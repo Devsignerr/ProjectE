@@ -144,6 +144,20 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 	return Object;
 }
 
+ComPtr<IDxcBlob> FD3D12ShaderCompiler::CreateBlob(const void* Data, size_t SizeInBytes) const
+{
+	E_CHECKF(Utils != nullptr, "셰이더 컴파일러가 초기화되지 않았습니다");
+
+	// IDxcUtils::CreateBlob은 데이터를 복사한다
+	ComPtr<IDxcBlobEncoding> Blob;
+	if (FAILED(Utils->CreateBlob(Data, static_cast<UINT32>(SizeInBytes), DXC_CP_ACP, &Blob)))
+	{
+		E_LOG(LogD3D12, Error, "DXIL 블롭 생성 실패 ({} bytes)", SizeInBytes);
+		return nullptr;
+	}
+	return Blob;
+}
+
 std::filesystem::path FD3D12ShaderCompiler::GetEngineShaderDirectory()
 {
 	return FPaths::GetEngineShaderDirectory();

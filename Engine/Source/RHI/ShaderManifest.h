@@ -1,0 +1,58 @@
+#pragma once
+
+#include "Core/CoreTypes.h"
+#include "RHI/D3D12/D3D12ShaderCompiler.h"
+
+#include <filesystem>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+
+// 셰이더 매니페스트(Engine/Shaders/Shaders.json)와 쿠킹 파일 규칙.
+// 런타임 라이브러리(FShaderLibrary)와 쿠킹 도구(ProjectECook)가 같은 규칙을 공유한다.
+
+struct FShaderManifestEntry
+{
+	std::wstring              File;       // 셰이더 디렉터리 기준 상대 경로
+	std::wstring              EntryPoint;
+	EShaderStage              Stage = EShaderStage::Vertex;
+	std::vector<std::wstring> Defines;
+
+	FShaderCompileDesc ToCompileDesc() const;
+};
+
+struct FShaderManifest
+{
+	static constexpr const wchar_t* DefaultFileName = L"Shaders.json";
+
+	std::vector<FShaderManifestEntry> Entries;
+
+	// 파일 로드 (실패 시 Error 로그 + false)
+	bool LoadFromFile(const std::filesystem::path& Path);
+
+	// JSON 문자열 파싱 (순수 함수, 테스트용). 실패 시 OutError에 사유
+	bool ParseJson(std::string_view Json, std::string& OutError);
+};
+
+// "Vertex" / "Pixel" / "Compute" (대소문자 무시)
+bool        ParseShaderStage(std::string_view Text, EShaderStage& OutStage);
+const char* ShaderStageToString(EShaderStage Stage);
+
+// 쿠킹 디렉터리: <엔진>/Engine/Shaders/Cooked
+std::filesystem::path GetCookedShaderDirectory();
+
+// 쿠킹 파일명: <File 스템>_<Entry>_<Stage>[_<디파인 FNV-1a 64비트 16진>][.debug].dxil
+// Debug 구성의 DXIL(-Zi -Od)과 Release(-O3)를 구분하기 위해 bDebugVariant가 접미사를 붙인다.
+std::wstring GetCookedShaderFileName(const FShaderCompileDesc& Desc, bool bDebugVariant = (E_DEBUG != 0));
+
+// 디파인 목록 해시 (순서 포함). 비어 있으면 0
+uint64 HashShaderDefines(std::span<const std::wstring> Defines);
+
+// 셰이더 소스와 그것이 #include "..." 로 참조하는 파일들(재귀). 첫 원소는 소스 자신.
+// 존재하지 않는 포함 파일은 목록에 넣지 않는다.
+std::vector<std::filesystem::path> CollectShaderDependencies(const std::filesystem::path& SourcePath,
+                                                             const std::filesystem::path& ShaderDirectory);
+
+// 쿠킹 결과가 모든 소스보다 새로우면 true. SourceTimes가 비어 있으면 false
+bool IsCookedShaderUpToDate(std::filesystem::file_time_type CookedTime, std::span<const std::filesystem::file_time_type> SourceTimes);

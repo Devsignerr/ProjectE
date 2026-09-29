@@ -97,9 +97,13 @@
 - [x] (트랙 B) 리플렉션/프로퍼티 시스템: `FTypeRegistry`, `FTypeInfo`/`FPropertyInfo`(타입/오프셋/표시명/범위/플래그), `TTypeBuilder` 유창한 등록, ECS 훅(Has/Add/Remove/Get), `RegisterSceneTypes`(FScene 생성자에서 보장) + 테스트 4개
 - [x] (트랙 B) 인스펙터를 리플렉션 기반 범용 UI로 전환 (타입별 위젯, 쿼터니언 오일러 캐시, 숨김/읽기 전용/색 플래그), "컴포넌트 추가" 메뉴 자동 생성
 - [ ] JSON 직렬화: 씬 저장/로드(리플렉션 기반), 머티리얼 에셋, 에디터 파일 메뉴
-- [ ] 에셋 임포트/쿠킹: glTF·PNG → 엔진 바이너리, 셰이더 사전 컴파일(DXIL), 런타임 실행 파일 골격
+- [ ] 에셋 임포트/쿠킹: glTF·PNG → 엔진 바이너리
+- [x] (트랙 D) 셰이더 사전 컴파일: `Engine/Shaders/Shaders.json` 매니페스트, `FShaderLibrary`(메모리 캐시 → 쿠킹 DXIL(소스·포함 파일 mtime 검사) → DXC 컴파일+기록), `ProjectECook` 도구(GPU 불필요), `FD3D12MipGenerator` 라이브러리 경유 + RhiTests 6개
+- [x] (트랙 D) 런타임 실행 파일 골격 `ProjectERuntime` (창 서브시스템, `--project`, 자리표시 씬 — DefaultScene 로드는 트랙 C 머지 후 연결)
 - [ ] 셰이더 핫 리로드
-- [ ] 패키징 스크립트 (Release 스테이징)
+- [x] (트랙 D) 패키징 스크립트 `Scripts/Package.ps1` (Release 빌드 → 쿠킹 → `Build/Package/<프로젝트>/` 스테이징 + Run.bat, 엔진 마커 검사)
+
+후속 과제 (트랙 D): `FSceneRenderer`/에디터의 셰이더 로드를 `FShaderLibrary`로 전환(머지 후), 런타임 파일 로그(콘솔 없음 → `FLog` 파일 싱크), 패키지에서 셰이더 소스·DXC DLL 제거(쿠킹 DXIL만 배포), 에셋 쿠킹
 
 ## Phase 6 — 렌더링 고도화
 

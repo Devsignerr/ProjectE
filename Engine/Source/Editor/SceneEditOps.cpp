@@ -2,9 +2,11 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Scene.h"
+#include "Scene/SceneCloner.h"
 
 #include <charconv>
 #include <cstring>
+#include <unordered_map>
 
 namespace
 {
@@ -30,42 +32,62 @@ namespace
 			break;
 		}
 	}
+
+	FEntity CloneRecursive(FScene& SourceScene, FEntity Source, FScene& DestScene, FEntity DestParent,
+	                       std::unordered_map<uint64, FEntity>& OutMap)
+	{
+		FRegistry& SourceRegistry = SourceScene.GetRegistry();
+		if (!SourceRegistry.IsValid(Source))
+		{
+			return NullEntity;
+		}
+
+		// 같은 씬 복제 시 엔티티/컴포넌트 추가가 저장소를 재할당할 수 있으므로 원본 포인터는 추가 이후에 얻는다
+		FRegistry&            DestRegistry = DestScene.GetRegistry();
+		const FNameComponent* SourceName   = SourceRegistry.TryGet<FNameComponent>(Source);
+		const std::string     Name         = SourceName ? SourceName->Name : std::string("Entity");
+		const FEntity         Clone        = DestScene.CreateEntity(Name);
+		DestScene.SetParent(Clone, DestParent);
+		OutMap[Source.ToId()] = Clone;
+
+		const FTypeInfo* HierarchyType = FTypeRegistry::Get().Find<FHierarchyComponent>();
+		FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
+			// 계층은 SetParent로 새로 구성한다 (원본 엔티티 참조를 복사하면 안 됨)
+			if (&Type == HierarchyType || !Type.HasComponent(SourceRegistry, Source))
+			{
+				return;
+			}
+			void*       DestComponent   = Type.HasComponent(DestRegistry, Clone) ? Type.GetComponent(DestRegistry, Clone) : Type.AddComponent(DestRegistry, Clone);
+			const void* SourceComponent = Type.GetComponent(SourceRegistry, Source);
+			for (const FPropertyInfo& Property : Type.Properties)
+			{
+				CopyProperty(Property, SourceComponent, DestComponent);
+			}
+		});
+
+		const std::vector<FEntity> Children = SourceScene.GetChildren(Source); // 같은 씬 복제 시 원본 목록이 바뀌지 않도록 복사
+		for (FEntity Child : Children)
+		{
+			CloneRecursive(SourceScene, Child, DestScene, Clone, OutMap);
+		}
+		return Clone;
+	}
 } // namespace
 
 FEntity FSceneEditOps::CloneSubtree(FScene& SourceScene, FEntity Source, FScene& DestScene, FEntity DestParent)
 {
-	FRegistry& SourceRegistry = SourceScene.GetRegistry();
-	if (!SourceRegistry.IsValid(Source))
+	std::unordered_map<uint64, FEntity> Map;
+	const FEntity                       Clone = CloneRecursive(SourceScene, Source, DestScene, DestParent, Map);
+
+	// 리플렉션 밖 런타임 데이터(스킨 관절/애니메이션 노드)를 복사하고 서브트리 안의 참조는 복제본으로 바꾼다
+	const auto Remap = [&Map](FEntity Entity) {
+		const auto Found = Map.find(Entity.ToId());
+		return Found != Map.end() ? Found->second : Entity;
+	};
+	for (const auto& [SourceId, CloneEntity] : Map)
 	{
-		return NullEntity;
-	}
-
-	// 같은 씬 복제 시 엔티티/컴포넌트 추가가 저장소를 재할당할 수 있으므로 원본 포인터는 추가 이후에 얻는다
-	FRegistry&            DestRegistry = DestScene.GetRegistry();
-	const FNameComponent* SourceName   = SourceRegistry.TryGet<FNameComponent>(Source);
-	const std::string     Name         = SourceName ? SourceName->Name : std::string("Entity");
-	const FEntity         Clone        = DestScene.CreateEntity(Name);
-	DestScene.SetParent(Clone, DestParent);
-
-	const FTypeInfo* HierarchyType = FTypeRegistry::Get().Find<FHierarchyComponent>();
-	FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
-		// 계층은 SetParent로 새로 구성한다 (원본 엔티티 참조를 복사하면 안 됨)
-		if (&Type == HierarchyType || !Type.HasComponent(SourceRegistry, Source))
-		{
-			return;
-		}
-		void*       DestComponent   = Type.HasComponent(DestRegistry, Clone) ? Type.GetComponent(DestRegistry, Clone) : Type.AddComponent(DestRegistry, Clone);
-		const void* SourceComponent = Type.GetComponent(SourceRegistry, Source);
-		for (const FPropertyInfo& Property : Type.Properties)
-		{
-			CopyProperty(Property, SourceComponent, DestComponent);
-		}
-	});
-
-	const std::vector<FEntity> Children = SourceScene.GetChildren(Source); // 같은 씬 복제 시 원본 목록이 바뀌지 않도록 복사
-	for (FEntity Child : Children)
-	{
-		CloneSubtree(SourceScene, Child, DestScene, Clone);
+		FSceneCloner::CopyRuntimeData(SourceScene.GetRegistry(), FEntity::FromId(SourceId), DestScene.GetRegistry(), CloneEntity);
+		FSceneCloner::RemapRuntimeReferences(DestScene.GetRegistry(), CloneEntity, Remap);
 	}
 	return Clone;
 }

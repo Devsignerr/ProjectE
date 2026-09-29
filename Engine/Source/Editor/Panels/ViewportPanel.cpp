@@ -108,6 +108,14 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				if (ImGui::IsKeyPressed(ImGuiKey_F)) FocusSelection(Context);
 			}
 
+			// 플레이 모드 표시: 뷰포트 테두리 (재생 초록, 일시정지 노랑)
+			if (Context.bPlaying)
+			{
+				const ImU32 BorderColor = Context.bPaused ? IM_COL32(255, 200, 70, 255) : IM_COL32(90, 230, 110, 255);
+				ImGui::GetWindowDrawList()->AddRect(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y),
+				                                    BorderColor, 0.0f, 0, 3.0f);
+			}
+
 			// 툴바 오버레이
 			ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
 			DrawToolbar();
@@ -156,6 +164,15 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 		                         &Context.Renderer->GetSkinPalettes());
 	}
 	RenderTarget->End(CommandList);
+}
+
+float FViewportPanel::GetAspectRatio(float Fallback) const
+{
+	if (!RenderTarget || RenderTarget->GetHeight() == 0)
+	{
+		return Fallback;
+	}
+	return static_cast<float>(RenderTarget->GetWidth()) / static_cast<float>(RenderTarget->GetHeight());
 }
 
 bool FViewportPanel::ReloadShaders(bool bForceRecompile)

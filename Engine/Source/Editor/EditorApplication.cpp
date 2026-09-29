@@ -101,8 +101,25 @@ bool FEditorApplication::OnInit()
 	Context.ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
 	Context.DefaultCubeMesh  = Resources.GetOrCreatePrimitiveMesh("cube");
 	Context.OpenSceneRequest = [this](const std::filesystem::path& Path) { OpenScene(Path); };
+	Context.Scripts          = &Scripts;
+	Scripts.SetContentDirectory(Context.ContentDirectory);
+	Scripts.SetAudioHooks({
+		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
+		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
+		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
+	});
+	if (Audio.Init() && IsAutomationRun())
+	{
+		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
+	}
+	PlayMode.Init(Scene, Scripts);
 
-	OpenStartupScene();
+	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
+	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	if (const std::wstring SceneArg = CommandLine.GetValue(L"--scene"); SceneArg.empty() || !OpenScene(Context.ContentDirectory / SceneArg))
+	{
+		OpenStartupScene();
+	}
 
 	// 자동 검증: --select <이름>[,<이름>...] 으로 시작 시 엔티티 선택 (선택 아웃라인/인스펙터 확인용, 같은 이름은 모두)
 	if (const std::wstring SelectNames = FCommandLine::FromProcess().GetValue(L"--select"); !SelectNames.empty())
@@ -155,7 +172,19 @@ bool FEditorApplication::OnInit()
 	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
 	LoadEditorCamera();
 
-	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일");
+	// 스크립트 핫 리로드: 프로젝트 Content의 .lua 감시
+	if (!ScriptWatcher.Start(Context.ContentDirectory, true))
+	{
+		E_LOG(LogEditor, Warning, "Content 디렉터리 감시를 시작하지 못했습니다. 스크립트 핫 리로드가 꺼집니다");
+	}
+
+	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일, F5 재생/정지");
+
+	// 자동 검증: --play 로 시작 시 플레이 모드 진입
+	if (CommandLine.HasFlag(L"--play"))
+	{
+		StartPlay();
+	}
 	return true;
 }
 
@@ -165,11 +194,19 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 
 	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard())
 	{
-		RequestExit();
+		// 플레이 중 ESC는 플레이 정지 (UE와 동일)
+		if (PlayMode.IsActive())
+		{
+			StopPlay();
+		}
+		else
+		{
+			RequestExit();
+		}
 	}
 
-	// 뷰포트 위에서만 카메라 조작 (기즈모 사용 중 제외)
-	if (ViewportPanel.IsHovered() && !ViewportPanel.IsUsingGizmo())
+	// 뷰포트 위에서만 카메라 조작 (기즈모 사용 중 제외). 게임 카메라로 보는 중에는 조작하지 않는다
+	if (ViewportPanel.IsHovered() && !ViewportPanel.IsUsingGizmo() && Context.Camera == &Camera)
 	{
 		CameraController.Update(Camera, InputState, DeltaSeconds);
 	}
@@ -181,10 +218,12 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		FEditorActions::DeleteSelection(Context);
 	}
 
-	FAnimationSystem::Update(Scene, DeltaSeconds);
-	Scene.UpdateTransforms();
+	UpdatePlayMode(DeltaSeconds);
+	FAnimationSystem::Update(*Context.Scene, DeltaSeconds);
+	Context.Scene->UpdateTransforms();
 
 	PollShaderChanges();
+	PollScriptChanges();
 
 	const float InstantFps = DeltaSeconds > 0.0f ? 1.0f / DeltaSeconds : 0.0f;
 	SmoothedFps            = SmoothedFps <= 0.0f ? InstantFps : FMath::Lerp(SmoothedFps, InstantFps, 0.05f);
@@ -198,6 +237,7 @@ void FEditorApplication::OnRender()
 	ImGuiLayer.BeginFrame();
 	HandleShortcuts();
 	HandleToolShortcuts();
+	HandlePlayShortcuts();
 	DrawMainMenuBar();
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
@@ -218,7 +258,7 @@ void FEditorApplication::OnRender()
 	CommitPendingEdit();
 
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
-	Scene.UpdateTransforms();
+	Context.Scene->UpdateTransforms();
 
 	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
@@ -241,6 +281,9 @@ void FEditorApplication::OnResize(uint32 Width, uint32 Height)
 
 void FEditorApplication::OnShutdown()
 {
+	StopPlay();
+	ScriptWatcher.Stop();
+	Audio.Shutdown();
 	SaveEditorCamera();
 	ShaderWatcher.Stop();
 	if (Rhi)
@@ -258,6 +301,7 @@ void FEditorApplication::OnShutdown()
 
 void FEditorApplication::NewScene()
 {
+	StopPlay();
 	Scene.Clear();
 	Context.ClearSelection();
 	CurrentScenePath.clear();
@@ -274,6 +318,7 @@ void FEditorApplication::NewScene()
 
 bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
 {
+	StopPlay();
 	Context.ClearSelection();
 	if (!FSceneSerializer::LoadFromFile(Scene, Path))
 	{
@@ -488,13 +533,13 @@ void FEditorApplication::DrawMainMenuBar()
 	{
 		if (ImGui::MenuItem("빈 엔티티 추가"))
 		{
-			Context.Select(Scene.CreateEntity("Entity"));
+			Context.Select(Context.Scene->CreateEntity("Entity"));
 			Context.MarkEdited("엔티티 추가");
 		}
 		if (ImGui::MenuItem("큐브 추가"))
 		{
-			const FEntity         Cube = Scene.CreateEntity("Cube");
-			FStaticMeshComponent& Mesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Cube);
+			const FEntity         Cube = Context.Scene->CreateEntity("Cube");
+			FStaticMeshComponent& Mesh = Context.Scene->GetRegistry().Emplace<FStaticMeshComponent>(Cube);
 			Mesh.Mesh      = Context.DefaultCubeMesh;
 			Mesh.MeshAsset = "primitive:cube";
 			Context.Select(Cube);
@@ -517,6 +562,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::EndMenu();
 	}
 	DrawToolsMenu();
+	DrawPlayControls();
 
 	ImGui::EndMainMenuBar();
 }
@@ -528,7 +574,7 @@ void FEditorApplication::DrawStatsWindow()
 		const FSceneRenderStats& Stats = SceneRenderer.GetStats();
 		ImGui::Text("FPS: %.1f (%.2f ms)", SmoothedFps, SmoothedFps > 0.0f ? 1000.0f / SmoothedFps : 0.0f);
 		ImGui::Text("메시: %u / %u 표시, 드로우 %u", Stats.VisibleMeshes, Stats.TotalMeshes, Stats.DrawCalls);
-		ImGui::Text("엔티티: %u", Scene.GetRegistry().GetAliveCount());
+		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
 		ImGui::Text("리소스: 메시 %zu, 머티리얼 %zu, 텍스처 %zu", Resources.GetMeshCount(), Resources.GetMaterialCount(),
 		            Resources.GetTextureCount());
 
@@ -704,6 +750,12 @@ void FEditorApplication::ResetUndoHistory()
 
 void FEditorApplication::CommitPendingEdit()
 {
+	// 플레이 중 변경은 플레이 씬에 대한 것이므로 편집 기록에 남기지 않는다 (정지하면 버려짐)
+	if (PlayMode.IsActive())
+	{
+		Context.PendingEdit = FPendingEdit{};
+		return;
+	}
 	// 드래그/텍스트 입력/기즈모 조작이 이어지는 동안은 모아 두었다가 끝난 뒤 한 단계로 기록
 	const bool  bInteracting = ImGui::IsAnyItemActive() || ViewportPanel.IsUsingGizmo();
 	std::string Label;
@@ -719,6 +771,11 @@ void FEditorApplication::CommitPendingEdit()
 
 void FEditorApplication::UndoEdit()
 {
+	if (PlayMode.IsActive())
+	{
+		ShowNotification("플레이 중에는 실행 취소할 수 없습니다", true);
+		return;
+	}
 	CommitPendingEdit();
 	if (Context.PendingEdit.IsPending() || !UndoHistory.CanUndo())
 	{
@@ -731,6 +788,11 @@ void FEditorApplication::UndoEdit()
 
 void FEditorApplication::RedoEdit()
 {
+	if (PlayMode.IsActive())
+	{
+		ShowNotification("플레이 중에는 다시 실행할 수 없습니다", true);
+		return;
+	}
 	CommitPendingEdit();
 	if (Context.PendingEdit.IsPending() || !UndoHistory.CanRedo())
 	{
@@ -840,4 +902,141 @@ void FEditorApplication::SaveEditorCamera() const
 	State.Rotation  = Camera.GetRotation();
 	State.MoveSpeed = CameraController.MoveSpeed;
 	State.Save(GetEditorCameraPath());
+}
+
+// ---------------------------------------------------------------- 플레이 모드 / 스크립트
+
+void FEditorApplication::StartPlay()
+{
+	if (PlayMode.IsActive())
+	{
+		return;
+	}
+	PlayMode.Play(Context);
+	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임", false);
+}
+
+void FEditorApplication::StopPlay()
+{
+	if (!PlayMode.IsActive())
+	{
+		return;
+	}
+	PlayMode.Stop(Context);
+	AudioSystem.Reset(Audio);
+	// 플레이 중 뷰포트 크기가 바뀌었을 수 있으므로 에디터 카메라 종횡비를 맞춘다
+	Context.Camera = &Camera;
+	Camera.SetAspectRatio(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));
+}
+
+void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
+{
+	// 텍스트 입력 중에는 게임에 키 입력을 주지 않는다
+	const bool bGameInput = !ImGui::GetIO().WantTextInput;
+	PlayMode.Tick(Context, DeltaSeconds, bGameInput ? &GetInput() : nullptr);
+
+	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라
+	FCamera* GameCamera = PlayMode.UpdateGameCamera(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));
+	Context.Camera      = GameCamera != nullptr ? GameCamera : &Camera;
+
+	// 오디오: 플레이 중에만, 보고 있는 카메라가 청자 (트랜스폼은 직전 프레임 갱신 기준)
+	if (PlayMode.IsActive())
+	{
+		Audio.SetListener({ Context.Camera->GetPosition(), Context.Camera->GetForwardVector(), Context.Camera->GetUpVector() });
+		AudioSystem.Update(*Context.Scene, Audio, Context.ContentDirectory);
+	}
+}
+
+void FEditorApplication::HandlePlayShortcuts()
+{
+	if (ImGui::GetIO().WantTextInput)
+	{
+		return;
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_F5, false))
+	{
+		if (PlayMode.IsActive())
+		{
+			StopPlay();
+		}
+		else
+		{
+			StartPlay();
+		}
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_F6, false))
+	{
+		PlayMode.TogglePause();
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_F7))
+	{
+		PlayMode.RequestStep();
+	}
+}
+
+void FEditorApplication::DrawPlayControls()
+{
+	ImGui::Separator();
+	if (!PlayMode.IsActive())
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.95f, 0.55f, 1.0f));
+		if (ImGui::MenuItem("재생"))
+		{
+			StartPlay();
+		}
+		ImGui::PopStyleColor();
+		ImGui::SetItemTooltip("뷰포트에서 재생 (F5). 정지하면 씬이 재생 전 상태로 돌아갑니다");
+		return;
+	}
+
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.45f, 1.0f));
+	if (ImGui::MenuItem("정지"))
+	{
+		StopPlay();
+		ImGui::PopStyleColor();
+		return;
+	}
+	ImGui::PopStyleColor();
+	ImGui::SetItemTooltip("정지하고 편집 씬 복원 (F5 / ESC)");
+
+	if (ImGui::MenuItem(PlayMode.IsPaused() ? "계속" : "일시정지"))
+	{
+		PlayMode.TogglePause();
+	}
+	ImGui::SetItemTooltip("일시정지 / 계속 (F6)");
+
+	if (ImGui::MenuItem("한 프레임", nullptr, false, PlayMode.IsPaused()))
+	{
+		PlayMode.RequestStep();
+	}
+	ImGui::SetItemTooltip("일시정지 중 한 프레임 진행 (F7)");
+
+	const ImVec4 StateColor = PlayMode.IsPaused() ? ImVec4(1.0f, 0.8f, 0.3f, 1.0f) : ImVec4(0.55f, 0.95f, 0.55f, 1.0f);
+	ImGui::TextColored(StateColor, PlayMode.IsPaused() ? "일시정지됨" : "플레이 중");
+	if (Scripts.GetErrorCount() > 0)
+	{
+		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "스크립트 오류 %u건", Scripts.GetErrorCount());
+	}
+}
+
+void FEditorApplication::PollScriptChanges()
+{
+	for (const std::filesystem::path& Path : ScriptWatcher.Poll())
+	{
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		if (Extension != L".lua")
+		{
+			continue;
+		}
+		const std::string Name = FStringConv::ToUtf8(Path.filename().wstring());
+		if (Scripts.ReloadScript(Path))
+		{
+			ShowNotification("스크립트 다시 로드됨: " + Name, false);
+		}
+		else
+		{
+			ShowNotification("스크립트 오류: " + Name + " (기존 코드 유지, 로그 확인)", true);
+		}
+	}
 }

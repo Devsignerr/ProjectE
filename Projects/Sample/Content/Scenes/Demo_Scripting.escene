@@ -1,0 +1,390 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 3.0
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -700.0,
+            -500.0,
+            350.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/OrbitCamera.lua",
+          "PropertyOverrides": "{\"Radius\":950.0,\"Height\":380.0}"
+        }
+      }
+    },
+    {
+      "Name": "Spinner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -280.0,
+            90.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":60.0}"
+        }
+      }
+    },
+    {
+      "Name": "Tumbler",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            280.0,
+            90.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":45.0,\"Axis\":[1.0,1.0,0.0]}"
+        }
+      }
+    },
+    {
+      "Name": "Bobber0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            -300.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":40.0,\"Phase\":0.0}"
+        }
+      }
+    },
+    {
+      "Name": "Bobber1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            -150.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":40.0,\"Phase\":0.2}"
+        }
+      }
+    },
+    {
+      "Name": "Bobber2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            0.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":40.0,\"Phase\":0.4}"
+        }
+      }
+    },
+    {
+      "Name": "Bobber3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            150.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":40.0,\"Phase\":0.6000000000000001}"
+        }
+      }
+    },
+    {
+      "Name": "Bobber4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            300.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":40.0,\"Phase\":0.8}"
+        }
+      }
+    },
+    {
+      "Name": "DamagedHelmet",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":30.0}"
+        }
+      }
+    },
+    {
+      "Name": "Spawner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Spawner.lua",
+          "PropertyOverrides": ""
+        }
+      }
+    }
+  ]
+}

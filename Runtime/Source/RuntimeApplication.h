@@ -8,6 +8,7 @@
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptSystem.h"
 
 #include <memory>
 
@@ -39,6 +40,7 @@ private:
 	FCamera              Camera;
 	FFlyCameraController CameraController;
 
-	FAudioEngine Audio;
-	FAudioSystem AudioSystem;
+	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
+	FAudioEngine         Audio;
+	FAudioSystem         AudioSystem;
 };

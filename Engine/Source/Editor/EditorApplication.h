@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Audio/AudioEngine.h"
+#include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Core/FileWatcher.h"
 #include "Editor/EditorContext.h"
@@ -12,12 +14,14 @@
 #include "Editor/Panels/HierarchyPanel.h"
 #include "Editor/Panels/InspectorPanel.h"
 #include "Editor/Panels/ViewportPanel.h"
+#include "Editor/PlayMode.h"
 #include "Editor/UndoHistory.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptSystem.h"
 
 #include <chrono>
 #include <filesystem>
@@ -75,6 +79,14 @@ private:
 	void DrawNotification();
 	void ShowNotification(std::string Message, bool bError);
 
+	// ---- 플레이 모드 / 스크립트
+	void StartPlay();
+	void StopPlay();
+	void UpdatePlayMode(float DeltaSeconds);
+	void HandlePlayShortcuts();
+	void DrawPlayControls(); // 메인 메뉴 바 안의 재생/일시정지/진행/정지 버튼
+	void PollScriptChanges(); // Content의 .lua 저장 감지 → 핫 리로드
+
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
@@ -97,6 +109,14 @@ private:
 
 	FUndoHistory        UndoHistory;
 	FModelTemplateCache ModelTemplates; // Undo 복원 시 모델 하위 노드 재사용
+
+	FScriptSystem Scripts;
+	FPlayMode     PlayMode;
+	FFileWatcher  ScriptWatcher;
+
+	// 오디오는 플레이 중에만 재생 (정지 시 모든 소스 해제)
+	FAudioEngine Audio;
+	FAudioSystem AudioSystem;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

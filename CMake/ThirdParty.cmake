@@ -131,3 +131,33 @@ add_library(ThirdParty::bc7enc ALIAS bc7enc)
 target_include_directories(bc7enc SYSTEM PUBLIC "${E_BC7ENC_DIR}")
 target_compile_options(bc7enc PRIVATE /W0)
 set_target_properties(bc7enc PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- Lua 5.4.9 (MIT, lua.org 공식 tarball — 해시는 lua.org/ftp 게시 값)
+# C++로 컴파일한다: 오류가 longjmp 대신 C++ 예외로 전파되어 바인딩 쪽 C++ 소멸자가 안전하게 실행된다 (sol2: SOL_USING_CXX_LUA)
+FetchContent_Declare(lua
+    URL      "https://www.lua.org/ftp/lua-5.4.9.tar.gz"
+    URL_HASH SHA256=2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6)
+FetchContent_MakeAvailable(lua)
+
+file(GLOB E_LUA_SOURCES "${lua_SOURCE_DIR}/src/*.c")
+list(REMOVE_ITEM E_LUA_SOURCES "${lua_SOURCE_DIR}/src/lua.c" "${lua_SOURCE_DIR}/src/luac.c") # 독립 실행 파일 제외
+set_source_files_properties(${E_LUA_SOURCES} PROPERTIES LANGUAGE CXX)
+add_library(lua STATIC ${E_LUA_SOURCES})
+add_library(ThirdParty::lua ALIAS lua)
+target_include_directories(lua SYSTEM PUBLIC "${lua_SOURCE_DIR}/src")
+target_compile_definitions(lua PRIVATE _CRT_SECURE_NO_WARNINGS)
+target_compile_options(lua PRIVATE /W0 /TP)
+set_target_properties(lua PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- sol2 v3.3.0 (MIT, Lua C++ 바인딩) — 헤더 전용
+FetchContent_Declare(sol2
+    URL      "https://github.com/ThePhD/sol2/archive/refs/tags/v3.3.0.zip"
+    URL_HASH SHA256=a7489629c596c8a67108ad3603cb6a90073ba6647e50441c8c55492254190d67
+    SOURCE_SUBDIR "none") # 자체 CMakeLists를 쓰지 않고 include만 사용
+FetchContent_MakeAvailable(sol2)
+
+add_library(sol2 INTERFACE)
+add_library(ThirdParty::sol2 ALIAS sol2)
+target_include_directories(sol2 SYSTEM INTERFACE "${sol2_SOURCE_DIR}/include")
+target_compile_definitions(sol2 INTERFACE SOL_USING_CXX_LUA=1 SOL_ALL_SAFETIES_ON=1)
+target_link_libraries(sol2 INTERFACE lua)

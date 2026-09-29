@@ -6,6 +6,7 @@
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
+#include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/SceneSerializer.h"
@@ -102,6 +103,15 @@ bool FRuntimeApplication::OnInit()
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 50.0f));
 
+	// 게임 시작: 스크립트 컴포넌트 실행
+	Scripts.SetContentDirectory(FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	Scripts.SetAudioHooks({
+		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
+		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
+		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
+	});
+	Scripts.BeginPlay(Scene);
+
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
 }
@@ -114,9 +124,20 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
-	CameraController.Update(Camera, InputState, DeltaSeconds);
+	Scripts.Update(DeltaSeconds, &InputState);
+	if (Scripts.ConsumeSceneStructureChanged())
+	{
+		FSceneAssetResolver::Resolve(Scene, Resources, Scripts.GetContentDirectory());
+	}
 	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
+
+	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
+	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
+	if (!CameraEntity.IsValid() || !FSceneCamera::ApplyToCamera(Scene, CameraEntity, Camera.GetAspectRatio(), Camera))
+	{
+		CameraController.Update(Camera, InputState, DeltaSeconds);
+	}
 
 	// 오디오: 카메라가 청자
 	Audio.SetListener({ Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetUpVector() });
@@ -142,6 +163,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
+	Scripts.EndPlay();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();
 

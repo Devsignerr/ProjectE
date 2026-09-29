@@ -58,6 +58,8 @@
 - D3D 호출: 초기화 경로는 `E_D3D_VERIFY(call)` (실패 시 Error 로그 + `return false`), 프레임 경로는 `E_D3D_CHECK(call)` (Fatal)
 - 디버그 전용 코드는 `#if E_DEBUG` (CMake가 Debug=1 / Release=0 정의)
 - 오디오: 사운드 위치는 `FAudioEngine::SetWorldPosition`(청자 기준 좌표로 변환 — miniaudio는 오른손 좌표계라 월드 좌표를 직접 넘기지 않는다). 오디오 컴포넌트는 Audio 모듈의 `RegisterAudioTypes()`로 등록하며 앱은 씬 로드 전에 호출. 자동 검증(`IsAutomationRun()`) 중에는 음소거. 오디오 테스트는 `bNoDevice` 엔진 + `ReadFrames`로 믹스 결과를 검증
+- 스크립팅(Lua 5.4 + sol2): `FScriptSystem`이 `FScriptComponent`(ScriptAsset + PropertyOverrides JSON)를 실행한다. 스크립트는 `Properties` 기본값을 가진 클래스 테이블을 반환하고 `OnStart/OnUpdate(dt)/OnDestroy`를 정의한다. 엔진 API는 리플렉션 자동 바인딩(`entity:GetComponent("TransformComponent").Position`) + 트랜스폼 빠른 경로 + `Scene/Log/Input/Time`. sol 헤더는 Scripting 모듈 내부(`LuaRuntime.h`, `SolInclude.h`)에서만 포함한다. 바인딩에서 오류는 C++ 예외(`std::runtime_error`)로 던지면 Lua 오류가 되고(Lua는 C++로 컴파일), 스크립트 오류는 해당 인스턴스만 멈춘다. 엔티티 파괴는 `Destroy()`로 프레임 끝에 지연 적용. 새 컴포넌트는 리플렉션 등록만 하면 스크립트에서 바로 쓸 수 있다
+- 플레이 모드: `FPlayMode`가 `FSceneCloner`로 편집 씬을 복제해 재생하고 정지 시 복원한다. 복제는 리플렉션 `CopyComponent` 훅을 쓰므로 **리플렉션에 등록되지 않은 컴포넌트는 플레이 씬에 복사되지 않는다**. 예외로 런타임 전용 데이터(`FSkinComponent`, `FAnimationComponent::Runtime`)는 `FSceneCloner::CopyRuntimeData/RemapRuntimeReferences`가 복사·재매핑하며, 새 런타임 전용 엔티티 참조를 추가하면 여기에 함께 추가한다(서브트리 복제 `FSceneEditOps::CloneSubtree`도 같은 함수 사용) 플레이 중 에디터 코드는 `Scene` 멤버가 아니라 `Context.Scene`(현재 씬)을 사용한다
 - 포스트 프로세싱: 효과는 `FPostProcessor` 안에서 확장하고(씬 렌더러는 `Render` 한 번 호출), 설정은 `FPostProcessSettings`, CPU/GPU 공용 식은 `Renderer/PostProcessMath.h`와 셰이더를 함께 수정. PSO 블렌드는 `FGraphicsPipelineDesc::BlendMode`(`bAlphaBlend`는 하위 호환용)
 
 ## 디렉터리
@@ -83,15 +85,16 @@ Engine/Source/
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
   Audio/          FAudioEngine(miniaudio 래퍼, 장치 없으면 무음 계속), FAudioSystem(FAudioSourceComponent ↔ 사운드 동기화), AudioMath(청자 공간 변환), RegisterAudioTypes()
-  Editor/         FImGuiLayer, FEditorApplication, EditorContext, Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
+  Scripting/      FScriptSystem(Lua 5.4 + sol2): 스크립트 컴포넌트 실행, 리플렉션 바인딩, 핫 리로드 (모듈 의존: Scripting → Scene → Core)
+  Editor/         FImGuiLayer, FEditorApplication, EditorContext, FPlayMode(재생/정지/복원), Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
 Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl) + Shaders.json(쿠킹 매니페스트 — 새 셰이더/엔트리는 여기 추가). Cooked/는 생성물(git 제외)
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
 Runtime/Source/   ProjectERuntime 게임 런타임 실행 파일 (창 서브시스템, `--project`로 프로젝트 지정)
 Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
-Tests/            CoreTests, RendererTests, RhiTests (CTest 등록)
-CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio
+Tests/            CoreTests, RendererTests, RhiTests, AudioTests, EditorTests, ScriptingTests (CTest 등록)
+CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2
 Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)
 Build/            CMake 빌드 출력 (git 제외)
 ```
@@ -123,7 +126,7 @@ Build/            CMake 빌드 출력 (git 제외)
 
 셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`). 에디터 실행 중에는 `Engine/Shaders/*.hlsl|hlsli`를 저장하면 자동 반영(핫 리로드, 실패 시 기존 셰이더 유지)되고, Ctrl+R(도구 → 셰이더 다시 로드)은 강제 재컴파일한다.
 
-화면 자동 검증: `.\Scripts\Verify.ps1 [-Target Editor|Runtime|Sandbox] [-ExtraArgs "--select <이름>"] [-Name <이름>]` → `Saved/Verify/<이름>.png`와 로그, D3D12 디버그 레이어 오류/경고 요약(종료 코드 0 = 오류 없음). 앱 공통 인자: `--exit-after <N>`, `--screenshot <경로>`, `--log <경로>`, 에디터 `--select <엔티티 이름>`. 렌더링/에디터 변경 후에는 반드시 실행해 스크린샷을 직접 보고, 디버그 레이어 오류 0건을 확인한 뒤 커밋한다.
+화면 자동 검증: `.\Scripts\Verify.ps1 [-Target Editor|Runtime|Sandbox] [-ExtraArgs "--select <이름>"] [-Name <이름>]` → `Saved/Verify/<이름>.png`와 로그, D3D12 디버그 레이어 오류/경고 요약(종료 코드 0 = 오류 없음). 앱 공통 인자: `--exit-after <N>`, `--screenshot <경로>`, `--log <경로>`, 에디터 `--select <엔티티 이름>`, `--play`(시작 시 플레이 모드), 에디터/런타임 `--scene <Content 기준 경로>`. 렌더링/에디터 변경 후에는 반드시 실행해 스크린샷을 직접 보고, 디버그 레이어 오류 0건을 확인한 뒤 커밋한다.
 
 빌드/단위 테스트 실행은 사용자 승인(2026-09-29)에 따라 이 프로젝트에서 항상 자동으로 수행한다. 에디터/Sandbox 실행(화면 확인)과 외부 다운로드는 사용자에게 안내/확인한다.
 

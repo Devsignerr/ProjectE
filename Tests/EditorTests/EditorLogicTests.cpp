@@ -351,3 +351,35 @@ E_TEST(EditorCamera_FramingKeepsDirectionAndFitsBounds)
 	const float Distance = FVector3::Distance(Position, Bounds.GetCenter());
 	E_EXPECT_NEAR(Distance, FVector3(100.0f).Length() / 0.5f, 0.5f);
 }
+
+E_TEST(SceneEditOps_DuplicateRemapsSkinAndAnimationRuntime)
+{
+	// 모델 루트(애니메이션) → 관절 → 스킨 메시. 복제본의 런타임 참조는 복제본 엔티티를 가리켜야 한다
+	FScene        Scene;
+	const FEntity Root  = Scene.CreateEntity("Model");
+	const FEntity Joint = Scene.CreateEntity("Joint");
+	const FEntity Skin  = Scene.CreateEntity("SkinMesh");
+	Scene.SetParent(Joint, Root);
+	Scene.SetParent(Skin, Root);
+	FAnimationComponent& Animation   = Scene.GetRegistry().Emplace<FAnimationComponent>(Root);
+	Animation.Runtime.NodeEntities   = { Root, Joint, Skin };
+	Animation.Runtime.CurrentTime    = 0.5f;
+	FSkinComponent& Binding          = Scene.GetRegistry().Emplace<FSkinComponent>(Skin);
+	Binding.Joints                   = { Joint };
+	Binding.InverseBindMatrices      = { FMatrix4x4::Identity };
+
+	const std::vector<FEntity> Clones = FSceneEditOps::Duplicate(Scene, { Root });
+	E_EXPECT_EQ(Clones.size(), static_cast<size_t>(1));
+	const FEntity CloneRoot = Clones[0];
+	const FEntity CloneJoint = Scene.GetChildren(CloneRoot)[0];
+	const FEntity CloneSkin  = Scene.GetChildren(CloneRoot)[1];
+
+	const FAnimationComponent& CloneAnimation = Scene.GetRegistry().Get<FAnimationComponent>(CloneRoot);
+	E_EXPECT_TRUE(CloneAnimation.Runtime.NodeEntities == (std::vector<FEntity>{ CloneRoot, CloneJoint, CloneSkin }));
+	E_EXPECT_NEAR(CloneAnimation.Runtime.CurrentTime, 0.5f, 0.0f);
+	const FSkinComponent* CloneBinding = Scene.GetRegistry().TryGet<FSkinComponent>(CloneSkin);
+	E_EXPECT_TRUE(CloneBinding != nullptr && CloneBinding->Joints == std::vector<FEntity>{ CloneJoint });
+	E_EXPECT_EQ(CloneBinding ? CloneBinding->InverseBindMatrices.size() : 0, static_cast<size_t>(1));
+	// 원본은 그대로
+	E_EXPECT_TRUE(Scene.GetRegistry().Get<FSkinComponent>(Skin).Joints == std::vector<FEntity>{ Joint });
+}

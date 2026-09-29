@@ -1,6 +1,7 @@
 add_subdirectory(Source/Core)
 add_subdirectory(Source/RHI)
 add_subdirectory(Source/Scene)
+add_subdirectory(Source/Scripting)
 add_subdirectory(Source/Renderer)
 add_subdirectory(Source/Audio)
 add_subdirectory(Source/Editor)

@@ -62,4 +62,17 @@ void RegisterSceneTypes()
 		.Property(&FAnimationComponent::bLoop, "Loop", "반복")
 		.Property(&FAnimationComponent::bRootMotion, "RootMotion", "루트 모션")
 		.AsComponent();
+
+	Registry.RegisterType<FCameraComponent>("CameraComponent", "카메라")
+		.Property(&FCameraComponent::FovYDegrees, "FovYDegrees", "시야각 (도)").Range(5.0f, 170.0f, 0.5f)
+		.Property(&FCameraComponent::NearZ, "NearZ", "근평면 (cm)").Range(0.1f, 10000.0f, 0.5f)
+		.Property(&FCameraComponent::FarZ, "FarZ", "원평면 (cm)").Range(100.0f, 10000000.0f, 100.0f)
+		.Property(&FCameraComponent::bPrimary, "Primary", "주 카메라")
+		.AsComponent();
+
+	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다
+	Registry.RegisterType<FScriptComponent>("ScriptComponent", "스크립트")
+		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트")
+		.Property(&FScriptComponent::PropertyOverrides, "PropertyOverrides", "프로퍼티 오버라이드", PF_Hidden)
+		.AsComponent();
 }

@@ -76,6 +76,7 @@ struct FTypeInfo
 	std::function<void*(FRegistry&, FEntity)>      GetComponent; // 없으면 nullptr
 	std::function<void*(FRegistry&, FEntity)>      AddComponent; // 기본 생성 후 포인터
 	std::function<void(FRegistry&, FEntity)>       RemoveComponent;
+	std::function<void(FRegistry&, FEntity, const FRegistry&, FEntity)> CopyComponent; // (대상, 대상 엔티티, 원본, 원본 엔티티) 값 복사
 
 	bool HasFlag(ETypeFlags Flag) const { return (Flags & Flag) != 0; }
 
@@ -205,6 +206,9 @@ public:
 		Info.GetComponent    = [](FRegistry& Registry, FEntity Entity) -> void* { return Registry.TryGet<T>(Entity); };
 		Info.AddComponent    = [](FRegistry& Registry, FEntity Entity) -> void* { return &Registry.GetOrEmplace<T>(Entity); };
 		Info.RemoveComponent = [](FRegistry& Registry, FEntity Entity) { Registry.Remove<T>(Entity); };
+		Info.CopyComponent   = [](FRegistry& Dest, FEntity DestEntity, const FRegistry& Source, FEntity SourceEntity) {
+			Dest.GetOrEmplace<T>(DestEntity) = Source.Get<T>(SourceEntity);
+		};
 		return *this;
 	}
 

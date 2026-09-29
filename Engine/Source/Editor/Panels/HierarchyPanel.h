@@ -4,7 +4,7 @@
 
 struct FEditorContext;
 
-// 씬 계층 트리: 선택, 드래그로 부모 변경, 우클릭 메뉴(자식 추가/삭제)
+// 씬 계층 트리: 선택(외부 선택 시 자동 펼침/스크롤 + 강조), 드래그로 부모 변경, 우클릭 메뉴(자식 추가/삭제)
 class FHierarchyPanel
 {
 public:
@@ -15,6 +15,12 @@ public:
 private:
 	void DrawEntityNode(FEditorContext& Context, FEntity Entity);
 	void DrawContextMenu(FEditorContext& Context, FEntity Entity);
+
+	// 선택이 바뀌면(특히 뷰포트 클릭) 조상 노드를 펼치고 선택 노드로 스크롤한다
+	FEntity LastSeenSelection;
+	FEntity RevealTarget;
+	bool    bScrollToReveal       = false;
+	bool    bSelectedFromThisPanel = false;
 
 	FEntity PendingDelete;
 	FEntity PendingReparentChild;

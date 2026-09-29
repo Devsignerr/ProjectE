@@ -6,6 +6,10 @@
     { "File": "Triangle.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "Tonemap.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "Outline.hlsl", "Entry": "MaskVS", "Stage": "Vertex" },
+    { "File": "Outline.hlsl", "Entry": "MaskPS", "Stage": "Pixel" },
+    { "File": "Outline.hlsl", "Entry": "CompositeVS", "Stage": "Vertex" },
+    { "File": "Outline.hlsl", "Entry": "CompositePS", "Stage": "Pixel" }
   ]
 }

@@ -508,7 +508,7 @@ void FEditorApplication::PollShaderChanges()
 		return;
 	}
 
-	if (SceneRenderer.ReloadShaders())
+	if (SceneRenderer.ReloadShaders() && ViewportPanel.ReloadShaders(false))
 	{
 		E_LOG(LogEditor, Display, "셰이더 다시 로드됨: {}", ChangedNames);
 		ShowNotification("셰이더 다시 로드됨: " + ChangedNames, false);
@@ -523,7 +523,7 @@ void FEditorApplication::PollShaderChanges()
 void FEditorApplication::ReloadAllShaders()
 {
 	SceneRenderer.GetShaderLibrary().InvalidateAll();
-	if (SceneRenderer.ReloadShaders(true))
+	if (SceneRenderer.ReloadShaders(true) && ViewportPanel.ReloadShaders(true))
 	{
 		ShowNotification("셰이더 전체 다시 로드됨", false);
 	}

@@ -20,6 +20,15 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	FScene&    Scene    = *Context.Scene;
 	FRegistry& Registry = Scene.GetRegistry();
 
+	// 선택 변경 감지: 이 패널 밖(뷰포트 등)에서 바뀌었으면 펼치고 스크롤
+	if (Context.SelectedEntity != LastSeenSelection)
+	{
+		LastSeenSelection = Context.SelectedEntity;
+		RevealTarget      = Context.SelectedEntity;
+		bScrollToReveal   = !bSelectedFromThisPanel;
+	}
+	bSelectedFromThisPanel = false;
+
 	if (ImGui::Begin("계층", &bOpen))
 	{
 		// 루트 엔티티 목록 (순회 중 구조 변경을 피하기 위해 먼저 수집)
@@ -60,6 +69,7 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 		}
 	}
 	ImGui::End();
+	RevealTarget = NullEntity;
 
 	// 순회가 끝난 뒤 구조 변경 적용
 	if (bPendingReparent)
@@ -98,11 +108,36 @@ void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 	}
 
 	ImGui::PushID(static_cast<int>(Entity.Index));
+
+	// 선택 대상의 조상은 한 번 펼쳐 준다 (이후에는 사용자가 접을 수 있음)
+	if (RevealTarget.IsValid() && !bLeaf && Scene.IsAncestorOf(Entity, RevealTarget))
+	{
+		ImGui::SetNextItemOpen(true);
+	}
+
+	// 선택 행은 뷰포트 아웃라인과 같은 계열 색으로 강조
+	const bool bSelected = Context.SelectedEntity == Entity;
+	if (bSelected)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.85f, 0.45f, 0.10f, 0.55f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.90f, 0.50f, 0.15f, 0.70f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.95f, 0.55f, 0.20f, 0.85f));
+	}
 	const bool bOpened = ImGui::TreeNodeEx("##Node", Flags, "%s", Name ? Name->Name.c_str() : "(이름 없음)");
+	if (bSelected)
+	{
+		ImGui::PopStyleColor(3);
+		if (bScrollToReveal && Entity == RevealTarget)
+		{
+			ImGui::SetScrollHereY(0.5f);
+			bScrollToReveal = false;
+		}
+	}
 
 	if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && !ImGui::IsItemToggledOpen())
 	{
 		Context.Select(Entity);
+		bSelectedFromThisPanel = true;
 	}
 
 	// 드래그 소스/타깃 (부모 변경)

@@ -6,6 +6,7 @@
 #include <memory>
 
 class FD3D12RenderTarget;
+class FSelectionOutline;
 class FInput;
 struct FEditorContext;
 
@@ -28,6 +29,9 @@ public:
 	// 씬을 렌더 타깃에 그린다 (RHI BeginFrame 이후)
 	void RenderScene(FEditorContext& Context);
 
+	// 선택 아웃라인 셰이더 핫 리로드
+	bool ReloadShaders(bool bForceRecompile);
+
 	bool IsHovered() const { return bHovered; }
 	bool IsUsingGizmo() const { return bUsingGizmo; }
 	bool bOpen = true;
@@ -45,6 +49,7 @@ private:
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
 
 	std::unique_ptr<FD3D12RenderTarget> RenderTarget;
+	std::unique_ptr<FSelectionOutline>  SelectionOutline;
 	uint32                              DesiredWidth  = 0;
 	uint32                              DesiredHeight = 0;
 

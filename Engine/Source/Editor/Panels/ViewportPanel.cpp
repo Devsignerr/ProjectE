@@ -6,6 +6,7 @@
 
 #include "Core/Input.h"
 #include "Editor/EditorContext.h"
+#include "Editor/SelectionOutline.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "Renderer/Camera.h"
@@ -24,6 +25,7 @@ FViewportPanel::~FViewportPanel() = default;
 
 void FViewportPanel::Shutdown()
 {
+	SelectionOutline.reset();
 	RenderTarget.reset();
 	DesiredWidth  = 0;
 	DesiredHeight = 0;
@@ -125,10 +127,28 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	}
 	ID3D12GraphicsCommandList* CommandList = Context.Rhi->GetCommandList();
 
-	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록한다
+	if (!SelectionOutline)
+	{
+		SelectionOutline = std::make_unique<FSelectionOutline>();
+		if (!SelectionOutline->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary()))
+		{
+			SelectionOutline.reset();
+		}
+	}
+
+	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록 → 선택 아웃라인 합성
 	RenderTarget->Begin(CommandList, nullptr);
 	Context.Renderer->Render(*Context.Scene, *Context.Camera, RenderTarget->GetOutput());
+	if (SelectionOutline)
+	{
+		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.SelectedEntity, RenderTarget->GetOutput());
+	}
 	RenderTarget->End(CommandList);
+}
+
+bool FViewportPanel::ReloadShaders(bool bForceRecompile)
+{
+	return !SelectionOutline || SelectionOutline->ReloadShaders(bForceRecompile);
 }
 
 void FViewportPanel::DrawToolbar()
@@ -249,6 +269,18 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 				Closest         = Entity;
 			}
 		});
+
+	// 모델에서 생성된 하위 노드(저장되지 않음)를 찍으면 모델 루트를 선택한다 (언리얼의 액터 선택과 같은 동작)
+	FRegistry& Registry = Context.Scene->GetRegistry();
+	while (Closest.IsValid() && Registry.Has<FTransientComponent>(Closest))
+	{
+		const FEntity Parent = Context.Scene->GetParent(Closest);
+		if (!Parent.IsValid())
+		{
+			break;
+		}
+		Closest = Parent;
+	}
 
 	Context.Select(Closest);
 }

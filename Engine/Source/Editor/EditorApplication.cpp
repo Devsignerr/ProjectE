@@ -1,5 +1,7 @@
 #include "Editor/EditorApplication.h"
 
+#include "Core/Paths.h"
+#include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/PrimitiveShapes.h"
@@ -52,7 +54,7 @@ bool FEditorApplication::OnInit()
 	{
 		return false;
 	}
-	if (!ImGuiLayer.Init(GetWindow(), *Rhi, std::filesystem::path(E_EDITOR_SAVED_DIR) / L"EditorLayout.ini"))
+	if (!ImGuiLayer.Init(GetWindow(), *Rhi, FPaths::GetSavedDirectory() / L"EditorLayout.ini"))
 	{
 		return false;
 	}
@@ -62,7 +64,8 @@ bool FEditorApplication::OnInit()
 	Context.Renderer         = &SceneRenderer;
 	Context.Scene            = &Scene;
 	Context.Camera           = &Camera;
-	Context.ContentDirectory = std::filesystem::path(E_EDITOR_CONTENT_DIR);
+	Context.ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
+	GetWindow().SetTitle(FPaths::HasProject() ? L"ProjectE Editor - " + FStringConv::ToWide(FPaths::GetProjectName()) : L"ProjectE Editor (프로젝트 없음)");
 	Context.DefaultCubeMesh  = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
 
 	BuildDefaultScene();

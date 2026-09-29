@@ -1,5 +1,6 @@
 #include "Core/Application.h"
 #include "Core/Math/Math.h"
+#include "Core/Paths.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
@@ -133,7 +134,11 @@ private:
 
 	void BuildScene()
 	{
-		const std::filesystem::path AssetDir(E_SANDBOX_ASSET_DIR);
+		if (!FPaths::HasProject())
+		{
+			E_LOG(LogSandbox, Warning, "열린 프로젝트가 없어 에셋을 로드할 수 없습니다 (--project <경로>)");
+		}
+		const std::filesystem::path AssetDir = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : std::filesystem::path();
 
 		// 태양광: 앞-왼쪽-위에서 비스듬히
 		const FEntity Sun = Scene.CreateEntity("Sun");

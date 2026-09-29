@@ -11,9 +11,5 @@ target_link_libraries(EEditor
     PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::Renderer
     PRIVATE ThirdParty::imgui ThirdParty::imguizmo)
 
-# 에디터 콘텐츠/저장 디렉터리 (프로젝트 파일 개념 도입 전까지 소스 트리 기준)
-target_compile_definitions(EEditor PRIVATE
-    "E_EDITOR_CONTENT_DIR=L\"${CMAKE_SOURCE_DIR}/Sandbox/Assets\""
-    "E_EDITOR_SAVED_DIR=L\"${CMAKE_SOURCE_DIR}/Saved\"")
 
 e_set_target_defaults(EEditor "Engine")

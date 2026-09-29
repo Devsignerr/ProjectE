@@ -57,6 +57,8 @@
 CMake/            CMake 헬퍼 모듈
 Engine/Source/
   Core/           타입, 로그, 어설트, 타이머, 창(Win32), 입력, 애플리케이션 루프
+  Core/Paths.h    FPaths: 엔진 디렉터리(실행 파일 상위에서 Engine/Shaders/Common.hlsli 마커 탐지), 프로젝트(.eproject) Content/Saved/Config
+                  FCommandLine(--project 등), FProjectDescriptor(.eproject JSON)
   Core/Math/      FMath, FVector2/3/4, FQuat, FMatrix4x4, FBox, FFrustum (통합 헤더 Math.h)
   Core/ECS/       FEntity(세대 핸들), TSparseSet, FRegistry(+TView) — 자체 희소 집합 ECS
   Core/Containers/ THandle(태그별 세대 핸들), TResourcePool
@@ -72,9 +74,9 @@ Engine/Source/
 Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl). 런타임에 소스 트리에서 직접 로드 (E_ENGINE_SHADER_DIR)
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
-Sandbox/Assets/   테스트 에셋 (E_SANDBOX_ASSET_DIR)
+Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
 Tests/            CoreTests, RendererTests (CTest 등록)
-CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정)
+CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json
 Scripts/          빌드 스크립트
 Build/            CMake 빌드 출력 (git 제외)
 ```

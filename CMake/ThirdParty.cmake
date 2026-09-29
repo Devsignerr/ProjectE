@@ -62,3 +62,14 @@ target_include_directories(imguizmo SYSTEM PUBLIC "${imguizmo_SOURCE_DIR}/src")
 target_link_libraries(imguizmo PUBLIC imgui)
 target_compile_options(imguizmo PRIVATE /W0)
 set_target_properties(imguizmo PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- nlohmann/json (v3.11.3, MIT) — 단일 헤더
+FetchContent_Declare(nlohmann_json
+    URL      "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp"
+    URL_HASH SHA256=9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(nlohmann_json)
+
+add_library(nlohmann_json INTERFACE)
+add_library(ThirdParty::nlohmann_json ALIAS nlohmann_json)
+target_include_directories(nlohmann_json SYSTEM INTERFACE "${nlohmann_json_SOURCE_DIR}")

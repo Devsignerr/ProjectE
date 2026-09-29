@@ -8,5 +8,6 @@ add_library(ProjectE::Core ALIAS ECore)
 
 # include 경로는 모듈 루트(Engine/Source) 기준: #include "Core/Log.h"
 target_include_directories(ECore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_link_libraries(ECore PRIVATE ThirdParty::nlohmann_json) # .eproject 등 JSON 파싱
 
 e_set_target_defaults(ECore "Engine")

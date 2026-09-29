@@ -1,5 +1,6 @@
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 
+#include "Core/Paths.h"
 #include "Core/StringConv.h"
 
 #include <dxcapi.h>
@@ -145,7 +146,7 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 
 std::filesystem::path FD3D12ShaderCompiler::GetEngineShaderDirectory()
 {
-	return std::filesystem::path(E_ENGINE_SHADER_DIR);
+	return FPaths::GetEngineShaderDirectory();
 }
 
 D3D12_SHADER_BYTECODE FD3D12ShaderCompiler::ToBytecode(IDxcBlob* Blob)

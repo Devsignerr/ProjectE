@@ -20,3 +20,6 @@ Saved/
 
 # Claude Code 워크트리/세션 파일
 .claude/worktrees/
+
+# 프로젝트 런타임 생성물
+Projects/*/Saved/

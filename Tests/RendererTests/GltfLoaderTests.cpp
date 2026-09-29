@@ -1,3 +1,4 @@
+#include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "Core/Testing/TestFramework.h"
 #include "Renderer/GltfLoader.h"
@@ -173,10 +174,10 @@ E_TEST(Gltf_LoadTriangleFile)
 	E_EXPECT_EQ(Model.Materials[0].BaseColorImage, -1);
 }
 
-// 실제 샘플 에셋 (Sandbox/Assets/DamagedHelmet.glb, Khronos CC-BY 4.0). 파일이 없으면 건너뛴다.
+// 실제 샘플 에셋 (Projects/Sample/Content/DamagedHelmet.glb, Khronos CC-BY 4.0). 파일이 없으면 건너뛴다.
 E_TEST(Gltf_LoadDamagedHelmetIfPresent)
 {
-	const std::filesystem::path Path = std::filesystem::path(E_TEST_ASSET_DIR) / L"DamagedHelmet.glb";
+	const std::filesystem::path Path = FPaths::GetEngineDirectory() / L"Projects" / L"Sample" / L"Content" / L"DamagedHelmet.glb";
 	if (!std::filesystem::exists(Path))
 	{
 		E_LOG(LogCore, Warning, "DamagedHelmet.glb 없음 — 테스트 건너뜀");

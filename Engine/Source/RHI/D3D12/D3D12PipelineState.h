@@ -42,6 +42,10 @@ public:
 	                 const wchar_t* DebugName);
 	void Shutdown();
 
+	// 핫 리로드용: 두 PSO 내용 교환 / 내부 오브젝트 소유권 넘기기 (지연 해제에 전달)
+	void                        Swap(FD3D12PipelineState& Other) { PipelineState.Swap(Other.PipelineState); }
+	ComPtr<ID3D12PipelineState> Detach() { return std::move(PipelineState); }
+
 	ID3D12PipelineState* Get() const { return PipelineState.Get(); }
 
 private:

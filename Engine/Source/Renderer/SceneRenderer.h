@@ -34,6 +34,12 @@ public:
 
 	void Render(FScene& Scene, const FCamera& Camera);
 
+	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
+	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
+	bool ReloadShaders(bool bForceRecompile = false);
+
+	FShaderLibrary& GetShaderLibrary() { return ShaderLibrary; }
+
 	// 컬링 프러스텀 고정 (컬링 동작 확인용). 켜면 이후 카메라를 움직여도 컬링은 고정 시점 기준
 	void SetFreezeCulling(bool bFreeze);
 	bool IsCullingFrozen() const { return bCullingFrozen; }
@@ -53,6 +59,9 @@ private:
 		FMatrix4x4         World;
 		float              DistanceSquared = 0.0f;
 	};
+
+	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
+	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 
 	void               CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition);
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;

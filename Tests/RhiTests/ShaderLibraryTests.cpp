@@ -4,6 +4,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "RHI/ShaderManifest.h"
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 
@@ -139,6 +140,10 @@ E_TEST(ShaderCooking_DependencyScan)
 	// 존재하지 않는 소스는 빈 목록
 	E_EXPECT_TRUE(CollectShaderDependencies(Dir / L"Nope.hlsl", Dir).empty());
 
+	// UTF-8 BOM으로 시작하는 파일의 첫 줄 #include도 인식 (엔진 셰이더는 모두 BOM 포함)
+	WriteTextFile(Dir / L"Bom.hlsl", "\xEF\xBB\xBF#include \"Common.hlsli\"\nvoid Main() {}\n");
+	E_EXPECT_EQ(CollectShaderDependencies(Dir / L"Bom.hlsl", Dir).size(), static_cast<size_t>(2));
+
 	std::error_code ErrorCode;
 	std::filesystem::remove_all(Dir, ErrorCode);
 }
@@ -211,6 +216,68 @@ E_TEST(ShaderLibrary_CompileCookReloadRoundtrip)
 		E_EXPECT_EQ(Library.GetStats().Failures, 1u);
 	}
 
+	Compiler.Shutdown();
+	std::error_code ErrorCode;
+	std::filesystem::remove_all(CookedDir, ErrorCode);
+}
+
+E_TEST(ShaderLibrary_InvalidateByDependency)
+{
+	FD3D12ShaderCompiler Compiler;
+	E_EXPECT_TRUE(Compiler.Init());
+
+	const std::filesystem::path CookedDir = MakeTempDirectory(L"CookedInvalidate");
+	const std::filesystem::path ShaderDir = FD3D12ShaderCompiler::GetEngineShaderDirectory();
+
+	FShaderLibrary Library;
+	Library.Init(Compiler, CookedDir, true);
+
+	FShaderCompileDesc MeshVS;
+	MeshVS.FileName   = L"Mesh.hlsl";
+	MeshVS.EntryPoint = L"VSMain";
+	MeshVS.Stage      = EShaderStage::Vertex;
+	FShaderCompileDesc MeshPS = MeshVS;
+	MeshPS.EntryPoint         = L"PSMain";
+	MeshPS.Stage              = EShaderStage::Pixel;
+	FShaderCompileDesc TriVS  = MeshVS;
+	TriVS.FileName            = L"Triangle.hlsl";
+
+	E_EXPECT_TRUE(Library.GetShader(MeshVS) != nullptr);
+	E_EXPECT_TRUE(Library.GetShader(MeshPS) != nullptr);
+	E_EXPECT_TRUE(Library.GetShader(TriVS) != nullptr);
+	E_EXPECT_EQ(Library.GetGeneration(), 0ull);
+
+	// 관련 없는 파일 → 영향 없음, 세대 유지
+	E_EXPECT_TRUE(Library.Invalidate(ShaderDir / L"GenerateMips.hlsl").empty());
+	E_EXPECT_EQ(Library.GetGeneration(), 0ull);
+
+	// Mesh.hlsl 변경 → Mesh VS/PS만 (대소문자/구분자 차이 허용)
+	std::wstring MeshPath = (ShaderDir / L"MESH.hlsl").wstring();
+	std::replace(MeshPath.begin(), MeshPath.end(), L'\\', L'/');
+	const std::vector<FShaderCompileDesc> MeshAffected = Library.Invalidate(MeshPath);
+	E_EXPECT_EQ(MeshAffected.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(std::all_of(MeshAffected.begin(), MeshAffected.end(), [](const FShaderCompileDesc& D) { return D.FileName == L"Mesh.hlsl"; }));
+	E_EXPECT_EQ(Library.GetGeneration(), 1ull);
+	E_EXPECT_TRUE(Library.Invalidate(ShaderDir / L"Mesh.hlsl").empty()); // 이미 제거됨
+
+	// 다시 채운 뒤 공통 포함 파일 변경 → 이를 #include하는 모든 셰이더 (Mesh VS/PS + Triangle VS)
+	Library.GetShader(MeshVS);
+	Library.GetShader(MeshPS);
+	const std::vector<FShaderCompileDesc> CommonAffected = Library.Invalidate(ShaderDir / L"Common.hlsli");
+	E_EXPECT_EQ(CommonAffected.size(), static_cast<size_t>(3));
+	E_EXPECT_EQ(Library.GetGeneration(), 2ull);
+
+	// 무효화 후 재요청은 메모리 캐시가 아닌 경로(쿠킹 로드 또는 컴파일)로 간다
+	const uint32 HitsBefore = Library.GetStats().MemoryHits;
+	E_EXPECT_TRUE(Library.GetShader(MeshVS) != nullptr);
+	E_EXPECT_EQ(Library.GetStats().MemoryHits, HitsBefore);
+
+	// 전체 무효화
+	const std::vector<FShaderCompileDesc> All = Library.InvalidateAll();
+	E_EXPECT_EQ(All.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(Library.InvalidateAll().empty());
+
+	Library.Shutdown();
 	Compiler.Shutdown();
 	std::error_code ErrorCode;
 	std::filesystem::remove_all(CookedDir, ErrorCode);

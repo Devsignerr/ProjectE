@@ -3,6 +3,8 @@
 #include "Core/StringConv.h"
 #include "RHI/ShaderManifest.h"
 
+#include <algorithm>
+#include <cwctype>
 #include <fstream>
 #include <vector>
 
@@ -11,6 +13,20 @@ namespace
 	std::string MakeDisplayName(const FShaderCompileDesc& Desc)
 	{
 		return FStringConv::ToUtf8(Desc.FileName) + ":" + FStringConv::ToUtf8(Desc.EntryPoint);
+	}
+
+	// 경로 비교용 정규화 (절대 경로, 소문자 — Windows 파일 시스템은 대소문자 무시)
+	std::wstring NormalizePathKey(const std::filesystem::path& Path)
+	{
+		std::error_code       ErrorCode;
+		std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+		if (ErrorCode)
+		{
+			Canonical = Path;
+		}
+		std::wstring Key = Canonical.lexically_normal().wstring();
+		std::transform(Key.begin(), Key.end(), Key.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		return Key;
 	}
 } // namespace
 
@@ -55,7 +71,7 @@ ComPtr<IDxcBlob> FShaderLibrary::GetShader(const FShaderCompileDesc& Desc)
 	if (const auto Found = Cache.find(Key); Found != Cache.end())
 	{
 		++Stats.MemoryHits;
-		return Found->second;
+		return Found->second.Blob;
 	}
 
 	const std::string DisplayName = MakeDisplayName(Desc);
@@ -64,7 +80,7 @@ ComPtr<IDxcBlob> FShaderLibrary::GetShader(const FShaderCompileDesc& Desc)
 	if (ComPtr<IDxcBlob> Cooked = TryLoadCooked(Desc, DisplayName))
 	{
 		++Stats.CookedLoads;
-		Cache[Key] = Cooked;
+		Cache[Key] = FCacheEntry{ Desc, Cooked };
 		return Cooked;
 	}
 
@@ -80,8 +96,55 @@ ComPtr<IDxcBlob> FShaderLibrary::GetShader(const FShaderCompileDesc& Desc)
 	{
 		SaveCooked(Desc, Compiled.Get(), DisplayName);
 	}
-	Cache[Key] = Compiled;
+	Cache[Key] = FCacheEntry{ Desc, Compiled };
 	return Compiled;
+}
+
+std::vector<FShaderCompileDesc> FShaderLibrary::Invalidate(const std::filesystem::path& ChangedFile)
+{
+	const std::filesystem::path ShaderDir  = FD3D12ShaderCompiler::GetEngineShaderDirectory();
+	const std::wstring          ChangedKey = NormalizePathKey(ChangedFile);
+
+	std::vector<FShaderCompileDesc> Affected;
+	for (auto Iterator = Cache.begin(); Iterator != Cache.end();)
+	{
+		const std::vector<std::filesystem::path> Dependencies =
+			CollectShaderDependencies(ShaderDir / Iterator->second.Desc.FileName, ShaderDir);
+		const bool bUses = std::any_of(Dependencies.begin(), Dependencies.end(),
+		                               [&](const std::filesystem::path& Dependency) { return NormalizePathKey(Dependency) == ChangedKey; });
+		if (bUses)
+		{
+			Affected.push_back(Iterator->second.Desc);
+			Iterator = Cache.erase(Iterator);
+		}
+		else
+		{
+			++Iterator;
+		}
+	}
+
+	if (!Affected.empty())
+	{
+		++Generation;
+		E_LOG(LogD3D12, Log, "셰이더 캐시 무효화: {} → {}개", FStringConv::ToUtf8(ChangedFile.filename().wstring()), Affected.size());
+	}
+	return Affected;
+}
+
+std::vector<FShaderCompileDesc> FShaderLibrary::InvalidateAll()
+{
+	std::vector<FShaderCompileDesc> Affected;
+	Affected.reserve(Cache.size());
+	for (const auto& [Key, Entry] : Cache)
+	{
+		Affected.push_back(Entry.Desc);
+	}
+	Cache.clear();
+	if (!Affected.empty())
+	{
+		++Generation;
+	}
+	return Affected;
 }
 
 bool FShaderLibrary::CookShader(const FShaderCompileDesc& Desc)
@@ -96,7 +159,7 @@ bool FShaderLibrary::CookShader(const FShaderCompileDesc& Desc)
 		return false;
 	}
 	++Stats.Compiles;
-	Cache[MakeCacheKey(Desc)] = Compiled;
+	Cache[MakeCacheKey(Desc)] = FCacheEntry{ Desc, Compiled };
 	return SaveCooked(Desc, Compiled.Get(), DisplayName);
 }
 

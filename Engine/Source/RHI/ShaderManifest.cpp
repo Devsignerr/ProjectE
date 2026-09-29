@@ -196,8 +196,16 @@ namespace
 
 		static const std::regex IncludePattern(R"re(^\s*#\s*include\s*"([^"]+)")re");
 		std::string              Line;
+		bool                     bFirstLine = true;
 		while (std::getline(File, Line))
 		{
+			// HLSL 파일은 UTF-8 BOM으로 시작하므로(DXC 요구) 첫 줄의 BOM을 제거해야 "#include"가 줄 시작에 온다
+			if (bFirstLine && Line.size() >= 3 && Line.compare(0, 3, "\xEF\xBB\xBF") == 0)
+			{
+				Line.erase(0, 3);
+			}
+			bFirstLine = false;
+
 			std::smatch Match;
 			if (std::regex_search(Line, Match, IncludePattern))
 			{

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Application.h"
+#include "Core/FileWatcher.h"
 #include "Editor/EditorContext.h"
 #include "Editor/ImGuiLayer.h"
 #include "Editor/Panels/ContentBrowserPanel.h"
@@ -13,8 +14,10 @@
 #include "Renderer/SceneRenderer.h"
 #include "Scene/Scene.h"
 
+#include <chrono>
 #include <filesystem>
 #include <memory>
+#include <string>
 
 class FD3D12RHI;
 
@@ -46,6 +49,14 @@ private:
 	void DrawStatsWindow();
 	void HandleShortcuts();
 
+	// ---- 셰이더 핫 리로드 (개발 기능)
+	void PollShaderChanges();                         // 셰이더 디렉터리 변경 감지 → 무효화 → PSO 재생성
+	void ReloadAllShaders();                          // 강제 전체 재컴파일 (Ctrl+R)
+	void HandleToolShortcuts();
+	void DrawToolsMenu();
+	void DrawNotification();
+	void ShowNotification(std::string Message, bool bError);
+
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
@@ -62,6 +73,11 @@ private:
 	FContentBrowserPanel ContentBrowserPanel;
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
+
+	FFileWatcher                          ShaderWatcher;
+	std::string                           NotificationText;
+	bool                                  bNotificationError = false;
+	std::chrono::steady_clock::time_point NotificationExpiry;
 
 	bool  bShowStats     = true;
 	bool  bShowImGuiDemo = false;

@@ -100,7 +100,7 @@
 - [x] (트랙 D) 셰이더 사전 컴파일: `Engine/Shaders/Shaders.json` 매니페스트, `FShaderLibrary`(메모리 캐시 → 쿠킹 DXIL(소스·포함 파일 mtime 검사) → DXC 컴파일+기록), `ProjectECook` 도구(GPU 불필요), `FD3D12MipGenerator`·`FSceneRenderer` 라이브러리 경유 + RhiTests 6개
 - [x] (트랙 D) 런타임 실행 파일 `ProjectERuntime` (창 서브시스템, `--project`, 프로젝트 DefaultScene 로드 → 없으면 자리표시 씬)
 - [x] (트랙 E) 에셋 쿠킹: `FAssetCache`(glTF → `.emodel`, 이미지 → `.etex`, `<프로젝트>/Cooked/`에 Content 상대 경로로 기록, 형식 버전+mtime 검사, 손상 파일 방어), 로더가 쿠킹본 우선 사용(없으면 변환 후 기록), `FBinaryWriter/Reader`(Core/Serialization), `ProjectECook`이 셰이더+에셋 쿠킹(`--force`), Package.ps1이 Cooked 포함 + 테스트 8개. 헬멧 로드 Debug 562ms → 120ms
-- [~] (트랙 F, 서브에이전트) 셰이더 핫 리로드: 셰이더 디렉터리 감시 → 변경 셰이더 재컴파일 → 의존 PSO 재생성(지연 해제), 실패 시 기존 PSO 유지 + 에러 로그, 에디터 메뉴 "셰이더 다시 로드"(Ctrl+R)
+- [x] (트랙 F, 서브에이전트) 셰이더 핫 리로드: `FFileWatcher`(ReadDirectoryChangesW overlapped + 메인 스레드 폴링, `FChangeDebouncer` 150ms) → `FShaderLibrary::Invalidate`(#include 의존 추적) → `FSceneRenderer::ReloadShaders`(새 PSO 생성 성공 시 교체, 이전 PSO 지연 해제, 실패 시 유지), 에디터 "도구 → 셰이더 다시 로드"(Ctrl+R 강제 재컴파일) + 우하단 알림. BOM 때문에 첫 줄 #include를 놓치던 의존 스캔 버그 수정 + 테스트 3개
 - [x] (트랙 D) 패키징 스크립트 `Scripts/Package.ps1` (Release 빌드 → 쿠킹 → `Build/Package/<프로젝트>/` 스테이징 + Run.bat, 엔진 마커 검사)
 
 후속 과제 (트랙 E): 텍스처 BC7/BC5 블록 압축(현재 비압축 RGBA8 — 헬멧 .emodel 81MB), 밉 사전 생성, 외부 .bin/이미지를 참조하는 .gltf의 의존 파일 mtime 검사, 쿠킹본 LZ4 압축

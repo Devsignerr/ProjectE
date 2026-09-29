@@ -97,7 +97,8 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			}
 
 			// 단축키 (뷰포트 위, 카메라 조작 중 아님)
-			if (bHovered && !Input.IsMouseButtonDown(EMouseButton::Right))
+			// Ctrl 조합(Ctrl+R 셰이더 재로드, Ctrl+S 저장 등)은 에디터 단축키이므로 제외
+			if (bHovered && !Input.IsMouseButtonDown(EMouseButton::Right) && !ImGui::GetIO().KeyCtrl)
 			{
 				if (ImGui::IsKeyPressed(ImGuiKey_W)) GizmoOperation = EGizmoOperation::Translate;
 				if (ImGui::IsKeyPressed(ImGuiKey_E)) GizmoOperation = EGizmoOperation::Rotate;

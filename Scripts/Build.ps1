@@ -39,14 +39,17 @@ if ($VisualStudio) {
     $ConfigurePreset = "vs2022"
     $BuildPreset     = "vs2022-$($Config.ToLower())"
     $BuildDir        = Join-Path $RootDir "Build\vs2022"
-    $Exe             = Join-Path $BuildDir "Bin\$Config\Sandbox.exe"
+    $BinDir          = Join-Path $BuildDir "Bin\$Config"
 }
 else {
     $ConfigurePreset = "ninja-$($Config.ToLower())"
     $BuildPreset     = $ConfigurePreset
     $BuildDir        = Join-Path $RootDir "Build\$ConfigurePreset"
-    $Exe             = Join-Path $BuildDir "Bin\Sandbox.exe"
+    $BinDir          = Join-Path $BuildDir "Bin"
 }
+$EditorExe  = Join-Path $BinDir "ProjectEEditor.exe"
+$SandboxExe = Join-Path $BinDir "Sandbox.exe"
+$Exe        = $EditorExe
 
 if ($Clean -and (Test-Path $BuildDir)) {
     Write-Host "빌드 디렉터리 삭제: $BuildDir"

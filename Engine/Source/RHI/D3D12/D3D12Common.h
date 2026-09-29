@@ -19,19 +19,65 @@ inline std::string HResultToString(HRESULT Result)
 	return std::format("0x{:08X}", static_cast<uint32>(Result));
 }
 
-// 리소스 상태 전이 배리어 생성 (d3dx12.h 미사용)
+// 리소스 상태 전이 배리어 생성 (d3dx12.h 미사용). Subresource로 특정 밉/슬라이스만 전이할 수 있다.
 inline D3D12_RESOURCE_BARRIER MakeTransitionBarrier(ID3D12Resource* Resource,
                                                     D3D12_RESOURCE_STATES Before,
-                                                    D3D12_RESOURCE_STATES After)
+                                                    D3D12_RESOURCE_STATES After,
+                                                    uint32 Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
 {
 	D3D12_RESOURCE_BARRIER Barrier{};
 	Barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	Barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	Barrier.Transition.pResource   = Resource;
-	Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	Barrier.Transition.Subresource = Subresource;
 	Barrier.Transition.StateBefore = Before;
 	Barrier.Transition.StateAfter  = After;
 	return Barrier;
+}
+
+// UAV 쓰기 완료 대기 배리어
+inline D3D12_RESOURCE_BARRIER MakeUavBarrier(ID3D12Resource* Resource)
+{
+	D3D12_RESOURCE_BARRIER Barrier{};
+	Barrier.Type          = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+	Barrier.Flags         = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	Barrier.UAV.pResource = Resource;
+	return Barrier;
+}
+
+// ---- 포맷 유틸리티 (밉 생성용 TYPELESS/UNORM/sRGB 변환). 지원 밖의 포맷은 UNKNOWN 반환.
+
+inline DXGI_FORMAT GetTypelessFormat(DXGI_FORMAT Format)
+{
+	switch (Format)
+	{
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+	case DXGI_FORMAT_R8G8B8A8_TYPELESS: return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+	case DXGI_FORMAT_B8G8R8A8_TYPELESS: return DXGI_FORMAT_B8G8R8A8_TYPELESS;
+	default:                            return DXGI_FORMAT_UNKNOWN;
+	}
+}
+
+inline DXGI_FORMAT GetUnormFormat(DXGI_FORMAT Format)
+{
+	switch (Format)
+	{
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+	case DXGI_FORMAT_R8G8B8A8_TYPELESS: return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+	case DXGI_FORMAT_B8G8R8A8_TYPELESS: return DXGI_FORMAT_B8G8R8A8_UNORM;
+	default:                            return DXGI_FORMAT_UNKNOWN;
+	}
+}
+
+inline bool IsSrgbFormat(DXGI_FORMAT Format)
+{
+	return Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB || Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
 }
 
 inline D3D12_HEAP_PROPERTIES MakeHeapProperties(D3D12_HEAP_TYPE Type)

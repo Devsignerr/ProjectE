@@ -39,6 +39,9 @@
 - 색공간: 백버퍼 RTV와 색상 텍스처는 sRGB 포맷, 셰이더는 선형 공간에서 계산. 데이터 텍스처(노멀 등)는 UNORM
 - glTF 임포트: 좌표 변환은 `FGltfLoader::Convert*`만 사용(반사 변환이라 CCW→CW, 쿼터니언 벡터부 부호 반전). 새 속성 추가 시 `GltfLoaderTests`에 케이스 추가
 - 테스트 매크로 인자에 템플릿 쉼표(`View<A, B>()`)를 직접 넣지 말고 지역 변수로 받는다
+- ImGui: UI는 `FImGuiLayer::BeginFrame()`~`EndFrame()` 사이에서만 기술하고, UI 드로우는 UNORM 백버퍼 뷰(`SetRenderTargetToBackBuffer(true)`)에 그린다. 뷰포트에 표시할 오프스크린 타깃은 `FD3D12RenderTarget`(UNORM SRV). `ImGuizmo.h`는 `imgui.h` 다음, Windows 헤더보다 먼저 포함
+- 패널은 `FEditorContext`(비소유 포인터 + 선택 상태)만 받는 `Draw()` 클래스로 만들고, 씬 구조 변경(부모 변경/삭제)은 순회가 끝난 뒤 적용한다
+- 병렬 작업: 독립 트랙은 서브에이전트를 git worktree로 띄워 브랜치에 커밋시키고 메인이 머지한다. `.claude/worktrees/`는 gitignore. 트랙마다 수정 허용 범위를 명시할 것
 - 경고 = 에러 (`/W4 /WX`). 경고를 억제하지 말고 원인을 고친다
 - 로그: `E_LOG(Category, Verbosity, "포맷 {}", 인자)` — std::format 문법. 카테고리는 헤더에서 `E_DECLARE_LOG_CATEGORY`, 하나의 .cpp에서 `E_DEFINE_LOG_CATEGORY`
 - 검증: `E_CHECK(expr)`, `E_CHECKF(expr, "포맷", ...)` (실패 시 Fatal)
@@ -62,8 +65,10 @@ Engine/Source/
                   FResourceManager(메시/텍스처/머티리얼 핸들 소유), FGltfLoader(cgltf)+FModelLoader(씬 배치),
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
-Engine/Shaders/   HLSL (Common.hlsli 공통 헤더). 런타임에 소스 트리에서 직접 로드 (E_ENGINE_SHADER_DIR)
-Sandbox/Source/   엔진 검증용 실행 파일
+  Editor/         FImGuiLayer, FEditorApplication, EditorContext, Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
+Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl). 런타임에 소스 트리에서 직접 로드 (E_ENGINE_SHADER_DIR)
+Editor/Source/    ProjectEEditor 실행 파일 (main만)
+Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Sandbox/Assets/   테스트 에셋 (E_SANDBOX_ASSET_DIR)
 Tests/            CoreTests, RendererTests (CTest 등록)
 CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정)
@@ -87,7 +92,7 @@ CMake와 Ninja는 PATH에 없고 VS 2022 번들 버전을 사용한다. 기본 �
 
 셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`).
 
-수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/Sandbox.exe`.
+수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).
 
 빌드/단위 테스트 실행은 사용자 승인(2026-09-29)에 따라 이 프로젝트에서 항상 자동으로 수행한다. Sandbox 실행(화면 확인)과 외부 다운로드는 사용자에게 안내/확인한다.
 

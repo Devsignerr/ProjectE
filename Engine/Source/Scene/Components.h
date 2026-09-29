@@ -64,3 +64,21 @@ struct FDirectionalLightComponent
 	FVector3 Color     = FVector3::OneVector;
 	float    Intensity = 1.0f;
 };
+
+// 카메라. 시점은 트랜스폼의 월드 위치/회전(+X 앞). 플레이 모드와 런타임은 bPrimary인 첫 카메라로 렌더한다
+struct FCameraComponent
+{
+	float FovYDegrees = 60.0f;
+	float NearZ       = 10.0f;     // cm
+	float FarZ        = 100000.0f; // cm
+	bool  bPrimary    = true;
+};
+
+// Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.
+//   ScriptAsset:       프로젝트 Content 기준 상대 경로 (예: "Scripts/Rotator.lua")
+//   PropertyOverrides: 스크립트 Properties 기본값을 덮어쓰는 JSON 객체 문자열 (인스펙터가 편집, 씬에 저장)
+struct FScriptComponent
+{
+	std::string ScriptAsset;
+	std::string PropertyOverrides;
+};

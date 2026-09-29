@@ -104,7 +104,7 @@ Build/            CMake 빌드 출력 (git 제외)
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).
 
-알려진 문제: 이 PC에서는 CMake "Visual Studio 17 2022" 제너레이터가 VS 인스턴스를 찾지 못한다(`could not find any instance of Visual Studio`). vswhere는 정상이지만 CMake가 쓰는 Setup API 열거가 비어 있고 `C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances\*\state.json`이 JSON 파서에서 실패한다. VS Installer의 "복구"로 해결될 가능성이 높다. 그 전까지 `.sln`이 필요하면 복구 후 `GenerateSolution.bat`를 쓰고, 그 외에는 방법 1·2로 충분하다.
+참고: 2026-09-30 VS Installer 복구 이후 `vs2022` 프리셋(.sln 생성)도 정상 동작한다. 이전에는 VS 설치 메타데이터 손상으로 CMake가 VS 인스턴스를 찾지 못했었다. 같은 증상이 재발하면 VS Installer의 "복구"로 해결한다.
 
 셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`).
 

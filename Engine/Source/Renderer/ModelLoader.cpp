@@ -184,7 +184,12 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 		}
 		const FModelImage& Image = Model.Images[ImageIndex];
 		FTextureHandle     Handle;
-		if (Image.Image.IsValid())
+		if (Image.Texture.IsValid())
+		{
+			// 쿠킹 텍스처는 용도(색공간)가 이미 정해져 있다 (FAssetCache::CompressModelImages)
+			Handle = Resources.CreateTexture(Image.Texture, FStringConv::ToWide(Model.Name + "/" + Image.Name));
+		}
+		else if (Image.Image.IsValid())
 		{
 			Handle = Resources.CreateTexture(Image.Image, bSRGB, FStringConv::ToWide(Model.Name + "/" + Image.Name));
 		}

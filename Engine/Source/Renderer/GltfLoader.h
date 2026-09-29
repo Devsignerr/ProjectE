@@ -2,6 +2,7 @@
 
 #include "Core/Math/Math.h"
 #include "Renderer/Image.h"
+#include "Renderer/TextureCompression.h"
 #include "Renderer/MeshData.h"
 #include "Renderer/SkinnedMeshData.h"
 #include "Scene/Animation.h"
@@ -14,8 +15,9 @@
 
 struct FModelImage
 {
-	std::string Name;
-	FImage      Image; // 디코딩 실패 시 IsValid() == false
+	std::string        Name;
+	FImage             Image;   // glTF 디코딩 결과 (실패 시 IsValid() == false). 압축 후 비워진다
+	FCompressedTexture Texture; // 쿠킹 텍스처 (FAssetCache::CompressModelImages가 머티리얼 용도에 맞춰 채움)
 };
 
 // glTF 2.0 금속/거칠기 머티리얼. *Image는 FModelData::Images 인덱스(-1이면 없음)

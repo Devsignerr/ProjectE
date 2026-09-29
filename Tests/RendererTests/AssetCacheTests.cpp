@@ -56,7 +56,10 @@ namespace
 
 E_TEST(AssetCache_ModelSerializationRoundTrip)
 {
-	const FModelData Source = MakeTestModel();
+	FModelData Source = MakeTestModel();
+	FAssetCache::CompressModelImages(Source); // 2x3 → 블록 크기가 아니므로 RGBA8 + 밉
+	E_EXPECT_FALSE(Source.Images[0].Image.IsValid());
+	E_EXPECT_TRUE(Source.Images[0].Texture.bSRGB); // 베이스 컬러 → 색상 용도
 
 	FBinaryWriter Writer;
 	FAssetCache::WriteModel(Writer, Source);
@@ -67,8 +70,9 @@ E_TEST(AssetCache_ModelSerializationRoundTrip)
 
 	E_EXPECT_TRUE(Loaded.Name == Source.Name);
 	E_EXPECT_EQ(Loaded.Images.size(), static_cast<size_t>(1));
-	E_EXPECT_TRUE(Loaded.Images[0].Image.Pixels == Source.Images[0].Image.Pixels);
-	E_EXPECT_EQ(Loaded.Images[0].Image.Height, 3u);
+	E_EXPECT_TRUE(Loaded.Images[0].Texture.Mips[0].Data == FImage::MakeSolidColor(2, 3, 10, 20, 30, 40).Pixels);
+	E_EXPECT_EQ(Loaded.Images[0].Texture.GetHeight(), 3u);
+	E_EXPECT_EQ(Loaded.Images[0].Texture.Mips.size(), Source.Images[0].Texture.Mips.size());
 	E_EXPECT_EQUALS(Loaded.Materials[0].BaseColorFactor, Source.Materials[0].BaseColorFactor, Tol);
 	E_EXPECT_NEAR(Loaded.Materials[0].RoughnessFactor, 0.25f, Tol);
 	E_EXPECT_EQ(Loaded.Meshes[0].Data.Vertices.size(), static_cast<size_t>(3));
@@ -200,6 +204,7 @@ E_TEST(AssetCache_DamagedHelmetCookedMatchesSource)
 	}
 	if (!First.Images.empty() && Second.Images.size() == First.Images.size())
 	{
-		E_EXPECT_TRUE(Second.Images[0].Image.Pixels == First.Images[0].Image.Pixels);
+		E_EXPECT_TRUE(Second.Images[0].Texture.Format == First.Images[0].Texture.Format);
+		E_EXPECT_TRUE(Second.Images[0].Texture.Mips.back().Data == First.Images[0].Texture.Mips.back().Data);
 	}
 }

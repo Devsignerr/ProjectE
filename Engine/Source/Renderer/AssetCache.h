@@ -19,7 +19,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
-	static constexpr uint32 ModelVersion = 4; // 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 5; // 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
 
 	static constexpr const wchar_t* ModelExtension = L".emodel";
@@ -48,6 +48,9 @@ struct FAssetCache
 
 	// 쿠킹본이 소스 기준으로 최신인지 (파일 시각만 비교, 형식 버전은 로드 시 검사)
 	static bool IsCookedUpToDate(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath);
+
+	// 모델 이미지를 머티리얼 용도(색상 > 노멀 > 선형 > 마스크 우선)로 밉 + BC 압축하고 원본 픽셀은 비운다
+	static void CompressModelImages(FModelData& Model);
 
 	// ---- 직렬화 (순수 함수, 테스트용 공개)
 	static void WriteModel(FBinaryWriter& Writer, const FModelData& Model);

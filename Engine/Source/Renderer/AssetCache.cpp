@@ -37,6 +37,48 @@ namespace
 		return Load(Reader) && Reader.IsOk() && Reader.IsAtEnd();
 	}
 
+	// 텍스처 본문 (헤더 없음): 형식, sRGB, 밉 수, 밉별 크기/데이터. 밉 0개 = 빈 텍스처 (디코딩 실패 이미지)
+	void WriteTexturePayload(FBinaryWriter& Writer, const FCompressedTexture& Texture)
+	{
+		Writer.Write(static_cast<uint8>(Texture.Format));
+		Writer.Write(static_cast<uint8>(Texture.bSRGB ? 1 : 0));
+		Writer.Write(static_cast<uint32>(Texture.Mips.size()));
+		for (const FTextureMip& Mip : Texture.Mips)
+		{
+			Writer.Write(Mip.Width);
+			Writer.Write(Mip.Height);
+			Writer.WriteArray(Mip.Data);
+		}
+	}
+
+	bool ReadTexturePayload(FBinaryReader& Reader, FCompressedTexture& OutTexture, bool bAllowEmpty)
+	{
+		OutTexture            = FCompressedTexture{};
+		const uint8  Format   = Reader.Read<uint8>();
+		const uint8  bSRGB    = Reader.Read<uint8>();
+		const uint32 MipCount = Reader.Read<uint32>();
+		if (!Reader.IsOk() || Format > static_cast<uint8>(ETextureFormat::BC4) || MipCount > 32 || (MipCount == 0 && !bAllowEmpty))
+		{
+			return false;
+		}
+		OutTexture.Format = static_cast<ETextureFormat>(Format);
+		OutTexture.bSRGB  = bSRGB != 0;
+		OutTexture.Mips.resize(MipCount);
+		for (FTextureMip& Mip : OutTexture.Mips)
+		{
+			Mip.Width  = Reader.Read<uint32>();
+			Mip.Height = Reader.Read<uint32>();
+			Mip.Data   = Reader.ReadArray<uint8>();
+			if (!Reader.IsOk() || Mip.Width == 0 || Mip.Height == 0 ||
+			    Mip.Data.size() != TextureCompression::GetMipDataSize(OutTexture.Format, Mip.Width, Mip.Height))
+			{
+				OutTexture = FCompressedTexture{};
+				return false;
+			}
+		}
+		return true;
+	}
+
 	std::string ToDisplay(const std::filesystem::path& Path)
 	{
 		return FStringConv::ToUtf8(Path.filename().wstring());
@@ -113,47 +155,51 @@ const wchar_t* FAssetCache::GetTextureExtension(ETextureUsage Usage)
 void FAssetCache::WriteTexture(FBinaryWriter& Writer, const FCompressedTexture& Texture)
 {
 	WriteHeader(Writer, TextureMagic, TextureVersion);
-	Writer.Write(static_cast<uint8>(Texture.Format));
-	Writer.Write(static_cast<uint8>(Texture.bSRGB ? 1 : 0));
-	Writer.Write(static_cast<uint32>(Texture.Mips.size()));
-	for (const FTextureMip& Mip : Texture.Mips)
-	{
-		Writer.Write(Mip.Width);
-		Writer.Write(Mip.Height);
-		Writer.WriteArray(Mip.Data);
-	}
+	WriteTexturePayload(Writer, Texture);
 }
 
 bool FAssetCache::ReadTexture(FBinaryReader& Reader, FCompressedTexture& OutTexture)
 {
 	OutTexture = FCompressedTexture{};
-	if (!ReadHeader(Reader, TextureMagic, TextureVersion))
-	{
-		return false;
-	}
-	const uint8  Format   = Reader.Read<uint8>();
-	const uint8  bSRGB    = Reader.Read<uint8>();
-	const uint32 MipCount = Reader.Read<uint32>();
-	if (!Reader.IsOk() || Format > static_cast<uint8>(ETextureFormat::BC4) || MipCount == 0 || MipCount > 32)
-	{
-		return false;
-	}
-	OutTexture.Format = static_cast<ETextureFormat>(Format);
-	OutTexture.bSRGB  = bSRGB != 0;
-	OutTexture.Mips.resize(MipCount);
-	for (FTextureMip& Mip : OutTexture.Mips)
-	{
-		Mip.Width  = Reader.Read<uint32>();
-		Mip.Height = Reader.Read<uint32>();
-		Mip.Data   = Reader.ReadArray<uint8>();
-		if (!Reader.IsOk() || Mip.Width == 0 || Mip.Height == 0 ||
-		    Mip.Data.size() != TextureCompression::GetMipDataSize(OutTexture.Format, Mip.Width, Mip.Height))
+	return ReadHeader(Reader, TextureMagic, TextureVersion) && ReadTexturePayload(Reader, OutTexture, false);
+}
+
+void FAssetCache::CompressModelImages(FModelData& Model)
+{
+	// 이미지별 용도: 여러 슬롯이 공유하면 우선순위가 높은 쪽 (ORM처럼 금속·거칠기와 AO가 공유하면 선형 BC7 — R 채널 보존)
+	constexpr int32 NotUsed = -1;
+	std::vector<int32> Priority(Model.Images.size(), NotUsed);
+	std::vector<ETextureUsage> Usages(Model.Images.size(), ETextureUsage::Linear);
+	auto Use = [&](int32 ImageIndex, ETextureUsage Usage, int32 UsagePriority) {
+		if (ImageIndex >= 0 && ImageIndex < static_cast<int32>(Model.Images.size()) && UsagePriority > Priority[ImageIndex])
 		{
-			OutTexture = FCompressedTexture{};
-			return false;
+			Priority[ImageIndex] = UsagePriority;
+			Usages[ImageIndex]   = Usage;
 		}
+	};
+	for (const FModelMaterial& Material : Model.Materials)
+	{
+		Use(Material.BaseColorImage, ETextureUsage::Color, 3);
+		Use(Material.EmissiveImage, ETextureUsage::Color, 3);
+		Use(Material.NormalImage, ETextureUsage::Normal, 2);
+		Use(Material.MetallicRoughnessImage, ETextureUsage::Linear, 1);
+		Use(Material.OcclusionImage, ETextureUsage::Mask, 0);
 	}
-	return true;
+
+	const auto StartTime = std::chrono::steady_clock::now();
+	size_t     TotalBytes = 0;
+	for (size_t Index = 0; Index < Model.Images.size(); ++Index)
+	{
+		FModelImage& Image = Model.Images[Index];
+		if (Image.Image.IsValid() && Priority[Index] != NotUsed)
+		{
+			Image.Texture = TextureCompression::Compress(Image.Image, Usages[Index]);
+			TotalBytes += Image.Texture.GetTotalBytes();
+		}
+		Image.Image = FImage{};
+	}
+	E_LOG(LogRenderer, Display, "모델 텍스처 압축: {} — 이미지 {}개 → {} KB ({:.0f} ms)", Model.Name, Model.Images.size(), TotalBytes / 1024,
+	      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count());
 }
 
 FAssetCache::ESource FAssetCache::LoadTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage,
@@ -222,9 +268,7 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 	for (const FModelImage& Image : Model.Images)
 	{
 		Writer.WriteString(Image.Name);
-		Writer.Write(Image.Image.Width);
-		Writer.Write(Image.Image.Height);
-		Writer.WriteArray(Image.Image.Pixels); // 디코딩 실패 이미지는 빈 배열
+		WriteTexturePayload(Writer, Image.Texture); // 디코딩 실패/미사용 이미지는 밉 0개
 	}
 
 	Writer.Write(static_cast<uint32>(Model.Materials.size()));
@@ -313,10 +357,11 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 	OutModel.Images.resize(ImageCount);
 	for (FModelImage& Image : OutModel.Images)
 	{
-		Image.Name         = Reader.ReadString();
-		Image.Image.Width  = Reader.Read<uint32>();
-		Image.Image.Height = Reader.Read<uint32>();
-		Image.Image.Pixels = Reader.ReadArray<uint8>();
+		Image.Name = Reader.ReadString();
+		if (!ReadTexturePayload(Reader, Image.Texture, true))
+		{
+			return false;
+		}
 	}
 
 	const uint32 MaterialCount = Reader.Read<uint32>();
@@ -509,6 +554,7 @@ FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& So
 	}
 	const double Ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count();
 	E_LOG(LogRenderer, Display, "원본 모델 변환: {} ({:.1f} ms)", ToDisplay(SourcePath), Ms);
+	CompressModelImages(OutModel);
 
 	if (bWriteCooked && !CookedPath.empty())
 	{
@@ -535,6 +581,7 @@ bool FAssetCache::CookModelAsset(const std::filesystem::path& SourcePath)
 	{
 		return false;
 	}
+	CompressModelImages(Model);
 	FBinaryWriter Writer;
 	WriteModel(Writer, Model);
 	return Writer.SaveToFile(CookedPath);

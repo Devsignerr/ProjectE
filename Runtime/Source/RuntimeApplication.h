@@ -8,6 +8,7 @@
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
+#include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 
@@ -42,6 +43,7 @@ private:
 	FFlyCameraController CameraController;
 
 	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
+	FGameModuleHost      GameModule; // 프로젝트 C++ 게임 모듈 (있으면)
 	FAudioEngine         Audio;
 	FAudioSystem         AudioSystem;
 	FPhysicsSystem       Physics; // 항상 시뮬레이션 (씬 로드 후 Begin)

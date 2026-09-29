@@ -70,6 +70,11 @@ bool FRuntimeApplication::OnInit()
 
 	RegisterAudioTypes(); // 씬 로드 전에
 	RegisterPhysicsTypes();
+	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
+	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
+	{
+		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));
+	}
 	if (Audio.Init() && IsAutomationRun())
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
@@ -128,6 +133,7 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
 	});
 	Physics.Begin();
+	GameModule.BeginPlay(Scene);
 	Scripts.BeginPlay(Scene);
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
@@ -147,6 +153,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	{
 		FSceneAssetResolver::Resolve(Scene, Resources, Scripts.GetContentDirectory());
 	}
+	GameModule.Update(Scene, DeltaSeconds);
 	Physics.Update(Scene, DeltaSeconds);
 	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
@@ -183,6 +190,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 void FRuntimeApplication::OnShutdown()
 {
 	Scripts.EndPlay();
+	GameModule.EndPlay(Scene);
 	Physics.End();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();
@@ -194,6 +202,7 @@ void FRuntimeApplication::OnShutdown()
 		Rhi->Shutdown();
 		Rhi.reset();
 	}
+	GameModule.Unload(); // 등록 타입 제거 (씬의 게임 컴포넌트는 앱 소멸 시 정리, DLL은 프로세스 종료까지 유지)
 }
 
 void FRuntimeApplication::BuildPlaceholderScene()

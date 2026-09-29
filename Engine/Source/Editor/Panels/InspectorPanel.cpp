@@ -1,14 +1,18 @@
 #include "Editor/Panels/InspectorPanel.h"
 
 #include "Core/Reflection/TypeInfo.h"
+#include "Core/StringConv.h"
 #include "Editor/EditorContext.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptSystem.h"
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <format>
 
 namespace
@@ -129,6 +133,10 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 	else if (&Type == Registry.Find<FStaticMeshComponent>())
 	{
 		DrawStaticMeshExtras(Context, Entity);
+	}
+	else if (&Type == Registry.Find<FScriptComponent>())
+	{
+		DrawScriptExtras(Context, Entity);
 	}
 }
 
@@ -309,6 +317,166 @@ void FInspectorPanel::DrawStaticMeshExtras(FEditorContext& Context, FEntity Enti
 		ImGui::DragFloat("노멀 강도", &Editable->Constants.NormalScale, 0.01f, 0.0f, 4.0f);
 		ImGui::SliderFloat("AO 강도", &Editable->Constants.OcclusionStrength, 0.0f, 1.0f);
 		ImGui::PopID();
+	}
+}
+
+namespace
+{
+	// 스크립트 프로퍼티 값 위젯. 반환: 편집됨
+	bool DrawScriptValue(const char* Label, FScriptValue& Value)
+	{
+		switch (Value.Type)
+		{
+		case EScriptValueType::Bool:
+			return ImGui::Checkbox(Label, &Value.bBool);
+		case EScriptValueType::Number:
+			if (Value.bInteger)
+			{
+				int IntValue = static_cast<int>(Value.Number);
+				if (ImGui::DragInt(Label, &IntValue))
+				{
+					Value.Number = IntValue;
+					return true;
+				}
+				return false;
+			}
+			else
+			{
+				float FloatValue = static_cast<float>(Value.Number);
+				if (ImGui::DragFloat(Label, &FloatValue, 0.1f))
+				{
+					Value.Number = FloatValue;
+					return true;
+				}
+				return false;
+			}
+		case EScriptValueType::String:
+		{
+			char Buffer[256];
+			strncpy_s(Buffer, sizeof(Buffer), Value.String.c_str(), _TRUNCATE);
+			if (ImGui::InputText(Label, Buffer, sizeof(Buffer)))
+			{
+				Value.String = Buffer;
+				return true;
+			}
+			return false;
+		}
+		case EScriptValueType::Vector3:
+			return ImGui::DragFloat3(Label, &Value.Vector.X, 0.5f);
+		default:
+			ImGui::TextDisabled("%s: (지원하지 않는 타입)", Label);
+			return false;
+		}
+	}
+
+	std::vector<std::string> ScanScriptFiles(const std::filesystem::path& ContentDirectory)
+	{
+		std::vector<std::string> Files;
+		std::error_code          ErrorCode;
+		for (auto It = std::filesystem::recursive_directory_iterator(ContentDirectory, ErrorCode);
+		     !ErrorCode && It != std::filesystem::recursive_directory_iterator(); It.increment(ErrorCode))
+		{
+			if (It->is_regular_file(ErrorCode) && It->path().extension() == L".lua")
+			{
+				Files.push_back(FStringConv::ToUtf8(std::filesystem::relative(It->path(), ContentDirectory, ErrorCode).generic_wstring()));
+			}
+		}
+		std::sort(Files.begin(), Files.end());
+		return Files;
+	}
+} // namespace
+
+void FInspectorPanel::DrawScriptExtras(FEditorContext& Context, FEntity Entity)
+{
+	FScriptComponent* Script = Context.Scene->GetRegistry().TryGet<FScriptComponent>(Entity);
+	if (Script == nullptr)
+	{
+		return;
+	}
+
+	if (ImGui::SmallButton("스크립트 선택..."))
+	{
+		ScriptFiles = ScanScriptFiles(Context.ContentDirectory);
+		ImGui::OpenPopup("SelectScript");
+	}
+	if (ImGui::BeginPopup("SelectScript"))
+	{
+		if (ScriptFiles.empty())
+		{
+			ImGui::TextDisabled("Content에 .lua 파일이 없습니다");
+		}
+		for (const std::string& File : ScriptFiles)
+		{
+			if (ImGui::MenuItem(File.c_str(), nullptr, File == Script->ScriptAsset))
+			{
+				Script->ScriptAsset = File;
+			}
+		}
+		ImGui::EndPopup();
+	}
+
+	if (Context.Scripts == nullptr || Script->ScriptAsset.empty())
+	{
+		return;
+	}
+	std::string                             Error;
+	const std::vector<FScriptPropertyDecl>* Decls = Context.Scripts->GetPropertyDecls(Script->ScriptAsset, &Error);
+	if (Decls == nullptr)
+	{
+		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.3f, 1.0f), "%s", Error.substr(0, Error.find('\n')).c_str());
+		return;
+	}
+	if (Decls->empty())
+	{
+		ImGui::TextDisabled("선언된 Properties 없음");
+		return;
+	}
+
+	// 플레이 중에는 실행 중인 인스턴스 값을 읽기 전용으로 보여 준다 (오버라이드 편집은 정지 후)
+	const bool      bLive     = Context.bPlaying;
+	FScriptValueMap Overrides = FScriptProperties::ParseOverrides(Script->PropertyOverrides);
+	bool            bChanged  = false;
+
+	ImGui::SeparatorText(bLive ? "Properties (실행 값)" : "Properties");
+	for (const FScriptPropertyDecl& Decl : *Decls)
+	{
+		const auto   Found       = Overrides.find(Decl.Name);
+		const bool   bOverridden = Found != Overrides.end() && FScriptProperties::IsCompatible(Decl.Default, Found->second);
+		FScriptValue Value       = bOverridden ? Found->second : Decl.Default;
+		Value.bInteger           = Decl.Default.bInteger;
+		if (bLive)
+		{
+			if (FScriptValue Live = Context.Scripts->GetInstanceProperty(Entity, Decl.Name); !Live.IsNil())
+			{
+				Value = Live;
+			}
+		}
+
+		ImGui::PushID(Decl.Name.c_str());
+		ImGui::BeginDisabled(bLive);
+		const bool bEdited = DrawScriptValue(Decl.Name.c_str(), Value);
+		ImGui::EndDisabled();
+		if (bEdited && !bLive)
+		{
+			Overrides[Decl.Name] = Value;
+			bChanged             = true;
+		}
+		if (bOverridden && !bLive)
+		{
+			ImGui::SameLine();
+			if (ImGui::SmallButton("기본값"))
+			{
+				Overrides.erase(Decl.Name);
+				bChanged = true;
+			}
+			ImGui::SetItemTooltip("스크립트 기본값으로 되돌리기");
+		}
+		ImGui::PopID();
+	}
+
+	if (bChanged)
+	{
+		Script->PropertyOverrides = FScriptProperties::SerializeOverrides(Overrides);
 	}
 }
 

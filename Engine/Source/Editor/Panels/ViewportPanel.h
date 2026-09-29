@@ -33,6 +33,8 @@ public:
 	bool ReloadShaders(bool bForceRecompile);
 
 	bool IsHovered() const { return bHovered; }
+	// 뷰포트 렌더 타깃 종횡비 (타깃이 없으면 Fallback)
+	float GetAspectRatio(float Fallback) const;
 	bool IsUsingGizmo() const { return bUsingGizmo; }
 	bool bOpen = true;
 

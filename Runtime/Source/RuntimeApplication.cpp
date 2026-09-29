@@ -1,9 +1,11 @@
 #include "RuntimeApplication.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
+#include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
 
@@ -63,20 +65,22 @@ bool FRuntimeApplication::OnInit()
 		return false;
 	}
 
-	// 프로젝트 기본 씬 로드, 없거나 실패하면 자리표시 씬
-	bool bSceneLoaded = false;
-	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
+	// 프로젝트 기본 씬(또는 --scene <Content 기준 경로>) 로드, 없거나 실패하면 자리표시 씬
+	bool               bSceneLoaded = false;
+	const std::wstring SceneArg     = FCommandLine::FromProcess().GetValue(L"--scene");
+	if (FPaths::HasProject() && (!SceneArg.empty() || !FPaths::GetProjectDescriptor().DefaultScene.empty()))
 	{
-		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);
+		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() /
+		                                        (SceneArg.empty() ? FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene) : SceneArg);
 		if (FSceneSerializer::LoadFromFile(Scene, ScenePath))
 		{
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
 			bSceneLoaded = true;
-			E_LOG(LogRuntime, Display, "기본 씬 로드: {}", FPaths::GetProjectDescriptor().DefaultScene);
+			E_LOG(LogRuntime, Display, "씬 로드: {}", FStringConv::ToUtf8(ScenePath.filename().wstring()));
 		}
 		else
 		{
-			E_LOG(LogRuntime, Warning, "기본 씬을 열지 못해 자리표시 씬을 표시합니다: {}", FPaths::GetProjectDescriptor().DefaultScene);
+			E_LOG(LogRuntime, Warning, "씬을 열지 못해 자리표시 씬을 표시합니다: {}", FStringConv::ToUtf8(ScenePath.wstring()));
 		}
 	}
 	if (!bSceneLoaded)
@@ -87,6 +91,10 @@ bool FRuntimeApplication::OnInit()
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 50.0f));
+
+	// 게임 시작: 스크립트 컴포넌트 실행
+	Scripts.SetContentDirectory(FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	Scripts.BeginPlay(Scene);
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
@@ -100,8 +108,19 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
-	CameraController.Update(Camera, InputState, DeltaSeconds);
+	Scripts.Update(DeltaSeconds, &InputState);
+	if (Scripts.ConsumeSceneStructureChanged())
+	{
+		FSceneAssetResolver::Resolve(Scene, Resources, Scripts.GetContentDirectory());
+	}
 	Scene.UpdateTransforms();
+
+	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
+	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
+	if (!CameraEntity.IsValid() || !FSceneCamera::ApplyToCamera(Scene, CameraEntity, Camera.GetAspectRatio(), Camera))
+	{
+		CameraController.Update(Camera, InputState, DeltaSeconds);
+	}
 }
 
 void FRuntimeApplication::OnRender()
@@ -123,6 +142,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
+	Scripts.EndPlay();
 	if (Rhi)
 	{
 		SceneRenderer.Shutdown();

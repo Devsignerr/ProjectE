@@ -4,7 +4,7 @@ file(GLOB_RECURSE SCRIPTING_TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 add_executable(ScriptingTests ${SCRIPTING_TEST_SOURCES})
-target_link_libraries(ScriptingTests PRIVATE ProjectE::Scripting ProjectE::Scene)
+target_link_libraries(ScriptingTests PRIVATE ProjectE::Scripting ProjectE::Scene ProjectE::Editor) # Editor: 플레이 모드 (GPU 없이 동작)
 
 e_set_target_defaults(ScriptingTests "Tests")
 

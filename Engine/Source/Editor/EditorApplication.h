@@ -11,11 +11,13 @@
 #include "Editor/Panels/HierarchyPanel.h"
 #include "Editor/Panels/InspectorPanel.h"
 #include "Editor/Panels/ViewportPanel.h"
+#include "Editor/PlayMode.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptSystem.h"
 
 #include <chrono>
 #include <filesystem>
@@ -61,6 +63,14 @@ private:
 	void DrawNotification();
 	void ShowNotification(std::string Message, bool bError);
 
+	// ---- 플레이 모드 / 스크립트
+	void StartPlay();
+	void StopPlay();
+	void UpdatePlayMode(float DeltaSeconds);
+	void HandlePlayShortcuts();
+	void DrawPlayControls(); // 메인 메뉴 바 안의 재생/일시정지/진행/정지 버튼
+	void PollScriptChanges(); // Content의 .lua 저장 감지 → 핫 리로드
+
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
@@ -80,6 +90,10 @@ private:
 	FOutputLogPanel      OutputLogPanel;
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
+
+	FScriptSystem Scripts;
+	FPlayMode     PlayMode;
+	FFileWatcher  ScriptWatcher;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

@@ -225,6 +225,14 @@ void FLuaRuntime::RegisterMathBindings()
 		"Right", [](const FQuat& Q) { return Q.GetRightVector(); },
 		"Up", [](const FQuat& Q) { return Q.GetUpVector(); },
 		"Slerp", [](const FQuat& A, const FQuat& B, float Alpha) { return FQuat::Slerp(A, B, Alpha); },
+		// Forward(+X)가 Direction을 향하는 회전 (Roll 없음)
+		"LookRotation",
+		[](const FVector3& Direction) {
+			const FVector3 D     = Direction.GetNormalized();
+			const float    Yaw   = FMath::RadiansToDegrees(FMath::Atan2(D.Y, D.X));
+			const float    Pitch = FMath::RadiansToDegrees(FMath::Atan2(D.Z, FMath::Sqrt(D.X * D.X + D.Y * D.Y)));
+			return FQuat::FromEuler(Pitch, Yaw, 0.0f);
+		},
 		"Identity", [] { return FQuat::Identity; });
 }
 
@@ -277,9 +285,10 @@ namespace
 
 	void WriteProperty(const FPropertyInfo& Property, void* Component, const sol::object& Value)
 	{
-		if (Property.HasFlag(PF_ReadOnly) || Property.Type == EPropertyType::ResourceHandle)
+		// PF_ReadOnly는 인스펙터 편집 제한이므로 스크립트는 쓸 수 있다 (예: 새로 만든 엔티티의 MeshAsset). 런타임 핸들만 금지
+		if (Property.Type == EPropertyType::ResourceHandle)
 		{
-			throw std::runtime_error(std::format("프로퍼티 '{}'는 읽기 전용입니다", Property.Name));
+			throw std::runtime_error(std::format("프로퍼티 '{}'는 런타임 리소스 핸들이라 스크립트에서 쓸 수 없습니다", Property.Name));
 		}
 		switch (Property.Type)
 		{

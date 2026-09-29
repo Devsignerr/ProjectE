@@ -43,6 +43,8 @@ public:
 	// Scene은 EndPlay까지 살아 있어야 한다 (비소유)
 	bool BeginPlay(FScene& Scene);
 	// 새 스크립트 컴포넌트 인스턴스화(+OnStart) → OnUpdate → 지연 삭제 적용. Input은 nullptr 허용 (입력 없음)
+	// DeltaSeconds는 MaxDeltaSeconds로 제한한다 (로딩/중단점 뒤 한 프레임에 크게 튀지 않도록, Unity maximumDeltaTime과 같은 목적)
+	static constexpr float MaxDeltaSeconds = 0.25f;
 	void Update(float DeltaSeconds, const FInput* Input);
 	// 모든 인스턴스 OnDestroy 후 Lua 상태 파괴
 	void EndPlay();

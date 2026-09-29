@@ -1,6 +1,7 @@
 #include "Scripting/ScriptSystem.h"
 
 #include "Core/Log.h"
+#include "Core/StringConv.h"
 #include "Scripting/LuaRuntime.h"
 
 E_DECLARE_LOG_CATEGORY(LogScript)
@@ -31,7 +32,7 @@ void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 {
 	if (PlayRuntime)
 	{
-		PlayRuntime->Update(DeltaSeconds, Input);
+		PlayRuntime->Update(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
 	}
 }
 
@@ -78,6 +79,16 @@ const std::vector<FScriptPropertyDecl>* FScriptSystem::GetPropertyDecls(const st
 		if (OutError)
 		{
 			*OutError = "스크립트가 지정되지 않았습니다";
+		}
+		return nullptr;
+	}
+	// 경로 입력 중(존재하지 않는 파일)에는 조용히 실패한다 (키 입력마다 오류 로그를 남기지 않도록)
+	std::error_code ErrorCode;
+	if (!std::filesystem::is_regular_file(ContentDirectory / FStringConv::ToWide(ScriptAsset), ErrorCode))
+	{
+		if (OutError)
+		{
+			*OutError = "스크립트 파일이 없습니다: " + ScriptAsset;
 		}
 		return nullptr;
 	}

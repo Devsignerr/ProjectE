@@ -108,12 +108,21 @@ E_TEST(ScriptSystem_UpdateMovesEntityWithOverrides)
 	FScriptSystem Scripts;
 	Scripts.SetContentDirectory(GetTestContentDirectory());
 	Scripts.BeginPlay(Scene);
-	Scripts.Update(0.5f, nullptr);
-	Scripts.Update(0.5f, nullptr);
+	for (int32 Frame = 0; Frame < 4; ++Frame) // 0.25초 × 4 = 1초 (MaxDeltaSeconds 이내)
+	{
+		Scripts.Update(0.25f, nullptr);
+	}
+	Scripts.Update(0.0f, nullptr);
 
 	E_EXPECT_EQ(Scripts.GetInstanceCount(), static_cast<size_t>(2));
 	E_EXPECT_EQUALS(Scene.GetTransform(Default).Position, FVector3(100.0f, 0.0f, 0.0f), Tol);
 	E_EXPECT_EQUALS(Scene.GetTransform(Overridden).Position, FVector3(10.0f, 0.0f, 0.0f), Tol);
+
+	// 큰 델타는 MaxDeltaSeconds로 제한된다
+	const FVector3 BeforeClamp = Scene.GetTransform(Default).Position;
+	Scripts.Update(10.0f, nullptr);
+	E_EXPECT_NEAR(Scene.GetTransform(Default).Position.X - BeforeClamp.X, 100.0f * FScriptSystem::MaxDeltaSeconds, Tol);
+	Scene.GetTransform(Default).Position = BeforeClamp;
 
 	// 오버라이드 값은 선언 타입(실수)을 따르고, 나머지는 기본값
 	const FScriptValue Speed = Scripts.GetInstanceProperty(Overridden, "Speed");

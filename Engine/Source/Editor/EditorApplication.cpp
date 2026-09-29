@@ -11,6 +11,8 @@
 #include <commdlg.h>
 #include <imgui.h>
 
+#include <algorithm>
+#include <cwctype>
 #include <filesystem>
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
@@ -93,6 +95,12 @@ bool FEditorApplication::OnInit()
 
 	OpenStartupScene();
 
+	// 셰이더 핫 리로드: 엔진 셰이더 디렉터리 감시 (실패해도 에디터는 계속)
+	if (!ShaderWatcher.Start(FPaths::GetEngineShaderDirectory(), true))
+	{
+		E_LOG(LogEditor, Warning, "셰이더 디렉터리 감시를 시작하지 못했습니다. Ctrl+R로 수동 다시 로드만 가능합니다");
+	}
+
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
 	Camera.SetPosition(FVector3(-6.0f, -4.0f, 3.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 0.8f));
@@ -125,6 +133,8 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 
 	Scene.UpdateTransforms();
 
+	PollShaderChanges();
+
 	const float InstantFps = DeltaSeconds > 0.0f ? 1.0f / DeltaSeconds : 0.0f;
 	SmoothedFps            = SmoothedFps <= 0.0f ? InstantFps : FMath::Lerp(SmoothedFps, InstantFps, 0.05f);
 }
@@ -136,6 +146,7 @@ void FEditorApplication::OnRender()
 
 	ImGuiLayer.BeginFrame();
 	HandleShortcuts();
+	HandleToolShortcuts();
 	DrawMainMenuBar();
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
@@ -149,6 +160,7 @@ void FEditorApplication::OnRender()
 	{
 		ImGui::ShowDemoWindow(&bShowImGuiDemo);
 	}
+	DrawNotification();
 
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
 	Scene.UpdateTransforms();
@@ -174,6 +186,7 @@ void FEditorApplication::OnResize(uint32 Width, uint32 Height)
 
 void FEditorApplication::OnShutdown()
 {
+	ShaderWatcher.Stop();
 	if (Rhi)
 	{
 		ImGuiLayer.Shutdown(); // 내부에서 GPU Flush
@@ -408,6 +421,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("ImGui 데모", nullptr, &bShowImGuiDemo);
 		ImGui::EndMenu();
 	}
+	DrawToolsMenu();
 
 	ImGui::EndMainMenuBar();
 }
@@ -433,6 +447,145 @@ void FEditorApplication::DrawStatsWindow()
 		{
 			SceneRenderer.SetFreezeCulling(bFreeze);
 		}
+	}
+	ImGui::End();
+}
+
+// ---------------------------------------------------------------- 셰이더 핫 리로드
+
+namespace
+{
+	bool IsShaderSourceFile(const std::filesystem::path& Path)
+	{
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		return Extension == L".hlsl" || Extension == L".hlsli";
+	}
+
+	// 쿠킹 산출물(Engine/Shaders/Cooked/) 변경은 무시
+	bool IsInCookedDirectory(const std::filesystem::path& Path, const std::filesystem::path& ShaderDirectory)
+	{
+		std::error_code             ErrorCode;
+		const std::filesystem::path Relative = std::filesystem::relative(Path, ShaderDirectory, ErrorCode);
+		if (ErrorCode || Relative.empty())
+		{
+			return false;
+		}
+		std::wstring FirstPart = Relative.begin()->wstring();
+		std::transform(FirstPart.begin(), FirstPart.end(), FirstPart.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		return FirstPart == L"cooked";
+	}
+} // namespace
+
+void FEditorApplication::PollShaderChanges()
+{
+	const std::vector<std::filesystem::path> Changed = ShaderWatcher.Poll();
+	if (Changed.empty())
+	{
+		return;
+	}
+
+	const std::filesystem::path ShaderDirectory = FPaths::GetEngineShaderDirectory();
+	std::string                 ChangedNames;
+	size_t                      AffectedCount = 0;
+	for (const std::filesystem::path& Path : Changed)
+	{
+		if (!IsShaderSourceFile(Path) || IsInCookedDirectory(Path, ShaderDirectory))
+		{
+			continue;
+		}
+		const size_t Count = SceneRenderer.GetShaderLibrary().Invalidate(Path).size();
+		if (Count == 0)
+		{
+			E_LOG(LogEditor, Log, "셰이더 변경 감지 (사용 중인 셰이더 아님): {}", FStringConv::ToUtf8(Path.filename().wstring()));
+			continue;
+		}
+		AffectedCount += Count;
+		ChangedNames += (ChangedNames.empty() ? "" : ", ") + FStringConv::ToUtf8(Path.filename().wstring());
+	}
+	if (AffectedCount == 0)
+	{
+		return;
+	}
+
+	if (SceneRenderer.ReloadShaders())
+	{
+		E_LOG(LogEditor, Display, "셰이더 다시 로드됨: {}", ChangedNames);
+		ShowNotification("셰이더 다시 로드됨: " + ChangedNames, false);
+	}
+	else
+	{
+		E_LOG(LogEditor, Error, "셰이더 컴파일 실패: {} (기존 셰이더 유지)", ChangedNames);
+		ShowNotification("셰이더 컴파일 실패: " + ChangedNames + " (기존 셰이더 유지, 로그 확인)", true);
+	}
+}
+
+void FEditorApplication::ReloadAllShaders()
+{
+	SceneRenderer.GetShaderLibrary().InvalidateAll();
+	if (SceneRenderer.ReloadShaders(true))
+	{
+		ShowNotification("셰이더 전체 다시 로드됨", false);
+	}
+	else
+	{
+		ShowNotification("셰이더 컴파일 실패 (기존 셰이더 유지, 로그 확인)", true);
+	}
+}
+
+void FEditorApplication::HandleToolShortcuts()
+{
+	if (ImGui::GetIO().WantTextInput)
+	{
+		return;
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_R))
+	{
+		ReloadAllShaders();
+	}
+}
+
+void FEditorApplication::DrawToolsMenu()
+{
+	if (ImGui::BeginMenu("도구"))
+	{
+		if (ImGui::MenuItem("셰이더 다시 로드", "Ctrl+R"))
+		{
+			ReloadAllShaders();
+		}
+		ImGui::TextDisabled(ShaderWatcher.IsWatching() ? "셰이더 자동 감시: 켜짐" : "셰이더 자동 감시: 꺼짐");
+		ImGui::EndMenu();
+	}
+}
+
+void FEditorApplication::ShowNotification(std::string Message, bool bError)
+{
+	NotificationText   = std::move(Message);
+	bNotificationError = bError;
+	NotificationExpiry = std::chrono::steady_clock::now() + std::chrono::seconds(bError ? 5 : 3);
+}
+
+void FEditorApplication::DrawNotification()
+{
+	if (NotificationText.empty() || std::chrono::steady_clock::now() >= NotificationExpiry)
+	{
+		return;
+	}
+
+	// 메인 창 우하단 토스트
+	const ImGuiViewport* Viewport = ImGui::GetMainViewport();
+	const float          Margin   = 16.0f * ImGuiLayer.GetDpiScale();
+	ImGui::SetNextWindowPos(ImVec2(Viewport->WorkPos.x + Viewport->WorkSize.x - Margin, Viewport->WorkPos.y + Viewport->WorkSize.y - Margin),
+	                        ImGuiCond_Always, ImVec2(1.0f, 1.0f));
+	ImGui::SetNextWindowViewport(Viewport->ID);
+	ImGui::SetNextWindowBgAlpha(0.85f);
+	constexpr ImGuiWindowFlags Flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs |
+	                                   ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking |
+	                                   ImGuiWindowFlags_NoSavedSettings;
+	if (ImGui::Begin("##Notification", nullptr, Flags))
+	{
+		const ImVec4 Color = bNotificationError ? ImVec4(1.0f, 0.45f, 0.4f, 1.0f) : ImVec4(0.55f, 0.9f, 0.55f, 1.0f);
+		ImGui::TextColored(Color, "%s", NotificationText.c_str());
 	}
 	ImGui::End();
 }

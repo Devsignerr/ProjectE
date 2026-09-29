@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 // 셰이더 바이트코드 공급자. 조회 순서: 메모리 캐시 → 쿠킹된 DXIL(소스보다 새로울 때) → DXC 컴파일(+쿠킹 기록).
 // 키 = 파일 + 엔트리 + 스테이지 + 디파인.
@@ -31,6 +32,16 @@ public:
 
 	void ClearMemoryCache() { Cache.clear(); }
 
+	// 핫 리로드: ChangedFile(셰이더 소스 또는 #include 파일)을 쓰는 캐시 항목을 제거하고 영향받은 desc 목록을 반환.
+	// 다음 GetShader는 쿠킹 파일 mtime 검사로 재컴파일한다. 비어 있지 않으면 세대 카운터 증가.
+	std::vector<FShaderCompileDesc> Invalidate(const std::filesystem::path& ChangedFile);
+
+	// 캐시된 모든 셰이더를 무효화하고 그 desc 목록 반환
+	std::vector<FShaderCompileDesc> InvalidateAll();
+
+	// 무효화가 일어날 때마다 증가 (셰이더를 캐시한 쪽이 변경 여부를 판단할 때 사용)
+	uint64 GetGeneration() const { return Generation; }
+
 	const FStats&                GetStats() const { return Stats; }
 	const std::filesystem::path& GetCookedDirectory() const { return CookedDir; }
 
@@ -43,9 +54,16 @@ private:
 	ComPtr<IDxcBlob> TryLoadCooked(const FShaderCompileDesc& Desc, const std::string& DisplayName);
 	bool             SaveCooked(const FShaderCompileDesc& Desc, IDxcBlob* Blob, const std::string& DisplayName);
 
-	FD3D12ShaderCompiler*                              Compiler = nullptr;
-	std::filesystem::path                              CookedDir;
-	bool                                               bWriteCooked = true;
-	std::unordered_map<std::wstring, ComPtr<IDxcBlob>> Cache;
-	FStats                                             Stats;
+	FD3D12ShaderCompiler* Compiler = nullptr;
+	std::filesystem::path CookedDir;
+	bool                  bWriteCooked = true;
+	struct FCacheEntry
+	{
+		FShaderCompileDesc Desc;
+		ComPtr<IDxcBlob>   Blob;
+	};
+
+	std::unordered_map<std::wstring, FCacheEntry> Cache;
+	FStats                                        Stats;
+	uint64                                        Generation = 0;
 };

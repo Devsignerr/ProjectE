@@ -38,21 +38,6 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
-	FShaderCompileDesc VertexDesc;
-	VertexDesc.FileName   = L"Mesh.hlsl";
-	VertexDesc.EntryPoint = L"VSMain";
-	VertexDesc.Stage      = EShaderStage::Vertex;
-	FShaderCompileDesc PixelDesc = VertexDesc;
-	PixelDesc.EntryPoint         = L"PSMain";
-	PixelDesc.Stage              = EShaderStage::Pixel;
-
-	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
-	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
-	if (!VertexShader || !PixelShader)
-	{
-		return false;
-	}
-
 	const uint32 PerObjectIndex = RootSignature.AddConstantBufferView(0);
 	const uint32 PerFrameIndex  = RootSignature.AddConstantBufferView(1);
 	const uint32 MaterialIndex  = RootSignature.AddConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -66,6 +51,37 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
+	if (!CreateMeshPipeline(PipelineState, false))
+	{
+		return false;
+	}
+
+	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료");
+	return true;
+}
+
+bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+{
+	FShaderCompileDesc VertexDesc;
+	VertexDesc.FileName   = L"Mesh.hlsl";
+	VertexDesc.EntryPoint = L"VSMain";
+	VertexDesc.Stage      = EShaderStage::Vertex;
+	FShaderCompileDesc PixelDesc = VertexDesc;
+	PixelDesc.EntryPoint         = L"PSMain";
+	PixelDesc.Stage              = EShaderStage::Pixel;
+
+	if (bForceRecompile && (!ShaderLibrary.CookShader(VertexDesc) || !ShaderLibrary.CookShader(PixelDesc)))
+	{
+		return false;
+	}
+
+	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
+	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
+	if (!VertexShader || !PixelShader)
+	{
+		return false;
+	}
+
 	FGraphicsPipelineDesc PsoDesc;
 	PsoDesc.RootSignature          = RootSignature.Get();
 	PsoDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
@@ -74,12 +90,25 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	PsoDesc.RenderTargetFormats[0] = FD3D12RHI::RenderTargetFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
-	if (!PipelineState.InitGraphics(Device, PsoDesc, L"MeshPipeline"))
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"MeshPipeline");
+}
+
+bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
+{
+	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
+
+	FD3D12PipelineState NewPipeline;
+	if (!CreateMeshPipeline(NewPipeline, bForceRecompile))
 	{
+		E_LOG(LogRenderer, Error, "셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
 	}
 
-	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료");
+	// 이전 PSO는 진행 중인 프레임이 참조할 수 있으므로 지연 해제
+	PipelineState.Swap(NewPipeline);
+	Rhi->DeferRelease(NewPipeline.Detach());
+
+	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
 }
 

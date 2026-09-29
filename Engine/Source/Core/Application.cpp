@@ -1,6 +1,7 @@
 #include "Core/Application.h"
 
 #include "Core/Log.h"
+#include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
 
 FApplication::FApplication(const FApplicationDesc& InDesc)
@@ -11,6 +12,10 @@ FApplication::FApplication(const FApplicationDesc& InDesc)
 int FApplication::Run()
 {
 	FLog::Init();
+	if (!FPaths::IsInitialized())
+	{
+		FPaths::Initialize();
+	}
 
 	// 모니터별 DPI 인식 (창 크기/좌표가 논리 픽셀로 스케일되지 않도록)
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);

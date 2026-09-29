@@ -9,8 +9,5 @@ target_link_libraries(Sandbox PRIVATE ProjectE::Core ProjectE::RHI ProjectE::Ren
 set_target_properties(Sandbox PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
-# 테스트 에셋 디렉터리 (에셋 파이프라인 도입 전까지 소스 트리에서 직접 로드)
-target_compile_definitions(Sandbox PRIVATE "E_SANDBOX_ASSET_DIR=L\"${CMAKE_CURRENT_SOURCE_DIR}/Assets\"")
-
 e_set_target_defaults(Sandbox "Sandbox")
 e_copy_dxc_runtime(Sandbox)

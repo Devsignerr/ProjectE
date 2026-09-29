@@ -80,21 +80,28 @@ Build/            CMake 빌드 출력 (git 제외)
 
 ## 빌드
 
-CMake와 Ninja는 PATH에 없고 VS 2022 번들 버전을 사용한다. 기본 경로는 Ninja 프리셋(VsDevCmd 환경 필요)이며 검증됨. Visual Studio 제너레이터 프리셋(`vs2022`)은 샌드박스 셸에서 VS 인스턴스 검색에 실패하므로 `.sln`이 필요할 때만 `-VisualStudio`로 사용자 셸에서 실행한다.
+세 가지 방법이 있으며 모두 같은 CMake 설정을 쓴다. CMake/Ninja는 PATH에 없고 VS 2022 번들 버전을 사용한다.
+
+1. **Visual Studio에서 폴더 열기 (권장)**: VS 2022 → `파일 → 열기 → 폴더`로 프로젝트 루트를 연다. `CMakePresets.json`의 `ninja-debug`가 자동 선택되고, 솔루션 탐색기의 "CMake 대상 보기"에서 모듈 트리가 보인다. 시작 항목을 `ProjectEEditor.exe`로 고르고 F5. 빌드는 Ctrl+Shift+B.
+2. **더블클릭**: 루트의 `Build.bat`(빌드), `RunEditor.bat`(빌드 후 에디터 실행), `GenerateSolution.bat`(.sln 생성 후 열기).
+3. **명령줄**:
 
 ```powershell
 .\Scripts\Build.ps1                  # 구성 + Ninja Debug 빌드
 .\Scripts\Build.ps1 -Config Release
-.\Scripts\Build.ps1 -Run             # 빌드 후 Sandbox 실행
+.\Scripts\Build.ps1 -Run             # 빌드 후 에디터 실행
+.\Scripts\Build.ps1 -RunSandbox      # 빌드 후 런타임 데모 실행
 .\Scripts\Build.ps1 -Test            # 빌드 후 단위 테스트 (ctest)
-.\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Build\vs2022\ProjectE.sln)
+.\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Builds2022\ProjectE.sln)
 ```
-
-셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`).
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).
 
-빌드/단위 테스트 실행은 사용자 승인(2026-09-29)에 따라 이 프로젝트에서 항상 자동으로 수행한다. Sandbox 실행(화면 확인)과 외부 다운로드는 사용자에게 안내/확인한다.
+알려진 문제: 이 PC에서는 CMake "Visual Studio 17 2022" 제너레이터가 VS 인스턴스를 찾지 못한다(`could not find any instance of Visual Studio`). vswhere는 정상이지만 CMake가 쓰는 Setup API 열거가 비어 있고 `C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances\*\state.json`이 JSON 파서에서 실패한다. VS Installer의 "복구"로 해결될 가능성이 높다. 그 전까지 `.sln`이 필요하면 복구 후 `GenerateSolution.bat`를 쓰고, 그 외에는 방법 1·2로 충분하다.
+
+셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`).
+
+빌드/단위 테스트 실행은 사용자 승인(2026-09-29)에 따라 이 프로젝트에서 항상 자동으로 수행한다. 에디터/Sandbox 실행(화면 확인)과 외부 다운로드는 사용자에게 안내/확인한다.
 
 ## 검증 체크리스트 (구현 후)
 

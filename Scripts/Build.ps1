@@ -4,7 +4,8 @@
 .EXAMPLE
     .\Scripts\Build.ps1                       # Ninja Debug 빌드
     .\Scripts\Build.ps1 -Config Release       # Ninja Release 빌드
-    .\Scripts\Build.ps1 -Run                  # Debug 빌드 후 Sandbox 실행
+    .\Scripts\Build.ps1 -Run                  # Debug 빌드 후 에디터(ProjectEEditor) 실행
+    .\Scripts\Build.ps1 -RunSandbox           # Debug 빌드 후 Sandbox(런타임 데모) 실행
     .\Scripts\Build.ps1 -Test                 # Debug 빌드 후 단위 테스트(ctest) 실행
     .\Scripts\Build.ps1 -VisualStudio         # .sln 생성 (Build\vs2022\ProjectE.sln) + 빌드
     .\Scripts\Build.ps1 -Clean                # 빌드 디렉터리 삭제 후 처음부터
@@ -13,6 +14,7 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Debug",
     [switch]$Run,
+    [switch]$RunSandbox,
     [switch]$Test,
     [switch]$Clean,
     [switch]$VisualStudio
@@ -81,8 +83,12 @@ try {
     }
 
     if ($Run) {
-        Write-Host "== 실행 ==" -ForegroundColor Cyan
-        & $Exe
+        Write-Host "== 에디터 실행 ==" -ForegroundColor Cyan
+        & $EditorExe
+    }
+    if ($RunSandbox) {
+        Write-Host "== Sandbox 실행 ==" -ForegroundColor Cyan
+        & $SandboxExe
     }
 }
 finally {

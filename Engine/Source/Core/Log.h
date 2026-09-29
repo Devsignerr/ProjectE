@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 
+#include <filesystem>
 #include <format>
 #include <string>
 #include <string_view>
@@ -49,6 +50,9 @@ public:
 	static void EnableHistory();
 	// 지정한 번호 이후의 로그만 복사한다. 로그 기록 스레드와 동기화된다.
 	static std::vector<FLogMessage> ReadHistory(uint64 AfterSequence);
+
+	// 모든 로그를 파일에도 기록 (자동 검증/GUI 앱 진단용). 빈 경로면 끈다. 실패 시 false
+	static bool SetFileOutput(const std::filesystem::path& Path);
 
 	static bool ShouldLog(const FLogCategory& Category, ELogVerbosity Verbosity);
 

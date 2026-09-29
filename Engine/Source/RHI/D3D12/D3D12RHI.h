@@ -9,6 +9,7 @@
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12SwapChain.h"
 
+#include <filesystem>
 #include <vector>
 
 struct FD3D12RHIDesc
@@ -48,6 +49,9 @@ public:
 	// 백버퍼(+깊이)를 렌더 타깃으로 다시 바인딩하고 전체 뷰포트/시저 설정.
 	// 오프스크린 렌더 타깃을 쓴 뒤 복귀하거나, UI를 UNORM 뷰(bLinearView)로 그릴 때 사용.
 	void SetRenderTargetToBackBuffer(bool bLinearView = false);
+
+	// 이번 프레임의 최종 백버퍼를 PNG로 저장 (EndFrame에서 복사 후 GPU 완료를 기다려 기록 — 검증용)
+	void RequestScreenshot(const std::filesystem::path& Path) { PendingScreenshot = Path; }
 
 	// 현재 백버퍼의 sRGB RTV를 출력 대상으로 (BeginFrame 이후 유효)
 	FRenderOutput GetBackBufferOutput() const;
@@ -91,6 +95,9 @@ private:
 	FPendingReleases                  PendingReleases[FrameCount];
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 	uint64                            FrameFenceValues[FrameCount] = {};
+
+	std::filesystem::path PendingScreenshot;
+	bool                  WriteScreenshot(ID3D12Resource* Readback, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint);
 
 	uint32 CurrentBackBufferIndex = 0;
 	bool   bVSync                 = true;

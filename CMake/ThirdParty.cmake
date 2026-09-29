@@ -15,6 +15,17 @@ add_library(stb_image INTERFACE)
 add_library(ThirdParty::stb_image ALIAS stb_image)
 target_include_directories(stb_image SYSTEM INTERFACE "${stb_image_SOURCE_DIR}")
 
+# ---------------------------------------------------------------- stb_image_write (v1.16, 같은 stb 커밋) — 스크린샷 PNG 저장
+FetchContent_Declare(stb_image_write
+    URL      "https://raw.githubusercontent.com/nothings/stb/${E_STB_COMMIT}/stb_image_write.h"
+    URL_HASH SHA256=cbd5f0ad7a9cf4468affb36354a1d2338034f2c12473cf1a8e32053cb6914a05
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(stb_image_write)
+
+add_library(stb_image_write INTERFACE)
+add_library(ThirdParty::stb_image_write ALIAS stb_image_write)
+target_include_directories(stb_image_write SYSTEM INTERFACE "${stb_image_write_SOURCE_DIR}")
+
 # ---------------------------------------------------------------- cgltf (glTF 2.0 파서, MIT)
 set(E_CGLTF_COMMIT "85cd62382dfea638278962690cf515023f33ed00")
 FetchContent_Declare(cgltf

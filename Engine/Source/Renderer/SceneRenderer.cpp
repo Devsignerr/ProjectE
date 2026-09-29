@@ -8,6 +8,7 @@
 #include "Scene/Scene.h"
 
 #include <algorithm>
+#include <cstring>
 #include <tuple>
 #include <unordered_map>
 
@@ -192,7 +193,9 @@ void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 		SceneColor->ShutdownDeferred(*Rhi);
 	}
 	SceneColor = std::make_unique<FD3D12RenderTarget>();
-	if (!SceneColor->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SceneColorHDR", FRenderTargetDesc::MakeHdr(true)))
+	FRenderTargetDesc SceneDesc = FRenderTargetDesc::MakeHdr(true);
+	std::memcpy(SceneDesc.ClearColor, &BackgroundColor.X, sizeof(SceneDesc.ClearColor));
+	if (!SceneColor->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SceneColorHDR", SceneDesc))
 	{
 		E_LOG(LogRenderer, Fatal, "HDR 씬 버퍼 생성 실패 ({}x{})", Width, Height);
 	}

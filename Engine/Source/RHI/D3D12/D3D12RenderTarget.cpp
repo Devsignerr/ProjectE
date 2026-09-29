@@ -3,6 +3,8 @@
 #include "RHI/D3D12/D3D12Device.h"
 #include "RHI/D3D12/D3D12RHI.h"
 
+#include <cstring>
+
 FD3D12RenderTarget::~FD3D12RenderTarget()
 {
 	Shutdown();
@@ -25,6 +27,7 @@ bool FD3D12RenderTarget::Init(FD3D12Device& Device, FD3D12DescriptorAllocator& I
 
 	D3D12_CLEAR_VALUE ClearValue{};
 	ClearValue.Format = Desc.RtvFormat;
+	std::memcpy(ClearValue.Color, Desc.ClearColor, sizeof(ClearValue.Color));
 
 	E_D3D_VERIFY(D3DDevice->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &TextureDesc,
 	                                                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &ClearValue,

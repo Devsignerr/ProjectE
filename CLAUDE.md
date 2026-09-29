@@ -117,6 +117,8 @@ Build/            CMake 빌드 출력 (git 제외)
 
 셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`). 에디터 실행 중에는 `Engine/Shaders/*.hlsl|hlsli`를 저장하면 자동 반영(핫 리로드, 실패 시 기존 셰이더 유지)되고, Ctrl+R(도구 → 셰이더 다시 로드)은 강제 재컴파일한다.
 
+화면 자동 검증: `.\Scripts\Verify.ps1 [-Target Editor|Runtime|Sandbox] [-ExtraArgs "--select <이름>"] [-Name <이름>]` → `Saved/Verify/<이름>.png`와 로그, D3D12 디버그 레이어 오류/경고 요약(종료 코드 0 = 오류 없음). 앱 공통 인자: `--exit-after <N>`, `--screenshot <경로>`, `--log <경로>`, 에디터 `--select <엔티티 이름>`. 렌더링/에디터 변경 후에는 반드시 실행해 스크린샷을 직접 보고, 디버그 레이어 오류 0건을 확인한 뒤 커밋한다.
+
 빌드/단위 테스트 실행은 사용자 승인(2026-09-29)에 따라 이 프로젝트에서 항상 자동으로 수행한다. 에디터/Sandbox 실행(화면 확인)과 외부 다운로드는 사용자에게 안내/확인한다.
 
 ## 검증 체크리스트 (구현 후)

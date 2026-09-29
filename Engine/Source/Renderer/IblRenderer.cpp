@@ -52,7 +52,7 @@ bool FIblRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& Library)
 	ShaderLibrary = &Library;
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	SkyRoot.AddConstants(12, 0);
-	SkyRoot.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	SkyRoot.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	SkyRoot.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	if (!SkyRoot.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_NONE, L"SkyRoot") || !CreateSkyPipeline(Library, SkyPipeline))
 	{
@@ -130,9 +130,9 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	FD3D12RootSignature Root;
 	Root.AddConstants(4, 0);
-	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) });
-	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0) });
-	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1) });
+	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
+	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
+	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	Root.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
 	if (!Root.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_NONE, L"IblBakeRoot"))

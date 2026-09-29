@@ -157,3 +157,11 @@ void FRuntimeApplication::BuildPlaceholderScene()
 
 	Scene.UpdateTransforms();
 }
+
+void FRuntimeApplication::OnScreenshotRequested(const std::filesystem::path& Path)
+{
+	if (Rhi)
+	{
+		Rhi->RequestScreenshot(Path);
+	}
+}

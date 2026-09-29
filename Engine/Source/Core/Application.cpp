@@ -1,8 +1,13 @@
 #include "Core/Application.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
+#include "Core/StringConv.h"
+
+#include <algorithm>
+#include <string>
 
 FApplication::FApplication(const FApplicationDesc& InDesc)
 	: Desc(InDesc)
@@ -15,6 +20,27 @@ int FApplication::Run()
 	if (!FPaths::IsInitialized())
 	{
 		FPaths::Initialize();
+	}
+
+	// 자동 검증 인자
+	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	if (const std::wstring LogPath = CommandLine.GetValue(L"--log"); !LogPath.empty())
+	{
+		FLog::SetFileOutput(LogPath);
+	}
+	ScreenshotPath = CommandLine.GetValue(L"--screenshot");
+	if (const std::wstring ExitAfter = CommandLine.GetValue(L"--exit-after"); !ExitAfter.empty())
+	{
+		ExitAfterFrames = static_cast<uint64>(std::max(1LL, std::stoll(ExitAfter)));
+	}
+	else if (!ScreenshotPath.empty())
+	{
+		ExitAfterFrames = 90; // 셰이더/에셋 로드와 자동 노출이 안정될 시간
+	}
+	if (ExitAfterFrames > 0)
+	{
+		E_LOG(LogCore, Display, "자동 검증 모드: {} 프레임 후 종료{}", ExitAfterFrames,
+		      ScreenshotPath.empty() ? "" : ", 스크린샷 " + FStringConv::ToUtf8(ScreenshotPath.wstring()));
 	}
 
 	// 모니터별 DPI 인식 (창 크기/좌표가 논리 픽셀로 스케일되지 않도록)
@@ -56,7 +82,16 @@ int FApplication::Run()
 		}
 		else
 		{
+			if (!ScreenshotPath.empty() && ExitAfterFrames > 0 && FrameIndex + 1 == ExitAfterFrames)
+			{
+				OnScreenshotRequested(ScreenshotPath);
+			}
 			OnRender();
+			++FrameIndex;
+			if (ExitAfterFrames > 0 && FrameIndex >= ExitAfterFrames)
+			{
+				RequestExit();
+			}
 		}
 
 		Input.EndFrame();

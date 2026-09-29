@@ -111,6 +111,14 @@ protected:
 		}
 	}
 
+	void OnScreenshotRequested(const std::filesystem::path& Path) override
+	{
+		if (Rhi)
+		{
+			Rhi->RequestScreenshot(Path);
+		}
+	}
+
 	void OnShutdown() override
 	{
 		if (Rhi)

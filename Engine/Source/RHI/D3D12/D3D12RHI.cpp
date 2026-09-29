@@ -1,5 +1,16 @@
 #include "RHI/D3D12/D3D12RHI.h"
 
+#include "Core/StringConv.h"
+
+#include <cstdio>
+#include <cstring>
+#include <vector>
+
+#pragma warning(push, 0)
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+#pragma warning(pop)
+
 FD3D12RHI::~FD3D12RHI()
 {
 	Shutdown();
@@ -198,13 +209,94 @@ void FD3D12RHI::EndFrame()
 {
 	ID3D12Resource* BackBuffer = SwapChain.GetCurrentBackBuffer();
 
-	const D3D12_RESOURCE_BARRIER ToPresent =
-		MakeTransitionBarrier(BackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	// 스크린샷: 백버퍼 → 리드백 버퍼 복사
+	ComPtr<ID3D12Resource>             Readback;
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint{};
+	D3D12_RESOURCE_STATES              BackBufferState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	if (!PendingScreenshot.empty())
+	{
+		const D3D12_RESOURCE_DESC Desc       = BackBuffer->GetDesc();
+		UINT64                    TotalBytes = 0;
+		Device.GetDevice()->GetCopyableFootprints(&Desc, 0, 1, 0, &Footprint, nullptr, nullptr, &TotalBytes);
+
+		const D3D12_HEAP_PROPERTIES ReadbackHeap = MakeHeapProperties(D3D12_HEAP_TYPE_READBACK);
+		const D3D12_RESOURCE_DESC   BufferDesc   = MakeBufferDesc(TotalBytes);
+		if (SUCCEEDED(Device.GetDevice()->CreateCommittedResource(&ReadbackHeap, D3D12_HEAP_FLAG_NONE, &BufferDesc,
+		                                                          D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&Readback))))
+		{
+			const D3D12_RESOURCE_BARRIER ToCopy =
+				MakeTransitionBarrier(BackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			CommandList->ResourceBarrier(1, &ToCopy);
+			BackBufferState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+
+			D3D12_TEXTURE_COPY_LOCATION Source{};
+			Source.pResource        = BackBuffer;
+			Source.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			Source.SubresourceIndex = 0;
+			D3D12_TEXTURE_COPY_LOCATION Destination{};
+			Destination.pResource       = Readback.Get();
+			Destination.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			Destination.PlacedFootprint = Footprint;
+			CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &Source, nullptr);
+		}
+	}
+
+	const D3D12_RESOURCE_BARRIER ToPresent = MakeTransitionBarrier(BackBuffer, BackBufferState, D3D12_RESOURCE_STATE_PRESENT);
 	CommandList->ResourceBarrier(1, &ToPresent);
 
 	E_D3D_CHECK(CommandList->Close());
 
 	FrameFenceValues[CurrentBackBufferIndex] = GraphicsQueue.ExecuteCommandList(CommandList.Get());
 
+	if (Readback)
+	{
+		GraphicsQueue.WaitForFenceValue(FrameFenceValues[CurrentBackBufferIndex]);
+		WriteScreenshot(Readback.Get(), Footprint);
+	}
+	PendingScreenshot.clear();
+
 	SwapChain.Present(bVSync);
+}
+
+bool FD3D12RHI::WriteScreenshot(ID3D12Resource* Readback, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint)
+{
+	const uint32 Width  = Footprint.Footprint.Width;
+	const uint32 Height = Footprint.Footprint.Height;
+
+	uint8* Mapped = nullptr;
+	if (FAILED(Readback->Map(0, nullptr, reinterpret_cast<void**>(&Mapped))))
+	{
+		return false;
+	}
+	// 백버퍼는 R8G8B8A8_UNORM(값은 sRGB로 인코딩됨) → 행 피치 제거 + 알파 불투명
+	std::vector<uint8> Pixels(static_cast<size_t>(Width) * Height * 4);
+	for (uint32 Row = 0; Row < Height; ++Row)
+	{
+		const uint8* Source = Mapped + Footprint.Offset + static_cast<size_t>(Row) * Footprint.Footprint.RowPitch;
+		uint8*       Dest   = Pixels.data() + static_cast<size_t>(Row) * Width * 4;
+		std::memcpy(Dest, Source, static_cast<size_t>(Width) * 4);
+		for (uint32 X = 0; X < Width; ++X)
+		{
+			Dest[X * 4 + 3] = 255;
+		}
+	}
+	const D3D12_RANGE NoWrite{ 0, 0 };
+	Readback->Unmap(0, &NoWrite);
+
+	std::error_code ErrorCode;
+	std::filesystem::create_directories(PendingScreenshot.parent_path(), ErrorCode);
+	const std::string PathUtf8 = FStringConv::ToUtf8(PendingScreenshot.wstring());
+	// 유니코드 경로 지원을 위해 파일은 직접 열고 stb에는 쓰기 콜백만 넘긴다
+	FILE* File = nullptr;
+	if (_wfopen_s(&File, PendingScreenshot.c_str(), L"wb") != 0 || File == nullptr)
+	{
+		E_LOG(LogD3D12, Error, "스크린샷 파일을 열 수 없습니다: {}", PathUtf8);
+		return false;
+	}
+	const int bOk = stbi_write_png_to_func(
+		[](void* Context, void* Data, int Size) { std::fwrite(Data, 1, static_cast<size_t>(Size), static_cast<FILE*>(Context)); },
+		File, static_cast<int>(Width), static_cast<int>(Height), 4, Pixels.data(), static_cast<int>(Width * 4));
+	std::fclose(File);
+	E_LOG(LogD3D12, Display, "스크린샷 저장: {} ({}x{})", PathUtf8, Width, Height);
+	return bOk != 0;
 }

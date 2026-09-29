@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <fstream>
 #include <mutex>
 #include <string>
 
@@ -13,7 +14,8 @@ E_DEFINE_LOG_CATEGORY(LogCore, Log)
 
 namespace
 {
-	std::mutex GLogMutex;
+	std::mutex    GLogMutex;
+	std::ofstream GLogFile; // SetFileOutput
 	bool       GbConsoleColorEnabled = false;
 	bool       GbHistoryEnabled = false;
 	uint64     GNextLogSequence = 1;
@@ -105,6 +107,20 @@ bool FLog::ShouldLog(const FLogCategory& Category, ELogVerbosity Verbosity)
 	return Verbosity <= Category.MaxVerbosity;
 }
 
+bool FLog::SetFileOutput(const std::filesystem::path& Path)
+{
+	std::scoped_lock Lock(GLogMutex);
+	GLogFile.close();
+	if (Path.empty())
+	{
+		return true;
+	}
+	std::error_code ErrorCode;
+	std::filesystem::create_directories(Path.parent_path(), ErrorCode);
+	GLogFile.open(Path, std::ios::binary | std::ios::trunc);
+	return GLogFile.is_open();
+}
+
 void FLog::Write(const FLogCategory& Category, ELogVerbosity Verbosity, std::string_view Message)
 {
 	SYSTEMTIME Time;
@@ -137,6 +153,11 @@ void FLog::Write(const FLogCategory& Category, ELogVerbosity Verbosity, std::str
 		}
 
 		OutputDebugStringW(FStringConv::ToWide(Line).c_str());
+		if (GLogFile.is_open())
+		{
+			GLogFile << Line;
+			GLogFile.flush(); // 비정상 종료에도 마지막 줄까지 남도록
+		}
 	}
 
 	if (Verbosity == ELogVerbosity::Fatal)

@@ -24,6 +24,7 @@ protected:
 	void OnRender() override;
 	void OnResize(uint32 Width, uint32 Height) override;
 	void OnShutdown() override;
+	void OnScreenshotRequested(const std::filesystem::path& Path) override;
 
 private:
 	void BuildPlaceholderScene();

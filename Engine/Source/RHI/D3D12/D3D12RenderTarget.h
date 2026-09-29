@@ -15,6 +15,7 @@ struct FRenderTargetDesc
 	DXGI_FORMAT RtvFormat      = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 선형 → 감마 인코딩
 	DXGI_FORMAT SrvFormat      = DXGI_FORMAT_R8G8B8A8_UNORM;      // UI가 인코딩된 값을 그대로 표시
 	bool        bWithDepth     = true;
+	float       ClearColor[4]  = { 0.0f, 0.0f, 0.0f, 0.0f }; // 최적 클리어 값 (Begin의 클리어 색과 같으면 빠른 경로)
 
 	// 기본(LDR 표시용): 위 값 그대로
 	static FRenderTargetDesc MakeLdrDisplay() { return FRenderTargetDesc{}; }

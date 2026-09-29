@@ -62,8 +62,29 @@ bool FD3D12Device::Init(bool bEnableDebugLayer)
 		ComPtr<ID3D12InfoQueue> InfoQueue;
 		if (SUCCEEDED(Device.As(&InfoQueue)))
 		{
-			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
-			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+			// 디버거가 붙어 있을 때만 중단 (자동 검증 실행에서는 로그로 남기고 계속)
+			const BOOL bBreak = IsDebuggerPresent() ? TRUE : FALSE;
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, bBreak);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, bBreak);
+		}
+
+		// 디버그 레이어 메시지를 엔진 로그로 (Windows 11 SDK의 ID3D12InfoQueue1)
+		ComPtr<ID3D12InfoQueue1> InfoQueue1;
+		if (SUCCEEDED(Device.As(&InfoQueue1)))
+		{
+			DWORD CallbackCookie = 0;
+			InfoQueue1->RegisterMessageCallback(
+				[](D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID Id, LPCSTR Description, void*) {
+					if (Severity <= D3D12_MESSAGE_SEVERITY_ERROR)
+					{
+						E_LOG(LogD3D12, Error, "[디버그 레이어] ({}) {}", static_cast<int32>(Id), Description);
+					}
+					else if (Severity == D3D12_MESSAGE_SEVERITY_WARNING)
+					{
+						E_LOG(LogD3D12, Warning, "[디버그 레이어] ({}) {}", static_cast<int32>(Id), Description);
+					}
+				},
+				D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &CallbackCookie);
 		}
 	}
 

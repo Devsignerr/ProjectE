@@ -1,5 +1,6 @@
 #include "Editor/EditorApplication.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
@@ -94,6 +95,18 @@ bool FEditorApplication::OnInit()
 	Context.OpenSceneRequest = [this](const std::filesystem::path& Path) { OpenScene(Path); };
 
 	OpenStartupScene();
+
+	// 자동 검증: --select <이름> 으로 시작 시 엔티티 선택 (선택 아웃라인/인스펙터 확인용)
+	if (const std::wstring SelectName = FCommandLine::FromProcess().GetValue(L"--select"); !SelectName.empty())
+	{
+		const std::string Target = FStringConv::ToUtf8(SelectName);
+		Scene.GetRegistry().View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Name) {
+			if (!Context.SelectedEntity.IsValid() && Name.Name == Target)
+			{
+				Context.Select(Entity);
+			}
+		});
+	}
 
 	// 셰이더 핫 리로드: 엔진 셰이더 디렉터리 감시 (실패해도 에디터는 계속)
 	if (!ShaderWatcher.Start(FPaths::GetEngineShaderDirectory(), true))
@@ -594,4 +607,12 @@ void FEditorApplication::DrawNotification()
 		ImGui::TextColored(Color, "%s", NotificationText.c_str());
 	}
 	ImGui::End();
+}
+
+void FEditorApplication::OnScreenshotRequested(const std::filesystem::path& Path)
+{
+	if (Rhi)
+	{
+		Rhi->RequestScreenshot(Path);
+	}
 }

@@ -65,6 +65,10 @@ try {
     if (Test-Path (Join-Path $ProjectDir "Config")) {
         Copy-Item -Recurse -Force (Join-Path $ProjectDir "Config") (Join-Path $ProjectDst "Config")
     }
+    # 쿠킹 에셋 (.emodel/.etex). Copy-Item은 수정 시각을 보존하므로 원본보다 새롭다는 판정이 유지된다
+    if (Test-Path (Join-Path $ProjectDir "Cooked")) {
+        Copy-Item -Recurse -Force (Join-Path $ProjectDir "Cooked") (Join-Path $ProjectDst "Cooked")
+    }
 
     # 실행 배치 (Sample이 아닌 프로젝트도 --project로 명시)
     $RunBat = "@echo off`r`ncd /d `"%~dp0`"`r`nstart `"`" `"%~dp0ProjectERuntime.exe`" --project `"Projects\$ProjectName`"`r`n"
@@ -80,6 +84,8 @@ try {
     }
     $CookedCount = (Get-ChildItem (Join-Path $EngineShaderDst "Cooked") -Filter "*.dxil" -ErrorAction SilentlyContinue | Measure-Object).Count
     Write-Host "검사: 쿠킹된 셰이더 $CookedCount 개" -ForegroundColor Green
+    $CookedAssetCount = (Get-ChildItem (Join-Path $ProjectDst "Cooked") -Recurse -Include "*.emodel", "*.etex" -ErrorAction SilentlyContinue | Measure-Object).Count
+    Write-Host "검사: 쿠킹된 에셋 $CookedAssetCount 개" -ForegroundColor Green
 
     $TotalBytes = (Get-ChildItem -Recurse -File $PackageDir | Measure-Object -Property Length -Sum).Sum
     Write-Host ("== 완료: {0} ({1:N1} MB) ==" -f $PackageDir, ($TotalBytes / 1MB)) -ForegroundColor Green

@@ -2,6 +2,7 @@
 
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/AssetCache.h"
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/PrimitiveShapes.h"
 
@@ -76,7 +77,7 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 	}
 
 	FImage Image;
-	if (!FImageLoader::LoadFromFile(Canonical, Image))
+	if (FAssetCache::LoadImageAsset(Canonical, Image) == FAssetCache::ESource::Failed)
 	{
 		return FTextureHandle{};
 	}

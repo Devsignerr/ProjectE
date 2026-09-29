@@ -2,6 +2,7 @@
 
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
+#include "Renderer/AssetCache.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/Scene.h"
 
@@ -76,7 +77,7 @@ std::string FModelLoader::MakeAssetPath(const std::filesystem::path& Path)
 FEntity FModelLoader::LoadIntoScene(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Parent)
 {
 	FModelData Model;
-	if (!FGltfLoader::Load(Path, Model))
+	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
 	{
 		return NullEntity;
 	}
@@ -91,7 +92,7 @@ FEntity FModelLoader::LoadIntoScene(const std::filesystem::path& Path, FScene& S
 bool FModelLoader::LoadIntoEntity(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Root)
 {
 	FModelData Model;
-	if (!FGltfLoader::Load(Path, Model))
+	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
 	{
 		return false;
 	}

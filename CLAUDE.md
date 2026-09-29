@@ -51,6 +51,7 @@
 - 검증: `E_CHECK(expr)`, `E_CHECKF(expr, "포맷", ...)` (실패 시 Fatal)
 - D3D 호출: 초기화 경로는 `E_D3D_VERIFY(call)` (실패 시 Error 로그 + `return false`), 프레임 경로는 `E_D3D_CHECK(call)` (Fatal)
 - 디버그 전용 코드는 `#if E_DEBUG` (CMake가 Debug=1 / Release=0 정의)
+- 포스트 프로세싱: 효과는 `FPostProcessor` 안에서 확장하고(씬 렌더러는 `Render` 한 번 호출), 설정은 `FPostProcessSettings`, CPU/GPU 공용 식은 `Renderer/PostProcessMath.h`와 셰이더를 함께 수정. PSO 블렌드는 `FGraphicsPipelineDesc::BlendMode`(`bAlphaBlend`는 하위 호환용)
 
 ## 디렉터리
 

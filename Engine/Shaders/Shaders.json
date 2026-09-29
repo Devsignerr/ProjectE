@@ -6,6 +6,12 @@
     { "File": "Triangle.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "Tonemap.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "Bloom.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "Bloom.hlsl", "Entry": "PSDownsample", "Stage": "Pixel" },
+    { "File": "Bloom.hlsl", "Entry": "PSUpsample", "Stage": "Pixel" },
+    { "File": "AutoExposure.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "AutoExposure.hlsl", "Entry": "PSHistogram", "Stage": "Pixel" },
+    { "File": "AutoExposure.hlsl", "Entry": "CSAverage", "Stage": "Compute" }
   ]
 }

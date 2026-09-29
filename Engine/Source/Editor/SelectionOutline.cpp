@@ -4,6 +4,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/ResourceManager.h"
+#include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Scene.h"
 
@@ -21,6 +22,7 @@ namespace
 	static_assert(sizeof(FCompositeConstants) == 48);
 
 	constexpr uint32 MaskRoot_Matrix       = 0; // b0 (루트 상수 16개)
+	constexpr uint32 MaskRoot_SkinPalette  = 1; // b4 (스킨 팔레트)
 	constexpr uint32 CompositeRoot_Consts  = 0; // b0 (루트 상수 12개)
 	constexpr uint32 CompositeRoot_Mask    = 1; // t0
 
@@ -47,6 +49,7 @@ bool FSelectionOutline::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
 	MaskRootSignature.AddConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	MaskRootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	if (!MaskRootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"OutlineMaskRootSignature"))
 	{
 		return false;
@@ -61,13 +64,14 @@ bool FSelectionOutline::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	}
 
 	CompositeFormat = FD3D12RHI::RenderTargetFormat;
-	return CreatePipelines(MaskPipeline, CompositePipeline, CompositeFormat, false);
+	return CreatePipelines(MaskPipeline, CompositePipeline, CompositeFormat, false) && CreateSkinnedMaskPipeline(SkinnedMaskPipeline, false);
 }
 
 void FSelectionOutline::Shutdown()
 {
 	Mask.reset();
 	MaskPipeline.Shutdown();
+	SkinnedMaskPipeline.Shutdown();
 	CompositePipeline.Shutdown();
 	MaskRootSignature.Shutdown();
 	CompositeRootSignature.Shutdown();
@@ -129,6 +133,31 @@ bool FSelectionOutline::CreatePipelines(FD3D12PipelineState& OutMask, FD3D12Pipe
 	return OutComposite.InitGraphics(Device, CompositeDesc, L"OutlineCompositePipeline");
 }
 
+bool FSelectionOutline::CreateSkinnedMaskPipeline(FD3D12PipelineState& OutMask, bool bForceRecompile)
+{
+	const FShaderCompileDesc VertexDesc = MakeDesc(L"MaskSkinnedVS", EShaderStage::Vertex);
+	if (bForceRecompile && !ShaderLibrary->CookShader(VertexDesc))
+	{
+		return false;
+	}
+	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary->GetShader(VertexDesc);
+	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary->GetShader(MakeDesc(L"MaskPS", EShaderStage::Pixel));
+	if (!VertexShader || !PixelShader)
+	{
+		return false;
+	}
+
+	FGraphicsPipelineDesc MaskDesc;
+	MaskDesc.RootSignature          = MaskRootSignature.Get();
+	MaskDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
+	MaskDesc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
+	MaskDesc.InputLayout            = FStaticMesh::GetSkinnedInputLayout();
+	MaskDesc.RenderTargetFormats[0] = DXGI_FORMAT_R8_UNORM;
+	MaskDesc.CullMode               = D3D12_CULL_MODE_NONE;
+	MaskDesc.bDepthEnable           = false;
+	return OutMask.InitGraphics(Rhi->GetDevice().GetDevice(), MaskDesc, L"OutlineSkinnedMaskPipeline");
+}
+
 bool FSelectionOutline::ReloadShaders(bool bForceRecompile)
 {
 	if (Rhi == nullptr)
@@ -146,6 +175,13 @@ bool FSelectionOutline::ReloadShaders(bool bForceRecompile)
 	CompositePipeline.Swap(NewComposite);
 	Rhi->DeferRelease(NewMask.Detach());
 	Rhi->DeferRelease(NewComposite.Detach());
+
+	FD3D12PipelineState NewSkinnedMask;
+	if (CreateSkinnedMaskPipeline(NewSkinnedMask, bForceRecompile))
+	{
+		SkinnedMaskPipeline.Swap(NewSkinnedMask);
+		Rhi->DeferRelease(NewSkinnedMask.Detach());
+	}
 	return true;
 }
 
@@ -183,7 +219,8 @@ void FSelectionOutline::CollectOutlinedEntities(FScene& Scene, FEntity Root, std
 	}
 }
 
-void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output)
+void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output,
+                               const FSkinnedMeshPalette* SkinPalettes)
 {
 	if (Rhi == nullptr || !Output.IsValid() || Output.Format != CompositeFormat)
 	{
@@ -218,6 +255,16 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 		const FStaticMesh* Mesh = Resources.GetMesh(Registry.Get<FStaticMeshComponent>(Entity).Mesh);
 		if (Mesh == nullptr)
 		{
+			continue;
+		}
+		// 스킨 메시: 현재 포즈 (팔레트가 월드까지 변환)
+		if (const FSkinnedDrawInfo* Skinned = SkinPalettes ? SkinPalettes->Find(Entity) : nullptr)
+		{
+			CommandList->SetPipelineState(SkinnedMaskPipeline.Get());
+			CommandList->SetGraphicsRoot32BitConstants(MaskRoot_Matrix, 16, &ViewProjection.M[0][0], 0);
+			CommandList->SetGraphicsRootConstantBufferView(MaskRoot_SkinPalette, Skinned->Palette);
+			Mesh->DrawSkinned(CommandList);
+			CommandList->SetPipelineState(MaskPipeline.Get());
 			continue;
 		}
 		const FMatrix4x4 WorldViewProjection = Registry.Get<FTransformComponent>(Entity).WorldMatrix * ViewProjection;

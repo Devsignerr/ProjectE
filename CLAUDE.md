@@ -45,6 +45,7 @@
 - 머티리얼(PBR, glTF 금속/거칠기): 텍스처 슬롯 t0~t4 = 베이스(sRGB)/금속거칠기(선형, G=거칠기 B=금속)/노멀(선형)/AO(선형 R)/발광(sRGB). 머티리얼마다 셰이더 가시 힙에 연속 5칸 테이블(`FMaterial::TextureTable`)을 두며 `FResourceManager`만 만들고 갱신한다. 머티리얼 텍스처 핸들을 바꾸면 `RefreshMaterialTextures` 호출
 - 탄젠트: `FVertex::Tangent.xyz` = UV +U 방향, `B = Cross(N, T) * Tangent.w` = 노멀 맵 +Y = UV 위쪽(-V). glTF TANGENT는 `FGltfLoader::ConvertTangent`(xyz 변환 + w 반전 — 축 반사 때문), 없으면 `FMeshData::ComputeTangents`
 - glTF 임포트: 좌표 변환은 `FGltfLoader::Convert*`만 사용(쿼터니언 벡터부 부호 반전). 축 반사와 엔진 카메라 규약의 반사가 상쇄되어 화면상 와인딩은 유지되므로 로더가 인덱스 순서를 뒤집어 CW 앞면으로 맞춘다. 와인딩 규약 검증: `Cross(P1-P0, P2-P0)·Normal > 0`. 새 속성 추가 시 `GltfLoaderTests`에 케이스 추가
+- 스켈레탈 애니메이션: 스킨 정점은 슬롯 1 스트림(`FSkinVertex`, 정적 메시 정점 형식은 불변), 본 팔레트 = `InverseBind * JointWorld`(루트 CBV b4, `SkinnedMesh.hlsli`)로 바로 월드 공간이며 World는 항등. 팔레트는 `FSceneRenderer`가 프레임당 한 번 `FSkinnedMeshPalette::Build`로 올리고 섀도우/아웃라인이 공유한다. 재생 로직은 `FAnimationSystem`(Scene), 제어는 `Play/Stop/SetSpeed` API. 새 메시 패스를 추가하면 스킨 경로(`DrawSkinned` + 스킨 PSO)도 함께 추가
 - 테스트 매크로 인자에 템플릿 쉼표(`View<A, B>()`)를 직접 넣지 말고 지역 변수로 받는다
 - ImGui: UI는 `FImGuiLayer::BeginFrame()`~`EndFrame()` 사이에서만 기술하고, UI 드로우는 UNORM 백버퍼 뷰(`SetRenderTargetToBackBuffer(true)`)에 그린다. 뷰포트에 표시할 오프스크린 타깃은 `FD3D12RenderTarget`(UNORM SRV). `ImGuizmo.h`는 `imgui.h` 다음, Windows 헤더보다 먼저 포함
 - 패널은 `FEditorContext`(비소유 포인터 + 선택 상태)만 받는 `Draw()` 클래스로 만들고, 씬 구조 변경(부모 변경/삭제)은 순회가 끝난 뒤 적용한다

@@ -54,6 +54,9 @@ public:
 
 	FShaderLibrary& GetShaderLibrary() { return ShaderLibrary; }
 
+	// 이번 프레임 스킨 팔레트 (Render 이후 같은 프레임 안에서만 유효 — 에디터 오버레이용)
+	const FSkinnedMeshPalette& GetSkinPalettes() const { return SkinPalettes; }
+
 	// 컬링 프러스텀 고정 (컬링 동작 확인용). 켜면 이후 카메라를 움직여도 컬링은 고정 시점 기준
 	void SetFreezeCulling(bool bFreeze);
 	bool IsCullingFrozen() const { return bCullingFrozen; }

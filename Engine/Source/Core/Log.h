@@ -3,7 +3,9 @@
 #include "Core/CoreTypes.h"
 
 #include <format>
+#include <string>
 #include <string_view>
+#include <vector>
 
 // 로그 상세 수준 (값이 클수록 더 상세)
 enum class ELogVerbosity : uint8
@@ -23,6 +25,13 @@ struct FLogCategory
 	ELogVerbosity MaxVerbosity;
 };
 
+struct FLogMessage
+{
+	uint64 Sequence = 0;
+	ELogVerbosity Verbosity = ELogVerbosity::Log;
+	std::string Text;
+};
+
 // 헤더에서 카테고리 선언, 하나의 .cpp에서 정의
 #define E_DECLARE_LOG_CATEGORY(CategoryName) extern FLogCategory CategoryName;
 #define E_DEFINE_LOG_CATEGORY(CategoryName, DefaultVerbosity) \
@@ -34,6 +43,12 @@ public:
 	// 콘솔 UTF-8 / 색상 출력 설정
 	static void Init();
 	static void Shutdown();
+
+	// 에디터 진입점에서 활성화하면 초기화 로그부터 제한된 개수만 보관한다.
+	static constexpr size_t MaxHistoryMessages = 2000;
+	static void EnableHistory();
+	// 지정한 번호 이후의 로그만 복사한다. 로그 기록 스레드와 동기화된다.
+	static std::vector<FLogMessage> ReadHistory(uint64 AfterSequence);
 
 	static bool ShouldLog(const FLogCategory& Category, ELogVerbosity Verbosity);
 

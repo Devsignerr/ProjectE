@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <deque>
 #include <mutex>
 #include <string>
 
@@ -14,6 +15,9 @@ namespace
 {
 	std::mutex GLogMutex;
 	bool       GbConsoleColorEnabled = false;
+	bool       GbHistoryEnabled = false;
+	uint64     GNextLogSequence = 1;
+	std::deque<FLogMessage> GLogHistory;
 
 	const char* ToString(ELogVerbosity Verbosity)
 	{
@@ -72,6 +76,30 @@ void FLog::Shutdown()
 	std::fflush(stdout);
 }
 
+void FLog::EnableHistory()
+{
+	std::scoped_lock Lock(GLogMutex);
+	GbHistoryEnabled = true;
+}
+
+std::vector<FLogMessage> FLog::ReadHistory(uint64 AfterSequence)
+{
+	std::scoped_lock Lock(GLogMutex);
+	std::vector<FLogMessage> Messages;
+	if (GLogHistory.empty() || GLogHistory.back().Sequence <= AfterSequence)
+	{
+		return Messages;
+	}
+	for (const FLogMessage& Message : GLogHistory)
+	{
+		if (Message.Sequence > AfterSequence)
+		{
+			Messages.push_back(Message);
+		}
+	}
+	return Messages;
+}
+
 bool FLog::ShouldLog(const FLogCategory& Category, ELogVerbosity Verbosity)
 {
 	return Verbosity <= Category.MaxVerbosity;
@@ -88,6 +116,14 @@ void FLog::Write(const FLogCategory& Category, ELogVerbosity Verbosity, std::str
 
 	{
 		std::scoped_lock Lock(GLogMutex);
+		if (GbHistoryEnabled)
+		{
+			GLogHistory.push_back({ GNextLogSequence++, Verbosity, Line });
+			if (GLogHistory.size() > MaxHistoryMessages)
+			{
+				GLogHistory.pop_front();
+			}
+		}
 
 		if (GbConsoleColorEnabled)
 		{

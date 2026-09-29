@@ -87,7 +87,7 @@ try {
 
     if ($Run) {
         Write-Host "== 에디터 실행 ==" -ForegroundColor Cyan
-        & $EditorExe
+        Start-Process -FilePath $EditorExe -WorkingDirectory $RootDir
     }
     if ($RunSandbox) {
         Write-Host "== Sandbox 실행 ==" -ForegroundColor Cyan

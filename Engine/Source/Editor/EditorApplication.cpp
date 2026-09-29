@@ -154,6 +154,7 @@ void FEditorApplication::OnRender()
 	ContentBrowserPanel.Draw(Context);
 	PostProcessPanel.Draw(Context);
 	ShadowPanel.Draw(Context);
+	OutputLogPanel.Draw(Context);
 	if (bShowStats)
 	{
 		DrawStatsWindow();
@@ -420,6 +421,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
 		ImGui::MenuItem("포스트 프로세스", nullptr, &PostProcessPanel.bOpen);
 		ImGui::MenuItem("그림자", nullptr, &ShadowPanel.bOpen);
+		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
 		ImGui::Separator();
 		ImGui::MenuItem("ImGui 데모", nullptr, &bShowImGuiDemo);

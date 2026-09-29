@@ -5,6 +5,7 @@
 #include "Editor/EditorContext.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
+#include "Scene/AnimationSystem.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 
@@ -143,6 +144,46 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 	{
 		DrawScriptExtras(Context, Entity);
 	}
+	else if (&Type == Registry.Find<FAnimationComponent>())
+	{
+		DrawAnimationExtras(Context, Entity);
+	}
+}
+
+void FInspectorPanel::DrawAnimationExtras(FEditorContext& Context, FEntity Entity)
+{
+	FAnimationComponent* Animation = Context.Scene->GetRegistry().TryGet<FAnimationComponent>(Entity);
+	if (Animation == nullptr)
+	{
+		return;
+	}
+	const std::vector<std::string> Clips = FAnimationSystem::GetClipNames(*Context.Scene, Entity);
+	if (Clips.empty())
+	{
+		ImGui::TextDisabled("클립 없음 (모델 로드 후 표시)");
+		return;
+	}
+
+	// 선택하면 Clip 문자열을 바꾼다 → 애니메이션 시스템이 BlendTime 동안 크로스페이드
+	const std::string Current = FAnimationSystem::GetCurrentClip(*Context.Scene, Entity);
+	if (ImGui::BeginCombo("클립 선택", Current.empty() ? "(없음)" : Current.c_str()))
+	{
+		for (const std::string& Clip : Clips)
+		{
+			const bool bSelected = Clip == Current;
+			if (ImGui::Selectable(Clip.c_str(), bSelected) && !bSelected)
+			{
+				Animation->Clip = Clip;
+				Context.MarkEdited("애니메이션 클립 변경");
+			}
+			if (bSelected)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::TextDisabled("클립 %zu개, 재생 시간 %.2f초", Clips.size(), Animation->Runtime.CurrentTime);
 }
 
 bool FInspectorPanel::DrawProperty(const FPropertyInfo& Property, void* Component, FEntity Entity)

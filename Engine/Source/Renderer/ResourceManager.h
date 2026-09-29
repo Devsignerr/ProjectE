@@ -2,6 +2,7 @@
 
 #include "Core/Containers/ResourcePool.h"
 #include "RHI/D3D12/D3D12Texture.h"
+#include "Renderer/GltfLoader.h"
 #include "Renderer/Image.h"
 #include "Renderer/Material.h"
 #include "Renderer/StaticMesh.h"
@@ -9,10 +10,22 @@
 #include "Scene/ResourceHandles.h"
 
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class FD3D12RHI;
+
+// 모델 에셋의 공유 GPU 리소스 (FModelLoader가 채운다). 같은 에셋의 인스턴스는 메시/머티리얼/텍스처를 공유한다.
+//   Model: 엔티티 배치용 데이터 (노드/스킨/애니메이션, 메시 인덱스·머티리얼 번호). 이미지·정점 데이터는 GPU 업로드 후 비운다
+struct FModelResources
+{
+	FModelData                   Model;
+	std::vector<FMeshHandle>     Meshes;
+	std::vector<FMaterialHandle> Materials;
+	size_t                       TextureCount = 0;
+};
 
 // 렌더 리소스(메시/텍스처/머티리얼) 소유자. 핸들로 접근하며 삭제는 GPU 안전하게 지연 처리된다.
 class FResourceManager
@@ -57,6 +70,11 @@ public:
 	// 무효 핸들이면 기본 머티리얼
 	const FMaterial& ResolveMaterial(FMaterialHandle Handle) const;
 
+	// ---- 모델 (키: 정규화 경로). 캐시된 핸들 중 하나라도 삭제됐으면 무효로 보고 항목을 버린다
+	const FModelResources* FindModelResources(const std::wstring& Key);
+	const FModelResources& AddModelResources(const std::wstring& Key, FModelResources Resources);
+	size_t                 GetModelCount() const { return ModelCache.size(); }
+
 	size_t GetTextureCount() const { return Textures.GetCount(); }
 	size_t GetMeshCount() const { return Meshes.GetCount(); }
 	size_t GetMaterialCount() const { return Materials.GetCount(); }
@@ -75,6 +93,7 @@ private:
 	std::unordered_map<std::wstring, FTextureHandle>  TextureCache;   // 키: 정규화 경로 + 색공간
 	std::unordered_map<std::wstring, FMaterialHandle> MaterialCache;  // 키: 정규화 경로
 	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
+	std::unordered_map<std::wstring, std::unique_ptr<FModelResources>> ModelCache; // 키: 정규화 경로 (주소 고정)
 
 	FTextureHandle  WhiteTexture;
 	FTextureHandle  FlatNormalTexture;

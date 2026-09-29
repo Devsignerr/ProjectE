@@ -6,6 +6,8 @@
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/PrimitiveShapes.h"
 
+#include <algorithm>
+
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
 namespace
@@ -79,6 +81,7 @@ void FResourceManager::Shutdown()
 	TextureCache.clear();
 	MaterialCache.clear();
 	PrimitiveMeshes.clear();
+	ModelCache.clear();
 
 	WhiteTexture      = FTextureHandle{};
 	FlatNormalTexture = FTextureHandle{};
@@ -362,4 +365,31 @@ const FMaterial& FResourceManager::ResolveMaterial(FMaterialHandle Handle) const
 		return *Material;
 	}
 	return *Materials.Get(DefaultMaterial);
+}
+
+const FModelResources* FResourceManager::FindModelResources(const std::wstring& Key)
+{
+	const auto Found = ModelCache.find(Key);
+	if (Found == ModelCache.end())
+	{
+		return nullptr;
+	}
+	const FModelResources& Cached = *Found->second;
+	const bool bMeshesAlive = std::all_of(Cached.Meshes.begin(), Cached.Meshes.end(),
+	                                      [this](FMeshHandle Handle) { return !Handle.IsValid() || Meshes.IsValid(Handle); });
+	const bool bMaterialsAlive = std::all_of(Cached.Materials.begin(), Cached.Materials.end(),
+	                                         [this](FMaterialHandle Handle) { return !Handle.IsValid() || Materials.IsValid(Handle); });
+	if (!bMeshesAlive || !bMaterialsAlive)
+	{
+		ModelCache.erase(Found);
+		return nullptr;
+	}
+	return &Cached;
+}
+
+const FModelResources& FResourceManager::AddModelResources(const std::wstring& Key, FModelResources Resources)
+{
+	std::unique_ptr<FModelResources>& Slot = ModelCache[Key];
+	Slot                                   = std::make_unique<FModelResources>(std::move(Resources));
+	return *Slot;
 }

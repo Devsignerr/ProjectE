@@ -136,28 +136,46 @@ std::string FModelLoader::MakeAssetPath(const std::filesystem::path& Path)
 
 FEntity FModelLoader::LoadIntoScene(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Parent)
 {
-	FModelData Model;
-	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+	const FModelResources* Model = LoadModelResources(Path, Resources);
+	if (Model == nullptr)
 	{
 		return NullEntity;
 	}
 
-	const FEntity Root = Scene.CreateEntity(Model.Name);
+	const FEntity Root = Scene.CreateEntity(Model->Model.Name);
 	Scene.SetParent(Root, Parent);
 	Scene.GetRegistry().Emplace<FModelComponent>(Root).AssetPath = MakeAssetPath(Path);
-	InstantiateInto(Model, Scene, Resources, Root);
+	InstantiateEntities(*Model, Scene, Resources, Root);
 	return Root;
 }
 
 bool FModelLoader::LoadIntoEntity(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Root)
 {
-	FModelData Model;
-	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+	const FModelResources* Model = LoadModelResources(Path, Resources);
+	if (Model == nullptr)
 	{
 		return false;
 	}
-	InstantiateInto(Model, Scene, Resources, Root);
+	InstantiateEntities(*Model, Scene, Resources, Root);
 	return true;
+}
+
+const FModelResources* FModelLoader::LoadModelResources(const std::filesystem::path& Path, FResourceManager& Resources)
+{
+	std::error_code             ErrorCode;
+	const std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	const std::wstring          Key       = (ErrorCode ? Path : Canonical).wstring();
+	if (const FModelResources* Cached = Resources.FindModelResources(Key))
+	{
+		return Cached;
+	}
+
+	FModelData Model;
+	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+	{
+		return nullptr;
+	}
+	return &Resources.AddModelResources(Key, CreateResources(std::move(Model), Resources));
 }
 
 FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Parent)
@@ -170,7 +188,14 @@ FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResou
 
 void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Root)
 {
-	// 텍스처: 색상 슬롯(베이스/발광)은 sRGB, 데이터 슬롯(금속·거칠기/노멀/AO)은 선형. (이미지, 색공간)별로 한 번만 생성
+	InstantiateEntities(CreateResources(Model, Resources), Scene, Resources, Root);
+}
+
+FModelResources FModelLoader::CreateResources(FModelData Model, FResourceManager& Resources)
+{
+	FModelResources Result;
+
+	// 텍스처: 쿠킹 텍스처는 용도(색공간)가 정해져 있다. 비압축 이미지는 색상 슬롯(베이스/발광)만 sRGB. (이미지, 색공간)별로 한 번만 생성
 	std::unordered_map<int64, FTextureHandle> ImageTextures;
 	auto GetOrCreateTexture = [&](int32 ImageIndex, bool bSRGB) -> FTextureHandle {
 		if (ImageIndex < 0 || ImageIndex >= static_cast<int32>(Model.Images.size()))
@@ -186,7 +211,6 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 		FTextureHandle     Handle;
 		if (Image.Texture.IsValid())
 		{
-			// 쿠킹 텍스처는 용도(색공간)가 이미 정해져 있다 (FAssetCache::CompressModelImages)
 			Handle = Resources.CreateTexture(Image.Texture, FStringConv::ToWide(Model.Name + "/" + Image.Name));
 		}
 		else if (Image.Image.IsValid())
@@ -198,7 +222,7 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 	};
 
 	// 머티리얼 (glTF 금속/거칠기 → 엔진 PBR, 1:1 대응)
-	std::vector<FMaterialHandle> MaterialHandles(Model.Materials.size());
+	Result.Materials.resize(Model.Materials.size());
 	for (size_t Index = 0; Index < Model.Materials.size(); ++Index)
 	{
 		const FModelMaterial& Source = Model.Materials[Index];
@@ -216,31 +240,41 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 		Material.Textures[MaterialSlot_Normal]            = GetOrCreateTexture(Source.NormalImage, false);
 		Material.Textures[MaterialSlot_Occlusion]         = GetOrCreateTexture(Source.OcclusionImage, false);
 		Material.Textures[MaterialSlot_Emissive]          = GetOrCreateTexture(Source.EmissiveImage, true);
-		MaterialHandles[Index]                         = Resources.CreateMaterial(Material);
+		Result.Materials[Index]                        = Resources.CreateMaterial(Material);
 	}
 
 	// 메시
-	std::vector<FMeshHandle> MeshHandles(Model.Meshes.size());
+	Result.Meshes.resize(Model.Meshes.size());
 	for (size_t Index = 0; Index < Model.Meshes.size(); ++Index)
 	{
-		if (!Model.Meshes[Index].Data.Vertices.empty() && !Model.Meshes[Index].Data.Indices.empty())
+		FModelMesh& Mesh = Model.Meshes[Index];
+		if (!Mesh.Data.Vertices.empty() && !Mesh.Data.Indices.empty())
 		{
-			const std::wstring DebugName = FStringConv::ToWide(Model.Name + "/" + Model.Meshes[Index].Name);
-			MeshHandles[Index] = Model.Meshes[Index].SkinVertices.empty()
-			                         ? Resources.CreateMesh(Model.Meshes[Index].Data, DebugName)
-			                         : Resources.CreateSkinnedMesh(Model.Meshes[Index].Data, Model.Meshes[Index].SkinVertices, DebugName);
+			const std::wstring DebugName = FStringConv::ToWide(Model.Name + "/" + Mesh.Name);
+			Result.Meshes[Index] = Mesh.SkinVertices.empty() ? Resources.CreateMesh(Mesh.Data, DebugName)
+			                                                 : Resources.CreateSkinnedMesh(Mesh.Data, Mesh.SkinVertices, DebugName);
 		}
+		// GPU에 올린 뒤 CPU 정점 데이터는 필요 없다 (엔티티 배치는 머티리얼 번호만 사용)
+		Mesh.Data         = FMeshData{};
+		Mesh.SkinVertices = {};
 	}
+	Model.Images.clear();
 
-	// 엔티티 계층
+	Result.TextureCount = ImageTextures.size();
+	Result.Model        = std::move(Model);
+	E_LOG(LogRenderer, Display, "모델 리소스 생성: {} (메시 {}, 머티리얼 {}, 텍스처 {})", Result.Model.Name, Result.Meshes.size(),
+	      Result.Materials.size(), Result.TextureCount);
+	return Result;
+}
+
+void FModelLoader::InstantiateEntities(const FModelResources& Resources, FScene& Scene, FResourceManager& ResourceManager, FEntity Root)
+{
+	const FModelData&    Model = Resources.Model;
 	std::vector<FEntity> NodeEntities(Model.Nodes.size(), NullEntity);
 	for (int32 RootNode : Model.RootNodes)
 	{
-		InstantiateNode(Model, RootNode, Root, Scene, MeshHandles, MaterialHandles, Resources.GetDefaultMaterial(), NodeEntities);
+		InstantiateNode(Model, RootNode, Root, Scene, Resources.Meshes, Resources.Materials, ResourceManager.GetDefaultMaterial(), NodeEntities);
 	}
 	AttachSkins(Model, Scene, NodeEntities);
 	AttachAnimation(Model, Scene, Root, std::move(NodeEntities));
-
-	E_LOG(LogRenderer, Display, "모델 배치: {} (메시 {}, 머티리얼 {}, 텍스처 {})", Model.Name, MeshHandles.size(),
-	      MaterialHandles.size(), ImageTextures.size());
 }

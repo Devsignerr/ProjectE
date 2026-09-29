@@ -99,11 +99,11 @@
 - [x] (트랙 C) JSON 직렬화: `FSceneSerializer`(.escene, 리플렉션 기반, Transient/핸들 제외, 관용적 로드), 에셋 참조(`MeshAsset`/`MaterialAsset`/`FModelComponent`) + `FSceneAssetResolver`, `.emat` 머티리얼 에셋(`FMaterialAsset`, `LoadMaterial`), 에디터 파일 메뉴(새 씬/열기/저장/다른 이름, Ctrl+N/O/S), 프로젝트 기본 씬 자동 생성 + 테스트 3개
 - [x] (트랙 D) 셰이더 사전 컴파일: `Engine/Shaders/Shaders.json` 매니페스트, `FShaderLibrary`(메모리 캐시 → 쿠킹 DXIL(소스·포함 파일 mtime 검사) → DXC 컴파일+기록), `ProjectECook` 도구(GPU 불필요), `FD3D12MipGenerator`·`FSceneRenderer` 라이브러리 경유 + RhiTests 6개
 - [x] (트랙 D) 런타임 실행 파일 `ProjectERuntime` (창 서브시스템, `--project`, 프로젝트 DefaultScene 로드 → 없으면 자리표시 씬)
-- [ ] 에셋 쿠킹: glTF·PNG → 엔진 바이너리 (쿠킹 도구 확장)
-- [ ] 셰이더 핫 리로드
+- [~] (트랙 E, 메인) 에셋 쿠킹: glTF → `.emesh`(정점/인덱스/머티리얼/노드 바이너리), PNG/JPG → `.etex`(밉 포함 RGBA8), 쿠킹 캐시(소스 mtime), 로더가 쿠킹본 우선 사용, `ProjectECook` 확장
+- [~] (트랙 F, 서브에이전트) 셰이더 핫 리로드: 셰이더 디렉터리 감시 → 변경 셰이더 재컴파일 → 의존 PSO 재생성(지연 해제), 실패 시 기존 PSO 유지 + 에러 로그, 에디터 메뉴 "셰이더 다시 로드"(Ctrl+R)
 - [x] (트랙 D) 패키징 스크립트 `Scripts/Package.ps1` (Release 빌드 → 쿠킹 → `Build/Package/<프로젝트>/` 스테이징 + Run.bat, 엔진 마커 검사)
 
-후속 과제 (트랙 D): `FSceneRenderer`/에디터의 셰이더 로드를 `FShaderLibrary`로 전환(머지 후), 런타임 파일 로그(콘솔 없음 → `FLog` 파일 싱크), 패키지에서 셰이더 소스·DXC DLL 제거(쿠킹 DXIL만 배포), 에셋 쿠킹
+후속 과제 (트랙 D): ~~`FSceneRenderer` 셰이더 로드 `FShaderLibrary` 전환~~(완료), 런타임 파일 로그(콘솔 없음 → `FLog` 파일 싱크), 패키지에서 셰이더 소스·DXC DLL 제거(쿠킹 DXIL만 배포), 에셋 쿠킹
 
 ## Phase 6 — 렌더링 고도화
 
@@ -116,5 +116,9 @@
 
 - [ ] 물리 (자체 충돌 감지 또는 Jolt 도입 검토)
 - [ ] 오디오
-- [ ] 스크립팅 (검토)
-- [ ] 패키징 / 런타임 빌드
+- [ ] 스크립팅: Lua 스크립트 컴포넌트 (sol2 바인딩, 리플렉션 기반 자동 노출, 파일 변경 감지 핫 리로드)
+- [ ] 엔진 DLL화: 엔진 모듈을 공유 라이브러리로 전환, 공개 API 내보내기 매크로(`E_CORE_API` 등)
+- [ ] 게임 모듈 분리: `Projects/<이름>/Source/` → `<이름>Game.dll`, 에디터/런타임이 `.eproject` 기준으로 로드, 게임 모듈이 컴포넌트/시스템을 리플렉션에 등록
+- [ ] 설치형 엔진 배포: 헤더 + lib/dll + CMake 패키지 설정(`find_package(ProjectE)`), 게임 프로젝트는 게임 모듈만 빌드
+- [ ] 게임 모듈 핫 리로드 (에디터 실행 중 게임 DLL 재빌드·교체)
+- [ ] 패키징 고도화: 쿠킹 DXIL만 배포(셰이더 소스/DXC 제거), 런타임 파일 로그

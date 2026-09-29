@@ -54,5 +54,7 @@ uint64 HashShaderDefines(std::span<const std::wstring> Defines);
 std::vector<std::filesystem::path> CollectShaderDependencies(const std::filesystem::path& SourcePath,
                                                              const std::filesystem::path& ShaderDirectory);
 
-// 쿠킹 결과가 모든 소스보다 새로우면 true. SourceTimes가 비어 있으면 false
-bool IsCookedShaderUpToDate(std::filesystem::file_time_type CookedTime, std::span<const std::filesystem::file_time_type> SourceTimes);
+// 소스 + 포함 파일 내용 해시 (FNV-1a 64, 파일 순서 포함). 파일을 하나라도 읽지 못하면 0.
+// 쿠킹 DXIL 옆 사이드카(<쿠킹 파일>.srchash)에 기록해 두고, 로드 시 다시 계산해 비교한다
+// (파일 시각은 git 체크아웃/머지/복사로 쉽게 어긋나므로 캐시 유효성에 쓰지 않는다)
+uint64 HashShaderSources(std::span<const std::filesystem::path> Dependencies);

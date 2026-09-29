@@ -4,7 +4,9 @@
 #include "RHI/ShaderManifest.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cwctype>
+#include <format>
 #include <fstream>
 #include <vector>
 
@@ -27,6 +29,27 @@ namespace
 		std::wstring Key = Canonical.lexically_normal().wstring();
 		std::transform(Key.begin(), Key.end(), Key.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
 		return Key;
+	}
+
+	std::filesystem::path GetSourceHashPath(const std::filesystem::path& CookedPath)
+	{
+		std::filesystem::path Path = CookedPath;
+		Path += L".srchash";
+		return Path;
+	}
+
+	// 사이드카가 없거나 형식이 틀리면 0
+	uint64 ReadSourceHash(const std::filesystem::path& CookedPath)
+	{
+		std::ifstream File(GetSourceHashPath(CookedPath), std::ios::binary);
+		std::string   Text;
+		if (!File || !(File >> Text) || Text.size() != 16)
+		{
+			return 0;
+		}
+		uint64 Value = 0;
+		const auto [End, Error] = std::from_chars(Text.data(), Text.data() + Text.size(), Value, 16);
+		return Error == std::errc() && End == Text.data() + Text.size() ? Value : 0;
 	}
 } // namespace
 
@@ -173,31 +196,17 @@ ComPtr<IDxcBlob> FShaderLibrary::TryLoadCooked(const FShaderCompileDesc& Desc, c
 		return nullptr;
 	}
 
-	// 소스(+포함 파일)보다 오래되었으면 무효
+	// 소스(+포함 파일) 내용이 쿠킹 당시와 같은지 (사이드카 해시). 소스가 없으면(패키지 배포) 쿠킹 파일을 그대로 신뢰한다
 	const std::filesystem::path ShaderDir  = FD3D12ShaderCompiler::GetEngineShaderDirectory();
 	const std::filesystem::path SourcePath = ShaderDir / Desc.FileName;
-
-	const std::vector<std::filesystem::path> Dependencies = CollectShaderDependencies(SourcePath, ShaderDir);
-	std::vector<std::filesystem::file_time_type> SourceTimes;
-	SourceTimes.reserve(Dependencies.size());
-	for (const std::filesystem::path& Dependency : Dependencies)
+	if (std::filesystem::exists(SourcePath, ErrorCode))
 	{
-		const std::filesystem::file_time_type Time = std::filesystem::last_write_time(Dependency, ErrorCode);
-		if (!ErrorCode)
+		const uint64 SourceHash = HashShaderSources(CollectShaderDependencies(SourcePath, ShaderDir));
+		if (SourceHash == 0 || ReadSourceHash(CookedPath) != SourceHash)
 		{
-			SourceTimes.push_back(Time);
+			E_LOG(LogD3D12, Log, "쿠킹된 셰이더가 현재 소스와 다름(내용 해시), 재컴파일: {}", DisplayName);
+			return nullptr;
 		}
-	}
-	const std::filesystem::file_time_type CookedTime = std::filesystem::last_write_time(CookedPath, ErrorCode);
-	if (ErrorCode)
-	{
-		return nullptr;
-	}
-	// 소스가 없는 경우(패키지 배포)에는 쿠킹 파일을 그대로 신뢰한다
-	if (!SourceTimes.empty() && !IsCookedShaderUpToDate(CookedTime, SourceTimes))
-	{
-		E_LOG(LogD3D12, Log, "쿠킹된 셰이더가 오래됨, 재컴파일: {}", DisplayName);
-		return nullptr;
 	}
 
 	std::ifstream File(CookedPath, std::ios::binary | std::ios::ate);
@@ -244,6 +253,14 @@ bool FShaderLibrary::SaveCooked(const FShaderCompileDesc& Desc, IDxcBlob* Blob, 
 		E_LOG(LogD3D12, Warning, "쿠킹 파일 기록 실패: {}", FStringConv::ToUtf8(CookedPath.wstring()));
 		return false;
 	}
+
+	File.close();
+
+	// 소스 내용 해시 사이드카 (로드 시 유효성 검사)
+	const std::filesystem::path ShaderDir = FD3D12ShaderCompiler::GetEngineShaderDirectory();
+	const uint64 SourceHash = HashShaderSources(CollectShaderDependencies(ShaderDir / Desc.FileName, ShaderDir));
+	std::ofstream HashFile(GetSourceHashPath(CookedPath), std::ios::binary | std::ios::trunc);
+	HashFile << std::format("{:016X}", SourceHash);
 
 	E_LOG(LogD3D12, Log, "셰이더 쿠킹 기록: {} → {}", DisplayName, FStringConv::ToUtf8(CookedPath.filename().wstring()));
 	return true;

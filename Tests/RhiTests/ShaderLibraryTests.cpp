@@ -111,18 +111,6 @@ E_TEST(ShaderCooking_FileNameRule)
 	E_EXPECT_TRUE(FShaderLibrary::MakeCacheKey(Desc) != FShaderLibrary::MakeCacheKey(Reordered));
 }
 
-E_TEST(ShaderCooking_UpToDateCheck)
-{
-	using namespace std::chrono_literals;
-	const std::filesystem::file_time_type Base = std::filesystem::file_time_type::clock::now();
-
-	const std::filesystem::file_time_type Sources[] = { Base - 10s, Base - 5s };
-	E_EXPECT_TRUE(IsCookedShaderUpToDate(Base, Sources));
-	E_EXPECT_TRUE(IsCookedShaderUpToDate(Base - 5s, Sources)); // 같은 시각은 최신으로 간주
-	E_EXPECT_FALSE(IsCookedShaderUpToDate(Base - 7s, Sources));
-	E_EXPECT_FALSE(IsCookedShaderUpToDate(Base, {}));
-}
-
 E_TEST(ShaderCooking_DependencyScan)
 {
 	const std::filesystem::path Dir = MakeTempDirectory(L"Deps");
@@ -195,15 +183,38 @@ E_TEST(ShaderLibrary_CompileCookReloadRoundtrip)
 		}
 	}
 	{
-		// 4) 쿠킹 파일을 소스보다 오래되게 만들면 재컴파일
+		// 4) 쿠킹 파일 시각이 소스보다 오래돼도 내용 해시가 같으면 쿠킹 파일 사용 (git 체크아웃 등으로 시각만 바뀐 경우)
 		FShaderLibrary Library;
 		Library.Init(Compiler, CookedDir, true);
 		std::error_code ErrorCode;
 		std::filesystem::last_write_time(Library.GetCookedPath(Desc), std::filesystem::file_time_type::clock::now() - 24h * 3650, ErrorCode);
-		const ComPtr<IDxcBlob> Blob = Library.GetShader(Desc);
-		E_EXPECT_TRUE(Blob != nullptr);
+		E_EXPECT_TRUE(Library.GetShader(Desc) != nullptr);
+		E_EXPECT_EQ(Library.GetStats().CookedLoads, 1u);
+		E_EXPECT_EQ(Library.GetStats().Compiles, 0u);
+	}
+	{
+		// 4b) 사이드카 해시가 현재 소스와 다르면(쿠킹 당시와 소스 내용이 다름) 시각과 무관하게 재컴파일
+		FShaderLibrary Library;
+		Library.Init(Compiler, CookedDir, true);
+		std::filesystem::path HashPath = Library.GetCookedPath(Desc);
+		HashPath += L".srchash";
+		E_EXPECT_TRUE(std::filesystem::exists(HashPath));
+		std::ofstream(HashPath, std::ios::binary | std::ios::trunc) << "0123456789ABCDEF";
+		E_EXPECT_TRUE(Library.GetShader(Desc) != nullptr);
 		E_EXPECT_EQ(Library.GetStats().Compiles, 1u);
 		E_EXPECT_EQ(Library.GetStats().CookedLoads, 0u);
+	}
+	{
+		// 4c) 사이드카가 없으면(이전 형식 쿠킹) 재컴파일 후 다시 기록
+		FShaderLibrary Library;
+		Library.Init(Compiler, CookedDir, true);
+		std::filesystem::path HashPath = Library.GetCookedPath(Desc);
+		HashPath += L".srchash";
+		std::error_code ErrorCode;
+		std::filesystem::remove(HashPath, ErrorCode);
+		E_EXPECT_TRUE(Library.GetShader(Desc) != nullptr);
+		E_EXPECT_EQ(Library.GetStats().Compiles, 1u);
+		E_EXPECT_TRUE(std::filesystem::exists(HashPath));
 	}
 	{
 		// 5) CookShader는 항상 컴파일 + 기록, 실패하는 엔트리는 false

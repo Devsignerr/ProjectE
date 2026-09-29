@@ -83,6 +83,7 @@ Engine/Source/
                   RHI 파사드, 셰이더 컴파일러(DXC), 루트 시그니처, PSO, 정적 버퍼, 텍스처, 밉 생성기
   RHI/ShaderLibrary.h  FShaderLibrary: 셰이더 바이트코드 공급(메모리 캐시 → Engine/Shaders/Cooked DXIL → DXC 컴파일). 셰이더는 항상 이걸로 얻는다
   RHI/ShaderManifest.h Shaders.json 파싱, 쿠킹 파일명 규칙(<스템>_<Entry>_<Stage>[_<디파인 해시>][.debug].dxil), #include 의존 파일 스캔
+                       쿠킹 유효성은 파일 시각이 아니라 소스+include 내용 해시(`.dxil.srchash` 사이드카, `HashShaderSources`)
   Renderer/       카메라, 플라이 카메라 컨트롤러, 메시 데이터/프리미티브, FStaticMesh, 이미지 로더(stb_image),
                   FResourceManager(메시/텍스처/머티리얼 핸들 소유), FGltfLoader(cgltf)+FModelLoader(씬 배치),
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)

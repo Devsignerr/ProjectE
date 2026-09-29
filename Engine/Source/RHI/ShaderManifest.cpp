@@ -233,18 +233,33 @@ std::vector<std::filesystem::path> CollectShaderDependencies(const std::filesyst
 	return Paths;
 }
 
-bool IsCookedShaderUpToDate(std::filesystem::file_time_type CookedTime, std::span<const std::filesystem::file_time_type> SourceTimes)
+uint64 HashShaderSources(std::span<const std::filesystem::path> Dependencies)
 {
-	if (SourceTimes.empty())
+	if (Dependencies.empty())
 	{
-		return false;
+		return 0;
 	}
-	for (const std::filesystem::file_time_type& SourceTime : SourceTimes)
-	{
-		if (SourceTime > CookedTime)
+
+	uint64     Hash = 14695981039346656037ull; // FNV-1a 64
+	const auto Mix  = [&Hash](const void* Data, size_t Size) {
+		const uint8* Bytes = static_cast<const uint8*>(Data);
+		for (size_t Index = 0; Index < Size; ++Index)
 		{
-			return false;
+			Hash ^= Bytes[Index];
+			Hash *= 1099511628211ull;
 		}
+	};
+	for (const std::filesystem::path& Path : Dependencies)
+	{
+		std::ifstream File(Path, std::ios::binary);
+		if (!File)
+		{
+			return 0;
+		}
+		const std::string Content((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
+		const uint64      Size = Content.size();
+		Mix(&Size, sizeof(Size)); // 파일 경계 구분
+		Mix(Content.data(), Content.size());
 	}
-	return true;
+	return Hash == 0 ? 1 : Hash; // 0은 "계산 실패" 예약
 }

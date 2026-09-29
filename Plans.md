@@ -96,7 +96,7 @@
 - [x] (트랙 A) 경로/프로젝트 체계: `FPaths`(엔진 디렉터리 탐지, 프로젝트 Content/Saved/Config), `.eproject`(JSON), `Projects/Sample` 예제 프로젝트, `--project` 인자, 절대 경로 define 제거, nlohmann/json 도입
 - [x] (트랙 B) 리플렉션/프로퍼티 시스템: `FTypeRegistry`, `FTypeInfo`/`FPropertyInfo`(타입/오프셋/표시명/범위/플래그), `TTypeBuilder` 유창한 등록, ECS 훅(Has/Add/Remove/Get), `RegisterSceneTypes`(FScene 생성자에서 보장) + 테스트 4개
 - [x] (트랙 B) 인스펙터를 리플렉션 기반 범용 UI로 전환 (타입별 위젯, 쿼터니언 오일러 캐시, 숨김/읽기 전용/색 플래그), "컴포넌트 추가" 메뉴 자동 생성
-- [ ] JSON 직렬화: 씬 저장/로드(리플렉션 기반), 머티리얼 에셋, 에디터 파일 메뉴
+- [x] (트랙 C) JSON 직렬화: `FSceneSerializer`(.escene, 리플렉션 기반, Transient/핸들 제외, 관용적 로드), 에셋 참조(`MeshAsset`/`MaterialAsset`/`FModelComponent`) + `FSceneAssetResolver`, `.emat` 머티리얼 에셋(`FMaterialAsset`, `LoadMaterial`), 에디터 파일 메뉴(새 씬/열기/저장/다른 이름, Ctrl+N/O/S), 프로젝트 기본 씬 자동 생성 + 테스트 3개
 - [ ] 에셋 임포트/쿠킹: glTF·PNG → 엔진 바이너리, 셰이더 사전 컴파일(DXIL), 런타임 실행 파일 골격
 - [ ] 셰이더 핫 리로드
 - [ ] 패키징 스크립트 (Release 스테이징)

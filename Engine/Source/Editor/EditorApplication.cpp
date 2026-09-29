@@ -1,11 +1,14 @@
 #include "Editor/EditorApplication.h"
 
 #include "Core/Paths.h"
+#include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelLoader.h"
-#include "Renderer/PrimitiveShapes.h"
+#include "Renderer/SceneAssetResolver.h"
+#include "Scene/SceneSerializer.h"
 
+#include <commdlg.h>
 #include <imgui.h>
 
 #include <filesystem>
@@ -21,6 +24,26 @@ namespace
 		Desc.Window.Width  = 1600;
 		Desc.Window.Height = 900;
 		return Desc;
+	}
+
+	// Win32 파일 대화상자. 취소하면 빈 경로
+	std::filesystem::path ShowSceneFileDialog(HWND Owner, const std::filesystem::path& InitialDirectory, bool bSave)
+	{
+		wchar_t Buffer[MAX_PATH] = {};
+		const std::wstring InitialDir = InitialDirectory.wstring();
+
+		OPENFILENAMEW Dialog{};
+		Dialog.lStructSize     = sizeof(Dialog);
+		Dialog.hwndOwner       = Owner;
+		Dialog.lpstrFilter     = L"ProjectE 씬 (*.escene)\0*.escene\0모든 파일 (*.*)\0*.*\0";
+		Dialog.lpstrFile       = Buffer;
+		Dialog.nMaxFile        = MAX_PATH;
+		Dialog.lpstrInitialDir = InitialDir.c_str();
+		Dialog.lpstrDefExt     = L"escene";
+		Dialog.Flags           = OFN_NOCHANGEDIR | OFN_PATHMUSTEXIST | (bSave ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
+
+		const BOOL bOk = bSave ? GetSaveFileNameW(&Dialog) : GetOpenFileNameW(&Dialog);
+		return bOk ? std::filesystem::path(Buffer) : std::filesystem::path();
 	}
 } // namespace
 
@@ -65,16 +88,16 @@ bool FEditorApplication::OnInit()
 	Context.Scene            = &Scene;
 	Context.Camera           = &Camera;
 	Context.ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
-	GetWindow().SetTitle(FPaths::HasProject() ? L"ProjectE Editor - " + FStringConv::ToWide(FPaths::GetProjectName()) : L"ProjectE Editor (프로젝트 없음)");
-	Context.DefaultCubeMesh  = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
+	Context.DefaultCubeMesh  = Resources.GetOrCreatePrimitiveMesh("cube");
+	Context.OpenSceneRequest = [this](const std::filesystem::path& Path) { OpenScene(Path); };
 
-	BuildDefaultScene();
+	OpenStartupScene();
 
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
 	Camera.SetPosition(FVector3(-6.0f, -4.0f, 3.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 0.8f));
 
-	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모");
+	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일");
 	return true;
 }
 
@@ -112,6 +135,7 @@ void FEditorApplication::OnRender()
 	ViewportPanel.PrepareFrame(Context);
 
 	ImGuiLayer.BeginFrame();
+	HandleShortcuts();
 	DrawMainMenuBar();
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
@@ -161,9 +185,106 @@ void FEditorApplication::OnShutdown()
 	}
 }
 
+// ---------------------------------------------------------------- 씬 파일
+
+void FEditorApplication::NewScene()
+{
+	Scene.Clear();
+	Context.ClearSelection();
+	CurrentScenePath.clear();
+
+	// 빈 씬에도 기본 조명은 둔다
+	const FEntity Sun = Scene.CreateEntity("Sun");
+	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
+	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
+	Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun).Intensity = 1.2f;
+	Scene.UpdateTransforms();
+
+	UpdateWindowTitle();
+}
+
+bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
+{
+	Context.ClearSelection();
+	if (!FSceneSerializer::LoadFromFile(Scene, Path))
+	{
+		return false;
+	}
+	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
+	CurrentScenePath = Path;
+	UpdateWindowTitle();
+	return true;
+}
+
+bool FEditorApplication::SaveScene()
+{
+	if (CurrentScenePath.empty())
+	{
+		return SaveSceneAs();
+	}
+	return FSceneSerializer::SaveToFile(Scene, CurrentScenePath);
+}
+
+bool FEditorApplication::SaveSceneAs()
+{
+	const std::filesystem::path Path = ShowSceneFileDialog(GetWindow().GetHandle(), Context.ContentDirectory, true);
+	if (Path.empty())
+	{
+		return false;
+	}
+	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	{
+		return false;
+	}
+	CurrentScenePath = Path;
+	UpdateWindowTitle();
+	return true;
+}
+
+void FEditorApplication::OpenStartupScene()
+{
+	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
+	{
+		const std::filesystem::path ScenePath = Context.ContentDirectory / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);
+		if (std::filesystem::exists(ScenePath))
+		{
+			if (OpenScene(ScenePath))
+			{
+				return;
+			}
+			E_LOG(LogEditor, Warning, "기본 씬을 열지 못해 기본 구성 씬을 만듭니다");
+		}
+		else
+		{
+			// 프로젝트가 가리키는 기본 씬이 아직 없으면 기본 구성으로 생성해 준다
+			BuildDefaultScene();
+			if (FSceneSerializer::SaveToFile(Scene, ScenePath))
+			{
+				CurrentScenePath = ScenePath;
+				E_LOG(LogEditor, Display, "기본 씬 생성: {}", FPaths::GetProjectDescriptor().DefaultScene);
+			}
+			UpdateWindowTitle();
+			return;
+		}
+	}
+
+	BuildDefaultScene();
+	UpdateWindowTitle();
+}
+
+void FEditorApplication::UpdateWindowTitle()
+{
+	std::wstring Title = L"ProjectE Editor";
+	Title += FPaths::HasProject() ? L" - " + FStringConv::ToWide(FPaths::GetProjectName()) : L" (프로젝트 없음)";
+	Title += L" - " + (CurrentScenePath.empty() ? std::wstring(L"제목 없음") : CurrentScenePath.filename().wstring());
+	GetWindow().SetTitle(Title);
+}
+
 void FEditorApplication::BuildDefaultScene()
 {
-	const std::filesystem::path& ContentDir = Context.ContentDirectory;
+	Scene.Clear();
+	Context.ClearSelection();
+	CurrentScenePath.clear();
 
 	const FEntity Sun = Scene.CreateEntity("Sun");
 	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
@@ -172,26 +293,50 @@ void FEditorApplication::BuildDefaultScene()
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
 	SunLight.Intensity = 1.2f;
 
-	FMaterial GroundMaterial;
-	GroundMaterial.Name                    = "Ground";
-	GroundMaterial.BaseColorTexture        = Resources.LoadTexture(ContentDir / L"UVChecker.png", true);
-	GroundMaterial.Constants.SpecularColor = FVector3(0.2f);
-	GroundMaterial.Constants.Shininess     = 32.0f;
-
+	// 바닥: 내장 큐브 + 체커 머티리얼 에셋 (에셋 참조로 기록되어 저장/로드 가능)
 	const FEntity Ground = Scene.CreateEntity("Ground");
 	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -0.1f);
 	Scene.GetTransform(Ground).Scale    = FVector3(20.0f, 20.0f, 0.2f);
 	FStaticMeshComponent& GroundMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Ground);
-	GroundMesh.Mesh     = Context.DefaultCubeMesh;
-	GroundMesh.Material = Resources.CreateMaterial(GroundMaterial);
+	GroundMesh.MeshAsset     = "primitive:cube";
+	GroundMesh.MaterialAsset = "Materials/Checker.emat";
 
-	const FEntity Helmet = FModelLoader::LoadIntoScene(ContentDir / L"DamagedHelmet.glb", Scene, Resources);
-	if (Scene.GetRegistry().IsValid(Helmet))
+	// 모델: 루트 엔티티 + 에셋 경로 (자식은 Resolve에서 생성)
+	const FEntity Helmet = Scene.CreateEntity("DamagedHelmet");
+	Scene.GetTransform(Helmet).Position = FVector3(0.0f, 0.0f, 1.2f);
+	Scene.GetRegistry().Emplace<FModelComponent>(Helmet).AssetPath = "DamagedHelmet.glb";
+
+	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
+}
+
+// ---------------------------------------------------------------- UI
+
+void FEditorApplication::HandleShortcuts()
+{
+	if (ImGui::GetIO().WantTextInput)
 	{
-		Scene.GetTransform(Helmet).Position = FVector3(0.0f, 0.0f, 1.2f);
+		return;
 	}
-
-	Scene.UpdateTransforms();
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_N))
+	{
+		NewScene();
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_O))
+	{
+		const std::filesystem::path Path = ShowSceneFileDialog(GetWindow().GetHandle(), Context.ContentDirectory, false);
+		if (!Path.empty())
+		{
+			OpenScene(Path);
+		}
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S))
+	{
+		SaveSceneAs();
+	}
+	else if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S))
+	{
+		SaveScene();
+	}
 }
 
 void FEditorApplication::DrawMainMenuBar()
@@ -203,6 +348,33 @@ void FEditorApplication::DrawMainMenuBar()
 
 	if (ImGui::BeginMenu("파일"))
 	{
+		if (ImGui::MenuItem("새 씬", "Ctrl+N"))
+		{
+			NewScene();
+		}
+		if (ImGui::MenuItem("씬 열기...", "Ctrl+O"))
+		{
+			const std::filesystem::path Path = ShowSceneFileDialog(GetWindow().GetHandle(), Context.ContentDirectory, false);
+			if (!Path.empty())
+			{
+				OpenScene(Path);
+			}
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("저장", "Ctrl+S"))
+		{
+			SaveScene();
+		}
+		if (ImGui::MenuItem("다른 이름으로 저장...", "Ctrl+Shift+S"))
+		{
+			SaveSceneAs();
+		}
+		ImGui::Separator();
+		if (!CurrentScenePath.empty())
+		{
+			ImGui::TextDisabled("%s", FStringConv::ToUtf8(CurrentScenePath.filename().wstring()).c_str());
+			ImGui::Separator();
+		}
 		if (ImGui::MenuItem("종료", "ESC"))
 		{
 			RequestExit();
@@ -217,8 +389,10 @@ void FEditorApplication::DrawMainMenuBar()
 		}
 		if (ImGui::MenuItem("큐브 추가"))
 		{
-			const FEntity Cube = Scene.CreateEntity("Cube");
-			Scene.GetRegistry().Emplace<FStaticMeshComponent>(Cube).Mesh = Context.DefaultCubeMesh;
+			const FEntity         Cube = Scene.CreateEntity("Cube");
+			FStaticMeshComponent& Mesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Cube);
+			Mesh.Mesh      = Context.DefaultCubeMesh;
+			Mesh.MeshAsset = "primitive:cube";
 			Context.Select(Cube);
 		}
 		ImGui::EndMenu();

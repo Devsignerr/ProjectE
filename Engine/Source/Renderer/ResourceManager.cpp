@@ -2,6 +2,8 @@
 
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/MaterialAsset.h"
+#include "Renderer/PrimitiveShapes.h"
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -50,6 +52,8 @@ void FResourceManager::Shutdown()
 	Textures.Clear();
 	Materials.Clear();
 	TextureCache.clear();
+	MaterialCache.clear();
+	PrimitiveMeshes.clear();
 
 	WhiteTexture    = FTextureHandle{};
 	DefaultMaterial = FMaterialHandle{};
@@ -150,9 +154,65 @@ void FResourceManager::DestroyMesh(FMeshHandle Handle)
 	}
 }
 
+FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
+{
+	const std::string Key(Name);
+	if (const auto Found = PrimitiveMeshes.find(Key); Found != PrimitiveMeshes.end() && Meshes.IsValid(Found->second))
+	{
+		return Found->second;
+	}
+
+	FMeshHandle Handle;
+	if (Key == "cube")
+	{
+		Handle = CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Primitive_Cube");
+	}
+	else
+	{
+		E_LOG(LogRenderer, Warning, "알 수 없는 내장 도형: {}", Key);
+		return FMeshHandle{};
+	}
+	PrimitiveMeshes[Key] = Handle;
+	return Handle;
+}
+
 FMaterialHandle FResourceManager::CreateMaterial(const FMaterial& Material)
 {
 	return Materials.Add(std::make_unique<FMaterial>(Material));
+}
+
+FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path)
+{
+	std::error_code       ErrorCode;
+	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	if (ErrorCode)
+	{
+		Canonical = Path;
+	}
+	const std::wstring CacheKey = Canonical.wstring();
+	if (const auto Found = MaterialCache.find(CacheKey); Found != MaterialCache.end() && Materials.IsValid(Found->second))
+	{
+		return Found->second;
+	}
+
+	FMaterialAsset Asset;
+	if (!Asset.LoadFromFile(Canonical))
+	{
+		return FMaterialHandle{};
+	}
+
+	FMaterial Material;
+	Material.Name      = Asset.Name;
+	Material.Constants = Asset.Constants;
+	if (!Asset.BaseColorTexture.empty())
+	{
+		Material.BaseColorTexture = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.BaseColorTexture), true);
+	}
+
+	const FMaterialHandle Handle = CreateMaterial(Material);
+	MaterialCache[CacheKey]      = Handle;
+	E_LOG(LogRenderer, Log, "머티리얼 로드: {}", Asset.Name);
+	return Handle;
 }
 
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)

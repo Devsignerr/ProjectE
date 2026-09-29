@@ -157,7 +157,8 @@ void FHierarchyPanel::DrawContextMenu(FEditorContext& Context, FEntity Entity)
 		const FEntity Created = Scene.CreateEntity("Cube");
 		Scene.SetParent(Created, Entity);
 		FStaticMeshComponent& Mesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Created);
-		Mesh.Mesh = Context.DefaultCubeMesh;
+		Mesh.Mesh      = Context.DefaultCubeMesh;
+		Mesh.MeshAsset = "primitive:cube";
 		Context.Select(Created);
 	}
 	if (Entity.IsValid())

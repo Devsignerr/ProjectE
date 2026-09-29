@@ -1,0 +1,8 @@
+{
+  "Name": "Checker",
+  "BaseColorTexture": "../UVChecker.png",
+  "BaseColorTint": [1.0, 1.0, 1.0, 1.0],
+  "SpecularColor": [0.2, 0.2, 0.2],
+  "Shininess": 32.0,
+  "SpecularStrength": 1.0
+}

@@ -9,7 +9,6 @@ add_library(ProjectE::Editor ALIAS EEditor)
 target_include_directories(EEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(EEditor
     PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::Renderer
-    PRIVATE ThirdParty::imgui ThirdParty::imguizmo)
-
+    PRIVATE ThirdParty::imgui ThirdParty::imguizmo comdlg32)
 
 e_set_target_defaults(EEditor "Engine")

@@ -34,9 +34,13 @@ public:
 	FMeshHandle  CreateMesh(const FMeshData& MeshData, const std::wstring& DebugName);
 	void         DestroyMesh(FMeshHandle Handle);
 	FStaticMesh* GetMesh(FMeshHandle Handle) const { return Meshes.Get(Handle); }
+	// 내장 도형 메시 ("cube"). 이름별로 한 번만 생성해 공유. 모르는 이름이면 무효 핸들
+	FMeshHandle GetOrCreatePrimitiveMesh(std::string_view Name);
 
 	// ---- 머티리얼
 	FMaterialHandle CreateMaterial(const FMaterial& Material);
+	// .emat 파일 로드 (경로별 캐시). 텍스처는 파일 위치 기준 상대 경로로 로드
+	FMaterialHandle LoadMaterial(const std::filesystem::path& Path);
 	void            DestroyMaterial(FMaterialHandle Handle);
 	FMaterial*      GetMaterial(FMaterialHandle Handle) const { return Materials.Get(Handle); }
 	FMaterialHandle GetDefaultMaterial() const { return DefaultMaterial; }
@@ -54,7 +58,9 @@ private:
 	TResourcePool<FStaticMesh, FMeshHandle>      Meshes;
 	TResourcePool<FMaterial, FMaterialHandle>    Materials;
 
-	std::unordered_map<std::wstring, FTextureHandle> TextureCache; // 키: 정규화 경로 + 색공간
+	std::unordered_map<std::wstring, FTextureHandle>  TextureCache;   // 키: 정규화 경로 + 색공간
+	std::unordered_map<std::wstring, FMaterialHandle> MaterialCache;  // 키: 정규화 경로
+	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
 
 	FTextureHandle  WhiteTexture;
 	FMaterialHandle DefaultMaterial;

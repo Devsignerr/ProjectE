@@ -1,5 +1,6 @@
 #include "Renderer/ModelLoader.h"
 
+#include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/Scene.h"
@@ -17,6 +18,7 @@ namespace
 		const FModelNode& Node   = Model.Nodes[NodeIndex];
 		const FEntity     Entity = Scene.CreateEntity(Node.Name);
 		Scene.SetParent(Entity, ParentEntity);
+		Scene.GetRegistry().Emplace<FTransientComponent>(Entity); // 모델에서 생성된 노드: 직렬화 제외
 
 		FTransformComponent& Transform = Scene.GetTransform(Entity);
 		Transform.Position = Node.Translation;
@@ -45,6 +47,7 @@ namespace
 			{
 				const FEntity MeshEntity = Scene.CreateEntity(std::format("{}_Primitive{}", Node.Name, Index));
 				Scene.SetParent(MeshEntity, Entity);
+				Scene.GetRegistry().Emplace<FTransientComponent>(MeshEntity);
 				AttachMesh(MeshEntity, Node.Meshes[Index]);
 			}
 		}
@@ -56,6 +59,20 @@ namespace
 	}
 } // namespace
 
+std::string FModelLoader::MakeAssetPath(const std::filesystem::path& Path)
+{
+	std::error_code ErrorCode;
+	if (FPaths::IsInitialized() && FPaths::HasProject())
+	{
+		const std::filesystem::path Relative = std::filesystem::relative(Path, FPaths::GetProjectContentDirectory(), ErrorCode);
+		if (!ErrorCode && !Relative.empty() && Relative.native().rfind(L"..", 0) != 0)
+		{
+			return FStringConv::ToUtf8(Relative.generic_wstring());
+		}
+	}
+	return FStringConv::ToUtf8(Path.generic_wstring());
+}
+
 FEntity FModelLoader::LoadIntoScene(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Parent)
 {
 	FModelData Model;
@@ -63,10 +80,34 @@ FEntity FModelLoader::LoadIntoScene(const std::filesystem::path& Path, FScene& S
 	{
 		return NullEntity;
 	}
-	return Instantiate(Model, Scene, Resources, Parent);
+
+	const FEntity Root = Scene.CreateEntity(Model.Name);
+	Scene.SetParent(Root, Parent);
+	Scene.GetRegistry().Emplace<FModelComponent>(Root).AssetPath = MakeAssetPath(Path);
+	InstantiateInto(Model, Scene, Resources, Root);
+	return Root;
+}
+
+bool FModelLoader::LoadIntoEntity(const std::filesystem::path& Path, FScene& Scene, FResourceManager& Resources, FEntity Root)
+{
+	FModelData Model;
+	if (!FGltfLoader::Load(Path, Model))
+	{
+		return false;
+	}
+	InstantiateInto(Model, Scene, Resources, Root);
+	return true;
 }
 
 FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Parent)
+{
+	const FEntity Root = Scene.CreateEntity(Model.Name);
+	Scene.SetParent(Root, Parent);
+	InstantiateInto(Model, Scene, Resources, Root);
+	return Root;
+}
+
+void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Root)
 {
 	// 텍스처: 베이스 컬러로 참조되는 이미지만 sRGB로 업로드
 	std::unordered_map<int32, FTextureHandle> ImageTextures;
@@ -79,7 +120,7 @@ FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResou
 		{
 			return Found->second;
 		}
-		const FModelImage& Image  = Model.Images[ImageIndex];
+		const FModelImage& Image = Model.Images[ImageIndex];
 		FTextureHandle     Handle;
 		if (Image.Image.IsValid())
 		{
@@ -116,8 +157,6 @@ FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResou
 	}
 
 	// 엔티티 계층
-	const FEntity Root = Scene.CreateEntity(Model.Name);
-	Scene.SetParent(Root, Parent);
 	for (int32 RootNode : Model.RootNodes)
 	{
 		InstantiateNode(Model, RootNode, Root, Scene, MeshHandles, MaterialHandles, Resources.GetDefaultMaterial());
@@ -125,5 +164,4 @@ FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResou
 
 	E_LOG(LogRenderer, Display, "모델 배치: {} (메시 {}, 머티리얼 {}, 텍스처 {})", Model.Name, MeshHandles.size(),
 	      MaterialHandles.size(), ImageTextures.size());
-	return Root;
 }

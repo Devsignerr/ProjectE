@@ -13,11 +13,12 @@
 #include "Renderer/SceneRenderer.h"
 #include "Scene/Scene.h"
 
+#include <filesystem>
 #include <memory>
 
 class FD3D12RHI;
 
-// 에디터 애플리케이션: RHI/리소스/씬/렌더러 + ImGui 패널
+// 에디터 애플리케이션: RHI/리소스/씬/렌더러 + ImGui 패널 + 씬 파일 관리
 class FEditorApplication final : public FApplication
 {
 public:
@@ -32,9 +33,18 @@ protected:
 	void OnShutdown() override;
 
 private:
+	// ---- 씬 파일
+	void NewScene();
+	bool OpenScene(const std::filesystem::path& Path);
+	bool SaveScene();
+	bool SaveSceneAs();
+	void OpenStartupScene(); // 프로젝트 기본 씬 로드 (없으면 기본 씬 구성 후 생성)
+	void UpdateWindowTitle();
+
 	void BuildDefaultScene();
 	void DrawMainMenuBar();
 	void DrawStatsWindow();
+	void HandleShortcuts();
 
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
@@ -50,6 +60,8 @@ private:
 	FHierarchyPanel      HierarchyPanel;
 	FInspectorPanel      InspectorPanel;
 	FContentBrowserPanel ContentBrowserPanel;
+
+	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
 
 	bool  bShowStats     = true;
 	bool  bShowImGuiDemo = false;

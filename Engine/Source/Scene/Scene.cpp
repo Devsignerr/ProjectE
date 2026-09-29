@@ -48,6 +48,33 @@ void FScene::DestroyEntity(FEntity Entity)
 	Registry.Destroy(Entity);
 }
 
+void FScene::Clear()
+{
+	std::vector<FEntity> Roots = GetRootEntities();
+	for (FEntity Root : Roots)
+	{
+		DestroyEntity(Root);
+	}
+}
+
+std::vector<FEntity> FScene::GetRootEntities() const
+{
+	std::vector<FEntity> Roots;
+	if (const TSparseSet<FHierarchyComponent>* Pool = Registry.TryGetPool<FHierarchyComponent>())
+	{
+		const std::vector<FEntity>&             Entities   = Pool->GetEntities();
+		const std::vector<FHierarchyComponent>& Components = Pool->GetComponents();
+		for (size_t Index = 0; Index < Entities.size(); ++Index)
+		{
+			if (!Components[Index].Parent.IsValid())
+			{
+				Roots.push_back(Entities[Index]);
+			}
+		}
+	}
+	return Roots;
+}
+
 void FScene::SetParent(FEntity Child, FEntity Parent)
 {
 	FHierarchyComponent* ChildHierarchy = Registry.TryGet<FHierarchyComponent>(Child);

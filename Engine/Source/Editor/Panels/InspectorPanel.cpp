@@ -333,7 +333,9 @@ void FInspectorPanel::DrawAddComponentMenu(FEditorContext& Context, FEntity Enti
 				// 스태틱 메시는 기본 큐브로 시작해 바로 보이게 한다
 				if (&Type == FTypeRegistry::Get().Find<FStaticMeshComponent>())
 				{
-					static_cast<FStaticMeshComponent*>(Added)->Mesh = Context.DefaultCubeMesh;
+					FStaticMeshComponent* Mesh = static_cast<FStaticMeshComponent*>(Added);
+					Mesh->Mesh      = Context.DefaultCubeMesh;
+					Mesh->MeshAsset = "primitive:cube";
 				}
 			}
 		});

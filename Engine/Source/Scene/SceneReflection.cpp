@@ -14,13 +14,17 @@ void RegisterSceneTypes()
 
 	FTypeRegistry& Registry = FTypeRegistry::Get();
 
-	// 이름/계층은 인스펙터가 별도로 다루므로 목록에서 숨기고 제거 불가
+	// 이름/계층은 인스펙터와 직렬화가 별도로 다루므로 목록에서 숨기고 제거 불가
 	Registry.RegisterType<FNameComponent>("NameComponent", "이름")
 		.Property(&FNameComponent::Name, "Name", "이름")
 		.AsComponent(false)
 		.Hide();
 
 	Registry.RegisterType<FHierarchyComponent>("HierarchyComponent", "계층")
+		.AsComponent(false)
+		.Hide();
+
+	Registry.RegisterType<FTransientComponent>("TransientComponent", "생성됨")
 		.AsComponent(false)
 		.Hide();
 
@@ -31,10 +35,17 @@ void RegisterSceneTypes()
 		.Property(&FTransformComponent::Scale, "Scale", "스케일").Range(0.001f, 1000.0f, 0.02f)
 		.AsComponent(false);
 
+	// 런타임 핸들은 Transient, 에셋 참조 문자열이 직렬화 대상
 	Registry.RegisterType<FStaticMeshComponent>("StaticMeshComponent", "스태틱 메시")
-		.Property(&FStaticMeshComponent::Mesh, "Mesh", "메시")
-		.Property(&FStaticMeshComponent::Material, "Material", "머티리얼")
+		.Property(&FStaticMeshComponent::Mesh, "Mesh", "메시", PF_Transient | PF_ReadOnly)
+		.Property(&FStaticMeshComponent::Material, "Material", "머티리얼", PF_Transient | PF_ReadOnly)
 		.Property(&FStaticMeshComponent::bVisible, "Visible", "표시")
+		.Property(&FStaticMeshComponent::MeshAsset, "MeshAsset", "메시 에셋", PF_ReadOnly)
+		.Property(&FStaticMeshComponent::MaterialAsset, "MaterialAsset", "머티리얼 에셋", PF_ReadOnly)
+		.AsComponent();
+
+	Registry.RegisterType<FModelComponent>("ModelComponent", "모델")
+		.Property(&FModelComponent::AssetPath, "AssetPath", "에셋 경로", PF_ReadOnly)
 		.AsComponent();
 
 	Registry.RegisterType<FDirectionalLightComponent>("DirectionalLightComponent", "방향광")

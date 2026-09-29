@@ -24,6 +24,8 @@ namespace
 	}
 
 	bool IsModelExtension(const std::string& Extension) { return Extension == ".glb" || Extension == ".gltf"; }
+	bool IsSceneExtension(const std::string& Extension) { return Extension == ".escene"; }
+	bool IsMaterialExtension(const std::string& Extension) { return Extension == ".emat"; }
 	bool IsImageExtension(const std::string& Extension)
 	{
 		return Extension == ".png" || Extension == ".jpg" || Extension == ".jpeg" || Extension == ".tga" || Extension == ".bmp";
@@ -118,6 +120,17 @@ void FContentBrowserPanel::Draw(FEditorContext& Context)
 							E_LOG(LogEditor, Error, "모델 로드 실패: {}", Entry.DisplayName);
 						}
 					}
+				}
+				else if (IsSceneExtension(Entry.Extension))
+				{
+					if (ImGui::SmallButton("열기") && Context.OpenSceneRequest)
+					{
+						Context.OpenSceneRequest(Entry.Path);
+					}
+				}
+				else if (IsMaterialExtension(Entry.Extension))
+				{
+					ImGui::TextDisabled("머티리얼");
 				}
 				else if (IsImageExtension(Entry.Extension))
 				{

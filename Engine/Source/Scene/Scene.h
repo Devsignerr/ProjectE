@@ -20,6 +20,12 @@ public:
 	// 자식까지 재귀 파괴
 	void DestroyEntity(FEntity Entity);
 
+	// 모든 엔티티 파괴
+	void Clear();
+
+	// 루트 엔티티(부모 없음) 목록을 생성 순서(풀 순서)대로 반환
+	std::vector<FEntity> GetRootEntities() const;
+
 	// Parent가 NullEntity면 루트로 만든다. 순환은 거부한다(로그 후 무시).
 	void SetParent(FEntity Child, FEntity Parent);
 

@@ -56,7 +56,8 @@ struct FModelData
 
 // cgltf 기반 glTF/GLB 로더.
 // 좌표 변환: glTF(오른손, +Y 위, +Z 앞/시청자 방향, +X 오른쪽) → 엔진(왼손, +Z 위, +X 앞, +Y 오른쪽)
-//   엔진 = (-glTF.z, glTF.x, glTF.y). 반사 변환이므로 glTF의 CCW 앞면이 엔진의 CW 앞면이 된다(인덱스 순서 유지).
+//   엔진 = (-glTF.z, glTF.x, glTF.y). 반사 변환이지만 엔진 카메라 규약도 반사라 화면상 와인딩은 유지되므로,
+//   glTF의 CCW 앞면을 엔진의 CW 앞면으로 맞추기 위해 삼각형 인덱스 순서를 뒤집는다.
 struct FGltfLoader
 {
 	static bool Load(const std::filesystem::path& Path, FModelData& OutModel);

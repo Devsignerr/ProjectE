@@ -86,8 +86,10 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 
 			DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
 
-			// 기즈모 위가 아닌 곳을 좌클릭하면 선택
-			if (bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택
+			const ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
+			const bool   bDragged  = (DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y) > 16.0f;
+			if (bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
 			    !Input.IsMouseButtonDown(EMouseButton::Right))
 			{
 				const ImVec2 Mouse = ImGui::GetMousePos();

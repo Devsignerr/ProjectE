@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
 
 #pragma warning(push, 0)
 #define CGLTF_IMPLEMENTATION
@@ -222,6 +223,13 @@ namespace
 			{
 				OutMesh.Data.Indices[Index] = static_cast<uint32>(Index);
 			}
+		}
+
+		// 와인딩 반전: glTF는 CCW 앞면. 축 변환(반사)과 엔진 카메라 규약(오른쪽=+Y, 역시 반사)이 상쇄되어
+		// 화면상 방향이 그대로 유지되므로, 엔진의 CW 앞면 규약에 맞추려면 삼각형마다 뒤 두 인덱스를 교환한다.
+		for (size_t Index = 0; Index + 2 < OutMesh.Data.Indices.size(); Index += 3)
+		{
+			std::swap(OutMesh.Data.Indices[Index + 1], OutMesh.Data.Indices[Index + 2]);
 		}
 
 		if (NormalAccessor == nullptr)

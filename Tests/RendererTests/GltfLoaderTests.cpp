@@ -143,6 +143,15 @@ E_TEST(Gltf_LoadTriangleFile)
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[0].Normal, FVector3(-1, 0, 0), Tol);
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[1].UV, FVector2(1, 0), Tol);
 
+	// 와인딩: 엔진 규약(CW 앞면)에서는 Cross(E1, E2)가 법선과 같은 방향 (FPrimitiveShapes 큐브와 동일)
+	{
+		const FVector3& P0 = Mesh.Data.Vertices[Mesh.Data.Indices[0]].Position;
+		const FVector3& P1 = Mesh.Data.Vertices[Mesh.Data.Indices[1]].Position;
+		const FVector3& P2 = Mesh.Data.Vertices[Mesh.Data.Indices[2]].Position;
+		const FVector3  GeometricNormal = FVector3::Cross(P1 - P0, P2 - P0);
+		E_EXPECT_TRUE(FVector3::Dot(GeometricNormal, Mesh.Data.Vertices[0].Normal) > 0.0f);
+	}
+
 	// 노드: Root 이동 (1,2,3) → (-3,1,2), 자식 Tri에 메시, 스케일 (2,3,4) → (4,2,3)
 	const FModelNode& Root = Model.Nodes[Model.RootNodes[0]];
 	E_EXPECT_TRUE(Root.Name == "Root");
@@ -198,5 +207,23 @@ E_TEST(Gltf_LoadDamagedHelmetIfPresent)
 		{
 			E_EXPECT_TRUE(Mesh.Data.Vertices[V].Normal.IsNormalized(1.0e-2f));
 		}
+
+		// 삼각형 대부분의 기하 법선이 정점 법선과 같은 방향이어야 한다 (와인딩 규약 검증)
+		size_t Agree = 0;
+		size_t Total = 0;
+		for (size_t Index = 0; Index + 2 < Mesh.Data.Indices.size(); Index += 3)
+		{
+			const FVertex& V0 = Mesh.Data.Vertices[Mesh.Data.Indices[Index + 0]];
+			const FVertex& V1 = Mesh.Data.Vertices[Mesh.Data.Indices[Index + 1]];
+			const FVertex& V2 = Mesh.Data.Vertices[Mesh.Data.Indices[Index + 2]];
+			const FVector3 GeometricNormal = FVector3::Cross(V1.Position - V0.Position, V2.Position - V0.Position);
+			const FVector3 AverageNormal   = V0.Normal + V1.Normal + V2.Normal;
+			if (!GeometricNormal.IsNearlyZero(1.0e-12f))
+			{
+				++Total;
+				Agree += FVector3::Dot(GeometricNormal, AverageNormal) > 0.0f ? 1 : 0;
+			}
+		}
+		E_EXPECT_TRUE(Total > 0 && Agree * 10 > Total * 9);
 	}
 }

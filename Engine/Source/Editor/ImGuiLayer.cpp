@@ -1,12 +1,15 @@
 #include "Editor/ImGuiLayer.h"
 
+// ImGuizmo.h는 imgui.h 다음, Windows.h(열거형 이름 충돌)보다 먼저 포함
+#include <imgui.h>
+#include <ImGuizmo.h>
+
 #include "Core/Log.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Core/Window.h"
 #include "RHI/D3D12/D3D12RHI.h"
 
-#include <imgui.h>
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
 
@@ -141,6 +144,7 @@ void FImGuiLayer::BeginFrame()
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame(); // 매 프레임 필수 — 없으면 기즈모 상호작용이 동작하지 않는다
 
 	// 메인 창 전체를 도크스페이스로 (중앙은 뷰포트가 차지하도록 패스스루)
 	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);

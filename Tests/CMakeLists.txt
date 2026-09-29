@@ -4,4 +4,7 @@ add_subdirectory(RhiTests)
 add_subdirectory(AudioTests)
 add_subdirectory(EditorTests)
 add_subdirectory(ScriptingTests)
+if(E_ENGINE_SHARED)
+    add_subdirectory(GameModuleTests) # 게임 모듈은 공유 빌드에서만
+endif()
 add_subdirectory(PhysicsTests)

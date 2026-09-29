@@ -63,6 +63,7 @@ struct FTypeInfo
 	std::string DisplayName;
 	uint32      Flags  = TF_None;
 	uint32      TypeId = 0; // 레지스트리 내 순번
+	std::string Owner;      // 등록한 모듈 ("Engine" 또는 게임 모듈 이름) — 모듈 언로드 시 함께 제거
 	size_t      Size   = 0;
 	size_t      Alignment = 0;
 
@@ -132,6 +133,12 @@ public:
 
 	const std::vector<std::unique_ptr<FTypeInfo>>& GetTypes() const { return Types; }
 
+	// 이후 등록되는 타입의 소유자 (게임 모듈 로드 중에는 모듈 이름, 기본 "Engine")
+	void               SetRegistrationOwner(std::string Owner) { CurrentOwner = std::move(Owner); }
+	const std::string& GetRegistrationOwner() const { return CurrentOwner; }
+	// 소유자가 같은 타입 제거 (게임 모듈 언로드 전: 등록 정보의 함수 포인터가 모듈 코드를 가리키므로). 제거한 수 반환
+	size_t RemoveTypesByOwner(std::string_view Owner);
+
 	// 컴포넌트 타입만 등록 순서대로 순회: Func(const FTypeInfo&)
 	template <typename TFunc>
 	void ForEachComponentType(TFunc&& Func) const
@@ -149,6 +156,7 @@ private:
 	FTypeInfo& AddType(std::type_index Index, std::string Name, std::string DisplayName, size_t Size, size_t Alignment);
 
 	std::vector<std::unique_ptr<FTypeInfo>>       Types;
+	std::string                                   CurrentOwner = "Engine";
 	std::unordered_map<std::string, FTypeInfo*>   ByName;
 	std::unordered_map<std::type_index, FTypeInfo*> ByType;
 };

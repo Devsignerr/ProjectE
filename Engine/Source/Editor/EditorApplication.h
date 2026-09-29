@@ -21,6 +21,7 @@
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
+#include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 
@@ -121,6 +122,9 @@ private:
 
 	// 물리도 플레이 중에만 (FPlayMode가 Begin/Update/End)
 	FPhysicsSystem Physics;
+
+	// 프로젝트 C++ 게임 모듈: 타입은 시작 시 등록, 시스템은 플레이 중에만 (FPlayMode)
+	FGameModuleHost GameModule;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

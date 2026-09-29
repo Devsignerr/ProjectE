@@ -145,16 +145,16 @@
 - [x] 2) (서브에이전트) 물리: Jolt 5.6.0(MIT, 태그 zip SHA256 고정), Physics 모듈(`FPhysicsWorld` cm↔m 변환·축/쿼터니언 그대로(해밀턴 곱 동일, 테스트로 검증), `FPhysicsSystem` 60Hz 고정 스텝 + 보간, 부모 있는 엔티티 로컬 역변환, 키네마틱 이동, 스크립트 텔레포트 감지), RigidBody/Box/Sphere/Capsule 콜라이더 컴포넌트(`RegisterPhysicsTypes()`), Lua `AddForce/AddImpulse/SetVelocity/GetVelocity`·`Physics.Raycast`(`FScriptPhysicsHooks`), 에디터 플레이 모드·런타임 연동, `primitive:sphere`, `Demo_Physics.escene` + `Launcher.lua`, PhysicsTests 12개. 한계: 엔티티당 콜라이더 1개, 충돌 콜백/트리거 없음, 에디터 콜라이더 표시 없음
 - [x] 3) 오디오(miniaudio 0.11.25): Audio 모듈(FAudioEngine/FAudioSystem/FAudioSourceComponent), 3D 공간화(청자 공간 변환), 런타임 연동 + `--scene`, 샘플 Hum/Chime.wav(자체 생성), `Demo_Audio.escene`, AudioTests 10개 완료. 에디터 플레이 모드 재생(보는 카메라가 청자, 정지 시 해제), Lua `entity:PlaySound/StopSound`, `Audio.PlayOneShot`(Scripting은 `FScriptAudioHooks`로 Audio에 비의존)
 - [x] 4) 텍스처 압축: `TextureCompression`(CPU 밉 — sRGB 선형 평균/노멀 재정규화, BC7/BC5/BC4, bc7enc_rdo), `FD3D12Texture::Init2DFromMips`, 용도별 쿠킹(`*.color|linear|normal|mask.etex`), .emat 슬롯 용도, 셰이더 노멀 Z 재구성, Cook 도구 용도 수집 완료. 배포 패키지: 쿠킹 DXIL + Shaders.json(엔진 마커)만, dxcompiler.dll 지연 로드(없으면 쿠킹 셰이더 전용), 쿠킹본 있는 원본 에셋 제외(`-IncludeSources`로 포함) — DXC 없는 패키지 실행 검증 완료. 모델 내장 이미지도 머티리얼 용도별 압축(`CompressModelImages`, ModelVersion 5) — DamagedHelmet 쿠킹 80MB → 26MB
-- [ ] 5) 엔진 DLL화 + 게임 모듈
+- [x] 5) 엔진 DLL화 + 게임 모듈: `ProjectEEngine.dll`(런타임 모듈 OBJECT → 공유 라이브러리, export 24k, `E_ENGINE_SHARED` OFF면 정적), ECS 타입 ID 엔진 DLL 전역화, `E_ENGINE_API`/엔진 로그 카테고리, `IGameModule` + `FGameModuleHost`(버전 검사, 소유자별 타입 제거), `.eproject "GameModule"`, `Projects/Sample/Source` → `SampleGame.dll`(Spinner/Hover 컴포넌트 + C++ 시스템), 에디터 플레이 모드/런타임 연동, `Demo_GameModule.escene`, GameModuleTests(실제 DLL 로드·타입 ID 공유·직렬화·언로드), 패키지에 엔진/게임 DLL 포함(37.8MB). 남음: 게임 모듈 핫 리로드, 설치형 배포(find_package)
 - [ ] 후속: 쿠킹 셰이더 캐시를 타임스탬프 대신 소스+include 내용 해시로 검증 (머지 직후 스킨 아웃라인 VS가 오래된 DXIL로 남아 보이지 않던 사례 — 재컴파일 후 정상, 경위 미확정)
 
 ## Phase 7 — 게임 시스템
 
-- [ ] 물리 (자체 충돌 감지 또는 Jolt 도입 검토)
-- [ ] 오디오
-- [ ] 스크립팅: Lua 스크립트 컴포넌트 (sol2 바인딩, 리플렉션 기반 자동 노출, 파일 변경 감지 핫 리로드)
-- [ ] 엔진 DLL화: 엔진 모듈을 공유 라이브러리로 전환, 공개 API 내보내기 매크로(`E_CORE_API` 등)
-- [ ] 게임 모듈 분리: `Projects/<이름>/Source/` → `<이름>Game.dll`, 에디터/런타임이 `.eproject` 기준으로 로드, 게임 모듈이 컴포넌트/시스템을 리플렉션에 등록
+- [x] 물리 (Jolt — 야간 작업 2)
+- [x] 오디오 (miniaudio — 야간 작업 3)
+- [x] 스크립팅: Lua 스크립트 컴포넌트 (sol2 바인딩, 리플렉션 기반 자동 노출, 파일 변경 감지 핫 리로드)
+- [x] 엔진 DLL화: 엔진 모듈을 공유 라이브러리로 전환, 공개 API 내보내기 매크로(`E_CORE_API` 등)
+- [x] 게임 모듈 분리: `Projects/<이름>/Source/` → `<이름>Game.dll`, 에디터/런타임이 `.eproject` 기준으로 로드, 게임 모듈이 컴포넌트/시스템을 리플렉션에 등록
 - [ ] 설치형 엔진 배포: 헤더 + lib/dll + CMake 패키지 설정(`find_package(ProjectE)`), 게임 프로젝트는 게임 모듈만 빌드
 - [ ] 게임 모듈 핫 리로드 (에디터 실행 중 게임 DLL 재빌드·교체)
 - [ ] 패키징 고도화: 쿠킹 DXIL만 배포(셰이더 소스/DXC 제거), 런타임 파일 로그

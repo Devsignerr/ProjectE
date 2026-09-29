@@ -1,0 +1,269 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.9599999785423279,
+            0.8999999761581421
+          ],
+          "Intensity": 3.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.000000149011612
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.20000000298023224
+          ]
+        }
+      },
+      "Name": "Ground",
+      "Parent": -1
+    },
+    {
+      "Name": "SpinningHelmet",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "SpinnerComponent": {
+          "DegreesPerSecond": 45.0,
+          "Axis": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "HoverComponent": {
+          "Amplitude": 15.0,
+          "Frequency": 0.4
+        }
+      }
+    },
+    {
+      "Name": "SpinCube0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            -250.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "SpinnerComponent": {
+          "DegreesPerSecond": 90.0,
+          "Axis": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        "HoverComponent": {
+          "Amplitude": 25.0,
+          "Frequency": 0.3
+        }
+      }
+    },
+    {
+      "Name": "SpinCube1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            250.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "SpinnerComponent": {
+          "DegreesPerSecond": -120.0,
+          "Axis": [
+            1.0,
+            0.0,
+            0.0
+          ]
+        },
+        "HoverComponent": {
+          "Amplitude": 25.0,
+          "Frequency": 0.4
+        }
+      }
+    },
+    {
+      "Name": "SpinCube2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250.0,
+            -250.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "SpinnerComponent": {
+          "DegreesPerSecond": 180.0,
+          "Axis": [
+            0.0,
+            1.0,
+            0.0
+          ]
+        },
+        "HoverComponent": {
+          "Amplitude": 25.0,
+          "Frequency": 0.5
+        }
+      }
+    },
+    {
+      "Name": "SpinCube3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250.0,
+            250.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "SpinnerComponent": {
+          "DegreesPerSecond": 60.0,
+          "Axis": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "HoverComponent": {
+          "Amplitude": 25.0,
+          "Frequency": 0.6000000000000001
+        }
+      }
+    }
+  ]
+}

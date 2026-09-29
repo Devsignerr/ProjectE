@@ -43,6 +43,7 @@ FTypeInfo& FTypeRegistry::AddType(std::type_index Index, std::string Name, std::
 	Info->TypeId      = static_cast<uint32>(Types.size());
 	Info->Size        = Size;
 	Info->Alignment   = Alignment;
+	Info->Owner       = CurrentOwner;
 
 	FTypeInfo& Result = *Info;
 	ByName[Result.Name] = &Result;
@@ -51,4 +52,27 @@ FTypeInfo& FTypeRegistry::AddType(std::type_index Index, std::string Name, std::
 
 	E_LOG(LogCore, Verbose, "리플렉션 타입 등록: {} ({} bytes)", Result.Name, Result.Size);
 	return Result;
+}
+
+size_t FTypeRegistry::RemoveTypesByOwner(std::string_view Owner)
+{
+	size_t Removed = 0;
+	for (auto It = Types.begin(); It != Types.end();)
+	{
+		FTypeInfo& Type = **It;
+		if (Type.Owner != Owner)
+		{
+			++It;
+			continue;
+		}
+		ByName.erase(Type.Name);
+		std::erase_if(ByType, [&Type](const auto& Entry) { return Entry.second == &Type; });
+		It = Types.erase(It);
+		++Removed;
+	}
+	for (size_t Index = 0; Index < Types.size(); ++Index)
+	{
+		Types[Index]->TypeId = static_cast<uint32>(Index);
+	}
+	return Removed;
 }

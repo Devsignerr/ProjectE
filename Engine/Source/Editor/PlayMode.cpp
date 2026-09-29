@@ -5,6 +5,7 @@
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Renderer/SceneCamera.h"
+#include "Scene/GameModuleHost.h"
 #include "Scripting/ScriptSystem.h"
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
@@ -39,6 +40,10 @@ void FPlayMode::Play(FEditorContext& Context)
 	{
 		Physics->Begin();
 	}
+	if (GameModule != nullptr)
+	{
+		GameModule->BeginPlay(PlayScene);
+	}
 	Scripts->BeginPlay(PlayScene);
 	E_LOG(LogEditor, Display, "플레이 시작 (엔티티 {}개)", PlayScene.GetRegistry().GetAliveCount());
 }
@@ -51,6 +56,10 @@ void FPlayMode::Stop(FEditorContext& Context)
 	}
 
 	Scripts->EndPlay();
+	if (GameModule != nullptr)
+	{
+		GameModule->EndPlay(PlayScene);
+	}
 	if (Physics != nullptr)
 	{
 		Physics->End();
@@ -111,6 +120,10 @@ bool FPlayMode::Tick(FEditorContext& Context, float DeltaSeconds, const FInput* 
 	{
 		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
 		FSceneAssetResolver::Resolve(PlayScene, *Context.Resources, Context.ContentDirectory);
+	}
+	if (GameModule != nullptr)
+	{
+		GameModule->Update(PlayScene, StepDelta);
 	}
 	if (Physics != nullptr)
 	{

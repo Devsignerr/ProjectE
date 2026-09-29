@@ -6,6 +6,7 @@
 #include "Scene/SceneCloner.h"
 
 class FInput;
+class FGameModuleHost;
 class FPhysicsSystem;
 class FScriptSystem;
 struct FEditorContext;
@@ -30,6 +31,8 @@ public:
 
 	// EditScene/Scripts/Physics는 FPlayMode보다 오래 산다 (비소유). Physics는 없어도 된다
 	void Init(FScene& InEditScene, FScriptSystem& InScripts, FPhysicsSystem* InPhysics = nullptr);
+	// 게임 모듈 C++ 시스템 (플레이 시작/정지/프레임). 없어도 된다 (비소유)
+	void SetGameModule(FGameModuleHost* InGameModule) { GameModule = InGameModule; }
 
 	void Play(FEditorContext& Context);
 	void Stop(FEditorContext& Context);
@@ -54,6 +57,7 @@ private:
 	FScene*        EditScene = nullptr;
 	FScriptSystem* Scripts   = nullptr;
 	FPhysicsSystem* Physics  = nullptr;
+	FGameModuleHost* GameModule = nullptr;
 
 	FScene                   PlayScene;
 	FSceneCloner::FEntityMap EntityMap;      // 편집 씬 → 플레이 씬

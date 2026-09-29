@@ -51,6 +51,8 @@
 - ImGui: UI는 `FImGuiLayer::BeginFrame()`~`EndFrame()` 사이에서만 기술하고, UI 드로우는 UNORM 백버퍼 뷰(`SetRenderTargetToBackBuffer(true)`)에 그린다. 뷰포트에 표시할 오프스크린 타깃은 `FD3D12RenderTarget`(UNORM SRV). `ImGuizmo.h`는 `imgui.h` 다음, Windows 헤더보다 먼저 포함
 - 패널은 `FEditorContext`(비소유 포인터 + 선택 상태)만 받는 `Draw()` 클래스로 만들고, 씬 구조 변경(부모 변경/삭제)은 순회가 끝난 뒤 적용한다
 - 에디터 씬 편집 코드는 변경 직후 `Context.MarkEdited("라벨")`을 호출한다 → 조작(드래그/텍스트 입력/기즈모)이 끝나면 씬 JSON 스냅샷이 Undo 한 단계로 커밋된다. 선택은 `Context.Select*`/`ToggleSelection`/`SelectMany`로만 바꾼다(`SelectedEntity`=주 선택, `Selection`=전체). 여러 선택 대상 명령은 `FEditorActions`/`FSceneEditOps`(최상위 필터)를 쓴다. 에디터 인자 `--select A,B`(같은 이름 모두), `--verify-undo`(복제/Undo/Redo 자동 검증)
+- 엔진 DLL: 런타임 모듈(Core/RHI/Scene/Renderer/Audio/Physics/Scripting)은 `ProjectEEngine.dll` 하나로 빌드된다(`E_ENGINE_SHARED`, 기본 ON — OBJECT 라이브러리를 DLL에 링크, 함수는 `WINDOWS_EXPORT_ALL_SYMBOLS`로 자동 내보냄). 실행 파일/테스트/게임 모듈은 **`ProjectE::Engine`만 링크**한다(모듈 타깃 직접 링크 금지 — 객체 중복). DLL 밖에서 접근하는 **전역 데이터**는 `E_ENGINE_API`(Core/EngineApi.h), 엔진 공개 헤더의 로그 카테고리는 `E_DECLARE_ENGINE_LOG_CATEGORY`. 헤더 인라인 템플릿의 함수 지역 static처럼 바이너리마다 따로 생기는 상태에 전역 의미를 두지 않는다(예: ECS 타입 ID는 `FRegistry::AssignComponentTypeId`가 엔진 DLL에서 부여)
+- 게임 모듈: `Projects/<이름>/Source/CMakeLists.txt` → `<이름>.dll`(SHARED, `ProjectE::Engine` 링크, `E_GAME_MODULE_TARGETS`에 추가). `.eproject`의 `"GameModule"`로 지정하면 에디터/런타임이 실행 파일 폴더에서 로드(`FGameModuleHost`). `IGameModule`(Scene/GameModule.h) + `E_IMPLEMENT_GAME_MODULE`: `OnLoad`에서 컴포넌트 리플렉션 등록(인스펙터/직렬화/Lua 자동 노출), `OnBeginPlay/OnUpdate/OnEndPlay`(에디터는 플레이 중에만, 스크립트 뒤·물리 앞). 언로드 시 모듈 소유 타입 제거, DLL은 프로세스 종료까지 유지
 - 병렬 작업: 독립 트랙은 서브에이전트를 git worktree로 띄워 브랜치에 커밋시키고 메인이 머지한다. `.claude/worktrees/`는 gitignore. 트랙마다 수정 허용 범위를 명시할 것
 - 경고 = 에러 (`/W4 /WX`). 경고를 억제하지 말고 원인을 고친다
 - 로그: `E_LOG(Category, Verbosity, "포맷 {}", 인자)` — std::format 문법. 카테고리는 헤더에서 `E_DECLARE_LOG_CATEGORY`, 하나의 .cpp에서 `E_DEFINE_LOG_CATEGORY`
@@ -76,7 +78,7 @@ Engine/Source/
   Core/Containers/ THandle(태그별 세대 핸들), TResourcePool
   Core/Reflection/ FTypeRegistry/FTypeInfo/FPropertyInfo, TTypeBuilder — 인스펙터·직렬화·스크립트 바인딩 공용 타입 정보
   Core/Testing/   경량 단위 테스트 프레임워크
-  Scene/          FScene(계층/트랜스폼 갱신), Components.h(Name/Transform/Hierarchy/StaticMesh/DirectionalLight), ResourceHandles.h
+  Scene/          FScene(계층/트랜스폼 갱신), Components.h(Name/Transform/Hierarchy/StaticMesh/DirectionalLight), ResourceHandles.h, GameModule.h/GameModuleHost(게임 모듈 DLL)
   RHI/D3D12/      디바이스, 커맨드 큐, 디스크립터 힙/할당자, 스왑체인, 깊이 버퍼, 동적 업로드 버퍼,
                   RHI 파사드, 셰이더 컴파일러(DXC), 루트 시그니처, PSO, 정적 버퍼, 텍스처, 밉 생성기
   RHI/ShaderLibrary.h  FShaderLibrary: 셰이더 바이트코드 공급(메모리 캐시 → Engine/Shaders/Cooked DXIL → DXC 컴파일). 셰이더는 항상 이걸로 얻는다
@@ -94,7 +96,8 @@ Editor/Source/    ProjectEEditor 실행 파일 (main만)
 Runtime/Source/   ProjectERuntime 게임 런타임 실행 파일 (창 서브시스템, `--project`로 프로젝트 지정)
 Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
-Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
+Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋, Source/ = SampleGame.dll 게임 모듈). 인자 없이 실행하면 기본으로 열린다
+Engine/EngineDll.cpp  ProjectEEngine.dll 진입 단위 (엔진 모듈 객체가 여기로 링크됨)
 Tests/            CoreTests, RendererTests, RhiTests, AudioTests, EditorTests, ScriptingTests, PhysicsTests (CTest 등록)
 CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2, Jolt Physics
 Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)

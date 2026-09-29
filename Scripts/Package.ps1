@@ -33,7 +33,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "빌드 실패" }
 
     $BinDir = Join-Path $RootDir "Build\ninja-$($Config.ToLower())\Bin"
-    foreach ($Required in @("ProjectERuntime.exe", "ProjectECook.exe")) {
+    # 게임 모듈 (.eproject "GameModule")
+    $GameModule = (Get-Content $ProjectFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json).GameModule
+    $RequiredFiles = @("ProjectERuntime.exe", "ProjectECook.exe", "ProjectEEngine.dll")
+    if ($GameModule) { $RequiredFiles += "$GameModule.dll" }
+    foreach ($Required in $RequiredFiles) {
         if (-not (Test-Path (Join-Path $BinDir $Required))) { throw "빌드 산출물이 없습니다: $Required" }
     }
 
@@ -49,6 +53,8 @@ try {
     New-Item -ItemType Directory -Force $PackageDir | Out-Null
 
     Copy-Item (Join-Path $BinDir "ProjectERuntime.exe") $PackageDir
+    Copy-Item (Join-Path $BinDir "ProjectEEngine.dll") $PackageDir
+    if ($GameModule) { Copy-Item (Join-Path $BinDir "$GameModule.dll") $PackageDir }
 
     # 엔진 셰이더: Shaders.json(FPaths 엔진 마커) + 이 구성의 쿠킹 DXIL (Debug 빌드는 *.debug.dxil을 찾는다)
     $EngineShaderSrc = Join-Path $RootDir "Engine\Shaders"

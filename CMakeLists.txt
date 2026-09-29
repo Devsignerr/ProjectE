@@ -56,6 +56,22 @@ add_subdirectory(Editor)
 add_subdirectory(Runtime)
 add_subdirectory(Tools)
 
+# 프로젝트 게임 모듈 (Projects/<이름>/Source/CMakeLists.txt → <이름>Game.dll). 엔진 DLL 공유 빌드에서만 의미가 있다
+if(E_ENGINE_SHARED)
+    file(GLOB E_GAME_MODULE_DIRS LIST_DIRECTORIES true "${CMAKE_SOURCE_DIR}/Projects/*/Source")
+    foreach(_Dir IN LISTS E_GAME_MODULE_DIRS)
+        if(EXISTS "${_Dir}/CMakeLists.txt")
+            file(RELATIVE_PATH _Binary "${CMAKE_SOURCE_DIR}" "${_Dir}")
+            add_subdirectory("${_Dir}" "${CMAKE_BINARY_DIR}/${_Binary}")
+        endif()
+    endforeach()
+    get_property(_GameTargets GLOBAL PROPERTY E_GAME_MODULE_TARGETS)
+    if(_GameTargets)
+        add_dependencies(ProjectEEditor ${_GameTargets}) # F5/빌드 시 게임 모듈도 함께 빌드
+        add_dependencies(ProjectERuntime ${_GameTargets})
+    endif()
+endif()
+
 if(E_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)

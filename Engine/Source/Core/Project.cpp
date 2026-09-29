@@ -34,6 +34,7 @@ bool FProjectDescriptor::LoadFromFile(const std::filesystem::path& Path)
 	Name          = Json.value("Name", std::string());
 	EngineVersion = Json.value("EngineVersion", std::string("0.1.0"));
 	DefaultScene  = Json.value("DefaultScene", std::string());
+	GameModule    = Json.value("GameModule", std::string());
 
 	if (Name.empty())
 	{
@@ -52,6 +53,10 @@ bool FProjectDescriptor::SaveToFile(const std::filesystem::path& Path) const
 	Json["Name"]          = Name;
 	Json["EngineVersion"] = EngineVersion;
 	Json["DefaultScene"]  = DefaultScene;
+	if (!GameModule.empty())
+	{
+		Json["GameModule"] = GameModule;
+	}
 
 	std::ofstream File(Path, std::ios::binary | std::ios::trunc);
 	if (!File)

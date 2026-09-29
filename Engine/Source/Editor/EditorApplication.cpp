@@ -68,6 +68,11 @@ bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
+	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
+	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
+	{
+		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));
+	}
 
 	FD3D12RHIDesc RhiDesc;
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
@@ -130,6 +135,7 @@ bool FEditorApplication::OnInit()
 		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
 	});
 	PlayMode.Init(Scene, Scripts, &Physics);
+	PlayMode.SetGameModule(&GameModule);
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
@@ -312,6 +318,7 @@ void FEditorApplication::OnShutdown()
 		Rhi->Shutdown();
 		Rhi.reset();
 	}
+	GameModule.Unload(); // 등록 타입 제거 (씬의 게임 컴포넌트는 앱 소멸 시 정리, DLL은 프로세스 종료까지 유지)
 }
 
 // ---------------------------------------------------------------- 씬 파일

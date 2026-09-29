@@ -141,7 +141,7 @@
 - [x] 0b) 센티미터 전환: `FUnits`(Core/Math/Units.h), glTF 임포트 ×100(`FGltfLoader::ImportScale`, 방향 벡터 제외), `ModelVersion` 3, 기본 큐브 100cm, 카메라 근/원 10/100000, 플라이 속도 500cm/s, 그림자 거리 6000/5000, Main.escene·코드 씬 위치 ×100. 크래시 핸들러(`FCrashHandler`: SEH 예외 코드 + 심볼 콜스택 → stderr/로그) 추가
 - [x] 1a) (서브에이전트) 스켈레탈 애니메이션: glTF 스킨/애니메이션 임포트(IBM 이동 ×100), GPU 스키닝(메인+그림자+아웃라인), `FAnimationComponent`/`FAnimationSystem`(재생/루프/속도/크로스페이드/루트 모션, Lua용 API), ModelVersion 4, Khronos Fox(CC-BY) + `Demo_Animation.escene`, `--scene` 인자, AnimationTests. 한계: 클립 선택은 텍스트, 피킹은 바인드 포즈 경계, 모프 타깃 미지원
 - [~] 1b) (서브에이전트) Lua 스크립팅 + 에디터 플레이 모드
-- [~] 1c) (서브에이전트) 에디터 편의: Undo/Redo, 그리드·축, 스냅, 복제, 다중 선택, 카메라 저장
+- [x] 1c) (서브에이전트) 에디터 편의: 스냅샷 Undo/Redo(100단계, 드래그 1회=1단계, dirty `*`), 무한 그리드·축(Grid.hlsl), 스냅(10cm/15°/0.1, Ctrl 반전), 복제 Ctrl+D(리플렉션 서브트리 복제), 다중 선택(Ctrl/Shift), 에디터 카메라 저장 + F 포커스, `--select A,B`/`--verify-undo`, EditorTests. 한계: 머티리얼 편집은 Undo 제외, 대형 씬 스냅샷 비용
 - [ ] 2) 물리(Jolt) — 1b 머지 후
 - [~] 3) 오디오(miniaudio 0.11.25): Audio 모듈(FAudioEngine/FAudioSystem/FAudioSourceComponent), 3D 공간화(청자 공간 변환), 런타임 연동 + `--scene`, 샘플 Hum/Chime.wav(자체 생성), `Demo_Audio.escene`, AudioTests 10개 완료. 남음: 에디터 플레이 모드 연동·Lua 바인딩(1b 머지 후)
 - [x] 4) 텍스처 압축: `TextureCompression`(CPU 밉 — sRGB 선형 평균/노멀 재정규화, BC7/BC5/BC4, bc7enc_rdo), `FD3D12Texture::Init2DFromMips`, 용도별 쿠킹(`*.color|linear|normal|mask.etex`), .emat 슬롯 용도, 셰이더 노멀 Z 재구성, Cook 도구 용도 수집 완료. 배포 패키지: 쿠킹 DXIL + Shaders.json(엔진 마커)만, dxcompiler.dll 지연 로드(없으면 쿠킹 셰이더 전용), 쿠킹본 있는 원본 에셋 제외(`-IncludeSources`로 포함) — DXC 없는 패키지 실행 검증 완료. 모델 내장 이미지도 머티리얼 용도별 압축(`CompressModelImages`, ModelVersion 5) — DamagedHelmet 쿠킹 80MB → 26MB

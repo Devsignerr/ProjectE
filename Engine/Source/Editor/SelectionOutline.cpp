@@ -222,13 +222,22 @@ void FSelectionOutline::CollectOutlinedEntities(FScene& Scene, FEntity Root, std
 void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output,
                                const FSkinnedMeshPalette* SkinPalettes)
 {
+	Render(Scene, Resources, Camera, std::vector<FEntity>{ Selected }, Output, SkinPalettes);
+}
+
+void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const std::vector<FEntity>& Selected,
+                               const FRenderOutput& Output, const FSkinnedMeshPalette* SkinPalettes)
+{
 	if (Rhi == nullptr || !Output.IsValid() || Output.Format != CompositeFormat)
 	{
 		return;
 	}
 
 	Entities.clear();
-	CollectOutlinedEntities(Scene, Selected, Entities);
+	for (FEntity Root : Selected)
+	{
+		CollectOutlinedEntities(Scene, Root, Entities);
+	}
 	if (Entities.empty())
 	{
 		return;

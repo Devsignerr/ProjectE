@@ -4,6 +4,7 @@
 #include "Core/FileWatcher.h"
 #include "Editor/EditorContext.h"
 #include "Editor/ImGuiLayer.h"
+#include "Editor/ModelTemplateCache.h"
 #include "Editor/Panels/ContentBrowserPanel.h"
 #include "Editor/Panels/PostProcessPanel.h"
 #include "Editor/Panels/ShadowPanel.h"
@@ -11,6 +12,7 @@
 #include "Editor/Panels/HierarchyPanel.h"
 #include "Editor/Panels/InspectorPanel.h"
 #include "Editor/Panels/ViewportPanel.h"
+#include "Editor/UndoHistory.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
@@ -53,6 +55,18 @@ private:
 	void DrawStatsWindow();
 	void HandleShortcuts();
 
+	// ---- 실행 취소 (씬 스냅샷)
+	void ResetUndoHistory();                       // 씬 열기/새 씬 직후 기준 상태로
+	void CommitPendingEdit();                      // 조작이 끝난 편집을 Undo 단계로 기록
+	void UndoEdit();
+	void RedoEdit();
+	void RestoreSnapshot(const std::string& State); // 선택은 엔티티 경로로 복구
+	void DrawEditMenu();
+
+	// ---- 에디터 카메라 저장/복원 (Saved/EditorCamera.json)
+	void LoadEditorCamera();
+	void SaveEditorCamera() const;
+
 	// ---- 셰이더 핫 리로드 (개발 기능)
 	void PollShaderChanges();                         // 셰이더 디렉터리 변경 감지 → 무효화 → PSO 재생성
 	void ReloadAllShaders();                          // 강제 전체 재컴파일 (Ctrl+R)
@@ -80,6 +94,9 @@ private:
 	FOutputLogPanel      OutputLogPanel;
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
+
+	FUndoHistory        UndoHistory;
+	FModelTemplateCache ModelTemplates; // Undo 복원 시 모델 하위 노드 재사용
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

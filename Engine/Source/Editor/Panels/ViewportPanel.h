@@ -2,10 +2,12 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/Math/Math.h"
+#include "Editor/SnapSettings.h"
 
 #include <memory>
 
 class FD3D12RenderTarget;
+class FEditorGrid;
 class FSelectionOutline;
 class FInput;
 struct FEditorContext;
@@ -32,24 +34,27 @@ public:
 	// 선택 아웃라인 셰이더 핫 리로드
 	bool ReloadShaders(bool bForceRecompile);
 
+	// 선택 대상 전체가 보이도록 카메라를 물린다 (F). 선택이 없으면 아무것도 하지 않는다
+	void FocusSelection(FEditorContext& Context);
+
 	bool IsHovered() const { return bHovered; }
 	bool IsUsingGizmo() const { return bUsingGizmo; }
 	bool bOpen = true;
 
+	bool          bShowGrid = true;
+	FSnapSettings Snap;
+
 private:
-	enum class EGizmoOperation : uint8
-	{
-		Translate,
-		Rotate,
-		Scale,
-	};
+	using EGizmoOperation = ETransformTool;
 
 	void DrawToolbar();
+	void RenderGrid(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
 
 	std::unique_ptr<FD3D12RenderTarget> RenderTarget;
 	std::unique_ptr<FSelectionOutline>  SelectionOutline;
+	std::unique_ptr<FEditorGrid>        Grid;
 	uint32                              DesiredWidth  = 0;
 	uint32                              DesiredHeight = 0;
 

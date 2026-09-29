@@ -26,6 +26,8 @@
     { "File": "Ibl.hlsl", "Entry": "PrefilterCS", "Stage": "Compute" },
     { "File": "Ibl.hlsl", "Entry": "BrdfCS", "Stage": "Compute" },
     { "File": "Skybox.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "Skybox.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "Skybox.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "Grid.hlsl", "Entry": "GridVS", "Stage": "Vertex" },
+    { "File": "Grid.hlsl", "Entry": "GridPS", "Stage": "Pixel" }
   ]
 }

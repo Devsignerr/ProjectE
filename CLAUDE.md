@@ -50,6 +50,7 @@
 - 테스트 매크로 인자에 템플릿 쉼표(`View<A, B>()`)를 직접 넣지 말고 지역 변수로 받는다
 - ImGui: UI는 `FImGuiLayer::BeginFrame()`~`EndFrame()` 사이에서만 기술하고, UI 드로우는 UNORM 백버퍼 뷰(`SetRenderTargetToBackBuffer(true)`)에 그린다. 뷰포트에 표시할 오프스크린 타깃은 `FD3D12RenderTarget`(UNORM SRV). `ImGuizmo.h`는 `imgui.h` 다음, Windows 헤더보다 먼저 포함
 - 패널은 `FEditorContext`(비소유 포인터 + 선택 상태)만 받는 `Draw()` 클래스로 만들고, 씬 구조 변경(부모 변경/삭제)은 순회가 끝난 뒤 적용한다
+- 에디터 씬 편집 코드는 변경 직후 `Context.MarkEdited("라벨")`을 호출한다 → 조작(드래그/텍스트 입력/기즈모)이 끝나면 씬 JSON 스냅샷이 Undo 한 단계로 커밋된다. 선택은 `Context.Select*`/`ToggleSelection`/`SelectMany`로만 바꾼다(`SelectedEntity`=주 선택, `Selection`=전체). 여러 선택 대상 명령은 `FEditorActions`/`FSceneEditOps`(최상위 필터)를 쓴다. 에디터 인자 `--select A,B`(같은 이름 모두), `--verify-undo`(복제/Undo/Redo 자동 검증)
 - 병렬 작업: 독립 트랙은 서브에이전트를 git worktree로 띄워 브랜치에 커밋시키고 메인이 머지한다. `.claude/worktrees/`는 gitignore. 트랙마다 수정 허용 범위를 명시할 것
 - 경고 = 에러 (`/W4 /WX`). 경고를 억제하지 말고 원인을 고친다
 - 로그: `E_LOG(Category, Verbosity, "포맷 {}", 인자)` — std::format 문법. 카테고리는 헤더에서 `E_DECLARE_LOG_CATEGORY`, 하나의 .cpp에서 `E_DEFINE_LOG_CATEGORY`

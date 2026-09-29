@@ -5,6 +5,9 @@
 #include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
+#include "Editor/EditorActions.h"
+#include "Editor/EditorCameraState.h"
+#include "Editor/SceneEditOps.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -17,6 +20,7 @@
 #include <algorithm>
 #include <cwctype>
 #include <filesystem>
+#include <format>
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
@@ -100,16 +104,44 @@ bool FEditorApplication::OnInit()
 
 	OpenStartupScene();
 
-	// 자동 검증: --select <이름> 으로 시작 시 엔티티 선택 (선택 아웃라인/인스펙터 확인용)
-	if (const std::wstring SelectName = FCommandLine::FromProcess().GetValue(L"--select"); !SelectName.empty())
+	// 자동 검증: --select <이름>[,<이름>...] 으로 시작 시 엔티티 선택 (선택 아웃라인/인스펙터 확인용, 같은 이름은 모두)
+	if (const std::wstring SelectNames = FCommandLine::FromProcess().GetValue(L"--select"); !SelectNames.empty())
 	{
-		const std::string Target = FStringConv::ToUtf8(SelectName);
+		const std::string Targets = "," + FStringConv::ToUtf8(SelectNames) + ",";
 		Scene.GetRegistry().View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Name) {
-			if (!Context.SelectedEntity.IsValid() && Name.Name == Target)
+			if (!Name.Name.empty() && !Scene.GetRegistry().Has<FTransientComponent>(Entity) && Targets.find("," + Name.Name + ",") != std::string::npos)
 			{
-				Context.Select(Entity);
+				Context.AddToSelection(Entity);
 			}
 		});
+	}
+
+	// 자동 검증: --verify-undo 복제 → 커밋 → 실행 취소 → 다시 실행 → 실행 취소를 수행하고 엔티티/메시 수를 확인
+	if (FCommandLine::FromProcess().HasFlag(L"--verify-undo"))
+	{
+		const uint32 EntitiesBefore = Scene.GetRegistry().GetAliveCount();
+		const size_t MeshesBefore   = Resources.GetMeshCount();
+		FEditorActions::DuplicateSelection(Context);
+		CommitPendingEdit();
+		const uint32 EntitiesDuplicated = Scene.GetRegistry().GetAliveCount();
+		UndoEdit();
+		const bool bUndoOk = Scene.GetRegistry().GetAliveCount() == EntitiesBefore;
+		RedoEdit();
+		const bool bRedoOk = Scene.GetRegistry().GetAliveCount() == EntitiesDuplicated;
+		UndoEdit();
+		RedoEdit(); // 화면 확인용: 복제된 상태로 끝낸다
+		const bool bNoNewMeshes = Resources.GetMeshCount() == MeshesBefore;
+		const std::string Summary = std::format("엔티티 {} → 복제 {} → 취소 {} / 다시 {}, 메시 {} → {}, 선택 {}개", EntitiesBefore, EntitiesDuplicated,
+		                                        bUndoOk ? "일치" : "불일치", bRedoOk ? "일치" : "불일치", MeshesBefore,
+		                                        Resources.GetMeshCount(), Context.Selection.Num());
+		if (bUndoOk && bRedoOk && bNoNewMeshes && EntitiesDuplicated > EntitiesBefore)
+		{
+			E_LOG(LogEditor, Display, "Undo 검증 통과: {}", Summary);
+		}
+		else
+		{
+			E_LOG(LogEditor, Error, "Undo 검증 실패: {}", Summary);
+		}
 	}
 
 	// 셰이더 핫 리로드: 엔진 셰이더 디렉터리 감시 (실패해도 에디터는 계속)
@@ -121,6 +153,7 @@ bool FEditorApplication::OnInit()
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
+	LoadEditorCamera();
 
 	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일");
 	return true;
@@ -142,10 +175,10 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	// Delete: 선택 엔티티 삭제 (텍스트 입력 중 제외)
-	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard() && Scene.GetRegistry().IsValid(Context.SelectedEntity))
+	FEditorActions::PruneSelection(Context);
+	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard())
 	{
-		Scene.DestroyEntity(Context.SelectedEntity);
-		Context.ClearSelection();
+		FEditorActions::DeleteSelection(Context);
 	}
 
 	FAnimationSystem::Update(Scene, DeltaSeconds);
@@ -182,6 +215,7 @@ void FEditorApplication::OnRender()
 		ImGui::ShowDemoWindow(&bShowImGuiDemo);
 	}
 	DrawNotification();
+	CommitPendingEdit();
 
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
 	Scene.UpdateTransforms();
@@ -207,6 +241,7 @@ void FEditorApplication::OnResize(uint32 Width, uint32 Height)
 
 void FEditorApplication::OnShutdown()
 {
+	SaveEditorCamera();
 	ShaderWatcher.Stop();
 	if (Rhi)
 	{
@@ -234,7 +269,7 @@ void FEditorApplication::NewScene()
 	Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun).Intensity = 3.0f;
 	Scene.UpdateTransforms();
 
-	UpdateWindowTitle();
+	ResetUndoHistory();
 }
 
 bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
@@ -246,7 +281,7 @@ bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
 	}
 	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
 	CurrentScenePath = Path;
-	UpdateWindowTitle();
+	ResetUndoHistory();
 	return true;
 }
 
@@ -256,7 +291,13 @@ bool FEditorApplication::SaveScene()
 	{
 		return SaveSceneAs();
 	}
-	return FSceneSerializer::SaveToFile(Scene, CurrentScenePath);
+	if (!FSceneSerializer::SaveToFile(Scene, CurrentScenePath))
+	{
+		return false;
+	}
+	UndoHistory.MarkSaved();
+	UpdateWindowTitle();
+	return true;
 }
 
 bool FEditorApplication::SaveSceneAs()
@@ -271,6 +312,7 @@ bool FEditorApplication::SaveSceneAs()
 		return false;
 	}
 	CurrentScenePath = Path;
+	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
 	return true;
 }
@@ -307,13 +349,13 @@ void FEditorApplication::OpenStartupScene()
 				CurrentScenePath = ScenePath;
 				E_LOG(LogEditor, Display, "기본 씬 생성: {}", FPaths::GetProjectDescriptor().DefaultScene);
 			}
-			UpdateWindowTitle();
+			ResetUndoHistory();
 			return;
 		}
 	}
 
 	BuildDefaultScene();
-	UpdateWindowTitle();
+	ResetUndoHistory();
 }
 
 void FEditorApplication::UpdateWindowTitle()
@@ -321,6 +363,10 @@ void FEditorApplication::UpdateWindowTitle()
 	std::wstring Title = L"ProjectE Editor";
 	Title += FPaths::HasProject() ? L" - " + FStringConv::ToWide(FPaths::GetProjectName()) : L" (프로젝트 없음)";
 	Title += L" - " + (CurrentScenePath.empty() ? std::wstring(L"제목 없음") : CurrentScenePath.filename().wstring());
+	if (UndoHistory.IsDirty())
+	{
+		Title += L" *"; // 저장하지 않은 변경
+	}
 	GetWindow().SetTitle(Title);
 }
 
@@ -381,6 +427,18 @@ void FEditorApplication::HandleShortcuts()
 	{
 		SaveScene();
 	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z))
+	{
+		RedoEdit();
+	}
+	else if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Z))
+	{
+		UndoEdit();
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_D))
+	{
+		FEditorActions::DuplicateSelection(Context);
+	}
 }
 
 void FEditorApplication::DrawMainMenuBar()
@@ -425,11 +483,13 @@ void FEditorApplication::DrawMainMenuBar()
 		}
 		ImGui::EndMenu();
 	}
+	DrawEditMenu();
 	if (ImGui::BeginMenu("엔티티"))
 	{
 		if (ImGui::MenuItem("빈 엔티티 추가"))
 		{
 			Context.Select(Scene.CreateEntity("Entity"));
+			Context.MarkEdited("엔티티 추가");
 		}
 		if (ImGui::MenuItem("큐브 추가"))
 		{
@@ -438,6 +498,7 @@ void FEditorApplication::DrawMainMenuBar()
 			Mesh.Mesh      = Context.DefaultCubeMesh;
 			Mesh.MeshAsset = "primitive:cube";
 			Context.Select(Cube);
+			Context.MarkEdited("큐브 추가");
 		}
 		ImGui::EndMenu();
 	}
@@ -630,4 +691,153 @@ void FEditorApplication::OnScreenshotRequested(const std::filesystem::path& Path
 	{
 		Rhi->RequestScreenshot(Path);
 	}
+}
+
+// ---------------------------------------------------------------- 실행 취소
+
+void FEditorApplication::ResetUndoHistory()
+{
+	Context.PendingEdit = FPendingEdit{};
+	UndoHistory.Reset(FSceneSerializer::ToJsonString(Scene));
+	UpdateWindowTitle();
+}
+
+void FEditorApplication::CommitPendingEdit()
+{
+	// 드래그/텍스트 입력/기즈모 조작이 이어지는 동안은 모아 두었다가 끝난 뒤 한 단계로 기록
+	const bool  bInteracting = ImGui::IsAnyItemActive() || ViewportPanel.IsUsingGizmo();
+	std::string Label;
+	if (!Context.PendingEdit.TryTake(bInteracting, Label))
+	{
+		return;
+	}
+	if (UndoHistory.Commit(std::move(Label), FSceneSerializer::ToJsonString(Scene)))
+	{
+		UpdateWindowTitle();
+	}
+}
+
+void FEditorApplication::UndoEdit()
+{
+	CommitPendingEdit();
+	if (Context.PendingEdit.IsPending() || !UndoHistory.CanUndo())
+	{
+		return; // 조작 중이거나 되돌릴 것이 없음
+	}
+	const std::string Label = UndoHistory.GetUndoLabel();
+	RestoreSnapshot(*UndoHistory.Undo());
+	ShowNotification("실행 취소: " + Label, false);
+}
+
+void FEditorApplication::RedoEdit()
+{
+	CommitPendingEdit();
+	if (Context.PendingEdit.IsPending() || !UndoHistory.CanRedo())
+	{
+		return;
+	}
+	const std::string Label = UndoHistory.GetRedoLabel();
+	RestoreSnapshot(*UndoHistory.Redo());
+	ShowNotification("다시 실행: " + Label, false);
+}
+
+void FEditorApplication::RestoreSnapshot(const std::string& State)
+{
+	// 엔티티 핸들은 복원 후 바뀌므로 선택을 경로로 기억해 둔다
+	std::vector<FEntityPath> SelectedPaths;
+	for (FEntity Entity : Context.Selection.GetEntities())
+	{
+		SelectedPaths.push_back(FEntityPath::Build(Scene, Entity));
+	}
+	const FEntityPath PrimaryPath = FEntityPath::Build(Scene, Context.SelectedEntity);
+
+	ModelTemplates.Capture(Scene);
+	if (!FSceneSerializer::FromJsonString(Scene, State))
+	{
+		E_LOG(LogEditor, Error, "실행 취소 스냅샷 복원 실패");
+	}
+	ModelTemplates.Instantiate(Scene);
+	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
+	Scene.UpdateTransforms();
+
+	std::vector<FEntity> Restored;
+	for (const FEntityPath& Path : SelectedPaths)
+	{
+		if (const FEntity Entity = Path.Resolve(Scene); Entity.IsValid())
+		{
+			Restored.push_back(Entity);
+		}
+	}
+	Context.SelectMany(Restored, PrimaryPath.Resolve(Scene));
+	UpdateWindowTitle();
+}
+
+void FEditorApplication::DrawEditMenu()
+{
+	if (!ImGui::BeginMenu("편집"))
+	{
+		return;
+	}
+	const std::string UndoText = UndoHistory.CanUndo() ? "실행 취소: " + UndoHistory.GetUndoLabel() : std::string("실행 취소");
+	const std::string RedoText = UndoHistory.CanRedo() ? "다시 실행: " + UndoHistory.GetRedoLabel() : std::string("다시 실행");
+	if (ImGui::MenuItem(UndoText.c_str(), "Ctrl+Z", false, UndoHistory.CanUndo()))
+	{
+		UndoEdit();
+	}
+	if (ImGui::MenuItem(RedoText.c_str(), "Ctrl+Y", false, UndoHistory.CanRedo()))
+	{
+		RedoEdit();
+	}
+	ImGui::Separator();
+	const bool bHasSelection = !Context.Selection.IsEmpty();
+	if (ImGui::MenuItem("복제", "Ctrl+D", false, bHasSelection))
+	{
+		FEditorActions::DuplicateSelection(Context);
+	}
+	if (ImGui::MenuItem("삭제", "Del", false, bHasSelection))
+	{
+		FEditorActions::DeleteSelection(Context);
+	}
+	if (ImGui::MenuItem("선택 항목 포커스", "F", false, bHasSelection))
+	{
+		ViewportPanel.FocusSelection(Context);
+	}
+	ImGui::Separator();
+	ImGui::MenuItem("그리드 표시", nullptr, &ViewportPanel.bShowGrid);
+	ImGui::MenuItem("기즈모 스냅", nullptr, &ViewportPanel.Snap.bEnabled);
+	ImGui::TextDisabled("실행 취소 %zu단계 / 다시 실행 %zu단계", UndoHistory.GetUndoCount(), UndoHistory.GetRedoCount());
+	ImGui::EndMenu();
+}
+
+// ---------------------------------------------------------------- 에디터 카메라
+
+namespace
+{
+	std::filesystem::path GetEditorCameraPath()
+	{
+		return FPaths::GetSavedDirectory() / L"EditorCamera.json";
+	}
+} // namespace
+
+void FEditorApplication::LoadEditorCamera()
+{
+	FEditorCameraState State;
+	if (!State.Load(GetEditorCameraPath()))
+	{
+		return;
+	}
+	Camera.SetPosition(State.Position);
+	Camera.SetRotation(State.Rotation);
+	CameraController.MoveSpeed = State.MoveSpeed;
+	CameraController.SyncFromCamera(Camera);
+	E_LOG(LogEditor, Log, "에디터 카메라 복원: ({:.0f}, {:.0f}, {:.0f})", State.Position.X, State.Position.Y, State.Position.Z);
+}
+
+void FEditorApplication::SaveEditorCamera() const
+{
+	FEditorCameraState State;
+	State.Position  = Camera.GetPosition();
+	State.Rotation  = Camera.GetRotation();
+	State.MoveSpeed = CameraController.MoveSpeed;
+	State.Save(GetEditorCameraPath());
 }

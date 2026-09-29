@@ -29,6 +29,9 @@ public:
 	// SkinPalettes: 씬 렌더러의 이번 프레임 팔레트 (있으면 스킨 메시를 현재 포즈로 마스크)
 	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output,
 	            const FSkinnedMeshPalette* SkinPalettes = nullptr);
+	// 다중 선택: 모든 선택 엔티티(와 하위)를 한 마스크로 그린다
+	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const std::vector<FEntity>& Selected, const FRenderOutput& Output,
+	            const FSkinnedMeshPalette* SkinPalettes = nullptr);
 
 	bool ReloadShaders(bool bForceRecompile);
 

@@ -94,8 +94,8 @@
 **DoD**: 에디터가 `.eproject`를 열어 프로젝트 콘텐츠를 보여주고, 씬을 JSON으로 저장/열기할 수 있으며, 인스펙터는 리플렉션 정보만으로 모든 등록 컴포넌트를 편집한다. 컴파일 타임 절대 경로가 없고, 쿠킹된 프로젝트를 런타임 실행 파일이 로드한다.
 
 - [x] (트랙 A) 경로/프로젝트 체계: `FPaths`(엔진 디렉터리 탐지, 프로젝트 Content/Saved/Config), `.eproject`(JSON), `Projects/Sample` 예제 프로젝트, `--project` 인자, 절대 경로 define 제거, nlohmann/json 도입
-- [ ] (트랙 B) 리플렉션/프로퍼티 시스템: `FTypeRegistry`, 프로퍼티 메타(타입/오프셋/표시명/범위/플래그), 컴포넌트 등록 매크로, ECS 훅(Has/Add/Remove/Get) + 테스트
-- [ ] (트랙 B) 인스펙터를 리플렉션 기반 범용 UI로 전환, "컴포넌트 추가" 메뉴 자동 생성
+- [x] (트랙 B) 리플렉션/프로퍼티 시스템: `FTypeRegistry`, `FTypeInfo`/`FPropertyInfo`(타입/오프셋/표시명/범위/플래그), `TTypeBuilder` 유창한 등록, ECS 훅(Has/Add/Remove/Get), `RegisterSceneTypes`(FScene 생성자에서 보장) + 테스트 4개
+- [x] (트랙 B) 인스펙터를 리플렉션 기반 범용 UI로 전환 (타입별 위젯, 쿼터니언 오일러 캐시, 숨김/읽기 전용/색 플래그), "컴포넌트 추가" 메뉴 자동 생성
 - [ ] JSON 직렬화: 씬 저장/로드(리플렉션 기반), 머티리얼 에셋, 에디터 파일 메뉴
 - [ ] 에셋 임포트/쿠킹: glTF·PNG → 엔진 바이너리, 셰이더 사전 컴파일(DXIL), 런타임 실행 파일 골격
 - [ ] 셰이더 핫 리로드

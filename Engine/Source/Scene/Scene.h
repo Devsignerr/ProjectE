@@ -9,6 +9,8 @@
 class FScene
 {
 public:
+	FScene(); // 컴포넌트 리플렉션 등록 보장
+
 	FRegistry&       GetRegistry() { return Registry; }
 	const FRegistry& GetRegistry() const { return Registry; }
 

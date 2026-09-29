@@ -37,6 +37,7 @@
 - 상수 버퍼: `Renderer/ShaderTypes.h` 구조체와 HLSL cbuffer를 항상 함께 수정. 16바이트 패킹을 지키고 `static_assert`로 크기 고정
 - 셰이더 리소스 바인딩: 프레임/오브젝트/머티리얼 상수는 루트 CBV(동적 업로드 버퍼에서 할당), 텍스처는 `GetSrvAllocator()`의 셰이더 가시 힙 디스크립터 테이블, 샘플러는 정적 샘플러
 - 외부 라이브러리 추가는 `CMake/ThirdParty.cmake`에서 커밋/해시 고정, `ThirdParty::<name>` 별칭으로 링크. 서드파티 헤더 포함부는 `#pragma warning(push, 0)`으로 감싼다
+- 리플렉션: 새 컴포넌트는 `Scene/SceneReflection.cpp`의 `RegisterSceneTypes()`에 `RegisterType<T>(...).Property(...).AsComponent()`로 등록해야 인스펙터/직렬화에 나타난다. 파생 값(WorldMatrix 등)은 등록하지 않는다. 프로퍼티 타입은 `EPropertyType`에 있는 것만 지원
 - ECS: 컴포넌트는 POD에 가까운 struct, 로직은 시스템(뷰 순회)에 둔다. `View<...>().Each` 순회 중 같은 타입 컴포넌트 추가/제거 금지. 계층 변경은 반드시 `FScene::SetParent`
 - 리소스 수명: GPU 리소스는 `FResourceManager` 핸들로만 참조하고 직접 소유하지 않는다. 렌더링 중 삭제는 `Destroy*`(지연 해제)로, 즉시 `Shutdown()`은 GPU Flush 이후에만
 - 색공간: 백버퍼 RTV와 색상 텍스처는 sRGB 포맷, 셰이더는 선형 공간에서 계산. 데이터 텍스처(노멀 등)는 UNORM
@@ -62,6 +63,7 @@ Engine/Source/
   Core/Math/      FMath, FVector2/3/4, FQuat, FMatrix4x4, FBox, FFrustum (통합 헤더 Math.h)
   Core/ECS/       FEntity(세대 핸들), TSparseSet, FRegistry(+TView) — 자체 희소 집합 ECS
   Core/Containers/ THandle(태그별 세대 핸들), TResourcePool
+  Core/Reflection/ FTypeRegistry/FTypeInfo/FPropertyInfo, TTypeBuilder — 인스펙터·직렬화·스크립트 바인딩 공용 타입 정보
   Core/Testing/   경량 단위 테스트 프레임워크
   Scene/          FScene(계층/트랜스폼 갱신), Components.h(Name/Transform/Hierarchy/StaticMesh/DirectionalLight), ResourceHandles.h
   RHI/D3D12/      디바이스, 커맨드 큐, 디스크립터 힙/할당자, 스왑체인, 깊이 버퍼, 동적 업로드 버퍼,
@@ -71,7 +73,7 @@ Engine/Source/
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
   Editor/         FImGuiLayer, FEditorApplication, EditorContext, Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
-Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl). 런타임에 소스 트리에서 직접 로드 (E_ENGINE_SHADER_DIR)
+Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl). 런타임에 `FPaths::GetEngineShaderDirectory()`에서 로드
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다

@@ -1,6 +1,7 @@
 #include "Scene/Scene.h"
 
 #include "Core/Log.h"
+#include "Scene/SceneReflection.h"
 
 #include <algorithm>
 
@@ -10,6 +11,11 @@ E_DEFINE_LOG_CATEGORY(LogScene, Log)
 namespace
 {
 	const std::vector<FEntity> GEmptyChildren;
+}
+
+FScene::FScene()
+{
+	RegisterSceneTypes();
 }
 
 FEntity FScene::CreateEntity(std::string_view Name)

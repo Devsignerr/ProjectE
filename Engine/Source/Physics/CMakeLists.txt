@@ -3,7 +3,7 @@ file(GLOB_RECURSE PHYSICS_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-add_library(EPhysics STATIC ${PHYSICS_SOURCES})
+add_library(EPhysics ${E_ENGINE_MODULE_TYPE} ${PHYSICS_SOURCES})
 add_library(ProjectE::Physics ALIAS EPhysics)
 
 target_include_directories(EPhysics PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -11,4 +11,4 @@ target_link_libraries(EPhysics
     PUBLIC  ProjectE::Core ProjectE::Scene
     PRIVATE ThirdParty::jolt)
 
-e_set_target_defaults(EPhysics "Engine")
+e_set_engine_module_defaults(EPhysics)

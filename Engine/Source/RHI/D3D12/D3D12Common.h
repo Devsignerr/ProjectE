@@ -11,7 +11,7 @@
 
 using Microsoft::WRL::ComPtr;
 
-E_DECLARE_LOG_CATEGORY(LogD3D12)
+E_DECLARE_ENGINE_LOG_CATEGORY(LogD3D12)
 
 // HRESULT를 16진수 문자열로 변환
 inline std::string HResultToString(HRESULT Result)

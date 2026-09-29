@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/EngineApi.h"
 
 #include <filesystem>
 #include <format>
@@ -35,6 +36,8 @@ struct FLogMessage
 
 // 헤더에서 카테고리 선언, 하나의 .cpp에서 정의
 #define E_DECLARE_LOG_CATEGORY(CategoryName) extern FLogCategory CategoryName;
+// 엔진 공개 헤더용: 엔진 DLL 밖(에디터/게임 모듈)에서도 쓰는 카테고리 (정의는 엔진 .cpp의 E_DEFINE_LOG_CATEGORY)
+#define E_DECLARE_ENGINE_LOG_CATEGORY(CategoryName) extern E_ENGINE_API FLogCategory CategoryName;
 #define E_DEFINE_LOG_CATEGORY(CategoryName, DefaultVerbosity) \
 	FLogCategory CategoryName{ #CategoryName, ELogVerbosity::DefaultVerbosity };
 
@@ -74,4 +77,4 @@ public:
 		}                                                                                                      \
 	} while (0)
 
-E_DECLARE_LOG_CATEGORY(LogCore)
+E_DECLARE_ENGINE_LOG_CATEGORY(LogCore)

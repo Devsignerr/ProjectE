@@ -3,7 +3,7 @@ file(GLOB_RECURSE RENDERER_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-add_library(ERenderer STATIC ${RENDERER_SOURCES})
+add_library(ERenderer ${E_ENGINE_MODULE_TYPE} ${RENDERER_SOURCES})
 add_library(ProjectE::Renderer ALIAS ERenderer)
 
 target_include_directories(ERenderer PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -11,4 +11,4 @@ target_link_libraries(ERenderer
     PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene
     PRIVATE ThirdParty::stb_image ThirdParty::cgltf ThirdParty::nlohmann_json ThirdParty::bc7enc)
 
-e_set_target_defaults(ERenderer "Engine")
+e_set_engine_module_defaults(ERenderer)

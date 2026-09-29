@@ -5,7 +5,7 @@ file(GLOB_RECURSE SANDBOX_SOURCES CONFIGURE_DEPENDS
 
 # 로그 확인을 위해 콘솔 서브시스템으로 빌드 (창 없는 실행은 이후 단계에서 도입)
 add_executable(Sandbox ${SANDBOX_SOURCES})
-target_link_libraries(Sandbox PRIVATE ProjectE::Core ProjectE::RHI ProjectE::Renderer)
+target_link_libraries(Sandbox PRIVATE ProjectE::Engine)
 set_target_properties(Sandbox PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 

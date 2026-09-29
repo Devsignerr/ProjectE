@@ -4,7 +4,7 @@ file(GLOB_RECURSE COOK_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
 
 add_executable(ProjectECook ${COOK_SOURCES})
-target_link_libraries(ProjectECook PRIVATE ProjectE::Core ProjectE::RHI ProjectE::Renderer)
+target_link_libraries(ProjectECook PRIVATE ProjectE::Engine)
 set_target_properties(ProjectECook PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 

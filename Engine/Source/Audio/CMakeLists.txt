@@ -3,7 +3,7 @@ file(GLOB_RECURSE AUDIO_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-add_library(EAudio STATIC ${AUDIO_SOURCES})
+add_library(EAudio ${E_ENGINE_MODULE_TYPE} ${AUDIO_SOURCES})
 add_library(ProjectE::Audio ALIAS EAudio)
 
 target_include_directories(EAudio PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -11,4 +11,4 @@ target_link_libraries(EAudio
     PUBLIC  ProjectE::Core ProjectE::Scene
     PRIVATE ThirdParty::miniaudio)
 
-e_set_target_defaults(EAudio "Engine")
+e_set_engine_module_defaults(EAudio)

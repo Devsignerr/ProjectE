@@ -7,7 +7,7 @@
 
 #include <memory>
 
-E_DECLARE_LOG_CATEGORY(LogPhysics)
+E_DECLARE_ENGINE_LOG_CATEGORY(LogPhysics)
 
 enum class EPhysicsShape : uint8
 {

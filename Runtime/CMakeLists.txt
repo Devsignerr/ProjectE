@@ -4,7 +4,7 @@ file(GLOB_RECURSE RUNTIME_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.cpp")
 
 add_executable(ProjectERuntime ${RUNTIME_SOURCES})
-target_link_libraries(ProjectERuntime PRIVATE ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::Renderer ProjectE::Audio ProjectE::Physics ProjectE::Scripting)
+target_link_libraries(ProjectERuntime PRIVATE ProjectE::Engine)
 set_target_properties(ProjectERuntime PROPERTIES
     WIN32_EXECUTABLE ON
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")

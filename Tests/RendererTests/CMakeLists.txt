@@ -4,7 +4,7 @@ file(GLOB_RECURSE RENDERER_TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 add_executable(RendererTests ${RENDERER_TEST_SOURCES})
-target_link_libraries(RendererTests PRIVATE ProjectE::Renderer ProjectE::Scene)
+target_link_libraries(RendererTests PRIVATE ProjectE::Engine)
 
 e_set_target_defaults(RendererTests "Tests")
 

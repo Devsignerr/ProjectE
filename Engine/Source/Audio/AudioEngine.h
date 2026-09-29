@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-E_DECLARE_LOG_CATEGORY(LogAudio)
+E_DECLARE_ENGINE_LOG_CATEGORY(LogAudio)
 
 struct FAudioEngineDesc
 {

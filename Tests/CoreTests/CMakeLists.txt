@@ -4,7 +4,7 @@ file(GLOB_RECURSE CORE_TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 add_executable(CoreTests ${CORE_TEST_SOURCES})
-target_link_libraries(CoreTests PRIVATE ProjectE::Core)
+target_link_libraries(CoreTests PRIVATE ProjectE::Engine)
 
 e_set_target_defaults(CoreTests "Tests")
 

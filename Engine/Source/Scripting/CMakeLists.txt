@@ -3,7 +3,7 @@ file(GLOB_RECURSE SCRIPTING_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-add_library(EScripting STATIC ${SCRIPTING_SOURCES})
+add_library(EScripting ${E_ENGINE_MODULE_TYPE} ${SCRIPTING_SOURCES})
 add_library(ProjectE::Scripting ALIAS EScripting)
 
 target_include_directories(EScripting PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
@@ -13,4 +13,4 @@ target_link_libraries(EScripting
 # sol2 템플릿이 많아 오브젝트 섹션 수 한도를 넘을 수 있다
 target_compile_options(EScripting PRIVATE /bigobj)
 
-e_set_target_defaults(EScripting "Engine")
+e_set_engine_module_defaults(EScripting)

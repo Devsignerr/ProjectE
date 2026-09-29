@@ -4,6 +4,8 @@
 
 #include <memory>
 #include <tuple>
+#include <typeindex>
+#include <typeinfo>
 #include <vector>
 
 class FRegistry;
@@ -183,19 +185,17 @@ public:
 	}
 
 private:
-	// 컴포넌트 타입마다 프로세스 전역 고유 ID (최초 사용 순서대로 부여)
+	// 컴포넌트 타입마다 프로세스 전역 고유 ID (최초 사용 순서대로 부여).
+	// 엔진 DLL과 게임 모듈 DLL이 같은 타입에 같은 ID를 쓰도록 ID 표는 Core(엔진 DLL) 한 곳에 둔다.
+	// 바이너리별 지역 static은 조회 결과 캐시일 뿐이다. 키는 std::type_index (MSVC는 장식 이름으로 비교 → DLL 간 동일, 익명 네임스페이스 구분)
 	template <typename T>
 	static uint32 GetTypeId()
 	{
-		static const uint32 TypeId = NextTypeId()++;
+		static const uint32 TypeId = AssignComponentTypeId(std::type_index(typeid(T)));
 		return TypeId;
 	}
 
-	static uint32& NextTypeId()
-	{
-		static uint32 Counter = 0;
-		return Counter;
-	}
+	static uint32 AssignComponentTypeId(std::type_index Type);
 
 	bool IsFree(uint32 Index) const
 	{

@@ -69,8 +69,35 @@
         "TransformComponent": {
           "Position": [
             0.0,
+            -0.5104963779449463,
+            2.2191083431243896
+          ],
+          "Rotation": [
             0.0,
-            1.2000000476837158
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "DamagedHelmet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1.712937355041504,
+            2.2933292388916016
           ],
           "Rotation": [
             0.0,

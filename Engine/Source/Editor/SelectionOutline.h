@@ -26,6 +26,8 @@ public:
 
 	// Output: 씬 렌더 결과가 담긴 대상(렌더 타깃 상태). 선택이 없으면 아무것도 하지 않는다.
 	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output);
+	// 다중 선택: 모든 선택 엔티티(와 하위)를 한 마스크로 그린다
+	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const std::vector<FEntity>& Selected, const FRenderOutput& Output);
 
 	bool ReloadShaders(bool bForceRecompile);
 

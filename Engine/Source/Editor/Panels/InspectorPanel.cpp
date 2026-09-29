@@ -76,6 +76,7 @@ void FInspectorPanel::Draw(FEditorContext& Context)
 			if (PendingRemove != nullptr)
 			{
 				PendingRemove->RemoveComponent(Registry, Entity);
+				Context.MarkEdited("컴포넌트 제거");
 			}
 
 			ImGui::Separator();
@@ -99,6 +100,7 @@ void FInspectorPanel::DrawNameField(FEditorContext& Context, FEntity Entity)
 	if (ImGui::InputText("##Name", Buffer, sizeof(Buffer)))
 	{
 		Name->Name = Buffer;
+		Context.MarkEdited("이름 변경");
 	}
 	ImGui::TextDisabled("엔티티 #%u (세대 %u)", Entity.Index, Entity.Generation);
 }
@@ -114,7 +116,10 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 		}
 		ImGui::PushID(Property.Name.c_str());
 		ImGui::BeginDisabled(Property.HasFlag(PF_ReadOnly));
-		DrawProperty(Property, Component, Entity);
+		if (DrawProperty(Property, Component, Entity))
+		{
+			Context.MarkEdited(std::format("{} 편집", Property.DisplayName));
+		}
 		ImGui::EndDisabled();
 		ImGui::PopID();
 	}
@@ -332,6 +337,7 @@ void FInspectorPanel::DrawAddComponentMenu(FEditorContext& Context, FEntity Enti
 			if (ImGui::MenuItem(Type.DisplayName.c_str()))
 			{
 				void* Added = Type.AddComponent(Registry, Entity);
+				Context.MarkEdited("컴포넌트 추가");
 				// 스태틱 메시는 기본 큐브로 시작해 바로 보이게 한다
 				if (&Type == FTypeRegistry::Get().Find<FStaticMeshComponent>())
 				{

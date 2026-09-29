@@ -114,6 +114,7 @@ void FContentBrowserPanel::Draw(FEditorContext& Context)
 						{
 							Context.Scene->UpdateTransforms();
 							Context.Select(LoadedRoot);
+							Context.MarkEdited("모델 추가");
 						}
 						else
 						{

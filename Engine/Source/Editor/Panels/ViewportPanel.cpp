@@ -5,7 +5,10 @@
 #include "Editor/Panels/ViewportPanel.h"
 
 #include "Core/Input.h"
+#include "Editor/EditorCameraState.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorGrid.h"
+#include "Editor/SceneEditOps.h"
 #include "Editor/SelectionOutline.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
@@ -25,6 +28,7 @@ FViewportPanel::~FViewportPanel() = default;
 
 void FViewportPanel::Shutdown()
 {
+	Grid.reset();
 	SelectionOutline.reset();
 	RenderTarget.reset();
 	DesiredWidth  = 0;
@@ -88,15 +92,11 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 
 			DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
 
-			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택
+			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택 (툴바를 그린 뒤 처리)
 			const ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
 			const bool   bDragged  = (DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y) > 16.0f;
-			if (bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
-			    !Input.IsMouseButtonDown(EMouseButton::Right))
-			{
-				const ImVec2 Mouse = ImGui::GetMousePos();
-				PickEntity(Context, FVector2(Mouse.x - ImagePosition.x, Mouse.y - ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
-			}
+			const bool   bPick     = bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
+			                   !Input.IsMouseButtonDown(EMouseButton::Right);
 
 			// 단축키 (뷰포트 위, 카메라 조작 중 아님)
 			// Ctrl 조합(Ctrl+R 셰이더 재로드, Ctrl+S 저장 등)은 에디터 단축키이므로 제외
@@ -105,11 +105,18 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				if (ImGui::IsKeyPressed(ImGuiKey_W)) GizmoOperation = EGizmoOperation::Translate;
 				if (ImGui::IsKeyPressed(ImGuiKey_E)) GizmoOperation = EGizmoOperation::Rotate;
 				if (ImGui::IsKeyPressed(ImGuiKey_R)) GizmoOperation = EGizmoOperation::Scale;
+				if (ImGui::IsKeyPressed(ImGuiKey_F)) FocusSelection(Context);
 			}
 
 			// 툴바 오버레이
 			ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
 			DrawToolbar();
+
+			if (bPick && !ImGui::IsAnyItemHovered())
+			{
+				const ImVec2 Mouse = ImGui::GetMousePos();
+				PickEntity(Context, FVector2(Mouse.x - ImagePosition.x, Mouse.y - ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+			}
 		}
 		else
 		{
@@ -139,16 +146,44 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록 → 선택 아웃라인 합성
 	RenderTarget->Begin(CommandList, nullptr);
 	Context.Renderer->Render(*Context.Scene, *Context.Camera, RenderTarget->GetOutput());
+	if (bShowGrid)
+	{
+		RenderGrid(Context);
+	}
 	if (SelectionOutline)
 	{
-		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.SelectedEntity, RenderTarget->GetOutput());
+		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.Selection.GetEntities(), RenderTarget->GetOutput());
 	}
 	RenderTarget->End(CommandList);
 }
 
 bool FViewportPanel::ReloadShaders(bool bForceRecompile)
 {
-	return !SelectionOutline || SelectionOutline->ReloadShaders(bForceRecompile);
+	const bool bOutlineOk = !SelectionOutline || SelectionOutline->ReloadShaders(bForceRecompile);
+	const bool bGridOk    = !Grid || Grid->ReloadShaders(bForceRecompile);
+	return bOutlineOk && bGridOk;
+}
+
+void FViewportPanel::RenderGrid(FEditorContext& Context)
+{
+	if (!Grid)
+	{
+		Grid = std::make_unique<FEditorGrid>();
+		if (!Grid->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary()))
+		{
+			Grid.reset();
+			bShowGrid = false; // 셰이더 오류 시 매 프레임 재시도하지 않는다
+			return;
+		}
+	}
+	// 씬 렌더러의 HDR 버퍼 깊이를 그대로 사용 (뷰포트와 같은 크기일 때만)
+	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
+	if (SceneColor == nullptr || !SceneColor->GetDesc().bWithDepth || SceneColor->GetWidth() != RenderTarget->GetWidth() ||
+	    SceneColor->GetHeight() != RenderTarget->GetHeight())
+	{
+		return;
+	}
+	Grid->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv());
 }
 
 void FViewportPanel::DrawToolbar()
@@ -182,6 +217,42 @@ void FViewportPanel::DrawToolbar()
 		bGizmoLocal = !bGizmoLocal;
 	}
 	ImGui::SetItemTooltip("기즈모 기준 좌표계 전환");
+
+	const auto ToggleButton = [&](const char* Label, bool& bValue, const char* Tooltip) {
+		ImGui::SameLine();
+		if (bValue)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+		}
+		const bool bClicked = ImGui::Button(Label);
+		if (bValue)
+		{
+			ImGui::PopStyleColor();
+		}
+		if (bClicked)
+		{
+			bValue = !bValue;
+		}
+		ImGui::SetItemTooltip("%s", Tooltip);
+	};
+	ToggleButton("격자", bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
+	ToggleButton("스냅", Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
+	ImGui::SameLine();
+	if (ImGui::ArrowButton("##SnapOptions", ImGuiDir_Down))
+	{
+		ImGui::OpenPopup("SnapOptions");
+	}
+	ImGui::SetItemTooltip("스냅 간격");
+	if (ImGui::BeginPopup("SnapOptions"))
+	{
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::DragFloat("이동 (cm)", &Snap.TranslateStep, 1.0f, 0.1f, 10000.0f, "%.1f");
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::DragFloat("회전 (도)", &Snap.RotateStepDegree, 0.5f, 0.1f, 180.0f, "%.1f");
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::DragFloat("스케일", &Snap.ScaleStep, 0.01f, 0.001f, 10.0f, "%.3f");
+		ImGui::EndPopup();
+	}
 
 	ImGui::EndGroup();
 	ImGui::PopStyleVar();
@@ -218,22 +289,42 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 	// ImGuizmo는 float[16]을 행벡터 규약(이동이 [12..14])으로 다루므로 FMatrix4x4 메모리를 그대로 전달
 	const FMatrix4x4 View       = Context.Camera->GetViewMatrix();
 	const FMatrix4x4 Projection = Context.Camera->GetProjectionMatrix();
-	FMatrix4x4       World      = Transform->WorldMatrix;
+	const FMatrix4x4 OldWorld   = Transform->WorldMatrix;
+	FMatrix4x4       World      = OldWorld;
 
-	const bool bManipulated = ImGuizmo::Manipulate(&View.M[0][0], &Projection.M[0][0], Operation, Mode, &World.M[0][0]);
+	float        SnapValues[3] = {};
+	const float* SnapPointer   = Snap.GetSnapValues(GizmoOperation, ImGui::GetIO().KeyCtrl, SnapValues);
+
+	const bool bManipulated = ImGuizmo::Manipulate(&View.M[0][0], &Projection.M[0][0], Operation, Mode, &World.M[0][0], nullptr, SnapPointer);
 	bUsingGizmo             = ImGuizmo::IsUsing();
 	bGizmoOver              = ImGuizmo::IsOver();
 
 	if (bManipulated)
 	{
-		// 월드 → 로컬: Local = World * Inverse(ParentWorld)
-		FMatrix4x4 Local = World;
-		if (const FEntity Parent = Scene.GetParent(Entity); Parent.IsValid())
+		// 주 선택의 월드 변화량을 다른 최상위 선택에도 적용: NewWorld = World * Inverse(OldPrimary) * NewPrimary
+		// (주 선택의 조상이 함께 선택됐다면 조상만 움직여도 주 선택은 정확히 World가 된다)
+		const FMatrix4x4 Delta = OldWorld.GetInverse() * World;
+		for (FEntity Target : FSceneEditOps::GetTopLevel(Scene, Context.Selection.GetEntities()))
 		{
-			Local = World * Scene.GetTransform(Parent).WorldMatrix.GetInverse();
+			FTransformComponent* TargetTransform = Scene.GetRegistry().TryGet<FTransformComponent>(Target);
+			if (TargetTransform == nullptr)
+			{
+				continue;
+			}
+			const FMatrix4x4 NewWorld = Target == Entity ? World : TargetTransform->WorldMatrix * Delta;
+
+			// 월드 → 로컬: Local = World * Inverse(ParentWorld)
+			FMatrix4x4 Local = NewWorld;
+			if (const FEntity Parent = Scene.GetParent(Target); Parent.IsValid())
+			{
+				Local = NewWorld * Scene.GetTransform(Parent).WorldMatrix.GetInverse();
+			}
+			Local.Decompose(TargetTransform->Position, TargetTransform->Rotation, TargetTransform->Scale);
 		}
-		Local.Decompose(Transform->Position, Transform->Rotation, Transform->Scale);
 		Scene.UpdateTransforms();
+
+		static constexpr const char* Labels[] = { "이동", "회전", "스케일" };
+		Context.MarkEdited(Labels[static_cast<int32>(GizmoOperation)]);
 	}
 }
 
@@ -282,5 +373,49 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 		Closest = Parent;
 	}
 
-	Context.Select(Closest);
+	if (ImGui::GetIO().KeyCtrl)
+	{
+		if (Closest.IsValid())
+		{
+			Context.ToggleSelection(Closest);
+		}
+	}
+	else
+	{
+		Context.Select(Closest);
+	}
+}
+
+void FViewportPanel::FocusSelection(FEditorContext& Context)
+{
+	FScene& Scene = *Context.Scene;
+	FBox    Bounds;
+	std::vector<FEntity> Meshes;
+	for (FEntity Entity : Context.Selection.GetEntities())
+	{
+		if (!Scene.GetRegistry().IsValid(Entity))
+		{
+			continue;
+		}
+		Meshes.clear();
+		FSelectionOutline::CollectOutlinedEntities(Scene, Entity, Meshes);
+		for (FEntity MeshEntity : Meshes)
+		{
+			if (const FStaticMesh* Mesh = Context.Resources->GetMesh(Scene.GetRegistry().Get<FStaticMeshComponent>(MeshEntity).Mesh))
+			{
+				Bounds.AddBox(Mesh->GetLocalBounds().TransformBy(Scene.GetTransform(MeshEntity).WorldMatrix));
+			}
+		}
+		// 메시가 없는 엔티티(빈 엔티티, 조명 등)는 위치만
+		if (Meshes.empty())
+		{
+			Bounds.AddPoint(Scene.GetTransform(Entity).GetWorldPosition());
+		}
+	}
+	if (!Bounds.IsValid())
+	{
+		return;
+	}
+	FCamera& Camera = *Context.Camera;
+	Camera.SetPosition(FEditorCameraState::ComputeFramingPosition(Bounds, Camera.GetForwardVector(), Camera.GetFovYDegrees(), Camera.GetAspectRatio()));
 }

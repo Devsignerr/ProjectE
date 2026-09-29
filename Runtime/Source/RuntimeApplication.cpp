@@ -1,6 +1,7 @@
 #include "RuntimeApplication.h"
 
 #include "Audio/AudioReflection.h"
+#include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
@@ -68,6 +69,7 @@ bool FRuntimeApplication::OnInit()
 	}
 
 	RegisterAudioTypes(); // 씬 로드 전에
+	RegisterPhysicsTypes();
 	if (Audio.Init() && IsAutomationRun())
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
@@ -110,6 +112,22 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
+	Scripts.SetPhysicsHooks({
+		[this](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
+			FPhysicsHit Hit;
+			if (!Physics.Raycast(Origin, Direction, MaxDistance, Hit))
+			{
+				return false;
+			}
+			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			return true;
+		},
+		[this](FEntity Entity, const FVector3& Force) { Physics.AddForce(Entity, Force); },
+		[this](FEntity Entity, const FVector3& Impulse) { Physics.AddImpulse(Entity, Impulse); },
+		[this](FEntity Entity, const FVector3& Velocity) { Physics.SetVelocity(Entity, Velocity); },
+		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
+	});
+	Physics.Begin();
 	Scripts.BeginPlay(Scene);
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
@@ -129,6 +147,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	{
 		FSceneAssetResolver::Resolve(Scene, Resources, Scripts.GetContentDirectory());
 	}
+	Physics.Update(Scene, DeltaSeconds);
 	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
 
@@ -164,6 +183,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 void FRuntimeApplication::OnShutdown()
 {
 	Scripts.EndPlay();
+	Physics.End();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();
 

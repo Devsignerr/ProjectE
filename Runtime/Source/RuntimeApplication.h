@@ -3,6 +3,7 @@
 #include "Audio/AudioEngine.h"
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
+#include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
@@ -43,4 +44,5 @@ private:
 	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
 	FAudioEngine         Audio;
 	FAudioSystem         AudioSystem;
+	FPhysicsSystem       Physics; // 항상 시뮬레이션 (씬 로드 후 Begin)
 };

@@ -8,7 +8,7 @@ add_library(ProjectE::Editor ALIAS EEditor)
 
 target_include_directories(EEditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(EEditor
-    PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::Renderer ProjectE::Audio ProjectE::Scripting
+    PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::Renderer ProjectE::Audio ProjectE::Physics ProjectE::Scripting
     PRIVATE ThirdParty::imgui ThirdParty::imguizmo ThirdParty::nlohmann_json comdlg32)
 
 e_set_target_defaults(EEditor "Engine")

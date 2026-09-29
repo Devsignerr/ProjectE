@@ -6,6 +6,7 @@
 #include "Scene/SceneCloner.h"
 
 class FInput;
+class FPhysicsSystem;
 class FScriptSystem;
 struct FEditorContext;
 
@@ -13,6 +14,7 @@ struct FEditorContext;
 //   Play:  편집 씬을 PlayScene으로 복제(FSceneCloner) → Context.Scene을 PlayScene으로 전환 → 스크립트 시작
 //   Stop:  스크립트 종료(OnDestroy) → PlayScene 폐기 → Context.Scene을 편집 씬으로 되돌림 (선택 복원)
 //   Pause/Step: 일시정지 중에는 게임 로직을 멈추고, Step은 한 프레임(1/60초)만 진행
+//   물리: Play에서 월드 생성, Tick에서 스크립트 뒤·UpdateTransforms 전에 스텝, Stop에서 파괴 (편집 모드에서는 시뮬레이션 안 함)
 // 플레이 중 편집(기즈모/인스펙터)은 PlayScene에만 적용되고 정지하면 사라진다 (Unity/UE와 동일).
 class FPlayMode
 {
@@ -26,8 +28,8 @@ public:
 
 	static constexpr float StepSeconds = 1.0f / 60.0f;
 
-	// EditScene/Scripts는 FPlayMode보다 오래 산다 (비소유)
-	void Init(FScene& InEditScene, FScriptSystem& InScripts);
+	// EditScene/Scripts/Physics는 FPlayMode보다 오래 산다 (비소유). Physics는 없어도 된다
+	void Init(FScene& InEditScene, FScriptSystem& InScripts, FPhysicsSystem* InPhysics = nullptr);
 
 	void Play(FEditorContext& Context);
 	void Stop(FEditorContext& Context);
@@ -51,6 +53,7 @@ private:
 
 	FScene*        EditScene = nullptr;
 	FScriptSystem* Scripts   = nullptr;
+	FPhysicsSystem* Physics  = nullptr;
 
 	FScene                   PlayScene;
 	FSceneCloner::FEntityMap EntityMap;      // 편집 씬 → 플레이 씬

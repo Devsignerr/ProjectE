@@ -1,6 +1,7 @@
 #include "Editor/EditorApplication.h"
 
 #include "Audio/AudioReflection.h"
+#include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
@@ -66,6 +67,7 @@ FEditorApplication::~FEditorApplication() = default;
 bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
+	RegisterPhysicsTypes();
 
 	FD3D12RHIDesc RhiDesc;
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
@@ -112,7 +114,22 @@ bool FEditorApplication::OnInit()
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
 	}
-	PlayMode.Init(Scene, Scripts);
+	Scripts.SetPhysicsHooks({
+		[this](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
+			FPhysicsHit Hit;
+			if (!Physics.Raycast(Origin, Direction, MaxDistance, Hit))
+			{
+				return false;
+			}
+			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			return true;
+		},
+		[this](FEntity Entity, const FVector3& Force) { Physics.AddForce(Entity, Force); },
+		[this](FEntity Entity, const FVector3& Impulse) { Physics.AddImpulse(Entity, Impulse); },
+		[this](FEntity Entity, const FVector3& Velocity) { Physics.SetVelocity(Entity, Velocity); },
+		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
+	});
+	PlayMode.Init(Scene, Scripts, &Physics);
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();

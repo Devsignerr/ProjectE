@@ -54,6 +54,7 @@
 - 검증: `E_CHECK(expr)`, `E_CHECKF(expr, "포맷", ...)` (실패 시 Fatal)
 - D3D 호출: 초기화 경로는 `E_D3D_VERIFY(call)` (실패 시 Error 로그 + `return false`), 프레임 경로는 `E_D3D_CHECK(call)` (Fatal)
 - 디버그 전용 코드는 `#if E_DEBUG` (CMake가 Debug=1 / Release=0 정의)
+- 오디오: 사운드 위치는 `FAudioEngine::SetWorldPosition`(청자 기준 좌표로 변환 — miniaudio는 오른손 좌표계라 월드 좌표를 직접 넘기지 않는다). 오디오 컴포넌트는 Audio 모듈의 `RegisterAudioTypes()`로 등록하며 앱은 씬 로드 전에 호출. 자동 검증(`IsAutomationRun()`) 중에는 음소거. 오디오 테스트는 `bNoDevice` 엔진 + `ReadFrames`로 믹스 결과를 검증
 - 포스트 프로세싱: 효과는 `FPostProcessor` 안에서 확장하고(씬 렌더러는 `Render` 한 번 호출), 설정은 `FPostProcessSettings`, CPU/GPU 공용 식은 `Renderer/PostProcessMath.h`와 셰이더를 함께 수정. PSO 블렌드는 `FGraphicsPipelineDesc::BlendMode`(`bAlphaBlend`는 하위 호환용)
 
 ## 디렉터리
@@ -78,6 +79,7 @@ Engine/Source/
                   FResourceManager(메시/텍스처/머티리얼 핸들 소유), FGltfLoader(cgltf)+FModelLoader(씬 배치),
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
+  Audio/          FAudioEngine(miniaudio 래퍼, 장치 없으면 무음 계속), FAudioSystem(FAudioSourceComponent ↔ 사운드 동기화), AudioMath(청자 공간 변환), RegisterAudioTypes()
   Editor/         FImGuiLayer, FEditorApplication, EditorContext, Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
 Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl) + Shaders.json(쿠킹 매니페스트 — 새 셰이더/엔트리는 여기 추가). Cooked/는 생성물(git 제외)
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
@@ -86,7 +88,7 @@ Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
 Tests/            CoreTests, RendererTests, RhiTests (CTest 등록)
-CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json
+CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio
 Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)
 Build/            CMake 빌드 출력 (git 제외)
 ```

@@ -1,5 +1,7 @@
 #include "RuntimeApplication.h"
 
+#include "Audio/AudioReflection.h"
+#include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -63,20 +65,31 @@ bool FRuntimeApplication::OnInit()
 		return false;
 	}
 
-	// 프로젝트 기본 씬 로드, 없거나 실패하면 자리표시 씬
-	bool bSceneLoaded = false;
-	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
+	RegisterAudioTypes(); // 씬 로드 전에
+	if (Audio.Init() && IsAutomationRun())
 	{
-		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);
+		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
+	}
+
+	// 씬: --scene <Content 기준 상대 경로>가 있으면 그것, 아니면 프로젝트 기본 씬. 없거나 실패하면 자리표시 씬
+	std::string SceneAsset = FPaths::HasProject() ? FPaths::GetProjectDescriptor().DefaultScene : std::string();
+	if (const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene"); !SceneArg.empty())
+	{
+		SceneAsset = FStringConv::ToUtf8(SceneArg);
+	}
+	bool bSceneLoaded = false;
+	if (FPaths::HasProject() && !SceneAsset.empty())
+	{
+		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(SceneAsset);
 		if (FSceneSerializer::LoadFromFile(Scene, ScenePath))
 		{
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
 			bSceneLoaded = true;
-			E_LOG(LogRuntime, Display, "기본 씬 로드: {}", FPaths::GetProjectDescriptor().DefaultScene);
+			E_LOG(LogRuntime, Display, "씬 로드: {}", SceneAsset);
 		}
 		else
 		{
-			E_LOG(LogRuntime, Warning, "기본 씬을 열지 못해 자리표시 씬을 표시합니다: {}", FPaths::GetProjectDescriptor().DefaultScene);
+			E_LOG(LogRuntime, Warning, "씬을 열지 못해 자리표시 씬을 표시합니다: {}", SceneAsset);
 		}
 	}
 	if (!bSceneLoaded)
@@ -102,6 +115,10 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 
 	CameraController.Update(Camera, InputState, DeltaSeconds);
 	Scene.UpdateTransforms();
+
+	// 오디오: 카메라가 청자
+	Audio.SetListener({ Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetUpVector() });
+	AudioSystem.Update(Scene, Audio, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : std::filesystem::path());
 }
 
 void FRuntimeApplication::OnRender()
@@ -123,6 +140,9 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
+	AudioSystem.Reset(Audio);
+	Audio.Shutdown();
+
 	if (Rhi)
 	{
 		SceneRenderer.Shutdown();

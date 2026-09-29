@@ -1,5 +1,6 @@
 #include "Editor/EditorApplication.h"
 
+#include "Audio/AudioReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Platform/WindowsHeaders.h"
@@ -59,6 +60,8 @@ FEditorApplication::~FEditorApplication() = default;
 
 bool FEditorApplication::OnInit()
 {
+	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
+
 	FD3D12RHIDesc RhiDesc;
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
 	RhiDesc.Width        = GetWindow().GetWidth();

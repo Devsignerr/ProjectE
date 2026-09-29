@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Audio/AudioEngine.h"
+#include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
@@ -36,4 +38,7 @@ private:
 
 	FCamera              Camera;
 	FFlyCameraController CameraController;
+
+	FAudioEngine Audio;
+	FAudioSystem AudioSystem;
 };

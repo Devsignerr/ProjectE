@@ -42,6 +42,9 @@ protected:
 	// 자동 검증: --screenshot 요청 시 이번 프레임 렌더 직전에 호출된다. 파생 클래스는 RHI에 전달한다.
 	virtual void OnScreenshotRequested(const std::filesystem::path& /*Path*/) {}
 
+	// 자동 검증 실행(--exit-after/--screenshot) 중인지. 오디오 음소거 등에 사용
+	bool IsAutomationRun() const { return ExitAfterFrames > 0; }
+
 	// 현재까지 렌더한 프레임 수
 	uint64 GetFrameIndex() const { return FrameIndex; }
 

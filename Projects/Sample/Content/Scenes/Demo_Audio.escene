@@ -1,0 +1,144 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.9599999785423279,
+            0.8999999761581421
+          ],
+          "Intensity": 3.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.000000149011612
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.20000000298023224
+          ]
+        }
+      },
+      "Name": "Ground",
+      "Parent": -1
+    },
+    {
+      "Name": "HumSpeaker",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -300.0,
+            25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/Hum.wav",
+          "Volume": 0.8,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": true,
+          "MinDistance": 100.0,
+          "MaxDistance": 5000.0
+        }
+      }
+    },
+    {
+      "Name": "ChimeSpeaker",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            300.0,
+            25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/Chime.wav",
+          "Volume": 0.6,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": true,
+          "MinDistance": 100.0,
+          "MaxDistance": 5000.0
+        }
+      }
+    }
+  ]
+}

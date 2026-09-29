@@ -84,3 +84,23 @@ FetchContent_MakeAvailable(nlohmann_json)
 add_library(nlohmann_json INTERFACE)
 add_library(ThirdParty::nlohmann_json ALIAS nlohmann_json)
 target_include_directories(nlohmann_json SYSTEM INTERFACE "${nlohmann_json_SOURCE_DIR}")
+
+# ---------------------------------------------------------------- miniaudio (0.11.25, Public Domain 또는 MIT-0) — 오디오 재생/디코딩(wav/flac/mp3)/3D 공간화
+set(E_MINIAUDIO_COMMIT "9634bedb5b5a2ca38c1ee7108a9358a4e233f14d")
+FetchContent_Declare(miniaudio
+    URL      "https://raw.githubusercontent.com/mackron/miniaudio/${E_MINIAUDIO_COMMIT}/miniaudio.h"
+    URL_HASH SHA256=ac7af4de748b7e26b777f37e01cee313a308a7296a3eb080e2906b320cc55c89
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(miniaudio)
+
+# 구현부는 한 번만 컴파일 (프로젝트 언어가 CXX뿐이므로 C++로). 백엔드 설정 매크로는 구조체 배치에 영향을 주므로 PUBLIC으로 모든 사용처에 전파
+file(WRITE "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp"
+    "#define MINIAUDIO_IMPLEMENTATION\n#include \"miniaudio.h\"\n")
+add_library(miniaudio STATIC "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp")
+add_library(ThirdParty::miniaudio ALIAS miniaudio)
+target_include_directories(miniaudio SYSTEM PUBLIC "${miniaudio_SOURCE_DIR}")
+target_compile_definitions(miniaudio PUBLIC
+    MA_ENABLE_ONLY_SPECIFIC_BACKENDS MA_ENABLE_WASAPI MA_ENABLE_NULL # Windows: WASAPI + 테스트용 null 장치
+    MA_NO_ENCODING)
+target_compile_options(miniaudio PRIVATE /W0)
+set_target_properties(miniaudio PROPERTIES FOLDER "ThirdParty")

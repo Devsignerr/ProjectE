@@ -2,12 +2,15 @@
 
 #include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
+#include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 #include "RHI/ShaderLibrary.h"
+#include "Renderer/PostProcess.h"
 #include "Renderer/ShaderTypes.h"
 #include "Scene/ResourceHandles.h"
 
+#include <memory>
 #include <vector>
 
 class FCamera;
@@ -24,15 +27,22 @@ struct FSceneRenderStats
 	uint32 DrawCalls     = 0;
 };
 
-// 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → 드로우.
-// 호출 순서: Rhi.BeginFrame() → Render() → Rhi.EndFrame()
+// 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
+// 호출 순서: Rhi.BeginFrame() → Render(..., Output) → (오버레이/UI) → Rhi.EndFrame()
+// Render가 끝나면 Output RTV가 깊이 없이 바인딩된 상태로 남는다 (에디터 오버레이가 그 위에 그린다).
 class FSceneRenderer
 {
 public:
 	bool Init(FD3D12RHI& InRhi, FResourceManager& InResources);
 	void Shutdown();
 
-	void Render(FScene& Scene, const FCamera& Camera);
+	void Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
+
+	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 출력과 같은 크기
+	const FD3D12RenderTarget* GetSceneColor() const { return SceneColor.get(); }
+
+	FPostProcessSettings PostProcessSettings;
+	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -73,6 +83,14 @@ private:
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
+	FPostProcessor       PostProcessor;
+
+	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
+
+	static constexpr DXGI_FORMAT SceneColorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+	void EnsureSceneColor(uint32 Width, uint32 Height);
+	void DrawMeshes(FScene& Scene, const FCamera& Camera);
 
 	std::vector<FMeshDrawCommand> DrawCommands;
 	FSceneRenderStats             Stats;

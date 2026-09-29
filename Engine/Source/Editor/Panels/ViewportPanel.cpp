@@ -125,9 +125,9 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	}
 	ID3D12GraphicsCommandList* CommandList = Context.Rhi->GetCommandList();
 
-	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
-	RenderTarget->Begin(CommandList, ClearColor);
-	Context.Renderer->Render(*Context.Scene, *Context.Camera);
+	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록한다
+	RenderTarget->Begin(CommandList, nullptr);
+	Context.Renderer->Render(*Context.Scene, *Context.Camera, RenderTarget->GetOutput());
 	RenderTarget->End(CommandList);
 }
 

@@ -55,8 +55,12 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	if (!PostProcessor.Init(*Rhi, ShaderLibrary))
+	{
+		return false;
+	}
 
-	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료");
+	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료 (HDR {}, 톤매핑)", "R16G16B16A16_FLOAT");
 	return true;
 }
 
@@ -87,7 +91,7 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool b
 	PsoDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
 	PsoDesc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
 	PsoDesc.InputLayout            = FStaticMesh::GetInputLayout();
-	PsoDesc.RenderTargetFormats[0] = FD3D12RHI::RenderTargetFormat;
+	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
 	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"MeshPipeline");
@@ -108,6 +112,12 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	PipelineState.Swap(NewPipeline);
 	Rhi->DeferRelease(NewPipeline.Detach());
 
+	if (!PostProcessor.ReloadShaders(bForceRecompile))
+	{
+		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
+		return false;
+	}
+
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
 }
@@ -119,6 +129,8 @@ void FSceneRenderer::Shutdown()
 		return;
 	}
 	Rhi->GetGraphicsQueue().Flush();
+	SceneColor.reset();
+	PostProcessor.Shutdown();
 	PipelineState.Shutdown();
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
@@ -133,10 +145,43 @@ void FSceneRenderer::SetFreezeCulling(bool bFreeze)
 	bCullingFrozen = bFreeze;
 }
 
-void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera)
+void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
+{
+	if (SceneColor && SceneColor->GetWidth() == Width && SceneColor->GetHeight() == Height)
+	{
+		return;
+	}
+	// 이전 타깃은 진행 중인 프레임이 참조할 수 있으므로 지연 해제
+	if (SceneColor)
+	{
+		SceneColor->ShutdownDeferred(*Rhi);
+	}
+	SceneColor = std::make_unique<FD3D12RenderTarget>();
+	if (!SceneColor->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SceneColorHDR", FRenderTargetDesc::MakeHdr(true)))
+	{
+		E_LOG(LogRenderer, Fatal, "HDR 씬 버퍼 생성 실패 ({}x{})", Width, Height);
+	}
+}
+
+void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
 {
 	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
+	E_CHECKF(Output.IsValid(), "씬 렌더러 출력 대상이 유효하지 않습니다");
 
+	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+
+	// 1) HDR 씬 패스
+	EnsureSceneColor(Output.Width, Output.Height);
+	SceneColor->Begin(CommandList, &BackgroundColor.X);
+	DrawMeshes(Scene, Camera);
+	SceneColor->End(CommandList);
+
+	// 2) 포스트 프로세싱 → 출력
+	PostProcessor.Render(CommandList, SceneColor->GetSrv(), Output, PostProcessSettings);
+}
+
+void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera)
+{
 	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
 	if (!bCullingFrozen)
 	{

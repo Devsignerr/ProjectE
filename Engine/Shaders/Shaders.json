@@ -4,6 +4,8 @@
     { "File": "Mesh.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "Triangle.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "Triangle.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
-    { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" }
+    { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" },
+    { "File": "Tonemap.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
   ]
 }

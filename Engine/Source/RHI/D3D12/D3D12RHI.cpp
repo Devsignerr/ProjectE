@@ -158,6 +158,16 @@ void FD3D12RHI::SetRenderTargetToBackBuffer(bool bLinearView)
 	CommandList->RSSetScissorRects(1, &Scissor);
 }
 
+FRenderOutput FD3D12RHI::GetBackBufferOutput() const
+{
+	FRenderOutput Output;
+	Output.Rtv    = SwapChain.GetCurrentRenderTargetView(false);
+	Output.Format = RenderTargetFormat;
+	Output.Width  = SwapChain.GetWidth();
+	Output.Height = SwapChain.GetHeight();
+	return Output;
+}
+
 void FD3D12RHI::DeferRelease(ComPtr<ID3D12Object> Object)
 {
 	if (Object)

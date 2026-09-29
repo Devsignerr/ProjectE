@@ -6,6 +6,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12Device.h"
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
+#include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12SwapChain.h"
 
 #include <vector>
@@ -47,6 +48,9 @@ public:
 	// 백버퍼(+깊이)를 렌더 타깃으로 다시 바인딩하고 전체 뷰포트/시저 설정.
 	// 오프스크린 렌더 타깃을 쓴 뒤 복귀하거나, UI를 UNORM 뷰(bLinearView)로 그릴 때 사용.
 	void SetRenderTargetToBackBuffer(bool bLinearView = false);
+
+	// 현재 백버퍼의 sRGB RTV를 출력 대상으로 (BeginFrame 이후 유효)
+	FRenderOutput GetBackBufferOutput() const;
 
 	void SetVSync(bool bEnabled) { bVSync = bEnabled; }
 	bool IsVSync() const { return bVSync; }

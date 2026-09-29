@@ -9,7 +9,7 @@ FD3D12RenderTarget::~FD3D12RenderTarget()
 }
 
 bool FD3D12RenderTarget::Init(FD3D12Device& Device, FD3D12DescriptorAllocator& InSrvAllocator, uint32 InWidth, uint32 InHeight,
-                              const wchar_t* DebugName)
+                              const wchar_t* DebugName, const FRenderTargetDesc& InDesc)
 {
 	E_CHECKF(ColorResource == nullptr, "렌더 타깃이 이미 생성되어 있습니다");
 	E_CHECKF(InWidth > 0 && InHeight > 0, "렌더 타깃 크기는 0일 수 없습니다");
@@ -18,12 +18,13 @@ bool FD3D12RenderTarget::Init(FD3D12Device& Device, FD3D12DescriptorAllocator& I
 	SrvAllocator            = &InSrvAllocator;
 	Width                   = InWidth;
 	Height                  = InHeight;
+	Desc                    = InDesc;
 
 	const D3D12_HEAP_PROPERTIES DefaultHeap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	const D3D12_RESOURCE_DESC   TextureDesc = MakeTexture2DDesc(Width, Height, ResourceFormat, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+	const D3D12_RESOURCE_DESC   TextureDesc = MakeTexture2DDesc(Width, Height, Desc.ResourceFormat, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 	D3D12_CLEAR_VALUE ClearValue{};
-	ClearValue.Format = RtvFormat;
+	ClearValue.Format = Desc.RtvFormat;
 
 	E_D3D_VERIFY(D3DDevice->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &TextureDesc,
 	                                                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &ClearValue,
@@ -36,19 +37,19 @@ bool FD3D12RenderTarget::Init(FD3D12Device& Device, FD3D12DescriptorAllocator& I
 		return false;
 	}
 	D3D12_RENDER_TARGET_VIEW_DESC RtvDesc{};
-	RtvDesc.Format        = RtvFormat;
+	RtvDesc.Format        = Desc.RtvFormat;
 	RtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 	D3DDevice->CreateRenderTargetView(ColorResource.Get(), &RtvDesc, RtvHeap.GetCpuHandle(0));
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
-	SrvDesc.Format                    = SrvFormat;
+	SrvDesc.Format                    = Desc.SrvFormat;
 	SrvDesc.ViewDimension             = D3D12_SRV_DIMENSION_TEXTURE2D;
 	SrvDesc.Shader4ComponentMapping   = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	SrvDesc.Texture2D.MipLevels       = 1;
 	Srv = SrvAllocator->Allocate();
 	D3DDevice->CreateShaderResourceView(ColorResource.Get(), &SrvDesc, Srv.Cpu);
 
-	return DepthBuffer.Init(D3DDevice, Width, Height);
+	return !Desc.bWithDepth || DepthBuffer.Init(D3DDevice, Width, Height);
 }
 
 void FD3D12RenderTarget::Shutdown()
@@ -88,10 +89,20 @@ void FD3D12RenderTarget::Begin(ID3D12GraphicsCommandList* CommandList, const flo
 	bInRenderState = true;
 
 	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = RtvHeap.GetCpuHandle(0);
-	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
-	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
-	CommandList->ClearRenderTargetView(Rtv, ClearColor, 0, nullptr);
-	CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+	if (Desc.bWithDepth)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
+		CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
+		CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+	}
+	else
+	{
+		CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+	}
+	if (ClearColor != nullptr)
+	{
+		CommandList->ClearRenderTargetView(Rtv, ClearColor, 0, nullptr);
+	}
 
 	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
 	const D3D12_RECT     Scissor{ 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height) };
@@ -107,4 +118,14 @@ void FD3D12RenderTarget::End(ID3D12GraphicsCommandList* CommandList)
 		MakeTransitionBarrier(ColorResource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	CommandList->ResourceBarrier(1, &ToShaderResource);
 	bInRenderState = false;
+}
+
+FRenderOutput FD3D12RenderTarget::GetOutput() const
+{
+	FRenderOutput Output;
+	Output.Rtv    = RtvHeap.GetCpuHandle(0);
+	Output.Format = Desc.RtvFormat;
+	Output.Width  = Width;
+	Output.Height = Height;
+	return Output;
 }

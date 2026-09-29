@@ -98,7 +98,7 @@ protected:
 	{
 		const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f }; // 선형 공간 값 (sRGB 백버퍼가 인코딩)
 		Rhi->BeginFrame(ClearColor);
-		SceneRenderer.Render(Scene, Camera);
+		SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
 		Rhi->EndFrame();
 	}
 

@@ -16,6 +16,7 @@
     { "File": "Bloom.hlsl", "Entry": "PSUpsample", "Stage": "Pixel" },
     { "File": "AutoExposure.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "AutoExposure.hlsl", "Entry": "PSHistogram", "Stage": "Pixel" },
-    { "File": "AutoExposure.hlsl", "Entry": "CSAverage", "Stage": "Compute" }
+    { "File": "AutoExposure.hlsl", "Entry": "CSAverage", "Stage": "Compute" },
+    { "File": "Shadow.hlsl", "Entry": "ShadowVS", "Stage": "Vertex" }
   ]
 }

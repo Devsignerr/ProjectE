@@ -30,6 +30,11 @@ struct FGraphicsPipelineDesc
 	D3D12_CULL_MODE CullMode              = D3D12_CULL_MODE_BACK;
 	D3D12_FILL_MODE FillMode              = D3D12_FILL_MODE_SOLID;
 	bool            bFrontCounterClockwise = false;
+	// 깊이 바이어스 (섀도우 맵 등). 기본은 D3D12 기본값(0)
+	int32 DepthBias            = 0;
+	float SlopeScaledDepthBias = 0.0f;
+	float DepthBiasClamp       = 0.0f;
+	bool  bDepthClip           = true; // false면 근평면 뒤 캐스터도 그린다 (섀도우 팬케이킹)
 
 	// 깊이
 	bool                  bDepthEnable = false;

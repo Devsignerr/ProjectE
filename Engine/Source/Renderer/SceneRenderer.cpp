@@ -22,6 +22,8 @@ namespace
 		RootParam_PerFrame        = 1, // b1
 		RootParam_Material        = 2, // b2
 		RootParam_MaterialTexture = 3, // t0~t4 (머티리얼 텍스처 테이블)
+		RootParam_Shadow          = 4, // b3 (캐스케이드 상수)
+		RootParam_ShadowMap       = 5, // t8 (섀도우 맵 배열)
 	};
 } // namespace
 
@@ -45,7 +47,19 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialSlot_Count, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(PerObjectIndex == RootParam_PerObject && PerFrameIndex == RootParam_PerFrame &&
 	        MaterialIndex == RootParam_Material && TextureIndex == RootParam_MaterialTexture);
+	const uint32 ShadowIndex    = RootSignature.AddConstantBufferView(3, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 ShadowMapIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(ShadowIndex == RootParam_Shadow && ShadowMapIndex == RootParam_ShadowMap);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
+
+	// s2: 섀도우 비교 샘플러 (하드웨어 2x2 PCF, 범위 밖은 빛 받음)
+	D3D12_STATIC_SAMPLER_DESC ShadowSamplerDesc = FD3D12RootSignature::MakeStaticSampler(
+		2, D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_BORDER);
+	ShadowSamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	ShadowSamplerDesc.BorderColor    = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+	ShadowSamplerDesc.MaxAnisotropy  = 1;
+	RootSignature.AddStaticSampler(ShadowSamplerDesc);
 	if (!RootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"MeshRootSignature"))
 	{
 		return false;
@@ -56,6 +70,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 	if (!PostProcessor.Init(*Rhi, ShaderLibrary))
+	{
+		return false;
+	}
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -112,6 +130,11 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	PipelineState.Swap(NewPipeline);
 	Rhi->DeferRelease(NewPipeline.Detach());
 
+	if (!ShadowRenderer.ReloadShaders(bForceRecompile))
+	{
+		E_LOG(LogRenderer, Error, "섀도우 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
+		return false;
+	}
 	if (!PostProcessor.ReloadShaders(bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
@@ -131,6 +154,7 @@ void FSceneRenderer::Shutdown()
 	Rhi->GetGraphicsQueue().Flush();
 	SceneColor.reset();
 	PostProcessor.Shutdown();
+	ShadowRenderer.Shutdown();
 	PipelineState.Shutdown();
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
@@ -170,17 +194,22 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 
+	const FPerFrameConstants PerFrame = BuildPerFrameConstants(Scene, Camera);
+
+	// 0) 방향광 섀도우 패스
+	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
+
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Output.Width, Output.Height);
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
-	DrawMeshes(Scene, Camera);
+	DrawMeshes(Scene, Camera, PerFrame);
 	SceneColor->End(CommandList);
 
 	// 2) 포스트 프로세싱 → 출력
 	PostProcessor.Render(CommandList, SceneColor->GetSrv(), Output, PostProcessSettings);
 }
 
-void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera)
+void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPerFrameConstants& PerFrame)
 {
 	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
 	if (!bCullingFrozen)
@@ -199,11 +228,14 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera)
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 
-	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(BuildPerFrameConstants(Scene, Camera));
+	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
+	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
 
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(PipelineState.Get());
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAllocation.GpuAddress);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAllocation.GpuAddress);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;

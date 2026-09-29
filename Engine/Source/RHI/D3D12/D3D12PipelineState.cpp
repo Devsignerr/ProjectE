@@ -50,10 +50,10 @@ bool FD3D12PipelineState::InitGraphics(ID3D12Device* Device, const FGraphicsPipe
 	PsoDesc.RasterizerState.FillMode              = Desc.FillMode;
 	PsoDesc.RasterizerState.CullMode              = Desc.CullMode;
 	PsoDesc.RasterizerState.FrontCounterClockwise = Desc.bFrontCounterClockwise ? TRUE : FALSE;
-	PsoDesc.RasterizerState.DepthBias             = D3D12_DEFAULT_DEPTH_BIAS;
-	PsoDesc.RasterizerState.DepthBiasClamp        = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-	PsoDesc.RasterizerState.SlopeScaledDepthBias  = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	PsoDesc.RasterizerState.DepthClipEnable       = TRUE;
+	PsoDesc.RasterizerState.DepthBias             = Desc.DepthBias;
+	PsoDesc.RasterizerState.DepthBiasClamp        = Desc.DepthBiasClamp;
+	PsoDesc.RasterizerState.SlopeScaledDepthBias  = Desc.SlopeScaledDepthBias;
+	PsoDesc.RasterizerState.DepthClipEnable       = Desc.bDepthClip ? TRUE : FALSE;
 	PsoDesc.RasterizerState.MultisampleEnable     = FALSE;
 	PsoDesc.RasterizerState.AntialiasedLineEnable = FALSE;
 	PsoDesc.RasterizerState.ForcedSampleCount     = 0;

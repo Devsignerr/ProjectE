@@ -115,8 +115,8 @@
 - [x] (트랙 G) 선택 표시: `FSelectionOutline`(선택+하위 메시를 R8 마스크에 → `Outline.hlsl` 원형 반경 가장자리 합성, 내부 약한 틴트, 가려져도 실루엣 표시), 계층 패널 강조(주황 계열 행 색, 외부 선택 시 조상 자동 펼침 + 스크롤), 뷰포트에서 모델 하위 노드 클릭 시 모델 루트 선택, 셰이더 핫 리로드 연동
 - [x] (트랙 J, 서브에이전트) 포스트 프로세싱: 블룸(Jimenez 13탭 다운샘플 + Karis 평균/소프트 니 임계값, 텐트 업샘플 가산, 절반 해상도부터 최대 6단계, `Bloom.hlsl`), 자동 노출(1/4 해상도 로그 휘도 히스토그램 PS UAV → 컴퓨트 평균 + 지수 시간 적응, `AutoExposure.hlsl`), 수동 EV, 톤매핑 연산자, `EBlendMode`(Opaque/Alpha/Additive) PSO 블렌드, 에디터 "포스트 프로세스" 패널, `FPostProcessMath` + 테스트 5개. 비네트/그레인은 미구현
 - [x] (트랙 H, 서브에이전트) PBR 금속/거칠기: Cook-Torrance(GGX, Smith height-correlated, Schlick) + 에너지 보존 Lambert, glTF 텍스처 5종(베이스/금속거칠기/노멀/AO/발광, 발광 강도 확장 포함), 정점 탄젠트(glTF TANGENT 변환 또는 UV로 계산), 머티리얼별 연속 SRV 5칸 디스크립터 테이블(`AllocateRange`), `.emat` PBR 필드(구 형식 호환), 쿠킹 모델 형식 v2, 간이 환경광(하늘/지면 반구 + EnvBRDFApprox, `EvaluateAmbient`) + 테스트 7개
-- [ ] 섀도우 맵 (방향광 CSM, PCF) — 트랙 H 머지 후
-- [ ] IBL (환경 큐브맵, 프리필터/BRDF LUT) — 트랙 H 머지 후
+- [x] 섀도우 맵: 방향광 CSM(최대 4), 3x3 PCF, 텍셀 스냅, 바이어스/거리/해상도 설정 패널. VS Debug/Release 빌드·테스트 및 셰이더 18개 쿠킹 통과. 수학 테스트 3개 추가. GUI 시각 검증은 별도 필요.
+- [~] IBL (절차적 환경 큐브맵, 조도/프리필터/BRDF LUT, 스카이박스) — 병렬 구현 중
 - [ ] 스켈레탈 애니메이션
 
 ## Phase 7 — 게임 시스템

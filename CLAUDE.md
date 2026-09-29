@@ -94,8 +94,9 @@ Build/            CMake 빌드 출력 (git 제외)
 세 가지 방법이 있으며 모두 같은 CMake 설정을 쓴다. CMake/Ninja는 PATH에 없고 VS 2022 번들 버전을 사용한다.
 
 1. **Visual Studio에서 폴더 열기 (권장)**: VS 2022 → `파일 → 열기 → 폴더`로 프로젝트 루트를 연다. `CMakePresets.json`의 `ninja-debug`가 자동 선택되고, 솔루션 탐색기의 "CMake 대상 보기"에서 모듈 트리가 보인다. 시작 항목을 `ProjectEEditor.exe`로 고르고 F5. 빌드는 Ctrl+Shift+B.
-2. **더블클릭**: 루트의 `Build.bat`(빌드), `RunEditor.bat`(빌드 후 에디터 실행), `GenerateSolution.bat`(.sln 생성 후 열기).
-3. **명령줄**:
+2. **.sln으로 빌드**: `GenerateSolution.bat` 더블클릭 → `Builds2022\ProjectE.sln`이 생성되어 열린다. 시작 프로젝트는 `ProjectEEditor`로 설정되어 있고 F5로 빌드+실행. 파일/모듈을 추가한 뒤에는 이 배치를 다시 실행하거나 VS의 ZERO_CHECK 프로젝트가 자동 재생성한다. 산출물은 `Builds2022\Bin\<Debug|Release>\`.
+3. **더블클릭**: 루트의 `Build.bat`(빌드), `RunEditor.bat`(빌드 후 에디터 실행).
+4. **명령줄**:
 
 ```powershell
 .\Scripts\Build.ps1                  # 구성 + Ninja Debug 빌드

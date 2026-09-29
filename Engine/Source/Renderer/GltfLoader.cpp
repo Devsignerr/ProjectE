@@ -214,6 +214,30 @@ namespace
 			}
 		}
 
+		// 스킨 가중치 (JOINTS_0 + WEIGHTS_0). 가중치 합을 1로 정규화
+		const cgltf_accessor* JointsAccessor  = FindAttribute(Primitive, cgltf_attribute_type_joints, 0);
+		const cgltf_accessor* WeightsAccessor = FindAttribute(Primitive, cgltf_attribute_type_weights, 0);
+		if (JointsAccessor != nullptr && WeightsAccessor != nullptr && JointsAccessor->count == VertexCount && WeightsAccessor->count == VertexCount)
+		{
+			const std::vector<float> Weights = UnpackFloats(WeightsAccessor, 4);
+			OutMesh.SkinVertices.resize(VertexCount);
+			for (cgltf_size Index = 0; Index < VertexCount; ++Index)
+			{
+				cgltf_uint Joints[4] = { 0, 0, 0, 0 };
+				cgltf_accessor_read_uint(JointsAccessor, Index, Joints, 4);
+
+				FSkinVertex& Skin = OutMesh.SkinVertices[Index];
+				FVector4     W(Weights[Index * 4], Weights[Index * 4 + 1], Weights[Index * 4 + 2], Weights[Index * 4 + 3]);
+				const float  Sum = W.X + W.Y + W.Z + W.W;
+				W = Sum > FMath::SmallNumber ? W / Sum : FVector4(1.0f, 0.0f, 0.0f, 0.0f);
+				for (int32 Slot = 0; Slot < 4; ++Slot)
+				{
+					Skin.Joints[Slot] = static_cast<uint16>(FMath::Min<cgltf_uint>(Joints[Slot], MaxSkinJoints - 1));
+				}
+				Skin.Weights = W;
+			}
+		}
+
 		if (Primitive.indices != nullptr)
 		{
 			OutMesh.Data.Indices.resize(Primitive.indices->count);
@@ -370,6 +394,10 @@ namespace
 			{
 				Node.Meshes = MeshPrimitiveLists[static_cast<size_t>(GltfNode.mesh - Data.meshes)];
 			}
+			if (GltfNode.skin != nullptr)
+			{
+				Node.Skin = static_cast<int32>(GltfNode.skin - Data.skins);
+			}
 		}
 
 		// 루트: 기본 씬의 노드 목록, 없으면 부모 없는 노드 전체
@@ -390,6 +418,115 @@ namespace
 					OutModel.RootNodes.push_back(static_cast<int32>(Index));
 				}
 			}
+		}
+	}
+
+	// 스킨: 조인트 노드 + 역바인드 행렬 (축 변환 후 이동부만 ImportScale — 균등 스케일은 선형부와 교환 가능)
+	void LoadSkins(const cgltf_data& Data, FModelData& OutModel)
+	{
+		OutModel.Skins.resize(Data.skins_count);
+		for (cgltf_size Index = 0; Index < Data.skins_count; ++Index)
+		{
+			const cgltf_skin& GltfSkin = Data.skins[Index];
+			FModelSkin&       Skin     = OutModel.Skins[Index];
+			Skin.Name = SafeName(GltfSkin.name, "Skin", Index);
+
+			cgltf_size JointCount = GltfSkin.joints_count;
+			if (JointCount > MaxSkinJoints)
+			{
+				E_LOG(LogRenderer, Warning, "스킨 '{}' 조인트 {}개 중 {}개만 사용합니다", Skin.Name, JointCount, MaxSkinJoints);
+				JointCount = MaxSkinJoints;
+			}
+			Skin.Joints.resize(JointCount);
+			Skin.InverseBindMatrices.assign(JointCount, FMatrix4x4::Identity);
+			for (cgltf_size Joint = 0; Joint < JointCount; ++Joint)
+			{
+				Skin.Joints[Joint] = static_cast<int32>(GltfSkin.joints[Joint] - Data.nodes);
+				if (GltfSkin.inverse_bind_matrices != nullptr && Joint < GltfSkin.inverse_bind_matrices->count)
+				{
+					// 열우선 float[16]을 행우선으로 읽으면 행벡터 규약 행렬
+					FMatrix4x4 Matrix;
+					cgltf_accessor_read_float(GltfSkin.inverse_bind_matrices, Joint, &Matrix.M[0][0], 16);
+					Matrix = FGltfLoader::ConvertMatrix(Matrix);
+					for (int32 Axis = 0; Axis < 3; ++Axis)
+					{
+						Matrix.M[3][Axis] *= FGltfLoader::ImportScale;
+					}
+					Skin.InverseBindMatrices[Joint] = Matrix;
+				}
+			}
+		}
+	}
+
+	// 애니메이션: 채널별 키를 엔진 좌표계로 변환. CUBICSPLINE은 탄젠트를 버리고 선형 보간으로 대체
+	void LoadAnimations(const cgltf_data& Data, FModelData& OutModel)
+	{
+		for (cgltf_size Index = 0; Index < Data.animations_count; ++Index)
+		{
+			const cgltf_animation& GltfAnimation = Data.animations[Index];
+			FAnimationClip         Clip;
+			Clip.Name = SafeName(GltfAnimation.name, "Animation", Index);
+
+			for (cgltf_size ChannelIndex = 0; ChannelIndex < GltfAnimation.channels_count; ++ChannelIndex)
+			{
+				const cgltf_animation_channel& GltfChannel = GltfAnimation.channels[ChannelIndex];
+				const cgltf_animation_sampler* Sampler     = GltfChannel.sampler;
+				if (GltfChannel.target_node == nullptr || Sampler == nullptr || Sampler->input == nullptr || Sampler->output == nullptr)
+				{
+					continue;
+				}
+
+				FAnimationChannel Channel;
+				Channel.Node = static_cast<int32>(GltfChannel.target_node - Data.nodes);
+				switch (GltfChannel.target_path)
+				{
+				case cgltf_animation_path_type_translation: Channel.Path = EAnimationPath::Translation; break;
+				case cgltf_animation_path_type_rotation:    Channel.Path = EAnimationPath::Rotation; break;
+				case cgltf_animation_path_type_scale:       Channel.Path = EAnimationPath::Scale; break;
+				default: continue; // 모프 가중치 등은 미지원
+				}
+				Channel.Interpolation = Sampler->interpolation == cgltf_interpolation_type_step ? EAnimationInterpolation::Step
+				                                                                                : EAnimationInterpolation::Linear;
+				const bool       bCubic     = Sampler->interpolation == cgltf_interpolation_type_cubic_spline;
+				const cgltf_size KeyCount   = Sampler->input->count;
+				const cgltf_size Components = Channel.Path == EAnimationPath::Rotation ? 4 : 3;
+				if (Sampler->output->count < KeyCount * (bCubic ? 3 : 1))
+				{
+					E_LOG(LogRenderer, Warning, "애니메이션 '{}' 채널 {}: 출력 키 수가 부족해 건너뜁니다", Clip.Name, ChannelIndex);
+					continue;
+				}
+
+				Channel.Times.resize(KeyCount);
+				Channel.Values.resize(KeyCount);
+				for (cgltf_size Key = 0; Key < KeyCount; ++Key)
+				{
+					cgltf_accessor_read_float(Sampler->input, Key, &Channel.Times[Key], 1);
+
+					float Value[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+					cgltf_accessor_read_float(Sampler->output, bCubic ? Key * 3 + 1 : Key, Value, Components);
+					switch (Channel.Path)
+					{
+					case EAnimationPath::Translation:
+						Channel.Values[Key] = FVector4(FGltfLoader::ConvertPosition({ Value[0], Value[1], Value[2] }) * FGltfLoader::ImportScale, 0.0f);
+						break;
+					case EAnimationPath::Rotation:
+					{
+						const FQuat Q = FGltfLoader::ConvertRotation({ Value[0], Value[1], Value[2], Value[3] });
+						Channel.Values[Key] = FVector4(Q.X, Q.Y, Q.Z, Q.W);
+						break;
+					}
+					case EAnimationPath::Scale:
+						Channel.Values[Key] = FVector4(FGltfLoader::ConvertScale({ Value[0], Value[1], Value[2] }), 0.0f);
+						break;
+					}
+				}
+				if (KeyCount > 0)
+				{
+					Clip.Duration = FMath::Max(Clip.Duration, Channel.Times[KeyCount - 1]);
+				}
+				Clip.Channels.push_back(std::move(Channel));
+			}
+			OutModel.Animations.push_back(std::move(Clip));
 		}
 	}
 } // namespace
@@ -469,6 +606,8 @@ bool FGltfLoader::Load(const std::filesystem::path& Path, FModelData& OutModel)
 	}
 
 	LoadNodes(*Data, MeshPrimitiveLists, OutModel);
+	LoadSkins(*Data, OutModel);
+	LoadAnimations(*Data, OutModel);
 	cgltf_free(Data);
 
 	size_t TotalVertices = 0;
@@ -481,5 +620,9 @@ bool FGltfLoader::Load(const std::filesystem::path& Path, FModelData& OutModel)
 	E_LOG(LogRenderer, Display, "glTF 로드: {} (노드 {}, 메시 {}, 머티리얼 {}, 이미지 {}, 정점 {}, 삼각형 {})", OutModel.Name,
 	      OutModel.Nodes.size(), OutModel.Meshes.size(), OutModel.Materials.size(), OutModel.Images.size(), TotalVertices,
 	      TotalIndices / 3);
+	if (!OutModel.Skins.empty() || !OutModel.Animations.empty())
+	{
+		E_LOG(LogRenderer, Display, "glTF 스킨 {}, 애니메이션 {}개", OutModel.Skins.size(), OutModel.Animations.size());
+	}
 	return true;
 }

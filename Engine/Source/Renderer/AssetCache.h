@@ -17,7 +17,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 ImageMagic   = 0x58455445; // "ETEX"
-	static constexpr uint32 ModelVersion = 3; // 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 4; // 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 ImageVersion = 1;
 
 	static constexpr const wchar_t* ModelExtension = L".emodel";

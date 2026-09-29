@@ -2,6 +2,7 @@
   "Shaders": [
     { "File": "Mesh.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "Mesh.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "Mesh.hlsl", "Entry": "VSSkinned", "Stage": "Vertex" },
     { "File": "Triangle.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "Triangle.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" },
@@ -18,6 +19,7 @@
     { "File": "AutoExposure.hlsl", "Entry": "PSHistogram", "Stage": "Pixel" },
     { "File": "AutoExposure.hlsl", "Entry": "CSAverage", "Stage": "Compute" },
     { "File": "Shadow.hlsl", "Entry": "ShadowVS", "Stage": "Vertex" },
+    { "File": "Shadow.hlsl", "Entry": "ShadowSkinnedVS", "Stage": "Vertex" },
     { "File": "Ibl.hlsl", "Entry": "SkyCS", "Stage": "Compute" },
     { "File": "Ibl.hlsl", "Entry": "IrradianceCS", "Stage": "Compute" },
     { "File": "Ibl.hlsl", "Entry": "PrefilterCS", "Stage": "Compute" },

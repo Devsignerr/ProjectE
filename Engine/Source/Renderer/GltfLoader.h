@@ -3,6 +3,8 @@
 #include "Core/Math/Math.h"
 #include "Renderer/Image.h"
 #include "Renderer/MeshData.h"
+#include "Renderer/SkinnedMeshData.h"
+#include "Scene/Animation.h"
 
 #include <filesystem>
 #include <string>
@@ -40,6 +42,8 @@ struct FModelMesh
 	std::string Name;
 	FMeshData   Data;
 	int32       Material = -1; // FModelData::Materials 인덱스
+
+	std::vector<FSkinVertex> SkinVertices; // JOINTS_0/WEIGHTS_0 (비어 있으면 정적 메시)
 };
 
 struct FModelNode
@@ -51,6 +55,7 @@ struct FModelNode
 	FQuat              Rotation;
 	FVector3           Scale = FVector3::OneVector;
 	std::vector<int32> Meshes; // FModelData::Meshes 인덱스 (노드의 glTF 메시가 가진 primitive들)
+	int32              Skin = -1; // FModelData::Skins 인덱스
 };
 
 struct FModelData
@@ -61,6 +66,8 @@ struct FModelData
 	std::vector<FModelMesh>     Meshes;
 	std::vector<FModelNode>     Nodes;
 	std::vector<int32>          RootNodes;
+	std::vector<FModelSkin>     Skins;
+	std::vector<FAnimationClip> Animations; // 채널 Node = Nodes 인덱스
 };
 
 // cgltf 기반 glTF/GLB 로더.

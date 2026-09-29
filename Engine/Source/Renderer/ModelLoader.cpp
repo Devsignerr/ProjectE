@@ -14,10 +14,11 @@ namespace
 {
 	void InstantiateNode(const FModelData& Model, int32 NodeIndex, FEntity ParentEntity, FScene& Scene,
 	                     const std::vector<FMeshHandle>& MeshHandles, const std::vector<FMaterialHandle>& MaterialHandles,
-	                     FMaterialHandle DefaultMaterial)
+	                     FMaterialHandle DefaultMaterial, std::vector<FEntity>& NodeEntities)
 	{
 		const FModelNode& Node   = Model.Nodes[NodeIndex];
 		const FEntity     Entity = Scene.CreateEntity(Node.Name);
+		NodeEntities[NodeIndex]  = Entity;
 		Scene.SetParent(Entity, ParentEntity);
 		Scene.GetRegistry().Emplace<FTransientComponent>(Entity); // 모델에서 생성된 노드: 직렬화 제외
 
@@ -55,8 +56,67 @@ namespace
 
 		for (int32 Child : Node.Children)
 		{
-			InstantiateNode(Model, Child, Entity, Scene, MeshHandles, MaterialHandles, DefaultMaterial);
+			InstantiateNode(Model, Child, Entity, Scene, MeshHandles, MaterialHandles, DefaultMaterial, NodeEntities);
 		}
+	}
+
+	// 스킨 노드의 메시 엔티티(노드 자신 또는 primitive 자식)에 조인트 바인딩 부착. 모든 노드 생성 후 호출
+	void AttachSkins(const FModelData& Model, FScene& Scene, const std::vector<FEntity>& NodeEntities)
+	{
+		FRegistry& Registry = Scene.GetRegistry();
+		for (size_t NodeIndex = 0; NodeIndex < Model.Nodes.size(); ++NodeIndex)
+		{
+			const FModelNode& Node = Model.Nodes[NodeIndex];
+			if (Node.Skin < 0 || !Registry.IsValid(NodeEntities[NodeIndex]))
+			{
+				continue;
+			}
+			const FModelSkin& Skin = Model.Skins[Node.Skin];
+			FSkinComponent    Binding;
+			Binding.InverseBindMatrices = Skin.InverseBindMatrices;
+			Binding.Joints.reserve(Skin.Joints.size());
+			for (int32 Joint : Skin.Joints)
+			{
+				Binding.Joints.push_back(NodeEntities[Joint]);
+			}
+
+			std::vector<FEntity> Targets = { NodeEntities[NodeIndex] };
+			if (Node.Meshes.size() > 1)
+			{
+				Targets = Scene.GetChildren(NodeEntities[NodeIndex]);
+			}
+			for (FEntity Target : Targets)
+			{
+				if (Registry.Has<FStaticMeshComponent>(Target))
+				{
+					Registry.Emplace<FSkinComponent>(Target) = Binding;
+				}
+			}
+		}
+	}
+
+	// 애니메이션이 있으면 루트에 FAnimationComponent (이미 있으면 설정 유지 — 씬 파일에서 복원된 경우) + 런타임 연결
+	void AttachAnimation(const FModelData& Model, FScene& Scene, FEntity Root, std::vector<FEntity> NodeEntities)
+	{
+		if (Model.Animations.empty())
+		{
+			return;
+		}
+		std::vector<int32>     Parents(Model.Nodes.size());
+		std::vector<FNodePose> RestPose(Model.Nodes.size());
+		for (size_t Index = 0; Index < Model.Nodes.size(); ++Index)
+		{
+			const FModelNode& Node = Model.Nodes[Index];
+			Parents[Index]              = Node.Parent;
+			RestPose[Index].Translation = Node.Translation;
+			RestPose[Index].Rotation    = Node.Rotation;
+			RestPose[Index].Scale       = Node.Scale;
+		}
+
+		FAnimationComponent& Animation = Scene.GetRegistry().GetOrEmplace<FAnimationComponent>(Root);
+		Animation.Runtime              = FAnimationRuntime{};
+		Animation.Runtime.Set          = MakeAnimationSet(Model.Animations, std::move(Parents), std::move(RestPose));
+		Animation.Runtime.NodeEntities = std::move(NodeEntities);
 	}
 } // namespace
 
@@ -160,15 +220,21 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 	{
 		if (!Model.Meshes[Index].Data.Vertices.empty() && !Model.Meshes[Index].Data.Indices.empty())
 		{
-			MeshHandles[Index] = Resources.CreateMesh(Model.Meshes[Index].Data, FStringConv::ToWide(Model.Name + "/" + Model.Meshes[Index].Name));
+			const std::wstring DebugName = FStringConv::ToWide(Model.Name + "/" + Model.Meshes[Index].Name);
+			MeshHandles[Index] = Model.Meshes[Index].SkinVertices.empty()
+			                         ? Resources.CreateMesh(Model.Meshes[Index].Data, DebugName)
+			                         : Resources.CreateSkinnedMesh(Model.Meshes[Index].Data, Model.Meshes[Index].SkinVertices, DebugName);
 		}
 	}
 
 	// 엔티티 계층
+	std::vector<FEntity> NodeEntities(Model.Nodes.size(), NullEntity);
 	for (int32 RootNode : Model.RootNodes)
 	{
-		InstantiateNode(Model, RootNode, Root, Scene, MeshHandles, MaterialHandles, Resources.GetDefaultMaterial());
+		InstantiateNode(Model, RootNode, Root, Scene, MeshHandles, MaterialHandles, Resources.GetDefaultMaterial(), NodeEntities);
 	}
+	AttachSkins(Model, Scene, NodeEntities);
+	AttachAnimation(Model, Scene, Root, std::move(NodeEntities));
 
 	E_LOG(LogRenderer, Display, "모델 배치: {} (메시 {}, 머티리얼 {}, 텍스처 {})", Model.Name, MeshHandles.size(),
 	      MaterialHandles.size(), ImageTextures.size());

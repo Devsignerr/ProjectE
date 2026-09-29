@@ -1,10 +1,12 @@
 #include "RuntimeApplication.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/AnimationSystem.h"
 #include "Scene/SceneSerializer.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
@@ -65,9 +67,12 @@ bool FRuntimeApplication::OnInit()
 
 	// 프로젝트 기본 씬 로드, 없거나 실패하면 자리표시 씬
 	bool bSceneLoaded = false;
-	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
+	// --scene <Content 기준 상대 경로>가 있으면 기본 씬 대신 사용
+	const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene");
+	if (FPaths::HasProject() && (!SceneArg.empty() || !FPaths::GetProjectDescriptor().DefaultScene.empty()))
 	{
-		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);
+		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() /
+		                                        (SceneArg.empty() ? FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene) : SceneArg);
 		if (FSceneSerializer::LoadFromFile(Scene, ScenePath))
 		{
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
@@ -101,6 +106,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	CameraController.Update(Camera, InputState, DeltaSeconds);
+	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
 }
 

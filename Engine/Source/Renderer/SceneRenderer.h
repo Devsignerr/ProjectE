@@ -9,6 +9,7 @@
 #include "Renderer/PostProcess.h"
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/ShadowRenderer.h"
+#include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
 #include "Scene/ResourceHandles.h"
 
@@ -73,10 +74,13 @@ private:
 		FMaterialHandle    MaterialHandle;
 		FMatrix4x4         World;
 		float              DistanceSquared = 0.0f;
+		D3D12_GPU_VIRTUAL_ADDRESS SkinPalette = 0; // 0이 아니면 스킨 메시 (World = 항등)
 	};
 
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
 	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
+	// 스킨 메시 PSO (Mesh.hlsl VSSkinned + 스킨 입력 레이아웃)
+	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 
 	void               CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition);
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
@@ -88,6 +92,8 @@ private:
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
+	FD3D12PipelineState  SkinnedPipelineState;
+	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;

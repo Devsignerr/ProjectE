@@ -380,3 +380,43 @@ E_TEST(ScriptSystem_AudioHooksAndAnimationBindings)
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	Scripts.EndPlay();
 }
+
+E_TEST(ScriptSystem_PhysicsHooks)
+{
+	FScene        Scene;
+	const FEntity Ball = Scene.CreateEntity("Ball");
+
+	FVector3      LastImpulse;
+	FVector3      LastForce;
+	FScriptSystem Scripts;
+	Scripts.SetContentDirectory(GetTestContentDirectory());
+	Scripts.SetPhysicsHooks({
+		[&](const FVector3& Origin, const FVector3&, float MaxDistance, FScriptRayHit& OutHit) {
+			if (MaxDistance < 100.0f)
+			{
+				return false;
+			}
+			OutHit = { Ball, Origin - FVector3(0.0f, 0.0f, 50.0f), FVector3::UpVector, 50.0f };
+			return true;
+		},
+		[&](FEntity, const FVector3& Force) { LastForce = Force; },
+		[&](FEntity, const FVector3& Impulse) { LastImpulse = Impulse; },
+		[&](FEntity, const FVector3&) {},
+		[&](FEntity) { return FVector3(1.0f, 2.0f, 3.0f); },
+	});
+	Scripts.BeginPlay(Scene);
+
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+local E = Scene.Find('Ball')
+E:AddImpulse(Vector3(0, 0, 10))
+E:AddForce(Vector3(5, 0, 0))
+assert(E:GetVelocity().Y == 2)
+local Hit = Physics.Raycast(Vector3(0, 0, 100), Vector3(0, 0, -1), 1000)
+assert(Hit and Hit.entity == E and Hit.distance == 50 and Hit.normal.Z == 1)
+assert(Physics.Raycast(Vector3(0, 0, 100), Vector3(0, 0, -1), 10) == nil)
+)"));
+	E_EXPECT_EQUALS(LastImpulse, FVector3(0.0f, 0.0f, 10.0f), 1.0e-5f);
+	E_EXPECT_EQUALS(LastForce, FVector3(5.0f, 0.0f, 0.0f), 1.0e-5f);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	Scripts.EndPlay();
+}

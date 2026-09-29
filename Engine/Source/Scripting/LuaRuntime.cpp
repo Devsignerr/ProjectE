@@ -470,6 +470,33 @@ void FLuaRuntime::RegisterEntityBindings()
 		}
 	};
 
+	// ---- 물리 (RigidBodyComponent + 콜라이더, 동적 바디). 훅이 없거나 바디가 없으면 무시 / 0 벡터
+	EntityType["AddForce"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Force) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->AddForce)
+		{
+			PhysicsHooks->AddForce(Entity.Entity, Force);
+		}
+	};
+	EntityType["AddImpulse"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Impulse) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->AddImpulse)
+		{
+			PhysicsHooks->AddImpulse(Entity.Entity, Impulse);
+		}
+	};
+	EntityType["SetVelocity"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Velocity) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->SetVelocity)
+		{
+			PhysicsHooks->SetVelocity(Entity.Entity, Velocity);
+		}
+	};
+	EntityType["GetVelocity"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->GetVelocity ? PhysicsHooks->GetVelocity(Entity.Entity) : FVector3();
+	};
+
 	Lua.new_usertype<FScriptComponentRef>(
 		"Component",
 		sol::no_constructor,
@@ -572,6 +599,22 @@ void FLuaRuntime::RegisterGlobals()
 		{
 			AudioHooks->PlayOneShot(ClipAsset);
 		}
+	};
+
+	// ---- Physics.Raycast(origin, direction, maxDistance) → { entity, position, normal, distance } 또는 nil (cm)
+	sol::table PhysicsTable   = Lua.create_named_table("Physics");
+	PhysicsTable["Raycast"]   = [this](const FVector3& Origin, const FVector3& Direction, float MaxDistance) -> sol::object {
+		FScriptRayHit Hit;
+		if (!PhysicsHooks || !PhysicsHooks->Raycast || !PhysicsHooks->Raycast(Origin, Direction, MaxDistance, Hit))
+		{
+			return sol::lua_nil;
+		}
+		sol::table Result  = Lua.create_table();
+		Result["entity"]   = Scene != nullptr && Scene->GetRegistry().IsValid(Hit.Entity) ? sol::make_object(Lua, FScriptEntity{ Hit.Entity }) : sol::object(sol::lua_nil);
+		Result["position"] = Hit.Position;
+		Result["normal"]   = Hit.Normal;
+		Result["distance"] = Hit.Distance;
+		return Result;
 	};
 
 	sol::table TimeTable     = Lua.create_named_table("Time");

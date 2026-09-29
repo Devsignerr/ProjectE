@@ -24,6 +24,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	EndPlay();
 	PlayRuntime = std::make_unique<FLuaRuntime>(ContentDirectory, ErrorCount);
 	PlayRuntime->SetAudioHooks(&AudioHooks);
+	PlayRuntime->SetPhysicsHooks(&PhysicsHooks);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;
@@ -132,4 +133,9 @@ FScriptValue FScriptSystem::GetInstanceProperty(FEntity Entity, const std::strin
 void FScriptSystem::SetAudioHooks(FScriptAudioHooks Hooks)
 {
 	AudioHooks = std::move(Hooks);
+}
+
+void FScriptSystem::SetPhysicsHooks(FScriptPhysicsHooks Hooks)
+{
+	PhysicsHooks = std::move(Hooks);
 }

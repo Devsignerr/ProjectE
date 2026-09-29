@@ -142,10 +142,11 @@
 - [x] 1a) (서브에이전트) 스켈레탈 애니메이션: glTF 스킨/애니메이션 임포트(IBM 이동 ×100), GPU 스키닝(메인+그림자+아웃라인), `FAnimationComponent`/`FAnimationSystem`(재생/루프/속도/크로스페이드/루트 모션, Lua용 API), ModelVersion 4, Khronos Fox(CC-BY) + `Demo_Animation.escene`, `--scene` 인자, AnimationTests. 한계: 클립 선택은 텍스트, 피킹은 바인드 포즈 경계, 모프 타깃 미지원
 - [x] 1b) (서브에이전트) Lua 스크립팅 + 에디터 플레이 모드: Lua 5.4.9 + sol2 3.3.0(C++로 컴파일), Scripting 모듈(리플렉션 자동 바인딩, Scene/Log/Input/Time, 핫 리로드, 오류 격리), 유니티형 테이블 + Properties 인스펙터, 플레이 모드(메모리 복제 `FSceneCloner`, 정지 시 복원, 일시정지/한 프레임, 카메라 컴포넌트), `Demo_Scripting.escene`, ScriptingTests. 머지 시 통합: 복제(플레이/Ctrl+D/Undo 템플릿) 시 스킨·애니메이션 런타임 참조 재매핑(`FSceneCloner::CopyRuntimeData/RemapRuntimeReferences`), 플레이 중 Undo 차단, Lua 애니메이션 API(`entity:PlayAnimation/StopAnimation/ResumeAnimation/SetAnimationSpeed/GetAnimationClip(s)`)
 - [x] 1c) (서브에이전트) 에디터 편의: 스냅샷 Undo/Redo(100단계, 드래그 1회=1단계, dirty `*`), 무한 그리드·축(Grid.hlsl), 스냅(10cm/15°/0.1, Ctrl 반전), 복제 Ctrl+D(리플렉션 서브트리 복제), 다중 선택(Ctrl/Shift), 에디터 카메라 저장 + F 포커스, `--select A,B`/`--verify-undo`, EditorTests. 한계: 머티리얼 편집은 Undo 제외, 대형 씬 스냅샷 비용
-- [ ] 2) 물리(Jolt) — 1b 머지 후
+- [x] 2) (서브에이전트) 물리: Jolt 5.6.0(MIT, 태그 zip SHA256 고정), Physics 모듈(`FPhysicsWorld` cm↔m 변환·축/쿼터니언 그대로(해밀턴 곱 동일, 테스트로 검증), `FPhysicsSystem` 60Hz 고정 스텝 + 보간, 부모 있는 엔티티 로컬 역변환, 키네마틱 이동, 스크립트 텔레포트 감지), RigidBody/Box/Sphere/Capsule 콜라이더 컴포넌트(`RegisterPhysicsTypes()`), Lua `AddForce/AddImpulse/SetVelocity/GetVelocity`·`Physics.Raycast`(`FScriptPhysicsHooks`), 에디터 플레이 모드·런타임 연동, `primitive:sphere`, `Demo_Physics.escene` + `Launcher.lua`, PhysicsTests 12개. 한계: 엔티티당 콜라이더 1개, 충돌 콜백/트리거 없음, 에디터 콜라이더 표시 없음
 - [x] 3) 오디오(miniaudio 0.11.25): Audio 모듈(FAudioEngine/FAudioSystem/FAudioSourceComponent), 3D 공간화(청자 공간 변환), 런타임 연동 + `--scene`, 샘플 Hum/Chime.wav(자체 생성), `Demo_Audio.escene`, AudioTests 10개 완료. 에디터 플레이 모드 재생(보는 카메라가 청자, 정지 시 해제), Lua `entity:PlaySound/StopSound`, `Audio.PlayOneShot`(Scripting은 `FScriptAudioHooks`로 Audio에 비의존)
 - [x] 4) 텍스처 압축: `TextureCompression`(CPU 밉 — sRGB 선형 평균/노멀 재정규화, BC7/BC5/BC4, bc7enc_rdo), `FD3D12Texture::Init2DFromMips`, 용도별 쿠킹(`*.color|linear|normal|mask.etex`), .emat 슬롯 용도, 셰이더 노멀 Z 재구성, Cook 도구 용도 수집 완료. 배포 패키지: 쿠킹 DXIL + Shaders.json(엔진 마커)만, dxcompiler.dll 지연 로드(없으면 쿠킹 셰이더 전용), 쿠킹본 있는 원본 에셋 제외(`-IncludeSources`로 포함) — DXC 없는 패키지 실행 검증 완료. 모델 내장 이미지도 머티리얼 용도별 압축(`CompressModelImages`, ModelVersion 5) — DamagedHelmet 쿠킹 80MB → 26MB
 - [ ] 5) 엔진 DLL화 + 게임 모듈
+- [ ] 후속: 쿠킹 셰이더 캐시를 타임스탬프 대신 소스+include 내용 해시로 검증 (머지 직후 스킨 아웃라인 VS가 오래된 DXIL로 남아 보이지 않던 사례 — 재컴파일 후 정상, 경위 미확정)
 
 ## Phase 7 — 게임 시스템
 

@@ -17,3 +17,6 @@ CMakeUserPresets.json
 *.log
 *.tmp
 Saved/
+
+# Claude Code 워크트리/세션 파일
+.claude/worktrees/

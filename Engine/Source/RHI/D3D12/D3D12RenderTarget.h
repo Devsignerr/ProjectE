@@ -76,6 +76,8 @@ public:
 	const FD3D12DescriptorHandle& GetSrv() const { return Srv; }
 	D3D12_CPU_DESCRIPTOR_HANDLE   GetRtv() const { return RtvHeap.GetCpuHandle(0); }
 	ID3D12Resource*               GetColorResource() const { return ColorResource.Get(); }
+	// 깊이 버퍼 DSV (bWithDepth일 때만 유효). 상태는 항상 DEPTH_WRITE — 깊이 쓰기 없이 테스트만 하는 오버레이에 재사용 가능
+	D3D12_CPU_DESCRIPTOR_HANDLE   GetDsv() const { return DepthBuffer.GetDepthStencilView(); }
 	const FRenderTargetDesc&      GetDesc() const { return Desc; }
 	uint32                        GetWidth() const { return Width; }
 	uint32                        GetHeight() const { return Height; }

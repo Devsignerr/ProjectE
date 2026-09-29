@@ -46,6 +46,17 @@ FD3D12DescriptorHandle FD3D12DescriptorAllocator::Allocate()
 	return Handle;
 }
 
+void FD3D12DescriptorAllocator::FreeByCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle)
+{
+	const uint32 Index = Heap.GetIndexFromCpuHandle(CpuHandle);
+	E_CHECKF(Index != ~0u, "이 할당자의 힙에 속하지 않는 디스크립터입니다");
+
+	FD3D12DescriptorHandle Handle;
+	Handle.Index = Index;
+	Handle.Cpu   = CpuHandle;
+	Free(Handle);
+}
+
 void FD3D12DescriptorAllocator::Free(FD3D12DescriptorHandle& Handle)
 {
 	if (!Handle.IsValid())

@@ -29,6 +29,9 @@ public:
 	FD3D12DescriptorHandle Allocate();
 	void                   Free(FD3D12DescriptorHandle& Handle);
 
+	// 외부 라이브러리(ImGui 등)가 CPU 핸들만 돌려줄 때 사용
+	void FreeByCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle);
+
 	ID3D12DescriptorHeap* GetHeap() const { return Heap.GetHeap(); }
 	uint32                GetCapacity() const { return Capacity; }
 	uint32                GetAllocatedCount() const { return NextUnused - static_cast<uint32>(FreeList.size()); }

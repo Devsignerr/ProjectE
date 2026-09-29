@@ -44,6 +44,10 @@ public:
 	// 커맨드 리스트를 닫아 실행하고 Present
 	void EndFrame();
 
+	// 백버퍼(+깊이)를 렌더 타깃으로 다시 바인딩하고 전체 뷰포트/시저 설정.
+	// 오프스크린 렌더 타깃을 쓴 뒤 복귀하거나, UI를 UNORM 뷰(bLinearView)로 그릴 때 사용.
+	void SetRenderTargetToBackBuffer(bool bLinearView = false);
+
 	void SetVSync(bool bEnabled) { bVSync = bEnabled; }
 	bool IsVSync() const { return bVSync; }
 

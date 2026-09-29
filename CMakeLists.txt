@@ -52,10 +52,11 @@ option(E_BUILD_TESTS "단위 테스트 빌드" ON)
 
 add_subdirectory(Engine)
 add_subdirectory(Sandbox)
+add_subdirectory(Editor)
 
 if(E_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)
 endif()
 
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Sandbox)
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ProjectEEditor)

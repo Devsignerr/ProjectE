@@ -139,11 +139,16 @@ void FD3D12RHI::BeginFrame(const float ClearColor[4])
 		MakeTransitionBarrier(BackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->ResourceBarrier(1, &ToRenderTarget);
 
-	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SwapChain.GetCurrentRenderTargetView();
+	SetRenderTargetToBackBuffer(false);
+	CommandList->ClearRenderTargetView(SwapChain.GetCurrentRenderTargetView(false), ClearColor, 0, nullptr);
+	CommandList->ClearDepthStencilView(DepthBuffer.GetDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+}
+
+void FD3D12RHI::SetRenderTargetToBackBuffer(bool bLinearView)
+{
+	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SwapChain.GetCurrentRenderTargetView(bLinearView);
 	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
 	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
-	CommandList->ClearRenderTargetView(Rtv, ClearColor, 0, nullptr);
-	CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
 
 	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f,
 	                               static_cast<float>(SwapChain.GetWidth()), static_cast<float>(SwapChain.GetHeight()),

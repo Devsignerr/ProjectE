@@ -23,6 +23,8 @@ class FWindow
 {
 public:
 	using FEventHandler = std::function<void(const FWindowEvent&)>;
+	// 원시 Win32 메시지를 먼저 받는 훅 (UI 라이브러리 등). true를 반환하면 메시지를 소비한다.
+	using FMessageHook = std::function<bool(HWND Hwnd, uint32 Message, uint64 WParam, int64 LParam)>;
 
 	FWindow() = default;
 	~FWindow();
@@ -37,6 +39,7 @@ public:
 	void PumpMessages();
 
 	void SetEventHandler(FEventHandler Handler) { EventHandler = std::move(Handler); }
+	void SetMessageHook(FMessageHook Hook) { MessageHook = std::move(Hook); }
 	void SetTitle(const std::wstring& Title);
 
 	HWND   GetHandle() const { return Hwnd; }
@@ -57,4 +60,5 @@ private:
 	bool          bMinimized  = false;
 	bool          bInSizeMove = false; // 드래그 리사이즈 중에는 Resize 이벤트를 보류
 	FEventHandler EventHandler;
+	FMessageHook  MessageHook;
 };

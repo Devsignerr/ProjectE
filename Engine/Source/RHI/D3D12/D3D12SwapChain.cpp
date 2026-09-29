@@ -36,7 +36,8 @@ bool FD3D12SwapChain::Init(FD3D12Device& InDevice, FD3D12CommandQueue& PresentQu
 	E_D3D_VERIFY(Factory->MakeWindowAssociation(WindowHandle, DXGI_MWA_NO_ALT_ENTER));
 	E_D3D_VERIFY(SwapChain1.As(&SwapChain));
 
-	if (!RtvHeap.Init(Device->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, BackBufferCount, false, L"SwapChainRtvHeap"))
+	// 백버퍼마다 sRGB 뷰 + UNORM 뷰
+	if (!RtvHeap.Init(Device->GetDevice(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, BackBufferCount * 2, false, L"SwapChainRtvHeap"))
 	{
 		return false;
 	}
@@ -109,6 +110,9 @@ bool FD3D12SwapChain::CreateBackBufferViews()
 		RtvDesc.ViewDimension      = D3D12_RTV_DIMENSION_TEXTURE2D;
 		RtvDesc.Texture2D.MipSlice = 0;
 		D3DDevice->CreateRenderTargetView(BackBuffers[Index].Get(), &RtvDesc, RtvHeap.GetCpuHandle(Index));
+
+		RtvDesc.Format = BackBufferFormat;
+		D3DDevice->CreateRenderTargetView(BackBuffers[Index].Get(), &RtvDesc, RtvHeap.GetCpuHandle(BackBufferCount + Index));
 	}
 
 	return true;

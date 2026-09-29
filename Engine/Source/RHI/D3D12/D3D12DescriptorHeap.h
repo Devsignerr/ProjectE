@@ -16,6 +16,19 @@ public:
 
 	ID3D12DescriptorHeap* GetHeap() const { return Heap.Get(); }
 	uint32                GetCapacity() const { return Capacity; }
+	uint32                GetIncrementSize() const { return IncrementSize; }
+
+	// CPU 핸들 → 인덱스 (이 힙의 핸들이 아니면 InvalidIndex)
+	uint32 GetIndexFromCpuHandle(D3D12_CPU_DESCRIPTOR_HANDLE Handle) const
+	{
+		if (IncrementSize == 0 || Handle.ptr < CpuStart.ptr)
+		{
+			return ~0u;
+		}
+		const SIZE_T Offset = Handle.ptr - CpuStart.ptr;
+		const uint32 Index  = static_cast<uint32>(Offset / IncrementSize);
+		return (Offset % IncrementSize == 0 && Index < Capacity) ? Index : ~0u;
+	}
 
 private:
 	ComPtr<ID3D12DescriptorHeap> Heap;

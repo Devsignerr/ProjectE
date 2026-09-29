@@ -23,9 +23,15 @@ public:
 
 	void Present(bool bVSync);
 
-	uint32                      GetCurrentBackBufferIndex() const { return SwapChain->GetCurrentBackBufferIndex(); }
-	ID3D12Resource*             GetCurrentBackBuffer() const { return BackBuffers[GetCurrentBackBufferIndex()].Get(); }
-	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRenderTargetView() const { return RtvHeap.GetCpuHandle(GetCurrentBackBufferIndex()); }
+	uint32          GetCurrentBackBufferIndex() const { return SwapChain->GetCurrentBackBufferIndex(); }
+	ID3D12Resource* GetCurrentBackBuffer() const { return BackBuffers[GetCurrentBackBufferIndex()].Get(); }
+
+	// bLinearView = false: sRGB 뷰(씬 렌더링용, 자동 감마 인코딩)
+	// bLinearView = true : UNORM 뷰(UI 등 이미 sRGB로 인코딩된 색을 그대로 쓸 때)
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentRenderTargetView(bool bLinearView = false) const
+	{
+		return RtvHeap.GetCpuHandle(GetCurrentBackBufferIndex() + (bLinearView ? BackBufferCount : 0));
+	}
 
 	uint32 GetWidth() const { return Width; }
 	uint32 GetHeight() const { return Height; }

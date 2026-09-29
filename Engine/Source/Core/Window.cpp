@@ -210,6 +210,11 @@ int64 __stdcall FWindow::WndProc(HWND InHwnd, uint32 Message, uint64 WParam, int
 
 int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 {
+	if (MessageHook && MessageHook(Hwnd, Message, WParam, LParam))
+	{
+		return 1;
+	}
+
 	FWindowEvent Event{};
 
 	switch (Message)

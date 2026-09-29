@@ -3,6 +3,7 @@
 #include "Core/Math/Box.h"
 #include "RHI/D3D12/D3D12Buffer.h"
 #include "Renderer/MeshData.h"
+#include "Renderer/SkinnedMeshData.h"
 
 #include <vector>
 
@@ -21,17 +22,27 @@ public:
 	// 토폴로지/버퍼 바인딩 후 인덱스 드로우
 	void Draw(ID3D12GraphicsCommandList* CommandList) const;
 
+	// 스킨 정점 스트림(슬롯 1) 추가. Init 이후 호출, 정점 수가 같아야 한다
+	bool InitSkin(FD3D12Device& Device, FD3D12CommandQueue& Queue, const std::vector<FSkinVertex>& SkinVertices, const wchar_t* DebugName);
+	bool IsSkinned() const { return bSkinned; }
+	// 슬롯 0 + 슬롯 1(스킨) 바인딩 후 드로우 (IsSkinned일 때만)
+	void DrawSkinned(ID3D12GraphicsCommandList* CommandList) const;
+
 	uint32      GetIndexCount() const { return IndexCount; }
 	uint32      GetVertexCount() const { return VertexCount; }
 	const FBox& GetLocalBounds() const { return LocalBounds; }
 
 	// FVertex에 대응하는 입력 레이아웃
 	static const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetInputLayout();
+	// FVertex + FSkinVertex(슬롯 1: BLENDINDICES, BLENDWEIGHT)
+	static const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetSkinnedInputLayout();
 
 private:
 	FD3D12Buffer VertexBuffer;
 	FD3D12Buffer IndexBuffer;
+	FD3D12Buffer SkinBuffer;
 	FBox         LocalBounds;
 	uint32       VertexCount = 0;
 	uint32       IndexCount  = 0;
+	bool         bSkinned    = false;
 };

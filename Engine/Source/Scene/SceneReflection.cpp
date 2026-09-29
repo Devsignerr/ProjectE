@@ -52,4 +52,14 @@ void RegisterSceneTypes()
 		.Property(&FDirectionalLightComponent::Color, "Color", "색", PF_Color)
 		.Property(&FDirectionalLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 50.0f, 0.05f)
 		.AsComponent();
+
+	// 런타임 상태(Runtime)는 등록하지 않는다. FSkinComponent는 런타임 전용이라 등록하지 않음
+	Registry.RegisterType<FAnimationComponent>("AnimationComponent", "애니메이션")
+		.Property(&FAnimationComponent::Clip, "Clip", "클립")
+		.Property(&FAnimationComponent::Speed, "Speed", "속도").Range(-5.0f, 5.0f, 0.01f)
+		.Property(&FAnimationComponent::BlendTime, "BlendTime", "블렌드 시간").Range(0.0f, 5.0f, 0.01f)
+		.Property(&FAnimationComponent::bPlaying, "Playing", "재생")
+		.Property(&FAnimationComponent::bLoop, "Loop", "반복")
+		.Property(&FAnimationComponent::bRootMotion, "RootMotion", "루트 모션")
+		.AsComponent();
 }

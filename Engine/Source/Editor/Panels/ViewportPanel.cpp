@@ -141,7 +141,8 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	Context.Renderer->Render(*Context.Scene, *Context.Camera, RenderTarget->GetOutput());
 	if (SelectionOutline)
 	{
-		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.SelectedEntity, RenderTarget->GetOutput());
+		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.SelectedEntity, RenderTarget->GetOutput(),
+		                         &Context.Renderer->GetSkinPalettes());
 	}
 	RenderTarget->End(CommandList);
 }

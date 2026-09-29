@@ -7,6 +7,7 @@
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/AnimationSystem.h"
 #include "Scene/SceneSerializer.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
@@ -114,6 +115,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	CameraController.Update(Camera, InputState, DeltaSeconds);
+	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
 
 	// 오디오: 카메라가 청자

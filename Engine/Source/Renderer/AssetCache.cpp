@@ -251,6 +251,7 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 		Writer.Write(Mesh.Material);
 		Writer.WriteArray(Mesh.Data.Vertices);
 		Writer.WriteArray(Mesh.Data.Indices);
+		Writer.WriteArray(Mesh.SkinVertices);
 	}
 
 	Writer.Write(static_cast<uint32>(Model.Nodes.size()));
@@ -263,9 +264,34 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 		Writer.Write(Node.Rotation);
 		Writer.Write(Node.Scale);
 		Writer.WriteArray(Node.Meshes);
+		Writer.Write(Node.Skin);
 	}
 
 	Writer.WriteArray(Model.RootNodes);
+
+	Writer.Write(static_cast<uint32>(Model.Skins.size()));
+	for (const FModelSkin& Skin : Model.Skins)
+	{
+		Writer.WriteString(Skin.Name);
+		Writer.WriteArray(Skin.Joints);
+		Writer.WriteArray(Skin.InverseBindMatrices);
+	}
+
+	Writer.Write(static_cast<uint32>(Model.Animations.size()));
+	for (const FAnimationClip& Clip : Model.Animations)
+	{
+		Writer.WriteString(Clip.Name);
+		Writer.Write(Clip.Duration);
+		Writer.Write(static_cast<uint32>(Clip.Channels.size()));
+		for (const FAnimationChannel& Channel : Clip.Channels)
+		{
+			Writer.Write(Channel.Node);
+			Writer.Write(static_cast<uint8>(Channel.Path));
+			Writer.Write(static_cast<uint8>(Channel.Interpolation));
+			Writer.WriteArray(Channel.Times);
+			Writer.WriteArray(Channel.Values);
+		}
+	}
 }
 
 bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
@@ -327,6 +353,7 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		Mesh.Material      = Reader.Read<int32>();
 		Mesh.Data.Vertices = Reader.ReadArray<FVertex>();
 		Mesh.Data.Indices  = Reader.ReadArray<uint32>();
+		Mesh.SkinVertices  = Reader.ReadArray<FSkinVertex>();
 	}
 
 	const uint32 NodeCount = Reader.Read<uint32>();
@@ -344,9 +371,55 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		Node.Rotation    = Reader.Read<FQuat>();
 		Node.Scale       = Reader.Read<FVector3>();
 		Node.Meshes      = Reader.ReadArray<int32>();
+		Node.Skin        = Reader.Read<int32>();
 	}
 
 	OutModel.RootNodes = Reader.ReadArray<int32>();
+
+	const uint32 SkinCount = Reader.Read<uint32>();
+	if (SkinCount > MaxElements)
+	{
+		return false;
+	}
+	OutModel.Skins.resize(SkinCount);
+	for (FModelSkin& Skin : OutModel.Skins)
+	{
+		Skin.Name                = Reader.ReadString();
+		Skin.Joints              = Reader.ReadArray<int32>(MaxSkinJoints);
+		Skin.InverseBindMatrices = Reader.ReadArray<FMatrix4x4>(MaxSkinJoints);
+	}
+
+	const uint32 AnimationCount = Reader.Read<uint32>();
+	if (AnimationCount > MaxElements)
+	{
+		return false;
+	}
+	OutModel.Animations.resize(AnimationCount);
+	for (FAnimationClip& Clip : OutModel.Animations)
+	{
+		Clip.Name     = Reader.ReadString();
+		Clip.Duration = Reader.Read<float>();
+		const uint32 ChannelCount = Reader.Read<uint32>();
+		if (ChannelCount > MaxElements || !Reader.IsOk())
+		{
+			return false;
+		}
+		Clip.Channels.resize(ChannelCount);
+		for (FAnimationChannel& Channel : Clip.Channels)
+		{
+			Channel.Node          = Reader.Read<int32>();
+			const uint8 Path      = Reader.Read<uint8>();
+			const uint8 Interp    = Reader.Read<uint8>();
+			if (Path > static_cast<uint8>(EAnimationPath::Scale) || Interp > static_cast<uint8>(EAnimationInterpolation::Step))
+			{
+				return false;
+			}
+			Channel.Path          = static_cast<EAnimationPath>(Path);
+			Channel.Interpolation = static_cast<EAnimationInterpolation>(Interp);
+			Channel.Times         = Reader.ReadArray<float>();
+			Channel.Values        = Reader.ReadArray<FVector4>();
+		}
+	}
 	if (!Reader.IsOk())
 	{
 		OutModel = FModelData{};
@@ -386,6 +459,30 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 	for (int32 Root : OutModel.RootNodes)
 	{
 		if (Root < 0 || Root >= static_cast<int32>(OutModel.Nodes.size())) return false;
+	}
+	for (const FModelMesh& Mesh : OutModel.Meshes)
+	{
+		if (!Mesh.SkinVertices.empty() && Mesh.SkinVertices.size() != Mesh.Data.Vertices.size()) return false;
+	}
+	for (const FModelNode& Node : OutModel.Nodes)
+	{
+		if (!InRange(Node.Skin, OutModel.Skins.size())) return false;
+	}
+	for (const FModelSkin& Skin : OutModel.Skins)
+	{
+		if (Skin.Joints.size() != Skin.InverseBindMatrices.size()) return false;
+		for (int32 Joint : Skin.Joints)
+		{
+			if (Joint < 0 || Joint >= static_cast<int32>(OutModel.Nodes.size())) return false;
+		}
+	}
+	for (const FAnimationClip& Clip : OutModel.Animations)
+	{
+		for (const FAnimationChannel& Channel : Clip.Channels)
+		{
+			if (Channel.Node < 0 || Channel.Node >= static_cast<int32>(OutModel.Nodes.size())) return false;
+			if (Channel.Times.size() != Channel.Values.size()) return false;
+		}
 	}
 	return true;
 }

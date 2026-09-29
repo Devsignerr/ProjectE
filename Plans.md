@@ -139,7 +139,7 @@
 순서:
 - [x] 0a) 자동 검증: `--exit-after/--screenshot/--log/--select`, D3D12 디버그 레이어 메시지 → 엔진 로그(디버거 없으면 중단 안 함), 백버퍼 PNG 스크린샷, `Scripts/Verify.ps1`. Phase 6 화면 자체 검증 완료(PBR/CSM/IBL 하늘/아웃라인/계층 강조/패널) + 발견한 디버그 레이어 오류 수정(IBL·포스트 공용 테이블 DATA_VOLATILE, HDR 최적 클리어 값) → 에디터/런타임/Sandbox 오류 0건
 - [x] 0b) 센티미터 전환: `FUnits`(Core/Math/Units.h), glTF 임포트 ×100(`FGltfLoader::ImportScale`, 방향 벡터 제외), `ModelVersion` 3, 기본 큐브 100cm, 카메라 근/원 10/100000, 플라이 속도 500cm/s, 그림자 거리 6000/5000, Main.escene·코드 씬 위치 ×100. 크래시 핸들러(`FCrashHandler`: SEH 예외 코드 + 심볼 콜스택 → stderr/로그) 추가
-- [~] 1a) (서브에이전트) 스켈레탈 애니메이션
+- [x] 1a) (서브에이전트) 스켈레탈 애니메이션: glTF 스킨/애니메이션 임포트(IBM 이동 ×100), GPU 스키닝(메인+그림자+아웃라인), `FAnimationComponent`/`FAnimationSystem`(재생/루프/속도/크로스페이드/루트 모션, Lua용 API), ModelVersion 4, Khronos Fox(CC-BY) + `Demo_Animation.escene`, `--scene` 인자, AnimationTests. 한계: 클립 선택은 텍스트, 피킹은 바인드 포즈 경계, 모프 타깃 미지원
 - [~] 1b) (서브에이전트) Lua 스크립팅 + 에디터 플레이 모드
 - [~] 1c) (서브에이전트) 에디터 편의: Undo/Redo, 그리드·축, 스냅, 복제, 다중 선택, 카메라 저장
 - [ ] 2) 물리(Jolt) — 1b 머지 후

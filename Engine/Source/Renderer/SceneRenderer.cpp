@@ -26,6 +26,7 @@ namespace
 		RootParam_Shadow          = 4, // b3 (캐스케이드 상수)
 		RootParam_ShadowMap       = 5, // t8 (섀도우 맵 배열)
 		RootParam_Ibl             = 6, // t5~t7
+		RootParam_SkinPalette     = 7, // b4 (스킨 메시 본 팔레트, 정점 셰이더)
 	};
 } // namespace
 
@@ -56,6 +57,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 IblIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 5) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(IblIndex == RootParam_Ibl);
+	const uint32 SkinPaletteIndex = RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	E_CHECK(SkinPaletteIndex == RootParam_SkinPalette);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -71,7 +74,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
-	if (!CreateMeshPipeline(PipelineState, false))
+	if (!CreateMeshPipeline(PipelineState, false) || !CreateSkinnedMeshPipeline(SkinnedPipelineState, false))
 	{
 		return false;
 	}
@@ -121,6 +124,39 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool b
 	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"MeshPipeline");
 }
 
+bool FSceneRenderer::CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+{
+	FShaderCompileDesc VertexDesc;
+	VertexDesc.FileName   = L"Mesh.hlsl";
+	VertexDesc.EntryPoint = L"VSSkinned";
+	VertexDesc.Stage      = EShaderStage::Vertex;
+	FShaderCompileDesc PixelDesc = VertexDesc;
+	PixelDesc.EntryPoint         = L"PSMain";
+	PixelDesc.Stage              = EShaderStage::Pixel;
+
+	if (bForceRecompile && !ShaderLibrary.CookShader(VertexDesc))
+	{
+		return false;
+	}
+
+	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
+	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
+	if (!VertexShader || !PixelShader)
+	{
+		return false;
+	}
+
+	FGraphicsPipelineDesc PsoDesc;
+	PsoDesc.RootSignature          = RootSignature.Get();
+	PsoDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
+	PsoDesc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
+	PsoDesc.InputLayout            = FStaticMesh::GetSkinnedInputLayout();
+	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
+	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
+	PsoDesc.bDepthEnable           = true;
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"SkinnedMeshPipeline");
+}
+
 bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 {
 	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
@@ -135,6 +171,17 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	// 이전 PSO는 진행 중인 프레임이 참조할 수 있으므로 지연 해제
 	PipelineState.Swap(NewPipeline);
 	Rhi->DeferRelease(NewPipeline.Detach());
+
+	FD3D12PipelineState NewSkinnedPipeline;
+	if (CreateSkinnedMeshPipeline(NewSkinnedPipeline, bForceRecompile))
+	{
+		SkinnedPipelineState.Swap(NewSkinnedPipeline);
+		Rhi->DeferRelease(NewSkinnedPipeline.Detach());
+	}
+	else
+	{
+		E_LOG(LogRenderer, Error, "스킨 메시 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
+	}
 
 	if (!ShadowRenderer.ReloadShaders(bForceRecompile))
 	{
@@ -168,6 +215,7 @@ void FSceneRenderer::Shutdown()
 	ShadowRenderer.Shutdown();
 	IblRenderer.Shutdown();
 	PipelineState.Shutdown();
+	SkinnedPipelineState.Shutdown();
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
@@ -210,8 +258,11 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 
 	const FPerFrameConstants PerFrame = BuildPerFrameConstants(Scene, Camera);
 
+	// 스킨 메시 본 팔레트 (섀도우/메인 패스 공유)
+	SkinPalettes.Build(Scene, *Resources, Rhi->GetDynamicBuffer());
+
 	// 0) 방향광 섀도우 패스
-	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
+	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
 
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Output.Width, Output.Height);
@@ -234,10 +285,12 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 
 	CollectDrawCommands(Scene, FrozenFrustum, Camera.GetPosition());
 
-	// 정렬: 머티리얼 → 메시 → 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
+	// 정렬: (정적/스킨 PSO) → 머티리얼 → 메시 → 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
 	std::sort(DrawCommands.begin(), DrawCommands.end(), [](const FMeshDrawCommand& A, const FMeshDrawCommand& B) {
-		return std::tie(A.MaterialHandle.Index, A.MeshHandle.Index, A.DistanceSquared) <
-		       std::tie(B.MaterialHandle.Index, B.MeshHandle.Index, B.DistanceSquared);
+		const bool bSkinnedA = A.SkinPalette != 0;
+		const bool bSkinnedB = B.SkinPalette != 0;
+		return std::tie(bSkinnedA, A.MaterialHandle.Index, A.MeshHandle.Index, A.DistanceSquared) <
+		       std::tie(bSkinnedB, B.MaterialHandle.Index, B.MeshHandle.Index, B.DistanceSquared);
 	});
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
@@ -257,10 +310,17 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
 
 	const FMaterial* BoundMaterial = nullptr;
+	bool             bSkinnedBound = false;
 	Stats.DrawCalls                = 0;
 
 	for (const FMeshDrawCommand& Command : DrawCommands)
 	{
+		const bool bSkinned = Command.SkinPalette != 0;
+		if (bSkinned != bSkinnedBound)
+		{
+			CommandList->SetPipelineState(bSkinned ? SkinnedPipelineState.Get() : PipelineState.Get());
+			bSkinnedBound = bSkinned;
+		}
 		if (Command.Material != BoundMaterial)
 		{
 			const uint64 Key   = Command.MaterialHandle.ToId();
@@ -279,7 +339,15 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 		PerObject.WorldInverseTranspose = Command.World.GetInverse().GetTransposed();
 		CommandList->SetGraphicsRootConstantBufferView(RootParam_PerObject, DynamicBuffer.AllocateConstants(PerObject).GpuAddress);
 
-		Command.Mesh->Draw(CommandList);
+		if (bSkinned)
+		{
+			CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Command.SkinPalette);
+			Command.Mesh->DrawSkinned(CommandList);
+		}
+		else
+		{
+			Command.Mesh->Draw(CommandList);
+		}
 		++Stats.DrawCalls;
 	}
 }
@@ -291,7 +359,7 @@ void FSceneRenderer::CollectDrawCommands(FScene& Scene, const FFrustum& Frustum,
 	Stats.VisibleMeshes = 0;
 
 	Scene.GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
-		[&](FEntity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
+		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
 			++Stats.TotalMeshes;
 			if (!MeshComponent.bVisible)
 			{
@@ -304,8 +372,9 @@ void FSceneRenderer::CollectDrawCommands(FScene& Scene, const FFrustum& Frustum,
 				return;
 			}
 
-			// 월드 AABB로 프러스텀 컬링
-			const FBox WorldBounds = Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix);
+			// 월드 AABB로 프러스텀 컬링 (스킨 메시는 팔레트 기준 경계)
+			const FSkinnedDrawInfo* Skinned     = SkinPalettes.Find(Entity);
+			const FBox              WorldBounds = Skinned ? Skinned->WorldBounds : Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix);
 			if (!Frustum.Intersects(WorldBounds))
 			{
 				return;
@@ -317,8 +386,9 @@ void FSceneRenderer::CollectDrawCommands(FScene& Scene, const FFrustum& Frustum,
 			Command.MeshHandle        = MeshComponent.Mesh;
 			Command.Material          = &Resources->ResolveMaterial(MeshComponent.Material);
 			Command.MaterialHandle    = MeshComponent.Material.IsValid() ? MeshComponent.Material : Resources->GetDefaultMaterial();
-			Command.World             = Transform.WorldMatrix;
+			Command.World             = Skinned ? FMatrix4x4::Identity : Transform.WorldMatrix;
 			Command.DistanceSquared   = FVector3::DistanceSquared(WorldBounds.GetCenter(), CameraPosition);
+			Command.SkinPalette       = Skinned ? Skinned->Palette : 0;
 		});
 }
 

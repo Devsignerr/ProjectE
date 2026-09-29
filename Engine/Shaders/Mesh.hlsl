@@ -1,5 +1,6 @@
 ﻿#include "Common.hlsli"
 #include "PBR.hlsli"
+#include "SkinnedMesh.hlsli"
 
 // 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + 간이 환경광. 출력은 선형 HDR
 
@@ -183,6 +184,36 @@ FPixelInput VSMain(FVertexInput Input)
 	const float3x3 World3     = (float3x3)World;
 	const float    Handedness = determinant(World3) < 0.0f ? -1.0f : 1.0f;
 	Output.WorldTangent = float4(normalize(mul(Input.Tangent.xyz, World3)), Input.Tangent.w * Handedness);
+	Output.UV           = Input.UV;
+	Output.Color        = Input.Color;
+	return Output;
+}
+
+struct FSkinnedVertexInput
+{
+	float3 Position : POSITION;
+	float3 Normal   : NORMAL;
+	float2 UV       : TEXCOORD0;
+	float4 Color    : COLOR;
+	float4 Tangent  : TANGENT;
+	uint4  Joints   : BLENDINDICES; // 슬롯 1 스킨 스트림
+	float4 Weights  : BLENDWEIGHT;
+};
+
+// 스킨 메시: 팔레트로 바로 월드 공간 (World 상수는 항등). 본 행렬은 균등 스케일 + 회전 + 이동을 가정해 법선도 같은 3x3으로 변환
+FPixelInput VSSkinned(FSkinnedVertexInput Input)
+{
+	FPixelInput Output;
+
+	const float4x4 Skin          = ComputeSkinMatrix(Input.Joints, Input.Weights);
+	const float4   WorldPosition = mul(mul(float4(Input.Position, 1.0f), Skin), World);
+	const float3x3 Skin3         = mul((float3x3)Skin, (float3x3)World);
+	Output.Position      = mul(WorldPosition, ViewProjection);
+	Output.WorldPosition = WorldPosition.xyz;
+	Output.WorldNormal   = normalize(mul(Input.Normal, Skin3));
+
+	const float Handedness = determinant(Skin3) < 0.0f ? -1.0f : 1.0f;
+	Output.WorldTangent = float4(normalize(mul(Input.Tangent.xyz, Skin3)), Input.Tangent.w * Handedness);
 	Output.UV           = Input.UV;
 	Output.Color        = Input.Color;
 	return Output;

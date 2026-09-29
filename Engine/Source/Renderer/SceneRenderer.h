@@ -9,6 +9,7 @@
 #include "Renderer/PostProcess.h"
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/ShadowRenderer.h"
+#include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
 #include "Scene/ResourceHandles.h"
 
@@ -53,6 +54,9 @@ public:
 
 	FShaderLibrary& GetShaderLibrary() { return ShaderLibrary; }
 
+	// 이번 프레임 스킨 팔레트 (Render 이후 같은 프레임 안에서만 유효 — 에디터 오버레이용)
+	const FSkinnedMeshPalette& GetSkinPalettes() const { return SkinPalettes; }
+
 	// 컬링 프러스텀 고정 (컬링 동작 확인용). 켜면 이후 카메라를 움직여도 컬링은 고정 시점 기준
 	void SetFreezeCulling(bool bFreeze);
 	bool IsCullingFrozen() const { return bCullingFrozen; }
@@ -73,10 +77,13 @@ private:
 		FMaterialHandle    MaterialHandle;
 		FMatrix4x4         World;
 		float              DistanceSquared = 0.0f;
+		D3D12_GPU_VIRTUAL_ADDRESS SkinPalette = 0; // 0이 아니면 스킨 메시 (World = 항등)
 	};
 
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
 	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
+	// 스킨 메시 PSO (Mesh.hlsl VSSkinned + 스킨 입력 레이아웃)
+	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 
 	void               CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition);
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
@@ -88,6 +95,8 @@ private:
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
+	FD3D12PipelineState  SkinnedPipelineState;
+	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;

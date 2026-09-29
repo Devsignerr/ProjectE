@@ -4,6 +4,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/ResourceManager.h"
+#include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Scene.h"
 
@@ -28,12 +29,13 @@ bool FShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	ShaderLibrary = &InShaderLibrary;
 
 	RootSignature.AddConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX); // 1: 스킨 팔레트 (SkinnedMesh.hlsli b4)
 	if (!RootSignature.Finalize(Rhi->GetDevice().GetDevice(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
 	                            L"ShadowRootSignature"))
 	{
 		return false;
 	}
-	if (!CreatePipeline(Pipeline, false))
+	if (!CreatePipeline(Pipeline, false) || !CreatePipeline(SkinnedPipeline, false, true))
 	{
 		return false;
 	}
@@ -56,17 +58,18 @@ void FShadowRenderer::Shutdown()
 	ShadowMap.Reset();
 	DsvHeap.Shutdown();
 	Pipeline.Shutdown();
+	SkinnedPipeline.Shutdown();
 	RootSignature.Shutdown();
 	MapResolution = 0;
 	Rhi           = nullptr;
 	ShaderLibrary = nullptr;
 }
 
-bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned)
 {
 	FShaderCompileDesc VertexDesc;
 	VertexDesc.FileName   = L"Shadow.hlsl";
-	VertexDesc.EntryPoint = L"ShadowVS";
+	VertexDesc.EntryPoint = bSkinned ? L"ShadowSkinnedVS" : L"ShadowVS";
 	VertexDesc.Stage      = EShaderStage::Vertex;
 	if (bForceRecompile && !ShaderLibrary->CookShader(VertexDesc))
 	{
@@ -81,7 +84,7 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	FGraphicsPipelineDesc Desc;
 	Desc.RootSignature        = RootSignature.Get();
 	Desc.VertexShader         = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
-	Desc.InputLayout          = FStaticMesh::GetInputLayout(); // POSITION만 사용
+	Desc.InputLayout          = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // POSITION(+스킨)만 사용
 	Desc.NumRenderTargets     = 0;
 	Desc.DepthStencilFormat   = ShadowDsvFormat;
 	Desc.bDepthEnable         = true;
@@ -89,7 +92,7 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	Desc.bDepthClip           = false;                // 광원 근평면 뒤 캐스터를 근평면에 붙여 그린다 (팬케이킹)
 	Desc.DepthBias            = BakedDepthBias;
 	Desc.SlopeScaledDepthBias = BakedSlopeBias;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, L"ShadowPipeline");
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, bSkinned ? L"ShadowSkinnedPipeline" : L"ShadowPipeline");
 }
 
 bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
@@ -106,6 +109,15 @@ bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
 	}
 	Pipeline.Swap(NewPipeline);
 	Rhi->DeferRelease(NewPipeline.Detach());
+
+	FD3D12PipelineState NewSkinnedPipeline;
+	if (!CreatePipeline(NewSkinnedPipeline, bForceRecompile, true))
+	{
+		E_LOG(LogRenderer, Error, "스킨 섀도우 셰이더 다시 로드 실패: 기존 파이프라인 유지");
+		return false;
+	}
+	SkinnedPipeline.Swap(NewSkinnedPipeline);
+	Rhi->DeferRelease(NewSkinnedPipeline.Detach());
 	return true;
 }
 
@@ -187,7 +199,7 @@ void FShadowRenderer::ReleaseShadowMap()
 }
 
 void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FVector3& LightDirection,
-                             const FShadowSettings& Settings)
+                             const FShadowSettings& Settings, const FSkinnedMeshPalette* SkinPalettes)
 {
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
 
@@ -263,8 +275,13 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 
 		const FFrustum CascadeFrustum = FFrustum::FromViewProjection(Cascades[Index].ViewProjection);
 		Registry.View<FTransformComponent, FStaticMeshComponent>().Each(
-			[&](FEntity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
+			[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
 				if (!MeshComponent.bVisible)
+				{
+					return;
+				}
+				// 스킨 메시는 아래에서 스킨 PSO로 따로 그린다
+				if (SkinPalettes != nullptr && SkinPalettes->Find(Entity) != nullptr)
 				{
 					return;
 				}
@@ -277,6 +294,32 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 				CommandList->SetGraphicsRoot32BitConstants(0, 16, &WorldLightViewProjection.M[0][0], 0);
 				Mesh->Draw(CommandList);
 			});
+
+		// 스킨 메시 캐스터: 팔레트가 바로 월드로 보내므로 상수는 캐스케이드 뷰-투영 그대로
+		if (SkinPalettes != nullptr && SkinPalettes->GetCount() > 0)
+		{
+			bool bSkinnedPipelineBound = false;
+			Registry.View<FSkinComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FSkinComponent&, FStaticMeshComponent& MeshComponent) {
+				const FSkinnedDrawInfo* Skinned = SkinPalettes->Find(Entity);
+				const FStaticMesh*      Mesh    = Resources.GetMesh(MeshComponent.Mesh);
+				if (!MeshComponent.bVisible || Skinned == nullptr || Mesh == nullptr || !CascadeFrustum.Intersects(Skinned->WorldBounds))
+				{
+					return;
+				}
+				if (!bSkinnedPipelineBound)
+				{
+					CommandList->SetPipelineState(SkinnedPipeline.Get());
+					CommandList->SetGraphicsRoot32BitConstants(0, 16, &Cascades[Index].ViewProjection.M[0][0], 0);
+					bSkinnedPipelineBound = true;
+				}
+				CommandList->SetGraphicsRootConstantBufferView(1, Skinned->Palette);
+				Mesh->DrawSkinned(CommandList);
+			});
+			if (bSkinnedPipelineBound)
+			{
+				CommandList->SetPipelineState(Pipeline.Get());
+			}
+		}
 	}
 
 	const D3D12_RESOURCE_BARRIER ToShaderResource =

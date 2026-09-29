@@ -8,6 +8,7 @@
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/AnimationSystem.h"
 #include "Scene/SceneSerializer.h"
 
 #include <commdlg.h>
@@ -147,6 +148,7 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		Context.ClearSelection();
 	}
 
+	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
 
 	PollShaderChanges();
@@ -275,6 +277,16 @@ bool FEditorApplication::SaveSceneAs()
 
 void FEditorApplication::OpenStartupScene()
 {
+	// --scene <Content 기준 상대 경로>: 기본 씬 대신 지정 씬 (자동 검증/데모용)
+	if (const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene"); !SceneArg.empty())
+	{
+		if (OpenScene(Context.ContentDirectory / SceneArg))
+		{
+			return;
+		}
+		E_LOG(LogEditor, Warning, "--scene 씬을 열지 못해 기본 씬을 엽니다: {}", FStringConv::ToUtf8(SceneArg));
+	}
+
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
 	{
 		const std::filesystem::path ScenePath = Context.ContentDirectory / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);

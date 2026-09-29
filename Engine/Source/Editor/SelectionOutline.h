@@ -14,6 +14,7 @@ class FD3D12RHI;
 class FResourceManager;
 class FScene;
 class FShaderLibrary;
+class FSkinnedMeshPalette;
 
 // 에디터 선택 아웃라인: 선택 엔티티(와 하위)의 메시를 마스크에 그린 뒤, 마스크 경계를 출력 위에 합성한다.
 class FSelectionOutline
@@ -25,7 +26,9 @@ public:
 	void Shutdown();
 
 	// Output: 씬 렌더 결과가 담긴 대상(렌더 타깃 상태). 선택이 없으면 아무것도 하지 않는다.
-	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output);
+	// SkinPalettes: 씬 렌더러의 이번 프레임 팔레트 (있으면 스킨 메시를 현재 포즈로 마스크)
+	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, FEntity Selected, const FRenderOutput& Output,
+	            const FSkinnedMeshPalette* SkinPalettes = nullptr);
 
 	bool ReloadShaders(bool bForceRecompile);
 
@@ -38,6 +41,7 @@ public:
 
 private:
 	bool CreatePipelines(FD3D12PipelineState& OutMask, FD3D12PipelineState& OutComposite, DXGI_FORMAT OutputFormat, bool bForceRecompile);
+	bool CreateSkinnedMaskPipeline(FD3D12PipelineState& OutMask, bool bForceRecompile);
 	void EnsureMask(uint32 Width, uint32 Height);
 
 	FD3D12RHI*      Rhi           = nullptr;
@@ -46,6 +50,7 @@ private:
 	FD3D12RootSignature MaskRootSignature;
 	FD3D12RootSignature CompositeRootSignature;
 	FD3D12PipelineState MaskPipeline;
+	FD3D12PipelineState SkinnedMaskPipeline;
 	FD3D12PipelineState CompositePipeline;
 	DXGI_FORMAT         CompositeFormat = DXGI_FORMAT_UNKNOWN;
 

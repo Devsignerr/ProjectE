@@ -37,6 +37,8 @@ public:
 
 	// ---- 메시
 	FMeshHandle  CreateMesh(const FMeshData& MeshData, const std::wstring& DebugName);
+	// 스킨 정점 스트림을 가진 메시 (SkinVertices.size() == 정점 수). GPU 스키닝으로 그려진다
+	FMeshHandle  CreateSkinnedMesh(const FMeshData& MeshData, const std::vector<FSkinVertex>& SkinVertices, const std::wstring& DebugName);
 	void         DestroyMesh(FMeshHandle Handle);
 	FStaticMesh* GetMesh(FMeshHandle Handle) const { return Meshes.Get(Handle); }
 	// 내장 도형 메시 ("cube"). 이름별로 한 번만 생성해 공유. 모르는 이름이면 무효 핸들

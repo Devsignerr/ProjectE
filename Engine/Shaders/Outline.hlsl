@@ -1,5 +1,6 @@
 ﻿#include "Common.hlsli"
 #include "Fullscreen.hlsli"
+#include "SkinnedMesh.hlsli"
 
 // 에디터 선택 아웃라인
 //   1) Mask 패스: 선택된 메시를 R8 마스크에 1로 기록
@@ -13,6 +14,12 @@ cbuffer MaskConstants : register(b0)
 float4 MaskVS(float3 Position : POSITION) : SV_Position
 {
 	return mul(float4(Position, 1.0f), WorldViewProjection);
+}
+
+// 스킨 메시: 팔레트가 바로 월드로 보내므로 WorldViewProjection = 뷰-투영
+float4 MaskSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT) : SV_Position
+{
+	return mul(mul(float4(Position, 1.0f), ComputeSkinMatrix(Joints, Weights)), WorldViewProjection);
 }
 
 float MaskPS() : SV_Target

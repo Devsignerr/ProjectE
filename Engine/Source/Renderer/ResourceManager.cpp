@@ -209,6 +209,19 @@ FMeshHandle FResourceManager::CreateMesh(const FMeshData& MeshData, const std::w
 	return Meshes.Add(std::move(Mesh));
 }
 
+FMeshHandle FResourceManager::CreateSkinnedMesh(const FMeshData& MeshData, const std::vector<FSkinVertex>& SkinVertices, const std::wstring& DebugName)
+{
+	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
+
+	auto Mesh = std::make_unique<FStaticMesh>();
+	if (!Mesh->Init(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), MeshData, DebugName.c_str()) ||
+	    !Mesh->InitSkin(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), SkinVertices, DebugName.c_str()))
+	{
+		return FMeshHandle{};
+	}
+	return Meshes.Add(std::move(Mesh));
+}
+
 void FResourceManager::DestroyMesh(FMeshHandle Handle)
 {
 	if (std::unique_ptr<FStaticMesh> Mesh = Meshes.Remove(Handle))

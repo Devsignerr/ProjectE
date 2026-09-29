@@ -11,6 +11,7 @@ class FD3D12RHI;
 class FResourceManager;
 class FScene;
 class FShaderLibrary;
+class FSkinnedMeshPalette;
 
 // 방향광 섀도우 설정 (씬 렌더러가 소유, 에디터가 조정)
 struct FShadowSettings
@@ -52,8 +53,9 @@ public:
 	void Shutdown();
 
 	// 섀도우 패스 기록. 끝나면 섀도우 맵은 PIXEL_SHADER_RESOURCE 상태. 비활성이면 상수만 채운다.
+	// SkinPalettes가 있으면 스킨 메시는 GPU 스키닝으로 그린다 (없으면 바인드 포즈 그대로)
 	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FVector3& LightDirection,
-	            const FShadowSettings& Settings);
+	            const FShadowSettings& Settings, const FSkinnedMeshPalette* SkinPalettes = nullptr);
 
 	const FShadowConstants&        GetConstants() const { return Constants; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
@@ -61,7 +63,7 @@ public:
 	bool ReloadShaders(bool bForceRecompile);
 
 private:
-	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
+	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned = false);
 	void EnsureShadowMap(uint32 Resolution, uint32 Cascades);
 	void ReleaseShadowMap();
 
@@ -70,6 +72,7 @@ private:
 
 	FD3D12RootSignature RootSignature;
 	FD3D12PipelineState Pipeline;
+	FD3D12PipelineState SkinnedPipeline; // ShadowSkinnedVS + 스킨 입력 레이아웃
 
 	ComPtr<ID3D12Resource> ShadowMap;
 	FD3D12DescriptorHeap   DsvHeap; // 캐스케이드별 DSV

@@ -16,6 +16,7 @@
 #include "Editor/Panels/ViewportPanel.h"
 #include "Editor/PlayMode.h"
 #include "Editor/UndoHistory.h"
+#include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
@@ -117,6 +118,9 @@ private:
 	// 오디오는 플레이 중에만 재생 (정지 시 모든 소스 해제)
 	FAudioEngine Audio;
 	FAudioSystem AudioSystem;
+
+	// 물리도 플레이 중에만 (FPlayMode가 Begin/Update/End)
+	FPhysicsSystem Physics;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

@@ -2,16 +2,18 @@
 
 #include "Core/Log.h"
 #include "Editor/EditorContext.h"
+#include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Renderer/SceneCamera.h"
 #include "Scripting/ScriptSystem.h"
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
-void FPlayMode::Init(FScene& InEditScene, FScriptSystem& InScripts)
+void FPlayMode::Init(FScene& InEditScene, FScriptSystem& InScripts, FPhysicsSystem* InPhysics)
 {
 	EditScene = &InEditScene;
 	Scripts   = &InScripts;
+	Physics   = InPhysics;
 }
 
 void FPlayMode::Play(FEditorContext& Context)
@@ -33,6 +35,10 @@ void FPlayMode::Play(FEditorContext& Context)
 	bStepRequested = false;
 	SyncContextFlags(Context);
 
+	if (Physics != nullptr)
+	{
+		Physics->Begin();
+	}
 	Scripts->BeginPlay(PlayScene);
 	E_LOG(LogEditor, Display, "플레이 시작 (엔티티 {}개)", PlayScene.GetRegistry().GetAliveCount());
 }
@@ -45,6 +51,10 @@ void FPlayMode::Stop(FEditorContext& Context)
 	}
 
 	Scripts->EndPlay();
+	if (Physics != nullptr)
+	{
+		Physics->End();
+	}
 	PlayScene.Clear();
 	EntityMap.clear();
 
@@ -101,6 +111,10 @@ bool FPlayMode::Tick(FEditorContext& Context, float DeltaSeconds, const FInput* 
 	{
 		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
 		FSceneAssetResolver::Resolve(PlayScene, *Context.Resources, Context.ContentDirectory);
+	}
+	if (Physics != nullptr)
+	{
+		Physics->Update(PlayScene, StepDelta);
 	}
 	PlayScene.UpdateTransforms();
 	return true;

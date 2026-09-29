@@ -60,6 +60,7 @@
 - 오디오: 사운드 위치는 `FAudioEngine::SetWorldPosition`(청자 기준 좌표로 변환 — miniaudio는 오른손 좌표계라 월드 좌표를 직접 넘기지 않는다). 오디오 컴포넌트는 Audio 모듈의 `RegisterAudioTypes()`로 등록하며 앱은 씬 로드 전에 호출. 자동 검증(`IsAutomationRun()`) 중에는 음소거. 오디오 테스트는 `bNoDevice` 엔진 + `ReadFrames`로 믹스 결과를 검증
 - 스크립팅(Lua 5.4 + sol2): `FScriptSystem`이 `FScriptComponent`(ScriptAsset + PropertyOverrides JSON)를 실행한다. 스크립트는 `Properties` 기본값을 가진 클래스 테이블을 반환하고 `OnStart/OnUpdate(dt)/OnDestroy`를 정의한다. 엔진 API는 리플렉션 자동 바인딩(`entity:GetComponent("TransformComponent").Position`) + 트랜스폼 빠른 경로 + `Scene/Log/Input/Time`. sol 헤더는 Scripting 모듈 내부(`LuaRuntime.h`, `SolInclude.h`)에서만 포함한다. 바인딩에서 오류는 C++ 예외(`std::runtime_error`)로 던지면 Lua 오류가 되고(Lua는 C++로 컴파일), 스크립트 오류는 해당 인스턴스만 멈춘다. 엔티티 파괴는 `Destroy()`로 프레임 끝에 지연 적용. 새 컴포넌트는 리플렉션 등록만 하면 스크립트에서 바로 쓸 수 있다
 - 플레이 모드: `FPlayMode`가 `FSceneCloner`로 편집 씬을 복제해 재생하고 정지 시 복원한다. 복제는 리플렉션 `CopyComponent` 훅을 쓰므로 **리플렉션에 등록되지 않은 컴포넌트는 플레이 씬에 복사되지 않는다**. 예외로 런타임 전용 데이터(`FSkinComponent`, `FAnimationComponent::Runtime`)는 `FSceneCloner::CopyRuntimeData/RemapRuntimeReferences`가 복사·재매핑하며, 새 런타임 전용 엔티티 참조를 추가하면 여기에 함께 추가한다(서브트리 복제 `FSceneEditOps::CloneSubtree`도 같은 함수 사용) 플레이 중 에디터 코드는 `Scene` 멤버가 아니라 `Context.Scene`(현재 씬)을 사용한다
+- 물리(Jolt 5.6): 엔진 cm ↔ Jolt m 변환은 `FPhysicsWorld` 경계에서만. 축·쿼터니언 성분은 그대로 넘긴다(엔진 FQuat도 해밀턴 곱/q v q* — `PhysicsTests`가 Jolt와 비교 검증), 중력만 -Z. 컴포넌트는 `RigidBody`/`Box|Sphere|CapsuleCollider`(Physics 모듈 `RegisterPhysicsTypes()`, 씬 로드 전 호출), 바디 핸들은 `FPhysicsSystem`이 엔티티별로 보관(컴포넌트에 런타임 상태 없음). 순서: 스크립트 → `FPhysicsSystem::Update`(60Hz 고정 스텝 + 보간 결과를 트랜스폼에 씀) → `UpdateTransforms`. 에디터는 플레이 중에만 시뮬레이션(`FPlayMode`가 Begin/Update/End). 스크립트가 만든 엔티티의 바디는 다음 물리 갱신에 생기므로 힘/충격량은 그 다음 프레임부터. Lua: `entity:AddForce/AddImpulse/SetVelocity/GetVelocity`, `Physics.Raycast` (Scripting은 `FScriptPhysicsHooks`로 Physics에 비의존)
 - 포스트 프로세싱: 효과는 `FPostProcessor` 안에서 확장하고(씬 렌더러는 `Render` 한 번 호출), 설정은 `FPostProcessSettings`, CPU/GPU 공용 식은 `Renderer/PostProcessMath.h`와 셰이더를 함께 수정. PSO 블렌드는 `FGraphicsPipelineDesc::BlendMode`(`bAlphaBlend`는 하위 호환용)
 
 ## 디렉터리
@@ -85,6 +86,7 @@ Engine/Source/
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
   Audio/          FAudioEngine(miniaudio 래퍼, 장치 없으면 무음 계속), FAudioSystem(FAudioSourceComponent ↔ 사운드 동기화), AudioMath(청자 공간 변환), RegisterAudioTypes()
+  Physics/        FPhysicsWorld(Jolt 래퍼, cm↔m), FPhysicsSystem(씬 동기화, 고정 스텝, 보간, 레이캐스트), 강체/콜라이더 컴포넌트 (모듈 의존: Physics → Scene → Core)
   Scripting/      FScriptSystem(Lua 5.4 + sol2): 스크립트 컴포넌트 실행, 리플렉션 바인딩, 핫 리로드 (모듈 의존: Scripting → Scene → Core)
   Editor/         FImGuiLayer, FEditorApplication, EditorContext, FPlayMode(재생/정지/복원), Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
 Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl) + Shaders.json(쿠킹 매니페스트 — 새 셰이더/엔트리는 여기 추가). Cooked/는 생성물(git 제외)
@@ -93,8 +95,8 @@ Runtime/Source/   ProjectERuntime 게임 런타임 실행 파일 (창 서브시�
 Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
-Tests/            CoreTests, RendererTests, RhiTests, AudioTests, EditorTests, ScriptingTests (CTest 등록)
-CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2
+Tests/            CoreTests, RendererTests, RhiTests, AudioTests, EditorTests, ScriptingTests, PhysicsTests (CTest 등록)
+CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2, Jolt Physics
 Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)
 Build/            CMake 빌드 출력 (git 제외)
 ```

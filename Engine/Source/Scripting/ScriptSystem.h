@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/ECS/Entity.h"
+#include "Core/Math/Math.h"
 #include "Scripting/ScriptValue.h"
 
 #include <filesystem>
@@ -20,6 +21,24 @@ struct FScriptAudioHooks
 	std::function<void(FEntity)>             Play;        // 엔티티의 오디오 소스 재생 (처음부터)
 	std::function<void(FEntity)>             Stop;        // 정지
 	std::function<void(const std::string&)> PlayOneShot; // Content 기준 경로의 효과음 (비공간)
+};
+
+struct FScriptRayHit
+{
+	FEntity  Entity;
+	FVector3 Position; // cm
+	FVector3 Normal;
+	float    Distance = 0.0f; // cm
+};
+
+// 스크립트가 쓰는 물리 기능. 앱이 Physics 모듈(FPhysicsSystem)과 연결한다 (비어 있으면 무시). 단위 cm, kg
+struct FScriptPhysicsHooks
+{
+	std::function<bool(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit)> Raycast;
+	std::function<void(FEntity, const FVector3&)> AddForce;    // kg·cm/s²
+	std::function<void(FEntity, const FVector3&)> AddImpulse;  // kg·cm/s
+	std::function<void(FEntity, const FVector3&)> SetVelocity; // cm/s
+	std::function<FVector3(FEntity)>              GetVelocity;
 };
 
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.
@@ -63,6 +82,7 @@ public:
 
 	// 다음 BeginPlay부터 적용 (플레이 중이면 즉시)
 	void SetAudioHooks(FScriptAudioHooks Hooks);
+	void SetPhysicsHooks(FScriptPhysicsHooks Hooks);
 
 	// ---- 핫 리로드: 변경된 .lua 파일 (절대 경로). 실패하면 기존 스크립트를 유지한다. 반환: 성공 여부
 	bool ReloadScript(const std::filesystem::path& ScriptPath);
@@ -79,6 +99,7 @@ public:
 private:
 	std::filesystem::path        ContentDirectory;
 	FScriptAudioHooks            AudioHooks;
+	FScriptPhysicsHooks          PhysicsHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)
 	uint32                       ErrorCount = 0;

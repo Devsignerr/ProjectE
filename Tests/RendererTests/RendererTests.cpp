@@ -81,3 +81,23 @@ E_TEST(Camera_ProjectionClipRange)
 	E_EXPECT_NEAR(NearClip.Z / NearClip.W, 0.0f, Tol);
 	E_EXPECT_NEAR(FarClip.Z / FarClip.W, 1.0f, Tol);
 }
+
+E_TEST(PrimitiveShapes_SphereWindingAndRadius)
+{
+	const FMeshData Sphere = FPrimitiveShapes::MakeSphere(50.0f, 16, 8);
+	E_EXPECT_TRUE(!Sphere.Indices.empty() && Sphere.Indices.size() % 3 == 0);
+	bool bAllClockwise = true;
+	for (size_t Index = 0; Index < Sphere.Indices.size(); Index += 3)
+	{
+		const FVertex& V0     = Sphere.Vertices[Sphere.Indices[Index]];
+		const FVertex& V1     = Sphere.Vertices[Sphere.Indices[Index + 1]];
+		const FVertex& V2     = Sphere.Vertices[Sphere.Indices[Index + 2]];
+		const FVector3 Normal = V0.Normal + V1.Normal + V2.Normal;
+		bAllClockwise         = bAllClockwise && FVector3::Dot(FVector3::Cross(V1.Position - V0.Position, V2.Position - V0.Position), Normal) > 0.0f;
+	}
+	E_EXPECT_TRUE(bAllClockwise);
+	for (const FVertex& Vertex : Sphere.Vertices)
+	{
+		E_EXPECT_NEAR(Vertex.Position.Length(), 50.0f, 1.0e-3f);
+	}
+}

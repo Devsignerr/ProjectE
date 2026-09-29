@@ -161,3 +161,28 @@ add_library(ThirdParty::sol2 ALIAS sol2)
 target_include_directories(sol2 SYSTEM INTERFACE "${sol2_SOURCE_DIR}/include")
 target_compile_definitions(sol2 INTERFACE SOL_USING_CXX_LUA=1 SOL_ALL_SAFETIES_ON=1)
 target_link_libraries(sol2 INTERFACE lua)
+
+# ---------------------------------------------------------------- Jolt Physics (v5.6.0, MIT) — 강체 물리
+# Build/CMakeLists.txt 사용 (하위 디렉터리라 샘플/테스트/뷰어는 만들지 않는다). 옵션은 엔진 설정과 맞춘다:
+#   동적 CRT(/MD), 예외·RTTI 켜짐, 디버그 렌더러/프로파일러/컴퓨트/ObjectStream 끔, SSE4.2까지만 (AVX 계열은 /arch를 사용자 코드에 강제하므로 끔)
+# JPH_* 정의는 Jolt 타깃이 PUBLIC으로 전파한다 (라이브러리와 사용자 코드가 반드시 같아야 함)
+foreach(_Option
+        USE_STATIC_MSVC_RUNTIME_LIBRARY OVERRIDE_CXX_FLAGS ENABLE_ALL_WARNINGS INTERPROCEDURAL_OPTIMIZATION ENABLE_INSTALL
+        DEBUG_RENDERER_IN_DEBUG_AND_RELEASE PROFILER_IN_DEBUG_AND_RELEASE ENABLE_OBJECT_STREAM FLOATING_POINT_EXCEPTIONS_ENABLED
+        JPH_USE_DX12 JPH_USE_VK JPH_USE_MTL JPH_USE_CPU_COMPUTE
+        USE_AVX USE_AVX2 USE_AVX512 USE_LZCNT USE_TZCNT USE_F16C USE_FMADD
+        TARGET_UNIT_TESTS TARGET_HELLO_WORLD TARGET_PERFORMANCE_TEST TARGET_SAMPLES TARGET_VIEWER)
+    set(${_Option} OFF CACHE INTERNAL "")
+endforeach()
+foreach(_Option CPP_EXCEPTIONS_ENABLED CPP_RTTI_ENABLED USE_SSE4_1 USE_SSE4_2)
+    set(${_Option} ON CACHE INTERNAL "")
+endforeach()
+FetchContent_Declare(jolt
+    URL      "https://github.com/jrouwe/JoltPhysics/archive/refs/tags/v5.6.0.zip"
+    URL_HASH SHA256=0af9beea51637ef805e624fe838ea2870f7b68cd48cbe1615c853bd9bcf4f1d7
+    SOURCE_SUBDIR "Build")
+FetchContent_MakeAvailable(jolt)
+
+add_library(ThirdParty::jolt ALIAS Jolt)
+target_compile_options(Jolt PRIVATE /W0)
+set_target_properties(Jolt PROPERTIES FOLDER "ThirdParty")

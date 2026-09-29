@@ -59,6 +59,7 @@ public:
 	// ---- 플레이
 	void SetScene(FScene* InScene) { Scene = InScene; }
 	void SetAudioHooks(const FScriptAudioHooks* InHooks) { AudioHooks = InHooks; } // FScriptSystem 소유 (런타임보다 오래 산다)
+	void SetPhysicsHooks(const FScriptPhysicsHooks* InHooks) { PhysicsHooks = InHooks; } // 〃
 	void Update(float DeltaSeconds, const FInput* Input);
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
@@ -111,6 +112,7 @@ private:
 	std::filesystem::path ContentDirectory;
 	uint32&               ErrorCounter;
 	const FScriptAudioHooks* AudioHooks = nullptr;
+	const FScriptPhysicsHooks* PhysicsHooks = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
 

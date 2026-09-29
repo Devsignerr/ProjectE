@@ -246,6 +246,10 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	{
 		Handle = CreateMesh(FPrimitiveShapes::MakeCube(FUnits::MetersToUnits), L"Primitive_Cube") /* 1m 큐브 */;
 	}
+	else if (Key == "sphere")
+	{
+		Handle = CreateMesh(FPrimitiveShapes::MakeSphere(0.5f * FUnits::MetersToUnits), L"Primitive_Sphere"); // 지름 1m 구
+	}
 	else
 	{
 		E_LOG(LogRenderer, Warning, "알 수 없는 내장 도형: {}", Key);

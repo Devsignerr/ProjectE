@@ -125,7 +125,7 @@ bool FSelectionOutline::CreatePipelines(FD3D12PipelineState& OutMask, FD3D12Pipe
 	CompositeDesc.RenderTargetFormats[0] = OutputFormat;
 	CompositeDesc.CullMode               = D3D12_CULL_MODE_NONE;
 	CompositeDesc.bDepthEnable           = false;
-	CompositeDesc.bAlphaBlend            = true;
+	CompositeDesc.BlendMode              = EBlendMode::Alpha;
 	return OutComposite.InitGraphics(Device, CompositeDesc, L"OutlineCompositePipeline");
 }
 

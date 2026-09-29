@@ -170,11 +170,13 @@ namespace
 		const cgltf_accessor* NormalAccessor   = FindAttribute(Primitive, cgltf_attribute_type_normal);
 		const cgltf_accessor* TexCoordAccessor = FindAttribute(Primitive, cgltf_attribute_type_texcoord, 0);
 		const cgltf_accessor* ColorAccessor    = FindAttribute(Primitive, cgltf_attribute_type_color, 0);
+		const cgltf_accessor* TangentAccessor  = FindAttribute(Primitive, cgltf_attribute_type_tangent);
 
 		const cgltf_size         VertexCount = PositionAccessor->count;
 		const std::vector<float> Positions   = UnpackFloats(PositionAccessor, 3);
 		const std::vector<float> Normals     = NormalAccessor ? UnpackFloats(NormalAccessor, 3) : std::vector<float>();
 		const std::vector<float> TexCoords   = TexCoordAccessor ? UnpackFloats(TexCoordAccessor, 2) : std::vector<float>();
+		const std::vector<float> Tangents    = TangentAccessor ? UnpackFloats(TangentAccessor, 4) : std::vector<float>();
 		std::vector<float>       Colors;
 		if (ColorAccessor)
 		{
@@ -206,6 +208,10 @@ namespace
 			{
 				Vertex.Color = { Colors[Index * 4], Colors[Index * 4 + 1], Colors[Index * 4 + 2], Colors[Index * 4 + 3] };
 			}
+			if (TangentAccessor)
+			{
+				Vertex.Tangent = FGltfLoader::ConvertTangent({ Tangents[Index * 4], Tangents[Index * 4 + 1], Tangents[Index * 4 + 2], Tangents[Index * 4 + 3] });
+			}
 		}
 
 		if (Primitive.indices != nullptr)
@@ -235,6 +241,11 @@ namespace
 		if (NormalAccessor == nullptr)
 		{
 			GenerateSmoothNormals(OutMesh.Data);
+		}
+		// 탄젠트가 없으면 UV로 계산 (UV도 없으면 법선에 수직인 임의 방향). 계산식은 위치/UV만 쓰므로 와인딩 교환과 무관
+		if (TangentAccessor == nullptr)
+		{
+			OutMesh.Data.ComputeTangents();
 		}
 
 		OutMesh.Material = Primitive.material ? static_cast<int32>(Primitive.material - Data.materials) : -1;
@@ -280,17 +291,28 @@ namespace
 			FModelMaterial&       Material     = OutModel.Materials[Index];
 			Material.Name = SafeName(GltfMaterial.name, "Material", Index);
 
+			const auto ImageIndexOf = [&](const cgltf_texture_view& View) -> int32 {
+				return (View.texture != nullptr && View.texture->image != nullptr) ? static_cast<int32>(View.texture->image - Data.images) : -1;
+			};
+
 			if (GltfMaterial.has_pbr_metallic_roughness)
 			{
 				const cgltf_pbr_metallic_roughness& Pbr = GltfMaterial.pbr_metallic_roughness;
-				Material.BaseColorFactor = { Pbr.base_color_factor[0], Pbr.base_color_factor[1], Pbr.base_color_factor[2], Pbr.base_color_factor[3] };
-				Material.MetallicFactor  = Pbr.metallic_factor;
-				Material.RoughnessFactor = Pbr.roughness_factor;
-				if (Pbr.base_color_texture.texture != nullptr && Pbr.base_color_texture.texture->image != nullptr)
-				{
-					Material.BaseColorImage = static_cast<int32>(Pbr.base_color_texture.texture->image - Data.images);
-				}
+				Material.BaseColorFactor        = { Pbr.base_color_factor[0], Pbr.base_color_factor[1], Pbr.base_color_factor[2], Pbr.base_color_factor[3] };
+				Material.MetallicFactor         = Pbr.metallic_factor;
+				Material.RoughnessFactor        = Pbr.roughness_factor;
+				Material.BaseColorImage         = ImageIndexOf(Pbr.base_color_texture);
+				Material.MetallicRoughnessImage = ImageIndexOf(Pbr.metallic_roughness_texture);
 			}
+
+			Material.NormalImage       = ImageIndexOf(GltfMaterial.normal_texture);
+			Material.NormalScale       = GltfMaterial.normal_texture.texture ? GltfMaterial.normal_texture.scale : 1.0f;
+			Material.OcclusionImage    = ImageIndexOf(GltfMaterial.occlusion_texture);
+			Material.OcclusionStrength = GltfMaterial.occlusion_texture.texture ? GltfMaterial.occlusion_texture.scale : 1.0f;
+			Material.EmissiveImage     = ImageIndexOf(GltfMaterial.emissive_texture);
+
+			const float EmissiveStrength = GltfMaterial.has_emissive_strength ? GltfMaterial.emissive_strength.emissive_strength : 1.0f;
+			Material.EmissiveFactor = FVector3(GltfMaterial.emissive_factor[0], GltfMaterial.emissive_factor[1], GltfMaterial.emissive_factor[2]) * EmissiveStrength;
 		}
 	}
 
@@ -377,6 +399,13 @@ FQuat FGltfLoader::ConvertRotation(const FQuat& Gltf)
 	// 반사 변환으로 켤레하면 축은 변환되고 회전 방향은 반대가 된다 → 벡터부 부호 반전
 	const FVector3 Axis = ConvertPosition({ Gltf.X, Gltf.Y, Gltf.Z });
 	return FQuat(-Axis.X, -Axis.Y, -Axis.Z, Gltf.W).GetNormalized();
+}
+
+FVector4 FGltfLoader::ConvertTangent(const FVector4& Gltf)
+{
+	// 반사 C에 대해 Cross(C·N, C·T) = -C·Cross(N, T). 같은 바이탄젠트를 얻으려면 w 부호를 뒤집어야 한다
+	const FVector3 Tangent = ConvertPosition(FVector3(Gltf.X, Gltf.Y, Gltf.Z)).GetNormalized();
+	return FVector4(Tangent, Gltf.W < 0.0f ? 1.0f : -1.0f);
 }
 
 FMatrix4x4 FGltfLoader::ConvertMatrix(const FMatrix4x4& GltfRowMajor)

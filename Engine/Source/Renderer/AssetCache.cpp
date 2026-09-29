@@ -193,9 +193,16 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 	{
 		Writer.WriteString(Material.Name);
 		Writer.Write(Material.BaseColorFactor);
-		Writer.Write(Material.BaseColorImage);
+		Writer.Write(Material.EmissiveFactor);
 		Writer.Write(Material.MetallicFactor);
 		Writer.Write(Material.RoughnessFactor);
+		Writer.Write(Material.NormalScale);
+		Writer.Write(Material.OcclusionStrength);
+		Writer.Write(Material.BaseColorImage);
+		Writer.Write(Material.MetallicRoughnessImage);
+		Writer.Write(Material.NormalImage);
+		Writer.Write(Material.OcclusionImage);
+		Writer.Write(Material.EmissiveImage);
 	}
 
 	Writer.Write(static_cast<uint32>(Model.Meshes.size()));
@@ -255,11 +262,18 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 	OutModel.Materials.resize(MaterialCount);
 	for (FModelMaterial& Material : OutModel.Materials)
 	{
-		Material.Name            = Reader.ReadString();
-		Material.BaseColorFactor = Reader.Read<FVector4>();
-		Material.BaseColorImage  = Reader.Read<int32>();
-		Material.MetallicFactor  = Reader.Read<float>();
-		Material.RoughnessFactor = Reader.Read<float>();
+		Material.Name                   = Reader.ReadString();
+		Material.BaseColorFactor        = Reader.Read<FVector4>();
+		Material.EmissiveFactor         = Reader.Read<FVector3>();
+		Material.MetallicFactor         = Reader.Read<float>();
+		Material.RoughnessFactor        = Reader.Read<float>();
+		Material.NormalScale            = Reader.Read<float>();
+		Material.OcclusionStrength      = Reader.Read<float>();
+		Material.BaseColorImage         = Reader.Read<int32>();
+		Material.MetallicRoughnessImage = Reader.Read<int32>();
+		Material.NormalImage            = Reader.Read<int32>();
+		Material.OcclusionImage         = Reader.Read<int32>();
+		Material.EmissiveImage          = Reader.Read<int32>();
 	}
 
 	const uint32 MeshCount = Reader.Read<uint32>();
@@ -304,7 +318,11 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 	const auto InRange = [](int32 Index, size_t Count) { return Index >= -1 && Index < static_cast<int32>(Count); };
 	for (const FModelMaterial& Material : OutModel.Materials)
 	{
-		if (!InRange(Material.BaseColorImage, OutModel.Images.size())) return false;
+		for (const int32 ImageIndex : { Material.BaseColorImage, Material.MetallicRoughnessImage, Material.NormalImage,
+		                                Material.OcclusionImage, Material.EmissiveImage })
+		{
+			if (!InRange(ImageIndex, OutModel.Images.size())) return false;
+		}
 	}
 	for (const FModelMesh& Mesh : OutModel.Meshes)
 	{

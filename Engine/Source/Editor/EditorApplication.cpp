@@ -211,7 +211,7 @@ void FEditorApplication::NewScene()
 	const FEntity Sun = Scene.CreateEntity("Sun");
 	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
-	Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun).Intensity = 1.2f;
+	Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun).Intensity = 3.0f;
 	Scene.UpdateTransforms();
 
 	UpdateWindowTitle();
@@ -305,7 +305,7 @@ void FEditorApplication::BuildDefaultScene()
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
-	SunLight.Intensity = 1.2f;
+	SunLight.Intensity = 3.0f;
 
 	// 바닥: 내장 큐브 + 체커 머티리얼 에셋 (에셋 참조로 기록되어 저장/로드 가능)
 	const FEntity Ground = Scene.CreateEntity("Ground");

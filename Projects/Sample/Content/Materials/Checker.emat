@@ -1,8 +1,14 @@
 {
   "Name": "Checker",
+  "BaseColorFactor": [1.0, 1.0, 1.0, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 0.0,
+  "Roughness": 0.8,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
   "BaseColorTexture": "../UVChecker.png",
-  "BaseColorTint": [1.0, 1.0, 1.0, 1.0],
-  "SpecularColor": [0.2, 0.2, 0.2],
-  "Shininess": 32.0,
-  "SpecularStrength": 1.0
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
 }

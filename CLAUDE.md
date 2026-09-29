@@ -41,6 +41,8 @@
 - ECS: 컴포넌트는 POD에 가까운 struct, 로직은 시스템(뷰 순회)에 둔다. `View<...>().Each` 순회 중 같은 타입 컴포넌트 추가/제거 금지. 계층 변경은 반드시 `FScene::SetParent`
 - 리소스 수명: GPU 리소스는 `FResourceManager` 핸들로만 참조하고 직접 소유하지 않는다. 렌더링 중 삭제는 `Destroy*`(지연 해제)로, 즉시 `Shutdown()`은 GPU Flush 이후에만
 - 색공간: 백버퍼 RTV와 색상 텍스처는 sRGB 포맷, 셰이더는 선형 공간에서 계산. 데이터 텍스처(노멀 등)는 UNORM
+- 머티리얼(PBR, glTF 금속/거칠기): 텍스처 슬롯 t0~t4 = 베이스(sRGB)/금속거칠기(선형, G=거칠기 B=금속)/노멀(선형)/AO(선형 R)/발광(sRGB). 머티리얼마다 셰이더 가시 힙에 연속 5칸 테이블(`FMaterial::TextureTable`)을 두며 `FResourceManager`만 만들고 갱신한다. 머티리얼 텍스처 핸들을 바꾸면 `RefreshMaterialTextures` 호출
+- 탄젠트: `FVertex::Tangent.xyz` = UV +U 방향, `B = Cross(N, T) * Tangent.w` = 노멀 맵 +Y = UV 위쪽(-V). glTF TANGENT는 `FGltfLoader::ConvertTangent`(xyz 변환 + w 반전 — 축 반사 때문), 없으면 `FMeshData::ComputeTangents`
 - glTF 임포트: 좌표 변환은 `FGltfLoader::Convert*`만 사용(쿼터니언 벡터부 부호 반전). 축 반사와 엔진 카메라 규약의 반사가 상쇄되어 화면상 와인딩은 유지되므로 로더가 인덱스 순서를 뒤집어 CW 앞면으로 맞춘다. 와인딩 규약 검증: `Cross(P1-P0, P2-P0)·Normal > 0`. 새 속성 추가 시 `GltfLoaderTests`에 케이스 추가
 - 테스트 매크로 인자에 템플릿 쉼표(`View<A, B>()`)를 직접 넣지 말고 지역 변수로 받는다
 - ImGui: UI는 `FImGuiLayer::BeginFrame()`~`EndFrame()` 사이에서만 기술하고, UI 드로우는 UNORM 백버퍼 뷰(`SetRenderTargetToBackBuffer(true)`)에 그린다. 뷰포트에 표시할 오프스크린 타깃은 `FD3D12RenderTarget`(UNORM SRV). `ImGuizmo.h`는 `imgui.h` 다음, Windows 헤더보다 먼저 포함

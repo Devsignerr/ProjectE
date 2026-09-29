@@ -16,13 +16,22 @@ struct FModelImage
 	FImage      Image; // 디코딩 실패 시 IsValid() == false
 };
 
+// glTF 2.0 금속/거칠기 머티리얼. *Image는 FModelData::Images 인덱스(-1이면 없음)
 struct FModelMaterial
 {
 	std::string Name;
-	FVector4    BaseColorFactor = FVector4::OneVector;
-	int32       BaseColorImage  = -1; // FModelData::Images 인덱스
-	float       MetallicFactor  = 1.0f;
-	float       RoughnessFactor = 1.0f;
+	FVector4    BaseColorFactor   = FVector4::OneVector;
+	FVector3    EmissiveFactor    = FVector3::ZeroVector; // KHR_materials_emissive_strength 반영
+	float       MetallicFactor    = 1.0f;
+	float       RoughnessFactor   = 1.0f;
+	float       NormalScale       = 1.0f;
+	float       OcclusionStrength = 1.0f;
+
+	int32 BaseColorImage         = -1; // sRGB
+	int32 MetallicRoughnessImage = -1; // 선형 (G=거칠기, B=금속)
+	int32 NormalImage            = -1; // 선형
+	int32 OcclusionImage         = -1; // 선형 (R)
+	int32 EmissiveImage          = -1; // sRGB
 };
 
 // glTF primitive 하나 = 메시 하나
@@ -65,5 +74,7 @@ struct FGltfLoader
 	static FVector3   ConvertPosition(const FVector3& Gltf) { return { -Gltf.Z, Gltf.X, Gltf.Y }; }
 	static FVector3   ConvertScale(const FVector3& Gltf) { return { Gltf.Z, Gltf.X, Gltf.Y }; }
 	static FQuat      ConvertRotation(const FQuat& Gltf);
+	// 탄젠트: xyz는 위치처럼 변환, 반사로 Cross(N, T)의 방향이 뒤집히므로 바이탄젠트 부호 w를 반전한다
+	static FVector4   ConvertTangent(const FVector4& Gltf);
 	static FMatrix4x4 ConvertMatrix(const FMatrix4x4& GltfRowMajor);
 };

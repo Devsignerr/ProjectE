@@ -33,15 +33,33 @@ namespace
 	}
 } // namespace
 
+const char* FMaterialAsset::GetTextureKey(uint32 Slot)
+{
+	switch (Slot)
+	{
+	case MaterialSlot_BaseColor:         return "BaseColorTexture";
+	case MaterialSlot_MetallicRoughness: return "MetallicRoughnessTexture";
+	case MaterialSlot_Normal:            return "NormalTexture";
+	case MaterialSlot_Occlusion:         return "OcclusionTexture";
+	case MaterialSlot_Emissive:          return "EmissiveTexture";
+	default:                             return "";
+	}
+}
+
 std::string FMaterialAsset::ToJsonString() const
 {
 	json Document;
-	Document["Name"]             = Name;
-	Document["BaseColorTexture"] = BaseColorTexture;
-	Document["BaseColorTint"]    = { Constants.BaseColorTint.X, Constants.BaseColorTint.Y, Constants.BaseColorTint.Z, Constants.BaseColorTint.W };
-	Document["SpecularColor"]    = { Constants.SpecularColor.X, Constants.SpecularColor.Y, Constants.SpecularColor.Z };
-	Document["Shininess"]        = Constants.Shininess;
-	Document["SpecularStrength"] = Constants.SpecularStrength;
+	Document["Name"]              = Name;
+	Document["BaseColorFactor"]   = { Constants.BaseColorFactor.X, Constants.BaseColorFactor.Y, Constants.BaseColorFactor.Z, Constants.BaseColorFactor.W };
+	Document["EmissiveFactor"]    = { Constants.EmissiveFactor.X, Constants.EmissiveFactor.Y, Constants.EmissiveFactor.Z };
+	Document["Metallic"]          = Constants.Metallic;
+	Document["Roughness"]         = Constants.Roughness;
+	Document["NormalScale"]       = Constants.NormalScale;
+	Document["OcclusionStrength"] = Constants.OcclusionStrength;
+	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+	{
+		Document[GetTextureKey(Slot)] = TexturePaths[Slot];
+	}
 	return Document.dump(2);
 }
 
@@ -54,13 +72,21 @@ bool FMaterialAsset::FromJsonString(const std::string& JsonText)
 		return false;
 	}
 
-	Name             = Document.value("Name", std::string());
-	BaseColorTexture = Document.value("BaseColorTexture", std::string());
-	Constants        = FMaterialConstants{};
-	ReadFloats(Document, "BaseColorTint", &Constants.BaseColorTint.X, 4);
-	ReadFloats(Document, "SpecularColor", &Constants.SpecularColor.X, 3);
-	Constants.Shininess        = Document.value("Shininess", Constants.Shininess);
-	Constants.SpecularStrength = Document.value("SpecularStrength", Constants.SpecularStrength);
+	Name      = Document.value("Name", std::string());
+	Constants = FMaterialConstants{};
+	if (!ReadFloats(Document, "BaseColorFactor", &Constants.BaseColorFactor.X, 4))
+	{
+		ReadFloats(Document, "BaseColorTint", &Constants.BaseColorFactor.X, 4); // 구 형식 호환
+	}
+	ReadFloats(Document, "EmissiveFactor", &Constants.EmissiveFactor.X, 3);
+	Constants.Metallic          = Document.value("Metallic", Constants.Metallic);
+	Constants.Roughness         = Document.value("Roughness", Constants.Roughness);
+	Constants.NormalScale       = Document.value("NormalScale", Constants.NormalScale);
+	Constants.OcclusionStrength = Document.value("OcclusionStrength", Constants.OcclusionStrength);
+	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+	{
+		TexturePaths[Slot] = Document.value(GetTextureKey(Slot), std::string());
+	}
 	return true;
 }
 

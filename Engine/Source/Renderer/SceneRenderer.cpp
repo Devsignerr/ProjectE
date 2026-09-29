@@ -21,7 +21,7 @@ namespace
 		RootParam_PerObject       = 0, // b0
 		RootParam_PerFrame        = 1, // b1
 		RootParam_Material        = 2, // b2
-		RootParam_MaterialTexture = 3, // t0
+		RootParam_MaterialTexture = 3, // t0~t4 (머티리얼 텍스처 테이블)
 	};
 } // namespace
 
@@ -42,7 +42,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 PerFrameIndex  = RootSignature.AddConstantBufferView(1);
 	const uint32 MaterialIndex  = RootSignature.AddConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 TextureIndex   = RootSignature.AddDescriptorTable(
-		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialSlot_Count, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(PerObjectIndex == RootParam_PerObject && PerFrameIndex == RootParam_PerFrame &&
 	        MaterialIndex == RootParam_Material && TextureIndex == RootParam_MaterialTexture);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
@@ -222,8 +222,7 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera)
 				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Command.Material->Constants).GpuAddress).first;
 			}
 			CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
-			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture,
-			                                            Resources->ResolveTexture(Command.Material->BaseColorTexture).GetSrv().Gpu);
+			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Command.Material->TextureTable.Gpu);
 			BoundMaterial = Command.Material;
 		}
 
@@ -280,7 +279,9 @@ FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const F
 	FPerFrameConstants PerFrame;
 	PerFrame.ViewProjection = Camera.GetViewProjectionMatrix();
 	PerFrame.CameraPosition = Camera.GetPosition();
-	PerFrame.AmbientColor   = AmbientColor;
+	PerFrame.SkyColor         = SkyColor;
+	PerFrame.GroundColor      = GroundColor;
+	PerFrame.AmbientIntensity = AmbientIntensity;
 
 	// 첫 번째 방향광 사용 (여러 광원은 Phase 6)
 	bool bFoundLight = false;
@@ -299,7 +300,7 @@ FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const F
 	if (!bFoundLight)
 	{
 		PerFrame.DirectionalLight.Direction = FVector3(1.0f, 0.5f, -1.0f).GetNormalized();
-		PerFrame.DirectionalLight.Intensity = 1.0f;
+		PerFrame.DirectionalLight.Intensity = 3.0f; // HDR 단위 (확산 BRDF에 1/π가 있어 흰 면 ≈ 0.95)
 	}
 	return PerFrame;
 }

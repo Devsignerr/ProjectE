@@ -52,5 +52,6 @@ FMeshData FPrimitiveShapes::MakeCube(float Size, const FVector4& Color)
 	AddQuadFace(Mesh, Z * HalfExtent, Z, X, HalfExtent, Color);   // 위 (+Z)
 	AddQuadFace(Mesh, -Z * HalfExtent, -Z, X, HalfExtent, Color); // 아래 (-Z)
 
+	Mesh.ComputeTangents();
 	return Mesh;
 }

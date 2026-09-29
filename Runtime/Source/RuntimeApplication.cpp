@@ -139,15 +139,14 @@ void FRuntimeApplication::BuildPlaceholderScene()
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
-	SunLight.Intensity = 1.2f;
+	SunLight.Intensity = 3.0f;
 
 	const FMeshHandle CubeMesh = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
 
 	FMaterial GroundMaterial;
 	GroundMaterial.Name                    = "Ground";
-	GroundMaterial.Constants.BaseColorTint = FVector4(0.55f, 0.6f, 0.65f, 1.0f);
-	GroundMaterial.Constants.SpecularColor = FVector3(0.2f);
-	GroundMaterial.Constants.Shininess     = 32.0f;
+	GroundMaterial.Constants.BaseColorFactor = FVector4(0.55f, 0.6f, 0.65f, 1.0f);
+	GroundMaterial.Constants.Roughness       = 0.8f;
 
 	const FEntity Ground = Scene.CreateEntity("Ground");
 	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -0.1f);

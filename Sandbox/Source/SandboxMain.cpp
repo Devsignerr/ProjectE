@@ -145,7 +145,7 @@ private:
 		Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 		FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 		SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
-		SunLight.Intensity = 1.2f;
+		SunLight.Intensity = 3.0f;
 
 		// 공용 리소스
 		const FMeshHandle    CubeMesh       = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
@@ -153,9 +153,8 @@ private:
 
 		FMaterial CheckerMaterial;
 		CheckerMaterial.Name                       = "Checker";
-		CheckerMaterial.BaseColorTexture           = CheckerTexture;
-		CheckerMaterial.Constants.SpecularColor    = FVector3(0.3f);
-		CheckerMaterial.Constants.Shininess        = 32.0f;
+		CheckerMaterial.Textures[MaterialSlot_BaseColor] = CheckerTexture;
+		CheckerMaterial.Constants.Roughness              = 0.8f;
 		const FMaterialHandle CheckerHandle = Resources.CreateMaterial(CheckerMaterial);
 
 		// 바닥: 납작한 큐브
@@ -175,10 +174,10 @@ private:
 
 			FMaterial TintMaterial;
 			TintMaterial.Name                    = std::format("Tint{}", Index);
-			TintMaterial.BaseColorTexture        = CheckerTexture;
-			TintMaterial.Constants.BaseColorTint = FVector4(0.5f + 0.5f * FMath::Cos(Angle), 0.5f + 0.5f * FMath::Sin(Angle), 0.7f, 1.0f);
-			TintMaterial.Constants.Shininess     = 64.0f;
-			TintMaterial.Constants.SpecularColor = FVector3(0.5f);
+			TintMaterial.Textures[MaterialSlot_BaseColor] = CheckerTexture;
+			TintMaterial.Constants.BaseColorFactor        = FVector4(0.5f + 0.5f * FMath::Cos(Angle), 0.5f + 0.5f * FMath::Sin(Angle), 0.7f, 1.0f);
+			TintMaterial.Constants.Roughness              = 0.35f;
+			TintMaterial.Constants.Metallic               = Index % 2 == 0 ? 1.0f : 0.0f;
 
 			const FEntity Orbiter = Scene.CreateEntity(std::format("Orbiter{}", Index));
 			Scene.SetParent(Orbiter, OrbitRoot);

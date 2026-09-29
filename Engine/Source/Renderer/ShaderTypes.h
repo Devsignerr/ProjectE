@@ -21,8 +21,11 @@ struct alignas(16) FPerFrameConstants
 	FVector3                   CameraPosition;
 	float                      Padding0 = 0.0f;
 	FDirectionalLightConstants DirectionalLight;
-	FVector3                   AmbientColor = FVector3(0.03f, 0.03f, 0.04f);
-	float                      Padding1     = 0.0f;
+	// 간이 환경광 (하늘/지면 반구). 이후 IBL이 대체한다
+	FVector3                   SkyColor         = FVector3(0.35f, 0.45f, 0.6f);
+	float                      AmbientIntensity = 1.0f;
+	FVector3                   GroundColor      = FVector3(0.15f, 0.13f, 0.1f);
+	float                      Padding1         = 0.0f;
 };
 static_assert(sizeof(FPerFrameConstants) % 16 == 0);
 
@@ -33,13 +36,15 @@ struct alignas(16) FPerObjectConstants
 };
 static_assert(sizeof(FPerObjectConstants) % 16 == 0);
 
-// Blinn-Phong 머티리얼
+// 금속/거칠기 PBR 머티리얼 (glTF 2.0 규약). 텍스처 값에 곱해지는 팩터들
 struct alignas(16) FMaterialConstants
 {
-	FVector4 BaseColorTint    = FVector4::OneVector;
-	FVector3 SpecularColor    = FVector3(0.04f, 0.04f, 0.04f);
-	float    Shininess        = 64.0f; // 스페큘러 지수
-	float    SpecularStrength = 1.0f;
-	FVector3 Padding0;
+	FVector4 BaseColorFactor   = FVector4::OneVector;
+	FVector3 EmissiveFactor    = FVector3::ZeroVector; // HDR 선형
+	float    Metallic          = 0.0f;
+	float    Roughness         = 0.5f;
+	float    NormalScale       = 1.0f; // 노멀 맵 XY 배율
+	float    OcclusionStrength = 1.0f; // 0 = AO 무시, 1 = 전체 적용
+	float    AlphaCutoff       = 0.5f; // 알파 테스트(후속)
 };
-static_assert(sizeof(FMaterialConstants) % 16 == 0);
+static_assert(sizeof(FMaterialConstants) == 48);

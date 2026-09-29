@@ -56,8 +56,10 @@ public:
 
 	const FSceneRenderStats& GetStats() const { return Stats; }
 
-	// 씬에 조명 컴포넌트가 없을 때 사용하는 기본값
-	FVector3 AmbientColor = FVector3(0.08f, 0.09f, 0.12f);
+	// 간이 환경광 (하늘/지면 반구, HDR 선형). 이후 IBL이 대체한다
+	FVector3 SkyColor         = FVector3(0.35f, 0.45f, 0.6f);
+	FVector3 GroundColor      = FVector3(0.15f, 0.13f, 0.1f);
+	float    AmbientIntensity = 1.0f;
 
 private:
 	struct FMeshDrawCommand

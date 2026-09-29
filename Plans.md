@@ -112,7 +112,7 @@
 **DoD**: DamagedHelmet이 PBR(금속/거칠기/노멀/AO/발광)로 올바르게 보이고, 방향광 그림자가 드리우며, HDR + 톤매핑/블룸이 적용된다. 에디터에서 선택한 물체는 뷰포트에 아웃라인, 계층 패널에 강조(부모 자동 펼침·스크롤)가 표시된다. 디버그 레이어 에러 없음.
 
 - [x] (기반) HDR 파이프라인: 씬을 R16G16B16A16_FLOAT(`FD3D12RenderTarget` 포맷 설정화)에 그린 뒤 `FPostProcessor`(노출 + ACES/Reinhard 톤매핑, `Tonemap.hlsl`/`Fullscreen.hlsli`)로 출력(`FRenderOutput`: 백버퍼 또는 뷰포트 RTV)
-- [~] (트랙 H, 서브에이전트) PBR: Cook-Torrance(GGX/Smith/Schlick), glTF 금속·거칠기/노멀/AO/발광 텍스처, 탄젠트(MikkTSpace 대체 계산), 머티리얼/쿠킹 형식 확장, 간이 환경광(하늘 반구 + 스페큘러 근사)
+- [x] (트랙 H, 서브에이전트) PBR 금속/거칠기: Cook-Torrance(GGX, Smith height-correlated, Schlick) + 에너지 보존 Lambert, glTF 텍스처 5종(베이스/금속거칠기/노멀/AO/발광, 발광 강도 확장 포함), 정점 탄젠트(glTF TANGENT 변환 또는 UV로 계산), 머티리얼별 연속 SRV 5칸 디스크립터 테이블(`AllocateRange`), `.emat` PBR 필드(구 형식 호환), 쿠킹 모델 형식 v2, 간이 환경광(하늘/지면 반구 + EnvBRDFApprox, `EvaluateAmbient`) + 테스트 7개
 - [~] (트랙 J, 서브에이전트) 포스트 프로세싱: 블룸(다운/업샘플 체인), 자동/수동 노출, 톤매핑 설정 UI, 비네트/그레인은 선택
 - [~] (트랙 G, 메인) 선택 표시: 뷰포트 아웃라인(선택 마스크 + 가장자리 검출 합성), 계층 패널 강조(부모 자동 펼침, 스크롤)
 - [ ] 섀도우 맵 (방향광 CSM, PCF) — 트랙 H 머지 후

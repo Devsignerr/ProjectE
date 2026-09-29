@@ -27,6 +27,7 @@ public:
 	void           DestroyTexture(FTextureHandle Handle);
 	FD3D12Texture* GetTexture(FTextureHandle Handle) const { return Textures.Get(Handle); }
 	FTextureHandle GetWhiteTexture() const { return WhiteTexture; }
+	FTextureHandle GetFlatNormalTexture() const { return FlatNormalTexture; } // (0.5, 0.5, 1) 선형
 	// 무효 핸들이면 흰색 텍스처
 	const FD3D12Texture& ResolveTexture(FTextureHandle Handle) const;
 
@@ -38,7 +39,10 @@ public:
 	FMeshHandle GetOrCreatePrimitiveMesh(std::string_view Name);
 
 	// ---- 머티리얼
+	// TextureTable은 무시되고 새로 만들어진다
 	FMaterialHandle CreateMaterial(const FMaterial& Material);
+	// 머티리얼의 텍스처 핸들을 바꾼 뒤 호출: 디스크립터 테이블을 새로 만들고 이전 것은 지연 해제
+	void            RefreshMaterialTextures(FMaterialHandle Handle);
 	// .emat 파일 로드 (경로별 캐시). 텍스처는 파일 위치 기준 상대 경로로 로드
 	FMaterialHandle LoadMaterial(const std::filesystem::path& Path);
 	void            DestroyMaterial(FMaterialHandle Handle);
@@ -52,6 +56,10 @@ public:
 	size_t GetMaterialCount() const { return Materials.GetCount(); }
 
 private:
+	// 슬롯별 해석된 텍스처로 새 디스크립터 테이블 작성 (이전 테이블은 지연 해제)
+	void BuildMaterialTable(FMaterial& Material);
+	const FD3D12Texture& ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const;
+
 	FD3D12RHI* Rhi = nullptr;
 
 	TResourcePool<FD3D12Texture, FTextureHandle> Textures;
@@ -63,5 +71,6 @@ private:
 	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
 
 	FTextureHandle  WhiteTexture;
+	FTextureHandle  FlatNormalTexture;
 	FMaterialHandle DefaultMaterial;
 };

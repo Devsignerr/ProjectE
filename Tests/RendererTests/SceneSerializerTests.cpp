@@ -163,25 +163,41 @@ E_TEST(SceneSerializer_FileAndTolerance)
 E_TEST(MaterialAsset_RoundTrip)
 {
 	FMaterialAsset Asset;
-	Asset.Name                       = "Test";
-	Asset.BaseColorTexture           = "../Tex.png";
-	Asset.Constants.BaseColorTint    = FVector4(0.1f, 0.2f, 0.3f, 0.4f);
-	Asset.Constants.SpecularColor    = FVector3(0.5f, 0.6f, 0.7f);
-	Asset.Constants.Shininess        = 12.0f;
-	Asset.Constants.SpecularStrength = 0.25f;
+	Asset.Name                                    = "Test";
+	Asset.TexturePaths[MaterialSlot_BaseColor]    = "../Tex.png";
+	Asset.TexturePaths[MaterialSlot_Normal]       = "Normal.png";
+	Asset.Constants.BaseColorFactor               = FVector4(0.1f, 0.2f, 0.3f, 0.4f);
+	Asset.Constants.EmissiveFactor                = FVector3(2.0f, 1.0f, 0.5f);
+	Asset.Constants.Metallic                      = 0.75f;
+	Asset.Constants.Roughness                     = 0.25f;
+	Asset.Constants.NormalScale                   = 0.5f;
+	Asset.Constants.OcclusionStrength             = 0.6f;
 
 	FMaterialAsset Loaded;
 	E_EXPECT_TRUE(Loaded.FromJsonString(Asset.ToJsonString()));
-	E_EXPECT_TRUE(Loaded.Name == "Test" && Loaded.BaseColorTexture == "../Tex.png");
-	E_EXPECT_EQUALS(Loaded.Constants.BaseColorTint, Asset.Constants.BaseColorTint, Tol);
-	E_EXPECT_EQUALS(Loaded.Constants.SpecularColor, Asset.Constants.SpecularColor, Tol);
-	E_EXPECT_NEAR(Loaded.Constants.Shininess, 12.0f, Tol);
-	E_EXPECT_NEAR(Loaded.Constants.SpecularStrength, 0.25f, Tol);
+	E_EXPECT_TRUE(Loaded.Name == "Test");
+	E_EXPECT_TRUE(Loaded.TexturePaths[MaterialSlot_BaseColor] == "../Tex.png");
+	E_EXPECT_TRUE(Loaded.TexturePaths[MaterialSlot_Normal] == "Normal.png");
+	E_EXPECT_TRUE(Loaded.TexturePaths[MaterialSlot_Emissive].empty());
+	E_EXPECT_EQUALS(Loaded.Constants.BaseColorFactor, Asset.Constants.BaseColorFactor, Tol);
+	E_EXPECT_EQUALS(Loaded.Constants.EmissiveFactor, Asset.Constants.EmissiveFactor, Tol);
+	E_EXPECT_NEAR(Loaded.Constants.Metallic, 0.75f, Tol);
+	E_EXPECT_NEAR(Loaded.Constants.Roughness, 0.25f, Tol);
+	E_EXPECT_NEAR(Loaded.Constants.NormalScale, 0.5f, Tol);
+	E_EXPECT_NEAR(Loaded.Constants.OcclusionStrength, 0.6f, Tol);
 
 	// 일부 필드 누락은 기본값 유지
 	FMaterialAsset Partial;
-	E_EXPECT_TRUE(Partial.FromJsonString(R"({"Name":"P","Shininess":5})"));
-	E_EXPECT_NEAR(Partial.Constants.Shininess, 5.0f, Tol);
-	E_EXPECT_NEAR(Partial.Constants.SpecularStrength, 1.0f, Tol);
+	E_EXPECT_TRUE(Partial.FromJsonString(R"({"Name":"P","Roughness":0.9})"));
+	E_EXPECT_NEAR(Partial.Constants.Roughness, 0.9f, Tol);
+	E_EXPECT_NEAR(Partial.Constants.Metallic, 0.0f, Tol);
+	E_EXPECT_EQUALS(Partial.Constants.BaseColorFactor, FVector4::OneVector, Tol);
 	E_EXPECT_FALSE(Partial.FromJsonString("nope"));
+
+	// 구 형식(Blinn-Phong): BaseColorTint는 BaseColorFactor로, 나머지 구 키는 무시
+	FMaterialAsset Legacy;
+	E_EXPECT_TRUE(Legacy.FromJsonString(R"({"Name":"Old","BaseColorTexture":"a.png","BaseColorTint":[0.5,0.5,0.5,1],"SpecularColor":[1,1,1],"Shininess":32})"));
+	E_EXPECT_EQUALS(Legacy.Constants.BaseColorFactor, FVector4(0.5f, 0.5f, 0.5f, 1.0f), Tol);
+	E_EXPECT_TRUE(Legacy.TexturePaths[MaterialSlot_BaseColor] == "a.png");
+	E_EXPECT_NEAR(Legacy.Constants.Roughness, FMaterialConstants{}.Roughness, Tol);
 }

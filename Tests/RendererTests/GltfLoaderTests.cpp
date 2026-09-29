@@ -143,6 +143,9 @@ E_TEST(Gltf_LoadTriangleFile)
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[2].Position, FVector3(0, 0, 1), Tol);
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[0].Normal, FVector3(-1, 0, 0), Tol);
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[1].UV, FVector2(1, 0), Tol);
+	// TANGENT 속성이 없으면 UV로 계산: glTF +U(= +X) → 엔진 +Y, 법선과 직교
+	E_EXPECT_EQUALS(FVector3(Mesh.Data.Vertices[0].Tangent.X, Mesh.Data.Vertices[0].Tangent.Y, Mesh.Data.Vertices[0].Tangent.Z), FVector3(0, 1, 0), Tol);
+	E_EXPECT_TRUE(FMath::Abs(Mesh.Data.Vertices[0].Tangent.W) == 1.0f);
 
 	// 와인딩: 엔진 규약(CW 앞면)에서는 Cross(E1, E2)가 법선과 같은 방향 (FPrimitiveShapes 큐브와 동일)
 	{

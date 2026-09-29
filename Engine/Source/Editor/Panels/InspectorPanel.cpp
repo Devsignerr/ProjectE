@@ -302,10 +302,12 @@ void FInspectorPanel::DrawStaticMeshExtras(FEditorContext& Context, FEntity Enti
 	if (FMaterial* Editable = Context.Resources->GetMaterial(Mesh->Material))
 	{
 		ImGui::PushID("Material");
-		ImGui::ColorEdit4("베이스 컬러 틴트", &Editable->Constants.BaseColorTint.X);
-		ImGui::ColorEdit3("스페큘러 색", &Editable->Constants.SpecularColor.X);
-		ImGui::DragFloat("광택", &Editable->Constants.Shininess, 1.0f, 1.0f, 1024.0f);
-		ImGui::DragFloat("스페큘러 강도", &Editable->Constants.SpecularStrength, 0.01f, 0.0f, 4.0f);
+		ImGui::ColorEdit4("베이스 컬러", &Editable->Constants.BaseColorFactor.X);
+		ImGui::SliderFloat("금속성", &Editable->Constants.Metallic, 0.0f, 1.0f);
+		ImGui::SliderFloat("거칠기", &Editable->Constants.Roughness, 0.0f, 1.0f);
+		ImGui::ColorEdit3("발광", &Editable->Constants.EmissiveFactor.X, ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float);
+		ImGui::DragFloat("노멀 강도", &Editable->Constants.NormalScale, 0.01f, 0.0f, 4.0f);
+		ImGui::SliderFloat("AO 강도", &Editable->Constants.OcclusionStrength, 0.0f, 1.0f);
 		ImGui::PopID();
 	}
 }

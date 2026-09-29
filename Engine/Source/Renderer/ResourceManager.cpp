@@ -21,17 +21,17 @@ bool FResourceManager::Init(FD3D12RHI& InRhi)
 	E_CHECKF(Rhi == nullptr, "리소스 관리자가 이미 초기화되어 있습니다");
 	Rhi = &InRhi;
 
-	// 기본 리소스: 1x1 흰색 텍스처, 흰색 머티리얼
-	WhiteTexture = CreateTexture(FImage::MakeSolidColor(1, 1, 255, 255, 255), true, L"DefaultWhite");
-	if (!WhiteTexture.IsValid())
+	// 기본 리소스: 1x1 흰색/평면 노멀 텍스처, 기본 머티리얼
+	WhiteTexture      = CreateTexture(FImage::MakeSolidColor(1, 1, 255, 255, 255), true, L"DefaultWhite");
+	FlatNormalTexture = CreateTexture(FImage::MakeSolidColor(1, 1, 128, 128, 255), false, L"DefaultFlatNormal");
+	if (!WhiteTexture.IsValid() || !FlatNormalTexture.IsValid())
 	{
 		return false;
 	}
 
 	FMaterial Default;
-	Default.Name             = "DefaultMaterial";
-	Default.BaseColorTexture = WhiteTexture;
-	DefaultMaterial          = CreateMaterial(Default);
+	Default.Name    = "DefaultMaterial";
+	DefaultMaterial = CreateMaterial(Default);
 
 	E_LOG(LogRenderer, Display, "리소스 관리자 초기화 완료");
 	return true;
@@ -47,6 +47,7 @@ void FResourceManager::Shutdown()
 	// 즉시 해제 전에 GPU 작업 완료 보장
 	Rhi->GetGraphicsQueue().Flush();
 
+	Materials.ForEach([this](FMaterialHandle, FMaterial& Material) { Rhi->GetSrvAllocator().Free(Material.TextureTable); });
 	Meshes.ForEach([](FMeshHandle, FStaticMesh& Mesh) { Mesh.Shutdown(); });
 	Textures.ForEach([](FTextureHandle, FD3D12Texture& Texture) { Texture.Shutdown(); });
 	Meshes.Clear();
@@ -56,7 +57,8 @@ void FResourceManager::Shutdown()
 	MaterialCache.clear();
 	PrimitiveMeshes.clear();
 
-	WhiteTexture    = FTextureHandle{};
+	WhiteTexture      = FTextureHandle{};
+	FlatNormalTexture = FTextureHandle{};
 	DefaultMaterial = FMaterialHandle{};
 	Rhi             = nullptr;
 }
@@ -111,14 +113,25 @@ FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, 
 
 void FResourceManager::DestroyTexture(FTextureHandle Handle)
 {
-	if (Handle == WhiteTexture)
+	if (Handle == WhiteTexture || Handle == FlatNormalTexture)
 	{
-		E_LOG(LogRenderer, Warning, "기본 흰색 텍스처는 삭제할 수 없습니다");
+		E_LOG(LogRenderer, Warning, "기본 텍스처는 삭제할 수 없습니다");
 		return;
 	}
 	if (std::unique_ptr<FD3D12Texture> Texture = Textures.Remove(Handle))
 	{
 		Texture->ShutdownDeferred(*Rhi);
+		// 이 텍스처를 쓰던 머티리얼은 기본 텍스처로 테이블을 다시 만든다 (이전 테이블은 지연 해제)
+		Materials.ForEach([&](FMaterialHandle, FMaterial& Material) {
+			for (const FTextureHandle& Slot : Material.Textures)
+			{
+				if (Slot == Handle)
+				{
+					BuildMaterialTable(Material);
+					break;
+				}
+			}
+		});
 		for (auto Iterator = TextureCache.begin(); Iterator != TextureCache.end();)
 		{
 			Iterator = (Iterator->second == Handle) ? TextureCache.erase(Iterator) : std::next(Iterator);
@@ -177,9 +190,53 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	return Handle;
 }
 
+const FD3D12Texture& FResourceManager::ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const
+{
+	if (const FD3D12Texture* Texture = Textures.Get(Material.Textures[Slot]))
+	{
+		return *Texture;
+	}
+	return *Textures.Get(Slot == MaterialSlot_Normal ? FlatNormalTexture : WhiteTexture);
+}
+
+void FResourceManager::BuildMaterialTable(FMaterial& Material)
+{
+	FD3D12DescriptorAllocator& Allocator = Rhi->GetSrvAllocator();
+	const FD3D12DescriptorHandle NewTable = Allocator.AllocateRange(MaterialSlot_Count);
+
+	// 디스크립터 복사 대신 SRV를 직접 기록 (셰이더 가시 힙은 읽기가 느려 복사 원본으로 부적합)
+	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
+	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+	{
+		const FD3D12Texture& Texture = ResolveSlotTexture(Material, Slot);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
+		SrvDesc.Format                  = Texture.GetFormat();
+		SrvDesc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+		SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SrvDesc.Texture2D.MipLevels     = Texture.GetMipCount();
+		Device->CreateShaderResourceView(Texture.GetResource(), &SrvDesc, Allocator.GetCpuHandle(NewTable.Index + Slot));
+	}
+
+	// 진행 중인 프레임이 이전 테이블을 읽을 수 있으므로 지연 해제
+	Rhi->DeferFreeDescriptor(Material.TextureTable);
+	Material.TextureTable = NewTable;
+}
+
 FMaterialHandle FResourceManager::CreateMaterial(const FMaterial& Material)
 {
-	return Materials.Add(std::make_unique<FMaterial>(Material));
+	auto NewMaterial          = std::make_unique<FMaterial>(Material);
+	NewMaterial->TextureTable = FD3D12DescriptorHandle{};
+	BuildMaterialTable(*NewMaterial);
+	return Materials.Add(std::move(NewMaterial));
+}
+
+void FResourceManager::RefreshMaterialTextures(FMaterialHandle Handle)
+{
+	if (FMaterial* Material = Materials.Get(Handle))
+	{
+		BuildMaterialTable(*Material);
+	}
 }
 
 FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path)
@@ -205,9 +262,12 @@ FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path
 	FMaterial Material;
 	Material.Name      = Asset.Name;
 	Material.Constants = Asset.Constants;
-	if (!Asset.BaseColorTexture.empty())
+	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
 	{
-		Material.BaseColorTexture = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.BaseColorTexture), true);
+		if (!Asset.TexturePaths[Slot].empty())
+		{
+			Material.Textures[Slot] = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::IsSrgbSlot(Slot));
+		}
 	}
 
 	const FMaterialHandle Handle = CreateMaterial(Material);
@@ -223,7 +283,14 @@ void FResourceManager::DestroyMaterial(FMaterialHandle Handle)
 		E_LOG(LogRenderer, Warning, "기본 머티리얼은 삭제할 수 없습니다");
 		return;
 	}
-	Materials.Remove(Handle);
+	if (std::unique_ptr<FMaterial> Material = Materials.Remove(Handle))
+	{
+		Rhi->DeferFreeDescriptor(Material->TextureTable);
+		for (auto Iterator = MaterialCache.begin(); Iterator != MaterialCache.end();)
+		{
+			Iterator = (Iterator->second == Handle) ? MaterialCache.erase(Iterator) : std::next(Iterator);
+		}
+	}
 }
 
 const FMaterial& FResourceManager::ResolveMaterial(FMaterialHandle Handle) const

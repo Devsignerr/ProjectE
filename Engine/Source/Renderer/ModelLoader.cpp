@@ -110,14 +110,15 @@ FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResou
 
 void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Root)
 {
-	// 텍스처: 베이스 컬러로 참조되는 이미지만 sRGB로 업로드
-	std::unordered_map<int32, FTextureHandle> ImageTextures;
-	auto GetOrCreateTexture = [&](int32 ImageIndex) -> FTextureHandle {
+	// 텍스처: 색상 슬롯(베이스/발광)은 sRGB, 데이터 슬롯(금속·거칠기/노멀/AO)은 선형. (이미지, 색공간)별로 한 번만 생성
+	std::unordered_map<int64, FTextureHandle> ImageTextures;
+	auto GetOrCreateTexture = [&](int32 ImageIndex, bool bSRGB) -> FTextureHandle {
 		if (ImageIndex < 0 || ImageIndex >= static_cast<int32>(Model.Images.size()))
 		{
 			return FTextureHandle{};
 		}
-		if (const auto Found = ImageTextures.find(ImageIndex); Found != ImageTextures.end())
+		const int64 Key = static_cast<int64>(ImageIndex) * 2 + (bSRGB ? 1 : 0);
+		if (const auto Found = ImageTextures.find(Key); Found != ImageTextures.end())
 		{
 			return Found->second;
 		}
@@ -125,26 +126,32 @@ void FModelLoader::InstantiateInto(const FModelData& Model, FScene& Scene, FReso
 		FTextureHandle     Handle;
 		if (Image.Image.IsValid())
 		{
-			Handle = Resources.CreateTexture(Image.Image, true, FStringConv::ToWide(Model.Name + "/" + Image.Name));
+			Handle = Resources.CreateTexture(Image.Image, bSRGB, FStringConv::ToWide(Model.Name + "/" + Image.Name));
 		}
-		ImageTextures[ImageIndex] = Handle;
+		ImageTextures[Key] = Handle;
 		return Handle;
 	};
 
-	// 머티리얼 (PBR 인자를 Blinn-Phong으로 근사; Phase 6 PBR에서 교체)
+	// 머티리얼 (glTF 금속/거칠기 → 엔진 PBR, 1:1 대응)
 	std::vector<FMaterialHandle> MaterialHandles(Model.Materials.size());
 	for (size_t Index = 0; Index < Model.Materials.size(); ++Index)
 	{
 		const FModelMaterial& Source = Model.Materials[Index];
 
 		FMaterial Material;
-		Material.Name                       = Source.Name;
-		Material.BaseColorTexture           = GetOrCreateTexture(Source.BaseColorImage);
-		Material.Constants.BaseColorTint    = Source.BaseColorFactor;
-		Material.Constants.Shininess        = FMath::Lerp(256.0f, 8.0f, FMath::Clamp(Source.RoughnessFactor, 0.0f, 1.0f));
-		Material.Constants.SpecularStrength = FMath::Lerp(0.5f, 0.1f, FMath::Clamp(Source.RoughnessFactor, 0.0f, 1.0f));
-		Material.Constants.SpecularColor    = FVector3::Lerp(FVector3(0.04f), FVector3(0.6f), FMath::Clamp(Source.MetallicFactor, 0.0f, 1.0f));
-		MaterialHandles[Index]              = Resources.CreateMaterial(Material);
+		Material.Name                                  = Source.Name;
+		Material.Constants.BaseColorFactor             = Source.BaseColorFactor;
+		Material.Constants.EmissiveFactor              = Source.EmissiveFactor;
+		Material.Constants.Metallic                    = Source.MetallicFactor;
+		Material.Constants.Roughness                   = Source.RoughnessFactor;
+		Material.Constants.NormalScale                 = Source.NormalScale;
+		Material.Constants.OcclusionStrength           = Source.OcclusionStrength;
+		Material.Textures[MaterialSlot_BaseColor]         = GetOrCreateTexture(Source.BaseColorImage, true);
+		Material.Textures[MaterialSlot_MetallicRoughness] = GetOrCreateTexture(Source.MetallicRoughnessImage, false);
+		Material.Textures[MaterialSlot_Normal]            = GetOrCreateTexture(Source.NormalImage, false);
+		Material.Textures[MaterialSlot_Occlusion]         = GetOrCreateTexture(Source.OcclusionImage, false);
+		Material.Textures[MaterialSlot_Emissive]          = GetOrCreateTexture(Source.EmissiveImage, true);
+		MaterialHandles[Index]                         = Resources.CreateMaterial(Material);
 	}
 
 	// 메시

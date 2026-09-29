@@ -1,0 +1,19 @@
+# 빌드 산출물
+Build/
+out/
+Binaries/
+Intermediate/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+CMakeUserPresets.json
+
+# 로그/임시
+*.log
+*.tmp
+Saved/

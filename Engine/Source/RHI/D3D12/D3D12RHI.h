@@ -1,0 +1,90 @@
+#pragma once
+
+#include "RHI/D3D12/D3D12CommandQueue.h"
+#include "RHI/D3D12/D3D12Common.h"
+#include "RHI/D3D12/D3D12DepthBuffer.h"
+#include "RHI/D3D12/D3D12DescriptorAllocator.h"
+#include "RHI/D3D12/D3D12Device.h"
+#include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
+#include "RHI/D3D12/D3D12SwapChain.h"
+
+#include <vector>
+
+struct FD3D12RHIDesc
+{
+	HWND   WindowHandle      = nullptr;
+	uint32 Width             = 0;
+	uint32 Height            = 0;
+	bool   bEnableDebugLayer = false;
+	bool   bVSync            = true;
+	uint64 DynamicBufferSize = 4 * 1024 * 1024; // 프레임당 동적 업로드 버퍼 크기
+	uint32 SrvDescriptorCount = 4096;           // 셰이더 가시 CBV/SRV/UAV 힙 크기
+};
+
+// D3D12 렌더링 파사드: 디바이스/큐/스왑체인/깊이 버퍼와 프레임 단위 커맨드 리스트를 묶는다.
+// 프레임 흐름: BeginFrame(클리어) → (드로우) → EndFrame(실행 + Present)
+class FD3D12RHI
+{
+public:
+	static constexpr uint32      FrameCount         = FD3D12SwapChain::BackBufferCount;
+	static constexpr DXGI_FORMAT RenderTargetFormat = FD3D12SwapChain::RenderTargetViewFormat; // PSO RTV 포맷 (sRGB)
+	static constexpr DXGI_FORMAT DepthBufferFormat  = FD3D12DepthBuffer::Format;
+
+	~FD3D12RHI();
+
+	bool Init(const FD3D12RHIDesc& Desc);
+	void Shutdown();
+
+	// 창 크기 변경 시 호출. GPU를 비운 뒤 백버퍼/깊이 버퍼를 재생성한다.
+	void Resize(uint32 Width, uint32 Height);
+
+	// 이번 프레임의 백버퍼를 렌더 타깃으로 전이하고 색/깊이를 클리어. 동적 업로드 버퍼도 초기화된다.
+	void BeginFrame(const float ClearColor[4]);
+
+	// 커맨드 리스트를 닫아 실행하고 Present
+	void EndFrame();
+
+	void SetVSync(bool bEnabled) { bVSync = bEnabled; }
+	bool IsVSync() const { return bVSync; }
+
+	FD3D12Device&              GetDevice() { return Device; }
+	FD3D12CommandQueue&        GetGraphicsQueue() { return GraphicsQueue; }
+	FD3D12SwapChain&           GetSwapChain() { return SwapChain; }
+	ID3D12GraphicsCommandList* GetCommandList() const { return CommandList.Get(); }
+
+	// 현재 프레임의 동적 업로드 버퍼 (BeginFrame 이후 유효)
+	FD3D12DynamicUploadBuffer& GetDynamicBuffer() { return DynamicBuffers[CurrentBackBufferIndex]; }
+
+	// 셰이더 가시 CBV/SRV/UAV 디스크립터 할당자. BeginFrame에서 힙이 바인딩된다.
+	FD3D12DescriptorAllocator& GetSrvAllocator() { return SrvAllocator; }
+
+	// 지연 해제: 현재 프레임을 GPU가 끝낸 뒤(같은 백버퍼 인덱스의 다음 BeginFrame) 실제로 해제한다
+	void DeferRelease(ComPtr<ID3D12Object> Object);
+	void DeferFreeDescriptor(const FD3D12DescriptorHandle& Handle);
+
+private:
+	struct FPendingReleases
+	{
+		std::vector<ComPtr<ID3D12Object>>   Objects;
+		std::vector<FD3D12DescriptorHandle> SrvDescriptors;
+	};
+
+	void ProcessPendingReleases(FPendingReleases& Pending);
+
+	FD3D12Device              Device;
+	FD3D12CommandQueue        GraphicsQueue;
+	FD3D12SwapChain           SwapChain;
+	FD3D12DepthBuffer         DepthBuffer;
+	FD3D12DescriptorAllocator SrvAllocator;
+
+	// 백버퍼마다 별도 할당자/동적 버퍼: GPU가 사용 중인 프레임의 메모리를 덮어쓰지 않기 위함
+	ComPtr<ID3D12CommandAllocator>    CommandAllocators[FrameCount];
+	FD3D12DynamicUploadBuffer         DynamicBuffers[FrameCount];
+	FPendingReleases                  PendingReleases[FrameCount];
+	ComPtr<ID3D12GraphicsCommandList> CommandList;
+	uint64                            FrameFenceValues[FrameCount] = {};
+
+	uint32 CurrentBackBufferIndex = 0;
+	bool   bVSync                 = true;
+	bool   bInitialized           = false;
+};

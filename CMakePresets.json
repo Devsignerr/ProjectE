@@ -1,0 +1,45 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "vs2022",
+      "displayName": "Visual Studio 2022 x64",
+      "generator": "Visual Studio 17 2022",
+      "architecture": { "value": "x64", "strategy": "set" },
+      "binaryDir": "${sourceDir}/Build/vs2022"
+    },
+    {
+      "name": "ninja-debug",
+      "displayName": "Ninja Debug (VS 개발자 명령 프롬프트에서 실행)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/ninja-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    },
+    {
+      "name": "ninja-release",
+      "displayName": "Ninja Release (VS 개발자 명령 프롬프트에서 실행)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/ninja-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "cl"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "vs2022-debug",   "configurePreset": "vs2022", "configuration": "Debug" },
+    { "name": "vs2022-release", "configurePreset": "vs2022", "configuration": "Release" },
+    { "name": "ninja-debug",    "configurePreset": "ninja-debug" },
+    { "name": "ninja-release",  "configurePreset": "ninja-release" }
+  ],
+  "testPresets": [
+    { "name": "vs2022-debug",   "configurePreset": "vs2022", "configuration": "Debug",   "output": { "outputOnFailure": true } },
+    { "name": "vs2022-release", "configurePreset": "vs2022", "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "ninja-debug",    "configurePreset": "ninja-debug",   "output": { "outputOnFailure": true } },
+    { "name": "ninja-release",  "configurePreset": "ninja-release", "output": { "outputOnFailure": true } }
+  ]
+}

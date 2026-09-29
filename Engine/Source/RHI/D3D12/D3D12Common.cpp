@@ -1,0 +1,3 @@
+#include "RHI/D3D12/D3D12Common.h"
+
+E_DEFINE_LOG_CATEGORY(LogD3D12, Log)

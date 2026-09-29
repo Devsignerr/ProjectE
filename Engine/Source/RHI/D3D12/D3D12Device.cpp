@@ -1,0 +1,110 @@
+#include "RHI/D3D12/D3D12Device.h"
+
+#include "Core/StringConv.h"
+
+#include <dxgidebug.h>
+
+bool FD3D12Device::Init(bool bEnableDebugLayer)
+{
+	UINT FactoryFlags = 0;
+
+	if (bEnableDebugLayer)
+	{
+		ComPtr<ID3D12Debug> DebugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&DebugController))))
+		{
+			DebugController->EnableDebugLayer();
+			FactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+			bDebugLayerEnabled = true;
+			E_LOG(LogD3D12, Display, "D3D12 디버그 레이어 활성화");
+		}
+		else
+		{
+			E_LOG(LogD3D12, Warning, "D3D12 디버그 레이어를 사용할 수 없습니다 (Windows 선택적 기능 '그래픽 도구' 설치 필요)");
+		}
+	}
+
+	E_D3D_VERIFY(CreateDXGIFactory2(FactoryFlags, IID_PPV_ARGS(&Factory)));
+
+	if (!SelectAdapter())
+	{
+		return false;
+	}
+
+	E_D3D_VERIFY(D3D12CreateDevice(Adapter.Get(), MinFeatureLevel, IID_PPV_ARGS(&Device)));
+	Device->SetName(L"MainDevice");
+
+	if (bDebugLayerEnabled)
+	{
+		// 심각한 메시지에서 디버거 중단
+		ComPtr<ID3D12InfoQueue> InfoQueue;
+		if (SUCCEEDED(Device.As(&InfoQueue)))
+		{
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+		}
+	}
+
+	for (uint32 Type = 0; Type < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++Type)
+	{
+		DescriptorSizes[Type] = Device->GetDescriptorHandleIncrementSize(static_cast<D3D12_DESCRIPTOR_HEAP_TYPE>(Type));
+	}
+
+	BOOL bAllowTearing = FALSE;
+	if (FAILED(Factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &bAllowTearing, sizeof(bAllowTearing))))
+	{
+		bAllowTearing = FALSE;
+	}
+	bTearingSupported = (bAllowTearing == TRUE);
+
+	E_LOG(LogD3D12, Display, "D3D12 디바이스 생성 완료 (테어링 지원: {})", bTearingSupported);
+	return true;
+}
+
+void FD3D12Device::Shutdown()
+{
+	Device.Reset();
+	Adapter.Reset();
+	Factory.Reset();
+
+	if (bDebugLayerEnabled)
+	{
+		// 해제되지 않은 D3D/DXGI 오브젝트를 디버거 출력 창에 보고
+		ComPtr<IDXGIDebug1> DxgiDebug;
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&DxgiDebug))))
+		{
+			E_LOG(LogD3D12, Display, "라이브 D3D 오브젝트 보고 (디버거 출력 창 확인)");
+			DxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL,
+			                             static_cast<DXGI_DEBUG_RLO_FLAGS>(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL));
+		}
+	}
+}
+
+bool FD3D12Device::SelectAdapter()
+{
+	ComPtr<IDXGIAdapter4> Candidate;
+	for (UINT Index = 0;
+	     Factory->EnumAdapterByGpuPreference(Index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&Candidate)) != DXGI_ERROR_NOT_FOUND;
+	     ++Index)
+	{
+		DXGI_ADAPTER_DESC3 AdapterDesc{};
+		Candidate->GetDesc3(&AdapterDesc);
+
+		if (AdapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)
+		{
+			continue;
+		}
+
+		// 디바이스 생성 가능 여부만 확인 (ppDevice = nullptr)
+		if (SUCCEEDED(D3D12CreateDevice(Candidate.Get(), MinFeatureLevel, __uuidof(ID3D12Device), nullptr)))
+		{
+			Adapter = Candidate;
+			E_LOG(LogD3D12, Display, "그래픽 어댑터: {} (전용 VRAM {} MB)",
+			      FStringConv::ToUtf8(AdapterDesc.Description), AdapterDesc.DedicatedVideoMemory / (1024 * 1024));
+			return true;
+		}
+	}
+
+	E_LOG(LogD3D12, Error, "D3D12를 지원하는 그래픽 어댑터를 찾지 못했습니다");
+	return false;
+}

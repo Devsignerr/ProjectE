@@ -1,0 +1,98 @@
+# ProjectE 개발 계획
+
+상태 표기: `[ ]` 대기 · `[~]` 진행중 · `[x]` 완료 · `[!]` 블로커
+
+## 핵심 결정 (2026-09-29)
+
+- **그래픽스 API**: DirectX 12 (Windows x64 전용, Windows SDK 10.0.22621)
+- **언어/빌드**: C++20, MSVC (VS 2022), CMake 3.25+ (VS 번들), Visual Studio / Ninja 제너레이터
+- **의존성 방침**: 핵심(창/입력/수학/RHI/렌더러/ECS)은 직접 구현. 이미지·모델 로딩, UI 등은 CMake FetchContent로 도입
+- **최종 목표**: 에디터를 포함한 범용 3D 게임 엔진
+- **좌표계/수학 규약** (2026-09-29): 왼손 Z-up (+X 앞, +Y 오른쪽, +Z 위, UE 방식). 행렬은 행우선·행벡터(`v * M`), 합성은 적용 순서대로 곱함(`S * R * T`, `World * View * Proj`). 뷰 공간은 +X 오른쪽/+Y 위/+Z 앞, 깊이 [0, 1]. 쿼터니언 `A * B`는 B 먼저 적용. HLSL은 `-Zpr`로 동일 레이아웃
+- **셰이더**: DXC(Windows SDK 번들 1.6, SM 6.0) 런타임 컴파일. `.hlsl/.hlsli`는 UTF-8 **BOM 필수** (DXC 1.6이 BOM 없는 한글 UTF-8을 읽지 못함)
+
+## Phase 0 — 프로젝트 골격
+
+**DoD**: `Sandbox.exe` 실행 시 창이 열리고 DX12로 배경색이 클리어된다. 리사이즈 / ESC 종료 / F1 VSync 토글이 동작하고, 디버그 레이어 에러 및 종료 시 라이브 오브젝트 누수가 없다.
+
+- [x] CMake 프로젝트 구성 (프리셋, 모듈 분리, 공통 옵션, 빌드 스크립트)
+- [x] Core: 기본 타입 / 로그(`E_LOG`) / 어설트(`E_CHECK`) / 문자열 변환
+- [x] Core: 타이머
+- [x] Core: Win32 창 + 이벤트 (키/마우스/리사이즈/포커스)
+- [x] Core: 입력 상태 관리 (Down / Pressed / Released, 마우스 델타)
+- [x] Core: 애플리케이션 루프 (`FApplication`)
+- [x] RHI/D3D12: 디바이스, 커맨드 큐 + 펜스, 디스크립터 힙, 스왑체인
+- [x] RHI/D3D12: 프레임 루프 파사드 (`FD3D12RHI` — 클리어, 프레젠트, 리사이즈)
+- [x] Sandbox 실행 파일
+- [x] 빌드 검증 (Ninja Debug, `/W4 /WX` 경고 0 — 2026-09-29)
+- [x] 실행 검증 (사용자 확인 2026-09-29)
+
+## Phase 1 — 첫 삼각형
+
+**DoD**: Sandbox 화면 중앙에 빨강/초록/파랑 정점 색이 보간된 삼각형이 그려진다. 수학 단위 테스트 전부 통과, 디버그 레이어 에러 없음.
+
+- [x] 수학 라이브러리: `FMath`, `FVector2/3/4`, `FQuat`, `FMatrix4x4` (`Core/Math/`)
+- [x] 단위 테스트 프레임워크 (`Core/Testing/`) + `Tests/CoreTests` 15개 통과 (CTest 등록)
+- [x] 셰이더 컴파일: DXC 런타임 컴파일 (`FD3D12ShaderCompiler`), `Engine/Shaders/` (Common.hlsli, Triangle.hlsl), DXC DLL 자동 복사
+- [x] 루트 시그니처 빌더 (`FD3D12RootSignature`: 상수/CBV/디스크립터 테이블/정적 샘플러, v1.1)
+- [x] 그래픽스 파이프라인 래퍼 (`FD3D12PipelineState`, 기본값 위주 `FGraphicsPipelineDesc`)
+- [x] 정적 버퍼 (`FD3D12Buffer::InitStatic`: 업로드 힙 → 디폴트 힙 동기 복사, VBV/IBV)
+- [x] Sandbox 삼각형 드로우 코드 + 빌드 검증 (`/W4 /WX` 경고 0), 셰이더 dxc.exe 오프라인 컴파일 검증
+- [x] 실행 검증 (사용자 확인 2026-09-29: 삼각형 표시 정상)
+
+## Phase 2 — 3D 기초
+
+**DoD**: UV 체커 텍스처가 입혀진 큐브가 자전하며 Blinn-Phong 방향광으로 음영·하이라이트가 보인다. 우클릭 + WASD/마우스로 시점 이동, 창 리사이즈 시 종횡비 유지, 디버그 레이어 에러 없음.
+
+- [x] 프레임 링 동적 업로드 버퍼 (`FD3D12DynamicUploadBuffer`, 루트 CBV용 256B 정렬 할당)
+- [x] 깊이 버퍼 (`FD3D12DepthBuffer`, D32_FLOAT, 리사이즈 연동) + RHI BeginFrame에서 RTV/DSV 바인딩·클리어
+- [x] Renderer 모듈 신설: `FCamera`, `FFlyCameraController`(우클릭+WASD/QE, 휠 속도), `FMeshData`/`FVertex`, `FPrimitiveShapes::MakeCube`, `FStaticMesh`, `ShaderTypes.h`
+- [x] 텍스처: stb_image(FetchContent, v2.30 고정) `FImageLoader`, `FD3D12Texture::Init2D`(풋프린트 업로드), 셰이더 가시 `FD3D12DescriptorAllocator`, 정적 샘플러
+- [x] Blinn-Phong 방향광 + 머티리얼 상수(b2) + 역전치 법선 변환 (`Mesh.hlsl`)
+- [x] `Tests/RendererTests` (큐브 위상/와인딩, 카메라)
+- [x] 실행 검증 (사용자 확인 2026-09-29: 텍스처 큐브 + 라이팅 + 카메라 조작 정상)
+
+후속 과제 (Phase 3 이후): 텍스처 밉맵 생성, sRGB 처리(백버퍼/텍스처 포맷), 디스크립터/리소스 지연 해제, 비동기 업로드 컨텍스트
+
+## Phase 3 — 리소스 / 씬
+
+**DoD**: Sandbox에 DamagedHelmet(glTF)이 텍스처와 함께 올바른 방향(Z-up)으로 표시되고, 회전하는 부모 아래 큐브 링이 따라 돌며(계층), 창 제목의 "메시 N/M 표시"가 시점에 따라 변한다(컬링). F2로 프러스텀을 고정하고 카메라를 돌리면 화면 밖 메시가 사라지는 것이 보인다. 디버그 레이어 에러 없음.
+
+- [x] 자체 ECS (`Core/ECS`: FEntity 세대 핸들, TSparseSet, FRegistry, TView) + 테스트 5개
+- [x] Scene 모듈 (`FScene`: 이름/트랜스폼/계층 컴포넌트, SetParent 순환 거부, 재귀 파괴, 계층 순서 WorldMatrix 갱신) + 테스트 4개
+- [x] 리소스 관리자 (`FResourceManager`: TResourcePool 세대 핸들, 경로 캐시, 기본 흰색 텍스처/머티리얼, 지연 해제)
+- [x] RHI 지연 해제 (`DeferRelease`/`DeferFreeDescriptor`, 프레임 펜스 이후 처리) + sRGB (백버퍼 RTV/색상 텍스처 `_SRGB`)
+- [x] glTF 로더 (cgltf, 커밋 고정): 좌표계 변환(반사, 쿼터니언/행렬 켤레 테스트), 노드 계층, 머티리얼, GLB 내장 이미지, 유니코드 경로 + `FModelLoader`로 씬 배치
+- [x] 프러스텀 컬링 (`FFrustum` p-vertex AABB 테스트) + `FSceneRenderer` (수집 → 컬링 → 머티리얼/메시/거리 정렬 → 드로우, 통계, 프러스텀 고정)
+- [x] Sandbox: ECS 씬(태양광 엔티티, 바닥, 공전 큐브 링, 원거리 큐브 40개, DamagedHelmet)
+- [x] 빌드 검증 (경고 0), 테스트 26개 통과 (DamagedHelmet 실제 파싱 포함)
+- [ ] 실행 검증 (DoD 확인)
+
+후속 과제: 텍스처 밉맵 생성, 비동기 업로드 컨텍스트, 카메라 컴포넌트, 다중 광원, 노멀 맵/탄젠트(glTF), 머티리얼 인스턴스 정렬 키 최적화
+
+## Phase 4 — 에디터
+
+- [ ] Dear ImGui 통합 (DX12 백엔드, 도킹)
+- [ ] 에디터 뷰포트 (오프스크린 렌더 타깃)
+- [ ] 계층(Hierarchy) / 인스펙터 / 콘텐츠 브라우저 패널
+- [ ] 기즈모 (이동/회전/스케일)
+
+## Phase 5 — 에셋 파이프라인 / 직렬화
+
+- [ ] 씬 저장/로드 (JSON)
+- [ ] 에셋 임포트/쿠킹 (엔진 전용 포맷)
+- [ ] 셰이더 핫 리로드
+
+## Phase 6 — 렌더링 고도화
+
+- [ ] PBR (금속/거칠기), IBL
+- [ ] 섀도우 맵 (CSM)
+- [ ] 포스트 프로세싱 (톤매핑, 블룸)
+- [ ] 스켈레탈 애니메이션
+
+## Phase 7 — 게임 시스템
+
+- [ ] 물리 (자체 충돌 감지 또는 Jolt 도입 검토)
+- [ ] 오디오
+- [ ] 스크립팅 (검토)
+- [ ] 패키징 / 런타임 빌드

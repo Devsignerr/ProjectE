@@ -1,0 +1,18 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{h,cpp,hlsl,hlsli}]
+indent_style = tab
+
+[*.{cmake,txt,json,md,yml,yaml}]
+indent_style = space
+indent_size = 4
+
+# DXC(Windows SDK 번들 1.6)와 PowerShell 5.1은 BOM 없는 UTF-8 한글을 잘못 해석한다
+[*.{hlsl,hlsli,ps1}]
+charset = utf-8-bom

@@ -231,3 +231,130 @@ E_TEST(Gltf_LoadDamagedHelmetIfPresent)
 		E_EXPECT_TRUE(Total > 0 && Agree * 10 > Total * 9);
 	}
 }
+
+namespace
+{
+	// 스킨 삼각형 + 조인트 2개 + 애니메이션(STEP 이동, LINEAR 회전, CUBICSPLINE 스케일) glTF
+	std::filesystem::path WriteSkinnedTestGltf()
+	{
+		std::vector<uint8> Buffer;
+		const float Positions[9] = { 0, 0, 0, 1, 0, 0, 0, 1, 0 };
+		const uint8 Joints[12]   = { 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0 };
+		const float Weights[12]  = { 1, 0, 0, 0, 2, 0, 0, 0, 1, 1, 0, 0 }; // 합이 1이 아닌 값 → 정규화 확인
+		const uint16 Indices[3]  = { 0, 1, 2 };
+		// 역바인드 (열우선): 이동 (0,-1,0), (-1,-1,0)
+		const float Ibm[32] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -1, 0, 1,
+		                        1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, -1, 0, 1 };
+		const float Times[2]        = { 0, 1 };
+		const float Translations[6] = { 0, 1, 0, 0, 2, 0 };
+		const float Rotations[8]    = { 0, 0, 0, 1, 0, 0.7071068f, 0, 0.7071068f };
+		const float CubicScales[18] = { 9, 9, 9, 1, 1, 1, 9, 9, 9, 9, 9, 9, 2, 3, 4, 9, 9, 9 };
+		for (float V : Positions) Append(Buffer, V);       // 0, 36
+		for (uint8 V : Joints) Append(Buffer, V);          // 36, 12
+		for (float V : Weights) Append(Buffer, V);         // 48, 48
+		for (uint16 V : Indices) Append(Buffer, V);        // 96, 6
+		Append<uint16>(Buffer, 0);                         // 정렬 패딩
+		for (float V : Ibm) Append(Buffer, V);             // 104, 128
+		for (float V : Times) Append(Buffer, V);           // 232, 8
+		for (float V : Translations) Append(Buffer, V);    // 240, 24
+		for (float V : Rotations) Append(Buffer, V);       // 264, 32
+		for (float V : CubicScales) Append(Buffer, V);     // 296, 72
+
+		const std::string Json = std::format(R"({{
+"asset":{{"version":"2.0"}},"scene":0,"scenes":[{{"nodes":[0,1]}}],
+"nodes":[{{"name":"Skinned","mesh":0,"skin":0}},{{"name":"J0","translation":[0,1,0],"children":[2]}},{{"name":"J1","translation":[1,0,0]}}],
+"meshes":[{{"primitives":[{{"attributes":{{"POSITION":0,"JOINTS_0":1,"WEIGHTS_0":2}},"indices":3}}]}}],
+"skins":[{{"joints":[1,2],"inverseBindMatrices":4,"skeleton":1}}],
+"animations":[{{"name":"Anim","samplers":[{{"input":5,"output":6,"interpolation":"STEP"}},{{"input":5,"output":7}},{{"input":5,"output":8,"interpolation":"CUBICSPLINE"}}],
+ "channels":[{{"sampler":0,"target":{{"node":1,"path":"translation"}}}},{{"sampler":1,"target":{{"node":2,"path":"rotation"}}}},{{"sampler":2,"target":{{"node":2,"path":"scale"}}}}]}}],
+"accessors":[
+ {{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,1,0]}},
+ {{"bufferView":1,"componentType":5121,"count":3,"type":"VEC4"}},
+ {{"bufferView":2,"componentType":5126,"count":3,"type":"VEC4"}},
+ {{"bufferView":3,"componentType":5123,"count":3,"type":"SCALAR"}},
+ {{"bufferView":4,"componentType":5126,"count":2,"type":"MAT4"}},
+ {{"bufferView":5,"componentType":5126,"count":2,"type":"SCALAR","min":[0],"max":[1]}},
+ {{"bufferView":6,"componentType":5126,"count":2,"type":"VEC3"}},
+ {{"bufferView":7,"componentType":5126,"count":2,"type":"VEC4"}},
+ {{"bufferView":8,"componentType":5126,"count":6,"type":"VEC3"}}],
+"bufferViews":[
+ {{"buffer":0,"byteOffset":0,"byteLength":36}},{{"buffer":0,"byteOffset":36,"byteLength":12}},{{"buffer":0,"byteOffset":48,"byteLength":48}},
+ {{"buffer":0,"byteOffset":96,"byteLength":6}},{{"buffer":0,"byteOffset":104,"byteLength":128}},{{"buffer":0,"byteOffset":232,"byteLength":8}},
+ {{"buffer":0,"byteOffset":240,"byteLength":24}},{{"buffer":0,"byteOffset":264,"byteLength":32}},{{"buffer":0,"byteOffset":296,"byteLength":72}}],
+"buffers":[{{"byteLength":{},"uri":"data:application/octet-stream;base64,{}"}}]
+}})", Buffer.size(), Base64Encode(Buffer));
+
+		const std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectE_테스트_Skinned.gltf";
+		std::ofstream File(Path, std::ios::binary);
+		File << Json;
+		return Path;
+	}
+} // namespace
+
+E_TEST(Gltf_LoadSkinAndAnimation)
+{
+	const std::filesystem::path Path = WriteSkinnedTestGltf();
+	FModelData Model;
+	const bool bLoaded = FGltfLoader::Load(Path, Model);
+	std::filesystem::remove(Path);
+	E_EXPECT_TRUE(bLoaded);
+	if (!bLoaded || Model.Meshes.size() != 1 || Model.Skins.size() != 1 || Model.Animations.size() != 1)
+	{
+		E_EXPECT_TRUE(false);
+		return;
+	}
+
+	// 스킨 정점: 조인트 인덱스 + 정규화된 가중치
+	const FModelMesh& Mesh = Model.Meshes[0];
+	E_EXPECT_EQ(Mesh.SkinVertices.size(), static_cast<size_t>(3));
+	E_EXPECT_EQ(Mesh.SkinVertices[1].Joints[0], static_cast<uint16>(1));
+	E_EXPECT_EQ(Mesh.SkinVertices[2].Joints[1], static_cast<uint16>(1));
+	E_EXPECT_EQUALS(Mesh.SkinVertices[1].Weights, FVector4(1, 0, 0, 0), Tol);
+	E_EXPECT_EQUALS(Mesh.SkinVertices[2].Weights, FVector4(0.5f, 0.5f, 0, 0), Tol);
+
+	// 스킨: 조인트 노드, 역바인드 이동 = 축 변환 × 100
+	E_EXPECT_EQ(Model.Nodes[0].Skin, 0);
+	const FModelSkin& Skin = Model.Skins[0];
+	E_EXPECT_TRUE(Skin.Joints == std::vector<int32>({ 1, 2 }));
+	E_EXPECT_EQUALS(Skin.InverseBindMatrices[0].GetOrigin(), FVector3(0, 0, -100), Tol);
+	E_EXPECT_EQUALS(Skin.InverseBindMatrices[1].GetOrigin(), FVector3(0, -100, -100), 1.0e-3f);
+
+	// 바인드 포즈에서 팔레트(역바인드 × 조인트 모델 행렬)는 항등이어야 한다 (정점이 제자리)
+	std::vector<FNodePose> Rest(Model.Nodes.size());
+	std::vector<int32>     Parents(Model.Nodes.size());
+	for (size_t Index = 0; Index < Model.Nodes.size(); ++Index)
+	{
+		Rest[Index]    = { Model.Nodes[Index].Translation, Model.Nodes[Index].Rotation, Model.Nodes[Index].Scale };
+		Parents[Index] = Model.Nodes[Index].Parent;
+	}
+	std::vector<FMatrix4x4> ModelMatrices;
+	AnimationMath::ComputeModelMatrices(Rest, Parents, ModelMatrices);
+	for (size_t Joint = 0; Joint < Skin.Joints.size(); ++Joint)
+	{
+		const FMatrix4x4 Palette = Skin.InverseBindMatrices[Joint] * ModelMatrices[Skin.Joints[Joint]];
+		E_EXPECT_EQUALS(Palette, FMatrix4x4::Identity, 1.0e-3f);
+	}
+
+	// 애니메이션 채널: 이동(STEP, ×100), 회전(변환), 스케일(CUBICSPLINE → 값만, 선형)
+	const FAnimationClip& Clip = Model.Animations[0];
+	E_EXPECT_TRUE(Clip.Name == "Anim");
+	E_EXPECT_NEAR(Clip.Duration, 1.0f, Tol);
+	E_EXPECT_EQ(Clip.Channels.size(), static_cast<size_t>(3));
+	if (Clip.Channels.size() == 3)
+	{
+		const FAnimationChannel& Translation = Clip.Channels[0];
+		E_EXPECT_EQ(Translation.Node, 1);
+		E_EXPECT_TRUE(Translation.Path == EAnimationPath::Translation && Translation.Interpolation == EAnimationInterpolation::Step);
+		E_EXPECT_EQUALS(Translation.Values[1], FVector4(0, 0, 200, 0), 1.0e-3f);
+
+		const FAnimationChannel& Rotation = Clip.Channels[1];
+		const FQuat              Expected = FGltfLoader::ConvertRotation(FQuat(0, 0.7071068f, 0, 0.7071068f));
+		E_EXPECT_TRUE(Rotation.Path == EAnimationPath::Rotation && Rotation.Interpolation == EAnimationInterpolation::Linear);
+		E_EXPECT_EQUALS(FQuat(Rotation.Values[1].X, Rotation.Values[1].Y, Rotation.Values[1].Z, Rotation.Values[1].W), Expected, 1.0e-3f);
+
+		const FAnimationChannel& Scale = Clip.Channels[2];
+		E_EXPECT_TRUE(Scale.Path == EAnimationPath::Scale && Scale.Interpolation == EAnimationInterpolation::Linear);
+		E_EXPECT_EQUALS(Scale.Values[0], FVector4(1, 1, 1, 0), Tol);
+		E_EXPECT_EQUALS(Scale.Values[1], FVector4(4, 2, 3, 0), Tol);
+	}
+}

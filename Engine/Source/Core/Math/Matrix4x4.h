@@ -59,6 +59,9 @@ struct FMatrix4x4
 
 	bool Equals(const FMatrix4x4& Other, float Tolerance = FMath::KindaSmallNumber) const;
 
+	// 아핀 행렬을 이동/회전/스케일로 분해 (전단 없음 가정, 음수 스케일은 X축에 부호를 몰아준다)
+	void Decompose(FVector3& OutTranslation, FQuat& OutRotation, FVector3& OutScale) const;
+
 	static FMatrix4x4 MakeTranslation(const FVector3& Translation);
 	static FMatrix4x4 MakeScale(const FVector3& Scale);
 	static FMatrix4x4 MakeScale(float UniformScale) { return MakeScale(FVector3(UniformScale)); }

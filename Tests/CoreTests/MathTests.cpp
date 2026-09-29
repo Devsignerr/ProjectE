@@ -312,3 +312,77 @@ E_TEST(Frustum_CullsBoxes)
 	E_EXPECT_TRUE(Frustum.Intersects(FBox(FVector3(-50.0f), FVector3(50.0f))));
 	E_EXPECT_FALSE(Frustum.Intersects(FBox()));
 }
+
+// ---------------------------------------------------------------- 오일러 왕복 / 분해 / 반직선
+
+E_TEST(Quat_ToEulerRoundtrip)
+{
+	const float Samples[][3] = {
+		{ 0.0f, 0.0f, 0.0f }, { 30.0f, 0.0f, 0.0f }, { 0.0f, 120.0f, 0.0f }, { 0.0f, 0.0f, -45.0f },
+		{ 20.0f, -70.0f, 130.0f }, { -60.0f, 170.0f, -170.0f }, { 89.0f, 10.0f, 20.0f },
+	};
+	for (const auto& Sample : Samples)
+	{
+		const FQuat Q = FQuat::FromEuler(Sample[0], Sample[1], Sample[2]);
+		float Pitch, Yaw, Roll;
+		Q.ToEuler(Pitch, Yaw, Roll);
+		// 각도 자체가 아니라 회전이 같으면 된다 (동치 표현 허용)
+		E_EXPECT_EQUALS(FQuat::FromEuler(Pitch, Yaw, Roll), Q, 1.0e-3f);
+	}
+
+	// 단순한 경우는 각도도 그대로 복원
+	float Pitch, Yaw, Roll;
+	FQuat::FromEuler(25.0f, 40.0f, -15.0f).ToEuler(Pitch, Yaw, Roll);
+	E_EXPECT_NEAR(Pitch, 25.0f, 1.0e-2f);
+	E_EXPECT_NEAR(Yaw, 40.0f, 1.0e-2f);
+	E_EXPECT_NEAR(Roll, -15.0f, 1.0e-2f);
+}
+
+E_TEST(Matrix_Decompose)
+{
+	const FVector3 T(1.0f, -2.0f, 3.0f);
+	const FQuat    R = FQuat::FromEuler(15.0f, 60.0f, -30.0f);
+	const FVector3 S(2.0f, 0.5f, 3.0f);
+
+	FVector3 OutT, OutS;
+	FQuat    OutR;
+	FMatrix4x4::MakeTransform(T, R, S).Decompose(OutT, OutR, OutS);
+	E_EXPECT_EQUALS(OutT, T, Tol);
+	E_EXPECT_EQUALS(OutS, S, 1.0e-3f);
+	E_EXPECT_EQUALS(OutR, R, 1.0e-3f);
+}
+
+E_TEST(Ray_IntersectsBox)
+{
+	const FBox Box(FVector3(4.0f, -1.0f, -1.0f), FVector3(6.0f, 1.0f, 1.0f));
+	float      Distance = 0.0f;
+
+	E_EXPECT_TRUE(FRay(FVector3::ZeroVector, FVector3::ForwardVector).Intersects(Box, Distance));
+	E_EXPECT_NEAR(Distance, 4.0f, Tol);
+	E_EXPECT_FALSE(FRay(FVector3::ZeroVector, -FVector3::ForwardVector).Intersects(Box, Distance)); // 반대 방향
+	E_EXPECT_FALSE(FRay(FVector3(0.0f, 5.0f, 0.0f), FVector3::ForwardVector).Intersects(Box, Distance)); // 옆으로 빗나감
+	E_EXPECT_TRUE(FRay(FVector3(5.0f, 0.0f, 0.0f), FVector3::UpVector).Intersects(Box, Distance)); // 상자 안에서 시작
+	E_EXPECT_NEAR(Distance, 0.0f, Tol);
+	// 축 평행 광선이 슬랩 밖에서 출발
+	E_EXPECT_FALSE(FRay(FVector3(0.0f, 0.0f, 5.0f), FVector3::ForwardVector).Intersects(Box, Distance));
+}
+
+E_TEST(Ray_FromNdcThroughCamera)
+{
+	const FMatrix4x4 View = FMatrix4x4::MakeLookAt(FVector3(-10.0f, 0.0f, 0.0f), FVector3::ZeroVector);
+	const FMatrix4x4 Proj = FMatrix4x4::MakePerspectiveFov(FMath::DegreesToRadians(90.0f), 1.0f, 1.0f, 100.0f);
+	const FMatrix4x4 InvViewProj = (View * Proj).GetInverse();
+
+	// 화면 중앙 → 카메라 앞(+X) 방향
+	const FRay Center = FRay::FromNdc(0.0f, 0.0f, InvViewProj);
+	E_EXPECT_EQUALS(Center.Direction, FVector3::ForwardVector, 1.0e-3f);
+	E_EXPECT_NEAR(Center.Origin.X, -9.0f, 1.0e-2f); // 근평면 위
+
+	// 화면 오른쪽 가장자리(NDC x=1, FOV 90°) → 45° 오른쪽(+Y)
+	const FRay Right = FRay::FromNdc(1.0f, 0.0f, InvViewProj);
+	E_EXPECT_NEAR(Right.Direction.Y, Right.Direction.X, 1.0e-3f);
+	E_EXPECT_TRUE(Right.Direction.Y > 0.0f);
+	// 화면 위쪽 → +Z
+	const FRay Up = FRay::FromNdc(0.0f, 1.0f, InvViewProj);
+	E_EXPECT_TRUE(Up.Direction.Z > 0.0f);
+}

@@ -1,5 +1,7 @@
 #include "RHI/D3D12/D3D12DepthBuffer.h"
 
+#include "RHI/D3D12/D3D12RHI.h"
+
 FD3D12DepthBuffer::~FD3D12DepthBuffer()
 {
 	Shutdown();
@@ -19,6 +21,15 @@ bool FD3D12DepthBuffer::Init(ID3D12Device* Device, uint32 InWidth, uint32 InHeig
 
 void FD3D12DepthBuffer::Shutdown()
 {
+	Resource.Reset();
+	DsvHeap.Shutdown();
+	Width  = 0;
+	Height = 0;
+}
+
+void FD3D12DepthBuffer::ShutdownDeferred(FD3D12RHI& Rhi)
+{
+	Rhi.DeferRelease(Resource);
 	Resource.Reset();
 	DsvHeap.Shutdown();
 	Width  = 0;

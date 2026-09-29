@@ -14,6 +14,8 @@ public:
 
 	bool Init(ID3D12Device* Device, uint32 InWidth, uint32 InHeight);
 	void Shutdown();
+	// 리소스를 지연 해제 (DSV 힙은 기록 시점에만 읽히므로 즉시 해제)
+	void ShutdownDeferred(class FD3D12RHI& Rhi);
 
 	// 호출 전에 GPU가 깊이 버퍼 사용을 끝냈음을 보장해야 한다
 	bool Resize(ID3D12Device* Device, uint32 InWidth, uint32 InHeight);

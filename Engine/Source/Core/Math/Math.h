@@ -6,6 +6,7 @@
 #include "Core/Math/MathUtils.h"
 #include "Core/Math/Matrix4x4.h"
 #include "Core/Math/Quat.h"
+#include "Core/Math/Ray.h"
 #include "Core/Math/Vector2.h"
 #include "Core/Math/Vector3.h"
 #include "Core/Math/Vector4.h"

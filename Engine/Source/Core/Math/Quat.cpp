@@ -55,6 +55,28 @@ FQuat FQuat::FromRotationMatrix(const float (&M)[4][4])
 	return Result.GetNormalized();
 }
 
+void FQuat::ToEuler(float& OutPitchDegrees, float& OutYawDegrees, float& OutRollDegrees) const
+{
+	// Forward 벡터에서 Yaw/Pitch, 남은 회전에서 Roll
+	const FVector3 Forward = GetForwardVector();
+	OutYawDegrees   = FMath::RadiansToDegrees(FMath::Atan2(Forward.Y, Forward.X));
+	OutPitchDegrees = FMath::RadiansToDegrees(FMath::Asin(FMath::Clamp(Forward.Z, -1.0f, 1.0f)));
+
+	if (FMath::Abs(Forward.Z) > 0.9999f)
+	{
+		OutRollDegrees = 0.0f;
+		return;
+	}
+
+	// Yaw/Pitch를 제거하면 X축(Forward) 회전만 남는다: Roll = FromAxisAngle(X, -RollRad)
+	const FQuat YawPitch = FromEuler(OutPitchDegrees, OutYawDegrees, 0.0f);
+	const FQuat Remaining = YawPitch.Inverse() * (*this);
+	OutRollDegrees = FMath::RadiansToDegrees(-2.0f * FMath::Atan2(Remaining.X, Remaining.W));
+	// [-180, 180] 정규화
+	if (OutRollDegrees > 180.0f) OutRollDegrees -= 360.0f;
+	if (OutRollDegrees < -180.0f) OutRollDegrees += 360.0f;
+}
+
 FQuat FQuat::operator*(const FQuat& Q) const
 {
 	// 해밀턴 곱: (this * Q) — Q 먼저, this 나중

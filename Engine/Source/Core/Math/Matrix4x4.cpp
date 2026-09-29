@@ -137,6 +137,29 @@ bool FMatrix4x4::Equals(const FMatrix4x4& Other, float Tolerance) const
 	return true;
 }
 
+void FMatrix4x4::Decompose(FVector3& OutTranslation, FQuat& OutRotation, FVector3& OutScale) const
+{
+	OutTranslation = GetOrigin();
+	OutScale       = FVector3(GetAxisX().Length(), GetAxisY().Length(), GetAxisZ().Length());
+
+	// 반사(행렬식 음수)면 X 스케일에 부호 반영
+	if (Determinant() < 0.0f)
+	{
+		OutScale.X = -OutScale.X;
+	}
+
+	FMatrix4x4 RotationOnly;
+	for (int32 Row = 0; Row < 3; ++Row)
+	{
+		const float InvScale = FMath::Abs(OutScale[Row]) > FMath::SmallNumber ? 1.0f / OutScale[Row] : 0.0f;
+		for (int32 Col = 0; Col < 3; ++Col)
+		{
+			RotationOnly.M[Row][Col] = M[Row][Col] * InvScale;
+		}
+	}
+	OutRotation = FQuat::FromRotationMatrix(RotationOnly.M);
+}
+
 FMatrix4x4 FMatrix4x4::MakeTranslation(const FVector3& Translation)
 {
 	FMatrix4x4 Result;

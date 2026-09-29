@@ -1,7 +1,12 @@
 #pragma once
 
 #include "Core/Application.h"
+#include "Editor/EditorContext.h"
 #include "Editor/ImGuiLayer.h"
+#include "Editor/Panels/ContentBrowserPanel.h"
+#include "Editor/Panels/HierarchyPanel.h"
+#include "Editor/Panels/InspectorPanel.h"
+#include "Editor/Panels/ViewportPanel.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
@@ -39,6 +44,12 @@ private:
 
 	FCamera              Camera;
 	FFlyCameraController CameraController;
+
+	FEditorContext       Context;
+	FViewportPanel       ViewportPanel;
+	FHierarchyPanel      HierarchyPanel;
+	FInspectorPanel      InspectorPanel;
+	FContentBrowserPanel ContentBrowserPanel;
 
 	bool  bShowStats     = true;
 	bool  bShowImGuiDemo = false;

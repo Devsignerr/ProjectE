@@ -57,13 +57,21 @@ bool FEditorApplication::OnInit()
 		return false;
 	}
 
+	Context.Rhi              = Rhi.get();
+	Context.Resources        = &Resources;
+	Context.Renderer         = &SceneRenderer;
+	Context.Scene            = &Scene;
+	Context.Camera           = &Camera;
+	Context.ContentDirectory = std::filesystem::path(E_EDITOR_CONTENT_DIR);
+	Context.DefaultCubeMesh  = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
+
 	BuildDefaultScene();
 
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
 	Camera.SetPosition(FVector3(-6.0f, -4.0f, 3.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 0.8f));
 
-	E_LOG(LogEditor, Display, "에디터 초기화 완료");
+	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모");
 	return true;
 }
 
@@ -76,10 +84,17 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
-	// UI가 마우스를 쓰는 동안은 카메라 조작 중지
-	if (!ImGuiLayer.WantCaptureMouse())
+	// 뷰포트 위에서만 카메라 조작 (기즈모 사용 중 제외)
+	if (ViewportPanel.IsHovered() && !ViewportPanel.IsUsingGizmo())
 	{
 		CameraController.Update(Camera, InputState, DeltaSeconds);
+	}
+
+	// Delete: 선택 엔티티 삭제 (텍스트 입력 중 제외)
+	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard() && Scene.GetRegistry().IsValid(Context.SelectedEntity))
+	{
+		Scene.DestroyEntity(Context.SelectedEntity);
+		Context.ClearSelection();
 	}
 
 	Scene.UpdateTransforms();
@@ -90,9 +105,15 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 
 void FEditorApplication::OnRender()
 {
-	// UI 구성 (즉시 모드이므로 렌더 직전에 기술)
+	// 뷰포트 크기 변경은 UI 기술 전에 반영
+	ViewportPanel.PrepareFrame(Context);
+
 	ImGuiLayer.BeginFrame();
 	DrawMainMenuBar();
+	ViewportPanel.Draw(Context, GetInput());
+	HierarchyPanel.Draw(Context);
+	InspectorPanel.Draw(Context);
+	ContentBrowserPanel.Draw(Context);
 	if (bShowStats)
 	{
 		DrawStatsWindow();
@@ -102,9 +123,12 @@ void FEditorApplication::OnRender()
 		ImGui::ShowDemoWindow(&bShowImGuiDemo);
 	}
 
-	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
+	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
+	Scene.UpdateTransforms();
+
+	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
-	SceneRenderer.Render(Scene, Camera);
+	ViewportPanel.RenderScene(Context);
 
 	// UI는 감마 인코딩된 색이므로 UNORM 뷰에 그린다
 	Rhi->SetRenderTargetToBackBuffer(true);
@@ -118,7 +142,6 @@ void FEditorApplication::OnResize(uint32 Width, uint32 Height)
 	if (Rhi)
 	{
 		Rhi->Resize(Width, Height);
-		Camera.SetAspectRatio(static_cast<float>(Width) / static_cast<float>(Height));
 	}
 }
 
@@ -126,7 +149,8 @@ void FEditorApplication::OnShutdown()
 {
 	if (Rhi)
 	{
-		ImGuiLayer.Shutdown();
+		ImGuiLayer.Shutdown(); // 내부에서 GPU Flush
+		ViewportPanel.Shutdown();
 		SceneRenderer.Shutdown();
 		Resources.Shutdown();
 		Rhi->Shutdown();
@@ -136,15 +160,14 @@ void FEditorApplication::OnShutdown()
 
 void FEditorApplication::BuildDefaultScene()
 {
-	const std::filesystem::path ContentDir(E_EDITOR_CONTENT_DIR);
+	const std::filesystem::path& ContentDir = Context.ContentDirectory;
 
 	const FEntity Sun = Scene.CreateEntity("Sun");
+	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
 	SunLight.Intensity = 1.2f;
-
-	const FMeshHandle CubeMesh = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
 
 	FMaterial GroundMaterial;
 	GroundMaterial.Name                    = "Ground";
@@ -156,7 +179,7 @@ void FEditorApplication::BuildDefaultScene()
 	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -0.1f);
 	Scene.GetTransform(Ground).Scale    = FVector3(20.0f, 20.0f, 0.2f);
 	FStaticMeshComponent& GroundMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Ground);
-	GroundMesh.Mesh     = CubeMesh;
+	GroundMesh.Mesh     = Context.DefaultCubeMesh;
 	GroundMesh.Material = Resources.CreateMaterial(GroundMaterial);
 
 	const FEntity Helmet = FModelLoader::LoadIntoScene(ContentDir / L"DamagedHelmet.glb", Scene, Resources);
@@ -183,9 +206,28 @@ void FEditorApplication::DrawMainMenuBar()
 		}
 		ImGui::EndMenu();
 	}
+	if (ImGui::BeginMenu("엔티티"))
+	{
+		if (ImGui::MenuItem("빈 엔티티 추가"))
+		{
+			Context.Select(Scene.CreateEntity("Entity"));
+		}
+		if (ImGui::MenuItem("큐브 추가"))
+		{
+			const FEntity Cube = Scene.CreateEntity("Cube");
+			Scene.GetRegistry().Emplace<FStaticMeshComponent>(Cube).Mesh = Context.DefaultCubeMesh;
+			Context.Select(Cube);
+		}
+		ImGui::EndMenu();
+	}
 	if (ImGui::BeginMenu("창"))
 	{
+		ImGui::MenuItem("뷰포트", nullptr, &ViewportPanel.bOpen);
+		ImGui::MenuItem("계층", nullptr, &HierarchyPanel.bOpen);
+		ImGui::MenuItem("인스펙터", nullptr, &InspectorPanel.bOpen);
+		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
+		ImGui::Separator();
 		ImGui::MenuItem("ImGui 데모", nullptr, &bShowImGuiDemo);
 		ImGui::EndMenu();
 	}

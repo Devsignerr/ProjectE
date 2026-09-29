@@ -27,6 +27,9 @@ struct FQuat
 	// 정규 직교 회전 행렬(FMatrix4x4 행벡터 규약, 스케일 없음)의 상단 3x3에서 쿼터니언 추출
 	static FQuat FromRotationMatrix(const float (&M)[4][4]);
 
+	// FromEuler의 역연산 (도). Pitch는 [-90, 90], 짐벌락(|Pitch| ≈ 90)에서는 Roll을 0으로 둔다
+	void ToEuler(float& OutPitchDegrees, float& OutYawDegrees, float& OutRollDegrees) const;
+
 	FQuat  operator*(const FQuat& Q) const;
 	FQuat& operator*=(const FQuat& Q) { *this = *this * Q; return *this; }
 

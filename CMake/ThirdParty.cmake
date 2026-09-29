@@ -104,3 +104,30 @@ target_compile_definitions(miniaudio PUBLIC
     MA_NO_ENCODING)
 target_compile_options(miniaudio PRIVATE /W0)
 set_target_properties(miniaudio PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- bc7enc_rdo (BC7 인코더 + rgbcx BC4/BC5 + BC7 디코더, MIT 또는 Unlicense) — 텍스처 쿠킹
+# 저장소에 대용량 바이너리(ispc.exe)가 있어 필요한 파일만 개별로 받는다 (각 SHA256 고정)
+set(E_BC7ENC_COMMIT "b9438627eef73a1157e84201b6fa6eb2ffd6d9f0")
+set(E_BC7ENC_DIR "${CMAKE_BINARY_DIR}/_deps/bc7enc-src")
+set(E_BC7ENC_FILES
+    "LICENSE=b3e843763e8d3bdeb0f469ecd4107fc32b5fa27ebee1af10d2066bc339292800"
+    "bc7enc.cpp=b90444a091530a13c61fa6375583fcc9bc9ca47e474fd71f818876de68c1b581"
+    "bc7enc.h=f40f4a956ed6a8845b7909e83831de09512424408b32ca29551bf49aee2fecf6"
+    "bc7decomp.cpp=cfbe156926ebd96443b4407a9da1b5b7a424fdf989fedca3cf2fd0515e0c368a"
+    "bc7decomp.h=cbba8778640e0021f55ca686b6bc19e6960032539084c70af698922b05c5b242"
+    "rgbcx.cpp=059243ce8e8e3ec634bc1e3da3996115aaf36196a8d75a24d3dbb3c8bfe0ca98"
+    "rgbcx.h=111bd4c0211eca172bec9d757e2e597a47c4e4731bb122c9e8761dca85711bba"
+    "rgbcx_table4.h=5051cf4ce17cb1f9d011ef788b7c8d174f2270532da0514c9f394830bab72f36")
+foreach(_Entry IN LISTS E_BC7ENC_FILES)
+    string(REPLACE "=" ";" _Pair "${_Entry}")
+    list(GET _Pair 0 _File)
+    list(GET _Pair 1 _Hash)
+    file(DOWNLOAD "https://raw.githubusercontent.com/richgel999/bc7enc_rdo/${E_BC7ENC_COMMIT}/${_File}" "${E_BC7ENC_DIR}/${_File}"
+        EXPECTED_HASH SHA256=${_Hash} TLS_VERIFY ON)
+endforeach()
+
+add_library(bc7enc STATIC "${E_BC7ENC_DIR}/bc7enc.cpp" "${E_BC7ENC_DIR}/bc7decomp.cpp" "${E_BC7ENC_DIR}/rgbcx.cpp")
+add_library(ThirdParty::bc7enc ALIAS bc7enc)
+target_include_directories(bc7enc SYSTEM PUBLIC "${E_BC7ENC_DIR}")
+target_compile_options(bc7enc PRIVATE /W0)
+set_target_properties(bc7enc PROPERTIES FOLDER "ThirdParty")

@@ -18,6 +18,15 @@ public:
 	bool Init2D(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D12DescriptorAllocator& InSrvAllocator,
 	            uint32 InWidth, uint32 InHeight, DXGI_FORMAT InFormat, const void* Pixels, uint32 BytesPerPixel,
 	            const wchar_t* DebugName, bool bGenerateMips = true);
+	// 미리 만든 밉 체인 업로드 (BC 압축 포맷 포함). Mips[i]: 밉 i 데이터, 행(블록 포맷이면 블록 행) 단위로 빈틈없이 채움
+	struct FMipData
+	{
+		const void* Data = nullptr;
+		size_t      Size = 0;
+	};
+	bool Init2DFromMips(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D12DescriptorAllocator& InSrvAllocator,
+	                    uint32 InWidth, uint32 InHeight, DXGI_FORMAT InFormat, const FMipData* Mips, uint32 InMipCount,
+	                    const wchar_t* DebugName);
 	// 즉시 해제 (GPU가 더 이상 사용하지 않음이 보장될 때)
 	void Shutdown();
 	// 지연 해제 (렌더링 중 교체/삭제 시)

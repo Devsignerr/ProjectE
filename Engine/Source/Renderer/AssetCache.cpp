@@ -96,67 +96,106 @@ bool FAssetCache::IsCookedUpToDate(const std::filesystem::path& SourcePath, cons
 	return !ErrorCode && CookedTime >= SourceTime;
 }
 
-// ---------------------------------------------------------------- 이미지
+// ---------------------------------------------------------------- 텍스처
 
-void FAssetCache::WriteImage(FBinaryWriter& Writer, const FImage& Image)
+const wchar_t* FAssetCache::GetTextureExtension(ETextureUsage Usage)
 {
-	WriteHeader(Writer, ImageMagic, ImageVersion);
-	Writer.Write(Image.Width);
-	Writer.Write(Image.Height);
-	Writer.WriteArray(Image.Pixels);
+	switch (Usage)
+	{
+	case ETextureUsage::Color:  return L".color.etex";
+	case ETextureUsage::Linear: return L".linear.etex";
+	case ETextureUsage::Normal: return L".normal.etex";
+	case ETextureUsage::Mask:   return L".mask.etex";
+	}
+	return L".etex";
 }
 
-bool FAssetCache::ReadImage(FBinaryReader& Reader, FImage& OutImage)
+void FAssetCache::WriteTexture(FBinaryWriter& Writer, const FCompressedTexture& Texture)
 {
-	OutImage = FImage{};
-	if (!ReadHeader(Reader, ImageMagic, ImageVersion))
+	WriteHeader(Writer, TextureMagic, TextureVersion);
+	Writer.Write(static_cast<uint8>(Texture.Format));
+	Writer.Write(static_cast<uint8>(Texture.bSRGB ? 1 : 0));
+	Writer.Write(static_cast<uint32>(Texture.Mips.size()));
+	for (const FTextureMip& Mip : Texture.Mips)
+	{
+		Writer.Write(Mip.Width);
+		Writer.Write(Mip.Height);
+		Writer.WriteArray(Mip.Data);
+	}
+}
+
+bool FAssetCache::ReadTexture(FBinaryReader& Reader, FCompressedTexture& OutTexture)
+{
+	OutTexture = FCompressedTexture{};
+	if (!ReadHeader(Reader, TextureMagic, TextureVersion))
 	{
 		return false;
 	}
-	OutImage.Width  = Reader.Read<uint32>();
-	OutImage.Height = Reader.Read<uint32>();
-	OutImage.Pixels = Reader.ReadArray<uint8>();
-	if (!Reader.IsOk() || !OutImage.IsValid())
+	const uint8  Format   = Reader.Read<uint8>();
+	const uint8  bSRGB    = Reader.Read<uint8>();
+	const uint32 MipCount = Reader.Read<uint32>();
+	if (!Reader.IsOk() || Format > static_cast<uint8>(ETextureFormat::BC4) || MipCount == 0 || MipCount > 32)
 	{
-		OutImage = FImage{};
 		return false;
+	}
+	OutTexture.Format = static_cast<ETextureFormat>(Format);
+	OutTexture.bSRGB  = bSRGB != 0;
+	OutTexture.Mips.resize(MipCount);
+	for (FTextureMip& Mip : OutTexture.Mips)
+	{
+		Mip.Width  = Reader.Read<uint32>();
+		Mip.Height = Reader.Read<uint32>();
+		Mip.Data   = Reader.ReadArray<uint8>();
+		if (!Reader.IsOk() || Mip.Width == 0 || Mip.Height == 0 ||
+		    Mip.Data.size() != TextureCompression::GetMipDataSize(OutTexture.Format, Mip.Width, Mip.Height))
+		{
+			OutTexture = FCompressedTexture{};
+			return false;
+		}
 	}
 	return true;
 }
 
-FAssetCache::ESource FAssetCache::LoadImageAsset(const std::filesystem::path& SourcePath, FImage& OutImage, bool bWriteCooked)
+FAssetCache::ESource FAssetCache::LoadTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage,
+                                                   FCompressedTexture& OutTexture, bool bWriteCooked)
 {
-	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, ImageExtension);
+	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, GetTextureExtension(Usage));
 	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath))
 	{
-		if (LoadCookedFile(CookedPath, [&](FBinaryReader& Reader) { return ReadImage(Reader, OutImage); }))
+		if (LoadCookedFile(CookedPath, [&](FBinaryReader& Reader) { return ReadTexture(Reader, OutTexture); }))
 		{
-			E_LOG(LogRenderer, Verbose, "쿠킹 이미지 사용: {}", ToDisplay(SourcePath));
+			E_LOG(LogRenderer, Verbose, "쿠킹 텍스처 사용: {}", ToDisplay(SourcePath));
 			return ESource::Cooked;
 		}
-		E_LOG(LogRenderer, Warning, "쿠킹 이미지가 손상되었거나 형식이 달라 원본을 다시 읽습니다: {}", ToDisplay(CookedPath));
+		E_LOG(LogRenderer, Warning, "쿠킹 텍스처가 손상되었거나 형식이 달라 원본을 다시 읽습니다: {}", ToDisplay(CookedPath));
 	}
 
-	if (!FImageLoader::LoadFromFile(SourcePath, OutImage))
+	FImage Image;
+	if (!FImageLoader::LoadFromFile(SourcePath, Image))
 	{
 		return ESource::Failed;
 	}
+	const auto StartTime = std::chrono::steady_clock::now();
+	OutTexture           = TextureCompression::Compress(Image, Usage);
+	E_LOG(LogRenderer, Display, "텍스처 압축: {} {}x{} → {} KB ({:.0f} ms)", ToDisplay(SourcePath), Image.Width, Image.Height,
+	      OutTexture.GetTotalBytes() / 1024,
+	      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count());
 
 	if (bWriteCooked && !CookedPath.empty())
 	{
 		FBinaryWriter Writer;
-		WriteImage(Writer, OutImage);
+		WriteTexture(Writer, OutTexture);
 		if (!Writer.SaveToFile(CookedPath))
 		{
-			E_LOG(LogRenderer, Warning, "쿠킹 이미지를 기록하지 못했습니다: {}", FStringConv::ToUtf8(CookedPath.wstring()));
+			E_LOG(LogRenderer, Warning, "쿠킹 텍스처를 기록하지 못했습니다: {}", FStringConv::ToUtf8(CookedPath.wstring()));
 		}
 	}
 	return ESource::Converted;
 }
 
-bool FAssetCache::CookImageAsset(const std::filesystem::path& SourcePath)
+bool FAssetCache::CookTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage)
 {
-	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, ImageExtension);
+	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, GetTextureExtension(Usage));
 	if (CookedPath.empty())
 	{
 		E_LOG(LogRenderer, Warning, "프로젝트 Content 밖의 이미지는 쿠킹하지 않습니다: {}", FStringConv::ToUtf8(SourcePath.wstring()));
@@ -168,7 +207,7 @@ bool FAssetCache::CookImageAsset(const std::filesystem::path& SourcePath)
 		return false;
 	}
 	FBinaryWriter Writer;
-	WriteImage(Writer, Image);
+	WriteTexture(Writer, TextureCompression::Compress(Image, Usage));
 	return Writer.SaveToFile(CookedPath);
 }
 

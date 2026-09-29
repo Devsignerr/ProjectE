@@ -14,6 +14,29 @@ namespace
 	{
 		return bSRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
 	}
+
+	constexpr DXGI_FORMAT GetTextureFormat(ETextureFormat Format, bool bSRGB)
+	{
+		switch (Format)
+		{
+		case ETextureFormat::BC7: return bSRGB ? DXGI_FORMAT_BC7_UNORM_SRGB : DXGI_FORMAT_BC7_UNORM;
+		case ETextureFormat::BC5: return DXGI_FORMAT_BC5_UNORM;
+		case ETextureFormat::BC4: return DXGI_FORMAT_BC4_UNORM;
+		default:                  return GetTextureFormat(bSRGB);
+		}
+	}
+
+	const wchar_t* GetUsageKey(ETextureUsage Usage)
+	{
+		switch (Usage)
+		{
+		case ETextureUsage::Color:  return L"|color";
+		case ETextureUsage::Linear: return L"|linear";
+		case ETextureUsage::Normal: return L"|normal";
+		case ETextureUsage::Mask:   return L"|mask";
+		}
+		return L"|?";
+	}
 } // namespace
 
 bool FResourceManager::Init(FD3D12RHI& InRhi)
@@ -63,7 +86,7 @@ void FResourceManager::Shutdown()
 	Rhi             = nullptr;
 }
 
-FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, bool bSRGB)
+FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, ETextureUsage Usage)
 {
 	std::error_code ErrorCode;
 	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
@@ -71,20 +94,20 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 	{
 		Canonical = Path;
 	}
-	const std::wstring CacheKey = Canonical.wstring() + (bSRGB ? L"|srgb" : L"|linear");
+	const std::wstring CacheKey = Canonical.wstring() + GetUsageKey(Usage);
 
 	if (const auto Found = TextureCache.find(CacheKey); Found != TextureCache.end() && Textures.IsValid(Found->second))
 	{
 		return Found->second;
 	}
 
-	FImage Image;
-	if (FAssetCache::LoadImageAsset(Canonical, Image) == FAssetCache::ESource::Failed)
+	FCompressedTexture Texture;
+	if (FAssetCache::LoadTextureAsset(Canonical, Usage, Texture) == FAssetCache::ESource::Failed)
 	{
 		return FTextureHandle{};
 	}
 
-	const FTextureHandle Handle = CreateTexture(Image, bSRGB, Canonical.filename().wstring());
+	const FTextureHandle Handle = CreateTexture(Texture, Canonical.filename().wstring());
 	if (Handle.IsValid())
 	{
 		TextureCache[CacheKey] = Handle;
@@ -109,6 +132,32 @@ FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, 
 		return FTextureHandle{};
 	}
 	return Textures.Add(std::move(Texture));
+}
+
+FTextureHandle FResourceManager::CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName)
+{
+	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
+	if (!Texture.IsValid())
+	{
+		E_LOG(LogRenderer, Error, "유효하지 않은 텍스처 데이터: {}", FStringConv::ToUtf8(DebugName));
+		return FTextureHandle{};
+	}
+
+	std::vector<FD3D12Texture::FMipData> Mips;
+	Mips.reserve(Texture.Mips.size());
+	for (const FTextureMip& Mip : Texture.Mips)
+	{
+		Mips.push_back({ Mip.Data.data(), Mip.Data.size() });
+	}
+
+	auto GpuTexture = std::make_unique<FD3D12Texture>();
+	if (!GpuTexture->Init2DFromMips(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Texture.GetWidth(),
+	                                Texture.GetHeight(), GetTextureFormat(Texture.Format, Texture.bSRGB), Mips.data(),
+	                                static_cast<uint32>(Mips.size()), DebugName.c_str()))
+	{
+		return FTextureHandle{};
+	}
+	return Textures.Add(std::move(GpuTexture));
 }
 
 void FResourceManager::DestroyTexture(FTextureHandle Handle)
@@ -266,7 +315,7 @@ FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path
 	{
 		if (!Asset.TexturePaths[Slot].empty())
 		{
-			Material.Textures[Slot] = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::IsSrgbSlot(Slot));
+			Material.Textures[Slot] = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
 		}
 	}
 

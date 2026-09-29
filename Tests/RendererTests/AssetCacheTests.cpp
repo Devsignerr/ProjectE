@@ -105,28 +105,40 @@ E_TEST(AssetCache_RejectsCorruptOrMismatchedData)
 	FBinaryReader BrokenReader(BrokenWriter.GetBuffer().data(), BrokenWriter.GetBuffer().size());
 	E_EXPECT_FALSE(FAssetCache::ReadModel(BrokenReader, Out));
 
-	// 이미지 형식 불일치 (모델 데이터를 이미지로 읽기)
-	FBinaryReader ImageReader(Bytes.data(), Bytes.size());
-	FImage        Image;
-	E_EXPECT_FALSE(FAssetCache::ReadImage(ImageReader, Image));
+	// 텍스처 형식 불일치 (모델 데이터를 텍스처로 읽기)
+	FBinaryReader      TextureReader(Bytes.data(), Bytes.size());
+	FCompressedTexture Texture;
+	E_EXPECT_FALSE(FAssetCache::ReadTexture(TextureReader, Texture));
 }
 
-E_TEST(AssetCache_ImageRoundTripAndPaths)
+E_TEST(AssetCache_TextureRoundTripAndPaths)
 {
-	const FImage  Source = FImage::MakeSolidColor(4, 2, 1, 2, 3, 4);
-	FBinaryWriter Writer;
-	FAssetCache::WriteImage(Writer, Source);
-	FBinaryReader Reader(Writer.GetBuffer().data(), Writer.GetBuffer().size());
-	FImage        Loaded;
-	E_EXPECT_TRUE(FAssetCache::ReadImage(Reader, Loaded));
-	E_EXPECT_TRUE(Loaded.Width == 4 && Loaded.Height == 2 && Loaded.Pixels == Source.Pixels);
+	const FCompressedTexture Source = TextureCompression::Compress(FImage::MakeSolidColor(8, 4, 1, 2, 3, 4), ETextureUsage::Color);
+	FBinaryWriter            Writer;
+	FAssetCache::WriteTexture(Writer, Source);
+	FBinaryReader      Reader(Writer.GetBuffer().data(), Writer.GetBuffer().size());
+	FCompressedTexture Loaded;
+	E_EXPECT_TRUE(FAssetCache::ReadTexture(Reader, Loaded));
+	E_EXPECT_TRUE(Loaded.Format == ETextureFormat::BC7 && Loaded.bSRGB);
+	E_EXPECT_EQ(Loaded.Mips.size(), Source.Mips.size());
+	E_EXPECT_TRUE(Loaded.GetWidth() == 8 && Loaded.GetHeight() == 4 && Loaded.Mips.back().Data == Source.Mips.back().Data);
 
-	// 경로 규칙: Content 안 → Cooked/<상대 경로><확장자>, 밖 → 빈 경로
+	// 밉 데이터 크기가 형식과 맞지 않으면 거부
+	FCompressedTexture Broken = Source;
+	Broken.Mips[0].Data.pop_back();
+	FBinaryWriter BrokenWriter;
+	FAssetCache::WriteTexture(BrokenWriter, Broken);
+	FBinaryReader BrokenReader(BrokenWriter.GetBuffer().data(), BrokenWriter.GetBuffer().size());
+	E_EXPECT_FALSE(FAssetCache::ReadTexture(BrokenReader, Loaded));
+
+	// 경로 규칙: Content 안 → Cooked/<상대 경로><용도 확장자>, 밖 → 빈 경로
 	if (FPaths::HasProject())
 	{
-		const std::filesystem::path Cooked = FAssetCache::GetCookedPath(FPaths::GetProjectContentDirectory() / L"Sub" / L"A.png", FAssetCache::ImageExtension);
-		E_EXPECT_TRUE(Cooked == FPaths::GetProjectDirectory() / L"Cooked" / L"Sub" / L"A.png.etex");
-		E_EXPECT_TRUE(FAssetCache::GetCookedPath(std::filesystem::temp_directory_path() / L"X.png", FAssetCache::ImageExtension).empty());
+		const std::filesystem::path Cooked = FAssetCache::GetCookedPath(FPaths::GetProjectContentDirectory() / L"Sub" / L"A.png",
+		                                                                FAssetCache::GetTextureExtension(ETextureUsage::Normal));
+		E_EXPECT_TRUE(Cooked == FPaths::GetProjectDirectory() / L"Cooked" / L"Sub" / L"A.png.normal.etex");
+		E_EXPECT_TRUE(FAssetCache::GetCookedPath(std::filesystem::temp_directory_path() / L"X.png",
+		                                         FAssetCache::GetTextureExtension(ETextureUsage::Color)).empty());
 	}
 }
 

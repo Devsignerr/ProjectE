@@ -195,7 +195,10 @@ float3 GetShadingNormal(FPixelInput Input)
 	const float3 T = normalize(Input.WorldTangent.xyz - N * dot(N, Input.WorldTangent.xyz));
 	const float3 B = cross(N, T) * Input.WorldTangent.w;
 
-	float3 TangentNormal = NormalTexture.Sample(LinearSampler, Input.UV).xyz * 2.0f - 1.0f;
+	// XY만 사용하고 Z는 재구성 (BC5 노멀 맵은 RG만 저장)
+	float3 TangentNormal;
+	TangentNormal.xy = NormalTexture.Sample(LinearSampler, Input.UV).xy * 2.0f - 1.0f;
+	TangentNormal.z  = sqrt(saturate(1.0f - dot(TangentNormal.xy, TangentNormal.xy)));
 	TangentNormal.xy *= NormalScale;
 	return normalize(T * TangentNormal.x + B * TangentNormal.y + N * TangentNormal.z);
 }

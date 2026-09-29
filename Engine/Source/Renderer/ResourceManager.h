@@ -5,6 +5,7 @@
 #include "Renderer/Image.h"
 #include "Renderer/Material.h"
 #include "Renderer/StaticMesh.h"
+#include "Renderer/TextureCompression.h"
 #include "Scene/ResourceHandles.h"
 
 #include <filesystem>
@@ -21,9 +22,12 @@ public:
 	void Shutdown();
 
 	// ---- 텍스처
-	// 경로 + 색공간으로 캐시. 실패 시 무효 핸들 (Resolve 시 흰색 텍스처로 대체)
-	FTextureHandle LoadTexture(const std::filesystem::path& Path, bool bSRGB);
+	// 경로 + 용도로 캐시 (쿠킹: 밉 + BC 압축). 실패 시 무효 핸들 (Resolve 시 흰색 텍스처로 대체)
+	FTextureHandle LoadTexture(const std::filesystem::path& Path, ETextureUsage Usage);
+	// 비압축 이미지 (밉은 GPU에서 생성)
 	FTextureHandle CreateTexture(const FImage& Image, bool bSRGB, const std::wstring& DebugName);
+	// 쿠킹된 텍스처 (전체 밉 체인 업로드)
+	FTextureHandle CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName);
 	void           DestroyTexture(FTextureHandle Handle);
 	FD3D12Texture* GetTexture(FTextureHandle Handle) const { return Textures.Get(Handle); }
 	FTextureHandle GetWhiteTexture() const { return WhiteTexture; }

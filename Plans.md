@@ -144,7 +144,7 @@
 - [~] 1c) (서브에이전트) 에디터 편의: Undo/Redo, 그리드·축, 스냅, 복제, 다중 선택, 카메라 저장
 - [ ] 2) 물리(Jolt) — 1b 머지 후
 - [~] 3) 오디오(miniaudio 0.11.25): Audio 모듈(FAudioEngine/FAudioSystem/FAudioSourceComponent), 3D 공간화(청자 공간 변환), 런타임 연동 + `--scene`, 샘플 Hum/Chime.wav(자체 생성), `Demo_Audio.escene`, AudioTests 10개 완료. 남음: 에디터 플레이 모드 연동·Lua 바인딩(1b 머지 후)
-- [ ] 4) 텍스처 압축(BC7/BC5) + 에셋 최적화
+- [~] 4) 텍스처 압축: `TextureCompression`(CPU 밉 — sRGB 선형 평균/노멀 재정규화, BC7/BC5/BC4, bc7enc_rdo), `FD3D12Texture::Init2DFromMips`, 용도별 쿠킹(`*.color|linear|normal|mask.etex`), .emat 슬롯 용도, 셰이더 노멀 Z 재구성, Cook 도구 용도 수집 완료. 남음: 모델 내장 이미지 압축(1a 머지 후 ModelVersion 올림), 패키지에서 셰이더 소스 제거
 - [ ] 5) 엔진 DLL화 + 게임 모듈
 
 ## Phase 7 — 게임 시스템

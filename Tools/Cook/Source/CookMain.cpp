@@ -6,15 +6,19 @@
 #include "RHI/ShaderLibrary.h"
 #include "RHI/ShaderManifest.h"
 #include "Renderer/AssetCache.h"
+#include "Renderer/MaterialAsset.h"
 
 #include <algorithm>
 #include <cwctype>
+#include <map>
+#include <set>
 
 E_DEFINE_LOG_CATEGORY(LogCook, Log)
 
 // 사용법: ProjectECook [--project <.eproject 또는 폴더>]
 //   1) Engine/Shaders/Shaders.json의 모든 셰이더를 DXC로 컴파일해 Engine/Shaders/Cooked/에 DXIL 기록
 //   2) 프로젝트 Content의 모델(glTF/GLB)과 이미지(PNG/JPG/TGA/BMP)를 <프로젝트>/Cooked/에 엔진 바이너리로 기록
+//      이미지는 .emat가 참조하는 슬롯 용도(색상/선형/노멀/마스크)별로, 참조되지 않으면 색상으로 압축 쿠킹
 int main()
 {
 	FLog::Init();
@@ -77,7 +81,25 @@ int main()
 		uint32     Skipped = 0;
 		uint32     AssetFailed = 0;
 
-		std::error_code ErrorCode;
+		// .emat 참조로 이미지별 텍스처 용도 수집
+		std::map<std::filesystem::path, std::set<ETextureUsage>> TextureUsages;
+		std::error_code                                          ErrorCode;
+		for (const auto& Entry : std::filesystem::recursive_directory_iterator(FPaths::GetProjectContentDirectory(), ErrorCode))
+		{
+			FMaterialAsset Material;
+			if (Entry.is_regular_file(ErrorCode) && Entry.path().extension() == L".emat" && Material.LoadFromFile(Entry.path()))
+			{
+				for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+				{
+					if (!Material.TexturePaths[Slot].empty())
+					{
+						const std::filesystem::path TexturePath = std::filesystem::weakly_canonical(Entry.path().parent_path() / FStringConv::ToWide(Material.TexturePaths[Slot]), ErrorCode);
+						TextureUsages[TexturePath].insert(FMaterialAsset::GetSlotUsage(Slot));
+					}
+				}
+			}
+		}
+
 		for (const auto& Entry : std::filesystem::recursive_directory_iterator(FPaths::GetProjectContentDirectory(), ErrorCode))
 		{
 			if (!Entry.is_regular_file(ErrorCode))
@@ -94,23 +116,49 @@ int main()
 				continue;
 			}
 
-			const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Entry.path(), bModel ? FAssetCache::ModelExtension : FAssetCache::ImageExtension);
-			if (!bForce && FAssetCache::IsCookedUpToDate(Entry.path(), CookedPath))
+			const std::string DisplayName = FStringConv::ToUtf8(std::filesystem::relative(Entry.path(), FPaths::GetProjectContentDirectory()).wstring());
+			if (bModel)
 			{
-				++Skipped;
+				const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Entry.path(), FAssetCache::ModelExtension);
+				if (!bForce && FAssetCache::IsCookedUpToDate(Entry.path(), CookedPath))
+				{
+					++Skipped;
+				}
+				else if (FAssetCache::CookModelAsset(Entry.path()))
+				{
+					++Cooked;
+					E_LOG(LogCook, Display, "에셋 쿠킹: {}", DisplayName);
+				}
+				else
+				{
+					++AssetFailed;
+					E_LOG(LogCook, Error, "에셋 쿠킹 실패: {}", DisplayName);
+				}
 				continue;
 			}
 
-			const bool bOk = bModel ? FAssetCache::CookModelAsset(Entry.path()) : FAssetCache::CookImageAsset(Entry.path());
-			if (bOk)
+			std::set<ETextureUsage> Usages = { ETextureUsage::Color };
+			if (const auto Found = TextureUsages.find(std::filesystem::weakly_canonical(Entry.path(), ErrorCode)); Found != TextureUsages.end())
 			{
-				++Cooked;
-				E_LOG(LogCook, Display, "에셋 쿠킹: {}", FStringConv::ToUtf8(std::filesystem::relative(Entry.path(), FPaths::GetProjectContentDirectory()).wstring()));
+				Usages = Found->second;
 			}
-			else
+			for (const ETextureUsage Usage : Usages)
 			{
-				++AssetFailed;
-				E_LOG(LogCook, Error, "에셋 쿠킹 실패: {}", FStringConv::ToUtf8(Entry.path().wstring()));
+				const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Entry.path(), FAssetCache::GetTextureExtension(Usage));
+				if (!bForce && FAssetCache::IsCookedUpToDate(Entry.path(), CookedPath))
+				{
+					++Skipped;
+				}
+				else if (FAssetCache::CookTextureAsset(Entry.path(), Usage))
+				{
+					++Cooked;
+					E_LOG(LogCook, Display, "텍스처 쿠킹: {} ({})", DisplayName, FStringConv::ToUtf8(FAssetCache::GetTextureExtension(Usage)));
+				}
+				else
+				{
+					++AssetFailed;
+					E_LOG(LogCook, Error, "텍스처 쿠킹 실패: {}", DisplayName);
+				}
 			}
 		}
 		E_LOG(LogCook, Display, "에셋 쿠킹 완료: 쿠킹 {}, 최신 유지 {}, 실패 {} → {}", Cooked, Skipped, AssetFailed,

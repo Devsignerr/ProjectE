@@ -9,6 +9,6 @@ add_library(ProjectE::Renderer ALIAS ERenderer)
 target_include_directories(ERenderer PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(ERenderer
     PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene
-    PRIVATE ThirdParty::stb_image ThirdParty::cgltf ThirdParty::nlohmann_json)
+    PRIVATE ThirdParty::stb_image ThirdParty::cgltf ThirdParty::nlohmann_json ThirdParty::bc7enc)
 
 e_set_target_defaults(ERenderer "Engine")

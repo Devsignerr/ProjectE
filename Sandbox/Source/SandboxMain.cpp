@@ -157,7 +157,7 @@ private:
 
 		// 공용 리소스
 		const FMeshHandle    CubeMesh       = Resources.CreateMesh(FPrimitiveShapes::MakeCube(FUnits::MetersToUnits), L"Cube");
-		const FTextureHandle CheckerTexture = Resources.LoadTexture(AssetDir / L"UVChecker.png", true);
+		const FTextureHandle CheckerTexture = Resources.LoadTexture(AssetDir / L"UVChecker.png", ETextureUsage::Color);
 
 		FMaterial CheckerMaterial;
 		CheckerMaterial.Name                       = "Checker";

@@ -2,6 +2,7 @@
 
 #include "Renderer/Material.h"
 #include "Renderer/ShaderTypes.h"
+#include "Renderer/TextureCompression.h"
 
 #include <filesystem>
 #include <string>
@@ -22,8 +23,18 @@ struct FMaterialAsset
 
 	// 슬롯별 JSON 키 ("BaseColorTexture" 등)
 	static const char* GetTextureKey(uint32 Slot);
-	// 슬롯이 색상(sRGB) 텍스처인지 (베이스 컬러/발광)
-	static bool IsSrgbSlot(uint32 Slot) { return Slot == MaterialSlot_BaseColor || Slot == MaterialSlot_Emissive; }
+	// 슬롯별 텍스처 용도 (쿠킹 압축 형식/색공간 결정)
+	static ETextureUsage GetSlotUsage(uint32 Slot)
+	{
+		switch (Slot)
+		{
+		case MaterialSlot_BaseColor:
+		case MaterialSlot_Emissive:  return ETextureUsage::Color;
+		case MaterialSlot_Normal:    return ETextureUsage::Normal;
+		case MaterialSlot_Occlusion: return ETextureUsage::Mask;
+		default:                     return ETextureUsage::Linear;
+		}
+	}
 
 	std::string ToJsonString() const;
 	bool        FromJsonString(const std::string& Json);

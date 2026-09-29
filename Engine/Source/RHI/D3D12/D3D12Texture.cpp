@@ -2,9 +2,12 @@
 
 #include "RHI/D3D12/D3D12CommandQueue.h"
 #include "RHI/D3D12/D3D12Device.h"
+#include "RHI/D3D12/D3D12MipGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "RHI/TextureUtils.h"
 
 #include <cstring>
+#include <vector>
 
 FD3D12Texture::~FD3D12Texture()
 {
@@ -13,7 +16,7 @@ FD3D12Texture::~FD3D12Texture()
 
 bool FD3D12Texture::Init2D(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D12DescriptorAllocator& InSrvAllocator,
                            uint32 InWidth, uint32 InHeight, DXGI_FORMAT InFormat, const void* Pixels, uint32 BytesPerPixel,
-                           const wchar_t* DebugName)
+                           const wchar_t* DebugName, bool bGenerateMips)
 {
 	E_CHECKF(Resource == nullptr, "텍스처가 이미 생성되어 있습니다");
 	E_CHECKF(Pixels != nullptr && InWidth > 0 && InHeight > 0, "텍스처 데이터가 비어 있습니다");
@@ -24,14 +27,31 @@ bool FD3D12Texture::Init2D(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D
 	Height                  = InHeight;
 	Format                  = InFormat;
 
-	// GPU 텍스처 (복사 대상 상태로 생성)
+	// 밉 체인 여부 결정: 옵션 + 포맷 지원 + 크기 + 생성기 사용 가능
+	MipCount = 1;
+	FD3D12MipGenerator* MipGenerator = nullptr;
+	if (bGenerateMips && FD3D12MipGenerator::SupportsFormat(Format) && CalculateMipCount(Width, Height) > 1)
+	{
+		MipGenerator = Device.GetMipGenerator();
+		if (MipGenerator != nullptr)
+		{
+			MipCount = CalculateMipCount(Width, Height);
+		}
+	}
+	const bool bWithMips = MipCount > 1;
+
+	// GPU 텍스처 (복사 대상 상태로 생성).
+	// 밉을 생성할 때는 sRGB UAV가 불가능하므로 리소스를 TYPELESS로 만들고 SRV(sRGB)/UAV(UNORM) 뷰를 따로 만든다.
 	const D3D12_HEAP_PROPERTIES DefaultHeap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	const D3D12_RESOURCE_DESC   TextureDesc = MakeTexture2DDesc(Width, Height, Format);
+	const D3D12_RESOURCE_DESC   TextureDesc =
+		MakeTexture2DDesc(Width, Height, bWithMips ? GetTypelessFormat(Format) : Format,
+	                      bWithMips ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE,
+	                      static_cast<uint16>(MipCount));
 	E_D3D_VERIFY(D3DDevice->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &TextureDesc,
 	                                                D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&Resource)));
 	Resource->SetName(DebugName);
 
-	// 업로드 레이아웃 (행 피치는 256바이트 정렬)
+	// 밉 0 업로드 레이아웃 (행 피치는 256바이트 정렬)
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint{};
 	UINT                               NumRows        = 0;
 	UINT64                             RowSizeInBytes = 0;
@@ -61,7 +81,8 @@ bool FD3D12Texture::Init2D(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D
 	}
 	UploadBuffer->Unmap(0, nullptr);
 
-	// 복사 → 픽셀 셰이더 리소스 상태로 전이
+	// 복사 → (밉 생성) → 픽셀 셰이더 리소스 상태로 전이. 밉 생성용 임시 디스크립터는 실행 완료 후 반환.
+	std::vector<FD3D12DescriptorHandle> TempDescriptors;
 	const bool bCopied = Queue.ExecuteImmediate(D3DDevice, [&](ID3D12GraphicsCommandList* CommandList) {
 		D3D12_TEXTURE_COPY_LOCATION Destination{};
 		Destination.pResource        = Resource.Get();
@@ -75,29 +96,41 @@ bool FD3D12Texture::Init2D(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D
 
 		CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &SourceLocation, nullptr);
 
-		const D3D12_RESOURCE_BARRIER ToShaderResource =
-			MakeTransitionBarrier(Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		CommandList->ResourceBarrier(1, &ToShaderResource);
+		if (bWithMips)
+		{
+			MipGenerator->RecordGenerateMips(CommandList, Resource.Get(), Format, Width, Height, MipCount, *SrvAllocator,
+			                                 TempDescriptors);
+		}
+		else
+		{
+			const D3D12_RESOURCE_BARRIER ToShaderResource =
+				MakeTransitionBarrier(Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			CommandList->ResourceBarrier(1, &ToShaderResource);
+		}
 	});
+	for (FD3D12DescriptorHandle& Handle : TempDescriptors)
+	{
+		SrvAllocator->Free(Handle);
+	}
 	if (!bCopied)
 	{
 		return false;
 	}
 
-	// SRV
+	// 전체 밉 체인을 노출하는 SRV
 	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
 	SrvDesc.Format                        = Format;
 	SrvDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
 	SrvDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	SrvDesc.Texture2D.MostDetailedMip     = 0;
-	SrvDesc.Texture2D.MipLevels           = 1;
+	SrvDesc.Texture2D.MipLevels           = MipCount;
 	SrvDesc.Texture2D.PlaneSlice          = 0;
 	SrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 	Srv = SrvAllocator->Allocate();
 	D3DDevice->CreateShaderResourceView(Resource.Get(), &SrvDesc, Srv.Cpu);
 
-	E_LOG(LogD3D12, Log, "텍스처 생성: {}x{} ({} bytes)", Width, Height, TotalBytes);
+	E_LOG(LogD3D12, Log, "텍스처 생성: {}x{}, 밉 {}개 ({} bytes 업로드)", Width, Height, MipCount, TotalBytes);
 	return true;
 }
 
@@ -109,9 +142,10 @@ void FD3D12Texture::Shutdown()
 		SrvAllocator = nullptr;
 	}
 	Resource.Reset();
-	Width  = 0;
-	Height = 0;
-	Format = DXGI_FORMAT_UNKNOWN;
+	Width    = 0;
+	Height   = 0;
+	MipCount = 1;
+	Format   = DXGI_FORMAT_UNKNOWN;
 }
 
 void FD3D12Texture::ShutdownDeferred(FD3D12RHI& Rhi)
@@ -121,7 +155,8 @@ void FD3D12Texture::ShutdownDeferred(FD3D12RHI& Rhi)
 	Srv          = FD3D12DescriptorHandle{};
 	SrvAllocator = nullptr;
 	Resource.Reset();
-	Width  = 0;
-	Height = 0;
-	Format = DXGI_FORMAT_UNKNOWN;
+	Width    = 0;
+	Height   = 0;
+	MipCount = 1;
+	Format   = DXGI_FORMAT_UNKNOWN;
 }

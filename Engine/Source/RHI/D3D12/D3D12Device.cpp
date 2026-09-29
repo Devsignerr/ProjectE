@@ -1,8 +1,30 @@
 #include "RHI/D3D12/D3D12Device.h"
 
 #include "Core/StringConv.h"
+#include "RHI/D3D12/D3D12MipGenerator.h"
 
 #include <dxgidebug.h>
+
+FD3D12Device::FD3D12Device()  = default;
+FD3D12Device::~FD3D12Device() = default;
+
+FD3D12MipGenerator* FD3D12Device::GetMipGenerator()
+{
+	if (MipGenerator == nullptr && !bMipGeneratorFailed && Device != nullptr)
+	{
+		auto Generator = std::make_unique<FD3D12MipGenerator>();
+		if (Generator->Init(Device.Get()))
+		{
+			MipGenerator = std::move(Generator);
+		}
+		else
+		{
+			bMipGeneratorFailed = true;
+			E_LOG(LogD3D12, Warning, "밉맵 생성기 초기화 실패 — 이후 텍스처는 밉 없이 생성됩니다");
+		}
+	}
+	return MipGenerator.get();
+}
 
 bool FD3D12Device::Init(bool bEnableDebugLayer)
 {
@@ -63,6 +85,10 @@ bool FD3D12Device::Init(bool bEnableDebugLayer)
 
 void FD3D12Device::Shutdown()
 {
+	// 디바이스보다 먼저 파생 오브젝트 해제
+	MipGenerator.reset();
+	bMipGeneratorFailed = false;
+
 	Device.Reset();
 	Adapter.Reset();
 	Factory.Reset();

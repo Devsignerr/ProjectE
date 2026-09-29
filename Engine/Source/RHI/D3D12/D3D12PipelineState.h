@@ -38,6 +38,8 @@ public:
 	~FD3D12PipelineState();
 
 	bool InitGraphics(ID3D12Device* Device, const FGraphicsPipelineDesc& Desc, const wchar_t* DebugName);
+	bool InitCompute(ID3D12Device* Device, ID3D12RootSignature* RootSignature, const D3D12_SHADER_BYTECODE& ComputeShader,
+	                 const wchar_t* DebugName);
 	void Shutdown();
 
 	ID3D12PipelineState* Get() const { return PipelineState.Get(); }

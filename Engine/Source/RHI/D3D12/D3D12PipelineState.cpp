@@ -82,6 +82,24 @@ bool FD3D12PipelineState::InitGraphics(ID3D12Device* Device, const FGraphicsPipe
 	return true;
 }
 
+bool FD3D12PipelineState::InitCompute(ID3D12Device* Device, ID3D12RootSignature* RootSignature,
+                                      const D3D12_SHADER_BYTECODE& ComputeShader, const wchar_t* DebugName)
+{
+	E_CHECKF(PipelineState == nullptr, "파이프라인 스테이트가 이미 생성되어 있습니다");
+	E_CHECKF(RootSignature != nullptr, "루트 시그니처가 필요합니다");
+	E_CHECKF(ComputeShader.pShaderBytecode != nullptr, "컴퓨트 셰이더가 필요합니다");
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC PsoDesc{};
+	PsoDesc.pRootSignature = RootSignature;
+	PsoDesc.CS             = ComputeShader;
+	PsoDesc.NodeMask       = 0;
+	PsoDesc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+	E_D3D_VERIFY(Device->CreateComputePipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
+	PipelineState->SetName(DebugName);
+	return true;
+}
+
 void FD3D12PipelineState::Shutdown()
 {
 	PipelineState.Reset();

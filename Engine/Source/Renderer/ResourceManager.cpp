@@ -96,7 +96,8 @@ FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, 
 
 	auto Texture = std::make_unique<FD3D12Texture>();
 	if (!Texture->Init2D(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Image.Width, Image.Height,
-	                     GetTextureFormat(bSRGB), Image.Pixels.data(), FImage::BytesPerPixel, DebugName.c_str()))
+	                     GetTextureFormat(bSRGB), Image.Pixels.data(), FImage::BytesPerPixel, DebugName.c_str(),
+	                     /*bGenerateMips*/ true))
 	{
 		return FTextureHandle{};
 	}

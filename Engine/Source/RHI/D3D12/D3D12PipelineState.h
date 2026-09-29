@@ -4,6 +4,14 @@
 
 #include <vector>
 
+// 렌더 타깃 블렌드 모드
+enum class EBlendMode : uint8
+{
+	Opaque,   // 블렌딩 없음
+	Alpha,    // Src * SrcAlpha + Dest * (1 - SrcAlpha)
+	Additive, // Src + Dest (HDR 누적, 블룸 업샘플 등)
+};
+
 // 그래픽스 파이프라인 설정. 자주 쓰는 값이 기본값이며 필요한 항목만 바꾼다.
 struct FGraphicsPipelineDesc
 {
@@ -28,8 +36,12 @@ struct FGraphicsPipelineDesc
 	bool                  bDepthWrite  = true;
 	D3D12_COMPARISON_FUNC DepthFunc    = D3D12_COMPARISON_FUNC_LESS;
 
-	// 블렌딩 (true면 표준 알파 블렌딩)
+	// 블렌딩
+	EBlendMode BlendMode = EBlendMode::Opaque;
+	// 하위 호환: true이고 BlendMode가 Opaque면 Alpha로 취급 (새 코드는 BlendMode 사용)
 	bool bAlphaBlend = false;
+
+	EBlendMode GetEffectiveBlendMode() const { return (bAlphaBlend && BlendMode == EBlendMode::Opaque) ? EBlendMode::Alpha : BlendMode; }
 };
 
 class FD3D12PipelineState

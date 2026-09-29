@@ -113,8 +113,8 @@
 
 - [x] (기반) HDR 파이프라인: 씬을 R16G16B16A16_FLOAT(`FD3D12RenderTarget` 포맷 설정화)에 그린 뒤 `FPostProcessor`(노출 + ACES/Reinhard 톤매핑, `Tonemap.hlsl`/`Fullscreen.hlsli`)로 출력(`FRenderOutput`: 백버퍼 또는 뷰포트 RTV)
 - [~] (트랙 H, 서브에이전트) PBR: Cook-Torrance(GGX/Smith/Schlick), glTF 금속·거칠기/노멀/AO/발광 텍스처, 탄젠트(MikkTSpace 대체 계산), 머티리얼/쿠킹 형식 확장, 간이 환경광(하늘 반구 + 스페큘러 근사)
-- [~] (트랙 J, 서브에이전트) 포스트 프로세싱: 블룸(다운/업샘플 체인), 자동/수동 노출, 톤매핑 설정 UI, 비네트/그레인은 선택
 - [x] (트랙 G) 선택 표시: `FSelectionOutline`(선택+하위 메시를 R8 마스크에 → `Outline.hlsl` 원형 반경 가장자리 합성, 내부 약한 틴트, 가려져도 실루엣 표시), 계층 패널 강조(주황 계열 행 색, 외부 선택 시 조상 자동 펼침 + 스크롤), 뷰포트에서 모델 하위 노드 클릭 시 모델 루트 선택, 셰이더 핫 리로드 연동
+- [x] (트랙 J, 서브에이전트) 포스트 프로세싱: 블룸(Jimenez 13탭 다운샘플 + Karis 평균/소프트 니 임계값, 텐트 업샘플 가산, 절반 해상도부터 최대 6단계, `Bloom.hlsl`), 자동 노출(1/4 해상도 로그 휘도 히스토그램 PS UAV → 컴퓨트 평균 + 지수 시간 적응, `AutoExposure.hlsl`), 수동 EV, 톤매핑 연산자, `EBlendMode`(Opaque/Alpha/Additive) PSO 블렌드, 에디터 "포스트 프로세스" 패널, `FPostProcessMath` + 테스트 5개. 비네트/그레인은 미구현
 - [ ] 섀도우 맵 (방향광 CSM, PCF) — 트랙 H 머지 후
 - [ ] IBL (환경 큐브맵, 프리필터/BRDF LUT) — 트랙 H 머지 후
 - [ ] 스켈레탈 애니메이션

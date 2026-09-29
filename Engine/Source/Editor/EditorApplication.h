@@ -5,6 +5,7 @@
 #include "Editor/EditorContext.h"
 #include "Editor/ImGuiLayer.h"
 #include "Editor/Panels/ContentBrowserPanel.h"
+#include "Editor/Panels/PostProcessPanel.h"
 #include "Editor/Panels/HierarchyPanel.h"
 #include "Editor/Panels/InspectorPanel.h"
 #include "Editor/Panels/ViewportPanel.h"
@@ -71,6 +72,7 @@ private:
 	FHierarchyPanel      HierarchyPanel;
 	FInspectorPanel      InspectorPanel;
 	FContentBrowserPanel ContentBrowserPanel;
+	FPostProcessPanel    PostProcessPanel;
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
 

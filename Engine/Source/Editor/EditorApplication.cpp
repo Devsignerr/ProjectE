@@ -152,6 +152,7 @@ void FEditorApplication::OnRender()
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
 	ContentBrowserPanel.Draw(Context);
+	PostProcessPanel.Draw(Context);
 	if (bShowStats)
 	{
 		DrawStatsWindow();
@@ -416,6 +417,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("계층", nullptr, &HierarchyPanel.bOpen);
 		ImGui::MenuItem("인스펙터", nullptr, &InspectorPanel.bOpen);
 		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
+		ImGui::MenuItem("포스트 프로세스", nullptr, &PostProcessPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
 		ImGui::Separator();
 		ImGui::MenuItem("ImGui 데모", nullptr, &bShowImGuiDemo);

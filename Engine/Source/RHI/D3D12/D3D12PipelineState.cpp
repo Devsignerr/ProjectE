@@ -20,15 +20,26 @@ bool FD3D12PipelineState::InitGraphics(ID3D12Device* Device, const FGraphicsPipe
 	// 블렌드
 	PsoDesc.BlendState.AlphaToCoverageEnable  = FALSE;
 	PsoDesc.BlendState.IndependentBlendEnable = FALSE;
+	const EBlendMode BlendMode = Desc.GetEffectiveBlendMode();
 	for (D3D12_RENDER_TARGET_BLEND_DESC& Target : PsoDesc.BlendState.RenderTarget)
 	{
-		Target.BlendEnable           = Desc.bAlphaBlend ? TRUE : FALSE;
-		Target.LogicOpEnable         = FALSE;
-		Target.SrcBlend              = D3D12_BLEND_SRC_ALPHA;
-		Target.DestBlend             = D3D12_BLEND_INV_SRC_ALPHA;
+		Target.BlendEnable   = BlendMode != EBlendMode::Opaque ? TRUE : FALSE;
+		Target.LogicOpEnable = FALSE;
+		if (BlendMode == EBlendMode::Additive)
+		{
+			Target.SrcBlend       = D3D12_BLEND_ONE;
+			Target.DestBlend      = D3D12_BLEND_ONE;
+			Target.SrcBlendAlpha  = D3D12_BLEND_ONE;
+			Target.DestBlendAlpha = D3D12_BLEND_ONE;
+		}
+		else
+		{
+			Target.SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+			Target.DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+			Target.SrcBlendAlpha  = D3D12_BLEND_ONE;
+			Target.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+		}
 		Target.BlendOp               = D3D12_BLEND_OP_ADD;
-		Target.SrcBlendAlpha         = D3D12_BLEND_ONE;
-		Target.DestBlendAlpha        = D3D12_BLEND_INV_SRC_ALPHA;
 		Target.BlendOpAlpha          = D3D12_BLEND_OP_ADD;
 		Target.LogicOp               = D3D12_LOGIC_OP_NOOP;
 		Target.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;

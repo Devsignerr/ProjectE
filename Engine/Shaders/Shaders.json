@@ -10,6 +10,12 @@
     { "File": "Outline.hlsl", "Entry": "MaskVS", "Stage": "Vertex" },
     { "File": "Outline.hlsl", "Entry": "MaskPS", "Stage": "Pixel" },
     { "File": "Outline.hlsl", "Entry": "CompositeVS", "Stage": "Vertex" },
-    { "File": "Outline.hlsl", "Entry": "CompositePS", "Stage": "Pixel" }
+    { "File": "Outline.hlsl", "Entry": "CompositePS", "Stage": "Pixel" },
+    { "File": "Bloom.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "Bloom.hlsl", "Entry": "PSDownsample", "Stage": "Pixel" },
+    { "File": "Bloom.hlsl", "Entry": "PSUpsample", "Stage": "Pixel" },
+    { "File": "AutoExposure.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "AutoExposure.hlsl", "Entry": "PSHistogram", "Stage": "Pixel" },
+    { "File": "AutoExposure.hlsl", "Entry": "CSAverage", "Stage": "Compute" }
   ]
 }

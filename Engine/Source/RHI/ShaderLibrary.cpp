@@ -217,7 +217,7 @@ ComPtr<IDxcBlob> FShaderLibrary::TryLoadCooked(const FShaderCompileDesc& Desc, c
 		return nullptr;
 	}
 
-	ComPtr<IDxcBlob> Blob = Compiler->CreateBlob(Bytes.data(), Bytes.size());
+	ComPtr<IDxcBlob> Blob = FD3D12ShaderCompiler::CreateBlob(Bytes.data(), Bytes.size());
 	if (Blob)
 	{
 		E_LOG(LogD3D12, Log, "쿠킹된 셰이더 로드: {} ({} bytes)", DisplayName, Bytes.size());

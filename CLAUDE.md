@@ -64,7 +64,7 @@
 CMake/            CMake 헬퍼 모듈
 Engine/Source/
   Core/           타입, 로그, 어설트, 타이머, 창(Win32), 입력, 애플리케이션 루프
-  Core/Paths.h    FPaths: 엔진 디렉터리(실행 파일 상위에서 Engine/Shaders/Common.hlsli 마커 탐지), 프로젝트(.eproject) Content/Saved/Config
+  Core/Paths.h    FPaths: 엔진 디렉터리(실행 파일 상위에서 Engine/Shaders/Shaders.json 마커 탐지), 프로젝트(.eproject) Content/Saved/Config
                   FCommandLine(--project 등), FProjectDescriptor(.eproject JSON)
   Core/Math/      FMath, FVector2/3/4, FQuat, FMatrix4x4, FBox, FFrustum (통합 헤더 Math.h)
   Core/ECS/       FEntity(세대 핸들), TSparseSet, FRegistry(+TView) — 자체 희소 집합 ECS
@@ -112,7 +112,7 @@ Build/            CMake 빌드 출력 (git 제외)
 .\Scripts\Build.ps1 -RunSandbox      # 빌드 후 런타임 데모 실행
 .\Scripts\Build.ps1 -Test            # 빌드 후 단위 테스트 (ctest)
 .\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Build\vs2022\ProjectE.sln)
-.\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release]  # Release 빌드 → 셰이더 쿠킹 → Build\Package\<프로젝트>\ 스테이징 (Run.bat 포함)
+.\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release] [-IncludeSources]  # Release 빌드 → 쿠킹 → Build\Package\<프로젝트>\ (쿠킹 DXIL/에셋만, DXC 없음, Run.bat 포함)
 ```
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).

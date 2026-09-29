@@ -1,9 +1,13 @@
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 
 #include "Core/Paths.h"
+#include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 
 #include <dxcapi.h>
+#include <wrl/implements.h>
+
+#include <vector>
 
 namespace
 {
@@ -17,6 +21,22 @@ namespace
 		}
 		return L"";
 	}
+
+	// DXC 없이 쓰는 최소 IDxcBlob (쿠킹 DXIL 보관). 참조 카운트는 WRL이 관리
+	class FMemoryBlob final : public Microsoft::WRL::RuntimeClass<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, IDxcBlob>
+	{
+	public:
+		FMemoryBlob(const void* Data, size_t SizeInBytes)
+			: Bytes(static_cast<const uint8*>(Data), static_cast<const uint8*>(Data) + SizeInBytes)
+		{
+		}
+
+		LPVOID STDMETHODCALLTYPE GetBufferPointer() override { return Bytes.data(); }
+		SIZE_T STDMETHODCALLTYPE GetBufferSize() override { return Bytes.size(); }
+
+	private:
+		std::vector<uint8> Bytes;
+	};
 } // namespace
 
 FD3D12ShaderCompiler::~FD3D12ShaderCompiler()
@@ -26,6 +46,12 @@ FD3D12ShaderCompiler::~FD3D12ShaderCompiler()
 
 bool FD3D12ShaderCompiler::Init()
 {
+	// 지연 로드 DLL: 먼저 존재를 확인한다 (없는 상태로 DXC 함수를 부르면 SEH 예외)
+	if (LoadLibraryW(L"dxcompiler.dll") == nullptr)
+	{
+		E_LOG(LogD3D12, Display, "DXC(dxcompiler.dll)가 없어 쿠킹된 셰이더만 사용합니다");
+		return true;
+	}
 	E_D3D_VERIFY(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&Utils)));
 	E_D3D_VERIFY(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&Compiler)));
 	E_D3D_VERIFY(Utils->CreateDefaultIncludeHandler(&IncludeHandler));
@@ -44,7 +70,12 @@ void FD3D12ShaderCompiler::Shutdown()
 
 ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) const
 {
-	E_CHECKF(Compiler != nullptr, "셰이더 컴파일러가 초기화되지 않았습니다");
+	if (!IsAvailable())
+	{
+		E_LOG(LogD3D12, Error, "DXC가 없어 셰이더를 컴파일할 수 없습니다 (쿠킹 파일 누락?): {}:{}", FStringConv::ToUtf8(Desc.FileName),
+		      FStringConv::ToUtf8(Desc.EntryPoint));
+		return nullptr;
+	}
 
 	const std::filesystem::path ShaderDir = GetEngineShaderDirectory();
 	const std::filesystem::path FullPath  = ShaderDir / Desc.FileName;
@@ -144,18 +175,9 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 	return Object;
 }
 
-ComPtr<IDxcBlob> FD3D12ShaderCompiler::CreateBlob(const void* Data, size_t SizeInBytes) const
+ComPtr<IDxcBlob> FD3D12ShaderCompiler::CreateBlob(const void* Data, size_t SizeInBytes)
 {
-	E_CHECKF(Utils != nullptr, "셰이더 컴파일러가 초기화되지 않았습니다");
-
-	// IDxcUtils::CreateBlob은 데이터를 복사한다
-	ComPtr<IDxcBlobEncoding> Blob;
-	if (FAILED(Utils->CreateBlob(Data, static_cast<UINT32>(SizeInBytes), DXC_CP_ACP, &Blob)))
-	{
-		E_LOG(LogD3D12, Error, "DXIL 블롭 생성 실패 ({} bytes)", SizeInBytes);
-		return nullptr;
-	}
-	return Blob;
+	return Microsoft::WRL::Make<FMemoryBlob>(Data, SizeInBytes);
 }
 
 std::filesystem::path FD3D12ShaderCompiler::GetEngineShaderDirectory()

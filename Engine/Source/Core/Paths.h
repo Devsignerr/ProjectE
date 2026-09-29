@@ -10,7 +10,7 @@ class FCommandLine;
 
 // 엔진/프로젝트 경로 체계 (컴파일 타임 절대 경로 대신 이것만 사용한다)
 //
-//   엔진 디렉터리: 실행 파일 디렉터리에서 상위로 올라가며 "Engine/Shaders/Common.hlsli" 마커가 있는 첫 디렉터리.
+//   엔진 디렉터리: 실행 파일 디렉터리에서 상위로 올라가며 "Engine/Shaders/Shaders.json" 마커가 있는 첫 디렉터리.
 //                  개발 빌드(Build/ninja-debug/Bin)와 패키징(exe 옆에 Engine/) 모두 만족한다.
 //   프로젝트:      .eproject 파일이 있는 폴더. Content/ (에셋), Saved/ (런타임 생성물), Config/ (설정).
 //                  명령줄 "--project <파일|폴더>" 우선, 없으면 개발 편의로 엔진의 Projects/Sample/Sample.eproject.

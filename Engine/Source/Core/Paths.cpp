@@ -8,7 +8,7 @@
 
 namespace
 {
-	constexpr const wchar_t* GEngineMarker         = L"Engine/Shaders/Common.hlsli";
+	constexpr const wchar_t* GEngineMarker         = L"Engine/Shaders/Shaders.json";
 	constexpr const wchar_t* GDefaultProjectFile   = L"Projects/Sample/Sample.eproject";
 	constexpr const wchar_t* GProjectOption        = L"--project";
 

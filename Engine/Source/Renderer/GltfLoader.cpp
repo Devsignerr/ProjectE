@@ -195,7 +195,7 @@ namespace
 		for (cgltf_size Index = 0; Index < VertexCount; ++Index)
 		{
 			FVertex& Vertex = OutMesh.Data.Vertices[Index];
-			Vertex.Position = FGltfLoader::ConvertPosition({ Positions[Index * 3], Positions[Index * 3 + 1], Positions[Index * 3 + 2] });
+			Vertex.Position = FGltfLoader::ConvertPosition({ Positions[Index * 3], Positions[Index * 3 + 1], Positions[Index * 3 + 2] }) * FGltfLoader::ImportScale;
 			if (NormalAccessor)
 			{
 				Vertex.Normal = FGltfLoader::ConvertPosition({ Normals[Index * 3], Normals[Index * 3 + 1], Normals[Index * 3 + 2] }).GetNormalized();
@@ -337,7 +337,7 @@ namespace
 				std::memcpy(Local.M, GltfNode.matrix, sizeof(float) * 16);
 				Local = FGltfLoader::ConvertMatrix(Local);
 
-				Node.Translation = Local.GetOrigin();
+				Node.Translation = Local.GetOrigin() * FGltfLoader::ImportScale;
 				Node.Scale       = { Local.GetAxisX().Length(), Local.GetAxisY().Length(), Local.GetAxisZ().Length() };
 				FMatrix4x4 RotationOnly;
 				for (int32 Row = 0; Row < 3; ++Row)
@@ -354,7 +354,7 @@ namespace
 			{
 				if (GltfNode.has_translation)
 				{
-					Node.Translation = FGltfLoader::ConvertPosition({ GltfNode.translation[0], GltfNode.translation[1], GltfNode.translation[2] });
+					Node.Translation = FGltfLoader::ConvertPosition({ GltfNode.translation[0], GltfNode.translation[1], GltfNode.translation[2] }) * FGltfLoader::ImportScale;
 				}
 				if (GltfNode.has_rotation)
 				{

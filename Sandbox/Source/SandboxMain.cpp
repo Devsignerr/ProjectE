@@ -52,9 +52,9 @@ protected:
 
 		BuildScene();
 
-		Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
-		Camera.SetPosition(FVector3(-7.0f, -5.0f, 3.5f));
-		Camera.LookAt(FVector3(0.0f, 0.0f, 0.8f));
+		Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
+		Camera.SetPosition(FVector3(-700.0f, -500.0f, 350.0f));
+		Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
 
 		E_LOG(LogSandbox, Display, "조작: ESC 종료, F1 VSync, F2 컬링 프러스텀 고정, 우클릭 + 마우스/WASD/QE 시점 이동, 휠 속도");
 		return true;
@@ -156,7 +156,7 @@ private:
 		SunLight.Intensity = 3.0f;
 
 		// 공용 리소스
-		const FMeshHandle    CubeMesh       = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
+		const FMeshHandle    CubeMesh       = Resources.CreateMesh(FPrimitiveShapes::MakeCube(FUnits::MetersToUnits), L"Cube");
 		const FTextureHandle CheckerTexture = Resources.LoadTexture(AssetDir / L"UVChecker.png", true);
 
 		FMaterial CheckerMaterial;
@@ -167,7 +167,7 @@ private:
 
 		// 바닥: 납작한 큐브
 		const FEntity Ground = Scene.CreateEntity("Ground");
-		Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -1.0f);
+		Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -100.0f);
 		Scene.GetTransform(Ground).Scale    = FVector3(20.0f, 20.0f, 0.2f);
 		FStaticMeshComponent& GroundMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Ground);
 		GroundMesh.Mesh     = CubeMesh;
@@ -175,7 +175,7 @@ private:
 
 		// 큐브 링: 회전하는 부모 아래 8개 자식 (계층 검증). 색상 틴트를 달리한 머티리얼
 		OrbitRoot = Scene.CreateEntity("OrbitRoot");
-		Scene.GetTransform(OrbitRoot).Position = FVector3(0.0f, 0.0f, 0.5f);
+		Scene.GetTransform(OrbitRoot).Position = FVector3(0.0f, 0.0f, 50.0f);
 		for (int32 Index = 0; Index < 8; ++Index)
 		{
 			const float Angle = FMath::DegreesToRadians(45.0f * static_cast<float>(Index));
@@ -189,7 +189,7 @@ private:
 
 			const FEntity Orbiter = Scene.CreateEntity(std::format("Orbiter{}", Index));
 			Scene.SetParent(Orbiter, OrbitRoot);
-			Scene.GetTransform(Orbiter).Position = FVector3(4.0f * FMath::Cos(Angle), 4.0f * FMath::Sin(Angle), 0.0f);
+			Scene.GetTransform(Orbiter).Position = FVector3(400.0f * FMath::Cos(Angle), 400.0f * FMath::Sin(Angle), 0.0f);
 			Scene.GetTransform(Orbiter).Rotation = FQuat::FromEuler(0.0f, 45.0f * static_cast<float>(Index), 0.0f);
 			Scene.GetTransform(Orbiter).Scale    = FVector3(0.6f);
 			FStaticMeshComponent& OrbiterMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Orbiter);
@@ -202,7 +202,7 @@ private:
 		{
 			const FEntity Far = Scene.CreateEntity(std::format("FarCube{}", Index));
 			const float   Angle = FMath::DegreesToRadians(9.0f * static_cast<float>(Index));
-			Scene.GetTransform(Far).Position = FVector3(30.0f * FMath::Cos(Angle), 30.0f * FMath::Sin(Angle), 1.0f + (Index % 5));
+			Scene.GetTransform(Far).Position = FVector3(3000.0f * FMath::Cos(Angle), 3000.0f * FMath::Sin(Angle), 100.0f * (1.0f + (Index % 5)));
 			FStaticMeshComponent& FarMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Far);
 			FarMesh.Mesh     = CubeMesh;
 			FarMesh.Material = CheckerHandle;
@@ -212,7 +212,7 @@ private:
 		HelmetRoot = FModelLoader::LoadIntoScene(AssetDir / L"DamagedHelmet.glb", Scene, Resources);
 		if (Scene.GetRegistry().IsValid(HelmetRoot))
 		{
-			Scene.GetTransform(HelmetRoot).Position = FVector3(0.0f, 0.0f, 1.2f);
+			Scene.GetTransform(HelmetRoot).Position = FVector3(0.0f, 0.0f, 120.0f);
 		}
 		else
 		{

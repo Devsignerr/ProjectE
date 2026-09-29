@@ -21,6 +21,7 @@
 ## 좌표계 / 수학 규약
 
 - 왼손 Z-up (UE 방식): `+X` 앞(Forward), `+Y` 오른쪽(Right), `+Z` 위(Up). `Cross(Forward, Right) == Up`
+- 단위: 1 = 1cm (UE 방식), 질량 kg, 시간 초. 미터 기반 외부 데이터/라이브러리(glTF, 물리)는 경계에서 `FUnits::MetersToUnits`/`UnitsToMeters`로만 변환. glTF는 위치·이동만 ×100(`FGltfLoader::ImportScale`), 방향 벡터는 스케일하지 않는다
 - 행렬 `FMatrix4x4`는 행우선 저장, 행벡터 규약 `v * M`. 합성은 적용 순서대로: `World = S * R * T`, `MVP = World * View * Proj`. 이동은 `M[3][0..2]`
 - 쿼터니언 `A * B`는 B 먼저 적용. `FQuat::FromEuler(Pitch, Yaw, Roll)`: +Pitch 기수 위, +Yaw 오른쪽, +Roll 오른쪽 날개 아래 (UE 부호)
 - 뷰 공간: `+X` 오른쪽, `+Y` 위, `+Z` 앞. 투영 깊이 [0, 1]. 앞면은 시계 방향(CW)

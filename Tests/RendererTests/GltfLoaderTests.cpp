@@ -138,9 +138,9 @@ E_TEST(Gltf_LoadTriangleFile)
 	E_EXPECT_EQ(Mesh.Data.Vertices.size(), static_cast<size_t>(3));
 	E_EXPECT_EQ(Mesh.Data.Indices.size(), static_cast<size_t>(3));
 	E_EXPECT_EQ(Mesh.Material, 0);
-	// glTF (1,0,0) → 엔진 (0,1,0), 법선 (0,0,1) → (-1,0,0)
-	E_EXPECT_EQUALS(Mesh.Data.Vertices[1].Position, FVector3(0, 1, 0), Tol);
-	E_EXPECT_EQUALS(Mesh.Data.Vertices[2].Position, FVector3(0, 0, 1), Tol);
+	// glTF (1,0,0) m → 엔진 (0,100,0) cm, 법선 (0,0,1) → (-1,0,0) (방향은 스케일하지 않음)
+	E_EXPECT_EQUALS(Mesh.Data.Vertices[1].Position, FVector3(0, 100, 0), Tol);
+	E_EXPECT_EQUALS(Mesh.Data.Vertices[2].Position, FVector3(0, 0, 100), Tol);
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[0].Normal, FVector3(-1, 0, 0), Tol);
 	E_EXPECT_EQUALS(Mesh.Data.Vertices[1].UV, FVector2(1, 0), Tol);
 	// TANGENT 속성이 없으면 UV로 계산: glTF +U(= +X) → 엔진 +Y, 법선과 직교
@@ -159,7 +159,7 @@ E_TEST(Gltf_LoadTriangleFile)
 	// 노드: Root 이동 (1,2,3) → (-3,1,2), 자식 Tri에 메시, 스케일 (2,3,4) → (4,2,3)
 	const FModelNode& Root = Model.Nodes[Model.RootNodes[0]];
 	E_EXPECT_TRUE(Root.Name == "Root");
-	E_EXPECT_EQUALS(Root.Translation, FVector3(-3, 1, 2), Tol);
+	E_EXPECT_EQUALS(Root.Translation, FVector3(-300, 100, 200), Tol);
 	E_EXPECT_EQ(Root.Children.size(), static_cast<size_t>(1));
 	E_EXPECT_TRUE(Root.Meshes.empty());
 	// glTF Y축 90° → 엔진 Z축(위) 회전, 반사로 각도 반전

@@ -3,6 +3,7 @@
 #include "Core/CommandLine.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
+#include "Core/Platform/CrashHandler.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 
@@ -12,6 +13,8 @@
 FApplication::FApplication(const FApplicationDesc& InDesc)
 	: Desc(InDesc)
 {
+	// 파생 클래스 멤버 생성보다 먼저 설치되어 초기화 중 크래시도 잡는다
+	FCrashHandler::Install();
 }
 
 int FApplication::Run()

@@ -18,9 +18,9 @@ struct FShadowSettings
 	bool   bEnabled         = true;
 	uint32 CascadeCount     = 4;
 	uint32 Resolution       = 2048;  // 캐스케이드 한 장 크기 (정사각형)
-	float  ShadowDistance   = 60.0f; // 카메라에서 그림자를 그리는 최대 거리
+	float  ShadowDistance   = 6000.0f; // cm: 카메라에서 그림자를 그리는 최대 거리 (60m)
 	float  SplitLambda      = 0.75f; // 0 = 균등 분할, 1 = 로그 분할
-	float  CasterExtension  = 50.0f; // 조각 밖(광원 쪽) 캐스터 포함 거리
+	float  CasterExtension  = 5000.0f; // cm: 조각 밖(광원 쪽) 캐스터 포함 거리
 	int32  DepthBias        = 1000;  // 래스터라이저 고정 바이어스 (D32 단위)
 	float  SlopeBias        = 2.0f;
 	float  NormalOffset     = 1.5f;  // 텍셀 크기 배수만큼 법선 방향으로 조회 위치를 민다

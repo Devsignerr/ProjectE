@@ -121,6 +121,20 @@ bool FLog::SetFileOutput(const std::filesystem::path& Path)
 	return GLogFile.is_open();
 }
 
+void FLog::WriteEmergency(std::string_view Text)
+{
+	const std::string Copy(Text);
+	std::fflush(stdout);
+	std::fputs(Copy.c_str(), stderr);
+	std::fflush(stderr);
+	OutputDebugStringA(Copy.c_str());
+	if (GLogFile.is_open())
+	{
+		GLogFile << Copy;
+		GLogFile.flush();
+	}
+}
+
 void FLog::Write(const FLogCategory& Category, ELogVerbosity Verbosity, std::string_view Message)
 {
 	SYSTEMTIME Time;

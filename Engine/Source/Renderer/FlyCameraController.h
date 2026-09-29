@@ -15,7 +15,7 @@ public:
 	// 외부에서 카메라 회전을 바꿨을 때 내부 Yaw/Pitch를 다시 맞춘다
 	void SyncFromCamera(const FCamera& Camera);
 
-	float MoveSpeed            = 5.0f;  // 단위/초
+	float MoveSpeed            = 500.0f; // cm/초
 	float FastMultiplier       = 4.0f;
 	float LookSensitivity      = 0.15f; // 도/픽셀
 	float MaxPitchDegrees      = 89.0f;

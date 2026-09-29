@@ -35,6 +35,6 @@ private:
 	FQuat    Rotation;
 	float    FovYDegrees = 60.0f;
 	float    AspectRatio = 16.0f / 9.0f;
-	float    NearZ       = 0.1f;
-	float    FarZ        = 1000.0f;
+	float    NearZ       = 10.0f;     // cm
+	float    FarZ        = 100000.0f; // cm
 };

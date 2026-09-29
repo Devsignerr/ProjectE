@@ -114,9 +114,9 @@ bool FEditorApplication::OnInit()
 		E_LOG(LogEditor, Warning, "셰이더 디렉터리 감시를 시작하지 못했습니다. Ctrl+R로 수동 다시 로드만 가능합니다");
 	}
 
-	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
-	Camera.SetPosition(FVector3(-6.0f, -4.0f, 3.0f));
-	Camera.LookAt(FVector3(0.0f, 0.0f, 0.8f));
+	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
+	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
+	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
 
 	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일");
 	return true;
@@ -224,7 +224,7 @@ void FEditorApplication::NewScene()
 
 	// 빈 씬에도 기본 조명은 둔다
 	const FEntity Sun = Scene.CreateEntity("Sun");
-	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
+	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 500.0f);
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun).Intensity = 3.0f;
 	Scene.UpdateTransforms();
@@ -316,7 +316,7 @@ void FEditorApplication::BuildDefaultScene()
 	CurrentScenePath.clear();
 
 	const FEntity Sun = Scene.CreateEntity("Sun");
-	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
+	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 500.0f);
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
@@ -324,7 +324,7 @@ void FEditorApplication::BuildDefaultScene()
 
 	// 바닥: 내장 큐브 + 체커 머티리얼 에셋 (에셋 참조로 기록되어 저장/로드 가능)
 	const FEntity Ground = Scene.CreateEntity("Ground");
-	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -0.1f);
+	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -10.0f);
 	Scene.GetTransform(Ground).Scale    = FVector3(20.0f, 20.0f, 0.2f);
 	FStaticMeshComponent& GroundMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Ground);
 	GroundMesh.MeshAsset     = "primitive:cube";
@@ -332,7 +332,7 @@ void FEditorApplication::BuildDefaultScene()
 
 	// 모델: 루트 엔티티 + 에셋 경로 (자식은 Resolve에서 생성)
 	const FEntity Helmet = Scene.CreateEntity("DamagedHelmet");
-	Scene.GetTransform(Helmet).Position = FVector3(0.0f, 0.0f, 1.2f);
+	Scene.GetTransform(Helmet).Position = FVector3(0.0f, 0.0f, 120.0f);
 	Scene.GetRegistry().Emplace<FModelComponent>(Helmet).AssetPath = "DamagedHelmet.glb";
 
 	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);

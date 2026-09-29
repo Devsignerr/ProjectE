@@ -71,7 +71,11 @@ struct FGltfLoader
 {
 	static bool Load(const std::filesystem::path& Path, FModelData& OutModel);
 
+	// 축 변환만 한다 (방향 벡터에도 사용). 위치/이동은 ImportScale을 곱해 엔진 단위(cm)로 바꾼다
 	static FVector3   ConvertPosition(const FVector3& Gltf) { return { -Gltf.Z, Gltf.X, Gltf.Y }; }
+
+	// glTF는 미터 → 엔진 센티미터
+	static constexpr float ImportScale = FUnits::MetersToUnits;
 	static FVector3   ConvertScale(const FVector3& Gltf) { return { Gltf.Z, Gltf.X, Gltf.Y }; }
 	static FQuat      ConvertRotation(const FQuat& Gltf);
 	// 탄젠트: xyz는 위치처럼 변환, 반사로 Cross(N, T)의 방향이 뒤집히므로 바이탄젠트 부호 w를 반전한다

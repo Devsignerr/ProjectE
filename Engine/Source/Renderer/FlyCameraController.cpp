@@ -19,7 +19,7 @@ void FFlyCameraController::Update(FCamera& Camera, const FInput& Input, float De
 	const float Wheel = Input.GetMouseWheelDelta();
 	if (Wheel != 0.0f)
 	{
-		MoveSpeed = FMath::Clamp(MoveSpeed * std::pow(1.2f, Wheel), 0.1f, 500.0f);
+		MoveSpeed = FMath::Clamp(MoveSpeed * std::pow(1.2f, Wheel), 10.0f, 50000.0f);
 	}
 
 	// 회전: 화면 아래로 드래그하면 Pitch 감소(아래를 봄)

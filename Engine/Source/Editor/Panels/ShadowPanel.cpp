@@ -25,9 +25,9 @@ void FShadowPanel::Draw(FEditorContext& Context)
 		{
 			Settings.Resolution = 512u << ResolutionIndex;
 		}
-		ImGui::SliderFloat("최대 거리", &Settings.ShadowDistance, 1.0f, 200.0f);
+		ImGui::SliderFloat("최대 거리 (cm)", &Settings.ShadowDistance, 100.0f, 20000.0f);
 		ImGui::SliderFloat("로그 분할 비중", &Settings.SplitLambda, 0.0f, 1.0f);
-		ImGui::SliderFloat("캐스터 확장 거리", &Settings.CasterExtension, 0.0f, 200.0f);
+		ImGui::SliderFloat("캐스터 확장 거리 (cm)", &Settings.CasterExtension, 0.0f, 20000.0f);
 		ImGui::SliderInt("깊이 바이어스", &Settings.DepthBias, 0, 10000);
 		ImGui::SliderFloat("경사 바이어스", &Settings.SlopeBias, 0.0f, 10.0f);
 		ImGui::SliderFloat("노멀 오프셋", &Settings.NormalOffset, 0.0f, 5.0f);

@@ -179,7 +179,7 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	FMeshHandle Handle;
 	if (Key == "cube")
 	{
-		Handle = CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Primitive_Cube");
+		Handle = CreateMesh(FPrimitiveShapes::MakeCube(FUnits::MetersToUnits), L"Primitive_Cube") /* 1m 큐브 */;
 	}
 	else
 	{

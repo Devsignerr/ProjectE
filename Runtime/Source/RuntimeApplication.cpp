@@ -84,9 +84,9 @@ bool FRuntimeApplication::OnInit()
 		BuildPlaceholderScene();
 	}
 
-	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 0.1f, 1000.0f);
-	Camera.SetPosition(FVector3(-6.0f, -4.0f, 3.0f));
-	Camera.LookAt(FVector3(0.0f, 0.0f, 0.5f));
+	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
+	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
+	Camera.LookAt(FVector3(0.0f, 0.0f, 50.0f));
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
@@ -135,13 +135,13 @@ void FRuntimeApplication::OnShutdown()
 void FRuntimeApplication::BuildPlaceholderScene()
 {
 	const FEntity Sun = Scene.CreateEntity("Sun");
-	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 5.0f);
+	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 500.0f);
 	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-50.0f, 30.0f, 0.0f);
 	FDirectionalLightComponent& SunLight = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	SunLight.Color     = FVector3(1.0f, 0.96f, 0.9f);
 	SunLight.Intensity = 3.0f;
 
-	const FMeshHandle CubeMesh = Resources.CreateMesh(FPrimitiveShapes::MakeCube(1.0f), L"Cube");
+	const FMeshHandle CubeMesh = Resources.CreateMesh(FPrimitiveShapes::MakeCube(FUnits::MetersToUnits), L"Cube");
 
 	FMaterial GroundMaterial;
 	GroundMaterial.Name                    = "Ground";
@@ -149,7 +149,7 @@ void FRuntimeApplication::BuildPlaceholderScene()
 	GroundMaterial.Constants.Roughness       = 0.8f;
 
 	const FEntity Ground = Scene.CreateEntity("Ground");
-	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -0.1f);
+	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -10.0f);
 	Scene.GetTransform(Ground).Scale    = FVector3(20.0f, 20.0f, 0.2f);
 	FStaticMeshComponent& GroundMesh = Scene.GetRegistry().Emplace<FStaticMeshComponent>(Ground);
 	GroundMesh.Mesh     = CubeMesh;

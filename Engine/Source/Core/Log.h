@@ -54,6 +54,9 @@ public:
 	// 모든 로그를 파일에도 기록 (자동 검증/GUI 앱 진단용). 빈 경로면 끈다. 실패 시 false
 	static bool SetFileOutput(const std::filesystem::path& Path);
 
+	// 크래시 경로 전용: 잠금 없이(best-effort) stderr·디버거·로그 파일에 그대로 쓴다
+	static void WriteEmergency(std::string_view Text);
+
 	static bool ShouldLog(const FLogCategory& Category, ELogVerbosity Verbosity);
 
 	// 콘솔과 디버거 출력 창에 기록. Fatal이면 중단.

@@ -30,7 +30,7 @@ void RegisterSceneTypes()
 
 	// WorldMatrix는 파생 값이므로 등록하지 않는다 (직렬화 제외)
 	Registry.RegisterType<FTransformComponent>("TransformComponent", "트랜스폼")
-		.Property(&FTransformComponent::Position, "Position", "위치")
+		.Property(&FTransformComponent::Position, "Position", "위치").Range(-1.0e7f, 1.0e7f, 1.0f) // cm
 		.Property(&FTransformComponent::Rotation, "Rotation", "회전")
 		.Property(&FTransformComponent::Scale, "Scale", "스케일").Range(0.001f, 1000.0f, 0.02f)
 		.AsComponent(false);

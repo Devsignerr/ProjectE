@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
+#include "RHI/ShaderLibrary.h"
 
 #include <vector>
 
@@ -32,6 +33,7 @@ public:
 private:
 	ID3D12Device*        Device = nullptr; // 소유하지 않음 (FD3D12Device가 수명 관리)
 	FD3D12ShaderCompiler ShaderCompiler;
+	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선 사용
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
 };

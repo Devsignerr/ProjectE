@@ -23,3 +23,6 @@ Saved/
 
 # 프로젝트 런타임 생성물
 Projects/*/Saved/
+
+# 쿠킹 산출물
+Engine/Shaders/Cooked/

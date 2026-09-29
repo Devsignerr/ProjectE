@@ -1,0 +1,93 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.9599999785423279,
+            0.8999999761581421
+          ],
+          "Intensity": 1.2000000476837158
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            5.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -0.10000000149011612
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.20000000298023224
+          ]
+        }
+      },
+      "Name": "Ground",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            1.2000000476837158
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "DamagedHelmet",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

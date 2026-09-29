@@ -36,7 +36,7 @@ bool FD3D12MipGenerator::Init(ID3D12Device* InDevice)
 	E_CHECKF(!IsInitialized(), "밉 생성기가 이미 초기화되어 있습니다");
 	Device = InDevice;
 
-	if (!ShaderCompiler.Init())
+	if (!ShaderCompiler.Init() || !ShaderLibrary.Init(ShaderCompiler))
 	{
 		return false;
 	}
@@ -45,7 +45,7 @@ bool FD3D12MipGenerator::Init(ID3D12Device* InDevice)
 	ComputeDesc.FileName   = L"GenerateMips.hlsl";
 	ComputeDesc.EntryPoint = L"CSMain";
 	ComputeDesc.Stage      = EShaderStage::Compute;
-	const ComPtr<IDxcBlob> ComputeShader = ShaderCompiler.Compile(ComputeDesc);
+	const ComPtr<IDxcBlob> ComputeShader = ShaderLibrary.GetShader(ComputeDesc);
 	if (!ComputeShader)
 	{
 		return false;
@@ -76,6 +76,7 @@ void FD3D12MipGenerator::Shutdown()
 {
 	PipelineState.Shutdown();
 	RootSignature.Shutdown();
+	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
 	Device = nullptr;
 }

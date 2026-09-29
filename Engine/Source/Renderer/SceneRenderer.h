@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
+#include "RHI/ShaderLibrary.h"
 #include "Renderer/ShaderTypes.h"
 #include "Scene/ResourceHandles.h"
 
@@ -60,6 +61,7 @@ private:
 	FResourceManager* Resources = nullptr;
 
 	FD3D12ShaderCompiler ShaderCompiler;
+	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
 

@@ -35,6 +35,9 @@ public:
 	// 실패 시 nullptr 반환 (에러 메시지는 로그로 출력)
 	ComPtr<IDxcBlob> Compile(const FShaderCompileDesc& Desc) const;
 
+	// 메모리의 DXIL 바이트를 복사해 블롭으로 만든다 (쿠킹된 셰이더 로드용)
+	ComPtr<IDxcBlob> CreateBlob(const void* Data, size_t SizeInBytes) const;
+
 	// 엔진 셰이더 소스 디렉터리 (빌드 시점에 CMake가 정의; 에셋 파이프라인 도입 전 임시)
 	static std::filesystem::path GetEngineShaderDirectory();
 

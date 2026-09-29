@@ -67,19 +67,23 @@ Engine/Source/
   Core/Testing/   경량 단위 테스트 프레임워크
   Scene/          FScene(계층/트랜스폼 갱신), Components.h(Name/Transform/Hierarchy/StaticMesh/DirectionalLight), ResourceHandles.h
   RHI/D3D12/      디바이스, 커맨드 큐, 디스크립터 힙/할당자, 스왑체인, 깊이 버퍼, 동적 업로드 버퍼,
-                  RHI 파사드, 셰이더 컴파일러(DXC), 루트 시그니처, PSO, 정적 버퍼, 텍스처
+                  RHI 파사드, 셰이더 컴파일러(DXC), 루트 시그니처, PSO, 정적 버퍼, 텍스처, 밉 생성기
+  RHI/ShaderLibrary.h  FShaderLibrary: 셰이더 바이트코드 공급(메모리 캐시 → Engine/Shaders/Cooked DXIL → DXC 컴파일). 셰이더는 항상 이걸로 얻는다
+  RHI/ShaderManifest.h Shaders.json 파싱, 쿠킹 파일명 규칙(<스템>_<Entry>_<Stage>[_<디파인 해시>][.debug].dxil), #include 의존 파일 스캔
   Renderer/       카메라, 플라이 카메라 컨트롤러, 메시 데이터/프리미티브, FStaticMesh, 이미지 로더(stb_image),
                   FResourceManager(메시/텍스처/머티리얼 핸들 소유), FGltfLoader(cgltf)+FModelLoader(씬 배치),
                   FSceneRenderer(수집→컬링→정렬→드로우), ShaderTypes.h (cbuffer와 1:1 대응하는 CPU 구조체)
                   모듈 의존: Renderer → Scene → Core, Renderer → RHI → Core
   Editor/         FImGuiLayer, FEditorApplication, EditorContext, Panels/(Viewport/Hierarchy/Inspector/ContentBrowser)
-Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl). 런타임에 `FPaths::GetEngineShaderDirectory()`에서 로드
+Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl) + Shaders.json(쿠킹 매니페스트 — 새 셰이더/엔트리는 여기 추가). Cooked/는 생성물(git 제외)
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
+Runtime/Source/   ProjectERuntime 게임 런타임 실행 파일 (창 서브시스템, `--project`로 프로젝트 지정)
+Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋). 인자 없이 실행하면 기본으로 열린다
-Tests/            CoreTests, RendererTests (CTest 등록)
+Tests/            CoreTests, RendererTests, RhiTests (CTest 등록)
 CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json
-Scripts/          빌드 스크립트
+Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)
 Build/            CMake 빌드 출력 (git 제외)
 ```
 
@@ -99,7 +103,8 @@ Build/            CMake 빌드 출력 (git 제외)
 .\Scripts\Build.ps1 -Run             # 빌드 후 에디터 실행
 .\Scripts\Build.ps1 -RunSandbox      # 빌드 후 런타임 데모 실행
 .\Scripts\Build.ps1 -Test            # 빌드 후 단위 테스트 (ctest)
-.\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Builds2022\ProjectE.sln)
+.\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Build\vs2022\ProjectE.sln)
+.\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release]  # Release 빌드 → 셰이더 쿠킹 → Build\Package\<프로젝트>\ 스테이징 (Run.bat 포함)
 ```
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).

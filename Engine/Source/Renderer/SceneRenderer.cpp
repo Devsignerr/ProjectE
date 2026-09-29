@@ -33,7 +33,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
-	if (!ShaderCompiler.Init())
+	if (!ShaderCompiler.Init() || !ShaderLibrary.Init(ShaderCompiler))
 	{
 		return false;
 	}
@@ -46,8 +46,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	PixelDesc.EntryPoint         = L"PSMain";
 	PixelDesc.Stage              = EShaderStage::Pixel;
 
-	const ComPtr<IDxcBlob> VertexShader = ShaderCompiler.Compile(VertexDesc);
-	const ComPtr<IDxcBlob> PixelShader  = ShaderCompiler.Compile(PixelDesc);
+	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
+	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
 	if (!VertexShader || !PixelShader)
 	{
 		return false;
@@ -92,6 +92,7 @@ void FSceneRenderer::Shutdown()
 	Rhi->GetGraphicsQueue().Flush();
 	PipelineState.Shutdown();
 	RootSignature.Shutdown();
+	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
 	DrawCommands.clear();
 	Rhi       = nullptr;

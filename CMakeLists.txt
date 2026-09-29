@@ -53,6 +53,8 @@ option(E_BUILD_TESTS "단위 테스트 빌드" ON)
 add_subdirectory(Engine)
 add_subdirectory(Sandbox)
 add_subdirectory(Editor)
+add_subdirectory(Runtime)
+add_subdirectory(Tools)
 
 if(E_BUILD_TESTS)
     enable_testing()

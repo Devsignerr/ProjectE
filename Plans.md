@@ -116,7 +116,8 @@
 - [x] (트랙 J, 서브에이전트) 포스트 프로세싱: 블룸(Jimenez 13탭 다운샘플 + Karis 평균/소프트 니 임계값, 텐트 업샘플 가산, 절반 해상도부터 최대 6단계, `Bloom.hlsl`), 자동 노출(1/4 해상도 로그 휘도 히스토그램 PS UAV → 컴퓨트 평균 + 지수 시간 적응, `AutoExposure.hlsl`), 수동 EV, 톤매핑 연산자, `EBlendMode`(Opaque/Alpha/Additive) PSO 블렌드, 에디터 "포스트 프로세스" 패널, `FPostProcessMath` + 테스트 5개. 비네트/그레인은 미구현
 - [x] (트랙 H, 서브에이전트) PBR 금속/거칠기: Cook-Torrance(GGX, Smith height-correlated, Schlick) + 에너지 보존 Lambert, glTF 텍스처 5종(베이스/금속거칠기/노멀/AO/발광, 발광 강도 확장 포함), 정점 탄젠트(glTF TANGENT 변환 또는 UV로 계산), 머티리얼별 연속 SRV 5칸 디스크립터 테이블(`AllocateRange`), `.emat` PBR 필드(구 형식 호환), 쿠킹 모델 형식 v2, 간이 환경광(하늘/지면 반구 + EnvBRDFApprox, `EvaluateAmbient`) + 테스트 7개
 - [x] 섀도우 맵: 방향광 CSM(최대 4), 3x3 PCF, 텍셀 스냅, 바이어스/거리/해상도 설정 패널. VS Debug/Release 빌드·테스트 및 셰이더 18개 쿠킹 통과. 수학 테스트 3개 추가. GUI 시각 검증은 별도 필요.
-- [~] IBL (절차적 환경 큐브맵, 조도/프리필터/BRDF LUT, 스카이박스) — 병렬 구현 중
+- [x] IBL: `FIblRenderer`가 초기화 때 GPU로 절차적 환경 큐브맵, 조도(E/π), GGX 프리필터 6밉, BRDF LUT를 생성. PBR의 t5~t7/s1에 연결하고 HDR 스카이박스 및 셰이더 핫 리로드 지원. VS Debug/Release 빌드·테스트 3종 및 셰이더 24개 쿠킹 통과, IBL 수학 테스트 6개 추가. 외부 HDR 환경맵 입력은 후속 과제.
+- [ ] Phase 6 실행 검증: 그림자/IBL/스카이박스 화면, 선택 아웃라인·계층 강조, 리사이즈·최소화·포커스 전환, 셰이더 재로드, D3D12 디버그 레이어 및 종료 시 누수 확인 (에디터 실행 승인 후)
 - [ ] 스켈레탈 애니메이션
 
 ## Phase 7 — 게임 시스템

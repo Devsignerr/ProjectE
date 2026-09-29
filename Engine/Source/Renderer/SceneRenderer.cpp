@@ -24,6 +24,7 @@ namespace
 		RootParam_MaterialTexture = 3, // t0~t4 (머티리얼 텍스처 테이블)
 		RootParam_Shadow          = 4, // b3 (캐스케이드 상수)
 		RootParam_ShadowMap       = 5, // t8 (섀도우 맵 배열)
+		RootParam_Ibl             = 6, // t5~t7
 	};
 } // namespace
 
@@ -51,6 +52,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 ShadowMapIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 8) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(ShadowIndex == RootParam_Shadow && ShadowMapIndex == RootParam_ShadowMap);
+	const uint32 IblIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 5) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(IblIndex == RootParam_Ibl);
+	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
 	// s2: 섀도우 비교 샘플러 (하드웨어 2x2 PCF, 범위 밖은 빛 받음)
@@ -73,7 +78,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
-	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary))
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -135,6 +140,11 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 		E_LOG(LogRenderer, Error, "섀도우 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
 	}
+	if (!IblRenderer.ReloadShaders(bForceRecompile))
+	{
+		E_LOG(LogRenderer, Error, "IBL 셰이더 다시 로드 실패: 기존 환경광을 유지합니다");
+		return false;
+	}
 	if (!PostProcessor.ReloadShaders(bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
@@ -155,6 +165,7 @@ void FSceneRenderer::Shutdown()
 	SceneColor.reset();
 	PostProcessor.Shutdown();
 	ShadowRenderer.Shutdown();
+	IblRenderer.Shutdown();
 	PipelineState.Shutdown();
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
@@ -202,6 +213,7 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Output.Width, Output.Height);
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
+	IblRenderer.RenderSkybox(Camera, AmbientIntensity);
 	DrawMeshes(Scene, Camera, PerFrame);
 	SceneColor->End(CommandList);
 
@@ -236,6 +248,7 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAllocation.GpuAddress);
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAllocation.GpuAddress);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_Ibl, IblRenderer.GetLightingTable().Gpu);
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;

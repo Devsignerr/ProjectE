@@ -9,6 +9,7 @@
 #include "Renderer/PostProcess.h"
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/ShadowRenderer.h"
+#include "Renderer/IblRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <memory>
@@ -89,6 +90,7 @@ private:
 	FD3D12PipelineState  PipelineState;
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
+	FIblRenderer         IblRenderer;
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
 

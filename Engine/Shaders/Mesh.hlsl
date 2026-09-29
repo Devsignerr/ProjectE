@@ -65,6 +65,27 @@ cbuffer ShadowConstants : register(b3)
 Texture2DArray<float>  ShadowMap     : register(t8);
 SamplerComparisonState ShadowSampler : register(s2);
 
+// 확산 맵은 irradiance / PI를 저장한다. 금속 반사에는 거칠기별 프리필터와 BRDF LUT를 사용한다.
+TextureCube<float4> IblDiffuse : register(t5);
+TextureCube<float4> IblSpecular : register(t6);
+Texture2D<float2> IblBrdf : register(t7);
+SamplerState IblSampler : register(s1);
+
+float3 EvaluateImageBasedLighting(FSurface Surface)
+{
+	const float NdotV = max(saturate(dot(Surface.N, Surface.V)), 1.0e-4f);
+	const float3 F0 = GetF0(Surface);
+	const float3 F = F0 + (max(1.0f - Surface.Roughness, F0) - F0) * pow(1.0f - NdotV, 5.0f);
+	const float3 Diffuse = IblDiffuse.SampleLevel(IblSampler, Surface.N, 0).rgb * Surface.Albedo;
+	uint Width, Height, MipCount;
+	IblSpecular.GetDimensions(0, Width, Height, MipCount);
+	const float3 R = reflect(-Surface.V, Surface.N);
+	const float3 Prefiltered = IblSpecular.SampleLevel(IblSampler, R, Surface.Roughness * (MipCount - 1)).rgb;
+	const float2 Brdf = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Surface.Roughness), 0);
+	const float3 Specular = Prefiltered * (F0 * Brdf.x + Brdf.y);
+	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse + Specular) * Surface.Occlusion * AmbientIntensity;
+}
+
 uint SelectCascade(float3 WorldPosition)
 {
 	const float ViewDepth = dot(WorldPosition - CameraPosition, ShadowCameraForward);
@@ -200,7 +221,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	const float Shadow = ComputeShadow(Input.WorldPosition, normalize(Input.WorldNormal), L);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
-	Color += EvaluateAmbient(Surface, SkyColor, GroundColor, AmbientIntensity);
+	Color += EvaluateImageBasedLighting(Surface);
 	Color += Emissive;
 
 	if (VisualizeCascades != 0)

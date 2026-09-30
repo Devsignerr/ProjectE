@@ -364,6 +364,34 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [ ] 디자이너 편집 창 (팔레트, 계층, 캔버스 배치, 속성)
 - [ ] 검증
 
+## Phase 18 — AI: 비헤이비어 트리 + 내비게이션 (2026-09-30, 사용자 요청: 언리얼 비헤이비어 트리처럼)
+
+**DoD**: 에디터의 노드 그래프 편집 창에서 비헤이비어 트리(컴포지트/데코레이터/서비스/태스크)와 블랙보드 키를 편집해 `.ebt`로 저장하고, 엔티티에 `FBehaviorTreeComponent`를 달면 플레이/런타임에서 실행된다. 블랙보드 값이 바뀌면 조건 데코레이터가 실행 중인 가지를 중단(abort)한다. Recast로 구운 내비메시 위에서 `MoveTo`가 장애물을 돌아 목표까지 이동한다. 노드는 C++(엔진/게임 모듈)과 Lua 스크립트 둘 다로 만들 수 있다. 플레이 중에는 편집 창에 실행 중인 노드가 강조되고, 뷰포트에 내비메시/경로 디버그 표시를 켤 수 있다.
+
+결정 (2026-09-30):
+- 길찾기: **Recast/Detour 도입** (`ThirdParty.cmake`에 커밋 고정, `ThirdParty::recast`). Recast 헤더는 AI 모듈 내부 .cpp에서만 포함한다. 좌표·단위 변환은 `FNavMesh` 경계에서만 한다(엔진 Z-up 왼손 ↔ Recast Y-up: 축을 바꾸면 반사가 생기므로 삼각형 인덱스 순서도 함께 뒤집는다. 변환 규칙은 테스트로 고정)
+- 그래프 편집기: **외부 라이브러리 사용** (에디터 전용). 1순위는 `imgui-node-editor`(thedmd)이고, 현재 ImGui 1.93 WIP(docking)와 호환되지 않으면 `imnodes`로 대체한다. 착수할 때 호환성부터 시험한다
+- 노드 작성: **C++과 Lua 둘 다 지원**. C++ 노드는 `FBehaviorTreeNodeRegistry`에 등록한다(엔진 기본 노드 + 게임 모듈 `OnLoad`). Lua 노드는 스크립트 에셋이 `Properties` + `OnExecute/OnTick(dt)/OnAbort`(태스크), `CanExecute`(데코레이터), `OnTick`(서비스)을 정의하고 `"Running"|"Success"|"Failure"`를 반환한다. 노드 파라미터는 기존 리플렉션 프로퍼티 타입(`EPropertyType`)으로 기술해 편집 창이 자동으로 그린다
+- **멀티플레이(Phase 17)**: AI는 서버에서만 실행한다(Standalone = 서버). 클라이언트는 결과(트랜스폼 등)를 복제로만 받는다. 블랙보드는 복제하지 않는다
+- 모듈: 새 `AI` 모듈(`EAI`, 엔진 DLL에 포함, 의존 AI → Scene → Core). 컴포넌트는 `RegisterAITypes()`로 등록하고 앱이 씬 로드 전에 호출한다. 실행 상태(노드 인스턴스, 블랙보드 값, Detour 쿼리)는 `FAISystem`이 엔티티별로 가진다(컴포넌트에는 런타임 상태 없음, 물리와 같은 방식)
+- 실행 모델: UE식 이벤트 기반. 매 프레임 루트부터 다시 평가하지 않고 실행 중인 태스크만 틱한다. 데코레이터 중단 모드는 `None/Self/LowerPriority/Both`. 갱신 순서: 스크립트 → 게임 모듈 → **AI** → 물리
+- 블랙보드: 키 정의는 `.ebt` 안에 둔다(UE의 별도 블랙보드 에셋은 필요할 때 확장). 키 타입은 Bool/Int/Float/Vector/Entity/String
+- 이동: `MoveTo`는 Detour 경로를 따라 이동한다. 강체가 있으면 속도를 설정하고, 없으면 트랜스폼을 직접 옮긴다. 무리 회피(DetourCrowd)는 후속 과제
+- 내비메시 굽기: 에디터에서 씬의 정적 메시/정적 콜라이더를 모아 굽고 `<씬>.enav`(씬 옆, 원본 데이터)로 저장한다. 설정(에이전트 반경/높이/경사/계단)은 씬의 `FNavMeshSettingsComponent`에 둔다. 런타임은 씬을 로드할 때 `.enav`를 읽는다(패키징에 포함)
+
+- [ ] 1. 외부 라이브러리 도입 시험: Recast/Detour와 그래프 편집기 라이브러리를 `ThirdParty.cmake`에 추가하고 `/W4 /WX` 격리, ImGui 1.93 WIP 호환 확인 — 완료 기준: 두 라이브러리 링크 성공, 빈 노드 편집기 창이 뜬다
+- [ ] 2. BT 핵심(순수 로직 + 테스트): 에셋 모델 `FBehaviorTreeAsset`(JSON), 블랙보드, 실행기(Selector/Sequence/Parallel(단순), 데코레이터 Blackboard/Cooldown/Loop/TimeLimit/Inverter/ForceSuccess, 서비스, 태스크 Wait/SetBlackboard/Log), 중단 규칙, `FBehaviorTreeNodeRegistry` — 완료 기준: `AITests`에서 가짜 노드로 실행 순서·중단·블랙보드 관찰 검증
+- [ ] 3. 내비게이션(순수 로직 + 테스트): `FNavMesh`(Recast 굽기 + Detour 경로 쿼리, 좌표 변환), `.enav` 저장/로드 — 완료 기준: 바닥 + 장애물 지오메트리에서 경로가 장애물을 돌아가는지, 좌표 변환 왕복 테스트
+- [ ] 4. 씬 연동: `FBehaviorTreeComponent`/`FNavMeshSettingsComponent` 리플렉션 등록, `FAISystem`(시작/갱신/정지, 에셋 핫 리로드), `MoveTo`/`RotateTo`/`PlayAnimation` 태스크, 플레이 모드·런타임 갱신 순서에 넣기 (Phase 17의 `FGameWorld`가 먼저 들어가 있으면 거기에 넣는다)
+- [ ] 5. Lua: Lua 태스크/데코레이터/서비스 노드, `entity:GetBlackboard()`(`Get/Set`), `AI.FindPath`, `AI.MoveTo` — 완료 기준: `ScriptingTests`에 Lua 노드 실행 케이스
+- [ ] 6. 게임 모듈 C++ API: C++ 노드 등록, 언로드할 때 모듈이 등록한 노드 제거 (`GameModuleApiVersion`은 Phase 17과 머지 순서에 맞춰 올린다)
+- [ ] 7. 에디터: BT 편집 창(`FAssetEditor` 상속, `.ebt` 등록, 노드 팔레트/연결/순서, 블랙보드 키 패널, 노드 속성), 콘텐츠 브라우저 "새 비헤이비어 트리", 플레이 중 실행 노드 강조(선택 엔티티 기준)
+- [ ] 8. 에디터 내비메시: 굽기 명령(도구 메뉴), 뷰포트 내비메시·경로 디버그 표시 토글
+- [ ] 9. 검증: 샘플 `Demo_AI.escene`(순찰 → 플레이어 발견 → 추적 → 놓치면 복귀, 장애물 우회), Verify 스크린샷, 디버그 레이어 오류 0건
+- [ ] 실행 검증 (사용자 확인)
+
+병렬 트랙: 2(BT 핵심)와 3(내비게이션)은 서로 독립이라 worktree 두 개로 동시에 진행할 수 있다. Phase 16(인게임 UI)과도 독립적이다. 충돌 지점은 `AssetEditorManager` 확장자 등록, 콘텐츠 브라우저 새 에셋 메뉴, `SceneReflection`/Lua 바인딩 추가, `ThirdParty.cmake`, 기본 창 배치, `Plans.md`/`CLAUDE.md`이며 모두 끝에 추가하는 변경이다. 단, 단계 4는 Phase 17 단계 2(`FGameWorld` 갱신 순서 통합)와 같은 코드를 건드리므로 둘 중 먼저 끝난 쪽에 맞춘다.
+
 ## 픽셀 아트 렌더링 (2026-09-30, 사용자 요청: "모자이크가 아니라 진짜 도트 게임처럼")
 
 **DoD**: 씬에 픽셀 아트 설정 컴포넌트를 두면 씬이 (출력 ÷ PixelSize) 해상도로 렌더되고, 정수 배율 최근접 확대로 화면에 표시된다. 직교 카메라가 움직여도 도트가 반짝이지 않고(텍셀 스냅) 움직임은 부드럽다(서브픽셀 보정). 1px 외곽선/모서리 하이라이트와 팔레트 양자화 + 디더링을 켤 수 있다. 에디터/런타임 모두 적용, 설정은 씬에 저장된다.

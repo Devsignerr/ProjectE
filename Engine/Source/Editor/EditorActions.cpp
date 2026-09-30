@@ -95,9 +95,9 @@ std::vector<std::filesystem::path> FEditorActions::CreatePrefabs(FEditorContext&
 
 FEntity FEditorActions::InstantiatePrefab(FEditorContext& Context, const std::filesystem::path& Path, FEntity Parent)
 {
-	std::string   Error;
+	std::string     Error;
 	FPrefabLibrary& Library = FPrefabLibrary::Get();
-	const FEntity Root    = Library.Instantiate(*Context.Scene, Library.MakeAssetPath(Path), Parent, &Error);
+	const FEntity   Root    = Library.Instantiate(*Context.Scene, Library.MakeAssetPath(Path), Parent, &Error);
 	if (!Root.IsValid())
 	{
 		if (Context.Notify)

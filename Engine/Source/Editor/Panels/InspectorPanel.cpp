@@ -182,7 +182,6 @@ void FInspectorPanel::DrawPrefabHeader(FEditorContext& Context, FEntity Entity)
 		PendingPrefabAction = EPrefabAction::RevertAll;
 	}
 	ImGui::SetItemTooltip("인스턴스에서 바꾼 값, 추가/삭제한 컴포넌트와 엔티티를 모두 원본대로 되돌립니다");
-	ImGui::SameLine();
 	if (ImGui::SmallButton(ICON_FA_UPLOAD " 원본에 적용"))
 	{
 		PendingPrefabAction = EPrefabAction::Apply;
@@ -195,7 +194,8 @@ void FInspectorPanel::DrawPrefabHeader(FEditorContext& Context, FEntity Entity)
 	}
 	ImGui::SetItemTooltip("원본과의 연결을 끊고 일반 엔티티로 만듭니다");
 	ImGui::EndDisabled();
-	ImGui::TextDisabled("오버라이드 %zu개 (하늘색 막대 = 원본과 다른 값, 우클릭으로 되돌리기)", OverrideCount);
+	ImGui::TextDisabled("오버라이드 %zu개", OverrideCount);
+	ImGui::SetItemTooltip("왼쪽 하늘색 막대가 있는 값이 원본과 다른 값입니다. 우클릭하면 원본 값으로 되돌립니다");
 
 	// 이 엔티티에서 제거한 원본 컴포넌트 (다시 추가하려면 되돌리기)
 	if (const auto Found = PrefabView.Overrides.Entities.find(PrefabView.Id); Found != PrefabView.Overrides.Entities.end())

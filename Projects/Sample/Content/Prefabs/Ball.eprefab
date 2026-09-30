@@ -1,0 +1,30 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "ScriptComponent": {
+          "PropertyOverrides": "{\"Lifetime\":4.0,\"FloorZ\":15.0}",
+          "ScriptAsset": "Scripts/Faller.lua"
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.3, 0.3, 0.3]
+        }
+      },
+      "Name": "Ball",
+      "Parent": -1
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

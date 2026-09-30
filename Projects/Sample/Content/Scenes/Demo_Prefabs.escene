@@ -1,0 +1,128 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 500.0],
+          "Rotation": [-0.10938165336847305, 0.4082179069519043, 0.23456971347332, 0.8754260540008545],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DirectionalLightComponent": {
+          "Color": [1.0, 0.96, 0.9],
+          "Intensity": 3.0
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, -10.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [20.0, 20.0, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Lamp A",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-150.0, -200.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Lamp.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 2
+        }
+      }
+    },
+    {
+      "Name": "Lamp B",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-150.0, 200.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Lamp.eprefab",
+          "Overrides": "{\"Entities\":{\"3\":{\"Properties\":[\"NameComponent.Name\",\"TransformComponent.Scale\"]}}}"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 3
+        }
+      }
+    },
+    {
+      "Name": "Big Bulb",
+      "Parent": 3,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 165.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.8, 0.8, 0.8]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": 3
+        }
+      }
+    },
+    {
+      "Name": "LampPost",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [150.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/LampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 5
+        }
+      }
+    },
+    {
+      "Name": "PrefabSpawner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 250.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/PrefabSpawner.lua",
+          "PropertyOverrides": "{\"Interval\":0.35,\"Prefab\":{\"Asset\":\"Prefabs/Ball.eprefab\"}}"
+        }
+      }
+    }
+  ]
+}

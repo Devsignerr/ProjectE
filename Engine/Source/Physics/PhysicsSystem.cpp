@@ -281,7 +281,7 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 
 void FPhysicsSystem::WriteDynamicTransforms(FScene& Scene)
 {
-	const float Alpha = Stepper.GetAlpha();
+	const float Alpha = bInterpolate ? Stepper.GetAlpha() : 1.0f;
 	for (auto& [Entity, State] : Bodies)
 	{
 		if (State.Motion != EPhysicsMotionType::Dynamic)

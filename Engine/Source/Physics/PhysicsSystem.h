@@ -41,6 +41,10 @@ public:
 	// 반환: 이번 프레임 진행한 고정 스텝 수
 	uint32 Update(FScene& Scene, float DeltaSeconds);
 
+	// 동적 바디 트랜스폼을 렌더 보간(직전↔현재 스텝)할지. 끄면 최신 스텝 결과를 그대로 쓴다 (서버: 복제할 값에 보간이 섞이지 않게)
+	void SetInterpolation(bool bEnabled) { bInterpolate = bEnabled; }
+	bool IsInterpolating() const { return bInterpolate; }
+
 	// ---- 게임플레이 API (cm, kg). 바디가 없는 엔티티는 무시 / false
 	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const;
 	void     AddForce(FEntity Entity, const FVector3& Force);
@@ -77,4 +81,5 @@ private:
 	std::unordered_map<FEntity, FBodyState>   Bodies;
 	FFixedStepper                             Stepper;
 	uint64                                    FrameCounter = 0;
+	bool                                      bInterpolate = true;
 };

@@ -242,3 +242,72 @@ add_library(ThirdParty::ufbx ALIAS ufbx)
 target_include_directories(ufbx SYSTEM PUBLIC "${ufbx_header_SOURCE_DIR}")
 target_compile_options(ufbx PRIVATE /W0)
 set_target_properties(ufbx PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- protobuf v21.12 (BSD-3) — GameNetworkingSockets 메시지 직렬화 전용
+# 22 이상은 abseil이 필수라 abseil 없이 빌드되는 마지막 버전으로 고정. 정적 라이브러리 + 동적 CRT(/MD).
+# protoc는 빌드 중 GNS .proto 코드 생성에만 쓴다. 엔진 코드는 protobuf를 직접 쓰지 않는다
+set(protobuf_BUILD_TESTS OFF CACHE INTERNAL "")
+set(protobuf_BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE INTERNAL "")
+set(protobuf_WITH_ZLIB OFF CACHE INTERNAL "")
+set(protobuf_INSTALL ON CACHE INTERNAL "") # 설치는 안 하지만 GNS install(EXPORT)가 libprotobuf의 export 세트를 요구한다
+set(protobuf_BUILD_PROTOC_BINARIES ON CACHE INTERNAL "")
+FetchContent_Declare(protobuf
+    URL      "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.12.tar.gz"
+    URL_HASH SHA256=22fdaf641b31655d4b2297f9981fa5203b2866f8332d3c6333f6b0107bb320de
+    OVERRIDE_FIND_PACKAGE) # GNS의 find_package(Protobuf)가 이 소스 빌드를 찾게 한다
+FetchContent_MakeAvailable(protobuf)
+foreach(_Target libprotobuf libprotobuf-lite libprotoc protoc)
+    target_compile_options(${_Target} PRIVATE /W0)
+    set_target_properties(${_Target} PROPERTIES FOLDER "ThirdParty/protobuf")
+endforeach()
+
+# find_package 리디렉트 스텁이 포함하는 추가 파일: 설치형 protobuf 설정 파일이 주던 protobuf_generate_cpp를 소스 빌드 protoc로 제공
+file(WRITE "${CMAKE_FIND_PACKAGE_REDIRECTS_DIR}/protobuf-extra.cmake" [=[
+function(protobuf_generate_cpp OutSources OutHeaders)
+    set(_Sources)
+    set(_Headers)
+    foreach(_Proto ${ARGN})
+        get_filename_component(_Absolute "${_Proto}" ABSOLUTE)
+        get_filename_component(_Directory "${_Absolute}" DIRECTORY)
+        get_filename_component(_Name "${_Absolute}" NAME_WE)
+        set(_Source "${CMAKE_CURRENT_BINARY_DIR}/${_Name}.pb.cc")
+        set(_Header "${CMAKE_CURRENT_BINARY_DIR}/${_Name}.pb.h")
+        add_custom_command(
+            OUTPUT "${_Source}" "${_Header}"
+            COMMAND protoc --cpp_out "${CMAKE_CURRENT_BINARY_DIR}" -I "${_Directory}" "${_Absolute}"
+            DEPENDS "${_Absolute}" protoc
+            COMMENT "protoc ${_Name}.proto"
+            VERBATIM)
+        list(APPEND _Sources "${_Source}")
+        list(APPEND _Headers "${_Header}")
+    endforeach()
+    set(${OutSources} ${_Sources} PARENT_SCOPE)
+    set(${OutHeaders} ${_Headers} PARENT_SCOPE)
+endfunction()
+]=])
+
+# ---------------------------------------------------------------- GameNetworkingSockets v1.6.0 (BSD-3) — 멀티플레이 전송 계층 (신뢰/비신뢰 메시지, 암호화)
+# 정적 라이브러리, 암호화는 Windows BCrypt(OpenSSL 불필요), ICE(NAT 통과 P2P)는 끔 — LAN/전용 서버만 쓴다.
+# 사용자 코드는 STEAMNETWORKINGSOCKETS_STATIC_LINK 정의가 필요하며 GNS 타깃이 INTERFACE로 전파한다.
+# GNS는 C 소스(ed25519-donna)가 있고 c_std_99를 PUBLIC 기능으로 전파하므로 프로젝트 전체에 C 언어를 켠다
+enable_language(C)
+foreach(_Option BUILD_SHARED_LIB BUILD_EXAMPLES BUILD_TESTS BUILD_TOOLS LTO ENABLE_ICE USE_STEAMWEBRTC)
+    set(${_Option} OFF CACHE INTERNAL "")
+endforeach()
+set(BUILD_STATIC_LIB ON CACHE INTERNAL "")
+set(Protobuf_USE_STATIC_LIBS ON CACHE INTERNAL "")
+set(USE_CRYPTO "BCrypt" CACHE INTERNAL "")
+FetchContent_Declare(gamenetworkingsockets
+    URL      "https://github.com/ValveSoftware/GameNetworkingSockets/archive/refs/tags/v1.6.0.tar.gz"
+    URL_HASH SHA256=bddfe735d29ff2bbf186013a945ed57caaf4b79893eb7918c06c0f64955016f3)
+FetchContent_MakeAvailable(gamenetworkingsockets)
+
+# 전역 WIN32_LEAN_AND_MEAN은 GNS가 쓰는 timeBeginPeriod(mmsystem)를 빼 버리므로 GNS 디렉터리에서만 제거
+get_property(_GnsDefinitions DIRECTORY "${gamenetworkingsockets_SOURCE_DIR}/src" PROPERTY COMPILE_DEFINITIONS)
+list(REMOVE_ITEM _GnsDefinitions WIN32_LEAN_AND_MEAN)
+set_property(DIRECTORY "${gamenetworkingsockets_SOURCE_DIR}/src" PROPERTY COMPILE_DEFINITIONS ${_GnsDefinitions})
+
+add_library(ThirdParty::gns ALIAS GameNetworkingSockets_s)
+target_compile_options(GameNetworkingSockets_s PRIVATE /W0)
+set_target_properties(GameNetworkingSockets_s PROPERTIES FOLDER "ThirdParty")

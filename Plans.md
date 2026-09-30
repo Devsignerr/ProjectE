@@ -336,10 +336,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - 틱: 서버 시뮬레이션 60Hz, 전송 30Hz(설정). 클라이언트는 약 100ms 뒤 스냅샷 보간
 - 입력: 클라이언트가 틱마다 입력 커맨드 전송. 서버에서 Lua `Input`은 해당 엔티티 소유 플레이어의 입력을 돌려준다
 
-- [ ] 1. GNS 도입 시험: `ThirdParty.cmake`(GNS + protobuf, BCrypt), `/W4 /WX` 격리, 첫 빌드 시간 측정 — 완료 기준: localhost 에코 테스트 통과
-- [ ] 2. 공용 월드 틱 `FGameWorld`: 씬 + 스크립트/게임 모듈/물리/애니메이션/파티클 갱신 순서를 하나로(현재 `RuntimeApplication.cpp`와 `PlayMode.cpp`+`EditorApplication.cpp`에 중복), 물리에 "보간 없이 최신 스텝 값 쓰기" 옵션 — 완료 기준: 기존 테스트 전부 통과, Verify(Editor/Runtime) 스크린샷 동일
-- [ ] 3. 창 없는 실행: `FApplicationDesc::bHeadless`(창·RHI 없이 고정 틱 루프) + `Server/Source/` → `ProjectEServer.exe`(`--project --scene --port`) — 완료 기준: 씬 로드 후 `--exit-after` 틱 수만큼 돌고 정상 종료
-- [ ] 4. Network 모듈 기반(`ENetwork`, 엔진 DLL 포함): 전송 계층 인터페이스, 넷 모드, 연결 수립(엔진·프로젝트 버전·씬 확인), 신뢰/비신뢰 채널, `FNetDriver`, 인자 `--host`/`--connect ip:port`
+- [x] 1. GNS 도입 시험 (2026-09-30): GNS v1.6.0 정적(BCrypt, ICE 끔) + protobuf v21.12(abseil 비의존 마지막 버전, `OVERRIDE_FIND_PACKAGE` + 리디렉트 `protobuf-extra.cmake`로 `protobuf_generate_cpp` 제공), 서드파티는 `/W0`(엔진 `/WX`와 격리), GNS 디렉터리만 `WIN32_LEAN_AND_MEAN` 제거, 프로젝트에 C 언어 활성화. `Tests/NetworkTests` `Gns_LocalhostEcho` 통과(Debug/Release). Release 전체 빌드 163초(엔진 재빌드 포함). 주의: GNS 리슨 소켓은 포트 0(자동 할당)을 받지 않는다
+- [x] 2. 공용 월드 틱 (2026-09-30): 새 `World` 모듈 `FGameWorld`(엔진 DLL) — `BeginPlay/EndPlay`, `TickGameplay`(스크립트 → 에셋 해석 → 게임 모듈 → 물리 → 트랜스폼), `TickPresentation`(애니메이션 → 트랜스폼 → 파티클, 에디터는 편집 중에도), 스크립트 물리 훅 연결도 한곳으로. 런타임/`FPlayMode`/에디터가 사용(중복 제거). `FPhysicsSystem::SetInterpolation(false)` = 최신 스텝 값. 테스트 `GameWorld_LifecycleAndPhysicsHooks`, `Physics_InterpolationCanBeDisabled`, 전체 9묶음 통과, Verify 4건(런타임 물리/애니메이션, 에디터 플레이/파티클) 오류 0건·화면 동일
+- [x] 3. 창 없는 실행 (2026-09-30): `FApplicationDesc::bHeadless`(창 없이 고해상도 대기 타이머로 고정 간격 틱, `--exit-after`는 틱 수, 콘솔 Ctrl+C → `RequestExit`) + `Server/` → `ProjectEServer.exe`(콘솔, `--project --scene`, `FGameWorld` + 물리 보간 끔, Resources 없음). 180틱 = 3.00초(60Hz), 데모 씬 8개 오류 0건, 런타임/에디터 Verify 오류 0건. `--port`는 4단계에서 추가. 알려진 제한: 서버는 GPU 리소스가 없어 에셋 해석을 안 하므로 모델 하위 노드(뼈대)가 생기지 않는다 → 서버 애니메이션/소켓이 필요해지면 CPU 전용 모델 로드 경로 필요
+- [x] 4. Network 모듈 기반 (2026-09-30): `ENetwork`(엔진 DLL, GNS 헤더는 모듈 .cpp에서만) — `INetTransport`(신뢰/비신뢰 메시지, 이벤트는 Poll로만) + `CreateGnsTransport`/`FLoopbackTransport`(테스트용 메모리), `ENetMode`, 메시지 `[uint8 종류][본문]`(`NetProtocolVersion`), `FNetDriver`(Hello → 프로토콜/엔진 버전·프로젝트·씬 확인 → Welcome(플레이어 ID, 호스트 0·원격 1부터) 또는 Reject 사유 후 끊기, 5초 핸드셰이크 시간 초과, 입장/퇴장 콜백), `FNetLaunchOptions`(`--host`/`--connect ip:port`/`--port`, 기본 7777). 서버·런타임 연결. `NetworkTests` 8개, 종단 검증: 전용 서버 + 런타임 클라이언트 입장/퇴장, 씬 불일치 거부 사유 전달, 리슨 서버 + 클라이언트
 - [ ] 5. 복제 핵심: 리플렉션 바이너리 직렬화(`EntityJson` switch 본뜸), NetId 매핑, 생성/파괴 메시지(프리팹 경로 또는 컴포넌트 스냅샷), 연결별 확인 기준 델타, 클라이언트 보간, 접속 시 `.eproject` `PlayerPrefab` 생성 + 소유권
 - [ ] 6. 물리 복제: 서버만 시뮬레이션, 클라이언트는 복제 엔티티 바디를 키네마틱으로 두고 위치·회전·속도 보간
 - [ ] 7. Lua API: `Net.IsServer/IsClient/LocalPlayerId`, `entity:IsLocallyOwned()`, RPC(`Server_*`/`Client_*`/`Multicast_*` 접두사, `self:CallServer("Name", ...)` 등), `OnPlayerJoined/Left`, 스크립트 실행 위치
@@ -379,6 +379,34 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [ ] 검증: 샘플 씬 `Demo_UI.escene`(HUD + 메뉴 버튼 → 스크립트), 런타임/플레이 스크린샷
 
 후속 과제: SDF 굽기는 Debug 빌드에서 한글 글자당 수십 ms(처음 쓸 때만) — 미리 굽기 목록 또는 백그라운드 굽기. 9-slice 브러시, 텍스트 입력 위젯, 애니메이션(UMG 타임라인), 로컬라이즈, 배포용 한글 글꼴(OFL) 번들
+
+## Phase 18 — AI: 비헤이비어 트리 + 내비게이션 (2026-09-30, 사용자 요청: 언리얼 비헤이비어 트리처럼)
+
+**DoD**: 에디터의 노드 그래프 편집 창에서 비헤이비어 트리(컴포지트/데코레이터/서비스/태스크)와 블랙보드 키를 편집해 `.ebt`로 저장하고, 엔티티에 `FBehaviorTreeComponent`를 달면 플레이/런타임에서 실행된다. 블랙보드 값이 바뀌면 조건 데코레이터가 실행 중인 가지를 중단(abort)한다. Recast로 구운 내비메시 위에서 `MoveTo`가 장애물을 돌아 목표까지 이동한다. 노드는 C++(엔진/게임 모듈)과 Lua 스크립트 둘 다로 만들 수 있다. 플레이 중에는 편집 창에 실행 중인 노드가 강조되고, 뷰포트에 내비메시/경로 디버그 표시를 켤 수 있다.
+
+결정 (2026-09-30):
+- 길찾기: **Recast/Detour 도입** (`ThirdParty.cmake`에 커밋 고정, `ThirdParty::recast`). Recast 헤더는 AI 모듈 내부 .cpp에서만 포함한다. 좌표·단위 변환은 `FNavMesh` 경계에서만 한다(엔진 Z-up 왼손 ↔ Recast Y-up: 축을 바꾸면 반사가 생기므로 삼각형 인덱스 순서도 함께 뒤집는다. 변환 규칙은 테스트로 고정)
+- 그래프 편집기: **외부 라이브러리 사용** (에디터 전용). 1순위는 `imgui-node-editor`(thedmd)이고, 현재 ImGui 1.93 WIP(docking)와 호환되지 않으면 `imnodes`로 대체한다. 착수할 때 호환성부터 시험한다
+- 노드 작성: **C++과 Lua 둘 다 지원**. C++ 노드는 `FBehaviorTreeNodeRegistry`에 등록한다(엔진 기본 노드 + 게임 모듈 `OnLoad`). Lua 노드는 스크립트 에셋이 `Properties` + `OnExecute/OnTick(dt)/OnAbort`(태스크), `CanExecute`(데코레이터), `OnTick`(서비스)을 정의하고 `"Running"|"Success"|"Failure"`를 반환한다. 노드 파라미터는 기존 리플렉션 프로퍼티 타입(`EPropertyType`)으로 기술해 편집 창이 자동으로 그린다
+- **멀티플레이(Phase 17)**: AI는 서버에서만 실행한다(Standalone = 서버). 클라이언트는 결과(트랜스폼 등)를 복제로만 받는다. 블랙보드는 복제하지 않는다
+- 모듈: 새 `AI` 모듈(`EAI`, 엔진 DLL에 포함, 의존 AI → Scene → Core). 컴포넌트는 `RegisterAITypes()`로 등록하고 앱이 씬 로드 전에 호출한다. 실행 상태(노드 인스턴스, 블랙보드 값, Detour 쿼리)는 `FAISystem`이 엔티티별로 가진다(컴포넌트에는 런타임 상태 없음, 물리와 같은 방식)
+- 실행 모델: UE식 이벤트 기반. 매 프레임 루트부터 다시 평가하지 않고 실행 중인 태스크만 틱한다. 데코레이터 중단 모드는 `None/Self/LowerPriority/Both`. 갱신 순서: 스크립트 → 게임 모듈 → **AI** → 물리
+- 블랙보드: 키 정의는 `.ebt` 안에 둔다(UE의 별도 블랙보드 에셋은 필요할 때 확장). 키 타입은 Bool/Int/Float/Vector/Entity/String
+- 이동: `MoveTo`는 Detour 경로를 따라 이동한다. 강체가 있으면 속도를 설정하고, 없으면 트랜스폼을 직접 옮긴다. 무리 회피(DetourCrowd)는 후속 과제
+- 내비메시 굽기: 에디터에서 씬의 정적 메시/정적 콜라이더를 모아 굽고 `<씬>.enav`(씬 옆, 원본 데이터)로 저장한다. 설정(에이전트 반경/높이/경사/계단)은 씬의 `FNavMeshSettingsComponent`에 둔다. 런타임은 씬을 로드할 때 `.enav`를 읽는다(패키징에 포함)
+
+- [ ] 1. 외부 라이브러리 도입 시험: Recast/Detour와 그래프 편집기 라이브러리를 `ThirdParty.cmake`에 추가하고 `/W4 /WX` 격리, ImGui 1.93 WIP 호환 확인 — 완료 기준: 두 라이브러리 링크 성공, 빈 노드 편집기 창이 뜬다
+- [ ] 2. BT 핵심(순수 로직 + 테스트): 에셋 모델 `FBehaviorTreeAsset`(JSON), 블랙보드, 실행기(Selector/Sequence/Parallel(단순), 데코레이터 Blackboard/Cooldown/Loop/TimeLimit/Inverter/ForceSuccess, 서비스, 태스크 Wait/SetBlackboard/Log), 중단 규칙, `FBehaviorTreeNodeRegistry` — 완료 기준: `AITests`에서 가짜 노드로 실행 순서·중단·블랙보드 관찰 검증
+- [ ] 3. 내비게이션(순수 로직 + 테스트): `FNavMesh`(Recast 굽기 + Detour 경로 쿼리, 좌표 변환), `.enav` 저장/로드 — 완료 기준: 바닥 + 장애물 지오메트리에서 경로가 장애물을 돌아가는지, 좌표 변환 왕복 테스트
+- [ ] 4. 씬 연동: `FBehaviorTreeComponent`/`FNavMeshSettingsComponent` 리플렉션 등록, `FAISystem`(시작/갱신/정지, 에셋 핫 리로드), `MoveTo`/`RotateTo`/`PlayAnimation` 태스크, 플레이 모드·런타임 갱신 순서에 넣기 (Phase 17의 `FGameWorld`가 먼저 들어가 있으면 거기에 넣는다)
+- [ ] 5. Lua: Lua 태스크/데코레이터/서비스 노드, `entity:GetBlackboard()`(`Get/Set`), `AI.FindPath`, `AI.MoveTo` — 완료 기준: `ScriptingTests`에 Lua 노드 실행 케이스
+- [ ] 6. 게임 모듈 C++ API: C++ 노드 등록, 언로드할 때 모듈이 등록한 노드 제거 (`GameModuleApiVersion`은 Phase 17과 머지 순서에 맞춰 올린다)
+- [ ] 7. 에디터: BT 편집 창(`FAssetEditor` 상속, `.ebt` 등록, 노드 팔레트/연결/순서, 블랙보드 키 패널, 노드 속성), 콘텐츠 브라우저 "새 비헤이비어 트리", 플레이 중 실행 노드 강조(선택 엔티티 기준)
+- [ ] 8. 에디터 내비메시: 굽기 명령(도구 메뉴), 뷰포트 내비메시·경로 디버그 표시 토글
+- [ ] 9. 검증: 샘플 `Demo_AI.escene`(순찰 → 플레이어 발견 → 추적 → 놓치면 복귀, 장애물 우회), Verify 스크린샷, 디버그 레이어 오류 0건
+- [ ] 실행 검증 (사용자 확인)
+
+병렬 트랙: 2(BT 핵심)와 3(내비게이션)은 서로 독립이라 worktree 두 개로 동시에 진행할 수 있다. Phase 16(인게임 UI)과도 독립적이다. 충돌 지점은 `AssetEditorManager` 확장자 등록, 콘텐츠 브라우저 새 에셋 메뉴, `SceneReflection`/Lua 바인딩 추가, `ThirdParty.cmake`, 기본 창 배치, `Plans.md`/`CLAUDE.md`이며 모두 끝에 추가하는 변경이다. 단, 단계 4는 Phase 17 단계 2(`FGameWorld` 갱신 순서 통합)와 같은 코드를 건드리므로 둘 중 먼저 끝난 쪽에 맞춘다.
 
 ## 픽셀 아트 렌더링 (2026-09-30, 사용자 요청: "모자이크가 아니라 진짜 도트 게임처럼")
 

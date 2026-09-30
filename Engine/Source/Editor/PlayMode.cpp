@@ -2,19 +2,15 @@
 
 #include "Core/Log.h"
 #include "Editor/EditorContext.h"
-#include "Physics/PhysicsSystem.h"
-#include "Renderer/SceneAssetResolver.h"
 #include "Renderer/SceneCamera.h"
-#include "Scene/GameModuleHost.h"
-#include "Scripting/ScriptSystem.h"
+#include "World/GameWorld.h"
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
-void FPlayMode::Init(FScene& InEditScene, FScriptSystem& InScripts, FPhysicsSystem* InPhysics)
+void FPlayMode::Init(FScene& InEditScene, FGameWorld& InWorld)
 {
 	EditScene = &InEditScene;
-	Scripts   = &InScripts;
-	Physics   = InPhysics;
+	World     = &InWorld;
 }
 
 void FPlayMode::Play(FEditorContext& Context)
@@ -36,15 +32,7 @@ void FPlayMode::Play(FEditorContext& Context)
 	bStepRequested = false;
 	SyncContextFlags(Context);
 
-	if (Physics != nullptr)
-	{
-		Physics->Begin();
-	}
-	if (GameModule != nullptr)
-	{
-		GameModule->BeginPlay(PlayScene);
-	}
-	Scripts->BeginPlay(PlayScene);
+	World->BeginPlay(PlayScene);
 	E_LOG(LogEditor, Display, "플레이 시작 (엔티티 {}개)", PlayScene.GetRegistry().GetAliveCount());
 }
 
@@ -55,15 +43,7 @@ void FPlayMode::Stop(FEditorContext& Context)
 		return;
 	}
 
-	Scripts->EndPlay();
-	if (GameModule != nullptr)
-	{
-		GameModule->EndPlay(PlayScene);
-	}
-	if (Physics != nullptr)
-	{
-		Physics->End();
-	}
+	World->EndPlay();
 	PlayScene.Clear();
 	EntityMap.clear();
 
@@ -115,21 +95,7 @@ bool FPlayMode::Tick(FEditorContext& Context, float DeltaSeconds, const FInput* 
 		StepDelta      = StepSeconds;
 	}
 
-	Scripts->Update(StepDelta, Input);
-	if (Scripts->ConsumeSceneStructureChanged() && Context.Resources != nullptr)
-	{
-		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
-		FSceneAssetResolver::Resolve(PlayScene, *Context.Resources, Context.ContentDirectory);
-	}
-	if (GameModule != nullptr)
-	{
-		GameModule->Update(PlayScene, StepDelta);
-	}
-	if (Physics != nullptr)
-	{
-		Physics->Update(PlayScene, StepDelta);
-	}
-	PlayScene.UpdateTransforms();
+	World->TickGameplay(StepDelta, Input);
 	return true;
 }
 

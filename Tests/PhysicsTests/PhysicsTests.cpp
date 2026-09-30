@@ -386,3 +386,24 @@ E_TEST(Physics_RollingResistanceStopsBall)
 	E_EXPECT_TRUE(FreeSpeed > 150.0f);
 	E_EXPECT_TRUE(FreeDistance > Distance * 2.0f);
 }
+
+E_TEST(Physics_InterpolationCanBeDisabled)
+{
+	// 1.5 스텝만큼 진행하면 보간은 직전↔현재 스텝의 중간, 끄면 최신 스텝 값
+	auto PositionAfterStepAndHalf = [](bool bInterpolate) {
+		FScene        Scene;
+		const FEntity Ball = AddDynamicSphere(Scene, FVector3(0.0f, 0.0f, 0.0f));
+		Scene.GetRegistry().Get<FRigidBodyComponent>(Ball).bUseGravity = false;
+		Scene.UpdateTransforms();
+
+		FPhysicsSystem Physics;
+		Physics.SetInterpolation(bInterpolate);
+		Physics.Begin();
+		Physics.Update(Scene, 0.0f); // 바디 생성만
+		Physics.SetVelocity(Ball, FVector3(600.0f, 0.0f, 0.0f)); // 스텝당 10cm
+		Physics.Update(Scene, Frame * 1.5f);
+		return Scene.GetTransform(Ball).Position.X;
+	};
+	E_EXPECT_NEAR(PositionAfterStepAndHalf(true), 5.0f, 0.2f);
+	E_EXPECT_NEAR(PositionAfterStepAndHalf(false), 10.0f, 0.2f);
+}

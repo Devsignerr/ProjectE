@@ -54,6 +54,7 @@ add_subdirectory(Engine)
 add_subdirectory(Sandbox)
 add_subdirectory(Editor)
 add_subdirectory(Runtime)
+add_subdirectory(Server)
 add_subdirectory(Tools)
 
 # 프로젝트 게임 모듈 (Projects/<이름>/Source/CMakeLists.txt → <이름>Game.dll). 엔진 DLL 공유 빌드에서만 의미가 있다

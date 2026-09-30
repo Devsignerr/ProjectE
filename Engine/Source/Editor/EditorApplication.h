@@ -26,6 +26,7 @@
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
+#include "World/GameWorld.h"
 
 #include <chrono>
 #include <filesystem>
@@ -130,11 +131,14 @@ private:
 	FAudioEngine Audio;
 	FAudioSystem AudioSystem;
 
-	// 물리도 플레이 중에만 (FPlayMode가 Begin/Update/End)
+	// 물리도 플레이 중에만 (FGameWorld가 Begin/Update/End)
 	FPhysicsSystem Physics;
 
-	// 프로젝트 C++ 게임 모듈: 타입은 시작 시 등록, 시스템은 플레이 중에만 (FPlayMode)
+	// 프로젝트 C++ 게임 모듈: 타입은 시작 시 등록, 시스템은 플레이 중에만 (FGameWorld)
 	FGameModuleHost GameModule;
+
+	// 게임 월드 갱신 순서 (플레이 중 게임플레이 틱 + 항상 표시 틱). 위 시스템들을 비소유로 참조
+	FGameWorld World;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

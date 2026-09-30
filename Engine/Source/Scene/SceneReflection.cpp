@@ -49,6 +49,12 @@ void RegisterSceneTypes()
 		.Property(&FModelComponent::AssetPath, "AssetPath", "에셋 경로", PF_ReadOnly)
 		.AsComponent();
 
+	// 소켓 부착: 대상 모델과 소켓은 인스펙터 전용 UI(목록 선택)로 고른다
+	Registry.RegisterType<FSocketAttachmentComponent>("SocketAttachmentComponent", "소켓 부착")
+		.Property(&FSocketAttachmentComponent::Target, "Target", "대상 모델", PF_Hidden)
+		.Property(&FSocketAttachmentComponent::Socket, "Socket", "소켓", PF_Hidden)
+		.AsComponent();
+
 	Registry.RegisterType<FDirectionalLightComponent>("DirectionalLightComponent", "방향광")
 		.Property(&FDirectionalLightComponent::Color, "Color", "색", PF_Color)
 		.Property(&FDirectionalLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 50.0f, 0.05f)

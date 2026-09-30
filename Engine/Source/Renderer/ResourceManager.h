@@ -17,6 +17,7 @@
 
 class FD3D12RHI;
 struct FMaterialAsset;
+struct FModelMetadata;
 struct FParticleSystemAsset;
 
 // 모델 에셋의 공유 GPU 리소스 (FModelLoader가 채운다). 같은 에셋의 인스턴스는 메시/머티리얼/텍스처를 공유한다.
@@ -27,6 +28,8 @@ struct FModelResources
 	std::vector<FMeshHandle>     Meshes;
 	std::vector<FMaterialHandle> Materials;
 	size_t                       TextureCount = 0;
+	// 노티파이/소켓 (.emeta). 편집기가 고치면 이 모델의 모든 인스턴스에 바로 반영된다 (항상 유효)
+	std::shared_ptr<FModelMetadata> Metadata;
 };
 
 // 렌더 리소스(메시/텍스처/머티리얼) 소유자. 핸들로 접근하며 삭제는 GPU 안전하게 지연 처리된다.

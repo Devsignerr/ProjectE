@@ -5,8 +5,11 @@
 #include "Scene/Animation.h"
 #include "Scene/ResourceHandles.h"
 
+#include <memory>
 #include <string>
 #include <vector>
+
+struct FModelMetadata;
 
 // 표시용 이름
 struct FNameComponent
@@ -48,9 +51,26 @@ struct FStaticMeshComponent
 };
 
 // glTF 모델 인스턴스의 루트. 자식 노드 엔티티는 로드 시 생성되며(FTransientComponent) 직렬화되지 않는다.
+// 모델 인스턴스 런타임 (직렬화/리플렉션 제외, FModelLoader가 채운다): 소켓 해석용
+struct FModelRuntime
+{
+	std::shared_ptr<const FModelMetadata> Metadata;     // 에셋 캐시와 공유 (.emeta)
+	std::vector<FEntity>                  NodeEntities; // 모델 노드 인덱스 → 엔티티
+};
+
 struct FModelComponent
 {
 	std::string AssetPath; // 프로젝트 Content 기준 상대 경로 (Content 밖이면 절대 경로)
+
+	FModelRuntime Runtime;
+};
+
+// 소켓 부착 (언리얼 AttachToComponent + 소켓). Target 모델의 소켓(뼈 기준 지점)을 부모 삼아 따라간다.
+//   이 엔티티의 트랜스폼은 소켓 기준 로컬 값이 된다 (계층 부모는 무시). 소켓을 찾지 못하면 평소처럼 계층을 따른다
+struct FSocketAttachmentComponent
+{
+	FEntity     Target; // FModelComponent가 있는 모델 루트
+	std::string Socket;
 };
 
 // 파생/생성된 엔티티 표식: 직렬화에서 제외 (모델 자식 노드 등)

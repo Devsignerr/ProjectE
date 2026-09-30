@@ -1,0 +1,13 @@
+{
+  "Version": 1,
+  "Clips": [
+    { "Clip": "Walk", "Notifies": [
+      { "Name": "Footstep_L", "Time": 0.1 },
+      { "Name": "Stride", "Time": 0.2, "Duration": 0.3 },
+      { "Name": "Footstep_R", "Time": 0.45 }
+    ] }
+  ],
+  "Sockets": [
+    { "Name": "Hat", "Bone": "b_Head_05", "Position": [0.0, 0.0, 1500.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] }
+  ]
+}

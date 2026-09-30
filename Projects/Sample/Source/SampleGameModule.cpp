@@ -2,11 +2,14 @@
 
 #include "Core/Log.h"
 #include "Core/Reflection/TypeInfo.h"
+#include "Scene/AnimNotify.h"
 #include "Scene/Components.h"
 #include "Scene/GameModule.h"
 #include "Scene/Scene.h"
 
 #include <cmath>
+
+E_DEFINE_LOG_CATEGORY(LogSampleGame, Log)
 
 // Sample 게임 모듈: C++ 게임 시스템 예시. 매 프레임 대량 순회는 스크립트가 아닌 여기(C++ 시스템)에 둔다.
 class FSampleGameModule final : public IGameModule
@@ -30,6 +33,16 @@ public:
 		// 부유 기준 높이는 플레이 시작 위치
 		Scene.GetRegistry().View<FTransformComponent, FHoverComponent>().Each(
 			[](FEntity, FTransformComponent&, FHoverComponent& Hover) { Hover.bInitialized = false; });
+	}
+
+	// 애니메이션 노티파이 (C++ 수신 예시). 매 프레임 오는 스테이트 Tick은 로그에서 뺀다
+	void OnAnimNotify(FScene& Scene, const FAnimNotifyEvent& Event) override
+	{
+		(void)Scene;
+		if (Event.Type == EAnimNotifyEventType::Notify)
+		{
+			E_LOG(LogSampleGame, Display, "[C++] 노티파이 {} (클립 {})", Event.Name, Event.Clip);
+		}
 	}
 
 	void OnUpdate(FScene& Scene, float DeltaSeconds) override

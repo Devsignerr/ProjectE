@@ -1,6 +1,7 @@
 #include "Scene/Scene.h"
 
 #include "Core/Log.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/SceneReflection.h"
 
 #include <algorithm>
@@ -141,26 +142,51 @@ bool FScene::IsAncestorOf(FEntity Ancestor, FEntity Entity) const
 
 void FScene::UpdateTransforms()
 {
-	// 루트(부모 없음)부터 재귀적으로 갱신
+	// 루트(부모 없음)부터 재귀적으로 갱신. 소켓 부착 엔티티는 대상 모델의 뼈가 계산된 뒤로 미룬다
+	DeferredAttachments.clear();
 	Registry.View<FTransformComponent, FHierarchyComponent>().Each(
 		[this](FEntity Entity, FTransformComponent& Transform, FHierarchyComponent& Hierarchy) {
+			(void)Transform;
 			if (!Hierarchy.Parent.IsValid())
 			{
-				Transform.WorldMatrix = Transform.GetLocalMatrix();
-				for (FEntity Child : Hierarchy.Children)
-				{
-					UpdateTransformRecursive(Child, Transform.WorldMatrix);
-				}
+				UpdateTransformRecursive(Entity, FMatrix4x4::Identity, true);
 			}
-			(void)Entity;
 		});
+
+	// 부착 처리: 대상(또는 대상의 조상)이 아직 처리되지 않은 부착 엔티티면 다음 차례로 (부착의 부착)
+	for (int32 Round = 0; Round < 16 && !DeferredAttachments.empty(); ++Round)
+	{
+		std::vector<FEntity> Pending = std::move(DeferredAttachments);
+		DeferredAttachments.clear();
+		std::vector<FEntity> Waiting;
+		for (const FEntity Entity : Pending)
+		{
+			const FEntity Target = Registry.Get<FSocketAttachmentComponent>(Entity).Target;
+			const bool    bTargetPending = std::any_of(Pending.begin(), Pending.end(), [&](FEntity Other) {
+                return Other != Entity && (Other == Target || IsAncestorOf(Other, Target));
+			});
+			if (bTargetPending && Round + 1 < 16)
+			{
+				Waiting.push_back(Entity);
+				continue;
+			}
+			UpdateTransformRecursive(Entity, GetParentWorldMatrix(Entity), false);
+		}
+		DeferredAttachments.insert(DeferredAttachments.end(), Waiting.begin(), Waiting.end());
+	}
+	DeferredAttachments.clear();
 }
 
-void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld)
+void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer)
 {
 	FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity);
 	if (Transform == nullptr)
 	{
+		return;
+	}
+	if (bAllowDefer && IsSocketAttached(Entity))
+	{
+		DeferredAttachments.push_back(Entity);
 		return;
 	}
 
@@ -171,7 +197,63 @@ void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWo
 	{
 		for (FEntity Child : Hierarchy->Children)
 		{
-			UpdateTransformRecursive(Child, Transform->WorldMatrix);
+			UpdateTransformRecursive(Child, Transform->WorldMatrix, true);
 		}
 	}
+}
+
+bool FScene::IsSocketAttached(FEntity Entity) const
+{
+	const FSocketAttachmentComponent* Attachment = Registry.TryGet<FSocketAttachmentComponent>(Entity);
+	// 자기 자신이나 자기 하위(순환)를 대상으로 하면 무시한다
+	return Attachment != nullptr && Registry.IsValid(Attachment->Target) && Attachment->Target != Entity && !IsAncestorOf(Entity, Attachment->Target);
+}
+
+bool FScene::GetSocketWorldMatrix(FEntity ModelRoot, std::string_view Socket, FMatrix4x4& OutWorld) const
+{
+	const FModelComponent* Model = Registry.IsValid(ModelRoot) ? Registry.TryGet<FModelComponent>(ModelRoot) : nullptr;
+	if (Model == nullptr || !Model->Runtime.Metadata)
+	{
+		return false;
+	}
+	const FModelSocket* Found = Model->Runtime.Metadata->FindSocket(Socket);
+	if (Found == nullptr)
+	{
+		return false;
+	}
+	FEntity Bone = ModelRoot;
+	if (!Found->Bone.empty())
+	{
+		Bone = NullEntity;
+		for (const FEntity Node : Model->Runtime.NodeEntities)
+		{
+			const FNameComponent* Name = Registry.IsValid(Node) ? Registry.TryGet<FNameComponent>(Node) : nullptr;
+			if (Name != nullptr && Name->Name == Found->Bone)
+			{
+				Bone = Node;
+				break;
+			}
+		}
+		if (!Bone.IsValid())
+		{
+			return false;
+		}
+	}
+	OutWorld = Found->GetLocalMatrix() * GetTransform(Bone).WorldMatrix;
+	return true;
+}
+
+FMatrix4x4 FScene::GetParentWorldMatrix(FEntity Entity) const
+{
+	if (IsSocketAttached(Entity))
+	{
+		const FSocketAttachmentComponent& Attachment = Registry.Get<FSocketAttachmentComponent>(Entity);
+		FMatrix4x4                        SocketWorld;
+		if (GetSocketWorldMatrix(Attachment.Target, Attachment.Socket, SocketWorld))
+		{
+			return SocketWorld;
+		}
+	}
+	const FEntity Parent = GetParent(Entity);
+	return Parent.IsValid() ? GetTransform(Parent).WorldMatrix : FMatrix4x4::Identity;
 }

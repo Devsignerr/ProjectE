@@ -4,6 +4,7 @@
 #include "Core/StringConv.h"
 #include "Renderer/AssetCache.h"
 #include "Renderer/ResourceManager.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
@@ -98,7 +99,8 @@ namespace
 	}
 
 	// 애니메이션이 있으면 루트에 FAnimationComponent (이미 있으면 설정 유지 — 씬 파일에서 복원된 경우) + 런타임 연결
-	void AttachAnimation(const FModelData& Model, FScene& Scene, FEntity Root, std::vector<FEntity> NodeEntities)
+	void AttachAnimation(const FModelData& Model, FScene& Scene, FEntity Root, std::vector<FEntity> NodeEntities,
+	                     const std::shared_ptr<const FModelMetadata>& Metadata)
 	{
 		if (Model.Animations.empty())
 		{
@@ -119,6 +121,7 @@ namespace
 		Animation.Runtime              = FAnimationRuntime{};
 		Animation.Runtime.Set          = MakeAnimationSet(Model.Animations, std::move(Parents), std::move(RestPose));
 		Animation.Runtime.NodeEntities = std::move(NodeEntities);
+		Animation.Runtime.Metadata     = Metadata;
 	}
 } // namespace
 
@@ -177,7 +180,9 @@ const FModelResources* FModelLoader::LoadModelResources(const std::filesystem::p
 	{
 		return nullptr;
 	}
-	return &Resources.AddModelResources(Key, CreateResources(std::move(Model), Resources));
+	FModelResources Created = CreateResources(std::move(Model), Resources);
+	*Created.Metadata        = FModelMetadata::LoadForSource(Path);
+	return &Resources.AddModelResources(Key, std::move(Created));
 }
 
 FEntity FModelLoader::Instantiate(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Parent)
@@ -263,6 +268,7 @@ FModelResources FModelLoader::CreateResources(FModelData Model, FResourceManager
 	Model.Images.clear();
 
 	Result.TextureCount = ImageTextures.size();
+	Result.Metadata     = std::make_shared<FModelMetadata>();
 	Result.Model        = std::move(Model);
 	E_LOG(LogRenderer, Display, "모델 리소스 생성: {} (메시 {}, 머티리얼 {}, 텍스처 {})", Result.Model.Name, Result.Meshes.size(),
 	      Result.Materials.size(), Result.TextureCount);
@@ -278,7 +284,13 @@ void FModelLoader::InstantiateEntities(const FModelResources& Resources, FScene&
 		InstantiateNode(Model, RootNode, Root, Scene, Resources.Meshes, Resources.Materials, ResourceManager.GetDefaultMaterial(), NodeEntities);
 	}
 	AttachSkins(Model, Scene, NodeEntities);
-	AttachAnimation(Model, Scene, Root, std::move(NodeEntities));
+	// 소켓 해석용 노드 연결 (모델 컴포넌트가 있는 루트만 — 절차 생성/테스트 배치는 없을 수 있다)
+	if (FModelComponent* ModelComponent = Scene.GetRegistry().TryGet<FModelComponent>(Root))
+	{
+		ModelComponent->Runtime.Metadata     = Resources.Metadata;
+		ModelComponent->Runtime.NodeEntities = NodeEntities;
+	}
+	AttachAnimation(Model, Scene, Root, std::move(NodeEntities), Resources.Metadata);
 }
 
 bool FModelLoader::IsModelFile(const std::filesystem::path& Path)

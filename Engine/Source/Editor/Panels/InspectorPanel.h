@@ -29,6 +29,7 @@ private:
 	void DrawStaticMeshExtras(FEditorContext& Context, FEntity Entity);
 	void DrawScriptExtras(FEditorContext& Context, FEntity Entity); // 스크립트 선택 + Properties 오버라이드
 	void DrawAnimationExtras(FEditorContext& Context, FEntity Entity); // 클립 선택 드롭다운 + 재생 상태
+	void DrawSocketAttachmentExtras(FEditorContext& Context, FEntity Entity); // 대상 모델 + 소켓 선택
 	void DrawAddComponentMenu(FEditorContext& Context, FEntity Entity);
 
 	// 쿼터니언은 오일러 각으로 편집. 변환 불안정을 피하기 위해 편집 중 값을 (엔티티, 프로퍼티)별로 캐시

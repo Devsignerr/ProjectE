@@ -7,6 +7,7 @@
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Renderer/ModelLoader.h"
@@ -175,6 +176,113 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 	else if (&Type == Registry.Find<FAnimationComponent>())
 	{
 		DrawAnimationExtras(Context, Entity);
+	}
+	else if (&Type == Registry.Find<FSocketAttachmentComponent>())
+	{
+		DrawSocketAttachmentExtras(Context, Entity);
+	}
+}
+
+void FInspectorPanel::DrawSocketAttachmentExtras(FEditorContext& Context, FEntity Entity)
+{
+	FScene&                     Scene      = *Context.Scene;
+	FRegistry&                  Registry   = Scene.GetRegistry();
+	FSocketAttachmentComponent* Attachment = Registry.TryGet<FSocketAttachmentComponent>(Entity);
+	if (Attachment == nullptr)
+	{
+		return;
+	}
+	const auto EntityLabel = [&](FEntity Target) -> std::string {
+		if (!Registry.IsValid(Target))
+		{
+			return "(없음)";
+		}
+		const FNameComponent* Name = Registry.TryGet<FNameComponent>(Target);
+		return Name != nullptr ? Name->Name : std::format("엔티티 #{}", Target.Index);
+	};
+	// 붙이면 소켓 위치로 맞춘다 (로컬 위치/회전 = 0)
+	const auto SnapToSocket = [&]() {
+		FTransformComponent& Transform = Scene.GetTransform(Entity);
+		Transform.Position             = FVector3::ZeroVector;
+		Transform.Rotation             = FQuat::Identity;
+		Scene.UpdateTransforms();
+	};
+
+	// 대상 모델: 씬의 모델 루트 중 선택 (자기 자신/자기 하위 제외)
+	if (ImGui::BeginCombo("대상 모델", EntityLabel(Attachment->Target).c_str()))
+	{
+		std::vector<FEntity> Models;
+		Registry.View<FModelComponent>().Each([&](FEntity Model, FModelComponent&) {
+			if (Model != Entity && !Scene.IsAncestorOf(Entity, Model))
+			{
+				Models.push_back(Model);
+			}
+		});
+		for (const FEntity Model : Models)
+		{
+			ImGui::PushID(static_cast<int>(Model.Index));
+			if (ImGui::Selectable(EntityLabel(Model).c_str(), Model == Attachment->Target))
+			{
+				Attachment->Target = Model;
+				Context.MarkEdited("소켓 대상 변경");
+			}
+			ImGui::PopID();
+		}
+		if (Models.empty())
+		{
+			ImGui::TextDisabled("씬에 모델이 없습니다");
+		}
+		ImGui::EndCombo();
+	}
+
+	const FModelComponent* Model = Registry.IsValid(Attachment->Target) ? Registry.TryGet<FModelComponent>(Attachment->Target) : nullptr;
+	const FModelMetadata*  Meta  = Model != nullptr ? Model->Runtime.Metadata.get() : nullptr;
+	if (ImGui::BeginCombo("소켓", Attachment->Socket.empty() ? "(선택)" : Attachment->Socket.c_str()))
+	{
+		if (Meta != nullptr)
+		{
+			for (const FModelSocket& Socket : Meta->Sockets)
+			{
+				const std::string Label = Socket.Bone.empty() ? Socket.Name : Socket.Name + "  (" + Socket.Bone + ")";
+				if (ImGui::Selectable(Label.c_str(), Socket.Name == Attachment->Socket))
+				{
+					Attachment->Socket = Socket.Name;
+					SnapToSocket();
+					Context.MarkEdited("소켓 선택");
+				}
+			}
+		}
+		if (Meta == nullptr || Meta->Sockets.empty())
+		{
+			ImGui::TextDisabled("소켓이 없습니다 — 모델 편집 창의 '소켓'에서 추가하세요");
+		}
+		ImGui::EndCombo();
+	}
+
+	if (Model == nullptr)
+	{
+		ImGui::TextColored(FEditorTheme::Warning, ICON_FA_TRIANGLE_EXCLAMATION " 대상 모델을 고르세요");
+	}
+	else if (!Scene.IsSocketAttached(Entity))
+	{
+		ImGui::TextColored(FEditorTheme::Warning, ICON_FA_TRIANGLE_EXCLAMATION " 대상이 이 엔티티의 하위라 붙일 수 없습니다");
+	}
+	else
+	{
+		FMatrix4x4 SocketWorld;
+		if (Scene.GetSocketWorldMatrix(Attachment->Target, Attachment->Socket, SocketWorld))
+		{
+			ImGui::TextColored(FEditorTheme::Success, ICON_FA_LINK " 소켓을 따라갑니다 (트랜스폼 = 소켓 기준)");
+			if (ImGui::SmallButton("소켓 위치로 맞추기"))
+			{
+				SnapToSocket();
+				Context.MarkEdited("소켓 위치로 맞추기");
+			}
+		}
+		else
+		{
+			ImGui::TextColored(FEditorTheme::Warning, ICON_FA_TRIANGLE_EXCLAMATION " 소켓을 찾지 못해 계층을 따릅니다");
+		}
 	}
 }
 

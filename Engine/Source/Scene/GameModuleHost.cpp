@@ -5,6 +5,7 @@
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
+#include "Scene/Scene.h"
 
 E_DECLARE_LOG_CATEGORY(LogScene)
 
@@ -94,6 +95,15 @@ void FGameModuleHost::Update(FScene& Scene, float DeltaSeconds)
 {
 	if (Module != nullptr && bPlaying)
 	{
+		// 직전 애니메이션 갱신에서 모인 노티파이 (순회 중 모듈이 씬 구조를 바꿀 수 있으므로 먼저 복사)
+		std::vector<FAnimNotifyEvent> Events;
+		Scene.GetRegistry().View<FAnimationComponent>().Each([&](FEntity, FAnimationComponent& Animation) {
+			Events.insert(Events.end(), Animation.Runtime.PendingNotifies.begin(), Animation.Runtime.PendingNotifies.end());
+		});
+		for (const FAnimNotifyEvent& Event : Events)
+		{
+			Module->OnAnimNotify(Scene, Event);
+		}
 		Module->OnUpdate(Scene, DeltaSeconds);
 	}
 }

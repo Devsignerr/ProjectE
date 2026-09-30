@@ -9,6 +9,8 @@
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
 #include "Editor/EditorGrid.h"
+#include "Editor/NavMeshDebugRenderer.h"
+#include "AI/AISystem.h"
 #include "Editor/SceneEditOps.h"
 #include "Editor/SelectionOutline.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -44,6 +46,7 @@ FViewportPanel::~FViewportPanel() = default;
 void FViewportPanel::Shutdown()
 {
 	UIRenderer.reset();
+	NavMeshDebug.reset();
 	Grid.reset();
 	SelectionOutline.reset();
 	RenderTarget.reset();
@@ -189,6 +192,7 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	{
 		RenderGrid(Context);
 	}
+	RenderNavMeshDebug(Context);
 	if (SelectionOutline)
 	{
 		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.Selection.GetEntities(), RenderTarget->GetOutput(),
@@ -216,7 +220,55 @@ bool FViewportPanel::ReloadShaders(bool bForceRecompile)
 	const bool bOutlineOk = !SelectionOutline || SelectionOutline->ReloadShaders(bForceRecompile);
 	const bool bGridOk    = !Grid || Grid->ReloadShaders(bForceRecompile);
 	const bool bUIOk      = !UIRenderer || UIRenderer->ReloadShaders(bForceRecompile);
-	return bOutlineOk && bGridOk && bUIOk;
+	const bool bNavOk     = !NavMeshDebug || NavMeshDebug->ReloadShaders(bForceRecompile);
+	return bOutlineOk && bGridOk && bUIOk && bNavOk;
+}
+
+void FViewportPanel::SetNavMeshTriangles(std::vector<FVector3> Triangles)
+{
+	PendingNavMeshTriangles = std::move(Triangles);
+	bNavMeshTrianglesDirty  = true;
+}
+
+void FViewportPanel::RenderNavMeshDebug(FEditorContext& Context)
+{
+	if (!bShowNavMesh)
+	{
+		return;
+	}
+	if (!NavMeshDebug)
+	{
+		NavMeshDebug = std::make_unique<FNavMeshDebugRenderer>();
+		if (!NavMeshDebug->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary()))
+		{
+			NavMeshDebug.reset();
+			bShowNavMesh = false; // 셰이더 오류 시 매 프레임 재시도하지 않는다
+			return;
+		}
+		bNavMeshTrianglesDirty = true;
+	}
+	if (bNavMeshTrianglesDirty)
+	{
+		NavMeshDebug->SetNavMeshTriangles(PendingNavMeshTriangles);
+		bNavMeshTrianglesDirty = false;
+	}
+	// 플레이 중: 이동 중인 엔티티의 경로
+	if (Context.bPlaying && Context.AI != nullptr)
+	{
+		Context.Scene->GetRegistry().View<FTransformComponent>().Each([&](FEntity Entity, FTransformComponent&) {
+			if (const std::vector<FVector3>* Path = Context.AI->GetMovePath(Entity))
+			{
+				NavMeshDebug->AddPath(*Path);
+			}
+		});
+	}
+	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
+	if (SceneColor == nullptr || !SceneColor->GetDesc().bWithDepth || SceneColor->GetWidth() != RenderTarget->GetWidth() ||
+	    SceneColor->GetHeight() != RenderTarget->GetHeight())
+	{
+		return; // 씬 깊이를 쓸 수 없는 모드 (픽셀 아트 등)
+	}
+	NavMeshDebug->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv(), true);
 }
 
 FUIRect FViewportPanel::GetGameUIViewport() const
@@ -338,6 +390,7 @@ void FViewportPanel::DrawToolbar(FEditorContext& Context)
 		ImGui::SetItemTooltip("%s", Tooltip);
 	};
 	ToggleButton(ICON_FA_BORDER_ALL, bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
+	ToggleButton(ICON_FA_ROUTE, bShowNavMesh, "내비메시 표시 (플레이 중에는 이동 경로도) — 굽기: 도구 → 내비메시 굽기");
 	ToggleButton(ICON_FA_MAGNET, Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
 
 	// 편집 카메라 투영 (플레이 중에는 게임 카메라 설정을 따른다)

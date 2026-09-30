@@ -15,7 +15,7 @@ namespace
 	fs::path GetUIContent()
 	{
 		static const fs::path Directory = [] {
-			const fs::path  Path = fs::temp_directory_path() / L"ProjectEUIScriptTests";
+			const fs::path  Path = FTestRegistry::GetTempDirectory() / L"ProjectEUIScriptTests";
 			std::error_code ErrorCode;
 			fs::remove_all(Path, ErrorCode);
 			fs::create_directories(Path / L"Scripts");

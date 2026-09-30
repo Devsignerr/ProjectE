@@ -141,14 +141,14 @@ E_TEST(AssetCache_TextureRoundTripAndPaths)
 		const std::filesystem::path Cooked = FAssetCache::GetCookedPath(FPaths::GetProjectContentDirectory() / L"Sub" / L"A.png",
 		                                                                FAssetCache::GetTextureExtension(ETextureUsage::Normal));
 		E_EXPECT_TRUE(Cooked == FPaths::GetProjectDirectory() / L"Cooked" / L"Sub" / L"A.png.normal.etex");
-		E_EXPECT_TRUE(FAssetCache::GetCookedPath(std::filesystem::temp_directory_path() / L"X.png",
+		E_EXPECT_TRUE(FAssetCache::GetCookedPath(FTestRegistry::GetTempDirectory() / L"X.png",
 		                                         FAssetCache::GetTextureExtension(ETextureUsage::Color)).empty());
 	}
 }
 
 E_TEST(AssetCache_UpToDateCheck)
 {
-	const std::filesystem::path Dir    = std::filesystem::temp_directory_path() / L"ProjectE_테스트_Cache";
+	const std::filesystem::path Dir    = FTestRegistry::GetTempDirectory() / L"ProjectE_테스트_Cache";
 	const std::filesystem::path Source = Dir / L"Source.txt";
 	const std::filesystem::path Cooked = Dir / L"Source.txt.etex";
 	std::filesystem::create_directories(Dir);

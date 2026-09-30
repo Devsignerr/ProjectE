@@ -3,6 +3,7 @@
 #include "Core/CoreMinimal.h"
 
 #include <cmath>
+#include <filesystem>
 #include <format>
 #include <string>
 
@@ -22,6 +23,10 @@ public:
 	static int32 RunAll();
 
 	static void ReportFailure(const char* File, int32 Line, const std::string& Message);
+
+	// 테스트용 임시 폴더: %TEMP%/ProjectE_Tests/<프로세스 ID> (없으면 만든다). RunAll이 끝나면 지운다.
+	// 테스트는 temp_directory_path() 대신 이 경로 아래에 파일을 만든다 (동시에 도는 다른 테스트 실행과 충돌 방지)
+	static std::filesystem::path GetTempDirectory();
 };
 
 struct FTestAutoRegister

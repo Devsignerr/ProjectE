@@ -20,15 +20,21 @@ FAssetEditor::~FAssetEditor() = default;
 
 bool FAssetEditor::Open(FAssetEditorEnvironment& Env)
 {
-	if (!Preview.Init(*Env.Rhi))
+	if (UsesPreview())
 	{
-		E_LOG(LogEditor, Error, "미리보기 렌더 타깃 생성 실패: {}", GetDisplayName());
-		return false;
+		if (!Preview.Init(*Env.Rhi))
+		{
+			E_LOG(LogEditor, Error, "미리보기 렌더 타깃 생성 실패: {}", GetDisplayName());
+			return false;
+		}
+		Preview.AddDefaultLight();
 	}
-	Preview.AddDefaultLight();
 	if (!LoadAsset(Env))
 	{
-		Preview.Shutdown(*Env.Rhi);
+		if (UsesPreview())
+		{
+			Preview.Shutdown(*Env.Rhi);
+		}
 		return false;
 	}
 	History.Reset(CaptureState());
@@ -43,7 +49,10 @@ void FAssetEditor::Close(FAssetEditorEnvironment& Env)
 		RevertToSaved(Env);
 	}
 	OnClose(Env);
-	Preview.Shutdown(*Env.Rhi);
+	if (UsesPreview())
+	{
+		Preview.Shutdown(*Env.Rhi);
+	}
 }
 
 void FAssetEditor::OnClose(FAssetEditorEnvironment& Env)

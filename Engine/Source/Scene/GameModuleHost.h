@@ -3,6 +3,7 @@
 #include "Scene/GameModule.h"
 
 #include <filesystem>
+#include <functional>
 #include <string>
 
 // 게임 모듈 DLL 로드/수명 관리.
@@ -16,6 +17,11 @@ public:
 
 	// 실행 파일 폴더의 <Name>.dll
 	static std::filesystem::path GetDefaultModulePath(const std::string& Name);
+
+	// 언로드 때 Scene 밖 모듈의 등록 정보(AI 비헤이비어 트리 노드 등)를 소유자(모듈 이름)로 정리하는 콜백. 프로세스 전역,
+	// 해당 모듈의 Register*Types()가 한 번 추가한다. 리플렉션 타입 제거 뒤에 불린다
+	using FOwnerCleanup = std::function<void(const std::string& Owner)>;
+	static void AddUnloadCleanup(FOwnerCleanup Cleanup);
 
 	bool Load(const std::filesystem::path& DllPath);
 	// DLL 없이 같은 프로세스의 모듈을 붙인다 (테스트/임베드용, 비소유 — Unload까지 살아 있어야 한다)

@@ -10,6 +10,6 @@ add_library(ProjectE::World ALIAS EWorld)
 target_include_directories(EWorld PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(EWorld
     PUBLIC  ProjectE::Core ProjectE::Scene
-    PRIVATE ProjectE::Scripting ProjectE::Physics ProjectE::Renderer ProjectE::Network)
+    PRIVATE ProjectE::Scripting ProjectE::Physics ProjectE::AI ProjectE::Renderer ProjectE::Network)
 
 e_set_engine_module_defaults(EWorld)

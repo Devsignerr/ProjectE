@@ -5,6 +5,7 @@ file(GLOB_RECURSE EDITOR_TEST_SOURCES CONFIGURE_DEPENDS
 
 add_executable(EditorTests ${EDITOR_TEST_SOURCES})
 target_link_libraries(EditorTests PRIVATE ProjectE::Editor)
+target_link_libraries(EditorTests PRIVATE ThirdParty::imgui_node_editor) # 노드 편집기 ↔ ImGui 호환성 테스트
 
 e_set_target_defaults(EditorTests "Tests")
 

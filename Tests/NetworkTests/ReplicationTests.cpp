@@ -42,7 +42,7 @@ namespace
 	// 테스트 Content에 복제 프리팹(Pawn + 자식 Gun)을 만든다
 	std::filesystem::path MakePawnPrefab()
 	{
-		const std::filesystem::path Content = std::filesystem::temp_directory_path() / L"ProjectEReplicationTests";
+		const std::filesystem::path Content = FTestRegistry::GetTempDirectory() / L"ProjectEReplicationTests";
 		std::filesystem::create_directories(Content);
 		std::filesystem::remove(Content / L"Pawn.eprefab"); // 이전 실행 결과 (CreatePrefab은 기존 파일을 덮지 않는다)
 		FPrefabLibrary::Get().SetContentDirectory(Content);

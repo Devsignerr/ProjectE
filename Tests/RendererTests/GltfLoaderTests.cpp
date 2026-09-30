@@ -77,7 +77,7 @@ namespace
 "buffers":[{{"byteLength":{},"uri":"data:application/octet-stream;base64,{}"}}]
 }})", Buffer.size(), Base64Encode(Buffer));
 
-		const std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectE_테스트_Triangle.gltf";
+		const std::filesystem::path Path = FTestRegistry::GetTempDirectory() / L"ProjectE_테스트_Triangle.gltf";
 		std::ofstream File(Path, std::ios::binary);
 		File << Json;
 		return Path;
@@ -284,7 +284,7 @@ namespace
 "buffers":[{{"byteLength":{},"uri":"data:application/octet-stream;base64,{}"}}]
 }})", Buffer.size(), Base64Encode(Buffer));
 
-		const std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectE_테스트_Skinned.gltf";
+		const std::filesystem::path Path = FTestRegistry::GetTempDirectory() / L"ProjectE_테스트_Skinned.gltf";
 		std::ofstream File(Path, std::ios::binary);
 		File << Json;
 		return Path;

@@ -6,10 +6,11 @@ add_subdirectory(Source/UI)
 add_subdirectory(Source/Renderer)
 add_subdirectory(Source/Audio)
 add_subdirectory(Source/Physics)
+add_subdirectory(Source/AI)
 add_subdirectory(Source/World)
 add_subdirectory(Source/Network)
 # ---- 엔진 런타임 DLL (ProjectEEngine.dll) 또는 정적 묶음
-set(E_ENGINE_RUNTIME_MODULES ECore ERHI EScene ERenderer EAudio EPhysics EScripting EWorld ENetwork EUI)
+set(E_ENGINE_RUNTIME_MODULES ECore ERHI EScene ERenderer EAudio EPhysics EAI EScripting EWorld ENetwork EUI)
 if(E_ENGINE_SHARED)
     add_library(ProjectEEngine SHARED "${CMAKE_CURRENT_SOURCE_DIR}/EngineDll.cpp")
     target_link_libraries(ProjectEEngine PUBLIC ${E_ENGINE_RUNTIME_MODULES}) # OBJECT 직접 링크 → 객체가 DLL에 들어간다

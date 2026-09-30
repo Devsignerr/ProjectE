@@ -23,9 +23,11 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 {
 	EndPlay();
 	PlayRuntime = std::make_unique<FLuaRuntime>(ContentDirectory, ErrorCount);
+	++PlaySession;
 	PlayRuntime->SetAudioHooks(&AudioHooks);
 	PlayRuntime->SetPhysicsHooks(&PhysicsHooks);
 	PlayRuntime->SetNetHooks(&NetHooks);
+	PlayRuntime->SetAIHooks(&AIHooks);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;
@@ -144,6 +146,43 @@ void FScriptSystem::SetPhysicsHooks(FScriptPhysicsHooks Hooks)
 void FScriptSystem::SetNetHooks(FScriptNetHooks Hooks)
 {
 	NetHooks = std::move(Hooks);
+}
+
+void FScriptSystem::SetAIHooks(FScriptAIHooks Hooks)
+{
+	AIHooks = std::move(Hooks);
+}
+
+FScriptObjectHandle FScriptSystem::CreateObject(const std::string& ScriptAsset, const std::string& PropertyOverrides, FEntity Entity)
+{
+	if (!PlayRuntime)
+	{
+		return 0;
+	}
+	const uint32 LocalId = PlayRuntime->CreateObject(ScriptAsset, PropertyOverrides, Entity);
+	return LocalId == 0 ? 0 : (static_cast<uint64>(PlaySession) << 32) | LocalId;
+}
+
+bool FScriptSystem::CallObject(FScriptObjectHandle Handle, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound)
+{
+	OutResult = FScriptValue{};
+	if (bOutFound)
+	{
+		*bOutFound = false;
+	}
+	if (!PlayRuntime || static_cast<uint32>(Handle >> 32) != PlaySession)
+	{
+		return false; // 지난 세션의 핸들
+	}
+	return PlayRuntime->CallObject(static_cast<uint32>(Handle & 0xFFFFFFFFu), Method, DeltaSeconds, OutResult, bOutFound);
+}
+
+void FScriptSystem::DestroyObject(FScriptObjectHandle Handle)
+{
+	if (PlayRuntime && static_cast<uint32>(Handle >> 32) == PlaySession)
+	{
+		PlayRuntime->DestroyObject(static_cast<uint32>(Handle & 0xFFFFFFFFu));
+	}
 }
 
 bool FScriptSystem::InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args)

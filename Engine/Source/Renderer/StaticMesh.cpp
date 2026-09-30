@@ -12,10 +12,14 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 	IndexCount  = static_cast<uint32>(MeshData.Indices.size());
 
 	LocalBounds = FBox();
+	CpuPositions.clear();
+	CpuPositions.reserve(MeshData.Vertices.size());
 	for (const FVertex& Vertex : MeshData.Vertices)
 	{
 		LocalBounds.AddPoint(Vertex.Position);
+		CpuPositions.push_back(Vertex.Position);
 	}
+	CpuIndices = MeshData.Indices;
 
 	const std::wstring VertexName = std::wstring(DebugName) + L"_VB";
 	const std::wstring IndexName  = std::wstring(DebugName) + L"_IB";
@@ -42,6 +46,8 @@ void FStaticMesh::Shutdown()
 	LocalBounds = FBox();
 	VertexCount = 0;
 	IndexCount  = 0;
+	CpuPositions.clear();
+	CpuIndices.clear();
 }
 
 void FStaticMesh::ShutdownDeferred(FD3D12RHI& Rhi)
@@ -56,6 +62,8 @@ void FStaticMesh::ShutdownDeferred(FD3D12RHI& Rhi)
 	LocalBounds = FBox();
 	VertexCount = 0;
 	IndexCount  = 0;
+	CpuPositions.clear();
+	CpuIndices.clear();
 }
 
 void FStaticMesh::Draw(ID3D12GraphicsCommandList* CommandList) const

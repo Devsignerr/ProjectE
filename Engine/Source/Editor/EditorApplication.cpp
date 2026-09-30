@@ -1,5 +1,7 @@
 #include "Editor/EditorApplication.h"
 
+#include "AI/AIModule.h"
+#include "AI/AISystem.h"
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
 #include "Network/ReplicationTypes.h"
@@ -10,6 +12,8 @@
 #include "Core/StringConv.h"
 #include "Editor/EditorActions.h"
 #include "Editor/EditorCameraState.h"
+#include "Editor/NavMeshBaker.h"
+#include "AI/AIComponents.h"
 #include "Editor/EditorTheme.h"
 #include "Editor/SceneEditOps.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -78,6 +82,7 @@ bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
+	RegisterAITypes();
 	RegisterNetworkTypes();
 	RegisterUITypes();
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
@@ -133,6 +138,7 @@ bool FEditorApplication::OnInit()
 	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
 	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
+	Context.AI               = &World.GetAI();
 	// 게임 월드: 스크립트 콘텐츠 경로와 물리 훅도 연결한다
 	World.Init({ &Scripts, &Physics, &GameModule, &Resources, Context.ContentDirectory });
 	Scripts.SetAudioHooks({
@@ -193,6 +199,16 @@ bool FEditorApplication::OnInit()
 			}
 			Start = End + 1;
 		}
+	}
+
+	// 자동 검증: --bake-navmesh 시작 씬 내비메시 굽기(저장), --show-navmesh 뷰포트 내비메시 표시
+	if (FCommandLine::FromProcess().HasFlag(L"--bake-navmesh"))
+	{
+		BakeNavMesh();
+	}
+	if (FCommandLine::FromProcess().HasFlag(L"--show-navmesh"))
+	{
+		ViewportPanel.bShowNavMesh = true;
 	}
 
 	// 자동 검증: --verify-undo 복제 → 커밋 → 실행 취소 → 다시 실행 → 실행 취소를 수행하고 엔티티/메시 수를 확인
@@ -285,6 +301,7 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	FEditorActions::PruneSelection(Context);
+	SyncNavMeshDisplay();
 
 	UpdatePlayMode(DeltaSeconds);
 	// 애니메이션/파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
@@ -834,9 +851,90 @@ void FEditorApplication::DrawToolsMenu()
 		{
 			ReloadAllShaders();
 		}
+		if (ImGui::MenuItem(ICON_FA_ROUTE " 내비메시 굽기", nullptr, false, !PlayMode.IsActive()))
+		{
+			BakeNavMesh();
+		}
+		ImGui::SetItemTooltip("씬의 정적 메시로 내비메시를 굽고 씬 옆 .enav로 저장합니다 (설정: NavMeshComponent)");
 		ImGui::TextDisabled(ShaderWatcher.IsWatching() ? "셰이더 자동 감시: 켜짐" : "셰이더 자동 감시: 꺼짐");
 		ImGui::EndMenu();
 	}
+}
+
+void FEditorApplication::BakeNavMesh()
+{
+	if (PlayMode.IsActive())
+	{
+		ShowNotification("플레이 중에는 내비메시를 구울 수 없습니다", true);
+		return;
+	}
+	Scene.UpdateTransforms();
+	FNavMesh                     NavMesh;
+	const FNavMeshBaker::FResult Result = FNavMeshBaker::Bake(Scene, Resources, NavMesh);
+	if (!Result.bSucceeded)
+	{
+		ShowNotification("내비메시 굽기 실패: " + Result.Error, true);
+		return;
+	}
+
+	// 씬 옆 <씬 이름>.enav (저장한 적 없는 씬이면 Content/NavMesh.enav)
+	const std::filesystem::path File = CurrentScenePath.empty() ? Context.ContentDirectory / L"NavMesh.enav"
+	                                                            : std::filesystem::path(CurrentScenePath).replace_extension(FNavMesh::FileExtension);
+	if (!NavMesh.SaveToFile(File))
+	{
+		ShowNotification("내비메시 파일을 저장하지 못했습니다: " + FStringConv::ToUtf8(File.wstring()), true);
+		return;
+	}
+
+	// 씬의 내비메시 컴포넌트가 이 파일을 가리키게 한다 (없으면 만든다)
+	FRegistry& Registry = Scene.GetRegistry();
+	FEntity    Owner;
+	Registry.View<FNavMeshComponent>().Each([&](FEntity Entity, FNavMeshComponent&) {
+		if (!Owner.IsValid())
+		{
+			Owner = Entity;
+		}
+	});
+	if (!Owner.IsValid())
+	{
+		Owner = Scene.CreateEntity("NavMesh");
+		Registry.Emplace<FNavMeshComponent>(Owner);
+	}
+	Registry.Get<FNavMeshComponent>(Owner).NavMeshAsset = FModelLoader::MakeAssetPath(File);
+	Context.MarkEdited("내비메시 굽기");
+
+	std::vector<FVector3> Triangles;
+	NavMesh.GetDebugTriangles(Triangles);
+	ViewportPanel.SetNavMeshTriangles(std::move(Triangles));
+	ViewportPanel.bShowNavMesh = true;
+	DisplayedNavMeshAsset      = Registry.Get<FNavMeshComponent>(Owner).NavMeshAsset;
+	E_LOG(LogEditor, Display, "내비메시 굽기: 메시 {}개, 삼각형 {}개 → 폴리곤 {}개 ({})", Result.MeshCount, Result.TriangleCount, Result.PolygonCount,
+	      DisplayedNavMeshAsset);
+	ShowNotification(std::format("내비메시 굽기 완료: 폴리곤 {}개 (메시 {}개) → {}", Result.PolygonCount, Result.MeshCount, DisplayedNavMeshAsset), false);
+}
+
+void FEditorApplication::SyncNavMeshDisplay()
+{
+	// 편집 씬의 내비메시 파일이 바뀌면(씬 열기, 실행 취소, 굽기) 뷰포트 표시를 다시 읽는다
+	std::string Asset;
+	Scene.GetRegistry().View<FNavMeshComponent>().Each([&](FEntity, FNavMeshComponent& Component) {
+		if (Asset.empty())
+		{
+			Asset = Component.NavMeshAsset;
+		}
+	});
+	if (Asset == DisplayedNavMeshAsset)
+	{
+		return;
+	}
+	DisplayedNavMeshAsset = Asset;
+	std::vector<FVector3> Triangles;
+	FNavMesh              NavMesh;
+	if (!Asset.empty() && NavMesh.LoadFromFile(Context.ContentDirectory / FStringConv::ToWide(Asset)))
+	{
+		NavMesh.GetDebugTriangles(Triangles);
+	}
+	ViewportPanel.SetNavMeshTriangles(std::move(Triangles));
 }
 
 void FEditorApplication::ShowNotification(std::string Message, bool bError)
@@ -1240,6 +1338,12 @@ void FEditorApplication::PollScriptChanges()
 		std::wstring Extension = Path.extension().wstring();
 		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
 		bPrefabChanged = bPrefabChanged || Extension == FPrefabLibrary::Extension;
+		// 비헤이비어 트리: 플레이 중이면 그 에셋을 쓰는 트리를 새 파일로 다시 시작한다 (편집 창 저장 포함)
+		if (Extension == L".ebt")
+		{
+			World.GetAI().ReloadBehaviorTree(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
 		if (Extension != L".lua")
 		{
 			continue;

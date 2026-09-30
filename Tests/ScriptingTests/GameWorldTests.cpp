@@ -27,7 +27,7 @@ E_TEST(GameWorld_LifecycleAndPhysicsHooks)
 	FScriptSystem  Scripts;
 	FPhysicsSystem Physics;
 	FGameWorld     World;
-	World.Init({ &Scripts, &Physics, nullptr, nullptr, std::filesystem::temp_directory_path() });
+	World.Init({ &Scripts, &Physics, nullptr, nullptr, FTestRegistry::GetTempDirectory() });
 
 	// 시작 전 게임플레이 틱은 아무것도 하지 않는다
 	World.TickGameplay(1.0f / 60.0f, nullptr);
@@ -76,7 +76,7 @@ E_TEST(GameWorld_ClientRoleMakesReplicatedBodiesKinematic)
 	FScriptSystem  Scripts;
 	FPhysicsSystem Physics;
 	FGameWorld     World;
-	World.Init({ &Scripts, &Physics, nullptr, nullptr, std::filesystem::temp_directory_path() });
+	World.Init({ &Scripts, &Physics, nullptr, nullptr, FTestRegistry::GetTempDirectory() });
 	World.BeginPlay(Scene, ENetMode::Client);
 	E_EXPECT_TRUE(World.GetRole() == EWorldRole::Client);
 	E_EXPECT_TRUE(Physics.IsActive());
@@ -105,7 +105,7 @@ namespace
 	// 스크립트가 돌았는지 표시: 시작하면 자기 위치 X를 1로 바꾼다
 	std::filesystem::path WriteMarkerScript()
 	{
-		const std::filesystem::path Directory = std::filesystem::temp_directory_path() / L"ProjectEGameWorldTests";
+		const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectEGameWorldTests";
 		std::filesystem::create_directories(Directory / L"Scripts");
 		std::ofstream File(Directory / L"Scripts/Marker.lua", std::ios::binary | std::ios::trunc);
 		File << "local M = {}\nfunction M:OnStart() self.entity:SetPosition(Vector3(1, 0, 0)) end\nreturn M\n";
@@ -165,7 +165,7 @@ E_TEST(GameWorld_LuaNetApiAndOwnership)
 
 	FScriptSystem Scripts;
 	FGameWorld    World;
-	World.Init({ &Scripts, nullptr, nullptr, nullptr, std::filesystem::temp_directory_path() });
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, FTestRegistry::GetTempDirectory() });
 
 	World.BeginPlay(Scene, ENetMode::Standalone);
 	E_EXPECT_TRUE(Scripts.RunString(R"(
@@ -206,7 +206,7 @@ E_TEST(GameWorld_LuaSessionApi)
 	FScene        Scene;
 	FScriptSystem Scripts;
 	FGameWorld    World;
-	World.Init({ &Scripts, nullptr, nullptr, nullptr, std::filesystem::temp_directory_path() });
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, FTestRegistry::GetTempDirectory() });
 	World.SetLanDiscoveryPort(DiscoveryPort);
 	World.BeginPlay(Scene);
 

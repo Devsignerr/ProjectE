@@ -11,7 +11,7 @@ namespace
 
 	std::filesystem::path MakeTempDirectory(const wchar_t* Name)
 	{
-		const std::filesystem::path Dir = std::filesystem::temp_directory_path() / L"ProjectE_CoreTests" / Name;
+		const std::filesystem::path Dir = FTestRegistry::GetTempDirectory() / L"ProjectE_CoreTests" / Name;
 		std::error_code             ErrorCode;
 		std::filesystem::remove_all(Dir, ErrorCode);
 		std::filesystem::create_directories(Dir, ErrorCode);

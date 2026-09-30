@@ -8,11 +8,13 @@
 #include "Scene/GameRpc.h"
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+class FAISystem;
 class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
@@ -54,17 +56,24 @@ enum class EWorldRole : uint8
 };
 
 // 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, 전용 서버가 같은 순서를 쓴다.
-//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → 물리 → UpdateTransforms
-//                                  (Client 역할: 게임 모듈 없음)
+//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 물리 → UpdateTransforms
+//                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
 //   스크립트 ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
 //   입력: 클라이언트는 게임플레이 틱마다 로컬 입력 상태를 서버로 보낸다(비신뢰). 서버 스크립트의 Lua Input은
 //         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음)
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
-// 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트 (Client 역할은 게임 모듈 없음), EndPlay = 역순
+// 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트(Lua 상태) → AI (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순.
+//   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
 // RPC(스크립트/게임 모듈 공용)와 입력·플레이어 이벤트는 GameWorldNet.cpp. 게임 모듈에는 IGameNet으로 자신을 넘긴다
+// AI 시스템(비헤이비어 트리, 내비메시, 이동)은 FGameWorld가 소유한다 (앱마다 따로 둘 설정이 없다)
 class FGameWorld final : public IGameNet
 {
 public:
+	FGameWorld();
+	~FGameWorld();
+	FGameWorld(const FGameWorld&)            = delete;
+	FGameWorld& operator=(const FGameWorld&) = delete;
+
 	// 스크립트 물리 훅(Physics.Raycast, entity:AddForce 등)도 여기서 연결한다 (네트워크 훅은 BeginPlay에서)
 	void Init(const FGameWorldSystems& InSystems);
 
@@ -95,6 +104,8 @@ public:
 
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
+	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
+	FAISystem& GetAI() { return *AI; }
 
 	// ---- IGameNet (게임 모듈용)
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
@@ -112,6 +123,8 @@ private:
 	void          SendLocalInput(const FInput& Input);
 	void          ReceivePlayerInput(FNetConnectionId Connection, const std::vector<uint8>& Message);
 	void          InstallScriptNetHooks();
+	// 스크립트 ↔ AI 훅 연결 (Lua 블랙보드/이동 API, Lua 비헤이비어 트리 노드)
+	void          ConnectScriptsAndAI();
 
 	struct FRemoteInput
 	{
@@ -119,7 +132,8 @@ private:
 		uint32 LastSequence = 0;
 	};
 
-	FGameWorldSystems Systems;
+	FGameWorldSystems          Systems;
+	std::unique_ptr<FAISystem> AI;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
 	ENetMode          Mode  = ENetMode::Standalone;
 

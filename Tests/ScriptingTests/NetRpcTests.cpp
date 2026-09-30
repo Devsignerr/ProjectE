@@ -18,7 +18,7 @@ namespace
 	// RPC 흐름 기록 스크립트 (Both): 클라이언트 → Server_Fire → 서버가 Client_Ack(소유자) + Multicast_Boom(모두)
 	std::filesystem::path WriteRpcScript()
 	{
-		const std::filesystem::path Directory = std::filesystem::temp_directory_path() / L"ProjectENetRpcTests";
+		const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectENetRpcTests";
 		std::filesystem::create_directories(Directory / L"Scripts");
 		std::ofstream File(Directory / L"Scripts/Rpc.lua", std::ios::binary | std::ios::trunc);
 		File << R"(
@@ -181,7 +181,7 @@ E_TEST(NetRpc_RoutesBetweenServerAndClient)
 E_TEST(NetInput_ServerScriptsSeeOwnersInput)
 {
 	RegisterNetworkTypes();
-	const std::filesystem::path Content = std::filesystem::temp_directory_path() / L"ProjectENetInputTests";
+	const std::filesystem::path Content = FTestRegistry::GetTempDirectory() / L"ProjectENetInputTests";
 	std::filesystem::create_directories(Content / L"Scripts");
 	{
 		std::ofstream File(Content / L"Scripts/Reader.lua", std::ios::binary | std::ios::trunc);

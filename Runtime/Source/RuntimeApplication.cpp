@@ -1,5 +1,6 @@
 #include "RuntimeApplication.h"
 
+#include "AI/AIModule.h"
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
@@ -71,6 +72,7 @@ bool FRuntimeApplication::OnInit()
 
 	RegisterAudioTypes(); // 씬 로드 전에
 	RegisterPhysicsTypes();
+	RegisterAITypes();
 	RegisterNetworkTypes();
 	RegisterUITypes();
 	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))

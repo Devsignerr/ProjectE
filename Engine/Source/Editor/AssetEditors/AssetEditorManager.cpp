@@ -2,6 +2,7 @@
 
 #include "Core/Log.h"
 #include "Core/StringConv.h"
+#include "Editor/AssetEditors/BehaviorTreeEditor.h"
 #include "Editor/AssetEditors/MaterialEditor.h"
 #include "Editor/AssetEditors/ModelEditors.h"
 #include "Editor/AssetEditors/ParticleEditor.h"
@@ -43,6 +44,8 @@ namespace
 
 	bool IsModelExtension(const std::wstring& Extension) { return Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx"; }
 
+	constexpr const wchar_t* BehaviorTreeExtension = L".ebt"; // FBehaviorTreeAsset::Extension
+
 	std::unique_ptr<FAssetEditor> CreateEditor(const std::filesystem::path& Path, FResourceManager& Resources)
 	{
 		const std::wstring Extension = ToLowerExtension(Path);
@@ -57,6 +60,10 @@ namespace
 		if (Extension == FPrefabLibrary::Extension)
 		{
 			return std::make_unique<FPrefabEditor>(Path);
+		}
+		if (Extension == BehaviorTreeExtension)
+		{
+			return std::make_unique<FBehaviorTreeEditor>(Path);
 		}
 		if (Extension == FUIAsset::Extension)
 		{
@@ -103,7 +110,7 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 {
 	const std::wstring Extension = ToLowerExtension(Path);
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
-	       Extension == FUIAsset::Extension || IsModelExtension(Extension);
+	       Extension == BehaviorTreeExtension || Extension == FUIAsset::Extension || IsModelExtension(Extension);
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)

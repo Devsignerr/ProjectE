@@ -20,7 +20,7 @@ namespace
 	fs::path GetContent()
 	{
 		static const fs::path Directory = [] {
-			const fs::path  Path = fs::temp_directory_path() / L"ProjectEUISystemTests";
+			const fs::path  Path = FTestRegistry::GetTempDirectory() / L"ProjectEUISystemTests";
 			std::error_code ErrorCode;
 			fs::remove_all(Path, ErrorCode);
 			fs::create_directories(Path / L"UI");

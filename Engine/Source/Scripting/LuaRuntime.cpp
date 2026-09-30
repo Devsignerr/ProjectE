@@ -132,6 +132,7 @@ FLuaRuntime::~FLuaRuntime()
 	// sol 참조(테이블/함수)는 상태보다 먼저 해제되어야 한다
 	PendingSpawns.clear();
 	Instances.clear();
+	Objects.clear();
 	Classes.clear();
 	Traceback = sol::lua_nil;
 }
@@ -151,6 +152,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterGlobals();
 	RegisterPrefabBindings();
 	RegisterNetBindings();
+	RegisterAIBindings();
 	RegisterUIBindings();
 }
 
@@ -917,6 +919,14 @@ bool FLuaRuntime::ReloadClass(const std::filesystem::path& ScriptPath, bool& bOu
 	{
 		Instances.erase(Id); // 다음 Update에서 새로 만들고 OnStart 호출
 	}
+	// 스크립트 객체(Lua 트리 노드): 오류로 멈춘 것 재개. 메타테이블을 공유하므로 새 함수는 이미 보인다
+	for (auto& [Id, Object] : Objects)
+	{
+		if (Object.Self.valid() && MakeClassKey(ContentDirectory / FStringConv::ToWide(Object.ScriptAsset)) == Key)
+		{
+			Object.bFaulted = false;
+		}
+	}
 	return true;
 }
 
@@ -938,9 +948,18 @@ void FLuaRuntime::CreateInstance(FEntity Entity, const std::string& ScriptAsset,
 		return;
 	}
 
-	sol::table Self       = Lua.create_table();
-	sol::table Properties = Lua.create_table();
-	const sol::object Defaults = Class.Class["Properties"];
+	sol::table Self            = Lua.create_table();
+	Self["entity"]             = FScriptEntity{ Entity };
+	Self["Properties"]         = MakeProperties(Class, ScriptAsset, Overrides);
+	Self[sol::metatable_key]   = Class.Metatable;
+	Instance.Self              = Self;
+	Instances.emplace(Entity.ToId(), std::move(Instance));
+}
+
+sol::table FLuaRuntime::MakeProperties(const FScriptClass& Class, const std::string& ScriptAsset, const std::string& Overrides)
+{
+	sol::table        Properties = Lua.create_table();
+	const sol::object Defaults   = Class.Class["Properties"];
 	if (Defaults.get_type() == sol::type::table)
 	{
 		for (const auto& [Key, Value] : Defaults.as<sol::table>())
@@ -970,12 +989,7 @@ void FLuaRuntime::CreateInstance(FEntity Entity, const std::string& ScriptAsset,
 		Typed.AssetFilter = Decl->Default.AssetFilter; // 에셋 확장자는 선언을 따른다
 		Properties[Name] = FromScriptValue(Typed);
 	}
-
-	Self["entity"]             = FScriptEntity{ Entity };
-	Self["Properties"]         = Properties;
-	Self[sol::metatable_key]   = Class.Metatable;
-	Instance.Self              = Self;
-	Instances.emplace(Entity.ToId(), std::move(Instance));
+	return Properties;
 }
 
 bool FLuaRuntime::CallMethod(FScriptInstance& Instance, const char* MethodName, float DeltaSeconds, bool bPassDelta)

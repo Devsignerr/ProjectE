@@ -17,7 +17,7 @@ E_TEST(Paths_EngineDirectoryDetected)
 	E_EXPECT_TRUE(std::filesystem::exists(FPaths::GetExecutableDirectory()));
 
 	// 마커가 없는 디렉터리에서는 찾지 못한다
-	const std::filesystem::path NoMarker = std::filesystem::temp_directory_path() / L"ProjectE_NoEngineMarker";
+	const std::filesystem::path NoMarker = FTestRegistry::GetTempDirectory() / L"ProjectE_NoEngineMarker";
 	std::error_code             ErrorCode;
 	std::filesystem::create_directories(NoMarker, ErrorCode);
 	E_EXPECT_TRUE(FPaths::FindEngineDirectory(NoMarker).empty());
@@ -38,12 +38,12 @@ E_TEST(Paths_DefaultSampleProject)
 	// 폴더로 지정해도 .eproject를 찾는다
 	E_EXPECT_TRUE(FPaths::ResolveProjectFile(FPaths::GetProjectDirectory()) == FPaths::GetProjectFile() ||
 	              FPaths::ResolveProjectFile(FPaths::GetProjectDirectory()).filename() == L"Sample.eproject");
-	E_EXPECT_TRUE(FPaths::ResolveProjectFile(std::filesystem::temp_directory_path() / L"없는_폴더_ProjectE").empty());
+	E_EXPECT_TRUE(FPaths::ResolveProjectFile(FTestRegistry::GetTempDirectory() / L"없는_폴더_ProjectE").empty());
 }
 
 E_TEST(Project_DescriptorRoundtrip)
 {
-	const std::filesystem::path Directory = std::filesystem::temp_directory_path() / L"ProjectE_ProjectTest";
+	const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectE_ProjectTest";
 	const std::filesystem::path File      = Directory / L"테스트.eproject";
 
 	FProjectDescriptor Saved;

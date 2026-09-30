@@ -20,6 +20,8 @@ struct FEditorTheme
 	static constexpr ImVec4 Success     = ImVec4(0.35f, 0.80f, 0.35f, 1.00f);
 	static constexpr ImVec4 Warning     = ImVec4(0.95f, 0.72f, 0.25f, 1.00f);
 	static constexpr ImVec4 Danger      = ImVec4(0.92f, 0.33f, 0.30f, 1.00f);
+	// 프리팹 인스턴스 이름(계층) / 오버라이드 표시 (유니티처럼 하늘색)
+	static constexpr ImVec4 PrefabText  = ImVec4(0.45f, 0.72f, 1.00f, 1.00f);
 
 	// 색/크기 (Scale = DPI 배율)
 	static void Apply(float Scale);

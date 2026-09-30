@@ -41,6 +41,15 @@ FScriptValue FScriptValue::MakeVector3(const FVector3& Vector)
 	return Value;
 }
 
+FScriptValue FScriptValue::MakeAsset(std::string Path, std::string Filter)
+{
+	FScriptValue Value;
+	Value.Type        = EScriptValueType::Asset;
+	Value.String      = std::move(Path);
+	Value.AssetFilter = std::move(Filter);
+	return Value;
+}
+
 bool FScriptValue::operator==(const FScriptValue& Other) const
 {
 	if (Type != Other.Type)
@@ -53,6 +62,7 @@ bool FScriptValue::operator==(const FScriptValue& Other) const
 	case EScriptValueType::Number:  return Number == Other.Number && bInteger == Other.bInteger;
 	case EScriptValueType::String:  return String == Other.String;
 	case EScriptValueType::Vector3: return Vector == Other.Vector;
+	case EScriptValueType::Asset:   return String == Other.String; // 확장자 필터는 선언 정보라 비교하지 않는다
 	default:                        return true;
 	}
 }
@@ -94,6 +104,10 @@ FScriptValueMap FScriptProperties::ParseOverrides(std::string_view Json)
 		{
 			Result[Name] = FScriptValue::MakeVector3(FVector3(Value[0].get<float>(), Value[1].get<float>(), Value[2].get<float>()));
 		}
+		else if (Value.is_object() && Value.size() == 1 && Value.contains("Asset") && Value["Asset"].is_string())
+		{
+			Result[Name] = FScriptValue::MakeAsset(Value["Asset"].get<std::string>(), std::string());
+		}
 		else
 		{
 			E_LOG(LogScript, Warning, "지원하지 않는 스크립트 프로퍼티 값 형식 무시: {}", Name);
@@ -127,6 +141,7 @@ std::string FScriptProperties::SerializeOverrides(const FScriptValueMap& Overrid
 			break;
 		case EScriptValueType::String:  Document[Name] = Value.String; break;
 		case EScriptValueType::Vector3: Document[Name] = nlohmann::json::array({ Value.Vector.X, Value.Vector.Y, Value.Vector.Z }); break;
+		case EScriptValueType::Asset:   Document[Name] = nlohmann::json{ { "Asset", Value.String } }; break;
 		default:                        break;
 		}
 	}

@@ -375,6 +375,10 @@ namespace
 				{
 					Entity.AddedComponents.insert(Type.Name);
 				}
+				else if (!bInTarget)
+				{
+					Entity.AddedComponents.erase(Type.Name); // 추가했다가 다시 뺀 컴포넌트
+				}
 			});
 		}
 

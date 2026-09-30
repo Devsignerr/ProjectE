@@ -22,6 +22,14 @@ struct FScriptEntity
 	FEntity Entity;
 };
 
+// Lua의 에셋 참조 값 (스크립트 Properties의 Asset 타입): Prefab("Prefabs/Ball.eprefab"), Asset("Sounds/Hit.wav", ".wav").
+// 읽기 전용 (.Path, .Filter) — 인스턴스끼리 공유해도 안전하다
+struct FScriptAssetRef
+{
+	std::string Path;
+	std::string Filter;
+};
+
 // Lua의 컴포넌트 참조: entity:GetComponent("TransformComponent"). 필드 접근마다 리플렉션으로 현재 값을 읽고 쓴다
 // (컴포넌트 포인터는 풀 재할당으로 바뀔 수 있어 보관하지 않는다)
 struct FScriptComponentRef
@@ -92,6 +100,17 @@ private:
 	void RegisterMathBindings();
 	void RegisterEntityBindings();
 	void RegisterGlobals();
+	void RegisterPrefabBindings(); // Asset/Prefab 값, Scene.SpawnPrefab
+
+	// Scene.SpawnPrefab 요청: 스크립트 갱신 루프 밖에서 만든다 (ApplyPendingSpawns)
+	struct FPendingSpawn
+	{
+		std::string             Asset;
+		bool                    bHasPosition = false;
+		FVector3                Position;
+		sol::protected_function OnSpawned; // 만든 뒤 루트 엔티티로 호출 (없을 수 있음)
+	};
+	void ApplyPendingSpawns();
 
 	std::string MakeClassKey(const std::filesystem::path& AbsolutePath) const;
 	bool        ExecuteClassFile(FScriptClass& Class, const std::filesystem::path& AbsolutePath);
@@ -125,6 +144,7 @@ private:
 
 	std::unordered_map<uint64, FScriptInstance> Instances; // 키: FEntity::ToId()
 	std::vector<FEntity>                        PendingDestroy;
+	std::vector<FPendingSpawn>                  PendingSpawns;
 	std::vector<FEntity>                        UpdateOrder; // 매 프레임 재사용 (할당 최소화)
 
 	friend struct FLuaBindings;

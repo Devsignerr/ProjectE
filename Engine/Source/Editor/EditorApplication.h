@@ -67,6 +67,8 @@ private:
 	void VerifyAssetMove();                                   // 자동 검증 --verify-asset-move
 	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신
 	void VerifyReimport(const std::filesystem::path& ModelPath); // 자동 검증 --verify-reimport
+	// 프리팹 원본을 바꾸는 작업 감싸기: 오버라이드 기록(옛 원본) → Change → 캐시 비우기 → 열린 씬 인스턴스 동기화 + 에셋 해석
+	bool ChangePrefabAsset(const std::function<bool()>& Change);
 
 	// ---- 실행 취소 (씬 스냅샷)
 	void ResetUndoHistory();                       // 씬 열기/새 씬 직후 기준 상태로

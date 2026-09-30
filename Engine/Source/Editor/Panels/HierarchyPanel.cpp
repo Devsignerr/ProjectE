@@ -9,17 +9,13 @@
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Renderer/ModelLoader.h"
 #include "Scene/Particles.h"
+#include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
 #include <imgui.h>
 
 #include <algorithm>
 #include <cwctype>
-
-namespace
-{
-	constexpr const char* GEntityDragPayload = "E_ENTITY";
-}
 
 void FHierarchyPanel::Draw(FEditorContext& Context)
 {
@@ -66,7 +62,7 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 		}
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(GEntityDragPayload))
+			if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentDragDrop::EntityPayloadType))
 			{
 				PendingReparentChild  = *static_cast<const FEntity*>(Payload->Data);
 				PendingReparentParent = NullEntity;
@@ -183,10 +179,24 @@ void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, FEditorTheme::AccentHover);
 		ImGui::PushStyleColor(ImGuiCol_HeaderActive, FEditorTheme::AccentHover);
 	}
-	// 이름 앞 아이콘 자리를 비워 두고, 항목을 그린 뒤 종류별 색 아이콘을 덧그린다
-	const bool bOpened = ImGui::TreeNodeEx("##Node", Flags, "      %s", Name ? Name->Name.c_str() : "(이름 없음)");
+	// 이름 앞 아이콘 자리를 비워 두고, 항목을 그린 뒤 종류별 색 아이콘을 덧그린다. 프리팹 인스턴스 소속은 하늘색 이름
+	const bool bPrefabRoot   = FPrefabLibrary::IsInstanceRoot(Scene, Entity);
+	const bool bPrefabMember = bPrefabRoot || FPrefabLibrary::FindInstanceRoot(Scene, Entity).IsValid();
+	if (bPrefabMember)
 	{
-		const FEntityIcon Icon   = GetEntityIcon(Registry, Entity, bLeaf);
+		ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::PrefabText);
+	}
+	const bool bOpened = ImGui::TreeNodeEx("##Node", Flags, "      %s", Name ? Name->Name.c_str() : "(이름 없음)");
+	if (bPrefabMember)
+	{
+		ImGui::PopStyleColor();
+	}
+	{
+		FEntityIcon Icon = GetEntityIcon(Registry, Entity, bLeaf);
+		if (bPrefabRoot)
+		{
+			Icon = { ICON_FA_BOXES_STACKED, ImGui::GetColorU32(FEditorTheme::PrefabText) };
+		}
 		const ImVec2      ItemMin = ImGui::GetItemRectMin();
 		const float       TextY   = ItemMin.y + ImGui::GetStyle().FramePadding.y;
 		ImGui::GetWindowDrawList()->AddText(ImVec2(ItemMin.x + ImGui::GetTreeNodeToLabelSpacing(), TextY), Icon.Color, Icon.Glyph);
@@ -237,13 +247,13 @@ void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 	// 드래그 소스/타깃 (부모 변경)
 	if (ImGui::BeginDragDropSource())
 	{
-		ImGui::SetDragDropPayload(GEntityDragPayload, &Entity, sizeof(FEntity));
+		ImGui::SetDragDropPayload(FContentDragDrop::EntityPayloadType, &Entity, sizeof(FEntity));
 		ImGui::TextUnformatted(Name ? Name->Name.c_str() : "Entity");
 		ImGui::EndDragDropSource();
 	}
 	if (ImGui::BeginDragDropTarget())
 	{
-		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(GEntityDragPayload))
+		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentDragDrop::EntityPayloadType))
 		{
 			PendingReparentChild  = *static_cast<const FEntity*>(Payload->Data);
 			PendingReparentParent = Entity;
@@ -342,6 +352,10 @@ void FHierarchyPanel::AddAssets(FEditorContext& Context, const std::vector<std::
 			Scene.GetRegistry().Emplace<FParticleSystemComponent>(Entity).Asset = FModelLoader::MakeAssetPath(Path);
 			Scene.SetParent(Entity, Parent);
 		}
+		else if (Extension == FPrefabLibrary::Extension)
+		{
+			Entity = FEditorActions::InstantiatePrefab(Context, Path, Parent);
+		}
 		if (Scene.GetRegistry().IsValid(Entity))
 		{
 			Added.push_back(Entity);
@@ -351,7 +365,7 @@ void FHierarchyPanel::AddAssets(FEditorContext& Context, const std::vector<std::
 	{
 		if (Context.Notify)
 		{
-			Context.Notify("계층에는 모델과 파티클만 끌어 놓을 수 있습니다", true);
+			Context.Notify("계층에는 모델, 파티클, 프리팹만 끌어 놓을 수 있습니다", true);
 		}
 		return;
 	}

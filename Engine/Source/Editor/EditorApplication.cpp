@@ -18,6 +18,7 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/Particles.h"
+#include "Scene/Prefab.h"
 #include "Scene/SceneSerializer.h"
 
 #include <commdlg.h>
@@ -126,6 +127,8 @@ bool FEditorApplication::OnInit()
 	Context.AssetsMoved        = [this](const std::vector<FAssetMove>& Moves) { OnAssetsMoved(Moves); };
 	Context.Notify             = [this](const std::string& Message, bool bError) { ShowNotification(Message, bError); };
 	Context.ReimportModel      = [this](const std::filesystem::path& Path) { return ReimportModelAsset(Path); };
+	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
+	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
 	Scripts.SetContentDirectory(Context.ContentDirectory);
 	Scripts.SetAudioHooks({
@@ -435,6 +438,7 @@ bool FEditorApplication::SaveScene()
 	{
 		return SaveSceneAs();
 	}
+	FPrefabLibrary::Get().RecordAllOverrides(Scene); // 아직 커밋 안 된 인스턴스 편집도 오버라이드로
 	if (!FSceneSerializer::SaveToFile(Scene, CurrentScenePath))
 	{
 		return false;
@@ -451,6 +455,7 @@ bool FEditorApplication::SaveSceneAs()
 	{
 		return false;
 	}
+	FPrefabLibrary::Get().RecordAllOverrides(Scene);
 	if (!FSceneSerializer::SaveToFile(Scene, Path))
 	{
 		return false;
@@ -880,6 +885,8 @@ void FEditorApplication::CommitPendingEdit()
 	{
 		return;
 	}
+	// 프리팹 인스턴스에서 원본과 달라진 항목을 오버라이드로 기록한 뒤 스냅샷 (인스턴스가 현재 원본에 맞춰져 있다는 전제 — ChangePrefabAsset 참고)
+	FPrefabLibrary::Get().RecordAllOverrides(Scene);
 	if (UndoHistory.Commit(std::move(Label), FSceneSerializer::ToJsonString(Scene)))
 	{
 		UpdateWindowTitle();
@@ -1145,10 +1152,12 @@ void FEditorApplication::DrawPlayControls()
 
 void FEditorApplication::PollScriptChanges()
 {
+	bool bPrefabChanged = false;
 	for (const std::filesystem::path& Path : ScriptWatcher.Poll())
 	{
 		std::wstring Extension = Path.extension().wstring();
 		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		bPrefabChanged = bPrefabChanged || Extension == FPrefabLibrary::Extension;
 		if (Extension != L".lua")
 		{
 			continue;
@@ -1163,6 +1172,25 @@ void FEditorApplication::PollScriptChanges()
 			ShowNotification("스크립트 오류: " + Name + " (기존 코드 유지, 로그 확인)", true);
 		}
 	}
+	// 프리팹 파일이 바뀌면 (외부 편집, 되돌리기 등) 열린 씬 인스턴스를 다시 맞춘다. 편집 창 저장 직후에도 불리지만 결과는 같다
+	if (bPrefabChanged)
+	{
+		ChangePrefabAsset([] { return true; });
+		E_LOG(LogEditor, Log, "프리팹 파일 변경 감지 — 열린 씬 인스턴스 다시 맞춤");
+	}
+}
+
+bool FEditorApplication::ChangePrefabAsset(const std::function<bool()>& Change)
+{
+	// 순서가 중요하다: 오버라이드 차이는 "현재 원본"과 비교하므로 원본이 바뀌기 전에 기록하고, 바뀐 뒤에는 인스턴스를 새 원본에 맞춘다
+	FPrefabLibrary& Library = FPrefabLibrary::Get();
+	Library.RecordAllOverrides(Scene);
+	const bool bOk = Change();
+	Library.Invalidate();
+	Library.SyncAllInstances(Scene);
+	FEditorActions::PruneSelection(Context);
+	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
+	return bOk;
 }
 
 void FEditorApplication::ApplyDefaultLayoutIfNeeded()
@@ -1243,6 +1271,9 @@ void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
 
 	// 3) 실행 취소 기록의 씬 스냅샷도 같은 경로로 (되돌려도 옛 경로를 찾지 않게)
 	UndoHistory.TransformStates([&](std::string& State) { FAssetReferenceUpdater::RemapSceneJson(State, Context.ContentDirectory, Moves); });
+
+	// 프리팹 원본 캐시는 경로가 키이므로 비운다 (다음 사용 시 새 경로로 다시 읽음)
+	FPrefabLibrary::Get().Invalidate();
 
 	// 4) 열려 있는 씬 파일 자체가 옮겨졌으면 저장 경로도
 	if (!CurrentScenePath.empty())

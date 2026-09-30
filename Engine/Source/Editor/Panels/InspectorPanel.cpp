@@ -24,7 +24,8 @@
 namespace
 {
 	// 컴포넌트 섹션 헤더 (아이콘 + 굵은 이름 + 제거 버튼). 반환: 펼침 여부. OutRemove: 제거 요청
-	bool DrawComponentHeader(const FTypeInfo& Type, bool& OutRemove)
+	// bPrefabAdded: 프리팹 인스턴스에서 추가한 컴포넌트 (제목에 표시)
+	bool DrawComponentHeader(const FTypeInfo& Type, bool bPrefabAdded, bool& OutRemove)
 	{
 		OutRemove = false;
 		ImGui::PushID(Type.Name.c_str());
@@ -33,7 +34,7 @@ namespace
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.26f, 0.26f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.30f, 0.30f, 1.0f));
 		ImGui::PushFont(FEditorTheme::GetBoldFont(), 0.0f);
-		const std::string Label     = std::format("{}  {}", FEditorTheme::GetComponentIcon(Type.Name), Type.DisplayName);
+		const std::string Label = std::format("{}  {}{}", FEditorTheme::GetComponentIcon(Type.Name), Type.DisplayName, bPrefabAdded ? "  (+ 인스턴스에서 추가)" : "") + "###Header";
 		const bool        bExpanded = ImGui::CollapsingHeader(Label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
 		ImGui::PopFont();
 		ImGui::PopStyleColor(3);
@@ -66,47 +67,233 @@ void FInspectorPanel::Draw(FEditorContext& Context)
 
 	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_SLIDERS, "인스펙터", "Inspector").c_str(), &bOpen))
 	{
-		const FEntity Entity   = Context.SelectedEntity;
-		FRegistry&    Registry = Context.Scene->GetRegistry();
-
-		if (!Registry.IsValid(Entity))
-		{
-			ImGui::TextDisabled("선택된 엔티티가 없습니다");
-		}
-		else
-		{
-			DrawNameField(Context, Entity);
-			ImGui::Separator();
-
-			// 등록 순서대로 컴포넌트 표시. 제거는 순회 후 적용.
-			const FTypeInfo* PendingRemove = nullptr;
-			FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
-				if (Type.HasFlag(TF_HiddenInInspector) || !Type.HasComponent(Registry, Entity))
-				{
-					return;
-				}
-				void* Component = Type.GetComponent(Registry, Entity);
-				bool  bRemove   = false;
-				if (DrawComponentHeader(Type, bRemove))
-				{
-					DrawComponent(Context, Entity, Type, Component);
-				}
-				if (bRemove)
-				{
-					PendingRemove = &Type;
-				}
-			});
-			if (PendingRemove != nullptr)
-			{
-				PendingRemove->RemoveComponent(Registry, Entity);
-				Context.MarkEdited("컴포넌트 제거");
-			}
-
-			ImGui::Separator();
-			DrawAddComponentMenu(Context, Entity);
-		}
+		DrawContents(Context);
 	}
 	ImGui::End();
+}
+
+void FInspectorPanel::DrawContents(FEditorContext& Context)
+{
+	const FEntity Entity   = Context.SelectedEntity;
+	FRegistry&    Registry = Context.Scene->GetRegistry();
+
+	if (!Registry.IsValid(Entity))
+	{
+		ImGui::TextDisabled("선택된 엔티티가 없습니다");
+		return;
+	}
+
+	UpdatePrefabView(Context, Entity);
+	DrawPrefabHeader(Context, Entity);
+	DrawNameField(Context, Entity);
+	ImGui::Separator();
+
+	// 등록 순서대로 컴포넌트 표시. 제거는 순회 후 적용.
+	const FTypeInfo* PendingRemove = nullptr;
+	FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
+		if (Type.HasFlag(TF_HiddenInInspector) || !Type.HasComponent(Registry, Entity))
+		{
+			return;
+		}
+		void*      Component = Type.GetComponent(Registry, Entity);
+		bool       bRemove   = false;
+		const auto Found     = PrefabView.bMember ? PrefabView.Overrides.Entities.find(PrefabView.Id) : PrefabView.Overrides.Entities.end();
+		const bool bAdded    = Found != PrefabView.Overrides.Entities.end() && Found->second.AddedComponents.contains(Type.Name);
+		if (DrawComponentHeader(Type, bAdded, bRemove))
+		{
+			DrawComponent(Context, Entity, Type, Component);
+		}
+		if (bRemove)
+		{
+			PendingRemove = &Type;
+		}
+	});
+	if (PendingRemove != nullptr)
+	{
+		PendingRemove->RemoveComponent(Registry, Entity);
+		Context.MarkEdited("컴포넌트 제거");
+	}
+
+	ImGui::Separator();
+	DrawAddComponentMenu(Context, Entity);
+	ApplyPendingPrefabAction(Context, Entity);
+}
+
+// ---------------------------------------------------------------- 프리팹
+
+void FInspectorPanel::UpdatePrefabView(FEditorContext& Context, FEntity Entity)
+{
+	PrefabView            = FPrefabView{};
+	const FScene&   Scene = *Context.Scene;
+	const FEntity   Root  = FPrefabLibrary::FindInstanceRoot(Scene, Entity);
+	const FRegistry& Registry = Scene.GetRegistry();
+	if (!Root.IsValid())
+	{
+		return;
+	}
+	PrefabView.bMember = true;
+	PrefabView.Root    = Root;
+	if (const FPrefabLinkComponent* Link = Registry.TryGet<FPrefabLinkComponent>(Entity))
+	{
+		PrefabView.Id = Link->Id;
+	}
+	const FPrefabInstanceComponent& Instance = Registry.Get<FPrefabInstanceComponent>(Root);
+	PrefabView.Asset                         = Instance.Asset;
+	PrefabView.Overrides                     = FPrefabOverrides::Parse(Instance.Overrides);
+}
+
+void FInspectorPanel::DrawPrefabHeader(FEditorContext& Context, FEntity Entity)
+{
+	if (!PrefabView.bMember)
+	{
+		return;
+	}
+	const FRegistry& Registry = Context.Scene->GetRegistry();
+	ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::PrefabText);
+	ImGui::TextUnformatted(ICON_FA_BOXES_STACKED);
+	ImGui::SameLine();
+	ImGui::TextWrapped("프리팹: %s", PrefabView.Asset.c_str());
+	ImGui::PopStyleColor();
+	if (Entity != PrefabView.Root)
+	{
+		const FNameComponent* RootName = Registry.TryGet<FNameComponent>(PrefabView.Root);
+		ImGui::TextDisabled("인스턴스 '%s'의 일부", RootName ? RootName->Name.c_str() : "");
+		ImGui::SameLine();
+		if (ImGui::SmallButton("루트 선택"))
+		{
+			Context.Select(PrefabView.Root);
+		}
+	}
+	if (const FPrefabInstanceComponent* Nested = Registry.TryGet<FPrefabInstanceComponent>(Entity); Nested && Entity != PrefabView.Root)
+	{
+		ImGui::TextDisabled("중첩 프리팹: %s", Nested->Asset.c_str());
+	}
+
+	const size_t OverrideCount = PrefabView.Overrides.Count();
+	if (ImGui::SmallButton(ICON_FA_PEN_TO_SQUARE " 원본 열기") && Context.OpenAssetEditorRequest)
+	{
+		Context.OpenAssetEditorRequest(FPrefabLibrary::Get().ResolveAssetPath(PrefabView.Asset));
+	}
+	ImGui::SetItemTooltip("프리팹 편집 창에서 원본을 고칩니다. 저장하면 이 씬의 모든 인스턴스에 반영됩니다");
+	ImGui::BeginDisabled(Context.bPlaying);
+	ImGui::SameLine();
+	if (ImGui::SmallButton(ICON_FA_ROTATE_LEFT " 되돌리기"))
+	{
+		PendingPrefabAction = EPrefabAction::RevertAll;
+	}
+	ImGui::SetItemTooltip("인스턴스에서 바꾼 값, 추가/삭제한 컴포넌트와 엔티티를 모두 원본대로 되돌립니다");
+	ImGui::SameLine();
+	if (ImGui::SmallButton(ICON_FA_UPLOAD " 원본에 적용"))
+	{
+		PendingPrefabAction = EPrefabAction::Apply;
+	}
+	ImGui::SetItemTooltip("이 인스턴스의 현재 상태를 원본 파일에 저장합니다 (루트 위치/회전/이름 제외). 다른 인스턴스에도 반영됩니다");
+	ImGui::SameLine();
+	if (ImGui::SmallButton(ICON_FA_LINK_SLASH " 연결 해제"))
+	{
+		PendingPrefabAction = EPrefabAction::Unpack;
+	}
+	ImGui::SetItemTooltip("원본과의 연결을 끊고 일반 엔티티로 만듭니다");
+	ImGui::EndDisabled();
+	ImGui::TextDisabled("오버라이드 %zu개 (하늘색 막대 = 원본과 다른 값, 우클릭으로 되돌리기)", OverrideCount);
+
+	// 이 엔티티에서 제거한 원본 컴포넌트 (다시 추가하려면 되돌리기)
+	if (const auto Found = PrefabView.Overrides.Entities.find(PrefabView.Id); Found != PrefabView.Overrides.Entities.end())
+	{
+		for (const std::string& Removed : Found->second.RemovedComponents)
+		{
+			const FTypeInfo* Type = FTypeRegistry::Get().Find(Removed);
+			ImGui::PushID(Removed.c_str());
+			ImGui::TextColored(FEditorTheme::Warning, "- %s (인스턴스에서 제거)", Type ? Type->DisplayName.c_str() : Removed.c_str());
+			ImGui::SameLine();
+			ImGui::BeginDisabled(Context.bPlaying);
+			if (ImGui::SmallButton("되돌리기"))
+			{
+				PendingPrefabAction = EPrefabAction::RevertComponent;
+				PendingPrefabKey    = Removed;
+			}
+			ImGui::EndDisabled();
+			ImGui::PopID();
+		}
+	}
+	ImGui::Separator();
+}
+
+void FInspectorPanel::DrawOverrideMarker(const std::string& Key)
+{
+	if (!PrefabView.bMember || !PrefabView.Overrides.IsPropertyOverridden(PrefabView.Id, Key))
+	{
+		return;
+	}
+	// 유니티처럼 왼쪽 가장자리에 하늘색 막대
+	const ImVec2 Min = ImGui::GetItemRectMin();
+	const ImVec2 Max = ImGui::GetItemRectMax();
+	const float  X   = ImGui::GetWindowPos().x + 2.0f;
+	ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(X, Min.y), ImVec2(X + 3.0f, Max.y), ImGui::GetColorU32(FEditorTheme::PrefabText));
+	if (ImGui::BeginPopupContextItem("##PrefabOverride"))
+	{
+		ImGui::TextDisabled("프리팹 오버라이드");
+		if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT " 원본 값으로 되돌리기"))
+		{
+			PendingPrefabAction = EPrefabAction::RevertProperty;
+			PendingPrefabKey    = Key;
+		}
+		ImGui::EndPopup();
+	}
+}
+
+void FInspectorPanel::ApplyPendingPrefabAction(FEditorContext& Context, FEntity Entity)
+{
+	const EPrefabAction Action = PendingPrefabAction;
+	PendingPrefabAction        = EPrefabAction::None;
+	if (Action == EPrefabAction::None || !PrefabView.bMember)
+	{
+		return;
+	}
+	FPrefabLibrary& Library = FPrefabLibrary::Get();
+	FScene&         Scene   = *Context.Scene;
+	const FEntity   Root    = PrefabView.Root;
+	std::string     Error;
+	bool            bOk     = true;
+	const char*     Label   = "프리팹 되돌리기";
+	switch (Action)
+	{
+	case EPrefabAction::RevertProperty:  bOk = Library.RevertProperty(Scene, Entity, PendingPrefabKey); break;
+	case EPrefabAction::RevertComponent: bOk = Library.RevertComponent(Scene, Entity, PendingPrefabKey); break;
+	case EPrefabAction::RevertAll:       bOk = Library.RevertAll(Scene, Root); break;
+	case EPrefabAction::Unpack:
+		Library.Unpack(Scene, Root);
+		Label = "프리팹 연결 해제";
+		break;
+	case EPrefabAction::Apply:
+	{
+		const auto Apply = [&] { return Library.ApplyToPrefab(Scene, Root, &Error); };
+		bOk              = Context.ChangePrefab ? Context.ChangePrefab(Apply) : Apply();
+		Label            = "원본에 적용";
+		if (bOk && Context.Notify)
+		{
+			Context.Notify("원본에 적용: " + PrefabView.Asset, false);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	if (!bOk)
+	{
+		if (!Error.empty() && Context.Notify)
+		{
+			Context.Notify(Error, true);
+		}
+		return;
+	}
+	// 동기화로 경로가 바뀐 컴포넌트의 리소스 핸들을 다시 해석
+	if (Context.Resources != nullptr)
+	{
+		FSceneAssetResolver::Resolve(Scene, *Context.Resources, Context.ContentDirectory);
+	}
+	Context.DeselectIf([&Scene](FEntity Selected) { return !Scene.GetRegistry().IsValid(Selected); });
+	Context.MarkEdited(Label);
 }
 
 void FInspectorPanel::DrawNameField(FEditorContext& Context, FEntity Entity)
@@ -125,6 +312,7 @@ void FInspectorPanel::DrawNameField(FEditorContext& Context, FEntity Entity)
 		Name->Name = Buffer;
 		Context.MarkEdited("이름 변경");
 	}
+	DrawOverrideMarker("NameComponent.Name");
 	ImGui::TextDisabled("엔티티 #%u (세대 %u)", Entity.Index, Entity.Generation);
 }
 
@@ -145,6 +333,7 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 			{
 				Context.MarkEdited(std::format("{} 지정", Property.DisplayName));
 			}
+			DrawOverrideMarker(Type.Name + "." + Property.Name);
 			ImGui::PopID();
 			continue;
 		}
@@ -154,6 +343,7 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 			Context.MarkEdited(std::format("{} 편집", Property.DisplayName));
 		}
 		ImGui::EndDisabled();
+		DrawOverrideMarker(Type.Name + "." + Property.Name);
 		ImGui::PopID();
 	}
 	ImGui::PopID();
@@ -408,11 +598,64 @@ void FInspectorPanel::DrawStaticMeshExtras(FEditorContext& Context, FEntity Enti
 
 namespace
 {
+	// Filter(";" 구분 확장자, 비면 모두 허용)가 Path의 확장자를 받는가
+	bool MatchesAssetFilter(const std::string& Filter, const std::filesystem::path& Path)
+	{
+		if (Filter.empty())
+		{
+			return true;
+		}
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		return (";" + Filter + ";").find(";" + FStringConv::ToUtf8(Extension) + ";") != std::string::npos;
+	}
+
+	// 스크립트 에셋 값 칸: 콘텐츠 브라우저에서 끌어 놓기 + 비우기. 반환: 편집됨
+	bool DrawScriptAssetValue(FEditorContext& Context, const char* Label, FScriptValue& Value)
+	{
+		bool              bChanged = false;
+		const std::string Filter   = Value.AssetFilter;
+		const FEditorTheme::FAssetStyle Style =
+			FEditorTheme::GetAssetStyle(Value.String.empty() ? std::string() : FStringConv::ToUtf8(std::filesystem::path(FStringConv::ToWide(Value.String)).extension().wstring()), false);
+		const std::string Text = std::format("{} {}", Value.String.empty() ? ICON_FA_CIRCLE_XMARK : Style.Icon, Value.String.empty() ? "(없음)" : Value.String.c_str());
+		ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+		ImGui::Button(Text.c_str(), ImVec2(ImGui::CalcItemWidth(), 0.0f));
+		ImGui::PopStyleVar();
+		ImGui::SetItemTooltip("콘텐츠 브라우저에서 %s 파일을 끌어 놓습니다", Filter.empty() ? "에셋" : Filter.c_str());
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
+			{
+				if (MatchesAssetFilter(Filter, Paths->front()))
+				{
+					Value.String = FModelLoader::MakeAssetPath(Paths->front());
+					bChanged     = true;
+				}
+				else if (Context.Notify)
+				{
+					Context.Notify(std::format("{} 칸에는 {} 파일만 놓을 수 있습니다", Label, Filter), true);
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		if (!Value.String.empty() && ImGui::SmallButton(ICON_FA_XMARK))
+		{
+			Value.String.clear();
+			bChanged = true;
+		}
+		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		ImGui::TextUnformatted(Label);
+		return bChanged;
+	}
+
 	// 스크립트 프로퍼티 값 위젯. 반환: 편집됨
-	bool DrawScriptValue(const char* Label, FScriptValue& Value)
+	bool DrawScriptValue(FEditorContext& Context, const char* Label, FScriptValue& Value)
 	{
 		switch (Value.Type)
 		{
+		case EScriptValueType::Asset:
+			return DrawScriptAssetValue(Context, Label, Value);
 		case EScriptValueType::Bool:
 			return ImGui::Checkbox(Label, &Value.bBool);
 		case EScriptValueType::Number:
@@ -496,6 +739,7 @@ void FInspectorPanel::DrawScriptExtras(FEditorContext& Context, FEntity Entity)
 			if (ImGui::MenuItem(File.c_str(), nullptr, File == Script->ScriptAsset))
 			{
 				Script->ScriptAsset = File;
+				Context.MarkEdited("스크립트 지정");
 			}
 		}
 		ImGui::EndPopup();
@@ -524,6 +768,7 @@ void FInspectorPanel::DrawScriptExtras(FEditorContext& Context, FEntity Entity)
 	bool            bChanged  = false;
 
 	ImGui::SeparatorText(bLive ? "Properties (실행 값)" : "Properties");
+	DrawOverrideMarker("ScriptComponent.PropertyOverrides");
 	for (const FScriptPropertyDecl& Decl : *Decls)
 	{
 		const auto   Found       = Overrides.find(Decl.Name);
@@ -540,7 +785,8 @@ void FInspectorPanel::DrawScriptExtras(FEditorContext& Context, FEntity Entity)
 
 		ImGui::PushID(Decl.Name.c_str());
 		ImGui::BeginDisabled(bLive);
-		const bool bEdited = DrawScriptValue(Decl.Name.c_str(), Value);
+		Value.AssetFilter  = Decl.Default.AssetFilter;
+		const bool bEdited = DrawScriptValue(Context, Decl.Name.c_str(), Value);
 		ImGui::EndDisabled();
 		if (bEdited && !bLive)
 		{
@@ -563,6 +809,7 @@ void FInspectorPanel::DrawScriptExtras(FEditorContext& Context, FEntity Entity)
 	if (bChanged)
 	{
 		Script->PropertyOverrides = FScriptProperties::SerializeOverrides(Overrides);
+		Context.MarkEdited("스크립트 프로퍼티 편집");
 	}
 }
 

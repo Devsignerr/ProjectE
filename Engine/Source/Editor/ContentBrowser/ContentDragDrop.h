@@ -8,6 +8,8 @@
 struct FContentDragDrop
 {
 	static constexpr const char* PayloadType = "PE_CONTENT_ASSETS";
+	// 계층 패널에서 끄는 엔티티 (페이로드 = FEntity). 계층(부모 변경), 콘텐츠 폴더(프리팹 만들기)가 받는다
+	static constexpr const char* EntityPayloadType = "E_ENTITY";
 
 	static std::vector<std::filesystem::path>& GetPaths()
 	{

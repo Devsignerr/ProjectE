@@ -50,6 +50,9 @@ struct FEditorContext
 	std::function<void(const std::vector<FAssetMove>&)> AssetsMoved;
 	// 모델 다시 가져오기 (임포트 설정 저장 후): 캐시 교체 → 열린 씬 인스턴스·편집 창·썸네일 갱신. 실패하면 false
 	std::function<bool(const std::filesystem::path&)> ReimportModel;
+	// 프리팹 원본을 바꾸는 작업(편집 창 저장, 원본에 적용)을 감싼다: 열린 씬 오버라이드 기록(옛 원본 기준) → Change →
+	// 원본 캐시 비우기 → 열린 씬 인스턴스를 새 원본에 맞춤 + 에셋 해석. 반환: Change 결과. 없으면 Change만 실행
+	std::function<bool(const std::function<bool()>&)> ChangePrefab;
 	// 화면 알림 (bError면 빨간색)
 	std::function<void(const std::string&, bool)> Notify;
 

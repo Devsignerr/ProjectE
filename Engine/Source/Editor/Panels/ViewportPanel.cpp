@@ -21,7 +21,9 @@
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Editor/EditorActions.h"
 #include "Scene/Particles.h"
+#include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
@@ -543,6 +545,15 @@ void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<
 			Scene.GetTransform(Emitter).Position                           = Position;
 			Registry.Emplace<FParticleSystemComponent>(Emitter).Asset = FModelLoader::MakeAssetPath(Path);
 			Placed.push_back(Emitter);
+		}
+		else if (Extension == FPrefabLibrary::Extension)
+		{
+			const FEntity Root = FEditorActions::InstantiatePrefab(Context, Path, NullEntity);
+			if (Registry.IsValid(Root))
+			{
+				Scene.GetTransform(Root).Position = Position;
+				Placed.push_back(Root);
+			}
 		}
 		else if (Extension == L".emat")
 		{

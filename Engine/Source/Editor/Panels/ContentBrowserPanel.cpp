@@ -9,6 +9,7 @@
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Editor/ContentBrowser/ThumbnailCache.h"
+#include "Editor/EditorActions.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
 #include "Renderer/MaterialAsset.h"
@@ -41,9 +42,10 @@ namespace
 	bool IsModelExtension(const std::string& Extension) { return Extension == ".glb" || Extension == ".gltf" || Extension == ".fbx"; }
 	bool IsSceneExtension(const std::string& Extension) { return Extension == ".escene"; }
 	bool IsParticleExtension(const std::string& Extension) { return Extension == ".eparticle"; }
+	bool IsPrefabExtension(const std::string& Extension) { return Extension == ".eprefab"; }
 
 	// 종류 필터 (0 = 전체). FEditorTheme::GetAssetStyle의 Label과 같은 이름
-	constexpr const char* GTypeFilters[] = { "전체", "모델", "머티리얼", "텍스처", "파티클", "씬", "스크립트", "오디오" };
+	constexpr const char* GTypeFilters[] = { "전체", "모델", "머티리얼", "텍스처", "파티클", "프리팹", "씬", "스크립트", "오디오" };
 
 	// 폭에 맞게 말줄임 ("긴이름…")
 	std::string Ellipsize(const std::string& Text, float MaxWidth)
@@ -639,6 +641,15 @@ void FContentBrowserPanel::AcceptMoveDrop(FEditorContext& Context, const std::fi
 		const std::vector<std::filesystem::path> Sources = *Paths; // 이동 중 목록이 바뀌지 않도록 복사
 		MoveAssets(Context, Sources, DestinationDirectory);
 	}
+	// 계층에서 끌어 온 엔티티 → 이 폴더에 프리팹 만들기
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(FContentDragDrop::EntityPayloadType))
+	{
+		const FEntity Entity = *static_cast<const FEntity*>(Payload->Data);
+		if (!FEditorActions::CreatePrefabs(Context, Entity, DestinationDirectory).empty())
+		{
+			bNeedsRefresh = true;
+		}
+	}
 	ImGui::EndDragDropTarget();
 }
 
@@ -674,7 +685,7 @@ void FContentBrowserPanel::DrawItemContextMenu(FEditorContext& Context, const FE
 			OpenEntry(Context, Entry);
 		}
 	}
-	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension))
+	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension) || IsPrefabExtension(Entry.Extension))
 	{
 		if (ImGui::MenuItem(ICON_FA_PLUS " 씬에 추가", nullptr, false, !Context.bPlaying))
 		{
@@ -792,6 +803,10 @@ void FContentBrowserPanel::AddToScene(FEditorContext& Context, const FEntry& Ent
 	{
 		Added = Scene.CreateEntity(FStringConv::ToUtf8(Entry.Path.stem().wstring()));
 		Scene.GetRegistry().Emplace<FParticleSystemComponent>(Added).Asset = FModelLoader::MakeAssetPath(Entry.Path);
+	}
+	else if (IsPrefabExtension(Entry.Extension))
+	{
+		Added = FEditorActions::InstantiatePrefab(Context, Entry.Path, NullEntity);
 	}
 	if (!Scene.GetRegistry().IsValid(Added))
 	{

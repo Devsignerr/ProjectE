@@ -50,6 +50,9 @@ struct FScriptPhysicsHooks
 //   function Rotator:OnDestroy() end                   -- 엔티티/컴포넌트 제거 또는 플레이 종료 시
 //   return Rotator
 // 인스턴스(self)마다 self.entity(엔티티 핸들)와 self.Properties(기본값 + 오버라이드 복사본)가 있다.
+// 프리팹: Properties에 Prefab("Prefabs/X.eprefab")로 선언하면 인스펙터에 드롭 칸이 생기고,
+//   Scene.SpawnPrefab(self.Properties.X, position?, function(root) ... end)로 만든다. 생성은 그 프레임 스크립트 갱신이 끝난 뒤
+//   (지연)이며 콜백이 그때 루트 엔티티를 받는다. 만든 엔티티의 에셋 참조는 ConsumeSceneStructureChanged로 앱이 해석한다.
 //
 // 플레이 세션마다 새 Lua 상태를 만든다 (전역 상태가 세션 사이에 남지 않음, Unity의 도메인 리로드와 같은 효과).
 // 스크립트 오류는 로그로 남기고 해당 인스턴스만 멈춘다 (핫 리로드 시 재개). 절대 크래시하지 않는다.

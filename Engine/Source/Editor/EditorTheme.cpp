@@ -181,6 +181,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255), "파티클" };
 	}
+	if (Extension == ".eprefab")
+	{
+		return { ICON_FA_BOXES_STACKED, IM_COL32(115, 184, 255, 255), "프리팹" };
+	}
 	if (Extension == ".escene")
 	{
 		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(230, 110, 90, 255), "씬" };

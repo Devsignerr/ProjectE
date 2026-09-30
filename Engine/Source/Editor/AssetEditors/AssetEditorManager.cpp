@@ -5,6 +5,8 @@
 #include "Editor/AssetEditors/MaterialEditor.h"
 #include "Editor/AssetEditors/ModelEditors.h"
 #include "Editor/AssetEditors/ParticleEditor.h"
+#include "Editor/AssetEditors/PrefabEditor.h"
+#include "Scene/Prefab.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Scene/Particles.h"
 #include "Editor/EditorContext.h"
@@ -50,6 +52,10 @@ namespace
 		{
 			return std::make_unique<FParticleEditor>(Path);
 		}
+		if (Extension == FPrefabLibrary::Extension)
+		{
+			return std::make_unique<FPrefabEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -89,7 +95,8 @@ void FAssetEditorManager::Shutdown(FEditorContext& Context)
 bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 {
 	const std::wstring Extension = ToLowerExtension(Path);
-	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || IsModelExtension(Extension);
+	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
+	       IsModelExtension(Extension);
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)

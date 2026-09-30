@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Scene/Prefab.h"
 
 #include <string>
 #include <vector>
@@ -12,10 +13,13 @@ struct FTypeInfo;
 
 // 선택된 엔티티의 컴포넌트를 리플렉션 정보로 편집한다.
 // 등록된 컴포넌트 타입(FTypeRegistry)을 순회하므로 새 컴포넌트는 등록만 하면 자동으로 표시된다.
+// 프리팹 인스턴스면 머리글(원본/되돌리기/원본에 적용/연결 해제)과 오버라이드된 프로퍼티 표시(왼쪽 하늘색 막대, 우클릭 되돌리기)를 더한다.
 class FInspectorPanel
 {
 public:
 	void Draw(FEditorContext& Context);
+	// 창 없이 내용만 (Context.Scene의 Context.SelectedEntity). 프리팹 편집 창이 자기 미리보기 씬으로 쓴다
+	void DrawContents(FEditorContext& Context);
 
 	bool bOpen = true;
 
@@ -30,6 +34,34 @@ private:
 	void DrawScriptExtras(FEditorContext& Context, FEntity Entity); // 스크립트 선택 + Properties 오버라이드
 	void DrawAnimationExtras(FEditorContext& Context, FEntity Entity); // 클립 선택 드롭다운 + 재생 상태
 	void DrawAddComponentMenu(FEditorContext& Context, FEntity Entity);
+
+	// ---- 프리팹
+	void UpdatePrefabView(FEditorContext& Context, FEntity Entity);
+	void DrawPrefabHeader(FEditorContext& Context, FEntity Entity);
+	// 직전 항목이 오버라이드된 프로퍼티(Key = "컴포넌트.프로퍼티")면 표시 + 우클릭 되돌리기
+	void DrawOverrideMarker(const std::string& Key);
+	void ApplyPendingPrefabAction(FEditorContext& Context, FEntity Entity);
+
+	struct FPrefabView
+	{
+		bool             bMember = false; // 선택 엔티티가 씬 인스턴스 소속
+		FEntity          Root;
+		std::string      Id;
+		std::string      Asset;
+		FPrefabOverrides Overrides;
+	};
+	enum class EPrefabAction : uint8
+	{
+		None,
+		RevertProperty,
+		RevertComponent,
+		RevertAll,
+		Apply,
+		Unpack,
+	};
+	FPrefabView   PrefabView;
+	EPrefabAction PendingPrefabAction = EPrefabAction::None;
+	std::string   PendingPrefabKey; // 되돌릴 프로퍼티 키 / 컴포넌트 이름
 
 	// 쿼터니언은 오일러 각으로 편집. 변환 불안정을 피하기 위해 편집 중 값을 (엔티티, 프로퍼티)별로 캐시
 	FEntity              EulerCacheEntity;

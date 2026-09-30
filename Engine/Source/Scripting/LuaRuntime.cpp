@@ -5,6 +5,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
@@ -128,6 +129,7 @@ FLuaRuntime::FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErr
 FLuaRuntime::~FLuaRuntime()
 {
 	// sol 참조(테이블/함수)는 상태보다 먼저 해제되어야 한다
+	PendingSpawns.clear();
 	Instances.clear();
 	Classes.clear();
 	Traceback = sol::lua_nil;
@@ -146,6 +148,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterMathBindings();
 	RegisterEntityBindings();
 	RegisterGlobals();
+	RegisterPrefabBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -645,6 +648,11 @@ FScriptValue FLuaRuntime::ToScriptValue(const sol::object& Object)
 		{
 			return FScriptValue::MakeVector3(Object.as<FVector3>());
 		}
+		if (Object.is<FScriptAssetRef>())
+		{
+			const FScriptAssetRef& Ref = Object.as<const FScriptAssetRef&>();
+			return FScriptValue::MakeAsset(Ref.Path, Ref.Filter);
+		}
 		return FScriptValue{};
 	default: return FScriptValue{};
 	}
@@ -659,6 +667,7 @@ sol::object FLuaRuntime::FromScriptValue(const FScriptValue& Value)
 		return Value.bInteger ? sol::make_object(Lua, static_cast<lua_Integer>(Value.Number)) : sol::make_object(Lua, Value.Number);
 	case EScriptValueType::String:  return sol::make_object(Lua, Value.String);
 	case EScriptValueType::Vector3: return sol::make_object(Lua, Value.Vector);
+	case EScriptValueType::Asset:   return sol::make_object(Lua, FScriptAssetRef{ Value.String, Value.AssetFilter });
 	default:                        return sol::lua_nil;
 	}
 }
@@ -893,6 +902,7 @@ void FLuaRuntime::CreateInstance(FEntity Entity, const std::string& ScriptAsset,
 		{
 			Typed.bInteger = Decl->Default.bInteger;
 		}
+		Typed.AssetFilter = Decl->Default.AssetFilter; // 에셋 확장자는 선언을 따른다
 		Properties[Name] = FromScriptValue(Typed);
 	}
 
@@ -987,6 +997,8 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 
 	FRegistry& Registry = Scene->GetRegistry();
 
+	ApplyPendingSpawns(); // 갱신 밖(RunString 등)에서 요청된 생성
+
 	UpdateOrder.clear();
 	Registry.View<FScriptComponent>().Each([&](FEntity Entity, FScriptComponent&) { UpdateOrder.push_back(Entity); });
 
@@ -1038,7 +1050,8 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 		CallMethod(Instance, "OnUpdate", DeltaSeconds, true);
 	}
 
-	// 4. 스크립트가 요청한 파괴
+	// 4. 스크립트가 요청한 프리팹 생성 (갱신 순회가 끝난 뒤) → 파괴
+	ApplyPendingSpawns();
 	ApplyPendingDestroys();
 }
 
@@ -1056,6 +1069,7 @@ void FLuaRuntime::DestroyAllInstances()
 	}
 	Instances.clear();
 	PendingDestroy.clear();
+	PendingSpawns.clear();
 }
 
 bool FLuaRuntime::RunString(std::string_view Code)
@@ -1083,4 +1097,92 @@ FScriptValue FLuaRuntime::GetInstanceProperty(FEntity Entity, const std::string&
 		return FScriptValue{};
 	}
 	return ToScriptValue(Properties.as<sol::table>()[Name]);
+}
+
+// ---------------------------------------------------------------- 프리팹 (에셋 값, Scene.SpawnPrefab)
+
+void FLuaRuntime::RegisterPrefabBindings()
+{
+	// 에셋 참조 값: Properties 기본값으로 선언하면 인스펙터가 콘텐츠 브라우저 드롭 칸을 보여 준다
+	Lua.new_usertype<FScriptAssetRef>(
+		"AssetRef",
+		sol::no_constructor,
+		"Path", sol::readonly_property([](const FScriptAssetRef& Ref) { return Ref.Path; }),
+		"Filter", sol::readonly_property([](const FScriptAssetRef& Ref) { return Ref.Filter; }),
+		"IsEmpty", [](const FScriptAssetRef& Ref) { return Ref.Path.empty(); },
+		sol::meta_function::to_string, [](const FScriptAssetRef& Ref) { return std::format("Asset({})", Ref.Path); },
+		sol::meta_function::equal_to, [](const FScriptAssetRef& A, const FScriptAssetRef& B) { return A.Path == B.Path; });
+	Lua["Asset"]  = [](sol::optional<std::string> Path, sol::optional<std::string> Filter) {
+		return FScriptAssetRef{ Path.value_or(std::string()), Filter.value_or(std::string()) };
+	};
+	Lua["Prefab"] = [](sol::optional<std::string> Path) { return FScriptAssetRef{ Path.value_or(std::string()), ".eprefab" }; };
+
+	// Scene.SpawnPrefab(prefab, position?, onSpawned?) — 프리팹 경로 문자열 또는 Prefab 값.
+	// 생성은 지연된다: 이번 프레임 스크립트 갱신(OnStart/OnUpdate 순회)이 끝난 뒤 만들어지고, onSpawned(root)가 그때 호출된다.
+	// 만든 엔티티의 스크립트는 다음 프레임부터 OnStart/OnUpdate가 돈다. 반환값 없음 (엔티티는 onSpawned에서 받는다)
+	sol::table SceneTable     = Lua["Scene"];
+	SceneTable["SpawnPrefab"] = [this](const sol::object& Prefab, sol::optional<FVector3> Position, sol::optional<sol::function> OnSpawned) {
+		if (Scene == nullptr)
+		{
+			throw std::runtime_error("씬이 없습니다 (플레이 중에만 프리팹을 만들 수 있습니다)");
+		}
+		FPendingSpawn Spawn;
+		if (Prefab.is<FScriptAssetRef>())
+		{
+			Spawn.Asset = Prefab.as<const FScriptAssetRef&>().Path;
+		}
+		else if (Prefab.get_type() == sol::type::string)
+		{
+			Spawn.Asset = Prefab.as<std::string>();
+		}
+		if (Spawn.Asset.empty())
+		{
+			throw std::runtime_error("Scene.SpawnPrefab: 프리팹 경로(문자열 또는 Prefab 값)가 필요합니다");
+		}
+		Spawn.bHasPosition = Position.has_value();
+		Spawn.Position     = Position.value_or(FVector3::ZeroVector);
+		if (OnSpawned)
+		{
+			Spawn.OnSpawned = sol::protected_function(*OnSpawned, Traceback);
+		}
+		PendingSpawns.push_back(std::move(Spawn));
+	};
+}
+
+void FLuaRuntime::ApplyPendingSpawns()
+{
+	if (PendingSpawns.empty() || Scene == nullptr)
+	{
+		return;
+	}
+	// 콜백이 또 생성하면 다음 적용(다음 프레임)으로 넘어간다
+	std::vector<FPendingSpawn> Batch;
+	Batch.swap(PendingSpawns);
+	for (FPendingSpawn& Spawn : Batch)
+	{
+		// 상대 경로는 이 런타임의 Content 기준 (라이브러리 기준 폴더와 달라도 같은 파일을 가리키도록 절대 경로로 넘긴다)
+		const std::filesystem::path RelativeOrAbsolute = FStringConv::ToWide(Spawn.Asset);
+		const std::filesystem::path File               = RelativeOrAbsolute.is_absolute() ? RelativeOrAbsolute : ContentDirectory / RelativeOrAbsolute;
+		std::string                 Error;
+		const FEntity               Root = FPrefabLibrary::Get().Instantiate(*Scene, FStringConv::ToUtf8(File.wstring()), NullEntity, &Error);
+		if (!Root.IsValid())
+		{
+			ReportError(std::format("Scene.SpawnPrefab 실패: {} — {}", Spawn.Asset, Error));
+			continue;
+		}
+		if (Spawn.bHasPosition)
+		{
+			Scene->GetTransform(Root).Position = Spawn.Position;
+		}
+		bStructureChanged = true; // 앱이 메시/머티리얼/모델 참조를 해석한다
+		if (Spawn.OnSpawned.valid())
+		{
+			sol::protected_function_result Result = Spawn.OnSpawned(FScriptEntity{ Root });
+			if (!Result.valid())
+			{
+				const sol::error CallbackError = Result;
+				ReportError(std::format("Scene.SpawnPrefab 콜백 오류 ({})\n{}", Spawn.Asset, CallbackError.what()));
+			}
+		}
+	}
 }

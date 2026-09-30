@@ -11,7 +11,7 @@ namespace
 {
 	std::filesystem::path MakePlayModeContent()
 	{
-		const std::filesystem::path Directory = std::filesystem::temp_directory_path() / L"ProjectEPlayModeTests";
+		const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectEPlayModeTests";
 		std::filesystem::create_directories(Directory / L"Scripts");
 		std::ofstream File(Directory / L"Scripts/Push.lua", std::ios::binary | std::ios::trunc);
 		File << R"(

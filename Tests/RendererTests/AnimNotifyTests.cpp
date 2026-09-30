@@ -209,7 +209,7 @@ E_TEST(ModelMetadata_JsonRoundTripAndSidecar)
 	E_EXPECT_FALSE(Loaded.FromJsonString("{ 깨진"));
 
 	// 사이드카: 원본 + ".emeta", 비어 있으면 파일을 지운다
-	const std::filesystem::path Source = std::filesystem::temp_directory_path() / L"ProjectE_메타_테스트.glb";
+	const std::filesystem::path Source = FTestRegistry::GetTempDirectory() / L"ProjectE_메타_테스트.glb";
 	E_EXPECT_TRUE(FModelMetadata::GetSidecarPath(Source).filename() == L"ProjectE_메타_테스트.glb.emeta");
 	E_EXPECT_TRUE(Metadata.SaveForSource(Source));
 	E_EXPECT_TRUE(std::filesystem::exists(FModelMetadata::GetSidecarPath(Source)));

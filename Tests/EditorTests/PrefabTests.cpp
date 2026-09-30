@@ -19,7 +19,7 @@ namespace
 	fs::path GetContent()
 	{
 		static const fs::path Directory = [] {
-			const fs::path  Path = fs::temp_directory_path() / L"ProjectEPrefabTests" / L"Content";
+			const fs::path  Path = FTestRegistry::GetTempDirectory() / L"ProjectEPrefabTests" / L"Content";
 			std::error_code ErrorCode;
 			fs::remove_all(Path.parent_path(), ErrorCode);
 			fs::create_directories(Path / L"Prefabs");

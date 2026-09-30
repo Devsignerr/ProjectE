@@ -21,7 +21,7 @@ namespace
 	// 테스트용 16비트 모노 사인파 WAV 작성
 	std::filesystem::path WriteSineWav(const char* FileName, float Frequency, float Seconds)
 	{
-		const std::filesystem::path Directory = std::filesystem::temp_directory_path() / "ProjectEAudioTests";
+		const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / "ProjectEAudioTests";
 		std::filesystem::create_directories(Directory);
 		const std::filesystem::path Path = Directory / FileName;
 

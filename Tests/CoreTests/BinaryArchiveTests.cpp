@@ -58,7 +58,7 @@ E_TEST(BinaryArchive_TruncatedDataFailsSafely)
 
 E_TEST(BinaryArchive_FileSaveLoad)
 {
-	const std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectE_테스트_Archive" / L"Data.bin";
+	const std::filesystem::path Path = FTestRegistry::GetTempDirectory() / L"ProjectE_테스트_Archive" / L"Data.bin";
 	FBinaryWriter               Writer;
 	Writer.WriteArray(std::vector<float>{ 0.25f, 0.5f });
 	E_EXPECT_TRUE(Writer.SaveToFile(Path));

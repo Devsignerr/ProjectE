@@ -16,7 +16,7 @@ namespace
 	std::filesystem::path GetTestContentDirectory()
 	{
 		static const std::filesystem::path Directory = [] {
-			std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectEScriptingTests";
+			std::filesystem::path Path = FTestRegistry::GetTempDirectory() / L"ProjectEScriptingTests";
 			std::error_code       ErrorCode;
 			std::filesystem::remove_all(Path, ErrorCode);
 			std::filesystem::create_directories(Path / L"Scripts");

@@ -13,7 +13,7 @@ namespace
 	fs::path GetSpawnContent()
 	{
 		static const fs::path Directory = [] {
-			const fs::path  Path = fs::temp_directory_path() / L"ProjectEPrefabSpawnTests";
+			const fs::path  Path = FTestRegistry::GetTempDirectory() / L"ProjectEPrefabSpawnTests";
 			std::error_code ErrorCode;
 			fs::remove_all(Path, ErrorCode);
 			fs::create_directories(Path / L"Scripts");

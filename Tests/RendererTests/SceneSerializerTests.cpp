@@ -125,7 +125,7 @@ E_TEST(SceneSerializer_FileAndTolerance)
 	FScene Source;
 	BuildTestScene(Source);
 
-	const std::filesystem::path Path = std::filesystem::temp_directory_path() / L"ProjectE_테스트" / L"Scene.escene";
+	const std::filesystem::path Path = FTestRegistry::GetTempDirectory() / L"ProjectE_테스트" / L"Scene.escene";
 	E_EXPECT_TRUE(FSceneSerializer::SaveToFile(Source, Path));
 
 	FScene Loaded;

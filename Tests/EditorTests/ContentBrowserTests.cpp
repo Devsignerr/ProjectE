@@ -37,7 +37,7 @@ namespace
 
 		explicit FTempContent(const char* Name)
 		{
-			Root    = fs::temp_directory_path() / "ProjectE_EditorTests" / Name;
+			Root    = FTestRegistry::GetTempDirectory() / "ProjectE_EditorTests" / Name;
 			Content = Root / "Content";
 			Project = Root / "Test.eproject";
 			std::error_code ErrorCode;

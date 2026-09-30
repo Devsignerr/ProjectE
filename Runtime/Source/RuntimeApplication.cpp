@@ -9,8 +9,6 @@
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
-#include "Scene/AnimationSystem.h"
-#include "Scene/Particles.h"
 #include "Scene/SceneSerializer.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
@@ -111,32 +109,15 @@ bool FRuntimeApplication::OnInit()
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 50.0f));
 
-	// 게임 시작: 스크립트 컴포넌트 실행
-	Scripts.SetContentDirectory(FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	// 게임 시작: 게임 월드(스크립트 콘텐츠 경로·물리 훅 연결) → BeginPlay
+	World.Init({ &Scripts, &Physics, &GameModule, &Resources,
+	             FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory() });
 	Scripts.SetAudioHooks({
 		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
-	Scripts.SetPhysicsHooks({
-		[this](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
-			FPhysicsHit Hit;
-			if (!Physics.Raycast(Origin, Direction, MaxDistance, Hit))
-			{
-				return false;
-			}
-			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
-			return true;
-		},
-		[this](FEntity Entity, const FVector3& Force) { Physics.AddForce(Entity, Force); },
-		[this](FEntity Entity, const FVector3& Impulse) { Physics.AddImpulse(Entity, Impulse); },
-		[this](FEntity Entity, const FVector3& Velocity) { Physics.SetVelocity(Entity, Velocity); },
-		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
-		[this](FEntity Entity) { return Physics.GetMass(Entity); },
-	});
-	Physics.Begin();
-	GameModule.BeginPlay(Scene);
-	Scripts.BeginPlay(Scene);
+	World.BeginPlay(Scene);
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
@@ -150,17 +131,8 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
-	Scripts.Update(DeltaSeconds, &InputState);
-	if (Scripts.ConsumeSceneStructureChanged())
-	{
-		FSceneAssetResolver::Resolve(Scene, Resources, Scripts.GetContentDirectory());
-	}
-	GameModule.Update(Scene, DeltaSeconds);
-	Physics.Update(Scene, DeltaSeconds);
-	FAnimationSystem::Update(Scene, DeltaSeconds);
-	Scene.UpdateTransforms();
-	FSceneAssetResolver::ResolveParticles(Scene, Resources, Scripts.GetContentDirectory());
-	FParticleSystem::Update(Scene, DeltaSeconds);
+	World.TickGameplay(DeltaSeconds, &InputState);
+	World.TickPresentation(Scene, DeltaSeconds);
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
@@ -193,9 +165,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
-	Scripts.EndPlay();
-	GameModule.EndPlay(Scene);
-	Physics.End();
+	World.EndPlay();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();
 

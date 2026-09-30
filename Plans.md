@@ -337,7 +337,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - 입력: 클라이언트가 틱마다 입력 커맨드 전송. 서버에서 Lua `Input`은 해당 엔티티 소유 플레이어의 입력을 돌려준다
 
 - [x] 1. GNS 도입 시험 (2026-09-30): GNS v1.6.0 정적(BCrypt, ICE 끔) + protobuf v21.12(abseil 비의존 마지막 버전, `OVERRIDE_FIND_PACKAGE` + 리디렉트 `protobuf-extra.cmake`로 `protobuf_generate_cpp` 제공), 서드파티는 `/W0`(엔진 `/WX`와 격리), GNS 디렉터리만 `WIN32_LEAN_AND_MEAN` 제거, 프로젝트에 C 언어 활성화. `Tests/NetworkTests` `Gns_LocalhostEcho` 통과(Debug/Release). Release 전체 빌드 163초(엔진 재빌드 포함). 주의: GNS 리슨 소켓은 포트 0(자동 할당)을 받지 않는다
-- [ ] 2. 공용 월드 틱 `FGameWorld`: 씬 + 스크립트/게임 모듈/물리/애니메이션/파티클 갱신 순서를 하나로(현재 `RuntimeApplication.cpp`와 `PlayMode.cpp`+`EditorApplication.cpp`에 중복), 물리에 "보간 없이 최신 스텝 값 쓰기" 옵션 — 완료 기준: 기존 테스트 전부 통과, Verify(Editor/Runtime) 스크린샷 동일
+- [x] 2. 공용 월드 틱 (2026-09-30): 새 `World` 모듈 `FGameWorld`(엔진 DLL) — `BeginPlay/EndPlay`, `TickGameplay`(스크립트 → 에셋 해석 → 게임 모듈 → 물리 → 트랜스폼), `TickPresentation`(애니메이션 → 트랜스폼 → 파티클, 에디터는 편집 중에도), 스크립트 물리 훅 연결도 한곳으로. 런타임/`FPlayMode`/에디터가 사용(중복 제거). `FPhysicsSystem::SetInterpolation(false)` = 최신 스텝 값. 테스트 `GameWorld_LifecycleAndPhysicsHooks`, `Physics_InterpolationCanBeDisabled`, 전체 9묶음 통과, Verify 4건(런타임 물리/애니메이션, 에디터 플레이/파티클) 오류 0건·화면 동일
 - [ ] 3. 창 없는 실행: `FApplicationDesc::bHeadless`(창·RHI 없이 고정 틱 루프) + `Server/Source/` → `ProjectEServer.exe`(`--project --scene --port`) — 완료 기준: 씬 로드 후 `--exit-after` 틱 수만큼 돌고 정상 종료
 - [ ] 4. Network 모듈 기반(`ENetwork`, 엔진 DLL 포함): 전송 계층 인터페이스, 넷 모드, 연결 수립(엔진·프로젝트 버전·씬 확인), 신뢰/비신뢰 채널, `FNetDriver`, 인자 `--host`/`--connect ip:port`
 - [ ] 5. 복제 핵심: 리플렉션 바이너리 직렬화(`EntityJson` switch 본뜸), NetId 매핑, 생성/파괴 메시지(프리팹 경로 또는 컴포넌트 스냅샷), 연결별 확인 기준 델타, 클라이언트 보간, 접속 시 `.eproject` `PlayerPrefab` 생성 + 소유권

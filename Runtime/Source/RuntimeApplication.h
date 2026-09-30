@@ -11,6 +11,7 @@
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
+#include "World/GameWorld.h"
 
 #include <memory>
 
@@ -47,4 +48,5 @@ private:
 	FAudioEngine         Audio;
 	FAudioSystem         AudioSystem;
 	FPhysicsSystem       Physics; // 항상 시뮬레이션 (씬 로드 후 Begin)
+	FGameWorld           World;   // 게임 월드 갱신 순서 (위 시스템들을 비소유로 참조)
 };

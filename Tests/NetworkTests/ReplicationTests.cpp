@@ -1,6 +1,7 @@
 #include "Core/Testing/TestFramework.h"
 #include "Network/LoopbackTransport.h"
 #include "Network/NetDriver.h"
+#include "Network/NetPlayerSpawner.h"
 #include "Network/ReplicationClient.h"
 #include "Network/ReplicationServer.h"
 #include "Network/ReplicationTypes.h"
@@ -36,6 +37,25 @@ namespace
 			}
 		});
 		return Result;
+	}
+
+	// 테스트 Content에 복제 프리팹(Pawn + 자식 Gun)을 만든다
+	std::filesystem::path MakePawnPrefab()
+	{
+		const std::filesystem::path Content = std::filesystem::temp_directory_path() / L"ProjectEReplicationTests";
+		std::filesystem::create_directories(Content);
+		std::filesystem::remove(Content / L"Pawn.eprefab"); // 이전 실행 결과 (CreatePrefab은 기존 파일을 덮지 않는다)
+		FPrefabLibrary::Get().SetContentDirectory(Content);
+		RegisterNetworkTypes();
+		FScene        Authoring;
+		const FEntity Pawn = Authoring.CreateEntity("Pawn");
+		Authoring.GetRegistry().Emplace<FReplicatedComponent>(Pawn);
+		const FEntity Gun = Authoring.CreateEntity("Gun");
+		Authoring.SetParent(Gun, Pawn);
+		Authoring.GetRegistry().Emplace<FReplicatedComponent>(Gun);
+		FPrefabLibrary::Get().CreatePrefab(Authoring, Pawn, Content / L"Pawn.eprefab");
+		FPrefabLibrary::Get().Invalidate();
+		return Content;
 	}
 
 	FNetSessionInfo Session()
@@ -82,8 +102,8 @@ namespace
 			return Client;
 		}
 
-		// 서버 복제 한 번 + 메시지 왕복
-		void Pump(int32 Rounds = 3)
+		// 서버 복제 + 메시지 왕복 + 클라이언트 보간. 기본 10회(0.33초) = 보간 지연(0.1초)을 넘겨 최종 값에 도달
+		void Pump(int32 Rounds = 10)
 		{
 			for (int32 Round = 0; Round < Rounds; ++Round)
 			{
@@ -92,6 +112,7 @@ namespace
 				for (auto& Client : Clients)
 				{
 					Client->Driver.Update(SendStep);
+					Client->Replication.Update(SendStep);
 				}
 			}
 		}
@@ -189,25 +210,9 @@ E_TEST(Replication_LateJoinerGetsCurrentState)
 E_TEST(Replication_PrefabSpawnLinksChildren)
 {
 	// 프리팹 인스턴스는 경로로 생성하고, 복제 대상 하위 엔티티는 링크 ID로 NetId를 짝짓는다
-	const std::filesystem::path Content = std::filesystem::temp_directory_path() / L"ProjectEReplicationTests";
-	std::filesystem::create_directories(Content);
-	std::filesystem::remove(Content / L"Pawn.eprefab"); // 이전 실행 결과 (CreatePrefab은 기존 파일을 덮지 않는다)
-	FPrefabLibrary::Get().SetContentDirectory(Content);
-	{
-		RegisterNetworkTypes();
-		FScene        Authoring;
-		const FEntity Pawn = Authoring.CreateEntity("Pawn");
-		Authoring.GetRegistry().Emplace<FReplicatedComponent>(Pawn);
-		const FEntity Gun = Authoring.CreateEntity("Gun");
-		Authoring.SetParent(Gun, Pawn);
-		Authoring.GetRegistry().Emplace<FReplicatedComponent>(Gun);
-		std::string Error;
-		E_EXPECT_TRUE(FPrefabLibrary::Get().CreatePrefab(Authoring, Pawn, Content / L"Pawn.eprefab", &Error));
-		FPrefabLibrary::Get().Invalidate();
-	}
-
-	FNetFixture Net;
-	auto&       Client = Net.Join();
+	MakePawnPrefab();
+	FNetFixture   Net;
+	auto&         Client     = Net.Join();
 	const FEntity ServerPawn = FPrefabLibrary::Get().Instantiate(Net.ServerScene, "Pawn.eprefab", NullEntity);
 	E_EXPECT_TRUE(ServerPawn.IsValid());
 	Net.ServerScene.GetTransform(ServerPawn).Position = FVector3(0.0f, 0.0f, 90.0f);
@@ -223,5 +228,83 @@ E_TEST(Replication_PrefabSpawnLinksChildren)
 	E_EXPECT_EQ(NetReplication::GetNetId(Client.Scene, ClientGun), NetReplication::GetNetId(Net.ServerScene, ServerGun));
 	E_EXPECT_EQUALS(Client.Scene.GetTransform(ClientPawn).Position, FVector3(0.0f, 0.0f, 90.0f), 1.0e-4f);
 	E_EXPECT_EQUALS(Client.Scene.GetTransform(ClientGun).Position, FVector3(20.0f, 0.0f, 0.0f), 1.0e-4f);
+	FPrefabLibrary::Get().SetContentDirectory(std::filesystem::path());
+}
+
+E_TEST(Replication_TransformInterpolatesBehindServer)
+{
+	// 트랜스폼은 비신뢰 스냅샷 → 클라이언트가 약 InterpolationDelay만큼 늦게, 스냅샷 사이를 보간해 따라간다
+	FNetFixture     Net;
+	auto&           Client      = Net.Join();
+	const FEntity   ServerCrate = FindByName(Net.ServerScene, "Crate");
+	const FEntity   ClientCrate = FindByName(Client.Scene, "Crate");
+	constexpr float Speed       = 300.0f; // cm/s
+	float           MaxLag      = 0.0f;
+	for (int32 Frame = 1; Frame <= 30; ++Frame)
+	{
+		Net.ServerScene.GetTransform(ServerCrate).Position = FVector3(Speed * SendStep * static_cast<float>(Frame), 0.0f, 0.0f);
+		Net.Pump(1);
+		if (Frame > 10)
+		{
+			const float Lag = Net.ServerScene.GetTransform(ServerCrate).Position.X - Client.Scene.GetTransform(ClientCrate).Position.X;
+			MaxLag          = std::max(MaxLag, Lag);
+			E_EXPECT_TRUE(Lag > 0.0f); // 뒤따라간다
+		}
+	}
+	// 지연 0.1초 × 300cm/s = 30cm 안팎 (스냅샷 한 칸 = 10cm 여유)
+	E_EXPECT_TRUE(MaxLag > 15.0f && MaxLag < 45.0f);
+
+	// 멈추면 정확히 최종 값에 도달
+	Net.Pump();
+	E_EXPECT_EQUALS(Client.Scene.GetTransform(ClientCrate).Position, Net.ServerScene.GetTransform(ServerCrate).Position, 1.0e-3f);
+}
+
+E_TEST(Replication_PlayerPawnSpawnOwnershipAndLeave)
+{
+	MakePawnPrefab();
+	FNetFixture   Net;
+	const FEntity Start = Net.ServerScene.CreateEntity(FNetPlayerSpawner::PlayerStartName);
+	Net.ServerScene.GetTransform(Start).Position = FVector3(500.0f, 0.0f, 100.0f);
+	FNetPlayerSpawner Spawner;
+	Spawner.Begin(Net.ServerScene, "Pawn.eprefab");
+	Net.ServerDriver.OnPlayerJoined = [&](const FNetDriver::FRemotePlayer& Player) {
+		Spawner.SpawnPlayer(Player.PlayerId);
+		Net.Server.OnPlayerJoined(Player.Connection);
+	};
+	Net.ServerDriver.OnPlayerLeft = [&](const FNetDriver::FRemotePlayer& Player, const std::string&) { Spawner.DespawnPlayer(Player.PlayerId); };
+
+	auto& A = Net.Join();
+	auto& B = Net.Join();
+	Net.Pump();
+	const uint32  IdA   = A.Driver.GetLocalPlayerId();
+	const FEntity PawnA = Spawner.FindPawn(IdA);
+	E_EXPECT_TRUE(PawnA.IsValid());
+	E_EXPECT_EQUALS(Net.ServerScene.GetTransform(PawnA).Position, FVector3(500.0f, 0.0f, 100.0f), 1.0e-4f);
+
+	// 두 클라이언트 모두 두 폰을 보고, 각자 자기 폰의 소유자를 안다
+	for (FNetFixture::FClient* Client : { &A, &B })
+	{
+		int32 PawnCount = 0;
+		bool  bOwnsOne  = false;
+		Client->Scene.GetRegistry().View<FReplicatedComponent>().Each([&](FEntity Entity, FReplicatedComponent& Replicated) {
+			if (FPrefabLibrary::IsInstanceRoot(Client->Scene, Entity))
+			{
+				++PawnCount;
+				bOwnsOne = bOwnsOne || Replicated.OwnerPlayerId == static_cast<int32>(Client->Driver.GetLocalPlayerId());
+			}
+		});
+		E_EXPECT_EQ(PawnCount, 2);
+		E_EXPECT_TRUE(bOwnsOne);
+	}
+
+	// A 퇴장 → 서버와 B에서 A의 폰 제거
+	A.Driver.Shutdown();
+	Net.Pump();
+	E_EXPECT_FALSE(Spawner.FindPawn(IdA).IsValid());
+	int32 RemainingOnB = 0;
+	B.Scene.GetRegistry().View<FReplicatedComponent>().Each([&](FEntity Entity, FReplicatedComponent&) {
+		RemainingOnB += FPrefabLibrary::IsInstanceRoot(B.Scene, Entity) ? 1 : 0;
+	});
+	E_EXPECT_EQ(RemainingOnB, 1);
 	FPrefabLibrary::Get().SetContentDirectory(std::filesystem::path());
 }

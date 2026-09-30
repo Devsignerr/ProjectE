@@ -139,11 +139,24 @@ bool FRuntimeApplication::OnInit()
 			E_LOG(LogRuntime, Error, "서버 {}에 접속하지 못했습니다 (단독 실행으로 계속)", NetOptions.ConnectAddress);
 		}
 		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
-		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) { ReplicationServer.OnPlayerJoined(Player.Connection); };
+		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
+			Players.SpawnPlayer(Player.PlayerId);
+			ReplicationServer.OnPlayerJoined(Player.Connection);
+		};
+		Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
 		World.BeginPlay(Scene);
-		if (NetOptions.Mode == ENetMode::ListenServer && !Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
+		if (NetOptions.Mode == ENetMode::ListenServer)
 		{
-			E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
+			if (Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
+			{
+				// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
+				Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
+				Players.SpawnPlayer(FNetDriver::HostPlayerId);
+			}
+			else
+			{
+				E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
+			}
 		}
 	}
 	if (Net.GetMode() != ENetMode::Standalone)
@@ -166,6 +179,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
 	if (Net.GetMode() == ENetMode::Client)
 	{
+		ReplicationClient.Update(DeltaSeconds); // 트랜스폼 보간
 		if (ReplicationClient.ConsumeAssetsChanged())
 		{
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
@@ -212,6 +226,7 @@ void FRuntimeApplication::OnShutdown()
 	Net.Shutdown();
 	ReplicationServer.End();
 	ReplicationClient.End();
+	Players.End();
 	World.EndPlay();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();

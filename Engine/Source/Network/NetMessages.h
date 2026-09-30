@@ -8,7 +8,7 @@
 
 // 네트워크 메시지 형식: [uint8 종류][본문]. 본문은 FBinaryWriter 리틀 엔디언.
 // 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다
-inline constexpr uint32 NetProtocolVersion = 2; // 2: 복제 메시지
+inline constexpr uint32 NetProtocolVersion = 3; // 2: 복제 메시지, 3: 트랜스폼 스냅샷
 
 enum class ENetMessageType : uint8
 {
@@ -22,6 +22,7 @@ enum class ENetMessageType : uint8
 	ReplicationSpawn   = GameBase + 0,
 	ReplicationDestroy = GameBase + 1,
 	ReplicationState   = GameBase + 2,
+	TransformSnapshot  = GameBase + 3, // 서버 → 클라이언트, 비신뢰 (최신 값만 의미 있음)
 };
 
 struct FNetHello

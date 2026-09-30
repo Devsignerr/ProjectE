@@ -62,7 +62,12 @@ bool FServerApplication::OnInit()
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory() });
 	Physics.SetInterpolation(false);
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
-	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) { Replication.OnPlayerJoined(Player.Connection); };
+	Players.Begin(Scene, FPaths::GetProjectDescriptor().PlayerPrefab);
+	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
+		Players.SpawnPlayer(Player.PlayerId);
+		Replication.OnPlayerJoined(Player.Connection);
+	};
+	Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
 	World.BeginPlay(Scene);
 
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
@@ -87,6 +92,7 @@ void FServerApplication::OnShutdown()
 {
 	Net.Shutdown();
 	Replication.End();
+	Players.End();
 	World.EndPlay();
 	E_LOG(LogServer, Display, "서버 종료 (틱 {}회)", GetFrameIndex());
 	GameModule.Unload();

@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/ECS/Entity.h"
+#include "Core/Math/Math.h"
 #include "Network/NetTypes.h"
 
 #include <string>
@@ -17,6 +18,8 @@ class FScene;
 //   - 동적 엔티티: 전송 틱에 NetId가 없는 복제 엔티티를 찾아 생성 메시지를 보낸다.
 //     프리팹 인스턴스 루트면 프리팹 경로 + (링크 ID → NetId), 아니면 이름 + 부모 NetId (컴포넌트는 곧바로 상태 메시지로)
 //   - 컴포넌트 값: 마지막으로 보낸 바이트와 다르면 그 컴포넌트 전체를 다시 보낸다 (모든 연결 공통 — 신뢰 채널이라 순서·도착 보장)
+//   - 트랜스폼: 생성/입장 때만 신뢰 채널로, 이후 변화는 비신뢰 스냅샷(서버 시각 포함)으로 보낸다. 손실에 대비해
+//     멈춘 뒤에도 RestResendSeconds 동안 계속 보낸다. 클라이언트가 약간 늦게 보간해 표시한다
 //   - 새로 입장한 플레이어: 동적 엔티티 생성 + 모든 복제 엔티티의 현재 값을 한 번에 보낸다
 // 전송 주기는 SendRate (기본 30Hz). 게임플레이 틱 뒤에 Tick을 부른다
 class FReplicationServer
@@ -29,7 +32,8 @@ public:
 	void Tick(float DeltaSeconds);
 	void OnPlayerJoined(FNetConnectionId Connection);
 
-	float SendRate = 30.0f;
+	float SendRate          = 30.0f;
+	float RestResendSeconds = 1.0f; // 트랜스폼이 멈춘 뒤에도 이만큼 계속 보낸다 (비신뢰 손실 대비)
 
 	uint32 GetReplicatedCount() const { return static_cast<uint32>(Tracked.size()); }
 
@@ -51,6 +55,12 @@ private:
 		std::string PrefabAsset;
 		std::vector<std::pair<std::string, uint32>> PrefabLinks; // 링크 ID → NetId (Prefab만)
 		std::unordered_map<std::string, std::vector<uint8>> LastSent; // 컴포넌트 이름 → 마지막으로 보낸 값
+
+		// 트랜스폼 스냅샷
+		FVector3 LastPosition;
+		FQuat    LastRotation;
+		FVector3 LastScale;
+		float    LastChangeTime = -1.0e9f; // 서버 시각 (초)
 	};
 
 	void DiscoverNewEntities(std::vector<uint32>& OutSpawned);
@@ -59,10 +69,12 @@ private:
 	std::vector<uint8> BuildStateMessage(const std::vector<uint32>& NetIds, bool bFull, bool bCommit);
 	std::vector<uint8> BuildSpawnMessage(const std::vector<uint32>& NetIds) const;
 	std::vector<uint32> GetSortedNetIds() const;
+	std::vector<uint8>  BuildTransformSnapshot();
 
 	FScene*     Scene  = nullptr;
 	FNetDriver* Driver = nullptr;
 	std::unordered_map<uint32, FTracked> Tracked;
 	uint32      NextDynamicNetId = 0;
 	float       SendAccumulator  = 0.0f;
+	float       ServerTime       = 0.0f;
 };

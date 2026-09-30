@@ -4,6 +4,7 @@
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Network/NetDriver.h"
+#include "Network/NetPlayerSpawner.h"
 #include "Network/ReplicationClient.h"
 #include "Network/ReplicationServer.h"
 #include "Physics/PhysicsSystem.h"
@@ -55,4 +56,5 @@ private:
 	FNetDriver           Net;     // --host(리슨 서버) / --connect(클라이언트). 없으면 Standalone
 	FReplicationServer   ReplicationServer; // 리슨 서버: 복제 엔티티 → 클라이언트
 	FReplicationClient   ReplicationClient; // 클라이언트: 서버 상태 적용 (게임 로직은 돌리지 않는다)
+	FNetPlayerSpawner    Players;           // 리슨 서버: 입장/퇴장 → PlayerPrefab 생성/제거 (호스트 포함)
 };

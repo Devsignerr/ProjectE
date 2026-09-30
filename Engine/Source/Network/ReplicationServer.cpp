@@ -19,6 +19,12 @@
 //   ReplicationState:   uint32 엔티티 수, [uint32 NetId, uint32 컴포넌트 수,
 //                                          [string 타입 이름, uint8 동작(0 설정, 1 제거), (설정만) uint32 바이트 수, 컴포넌트 바이트]...]...
 //     컴포넌트 바이트 = NetReplication::WriteComponent (모르는 타입은 바이트 수로 건너뛴다)
+//   TransformSnapshot (비신뢰): float 서버 시각, uint32 개수, [uint32 NetId, FVector3 위치, FQuat 회전, FVector3 스케일]... (로컬 트랜스폼)
+
+namespace
+{
+	constexpr const char* TransformTypeName = "TransformComponent";
+}
 
 void FReplicationServer::Begin(FScene& InScene, FNetDriver& InDriver)
 {
@@ -28,10 +34,16 @@ void FReplicationServer::Begin(FScene& InScene, FNetDriver& InDriver)
 	NextDynamicNetId = DynamicNetIdBase;
 
 	NetReplication::AssignStaticNetIds(InScene);
-	InScene.GetRegistry().View<FNetIdComponent>().Each([this](FEntity Entity, FNetIdComponent& NetId) {
+	InScene.GetRegistry().View<FNetIdComponent>().Each([this, &InScene](FEntity Entity, FNetIdComponent& NetId) {
 		FTracked& Entry = Tracked[NetId.NetId];
 		Entry.Entity    = Entity;
 		Entry.Kind      = ESpawnKind::Static;
+		if (const FTransformComponent* Transform = InScene.GetRegistry().TryGet<FTransformComponent>(Entity))
+		{
+			Entry.LastPosition = Transform->Position;
+			Entry.LastRotation = Transform->Rotation;
+			Entry.LastScale    = Transform->Scale;
+		}
 	});
 	// 정적 엔티티는 클라이언트도 같은 값으로 로드하므로 현재 값을 "보낸 것"으로 기록한다
 	BuildStateMessage(GetSortedNetIds(), false, true);
@@ -43,6 +55,7 @@ void FReplicationServer::End()
 	Driver = nullptr;
 	Tracked.clear();
 	SendAccumulator = 0.0f;
+	ServerTime      = 0.0f;
 }
 
 void FReplicationServer::Tick(float DeltaSeconds)
@@ -54,6 +67,7 @@ void FReplicationServer::Tick(float DeltaSeconds)
 	}
 	const float Interval = 1.0f / std::max(SendRate, 1.0f);
 	SendAccumulator += DeltaSeconds;
+	ServerTime += DeltaSeconds;
 	if (SendAccumulator < Interval)
 	{
 		return;
@@ -85,6 +99,11 @@ void FReplicationServer::Tick(float DeltaSeconds)
 	if (!State.empty())
 	{
 		Driver->Broadcast(State, ENetReliability::Reliable);
+	}
+	const std::vector<uint8> Snapshot = BuildTransformSnapshot();
+	if (!Snapshot.empty())
+	{
+		Driver->Broadcast(Snapshot, ENetReliability::Unreliable);
 	}
 }
 
@@ -228,6 +247,10 @@ std::vector<uint8> FReplicationServer::BuildStateMessage(const std::vector<uint3
 				return;
 			}
 			Present.push_back(Type.Name);
+			if (!bFull && Type.Name == TransformTypeName && Entry.LastSent.contains(Type.Name))
+			{
+				return; // 처음 한 번 뒤로는 비신뢰 스냅샷이 맡는다
+			}
 			FBinaryWriter Value;
 			NetReplication::WriteComponent(Value, Type, Type.GetComponent(Registry, Entity), ToNetId);
 			const auto Found    = Entry.LastSent.find(Type.Name);
@@ -303,6 +326,48 @@ std::vector<uint8> FReplicationServer::BuildSpawnMessage(const std::vector<uint3
 			Writer.Write(LinkNetId);
 		}
 	}
+	return Writer.GetBuffer();
+}
+
+std::vector<uint8> FReplicationServer::BuildTransformSnapshot()
+{
+	FRegistry&    Registry = Scene->GetRegistry();
+	FBinaryWriter Body;
+	uint32        Count = 0;
+	for (const uint32 NetId : GetSortedNetIds())
+	{
+		FTracked&                  Entry     = Tracked.at(NetId);
+		const FTransformComponent* Transform = Registry.IsValid(Entry.Entity) ? Registry.TryGet<FTransformComponent>(Entry.Entity) : nullptr;
+		if (Transform == nullptr)
+		{
+			continue;
+		}
+		if (Transform->Position != Entry.LastPosition || Transform->Rotation != Entry.LastRotation || Transform->Scale != Entry.LastScale)
+		{
+			Entry.LastPosition   = Transform->Position;
+			Entry.LastRotation   = Transform->Rotation;
+			Entry.LastScale      = Transform->Scale;
+			Entry.LastChangeTime = ServerTime;
+		}
+		if (ServerTime - Entry.LastChangeTime > RestResendSeconds)
+		{
+			continue;
+		}
+		Body.Write(NetId);
+		Body.Write(Transform->Position);
+		Body.Write(Transform->Rotation);
+		Body.Write(Transform->Scale);
+		++Count;
+	}
+	if (Count == 0)
+	{
+		return {};
+	}
+	FBinaryWriter Writer;
+	Writer.Write(static_cast<uint8>(ENetMessageType::TransformSnapshot));
+	Writer.Write(ServerTime);
+	Writer.Write(Count);
+	Writer.WriteBytes(Body.GetBuffer().data(), Body.GetBuffer().size());
 	return Writer.GetBuffer();
 }
 

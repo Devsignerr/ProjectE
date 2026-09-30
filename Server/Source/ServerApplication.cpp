@@ -4,6 +4,7 @@
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
+#include "Network/NetTransport.h"
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
 
@@ -59,18 +60,27 @@ bool FServerApplication::OnInit()
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory() });
 	Physics.SetInterpolation(false);
 	World.BeginPlay(Scene);
+
+	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
+	if (!Net.StartServer(CreateGnsTransport(), NetOptions.Port, FNetSessionInfo::FromProject(SceneAsset), true))
+	{
+		E_LOG(LogServer, Error, "포트 {}에서 서버를 열지 못했습니다", NetOptions.Port);
+		return false;
+	}
 	E_LOG(LogServer, Display, "서버 시작 (Ctrl+C 종료)");
 	return true;
 }
 
 void FServerApplication::OnUpdate(float DeltaSeconds)
 {
+	Net.Update(DeltaSeconds);
 	World.TickGameplay(DeltaSeconds, nullptr);
 	World.TickPresentation(Scene, DeltaSeconds); // 애니메이션(노티파이/소켓)은 게임 로직에 쓰이므로 서버도 돌린다
 }
 
 void FServerApplication::OnShutdown()
 {
+	Net.Shutdown();
 	World.EndPlay();
 	E_LOG(LogServer, Display, "서버 종료 (틱 {}회)", GetFrameIndex());
 	GameModule.Unload();

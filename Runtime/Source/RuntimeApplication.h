@@ -3,6 +3,7 @@
 #include "Audio/AudioEngine.h"
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
+#include "Network/NetDriver.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
@@ -49,4 +50,5 @@ private:
 	FAudioSystem         AudioSystem;
 	FPhysicsSystem       Physics; // 항상 시뮬레이션 (씬 로드 후 Begin)
 	FGameWorld           World;   // 게임 월드 갱신 순서 (위 시스템들을 비소유로 참조)
+	FNetDriver           Net;     // --host(리슨 서버) / --connect(클라이언트). 없으면 Standalone
 };

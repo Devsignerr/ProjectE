@@ -5,11 +5,14 @@
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
+#include "Network/NetTransport.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
+
+#include <format>
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
 
@@ -119,6 +122,22 @@ bool FRuntimeApplication::OnInit()
 	});
 	World.BeginPlay(Scene);
 
+	// 멀티플레이: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트 (연결만 — 복제는 이후 단계)
+	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
+	const FNetSessionInfo   Session    = FNetSessionInfo::FromProject(SceneAsset);
+	if (NetOptions.Mode == ENetMode::ListenServer && !Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
+	{
+		E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
+	}
+	else if (NetOptions.Mode == ENetMode::Client && !Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
+	{
+		E_LOG(LogRuntime, Error, "서버 {}에 접속하지 못했습니다 (단독 실행으로 계속)", NetOptions.ConnectAddress);
+	}
+	if (Net.GetMode() != ENetMode::Standalone)
+	{
+		GetWindow().SetTitle(FStringConv::ToWide(std::format("{} [{}]", FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE", ToString(Net.GetMode()))));
+	}
+
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
 }
@@ -131,6 +150,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
+	Net.Update(DeltaSeconds);
 	World.TickGameplay(DeltaSeconds, &InputState);
 	World.TickPresentation(Scene, DeltaSeconds);
 
@@ -165,6 +185,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
+	Net.Shutdown();
 	World.EndPlay();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();

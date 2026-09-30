@@ -1,6 +1,7 @@
 #include "Core/Application.h"
 
 #include "Core/CommandLine.h"
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Platform/CrashHandler.h"
@@ -65,8 +66,8 @@ int FApplication::Run()
 		E_LOG(LogCore, Log, "로그 파일: {}", FStringConv::ToUtf8(DefaultLog.wstring()));
 	}
 	// FPaths 초기화 로그는 파일을 열기 전이므로 요약을 다시 남긴다 (배포 환경 진단용)
-	E_LOG(LogCore, Display, "엔진: {}{}, 프로젝트: {}", FStringConv::ToUtf8(FPaths::GetEngineDirectory().wstring()), FPaths::IsPackaged() ? " (패키지)" : "",
-	      FPaths::HasProject() ? FStringConv::ToUtf8(FPaths::GetProjectFile().wstring()) : std::string("없음"));
+	E_LOG(LogCore, Display, "엔진: {}{}, 프로젝트: {}, pak 파일 {}개", FStringConv::ToUtf8(FPaths::GetEngineDirectory().wstring()), FPaths::IsPackaged() ? " (패키지)" : "",
+	      FPaths::HasProject() ? FStringConv::ToUtf8(FPaths::GetProjectFile().wstring()) : std::string("없음"), FFileSystem::GetMountedFileCount());
 	FCrashHandler::SetDumpDirectory(FPaths::GetCrashDirectory());
 	ScreenshotPath = CommandLine.GetValue(L"--screenshot");
 	if (const std::wstring ExitAfter = CommandLine.GetValue(L"--exit-after"); !ExitAfter.empty())

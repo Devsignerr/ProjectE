@@ -1,5 +1,6 @@
 #include "Renderer/ModelImportSettings.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Renderer/GltfLoader.h"
@@ -89,12 +90,10 @@ std::filesystem::path FModelImportSettings::GetSidecarPath(const std::filesystem
 FModelImportSettings FModelImportSettings::LoadForSource(const std::filesystem::path& SourcePath)
 {
 	FModelImportSettings Settings;
-	std::ifstream        File(GetSidecarPath(SourcePath), std::ios::binary);
-	if (File)
+	std::string          Text;
+	if (FFileSystem::ReadTextFile(GetSidecarPath(SourcePath), Text))
 	{
-		std::stringstream Buffer;
-		Buffer << File.rdbuf();
-		if (!Settings.FromJsonString(Buffer.str()))
+		if (!Settings.FromJsonString(Text))
 		{
 			E_LOG(LogRenderer, Warning, "임포트 설정을 읽지 못해 기본값을 씁니다: {}", FStringConv::ToUtf8(GetSidecarPath(SourcePath).wstring()));
 			Settings = FModelImportSettings{};

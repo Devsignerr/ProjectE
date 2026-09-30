@@ -1,5 +1,6 @@
 #include "Scene/SceneSerializer.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Scene/EntityJson.h"
@@ -76,15 +77,13 @@ bool FSceneSerializer::SaveToFile(FScene& Scene, const std::filesystem::path& Pa
 
 bool FSceneSerializer::LoadFromFile(FScene& OutScene, const std::filesystem::path& Path)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
 	{
 		E_LOG(LogScene, Error, "씬 파일을 열 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
-	if (!FromJsonString(OutScene, Buffer.str()))
+	if (!FromJsonString(OutScene, Text))
 	{
 		E_LOG(LogScene, Error, "씬 로드 실패: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;

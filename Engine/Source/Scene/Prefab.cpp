@@ -1,5 +1,6 @@
 #include "Scene/Prefab.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Reflection/TypeInfo.h"
@@ -33,15 +34,7 @@ namespace
 
 	bool ReadTextFile(const std::filesystem::path& Path, std::string& Out)
 	{
-		std::ifstream File(Path, std::ios::binary);
-		if (!File)
-		{
-			return false;
-		}
-		std::stringstream Buffer;
-		Buffer << File.rdbuf();
-		Out = Buffer.str();
-		return true;
+		return FFileSystem::ReadTextFile(Path, Out);
 	}
 
 	bool WriteTextFile(const std::filesystem::path& Path, const std::string& Text)

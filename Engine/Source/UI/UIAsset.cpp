@@ -1,5 +1,6 @@
 #include "UI/UIAsset.h"
 
+#include "Core/FileSystem.h"
 #include "Core/StringConv.h"
 
 #include <json.hpp>
@@ -540,15 +541,13 @@ const FUIAnimation* FUIAsset::FindAnimation(std::string_view Name) const
 
 bool FUIAsset::LoadFromFile(const std::filesystem::path& Path)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
 	{
 		E_LOG(LogUI, Error, "UI 에셋을 열 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
-	if (!FromJsonString(Buffer.str()))
+	if (!FromJsonString(Text))
 	{
 		E_LOG(LogUI, Error, "UI 에셋 로드 실패: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;

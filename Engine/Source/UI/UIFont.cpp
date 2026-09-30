@@ -1,5 +1,6 @@
 #include "UI/UIFont.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
@@ -156,17 +157,9 @@ FUIFont::~FUIFont() = default;
 
 bool FUIFont::LoadFromFile(const std::filesystem::path& Path)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
-	{
-		return false;
-	}
 	// 한 번에 읽는다 (istreambuf_iterator는 Debug에서 13MB 한글 글꼴에 1초 가까이 걸린다)
-	File.seekg(0, std::ios::end);
-	const std::streamoff Size = File.tellg();
-	File.seekg(0, std::ios::beg);
-	std::vector<uint8> Data(Size > 0 ? static_cast<size_t>(Size) : 0);
-	if (Size <= 0 || !File.read(reinterpret_cast<char*>(Data.data()), Size))
+	std::vector<uint8> Data;
+	if (!FFileSystem::ReadFile(Path, Data) || Data.empty())
 	{
 		return false;
 	}
@@ -554,8 +547,7 @@ FUIFont* FUIFontLibrary::GetDefaultFont()
 	{
 		// 엔진 번들 글꼴 (Noto Sans KR, OFL) — 맑은 고딕이 없는 PC/배포에서도 한글
 		const std::filesystem::path Bundled = FPaths::GetEngineDirectory() / L"Engine" / L"Content" / L"Fonts" / L"NotoSansKR-Regular.otf";
-		std::error_code             ErrorCode;
-		if (std::filesystem::exists(Bundled, ErrorCode))
+		if (FFileSystem::Exists(Bundled))
 		{
 			DefaultFontFile = Bundled;
 			DefaultFont     = LoadCached(Bundled);

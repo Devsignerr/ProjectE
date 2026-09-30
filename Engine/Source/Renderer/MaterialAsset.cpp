@@ -1,5 +1,6 @@
 #include "Renderer/MaterialAsset.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 
@@ -92,15 +93,13 @@ bool FMaterialAsset::FromJsonString(const std::string& JsonText)
 
 bool FMaterialAsset::LoadFromFile(const std::filesystem::path& Path)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
 	{
 		E_LOG(LogRenderer, Error, "머티리얼 파일을 열 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
-	if (!FromJsonString(Buffer.str()))
+	if (!FromJsonString(Text))
 	{
 		E_LOG(LogRenderer, Error, "머티리얼 로드 실패: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;

@@ -12,7 +12,9 @@
         Engine\Packaged.json         패키지 표식 → 런타임이 Saved를 %LOCALAPPDATA%로 옮긴다
         Engine\Shaders\              쿠킹된 DXIL + Shaders.json(엔진 마커). DXC DLL은 넣지 않는다 (dxcompiler.dll 지연 로드)
         Engine\Content\              엔진 콘텐츠 (기본 글꼴 등)
-        <ExecutableName>\            .eproject + Content + Cooked + Config (런타임이 exe 이름 폴더에서 프로젝트를 찾는다)
+        <ExecutableName>\            .eproject + Config + Content.epak (런타임이 exe 이름 폴더에서 프로젝트를 찾고 *.epak을 마운트한다)
+    Content.epak: <Exe>\Content, <Exe>\Cooked, Engine\Content, Engine\Shaders\Cooked를 패키지 루트 기준 키로 묶은 것 (압축 없음, 항목별 해시 검사).
+        Shaders.json(엔진 마커), Packaged.json, .eproject, Config는 파일로 남긴다. -NoPak이면 묶지 않는다 (디버깅)
     심볼: Build\Package\<프로젝트명>-Symbols\ 에 PDB + 같은 바이너리 (크래시 덤프 분석용, 배포하지 않는다)
     Content의 원본 모델/이미지는 쿠킹본이 있으면 제외한다 (쿠킹본은 원본이 없으면 그대로 신뢰됨).
     -IncludeSources: 셰이더 소스 + DXC + 원본 에셋까지 포함 (패키지에서 셰이더 핫 리로드/디버깅용)
@@ -21,7 +23,8 @@ param(
     [string]$Project = "Projects\Sample",
     [ValidateSet("Debug", "Release")]
     [string]$Config = "Release",
-    [switch]$IncludeSources
+    [switch]$IncludeSources,
+    [switch]$NoPak
 )
 
 $ErrorActionPreference = "Stop"
@@ -215,6 +218,17 @@ try {
     }
     if ($Missing.Count -gt 0) { throw "검사 실패: 패키지에 없는 종속 DLL`n  $($Missing -join "`n  ")" }
     Write-Host "검사: 종속 DLL 모두 패키지 또는 Windows 기본 DLL" -ForegroundColor Green
+
+    # ---- 5. pak: 콘텐츠 폴더를 하나로 묶고 원본 폴더는 지운다
+    if (-not $NoPak) {
+        $PakDirs = @("$ExeName\Content", "$ExeName\Cooked", "Engine\Content", "Engine\Shaders\Cooked") |
+            Where-Object { Test-Path (Join-Path $PackageDir $_) }
+        $PakFile = Join-Path $ProjectDst "Content.epak"
+        & $CookExe --make-pak $PakFile --pak-root $PackageDir --pak-dirs ($PakDirs -join ";")
+        if ($LASTEXITCODE -ne 0) { throw "pak 생성 실패" }
+        foreach ($Dir in $PakDirs) { Remove-Item -Recurse -Force (Join-Path $PackageDir $Dir) }
+        Write-Host "pak: $PakFile ($($PakDirs -join ', '))" -ForegroundColor Green
+    }
 
     $TotalBytes = (Get-ChildItem -Recurse -File $PackageDir | Measure-Object -Property Length -Sum).Sum
     Write-Host ("== 완료: {0} ({1:N1} MB) ==" -f $PackageDir, ($TotalBytes / 1MB)) -ForegroundColor Green

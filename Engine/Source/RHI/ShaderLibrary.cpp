@@ -1,5 +1,6 @@
 #include "RHI/ShaderLibrary.h"
 
+#include "Core/FileSystem.h"
 #include "Core/StringConv.h"
 #include "RHI/ShaderManifest.h"
 
@@ -41,9 +42,16 @@ namespace
 	// 사이드카가 없거나 형식이 틀리면 0
 	uint64 ReadSourceHash(const std::filesystem::path& CookedPath)
 	{
-		std::ifstream File(GetSourceHashPath(CookedPath), std::ios::binary);
-		std::string   Text;
-		if (!File || !(File >> Text) || Text.size() != 16)
+		std::string Text;
+		if (!FFileSystem::ReadTextFile(GetSourceHashPath(CookedPath), Text))
+		{
+			return 0;
+		}
+		while (!Text.empty() && (Text.back() == '\n' || Text.back() == '\r' || Text.back() == ' '))
+		{
+			Text.pop_back();
+		}
+		if (Text.size() != 16)
 		{
 			return 0;
 		}
@@ -191,7 +199,7 @@ ComPtr<IDxcBlob> FShaderLibrary::TryLoadCooked(const FShaderCompileDesc& Desc, c
 	const std::filesystem::path CookedPath = GetCookedPath(Desc);
 
 	std::error_code ErrorCode;
-	if (!std::filesystem::exists(CookedPath, ErrorCode))
+	if (!FFileSystem::Exists(CookedPath))
 	{
 		return nullptr;
 	}
@@ -209,19 +217,8 @@ ComPtr<IDxcBlob> FShaderLibrary::TryLoadCooked(const FShaderCompileDesc& Desc, c
 		}
 	}
 
-	std::ifstream File(CookedPath, std::ios::binary | std::ios::ate);
-	if (!File)
-	{
-		return nullptr;
-	}
-	const std::streamsize Size = File.tellg();
-	if (Size <= 0)
-	{
-		return nullptr;
-	}
-	File.seekg(0);
-	std::vector<char> Bytes(static_cast<size_t>(Size));
-	if (!File.read(Bytes.data(), Size))
+	std::vector<uint8> Bytes;
+	if (!FFileSystem::ReadFile(CookedPath, Bytes) || Bytes.empty())
 	{
 		return nullptr;
 	}

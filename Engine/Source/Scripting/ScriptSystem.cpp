@@ -1,5 +1,6 @@
 #include "Scripting/ScriptSystem.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Scripting/LuaRuntime.h"
@@ -89,8 +90,7 @@ const std::vector<FScriptPropertyDecl>* FScriptSystem::GetPropertyDecls(const st
 		return nullptr;
 	}
 	// 경로 입력 중(존재하지 않는 파일)에는 조용히 실패한다 (키 입력마다 오류 로그를 남기지 않도록)
-	std::error_code ErrorCode;
-	if (!std::filesystem::is_regular_file(ContentDirectory / FStringConv::ToWide(ScriptAsset), ErrorCode))
+	if (!FFileSystem::Exists(ContentDirectory / FStringConv::ToWide(ScriptAsset)))
 	{
 		if (OutError)
 		{

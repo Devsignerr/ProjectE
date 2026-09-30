@@ -1,5 +1,7 @@
 #include "Core/Serialization/BinaryArchive.h"
 
+#include "Core/FileSystem.h"
+
 #include <fstream>
 
 bool FBinaryWriter::SaveToFile(const std::filesystem::path& Path) const
@@ -33,18 +35,5 @@ bool FBinaryWriter::SaveToFile(const std::filesystem::path& Path) const
 
 bool ReadFileBytes(const std::filesystem::path& Path, std::vector<uint8>& OutBytes)
 {
-	OutBytes.clear();
-	std::ifstream File(Path, std::ios::binary | std::ios::ate);
-	if (!File)
-	{
-		return false;
-	}
-	const std::streamsize FileSize = File.tellg();
-	if (FileSize < 0)
-	{
-		return false;
-	}
-	File.seekg(0, std::ios::beg);
-	OutBytes.resize(static_cast<size_t>(FileSize));
-	return FileSize == 0 || static_cast<bool>(File.read(reinterpret_cast<char*>(OutBytes.data()), FileSize));
+	return FFileSystem::ReadFile(Path, OutBytes); // pak → 디스크
 }

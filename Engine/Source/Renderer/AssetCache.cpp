@@ -1,5 +1,6 @@
 #include "Renderer/AssetCache.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Serialization/BinaryArchive.h"
@@ -126,22 +127,17 @@ std::filesystem::path FAssetCache::GetCookedPath(const std::filesystem::path& So
 
 bool FAssetCache::IsCookedUpToDate(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
 {
-	std::error_code ErrorCode;
-	if (!std::filesystem::exists(CookedPath, ErrorCode))
+	if (!FFileSystem::Exists(CookedPath))
 	{
 		return false;
 	}
-	if (!std::filesystem::exists(SourcePath, ErrorCode))
+	if (!FFileSystem::Exists(SourcePath))
 	{
 		return true; // 원본 없이 배포된 패키지: 쿠킹본 신뢰
 	}
-	const auto SourceTime = std::filesystem::last_write_time(SourcePath, ErrorCode);
-	if (ErrorCode)
-	{
-		return false;
-	}
-	const auto CookedTime = std::filesystem::last_write_time(CookedPath, ErrorCode);
-	return !ErrorCode && CookedTime >= SourceTime;
+	const auto SourceTime = FFileSystem::GetLastWriteTime(SourcePath);
+	const auto CookedTime = FFileSystem::GetLastWriteTime(CookedPath);
+	return SourceTime && CookedTime && *CookedTime >= *SourceTime;
 }
 
 // ---------------------------------------------------------------- 텍스처
@@ -636,9 +632,8 @@ bool FAssetCache::LoadModelSource(const std::filesystem::path& SourcePath, FMode
 bool FAssetCache::IsCookedNewerThanImportInputs(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
 {
 	// 임포트 설정 파일과 추가 애니메이션 파일도 원본의 일부로 본다
-	std::error_code ErrorCode;
-	const auto      CookedTime = std::filesystem::last_write_time(CookedPath, ErrorCode);
-	if (ErrorCode)
+	const auto CookedTime = FFileSystem::GetLastWriteTime(CookedPath);
+	if (!CookedTime)
 	{
 		return false;
 	}
@@ -649,13 +644,10 @@ bool FAssetCache::IsCookedNewerThanImportInputs(const std::filesystem::path& Sou
 	}
 	for (const std::filesystem::path& Input : Inputs)
 	{
-		if (std::filesystem::exists(Input, ErrorCode))
+		const auto InputTime = FFileSystem::GetLastWriteTime(Input);
+		if (InputTime && *InputTime > *CookedTime)
 		{
-			const auto InputTime = std::filesystem::last_write_time(Input, ErrorCode);
-			if (!ErrorCode && InputTime > CookedTime)
-			{
-				return false;
-			}
+			return false;
 		}
 	}
 	return true;
@@ -680,17 +672,14 @@ void FAssetCache::WriteImportSettingsRecord(const std::filesystem::path& SourceP
 
 bool FAssetCache::IsCookedWithCurrentImportSettings(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
 {
-	std::error_code ErrorCode;
-	if (!std::filesystem::exists(SourcePath, ErrorCode))
+	if (!FFileSystem::Exists(SourcePath))
 	{
 		return true; // 원본 없는 패키지
 	}
-	std::ifstream File(GetImportRecordPath(CookedPath), std::ios::binary);
-	if (!File)
+	std::string Record;
+	if (!FFileSystem::ReadTextFile(GetImportRecordPath(CookedPath), Record))
 	{
 		return FModelImportSettings::LoadForSource(SourcePath).IsDefault(); // 기록이 없던 옛 쿠킹본: 기본 설정일 때만 유효
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
-	return Buffer.str() == FModelImportSettings::LoadForSource(SourcePath).ToJsonString();
+	return Record == FModelImportSettings::LoadForSource(SourcePath).ToJsonString();
 }

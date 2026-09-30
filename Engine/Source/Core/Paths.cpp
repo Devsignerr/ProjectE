@@ -2,6 +2,7 @@
 
 #include "Core/Assert.h"
 #include "Core/CommandLine.h"
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
@@ -128,6 +129,19 @@ void FPaths::Initialize(const FCommandLine& CommandLine)
 	if (!State.bHasProject)
 	{
 		E_LOG(LogCore, Warning, "열린 프로젝트가 없습니다 (--project <경로>로 지정)");
+	}
+
+	// 패키지: 프로젝트 폴더의 *.epak을 엔진 디렉터리(패키지 루트) 기준으로 마운트 — 콘텐츠를 읽기 전에
+	if (State.bPackaged && State.bHasProject)
+	{
+		std::error_code ErrorCode;
+		for (const std::filesystem::directory_entry& Entry : std::filesystem::directory_iterator(GetProjectDirectory(), ErrorCode))
+		{
+			if (Entry.is_regular_file(ErrorCode) && Entry.path().extension() == L".epak")
+			{
+				FFileSystem::Mount(Entry.path(), State.EngineDirectory);
+			}
+		}
 	}
 }
 

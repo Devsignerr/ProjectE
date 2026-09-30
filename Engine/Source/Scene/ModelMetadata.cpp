@@ -1,5 +1,6 @@
 #include "Scene/ModelMetadata.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 
@@ -182,12 +183,10 @@ std::filesystem::path FModelMetadata::GetSidecarPath(const std::filesystem::path
 FModelMetadata FModelMetadata::LoadForSource(const std::filesystem::path& SourcePath)
 {
 	FModelMetadata Metadata;
-	std::ifstream  File(GetSidecarPath(SourcePath), std::ios::binary);
-	if (File)
+	std::string    Text;
+	if (FFileSystem::ReadTextFile(GetSidecarPath(SourcePath), Text))
 	{
-		std::stringstream Buffer;
-		Buffer << File.rdbuf();
-		if (!Metadata.FromJsonString(Buffer.str()))
+		if (!Metadata.FromJsonString(Text))
 		{
 			E_LOG(LogScene, Warning, "모델 메타데이터를 읽지 못해 비워 둡니다: {}", FStringConv::ToUtf8(GetSidecarPath(SourcePath).wstring()));
 			Metadata = FModelMetadata{};

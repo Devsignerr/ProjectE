@@ -1,5 +1,6 @@
 #include "Scene/Particles.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Scene/Components.h"
@@ -717,15 +718,13 @@ bool FParticleSystemAsset::FromJsonString(const std::string& JsonText)
 
 bool FParticleSystemAsset::LoadFromFile(const std::filesystem::path& Path)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
 	{
 		E_LOG(LogScene, Error, "파티클 파일을 열 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
-	if (!FromJsonString(Buffer.str()))
+	if (!FromJsonString(Text))
 	{
 		return false;
 	}

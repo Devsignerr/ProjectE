@@ -1,5 +1,6 @@
 #include "UI/UISystem.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Input.h"
 #include "Core/StringConv.h"
 #include "Scene/Scene.h"
@@ -47,9 +48,10 @@ std::shared_ptr<const FUIAsset> FUIAssetLibrary::Load(const std::filesystem::pat
 	std::wstring Key = Path.lexically_normal().generic_wstring();
 	std::transform(Key.begin(), Key.end(), Key.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
 
-	std::error_code                       ErrorCode;
-	const std::filesystem::file_time_type WriteTime = std::filesystem::last_write_time(Path, ErrorCode);
-	const auto                            It        = Entries.find(Key);
+	const std::optional<std::filesystem::file_time_type> FoundTime = FFileSystem::GetLastWriteTime(Path); // pak 항목은 pak 시각
+	const bool                                           bMissing  = !FoundTime.has_value();
+	const std::filesystem::file_time_type                WriteTime = FoundTime.value_or(std::filesystem::file_time_type{});
+	const auto                                           It        = Entries.find(Key);
 	if (It != Entries.end() && It->second.WriteTime == WriteTime)
 	{
 		return It->second.Asset;
@@ -57,11 +59,11 @@ std::shared_ptr<const FUIAsset> FUIAssetLibrary::Load(const std::filesystem::pat
 	auto Asset = std::make_shared<FUIAsset>();
 	FEntry Entry;
 	Entry.WriteTime = WriteTime;
-	if (!ErrorCode && Asset->LoadFromFile(Path))
+	if (!bMissing && Asset->LoadFromFile(Path))
 	{
 		Entry.Asset = std::move(Asset);
 	}
-	else if (ErrorCode)
+	else if (bMissing)
 	{
 		E_LOG(LogUI, Error, "UI 에셋이 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 	}

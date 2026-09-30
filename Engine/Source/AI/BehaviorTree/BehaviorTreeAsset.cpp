@@ -1,5 +1,6 @@
 #include "AI/BehaviorTree/BehaviorTreeAsset.h"
 
+#include "Core/FileSystem.h"
 #include "AI/AIModule.h"
 #include "AI/BehaviorTree/BehaviorTreeNodeRegistry.h"
 #include "Core/StringConv.h"
@@ -442,16 +443,14 @@ bool FBehaviorTreeAsset::SaveToFile(const std::filesystem::path& Path) const
 
 bool FBehaviorTreeAsset::LoadFromFile(const std::filesystem::path& Path, std::string* OutError)
 {
-	std::ifstream File(Path, std::ios::binary);
-	if (!File)
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
 	{
 		SetError(OutError, std::format("파일을 열 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring())));
 		return false;
 	}
-	std::stringstream Buffer;
-	Buffer << File.rdbuf();
 	std::string Error;
-	if (!FromJsonString(Buffer.str(), &Error))
+	if (!FromJsonString(Text, &Error))
 	{
 		E_LOG(LogAI, Warning, "비헤이비어 트리를 읽지 못했습니다: {} ({})", FStringConv::ToUtf8(Path.wstring()), Error);
 		SetError(OutError, std::move(Error));

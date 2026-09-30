@@ -1,5 +1,6 @@
 #include "Scripting/LuaRuntime.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Input.h"
 #include "Core/Log.h"
 #include "Core/Reflection/TypeInfo.h"
@@ -94,15 +95,12 @@ namespace
 
 	std::string ReadTextFile(const std::filesystem::path& Path, bool& bOutOk)
 	{
-		std::ifstream File(Path, std::ios::binary);
-		bOutOk = static_cast<bool>(File);
+		std::string Text;
+		bOutOk = FFileSystem::ReadTextFile(Path, Text);
 		if (!bOutOk)
 		{
 			return std::string();
 		}
-		std::stringstream Buffer;
-		Buffer << File.rdbuf();
-		std::string Text = Buffer.str();
 		// UTF-8 BOM 제거 (Lua 파서는 BOM을 모른다)
 		if (Text.size() >= 3 && static_cast<unsigned char>(Text[0]) == 0xEF && static_cast<unsigned char>(Text[1]) == 0xBB &&
 		    static_cast<unsigned char>(Text[2]) == 0xBF)

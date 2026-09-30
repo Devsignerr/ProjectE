@@ -1,6 +1,7 @@
 #include "Audio/AudioEngine.h"
 
 #include "Core/Assert.h"
+#include "Core/FileSystem.h"
 #include "Core/StringConv.h"
 
 #pragma warning(push, 0)
@@ -8,9 +9,94 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <cstring>
 #include <unordered_map>
+#include <vector>
 
 E_DEFINE_LOG_CATEGORY(LogAudio, Log)
+
+namespace
+{
+	// miniaudio 파일 읽기를 FFileSystem(pak → 디스크)으로: 열 때 파일 전체를 메모리로 읽는다 (DECODE 로드라 어차피 전부 읽음)
+	struct FMemoryFile
+	{
+		std::vector<uint8> Bytes;
+		size_t             Cursor = 0;
+	};
+
+	ma_result VfsOpenW(ma_vfs*, const wchar_t* FilePath, ma_uint32 OpenMode, ma_vfs_file* OutFile)
+	{
+		if ((OpenMode & MA_OPEN_MODE_WRITE) != 0)
+		{
+			return MA_ACCESS_DENIED;
+		}
+		auto File = std::make_unique<FMemoryFile>();
+		if (!FFileSystem::ReadFile(FilePath, File->Bytes))
+		{
+			return MA_DOES_NOT_EXIST;
+		}
+		*OutFile = File.release();
+		return MA_SUCCESS;
+	}
+
+	ma_result VfsOpen(ma_vfs* Vfs, const char* FilePath, ma_uint32 OpenMode, ma_vfs_file* OutFile)
+	{
+		return VfsOpenW(Vfs, FStringConv::ToWide(FilePath).c_str(), OpenMode, OutFile);
+	}
+
+	ma_result VfsClose(ma_vfs*, ma_vfs_file File)
+	{
+		delete static_cast<FMemoryFile*>(File);
+		return MA_SUCCESS;
+	}
+
+	ma_result VfsRead(ma_vfs*, ma_vfs_file File, void* Destination, size_t SizeInBytes, size_t* OutBytesRead)
+	{
+		FMemoryFile* Memory = static_cast<FMemoryFile*>(File);
+		const size_t Count  = std::min(SizeInBytes, Memory->Bytes.size() - Memory->Cursor);
+		std::memcpy(Destination, Memory->Bytes.data() + Memory->Cursor, Count);
+		Memory->Cursor += Count;
+		if (OutBytesRead != nullptr)
+		{
+			*OutBytesRead = Count;
+		}
+		return Count == 0 && SizeInBytes > 0 ? MA_AT_END : MA_SUCCESS;
+	}
+
+	ma_result VfsWrite(ma_vfs*, ma_vfs_file, const void*, size_t, size_t*)
+	{
+		return MA_ACCESS_DENIED;
+	}
+
+	ma_result VfsSeek(ma_vfs*, ma_vfs_file File, ma_int64 Offset, ma_seek_origin Origin)
+	{
+		FMemoryFile*   Memory = static_cast<FMemoryFile*>(File);
+		const ma_int64 Base   = Origin == ma_seek_origin_start ? 0 : Origin == ma_seek_origin_current ? static_cast<ma_int64>(Memory->Cursor)
+		                                                                                               : static_cast<ma_int64>(Memory->Bytes.size());
+		const ma_int64 Target = Base + Offset;
+		if (Target < 0 || Target > static_cast<ma_int64>(Memory->Bytes.size()))
+		{
+			return MA_BAD_SEEK;
+		}
+		Memory->Cursor = static_cast<size_t>(Target);
+		return MA_SUCCESS;
+	}
+
+	ma_result VfsTell(ma_vfs*, ma_vfs_file File, ma_int64* OutCursor)
+	{
+		*OutCursor = static_cast<ma_int64>(static_cast<FMemoryFile*>(File)->Cursor);
+		return MA_SUCCESS;
+	}
+
+	ma_result VfsInfo(ma_vfs*, ma_vfs_file File, ma_file_info* OutInfo)
+	{
+		OutInfo->sizeInBytes = static_cast<FMemoryFile*>(File)->Bytes.size();
+		return MA_SUCCESS;
+	}
+
+	// ma_vfs*는 콜백 표로 시작하는 객체를 가리킨다
+	ma_vfs_callbacks GContentVfs = { &VfsOpen, &VfsOpenW, &VfsClose, &VfsRead, &VfsWrite, &VfsSeek, &VfsTell, &VfsInfo };
+} // namespace
 
 struct FAudioEngine::FSound
 {
@@ -44,8 +130,9 @@ bool FAudioEngine::Init(const FAudioEngineDesc& Desc)
 {
 	E_CHECKF(!Impl->bInitialized, "FAudioEngine::Init 중복 호출");
 
-	ma_engine_config Config = ma_engine_config_init();
-	Config.listenerCount    = 1;
+	ma_engine_config Config    = ma_engine_config_init();
+	Config.listenerCount       = 1;
+	Config.pResourceManagerVFS = &GContentVfs; // 사운드 파일은 FFileSystem으로 (pak 지원)
 	if (Desc.bNoDevice)
 	{
 		Config.noDevice   = MA_TRUE;

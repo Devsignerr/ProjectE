@@ -67,7 +67,8 @@ bool FServerApplication::OnInit()
 		Players.SpawnPlayer(Player.PlayerId);
 		Replication.OnPlayerJoined(Player.Connection);
 	};
-	Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+	Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+	Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) { World.HandleNetMessage(Connection, Message); };
 	World.BeginPlay(Scene, ENetMode::DedicatedServer);
 
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());

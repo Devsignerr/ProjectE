@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/ECS/Entity.h"
 #include "Network/NetTypes.h"
 
 #include <filesystem>
+#include <string>
+#include <vector>
 
 class FGameModuleHost;
 class FInput;
@@ -12,6 +15,7 @@ class FPhysicsSystem;
 class FResourceManager;
 class FScene;
 class FScriptSystem;
+struct FScriptRpcArg;
 
 // FGameWorld가 돌리는 시스템. 모두 비소유 — 앱이 소유하고 FGameWorld보다 오래 산다
 struct FGameWorldSystems
@@ -56,10 +60,16 @@ public:
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 
+	// FNetDriver::OnGameMessage에서 받은 월드 메시지(스크립트 RPC). 처리했으면 true (복제 메시지는 복제 객체가 먼저 받는다)
+	bool HandleNetMessage(FNetConnectionId Connection, const std::vector<uint8>& Message);
+
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
 
 private:
+	void  RouteScriptRpc(FEntity Target, uint8 Kind, const std::string& Name, const std::vector<FScriptRpcArg>& Args);
+	int32 GetEntityOwner(FEntity Entity) const;
+
 	FGameWorldSystems Systems;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
 	ENetMode          Mode  = ENetMode::Standalone;

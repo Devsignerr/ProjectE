@@ -74,6 +74,7 @@ public:
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
 	bool         RunString(std::string_view Code);
+	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args);
 	size_t       GetInstanceCount() const { return Instances.size(); }
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name);
 
@@ -134,6 +135,8 @@ private:
 	FScriptValue ToScriptValue(const sol::object& Object);
 	sol::object  FromScriptValue(const FScriptValue& Value);
 	sol::object  CopyValue(const sol::object& Object); // Vector3 등 값 타입 userdata 깊은 복사
+	FScriptRpcArg ToRpcArg(const sol::object& Object); // RPC로 보낼 수 없는 값이면 std::runtime_error
+	void          CallRpc(FEntity Target, EScriptRpcKind Kind, const std::string& Name, const sol::variadic_args& Args);
 
 	sol::state            Lua;
 	sol::protected_function Traceback; // 오류 메시지에 콜스택 추가 (debug.traceback)

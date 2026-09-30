@@ -130,7 +130,12 @@ bool FRuntimeApplication::OnInit()
 	{
 		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
-		Net.OnGameMessage = [this](FNetConnectionId, const std::vector<uint8>& Message) { ReplicationClient.HandleMessage(Message); };
+		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
+			if (!ReplicationClient.HandleMessage(Message))
+			{
+				World.HandleNetMessage(Connection, Message); // 스크립트 RPC
+			}
+		};
 		World.BeginPlay(Scene, ENetMode::Client);
 	}
 	else
@@ -144,7 +149,8 @@ bool FRuntimeApplication::OnInit()
 			Players.SpawnPlayer(Player.PlayerId);
 			ReplicationServer.OnPlayerJoined(Player.Connection);
 		};
-		Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+		Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) { World.HandleNetMessage(Connection, Message); };
 		World.BeginPlay(Scene, NetOptions.Mode == ENetMode::ListenServer ? ENetMode::ListenServer : ENetMode::Standalone);
 		if (NetOptions.Mode == ENetMode::ListenServer)
 		{

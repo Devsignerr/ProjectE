@@ -131,8 +131,9 @@ void FInspectorPanel::UpdatePrefabView(FEditorContext& Context, FEntity Entity)
 	{
 		return;
 	}
-	PrefabView.bMember = true;
-	PrefabView.Root    = Root;
+	PrefabView.bMember  = true;
+	PrefabView.bPlaying = Context.bPlaying; // 플레이 중에는 되돌리기 메뉴 없음 (플레이 씬 편집은 정지 시 버려짐)
+	PrefabView.Root     = Root;
 	if (const FPrefabLinkComponent* Link = Registry.TryGet<FPrefabLinkComponent>(Entity))
 	{
 		PrefabView.Id = Link->Id;
@@ -230,7 +231,7 @@ void FInspectorPanel::DrawOverrideMarker(const std::string& Key)
 	const ImVec2 Max = ImGui::GetItemRectMax();
 	const float  X   = ImGui::GetWindowPos().x + 2.0f;
 	ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(X, Min.y), ImVec2(X + 3.0f, Max.y), ImGui::GetColorU32(FEditorTheme::PrefabText));
-	if (ImGui::BeginPopupContextItem("##PrefabOverride"))
+	if (!PrefabView.bPlaying && ImGui::BeginPopupContextItem("##PrefabOverride"))
 	{
 		ImGui::TextDisabled("프리팹 오버라이드");
 		if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT " 원본 값으로 되돌리기"))

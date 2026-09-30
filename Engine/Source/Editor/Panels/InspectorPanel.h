@@ -44,7 +44,8 @@ private:
 
 	struct FPrefabView
 	{
-		bool             bMember = false; // 선택 엔티티가 씬 인스턴스 소속
+		bool             bMember  = false; // 선택 엔티티가 씬 인스턴스 소속
+		bool             bPlaying = false;
 		FEntity          Root;
 		std::string      Id;
 		std::string      Asset;

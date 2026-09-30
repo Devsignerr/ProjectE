@@ -199,6 +199,10 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 			Desc.AngularDamping    = RigidBody->AngularDamping;
 			Desc.RollingResistance = RigidBody->RollingResistance;
 			Desc.bUseGravity       = RigidBody->bUseGravity;
+			if (Desc.MotionType == EPhysicsMotionType::Dynamic && KinematicOverride && KinematicOverride(Scene, Entity))
+			{
+				Desc.MotionType = EPhysicsMotionType::Kinematic;
+			}
 		}
 		else
 		{

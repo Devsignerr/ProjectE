@@ -6,6 +6,7 @@
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "Network/NetTransport.h"
+#include "Network/ReplicationTypes.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
@@ -74,6 +75,7 @@ bool FRuntimeApplication::OnInit()
 
 	RegisterAudioTypes(); // 씬 로드 전에
 	RegisterPhysicsTypes();
+	RegisterNetworkTypes();
 	RegisterUITypes();
 	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
 	{
@@ -127,18 +129,43 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
-	World.BeginPlay(Scene);
 
-	// 멀티플레이: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트 (연결만 — 복제는 이후 단계)
+	// 멀티플레이: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트, 없으면 Standalone
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
 	const FNetSessionInfo   Session    = FNetSessionInfo::FromProject(SceneAsset);
-	if (NetOptions.Mode == ENetMode::ListenServer && !Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
+	if (NetOptions.Mode == ENetMode::Client && Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
 	{
-		E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
+		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
+		ReplicationClient.Begin(Scene);
+		Net.OnGameMessage = [this](FNetConnectionId, const std::vector<uint8>& Message) { ReplicationClient.HandleMessage(Message); };
+		World.BeginPlay(Scene, EWorldRole::Client);
 	}
-	else if (NetOptions.Mode == ENetMode::Client && !Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
+	else
 	{
-		E_LOG(LogRuntime, Error, "서버 {}에 접속하지 못했습니다 (단독 실행으로 계속)", NetOptions.ConnectAddress);
+		if (NetOptions.Mode == ENetMode::Client)
+		{
+			E_LOG(LogRuntime, Error, "서버 {}에 접속하지 못했습니다 (단독 실행으로 계속)", NetOptions.ConnectAddress);
+		}
+		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
+		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
+			Players.SpawnPlayer(Player.PlayerId);
+			ReplicationServer.OnPlayerJoined(Player.Connection);
+		};
+		Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+		World.BeginPlay(Scene);
+		if (NetOptions.Mode == ENetMode::ListenServer)
+		{
+			if (Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
+			{
+				// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
+				Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
+				Players.SpawnPlayer(FNetDriver::HostPlayerId);
+			}
+			else
+			{
+				E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
+			}
+		}
 	}
 	if (Net.GetMode() != ENetMode::Standalone)
 	{
@@ -157,7 +184,15 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		RequestExit();
 	}
 
-	Net.Update(DeltaSeconds);
+	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
+	if (Net.GetMode() == ENetMode::Client)
+	{
+		ReplicationClient.Update(DeltaSeconds); // 트랜스폼 보간
+		if (ReplicationClient.ConsumeAssetsChanged())
+		{
+			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
+		}
+	}
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
 	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
 	FUIFrameInput       UIInput;
@@ -172,8 +207,9 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		BlockedInput = InputState.WithoutMouseButtons();
 		GameInput    = &BlockedInput;
 	}
-	World.TickGameplay(DeltaSeconds, GameInput);
+	World.TickGameplay(DeltaSeconds, GameInput); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);
+	ReplicationServer.Tick(DeltaSeconds);
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
@@ -210,6 +246,9 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 void FRuntimeApplication::OnShutdown()
 {
 	Net.Shutdown();
+	ReplicationServer.End();
+	ReplicationClient.End();
+	Players.End();
 	World.EndPlay();
 	AudioSystem.Reset(Audio);
 	Audio.Shutdown();

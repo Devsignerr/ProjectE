@@ -5,6 +5,7 @@
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "Network/NetTransport.h"
+#include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
@@ -39,6 +40,7 @@ bool FServerApplication::OnInit()
 	// 씬 로드 전에 타입 등록 (오디오/UI는 컴포넌트 타입만 — 서버는 소리를 내거나 UI를 그리지 않는다)
 	RegisterAudioTypes();
 	RegisterPhysicsTypes();
+	RegisterNetworkTypes();
 	RegisterUITypes();
 	if (!FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -61,6 +63,13 @@ bool FServerApplication::OnInit()
 	// GPU 리소스 없음 → Resources = nullptr (에셋 해석 생략). 복제할 값에 렌더 보간이 섞이지 않도록 물리 보간을 끈다
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory() });
 	Physics.SetInterpolation(false);
+	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
+	Players.Begin(Scene, FPaths::GetProjectDescriptor().PlayerPrefab);
+	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
+		Players.SpawnPlayer(Player.PlayerId);
+		Replication.OnPlayerJoined(Player.Connection);
+	};
+	Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
 	World.BeginPlay(Scene);
 
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
@@ -78,11 +87,14 @@ void FServerApplication::OnUpdate(float DeltaSeconds)
 	Net.Update(DeltaSeconds);
 	World.TickGameplay(DeltaSeconds, nullptr);
 	World.TickPresentation(Scene, DeltaSeconds); // 애니메이션(노티파이/소켓)은 게임 로직에 쓰이므로 서버도 돌린다
+	Replication.Tick(DeltaSeconds);
 }
 
 void FServerApplication::OnShutdown()
 {
 	Net.Shutdown();
+	Replication.End();
+	Players.End();
 	World.EndPlay();
 	E_LOG(LogServer, Display, "서버 종료 (틱 {}회)", GetFrameIndex());
 	GameModule.Unload();

@@ -185,7 +185,12 @@ void FNetDriver::HandleServerEvent(const FNetEvent& Event)
 		const auto Pending = FindPending(Event.Connection);
 		if (Pending == PendingConnections.end())
 		{
-			break; // 입장한 플레이어의 게임 메시지는 이후 단계(복제/RPC/입력)에서 처리
+			const std::optional<ENetMessageType> Type = NetMessages::PeekType(Event.Data);
+			if (FindPlayer(Event.Connection) != Players.end() && Type && *Type >= ENetMessageType::GameBase && OnGameMessage)
+			{
+				OnGameMessage(Event.Connection, Event.Data);
+			}
+			break;
 		}
 		const std::optional<FNetHello> Hello = NetMessages::DecodeHello(Event.Data);
 		if (!Hello)
@@ -240,7 +245,15 @@ void FNetDriver::HandleClientEvent(const FNetEvent& Event)
 		FailClient(ClientState == EClientState::Joined ? "서버 연결 끊김: " + Event.Reason : "접속 실패: " + Event.Reason);
 		break;
 	case ENetEventType::Message:
-		if (ClientState == EClientState::Connecting)
+		if (ClientState == EClientState::Joined)
+		{
+			const std::optional<ENetMessageType> Type = NetMessages::PeekType(Event.Data);
+			if (Type && *Type >= ENetMessageType::GameBase && OnGameMessage)
+			{
+				OnGameMessage(Event.Connection, Event.Data);
+			}
+		}
+		else if (ClientState == EClientState::Connecting)
 		{
 			if (const std::optional<FNetWelcome> Welcome = NetMessages::DecodeWelcome(Event.Data))
 			{
@@ -259,6 +272,40 @@ void FNetDriver::HandleClientEvent(const FNetEvent& Event)
 		}
 		break;
 	}
+}
+
+bool FNetDriver::Send(FNetConnectionId Connection, const std::vector<uint8>& Message, ENetReliability Reliability)
+{
+	if (Transport == nullptr)
+	{
+		return false;
+	}
+	if (Mode == ENetMode::Client)
+	{
+		return SendToServer(Message, Reliability);
+	}
+	return Transport->Send(Connection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
+}
+
+void FNetDriver::Broadcast(const std::vector<uint8>& Message, ENetReliability Reliability)
+{
+	if (Transport == nullptr || !IsServer())
+	{
+		return;
+	}
+	for (const FRemotePlayer& Player : Players)
+	{
+		Transport->Send(Player.Connection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
+	}
+}
+
+bool FNetDriver::SendToServer(const std::vector<uint8>& Message, ENetReliability Reliability)
+{
+	if (Transport == nullptr || Mode != ENetMode::Client || ClientState != EClientState::Joined)
+	{
+		return false;
+	}
+	return Transport->Send(ServerConnection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
 }
 
 std::string FNetDriver::ValidateHello(const FNetHello& Hello) const

@@ -6,6 +6,8 @@
 #include "Renderer/ResourceManager.h"
 #include "Scene/Scene.h"
 
+#include <algorithm>
+#include <cwctype>
 #include <unordered_map>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
@@ -277,4 +279,11 @@ void FModelLoader::InstantiateEntities(const FModelResources& Resources, FScene&
 	}
 	AttachSkins(Model, Scene, NodeEntities);
 	AttachAnimation(Model, Scene, Root, std::move(NodeEntities));
+}
+
+bool FModelLoader::IsModelFile(const std::filesystem::path& Path)
+{
+	std::wstring Extension = Path.extension().wstring();
+	std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+	return Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx";
 }

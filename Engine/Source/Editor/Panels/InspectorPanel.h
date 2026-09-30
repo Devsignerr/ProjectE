@@ -23,6 +23,8 @@ private:
 	void DrawNameField(FEditorContext& Context, FEntity Entity);
 	void DrawComponent(FEditorContext& Context, FEntity Entity, const FTypeInfo& Type, void* Component);
 	bool DrawProperty(const FPropertyInfo& Property, void* Component, FEntity Entity);
+	// 에셋 경로 문자열 칸 (AssetFilter가 있는 프로퍼티): 콘텐츠 브라우저 드롭 받기. 반환: 바뀜
+	bool DrawAssetSlot(FEditorContext& Context, const FTypeInfo& Type, const FPropertyInfo& Property, void* Component);
 	void DrawTransformExtras(FEditorContext& Context, FEntity Entity);
 	void DrawStaticMeshExtras(FEditorContext& Context, FEntity Entity);
 	void DrawScriptExtras(FEditorContext& Context, FEntity Entity); // 스크립트 선택 + Properties 오버라이드

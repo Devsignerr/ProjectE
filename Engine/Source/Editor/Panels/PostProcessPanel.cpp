@@ -1,6 +1,7 @@
 #include "Editor/Panels/PostProcessPanel.h"
 
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "Renderer/SceneRenderer.h"
 
 #include <imgui.h>
@@ -12,7 +13,7 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		return;
 	}
 
-	if (ImGui::Begin("포스트 프로세스", &bOpen))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_WAND_MAGIC_SPARKLES, "포스트 프로세스", "PostProcess").c_str(), &bOpen))
 	{
 		FPostProcessSettings& Settings = Context.Renderer->PostProcessSettings;
 

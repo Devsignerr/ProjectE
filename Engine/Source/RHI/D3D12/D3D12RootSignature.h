@@ -17,6 +17,12 @@ public:
 	uint32 AddConstantBufferView(uint32 ShaderRegister, uint32 RegisterSpace = 0,
 	                             D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 
+	// 루트 SRV/UAV (버퍼 전용 — 구조화/원시 버퍼를 GPU 주소로 바로 바인딩)
+	uint32 AddShaderResourceView(uint32 ShaderRegister, uint32 RegisterSpace = 0,
+	                             D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
+	uint32 AddUnorderedAccessView(uint32 ShaderRegister, uint32 RegisterSpace = 0,
+	                              D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
+
 	uint32 AddDescriptorTable(std::vector<D3D12_DESCRIPTOR_RANGE1> Ranges,
 	                          D3D12_SHADER_VISIBILITY Visibility = D3D12_SHADER_VISIBILITY_ALL);
 

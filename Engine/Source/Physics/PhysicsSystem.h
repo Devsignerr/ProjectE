@@ -57,7 +57,7 @@ private:
 	struct FBodyState
 	{
 		uint32             Body = FPhysicsWorld::InvalidBody;
-		uint64             ShapeKey = 0; // 모양/운동 형식/재질 해시 (바뀌면 다시 생성)
+		FPhysicsBodyDesc   CreatedDesc; // 바디 생성에 쓴 설정 (모양/운동 형식/재질이 바뀌면 다시 생성)
 		EPhysicsMotionType Motion   = EPhysicsMotionType::Static;
 		uint64             LastSeenFrame = 0;
 

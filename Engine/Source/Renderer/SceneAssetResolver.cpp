@@ -4,6 +4,7 @@
 #include "Core/StringConv.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/ResourceManager.h"
+#include "Scene/Particles.h"
 #include "Scene/Scene.h"
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
@@ -58,5 +59,26 @@ void FSceneAssetResolver::Resolve(FScene& Scene, FResourceManager& Resources, co
 		}
 	}
 
+	ResolveParticles(Scene, Resources, ContentDirectory);
+
 	Scene.UpdateTransforms();
+}
+
+void FSceneAssetResolver::ResolveParticles(FScene& Scene, FResourceManager& Resources, const std::filesystem::path& ContentDirectory)
+{
+	Scene.GetRegistry().View<FParticleSystemComponent>().Each([&](FEntity, FParticleSystemComponent& Emitter) {
+		FParticleRuntime& Runtime = Emitter.Runtime;
+		// 같은 경로는 다시 해석하지 않는다 (실패한 경로도 매 프레임 재시도하지 않음 — 경로를 바꾸면 다시 해석)
+		if (Runtime.ResolvedAsset == Emitter.Asset)
+		{
+			return;
+		}
+		Runtime.Restart();
+		Runtime.ResolvedAsset = Emitter.Asset;
+		Runtime.System        = Emitter.Asset.empty() ? nullptr : Resources.LoadParticleSystem(ResolveContentPath(Emitter.Asset, ContentDirectory));
+		if (!Emitter.Asset.empty() && !Runtime.System)
+		{
+			E_LOG(LogRenderer, Warning, "파티클 에셋을 불러오지 못했습니다: {}", Emitter.Asset);
+		}
+	});
 }

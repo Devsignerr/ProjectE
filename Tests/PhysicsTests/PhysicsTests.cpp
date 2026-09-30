@@ -254,6 +254,46 @@ E_TEST(Physics_FrictionSlowsSliding)
 	E_EXPECT_TRUE(Rough < Slippery * 0.5f);
 }
 
+E_TEST(Physics_RollingSphereKeepsMomentum)
+{
+	// 회전 중 스케일 분해 오차로 바디가 다시 생성되면 속도가 0으로 초기화되어 공이 멈춘다
+	FScene        Scene;
+	AddFloor(Scene);
+	const FEntity Ball = AddDynamicSphere(Scene, FVector3(0.0f, 0.0f, 25.0f));
+	Scene.UpdateTransforms();
+
+	FPhysicsSystem Physics;
+	Physics.Begin();
+	Physics.Update(Scene, Frame);
+	Physics.SetVelocity(Ball, FVector3(500.0f, 0.0f, 0.0f));
+	Simulate(Physics, Scene, 3.0f);
+	// 미끄러짐 → 구름 전환 후 약 5/7 속도(357cm/s)로 계속 굴러간다
+	E_EXPECT_TRUE(Physics.GetVelocity(Ball).X > 250.0f);
+	E_EXPECT_TRUE(Scene.GetTransform(Ball).Position.X > 800.0f);
+}
+
+E_TEST(Physics_ScaleChangeResizesBody)
+{
+	FScene        Scene;
+	const FEntity Ball = AddDynamicSphere(Scene, FVector3(0.0f, 0.0f, 0.0f));
+	Scene.GetRegistry().Get<FRigidBodyComponent>(Ball).bUseGravity = false;
+	Scene.UpdateTransforms();
+
+	FPhysicsSystem Physics;
+	Physics.Begin();
+	Physics.Update(Scene, Frame);
+	FPhysicsHit Hit;
+	E_EXPECT_TRUE(Physics.Raycast(FVector3(0.0f, 0.0f, 500.0f), FVector3(0.0f, 0.0f, -1.0f), 1000.0f, Hit));
+	E_EXPECT_NEAR(Hit.Distance, 475.0f, 0.5f);
+
+	// 실제 스케일 변경은 허용 오차보다 크므로 바디 모양에 반영된다
+	Scene.GetTransform(Ball).Scale = FVector3(2.0f, 2.0f, 2.0f);
+	Scene.UpdateTransforms();
+	Simulate(Physics, Scene, Frame);
+	E_EXPECT_TRUE(Physics.Raycast(FVector3(0.0f, 0.0f, 500.0f), FVector3(0.0f, 0.0f, -1.0f), 1000.0f, Hit));
+	E_EXPECT_NEAR(Hit.Distance, 450.0f, 0.5f);
+}
+
 E_TEST(Physics_ImpulseAndTeleport)
 {
 	FScene        Scene;

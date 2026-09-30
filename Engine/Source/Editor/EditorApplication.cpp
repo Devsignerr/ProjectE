@@ -4,24 +4,32 @@
 #include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Reflection/TypeInfo.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Editor/EditorActions.h"
 #include "Editor/EditorCameraState.h"
+#include "Editor/EditorTheme.h"
 #include "Editor/SceneEditOps.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
+#include "Renderer/StaticMesh.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/Particles.h"
 #include "Scene/SceneSerializer.h"
 
 #include <commdlg.h>
 #include <imgui.h>
+#include <imgui_internal.h> // DockBuilder (기본 레이아웃)
 
 #include <algorithm>
 #include <cwctype>
 #include <filesystem>
 #include <format>
+#include <fstream>
+#include <sstream>
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
@@ -108,6 +116,16 @@ bool FEditorApplication::OnInit()
 	Context.ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
 	Context.DefaultCubeMesh  = Resources.GetOrCreatePrimitiveMesh("cube");
 	Context.OpenSceneRequest = [this](const std::filesystem::path& Path) { OpenScene(Path); };
+	Context.OpenAssetEditorRequest = [this](const std::filesystem::path& Path) {
+		if (!AssetEditors.Open(Context, Path))
+		{
+			ShowNotification("에셋을 열지 못했습니다: " + FStringConv::ToUtf8(Path.filename().wstring()), true);
+		}
+	};
+	Context.PrepareAssetChange = [this](const std::vector<std::filesystem::path>& Paths) { return AssetEditors.CloseEditorsFor(Context, Paths); };
+	Context.AssetsMoved        = [this](const std::vector<FAssetMove>& Moves) { OnAssetsMoved(Moves); };
+	Context.Notify             = [this](const std::string& Message, bool bError) { ShowNotification(Message, bError); };
+	Context.ReimportModel      = [this](const std::filesystem::path& Path) { return ReimportModelAsset(Path); };
 	Context.Scripts          = &Scripts;
 	Scripts.SetContentDirectory(Context.ContentDirectory);
 	Scripts.SetAudioHooks({
@@ -154,6 +172,34 @@ bool FEditorApplication::OnInit()
 				Context.AddToSelection(Entity);
 			}
 		});
+	}
+
+	// --content-dir <Content 기준 폴더>: 콘텐츠 브라우저 시작 폴더 (자동 검증)
+	if (const std::wstring ContentDir = FCommandLine::FromProcess().GetValue(L"--content-dir"); !ContentDir.empty())
+	{
+		ContentBrowserPanel.SetCurrentDirectory(Context.ContentDirectory / ContentDir);
+	}
+	// --reset-layout: 저장된 창 배치를 무시하고 기본 레이아웃으로 시작
+	bResetLayoutRequested = FCommandLine::FromProcess().HasFlag(L"--reset-layout");
+
+	// 자동 검증: --open-asset <Content 기준 경로>[,<경로>...] 으로 시작 시 에셋 편집 창 열기
+	if (const std::wstring AssetArgs = FCommandLine::FromProcess().GetValue(L"--open-asset"); !AssetArgs.empty())
+	{
+		size_t Start = 0;
+		while (Start <= AssetArgs.size())
+		{
+			const size_t       End  = AssetArgs.find(L',', Start);
+			const std::wstring Item = AssetArgs.substr(Start, End == std::wstring::npos ? std::wstring::npos : End - Start);
+			if (!Item.empty())
+			{
+				Context.OpenAssetEditorRequest(Context.ContentDirectory / Item);
+			}
+			if (End == std::wstring::npos)
+			{
+				break;
+			}
+			Start = End + 1;
+		}
 	}
 
 	// 자동 검증: --verify-undo 복제 → 커밋 → 실행 취소 → 다시 실행 → 실행 취소를 수행하고 엔티티/메시 수를 확인
@@ -234,9 +280,9 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		CameraController.Update(Camera, InputState, DeltaSeconds);
 	}
 
-	// Delete: 선택 엔티티 삭제 (텍스트 입력 중 제외)
+	// Delete: 선택 엔티티 삭제 (텍스트 입력 중, 에셋 편집 창 포커스 중 제외)
 	FEditorActions::PruneSelection(Context);
-	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard())
+	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard() && !AssetEditors.HasFocusedEditor() && !ContentBrowserPanel.IsFocused())
 	{
 		FEditorActions::DeleteSelection(Context);
 	}
@@ -244,6 +290,10 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	UpdatePlayMode(DeltaSeconds);
 	FAnimationSystem::Update(*Context.Scene, DeltaSeconds);
 	Context.Scene->UpdateTransforms();
+	// 파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
+	FSceneAssetResolver::ResolveParticles(*Context.Scene, Resources, Context.ContentDirectory);
+	FParticleSystem::Update(*Context.Scene, DeltaSeconds);
+	AssetEditors.Update(Context, DeltaSeconds);
 
 	PollShaderChanges();
 	PollScriptChanges();
@@ -258,6 +308,12 @@ void FEditorApplication::OnRender()
 	ViewportPanel.PrepareFrame(Context);
 
 	ImGuiLayer.BeginFrame();
+	ApplyDefaultLayoutIfNeeded();
+	// 윈도우 탐색기에서 끌어 놓은 파일은 콘텐츠 브라우저의 현재 폴더로 가져온다
+	if (const std::vector<std::filesystem::path> Dropped = ImGuiLayer.ConsumeDroppedFiles(); !Dropped.empty())
+	{
+		ContentBrowserPanel.ImportExternalFiles(Context, Dropped);
+	}
 	HandleShortcuts();
 	HandleToolShortcuts();
 	HandlePlayShortcuts();
@@ -265,13 +321,28 @@ void FEditorApplication::OnRender()
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
-	ContentBrowserPanel.Draw(Context);
-	PostProcessPanel.Draw(Context);
-	ShadowPanel.Draw(Context);
-	OutputLogPanel.Draw(Context);
+	// 아래 탭 묶음(통계/포스트/그림자/출력 로그/콘텐츠)은 처음에 마지막으로 그린 창이 선택되므로 콘텐츠를 마지막에
 	if (bShowStats)
 	{
 		DrawStatsWindow();
+	}
+	PostProcessPanel.Draw(Context);
+	ShadowPanel.Draw(Context);
+	OutputLogPanel.Draw(Context);
+	ContentBrowserPanel.Draw(Context);
+	AssetEditors.Draw(Context);
+	if (const std::wstring ReimportArg = FCommandLine::FromProcess().GetValue(L"--verify-reimport"); GetFrameIndex() == 20 && !ReimportArg.empty())
+	{
+		VerifyReimport(Context.ContentDirectory / ReimportArg);
+	}
+	if (GetFrameIndex() == 20 && FCommandLine::FromProcess().HasFlag(L"--verify-asset-move"))
+	{
+		VerifyAssetMove();
+	}
+	// 자동 검증: --verify-asset-close 편집 창을 몇 프레임 그린 뒤 값을 바꾸고 저장하지 않고 닫는다
+	if (GetFrameIndex() == 30 && FCommandLine::FromProcess().HasFlag(L"--verify-asset-close"))
+	{
+		E_LOG(LogEditor, Display, "자동 검증: 편집 창 {}개 닫음", AssetEditors.VerifyCloseWithoutSave(Context));
 	}
 	if (bShowImGuiDemo)
 	{
@@ -286,6 +357,8 @@ void FEditorApplication::OnRender()
 	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	ViewportPanel.RenderScene(Context);
+	AssetEditors.RenderPreviews(Context);
+	ContentBrowserPanel.RenderThumbnails(Context);
 
 	// UI는 감마 인코딩된 색이므로 UNORM 뷰에 그린다
 	Rhi->SetRenderTargetToBackBuffer(true);
@@ -312,6 +385,8 @@ void FEditorApplication::OnShutdown()
 	if (Rhi)
 	{
 		ImGuiLayer.Shutdown(); // 내부에서 GPU Flush
+		AssetEditors.Shutdown(Context);
+		ContentBrowserPanel.Shutdown(Context);
 		ViewportPanel.Shutdown();
 		SceneRenderer.Shutdown();
 		Resources.Shutdown();
@@ -488,6 +563,11 @@ void FEditorApplication::HandleShortcuts()
 			OpenScene(Path);
 		}
 	}
+	// 에셋 편집 창이 포커스를 가지면 저장/실행 취소는 그 창이 처리한다
+	if (AssetEditors.HasFocusedEditor())
+	{
+		return;
+	}
 	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S))
 	{
 		SaveSceneAs();
@@ -582,6 +662,10 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
 		ImGui::Separator();
+		if (ImGui::MenuItem("기본 레이아웃으로 되돌리기"))
+		{
+			bResetLayoutRequested = true;
+		}
 		ImGui::MenuItem("ImGui 데모", nullptr, &bShowImGuiDemo);
 		ImGui::EndMenu();
 	}
@@ -593,11 +677,12 @@ void FEditorApplication::DrawMainMenuBar()
 
 void FEditorApplication::DrawStatsWindow()
 {
-	if (ImGui::Begin("통계", &bShowStats))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_CHART_SIMPLE, "통계", "Stats").c_str(), &bShowStats))
 	{
 		const FSceneRenderStats& Stats = SceneRenderer.GetStats();
 		ImGui::Text("FPS: %.1f (%.2f ms)", SmoothedFps, SmoothedFps > 0.0f ? 1000.0f / SmoothedFps : 0.0f);
 		ImGui::Text("메시: %u / %u 표시, 드로우 %u", Stats.VisibleMeshes, Stats.TotalMeshes, Stats.DrawCalls);
+		ImGui::Text("파티클: %u", Stats.Particles);
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
 		ImGui::Text("리소스: 메시 %zu, 머티리얼 %zu, 텍스처 %zu", Resources.GetMeshCount(), Resources.GetMaterialCount(),
 		            Resources.GetTextureCount());
@@ -652,6 +737,7 @@ void FEditorApplication::PollShaderChanges()
 
 	const std::filesystem::path ShaderDirectory = FPaths::GetEngineShaderDirectory();
 	std::string                 ChangedNames;
+	std::vector<std::filesystem::path> ShaderFiles;
 	size_t                      AffectedCount = 0;
 	for (const std::filesystem::path& Path : Changed)
 	{
@@ -666,6 +752,7 @@ void FEditorApplication::PollShaderChanges()
 			continue;
 		}
 		AffectedCount += Count;
+		ShaderFiles.push_back(Path);
 		ChangedNames += (ChangedNames.empty() ? "" : ", ") + FStringConv::ToUtf8(Path.filename().wstring());
 	}
 	if (AffectedCount == 0)
@@ -673,7 +760,10 @@ void FEditorApplication::PollShaderChanges()
 		return;
 	}
 
-	if (SceneRenderer.ReloadShaders() && ViewportPanel.ReloadShaders(false))
+	const bool bMainOk    = SceneRenderer.ReloadShaders() && ViewportPanel.ReloadShaders(false);
+	const bool bPreviewOk = AssetEditors.ReloadShaders(&ShaderFiles);
+	ContentBrowserPanel.ReloadShaders(&ShaderFiles);
+	if (bMainOk && bPreviewOk)
 	{
 		E_LOG(LogEditor, Display, "셰이더 다시 로드됨: {}", ChangedNames);
 		ShowNotification("셰이더 다시 로드됨: " + ChangedNames, false);
@@ -688,7 +778,10 @@ void FEditorApplication::PollShaderChanges()
 void FEditorApplication::ReloadAllShaders()
 {
 	SceneRenderer.GetShaderLibrary().InvalidateAll();
-	if (SceneRenderer.ReloadShaders(true) && ViewportPanel.ReloadShaders(true))
+	const bool bMainOk    = SceneRenderer.ReloadShaders(true) && ViewportPanel.ReloadShaders(true);
+	const bool bPreviewOk = AssetEditors.ReloadShaders(nullptr);
+	ContentBrowserPanel.ReloadShaders(nullptr);
+	if (bMainOk && bPreviewOk)
 	{
 		ShowNotification("셰이더 전체 다시 로드됨", false);
 	}
@@ -1000,46 +1093,53 @@ void FEditorApplication::HandlePlayShortcuts()
 
 void FEditorApplication::DrawPlayControls()
 {
-	ImGui::Separator();
-	if (!PlayMode.IsActive())
+	// 메뉴 바 가운데 아이콘 버튼 (언리얼처럼 재생/일시정지/한 프레임/정지 자리가 고정)
+	const float ButtonWidth = ImGui::GetFrameHeight() * 1.4f;
+	const float GroupWidth  = ButtonWidth * 4.0f + ImGui::GetStyle().ItemSpacing.x * 3.0f;
+	ImGui::SetCursorPosX(FMath::Max(ImGui::GetCursorPosX() + 16.0f, (ImGui::GetWindowWidth() - GroupWidth) * 0.5f));
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+	const auto IconButton = [&](const char* Icon, const ImVec4& Color, bool bEnabled, const char* Tooltip) {
+		ImGui::BeginDisabled(!bEnabled);
+		ImGui::PushStyleColor(ImGuiCol_Text, Color);
+		const bool bClicked = ImGui::Button(Icon, ImVec2(ButtonWidth, 0.0f));
+		ImGui::PopStyleColor();
+		ImGui::EndDisabled();
+		ImGui::SetItemTooltip("%s", Tooltip);
+		return bClicked;
+	};
+
+	const bool bActive = PlayMode.IsActive();
+	const bool bPaused = bActive && PlayMode.IsPaused();
+	if (!bActive || bPaused)
 	{
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.95f, 0.55f, 1.0f));
-		if (ImGui::MenuItem("재생"))
+		if (IconButton(ICON_FA_PLAY, FEditorTheme::Success, true, bActive ? "계속 (F6)" : "뷰포트에서 재생 (F5). 정지하면 씬이 재생 전 상태로 돌아갑니다"))
 		{
-			StartPlay();
+			bActive ? PlayMode.TogglePause() : StartPlay();
 		}
-		ImGui::PopStyleColor();
-		ImGui::SetItemTooltip("뷰포트에서 재생 (F5). 정지하면 씬이 재생 전 상태로 돌아갑니다");
-		return;
 	}
-
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.45f, 1.0f));
-	if (ImGui::MenuItem("정지"))
-	{
-		StopPlay();
-		ImGui::PopStyleColor();
-		return;
-	}
-	ImGui::PopStyleColor();
-	ImGui::SetItemTooltip("정지하고 편집 씬 복원 (F5 / ESC)");
-
-	if (ImGui::MenuItem(PlayMode.IsPaused() ? "계속" : "일시정지"))
+	else if (IconButton(ICON_FA_PAUSE, FEditorTheme::Warning, true, "일시정지 (F6)"))
 	{
 		PlayMode.TogglePause();
 	}
-	ImGui::SetItemTooltip("일시정지 / 계속 (F6)");
-
-	if (ImGui::MenuItem("한 프레임", nullptr, false, PlayMode.IsPaused()))
+	if (IconButton(ICON_FA_FORWARD_STEP, ImVec4(0.8f, 0.8f, 0.8f, 1.0f), bPaused, "일시정지 중 한 프레임 진행 (F7)"))
 	{
 		PlayMode.RequestStep();
 	}
-	ImGui::SetItemTooltip("일시정지 중 한 프레임 진행 (F7)");
-
-	const ImVec4 StateColor = PlayMode.IsPaused() ? ImVec4(1.0f, 0.8f, 0.3f, 1.0f) : ImVec4(0.55f, 0.95f, 0.55f, 1.0f);
-	ImGui::TextColored(StateColor, PlayMode.IsPaused() ? "일시정지됨" : "플레이 중");
-	if (Scripts.GetErrorCount() > 0)
+	if (IconButton(ICON_FA_STOP, FEditorTheme::Danger, bActive, "정지하고 편집 씬 복원 (F5 / ESC)"))
 	{
-		ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.4f, 1.0f), "스크립트 오류 %u건", Scripts.GetErrorCount());
+		StopPlay();
+	}
+	ImGui::PopStyleColor(2);
+
+	if (bActive)
+	{
+		ImGui::TextColored(bPaused ? FEditorTheme::Warning : FEditorTheme::Success, bPaused ? "일시정지됨" : "플레이 중");
+	}
+	if (bActive && Scripts.GetErrorCount() > 0)
+	{
+		ImGui::TextColored(FEditorTheme::Danger, ICON_FA_TRIANGLE_EXCLAMATION " 스크립트 오류 %u건", Scripts.GetErrorCount());
 	}
 }
 
@@ -1062,5 +1162,269 @@ void FEditorApplication::PollScriptChanges()
 		{
 			ShowNotification("스크립트 오류: " + Name + " (기존 코드 유지, 로그 확인)", true);
 		}
+	}
+}
+
+void FEditorApplication::ApplyDefaultLayoutIfNeeded()
+{
+	// 레이아웃 저장 파일에 뷰포트 창 기록이 없으면(첫 실행, 창 ID 변경 후) 또는 메뉴로 요청하면 기본 배치
+	if (!bResetLayoutRequested && (bLayoutChecked || ImGui::FindWindowSettingsByID(ImHashStr("###Viewport")) != nullptr))
+	{
+		bLayoutChecked = true;
+		return;
+	}
+	bLayoutChecked        = true;
+	bResetLayoutRequested = false;
+
+	// 언리얼 5 배치: 가운데 뷰포트, 오른쪽 위 계층 / 오른쪽 아래 인스펙터, 아래 콘텐츠·출력 로그·통계·렌더 설정 탭
+	const ImGuiID        DockSpace = ImGuiLayer.GetDockSpaceId();
+	const ImGuiViewport* Viewport  = ImGui::GetMainViewport();
+	ImGui::DockBuilderRemoveNode(DockSpace);
+	ImGui::DockBuilderAddNode(DockSpace, ImGuiDockNodeFlags_DockSpace);
+	ImGui::DockBuilderSetNodeSize(DockSpace, Viewport->WorkSize);
+
+	ImGuiID Main        = 0;
+	ImGuiID Center      = 0;
+	ImGuiID RightTop    = 0;
+	const ImGuiID Right       = ImGui::DockBuilderSplitNode(DockSpace, ImGuiDir_Right, 0.26f, nullptr, &Main);
+	const ImGuiID Bottom      = ImGui::DockBuilderSplitNode(Main, ImGuiDir_Down, 0.38f, nullptr, &Center);
+	const ImGuiID RightBottom = ImGui::DockBuilderSplitNode(Right, ImGuiDir_Down, 0.60f, nullptr, &RightTop);
+
+	ImGui::DockBuilderDockWindow("###Viewport", Center);
+	ImGui::DockBuilderDockWindow("###ContentBrowser", Bottom);
+	ImGui::DockBuilderDockWindow("###OutputLog", Bottom);
+	ImGui::DockBuilderDockWindow("###Hierarchy", RightTop);
+	ImGui::DockBuilderDockWindow("###Stats", Bottom);
+	ImGui::DockBuilderDockWindow("###Inspector", RightBottom);
+	ImGui::DockBuilderDockWindow("###PostProcess", Bottom);
+	ImGui::DockBuilderDockWindow("###Shadows", Bottom);
+	ImGui::DockBuilderFinish(DockSpace);
+}
+
+void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
+{
+	// 1) 리소스 캐시 키 → 새 경로 (같은 에셋을 새 경로로 다시 로드해 중복 생성하지 않게)
+	for (const FAssetMove& Move : Moves)
+	{
+		Resources.OnAssetMoved(Move.From, Move.To);
+	}
+
+	// 2) 열린 씬의 컴포넌트 문자열 (디스크의 씬 파일은 참조 갱신기가 이미 고쳤으므로 편집 기록은 남기지 않는다)
+	uint32               Remapped = 0;
+	FRegistry&           Registry = Scene.GetRegistry();
+	std::vector<FEntity> Entities;
+	if (const TSparseSet<FHierarchyComponent>* Pool = Registry.TryGetPool<FHierarchyComponent>())
+	{
+		Entities = Pool->GetEntities();
+	}
+	FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
+		for (FEntity Entity : Entities)
+		{
+			if (!Type.HasComponent(Registry, Entity))
+			{
+				continue;
+			}
+			void* Component = Type.GetComponent(Registry, Entity);
+			for (const FPropertyInfo& Property : Type.Properties)
+			{
+				if (Property.Type != EPropertyType::String)
+				{
+					continue;
+				}
+				std::string& Value = Property.GetRef<std::string>(Component);
+				if (const std::optional<std::string> NewValue = FAssetReferenceUpdater::RemapContentPath(Value, Context.ContentDirectory, Moves))
+				{
+					Value = *NewValue;
+					++Remapped;
+				}
+			}
+		}
+	});
+
+	// 3) 실행 취소 기록의 씬 스냅샷도 같은 경로로 (되돌려도 옛 경로를 찾지 않게)
+	UndoHistory.TransformStates([&](std::string& State) { FAssetReferenceUpdater::RemapSceneJson(State, Context.ContentDirectory, Moves); });
+
+	// 4) 열려 있는 씬 파일 자체가 옮겨졌으면 저장 경로도
+	if (!CurrentScenePath.empty())
+	{
+		if (const std::optional<std::filesystem::path> NewScenePath = FAssetReferenceUpdater::MapPath(CurrentScenePath, Moves))
+		{
+			CurrentScenePath = *NewScenePath;
+			UpdateWindowTitle();
+		}
+	}
+	E_LOG(LogEditor, Display, "에셋 이동 반영: {}건, 열린 씬 참조 {}곳", Moves.size(), Remapped);
+}
+
+void FEditorApplication::VerifyAssetMove()
+{
+	// 자동 검증 (--verify-asset-move): Content/_VerifyAssetMove에 샘플 복사본을 만들고, 콘텐츠 브라우저와 같은 경로로
+	// 폴더 이동 + 텍스처 이름 변경을 한 뒤 씬 파일/머티리얼/열린 씬의 참조가 새 경로인지 확인한다. 끝나면 복사본을 지운다
+	namespace fs                 = std::filesystem;
+	const fs::path  Root         = Context.ContentDirectory / L"_VerifyAssetMove";
+	std::error_code ErrorCode;
+	fs::remove_all(Root, ErrorCode);
+	fs::create_directories(Root / L"Moved", ErrorCode);
+	fs::copy(Context.ContentDirectory / L"Materials", Root / L"Materials", fs::copy_options::recursive, ErrorCode);
+	fs::copy_file(Context.ContentDirectory / L"UVChecker.png", Root / L"UVChecker.png", ErrorCode);
+	{
+		std::ofstream File(Root / L"Test.escene", std::ios::binary);
+		File << "{ \"Version\": 1, \"Entities\": [ { \"Name\": \"Box\", \"Parent\": -1, \"Components\": { \"StaticMeshComponent\": "
+		        "{ \"MeshAsset\": \"primitive:cube\", \"MaterialAsset\": \"_VerifyAssetMove/Materials/Checker.emat\", \"Visible\": true } } } ] }";
+	}
+	const auto ReadText = [](const fs::path& Path) {
+		std::ifstream     File(Path, std::ios::binary);
+		std::stringstream Buffer;
+		Buffer << File.rdbuf();
+		return Buffer.str();
+	};
+	const auto LiveMaterialAsset = [this]() {
+		std::string Found;
+		Scene.GetRegistry().View<FStaticMeshComponent>().Each([&](FEntity, FStaticMeshComponent& Mesh) {
+			if (Mesh.MaterialAsset.find("_VerifyAssetMove") != std::string::npos)
+			{
+				Found = Mesh.MaterialAsset;
+			}
+		});
+		return Found;
+	};
+
+	bool bOk = OpenScene(Root / L"Test.escene");
+	const size_t MaterialsBefore = Resources.GetMaterialCount();
+	bOk = bOk && ContentBrowserPanel.MoveAssets(Context, { Root / L"Materials" }, Root / L"Moved");
+	const bool bSceneFile = ReadText(Root / L"Test.escene").find("\"_VerifyAssetMove/Moved/Materials/Checker.emat\"") != std::string::npos;
+	const bool bLive      = LiveMaterialAsset() == "_VerifyAssetMove/Moved/Materials/Checker.emat";
+	const bool bOwnRef    = ReadText(Root / L"Moved/Materials/Checker.emat").find("\"../../UVChecker.png\"") != std::string::npos;
+	bOk = bOk && ContentBrowserPanel.RenameAsset(Context, Root / L"UVChecker.png", L"Renamed.png");
+	const bool bRenamed = ReadText(Root / L"Moved/Materials/Checker.emat").find("\"../../Renamed.png\"") != std::string::npos;
+	// 새 경로로 다시 해석해도 캐시 키가 옮겨졌으므로 머티리얼이 새로 생기지 않는다
+	Resources.LoadMaterial(Root / L"Moved/Materials/Checker.emat");
+	const bool bNoDuplicate = Resources.GetMaterialCount() == MaterialsBefore;
+
+	const bool bPassed = bOk && bSceneFile && bLive && bOwnRef && bRenamed && bNoDuplicate;
+	const std::string Summary = std::format("씬 파일 {}, 열린 씬 {}, 머티리얼 자기 참조 {}, 이름 변경 {}, 중복 없음 {}", bSceneFile, bLive, bOwnRef, bRenamed, bNoDuplicate);
+	if (bPassed)
+	{
+		E_LOG(LogEditor, Display, "자동 검증 (에셋 이동): 통과 — {}", Summary);
+	}
+	else
+	{
+		E_LOG(LogEditor, Error, "자동 검증 (에셋 이동): 실패 — {}", Summary);
+	}
+
+	NewScene();
+	fs::remove_all(Root, ErrorCode);
+	fs::remove_all(FPaths::GetProjectDirectory() / L"Cooked" / L"_VerifyAssetMove", ErrorCode); // 복사본이 만든 쿠킹 캐시
+}
+
+bool FEditorApplication::ReimportModelAsset(const std::filesystem::path& Path)
+{
+	if (PlayMode.IsActive())
+	{
+		ShowNotification("플레이 중에는 다시 가져올 수 없습니다", true);
+		return false;
+	}
+	// 1) 캐시에서 옛 리소스를 꺼내 둔다 (인스턴스를 새로 만든 뒤 해제)
+	std::unique_ptr<FModelResources> Old = Resources.TakeModelResources(Path);
+
+	// 2) 열린 씬에서 같은 모델 인스턴스의 생성 노드를 지우고 다시 해석 (루트와 그 컴포넌트는 유지)
+	std::error_code             ErrorCode;
+	const std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	std::vector<FEntity>        Roots;
+	Scene.GetRegistry().View<FModelComponent>().Each([&](FEntity Entity, FModelComponent& Model) {
+		const std::filesystem::path AssetPath = FStringConv::ToWide(Model.AssetPath);
+		std::error_code             LocalError;
+		if (std::filesystem::weakly_canonical(AssetPath.is_absolute() ? AssetPath : Context.ContentDirectory / AssetPath, LocalError) == Canonical)
+		{
+			Roots.push_back(Entity);
+		}
+	});
+	for (const FEntity Root : Roots)
+	{
+		const std::vector<FEntity> Children = Scene.GetChildren(Root);
+		for (const FEntity Child : Children)
+		{
+			Scene.DestroyEntity(Child);
+		}
+	}
+	ModelTemplates.Clear(); // 실행 취소용 모델 템플릿도 옛 리소스를 가리키므로 버린다
+	FEditorActions::PruneSelection(Context);
+	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
+
+	// 3) 편집 창 미리보기 / 썸네일
+	AssetEditors.OnModelReimported(Context, Path);
+	ContentBrowserPanel.InvalidateThumbnail(Path);
+
+	// 4) 옛 GPU 리소스 해제 (진행 중 프레임이 쓸 수 있으므로 지연)
+	if (Old)
+	{
+		Resources.DestroyModelResources(*Old);
+	}
+	const bool bLoaded = FModelLoader::LoadModelResources(Path, Resources) != nullptr;
+	ShowNotification(bLoaded ? std::format("다시 가져옴: {} (씬 인스턴스 {}개 갱신)", FStringConv::ToUtf8(Path.filename().wstring()), Roots.size())
+	                         : "다시 가져오지 못했습니다: " + FStringConv::ToUtf8(Path.filename().wstring()),
+	                 !bLoaded);
+	return bLoaded;
+}
+
+void FEditorApplication::VerifyReimport(const std::filesystem::path& ModelPath)
+{
+	// 자동 검증 (--verify-reimport <모델>): 모델을 씬에 놓고 임포트 크기를 2배로 바꿔 다시 가져온 뒤 크기가 2배인지,
+	// 원래 설정으로 되돌린 뒤 원래 크기인지 확인한다. 기존 .eimport는 백업 후 복원
+	const std::filesystem::path Sidecar = FModelImportSettings::GetSidecarPath(ModelPath);
+	std::error_code             ErrorCode;
+	const bool                  bHadSidecar = std::filesystem::exists(Sidecar, ErrorCode);
+	std::string                 Backup;
+	if (bHadSidecar)
+	{
+		std::ifstream     File(Sidecar, std::ios::binary);
+		std::stringstream Buffer;
+		Buffer << File.rdbuf();
+		Backup = Buffer.str();
+	}
+	const FEntity Root = FModelLoader::LoadIntoScene(ModelPath, Scene, Resources);
+	const auto    MeasureWidth = [&]() {
+		Scene.UpdateTransforms();
+		FBox Bounds;
+		Scene.GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& Mesh) {
+			const FStaticMesh* StaticMesh = Resources.GetMesh(Mesh.Mesh);
+			if (StaticMesh != nullptr && Scene.IsAncestorOf(Root, Entity))
+			{
+				Bounds.AddBox(StaticMesh->GetLocalBounds().TransformBy(Transform.WorldMatrix));
+			}
+		});
+		return Bounds.IsValid() ? Bounds.GetSize().Length() : 0.0f;
+	};
+
+	const float          Before   = MeasureWidth();
+	FModelImportSettings Settings = FModelImportSettings::LoadForSource(ModelPath);
+	const float          OldScale = Settings.Scale;
+	Settings.Scale                = OldScale * 2.0f;
+	Settings.SaveForSource(ModelPath);
+	const bool  bFirst  = ReimportModelAsset(ModelPath);
+	const float Doubled = MeasureWidth();
+
+	if (bHadSidecar)
+	{
+		std::ofstream(Sidecar, std::ios::binary | std::ios::trunc) << Backup;
+	}
+	else
+	{
+		std::filesystem::remove(Sidecar, ErrorCode);
+	}
+	const bool  bSecond  = ReimportModelAsset(ModelPath);
+	const float Restored = MeasureWidth();
+	Scene.DestroyEntity(Root);
+
+	const float Ratio   = Before > 0.0f ? Doubled / Before : 0.0f;
+	const bool  bPassed = bFirst && bSecond && FMath::IsNearlyEqual(Ratio, 2.0f, 0.05f) && FMath::IsNearlyEqual(Restored, Before, Before * 0.01f + 0.01f);
+	const std::string Summary = std::format("{}: 크기 {:.1f} → {:.1f} (x{:.2f}) → 복원 {:.1f}", FStringConv::ToUtf8(ModelPath.filename().wstring()), Before, Doubled, Ratio, Restored);
+	if (bPassed)
+	{
+		E_LOG(LogEditor, Display, "자동 검증 (다시 가져오기): 통과 — {}", Summary);
+	}
+	else
+	{
+		E_LOG(LogEditor, Error, "자동 검증 (다시 가져오기): 실패 — {}", Summary);
 	}
 }

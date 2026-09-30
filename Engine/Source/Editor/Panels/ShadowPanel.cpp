@@ -1,5 +1,6 @@
 #include "Editor/Panels/ShadowPanel.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "Renderer/SceneRenderer.h"
 #include <imgui.h>
 
@@ -9,7 +10,7 @@ void FShadowPanel::Draw(FEditorContext& Context)
 	{
 		return;
 	}
-	if (ImGui::Begin("그림자", &bOpen))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_CIRCLE_HALF_STROKE, "그림자", "Shadows").c_str(), &bOpen))
 	{
 		FShadowSettings& Settings = Context.Renderer->ShadowSettings;
 		ImGui::Checkbox("그림자 사용", &Settings.bEnabled);

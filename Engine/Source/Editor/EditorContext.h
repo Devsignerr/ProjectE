@@ -7,6 +7,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -16,6 +17,7 @@ class FResourceManager;
 class FScene;
 class FSceneRenderer;
 class FScriptSystem;
+struct FAssetMove;
 
 // 패널들이 공유하는 에디터 상태 (소유하지 않음)
 struct FEditorContext
@@ -41,6 +43,15 @@ struct FEditorContext
 
 	// 패널 → 애플리케이션 요청 (씬 파일 열기 등)
 	std::function<void(const std::filesystem::path&)> OpenSceneRequest;
+	std::function<void(const std::filesystem::path&)> OpenAssetEditorRequest; // 에셋 편집 창 열기 (지원하지 않는 형식이면 무시)
+	// 에셋 파일 조작 전: 해당 경로(폴더면 안쪽 전부)의 편집 창을 닫는다. 저장 안 한 창이 있으면 닫지 않고 false
+	std::function<bool(const std::vector<std::filesystem::path>&)> PrepareAssetChange;
+	// 에셋 이동/이름 변경 후: 열린 씬·실행 취소 기록·리소스 캐시·현재 씬 경로를 새 경로로
+	std::function<void(const std::vector<FAssetMove>&)> AssetsMoved;
+	// 모델 다시 가져오기 (임포트 설정 저장 후): 캐시 교체 → 열린 씬 인스턴스·편집 창·썸네일 갱신. 실패하면 false
+	std::function<bool(const std::filesystem::path&)> ReimportModel;
+	// 화면 알림 (bError면 빨간색)
+	std::function<void(const std::string&, bool)> Notify;
 
 	// 씬 편집 알림: 편집이 끝나면(활성 위젯/기즈모 조작 없음) 애플리케이션이 Undo 단계로 커밋한다.
 	// 조작이 이어지는 동안 여러 번 호출돼도 첫 라벨 하나로 병합된다.

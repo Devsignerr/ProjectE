@@ -13,7 +13,7 @@ void RegisterAudioTypes()
 	bRegistered = true;
 
 	FTypeRegistry::Get().RegisterType<FAudioSourceComponent>("AudioSourceComponent", "오디오 소스")
-		.Property(&FAudioSourceComponent::ClipAsset, "ClipAsset", "클립")
+		.Property(&FAudioSourceComponent::ClipAsset, "ClipAsset", "클립").AssetFilter(".wav;.ogg;.mp3;.flac")
 		.Property(&FAudioSourceComponent::Volume, "Volume", "볼륨").Range(0.0f, 4.0f, 0.01f)
 		.Property(&FAudioSourceComponent::Pitch, "Pitch", "피치").Range(0.1f, 4.0f, 0.01f)
 		.Property(&FAudioSourceComponent::bLoop, "Loop", "반복")

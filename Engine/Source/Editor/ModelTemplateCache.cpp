@@ -37,11 +37,7 @@ uint32 FModelTemplateCache::Instantiate(FScene& Scene)
 
 	for (const auto& [Root, Template] : Targets)
 	{
-		const std::vector<FEntity> TemplateChildren = TemplateScene.GetChildren(Template);
-		for (FEntity Child : TemplateChildren)
-		{
-			FSceneEditOps::CloneSubtree(TemplateScene, Child, Scene, Root);
-		}
+		FSceneEditOps::CloneChildren(TemplateScene, Template, Scene, Root);
 	}
 	return static_cast<uint32>(Targets.size());
 }

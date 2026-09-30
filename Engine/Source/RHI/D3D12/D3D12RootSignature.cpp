@@ -35,6 +35,34 @@ uint32 FD3D12RootSignature::AddConstantBufferView(uint32 ShaderRegister, uint32 
 	return static_cast<uint32>(Parameters.size() - 1);
 }
 
+uint32 FD3D12RootSignature::AddShaderResourceView(uint32 ShaderRegister, uint32 RegisterSpace, D3D12_SHADER_VISIBILITY Visibility)
+{
+	D3D12_ROOT_PARAMETER1 Parameter{};
+	Parameter.ParameterType             = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	Parameter.Descriptor.ShaderRegister = ShaderRegister;
+	Parameter.Descriptor.RegisterSpace  = RegisterSpace;
+	Parameter.Descriptor.Flags          = D3D12_ROOT_DESCRIPTOR_FLAG_NONE;
+	Parameter.ShaderVisibility          = Visibility;
+
+	Parameters.push_back(Parameter);
+	TableRanges.emplace_back();
+	return static_cast<uint32>(Parameters.size() - 1);
+}
+
+uint32 FD3D12RootSignature::AddUnorderedAccessView(uint32 ShaderRegister, uint32 RegisterSpace, D3D12_SHADER_VISIBILITY Visibility)
+{
+	D3D12_ROOT_PARAMETER1 Parameter{};
+	Parameter.ParameterType             = D3D12_ROOT_PARAMETER_TYPE_UAV;
+	Parameter.Descriptor.ShaderRegister = ShaderRegister;
+	Parameter.Descriptor.RegisterSpace  = RegisterSpace;
+	Parameter.Descriptor.Flags          = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE;
+	Parameter.ShaderVisibility          = Visibility;
+
+	Parameters.push_back(Parameter);
+	TableRanges.emplace_back();
+	return static_cast<uint32>(Parameters.size() - 1);
+}
+
 uint32 FD3D12RootSignature::AddDescriptorTable(std::vector<D3D12_DESCRIPTOR_RANGE1> Ranges,
                                                D3D12_SHADER_VISIBILITY Visibility)
 {

@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 
+#include <filesystem>
 #include <vector>
 
 struct FEditorContext;
@@ -17,6 +18,8 @@ public:
 private:
 	void DrawEntityNode(FEditorContext& Context, FEntity Entity);
 	void DrawContextMenu(FEditorContext& Context, FEntity Entity);
+	// 콘텐츠 브라우저에서 놓은 모델/파티클을 Parent 아래(없으면 루트)에 추가
+	void AddAssets(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, FEntity Parent);
 
 	// 선택이 바뀌면(특히 뷰포트 클릭) 조상 노드를 펼치고 선택 노드로 스크롤한다
 	FEntity LastSeenSelection;
@@ -34,4 +37,7 @@ private:
 	FEntity PendingReparentChild;
 	FEntity PendingReparentParent;
 	bool    bPendingReparent = false;
+
+	std::vector<std::filesystem::path> PendingAssetPaths;
+	FEntity                            PendingAssetParent;
 };

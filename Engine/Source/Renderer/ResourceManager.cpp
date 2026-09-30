@@ -5,8 +5,11 @@
 #include "Renderer/AssetCache.h"
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/PrimitiveShapes.h"
+#include "Scene/Particles.h"
 
 #include <algorithm>
+#include <cwctype>
+#include <optional>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -82,6 +85,7 @@ void FResourceManager::Shutdown()
 	MaterialCache.clear();
 	PrimitiveMeshes.clear();
 	ModelCache.clear();
+	ParticleCache.clear();
 
 	WhiteTexture      = FTextureHandle{};
 	FlatNormalTexture = FTextureHandle{};
@@ -329,20 +333,32 @@ FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path
 	}
 
 	FMaterial Material;
-	Material.Name      = Asset.Name;
-	Material.Constants = Asset.Constants;
-	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
-	{
-		if (!Asset.TexturePaths[Slot].empty())
-		{
-			Material.Textures[Slot] = LoadTexture(Canonical.parent_path() / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
-		}
-	}
-
+	FillMaterialFromAsset(Material, Asset, Canonical.parent_path());
 	const FMaterialHandle Handle = CreateMaterial(Material);
 	MaterialCache[CacheKey]      = Handle;
 	E_LOG(LogRenderer, Log, "머티리얼 로드: {}", Asset.Name);
 	return Handle;
+}
+
+void FResourceManager::ApplyMaterialAsset(FMaterialHandle Handle, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
+{
+	if (FMaterial* Material = Materials.Get(Handle))
+	{
+		FillMaterialFromAsset(*Material, Asset, BaseDirectory);
+		BuildMaterialTable(*Material);
+	}
+}
+
+void FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
+{
+	Material.Name      = Asset.Name;
+	Material.Constants = Asset.Constants;
+	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+	{
+		Material.Textures[Slot] = Asset.TexturePaths[Slot].empty()
+		                              ? FTextureHandle{}
+		                              : LoadTexture(BaseDirectory / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
+	}
 }
 
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)
@@ -396,4 +412,146 @@ const FModelResources& FResourceManager::AddModelResources(const std::wstring& K
 	std::unique_ptr<FModelResources>& Slot = ModelCache[Key];
 	Slot                                   = std::make_unique<FModelResources>(std::move(Resources));
 	return *Slot;
+}
+
+std::shared_ptr<FParticleSystemAsset> FResourceManager::LoadParticleSystem(const std::filesystem::path& Path)
+{
+	std::error_code       ErrorCode;
+	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	if (ErrorCode)
+	{
+		Canonical = Path;
+	}
+	const std::wstring CacheKey = Canonical.wstring();
+	if (const auto Found = ParticleCache.find(CacheKey); Found != ParticleCache.end())
+	{
+		return Found->second;
+	}
+
+	auto System = std::make_shared<FParticleSystemAsset>();
+	if (!System->LoadFromFile(Canonical))
+	{
+		return nullptr;
+	}
+	ResolveParticleResources(*System, Canonical.parent_path());
+	ParticleCache[CacheKey] = System;
+	E_LOG(LogRenderer, Log, "파티클 로드: {} (이미터 {}개)", System->Name, System->Emitters.size());
+	return System;
+}
+
+void FResourceManager::ResolveParticleResources(FParticleSystemAsset& System, const std::filesystem::path& BaseDirectory)
+{
+	constexpr std::string_view PrimitivePrefix = "primitive:";
+	for (FParticleEmitter& Emitter : System.Emitters)
+	{
+		for (FParticleRendererSettings& Renderer : Emitter.Renderers)
+		{
+			Renderer.Texture = Renderer.TexturePath.empty() ? FTextureHandle{}
+			                                                : LoadTexture(BaseDirectory / FStringConv::ToWide(Renderer.TexturePath), ETextureUsage::Color);
+			Renderer.Mesh = {};
+			if (Renderer.Type == EParticleRendererType::Mesh)
+			{
+				// 메시 렌더러는 내장 도형만 (파일 메시는 추후)
+				const bool             bPrimitive = Renderer.MeshAsset.rfind(PrimitivePrefix, 0) == 0;
+				const std::string_view Name = bPrimitive ? std::string_view(Renderer.MeshAsset).substr(PrimitivePrefix.size()) : std::string_view("sphere");
+				Renderer.Mesh               = GetOrCreatePrimitiveMesh(Name);
+			}
+		}
+	}
+}
+
+void FResourceManager::OnAssetMoved(const std::filesystem::path& From, const std::filesystem::path& To)
+{
+	// 캐시 키 = weakly_canonical 경로 (+ 텍스처는 "|용도"). From은 이미 없어도 있는 부분까지 정규화된다
+	std::error_code             ErrorCode;
+	const std::filesystem::path CanonicalTo   = std::filesystem::weakly_canonical(To, ErrorCode);
+	const std::filesystem::path CanonicalFrom = std::filesystem::weakly_canonical(From, ErrorCode);
+	const std::wstring          OldPrefix     = CanonicalFrom.wstring();
+	const std::wstring          NewPrefix     = CanonicalTo.wstring();
+
+	const auto Lower = [](std::wstring Text) {
+		std::transform(Text.begin(), Text.end(), Text.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		return Text;
+	};
+	const std::wstring OldLower = Lower(OldPrefix);
+	// 키가 옛 경로 자체(뒤에 "|용도" 가능)이거나 옛 폴더 아래이면 새 키
+	const auto Remap = [&](const std::wstring& Key) -> std::optional<std::wstring> {
+		const std::wstring KeyLower = Lower(Key);
+		if (KeyLower.rfind(OldLower, 0) != 0)
+		{
+			return std::nullopt;
+		}
+		const wchar_t Next = Key.size() > OldPrefix.size() ? Key[OldPrefix.size()] : L'\0';
+		if (Next != L'\0' && Next != L'\\' && Next != L'/' && Next != L'|')
+		{
+			return std::nullopt;
+		}
+		return NewPrefix + Key.substr(OldPrefix.size());
+	};
+	const auto Rekey = [&](auto& Map) {
+		std::vector<std::pair<std::wstring, std::wstring>> Changes;
+		for (const auto& Entry : Map)
+		{
+			if (const std::optional<std::wstring> NewKey = Remap(Entry.first))
+			{
+				Changes.emplace_back(Entry.first, *NewKey);
+			}
+		}
+		for (const auto& [OldKey, NewKey] : Changes)
+		{
+			auto Node  = Map.extract(OldKey);
+			Node.key() = NewKey;
+			Map.insert(std::move(Node));
+		}
+	};
+	Rekey(TextureCache);
+	Rekey(MaterialCache);
+	Rekey(ModelCache);
+	Rekey(ParticleCache);
+}
+
+std::unique_ptr<FModelResources> FResourceManager::TakeModelResources(const std::filesystem::path& Path)
+{
+	std::error_code             ErrorCode;
+	const std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	const auto                  Found     = ModelCache.find((ErrorCode ? Path : Canonical).wstring());
+	if (Found == ModelCache.end())
+	{
+		return nullptr;
+	}
+	std::unique_ptr<FModelResources> Taken = std::move(Found->second);
+	ModelCache.erase(Found);
+	return Taken;
+}
+
+void FResourceManager::DestroyModelResources(const FModelResources& Model)
+{
+	// 모델 머티리얼의 텍스처는 모델 로드 때 만든 것(경로 캐시에 없음)이라 함께 해제한다
+	std::vector<FTextureHandle> TexturesToDestroy;
+	for (const FMaterialHandle Handle : Model.Materials)
+	{
+		if (const FMaterial* Material = Materials.Get(Handle); Material != nullptr && Handle != DefaultMaterial)
+		{
+			for (const FTextureHandle Texture : Material->Textures)
+			{
+				if (Texture.IsValid() && Texture != WhiteTexture && Texture != FlatNormalTexture &&
+				    std::find(TexturesToDestroy.begin(), TexturesToDestroy.end(), Texture) == TexturesToDestroy.end())
+				{
+					TexturesToDestroy.push_back(Texture);
+				}
+			}
+			DestroyMaterial(Handle);
+		}
+	}
+	for (const FTextureHandle Texture : TexturesToDestroy)
+	{
+		DestroyTexture(Texture);
+	}
+	for (const FMeshHandle Mesh : Model.Meshes)
+	{
+		if (Mesh.IsValid())
+		{
+			DestroyMesh(Mesh);
+		}
+	}
 }

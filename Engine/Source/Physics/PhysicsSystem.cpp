@@ -5,7 +5,6 @@
 #include "Scene/Scene.h"
 
 #include <algorithm>
-#include <bit>
 #include <cmath>
 #include <unordered_set>
 #include <vector>
@@ -54,22 +53,33 @@ namespace
 		return false;
 	}
 
-	void HashCombine(uint64& Seed, uint64 Value) { Seed ^= Value + 0x9E3779B97F4A7C15ull + (Seed << 6) + (Seed >> 2); }
-	void HashFloat(uint64& Seed, float Value) { HashCombine(Seed, std::bit_cast<uint32>(Value)); }
+	// 스케일에서 나온 치수는 회전 행렬 분해 오차(수 ULP)로 매 프레임 흔들리므로 상대 오차로 비교한다
+	constexpr float ShapeRelativeTolerance = 1.0e-4f;
 
-	// 바디를 다시 만들어야 하는 속성 해시 (위치/회전은 제외)
-	uint64 MakeShapeKey(const FPhysicsBodyDesc& Desc)
+	bool IsNearlySameDimension(float A, float B)
 	{
-		uint64 Seed = 0;
-		HashCombine(Seed, static_cast<uint64>(Desc.MotionType));
-		HashCombine(Seed, static_cast<uint64>(Desc.Shape));
-		for (float Value : { Desc.HalfExtents.X, Desc.HalfExtents.Y, Desc.HalfExtents.Z, Desc.Radius, Desc.HalfHeight, Desc.Offset.X, Desc.Offset.Y,
-		                     Desc.Offset.Z, Desc.Mass, Desc.Friction, Desc.Restitution, Desc.LinearDamping, Desc.AngularDamping })
+		return std::abs(A - B) <= ShapeRelativeTolerance * std::max({ 1.0f, std::abs(A), std::abs(B) });
+	}
+
+	// 바디를 다시 만들어야 하는지 (위치/회전은 제외). 컴포넌트 값은 정확히, 스케일 파생 치수는 허용 오차로 비교
+	bool NeedsRecreate(const FPhysicsBodyDesc& Old, const FPhysicsBodyDesc& New)
+	{
+		if (Old.MotionType != New.MotionType || Old.Shape != New.Shape || Old.bUseGravity != New.bUseGravity || Old.Mass != New.Mass ||
+		    Old.Friction != New.Friction || Old.Restitution != New.Restitution || Old.LinearDamping != New.LinearDamping ||
+		    Old.AngularDamping != New.AngularDamping)
 		{
-			HashFloat(Seed, Value);
+			return true;
 		}
-		HashCombine(Seed, Desc.bUseGravity ? 1 : 0);
-		return Seed;
+		const float OldDimensions[] = { Old.HalfExtents.X, Old.HalfExtents.Y, Old.HalfExtents.Z, Old.Radius, Old.HalfHeight, Old.Offset.X, Old.Offset.Y, Old.Offset.Z };
+		const float NewDimensions[] = { New.HalfExtents.X, New.HalfExtents.Y, New.HalfExtents.Z, New.Radius, New.HalfHeight, New.Offset.X, New.Offset.Y, New.Offset.Z };
+		for (size_t Index = 0; Index < std::size(OldDimensions); ++Index)
+		{
+			if (!IsNearlySameDimension(OldDimensions[Index], NewDimensions[Index]))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	bool IsSameRotation(const FQuat& A, const FQuat& B)
@@ -195,10 +205,8 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		{
 			Desc.MotionType = EPhysicsMotionType::Static;
 		}
-		const uint64 ShapeKey = MakeShapeKey(Desc);
-
 		auto Found = Bodies.find(Entity);
-		if (Found == Bodies.end() || Found->second.ShapeKey != ShapeKey)
+		if (Found == Bodies.end() || NeedsRecreate(Found->second.CreatedDesc, Desc))
 		{
 			if (Found != Bodies.end())
 			{
@@ -214,7 +222,7 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 				}
 				continue;
 			}
-			State.ShapeKey         = ShapeKey;
+			State.CreatedDesc      = Desc;
 			State.Motion           = Desc.MotionType;
 			State.LastSeenFrame    = FrameCounter;
 			State.PreviousPosition = State.CurrentPosition = Position;

@@ -31,6 +31,9 @@ struct FModelLoader
 	static FEntity Instantiate(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Parent = NullEntity);
 	static void    InstantiateInto(const FModelData& Model, FScene& Scene, FResourceManager& Resources, FEntity Root);
 
+	// 모델 원본 확장자인지 (.glb / .gltf / .fbx, 대소문자 무시)
+	static bool IsModelFile(const std::filesystem::path& Path);
+
 	// 프로젝트 Content 안의 경로면 Content 기준 상대 경로('/' 구분), 아니면 절대 경로 문자열
 	static std::string MakeAssetPath(const std::filesystem::path& Path);
 };

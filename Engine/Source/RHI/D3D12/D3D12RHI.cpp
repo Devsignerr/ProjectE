@@ -2,8 +2,10 @@
 
 #include "Core/StringConv.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <iterator>
 #include <vector>
 
 #pragma warning(push, 0)
@@ -84,6 +86,7 @@ void FD3D12RHI::Shutdown()
 	GraphicsQueue.Flush();
 
 	CommandList.Reset();
+	ProcessPendingReleases(RecordingReleases);
 	for (uint32 Index = 0; Index < FrameCount; ++Index)
 	{
 		ProcessPendingReleases(PendingReleases[Index]);
@@ -183,7 +186,7 @@ void FD3D12RHI::DeferRelease(ComPtr<ID3D12Object> Object)
 {
 	if (Object)
 	{
-		PendingReleases[CurrentBackBufferIndex].Objects.push_back(std::move(Object));
+		RecordingReleases.Objects.push_back(std::move(Object));
 	}
 }
 
@@ -191,7 +194,7 @@ void FD3D12RHI::DeferFreeDescriptor(const FD3D12DescriptorHandle& Handle)
 {
 	if (Handle.IsValid())
 	{
-		PendingReleases[CurrentBackBufferIndex].SrvDescriptors.push_back(Handle);
+		RecordingReleases.SrvDescriptors.push_back(Handle);
 	}
 }
 
@@ -247,6 +250,13 @@ void FD3D12RHI::EndFrame()
 	E_D3D_CHECK(CommandList->Close());
 
 	FrameFenceValues[CurrentBackBufferIndex] = GraphicsQueue.ExecuteCommandList(CommandList.Get());
+
+	// 이번 프레임 도중(BeginFrame 전 UI 단계 포함) 해제 요청된 것은 방금 제출한 프레임이 끝난 뒤 해제
+	FPendingReleases& Pending = PendingReleases[CurrentBackBufferIndex];
+	std::move(RecordingReleases.Objects.begin(), RecordingReleases.Objects.end(), std::back_inserter(Pending.Objects));
+	Pending.SrvDescriptors.insert(Pending.SrvDescriptors.end(), RecordingReleases.SrvDescriptors.begin(), RecordingReleases.SrvDescriptors.end());
+	RecordingReleases.Objects.clear();
+	RecordingReleases.SrvDescriptors.clear();
 
 	if (Readback)
 	{

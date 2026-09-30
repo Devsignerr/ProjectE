@@ -16,6 +16,8 @@
 #include <vector>
 
 class FD3D12RHI;
+struct FMaterialAsset;
+struct FParticleSystemAsset;
 
 // 모델 에셋의 공유 GPU 리소스 (FModelLoader가 채운다). 같은 에셋의 인스턴스는 메시/머티리얼/텍스처를 공유한다.
 //   Model: 엔티티 배치용 데이터 (노드/스킨/애니메이션, 메시 인덱스·머티리얼 번호). 이미지·정점 데이터는 GPU 업로드 후 비운다
@@ -64,16 +66,30 @@ public:
 	void            RefreshMaterialTextures(FMaterialHandle Handle);
 	// .emat 파일 로드 (경로별 캐시). 텍스처는 파일 위치 기준 상대 경로로 로드
 	FMaterialHandle LoadMaterial(const std::filesystem::path& Path);
+	// .emat 내용을 기존 머티리얼에 반영 (에디터 실시간 편집/되돌리기). 텍스처 경로는 BaseDirectory 기준
+	void            ApplyMaterialAsset(FMaterialHandle Handle, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
 	void            DestroyMaterial(FMaterialHandle Handle);
 	FMaterial*      GetMaterial(FMaterialHandle Handle) const { return Materials.Get(Handle); }
 	FMaterialHandle GetDefaultMaterial() const { return DefaultMaterial; }
 	// 무효 핸들이면 기본 머티리얼
 	const FMaterial& ResolveMaterial(FMaterialHandle Handle) const;
 
+	// ---- 파티클 시스템 (.eparticle, 경로별 캐시). 반환된 에셋을 고치면(파티클 편집기) 같은 에셋의 모든 컴포넌트에 즉시 반영된다
+	std::shared_ptr<FParticleSystemAsset> LoadParticleSystem(const std::filesystem::path& Path);
+	// 모든 렌더러의 TexturePath/MeshAsset으로 핸들을 채운다 (BaseDirectory = .eparticle 폴더)
+	void ResolveParticleResources(FParticleSystemAsset& System, const std::filesystem::path& BaseDirectory);
+
 	// ---- 모델 (키: 정규화 경로). 캐시된 핸들 중 하나라도 삭제됐으면 무효로 보고 항목을 버린다
 	const FModelResources* FindModelResources(const std::wstring& Key);
 	const FModelResources& AddModelResources(const std::wstring& Key, FModelResources Resources);
 	size_t                 GetModelCount() const { return ModelCache.size(); }
+	// 다시 가져오기: 캐시에서 모델 리소스를 꺼낸다 (씬 인스턴스를 새 리소스로 다시 만든 뒤 DestroyModelResources로 해제)
+	std::unique_ptr<FModelResources> TakeModelResources(const std::filesystem::path& Path);
+	// 모델이 만든 메시/머티리얼/텍스처를 지연 해제 (기본 텍스처/머티리얼은 제외)
+	void DestroyModelResources(const FModelResources& Model);
+
+	// 에셋 파일/폴더 이동 후 경로 캐시 키를 새 경로로 옮긴다 (같은 에셋을 새 경로로 다시 로드해 GPU 리소스가 중복되지 않게). 경로는 절대 경로
+	void OnAssetMoved(const std::filesystem::path& From, const std::filesystem::path& To);
 
 	size_t GetTextureCount() const { return Textures.GetCount(); }
 	size_t GetMeshCount() const { return Meshes.GetCount(); }
@@ -82,6 +98,7 @@ public:
 private:
 	// 슬롯별 해석된 텍스처로 새 디스크립터 테이블 작성 (이전 테이블은 지연 해제)
 	void BuildMaterialTable(FMaterial& Material);
+	void FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
 	const FD3D12Texture& ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const;
 
 	FD3D12RHI* Rhi = nullptr;
@@ -94,6 +111,7 @@ private:
 	std::unordered_map<std::wstring, FMaterialHandle> MaterialCache;  // 키: 정규화 경로
 	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
 	std::unordered_map<std::wstring, std::unique_ptr<FModelResources>> ModelCache; // 키: 정규화 경로 (주소 고정)
+	std::unordered_map<std::wstring, std::shared_ptr<FParticleSystemAsset>> ParticleCache; // 키: 정규화 경로
 
 	FTextureHandle  WhiteTexture;
 	FTextureHandle  FlatNormalTexture;

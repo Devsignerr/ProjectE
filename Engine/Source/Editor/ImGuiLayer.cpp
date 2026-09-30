@@ -8,30 +8,17 @@
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Core/Window.h"
+#include "Editor/EditorTheme.h"
 #include "RHI/D3D12/D3D12RHI.h"
 
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
+#include <shellapi.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 E_DEFINE_LOG_CATEGORY(LogEditor, Log)
-
-namespace
-{
-	void ApplyEditorStyle(float Scale)
-	{
-		ImGuiStyle& Style = ImGui::GetStyle();
-		ImGui::StyleColorsDark();
-		Style.WindowRounding   = 4.0f;
-		Style.FrameRounding    = 3.0f;
-		Style.GrabRounding     = 3.0f;
-		Style.TabRounding      = 3.0f;
-		Style.WindowBorderSize = 1.0f;
-		Style.ScaleAllSizes(Scale);
-	}
-} // namespace
 
 FImGuiLayer::~FImGuiLayer()
 {
@@ -57,26 +44,10 @@ bool FImGuiLayer::Init(FWindow& InWindow, FD3D12RHI& InRhi, const std::filesyste
 	IniFilePath    = FStringConv::ToUtf8(InIniFilePath.wstring());
 	IO.IniFilename = IniFilePath.c_str();
 
-	// DPI 스케일 + 한글 폰트 (맑은 고딕이 있으면 사용)
+	// DPI 스케일 + 테마(언리얼 5 풍) + 한글 글꼴(맑은 고딕, 없으면 기본) + 아이콘 글꼴
 	DpiScale = ImGui_ImplWin32_GetDpiScaleForHwnd(Window->GetHandle());
-	ApplyEditorStyle(DpiScale);
-
-	const float           FontSize = 16.0f * DpiScale;
-	const std::filesystem::path KoreanFont = L"C:\\Windows\\Fonts\\malgun.ttf";
-	if (std::filesystem::exists(KoreanFont))
-	{
-		ImFontConfig FontConfig;
-		FontConfig.OversampleH = 2;
-		IO.Fonts->AddFontFromFileTTF(FStringConv::ToUtf8(KoreanFont.wstring()).c_str(), FontSize, &FontConfig,
-		                             IO.Fonts->GetGlyphRangesKorean());
-	}
-	else
-	{
-		E_LOG(LogEditor, Warning, "한글 폰트(malgun.ttf)를 찾지 못해 기본 폰트를 사용합니다");
-		ImFontConfig FontConfig;
-		FontConfig.SizePixels = FontSize;
-		IO.Fonts->AddFontDefault(&FontConfig);
-	}
+	FEditorTheme::Apply(DpiScale);
+	FEditorTheme::LoadFonts(DpiScale);
 
 	if (!ImGui_ImplWin32_Init(Window->GetHandle()))
 	{
@@ -107,8 +78,23 @@ bool FImGuiLayer::Init(FWindow& InWindow, FD3D12RHI& InRhi, const std::filesyste
 		return false;
 	}
 
-	// 창 메시지 전달
-	Window->SetMessageHook([](HWND Hwnd, uint32 Message, uint64 WParam, int64 LParam) {
+	// 창 메시지 전달 + 윈도우 탐색기에서 끌어 놓은 파일 받기 (WM_DROPFILES)
+	DragAcceptFiles(Window->GetHandle(), TRUE);
+	Window->SetMessageHook([this](HWND Hwnd, uint32 Message, uint64 WParam, int64 LParam) {
+		if (Message == WM_DROPFILES)
+		{
+			const HDROP Drop  = reinterpret_cast<HDROP>(WParam);
+			const UINT  Count = DragQueryFileW(Drop, 0xFFFFFFFF, nullptr, 0);
+			for (UINT Index = 0; Index < Count; ++Index)
+			{
+				const UINT   Length = DragQueryFileW(Drop, Index, nullptr, 0);
+				std::wstring Path(Length, L' ');
+				DragQueryFileW(Drop, Index, Path.data(), Length + 1);
+				DroppedFiles.emplace_back(Path);
+			}
+			DragFinish(Drop);
+			return true;
+		}
 		return ImGui_ImplWin32_WndProcHandler(Hwnd, Message, WParam, LParam) != 0;
 	});
 
@@ -147,7 +133,7 @@ void FImGuiLayer::BeginFrame()
 	ImGuizmo::BeginFrame(); // 매 프레임 필수 — 없으면 기즈모 상호작용이 동작하지 않는다
 
 	// 메인 창 전체를 도크스페이스로 (중앙은 뷰포트가 차지하도록 패스스루)
-	ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+	DockSpaceId = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
 	bFrameBegun = true;
 }

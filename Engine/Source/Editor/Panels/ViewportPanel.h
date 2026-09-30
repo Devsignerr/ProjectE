@@ -1,15 +1,19 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "Editor/SnapSettings.h"
 
+#include <filesystem>
 #include <memory>
+#include <vector>
 
 class FD3D12RenderTarget;
 class FEditorGrid;
 class FSelectionOutline;
 class FInput;
+struct FRay;
 struct FEditorContext;
 
 // 씬 뷰포트: 오프스크린 렌더 타깃을 ImGui 이미지로 표시, 기즈모, 클릭 선택
@@ -53,6 +57,10 @@ private:
 	void RenderGrid(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
+	// 커서 아래 가장 가까운 메시 엔티티 (모델 하위 노드 그대로). OutRay/OutDistance: 광선과 경계 상자 진입 거리
+	FEntity RaycastMesh(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize, FRay& OutRay, float& OutDistance) const;
+	// 콘텐츠 브라우저 드롭: 모델/파티클은 놓은 위치에 추가, 머티리얼은 커서 아래 메시에 지정
+	void HandleAssetDrop(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, const FVector2& LocalPixel, const FVector2& ImageSize);
 
 	std::unique_ptr<FD3D12RenderTarget> RenderTarget;
 	std::unique_ptr<FSelectionOutline>  SelectionOutline;

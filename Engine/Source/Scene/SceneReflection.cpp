@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Components.h"
+#include "Scene/Particles.h"
 
 void RegisterSceneTypes()
 {
@@ -41,7 +42,7 @@ void RegisterSceneTypes()
 		.Property(&FStaticMeshComponent::Material, "Material", "머티리얼", PF_Transient | PF_ReadOnly)
 		.Property(&FStaticMeshComponent::bVisible, "Visible", "표시")
 		.Property(&FStaticMeshComponent::MeshAsset, "MeshAsset", "메시 에셋", PF_ReadOnly)
-		.Property(&FStaticMeshComponent::MaterialAsset, "MaterialAsset", "머티리얼 에셋", PF_ReadOnly)
+		.Property(&FStaticMeshComponent::MaterialAsset, "MaterialAsset", "머티리얼 에셋", PF_ReadOnly).AssetFilter(".emat")
 		.AsComponent();
 
 	Registry.RegisterType<FModelComponent>("ModelComponent", "모델")
@@ -72,7 +73,14 @@ void RegisterSceneTypes()
 
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다
 	Registry.RegisterType<FScriptComponent>("ScriptComponent", "스크립트")
-		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트")
+		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트").AssetFilter(".lua")
 		.Property(&FScriptComponent::PropertyOverrides, "PropertyOverrides", "프로퍼티 오버라이드", PF_Hidden)
+		.AsComponent();
+
+	// 파티클: 에셋(.eparticle)은 콘텐츠 브라우저의 파티클 편집기에서 고친다
+	Registry.RegisterType<FParticleSystemComponent>("ParticleSystemComponent", "파티클")
+		.Property(&FParticleSystemComponent::Asset, "Asset", "파티클 에셋").AssetFilter(".eparticle")
+		.Property(&FParticleSystemComponent::bPlaying, "Playing", "재생")
+		.Property(&FParticleSystemComponent::Speed, "Speed", "속도").Range(0.0f, 10.0f, 0.01f)
 		.AsComponent();
 }

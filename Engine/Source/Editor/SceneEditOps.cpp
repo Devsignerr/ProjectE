@@ -72,24 +72,41 @@ namespace
 		}
 		return Clone;
 	}
+
+	// 리플렉션 밖 런타임 데이터(스킨 관절/애니메이션 노드)를 복사하고 Map 안의 참조는 복제본으로 바꾼다
+	void CopyAndRemapRuntimeData(FScene& SourceScene, FScene& DestScene, const std::unordered_map<uint64, FEntity>& Map)
+	{
+		const auto Remap = [&Map](FEntity Entity) {
+			const auto Found = Map.find(Entity.ToId());
+			return Found != Map.end() ? Found->second : Entity;
+		};
+		for (const auto& [SourceId, CloneEntity] : Map)
+		{
+			FSceneCloner::CopyRuntimeData(SourceScene.GetRegistry(), FEntity::FromId(SourceId), DestScene.GetRegistry(), CloneEntity);
+			FSceneCloner::RemapRuntimeReferences(DestScene.GetRegistry(), CloneEntity, Remap);
+		}
+	}
 } // namespace
 
 FEntity FSceneEditOps::CloneSubtree(FScene& SourceScene, FEntity Source, FScene& DestScene, FEntity DestParent)
 {
 	std::unordered_map<uint64, FEntity> Map;
 	const FEntity                       Clone = CloneRecursive(SourceScene, Source, DestScene, DestParent, Map);
-
-	// 리플렉션 밖 런타임 데이터(스킨 관절/애니메이션 노드)를 복사하고 서브트리 안의 참조는 복제본으로 바꾼다
-	const auto Remap = [&Map](FEntity Entity) {
-		const auto Found = Map.find(Entity.ToId());
-		return Found != Map.end() ? Found->second : Entity;
-	};
-	for (const auto& [SourceId, CloneEntity] : Map)
-	{
-		FSceneCloner::CopyRuntimeData(SourceScene.GetRegistry(), FEntity::FromId(SourceId), DestScene.GetRegistry(), CloneEntity);
-		FSceneCloner::RemapRuntimeReferences(DestScene.GetRegistry(), CloneEntity, Remap);
-	}
+	CopyAndRemapRuntimeData(SourceScene, DestScene, Map);
 	return Clone;
+}
+
+void FSceneEditOps::CloneChildren(FScene& SourceScene, FEntity SourceParent, FScene& DestScene, FEntity DestParent)
+{
+	// 자식 서브트리를 한 맵으로 복제해야 형제 사이 참조(메시 → 뼈대 관절)가 복제본으로 이어진다
+	std::unordered_map<uint64, FEntity> Map;
+	Map[SourceParent.ToId()] = DestParent;
+	const std::vector<FEntity> Children = SourceScene.GetChildren(SourceParent);
+	for (FEntity Child : Children)
+	{
+		CloneRecursive(SourceScene, Child, DestScene, DestParent, Map);
+	}
+	CopyAndRemapRuntimeData(SourceScene, DestScene, Map);
 }
 
 std::vector<FEntity> FSceneEditOps::GetTopLevel(const FScene& Scene, const std::vector<FEntity>& Entities)

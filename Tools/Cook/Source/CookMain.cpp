@@ -109,7 +109,7 @@ int main()
 			std::wstring Extension = Entry.path().extension().wstring();
 			std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t C) { return static_cast<wchar_t>(std::towlower(C)); });
 
-			const bool bModel = Extension == L".glb" || Extension == L".gltf";
+			const bool bModel = Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx";
 			const bool bImage = Extension == L".png" || Extension == L".jpg" || Extension == L".jpeg" || Extension == L".tga" || Extension == L".bmp";
 			if (!bModel && !bImage)
 			{

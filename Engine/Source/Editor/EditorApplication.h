@@ -4,6 +4,8 @@
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Core/FileWatcher.h"
+#include "Editor/AssetEditors/AssetEditorManager.h"
+#include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/EditorContext.h"
 #include "Editor/ImGuiLayer.h"
 #include "Editor/ModelTemplateCache.h"
@@ -60,6 +62,11 @@ private:
 	void DrawMainMenuBar();
 	void DrawStatsWindow();
 	void HandleShortcuts();
+	void ApplyDefaultLayoutIfNeeded(); // 첫 실행 / 메뉴 요청 시 언리얼 풍 기본 도킹 배치
+	void OnAssetsMoved(const std::vector<FAssetMove>& Moves); // 콘텐츠 브라우저 이동/이름 변경 후 열린 씬·기록·캐시 갱신
+	void VerifyAssetMove();                                   // 자동 검증 --verify-asset-move
+	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신
+	void VerifyReimport(const std::filesystem::path& ModelPath); // 자동 검증 --verify-reimport
 
 	// ---- 실행 취소 (씬 스냅샷)
 	void ResetUndoHistory();                       // 씬 열기/새 씬 직후 기준 상태로
@@ -106,6 +113,7 @@ private:
 	FPostProcessPanel    PostProcessPanel;
 	FShadowPanel         ShadowPanel;
 	FOutputLogPanel      OutputLogPanel;
+	FAssetEditorManager  AssetEditors; // 머티리얼/메시/애니메이션/파티클 편집 창
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
 
@@ -133,5 +141,7 @@ private:
 
 	bool  bShowStats     = true;
 	bool  bShowImGuiDemo = false;
+	bool  bLayoutChecked        = false;
+	bool  bResetLayoutRequested = false;
 	float SmoothedFps    = 0.0f;
 };

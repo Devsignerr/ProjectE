@@ -24,6 +24,13 @@ public:
 	static void Resume(FScene& Scene, FEntity Entity);
 	static void SetSpeed(FScene& Scene, FEntity Entity, float Speed);
 
+	// 현재 클립 재생 위치 (초). 설정은 [0, 길이]로 제한되고 크로스페이드를 끝낸다. 포즈는 다음 Update에서 반영
+	// (일시정지 중에도 Update(0)이 그 시각 포즈를 쓴다 — 타임라인 스크럽용)
+	static void  SetTime(FScene& Scene, FEntity Entity, float Seconds);
+	static float GetTime(FScene& Scene, FEntity Entity);
+	// 현재 클립 길이 (초). 클립이 없으면 0
+	static float GetCurrentClipDuration(FScene& Scene, FEntity Entity);
+
 	static std::vector<std::string> GetClipNames(FScene& Scene, FEntity Entity);
 	// 현재 재생 중인 클립 이름 (없으면 빈 문자열)
 	static std::string GetCurrentClip(FScene& Scene, FEntity Entity);

@@ -341,3 +341,35 @@ E_TEST(Animation_FoxBindPoseConsistency)
 	}
 	E_EXPECT_TRUE(MaxError < 1.0f); // 1cm 미만 (모델 전체 약 1.5만 cm)
 }
+
+E_TEST(Animation_SetTimeScrubsWhilePaused)
+{
+	// 에셋 편집기 타임라인: 일시정지 상태에서 시간을 지정하면 Update(0)이 그 시각 포즈를 쓴다
+	FScene        Scene;
+	const FEntity Root  = Scene.CreateEntity("Model");
+	const FEntity Node0 = Scene.CreateEntity("Node0");
+	const FEntity Node1 = Scene.CreateEntity("Node1");
+	Scene.SetParent(Node0, Root);
+	Scene.SetParent(Node1, Node0);
+	FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Root);
+	Animation.Clip                 = "Move";
+	Animation.Runtime.Set          = MakeTestSet();
+	Animation.Runtime.NodeEntities = { Node0, Node1 };
+
+	FAnimationSystem::Stop(Scene, Root);
+	FAnimationSystem::SetTime(Scene, Root, 0.75f);
+	FAnimationSystem::Update(Scene, 0.5f); // 정지 중이므로 시간은 흐르지 않는다
+	E_EXPECT_NEAR(FAnimationSystem::GetTime(Scene, Root), 0.75f, Tol);
+	E_EXPECT_EQUALS(Scene.GetTransform(Node0).Position, FVector3(75, 0, 0), 1.0e-3f);
+	E_EXPECT_NEAR(FAnimationSystem::GetCurrentClipDuration(Scene, Root), 1.0f, Tol);
+
+	// 길이 밖은 제한, 클립 전환 중 설정하면 크로스페이드 없이 새 클립 시각
+	FAnimationSystem::SetTime(Scene, Root, 5.0f);
+	E_EXPECT_NEAR(FAnimationSystem::GetTime(Scene, Root), 1.0f, Tol);
+	E_EXPECT_TRUE(FAnimationSystem::Play(Scene, Root, "Turn", 0.5f));
+	FAnimationSystem::Stop(Scene, Root);
+	FAnimationSystem::SetTime(Scene, Root, 0.5f);
+	FAnimationSystem::Update(Scene, 0.0f);
+	E_EXPECT_TRUE(FAnimationSystem::GetCurrentClip(Scene, Root) == "Turn");
+	E_EXPECT_EQUALS(Scene.GetTransform(Node1).Rotation, FQuat::FromAxisAngle(FVector3::UpVector, FMath::DegreesToRadians(45.0f)), 1.0e-3f);
+}

@@ -3,31 +3,49 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/Scene.h"
+#include "Editor/ContentBrowser/ContentDragDrop.h"
+#include "Renderer/ModelLoader.h"
+#include "Renderer/SceneAssetResolver.h"
 #include "Scripting/ScriptSystem.h"
 
 #include <imgui.h>
 
 #include <algorithm>
+#include <cwctype>
 #include <cstring>
 #include <filesystem>
 #include <format>
 
 namespace
 {
-	// 컴포넌트 섹션 헤더 (+ 제거 버튼). 반환: 펼침 여부. OutRemove: 제거 요청
-	bool DrawComponentHeader(const char* Label, bool bRemovable, bool& OutRemove)
+	// 컴포넌트 섹션 헤더 (아이콘 + 굵은 이름 + 제거 버튼). 반환: 펼침 여부. OutRemove: 제거 요청
+	bool DrawComponentHeader(const FTypeInfo& Type, bool& OutRemove)
 	{
 		OutRemove = false;
-		ImGui::PushID(Label);
-		const bool bExpanded = ImGui::CollapsingHeader(Label, ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
-		if (bRemovable)
+		ImGui::PushID(Type.Name.c_str());
+		// 선택 강조색(파랑)이 아닌 회색 제목 줄
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.20f, 0.20f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.26f, 0.26f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.30f, 0.30f, 1.0f));
+		ImGui::PushFont(FEditorTheme::GetBoldFont(), 0.0f);
+		const std::string Label     = std::format("{}  {}", FEditorTheme::GetComponentIcon(Type.Name), Type.DisplayName);
+		const bool        bExpanded = ImGui::CollapsingHeader(Label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+		ImGui::PopFont();
+		ImGui::PopStyleColor(3);
+		if (Type.bRemovable)
 		{
-			ImGui::SameLine(ImGui::GetContentRegionAvail().x - 4.0f);
-			OutRemove = ImGui::SmallButton("X");
+			const float ButtonWidth = ImGui::GetFrameHeight();
+			ImGui::SameLine(ImGui::GetContentRegionMax().x - ButtonWidth);
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, FEditorTheme::Danger);
+			OutRemove = ImGui::Button(ICON_FA_TRASH_CAN, ImVec2(ButtonWidth, 0.0f));
+			ImGui::PopStyleColor(2);
+			ImGui::SetItemTooltip("컴포넌트 제거");
 		}
 		ImGui::PopID();
 		return bExpanded;
@@ -46,7 +64,7 @@ void FInspectorPanel::Draw(FEditorContext& Context)
 		return;
 	}
 
-	if (ImGui::Begin("인스펙터", &bOpen))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_SLIDERS, "인스펙터", "Inspector").c_str(), &bOpen))
 	{
 		const FEntity Entity   = Context.SelectedEntity;
 		FRegistry&    Registry = Context.Scene->GetRegistry();
@@ -69,7 +87,7 @@ void FInspectorPanel::Draw(FEditorContext& Context)
 				}
 				void* Component = Type.GetComponent(Registry, Entity);
 				bool  bRemove   = false;
-				if (DrawComponentHeader(Type.DisplayName.c_str(), Type.bRemovable, bRemove))
+				if (DrawComponentHeader(Type, bRemove))
 				{
 					DrawComponent(Context, Entity, Type, Component);
 				}
@@ -120,6 +138,16 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 			continue;
 		}
 		ImGui::PushID(Property.Name.c_str());
+		// 에셋 경로 칸: 콘텐츠 브라우저에서 끌어 놓아 지정
+		if (!Property.AssetFilter.empty() && Property.Type == EPropertyType::String)
+		{
+			if (DrawAssetSlot(Context, Type, Property, Component))
+			{
+				Context.MarkEdited(std::format("{} 지정", Property.DisplayName));
+			}
+			ImGui::PopID();
+			continue;
+		}
 		ImGui::BeginDisabled(Property.HasFlag(PF_ReadOnly));
 		if (DrawProperty(Property, Component, Entity))
 		{
@@ -350,11 +378,23 @@ void FInspectorPanel::DrawStaticMeshExtras(FEditorContext& Context, FEntity Enti
 		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.3f, 1.0f), "메시 핸들이 유효하지 않습니다");
 	}
 
-	// 머티리얼은 별도 리소스라 여기서 직접 편집 (머티리얼 에셋 에디터 도입 전까지)
 	const FMaterial& Material = Context.Resources->ResolveMaterial(Mesh->Material);
 	ImGui::SeparatorText(std::format("머티리얼: {}{}", Material.Name, Mesh->Material.IsValid() ? "" : " (기본값)").c_str());
+	// .emat 에셋은 머티리얼 편집기에서 고친다 (저장/실행 취소 지원, 같은 머티리얼을 쓰는 모든 메시에 반영)
+	if (!Mesh->MaterialAsset.empty())
+	{
+		ImGui::TextDisabled("%s", Mesh->MaterialAsset.c_str());
+		if (ImGui::Button("머티리얼 편집기에서 열기") && Context.OpenAssetEditorRequest)
+		{
+			const std::filesystem::path AssetPath = FStringConv::ToWide(Mesh->MaterialAsset);
+			Context.OpenAssetEditorRequest(AssetPath.is_absolute() ? AssetPath : Context.ContentDirectory / AssetPath);
+		}
+		return;
+	}
+	// 파일이 없는 머티리얼(모델 내장 등)은 여기서 직접 조정한다 (저장되지 않음)
 	if (FMaterial* Editable = Context.Resources->GetMaterial(Mesh->Material))
 	{
+		ImGui::TextDisabled("모델 내장 머티리얼: 값 변경은 저장되지 않습니다");
 		ImGui::PushID("Material");
 		ImGui::ColorEdit4("베이스 컬러", &Editable->Constants.BaseColorFactor.X);
 		ImGui::SliderFloat("금속성", &Editable->Constants.Metallic, 0.0f, 1.0f);
@@ -562,4 +602,67 @@ void FInspectorPanel::DrawAddComponentMenu(FEditorContext& Context, FEntity Enti
 		}
 		ImGui::EndPopup();
 	}
+}
+
+bool FInspectorPanel::DrawAssetSlot(FEditorContext& Context, const FTypeInfo& Type, const FPropertyInfo& Property, void* Component)
+{
+	std::string& Value    = Property.GetRef<std::string>(Component);
+	bool         bChanged = false;
+
+	// 읽기 전용(머티리얼 등)은 버튼 모양 칸 (누르면 편집 창), 아니면 직접 입력도 가능
+	const std::filesystem::path Extension = FStringConv::ToWide(Value).empty() ? std::filesystem::path() : std::filesystem::path(FStringConv::ToWide(Value)).extension();
+	const FEditorTheme::FAssetStyle Style = FEditorTheme::GetAssetStyle(FStringConv::ToUtf8(Extension.wstring()), false);
+	if (Property.HasFlag(PF_ReadOnly))
+	{
+		const std::string Text = std::format("{} {}", Value.empty() ? ICON_FA_CIRCLE_XMARK : Style.Icon, Value.empty() ? "(없음)" : Value.c_str());
+		ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+		if (ImGui::Button(Text.c_str(), ImVec2(ImGui::CalcItemWidth(), 0.0f)) && !Value.empty() && Context.OpenAssetEditorRequest)
+		{
+			const std::filesystem::path AssetPath = FStringConv::ToWide(Value);
+			Context.OpenAssetEditorRequest(AssetPath.is_absolute() ? AssetPath : Context.ContentDirectory / AssetPath);
+		}
+		ImGui::PopStyleVar();
+		ImGui::SetItemTooltip("콘텐츠 브라우저에서 %s 파일을 끌어 놓아 바꿉니다. 누르면 편집 창", Property.AssetFilter.c_str());
+	}
+	else
+	{
+		char Buffer[256];
+		strncpy_s(Buffer, sizeof(Buffer), Value.c_str(), _TRUNCATE);
+		ImGui::SetNextItemWidth(ImGui::CalcItemWidth());
+		if (ImGui::InputText("##AssetPath", Buffer, sizeof(Buffer)))
+		{
+			Value    = Buffer;
+			bChanged = true;
+		}
+		ImGui::SetItemTooltip("콘텐츠 브라우저에서 %s 파일을 끌어 놓을 수 있습니다", Property.AssetFilter.c_str());
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
+		{
+			std::wstring Dropped = Paths->front().extension().wstring();
+			std::transform(Dropped.begin(), Dropped.end(), Dropped.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+			const std::string Filter = ";" + Property.AssetFilter + ";";
+			if (Filter.find(";" + FStringConv::ToUtf8(Dropped) + ";") != std::string::npos)
+			{
+				Value    = FModelLoader::MakeAssetPath(Paths->front());
+				bChanged = true;
+				// 정적 메시 머티리얼은 핸들을 비우고 새 경로로 다시 해석
+				if (Type.Name == "StaticMeshComponent")
+				{
+					static_cast<FStaticMeshComponent*>(Component)->Material = FMaterialHandle{};
+					FSceneAssetResolver::Resolve(*Context.Scene, *Context.Resources, Context.ContentDirectory);
+				}
+			}
+			else if (Context.Notify)
+			{
+				Context.Notify(std::format("{} 칸에는 {} 파일만 놓을 수 있습니다", Property.DisplayName, Property.AssetFilter), true);
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+	ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+	ImGui::TextUnformatted(Property.DisplayName.c_str());
+	return bChanged;
 }

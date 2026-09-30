@@ -10,6 +10,7 @@
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/Particles.h"
 #include "Scene/SceneSerializer.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
@@ -157,6 +158,8 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	Physics.Update(Scene, DeltaSeconds);
 	FAnimationSystem::Update(Scene, DeltaSeconds);
 	Scene.UpdateTransforms();
+	FSceneAssetResolver::ResolveParticles(Scene, Resources, Scripts.GetContentDirectory());
+	FParticleSystem::Update(Scene, DeltaSeconds);
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);

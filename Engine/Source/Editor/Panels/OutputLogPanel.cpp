@@ -1,5 +1,7 @@
 #include "Editor/Panels/OutputLogPanel.h"
 
+#include "Editor/EditorTheme.h"
+
 #include <imgui.h>
 
 void FOutputLogPanel::Draw(FEditorContext&)
@@ -22,7 +24,7 @@ void FOutputLogPanel::Draw(FEditorContext&)
 	}
 
 	ImGui::SetNextWindowSize(ImVec2(900.0f, 260.0f), ImGuiCond_FirstUseEver);
-	if (ImGui::Begin("출력 로그", &bOpen))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_TERMINAL, "출력 로그", "OutputLog").c_str(), &bOpen))
 	{
 		ImGui::SetNextItemWidth(280.0f);
 		ImGui::InputTextWithHint("##LogSearch", "로그 검색", Search, sizeof(Search));

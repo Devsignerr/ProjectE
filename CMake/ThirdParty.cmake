@@ -186,3 +186,54 @@ FetchContent_MakeAvailable(jolt)
 add_library(ThirdParty::jolt ALIAS Jolt)
 target_compile_options(Jolt PRIVATE /W0)
 set_target_properties(Jolt PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- Font Awesome 6 Free Solid (아이콘 글꼴, SIL OFL 1.1) + IconFontCppHeaders (zlib)
+# 에디터 UI 아이콘. 글꼴은 실행 파일에 바이트 배열로 넣어 경로 의존 없이 쓴다 (ImGui AddFontFromMemoryTTF)
+FetchContent_Declare(fontawesome_font
+    URL      "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.7.2/webfonts/fa-solid-900.ttf"
+    URL_HASH SHA256=af19d135d3a935b3ebfbd80320716ffe1202052c5f68dc2c5f1abc57005ac605
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(fontawesome_font)
+set(E_ICON_HEADERS_COMMIT "210b5a399a64270674560d633638952d1e8d804d")
+FetchContent_Declare(icon_font_headers
+    URL      "https://raw.githubusercontent.com/juliettef/IconFontCppHeaders/${E_ICON_HEADERS_COMMIT}/IconsFontAwesome6.h"
+    URL_HASH SHA256=1986b023825b269fb8c60ccc2419c4594280249596e828e573d5c8ef309e265d
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(icon_font_headers)
+
+set(E_FONTAWESOME_SOURCE "${CMAKE_BINARY_DIR}/Generated/FontAwesomeSolid.cpp")
+if(NOT EXISTS "${E_FONTAWESOME_SOURCE}")
+    file(READ "${fontawesome_font_SOURCE_DIR}/fa-solid-900.ttf" _FontHex HEX)
+    string(LENGTH "${_FontHex}" _FontHexLength)
+    math(EXPR _FontSize "${_FontHexLength} / 2")
+    string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," _FontBytes "${_FontHex}")
+    file(WRITE "${E_FONTAWESOME_SOURCE}"
+        "// 자동 생성 (CMake/ThirdParty.cmake): Font Awesome 6.7.2 Free Solid\n"
+        "extern const unsigned char GFontAwesomeSolidData[] = {${_FontBytes}};\n"
+        "extern const unsigned int GFontAwesomeSolidSize = ${_FontSize};\n")
+endif()
+add_library(fontawesome STATIC "${E_FONTAWESOME_SOURCE}")
+add_library(ThirdParty::fontawesome ALIAS fontawesome)
+target_include_directories(fontawesome SYSTEM PUBLIC "${icon_font_headers_SOURCE_DIR}")
+target_compile_options(fontawesome PRIVATE /W0)
+set_target_properties(fontawesome PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- ufbx v0.23.1 (FBX 로더, MIT/퍼블릭 도메인 중 택일 — MIT)
+set(E_UFBX_COMMIT "26a482ae66871d7de36eb722aa060bce95bce274")
+FetchContent_Declare(ufbx_source
+    URL      "https://raw.githubusercontent.com/ufbx/ufbx/${E_UFBX_COMMIT}/ufbx.c"
+    URL_HASH SHA256=4a956c26a708e40d82ecb0aeaee54da709d5ba7c144c9642174970059bda7e1d
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_Declare(ufbx_header
+    URL      "https://raw.githubusercontent.com/ufbx/ufbx/${E_UFBX_COMMIT}/ufbx.h"
+    URL_HASH SHA256=f787be529af577efc04f3e3e735844a08556718dbb613d1211c2b313d72895dc
+    DOWNLOAD_NO_EXTRACT TRUE)
+FetchContent_MakeAvailable(ufbx_source ufbx_header)
+
+# 프로젝트 언어가 CXX뿐이므로 C++로 컴파일 (ufbx는 C/C++ 양쪽 컴파일을 지원)
+add_library(ufbx STATIC "${ufbx_source_SOURCE_DIR}/ufbx.c")
+set_source_files_properties("${ufbx_source_SOURCE_DIR}/ufbx.c" PROPERTIES LANGUAGE CXX)
+add_library(ThirdParty::ufbx ALIAS ufbx)
+target_include_directories(ufbx SYSTEM PUBLIC "${ufbx_header_SOURCE_DIR}")
+target_compile_options(ufbx PRIVATE /W0)
+set_target_properties(ufbx PROPERTIES FOLDER "ThirdParty")

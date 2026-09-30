@@ -74,7 +74,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
-	if (!CreateMeshPipeline(PipelineState, false) || !CreateSkinnedMeshPipeline(SkinnedPipelineState, false))
+	if (!CreateMeshPipeline(PipelineState, false, false) || !CreateSkinnedMeshPipeline(SkinnedPipelineState, false, false) ||
+	    !CreateMeshPipeline(WireframePipelineState, false, true) || !CreateSkinnedMeshPipeline(SkinnedWireframePipelineState, false, true))
 	{
 		return false;
 	}
@@ -86,12 +87,16 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	if (!ParticleRenderer.Init(*Rhi, ShaderLibrary, *Resources, SceneColorFormat, FD3D12RHI::DepthBufferFormat))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료 (HDR {}, 톤매핑)", "R16G16B16A16_FLOAT");
 	return true;
 }
 
-bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill)
 {
 	FShaderCompileDesc VertexDesc;
 	VertexDesc.FileName   = L"Mesh.hlsl";
@@ -121,10 +126,15 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool b
 	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"MeshPipeline");
+	if (bWireframeFill)
+	{
+		PsoDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		PsoDesc.CullMode = D3D12_CULL_MODE_NONE;
+	}
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, bWireframeFill ? L"MeshWireframePipeline" : L"MeshPipeline");
 }
 
-bool FSceneRenderer::CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+bool FSceneRenderer::CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill)
 {
 	FShaderCompileDesc VertexDesc;
 	VertexDesc.FileName   = L"Mesh.hlsl";
@@ -154,7 +164,13 @@ bool FSceneRenderer::CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline,
 	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"SkinnedMeshPipeline");
+	if (bWireframeFill)
+	{
+		PsoDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+		PsoDesc.CullMode = D3D12_CULL_MODE_NONE;
+	}
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc,
+	                                bWireframeFill ? L"SkinnedMeshWireframePipeline" : L"SkinnedMeshPipeline");
 }
 
 bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
@@ -162,7 +178,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
 
 	FD3D12PipelineState NewPipeline;
-	if (!CreateMeshPipeline(NewPipeline, bForceRecompile))
+	if (!CreateMeshPipeline(NewPipeline, bForceRecompile, false))
 	{
 		E_LOG(LogRenderer, Error, "셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
@@ -173,7 +189,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	Rhi->DeferRelease(NewPipeline.Detach());
 
 	FD3D12PipelineState NewSkinnedPipeline;
-	if (CreateSkinnedMeshPipeline(NewSkinnedPipeline, bForceRecompile))
+	if (CreateSkinnedMeshPipeline(NewSkinnedPipeline, bForceRecompile, false))
 	{
 		SkinnedPipelineState.Swap(NewSkinnedPipeline);
 		Rhi->DeferRelease(NewSkinnedPipeline.Detach());
@@ -181,6 +197,17 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	else
 	{
 		E_LOG(LogRenderer, Error, "스킨 메시 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
+	}
+
+	// 와이어프레임 PSO는 셰이더가 같으므로 위에서 이미 쿠킹됨 (강제 재컴파일 불필요)
+	FD3D12PipelineState NewWireframePipeline;
+	FD3D12PipelineState NewSkinnedWireframePipeline;
+	if (CreateMeshPipeline(NewWireframePipeline, false, true) && CreateSkinnedMeshPipeline(NewSkinnedWireframePipeline, false, true))
+	{
+		WireframePipelineState.Swap(NewWireframePipeline);
+		Rhi->DeferRelease(NewWireframePipeline.Detach());
+		SkinnedWireframePipelineState.Swap(NewSkinnedWireframePipeline);
+		Rhi->DeferRelease(NewSkinnedWireframePipeline.Detach());
 	}
 
 	if (!ShadowRenderer.ReloadShaders(bForceRecompile))
@@ -196,6 +223,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	if (!PostProcessor.ReloadShaders(bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
+		return false;
+	}
+	if (!ParticleRenderer.ReloadShaders(bForceRecompile))
+	{
 		return false;
 	}
 
@@ -214,8 +245,11 @@ void FSceneRenderer::Shutdown()
 	PostProcessor.Shutdown();
 	ShadowRenderer.Shutdown();
 	IblRenderer.Shutdown();
+	ParticleRenderer.Shutdown();
 	PipelineState.Shutdown();
 	SkinnedPipelineState.Shutdown();
+	WireframePipelineState.Shutdown();
+	SkinnedWireframePipelineState.Shutdown();
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
@@ -261,14 +295,21 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	// 스킨 메시 본 팔레트 (섀도우/메인 패스 공유)
 	SkinPalettes.Build(Scene, *Resources, Rhi->GetDynamicBuffer());
 
+	// GPU 파티클 계산 (그리기 전에)
+	ParticleRenderer.Simulate(Scene);
+
 	// 0) 방향광 섀도우 패스
 	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
 
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Output.Width, Output.Height);
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
-	IblRenderer.RenderSkybox(Camera, AmbientIntensity);
+	if (bDrawSkybox)
+	{
+		IblRenderer.RenderSkybox(Camera, AmbientIntensity);
+	}
 	DrawMeshes(Scene, Camera, PerFrame);
+	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
 	SceneColor->End(CommandList);
 
 	// 2) 포스트 프로세싱 → 출력
@@ -299,8 +340,11 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
 	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
 
+	FD3D12PipelineState& StaticPipeline  = bWireframe ? WireframePipelineState : PipelineState;
+	FD3D12PipelineState& SkinnedPipeline = bWireframe ? SkinnedWireframePipelineState : SkinnedPipelineState;
+
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-	CommandList->SetPipelineState(PipelineState.Get());
+	CommandList->SetPipelineState(StaticPipeline.Get());
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAllocation.GpuAddress);
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAllocation.GpuAddress);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
@@ -318,7 +362,7 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 		const bool bSkinned = Command.SkinPalette != 0;
 		if (bSkinned != bSkinnedBound)
 		{
-			CommandList->SetPipelineState(bSkinned ? SkinnedPipelineState.Get() : PipelineState.Get());
+			CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
 			bSkinnedBound = bSkinned;
 		}
 		if (Command.Material != BoundMaterial)

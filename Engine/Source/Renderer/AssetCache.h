@@ -19,7 +19,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
-	static constexpr uint32 ModelVersion = 5; // 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 6; // 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
 
 	static constexpr const wchar_t* ModelExtension = L".emodel";
@@ -45,6 +45,15 @@ struct FAssetCache
 	// 캐시 대상이 아니면 빈 경로
 	static std::filesystem::path GetCookedPath(const std::filesystem::path& SourcePath, const wchar_t* CookedExtension);
 	static std::filesystem::path GetCookedDirectory(); // 프로젝트 없으면 빈 경로
+
+	// 모델 원본 읽기: 확장자별 로더(.fbx → FFbxLoader, 그 밖 glTF). LoadModelSource는 임포트 설정·추가 애니메이션까지 적용
+	static bool LoadModelFile(const std::filesystem::path& SourcePath, FModelData& OutModel);
+	static bool LoadModelSource(const std::filesystem::path& SourcePath, FModelData& OutModel);
+	// 쿠킹에 쓴 임포트 설정 기록(<쿠킹 파일>.import)이 지금 설정과 같은지 / 기록 남기기
+	static bool IsCookedWithCurrentImportSettings(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath);
+	static void WriteImportSettingsRecord(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath);
+	// 쿠킹본이 임포트 설정 파일/추가 애니메이션 파일보다 새로운지 (없는 파일은 무시)
+	static bool IsCookedNewerThanImportInputs(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath);
 
 	// 쿠킹본이 소스 기준으로 최신인지 (파일 시각만 비교, 형식 버전은 로드 시 검사)
 	static bool IsCookedUpToDate(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath);

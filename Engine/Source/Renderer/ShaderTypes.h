@@ -48,3 +48,76 @@ struct alignas(16) FMaterialConstants
 	float    AlphaCutoff       = 0.5f; // 알파 테스트(후속)
 };
 static_assert(sizeof(FMaterialConstants) == 48);
+
+// 파티클 카메라 상수 (Particle.hlsl b0)
+struct alignas(16) FParticleFrameConstants
+{
+	FMatrix4x4 ViewProjection;
+	FVector3   CameraRight;
+	float      Padding0 = 0.0f;
+	FVector3   CameraUp;
+	float      Padding1 = 0.0f;
+	FVector3   CameraPosition;
+	float      Padding2 = 0.0f;
+};
+static_assert(sizeof(FParticleFrameConstants) == 112);
+
+// 렌더러 하나의 그리기 상수 (Particle.hlsl b1)
+struct alignas(16) FParticleDrawConstants
+{
+	FMatrix4x4 LocalToWorld;         // 로컬 공간 이미터면 이미터 월드 행렬, 아니면 단위 행렬
+	int32      SubImageColumns = 1;
+	int32      SubImageRows    = 1;
+	int32      Alignment       = 0;  // EParticleSpriteAlignment
+	int32      Padding0        = 0;
+	float      VelocityStretch = 0.0f;
+	float      Padding1[3]     = {};
+};
+static_assert(sizeof(FParticleDrawConstants) == 96);
+
+// 입자 하나 (구조화 버퍼). CPU 이미터는 매 프레임 올리고, GPU 이미터는 계산 셰이더가 직접 쓴다.
+//   ParticleCommon.hlsli의 FParticleData와 일치. Age >= Lifetime이면 죽은 입자
+struct FParticleGpuData
+{
+	FVector3 Position;
+	float    Age = 0.0f;
+	FVector3 Velocity;
+	float    Lifetime = 0.0f;
+	FVector4 BaseColor;
+	FVector4 Color;
+	FVector2 BaseSize;
+	FVector2 Size;
+	float    Rotation   = 0.0f; // 도
+	float    Mass       = 1.0f;
+	float    SubImage   = 0.0f;
+	uint32   SpawnIndex = 0;
+};
+static_assert(sizeof(FParticleGpuData) == 96);
+
+// GPU 파티클 계산 상수 (ParticleSimulate.hlsl b0)
+struct alignas(16) FParticleSimConstants
+{
+	FMatrix4x4 EmitterWorld;
+	float      DeltaSeconds      = 0.0f;
+	float      EmitterAlpha      = 0.0f;
+	float      Time              = 0.0f;
+	uint32     SpawnStart        = 0;
+	uint32     SpawnCount        = 0;
+	uint32     Capacity          = 0;
+	uint32     Seed              = 0;
+	uint32     bLocalSpace       = 0;
+	uint32     SpawnModuleCount  = 0;
+	uint32     SpawnOffset       = 0; // 프로그램 버퍼 안 float4 위치
+	uint32     UpdateModuleCount = 0;
+	uint32     UpdateOffset      = 0;
+};
+static_assert(sizeof(FParticleSimConstants) == 112);
+
+// 리본 정점 (CPU가 만든다)
+struct FParticleRibbonVertex
+{
+	FVector3 Position;
+	FVector2 UV;
+	FVector4 Color;
+};
+static_assert(sizeof(FParticleRibbonVertex) == 36);

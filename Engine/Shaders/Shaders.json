@@ -28,6 +28,12 @@
     { "File": "Skybox.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "Skybox.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "Grid.hlsl", "Entry": "GridVS", "Stage": "Vertex" },
-    { "File": "Grid.hlsl", "Entry": "GridPS", "Stage": "Pixel" }
+    { "File": "Grid.hlsl", "Entry": "GridPS", "Stage": "Pixel" },
+    { "File": "Particle.hlsl", "Entry": "VSSprite", "Stage": "Vertex" },
+    { "File": "Particle.hlsl", "Entry": "VSMesh", "Stage": "Vertex" },
+    { "File": "Particle.hlsl", "Entry": "VSRibbon", "Stage": "Vertex" },
+    { "File": "Particle.hlsl", "Entry": "PSAlpha", "Stage": "Pixel" },
+    { "File": "Particle.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" },
+    { "File": "ParticleSimulate.hlsl", "Entry": "CSMain", "Stage": "Compute" }
   ]
 }

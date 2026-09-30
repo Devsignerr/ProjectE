@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Components.h"
+#include "Scene/Particles.h"
 #include "Scene/Scene.h"
 
 void FSceneCloner::Clone(const FScene& Source, FScene& Dest, FEntityMap* OutEntityMap)
@@ -97,6 +98,16 @@ void FSceneCloner::CopyRuntimeData(const FRegistry& Source, FEntity SourceEntity
 		if (FAnimationComponent* DestAnimation = Dest.TryGet<FAnimationComponent>(DestEntity); DestAnimation && DestAnimation != Animation)
 		{
 			DestAnimation->Runtime = Animation->Runtime;
+		}
+	}
+	// 파티클: 공유 설정만 넘기고 입자는 처음부터 (플레이 시작/복제 시 새로 방출)
+	if (const FParticleSystemComponent* Emitter = Source.TryGet<FParticleSystemComponent>(SourceEntity))
+	{
+		if (FParticleSystemComponent* DestEmitter = Dest.TryGet<FParticleSystemComponent>(DestEntity); DestEmitter && DestEmitter != Emitter)
+		{
+			DestEmitter->Runtime               = FParticleRuntime{};
+			DestEmitter->Runtime.System        = Emitter->Runtime.System;
+			DestEmitter->Runtime.ResolvedAsset = Emitter->Runtime.ResolvedAsset;
 		}
 	}
 }

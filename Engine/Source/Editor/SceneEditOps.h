@@ -17,6 +17,10 @@ struct FSceneEditOps
 	// 리소스 핸들은 그대로 공유된다 (GPU 리소스 추가 생성 없음). 반환: 복제된 루트
 	static FEntity CloneSubtree(FScene& SourceScene, FEntity Source, FScene& DestScene, FEntity DestParent);
 
+	// SourceParent의 자식들을 DestParent 아래로 한 번에 복제한다 (DestParent는 기존 엔티티).
+	// 형제 서브트리 사이 참조와 SourceParent의 런타임 데이터(애니메이션 노드)도 복제본 기준으로 옮긴다
+	static void CloneChildren(FScene& SourceScene, FEntity SourceParent, FScene& DestScene, FEntity DestParent);
+
 	// 선택 목록에서 조상이 함께 선택된 엔티티를 뺀 최상위 목록 (삭제/복제/기즈모 델타 대상). 순서 유지
 	static std::vector<FEntity> GetTopLevel(const FScene& Scene, const std::vector<FEntity>& Entities);
 

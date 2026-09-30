@@ -7,6 +7,7 @@
 #include "Core/Input.h"
 #include "Editor/EditorCameraState.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "Editor/EditorGrid.h"
 #include "Editor/SceneEditOps.h"
 #include "Editor/SelectionOutline.h"
@@ -16,7 +17,16 @@
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Renderer/StaticMesh.h"
+#include "Core/StringConv.h"
+#include "Editor/ContentBrowser/ContentDragDrop.h"
+#include "Renderer/ModelLoader.h"
+#include "Renderer/SceneAssetResolver.h"
+#include "Scene/Particles.h"
 #include "Scene/Scene.h"
+
+#include <algorithm>
+#include <cwctype>
+#include <limits>
 
 namespace
 {
@@ -74,7 +84,7 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 	}
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-	const bool bVisible = ImGui::Begin("뷰포트", &bOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	const bool bVisible = ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_CAMERA, "뷰포트", "Viewport").c_str(), &bOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 	ImGui::PopStyleVar();
 
 	if (bVisible)
@@ -89,6 +99,16 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			const ImVec2 ImageSize(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight()));
 			ImGui::Image(static_cast<ImTextureID>(RenderTarget->GetSrv().Gpu.ptr), ImageSize);
 			bHovered = ImGui::IsItemHovered();
+			// 콘텐츠 브라우저에서 끌어 놓기: 모델/파티클 배치, 머티리얼은 커서 아래 메시에 지정
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
+				{
+					const ImVec2 Mouse = ImGui::GetMousePos();
+					HandleAssetDrop(Context, *Paths, FVector2(Mouse.x - ImagePosition.x, Mouse.y - ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+				}
+				ImGui::EndDragDropTarget();
+			}
 
 			DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
 
@@ -208,6 +228,10 @@ void FViewportPanel::DrawToolbar()
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
 	ImGui::BeginGroup();
+	// 뷰포트 위에 떠 있는 도구 막대: 반투명 어두운 버튼
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.08f, 0.08f, 0.08f, 0.78f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.22f, 0.22f, 0.22f, 0.90f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, FEditorTheme::Accent);
 
 	const auto ToolButton = [&](const char* Label, EGizmoOperation Operation, const char* Tooltip) {
 		const bool bActive = GizmoOperation == Operation;
@@ -226,11 +250,11 @@ void FViewportPanel::DrawToolbar()
 		ImGui::SetItemTooltip("%s", Tooltip);
 		ImGui::SameLine();
 	};
-	ToolButton("이동", EGizmoOperation::Translate, "이동 (W)");
-	ToolButton("회전", EGizmoOperation::Rotate, "회전 (E)");
-	ToolButton("스케일", EGizmoOperation::Scale, "스케일 (R)");
+	ToolButton(ICON_FA_UP_DOWN_LEFT_RIGHT, EGizmoOperation::Translate, "이동 (W)");
+	ToolButton(ICON_FA_ROTATE, EGizmoOperation::Rotate, "회전 (E)");
+	ToolButton(ICON_FA_UP_RIGHT_AND_DOWN_LEFT_FROM_CENTER, EGizmoOperation::Scale, "스케일 (R)");
 
-	if (ImGui::Button(bGizmoLocal ? "로컬" : "월드"))
+	if (ImGui::Button(bGizmoLocal ? ICON_FA_CUBE " 로컬" : ICON_FA_GLOBE " 월드"))
 	{
 		bGizmoLocal = !bGizmoLocal;
 	}
@@ -253,8 +277,8 @@ void FViewportPanel::DrawToolbar()
 		}
 		ImGui::SetItemTooltip("%s", Tooltip);
 	};
-	ToggleButton("격자", bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
-	ToggleButton("스냅", Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
+	ToggleButton(ICON_FA_BORDER_ALL, bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
+	ToggleButton(ICON_FA_MAGNET, Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##SnapOptions", ImGuiDir_Down))
 	{
@@ -273,6 +297,7 @@ void FViewportPanel::DrawToolbar()
 	}
 
 	ImGui::EndGroup();
+	ImGui::PopStyleColor(3);
 	ImGui::PopStyleVar();
 }
 
@@ -436,4 +461,124 @@ void FViewportPanel::FocusSelection(FEditorContext& Context)
 	}
 	FCamera& Camera = *Context.Camera;
 	Camera.SetPosition(FEditorCameraState::ComputeFramingPosition(Bounds, Camera.GetForwardVector(), Camera.GetFovYDegrees(), Camera.GetAspectRatio()));
+}
+
+FEntity FViewportPanel::RaycastMesh(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize, FRay& OutRay, float& OutDistance) const
+{
+	const float NdcX = (LocalPixel.X / ImageSize.X) * 2.0f - 1.0f;
+	const float NdcY = 1.0f - (LocalPixel.Y / ImageSize.Y) * 2.0f;
+	OutRay           = FRay::FromNdc(NdcX, NdcY, Context.Camera->GetViewProjectionMatrix().GetInverse());
+	OutDistance      = std::numeric_limits<float>::max();
+
+	FEntity Closest;
+	Context.Scene->GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
+		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
+			const FStaticMesh* Mesh = MeshComponent.bVisible ? Context.Resources->GetMesh(MeshComponent.Mesh) : nullptr;
+			float              Distance = 0.0f;
+			if (Mesh != nullptr && OutRay.Intersects(Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix), Distance) && Distance < OutDistance)
+			{
+				OutDistance = Distance;
+				Closest     = Entity;
+			}
+		});
+	return Closest;
+}
+
+void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, const FVector2& LocalPixel,
+                                     const FVector2& ImageSize)
+{
+	const auto Notify = [&](const std::string& Message, bool bError) {
+		if (Context.Notify)
+		{
+			Context.Notify(Message, bError);
+		}
+	};
+	if (Context.bPlaying)
+	{
+		Notify("플레이 중에는 에셋을 배치할 수 없습니다", true);
+		return;
+	}
+	if (ImageSize.X <= 0.0f || ImageSize.Y <= 0.0f)
+	{
+		return;
+	}
+
+	FRay          Ray;
+	float         HitDistance = 0.0f;
+	const FEntity Hit         = RaycastMesh(Context, LocalPixel, ImageSize, Ray, HitDistance);
+	// 놓을 위치: 메시에 닿으면 그 표면(경계 상자) 근처, 아니면 바닥면(Z = 0), 하늘을 향하면 카메라 앞 5m
+	FVector3 DropPoint = Ray.GetPoint(500.0f);
+	if (Hit.IsValid())
+	{
+		DropPoint = Ray.GetPoint(HitDistance);
+	}
+	else if (Ray.Direction.Z < -1.0e-4f)
+	{
+		DropPoint = Ray.GetPoint(-Ray.Origin.Z / Ray.Direction.Z);
+	}
+
+	FScene&    Scene    = *Context.Scene;
+	FRegistry& Registry = Scene.GetRegistry();
+	std::vector<FEntity> Placed;
+	bool                 bEdited = false;
+	for (size_t Index = 0; Index < Paths.size(); ++Index)
+	{
+		const std::filesystem::path& Path      = Paths[Index];
+		std::wstring                 Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		const FVector3 Position = DropPoint + FVector3(0.0f, 150.0f * static_cast<float>(Index), 0.0f); // 여러 개면 옆으로 나란히
+
+		if (Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx")
+		{
+			const FEntity Root = FModelLoader::LoadIntoScene(Path, Scene, *Context.Resources);
+			if (Registry.IsValid(Root))
+			{
+				Scene.GetTransform(Root).Position = Position;
+				Placed.push_back(Root);
+			}
+		}
+		else if (Extension == L".eparticle")
+		{
+			const FEntity Emitter = Scene.CreateEntity(FStringConv::ToUtf8(Path.stem().wstring()));
+			Scene.GetTransform(Emitter).Position                           = Position;
+			Registry.Emplace<FParticleSystemComponent>(Emitter).Asset = FModelLoader::MakeAssetPath(Path);
+			Placed.push_back(Emitter);
+		}
+		else if (Extension == L".emat")
+		{
+			// 모델에서 생성된 하위 메시는 저장되지 않으므로 바꾸지 않는다
+			if (!Hit.IsValid())
+			{
+				Notify("머티리얼은 메시 위에 놓으세요", true);
+			}
+			else if (Registry.Has<FTransientComponent>(Hit))
+			{
+				Notify("모델 안의 메시는 머티리얼을 바꿀 수 없습니다 (모델 파일의 내장 머티리얼)", true);
+			}
+			else
+			{
+				FStaticMeshComponent& Mesh = Registry.Get<FStaticMeshComponent>(Hit);
+				Mesh.MaterialAsset         = FModelLoader::MakeAssetPath(Path);
+				Mesh.Material              = FMaterialHandle{};
+				FSceneAssetResolver::Resolve(Scene, *Context.Resources, Context.ContentDirectory);
+				Context.Select(Hit);
+				bEdited = true;
+			}
+		}
+		else
+		{
+			Notify("뷰포트에 놓을 수 없는 에셋입니다: " + FStringConv::ToUtf8(Path.filename().wstring()), true);
+		}
+	}
+
+	if (!Placed.empty())
+	{
+		Scene.UpdateTransforms();
+		Context.SelectMany(Placed, Placed.back());
+		bEdited = true;
+	}
+	if (bEdited)
+	{
+		Context.MarkEdited("에셋 배치");
+	}
 }

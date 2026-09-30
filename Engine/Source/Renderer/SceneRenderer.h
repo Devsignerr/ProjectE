@@ -11,6 +11,7 @@
 #include "Renderer/ShadowRenderer.h"
 #include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
+#include "Renderer/ParticleRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <memory>
@@ -28,6 +29,7 @@ struct FSceneRenderStats
 	uint32 TotalMeshes   = 0; // 씬의 정적 메시 컴포넌트 수
 	uint32 VisibleMeshes = 0; // 컬링 통과
 	uint32 DrawCalls     = 0;
+	uint32 Particles     = 0; // 그린 파티클 입자 수
 };
 
 // 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
@@ -47,6 +49,8 @@ public:
 	FPostProcessSettings PostProcessSettings;
 	FShadowSettings      ShadowSettings;
 	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
+	bool                 bWireframe      = false; // 메시를 선으로 그린다 (에셋 미리보기용)
+	bool                 bDrawSkybox     = true;  // false면 하늘 대신 BackgroundColor (썸네일용, 환경광은 그대로)
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -80,10 +84,10 @@ private:
 		D3D12_GPU_VIRTUAL_ADDRESS SkinPalette = 0; // 0이 아니면 스킨 메시 (World = 항등)
 	};
 
-	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
-	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
+	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용). bWireframeFill이면 선 채우기 + 컬링 없음
+	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
 	// 스킨 메시 PSO (Mesh.hlsl VSSkinned + 스킨 입력 레이아웃)
-	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
+	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
 
 	void               CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition);
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
@@ -96,10 +100,13 @@ private:
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  PipelineState;
 	FD3D12PipelineState  SkinnedPipelineState;
+	FD3D12PipelineState  WireframePipelineState;
+	FD3D12PipelineState  SkinnedWireframePipelineState;
 	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;
+	FParticleRenderer    ParticleRenderer;
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
 

@@ -2,10 +2,19 @@
 
 #include "Editor/EditorActions.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "Editor/SceneEditOps.h"
+#include "Audio/AudioComponents.h"
+#include "Core/StringConv.h"
+#include "Editor/ContentBrowser/ContentDragDrop.h"
+#include "Renderer/ModelLoader.h"
+#include "Scene/Particles.h"
 #include "Scene/Scene.h"
 
 #include <imgui.h>
+
+#include <algorithm>
+#include <cwctype>
 
 namespace
 {
@@ -32,7 +41,7 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	bSelectedFromThisPanel = false;
 
 	VisibleOrder.clear();
-	if (ImGui::Begin("계층", &bOpen))
+	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_LIST, "계층", "Hierarchy").c_str(), &bOpen))
 	{
 		// 루트 엔티티 목록 (순회 중 구조 변경을 피하기 위해 먼저 수집)
 		std::vector<FEntity> Roots;
@@ -63,6 +72,12 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 				PendingReparentParent = NullEntity;
 				bPendingReparent      = true;
 			}
+			// 콘텐츠 브라우저의 모델/파티클 → 루트에 추가
+			if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
+			{
+				PendingAssetPaths  = *Paths;
+				PendingAssetParent = NullEntity;
+			}
 			ImGui::EndDragDropTarget();
 		}
 		if (ImGui::BeginPopupContextItem("##HierarchyEmptyMenu"))
@@ -76,6 +91,11 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	PreviousVisibleOrder.swap(VisibleOrder);
 
 	// 순회가 끝난 뒤 구조 변경 적용
+	if (!PendingAssetPaths.empty())
+	{
+		AddAssets(Context, PendingAssetPaths, PendingAssetParent);
+		PendingAssetPaths.clear();
+	}
 	if (bPendingReparent)
 	{
 		// 선택된 엔티티를 끌면 선택된 최상위 엔티티 전부를 옮긴다
@@ -105,6 +125,28 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	}
 }
 
+namespace
+{
+	struct FEntityIcon
+	{
+		const char* Glyph = ICON_FA_CIRCLE_DOT;
+		ImU32       Color = IM_COL32(140, 140, 140, 255);
+	};
+
+	// 가장 대표적인 컴포넌트로 아이콘/색을 고른다 (조명 > 카메라 > 파티클 > 모델 > 메시 > 오디오 > 스크립트)
+	FEntityIcon GetEntityIcon(const FRegistry& Registry, FEntity Entity, bool bLeaf)
+	{
+		if (Registry.Has<FDirectionalLightComponent>(Entity)) return { ICON_FA_SUN, IM_COL32(250, 210, 90, 255) };
+		if (Registry.Has<FCameraComponent>(Entity)) return { ICON_FA_VIDEO, IM_COL32(200, 200, 210, 255) };
+		if (Registry.Has<FParticleSystemComponent>(Entity)) return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255) };
+		if (Registry.Has<FModelComponent>(Entity)) return { ICON_FA_CUBES, IM_COL32(64, 170, 255, 255) };
+		if (Registry.Has<FStaticMeshComponent>(Entity)) return { ICON_FA_CUBE, IM_COL32(110, 180, 240, 255) };
+		if (Registry.Has<FAudioSourceComponent>(Entity)) return { ICON_FA_VOLUME_HIGH, IM_COL32(235, 110, 170, 255) };
+		if (Registry.Has<FScriptComponent>(Entity)) return { ICON_FA_FILE_CODE, IM_COL32(80, 200, 200, 255) };
+		return bLeaf ? FEntityIcon{} : FEntityIcon{ ICON_FA_FOLDER, IM_COL32(222, 178, 82, 255) };
+	}
+} // namespace
+
 void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 {
 	FScene&    Scene    = *Context.Scene;
@@ -133,15 +175,22 @@ void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 		ImGui::SetNextItemOpen(true);
 	}
 
-	// 선택 행은 뷰포트 아웃라인과 같은 계열 색으로 강조
+	// 선택 행은 테마 강조색 (언리얼 아웃라이너처럼 파랑)
 	const bool bSelected = Context.IsSelected(Entity);
 	if (bSelected)
 	{
-		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.85f, 0.45f, 0.10f, 0.55f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.90f, 0.50f, 0.15f, 0.70f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.95f, 0.55f, 0.20f, 0.85f));
+		ImGui::PushStyleColor(ImGuiCol_Header, FEditorTheme::Accent);
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, FEditorTheme::AccentHover);
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, FEditorTheme::AccentHover);
 	}
-	const bool bOpened = ImGui::TreeNodeEx("##Node", Flags, "%s", Name ? Name->Name.c_str() : "(이름 없음)");
+	// 이름 앞 아이콘 자리를 비워 두고, 항목을 그린 뒤 종류별 색 아이콘을 덧그린다
+	const bool bOpened = ImGui::TreeNodeEx("##Node", Flags, "      %s", Name ? Name->Name.c_str() : "(이름 없음)");
+	{
+		const FEntityIcon Icon   = GetEntityIcon(Registry, Entity, bLeaf);
+		const ImVec2      ItemMin = ImGui::GetItemRectMin();
+		const float       TextY   = ItemMin.y + ImGui::GetStyle().FramePadding.y;
+		ImGui::GetWindowDrawList()->AddText(ImVec2(ItemMin.x + ImGui::GetTreeNodeToLabelSpacing(), TextY), Icon.Color, Icon.Glyph);
+	}
 	if (bSelected)
 	{
 		ImGui::PopStyleColor(3);
@@ -199,6 +248,12 @@ void FHierarchyPanel::DrawEntityNode(FEditorContext& Context, FEntity Entity)
 			PendingReparentChild  = *static_cast<const FEntity*>(Payload->Data);
 			PendingReparentParent = Entity;
 			bPendingReparent      = true;
+		}
+		// 콘텐츠 브라우저의 모델/파티클 → 이 엔티티의 자식으로 추가
+		if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
+		{
+			PendingAssetPaths  = *Paths;
+			PendingAssetParent = Entity;
 		}
 		ImGui::EndDragDropTarget();
 	}
@@ -258,4 +313,49 @@ void FHierarchyPanel::DrawContextMenu(FEditorContext& Context, FEntity Entity)
 			PendingDelete = Entity;
 		}
 	}
+}
+
+void FHierarchyPanel::AddAssets(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, FEntity Parent)
+{
+	if (Context.bPlaying)
+	{
+		if (Context.Notify)
+		{
+			Context.Notify("플레이 중에는 에셋을 추가할 수 없습니다", true);
+		}
+		return;
+	}
+	FScene&              Scene = *Context.Scene;
+	std::vector<FEntity> Added;
+	for (const std::filesystem::path& Path : Paths)
+	{
+		std::wstring Extension = Path.extension().wstring();
+		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+		FEntity Entity;
+		if (Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx")
+		{
+			Entity = FModelLoader::LoadIntoScene(Path, Scene, *Context.Resources, Parent);
+		}
+		else if (Extension == L".eparticle")
+		{
+			Entity = Scene.CreateEntity(FStringConv::ToUtf8(Path.stem().wstring()));
+			Scene.GetRegistry().Emplace<FParticleSystemComponent>(Entity).Asset = FModelLoader::MakeAssetPath(Path);
+			Scene.SetParent(Entity, Parent);
+		}
+		if (Scene.GetRegistry().IsValid(Entity))
+		{
+			Added.push_back(Entity);
+		}
+	}
+	if (Added.empty())
+	{
+		if (Context.Notify)
+		{
+			Context.Notify("계층에는 모델과 파티클만 끌어 놓을 수 있습니다", true);
+		}
+		return;
+	}
+	Scene.UpdateTransforms();
+	Context.SelectMany(Added, Added.back());
+	Context.MarkEdited("에셋 추가");
 }

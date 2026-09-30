@@ -38,6 +38,16 @@ public:
 	void MarkSaved() { SavedIndex = static_cast<int64>(Cursor); }
 	bool IsDirty() const { return SavedIndex != static_cast<int64>(Cursor); }
 
+	// 모든 기록 상태를 제자리에서 고친다 (에셋 이동 후 스냅샷 안 경로 갱신). Transform(State)가 true면 바뀐 것
+	template <typename TTransform>
+	void TransformStates(TTransform&& Transform)
+	{
+		for (FEntry& Entry : Entries)
+		{
+			Transform(Entry.State);
+		}
+	}
+
 	size_t GetUndoCount() const { return Cursor; }
 	size_t GetRedoCount() const { return Entries.empty() ? 0 : Entries.size() - 1 - Cursor; }
 

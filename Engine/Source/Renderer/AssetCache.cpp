@@ -4,8 +4,14 @@
 #include "Core/Paths.h"
 #include "Core/Serialization/BinaryArchive.h"
 #include "Core/StringConv.h"
+#include "Renderer/FbxLoader.h"
+#include "Renderer/ModelImportSettings.h"
 
+#include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <sstream>
+#include <cwctype>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -535,7 +541,8 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& SourcePath, FModelData& OutModel, bool bWriteCooked)
 {
 	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, ModelExtension);
-	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath))
+	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath) && IsCookedNewerThanImportInputs(SourcePath, CookedPath) &&
+	    IsCookedWithCurrentImportSettings(SourcePath, CookedPath))
 	{
 		const auto StartTime = std::chrono::steady_clock::now();
 		if (LoadCookedFile(CookedPath, [&](FBinaryReader& Reader) { return ReadModel(Reader, OutModel); }))
@@ -548,7 +555,7 @@ FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& So
 	}
 
 	const auto StartTime = std::chrono::steady_clock::now();
-	if (!FGltfLoader::Load(SourcePath, OutModel))
+	if (!LoadModelSource(SourcePath, OutModel))
 	{
 		return ESource::Failed;
 	}
@@ -564,6 +571,7 @@ FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& So
 		{
 			E_LOG(LogRenderer, Warning, "쿠킹 모델을 기록하지 못했습니다: {}", FStringConv::ToUtf8(CookedPath.wstring()));
 		}
+		WriteImportSettingsRecord(SourcePath, CookedPath);
 	}
 	return ESource::Converted;
 }
@@ -577,12 +585,112 @@ bool FAssetCache::CookModelAsset(const std::filesystem::path& SourcePath)
 		return false;
 	}
 	FModelData Model;
-	if (!FGltfLoader::Load(SourcePath, Model))
+	if (!LoadModelSource(SourcePath, Model))
 	{
 		return false;
 	}
 	CompressModelImages(Model);
 	FBinaryWriter Writer;
 	WriteModel(Writer, Model);
-	return Writer.SaveToFile(CookedPath);
+	if (!Writer.SaveToFile(CookedPath))
+	{
+		return false;
+	}
+	WriteImportSettingsRecord(SourcePath, CookedPath);
+	return true;
+}
+
+// ---------------------------------------------------------------- 모델 원본 (+ 임포트 설정)
+
+bool FAssetCache::LoadModelFile(const std::filesystem::path& SourcePath, FModelData& OutModel)
+{
+	std::wstring Extension = SourcePath.extension().wstring();
+	std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+	return Extension == L".fbx" ? FFbxLoader::Load(SourcePath, OutModel) : FGltfLoader::Load(SourcePath, OutModel);
+}
+
+bool FAssetCache::LoadModelSource(const std::filesystem::path& SourcePath, FModelData& OutModel)
+{
+	if (!LoadModelFile(SourcePath, OutModel))
+	{
+		return false;
+	}
+	const FModelImportSettings Settings = FModelImportSettings::LoadForSource(SourcePath);
+	// 추가 애니메이션 파일: 노드 이름으로 채널을 맞춰 붙인다 (클립 이름 = 파일 이름)
+	for (const std::string& Relative : Settings.AnimationSources)
+	{
+		const std::filesystem::path AnimationPath = SourcePath.parent_path() / FStringConv::ToWide(Relative);
+		FModelData                  AnimationModel;
+		if (!LoadModelFile(AnimationPath, AnimationModel))
+		{
+			E_LOG(LogRenderer, Warning, "추가 애니메이션 파일을 읽지 못했습니다: {}", Relative);
+			continue;
+		}
+		const uint32 Merged = FModelImportSettings::MergeAnimations(OutModel, AnimationModel, FStringConv::ToUtf8(AnimationPath.stem().wstring()));
+		E_LOG(LogRenderer, Display, "추가 애니메이션 {}: 클립 {}개", Relative, Merged);
+	}
+	Settings.Apply(OutModel);
+	return true;
+}
+
+bool FAssetCache::IsCookedNewerThanImportInputs(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
+{
+	// 임포트 설정 파일과 추가 애니메이션 파일도 원본의 일부로 본다
+	std::error_code ErrorCode;
+	const auto      CookedTime = std::filesystem::last_write_time(CookedPath, ErrorCode);
+	if (ErrorCode)
+	{
+		return false;
+	}
+	std::vector<std::filesystem::path> Inputs = { FModelImportSettings::GetSidecarPath(SourcePath) };
+	for (const std::string& Relative : FModelImportSettings::LoadForSource(SourcePath).AnimationSources)
+	{
+		Inputs.push_back(SourcePath.parent_path() / FStringConv::ToWide(Relative));
+	}
+	for (const std::filesystem::path& Input : Inputs)
+	{
+		if (std::filesystem::exists(Input, ErrorCode))
+		{
+			const auto InputTime = std::filesystem::last_write_time(Input, ErrorCode);
+			if (!ErrorCode && InputTime > CookedTime)
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+// 쿠킹에 쓴 임포트 설정을 "<쿠킹 파일>.import"에 남긴다 (설정 파일을 지우거나 되돌린 경우도 알아채기 위해 — 시각 비교만으로는 못 잡음)
+namespace
+{
+	std::filesystem::path GetImportRecordPath(const std::filesystem::path& CookedPath)
+	{
+		std::filesystem::path Path = CookedPath;
+		Path += L".import";
+		return Path;
+	}
+} // namespace
+
+void FAssetCache::WriteImportSettingsRecord(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
+{
+	std::ofstream File(GetImportRecordPath(CookedPath), std::ios::binary | std::ios::trunc);
+	File << FModelImportSettings::LoadForSource(SourcePath).ToJsonString();
+}
+
+bool FAssetCache::IsCookedWithCurrentImportSettings(const std::filesystem::path& SourcePath, const std::filesystem::path& CookedPath)
+{
+	std::error_code ErrorCode;
+	if (!std::filesystem::exists(SourcePath, ErrorCode))
+	{
+		return true; // 원본 없는 패키지
+	}
+	std::ifstream File(GetImportRecordPath(CookedPath), std::ios::binary);
+	if (!File)
+	{
+		return FModelImportSettings::LoadForSource(SourcePath).IsDefault(); // 기록이 없던 옛 쿠킹본: 기본 설정일 때만 유효
+	}
+	std::stringstream Buffer;
+	Buffer << File.rdbuf();
+	return Buffer.str() == FModelImportSettings::LoadForSource(SourcePath).ToJsonString();
 }

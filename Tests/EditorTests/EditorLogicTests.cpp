@@ -1,4 +1,5 @@
 #include "Core/Testing/TestFramework.h"
+#include "Editor/AssetEditors/OrbitCamera.h"
 #include "Editor/EditorCameraState.h"
 #include "Editor/EntitySelection.h"
 #include "Editor/ModelTemplateCache.h"
@@ -295,6 +296,47 @@ E_TEST(ModelTemplateCache_RestoresTransientChildren)
 	E_EXPECT_EQ(Cache.Instantiate(Scene), 0u);
 }
 
+E_TEST(ModelTemplateCache_RemapsSkinJointsAcrossSiblingSubtrees)
+{
+	// Fox.glb 구조: 모델 루트 아래 뼈대(Armature → Bone)와 스킨 메시(Body)가 형제로 있다
+	FScene        Scene;
+	FRegistry&    Registry = Scene.GetRegistry();
+	const FEntity Model    = Scene.CreateEntity("Fox");
+	Registry.Emplace<FModelComponent>(Model).AssetPath = "Models/Fox.glb";
+	const FEntity Armature = Scene.CreateEntity("Armature");
+	Scene.SetParent(Armature, Model);
+	Registry.Emplace<FTransientComponent>(Armature);
+	const FEntity Bone = Scene.CreateEntity("Bone");
+	Scene.SetParent(Bone, Armature);
+	Registry.Emplace<FTransientComponent>(Bone);
+	const FEntity Body = Scene.CreateEntity("Body");
+	Scene.SetParent(Body, Model);
+	Registry.Emplace<FTransientComponent>(Body);
+	Registry.Emplace<FStaticMeshComponent>(Body);
+	Registry.Emplace<FSkinComponent>(Body).Joints = { Bone };
+	Registry.Emplace<FAnimationComponent>(Model).Runtime.NodeEntities = { Armature, Bone, Body };
+
+	FModelTemplateCache Cache;
+	Cache.Capture(Scene);
+	E_EXPECT_TRUE(FSceneSerializer::FromJsonString(Scene, FSceneSerializer::ToJsonString(Scene)));
+	E_EXPECT_EQ(Cache.Instantiate(Scene), 1u);
+
+	const FEntity RestoredModel = FEntityPath{ { { "Fox", 0 } } }.Resolve(Scene);
+	const FEntity RestoredArmature = FEntityPath{ { { "Fox", 0 }, { "Armature", 0 } } }.Resolve(Scene);
+	const FEntity RestoredBone = FEntityPath{ { { "Fox", 0 }, { "Armature", 0 }, { "Bone", 0 } } }.Resolve(Scene);
+	const FEntity RestoredBody = FEntityPath{ { { "Fox", 0 }, { "Body", 0 } } }.Resolve(Scene);
+	E_EXPECT_TRUE(RestoredBone.IsValid() && RestoredBody.IsValid());
+
+	// 스킨 관절은 형제 서브트리의 복원된 뼈를 가리켜야 한다 (템플릿 씬 엔티티 금지)
+	const FSkinComponent* Skin = Registry.TryGet<FSkinComponent>(RestoredBody);
+	E_EXPECT_TRUE(Skin != nullptr && Skin->Joints.size() == 1 && Skin->Joints[0] == RestoredBone);
+
+	// 루트의 애니메이션 노드 연결도 복원된 엔티티로 다시 이어져야 한다
+	const FAnimationComponent* Animation = Registry.TryGet<FAnimationComponent>(RestoredModel);
+	const std::vector<FEntity> ExpectedNodes = { RestoredArmature, RestoredBone, RestoredBody };
+	E_EXPECT_TRUE(Animation != nullptr && Animation->Runtime.NodeEntities == ExpectedNodes);
+}
+
 // ---------------------------------------------------------------- 스냅 / 카메라
 
 E_TEST(Snap_ValuesPerToolAndInvert)
@@ -382,4 +424,43 @@ E_TEST(SceneEditOps_DuplicateRemapsSkinAndAnimationRuntime)
 	E_EXPECT_EQ(CloneBinding ? CloneBinding->InverseBindMatrices.size() : 0, static_cast<size_t>(1));
 	// 원본은 그대로
 	E_EXPECT_TRUE(Scene.GetRegistry().Get<FSkinComponent>(Skin).Joints == std::vector<FEntity>{ Joint });
+}
+
+// ---------------------------------------------------------------- 에셋 미리보기 궤도 카메라
+
+E_TEST(OrbitCamera_LooksAtTargetAndClamps)
+{
+	FOrbitCamera Orbit;
+	Orbit.Target   = FVector3(10.0f, 20.0f, 30.0f);
+	Orbit.Distance = 200.0f;
+	// 위치는 Target에서 Distance만큼 떨어져 있고 Forward는 Target을 향한다
+	const FVector3 Position = Orbit.GetPosition();
+	E_EXPECT_NEAR(FVector3::Distance(Position, Orbit.Target), 200.0f, 0.01f);
+	E_EXPECT_EQUALS((Orbit.Target - Position).GetNormalized(), Orbit.GetRotation().GetForwardVector(), Tol);
+	// Pitch 음수 = 카메라가 대상보다 위
+	E_EXPECT_TRUE(Position.Z > Orbit.Target.Z);
+
+	Orbit.Orbit(0.0f, -500.0f);
+	E_EXPECT_NEAR(Orbit.Pitch, FOrbitCamera::MinPitch, 1.0e-4f);
+	Orbit.Zoom(1.0f);
+	E_EXPECT_NEAR(Orbit.Distance, 170.0f, 0.01f);
+	Orbit.Zoom(-1000.0f);
+	E_EXPECT_NEAR(Orbit.Distance, FOrbitCamera::MaxDistance, 0.01f);
+}
+
+E_TEST(OrbitCamera_FrameAndPan)
+{
+	FOrbitCamera Orbit;
+	const FBox   Bounds(FVector3(100.0f, 0.0f, 0.0f), FVector3(300.0f, 200.0f, 200.0f));
+	Orbit.Frame(Bounds, 60.0f, 1.0f);
+	E_EXPECT_EQUALS(Orbit.Target, Bounds.GetCenter(), Tol);
+	// 경계 구 반지름 / sin(30°)
+	E_EXPECT_NEAR(Orbit.Distance, FVector3(100.0f).Length() / 0.5f, 0.5f);
+
+	// 화면 높이 절반만큼 오른쪽으로 끌면 대상은 카메라 왼쪽으로 (화면 폭의 월드 길이 절반) 이동
+	const FVector3 Before = Orbit.Target;
+	const FVector3 Right  = Orbit.GetRotation().GetRightVector();
+	Orbit.Pan(50.0f, 0.0f, 60.0f, 100.0f);
+	const float HalfHeightWorld = Orbit.Distance * FMath::Tan(FMath::DegreesToRadians(30.0f));
+	E_EXPECT_NEAR(FVector3::Dot(Orbit.Target - Before, Right), -HalfHeightWorld, 0.1f);
 }

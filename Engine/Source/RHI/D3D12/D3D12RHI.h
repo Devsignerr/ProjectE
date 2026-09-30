@@ -70,7 +70,8 @@ public:
 	// 셰이더 가시 CBV/SRV/UAV 디스크립터 할당자. BeginFrame에서 힙이 바인딩된다.
 	FD3D12DescriptorAllocator& GetSrvAllocator() { return SrvAllocator; }
 
-	// 지연 해제: 현재 프레임을 GPU가 끝낸 뒤(같은 백버퍼 인덱스의 다음 BeginFrame) 실제로 해제한다
+	// 지연 해제: 요청한 뒤 처음 제출되는 프레임(EndFrame)을 GPU가 끝낸 뒤 실제로 해제한다.
+	// BeginFrame 전(UI 단계)에 요청해도 그 프레임이 아직 쓰는 리소스를 먼저 지우지 않는다
 	void DeferRelease(ComPtr<ID3D12Object> Object);
 	void DeferFreeDescriptor(const FD3D12DescriptorHandle& Handle);
 
@@ -93,6 +94,7 @@ private:
 	ComPtr<ID3D12CommandAllocator>    CommandAllocators[FrameCount];
 	FD3D12DynamicUploadBuffer         DynamicBuffers[FrameCount];
 	FPendingReleases                  PendingReleases[FrameCount];
+	FPendingReleases                  RecordingReleases; // 다음 EndFrame에 제출 프레임 칸으로 옮겨짐
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 	uint64                            FrameFenceValues[FrameCount] = {};
 

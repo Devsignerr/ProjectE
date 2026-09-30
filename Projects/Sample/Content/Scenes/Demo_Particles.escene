@@ -1,0 +1,117 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 500.0],
+          "Rotation": [-0.10938165336847305, 0.4082179069519043, 0.23456971347332, 0.8754260540008545],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DirectionalLightComponent": {
+          "Color": [1.0, 0.96, 0.9],
+          "Intensity": 1.5
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, -10.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [20.0, 20.0, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Brazier",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 15.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.3]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Fire",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 35.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Fire2.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Smoke",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 110.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Smoke.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Sparks",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [300.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Sparks.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-520.0, -300.0, 230.0],
+          "Rotation": [-0.026836, 0.113678, 0.22818, 0.966587],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        }
+      }
+    }
+  ]
+}

@@ -195,6 +195,36 @@ void FAnimationSystem::SetSpeed(FScene& Scene, FEntity Entity, float Speed)
 	}
 }
 
+void FAnimationSystem::SetTime(FScene& Scene, FEntity Entity, float Seconds)
+{
+	FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(Entity);
+	if (Animation == nullptr || !Animation->Runtime.Set || Animation->Runtime.Set->Clips.empty())
+	{
+		return;
+	}
+	ResolveClipChange(*Animation);
+	FAnimationRuntime& Runtime = Animation->Runtime;
+	Runtime.CurrentTime        = FMath::Clamp(Seconds, 0.0f, Runtime.Set->Clips[Runtime.CurrentClip].Duration);
+	Runtime.PreviousClip       = -1;
+}
+
+float FAnimationSystem::GetTime(FScene& Scene, FEntity Entity)
+{
+	const FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(Entity);
+	return Animation != nullptr && Animation->Runtime.CurrentClip >= 0 ? Animation->Runtime.CurrentTime : 0.0f;
+}
+
+float FAnimationSystem::GetCurrentClipDuration(FScene& Scene, FEntity Entity)
+{
+	const FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(Entity);
+	if (Animation == nullptr || !Animation->Runtime.Set || Animation->Runtime.CurrentClip < 0 ||
+	    Animation->Runtime.CurrentClip >= static_cast<int32>(Animation->Runtime.Set->Clips.size()))
+	{
+		return 0.0f;
+	}
+	return Animation->Runtime.Set->Clips[Animation->Runtime.CurrentClip].Duration;
+}
+
 std::vector<std::string> FAnimationSystem::GetClipNames(FScene& Scene, FEntity Entity)
 {
 	std::vector<std::string> Names;

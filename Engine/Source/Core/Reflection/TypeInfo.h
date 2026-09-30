@@ -28,6 +28,7 @@ struct FPropertyInfo
 	float Step     = 0.0f;
 
 	std::string HandleTypeName; // ResourceHandle일 때 태그 이름
+	std::string AssetFilter;    // 에셋 경로 문자열이면 허용 확장자 (";" 구분, 예 ".emat") — 에디터 드래그 앤 드롭 대상
 
 	bool HasFlag(EPropertyFlags Flag) const { return (Flags & Flag) != 0; }
 	bool HasRange() const { return MinValue < MaxValue; }
@@ -202,6 +203,14 @@ public:
 		Last.MinValue       = MinValue;
 		Last.MaxValue       = MaxValue;
 		Last.Step           = Step;
+		return *this;
+	}
+
+	// 직전에 추가한 문자열 프로퍼티가 받는 에셋 확장자 (";" 구분). 인스펙터가 콘텐츠 브라우저 드롭을 받는다
+	TTypeBuilder& AssetFilter(const char* Extensions)
+	{
+		E_CHECKF(!Info.Properties.empty(), "AssetFilter는 Property 다음에 호출해야 합니다");
+		Info.Properties.back().AssetFilter = Extensions;
 		return *this;
 	}
 

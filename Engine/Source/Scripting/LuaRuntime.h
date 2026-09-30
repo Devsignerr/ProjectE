@@ -74,7 +74,8 @@ public:
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
 	bool         RunString(std::string_view Code);
-	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args);
+	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args, bool bWarnIfMissing = true);
+	void         BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args);
 	size_t       GetInstanceCount() const { return Instances.size(); }
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name);
 

@@ -71,6 +71,8 @@ struct FScriptNetHooks
 	std::function<int32(FEntity)> GetOwner;         // 엔티티(또는 가장 가까운 복제 조상)의 소유 플레이어, 없으면 -1
 	// RPC 라우팅 (없으면 Standalone: 바로 로컬 호출). 잘못된 호출(클라이언트에서 CallClient 등)은 std::runtime_error로 알린다
 	std::function<void(FEntity, EScriptRpcKind, const std::string&, const std::vector<FScriptRpcArg>&)> SendRpc;
+	// 스크립트가 보는 Input (없으면 Update에 넘긴 로컬 입력). 서버는 엔티티 소유 플레이어의 입력을 돌려준다 (없으면 nullptr = 입력 없음)
+	std::function<const FInput*(FEntity, const FInput* LocalInput)> ResolveInput;
 };
 
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.
@@ -129,6 +131,8 @@ public:
 	// ---- 테스트/디버그
 	// 받은 RPC 실행: Target 엔티티 스크립트의 MethodName(self, 인자...)을 부른다. 인스턴스/메서드가 없거나 오류면 false
 	bool InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args);
+	// MethodName을 정의한 모든 인스턴스에서 호출 (OnPlayerJoined 등 전역 이벤트). 정의하지 않은 인스턴스는 건너뛴다
+	void BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args);
 
 	bool         RunString(std::string_view Code);                             // 플레이 상태에서 Lua 코드 실행 (오류는 로그 + false)
 	size_t       GetInstanceCount() const;                                     // 살아 있는 스크립트 인스턴스 수

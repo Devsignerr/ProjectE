@@ -149,6 +149,9 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	NetHooks.SendRpc           = [this](FEntity Target, EScriptRpcKind Kind, const std::string& Name, const std::vector<FScriptRpcArg>& Args) {
 		RouteScriptRpc(Target, static_cast<uint8>(Kind), Name, Args);
 	};
+	NetHooks.ResolveInput = [this](FEntity Entity, const FInput* LocalInput) { return ResolveInput(Entity, LocalInput); };
+	RemoteInputs.clear();
+	InputSequence = 0;
 	Systems.Scripts->SetNetHooks(std::move(NetHooks));
 
 	if (Systems.Physics != nullptr)
@@ -195,6 +198,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		return;
 	}
+	if (Mode == ENetMode::Client && Input != nullptr)
+	{
+		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다
+	}
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
@@ -210,6 +217,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
 	Scene->UpdateTransforms();
+	for (auto& [PlayerId, Remote] : RemoteInputs)
+	{
+		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만
+	}
 }
 
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
@@ -307,7 +318,16 @@ void FGameWorld::RouteScriptRpc(FEntity Target, uint8 KindValue, const std::stri
 
 bool FGameWorld::HandleNetMessage(FNetConnectionId Connection, const std::vector<uint8>& Message)
 {
-	if (Message.empty() || Message[0] != static_cast<uint8>(ENetMessageType::ScriptRpc) || !IsPlaying())
+	if (Message.empty() || !IsPlaying())
+	{
+		return false;
+	}
+	if (Message[0] == static_cast<uint8>(ENetMessageType::PlayerInput))
+	{
+		ReceivePlayerInput(Connection, Message);
+		return true;
+	}
+	if (Message[0] != static_cast<uint8>(ENetMessageType::ScriptRpc))
 	{
 		return false;
 	}
@@ -380,4 +400,117 @@ bool FGameWorld::HandleNetMessage(FNetConnectionId Connection, const std::vector
 	}
 	Systems.Scripts->InvokeMethod(Target, RpcPrefix(Kind) + Name, Args);
 	return true;
+}
+
+// 입력 커맨드 (ENetMessageType::PlayerInput, 비신뢰, 클라이언트 → 서버):
+//   uint32 순번, 키 비트(EKey::Count비트를 바이트로), 마우스 버튼 비트(1바이트), int32 마우스 X, int32 마우스 Y, float 휠
+// 상태 전체를 보내므로 손실돼도 다음 커맨드로 복구된다 (순번이 오래된 것은 버린다)
+void FGameWorld::SendLocalInput(const FInput& Input)
+{
+	if (Systems.Net == nullptr || Systems.Net->GetClientState() != FNetDriver::EClientState::Joined)
+	{
+		return;
+	}
+	FBinaryWriter Writer;
+	Writer.Write(static_cast<uint8>(ENetMessageType::PlayerInput));
+	Writer.Write(++InputSequence);
+	const FInput::FKeyBits& Keys = Input.GetKeyStates();
+	for (size_t Byte = 0; Byte < (Keys.size() + 7) / 8; ++Byte)
+	{
+		uint8 Bits = 0;
+		for (size_t Bit = 0; Bit < 8 && Byte * 8 + Bit < Keys.size(); ++Bit)
+		{
+			Bits |= Keys[Byte * 8 + Bit] ? static_cast<uint8>(1u << Bit) : 0;
+		}
+		Writer.Write(Bits);
+	}
+	static_assert(static_cast<size_t>(EMouseButton::Count) <= 8, "마우스 버튼 비트는 1바이트");
+	Writer.Write(static_cast<uint8>(Input.GetButtonStates().to_ulong()));
+	Writer.Write(Input.GetMouseX());
+	Writer.Write(Input.GetMouseY());
+	Writer.Write(Input.GetMouseWheelDelta());
+	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
+}
+
+void FGameWorld::ReceivePlayerInput(FNetConnectionId Connection, const std::vector<uint8>& Message)
+{
+	if (Mode == ENetMode::Client || Systems.Net == nullptr)
+	{
+		return;
+	}
+	const std::vector<FNetDriver::FRemotePlayer>& Players = Systems.Net->GetPlayers();
+	const auto Sender = std::find_if(Players.begin(), Players.end(), [Connection](const FNetDriver::FRemotePlayer& Player) { return Player.Connection == Connection; });
+	if (Sender == Players.end())
+	{
+		return;
+	}
+	FBinaryReader Reader(Message.data(), Message.size());
+	Reader.Read<uint8>();
+	const uint32     Sequence = Reader.Read<uint32>();
+	FInput::FKeyBits Keys;
+	for (size_t Byte = 0; Byte < (Keys.size() + 7) / 8; ++Byte)
+	{
+		const uint8 Bits = Reader.Read<uint8>();
+		for (size_t Bit = 0; Bit < 8 && Byte * 8 + Bit < Keys.size(); ++Bit)
+		{
+			Keys[Byte * 8 + Bit] = (Bits >> Bit) & 1u;
+		}
+	}
+	const FInput::FButtonBits Buttons(Reader.Read<uint8>());
+	const int32               MouseX = Reader.Read<int32>();
+	const int32               MouseY = Reader.Read<int32>();
+	const float               Wheel  = Reader.Read<float>();
+	FRemoteInput&             Remote = RemoteInputs[Sender->PlayerId];
+	if (!Reader.IsOk() || !Reader.IsAtEnd() || Sequence <= Remote.LastSequence)
+	{
+		return; // 잘렸거나 늦게 도착한(재정렬) 커맨드
+	}
+	Remote.LastSequence = Sequence;
+	Remote.Input.SetState(Keys, Buttons, MouseX, MouseY, Wheel);
+}
+
+const FInput* FGameWorld::ResolveInput(FEntity Entity, const FInput* LocalInput) const
+{
+	if (Mode == ENetMode::Client)
+	{
+		return LocalInput; // 클라이언트 스크립트는 자기 입력
+	}
+	const int32 Owner       = GetEntityOwner(Entity);
+	const int32 LocalPlayer = Mode == ENetMode::DedicatedServer ? -1 : static_cast<int32>(Systems.Net != nullptr ? Systems.Net->GetLocalPlayerId() : 0);
+	if (Owner < 0)
+	{
+		return Mode == ENetMode::DedicatedServer ? nullptr : LocalInput; // 서버 소유: 호스트 입력 (1인용 동작 그대로)
+	}
+	if (Owner == LocalPlayer)
+	{
+		return LocalInput;
+	}
+	const auto Found = RemoteInputs.find(static_cast<uint32>(Owner));
+	return Found != RemoteInputs.end() ? &Found->second.Input : nullptr;
+}
+
+void FGameWorld::OnPlayerJoined(uint32 PlayerId, FEntity Pawn)
+{
+	if (!IsPlaying() || Mode == ENetMode::Client)
+	{
+		return;
+	}
+	FScriptRpcArg Id;
+	Id.Value = FScriptValue::MakeNumber(static_cast<double>(PlayerId), true);
+	FScriptRpcArg PawnArg;
+	PawnArg.bIsEntity = true;
+	PawnArg.Entity    = Pawn;
+	Systems.Scripts->BroadcastMethod("OnPlayerJoined", { Id, PawnArg });
+}
+
+void FGameWorld::OnPlayerLeft(uint32 PlayerId)
+{
+	RemoteInputs.erase(PlayerId);
+	if (!IsPlaying() || Mode == ENetMode::Client)
+	{
+		return;
+	}
+	FScriptRpcArg Id;
+	Id.Value = FScriptValue::MakeNumber(static_cast<double>(PlayerId), true);
+	Systems.Scripts->BroadcastMethod("OnPlayerLeft", { Id });
 }

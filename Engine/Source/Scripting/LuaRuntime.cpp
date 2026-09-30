@@ -1103,6 +1103,8 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 			continue;
 		}
 		FScriptInstance& Instance = Found->second;
+		// 이 인스턴스가 보는 입력 (서버: 엔티티 소유 플레이어의 입력)
+		Input = NetHooks != nullptr && NetHooks->ResolveInput ? NetHooks->ResolveInput(Entity, InInput) : InInput;
 		if (!Instance.bStarted)
 		{
 			Instance.bStarted = true;
@@ -1113,6 +1115,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 		}
 		CallMethod(Instance, "OnUpdate", DeltaSeconds, true);
 	}
+	Input = InInput;
 
 	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생)
 	DispatchAnimNotifies();
@@ -1359,7 +1362,22 @@ void FLuaRuntime::CallRpc(FEntity Target, EScriptRpcKind Kind, const std::string
 	InvokeMethod(Target, Prefix + Name, Converted);
 }
 
-bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args)
+void FLuaRuntime::BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args)
+{
+	// 호출 중 인스턴스가 생기거나 없어질 수 있으므로 대상 목록을 먼저 복사한다
+	std::vector<FEntity> Targets;
+	Targets.reserve(Instances.size());
+	for (const auto& [Id, Instance] : Instances)
+	{
+		Targets.push_back(Instance.Entity);
+	}
+	for (const FEntity Target : Targets)
+	{
+		InvokeMethod(Target, MethodName, Args, false);
+	}
+}
+
+bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args, bool bWarnIfMissing)
 {
 	const auto Found = Instances.find(Target.ToId());
 	if (Found == Instances.end() || Found->second.bFaulted || !Found->second.Self.valid())
@@ -1370,7 +1388,10 @@ bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, co
 	const sol::object Method   = Instance.Self[MethodName];
 	if (Method.get_type() != sol::type::function)
 	{
-		E_LOG(LogScript, Warning, "RPC 대상 메서드가 없습니다: {}:{}", Instance.ScriptAsset, MethodName);
+		if (bWarnIfMissing)
+		{
+			E_LOG(LogScript, Warning, "RPC 대상 메서드가 없습니다: {}:{}", Instance.ScriptAsset, MethodName);
+		}
 		return false;
 	}
 	std::vector<sol::object> Values;

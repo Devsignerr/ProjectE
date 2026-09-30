@@ -10,6 +10,9 @@
 class FInput
 {
 public:
+	using FKeyBits    = std::bitset<static_cast<size_t>(EKey::Count)>;
+	using FButtonBits = std::bitset<static_cast<size_t>(EMouseButton::Count)>;
+
 	// 창 이벤트로 상태 갱신
 	void ProcessEvent(const FWindowEvent& Event);
 
@@ -33,11 +36,17 @@ public:
 	int32 GetMouseDeltaY() const { return MouseY - PrevMouseY; }
 	float GetMouseWheelDelta() const { return WheelDelta; }
 
+	// 네트워크 입력 커맨드: 현재 상태를 통째로 읽고 쓴다 (서버는 원격 플레이어마다 FInput을 두고 받은 상태로 교체한다.
+	// 눌림/떼어짐 판정은 로컬과 같이 EndFrame 기준)
+	const FKeyBits&    GetKeyStates() const { return KeyStates; }
+	const FButtonBits& GetButtonStates() const { return ButtonStates; }
+	void               SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel);
+
 private:
-	std::bitset<static_cast<size_t>(EKey::Count)>         KeyStates;
-	std::bitset<static_cast<size_t>(EKey::Count)>         PrevKeyStates;
-	std::bitset<static_cast<size_t>(EMouseButton::Count)> ButtonStates;
-	std::bitset<static_cast<size_t>(EMouseButton::Count)> PrevButtonStates;
+	FKeyBits    KeyStates;
+	FKeyBits    PrevKeyStates;
+	FButtonBits ButtonStates;
+	FButtonBits PrevButtonStates;
 
 	int32 MouseX     = 0;
 	int32 MouseY     = 0;

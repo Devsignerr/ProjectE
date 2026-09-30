@@ -150,3 +150,11 @@ bool FScriptSystem::InvokeMethod(FEntity Target, const std::string& MethodName, 
 {
 	return PlayRuntime != nullptr && PlayRuntime->InvokeMethod(Target, MethodName, Args);
 }
+
+void FScriptSystem::BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args)
+{
+	if (PlayRuntime != nullptr)
+	{
+		PlayRuntime->BroadcastMethod(MethodName, Args);
+	}
+}

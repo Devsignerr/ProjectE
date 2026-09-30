@@ -174,3 +174,99 @@ E_TEST(NetRpc_RoutesBetweenServerAndClient)
 	ClientWorld.EndPlay();
 	ServerWorld.EndPlay();
 }
+
+// 입력 커맨드: 클라이언트 입력이 서버로 가서, 그 클라이언트 소유 엔티티의 서버 스크립트 Input에 보인다.
+// 서버 소유 엔티티는 전용 서버에서 입력이 없다. OnPlayerJoined/Left는 서버 스크립트에 전달된다
+E_TEST(NetInput_ServerScriptsSeeOwnersInput)
+{
+	RegisterNetworkTypes();
+	const std::filesystem::path Content = std::filesystem::temp_directory_path() / L"ProjectENetInputTests";
+	std::filesystem::create_directories(Content / L"Scripts");
+	{
+		std::ofstream File(Content / L"Scripts/Reader.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { W = 0, Pressed = 0, Joined = -1, Left = -1 } }
+function T:OnUpdate(dt)
+	self.Properties.W = Input.IsKeyDown("W") and 1 or 0
+	if Input.IsKeyPressed("W") then self.Properties.Pressed = self.Properties.Pressed + 1 end
+end
+function T:OnPlayerJoined(id, pawn) self.Properties.Joined = id end
+function T:OnPlayerLeft(id) self.Properties.Left = id end
+return T
+)";
+	}
+	const auto BuildInputLevel = [](FScene& Scene) {
+		for (const char* Name : { "Pawn", "Other" })
+		{
+			const FEntity Entity = Scene.CreateEntity(Name);
+			Scene.GetRegistry().Emplace<FScriptComponent>(Entity).ScriptAsset = "Scripts/Reader.lua"; // ServerOnly
+			Scene.GetRegistry().Emplace<FReplicatedComponent>(Entity);
+		}
+		Scene.UpdateTransforms();
+	};
+
+	auto            Hub = std::make_shared<FLoopbackHub>();
+	FNetSessionInfo Session;
+	FScene          ServerScene;
+	FScriptSystem   ServerScripts;
+	FNetDriver      ServerNet;
+	FGameWorld      ServerWorld;
+	BuildInputLevel(ServerScene);
+	ServerWorld.Init({ &ServerScripts, nullptr, nullptr, nullptr, Content, &ServerNet });
+	ServerNet.StartServer(std::make_unique<FLoopbackTransport>(Hub), 7777, Session, true);
+	ServerNet.OnPlayerJoined = [&](const FNetDriver::FRemotePlayer& Player) {
+		const FEntity Pawn = Find(ServerScene, "Pawn");
+		ServerScene.GetRegistry().Get<FReplicatedComponent>(Pawn).OwnerPlayerId = static_cast<int32>(Player.PlayerId);
+		ServerWorld.OnPlayerJoined(Player.PlayerId, Pawn);
+	};
+	ServerNet.OnPlayerLeft  = [&](const FNetDriver::FRemotePlayer& Player, const std::string&) { ServerWorld.OnPlayerLeft(Player.PlayerId); };
+	ServerNet.OnGameMessage = [&](FNetConnectionId Connection, const std::vector<uint8>& Message) { ServerWorld.HandleNetMessage(Connection, Message); };
+	ServerWorld.BeginPlay(ServerScene, ENetMode::DedicatedServer);
+	ServerWorld.TickGameplay(1.0f / 60.0f, nullptr); // 스크립트 인스턴스 생성
+
+	FScene        ClientScene;
+	FScriptSystem ClientScripts;
+	FNetDriver    ClientNet;
+	FGameWorld    ClientWorld;
+	FInput        ClientInput;
+	BuildInputLevel(ClientScene);
+	ClientWorld.Init({ &ClientScripts, nullptr, nullptr, nullptr, Content, &ClientNet });
+	ClientWorld.BeginPlay(ClientScene, ENetMode::Client);
+	ClientNet.StartClient(std::make_unique<FLoopbackTransport>(Hub), "127.0.0.1:7777", Session);
+
+	const auto Pump = [&](int32 Rounds) {
+		for (int32 Round = 0; Round < Rounds; ++Round)
+		{
+			constexpr float Step = 1.0f / 60.0f;
+			ClientWorld.TickGameplay(Step, &ClientInput); // 입력 전송
+			ClientInput.EndFrame();
+			ClientNet.Update(Step);
+			ServerNet.Update(Step);
+			ServerWorld.TickGameplay(Step, nullptr);
+		}
+	};
+	Pump(4);
+	const FEntity ServerPawn  = Find(ServerScene, "Pawn");
+	const FEntity ServerOther = Find(ServerScene, "Other");
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Joined").Number, static_cast<double>(ClientNet.GetLocalPlayerId()), 1.0e-9);
+
+	FInput::FKeyBits Keys;
+	Keys[static_cast<size_t>(EKey::W)] = true;
+	ClientInput.SetState(Keys, {}, 0, 0, 0.0f);
+	Pump(3);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "W").Number, 1.0, 1.0e-9);  // 소유 플레이어 입력
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "W").Number, 0.0, 1.0e-9); // 서버 소유: 전용 서버엔 입력 없음
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Pressed").Number, 1.0, 1.0e-9); // 눌림은 한 번만
+
+	ClientInput.SetState({}, {}, 0, 0, 0.0f);
+	Pump(3);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "W").Number, 0.0, 1.0e-9);
+
+	const uint32 PlayerId = ClientNet.GetLocalPlayerId();
+	ClientNet.Shutdown();
+	Pump(2);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "Left").Number, static_cast<double>(PlayerId), 1.0e-9);
+	E_EXPECT_EQ(ServerScripts.GetErrorCount(), 0u);
+	ClientWorld.EndPlay();
+	ServerWorld.EndPlay();
+}

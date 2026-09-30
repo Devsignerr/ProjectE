@@ -146,10 +146,14 @@ bool FRuntimeApplication::OnInit()
 		}
 		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
 		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
-			Players.SpawnPlayer(Player.PlayerId);
+			const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 			ReplicationServer.OnPlayerJoined(Player.Connection);
+			World.OnPlayerJoined(Player.PlayerId, Pawn);
 		};
-		Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+		Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) {
+			World.OnPlayerLeft(Player.PlayerId);
+			Players.DespawnPlayer(Player.PlayerId);
+		};
 		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) { World.HandleNetMessage(Connection, Message); };
 		World.BeginPlay(Scene, NetOptions.Mode == ENetMode::ListenServer ? ENetMode::ListenServer : ENetMode::Standalone);
 		if (NetOptions.Mode == ENetMode::ListenServer)
@@ -158,7 +162,7 @@ bool FRuntimeApplication::OnInit()
 			{
 				// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
 				Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
-				Players.SpawnPlayer(FNetDriver::HostPlayerId);
+				World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
 			}
 			else
 			{

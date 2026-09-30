@@ -142,7 +142,8 @@
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/HudController.lua",
-          "PropertyOverrides": ""
+          "PropertyOverrides": "",
+          "ExecutionLocation": 1
         }
       }
     }

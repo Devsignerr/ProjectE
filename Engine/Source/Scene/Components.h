@@ -138,8 +138,17 @@ struct FPixelArtComponent
 // Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.
 //   ScriptAsset:       프로젝트 Content 기준 상대 경로 (예: "Scripts/Rotator.lua")
 //   PropertyOverrides: 스크립트 Properties 기본값을 덮어쓰는 JSON 객체 문자열 (인스펙터가 편집, 씬에 저장)
+// 스크립트가 도는 곳 (멀티플레이). Standalone(1인용)은 서버이자 클라이언트이므로 모두 돈다
+enum class EScriptExecution : int32
+{
+	ServerOnly = 0, // 게임 로직 (기본). 전용/리슨 서버와 Standalone
+	ClientOnly = 1, // 연출/입력/UI. 클라이언트와 리슨 호스트, Standalone
+	Both       = 2,
+};
+
 struct FScriptComponent
 {
 	std::string ScriptAsset;
 	std::string PropertyOverrides;
+	int32       ExecutionLocation = static_cast<int32>(EScriptExecution::ServerOnly); // EScriptExecution
 };

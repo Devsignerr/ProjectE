@@ -59,6 +59,11 @@ target_link_libraries(imgui PUBLIC d3d12 dxgi)
 target_compile_options(imgui PRIVATE /W0) # 서드파티 경고 무시 (전역 /W4를 마지막 지정이 덮어씀)
 set_target_properties(imgui PROPERTIES FOLDER "ThirdParty")
 
+# ---------------------------------------------------------------- stb_truetype (imgui 동봉 imstb_truetype.h 재사용 — 게임 UI SDF 글꼴, 추가 다운로드 없음)
+add_library(stb_truetype INTERFACE)
+add_library(ThirdParty::stb_truetype ALIAS stb_truetype)
+target_include_directories(stb_truetype SYSTEM INTERFACE "${imgui_SOURCE_DIR}")
+
 # ---------------------------------------------------------------- ImGuizmo (트랜스폼 기즈모, MIT)
 set(E_IMGUIZMO_COMMIT "18cef5e031d8c6973d80284c67f60549fafd78c1")
 FetchContent_Declare(imguizmo

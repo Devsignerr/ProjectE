@@ -46,6 +46,8 @@ public:
 	FTextureHandle CreateTexture(const FImage& Image, bool bSRGB, const std::wstring& DebugName);
 	// 쿠킹된 텍스처 (전체 밉 체인 업로드)
 	FTextureHandle CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName);
+	// 밉 1개 원시 텍스처 (UI 글꼴 아틀라스 R8 등). Pixels는 행 단위로 빈틈없이 (Width * BytesPerPixel)
+	FTextureHandle CreateTexture(uint32 Width, uint32 Height, DXGI_FORMAT Format, const void* Pixels, uint32 BytesPerPixel, const std::wstring& DebugName);
 	void           DestroyTexture(FTextureHandle Handle);
 	FD3D12Texture* GetTexture(FTextureHandle Handle) const { return Textures.Get(Handle); }
 	FTextureHandle GetWhiteTexture() const { return WhiteTexture; }

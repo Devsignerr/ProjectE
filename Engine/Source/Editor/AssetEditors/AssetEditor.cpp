@@ -42,7 +42,13 @@ void FAssetEditor::Close(FAssetEditorEnvironment& Env)
 	{
 		RevertToSaved(Env);
 	}
+	OnClose(Env);
 	Preview.Shutdown(*Env.Rhi);
+}
+
+void FAssetEditor::OnClose(FAssetEditorEnvironment& Env)
+{
+	(void)Env;
 }
 
 void FAssetEditor::Update(FAssetEditorEnvironment& Env, float DeltaSeconds)
@@ -105,14 +111,7 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 		ImGui::TableNextRow();
 
 		ImGui::TableNextColumn();
-		DrawPreviewToolbar(Env);
-		const ImVec2 Avail = ImGui::GetContentRegionAvail();
-		Preview.DrawViewport(FVector2(Avail.x, FMath::Max(Avail.y, 64.0f)));
-		if (Preview.IsHovered() && ImGui::IsKeyPressed(ImGuiKey_F) && !ImGui::GetIO().KeyCtrl)
-		{
-			FramePreview(Env);
-		}
-		DrawPreviewOverlay(Env);
+		DrawPreviewArea(Env);
 
 		ImGui::TableNextColumn();
 		if (ImGui::BeginChild("##Properties", ImVec2(0.0f, 0.0f)))
@@ -124,6 +123,18 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 		ImGui::EndChild();
 		ImGui::EndTable();
 	}
+}
+
+void FAssetEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
+{
+	DrawPreviewToolbar(Env);
+	const ImVec2 Avail = ImGui::GetContentRegionAvail();
+	Preview.DrawViewport(FVector2(Avail.x, FMath::Max(Avail.y, 64.0f)));
+	if (Preview.IsHovered() && ImGui::IsKeyPressed(ImGuiKey_F) && !ImGui::GetIO().KeyCtrl)
+	{
+		FramePreview(Env);
+	}
+	DrawPreviewOverlay(Env);
 }
 
 void FAssetEditor::DrawPreviewToolbar(FAssetEditorEnvironment& Env)

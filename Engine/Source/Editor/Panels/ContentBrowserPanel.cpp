@@ -17,6 +17,7 @@
 #include "Renderer/ModelLoader.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Particles.h"
+#include "UI/UIAsset.h"
 #include "Scene/Scene.h"
 
 #include <imgui_internal.h> // ImHashStr
@@ -739,6 +740,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewParticle", FParticleSystemAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_DISPLAY " 새 UI"))
+	{
+		CreateAsset(Context, "NewUI", FUIAsset::Extension);
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
 	{
@@ -1080,6 +1085,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FParticleSystemAsset::Extension)
 	{
 		bOk = FParticleSystemAsset::MakeDefault(Name).SaveToFile(Path);
+	}
+	else if (Extension == FUIAsset::Extension)
+	{
+		bOk = FUIAsset::MakeDefault().SaveToFile(Path);
 	}
 	if (!bOk)
 	{

@@ -36,6 +36,8 @@
     { "File": "Particle.hlsl", "Entry": "VSRibbon", "Stage": "Vertex" },
     { "File": "Particle.hlsl", "Entry": "PSAlpha", "Stage": "Pixel" },
     { "File": "Particle.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" },
-    { "File": "ParticleSimulate.hlsl", "Entry": "CSMain", "Stage": "Compute" }
+    { "File": "ParticleSimulate.hlsl", "Entry": "CSMain", "Stage": "Compute" },
+    { "File": "UI.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "UI.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
   ]
 }

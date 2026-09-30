@@ -6,9 +6,11 @@
 #include "Editor/AssetEditors/ModelEditors.h"
 #include "Editor/AssetEditors/ParticleEditor.h"
 #include "Editor/AssetEditors/PrefabEditor.h"
+#include "Editor/AssetEditors/WidgetEditor.h"
 #include "Scene/Prefab.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Scene/Particles.h"
+#include "UI/UIAsset.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorGrid.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -56,6 +58,10 @@ namespace
 		{
 			return std::make_unique<FPrefabEditor>(Path);
 		}
+		if (Extension == FUIAsset::Extension)
+		{
+			return std::make_unique<FWidgetEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -87,6 +93,7 @@ void FAssetEditorManager::Shutdown(FEditorContext& Context)
 	}
 	if (bRendererReady)
 	{
+		UIRenderer.Shutdown();
 		PreviewRenderer.Shutdown();
 		bRendererReady = false;
 	}
@@ -96,7 +103,7 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 {
 	const std::wstring Extension = ToLowerExtension(Path);
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
-	       IsModelExtension(Extension);
+	       Extension == FUIAsset::Extension || IsModelExtension(Extension);
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)
@@ -121,6 +128,10 @@ bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)
 	{
 		Grid.reset();
 	}
+	if (!UIRenderer.Init(*Context.Rhi, PreviewRenderer.GetShaderLibrary(), *Context.Resources, FD3D12RHI::RenderTargetFormat))
+	{
+		E_LOG(LogEditor, Warning, "UI 미리보기 렌더러 초기화 실패 (UI 디자이너 미리보기 없음)");
+	}
 	bRendererReady = true;
 	return true;
 }
@@ -133,6 +144,7 @@ FAssetEditorEnvironment FAssetEditorManager::MakeEnvironment(FEditorContext& Con
 	Env.Resources       = Context.Resources;
 	Env.PreviewRenderer = bRendererReady ? &PreviewRenderer : nullptr;
 	Env.Grid            = Grid.get();
+	Env.UIRenderer      = bRendererReady && UIRenderer.IsInitialized() ? &UIRenderer : nullptr;
 	return Env;
 }
 
@@ -362,6 +374,7 @@ bool FAssetEditorManager::ReloadShaders(const std::vector<std::filesystem::path>
 	{
 		bOk = Grid->ReloadShaders(bForce) && bOk;
 	}
+	bOk = UIRenderer.ReloadShaders(bForce) && bOk;
 	return bOk;
 }
 

@@ -468,5 +468,8 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] Online 모듈(`EOnline`, 엔진 DLL) `FSteamSubsystem`: Init(App ID, 패키지 재실행 `SteamAPI_RestartAppIfNecessary`, 개발은 환경 변수 `SteamAppId`), RunCallbacks/Shutdown, 사용자 이름/SteamID/언어, 업적(1.53 `RequestCurrentStats` → 수신 전 요청은 대기열, `StoreStats`), 오버레이 열기/활성 상태(`GameOverlayActivated_t`). SDK 없이 빌드하면 같은 API의 빈 구현. CMake: `E_STEAMWORKS_SDK_DIR`(루트 `CMakeLocal.cmake` gitignore / 환경 변수), `ThirdParty::steamworks` IMPORTED, `steam_api64.dll` Bin 복사, Package.ps1 동봉. `.eproject "SteamAppId"`, 런타임이 렌더러 전에 Init. Lua `Steam` 테이블(`FScriptSteamHooks`, `FGameWorld::Init` 연결). 테스트 `Steam_DisabledWithoutInit`, Lua Steam 기본값. 확인: Steam 클라이언트가 꺼진 상태에서 경고 후 정상 실행(Verify 오류 0)
 - [ ] 실제 Steam 확인 (사용자): Steam 로그인 상태에서 런타임 실행 → 초기화 로그(사용자 이름), Shift+Tab 오버레이, 업적(Steamworks에 등록된 API 이름)
 
-4단계 — SteamPipe:
-- [ ] `Scripts/SteamUpload.ps1`: app/depot vdf 생성 + steamcmd 업로드(로그인은 사용자)
+4단계 — SteamPipe (2026-10-01):
+- [x] `Scripts/SteamUpload.ps1`: Package.ps1 → `Build/SteamPipe/<프로젝트>/app_build_<AppId>.vdf` + `depot_build_<DepotId>.vdf`(App ID = .eproject SteamAppId, Depot 기본 App ID + 1 = 2905831 — ProjectSC 기존 스크립트와 일치, `*.pdb` 제외) → `steamcmd +login <계정> +run_app_build`(비밀번호는 명령줄에 넣지 않고 steamcmd가 직접 묻는다). 옵션 `-SetLive <베타 브랜치>`(default 거부 — 웹에서 공개), `-Preview`, `-SkipPackage`, `-GenerateOnly`, `-Description`. steamcmd 찾기: `-SteamCmd` → `STEAMCMD` → CMakeLocal SDK `tools/ContentBuilder/builder`. 패키지에 steam_appid.txt가 있으면 거부. 확인: `-GenerateOnly`로 Release 패키지 52.6MB(18개 파일, steam_api64.dll 포함) + vdf 생성, 패키지 실행(Steam 꺼짐 → 경고 후 정상), 에디터 Verify 오류 0
+- [ ] 실제 업로드 (사용자): `.\Scripts\SteamUpload.ps1 -Account <빌드 계정> [-SetLive beta]` → Steamworks 웹에서 빌드 확인, 실행 옵션 실행 파일 `Sample.exe`
+
+후속 과제: 크래시 덤프 업로드(현재 로컬 보관만), pak 암호화/압축·패치 pak 우선순위, Steam 클라우드 저장·리치 프레즌스·통계, 스토어용 버전 번호 자동 증가, 설치형 엔진 배포(Phase 7 남은 항목)

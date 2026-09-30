@@ -143,6 +143,7 @@ Build/            CMake 빌드 출력 (git 제외)
 .\Scripts\Build.ps1 -Test            # 빌드 후 단위 테스트 (ctest)
 .\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Build\vs2022\ProjectE.sln)
 .\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release] [-IncludeSources]  # Release 빌드 → 쿠킹 → Build\Package\<프로젝트>\<ExecutableName>.exe (아이콘/버전 스탬프, VC++ 런타임 동봉, 종속 DLL 검사) + Build\Package\<프로젝트>-Symbols\ (PDB)
+.\Scripts\SteamUpload.ps1 -Account <빌드 계정> [-SetLive beta] [-Preview] [-GenerateOnly] [-SkipPackage]  # 패키징 → SteamPipe vdf → steamcmd 업로드
 ```
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).

@@ -171,7 +171,7 @@
 - [x] 원인 1 수정: 회전하는 동적 바디가 매 프레임 다시 생성되어 선속도·각속도가 0으로 초기화됨. 월드 행렬 분해 스케일의 ULP 오차가 비트 해시(`MakeShapeKey`)를 바꾸던 문제 → 생성 설정(`CreatedDesc`)을 보관하고 스케일 파생 치수는 상대 오차 1e-4로 비교(`NeedsRecreate`). 실험: 500cm/s로 굴린 공이 0.5초 만에 정지(3초간 재생성 79회) → 수정 후 계속 굴러감. 테스트 `Physics_RollingSphereKeepsMomentum`, `Physics_ScaleChangeResizesBody`
 - [x] 원인 후보 조사 (2026-09-30, 데모와 같은 조건의 수치 실험): 쌓기 안정성(3초 이동 0cm)·상자끼리 충돌(비탄성 이론값 일치)·마찰 감속(이론 208cm / 실측 209cm)·솔버는 정상. 원인 = 수치 설정: ① 질량이 크기와 무관(기본 1kg, 데모 60cm 상자 5kg = 밀도 23kg/m³ 스티로폼 수준)인데 발사 공은 8kg·22m/s → 상자 더미가 4.8m 날아감 ② Jolt에 구르기 저항이 없어 공이 10초 뒤에도 130cm/s로 17m 구름
 - [x] 수정 (사용자 결정 2026-09-30): `FRigidBodyComponent::Density`(kg/m³, 기본 500) + `Mass` 기본 0 = 콜라이더 부피 × 밀도 자동(값을 넣으면 직접 지정), `RollingResistance`(기본 0.05, `FPhysicsWorld`가 접촉 리스너로 이번 스텝에 닿은 동적 바디만 회전 감속 — 구는 약 계수 × g) → 공 300cm/s가 4.2m 구르고 멈춤. Lua `entity:GetMass()`(실제 바디 질량). 데모: 상자 밀도 120(약 26kg), 발사 공 5kg·15m/s → 상자 더미 흩어짐 0.9m. 테스트 `Physics_MassFromDensityOrExplicit`, `Physics_RollingResistanceStopsBall`, ScriptingTests `GetMass`
-- [ ] 실행 검증 (사용자 확인)
+- [x] 실행 검증 (사용자 확인 2026-09-30)
 
 ## Phase 9 — 에셋 편집 창
 

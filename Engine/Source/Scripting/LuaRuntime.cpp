@@ -5,6 +5,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/Components.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
@@ -149,6 +150,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterEntityBindings();
 	RegisterGlobals();
 	RegisterPrefabBindings();
+	RegisterNetBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -534,6 +536,18 @@ void FLuaRuntime::RegisterEntityBindings()
 	EntityType["GetMass"] = [RequireEntity, this](const FScriptEntity& Entity) {
 		RequireEntity(Entity);
 		return PhysicsHooks && PhysicsHooks->GetMass ? PhysicsHooks->GetMass(Entity.Entity) : 0.0f;
+	};
+
+	// ---- 네트워크 소유권: 소유 플레이어 ID (-1 = 서버 소유), 이 기계가 조종 권한을 갖는가
+	//   서버 소유(-1)는 서버(Standalone 포함)에서 참, 플레이어 소유는 그 플레이어의 기계에서 참
+	EntityType["GetOwner"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return GetOwner(Entity.Entity);
+	};
+	EntityType["IsLocallyOwned"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		const int32 Owner = GetOwner(Entity.Entity);
+		return Owner < 0 ? (NetHooks == nullptr || NetHooks->bIsServer) : Owner == GetLocalPlayerId();
 	};
 
 	Lua.new_usertype<FScriptComponentRef>(
@@ -1059,7 +1073,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 		if (!Instances.contains(Entity.ToId()))
 		{
 			const FScriptComponent& Component = Registry.Get<FScriptComponent>(Entity);
-			if (!Component.ScriptAsset.empty())
+			if (!Component.ScriptAsset.empty() && ShouldRunHere(Component))
 			{
 				CreateInstance(Entity, Component.ScriptAsset, Component.PropertyOverrides);
 			}
@@ -1258,4 +1272,40 @@ void FLuaRuntime::ApplyPendingSpawns()
 			}
 		}
 	}
+}
+
+// ---------------------------------------------------------------- 네트워크 (Net 테이블)
+
+void FLuaRuntime::RegisterNetBindings()
+{
+	// Net.IsServer(): 게임 로직 권한 (서버/Standalone), Net.IsClient(): 화면/로컬 플레이어가 있음 (클라이언트/리슨 호스트/Standalone)
+	sol::table NetTable            = Lua.create_named_table("Net");
+	NetTable["IsServer"]           = [this]() { return NetHooks == nullptr || NetHooks->bIsServer; };
+	NetTable["IsClient"]           = [this]() { return NetHooks == nullptr || NetHooks->bIsClient; };
+	NetTable["GetMode"]            = [this]() { return NetHooks != nullptr ? NetHooks->ModeName : std::string("Standalone"); };
+	NetTable["GetLocalPlayerId"]   = [this]() { return GetLocalPlayerId(); };
+}
+
+bool FLuaRuntime::ShouldRunHere(const FScriptComponent& Component) const
+{
+	if (NetHooks == nullptr)
+	{
+		return true;
+	}
+	switch (static_cast<EScriptExecution>(Component.ExecutionLocation))
+	{
+	case EScriptExecution::ClientOnly: return NetHooks->bRunClientScripts;
+	case EScriptExecution::Both:       return NetHooks->bRunServerScripts || NetHooks->bRunClientScripts;
+	default:                           return NetHooks->bRunServerScripts;
+	}
+}
+
+int32 FLuaRuntime::GetLocalPlayerId() const
+{
+	return NetHooks != nullptr && NetHooks->GetLocalPlayerId ? NetHooks->GetLocalPlayerId() : 0;
+}
+
+int32 FLuaRuntime::GetOwner(FEntity Entity) const
+{
+	return NetHooks != nullptr && NetHooks->GetOwner ? NetHooks->GetOwner(Entity) : -1;
 }

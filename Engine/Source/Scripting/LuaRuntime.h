@@ -14,6 +14,7 @@
 
 class FInput;
 class FScene;
+struct FScriptComponent;
 struct FTypeInfo;
 
 // Lua의 Entity 값: 엔티티 핸들만 담는다 (씬은 런타임이 가진 현재 씬)
@@ -68,6 +69,7 @@ public:
 	void SetScene(FScene* InScene) { Scene = InScene; }
 	void SetAudioHooks(const FScriptAudioHooks* InHooks) { AudioHooks = InHooks; } // FScriptSystem 소유 (런타임보다 오래 산다)
 	void SetPhysicsHooks(const FScriptPhysicsHooks* InHooks) { PhysicsHooks = InHooks; } // 〃
+	void SetNetHooks(const FScriptNetHooks* InHooks) { NetHooks = InHooks; }             // 〃
 	void Update(float DeltaSeconds, const FInput* Input);
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
@@ -103,6 +105,11 @@ private:
 	void RegisterEntityBindings();
 	void RegisterGlobals();
 	void RegisterPrefabBindings(); // Asset/Prefab 값, Scene.SpawnPrefab
+	void RegisterNetBindings();    // Net 테이블, entity:GetOwner/IsLocallyOwned
+
+	bool  ShouldRunHere(const FScriptComponent& Component) const; // ExecutionLocation 필터
+	int32 GetLocalPlayerId() const;
+	int32 GetOwner(FEntity Entity) const;
 
 	// Scene.SpawnPrefab 요청: 스크립트 갱신 루프 밖에서 만든다 (ApplyPendingSpawns)
 	struct FPendingSpawn
@@ -134,6 +141,7 @@ private:
 	uint32&               ErrorCounter;
 	const FScriptAudioHooks* AudioHooks = nullptr;
 	const FScriptPhysicsHooks* PhysicsHooks = nullptr;
+	const FScriptNetHooks*     NetHooks     = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
 

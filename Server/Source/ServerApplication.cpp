@@ -59,7 +59,7 @@ bool FServerApplication::OnInit()
 	E_LOG(LogServer, Display, "씬 로드: {} (엔티티 {}개)", SceneAsset, Scene.GetRegistry().GetAliveCount());
 
 	// GPU 리소스 없음 → Resources = nullptr (에셋 해석 생략). 복제할 값에 렌더 보간이 섞이지 않도록 물리 보간을 끈다
-	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory() });
+	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory(), &Net });
 	Physics.SetInterpolation(false);
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
 	Players.Begin(Scene, FPaths::GetProjectDescriptor().PlayerPrefab);
@@ -68,7 +68,7 @@ bool FServerApplication::OnInit()
 		Replication.OnPlayerJoined(Player.Connection);
 	};
 	Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
-	World.BeginPlay(Scene);
+	World.BeginPlay(Scene, ENetMode::DedicatedServer);
 
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
 	if (!Net.StartServer(CreateGnsTransport(), NetOptions.Port, FNetSessionInfo::FromProject(SceneAsset), true))

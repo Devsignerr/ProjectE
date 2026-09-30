@@ -172,7 +172,7 @@ set_target_properties(miniaudio PROPERTIES FOLDER "ThirdParty")
 # ---------------------------------------------------------------- bc7enc_rdo (BC7 인코더 + rgbcx BC4/BC5 + BC7 디코더, MIT 또는 Unlicense) — 텍스처 쿠킹
 # 저장소에 대용량 바이너리(ispc.exe)가 있어 필요한 파일만 개별로 받는다 (각 SHA256 고정)
 set(E_BC7ENC_COMMIT "b9438627eef73a1157e84201b6fa6eb2ffd6d9f0")
-set(E_BC7ENC_DIR "${CMAKE_BINARY_DIR}/_deps/bc7enc-src")
+set(E_BC7ENC_DIR "${E_THIRDPARTY_SOURCE_CACHE}/bc7enc-src") # 소스 캐시 공유 (file(DOWNLOAD)는 해시가 맞는 파일이 있으면 받지 않는다)
 set(E_BC7ENC_FILES
     "LICENSE=b3e843763e8d3bdeb0f469ecd4107fc32b5fa27ebee1af10d2066bc339292800"
     "bc7enc.cpp=b90444a091530a13c61fa6375583fcc9bc9ca47e474fd71f818876de68c1b581"

@@ -3,11 +3,13 @@
 #include "Core/CoreTypes.h"
 #include "Core/ECS/Entity.h"
 #include "Core/Input.h"
+#include "Network/LanDiscovery.h"
 #include "Network/NetTypes.h"
 #include "Scene/GameRpc.h"
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -29,6 +31,20 @@ struct FGameWorldSystems
 	FResourceManager*     Resources  = nullptr; // 없으면 에셋 핸들 해석을 건너뛴다 (GPU 없는 서버)
 	std::filesystem::path ContentDirectory;
 	FNetDriver*           Net        = nullptr; // 없으면 로컬 플레이어 ID 0 (Standalone)
+};
+
+// 스크립트(Net.Host/Connect/Disconnect)가 요청한 세션 전환. 앱이 ConsumeSessionRequest로 꺼내 처리한다
+struct FNetSessionRequest
+{
+	enum class EType : uint8
+	{
+		Host,       // 리슨 서버로 (Standalone이면 재시작 없이)
+		Connect,    // Address 서버에 클라이언트로 (씬을 다시 연다)
+		Disconnect, // Standalone으로 (씬을 다시 연다)
+	};
+	EType       Type = EType::Disconnect;
+	std::string Address;
+	uint16      Port = 0; // Host: 0이면 기본 포트
 };
 
 // 월드를 돌리는 쪽 (넷 모드에서 정해진다). Authority = 서버/Standalone(게임 로직 전부), Client = 네트워크 클라이언트
@@ -80,6 +96,11 @@ public:
 	void OnPlayerJoined(uint32 PlayerId, FEntity Pawn);
 	void OnPlayerLeft(uint32 PlayerId);
 
+	// 세션 전환 (로비): 스크립트 요청 꺼내기, 플레이 중 넷 모드 바꾸기 (Standalone ↔ 리슨 서버처럼 스크립트 필터가 같은 경우만)
+	std::optional<FNetSessionRequest> ConsumeSessionRequest();
+	void                              SetNetMode(ENetMode InMode);
+	void                              SetLanDiscoveryPort(uint16 Port) { LanDiscoveryPort = Port; } // 테스트용
+
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
 	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
@@ -117,4 +138,8 @@ private:
 
 	std::unordered_map<uint32, FRemoteInput> RemoteInputs;      // 서버: 플레이어 ID → 받은 입력
 	uint32                                   InputSequence = 0; // 클라이언트: 보낸 입력 순번
+
+	FLanDiscovery                     SessionSearch; // Net.FindSessions
+	uint16                            LanDiscoveryPort = DefaultLanDiscoveryPort;
+	std::optional<FNetSessionRequest> PendingSessionRequest;
 };

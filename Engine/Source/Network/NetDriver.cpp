@@ -41,6 +41,11 @@ FNetLaunchOptions FNetLaunchOptions::FromCommandLine(const FCommandLine& Command
 		Options.Mode           = ENetMode::Client;
 		Options.ConnectAddress = FStringConv::ToUtf8(Address);
 	}
+	else if (CommandLine.HasFlag(L"--join-lan"))
+	{
+		Options.Mode     = ENetMode::Client;
+		Options.bJoinLan = true;
+	}
 	else if (CommandLine.HasFlag(L"--host"))
 	{
 		Options.Mode = ENetMode::ListenServer;
@@ -325,6 +330,10 @@ std::string FNetDriver::ValidateHello(const FNetHello& Hello) const
 	if (Hello.SceneAsset != Session.SceneAsset)
 	{
 		return std::format("씬 불일치 (서버 {}, 클라이언트 {})", Session.SceneAsset, Hello.SceneAsset);
+	}
+	if (Players.size() >= MaxPlayers)
+	{
+		return std::format("서버가 가득 참 ({}명)", MaxPlayers);
 	}
 	return {};
 }

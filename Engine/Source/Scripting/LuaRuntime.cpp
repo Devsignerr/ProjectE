@@ -1315,6 +1315,58 @@ void FLuaRuntime::RegisterNetBindings()
 	NetTable["IsClient"]           = [this]() { return NetHooks == nullptr || NetHooks->bIsClient; };
 	NetTable["GetMode"]            = [this]() { return NetHooks != nullptr ? NetHooks->ModeName : std::string("Standalone"); };
 	NetTable["GetLocalPlayerId"]   = [this]() { return GetLocalPlayerId(); };
+
+	// ---- 세션 (로비). Host/Connect/Disconnect는 요청만 하고 앱이 이번 프레임 끝에 전환한다 (Connect/Disconnect는 씬을 다시 연다)
+	NetTable["FindSessions"] = [this]() {
+		if (NetHooks != nullptr && NetHooks->FindSessions)
+		{
+			NetHooks->FindSessions();
+		}
+	};
+	NetTable["GetSessions"] = [this]() {
+		sol::table Result = Lua.create_table();
+		if (NetHooks != nullptr && NetHooks->GetSessions)
+		{
+			int32 Index = 1;
+			for (const FScriptLanSession& Session : NetHooks->GetSessions())
+			{
+				sol::table Entry     = Lua.create_table();
+				Entry["name"]        = Session.Name;
+				Entry["scene"]       = Session.SceneAsset;
+				Entry["address"]     = Session.Address;
+				Entry["players"]     = Session.Players;
+				Entry["maxPlayers"]  = Session.MaxPlayers;
+				Result[Index++]      = Entry;
+			}
+		}
+		return Result;
+	};
+	NetTable["Host"] = [this](sol::optional<int32> Port) {
+		if (NetHooks == nullptr || !NetHooks->Host)
+		{
+			throw std::runtime_error("Net.Host: 이 앱은 세션 전환을 지원하지 않습니다");
+		}
+		NetHooks->Host(Port.value_or(0));
+	};
+	NetTable["Connect"] = [this](const std::string& Address) {
+		if (NetHooks == nullptr || !NetHooks->Connect)
+		{
+			throw std::runtime_error("Net.Connect: 이 앱은 세션 전환을 지원하지 않습니다");
+		}
+		NetHooks->Connect(Address);
+	};
+	NetTable["Disconnect"] = [this]() {
+		if (NetHooks != nullptr && NetHooks->Disconnect)
+		{
+			NetHooks->Disconnect();
+		}
+	};
+	NetTable["GetState"] = [this]() {
+		return NetHooks != nullptr && NetHooks->GetState ? NetHooks->GetState() : std::string("Standalone");
+	};
+	NetTable["GetFailureReason"] = [this]() {
+		return NetHooks != nullptr && NetHooks->GetFailureReason ? NetHooks->GetFailureReason() : std::string();
+	};
 }
 
 bool FLuaRuntime::ShouldRunHere(const FScriptComponent& Component) const

@@ -43,6 +43,16 @@ struct FScriptPhysicsHooks
 	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
 };
 
+// LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)
+struct FScriptLanSession
+{
+	std::string Name;
+	std::string SceneAsset;
+	std::string Address; // Net.Connect에 넘긴다
+	int32       Players    = 0;
+	int32       MaxPlayers = 0;
+};
+
 // 스크립트가 쓰는 네트워크 정보. 앱(FGameWorld)이 Network 모듈과 연결한다 (Scripting은 Network에 의존하지 않는다).
 // 기본값 = Standalone (서버이자 클라이언트, 모든 스크립트 실행, 로컬 플레이어 0)
 struct FScriptNetHooks
@@ -59,6 +69,15 @@ struct FScriptNetHooks
 	std::function<void(FEntity, EGameRpcKind, const std::string&, const FGameRpcArgs&)> SendRpc;
 	// 스크립트가 보는 Input (없으면 Update에 넘긴 로컬 입력). 서버는 엔티티 소유 플레이어의 입력을 돌려준다 (없으면 nullptr = 입력 없음)
 	std::function<const FInput*(FEntity, const FInput* LocalInput)> ResolveInput;
+
+	// 세션 (로비): 찾기/목록, 전환 요청(호스트/접속/끊기 — 앱이 프레임 끝에 처리), 상태 문자열
+	std::function<void()>                           FindSessions;
+	std::function<std::vector<FScriptLanSession>()> GetSessions;
+	std::function<void(int32 Port)>                 Host;
+	std::function<void(const std::string& Address)> Connect;
+	std::function<void()>                           Disconnect;
+	std::function<std::string()>                    GetState;         // Standalone / Hosting / Connecting / Connected / Failed
+	std::function<std::string()>                    GetFailureReason; // Failed일 때 사유
 };
 
 // 스크립트가 쓰는 AI 기능 (블랙보드, 이동, 경로). 앱(FGameWorld)이 AI 모듈(FAISystem)과 연결한다 (Scripting은 AI에 비의존).

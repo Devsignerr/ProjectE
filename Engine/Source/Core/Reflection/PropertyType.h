@@ -31,11 +31,12 @@ const char* PropertyTypeToString(EPropertyType Type);
 // 프로퍼티 표시/직렬화 힌트
 enum EPropertyFlags : uint32
 {
-	PF_None      = 0,
-	PF_Hidden    = 1 << 0, // 인스펙터에 표시하지 않음
-	PF_ReadOnly  = 1 << 1, // 표시만 하고 편집 불가
-	PF_Color     = 1 << 2, // Vector3/Vector4를 색으로 편집
-	PF_Transient = 1 << 3, // 직렬화 제외 (캐시 등)
+	PF_None        = 0,
+	PF_Hidden      = 1 << 0, // 인스펙터에 표시하지 않음
+	PF_ReadOnly    = 1 << 1, // 표시만 하고 편집 불가
+	PF_Color       = 1 << 2, // Vector3/Vector4를 색으로 편집
+	PF_Transient   = 1 << 3, // 직렬화 제외 (캐시 등). 복제는 된다
+	PF_NoReplicate = 1 << 4, // 네트워크 복제 제외 (서버 전용 값 등). 리소스 핸들은 플래그 없이도 제외
 };
 
 // C++ 타입 → EPropertyType 매핑. 지원하지 않는 타입은 컴파일 오류가 난다.

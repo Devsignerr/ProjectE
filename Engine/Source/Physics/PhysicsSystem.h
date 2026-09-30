@@ -4,6 +4,7 @@
 #include "Physics/PhysicsMath.h"
 #include "Physics/PhysicsWorld.h"
 
+#include <functional>
 #include <memory>
 #include <unordered_map>
 
@@ -41,6 +42,14 @@ public:
 	// 반환: 이번 프레임 진행한 고정 스텝 수
 	uint32 Update(FScene& Scene, float DeltaSeconds);
 
+	// 동적 바디 트랜스폼을 렌더 보간(직전↔현재 스텝)할지. 끄면 최신 스텝 결과를 그대로 쓴다 (서버: 복제할 값에 보간이 섞이지 않게)
+	void SetInterpolation(bool bEnabled) { bInterpolate = bEnabled; }
+	bool IsInterpolating() const { return bInterpolate; }
+
+	// 참을 돌려주는 엔티티의 동적 바디를 키네마틱으로 만든다 (네트워크 클라이언트: 서버가 시뮬레이션한 복제 엔티티는
+	// 복제된 트랜스폼을 따라가고, 로컬 물체와는 충돌한다). 바꾸면 다음 Update에서 해당 바디를 다시 만든다
+	void SetKinematicOverride(std::function<bool(const FScene&, FEntity)> Predicate) { KinematicOverride = std::move(Predicate); }
+
 	// ---- 게임플레이 API (cm, kg). 바디가 없는 엔티티는 무시 / false
 	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const;
 	void     AddForce(FEntity Entity, const FVector3& Force);
@@ -77,4 +86,6 @@ private:
 	std::unordered_map<FEntity, FBodyState>   Bodies;
 	FFixedStepper                             Stepper;
 	uint64                                    FrameCounter = 0;
+	bool                                      bInterpolate = true;
+	std::function<bool(const FScene&, FEntity)> KinematicOverride;
 };

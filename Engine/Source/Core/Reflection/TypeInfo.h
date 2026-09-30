@@ -55,6 +55,7 @@ enum ETypeFlags : uint32
 {
 	TF_None              = 0,
 	TF_HiddenInInspector = 1 << 0, // 인스펙터 컴포넌트 목록에 표시하지 않음
+	TF_NoReplicate       = 1 << 1, // 네트워크 복제 제외 (씬 구조/편집 전용 컴포넌트)
 };
 
 // 등록된 타입 하나의 메타데이터. ECS 컴포넌트면 레지스트리 조작 훅을 갖는다.
@@ -232,6 +233,12 @@ public:
 	TTypeBuilder& Hide()
 	{
 		Info.Flags |= TF_HiddenInInspector;
+		return *this;
+	}
+
+	TTypeBuilder& NoReplicate()
+	{
+		Info.Flags |= TF_NoReplicate;
 		return *this;
 	}
 

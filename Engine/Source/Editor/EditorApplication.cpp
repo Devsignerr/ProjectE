@@ -2,6 +2,7 @@
 
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
+#include "Network/ReplicationTypes.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Reflection/TypeInfo.h"
@@ -16,8 +17,6 @@
 #include "Renderer/ModelLoader.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/SceneAssetResolver.h"
-#include "Scene/AnimationSystem.h"
-#include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/SceneSerializer.h"
 
@@ -77,6 +76,7 @@ bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
+	RegisterNetworkTypes();
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -130,7 +130,8 @@ bool FEditorApplication::OnInit()
 	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
 	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
-	Scripts.SetContentDirectory(Context.ContentDirectory);
+	// 게임 월드: 스크립트 콘텐츠 경로와 물리 훅도 연결한다
+	World.Init({ &Scripts, &Physics, &GameModule, &Resources, Context.ContentDirectory });
 	Scripts.SetAudioHooks({
 		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
@@ -140,24 +141,7 @@ bool FEditorApplication::OnInit()
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
 	}
-	Scripts.SetPhysicsHooks({
-		[this](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
-			FPhysicsHit Hit;
-			if (!Physics.Raycast(Origin, Direction, MaxDistance, Hit))
-			{
-				return false;
-			}
-			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
-			return true;
-		},
-		[this](FEntity Entity, const FVector3& Force) { Physics.AddForce(Entity, Force); },
-		[this](FEntity Entity, const FVector3& Impulse) { Physics.AddImpulse(Entity, Impulse); },
-		[this](FEntity Entity, const FVector3& Velocity) { Physics.SetVelocity(Entity, Velocity); },
-		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
-		[this](FEntity Entity) { return Physics.GetMass(Entity); },
-	});
-	PlayMode.Init(Scene, Scripts, &Physics);
-	PlayMode.SetGameModule(&GameModule);
+	PlayMode.Init(Scene, World);
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
@@ -287,11 +271,8 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	FEditorActions::PruneSelection(Context);
 
 	UpdatePlayMode(DeltaSeconds);
-	FAnimationSystem::Update(*Context.Scene, DeltaSeconds);
-	Context.Scene->UpdateTransforms();
-	// 파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
-	FSceneAssetResolver::ResolveParticles(*Context.Scene, Resources, Context.ContentDirectory);
-	FParticleSystem::Update(*Context.Scene, DeltaSeconds);
+	// 애니메이션/파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
+	World.TickPresentation(*Context.Scene, DeltaSeconds);
 	AssetEditors.Update(Context, DeltaSeconds);
 
 	PollShaderChanges();

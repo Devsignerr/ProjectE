@@ -1,0 +1,1010 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 3.0
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -700.0,
+            -500.0,
+            350.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/OrbitCamera.lua",
+          "PropertyOverrides": "{\"Radius\": 1100.0, \"Height\": 420.0, \"Speed\": 6.0, \"StartAngle\": -120.0}"
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            -64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            -64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            0.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate5",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate6",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            214.0,
+            -64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate7",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            214.0,
+            0.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate8",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            214.0,
+            64.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate9",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            118.0,
+            -32.0,
+            91.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate10",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            118.0,
+            32.0,
+            91.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate11",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            182.0,
+            -32.0,
+            91.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate12",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            182.0,
+            32.0,
+            91.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Crate13",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            0.0,
+            152.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Ball0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -150.0,
+            -250.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50.0,
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 2.0,
+          "Friction": 0.6,
+          "Restitution": 0.5,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Ball1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -50.0,
+            250.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50.0,
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 2.0,
+          "Friction": 0.6,
+          "Restitution": 0.5,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Ball2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            350.0,
+            150.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50.0,
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 2.0,
+          "Friction": 0.6,
+          "Restitution": 0.5,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "Launcher",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -650.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Launcher.lua",
+          "PropertyOverrides": ""
+        }
+      }
+    }
+  ]
+}

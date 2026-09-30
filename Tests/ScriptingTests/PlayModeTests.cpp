@@ -3,6 +3,7 @@
 #include "Editor/PlayMode.h"
 #include "Scene/SceneSerializer.h"
 #include "Scripting/ScriptSystem.h"
+#include "World/GameWorld.h"
 
 #include <filesystem>
 #include <fstream>
@@ -38,9 +39,10 @@ E_TEST(PlayMode_StopRestoresEditScene)
 	const std::string Before = FSceneSerializer::ToJsonString(EditScene);
 
 	FScriptSystem Scripts;
-	Scripts.SetContentDirectory(MakePlayModeContent());
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, MakePlayModeContent() }); // 물리/게임 모듈/GPU 없이
 	FPlayMode PlayMode;
-	PlayMode.Init(EditScene, Scripts);
+	PlayMode.Init(EditScene, World);
 
 	FEditorContext Context;
 	Context.Scene = &EditScene;

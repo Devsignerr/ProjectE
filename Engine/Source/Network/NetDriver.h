@@ -24,13 +24,14 @@ struct FNetSessionInfo
 	static FNetSessionInfo FromProject(const std::string& SceneAsset, const std::string& PlayerName = {});
 };
 
-// 명령줄 실행 형태: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트, 둘 다 없으면 Standalone.
-// 전용 서버는 실행 파일이 정한다 (--port만 읽는다)
+// 명령줄 실행 형태: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트, --join-lan = LAN에서 찾은 첫 세션에 접속,
+// 없으면 Standalone. 전용 서버는 실행 파일이 정한다 (--port만 읽는다)
 struct FNetLaunchOptions
 {
 	ENetMode    Mode = ENetMode::Standalone;
 	uint16      Port = DefaultNetPort;
-	std::string ConnectAddress;
+	std::string ConnectAddress; // --join-lan이면 비어 있다 (앱이 찾아서 채운다)
+	bool        bJoinLan = false;
 
 	static FNetLaunchOptions FromCommandLine(const FCommandLine& CommandLine);
 };
@@ -59,6 +60,7 @@ public:
 	};
 
 	static constexpr float  HandshakeTimeoutSeconds = 5.0f;
+	uint16                  MaxPlayers              = 16; // 서버: 원격 플레이어 최대 수 (넘으면 "서버가 가득 참"으로 거부)
 	static constexpr uint32 HostPlayerId            = 0; // Standalone/리슨 서버의 로컬 플레이어. 원격 플레이어는 1부터
 
 	FNetDriver() = default;

@@ -9,6 +9,8 @@
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
 
+#include <format>
+
 E_DEFINE_LOG_CATEGORY(LogServer, Log)
 
 namespace
@@ -81,6 +83,12 @@ bool FServerApplication::OnInit()
 		E_LOG(LogServer, Error, "포트 {}에서 서버를 열지 못했습니다", NetOptions.Port);
 		return false;
 	}
+	FLanHostInfo LanInfo;
+	LanInfo.Name       = std::format("{} 전용 서버", FPaths::GetProjectName());
+	LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);
+	LanInfo.GamePort   = NetOptions.Port;
+	LanInfo.MaxPlayers = Net.MaxPlayers;
+	Lan.StartHost(LanInfo);
 	E_LOG(LogServer, Display, "서버 시작 (Ctrl+C 종료)");
 	return true;
 }
@@ -88,6 +96,8 @@ bool FServerApplication::OnInit()
 void FServerApplication::OnUpdate(float DeltaSeconds)
 {
 	Net.Update(DeltaSeconds);
+	Lan.SetPlayerCount(static_cast<uint16>(Net.GetPlayers().size()));
+	Lan.Update();
 	World.TickGameplay(DeltaSeconds, nullptr);
 	World.TickPresentation(Scene, DeltaSeconds); // 애니메이션(노티파이/소켓)은 게임 로직에 쓰이므로 서버도 돌린다
 	Replication.Tick(DeltaSeconds);
@@ -95,6 +105,7 @@ void FServerApplication::OnUpdate(float DeltaSeconds)
 
 void FServerApplication::OnShutdown()
 {
+	Lan.Stop();
 	Net.Shutdown();
 	Replication.End();
 	Players.End();

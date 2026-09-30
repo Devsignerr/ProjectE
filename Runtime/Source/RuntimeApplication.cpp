@@ -13,7 +13,9 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
 
+#include <chrono>
 #include <format>
+#include <thread>
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
 
@@ -124,8 +126,31 @@ bool FRuntimeApplication::OnInit()
 	});
 
 	// 멀티플레이: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트, 없으면 Standalone
-	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
-	const FNetSessionInfo   Session    = FNetSessionInfo::FromProject(SceneAsset);
+	FNetLaunchOptions     NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
+	const FNetSessionInfo Session    = FNetSessionInfo::FromProject(SceneAsset);
+	if (NetOptions.bJoinLan)
+	{
+		// LAN에서 같은 프로젝트 세션을 찾아 첫 번째에 접속 (최대 2초, 0.5초마다 다시 질의)
+		for (int32 Attempt = 0; Attempt < 4 && Lan.GetSessions().empty(); ++Attempt)
+		{
+			Lan.StartSearch(Session.ProjectName);
+			for (int32 Wait = 0; Wait < 50 && Lan.GetSessions().empty(); ++Wait)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				Lan.Update();
+			}
+		}
+		if (!Lan.GetSessions().empty())
+		{
+			NetOptions.ConnectAddress = Lan.GetSessions().front().Address;
+			E_LOG(LogRuntime, Display, "LAN 세션 '{}' ({})에 접속합니다", Lan.GetSessions().front().Name, NetOptions.ConnectAddress);
+		}
+		else
+		{
+			E_LOG(LogRuntime, Warning, "LAN에서 세션을 찾지 못했습니다");
+		}
+		Lan.Stop();
+	}
 	if (NetOptions.Mode == ENetMode::Client && Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
 	{
 		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
@@ -163,6 +188,12 @@ bool FRuntimeApplication::OnInit()
 				// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
 				Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
 				World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
+				FLanHostInfo LanInfo;
+				LanInfo.Name       = std::format("{} (호스트)", FPaths::GetProjectName());
+				LanInfo.Session    = Session;
+				LanInfo.GamePort   = NetOptions.Port;
+				LanInfo.MaxPlayers = Net.MaxPlayers;
+				Lan.StartHost(LanInfo);
 			}
 			else
 			{
@@ -188,6 +219,11 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
+	if (Lan.IsHosting())
+	{
+		Lan.SetPlayerCount(static_cast<uint16>(Net.GetPlayers().size() + 1)); // 호스트 포함
+		Lan.Update();
+	}
 	if (Net.GetMode() == ENetMode::Client)
 	{
 		ReplicationClient.Update(DeltaSeconds); // 트랜스폼 보간
@@ -231,6 +267,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
+	Lan.Stop();
 	Net.Shutdown();
 	ReplicationServer.End();
 	ReplicationClient.End();

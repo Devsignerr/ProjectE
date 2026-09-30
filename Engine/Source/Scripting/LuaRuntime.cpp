@@ -553,15 +553,15 @@ void FLuaRuntime::RegisterEntityBindings()
 	// ---- RPC: entity:CallServer("Fire", 인자...) → 그 엔티티 스크립트의 Server_Fire(self, 인자...) (Client_/Multicast_도 같은 규칙)
 	EntityType["CallServer"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
 		RequireEntity(Entity);
-		CallRpc(Entity.Entity, EScriptRpcKind::Server, Name, Args);
+		CallRpc(Entity.Entity, EGameRpcKind::Server, Name, Args);
 	};
 	EntityType["CallClient"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
 		RequireEntity(Entity);
-		CallRpc(Entity.Entity, EScriptRpcKind::Client, Name, Args);
+		CallRpc(Entity.Entity, EGameRpcKind::Client, Name, Args);
 	};
 	EntityType["CallMulticast"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
 		RequireEntity(Entity);
-		CallRpc(Entity.Entity, EScriptRpcKind::Multicast, Name, Args);
+		CallRpc(Entity.Entity, EGameRpcKind::Multicast, Name, Args);
 	};
 
 	Lua.new_usertype<FScriptComponentRef>(
@@ -1327,42 +1327,61 @@ int32 FLuaRuntime::GetOwner(FEntity Entity) const
 	return NetHooks != nullptr && NetHooks->GetOwner ? NetHooks->GetOwner(Entity) : -1;
 }
 
-FScriptRpcArg FLuaRuntime::ToRpcArg(const sol::object& Object)
+FGameRpcValue FLuaRuntime::ToRpcValue(const sol::object& Object)
 {
-	FScriptRpcArg Arg;
 	if (Object.is<FScriptEntity>())
 	{
-		Arg.bIsEntity = true;
-		Arg.Entity    = Object.as<FScriptEntity>().Entity;
-		return Arg;
+		return FGameRpcValue::MakeEntity(Object.as<FScriptEntity>().Entity);
 	}
-	Arg.Value = ToScriptValue(Object);
-	if (Arg.Value.IsNil() && Object.get_type() != sol::type::lua_nil && Object.get_type() != sol::type::none)
+	const FScriptValue Value = ToScriptValue(Object);
+	switch (Value.Type)
 	{
-		throw std::runtime_error("RPC 인자는 nil/bool/숫자/문자열/Vector3/에셋/엔티티만 보낼 수 있습니다");
+	case EScriptValueType::Bool:    return FGameRpcValue::MakeBool(Value.bBool);
+	case EScriptValueType::Number:  return FGameRpcValue::MakeNumber(Value.Number, Value.bInteger);
+	case EScriptValueType::String:  return FGameRpcValue::MakeString(Value.String);
+	case EScriptValueType::Vector3: return FGameRpcValue::MakeVector3(Value.Vector);
+	case EScriptValueType::Asset:   return FGameRpcValue::MakeAsset(Value.String, Value.AssetFilter);
+	default:
+		if (Object.get_type() != sol::type::lua_nil && Object.get_type() != sol::type::none)
+		{
+			throw std::runtime_error("RPC 인자는 nil/bool/숫자/문자열/Vector3/에셋/엔티티만 보낼 수 있습니다");
+		}
+		return FGameRpcValue{};
 	}
-	return Arg;
 }
 
-void FLuaRuntime::CallRpc(FEntity Target, EScriptRpcKind Kind, const std::string& Name, const sol::variadic_args& Args)
+sol::object FLuaRuntime::FromRpcValue(const FGameRpcValue& Value)
 {
-	std::vector<FScriptRpcArg> Converted;
+	switch (Value.Type)
+	{
+	case FGameRpcValue::EType::Bool:    return sol::make_object(Lua, Value.bBool);
+	case FGameRpcValue::EType::Number:
+		return Value.bInteger ? sol::make_object(Lua, static_cast<lua_Integer>(Value.Number)) : sol::make_object(Lua, Value.Number);
+	case FGameRpcValue::EType::String:  return sol::make_object(Lua, Value.String);
+	case FGameRpcValue::EType::Vector3: return sol::make_object(Lua, Value.Vector);
+	case FGameRpcValue::EType::Asset:   return sol::make_object(Lua, FScriptAssetRef{ Value.String, Value.AssetFilter });
+	case FGameRpcValue::EType::Entity:  return sol::make_object(Lua, FScriptEntity{ Value.Entity });
+	default:                            return sol::lua_nil;
+	}
+}
+
+void FLuaRuntime::CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const sol::variadic_args& Args)
+{
+	FGameRpcArgs Converted;
 	Converted.reserve(Args.size());
 	for (const sol::object Arg : Args)
 	{
-		Converted.push_back(ToRpcArg(Arg));
+		Converted.push_back(ToRpcValue(Arg));
 	}
 	if (NetHooks != nullptr && NetHooks->SendRpc)
 	{
 		NetHooks->SendRpc(Target, Kind, Name, Converted);
 		return;
 	}
-	// 네트워크 없음(Standalone): 로컬에서 바로 부른다
-	const char* Prefix = Kind == EScriptRpcKind::Server ? "Server_" : (Kind == EScriptRpcKind::Client ? "Client_" : "Multicast_");
-	InvokeMethod(Target, Prefix + Name, Converted);
+	InvokeMethod(Target, GetRpcMethodPrefix(Kind) + Name, Converted); // 네트워크 없음(Standalone): 바로 로컬 호출
 }
 
-void FLuaRuntime::BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args)
+void FLuaRuntime::BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args)
 {
 	// 호출 중 인스턴스가 생기거나 없어질 수 있으므로 대상 목록을 먼저 복사한다
 	std::vector<FEntity> Targets;
@@ -1373,11 +1392,11 @@ void FLuaRuntime::BroadcastMethod(const std::string& MethodName, const std::vect
 	}
 	for (const FEntity Target : Targets)
 	{
-		InvokeMethod(Target, MethodName, Args, false);
+		InvokeMethod(Target, MethodName, Args);
 	}
 }
 
-bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args, bool bWarnIfMissing)
+bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args)
 {
 	const auto Found = Instances.find(Target.ToId());
 	if (Found == Instances.end() || Found->second.bFaulted || !Found->second.Self.valid())
@@ -1388,17 +1407,13 @@ bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, co
 	const sol::object Method   = Instance.Self[MethodName];
 	if (Method.get_type() != sol::type::function)
 	{
-		if (bWarnIfMissing)
-		{
-			E_LOG(LogScript, Warning, "RPC 대상 메서드가 없습니다: {}:{}", Instance.ScriptAsset, MethodName);
-		}
 		return false;
 	}
 	std::vector<sol::object> Values;
 	Values.reserve(Args.size());
-	for (const FScriptRpcArg& Arg : Args)
+	for (const FGameRpcValue& Arg : Args)
 	{
-		Values.push_back(Arg.bIsEntity ? sol::make_object(Lua, FScriptEntity{ Arg.Entity }) : FromScriptValue(Arg.Value));
+		Values.push_back(FromRpcValue(Arg));
 	}
 	const sol::table               Self = Instance.Self;
 	sol::protected_function        Function(Method.as<sol::function>(), Traceback);

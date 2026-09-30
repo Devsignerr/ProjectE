@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
-#include "Core/Input.h"
 #include "Core/ECS/Entity.h"
+#include "Core/Input.h"
 #include "Network/NetTypes.h"
+#include "Scene/GameRpc.h"
 
 #include <filesystem>
 #include <memory>
@@ -18,7 +19,6 @@ class FPhysicsSystem;
 class FResourceManager;
 class FScene;
 class FScriptSystem;
-struct FScriptRpcArg;
 
 // FGameWorld가 돌리는 시스템. 모두 비소유 — 앱이 소유하고 FGameWorld보다 오래 산다
 struct FGameWorldSystems
@@ -39,7 +39,7 @@ enum class EWorldRole : uint8
 	Client,
 };
 
-// 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, (이후) 전용 서버가 같은 순서를 쓴다.
+// 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, 전용 서버가 같은 순서를 쓴다.
 //   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 물리 → UpdateTransforms
 //                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
 //   스크립트 ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
@@ -47,8 +47,9 @@ enum class EWorldRole : uint8
 //         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음)
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
 // 시작/정지: BeginPlay = 물리 → 게임 모듈 → AI → 스크립트 (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순
+// RPC(스크립트/게임 모듈 공용)와 입력·플레이어 이벤트는 GameWorldNet.cpp. 게임 모듈에는 IGameNet으로 자신을 넘긴다
 // AI 시스템(비헤이비어 트리, 내비메시, 이동)은 FGameWorld가 소유한다 (앱마다 따로 둘 설정이 없다)
-class FGameWorld
+class FGameWorld final : public IGameNet
 {
 public:
 	FGameWorld();
@@ -71,10 +72,10 @@ public:
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 
-	// FNetDriver::OnGameMessage에서 받은 월드 메시지(스크립트 RPC, 입력). 처리했으면 true (복제 메시지는 복제 객체가 먼저 받는다)
+	// FNetDriver::OnGameMessage에서 받은 월드 메시지(RPC, 입력). 처리했으면 true (복제 메시지는 복제 객체가 먼저 받는다)
 	bool HandleNetMessage(FNetConnectionId Connection, const std::vector<uint8>& Message);
 
-	// 서버: 플레이어 입장/퇴장 → 스크립트 OnPlayerJoined(playerId, pawn) / OnPlayerLeft(playerId)
+	// 서버: 플레이어 입장/퇴장 → 스크립트 OnPlayerJoined(playerId, pawn)/OnPlayerLeft(playerId) + 게임 모듈
 	void OnPlayerJoined(uint32 PlayerId, FEntity Pawn);
 	void OnPlayerLeft(uint32 PlayerId);
 
@@ -83,12 +84,22 @@ public:
 	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
 	FAISystem& GetAI() { return *AI; }
 
+	// ---- IGameNet (게임 모듈용)
+	bool  IsServer() const override { return Mode != ENetMode::Client; }
+	bool  IsClient() const override { return Mode != ENetMode::DedicatedServer; }
+	int32 GetLocalPlayerId() const override;
+	int32 GetOwner(FEntity Entity) const override;
+	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
+
 private:
-	void          RouteScriptRpc(FEntity Target, uint8 Kind, const std::string& Name, const std::vector<FScriptRpcArg>& Args);
-	int32         GetEntityOwner(FEntity Entity) const;
+	// 잘못된 호출(클라이언트에서 Client/Multicast 등)은 std::runtime_error (Lua에서는 스크립트 오류가 된다)
+	void          RouteRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args);
+	void          InvokeRpcLocally(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args);
+	void          ReceiveRpc(FNetConnectionId Connection, const std::vector<uint8>& Message);
 	const FInput* ResolveInput(FEntity Entity, const FInput* LocalInput) const;
 	void          SendLocalInput(const FInput& Input);
 	void          ReceivePlayerInput(FNetConnectionId Connection, const std::vector<uint8>& Message);
+	void          InstallScriptNetHooks();
 
 	struct FRemoteInput
 	{

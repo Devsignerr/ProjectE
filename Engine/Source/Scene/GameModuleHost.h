@@ -18,6 +18,8 @@ public:
 	static std::filesystem::path GetDefaultModulePath(const std::string& Name);
 
 	bool Load(const std::filesystem::path& DllPath);
+	// DLL 없이 같은 프로세스의 모듈을 붙인다 (테스트/임베드용, 비소유 — Unload까지 살아 있어야 한다)
+	void Attach(IGameModule& InModule, std::string InName);
 	void Unload();
 	bool IsLoaded() const { return Module != nullptr; }
 	const std::string& GetName() const { return Name; }
@@ -27,6 +29,12 @@ public:
 	void Update(FScene& Scene, float DeltaSeconds);
 	void EndPlay(FScene& Scene);
 	bool IsPlaying() const { return bPlaying; }
+
+	// 멀티플레이 (플레이 중에만 전달). Net은 BeginPlay 전에 넘기고 EndPlay 뒤에 nullptr로 되돌린다
+	void SetNet(IGameNet* Net);
+	void PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn);
+	void PlayerLeft(FScene& Scene, uint32 PlayerId);
+	void Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, const std::string& RpcName, const FGameRpcArgs& Args);
 
 private:
 	void*        Library = nullptr; // HMODULE (공개 헤더에 Windows.h 금지)

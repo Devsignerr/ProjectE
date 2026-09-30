@@ -13,6 +13,9 @@ class FHierarchyPanel
 public:
 	void Draw(FEditorContext& Context);
 
+	// 계층 창이 키보드 포커스를 가졌는지 (직전 프레임 기준, 씬 편집 단축키 대상 판정)
+	bool IsFocused() const { return bFocused; }
+
 	bool bOpen = true;
 
 private:
@@ -34,6 +37,9 @@ private:
 
 	FEntity PendingDelete;
 	bool    bPendingDuplicate = false;
+	bool    bPendingCopy      = false;
+	bool    bPendingPaste     = false;
+	bool    bFocused          = false;
 	FEntity PendingReparentChild;
 	FEntity PendingReparentParent;
 	bool    bPendingReparent = false;

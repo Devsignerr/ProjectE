@@ -42,6 +42,8 @@ public:
 	void FocusSelection(FEditorContext& Context);
 
 	bool IsHovered() const { return bHovered; }
+	// 뷰포트 창이 키보드 포커스를 가졌는지 (직전 프레임 기준, 씬 편집 단축키 대상 판정)
+	bool IsFocused() const { return bFocused; }
 	// 뷰포트 렌더 타깃 종횡비 (타깃이 없으면 Fallback)
 	float GetAspectRatio(float Fallback) const;
 	bool IsUsingGizmo() const { return bUsingGizmo; }
@@ -73,4 +75,6 @@ private:
 	bool            bHovered       = false;
 	bool            bUsingGizmo    = false;
 	bool            bGizmoOver     = false;
+	bool            bFocused       = false;
+	bool            bWasUsingGizmo = false; // 기즈모 조작 시작 프레임 판정 (Alt+드래그 복제)
 };

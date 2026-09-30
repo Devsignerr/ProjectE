@@ -250,7 +250,7 @@ bool FEditorApplication::OnInit()
 		E_LOG(LogEditor, Warning, "Content 디렉터리 감시를 시작하지 못했습니다. 스크립트 핫 리로드가 꺼집니다");
 	}
 
-	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모, Ctrl+N/O/S 씬 파일, F5 재생/정지");
+	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모(Alt+드래그 복제), End 바닥에 붙이기, Ctrl+C/V/D/Z, Ctrl+N/O/S 씬 파일, F5 재생/정지");
 
 	// 자동 검증: --play 로 시작 시 플레이 모드 진입
 	if (CommandLine.HasFlag(L"--play"))
@@ -283,12 +283,7 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		CameraController.Update(Camera, InputState, DeltaSeconds);
 	}
 
-	// Delete: 선택 엔티티 삭제 (텍스트 입력 중, 에셋 편집 창 포커스 중 제외)
 	FEditorActions::PruneSelection(Context);
-	if (InputState.IsKeyPressed(EKey::Delete) && !ImGuiLayer.WantCaptureKeyboard() && !AssetEditors.HasFocusedEditor() && !ContentBrowserPanel.IsFocused())
-	{
-		FEditorActions::DeleteSelection(Context);
-	}
 
 	UpdatePlayMode(DeltaSeconds);
 	FAnimationSystem::Update(*Context.Scene, DeltaSeconds);
@@ -592,6 +587,29 @@ void FEditorApplication::HandleShortcuts()
 	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_D))
 	{
 		FEditorActions::DuplicateSelection(Context);
+	}
+
+	// 선택 대상 편집 (뷰포트/계층 창에 포커스가 있을 때만 — 콘텐츠 브라우저 등은 자체 Delete/복사를 쓴다).
+	// ImGui 키보드 내비게이션이 켜져 있어 창 포커스 중에는 WantCaptureKeyboard가 항상 참이므로 창 포커스로 판정한다
+	if (!ViewportPanel.IsFocused() && !HierarchyPanel.IsFocused())
+	{
+		return;
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_C))
+	{
+		FEditorActions::CopySelection(Context);
+	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_V))
+	{
+		FEditorActions::PasteClipboard(Context);
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+	{
+		FEditorActions::DeleteSelection(Context);
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_End, false))
+	{
+		FEditorActions::SnapSelectionToFloor(Context);
 	}
 }
 
@@ -976,13 +994,25 @@ void FEditorApplication::DrawEditMenu()
 	}
 	ImGui::Separator();
 	const bool bHasSelection = !Context.Selection.IsEmpty();
-	if (ImGui::MenuItem("복제", "Ctrl+D", false, bHasSelection))
+	if (ImGui::MenuItem("복사", "Ctrl+C", false, bHasSelection))
+	{
+		FEditorActions::CopySelection(Context);
+	}
+	if (ImGui::MenuItem("붙여넣기", "Ctrl+V", false, !Context.EntityClipboard.empty()))
+	{
+		FEditorActions::PasteClipboard(Context);
+	}
+	if (ImGui::MenuItem("복제", "Ctrl+D / Alt+드래그", false, bHasSelection))
 	{
 		FEditorActions::DuplicateSelection(Context);
 	}
 	if (ImGui::MenuItem("삭제", "Del", false, bHasSelection))
 	{
 		FEditorActions::DeleteSelection(Context);
+	}
+	if (ImGui::MenuItem("바닥에 붙이기", "End", false, bHasSelection))
+	{
+		FEditorActions::SnapSelectionToFloor(Context);
 	}
 	if (ImGui::MenuItem("선택 항목 포커스", "F", false, bHasSelection))
 	{

@@ -1,9 +1,11 @@
 #include "Editor/SceneEditOps.h"
 
+#include "Core/Math/Box.h"
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneCloner.h"
+#include "Scene/SceneSerializer.h"
 
 #include <charconv>
 #include <cstring>
@@ -178,28 +180,101 @@ std::vector<FEntity> FSceneEditOps::GetTopLevel(const FScene& Scene, const std::
 	return Result;
 }
 
+namespace
+{
+	// 복제/붙여넣기 결과 루트 이름에 번호를 붙여 씬에서 겹치지 않게 한다
+	void MakeRootNameUnique(FScene& Scene, FEntity Root)
+	{
+		FNameComponent* Name = Scene.GetRegistry().TryGet<FNameComponent>(Root);
+		if (Name == nullptr)
+		{
+			return;
+		}
+		const auto IsUsed = [&Scene, Root](const std::string& Candidate) {
+			bool bUsed = false;
+			Scene.GetRegistry().View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Other) {
+				bUsed = bUsed || (Entity != Root && Other.Name == Candidate);
+			});
+			return bUsed;
+		};
+		if (IsUsed(Name->Name))
+		{
+			Name->Name = FSceneEditOps::MakeUniqueName(Name->Name, IsUsed);
+		}
+	}
+} // namespace
+
 std::vector<FEntity> FSceneEditOps::Duplicate(FScene& Scene, const std::vector<FEntity>& Entities)
 {
-	const auto IsUsed = [&Scene](const std::string& Candidate) {
-		bool bUsed = false;
-		Scene.GetRegistry().View<FNameComponent>().Each([&](FEntity, FNameComponent& Name) {
-			bUsed = bUsed || Name.Name == Candidate;
-		});
-		return bUsed;
-	};
-
 	std::vector<FEntity> Clones;
 	for (FEntity Entity : GetTopLevel(Scene, Entities))
 	{
 		const FEntity Clone = CloneSubtree(Scene, Entity, Scene, Scene.GetParent(Entity));
-		if (FNameComponent* Name = Scene.GetRegistry().TryGet<FNameComponent>(Clone))
-		{
-			Name->Name = MakeUniqueName(Name->Name, IsUsed);
-		}
+		MakeRootNameUnique(Scene, Clone);
 		Clones.push_back(Clone);
 	}
 	Scene.UpdateTransforms();
 	return Clones;
+}
+
+std::string FSceneEditOps::Copy(FScene& Scene, const std::vector<FEntity>& Entities)
+{
+	const std::vector<FEntity> TopLevel = GetTopLevel(Scene, Entities);
+	if (TopLevel.empty())
+	{
+		return {};
+	}
+	// 임시 씬에 루트로 복제하고 월드 트랜스폼을 로컬 값으로 굳힌다 (붙여넣으면 원래 보이던 자리에 놓인다)
+	FScene Clipboard;
+	for (FEntity Entity : TopLevel)
+	{
+		const FEntity Clone = CloneSubtree(Scene, Entity, Clipboard, NullEntity);
+		if (Clone.IsValid())
+		{
+			FTransformComponent& Transform = Clipboard.GetTransform(Clone);
+			Scene.GetTransform(Entity).WorldMatrix.Decompose(Transform.Position, Transform.Rotation, Transform.Scale);
+		}
+	}
+	return FSceneSerializer::ToJsonString(Clipboard);
+}
+
+std::vector<FEntity> FSceneEditOps::Paste(FScene& Scene, const std::string& Clipboard)
+{
+	std::vector<FEntity> Roots;
+	FScene               Source;
+	if (Clipboard.empty() || !FSceneSerializer::FromJsonString(Source, Clipboard))
+	{
+		return Roots;
+	}
+	for (FEntity Entity : Source.GetRootEntities())
+	{
+		const FEntity Clone = CloneSubtree(Source, Entity, Scene, NullEntity);
+		MakeRootNameUnique(Scene, Clone);
+		Roots.push_back(Clone);
+	}
+	Scene.UpdateTransforms();
+	return Roots;
+}
+
+bool FSceneEditOps::FindFloorHeight(const FBox& Bounds, const std::vector<FBox>& Surfaces, float& OutHeight)
+{
+	const float Limit = Bounds.GetCenter().Z;
+	bool        bFound = false;
+	for (const FBox& Surface : Surfaces)
+	{
+		const bool bOverlapsXY = Surface.Min.X <= Bounds.Max.X && Surface.Max.X >= Bounds.Min.X && Surface.Min.Y <= Bounds.Max.Y &&
+		                         Surface.Max.Y >= Bounds.Min.Y;
+		if (!Surface.IsValid() || !bOverlapsXY || Surface.Max.Z > Limit)
+		{
+			continue;
+		}
+		if (!bFound || Surface.Max.Z > OutHeight)
+		{
+			OutHeight = Surface.Max.Z;
+			bFound    = true;
+		}
+	}
+	return bFound;
 }
 
 void FSceneEditOps::Delete(FScene& Scene, const std::vector<FEntity>& Entities)

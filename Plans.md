@@ -255,6 +255,17 @@
 - [x] 기존 형식 변환(버전 없는 v1 → 이미터 1개 + 대응 모듈, 끝 크기/색은 곡선 비율로) + 테스트(`ParticleTests` 9개) + 검증(편집 창 스크린샷, 저장 안 함 닫기, 플레이 모드, 썸네일 — 로그 오류 0)
 - [ ] 후속(범위 밖): 나이아가라 .uasset 직접 변환, 사용자 스크립트 모듈, 이벤트, 파일 메시 렌더러, GPU 빈칸 목록/간접 그리기/정렬
 
+## 에디터 단축키 강화 (2026-09-30, 사용자 요청: 언리얼식)
+
+**DoD**: 뷰포트/계층에 포커스가 있을 때 Alt+기즈모 드래그 복제, End 바닥에 붙이기, Ctrl+C/V 복사·붙여넣기, Delete 삭제가 동작하고 모두 Ctrl+Z 한 단계로 되돌려진다.
+
+- [x] `FSceneEditOps::Copy/Paste`(씬 JSON, 월드 위치 유지 루트 붙여넣기) + `FindFloorHeight`(경계 상자 기준) + 테스트
+- [x] `FEditorActions::CopySelection/PasteClipboard/SnapSelectionToFloor`, 클립보드는 `FEditorContext::EntityClipboard`(씬 전환에도 유지)
+- [x] Alt+드래그: 기즈모 조작 시작 프레임에 선택 복제 → 복제본 조작 (복제+이동이 Undo 한 단계)
+- [x] Delete를 `HandleShortcuts`로 이동 (키보드 내비게이션 때문에 `WantCaptureKeyboard`가 항상 참이라 동작하지 않던 문제), 뷰포트/계층 창 포커스로 판정
+- [x] 계층 우클릭 메뉴·편집 메뉴에 복사/붙여넣기/바닥에 붙이기
+- [x] 실행 검증 (사용자 확인)
+
 ## Phase 13~16 진행 순서 (2026-09-30, 사용자 결정 — 13·14 완료, 15·16은 나중에)
 
 Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게임 UI 순서. Phase 12와의 선후는 논의되지 않음 — 착수 시 확정.

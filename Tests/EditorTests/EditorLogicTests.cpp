@@ -1,3 +1,4 @@
+#include "Core/Math/Box.h"
 #include "Core/Testing/TestFramework.h"
 #include "Editor/AssetEditors/OrbitCamera.h"
 #include "Editor/EditorCameraState.h"
@@ -214,6 +215,70 @@ E_TEST(SceneEditOps_DuplicateKeepsHierarchyAndComponents)
 	// 원본 계층은 그대로
 	E_EXPECT_TRUE(Scene.GetParent(Child) == Item);
 	E_EXPECT_EQ(Scene.GetChildren(Item).size(), static_cast<size_t>(1));
+}
+
+E_TEST(SceneEditOps_CopyPasteKeepsWorldTransformAndHierarchy)
+{
+	FScene        Scene;
+	const FEntity Parent = Scene.CreateEntity("Parent");
+	const FEntity Item   = Scene.CreateEntity("Item");
+	const FEntity Child  = Scene.CreateEntity("Child");
+	Scene.SetParent(Item, Parent);
+	Scene.SetParent(Child, Item);
+	Scene.GetTransform(Parent).Position = FVector3(0.0f, 0.0f, 50.0f);
+	Scene.GetTransform(Item).Position   = FVector3(100.0f, 0.0f, 0.0f);
+	Scene.GetTransform(Child).Position  = FVector3(0.0f, 10.0f, 0.0f);
+	Scene.GetRegistry().Emplace<FStaticMeshComponent>(Child).MeshAsset = "primitive:cube";
+	Scene.UpdateTransforms();
+
+	// 자식이 함께 선택돼도 최상위만 복사된다
+	const std::string Clipboard = FSceneEditOps::Copy(Scene, { Child, Item });
+	E_EXPECT_FALSE(Clipboard.empty());
+
+	const std::vector<FEntity> Pasted = FSceneEditOps::Paste(Scene, Clipboard);
+	E_EXPECT_EQ(Pasted.size(), static_cast<size_t>(1));
+	const FEntity Root = Pasted[0];
+	// 루트에 붙고 원래 월드 위치를 유지하며 이름은 겹치지 않는다
+	E_EXPECT_FALSE(Scene.GetParent(Root).IsValid());
+	E_EXPECT_TRUE(NameOf(Scene, Root) == "Item1");
+	E_EXPECT_EQUALS(Scene.GetTransform(Root).GetWorldPosition(), FVector3(100.0f, 0.0f, 50.0f), Tol);
+
+	const std::vector<FEntity>& Children = Scene.GetChildren(Root);
+	E_EXPECT_EQ(Children.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(NameOf(Scene, Children[0]) == "Child");
+	E_EXPECT_EQUALS(Scene.GetTransform(Children[0]).GetWorldPosition(), FVector3(100.0f, 10.0f, 50.0f), Tol);
+	const FStaticMeshComponent* Mesh = Scene.GetRegistry().TryGet<FStaticMeshComponent>(Children[0]);
+	E_EXPECT_TRUE(Mesh != nullptr && Mesh->MeshAsset == "primitive:cube");
+
+	// 다시 붙여넣으면 번호가 올라간다. 형식이 틀린 문자열은 무시
+	const std::vector<FEntity> Again = FSceneEditOps::Paste(Scene, Clipboard);
+	E_EXPECT_EQ(Again.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(NameOf(Scene, Again[0]) == "Item2");
+	E_EXPECT_TRUE(FSceneEditOps::Paste(Scene, "not json").empty());
+	E_EXPECT_TRUE(FSceneEditOps::Copy(Scene, {}).empty());
+}
+
+E_TEST(SceneEditOps_FindFloorHeight)
+{
+	const FBox              Object(FVector3(-10.0f, -10.0f, 200.0f), FVector3(10.0f, 10.0f, 220.0f));
+	const std::vector<FBox> Surfaces = {
+		FBox(FVector3(-1000.0f, -1000.0f, -10.0f), FVector3(1000.0f, 1000.0f, 0.0f)), // 바닥
+		FBox(FVector3(0.0f, 0.0f, 0.0f), FVector3(50.0f, 50.0f, 100.0f)),             // 일부만 겹치는 받침대
+		FBox(FVector3(500.0f, 500.0f, 0.0f), FVector3(600.0f, 600.0f, 150.0f)),       // XY가 겹치지 않음
+		FBox(FVector3(-50.0f, -50.0f, 300.0f), FVector3(50.0f, 50.0f, 310.0f)),       // 위에 있는 천장
+	};
+	float Height = 0.0f;
+	E_EXPECT_TRUE(FSceneEditOps::FindFloorHeight(Object, Surfaces, Height));
+	E_EXPECT_NEAR(Height, 100.0f, Tol);
+
+	// 바닥에 반쯤 묻힌 물체는 그 바닥 윗면으로 (윗면이 물체 중심보다 낮으면 후보)
+	const FBox Sunk(FVector3(-10.0f, -10.0f, -5.0f), FVector3(-5.0f, -5.0f, 15.0f));
+	E_EXPECT_TRUE(FSceneEditOps::FindFloorHeight(Sunk, Surfaces, Height));
+	E_EXPECT_NEAR(Height, 0.0f, Tol);
+
+	// 아래에 아무것도 없으면 실패
+	const FBox Away(FVector3(5000.0f, 5000.0f, 10.0f), FVector3(5010.0f, 5010.0f, 20.0f));
+	E_EXPECT_FALSE(FSceneEditOps::FindFloorHeight(Away, Surfaces, Height));
 }
 
 E_TEST(SceneEditOps_DeleteTopLevel)

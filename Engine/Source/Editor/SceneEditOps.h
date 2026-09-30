@@ -8,6 +8,7 @@
 #include <vector>
 
 class FScene;
+struct FBox;
 
 // 에디터 씬 편집 연산 (ImGui/GPU 비의존, 단위 테스트 대상)
 struct FSceneEditOps
@@ -29,6 +30,17 @@ struct FSceneEditOps
 
 	// 최상위 엔티티들을 (자식 포함) 삭제
 	static void Delete(FScene& Scene, const std::vector<FEntity>& Entities);
+
+	// 복사(Ctrl+C): 최상위 엔티티들(자식 포함)을 월드 트랜스폼을 로컬 값으로 가진 루트 엔티티로 만든 씬 JSON 문자열.
+	// 모델 하위 노드 등 저장하지 않는 엔티티는 빠지고 붙여넣은 뒤 에셋 해석으로 다시 생긴다. 선택이 비면 빈 문자열
+	static std::string Copy(FScene& Scene, const std::vector<FEntity>& Entities);
+
+	// 붙여넣기(Ctrl+V): Copy 결과를 Scene 루트에 만들고 이름에 번호를 붙인다. 반환: 새 루트들 (복사 순서). 형식이 틀리면 빈 목록
+	static std::vector<FEntity> Paste(FScene& Scene, const std::string& Clipboard);
+
+	// 바닥 붙이기(End): Surfaces 중 Bounds와 XY가 겹치고 윗면이 Bounds 중심 높이 이하인 것 가운데 가장 높은 윗면.
+	// 없으면 false (바닥에 반쯤 묻힌 물체는 그 바닥 위로 올라온다)
+	static bool FindFloorHeight(const FBox& Bounds, const std::vector<FBox>& Surfaces, float& OutHeight);
 
 	// "Cube" → "Cube1", "Cube1" → "Cube2", "Rock_07" → "Rock_08" 처럼 끝 번호를 올려 IsUsed가 false인 이름을 찾는다
 	static std::string MakeUniqueName(std::string_view Name, const std::function<bool(const std::string&)>& IsUsed);

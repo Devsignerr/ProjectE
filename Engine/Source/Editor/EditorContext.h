@@ -39,6 +39,7 @@ struct FEditorContext
 	bool bPaused  = false;
 
 	std::filesystem::path ContentDirectory;
+	std::string           EntityClipboard; // 복사한 엔티티 (FSceneEditOps::Copy 형식). 씬을 바꿔도 유지
 	FMeshHandle           DefaultCubeMesh; // "큐브 추가" 등에 사용 (MeshAsset "primitive:cube")
 
 	// 패널 → 애플리케이션 요청 (씬 파일 열기 등)

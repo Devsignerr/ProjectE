@@ -16,6 +16,15 @@ struct FEditorActions
 	// 선택 엔티티(최상위, 자식 포함)를 삭제하고 선택을 비운다 (Delete)
 	static void DeleteSelection(FEditorContext& Context);
 
+	// 선택 엔티티(최상위, 자식 포함)를 에디터 클립보드에 복사한다 (Ctrl+C)
+	static void CopySelection(FEditorContext& Context);
+
+	// 클립보드 엔티티를 씬 루트에 (복사 당시 월드 위치로) 붙여넣고 선택한다 (Ctrl+V)
+	static void PasteClipboard(FEditorContext& Context);
+
+	// 선택 엔티티(최상위)를 각자 아래의 가장 가까운 메시 윗면에 내려놓는다 (End, 언리얼과 동일). 경계 상자 기준
+	static void SnapSelectionToFloor(FEditorContext& Context);
+
 	// 파괴된 엔티티를 선택에서 뺀다
 	static void PruneSelection(FEditorContext& Context);
 

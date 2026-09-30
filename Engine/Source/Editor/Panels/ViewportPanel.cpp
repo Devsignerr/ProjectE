@@ -77,9 +77,11 @@ void FViewportPanel::PrepareFrame(FEditorContext& Context)
 
 void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 {
-	bHovered    = false;
-	bUsingGizmo = false;
-	bGizmoOver  = false;
+	bWasUsingGizmo = bUsingGizmo;
+	bHovered       = false;
+	bUsingGizmo    = false;
+	bGizmoOver     = false;
+	bFocused       = false;
 	if (!bOpen)
 	{
 		return;
@@ -89,6 +91,7 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 	const bool bVisible = ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_CAMERA, "뷰포트", "Viewport").c_str(), &bOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 	ImGui::PopStyleVar();
 
+	bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	if (bVisible)
 	{
 		const ImVec2 Avail = ImGui::GetContentRegionAvail();
@@ -305,8 +308,8 @@ void FViewportPanel::DrawToolbar()
 
 void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize)
 {
-	FScene&       Scene  = *Context.Scene;
-	const FEntity Entity = Context.SelectedEntity;
+	FScene& Scene  = *Context.Scene;
+	FEntity Entity = Context.SelectedEntity;
 	if (!Scene.GetRegistry().IsValid(Entity))
 	{
 		return;
@@ -343,6 +346,19 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 	const bool bManipulated = ImGuizmo::Manipulate(&View.M[0][0], &Projection.M[0][0], Operation, Mode, &World.M[0][0], nullptr, SnapPointer);
 	bUsingGizmo             = ImGuizmo::IsUsing();
 	bGizmoOver              = ImGuizmo::IsOver();
+
+	// Alt+드래그 (언리얼과 동일): 조작을 시작하는 순간 선택을 복제하고 복제본을 움직인다. 원본은 제자리에 남는다.
+	// 복제본의 월드 행렬이 원본과 같으므로 기즈모 조작은 끊기지 않고, 복제+이동이 Undo 한 단계로 합쳐진다
+	if (bUsingGizmo && !bWasUsingGizmo && ImGui::GetIO().KeyAlt)
+	{
+		FEditorActions::DuplicateSelection(Context);
+		Entity    = Context.SelectedEntity;
+		Transform = Scene.GetRegistry().TryGet<FTransformComponent>(Entity);
+		if (Transform == nullptr)
+		{
+			return;
+		}
+	}
 
 	if (bManipulated)
 	{

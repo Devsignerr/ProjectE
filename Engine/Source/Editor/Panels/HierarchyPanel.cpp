@@ -37,8 +37,10 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	bSelectedFromThisPanel = false;
 
 	VisibleOrder.clear();
+	bFocused = false;
 	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_LIST, "계층", "Hierarchy").c_str(), &bOpen))
 	{
+		bFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 		// 루트 엔티티 목록 (순회 중 구조 변경을 피하기 위해 먼저 수집)
 		std::vector<FEntity> Roots;
 		Registry.View<FHierarchyComponent>().Each([&](FEntity Entity, FHierarchyComponent& Hierarchy) {
@@ -118,6 +120,16 @@ void FHierarchyPanel::Draw(FEditorContext& Context)
 	{
 		FEditorActions::DuplicateSelection(Context);
 		bPendingDuplicate = false;
+	}
+	if (bPendingCopy)
+	{
+		FEditorActions::CopySelection(Context);
+		bPendingCopy = false;
+	}
+	if (bPendingPaste)
+	{
+		FEditorActions::PasteClipboard(Context);
+		bPendingPaste = false;
 	}
 }
 
@@ -311,9 +323,25 @@ void FHierarchyPanel::DrawContextMenu(FEditorContext& Context, FEntity Entity)
 		Context.Select(Created);
 		Context.MarkEdited("큐브 추가");
 	}
+	if (!Entity.IsValid())
+	{
+		ImGui::Separator();
+		if (ImGui::MenuItem("붙여넣기", "Ctrl+V", false, !Context.EntityClipboard.empty()))
+		{
+			bPendingPaste = true;
+		}
+	}
 	if (Entity.IsValid())
 	{
 		ImGui::Separator();
+		if (ImGui::MenuItem("복사", "Ctrl+C"))
+		{
+			bPendingCopy = true;
+		}
+		if (ImGui::MenuItem("붙여넣기", "Ctrl+V", false, !Context.EntityClipboard.empty()))
+		{
+			bPendingPaste = true;
+		}
 		if (ImGui::MenuItem("복제", "Ctrl+D"))
 		{
 			bPendingDuplicate = true;

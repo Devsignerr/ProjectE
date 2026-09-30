@@ -2,7 +2,9 @@
 
 #include "Core/Log.h"
 #include "Editor/EditorContext.h"
+#include "Renderer/SceneAssetResolver.h"
 #include "Renderer/SceneCamera.h"
+#include "Scene/SceneSerializer.h"
 #include "World/GameWorld.h"
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
@@ -13,7 +15,7 @@ void FPlayMode::Init(FScene& InEditScene, FGameWorld& InWorld)
 	World     = &InWorld;
 }
 
-void FPlayMode::Play(FEditorContext& Context)
+void FPlayMode::Play(FEditorContext& Context, const FPlayOptions& Options)
 {
 	if (IsActive())
 	{
@@ -21,7 +23,25 @@ void FPlayMode::Play(FEditorContext& Context)
 	}
 
 	EditSelection = Context.SelectedEntity;
-	FSceneCloner::Clone(*EditScene, PlayScene, &EntityMap);
+	if (Options.SceneJson != nullptr)
+	{
+		// 네트워크 플레이: 다른 프로세스와 같은 로드 경로 (복제 대신 JSON) → 에셋 핸들 해석
+		EntityMap.clear();
+		if (!FSceneSerializer::FromJsonString(PlayScene, *Options.SceneJson))
+		{
+			E_LOG(LogEditor, Error, "플레이 씬을 만들지 못했습니다 (씬 JSON 오류)");
+			PlayScene.Clear();
+			return;
+		}
+		if (Context.Resources != nullptr)
+		{
+			FSceneAssetResolver::Resolve(PlayScene, *Context.Resources, Context.ContentDirectory);
+		}
+	}
+	else
+	{
+		FSceneCloner::Clone(*EditScene, PlayScene, &EntityMap);
+	}
 	PlayScene.UpdateTransforms();
 
 	Context.Scene = &PlayScene;
@@ -32,7 +52,11 @@ void FPlayMode::Play(FEditorContext& Context)
 	bStepRequested = false;
 	SyncContextFlags(Context);
 
-	World->BeginPlay(PlayScene);
+	if (Options.BeforeBeginPlay)
+	{
+		Options.BeforeBeginPlay(PlayScene);
+	}
+	World->BeginPlay(PlayScene, Options.Mode);
 	E_LOG(LogEditor, Display, "플레이 시작 (엔티티 {}개)", PlayScene.GetRegistry().GetAliveCount());
 }
 

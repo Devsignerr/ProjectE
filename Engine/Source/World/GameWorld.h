@@ -83,7 +83,8 @@ public:
 	// FNetDriver::OnGameMessage에서 받은 월드 메시지(RPC, 입력). 처리했으면 true (복제 메시지는 복제 객체가 먼저 받는다)
 	bool HandleNetMessage(FNetConnectionId Connection, const std::vector<uint8>& Message);
 
-	// 서버: 플레이어 입장/퇴장 → 스크립트 OnPlayerJoined(playerId, pawn)/OnPlayerLeft(playerId) + 게임 모듈
+	// 서버: 플레이어 입장/퇴장 → 스크립트 OnPlayerJoined(playerId, pawn)/OnPlayerLeft(playerId) + 게임 모듈.
+	// 이미 돌고 있는 스크립트만 받는다 (방금 생성된 폰의 스크립트는 다음 게임플레이 틱에 OnStart)
 	void OnPlayerJoined(uint32 PlayerId, FEntity Pawn);
 	void OnPlayerLeft(uint32 PlayerId);
 

@@ -5,6 +5,7 @@
 #include "AI/BehaviorTree/BehaviorTreeNodeRegistry.h"
 #include "AI/LuaNodes.h"
 #include "Core/Reflection/TypeInfo.h"
+#include "Scene/GameModuleHost.h"
 
 E_DEFINE_LOG_CATEGORY(LogAI, Log)
 
@@ -43,4 +44,13 @@ void RegisterAITypes()
 
 	RegisterAITasks(FBehaviorTreeNodeRegistry::Get());
 	RegisterLuaBehaviorTreeNodes(FBehaviorTreeNodeRegistry::Get());
+
+	// 게임 모듈이 OnLoad에서 등록한 C++ 노드는 언로드 때 함께 해제한다 (게임 모듈은 플레이 중에 언로드되지 않는다 — 트리는 EndPlay에서 이미 파기됨)
+	FGameModuleHost::AddUnloadCleanup([](const std::string& Owner) {
+		const int32 Removed = FBehaviorTreeNodeRegistry::Get().UnregisterOwner(Owner);
+		if (Removed > 0)
+		{
+			E_LOG(LogAI, Display, "게임 모듈 {}의 비헤이비어 트리 노드 {}개 해제", Owner, Removed);
+		}
+	});
 }

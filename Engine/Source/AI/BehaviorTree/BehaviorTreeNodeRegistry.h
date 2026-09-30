@@ -29,7 +29,8 @@ struct FBTNodeInfo
 	EBTNodeCategory           Category = EBTNodeCategory::Task;
 	std::vector<FBTParamDesc> Params;
 	FBTNodeFactory            Factory;
-	std::string               Owner;       // 등록 주체 태그 ("Engine", 게임 모듈 이름 등). UnregisterOwner로 일괄 해제
+	std::string               Owner;       // 등록 주체 태그 ("Engine", 게임 모듈 이름 등). UnregisterOwner로 일괄 해제.
+	                                       // 비우면 FTypeRegistry의 현재 등록 소유자(게임 모듈 OnLoad 중이면 모듈 이름, 아니면 "Engine")
 
 	const FBTParamDesc* FindParam(std::string_view ParamName) const;
 };

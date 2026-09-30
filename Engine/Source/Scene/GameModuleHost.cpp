@@ -7,12 +7,26 @@
 #include "Core/StringConv.h"
 #include "Scene/Scene.h"
 
+#include <vector>
+
 E_DECLARE_LOG_CATEGORY(LogScene)
 
 namespace
 {
 	using FGetVersionFunc = uint32 (*)();
 	using FCreateFunc     = IGameModule* (*)();
+
+	// 엔진 DLL 안의 함수 지역 static (바이너리마다 따로 생기지 않도록 .cpp에 둔다)
+	std::vector<FGameModuleHost::FOwnerCleanup>& GetUnloadCleanups()
+	{
+		static std::vector<FGameModuleHost::FOwnerCleanup> Cleanups;
+		return Cleanups;
+	}
+}
+
+void FGameModuleHost::AddUnloadCleanup(FOwnerCleanup Cleanup)
+{
+	GetUnloadCleanups().push_back(std::move(Cleanup));
 }
 
 FGameModuleHost::~FGameModuleHost()
@@ -88,6 +102,10 @@ void FGameModuleHost::Unload()
 	}
 	Module->OnUnload();
 	const size_t Removed = FTypeRegistry::Get().RemoveTypesByOwner(Name);
+	for (const FOwnerCleanup& Cleanup : GetUnloadCleanups())
+	{
+		Cleanup(Name);
+	}
 	E_LOG(LogScene, Display, "게임 모듈 언로드: {} (타입 {}개 제거)", Name, Removed);
 	Module   = nullptr;
 	Library  = nullptr; // DLL은 프로세스 종료까지 유지 (클래스 주석 참고)

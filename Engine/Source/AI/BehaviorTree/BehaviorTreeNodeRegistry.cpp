@@ -2,6 +2,7 @@
 
 #include "AI/AIModule.h"
 #include "AI/BehaviorTree/BuiltinNodes.h"
+#include "Core/Reflection/TypeInfo.h"
 
 const FBTParamDesc* FBTNodeInfo::FindParam(std::string_view ParamName) const
 {
@@ -29,6 +30,15 @@ FBehaviorTreeNodeRegistry::FBehaviorTreeNodeRegistry()
 
 bool FBehaviorTreeNodeRegistry::Register(FBTNodeInfo Info)
 {
+	// 소유자를 비우면 리플렉션의 현재 등록 소유자를 쓴다 (게임 모듈 OnLoad 중이면 모듈 이름 → 언로드 때 함께 해제)
+	if (Info.Owner.empty())
+	{
+		Info.Owner = FTypeRegistry::Get().GetRegistrationOwner();
+	}
+	if (Info.Owner.empty())
+	{
+		Info.Owner = EngineOwner;
+	}
 	if (Info.Name.empty() || !Info.Factory)
 	{
 		E_LOG(LogAI, Error, "비헤이비어 트리 노드 등록 실패: 이름 또는 팩토리가 비어 있습니다 ({})", Info.Name);

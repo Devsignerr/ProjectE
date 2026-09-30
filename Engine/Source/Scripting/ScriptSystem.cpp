@@ -30,6 +30,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	PlayRuntime->SetNetHooks(&NetHooks);
 	PlayRuntime->SetAIHooks(&AIHooks);
 	PlayRuntime->SetAppHooks(&AppHooks);
+	PlayRuntime->SetSteamHooks(&SteamHooks);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;
@@ -157,6 +158,11 @@ void FScriptSystem::SetAIHooks(FScriptAIHooks Hooks)
 void FScriptSystem::SetAppHooks(FScriptAppHooks Hooks)
 {
 	AppHooks = std::move(Hooks);
+}
+
+void FScriptSystem::SetSteamHooks(FScriptSteamHooks Hooks)
+{
+	SteamHooks = std::move(Hooks);
 }
 
 FScriptObjectHandle FScriptSystem::CreateObject(const std::string& ScriptAsset, const std::string& PropertyOverrides, FEntity Entity)

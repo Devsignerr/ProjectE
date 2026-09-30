@@ -9,8 +9,9 @@ add_subdirectory(Source/Physics)
 add_subdirectory(Source/AI)
 add_subdirectory(Source/World)
 add_subdirectory(Source/Network)
+add_subdirectory(Source/Online)
 # ---- 엔진 런타임 DLL (ProjectEEngine.dll) 또는 정적 묶음
-set(E_ENGINE_RUNTIME_MODULES ECore ERHI EScene ERenderer EAudio EPhysics EAI EScripting EWorld ENetwork EUI)
+set(E_ENGINE_RUNTIME_MODULES ECore ERHI EScene ERenderer EAudio EPhysics EAI EScripting EWorld ENetwork EUI EOnline)
 if(E_ENGINE_SHARED)
     add_library(ProjectEEngine SHARED "${CMAKE_CURRENT_SOURCE_DIR}/EngineDll.cpp")
     target_link_libraries(ProjectEEngine PUBLIC ${E_ENGINE_RUNTIME_MODULES}) # OBJECT 직접 링크 → 객체가 DLL에 들어간다
@@ -20,6 +21,12 @@ if(E_ENGINE_SHARED)
     # 쿠킹 셰이더만 배포한 패키지는 dxcompiler.dll 없이 실행 (FD3D12ShaderCompiler가 존재 확인 후 사용)
     target_link_libraries(ProjectEEngine PRIVATE delayimp)
     target_link_options(ProjectEEngine PRIVATE "/DELAYLOAD:dxcompiler.dll")
+    # Steamworks(선택): steam_api64.dll을 실행 파일 폴더로 (패키징도 여기서 가져간다)
+    if(E_STEAMWORKS_DLL)
+        add_custom_command(TARGET ProjectEEngine POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${E_STEAMWORKS_DLL}" "$<TARGET_FILE_DIR:ProjectEEngine>"
+            COMMENT "Steamworks 런타임 복사: steam_api64.dll")
+    endif()
 else()
     add_library(ProjectEEngine INTERFACE)
     target_link_libraries(ProjectEEngine INTERFACE ${E_ENGINE_RUNTIME_MODULES})

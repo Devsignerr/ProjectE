@@ -12,6 +12,7 @@ Intermediate/
 *.VC.db
 *.VC.opendb
 CMakeUserPresets.json
+CMakeLocal.cmake
 
 # 로그/임시
 *.log

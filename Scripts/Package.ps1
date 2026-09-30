@@ -94,6 +94,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "실행 파일 스탬프 실패" }
     Copy-Item (Join-Path $BinDir "ProjectEEngine.dll") $PackageDir
     if ($GameModule) { Copy-Item (Join-Path $BinDir "$GameModule.dll") $PackageDir }
+    # Steamworks (SDK를 지정해 빌드했으면 엔진 DLL이 steam_api64.dll을 가져온다)
+    $SteamDll = Join-Path $BinDir "steam_api64.dll"
+    if (Test-Path $SteamDll) {
+        Copy-Item $SteamDll $PackageDir
+        if (-not $Descriptor.SteamAppId) { Write-Host "주의: steam_api64.dll은 있지만 .eproject SteamAppId가 없어 Steam을 초기화하지 않습니다" -ForegroundColor Yellow }
+    }
 
     # VC++ 런타임 (app-local). 디버그 CRT는 재배포할 수 없으므로 Release만
     if ($Config -eq "Release") {

@@ -464,8 +464,9 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] `FFileSystem`(Core: pak → 디스크 조회, 키 = 마운트 루트 기준 소문자 경로, pak 항목 시각 = pak 파일 시각, 스레드 안전 읽기, 항목별 FNV-1a 해시 검사) + `FPakWriter`(`.epak` v1, 압축 없음 — BC 텍스처가 대부분이라 이득이 작고 의존성 추가 없이). 콘텐츠 읽기 통합: `ReadFileBytes`(쿠킹 모델/텍스처/.enav), 씬/머티리얼/파티클/프리팹/UI/BT/모델 사이드카 JSON, Lua, 글꼴, 이미지, 쿠킹 셰이더(+srchash), 에셋 캐시 신선도 판정, UI 에셋 캐시 시각, 오디오(miniaudio VFS). 디스크 직접 유지: 쓰기, Shaders.json/.eproject/Config(파일로 남김), glTF/FBX 원본 임포트(패키지에는 원본 없음). `FPaths`가 패키지일 때 프로젝트 폴더 `*.epak`을 패키지 루트 기준으로 마운트. `ProjectECook --make-pak`(키 정렬 → 같은 입력이면 같은 pak), Package.ps1 5단계(검사 후 `<Exe>/Content.epak` 생성, 원본 폴더 삭제, `-NoPak`). 테스트 `FileSystemTests` 2개(키 정규화, 마운트/읽기/대소문자/디스크 폴백/손상 감지/잘못된 파일). 확인: pak 93개 파일 32.1MB, 패키지 52.3MB — 기본/`Demo_UI`(글꼴·9-slice·Lua)/`Demo_AI`(.enav·.ebt)/`Demo_Audio`(사운드) 모두 디스크 Content 없이 정상, 경고·오류 0
 - 한계: 암호화 없음(내용을 숨기는 목적이 아님 — 필요하면 후속), 압축 없음, 패치용 추가 pak 우선순위 없음(먼저 마운트한 pak이 이긴다)
 
-3단계 — Steamworks (선택 모듈):
-- [ ] SDK 방식 결정 후 초기화/콜백/업적/오버레이 + Lua/게임 모듈 API
+3단계 — Steamworks (2026-10-01, 사용자 결정: ProjectSC의 SDK 1.53a 경로 사용, App ID = ProjectSC `SteamDevAppId` 2905830):
+- [x] Online 모듈(`EOnline`, 엔진 DLL) `FSteamSubsystem`: Init(App ID, 패키지 재실행 `SteamAPI_RestartAppIfNecessary`, 개발은 환경 변수 `SteamAppId`), RunCallbacks/Shutdown, 사용자 이름/SteamID/언어, 업적(1.53 `RequestCurrentStats` → 수신 전 요청은 대기열, `StoreStats`), 오버레이 열기/활성 상태(`GameOverlayActivated_t`). SDK 없이 빌드하면 같은 API의 빈 구현. CMake: `E_STEAMWORKS_SDK_DIR`(루트 `CMakeLocal.cmake` gitignore / 환경 변수), `ThirdParty::steamworks` IMPORTED, `steam_api64.dll` Bin 복사, Package.ps1 동봉. `.eproject "SteamAppId"`, 런타임이 렌더러 전에 Init. Lua `Steam` 테이블(`FScriptSteamHooks`, `FGameWorld::Init` 연결). 테스트 `Steam_DisabledWithoutInit`, Lua Steam 기본값. 확인: Steam 클라이언트가 꺼진 상태에서 경고 후 정상 실행(Verify 오류 0)
+- [ ] 실제 Steam 확인 (사용자): Steam 로그인 상태에서 런타임 실행 → 초기화 로그(사용자 이름), Shift+Tab 오버레이, 업적(Steamworks에 등록된 API 이름)
 
 4단계 — SteamPipe:
 - [ ] `Scripts/SteamUpload.ps1`: app/depot vdf 생성 + steamcmd 업로드(로그인은 사용자)

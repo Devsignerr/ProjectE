@@ -8,7 +8,8 @@
 // .eproject 파일 내용 (JSON)
 //   { "Name": "Sample", "EngineVersion": "0.1.0", "DefaultScene": "Scenes/Main.escene", "GameModule": "SampleGame",
 //     "PlayerPrefab": "Prefabs/Player.eprefab",
-//     "DisplayName": "샘플 게임", "Version": "1.0.0", "Company": "MyStudio", "ExecutableName": "SampleGame", "Icon": "Build/Icon.png" }
+//     "DisplayName": "샘플 게임", "Version": "1.0.0", "Company": "MyStudio", "ExecutableName": "SampleGame", "Icon": "Build/Icon.png",
+//     "SteamAppId": 480 }
 struct FProjectDescriptor
 {
 	static constexpr const wchar_t* Extension = L".eproject";
@@ -25,6 +26,7 @@ struct FProjectDescriptor
 	std::string Company;        // exe 회사 이름, 패키지 사용자 저장 폴더 상위 이름
 	std::string ExecutableName; // 패키지 exe 이름 (확장자 제외)
 	std::string Icon;           // 프로젝트 폴더 기준 .ico 또는 .png
+	uint32      SteamAppId = 0; // Steamworks App ID (0 = Steam 사용 안 함). 런타임만 초기화한다
 
 	const std::string& GetDisplayName() const { return DisplayName.empty() ? Name : DisplayName; }
 	const std::string& GetExecutableName() const { return ExecutableName.empty() ? Name : ExecutableName; }

@@ -49,6 +49,11 @@ add_compile_definitions(
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug>:ProgramDatabase>$<$<CONFIG:Release>:Embedded>")
 add_link_options($<$<CONFIG:Release>:/DEBUG> $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
 
+# PC별 로컬 설정 (gitignore): 예) set(E_STEAMWORKS_SDK_DIR "D:/SDK/steamworks_sdk_153a")
+if(EXISTS "${CMAKE_SOURCE_DIR}/CMakeLocal.cmake")
+    include("${CMAKE_SOURCE_DIR}/CMakeLocal.cmake")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 include(EngineTargets)
 include(ThirdParty)

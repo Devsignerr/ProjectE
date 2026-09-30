@@ -4,6 +4,7 @@
 #include "AI/BehaviorTree/BehaviorTreeInstance.h"
 #include "Core/Assert.h"
 #include "Network/ReplicationTypes.h"
+#include "Online/SteamSubsystem.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -142,6 +143,18 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 	Systems.Scripts->SetContentDirectory(Systems.ContentDirectory);
 	AI->SetContentDirectory(Systems.ContentDirectory);
 	ConnectScriptsAndAI();
+	// Lua Steam 테이블 → FSteamSubsystem (초기화하지 않은 앱에서는 모두 "사용 불가")
+	FSteamSubsystem& Steam = FSteamSubsystem::Get();
+	Systems.Scripts->SetSteamHooks({
+		[&Steam]() { return Steam.IsAvailable(); },
+		[&Steam]() { return Steam.GetPlayerName(); },
+		[&Steam]() { return Steam.GetGameLanguage(); },
+		[&Steam](const std::string& Name) { return Steam.UnlockAchievement(Name); },
+		[&Steam](const std::string& Name) { return Steam.IsAchievementUnlocked(Name); },
+		[&Steam](const std::string& Name) { return Steam.ClearAchievement(Name); },
+		[&Steam](const std::string& Dialog) { return Steam.ActivateOverlay(Dialog); },
+		[&Steam]() { return Steam.IsOverlayActive(); },
+	});
 
 	FPhysicsSystem* Physics = Systems.Physics;
 	if (Physics == nullptr)

@@ -7,6 +7,7 @@
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "Network/ReplicationTypes.h"
+#include "Online/SteamSubsystem.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
@@ -77,6 +78,17 @@ bool FRuntimeApplication::OnInit()
 	else
 	{
 		E_LOG(LogRuntime, Warning, "프로젝트가 없습니다 (--project <경로>). 자리표시 씬만 표시합니다");
+	}
+
+	// Steam (.eproject SteamAppId): 오버레이가 D3D 장치를 잡도록 렌더러보다 먼저. 패키지 게임은 Steam 밖에서 실행되면 Steam으로 다시 실행
+	// (자동 검증과 --no-steam-restart는 제외). 실패해도 Steam 없이 계속한다
+	if (FPaths::HasProject())
+	{
+		const bool bAllowRestart = FPaths::IsPackaged() && !IsAutomationRun() && !FCommandLine::FromProcess().HasFlag(L"--no-steam-restart");
+		if (FSteamSubsystem::Get().Init(FPaths::GetProjectDescriptor().SteamAppId, bAllowRestart) == FSteamSubsystem::EInitResult::RestartThroughSteam)
+		{
+			return false; // Steam이 게임을 다시 실행한다
+		}
 	}
 
 	FD3D12RHIDesc RhiDesc;
@@ -173,6 +185,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
 
+	FSteamSubsystem::Get().RunCallbacks();
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
 	if (Lan.IsHosting())
 	{
@@ -306,6 +319,7 @@ void FRuntimeApplication::OnShutdown()
 		Rhi->Shutdown();
 		Rhi.reset();
 	}
+	FSteamSubsystem::Get().Shutdown();
 	GameModule.Unload(); // 등록 타입 제거 (씬의 게임 컴포넌트는 앱 소멸 시 정리, DLL은 프로세스 종료까지 유지)
 }
 

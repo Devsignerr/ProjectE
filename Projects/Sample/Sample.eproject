@@ -7,5 +7,6 @@
   "DisplayName": "ProjectE Sample",
   "Version": "0.1.0",
   "Company": "ProjectE",
-  "Icon": "Icon.png"
+  "Icon": "Icon.png",
+  "SteamAppId": 2905830
 }

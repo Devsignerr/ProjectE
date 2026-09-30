@@ -107,6 +107,19 @@ struct FScriptAppHooks
 	std::function<void(bool)>                     SetVSync;
 };
 
+// 스크립트가 쓰는 Steam 기능 (Lua Steam 테이블). FGameWorld가 Online 모듈(FSteamSubsystem)과 연결한다 (비어 있으면 사용 불가)
+struct FScriptSteamHooks
+{
+	std::function<bool()>                         IsAvailable;
+	std::function<std::string()>                  GetPlayerName;
+	std::function<std::string()>                  GetLanguage;
+	std::function<bool(const std::string& Name)>  UnlockAchievement;
+	std::function<bool(const std::string& Name)>  IsAchievementUnlocked;
+	std::function<bool(const std::string& Name)>  ClearAchievement;
+	std::function<bool(const std::string& Dialog)> ActivateOverlay;
+	std::function<bool()>                         IsOverlayActive;
+};
+
 // 컴포넌트가 아닌 스크립트 객체 (Lua 비헤이비어 트리 노드 등): 플레이 세션 안에서만 유효한 핸들. 0 = 무효
 using FScriptObjectHandle = uint64;
 
@@ -158,6 +171,7 @@ public:
 	void SetNetHooks(FScriptNetHooks Hooks);
 	void SetAIHooks(FScriptAIHooks Hooks);
 	void SetAppHooks(FScriptAppHooks Hooks);
+	void SetSteamHooks(FScriptSteamHooks Hooks);
 
 	// ---- 스크립트 객체 (컴포넌트 없이 스크립트 클래스의 인스턴스를 만든다 — Lua 비헤이비어 트리 노드용)
 	// self.entity = Entity, self.Properties = 선언 기본값 + PropertyOverrides(JSON, FScriptComponent와 같은 형식).
@@ -192,6 +206,7 @@ private:
 	FScriptNetHooks              NetHooks;
 	FScriptAIHooks               AIHooks;
 	FScriptAppHooks              AppHooks;
+	FScriptSteamHooks            SteamHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)

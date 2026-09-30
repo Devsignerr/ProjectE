@@ -42,6 +42,7 @@ bool FProjectDescriptor::LoadFromFile(const std::filesystem::path& Path)
 	Company        = Json.value("Company", std::string());
 	ExecutableName = Json.value("ExecutableName", std::string());
 	Icon           = Json.value("Icon", std::string());
+	SteamAppId     = Json.value("SteamAppId", 0u);
 
 	if (Name.empty())
 	{
@@ -79,6 +80,10 @@ bool FProjectDescriptor::SaveToFile(const std::filesystem::path& Path) const
 		{
 			Json[Key] = *Value;
 		}
+	}
+	if (SteamAppId != 0)
+	{
+		Json["SteamAppId"] = SteamAppId;
 	}
 
 	std::ofstream File(Path, std::ios::binary | std::ios::trunc);

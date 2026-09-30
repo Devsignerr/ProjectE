@@ -22,13 +22,16 @@ void RegisterSceneTypes()
 		.AsComponent(false)
 		.Hide();
 
+	// 계층은 복제 생성 메시지(부모 NetId)로, 생성됨 표식은 편집 전용이라 복제하지 않는다
 	Registry.RegisterType<FHierarchyComponent>("HierarchyComponent", "계층")
 		.AsComponent(false)
-		.Hide();
+		.Hide()
+		.NoReplicate();
 
 	Registry.RegisterType<FTransientComponent>("TransientComponent", "생성됨")
 		.AsComponent(false)
-		.Hide();
+		.Hide()
+		.NoReplicate();
 
 	// WorldMatrix는 파생 값이므로 등록하지 않는다 (직렬화 제외)
 	Registry.RegisterType<FTransformComponent>("TransformComponent", "트랜스폼")
@@ -104,16 +107,19 @@ void RegisterSceneTypes()
 		.Property(&FParticleSystemComponent::Speed, "Speed", "속도").Range(0.0f, 10.0f, 0.01f)
 		.AsComponent();
 
-	// 프리팹: 인스턴스 루트 표식 + 엔티티 연결. 인스펙터는 전용 머리글로 보여 주고(목록에서 숨김), 연결 해제로만 없앤다
+	// 프리팹: 인스턴스 루트 표식 + 엔티티 연결. 인스펙터는 전용 머리글로 보여 주고(목록에서 숨김), 연결 해제로만 없앤다.
+	// 복제는 프리팹 생성 메시지(경로 + 링크 ID)로 클라이언트가 직접 만들므로 이 컴포넌트들은 보내지 않는다
 	Registry.RegisterType<FPrefabInstanceComponent>("PrefabInstanceComponent", "프리팹 인스턴스")
 		.Property(&FPrefabInstanceComponent::Asset, "Asset", "프리팹", PF_ReadOnly).AssetFilter(".eprefab")
 		.Property(&FPrefabInstanceComponent::Overrides, "Overrides", "오버라이드", PF_Hidden | PF_ReadOnly)
 		.AsComponent(false)
-		.Hide();
+		.Hide()
+		.NoReplicate();
 
 	Registry.RegisterType<FPrefabLinkComponent>("PrefabLinkComponent", "프리팹 연결")
 		.Property(&FPrefabLinkComponent::Id, "Id", "프리팹 안 ID", PF_ReadOnly)
 		.Property(&FPrefabLinkComponent::Root, "Root", "인스턴스 루트", PF_ReadOnly)
 		.AsComponent(false)
-		.Hide();
+		.Hide()
+		.NoReplicate();
 }

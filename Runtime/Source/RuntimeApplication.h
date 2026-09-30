@@ -4,6 +4,8 @@
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Network/NetDriver.h"
+#include "Network/ReplicationClient.h"
+#include "Network/ReplicationServer.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
 #include "Renderer/FlyCameraController.h"
@@ -51,4 +53,6 @@ private:
 	FPhysicsSystem       Physics; // 항상 시뮬레이션 (씬 로드 후 Begin)
 	FGameWorld           World;   // 게임 월드 갱신 순서 (위 시스템들을 비소유로 참조)
 	FNetDriver           Net;     // --host(리슨 서버) / --connect(클라이언트). 없으면 Standalone
+	FReplicationServer   ReplicationServer; // 리슨 서버: 복제 엔티티 → 클라이언트
+	FReplicationClient   ReplicationClient; // 클라이언트: 서버 상태 적용 (게임 로직은 돌리지 않는다)
 };

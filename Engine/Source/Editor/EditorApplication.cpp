@@ -2,6 +2,7 @@
 
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
+#include "Network/ReplicationTypes.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Reflection/TypeInfo.h"
@@ -75,6 +76,7 @@ bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
+	RegisterNetworkTypes();
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{

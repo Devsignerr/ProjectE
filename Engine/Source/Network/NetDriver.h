@@ -85,9 +85,16 @@ public:
 	uint32             GetLocalPlayerId() const { return LocalPlayerId; }
 	const std::string& GetFailureReason() const { return FailureReason; }
 
+	// 게임 메시지 보내기 (첫 바이트 = ENetMessageType::GameBase 이상). 서버: 입장한 플레이어에게, 클라이언트: 서버에게 (Connection 무시)
+	bool Send(FNetConnectionId Connection, const std::vector<uint8>& Message, ENetReliability Reliability);
+	void Broadcast(const std::vector<uint8>& Message, ENetReliability Reliability); // 서버: 입장한 모든 플레이어
+	bool SendToServer(const std::vector<uint8>& Message, ENetReliability Reliability);
+
 	// 서버 이벤트 (Update 안에서 불린다)
 	std::function<void(const FRemotePlayer&)>                     OnPlayerJoined;
 	std::function<void(const FRemotePlayer&, const std::string&)> OnPlayerLeft; // 두 번째 인자: 사유
+	// 게임 메시지 수신 (서버: 입장한 플레이어로부터, 클라이언트: 입장 후 서버로부터). Update 안에서 불린다
+	std::function<void(FNetConnectionId, const std::vector<uint8>&)> OnGameMessage;
 
 private:
 	struct FPendingConnection

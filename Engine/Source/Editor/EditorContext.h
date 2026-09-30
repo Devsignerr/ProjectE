@@ -13,6 +13,7 @@
 
 class FCamera;
 class FD3D12RHI;
+class FPlayInEditorNet;
 class FResourceManager;
 class FScene;
 class FSceneRenderer;
@@ -28,6 +29,7 @@ struct FEditorContext
 	FScene*           Scene     = nullptr;
 	FCamera*          Camera    = nullptr;
 	FScriptSystem*    Scripts   = nullptr; // 스크립트 Properties 선언 조회 (인스펙터)
+	FPlayInEditorNet* NetPlay   = nullptr; // 네트워크 플레이 설정/상태, LAN 세션 (네트워크 패널)
 
 	// 주 선택 (기즈모/인스펙터 대상). 읽기만 하고 변경은 Select* 함수로 한다 (Selection과 동기화)
 	FEntity SelectedEntity;

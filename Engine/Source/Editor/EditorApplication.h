@@ -10,12 +10,14 @@
 #include "Editor/ImGuiLayer.h"
 #include "Editor/ModelTemplateCache.h"
 #include "Editor/Panels/ContentBrowserPanel.h"
+#include "Editor/Panels/NetworkPanel.h"
 #include "Editor/Panels/PostProcessPanel.h"
 #include "Editor/Panels/ShadowPanel.h"
 #include "Editor/Panels/OutputLogPanel.h"
 #include "Editor/Panels/HierarchyPanel.h"
 #include "Editor/Panels/InspectorPanel.h"
 #include "Editor/Panels/ViewportPanel.h"
+#include "Editor/PlayInEditorNet.h"
 #include "Editor/PlayMode.h"
 #include "Editor/UndoHistory.h"
 #include "Physics/PhysicsSystem.h"
@@ -116,6 +118,7 @@ private:
 	FPostProcessPanel    PostProcessPanel;
 	FShadowPanel         ShadowPanel;
 	FOutputLogPanel      OutputLogPanel;
+	FNetworkPanel        NetworkPanel;
 	FAssetEditorManager  AssetEditors; // 머티리얼/메시/애니메이션/파티클 편집 창
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
@@ -139,6 +142,9 @@ private:
 
 	// 게임 월드 갱신 순서 (플레이 중 게임플레이 틱 + 항상 표시 틱). 위 시스템들을 비소유로 참조
 	FGameWorld World;
+
+	// 네트워크 플레이 (리슨/전용 서버 + 런타임 클라이언트 창). 설정은 네트워크 패널
+	FPlayInEditorNet NetPlay;
 
 	FFileWatcher                          ShaderWatcher;
 	std::string                           NotificationText;

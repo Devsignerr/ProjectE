@@ -40,6 +40,16 @@ protected:
 private:
 	void BuildPlaceholderScene();
 
+	// ---- 세션 (RuntimeSession.cpp): 씬 로드 + 넷 모드별 시작/종료, 스크립트 요청(Net.Host/Connect/Disconnect) 처리
+	void LoadScene(); // SceneAsset (없거나 실패하면 자리표시 씬)
+	void StartSession(FNetLaunchOptions Options);
+	void EndSession();
+	void HandleSessionRequest(const FNetSessionRequest& Request);
+	void StartListenServer(uint16 Port); // 이미 World가 Standalone으로 도는 상태에서
+	void UpdateWindowTitle();
+
+	std::string SceneAsset; // Content 기준 현재 씬
+
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;

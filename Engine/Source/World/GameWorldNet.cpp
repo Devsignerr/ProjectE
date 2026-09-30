@@ -1,6 +1,8 @@
 // FGameWorld의 네트워크 부분: 스크립트 네트워크 훅, RPC(스크립트/게임 모듈 공용), 입력 커맨드, 플레이어 이벤트
 #include "World/GameWorld.h"
 
+#include "Core/Assert.h"
+#include "Core/Paths.h"
 #include "Core/Serialization/BinaryArchive.h"
 #include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
@@ -98,7 +100,54 @@ void FGameWorld::InstallScriptNetHooks()
 	NetHooks.GetOwner          = [this](FEntity Entity) { return GetOwner(Entity); };
 	NetHooks.SendRpc           = [this](FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) { RouteRpc(Target, Kind, Name, Args); };
 	NetHooks.ResolveInput      = [this](FEntity Entity, const FInput* LocalInput) { return ResolveInput(Entity, LocalInput); };
+
+	// 세션 (로비)
+	NetHooks.FindSessions = [this]() { SessionSearch.StartSearch(FPaths::HasProject() ? FPaths::GetProjectName() : std::string(), LanDiscoveryPort); };
+	NetHooks.GetSessions  = [this]() {
+		std::vector<FScriptLanSession> Result;
+		for (const FLanSession& Session : SessionSearch.GetSessions())
+		{
+			Result.push_back({ Session.Name, Session.SceneAsset, Session.Address, Session.Players, Session.MaxPlayers });
+		}
+		return Result;
+	};
+	NetHooks.Host       = [this](int32 Port) { PendingSessionRequest = FNetSessionRequest{ FNetSessionRequest::EType::Host, {}, static_cast<uint16>(std::clamp(Port, 0, 65535)) }; };
+	NetHooks.Connect    = [this](const std::string& Address) { PendingSessionRequest = FNetSessionRequest{ FNetSessionRequest::EType::Connect, Address, 0 }; };
+	NetHooks.Disconnect = [this]() { PendingSessionRequest = FNetSessionRequest{ FNetSessionRequest::EType::Disconnect, {}, 0 }; };
+	NetHooks.GetState   = [this]() -> std::string {
+		if (Systems.Net == nullptr || Systems.Net->GetMode() == ENetMode::Standalone)
+		{
+			return "Standalone";
+		}
+		if (Systems.Net->IsServer())
+		{
+			return "Hosting";
+		}
+		switch (Systems.Net->GetClientState())
+		{
+		case FNetDriver::EClientState::Connecting: return "Connecting";
+		case FNetDriver::EClientState::Joined:     return "Connected";
+		case FNetDriver::EClientState::Failed:     return "Failed";
+		default:                                   return "Standalone";
+		}
+	};
+	NetHooks.GetFailureReason = [this]() { return Systems.Net != nullptr ? Systems.Net->GetFailureReason() : std::string(); };
 	Systems.Scripts->SetNetHooks(std::move(NetHooks));
+}
+
+std::optional<FNetSessionRequest> FGameWorld::ConsumeSessionRequest()
+{
+	std::optional<FNetSessionRequest> Request = std::move(PendingSessionRequest);
+	PendingSessionRequest.reset();
+	return Request;
+}
+
+void FGameWorld::SetNetMode(ENetMode InMode)
+{
+	// 스크립트 실행 필터가 바뀌는 전환(클라이언트 ↔ 서버)은 월드를 다시 시작해야 한다
+	E_CHECKF((Mode == ENetMode::Client) == (InMode == ENetMode::Client), "SetNetMode: 클라이언트 ↔ 서버 전환은 BeginPlay로 다시 시작하세요");
+	Mode = InMode;
+	InstallScriptNetHooks();
 }
 
 int32 FGameWorld::GetLocalPlayerId() const

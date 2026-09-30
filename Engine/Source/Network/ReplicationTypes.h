@@ -33,7 +33,8 @@ void RegisterNetworkTypes();
 
 namespace NetReplication
 {
-	// 씬에 있는 복제 엔티티에 정적 NetId를 매긴다 (로드 직후, 동적 생성 전에). 서버와 클라이언트가 같은 씬이면 같은 결과
+	// 씬에 있는 복제 엔티티에 정적 NetId를 매긴다 (로드 직후, 동적 생성 전에). 서버와 클라이언트가 같은 씬 파일을 로드했으면
+	// 같은 결과 (ReplicatedComponent가 추가된 순서 기준 — 엔티티 인덱스와 무관)
 	void AssignStaticNetIds(FScene& Scene);
 
 	uint32 GetNetId(const FScene& Scene, FEntity Entity); // 없으면 InvalidNetId

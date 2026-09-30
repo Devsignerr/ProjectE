@@ -49,6 +49,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	Mode  = InMode;
 	RemoteInputs.clear();
 	InputSequence = 0;
+	PendingSessionRequest.reset();
 	InstallScriptNetHooks();
 
 	const bool bClient = Mode == ENetMode::Client;
@@ -80,6 +81,7 @@ void FGameWorld::EndPlay()
 		return;
 	}
 	Systems.Scripts->EndPlay();
+	SessionSearch.Stop();
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
 		Systems.GameModule->EndPlay(*Scene);
@@ -101,6 +103,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	if (Mode == ENetMode::Client && Input != nullptr)
 	{
 		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다
+	}
+	if (SessionSearch.IsSearching())
+	{
+		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)

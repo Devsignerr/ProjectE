@@ -5,17 +5,11 @@
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
-#include "Network/NetTransport.h"
 #include "Network/ReplicationTypes.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
-#include "Scene/SceneSerializer.h"
-
-#include <chrono>
-#include <format>
-#include <thread>
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
 
@@ -87,36 +81,18 @@ bool FRuntimeApplication::OnInit()
 	}
 
 	// 씬: --scene <Content 기준 상대 경로>가 있으면 그것, 아니면 프로젝트 기본 씬. 없거나 실패하면 자리표시 씬
-	std::string SceneAsset = FPaths::HasProject() ? FPaths::GetProjectDescriptor().DefaultScene : std::string();
+	SceneAsset = FPaths::HasProject() ? FPaths::GetProjectDescriptor().DefaultScene : std::string();
 	if (const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene"); !SceneArg.empty())
 	{
 		SceneAsset = FStringConv::ToUtf8(SceneArg);
 	}
-	bool bSceneLoaded = false;
-	if (FPaths::HasProject() && !SceneAsset.empty())
-	{
-		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(SceneAsset);
-		if (FSceneSerializer::LoadFromFile(Scene, ScenePath))
-		{
-			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
-			bSceneLoaded = true;
-			E_LOG(LogRuntime, Display, "씬 로드: {}", SceneAsset);
-		}
-		else
-		{
-			E_LOG(LogRuntime, Warning, "씬을 열지 못해 자리표시 씬을 표시합니다: {}", SceneAsset);
-		}
-	}
-	if (!bSceneLoaded)
-	{
-		BuildPlaceholderScene();
-	}
+	LoadScene();
 
 	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 50.0f));
 
-	// 게임 시작: 게임 월드(스크립트 콘텐츠 경로·물리 훅 연결) → BeginPlay
+	// 게임 월드(스크립트 콘텐츠 경로·물리 훅 연결) → 세션 시작 (멀티플레이: --host / --connect / --join-lan, 없으면 Standalone)
 	World.Init({ &Scripts, &Physics, &GameModule, &Resources,
 	             FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory(), &Net });
 	Scripts.SetAudioHooks({
@@ -124,87 +100,7 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
-
-	// 멀티플레이: --host [--port N] = 리슨 서버, --connect ip:port = 클라이언트, 없으면 Standalone
-	FNetLaunchOptions     NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());
-	const FNetSessionInfo Session    = FNetSessionInfo::FromProject(SceneAsset);
-	if (NetOptions.bJoinLan)
-	{
-		// LAN에서 같은 프로젝트 세션을 찾아 첫 번째에 접속 (최대 2초, 0.5초마다 다시 질의)
-		for (int32 Attempt = 0; Attempt < 4 && Lan.GetSessions().empty(); ++Attempt)
-		{
-			Lan.StartSearch(Session.ProjectName);
-			for (int32 Wait = 0; Wait < 50 && Lan.GetSessions().empty(); ++Wait)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
-				Lan.Update();
-			}
-		}
-		if (!Lan.GetSessions().empty())
-		{
-			NetOptions.ConnectAddress = Lan.GetSessions().front().Address;
-			E_LOG(LogRuntime, Display, "LAN 세션 '{}' ({})에 접속합니다", Lan.GetSessions().front().Name, NetOptions.ConnectAddress);
-		}
-		else
-		{
-			E_LOG(LogRuntime, Warning, "LAN에서 세션을 찾지 못했습니다");
-		}
-		Lan.Stop();
-	}
-	if (NetOptions.Mode == ENetMode::Client && Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
-	{
-		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
-		ReplicationClient.Begin(Scene);
-		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
-			if (!ReplicationClient.HandleMessage(Message))
-			{
-				World.HandleNetMessage(Connection, Message); // 스크립트 RPC
-			}
-		};
-		World.BeginPlay(Scene, ENetMode::Client);
-	}
-	else
-	{
-		if (NetOptions.Mode == ENetMode::Client)
-		{
-			E_LOG(LogRuntime, Error, "서버 {}에 접속하지 못했습니다 (단독 실행으로 계속)", NetOptions.ConnectAddress);
-		}
-		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
-		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
-			const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
-			ReplicationServer.OnPlayerJoined(Player.Connection);
-			World.OnPlayerJoined(Player.PlayerId, Pawn);
-		};
-		Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) {
-			World.OnPlayerLeft(Player.PlayerId);
-			Players.DespawnPlayer(Player.PlayerId);
-		};
-		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) { World.HandleNetMessage(Connection, Message); };
-		World.BeginPlay(Scene, NetOptions.Mode == ENetMode::ListenServer ? ENetMode::ListenServer : ENetMode::Standalone);
-		if (NetOptions.Mode == ENetMode::ListenServer)
-		{
-			if (Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))
-			{
-				// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
-				Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
-				World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
-				FLanHostInfo LanInfo;
-				LanInfo.Name       = std::format("{} (호스트)", FPaths::GetProjectName());
-				LanInfo.Session    = Session;
-				LanInfo.GamePort   = NetOptions.Port;
-				LanInfo.MaxPlayers = Net.MaxPlayers;
-				Lan.StartHost(LanInfo);
-			}
-			else
-			{
-				E_LOG(LogRuntime, Error, "포트 {}에서 리슨 서버를 열지 못했습니다 (단독 실행으로 계속)", NetOptions.Port);
-			}
-		}
-	}
-	if (Net.GetMode() != ENetMode::Standalone)
-	{
-		GetWindow().SetTitle(FStringConv::ToWide(std::format("{} [{}]", FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE", ToString(Net.GetMode()))));
-	}
+	StartSession(FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess()));
 
 	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
 	return true;
@@ -235,6 +131,10 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	World.TickGameplay(DeltaSeconds, &InputState); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);
 	ReplicationServer.Tick(DeltaSeconds);
+	if (const std::optional<FNetSessionRequest> Request = World.ConsumeSessionRequest())
+	{
+		HandleSessionRequest(*Request); // 스크립트의 Net.Host/Connect/Disconnect (프레임 끝에 전환)
+	}
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
@@ -267,13 +167,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 
 void FRuntimeApplication::OnShutdown()
 {
-	Lan.Stop();
-	Net.Shutdown();
-	ReplicationServer.End();
-	ReplicationClient.End();
-	Players.End();
-	World.EndPlay();
-	AudioSystem.Reset(Audio);
+	EndSession();
 	Audio.Shutdown();
 
 	if (Rhi)

@@ -31,6 +31,8 @@
     { "File": "Skybox.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "Grid.hlsl", "Entry": "GridVS", "Stage": "Vertex" },
     { "File": "Grid.hlsl", "Entry": "GridPS", "Stage": "Pixel" },
+    { "File": "NavMeshDebug.hlsl", "Entry": "NavDebugVS", "Stage": "Vertex" },
+    { "File": "NavMeshDebug.hlsl", "Entry": "NavDebugPS", "Stage": "Pixel" },
     { "File": "Particle.hlsl", "Entry": "VSSprite", "Stage": "Vertex" },
     { "File": "Particle.hlsl", "Entry": "VSMesh", "Stage": "Vertex" },
     { "File": "Particle.hlsl", "Entry": "VSRibbon", "Stage": "Vertex" },

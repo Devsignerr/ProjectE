@@ -33,6 +33,9 @@ public:
 	uint32      GetIndexCount() const { return IndexCount; }
 	uint32      GetVertexCount() const { return VertexCount; }
 	const FBox& GetLocalBounds() const { return LocalBounds; }
+	// CPU 사본 (로컬 위치 + 삼각형 인덱스, CW 앞면): 내비메시 굽기 등 CPU 지오메트리 처리용
+	const std::vector<FVector3>& GetCpuPositions() const { return CpuPositions; }
+	const std::vector<uint32>&   GetCpuIndices() const { return CpuIndices; }
 
 	// FVertex에 대응하는 입력 레이아웃
 	static const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetInputLayout();
@@ -40,11 +43,13 @@ public:
 	static const std::vector<D3D12_INPUT_ELEMENT_DESC>& GetSkinnedInputLayout();
 
 private:
-	FD3D12Buffer VertexBuffer;
-	FD3D12Buffer IndexBuffer;
-	FD3D12Buffer SkinBuffer;
-	FBox         LocalBounds;
-	uint32       VertexCount = 0;
-	uint32       IndexCount  = 0;
-	bool         bSkinned    = false;
+	FD3D12Buffer          VertexBuffer;
+	FD3D12Buffer          IndexBuffer;
+	FD3D12Buffer          SkinBuffer;
+	FBox                  LocalBounds;
+	std::vector<FVector3> CpuPositions;
+	std::vector<uint32>   CpuIndices;
+	uint32                VertexCount = 0;
+	uint32                IndexCount  = 0;
+	bool                  bSkinned    = false;
 };

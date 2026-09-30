@@ -13,6 +13,7 @@
 class FCamera;
 class FD3D12RenderTarget;
 class FEditorGrid;
+class FNavMeshDebugRenderer;
 class FSelectionOutline;
 class FUIRenderer;
 class FInput;
@@ -58,8 +59,12 @@ public:
 	bool bGameUIWantsKeyboard = false; // 게임 UI 텍스트 상자에 입력 중 (ESC로 플레이를 멈추지 않는다)
 	bool bOpen = true;
 
-	bool          bShowGrid = true;
+	bool          bShowGrid    = true;
+	bool          bShowNavMesh = false; // 내비메시(+ 플레이 중 이동 경로) 디버그 표시
 	FSnapSettings Snap;
+
+	// 표시할 내비메시 (FNavMesh::GetDebugTriangles, 엔진 좌표). 다음 렌더에서 GPU 버퍼로 올린다. 빈 목록 = 지움
+	void SetNavMeshTriangles(std::vector<FVector3> Triangles);
 
 private:
 	using EGizmoOperation = ETransformTool;
@@ -68,6 +73,7 @@ private:
 	// 편집 카메라 원근 ↔ 직교 전환 (플레이 중에는 게임 카메라가 쓰이므로 호출하지 않는다)
 	void ToggleOrthographic(FCamera& Camera);
 	void RenderGrid(FEditorContext& Context);
+	void RenderNavMeshDebug(FEditorContext& Context);
 	void RenderGameUI(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
@@ -80,6 +86,9 @@ private:
 	std::unique_ptr<FSelectionOutline>  SelectionOutline;
 	std::unique_ptr<FEditorGrid>        Grid;
 	std::unique_ptr<FUIRenderer>        UIRenderer; // 플레이 중 게임 UI (처음 필요할 때)
+	std::unique_ptr<FNavMeshDebugRenderer> NavMeshDebug;           // 내비메시 표시를 켤 때 만든다
+	std::vector<FVector3>                  PendingNavMeshTriangles;
+	bool                                   bNavMeshTrianglesDirty = false;
 	FUIDrawList                         GameUIDrawList;
 	FVector2                            ImageMin;
 	uint32                              DesiredWidth  = 0;

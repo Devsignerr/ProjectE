@@ -90,6 +90,9 @@ private:
 	void ReloadAllShaders();                          // 강제 전체 재컴파일 (Ctrl+R)
 	void HandleToolShortcuts();
 	void DrawToolsMenu();
+	// 도구 → 내비메시 굽기: 편집 씬 정적 메시 → 씬 옆 .enav + NavMeshComponent 지정 + 뷰포트 표시
+	void BakeNavMesh();
+	void SyncNavMeshDisplay(); // 편집 씬 NavMeshComponent 파일이 바뀌면 뷰포트 표시를 다시 읽는다 (매 프레임, 바뀔 때만 로드)
 	void DrawNotification();
 	void ShowNotification(std::string Message, bool bError);
 
@@ -122,6 +125,7 @@ private:
 	FAssetEditorManager  AssetEditors; // 머티리얼/메시/애니메이션/파티클 편집 창
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
+	std::string           DisplayedNavMeshAsset; // 뷰포트에 표시 중인 내비메시 파일 (Content 기준)
 
 	FUndoHistory        UndoHistory;
 	FModelTemplateCache ModelTemplates; // Undo 복원 시 모델 하위 노드 재사용

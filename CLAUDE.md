@@ -37,7 +37,7 @@
 - 단위 테스트: `Core/Testing/TestFramework.h`의 `E_TEST`, `E_EXPECT_*` 사용. 순수 로직(수학 등)은 테스트를 함께 작성
 - 상수 버퍼: `Renderer/ShaderTypes.h` 구조체와 HLSL cbuffer를 항상 함께 수정. 16바이트 패킹을 지키고 `static_assert`로 크기 고정
 - 셰이더 리소스 바인딩: 프레임/오브젝트/머티리얼 상수는 루트 CBV(동적 업로드 버퍼에서 할당), 텍스처는 `GetSrvAllocator()`의 셰이더 가시 힙 디스크립터 테이블, 샘플러는 정적 샘플러
-- 외부 라이브러리 추가는 `CMake/ThirdParty.cmake`에서 커밋/해시 고정, `ThirdParty::<name>` 별칭으로 링크. 서드파티 헤더 포함부는 `#pragma warning(push, 0)`으로 감싼다
+- 외부 라이브러리 추가는 `CMake/ThirdParty.cmake`에서 커밋/해시 고정, `ThirdParty::<name>` 별칭으로 링크. 선언은 `FetchContent_Declare/MakeAvailable` 대신 `e_fetchcontent_declare/e_fetchcontent_make_available`(소스를 `Build/_deps/<이름>-src`에 한 번 받아 모든 빌드 폴더가 공유, 이후 다운로드·하위 빌드 생략, 선언/패치 파일이 바뀌면 자동으로 다시 받음 — 강제로 받으려면 `Build/_deps/<이름>.populated` 삭제). 서드파티 헤더 포함부는 `#pragma warning(push, 0)`으로 감싼다
 - 리플렉션: 새 컴포넌트는 `Scene/SceneReflection.cpp`의 `RegisterSceneTypes()`에 `RegisterType<T>(...).Property(...).AsComponent()`로 등록해야 인스펙터/직렬화에 나타난다. 파생 값(WorldMatrix 등)은 등록하지 않는다. 프로퍼티 타입은 `EPropertyType`에 있는 것만 지원
 - ECS: 컴포넌트는 POD에 가까운 struct, 로직은 시스템(뷰 순회)에 둔다. `View<...>().Each` 순회 중 같은 타입 컴포넌트 추가/제거 금지. 계층 변경은 반드시 `FScene::SetParent`
 - 리소스 수명: GPU 리소스는 `FResourceManager` 핸들로만 참조하고 직접 소유하지 않는다. 렌더링 중 삭제는 `Destroy*`(지연 해제)로, 즉시 `Shutdown()`은 GPU Flush 이후에만

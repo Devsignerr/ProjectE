@@ -3,24 +3,62 @@
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 
+# ---------------------------------------------------------------- 소스 캐시 (모든 빌드 폴더 공유)
+# 소스는 Build/_deps/<이름>-src 한 곳에 받고 ninja-debug/ninja-release/vs2022가 같이 쓴다 (빌드 결과물 <이름>-build는 폴더마다 따로).
+# 한 번 받은 뒤에는 FETCHCONTENT_SOURCE_DIR_<이름>으로 그 폴더를 바로 써서 다운로드와 하위 빌드(VS 제너레이터에서 느림)를 건너뛴다.
+# 선언(URL/해시/옵션)이나 인자로 넘긴 파일(패치 스크립트 등)의 내용이 바뀌면 표식(<이름>.populated)이 달라져 다시 받는다.
+# 강제로 다시 받으려면 Build/_deps/<이름>.populated를 지운다
+set(E_THIRDPARTY_SOURCE_CACHE "${CMAKE_SOURCE_DIR}/Build/_deps" CACHE PATH "서드파티 소스 공유 폴더")
+
+function(e_fetchcontent_declare Name)
+    set(Source "${E_THIRDPARTY_SOURCE_CACHE}/${Name}-src")
+    set(KeyText "${ARGN}")
+    foreach(Argument IN LISTS ARGN)
+        if(IS_ABSOLUTE "${Argument}" AND EXISTS "${Argument}" AND NOT IS_DIRECTORY "${Argument}")
+            file(SHA256 "${Argument}" FileHash)
+            string(APPEND KeyText ";${FileHash}")
+        endif()
+    endforeach()
+    string(SHA256 Key "${KeyText}")
+    set_property(GLOBAL PROPERTY E_FETCH_KEY_${Name} "${Key}")
+
+    string(TOUPPER "${Name}" UpperName)
+    set(Marker "${E_THIRDPARTY_SOURCE_CACHE}/${Name}.populated")
+    if(EXISTS "${Marker}" AND IS_DIRECTORY "${Source}")
+        file(READ "${Marker}" StoredKey)
+        if(StoredKey STREQUAL Key)
+            set(FETCHCONTENT_SOURCE_DIR_${UpperName} "${Source}" PARENT_SCOPE) # 받아 둔 소스를 그대로 (다운로드/하위 빌드 없음)
+        endif()
+    endif()
+    FetchContent_Declare(${Name} ${ARGN} SOURCE_DIR "${Source}")
+endfunction()
+
+macro(e_fetchcontent_make_available)
+    FetchContent_MakeAvailable(${ARGN})
+    foreach(_EFetchName ${ARGN})
+        get_property(_EFetchKey GLOBAL PROPERTY E_FETCH_KEY_${_EFetchName})
+        file(WRITE "${E_THIRDPARTY_SOURCE_CACHE}/${_EFetchName}.populated" "${_EFetchKey}")
+    endforeach()
+endmacro()
+
 # ---------------------------------------------------------------- stb_image (v2.30)
 set(E_STB_COMMIT "2c980bb59875b0d32144a71867fbdebb2f77cd20")
-FetchContent_Declare(stb_image
+e_fetchcontent_declare(stb_image
     URL      "https://raw.githubusercontent.com/nothings/stb/${E_STB_COMMIT}/stb_image.h"
     URL_HASH SHA256=594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(stb_image)
+e_fetchcontent_make_available(stb_image)
 
 add_library(stb_image INTERFACE)
 add_library(ThirdParty::stb_image ALIAS stb_image)
 target_include_directories(stb_image SYSTEM INTERFACE "${stb_image_SOURCE_DIR}")
 
 # ---------------------------------------------------------------- stb_image_write (v1.16, 같은 stb 커밋) — 스크린샷 PNG 저장
-FetchContent_Declare(stb_image_write
+e_fetchcontent_declare(stb_image_write
     URL      "https://raw.githubusercontent.com/nothings/stb/${E_STB_COMMIT}/stb_image_write.h"
     URL_HASH SHA256=cbd5f0ad7a9cf4468affb36354a1d2338034f2c12473cf1a8e32053cb6914a05
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(stb_image_write)
+e_fetchcontent_make_available(stb_image_write)
 
 add_library(stb_image_write INTERFACE)
 add_library(ThirdParty::stb_image_write ALIAS stb_image_write)
@@ -28,11 +66,11 @@ target_include_directories(stb_image_write SYSTEM INTERFACE "${stb_image_write_S
 
 # ---------------------------------------------------------------- cgltf (glTF 2.0 파서, MIT)
 set(E_CGLTF_COMMIT "85cd62382dfea638278962690cf515023f33ed00")
-FetchContent_Declare(cgltf
+e_fetchcontent_declare(cgltf
     URL      "https://raw.githubusercontent.com/jkuhlmann/cgltf/${E_CGLTF_COMMIT}/cgltf.h"
     URL_HASH SHA256=efb169dee911696b5d35fc8e3f7ea0c56d679debc529eba9ca6aa6443ba9d5e9
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(cgltf)
+e_fetchcontent_make_available(cgltf)
 
 add_library(cgltf INTERFACE)
 add_library(ThirdParty::cgltf ALIAS cgltf)
@@ -40,10 +78,10 @@ target_include_directories(cgltf SYSTEM INTERFACE "${cgltf_SOURCE_DIR}")
 
 # ---------------------------------------------------------------- Dear ImGui (docking 브랜치, 1.93.0 WIP, MIT)
 set(E_IMGUI_COMMIT "64944b4520b30772de8dbf0b37d0311746477a32")
-FetchContent_Declare(imgui
+e_fetchcontent_declare(imgui
     URL      "https://github.com/ocornut/imgui/archive/${E_IMGUI_COMMIT}.zip"
     URL_HASH SHA256=18a0c1b583c4e89675e8da8a733a607713a431db5e4a0044c65b980466a8a641)
-FetchContent_MakeAvailable(imgui)
+e_fetchcontent_make_available(imgui)
 
 add_library(imgui STATIC
     "${imgui_SOURCE_DIR}/imgui.cpp"
@@ -66,11 +104,11 @@ target_include_directories(stb_truetype SYSTEM INTERFACE "${imgui_SOURCE_DIR}")
 
 # ---------------------------------------------------------------- ImGuizmo (트랜스폼 기즈모, MIT)
 set(E_IMGUIZMO_COMMIT "18cef5e031d8c6973d80284c67f60549fafd78c1")
-FetchContent_Declare(imguizmo
+e_fetchcontent_declare(imguizmo
     URL      "https://github.com/CedricGuillemet/ImGuizmo/archive/${E_IMGUIZMO_COMMIT}.zip"
     URL_HASH SHA256=f9c71db12f0c726157dac94eef7d8bd8f5551da3494496f660e6e3c39e31ac4c
     SOURCE_SUBDIR "src") # 자체 CMakeLists(전체 위젯 빌드, imgui 미링크)를 쓰지 않고 아래에서 필요한 소스만 직접 빌드
-FetchContent_MakeAvailable(imguizmo)
+e_fetchcontent_make_available(imguizmo)
 
 add_library(imguizmo STATIC "${imguizmo_SOURCE_DIR}/src/ImGuizmo.cpp")
 add_library(ThirdParty::imguizmo ALIAS imguizmo)
@@ -82,12 +120,12 @@ set_target_properties(imguizmo PROPERTIES FOLDER "ThirdParty")
 # ---------------------------------------------------------------- imgui-node-editor (노드 그래프 편집기, 에디터 전용, MIT)
 # master 2026-02-20 ("fixing for modern imgui" 이후). 예제/외부 의존은 쓰지 않고 라이브러리 소스만 빌드한다
 set(E_IMGUI_NODE_EDITOR_COMMIT "021aa0ea4da13fed864bafb2a92d4c5205076866")
-FetchContent_Declare(imgui_node_editor
+e_fetchcontent_declare(imgui_node_editor
     URL      "https://github.com/thedmd/imgui-node-editor/archive/${E_IMGUI_NODE_EDITOR_COMMIT}.zip"
     URL_HASH SHA256=ffc7a1d6868e7d00a52bb0c54a3baa32c19085e15992372dcb9d9a1ac9a461b6
     PATCH_COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/Patches/ImGuiNodeEditor.cmake" # ImGui 1.92+ 연산자 중복 정의
     SOURCE_SUBDIR "_none") # 루트 CMakeLists(예제)는 쓰지 않는다
-FetchContent_MakeAvailable(imgui_node_editor)
+e_fetchcontent_make_available(imgui_node_editor)
 
 add_library(imgui_node_editor STATIC
     "${imgui_node_editor_SOURCE_DIR}/imgui_node_editor.cpp"
@@ -101,11 +139,11 @@ target_compile_options(imgui_node_editor PRIVATE /W0)
 set_target_properties(imgui_node_editor PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- nlohmann/json (v3.11.3, MIT) — 단일 헤더
-FetchContent_Declare(nlohmann_json
+e_fetchcontent_declare(nlohmann_json
     URL      "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp"
     URL_HASH SHA256=9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(nlohmann_json)
+e_fetchcontent_make_available(nlohmann_json)
 
 add_library(nlohmann_json INTERFACE)
 add_library(ThirdParty::nlohmann_json ALIAS nlohmann_json)
@@ -113,11 +151,11 @@ target_include_directories(nlohmann_json SYSTEM INTERFACE "${nlohmann_json_SOURC
 
 # ---------------------------------------------------------------- miniaudio (0.11.25, Public Domain 또는 MIT-0) — 오디오 재생/디코딩(wav/flac/mp3)/3D 공간화
 set(E_MINIAUDIO_COMMIT "9634bedb5b5a2ca38c1ee7108a9358a4e233f14d")
-FetchContent_Declare(miniaudio
+e_fetchcontent_declare(miniaudio
     URL      "https://raw.githubusercontent.com/mackron/miniaudio/${E_MINIAUDIO_COMMIT}/miniaudio.h"
     URL_HASH SHA256=ac7af4de748b7e26b777f37e01cee313a308a7296a3eb080e2906b320cc55c89
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(miniaudio)
+e_fetchcontent_make_available(miniaudio)
 
 # 구현부는 한 번만 컴파일 (프로젝트 언어가 CXX뿐이므로 C++로). 백엔드 설정 매크로는 구조체 배치에 영향을 주므로 PUBLIC으로 모든 사용처에 전파
 file(WRITE "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp"
@@ -160,10 +198,10 @@ set_target_properties(bc7enc PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- Lua 5.4.9 (MIT, lua.org 공식 tarball — 해시는 lua.org/ftp 게시 값)
 # C++로 컴파일한다: 오류가 longjmp 대신 C++ 예외로 전파되어 바인딩 쪽 C++ 소멸자가 안전하게 실행된다 (sol2: SOL_USING_CXX_LUA)
-FetchContent_Declare(lua
+e_fetchcontent_declare(lua
     URL      "https://www.lua.org/ftp/lua-5.4.9.tar.gz"
     URL_HASH SHA256=2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6)
-FetchContent_MakeAvailable(lua)
+e_fetchcontent_make_available(lua)
 
 file(GLOB E_LUA_SOURCES "${lua_SOURCE_DIR}/src/*.c")
 list(REMOVE_ITEM E_LUA_SOURCES "${lua_SOURCE_DIR}/src/lua.c" "${lua_SOURCE_DIR}/src/luac.c") # 독립 실행 파일 제외
@@ -176,11 +214,11 @@ target_compile_options(lua PRIVATE /W0 /TP)
 set_target_properties(lua PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- sol2 v3.3.0 (MIT, Lua C++ 바인딩) — 헤더 전용
-FetchContent_Declare(sol2
+e_fetchcontent_declare(sol2
     URL      "https://github.com/ThePhD/sol2/archive/refs/tags/v3.3.0.zip"
     URL_HASH SHA256=a7489629c596c8a67108ad3603cb6a90073ba6647e50441c8c55492254190d67
     SOURCE_SUBDIR "none") # 자체 CMakeLists를 쓰지 않고 include만 사용
-FetchContent_MakeAvailable(sol2)
+e_fetchcontent_make_available(sol2)
 
 add_library(sol2 INTERFACE)
 add_library(ThirdParty::sol2 ALIAS sol2)
@@ -203,11 +241,11 @@ endforeach()
 foreach(_Option CPP_EXCEPTIONS_ENABLED CPP_RTTI_ENABLED USE_SSE4_1 USE_SSE4_2)
     set(${_Option} ON CACHE INTERNAL "")
 endforeach()
-FetchContent_Declare(jolt
+e_fetchcontent_declare(jolt
     URL      "https://github.com/jrouwe/JoltPhysics/archive/refs/tags/v5.6.0.zip"
     URL_HASH SHA256=0af9beea51637ef805e624fe838ea2870f7b68cd48cbe1615c853bd9bcf4f1d7
     SOURCE_SUBDIR "Build")
-FetchContent_MakeAvailable(jolt)
+e_fetchcontent_make_available(jolt)
 
 add_library(ThirdParty::jolt ALIAS Jolt)
 target_compile_options(Jolt PRIVATE /W0)
@@ -215,11 +253,11 @@ set_target_properties(Jolt PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- Recast/Detour (v1.6.0, zlib) — 내비메시 굽기 + 경로 탐색
 # 자체 CMakeLists(데모/테스트/설치)를 쓰지 않고 Recast, Detour, DetourCrowd 소스만 정적 라이브러리로 빌드한다
-FetchContent_Declare(recastnavigation
+e_fetchcontent_declare(recastnavigation
     URL      "https://github.com/recastnavigation/recastnavigation/archive/refs/tags/v1.6.0.zip"
     URL_HASH SHA256=8b50c62177249554b226514b307e6c529934a62b3926822777bf6abb8906a155
     SOURCE_SUBDIR "_none")
-FetchContent_MakeAvailable(recastnavigation)
+e_fetchcontent_make_available(recastnavigation)
 
 file(GLOB E_RECAST_SOURCES
     "${recastnavigation_SOURCE_DIR}/Recast/Source/*.cpp"
@@ -236,17 +274,17 @@ set_target_properties(recast PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- Font Awesome 6 Free Solid (아이콘 글꼴, SIL OFL 1.1) + IconFontCppHeaders (zlib)
 # 에디터 UI 아이콘. 글꼴은 실행 파일에 바이트 배열로 넣어 경로 의존 없이 쓴다 (ImGui AddFontFromMemoryTTF)
-FetchContent_Declare(fontawesome_font
+e_fetchcontent_declare(fontawesome_font
     URL      "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.7.2/webfonts/fa-solid-900.ttf"
     URL_HASH SHA256=af19d135d3a935b3ebfbd80320716ffe1202052c5f68dc2c5f1abc57005ac605
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(fontawesome_font)
+e_fetchcontent_make_available(fontawesome_font)
 set(E_ICON_HEADERS_COMMIT "210b5a399a64270674560d633638952d1e8d804d")
-FetchContent_Declare(icon_font_headers
+e_fetchcontent_declare(icon_font_headers
     URL      "https://raw.githubusercontent.com/juliettef/IconFontCppHeaders/${E_ICON_HEADERS_COMMIT}/IconsFontAwesome6.h"
     URL_HASH SHA256=1986b023825b269fb8c60ccc2419c4594280249596e828e573d5c8ef309e265d
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(icon_font_headers)
+e_fetchcontent_make_available(icon_font_headers)
 
 set(E_FONTAWESOME_SOURCE "${CMAKE_BINARY_DIR}/Generated/FontAwesomeSolid.cpp")
 if(NOT EXISTS "${E_FONTAWESOME_SOURCE}")
@@ -267,15 +305,15 @@ set_target_properties(fontawesome PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- ufbx v0.23.1 (FBX 로더, MIT/퍼블릭 도메인 중 택일 — MIT)
 set(E_UFBX_COMMIT "26a482ae66871d7de36eb722aa060bce95bce274")
-FetchContent_Declare(ufbx_source
+e_fetchcontent_declare(ufbx_source
     URL      "https://raw.githubusercontent.com/ufbx/ufbx/${E_UFBX_COMMIT}/ufbx.c"
     URL_HASH SHA256=4a956c26a708e40d82ecb0aeaee54da709d5ba7c144c9642174970059bda7e1d
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_Declare(ufbx_header
+e_fetchcontent_declare(ufbx_header
     URL      "https://raw.githubusercontent.com/ufbx/ufbx/${E_UFBX_COMMIT}/ufbx.h"
     URL_HASH SHA256=f787be529af577efc04f3e3e735844a08556718dbb613d1211c2b313d72895dc
     DOWNLOAD_NO_EXTRACT TRUE)
-FetchContent_MakeAvailable(ufbx_source ufbx_header)
+e_fetchcontent_make_available(ufbx_source ufbx_header)
 
 # 프로젝트 언어가 CXX뿐이므로 C++로 컴파일 (ufbx는 C/C++ 양쪽 컴파일을 지원)
 add_library(ufbx STATIC "${ufbx_source_SOURCE_DIR}/ufbx.c")
@@ -294,11 +332,11 @@ set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE INTERNAL "")
 set(protobuf_WITH_ZLIB OFF CACHE INTERNAL "")
 set(protobuf_INSTALL ON CACHE INTERNAL "") # 설치는 안 하지만 GNS install(EXPORT)가 libprotobuf의 export 세트를 요구한다
 set(protobuf_BUILD_PROTOC_BINARIES ON CACHE INTERNAL "")
-FetchContent_Declare(protobuf
+e_fetchcontent_declare(protobuf
     URL      "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v21.12.tar.gz"
     URL_HASH SHA256=22fdaf641b31655d4b2297f9981fa5203b2866f8332d3c6333f6b0107bb320de
     OVERRIDE_FIND_PACKAGE) # GNS의 find_package(Protobuf)가 이 소스 빌드를 찾게 한다
-FetchContent_MakeAvailable(protobuf)
+e_fetchcontent_make_available(protobuf)
 foreach(_Target libprotobuf libprotobuf-lite libprotoc protoc)
     target_compile_options(${_Target} PRIVATE /W0)
     set_target_properties(${_Target} PROPERTIES FOLDER "ThirdParty/protobuf")
@@ -340,10 +378,10 @@ endforeach()
 set(BUILD_STATIC_LIB ON CACHE INTERNAL "")
 set(Protobuf_USE_STATIC_LIBS ON CACHE INTERNAL "")
 set(USE_CRYPTO "BCrypt" CACHE INTERNAL "")
-FetchContent_Declare(gamenetworkingsockets
+e_fetchcontent_declare(gamenetworkingsockets
     URL      "https://github.com/ValveSoftware/GameNetworkingSockets/archive/refs/tags/v1.6.0.tar.gz"
     URL_HASH SHA256=bddfe735d29ff2bbf186013a945ed57caaf4b79893eb7918c06c0f64955016f3)
-FetchContent_MakeAvailable(gamenetworkingsockets)
+e_fetchcontent_make_available(gamenetworkingsockets)
 
 # 전역 WIN32_LEAN_AND_MEAN은 GNS가 쓰는 timeBeginPeriod(mmsystem)를 빼 버리므로 GNS 디렉터리에서만 제거
 get_property(_GnsDefinitions DIRECTORY "${gamenetworkingsockets_SOURCE_DIR}/src" PROPERTY COMPILE_DEFINITIONS)

@@ -145,6 +145,13 @@ struct FUIRect
 	constexpr bool operator==(const FUIRect& Other) const { return Min == Other.Min && Max == Other.Max; }
 };
 
+// 브러시 그리는 방식
+enum class EUIBrushDrawAs : uint8
+{
+	Box = 0,   // 사각형에 늘여 그림 (둥근 모서리/테두리 가능)
+	NineSlice, // 가장자리(Margin)는 원래 크기 유지, 가운데만 늘림 (둥근 모서리/테두리 무시)
+};
+
 // UI 단위 → 화면 픽셀: Pixel = Ui * Scale + Offset
 struct FUITransform
 {
@@ -164,6 +171,10 @@ struct FUIBrush
 	float       CornerRadius = 0.0f;                   // UI 단위
 	float       BorderWidth  = 0.0f;                   // UI 단위 (안쪽으로)
 	FVector4    BorderColor  = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+	// 9-slice: Margin = 텍스처 비율(0~0.5, UMG와 같음), 화면 가장자리 두께 = Margin × TextureSize (UI 단위)
+	EUIBrushDrawAs DrawAs      = EUIBrushDrawAs::Box;
+	FUIMargin      Margin      = FUIMargin(0.25f);
+	FVector2       TextureSize = FVector2(64.0f, 64.0f);
 
 	bool IsVisible() const { return Color.W > 0.0f || (BorderWidth > 0.0f && BorderColor.W > 0.0f); }
 	bool operator==(const FUIBrush& Other) const = default;
@@ -186,6 +197,8 @@ const char* ToString(EUITextJustify Value);
 bool        FromString(std::string_view Text, EUITextJustify& Out);
 const char* ToString(EUIFillDirection Value);
 bool        FromString(std::string_view Text, EUIFillDirection& Out);
+const char* ToString(EUIBrushDrawAs Value);
+bool        FromString(std::string_view Text, EUIBrushDrawAs& Out);
 const char* ToString(EUIScaleMode Value);
 bool        FromString(std::string_view Text, EUIScaleMode& Out);
 

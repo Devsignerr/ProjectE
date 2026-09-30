@@ -172,6 +172,54 @@ void FUIPainter::PaintBrush(const FUIBrush& Brush, const FUIRect& Rect, float Op
 	{
 		return;
 	}
+	if (Brush.DrawAs == EUIBrushDrawAs::NineSlice && !Brush.Texture.empty())
+	{
+		// 가장자리 두께(UI 단위) = 텍스처 비율 × 원본 크기. 사각형보다 두꺼우면 비율대로 줄인다
+		const FUIMargin M      = Brush.Margin;
+		float           Left   = FMath::Max(M.Left, 0.0f) * Brush.TextureSize.X;
+		float           Right  = FMath::Max(M.Right, 0.0f) * Brush.TextureSize.X;
+		float           Top    = FMath::Max(M.Top, 0.0f) * Brush.TextureSize.Y;
+		float           Bottom = FMath::Max(M.Bottom, 0.0f) * Brush.TextureSize.Y;
+		if (Left + Right > Rect.GetWidth() && Left + Right > 0.0f)
+		{
+			const float Shrink = Rect.GetWidth() / (Left + Right);
+			Left *= Shrink;
+			Right *= Shrink;
+		}
+		if (Top + Bottom > Rect.GetHeight() && Top + Bottom > 0.0f)
+		{
+			const float Shrink = Rect.GetHeight() / (Top + Bottom);
+			Top *= Shrink;
+			Bottom *= Shrink;
+		}
+		const float Xs[4] = { Rect.Min.X, Rect.Min.X + Left, Rect.Max.X - Right, Rect.Max.X };
+		const float Ys[4] = { Rect.Min.Y, Rect.Min.Y + Top, Rect.Max.Y - Bottom, Rect.Max.Y };
+		const float Us[4] = { 0.0f, M.Left, 1.0f - M.Right, 1.0f };
+		const float Vs[4] = { 0.0f, M.Top, 1.0f - M.Bottom, 1.0f };
+		FUITextureRef Texture;
+		Texture.Path = Brush.Texture;
+		for (int32 Row = 0; Row < 3; ++Row)
+		{
+			for (int32 Col = 0; Col < 3; ++Col)
+			{
+				if (Xs[Col + 1] <= Xs[Col] || Ys[Row + 1] <= Ys[Row])
+				{
+					continue;
+				}
+				const FVector2 Min = Transform.ToPixels(FVector2(Xs[Col], Ys[Row]));
+				const FVector2 Max = Transform.ToPixels(FVector2(Xs[Col + 1], Ys[Row + 1]));
+				FUIDrawQuad    Quad;
+				Quad.Rect           = FVector4(Min.X, Min.Y, Max.X, Max.Y);
+				Quad.UV             = FVector4(Us[Col], Vs[Row], Us[Col + 1], Vs[Row + 1]);
+				Quad.Color          = ToLinear(Brush.Color, Opacity);
+				Quad.SecondaryColor = FVector4();
+				Quad.Params         = FVector4(0.0f, 0.0f, static_cast<float>(EUIDrawMode::Box), 0.0f);
+				Out.AddQuad(Quad, Texture, ClipPixels);
+			}
+		}
+		return;
+	}
+
 	const FUIRect Pixels    = Transform.ToPixels(Rect);
 	const float   HalfMin   = FMath::Min(Pixels.GetWidth(), Pixels.GetHeight()) * 0.5f;
 	const float   Radius    = FMath::Clamp(Brush.CornerRadius * Transform.Scale, 0.0f, HalfMin);

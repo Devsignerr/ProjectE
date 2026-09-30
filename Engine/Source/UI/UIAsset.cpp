@@ -89,6 +89,12 @@ namespace
 		Object["CornerRadius"] = Brush.CornerRadius;
 		Object["BorderWidth"]  = Brush.BorderWidth;
 		Object["BorderColor"]  = ToJson(Brush.BorderColor);
+		if (Brush.DrawAs == EUIBrushDrawAs::NineSlice)
+		{
+			Object["DrawAs"]      = ToString(Brush.DrawAs);
+			Object["Margin"]      = ToJson(Brush.Margin);
+			Object["TextureSize"] = ToJson(Brush.TextureSize);
+		}
 		return Object;
 	}
 
@@ -104,6 +110,9 @@ namespace
 		Read(*It, "CornerRadius", Out.CornerRadius);
 		Read(*It, "BorderWidth", Out.BorderWidth);
 		Read(*It, "BorderColor", Out.BorderColor);
+		ReadEnum(*It, "DrawAs", Out.DrawAs);
+		Read(*It, "Margin", Out.Margin);
+		Read(*It, "TextureSize", Out.TextureSize);
 	}
 
 	json SlotToJson(const FUISlot& Slot, EUIWidgetType ParentType)

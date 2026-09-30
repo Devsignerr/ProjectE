@@ -9,6 +9,7 @@
 #include "Editor/EditorTheme.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
+#include "Renderer/Image.h"
 #include "Renderer/UIRenderer.h"
 #include "UI/UIFont.h"
 #include "UI/UILayout.h"
@@ -91,6 +92,7 @@ namespace
 	constexpr const char* GFillLabels[]       = { "왼쪽 → 오른쪽", "오른쪽 → 왼쪽", "아래 → 위", "위 → 아래" };
 	constexpr const char* GScaleModeLabels[]  = { "없음 (1배)", "높이 맞춤", "너비 맞춤", "전체 보이기 (작은 쪽)", "채우기 (큰 쪽)" };
 	constexpr const char* GEventLabels[]      = { "클릭", "누름", "뗌", "호버 시작", "호버 끝" };
+	constexpr const char* GDrawAsLabels[]     = { "늘이기", "9-slice" };
 
 	template <typename TEnum, size_t N>
 	bool EnumCombo(const char* Label, TEnum& Value, const char* const (&Labels)[N])
@@ -1453,6 +1455,30 @@ bool FWidgetEditor::DrawBrush(const char* Label, FUIBrush& Brush, bool bDefaultO
 	{
 		bChanged |= ImGui::ColorEdit4("색", &Brush.Color.X, ImGuiColorEditFlags_AlphaBar);
 		bChanged |= DrawTextureField("텍스처", Brush.Texture);
+		if (!Brush.Texture.empty())
+		{
+			bChanged |= EnumCombo("그리기", Brush.DrawAs, GDrawAsLabels);
+		}
+		if (!Brush.Texture.empty() && Brush.DrawAs == EUIBrushDrawAs::NineSlice)
+		{
+			// 9-slice: 가장자리는 원래 두께, 가운데만 늘어난다 (둥근 모서리/테두리 대신 텍스처 모양)
+			bChanged |= ImGui::DragFloat4("여백 (비율)", &Brush.Margin.Left, 0.005f, 0.0f, 0.5f, "%.3f");
+			ImGui::SetItemTooltip("텍스처 가장자리 비율 (왼/위/오른/아래, 0~0.5) — UMG Margin과 같음");
+			bChanged |= ImGui::DragFloat2("원본 크기", &Brush.TextureSize.X, 1.0f, 1.0f, 8192.0f, "%.0f");
+			ImGui::SetItemTooltip("화면 가장자리 두께 = 여백 × 원본 크기 (UI 단위)");
+			if (ImGui::SmallButton("텍스처 크기로"))
+			{
+				const std::filesystem::path File = ContentDirectory / FStringConv::ToWide(Brush.Texture);
+				if (FImage Image; FImageLoader::LoadFromFile(File, Image))
+				{
+					Brush.TextureSize = FVector2(static_cast<float>(Image.Width), static_cast<float>(Image.Height));
+					bChanged          = true;
+				}
+			}
+			ImGui::TreePop();
+			ImGui::PopID();
+			return bChanged;
+		}
 		bChanged |= ImGui::DragFloat("모서리 반지름", &Brush.CornerRadius, 0.25f, 0.0f, 1000.0f, "%.1f");
 		bChanged |= ImGui::DragFloat("테두리 폭", &Brush.BorderWidth, 0.1f, 0.0f, 100.0f, "%.1f");
 		if (Brush.BorderWidth > 0.0f)

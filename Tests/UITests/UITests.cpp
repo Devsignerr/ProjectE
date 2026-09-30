@@ -571,3 +571,45 @@ E_TEST(UISdf_DistanceTransformAndCircle)
 	// 안쪽으로 갈수록 커진다
 	E_EXPECT_TRUE(At(10, 8) > At(11, 8) && At(11, 8) > At(12, 8) && At(12, 8) > At(13, 8));
 }
+
+E_TEST(UIPainter_NineSlice)
+{
+	FUIBrush Brush;
+	Brush.Texture     = "Frame.png";
+	Brush.DrawAs      = EUIBrushDrawAs::NineSlice;
+	Brush.Margin      = FUIMargin(0.25f);
+	Brush.TextureSize = FVector2(64.0f, 64.0f); // 가장자리 16
+	FUIDrawList  List;
+	FUITransform Transform; // 1배
+	FUIPainter::PaintBrush(Brush, FUIRect(FVector2(0.0f, 0.0f), FVector2(200.0f, 100.0f)), 1.0f, Transform, FUIRect::Infinite(), List);
+	E_EXPECT_EQ(List.Quads.size(), size_t(9));
+	E_EXPECT_EQ(List.Batches.size(), size_t(1));
+	if (List.Quads.size() == 9)
+	{
+		// 좌상 모서리: 원래 두께 16, UV 0~0.25
+		E_EXPECT_NEAR(List.Quads[0].Rect.Z, 16.0f, 1e-4f);
+		E_EXPECT_NEAR(List.Quads[0].UV.Z, 0.25f, 1e-4f);
+		// 가운데: 늘어남 (16~184 x 16~84), UV 0.25~0.75
+		E_EXPECT_NEAR(List.Quads[4].Rect.X, 16.0f, 1e-4f);
+		E_EXPECT_NEAR(List.Quads[4].Rect.Z, 184.0f, 1e-4f);
+		E_EXPECT_NEAR(List.Quads[4].UV.W, 0.75f, 1e-4f);
+		// 우하 모서리
+		E_EXPECT_NEAR(List.Quads[8].Rect.X, 184.0f, 1e-4f);
+		E_EXPECT_NEAR(List.Quads[8].Rect.W, 100.0f, 1e-4f);
+	}
+	// 사각형이 가장자리 합보다 작으면 비율대로 줄이고 가운데는 빠진다 (높이 20 → 위/아래 10씩)
+	List.Clear();
+	FUIPainter::PaintBrush(Brush, FUIRect(FVector2(0.0f, 0.0f), FVector2(200.0f, 20.0f)), 1.0f, Transform, FUIRect::Infinite(), List);
+	E_EXPECT_EQ(List.Quads.size(), size_t(6));
+	if (!List.Quads.empty())
+	{
+		E_EXPECT_NEAR(List.Quads[0].Rect.W, 10.0f, 1e-4f);
+	}
+	// JSON 왕복
+	FUIAsset   Asset;
+	FUIWidget* Border = AddChild(*Asset.Root, EUIWidgetType::Border, "Frame");
+	Border->Brush     = Brush;
+	FUIAsset Loaded;
+	E_EXPECT_TRUE(Loaded.FromJsonString(Asset.ToJsonString()));
+	E_EXPECT_TRUE(Loaded.Root->FindByName("Frame")->Brush == Brush);
+}

@@ -37,6 +37,7 @@ namespace
 	constexpr const char* JustifyNames[]      = { "Left", "Center", "Right" };
 	constexpr const char* FillDirectionNames[] = { "LeftToRight", "RightToLeft", "BottomToTop", "TopToBottom" };
 	constexpr const char* ScaleModeNames[]    = { "None", "MatchHeight", "MatchWidth", "Fit", "Fill" };
+	constexpr const char* DrawAsNames[]       = { "Box", "NineSlice" };
 	static_assert(std::size(WidgetTypeNames) == static_cast<size_t>(EUIWidgetType::Count));
 
 	float SrgbToLinearChannel(float Value)
@@ -61,6 +62,8 @@ const char* ToString(EUITextJustify Value) { return EnumToString(Value, JustifyN
 bool        FromString(std::string_view Text, EUITextJustify& Out) { return EnumFromString(Text, Out, JustifyNames); }
 const char* ToString(EUIFillDirection Value) { return EnumToString(Value, FillDirectionNames); }
 bool        FromString(std::string_view Text, EUIFillDirection& Out) { return EnumFromString(Text, Out, FillDirectionNames); }
+const char* ToString(EUIBrushDrawAs Value) { return EnumToString(Value, DrawAsNames); }
+bool        FromString(std::string_view Text, EUIBrushDrawAs& Out) { return EnumFromString(Text, Out, DrawAsNames); }
 const char* ToString(EUIScaleMode Value) { return EnumToString(Value, ScaleModeNames); }
 bool        FromString(std::string_view Text, EUIScaleMode& Out) { return EnumFromString(Text, Out, ScaleModeNames); }
 

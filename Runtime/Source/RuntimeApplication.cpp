@@ -128,9 +128,10 @@ bool FRuntimeApplication::OnInit()
 	const FNetSessionInfo   Session    = FNetSessionInfo::FromProject(SceneAsset);
 	if (NetOptions.Mode == ENetMode::Client && Net.StartClient(CreateGnsTransport(), NetOptions.ConnectAddress, Session))
 	{
-		// 클라이언트: 게임 로직(스크립트/물리/게임 모듈)은 서버가 돌리고 결과만 받는다
+		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
 		Net.OnGameMessage = [this](FNetConnectionId, const std::vector<uint8>& Message) { ReplicationClient.HandleMessage(Message); };
+		World.BeginPlay(Scene, EWorldRole::Client);
 	}
 	else
 	{
@@ -185,10 +186,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
 		}
 	}
-	else
-	{
-		World.TickGameplay(DeltaSeconds, &InputState);
-	}
+	World.TickGameplay(DeltaSeconds, &InputState); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);
 	ReplicationServer.Tick(DeltaSeconds);
 

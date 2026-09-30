@@ -2,5 +2,6 @@
   "Name": "Sample",
   "EngineVersion": "0.1.0",
   "DefaultScene": "Scenes/Main.escene",
-  "GameModule": "SampleGame"
+  "GameModule": "SampleGame",
+  "PlayerPrefab": "Prefabs/Player.eprefab"
 }

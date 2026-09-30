@@ -28,6 +28,8 @@ struct FPlayNetSettings
 	EMode  Mode        = EMode::Standalone;
 	int32  ClientCount = 1; // 추가로 띄울 런타임 클라이언트 창 수
 	uint16 Port        = DefaultNetPort;
+	int32  LatencyMs   = 0;    // 디버그 지연 (에디터와 띄운 프로세스 모두, 보내는 쪽)
+	float  LossPercent = 0.0f; // 디버그 손실
 };
 
 // 에디터 플레이의 네트워크 부분: 드라이버/복제/플레이어/LAN + 자식 프로세스(전용 서버, 런타임 클라이언트).
@@ -60,6 +62,8 @@ public:
 	const FNetDriver&        GetDriver() const { return Net; }
 	int32                    GetChildProcessCount() const;
 	FLanDiscovery&           GetLanSearch() { return LanSearch; }
+	// 디버그 지연/손실을 지금 에디터 연결에 적용 (패널에서 바꿀 때). 띄울 프로세스에는 명령줄로 넘긴다
+	void                     ApplySimulation();
 	// 런타임 클라이언트 창 하나 실행 (Address 서버, SceneAsset = 서버가 연 씬)
 	bool                     LaunchRuntimeClient(const std::string& Address, const std::string& SceneAsset);
 	const std::string&       GetSceneAsset() const { return SceneAsset; }

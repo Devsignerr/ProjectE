@@ -36,6 +36,14 @@ FNetLaunchOptions FNetLaunchOptions::FromCommandLine(const FCommandLine& Command
 			E_LOG(LogNet, Warning, "--port 값이 잘못되어 기본 포트 {}를 씁니다: {}", DefaultNetPort, PortText);
 		}
 	}
+	if (const std::wstring Lag = CommandLine.GetValue(L"--net-lag"); !Lag.empty())
+	{
+		Options.SimulatedLatencyMs = std::max(0, std::stoi(Lag));
+	}
+	if (const std::wstring Loss = CommandLine.GetValue(L"--net-loss"); !Loss.empty())
+	{
+		Options.SimulatedLossPercent = std::clamp(std::stof(Loss), 0.0f, 100.0f);
+	}
 	if (const std::wstring Address = CommandLine.GetValue(L"--connect"); !Address.empty())
 	{
 		Options.Mode           = ENetMode::Client;
@@ -311,6 +319,19 @@ bool FNetDriver::SendToServer(const std::vector<uint8>& Message, ENetReliability
 		return false;
 	}
 	return Transport->Send(ServerConnection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
+}
+
+bool FNetDriver::GetStats(FNetConnectionId Connection, FNetConnectionStats& OutStats) const
+{
+	return Transport != nullptr && Transport->GetStats(Connection, OutStats);
+}
+
+void FNetDriver::SetSimulation(int32 LatencyMs, float LossPercent)
+{
+	if (Transport != nullptr)
+	{
+		Transport->SetSimulation(LatencyMs, LossPercent);
+	}
 }
 
 std::string FNetDriver::ValidateHello(const FNetHello& Hello) const

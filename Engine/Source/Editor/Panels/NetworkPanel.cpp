@@ -40,6 +40,17 @@ void FNetworkPanel::Draw(FEditorContext& Context)
 		ImGui::EndDisabled();
 		ImGui::EndDisabled();
 
+		// 디버그 지연/손실: 플레이 중에도 에디터 연결에 바로 적용 (띄운 프로세스는 시작할 때 값)
+		ImGui::BeginDisabled(Settings.Mode == FPlayNetSettings::EMode::Standalone);
+		bool bSimulationChanged = ImGui::SliderInt("지연 (ms)", &Settings.LatencyMs, 0, 500);
+		bSimulationChanged      = ImGui::SliderFloat("손실 (%)", &Settings.LossPercent, 0.0f, 50.0f, "%.1f") || bSimulationChanged;
+		ImGui::SetItemTooltip("보내는 패킷을 늦추거나 버린다 (디버그). 띄우는 서버/클라이언트 창에도 같은 값");
+		if (bSimulationChanged && NetPlay.IsActive())
+		{
+			NetPlay.ApplySimulation();
+		}
+		ImGui::EndDisabled();
+
 		// ---- 진행 중인 세션
 		ImGui::SeparatorText("세션");
 		if (!NetPlay.IsActive())
@@ -55,7 +66,10 @@ void FNetworkPanel::Draw(FEditorContext& Context)
 				ImGui::Text("원격 플레이어 %d명", static_cast<int32>(Net.GetPlayers().size()));
 				for (const FNetDriver::FRemotePlayer& Player : Net.GetPlayers())
 				{
-					ImGui::BulletText("%u  %s", Player.PlayerId, Player.Name.c_str());
+					FNetConnectionStats Stats;
+					Net.GetStats(Player.Connection, Stats);
+					ImGui::BulletText("%u  %s   핑 %dms  품질 %.0f%%  송신 %.1fKB/s  수신 %.1fKB/s", Player.PlayerId, Player.Name.c_str(), Stats.PingMs,
+					                  Stats.Quality * 100.0f, Stats.OutBytesPerSec / 1024.0f, Stats.InBytesPerSec / 1024.0f);
 				}
 			}
 			else
@@ -63,6 +77,12 @@ void FNetworkPanel::Draw(FEditorContext& Context)
 				const FNetDriver::EClientState State = Net.GetClientState();
 				const char* StateText = State == FNetDriver::EClientState::Joined ? "입장" : State == FNetDriver::EClientState::Failed ? "실패" : "접속 중";
 				ImGui::Text("클라이언트: %s (플레이어 %u)", StateText, Net.GetLocalPlayerId());
+				FNetConnectionStats Stats;
+				if (Net.GetServerStats(Stats))
+				{
+					ImGui::Text("핑 %dms  품질 %.0f%%  송신 %.1fKB/s  수신 %.1fKB/s", Stats.PingMs, Stats.Quality * 100.0f, Stats.OutBytesPerSec / 1024.0f,
+					            Stats.InBytesPerSec / 1024.0f);
+				}
 				if (State == FNetDriver::EClientState::Failed)
 				{
 					ImGui::TextColored(FEditorTheme::Danger, "%s", Net.GetFailureReason().c_str());

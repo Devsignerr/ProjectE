@@ -55,6 +55,7 @@ function Launcher:OnUpdate(dt)
 	Mesh.MeshAsset     = "primitive:sphere"
 	Mesh.MaterialAsset = "Materials/Orange.emat"
 
+	Ball:AddComponent("ReplicatedComponent")     -- 멀티플레이: 클라이언트에도 보인다 (1인용에서는 영향 없음)
 	Ball:AddComponent("SphereColliderComponent") -- 반지름 50cm × 스케일
 	local Body       = Ball:AddComponent("RigidBodyComponent")
 	Body.Mass        = 5.0 -- 지름 40cm 공 (상자는 밀도 기반 약 26kg)

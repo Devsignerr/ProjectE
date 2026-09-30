@@ -83,6 +83,10 @@ bool FServerApplication::OnInit()
 		E_LOG(LogServer, Error, "포트 {}에서 서버를 열지 못했습니다", NetOptions.Port);
 		return false;
 	}
+	if (NetOptions.SimulatedLatencyMs > 0 || NetOptions.SimulatedLossPercent > 0.0f)
+	{
+		Net.SetSimulation(NetOptions.SimulatedLatencyMs, NetOptions.SimulatedLossPercent);
+	}
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} 전용 서버", FPaths::GetProjectName());
 	LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);

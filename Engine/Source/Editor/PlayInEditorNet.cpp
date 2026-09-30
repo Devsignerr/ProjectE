@@ -21,6 +21,11 @@ namespace
 	{
 		return L"\"" + Text + L"\"";
 	}
+
+	std::wstring SimulationArguments(const FPlayNetSettings& Settings)
+	{
+		return Settings.LatencyMs > 0 || Settings.LossPercent > 0.0f ? std::format(L" --net-lag {} --net-loss {}", Settings.LatencyMs, Settings.LossPercent) : std::wstring();
+	}
 } // namespace
 
 FPlayInEditorNet::~FPlayInEditorNet()
@@ -72,6 +77,7 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 			{
 				E_LOG(LogEditor, Error, "포트 {}에서 리슨 서버를 열지 못했습니다", Settings.Port);
 			}
+			ApplySimulation();
 			ReplicationServer.Begin(Scene, Net); // 정적 NetId는 스크립트가 엔티티를 만들기 전에
 			Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 				const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
@@ -89,7 +95,8 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 	{
 		// 전용 서버 프로세스를 먼저 띄우고 에디터는 클라이언트로 (GNS가 서버가 열릴 때까지 접속을 재시도한다)
 		const std::wstring Arguments = std::format(L"--project {} --scene {} --port {} --log {}", Quote(FPaths::GetProjectFile().wstring()),
-		                                           Quote(FStringConv::ToWide(SceneAsset)), Settings.Port, Quote((Directory / L"Server.log").wstring()));
+		                                           Quote(FStringConv::ToWide(SceneAsset)), Settings.Port, Quote((Directory / L"Server.log").wstring())) +
+		                               SimulationArguments(Settings);
 		if (!LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectEServer.exe", Arguments))
 		{
 			return false;
@@ -106,6 +113,7 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 				}
 			};
 			Net.StartClient(CreateGnsTransport(), std::format("127.0.0.1:{}", Settings.Port), Session);
+			ApplySimulation();
 		};
 	}
 	return true;
@@ -180,6 +188,13 @@ void FPlayInEditorNet::Stop()
 	PlayScene = nullptr;
 }
 
+void FPlayInEditorNet::ApplySimulation()
+{
+	Settings.LatencyMs   = PendingSettings.LatencyMs;
+	Settings.LossPercent = PendingSettings.LossPercent;
+	Net.SetSimulation(Settings.LatencyMs, Settings.LossPercent);
+}
+
 int32 FPlayInEditorNet::GetChildProcessCount() const
 {
 	int32 Running = 0;
@@ -195,7 +210,8 @@ bool FPlayInEditorNet::LaunchRuntimeClient(const std::string& Address, const std
 	// 로그: Saved/PlayInEditor/Client<N>.log (창마다 따로)
 	const std::filesystem::path LogPath   = FPaths::GetSavedDirectory() / L"PlayInEditor" / std::format(L"Client{}.log", ++LaunchedClientCount);
 	const std::wstring          Arguments = std::format(L"--project {} --scene {} --connect {} --log {}", Quote(FPaths::GetProjectFile().wstring()),
-	                                                    Quote(FStringConv::ToWide(ClientSceneAsset)), FStringConv::ToWide(Address), Quote(LogPath.wstring()));
+	                                                    Quote(FStringConv::ToWide(ClientSceneAsset)), FStringConv::ToWide(Address), Quote(LogPath.wstring())) +
+	                               SimulationArguments(PendingSettings);
 	return LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectERuntime.exe", Arguments);
 }
 

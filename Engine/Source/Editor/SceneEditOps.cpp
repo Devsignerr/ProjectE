@@ -1,6 +1,7 @@
 #include "Editor/SceneEditOps.h"
 
 #include "Core/Reflection/TypeInfo.h"
+#include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneCloner.h"
 
@@ -73,6 +74,46 @@ namespace
 		return Clone;
 	}
 
+	// 리플렉션 Entity 프로퍼티 중 복제 범위 안을 가리키는 참조를 복제본으로 바꾼다.
+	// 프리팹 연결: 인스턴스 루트까지 복제하면 새 인스턴스, 인스턴스 일부만 복제하면 연결을 끊어 인스턴스에 추가한 엔티티가 된다
+	void RemapReflectedReferences(FScene& DestScene, const std::unordered_map<uint64, FEntity>& Map)
+	{
+		FRegistry& Registry = DestScene.GetRegistry();
+		for (const auto& [SourceId, CloneEntity] : Map)
+		{
+			(void)SourceId;
+			// 연결 판정은 다시 매핑하기 전 (원본 인스턴스 루트가 복제 범위에 있었는가)
+			const FPrefabLinkComponent* Link         = Registry.TryGet<FPrefabLinkComponent>(CloneEntity);
+			const bool                  bBrokenLink  = Link != nullptr && !Map.contains(Link->Root.ToId());
+			FTypeRegistry::Get().ForEachComponentType([&](const FTypeInfo& Type) {
+				if (!Type.HasComponent(Registry, CloneEntity))
+				{
+					return;
+				}
+				for (const FPropertyInfo& Property : Type.Properties)
+				{
+					if (Property.Type == EPropertyType::Entity)
+					{
+						FEntity&   Reference = Property.GetRef<FEntity>(Type.GetComponent(Registry, CloneEntity));
+						const auto Found     = Map.find(Reference.ToId());
+						if (Found != Map.end())
+						{
+							Reference = Found->second;
+						}
+					}
+				}
+			});
+			if (bBrokenLink)
+			{
+				Registry.Remove<FPrefabLinkComponent>(CloneEntity);
+				if (Registry.Has<FPrefabInstanceComponent>(CloneEntity))
+				{
+					Registry.Remove<FPrefabInstanceComponent>(CloneEntity); // 중첩 인스턴스 일부 복제 → 일반 엔티티
+				}
+			}
+		}
+	}
+
 	// 리플렉션 밖 런타임 데이터(스킨 관절/애니메이션 노드)를 복사하고 Map 안의 참조는 복제본으로 바꾼다
 	void CopyAndRemapRuntimeData(FScene& SourceScene, FScene& DestScene, const std::unordered_map<uint64, FEntity>& Map)
 	{
@@ -85,6 +126,7 @@ namespace
 			FSceneCloner::CopyRuntimeData(SourceScene.GetRegistry(), FEntity::FromId(SourceId), DestScene.GetRegistry(), CloneEntity);
 			FSceneCloner::RemapRuntimeReferences(DestScene.GetRegistry(), CloneEntity, Remap);
 		}
+		RemapReflectedReferences(DestScene, Map);
 	}
 } // namespace
 

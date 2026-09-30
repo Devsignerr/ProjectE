@@ -20,7 +20,7 @@ namespace
 	enum class EReferenceBase : uint8
 	{
 		None,
-		ContentRoot, // .escene, .eproject
+		ContentRoot, // .escene, .eproject, .eprefab
 		OwnFolder,   // .emat, .eparticle
 	};
 
@@ -33,7 +33,7 @@ namespace
 	EReferenceBase GetReferenceBase(const std::filesystem::path& File)
 	{
 		const std::wstring Extension = Lower(File.extension().wstring());
-		if (Extension == L".escene" || Extension == L".eproject")
+		if (Extension == L".escene" || Extension == L".eproject" || Extension == L".eprefab")
 		{
 			return EReferenceBase::ContentRoot;
 		}
@@ -85,11 +85,28 @@ namespace
 		return FStringConv::ToUtf8(Target.lexically_normal().lexically_relative(Base.lexically_normal()).generic_wstring());
 	}
 
+	// 문자열 값 안에 든 JSON (스크립트 PropertyOverrides 등). 객체/배열이 아니면 discarded
+	json ParseEmbeddedJson(const std::string& Value)
+	{
+		if (Value.empty() || (Value.front() != '{' && Value.front() != '['))
+		{
+			return json(json::value_t::discarded);
+		}
+		return json::parse(Value, nullptr, false);
+	}
+
 	void CollectStrings(const json& Node, std::vector<std::string>& Out)
 	{
 		if (Node.is_string())
 		{
-			Out.push_back(Node.get<std::string>());
+			const std::string& Value    = Node.get_ref<const std::string&>();
+			const json         Embedded = ParseEmbeddedJson(Value);
+			if (!Embedded.is_discarded())
+			{
+				CollectStrings(Embedded, Out); // JSON 안의 JSON 문자열도 경로 후보
+				return;
+			}
+			Out.push_back(Value);
 		}
 		else if (Node.is_object() || Node.is_array())
 		{
@@ -98,6 +115,31 @@ namespace
 				CollectStrings(Child, Out);
 			}
 		}
+	}
+
+	// Text 안의 문자열 토큰 Old → New. JSON 안 JSON 문자열에 이스케이프되어 든 형태(\"...\")도 바꾼다. 반환: 바꾼 개수
+	uint32 ReplaceStringToken(std::string& Text, const std::string& Old, const std::string& New)
+	{
+		uint32 Count = 0;
+		for (int32 Level = 0; Level < 2; ++Level)
+		{
+			std::string OldToken = json(Old).dump();
+			std::string NewToken = json(New).dump();
+			if (Level == 1)
+			{
+				// 한 번 더 문자열로 감싼 뒤 바깥 따옴표를 뗀다: "a" → \"a\"
+				OldToken = json(OldToken).dump();
+				NewToken = json(NewToken).dump();
+				OldToken = OldToken.substr(1, OldToken.size() - 2);
+				NewToken = NewToken.substr(1, NewToken.size() - 2);
+			}
+			for (size_t Position = Text.find(OldToken); Position != std::string::npos; Position = Text.find(OldToken, Position + NewToken.size()))
+			{
+				Text.replace(Position, OldToken.size(), NewToken);
+				++Count;
+			}
+		}
+		return Count;
 	}
 
 	bool ReadFile(const std::filesystem::path& Path, std::string& Out)
@@ -180,6 +222,22 @@ std::optional<std::filesystem::path> FAssetReferenceUpdater::MapPath(const std::
 std::optional<std::string> FAssetReferenceUpdater::RemapContentPath(const std::string& Value, const std::filesystem::path& ContentDirectory,
                                                                     const std::vector<FAssetMove>& Moves)
 {
+	// JSON이 든 문자열 (스크립트 오버라이드): 안쪽 문자열마다 다시 계산해 토큰 치환
+	if (const json Embedded = ParseEmbeddedJson(Value); !Embedded.is_discarded())
+	{
+		std::vector<std::string> Strings;
+		CollectStrings(Embedded, Strings);
+		std::string Result = Value;
+		uint32      Count  = 0;
+		for (const std::string& Inner : Strings)
+		{
+			if (const std::optional<std::string> NewInner = RemapContentPath(Inner, ContentDirectory, Moves); NewInner && *NewInner != Inner)
+			{
+				Count += ReplaceStringToken(Result, Inner, *NewInner);
+			}
+		}
+		return Count > 0 ? std::optional<std::string>(Result) : std::nullopt;
+	}
 	if (!LooksLikeFilePath(Value))
 	{
 		return std::nullopt;
@@ -240,13 +298,7 @@ FAssetReferenceUpdater::FResult FAssetReferenceUpdater::UpdateAfterMove(const st
 		// JSON 문자열 토큰 단위 치환 ("값" 전체가 같은 것만)
 		for (const auto& [Old, New] : Replacements)
 		{
-			const std::string OldToken = json(Old).dump();
-			const std::string NewToken = json(New).dump();
-			for (size_t Position = Text.find(OldToken); Position != std::string::npos; Position = Text.find(OldToken, Position + NewToken.size()))
-			{
-				Text.replace(Position, OldToken.size(), NewToken);
-				++Result.ReplacedCount;
-			}
+			Result.ReplacedCount += ReplaceStringToken(Text, Old, New);
 		}
 		std::ofstream Out(File, std::ios::binary | std::ios::trunc);
 		if (!Out)
@@ -314,13 +366,7 @@ uint32 FAssetReferenceUpdater::RemapSceneJson(std::string& Json, const std::file
 		{
 			continue;
 		}
-		const std::string OldToken = json(Value).dump();
-		const std::string NewToken = json(*NewValue).dump();
-		for (size_t Position = Json.find(OldToken); Position != std::string::npos; Position = Json.find(OldToken, Position + NewToken.size()))
-		{
-			Json.replace(Position, OldToken.size(), NewToken);
-			++Count;
-		}
+		Count += ReplaceStringToken(Json, Value, *NewValue);
 	}
 	return Count;
 }

@@ -3,6 +3,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Components.h"
 #include "Scene/Particles.h"
+#include "Scene/Prefab.h"
 
 void RegisterSceneTypes()
 {
@@ -83,4 +84,17 @@ void RegisterSceneTypes()
 		.Property(&FParticleSystemComponent::bPlaying, "Playing", "재생")
 		.Property(&FParticleSystemComponent::Speed, "Speed", "속도").Range(0.0f, 10.0f, 0.01f)
 		.AsComponent();
+
+	// 프리팹: 인스턴스 루트 표식 + 엔티티 연결. 인스펙터는 전용 머리글로 보여 주고(목록에서 숨김), 연결 해제로만 없앤다
+	Registry.RegisterType<FPrefabInstanceComponent>("PrefabInstanceComponent", "프리팹 인스턴스")
+		.Property(&FPrefabInstanceComponent::Asset, "Asset", "프리팹", PF_ReadOnly).AssetFilter(".eprefab")
+		.Property(&FPrefabInstanceComponent::Overrides, "Overrides", "오버라이드", PF_Hidden | PF_ReadOnly)
+		.AsComponent(false)
+		.Hide();
+
+	Registry.RegisterType<FPrefabLinkComponent>("PrefabLinkComponent", "프리팹 연결")
+		.Property(&FPrefabLinkComponent::Id, "Id", "프리팹 안 ID", PF_ReadOnly)
+		.Property(&FPrefabLinkComponent::Root, "Root", "인스턴스 루트", PF_ReadOnly)
+		.AsComponent(false)
+		.Hide();
 }

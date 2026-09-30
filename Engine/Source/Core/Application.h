@@ -41,6 +41,8 @@ public:
 	const FTimer& GetTimer() const { return Timer; }
 
 protected:
+	// 창을 만들기 직전 (FPaths 초기화 후). 사용자 설정으로 창 크기를 바꾸는 데 쓴다
+	virtual void OnConfigureWindow(FWindowDesc& /*WindowDesc*/) {}
 	virtual bool OnInit() { return true; }
 	virtual void OnUpdate(float /*DeltaSeconds*/) {}
 	virtual void OnRender() {}

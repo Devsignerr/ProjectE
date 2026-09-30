@@ -77,6 +77,7 @@ public:
 	void SetPhysicsHooks(const FScriptPhysicsHooks* InHooks) { PhysicsHooks = InHooks; } // 〃
 	void SetNetHooks(const FScriptNetHooks* InHooks) { NetHooks = InHooks; }             // 〃
 	void SetAIHooks(const FScriptAIHooks* InHooks) { AIHooks = InHooks; }                // 〃
+	void SetAppHooks(const FScriptAppHooks* InHooks) { AppHooks = InHooks; }             // 〃
 
 	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
 	uint32 CreateObject(const std::string& ScriptAsset, const std::string& Overrides, FEntity Entity);
@@ -128,6 +129,7 @@ private:
 	int32 GetLocalPlayerId() const;
 	int32 GetOwner(FEntity Entity) const;
 	void RegisterUIBindings();     // entity:GetWidget, UIWidget 값 (ScriptUIBindings.cpp)
+	void RegisterGameBindings();   // Game 테이블: 종료, 화면 설정 (ScriptGameBindings.cpp)
 	// 이번 프레임 게임 UI 이벤트를 스크립트 함수로 전달 (OnUIClicked_<위젯 이름> 등, ScriptUIBindings.cpp)
 	void DispatchUIEvents();
 
@@ -166,6 +168,7 @@ private:
 	const FScriptPhysicsHooks* PhysicsHooks = nullptr;
 	const FScriptNetHooks*     NetHooks     = nullptr;
 	const FScriptAIHooks*      AIHooks      = nullptr;
+	const FScriptAppHooks*     AppHooks     = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
 

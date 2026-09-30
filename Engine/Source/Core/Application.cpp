@@ -99,6 +99,7 @@ int FApplication::Run()
 		SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
 		Window.SetEventHandler([this](const FWindowEvent& Event) { HandleWindowEvent(Event); });
+		OnConfigureWindow(Desc.Window);
 		if (!Window.Create(Desc.Window))
 		{
 			E_LOG(LogCore, Error, "창 생성에 실패하여 종료합니다");

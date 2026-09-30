@@ -97,6 +97,16 @@ struct FScriptAIHooks
 	std::function<void(FEntity)> StopTree;
 };
 
+// 스크립트가 쓰는 앱 기능 (Lua Game 테이블 — 종료, 화면 설정). 런타임/에디터가 연결한다 (비어 있으면 무시)
+struct FScriptAppHooks
+{
+	std::function<void()>                         Quit;          // 런타임: 종료 요청 / 에디터: 플레이 정지 요청 (둘 다 프레임 끝에 처리)
+	std::function<std::string()>                  GetWindowMode; // "Windowed" / "BorderlessFullscreen"
+	std::function<bool(const std::string& Mode)>  SetWindowMode; // 알 수 없는 이름이면 false
+	std::function<bool()>                         IsVSync;
+	std::function<void(bool)>                     SetVSync;
+};
+
 // 컴포넌트가 아닌 스크립트 객체 (Lua 비헤이비어 트리 노드 등): 플레이 세션 안에서만 유효한 핸들. 0 = 무효
 using FScriptObjectHandle = uint64;
 
@@ -147,6 +157,7 @@ public:
 	void SetPhysicsHooks(FScriptPhysicsHooks Hooks);
 	void SetNetHooks(FScriptNetHooks Hooks);
 	void SetAIHooks(FScriptAIHooks Hooks);
+	void SetAppHooks(FScriptAppHooks Hooks);
 
 	// ---- 스크립트 객체 (컴포넌트 없이 스크립트 클래스의 인스턴스를 만든다 — Lua 비헤이비어 트리 노드용)
 	// self.entity = Entity, self.Properties = 선언 기본값 + PropertyOverrides(JSON, FScriptComponent와 같은 형식).
@@ -180,6 +191,7 @@ private:
 	FScriptPhysicsHooks          PhysicsHooks;
 	FScriptNetHooks              NetHooks;
 	FScriptAIHooks               AIHooks;
+	FScriptAppHooks              AppHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)

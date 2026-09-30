@@ -35,6 +35,37 @@ FRuntimeApplication::FRuntimeApplication()
 
 FRuntimeApplication::~FRuntimeApplication() = default;
 
+void FRuntimeApplication::OnConfigureWindow(FWindowDesc& WindowDesc)
+{
+	// 프로젝트 기본값(Config/DefaultGameUserSettings.json) ← 사용자 설정. 자동 검증은 사용자 설정 없이 (결과가 PC마다 달라지지 않도록)
+	if (IsAutomationRun())
+	{
+		if (FPaths::HasProject())
+		{
+			UserSettings.ApplyFile(FPaths::GetProjectConfigDirectory() / L"DefaultGameUserSettings.json");
+		}
+	}
+	else
+	{
+		UserSettings = FGameUserSettings::Load();
+	}
+	// --window-mode <Windowed|BorderlessFullscreen>: 이번 실행만 (저장하지 않음, 검증용)
+	if (const std::wstring ModeArg = FCommandLine::FromProcess().GetValue(L"--window-mode"); !ModeArg.empty())
+	{
+		EWindowMode Mode = UserSettings.WindowMode;
+		if (TryParseWindowMode(FStringConv::ToUtf8(ModeArg), Mode))
+		{
+			UserSettings.WindowMode = Mode;
+		}
+		else
+		{
+			E_LOG(LogRuntime, Warning, "--window-mode 값을 알 수 없습니다: {}", FStringConv::ToUtf8(ModeArg));
+		}
+	}
+	WindowDesc.Width  = UserSettings.WindowWidth;
+	WindowDesc.Height = UserSettings.WindowHeight;
+}
+
 bool FRuntimeApplication::OnInit()
 {
 	// FApplication::Run이 FPaths를 초기화했으므로 여기서는 프로젝트만 확인
@@ -52,6 +83,7 @@ bool FRuntimeApplication::OnInit()
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
 	RhiDesc.Width        = GetWindow().GetWidth();
 	RhiDesc.Height       = GetWindow().GetHeight();
+	RhiDesc.bVSync       = UserSettings.bVSync;
 #if E_DEBUG
 	RhiDesc.bEnableDebugLayer = true;
 #endif
@@ -109,9 +141,31 @@ bool FRuntimeApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
+	// Lua Game 테이블: 종료 버튼/옵션 메뉴
+	Scripts.SetAppHooks({
+		[this]() { RequestExit(); },
+		[this]() { return std::string(ToString(UserSettings.WindowMode)); },
+		[this](const std::string& ModeName) {
+			EWindowMode Mode = EWindowMode::Windowed;
+			if (!TryParseWindowMode(ModeName, Mode))
+			{
+				return false;
+			}
+			ApplyWindowMode(Mode, true);
+			return true;
+		},
+		[this]() { return UserSettings.bVSync; },
+		[this](bool bEnabled) { SetVSync(bEnabled); },
+	});
 	StartSession(FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess()));
 
-	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (ESC 종료)");
+	// 저장된 창 모드 (RHI 초기화 후 — 크기가 바뀌면 스왑체인이 따라간다)
+	if (UserSettings.WindowMode != EWindowMode::Windowed)
+	{
+		ApplyWindowMode(UserSettings.WindowMode, false);
+	}
+
+	E_LOG(LogRuntime, Display, "런타임 초기화 완료 (Alt+Enter 전체 화면{})", FPaths::IsPackaged() ? "" : ", ESC 종료");
 	return true;
 }
 
@@ -153,10 +207,16 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		}
 		GameInput = &BlockedInput;
 	}
-	// ESC 종료 (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
-	if (!UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	// ESC 종료는 개발 실행에서만 — 패키지 게임은 ESC를 게임(일시정지 메뉴 등)에 넘기고 종료는 Game.Quit()로
+	// (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
+	if (!FPaths::IsPackaged() && !UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
 	{
 		RequestExit();
+	}
+	// Alt+Enter: 창 ↔ 테두리 없는 전체 화면
+	if ((InputState.IsKeyDown(EKey::LeftAlt) || InputState.IsKeyDown(EKey::RightAlt)) && InputState.IsKeyPressed(EKey::Enter))
+	{
+		ApplyWindowMode(UserSettings.WindowMode == EWindowMode::Windowed ? EWindowMode::BorderlessFullscreen : EWindowMode::Windowed, true);
 	}
 	World.TickGameplay(DeltaSeconds, GameInput); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);
@@ -198,8 +258,43 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 	}
 }
 
+void FRuntimeApplication::ApplyWindowMode(EWindowMode Mode, bool bSave)
+{
+	UserSettings.WindowMode = Mode;
+	GetWindow().SetBorderlessFullscreen(Mode == EWindowMode::BorderlessFullscreen);
+	if (bSave)
+	{
+		SaveUserSettings();
+	}
+}
+
+void FRuntimeApplication::SetVSync(bool bEnabled)
+{
+	UserSettings.bVSync = bEnabled;
+	if (Rhi)
+	{
+		Rhi->SetVSync(bEnabled);
+	}
+	SaveUserSettings();
+}
+
+void FRuntimeApplication::SaveUserSettings() const
+{
+	if (!IsAutomationRun())
+	{
+		UserSettings.Save();
+	}
+}
+
 void FRuntimeApplication::OnShutdown()
 {
+	// 창 모드면 마지막 창 크기를 기억한다 (최소화 상태는 제외)
+	if (!GetWindow().IsBorderlessFullscreen() && !GetWindow().IsMinimized() && GetWindow().GetWidth() > 0)
+	{
+		UserSettings.WindowWidth  = GetWindow().GetWidth();
+		UserSettings.WindowHeight = GetWindow().GetHeight();
+	}
+	SaveUserSettings();
 	EndSession();
 	Audio.Shutdown();
 

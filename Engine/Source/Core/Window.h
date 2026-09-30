@@ -42,6 +42,11 @@ public:
 	void SetMessageHook(FMessageHook Hook) { MessageHook = std::move(Hook); }
 	void SetTitle(const std::wstring& Title);
 
+	// 테두리 없는 전체 화면 (창이 있는 모니터 전체를 덮는 팝업 창). 끄면 이전 창 위치/크기/최대화 상태로 돌아간다.
+	// 크기가 바뀌므로 Resize 이벤트가 온다
+	void SetBorderlessFullscreen(bool bEnable);
+	bool IsBorderlessFullscreen() const { return bBorderlessFullscreen; }
+
 	HWND   GetHandle() const { return Hwnd; }
 	uint32 GetWidth() const { return Width; }
 	uint32 GetHeight() const { return Height; }
@@ -60,6 +65,11 @@ private:
 	bool          bMinimized  = false;
 	bool          bInSizeMove = false; // 드래그 리사이즈 중에는 Resize 이벤트를 보류
 	uint32        PendingHighSurrogate = 0; // WM_CHAR UTF-16 서로게이트 앞쪽
+	bool          bBorderlessFullscreen = false;
+	// 전체 화면 전 창 상태 (WINDOWPLACEMENT 일부 — 헤더에 Windows.h를 넣지 않으려고 값으로 보관)
+	uint32        SavedStyle      = 0;
+	int32         SavedNormalRect[4] = {}; // left, top, right, bottom
+	bool          bSavedMaximized = false;
 	FEventHandler EventHandler;
 	FMessageHook  MessageHook;
 };

@@ -154,6 +154,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterNetBindings();
 	RegisterAIBindings();
 	RegisterUIBindings();
+	RegisterGameBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()

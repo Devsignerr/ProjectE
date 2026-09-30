@@ -146,6 +146,8 @@ bool FEditorApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
+	// Lua Game.Quit()은 에디터에서 플레이 정지 (창 모드/VSync는 에디터 창에 적용하지 않는다)
+	Scripts.SetAppHooks({ [this]() { bScriptStopPlayRequested = true; } });
 	if (Audio.Init() && IsAutomationRun())
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
@@ -1234,6 +1236,13 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	}
 	PlayMode.Tick(Context, DeltaSeconds, GameInput);
 	NetPlay.PostTick(DeltaSeconds); // 리슨 서버 복제 전송
+	if (bScriptStopPlayRequested)
+	{
+		bScriptStopPlayRequested = false;
+		ShowNotification("Game.Quit() — 플레이를 정지합니다", false);
+		StopPlay();
+		return;
+	}
 	if (World.ConsumeSessionRequest())
 	{
 		ShowNotification("에디터 플레이에서는 Net.Host/Connect/Disconnect를 지원하지 않습니다 (런타임에서 동작)", true);

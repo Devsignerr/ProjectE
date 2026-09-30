@@ -3,6 +3,7 @@
 #include "Audio/AudioEngine.h"
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
+#include "Core/GameUserSettings.h"
 #include "Network/LanDiscovery.h"
 #include "Network/NetDriver.h"
 #include "Network/NetPlayerSpawner.h"
@@ -32,6 +33,7 @@ public:
 	~FRuntimeApplication() override; // unique_ptr<FD3D12RHI> 완전 타입이 필요하므로 cpp에 정의
 
 protected:
+	void OnConfigureWindow(FWindowDesc& WindowDesc) override;
 	bool OnInit() override;
 	void OnUpdate(float DeltaSeconds) override;
 	void OnRender() override;
@@ -42,6 +44,11 @@ protected:
 private:
 	void BuildPlaceholderScene();
 
+	// ---- 화면 설정 (창/테두리 없는 전체 화면, VSync). 자동 검증 실행에서는 사용자 설정 파일을 읽거나 쓰지 않는다
+	void ApplyWindowMode(EWindowMode Mode, bool bSave);
+	void SetVSync(bool bEnabled);
+	void SaveUserSettings() const;
+
 	// ---- 세션 (RuntimeSession.cpp): 씬 로드 + 넷 모드별 시작/종료, 스크립트 요청(Net.Host/Connect/Disconnect) 처리
 	void LoadScene(); // SceneAsset (없거나 실패하면 자리표시 씬)
 	void StartSession(FNetLaunchOptions Options);
@@ -51,6 +58,8 @@ private:
 	void UpdateWindowTitle();
 
 	std::string SceneAsset; // Content 기준 현재 씬
+
+	FGameUserSettings UserSettings;
 
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;

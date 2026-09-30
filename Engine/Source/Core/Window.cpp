@@ -180,6 +180,51 @@ void FWindow::SetTitle(const std::wstring& Title)
 	}
 }
 
+void FWindow::SetBorderlessFullscreen(bool bEnable)
+{
+	if (Hwnd == nullptr || bEnable == bBorderlessFullscreen)
+	{
+		return;
+	}
+	bBorderlessFullscreen = bEnable;
+
+	if (bEnable)
+	{
+		WINDOWPLACEMENT Placement{};
+		Placement.length = sizeof(Placement);
+		GetWindowPlacement(Hwnd, &Placement);
+		SavedStyle         = static_cast<uint32>(GetWindowLongPtrW(Hwnd, GWL_STYLE));
+		SavedNormalRect[0] = Placement.rcNormalPosition.left;
+		SavedNormalRect[1] = Placement.rcNormalPosition.top;
+		SavedNormalRect[2] = Placement.rcNormalPosition.right;
+		SavedNormalRect[3] = Placement.rcNormalPosition.bottom;
+		bSavedMaximized    = Placement.showCmd == SW_SHOWMAXIMIZED;
+
+		MONITORINFO Monitor{};
+		Monitor.cbSize = sizeof(Monitor);
+		GetMonitorInfoW(MonitorFromWindow(Hwnd, MONITOR_DEFAULTTONEAREST), &Monitor);
+		SetWindowLongPtrW(Hwnd, GWL_STYLE, static_cast<LONG_PTR>((SavedStyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP | WS_VISIBLE));
+		SetWindowPos(Hwnd, HWND_TOP, Monitor.rcMonitor.left, Monitor.rcMonitor.top,
+		             Monitor.rcMonitor.right - Monitor.rcMonitor.left, Monitor.rcMonitor.bottom - Monitor.rcMonitor.top,
+		             SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+		E_LOG(LogCore, Display, "테두리 없는 전체 화면: {}x{}", Monitor.rcMonitor.right - Monitor.rcMonitor.left, Monitor.rcMonitor.bottom - Monitor.rcMonitor.top);
+	}
+	else
+	{
+		SetWindowLongPtrW(Hwnd, GWL_STYLE, static_cast<LONG_PTR>(SavedStyle));
+		WINDOWPLACEMENT Placement{};
+		Placement.length                  = sizeof(Placement);
+		Placement.showCmd                 = bSavedMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+		Placement.rcNormalPosition.left   = SavedNormalRect[0];
+		Placement.rcNormalPosition.top    = SavedNormalRect[1];
+		Placement.rcNormalPosition.right  = SavedNormalRect[2];
+		Placement.rcNormalPosition.bottom = SavedNormalRect[3];
+		SetWindowPlacement(Hwnd, &Placement);
+		SetWindowPos(Hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+		E_LOG(LogCore, Display, "창 모드로 전환");
+	}
+}
+
 void FWindow::Dispatch(const FWindowEvent& Event)
 {
 	if (EventHandler)
@@ -299,6 +344,14 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		Dispatch(Event);
 		return 0;
 	}
+
+	case WM_SYSCHAR:
+		// Alt+Enter는 앱이 전체 화면 전환으로 쓴다 (기본 처리는 경고음)
+		if (WParam == VK_RETURN)
+		{
+			return 0;
+		}
+		break;
 
 	case WM_KEYUP:
 	case WM_SYSKEYUP:

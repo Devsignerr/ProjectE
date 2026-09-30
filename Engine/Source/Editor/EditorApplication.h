@@ -159,5 +159,6 @@ private:
 	bool  bShowImGuiDemo = false;
 	bool  bLayoutChecked        = false;
 	bool  bResetLayoutRequested = false;
+	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
 	float SmoothedFps    = 0.0f;
 };

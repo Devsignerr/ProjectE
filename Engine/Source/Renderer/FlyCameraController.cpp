@@ -35,10 +35,19 @@ void FFlyCameraController::Update(FCamera& Camera, const FInput& Input, float De
 	                            -MaxPitchDegrees, MaxPitchDegrees);
 	Camera.SetRotation(FQuat::FromEuler(PitchDegrees, YawDegrees, 0.0f));
 
-	// 이동
+	const float Speed = MoveSpeed * (Input.IsKeyDown(EKey::LeftShift) ? FastMultiplier : 1.0f);
+
+	// 이동. 직교는 시선 방향으로 움직여도 화면이 변하지 않으므로 W/S를 같은 높이(Z)에서 수평 이동으로 쓴다
+	//   (시선을 바닥에 투영한 방향, 바로 아래를 보고 있으면 화면 위쪽 방향)
+	FVector3 ForwardMove = Camera.GetForwardVector();
+	if (Camera.IsOrthographic())
+	{
+		const FVector3 Flat = FVector3(ForwardMove.X, ForwardMove.Y, 0.0f);
+		ForwardMove         = Flat.IsNearlyZero() ? FVector3(Camera.GetUpVector().X, Camera.GetUpVector().Y, 0.0f).GetNormalized() : Flat.GetNormalized();
+	}
 	FVector3 Direction;
-	if (Input.IsKeyDown(EKey::W)) Direction += Camera.GetForwardVector();
-	if (Input.IsKeyDown(EKey::S)) Direction -= Camera.GetForwardVector();
+	if (Input.IsKeyDown(EKey::W)) Direction += ForwardMove;
+	if (Input.IsKeyDown(EKey::S)) Direction -= ForwardMove;
 	if (Input.IsKeyDown(EKey::D)) Direction += Camera.GetRightVector();
 	if (Input.IsKeyDown(EKey::A)) Direction -= Camera.GetRightVector();
 	if (Input.IsKeyDown(EKey::E)) Direction += FVector3::UpVector;
@@ -46,7 +55,6 @@ void FFlyCameraController::Update(FCamera& Camera, const FInput& Input, float De
 
 	if (!Direction.IsNearlyZero())
 	{
-		const float Speed = MoveSpeed * (Input.IsKeyDown(EKey::LeftShift) ? FastMultiplier : 1.0f);
 		Camera.SetPosition(Camera.GetPosition() + Direction.GetNormalized() * (Speed * DeltaSeconds));
 	}
 }

@@ -42,6 +42,19 @@ struct FScriptPhysicsHooks
 	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
 };
 
+// 스크립트가 쓰는 네트워크 정보. 앱(FGameWorld)이 Network 모듈과 연결한다 (Scripting은 Network에 의존하지 않는다).
+// 기본값 = Standalone (서버이자 클라이언트, 모든 스크립트 실행, 로컬 플레이어 0)
+struct FScriptNetHooks
+{
+	bool        bRunServerScripts = true; // ExecutionLocation 필터 (세션 시작 시 고정)
+	bool        bRunClientScripts = true;
+	bool        bIsServer         = true;
+	bool        bIsClient         = true;
+	std::string ModeName          = "Standalone";
+	std::function<int32()>        GetLocalPlayerId; // 없으면 0. 전용 서버 -1 (로컬 플레이어 없음), 클라이언트는 입장 후 정해진다
+	std::function<int32(FEntity)> GetOwner;         // 엔티티(또는 가장 가까운 복제 조상)의 소유 플레이어, 없으면 -1
+};
+
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.
 //
 // 스크립트 형식 (Unity 스타일 테이블 반환):
@@ -87,6 +100,7 @@ public:
 	// 다음 BeginPlay부터 적용 (플레이 중이면 즉시)
 	void SetAudioHooks(FScriptAudioHooks Hooks);
 	void SetPhysicsHooks(FScriptPhysicsHooks Hooks);
+	void SetNetHooks(FScriptNetHooks Hooks);
 
 	// ---- 핫 리로드: 변경된 .lua 파일 (절대 경로). 실패하면 기존 스크립트를 유지한다. 반환: 성공 여부
 	bool ReloadScript(const std::filesystem::path& ScriptPath);
@@ -104,6 +118,7 @@ private:
 	std::filesystem::path        ContentDirectory;
 	FScriptAudioHooks            AudioHooks;
 	FScriptPhysicsHooks          PhysicsHooks;
+	FScriptNetHooks              NetHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)
 	uint32                       ErrorCount = 0;

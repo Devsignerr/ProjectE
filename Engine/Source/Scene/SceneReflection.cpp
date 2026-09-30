@@ -98,6 +98,7 @@ void RegisterSceneTypes()
 	Registry.RegisterType<FScriptComponent>("ScriptComponent", "스크립트")
 		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트").AssetFilter(".lua")
 		.Property(&FScriptComponent::PropertyOverrides, "PropertyOverrides", "프로퍼티 오버라이드", PF_Hidden)
+		.Property(&FScriptComponent::ExecutionLocation, "ExecutionLocation", "실행 위치 (0 서버, 1 클라이언트, 2 양쪽)").Range(0.0f, 2.0f, 1.0f)
 		.AsComponent();
 
 	// 파티클: 에셋(.eparticle)은 콘텐츠 브라우저의 파티클 편집기에서 고친다

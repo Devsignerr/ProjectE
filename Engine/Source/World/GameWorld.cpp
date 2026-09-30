@@ -1,6 +1,7 @@
 #include "World/GameWorld.h"
 
 #include "Core/Assert.h"
+#include "Network/NetDriver.h"
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -39,17 +40,46 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 	});
 }
 
-void FGameWorld::BeginPlay(FScene& InScene, EWorldRole InRole)
+void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 {
 	if (IsPlaying())
 	{
 		EndPlay();
 	}
-	Scene = &InScene;
-	Role  = InRole;
+	Scene                 = &InScene;
+	Mode                  = InMode;
+	const bool bClient    = Mode == ENetMode::Client;
+	const bool bDedicated = Mode == ENetMode::DedicatedServer;
+
+	// 스크립트 네트워크 정보: 실행 위치 필터, 모드, 로컬 플레이어, 소유권(가장 가까운 복제 조상의 OwnerPlayerId)
+	FScriptNetHooks NetHooks;
+	NetHooks.bRunServerScripts = !bClient;
+	NetHooks.bRunClientScripts = !bDedicated;
+	NetHooks.bIsServer         = !bClient;
+	NetHooks.bIsClient         = !bDedicated;
+	NetHooks.ModeName          = ToString(Mode);
+	NetHooks.GetLocalPlayerId  = [this]() {
+		if (Mode == ENetMode::DedicatedServer)
+		{
+			return -1; // 전용 서버에는 로컬 플레이어가 없다
+		}
+		return static_cast<int32>(Systems.Net != nullptr ? Systems.Net->GetLocalPlayerId() : 0);
+	};
+	NetHooks.GetOwner          = [this](FEntity Entity) {
+		for (FEntity Current = Entity; Scene != nullptr && Scene->GetRegistry().IsValid(Current); Current = Scene->GetParent(Current))
+		{
+			if (const FReplicatedComponent* Replicated = Scene->GetRegistry().TryGet<FReplicatedComponent>(Current))
+			{
+				return Replicated->OwnerPlayerId;
+			}
+		}
+		return -1;
+	};
+	Systems.Scripts->SetNetHooks(std::move(NetHooks));
+
 	if (Systems.Physics != nullptr)
 	{
-		if (Role == EWorldRole::Client)
+		if (bClient)
 		{
 			// 서버가 시뮬레이션하는 복제 엔티티(NetId 보유)는 키네마틱: 복제 트랜스폼을 따라가며 로컬 물체와 충돌
 			Systems.Physics->SetKinematicOverride([](const FScene& Target, FEntity Entity) { return Target.GetRegistry().Has<FNetIdComponent>(Entity); });
@@ -60,11 +90,7 @@ void FGameWorld::BeginPlay(FScene& InScene, EWorldRole InRole)
 		}
 		Systems.Physics->Begin();
 	}
-	if (Role == EWorldRole::Client)
-	{
-		return; // 게임 로직(게임 모듈/스크립트)은 서버에서만
-	}
-	if (Systems.GameModule != nullptr)
+	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
 	{
 		Systems.GameModule->BeginPlay(InScene);
 	}
@@ -77,13 +103,10 @@ void FGameWorld::EndPlay()
 	{
 		return;
 	}
-	if (Role == EWorldRole::Authority)
+	Systems.Scripts->EndPlay();
+	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
-		Systems.Scripts->EndPlay();
-		if (Systems.GameModule != nullptr)
-		{
-			Systems.GameModule->EndPlay(*Scene);
-		}
+		Systems.GameModule->EndPlay(*Scene);
 	}
 	if (Systems.Physics != nullptr)
 	{
@@ -98,18 +121,15 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		return;
 	}
-	if (Role == EWorldRole::Authority)
+	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
-		Systems.Scripts->Update(DeltaSeconds, Input);
-		if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
-		{
-			// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
-			FSceneAssetResolver::Resolve(*Scene, *Systems.Resources, Systems.ContentDirectory);
-		}
-		if (Systems.GameModule != nullptr)
-		{
-			Systems.GameModule->Update(*Scene, DeltaSeconds);
-		}
+		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
+		FSceneAssetResolver::Resolve(*Scene, *Systems.Resources, Systems.ContentDirectory);
+	}
+	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
+	{
+		Systems.GameModule->Update(*Scene, DeltaSeconds);
 	}
 	if (Systems.Physics != nullptr)
 	{

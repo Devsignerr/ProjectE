@@ -116,7 +116,7 @@ bool FRuntimeApplication::OnInit()
 
 	// 게임 시작: 게임 월드(스크립트 콘텐츠 경로·물리 훅 연결) → BeginPlay
 	World.Init({ &Scripts, &Physics, &GameModule, &Resources,
-	             FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory() });
+	             FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory(), &Net });
 	Scripts.SetAudioHooks({
 		[this](FEntity Entity) { AudioSystem.Play(Audio, Entity); },
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
@@ -131,7 +131,7 @@ bool FRuntimeApplication::OnInit()
 		// 클라이언트: 게임 로직(스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
 		Net.OnGameMessage = [this](FNetConnectionId, const std::vector<uint8>& Message) { ReplicationClient.HandleMessage(Message); };
-		World.BeginPlay(Scene, EWorldRole::Client);
+		World.BeginPlay(Scene, ENetMode::Client);
 	}
 	else
 	{
@@ -145,7 +145,7 @@ bool FRuntimeApplication::OnInit()
 			ReplicationServer.OnPlayerJoined(Player.Connection);
 		};
 		Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
-		World.BeginPlay(Scene);
+		World.BeginPlay(Scene, NetOptions.Mode == ENetMode::ListenServer ? ENetMode::ListenServer : ENetMode::Standalone);
 		if (NetOptions.Mode == ENetMode::ListenServer)
 		{
 			if (Net.StartServer(CreateGnsTransport(), NetOptions.Port, Session, false))

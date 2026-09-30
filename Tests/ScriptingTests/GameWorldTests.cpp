@@ -2,11 +2,13 @@
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
+#include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 #include "World/GameWorld.h"
 
 #include <filesystem>
+#include <fstream>
 
 // 시작/정지 수명, 게임플레이 틱에서 물리 진행, 스크립트 물리 훅 연결(Physics.Raycast, GetMass)
 E_TEST(GameWorld_LifecycleAndPhysicsHooks)
@@ -51,7 +53,7 @@ assert(math.abs(Hit.entity:GetMass() - 3) < 0.001)
 	E_EXPECT_FALSE(Scripts.IsPlaying());
 }
 
-// 클라이언트 역할: 스크립트/게임 모듈은 돌지 않고, 복제 엔티티(NetId)의 동적 바디는 키네마틱으로 트랜스폼을 따른다.
+// 클라이언트 역할: 게임 모듈은 돌지 않고(스크립트는 ClientOnly/Both만), 복제 엔티티(NetId)의 동적 바디는 키네마틱으로 트랜스폼을 따른다.
 // 복제되지 않은 로컬 동적 바디는 그대로 시뮬레이션된다
 E_TEST(GameWorld_ClientRoleMakesReplicatedBodiesKinematic)
 {
@@ -71,10 +73,10 @@ E_TEST(GameWorld_ClientRoleMakesReplicatedBodiesKinematic)
 	FPhysicsSystem Physics;
 	FGameWorld     World;
 	World.Init({ &Scripts, &Physics, nullptr, nullptr, std::filesystem::temp_directory_path() });
-	World.BeginPlay(Scene, EWorldRole::Client);
+	World.BeginPlay(Scene, ENetMode::Client);
 	E_EXPECT_TRUE(World.GetRole() == EWorldRole::Client);
 	E_EXPECT_TRUE(Physics.IsActive());
-	E_EXPECT_FALSE(Scripts.IsPlaying());
+	E_EXPECT_TRUE(Scripts.IsPlaying()); // ClientOnly/Both 스크립트용
 	for (int32 Frame = 0; Frame < 30; ++Frame)
 	{
 		World.TickGameplay(1.0f / 60.0f, nullptr);
@@ -92,4 +94,96 @@ E_TEST(GameWorld_ClientRoleMakesReplicatedBodiesKinematic)
 	E_EXPECT_TRUE(Physics.GetVelocity(Replicated).Y > 1000.0f); // 한 프레임에 100cm → 약 6000cm/s
 	World.EndPlay();
 	E_EXPECT_FALSE(Physics.IsActive());
+}
+
+namespace
+{
+	// 스크립트가 돌았는지 표시: 시작하면 자기 위치 X를 1로 바꾼다
+	std::filesystem::path WriteMarkerScript()
+	{
+		const std::filesystem::path Directory = std::filesystem::temp_directory_path() / L"ProjectEGameWorldTests";
+		std::filesystem::create_directories(Directory / L"Scripts");
+		std::ofstream File(Directory / L"Scripts/Marker.lua", std::ios::binary | std::ios::trunc);
+		File << "local M = {}\nfunction M:OnStart() self.entity:SetPosition(Vector3(1, 0, 0)) end\nreturn M\n";
+		return Directory;
+	}
+
+	FEntity AddMarker(FScene& Scene, const char* Name, EScriptExecution Location)
+	{
+		const FEntity    Entity    = Scene.CreateEntity(Name);
+		FScriptComponent& Component = Scene.GetRegistry().Emplace<FScriptComponent>(Entity);
+		Component.ScriptAsset       = "Scripts/Marker.lua";
+		Component.ExecutionLocation = static_cast<int32>(Location);
+		return Entity;
+	}
+} // namespace
+
+// ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
+E_TEST(GameWorld_ScriptExecutionLocationFilter)
+{
+	const std::filesystem::path Content = WriteMarkerScript();
+	const auto RanScripts = [&](ENetMode Mode) {
+		FScene        Scene;
+		const FEntity Server = AddMarker(Scene, "Server", EScriptExecution::ServerOnly);
+		const FEntity Client = AddMarker(Scene, "Client", EScriptExecution::ClientOnly);
+		const FEntity Both   = AddMarker(Scene, "Both", EScriptExecution::Both);
+		Scene.UpdateTransforms();
+		FScriptSystem Scripts;
+		FGameWorld    World;
+		World.Init({ &Scripts, nullptr, nullptr, nullptr, Content });
+		World.BeginPlay(Scene, Mode);
+		World.TickGameplay(1.0f / 60.0f, nullptr);
+		const auto Ran = [&](FEntity Entity) { return Scene.GetTransform(Entity).Position.X == 1.0f; };
+		std::string Result = std::string(Ran(Server) ? "S" : "") + (Ran(Client) ? "C" : "") + (Ran(Both) ? "B" : "");
+		World.EndPlay();
+		return Result;
+	};
+	E_EXPECT_TRUE(RanScripts(ENetMode::Standalone) == "SCB");
+	E_EXPECT_TRUE(RanScripts(ENetMode::ListenServer) == "SCB");
+	E_EXPECT_TRUE(RanScripts(ENetMode::DedicatedServer) == "SB");
+	E_EXPECT_TRUE(RanScripts(ENetMode::Client) == "CB");
+}
+
+// Lua Net 테이블과 소유권: 서버 소유(-1)는 서버에서 조종 권한, 플레이어 소유는 그 플레이어의 기계에서
+E_TEST(GameWorld_LuaNetApiAndOwnership)
+{
+	RegisterNetworkTypes();
+	FScene        Scene;
+	const FEntity ServerOwned = Scene.CreateEntity("ServerOwned");
+	Scene.GetRegistry().Emplace<FReplicatedComponent>(ServerOwned);
+	const FEntity Pawn = Scene.CreateEntity("Pawn");
+	Scene.GetRegistry().Emplace<FReplicatedComponent>(Pawn).OwnerPlayerId = 0;
+	const FEntity Weapon = Scene.CreateEntity("Weapon"); // 복제 표시 없음 → 가장 가까운 복제 조상(Pawn)의 소유자
+	Scene.SetParent(Weapon, Pawn);
+	const FEntity Other = Scene.CreateEntity("Other");
+	Scene.GetRegistry().Emplace<FReplicatedComponent>(Other).OwnerPlayerId = 7;
+	Scene.UpdateTransforms();
+
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, std::filesystem::temp_directory_path() });
+
+	World.BeginPlay(Scene, ENetMode::Standalone);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+assert(Net.IsServer() and Net.IsClient() and Net.GetMode() == 'Standalone' and Net.GetLocalPlayerId() == 0)
+assert(Scene.Find('ServerOwned'):GetOwner() == -1 and Scene.Find('ServerOwned'):IsLocallyOwned())
+assert(Scene.Find('Weapon'):GetOwner() == 0 and Scene.Find('Weapon'):IsLocallyOwned())
+assert(Scene.Find('Other'):GetOwner() == 7 and not Scene.Find('Other'):IsLocallyOwned())
+)"));
+	World.EndPlay();
+
+	World.BeginPlay(Scene, ENetMode::DedicatedServer);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+assert(Net.IsServer() and not Net.IsClient() and Net.GetMode() == 'DedicatedServer' and Net.GetLocalPlayerId() == -1)
+assert(Scene.Find('ServerOwned'):IsLocallyOwned() and not Scene.Find('Pawn'):IsLocallyOwned()) -- 전용 서버에는 플레이어 0이 없다
+)"));
+	World.EndPlay();
+
+	World.BeginPlay(Scene, ENetMode::Client);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+assert(not Net.IsServer() and Net.IsClient() and Net.GetMode() == 'Client')
+assert(not Scene.Find('ServerOwned'):IsLocallyOwned()) -- 서버 소유는 클라이언트에서 권한 없음
+)"));
+	World.EndPlay();
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 }

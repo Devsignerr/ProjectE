@@ -104,6 +104,7 @@ Engine/Source/
 Engine/Shaders/   HLSL (Common.hlsli 공통 헤더, Mesh.hlsl, GenerateMips.hlsl) + Shaders.json(쿠킹 매니페스트 — 새 셰이더/엔트리는 여기 추가). Cooked/는 생성물(git 제외)
 Editor/Source/    ProjectEEditor 실행 파일 (main만)
 Runtime/Source/   ProjectERuntime 게임 런타임 실행 파일 (창 서브시스템, `--project`로 프로젝트 지정)
+Server/Source/    ProjectEServer 전용 서버 실행 파일 (콘솔, 창/GPU 없음 — `FApplicationDesc::bHeadless` 고정 틱 루프 + `FGameWorld`, `--exit-after`는 틱 수)
 Tools/Cook/       ProjectECook 쿠킹 도구 (셰이더 → DXIL, GPU 불필요)
 Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋, Source/ = SampleGame.dll 게임 모듈). 인자 없이 실행하면 기본으로 열린다

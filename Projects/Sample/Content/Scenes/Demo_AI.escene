@@ -1,0 +1,189 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 500.0],
+          "Rotation": [-0.10938165336847305, 0.4082179069519043, 0.23456971347332, 0.8754260540008545],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DirectionalLightComponent": {
+          "Color": [1.0, 0.96, 0.9],
+          "Intensity": 2.5
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, -10.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [22.0, 18.0, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Wall",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 450.0, 75.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.4, 6.0, 1.5]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Crate",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-450.0, 650.0, 50.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.5, 1.0, 1.0]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "NavMesh",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "NavMeshComponent": {
+          "NavMeshAsset": "Scenes/Demo_AI.enav",
+          "AgentRadius": 45.0,
+          "AgentHeight": 180.0,
+          "AgentMaxClimb": 40.0,
+          "AgentMaxSlopeDegrees": 45.0,
+          "CellSize": 20.0,
+          "CellHeight": 10.0
+        }
+      }
+    },
+    {
+      "Name": "Guard",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-550.0, 350.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "BehaviorTreeComponent": {
+          "Asset": "AI/Guard.ebt",
+          "AutoStart": true
+        },
+        "NavAgentComponent": {
+          "MaxSpeed": 150.0,
+          "AcceptanceRadius": 20.0,
+          "TurnSpeedDegrees": 540.0,
+          "OrientToMovement": true
+        }
+      }
+    },
+    {
+      "Name": "GuardBody",
+      "Parent": 5,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.7, 0.7, 1.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "GuardNose",
+      "Parent": 5,
+      "Components": {
+        "TransformComponent": {
+          "Position": [45.0, 0.0, 95.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.3, 0.2, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Player",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [800.0, -150.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/PlayerWalker.lua",
+          "PropertyOverrides": "{\"PointA\":[800.0,-150.0,0.0],\"PointB\":[-800.0,-150.0,0.0],\"Speed\":200.0}"
+        }
+      }
+    },
+    {
+      "Name": "PlayerBody",
+      "Parent": 8,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.5, 0.5, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1083.0, -1083.0, 1286.0],
+          "Rotation": [-0.130885, 0.315985, 0.359605, 0.868163],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        }
+      }
+    }
+  ]
+}

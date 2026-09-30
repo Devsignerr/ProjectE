@@ -421,7 +421,7 @@ void FBehaviorTreeEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 	{
 		NodeEditor::NavigateToContent(0.0f);
 	}
-	// 열 때: 큰 트리 전체로 축소하지 않고 루트 + 첫 단계 자식에 맞춘다 (루트뿐이면 확대하지 않고 가운데만). 선택은 되돌린다
+	// 열 때: UE처럼 1:1 배율로 루트 + 첫 단계 자식의 가운데를 화면 중앙에 둔다 (배율은 바꾸지 않음 — 전체는 F). 선택은 되돌린다
 	if (CenterFrames >= 0 && CenterFrames-- == 0 && Asset.Root)
 	{
 		NodeEditor::SelectNode(ToGraphNode(Asset.Root->Id));
@@ -429,7 +429,7 @@ void FBehaviorTreeEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 		{
 			NodeEditor::SelectNode(ToGraphNode(Child.Id), true);
 		}
-		NodeEditor::NavigateToSelection(!Asset.Root->Children.empty(), 0.0f);
+		NodeEditor::NavigateToSelection(false, 0.0f);
 		NodeEditor::ClearSelection();
 	}
 	NodeEditor::End();

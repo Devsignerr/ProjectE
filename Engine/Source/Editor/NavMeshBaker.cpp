@@ -4,11 +4,12 @@
 #include "Physics/PhysicsComponents.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
+#include "Scene/Components.h"
 #include "Scene/Scene.h"
 
 namespace
 {
-	// 자기 또는 조상이 움직이는 물체(동적 강체, AI 에이전트)면 바닥 후보가 아니다
+	// 자기 또는 조상이 움직이는 물체(동적 강체, AI 에이전트, 스크립트가 움직일 수 있는 엔티티)면 바닥 후보가 아니다
 	bool IsMovingObject(const FScene& Scene, FEntity Entity)
 	{
 		const FRegistry& Registry = Scene.GetRegistry();
@@ -16,7 +17,7 @@ namespace
 		{
 			const FRigidBodyComponent* Body = Registry.TryGet<FRigidBodyComponent>(Current);
 			if ((Body && Body->MotionType == static_cast<int32>(EPhysicsMotionType::Dynamic)) || Registry.Has<FBehaviorTreeComponent>(Current) ||
-			    Registry.Has<FNavAgentComponent>(Current))
+			    Registry.Has<FNavAgentComponent>(Current) || Registry.Has<FScriptComponent>(Current))
 			{
 				return true;
 			}

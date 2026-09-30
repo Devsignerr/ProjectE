@@ -11,7 +11,8 @@ class FScene;
 
 // 에디터 내비메시 굽기: 씬의 정적 지오메트리를 모아 FNavMesh를 굽고 .enav로 저장한다.
 //   포함: 보이는 FStaticMeshComponent (모델 하위 메시 포함, 스킨 메시 제외)
-//   제외: 동적 강체, AI 에이전트(FBehaviorTreeComponent/FNavAgentComponent)와 그 하위 — 움직이는 물체는 바닥이 아니다
+//   제외: 동적 강체, AI 에이전트(FBehaviorTreeComponent/FNavAgentComponent), 스크립트 컴포넌트(움직일 수 있음)와 그 하위 —
+//         움직이는 물체는 바닥/장애물이 아니다 (스크립트가 붙은 고정 장애물은 스크립트를 자식 엔티티로 옮기거나 형제로 둔다)
 struct FNavMeshBaker
 {
 	struct FResult

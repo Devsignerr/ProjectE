@@ -70,6 +70,12 @@ try {
         Copy-Item (Join-Path $BinDir "dxil.dll") $PackageDir
     }
 
+    # 엔진 콘텐츠 (게임 UI 기본 글꼴 등)
+    $EngineContentSrc = Join-Path $RootDir "Engine\Content"
+    if (Test-Path $EngineContentSrc) {
+        Copy-Item -Recurse -Force $EngineContentSrc (Join-Path $PackageDir "Engine\Content")
+    }
+
     # 프로젝트: .eproject + Content + Config (Saved 제외)
     $ProjectDst = Join-Path $PackageDir "Projects\$ProjectName"
     New-Item -ItemType Directory -Force $ProjectDst | Out-Null

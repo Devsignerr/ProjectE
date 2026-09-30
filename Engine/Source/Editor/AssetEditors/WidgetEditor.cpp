@@ -1494,10 +1494,10 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 				Widget.Text = Buffer;
 				bChanged    = true;
 			}
-			const char* FontLabel = Widget.Font.empty() ? "(기본 — 맑은 고딕)" : Widget.Font.c_str();
+			const char* FontLabel = Widget.Font.empty() ? "(기본 글꼴 — Noto Sans KR)" : Widget.Font.c_str();
 			if (ImGui::BeginCombo("글꼴", FontLabel))
 			{
-				if (ImGui::Selectable("(기본 — 맑은 고딕)", Widget.Font.empty()))
+				if (ImGui::Selectable("(기본 글꼴 — Noto Sans KR)", Widget.Font.empty()))
 				{
 					Widget.Font.clear();
 					bChanged = true;

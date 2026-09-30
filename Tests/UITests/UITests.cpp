@@ -5,6 +5,7 @@
 #include "UI/UIInstance.h"
 #include "UI/UILayout.h"
 #include "UI/UIPainter.h"
+#include "UI/UISdf.h"
 #include "UI/Widget.h"
 
 #include <chrono>
@@ -532,4 +533,41 @@ E_TEST(UIFont_BakeSpeed)
 	E_LOG(LogUI, Display, "SDF 굽기: 한글 {}자 {:.1f} ms (글자당 {:.2f} ms)", Font.GetGlyphCount(), Ms, Ms / static_cast<double>(Font.GetGlyphCount()));
 	E_EXPECT_EQ(Layout.Glyphs.size(), size_t(30));
 	E_EXPECT_TRUE(Ms / 30.0 < 40.0);
+}
+
+E_TEST(UISdf_DistanceTransformAndCircle)
+{
+	// 1차원: 특징 = 인덱스 2 → 제곱 거리
+	const float F[5] = { 1.0e20f, 1.0e20f, 0.0f, 1.0e20f, 1.0e20f };
+	float       D[5] = {};
+	int32       V[5] = {};
+	float       Z[6] = {};
+	UISdf::DistanceTransform1D(F, D, 5, V, Z);
+	E_EXPECT_NEAR(D[0], 4.0f, 1e-4f);
+	E_EXPECT_NEAR(D[2], 0.0f, 1e-4f);
+	E_EXPECT_NEAR(D[4], 4.0f, 1e-4f);
+
+	// 원 (고해상도 64x64, 반지름 16 → 출력 16x16, 반지름 4픽셀), 거리 범위 3픽셀
+	constexpr int32    Size = 64;
+	std::vector<uint8> Coverage(Size * Size);
+	for (int32 Y = 0; Y < Size; ++Y)
+	{
+		for (int32 X = 0; X < Size; ++X)
+		{
+			const float Dx = static_cast<float>(X) + 0.5f - 32.0f;
+			const float Dy = static_cast<float>(Y) + 0.5f - 32.0f;
+			Coverage[static_cast<size_t>(Y * Size + X)] = Dx * Dx + Dy * Dy <= 16.0f * 16.0f ? 255 : 0;
+		}
+	}
+	std::vector<uint8> Sdf;
+	UISdf::MakeSdf(Coverage.data(), Size, Size, 4, 3.0f, Sdf);
+	E_EXPECT_EQ(Sdf.size(), size_t(16 * 16));
+	const auto At = [&Sdf](int32 X, int32 Y) { return static_cast<int32>(Sdf[static_cast<size_t>(Y * 16 + X)]); };
+	E_EXPECT_EQ(At(7, 7), 255); // 가운데: 가장자리에서 3픽셀 넘게 안쪽
+	E_EXPECT_EQ(At(0, 0), 0);   // 모서리: 한참 바깥
+	// 가장자리: 가운데(8,8)에서 반지름 4 → 출력 픽셀 (12, 8)은 가장자리를 걸침 (중심 12.5 → 거리 약 -0.5 → 128 - 21)
+	const int32 Edge = At(12, 8);
+	E_EXPECT_TRUE(Edge > 90 && Edge < 150);
+	// 안쪽으로 갈수록 커진다
+	E_EXPECT_TRUE(At(10, 8) > At(11, 8) && At(11, 8) > At(12, 8) && At(12, 8) > At(13, 8));
 }

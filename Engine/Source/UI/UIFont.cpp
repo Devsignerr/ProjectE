@@ -1,7 +1,9 @@
 #include "UI/UIFont.h"
 
 #include "Core/Log.h"
+#include "Core/Paths.h"
 #include "Core/StringConv.h"
+#include "UI/UISdf.h"
 #include "UI/Widget.h"
 
 #pragma warning(push, 0)
@@ -246,16 +248,43 @@ const FUIGlyph& FUIFont::GetGlyph(uint32 Codepoint)
 
 	if (!IsSpace(Codepoint) && Codepoint != '\n')
 	{
+		// 4배 해상도 래스터 → 거리 변환 SDF (UISdf). stb_truetype의 SDF 함수는 3차 곡선(OTF/CFF)을 처리하지 못한다.
 		// 가장자리 값 128, 거리 1픽셀당 128/패딩 → 모양 바깥 패딩 픽셀까지 0~255로 표현
-		int32  Width   = 0;
-		int32  Height  = 0;
-		int32  OffsetX = 0;
-		int32  OffsetY = 0;
-		uint8* Sdf     = stbtt_GetGlyphSDF(&FontInfo->Info, BaseScale, Glyph.GlyphIndex, SdfPadding, 128, 128.0f / static_cast<float>(SdfPadding), &Width,
-		                                   &Height, &OffsetX, &OffsetY);
+		constexpr int32    Oversample = 4;
+		std::vector<uint8> Sdf;
+		int32              Width   = 0;
+		int32              Height  = 0;
+		int32              OffsetX = 0;
+		int32              OffsetY = 0;
+		int32              X0 = 0, Y0 = 0, X1 = 0, Y1 = 0;
+		stbtt_GetGlyphBitmapBox(&FontInfo->Info, Glyph.GlyphIndex, BaseScale, BaseScale, &X0, &Y0, &X1, &Y1);
+		if (X1 > X0 && Y1 > Y0)
+		{
+			Width               = X1 - X0 + 2 * SdfPadding;
+			Height              = Y1 - Y0 + 2 * SdfPadding;
+			OffsetX             = X0 - SdfPadding;
+			OffsetY             = Y0 - SdfPadding;
+			const float HiScale = BaseScale * static_cast<float>(Oversample);
+			int32       HX0 = 0, HY0 = 0, HX1 = 0, HY1 = 0;
+			stbtt_GetGlyphBitmapBox(&FontInfo->Info, Glyph.GlyphIndex, HiScale, HiScale, &HX0, &HY0, &HX1, &HY1);
+			const int32        CanvasWidth  = Width * Oversample;
+			const int32        CanvasHeight = Height * Oversample;
+			std::vector<uint8> Coverage(static_cast<size_t>(CanvasWidth) * CanvasHeight, 0);
+			// 고해상도 상자를 기준 상자(+패딩) 안에 놓는다 (반올림 차이만큼 잘라 안전하게)
+			const int32 PlaceX = std::clamp(HX0 - OffsetX * Oversample, 0, CanvasWidth - 1);
+			const int32 PlaceY = std::clamp(HY0 - OffsetY * Oversample, 0, CanvasHeight - 1);
+			const int32 DrawW  = std::min(HX1 - HX0, CanvasWidth - PlaceX);
+			const int32 DrawH  = std::min(HY1 - HY0, CanvasHeight - PlaceY);
+			if (DrawW > 0 && DrawH > 0)
+			{
+				stbtt_MakeGlyphBitmap(&FontInfo->Info, &Coverage[static_cast<size_t>(PlaceY) * CanvasWidth + PlaceX], DrawW, DrawH, CanvasWidth, HiScale,
+				                      HiScale, Glyph.GlyphIndex);
+				UISdf::MakeSdf(Coverage.data(), CanvasWidth, CanvasHeight, Oversample, static_cast<float>(SdfPadding), Sdf);
+			}
+		}
 		uint32 AtlasX = 0;
 		uint32 AtlasY = 0;
-		if (Sdf != nullptr && Width > 0 && Height > 0)
+		if (!Sdf.empty())
 		{
 			if (AllocateAtlasRect(static_cast<uint32>(Width), static_cast<uint32>(Height), AtlasX, AtlasY))
 			{
@@ -277,10 +306,6 @@ const FUIGlyph& FUIFont::GetGlyph(uint32 Codepoint)
 				E_LOG(LogUI, Warning, "글꼴 아틀라스가 가득 차 일부 글자를 그리지 못합니다 ({0}x{0})", AtlasSize);
 				bWarnedFull = true;
 			}
-		}
-		if (Sdf != nullptr)
-		{
-			stbtt_FreeSDF(Sdf, nullptr);
 		}
 	}
 	return Glyphs.emplace(Codepoint, Glyph).first->second;
@@ -472,6 +497,17 @@ FUIFont* FUIFontLibrary::GetDefaultFont()
 		const std::filesystem::path Path = DefaultFontPath.is_absolute() ? DefaultFontPath : ContentDirectory / DefaultFontPath;
 		DefaultFont                      = LoadCached(Path);
 		DefaultFontFile                  = DefaultFont != nullptr ? Path : std::filesystem::path();
+	}
+	if (DefaultFont == nullptr)
+	{
+		// 엔진 번들 글꼴 (Noto Sans KR, OFL) — 맑은 고딕이 없는 PC/배포에서도 한글
+		const std::filesystem::path Bundled = FPaths::GetEngineDirectory() / L"Engine" / L"Content" / L"Fonts" / L"NotoSansKR-Regular.otf";
+		std::error_code             ErrorCode;
+		if (std::filesystem::exists(Bundled, ErrorCode))
+		{
+			DefaultFontFile = Bundled;
+			DefaultFont     = LoadCached(Bundled);
+		}
 	}
 	if (DefaultFont == nullptr)
 	{

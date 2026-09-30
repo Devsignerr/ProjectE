@@ -108,7 +108,7 @@ private:
 };
 
 // 글꼴 캐시 (경로별 하나, 프로세스 전역 — 편집기 미리보기와 게임이 아틀라스를 공유).
-// 위젯 Font가 비었거나 로드에 실패하면 기본 글꼴(프로젝트 지정 → Windows 맑은 고딕)을 쓴다.
+// 위젯 Font가 비었거나 로드에 실패하면 기본 글꼴(프로젝트 지정 → 엔진 번들 Noto Sans KR → Windows 맑은 고딕)을 쓴다.
 class FUIFontLibrary final : public IUITextMeasurer
 {
 public:

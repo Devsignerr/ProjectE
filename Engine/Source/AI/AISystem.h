@@ -31,6 +31,29 @@ struct FAIMovementHooks
 	std::function<bool(FEntity, const FVector3& DesiredVelocity)> ApplyVelocity;
 };
 
+// Lua 스크립트 메서드 호출 결과 (Lua 노드가 상태로 바꾼다)
+enum class EAIScriptResult : uint8
+{
+	NotFound, // 객체 없음/메서드 없음
+	Error,    // 스크립트 오류 (그 객체는 멈춘다)
+	Nil,
+	True,
+	False,
+	Running,  // 문자열 "Running"/"Success"/"Failure" (대소문자 무시)
+	Success,
+	Failure,
+	Other,    // 그 밖의 값
+};
+
+// Lua 비헤이비어 트리 노드용 스크립트 연결 (AI는 Scripting에 비의존 — FGameWorld가 FScriptSystem 스크립트 객체와 연결한다)
+struct FAIScriptHooks
+{
+	// self.entity = Self, self.Properties = 선언 기본값 + Properties(JSON). 0 = 실패 (플레이 중 아님, 로드 오류)
+	std::function<uint64(const std::string& Script, const std::string& Properties, FEntity Self)> CreateObject;
+	std::function<EAIScriptResult(uint64 Handle, const char* Method, const float* DeltaSeconds)>  Call;
+	std::function<void(uint64 Handle)>                                                          DestroyObject;
+};
+
 // AI 실행: FBehaviorTreeComponent 엔티티마다 트리 인스턴스를 만들어 틱하고, MoveTo 요청을 내비메시 경로로 수행한다.
 // 서버/Standalone에서만 돈다 (FGameWorld가 Client 역할이면 부르지 않는다). 실행 상태는 모두 여기 있고 컴포넌트에는 없다.
 // 순서 (FGameWorld): 스크립트 → 게임 모듈 → AI(Update: 트리 틱 → 이동) → 물리 → UpdateTransforms
@@ -44,6 +67,9 @@ public:
 
 	void SetContentDirectory(const std::filesystem::path& Directory) { ContentDirectory = Directory; }
 	void SetMovementHooks(FAIMovementHooks Hooks) { MovementHooks = std::move(Hooks); }
+	void SetScriptHooks(FAIScriptHooks Hooks) { ScriptHooks = std::move(Hooks); }
+	// Lua 노드가 쓴다 (FAISystem 수명 동안 유효)
+	const FAIScriptHooks& GetScriptHooks() const { return ScriptHooks; }
 
 	// 내비메시(FNavMeshComponent.NavMeshAsset)를 읽고 자동 시작 트리를 만든다. 이미 활성이면 End 후 다시 시작
 	void Begin(FScene& InScene);
@@ -110,6 +136,7 @@ private:
 	FScene*                                                            Scene = nullptr; // 비소유 (Begin~End)
 	std::filesystem::path                                              ContentDirectory;
 	FAIMovementHooks                                                   MovementHooks;
+	FAIScriptHooks                                                     ScriptHooks;
 	FNavMesh                                                           NavMesh;
 	std::unordered_map<uint64, FAgent>                                 Agents; // FEntity::ToId()
 	std::unordered_map<std::string, std::unique_ptr<FBehaviorTreeAsset>> AssetCache; // 실패한 경로는 nullptr

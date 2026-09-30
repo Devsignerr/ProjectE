@@ -39,6 +39,12 @@ struct FScriptComponentRef
 	const FTypeInfo* Type = nullptr;
 };
 
+// Lua의 블랙보드 참조: entity:GetBlackboard(). 엔티티만 담고 값은 매번 AI 훅으로 읽고 쓴다
+struct FScriptBlackboard
+{
+	FEntity Entity;
+};
+
 // Lua 상태 하나 + 엔진 바인딩 + 스크립트 클래스 캐시 + (플레이 중) 인스턴스
 class FLuaRuntime
 {
@@ -70,6 +76,12 @@ public:
 	void SetAudioHooks(const FScriptAudioHooks* InHooks) { AudioHooks = InHooks; } // FScriptSystem 소유 (런타임보다 오래 산다)
 	void SetPhysicsHooks(const FScriptPhysicsHooks* InHooks) { PhysicsHooks = InHooks; } // 〃
 	void SetNetHooks(const FScriptNetHooks* InHooks) { NetHooks = InHooks; }             // 〃
+	void SetAIHooks(const FScriptAIHooks* InHooks) { AIHooks = InHooks; }                // 〃
+
+	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
+	uint32 CreateObject(const std::string& ScriptAsset, const std::string& Overrides, FEntity Entity);
+	bool   CallObject(uint32 Id, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound);
+	void   DestroyObject(uint32 Id);
 	void Update(float DeltaSeconds, const FInput* Input);
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
@@ -108,6 +120,9 @@ private:
 	void RegisterGlobals();
 	void RegisterPrefabBindings(); // Asset/Prefab 값, Scene.SpawnPrefab
 	void RegisterNetBindings();    // Net 테이블, entity:GetOwner/IsLocallyOwned
+	void RegisterAIBindings();     // AI 테이블, entity:GetBlackboard/MoveTo 등 (LuaAIBindings.cpp)
+	// 선언 기본값 + 오버라이드로 Properties 테이블을 만든다 (인스턴스/스크립트 객체 공용)
+	sol::table MakeProperties(const FScriptClass& Class, const std::string& ScriptAsset, const std::string& Overrides);
 
 	bool  ShouldRunHere(const FScriptComponent& Component) const; // ExecutionLocation 필터
 	int32 GetLocalPlayerId() const;
@@ -147,6 +162,7 @@ private:
 	const FScriptAudioHooks* AudioHooks = nullptr;
 	const FScriptPhysicsHooks* PhysicsHooks = nullptr;
 	const FScriptNetHooks*     NetHooks     = nullptr;
+	const FScriptAIHooks*      AIHooks      = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
 
@@ -161,6 +177,15 @@ private:
 	std::vector<FEntity>                        PendingDestroy;
 	std::vector<FPendingSpawn>                  PendingSpawns;
 	std::vector<FEntity>                        UpdateOrder; // 매 프레임 재사용 (할당 최소화)
+
+	struct FScriptObject
+	{
+		std::string ScriptAsset;
+		sol::table  Self;
+		bool        bFaulted = false;
+	};
+	std::unordered_map<uint32, FScriptObject> Objects; // 스크립트 객체 (컴포넌트 없음)
+	uint32                                    NextObjectId = 1;
 
 	friend struct FLuaBindings;
 };

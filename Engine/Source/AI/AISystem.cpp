@@ -231,9 +231,10 @@ bool FAISystem::CreateTree(FEntity Entity, FAgent& Agent, const std::string& Ass
 		E_LOG(LogAI, Error, "비헤이비어 트리를 시작하지 못했습니다: {} — {}", AssetPath, Error);
 		return false;
 	}
-	Tree->Start();
+	// 시작 중 노드(서비스 OnBecomeRelevant, Lua 노드)가 FindTree로 블랙보드를 찾으므로 먼저 등록하고 시작한다
 	Agent.Tree        = std::move(Tree);
 	Agent.bTreeFailed = false;
+	Agent.Tree->Start();
 	return true;
 }
 

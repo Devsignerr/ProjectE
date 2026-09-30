@@ -61,6 +61,26 @@ struct FScriptNetHooks
 	std::function<const FInput*(FEntity, const FInput* LocalInput)> ResolveInput;
 };
 
+// 스크립트가 쓰는 AI 기능 (블랙보드, 이동, 경로). 앱(FGameWorld)이 AI 모듈(FAISystem)과 연결한다 (Scripting은 AI에 비의존).
+// 블랙보드 값은 FScriptValue(Bool/Number/String/Vector3) 또는 엔티티. 트리가 없거나 키가 없으면 실패
+struct FScriptAIHooks
+{
+	// 설정 안 됨/키 없음/트리 없음이면 false. 엔티티 키면 bOutIsEntity = true + OutEntity
+	std::function<bool(FEntity, const std::string& Key, FScriptValue& OutValue, FEntity& OutEntity, bool& bOutIsEntity)> GetBlackboard;
+	std::function<bool(FEntity, const std::string& Key, const FScriptValue& Value)> SetBlackboard;       // 키 타입과 다르면 false
+	std::function<bool(FEntity, const std::string& Key, FEntity Value)>             SetBlackboardEntity; // 〃
+	std::function<bool(FEntity, const std::string& Key)>                            ClearBlackboard;
+	std::function<std::string(FEntity, const FVector3& Goal, float AcceptanceRadius)> MoveTo;       // "Moving"/"Succeeded"/"Failed" (반경 < 0 = 에이전트 값)
+	std::function<std::string(FEntity)>                                               GetMoveStatus; // + "Idle"
+	std::function<void(FEntity)>                                                      StopMove;
+	std::function<bool(const FVector3& Start, const FVector3& End, std::vector<FVector3>& OutPoints)> FindPath;
+	std::function<bool(FEntity)> StartTree; // FBehaviorTreeComponent 에셋으로 (재)시작
+	std::function<void(FEntity)> StopTree;
+};
+
+// 컴포넌트가 아닌 스크립트 객체 (Lua 비헤이비어 트리 노드 등): 플레이 세션 안에서만 유효한 핸들. 0 = 무효
+using FScriptObjectHandle = uint64;
+
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.
 //
 // 스크립트 형식 (Unity 스타일 테이블 반환):
@@ -107,6 +127,15 @@ public:
 	void SetAudioHooks(FScriptAudioHooks Hooks);
 	void SetPhysicsHooks(FScriptPhysicsHooks Hooks);
 	void SetNetHooks(FScriptNetHooks Hooks);
+	void SetAIHooks(FScriptAIHooks Hooks);
+
+	// ---- 스크립트 객체 (컴포넌트 없이 스크립트 클래스의 인스턴스를 만든다 — Lua 비헤이비어 트리 노드용)
+	// self.entity = Entity, self.Properties = 선언 기본값 + PropertyOverrides(JSON, FScriptComponent와 같은 형식).
+	// 플레이 중이 아니거나 스크립트 로드에 실패하면 0. 핸들은 플레이 세션이 바뀌면 무효가 된다(호출해도 안전)
+	FScriptObjectHandle CreateObject(const std::string& ScriptAsset, const std::string& PropertyOverrides, FEntity Entity);
+	// self:Method(DeltaSeconds?) 호출. 메서드가 없으면 false + bOutFound = false, 오류면 false (그 객체는 멈춘다, 스크립트 저장 시 재개)
+	bool CallObject(FScriptObjectHandle Handle, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound = nullptr);
+	void DestroyObject(FScriptObjectHandle Handle);
 
 	// ---- 핫 리로드: 변경된 .lua 파일 (절대 경로). 실패하면 기존 스크립트를 유지한다. 반환: 성공 여부
 	bool ReloadScript(const std::filesystem::path& ScriptPath);
@@ -131,7 +160,9 @@ private:
 	FScriptAudioHooks            AudioHooks;
 	FScriptPhysicsHooks          PhysicsHooks;
 	FScriptNetHooks              NetHooks;
+	FScriptAIHooks               AIHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
+	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)
 	uint32                       ErrorCount = 0;
 };

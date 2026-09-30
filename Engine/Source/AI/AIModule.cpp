@@ -3,6 +3,7 @@
 #include "AI/AIComponents.h"
 #include "AI/AITasks.h"
 #include "AI/BehaviorTree/BehaviorTreeNodeRegistry.h"
+#include "AI/LuaNodes.h"
 #include "Core/Reflection/TypeInfo.h"
 
 E_DEFINE_LOG_CATEGORY(LogAI, Log)
@@ -41,4 +42,5 @@ void RegisterAITypes()
 		.AsComponent();
 
 	RegisterAITasks(FBehaviorTreeNodeRegistry::Get());
+	RegisterLuaBehaviorTreeNodes(FBehaviorTreeNodeRegistry::Get());
 }

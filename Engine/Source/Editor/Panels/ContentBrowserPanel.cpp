@@ -5,6 +5,7 @@
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Editor/AssetEditors/AssetEditorManager.h"
+#include "Editor/AssetEditors/BehaviorTreeEditor.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
@@ -739,6 +740,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewParticle", FParticleSystemAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT " 새 비헤이비어 트리"))
+	{
+		CreateAsset(Context, "NewBehaviorTree", L".ebt");
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
 	{
@@ -1080,6 +1085,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FParticleSystemAsset::Extension)
 	{
 		bOk = FParticleSystemAsset::MakeDefault(Name).SaveToFile(Path);
+	}
+	else if (Extension == L".ebt")
+	{
+		bOk = FBehaviorTreeEditor::MakeDefaultAsset().SaveToFile(Path);
 	}
 	if (!bOk)
 	{

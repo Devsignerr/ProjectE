@@ -43,6 +43,8 @@ public:
 	virtual bool        HasEditableState() const { return true; }
 	// 속성 열 폭 비율 (미리보기 = 2). 편집 항목이 많은 창은 크게
 	virtual float       GetPropertiesWidthWeight() const { return 1.0f; }
+	// false면 3D 미리보기(렌더 타깃)를 만들지 않는다 — 왼쪽 열은 DrawMainPanel이 채운다 (노드 그래프 편집기 등)
+	virtual bool        UsesPreview() const { return true; }
 	virtual void        Update(FAssetEditorEnvironment& Env, float DeltaSeconds);
 	// 창 내용 (ImGui 창 Begin~End 사이에서 호출)
 	void                Draw(FAssetEditorEnvironment& Env);
@@ -72,6 +74,8 @@ protected:
 	virtual bool        SaveAsset(FAssetEditorEnvironment& Env) = 0;
 	virtual std::string CaptureState() const = 0;
 	virtual void        RestoreState(FAssetEditorEnvironment& Env, const std::string& State) = 0;
+	// 왼쪽 열 (기본: 미리보기 도구 줄 + 3D 미리보기 + 오버레이)
+	virtual void DrawMainPanel(FAssetEditorEnvironment& Env);
 	// 오른쪽 속성 패널 / 미리보기 위 오버레이
 	virtual void DrawProperties(FAssetEditorEnvironment& Env) = 0;
 	virtual void DrawPreviewOverlay(FAssetEditorEnvironment& Env);

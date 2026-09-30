@@ -185,6 +185,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_BOXES_STACKED, IM_COL32(115, 184, 255, 255), "프리팹" };
 	}
+	if (Extension == ".ebt")
+	{
+		return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(120, 150, 255, 255), "비헤이비어 트리" };
+	}
 	if (Extension == ".escene")
 	{
 		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(230, 110, 90, 255), "씬" };

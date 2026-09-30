@@ -20,15 +20,21 @@ FAssetEditor::~FAssetEditor() = default;
 
 bool FAssetEditor::Open(FAssetEditorEnvironment& Env)
 {
-	if (!Preview.Init(*Env.Rhi))
+	if (UsesPreview())
 	{
-		E_LOG(LogEditor, Error, "미리보기 렌더 타깃 생성 실패: {}", GetDisplayName());
-		return false;
+		if (!Preview.Init(*Env.Rhi))
+		{
+			E_LOG(LogEditor, Error, "미리보기 렌더 타깃 생성 실패: {}", GetDisplayName());
+			return false;
+		}
+		Preview.AddDefaultLight();
 	}
-	Preview.AddDefaultLight();
 	if (!LoadAsset(Env))
 	{
-		Preview.Shutdown(*Env.Rhi);
+		if (UsesPreview())
+		{
+			Preview.Shutdown(*Env.Rhi);
+		}
 		return false;
 	}
 	History.Reset(CaptureState());
@@ -42,7 +48,10 @@ void FAssetEditor::Close(FAssetEditorEnvironment& Env)
 	{
 		RevertToSaved(Env);
 	}
-	Preview.Shutdown(*Env.Rhi);
+	if (UsesPreview())
+	{
+		Preview.Shutdown(*Env.Rhi);
+	}
 }
 
 void FAssetEditor::Update(FAssetEditorEnvironment& Env, float DeltaSeconds)
@@ -105,14 +114,7 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 		ImGui::TableNextRow();
 
 		ImGui::TableNextColumn();
-		DrawPreviewToolbar(Env);
-		const ImVec2 Avail = ImGui::GetContentRegionAvail();
-		Preview.DrawViewport(FVector2(Avail.x, FMath::Max(Avail.y, 64.0f)));
-		if (Preview.IsHovered() && ImGui::IsKeyPressed(ImGuiKey_F) && !ImGui::GetIO().KeyCtrl)
-		{
-			FramePreview(Env);
-		}
-		DrawPreviewOverlay(Env);
+		DrawMainPanel(Env);
 
 		ImGui::TableNextColumn();
 		if (ImGui::BeginChild("##Properties", ImVec2(0.0f, 0.0f)))
@@ -124,6 +126,18 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 		ImGui::EndChild();
 		ImGui::EndTable();
 	}
+}
+
+void FAssetEditor::DrawMainPanel(FAssetEditorEnvironment& Env)
+{
+	DrawPreviewToolbar(Env);
+	const ImVec2 Avail = ImGui::GetContentRegionAvail();
+	Preview.DrawViewport(FVector2(Avail.x, FMath::Max(Avail.y, 64.0f)));
+	if (Preview.IsHovered() && ImGui::IsKeyPressed(ImGuiKey_F) && !ImGui::GetIO().KeyCtrl)
+	{
+		FramePreview(Env);
+	}
+	DrawPreviewOverlay(Env);
 }
 
 void FAssetEditor::DrawPreviewToolbar(FAssetEditorEnvironment& Env)

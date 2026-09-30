@@ -94,6 +94,10 @@ namespace
 		WriteList("Decorators", Node.Decorators);
 		WriteList("Services", Node.Services);
 		WriteList("Children", Node.Children);
+		if (Node.EditorPosition)
+		{
+			Out["EditorPosition"] = { Node.EditorPosition->X, Node.EditorPosition->Y };
+		}
 		return Out;
 	}
 
@@ -121,6 +125,13 @@ namespace
 				return false;
 			}
 			OutNode.Id = In["Id"].get<uint32>();
+		}
+
+		// 편집기 위치 (형식이 틀리면 무시 — 실행에 영향 없음)
+		if (const auto Position = In.find("EditorPosition");
+		    Position != In.end() && Position->is_array() && Position->size() == 2 && (*Position)[0].is_number() && (*Position)[1].is_number())
+		{
+			OutNode.EditorPosition = FVector2((*Position)[0].get<float>(), (*Position)[1].get<float>());
 		}
 
 		if (In.contains("Params"))

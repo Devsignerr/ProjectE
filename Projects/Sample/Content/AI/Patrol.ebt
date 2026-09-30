@@ -1,0 +1,36 @@
+{
+  "Version": 1,
+  "Blackboard": [
+    { "Name": "Target", "Type": "Entity" },
+    { "Name": "PatrolPoint", "Type": "Vector" }
+  ],
+  "Root": {
+    "Type": "Selector",
+    "Id": 1,
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Id": 2,
+        "Decorators": [
+          { "Type": "Blackboard", "Id": 3, "Params": [ { "Name": "Key", "Value": "Target" }, { "Name": "Operation", "Value": "IsSet" }, { "Name": "AbortMode", "Value": "Both" } ] }
+        ],
+        "Children": [
+          { "Type": "MoveTo", "Id": 4, "Params": [ { "Name": "TargetKey", "Value": "Target" }, { "Name": "AcceptanceRadius", "Value": 120.0 } ] },
+          { "Type": "Wait", "Id": 5, "Params": [ { "Name": "WaitTime", "Value": 0.5 } ] }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Id": 6,
+        "Children": [
+          { "Type": "SetBlackboard", "Id": 7, "Params": [ { "Name": "Key", "Value": "PatrolPoint" }, { "Name": "Value", "Value": "400,0,0" } ] },
+          { "Type": "MoveTo", "Id": 8, "Params": [ { "Name": "TargetKey", "Value": "PatrolPoint" } ] },
+          { "Type": "Wait", "Id": 9, "Params": [ { "Name": "WaitTime", "Value": 1.0 } ] },
+          { "Type": "SetBlackboard", "Id": 10, "Params": [ { "Name": "Key", "Value": "PatrolPoint" }, { "Name": "Value", "Value": "-400,0,0" } ] },
+          { "Type": "MoveTo", "Id": 11, "Params": [ { "Name": "TargetKey", "Value": "PatrolPoint" } ] },
+          { "Type": "Wait", "Id": 12, "Params": [ { "Name": "WaitTime", "Value": 1.0 } ] }
+        ]
+      }
+    ]
+  }
+}

@@ -680,3 +680,30 @@ E_TEST(BTAsset_FileSaveLoad)
 	E_EXPECT_FALSE(Error.empty());
 	std::filesystem::remove(Path);
 }
+
+// 편집기 노드 위치(EditorPosition): 저장/로드 왕복, 없으면 비어 있고 형식이 틀리면 무시(로드는 성공)
+E_TEST(BTAsset_EditorPositionRoundTrip)
+{
+	FBehaviorTreeAsset Asset;
+	FBTNodeDesc        Root;
+	Root.Type           = "Sequence";
+	Root.Id             = 1;
+	Root.EditorPosition = FVector2(12.5f, -40.0f);
+	FBTNodeDesc Child;
+	Child.Type = "Wait";
+	Child.Id   = 2;
+	Root.Children.push_back(Child);
+	Asset.Root = Root;
+
+	FBehaviorTreeAsset Loaded;
+	E_EXPECT_TRUE(Loaded.FromJsonString(Asset.ToJsonString()));
+	E_EXPECT_TRUE(Loaded.Root && Loaded.Root->EditorPosition.has_value());
+	E_EXPECT_NEAR(Loaded.Root->EditorPosition->X, 12.5f, 1.0e-4f);
+	E_EXPECT_NEAR(Loaded.Root->EditorPosition->Y, -40.0f, 1.0e-4f);
+	E_EXPECT_FALSE(Loaded.Root->Children[0].EditorPosition.has_value());
+
+	const std::string  Malformed = R"({"Version":1,"Blackboard":[],"Root":{"Type":"Wait","Id":1,"EditorPosition":"left"}})";
+	FBehaviorTreeAsset Tolerant;
+	E_EXPECT_TRUE(Tolerant.FromJsonString(Malformed));
+	E_EXPECT_FALSE(Tolerant.Root->EditorPosition.has_value());
+}

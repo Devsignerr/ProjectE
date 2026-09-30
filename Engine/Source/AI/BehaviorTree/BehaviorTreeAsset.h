@@ -2,6 +2,7 @@
 
 #include "AI/BehaviorTree/Blackboard.h"
 #include "AI/BehaviorTree/BehaviorTreeTypes.h"
+#include "Core/Math/Vector2.h"
 
 #include <filesystem>
 #include <optional>
@@ -18,6 +19,8 @@ struct FBTNodeDesc
 	std::vector<FBTNodeDesc> Children;   // 컴포지트만
 	std::vector<FBTNodeDesc> Decorators; // 위에서 아래 순서 (마지막이 노드에 가장 가깝다)
 	std::vector<FBTNodeDesc> Services;
+	// 편집기 그래프 위치 (컴포지트/태스크만, 실행에는 쓰지 않는다). 없으면 편집기가 자동 배치한다
+	std::optional<FVector2> EditorPosition;
 
 	const FBTParamValue* FindParam(std::string_view Name) const;
 	void                 SetParam(std::string_view Name, FBTParamValue Value);

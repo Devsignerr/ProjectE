@@ -1,6 +1,7 @@
 #include "Editor/EditorApplication.h"
 
 #include "AI/AIModule.h"
+#include "AI/AISystem.h"
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
 #include "Network/ReplicationTypes.h"
@@ -132,6 +133,7 @@ bool FEditorApplication::OnInit()
 	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
 	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
+	Context.AI               = &World.GetAI();
 	// 게임 월드: 스크립트 콘텐츠 경로와 물리 훅도 연결한다
 	World.Init({ &Scripts, &Physics, &GameModule, &Resources, Context.ContentDirectory });
 	Scripts.SetAudioHooks({
@@ -1178,6 +1180,12 @@ void FEditorApplication::PollScriptChanges()
 		std::wstring Extension = Path.extension().wstring();
 		std::transform(Extension.begin(), Extension.end(), Extension.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
 		bPrefabChanged = bPrefabChanged || Extension == FPrefabLibrary::Extension;
+		// 비헤이비어 트리: 플레이 중이면 그 에셋을 쓰는 트리를 새 파일로 다시 시작한다 (편집 창 저장 포함)
+		if (Extension == L".ebt")
+		{
+			World.GetAI().ReloadBehaviorTree(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
 		if (Extension != L".lua")
 		{
 			continue;

@@ -379,7 +379,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - 이동: `MoveTo`는 Detour 경로를 따라 이동한다. 강체가 있으면 속도를 설정하고, 없으면 트랜스폼을 직접 옮긴다. 무리 회피(DetourCrowd)는 후속 과제
 - 내비메시 굽기: 에디터에서 씬의 정적 메시/정적 콜라이더를 모아 굽고 `<씬>.enav`(씬 옆, 원본 데이터)로 저장한다. 설정(에이전트 반경/높이/경사/계단)은 씬의 `FNavMeshSettingsComponent`에 둔다. 런타임은 씬을 로드할 때 `.enav`를 읽는다(패키징에 포함)
 
-- [ ] 1. 외부 라이브러리 도입 시험: Recast/Detour와 그래프 편집기 라이브러리를 `ThirdParty.cmake`에 추가하고 `/W4 /WX` 격리, ImGui 1.93 WIP 호환 확인 — 완료 기준: 두 라이브러리 링크 성공, 빈 노드 편집기 창이 뜬다
+- [x] 1. 외부 라이브러리 도입 시험 (2026-09-30): Recast/Detour v1.6.0(Recast/Detour/DetourCrowd 소스만 `ThirdParty::recast` 정적 라이브러리)과 imgui-node-editor master `021aa0e`(`ThirdParty::imgui_node_editor`, EEditor에 PRIVATE 링크)를 `/W0`로 추가. ImGui 1.92.0부터 `operator*(float, ImVec2)`가 중복 정의되어 `CMake/Patches/ImGuiNodeEditor.cmake`(PATCH_COMMAND)로 `IMGUI_VERSION_NUM < 19200`일 때만 쓰도록 감쌈. 호환성은 화면 없이 노드/핀/링크를 3프레임 그리는 `EditorTests` `NodeEditor_DrawsNodesWithEngineImGui`로 확인했다(ImGui 버전을 올리면 이 테스트가 먼저 깨진다). Recast는 컴파일만 확인했고 엔진 DLL 링크는 단계 3에서 AI 모듈과 함께 한다
 - [ ] 2. BT 핵심(순수 로직 + 테스트): 에셋 모델 `FBehaviorTreeAsset`(JSON), 블랙보드, 실행기(Selector/Sequence/Parallel(단순), 데코레이터 Blackboard/Cooldown/Loop/TimeLimit/Inverter/ForceSuccess, 서비스, 태스크 Wait/SetBlackboard/Log), 중단 규칙, `FBehaviorTreeNodeRegistry` — 완료 기준: `AITests`에서 가짜 노드로 실행 순서·중단·블랙보드 관찰 검증
 - [ ] 3. 내비게이션(순수 로직 + 테스트): `FNavMesh`(Recast 굽기 + Detour 경로 쿼리, 좌표 변환), `.enav` 저장/로드 — 완료 기준: 바닥 + 장애물 지오메트리에서 경로가 장애물을 돌아가는지, 좌표 변환 왕복 테스트
 - [ ] 4. 씬 연동: `FBehaviorTreeComponent`/`FNavMeshSettingsComponent` 리플렉션 등록, `FAISystem`(시작/갱신/정지, 에셋 핫 리로드), `MoveTo`/`RotateTo`/`PlayAnimation` 태스크, 플레이 모드·런타임 갱신 순서에 넣기 (Phase 17의 `FGameWorld`가 먼저 들어가 있으면 거기에 넣는다)

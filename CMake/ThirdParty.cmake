@@ -74,6 +74,27 @@ target_link_libraries(imguizmo PUBLIC imgui)
 target_compile_options(imguizmo PRIVATE /W0)
 set_target_properties(imguizmo PROPERTIES FOLDER "ThirdParty")
 
+# ---------------------------------------------------------------- imgui-node-editor (노드 그래프 편집기, 에디터 전용, MIT)
+# master 2026-02-20 ("fixing for modern imgui" 이후). 예제/외부 의존은 쓰지 않고 라이브러리 소스만 빌드한다
+set(E_IMGUI_NODE_EDITOR_COMMIT "021aa0ea4da13fed864bafb2a92d4c5205076866")
+FetchContent_Declare(imgui_node_editor
+    URL      "https://github.com/thedmd/imgui-node-editor/archive/${E_IMGUI_NODE_EDITOR_COMMIT}.zip"
+    URL_HASH SHA256=ffc7a1d6868e7d00a52bb0c54a3baa32c19085e15992372dcb9d9a1ac9a461b6
+    PATCH_COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_LIST_DIR}/Patches/ImGuiNodeEditor.cmake" # ImGui 1.92+ 연산자 중복 정의
+    SOURCE_SUBDIR "_none") # 루트 CMakeLists(예제)는 쓰지 않는다
+FetchContent_MakeAvailable(imgui_node_editor)
+
+add_library(imgui_node_editor STATIC
+    "${imgui_node_editor_SOURCE_DIR}/imgui_node_editor.cpp"
+    "${imgui_node_editor_SOURCE_DIR}/imgui_node_editor_api.cpp"
+    "${imgui_node_editor_SOURCE_DIR}/imgui_canvas.cpp"
+    "${imgui_node_editor_SOURCE_DIR}/crude_json.cpp")
+add_library(ThirdParty::imgui_node_editor ALIAS imgui_node_editor)
+target_include_directories(imgui_node_editor SYSTEM PUBLIC "${imgui_node_editor_SOURCE_DIR}")
+target_link_libraries(imgui_node_editor PUBLIC imgui)
+target_compile_options(imgui_node_editor PRIVATE /W0)
+set_target_properties(imgui_node_editor PROPERTIES FOLDER "ThirdParty")
+
 # ---------------------------------------------------------------- nlohmann/json (v3.11.3, MIT) — 단일 헤더
 FetchContent_Declare(nlohmann_json
     URL      "https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp"
@@ -186,6 +207,27 @@ FetchContent_MakeAvailable(jolt)
 add_library(ThirdParty::jolt ALIAS Jolt)
 target_compile_options(Jolt PRIVATE /W0)
 set_target_properties(Jolt PROPERTIES FOLDER "ThirdParty")
+
+# ---------------------------------------------------------------- Recast/Detour (v1.6.0, zlib) — 내비메시 굽기 + 경로 탐색
+# 자체 CMakeLists(데모/테스트/설치)를 쓰지 않고 Recast, Detour, DetourCrowd 소스만 정적 라이브러리로 빌드한다
+FetchContent_Declare(recastnavigation
+    URL      "https://github.com/recastnavigation/recastnavigation/archive/refs/tags/v1.6.0.zip"
+    URL_HASH SHA256=8b50c62177249554b226514b307e6c529934a62b3926822777bf6abb8906a155
+    SOURCE_SUBDIR "_none")
+FetchContent_MakeAvailable(recastnavigation)
+
+file(GLOB E_RECAST_SOURCES
+    "${recastnavigation_SOURCE_DIR}/Recast/Source/*.cpp"
+    "${recastnavigation_SOURCE_DIR}/Detour/Source/*.cpp"
+    "${recastnavigation_SOURCE_DIR}/DetourCrowd/Source/*.cpp")
+add_library(recast STATIC ${E_RECAST_SOURCES})
+add_library(ThirdParty::recast ALIAS recast)
+target_include_directories(recast SYSTEM PUBLIC
+    "${recastnavigation_SOURCE_DIR}/Recast/Include"
+    "${recastnavigation_SOURCE_DIR}/Detour/Include"
+    "${recastnavigation_SOURCE_DIR}/DetourCrowd/Include")
+target_compile_options(recast PRIVATE /W0)
+set_target_properties(recast PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- Font Awesome 6 Free Solid (아이콘 글꼴, SIL OFL 1.1) + IconFontCppHeaders (zlib)
 # 에디터 UI 아이콘. 글꼴은 실행 파일에 바이트 배열로 넣어 경로 의존 없이 쓴다 (ImGui AddFontFromMemoryTTF)

@@ -107,7 +107,7 @@ Sandbox/Source/   엔진 검증용 런타임 데모 실행 파일
 Projects/Sample/  예제 프로젝트 (Sample.eproject, Content/ 에셋, Source/ = SampleGame.dll 게임 모듈). 인자 없이 실행하면 기본으로 열린다
 Engine/EngineDll.cpp  ProjectEEngine.dll 진입 단위 (엔진 모듈 객체가 여기로 링크됨)
 Tests/            CoreTests, RendererTests, RhiTests, AudioTests, EditorTests, ScriptingTests, PhysicsTests, NetworkTests (CTest 등록)
-CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2, Jolt Physics, protobuf(GNS 전용), GameNetworkingSockets
+CMake/ThirdParty.cmake  FetchContent 외부 라이브러리 (커밋/해시 고정): stb_image, cgltf, imgui, ImGuizmo, nlohmann/json, miniaudio, bc7enc_rdo, Lua, sol2, Jolt Physics, protobuf(GNS 전용), GameNetworkingSockets, Recast/Detour, imgui-node-editor(에디터 전용). 서드파티 소스 수정이 필요하면 `CMake/Patches/*.cmake`를 PATCH_COMMAND로 적용한다(여러 번 실행해도 안전하게, 대상 문자열을 못 찾으면 FATAL_ERROR)
 Scripts/          빌드 스크립트 (Build.ps1), 패키징 스크립트 (Package.ps1)
 Build/            CMake 빌드 출력 (git 제외)
 ```

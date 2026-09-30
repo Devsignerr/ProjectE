@@ -25,7 +25,7 @@ public:
 
 	// Viewport: UI를 놓을 화면 픽셀 영역. Pointer는 화면 픽셀 기준 (nullptr이면 입력 없음). 반환: 포인터가 UI 위에 있음
 	bool Update(const FUIRect& Viewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,
-	            std::vector<FUIEvent>& OutEvents);
+	            std::vector<FUIEvent>& OutEvents, float DeltaSeconds = 0.0f);
 	// 레이아웃만 (입력 없이)
 	void Layout(const FUIRect& Viewport, FUIFontLibrary& Fonts);
 	void Paint(FUIDrawList& Out, FUIFontLibrary& Fonts) const;
@@ -34,6 +34,8 @@ public:
 	const FUIRect&      GetViewport() const { return Viewport; }
 	FUIInputRouter&     GetInputRouter() { return Router; }
 	bool                IsPointerOverUI() const { return bPointerOver; }
+	// 포커스된 텍스트 상자가 있어 키보드를 가져감
+	bool                WantsKeyboard() { return Router.WantsKeyboard(*Asset.Root); }
 
 private:
 	FUIAsset       Asset;

@@ -54,7 +54,8 @@ public:
 	FVector2 GetImageMin() const { return ImageMin; }
 	FUIRect  GetGameUIViewport() const;
 	// 게임 UI가 포인터를 가져간 프레임에는 클릭 선택을 하지 않는다 (에디터가 매 프레임 설정)
-	bool bGameUIWantsPointer = false;
+	bool bGameUIWantsPointer  = false;
+	bool bGameUIWantsKeyboard = false; // 게임 UI 텍스트 상자에 입력 중 (ESC로 플레이를 멈추지 않는다)
 	bool bOpen = true;
 
 	bool          bShowGrid = true;

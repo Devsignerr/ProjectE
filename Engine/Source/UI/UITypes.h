@@ -23,6 +23,7 @@ enum class EUIWidgetType : uint8
 	Text,
 	Button, // 배경(상태별 브러시) + 자식 1개, 클릭 이벤트
 	ProgressBar,
+	TextBox, // 한 줄 텍스트 입력 (클릭/Tab으로 포커스, Enter 확정)
 	Count
 };
 

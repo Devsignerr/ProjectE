@@ -235,6 +235,21 @@ namespace
 			Object["Percent"]       = Widget.Percent;
 			Object["FillDirection"] = ToString(Widget.FillDirection);
 			break;
+		case EUIWidgetType::TextBox:
+			Object["Brush"]          = BrushToJson(Widget.Brush);
+			Object["FocusedBrush"]   = BrushToJson(Widget.FocusedBrush);
+			Object["ContentPadding"] = ToJson(Widget.ContentPadding);
+			Object["Text"]           = Widget.Text;
+			Object["HintText"]       = Widget.HintText;
+			Object["HintColor"]      = ToJson(Widget.HintColor);
+			if (!Widget.Font.empty())
+			{
+				Object["Font"] = Widget.Font;
+			}
+			Object["FontSize"]  = Widget.FontSize;
+			Object["TextColor"] = ToJson(Widget.TextColor);
+			Object["MaxLength"] = Widget.MaxLength;
+			break;
 		case EUIWidgetType::ScrollBox:
 			Object["Orientation"]    = ToString(Widget.Orientation);
 			Object["ScrollbarWidth"] = Widget.ScrollbarWidth;
@@ -299,6 +314,10 @@ namespace
 		ReadBrush(Object, "PressedBrush", Widget->PressedBrush);
 		ReadBrush(Object, "DisabledBrush", Widget->DisabledBrush);
 		ReadBrush(Object, "FillBrush", Widget->FillBrush);
+		ReadBrush(Object, "FocusedBrush", Widget->FocusedBrush);
+		Read(Object, "HintText", Widget->HintText);
+		Read(Object, "HintColor", Widget->HintColor);
+		Read(Object, "MaxLength", Widget->MaxLength);
 		Read(Object, "Percent", Widget->Percent);
 		ReadEnum(Object, "FillDirection", Widget->FillDirection);
 		ReadEnum(Object, "Orientation", Widget->Orientation);

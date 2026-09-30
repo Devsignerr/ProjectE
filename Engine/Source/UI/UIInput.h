@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+class IUITextMeasurer;
+
 struct FUIWidget;
 
 // 한 프레임의 포인터 입력 (위치는 UI 단위)
@@ -18,12 +20,25 @@ struct FUIPointerInput
 	float    Wheel     = 0.0f;  // 휠 칸 수 (+ = 위로)
 };
 
-// 키보드 탐색 (포커스된 버튼 실행, Tab 이동)
+// 키보드: 탐색(포커스된 버튼 실행, Tab 이동) + 텍스트 상자 편집
 struct FUIKeyInput
 {
-	bool bActivate      = false; // Enter/Space 눌림
+	bool bActivate      = false; // Enter/Space 눌림 (버튼 실행)
 	bool bFocusNext     = false; // Tab
 	bool bFocusPrevious = false; // Shift+Tab
+
+	// 텍스트 상자 (포커스된 텍스트 상자가 있을 때만 쓰인다)
+	std::u32string Typed;              // 입력 문자 (제어 문자 제외)
+	bool           bBackspace = false; // 반복 포함
+	bool           bDelete    = false;
+	bool           bLeft      = false;
+	bool           bRight     = false;
+	bool           bHome      = false;
+	bool           bEnd       = false;
+	bool           bCommit    = false; // Enter
+	bool           bCancel    = false; // Esc
+
+	bool HasTextEdit() const { return !Typed.empty() || bBackspace || bDelete || bLeft || bRight || bHome || bEnd || bCommit || bCancel; }
 };
 
 enum class EUIEventType : uint8
@@ -33,6 +48,8 @@ enum class EUIEventType : uint8
 	Released,
 	HoverBegin,
 	HoverEnd,
+	TextChanged,   // 텍스트 상자 내용이 바뀜
+	TextCommitted, // 텍스트 상자 Enter 또는 포커스를 잃음
 };
 
 struct FUIEvent
@@ -61,6 +78,8 @@ public:
 	uint32 GetPressedId() const { return PressedId; }
 	uint32 GetFocusedId() const { return FocusedId; }
 	void   SetFocus(FUIWidget& Root, uint32 WidgetId);
+	// 포커스가 텍스트 상자면 true (게임 키보드 입력을 막아야 함)
+	bool   WantsKeyboard(FUIWidget& Root);
 	void   Reset(FUIWidget& Root);
 
 private:

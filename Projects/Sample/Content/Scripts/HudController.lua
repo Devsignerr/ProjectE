@@ -2,6 +2,7 @@
 --   위젯 찾기: self.entity:GetWidget("이름") (같은 엔티티의 UIComponent)
 --   값: .Text / .Percent / .Visible / .Enabled / .Opacity / .Color(sRGB Vector4) / .Texture / .FontSize
 --   이벤트: OnUIClicked_<이름>, OnUIPressed_, OnUIReleased_, OnUIHoverBegin_, OnUIHoverEnd_
+--          텍스트 상자: OnUITextChanged_<이름>, OnUITextCommitted_<이름> (입력 중에는 게임 키 입력이 막힌다)
 local HudController = {
 	Properties = {
 		ScorePerSecond = 120.0,
@@ -18,6 +19,7 @@ function HudController:OnStart()
 	self.HealthText = self.entity:GetWidget("HealthLabel")
 	self.ScoreText  = self.entity:GetWidget("ScoreText")
 	self.Log        = self.entity:GetWidget("LogLine0")
+	self.Chat       = self.entity:GetWidget("ChatInput")
 	self.bPlaying   = false
 end
 
@@ -48,6 +50,13 @@ function HudController:OnUIClicked_PlayButton()
 	self.Menu.Visible = false
 	self.Log.Text     = "게임을 시작했습니다. (M: 메뉴)"
 	Log.Info("UI: 게임 시작")
+end
+
+function HudController:OnUITextCommitted_ChatInput()
+	if self.Chat.Text ~= "" then
+		self.Log.Text  = "나: " .. self.Chat.Text
+		self.Chat.Text = ""
+	end
 end
 
 function HudController:OnUIClicked_OptionsButton()

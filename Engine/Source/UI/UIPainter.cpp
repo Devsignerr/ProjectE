@@ -3,6 +3,7 @@
 #include "UI/Widget.h"
 
 #include <algorithm>
+#include <cmath>
 
 void FUIDrawList::AddQuad(const FUIDrawQuad& Quad, const FUITextureRef& Texture, const FUIRect& Clip)
 {
@@ -92,6 +93,52 @@ namespace
 		FUIPainter::PaintBrush(Thumb, ThumbRect, Opacity, Transform, Clip, Out);
 	}
 
+	void PaintTextBox(const FUIWidget& Widget, float Opacity, bool bEnabled, const FUITransform& Transform, const FUIRect& Clip, FUIFontLibrary& Fonts,
+	                  FUIDrawList& Out)
+	{
+		const float BoxOpacity = bEnabled ? Opacity : Opacity * 0.5f;
+		FUIPainter::PaintBrush(Widget.State.bFocused ? Widget.FocusedBrush : Widget.Brush, Widget.State.Geometry, BoxOpacity, Transform, Clip, Out);
+
+		// 내용 영역 안에서만 (가로 스크롤)
+		const FUIRect Content     = Widget.State.Geometry.Inset(Widget.ContentPadding);
+		const FUIRect ContentClip = Clip.Intersect(Transform.ToPixels(Content));
+		if (ContentClip.IsEmpty())
+		{
+			return;
+		}
+		FUIFont* Font       = Fonts.GetFont(Widget.Font);
+		const float LineHeight = Font != nullptr ? Font->GetLineHeight(Widget.FontSize) : Widget.FontSize;
+		const float Top        = Content.Min.Y + (Content.GetHeight() - LineHeight) * 0.5f;
+		const float Left       = Content.Min.X - Widget.State.TextScroll;
+		const bool  bHint      = Widget.Text.empty() && !Widget.State.bFocused;
+
+		FUIWidgetData Line = Widget; // 한 줄, 왼쪽 정렬로 그린다
+		Line.Justify       = EUITextJustify::Left;
+		Line.bWrap         = false;
+		Line.OutlineWidth  = 0.0f;
+		Line.ShadowOffset  = FVector2::ZeroVector;
+		if (bHint)
+		{
+			Line.Text      = Widget.HintText;
+			Line.TextColor = Widget.HintColor;
+		}
+		const FUIRect TextRect(FVector2(Left, Top), FVector2(Left + 100000.0f, Top + LineHeight));
+		FUIPainter::PaintText(Line, TextRect, BoxOpacity, Transform, ContentClip, Fonts, Out);
+
+		// 캐럿 (0.5초 켜짐 / 0.5초 꺼짐)
+		if (Widget.State.bFocused && Font != nullptr && std::fmod(Widget.State.CaretTime, 1.0f) < 0.5f)
+		{
+			std::vector<float> Positions;
+			Font->GetCaretPositions(Widget.Text, Widget.FontSize, Positions);
+			const int32 Caret = FMath::Clamp(Widget.State.CaretIndex, 0, static_cast<int32>(Positions.size()) - 1);
+			const float X     = Left + Positions[static_cast<size_t>(Caret)];
+			FUIBrush    CaretBrush;
+			CaretBrush.Color = Widget.TextColor;
+			FUIPainter::PaintBrush(CaretBrush, FUIRect(FVector2(X, Top + LineHeight * 0.1f), FVector2(X + FMath::Max(1.5f, 1.0f / Transform.Scale), Top + LineHeight * 0.9f)),
+			                       BoxOpacity, Transform, ContentClip, Out);
+		}
+	}
+
 	void PaintWidget(const FUIWidget& Widget, float ParentOpacity, bool bParentEnabled, const FUITransform& Transform, const FUIRect& ViewportClip,
 	                 FUIFontLibrary& Fonts, FUIDrawList& Out)
 	{
@@ -125,6 +172,9 @@ namespace
 			break;
 		case EUIWidgetType::ProgressBar:
 			PaintProgressBar(Widget, Opacity, Transform, Clip, Out);
+			break;
+		case EUIWidgetType::TextBox:
+			PaintTextBox(Widget, Opacity, bEnabled, Transform, Clip, Fonts, Out);
 			break;
 		default:
 			break;

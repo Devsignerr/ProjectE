@@ -114,6 +114,10 @@ namespace
 		case EUIWidgetType::Text:
 			Desired = Measurer.MeasureText(Widget, 0.0f);
 			break;
+		case EUIWidgetType::TextBox:
+			// 한 줄 높이 (+ 안쪽 여백). 너비는 보통 슬롯/최소 크기가 정한다
+			Desired = Measurer.MeasureText(Widget, 0.0f) + Widget.ContentPadding.GetTotal();
+			break;
 		case EUIWidgetType::ProgressBar:
 		case EUIWidgetType::Count:
 			break;

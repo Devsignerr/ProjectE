@@ -80,6 +80,12 @@ struct FUIWidgetData
 	FUIBrush         FillBrush;
 	EUIFillDirection FillDirection = EUIFillDirection::LeftToRight;
 
+	// ---- 텍스트 상자 (Text/Font/FontSize/TextColor/ContentPadding 공유, Brush = 기본 배경)
+	std::string HintText;                                // 비어 있고 포커스가 없을 때 흐리게
+	FVector4    HintColor = FVector4(1.0f, 1.0f, 1.0f, 0.35f);
+	int32       MaxLength = 0;                           // 글자 수 제한 (0 = 없음)
+	FUIBrush    FocusedBrush;                            // 포커스 중 배경
+
 	// ---- 스크롤
 	EUIOrientation Orientation      = EUIOrientation::Vertical;
 	float          ScrollbarWidth   = 8.0f;
@@ -101,6 +107,9 @@ struct FUIWidgetState
 	bool     bHovered     = false;
 	bool     bPressed     = false;
 	bool     bFocused     = false;
+	int32    CaretIndex   = 0;    // 텍스트 상자: 캐럿 위치 (코드 포인트)
+	float    TextScroll   = 0.0f; // 텍스트 상자: 가로 스크롤 (UI 단위, 캐럿이 보이도록)
+	float    CaretTime    = 0.0f; // 깜빡임 (편집하면 0)
 };
 
 // 위젯 트리 노드. 자식을 소유하고 부모는 비소유 포인터(자식을 붙일 때 설정, 트리 수명 동안 유효).

@@ -49,6 +49,17 @@ std::unique_ptr<FUIWidget> FUIWidget::Create(EUIWidgetType Type)
 		Widget->DisabledBrush  = MakeBrush(FVector4(0.35f, 0.35f, 0.38f, 1.0f), 6.0f);
 		Widget->ContentPadding = FUIMargin(16.0f, 8.0f);
 		break;
+	case EUIWidgetType::TextBox:
+		Widget->Brush                    = MakeBrush(FVector4(0.05f, 0.06f, 0.08f, 0.9f), 6.0f);
+		Widget->Brush.BorderWidth        = 1.0f;
+		Widget->Brush.BorderColor        = FVector4(1.0f, 1.0f, 1.0f, 0.25f);
+		Widget->FocusedBrush             = Widget->Brush;
+		Widget->FocusedBrush.BorderColor = FVector4(0.35f, 0.58f, 1.0f, 1.0f);
+		Widget->FocusedBrush.BorderWidth = 2.0f;
+		Widget->ContentPadding           = FUIMargin(10.0f, 6.0f);
+		Widget->HintText                 = "입력...";
+		Widget->MinSize                  = FVector2(160.0f, 0.0f);
+		break;
 	case EUIWidgetType::ProgressBar:
 		Widget->Brush     = MakeBrush(FVector4(0.06f, 0.06f, 0.07f, 0.85f), 4.0f);
 		Widget->FillBrush = MakeBrush(FVector4(0.3f, 0.85f, 0.4f, 1.0f), 4.0f);

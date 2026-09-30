@@ -11,6 +11,7 @@
 //   local Health = self.entity:GetWidget("HealthBar")   -- 같은 엔티티의 UIComponent 안 위젯 (없으면 nil)
 //   Health.Percent = 0.5; Label.Text = "점수 10"; Menu.Visible = false; Button.Enabled = false
 //   function Hud:OnUIClicked_PlayButton() ... end        -- 이벤트: OnUIClicked_/OnUIPressed_/OnUIReleased_/OnUIHoverBegin_/OnUIHoverEnd_<이름>
+//                                                         텍스트 상자: OnUITextChanged_/OnUITextCommitted_<이름> (값은 widget.Text)
 //   (이름이 Lua 식별자가 아니면 Hud["OnUIClicked_시작"] = function(self) ... end)
 // 위젯 값은 접근할 때마다 이름으로 다시 찾는다 (인스턴스가 다시 만들어져도 같은 이름이면 계속 유효)
 
@@ -31,6 +32,8 @@ namespace
 		case EUIEventType::Released:   return "OnUIReleased_";
 		case EUIEventType::HoverBegin: return "OnUIHoverBegin_";
 		case EUIEventType::HoverEnd:   return "OnUIHoverEnd_";
+		case EUIEventType::TextChanged:   return "OnUITextChanged_";
+		case EUIEventType::TextCommitted: return "OnUITextCommitted_";
 		}
 		return "OnUIEvent_";
 	}
@@ -106,6 +109,8 @@ void FLuaRuntime::RegisterUIBindings()
 		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { GetMainColor(RequireWidget(Ref)) = Value; }),
 		"Texture", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Brush.Texture; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Brush.Texture = Value; }),
+		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintText; },
+		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).HintText = Value; }),
 		"FontSize", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).FontSize; },
 		                          [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).FontSize = FMath::Max(Value, 1.0f); }),
 		sol::meta_function::to_string, [](const FScriptWidgetRef& Ref) { return "UIWidget(" + Ref.Name + ")"; });

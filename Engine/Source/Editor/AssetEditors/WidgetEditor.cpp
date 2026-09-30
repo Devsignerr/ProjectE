@@ -57,6 +57,7 @@ namespace
 		{ EUIWidgetType::Text, ICON_FA_FONT, "텍스트", "SDF 글꼴 텍스트" },
 		{ EUIWidgetType::Button, ICON_FA_HAND_POINTER, "버튼", "상태별 모양 + 클릭 이벤트 (자식 1개)" },
 		{ EUIWidgetType::ProgressBar, ICON_FA_BARS_PROGRESS, "진행 막대", "0~1 비율 채우기" },
+		{ EUIWidgetType::TextBox, ICON_FA_I_CURSOR, "텍스트 상자", "한 줄 입력 (클릭해 포커스, Enter 확정)" },
 	};
 
 	const FPaletteEntry& GetPaletteEntry(EUIWidgetType Type)
@@ -91,7 +92,7 @@ namespace
 	constexpr const char* GJustifyLabels[]    = { "왼쪽", "가운데", "오른쪽" };
 	constexpr const char* GFillLabels[]       = { "왼쪽 → 오른쪽", "오른쪽 → 왼쪽", "아래 → 위", "위 → 아래" };
 	constexpr const char* GScaleModeLabels[]  = { "없음 (1배)", "높이 맞춤", "너비 맞춤", "전체 보이기 (작은 쪽)", "채우기 (큰 쪽)" };
-	constexpr const char* GEventLabels[]      = { "클릭", "누름", "뗌", "호버 시작", "호버 끝" };
+	constexpr const char* GEventLabels[]      = { "클릭", "누름", "뗌", "호버 시작", "호버 끝", "텍스트 변경", "텍스트 확정" };
 	constexpr const char* GDrawAsLabels[]     = { "늘이기", "9-slice" };
 
 	template <typename TEnum, size_t N>
@@ -134,6 +135,7 @@ namespace
 		case EUIWidgetType::Button:       Slot.Offsets.Right = 220.0f; Slot.Offsets.Bottom = 64.0f; break;
 		case EUIWidgetType::Border:       Slot.Offsets.Right = 320.0f; Slot.Offsets.Bottom = 200.0f; break;
 		case EUIWidgetType::ProgressBar:  Slot.Offsets.Right = 320.0f; Slot.Offsets.Bottom = 24.0f; break;
+		case EUIWidgetType::TextBox:      Slot.Offsets.Right = 360.0f; Slot.Offsets.Bottom = 48.0f; break;
 		case EUIWidgetType::ScrollBox:    Slot.Offsets.Right = 320.0f; Slot.Offsets.Bottom = 400.0f; break;
 		default:                          Slot.Offsets.Right = 400.0f; Slot.Offsets.Bottom = 300.0f; break;
 		}
@@ -526,7 +528,8 @@ void FWidgetEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 	}
 	ImGui::EndChild();
 
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput)
+	// 미리보기 입력 중에는 키가 UI로 가므로(텍스트 상자 Delete 등) 편집 단축키를 쓰지 않는다
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::GetIO().WantTextInput && !bPreviewInput)
 	{
 		HandleShortcuts();
 	}
@@ -1043,14 +1046,35 @@ void FWidgetEditor::HandlePreviewInput(bool bHovered)
 		Keys.bActivate      = ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_Space, false);
 		Keys.bFocusNext     = ImGui::IsKeyPressed(ImGuiKey_Tab, false) && !Io.KeyShift;
 		Keys.bFocusPrevious = ImGui::IsKeyPressed(ImGuiKey_Tab, false) && Io.KeyShift;
+		// 텍스트 상자 미리보기: ImGui가 받은 문자/키를 그대로
+		for (const ImWchar Char : Io.InputQueueCharacters)
+		{
+			if (Char >= 0x20 && Char != 0x7F)
+			{
+				Keys.Typed.push_back(static_cast<char32_t>(Char));
+			}
+		}
+		Keys.bBackspace = ImGui::IsKeyPressed(ImGuiKey_Backspace, true);
+		Keys.bDelete    = ImGui::IsKeyPressed(ImGuiKey_Delete, true);
+		Keys.bLeft      = ImGui::IsKeyPressed(ImGuiKey_LeftArrow, true);
+		Keys.bRight     = ImGui::IsKeyPressed(ImGuiKey_RightArrow, true);
+		Keys.bHome      = ImGui::IsKeyPressed(ImGuiKey_Home, false);
+		Keys.bEnd       = ImGui::IsKeyPressed(ImGuiKey_End, false);
+		Keys.bCommit    = ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false);
+		Keys.bCancel    = ImGui::IsKeyPressed(ImGuiKey_Escape, false);
 	}
 	std::vector<FUIEvent> Events;
 	PreviewRouter.Process(*Asset.Root, Pointer, Keys, Events);
+	// 캐럿 깜빡임
+	if (FUIWidget* Focused = PreviewRouter.GetFocusedId() != 0 ? Asset.Root->FindById(PreviewRouter.GetFocusedId()) : nullptr)
+	{
+		Focused->State.CaretTime += Io.DeltaTime;
+	}
 	for (const FUIEvent& Event : Events)
 	{
-		if (Event.Type == EUIEventType::Pressed || Event.Type == EUIEventType::Released)
+		if (Event.Type == EUIEventType::Pressed || Event.Type == EUIEventType::Released || Event.Type == EUIEventType::TextChanged)
 		{
-			continue; // 로그는 클릭/호버만
+			continue; // 로그는 클릭/호버/확정만
 		}
 		EventLog.push_back(std::format("{} {}", GEventLabels[static_cast<size_t>(Event.Type)], Event.WidgetName));
 		if (EventLog.size() > 6)
@@ -1576,6 +1600,33 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 			bChanged |= EnumCombo("채우는 방향", Widget.FillDirection, GFillLabels);
 			bChanged |= DrawBrush("배경", Widget.Brush, false);
 			bChanged |= DrawBrush("채우기", Widget.FillBrush, true);
+		}
+		break;
+	case EUIWidgetType::TextBox:
+		if (ImGui::CollapsingHeader("텍스트 상자", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			char Buffer[1024];
+			std::snprintf(Buffer, sizeof(Buffer), "%s", Widget.Text.c_str());
+			if (ImGui::InputText("기본 내용", Buffer, sizeof(Buffer)))
+			{
+				Widget.Text = Buffer;
+				bChanged    = true;
+			}
+			std::snprintf(Buffer, sizeof(Buffer), "%s", Widget.HintText.c_str());
+			if (ImGui::InputText("안내 문구", Buffer, sizeof(Buffer)))
+			{
+				Widget.HintText = Buffer;
+				bChanged        = true;
+			}
+			bChanged |= ImGui::ColorEdit4("안내 색", &Widget.HintColor.X, ImGuiColorEditFlags_AlphaBar);
+			bChanged |= ImGui::DragInt("최대 글자 수", &Widget.MaxLength, 0.2f, 0, 10000);
+			ImGui::SetItemTooltip("0 = 제한 없음");
+			bChanged |= ImGui::DragFloat("글자 크기", &Widget.FontSize, 0.25f, 1.0f, 512.0f, "%.1f");
+			bChanged |= ImGui::ColorEdit4("글자 색", &Widget.TextColor.X, ImGuiColorEditFlags_AlphaBar);
+			bChanged |= DrawBrush("배경", Widget.Brush, false);
+			bChanged |= DrawBrush("포커스 배경", Widget.FocusedBrush, false);
+			bChanged |= ImGui::DragFloat4("안쪽 여백", &Widget.ContentPadding.Left, 0.5f, 0.0f, 1000.0f, "%.1f");
+			FAssetEditorWidgets::Hint("스크립트: OnUITextChanged_<이름> / OnUITextCommitted_<이름>, 값은 widget.Text. 입력 중에는 게임 키보드 입력이 막힌다.");
 		}
 		break;
 	case EUIWidgetType::ScrollBox:

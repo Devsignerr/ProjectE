@@ -1271,6 +1271,93 @@
             ]
           }
         ]
+      },
+      {
+        "Type": "TextBox",
+        "Name": "ChatInput",
+        "Visibility": "Visible",
+        "Enabled": true,
+        "Opacity": 1,
+        "MinSize": [
+          160,
+          0
+        ],
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            32,
+            -32,
+            420,
+            48
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.8
+          ],
+          "CornerRadius": 6,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            1,
+            1,
+            0.25
+          ]
+        },
+        "FocusedBrush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.95
+          ],
+          "CornerRadius": 6,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.35,
+            0.58,
+            1,
+            1
+          ]
+        },
+        "ContentPadding": [
+          12,
+          6,
+          12,
+          6
+        ],
+        "Text": "",
+        "HintText": "채팅 입력 (클릭 후 Enter)",
+        "HintColor": [
+          1,
+          1,
+          1,
+          0.4
+        ],
+        "FontSize": 22,
+        "TextColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "MaxLength": 60
       }
     ]
   }

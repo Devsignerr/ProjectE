@@ -41,7 +41,7 @@ void FUIInstance::Layout(const FUIRect& InViewport, FUIFontLibrary& Fonts)
 }
 
 bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,
-                         std::vector<FUIEvent>& OutEvents)
+                         std::vector<FUIEvent>& OutEvents, float DeltaSeconds)
 {
 	Layout(InViewport, Fonts);
 
@@ -59,6 +59,24 @@ bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* Point
 	{
 		// 스크롤 위치가 바뀌었으면 같은 프레임에 반영
 		FUILayout::Compute(*Asset.Root, InViewport.GetSize() / Transform.Scale, Fonts);
+	}
+
+	// 포커스된 텍스트 상자: 캐럿 깜빡임 + 캐럿이 보이도록 가로 스크롤
+	if (FUIWidget* Focused = Router.GetFocusedId() != 0 ? Asset.Root->FindById(Router.GetFocusedId()) : nullptr;
+	    Focused != nullptr && Focused->Type == EUIWidgetType::TextBox)
+	{
+		Focused->State.CaretTime += DeltaSeconds;
+		if (FUIFont* Font = Fonts.GetFont(Focused->Font))
+		{
+			std::vector<float> Positions;
+			Font->GetCaretPositions(Focused->Text, Focused->FontSize, Positions);
+			const int32 Caret        = FMath::Clamp(Focused->State.CaretIndex, 0, static_cast<int32>(Positions.size()) - 1);
+			const float CaretX       = Positions[static_cast<size_t>(Caret)];
+			const float ContentWidth = FMath::Max(Focused->State.Geometry.Inset(Focused->ContentPadding).GetWidth() - 2.0f, 1.0f);
+			float&      Scroll       = Focused->State.TextScroll;
+			Scroll                   = FMath::Clamp(Scroll, CaretX - ContentWidth, CaretX);
+			Scroll                   = FMath::Clamp(Scroll, 0.0f, FMath::Max(Positions.back() - ContentWidth, 0.0f));
+		}
 	}
 	return bPointerOver;
 }

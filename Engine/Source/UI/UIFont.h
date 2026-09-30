@@ -73,6 +73,8 @@ public:
 	void     Layout(std::string_view Utf8, float FontSize, float WrapWidth, FUITextLayout& Out);
 	FVector2 Measure(std::string_view Utf8, float FontSize, float WrapWidth);
 	float    GetLineHeight(float FontSize) const;
+	// 한 줄 배치의 글자 경계 X (코드 포인트 N개 → N+1개, 0 = 시작). 텍스트 상자 캐럿/클릭 위치용
+	void     GetCaretPositions(std::string_view Utf8, float FontSize, std::vector<float>& OutPositions);
 	// 글자를 미리 굽는다 (UI 인스턴스를 만들 때 — 첫 프레임에 한꺼번에 굽는 끊김 방지)
 	void     Prebake(std::string_view Utf8);
 	// 셰이더용: SDF 값 0~1 차이 1이 화면에서 몇 UI 단위인지 (= 2 × 패딩 × 크기 비율)
@@ -146,3 +148,5 @@ private:
 
 // UTF-8 → 코드 포인트 (잘못된 바이트는 U+FFFD)
 std::vector<uint32> DecodeUtf8(std::string_view Utf8);
+// 코드 포인트 → UTF-8
+std::string EncodeUtf8(const std::vector<uint32>& Codepoints);

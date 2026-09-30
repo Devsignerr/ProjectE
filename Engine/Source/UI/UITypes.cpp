@@ -28,7 +28,7 @@ namespace
 
 	// 열거형 순서와 같아야 한다
 	constexpr const char* WidgetTypeNames[]   = { "Canvas", "HorizontalBox", "VerticalBox", "Overlay", "UniformGrid", "ScrollBox",
-		                                          "Border", "Image",         "Text",        "Button",  "ProgressBar" };
+		                                          "Border", "Image",         "Text",        "Button",  "ProgressBar", "TextBox" };
 	constexpr const char* VisibilityNames[]   = { "Visible", "Collapsed", "Hidden", "HitTestInvisible", "SelfHitTestInvisible" };
 	constexpr const char* HAlignNames[]       = { "Fill", "Left", "Center", "Right" };
 	constexpr const char* VAlignNames[]       = { "Fill", "Top", "Center", "Bottom" };

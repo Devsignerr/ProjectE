@@ -117,6 +117,38 @@ std::vector<uint32> DecodeUtf8(std::string_view Utf8)
 	return Result;
 }
 
+std::string EncodeUtf8(const std::vector<uint32>& Codepoints)
+{
+	std::string Result;
+	Result.reserve(Codepoints.size());
+	for (const uint32 Codepoint : Codepoints)
+	{
+		if (Codepoint < 0x80)
+		{
+			Result.push_back(static_cast<char>(Codepoint));
+		}
+		else if (Codepoint < 0x800)
+		{
+			Result.push_back(static_cast<char>(0xC0 | (Codepoint >> 6)));
+			Result.push_back(static_cast<char>(0x80 | (Codepoint & 0x3F)));
+		}
+		else if (Codepoint < 0x10000)
+		{
+			Result.push_back(static_cast<char>(0xE0 | (Codepoint >> 12)));
+			Result.push_back(static_cast<char>(0x80 | ((Codepoint >> 6) & 0x3F)));
+			Result.push_back(static_cast<char>(0x80 | (Codepoint & 0x3F)));
+		}
+		else
+		{
+			Result.push_back(static_cast<char>(0xF0 | (Codepoint >> 18)));
+			Result.push_back(static_cast<char>(0x80 | ((Codepoint >> 12) & 0x3F)));
+			Result.push_back(static_cast<char>(0x80 | ((Codepoint >> 6) & 0x3F)));
+			Result.push_back(static_cast<char>(0x80 | (Codepoint & 0x3F)));
+		}
+	}
+	return Result;
+}
+
 // ---------------------------------------------------------------- FUIFont
 
 FUIFont::FUIFont()  = default;
@@ -430,6 +462,26 @@ void FUIFont::Layout(std::string_view Utf8, float FontSize, float WrapWidth, FUI
 	}
 	FlushLine(LineGlyphs.size(), TrimmedWidth(LineGlyphs.size(), PenX));
 	Out.Size.Y = static_cast<float>(Out.Lines.size()) * Out.LineHeight;
+}
+
+void FUIFont::GetCaretPositions(std::string_view Utf8, float FontSize, std::vector<float>& OutPositions)
+{
+	OutPositions.clear();
+	OutPositions.push_back(0.0f);
+	if (!IsLoaded())
+	{
+		return;
+	}
+	const float Scale     = FontSize / BasePixelHeight;
+	float       PenX      = 0.0f;
+	int32       PrevGlyph = 0;
+	for (const uint32 Codepoint : DecodeUtf8(Utf8))
+	{
+		const FUIGlyph& Glyph = GetGlyph(Codepoint);
+		PenX += (GetKerning(PrevGlyph, Glyph.GlyphIndex) + Glyph.Advance) * Scale;
+		PrevGlyph = Glyph.GlyphIndex;
+		OutPositions.push_back(PenX);
+	}
 }
 
 void FUIFont::Prebake(std::string_view Utf8)

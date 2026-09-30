@@ -179,10 +179,6 @@ bool FRuntimeApplication::OnInit()
 void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
-	if (InputState.IsKeyPressed(EKey::Escape))
-	{
-		RequestExit();
-	}
 
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
 	if (Net.GetMode() == ENetMode::Client)
@@ -199,13 +195,24 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
 	UIInput.bHasPointer = true;
 	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
-	UIInput.Keys        = FUISystem::MakeKeys(InputState);
-	FInput      BlockedInput;
-	const FInput* GameInput = &InputState;
-	if (FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory()))
+	UIInput.Keys         = FUISystem::MakeKeys(InputState);
+	UIInput.DeltaSeconds = DeltaSeconds;
+	FInput               BlockedInput;
+	const FInput*        GameInput = &InputState;
+	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	if (UIResult.bPointer || UIResult.bKeyboard)
 	{
-		BlockedInput = InputState.WithoutMouseButtons();
-		GameInput    = &BlockedInput;
+		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;
+		if (UIResult.bKeyboard)
+		{
+			BlockedInput = BlockedInput.WithoutKeyboard();
+		}
+		GameInput = &BlockedInput;
+	}
+	// ESC 종료 (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
+	if (!UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	{
+		RequestExit();
 	}
 	World.TickGameplay(DeltaSeconds, GameInput); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);

@@ -95,7 +95,7 @@ FUIInstance* FUISystem::EnsureInstance(FUIComponent& Component, const std::files
 	return Runtime.Instance.get();
 }
 
-bool FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, const std::filesystem::path& ContentDirectory)
+FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, const std::filesystem::path& ContentDirectory)
 {
 	FUIFontLibrary& Fonts = FUIFontLibrary::Get();
 	Fonts.SetContentDirectory(ContentDirectory);
@@ -108,6 +108,7 @@ bool FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, const std::fil
 
 	std::vector<FOrderedUI> Ordered = CollectVisible(Scene);
 	bool                    bTaken  = false; // 위 UI가 포인터를 가져갔으면 아래 UI는 포인터 밖으로
+	bool                    bKeysTaken = false;
 	for (auto It = Ordered.rbegin(); It != Ordered.rend(); ++It)
 	{
 		FUIComponent& Component = *It->Component;
@@ -124,19 +125,31 @@ bool FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, const std::fil
 			Pointer.bPressed = false;
 			Pointer.Wheel    = 0.0f;
 		}
-		const FUIKeyInput NoKeys;
-		const FUIKeyInput& Keys = Component.bKeyboardFocus ? Input.Keys : NoKeys;
+		FUIKeyInput Keys;
+		if (!bKeysTaken)
+		{
+			Keys = Input.Keys;
+			if (!Component.bKeyboardFocus)
+			{
+				// 버튼 탐색 키는 메뉴형 UI만 (게임 키와 겹침) — 텍스트 상자 편집은 항상
+				Keys.bActivate = Keys.bFocusNext = Keys.bFocusPrevious = false;
+			}
+		}
 		if (bInput)
 		{
-			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events);
+			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds);
 			bTaken                         = bTaken || Component.Runtime.bPointerOver;
+			bKeysTaken                     = bKeysTaken || Instance->WantsKeyboard();
 		}
 		else
 		{
 			Instance->Layout(Input.Viewport, Fonts);
 		}
 	}
-	return bTaken;
+	FUIInputResult Result;
+	Result.bPointer  = bTaken;
+	Result.bKeyboard = bKeysTaken;
+	return Result;
 }
 
 void FUISystem::Paint(FScene& Scene, FUIDrawList& Out)
@@ -170,5 +183,20 @@ FUIKeyInput FUISystem::MakeKeys(const FInput& Input)
 	Keys.bActivate      = Input.IsKeyPressed(EKey::Enter) || Input.IsKeyPressed(EKey::Space);
 	Keys.bFocusNext     = Input.IsKeyPressed(EKey::Tab) && !bShift;
 	Keys.bFocusPrevious = Input.IsKeyPressed(EKey::Tab) && bShift;
+	for (const char32_t Char : Input.GetTypedText())
+	{
+		if (Char >= 0x20 && Char != 0x7F)
+		{
+			Keys.Typed.push_back(Char); // 제어 문자(Backspace 0x08, Enter 0x0D, Tab 0x09 등)는 아래 키로
+		}
+	}
+	Keys.bBackspace = Input.IsKeyRepeated(EKey::Backspace);
+	Keys.bDelete    = Input.IsKeyRepeated(EKey::Delete);
+	Keys.bLeft      = Input.IsKeyRepeated(EKey::Left);
+	Keys.bRight     = Input.IsKeyRepeated(EKey::Right);
+	Keys.bHome      = Input.IsKeyPressed(EKey::Home);
+	Keys.bEnd       = Input.IsKeyPressed(EKey::End);
+	Keys.bCommit    = Input.IsKeyPressed(EKey::Enter) || Input.IsKeyPressed(EKey::NumpadEnter);
+	Keys.bCancel    = Input.IsKeyPressed(EKey::Escape);
 	return Keys;
 }

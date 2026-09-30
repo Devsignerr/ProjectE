@@ -252,7 +252,8 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
 
-	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard())
+	// (게임 UI 텍스트 상자에 입력 중이면 ESC는 UI가 받는다 — 직전 프레임 기준)
+	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard() && !ViewportPanel.bGameUIWantsKeyboard)
 	{
 		// 플레이 중 ESC는 플레이 정지 (UE와 동일)
 		if (PlayMode.IsActive())
@@ -1082,7 +1083,8 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 
 	// 게임 UI가 먼저 입력을 본다 (뷰포트 이미지 위 포인터만). 포인터를 가져가면 게임에는 마우스 버튼/휠을 뺀 입력
 	FInput BlockedInput;
-	ViewportPanel.bGameUIWantsPointer = false;
+	ViewportPanel.bGameUIWantsPointer  = false;
+	ViewportPanel.bGameUIWantsKeyboard = false;
 	if (PlayMode.IsActive())
 	{
 		FUIFrameInput UIInput;
@@ -1093,11 +1095,18 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 			UIInput.Pointer = FUISystem::MakePointer(*GameInput, -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
 			UIInput.Keys    = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
 		}
-		if (FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory) && GameInput != nullptr)
+		UIInput.DeltaSeconds          = DeltaSeconds;
+		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
+		if (GameInput != nullptr && (UIResult.bPointer || UIResult.bKeyboard))
 		{
-			ViewportPanel.bGameUIWantsPointer = true;
-			BlockedInput                      = GameInput->WithoutMouseButtons();
-			GameInput                         = &BlockedInput;
+			ViewportPanel.bGameUIWantsPointer  = UIResult.bPointer;
+			ViewportPanel.bGameUIWantsKeyboard = UIResult.bKeyboard;
+			BlockedInput                       = UIResult.bPointer ? GameInput->WithoutMouseButtons() : *GameInput;
+			if (UIResult.bKeyboard)
+			{
+				BlockedInput = BlockedInput.WithoutKeyboard();
+			}
+			GameInput = &BlockedInput;
 		}
 	}
 	PlayMode.Tick(Context, DeltaSeconds, GameInput);

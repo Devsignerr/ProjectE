@@ -68,6 +68,18 @@ bool FGameModuleHost::Load(const std::filesystem::path& DllPath)
 	return true;
 }
 
+void FGameModuleHost::Attach(IGameModule& InModule, std::string InName)
+{
+	Unload();
+	Module = &InModule;
+	Name   = std::move(InName);
+	FTypeRegistry&    Registry      = FTypeRegistry::Get();
+	const std::string PreviousOwner = Registry.GetRegistrationOwner();
+	Registry.SetRegistrationOwner(Name);
+	Module->OnLoad();
+	Registry.SetRegistrationOwner(PreviousOwner);
+}
+
 void FGameModuleHost::Unload()
 {
 	if (Module == nullptr)
@@ -114,5 +126,37 @@ void FGameModuleHost::EndPlay(FScene& Scene)
 	{
 		Module->OnEndPlay(Scene);
 		bPlaying = false;
+	}
+}
+
+void FGameModuleHost::SetNet(IGameNet* Net)
+{
+	if (Module != nullptr)
+	{
+		Module->SetNet(Net);
+	}
+}
+
+void FGameModuleHost::PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnPlayerJoined(Scene, PlayerId, Pawn);
+	}
+}
+
+void FGameModuleHost::PlayerLeft(FScene& Scene, uint32 PlayerId)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnPlayerLeft(Scene, PlayerId);
+	}
+}
+
+void FGameModuleHost::Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, const std::string& RpcName, const FGameRpcArgs& Args)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnRpc(Scene, Target, Kind, RpcName, Args);
 	}
 }

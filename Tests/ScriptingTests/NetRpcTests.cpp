@@ -5,6 +5,7 @@
 #include "Network/ReplicationServer.h"
 #include "Network/ReplicationTypes.h"
 #include "Scene/Components.h"
+#include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 #include "World/GameWorld.h"
@@ -269,4 +270,73 @@ return T
 	E_EXPECT_EQ(ServerScripts.GetErrorCount(), 0u);
 	ClientWorld.EndPlay();
 	ServerWorld.EndPlay();
+}
+
+namespace
+{
+	// DLL 없이 붙이는 게임 모듈: 받은 이벤트를 기록하고 RPC를 보내 본다
+	struct FRecordingModule final : IGameModule
+	{
+		uint32      JoinedPlayer = 0;
+		FEntity     JoinedPawn;
+		int32       LeftPlayer = -1;
+		std::string LastRpc;
+		double      LastRpcNumber = 0.0;
+		bool        bHadNetAtBegin = false;
+
+		void OnBeginPlay(FScene&) override { bHadNetAtBegin = GetNet() != nullptr; }
+		void OnPlayerJoined(FScene&, uint32 PlayerId, FEntity Pawn) override
+		{
+			JoinedPlayer = PlayerId;
+			JoinedPawn   = Pawn;
+			// C++에서 RPC: 서버의 Multicast는 스크립트 Multicast_Boom에도 도달한다
+			GetNet()->CallRpc(Pawn, EGameRpcKind::Multicast, "Boom", { FGameRpcValue::MakeString("C++") });
+		}
+		void OnPlayerLeft(FScene&, uint32 PlayerId) override { LeftPlayer = static_cast<int32>(PlayerId); }
+		void OnRpc(FScene&, FEntity, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override
+		{
+			LastRpc       = GetRpcMethodPrefix(Kind) + Name;
+			LastRpcNumber = !Args.empty() ? Args[0].Number : 0.0;
+		}
+	};
+} // namespace
+
+// 게임 모듈 C++ API: OnPlayerJoined/Left, OnRpc(스크립트 메서드와 함께), GetNet()->CallRpc, 플레이 밖에서는 GetNet() == nullptr
+E_TEST(NetRpc_GameModuleReceivesEventsAndSendsRpc)
+{
+	RegisterNetworkTypes();
+	const std::filesystem::path Content = WriteRpcScript();
+	FScene                      Scene;
+	BuildLevel(Scene);
+	const FEntity Pawn = Find(Scene, "Pawn");
+	Scene.GetRegistry().Get<FReplicatedComponent>(Pawn).OwnerPlayerId = 0;
+
+	FRecordingModule Module;
+	FGameModuleHost  Host;
+	Host.Attach(Module, "RecordingModule");
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, &Host, nullptr, Content });
+	World.BeginPlay(Scene);
+	World.TickGameplay(1.0f / 60.0f, nullptr);
+	E_EXPECT_TRUE(Module.bHadNetAtBegin);
+
+	World.OnPlayerJoined(0, Pawn);
+	E_EXPECT_EQ(Module.JoinedPlayer, 0u);
+	E_EXPECT_TRUE(Module.JoinedPawn == Pawn);
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Pawn, "Boomed").String == "C++"); // C++ → 스크립트
+	E_EXPECT_TRUE(Module.LastRpc == "Multicast_Boom");                          // 자기 Multicast도 받는다
+
+	// 스크립트 → C++: Server RPC는 스크립트 Server_Fire와 게임 모듈 OnRpc 둘 다 받는다
+	E_EXPECT_TRUE(Scripts.RunString("Scene.Find('Pawn'):CallServer('Fire', 9, Vector3(1, 0, 0))"));
+	E_EXPECT_NEAR(Scripts.GetInstanceProperty(Pawn, "Fired").Number, 9.0, 1.0e-9);
+	E_EXPECT_TRUE(Module.LastRpc == "Multicast_Boom" || Module.LastRpc == "Server_Fire"); // Server_Fire 안에서 Multicast를 또 부른다
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Pawn, "Boomed").String == "펑1.0");
+
+	World.OnPlayerLeft(0);
+	E_EXPECT_EQ(Module.LeftPlayer, 0);
+	World.EndPlay();
+	E_EXPECT_TRUE(Module.GetNet() == nullptr);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	Host.Unload();
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Scene/GameRpc.h"
 
 class FScene;
 struct FAnimNotifyEvent;
@@ -13,6 +14,10 @@ struct FAnimNotifyEvent;
 //   OnAnimNotify: 애니메이션 노티파이 (Scene/AnimNotify.h). 플레이 중, 발생 다음 프레임 OnUpdate 직전에 이벤트마다 한 번
 //   OnEndPlay:   게임 종료 (에디터 정지 포함)
 //   OnUnload:    언로드 직전 (등록 타입은 호스트가 제거한다)
+// 멀티플레이: 게임 모듈은 서버(Standalone 포함)에서만 돈다 (클라이언트는 복제로 결과를 받는다).
+//   OnPlayerJoined/OnPlayerLeft: 플레이어 입장(폰 생성 직후)/퇴장
+//   OnRpc: 받은 RPC (Server RPC와 서버 자신의 Multicast). 같은 엔티티 스크립트의 Server_/Multicast_ 메서드와 함께 불린다
+//   GetNet(): RPC 보내기/소유권 조회 (OnBeginPlay ~ OnEndPlay 동안 유효, 그 밖에서는 nullptr)
 class IGameModule
 {
 public:
@@ -24,10 +29,20 @@ public:
 	virtual void OnAnimNotify(FScene& /*Scene*/, const FAnimNotifyEvent& /*Event*/) {}
 	virtual void OnEndPlay(FScene& /*Scene*/) {}
 	virtual void OnUnload() {}
+
+	virtual void OnPlayerJoined(FScene& /*Scene*/, uint32 /*PlayerId*/, FEntity /*Pawn*/) {}
+	virtual void OnPlayerLeft(FScene& /*Scene*/, uint32 /*PlayerId*/) {}
+	virtual void OnRpc(FScene& /*Scene*/, FEntity /*Target*/, EGameRpcKind /*Kind*/, const std::string& /*Name*/, const FGameRpcArgs& /*Args*/) {}
+
+	IGameNet* GetNet() const { return Net; }
+	void      SetNet(IGameNet* InNet) { Net = InNet; } // 엔진(FGameModuleHost)만 부른다
+
+private:
+	IGameNet* Net = nullptr;
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 2; // 2: OnAnimNotify 추가
+inline constexpr uint32 GameModuleApiVersion = 3; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

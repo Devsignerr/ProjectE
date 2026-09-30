@@ -457,6 +457,38 @@ void FLuaRuntime::RegisterEntityBindings()
 		return sol::as_table(FAnimationSystem::GetClipNames(*Scene, Entity.Entity));
 	};
 
+	// ---- 소켓 부착 (Target 모델의 .emeta 소켓). 붙이면 로컬 트랜스폼을 소켓 위치로 맞추고, 떼면 현재 월드 위치를 유지한다
+	EntityType["AttachToSocket"] = [RequireEntity, this](const FScriptEntity& Entity, const FScriptEntity& Target, const std::string& Socket) {
+		FRegistry& Registry = RequireEntity(Entity);
+		FMatrix4x4 SocketWorld;
+		if (!Scene->GetSocketWorldMatrix(Target.Entity, Socket, SocketWorld))
+		{
+			return false;
+		}
+		FSocketAttachmentComponent& Attachment = Registry.GetOrEmplace<FSocketAttachmentComponent>(Entity.Entity);
+		Attachment.Target                       = Target.Entity;
+		Attachment.Socket                       = Socket;
+		if (FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity.Entity))
+		{
+			Transform->Position = FVector3::ZeroVector;
+			Transform->Rotation = FQuat::Identity;
+		}
+		return true;
+	};
+	EntityType["DetachFromSocket"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		FRegistry& Registry = RequireEntity(Entity);
+		if (!Registry.Has<FSocketAttachmentComponent>(Entity.Entity))
+		{
+			return;
+		}
+		Registry.Remove<FSocketAttachmentComponent>(Entity.Entity);
+		if (FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity.Entity))
+		{
+			const FMatrix4x4 Local = Transform->WorldMatrix * Scene->GetParentWorldMatrix(Entity.Entity).GetInverse();
+			Local.Decompose(Transform->Position, Transform->Rotation, Transform->Scale);
+		}
+	};
+
 	// ---- 오디오 (AudioSourceComponent). 앱이 훅을 연결하지 않았으면 아무것도 하지 않는다
 	EntityType["PlaySound"] = [RequireEntity, this](const FScriptEntity& Entity) {
 		RequireEntity(Entity);
@@ -1050,9 +1082,46 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 		CallMethod(Instance, "OnUpdate", DeltaSeconds, true);
 	}
 
-	// 4. 스크립트가 요청한 프리팹 생성 (갱신 순회가 끝난 뒤) → 파괴
+	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생)
+	DispatchAnimNotifies();
+
+	// 4. 스크립트가 요청한 프리팹 생성 (갱신 순회·노티파이가 끝난 뒤) → 파괴
 	ApplyPendingSpawns();
 	ApplyPendingDestroys();
+}
+
+void FLuaRuntime::DispatchAnimNotifies()
+{
+	FRegistry& Registry = Scene->GetRegistry();
+	// 받는 쪽: 노티파이가 난 엔티티(모델 루트)의 스크립트, 없으면 가장 가까운 조상의 스크립트 (캐릭터 루트에 스크립트를 두는 경우)
+	std::vector<FAnimNotifyEvent> Events;
+	Registry.View<FAnimationComponent>().Each([&](FEntity, FAnimationComponent& Animation) {
+		Events.insert(Events.end(), Animation.Runtime.PendingNotifies.begin(), Animation.Runtime.PendingNotifies.end());
+	});
+	for (const FAnimNotifyEvent& Event : Events)
+	{
+		FScriptInstance* Receiver = nullptr;
+		for (FEntity Current = Event.Entity; Current.IsValid() && Registry.IsValid(Current); Current = Scene->GetParent(Current))
+		{
+			const auto Found = Instances.find(Current.ToId());
+			if (Found != Instances.end())
+			{
+				Receiver = &Found->second;
+				break;
+			}
+		}
+		if (Receiver == nullptr || Receiver->bFaulted || !Receiver->bStarted)
+		{
+			continue;
+		}
+		switch (Event.Type)
+		{
+		case EAnimNotifyEventType::Notify:     CallMethod(*Receiver, ("OnAnimNotify_" + Event.Name).c_str()); break;
+		case EAnimNotifyEventType::StateBegin: CallMethod(*Receiver, ("OnAnimNotifyBegin_" + Event.Name).c_str()); break;
+		case EAnimNotifyEventType::StateTick:  CallMethod(*Receiver, ("OnAnimNotifyTick_" + Event.Name).c_str(), Event.DeltaSeconds, true); break;
+		case EAnimNotifyEventType::StateEnd:   CallMethod(*Receiver, ("OnAnimNotifyEnd_" + Event.Name).c_str()); break;
+		}
+	}
 }
 
 void FLuaRuntime::DestroyAllInstances()

@@ -49,6 +49,10 @@ public:
 	bool WasDrawnThisFrame() const { return bDrawn; }
 	void BeginUiFrame() { bDrawn = false; }
 
+	// 미리보기 이미지가 그려진 영역 (기즈모 SetRect용)
+	FVector2 GetImageMin() const { return ImageMin; }
+	FVector2 GetImageSize() const { return ImageSize; }
+
 	// 월드 점 → 화면 좌표 (DrawViewport가 그린 이미지 기준). 카메라 뒤면 false
 	bool ProjectToScreen(const FVector3& WorldPosition, FVector2& OutScreen) const;
 
@@ -56,6 +60,8 @@ public:
 	void Render(FD3D12RHI& Rhi, FSceneRenderer& Renderer, FEditorGrid* Grid);
 
 	bool bShowGrid = true;
+	// 오버레이(기즈모)가 마우스를 쓰는 중이면 true로 둔다 → 다음 DrawViewport에서 카메라 조작을 막는다
+	bool bBlockCameraInput = false;
 
 private:
 	FScene                              Scene;

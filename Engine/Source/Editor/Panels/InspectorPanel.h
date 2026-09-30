@@ -33,6 +33,7 @@ private:
 	void DrawStaticMeshExtras(FEditorContext& Context, FEntity Entity);
 	void DrawScriptExtras(FEditorContext& Context, FEntity Entity); // 스크립트 선택 + Properties 오버라이드
 	void DrawAnimationExtras(FEditorContext& Context, FEntity Entity); // 클립 선택 드롭다운 + 재생 상태
+	void DrawSocketAttachmentExtras(FEditorContext& Context, FEntity Entity); // 대상 모델 + 소켓 선택
 	void DrawAddComponentMenu(FEditorContext& Context, FEntity Entity);
 
 	// ---- 프리팹

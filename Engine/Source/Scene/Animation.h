@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Scene/AnimNotify.h"
 
 #include <memory>
 #include <string>
@@ -97,6 +98,8 @@ namespace AnimationMath
 	                                float Duration);
 } // namespace AnimationMath
 
+struct FModelMetadata;
+
 // FAnimationComponent의 런타임 상태 (직렬화 제외). 모델 인스턴스화 시 FModelLoader가 채운다
 struct FAnimationRuntime
 {
@@ -113,6 +116,14 @@ struct FAnimationRuntime
 	std::string ActiveClipName;           // 적용 중인 Clip 문자열 (변경 감지용)
 	bool        bWarnedUnknownClip = false;
 
+	// 노티파이 (.emeta 공유 데이터, 규칙은 Scene/AnimNotify.h)
+	std::shared_ptr<const FModelMetadata> Metadata;
+	std::vector<uint8>                    ActiveStates;     // 현재 클립 노티파이별 스테이트 진행 중
+	int32                                 NotifyClip = -1;  // ActiveStates가 가리키는 클립
+	bool                                  bResyncStates = false;
+	std::vector<FAnimNotifyEvent>         PendingNotifies;  // 직전 갱신에서 발생 (다음 갱신 시작에 비움)
+
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> BlendScratch;
+	std::vector<FAnimNotifyHit> HitScratch;
 };

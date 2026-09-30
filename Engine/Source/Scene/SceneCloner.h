@@ -21,7 +21,7 @@ struct FSceneCloner
 	// Dest의 기존 내용은 비운다. OutEntityMap이 있으면 원본 → 복제본 매핑을 채운다
 	static void Clone(const FScene& Source, FScene& Dest, FEntityMap* OutEntityMap = nullptr);
 
-	// 리플렉션에 등록되지 않은 런타임 데이터 복사: FSkinComponent 전체, FAnimationComponent::Runtime.
+	// 리플렉션에 등록되지 않은 런타임 데이터 복사: FSkinComponent 전체, FAnimationComponent/FModelComponent::Runtime.
 	// 대상에 FAnimationComponent가 이미 있어야 Runtime이 복사된다 (리플렉션 복사 이후 호출). 같은 레지스트리여도 안전
 	static void CopyRuntimeData(const FRegistry& Source, FEntity SourceEntity, FRegistry& Dest, FEntity DestEntity);
 	// 런타임 데이터 안의 엔티티 참조(스킨 관절, 애니메이션 노드)를 Remap 결과로 바꾼다

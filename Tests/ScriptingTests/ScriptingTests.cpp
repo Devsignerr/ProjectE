@@ -1,4 +1,5 @@
 #include "Core/Testing/TestFramework.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneCloner.h"
 #include "Scene/SceneSerializer.h"
@@ -417,6 +418,59 @@ assert(Physics.Raycast(Vector3(0, 0, 100), Vector3(0, 0, -1), 10) == nil)
 )"));
 	E_EXPECT_EQUALS(LastImpulse, FVector3(0.0f, 0.0f, 10.0f), 1.0e-5f);
 	E_EXPECT_EQUALS(LastForce, FVector3(5.0f, 0.0f, 0.0f), 1.0e-5f);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	Scripts.EndPlay();
+}
+
+E_TEST(ScriptSystem_AnimNotifiesReachNearestScriptAndSocketApi)
+{
+	// 스크립트는 캐릭터 루트, 노티파이는 자식 모델에서 발생 → 가장 가까운 조상 스크립트가 받는다
+	WriteScript("Scripts/NotifyListener.lua", R"(
+local Listener = { Properties = {} }
+function Listener:OnStart() self.Steps = 0; self.Began = 0; self.Ticked = 0; self.Ended = 0 end
+function Listener:OnAnimNotify_Footstep() self.Steps = self.Steps + 1 end
+function Listener:OnAnimNotifyBegin_Swing() self.Began = self.Began + 1 end
+function Listener:OnAnimNotifyTick_Swing(dt) self.Ticked = self.Ticked + dt end
+function Listener:OnAnimNotifyEnd_Swing() self.Ended = self.Ended + 1 end
+return Listener
+)");
+	FScene        Scene;
+	const FEntity Character = AddScriptedEntity(Scene, "Character", "Scripts/NotifyListener.lua");
+	const FEntity Model     = Scene.CreateEntity("Model");
+	Scene.SetParent(Model, Character);
+	FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Model);
+
+	FScriptSystem Scripts;
+	Scripts.SetContentDirectory(GetTestContentDirectory());
+	Scripts.BeginPlay(Scene);
+	Scripts.Update(0.1f, nullptr); // OnStart
+	Animation.Runtime.PendingNotifies = {
+		{ Model, "Footstep", "Walk", EAnimNotifyEventType::Notify, 0.0f },
+		{ Model, "Swing", "Walk", EAnimNotifyEventType::StateBegin, 0.0f },
+		{ Model, "Swing", "Walk", EAnimNotifyEventType::StateTick, 0.25f },
+		{ Model, "Swing", "Walk", EAnimNotifyEventType::StateEnd, 0.0f },
+		{ Model, "Unknown", "Walk", EAnimNotifyEventType::Notify, 0.0f }, // 받는 함수가 없으면 무시
+	};
+	Scripts.Update(0.1f, nullptr);
+	E_EXPECT_TRUE(Scripts.RunString("local S = Scene.Find('Character'):GetScript(); assert(S.Steps == 1 and S.Began == 1 and S.Ended == 1 and S.Ticked == 0.25)"));
+
+	// 소켓 API: 붙이면 소켓 위치로, 없는 소켓은 false, 떼면 월드 위치 유지
+	auto         Metadata = std::make_shared<FModelMetadata>();
+	FModelSocket Socket;
+	Socket.Name     = "Grip";
+	Socket.Position = FVector3(0.0f, 0.0f, 30.0f);
+	Metadata->Sockets.push_back(Socket);
+	Scene.GetRegistry().Emplace<FModelComponent>(Model).Runtime.Metadata = Metadata;
+	const FEntity Sword                                                 = Scene.CreateEntity("Sword");
+	Scene.GetTransform(Sword).Position                                  = FVector3(7.0f, 7.0f, 7.0f);
+	Scene.UpdateTransforms();
+	E_EXPECT_TRUE(Scripts.RunString("local W = Scene.Find('Sword'); assert(W:AttachToSocket(Scene.Find('Model'), 'None') == false); assert(W:AttachToSocket(Scene.Find('Model'), 'Grip'))"));
+	Scene.UpdateTransforms();
+	E_EXPECT_EQUALS(Scene.GetTransform(Sword).GetWorldPosition(), FVector3(0.0f, 0.0f, 30.0f), Tol);
+	E_EXPECT_TRUE(Scripts.RunString("Scene.Find('Sword'):DetachFromSocket()"));
+	E_EXPECT_FALSE(Scene.GetRegistry().Has<FSocketAttachmentComponent>(Sword));
+	Scene.UpdateTransforms();
+	E_EXPECT_EQUALS(Scene.GetTransform(Sword).GetWorldPosition(), FVector3(0.0f, 0.0f, 30.0f), Tol);
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	Scripts.EndPlay();
 }

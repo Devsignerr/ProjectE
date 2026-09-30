@@ -359,11 +359,7 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 			const FMatrix4x4 NewWorld = Target == Entity ? World : TargetTransform->WorldMatrix * Delta;
 
 			// 월드 → 로컬: Local = World * Inverse(ParentWorld)
-			FMatrix4x4 Local = NewWorld;
-			if (const FEntity Parent = Scene.GetParent(Target); Parent.IsValid())
-			{
-				Local = NewWorld * Scene.GetTransform(Parent).WorldMatrix.GetInverse();
-			}
+			const FMatrix4x4 Local = NewWorld * Scene.GetParentWorldMatrix(Target).GetInverse(); // 소켓 부착이면 소켓 기준
 			Local.Decompose(TargetTransform->Position, TargetTransform->Rotation, TargetTransform->Scale);
 		}
 		Scene.UpdateTransforms();

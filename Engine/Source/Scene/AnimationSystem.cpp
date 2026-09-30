@@ -2,6 +2,7 @@
 
 #include "Core/Log.h"
 #include "Scene/Components.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 
 E_DEFINE_LOG_CATEGORY(LogAnimation, Log)
@@ -67,6 +68,47 @@ namespace
 		Runtime.PendingBlendTime = -1.0f;
 	}
 
+
+	// 판정 결과를 이벤트로 옮긴다
+	void EmitNotifies(FAnimationRuntime& Runtime, FEntity Entity, const std::vector<FAnimNotify>& Notifies, const std::string& Clip, float DeltaSeconds)
+	{
+		for (const FAnimNotifyHit& Hit : Runtime.HitScratch)
+		{
+			if (Hit.Index >= 0 && Hit.Index < static_cast<int32>(Notifies.size()))
+			{
+				Runtime.PendingNotifies.push_back({ Entity, Notifies[Hit.Index].Name, Clip, Hit.Type,
+				                                    Hit.Type == EAnimNotifyEventType::StateTick ? DeltaSeconds : 0.0f });
+			}
+		}
+		Runtime.HitScratch.clear();
+	}
+
+	const std::vector<FAnimNotify>* FindClipNotifies(const FAnimationRuntime& Runtime, int32 Clip)
+	{
+		if (!Runtime.Metadata || Clip < 0 || Clip >= static_cast<int32>(Runtime.Set->Clips.size()))
+		{
+			return nullptr;
+		}
+		return Runtime.Metadata->FindNotifies(Runtime.Set->Clips[Clip].Name);
+	}
+
+	// 클립이 바뀌었으면 이전 클립의 진행 중 스테이트를 끝낸다 (사라지는 클립의 노티파이는 발생시키지 않는다)
+	void EndStatesIfClipChanged(FAnimationRuntime& Runtime, FEntity Entity, bool bForceEnd)
+	{
+		if (Runtime.NotifyClip == Runtime.CurrentClip && !bForceEnd)
+		{
+			return;
+		}
+		if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Runtime.NotifyClip))
+		{
+			Runtime.ActiveStates.resize(Old->size(), 0);
+			AnimNotifyMath::EndAll(Runtime.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Old, Runtime.Set->Clips[Runtime.NotifyClip].Name, 0.0f);
+		}
+		Runtime.ActiveStates.clear();
+		Runtime.NotifyClip = Runtime.CurrentClip;
+	}
+
 	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
 	{
 		FAnimationRuntime& Runtime = Animation.Runtime;
@@ -74,8 +116,10 @@ namespace
 		{
 			return;
 		}
+		Runtime.PendingNotifies.clear();
 		const FAnimationSet& Set = *Runtime.Set;
 		ResolveClipChange(Animation);
+		EndStatesIfClipChanged(Runtime, Entity, Runtime.bResyncStates);
 
 		const FAnimationClip& Clip  = Set.Clips[Runtime.CurrentClip];
 		const float           Delta = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
@@ -83,6 +127,15 @@ namespace
 		const float PreviousCurrentTime = Runtime.CurrentTime;
 		bool        bWrapped            = false;
 		Runtime.CurrentTime = AnimationMath::AdvanceTime(Runtime.CurrentTime, Delta, Clip.Duration, Animation.bLoop, bWrapped);
+
+		// 노티파이: 이번 진행 구간에서 지나간 시점/구간
+		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Runtime.CurrentClip); Notifies != nullptr && Delta != 0.0f)
+		{
+			AnimNotifyMath::Collect(*Notifies, PreviousCurrentTime, Runtime.CurrentTime, Delta, Clip.Duration, Animation.bLoop, bWrapped,
+			                        Runtime.bResyncStates, Runtime.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Notifies, Clip.Name, DeltaSeconds);
+			Runtime.bResyncStates = false;
+		}
 
 		// 현재 클립 포즈
 		Runtime.PoseScratch = Set.RestPose;
@@ -206,6 +259,8 @@ void FAnimationSystem::SetTime(FScene& Scene, FEntity Entity, float Seconds)
 	FAnimationRuntime& Runtime = Animation->Runtime;
 	Runtime.CurrentTime        = FMath::Clamp(Seconds, 0.0f, Runtime.Set->Clips[Runtime.CurrentClip].Duration);
 	Runtime.PreviousClip       = -1;
+	// 스크럽: 점 노티파이는 건너뛰고, 진행 중 스테이트는 다음 갱신에서 End 후 그 시각 기준으로 다시 Begin
+	Runtime.bResyncStates = true;
 }
 
 float FAnimationSystem::GetTime(FScene& Scene, FEntity Entity)

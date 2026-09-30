@@ -16,11 +16,8 @@ namespace
 
 	FMatrix4x4 ComputeWorldMatrix(const FScene& Scene, FEntity Entity)
 	{
-		const FTransformComponent& Transform = Scene.GetTransform(Entity);
-		const FEntity              Parent    = Scene.GetParent(Entity);
-		const FMatrix4x4           Local     = Transform.GetLocalMatrix();
-		// 부모 월드 행렬은 직전 UpdateTransforms 기준 (행벡터 규약: 로컬 먼저)
-		return Parent.IsValid() ? Local * Scene.GetTransform(Parent).WorldMatrix : Local;
+		// 부모(또는 부착 소켓) 월드 행렬은 직전 UpdateTransforms 기준 (행벡터 규약: 로컬 먼저)
+		return Scene.GetTransform(Entity).GetLocalMatrix() * Scene.GetParentWorldMatrix(Entity);
 	}
 
 	float MaxAbs(float A, float B) { return std::max(std::abs(A), std::abs(B)); }
@@ -293,10 +290,9 @@ void FPhysicsSystem::WriteDynamicTransforms(FScene& Scene)
 		const FQuat    WorldRotation = FQuat::Slerp(State.PreviousRotation, State.CurrentRotation, Alpha).GetNormalized();
 
 		FTransformComponent& Transform = Scene.GetTransform(Entity);
-		const FEntity        Parent    = Scene.GetParent(Entity);
-		if (Parent.IsValid())
+		if (Scene.GetParent(Entity).IsValid() || Scene.IsSocketAttached(Entity))
 		{
-			PhysicsMath::WorldToLocal(Scene.GetTransform(Parent).WorldMatrix, WorldPosition, WorldRotation, Transform.Position, Transform.Rotation);
+			PhysicsMath::WorldToLocal(Scene.GetParentWorldMatrix(Entity), WorldPosition, WorldRotation, Transform.Position, Transform.Rotation);
 		}
 		else
 		{

@@ -15,6 +15,7 @@
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
+#include "Scene/ModelMetadata.h"
 #include "Scene/Particles.h"
 #include "Scene/Scene.h"
 
@@ -41,6 +42,14 @@ namespace
 
 	bool IsModelExtension(const std::string& Extension) { return Extension == ".glb" || Extension == ".gltf" || Extension == ".fbx"; }
 	bool IsSceneExtension(const std::string& Extension) { return Extension == ".escene"; }
+	// 모델과 함께 다니는 사이드카 (임포트 설정 .eimport, 노티파이/소켓 .emeta). 원본 경로 + 확장자
+	std::vector<std::filesystem::path> GetModelSidecars(const std::filesystem::path& Model)
+	{
+		return { FModelImportSettings::GetSidecarPath(Model), FModelMetadata::GetSidecarPath(Model) };
+	}
+
+	bool IsSidecarExtension(const std::string& Extension) { return Extension == ".eimport" || Extension == ".emeta"; }
+
 	bool IsParticleExtension(const std::string& Extension) { return Extension == ".eparticle"; }
 	bool IsPrefabExtension(const std::string& Extension) { return Extension == ".eprefab"; }
 
@@ -159,8 +168,8 @@ void FContentBrowserPanel::Refresh(const std::filesystem::path& InRoot)
 	}
 	for (const std::filesystem::directory_entry& DirectoryEntry : std::filesystem::directory_iterator(CurrentDirectory, ErrorCode))
 	{
-		// 모델 임포트 설정(사이드카)은 모델과 함께 다루므로 목록에서 숨긴다
-		if (ToLower(FStringConv::ToUtf8(DirectoryEntry.path().extension().wstring())) == ".eimport")
+		// 모델 사이드카(.eimport/.emeta)는 모델과 함께 다루므로 목록에서 숨긴다
+		if (IsSidecarExtension(ToLower(FStringConv::ToUtf8(DirectoryEntry.path().extension().wstring()))))
 		{
 			continue;
 		}
@@ -922,7 +931,12 @@ void FContentBrowserPanel::Duplicate(FEditorContext& Context, const std::vector<
 			std::error_code ErrorCode;
 			if (FModelLoader::IsModelFile(Source))
 			{
-				std::filesystem::copy_file(FModelImportSettings::GetSidecarPath(Source), FModelImportSettings::GetSidecarPath(NewPath), ErrorCode);
+				const std::vector<std::filesystem::path> From = GetModelSidecars(Source);
+				const std::vector<std::filesystem::path> To   = GetModelSidecars(NewPath);
+				for (size_t Index = 0; Index < From.size(); ++Index)
+				{
+					std::filesystem::copy_file(From[Index], To[Index], ErrorCode); // 없으면 실패해도 무시
+				}
 			}
 			++Count;
 		}
@@ -936,11 +950,17 @@ void FContentBrowserPanel::RequestDelete(FEditorContext& Context, const std::vec
 	DeleteTargets = Targets;
 	for (const std::filesystem::path& Target : Targets)
 	{
-		const std::filesystem::path Sidecar = FModelImportSettings::GetSidecarPath(Target);
-		std::error_code             ErrorCode;
-		if (FModelLoader::IsModelFile(Target) && std::filesystem::exists(Sidecar, ErrorCode))
+		if (!FModelLoader::IsModelFile(Target))
 		{
-			DeleteTargets.push_back(Sidecar);
+			continue;
+		}
+		for (const std::filesystem::path& Sidecar : GetModelSidecars(Target))
+		{
+			std::error_code ErrorCode;
+			if (std::filesystem::exists(Sidecar, ErrorCode))
+			{
+				DeleteTargets.push_back(Sidecar);
+			}
 		}
 	}
 	DeleteReferenceCount = FAssetReferenceUpdater::FindReferencingFiles(Context.ContentDirectory, GetProjectFileOrEmpty(), Targets).size();
@@ -1136,17 +1156,24 @@ void FContentBrowserPanel::InvalidateThumbnail(const std::filesystem::path& Path
 
 void FContentBrowserPanel::MoveSidecar(const std::filesystem::path& Source, const std::filesystem::path& NewPath, std::vector<FAssetMove>& Moves)
 {
-	// 모델을 옮기거나 이름을 바꾸면 임포트 설정 파일도 같은 이름으로 따라간다
-	const std::filesystem::path Sidecar = FModelImportSettings::GetSidecarPath(Source);
-	std::error_code             ErrorCode;
-	if (!FModelLoader::IsModelFile(Source) || !std::filesystem::exists(Sidecar, ErrorCode))
+	// 모델을 옮기거나 이름을 바꾸면 사이드카(.eimport/.emeta)도 같은 이름으로 따라간다
+	if (!FModelLoader::IsModelFile(Source))
 	{
 		return;
 	}
-	const std::filesystem::path NewSidecar = FModelImportSettings::GetSidecarPath(NewPath);
-	std::filesystem::rename(Sidecar, NewSidecar, ErrorCode);
-	if (!ErrorCode)
+	const std::vector<std::filesystem::path> From = GetModelSidecars(Source);
+	const std::vector<std::filesystem::path> To   = GetModelSidecars(NewPath);
+	for (size_t Index = 0; Index < From.size(); ++Index)
 	{
-		Moves.push_back({ Sidecar, NewSidecar });
+		std::error_code ErrorCode;
+		if (!std::filesystem::exists(From[Index], ErrorCode))
+		{
+			continue;
+		}
+		std::filesystem::rename(From[Index], To[Index], ErrorCode);
+		if (!ErrorCode)
+		{
+			Moves.push_back({ From[Index], To[Index] });
+		}
 	}
 }

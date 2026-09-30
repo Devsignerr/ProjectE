@@ -100,6 +100,13 @@ void FSceneCloner::CopyRuntimeData(const FRegistry& Source, FEntity SourceEntity
 			DestAnimation->Runtime = Animation->Runtime;
 		}
 	}
+	if (const FModelComponent* Model = Source.TryGet<FModelComponent>(SourceEntity))
+	{
+		if (FModelComponent* DestModel = Dest.TryGet<FModelComponent>(DestEntity); DestModel && DestModel != Model)
+		{
+			DestModel->Runtime = Model->Runtime;
+		}
+	}
 	// 파티클: 공유 설정만 넘기고 입자는 처음부터 (플레이 시작/복제 시 새로 방출)
 	if (const FParticleSystemComponent* Emitter = Source.TryGet<FParticleSystemComponent>(SourceEntity))
 	{
@@ -124,6 +131,13 @@ void FSceneCloner::RemapRuntimeReferences(FRegistry& Registry, FEntity Entity, c
 	if (FAnimationComponent* Animation = Registry.TryGet<FAnimationComponent>(Entity))
 	{
 		for (FEntity& Node : Animation->Runtime.NodeEntities)
+		{
+			Node = Remap(Node);
+		}
+	}
+	if (FModelComponent* Model = Registry.TryGet<FModelComponent>(Entity))
+	{
+		for (FEntity& Node : Model->Runtime.NodeEntities)
 		{
 			Node = Remap(Node);
 		}

@@ -77,7 +77,7 @@ void FAssetPreview::DrawViewport(const FVector2& Size)
 	bHovered             = ImGui::IsItemHovered();
 	ViewportMin          = FVector2(Origin.x, Origin.y);
 	ViewportMax          = FVector2(Origin.x + Size.X, Origin.y + Size.Y);
-	const bool bActive   = ImGui::IsItemActive();
+	const bool bActive   = ImGui::IsItemActive() && !bBlockCameraInput;
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
 	DrawList->AddRectFilled(Origin, ImVec2(Origin.x + Size.X, Origin.y + Size.Y), IM_COL32(12, 12, 14, 255));
 

@@ -96,6 +96,8 @@ private:
 		bool          bFaulted = false; // 오류 후 정지 (핫 리로드 시 해제)
 	};
 
+	// 직전 애니메이션 갱신의 노티파이를 스크립트 함수로 전달 (OnAnimNotify_<이름> 등)
+	void DispatchAnimNotifies();
 	void RegisterBindings();
 	void RegisterMathBindings();
 	void RegisterEntityBindings();

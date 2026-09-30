@@ -60,6 +60,17 @@ private:
 	void DrawCanvasOverlay(ImDrawList* DrawList);
 	void HandleShortcuts();
 
+	// ---- 애니메이션 타임라인 (캔버스 아래)
+	void          DrawTimeline();
+	void          DrawTimelineTracks(FUIAnimation& Animation);
+	void          DrawKeyPanel(FUIAnimation& Animation);
+	void          AddKeysForSelected(FUIAnimation& Animation, std::initializer_list<EUIAnimProperty> Properties);
+	FUIAnimation* GetSelectedAnimation();
+	std::string   MakeUniqueAnimationName(std::string_view Base, const FUIAnimation* Except) const;
+	// 표시용 트리: 타임라인이 열려 있으면 재생 헤드 시점 애니메이션을 적용한 복제본, 아니면 편집 트리
+	void       UpdateAnimationPreview(float DeltaSeconds);
+	FUIWidget& GetDisplayRoot() { return AnimPreview ? *AnimPreview->Root : *Asset.Root; }
+
 	// ---- 속성
 	void DrawAssetSettings();
 	void DrawCommonProperties(FUIWidget& Widget);
@@ -84,6 +95,7 @@ private:
 	void               Select(const FUIWidget* Widget);
 	std::vector<int32> GetPath(const FUIWidget* Widget) const;
 	FUIWidget*         ResolvePath(const std::vector<int32>& Path);
+	static FUIWidget*  ResolvePathIn(FUIWidget& Root, const std::vector<int32>& Path);
 
 	// ---- 레이아웃/좌표 (캔버스 타깃 픽셀 = 화면 좌표 - CanvasMin)
 	void       UpdateLayout();
@@ -136,9 +148,25 @@ private:
 	std::vector<std::string> ImageFiles;
 	std::vector<std::string> FontFiles;
 
+	// 애니메이션 타임라인
+	bool                      bShowTimeline      = false;
+	int32                     SelectedAnimation  = -1;
+	float                     Playhead           = 0.0f;
+	bool                      bTimelinePlaying   = false;
+	bool                      bTimelineLoop      = true;
+	int32                     SelectedTrack      = -1;
+	int32                     SelectedKey        = -1;
+	bool                      bDraggingKey       = false;
+	bool                      bDraggingPlayhead  = false;
+	std::unique_ptr<FUIAsset> AnimPreview;
+	char                      AnimationNameBuffer[64] = {};
+	int32                     AnimationNameIndex = -1;
+
 	// 자동 검증 인자 (--ui-select / --ui-zoom)
 	std::string AutoSelectName;
 	float       AutoZoom = 0.0f;
+	std::string AutoAnimation; // --ui-animation <이름> [--ui-anim-time <초>]: 타임라인을 열고 그 시점 미리보기
+	float       AutoAnimationTime = 0.0f;
 
 	// 이름 편집 버퍼 (선택이 바뀌면 다시 채움)
 	char               NameBuffer[128] = {};

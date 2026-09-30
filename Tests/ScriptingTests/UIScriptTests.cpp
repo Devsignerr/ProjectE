@@ -116,3 +116,58 @@ return Menu
 	E_EXPECT_TRUE(Scripts.RunString("assert(Clicks == 1)"));
 	Scripts.EndPlay();
 }
+
+E_TEST(UIScript_AnimationPlayAndFinishEvent)
+{
+	const fs::path Content = GetUIContent();
+	{
+		FUIAsset Asset;
+		Asset.DesignSize  = FVector2(800.0f, 600.0f);
+		FUIWidget* Banner = Asset.Root->AddChild(FUIWidget::Create(EUIWidgetType::Border));
+		Banner->Name      = "Banner";
+		FUIAnimation Fade;
+		Fade.Name   = "Fade";
+		Fade.Length = 0.5f;
+		FUIAnimTrack& Track = Fade.GetOrAddTrack("Banner", EUIAnimProperty::Opacity);
+		Track.SetKey(0.0f, 1.0f);
+		Track.SetKey(0.5f, 0.0f);
+		Asset.Animations.push_back(Fade);
+		E_EXPECT_TRUE(Asset.SaveToFile(Content / L"UI/Anim.eui"));
+	}
+	std::ofstream(Content / L"Scripts/Anim.lua", std::ios::binary | std::ios::trunc) << R"(
+local Anim = { Properties = {} }
+function Anim:OnStart()
+	Started = self.entity:PlayUIAnimation("Fade")
+	Missing = self.entity:PlayUIAnimation("Nope")
+end
+function Anim:OnUpdate(dt)
+	Playing = self.entity:IsUIAnimationPlaying("Fade")
+end
+function Anim:OnUIAnimationFinished_Fade()
+	Finished = (Finished or 0) + 1
+end
+return Anim
+)";
+	FScene        Scene;
+	const FEntity Entity = Scene.CreateEntity("Anim");
+	Scene.GetRegistry().Emplace<FUIComponent>(Entity).Asset            = "UI/Anim.eui";
+	Scene.GetRegistry().Emplace<FScriptComponent>(Entity).ScriptAsset = "Scripts/Anim.lua";
+	FScriptSystem Scripts;
+	Scripts.SetContentDirectory(Content);
+	E_EXPECT_TRUE(Scripts.BeginPlay(Scene));
+
+	FUIFrameInput Input = MakePointer(0.0f, 0.0f, false, false, false);
+	Input.DeltaSeconds  = 0.2f;
+	FUISystem::Update(Scene, Input, Content);
+	Scripts.Update(0.2f, nullptr); // OnStart: 재생 시작
+	E_EXPECT_TRUE(Scripts.RunString("assert(Started == true and Missing == false)"));
+	for (int32 Frame = 0; Frame < 4; ++Frame) // 0.8초 → 끝
+	{
+		FUISystem::Update(Scene, Input, Content);
+		Scripts.Update(0.2f, nullptr);
+	}
+	E_EXPECT_TRUE(Scripts.RunString("assert(Finished == 1 and Playing == false)"));
+	const FUIInstance* Instance = Scene.GetRegistry().Get<FUIComponent>(Entity).Runtime.Instance.get();
+	E_EXPECT_TRUE(Instance != nullptr && Instance->GetRoot().FindByName("Banner")->RenderOpacity == 0.0f);
+	Scripts.EndPlay();
+}

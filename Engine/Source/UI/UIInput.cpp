@@ -31,7 +31,7 @@ namespace
 		case EUIVisibility::HitTestInvisible: return nullptr;
 		default:                              break;
 		}
-		if (!Widget.State.Clip.Contains(Point))
+		if (!Widget.State.VisualClip.Contains(Point))
 		{
 			return nullptr;
 		}
@@ -44,7 +44,7 @@ namespace
 				return Hit;
 			}
 		}
-		if (Widget.Visibility == EUIVisibility::Visible && Widget.State.Geometry.Contains(Point))
+		if (Widget.Visibility == EUIVisibility::Visible && Widget.State.VisualGeometry.Contains(Point))
 		{
 			return &Widget;
 		}
@@ -96,7 +96,8 @@ namespace
 		}
 		std::vector<float> Positions;
 		Font->GetCaretPositions(Box.Text, Box.FontSize, Positions);
-		const float Local = PointerX - (Box.State.Geometry.Min.X + Box.ContentPadding.Left) + Box.State.TextScroll;
+		const float LayoutX = (PointerX - Box.State.VisualOffset.X) / Box.State.VisualScale.X; // 렌더 변환 역변환
+		const float Local   = LayoutX - (Box.State.Geometry.Min.X + Box.ContentPadding.Left) + Box.State.TextScroll;
 		int32       Best  = 0;
 		for (size_t Index = 1; Index < Positions.size(); ++Index)
 		{

@@ -327,6 +327,33 @@ void FUILayout::Compute(FUIWidget& Root, const FVector2& RootSize, IUITextMeasur
 {
 	ComputeDesired(Root, Measurer);
 	Arrange(Root, FUIRect(FVector2::ZeroVector, RootSize), FUIRect::Infinite(), Measurer);
+	ApplyRenderTransforms(Root, FVector2(1.0f, 1.0f), FVector2::ZeroVector, FUIRect::Infinite());
+}
+
+void FUILayout::ApplyRenderTransforms(FUIWidget& Widget, const FVector2& ParentScale, const FVector2& ParentOffset, const FUIRect& ParentClip)
+{
+	// 로컬: p → (p - 피벗) × 배율 + 피벗 + 이동 (레이아웃 좌표), 부모 변환을 그 뒤에 적용
+	const FUIRect& Rect   = Widget.State.Geometry;
+	const FVector2 Pivot  = Rect.Min + Rect.GetSize() * Widget.RenderPivot;
+	const FVector2 Local  = Widget.RenderScale;
+	const FVector2 LocalO = Pivot - Pivot * Local + Widget.RenderTranslation;
+	Widget.State.VisualScale  = Local * ParentScale;
+	Widget.State.VisualOffset = LocalO * ParentScale + ParentOffset;
+
+	const auto Map = [&Widget](const FVector2& Point) { return Point * Widget.State.VisualScale + Widget.State.VisualOffset; };
+	FUIRect    Visual(Map(Rect.Min), Map(Rect.Max));
+	// 음수 배율이면 뒤집힌다 — 모서리 정렬
+	Visual                      = FUIRect(FVector2(FMath::Min(Visual.Min.X, Visual.Max.X), FMath::Min(Visual.Min.Y, Visual.Max.Y)),
+	                                      FVector2(FMath::Max(Visual.Min.X, Visual.Max.X), FMath::Max(Visual.Min.Y, Visual.Max.Y)));
+	Widget.State.VisualGeometry = Visual;
+	Widget.State.VisualClip     = ParentClip;
+
+	// 스크롤 박스는 자식을 자기 (변환된) 영역으로 자른다
+	const FUIRect ChildClip = Widget.Type == EUIWidgetType::ScrollBox ? ParentClip.Intersect(Visual) : ParentClip;
+	for (const std::unique_ptr<FUIWidget>& Child : Widget.Children)
+	{
+		ApplyRenderTransforms(*Child, Widget.State.VisualScale, Widget.State.VisualOffset, ChildClip);
+	}
 }
 
 float FUILayout::ComputeScale(EUIScaleMode Mode, const FVector2& DesignSize, const FVector2& ViewportSize)

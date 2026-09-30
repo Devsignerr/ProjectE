@@ -154,6 +154,9 @@ FWidgetEditor::FWidgetEditor(std::filesystem::path InPath)
 	AutoSelectName                 = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-select"));
 	const std::wstring ZoomArg     = CommandLine.GetValue(L"--ui-zoom");
 	AutoZoom                       = ZoomArg.empty() ? 0.0f : std::stof(ZoomArg);
+	AutoAnimation                  = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-animation"));
+	const std::wstring TimeArg     = CommandLine.GetValue(L"--ui-anim-time");
+	AutoAnimationTime              = TimeArg.empty() ? 0.0f : std::stof(TimeArg);
 }
 
 FWidgetEditor::~FWidgetEditor() = default;
@@ -211,6 +214,12 @@ void FWidgetEditor::RestoreState(FAssetEditorEnvironment& Env, const std::string
 	}
 	NameBufferPath.clear(); // 이름 칸 다시 채움
 	PreviewRouter = FUIInputRouter{};
+	if (SelectedAnimation >= static_cast<int32>(Asset.Animations.size()))
+	{
+		SelectedAnimation = Asset.Animations.empty() ? -1 : 0;
+	}
+	AnimationNameIndex = -1;
+	SelectedKey        = -1;
 }
 
 void FWidgetEditor::ScanContentFiles(FAssetEditorEnvironment& Env)
@@ -265,7 +274,12 @@ std::vector<int32> FWidgetEditor::GetPath(const FUIWidget* Widget) const
 
 FUIWidget* FWidgetEditor::ResolvePath(const std::vector<int32>& WidgetPath)
 {
-	FUIWidget* Current = Asset.Root.get();
+	return ResolvePathIn(*Asset.Root, WidgetPath);
+}
+
+FUIWidget* FWidgetEditor::ResolvePathIn(FUIWidget& Root, const std::vector<int32>& WidgetPath)
+{
+	FUIWidget* Current = &Root;
 	for (const int32 Index : WidgetPath)
 	{
 		if (Current == nullptr || Index < 0 || Index >= static_cast<int32>(Current->Children.size()))
@@ -483,7 +497,7 @@ FVector2 FWidgetEditor::ScreenToUi(const FVector2& Screen) const
 FUIWidget* FWidgetEditor::PickWidget(FUIWidget& Widget, const FVector2& UiPoint)
 {
 	// 편집용 맞히기: 입력 설정과 관계없이 보이는 위젯 중 가장 깊고 위에 있는 것
-	if (Widget.Visibility == EUIVisibility::Collapsed || Widget.Visibility == EUIVisibility::Hidden || !Widget.State.Clip.Contains(UiPoint))
+	if (Widget.Visibility == EUIVisibility::Collapsed || Widget.Visibility == EUIVisibility::Hidden || !Widget.State.VisualClip.Contains(UiPoint))
 	{
 		return nullptr;
 	}
@@ -503,7 +517,7 @@ FUIWidget* FWidgetEditor::PickWidget(FUIWidget& Widget, const FVector2& UiPoint)
 			return Hit;
 		}
 	}
-	return Widget.State.Geometry.Contains(UiPoint) ? &Widget : nullptr;
+	return Widget.State.VisualGeometry.Contains(UiPoint) ? &Widget : nullptr;
 }
 
 // ---------------------------------------------------------------- 미리보기 영역
@@ -524,7 +538,21 @@ void FWidgetEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 	ImGui::SameLine();
 	if (ImGui::BeginChild("##UICanvasArea", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
 	{
-		DrawCanvas(Env);
+		const float TimelineHeight = bShowTimeline ? FMath::Min(260.0f, ImGui::GetContentRegionAvail().y * 0.45f) : 0.0f;
+		if (ImGui::BeginChild("##UICanvasOnly", ImVec2(0.0f, bShowTimeline ? -TimelineHeight : 0.0f), ImGuiChildFlags_None,
+		                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse))
+		{
+			DrawCanvas(Env);
+		}
+		ImGui::EndChild();
+		if (bShowTimeline)
+		{
+			if (ImGui::BeginChild("##UITimeline", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders))
+			{
+				DrawTimeline();
+			}
+			ImGui::EndChild();
+		}
 	}
 	ImGui::EndChild();
 
@@ -578,6 +606,15 @@ void FWidgetEditor::DrawCanvasToolbar()
 		PreviewRouter.Reset(*Asset.Root);
 		EventLog.clear();
 		Drag = EDragMode::None;
+	}
+	ImGui::SameLine();
+	if (FEditorTheme::ToolButton(ICON_FA_FILM, "애니메이션 타임라인", bShowTimeline))
+	{
+		bShowTimeline = !bShowTimeline;
+		if (bShowTimeline && SelectedAnimation < 0 && !Asset.Animations.empty())
+		{
+			SelectedAnimation = 0;
+		}
 	}
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60.0f);
@@ -821,6 +858,7 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 	const bool bActive  = ImGui::IsItemActive();
 
 	UpdateLayout();
+	UpdateAnimationPreview(ImGui::GetIO().DeltaTime);
 
 	// 팔레트/콘텐츠(이미지)를 캔버스에 놓기: 포인터 아래 위젯(또는 그 부모)에 추가
 	if (ImGui::BeginDragDropTarget())
@@ -830,7 +868,7 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(GPalettePayload))
 		{
 			const EUIWidgetType Type = static_cast<EUIWidgetType>(*static_cast<const int32*>(Payload->Data));
-			FUIWidget*          Onto = PickWidget(*Asset.Root, Ui);
+			FUIWidget*          Onto = PickWidget(GetDisplayRoot(), Ui);
 			Defer([this, Type, Ui, Path = GetPath(Onto != nullptr ? Onto : Asset.Root.get())]() { AddWidget(Type, ResolvePath(Path), -1, &Ui); });
 		}
 		if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload())
@@ -844,7 +882,7 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 				std::error_code             ErrorCode;
 				const std::filesystem::path Relative = std::filesystem::relative(File, ContentDirectory, ErrorCode);
 				const std::string           Texture  = FStringConv::ToUtf8((ErrorCode ? File : Relative).generic_wstring());
-				FUIWidget*                  Onto     = PickWidget(*Asset.Root, Ui);
+				FUIWidget*                  Onto     = PickWidget(GetDisplayRoot(), Ui);
 				Defer([this, Ui, Texture, Path = GetPath(Onto != nullptr ? Onto : Asset.Root.get())]() {
 					if (FUIWidget* Image = AddWidget(EUIWidgetType::Image, ResolvePath(Path), -1, &Ui))
 					{
@@ -879,7 +917,7 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 	FUIBrush Background;
 	Background.Color = FVector4(0.16f, 0.17f, 0.2f, 1.0f);
 	FUIPainter::PaintBrush(Background, FrameUi, 1.0f, Transform, TargetRect, DrawList);
-	FUIPainter::Paint(*Asset.Root, Transform, TargetRect.Intersect(Transform.ToPixels(FrameUi)), FUIFontLibrary::Get(), DrawList);
+	FUIPainter::Paint(GetDisplayRoot(), Transform, TargetRect.Intersect(Transform.ToPixels(FrameUi)), FUIFontLibrary::Get(), DrawList);
 	bRenderThisFrame = Target != nullptr;
 
 	ImDrawList* WindowDrawList = ImGui::GetWindowDrawList();
@@ -911,7 +949,7 @@ void FWidgetEditor::HandleCanvasInput(bool bHovered, bool bActive)
 	const ImGuiIO& Io    = ImGui::GetIO();
 	const FVector2 Mouse(Io.MousePos.x, Io.MousePos.y);
 	const float    Scale = Zoom * GetUiScale();
-	HoveredWidget        = bHovered && Drag == EDragMode::None ? PickWidget(*Asset.Root, ScreenToUi(Mouse)) : nullptr;
+	HoveredWidget        = bHovered && Drag == EDragMode::None ? PickWidget(GetDisplayRoot(), ScreenToUi(Mouse)) : nullptr;
 
 	// 휠 = 포인터 기준 확대/축소
 	if (bHovered && Io.MouseWheel != 0.0f)
@@ -934,8 +972,8 @@ void FWidgetEditor::HandleCanvasInput(bool bHovered, bool bActive)
 	int32 HandleUnderMouse = -1;
 	if (IsCanvasChild(Selected) && bHovered)
 	{
-		const FVector2 Min = UiToScreen(Selected->State.Geometry.Min);
-		const FVector2 Max = UiToScreen(Selected->State.Geometry.Max);
+		const FVector2 Min = UiToScreen(Selected->State.VisualGeometry.Min);
+		const FVector2 Max = UiToScreen(Selected->State.VisualGeometry.Max);
 		for (int32 Index = 0; Index < 8; ++Index)
 		{
 			const FVector2 Handle(FMath::Lerp(Min.X, Max.X, GHandleX[Index]), FMath::Lerp(Min.Y, Max.Y, GHandleY[Index]));
@@ -963,9 +1001,9 @@ void FWidgetEditor::HandleCanvasInput(bool bHovered, bool bActive)
 		}
 		else
 		{
-			FUIWidget* Picked = PickWidget(*Asset.Root, ScreenToUi(Mouse));
+			FUIWidget* Picked = PickWidget(GetDisplayRoot(), ScreenToUi(Mouse));
 			Select(Picked);
-			Selected = Picked;
+			Selected = GetSelected(); // 편집 트리 쪽 (표시 트리는 미리보기 복제본일 수 있다)
 			Drag     = IsCanvasChild(Picked) ? EDragMode::Move : EDragMode::None;
 		}
 		if (Drag != EDragMode::None && Selected != nullptr)
@@ -1100,26 +1138,26 @@ void FWidgetEditor::DrawCanvasOverlay(ImDrawList* Overlay)
 
 	if (bShowBounds)
 	{
-		static_cast<const FUIWidget&>(*Asset.Root).ForEach([&](const FUIWidget& Widget) {
+		static_cast<const FUIWidget&>(GetDisplayRoot()).ForEach([&](const FUIWidget& Widget) {
 			if (Widget.Parent != nullptr && Widget.Visibility != EUIVisibility::Collapsed)
 			{
-				Overlay->AddRect(ToImVec2(UiToScreen(Widget.State.Geometry.Min)), ToImVec2(UiToScreen(Widget.State.Geometry.Max)), IM_COL32(255, 255, 255, 28));
+				Overlay->AddRect(ToImVec2(UiToScreen(Widget.State.VisualGeometry.Min)), ToImVec2(UiToScreen(Widget.State.VisualGeometry.Max)), IM_COL32(255, 255, 255, 28));
 			}
 		});
 	}
-	if (HoveredWidget != nullptr && HoveredWidget != GetSelected())
+	FUIWidget* Selected = bHasSelection ? ResolvePathIn(GetDisplayRoot(), SelectedPath) : nullptr;
+	if (HoveredWidget != nullptr && HoveredWidget != Selected)
 	{
-		Overlay->AddRect(ToImVec2(UiToScreen(HoveredWidget->State.Geometry.Min)), ToImVec2(UiToScreen(HoveredWidget->State.Geometry.Max)),
+		Overlay->AddRect(ToImVec2(UiToScreen(HoveredWidget->State.VisualGeometry.Min)), ToImVec2(UiToScreen(HoveredWidget->State.VisualGeometry.Max)),
 		                 ToColor(FEditorTheme::Accent, 0.6f), 0.0f, 0, 1.0f);
 	}
 
-	FUIWidget* Selected = GetSelected();
 	if (Selected == nullptr || bPreviewInput)
 	{
 		return;
 	}
-	const FVector2 Min = UiToScreen(Selected->State.Geometry.Min);
-	const FVector2 Max = UiToScreen(Selected->State.Geometry.Max);
+	const FVector2 Min = UiToScreen(Selected->State.VisualGeometry.Min);
+	const FVector2 Max = UiToScreen(Selected->State.VisualGeometry.Max);
 	Overlay->AddRect(ToImVec2(Min), ToImVec2(Max), ToColor(FEditorTheme::Accent, 1.0f), 0.0f, 0, 2.0f);
 	Overlay->AddText(ImVec2(Min.X, Min.Y - ImGui::GetTextLineHeight() - 2.0f), ToColor(FEditorTheme::AccentHover, 1.0f), Selected->Name.c_str());
 
@@ -1305,6 +1343,19 @@ void FWidgetEditor::DrawCommonProperties(FUIWidget& Widget)
 	if (ImGui::DragFloat2("최소 크기", &Widget.MinSize.X, 1.0f, 0.0f, 8192.0f, "%.0f"))
 	{
 		MarkEdited("최소 크기");
+	}
+	if (ImGui::TreeNodeEx("렌더 변환", Widget.RenderTranslation != FVector2::ZeroVector || Widget.RenderScale != FVector2(1.0f, 1.0f) ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+	{
+		bool bChanged = false;
+		bChanged |= ImGui::DragFloat2("이동", &Widget.RenderTranslation.X, 0.5f, -10000.0f, 10000.0f, "%.1f");
+		bChanged |= ImGui::DragFloat2("배율", &Widget.RenderScale.X, 0.01f, -10.0f, 10.0f, "%.2f");
+		bChanged |= ImGui::DragFloat2("피벗", &Widget.RenderPivot.X, 0.01f, 0.0f, 1.0f, "%.2f");
+		FAssetEditorWidgets::Hint("레이아웃에 영향 없이 그리기/클릭 위치만 바뀐다 (애니메이션용). 자식에게 누적된다.");
+		if (bChanged)
+		{
+			MarkEdited("렌더 변환");
+		}
+		ImGui::TreePop();
 	}
 }
 
@@ -1651,5 +1702,432 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 	if (bChanged)
 	{
 		MarkEdited("속성");
+	}
+}
+
+// ---------------------------------------------------------------- 애니메이션 타임라인
+
+namespace
+{
+	struct FAnimPropertyGroup
+	{
+		const char*                            Label;
+		std::initializer_list<EUIAnimProperty> Properties;
+	};
+
+	const char* GetAnimPropertyLabel(EUIAnimProperty Property)
+	{
+		switch (Property)
+		{
+		case EUIAnimProperty::Opacity:      return "불투명도";
+		case EUIAnimProperty::TranslationX: return "이동 X";
+		case EUIAnimProperty::TranslationY: return "이동 Y";
+		case EUIAnimProperty::ScaleX:       return "배율 X";
+		case EUIAnimProperty::ScaleY:       return "배율 Y";
+		case EUIAnimProperty::ColorR:       return "색 R";
+		case EUIAnimProperty::ColorG:       return "색 G";
+		case EUIAnimProperty::ColorB:       return "색 B";
+		case EUIAnimProperty::ColorA:       return "색 A";
+		case EUIAnimProperty::Percent:      return "진행률";
+		default:                            return "?";
+		}
+	}
+
+	constexpr const char* GInterpLabels[] = { "선형", "계단", "천천히 시작", "천천히 끝", "천천히 시작·끝" };
+} // namespace
+
+FUIAnimation* FWidgetEditor::GetSelectedAnimation()
+{
+	return SelectedAnimation >= 0 && SelectedAnimation < static_cast<int32>(Asset.Animations.size()) ? &Asset.Animations[static_cast<size_t>(SelectedAnimation)]
+	                                                                                                : nullptr;
+}
+
+std::string FWidgetEditor::MakeUniqueAnimationName(std::string_view Base, const FUIAnimation* Except) const
+{
+	const auto Used = [this, Except](const std::string& Name) {
+		return std::any_of(Asset.Animations.begin(), Asset.Animations.end(), [&](const FUIAnimation& Animation) { return &Animation != Except && Animation.Name == Name; });
+	};
+	std::string Name(Base.empty() ? std::string_view("Animation") : Base);
+	if (!Used(Name))
+	{
+		return Name;
+	}
+	for (int32 Number = 1;; ++Number)
+	{
+		std::string Candidate = std::format("{}_{}", Name, Number);
+		if (!Used(Candidate))
+		{
+			return Candidate;
+		}
+	}
+}
+
+void FWidgetEditor::UpdateAnimationPreview(float DeltaSeconds)
+{
+	// 자동 검증: --ui-animation <이름> [--ui-anim-time <초>]
+	if (!AutoAnimation.empty())
+	{
+		for (size_t Index = 0; Index < Asset.Animations.size(); ++Index)
+		{
+			if (Asset.Animations[Index].Name == AutoAnimation)
+			{
+				bShowTimeline     = true;
+				SelectedAnimation = static_cast<int32>(Index);
+				Playhead          = AutoAnimationTime;
+			}
+		}
+		AutoAnimation.clear();
+	}
+
+	FUIAnimation* Animation = bShowTimeline && !bPreviewInput ? GetSelectedAnimation() : nullptr;
+	if (Animation == nullptr)
+	{
+		AnimPreview.reset();
+		bTimelinePlaying = false;
+		return;
+	}
+	if (bTimelinePlaying)
+	{
+		Playhead += DeltaSeconds;
+		if (Playhead > Animation->Length)
+		{
+			Playhead         = bTimelineLoop ? std::fmod(Playhead, FMath::Max(Animation->Length, 0.001f)) : Animation->Length;
+			bTimelinePlaying = bTimelineLoop;
+		}
+	}
+	Playhead    = FMath::Clamp(Playhead, 0.0f, Animation->Length);
+	AnimPreview = std::make_unique<FUIAsset>(Asset.Clone());
+	Animation->ApplyAt(*AnimPreview->Root, Playhead);
+	AnimPreview->Root->AssignIds();
+	FUILayout::Compute(*AnimPreview->Root, PreviewSize / GetUiScale(), FUIFontLibrary::Get());
+}
+
+void FWidgetEditor::AddKeysForSelected(FUIAnimation& Animation, std::initializer_list<EUIAnimProperty> Properties)
+{
+	// 값: 표시 트리(재생 헤드 시점 결과) — 트랙이 없으면 기본값
+	FUIWidget* Selected = bHasSelection ? ResolvePathIn(GetDisplayRoot(), SelectedPath) : nullptr;
+	if (Selected == nullptr)
+	{
+		return;
+	}
+	for (const EUIAnimProperty Property : Properties)
+	{
+		FUIAnimTrack& Track = Animation.GetOrAddTrack(Selected->Name, Property);
+		SelectedKey         = Track.SetKey(Playhead, FUIAnimMath::GetProperty(*Selected, Property));
+		SelectedTrack       = static_cast<int32>(&Track - Animation.Tracks.data());
+	}
+	Animation.Length = FMath::Max(Animation.Length, Playhead);
+	MarkEdited("애니메이션 키");
+}
+
+void FWidgetEditor::DrawTimeline()
+{
+	// ---- 첫 줄: 애니메이션 선택/추가/이름/삭제, 길이, 재생
+	FUIAnimation* Animation = GetSelectedAnimation();
+	ImGui::SetNextItemWidth(160.0f);
+	if (ImGui::BeginCombo("##Animation", Animation != nullptr ? Animation->Name.c_str() : "(애니메이션 없음)"))
+	{
+		for (size_t Index = 0; Index < Asset.Animations.size(); ++Index)
+		{
+			if (ImGui::Selectable(Asset.Animations[Index].Name.c_str(), static_cast<int32>(Index) == SelectedAnimation))
+			{
+				SelectedAnimation = static_cast<int32>(Index);
+				SelectedTrack = SelectedKey = -1;
+				Playhead                    = 0.0f;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button(ICON_FA_PLUS " 새 애니메이션"))
+	{
+		FUIAnimation New;
+		New.Name   = MakeUniqueAnimationName("Animation", nullptr);
+		New.Length = 1.0f;
+		Asset.Animations.push_back(std::move(New));
+		SelectedAnimation = static_cast<int32>(Asset.Animations.size()) - 1;
+		SelectedTrack = SelectedKey = -1;
+		Playhead                    = 0.0f;
+		MarkEdited("애니메이션 추가");
+		return;
+	}
+	if (Animation == nullptr)
+	{
+		FAssetEditorWidgets::Hint("애니메이션을 추가한 뒤 위젯을 고르고 \"키 추가\"로 현재 값을 재생 헤드 시간에 기록하세요.");
+		return;
+	}
+	ImGui::SameLine();
+	if (AnimationNameIndex != SelectedAnimation)
+	{
+		std::snprintf(AnimationNameBuffer, sizeof(AnimationNameBuffer), "%s", Animation->Name.c_str());
+		AnimationNameIndex = SelectedAnimation;
+	}
+	ImGui::SetNextItemWidth(140.0f);
+	ImGui::InputText("##AnimName", AnimationNameBuffer, sizeof(AnimationNameBuffer));
+	if (ImGui::IsItemDeactivatedAfterEdit())
+	{
+		const std::string Unique = MakeUniqueAnimationName(AnimationNameBuffer, Animation);
+		if (Unique != Animation->Name)
+		{
+			Animation->Name = Unique;
+			MarkEdited("애니메이션 이름");
+		}
+		std::snprintf(AnimationNameBuffer, sizeof(AnimationNameBuffer), "%s", Animation->Name.c_str());
+	}
+	ImGui::SetItemTooltip("Lua: self.entity:PlayUIAnimation(\"이름\"), 끝나면 OnUIAnimationFinished_<이름>");
+	ImGui::SameLine();
+	if (ImGui::Button(ICON_FA_TRASH "##DeleteAnim"))
+	{
+		Asset.Animations.erase(Asset.Animations.begin() + SelectedAnimation);
+		SelectedAnimation = Asset.Animations.empty() ? -1 : 0;
+		SelectedTrack = SelectedKey = -1;
+		AnimationNameIndex          = -1;
+		MarkEdited("애니메이션 삭제");
+		return;
+	}
+	ImGui::SetItemTooltip("애니메이션 삭제");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70.0f);
+	if (ImGui::DragFloat("길이", &Animation->Length, 0.01f, 0.05f, 600.0f, "%.2f초"))
+	{
+		Animation->Length = FMath::Max(Animation->Length, 0.05f);
+		MarkEdited("애니메이션 길이");
+	}
+	ImGui::SameLine();
+	if (FEditorTheme::ToolButton(bTimelinePlaying ? ICON_FA_PAUSE : ICON_FA_PLAY, bTimelinePlaying ? "일시정지" : "재생 미리보기", bTimelinePlaying))
+	{
+		if (!bTimelinePlaying && Playhead >= Animation->Length)
+		{
+			Playhead = 0.0f;
+		}
+		bTimelinePlaying = !bTimelinePlaying;
+	}
+	ImGui::SameLine();
+	if (FEditorTheme::ToolButton(ICON_FA_REPEAT, "반복 재생", bTimelineLoop))
+	{
+		bTimelineLoop = !bTimelineLoop;
+	}
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(70.0f);
+	ImGui::DragFloat("시간", &Playhead, 0.01f, 0.0f, Animation->Length, "%.2f");
+	ImGui::SameLine();
+	FUIWidget* Selected = GetSelected();
+	ImGui::BeginDisabled(Selected == nullptr);
+	if (ImGui::Button(ICON_FA_KEY " 키 추가"))
+	{
+		ImGui::OpenPopup("##AddKey");
+	}
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip("선택한 위젯의 현재 값을 재생 헤드 시간에 기록");
+	if (ImGui::BeginPopup("##AddKey"))
+	{
+		static const FAnimPropertyGroup Groups[] = {
+			{ "불투명도", { EUIAnimProperty::Opacity } },
+			{ "이동 (X, Y)", { EUIAnimProperty::TranslationX, EUIAnimProperty::TranslationY } },
+			{ "배율 (X, Y)", { EUIAnimProperty::ScaleX, EUIAnimProperty::ScaleY } },
+			{ "색 (RGBA)", { EUIAnimProperty::ColorR, EUIAnimProperty::ColorG, EUIAnimProperty::ColorB, EUIAnimProperty::ColorA } },
+			{ "진행률", { EUIAnimProperty::Percent } },
+		};
+		for (const FAnimPropertyGroup& Group : Groups)
+		{
+			if (ImGui::MenuItem(Group.Label))
+			{
+				AddKeysForSelected(*Animation, Group.Properties);
+			}
+		}
+		ImGui::EndPopup();
+	}
+
+	ImGui::Separator();
+	// ---- 아래: 트랙/키 (왼쪽) + 선택한 키 (오른쪽)
+	if (ImGui::BeginTable("##TimelineLayout", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV))
+	{
+		ImGui::TableSetupColumn("트랙", ImGuiTableColumnFlags_WidthStretch, 3.0f);
+		ImGui::TableSetupColumn("키", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		DrawTimelineTracks(*Animation);
+		ImGui::TableNextColumn();
+		DrawKeyPanel(*Animation);
+		ImGui::EndTable();
+	}
+}
+
+void FWidgetEditor::DrawTimelineTracks(FUIAnimation& Animation)
+{
+	constexpr float LabelWidth = 170.0f;
+	const float     RowHeight  = ImGui::GetFrameHeight();
+	const float     RulerHeight = RowHeight;
+	const ImVec2    Origin     = ImGui::GetCursorScreenPos();
+	const float     AreaWidth  = FMath::Max(ImGui::GetContentRegionAvail().x, LabelWidth + 60.0f);
+	const float     TimeLeft   = Origin.x + LabelWidth;
+	const float     TimeWidth  = AreaWidth - LabelWidth - 10.0f;
+	const float     Length     = FMath::Max(Animation.Length, 0.01f);
+	const auto      TimeToX    = [&](float Time) { return TimeLeft + Time / Length * TimeWidth; };
+	const auto      XToTime    = [&](float X) { return FMath::Clamp((X - TimeLeft) / TimeWidth * Length, 0.0f, Length); };
+	const float     Height     = RulerHeight + RowHeight * static_cast<float>(FMath::Max<size_t>(Animation.Tracks.size(), 1)) + 4.0f;
+	ImDrawList*     Draw       = ImGui::GetWindowDrawList();
+	const ImGuiIO&  Io         = ImGui::GetIO();
+
+	// 눈금자: 클릭/드래그 = 재생 헤드
+	ImGui::SetCursorScreenPos(ImVec2(TimeLeft, Origin.y));
+	ImGui::InvisibleButton("##Ruler", ImVec2(FMath::Max(TimeWidth, 1.0f), RulerHeight));
+	if (ImGui::IsItemActive())
+	{
+		Playhead         = XToTime(Io.MousePos.x);
+		bTimelinePlaying = false;
+	}
+	Draw->AddRectFilled(ImVec2(TimeLeft, Origin.y), ImVec2(TimeLeft + TimeWidth, Origin.y + RulerHeight), IM_COL32(40, 42, 48, 255));
+	const float Step = Length <= 1.0f ? 0.1f : (Length <= 5.0f ? 0.5f : 1.0f);
+	for (float Tick = 0.0f; Tick <= Length + 1e-4f; Tick += Step)
+	{
+		const float X = TimeToX(Tick);
+		Draw->AddLine(ImVec2(X, Origin.y + RulerHeight * 0.55f), ImVec2(X, Origin.y + RulerHeight), IM_COL32(150, 150, 160, 255));
+		Draw->AddText(ImVec2(X + 2.0f, Origin.y), IM_COL32(170, 170, 180, 255), std::format("{:.1f}", Tick).c_str());
+	}
+
+	// 트랙 줄
+	int32 DeleteTrack = -1;
+	for (size_t TrackIndex = 0; TrackIndex < Animation.Tracks.size(); ++TrackIndex)
+	{
+		FUIAnimTrack& Track = Animation.Tracks[TrackIndex];
+		const float   Y     = Origin.y + RulerHeight + RowHeight * static_cast<float>(TrackIndex);
+		ImGui::PushID(static_cast<int32>(TrackIndex));
+		const bool bTrackSelected = static_cast<int32>(TrackIndex) == SelectedTrack;
+		if (bTrackSelected || (TrackIndex % 2) == 0)
+		{
+			Draw->AddRectFilled(ImVec2(Origin.x, Y), ImVec2(Origin.x + AreaWidth - 10.0f, Y + RowHeight),
+			                    bTrackSelected ? ToColor(FEditorTheme::Accent, 0.25f) : IM_COL32(255, 255, 255, 8));
+		}
+		// 이름 (클릭 = 트랙 + 위젯 선택, 우클릭 = 삭제)
+		ImGui::SetCursorScreenPos(ImVec2(Origin.x + 4.0f, Y));
+		const bool bMissing = Asset.Root->FindByName(Track.Widget) == nullptr;
+		if (bMissing)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::Danger);
+		}
+		if (ImGui::Selectable(std::format("{} · {}", Track.Widget, GetAnimPropertyLabel(Track.Property)).c_str(), bTrackSelected, 0, ImVec2(LabelWidth - 8.0f, RowHeight)))
+		{
+			SelectedTrack = static_cast<int32>(TrackIndex);
+			SelectedKey   = -1;
+			if (FUIWidget* TrackWidget = Asset.Root->FindByName(Track.Widget))
+			{
+				Select(TrackWidget);
+			}
+		}
+		if (bMissing)
+		{
+			ImGui::PopStyleColor();
+			ImGui::SetItemTooltip("위젯 '%s'이(가) 없습니다 (이름을 바꿨거나 삭제됨)", Track.Widget.c_str());
+		}
+		if (ImGui::BeginPopupContextItem())
+		{
+			if (ImGui::MenuItem(ICON_FA_TRASH " 트랙 삭제"))
+			{
+				DeleteTrack = static_cast<int32>(TrackIndex);
+			}
+			ImGui::EndPopup();
+		}
+		// 키 (마름모): 클릭 = 선택, 끌기 = 시간 이동
+		for (size_t KeyIndex = 0; KeyIndex < Track.Keys.size(); ++KeyIndex)
+		{
+			const float  X = TimeToX(Track.Keys[KeyIndex].Time);
+			const ImVec2 Center(X, Y + RowHeight * 0.5f);
+			const float  Size     = RowHeight * 0.3f;
+			ImGui::SetCursorScreenPos(ImVec2(X - Size, Center.y - Size));
+			ImGui::PushID(static_cast<int32>(KeyIndex));
+			ImGui::InvisibleButton("##Key", ImVec2(Size * 2.0f, Size * 2.0f));
+			const bool bKeySelected = bTrackSelected && static_cast<int32>(KeyIndex) == SelectedKey;
+			if (ImGui::IsItemActivated())
+			{
+				SelectedTrack = static_cast<int32>(TrackIndex);
+				SelectedKey   = static_cast<int32>(KeyIndex);
+				Playhead      = Track.Keys[KeyIndex].Time;
+			}
+			if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 2.0f))
+			{
+				// 0.01초 단위, 다른 키를 넘으면 순서가 바뀌므로 정렬 후 선택 번호를 따라간다
+				const float NewTime        = std::round(XToTime(Io.MousePos.x) * 100.0f) / 100.0f;
+				Track.Keys[KeyIndex].Time  = NewTime;
+				const FUIAnimKey Moved     = Track.Keys[KeyIndex];
+				Track.SortKeys();
+				for (size_t Find = 0; Find < Track.Keys.size(); ++Find)
+				{
+					if (Track.Keys[Find] == Moved)
+					{
+						SelectedKey = static_cast<int32>(Find);
+					}
+				}
+				Playhead = NewTime;
+				MarkEdited("키 이동");
+			}
+			ImGui::SetItemTooltip("%.2f초 = %.3f (%s)", Track.Keys[KeyIndex].Time, Track.Keys[KeyIndex].Value, GInterpLabels[static_cast<size_t>(Track.Keys[KeyIndex].Interp)]);
+			ImGui::PopID();
+			const ImU32 Color = bKeySelected ? ToColor(FEditorTheme::Warning, 1.0f) : IM_COL32(220, 220, 230, 255);
+			Draw->AddQuadFilled(ImVec2(Center.x, Center.y - Size), ImVec2(Center.x + Size, Center.y), ImVec2(Center.x, Center.y + Size), ImVec2(Center.x - Size, Center.y), Color);
+			if (KeyIndex + 1 < Track.Keys.size())
+			{
+				Draw->AddLine(ImVec2(Center.x + Size, Center.y), ImVec2(TimeToX(Track.Keys[KeyIndex + 1].Time) - Size, Center.y), IM_COL32(200, 200, 210, 70), 2.0f);
+			}
+		}
+		ImGui::PopID();
+	}
+	if (Animation.Tracks.empty())
+	{
+		Draw->AddText(ImVec2(Origin.x + 4.0f, Origin.y + RulerHeight + 2.0f), ImGui::GetColorU32(ImGuiCol_TextDisabled), "트랙 없음 — 위젯 선택 후 \"키 추가\"");
+	}
+
+	// 재생 헤드 + 길이 끝
+	const float PlayX = TimeToX(Playhead);
+	Draw->AddLine(ImVec2(PlayX, Origin.y), ImVec2(PlayX, Origin.y + Height), ToColor(FEditorTheme::Danger, 1.0f), 2.0f);
+	Draw->AddLine(ImVec2(TimeToX(Length), Origin.y), ImVec2(TimeToX(Length), Origin.y + Height), IM_COL32(255, 255, 255, 60), 1.0f);
+	ImGui::SetCursorScreenPos(ImVec2(Origin.x, Origin.y + Height));
+	ImGui::Dummy(ImVec2(1.0f, 1.0f));
+
+	if (DeleteTrack >= 0)
+	{
+		Animation.Tracks.erase(Animation.Tracks.begin() + DeleteTrack);
+		SelectedTrack = SelectedKey = -1;
+		MarkEdited("트랙 삭제");
+	}
+}
+
+void FWidgetEditor::DrawKeyPanel(FUIAnimation& Animation)
+{
+	FUIAnimTrack* Track = SelectedTrack >= 0 && SelectedTrack < static_cast<int32>(Animation.Tracks.size()) ? &Animation.Tracks[static_cast<size_t>(SelectedTrack)]
+	                                                                                                      : nullptr;
+	if (Track == nullptr || SelectedKey < 0 || SelectedKey >= static_cast<int32>(Track->Keys.size()))
+	{
+		FAssetEditorWidgets::Hint("키를 클릭하면 값/보간을 고칠 수 있습니다. 끌면 시간이 바뀝니다.");
+		return;
+	}
+	FUIAnimKey& Key = Track->Keys[static_cast<size_t>(SelectedKey)];
+	ImGui::TextDisabled("%s · %s", Track->Widget.c_str(), GetAnimPropertyLabel(Track->Property));
+	bool bChanged = false;
+	if (ImGui::DragFloat("시간##Key", &Key.Time, 0.01f, 0.0f, Animation.Length, "%.2f"))
+	{
+		const FUIAnimKey Moved = Key;
+		Track->SortKeys();
+		for (size_t Find = 0; Find < Track->Keys.size(); ++Find)
+		{
+			if (Track->Keys[Find] == Moved)
+			{
+				SelectedKey = static_cast<int32>(Find);
+			}
+		}
+		bChanged = true;
+	}
+	FUIAnimKey& Current = Track->Keys[static_cast<size_t>(SelectedKey)];
+	bChanged |= ImGui::DragFloat("값##Key", &Current.Value, 0.01f, 0.0f, 0.0f, "%.3f");
+	bChanged |= EnumCombo("다음 키까지", Current.Interp, GInterpLabels);
+	if (ImGui::Button(ICON_FA_TRASH " 키 삭제"))
+	{
+		Track->Keys.erase(Track->Keys.begin() + SelectedKey);
+		SelectedKey = -1;
+		bChanged    = true;
+	}
+	if (bChanged)
+	{
+		MarkEdited("애니메이션 키");
 	}
 }

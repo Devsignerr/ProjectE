@@ -4,6 +4,9 @@
 #include "UI/UILayout.h"
 #include "UI/UIPainter.h"
 
+#include <algorithm>
+#include <cmath>
+
 FUIInstance::FUIInstance()
 {
 	Asset.Root->AssignIds();
@@ -43,6 +46,7 @@ void FUIInstance::Layout(const FUIRect& InViewport, FUIFontLibrary& Fonts)
 bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,
                          std::vector<FUIEvent>& OutEvents, float DeltaSeconds)
 {
+	TickAnimations(DeltaSeconds, OutEvents); // 값을 먼저 바꾸고 레이아웃 (렌더 변환은 레이아웃 뒤 누적)
 	Layout(InViewport, Fonts);
 
 	FUIPointerInput Pointer;
@@ -84,4 +88,80 @@ bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* Point
 void FUIInstance::Paint(FUIDrawList& Out, FUIFontLibrary& Fonts) const
 {
 	FUIPainter::Paint(*Asset.Root, Transform, Viewport, Fonts, Out);
+}
+
+bool FUIInstance::PlayAnimation(std::string_view Name, int32 Loops, float Speed)
+{
+	for (size_t Index = 0; Index < Asset.Animations.size(); ++Index)
+	{
+		if (Asset.Animations[Index].Name != Name)
+		{
+			continue;
+		}
+		StopAnimation(Name);
+		FUIAnimationPlayback Playback;
+		Playback.AnimationIndex = static_cast<int32>(Index);
+		Playback.Speed          = Speed;
+		Playback.LoopsRemaining = FMath::Max(Loops, 0);
+		Playback.Time           = Speed < 0.0f ? Asset.Animations[Index].Length : 0.0f;
+		Asset.Animations[Index].ApplyAt(*Asset.Root, Playback.Time);
+		Playing.push_back(Playback);
+		return true;
+	}
+	E_LOG(LogUI, Warning, "UI 애니메이션이 없습니다: {}", Name);
+	return false;
+}
+
+void FUIInstance::StopAnimation(std::string_view Name)
+{
+	std::erase_if(Playing, [this, Name](const FUIAnimationPlayback& Playback) { return Asset.Animations[static_cast<size_t>(Playback.AnimationIndex)].Name == Name; });
+}
+
+void FUIInstance::StopAllAnimations()
+{
+	Playing.clear();
+}
+
+bool FUIInstance::IsAnimationPlaying(std::string_view Name) const
+{
+	return std::any_of(Playing.begin(), Playing.end(), [this, Name](const FUIAnimationPlayback& Playback) {
+		return Asset.Animations[static_cast<size_t>(Playback.AnimationIndex)].Name == Name;
+	});
+}
+
+void FUIInstance::TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents)
+{
+	for (size_t Index = 0; Index < Playing.size();)
+	{
+		FUIAnimationPlayback& Playback  = Playing[Index];
+		const FUIAnimation&   Animation = Asset.Animations[static_cast<size_t>(Playback.AnimationIndex)];
+		const float           Length    = FMath::Max(Animation.Length, 0.001f);
+		Playback.Time += DeltaSeconds * Playback.Speed;
+		bool       bFinished = false;
+		const bool bPastEnd  = Playback.Speed >= 0.0f ? Playback.Time >= Length : Playback.Time <= 0.0f;
+		if (bPastEnd)
+		{
+			if (Playback.LoopsRemaining == 1)
+			{
+				Playback.Time = Playback.Speed >= 0.0f ? Length : 0.0f; // 끝 값에 멈춘다
+				bFinished     = true;
+			}
+			else
+			{
+				if (Playback.LoopsRemaining > 1)
+				{
+					--Playback.LoopsRemaining;
+				}
+				Playback.Time = Playback.Speed >= 0.0f ? std::fmod(Playback.Time, Length) : Length + std::fmod(Playback.Time, Length);
+			}
+		}
+		Animation.ApplyAt(*Asset.Root, Playback.Time);
+		if (bFinished)
+		{
+			OutEvents.push_back({ EUIEventType::AnimationFinished, 0, Animation.Name });
+			Playing.erase(Playing.begin() + static_cast<std::ptrdiff_t>(Index));
+			continue;
+		}
+		++Index;
+	}
 }

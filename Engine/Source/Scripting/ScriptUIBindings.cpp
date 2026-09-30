@@ -1,6 +1,7 @@
 #include "Scripting/LuaRuntime.h"
 
 #include "Scene/Scene.h"
+#include "UI/UIAnimation.h"
 #include "UI/UIComponent.h"
 #include "UI/UIInstance.h"
 #include "UI/UISystem.h"
@@ -12,6 +13,7 @@
 //   Health.Percent = 0.5; Label.Text = "점수 10"; Menu.Visible = false; Button.Enabled = false
 //   function Hud:OnUIClicked_PlayButton() ... end        -- 이벤트: OnUIClicked_/OnUIPressed_/OnUIReleased_/OnUIHoverBegin_/OnUIHoverEnd_<이름>
 //                                                         텍스트 상자: OnUITextChanged_/OnUITextCommitted_<이름> (값은 widget.Text)
+//   self.entity:PlayUIAnimation("Intro") / StopUIAnimation / IsUIAnimationPlaying, 끝나면 OnUIAnimationFinished_<애니메이션 이름>
 //   (이름이 Lua 식별자가 아니면 Hud["OnUIClicked_시작"] = function(self) ... end)
 // 위젯 값은 접근할 때마다 이름으로 다시 찾는다 (인스턴스가 다시 만들어져도 같은 이름이면 계속 유효)
 
@@ -34,20 +36,11 @@ namespace
 		case EUIEventType::HoverEnd:   return "OnUIHoverEnd_";
 		case EUIEventType::TextChanged:   return "OnUITextChanged_";
 		case EUIEventType::TextCommitted: return "OnUITextCommitted_";
+		case EUIEventType::AnimationFinished: return "OnUIAnimationFinished_";
 		}
 		return "OnUIEvent_";
 	}
 
-	// 종류별 "대표 색": 텍스트 = 글자 색, 진행 막대 = 채우기 색, 나머지 = 배경(기본 브러시) 색 (sRGB)
-	FVector4& GetMainColor(FUIWidget& Widget)
-	{
-		switch (Widget.Type)
-		{
-		case EUIWidgetType::Text:        return Widget.TextColor;
-		case EUIWidgetType::ProgressBar: return Widget.FillBrush.Color;
-		default:                         return Widget.Brush.Color;
-		}
-	}
 } // namespace
 
 void FLuaRuntime::RegisterUIBindings()
@@ -105,8 +98,8 @@ void FLuaRuntime::RegisterUIBindings()
 		                         [RequireWidget](const FScriptWidgetRef& Ref, bool bValue) { RequireWidget(Ref).bEnabled = bValue; }),
 		"Opacity", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).RenderOpacity; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).RenderOpacity = FMath::Clamp(Value, 0.0f, 1.0f); }),
-		"Color", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetMainColor(RequireWidget(Ref)); },
-		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { GetMainColor(RequireWidget(Ref)) = Value; }),
+		"Color", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return FUIAnimMath::GetMainColor(RequireWidget(Ref)); },
+		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { FUIAnimMath::GetMainColor(RequireWidget(Ref)) = Value; }),
 		"Texture", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Brush.Texture; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Brush.Texture = Value; }),
 		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintText; },
@@ -123,6 +116,21 @@ void FLuaRuntime::RegisterUIBindings()
 			return sol::lua_nil;
 		}
 		return sol::make_object(Lua, FScriptWidgetRef{ Entity.Entity, Name });
+	};
+	// UI 애니메이션 (.eui Animations): entity:PlayUIAnimation("Intro"[, 반복(0 = 무한), 속도(음수 = 거꾸로)]) → 있으면 true
+	EntityType["PlayUIAnimation"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name, sol::optional<int32> Loops, sol::optional<float> Speed) {
+		FUIInstance* Instance = FindInstance(Entity.Entity);
+		return Instance != nullptr && Instance->PlayAnimation(Name, Loops.value_or(1), Speed.value_or(1.0f));
+	};
+	EntityType["StopUIAnimation"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name) {
+		if (FUIInstance* Instance = FindInstance(Entity.Entity))
+		{
+			Instance->StopAnimation(Name);
+		}
+	};
+	EntityType["IsUIAnimationPlaying"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name) {
+		const FUIInstance* Instance = FindInstance(Entity.Entity);
+		return Instance != nullptr && Instance->IsAnimationPlaying(Name);
 	};
 	// 이 엔티티의 UI가 이번 프레임 포인터를 가져갔는지 (게임 쪽 마우스 입력은 이미 막혀 있다 — 표시용)
 	EntityType["IsPointerOverUI"] = [this](const FScriptEntity& Entity) {

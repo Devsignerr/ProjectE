@@ -386,7 +386,13 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 멀티플레이와의 연결 (17단계 쪽에서 할 일): HUD 스크립트는 `ClientOnly`가 맞다(17-7 스크립트 실행 위치 도입 시 샘플 `HudController`를 ClientOnly로). UI는 복제 대상이 아니다(클라이언트 로컬). 게임 내 로비 UI는 17-9 API 위에.
 
-후속 과제: SDF 굽기는 Debug 빌드에서 한글 글자당 수십 ms(처음 쓸 때만) — 미리 굽기 목록 또는 백그라운드 굽기. 9-slice 브러시, 텍스트 입력 위젯, 애니메이션(UMG 타임라인), 로컬라이즈, 배포용 한글 글꼴(OFL) 번들
+후속 과제 (2026-10-01 진행, 사용자 선택: Noto Sans KR 번들 / UMG식 타임라인):
+- [x] 글꼴 성능: 원인은 SDF가 아니라 13MB 글꼴 파일 바이트 단위 읽기(Debug 853ms → 일괄 읽기 15ms). 인스턴스 생성 시 에셋 텍스트 글자 미리 굽기. 굽기 속도 로그 테스트
+- [x] 기본 글꼴 Noto Sans KR Regular 번들 (`Engine/Content/Fonts`, notofonts/noto-cjk `Sans2.004`, SHA256 고정, OFL 동봉, Package.ps1이 Engine/Content 복사). 순서: 프로젝트 지정 → 번들 → 맑은 고딕. **발견**: stb_truetype SDF는 3차 곡선(CFF)을 버려 OTF가 깨짐 → 4배 래스터 + Felzenszwalb 거리 변환 + 축소(`UI/UISdf`, 테스트)로 교체 (글자당 약 3ms, Debug)
+- [x] 9-slice 브러시 (`EUIBrushDrawAs::NineSlice`, Margin = 텍스처 비율, 두께 = Margin × 원본 크기, 작으면 비율 축소), 디자이너 편집/"텍스처 크기로", 샘플 로그 패널 틀(`UI/PanelFrame.png`)
+- [x] 텍스트 상자 `TextBox` (+ Core 문자 입력 `EWindowEventType::Char`, `FInput::GetTypedText/IsKeyRepeated/WithoutKeyboard`): 클릭/Tab 포커스, 입력/지우기/화살표/Home/End, 최대 길이, Enter 확정·Esc 해제·포커스 잃으면 확정, 클릭 위치 캐럿, 가로 스크롤, 안내 문구. 입력 중에는 게임에 키보드를 넘기지 않고 ESC도 UI가 받는다(`FUIInputResult`). Lua `OnUITextChanged_/OnUITextCommitted_`. 샘플 채팅 입력칸. 한계: IME 조합 중인 글자는 완성될 때까지 보이지 않음(WM_CHAR만 받음), 선택/복사/붙여넣기 없음
+- [x] UMG식 애니메이션: 렌더 변환(이동/배율/피벗, 레이아웃 영향 없음, 자식 누적 → `State.Visual*`로 그리기/맞히기), `.eui` v2 `Animations`(트랙 = 위젯 이름 + 속성: 불투명도/이동/배율/색 RGBA/진행률, 키마다 보간 선형/계단/이징), `FUIInstance` 재생(반복/속도/거꾸로, 끝 이벤트), Lua `entity:PlayUIAnimation/StopUIAnimation/IsUIAnimationPlaying` + `OnUIAnimationFinished_<이름>`. 디자이너 타임라인(애니메이션 추가/이름/삭제/길이, 재생·반복, 재생 헤드, 키 추가(현재 값), 키 끌기/값/보간/삭제, 트랙 삭제, 재생 헤드 시점 미리보기 — 복제본이라 기본값 불변). 샘플 `MenuIntro`/`ScorePulse`. 자동 검증 인자 `--ui-animation <이름> --ui-anim-time <초>`. 한계: 회전 없음
+- [ ] 남은 후속: 로컬라이즈(문자열 표), 텍스트 상자 선택/클립보드/IME 조합 표시, 애니메이션 녹화 모드(속성 편집 → 자동 키)
 
 ## Phase 18 — AI: 비헤이비어 트리 + 내비게이션 (2026-09-30, 사용자 요청: 언리얼 비헤이비어 트리처럼)
 

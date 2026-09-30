@@ -3,6 +3,7 @@
 --   값: .Text / .Percent / .Visible / .Enabled / .Opacity / .Color(sRGB Vector4) / .Texture / .FontSize
 --   이벤트: OnUIClicked_<이름>, OnUIPressed_, OnUIReleased_, OnUIHoverBegin_, OnUIHoverEnd_
 --          텍스트 상자: OnUITextChanged_<이름>, OnUITextCommitted_<이름> (입력 중에는 게임 키 입력이 막힌다)
+--   애니메이션(.eui 타임라인): self.entity:PlayUIAnimation("이름"[, 반복, 속도]), 끝나면 OnUIAnimationFinished_<이름>
 local HudController = {
 	Properties = {
 		ScorePerSecond = 120.0,
@@ -21,6 +22,8 @@ function HudController:OnStart()
 	self.Log        = self.entity:GetWidget("LogLine0")
 	self.Chat       = self.entity:GetWidget("ChatInput")
 	self.bPlaying   = false
+	self.NextPulse  = 500
+	self.entity:PlayUIAnimation("MenuIntro")
 end
 
 function HudController:OnUpdate(dt)
@@ -29,6 +32,10 @@ function HudController:OnUpdate(dt)
 		self.Score = self.Score + self.Properties.ScorePerSecond * dt
 	end
 	self.ScoreText.Text = string.format("점수 %d", math.floor(self.Score))
+	if self.Score >= self.NextPulse then
+		self.NextPulse = self.NextPulse + 500
+		self.entity:PlayUIAnimation("ScorePulse")
+	end
 
 	-- 체력: 천천히 오르내리고, 낮으면 빨갛게
 	local Health = 55 + 45 * math.sin(self.Time * 0.8)
@@ -42,6 +49,9 @@ function HudController:OnUpdate(dt)
 
 	if Input.IsKeyPressed(self.Properties.MenuKey) then
 		self.Menu.Visible = not self.Menu.Visible
+		if self.Menu.Visible then
+			self.entity:PlayUIAnimation("MenuIntro")
+		end
 	end
 end
 

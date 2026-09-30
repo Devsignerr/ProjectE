@@ -50,6 +50,7 @@ enum class EUIEventType : uint8
 	HoverEnd,
 	TextChanged,   // 텍스트 상자 내용이 바뀜
 	TextCommitted, // 텍스트 상자 Enter 또는 포커스를 잃음
+	AnimationFinished, // UI 애니메이션 재생 끝 (WidgetName = 애니메이션 이름)
 };
 
 struct FUIEvent

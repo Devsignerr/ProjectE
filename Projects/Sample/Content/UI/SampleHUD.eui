@@ -1,5 +1,5 @@
 {
-  "Version": 1,
+  "Version": 2,
   "DesignSize": [
     1920,
     1080
@@ -1360,5 +1360,125 @@
         "MaxLength": 60
       }
     ]
-  }
+  },
+  "Animations": [
+    {
+      "Name": "MenuIntro",
+      "Length": 0.5,
+      "Tracks": [
+        {
+          "Widget": "MenuPanel",
+          "Property": "Opacity",
+          "Keys": [
+            [
+              0.0,
+              0.0,
+              "EaseOut"
+            ],
+            [
+              0.4,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "TranslationY",
+          "Keys": [
+            [
+              0.0,
+              60.0,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              0.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "ScaleX",
+          "Keys": [
+            [
+              0.0,
+              0.92,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "ScaleY",
+          "Keys": [
+            [
+              0.0,
+              0.92,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              1.0,
+              "Linear"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ScorePulse",
+      "Length": 0.35,
+      "Tracks": [
+        {
+          "Widget": "ScoreText",
+          "Property": "ScaleX",
+          "Keys": [
+            [
+              0.0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.12,
+              1.35,
+              "EaseIn"
+            ],
+            [
+              0.35,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "ScoreText",
+          "Property": "ScaleY",
+          "Keys": [
+            [
+              0.0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.12,
+              1.35,
+              "EaseIn"
+            ],
+            [
+              0.35,
+              1.0,
+              "Linear"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
 }

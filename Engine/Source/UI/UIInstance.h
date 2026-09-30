@@ -34,6 +34,14 @@ public:
 	const FUIRect&      GetViewport() const { return Viewport; }
 	FUIInputRouter&     GetInputRouter() { return Router; }
 	bool                IsPointerOverUI() const { return bPointerOver; }
+	// ---- 애니메이션 (에셋 Animations). 같은 이름을 다시 재생하면 처음부터. Loops 0 = 무한, Speed 음수 = 거꾸로
+	bool PlayAnimation(std::string_view Name, int32 Loops = 1, float Speed = 1.0f);
+	void StopAnimation(std::string_view Name); // 현재 값에 멈춘다
+	void StopAllAnimations();
+	bool IsAnimationPlaying(std::string_view Name) const;
+	// 재생 진행 (Update가 부른다). 끝난 애니메이션은 AnimationFinished 이벤트 (WidgetName = 애니메이션 이름)
+	void TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents);
+
 	// 포커스된 텍스트 상자가 있어 키보드를 가져감
 	bool                WantsKeyboard() { return Router.WantsKeyboard(*Asset.Root); }
 
@@ -43,4 +51,6 @@ private:
 	FUITransform   Transform;
 	FUIRect        Viewport;
 	bool           bPointerOver = false;
+
+	std::vector<FUIAnimationPlayback> Playing;
 };

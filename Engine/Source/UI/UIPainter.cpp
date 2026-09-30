@@ -134,7 +134,7 @@ namespace
 			const float X     = Left + Positions[static_cast<size_t>(Caret)];
 			FUIBrush    CaretBrush;
 			CaretBrush.Color = Widget.TextColor;
-			FUIPainter::PaintBrush(CaretBrush, FUIRect(FVector2(X, Top + LineHeight * 0.1f), FVector2(X + FMath::Max(1.5f, 1.0f / Transform.Scale), Top + LineHeight * 0.9f)),
+			FUIPainter::PaintBrush(CaretBrush, FUIRect(FVector2(X, Top + LineHeight * 0.1f), FVector2(X + FMath::Max(1.5f, 1.0f / Transform.GetUniformScale()), Top + LineHeight * 0.9f)),
 			                       BoxOpacity, Transform, ContentClip, Out);
 		}
 	}
@@ -152,29 +152,34 @@ namespace
 		{
 			return;
 		}
-		const FUIRect Clip = ViewportClip.Intersect(Transform.ToPixels(Widget.State.Clip));
+		// 잘림은 렌더 변환까지 적용된 영역, 그리기는 레이아웃 좌표를 위젯 변환(루트 × 렌더 변환)으로 옮긴다
+		const FUIRect Clip = ViewportClip.Intersect(Transform.ToPixels(Widget.State.VisualClip));
 		if (Clip.IsEmpty())
 		{
 			return;
 		}
+		FUITransform Local;
+		Local.Scale   = Transform.Scale;
+		Local.Stretch = Widget.State.VisualScale;
+		Local.Offset  = Widget.State.VisualOffset * Transform.Scale + Transform.Offset;
 
 		switch (Widget.Type)
 		{
 		case EUIWidgetType::Border:
 		case EUIWidgetType::Image:
-			FUIPainter::PaintBrush(Widget.Brush, Widget.State.Geometry, Opacity, Transform, Clip, Out);
+			FUIPainter::PaintBrush(Widget.Brush, Widget.State.Geometry, Opacity, Local, Clip, Out);
 			break;
 		case EUIWidgetType::Button:
-			FUIPainter::PaintBrush(SelectButtonBrush(Widget, bEnabled), Widget.State.Geometry, Opacity, Transform, Clip, Out);
+			FUIPainter::PaintBrush(SelectButtonBrush(Widget, bEnabled), Widget.State.Geometry, Opacity, Local, Clip, Out);
 			break;
 		case EUIWidgetType::Text:
-			FUIPainter::PaintText(Widget, Widget.State.Geometry, Opacity, Transform, Clip, Fonts, Out);
+			FUIPainter::PaintText(Widget, Widget.State.Geometry, Opacity, Local, Clip, Fonts, Out);
 			break;
 		case EUIWidgetType::ProgressBar:
-			PaintProgressBar(Widget, Opacity, Transform, Clip, Out);
+			PaintProgressBar(Widget, Opacity, Local, Clip, Out);
 			break;
 		case EUIWidgetType::TextBox:
-			PaintTextBox(Widget, Opacity, bEnabled, Transform, Clip, Fonts, Out);
+			PaintTextBox(Widget, Opacity, bEnabled, Local, Clip, Fonts, Out);
 			break;
 		default:
 			break;
@@ -205,7 +210,7 @@ namespace
 
 		if (Widget.Type == EUIWidgetType::ScrollBox)
 		{
-			PaintScrollbar(Widget, Opacity, Transform, Clip, Out);
+			PaintScrollbar(Widget, Opacity, Local, Clip, Out);
 		}
 	}
 } // namespace
@@ -256,8 +261,9 @@ void FUIPainter::PaintBrush(const FUIBrush& Brush, const FUIRect& Rect, float Op
 				{
 					continue;
 				}
-				const FVector2 Min = Transform.ToPixels(FVector2(Xs[Col], Ys[Row]));
-				const FVector2 Max = Transform.ToPixels(FVector2(Xs[Col + 1], Ys[Row + 1]));
+				const FUIRect  Cell = Transform.ToPixels(FUIRect(FVector2(Xs[Col], Ys[Row]), FVector2(Xs[Col + 1], Ys[Row + 1])));
+				const FVector2 Min  = Cell.Min;
+				const FVector2 Max  = Cell.Max;
 				FUIDrawQuad    Quad;
 				Quad.Rect           = FVector4(Min.X, Min.Y, Max.X, Max.Y);
 				Quad.UV             = FVector4(Us[Col], Vs[Row], Us[Col + 1], Vs[Row + 1]);
@@ -272,8 +278,8 @@ void FUIPainter::PaintBrush(const FUIBrush& Brush, const FUIRect& Rect, float Op
 
 	const FUIRect Pixels    = Transform.ToPixels(Rect);
 	const float   HalfMin   = FMath::Min(Pixels.GetWidth(), Pixels.GetHeight()) * 0.5f;
-	const float   Radius    = FMath::Clamp(Brush.CornerRadius * Transform.Scale, 0.0f, HalfMin);
-	const float   Border    = FMath::Clamp(Brush.BorderWidth * Transform.Scale, 0.0f, HalfMin);
+	const float   Radius    = FMath::Clamp(Brush.CornerRadius * Transform.GetUniformScale(), 0.0f, HalfMin);
+	const float   Border    = FMath::Clamp(Brush.BorderWidth * Transform.GetUniformScale(), 0.0f, HalfMin);
 
 	FUIDrawQuad Quad;
 	Quad.Rect           = FVector4(Pixels.Min.X, Pixels.Min.Y, Pixels.Max.X, Pixels.Max.Y);
@@ -306,8 +312,8 @@ void FUIPainter::PaintText(const FUIWidgetData& TextWidget, const FUIRect& Geome
 		return;
 	}
 
-	const float   Range     = FUIFont::GetDistanceRange(TextWidget.FontSize) * Transform.Scale;
-	const float   Outline   = FMath::Max(TextWidget.OutlineWidth, 0.0f) * Transform.Scale;
+	const float   Range     = FUIFont::GetDistanceRange(TextWidget.FontSize) * Transform.GetUniformScale();
+	const float   Outline   = FMath::Max(TextWidget.OutlineWidth, 0.0f) * Transform.GetUniformScale();
 	FUITextureRef Texture;
 	Texture.Font = Font;
 
@@ -324,8 +330,9 @@ void FUIPainter::PaintText(const FUIWidgetData& TextWidget, const FUIRect& Geome
 			{
 				ShiftX = Geometry.GetWidth() - Line.Width;
 			}
-			const FVector2 Min = Transform.ToPixels(Geometry.Min + Offset + Glyph.Position + FVector2(ShiftX, 0.0f));
-			const FVector2 Max = Min + Glyph.Size * Transform.Scale;
+			const FUIRect Pixels = Transform.ToPixels(FUIRect::FromPositionSize(Geometry.Min + Offset + Glyph.Position + FVector2(ShiftX, 0.0f), Glyph.Size));
+			const FVector2 Min   = Pixels.Min;
+			const FVector2 Max   = Pixels.Max;
 
 			FUIDrawQuad Quad;
 			Quad.Rect           = FVector4(Min.X, Min.Y, Max.X, Max.Y);

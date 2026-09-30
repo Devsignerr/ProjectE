@@ -153,15 +153,28 @@ enum class EUIBrushDrawAs : uint8
 	NineSlice, // 가장자리(Margin)는 원래 크기 유지, 가운데만 늘림 (둥근 모서리/테두리 무시)
 };
 
-// UI 단위 → 화면 픽셀: Pixel = Ui * Scale + Offset
+// UI 단위 → 화면 픽셀: Pixel = Ui * (Scale * Stretch) + Offset. Stretch는 위젯 렌더 변환의 축별 배율 (보통 1)
 struct FUITransform
 {
 	float    Scale = 1.0f;
 	FVector2 Offset;
+	FVector2 Stretch = FVector2(1.0f, 1.0f);
 
-	constexpr FVector2 ToPixels(const FVector2& Ui) const { return Ui * Scale + Offset; }
-	constexpr FVector2 ToUi(const FVector2& Pixels) const { return (Pixels - Offset) / Scale; }
-	constexpr FUIRect  ToPixels(const FUIRect& Rect) const { return { ToPixels(Rect.Min), ToPixels(Rect.Max) }; }
+	constexpr FVector2 GetAxisScale() const { return Stretch * Scale; }
+	// 반지름/테두리/글꼴 거리처럼 한 값으로 줄이는 것들
+	constexpr float    GetUniformScale() const { return Scale * FMath::Min(FMath::Abs(Stretch.X), FMath::Abs(Stretch.Y)); }
+	constexpr FVector2 ToPixels(const FVector2& Ui) const { return Ui * GetAxisScale() + Offset; }
+	constexpr FVector2 ToUi(const FVector2& Pixels) const
+	{
+		const FVector2 Axis = GetAxisScale();
+		return FVector2((Pixels.X - Offset.X) / Axis.X, (Pixels.Y - Offset.Y) / Axis.Y);
+	}
+	constexpr FUIRect ToPixels(const FUIRect& Rect) const
+	{
+		const FVector2 A = ToPixels(Rect.Min);
+		const FVector2 B = ToPixels(Rect.Max);
+		return { FVector2(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y)), FVector2(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y)) };
+	}
 };
 
 // 배경/테두리/이미지 칠하기. 색은 sRGB(에디터 색 선택 그대로) + 직선 알파이며 그릴 때 선형으로 바꾼다.

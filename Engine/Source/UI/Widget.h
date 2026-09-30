@@ -50,6 +50,10 @@ struct FUIWidgetData
 	float         RenderOpacity = 1.0f; // 자식까지 곱해진다
 	FVector2      MinSize;             // 원하는 크기의 최솟값 (0 = 제한 없음)
 	FUISlot       Slot;
+	// 렌더 변환 (UMG Render Transform): 레이아웃이 끝난 뒤 그리기/맞히기에만 적용, 자식에게 누적. 회전 없음
+	FVector2      RenderTranslation;                    // UI 단위
+	FVector2      RenderScale = FVector2(1.0f, 1.0f);
+	FVector2      RenderPivot = FVector2(0.5f, 0.5f);   // 자기 영역 비율 (배율 중심)
 
 	// ---- 모양: 보더/이미지 배경, 버튼 기본 상태, 진행 막대 배경
 	FUIBrush  Brush;
@@ -101,7 +105,12 @@ struct FUIWidgetState
 	uint32   Id = 0;       // 트리 안 고유 번호 (FUIWidget::AssignIds)
 	FVector2 DesiredSize;  // 자기 슬롯 여백 제외
 	FUIRect  Geometry;     // 배치된 영역 (UI 단위)
-	FUIRect  Clip = FUIRect::Infinite(); // 이 위젯이 그려질 때의 잘림 영역 (조상 스크롤 박스)
+	FUIRect  Clip = FUIRect::Infinite(); // 이 위젯이 그려질 때의 잘림 영역 (조상 스크롤 박스, 레이아웃 좌표)
+	// 렌더 변환까지 적용한 결과 (그리기/맞히기는 이것을 쓴다). 변환이 없으면 Geometry/Clip과 같다
+	FUIRect  VisualGeometry;
+	FUIRect  VisualClip   = FUIRect::Infinite();
+	FVector2 VisualScale  = FVector2(1.0f, 1.0f); // 레이아웃 좌표 → 화면 UI 좌표: p * VisualScale + VisualOffset
+	FVector2 VisualOffset;
 	float    ScrollOffset = 0.0f; // 스크롤: 현재 위치 (0 ~ ScrollMax)
 	float    ScrollMax    = 0.0f;
 	bool     bHovered     = false;

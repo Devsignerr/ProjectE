@@ -22,6 +22,9 @@ struct FUILayout
 	// 루트를 (0, 0) ~ RootSize 영역에 배치한다
 	static void Compute(FUIWidget& Root, const FVector2& RootSize, IUITextMeasurer& Measurer);
 
+	// 렌더 변환 누적 → State.VisualGeometry/VisualClip/VisualScale/VisualOffset (Compute가 마지막에 호출)
+	static void ApplyRenderTransforms(FUIWidget& Widget, const FVector2& ParentScale, const FVector2& ParentOffset, const FUIRect& ParentClip);
+
 	// 설계 해상도 기준 배율 (화면 픽셀 / UI 단위)
 	static float ComputeScale(EUIScaleMode Mode, const FVector2& DesignSize, const FVector2& ViewportSize);
 

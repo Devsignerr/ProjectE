@@ -171,6 +171,77 @@ namespace
 		Read(Object, "Column", Slot.Column);
 	}
 
+	json AnimationToJson(const FUIAnimation& Animation)
+	{
+		json Tracks = json::array();
+		for (const FUIAnimTrack& Track : Animation.Tracks)
+		{
+			json Keys = json::array();
+			for (const FUIAnimKey& Key : Track.Keys)
+			{
+				Keys.push_back(json::array({ Key.Time, Key.Value, ToString(Key.Interp) }));
+			}
+			json TrackObject;
+			TrackObject["Widget"]   = Track.Widget;
+			TrackObject["Property"] = ToString(Track.Property);
+			TrackObject["Keys"]     = std::move(Keys);
+			Tracks.push_back(std::move(TrackObject));
+		}
+		json Object;
+		Object["Name"]   = Animation.Name;
+		Object["Length"] = Animation.Length;
+		Object["Tracks"] = std::move(Tracks);
+		return Object;
+	}
+
+	bool AnimationFromJson(const json& Object, FUIAnimation& Out)
+	{
+		if (!Object.is_object())
+		{
+			return false;
+		}
+		Read(Object, "Name", Out.Name);
+		Read(Object, "Length", Out.Length);
+		Out.Length          = FMath::Max(Out.Length, 0.01f);
+		const auto TracksIt = Object.find("Tracks");
+		if (TracksIt == Object.end() || !TracksIt->is_array())
+		{
+			return true;
+		}
+		for (const json& TrackObject : *TracksIt)
+		{
+			FUIAnimTrack Track;
+			Read(TrackObject, "Widget", Track.Widget);
+			const auto PropertyIt = TrackObject.find("Property");
+			if (PropertyIt == TrackObject.end() || !PropertyIt->is_string() || !FromString(PropertyIt->get<std::string>(), Track.Property))
+			{
+				E_LOG(LogUI, Warning, "UI 애니메이션 '{}': 알 수 없는 속성 트랙을 건너뜁니다", Out.Name);
+				continue;
+			}
+			if (const auto KeysIt = TrackObject.find("Keys"); KeysIt != TrackObject.end() && KeysIt->is_array())
+			{
+				for (const json& KeyObject : *KeysIt)
+				{
+					if (!KeyObject.is_array() || KeyObject.size() < 2 || !KeyObject[0].is_number() || !KeyObject[1].is_number())
+					{
+						continue;
+					}
+					FUIAnimKey Key;
+					Key.Time  = KeyObject[0].get<float>();
+					Key.Value = KeyObject[1].get<float>();
+					if (KeyObject.size() >= 3 && KeyObject[2].is_string())
+					{
+						FromString(KeyObject[2].get<std::string>(), Key.Interp);
+					}
+					Track.Keys.push_back(Key);
+				}
+			}
+			Track.SortKeys();
+			Out.Tracks.push_back(std::move(Track));
+		}
+		return true;
+	}
+
 	// ParentType이 Count면 슬롯을 쓰지 않는다 (루트)
 	json WidgetToJson(const FUIWidget& Widget, EUIWidgetType ParentType, bool bForceSlot)
 	{
@@ -183,6 +254,19 @@ namespace
 		if (Widget.MinSize != FVector2::ZeroVector)
 		{
 			Object["MinSize"] = ToJson(Widget.MinSize);
+		}
+		// 렌더 변환은 기본값이 아닐 때만
+		if (Widget.RenderTranslation != FVector2::ZeroVector)
+		{
+			Object["RenderTranslation"] = ToJson(Widget.RenderTranslation);
+		}
+		if (Widget.RenderScale != FVector2(1.0f, 1.0f))
+		{
+			Object["RenderScale"] = ToJson(Widget.RenderScale);
+		}
+		if (Widget.RenderPivot != FVector2(0.5f, 0.5f))
+		{
+			Object["RenderPivot"] = ToJson(Widget.RenderPivot);
 		}
 		if (ParentType != EUIWidgetType::Count)
 		{
@@ -293,6 +377,9 @@ namespace
 		Read(Object, "Enabled", Widget->bEnabled);
 		Read(Object, "Opacity", Widget->RenderOpacity);
 		Read(Object, "MinSize", Widget->MinSize);
+		Read(Object, "RenderTranslation", Widget->RenderTranslation);
+		Read(Object, "RenderScale", Widget->RenderScale);
+		Read(Object, "RenderPivot", Widget->RenderPivot);
 		if (const auto SlotIt = Object.find("Slot"); SlotIt != Object.end() && SlotIt->is_object())
 		{
 			ReadSlot(*SlotIt, Widget->Slot);
@@ -361,6 +448,7 @@ FUIAsset FUIAsset::Clone() const
 	Copy.DesignSize = DesignSize;
 	Copy.ScaleMode  = ScaleMode;
 	Copy.Root       = Root ? Root->Clone() : FUIWidget::Create(EUIWidgetType::Canvas);
+	Copy.Animations = Animations;
 	Copy.Root->AssignIds();
 	return Copy;
 }
@@ -374,6 +462,15 @@ std::string FUIAsset::ToJsonString() const
 	if (Root)
 	{
 		Document["Root"] = WidgetToJson(*Root, EUIWidgetType::Count, false);
+	}
+	if (!Animations.empty())
+	{
+		json List = json::array();
+		for (const FUIAnimation& Animation : Animations)
+		{
+			List.push_back(AnimationToJson(Animation));
+		}
+		Document["Animations"] = std::move(List);
 	}
 	return Document.dump(2);
 }
@@ -409,7 +506,36 @@ bool FUIAsset::FromJsonString(const std::string& JsonText)
 		Root->Name = "Root";
 	}
 	Root->AssignIds();
+	Animations.clear();
+	if (const auto It = Document.find("Animations"); It != Document.end() && It->is_array())
+	{
+		for (const json& Object : *It)
+		{
+			FUIAnimation Animation;
+			if (AnimationFromJson(Object, Animation))
+			{
+				Animations.push_back(std::move(Animation));
+			}
+		}
+	}
 	return true;
+}
+
+FUIAnimation* FUIAsset::FindAnimation(std::string_view Name)
+{
+	return const_cast<FUIAnimation*>(static_cast<const FUIAsset*>(this)->FindAnimation(Name));
+}
+
+const FUIAnimation* FUIAsset::FindAnimation(std::string_view Name) const
+{
+	for (const FUIAnimation& Animation : Animations)
+	{
+		if (Animation.Name == Name)
+		{
+			return &Animation;
+		}
+	}
+	return nullptr;
 }
 
 bool FUIAsset::LoadFromFile(const std::filesystem::path& Path)

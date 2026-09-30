@@ -25,12 +25,16 @@ namespace NetReplication
 {
 	void AssignStaticNetIds(FScene& Scene)
 	{
-		FRegistry&           Registry = Scene.GetRegistry();
-		std::vector<FEntity> Entities;
-		Registry.View<FReplicatedComponent>().Each([&](FEntity Entity, FReplicatedComponent&) { Entities.push_back(Entity); });
-		// 새 씬에 로드하면 엔티티 인덱스가 파일 순서대로 매겨지므로 인덱스 순이 양쪽에서 같다
-		std::sort(Entities.begin(), Entities.end(), [](FEntity A, FEntity B) { return A.Index < B.Index; });
-		uint32 NextNetId = 1;
+		// 순서 = ReplicatedComponent 풀에 추가된 순서(밀집 배열). 같은 씬 파일을 로드하면 양쪽이 같다.
+		// 엔티티 인덱스 순서는 쓰지 않는다 — 씬을 비우고 다시 열면(세션 전환) 해제된 인덱스가 역순으로 재사용되기 때문
+		FRegistry& Registry = Scene.GetRegistry();
+		const TSparseSet<FReplicatedComponent>* Pool = Registry.TryGetPool<FReplicatedComponent>();
+		if (Pool == nullptr)
+		{
+			return;
+		}
+		const std::vector<FEntity> Entities = Pool->GetEntities(); // 아래에서 다른 풀(FNetIdComponent)에 추가하므로 복사
+		uint32                     NextNetId = 1;
 		for (const FEntity Entity : Entities)
 		{
 			Registry.GetOrEmplace<FNetIdComponent>(Entity).NetId = NextNetId++;

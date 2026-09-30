@@ -1,4 +1,6 @@
+#include "Core/Paths.h"
 #include "Core/Testing/TestFramework.h"
+#include "Network/LanDiscovery.h"
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
@@ -7,8 +9,10 @@
 #include "Scripting/ScriptSystem.h"
 #include "World/GameWorld.h"
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <thread>
 
 // 시작/정지 수명, 게임플레이 틱에서 물리 진행, 스크립트 물리 훅 연결(Physics.Raycast, GetMass)
 E_TEST(GameWorld_LifecycleAndPhysicsHooks)
@@ -186,4 +190,52 @@ assert(not Scene.Find('ServerOwned'):IsLocallyOwned()) -- 서버 소유는 클�
 )"));
 	World.EndPlay();
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+}
+
+// Lua 세션 API: FindSessions/GetSessions(LAN), Host/Connect/Disconnect는 요청만 쌓고 앱이 ConsumeSessionRequest로 꺼낸다
+E_TEST(GameWorld_LuaSessionApi)
+{
+	constexpr uint16 DiscoveryPort = 27796;
+	FLanDiscovery    LanHost;
+	FLanHostInfo     Info;
+	Info.Name                = "로비 테스트";
+	Info.Session.ProjectName = FPaths::GetProjectName(); // 테스트는 기본 예제 프로젝트(Sample)로 실행된다
+	Info.GamePort            = 27797;
+	E_EXPECT_TRUE(LanHost.StartHost(Info, DiscoveryPort));
+
+	FScene        Scene;
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, std::filesystem::temp_directory_path() });
+	World.SetLanDiscoveryPort(DiscoveryPort);
+	World.BeginPlay(Scene);
+
+	E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetState() == 'Standalone'); Net.FindSessions()"));
+	for (int32 Frame = 0; Frame < 60; ++Frame)
+	{
+		LanHost.Update();
+		World.TickGameplay(1.0f / 60.0f, nullptr);
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+local Sessions = Net.GetSessions()
+assert(#Sessions == 1 and Sessions[1].name == '로비 테스트' and Sessions[1].address:sub(-6) == ':27797')
+Net.Connect(Sessions[1].address)
+)"));
+	std::optional<FNetSessionRequest> Request = World.ConsumeSessionRequest();
+	E_EXPECT_TRUE(Request.has_value() && Request->Type == FNetSessionRequest::EType::Connect && Request->Address.ends_with(":27797"));
+	E_EXPECT_FALSE(World.ConsumeSessionRequest().has_value()); // 한 번만 꺼내진다
+
+	E_EXPECT_TRUE(Scripts.RunString("Net.Host(9000)"));
+	Request = World.ConsumeSessionRequest();
+	E_EXPECT_TRUE(Request.has_value() && Request->Type == FNetSessionRequest::EType::Host && Request->Port == 9000);
+	E_EXPECT_TRUE(Scripts.RunString("Net.Disconnect()"));
+	Request = World.ConsumeSessionRequest();
+	E_EXPECT_TRUE(Request.has_value() && Request->Type == FNetSessionRequest::EType::Disconnect);
+
+	// 플레이 중 Standalone → 리슨 서버 전환 (스크립트는 그대로)
+	World.SetNetMode(ENetMode::ListenServer);
+	E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetMode() == 'ListenServer' and Net.IsServer() and Net.IsClient())"));
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
 }

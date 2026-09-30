@@ -1,7 +1,6 @@
 #include "World/GameWorld.h"
 
 #include "Core/Assert.h"
-#include "Network/NetDriver.h"
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -46,37 +45,14 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	{
 		EndPlay();
 	}
-	Scene                 = &InScene;
-	Mode                  = InMode;
-	const bool bClient    = Mode == ENetMode::Client;
-	const bool bDedicated = Mode == ENetMode::DedicatedServer;
+	Scene = &InScene;
+	Mode  = InMode;
+	RemoteInputs.clear();
+	InputSequence = 0;
+	PendingSessionRequest.reset();
+	InstallScriptNetHooks();
 
-	// 스크립트 네트워크 정보: 실행 위치 필터, 모드, 로컬 플레이어, 소유권(가장 가까운 복제 조상의 OwnerPlayerId)
-	FScriptNetHooks NetHooks;
-	NetHooks.bRunServerScripts = !bClient;
-	NetHooks.bRunClientScripts = !bDedicated;
-	NetHooks.bIsServer         = !bClient;
-	NetHooks.bIsClient         = !bDedicated;
-	NetHooks.ModeName          = ToString(Mode);
-	NetHooks.GetLocalPlayerId  = [this]() {
-		if (Mode == ENetMode::DedicatedServer)
-		{
-			return -1; // 전용 서버에는 로컬 플레이어가 없다
-		}
-		return static_cast<int32>(Systems.Net != nullptr ? Systems.Net->GetLocalPlayerId() : 0);
-	};
-	NetHooks.GetOwner          = [this](FEntity Entity) {
-		for (FEntity Current = Entity; Scene != nullptr && Scene->GetRegistry().IsValid(Current); Current = Scene->GetParent(Current))
-		{
-			if (const FReplicatedComponent* Replicated = Scene->GetRegistry().TryGet<FReplicatedComponent>(Current))
-			{
-				return Replicated->OwnerPlayerId;
-			}
-		}
-		return -1;
-	};
-	Systems.Scripts->SetNetHooks(std::move(NetHooks));
-
+	const bool bClient = Mode == ENetMode::Client;
 	if (Systems.Physics != nullptr)
 	{
 		if (bClient)
@@ -92,6 +68,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	}
 	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
 	{
+		Systems.GameModule->SetNet(this);
 		Systems.GameModule->BeginPlay(InScene);
 	}
 	Systems.Scripts->BeginPlay(InScene);
@@ -104,9 +81,11 @@ void FGameWorld::EndPlay()
 		return;
 	}
 	Systems.Scripts->EndPlay();
+	SessionSearch.Stop();
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
 		Systems.GameModule->EndPlay(*Scene);
+		Systems.GameModule->SetNet(nullptr);
 	}
 	if (Systems.Physics != nullptr)
 	{
@@ -120,6 +99,14 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	if (!IsPlaying())
 	{
 		return;
+	}
+	if (Mode == ENetMode::Client && Input != nullptr)
+	{
+		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다
+	}
+	if (SessionSearch.IsSearching())
+	{
+		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
@@ -136,6 +123,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
 	Scene->UpdateTransforms();
+	for (auto& [PlayerId, Remote] : RemoteInputs)
+	{
+		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만
+	}
 }
 
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)

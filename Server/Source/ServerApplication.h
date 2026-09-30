@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Application.h"
+#include "Network/LanDiscovery.h"
 #include "Network/NetDriver.h"
 #include "Network/NetPlayerSpawner.h"
 #include "Network/ReplicationServer.h"
@@ -32,4 +33,5 @@ private:
 	FNetDriver         Net;         // 전용 서버 연결 관리 (접속/핸드셰이크/플레이어 목록)
 	FReplicationServer Replication; // 복제 엔티티 → 클라이언트 (게임플레이 틱 뒤)
 	FNetPlayerSpawner  Players;     // 입장/퇴장 → .eproject PlayerPrefab 생성/제거
+	FLanDiscovery      Lan;         // LAN 방 목록에 알림 (탐색 포트 7778)
 };

@@ -308,3 +308,23 @@ E_TEST(Replication_PlayerPawnSpawnOwnershipAndLeave)
 	E_EXPECT_EQ(RemainingOnB, 1);
 	FPrefabLibrary::Get().SetContentDirectory(std::filesystem::path());
 }
+
+E_TEST(Replication_StaticNetIdsSurviveSceneReload)
+{
+	// 씬을 비우고 다시 열면(세션 전환) 해제된 엔티티 인덱스가 역순으로 재사용된다. 정적 NetId는 그래도 새로 연 쪽과 같아야 한다
+	RegisterNetworkTypes();
+	FScene Fresh;
+	BuildLevel(Fresh);
+	NetReplication::AssignStaticNetIds(Fresh);
+
+	FScene Reloaded;
+	BuildLevel(Reloaded);
+	Reloaded.Clear();
+	BuildLevel(Reloaded);
+	E_EXPECT_TRUE(FindByName(Reloaded, "Door").Index != FindByName(Fresh, "Door").Index); // 인덱스는 실제로 다르다 (역순 재사용)
+	NetReplication::AssignStaticNetIds(Reloaded);
+	for (const char* Name : { "Crate", "Door" })
+	{
+		E_EXPECT_EQ(NetReplication::GetNetId(Reloaded, FindByName(Reloaded, Name)), NetReplication::GetNetId(Fresh, FindByName(Fresh, Name)));
+	}
+}

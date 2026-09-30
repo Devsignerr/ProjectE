@@ -11,6 +11,6 @@ add_library(ProjectE::Network ALIAS ENetwork)
 target_include_directories(ENetwork PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(ENetwork
     PUBLIC  ProjectE::Core ProjectE::Scene
-    PRIVATE ThirdParty::gns)
+    PRIVATE ThirdParty::gns ws2_32) # ws2_32: LAN 탐색(FLanDiscovery) UDP
 
 e_set_engine_module_defaults(ENetwork)

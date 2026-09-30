@@ -220,3 +220,21 @@ E_TEST(NetDriver_JoinOverGns)
 	E_EXPECT_TRUE(Wrong.GetClientState() == FNetDriver::EClientState::Failed);
 	E_EXPECT_TRUE(Wrong.GetFailureReason().find("프로젝트 불일치") != std::string::npos);
 }
+
+E_TEST(NetDriver_RejectsWhenFull)
+{
+	auto       Hub = std::make_shared<FLoopbackHub>();
+	FNetDriver Server;
+	Server.MaxPlayers = 1;
+	FNetDriver First;
+	FNetDriver Second;
+	E_EXPECT_TRUE(Server.StartServer(std::make_unique<FLoopbackTransport>(Hub), TestPort, MakeSession(), true));
+	E_EXPECT_TRUE(First.StartClient(std::make_unique<FLoopbackTransport>(Hub), "127.0.0.1:7777", MakeSession()));
+	Pump({ &Server, &First });
+	E_EXPECT_TRUE(Second.StartClient(std::make_unique<FLoopbackTransport>(Hub), "127.0.0.1:7777", MakeSession()));
+	Pump({ &Server, &First, &Second });
+	E_EXPECT_TRUE(First.GetClientState() == FNetDriver::EClientState::Joined);
+	E_EXPECT_TRUE(Second.GetClientState() == FNetDriver::EClientState::Failed);
+	E_EXPECT_TRUE(Second.GetFailureReason().find("가득") != std::string::npos);
+	E_EXPECT_TRUE(FNetLaunchOptions::FromCommandLine(FCommandLine::Parse(L"--join-lan")).bJoinLan);
+}

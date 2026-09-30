@@ -145,3 +145,16 @@ void FScriptSystem::SetNetHooks(FScriptNetHooks Hooks)
 {
 	NetHooks = std::move(Hooks);
 }
+
+bool FScriptSystem::InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args)
+{
+	return PlayRuntime != nullptr && PlayRuntime->InvokeMethod(Target, MethodName, Args);
+}
+
+void FScriptSystem::BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args)
+{
+	if (PlayRuntime != nullptr)
+	{
+		PlayRuntime->BroadcastMethod(MethodName, Args);
+	}
+}

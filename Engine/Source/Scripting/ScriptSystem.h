@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Scene/GameRpc.h"
 #include "Scripting/ScriptValue.h"
 
 #include <filesystem>
@@ -42,6 +43,16 @@ struct FScriptPhysicsHooks
 	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
 };
 
+// LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)
+struct FScriptLanSession
+{
+	std::string Name;
+	std::string SceneAsset;
+	std::string Address; // Net.Connect에 넘긴다
+	int32       Players    = 0;
+	int32       MaxPlayers = 0;
+};
+
 // 스크립트가 쓰는 네트워크 정보. 앱(FGameWorld)이 Network 모듈과 연결한다 (Scripting은 Network에 의존하지 않는다).
 // 기본값 = Standalone (서버이자 클라이언트, 모든 스크립트 실행, 로컬 플레이어 0)
 struct FScriptNetHooks
@@ -53,6 +64,20 @@ struct FScriptNetHooks
 	std::string ModeName          = "Standalone";
 	std::function<int32()>        GetLocalPlayerId; // 없으면 0. 전용 서버 -1 (로컬 플레이어 없음), 클라이언트는 입장 후 정해진다
 	std::function<int32(FEntity)> GetOwner;         // 엔티티(또는 가장 가까운 복제 조상)의 소유 플레이어, 없으면 -1
+	// RPC 라우팅 (entity:CallServer 등, 규칙은 Scene/GameRpc.h). 없으면 Standalone: 바로 로컬 호출.
+	// 잘못된 호출(클라이언트에서 CallClient 등)은 std::runtime_error로 알린다 (스크립트 오류가 된다)
+	std::function<void(FEntity, EGameRpcKind, const std::string&, const FGameRpcArgs&)> SendRpc;
+	// 스크립트가 보는 Input (없으면 Update에 넘긴 로컬 입력). 서버는 엔티티 소유 플레이어의 입력을 돌려준다 (없으면 nullptr = 입력 없음)
+	std::function<const FInput*(FEntity, const FInput* LocalInput)> ResolveInput;
+
+	// 세션 (로비): 찾기/목록, 전환 요청(호스트/접속/끊기 — 앱이 프레임 끝에 처리), 상태 문자열
+	std::function<void()>                           FindSessions;
+	std::function<std::vector<FScriptLanSession>()> GetSessions;
+	std::function<void(int32 Port)>                 Host;
+	std::function<void(const std::string& Address)> Connect;
+	std::function<void()>                           Disconnect;
+	std::function<std::string()>                    GetState;         // Standalone / Hosting / Connecting / Connected / Failed
+	std::function<std::string()>                    GetFailureReason; // Failed일 때 사유
 };
 
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.
@@ -109,6 +134,12 @@ public:
 	const std::vector<FScriptPropertyDecl>* GetPropertyDecls(const std::string& ScriptAsset, std::string* OutError = nullptr);
 
 	// ---- 테스트/디버그
+	// 받은 RPC 실행: Target 엔티티 스크립트의 MethodName(self, 인자...)을 부른다. 인스턴스/메서드가 없거나 오류면 false
+	// (게임 모듈이 같은 RPC를 처리할 수 있으므로 메서드가 없어도 경고하지 않는다)
+	bool InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
+	// MethodName을 정의한 모든 인스턴스에서 호출 (OnPlayerJoined 등 전역 이벤트). 정의하지 않은 인스턴스는 건너뛴다
+	void BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+
 	bool         RunString(std::string_view Code);                             // 플레이 상태에서 Lua 코드 실행 (오류는 로그 + false)
 	size_t       GetInstanceCount() const;                                     // 살아 있는 스크립트 인스턴스 수
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name); // self.Properties[Name]

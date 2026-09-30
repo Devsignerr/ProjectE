@@ -11,6 +11,9 @@
 class FInput
 {
 public:
+	using FKeyBits    = std::bitset<static_cast<size_t>(EKey::Count)>;
+	using FButtonBits = std::bitset<static_cast<size_t>(EMouseButton::Count)>;
+
 	// 창 이벤트로 상태 갱신
 	void ProcessEvent(const FWindowEvent& Event);
 
@@ -42,12 +45,18 @@ public:
 	// 이번 프레임에 입력된 문자 (WM_CHAR, 제어 문자 포함)
 	const std::u32string& GetTypedText() const { return TypedText; }
 
+	// 네트워크 입력 커맨드: 현재 상태를 통째로 읽고 쓴다 (서버는 원격 플레이어마다 FInput을 두고 받은 상태로 교체한다.
+	// 눌림/떼어짐 판정은 로컬과 같이 EndFrame 기준)
+	const FKeyBits&    GetKeyStates() const { return KeyStates; }
+	const FButtonBits& GetButtonStates() const { return ButtonStates; }
+	void               SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel);
+
 private:
-	std::bitset<static_cast<size_t>(EKey::Count)>         KeyStates;
-	std::bitset<static_cast<size_t>(EKey::Count)>         PrevKeyStates;
-	std::bitset<static_cast<size_t>(EKey::Count)>         RepeatStates; // 이번 프레임에 KeyDown(반복 포함)이 온 키
-	std::bitset<static_cast<size_t>(EMouseButton::Count)> ButtonStates;
-	std::bitset<static_cast<size_t>(EMouseButton::Count)> PrevButtonStates;
+	FKeyBits    KeyStates;
+	FKeyBits    PrevKeyStates;
+	FKeyBits    RepeatStates; // 이번 프레임에 KeyDown(반복 포함)이 온 키
+	FButtonBits ButtonStates;
+	FButtonBits PrevButtonStates;
 
 	int32 MouseX     = 0;
 	int32 MouseY     = 0;

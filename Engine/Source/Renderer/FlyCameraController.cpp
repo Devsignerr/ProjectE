@@ -12,6 +12,13 @@ void FFlyCameraController::Update(FCamera& Camera, const FInput& Input, float De
 
 	if (!Input.IsMouseButtonDown(EMouseButton::Right))
 	{
+		// 직교 줌: 한 눈금당 15%
+		const float ZoomWheel = Input.GetMouseWheelDelta();
+		if (Camera.IsOrthographic() && ZoomWheel != 0.0f)
+		{
+			const float Height = FMath::Clamp(Camera.GetOrthoHeight() * std::pow(1.15f, -ZoomWheel), MinOrthoHeight, MaxOrthoHeight);
+			Camera.SetOrthographic(Height, Camera.GetAspectRatio(), Camera.GetNearZ(), Camera.GetFarZ());
+		}
 		return;
 	}
 

@@ -113,10 +113,26 @@ struct FAnimationComponent
 // 카메라. 시점은 트랜스폼의 월드 위치/회전(+X 앞). 플레이 모드와 런타임은 bPrimary인 첫 카메라로 렌더한다
 struct FCameraComponent
 {
-	float FovYDegrees = 60.0f;
-	float NearZ       = 10.0f;     // cm
-	float FarZ        = 100000.0f; // cm
-	bool  bPrimary    = true;
+	float FovYDegrees   = 60.0f;
+	float NearZ         = 10.0f;     // cm
+	float FarZ          = 100000.0f; // cm
+	bool  bPrimary      = true;
+	bool  bOrthographic = false;     // 직교 투영 (픽셀 아트 텍셀 스냅은 직교에서만 정확)
+	float OrthoHeight   = 1000.0f;   // 직교일 때 화면 세로가 담는 월드 높이 (cm)
+};
+
+// 픽셀 아트 렌더링 설정 (씬 전역 — 씬에서 처음 찾은 활성 컴포넌트 하나만 쓴다).
+// 씬을 (출력 ÷ PixelSize) 해상도로 렌더하고 최근접 정수 배율로 확대한다. 직교 카메라는 도트 격자에 스냅 + 서브픽셀 보정.
+struct FPixelArtComponent
+{
+	bool  bEnabled          = true;
+	int32 PixelSize         = 4;      // 도트 하나 = 화면 픽셀 N×N (정수 배율)
+	bool  bSnapCamera       = true;   // 직교 카메라 위치를 도트 격자에 맞춤 (이동 시 도트 반짝임 제거)
+	float OutlineStrength   = 0.6f;   // 깊이 경계(실루엣) 1px 외곽선 어둡기 (0 = 끔)
+	float HighlightStrength = 0.35f;  // 볼록 모서리 1px 밝기 (0 = 끔)
+	float DepthThreshold    = 25.0f;  // 외곽선 판정 깊이 차 (cm)
+	int32 ColorLevels       = 0;      // 채널당 색 단계 수 (0 = 양자화 끔, 2 이상)
+	float DitherStrength    = 0.5f;   // 양자화 Bayer 디더 세기 (0~1)
 };
 
 // Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.

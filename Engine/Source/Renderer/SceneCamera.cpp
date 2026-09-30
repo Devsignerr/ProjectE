@@ -38,6 +38,11 @@ bool FSceneCamera::ApplyToCamera(FScene& Scene, FEntity CameraEntity, float Aspe
 	const float NearZ = FMath::Max(Camera->NearZ, 0.01f);
 	const float FarZ  = FMath::Max(Camera->FarZ, NearZ + 1.0f);
 	OutCamera.SetPerspective(FMath::Clamp(Camera->FovYDegrees, 1.0f, 179.0f), AspectRatio, NearZ, FarZ);
+	if (Camera->bOrthographic)
+	{
+		// FOV는 원근 값 그대로 남겨 둔다 (스카이박스 방향 계산에 사용)
+		OutCamera.SetOrthographic(FMath::Max(Camera->OrthoHeight, 1.0f), AspectRatio, NearZ, FarZ);
+	}
 	OutCamera.SetPosition(Position);
 	OutCamera.SetRotation(Rotation.GetNormalized());
 	return true;

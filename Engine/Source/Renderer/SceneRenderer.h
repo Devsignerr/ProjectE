@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Math/Math.h"
+#include "Renderer/Camera.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
@@ -17,12 +18,12 @@
 #include <memory>
 #include <vector>
 
-class FCamera;
 class FD3D12RHI;
 struct FMaterial;
 class FResourceManager;
 class FScene;
 class FStaticMesh;
+struct FPixelArtComponent;
 
 struct FSceneRenderStats
 {
@@ -33,6 +34,7 @@ struct FSceneRenderStats
 };
 
 // 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
+// 씬에 활성 FPixelArtComponent가 있으면 저해상도(출력 ÷ 도트 크기)로 렌더 → 포스트 → 픽셀 아트 합성(최근접 확대)으로 Output.
 // 호출 순서: Rhi.BeginFrame() → Render(..., Output) → (오버레이/UI) → Rhi.EndFrame()
 // Render가 끝나면 Output RTV가 깊이 없이 바인딩된 상태로 남는다 (에디터 오버레이가 그 위에 그린다).
 class FSceneRenderer
@@ -43,7 +45,7 @@ public:
 
 	void Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 
-	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 출력과 같은 크기
+	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 출력과 같은 크기 (픽셀 아트 모드에서는 저해상도)
 	const FD3D12RenderTarget* GetSceneColor() const { return SceneColor.get(); }
 
 	FPostProcessSettings PostProcessSettings;
@@ -113,7 +115,17 @@ private:
 	static constexpr DXGI_FORMAT SceneColorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
 	void EnsureSceneColor(uint32 Width, uint32 Height);
+	void EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
+	                  const FRenderTargetDesc& Desc);
+	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
+	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height);
 	void DrawMeshes(FScene& Scene, const FCamera& Camera, const FPerFrameConstants& PerFrame);
+
+	// 픽셀 아트: 저해상도 렌더용 카메라(여백만큼 넓힌 투영 + 도트 격자 스냅)와 합성 인자
+	FCamera BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
+	                            uint32 SourceWidth, uint32 SourceHeight, FPixelArtCompositeParams& OutParams) const;
+
+	std::unique_ptr<FD3D12RenderTarget> PixelArtColor; // 픽셀 아트: 저해상도 톤매핑 결과 (선형, 부동소수점)
 
 	std::vector<FMeshDrawCommand> DrawCommands;
 	FSceneRenderStats             Stats;

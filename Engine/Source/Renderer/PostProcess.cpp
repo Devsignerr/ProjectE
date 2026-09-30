@@ -21,7 +21,7 @@ namespace
 		PostRoot_Luminance = 4, // u1
 	};
 
-	constexpr uint32 PostRootConstantCount = 8;
+	constexpr uint32 PostRootConstantCount = 16; // 패스별 상수 구조체는 이 크기 이하
 
 	struct FTonemapConstants
 	{
@@ -33,7 +33,7 @@ namespace
 		float  AutoExposureMaxEV = 6.0f;
 		float  Padding[2]        = {};
 	};
-	static_assert(sizeof(FTonemapConstants) == PostRootConstantCount * 4);
+	static_assert(sizeof(FTonemapConstants) <= PostRootConstantCount * 4 && sizeof(FTonemapConstants) % 4 == 0);
 
 	struct FBloomConstants
 	{
@@ -44,7 +44,7 @@ namespace
 		float  FilterRadius       = 1.0f;
 		float  Padding[2]         = {};
 	};
-	static_assert(sizeof(FBloomConstants) == PostRootConstantCount * 4);
+	static_assert(sizeof(FBloomConstants) <= PostRootConstantCount * 4 && sizeof(FBloomConstants) % 4 == 0);
 
 	struct FAutoExposureConstants
 	{
@@ -56,7 +56,38 @@ namespace
 		float AdaptationSpeed       = 0.0f;
 		float Padding[2]            = {};
 	};
-	static_assert(sizeof(FAutoExposureConstants) == PostRootConstantCount * 4);
+	static_assert(sizeof(FAutoExposureConstants) <= PostRootConstantCount * 4 && sizeof(FAutoExposureConstants) % 4 == 0);
+
+	// PixelArt.hlsl cbuffer와 1:1
+	struct FPixelArtConstants
+	{
+		float  OutputSize[2]     = {};
+		float  PixelSize         = 1.0f;
+		float  OutlineStrength   = 0.0f;
+		float  SubPixelOffset[2] = {};
+		float  HighlightStrength = 0.0f;
+		float  DepthThreshold    = 1.0f;
+		uint32 DitherOrigin[2]   = {};
+		float  ColorLevels       = 0.0f;
+		float  DitherStrength    = 0.0f;
+		uint32 bOrthographic     = 0;
+		float  NearZ             = 1.0f;
+		float  FarZ              = 2.0f;
+		float  PixelViewScale    = 1.0f;
+	};
+	static_assert(sizeof(FPixelArtConstants) == PostRootConstantCount * 4);
+
+	template <typename T>
+	void SetGraphicsConstants(ID3D12GraphicsCommandList* CommandList, const T& Constants)
+	{
+		CommandList->SetGraphicsRoot32BitConstants(PostRoot_Constants, sizeof(T) / 4, &Constants, 0);
+	}
+
+	template <typename T>
+	void SetComputeConstants(ID3D12GraphicsCommandList* CommandList, const T& Constants)
+	{
+		CommandList->SetComputeRoot32BitConstants(PostRoot_Constants, sizeof(T) / 4, &Constants, 0);
+	}
 
 	struct FPipelineInfo
 	{
@@ -138,7 +169,7 @@ bool FPostProcessor::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	}
 
 	// 가장 흔한 출력 포맷(sRGB 백버퍼/뷰포트)은 미리 만들어 초기화 실패를 조기에 드러낸다
-	return GetTonemapPipeline(FD3D12RHI::RenderTargetFormat) != nullptr;
+	return GetOutputPipeline(EOutputPass::Tonemap, FD3D12RHI::RenderTargetFormat) != nullptr;
 }
 
 void FPostProcessor::Shutdown()
@@ -154,7 +185,10 @@ void FPostProcessor::Shutdown()
 	BloomTargets.clear();
 	BloomSourceWidth  = 0;
 	BloomSourceHeight = 0;
-	TonemapPipelines.clear();
+	for (auto& PassPipelines : OutputPipelines)
+	{
+		PassPipelines.clear();
+	}
 	for (FD3D12PipelineState& Pipeline : Pipelines)
 	{
 		Pipeline.Shutdown();
@@ -223,10 +257,11 @@ bool FPostProcessor::CreatePipeline(EPipeline Pipeline, FD3D12PipelineState& Out
 	return OutPipeline.InitGraphics(Device, PsoDesc, Info.DebugName);
 }
 
-bool FPostProcessor::CreateTonemapPipeline(FD3D12PipelineState& OutPipeline, DXGI_FORMAT OutputFormat, bool bForceRecompile)
+bool FPostProcessor::CreateOutputPipeline(EOutputPass Pass, FD3D12PipelineState& OutPipeline, DXGI_FORMAT OutputFormat, bool bForceRecompile)
 {
+	const bool         bTonemap = Pass == EOutputPass::Tonemap;
 	FShaderCompileDesc VertexDesc;
-	VertexDesc.FileName   = L"Tonemap.hlsl";
+	VertexDesc.FileName   = bTonemap ? L"Tonemap.hlsl" : L"PixelArt.hlsl";
 	VertexDesc.EntryPoint = L"VSMain";
 	VertexDesc.Stage      = EShaderStage::Vertex;
 	FShaderCompileDesc PixelDesc = VertexDesc;
@@ -247,20 +282,22 @@ bool FPostProcessor::CreateTonemapPipeline(FD3D12PipelineState& OutPipeline, DXG
 	PsoDesc.RenderTargetFormats[0] = OutputFormat;
 	PsoDesc.CullMode               = D3D12_CULL_MODE_NONE;
 	PsoDesc.bDepthEnable           = false;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, L"TonemapPipeline");
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, bTonemap ? L"TonemapPipeline" : L"PixelArtCompositePipeline");
 }
 
-FD3D12PipelineState* FPostProcessor::GetTonemapPipeline(DXGI_FORMAT OutputFormat)
+FD3D12PipelineState* FPostProcessor::GetOutputPipeline(EOutputPass Pass, DXGI_FORMAT OutputFormat)
 {
-	if (auto Found = TonemapPipelines.find(OutputFormat); Found != TonemapPipelines.end())
+	auto& PassPipelines = OutputPipelines[static_cast<size_t>(Pass)];
+	if (auto Found = PassPipelines.find(OutputFormat); Found != PassPipelines.end())
 	{
 		return &Found->second;
 	}
-	FD3D12PipelineState& Pipeline = TonemapPipelines[OutputFormat];
-	if (!CreateTonemapPipeline(Pipeline, OutputFormat, false))
+	FD3D12PipelineState& Pipeline = PassPipelines[OutputFormat];
+	if (!CreateOutputPipeline(Pass, Pipeline, OutputFormat, false))
 	{
-		TonemapPipelines.erase(OutputFormat);
-		E_LOG(LogRenderer, Error, "톤매핑 파이프라인 생성 실패 (포맷 {})", static_cast<int32>(OutputFormat));
+		PassPipelines.erase(OutputFormat);
+		E_LOG(LogRenderer, Error, "{} 파이프라인 생성 실패 (포맷 {})", Pass == EOutputPass::Tonemap ? "톤매핑" : "픽셀 아트 합성",
+		      static_cast<int32>(OutputFormat));
 		return nullptr;
 	}
 	return &Pipeline;
@@ -282,18 +319,21 @@ bool FPostProcessor::ReloadShaders(bool bForceRecompile)
 		Rhi->DeferRelease(NewPipeline.Detach());
 	}
 
-	bool bForceTonemap = bForceRecompile;
-	for (auto& [Format, Pipeline] : TonemapPipelines)
+	for (size_t PassIndex = 0; PassIndex < static_cast<size_t>(EOutputPass::Count); ++PassIndex)
 	{
-		FD3D12PipelineState NewPipeline;
-		if (!CreateTonemapPipeline(NewPipeline, Format, bForceTonemap))
+		bool bForcePass = bForceRecompile;
+		for (auto& [Format, Pipeline] : OutputPipelines[PassIndex])
 		{
-			bAllOk = false;
-			continue;
+			FD3D12PipelineState NewPipeline;
+			if (!CreateOutputPipeline(static_cast<EOutputPass>(PassIndex), NewPipeline, Format, bForcePass))
+			{
+				bAllOk = false;
+				continue;
+			}
+			Pipeline.Swap(NewPipeline);
+			Rhi->DeferRelease(NewPipeline.Detach());
+			bForcePass = false; // 같은 셰이더를 포맷마다 다시 쿠킹하지 않는다
 		}
-		Pipeline.Swap(NewPipeline);
-		Rhi->DeferRelease(NewPipeline.Detach());
-		bForceTonemap = false; // 같은 셰이더를 포맷마다 다시 쿠킹하지 않는다
 	}
 	return bAllOk;
 }
@@ -407,7 +447,7 @@ void FPostProcessor::RenderBloom(ID3D12GraphicsCommandList* CommandList, const F
 		Constants.Knee               = FMath::Clamp(Settings.BloomKnee, 0.0f, 1.0f);
 
 		BloomTargets[Level]->Begin(CommandList, nullptr); // 전체를 덮어쓰므로 클리어 불필요
-		CommandList->SetGraphicsRoot32BitConstants(PostRoot_Constants, PostRootConstantCount, &Constants, 0);
+		SetGraphicsConstants(CommandList, Constants);
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, Source.Gpu);
 		DrawFullscreen(CommandList);
 		BloomTargets[Level]->End(CommandList);
@@ -425,7 +465,7 @@ void FPostProcessor::RenderBloom(ID3D12GraphicsCommandList* CommandList, const F
 		Constants.FilterRadius       = 1.0f;
 
 		BloomTargets[Level - 1]->Begin(CommandList, nullptr); // 다운샘플 결과 위에 누적
-		CommandList->SetGraphicsRoot32BitConstants(PostRoot_Constants, PostRootConstantCount, &Constants, 0);
+		SetGraphicsConstants(CommandList, Constants);
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, Source.GetSrv().Gpu);
 		DrawFullscreen(CommandList);
 		BloomTargets[Level - 1]->End(CommandList);
@@ -451,7 +491,7 @@ void FPostProcessor::RenderAutoExposure(ID3D12GraphicsCommandList* CommandList, 
 	SetFullscreenViewport(CommandList, HistogramWidth, HistogramHeight);
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(Pipelines[static_cast<size_t>(EPipeline::Histogram)].Get());
-	CommandList->SetGraphicsRoot32BitConstants(PostRoot_Constants, PostRootConstantCount, &Constants, 0);
+	SetGraphicsConstants(CommandList, Constants);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, SceneColor.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Histogram, HistogramUav.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Luminance, LuminanceUav.Gpu);
@@ -463,7 +503,7 @@ void FPostProcessor::RenderAutoExposure(ID3D12GraphicsCommandList* CommandList, 
 	// 2) 평균 + 시간 적응 (히스토그램은 컴퓨트가 다시 0으로 비운다)
 	CommandList->SetComputeRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(Pipelines[static_cast<size_t>(EPipeline::AverageLuminance)].Get());
-	CommandList->SetComputeRoot32BitConstants(PostRoot_Constants, PostRootConstantCount, &Constants, 0);
+	SetComputeConstants(CommandList, Constants);
 	CommandList->SetComputeRootDescriptorTable(PostRoot_Histogram, HistogramUav.Gpu);
 	CommandList->SetComputeRootDescriptorTable(PostRoot_Luminance, LuminanceUav.Gpu);
 	CommandList->Dispatch(1, 1, 1);
@@ -477,7 +517,7 @@ void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12
 {
 	E_CHECKF(Output.IsValid(), "포스트 프로세스 출력 대상이 유효하지 않습니다");
 
-	FD3D12PipelineState* TonemapPipeline = GetTonemapPipeline(Output.Format);
+	FD3D12PipelineState* TonemapPipeline = GetOutputPipeline(EOutputPass::Tonemap, Output.Format);
 	if (TonemapPipeline == nullptr)
 	{
 		return;
@@ -518,7 +558,7 @@ void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12
 	SetFullscreenViewport(CommandList, Output.Width, Output.Height);
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(TonemapPipeline->Get());
-	CommandList->SetGraphicsRoot32BitConstants(PostRoot_Constants, PostRootConstantCount, &Constants, 0);
+	SetGraphicsConstants(CommandList, Constants);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, HdrSceneColor.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source2, BloomSource.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Histogram, HistogramUav.Gpu);
@@ -526,4 +566,54 @@ void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12
 	DrawFullscreen(CommandList);
 
 	TransitionExposureBuffers(CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON);
+}
+
+void FPostProcessor::RenderPixelArtComposite(ID3D12GraphicsCommandList* CommandList, const FD3D12RenderTarget& SourceColor,
+                                             const FD3D12RenderTarget& SourceDepth, const FRenderOutput& Output,
+                                             const FPixelArtCompositeParams& Params)
+{
+	E_CHECKF(Output.IsValid(), "픽셀 아트 합성 출력 대상이 유효하지 않습니다");
+	E_CHECKF(SourceDepth.GetDesc().bWithDepth, "픽셀 아트 합성에는 깊이가 있는 소스가 필요합니다");
+
+	FD3D12PipelineState* Pipeline = GetOutputPipeline(EOutputPass::PixelArtComposite, Output.Format);
+	if (Pipeline == nullptr)
+	{
+		return;
+	}
+
+	FPixelArtConstants Constants;
+	Constants.OutputSize[0]     = static_cast<float>(Output.Width);
+	Constants.OutputSize[1]     = static_cast<float>(Output.Height);
+	Constants.PixelSize         = static_cast<float>(FMath::Max(Params.PixelSize, 1u));
+	Constants.OutlineStrength   = FMath::Clamp(Params.OutlineStrength, 0.0f, 1.0f);
+	Constants.SubPixelOffset[0] = Params.SubPixelOffset.X;
+	Constants.SubPixelOffset[1] = Params.SubPixelOffset.Y;
+	Constants.HighlightStrength = FMath::Max(Params.HighlightStrength, 0.0f);
+	Constants.DepthThreshold    = FMath::Max(Params.DepthThreshold, 0.01f);
+	Constants.DitherOrigin[0]   = Params.DitherOrigin[0];
+	Constants.DitherOrigin[1]   = Params.DitherOrigin[1];
+	Constants.ColorLevels       = Params.ColorLevels >= 2 ? static_cast<float>(Params.ColorLevels) : 0.0f;
+	Constants.DitherStrength    = FMath::Clamp(Params.DitherStrength, 0.0f, 1.0f);
+	Constants.bOrthographic     = Params.bOrthographic ? 1u : 0u;
+	Constants.NearZ             = Params.NearZ;
+	Constants.FarZ              = Params.FarZ;
+	Constants.PixelViewScale    = Params.PixelViewScale;
+
+	// 깊이는 평소 DEPTH_WRITE 상태로 유지되므로 읽는 동안만 셰이더 리소스로 전이
+	const D3D12_RESOURCE_BARRIER ToRead =
+		MakeTransitionBarrier(SourceDepth.GetDepthResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	CommandList->ResourceBarrier(1, &ToRead);
+
+	CommandList->OMSetRenderTargets(1, &Output.Rtv, FALSE, nullptr);
+	SetFullscreenViewport(CommandList, Output.Width, Output.Height);
+	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	CommandList->SetPipelineState(Pipeline->Get());
+	SetGraphicsConstants(CommandList, Constants);
+	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, SourceColor.GetSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source2, SourceDepth.GetDepthSrv().Gpu);
+	DrawFullscreen(CommandList);
+
+	const D3D12_RESOURCE_BARRIER ToWrite =
+		MakeTransitionBarrier(SourceDepth.GetDepthResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	CommandList->ResourceBarrier(1, &ToWrite);
 }

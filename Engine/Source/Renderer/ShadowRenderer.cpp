@@ -237,9 +237,14 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 	float                SliceNear = NearZ;
 	for (uint32 Index = 0; Index < CascadeCount; ++Index)
 	{
-		const auto Corners = ShadowMath::ComputeFrustumSliceCorners(Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetRightVector(),
-		                                                            Camera.GetUpVector(), FMath::DegreesToRadians(Camera.GetFovYDegrees()),
-		                                                            Camera.GetAspectRatio(), SliceNear, Splits[Index]);
+		const float HalfHeight = Camera.GetOrthoHeight() * 0.5f;
+		const auto  Corners    = Camera.IsOrthographic()
+		                             ? ShadowMath::ComputeOrthoSliceCorners(Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetRightVector(),
+		                                                                    Camera.GetUpVector(), HalfHeight * Camera.GetAspectRatio(), HalfHeight,
+		                                                                    SliceNear, Splits[Index])
+		                             : ShadowMath::ComputeFrustumSliceCorners(Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetRightVector(),
+		                                                                      Camera.GetUpVector(), FMath::DegreesToRadians(Camera.GetFovYDegrees()),
+		                                                                      Camera.GetAspectRatio(), SliceNear, Splits[Index]);
 		Cascades[Index] = ShadowMath::ComputeCascade(Corners, LightDirection, Resolution, Settings.CasterExtension);
 		Constants.CascadeViewProjection[Index] = Cascades[Index].ViewProjection;
 		Constants.CascadeSplits[Index]         = Splits[Index];

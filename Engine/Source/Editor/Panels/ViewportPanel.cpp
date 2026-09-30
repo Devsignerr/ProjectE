@@ -143,7 +143,7 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 
 			// 툴바 오버레이
 			ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
-			DrawToolbar();
+			DrawToolbar(Context);
 
 			if (bPick && !ImGui::IsAnyItemHovered())
 			{
@@ -229,7 +229,25 @@ void FViewportPanel::RenderGrid(FEditorContext& Context)
 	Grid->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv());
 }
 
-void FViewportPanel::DrawToolbar()
+void FViewportPanel::ToggleOrthographic(FCamera& Camera)
+{
+	if (Camera.IsOrthographic())
+	{
+		Camera.SetPerspectiveMode();
+		return;
+	}
+	// 지금 보이는 크기를 유지: 아래를 보고 있으면 바닥(Z=0)까지, 아니면 10m를 초점 거리로
+	const FVector3 Forward       = Camera.GetForwardVector();
+	float          FocusDistance = 1000.0f;
+	if (Forward.Z < -0.05f && Camera.GetPosition().Z > 0.0f)
+	{
+		FocusDistance = FMath::Clamp(-Camera.GetPosition().Z / Forward.Z, 100.0f, 20000.0f);
+	}
+	Camera.SetOrthographic(FEditorCameraState::ComputeMatchingOrthoHeight(Camera.GetFovYDegrees(), FocusDistance), Camera.GetAspectRatio(),
+	                       Camera.GetNearZ(), Camera.GetFarZ());
+}
+
+void FViewportPanel::DrawToolbar(FEditorContext& Context)
 {
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
 	ImGui::BeginGroup();
@@ -284,6 +302,17 @@ void FViewportPanel::DrawToolbar()
 	};
 	ToggleButton(ICON_FA_BORDER_ALL, bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
 	ToggleButton(ICON_FA_MAGNET, Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
+
+	// 편집 카메라 투영 (플레이 중에는 게임 카메라 설정을 따른다)
+	ImGui::SameLine();
+	ImGui::BeginDisabled(Context.bPlaying);
+	const bool bOrthographic = Context.Camera->IsOrthographic();
+	if (ImGui::Button(bOrthographic ? ICON_FA_VECTOR_SQUARE " 직교" : ICON_FA_VIDEO " 원근"))
+	{
+		ToggleOrthographic(*Context.Camera);
+	}
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip("편집 카메라 투영 전환 (직교: 휠로 확대/축소)");
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##SnapOptions", ImGuiDir_Down))
 	{
@@ -320,7 +349,7 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 		return;
 	}
 
-	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetOrthographic(Context.Camera->IsOrthographic());
 	ImGuizmo::SetDrawlist();
 	ImGuizmo::SetRect(ImagePosition.X, ImagePosition.Y, ImageSize.X, ImageSize.Y);
 
@@ -475,6 +504,11 @@ void FViewportPanel::FocusSelection(FEditorContext& Context)
 	}
 	FCamera& Camera = *Context.Camera;
 	Camera.SetPosition(FEditorCameraState::ComputeFramingPosition(Bounds, Camera.GetForwardVector(), Camera.GetFovYDegrees(), Camera.GetAspectRatio()));
+	if (Camera.IsOrthographic())
+	{
+		Camera.SetOrthographic(FEditorCameraState::ComputeFramingOrthoHeight(Bounds, Camera.GetAspectRatio()), Camera.GetAspectRatio(),
+		                       Camera.GetNearZ(), Camera.GetFarZ());
+	}
 }
 
 FEntity FViewportPanel::RaycastMesh(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize, FRay& OutRay, float& OutDistance) const

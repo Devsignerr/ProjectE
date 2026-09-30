@@ -1,0 +1,316 @@
+{
+  "Entities": [
+    {
+      "Name": "PixelArtSettings",
+      "Parent": -1,
+      "Components": {
+        "PixelArtComponent": {
+          "Enabled": true,
+          "PixelSize": 4,
+          "SnapCamera": true,
+          "OutlineStrength": 0.6,
+          "HighlightStrength": 0.35,
+          "DepthThreshold": 25.0,
+          "ColorLevels": 0,
+          "DitherStrength": 0.5
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.95,
+            0.88
+          ],
+          "Intensity": 3.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            500
+          ],
+          "Rotation": [
+            -0.109381654946615,
+            0.40821789367673483,
+            0.23456971600980447,
+            0.875426098065593
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 5000.0,
+          "Primary": true,
+          "Orthographic": true,
+          "OrthoHeight": 700.0
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CameraPan.lua",
+          "PropertyOverrides": ""
+        },
+        "TransformComponent": {
+          "Position": [
+            -1224.7448713915892,
+            -1224.7448713915892,
+            1060.0
+          ],
+          "Rotation": [
+            -0.09904576054128762,
+            0.23911761839433449,
+            0.3696438106143861,
+            0.8923991008325228
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            -10
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            12,
+            12,
+            0.2
+          ]
+        }
+      }
+    },
+    {
+      "Name": "CrateA",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -150,
+            -120,
+            50
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "Name": "CrateB",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -150,
+            -20,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Pillar",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            180,
+            -180,
+            100
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            2.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Ramp",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            160,
+            140,
+            30
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.6,
+            1.0,
+            0.6
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Ball",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -40,
+            180,
+            40
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fox",
+      "Parent": -1,
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            40,
+            -40,
+            0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.984807753012208,
+            -0.1736481776669303
+          ],
+          "Scale": [
+            0.012,
+            0.012,
+            0.012
+          ]
+        }
+      }
+    }
+  ],
+  "Version": 1
+}

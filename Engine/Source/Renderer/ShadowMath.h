@@ -49,6 +49,27 @@ namespace ShadowMath
 		return Corners;
 	}
 
+	// 직교 카메라 상자의 [SliceNear, SliceFar] 구간 8개 꼭짓점 (월드). HalfWidth/HalfHeight = 화면 절반 크기(cm)
+	inline std::array<FVector3, 8> ComputeOrthoSliceCorners(const FVector3& Position, const FVector3& Forward, const FVector3& Right,
+	                                                       const FVector3& Up, float HalfWidth, float HalfHeight, float SliceNear,
+	                                                       float SliceFar)
+	{
+		std::array<FVector3, 8> Corners{};
+		const float             Depths[2] = { SliceNear, SliceFar };
+		int32                   Out       = 0;
+		for (float Depth : Depths)
+		{
+			const FVector3 Center = Position + Forward * Depth;
+			const FVector3 HalfX  = Right * HalfWidth;
+			const FVector3 HalfY  = Up * HalfHeight;
+			Corners[Out++]        = Center - HalfX - HalfY;
+			Corners[Out++]        = Center + HalfX - HalfY;
+			Corners[Out++]        = Center - HalfX + HalfY;
+			Corners[Out++]        = Center + HalfX + HalfY;
+		}
+		return Corners;
+	}
+
 	struct FCascade
 	{
 		FMatrix4x4 ViewProjection; // 월드 → 섀도우 클립 (행벡터)

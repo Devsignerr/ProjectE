@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
@@ -41,6 +42,23 @@ struct FPostProcessSettings
 	float BloomIntensity = 0.08f;
 };
 
+// 픽셀 아트 합성 입력 (FSceneRenderer가 FPixelArtComponent + 카메라로 채운다). 식은 PixelArtMath.h / PixelArt.hlsl
+struct FPixelArtCompositeParams
+{
+	uint32   PixelSize = 1;
+	FVector2 SubPixelOffset;            // 소스 텍셀 단위
+	uint32   DitherOrigin[2]   = {};    // 0~3, 월드 격자 기준 디더 무늬 원점
+	float    OutlineStrength   = 0.0f;
+	float    HighlightStrength = 0.0f;
+	float    DepthThreshold    = 25.0f; // cm
+	int32    ColorLevels       = 0;
+	float    DitherStrength    = 0.0f;
+	bool     bOrthographic     = false;
+	float    NearZ             = 10.0f;
+	float    FarZ              = 100000.0f;
+	float    PixelViewScale    = 1.0f;  // 직교: 텍셀 월드 크기(cm), 원근: 깊이 1당 텍셀 크기
+};
+
 // HDR 씬 컬러 → 출력 대상(LDR, sRGB RTV).
 //   [블룸] 13탭 다운샘플 체인(첫 단계 Karis 평균 + 임계값) → 텐트 업샘플 가산 합성 (절반 해상도부터 최대 6단계)
 //   [자동 노출] 1/4 해상도 로그 휘도 히스토그램(픽셀 셰이더 UAV) → 컴퓨트 평균 + 시간 적응 (GPU 버퍼에 유지)
@@ -59,6 +77,11 @@ public:
 	void Render(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& HdrSceneColor, const FRenderOutput& Output,
 	            const FPostProcessSettings& Settings);
 
+	// 픽셀 아트: 저해상도 톤매핑 결과(SourceColor, 선형) + 저해상도 깊이(SourceDepth의 깊이 버퍼)를
+	// 서브픽셀 보정 최근접 확대 + 1px 외곽선/모서리 하이라이트 + 양자화/디더로 Output에 합성한다
+	void RenderPixelArtComposite(ID3D12GraphicsCommandList* CommandList, const FD3D12RenderTarget& SourceColor,
+	                             const FD3D12RenderTarget& SourceDepth, const FRenderOutput& Output, const FPixelArtCompositeParams& Params);
+
 	// 핫 리로드: 모든 PSO를 새 셰이더로 재생성 (하나라도 실패하면 해당 PSO는 기존 유지, false)
 	bool ReloadShaders(bool bForceRecompile);
 
@@ -75,8 +98,16 @@ private:
 	};
 
 	bool CreatePipeline(EPipeline Pipeline, FD3D12PipelineState& OutPipeline, bool bForceRecompile);
-	bool CreateTonemapPipeline(FD3D12PipelineState& OutPipeline, DXGI_FORMAT OutputFormat, bool bForceRecompile);
-	FD3D12PipelineState* GetTonemapPipeline(DXGI_FORMAT OutputFormat);
+	// 출력 포맷마다 PSO가 필요한 풀스크린 패스
+	enum class EOutputPass : uint8
+	{
+		Tonemap,
+		PixelArtComposite,
+		Count
+	};
+
+	bool CreateOutputPipeline(EOutputPass Pass, FD3D12PipelineState& OutPipeline, DXGI_FORMAT OutputFormat, bool bForceRecompile);
+	FD3D12PipelineState* GetOutputPipeline(EOutputPass Pass, DXGI_FORMAT OutputFormat);
 
 	bool CreateExposureBuffers();
 	void EnsureBloomTargets(uint32 Width, uint32 Height);
@@ -92,7 +123,7 @@ private:
 
 	FD3D12RootSignature                                   RootSignature; // 모든 포스트 패스 공용 (그래픽스/컴퓨트)
 	FD3D12PipelineState                                   Pipelines[static_cast<size_t>(EPipeline::Count)];
-	std::unordered_map<DXGI_FORMAT, FD3D12PipelineState> TonemapPipelines; // 출력 포맷별
+	std::unordered_map<DXGI_FORMAT, FD3D12PipelineState> OutputPipelines[static_cast<size_t>(EOutputPass::Count)]; // 패스·출력 포맷별
 
 	// 블룸 레벨 (0 = 절반 해상도)
 	std::vector<std::unique_ptr<FD3D12RenderTarget>> BloomTargets;

@@ -20,6 +20,16 @@ void FCamera::SetPerspective(float InFovYDegrees, float InAspectRatio, float InN
 	AspectRatio = InAspectRatio;
 	NearZ       = InNearZ;
 	FarZ        = InFarZ;
+	bOrthographic = false;
+}
+
+void FCamera::SetOrthographic(float InOrthoHeight, float InAspectRatio, float InNearZ, float InFarZ)
+{
+	OrthoHeight   = InOrthoHeight;
+	AspectRatio   = InAspectRatio;
+	NearZ         = InNearZ;
+	FarZ          = InFarZ;
+	bOrthographic = true;
 }
 
 FMatrix4x4 FCamera::GetViewMatrix() const
@@ -29,5 +39,9 @@ FMatrix4x4 FCamera::GetViewMatrix() const
 
 FMatrix4x4 FCamera::GetProjectionMatrix() const
 {
+	if (bOrthographic)
+	{
+		return FMatrix4x4::MakeOrthographic(OrthoHeight * AspectRatio, OrthoHeight, NearZ, FarZ);
+	}
 	return FMatrix4x4::MakePerspectiveFov(FMath::DegreesToRadians(FovYDegrees), AspectRatio, NearZ, FarZ);
 }

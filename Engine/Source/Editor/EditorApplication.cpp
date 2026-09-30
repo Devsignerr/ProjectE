@@ -1047,6 +1047,10 @@ void FEditorApplication::LoadEditorCamera()
 	Camera.SetRotation(State.Rotation);
 	CameraController.MoveSpeed = State.MoveSpeed;
 	CameraController.SyncFromCamera(Camera);
+	if (State.bOrthographic)
+	{
+		Camera.SetOrthographic(State.OrthoHeight, Camera.GetAspectRatio(), Camera.GetNearZ(), Camera.GetFarZ());
+	}
 	E_LOG(LogEditor, Log, "에디터 카메라 복원: ({:.0f}, {:.0f}, {:.0f})", State.Position.X, State.Position.Y, State.Position.Z);
 }
 
@@ -1055,7 +1059,9 @@ void FEditorApplication::SaveEditorCamera() const
 	FEditorCameraState State;
 	State.Position  = Camera.GetPosition();
 	State.Rotation  = Camera.GetRotation();
-	State.MoveSpeed = CameraController.MoveSpeed;
+	State.MoveSpeed     = CameraController.MoveSpeed;
+	State.bOrthographic = Camera.IsOrthographic();
+	State.OrthoHeight   = Camera.GetOrthoHeight();
 	State.Save(GetEditorCameraPath());
 }
 

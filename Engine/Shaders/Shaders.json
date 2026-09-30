@@ -8,6 +8,8 @@
     { "File": "GenerateMips.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "Tonemap.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "Tonemap.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "PixelArt.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "PixelArt.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "Outline.hlsl", "Entry": "MaskVS", "Stage": "Vertex" },
     { "File": "Outline.hlsl", "Entry": "MaskPS", "Stage": "Pixel" },
     { "File": "Outline.hlsl", "Entry": "MaskSkinnedVS", "Stage": "Vertex" },

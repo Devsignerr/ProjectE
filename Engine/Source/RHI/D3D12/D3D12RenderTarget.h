@@ -78,6 +78,9 @@ public:
 	ID3D12Resource*               GetColorResource() const { return ColorResource.Get(); }
 	// 깊이 버퍼 DSV (bWithDepth일 때만 유효). 상태는 항상 DEPTH_WRITE — 깊이 쓰기 없이 테스트만 하는 오버레이에 재사용 가능
 	D3D12_CPU_DESCRIPTOR_HANDLE   GetDsv() const { return DepthBuffer.GetDepthStencilView(); }
+	// 깊이 SRV (R32_FLOAT, bWithDepth일 때만 유효). 읽기 전후로 깊이 리소스를 DEPTH_WRITE ↔ PIXEL_SHADER_RESOURCE 전이해야 한다
+	const FD3D12DescriptorHandle& GetDepthSrv() const { return DepthSrv; }
+	ID3D12Resource*               GetDepthResource() const { return DepthBuffer.GetResource(); }
 	const FRenderTargetDesc&      GetDesc() const { return Desc; }
 	uint32                        GetWidth() const { return Width; }
 	uint32                        GetHeight() const { return Height; }
@@ -87,6 +90,7 @@ private:
 	ComPtr<ID3D12Resource>     ColorResource;
 	FD3D12DescriptorHeap       RtvHeap;
 	FD3D12DescriptorHandle     Srv;
+	FD3D12DescriptorHandle     DepthSrv;
 	FD3D12DescriptorAllocator* SrvAllocator = nullptr;
 	FD3D12DepthBuffer          DepthBuffer;
 	FRenderTargetDesc          Desc;

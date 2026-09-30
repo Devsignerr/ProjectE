@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 
+class FCamera;
 class FD3D12RenderTarget;
 class FEditorGrid;
 class FSelectionOutline;
@@ -55,7 +56,9 @@ public:
 private:
 	using EGizmoOperation = ETransformTool;
 
-	void DrawToolbar();
+	void DrawToolbar(FEditorContext& Context);
+	// 편집 카메라 원근 ↔ 직교 전환 (플레이 중에는 게임 카메라가 쓰이므로 호출하지 않는다)
+	void ToggleOrthographic(FCamera& Camera);
 	void RenderGrid(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);

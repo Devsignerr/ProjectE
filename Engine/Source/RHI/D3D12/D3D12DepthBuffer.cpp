@@ -49,7 +49,7 @@ bool FD3D12DepthBuffer::Resize(ID3D12Device* Device, uint32 InWidth, uint32 InHe
 bool FD3D12DepthBuffer::CreateResource(ID3D12Device* Device)
 {
 	const D3D12_HEAP_PROPERTIES DefaultHeap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	const D3D12_RESOURCE_DESC   TextureDesc = MakeTexture2DDesc(Width, Height, Format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+	const D3D12_RESOURCE_DESC   TextureDesc = MakeTexture2DDesc(Width, Height, ResourceFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
 	// 클리어 값을 리소스와 일치시키면 클리어가 빠른 경로를 탄다
 	D3D12_CLEAR_VALUE ClearValue{};

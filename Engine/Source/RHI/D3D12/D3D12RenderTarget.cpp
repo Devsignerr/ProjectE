@@ -52,7 +52,22 @@ bool FD3D12RenderTarget::Init(FD3D12Device& Device, FD3D12DescriptorAllocator& I
 	Srv = SrvAllocator->Allocate();
 	D3DDevice->CreateShaderResourceView(ColorResource.Get(), &SrvDesc, Srv.Cpu);
 
-	return !Desc.bWithDepth || DepthBuffer.Init(D3DDevice, Width, Height);
+	if (!Desc.bWithDepth)
+	{
+		return true;
+	}
+	if (!DepthBuffer.Init(D3DDevice, Width, Height))
+	{
+		return false;
+	}
+	D3D12_SHADER_RESOURCE_VIEW_DESC DepthSrvDesc{};
+	DepthSrvDesc.Format                  = FD3D12DepthBuffer::SrvFormat;
+	DepthSrvDesc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+	DepthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	DepthSrvDesc.Texture2D.MipLevels     = 1;
+	DepthSrv = SrvAllocator->Allocate();
+	D3DDevice->CreateShaderResourceView(DepthBuffer.GetResource(), &DepthSrvDesc, DepthSrv.Cpu);
+	return true;
 }
 
 void FD3D12RenderTarget::Shutdown()
@@ -60,6 +75,7 @@ void FD3D12RenderTarget::Shutdown()
 	if (SrvAllocator != nullptr)
 	{
 		SrvAllocator->Free(Srv);
+		SrvAllocator->Free(DepthSrv);
 		SrvAllocator = nullptr;
 	}
 	DepthBuffer.Shutdown();
@@ -73,7 +89,9 @@ void FD3D12RenderTarget::ShutdownDeferred(FD3D12RHI& Rhi)
 {
 	Rhi.DeferRelease(ColorResource);
 	Rhi.DeferFreeDescriptor(Srv);
+	Rhi.DeferFreeDescriptor(DepthSrv);
 	Srv          = FD3D12DescriptorHandle{};
+	DepthSrv     = FD3D12DescriptorHandle{};
 	SrvAllocator = nullptr;
 	DepthBuffer.ShutdownDeferred(Rhi);
 	RtvHeap.Shutdown();

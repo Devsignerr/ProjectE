@@ -76,6 +76,19 @@ void RegisterSceneTypes()
 		.Property(&FCameraComponent::NearZ, "NearZ", "근평면 (cm)").Range(0.1f, 10000.0f, 0.5f)
 		.Property(&FCameraComponent::FarZ, "FarZ", "원평면 (cm)").Range(100.0f, 10000000.0f, 100.0f)
 		.Property(&FCameraComponent::bPrimary, "Primary", "주 카메라")
+		.Property(&FCameraComponent::bOrthographic, "Orthographic", "직교 투영")
+		.Property(&FCameraComponent::OrthoHeight, "OrthoHeight", "직교 높이 (cm)").Range(1.0f, 100000.0f, 1.0f)
+		.AsComponent();
+
+	Registry.RegisterType<FPixelArtComponent>("PixelArtComponent", "픽셀 아트")
+		.Property(&FPixelArtComponent::bEnabled, "Enabled", "사용")
+		.Property(&FPixelArtComponent::PixelSize, "PixelSize", "도트 크기 (px)").Range(1.0f, 16.0f)
+		.Property(&FPixelArtComponent::bSnapCamera, "SnapCamera", "카메라 도트 스냅")
+		.Property(&FPixelArtComponent::OutlineStrength, "OutlineStrength", "외곽선").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FPixelArtComponent::HighlightStrength, "HighlightStrength", "모서리 하이라이트").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FPixelArtComponent::DepthThreshold, "DepthThreshold", "외곽선 깊이 차 (cm)").Range(0.1f, 1000.0f, 0.5f)
+		.Property(&FPixelArtComponent::ColorLevels, "ColorLevels", "색 단계 (0 = 끔)").Range(0.0f, 32.0f)
+		.Property(&FPixelArtComponent::DitherStrength, "DitherStrength", "디더").Range(0.0f, 1.0f, 0.01f)
 		.AsComponent();
 
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다

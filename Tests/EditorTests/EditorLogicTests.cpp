@@ -437,6 +437,17 @@ E_TEST(EditorCamera_JsonRoundTrip)
 	E_EXPECT_EQUALS(Loaded.Position, State.Position, Tol);
 	E_EXPECT_TRUE(Loaded.Rotation.Equals(State.Rotation, 1.0e-4f));
 	E_EXPECT_NEAR(Loaded.MoveSpeed, 1234.0f, Tol);
+	E_EXPECT_FALSE(Loaded.bOrthographic);
+
+	// 직교 상태도 저장/복원, 범위 밖 직교 높이는 제한
+	State.bOrthographic = true;
+	State.OrthoHeight   = 750.0f;
+	E_EXPECT_TRUE(Loaded.FromJsonString(State.ToJsonString()));
+	E_EXPECT_TRUE(Loaded.bOrthographic);
+	E_EXPECT_NEAR(Loaded.OrthoHeight, 750.0f, Tol);
+	FEditorCameraState Clamped;
+	E_EXPECT_TRUE(Clamped.FromJsonString(R"({"Position":[1,2,3],"Rotation":[0,0,0,1],"OrthoHeight":0.001})"));
+	E_EXPECT_NEAR(Clamped.OrthoHeight, FEditorCameraState::MinOrthoHeight, Tol);
 
 	// 잘못된 입력은 거부하고 값을 유지한다
 	E_EXPECT_FALSE(Loaded.FromJsonString("not json"));
@@ -528,4 +539,16 @@ E_TEST(OrbitCamera_FrameAndPan)
 	Orbit.Pan(50.0f, 0.0f, 60.0f, 100.0f);
 	const float HalfHeightWorld = Orbit.Distance * FMath::Tan(FMath::DegreesToRadians(30.0f));
 	E_EXPECT_NEAR(FVector3::Dot(Orbit.Target - Before, Right), -HalfHeightWorld, 0.1f);
+}
+
+E_TEST(EditorCamera_OrthoHeightHelpers)
+{
+	// 초점 거리 1000cm, 시야각 90° → 화면 세로 2000cm
+	E_EXPECT_NEAR(FEditorCameraState::ComputeMatchingOrthoHeight(90.0f, 1000.0f), 2000.0f, 0.5f);
+
+	// 경계 구 반지름 173.2 → 지름 × 1.1, 세로로 긴 화면(종횡비 0.5)은 가로 기준으로 두 배
+	const FBox  Bounds(FVector3(-100.0f), FVector3(100.0f));
+	const float Radius = FVector3(100.0f).Length();
+	E_EXPECT_NEAR(FEditorCameraState::ComputeFramingOrthoHeight(Bounds, 16.0f / 9.0f), Radius * 2.2f, 0.5f);
+	E_EXPECT_NEAR(FEditorCameraState::ComputeFramingOrthoHeight(Bounds, 0.5f), Radius * 4.4f, 0.5f);
 }

@@ -37,6 +37,8 @@ std::string FEditorCameraState::ToJsonString() const
 	Document["Position"]  = json::array({ Position.X, Position.Y, Position.Z });
 	Document["Rotation"]  = json::array({ Rotation.X, Rotation.Y, Rotation.Z, Rotation.W });
 	Document["MoveSpeed"] = MoveSpeed;
+	Document["Orthographic"] = bOrthographic;
+	Document["OrthoHeight"]  = OrthoHeight;
 	return Document.dump(2);
 }
 
@@ -65,6 +67,14 @@ bool FEditorCameraState::FromJsonString(const std::string& Json)
 	if (const auto Found = Document.find("MoveSpeed"); Found != Document.end() && Found->is_number())
 	{
 		MoveSpeed = FMath::Max(Found->get<float>(), 1.0f);
+	}
+	if (const auto Found = Document.find("Orthographic"); Found != Document.end() && Found->is_boolean())
+	{
+		bOrthographic = Found->get<bool>();
+	}
+	if (const auto Found = Document.find("OrthoHeight"); Found != Document.end() && Found->is_number())
+	{
+		OrthoHeight = FMath::Clamp(Found->get<float>(), MinOrthoHeight, MaxOrthoHeight);
 	}
 	return true;
 }
@@ -111,4 +121,18 @@ FVector3 FEditorCameraState::ComputeFramingPosition(const FBox& Bounds, const FV
 	const float Distance  = Radius / FMath::Sin(HalfFov);
 	const FVector3 Direction = Forward.GetNormalized();
 	return Center - Direction * Distance;
+}
+
+float FEditorCameraState::ComputeFramingOrthoHeight(const FBox& Bounds, float AspectRatio)
+{
+	const float Radius = FMath::Max(Bounds.GetExtent().Length(), 50.0f);
+	// 세로가 좁으면 지름 × 여유, 가로가 좁으면(종횡비 < 1) 가로 기준으로 늘린다
+	const float Height = Radius * 2.2f * FMath::Max(1.0f, 1.0f / FMath::Max(AspectRatio, 0.01f));
+	return FMath::Clamp(Height, MinOrthoHeight, MaxOrthoHeight);
+}
+
+float FEditorCameraState::ComputeMatchingOrthoHeight(float FovYDegrees, float FocusDistance)
+{
+	const float Height = 2.0f * FMath::Tan(FMath::DegreesToRadians(FovYDegrees) * 0.5f) * FMath::Max(FocusDistance, 1.0f);
+	return FMath::Clamp(Height, MinOrthoHeight, MaxOrthoHeight);
 }

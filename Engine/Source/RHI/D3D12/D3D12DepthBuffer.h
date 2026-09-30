@@ -3,12 +3,14 @@
 #include "RHI/D3D12/D3D12Common.h"
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 
-// 스왑체인 크기에 맞춘 깊이 버퍼 (D32_FLOAT)
+// 스왑체인 크기에 맞춘 깊이 버퍼 (D32_FLOAT, 리소스는 R32_TYPELESS라 R32_FLOAT SRV 생성 가능)
 class FD3D12DepthBuffer
 {
 public:
-	static constexpr DXGI_FORMAT Format     = DXGI_FORMAT_D32_FLOAT;
-	static constexpr float       ClearDepth = 1.0f;
+	static constexpr DXGI_FORMAT Format         = DXGI_FORMAT_D32_FLOAT;
+	static constexpr DXGI_FORMAT ResourceFormat = DXGI_FORMAT_R32_TYPELESS; // SRV로도 읽을 수 있도록
+	static constexpr DXGI_FORMAT SrvFormat      = DXGI_FORMAT_R32_FLOAT;
+	static constexpr float       ClearDepth     = 1.0f;
 
 	~FD3D12DepthBuffer();
 

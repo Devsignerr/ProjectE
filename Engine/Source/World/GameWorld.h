@@ -4,7 +4,9 @@
 #include "Network/NetTypes.h"
 
 #include <filesystem>
+#include <memory>
 
+class FAISystem;
 class FGameModuleHost;
 class FInput;
 class FNetDriver;
@@ -33,14 +35,20 @@ enum class EWorldRole : uint8
 };
 
 // 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, (이후) 전용 서버가 같은 순서를 쓴다.
-//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → 물리 → UpdateTransforms
-//                                  (Client 역할: 게임 모듈 없음)
+//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 물리 → UpdateTransforms
+//                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
 //   스크립트 ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
-// 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트 (Client 역할은 게임 모듈 없음), EndPlay = 역순
+// 시작/정지: BeginPlay = 물리 → 게임 모듈 → AI → 스크립트 (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순
+// AI 시스템(비헤이비어 트리, 내비메시, 이동)은 FGameWorld가 소유한다 (앱마다 따로 둘 설정이 없다)
 class FGameWorld
 {
 public:
+	FGameWorld();
+	~FGameWorld();
+	FGameWorld(const FGameWorld&)            = delete;
+	FGameWorld& operator=(const FGameWorld&) = delete;
+
 	// 스크립트 물리 훅(Physics.Raycast, entity:AddForce 등)도 여기서 연결한다 (네트워크 훅은 BeginPlay에서)
 	void Init(const FGameWorldSystems& InSystems);
 
@@ -58,9 +66,12 @@ public:
 
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
+	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
+	FAISystem& GetAI() { return *AI; }
 
 private:
-	FGameWorldSystems Systems;
+	FGameWorldSystems          Systems;
+	std::unique_ptr<FAISystem> AI;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
 	ENetMode          Mode  = ENetMode::Standalone;
 };

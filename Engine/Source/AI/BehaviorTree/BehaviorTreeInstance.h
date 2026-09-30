@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+class FAISystem;
 class FScene;
 class FBehaviorTreeAsset;
 struct FBTNodeDesc;
@@ -17,8 +18,9 @@ struct FBTNodeDesc;
 // 트리 실행 컨텍스트 (노드가 Tree.GetContext()로 읽는다)
 struct FBehaviorTreeContext
 {
-	FScene* Scene = nullptr; // 비소유. 인스턴스보다 오래 살아야 한다 (순수 로직 테스트에서는 nullptr)
-	FEntity Self;
+	FScene*    Scene = nullptr; // 비소유. 인스턴스보다 오래 살아야 한다 (순수 로직 테스트에서는 nullptr)
+	FAISystem* AI    = nullptr; // 비소유. 이동/경로 태스크용 (FAISystem이 만든 인스턴스만 설정)
+	FEntity    Self;
 	uint32  RandomSeed = 0;  // 0이면 비결정적 시드
 };
 

@@ -1,8 +1,10 @@
 #include "World/GameWorld.h"
 
+#include "AI/AISystem.h"
 #include "Core/Assert.h"
 #include "Network/NetDriver.h"
 #include "Network/ReplicationTypes.h"
+#include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
@@ -11,17 +13,35 @@
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 
+FGameWorld::FGameWorld() : AI(std::make_unique<FAISystem>()) {}
+FGameWorld::~FGameWorld() = default;
+
 void FGameWorld::Init(const FGameWorldSystems& InSystems)
 {
 	E_CHECKF(InSystems.Scripts != nullptr, "FGameWorld: 스크립트 시스템은 필수입니다");
 	Systems = InSystems;
 	Systems.Scripts->SetContentDirectory(Systems.ContentDirectory);
+	AI->SetContentDirectory(Systems.ContentDirectory);
 
 	FPhysicsSystem* Physics = Systems.Physics;
 	if (Physics == nullptr)
 	{
+		AI->SetMovementHooks({});
 		return;
 	}
+	// AI 이동: 동적 강체는 물리에 수평 속도를 넘기고(Z 속도 = 중력/점프는 유지), 그 밖은 AI가 트랜스폼을 옮긴다
+	AI->SetMovementHooks({
+		[this, Physics](FEntity Entity, const FVector3& DesiredVelocity) {
+			const FRigidBodyComponent* Body = Scene != nullptr ? Scene->GetRegistry().TryGet<FRigidBodyComponent>(Entity) : nullptr;
+			if (Body == nullptr || Body->MotionType != static_cast<int32>(EPhysicsMotionType::Dynamic))
+			{
+				return false;
+			}
+			const FVector3 Current = Physics->GetVelocity(Entity);
+			Physics->SetVelocity(Entity, FVector3(DesiredVelocity.X, DesiredVelocity.Y, Current.Z));
+			return true;
+		},
+	});
 	Systems.Scripts->SetPhysicsHooks({
 		[Physics](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
 			FPhysicsHit Hit;
@@ -94,6 +114,10 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	{
 		Systems.GameModule->BeginPlay(InScene);
 	}
+	if (!bClient) // AI도 서버에서만. 스크립트 OnStart가 블랙보드를 쓸 수 있게 스크립트보다 먼저
+	{
+		AI->Begin(InScene);
+	}
 	Systems.Scripts->BeginPlay(InScene);
 }
 
@@ -104,6 +128,7 @@ void FGameWorld::EndPlay()
 		return;
 	}
 	Systems.Scripts->EndPlay();
+	AI->End();
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
 		Systems.GameModule->EndPlay(*Scene);
@@ -131,6 +156,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		Systems.GameModule->Update(*Scene, DeltaSeconds);
 	}
+	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->Update(*Scene, DeltaSeconds);

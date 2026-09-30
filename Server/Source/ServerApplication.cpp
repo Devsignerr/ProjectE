@@ -1,5 +1,6 @@
 #include "ServerApplication.h"
 
+#include "AI/AIModule.h"
 #include "Audio/AudioReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
@@ -39,6 +40,7 @@ bool FServerApplication::OnInit()
 	// 씬 로드 전에 타입 등록 (오디오는 컴포넌트 타입만 — 서버는 소리를 내지 않는다)
 	RegisterAudioTypes();
 	RegisterPhysicsTypes();
+	RegisterAITypes();
 	RegisterNetworkTypes();
 	if (!FPaths::GetProjectDescriptor().GameModule.empty())
 	{

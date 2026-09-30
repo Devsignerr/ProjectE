@@ -127,7 +127,15 @@ bool FUIFont::LoadFromFile(const std::filesystem::path& Path)
 	{
 		return false;
 	}
-	std::vector<uint8> Data((std::istreambuf_iterator<char>(File)), std::istreambuf_iterator<char>());
+	// 한 번에 읽는다 (istreambuf_iterator는 Debug에서 13MB 한글 글꼴에 1초 가까이 걸린다)
+	File.seekg(0, std::ios::end);
+	const std::streamoff Size = File.tellg();
+	File.seekg(0, std::ios::beg);
+	std::vector<uint8> Data(Size > 0 ? static_cast<size_t>(Size) : 0);
+	if (Size <= 0 || !File.read(reinterpret_cast<char*>(Data.data()), Size))
+	{
+		return false;
+	}
 	if (!LoadFromMemory(std::move(Data)))
 	{
 		E_LOG(LogUI, Error, "글꼴을 읽지 못했습니다: {}", FStringConv::ToUtf8(Path.wstring()));
@@ -399,6 +407,18 @@ void FUIFont::Layout(std::string_view Utf8, float FontSize, float WrapWidth, FUI
 	Out.Size.Y = static_cast<float>(Out.Lines.size()) * Out.LineHeight;
 }
 
+void FUIFont::Prebake(std::string_view Utf8)
+{
+	if (!IsLoaded())
+	{
+		return;
+	}
+	for (const uint32 Codepoint : DecodeUtf8(Utf8))
+	{
+		GetGlyph(Codepoint);
+	}
+}
+
 FVector2 FUIFont::Measure(std::string_view Utf8, float FontSize, float WrapWidth)
 {
 	FUITextLayout Layout;
@@ -418,6 +438,7 @@ void FUIFontLibrary::SetDefaultFontPath(const std::filesystem::path& Path)
 {
 	DefaultFontPath    = Path;
 	DefaultFont        = nullptr;
+	DefaultFontFile.clear();
 	bDefaultFontLoaded = false;
 }
 
@@ -450,16 +471,28 @@ FUIFont* FUIFontLibrary::GetDefaultFont()
 	{
 		const std::filesystem::path Path = DefaultFontPath.is_absolute() ? DefaultFontPath : ContentDirectory / DefaultFontPath;
 		DefaultFont                      = LoadCached(Path);
+		DefaultFontFile                  = DefaultFont != nullptr ? Path : std::filesystem::path();
 	}
 	if (DefaultFont == nullptr)
 	{
-		DefaultFont = LoadCached(GetSystemFontPath());
+		DefaultFontFile = GetSystemFontPath();
+		DefaultFont     = LoadCached(DefaultFontFile);
+		if (DefaultFont == nullptr)
+		{
+			DefaultFontFile.clear();
+		}
 	}
 	if (DefaultFont == nullptr)
 	{
 		E_LOG(LogUI, Error, "UI 기본 글꼴을 찾지 못해 텍스트를 그리지 않습니다");
 	}
 	return DefaultFont;
+}
+
+std::filesystem::path FUIFontLibrary::GetDefaultFontFile()
+{
+	GetDefaultFont();
+	return DefaultFontFile;
 }
 
 FUIFont* FUIFontLibrary::GetFont(std::string_view FontPath)
@@ -500,5 +533,6 @@ void FUIFontLibrary::Clear()
 {
 	Fonts.clear();
 	DefaultFont        = nullptr;
+	DefaultFontFile.clear();
 	bDefaultFontLoaded = false;
 }

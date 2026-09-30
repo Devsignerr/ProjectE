@@ -7,6 +7,7 @@
 #include "UI/UIPainter.h"
 #include "UI/Widget.h"
 
+#include <chrono>
 #include <filesystem>
 
 namespace
@@ -508,4 +509,27 @@ E_TEST(UIPainter_ButtonStateBrushAndBatches)
 		E_EXPECT_EQ(List.Batches[1].Texture.Path, std::string("Icon.png"));
 	}
 	(void)Measurer;
+}
+
+E_TEST(UIFont_BakeSpeed)
+{
+	// 새 글꼴 인스턴스에 한글 30자를 굽는 시간 (성능 회귀 감시용 로그 — 기준값은 빌드 구성마다 다르므로 실패 조건은 느슨하게)
+	FUIFont* Default = FUIFontLibrary::Get().GetDefaultFont();
+	if (Default == nullptr)
+	{
+		return;
+	}
+	FUIFont    Font;
+	const auto LoadStart = std::chrono::steady_clock::now();
+	E_EXPECT_TRUE(Font.LoadFromFile(FUIFontLibrary::Get().GetDefaultFontFile()));
+	const double LoadMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - LoadStart).count();
+	E_LOG(LogUI, Display, "글꼴 파일 읽기: {:.1f} ms", LoadMs);
+	E_EXPECT_TRUE(LoadMs < 300.0);
+	const auto    Start = std::chrono::steady_clock::now();
+	FUITextLayout Layout;
+	Font.Layout("가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노", 32.0f, 0.0f, Layout);
+	const double Ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - Start).count();
+	E_LOG(LogUI, Display, "SDF 굽기: 한글 {}자 {:.1f} ms (글자당 {:.2f} ms)", Font.GetGlyphCount(), Ms, Ms / static_cast<double>(Font.GetGlyphCount()));
+	E_EXPECT_EQ(Layout.Glyphs.size(), size_t(30));
+	E_EXPECT_TRUE(Ms / 30.0 < 40.0);
 }

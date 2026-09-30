@@ -73,6 +73,8 @@ public:
 	void     Layout(std::string_view Utf8, float FontSize, float WrapWidth, FUITextLayout& Out);
 	FVector2 Measure(std::string_view Utf8, float FontSize, float WrapWidth);
 	float    GetLineHeight(float FontSize) const;
+	// 글자를 미리 굽는다 (UI 인스턴스를 만들 때 — 첫 프레임에 한꺼번에 굽는 끊김 방지)
+	void     Prebake(std::string_view Utf8);
 	// 셰이더용: SDF 값 0~1 차이 1이 화면에서 몇 UI 단위인지 (= 2 × 패딩 × 크기 비율)
 	static float GetDistanceRange(float FontSize) { return 2.0f * static_cast<float>(SdfPadding) * FontSize / BasePixelHeight; }
 
@@ -121,6 +123,8 @@ public:
 	// 실패 시 기본 글꼴, 기본 글꼴도 없으면 nullptr
 	FUIFont* GetFont(std::string_view FontPath);
 	FUIFont* GetDefaultFont();
+	// 기본 글꼴 파일 경로 (없으면 빈 경로)
+	std::filesystem::path GetDefaultFontFile();
 	// 로드된 글꼴 전체 (렌더러가 아틀라스를 올릴 때)
 	std::vector<FUIFont*> GetLoadedFonts() const;
 
@@ -136,6 +140,7 @@ private:
 	std::filesystem::path                                    DefaultFontPath;
 	std::unordered_map<std::wstring, std::unique_ptr<FUIFont>> Fonts; // 키: 정규화 경로 (실패한 경로는 nullptr)
 	FUIFont*                                                 DefaultFont        = nullptr;
+	std::filesystem::path                                    DefaultFontFile;
 	bool                                                     bDefaultFontLoaded = false;
 };
 

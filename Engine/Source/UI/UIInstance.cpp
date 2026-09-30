@@ -19,6 +19,17 @@ void FUIInstance::SetAsset(const FUIAsset& InAsset)
 	Asset        = InAsset.Clone();
 	Router       = FUIInputRouter{};
 	bPointerOver = false;
+	// 에셋에 들어 있는 글자는 지금 굽는다 (실행 중 바뀌는 글자만 처음 쓸 때 굽힌다)
+	FUIFontLibrary& Fonts = FUIFontLibrary::Get();
+	Asset.Root->ForEach([&Fonts](FUIWidget& Widget) {
+		if (Widget.Type == EUIWidgetType::Text && !Widget.Text.empty())
+		{
+			if (FUIFont* Font = Fonts.GetFont(Widget.Font))
+			{
+				Font->Prebake(Widget.Text);
+			}
+		}
+	});
 }
 
 void FUIInstance::Layout(const FUIRect& InViewport, FUIFontLibrary& Fonts)

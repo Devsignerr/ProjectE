@@ -29,13 +29,15 @@ struct FPhysicsBodyDesc
 	float         HalfHeight  = 50.0f;
 	FVector3      Offset;       // 바디 로컬 오프셋 (회전 적용 전)
 
-	float  Mass           = 1.0f;
-	float  Friction       = 0.5f;
-	float  Restitution    = 0.0f;
-	float  LinearDamping  = 0.05f;
-	float  AngularDamping = 0.05f;
-	bool   bUseGravity    = true;
-	uint64 UserData       = 0; // 엔티티 ToId()
+	float  Mass              = 0.0f;   // 0이면 부피 × Density
+	float  Density           = 500.0f; // kg/m³
+	float  Friction          = 0.5f;
+	float  Restitution       = 0.0f;
+	float  LinearDamping     = 0.05f;
+	float  AngularDamping    = 0.05f;
+	float  RollingResistance = 0.05f; // 동적 바디만. 접촉 중 회전 감속
+	bool   bUseGravity       = true;
+	uint64 UserData          = 0; // 엔티티 ToId()
 };
 
 struct FPhysicsRayHit
@@ -74,7 +76,9 @@ public:
 	void     AddImpulse(uint32 Body, const FVector3& Impulse);
 	void     SetLinearVelocity(uint32 Body, const FVector3& Velocity);
 	FVector3 GetLinearVelocity(uint32 Body) const;
+	float    GetMass(uint32 Body) const; // kg, 정적/키네마틱은 0
 
+	// 한 스텝 진행 후 접촉 중인 동적 바디에 구르기 저항을 적용한다
 	void Step(float DeltaSeconds);
 
 	// Direction은 정규화하지 않아도 된다. MaxDistance cm

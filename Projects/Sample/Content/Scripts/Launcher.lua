@@ -2,7 +2,7 @@
 local Launcher = {
 	Properties = {
 		Interval = 1.2,    -- 초
-		Speed    = 2200.0, -- 발사 속도 (cm/s)
+		Speed    = 1500.0, -- 발사 속도 (cm/s)
 		Lift     = 0.08,   -- 위쪽 성분 비율
 		MaxCount = 8,      -- 동시에 존재하는 최대 공 수 (넘으면 가장 오래된 공 제거)
 	},
@@ -24,7 +24,7 @@ end
 function Launcher:OnUpdate(dt)
 	-- 지난 프레임에 만든 공은 이제 바디가 있으므로 발사
 	if self.Pending then
-		local Mass      = self.Pending:GetComponent("RigidBodyComponent").Mass
+		local Mass      = self.Pending:GetMass() -- 실제 바디 질량 (Mass가 0이면 밀도로 계산된 값)
 		local Direction = self.entity:GetForward() + Vector3(0, 0, self.Properties.Lift)
 		self.Pending:AddImpulse(Direction * (self.Properties.Speed * Mass))
 		self.Pending = nil
@@ -57,7 +57,7 @@ function Launcher:OnUpdate(dt)
 
 	Ball:AddComponent("SphereColliderComponent") -- 반지름 50cm × 스케일
 	local Body       = Ball:AddComponent("RigidBodyComponent")
-	Body.Mass        = 8.0
+	Body.Mass        = 5.0 -- 지름 40cm 공 (상자는 밀도 기반 약 26kg)
 	Body.Restitution = 0.3
 
 	table.insert(self.Balls, Ball)

@@ -154,6 +154,7 @@ bool FEditorApplication::OnInit()
 		[this](FEntity Entity, const FVector3& Impulse) { Physics.AddImpulse(Entity, Impulse); },
 		[this](FEntity Entity, const FVector3& Velocity) { Physics.SetVelocity(Entity, Velocity); },
 		[this](FEntity Entity) { return Physics.GetVelocity(Entity); },
+		[this](FEntity Entity) { return Physics.GetMass(Entity); },
 	});
 	PlayMode.Init(Scene, Scripts, &Physics);
 	PlayMode.SetGameModule(&GameModule);

@@ -36,8 +36,10 @@ namespace
 		Scene.GetTransform(Ball).Position = Position;
 		Scene.GetRegistry().Emplace<FSphereColliderComponent>(Ball).Radius = Radius;
 		FRigidBodyComponent& Body = Scene.GetRegistry().Emplace<FRigidBodyComponent>(Ball);
+		Body.Mass                 = 1.0f; // 충격량 계산을 단순하게 (기본은 밀도 자동)
 		Body.LinearDamping        = 0.0f;
 		Body.AngularDamping       = 0.0f;
+		Body.RollingResistance    = 0.0f; // 구르기 저항은 전용 테스트에서
 		return Ball;
 	}
 
@@ -324,4 +326,63 @@ E_TEST(PhysicsReflection_RegistersComponents)
 	{
 		E_EXPECT_TRUE(FTypeRegistry::Get().Find(Name) != nullptr);
 	}
+}
+
+E_TEST(Physics_MassFromDensityOrExplicit)
+{
+	FScene        Scene;
+	const FEntity Box = Scene.CreateEntity("Box");
+	Scene.GetRegistry().Emplace<FBoxColliderComponent>(Box); // 100cm 큐브 = 1m³
+	Scene.GetRegistry().Emplace<FRigidBodyComponent>(Box).bUseGravity = false;
+	const FEntity Ball = AddDynamicSphere(Scene, FVector3(500.0f, 0.0f, 0.0f), 50.0f);
+	FRigidBodyComponent& BallBody = Scene.GetRegistry().Get<FRigidBodyComponent>(Ball);
+	BallBody.Mass                 = 0.0f;
+	BallBody.Density              = 1000.0f;
+	BallBody.bUseGravity          = false;
+	const FEntity Heavy = AddDynamicSphere(Scene, FVector3(-500.0f, 0.0f, 0.0f));
+	Scene.GetRegistry().Get<FRigidBodyComponent>(Heavy).Mass = 7.0f;
+	Scene.UpdateTransforms();
+
+	FPhysicsSystem Physics;
+	Physics.Begin();
+	Physics.Update(Scene, Frame);
+	// 기본 밀도 500kg/m³ × 1m³, 물 밀도 구 4/3 π 0.5³ × 1000, 직접 지정은 밀도 무시
+	E_EXPECT_NEAR(Physics.GetMass(Box), 500.0f, 1.0f);
+	E_EXPECT_NEAR(Physics.GetMass(Ball), 523.6f, 1.0f);
+	E_EXPECT_NEAR(Physics.GetMass(Heavy), 7.0f, 1.0e-3f);
+
+	// 밀도 변경 → 바디 다시 생성
+	Scene.GetRegistry().Get<FRigidBodyComponent>(Box).Density = 100.0f;
+	Physics.Update(Scene, Frame);
+	E_EXPECT_NEAR(Physics.GetMass(Box), 100.0f, 0.5f);
+}
+
+E_TEST(Physics_RollingResistanceStopsBall)
+{
+	auto RollOut = [](float RollingResistance, float& OutSpeed) {
+		FScene        Scene;
+		AddFloor(Scene);
+		const FEntity Ball = AddDynamicSphere(Scene, FVector3(0.0f, 0.0f, 25.0f));
+		Scene.GetRegistry().Get<FRigidBodyComponent>(Ball).RollingResistance = RollingResistance;
+		Scene.UpdateTransforms();
+
+		FPhysicsSystem Physics;
+		Physics.Begin();
+		Physics.Update(Scene, Frame);
+		Physics.SetVelocity(Ball, FVector3(300.0f, 0.0f, 0.0f));
+		Simulate(Physics, Scene, 8.0f);
+		OutSpeed = Physics.GetVelocity(Ball).Length();
+		return Scene.GetTransform(Ball).Position.X;
+	};
+	// 구르기 속도 약 214cm/s(5/7), 감속 ≈ 0.05 × 980 = 49cm/s² → 약 4.4초·5m 안팎에서 멈춘다
+	float       Speed    = 0.0f;
+	const float Distance = RollOut(0.05f, Speed);
+	E_EXPECT_TRUE(Speed < 5.0f);
+	E_EXPECT_TRUE(Distance > 300.0f && Distance < 800.0f);
+
+	// 저항이 없으면 계속 굴러간다
+	float       FreeSpeed    = 0.0f;
+	const float FreeDistance = RollOut(0.0f, FreeSpeed);
+	E_EXPECT_TRUE(FreeSpeed > 150.0f);
+	E_EXPECT_TRUE(FreeDistance > Distance * 2.0f);
 }

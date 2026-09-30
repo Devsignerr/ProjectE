@@ -62,8 +62,8 @@ namespace
 	bool NeedsRecreate(const FPhysicsBodyDesc& Old, const FPhysicsBodyDesc& New)
 	{
 		if (Old.MotionType != New.MotionType || Old.Shape != New.Shape || Old.bUseGravity != New.bUseGravity || Old.Mass != New.Mass ||
-		    Old.Friction != New.Friction || Old.Restitution != New.Restitution || Old.LinearDamping != New.LinearDamping ||
-		    Old.AngularDamping != New.AngularDamping)
+		    Old.Density != New.Density || Old.Friction != New.Friction || Old.Restitution != New.Restitution ||
+		    Old.LinearDamping != New.LinearDamping || Old.AngularDamping != New.AngularDamping || Old.RollingResistance != New.RollingResistance)
 		{
 			return true;
 		}
@@ -191,12 +191,14 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		if (const FRigidBodyComponent* RigidBody = Registry.TryGet<FRigidBodyComponent>(Entity))
 		{
 			Desc.MotionType     = static_cast<EPhysicsMotionType>(std::clamp(RigidBody->MotionType, 0, 2));
-			Desc.Mass           = RigidBody->Mass;
-			Desc.Friction       = RigidBody->Friction;
-			Desc.Restitution    = RigidBody->Restitution;
-			Desc.LinearDamping  = RigidBody->LinearDamping;
-			Desc.AngularDamping = RigidBody->AngularDamping;
-			Desc.bUseGravity    = RigidBody->bUseGravity;
+			Desc.Mass              = RigidBody->Mass;
+			Desc.Density           = RigidBody->Density;
+			Desc.Friction          = RigidBody->Friction;
+			Desc.Restitution       = RigidBody->Restitution;
+			Desc.LinearDamping     = RigidBody->LinearDamping;
+			Desc.AngularDamping    = RigidBody->AngularDamping;
+			Desc.RollingResistance = RigidBody->RollingResistance;
+			Desc.bUseGravity       = RigidBody->bUseGravity;
 		}
 		else
 		{
@@ -350,4 +352,13 @@ FVector3 FPhysicsSystem::GetVelocity(FEntity Entity) const
 		return World->GetLinearVelocity(Found->second.Body);
 	}
 	return FVector3();
+}
+
+float FPhysicsSystem::GetMass(FEntity Entity) const
+{
+	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end())
+	{
+		return World->GetMass(Found->second.Body);
+	}
+	return 0.0f;
 }

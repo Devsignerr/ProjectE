@@ -47,6 +47,7 @@ public:
 	void     AddImpulse(FEntity Entity, const FVector3& Impulse);
 	void     SetVelocity(FEntity Entity, const FVector3& Velocity);
 	FVector3 GetVelocity(FEntity Entity) const;
+	float    GetMass(FEntity Entity) const; // 실제 바디 질량 (Mass 0 = 밀도 자동 계산 결과). 동적 바디가 아니면 0
 	bool     HasBody(FEntity Entity) const { return Bodies.contains(Entity); }
 
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }

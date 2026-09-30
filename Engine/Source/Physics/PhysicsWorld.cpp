@@ -10,6 +10,7 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -22,10 +23,12 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <atomic>
 #include <cstdarg>
 #include <cstdio>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 
 E_DEFINE_LOG_CATEGORY(LogPhysics, Log)
 
@@ -144,24 +147,36 @@ namespace
 
 	JPH::RefConst<JPH::Shape> CreateShape(const FPhysicsBodyDesc& Desc)
 	{
-		constexpr float MinSize = 0.001f; // m (1mm) — 퇴화 모양 방지
+		constexpr float MinSize    = 0.001f; // m (1mm) — 퇴화 모양 방지
+		constexpr float MinDensity = 0.01f;  // kg/m³
+		const float     Density    = std::max(Desc.Density, MinDensity); // 질량을 직접 지정하지 않으면 부피 × 밀도
 		JPH::ShapeSettings::ShapeResult Result;
 		switch (Desc.Shape)
 		{
 		case EPhysicsShape::Sphere:
-			Result = JPH::SphereShapeSettings(std::max(Desc.Radius * FUnits::UnitsToMeters, MinSize)).Create();
+		{
+			JPH::SphereShapeSettings Sphere(std::max(Desc.Radius * FUnits::UnitsToMeters, MinSize));
+			Sphere.SetDensity(Density);
+			Result = Sphere.Create();
 			break;
+		}
 		case EPhysicsShape::Capsule:
-			Result = JPH::CapsuleShapeSettings(std::max(Desc.HalfHeight * FUnits::UnitsToMeters, MinSize),
-			                                   std::max(Desc.Radius * FUnits::UnitsToMeters, MinSize)).Create();
+		{
+			JPH::CapsuleShapeSettings Capsule(std::max(Desc.HalfHeight * FUnits::UnitsToMeters, MinSize),
+			                                  std::max(Desc.Radius * FUnits::UnitsToMeters, MinSize));
+			Capsule.SetDensity(Density);
+			Result = Capsule.Create();
 			break;
+		}
 		default:
 		{
 			const FVector3 Half(std::max(Desc.HalfExtents.X * FUnits::UnitsToMeters, MinSize),
 			                    std::max(Desc.HalfExtents.Y * FUnits::UnitsToMeters, MinSize),
 			                    std::max(Desc.HalfExtents.Z * FUnits::UnitsToMeters, MinSize));
 			const float ConvexRadius = std::min(JPH::cDefaultConvexRadius, 0.5f * std::min({ Half.X, Half.Y, Half.Z }));
-			Result = JPH::BoxShapeSettings(ToJoltVector(Half), ConvexRadius).Create();
+			JPH::BoxShapeSettings Box(ToJoltVector(Half), ConvexRadius);
+			Box.SetDensity(Density);
+			Result = Box.Create();
 			break;
 		}
 		}
@@ -188,6 +203,75 @@ namespace
 		}
 		return WrappedResult.Get();
 	}
+
+	// 구르기 저항의 굴림 반지름 (m): 구/캡슐은 반지름, 박스는 가장 짧은 반 크기
+	float GetRollingRadius(const FPhysicsBodyDesc& Desc)
+	{
+		constexpr float MinRadius = 0.001f;
+		switch (Desc.Shape)
+		{
+		case EPhysicsShape::Sphere:
+		case EPhysicsShape::Capsule:
+			return std::max(Desc.Radius * FUnits::UnitsToMeters, MinRadius);
+		default:
+			return std::max(std::min({ Desc.HalfExtents.X, Desc.HalfExtents.Y, Desc.HalfExtents.Z }) * FUnits::UnitsToMeters, MinRadius);
+		}
+	}
+
+	// 스텝마다 접촉 중인 동적 바디를 기록한다. 콜백은 Jolt 작업 스레드에서 동시에 불리므로 바디 인덱스별 원자 변수에 스텝 번호를 쓴다
+	class FContactTracker final : public JPH::ContactListener
+	{
+	public:
+		explicit FContactTracker(JPH::uint MaxBodies)
+			: LastContactStep(std::make_unique<std::atomic<uint32>[]>(MaxBodies))
+			, Capacity(MaxBodies)
+		{
+		}
+
+		void OnContactAdded(const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold&, JPH::ContactSettings&) override
+		{
+			Mark(Body1, Body2);
+		}
+		void OnContactPersisted(const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold&, JPH::ContactSettings&) override
+		{
+			Mark(Body1, Body2);
+		}
+
+		// Update 전에 호출 (메인 스레드). 0은 "접촉 없음"이므로 1부터 센다
+		void BeginStep() { StepIndex = StepIndex == ~0u ? 1u : StepIndex + 1u; }
+		bool WasInContact(JPH::BodyID Body) const
+		{
+			const JPH::uint Index = Body.GetIndex();
+			return Index < Capacity && LastContactStep[Index].load(std::memory_order_relaxed) == StepIndex;
+		}
+
+	private:
+		void Mark(const JPH::Body& Body1, const JPH::Body& Body2)
+		{
+			for (const JPH::Body* Body : { &Body1, &Body2 })
+			{
+				const JPH::uint Index = Body->GetID().GetIndex();
+				if (Body->IsDynamic() && Index < Capacity)
+				{
+					LastContactStep[Index].store(StepIndex, std::memory_order_relaxed);
+				}
+			}
+		}
+
+		std::unique_ptr<std::atomic<uint32>[]> LastContactStep;
+		JPH::uint                              Capacity  = 0;
+		uint32                                 StepIndex = 0;
+	};
+
+	struct FRollingBody
+	{
+		float Coefficient = 0.0f;
+		float Radius      = 0.0f; // m
+	};
+
+	// 구르기 저항 계수 → 각감속 배율. 회전만 줄이면 마찰이 선속도를 끌어내리는데, 속이 찬 구(I = 2/5 m r²)의
+	// 선감속이 계수 × g가 되려면 각감속을 (I + m r²) / I = 3.5배로 줘야 한다
+	constexpr float RollingCouplingFactor = 3.5f;
 } // namespace
 
 struct FPhysicsWorld::FImpl
@@ -198,6 +282,8 @@ struct FPhysicsWorld::FImpl
 	std::unique_ptr<JPH::TempAllocatorImpl>    TempAllocator;
 	std::unique_ptr<JPH::JobSystemThreadPool>  JobSystem;
 	std::unique_ptr<JPH::PhysicsSystem>        System;
+	std::unique_ptr<FContactTracker>           Contacts;
+	std::unordered_map<uint32, FRollingBody>   RollingBodies; // 바디 ID(인덱스+시퀀스) → 구르기 저항
 
 	JPH::BodyInterface& Bodies() { return System->GetBodyInterface(); }
 	const JPH::BodyInterface& Bodies() const { return System->GetBodyInterface(); }
@@ -219,6 +305,8 @@ FPhysicsWorld::FPhysicsWorld()
 	Impl->System               = std::make_unique<JPH::PhysicsSystem>();
 	Impl->System->Init(MaxBodies, NumBodyMutexes, MaxBodyPairs, MaxContactConstraints, Impl->BroadPhaseLayers, Impl->ObjectVsBroadPhase,
 	                   Impl->ObjectPairs);
+	Impl->Contacts = std::make_unique<FContactTracker>(MaxBodies);
+	Impl->System->SetContactListener(Impl->Contacts.get());
 	// 침투 허용치: Jolt 기본 2cm는 cm 단위 장면에서 물체가 바닥에 눈에 띄게 박혀 보이므로 5mm로 줄인다
 	JPH::PhysicsSettings Settings = Impl->System->GetPhysicsSettings();
 	Settings.mPenetrationSlop     = 0.005f;
@@ -263,8 +351,9 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 	Settings.mAngularDamping = Desc.AngularDamping;
 	Settings.mGravityFactor  = Desc.bUseGravity ? 1.0f : 0.0f;
 	Settings.mUserData       = Desc.UserData;
-	if (Motion == JPH::EMotionType::Dynamic)
+	if (Motion == JPH::EMotionType::Dynamic && Desc.Mass > 0.0f)
 	{
+		// 질량 직접 지정: 관성은 모양에서 계산해 질량에 맞춘다 (0이면 Jolt 기본 = 모양 부피 × 밀도)
 		Settings.mOverrideMassProperties       = JPH::EOverrideMassProperties::CalculateInertia;
 		Settings.mMassPropertiesOverride.mMass = std::max(Desc.Mass, 0.001f);
 	}
@@ -274,6 +363,10 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 	{
 		E_LOG(LogPhysics, Error, "바디 생성 실패 (최대 바디 수 초과?)");
 		return InvalidBody;
+	}
+	if (Motion == JPH::EMotionType::Dynamic && Desc.RollingResistance > 0.0f)
+	{
+		Impl->RollingBodies[Id.GetIndexAndSequenceNumber()] = { Desc.RollingResistance, GetRollingRadius(Desc) };
 	}
 	return Id.GetIndexAndSequenceNumber();
 }
@@ -285,6 +378,7 @@ void FPhysicsWorld::DestroyBody(uint32 Body)
 		return;
 	}
 	const JPH::BodyID Id(Body);
+	Impl->RollingBodies.erase(Body);
 	Impl->Bodies().RemoveBody(Id);
 	Impl->Bodies().DestroyBody(Id);
 }
@@ -357,12 +451,53 @@ FVector3 FPhysicsWorld::GetLinearVelocity(uint32 Body) const
 	return PhysicsMath::ToCentimeters(FromJoltVector(Impl->Bodies().GetLinearVelocity(JPH::BodyID(Body))));
 }
 
+float FPhysicsWorld::GetMass(uint32 Body) const
+{
+	if (Body == InvalidBody)
+	{
+		return 0.0f;
+	}
+	JPH::BodyLockRead Lock(Impl->System->GetBodyLockInterface(), JPH::BodyID(Body));
+	if (!Lock.Succeeded() || !Lock.GetBody().IsDynamic())
+	{
+		return 0.0f;
+	}
+	const float InverseMass = Lock.GetBody().GetMotionProperties()->GetInverseMass();
+	return InverseMass > 0.0f ? 1.0f / InverseMass : 0.0f;
+}
+
 void FPhysicsWorld::Step(float DeltaSeconds)
 {
+	Impl->Contacts->BeginStep();
 	const JPH::EPhysicsUpdateError Error = Impl->System->Update(DeltaSeconds, 1, Impl->TempAllocator.get(), Impl->JobSystem.get());
 	if (Error != JPH::EPhysicsUpdateError::None)
 	{
 		E_LOG(LogPhysics, Warning, "물리 스텝 경고 (코드 {}): 바디 쌍/접촉 제한 초과", static_cast<uint32>(Error));
+	}
+
+	// 구르기 저항: Jolt에는 없으므로 이번 스텝에 접촉한 바디의 회전 속력을 일정하게 줄인다 (공중 회전에는 영향 없음)
+	const float Gravity = Impl->System->GetGravity().Length(); // m/s²
+	if (Gravity <= 0.0f)
+	{
+		return;
+	}
+	JPH::BodyInterface& Bodies = Impl->Bodies();
+	for (const auto& [Body, Rolling] : Impl->RollingBodies)
+	{
+		const JPH::BodyID Id(Body);
+		if (!Impl->Contacts->WasInContact(Id) || !Bodies.IsActive(Id))
+		{
+			continue;
+		}
+		const JPH::Vec3 Angular = Bodies.GetAngularVelocity(Id);
+		const float     Speed   = Angular.Length();
+		if (Speed <= 0.0f)
+		{
+			continue;
+		}
+		const float Deceleration = Rolling.Coefficient * Gravity * RollingCouplingFactor / Rolling.Radius; // rad/s²
+		const float NewSpeed     = std::max(Speed - Deceleration * DeltaSeconds, 0.0f);
+		Bodies.SetAngularVelocity(Id, Angular * (NewSpeed / Speed));
 	}
 }
 

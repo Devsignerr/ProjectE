@@ -531,6 +531,10 @@ void FLuaRuntime::RegisterEntityBindings()
 		RequireEntity(Entity);
 		return PhysicsHooks && PhysicsHooks->GetVelocity ? PhysicsHooks->GetVelocity(Entity.Entity) : FVector3();
 	};
+	EntityType["GetMass"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->GetMass ? PhysicsHooks->GetMass(Entity.Entity) : 0.0f;
+	};
 
 	Lua.new_usertype<FScriptComponentRef>(
 		"Component",

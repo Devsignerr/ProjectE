@@ -169,8 +169,8 @@
 
 - [x] 증상 구체화: "물체끼리 부딪혀도 자연스럽게 상호작용하지 않고 어색하게 밀려남" (사용자 2026-09-30)
 - [x] 원인 1 수정: 회전하는 동적 바디가 매 프레임 다시 생성되어 선속도·각속도가 0으로 초기화됨. 월드 행렬 분해 스케일의 ULP 오차가 비트 해시(`MakeShapeKey`)를 바꾸던 문제 → 생성 설정(`CreatedDesc`)을 보관하고 스케일 파생 치수는 상대 오차 1e-4로 비교(`NeedsRecreate`). 실험: 500cm/s로 굴린 공이 0.5초 만에 정지(3초간 재생성 79회) → 수정 후 계속 굴러감. 테스트 `Physics_RollingSphereKeepsMomentum`, `Physics_ScaleChangeResizesBody`
-- [ ] 원인 후보 조사 (코드 확인 전 후보): 기본 질량 1kg(`FRigidBodyComponent::Mass` — 100cm 큐브 크기에 비해 가벼움), 강체 없이 콜라이더만 있는 정적 바디의 마찰/반발 값, 구르기 저항 부재(각감쇠 0.05만 있음), 마찰/반발 합성 방식(Jolt 기본: 마찰 기하평균·반발 최댓값), 솔버 반복/충돌 스텝(`Update(..., 1, ...)`)
-- [ ] 조사 결과로 세부 수정 항목 확정 후 구현 + 테스트
+- [x] 원인 후보 조사 (2026-09-30, 데모와 같은 조건의 수치 실험): 쌓기 안정성(3초 이동 0cm)·상자끼리 충돌(비탄성 이론값 일치)·마찰 감속(이론 208cm / 실측 209cm)·솔버는 정상. 원인 = 수치 설정: ① 질량이 크기와 무관(기본 1kg, 데모 60cm 상자 5kg = 밀도 23kg/m³ 스티로폼 수준)인데 발사 공은 8kg·22m/s → 상자 더미가 4.8m 날아감 ② Jolt에 구르기 저항이 없어 공이 10초 뒤에도 130cm/s로 17m 구름
+- [x] 수정 (사용자 결정 2026-09-30): `FRigidBodyComponent::Density`(kg/m³, 기본 500) + `Mass` 기본 0 = 콜라이더 부피 × 밀도 자동(값을 넣으면 직접 지정), `RollingResistance`(기본 0.05, `FPhysicsWorld`가 접촉 리스너로 이번 스텝에 닿은 동적 바디만 회전 감속 — 구는 약 계수 × g) → 공 300cm/s가 4.2m 구르고 멈춤. Lua `entity:GetMass()`(실제 바디 질량). 데모: 상자 밀도 120(약 26kg), 발사 공 5kg·15m/s → 상자 더미 흩어짐 0.9m. 테스트 `Physics_MassFromDensityOrExplicit`, `Physics_RollingResistanceStopsBall`, ScriptingTests `GetMass`
 - [ ] 실행 검증 (사용자 확인)
 
 ## Phase 9 — 에셋 편집 창
@@ -317,6 +317,39 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [ ] 실행 검증 (사용자 확인): 계층 → 콘텐츠 드롭으로 만들기, 뷰포트/계층 드롭 배치, 인스턴스 값 바꾸기 → 하늘색 표시·우클릭 되돌리기·원본에 적용, 편집 창 저장 후 반영, Ctrl+Z, 스크립트 칸에 프리팹 끌어 넣기
 
 알려진 제한: 인스턴스 안에서 원본 엔티티의 부모를 바꾸면 다음 동기화 때 원본 계층으로 돌아간다. 모델(`FModelComponent`) 경로가 원본에서 바뀌면 이미 만든 모델 하위 노드는 다시 만들지 않는다. 변형(Variant) 프리팹(루트가 다른 프리팹의 인스턴스)은 지원하지 않는다. 열린 다른 프리팹 편집 창은 안쪽 원본 저장을 즉시 반영하지 않는다(다시 열면 반영).
+
+## Phase 17 — 멀티플레이 (2026-09-30, 사용자 요청)
+
+진행 순서 (2026-09-30 사용자 결정): Phase 8 물리 품질 마무리 → Phase 17 → Phase 16 인게임 UI. (물리 복제가 붙기 전에 물리 조정을 끝낸다)
+
+**DoD**: 전용 서버(`ProjectEServer.exe`, 창·GPU 없음) 또는 리슨 서버에 클라이언트가 LAN으로 접속해, 서버가 시뮬레이션한 씬(스크립트·물리 포함)이 클라이언트에 보간되어 보이고, 각 플레이어가 자기 캐릭터를 입력으로 조작하며, Lua/C++ RPC가 오간다. 에디터에서 "리슨/전용 서버 + 클라이언트 N개"로 플레이할 수 있다. 1인용(Standalone)은 기존과 똑같이 동작한다. 지연/손실 시뮬레이션에서 크래시·불일치 없음.
+
+결정 (2026-09-30):
+- 서버 권한형. 리슨 서버 + 전용 서버 둘 다. P2P/락스텝 아님
+- 범용 기반만: 복제/RPC/연결/소유권 + 스냅샷 보간. 클라이언트 측 예측·서버 보정·랙 보상은 후속 과제(훅만 남긴다)
+- 전송 계층: GameNetworkingSockets(암호화 BCrypt). protobuf 때문에 빌드가 무거워도 GNS 유지(필요하면 vcpkg 등 도입 검토). 전송 계층은 인터페이스로 분리(GNS 구현 + 테스트용 루프백)
+- 1차 범위: Lua 네트워크 API, 물리 복제, 에디터 다중 클라이언트 플레이, LAN 로비/세션. 온라인 서비스(스팀 등)는 범위 밖
+- **넷 모드**: `Standalone`(기본, 1인용) / `ListenServer` / `DedicatedServer` / `Client`. Standalone은 네트워크 드라이버·소켓을 만들지 않고 로컬 프로세스가 서버이자 클라이언트로 취급된다(UE `NM_Standalone`과 같음) → `Net.IsServer()`=true, 모든 엔티티 `IsLocallyOwned`=true, `ServerOnly` 스크립트 실행, RPC는 즉시 로컬 호출. 기존 1인용 게임/스크립트는 수정 없이 동작
+- 스크립트 실행 위치: `FScriptComponent`에 `ServerOnly`(기본) / `ClientOnly` / `Both`. 클라이언트는 복제 결과만 받고 연출용 스크립트만 `ClientOnly`
+- 복제 단위: `FReplicatedComponent`가 붙은 엔티티만(소유 연결, 복제 주기). 그 엔티티의 리플렉션 등록 프로퍼티는 기본 복제, `PF_NoReplicate`로 제외
+- 엔티티 식별: `FNetIdComponent`. 씬에 원래 있는 엔티티는 양쪽이 같은 씬을 로드한 순서로 결정적 ID, 동적 생성은 서버가 부여
+- 틱: 서버 시뮬레이션 60Hz, 전송 30Hz(설정). 클라이언트는 약 100ms 뒤 스냅샷 보간
+- 입력: 클라이언트가 틱마다 입력 커맨드 전송. 서버에서 Lua `Input`은 해당 엔티티 소유 플레이어의 입력을 돌려준다
+
+- [ ] 1. GNS 도입 시험: `ThirdParty.cmake`(GNS + protobuf, BCrypt), `/W4 /WX` 격리, 첫 빌드 시간 측정 — 완료 기준: localhost 에코 테스트 통과
+- [ ] 2. 공용 월드 틱 `FGameWorld`: 씬 + 스크립트/게임 모듈/물리/애니메이션/파티클 갱신 순서를 하나로(현재 `RuntimeApplication.cpp`와 `PlayMode.cpp`+`EditorApplication.cpp`에 중복), 물리에 "보간 없이 최신 스텝 값 쓰기" 옵션 — 완료 기준: 기존 테스트 전부 통과, Verify(Editor/Runtime) 스크린샷 동일
+- [ ] 3. 창 없는 실행: `FApplicationDesc::bHeadless`(창·RHI 없이 고정 틱 루프) + `Server/Source/` → `ProjectEServer.exe`(`--project --scene --port`) — 완료 기준: 씬 로드 후 `--exit-after` 틱 수만큼 돌고 정상 종료
+- [ ] 4. Network 모듈 기반(`ENetwork`, 엔진 DLL 포함): 전송 계층 인터페이스, 넷 모드, 연결 수립(엔진·프로젝트 버전·씬 확인), 신뢰/비신뢰 채널, `FNetDriver`, 인자 `--host`/`--connect ip:port`
+- [ ] 5. 복제 핵심: 리플렉션 바이너리 직렬화(`EntityJson` switch 본뜸), NetId 매핑, 생성/파괴 메시지(프리팹 경로 또는 컴포넌트 스냅샷), 연결별 확인 기준 델타, 클라이언트 보간, 접속 시 `.eproject` `PlayerPrefab` 생성 + 소유권
+- [ ] 6. 물리 복제: 서버만 시뮬레이션, 클라이언트는 복제 엔티티 바디를 키네마틱으로 두고 위치·회전·속도 보간
+- [ ] 7. Lua API: `Net.IsServer/IsClient/LocalPlayerId`, `entity:IsLocallyOwned()`, RPC(`Server_*`/`Client_*`/`Multicast_*` 접두사, `self:CallServer("Name", ...)` 등), `OnPlayerJoined/Left`, 스크립트 실행 위치
+- [ ] 8. 게임 모듈 C++ API: `IGameModule::OnPlayerJoined/Left`, RPC 등록, `GameModuleApiVersion` 3
+- [ ] 9. LAN 로비/세션: Winsock UDP 브로드캐스트 방 목록(이름/인원/맵), Lua `Net.FindSessions/Host/Connect`, 에디터 ImGui 로비 창(게임 내 로비 UI는 Phase 16에서 이 API 위에)
+- [ ] 10. 에디터 다중 클라이언트 플레이: 플레이 설정(단독/리슨/전용 서버+클라이언트, 클라이언트 수 N), 편집 씬을 `Saved/PlayInEditor/`에 저장 → `ProjectERuntime.exe --connect` N개 실행, 정지 시 자식 프로세스 종료
+- [ ] 11. 디버그·검증: GNS 가짜 지연/손실 설정, 네트워크 통계 패널, `Tests/NetworkTests`(루프백: 직렬화 왕복/델타/생성·파괴/RPC/입력), `Verify.ps1 -Multiplayer`(서버 + 클라이언트 2개 스크린샷·로그), 샘플 `Demo_Multiplayer.escene` + `PlayerPrefab`
+- [ ] 실행 검증 (사용자 확인)
+
+단계 2~3은 멀티플레이 없이도 의미 있는 리팩터라 먼저 커밋. 4 이후 6/7/9는 worktree 병렬 트랙 후보.
 
 ## Phase 16 — 인게임 UI (2026-09-30, 사용자 요청: UMG처럼)
 

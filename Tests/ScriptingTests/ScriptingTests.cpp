@@ -404,6 +404,7 @@ E_TEST(ScriptSystem_PhysicsHooks)
 		[&](FEntity, const FVector3& Impulse) { LastImpulse = Impulse; },
 		[&](FEntity, const FVector3&) {},
 		[&](FEntity) { return FVector3(1.0f, 2.0f, 3.0f); },
+		[&](FEntity) { return 12.5f; },
 	});
 	Scripts.BeginPlay(Scene);
 
@@ -412,6 +413,7 @@ local E = Scene.Find('Ball')
 E:AddImpulse(Vector3(0, 0, 10))
 E:AddForce(Vector3(5, 0, 0))
 assert(E:GetVelocity().Y == 2)
+assert(E:GetMass() == 12.5)
 local Hit = Physics.Raycast(Vector3(0, 0, 100), Vector3(0, 0, -1), 1000)
 assert(Hit and Hit.entity == E and Hit.distance == 50 and Hit.normal.Z == 1)
 assert(Physics.Raycast(Vector3(0, 0, 100), Vector3(0, 0, -1), 10) == nil)

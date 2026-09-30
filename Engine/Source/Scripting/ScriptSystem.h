@@ -39,6 +39,7 @@ struct FScriptPhysicsHooks
 	std::function<void(FEntity, const FVector3&)> AddImpulse;  // kg·cm/s
 	std::function<void(FEntity, const FVector3&)> SetVelocity; // cm/s
 	std::function<FVector3(FEntity)>              GetVelocity;
+	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
 };
 
 // Lua 스크립트 컴포넌트(FScriptComponent) 실행 시스템.

@@ -11,6 +11,8 @@
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
+#include "UI/UIReflection.h"
+#include "UI/UISystem.h"
 
 #include <format>
 
@@ -72,6 +74,11 @@ bool FRuntimeApplication::OnInit()
 
 	RegisterAudioTypes(); // 씬 로드 전에
 	RegisterPhysicsTypes();
+	RegisterUITypes();
+	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
+	{
+		E_LOG(LogRuntime, Warning, "UI 렌더러 초기화 실패: 게임 UI를 그리지 않습니다");
+	}
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -151,14 +158,28 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	Net.Update(DeltaSeconds);
-	World.TickGameplay(DeltaSeconds, &InputState);
+	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
+	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
+	FUIFrameInput       UIInput;
+	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
+	UIInput.bHasPointer = true;
+	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
+	UIInput.Keys        = FUISystem::MakeKeys(InputState);
+	FInput      BlockedInput;
+	const FInput* GameInput = &InputState;
+	if (FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory()))
+	{
+		BlockedInput = InputState.WithoutMouseButtons();
+		GameInput    = &BlockedInput;
+	}
+	World.TickGameplay(DeltaSeconds, GameInput);
 	World.TickPresentation(Scene, DeltaSeconds);
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
 	if (!CameraEntity.IsValid() || !FSceneCamera::ApplyToCamera(Scene, CameraEntity, Camera.GetAspectRatio(), Camera))
 	{
-		CameraController.Update(Camera, InputState, DeltaSeconds);
+		CameraController.Update(Camera, *GameInput, DeltaSeconds);
 	}
 
 	// 오디오: 카메라가 청자
@@ -171,6 +192,9 @@ void FRuntimeApplication::OnRender()
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
+	UIDrawList.Clear();
+	FUISystem::Paint(Scene, UIDrawList);
+	UIRenderer.Render(UIDrawList, Rhi->GetBackBufferOutput(), FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	Rhi->EndFrame();
 }
 
@@ -192,6 +216,7 @@ void FRuntimeApplication::OnShutdown()
 
 	if (Rhi)
 	{
+		UIRenderer.Shutdown();
 		SceneRenderer.Shutdown();
 		Resources.Shutdown();
 		Rhi->Shutdown();

@@ -115,6 +115,8 @@ struct FUIWidget : FUIWidgetData
 
 	// 종류별 기본값으로 새 위젯 (이름 = 종류 이름)
 	static std::unique_ptr<FUIWidget> Create(EUIWidgetType Type);
+	// 종류별 기본 표시 (배치 패널 = SelfHitTestInvisible, 텍스트/진행 막대 = HitTestInvisible, 나머지 Visible)
+	static EUIVisibility GetDefaultVisibility(EUIWidgetType Type);
 	// 저장 값 + 자식 전체 복제 (실행 상태는 초기화)
 	std::unique_ptr<FUIWidget> Clone() const;
 

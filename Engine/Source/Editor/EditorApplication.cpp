@@ -18,6 +18,8 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/Prefab.h"
 #include "Scene/SceneSerializer.h"
+#include "UI/UIReflection.h"
+#include "UI/UISystem.h"
 
 #include <commdlg.h>
 #include <imgui.h>
@@ -75,6 +77,7 @@ bool FEditorApplication::OnInit()
 {
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
+	RegisterUITypes();
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -1072,8 +1075,30 @@ void FEditorApplication::StopPlay()
 void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 {
 	// 텍스트 입력 중에는 게임에 키 입력을 주지 않는다
-	const bool bGameInput = !ImGui::GetIO().WantTextInput;
-	PlayMode.Tick(Context, DeltaSeconds, bGameInput ? &GetInput() : nullptr);
+	const bool    bGameInput = !ImGui::GetIO().WantTextInput;
+	const FInput* GameInput  = bGameInput ? &GetInput() : nullptr;
+
+	// 게임 UI가 먼저 입력을 본다 (뷰포트 이미지 위 포인터만). 포인터를 가져가면 게임에는 마우스 버튼/휠을 뺀 입력
+	FInput BlockedInput;
+	ViewportPanel.bGameUIWantsPointer = false;
+	if (PlayMode.IsActive())
+	{
+		FUIFrameInput UIInput;
+		UIInput.Viewport    = ViewportPanel.GetGameUIViewport();
+		UIInput.bHasPointer = GameInput != nullptr;
+		if (GameInput != nullptr)
+		{
+			UIInput.Pointer = FUISystem::MakePointer(*GameInput, -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
+			UIInput.Keys    = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
+		}
+		if (FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory) && GameInput != nullptr)
+		{
+			ViewportPanel.bGameUIWantsPointer = true;
+			BlockedInput                      = GameInput->WithoutMouseButtons();
+			GameInput                         = &BlockedInput;
+		}
+	}
+	PlayMode.Tick(Context, DeltaSeconds, GameInput);
 
 	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라
 	FCamera* GameCamera = PlayMode.UpdateGameCamera(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));

@@ -51,7 +51,7 @@ class FUIInputRouter
 public:
 	static constexpr float WheelStep = 48.0f; // 휠 한 칸 스크롤 (UI 단위)
 
-	// 반환: 포인터가 UI 위에 있음 (게임 포인터 입력을 막아야 함)
+	// 반환: 포인터가 UI 위에 있거나 UI 버튼을 누르고 있음 (게임 포인터 입력을 막아야 함)
 	bool Process(FUIWidget& Root, const FUIPointerInput& Pointer, const FUIKeyInput& Keys, std::vector<FUIEvent>& OutEvents);
 
 	// 가장 위의 맞힌 위젯 (없으면 nullptr)

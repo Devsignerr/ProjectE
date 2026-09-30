@@ -19,6 +19,9 @@ public:
 	// 모든 눌림 상태 해제 (포커스 상실 시)
 	void ClearState();
 
+	// 게임 UI가 포인터를 가져간 프레임에 게임 로직으로 넘길 사본: 마우스 버튼/휠을 비운다 (키보드/마우스 위치는 그대로)
+	FInput WithoutMouseButtons() const;
+
 	bool IsKeyDown(EKey Key) const { return KeyStates[static_cast<size_t>(Key)]; }
 	bool IsKeyPressed(EKey Key) const;  // 이번 프레임에 눌림
 	bool IsKeyReleased(EKey Key) const; // 이번 프레임에 떼어짐

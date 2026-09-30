@@ -366,17 +366,20 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 1단계 (worktree, 2026-09-30):
 - [x] 위젯 트리 + 레이아웃(앵커/정렬/크기) — `FUIWidget`/`FUILayout`, 테스트 9개 (캔버스 점/늘이기 앵커, 박스 자동/채우기, 접힘/숨김, 줄바꿈 텍스트, 오버레이/보더/그리드, 스크롤 제한/잘림, 배율, 슬롯 편집 역산)
 - [x] UI 렌더러 (사각형/이미지/텍스트, 해상도 스케일) — `FUIPainter`(그리기 목록, 텍스처·잘림별 묶음) + `FUIRenderer`, `FResourceManager::CreateTexture(Raw)`(R8 아틀라스)
-- [~] 입력 라우팅 — `FUIInputRouter`(맞히기/호버/눌림/클릭/포커스/Tab/휠, 입력 차단 여부) + 테스트 3개, 디자이너 "미리보기 입력"에서 동작. **게임 입력과의 우선순위 연결은 2단계**
-- [~] UI 에셋 형식 + 바인딩 — `.eui` v1(`FUIAsset`, JSON 왕복 테스트, 하위 트리 복사/붙여넣기), `FUIInstance`(런타임 인스턴스). **Lua/C++ 바인딩과 씬 컴포넌트는 2단계**
+- [x] 입력 라우팅 — `FUIInputRouter`(맞히기/호버/눌림/클릭/포커스/Tab/휠, 입력 차단 여부) + 테스트 3개, 디자이너 "미리보기 입력"에서 동작. 게임 입력과의 우선순위는 2단계에서 연결
+- [x] UI 에셋 형식 + 바인딩 — `.eui` v1(`FUIAsset`, JSON 왕복 테스트, 하위 트리 복사/붙여넣기), `FUIInstance`(런타임 인스턴스). Lua 바인딩/씬 컴포넌트는 2단계
 - [x] 디자이너 편집 창 — `FWidgetEditor`: 계층(끌어서 부모 변경/순서/복제/복사·붙여넣기/삭제), 팔레트(끌어 놓기/클릭 추가), 캔버스(실제 UI 렌더러, 휠 확대, 가운데·오른쪽 드래그 이동, 선택·이동·8방향 크기, 스냅, 앵커 표시, 미리보기 해상도 프리셋), 속성(UI 설정/공통/슬롯(부모별)/종류별/브러시·텍스처 드롭/글꼴), 앵커 프리셋 4x4. 콘텐츠 브라우저 "새 UI", 아이콘, 참조 갱신(Content 기준). 샘플 `UI/SampleHUD.eui`
 - [x] 1단계 검증: 단위 테스트 전체 통과(UITests 17개 포함), `Verify.ps1 --open-asset UI/SampleHUD.eui [--ui-select PlayButton --ui-zoom 1]` 스크린샷 확인(한글 SDF/둥근 모서리/테두리/선택 표시), `--verify-asset-close`로 UI 편집 창 저장 안 함 닫기 무오류, 디버그 레이어 오류 0건
 
-2단계 (17-2 `FGameWorld` 머지 후):
-- [ ] 씬 컴포넌트 `FUIComponent`(에셋 경로, Z 순서, 보임) + `RegisterUITypes()` + `FSceneCloner` 런타임 인스턴스 처리, 콘텐츠 브라우저에서 씬으로 끌어 놓기
-- [ ] 런타임/플레이 모드 그리기 (씬/포스트 뒤, 에디터 ImGui 앞 — 플레이 뷰포트 오프스크린 타깃 포함, 픽셀 아트 모드는 최종 해상도에)
-- [ ] 입력 우선순위: UI가 포인터를 가져가면 게임 `Input`(Lua `Input`)에 전달하지 않음, 키보드 포커스
-- [ ] Lua 바인딩: `self:GetUI()`/`UI.Find(entity, "이름")`, 위젯 값(Text/Percent/Visibility/Enabled/색 등), 이벤트 `OnUIClicked_<이름>`/`OnUIHover*`; C++ `IGameModule` 훅(API 버전은 17-8과 맞춤)
-- [ ] 검증: 샘플 씬 `Demo_UI.escene`(HUD + 메뉴 버튼 → 스크립트), 런타임/플레이 스크린샷
+2단계 (2026-09-30, master의 17-1~4 머지 후 `FGameWorld` 위에):
+- [x] 씬 컴포넌트 `FUIComponent`(에셋/Z 순서/보임/입력 받기/키보드 포커스) + `RegisterUITypes()`(에디터/런타임/서버 — 서버는 타입만) + 런타임 상태 `FUIComponentRuntime`(복사하면 비워짐 → 플레이 복제/엔티티 복제가 인스턴스를 공유하지 않음), `FUIAssetLibrary`(경로 캐시, 수정 시각이 바뀌면 다시 읽음), 뷰포트 끌어 놓기/콘텐츠 브라우저 "씬에 추가", 계층/인스펙터 아이콘
+- [x] 런타임/플레이 모드 그리기: `FUISystem::Paint` → `FUIRenderer` (런타임 = 백버퍼, 에디터 = 플레이 중 뷰포트 타깃, 씬·그리드·아웃라인 위). 픽셀 아트 모드도 최종 해상도에 그려진다
+- [x] 입력 우선순위: `FUISystem::Update`(Z 순서 큰 UI부터, 위 UI가 가져가면 아래는 포인터 없음)가 `FGameWorld::TickGameplay` 전에 돌고, 포인터를 가져가면 게임에는 `FInput::WithoutMouseButtons()`(키보드 유지). UI 버튼을 누른 채 끌어 나가도 뗄 때까지 가져간다. 에디터는 뷰포트 이미지 위 포인터만, 가져간 프레임에는 클릭 선택 안 함. 키보드 포커스(Tab/Enter/Space)는 컴포넌트 `KeyboardFocus`를 켠 UI만
+- [x] Lua 바인딩(`Scripting/ScriptUIBindings.cpp`): `entity:GetWidget("이름")` → `UIWidget`(Name/Type/Text/Percent/Visible/Visibility/Enabled/Opacity/Color/Texture/FontSize), `entity:IsPointerOverUI()`, 이벤트 `OnUIClicked_/OnUIPressed_/OnUIReleased_/OnUIHoverBegin_/OnUIHoverEnd_<이름>`(UI 엔티티 또는 가장 가까운 조상의 스크립트). C++ 게임 모듈은 `FUIComponent::Runtime`(Instance/Events)을 직접 읽는다 — **`IGameModule` API는 17-8과 겹치지 않도록 바꾸지 않음**
+- [x] 검증: UITests 20개(UI 시스템 Z 순서/입력 끔/숨김/복제/다시 읽기/입력 사본 추가), ScriptingTests `UIScript_WidgetValuesAndClickEvent`, 전체 10묶음 통과. 샘플 `Demo_UI.escene` + `Scripts/HudController.lua`(체력/점수 갱신, 버튼으로 메뉴 닫기, M 키로 다시 열기): 런타임·에디터 플레이 스크린샷 확인, 디버그 레이어 오류 0건, 전용 서버 60틱 로드 정상
+- [ ] 실행 검증 (사용자 확인): 에디터 플레이에서 버튼 호버/클릭, M 키, 디자이너에서 편집 → 저장 → 다시 플레이 반영
+
+멀티플레이와의 연결 (17단계 쪽에서 할 일): HUD 스크립트는 `ClientOnly`가 맞다(17-7 스크립트 실행 위치 도입 시 샘플 `HudController`를 ClientOnly로). UI는 복제 대상이 아니다(클라이언트 로컬). 게임 내 로비 UI는 17-9 API 위에.
 
 후속 과제: SDF 굽기는 Debug 빌드에서 한글 글자당 수십 ms(처음 쓸 때만) — 미리 굽기 목록 또는 백그라운드 굽기. 9-slice 브러시, 텍스트 입력 위젯, 애니메이션(UMG 타임라인), 로컬라이즈, 배포용 한글 글꼴(OFL) 번들
 

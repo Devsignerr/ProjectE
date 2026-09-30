@@ -7,6 +7,7 @@
 #include "Network/NetTransport.h"
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
+#include "UI/UIReflection.h"
 
 E_DEFINE_LOG_CATEGORY(LogServer, Log)
 
@@ -35,9 +36,10 @@ bool FServerApplication::OnInit()
 	}
 	E_LOG(LogServer, Display, "전용 서버 — 프로젝트: {}", FPaths::GetProjectName());
 
-	// 씬 로드 전에 타입 등록 (오디오는 컴포넌트 타입만 — 서버는 소리를 내지 않는다)
+	// 씬 로드 전에 타입 등록 (오디오/UI는 컴포넌트 타입만 — 서버는 소리를 내거나 UI를 그리지 않는다)
 	RegisterAudioTypes();
 	RegisterPhysicsTypes();
+	RegisterUITypes();
 	if (!FPaths::GetProjectDescriptor().GameModule.empty())
 	{
 		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));

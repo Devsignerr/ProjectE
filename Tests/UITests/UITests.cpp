@@ -344,7 +344,7 @@ E_TEST(UIInput_ClickHoverAndDisabled)
 	Pointer.bReleased                = true;
 	Pointer.Position                 = FVector2(300.0f, 300.0f);
 	Events.clear();
-	E_EXPECT_FALSE(Router.Process(*Root, Pointer, {}, Events));
+	E_EXPECT_TRUE(Router.Process(*Root, Pointer, {}, Events)); // 누른 채 끌어 나간 떼기까지는 UI가 가져간다
 	bool bClicked = false;
 	for (const FUIEvent& Event : Events)
 	{
@@ -352,6 +352,9 @@ E_TEST(UIInput_ClickHoverAndDisabled)
 	}
 	E_EXPECT_FALSE(bClicked);
 	E_EXPECT_FALSE(Button->State.bHovered);
+	Pointer.bReleased = false;
+	Events.clear();
+	E_EXPECT_FALSE(Router.Process(*Root, Pointer, {}, Events)); // 다음 프레임부터는 게임으로
 
 	// 비활성: 입력은 막지만(true) 이벤트 없음
 	Button->bEnabled  = false;

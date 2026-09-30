@@ -224,6 +224,7 @@ const char* FEditorTheme::GetComponentIcon(std::string_view TypeName)
 		{ "CameraComponent", ICON_FA_VIDEO },
 		{ "ScriptComponent", ICON_FA_FILE_CODE },
 		{ "ParticleSystemComponent", ICON_FA_FIRE },
+		{ "UIComponent", ICON_FA_DISPLAY },
 		{ "SocketAttachmentComponent", ICON_FA_LINK },
 		{ "RigidBodyComponent", ICON_FA_WEIGHT_HANGING },
 		{ "BoxColliderComponent", ICON_FA_BOX },

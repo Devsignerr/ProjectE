@@ -9,9 +9,11 @@
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/UIRenderer.h"
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
+#include "UI/UIDrawList.h"
 #include "World/GameWorld.h"
 
 #include <memory>
@@ -39,6 +41,8 @@ private:
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
+	FUIRenderer                UIRenderer; // 게임 UI (씬 위)
+	FUIDrawList                UIDrawList; // 프레임마다 다시 채움
 	FScene                     Scene;
 
 	FCamera              Camera;

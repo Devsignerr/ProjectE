@@ -89,3 +89,12 @@ bool FInput::IsMouseButtonReleased(EMouseButton Button) const
 	const size_t Index = static_cast<size_t>(Button);
 	return !ButtonStates[Index] && PrevButtonStates[Index];
 }
+
+FInput FInput::WithoutMouseButtons() const
+{
+	FInput Copy = *this;
+	Copy.ButtonStates.reset();
+	Copy.PrevButtonStates.reset();
+	Copy.WheelDelta = 0.0f;
+	return Copy;
+}

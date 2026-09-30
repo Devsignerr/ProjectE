@@ -4,6 +4,7 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "Editor/SnapSettings.h"
+#include "UI/UIDrawList.h"
 
 #include <filesystem>
 #include <memory>
@@ -13,6 +14,7 @@ class FCamera;
 class FD3D12RenderTarget;
 class FEditorGrid;
 class FSelectionOutline;
+class FUIRenderer;
 class FInput;
 struct FRay;
 struct FEditorContext;
@@ -48,6 +50,11 @@ public:
 	// 뷰포트 렌더 타깃 종횡비 (타깃이 없으면 Fallback)
 	float GetAspectRatio(float Fallback) const;
 	bool IsUsingGizmo() const { return bUsingGizmo; }
+	// 플레이 중 게임 UI: 뷰포트 이미지 좌상단(화면 좌표, 직전 프레임)과 UI 영역(렌더 타깃 픽셀, 이미지와 1:1)
+	FVector2 GetImageMin() const { return ImageMin; }
+	FUIRect  GetGameUIViewport() const;
+	// 게임 UI가 포인터를 가져간 프레임에는 클릭 선택을 하지 않는다 (에디터가 매 프레임 설정)
+	bool bGameUIWantsPointer = false;
 	bool bOpen = true;
 
 	bool          bShowGrid = true;
@@ -60,6 +67,7 @@ private:
 	// 편집 카메라 원근 ↔ 직교 전환 (플레이 중에는 게임 카메라가 쓰이므로 호출하지 않는다)
 	void ToggleOrthographic(FCamera& Camera);
 	void RenderGrid(FEditorContext& Context);
+	void RenderGameUI(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
 	// 커서 아래 가장 가까운 메시 엔티티 (모델 하위 노드 그대로). OutRay/OutDistance: 광선과 경계 상자 진입 거리
@@ -70,6 +78,9 @@ private:
 	std::unique_ptr<FD3D12RenderTarget> RenderTarget;
 	std::unique_ptr<FSelectionOutline>  SelectionOutline;
 	std::unique_ptr<FEditorGrid>        Grid;
+	std::unique_ptr<FUIRenderer>        UIRenderer; // 플레이 중 게임 UI (처음 필요할 때)
+	FUIDrawList                         GameUIDrawList;
+	FVector2                            ImageMin;
 	uint32                              DesiredWidth  = 0;
 	uint32                              DesiredHeight = 0;
 

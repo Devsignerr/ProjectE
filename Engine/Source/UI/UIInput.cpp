@@ -117,7 +117,8 @@ void FUIInputRouter::Reset(FUIWidget& Root)
 
 bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, const FUIKeyInput& Keys, std::vector<FUIEvent>& OutEvents)
 {
-	FUIWidget* Hit    = Pointer.bInside ? HitTest(Root, Pointer.Position) : nullptr;
+	const bool bCaptured = PressedId != 0; // 버튼을 누른 채 밖으로 끌어도 뗄 때까지 포인터를 가져간다
+	FUIWidget* Hit       = Pointer.bInside ? HitTest(Root, Pointer.Position) : nullptr;
 	FUIWidget* Button = FindAncestorOfType(Hit, EUIWidgetType::Button);
 	if (Button != nullptr && !Button->IsEnabledInHierarchy())
 	{
@@ -201,5 +202,5 @@ bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, co
 			Emit(OutEvents, EUIEventType::Clicked, *Focused);
 		}
 	}
-	return Hit != nullptr;
+	return Hit != nullptr || bCaptured;
 }

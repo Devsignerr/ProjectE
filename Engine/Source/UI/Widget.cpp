@@ -13,32 +13,34 @@ namespace
 	}
 } // namespace
 
-std::unique_ptr<FUIWidget> FUIWidget::Create(EUIWidgetType Type)
+EUIVisibility FUIWidget::GetDefaultVisibility(EUIWidgetType Type)
 {
-	auto Widget  = std::make_unique<FUIWidget>(Type);
-	Widget->Name = ToString(Type);
 	switch (Type)
 	{
 	case EUIWidgetType::Canvas:
 	case EUIWidgetType::HorizontalBox:
 	case EUIWidgetType::VerticalBox:
 	case EUIWidgetType::Overlay:
-	case EUIWidgetType::UniformGrid:
-		// 배치용 패널은 빈 곳의 클릭을 게임으로 흘려보낸다
-		Widget->Visibility = EUIVisibility::SelfHitTestInvisible;
-		break;
-	case EUIWidgetType::ScrollBox:
-		Widget->Visibility = EUIVisibility::Visible; // 휠을 받는다
-		break;
+	case EUIWidgetType::UniformGrid: return EUIVisibility::SelfHitTestInvisible; // 배치용 패널은 빈 곳의 클릭을 게임으로 흘려보낸다
+	case EUIWidgetType::Text:
+	case EUIWidgetType::ProgressBar: return EUIVisibility::HitTestInvisible;
+	default:                         return EUIVisibility::Visible; // 스크롤 박스는 휠을 받는다
+	}
+}
+
+std::unique_ptr<FUIWidget> FUIWidget::Create(EUIWidgetType Type)
+{
+	auto Widget        = std::make_unique<FUIWidget>(Type);
+	Widget->Name       = ToString(Type);
+	Widget->Visibility = GetDefaultVisibility(Type);
+	switch (Type)
+	{
 	case EUIWidgetType::Border:
 		Widget->Brush          = MakeBrush(FVector4(0.08f, 0.09f, 0.12f, 0.85f), 6.0f);
 		Widget->ContentPadding = FUIMargin(8.0f);
 		break;
-	case EUIWidgetType::Image:
-		break;
 	case EUIWidgetType::Text:
-		Widget->Visibility = EUIVisibility::HitTestInvisible;
-		Widget->Text       = "텍스트";
+		Widget->Text = "텍스트";
 		break;
 	case EUIWidgetType::Button:
 		Widget->Brush          = MakeBrush(FVector4(0.22f, 0.45f, 0.9f, 1.0f), 6.0f);
@@ -48,13 +50,12 @@ std::unique_ptr<FUIWidget> FUIWidget::Create(EUIWidgetType Type)
 		Widget->ContentPadding = FUIMargin(16.0f, 8.0f);
 		break;
 	case EUIWidgetType::ProgressBar:
-		Widget->Visibility = EUIVisibility::HitTestInvisible;
-		Widget->Brush      = MakeBrush(FVector4(0.06f, 0.06f, 0.07f, 0.85f), 4.0f);
-		Widget->FillBrush  = MakeBrush(FVector4(0.3f, 0.85f, 0.4f, 1.0f), 4.0f);
-		Widget->MinSize    = FVector2(100.0f, 16.0f);
+		Widget->Brush     = MakeBrush(FVector4(0.06f, 0.06f, 0.07f, 0.85f), 4.0f);
+		Widget->FillBrush = MakeBrush(FVector4(0.3f, 0.85f, 0.4f, 1.0f), 4.0f);
+		Widget->MinSize   = FVector2(100.0f, 16.0f);
 		break;
-	case EUIWidgetType::Count:
-		break;
+	default:
+		break; // 배치 패널/이미지는 기본값 그대로
 	}
 	return Widget;
 }

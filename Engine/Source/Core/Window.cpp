@@ -101,6 +101,9 @@ bool FWindow::Create(const FWindowDesc& Desc)
 	WindowClass.lpfnWndProc   = &FWindow::WndProc;
 	WindowClass.hInstance     = Instance;
 	WindowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+	// 패키지 exe에 써 넣은 아이콘 그룹 1 (FExecutableResources::IconGroupId). 없으면 기본 아이콘
+	WindowClass.hIcon   = static_cast<HICON>(LoadImageW(Instance, MAKEINTRESOURCEW(1), IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0));
+	WindowClass.hIconSm = static_cast<HICON>(LoadImageW(Instance, MAKEINTRESOURCEW(1), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0));
 	WindowClass.hbrBackground = nullptr; // 배경은 렌더러가 그린다 (깜빡임 방지)
 	WindowClass.lpszClassName = GWindowClassName;
 

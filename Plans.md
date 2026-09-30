@@ -438,3 +438,33 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 5. 편집 뷰포트 직교 보기 (2026-09-30 사용자 요청): 툴바 원근/직교 토글(전환 시 초점 거리 기준으로 같은 크기), 휠 줌, F 프레이밍, 직교 기즈모, `EditorCamera.json` 저장 + 테스트
 - [ ] 실행 검증 (사용자 확인): 카메라 이동 시 반짝임 없음, 창 크기 변경
 - [ ] 후속: 머티리얼 텍스처 최근접 샘플링 옵션(작은 텍스처 확대 시 번짐), 직교 카메라 스페큘러 시선 벡터(현재 원근처럼 카메라 위치 기준), 픽셀 모드 에디터 그리드, 팔레트 텍스처(LUT) 기반 색 제한
+
+## Phase 19 — 배포: 게임 패키지 → Steam (2026-10-01, 사용자 요청: "게임을 바이너리화해서 스팀 같은 데 올릴 수 있게", 1~4 순서대로)
+
+**DoD**: `Package.ps1` 한 번으로 `<게임 이름>.exe`(아이콘·버전 정보)를 더블클릭하면 바로 실행되는 폴더가 나오고, VC++ 런타임이 설치되지 않은 PC에서도 실행된다. 로그·크래시 덤프·설정은 사용자 폴더(`%LOCALAPPDATA%`)에 남고 PDB는 패키지 밖에 따로 보관된다. 창/테두리 없는 전체 화면을 고를 수 있다. 콘텐츠는 pak으로 묶인다. Steamworks를 켠 빌드는 Steam 초기화·업적·오버레이가 되고, 스크립트 하나로 SteamPipe에 올릴 수 있다.
+
+결정 (2026-10-01):
+- 실행 파일: 프로젝트마다 exe를 새로 빌드하지 않는다. 패키징 때 `ProjectERuntime.exe`를 `<ExecutableName>.exe`로 복사하고 아이콘(.ico 또는 .png)·버전 리소스를 `UpdateResource`로 써 넣는다(`ProjectECook --stamp-exe`)
+- 패키지 배치(UE식): `<Pkg>/<Exe>.exe` + `Engine/` + `<Exe>/<프로젝트>.eproject, Content/, Cooked/, Config/`. 런타임은 `--project`가 없으면 `<exe 폴더>/<exe 이름>/`의 .eproject를 먼저 찾는다(`Run.bat` 불필요)
+- 패키지 판정: `Engine/Packaged.json`(Package.ps1이 기록: 구성/시각/엔진 버전) → `FPaths::IsPackaged()`. 패키지는 Saved를 `%LOCALAPPDATA%/[<Company>/]<프로젝트>/Saved`로 옮긴다(설치 폴더는 쓰기 불가일 수 있음)
+- VC++ 런타임: app-local 배포(`Microsoft.VC143.CRT` DLL 복사). 정적 CRT(/MT)는 엔진 DLL·게임 모듈·exe가 STL 객체를 주고받으므로 쓰지 않는다
+- 심볼: Release에도 PDB 생성(`/Zi`, `/DEBUG /OPT:REF /OPT:ICF`), 패키지에는 넣지 않고 `Build/Package/<이름>-Symbols/`에 보관
+- 크래시: 미니덤프 + 로그 사본을 `Saved/Crashes/<시각>/`에, 패키지 창 앱이면 알림 대화 상자
+- 화면: 창 모드 / 테두리 없는 전체 화면(전용 전체 화면은 하지 않음 — flip 모델), Alt+Enter 전환, VSync. 사용자 설정 `Saved/Config/GameUserSettings.json`, 프로젝트 기본값 `Config/DefaultGameUserSettings.json`(선택)
+- Steamworks SDK는 파트너 계정 로그인 후에만 받을 수 있어 FetchContent로 받지 않는다 → 3단계 착수 시 사용자와 방식 결정
+
+1단계 — 배포 품질:
+- [x] 1-1. 경로: `.eproject` 배포 필드(DisplayName/Version/Company/ExecutableName/Icon, 비면 `Get*` 대체값), `FPaths::IsPackaged` + 사용자 Saved(`MakeUserSavedDirectory`, 폴더 이름 정리), exe 이름 폴더 프로젝트 탐색, 기본 로그 파일(`<Saved>/Logs/<exe 이름>.log`, 이전 로그 `-backup` 1개, 같은 앱이 쓰는 중이면 `-<pid>`) + 로그 첫머리 엔진/프로젝트 요약, 런타임 창 제목 = DisplayName. `PathsTests` 확장
+- [x] 1-2. 크래시: `<Saved>/Crashes/<시각>/` Minidump.dmp(스택 간접 메모리 + 스레드 정보) + CrashReport.txt + 로그 사본, Fatal 로그도 사용자 예외로 같은 경로(`FCrashHandler::ReportFatal`), 재진입 방지, 패키지 창 앱이면 알림 대화 상자. 검증 인자 `--crash-test`(30프레임 뒤 액세스 위반). Release PDB(`/Z7` + `/DEBUG /OPT:REF /OPT:ICF`)
+- [x] 1-3. `FExecutableResources`(Core/Platform: .ico 파싱, RGBA → 256/64/48/32/16 BMP 아이콘, VS_VERSIONINFO 생성, `UpdateResource` 기록) + `ProjectECook --stamp-exe`, 창 클래스 아이콘 = 리소스 그룹 1. Package.ps1: `<Exe>.exe` + `<Exe>/` 프로젝트 폴더, `Engine/Packaged.json`, Run.bat 제거, VC++ 런타임(vswhere → `Microsoft.VC143.CRT`) 동봉, `<이름>-Symbols/`(PDB + 같은 바이너리), dumpbin 종속 DLL 검사(CRT는 패키지 안에 있어야 통과), ExecutableName = 게임 모듈 이름이면 거부. 샘플 `Icon.png`. `ExecutableResourcesTests` 4개(복사한 exe에 스탬프 → `GetFileVersionInfo`/`LoadImage`로 확인). 확인: Release 패키지 51.8MB, 인자 없이 `Sample.exe` 실행 스크린샷 정상, 로그/덤프 `%LOCALAPPDATA%\ProjectE\Sample\Saved`, 탐색기 버전 정보
+- [ ] 1-4. 화면 설정(창/테두리 없는 전체 화면, Alt+Enter, VSync, 설정 파일) + Lua `Game.Quit/SetWindowMode/SetVSync`
+- [ ] 1-5. 검증: 패키지 exe 직접 실행 스크린샷, 사용자 폴더 로그/설정, 강제 크래시 덤프
+
+2단계 — pak:
+- [ ] 콘텐츠 아카이브 형식 + 가상 파일 시스템(런타임 파일 읽기 경로 통합) + 패키징 연동 + 테스트
+
+3단계 — Steamworks (선택 모듈):
+- [ ] SDK 방식 결정 후 초기화/콜백/업적/오버레이 + Lua/게임 모듈 API
+
+4단계 — SteamPipe:
+- [ ] `Scripts/SteamUpload.ps1`: app/depot vdf 생성 + steamcmd 업로드(로그인은 사용자)

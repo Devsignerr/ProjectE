@@ -40,7 +40,7 @@ bool FRuntimeApplication::OnInit()
 	// FApplication::Run이 FPaths를 초기화했으므로 여기서는 프로젝트만 확인
 	if (FPaths::HasProject())
 	{
-		GetWindow().SetTitle(FStringConv::ToWide(FPaths::GetProjectName()));
+		GetWindow().SetTitle(FStringConv::ToWide(FPaths::GetProjectDescriptor().GetDisplayName()));
 		E_LOG(LogRuntime, Display, "프로젝트: {}", FPaths::GetProjectName());
 	}
 	else

@@ -9,7 +9,35 @@
 
 #include <algorithm>
 #include <chrono>
+#include <format>
 #include <string>
+
+namespace
+{
+	// 기본 로그 파일 <Saved>/Logs/<실행 파일 이름>.log. 이전 실행 로그는 -backup으로 하나 보관한다.
+	// 같은 앱이 이미 돌고 있어 이전 파일을 옮길 수 없으면(쓰는 중) 프로세스 번호를 붙인 파일을 쓴다
+	std::filesystem::path OpenDefaultLogFile()
+	{
+		wchar_t     Buffer[MAX_PATH * 4];
+		const DWORD Length = GetModuleFileNameW(nullptr, Buffer, static_cast<DWORD>(std::size(Buffer)));
+		const std::wstring Stem = std::filesystem::path(Buffer, Buffer + Length).stem().wstring();
+
+		const std::filesystem::path Directory = FPaths::GetLogDirectory();
+		std::filesystem::path       LogPath   = Directory / (Stem + L".log");
+		std::error_code             ErrorCode;
+		if (std::filesystem::exists(LogPath, ErrorCode))
+		{
+			const std::filesystem::path BackupPath = Directory / (Stem + L"-backup.log");
+			std::filesystem::remove(BackupPath, ErrorCode);
+			std::filesystem::rename(LogPath, BackupPath, ErrorCode);
+			if (ErrorCode)
+			{
+				LogPath = Directory / std::format(L"{}-{}.log", Stem, GetCurrentProcessId());
+			}
+		}
+		return FLog::SetFileOutput(LogPath) ? LogPath : std::filesystem::path();
+	}
+} // namespace
 
 FApplication::FApplication(const FApplicationDesc& InDesc)
 	: Desc(InDesc)
@@ -32,6 +60,14 @@ int FApplication::Run()
 	{
 		FLog::SetFileOutput(LogPath);
 	}
+	else if (const std::filesystem::path DefaultLog = OpenDefaultLogFile(); !DefaultLog.empty())
+	{
+		E_LOG(LogCore, Log, "로그 파일: {}", FStringConv::ToUtf8(DefaultLog.wstring()));
+	}
+	// FPaths 초기화 로그는 파일을 열기 전이므로 요약을 다시 남긴다 (배포 환경 진단용)
+	E_LOG(LogCore, Display, "엔진: {}{}, 프로젝트: {}", FStringConv::ToUtf8(FPaths::GetEngineDirectory().wstring()), FPaths::IsPackaged() ? " (패키지)" : "",
+	      FPaths::HasProject() ? FStringConv::ToUtf8(FPaths::GetProjectFile().wstring()) : std::string("없음"));
+	FCrashHandler::SetDumpDirectory(FPaths::GetCrashDirectory());
 	ScreenshotPath = CommandLine.GetValue(L"--screenshot");
 	if (const std::wstring ExitAfter = CommandLine.GetValue(L"--exit-after"); !ExitAfter.empty())
 	{
@@ -44,6 +80,12 @@ int FApplication::Run()
 	if (Desc.bHeadless)
 	{
 		ScreenshotPath.clear(); // 렌더가 없으므로 무시
+	}
+	// 크래시 알림 대화 상자는 패키지 게임 창에서만 (개발/자동 검증은 로그와 덤프로 충분, 서버는 사람이 없다)
+	FCrashHandler::SetShowDialog(FPaths::IsPackaged() && !Desc.bHeadless && ExitAfterFrames == 0);
+	if (CommandLine.HasFlag(L"--crash-test"))
+	{
+		CrashTestFrame = 30; // 패키지 크래시 덤프 검증: 30프레임(틱) 뒤 의도적 액세스 위반
 	}
 	if (ExitAfterFrames > 0)
 	{
@@ -116,6 +158,7 @@ void FApplication::RunWindowedLoop()
 			}
 			OnRender();
 			++FrameIndex;
+			UpdateCrashTest();
 			if (ExitAfterFrames > 0 && FrameIndex >= ExitAfterFrames)
 			{
 				RequestExit();
@@ -158,6 +201,7 @@ void FApplication::RunHeadlessLoop()
 		Timer.Tick();
 		OnUpdate(Timer.GetDeltaSeconds());
 		++FrameIndex;
+		UpdateCrashTest();
 		if (ExitAfterFrames > 0 && FrameIndex >= ExitAfterFrames)
 		{
 			RequestExit();
@@ -193,6 +237,16 @@ void FApplication::RunHeadlessLoop()
 	}
 	SetConsoleCtrlHandler(&HandleConsoleControl, FALSE);
 	GHeadlessApp = nullptr;
+}
+
+void FApplication::UpdateCrashTest()
+{
+	if (CrashTestFrame != 0 && FrameIndex == CrashTestFrame)
+	{
+		E_LOG(LogCore, Warning, "--crash-test: 의도적으로 크래시를 일으킵니다");
+		volatile int* Null = nullptr;
+		*Null = 1;
+	}
 }
 
 void FApplication::HandleWindowEvent(const FWindowEvent& Event)

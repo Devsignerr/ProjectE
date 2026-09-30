@@ -1,5 +1,6 @@
 #include "Core/Log.h"
 
+#include "Core/Platform/CrashHandler.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 
@@ -16,6 +17,7 @@ namespace
 {
 	std::mutex    GLogMutex;
 	std::ofstream GLogFile; // SetFileOutput
+	std::filesystem::path GLogFilePath;
 	bool       GbConsoleColorEnabled = false;
 	bool       GbHistoryEnabled = false;
 	uint64     GNextLogSequence = 1;
@@ -111,6 +113,7 @@ bool FLog::SetFileOutput(const std::filesystem::path& Path)
 {
 	std::scoped_lock Lock(GLogMutex);
 	GLogFile.close();
+	GLogFilePath.clear();
 	if (Path.empty())
 	{
 		return true;
@@ -118,7 +121,16 @@ bool FLog::SetFileOutput(const std::filesystem::path& Path)
 	std::error_code ErrorCode;
 	std::filesystem::create_directories(Path.parent_path(), ErrorCode);
 	GLogFile.open(Path, std::ios::binary | std::ios::trunc);
+	if (GLogFile.is_open())
+	{
+		GLogFilePath = Path;
+	}
 	return GLogFile.is_open();
+}
+
+std::filesystem::path FLog::GetFileOutputPath()
+{
+	return GLogFilePath; // 크래시 경로에서도 불리므로 잠그지 않는다 (SetFileOutput은 시작 때만)
 }
 
 void FLog::WriteEmergency(std::string_view Text)
@@ -181,6 +193,7 @@ void FLog::Write(const FLogCategory& Category, ELogVerbosity Verbosity, std::str
 		{
 			__debugbreak();
 		}
+		FCrashHandler::ReportFatal(Line); // 덤프 폴더가 지정되어 있으면 미니덤프
 		std::abort();
 	}
 }

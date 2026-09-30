@@ -3,5 +3,9 @@
   "EngineVersion": "0.1.0",
   "DefaultScene": "Scenes/Main.escene",
   "GameModule": "SampleGame",
-  "PlayerPrefab": "Prefabs/Player.eprefab"
+  "PlayerPrefab": "Prefabs/Player.eprefab",
+  "DisplayName": "ProjectE Sample",
+  "Version": "0.1.0",
+  "Company": "ProjectE",
+  "Icon": "Icon.png"
 }

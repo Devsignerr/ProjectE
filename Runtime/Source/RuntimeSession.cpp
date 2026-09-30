@@ -167,6 +167,6 @@ void FRuntimeApplication::HandleSessionRequest(const FNetSessionRequest& Request
 
 void FRuntimeApplication::UpdateWindowTitle()
 {
-	const std::string Project = FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE";
+	const std::string Project = FPaths::HasProject() ? FPaths::GetProjectDescriptor().GetDisplayName() : "ProjectE";
 	GetWindow().SetTitle(FStringConv::ToWide(Net.GetMode() == ENetMode::Standalone ? Project : std::format("{} [{}]", Project, ToString(Net.GetMode()))));
 }

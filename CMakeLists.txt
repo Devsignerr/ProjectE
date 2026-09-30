@@ -44,6 +44,11 @@ add_compile_definitions(
     $<IF:$<CONFIG:Debug>,E_DEBUG=1,E_DEBUG=0>
 )
 
+# Release에도 PDB 생성 (배포 크래시 덤프 분석용 — 패키지에는 넣지 않고 따로 보관).
+# /Z7(오브젝트에 내장)은 병렬 컴파일에서 PDB 잠금 경합이 없다. /DEBUG를 켜면 링커 최적화가 꺼지므로 명시한다
+set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug>:ProgramDatabase>$<$<CONFIG:Release>:Embedded>")
+add_link_options($<$<CONFIG:Release>:/DEBUG> $<$<CONFIG:Release>:/OPT:REF> $<$<CONFIG:Release>:/OPT:ICF>)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 include(EngineTargets)
 include(ThirdParty)

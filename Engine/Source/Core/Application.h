@@ -60,6 +60,7 @@ private:
 	void HandleWindowEvent(const FWindowEvent& Event);
 	void RunWindowedLoop();
 	void RunHeadlessLoop();
+	void UpdateCrashTest();
 
 	FApplicationDesc Desc;
 	FWindow          Window;
@@ -68,10 +69,12 @@ private:
 	std::atomic<bool> bExitRequested = false;
 
 	// 자동 검증 인자 (명령줄):
-	//   --log <경로>          모든 로그를 파일에도 기록
+	//   --log <경로>          모든 로그를 파일에도 기록 (없으면 <Saved>/Logs/<실행 파일 이름>.log)
 	//   --exit-after <N>      N 프레임 렌더 후 종료 (--screenshot만 주면 기본 90, 헤드리스는 N 틱)
 	//   --screenshot <경로>   마지막 프레임을 PNG로 저장
+	//   --crash-test          30프레임 뒤 액세스 위반을 일으켜 크래시 덤프/대화 상자를 검증
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
 	uint64                FrameIndex = 0;
+	uint64                CrashTestFrame = 0; // --crash-test: 이 프레임(틱)에서 의도적 크래시 (덤프 검증)
 };

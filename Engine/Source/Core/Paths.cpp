@@ -6,9 +6,12 @@
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 
+#include <string_view>
+
 namespace
 {
 	constexpr const wchar_t* GEngineMarker         = L"Engine/Shaders/Shaders.json";
+	constexpr const wchar_t* GPackagedMarker       = L"Engine/Packaged.json";
 	constexpr const wchar_t* GDefaultProjectFile   = L"Projects/Sample/Sample.eproject";
 	constexpr const wchar_t* GProjectOption        = L"--project";
 
@@ -20,6 +23,7 @@ namespace
 		std::filesystem::path ProjectFile;
 		FProjectDescriptor    ProjectDescriptor;
 		bool                  bHasProject = false;
+		bool                  bPackaged   = false;
 	};
 
 	FPathsState& GetState()
@@ -50,6 +54,24 @@ namespace
 	{
 		return FStringConv::ToUtf8(Path.wstring());
 	}
+
+	std::filesystem::path QueryExecutableStem()
+	{
+		wchar_t     Buffer[MAX_PATH * 4];
+		const DWORD Length = GetModuleFileNameW(nullptr, Buffer, static_cast<DWORD>(std::size(Buffer)));
+		return std::filesystem::path(Buffer, Buffer + Length).stem();
+	}
+
+	std::filesystem::path QueryLocalAppData()
+	{
+		wchar_t     Buffer[MAX_PATH * 4];
+		const DWORD Length = GetEnvironmentVariableW(L"LOCALAPPDATA", Buffer, static_cast<DWORD>(std::size(Buffer)));
+		if (Length == 0 || Length >= std::size(Buffer))
+		{
+			return {};
+		}
+		return std::filesystem::path(Buffer, Buffer + Length);
+	}
 } // namespace
 
 void FPaths::Initialize()
@@ -74,17 +96,24 @@ void FPaths::Initialize(const FCommandLine& CommandLine)
 		      ToUtf8(State.ExecutableDirectory), FStringConv::ToUtf8(GEngineMarker));
 	}
 	State.bInitialized = true;
+	std::error_code MarkerError;
+	State.bPackaged = std::filesystem::exists(State.EngineDirectory / GPackagedMarker, MarkerError);
 
-	E_LOG(LogCore, Display, "엔진 디렉터리: {}", ToUtf8(State.EngineDirectory));
+	E_LOG(LogCore, Display, "엔진 디렉터리: {}{}", ToUtf8(State.EngineDirectory), State.bPackaged ? " (패키지)" : "");
 
-	// 프로젝트: 명령줄 우선, 없으면 예제 프로젝트
-	const std::wstring ProjectArgument = CommandLine.GetValue(GProjectOption);
+	// 프로젝트: 명령줄 → <실행 파일 폴더>/<실행 파일 이름>/ (패키지 배치) → 예제 프로젝트
+	const std::wstring          ProjectArgument = CommandLine.GetValue(GProjectOption);
+	const std::filesystem::path PackagedProject = ResolveProjectFile(State.ExecutableDirectory / QueryExecutableStem());
 	if (!ProjectArgument.empty())
 	{
 		if (!SetProject(ProjectArgument))
 		{
 			E_LOG(LogCore, Error, "--project로 지정한 프로젝트를 열 수 없습니다: {}", FStringConv::ToUtf8(ProjectArgument));
 		}
+	}
+	else if (!PackagedProject.empty())
+	{
+		SetProject(PackagedProject);
 	}
 	else
 	{
@@ -122,6 +151,11 @@ const std::filesystem::path& FPaths::GetEngineDirectory()
 std::filesystem::path FPaths::GetEngineShaderDirectory()
 {
 	return GetEngineDirectory() / L"Engine" / L"Shaders";
+}
+
+bool FPaths::IsPackaged()
+{
+	return GetState().bPackaged;
 }
 
 bool FPaths::SetProject(const std::filesystem::path& ProjectFileOrDirectory)
@@ -191,6 +225,16 @@ std::filesystem::path FPaths::GetProjectConfigDirectory()
 
 std::filesystem::path FPaths::GetProjectSavedDirectory()
 {
+	if (IsPackaged())
+	{
+		// 설치 폴더(Program Files, Steam 라이브러리)는 쓰기 권한이 없을 수 있다
+		const std::filesystem::path LocalAppData = QueryLocalAppData();
+		if (!LocalAppData.empty())
+		{
+			const FProjectDescriptor& Descriptor = GetProjectDescriptor();
+			return EnsureDirectory(MakeUserSavedDirectory(LocalAppData, Descriptor.Company, Descriptor.Name));
+		}
+	}
 	return EnsureDirectory(GetProjectDirectory() / L"Saved");
 }
 
@@ -201,6 +245,48 @@ std::filesystem::path FPaths::GetSavedDirectory()
 		return GetProjectSavedDirectory();
 	}
 	return EnsureDirectory(GetEngineDirectory() / L"Saved");
+}
+
+std::filesystem::path FPaths::GetLogDirectory()
+{
+	return EnsureDirectory(GetSavedDirectory() / L"Logs");
+}
+
+std::filesystem::path FPaths::GetCrashDirectory()
+{
+	return EnsureDirectory(GetSavedDirectory() / L"Crashes");
+}
+
+std::string FPaths::SanitizeFileName(const std::string& Name)
+{
+	constexpr std::string_view InvalidCharacters = "<>:\"/\\|?*";
+	std::string                Result            = Name;
+	for (char& Character : Result)
+	{
+		if (static_cast<unsigned char>(Character) < 0x20 || InvalidCharacters.find(Character) != std::string_view::npos)
+		{
+			Character = '_';
+		}
+	}
+	// 끝의 점/공백은 Windows 폴더 이름에 쓸 수 없다
+	while (!Result.empty() && (Result.back() == '.' || Result.back() == ' '))
+	{
+		Result.pop_back();
+	}
+	return Result;
+}
+
+std::filesystem::path FPaths::MakeUserSavedDirectory(const std::filesystem::path& LocalAppData, const std::string& Company,
+                                                     const std::string& ProjectName)
+{
+	std::filesystem::path Directory = LocalAppData;
+	if (const std::string SafeCompany = SanitizeFileName(Company); !SafeCompany.empty())
+	{
+		Directory /= FStringConv::ToWide(SafeCompany);
+	}
+	const std::string SafeName = SanitizeFileName(ProjectName);
+	Directory /= FStringConv::ToWide(SafeName.empty() ? std::string("ProjectE") : SafeName);
+	return Directory / L"Saved";
 }
 
 std::filesystem::path FPaths::FindEngineDirectory(const std::filesystem::path& StartDirectory)

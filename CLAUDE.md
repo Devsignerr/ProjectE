@@ -60,6 +60,7 @@
 - 엔진 DLL: 런타임 모듈(Core/RHI/Scene/Renderer/Audio/Physics/AI/Scripting/World/Network/UI)은 `ProjectEEngine.dll` 하나로 빌드된다(`E_ENGINE_SHARED`, 기본 ON — OBJECT 라이브러리를 DLL에 링크, 함수는 `WINDOWS_EXPORT_ALL_SYMBOLS`로 자동 내보냄). 실행 파일/테스트/게임 모듈은 **`ProjectE::Engine`만 링크**한다(모듈 타깃 직접 링크 금지 — 객체 중복). DLL 밖에서 접근하는 **전역 데이터**는 `E_ENGINE_API`(Core/EngineApi.h), 엔진 공개 헤더의 로그 카테고리는 `E_DECLARE_ENGINE_LOG_CATEGORY`. 헤더 인라인 템플릿의 함수 지역 static처럼 바이너리마다 따로 생기는 상태에 전역 의미를 두지 않는다(예: ECS 타입 ID는 `FRegistry::AssignComponentTypeId`가 엔진 DLL에서 부여)
 - 게임 모듈: `Projects/<이름>/Source/CMakeLists.txt` → `<이름>.dll`(SHARED, `ProjectE::Engine` 링크, `E_GAME_MODULE_TARGETS`에 추가). `.eproject`의 `"GameModule"`로 지정하면 에디터/런타임이 실행 파일 폴더에서 로드(`FGameModuleHost`). `IGameModule`(Scene/GameModule.h) + `E_IMPLEMENT_GAME_MODULE`: `OnLoad`에서 컴포넌트 리플렉션 등록(인스펙터/직렬화/Lua 자동 노출), `OnBeginPlay/OnUpdate/OnEndPlay`(에디터는 플레이 중에만, 스크립트 뒤·물리 앞). 언로드 시 모듈 소유 타입 제거(+ `AddUnloadCleanup`으로 등록된 다른 모듈의 소유자별 정리 — 예: 비헤이비어 트리 노드. 게임 모듈의 BT 노드는 OnLoad에서 Owner를 비운 채 `FBehaviorTreeNodeRegistry::Get().Register`), DLL은 프로세스 종료까지 유지. 멀티플레이(`GameModuleApiVersion` 3): 게임 모듈은 서버에서만 돌며 `OnPlayerJoined/Left`, `OnRpc`(Server RPC·자신의 Multicast, 같은 이름의 스크립트 메서드와 함께), `GetNet()->CallRpc`(`Scene/GameRpc.h` — Lua와 같은 경로)를 쓴다. 인터페이스를 바꾸면 버전을 올린다
 - 병렬 작업: 독립 트랙은 서브에이전트를 git worktree로 띄워 브랜치에 커밋시키고 메인이 머지한다. `.claude/worktrees/`는 gitignore. 트랙마다 수정 허용 범위를 명시할 것
+- 배포/패키징(Phase 19): 패키지 배치는 `Package.ps1` 머리 주석이 기준(`<Exe>.exe` + `Engine/` + `<Exe>/` 프로젝트 폴더 — 런타임은 `--project`가 없으면 `<exe 폴더>/<exe 이름>/`에서 .eproject를 찾는다). exe는 다시 빌드하지 않고 `ProjectERuntime.exe` 복사본에 `ProjectECook --stamp-exe`(`FExecutableResources`)로 .eproject `DisplayName/Version/Company/Icon` 리소스를 쓴다(아이콘 그룹 ID 1 = 창 아이콘). `Engine/Packaged.json`이 있으면 `FPaths::IsPackaged()` → Saved는 `%LOCALAPPDATA%/[Company/]<이름>/Saved`이므로 **런타임이 쓰는 파일은 항상 `FPaths::GetSavedDirectory()` 아래**(프로젝트/설치 폴더에 쓰지 않는다). 로그는 기본 `<Saved>/Logs/<exe 이름>.log`(`--log`로 대체), 크래시·Fatal은 `<Saved>/Crashes/<시각>/`에 미니덤프 + 보고서 + 로그 사본(`FCrashHandler`, 검증 인자 `--crash-test`). Release도 PDB(`/Z7` + `/DEBUG /OPT:REF /OPT:ICF`), VC++ 런타임은 app-local(정적 CRT 금지 — DLL 경계로 STL을 넘긴다)
 - 경고 = 에러 (`/W4 /WX`). 경고를 억제하지 말고 원인을 고친다
 - 로그: `E_LOG(Category, Verbosity, "포맷 {}", 인자)` — std::format 문법. 카테고리는 헤더에서 `E_DECLARE_LOG_CATEGORY`, 하나의 .cpp에서 `E_DEFINE_LOG_CATEGORY`
 - 검증: `E_CHECK(expr)`, `E_CHECKF(expr, "포맷", ...)` (실패 시 Fatal)
@@ -140,7 +141,7 @@ Build/            CMake 빌드 출력 (git 제외)
 .\Scripts\Build.ps1 -RunSandbox      # 빌드 후 런타임 데모 실행
 .\Scripts\Build.ps1 -Test            # 빌드 후 단위 테스트 (ctest)
 .\Scripts\Build.ps1 -VisualStudio    # .sln 생성 (Build\vs2022\ProjectE.sln)
-.\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release] [-IncludeSources]  # Release 빌드 → 쿠킹 → Build\Package\<프로젝트>\ (쿠킹 DXIL/에셋만, DXC 없음, Run.bat 포함)
+.\Scripts\Package.ps1 [-Project Projects\Sample] [-Config Release] [-IncludeSources]  # Release 빌드 → 쿠킹 → Build\Package\<프로젝트>\<ExecutableName>.exe (아이콘/버전 스탬프, VC++ 런타임 동봉, 종속 DLL 검사) + Build\Package\<프로젝트>-Symbols\ (PDB)
 ```
 
 수동(VS 개발자 명령 프롬프트): `cmake --preset ninja-debug` → `cmake --build --preset ninja-debug`. 실행 파일은 `Build/ninja-<config>/Bin/` 아래 `ProjectEEditor.exe`(에디터), `Sandbox.exe`(런타임 데모).

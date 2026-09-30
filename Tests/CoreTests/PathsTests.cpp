@@ -52,6 +52,27 @@ E_TEST(Project_DescriptorRoundtrip)
 	Saved.DefaultScene  = "Scenes/Main.escene";
 	E_EXPECT_TRUE(Saved.SaveToFile(File));
 
+	// 배포 필드: 비어 있으면 대체값, 값이 있으면 저장/로드된다
+	E_EXPECT_TRUE(Saved.GetDisplayName() == Saved.Name);
+	E_EXPECT_TRUE(Saved.GetExecutableName() == Saved.Name);
+	E_EXPECT_TRUE(Saved.GetVersion() == "1.0.0");
+	{
+		FProjectDescriptor WithDistribution = Saved;
+		WithDistribution.DisplayName    = "보이는 이름";
+		WithDistribution.Version        = "2.3.4";
+		WithDistribution.Company        = "Studio";
+		WithDistribution.ExecutableName = "MyGame";
+		WithDistribution.Icon           = "Build/Icon.png";
+		E_EXPECT_TRUE(WithDistribution.SaveToFile(Directory / L"배포.eproject"));
+		FProjectDescriptor Reloaded;
+		E_EXPECT_TRUE(Reloaded.LoadFromFile(Directory / L"배포.eproject"));
+		E_EXPECT_TRUE(Reloaded.GetDisplayName() == "보이는 이름");
+		E_EXPECT_TRUE(Reloaded.GetVersion() == "2.3.4");
+		E_EXPECT_TRUE(Reloaded.Company == "Studio");
+		E_EXPECT_TRUE(Reloaded.GetExecutableName() == "MyGame");
+		E_EXPECT_TRUE(Reloaded.Icon == "Build/Icon.png");
+	}
+
 	FProjectDescriptor Loaded;
 	E_EXPECT_TRUE(Loaded.LoadFromFile(File));
 	E_EXPECT_TRUE(Loaded.Name == Saved.Name);
@@ -69,6 +90,22 @@ E_TEST(Project_DescriptorRoundtrip)
 
 	std::error_code ErrorCode;
 	std::filesystem::remove_all(Directory, ErrorCode);
+}
+
+E_TEST(Paths_UserSavedDirectory)
+{
+	// 개발 실행은 패키지가 아니다 (Engine/Packaged.json 없음)
+	E_EXPECT_FALSE(FPaths::IsPackaged());
+	E_EXPECT_TRUE(FPaths::GetLogDirectory() == FPaths::GetSavedDirectory() / L"Logs");
+	E_EXPECT_TRUE(std::filesystem::is_directory(FPaths::GetCrashDirectory()));
+
+	const std::filesystem::path Root = L"C:\\Users\\U\\AppData\\Local";
+	E_EXPECT_TRUE(FPaths::MakeUserSavedDirectory(Root, "", "Sample") == Root / L"Sample" / L"Saved");
+	E_EXPECT_TRUE(FPaths::MakeUserSavedDirectory(Root, "My Studio", "샘플 게임") == Root / L"My Studio" / L"샘플 게임" / L"Saved");
+	// 폴더 이름에 쓸 수 없는 문자는 '_', 끝의 점/공백은 제거, 이름이 비면 대체 이름
+	E_EXPECT_TRUE(FPaths::MakeUserSavedDirectory(Root, "A/B:C.", "Game?*") == Root / L"A_B_C" / L"Game__" / L"Saved");
+	E_EXPECT_TRUE(FPaths::MakeUserSavedDirectory(Root, "...", "") == Root / L"ProjectE" / L"Saved");
+	E_EXPECT_TRUE(FPaths::SanitizeFileName("a<b>c|d\"e") == "a_b_c_d_e");
 }
 
 E_TEST(CommandLine_Parse)

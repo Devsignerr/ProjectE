@@ -1,3 +1,5 @@
+#include "ExeStamp.h"
+
 #include "Core/CommandLine.h"
 #include "Core/CoreMinimal.h"
 #include "Core/Paths.h"
@@ -16,6 +18,7 @@
 E_DEFINE_LOG_CATEGORY(LogCook, Log)
 
 // 사용법: ProjectECook [--project <.eproject 또는 폴더>]
+//        ProjectECook --project <...> --stamp-exe <exe>   (패키징: exe에 프로젝트 아이콘/버전 리소스만 기록하고 끝)
 //   1) Engine/Shaders/Shaders.json의 모든 셰이더를 DXC로 컴파일해 Engine/Shaders/Cooked/에 DXIL 기록
 //   2) 프로젝트 Content의 모델(glTF/GLB)과 이미지(PNG/JPG/TGA/BMP)를 <프로젝트>/Cooked/에 엔진 바이너리로 기록
 //      이미지는 .emat가 참조하는 슬롯 용도(색상/선형/노멀/마스크)별로, 참조되지 않으면 색상으로 압축 쿠킹
@@ -25,6 +28,11 @@ int main()
 
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	FPaths::Initialize(CommandLine);
+
+	if (const std::wstring StampTarget = CommandLine.GetValue(L"--stamp-exe"); !StampTarget.empty())
+	{
+		return StampExecutable(StampTarget);
+	}
 
 	if (FPaths::HasProject())
 	{

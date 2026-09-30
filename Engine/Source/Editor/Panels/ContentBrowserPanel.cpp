@@ -18,6 +18,8 @@
 #include "Renderer/ModelLoader.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Particles.h"
+#include "UI/UIAsset.h"
+#include "UI/UIComponent.h"
 #include "Scene/Scene.h"
 
 #include <imgui_internal.h> // ImHashStr
@@ -53,6 +55,7 @@ namespace
 
 	bool IsParticleExtension(const std::string& Extension) { return Extension == ".eparticle"; }
 	bool IsPrefabExtension(const std::string& Extension) { return Extension == ".eprefab"; }
+	bool IsUIExtension(const std::string& Extension) { return Extension == ".eui"; }
 
 	// 종류 필터 (0 = 전체). FEditorTheme::GetAssetStyle의 Label과 같은 이름
 	constexpr const char* GTypeFilters[] = { "전체", "모델", "머티리얼", "텍스처", "파티클", "프리팹", "씬", "스크립트", "오디오" };
@@ -695,7 +698,7 @@ void FContentBrowserPanel::DrawItemContextMenu(FEditorContext& Context, const FE
 			OpenEntry(Context, Entry);
 		}
 	}
-	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension) || IsPrefabExtension(Entry.Extension))
+	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension) || IsPrefabExtension(Entry.Extension) || IsUIExtension(Entry.Extension))
 	{
 		if (ImGui::MenuItem(ICON_FA_PLUS " 씬에 추가", nullptr, false, !Context.bPlaying))
 		{
@@ -743,6 +746,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT " 새 비헤이비어 트리"))
 	{
 		CreateAsset(Context, "NewBehaviorTree", L".ebt");
+	}
+	if (ImGui::MenuItem(ICON_FA_DISPLAY " 새 UI"))
+	{
+		CreateAsset(Context, "NewUI", FUIAsset::Extension);
 	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
@@ -821,6 +828,12 @@ void FContentBrowserPanel::AddToScene(FEditorContext& Context, const FEntry& Ent
 	else if (IsPrefabExtension(Entry.Extension))
 	{
 		Added = FEditorActions::InstantiatePrefab(Context, Entry.Path, NullEntity);
+	}
+	else if (IsUIExtension(Entry.Extension))
+	{
+		// 화면 UI (플레이 중 화면 전체 위)
+		Added = Scene.CreateEntity(FStringConv::ToUtf8(Entry.Path.stem().wstring()));
+		Scene.GetRegistry().Emplace<FUIComponent>(Added).Asset = FModelLoader::MakeAssetPath(Entry.Path);
 	}
 	if (!Scene.GetRegistry().IsValid(Added))
 	{
@@ -1089,6 +1102,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == L".ebt")
 	{
 		bOk = FBehaviorTreeEditor::MakeDefaultAsset().SaveToFile(Path);
+	}
+	else if (Extension == FUIAsset::Extension)
+	{
+		bOk = FUIAsset::MakeDefault().SaveToFile(Path);
 	}
 	if (!bOk)
 	{

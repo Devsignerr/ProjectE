@@ -181,6 +181,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255), "파티클" };
 	}
+	if (Extension == ".eui")
+	{
+		return { ICON_FA_DISPLAY, IM_COL32(120, 200, 255, 255), "UI" };
+	}
 	if (Extension == ".eprefab")
 	{
 		return { ICON_FA_BOXES_STACKED, IM_COL32(115, 184, 255, 255), "프리팹" };
@@ -224,6 +228,7 @@ const char* FEditorTheme::GetComponentIcon(std::string_view TypeName)
 		{ "CameraComponent", ICON_FA_VIDEO },
 		{ "ScriptComponent", ICON_FA_FILE_CODE },
 		{ "ParticleSystemComponent", ICON_FA_FIRE },
+		{ "UIComponent", ICON_FA_DISPLAY },
 		{ "SocketAttachmentComponent", ICON_FA_LINK },
 		{ "RigidBodyComponent", ICON_FA_WEIGHT_HANGING },
 		{ "BoxColliderComponent", ICON_FA_BOX },

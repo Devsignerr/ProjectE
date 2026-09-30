@@ -36,6 +36,15 @@ enum class ENetEventType : uint8
 	Message,      // 메시지 수신 (Data)
 };
 
+// 연결 하나의 실시간 상태 (디버그/통계 패널)
+struct FNetConnectionStats
+{
+	int32 PingMs         = 0;
+	float Quality        = 1.0f; // 0~1 (패킷이 제때 도착한 비율)
+	float OutBytesPerSec = 0.0f;
+	float InBytesPerSec  = 0.0f;
+};
+
 struct FNetEvent
 {
 	ENetEventType      Type       = ENetEventType::Message;

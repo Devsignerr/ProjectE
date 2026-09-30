@@ -59,6 +59,7 @@ private:
 	uint32        Height      = 0;
 	bool          bMinimized  = false;
 	bool          bInSizeMove = false; // 드래그 리사이즈 중에는 Resize 이벤트를 보류
+	uint32        PendingHighSurrogate = 0; // WM_CHAR UTF-16 서로게이트 앞쪽
 	FEventHandler EventHandler;
 	FMessageHook  MessageHook;
 };

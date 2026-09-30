@@ -11,6 +11,7 @@
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
+#include "UI/UIComponent.h"
 
 #include <imgui.h>
 
@@ -141,7 +142,7 @@ namespace
 		ImU32       Color = IM_COL32(140, 140, 140, 255);
 	};
 
-	// 가장 대표적인 컴포넌트로 아이콘/색을 고른다 (조명 > 카메라 > 파티클 > 모델 > 메시 > 오디오 > 스크립트)
+	// 가장 대표적인 컴포넌트로 아이콘/색을 고른다 (조명 > 카메라 > 파티클 > 모델 > 메시 > 오디오 > UI > 스크립트)
 	FEntityIcon GetEntityIcon(const FRegistry& Registry, FEntity Entity, bool bLeaf)
 	{
 		if (Registry.Has<FDirectionalLightComponent>(Entity)) return { ICON_FA_SUN, IM_COL32(250, 210, 90, 255) };
@@ -150,6 +151,7 @@ namespace
 		if (Registry.Has<FModelComponent>(Entity)) return { ICON_FA_CUBES, IM_COL32(64, 170, 255, 255) };
 		if (Registry.Has<FStaticMeshComponent>(Entity)) return { ICON_FA_CUBE, IM_COL32(110, 180, 240, 255) };
 		if (Registry.Has<FAudioSourceComponent>(Entity)) return { ICON_FA_VOLUME_HIGH, IM_COL32(235, 110, 170, 255) };
+		if (Registry.Has<FUIComponent>(Entity)) return { ICON_FA_DISPLAY, IM_COL32(120, 200, 255, 255) };
 		if (Registry.Has<FScriptComponent>(Entity)) return { ICON_FA_FILE_CODE, IM_COL32(80, 200, 200, 255) };
 		return bLeaf ? FEntityIcon{} : FEntityIcon{ ICON_FA_FOLDER, IM_COL32(222, 178, 82, 255) };
 	}

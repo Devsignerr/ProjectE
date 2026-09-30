@@ -26,6 +26,11 @@ public:
 	virtual void Poll(std::vector<FNetEvent>& OutEvents) = 0;
 	// 모든 연결과 대기를 닫는다
 	virtual void Close() = 0;
+
+	// 디버그: 연결 상태 (지원하지 않거나 없는 연결이면 false)
+	virtual bool GetStats(FNetConnectionId /*Connection*/, FNetConnectionStats& /*OutStats*/) const { return false; }
+	// 디버그: 보내는 패킷에 지연/손실을 흉내 낸다 (GNS: 프로세스 전역 설정). 0이면 끔
+	virtual void SetSimulation(int32 /*LatencyMs*/, float /*LossPercent*/) {}
 };
 
 // GameNetworkingSockets 전송 계층. 프로세스 안에 여러 개를 만들 수 있다 (서버+클라이언트 동시 실행 가능)

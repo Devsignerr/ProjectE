@@ -25,6 +25,9 @@
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
+#include "Renderer/UIRenderer.h"
+#include "UI/UIComponent.h"
+#include "UI/UISystem.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -40,6 +43,7 @@ FViewportPanel::~FViewportPanel() = default;
 
 void FViewportPanel::Shutdown()
 {
+	UIRenderer.reset();
 	Grid.reset();
 	SelectionOutline.reset();
 	RenderTarget.reset();
@@ -101,6 +105,7 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 		if (RenderTarget)
 		{
 			const ImVec2 ImagePosition = ImGui::GetCursorScreenPos();
+			ImageMin                   = FVector2(ImagePosition.x, ImagePosition.y);
 			const ImVec2 ImageSize(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight()));
 			ImGui::Image(static_cast<ImTextureID>(RenderTarget->GetSrv().Gpu.ptr), ImageSize);
 			bHovered = ImGui::IsItemHovered();
@@ -120,8 +125,9 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택 (툴바를 그린 뒤 처리)
 			const ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
 			const bool   bDragged  = (DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y) > 16.0f;
+			// 플레이 중 게임 UI가 포인터를 가져갔으면(버튼 클릭 등) 엔티티를 선택하지 않는다
 			const bool   bPick     = bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
-			                   !Input.IsMouseButtonDown(EMouseButton::Right);
+			                   !Input.IsMouseButtonDown(EMouseButton::Right) && !(Context.bPlaying && bGameUIWantsPointer);
 
 			// 단축키 (뷰포트 위, 카메라 조작 중 아님)
 			// Ctrl 조합(Ctrl+R 셰이더 재로드, Ctrl+S 저장 등)은 에디터 단축키이므로 제외
@@ -188,6 +194,11 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.Selection.GetEntities(), RenderTarget->GetOutput(),
 		                         &Context.Renderer->GetSkinPalettes());
 	}
+	// 플레이 중: 게임 UI를 맨 위에 (레이아웃/입력은 OnUpdate의 FUISystem::Update가 이미 처리)
+	if (Context.bPlaying)
+	{
+		RenderGameUI(Context);
+	}
 	RenderTarget->End(CommandList);
 }
 
@@ -204,7 +215,33 @@ bool FViewportPanel::ReloadShaders(bool bForceRecompile)
 {
 	const bool bOutlineOk = !SelectionOutline || SelectionOutline->ReloadShaders(bForceRecompile);
 	const bool bGridOk    = !Grid || Grid->ReloadShaders(bForceRecompile);
-	return bOutlineOk && bGridOk;
+	const bool bUIOk      = !UIRenderer || UIRenderer->ReloadShaders(bForceRecompile);
+	return bOutlineOk && bGridOk && bUIOk;
+}
+
+FUIRect FViewportPanel::GetGameUIViewport() const
+{
+	if (!RenderTarget)
+	{
+		return FUIRect();
+	}
+	return FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight())));
+}
+
+void FViewportPanel::RenderGameUI(FEditorContext& Context)
+{
+	if (!UIRenderer)
+	{
+		UIRenderer = std::make_unique<FUIRenderer>();
+		if (!UIRenderer->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary(), *Context.Resources, FD3D12RHI::RenderTargetFormat))
+		{
+			UIRenderer.reset();
+			return;
+		}
+	}
+	GameUIDrawList.Clear();
+	FUISystem::Paint(*Context.Scene, GameUIDrawList);
+	UIRenderer->Render(GameUIDrawList, RenderTarget->GetOutput(), Context.ContentDirectory);
 }
 
 void FViewportPanel::RenderGrid(FEditorContext& Context)
@@ -591,6 +628,13 @@ void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<
 			Scene.GetTransform(Emitter).Position                           = Position;
 			Registry.Emplace<FParticleSystemComponent>(Emitter).Asset = FModelLoader::MakeAssetPath(Path);
 			Placed.push_back(Emitter);
+		}
+		else if (Extension == L".eui")
+		{
+			// 화면 UI: 위치와 무관 (플레이 중 화면 전체 위에 그려진다)
+			const FEntity UIEntity = Scene.CreateEntity(FStringConv::ToUtf8(Path.stem().wstring()));
+			Registry.Emplace<FUIComponent>(UIEntity).Asset = FModelLoader::MakeAssetPath(Path);
+			Placed.push_back(UIEntity);
 		}
 		else if (Extension == FPrefabLibrary::Extension)
 		{

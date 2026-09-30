@@ -253,6 +253,32 @@ namespace
 			}
 		}
 
+		bool GetStats(FNetConnectionId Connection, FNetConnectionStats& OutStats) const override
+		{
+			SteamNetConnectionRealTimeStatus_t Status;
+			if (!bInitialized || Sockets->GetConnectionRealTimeStatus(Connection, &Status, 0, nullptr) != k_EResultOK)
+			{
+				return false;
+			}
+			OutStats.PingMs         = Status.m_nPing;
+			OutStats.Quality        = Status.m_flConnectionQualityLocal;
+			OutStats.OutBytesPerSec = Status.m_flOutBytesPerSec;
+			OutStats.InBytesPerSec  = Status.m_flInBytesPerSec;
+			return true;
+		}
+
+		void SetSimulation(int32 LatencyMs, float LossPercent) override
+		{
+			if (!bInitialized)
+			{
+				return;
+			}
+			// 보내는 쪽에만 걸어 한 방향 지연 = LatencyMs (양쪽이 켜면 왕복은 두 배)
+			SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, LatencyMs);
+			SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, LossPercent);
+			E_LOG(LogNet, Display, "네트워크 시뮬레이션: 지연 {}ms, 손실 {}%", LatencyMs, LossPercent);
+		}
+
 	private:
 		void DrainMessages(HSteamNetConnection Connection)
 		{

@@ -9,6 +9,7 @@
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
+#include "UI/UIReflection.h"
 
 #include <format>
 
@@ -39,11 +40,12 @@ bool FServerApplication::OnInit()
 	}
 	E_LOG(LogServer, Display, "전용 서버 — 프로젝트: {}", FPaths::GetProjectName());
 
-	// 씬 로드 전에 타입 등록 (오디오는 컴포넌트 타입만 — 서버는 소리를 내지 않는다)
+	// 씬 로드 전에 타입 등록 (오디오/UI는 컴포넌트 타입만 — 서버는 소리를 내거나 UI를 그리지 않는다)
 	RegisterAudioTypes();
 	RegisterPhysicsTypes();
 	RegisterAITypes();
 	RegisterNetworkTypes();
+	RegisterUITypes();
 	if (!FPaths::GetProjectDescriptor().GameModule.empty())
 	{
 		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));
@@ -84,6 +86,10 @@ bool FServerApplication::OnInit()
 	{
 		E_LOG(LogServer, Error, "포트 {}에서 서버를 열지 못했습니다", NetOptions.Port);
 		return false;
+	}
+	if (NetOptions.SimulatedLatencyMs > 0 || NetOptions.SimulatedLossPercent > 0.0f)
+	{
+		Net.SetSimulation(NetOptions.SimulatedLatencyMs, NetOptions.SimulatedLossPercent);
 	}
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} 전용 서버", FPaths::GetProjectName());

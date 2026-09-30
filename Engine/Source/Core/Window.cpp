@@ -277,6 +277,26 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		// Alt+F4 등 시스템 키 기본 동작은 유지
 		return Message == WM_SYSKEYDOWN ? DefWindowProcW(Hwnd, Message, WParam, LParam) : 0;
 
+	case WM_CHAR:
+	{
+		// UTF-16: 서로게이트 쌍은 두 메시지로 온다
+		const uint32 Unit = static_cast<uint32>(WParam);
+		if (Unit >= 0xD800 && Unit <= 0xDBFF)
+		{
+			PendingHighSurrogate = Unit;
+			return 0;
+		}
+		Event.Type      = EWindowEventType::Char;
+		Event.Character = Unit;
+		if (Unit >= 0xDC00 && Unit <= 0xDFFF && PendingHighSurrogate != 0)
+		{
+			Event.Character = 0x10000 + ((PendingHighSurrogate - 0xD800) << 10) + (Unit - 0xDC00);
+		}
+		PendingHighSurrogate = 0;
+		Dispatch(Event);
+		return 0;
+	}
+
 	case WM_KEYUP:
 	case WM_SYSKEYUP:
 		Event.Type = EWindowEventType::KeyUp;

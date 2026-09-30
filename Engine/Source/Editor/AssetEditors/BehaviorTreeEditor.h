@@ -40,7 +40,7 @@ protected:
 	bool        SaveAsset(FAssetEditorEnvironment& Env) override;
 	std::string CaptureState() const override;
 	void        RestoreState(FAssetEditorEnvironment& Env, const std::string& State) override;
-	void        DrawMainPanel(FAssetEditorEnvironment& Env) override;
+	void        DrawPreviewArea(FAssetEditorEnvironment& Env) override;
 	void        DrawProperties(FAssetEditorEnvironment& Env) override;
 	void        FramePreview(FAssetEditorEnvironment& Env) override;
 

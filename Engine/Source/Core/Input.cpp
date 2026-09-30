@@ -7,8 +7,13 @@ void FInput::ProcessEvent(const FWindowEvent& Event)
 	case EWindowEventType::KeyDown:
 		if (Event.Key != EKey::None)
 		{
-			KeyStates[static_cast<size_t>(Event.Key)] = true;
+			KeyStates[static_cast<size_t>(Event.Key)]    = true;
+			RepeatStates[static_cast<size_t>(Event.Key)] = true;
 		}
+		break;
+
+	case EWindowEventType::Char:
+		TypedText.push_back(static_cast<char32_t>(Event.Character));
 		break;
 
 	case EWindowEventType::KeyUp:
@@ -58,6 +63,8 @@ void FInput::EndFrame()
 	PrevMouseX       = MouseX;
 	PrevMouseY       = MouseY;
 	WheelDelta       = 0.0f;
+	RepeatStates.reset();
+	TypedText.clear();
 }
 
 void FInput::SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel)
@@ -81,6 +88,11 @@ bool FInput::IsKeyPressed(EKey Key) const
 	return KeyStates[Index] && !PrevKeyStates[Index];
 }
 
+bool FInput::IsKeyRepeated(EKey Key) const
+{
+	return RepeatStates[static_cast<size_t>(Key)];
+}
+
 bool FInput::IsKeyReleased(EKey Key) const
 {
 	const size_t Index = static_cast<size_t>(Key);
@@ -97,4 +109,23 @@ bool FInput::IsMouseButtonReleased(EMouseButton Button) const
 {
 	const size_t Index = static_cast<size_t>(Button);
 	return !ButtonStates[Index] && PrevButtonStates[Index];
+}
+
+FInput FInput::WithoutMouseButtons() const
+{
+	FInput Copy = *this;
+	Copy.ButtonStates.reset();
+	Copy.PrevButtonStates.reset();
+	Copy.WheelDelta = 0.0f;
+	return Copy;
+}
+
+FInput FInput::WithoutKeyboard() const
+{
+	FInput Copy = *this;
+	Copy.KeyStates.reset();
+	Copy.PrevKeyStates.reset();
+	Copy.RepeatStates.reset();
+	Copy.TypedText.clear();
+	return Copy;
 }

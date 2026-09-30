@@ -1005,6 +1005,102 @@
           "PropertyOverrides": ""
         }
       }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -300.0,
+            -200.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -300.0,
+            200.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -450.0,
+            -200.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -450.0,
+            200.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
     }
   ]
 }

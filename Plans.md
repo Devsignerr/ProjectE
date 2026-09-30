@@ -349,12 +349,12 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] 7b (2026-09-30): RPC — `entity:CallServer/CallClient/CallMulticast(이름, 인자...)` → 그 엔티티 스크립트의 `Server_/Client_/Multicast_<이름>` (계획의 `self:CallServer` 대신 엔티티 메서드: 모든 스크립트에서 같은 형태). 라우팅은 `FGameWorld`(`FScriptNetHooks::SendRpc`): Server = 서버에서 바로 / 클라이언트는 전송(서버는 보낸 플레이어가 소유자일 때만 실행), Client = 소유자(호스트면 로컬), Multicast = 서버 로컬 + 모든 클라이언트, Standalone = 전부 로컬. 인자 nil/bool/숫자/문자열/Vector3/에셋/엔티티(NetId). 메시지 `ScriptRpc`(신뢰), 프로토콜 4. 테스트 2개(Standalone, 전용 서버 ↔ 클라이언트 루프백: 소유자 검증·엔티티 인자·클라이언트 쪽 오류)
   - [x] 7c (2026-09-30): 입력 커맨드 `PlayerInput`(클라이언트 → 서버, 비신뢰, 매 게임플레이 틱 상태 전체 + 순번) → 서버는 플레이어별 `FInput`(`SetState`, 틱마다 `EndFrame`). 스크립트 인스턴스마다 `FScriptNetHooks::ResolveInput` — 서버에서 Lua `Input`은 엔티티 소유 플레이어의 입력(서버 소유/호스트 소유 = 로컬, 전용 서버의 서버 소유 = 없음), 클라이언트는 자기 입력. `OnPlayerJoined(id, pawn)`/`OnPlayerLeft(id)`를 서버 스크립트 전체에 전달(`BroadcastMethod`). 프로토콜 5. 테스트 `NetInput_ServerScriptsSeeOwnersInput`
 - [x] 8. 게임 모듈 C++ API (2026-09-30): `Scene/GameRpc.h`(`EGameRpcKind`, `FGameRpcValue`, `IGameNet`) — Lua와 C++이 같은 RPC 경로(스크립트 쪽 7b 타입을 이것으로 교체). `IGameModule::OnPlayerJoined/OnPlayerLeft/OnRpc`(스크립트 메서드와 함께 호출, 서버에서만) + `GetNet()`(OnBeginPlay~OnEndPlay, `FGameWorld`가 `IGameNet` 구현 → `CallRpc`/소유권/모드). 계획의 "RPC 등록" 대신 `OnRpc` 한 곳에서 이름으로 분기(등록 없이). `FGameModuleHost::Attach`(DLL 없이 모듈 연결, 테스트용). `GameModuleApiVersion` 3. `FGameWorld` 네트워크 부분은 `GameWorldNet.cpp`로 분리. 테스트 `NetRpc_GameModuleReceivesEventsAndSendsRpc`
-- [~] 9. LAN 로비/세션: Winsock UDP 브로드캐스트 방 목록(이름/인원/맵), Lua `Net.FindSessions/Host/Connect`, 에디터 ImGui 로비 창(게임 내 로비 UI는 Phase 16에서 이 API 위에)
+- [x] 9. LAN 로비/세션: Winsock UDP 브로드캐스트 방 목록(이름/인원/맵), Lua `Net.FindSessions/Host/Connect`, 에디터 ImGui 로비 창(게임 내 로비 UI는 Phase 16에서 이 API 위에)
   - [x] 9a (2026-09-30): `FLanDiscovery`(Winsock UDP, 비차단) — 질의(브로드캐스트 + 127.0.0.1, 프로젝트 필터) ↔ 응답(방 이름/프로젝트/엔진 버전/씬/게임 포트/인원/최대 인원/호스트 ID, 같은 호스트는 ID로 하나·LAN 주소 우선), 탐색 포트 7778. 전용 서버·리슨 호스트가 알림, 런타임 `--join-lan`(최대 2초 검색 → 첫 세션 접속), `FNetDriver::MaxPlayers`(기본 16, 가득 차면 거부). 테스트 2개 + 종단 검증(전용 서버를 LAN 주소로 찾아 입장)
   - [x] 9b (2026-09-30): Lua `Net.FindSessions/GetSessions/Host/Connect/Disconnect/GetState/GetFailureReason` — `FGameWorld`가 LAN 검색과 세션 전환 요청 큐(`ConsumeSessionRequest`) 보유, 런타임이 프레임 끝에 처리(`RuntimeSession.cpp`: `LoadScene/StartSession/EndSession`, Host = Standalone이면 재시작 없이 `SetNetMode(ListenServer)`, Connect/Disconnect = 씬 재로드 후 새 세션). 버그 수정: 정적 NetId를 엔티티 인덱스 순이 아니라 `ReplicatedComponent` 풀 추가 순서로 — 씬을 비우고 다시 열면 인덱스가 역순 재사용되어 어긋났다(테스트 `Replication_StaticNetIdsSurviveSceneReload`). 테스트 `GameWorld_LuaSessionApi` + 종단 검증(스크립트가 단독 실행 중 Net.Connect → 전용 서버 입장, 화면 일치)
-  - [ ] 9c: 에디터 LAN 세션 창 (10단계와 함께)
-- [ ] 10. 에디터 다중 클라이언트 플레이: 플레이 설정(단독/리슨/전용 서버+클라이언트, 클라이언트 수 N), 편집 씬을 `Saved/PlayInEditor/`에 저장 → `ProjectERuntime.exe --connect` N개 실행, 정지 시 자식 프로세스 종료
-- [ ] 11. 디버그·검증: GNS 가짜 지연/손실 설정, 네트워크 통계 패널, `Tests/NetworkTests`(루프백: 직렬화 왕복/델타/생성·파괴/RPC/입력), `Verify.ps1 -Multiplayer`(서버 + 클라이언트 2개 스크린샷·로그), 샘플 `Demo_Multiplayer.escene` + `PlayerPrefab`
+  - [x] 9c (2026-10-01): 에디터 네트워크 패널의 LAN 세션 목록(찾기 → 방 이름/인원/주소, "런타임으로 접속"은 그 세션의 씬으로 런타임 클라이언트 실행)
+- [x] 10. 에디터 다중 클라이언트 플레이 (2026-10-01): `FPlayInEditorNet`(Editor) + 네트워크 패널(창 메뉴, 기본 닫힘) — 모드 1인용/리슨(에디터 호스트)/전용 서버(`ProjectEServer.exe` + 에디터도 클라이언트), 런타임 클라이언트 창 N개, 포트. 편집 씬을 `Saved/PlayInEditor/PIE.escene`에 저장하고 에디터 플레이 씬도 복제가 아니라 같은 JSON에서 만든다(`FPlayOptions::SceneJson`, 모든 프로세스 정적 NetId 일치, 절대 경로 = 핸드셰이크 씬 이름). 정지/종료 시 자식 프로세스 종료, 클라이언트 로그 `Saved/PlayInEditor/Client<N>.log`, 서버 로그 `Server.log`. 자동 검증 인자 `--play --play-net listen|dedicated --play-clients N [--port N]`. 종단 검증: 리슨(에디터 + 클라이언트 1), 전용(서버 + 에디터 + 클라이언트 1) 입장 확인, 디버그 레이어 오류 0건. 플레이 중 Lua 세션 전환은 에디터에서 미지원(알림)
+- [x] 11. 디버그·검증 (2026-10-01): 지연/손실 시뮬레이션(`INetTransport::SetSimulation` — GNS FakePacketLag/Loss_Send, 인자 `--net-lag <ms> --net-loss <%>`, 네트워크 패널 슬라이더는 플레이 중 즉시 적용·띄우는 프로세스엔 인자로), 연결 통계(`GetStats`: 핑/품질/송수신 KB/s, 패널에 플레이어별), `Verify.ps1 -Multiplayer [-Clients N] [-Scene] [-Port] [-ExtraArgs]`(전용 서버 + 런타임 클라이언트, 입장 여부·로그 오류 요약), 샘플: `Prefabs/Player.eprefab`(복제 + `Scripts/PlayerController.lua` WASD — 서버에서 소유자 입력으로 이동), `Demo_Multiplayer.escene` `PlayerStart` 4개, `Sample.eproject` `"PlayerPrefab"`, 발사대 공 복제. 검증: `-Multiplayer` 기본·지연 100ms/손실 5% 모두 클라이언트 2개 입장·오류 0건, 화면이 서버 상태를 따라감. `NetworkTests`/`ScriptingTests`는 루프백 중심(계획 그대로)
 - [ ] 실행 검증 (사용자 확인)
 
 단계 2~3은 멀티플레이 없이도 의미 있는 리팩터라 먼저 커밋. 4 이후 6/7/9는 worktree 병렬 트랙 후보.
@@ -363,14 +363,39 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: 에디터의 UI 디자이너에서 위젯(패널/이미지/텍스트/버튼 등)을 끌어다 배치·앵커·스타일을 편집해 UI 에셋으로 저장하고, 런타임/플레이 모드 화면에 그려지며 입력(클릭/호버/포커스)을 받고 Lua/C++에서 값 변경·이벤트 처리를 한다.
 
-결정: 외부 라이브러리 없이 엔진이 직접 구현 + UMG식 비주얼 디자이너. ImGui는 에디터 전용으로 유지(게임 UI에 쓰지 않음). 텍스트 렌더링 방식, 레이아웃 모델 등 세부는 착수 시 결정.
+결정: 외부 라이브러리 없이 엔진이 직접 구현 + UMG식 비주얼 디자이너. ImGui는 에디터 전용으로 유지(게임 UI에 쓰지 않음).
 
-- [ ] 위젯 트리 + 레이아웃(앵커/정렬/크기) — 순수 로직 + 테스트
-- [ ] UI 렌더러 (사각형/이미지/텍스트, 해상도 스케일)
-- [ ] 입력 라우팅 (클릭/호버/포커스, 게임 입력과의 우선순위)
-- [ ] UI 에셋 형식 + Lua/C++ 바인딩 (위젯 찾기, 값 바꾸기, 이벤트)
-- [ ] 디자이너 편집 창 (팔레트, 계층, 캔버스 배치, 속성)
-- [ ] 검증
+결정 (착수 시, 2026-09-30 사용자 선택):
+- 진행 순서 변경: Phase 17(멀티플레이, 다른 에이전트가 메인 트리에서 진행)과 **병렬**. worktree 브랜치 `phase16-ui`. 1단계 = 멀티플레이와 겹치지 않는 부분(UI 모듈/렌더러/에셋/디자이너), 2단계 = 17-2 `FGameWorld`가 master에 들어온 뒤 그 위에 런타임·플레이 연결(옛 중복 루프에 붙이지 않음). 전용 서버(`bHeadless`)에서는 UI를 만들지 않는다. 게임 내 로비 UI는 17-9 이후
+- 텍스트: **SDF 글꼴 아틀라스** (stb_truetype — imgui 동봉 `imstb_truetype.h` 재사용, 추가 다운로드 없음). 필요한 글자만 처음 쓸 때 굽는 동적 아틀라스(R8, 1024 → 최대 4096). 기본 글꼴은 Windows 맑은 고딕(배포용 한글 글꼴 번들은 다운로드 승인 후 후속)
+- 레이아웃: **캔버스(앵커/오프셋/피벗) + 가로/세로 박스(자동/채우기) + 오버레이 + 균일 그리드 + 스크롤 박스**, Slate식 원하는 크기 → 배치 2단계. 해상도는 설계 해상도 + 배율 규칙(높이/너비 맞춤, 전체 보이기, 채우기)
+- 모듈: `UI`(Core만 의존, 순수 로직 — 엔진 DLL 포함), 그리기는 `Renderer/FUIRenderer`(UI.hlsl 인스턴스 사각형: 둥근 모서리/테두리 SDF + 글꼴 SDF 외곽선/그림자)
+
+1단계 (worktree, 2026-09-30):
+- [x] 위젯 트리 + 레이아웃(앵커/정렬/크기) — `FUIWidget`/`FUILayout`, 테스트 9개 (캔버스 점/늘이기 앵커, 박스 자동/채우기, 접힘/숨김, 줄바꿈 텍스트, 오버레이/보더/그리드, 스크롤 제한/잘림, 배율, 슬롯 편집 역산)
+- [x] UI 렌더러 (사각형/이미지/텍스트, 해상도 스케일) — `FUIPainter`(그리기 목록, 텍스처·잘림별 묶음) + `FUIRenderer`, `FResourceManager::CreateTexture(Raw)`(R8 아틀라스)
+- [x] 입력 라우팅 — `FUIInputRouter`(맞히기/호버/눌림/클릭/포커스/Tab/휠, 입력 차단 여부) + 테스트 3개, 디자이너 "미리보기 입력"에서 동작. 게임 입력과의 우선순위는 2단계에서 연결
+- [x] UI 에셋 형식 + 바인딩 — `.eui` v1(`FUIAsset`, JSON 왕복 테스트, 하위 트리 복사/붙여넣기), `FUIInstance`(런타임 인스턴스). Lua 바인딩/씬 컴포넌트는 2단계
+- [x] 디자이너 편집 창 — `FWidgetEditor`: 계층(끌어서 부모 변경/순서/복제/복사·붙여넣기/삭제), 팔레트(끌어 놓기/클릭 추가), 캔버스(실제 UI 렌더러, 휠 확대, 가운데·오른쪽 드래그 이동, 선택·이동·8방향 크기, 스냅, 앵커 표시, 미리보기 해상도 프리셋), 속성(UI 설정/공통/슬롯(부모별)/종류별/브러시·텍스처 드롭/글꼴), 앵커 프리셋 4x4. 콘텐츠 브라우저 "새 UI", 아이콘, 참조 갱신(Content 기준). 샘플 `UI/SampleHUD.eui`
+- [x] 1단계 검증: 단위 테스트 전체 통과(UITests 17개 포함), `Verify.ps1 --open-asset UI/SampleHUD.eui [--ui-select PlayButton --ui-zoom 1]` 스크린샷 확인(한글 SDF/둥근 모서리/테두리/선택 표시), `--verify-asset-close`로 UI 편집 창 저장 안 함 닫기 무오류, 디버그 레이어 오류 0건
+
+2단계 (2026-09-30, master의 17-1~4 머지 후 `FGameWorld` 위에):
+- [x] 씬 컴포넌트 `FUIComponent`(에셋/Z 순서/보임/입력 받기/키보드 포커스) + `RegisterUITypes()`(에디터/런타임/서버 — 서버는 타입만) + 런타임 상태 `FUIComponentRuntime`(복사하면 비워짐 → 플레이 복제/엔티티 복제가 인스턴스를 공유하지 않음), `FUIAssetLibrary`(경로 캐시, 수정 시각이 바뀌면 다시 읽음), 뷰포트 끌어 놓기/콘텐츠 브라우저 "씬에 추가", 계층/인스펙터 아이콘
+- [x] 런타임/플레이 모드 그리기: `FUISystem::Paint` → `FUIRenderer` (런타임 = 백버퍼, 에디터 = 플레이 중 뷰포트 타깃, 씬·그리드·아웃라인 위). 픽셀 아트 모드도 최종 해상도에 그려진다
+- [x] 입력 우선순위: `FUISystem::Update`(Z 순서 큰 UI부터, 위 UI가 가져가면 아래는 포인터 없음)가 `FGameWorld::TickGameplay` 전에 돌고, 포인터를 가져가면 게임에는 `FInput::WithoutMouseButtons()`(키보드 유지). UI 버튼을 누른 채 끌어 나가도 뗄 때까지 가져간다. 에디터는 뷰포트 이미지 위 포인터만, 가져간 프레임에는 클릭 선택 안 함. 키보드 포커스(Tab/Enter/Space)는 컴포넌트 `KeyboardFocus`를 켠 UI만
+- [x] Lua 바인딩(`Scripting/ScriptUIBindings.cpp`): `entity:GetWidget("이름")` → `UIWidget`(Name/Type/Text/Percent/Visible/Visibility/Enabled/Opacity/Color/Texture/FontSize), `entity:IsPointerOverUI()`, 이벤트 `OnUIClicked_/OnUIPressed_/OnUIReleased_/OnUIHoverBegin_/OnUIHoverEnd_<이름>`(UI 엔티티 또는 가장 가까운 조상의 스크립트). C++ 게임 모듈은 `FUIComponent::Runtime`(Instance/Events)을 직접 읽는다 — **`IGameModule` API는 17-8과 겹치지 않도록 바꾸지 않음**
+- [x] 검증: UITests 20개(UI 시스템 Z 순서/입력 끔/숨김/복제/다시 읽기/입력 사본 추가), ScriptingTests `UIScript_WidgetValuesAndClickEvent`, 전체 10묶음 통과. 샘플 `Demo_UI.escene` + `Scripts/HudController.lua`(체력/점수 갱신, 버튼으로 메뉴 닫기, M 키로 다시 열기): 런타임·에디터 플레이 스크린샷 확인, 디버그 레이어 오류 0건, 전용 서버 60틱 로드 정상
+- [ ] 실행 검증 (사용자 확인): 에디터 플레이에서 버튼 호버/클릭, M 키, 디자이너에서 편집 → 저장 → 다시 플레이 반영
+
+멀티플레이와의 연결 (17단계 쪽에서 할 일): HUD 스크립트는 `ClientOnly`가 맞다(17-7 스크립트 실행 위치 도입 시 샘플 `HudController`를 ClientOnly로). UI는 복제 대상이 아니다(클라이언트 로컬). 게임 내 로비 UI는 17-9 API 위에.
+
+후속 과제 (2026-10-01 진행, 사용자 선택: Noto Sans KR 번들 / UMG식 타임라인):
+- [x] 글꼴 성능: 원인은 SDF가 아니라 13MB 글꼴 파일 바이트 단위 읽기(Debug 853ms → 일괄 읽기 15ms). 인스턴스 생성 시 에셋 텍스트 글자 미리 굽기. 굽기 속도 로그 테스트
+- [x] 기본 글꼴 Noto Sans KR Regular 번들 (`Engine/Content/Fonts`, notofonts/noto-cjk `Sans2.004`, SHA256 고정, OFL 동봉, Package.ps1이 Engine/Content 복사). 순서: 프로젝트 지정 → 번들 → 맑은 고딕. **발견**: stb_truetype SDF는 3차 곡선(CFF)을 버려 OTF가 깨짐 → 4배 래스터 + Felzenszwalb 거리 변환 + 축소(`UI/UISdf`, 테스트)로 교체 (글자당 약 3ms, Debug)
+- [x] 9-slice 브러시 (`EUIBrushDrawAs::NineSlice`, Margin = 텍스처 비율, 두께 = Margin × 원본 크기, 작으면 비율 축소), 디자이너 편집/"텍스처 크기로", 샘플 로그 패널 틀(`UI/PanelFrame.png`)
+- [x] 텍스트 상자 `TextBox` (+ Core 문자 입력 `EWindowEventType::Char`, `FInput::GetTypedText/IsKeyRepeated/WithoutKeyboard`): 클릭/Tab 포커스, 입력/지우기/화살표/Home/End, 최대 길이, Enter 확정·Esc 해제·포커스 잃으면 확정, 클릭 위치 캐럿, 가로 스크롤, 안내 문구. 입력 중에는 게임에 키보드를 넘기지 않고 ESC도 UI가 받는다(`FUIInputResult`). Lua `OnUITextChanged_/OnUITextCommitted_`. 샘플 채팅 입력칸. 한계: IME 조합 중인 글자는 완성될 때까지 보이지 않음(WM_CHAR만 받음), 선택/복사/붙여넣기 없음
+- [x] UMG식 애니메이션: 렌더 변환(이동/배율/피벗, 레이아웃 영향 없음, 자식 누적 → `State.Visual*`로 그리기/맞히기), `.eui` v2 `Animations`(트랙 = 위젯 이름 + 속성: 불투명도/이동/배율/색 RGBA/진행률, 키마다 보간 선형/계단/이징), `FUIInstance` 재생(반복/속도/거꾸로, 끝 이벤트), Lua `entity:PlayUIAnimation/StopUIAnimation/IsUIAnimationPlaying` + `OnUIAnimationFinished_<이름>`. 디자이너 타임라인(애니메이션 추가/이름/삭제/길이, 재생·반복, 재생 헤드, 키 추가(현재 값), 키 끌기/값/보간/삭제, 트랙 삭제, 재생 헤드 시점 미리보기 — 복제본이라 기본값 불변). 샘플 `MenuIntro`/`ScorePulse`. 자동 검증 인자 `--ui-animation <이름> --ui-anim-time <초>`. 한계: 회전 없음
+- [ ] 남은 후속: 로컬라이즈(문자열 표), 텍스트 상자 선택/클립보드/IME 조합 표시, 애니메이션 녹화 모드(속성 편집 → 자동 키)
 
 ## Phase 18 — AI: 비헤이비어 트리 + 내비게이션 (2026-09-30, 사용자 요청: 언리얼 비헤이비어 트리처럼)
 
@@ -393,7 +418,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 4. 씬 연동 (2026-09-30): 컴포넌트 `FBehaviorTreeComponent`(Asset .ebt, AutoStart) / `FNavAgentComponent`(속도, 도착 반경, 회전 속도, 이동 방향 회전) / `FNavMeshComponent`(구운 .enav 경로 + 굽기 설정 — 계획의 "씬 옆 .enav" 대신 컴포넌트가 경로를 가진다. 콘텐츠 이동/프리팹과 같은 경로 규칙을 따르게 하려고), `RegisterAITypes()`(에디터/런타임/서버). `FAISystem`(엔티티별 트리 + 이동 상태, 새/파괴 엔티티·컴포넌트 변경 동기화, 에셋 캐시, `ReloadBehaviorTree`, `RequestMove/GetMoveStatus/StopMove/FindPath`, `TurnTowards`) — `FGameWorld`가 소유, 순서 스크립트 → 게임 모듈 → **AI** → 물리, Client 역할은 AI 없음, BeginPlay는 스크립트(Lua 상태 생성) 다음, EndPlay는 스크립트보다 먼저(Lua 노드 OnAbort). 이동: 동적 강체는 물리에 수평 속도(Z 속도 유지), 그 밖은 트랜스폼을 경로 높이를 따라 직접 옮김. 내비메시가 없으면 직선 이동(경고 한 번). 태스크 `MoveTo`(Vector/Entity 키, 목표가 RepathDistance 넘게 움직이면 재탐색)/`RotateTo`/`PlayAnimation`. `AISystemTests` 7개. 남은 것: 에디터 `.ebt` 변경 감지 → `ReloadBehaviorTree` 연결(단계 7), FGameWorld 수준 Client 역할 테스트
 - [x] 5. Lua (2026-09-30): Scripting은 AI에 비의존 — `FScriptAIHooks`(블랙보드/이동/경로/트리 제어)와 범용 스크립트 객체 API `FScriptSystem::CreateObject/CallObject/DestroyObject`(세션 번호가 든 핸들, 지난 세션 핸들은 무시)를 두고, AI는 `FAIScriptHooks`로 스크립트 객체를 부른다. 둘을 `FGameWorld::ConnectScriptsAndAI`가 연결. Lua API: `entity:GetBlackboard()` → `Get/Set/IsSet/Clear`(값 bool/number/string/Vector3/Entity, Set(nil) = Clear), `entity:MoveTo(pos, 반경?)`/`GetMoveStatus()`/`StopMove()`/`StartBehaviorTree()`/`StopBehaviorTree()`, `AI.FindPath(a, b)`, `AI.MoveTo(entity, pos, 반경?)`. Lua 노드(`AI/LuaNodes.h` 머리 주석이 규칙): `LuaTask`(OnExecute/OnTick/OnAbort, "Running"/"Success"/"Failure" 또는 bool), `LuaDecorator`(CanExecute + ObservedKeys/AbortMode), `LuaService`(OnBecomeRelevant/OnTick/OnCeaseRelevant), 파라미터 Script + Properties(JSON 오버라이드). 새 바인딩은 `Scripting/LuaAIBindings.cpp`(LuaRuntime.cpp 변경 최소화). 수정: 트리를 등록한 뒤 Start(시작 중 노드가 블랙보드를 못 찾던 문제), FGameWorld 순서 BeginPlay 스크립트 → AI / EndPlay AI → 스크립트. `AIScriptTests` 5개(ScriptingTests)
 - [x] 6. 게임 모듈 C++ API (2026-09-30): 게임 모듈은 `OnLoad`에서 `FBehaviorTreeNodeRegistry::Get().Register`(Owner를 비우면 `FTypeRegistry`의 현재 등록 소유자 = 모듈 이름)로 C++ 노드를 등록한다. 언로드는 `FGameModuleHost::AddUnloadCleanup`(Scene 밖 모듈의 소유자별 정리 콜백, `RegisterAITypes`가 등록)으로 모듈 노드를 해제한다. `IGameModule` 가상 함수는 바뀌지 않아 `GameModuleApiVersion`은 그대로 3. `GameModuleNodeTests`(AITests)
-- [x] 7. 에디터 (2026-10-01): `FBehaviorTreeEditor`(`Editor/AssetEditors/BehaviorTreeEditor`, imgui-node-editor) — 위→아래 그래프, 데코레이터(◆, 노드 위)/서비스(⚙, 노드 아래)는 노드 안 줄, 자식 실행 순서 = X 좌표(UE와 같음, 노드 제목에 순서 번호), 우클릭 메뉴(자식/데코레이터/서비스 추가, 삭제), 출력 핀을 끌어 부모 변경, Delete = 하위 트리째 삭제(루트/링크만 삭제는 거부). 오른쪽: 블랙보드 키(이름/타입/추가/삭제), 선택 항목 파라미터(레지스트리 `FBTParamDesc`: Options → 콤보, 이름이 …Key면 블랙보드 키 콤보, Script는 .lua 드롭, Properties는 여러 줄), 데코레이터/서비스 목록(순서/삭제/추가). 노드 위치는 `FBTNodeDesc::EditorPosition`으로 .ebt에 저장(없으면 자동 배치). 열 때 루트 + 첫 단계 자식에 맞춤, F = 전체 보기. 플레이 중 이 에셋을 쓰는 엔티티(선택 엔티티 우선)의 실행 노드 강조 + 새로 실행된 링크 흐름 + 블랙보드 현재 값. `FAssetEditor::UsesPreview/DrawMainPanel`(3D 미리보기 없는 편집기), 콘텐츠 브라우저 "새 비헤이비어 트리", `.ebt` 아이콘, 파일 감시 `.ebt` 변경 → `ReloadBehaviorTree`. 샘플 `AI/Patrol.ebt`. Verify: `--open-asset AI/Patrol.ebt`(스크린샷 확인, 디버그 레이어 오류 0), `--verify-asset-close` 통과. 플레이 중 강조 화면 확인은 단계 9 데모 씬에서
+- [x] 7. 에디터 (2026-10-01): `FBehaviorTreeEditor`(`Editor/AssetEditors/BehaviorTreeEditor`, imgui-node-editor) — 위→아래 그래프, 데코레이터(◆, 노드 위)/서비스(⚙, 노드 아래)는 노드 안 줄, 자식 실행 순서 = X 좌표(UE와 같음, 노드 제목에 순서 번호), 우클릭 메뉴(자식/데코레이터/서비스 추가, 삭제), 출력 핀을 끌어 부모 변경, Delete = 하위 트리째 삭제(루트/링크만 삭제는 거부). 오른쪽: 블랙보드 키(이름/타입/추가/삭제), 선택 항목 파라미터(레지스트리 `FBTParamDesc`: Options → 콤보, 이름이 …Key면 블랙보드 키 콤보, Script는 .lua 드롭, Properties는 여러 줄), 데코레이터/서비스 목록(순서/삭제/추가). 노드 위치는 `FBTNodeDesc::EditorPosition`으로 .ebt에 저장(없으면 자동 배치). 열 때 루트 + 첫 단계 자식에 맞춤, F = 전체 보기. 플레이 중 이 에셋을 쓰는 엔티티(선택 엔티티 우선)의 실행 노드 강조 + 새로 실행된 링크 흐름 + 블랙보드 현재 값. `FAssetEditor::UsesPreview/DrawPreviewArea`(3D 미리보기 없는 편집기), 콘텐츠 브라우저 "새 비헤이비어 트리", `.ebt` 아이콘, 파일 감시 `.ebt` 변경 → `ReloadBehaviorTree`. 샘플 `AI/Patrol.ebt`. Verify: `--open-asset AI/Patrol.ebt`(스크린샷 확인, 디버그 레이어 오류 0), `--verify-asset-close` 통과. 플레이 중 강조 화면 확인은 단계 9 데모 씬에서
 - [ ] 8. 에디터 내비메시: 굽기 명령(도구 메뉴), 뷰포트 내비메시·경로 디버그 표시 토글
 - [ ] 9. 검증: 샘플 `Demo_AI.escene`(순찰 → 플레이어 발견 → 추적 → 놓치면 복귀, 장애물 우회), Verify 스크린샷, 디버그 레이어 오류 0건
 - [ ] 실행 검증 (사용자 확인)

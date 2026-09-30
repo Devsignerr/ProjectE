@@ -92,6 +92,10 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 			StartListenServer(Options.Port);
 		}
 	}
+	if (Net.GetMode() != ENetMode::Standalone && (Options.SimulatedLatencyMs > 0 || Options.SimulatedLossPercent > 0.0f))
+	{
+		Net.SetSimulation(Options.SimulatedLatencyMs, Options.SimulatedLossPercent); // --net-lag / --net-loss
+	}
 	UpdateWindowTitle();
 }
 

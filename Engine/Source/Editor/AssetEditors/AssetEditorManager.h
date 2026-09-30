@@ -2,6 +2,7 @@
 
 #include "Editor/AssetEditors/AssetEditor.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/UIRenderer.h"
 
 #include <filesystem>
 #include <memory>
@@ -62,6 +63,7 @@ private:
 
 	std::vector<FOpenEditor>     Editors;
 	FSceneRenderer               PreviewRenderer;
+	FUIRenderer                  UIRenderer; // UI 디자이너 미리보기
 	std::unique_ptr<FEditorGrid> Grid;
 	bool                         bRendererReady  = false;
 	bool                         bRendererFailed = false;

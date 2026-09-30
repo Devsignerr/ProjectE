@@ -127,6 +127,9 @@ private:
 	bool  ShouldRunHere(const FScriptComponent& Component) const; // ExecutionLocation 필터
 	int32 GetLocalPlayerId() const;
 	int32 GetOwner(FEntity Entity) const;
+	void RegisterUIBindings();     // entity:GetWidget, UIWidget 값 (ScriptUIBindings.cpp)
+	// 이번 프레임 게임 UI 이벤트를 스크립트 함수로 전달 (OnUIClicked_<위젯 이름> 등, ScriptUIBindings.cpp)
+	void DispatchUIEvents();
 
 	// Scene.SpawnPrefab 요청: 스크립트 갱신 루프 밖에서 만든다 (ApplyPendingSpawns)
 	struct FPendingSpawn

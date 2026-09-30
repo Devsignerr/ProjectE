@@ -14,6 +14,7 @@ enum class EWindowEventType : uint8
 	MouseButtonDown,
 	MouseButtonUp,
 	MouseWheel,
+	Char, // 문자 입력 (WM_CHAR, IME 조합 완료 글자 포함)
 };
 
 // 창에서 발생한 이벤트. 타입에 따라 관련 필드만 유효하다.
@@ -38,4 +39,7 @@ struct FWindowEvent
 	int32        MouseX     = 0;
 	int32        MouseY     = 0;
 	float        WheelDelta = 0.0f; // 한 눈금 = 1.0
+
+	// Char
+	uint32 Character = 0; // 유니코드 코드 포인트 (UTF-16 서로게이트는 합쳐서 전달)
 };

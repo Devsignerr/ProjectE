@@ -1,13 +1,28 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Network/NetTypes.h"
 #include "Renderer/Camera.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneCloner.h"
 
+#include <functional>
+#include <string>
+
 class FGameWorld;
 class FInput;
 struct FEditorContext;
+
+// 플레이 시작 옵션 (기본 = 1인용: 편집 씬 복제)
+struct FPlayOptions
+{
+	ENetMode Mode = ENetMode::Standalone;
+	// 있으면 편집 씬을 복제하지 않고 이 씬 JSON을 로드한다 (네트워크 플레이: 모든 프로세스가 같은 JSON을 같은 방식으로
+	// 로드해야 정적 NetId가 같다. 선택은 옮기지 않는다)
+	const std::string* SceneJson = nullptr;
+	// 월드 시작 직전 (정적 NetId 부여/복제 시작 등 — 스크립트가 엔티티를 만들기 전)
+	std::function<void(FScene& PlayScene)> BeforeBeginPlay;
+};
 
 // 에디터 플레이 모드 (뷰포트 안에서 재생, 정지 시 원래 씬 복원).
 //   Play:  편집 씬을 PlayScene으로 복제(FSceneCloner) → Context.Scene을 PlayScene으로 전환 → FGameWorld::BeginPlay
@@ -30,7 +45,7 @@ public:
 	// EditScene/World는 FPlayMode보다 오래 산다 (비소유)
 	void Init(FScene& InEditScene, FGameWorld& InWorld);
 
-	void Play(FEditorContext& Context);
+	void Play(FEditorContext& Context, const FPlayOptions& Options = {});
 	void Stop(FEditorContext& Context);
 	void TogglePause();
 	void RequestStep(); // 일시정지 중에만 의미 있음

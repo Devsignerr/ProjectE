@@ -1,0 +1,32 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "ReplicatedComponent": {},
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "",
+          "ScriptAsset": "Scripts/PlayerController.lua"
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 30.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

@@ -121,3 +121,19 @@ struct FParticleRibbonVertex
 	FVector4 Color;
 };
 static_assert(sizeof(FParticleRibbonVertex) == 36);
+
+// UI 프레임 상수 (UI.hlsl b0). 사각형 데이터는 FUIDrawQuad(UI/UIDrawList.h, 80바이트) = UI.hlsl FUIQuad
+struct alignas(16) FUIConstants
+{
+	FVector2 ViewportSize;
+	FVector2 Padding;
+};
+static_assert(sizeof(FUIConstants) == 16);
+
+// UI 묶음 상수 (UI.hlsl b1)
+struct alignas(16) FUIBatchConstants
+{
+	uint32 QuadOffset = 0;
+	uint32 Padding[3] = {};
+};
+static_assert(sizeof(FUIBatchConstants) == 16);

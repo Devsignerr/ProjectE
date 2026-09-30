@@ -21,6 +21,8 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/Prefab.h"
 #include "Scene/SceneSerializer.h"
+#include "UI/UIReflection.h"
+#include "UI/UISystem.h"
 
 #include <commdlg.h>
 #include <imgui.h>
@@ -80,6 +82,7 @@ bool FEditorApplication::OnInit()
 	RegisterPhysicsTypes();
 	RegisterAITypes();
 	RegisterNetworkTypes();
+	RegisterUITypes();
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -146,6 +149,8 @@ bool FEditorApplication::OnInit()
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
 	}
 	PlayMode.Init(Scene, World);
+	NetPlay.Init(World, &Resources, Context.ContentDirectory);
+	Context.NetPlay = &NetPlay;
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
@@ -241,6 +246,16 @@ bool FEditorApplication::OnInit()
 
 	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모(Alt+드래그 복제), End 바닥에 붙이기, Ctrl+C/V/D/Z, Ctrl+N/O/S 씬 파일, F5 재생/정지");
 
+	// 자동 검증: --play-net listen|dedicated [--play-clients N] 로 네트워크 플레이 설정 (--play와 함께)
+	if (const std::wstring PlayNet = CommandLine.GetValue(L"--play-net"); !PlayNet.empty())
+	{
+		NetPlay.PendingSettings.Mode = PlayNet == L"dedicated" ? FPlayNetSettings::EMode::DedicatedServer : FPlayNetSettings::EMode::ListenServer;
+		if (const std::wstring Clients = CommandLine.GetValue(L"--play-clients"); !Clients.empty())
+		{
+			NetPlay.PendingSettings.ClientCount = std::clamp(std::stoi(Clients), 0, 4);
+		}
+		NetPlay.PendingSettings.Port = FNetLaunchOptions::FromCommandLine(CommandLine).Port;
+	}
 	// 자동 검증: --play 로 시작 시 플레이 모드 진입
 	if (CommandLine.HasFlag(L"--play"))
 	{
@@ -253,7 +268,8 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
 
-	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard())
+	// (게임 UI 텍스트 상자에 입력 중이면 ESC는 UI가 받는다 — 직전 프레임 기준)
+	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard() && !ViewportPanel.bGameUIWantsKeyboard)
 	{
 		// 플레이 중 ESC는 플레이 정지 (UE와 동일)
 		if (PlayMode.IsActive())
@@ -313,6 +329,7 @@ void FEditorApplication::OnRender()
 	PostProcessPanel.Draw(Context);
 	ShadowPanel.Draw(Context);
 	OutputLogPanel.Draw(Context);
+	NetworkPanel.Draw(Context);
 	ContentBrowserPanel.Draw(Context);
 	AssetEditors.Draw(Context);
 	if (const std::wstring ReimportArg = FCommandLine::FromProcess().GetValue(L"--verify-reimport"); GetFrameIndex() == 20 && !ReimportArg.empty())
@@ -668,6 +685,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
 		ImGui::MenuItem("포스트 프로세스", nullptr, &PostProcessPanel.bOpen);
 		ImGui::MenuItem("그림자", nullptr, &ShadowPanel.bOpen);
+		ImGui::MenuItem("네트워크", nullptr, &NetworkPanel.bOpen);
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
 		ImGui::Separator();
@@ -1058,7 +1076,16 @@ void FEditorApplication::StartPlay()
 	{
 		return;
 	}
-	PlayMode.Play(Context);
+	FPlayOptions Options;
+	if (NetPlay.Prepare(NetPlay.PendingSettings, Scene, Options))
+	{
+		PlayMode.Play(Context, Options); // 네트워크 플레이: PIE 씬 파일에서 플레이 씬을 만든다
+		NetPlay.AfterPlay();
+	}
+	else
+	{
+		PlayMode.Play(Context);
+	}
 	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임", false);
 }
 
@@ -1069,6 +1096,7 @@ void FEditorApplication::StopPlay()
 		return;
 	}
 	PlayMode.Stop(Context);
+	NetPlay.Stop(); // 네트워크 종료 + 서버/클라이언트 창 닫기
 	AudioSystem.Reset(Audio);
 	// 플레이 중 뷰포트 크기가 바뀌었을 수 있으므로 에디터 카메라 종횡비를 맞춘다
 	Context.Camera = &Camera;
@@ -1078,8 +1106,44 @@ void FEditorApplication::StopPlay()
 void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 {
 	// 텍스트 입력 중에는 게임에 키 입력을 주지 않는다
-	const bool bGameInput = !ImGui::GetIO().WantTextInput;
-	PlayMode.Tick(Context, DeltaSeconds, bGameInput ? &GetInput() : nullptr);
+	const bool    bGameInput = !ImGui::GetIO().WantTextInput;
+	const FInput* GameInput  = bGameInput ? &GetInput() : nullptr;
+
+	// 게임 UI가 먼저 입력을 본다 (뷰포트 이미지 위 포인터만). 포인터를 가져가면 게임에는 마우스 버튼/휠을 뺀 입력
+	NetPlay.Update(DeltaSeconds); // 네트워크 플레이: 수신/클라이언트 보간 (게임플레이 틱 전)
+	FInput BlockedInput;
+	ViewportPanel.bGameUIWantsPointer  = false;
+	ViewportPanel.bGameUIWantsKeyboard = false;
+	if (PlayMode.IsActive())
+	{
+		FUIFrameInput UIInput;
+		UIInput.Viewport    = ViewportPanel.GetGameUIViewport();
+		UIInput.bHasPointer = GameInput != nullptr;
+		if (GameInput != nullptr)
+		{
+			UIInput.Pointer = FUISystem::MakePointer(*GameInput, -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
+			UIInput.Keys    = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
+		}
+		UIInput.DeltaSeconds          = DeltaSeconds;
+		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
+		if (GameInput != nullptr && (UIResult.bPointer || UIResult.bKeyboard))
+		{
+			ViewportPanel.bGameUIWantsPointer  = UIResult.bPointer;
+			ViewportPanel.bGameUIWantsKeyboard = UIResult.bKeyboard;
+			BlockedInput                       = UIResult.bPointer ? GameInput->WithoutMouseButtons() : *GameInput;
+			if (UIResult.bKeyboard)
+			{
+				BlockedInput = BlockedInput.WithoutKeyboard();
+			}
+			GameInput = &BlockedInput;
+		}
+	}
+	PlayMode.Tick(Context, DeltaSeconds, GameInput);
+	NetPlay.PostTick(DeltaSeconds); // 리슨 서버 복제 전송
+	if (World.ConsumeSessionRequest())
+	{
+		ShowNotification("에디터 플레이에서는 Net.Host/Connect/Disconnect를 지원하지 않습니다 (런타임에서 동작)", true);
+	}
 
 	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라
 	FCamera* GameCamera = PlayMode.UpdateGameCamera(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));
@@ -1254,6 +1318,7 @@ void FEditorApplication::ApplyDefaultLayoutIfNeeded()
 	ImGui::DockBuilderDockWindow("###Inspector", RightBottom);
 	ImGui::DockBuilderDockWindow("###PostProcess", Bottom);
 	ImGui::DockBuilderDockWindow("###Shadows", Bottom);
+	ImGui::DockBuilderDockWindow("###Network", Bottom);
 	ImGui::DockBuilderFinish(DockSpace);
 }
 

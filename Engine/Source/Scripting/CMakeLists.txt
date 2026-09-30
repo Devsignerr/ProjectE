@@ -9,7 +9,7 @@ add_library(ProjectE::Scripting ALIAS EScripting)
 target_include_directories(EScripting PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(EScripting
     PUBLIC  ProjectE::Core ProjectE::Scene
-    PRIVATE ThirdParty::sol2 ThirdParty::nlohmann_json)
+    PRIVATE ProjectE::UI ThirdParty::sol2 ThirdParty::nlohmann_json)
 # sol2 템플릿이 많아 오브젝트 섹션 수 한도를 넘을 수 있다
 target_compile_options(EScripting PRIVATE /bigobj)
 

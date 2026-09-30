@@ -141,6 +141,19 @@ FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, 
 	return Textures.Add(std::move(Texture));
 }
 
+FTextureHandle FResourceManager::CreateTexture(uint32 Width, uint32 Height, DXGI_FORMAT Format, const void* Pixels, uint32 BytesPerPixel,
+                                               const std::wstring& DebugName)
+{
+	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
+	auto Texture = std::make_unique<FD3D12Texture>();
+	if (!Texture->Init2D(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Width, Height, Format, Pixels, BytesPerPixel,
+	                     DebugName.c_str(), /*bGenerateMips*/ false))
+	{
+		return FTextureHandle{};
+	}
+	return Textures.Add(std::move(Texture));
+}
+
 FTextureHandle FResourceManager::CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName)
 {
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");

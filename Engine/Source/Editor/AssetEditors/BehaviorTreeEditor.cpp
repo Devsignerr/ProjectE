@@ -354,7 +354,7 @@ const FBehaviorTreeInstance* FBehaviorTreeEditor::FindDebugTree(FAssetEditorEnvi
 
 // ---------------------------------------------------------------- 그래프
 
-void FBehaviorTreeEditor::DrawMainPanel(FAssetEditorEnvironment& Env)
+void FBehaviorTreeEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 {
 	std::string                  DebugEntity;
 	const FBehaviorTreeInstance* DebugTree = FindDebugTree(Env, &DebugEntity);

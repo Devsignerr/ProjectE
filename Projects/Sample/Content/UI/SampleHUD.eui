@@ -1,0 +1,1484 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1920,
+    1080
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Visibility": "SelfHitTestInvisible",
+    "Enabled": true,
+    "Opacity": 1,
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "StatusPanel",
+        "Visibility": "Visible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            32,
+            32,
+            420,
+            96
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.78
+          ],
+          "CornerRadius": 12,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            1,
+            1,
+            0.12
+          ]
+        },
+        "ContentPadding": [
+          18,
+          12,
+          18,
+          12
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "StatusBox",
+            "Visibility": "SelfHitTestInvisible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "HealthLabel",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "체력 75 / 100",
+                "FontSize": 24,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "ProgressBar",
+                "Name": "HealthBar",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "MinSize": [
+                  100,
+                  20
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Fill",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.02,
+                    0.02,
+                    0.03,
+                    0.9
+                  ],
+                  "CornerRadius": 6,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "FillBrush": {
+                  "Color": [
+                    0.3,
+                    0.85,
+                    0.4,
+                    1
+                  ],
+                  "CornerRadius": 6,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "Percent": 0.75,
+                "FillDirection": "LeftToRight"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "ScoreText",
+        "Visibility": "HitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Text": "점수 12,340",
+        "FontSize": 40,
+        "TextColor": [
+          1,
+          0.85,
+          0.35,
+          1
+        ],
+        "Justify": "Right",
+        "Wrap": false,
+        "OutlineWidth": 1.5,
+        "OutlineColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          0
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ],
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -40,
+            36,
+            0,
+            0
+          ],
+          "Alignment": [
+            1,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        }
+      },
+      {
+        "Type": "Border",
+        "Name": "MenuPanel",
+        "Visibility": "Visible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.5
+          ],
+          "AnchorMax": [
+            0.5,
+            0.5
+          ],
+          "Offsets": [
+            0,
+            0,
+            520,
+            470
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.07,
+            0.08,
+            0.12,
+            0.9
+          ],
+          "CornerRadius": 18,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.45,
+            0.65,
+            1,
+            0.35
+          ]
+        },
+        "ContentPadding": [
+          40,
+          32,
+          40,
+          36
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "MenuBox",
+            "Visibility": "SelfHitTestInvisible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "Title",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "ProjectE",
+                "FontSize": 64,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  4
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    4
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "Subtitle",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "인게임 UI 샘플",
+                "FontSize": 26,
+                "TextColor": [
+                  0.7,
+                  0.76,
+                  0.9,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    24
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Button",
+                "Name": "PlayButton",
+                "Visibility": "Visible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    14
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Fill",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.16,
+                    0.36,
+                    0.78,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.26,
+                    0.5,
+                    0.98,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.75,
+                    0.85,
+                    1,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.1,
+                    0.24,
+                    0.56,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.3,
+                    0.3,
+                    0.33,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  16,
+                  10,
+                  16,
+                  10
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "PlayButtonLabel",
+                    "Visibility": "HitTestInvisible",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Text": "게임 시작",
+                    "FontSize": 30,
+                    "TextColor": [
+                      1,
+                      1,
+                      1,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 0,
+                    "OutlineColor": [
+                      0,
+                      0,
+                      0,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ],
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "OptionsButton",
+                "Visibility": "Visible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    14
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Fill",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.16,
+                    0.36,
+                    0.78,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.26,
+                    0.5,
+                    0.98,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.75,
+                    0.85,
+                    1,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.1,
+                    0.24,
+                    0.56,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.3,
+                    0.3,
+                    0.33,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  16,
+                  10,
+                  16,
+                  10
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "OptionsButtonLabel",
+                    "Visibility": "HitTestInvisible",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Text": "설정",
+                    "FontSize": 30,
+                    "TextColor": [
+                      1,
+                      1,
+                      1,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 0,
+                    "OutlineColor": [
+                      0,
+                      0,
+                      0,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ],
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "QuitButton",
+                "Visibility": "Visible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Fill",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.16,
+                    0.36,
+                    0.78,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.26,
+                    0.5,
+                    0.98,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.75,
+                    0.85,
+                    1,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.1,
+                    0.24,
+                    0.56,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 1.5,
+                  "BorderColor": [
+                    0.45,
+                    0.65,
+                    1,
+                    0.9
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.3,
+                    0.3,
+                    0.33,
+                    1
+                  ],
+                  "CornerRadius": 10,
+                  "BorderWidth": 0,
+                  "BorderColor": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  16,
+                  10,
+                  16,
+                  10
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "QuitButtonLabel",
+                    "Visibility": "HitTestInvisible",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Text": "종료",
+                    "FontSize": 30,
+                    "TextColor": [
+                      1,
+                      1,
+                      1,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 0,
+                    "OutlineColor": [
+                      0,
+                      0,
+                      0,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ],
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "LogPanel",
+        "Visibility": "Visible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            1,
+            1
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            -32,
+            -32,
+            420,
+            260
+          ],
+          "Alignment": [
+            1,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "Texture": "UI/PanelFrame.png",
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "DrawAs": "NineSlice",
+          "Margin": [
+            0.3,
+            0.3,
+            0.3,
+            0.3
+          ],
+          "TextureSize": [
+            64,
+            64
+          ]
+        },
+        "ContentPadding": [
+          18,
+          16,
+          14,
+          16
+        ],
+        "Children": [
+          {
+            "Type": "ScrollBox",
+            "Name": "LogScroll",
+            "Visibility": "Visible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Orientation": "Vertical",
+            "ScrollbarWidth": 6,
+            "ScrollbarColor": [
+              1,
+              1,
+              1,
+              0.35
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "LogLine0",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "여우가 숲에서 나타났습니다.",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine1",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "아이템을 얻었습니다: 오래된 열쇠",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine2",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "체크포인트에 도착했습니다.",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine3",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "스크롤 박스는 휠로 움직입니다. 긴 문장은 자동으로 줄바꿈되어 여러 줄에 걸쳐 표시됩니다.",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine4",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "보물 상자를 열었습니다.",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine5",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "새 기록을 세웠습니다!",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine6",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "동료가 합류했습니다.",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "LogLine7",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "마지막 줄",
+                "FontSize": 22,
+                "TextColor": [
+                  0.85,
+                  0.88,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 0,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "TextBox",
+        "Name": "ChatInput",
+        "Visibility": "Visible",
+        "Enabled": true,
+        "Opacity": 1,
+        "MinSize": [
+          160,
+          0
+        ],
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            32,
+            -32,
+            420,
+            48
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.8
+          ],
+          "CornerRadius": 6,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            1,
+            1,
+            0.25
+          ]
+        },
+        "FocusedBrush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.95
+          ],
+          "CornerRadius": 6,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.35,
+            0.58,
+            1,
+            1
+          ]
+        },
+        "ContentPadding": [
+          12,
+          6,
+          12,
+          6
+        ],
+        "Text": "",
+        "HintText": "채팅 입력 (클릭 후 Enter)",
+        "HintColor": [
+          1,
+          1,
+          1,
+          0.4
+        ],
+        "FontSize": 22,
+        "TextColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "MaxLength": 60
+      }
+    ]
+  },
+  "Animations": [
+    {
+      "Name": "MenuIntro",
+      "Length": 0.5,
+      "Tracks": [
+        {
+          "Widget": "MenuPanel",
+          "Property": "Opacity",
+          "Keys": [
+            [
+              0.0,
+              0.0,
+              "EaseOut"
+            ],
+            [
+              0.4,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "TranslationY",
+          "Keys": [
+            [
+              0.0,
+              60.0,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              0.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "ScaleX",
+          "Keys": [
+            [
+              0.0,
+              0.92,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "MenuPanel",
+          "Property": "ScaleY",
+          "Keys": [
+            [
+              0.0,
+              0.92,
+              "EaseOut"
+            ],
+            [
+              0.5,
+              1.0,
+              "Linear"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ScorePulse",
+      "Length": 0.35,
+      "Tracks": [
+        {
+          "Widget": "ScoreText",
+          "Property": "ScaleX",
+          "Keys": [
+            [
+              0.0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.12,
+              1.35,
+              "EaseIn"
+            ],
+            [
+              0.35,
+              1.0,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "ScoreText",
+          "Property": "ScaleY",
+          "Keys": [
+            [
+              0.0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.12,
+              1.35,
+              "EaseIn"
+            ],
+            [
+              0.35,
+              1.0,
+              "Linear"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

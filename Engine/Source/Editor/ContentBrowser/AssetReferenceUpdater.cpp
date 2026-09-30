@@ -20,7 +20,7 @@ namespace
 	enum class EReferenceBase : uint8
 	{
 		None,
-		ContentRoot, // .escene, .eproject, .eprefab
+		ContentRoot, // .escene, .eproject, .eprefab, .eui
 		OwnFolder,   // .emat, .eparticle
 	};
 
@@ -33,7 +33,7 @@ namespace
 	EReferenceBase GetReferenceBase(const std::filesystem::path& File)
 	{
 		const std::wstring Extension = Lower(File.extension().wstring());
-		if (Extension == L".escene" || Extension == L".eproject" || Extension == L".eprefab")
+		if (Extension == L".escene" || Extension == L".eproject" || Extension == L".eprefab" || Extension == L".eui")
 		{
 			return EReferenceBase::ContentRoot;
 		}

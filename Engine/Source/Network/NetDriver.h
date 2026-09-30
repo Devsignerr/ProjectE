@@ -30,8 +30,10 @@ struct FNetLaunchOptions
 {
 	ENetMode    Mode = ENetMode::Standalone;
 	uint16      Port = DefaultNetPort;
-	std::string ConnectAddress; // --join-lan이면 비어 있다 (앱이 찾아서 채운다)
-	bool        bJoinLan = false;
+	std::string ConnectAddress;               // --join-lan이면 비어 있다 (앱이 찾아서 채운다)
+	bool        bJoinLan             = false;
+	int32       SimulatedLatencyMs   = 0;    // --net-lag <ms>: 디버그 지연 (보내는 쪽)
+	float       SimulatedLossPercent = 0.0f; // --net-loss <%>: 디버그 손실
 
 	static FNetLaunchOptions FromCommandLine(const FCommandLine& CommandLine);
 };
@@ -91,6 +93,11 @@ public:
 	bool Send(FNetConnectionId Connection, const std::vector<uint8>& Message, ENetReliability Reliability);
 	void Broadcast(const std::vector<uint8>& Message, ENetReliability Reliability); // 서버: 입장한 모든 플레이어
 	bool SendToServer(const std::vector<uint8>& Message, ENetReliability Reliability);
+
+	// 디버그: 연결 상태 (클라이언트는 서버 연결), 지연/손실 흉내 (시작한 뒤에 부른다)
+	bool GetStats(FNetConnectionId Connection, FNetConnectionStats& OutStats) const;
+	bool GetServerStats(FNetConnectionStats& OutStats) const { return GetStats(ServerConnection, OutStats); }
+	void SetSimulation(int32 LatencyMs, float LossPercent);
 
 	// 서버 이벤트 (Update 안에서 불린다)
 	std::function<void(const FRemotePlayer&)>                     OnPlayerJoined;

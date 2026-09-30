@@ -48,10 +48,16 @@ void FAssetEditor::Close(FAssetEditorEnvironment& Env)
 	{
 		RevertToSaved(Env);
 	}
+	OnClose(Env);
 	if (UsesPreview())
 	{
 		Preview.Shutdown(*Env.Rhi);
 	}
+}
+
+void FAssetEditor::OnClose(FAssetEditorEnvironment& Env)
+{
+	(void)Env;
 }
 
 void FAssetEditor::Update(FAssetEditorEnvironment& Env, float DeltaSeconds)
@@ -114,7 +120,7 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 		ImGui::TableNextRow();
 
 		ImGui::TableNextColumn();
-		DrawMainPanel(Env);
+		DrawPreviewArea(Env);
 
 		ImGui::TableNextColumn();
 		if (ImGui::BeginChild("##Properties", ImVec2(0.0f, 0.0f)))
@@ -128,7 +134,7 @@ void FAssetEditor::Draw(FAssetEditorEnvironment& Env)
 	}
 }
 
-void FAssetEditor::DrawMainPanel(FAssetEditorEnvironment& Env)
+void FAssetEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 {
 	DrawPreviewToolbar(Env);
 	const ImVec2 Avail = ImGui::GetContentRegionAvail();

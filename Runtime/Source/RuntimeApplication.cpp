@@ -11,6 +11,8 @@
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "UI/UIReflection.h"
+#include "UI/UISystem.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
 
@@ -72,6 +74,11 @@ bool FRuntimeApplication::OnInit()
 	RegisterPhysicsTypes();
 	RegisterAITypes();
 	RegisterNetworkTypes();
+	RegisterUITypes();
+	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
+	{
+		E_LOG(LogRuntime, Warning, "UI 렌더러 초기화 실패: 게임 UI를 그리지 않습니다");
+	}
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
 	{
@@ -111,10 +118,6 @@ bool FRuntimeApplication::OnInit()
 void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
-	if (InputState.IsKeyPressed(EKey::Escape))
-	{
-		RequestExit();
-	}
 
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
 	if (Lan.IsHosting())
@@ -130,7 +133,32 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
 		}
 	}
-	World.TickGameplay(DeltaSeconds, &InputState); // 클라이언트 역할이면 물리만
+	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
+	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
+	FUIFrameInput       UIInput;
+	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
+	UIInput.bHasPointer = true;
+	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
+	UIInput.Keys         = FUISystem::MakeKeys(InputState);
+	UIInput.DeltaSeconds = DeltaSeconds;
+	FInput               BlockedInput;
+	const FInput*        GameInput = &InputState;
+	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	if (UIResult.bPointer || UIResult.bKeyboard)
+	{
+		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;
+		if (UIResult.bKeyboard)
+		{
+			BlockedInput = BlockedInput.WithoutKeyboard();
+		}
+		GameInput = &BlockedInput;
+	}
+	// ESC 종료 (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
+	if (!UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	{
+		RequestExit();
+	}
+	World.TickGameplay(DeltaSeconds, GameInput); // 클라이언트 역할이면 물리만
 	World.TickPresentation(Scene, DeltaSeconds);
 	ReplicationServer.Tick(DeltaSeconds);
 	if (const std::optional<FNetSessionRequest> Request = World.ConsumeSessionRequest())
@@ -142,7 +170,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
 	if (!CameraEntity.IsValid() || !FSceneCamera::ApplyToCamera(Scene, CameraEntity, Camera.GetAspectRatio(), Camera))
 	{
-		CameraController.Update(Camera, InputState, DeltaSeconds);
+		CameraController.Update(Camera, *GameInput, DeltaSeconds);
 	}
 
 	// 오디오: 카메라가 청자
@@ -155,6 +183,9 @@ void FRuntimeApplication::OnRender()
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
+	UIDrawList.Clear();
+	FUISystem::Paint(Scene, UIDrawList);
+	UIRenderer.Render(UIDrawList, Rhi->GetBackBufferOutput(), FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	Rhi->EndFrame();
 }
 
@@ -174,6 +205,7 @@ void FRuntimeApplication::OnShutdown()
 
 	if (Rhi)
 	{
+		UIRenderer.Shutdown();
 		SceneRenderer.Shutdown();
 		Resources.Shutdown();
 		Rhi->Shutdown();

@@ -60,6 +60,15 @@ void FInput::EndFrame()
 	WheelDelta       = 0.0f;
 }
 
+void FInput::SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel)
+{
+	KeyStates    = Keys;
+	ButtonStates = Buttons;
+	MouseX       = InMouseX;
+	MouseY       = InMouseY;
+	WheelDelta  += Wheel;
+}
+
 void FInput::ClearState()
 {
 	KeyStates.reset();

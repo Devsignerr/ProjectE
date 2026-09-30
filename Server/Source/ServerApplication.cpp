@@ -66,10 +66,15 @@ bool FServerApplication::OnInit()
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
 	Players.Begin(Scene, FPaths::GetProjectDescriptor().PlayerPrefab);
 	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
-		Players.SpawnPlayer(Player.PlayerId);
+		const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 		Replication.OnPlayerJoined(Player.Connection);
+		World.OnPlayerJoined(Player.PlayerId, Pawn);
 	};
-	Net.OnPlayerLeft = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) { Players.DespawnPlayer(Player.PlayerId); };
+	Net.OnPlayerLeft  = [this](const FNetDriver::FRemotePlayer& Player, const std::string&) {
+		World.OnPlayerLeft(Player.PlayerId);
+		Players.DespawnPlayer(Player.PlayerId);
+	};
+	Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) { World.HandleNetMessage(Connection, Message); };
 	World.BeginPlay(Scene, ENetMode::DedicatedServer);
 
 	const FNetLaunchOptions NetOptions = FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess());

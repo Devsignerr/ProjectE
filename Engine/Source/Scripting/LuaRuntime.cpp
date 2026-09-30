@@ -550,6 +550,20 @@ void FLuaRuntime::RegisterEntityBindings()
 		return Owner < 0 ? (NetHooks == nullptr || NetHooks->bIsServer) : Owner == GetLocalPlayerId();
 	};
 
+	// ---- RPC: entity:CallServer("Fire", 인자...) → 그 엔티티 스크립트의 Server_Fire(self, 인자...) (Client_/Multicast_도 같은 규칙)
+	EntityType["CallServer"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
+		RequireEntity(Entity);
+		CallRpc(Entity.Entity, EScriptRpcKind::Server, Name, Args);
+	};
+	EntityType["CallClient"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
+		RequireEntity(Entity);
+		CallRpc(Entity.Entity, EScriptRpcKind::Client, Name, Args);
+	};
+	EntityType["CallMulticast"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
+		RequireEntity(Entity);
+		CallRpc(Entity.Entity, EScriptRpcKind::Multicast, Name, Args);
+	};
+
 	Lua.new_usertype<FScriptComponentRef>(
 		"Component",
 		sol::no_constructor,
@@ -1089,6 +1103,8 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 			continue;
 		}
 		FScriptInstance& Instance = Found->second;
+		// 이 인스턴스가 보는 입력 (서버: 엔티티 소유 플레이어의 입력)
+		Input = NetHooks != nullptr && NetHooks->ResolveInput ? NetHooks->ResolveInput(Entity, InInput) : InInput;
 		if (!Instance.bStarted)
 		{
 			Instance.bStarted = true;
@@ -1099,6 +1115,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 		}
 		CallMethod(Instance, "OnUpdate", DeltaSeconds, true);
 	}
+	Input = InInput;
 
 	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생)
 	DispatchAnimNotifies();
@@ -1308,4 +1325,90 @@ int32 FLuaRuntime::GetLocalPlayerId() const
 int32 FLuaRuntime::GetOwner(FEntity Entity) const
 {
 	return NetHooks != nullptr && NetHooks->GetOwner ? NetHooks->GetOwner(Entity) : -1;
+}
+
+FScriptRpcArg FLuaRuntime::ToRpcArg(const sol::object& Object)
+{
+	FScriptRpcArg Arg;
+	if (Object.is<FScriptEntity>())
+	{
+		Arg.bIsEntity = true;
+		Arg.Entity    = Object.as<FScriptEntity>().Entity;
+		return Arg;
+	}
+	Arg.Value = ToScriptValue(Object);
+	if (Arg.Value.IsNil() && Object.get_type() != sol::type::lua_nil && Object.get_type() != sol::type::none)
+	{
+		throw std::runtime_error("RPC 인자는 nil/bool/숫자/문자열/Vector3/에셋/엔티티만 보낼 수 있습니다");
+	}
+	return Arg;
+}
+
+void FLuaRuntime::CallRpc(FEntity Target, EScriptRpcKind Kind, const std::string& Name, const sol::variadic_args& Args)
+{
+	std::vector<FScriptRpcArg> Converted;
+	Converted.reserve(Args.size());
+	for (const sol::object Arg : Args)
+	{
+		Converted.push_back(ToRpcArg(Arg));
+	}
+	if (NetHooks != nullptr && NetHooks->SendRpc)
+	{
+		NetHooks->SendRpc(Target, Kind, Name, Converted);
+		return;
+	}
+	// 네트워크 없음(Standalone): 로컬에서 바로 부른다
+	const char* Prefix = Kind == EScriptRpcKind::Server ? "Server_" : (Kind == EScriptRpcKind::Client ? "Client_" : "Multicast_");
+	InvokeMethod(Target, Prefix + Name, Converted);
+}
+
+void FLuaRuntime::BroadcastMethod(const std::string& MethodName, const std::vector<FScriptRpcArg>& Args)
+{
+	// 호출 중 인스턴스가 생기거나 없어질 수 있으므로 대상 목록을 먼저 복사한다
+	std::vector<FEntity> Targets;
+	Targets.reserve(Instances.size());
+	for (const auto& [Id, Instance] : Instances)
+	{
+		Targets.push_back(Instance.Entity);
+	}
+	for (const FEntity Target : Targets)
+	{
+		InvokeMethod(Target, MethodName, Args, false);
+	}
+}
+
+bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, const std::vector<FScriptRpcArg>& Args, bool bWarnIfMissing)
+{
+	const auto Found = Instances.find(Target.ToId());
+	if (Found == Instances.end() || Found->second.bFaulted || !Found->second.Self.valid())
+	{
+		return false;
+	}
+	FScriptInstance&  Instance = Found->second;
+	const sol::object Method   = Instance.Self[MethodName];
+	if (Method.get_type() != sol::type::function)
+	{
+		if (bWarnIfMissing)
+		{
+			E_LOG(LogScript, Warning, "RPC 대상 메서드가 없습니다: {}:{}", Instance.ScriptAsset, MethodName);
+		}
+		return false;
+	}
+	std::vector<sol::object> Values;
+	Values.reserve(Args.size());
+	for (const FScriptRpcArg& Arg : Args)
+	{
+		Values.push_back(Arg.bIsEntity ? sol::make_object(Lua, FScriptEntity{ Arg.Entity }) : FromScriptValue(Arg.Value));
+	}
+	const sol::table               Self = Instance.Self;
+	sol::protected_function        Function(Method.as<sol::function>(), Traceback);
+	sol::protected_function_result Result = Function(Self, sol::as_args(Values));
+	if (!Result.valid())
+	{
+		const sol::error Error = Result;
+		Instance.bFaulted      = true;
+		ReportError(std::format("스크립트 오류 ({}:{}) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, MethodName, Error.what()));
+		return false;
+	}
+	return true;
 }

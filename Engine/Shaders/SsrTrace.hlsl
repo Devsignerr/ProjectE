@@ -36,6 +36,10 @@ Texture2D<float4> DecalMaterial  : register(t5); // DBufferC
 SamplerState      LinearSampler  : register(s0);
 
 static const float SsrFloatMax = 3.402823466e+38f;
+// 곡률 페이드 (ReflectionMath::SsrCurvature*): 곡률 반경 MinRadius 이하 0 → MaxRadius 이상 1, 이웃 법선 각이 MinAngle 미만이면 평면
+static const float CurvatureMinAngle      = 0.005f; // 라디안 (≈0.3도, 10비트 팔면체 법선 양자화보다 크게)
+static const float CurvatureFadeMinRadius = 20.0f;  // cm (데칼 리벳 등 수 cm 곡면은 0)
+static const float CurvatureFadeMaxRadius = 60.0f;  // cm (Demo_Reflections 크롬 공 반지름 75cm는 그대로)
 
 FFullscreenVSOutput VSMain(uint VertexId : SV_VertexID)
 {
@@ -122,6 +126,44 @@ float3 HierarchicalRaymarch(float3 Origin, float3 Direction, out bool bValid)
 	return Position;
 }
 
+// 표면 법선 (사전 패스 기하 법선 + 데칼 — 메인 패스와 같은 표면)
+float3 LoadSurfaceNormal(int2 Pixel, out float3 GeometryNormal, out float Roughness)
+{
+	const float4 NormalData = SceneNormal.Load(int3(Pixel, 0));
+	GeometryNormal          = DecodeScreenNormal(NormalData);
+	Roughness               = DecodeScreenRoughness(NormalData);
+	float3 N                = GeometryNormal;
+	if (bDecals != 0)
+	{
+		ApplyScreenDecals(DecalNormal, DecalMaterial, Pixel, N, Roughness);
+	}
+	return N;
+}
+
+// 곡률 페이드 (ReflectionMath::ComputeSsrCurvatureFade와 같은 식): 곡률 반경이 작은 면(데칼 리벳·경사면, 작은 곡면)은 볼록 거울처럼
+//   반사 상이 작게 압축되어 TAA 지터마다 맞는 지점이 크게 바뀌고, 평면 거울 가정의 반사 움직임 재투영도 맞지 않아 깜빡인다 → 캡처/하늘에 맡긴다.
+//   곡률 = 이웃 픽셀 법선 각 ÷ 픽셀 하나의 월드 크기 (화면 크기와 무관 — 가까이서 크게 보이는 리벳도 같은 판정).
+//   다른 물체(기하 법선이 다름)와의 경계는 곡률로 치지 않고, 법선 양자화 잡음(CurvatureMinAngle 미만)은 무시한다
+float ComputeCurvatureFade(int2 Pixel, float3 GeometryNormal, float3 WorldNormal, float ViewDepth)
+{
+	static const int2 Offsets[4] = { int2(1, 0), int2(-1, 0), int2(0, 1), int2(0, -1) };
+	const int2        MaxPixel   = int2(ScreenSize) - 1;
+	float             MaxAngle   = 0.0f;
+	[unroll] for (int Index = 0; Index < 4; ++Index)
+	{
+		float3       TapGeometry;
+		float        TapRoughness;
+		const float3 TapNormal = LoadSurfaceNormal(clamp(Pixel + Offsets[Index], 0, MaxPixel), TapGeometry, TapRoughness);
+		if (dot(TapGeometry, GeometryNormal) > 0.9f)
+		{
+			MaxAngle = max(MaxAngle, acos(saturate(dot(TapNormal, WorldNormal))));
+		}
+	}
+	const float PixelSize = bOrthographic != 0 ? 1.0f / ProjectionScale : ViewDepth / ProjectionScale; // cm
+	const float Curvature = MaxAngle < CurvatureMinAngle ? 0.0f : MaxAngle / max(PixelSize, 1.0e-4f); // 1 / 곡률 반경 (1/cm)
+	return saturate((1.0f / max(Curvature, 1.0e-6f) - CurvatureFadeMinRadius) / (CurvatureFadeMaxRadius - CurvatureFadeMinRadius));
+}
+
 // 픽셀 하나의 반사 추적. SurfaceView = 반사 표면 뷰 위치, HitDistance = 표면 → 교차점 거리 (cm, 맞지 않으면 0), Roughness = 표면 거칠기
 float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance, out float Roughness)
 {
@@ -133,19 +175,19 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	{
 		return 0.0f;
 	}
-	const float4 NormalData  = SceneNormal.Load(int3(Pixel, 0));
-	float3       WorldNormal = DecodeScreenNormal(NormalData);
-	Roughness                = DecodeScreenRoughness(NormalData);
-	if (bDecals != 0)
-	{
-		ApplyScreenDecals(DecalNormal, DecalMaterial, Pixel, WorldNormal, Roughness); // 메인 패스와 같은 표면 (데칼 거칠기/노멀)
-	}
+	float3       GeometryNormal;
+	const float3 WorldNormal = LoadSurfaceNormal(Pixel, GeometryNormal, Roughness);
 	if (Roughness > MaxRoughness)
 	{
 		return 0.0f; // 메인 패스가 어차피 0으로 페이드
 	}
-	const float2 UV = (float2(Pixel) + 0.5f) / ScreenSize;
-	const float3 P  = ViewFromDepth(UV, Depth);
+	const float2 UV            = (float2(Pixel) + 0.5f) / ScreenSize;
+	const float3 P             = ViewFromDepth(UV, Depth);
+	const float  CurvatureFade = ComputeCurvatureFade(Pixel, GeometryNormal, WorldNormal, P.z);
+	if (CurvatureFade <= 0.0f)
+	{
+		return 0.0f; // 굽은 면 → 캡처/하늘 반사
+	}
 	SurfaceView     = P;
 	const float3 N  = normalize(mul(WorldNormal, (float3x3)View));
 	const float3 V  = bOrthographic != 0 ? float3(0.0f, 0.0f, 1.0f) : normalize(P); // 카메라 → 점
@@ -210,7 +252,7 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	// 카메라 쪽으로 돌아오는 광선은 화면에 정보가 적어 틀리기 쉽다 → 뷰 z가 -0.3 이하면 0
 	const float  TowardFade = bOrthographic != 0 ? 1.0f : saturate((R.z + 0.3f) / 0.3f);
 	HitDistance = length(HitView - P);
-	return float4(max(Color, 0.0f), EdgeFade * TravelFade * TowardFade);
+	return float4(max(Color, 0.0f), EdgeFade * TravelFade * TowardFade * CurvatureFade);
 }
 
 struct FSsrTraceOutput

@@ -86,6 +86,19 @@ struct FReflectionMath
 		return std::sqrt(FMath::Max(1.0f - CosAngle * CosAngle, 0.0f)) / FMath::Max(CosAngle, 1.0e-4f);
 	}
 
+	// SSR 곡률 페이드 (SsrTrace.hlsl ComputeCurvatureFade와 같은 식): 곡률 반경이 작은 면(데칼 리벳, 작은 곡면)은 볼록 거울처럼 반사 상이 압축되어
+	//   TAA 지터마다 맞는 지점이 크게 바뀌고 평면 거울 가정의 반사 재투영도 맞지 않아 깜빡인다 → 캡처/하늘에 맡긴다.
+	//   NeighborAngle = 같은 면 이웃 픽셀과의 최대 법선 각(라디안), PixelWorldSize = 픽셀 하나의 월드 크기(cm). 반경 MinRadius 이하 0 → MaxRadius 이상 1
+	static constexpr float SsrCurvatureMinAngle      = 0.005f; // 이보다 작은 각은 법선 양자화 잡음 → 평면
+	static constexpr float SsrCurvatureFadeMinRadius = 20.0f;  // cm
+	static constexpr float SsrCurvatureFadeMaxRadius = 60.0f;  // cm
+	static float ComputeSsrCurvatureFade(float NeighborAngle, float PixelWorldSize)
+	{
+		const float Curvature = NeighborAngle < SsrCurvatureMinAngle ? 0.0f : NeighborAngle / FMath::Max(PixelWorldSize, 1.0e-4f);
+		const float Radius    = 1.0f / FMath::Max(Curvature, 1.0e-6f);
+		return FMath::Clamp((Radius - SsrCurvatureFadeMinRadius) / (SsrCurvatureFadeMaxRadius - SsrCurvatureFadeMinRadius), 0.0f, 1.0f);
+	}
+
 	// 반사된 상의 뷰 깊이 (원근): 거울에 비친 점은 시선 방향으로 표면 뒤 교차 거리만큼 간 가상 점에 보인다.
 	//   = 표면 뷰 깊이 × (1 + 교차 거리 / 카메라 → 표면 거리). 흐림 반경의 픽셀/거리는 표면이 아니라 이 깊이로 나눈다
 	static float ComputeSsrReflectionViewDepth(float SurfaceViewDepth, float SurfaceDistance, float HitDistance)

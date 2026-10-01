@@ -115,3 +115,16 @@ E_TEST(Reflection_SsrBlurRadius)
 	E_EXPECT_NEAR(FReflectionMath::ComputeSsrReflectionViewDepth(400.0f, 800.0f, 400.0f), 600.0f, 1.0e-3f);
 	E_EXPECT_NEAR(FReflectionMath::ComputeSsrReflectionViewDepth(800.0f, 800.0f, 0.0f), 800.0f, 1.0e-3f);
 }
+
+E_TEST(Reflection_SsrCurvatureFade)
+{
+	// 평면과 양자화 잡음 수준의 각은 그대로
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(0.0f, 0.2f), 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(0.004f, 0.01f), 1.0f, 1.0e-6f);
+	// 반지름 5cm 리벳: 화면 크기와 무관하게 0 (가까이서 픽셀 0.1cm / 멀리서 1cm)
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(0.1f / 5.0f, 0.1f), 0.0f, 1.0e-6f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(1.0f / 5.0f, 1.0f), 0.0f, 1.0e-6f);
+	// 반지름 75cm 크롬 공은 그대로, 40cm는 절반
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(0.5f / 75.0f, 0.5f), 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrCurvatureFade(0.4f / 40.0f, 0.4f), 0.5f, 1.0e-3f);
+}

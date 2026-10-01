@@ -25,6 +25,7 @@ struct FEditorViewportSettings
 	float  TranslateSnap      = 10.0f;  // cm
 	float  RotateSnap         = 15.0f;  // 도
 	float  ScaleSnap          = 0.1f;
+	bool   bVSync             = false;  // 켜면 프레임이 모니터 주사율에 묶인다 (끄면 테어링 지원 시 제한 없음)
 };
 
 // "EditorPerProjectUserSettings" — <Saved>/Config/ (프로젝트별 개인 상태, 창에 표시하지 않음)

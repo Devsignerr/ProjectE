@@ -917,6 +917,12 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 			Inputs.bStochastic   = CurrentJitterNdc.X != 0.0f || CurrentJitterNdc.Y != 0.0f; // TAA가 누적할 때만 거친 반사를 흔든다
 			Inputs.Velocity      = SceneVelocity.get();
 			Inputs.bHistoryValid = bTemporalHistoryValid;
+			// 반사 색은 지난 프레임 TAA 결과에서 (지난 프레임에 TAA가 돌았고 크기가 같을 때만 — 아니면 지터된 SceneColor)
+			if (const FD3D12RenderTarget* LastTaa = bTaaRanLastFrame ? TemporalAA.GetLastOutput() : nullptr;
+			    LastTaa != nullptr && LastTaa->GetWidth() == SceneColor->GetWidth() && LastTaa->GetHeight() == SceneColor->GetHeight())
+			{
+				Inputs.PrevColor = LastTaa;
+			}
 			ScreenSpaceReflections.Render(Inputs);
 			EndTimer(ERenderTimer::Reflections);
 		}

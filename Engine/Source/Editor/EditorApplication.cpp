@@ -202,6 +202,14 @@ bool FEditorApplication::OnInit()
 	}
 	// --reset-layout: 저장된 창 배치를 무시하고 기본 레이아웃으로 시작
 	bResetLayoutRequested = FCommandLine::FromProcess().HasFlag(L"--reset-layout");
+	if (const std::wstring Pan = FCommandLine::FromProcess().GetValue(L"--verify-camera-pan"); !Pan.empty())
+	{
+		VerifyCameraPanPerFrame = std::stof(Pan);
+	}
+	if (const std::wstring PanStart = FCommandLine::FromProcess().GetValue(L"--verify-camera-pan-start"); !PanStart.empty())
+	{
+		VerifyCameraPanStart = static_cast<uint64>(std::stoull(PanStart));
+	}
 	// 자동 검증: --open-settings project|editor [--settings-section <Id>] 으로 설정 창 열기
 	if (const std::wstring SettingsArg = FCommandLine::FromProcess().GetValue(L"--open-settings"); !SettingsArg.empty())
 	{
@@ -345,6 +353,10 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	{
 		CameraController.Update(Camera, InputState, DeltaSeconds);
 	}
+	if (VerifyCameraPanPerFrame != 0.0f && Context.Camera == &Camera && GetFrameIndex() >= VerifyCameraPanStart)
+	{
+		Camera.SetPosition(Camera.GetPosition() + Camera.GetRightVector() * VerifyCameraPanPerFrame);
+	}
 
 	FEditorActions::PruneSelection(Context);
 	SyncNavMeshDisplay();
@@ -446,7 +458,10 @@ void FEditorApplication::OnShutdown()
 	StopPlay();
 	ScriptWatcher.Stop();
 	Audio.Shutdown();
-	SaveEditorCamera();
+	if (VerifyCameraPanPerFrame == 0.0f) // 검증용으로 민 카메라는 저장하지 않는다 (다음 실행 시점이 밀림)
+	{
+		SaveEditorCamera();
+	}
 	// 뷰포트 툴바에서 바꾼 스냅 값을 개인 환경설정에 (자동 검증은 개인 설정을 쓰지 않는다)
 	if (!IsAutomationRun())
 	{
@@ -586,6 +601,10 @@ void FEditorApplication::ApplyViewportPreferences()
 	ViewportPanel.Snap.TranslateStep    = Prefs.TranslateSnap;
 	ViewportPanel.Snap.RotateStepDegree = Prefs.RotateSnap;
 	ViewportPanel.Snap.ScaleStep        = Prefs.ScaleSnap;
+	if (Rhi)
+	{
+		Rhi->SetVSync(Prefs.bVSync);
+	}
 }
 
 void FEditorApplication::UpdateAutoSave(float DeltaSeconds)
@@ -937,7 +956,13 @@ void FEditorApplication::DrawStatsWindow()
 		bool bVSync = Rhi->IsVSync();
 		if (ImGui::Checkbox("VSync", &bVSync))
 		{
+			// 환경설정(뷰포트)에 저장해 다음 실행에도 유지 — 자동 검증 실행은 개인 설정을 쓰지 않는다
 			Rhi->SetVSync(bVSync);
+			FEditorPreferences::Get().Viewport.bVSync = bVSync;
+			if (FSettingsSection* Section = FSettingsRegistry::Get().Find("EditorViewport"); Section != nullptr && !IsAutomationRun())
+			{
+				Section->Save();
+			}
 		}
 		ImGui::Checkbox("오클루전 컬링", &SceneRenderer.bEnableOcclusion);
 		if (SceneRenderer.bEnableOcclusion)

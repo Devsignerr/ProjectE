@@ -171,6 +171,8 @@ private:
 	bool  bShowImGuiDemo = false;
 	bool  bLayoutChecked        = false;
 	bool  bResetLayoutRequested = false;
+	float  VerifyCameraPanPerFrame = 0.0f; // --verify-camera-pan <cm/프레임>: 편집 카메라를 오른쪽으로 일정하게 민다 (움직일 때 시간 떨림 확인)
+	uint64 VerifyCameraPanStart    = 0;    // --verify-camera-pan-start <프레임>: 이 프레임부터 민다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
 	float AutoSaveElapsedSeconds   = 0.0f;
 	float SmoothedFps    = 0.0f;

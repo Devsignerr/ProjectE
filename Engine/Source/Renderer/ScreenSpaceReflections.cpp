@@ -90,6 +90,7 @@ void FScreenSpaceReflections::Shutdown()
 	}
 	ReleaseHiz();
 	Result.reset();
+	ReflectMotion.reset();
 	History[0].reset();
 	History[1].reset();
 	Output = nullptr;
@@ -124,7 +125,7 @@ bool FScreenSpaceReflections::CreatePipelines(FD3D12PipelineState& OutCopy, FD3D
 	}
 	return OutCopy.InitCompute(Device, HizRoot.Get(), FD3D12ShaderCompiler::ToBytecode(Copy.Get()), L"SsrHizCopy") &&
 	       OutDownsample.InitCompute(Device, HizRoot.Get(), FD3D12ShaderCompiler::ToBytecode(Downsample.Get()), L"SsrHizDownsample") &&
-	       Root->CreateGraphicsPipeline(OutTrace, Device, *Library, L"SsrTrace.hlsl", L"PSTrace", { ResultFormat }, EBlendMode::Opaque, bForceRecompile,
+	       Root->CreateGraphicsPipeline(OutTrace, Device, *Library, L"SsrTrace.hlsl", L"PSTrace", { ResultFormat, MotionFormat }, EBlendMode::Opaque, bForceRecompile,
 	                                    L"SsrTracePipeline") &&
 	       Root->CreateGraphicsPipeline(OutResolve, Device, *Library, L"SsrResolve.hlsl", L"PSResolve", { ResultFormat }, EBlendMode::Opaque,
 	                                    bForceRecompile, L"SsrResolvePipeline");
@@ -183,6 +184,15 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 	if (!Result->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrResult", FRenderTargetDesc::MakeColor(ResultFormat)))
 	{
 		E_LOG(LogRenderer, Fatal, "SSR 버퍼 생성 실패 ({}x{})", Width, Height);
+	}
+	if (ReflectMotion)
+	{
+		ReflectMotion->ShutdownDeferred(*Rhi);
+	}
+	ReflectMotion = std::make_unique<FD3D12RenderTarget>();
+	if (!ReflectMotion->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrReflectMotion", FRenderTargetDesc::MakeColor(MotionFormat)))
+	{
+		E_LOG(LogRenderer, Fatal, "SSR 반사 움직임 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
@@ -292,15 +302,24 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	Constants.bStochastic   = Inputs.bStochastic ? 1u : 0u;
 	const D3D12_GPU_VIRTUAL_ADDRESS Address = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
+	// 색 + 반사 움직임 (전체 화면 삼각형이 모든 픽셀을 쓰므로 지우지 않는다)
 	Result->Begin(CommandList, nullptr);
+	ReflectMotion->Begin(CommandList, nullptr);
+	const D3D12_CPU_DESCRIPTOR_HANDLE TraceTargets[] = { Result->GetRtv(), ReflectMotion->GetRtv() };
+	CommandList->OMSetRenderTargets(2, TraceTargets, FALSE, nullptr);
 	DrawScreenPass(CommandList, *Root, TracePipeline, Address,
-	               { Inputs.SceneColor->GetDepthSrv(), HizSrv, Inputs.SceneNormal->GetSrv(), Inputs.SceneColor->GetSrv() }, Width, Height);
+	               { Inputs.SceneColor->GetDepthSrv(), HizSrv, Inputs.SceneNormal->GetSrv(),
+	                 (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv() },
+	               Width, Height);
 	Result->End(CommandList);
+	ReflectMotion->End(CommandList);
 
-	// 3) 확률 반사면 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다
+	// 3) 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다.
+	//    거울 반사도 누적한다 — 깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고(특히 곡면·스치는 각), TAA 지터마다 계단이 옮겨 다닌다.
+	//    정지 화면은 TAA가 평균내지만 움직이면 TAA가 반사 이력을 버려(표면 움직임 ≠ 반사 내용 움직임) 지글거린다
 	Output                    = nullptr;
 	const uint64 FrameNumber  = Rhi->GetFrameNumber();
-	if (Inputs.bStochastic && Inputs.Velocity != nullptr)
+	if (Inputs.Velocity != nullptr)
 	{
 		const bool bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
 		const FD3D12RenderTarget& Previous = *History[HistoryIndex];
@@ -315,7 +334,7 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(ResolveConstants).GpuAddress;
 
 		Current.Begin(CommandList, nullptr);
-		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv() }, Width,
+		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv() }, Width,
 		               Height);
 		Current.End(CommandList);
 		Output           = &Current;

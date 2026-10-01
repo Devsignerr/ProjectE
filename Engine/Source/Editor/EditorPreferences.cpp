@@ -38,7 +38,8 @@ void FEditorPreferences::Initialize()
 		.Property(&FEditorViewportSettings::bSnapEnabled, "SnapEnabled", "기즈모 스냅 켜기")
 		.Property(&FEditorViewportSettings::TranslateSnap, "TranslateSnap", "이동 스냅 (cm)").Range(0.1f, 10000.0f, 1.0f)
 		.Property(&FEditorViewportSettings::RotateSnap, "RotateSnap", "회전 스냅 (도)").Range(0.1f, 180.0f, 1.0f)
-		.Property(&FEditorViewportSettings::ScaleSnap, "ScaleSnap", "스케일 스냅").Range(0.001f, 10.0f, 0.01f);
+		.Property(&FEditorViewportSettings::ScaleSnap, "ScaleSnap", "스케일 스냅").Range(0.001f, 10.0f, 0.01f)
+		.Property(&FEditorViewportSettings::bVSync, "VSync", "수직 동기화").Tooltip("켜면 프레임이 모니터 주사율로 고정된다");
 
 	Registry.Register(ProjectState, { "EditorPerProjectUserSettings", "프로젝트 상태", GEditorCategory, "", ESettingsScope::ProjectUser, false, true })
 		.Property(&FEditorProjectState::LastOpenedScene, "LastOpenedScene", "마지막 씬");

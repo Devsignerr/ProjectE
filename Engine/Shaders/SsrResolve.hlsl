@@ -2,8 +2,9 @@
 #include "Fullscreen.hlsli"
 
 // SSR 시간 누적 (FScreenSpaceReflections::Render 2단계, FScreenPassRootSignature). 추적은 SsrTrace.hlsl
-//   확률 반사(bStochastic)일 때만: 거친 면의 광선 흔들기와 맞음/안 맞음이 픽셀·프레임마다 바뀌는 큰 노이즈는 TAA의 이웃 색 클램프가
-//   걸러 내지 못해 정지 화면도 지글거린다 → 메인 패스가 읽기 전에 여기서 재투영 누적한다 (언리얼 SSR 시간 필터와 같은 역할)
+//   ① 확률 반사: 거친 면의 광선 흔들기와 맞음/안 맞음이 픽셀·프레임마다 바뀌는 큰 노이즈는 TAA의 이웃 색 클램프가 걸러 내지 못한다
+//   ② 거울 반사: 깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고 지터마다 옮겨 다닌다. 움직이면 TAA가 반사 이력을 버려 그대로 보인다
+//   → 메인 패스가 읽기 전에 여기서 표면 움직임으로 재투영 누적 + 분산 클램프 (언리얼 SSR 시간 필터와 같은 역할)
 
 SamplerState LinearSampler : register(s0);
 
@@ -21,10 +22,12 @@ cbuffer SsrResolveConstants : register(b0)
 	float3 ResolvePadding;
 };
 
-// PSResolve 입력: t0 = 이번 추적 결과, t1 = 지난 프레임 누적 결과, t2 = 움직임 벡터 (ScreenSpace.hlsli 규약: 현재 UV − 이전 UV)
-Texture2D<float4> SsrCurrent  : register(t0);
-Texture2D<float4> SsrHistory  : register(t1);
-Texture2D<float2> SsrVelocity : register(t2);
+// PSResolve 입력: t0 = 이번 추적 결과, t1 = 지난 프레임 누적 결과, t2 = 표면 움직임 벡터 (ScreenSpace.hlsli 규약: 현재 UV − 이전 UV),
+//   t3 = 반사 움직임 벡터 (SsrTrace.hlsl: 반사된 가상 점 기준, 맞지 않은 픽셀은 0)
+Texture2D<float4> SsrCurrent       : register(t0);
+Texture2D<float4> SsrHistory       : register(t1);
+Texture2D<float2> SsrVelocity      : register(t2);
+Texture2D<float2> SsrReflectMotion : register(t3);
 
 // 반사 색은 HDR이라 밝은 표본 하나가 평균을 지배하지 않게 신뢰도를 곱한 색을 Reinhard로 눌러 누적한다 (출력 때 되돌림)
 float4 ToResolveSpace(float4 V)
@@ -64,7 +67,9 @@ float4 PSResolve(FFullscreenVSOutput Input) : SV_Target
 	{
 		return FromResolveSpace(Center);
 	}
-	const float2 PrevUV = Input.UV - SsrVelocity.Load(int3(Pixel, 0));
+	// 반사가 맞은 픽셀은 반사된 상의 움직임으로, 아니면(캡처/하늘로 대체) 표면 움직임으로 이력을 찾는다
+	const float2 Motion = SsrCurrent.Load(int3(Pixel, 0)).a > 0.0f ? SsrReflectMotion.Load(int3(Pixel, 0)) : SsrVelocity.Load(int3(Pixel, 0));
+	const float2 PrevUV = Input.UV - Motion;
 	if (any(PrevUV < 0.0f) || any(PrevUV > 1.0f))
 	{
 		return FromResolveSpace(Center);

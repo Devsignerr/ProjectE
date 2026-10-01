@@ -37,6 +37,9 @@ public:
 	// 해상 결과 (PIXEL_SHADER_RESOURCE, HDR). 반환 타깃은 다음 Resolve까지 유효
 	const FD3D12RenderTarget& Resolve(const FTemporalAAInputs& Inputs);
 
+	// 마지막 Resolve 결과 (지난 프레임의 안티에일리어싱된 HDR — SSR 반사 색 원본). 이력이 없으면 nullptr
+	const FD3D12RenderTarget* GetLastOutput() const { return bHasHistory ? HistoryTargets[WriteIndex ^ 1].get() : nullptr; }
+
 	// 이력을 버린다 (다음 Resolve는 현재 프레임 그대로)
 	void ResetHistory() { bHasHistory = false; }
 

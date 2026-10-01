@@ -116,9 +116,11 @@ float3 HierarchicalRaymarch(float3 Origin, float3 Direction, out bool bValid)
 	return Position;
 }
 
-float4 PSTrace(FFullscreenVSOutput Input) : SV_Target
+// 픽셀 하나의 반사 추적. SurfaceView = 반사 표면 뷰 위치, HitDistance = 표면 → 교차점 거리 (cm, 맞지 않으면 0)
+float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance)
 {
-	const int2  Pixel = int2(Input.Position.xy);
+	SurfaceView = 0.0f;
+	HitDistance = 0.0f;
 	const float Depth = SceneDepth.Load(int3(Pixel, 0));
 	if (Depth >= 1.0f)
 	{
@@ -132,6 +134,7 @@ float4 PSTrace(FFullscreenVSOutput Input) : SV_Target
 	}
 	const float2 UV = (float2(Pixel) + 0.5f) / ScreenSize;
 	const float3 P  = ViewFromDepth(UV, Depth);
+	SurfaceView     = P;
 	const float3 N  = normalize(mul(DecodeScreenNormal(NormalData), (float3x3)View));
 	const float3 V  = bOrthographic != 0 ? float3(0.0f, 0.0f, 1.0f) : normalize(P); // 카메라 → 점
 	float3       R  = reflect(V, N);
@@ -209,6 +212,38 @@ float4 PSTrace(FFullscreenVSOutput Input) : SV_Target
 	const float  TravelFade = 1.0f - saturate((length(HitView - P) / max(MaxDistance, 1.0f) - 0.7f) / 0.3f);
 	// 카메라 쪽으로 돌아오는 광선은 화면에 정보가 적어 틀리기 쉽다 → 뷰 z가 -0.3 이하면 0
 	const float  TowardFade = bOrthographic != 0 ? 1.0f : saturate((R.z + 0.3f) / 0.3f);
+	HitDistance = length(HitView - P);
 	return float4(max(Color, 0.0f), EdgeFade * TravelFade * TowardFade);
+}
+
+struct FSsrTraceOutput
+{
+	float4 Color  : SV_Target0; // rgb = 반사 색, a = 신뢰도
+	float2 Motion : SV_Target1; // 반사 움직임 벡터 (현재 UV − 이전 UV, 맞지 않으면 0 → 누적은 표면 움직임)
+};
+
+// 반사 움직임: 거울에 비친 상은 표면이 아니라 "시선 방향으로 표면 뒤 교차 거리만큼 간 가상 점"에 있는 것처럼 움직인다.
+//   그 가상 점의 이전 프레임 화면 위치를 누적(SsrResolve.hlsl)이 이력 위치로 쓴다 — 평면 거울은 정확, 곡면은 근사.
+//   표면 움직임으로 이력을 찾으면 카메라가 움직일 때 반사 내용이 어긋나 클램프가 이력을 버리고 반사 윤곽 계단이 지글거린다
+FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
+{
+	const int2      Pixel = int2(Input.Position.xy);
+	float3          SurfaceView;
+	float           HitDistance;
+	FSsrTraceOutput Output;
+	Output.Color  = TraceReflection(Pixel, SurfaceView, HitDistance);
+	Output.Motion = 0.0f;
+	if (Output.Color.a > 0.0f && HitDistance > 0.0f)
+	{
+		const float3 ViewDirection = bOrthographic != 0 ? float3(0.0f, 0.0f, 1.0f) : normalize(SurfaceView);
+		const float3 Virtual       = ScreenFromView(SurfaceView + ViewDirection * HitDistance);
+		const float4 PrevClip      = mul(float4(Virtual.x * 2.0f - 1.0f, 1.0f - Virtual.y * 2.0f, Virtual.z, 1.0f), Reprojection);
+		if (PrevClip.w > 1.0e-5f)
+		{
+			const float2 PrevUV = float2(PrevClip.x / PrevClip.w * 0.5f + 0.5f, 0.5f - PrevClip.y / PrevClip.w * 0.5f);
+			Output.Motion       = (float2(Pixel) + 0.5f) / ScreenSize - PrevUV;
+		}
+	}
+	return Output;
 }
 

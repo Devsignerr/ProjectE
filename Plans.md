@@ -642,9 +642,11 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 34 — 지형 / 식생 (트랙 E, 2단계)
 
-- [~] 34-1. 지형 데이터·스컬프트/페인트 브러시·높이맵 충돌
-- [ ] 34-2. 지형 렌더링 (33-1 머지 후)
-- [ ] 34-3. 풀·나무 브러시 배치 (인스턴싱)
+- [x] 34-1. `FTerrainComponent` + `.eterrain`(JSON + base64: 16비트 높이, 정점별 RGBA8 레이어 가중치 4개, `FTerrainLibrary` 경로 공유). 브러시 올리기/내리기/평탄화/부드럽게/노이즈/레이어 칠하기(크기·세기·감쇠, 지형 위 브러시 원, `[ ]` 반경, Shift 반대). 높이맵 가져오기 PNG16/8·RAW16, 내보내기 PNG16·RAW16. Undo = 컴포넌트 `EditRevision` + 바뀐 영역 전/후 기록 사슬(갈래 처리, 256MB, 스트로크 끝에만 기록). 충돌 = Jolt 높이장 정적 바디(`Physics/TerrainCollision.cpp`, 축 순환 + 표본 전치, 편집 시 재생성). `--terrain-brush-test`
+- [x] 34-2. `TerrainRenderer` + `Terrain.hlsl`(Mesh.hlsl include로 조명 공유, 지형 리소스는 레지스터 공간 1): R16 높이 텍스처로 정점 생성, 64셀 청크 + 거리 LOD + 스커트, 같은 LOD 인스턴싱, 메인/그림자 장별 청크 컬링, 레이어 4개 PBR 블렌드(노멀, 반복 무늬 완화), 방향광/로컬 그림자 받기·드리우기(`FShadowCasterHook`), 선택 아웃라인, 브러시 영역만 `CopyTextureRegion`. `--terrain-lod-colors`, `--terrain-force-lod N`
+- [x] 34-3. `FFoliageComponent` + `.efoliage`(타입 목록 + 인스턴스 base64): 밀도/크기 무작위/경사·높이 제한/지면 정렬/컬링·그림자 거리/충돌. 렌더 = 기존 GPU 인스턴싱(`FMeshInstanceList::AddExternal`), 20m 셀 컬링, 끝 15% 크기 페이드, 화면 크기 LOD, 그림자 거리 밖 제외. 내장 절차 메시(풀/덤불/활엽수/침엽수/바위), 나무 충돌 = 컴포넌트당 캡슐 StaticCompound. 폴리지 창 칠하기/지우기 + Undo. `--foliage-brush-test`, `--generate-terrain-demo`. 데모 `Demo_Terrain`(513², 폴리지 3.6만, 에셋 5.2MB). 측정 Release CPU 0.41ms / GPU 0.35ms, 드로우 14(그림자 36). 테스트 Terrain_* 12개 + TerrainRenderer/Foliage_* 6개(Renderer), TerrainCollision_* 3개 + FoliageCollision 1개(Physics), TerrainEditHistory_* 3개(Editor) (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0. 트랙 D 사전 패스 통합은 D 머지 때)
+- [ ] 실행 검증 (사용자): 브러시 손맛(세기 1 = 초당 10m, 평탄화/부드럽게/칠하기 초당 8, 노이즈 800cm), 실제 마우스 스트로크, 풀 밀도(100m²당 150), 나무 캡슐(반지름 22cm)에 부딪히며 걷기, 그림자 거리 기본값, 지형 선택 표시
+- 후속: 지형이 로컬 라이트 그림자를 드리우는 것은 미확인(데모에 로컬 라이트 없음), 픽셀 아트 경로 미확인, 지형 그림자 바이어스 고정, 와이어프레임 무시, 일반 메시 위 폴리지는 경계 상자 윗면 근사, 인스턴스 개별 선택 없음, 폴리지 LOD 히스테리시스 없음, 머티리얼 이동 시 메모리 사본 경로 미갱신, 씬 열기 시 저장 안 한 지형/폴리지 편집 버림, 해상도 셀 수는 64 이하 2의 거듭제곱으로 나뉘어야 함(129/257/513/1025)
 
 ## Phase 35 — 편집 도구 (트랙 F, 2단계)
 

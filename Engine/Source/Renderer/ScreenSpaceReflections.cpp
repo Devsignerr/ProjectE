@@ -50,7 +50,7 @@ namespace
 	};
 	static_assert(sizeof(FSsrResolveConstants) == 32);
 
-	constexpr float ResolveCurrentWeight = 0.1f; // 이번 프레임 비중 (정지 화면 ≈ 20프레임에 수렴)
+	constexpr float ResolveCurrentWeight = 0.05f; // 이번 프레임 비중 (정지 화면 ≈ 40프레임에 수렴, 확률 표본 노이즈를 충분히 평균)
 	constexpr float ResolveVarianceGamma = 1.5f; // 움직일 때 번짐(고스팅)과 남는 노이즈 사이의 타협
 
 	constexpr DXGI_FORMAT HizFormat = DXGI_FORMAT_R32_FLOAT;
@@ -334,7 +334,8 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(ResolveConstants).GpuAddress;
 
 		Current.Begin(CommandList, nullptr);
-		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv() }, Width,
+		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv(),
+		                 Inputs.SceneNormal->GetSrv() }, Width,
 		               Height);
 		Current.End(CommandList);
 		Output           = &Current;

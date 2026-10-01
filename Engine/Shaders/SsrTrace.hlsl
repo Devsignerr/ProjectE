@@ -39,6 +39,13 @@ FFullscreenVSOutput VSMain(uint VertexId : SV_VertexID)
 	return FullscreenVS(VertexId);
 }
 
+uint PcgHash(uint V)
+{
+	const uint State = V * 747796405u + 2891336453u;
+	const uint Word  = ((State >> ((State >> 28u) + 4u)) ^ State) * 277803737u;
+	return (Word >> 22u) ^ Word;
+}
+
 float3 ViewFromDepth(float2 UV, float Depth)
 {
 	const float4 P = mul(float4(UV.x * 2.0f - 1.0f, 1.0f - UV.y * 2.0f, Depth, 1.0f), InvProjection);
@@ -141,8 +148,10 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	if (bStochastic != 0 && Roughness > 0.05f)
 	{
 		// GGX 미세면 법선 하나 (픽셀·프레임마다 다른 표본) → TAA 누적이 거친 반사의 번짐이 된다
-		const float2 Xi = frac(float2(52.9829189f * frac(0.06711056f * Pixel.x + 0.00583715f * Pixel.y), 0.7548776f * (FrameIndex % 64u)) +
-		                       float2(0.5698403f * (FrameIndex % 64u), 0.3141592f * frac(0.0291f * Pixel.x + 0.0712f * Pixel.y)));
+		// 픽셀·프레임마다 서로 상관없는 표본 (PCG 해시). 이웃 픽셀 표본이 비슷하면(예: 픽셀 좌표의 느린 선형 식) 반사가 띠 모양으로
+		// 같이 흔들려 물결처럼 보이고, 3x3 분산이 작게 잡혀 누적(SsrResolve)이 이력을 버린다
+		const uint   Seed = PcgHash(uint(Pixel.x) + PcgHash(uint(Pixel.y) + PcgHash(FrameIndex)));
+		const float2 Xi   = float2(PcgHash(Seed), PcgHash(Seed ^ 0x9E3779B9u)) * (1.0f / 4294967296.0f);
 		const float  Alpha    = Roughness * Roughness;
 		const float  Phi      = 2.0f * 3.14159265f * Xi.x;
 		const float  CosTheta = sqrt((1.0f - Xi.y) / max(1.0f + (Alpha * Alpha - 1.0f) * Xi.y, 1.0e-6f));

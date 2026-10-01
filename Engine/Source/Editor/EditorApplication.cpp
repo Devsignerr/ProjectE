@@ -26,6 +26,7 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimGraph.h"
 #include "Scene/Prefab.h"
+#include "Scene/Sequence.h"
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
@@ -449,6 +450,7 @@ void FEditorApplication::OnShutdown()
 void FEditorApplication::NewScene()
 {
 	StopPlay();
+	AssetEditors.EndScenePreviews(Context); // 시퀀서 미리보기 값을 되돌린 뒤 씬을 바꾼다
 	Scene.Clear();
 	Context.ClearSelection();
 	CurrentScenePath.clear();
@@ -466,6 +468,7 @@ void FEditorApplication::NewScene()
 bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
 {
 	StopPlay();
+	AssetEditors.EndScenePreviews(Context);
 	Context.ClearSelection();
 	if (!FSceneSerializer::LoadFromFile(Scene, Path))
 	{
@@ -485,7 +488,10 @@ bool FEditorApplication::SaveScene()
 		return SaveSceneAs();
 	}
 	FPrefabLibrary::Get().RecordAllOverrides(Scene); // 아직 커밋 안 된 인스턴스 편집도 오버라이드로
-	if (!FSceneSerializer::SaveToFile(Scene, CurrentScenePath))
+	AssetEditors.SwapScenePreviews(Context);         // 시퀀서 미리보기 값이 아니라 원래 값을 저장
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, CurrentScenePath);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return false;
 	}
@@ -502,7 +508,10 @@ bool FEditorApplication::SaveSceneAs()
 		return false;
 	}
 	FPrefabLibrary::Get().RecordAllOverrides(Scene);
-	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	AssetEditors.SwapScenePreviews(Context);
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, Path);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return false;
 	}
@@ -574,7 +583,10 @@ void FEditorApplication::UpdateAutoSave(float DeltaSeconds)
 	GetLocalTime(&Time);
 	const std::filesystem::path Path = Directory / std::format(L"{}_{:04}{:02}{:02}_{:02}{:02}{:02}.escene", Stem, Time.wYear, Time.wMonth, Time.wDay,
 	                                                           Time.wHour, Time.wMinute, Time.wSecond);
-	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	AssetEditors.SwapScenePreviews(Context);
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, Path);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return;
 	}
@@ -1178,8 +1190,12 @@ void FEditorApplication::CommitPendingEdit()
 		return;
 	}
 	// 프리팹 인스턴스에서 원본과 달라진 항목을 오버라이드로 기록한 뒤 스냅샷 (인스턴스가 현재 원본에 맞춰져 있다는 전제 — ChangePrefabAsset 참고)
+	// 시퀀서 미리보기 중이면 미리보기 값 대신 원래 값으로 기록 (맞바꿨다가 되돌린다)
+	AssetEditors.SwapScenePreviews(Context);
 	FPrefabLibrary::Get().RecordAllOverrides(Scene);
-	if (UndoHistory.Commit(std::move(Label), FSceneSerializer::ToJsonString(Scene)))
+	std::string Snapshot = FSceneSerializer::ToJsonString(Scene);
+	AssetEditors.SwapScenePreviews(Context);
+	if (UndoHistory.Commit(std::move(Label), std::move(Snapshot)))
 	{
 		UpdateWindowTitle();
 	}
@@ -1356,6 +1372,7 @@ void FEditorApplication::StartPlay()
 	{
 		return;
 	}
+	AssetEditors.EndScenePreviews(Context); // 플레이 씬은 편집 씬 복제 — 시퀀서 미리보기 값을 먼저 되돌린다
 	FPlayOptions Options;
 	if (NetPlay.Prepare(NetPlay.PendingSettings, Scene, Options))
 	{
@@ -1568,6 +1585,12 @@ void FEditorApplication::PollScriptChanges()
 		if (Extension == FAnimGraphAsset::Extension)
 		{
 			FAnimGraphLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
+		// 시퀀스: 재생 중인 SequencePlayerComponent가 다음 갱신에서 새 파일을 읽는다
+		if (Extension == FSequenceAsset::Extension)
+		{
+			FSequenceLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
 		if (Extension != L".lua")

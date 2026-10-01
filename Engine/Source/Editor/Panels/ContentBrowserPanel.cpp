@@ -18,6 +18,7 @@
 #include "Renderer/ModelLoader.h"
 #include "Scene/AnimGraph.h"
 #include "Scene/ModelMetadata.h"
+#include "Scene/Sequence.h"
 #include "Scene/Particles.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "UI/Localization.h"
@@ -762,6 +763,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewAnimGraph", FAnimGraphAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD " 새 시퀀스 (컷신)"))
+	{
+		CreateAsset(Context, "NewSequence", FSequenceAsset::Extension);
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
 	{
@@ -1128,6 +1133,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FAnimGraphAsset::Extension)
 	{
 		bOk = FAnimGraphAsset::MakeDefault().SaveToFile(Path);
+	}
+	else if (Extension == FSequenceAsset::Extension)
+	{
+		bOk = FSequenceAsset::MakeDefault().SaveToFile(Path);
 	}
 	if (!bOk)
 	{

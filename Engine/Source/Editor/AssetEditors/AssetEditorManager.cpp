@@ -1,5 +1,6 @@
 #include "Editor/AssetEditors/AssetEditorManager.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Editor/AssetEditors/BehaviorTreeEditor.h"
@@ -11,6 +12,8 @@
 #include "Editor/AssetEditors/StringTableEditor.h"
 #include "Editor/AssetEditors/AnimGraphEditor.h"
 #include "Scene/AnimGraph.h"
+#include "Editor/AssetEditors/SequenceEditor.h"
+#include "Scene/Sequence.h"
 #include "Scene/Prefab.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Scene/Particles.h"
@@ -80,6 +83,10 @@ namespace
 		{
 			return std::make_unique<FAnimGraphEditor>(Path);
 		}
+		if (Extension == FSequenceAsset::Extension)
+		{
+			return std::make_unique<FSequenceEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -122,7 +129,7 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 	const std::wstring Extension = ToLowerExtension(Path);
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
 	       Extension == BehaviorTreeExtension || Extension == FUIAsset::Extension || IsModelExtension(Extension) ||
-	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension;
+	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension || Extension == FSequenceAsset::Extension;
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)
@@ -260,6 +267,13 @@ void FAssetEditorManager::Draw(FEditorContext& Context)
 		ImGui::SetNextWindowSize(ImVec2(MainViewport->WorkSize.x * 0.7f, MainViewport->WorkSize.y * 0.75f), ImGuiCond_FirstUseEver);
 		ImGui::SetNextWindowPos(ImVec2(MainViewport->WorkPos.x + MainViewport->WorkSize.x * 0.5f, MainViewport->WorkPos.y + MainViewport->WorkSize.y * 0.5f),
 		                        ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+		// 자동 검증: --asset-window x,y,w,h (편집 창 위치/크기, 뷰포트를 함께 찍을 때)
+		static const std::wstring WindowArg = FCommandLine::FromProcess().GetValue(L"--asset-window");
+		if (float Rect[4] = {}; !WindowArg.empty() && swscanf_s(WindowArg.c_str(), L"%f,%f,%f,%f", &Rect[0], &Rect[1], &Rect[2], &Rect[3]) == 4)
+		{
+			ImGui::SetNextWindowPos(ImVec2(MainViewport->WorkPos.x + Rect[0], MainViewport->WorkPos.y + Rect[1]), ImGuiCond_Appearing);
+			ImGui::SetNextWindowSize(ImVec2(Rect[2], Rect[3]), ImGuiCond_Appearing);
+		}
 		ImGui::SetNextWindowBgAlpha(1.0f);
 
 		bool             bOpen = true;
@@ -436,6 +450,24 @@ bool FAssetEditorManager::CloseEditorsFor(FEditorContext& Context, const std::ve
 		CloseEditor(Context, *It);
 	}
 	return true;
+}
+
+void FAssetEditorManager::SwapScenePreviews(FEditorContext& Context)
+{
+	FAssetEditorEnvironment Env = MakeEnvironment(Context);
+	for (FOpenEditor& Open : Editors)
+	{
+		Open.Editor->SwapScenePreview(Env);
+	}
+}
+
+void FAssetEditorManager::EndScenePreviews(FEditorContext& Context)
+{
+	FAssetEditorEnvironment Env = MakeEnvironment(Context);
+	for (FOpenEditor& Open : Editors)
+	{
+		Open.Editor->EndScenePreview(Env);
+	}
 }
 
 void FAssetEditorManager::OnModelReimported(FEditorContext& Context, const std::filesystem::path& Path)

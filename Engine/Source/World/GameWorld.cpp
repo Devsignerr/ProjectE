@@ -194,6 +194,14 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 		[Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); },
 		[Physics](FEntity Entity) { Physics->RequestJump(Entity); },
 		[Physics](FEntity Entity) { return Physics->IsGrounded(Entity); },
+		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); },
+		[this, Physics](FEntity Entity) {
+			if (Scene != nullptr)
+			{
+				Physics->DisableRagdoll(*Scene, Entity);
+			}
+		},
+		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->IsRagdollActive(*Scene, Entity); },
 	});
 }
 
@@ -214,6 +222,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	InputSequence = 0;
 	LastMatchState       = -1;
 	RespawnStartIndex    = 0;
+	RagdollDeadStates.clear();
 	PendingSessionRequest.reset();
 	PredictedBodies.clear();
 	PredictionClock        = 0.0f;
@@ -313,6 +322,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
 	TickGameplayRules(DeltaSeconds);  // 이번 프레임 데미지 이벤트·사망·리스폰·매치 (물리 전: 리스폰 순간이동이 이번 스텝에 반영)
+	TickRagdolls();                   // 사망/리스폰 → 래그돌 켜기/끄기 (모든 역할, 복제된 체력 기준 — 물리 전: 이번 스텝부터 쓰러진다)
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->Update(*Scene, DeltaSeconds);

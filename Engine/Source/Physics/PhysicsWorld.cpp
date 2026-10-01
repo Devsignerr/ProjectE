@@ -387,6 +387,22 @@ namespace
 		std::unordered_map<uint64, uint32> Disabled; // 쌍 → 끈 횟수
 	};
 
+	// 캐릭터 이동 질의(CharacterVirtual)에도 바디 쌍 충돌 끄기를 적용한다 (내부 바디와 꺼진 쌍 — 죽은 캐릭터 캡슐이 자기 래그돌을 밀지 않게)
+	class FCharacterBodyFilter final : public JPH::BodyFilter
+	{
+	public:
+		FCharacterBodyFilter(const FPairGroupFilter& InPairs, JPH::BodyID InInner) : Pairs(InPairs), Inner(InInner) {}
+		bool ShouldCollide(const JPH::BodyID& Body) const override
+		{
+			return Inner.IsInvalid() || Pairs.Disabled.empty() ||
+			       !Pairs.Disabled.contains(MakePairKey(Inner.GetIndexAndSequenceNumber(), Body.GetIndexAndSequenceNumber()));
+		}
+
+	private:
+		const FPairGroupFilter& Pairs;
+		JPH::BodyID             Inner;
+	};
+
 	struct FConstraintEntry
 	{
 		JPH::Ref<JPH::TwoBodyConstraint> Constraint;
@@ -966,8 +982,9 @@ void FPhysicsWorld::UpdateCharacter(uint32 Character, float DeltaSeconds, const 
 	JPH::CharacterVirtual::ExtendedUpdateSettings Settings;
 	Settings.mStickToFloorStepDown = JPH::Vec3(0.0f, 0.0f, -std::max(StickDown, 0.0f) * FUnits::UnitsToMeters);
 	Settings.mWalkStairsStepUp     = JPH::Vec3(0.0f, 0.0f, std::max(StepUp, 0.0f) * FUnits::UnitsToMeters);
+	const FCharacterBodyFilter BodyFilter(*Impl->PairFilter, Virtual.GetInnerBodyID());
 	Virtual.ExtendedUpdate(DeltaSeconds, Impl->System->GetGravity(), Settings, Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving),
-	                       Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving), JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
+	                       Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving), BodyFilter, JPH::ShapeFilter(), *Impl->TempAllocator);
 }
 
 void FPhysicsWorld::SetCharacterState(uint32 Character, const FVector3& Position, const FVector3& Velocity)
@@ -980,8 +997,9 @@ void FPhysicsWorld::SetCharacterState(uint32 Character, const FVector3& Position
 	JPH::CharacterVirtual& Virtual = *Found->second;
 	Virtual.SetPosition(ToJoltPosition(Position));
 	Virtual.SetLinearVelocity(ToJoltVector(PhysicsMath::ToMeters(Velocity)));
+	const FCharacterBodyFilter BodyFilter(*Impl->PairFilter, Virtual.GetInnerBodyID());
 	Virtual.RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving), Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving),
-	                        JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
+	                        BodyFilter, JPH::ShapeFilter(), *Impl->TempAllocator);
 }
 
 void FPhysicsWorld::SetCharacterRotation(uint32 Character, const FQuat& Rotation)

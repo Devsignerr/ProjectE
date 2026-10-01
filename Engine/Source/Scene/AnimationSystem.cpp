@@ -226,6 +226,10 @@ namespace
 			return;
 		}
 		Runtime.PendingNotifies.clear();
+		if (Runtime.bPhysicsPose)
+		{
+			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이도 멈춘다)
+		}
 		if (FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity); Graph != nullptr && ResolveGraph(*Graph, *Runtime.Set))
 		{
 			UpdateGraphAnimation(Scene, Entity, Animation, *Graph, DeltaSeconds);

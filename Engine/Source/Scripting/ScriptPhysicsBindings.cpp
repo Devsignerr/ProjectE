@@ -3,10 +3,40 @@
 //                                                 --   info.Impulse (충격 세기 추정 kg·cm/s), info.Speed (다가오던 속력 cm/s)
 //   function T:OnCollisionEnd(other) end          -- other는 파괴됐으면 nil
 //   function T:OnTriggerEnter(other) end / function T:OnTriggerExit(other) end  -- 트리거 쪽과 들어온 쪽 둘 다 받는다
+// 래그돌 (Physics/Ragdoll.h — 엔티티 자신이나 자손의 스켈레탈 모델, 물리 훅이 없으면 false/무시):
+//   entity:EnableRagdoll() → 켰는가 (이미 켜져 있거나 뼈대가 없으면 false)   entity:DisableRagdoll()   entity:IsRagdollActive()
+//   각 프로세스 로컬 연출이다 (복제되지 않음). 사망 연동은 RagdollComponent.EnableOnDeath가 자동으로 한다
 #include "Scene/Scene.h"
 #include "Scripting/LuaRuntime.h"
 
 #include <format>
+#include <stdexcept>
+
+void FLuaRuntime::RegisterPhysicsBindings()
+{
+	const auto Require = [this](const FScriptEntity& Entity) {
+		if (Scene == nullptr || !Scene->GetRegistry().IsValid(Entity.Entity))
+		{
+			throw std::runtime_error("유효하지 않은 엔티티입니다");
+		}
+	};
+	sol::usertype<FScriptEntity> EntityType = Lua["Entity"];
+	EntityType["EnableRagdoll"] = [this, Require](const FScriptEntity& Entity) {
+		Require(Entity);
+		return PhysicsHooks != nullptr && PhysicsHooks->EnableRagdoll && PhysicsHooks->EnableRagdoll(Entity.Entity);
+	};
+	EntityType["DisableRagdoll"] = [this, Require](const FScriptEntity& Entity) {
+		Require(Entity);
+		if (PhysicsHooks != nullptr && PhysicsHooks->DisableRagdoll)
+		{
+			PhysicsHooks->DisableRagdoll(Entity.Entity);
+		}
+	};
+	EntityType["IsRagdollActive"] = [this, Require](const FScriptEntity& Entity) {
+		Require(Entity);
+		return PhysicsHooks != nullptr && PhysicsHooks->IsRagdollActive && PhysicsHooks->IsRagdollActive(Entity.Entity);
+	};
+}
 
 bool FLuaRuntime::InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields)
 {

@@ -46,6 +46,10 @@ struct FScriptPhysicsHooks
 	std::function<void(FEntity, const FVector3&)> AddMovementInput;
 	std::function<void(FEntity)>                  Jump;
 	std::function<bool(FEntity)>                  IsGrounded;
+	// 래그돌 (Physics/Ragdoll.h): 엔티티 자신이나 자손의 스켈레탈 모델
+	std::function<bool(FEntity)>                  EnableRagdoll;
+	std::function<void(FEntity)>                  DisableRagdoll;
+	std::function<bool(FEntity)>                  IsRagdollActive;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

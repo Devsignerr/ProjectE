@@ -3,6 +3,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsComponents.h"
+#include "Physics/Ragdoll.h"
 
 void RegisterPhysicsTypes()
 {
@@ -112,5 +113,19 @@ void RegisterPhysicsTypes()
 		.Property(&FBallJointComponent::ConeAngle, "ConeAngle", "원뿔 반각 (도, 180 = 자유)").Range(0.0f, 180.0f, 1.0f)
 		.Property(&FBallJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
 		.Property(&FBallJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
+
+	// ---- 래그돌 (규칙은 Ragdoll.h)
+	Registry.RegisterType<FRagdollComponent>("RagdollComponent", "래그돌")
+		.Property(&FRagdollComponent::bEnableOnDeath, "EnableOnDeath", "사망 시 켜기").Tooltip("체력(자신이나 조상의 HealthComponent)이 0이 되면 켜고 리스폰하면 끈다")
+		.Property(&FRagdollComponent::Mass, "Mass", "질량 (kg)").Range(0.1f, 10000.0f, 0.5f)
+		.Property(&FRagdollComponent::RadiusScale, "RadiusScale", "캡슐 굵기 (뼈 길이 비율)").Range(0.01f, 0.5f, 0.01f)
+		.Property(&FRagdollComponent::MinRadius, "MinRadius", "최소 반지름 (cm)").Range(0.1f, 100.0f, 0.1f)
+		.Property(&FRagdollComponent::MinBoneLength, "MinBoneLength", "최소 뼈 길이 (cm)").Range(0.1f, 100.0f, 0.1f)
+		.Tooltip("더 짧은 뼈는 캡슐 없이 부모를 따라간다")
+		.Property(&FRagdollComponent::SwingLimit, "SwingLimit", "흔들림 제한 (도)").Range(0.0f, 180.0f, 1.0f)
+		.Property(&FRagdollComponent::TwistLimit, "TwistLimit", "비틀림 제한 (도)").Range(0.0f, 180.0f, 1.0f)
+		.Property(&FRagdollComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FRagdollComponent::ExcludeBones, "ExcludeBones", "제외 뼈 (쉼표)").Tooltip("이름 일부가 맞는 뼈와 그 아래는 캡슐을 만들지 않는다 (예: Tail,Ear)")
 		.AsComponent();
 }

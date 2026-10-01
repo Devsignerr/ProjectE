@@ -129,6 +129,13 @@ public:
 	bool   IsJointBroken(FEntity Entity) const;  // 이 엔티티의 관절 컴포넌트 중 하나라도 끊어졌는가
 	bool   HasJoint(FEntity Entity) const;       // 이 엔티티의 관절이 하나라도 만들어져 있는가
 
+	// ---- 래그돌 (규칙은 Physics/Ragdoll.h). Entity = 모델 루트(FAnimationComponent) 또는 그 조상 — 자신이 아니면 자손에서 찾는다
+	bool   EnableRagdoll(FScene& Scene, FEntity Entity); // 이미 켜져 있거나 뼈대가 없으면 false
+	void   DisableRagdoll(FScene& Scene, FEntity Entity);
+	bool   IsRagdollActive(const FScene& Scene, FEntity Entity) const;
+	uint32 GetRagdollPartCount(const FScene& Scene, FEntity Entity) const; // 켜진 래그돌의 캡슐 수 (0 = 꺼짐)
+	static FEntity FindRagdollModel(const FScene& Scene, FEntity Entity);   // 래그돌을 만들 모델 루트 (없으면 무효)
+
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
 	const FFixedStepper& GetStepper() const { return Stepper; }
 	FPhysicsWorld*       GetWorld() { return World.get(); }
@@ -199,6 +206,35 @@ private:
 	void SyncJoints(FScene& Scene);
 	void CheckJointBreaks();
 	std::unordered_map<FJointKey, FJointState, FJointKeyHash> Joints;
+
+	// 래그돌 (Physics/PhysicsRagdoll.cpp)
+	struct FRagdollPart
+	{
+		int32      Node = -1;
+		uint32     Body = FPhysicsWorld::InvalidBody;
+		FMatrix4x4 BoneFromBody;   // 뼈 월드(강체) = BoneFromBody * 캡슐 월드 (행벡터: 뼈가 캡슐의 자식)
+		FVector3   BoneScale;      // 켤 때의 뼈 월드 스케일
+		FVector3   PreviousPosition, CurrentPosition;
+		FQuat      PreviousRotation, CurrentRotation;
+	};
+	struct FSavedNodePose
+	{
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale;
+	};
+	struct FRagdollState
+	{
+		std::vector<FRagdollPart>   Parts;
+		std::vector<uint32>         Constraints;
+		std::vector<int32>          PartOfNode; // 노드 → 캡슐 (-1 = 부모를 따라간다)
+		std::vector<int32>          NodeOrder;  // 부모 먼저
+		std::vector<FSavedNodePose> Saved;      // 켤 때의 노드 로컬 트랜스폼 (끄면 되돌린다)
+	};
+	std::unordered_map<FEntity, FRagdollState> Ragdolls; // 모델 루트 → 래그돌
+	void DestroyRagdollBodies(FRagdollState& State);
+	void SyncRagdolls(FScene& Scene);     // 사라진 모델 정리
+	void WriteRagdollPoses(FScene& Scene); // 캡슐 → 뼈 로컬 트랜스폼
 
 	void CollectContactEvents(); // 월드 이벤트 → 엔티티 기준 이벤트 (양쪽)
 	std::function<bool(const FScene&, FEntity)> ContactReportFilter;

@@ -110,6 +110,7 @@ void FPhysicsSystem::End()
 	Characters.clear(); // 월드가 캐릭터와 함께 사라진다
 	Bodies.clear();
 	Joints.clear();
+	Ragdolls.clear(); // 바디는 월드와 함께 사라진다
 	CollisionEvents.clear();
 	World.reset();
 	Stepper.Reset();
@@ -126,6 +127,7 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 	SyncCharacters(Scene);
 	SyncBodies(Scene);
 	SyncJoints(Scene);
+	SyncRagdolls(Scene);
 	CollectContactEvents(); // 사라진 바디의 접촉 끝 (밖에서 부른 SyncBodies 것도)
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
@@ -146,6 +148,14 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 				State.PreviousRotation = State.CurrentRotation;
 			}
 		}
+		for (auto& [Model, Ragdoll] : Ragdolls)
+		{
+			for (FRagdollPart& Part : Ragdoll.Parts)
+			{
+				Part.PreviousPosition = Part.CurrentPosition;
+				Part.PreviousRotation = Part.CurrentRotation;
+			}
+		}
 
 		World->Step(Stepper.StepSeconds);
 		CollectContactEvents();
@@ -156,6 +166,13 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 			if (State.Motion == EPhysicsMotionType::Dynamic)
 			{
 				World->GetTransform(State.Body, State.CurrentPosition, State.CurrentRotation);
+			}
+		}
+		for (auto& [Model, Ragdoll] : Ragdolls)
+		{
+			for (FRagdollPart& Part : Ragdoll.Parts)
+			{
+				World->GetTransform(Part.Body, Part.CurrentPosition, Part.CurrentRotation);
 			}
 		}
 	}
@@ -172,6 +189,7 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 	}
 
 	WriteDynamicTransforms(Scene);
+	WriteRagdollPoses(Scene);
 	return Steps;
 }
 

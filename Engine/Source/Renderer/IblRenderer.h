@@ -54,6 +54,7 @@ private:
 	std::unique_ptr<FD3D12Texture>       EnvironmentTexture; // 등장방형 HDR (없으면 절차적 하늘)
 	float                               EnvironmentRotation = 0.0f; // 라디안
 	uint32                              SkySize = IblMath::SkyCubeSize;
+	uint32                              SkyMipCount = IblMath::GetFullMipCount(IblMath::SkyCubeSize); // 필터드 중요도 샘플링용 밉 체인
 	bool Generate(FShaderLibrary& Library, bool bRebuild = false);
 	bool CreateSkyPipeline(FShaderLibrary& Library, FD3D12PipelineState& OutPipeline);
 	FShaderLibrary* ShaderLibrary = nullptr; // 비소유: 씬 렌더러가 소유

@@ -80,6 +80,36 @@ namespace IblMath
 		                0.5f - FMath::Asin(FMath::Clamp(D.Z, -1.0f, 1.0f)) / FMath::Pi);
 	}
 
+	// 한 변이 1이 될 때까지의 밉 수 (하늘 큐브 밉 체인)
+	inline uint32 GetFullMipCount(uint32 Size)
+	{
+		uint32 Count = 1;
+		while (Size > 1)
+		{
+			Size >>= 1;
+			++Count;
+		}
+		return Count;
+	}
+
+	// GGX 법선 분포 D (Alpha = 거칠기^2)
+	inline float GgxDistribution(float NdotH, float Roughness)
+	{
+		const float Alpha2 = Roughness * Roughness * Roughness * Roughness;
+		const float Denom  = NdotH * NdotH * (Alpha2 - 1.0f) + 1.0f;
+		return Alpha2 / FMath::Max(FMath::Pi * Denom * Denom, 1.0e-8f);
+	}
+
+	// 필터드 중요도 샘플링 (Ibl.hlsl과 같은 식, Křivánek & Colbert 2008): 표본 하나가 대표하는 입체각 1 / (표본 수 × pdf)를
+	// 원본 큐브 텍셀 입체각 4π / (6 × 크기²)과 비교해 그만큼 흐린 원본 밉에서 읽는다(+1 = 표본 사이를 겹쳐 덮는 치우침).
+	// 원본 밉 0만 읽으면 밝고 작은 광원(HDR 하늘의 해)이 표본 방향마다 따로 찍혀 반사/조도가 점박이가 된다
+	inline float ComputeFilteredSampleLod(float Pdf, uint32 SampleCount, uint32 SourceSize)
+	{
+		const float SampleSolidAngle = 1.0f / FMath::Max(static_cast<float>(SampleCount) * Pdf, 1.0e-8f);
+		const float TexelSolidAngle  = 4.0f * FMath::Pi / (6.0f * static_cast<float>(SourceSize) * static_cast<float>(SourceSize));
+		return FMath::Max(0.5f * std::log2(SampleSolidAngle / TexelSolidAngle) + 1.0f, 0.0f);
+	}
+
 	inline float MipToRoughness(uint32 Mip, uint32 MipCount)
 	{
 		return MipCount <= 1

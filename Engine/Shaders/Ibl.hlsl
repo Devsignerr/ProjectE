@@ -11,6 +11,7 @@ TextureCube<float4> Environment : register(t0);
 Texture2D<float4> EquirectSource : register(t1); // 등장방형 HDR (Phase 33-7)
 RWTexture2DArray<float4> CubeOutput : register(u0);
 RWTexture2D<float4> LutOutput : register(u1);
+RWTexture2DArray<float4> CubeSource : register(u2); // DownsampleCS: 윗 밉
 SamplerState LinearSampler : register(s0);
 SamplerState WrapSampler : register(s1);
 
@@ -57,6 +58,31 @@ float3 SampleGGX(float2 Xi, float SurfaceRoughness)
 		CosTheta);
 }
 
+// GGX 법선 분포 D (IblMath::GgxDistribution과 같은 식)
+float GgxDistribution(float NdotH, float SurfaceRoughness)
+{
+	float Alpha2 = SurfaceRoughness * SurfaceRoughness * SurfaceRoughness * SurfaceRoughness;
+	float Denom = NdotH * NdotH * (Alpha2 - 1) + 1;
+	return Alpha2 / max(Pi * Denom * Denom, 1e-8);
+}
+
+// 필터드 중요도 샘플링 (IblMath::ComputeFilteredSampleLod와 같은 식): 표본 하나가 대표하는 입체각만큼 흐린 원본 밉에서 읽는다.
+//   원본 밉 0만 읽으면 HDR 하늘의 해처럼 밝고 작은 광원이 표본 방향마다 따로 찍혀 반사/조도가 점박이가 된다.
+//   원본 밉이 하나뿐이면(반사 캡처 원본 큐브) SampleLevel이 밉 0으로 자른다
+float FilteredSampleLod(float Pdf, uint SourceSize)
+{
+	float SampleSolidAngle = 1 / max(float(SampleCount) * Pdf, 1e-8);
+	float TexelSolidAngle = 4 * Pi / (6 * float(SourceSize) * float(SourceSize));
+	return max(0.5 * log2(SampleSolidAngle / TexelSolidAngle) + 1, 0);
+}
+
+uint EnvironmentSize()
+{
+	uint Width, Height, Mips;
+	Environment.GetDimensions(0, Width, Height, Mips);
+	return Width;
+}
+
 float GeometrySmithIbl(float NdotV, float NdotL, float SurfaceRoughness)
 {
 	float K = SurfaceRoughness * SurfaceRoughness / 2;
@@ -101,6 +127,18 @@ void EquirectCS(uint3 Id : SV_DispatchThreadID)
 	CubeOutput[Id] = float4(max(EquirectSource.SampleLevel(WrapSampler, UV, 0).rgb, 0), 1);
 }
 
+// 하늘 큐브 밉 체인 (필터드 중요도 샘플링용): 윗 밉(u2) 2x2 평균 → 이번 밉(u0). Size = 이번 밉 크기
+[numthreads(8, 8, 1)]
+void DownsampleCS(uint3 Id : SV_DispatchThreadID)
+{
+	if (any(Id.xy >= Size) || Id.z >= 6) return;
+
+	uint2 Base = Id.xy * 2;
+	float4 Sum = CubeSource[uint3(Base, Id.z)] + CubeSource[uint3(Base + uint2(1, 0), Id.z)]
+		+ CubeSource[uint3(Base + uint2(0, 1), Id.z)] + CubeSource[uint3(Base + uint2(1, 1), Id.z)];
+	CubeOutput[Id] = Sum * 0.25;
+}
+
 [numthreads(8, 8, 1)]
 void IrradianceCS(uint3 Id : SV_DispatchThreadID)
 {
@@ -109,16 +147,20 @@ void IrradianceCS(uint3 Id : SV_DispatchThreadID)
 	float3 N = FaceDirection(
 		Id.z, (float2(Id.xy) + 0.5) / float(Size) * 2 - 1);
 	float3 Sum = 0;
+	uint SourceSize = EnvironmentSize();
 
 	for (uint I = 0; I < SampleCount; ++I)
 	{
 		float2 Xi = Hammersley(I);
 		float Phi = 2 * Pi * Xi.x;
 		float R = sqrt(Xi.y);
+		float CosTheta = sqrt(1 - Xi.y);
 		float3 L = ToWorld(
-			float3(R * cos(Phi), R * sin(Phi), sqrt(1 - Xi.y)), N);
+			float3(R * cos(Phi), R * sin(Phi), CosTheta), N);
 
-		Sum += Environment.SampleLevel(LinearSampler, L, 0).rgb;
+		// 코사인 샘플링 pdf = cos / pi
+		float Lod = FilteredSampleLod(CosTheta / Pi, SourceSize);
+		Sum += Environment.SampleLevel(LinearSampler, L, Lod).rgb;
 	}
 
 	// 코사인 중요도 샘플링 평균 = irradiance / pi.
@@ -133,10 +175,12 @@ void PrefilterCS(uint3 Id : SV_DispatchThreadID)
 	float3 N = FaceDirection(
 		Id.z, (float2(Id.xy) + 0.5) / float(Size) * 2 - 1);
 
+	uint SourceSize = EnvironmentSize();
 	if (Roughness <= 0)
 	{
+		// 거울 밉: 출력 텍셀 하나가 덮는 만큼의 원본 밉 (512 원본 → 128 출력이면 밉 2). 밉 0 한 점만 읽으면 해 가장자리가 계단·누락된다
 		CubeOutput[Id] = float4(
-			Environment.SampleLevel(LinearSampler, N, 0).rgb, 1);
+			Environment.SampleLevel(LinearSampler, N, max(log2(float(SourceSize) / float(Size)), 0)).rgb, 1);
 		return;
 	}
 
@@ -145,13 +189,16 @@ void PrefilterCS(uint3 Id : SV_DispatchThreadID)
 
 	for (uint I = 0; I < SampleCount; ++I)
 	{
-		float3 H = ToWorld(SampleGGX(Hammersley(I), Roughness), N);
+		float3 LocalH = SampleGGX(Hammersley(I), Roughness);
+		float3 H = ToWorld(LocalH, N);
 		float3 L = normalize(2 * dot(N, H) * H - N);
 		float NdotL = saturate(dot(N, L));
 
 		if (NdotL > 0)
 		{
-			Sum += Environment.SampleLevel(LinearSampler, L, 0).rgb * NdotL;
+			// N = V 가정에서 반사 방향 pdf = D · NdotH / (4 · VdotH) = D / 4
+			float Lod = FilteredSampleLod(GgxDistribution(LocalH.z, Roughness) * 0.25, SourceSize);
+			Sum += Environment.SampleLevel(LinearSampler, L, Lod).rgb * NdotL;
 			Weight += NdotL;
 		}
 	}

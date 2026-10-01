@@ -67,6 +67,7 @@
     { "File": "SsrResolve.hlsl", "Entry": "PSBlur", "Stage": "Pixel" },
     { "File": "SsrResolve.hlsl", "Entry": "PSResolve", "Stage": "Pixel" },
     { "File": "Ibl.hlsl", "Entry": "EquirectCS", "Stage": "Compute" },
+    { "File": "Ibl.hlsl", "Entry": "DownsampleCS", "Stage": "Compute" },
     { "File": "Terrain.hlsl", "Entry": "TerrainVS", "Stage": "Vertex" },
     { "File": "Terrain.hlsl", "Entry": "TerrainPS", "Stage": "Pixel" },
     { "File": "Terrain.hlsl", "Entry": "TerrainShadowVS", "Stage": "Vertex" },

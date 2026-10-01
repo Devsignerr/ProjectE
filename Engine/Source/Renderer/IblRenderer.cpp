@@ -11,8 +11,8 @@ E_DECLARE_LOG_CATEGORY(LogRenderer)
 namespace
 {
 	constexpr DXGI_FORMAT IblFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	const wchar_t* BakeEntries[] = { L"SkyCS", L"IrradianceCS", L"PrefilterCS", L"BrdfCS", L"EquirectCS" };
-	constexpr uint32 BakeEntryCount = 5;
+	const wchar_t* BakeEntries[] = { L"SkyCS", L"IrradianceCS", L"PrefilterCS", L"BrdfCS", L"EquirectCS", L"DownsampleCS" };
+	constexpr uint32 BakeEntryCount = 6;
 
 	FShaderCompileDesc ShaderDesc(const wchar_t* File, const wchar_t* Entry, EShaderStage Stage)
 	{
@@ -63,7 +63,7 @@ bool FIblRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& Library)
 	}
 	SkySrv = Rhi->GetSrvAllocator().Allocate();
 	LightingTable = Rhi->GetSrvAllocator().AllocateRange(3);
-	if (!CreateTexture(IblMath::SkyCubeSize, 6, 1, Sky, SkySrv.Cpu, L"IblSky") ||
+	if (!CreateTexture(IblMath::SkyCubeSize, 6, static_cast<uint16>(SkyMipCount), Sky, SkySrv.Cpu, L"IblSky") ||
 		!CreateTexture(IblMath::IrradianceSize, 6, 1, Irradiance, LightingTable.Cpu, L"IblIrradiance") ||
 		!CreateTexture(IblMath::PrefilterSize, 6, static_cast<uint16>(PrefilterMipCount), Prefilter,
 			Rhi->GetSrvAllocator().GetCpuHandle(LightingTable.Index + 1), L"IblPrefilter") ||
@@ -137,6 +137,7 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }); // t1 등장방형
+	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }); // u2 밉 내리기 원본
 	Root.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
 	Root.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -155,9 +156,12 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 		}
 	}
 
-	// 초기화 명령이 끝날 때까지만 필요한 UAV 테이블.
+	// 초기화 명령이 끝날 때까지만 필요한 UAV 테이블: 하늘 밉들, 조도, 프리필터 밉들, BRDF
 	auto& Allocator = Rhi->GetSrvAllocator();
-	FD3D12DescriptorHandle Uavs = Allocator.AllocateRange(PrefilterMipCount + 3);
+	const uint32 IrradianceSlot = SkyMipCount;
+	const uint32 PrefilterSlot  = SkyMipCount + 1;
+	const uint32 BrdfSlot       = PrefilterSlot + PrefilterMipCount;
+	FD3D12DescriptorHandle Uavs = Allocator.AllocateRange(BrdfSlot + 1);
 	const auto UavGpu = [&](uint32 Offset)
 	{
 		return D3D12_GPU_DESCRIPTOR_HANDLE{ Uavs.Gpu.ptr + static_cast<UINT64>(Offset) * Allocator.GetIncrementSize() };
@@ -174,13 +178,16 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 		}
 		Device->CreateUnorderedAccessView(Resource, nullptr, &Desc, Allocator.GetCpuHandle(Uavs.Index + Slot));
 	};
-	CreateUav(Sky.Get(), 0, 0, true);
-	CreateUav(Irradiance.Get(), 1, 0, true);
+	for (uint32 Mip = 0; Mip < SkyMipCount; ++Mip)
+	{
+		CreateUav(Sky.Get(), Mip, Mip, true);
+	}
+	CreateUav(Irradiance.Get(), IrradianceSlot, 0, true);
 	for (uint32 Mip = 0; Mip < PrefilterMipCount; ++Mip)
 	{
-		CreateUav(Prefilter.Get(), 2 + Mip, Mip, true);
+		CreateUav(Prefilter.Get(), PrefilterSlot + Mip, Mip, true);
 	}
-	CreateUav(BrdfLut.Get(), PrefilterMipCount + 2, 0, false);
+	CreateUav(BrdfLut.Get(), BrdfSlot, 0, false);
 
 	const bool bSuccess = Rhi->GetGraphicsQueue().ExecuteImmediate(Device, [&](ID3D12GraphicsCommandList* List)
 	{
@@ -200,7 +207,7 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 		List->SetDescriptorHeaps(1, Heaps);
 		List->SetComputeRootSignature(Root.Get());
 		List->SetComputeRootDescriptorTable(1, SkySrv.Gpu);
-		List->SetComputeRootDescriptorTable(3, UavGpu(PrefilterMipCount + 2));
+		List->SetComputeRootDescriptorTable(3, UavGpu(BrdfSlot));
 		const auto Dispatch = [&](uint32 Pipeline, uint32 Size, uint32 Slot, uint32 Slices, float Roughness)
 		{
 			const FBakeConstants Constants{ Size, IblMath::IntegrationSampleCount, Roughness, EnvironmentRotation };
@@ -222,13 +229,21 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 		{
 			Dispatch(0, SkySize, 0, 6, 0.0f);
 		}
+		// 하늘 밉 체인 (조도/프리필터가 표본 입체각만큼 흐린 밉을 읽는다 — 필터드 중요도 샘플링)
+		for (uint32 Mip = 1; Mip < SkyMipCount; ++Mip)
+		{
+			const auto UavBarrier = MakeUavBarrier(Sky.Get());
+			List->ResourceBarrier(1, &UavBarrier);
+			List->SetComputeRootDescriptorTable(5, UavGpu(Mip - 1));
+			Dispatch(5, FMath::Max(SkySize >> Mip, 1u), Mip, 6, 0.0f);
+		}
 		Transition(Sky.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		Dispatch(1, IblMath::IrradianceSize, 1, 6, 0.0f);
+		Dispatch(1, IblMath::IrradianceSize, IrradianceSlot, 6, 0.0f);
 		for (uint32 Mip = 0; Mip < PrefilterMipCount; ++Mip)
 		{
-			Dispatch(2, IblMath::PrefilterSize >> Mip, 2 + Mip, 6, IblMath::MipToRoughness(Mip, PrefilterMipCount));
+			Dispatch(2, IblMath::PrefilterSize >> Mip, PrefilterSlot + Mip, 6, IblMath::MipToRoughness(Mip, PrefilterMipCount));
 		}
-		Dispatch(3, IblMath::BrdfLutSize, 1, 1, 0.0f);
+		Dispatch(3, IblMath::BrdfLutSize, IrradianceSlot, 1, 0.0f); // u0는 쓰지 않음 (UAV 상태인 칸)
 		Transition(Sky.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		for (ID3D12Resource* Resource : { Irradiance.Get(), Prefilter.Get(), BrdfLut.Get() })
 		{
@@ -250,9 +265,10 @@ bool FIblRenderer::RecreateSky(uint32 Size)
 		Rhi->DeferRelease(Sky); // 진행 중인 프레임이 하늘을 그릴 수 있다
 		Sky.Reset();
 	}
-	SkySize = Size;
+	SkySize     = Size;
+	SkyMipCount = IblMath::GetFullMipCount(Size);
 	// Generate(bRebuild)가 PIXEL_SHADER_RESOURCE → UAV로 전이하므로 그 상태로 만든다. SRV는 같은 칸에 다시 기록
-	return CreateTexture(Size, 6, 1, Sky, SkySrv.Cpu, L"IblSky", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	return CreateTexture(Size, 6, static_cast<uint16>(SkyMipCount), Sky, SkySrv.Cpu, L"IblSky", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 }
 
 bool FIblRenderer::SetEnvironment(const FEnvironmentImage* Image, float RotationDegrees)

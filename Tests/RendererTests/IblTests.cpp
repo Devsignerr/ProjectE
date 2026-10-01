@@ -94,6 +94,36 @@ E_TEST(Ibl_GgxSamplesAndMipRoughness)
 	}
 }
 
+E_TEST(Ibl_FilteredImportanceSampling)
+{
+	E_EXPECT_EQ(IblMath::GetFullMipCount(512), 10u);
+	E_EXPECT_EQ(IblMath::GetFullMipCount(128), 8u);
+	E_EXPECT_EQ(IblMath::GetFullMipCount(1), 1u);
+
+	// GGX D: 정점(NdotH = 1)은 1 / (pi alpha^2), 반구 적분(D · cos)은 1
+	const float Roughness = 0.4f;
+	const float Alpha     = Roughness * Roughness;
+	E_EXPECT_NEAR(IblMath::GgxDistribution(1.0f, Roughness), 1.0f / (FMath::Pi * Alpha * Alpha), 1.0e-3f);
+	float Integral = 0.0f;
+	constexpr int Steps = 4096;
+	for (int Index = 0; Index < Steps; ++Index)
+	{
+		const float Theta = (static_cast<float>(Index) + 0.5f) / Steps * FMath::Pi * 0.5f;
+		Integral += IblMath::GgxDistribution(FMath::Cos(Theta), Roughness) * FMath::Cos(Theta) * FMath::Sin(Theta) * 2.0f * FMath::Pi * (FMath::Pi * 0.5f / Steps);
+	}
+	E_EXPECT_NEAR(Integral, 1.0f, 0.01f);
+
+	// 표본 입체각 = 텍셀 입체각이면 밉 1(+1 치우침), 표본 수 4배 → 밉 1 감소, 원본 크기 2배 → 밉 1 증가, 음수는 0
+	const uint32 Size        = 512;
+	const float  TexelAngle  = 4.0f * FMath::Pi / (6.0f * Size * Size);
+	const float  MatchedPdf  = 1.0f / (256.0f * TexelAngle);
+	E_EXPECT_NEAR(IblMath::ComputeFilteredSampleLod(MatchedPdf, 256, Size), 1.0f, 1.0e-3f);
+	E_EXPECT_NEAR(IblMath::ComputeFilteredSampleLod(MatchedPdf / 64.0f, 256, Size), 4.0f, 1.0e-3f);
+	E_EXPECT_NEAR(IblMath::ComputeFilteredSampleLod(MatchedPdf / 64.0f, 1024, Size), 3.0f, 1.0e-3f);
+	E_EXPECT_NEAR(IblMath::ComputeFilteredSampleLod(MatchedPdf / 64.0f, 256, Size * 2), 5.0f, 1.0e-3f);
+	E_EXPECT_NEAR(IblMath::ComputeFilteredSampleLod(MatchedPdf * 1.0e6f, 256, Size), 0.0f, 1.0e-6f);
+}
+
 E_TEST(Ibl_BrdfSmoothSurface)
 {
 	// 완전 매끈한 표면에서는 A=1-Fc, B=Fc인 Schlick 항으로 수렴한다.

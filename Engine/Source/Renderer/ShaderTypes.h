@@ -34,6 +34,59 @@ struct alignas(16) FPerFrameConstants
 };
 static_assert(sizeof(FPerFrameConstants) == 288);
 
+// 안개 적용 상수 (Fog.hlsli FogConstants와 1:1 — 전체 화면 적용 패스 b0, 파티클 b2). 밀도/감쇠/거리는 cm 단위
+struct alignas(16) FFogConstants
+{
+	FVector3   Color;                     // 산란 색 (선형)
+	float      Density       = 0.0f;      // 1/cm
+	FVector3   DirectionalColor;
+	float      HeightFalloff = 0.0f;      // 1/cm
+	FVector3   LightDirection = FVector3(0.0f, 0.0f, -1.0f); // 빛 진행 방향
+	float      BaseHeight    = 0.0f;
+	FVector3   CameraPosition;
+	float      StartDistance = 0.0f;
+	FVector3   CameraForward = FVector3::ForwardVector;
+	float      MaxOpacity    = 1.0f;
+	float      DirectionalExponent      = 8.0f;
+	float      DirectionalStartDistance = 0.0f;
+	uint32     bEnabled      = 0;
+	uint32     bVolumetric   = 0;
+	float      VolumetricDistance = 0.0f;
+	float      SkyDistance   = 100000.0f; // 기하 없는 픽셀(하늘)의 광선 길이
+	FVector2   ScreenSize;
+	FMatrix4x4 ViewProjection;            // 지터 없음 (볼륨 좌표)
+	FMatrix4x4 InvViewProjection;         // 지터 포함 투영의 역 (깊이 → 월드)
+};
+static_assert(sizeof(FFogConstants) == 240);
+
+// 볼류메트릭 안개 계산 상수 (VolumetricFog.hlsl b0)
+struct alignas(16) FVolumetricFogConstants
+{
+	FMatrix4x4 InvViewProjection;   // 지터 없음 (격자 칸 → 월드 광선)
+	FMatrix4x4 PrevViewProjection;  // 이전 프레임 (지터 없음, 시간 누적 재투영)
+	FVector3   CameraPosition;
+	float      VolumetricDistance = 6000.0f;
+	FVector3   CameraForward = FVector3::ForwardVector;
+	float      Density       = 0.0f; // 1/cm
+	FVector3   LightDirection = FVector3(0.0f, 0.0f, -1.0f);
+	float      HeightFalloff = 0.0f; // 1/cm
+	FVector3   LightColor;           // 색 × 강도
+	float      BaseHeight    = 0.0f;
+	FVector3   Albedo        = FVector3::OneVector;
+	float      ExtinctionScale = 1.0f;
+	FVector3   AmbientColor;         // 고르게 들어오는 빛 (안개 색)
+	float      Anisotropy    = 0.0f;
+	uint32     GridX = 1;
+	uint32     GridY = 1;
+	uint32     GridZ = 1;
+	float      SliceJitter   = 0.5f; // 조각 안 표본 위치 [0, 1)
+	float      DirectionalScale = 1.0f;
+	float      LocalLightScale  = 1.0f;
+	float      HistoryWeight    = 0.9f;
+	uint32     bHistoryValid    = 0;
+};
+static_assert(sizeof(FVolumetricFogConstants) == 256);
+
 // 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
 // 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다
 // 스킨 메시는 World/NormalMatrix 대신 BoneOffset(프레임 팔레트 버퍼 t15 안 첫 본 행렬 번호)을 쓴다

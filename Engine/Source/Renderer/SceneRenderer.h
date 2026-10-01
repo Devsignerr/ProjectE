@@ -21,6 +21,7 @@
 #include "Renderer/TemporalAA.h"
 #include "Renderer/AmbientOcclusion.h"
 #include "Renderer/DecalRenderer.h"
+#include "Renderer/FogRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -52,6 +53,8 @@ enum class ERenderTimer : uint32
 	TemporalAA,
 	AmbientOcclusion, // SSAO 계산 + 블러 (반해상도)
 	Decals,           // 데칼 → DBuffer
+	VolumetricFog,    // 안개 상수 + 볼류메트릭 주입·적분 (계산)
+	Fog,              // 안개 적용 (전체 화면)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -193,6 +196,7 @@ private:
 	FTemporalAA          TemporalAA;
 	FAmbientOcclusion    AmbientOcclusion;
 	FDecalRenderer       DecalRenderer;
+	FFogRenderer         FogRenderer;
 	bool                 bTaaRanLastFrame = false;
 	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
 	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)

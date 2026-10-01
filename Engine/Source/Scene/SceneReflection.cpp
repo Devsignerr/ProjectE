@@ -191,4 +191,24 @@ void RegisterSceneTypes()
 		.Property(&FDecalComponent::FadeEndDistance, "FadeEndDistance", "페이드 끝 (cm)").Range(0.0f, 1000000.0f, 10.0f).Tooltip("시작보다 작거나 같으면 페이드 없음")
 		.Property(&FDecalComponent::Material, "Material", "머티리얼 핸들", PF_Transient | PF_ReadOnly)
 		.AsComponent();
+
+	// 높이 지수 안개 + 볼류메트릭 안개 (Phase 33-5, 씬 전역 — 첫 하나만). 기준 높이 = 엔티티 월드 Z
+	Registry.RegisterType<FHeightFogComponent>("HeightFogComponent", "높이 안개")
+		.Property(&FHeightFogComponent::Color, "Color", "안개 색", PF_Color)
+		.Property(&FHeightFogComponent::Density, "Density", "밀도 (1/m)").Range(0.0f, 10.0f, 0.001f).Tooltip("엔티티 높이(월드 Z)에서의 밀도")
+		.Property(&FHeightFogComponent::HeightFalloff, "HeightFalloff", "높이 감쇠 (1/m)").Range(0.0f, 10.0f, 0.005f)
+		.Property(&FHeightFogComponent::StartDistance, "StartDistance", "시작 거리 (cm)").Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FHeightFogComponent::MaxOpacity, "MaxOpacity", "최대 불투명도").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FHeightFogComponent::DirectionalInscatteringColor, "DirectionalInscatteringColor", "방향광 산란 색", PF_Color)
+		.Property(&FHeightFogComponent::DirectionalInscatteringExponent, "DirectionalInscatteringExponent", "방향광 산란 지수").Range(1.0f, 64.0f, 0.1f)
+		.Property(&FHeightFogComponent::DirectionalInscatteringStartDistance, "DirectionalInscatteringStartDistance", "방향광 산란 시작 (cm)")
+		.Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FHeightFogComponent::bVolumetric, "Volumetric", "볼류메트릭 안개").Tooltip("빛줄기·그림자가 보이는 3D 안개 (카메라 앞 거리까지)")
+		.Property(&FHeightFogComponent::VolumetricDistance, "VolumetricDistance", "볼류메트릭 거리 (cm)").Range(500.0f, 100000.0f, 10.0f)
+		.Property(&FHeightFogComponent::VolumetricAlbedo, "VolumetricAlbedo", "산란 비율 색", PF_Color)
+		.Property(&FHeightFogComponent::VolumetricExtinctionScale, "VolumetricExtinctionScale", "소멸 배율").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricAnisotropy, "VolumetricAnisotropy", "비등방성 (g)").Range(-0.9f, 0.9f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricDirectionalScale, "VolumetricDirectionalScale", "방향광 산란 배율").Range(0.0f, 20.0f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricLocalLightScale, "VolumetricLocalLightScale", "로컬 라이트 산란 배율").Range(0.0f, 20.0f, 0.01f)
+		.AsComponent();
 }

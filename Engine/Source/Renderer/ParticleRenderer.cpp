@@ -65,6 +65,8 @@ namespace
 		RootParam_Draw      = 1, // b1
 		RootParam_Particles = 2, // t1 (루트 SRV)
 		RootParam_Texture   = 3, // t0
+		RootParam_Fog       = 4, // b2 (안개 상수, 정점)
+		RootParam_FogVolume = 5, // t2 (볼류메트릭 안개 결과, 정점)
 	};
 	enum EComputeRootParameter : uint32
 	{
@@ -202,7 +204,13 @@ bool FParticleRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, 
 	const uint32 TextureIndex   = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) },
 	                                                               D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(FrameIndex == RootParam_Frame && DrawIndex == RootParam_Draw && ParticlesIndex == RootParam_Particles && TextureIndex == RootParam_Texture);
+	const uint32 FogIndex       = RootSignature.AddConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 FogVolumeIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_VERTEX);
+	E_CHECK(FogIndex == RootParam_Fog && FogVolumeIndex == RootParam_FogVolume);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
+	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+	                                                                      D3D12_SHADER_VISIBILITY_VERTEX)); // 안개 볼륨
 	if (!RootSignature.Finalize(Rhi->GetDevice().GetDevice(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"ParticleRootSignature"))
 	{
 		return false;
@@ -634,6 +642,8 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFr
 
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Frame, FrameAddress);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogConstants);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogVolume.Gpu);
 
 	const FVector3        Forward       = Camera.GetForwardVector();
 	const FD3D12Texture&  Fallback      = Resources->ResolveTexture(DefaultTexture);

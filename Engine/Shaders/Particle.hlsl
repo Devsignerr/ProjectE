@@ -1,5 +1,9 @@
 ﻿#include "Common.hlsli"
 #include "ParticleCommon.hlsli"
+#define E_FOG_CONSTANTS_REGISTER b2
+#define E_FOG_VOLUME_REGISTER t2
+#define E_FOG_SAMPLER_REGISTER s1
+#include "Fog.hlsli" // 정점마다 안개 (불투명 메시는 FogApply 전체 화면 패스)
 
 // 파티클 그리기 (조명/그림자 없음 — 메시 렌더러만 간단한 음영)
 //   스프라이트: 입자마다 사각형 (정점 6개를 SV_VertexID로), 입자는 구조화 버퍼에서 SV_InstanceID로 읽는다
@@ -37,6 +41,7 @@ struct FParticleVSOutput
 	float4 Position : SV_Position;
 	float2 UV       : TEXCOORD0;
 	float4 Color    : COLOR;
+	float4 Fog      : TEXCOORD1; // rgb = 더할 산란, a = 투과율 (Fog.hlsli EvaluateFog)
 };
 
 static const float2 GCorners[6] = {
@@ -50,6 +55,7 @@ FParticleVSOutput MakeCulled()
 	Output.Position = float4(0.0f, 0.0f, -2.0f, 1.0f); // 깊이 범위 밖 (모든 정점이 같아 면적도 0)
 	Output.UV       = float2(0.0f, 0.0f);
 	Output.Color    = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	Output.Fog      = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	return Output;
 }
 
@@ -92,6 +98,7 @@ FParticleVSOutput VSSprite(uint VertexId : SV_VertexID, uint InstanceId : SV_Ins
 
 	FParticleVSOutput Output;
 	Output.Position = mul(float4(Center + Offset, 1.0f), ViewProjection);
+	Output.Fog      = EvaluateFog(Center + Offset);
 	Output.UV       = UV;
 	Output.Color    = P.Color;
 	return Output;
@@ -124,6 +131,7 @@ FParticleVSOutput VSMesh(FParticleMeshInput Input, uint InstanceId : SV_Instance
 
 	FParticleVSOutput Output;
 	Output.Position = mul(float4(World, 1.0f), ViewProjection);
+	Output.Fog      = EvaluateFog(World);
 	Output.UV       = Input.UV;
 	Output.Color    = float4(P.Color.rgb * Shade, P.Color.a);
 	return Output;
@@ -140,6 +148,7 @@ FParticleVSOutput VSRibbon(FParticleRibbonInput Input)
 {
 	FParticleVSOutput Output;
 	Output.Position = mul(float4(Input.Position, 1.0f), ViewProjection);
+	Output.Fog      = EvaluateFog(Input.Position);
 	Output.UV       = Input.UV;
 	Output.Color    = Input.Color;
 	return Output;
@@ -148,7 +157,8 @@ FParticleVSOutput VSRibbon(FParticleRibbonInput Input)
 float4 PSAlpha(FParticleVSOutput Input) : SV_Target
 {
 	const float4 Texel = ParticleTexture.Sample(LinearClamp, Input.UV);
-	return float4(Texel.rgb * Input.Color.rgb, saturate(Texel.a * Input.Color.a));
+	// 안개: 반투명은 뒤(이미 안개가 적용된 씬) 위에 덮이므로 자기 색에 투과율 + 산란
+	return float4(Texel.rgb * Input.Color.rgb * Input.Fog.a + Input.Fog.rgb, saturate(Texel.a * Input.Color.a));
 }
 
 float4 PSAdditive(FParticleVSOutput Input) : SV_Target
@@ -156,5 +166,6 @@ float4 PSAdditive(FParticleVSOutput Input) : SV_Target
 	const float4 Texel = ParticleTexture.Sample(LinearClamp, Input.UV);
 	// 알파는 색에 영향 없음(가산) — TAA 반응형 마스크로 덮인 정도를 남긴다
 	const float Coverage = saturate(Texel.a * Input.Color.a);
-	return float4(Texel.rgb * Input.Color.rgb * Coverage, Coverage);
+	// 안개: 가산은 빛을 더하므로 투과율만 곱한다 (산란을 더하면 겹칠수록 안개가 진해진다)
+	return float4(Texel.rgb * Input.Color.rgb * Coverage * Input.Fog.a, Coverage);
 }

@@ -128,7 +128,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	}
 	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
+	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
+	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
 	{
 		return false;
 	}
@@ -214,6 +215,8 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::TemporalAA:   return "TAA";
 	case ERenderTimer::AmbientOcclusion: return "SSAO";
 	case ERenderTimer::Decals:       return "데칼";
+	case ERenderTimer::VolumetricFog: return "볼류메트릭 안개";
+	case ERenderTimer::Fog:          return "안개 적용";
 	default:                        return "?";
 	}
 }
@@ -419,7 +422,8 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
-	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile))
+	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile) ||
+	    !FogRenderer.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -456,6 +460,7 @@ void FSceneRenderer::Shutdown()
 	TemporalAA.Shutdown();
 	AmbientOcclusion.Shutdown();
 	DecalRenderer.Shutdown();
+	FogRenderer.Shutdown();
 	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
 	{
@@ -827,6 +832,25 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	Stats.Decals           = bDecals ? DecalRenderer.GetDrawnCount() : 0;
 	PerFrame.DecalsEnabled = bDecals ? 1u : 0u;
 
+	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분). 적용은 메인 패스 뒤, 파티클은 정점에서
+	{
+		BeginTimer(ERenderTimer::VolumetricFog);
+		FogRenderer.Prepare(Scene, RenderCamera, UnjitteredViewProjection, Width, Height);
+		FVolumetricFogInputs FogInputs;
+		FogInputs.ShadowConstants    = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
+		FogInputs.ShadowMapSrv       = ShadowRenderer.GetShadowMapSrv();
+		FogInputs.ShadowMap          = ShadowRenderer.GetShadowMapResource();
+		FogInputs.ClusterConstants   = LocalLightRenderer.GetConstants();
+		FogInputs.LocalLights        = LocalLightRenderer.GetLightList();
+		FogInputs.LightDirection     = PerFrame.DirectionalLight.Direction;
+		FogInputs.LightColor         = PerFrame.DirectionalLight.Color * PerFrame.DirectionalLight.Intensity;
+		FogInputs.PrevViewProjection = PerFrame.PrevViewProjection;
+		FogInputs.bHistoryValid      = bTemporalHistoryValid;
+		FogInputs.FrameIndex         = SceneFrameCount;
+		FogRenderer.RenderVolumetric(FogInputs);
+		EndTimer(ERenderTimer::VolumetricFog);
+	}
+
 	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트) + 파티클
 	const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
 	SceneColor->Begin(CommandList, SceneClear, !bPrepass);
@@ -852,6 +876,15 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 		Stats.OcclusionTested = Stats.OcclusionPhase1 = Stats.OcclusionPhase2 = 0;
 	}
 	EndTimer(ERenderTimer::MainDraw);
+
+	// 안개 적용 (불투명 메시 + 하늘, 씬 깊이) → 파티클은 정점에서 같은 식
+	if (FogRenderer.IsEnabled())
+	{
+		BeginTimer(ERenderTimer::Fog);
+		FogRenderer.Apply(*SceneColor);
+		EndTimer(ERenderTimer::Fog);
+	}
+	ParticleRenderer.SetFog(FogRenderer.GetConstantsAddress(), FogRenderer.GetVolumeSrv());
 
 	BeginTimer(ERenderTimer::Particles);
 	Stats.Particles              = ParticleRenderer.Render(Scene, RenderCamera, FrozenFrustum);

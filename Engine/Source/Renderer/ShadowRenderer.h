@@ -60,6 +60,7 @@ public:
 
 	const FShadowConstants&        GetConstants() const { return Constants; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
+	ID3D12Resource*               GetShadowMapResource() const { return ShadowMap.Get(); } // 평소 PIXEL_SHADER_RESOURCE
 
 	bool ReloadShaders(bool bForceRecompile);
 

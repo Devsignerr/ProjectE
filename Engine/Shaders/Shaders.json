@@ -54,6 +54,10 @@
     { "File": "AmbientOcclusion.hlsl", "Entry": "PSCompute", "Stage": "Pixel" },
     { "File": "AmbientOcclusion.hlsl", "Entry": "PSBlur", "Stage": "Pixel" },
     { "File": "Decal.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "Decal.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "Decal.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "FogApply.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "FogApply.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "VolumetricFog.hlsl", "Entry": "CSInject", "Stage": "Compute" },
+    { "File": "VolumetricFog.hlsl", "Entry": "CSIntegrate", "Stage": "Compute" }
   ]
 }

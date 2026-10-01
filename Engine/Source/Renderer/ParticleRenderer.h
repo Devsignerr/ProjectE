@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Math/Math.h"
+#include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/ShaderTypes.h"
@@ -44,6 +45,13 @@ public:
 
 	bool bEnableCulling = true; // 화면 밖 이미터 컬링 (끄면 모두 계산·그리기, --no-particle-culling)
 
+	// 안개 (FFogRenderer): Render 전에 이번 프레임 상수(b2)와 볼류메트릭 결과(t2)를 넘긴다. 정점마다 Fog.hlsli EvaluateFog
+	void SetFog(D3D12_GPU_VIRTUAL_ADDRESS InFogConstants, const FD3D12DescriptorHandle& InFogVolume)
+	{
+		FogConstants = InFogConstants;
+		FogVolume    = InFogVolume;
+	}
+
 	// 지난 Render에서 화면 밖이라 그리지 않은 이미터 수, 지난 Simulate에서 계산을 미룬 GPU 이미터 수 (통계)
 	uint32 GetCulledEmitterCount() const { return CulledEmitters; }
 	uint32 GetCulledGpuEmitterCount() const { return CulledGpuEmitters; }
@@ -52,6 +60,9 @@ public:
 	static void BuildGpuProgram(const FParticleEmitter& Emitter, std::vector<FVector4>& OutProgram, FParticleSimConstants& OutConstants);
 
 private:
+	D3D12_GPU_VIRTUAL_ADDRESS FogConstants = 0;
+	FD3D12DescriptorHandle    FogVolume;
+
 	enum EPipelineKind : uint32
 	{
 		Pipeline_Sprite = 0,

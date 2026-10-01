@@ -186,6 +186,29 @@ struct FSkyLightComponent
 	float Intensity = 1.0f;
 };
 
+// 높이 지수 안개 + 볼류메트릭 안개 (씬 전역 — 처음 찾은 것 하나만, 식은 Renderer/FogMath.h).
+//   기준 높이 = 엔티티 월드 Z. 밀도(z) = Density · exp(-HeightFalloff · (z - 기준 높이)) (1/m 단위로 저장, 렌더러가 cm로 바꾼다)
+//   색은 선형 HDR (방향광 색과 같은 규약). 볼류메트릭은 카메라 앞 VolumetricDistance까지 3D 격자로 빛 산란(방향광 그림자/로컬 라이트)을
+//   계산하고, 그 뒤는 해석식 안개가 이어 받는다. 불투명 메시·하늘(전체 화면 적용)과 파티클(정점에서 계산)에 적용된다
+struct FHeightFogComponent
+{
+	FVector3 Color                       = FVector3(0.45f, 0.55f, 0.7f); // 안개 산란 색 (선형)
+	float    Density                     = 0.02f;  // 1/m (기준 높이에서)
+	float    HeightFalloff               = 0.2f;   // 1/m (클수록 위로 갈수록 빨리 옅어짐)
+	float    StartDistance               = 0.0f;   // cm
+	float    MaxOpacity                  = 1.0f;
+	FVector3 DirectionalInscatteringColor = FVector3(0.35f, 0.3f, 0.2f); // 태양 쪽을 볼 때 더하는 색 (선형)
+	float    DirectionalInscatteringExponent      = 8.0f;
+	float    DirectionalInscatteringStartDistance = 1000.0f; // cm
+	bool     bVolumetric                 = false;
+	float    VolumetricDistance          = 6000.0f; // cm
+	FVector3 VolumetricAlbedo            = FVector3::OneVector; // 산란 비율 색 (1 = 흡수 없음)
+	float    VolumetricExtinctionScale   = 1.0f;
+	float    VolumetricAnisotropy        = 0.2f;    // 헤니-그린스타인 g (0 = 고르게, + = 빛 진행 방향으로)
+	float    VolumetricDirectionalScale  = 1.0f;    // 방향광 산란 배율
+	float    VolumetricLocalLightScale   = 1.0f;    // 점광원/스포트 산란 배율
+};
+
 // 박스 투영 데칼 (깊이 사전 패스 뒤 DBuffer에 그려 메인 패스가 베이스색/노멀/거칠기에 섞는다, 식은 Renderer/DecalMath.h).
 //   상자 = 엔티티 로컬 [-Size/2, Size/2]이고 로컬 -Z 방향으로 찍힌다 (회전 없으면 바닥). U = 로컬 +Y, 텍스처 위 = 로컬 +X
 //   머티리얼(.emat): 베이스색 텍스처 × BaseColorFactor (알파 = 불투명도), 노멀 맵, 금속/거칠기. SortOrder가 큰 데칼이 위에 그려진다

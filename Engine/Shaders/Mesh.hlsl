@@ -57,19 +57,8 @@ Texture2D    OcclusionTexture         : register(t3); // 선형, R
 Texture2D    EmissiveTexture          : register(t4); // sRGB
 SamplerState LinearSampler            : register(s0);
 
-// 방향광 캐스케이드 섀도우 (ShadowRenderer.h FShadowConstants와 1:1)
-cbuffer ShadowConstants : register(b3)
-{
-	float4x4 CascadeViewProjection[4];
-	float4   CascadeSplits;     // 뷰 공간 far 거리
-	float4   CascadeTexelWorld; // 캐스케이드별 월드 텍셀 크기
-	float3   ShadowCameraForward;
-	float    ShadowEnabled;
-	float    ShadowTexelSize;   // 1 / 해상도
-	float    ShadowNormalOffset;
-	uint     CascadeCount;
-	uint     VisualizeCascades;
-};
+// 방향광 캐스케이드 섀도우 상수 b3 (ShadowCommon.hlsli — 볼류메트릭 안개와 공유)
+#include "ShadowCommon.hlsli"
 
 Texture2DArray<float>  ShadowMap     : register(t8);
 SamplerComparisonState ShadowSampler : register(s2);

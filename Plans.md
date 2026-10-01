@@ -562,7 +562,11 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: Demo_Stress 기준 측정치(프레임 시간 CPU/GPU, 드로우 콜 수)를 기록하고, 같은 메시·머티리얼은 인스턴싱으로 묶고(정적 메시 + 섀도우/로컬 그림자/아웃라인 패스), LOD(모델 임포트 생성 또는 수동 + 화면 크기 전환), 오클루전 컬링(HZB)로 개선 후 다시 측정
 
-- [ ] Demo_Stress 기준 측정 → GPU 인스턴싱 → LOD → 오클루전 컬링
+- [x] 26-1. 측정 수단(`FD3D12GpuTimer`, `--perf-capture`, 구간별 CPU/GPU, 통계 창) + `Demo_StressStatic`(정적 2400개 — Demo_Stress는 전부 스킨이라 인스턴싱 대상 아님)
+- [x] 26-2. GPU 인스턴싱(메인/CSM/로컬 그림자/아웃라인): StressStatic Debug 57.3 → 12.1ms, Release CPU 1.73 → 0.89ms, 드로우 2313 → 10
+- [x] 26-3. LOD(직접 구현 QEM, 임포트 설정, `ModelVersion` 7): StressStatic Release GPU 1.71 → 0.81ms, 삼각형 189만 → 31만
+- [x] 26-4. HZB 2단계 오클루전: 68% 가림이지만 LOD와 함께면 GPU 0.76 → 0.85ms로 손해라 기본 끔 (2026-10-01 master 머지, 회귀 Verify 오류 0)
+- 후속: 스킨 메시 비용(Demo_Stress — 팔레트 수집 CPU 0.37ms, CSM 스킨 그림자 821드로우), 동적 업로드 버퍼 용량(4MB 중 ≈3.7MB 사용), LOD 히스테리시스/크로스페이드, 헬멧 LOD 25%에서 멈춤
 
 ## Phase 27 — 애니메이션 캐릭터 (트랙 D, Phase 24 뒤)
 

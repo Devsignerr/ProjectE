@@ -10,6 +10,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,7 +22,9 @@ class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
 class FReplicationClient;
+class FReplicationServer;
 class FResourceManager;
+struct FSceneDocument;
 class FScene;
 class FScriptSystem;
 
@@ -59,8 +62,10 @@ enum class EWorldRole : uint8
 };
 
 // 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, 전용 서버가 같은 순서를 쓴다.
-//   게임플레이 틱 (플레이 중에만): 스크립트 → (클라이언트) 물리 예측 → 캐릭터 이동 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI
-//                                  → 게임플레이 규칙 → 물리 → UpdateTransforms → (클라이언트) 물리 예측 기록
+//   게임플레이 틱 (플레이 중에만): 스크립트 → 시퀀스(컷신, 모든 역할 로컬) → (클라이언트) 물리 예측 → 캐릭터 이동 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI
+//                                  시퀀스는 트랜스폼/프로퍼티/카메라 컷을 바로 쓰고 애니메이션 트랙은 클립 시각만 정한다 → 이번 프레임 표시 틱의
+//                                  FAnimationSystem이 그 포즈를 쓴다. 시퀀스 이벤트는 다음 틱 스크립트 갱신에서 OnSequenceEvent_<이름>
+//                                  → 게임플레이 규칙 → 사망 래그돌 켜기/끄기 → 물리 → UpdateTransforms → (클라이언트) 물리 예측 기록
 //                                  게임플레이 규칙 (GameWorldGameplay.cpp, 서버): 데미지 이벤트 → OnDamaged/OnDeath, 사망 처리(점수/파괴/리스폰 예약),
 //                                  리스폰, 매치 진행. 모든 역할: 매치 상태가 바뀌면 스크립트 OnMatchStateChanged(state)
 //                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
@@ -68,7 +73,8 @@ enum class EWorldRole : uint8
 //   입력: 클라이언트는 게임플레이 틱마다 로컬 입력 상태를 서버로 보낸다(비신뢰). 서버 스크립트의 Lua Input은
 //         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음).
 //         입력 액션 값(Input.GetAction)도 함께 보낸다 — 클라이언트가 자기 바인딩으로 계산한 값. 게임 모듈은 IGameNet::GetInput
-//                                  물리 → UpdateTransforms 뒤: 캐릭터 이동 상태 → 애니메이션 그래프 파라미터 (Speed/VerticalSpeed/Grounded) → 스크립트 OnLateUpdate
+//                                  물리 → UpdateTransforms 뒤: 캐릭터 이동 상태 → 애니메이션 그래프 파라미터 (Speed/VerticalSpeed/Grounded)
+//                                  → 충돌/트리거 알림 (GameWorldPhysicsEvents.cpp) → 스크립트 OnLateUpdate
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
 // 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트(Lua 상태) → AI (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순.
 //   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
@@ -98,7 +104,10 @@ public:
 	void SetNetDriver(FNetDriver* InNet) { Systems.Net = InNet; }
 	// 클라이언트: 복제 클라이언트(스냅샷 버퍼) — 물리 예측이 서버 상태를 읽는다 (World/GameWorldPhysicsPrediction.cpp).
 	// 없으면 물리 예측 없음 (복제 동적 바디는 키네마틱 보간). 앱이 클라이언트 BeginPlay 전에 연결하고, EndPlay가 비운다 (비소유)
-	void SetReplicationClient(FReplicationClient* InReplication) { Replication = InReplication; }
+	// 서브 씬 메시지 처리기도 여기서 연결한다 (서버가 불러온 서브 씬을 클라이언트가 곧바로 붙인다)
+	void SetReplicationClient(FReplicationClient* InReplication);
+	// 서버/Standalone: 복제 서버 (서브 씬 NetId·클라이언트 알림). 없으면 서브 씬은 로컬에만. 앱이 연결하고 해제한다 (EndPlay가 비우지 않음, 비소유)
+	void SetReplicationServer(FReplicationServer* InReplication) { ReplicationServer = InReplication; }
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 
@@ -114,6 +123,29 @@ public:
 	std::optional<FNetSessionRequest> ConsumeSessionRequest();
 	void                              SetNetMode(ENetMode InMode);
 	void                              SetLanDiscoveryPort(uint16 Port) { LanDiscoveryPort = Port; } // 테스트용
+
+	// 맵 전환 요청 (Lua Game.OpenScene, 게임 모듈 IGameNet::OpenScene). 서버/Standalone에서만, 씬 파일(Content 기준)이 있어야 한다.
+	// 앱이 프레임 끝에 FGameWorldTravel::ConsumePending → Travel로 처리한다 (갱신 도중 씬을 부수지 않는다). 실패하면 false + 사유
+	bool                       RequestOpenScene(const std::string& SceneAsset, std::string* OutError = nullptr);
+	std::optional<std::string> ConsumeOpenSceneRequest();
+	// 지금 플레이 중인 씬 (Content 기준, Lua Game.GetCurrentScene). 앱이 씬을 열 때 정한다 (Travel은 자동)
+	void               SetCurrentSceneAsset(std::string SceneAsset) { CurrentSceneAsset = std::move(SceneAsset); }
+	const std::string& GetCurrentSceneAsset() const { return CurrentSceneAsset; }
+
+	// 서브 씬 스트리밍 (World/GameWorldStreaming.cpp 머리 주석). 서버/Standalone에서만 요청 가능 (클라이언트는 서버를 따른다).
+	// Load: 파일 읽기·파싱은 백그라운드, 붙이기는 다음 게임플레이 틱 처음(메인 스레드). 이미 있거나 불러오는 중이면 true
+	// (UnloadSubScene/IsSubSceneLoaded는 IGameNet 구현과 같은 함수 — 아래). Unload: 불러온/불러오는 중이었으면 true (루트째 지연 파괴)
+	bool    RequestLoadSubScene(const std::string& Asset, const FVector3& Offset, std::string* OutError = nullptr);
+	FEntity GetSubSceneRoot(const std::string& Asset) const; // 붙기 전이면 NullEntity
+	bool    bAsyncSubSceneLoad = true; // false = 파싱도 붙이는 틱에 메인 스레드에서 (기다림 없이 결정적 — 테스트/측정)
+	struct FSubSceneStats
+	{
+		uint32 Loads = 0, Unloads = 0;
+		float  LastParseMs = 0.0f;  // 파일 읽기 + JSON 파싱 (백그라운드 스레드)
+		float  LastAttachMs = 0.0f; // 엔티티 생성 + 프리팹 동기화 + 에셋 해석 + 복제 등록 (메인 스레드 = 멈칫함)
+		float  MaxAttachMs = 0.0f;
+	};
+	const FSubSceneStats& GetSubSceneStats() const { return SubSceneStats; }
 
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
@@ -138,6 +170,10 @@ public:
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
 	const FInput* GetInput(FEntity Entity) const override { return ResolveInput(Entity, TickLocalInput); }
+	bool          OpenScene(const std::string& SceneAsset) override;
+	bool          LoadSubScene(const std::string& Asset, const FVector3& Offset) override;
+	bool          UnloadSubScene(const std::string& Asset) override;
+	bool          IsSubSceneLoaded(const std::string& Asset) const override;
 
 private:
 	// 잘못된 호출(클라이언트에서 Client/Multicast 등)은 std::runtime_error (Lua에서는 스크립트 오류가 된다)
@@ -271,6 +307,14 @@ private:
 	int32  LastMatchState    = -1; // OnMatchStateChanged 감지 (-1 = 게임 모드 없음/시작 전)
 	uint32 RespawnStartIndex = 0;  // 리스폰 PlayerStart 순번
 
+	// 물리 알림 (World/GameWorldPhysicsEvents.cpp): 물리·UpdateTransforms 뒤 충돌/트리거 이벤트 → 스크립트 + 게임 모듈
+	void DispatchCollisionEvents();
+	bool ShouldReportContacts(const FScene& Target, FEntity Entity) const; // FPhysicsSystem 보고 필터 (역할 규칙 포함)
+
+	// 사망 래그돌 (World/GameWorldRagdoll.cpp): FRagdollComponent bEnableOnDeath 모델의 체력 변화 → 켜기/끄기
+	void TickRagdolls();
+	std::unordered_map<FEntity, bool> RagdollDeadStates; // 모델 → 지난 틱에 죽어 있었나
+
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
@@ -282,4 +326,39 @@ private:
 	FLanDiscovery                     SessionSearch; // Net.FindSessions
 	uint16                            LanDiscoveryPort = 0; // 0 = 프로젝트 설정
 	std::optional<FNetSessionRequest> PendingSessionRequest;
+
+	std::optional<std::string> PendingSceneRequest; // 맵 전환 (프레임 끝에 앱이 처리)
+	std::string                CurrentSceneAsset;
+
+	// 서브 씬 (World/GameWorldStreaming.cpp)
+	struct FParsedSubScene // 백그라운드 스레드 결과 (future 완료 후에만 읽는다)
+	{
+		std::shared_ptr<const FSceneDocument> Document;
+		std::string                           Error;
+		float                                 ParseMs = 0.0f;
+	};
+	struct FSubSceneInstance
+	{
+		std::string Asset;
+		uint32      InstanceId = 0;
+		FVector3    Offset;
+		FEntity     Root;              // 붙기 전 NullEntity
+		bool        bByScript = false; // 스크립트/게임 모듈 요청 (볼륨이 내리지 않는다)
+		bool        bByVolume = false;
+		std::future<FParsedSubScene> Pending; // 백그라운드 파싱 (붙이면 비운다)
+	};
+	void               TickSubScenes();      // 게임플레이 틱 처음: 파싱 끝난 것 붙이기 + 볼륨 판정 (서버/Standalone)
+	void               UpdateStreamingVolumes();
+	bool               StartSubSceneLoad(const std::string& Asset, const FVector3& Offset, bool bByScript, std::string* OutError);
+	FEntity            AttachSubScene(FSubSceneInstance& Instance, const FSceneDocument& Document);
+	void               DestroySubScene(FSubSceneInstance& Instance);
+	FEntity            ClientLoadSubScene(const std::string& Asset, uint32 InstanceId, const FVector3& Offset); // 서버 지시 (동기)
+	void               ClientUnloadSubScene(uint32 InstanceId);
+	FSubSceneInstance* FindSubScene(const std::string& Asset);
+	const FSubSceneInstance* FindSubScene(const std::string& Asset) const;
+	void               ClearSubScenes();
+	std::vector<std::unique_ptr<FSubSceneInstance>> SubScenes;
+	uint32                                          NextSubSceneId = 1;
+	FSubSceneStats                                  SubSceneStats;
+	FReplicationServer*                             ReplicationServer = nullptr;
 };

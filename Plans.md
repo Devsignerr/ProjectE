@@ -601,3 +601,54 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 29-3. 파티클 이미터 경계(`ParticleBounds`, `bFixedBounds`) + 컬링, 화면 밖 GPU 계산은 미뤘다 다시 보일 때 따라잡기 (시험 씬 GPU 1.68 → 1.03ms)
 - [x] 29-4. LOD 히스테리시스(±10%). 화면 밖 애니메이션 갱신 생략은 Demo_Stress에서 이득 0이라 안 함 (2026-10-01 master 머지, Verify 오류 0)
 - 후속: 스킨 가시성 판정 비용(조인트 행렬 캐시), 화면 밖 애니메이션 갱신 생략(렌더러 → Scene 가시성 경로, 소켓 대상 제외), GPU 이미터 추정 경계가 보수적, 오래 숨은 이미터 재등장 시 디스패치 몰림
+
+## Phase 30~35 병렬 진행 (2026-10-01, 사용자 결정: 1·2·3순위 기능, 1단계 동시 4트랙)
+
+결정 (2026-10-01 사용자 선택): 동시 트랙 4개 먼저(A·B·C·D) → 끝나는 순서로 E·F 투입(C 자리에 E, 다음 빈자리에 F). 안티에일리어싱 = TAA. 머티리얼 노드 편집기는 이번 범위에서 제외. 래그돌 = 사망 시 전신 래그돌까지(애니메이션·물리 혼합 제외).
+공통 규칙: Phase 23~26과 같음. `Plans.md`/`CLAUDE.md`는 메인만 고친다(트랙은 커밋 메시지에 규칙 기록). 등록부(`SceneReflection.cpp`, `ProjectSettings.cpp`, Lua 바인딩, `Tests/CMakeLists.txt`, `Shaders.json`)는 끝에 추가만. `NetProtocolVersion`/`GameModuleApiVersion`은 필요하면 올리고 머지 때 메인이 최종값을 정한다.
+현황(메인 확인): 렌더러는 깊이/법선 사전 패스 없이 HDR 씬 패스에 바로 그린다(`FSceneRenderer::RenderSceneColor`) → TAA/SSAO/데칼/안개/반사는 공통 기반이 필요해 한 트랙(D)에서 순서대로. 물리 충돌 이벤트 없음, Lua `Scene`은 Create/Destroy/Find/SpawnPrefab뿐(맵 전환 없음).
+
+## Phase 30 — 충돌·영역 알림 / 관절 / 사망 래그돌 (트랙 A)
+
+- [x] 30-1. 충돌·트리거 알림: 콜라이더 `bIsTrigger`, 강체 `bReportContacts`. Jolt 접촉 리스너는 보고 대상(트리거/ReportContacts/스크립트 엔티티/게임 모듈 `WantsCollisionEvents`) 바디가 낀 접촉만 잠금 아래 모으고, 스텝 뒤 메인 스레드에서 바디 쌍 단위로 시작 1회/끝 1회 정리(잠드는 "접촉 제거"는 끝 아님 — 깨어난 뒤 온전한 스텝 하나 동안 `WereBodiesInContact` 거짓이면 끝, 바디 삭제는 즉시 끝). 트리거 = 잠들지 않는 키네마틱 센서 + `CollideKinematicVsNonDynamic`, 전용 `Trigger` 레이어, 레이캐스트 무시. 전달은 `FGameWorld`(`World/GameWorldPhysicsEvents.cpp`)가 물리 → UpdateTransforms → 애니메이션 파라미터 뒤, `OnLateUpdate` 앞. Lua `OnCollisionBegin(other, info{Point,Normal,Impulse,Speed})`/`OnCollisionEnd`/`OnTriggerEnter`/`OnTriggerExit`(상대 파괴 시 nil), 게임 모듈 같은 이름. 클라이언트는 복제 엔티티 이벤트를 만들지 않음. 테스트 `PhysicsEvents_*` 4개, `CollisionScript_*` 2개
+- [x] 30-2. 관절: `Fixed/Hinge(제한·모터·마찰)/Distance(최소·최대·스프링)/BallJointComponent(원뿔)` + 공통 Target(비면 월드)/Anchor/BreakForce(N)/CollideConnected. `FPhysicsWorld`가 Jolt 관절 소유(바디보다 먼저 제거), 바디 쌍 충돌 끄기 = 충돌 그룹(ID = 바디 ID) + 참조 계수 GroupFilter. `FPhysicsSystem::SyncJoints`(바디 동기화 뒤, 설정/바디 변경 시 현재 자세로 재생성), 구속 힘 > BreakForce → 제거 + `OnJointBreak(other, force)`. 뷰포트 관절 표시. `Demo_Joints`(경첩 문, 사슬, 스프링, 모터 풍차, 끊어지는 판 — 충격 4804 → 5134 N에서 끊어짐, 트리거 램프). 테스트 `PhysicsJoints_*` 7개
+- [x] 30-3. 사망 래그돌: `FRagdollComponent`(`Physics/Ragdoll.h`), 순수 `RagdollMath::BuildLayout`(뼈 → 캡슐 + SwingTwist 관절, 짧은 뼈 합치기, 이웃/겹침/주인 바디 충돌 끄기 — CharacterVirtual 질의도 따름). `FAnimationRuntime::bPhysicsPose`면 애니메이션 갱신 생략 → 물리가 뼈 로컬 트랜스폼을 부모 먼저 씀, 끄면 원래 로컬로 복원. 사망 연동 `World/GameWorldRagdoll.cpp`(게임플레이 규칙 뒤·물리 앞, 자신/조상 `FHealthComponent` 살아 있음↔죽음 전환 때만). 래그돌은 비복제 로컬 연출(각자 복제된 체력으로 판단). Lua `entity:EnableRagdoll/DisableRagdoll/IsRagdollActive`. `Demo_Ragdoll`(Fox 뼈 24 → 캡슐 23·관절 22). 테스트 `RagdollMath_*` 2개, `Ragdoll_EnableFallsAndDisableRestores`, `RagdollScript_*` 2개. `GameModuleApiVersion` 8(머지 시 B의 7 위로) (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): Demo_Joints 문/사슬/스프링 손맛, Fox 래그돌 캡슐 굵기(`RadiusScale` 0.25)·쓰러지는 모양, `Player.eprefab`에 `RagdollComponent`를 달지(지금은 사망 시 모델 숨김)
+- 후속: 바디 재생성 시 쌍이 끝 → 다시 시작으로 보임, 캐릭터 ↔ 정적 벽 접촉 미보고, 예측 접촉 때문에 `CollisionBegin`이 한 스텝 먼저 올 수 있음(충격은 솔버 전 추정), 래그돌 켠 채 EndPlay 시 `bPhysicsPose` 남음(플레이 씬은 버려서 현재 안전), 래그돌 캡슐은 접촉 이벤트 없음, 전용 서버는 모델 데이터 없어 래그돌 안 만듦, 부분 래그돌/일어나기/`.emeta` 뼈별 설정 UI
+
+## Phase 31 — 게임 중 맵 바꾸기 / 큰 맵 나눠 불러오기 (트랙 B)
+
+- [x] 31-1. 게임 중 맵 전환: Lua `Game.OpenScene/GetCurrentScene`, C++ `IGameNet::OpenScene`(서버·Standalone만, 클라이언트는 경고 + false). 처리는 `World/GameWorldTravel.h` `FGameWorldTravel::ConsumePending/Travel` 하나(런타임/서버/에디터 플레이/테스트 공용): 프레임 끝 → EndPlay → 정리 → 씬 비우기 → 로드 → 에셋 해석 → 정적 NetId → BeginPlay, 씬 객체는 유지하고 내용만 교체. 멀티플레이 = ServerTravel식(연결 유지, Travel/TravelAck, 이동 중 플레이어는 `FRemotePlayer::bInScene`으로 송수신 제외, Ack 후 `OnPlayerJoined` 재호출 → 폰 재생성·전체 상태). 씬 간 값 `Game.SetPersistent/GetPersistent/ClearPersistent`(프로세스 메모리만, 에디터는 정지 시 비움). 런타임 로딩 = 검은 화면 1프레임. `FPlayMode::Travel`(정지하면 편집 씬 복원). 샘플 `Demo_Travel_A/B`, `TravelPortal.lua`. 테스트 `SceneTravel_*` 4개
+- [x] 31-2. 서브 씬 스트리밍: `SubSceneVolumeComponent`(경로, HalfExtents, UnloadMargin) + `StreamingSourceComponent`(기준 = 주 카메라/캐릭터 이동/이 컴포넌트), Lua `Scene.LoadSubScene/UnloadSubScene/IsSubSceneLoaded/GetSubSceneRoot` + `OnSubSceneLoaded(path)`, `IGameNet` 3개. 파일 읽기·JSON 파싱만 `std::async`(`FSceneSerializer::ParseFile`), 엔티티 생성·프리팹 동기화·GPU는 다음 게임플레이 틱 메인 스레드(`AppendDocument`). 루트 엔티티 하나 아래(`FTransientComponent` — 메인 씬 저장 제외), 내릴 때 루트째 지연 파괴. 멀티플레이 SubSceneLoad/Unload, NetId = `1<<26 + (번호-1)*16384 + 하위 트리 순서`, 늦은 입장자에게 목록 먼저. 측정: 엔티티 1000개 Release 파싱 4.0ms + 붙이기 2.1ms, Demo_Streaming 붙이기 2.0~2.6ms. 데모 `Demo_Streaming` + `Streaming/Area1~3`. 테스트 `SubScene_*` 3개. `NetProtocolVersion` 10, `GameModuleApiVersion` 7 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): **pak 패키지에서 포털·스트리밍**(`.ps1` 막혀 미확인), 직접 조작으로 포털 진입, 인스펙터에서 서브 씬 볼륨 추가·편집, 실제 PC 2대로 전환 중 입장/퇴장
+- 후속: `FResourceManager` 메시/텍스처/머티리얼 캐시 해제 없음(맵마다 에셋이 다르면 메모리 누적), 이동 전 비신뢰 스냅샷이 이동 뒤 도착하는 경우(시퀀스 번호 없음), 클라이언트 서브 씬은 동기 처리, 서브 씬 붙일 때 씬 전체 에셋 해석 재실행, 파싱 중 내리면 대기, 같은 서브 씬 볼륨 2개/중첩 서브 씬 미정, 에디터 볼륨 표시·미리보기 없음, 로딩 화면 글자 없음
+
+## Phase 32 — 다국어 / 입력창 마무리 (트랙 C)
+
+- [x] 32-1. 다국어: `.estrings`(한 파일에 모든 언어 `{Version, Languages, Strings:{키:{언어:값}}}` — 편집 창이 파일 단위이고 pak은 폴더 나열이 안 돼서), `FLocalization`(UI 모듈, 엔진 DLL 하나 — 게임 모듈 C++ API, `GameModuleApiVersion` 변경 없음), 형식 인자 `{0}`/`{이름}`/`{{`, 찾기 현재 언어 → 기본 언어 → 키 그대로(키마다 경고 1회), 언어 결정 `--language` > `<Saved>/Config/Language.json` > 시스템 언어(설정) > 기본 언어. 프로젝트 설정 "Localization"(DefaultLanguage/StringTables/DetectSystemLanguage — 비면 `Content/Localization/*.estrings`, pak은 설정 필수). 위젯 `TextKey`/`HintTextKey`(그릴 때마다 조회 → 즉시 반영), Lua `Loc.*` + `widget.TextKey`, 문자열 표 편집 창 `FStringTableEditor`, 디자이너 키 선택·미리보기 언어. 샘플 `Strings.estrings`(20키), HUD L 키 한/영 전환. 테스트 UITests 5개 + `UIScript_LocalizationKeysAndLocTable`
+- [x] 32-2. `FUITextEdit` 순수 편집 로직(Shift 선택, Ctrl 단어 이동/지우기, Ctrl+A, 복사/잘라내기/붙여넣기 — 줄바꿈 → 공백, 최대 길이), 마우스 클릭/Shift+클릭/끌기 선택, Win32 클립보드(`UI/UIPlatformWindows.cpp`), 선택 영역 `SelectionColor`, IME 조합 밑줄(`FWindow::SetTextInput` — 켜져 있을 때 IME 메시지를 직접 처리, 후보 창은 캐럿 아래, 끄면 조합 취소; `WindowEvent::ImeComposition`). 에디터는 플레이 + 뷰포트 포커스 + 텍스트 상자 포커스일 때만 켬. 자동 검증 `--ui-text-demo select|compose`. 테스트 UITests 6개 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): 실제 한글 IME 입력(조합 밑줄, Enter 확정, 한자 후보 창 위치, 포커스 이동 시 취소, 창 재활성화 시 시스템 조합 창 깜빡임 — `WM_IME_SETCONTEXT` 미처리), Ctrl+C/X/V 실제 클립보드, Shift+클릭/끌기, L 키 언어 전환 후 다음 실행 유지, 디자이너 미리보기 언어·표 저장 즉시 반영
+- 후속: 더블클릭 단어 선택, `.estrings` 이동 시 `Config/Localization.json` 경로 미갱신, 설정 창 Localization 변경은 다음 실행부터, 한글 입력 모드에서 IME가 WASD를 가로챔(포커스 없을 때 `ImmAssociateContextEx`로 IME 끄기), ImGui 창을 메인 창 밖으로 떼면 캐럿 위치 어긋남, 여러 줄 텍스트 상자
+
+## Phase 33 — 화면 품질 (트랙 D)
+
+- [~] 33-1. 깊이/법선 사전 패스 + 움직임 벡터 + 지터 (공통 기반)
+- [ ] 33-2. TAA
+- [ ] 33-3. SSAO
+- [ ] 33-4. 데칼
+- [ ] 33-5. 높이 안개 + 볼류메트릭 안개
+- [ ] 33-6. 반사 (SSR + 반사 캡처)
+- [ ] 33-7. 외부 HDR 환경맵 하늘/IBL
+
+## Phase 34 — 지형 / 식생 (트랙 E, 2단계)
+
+- [~] 34-1. 지형 데이터·스컬프트/페인트 브러시·높이맵 충돌
+- [ ] 34-2. 지형 렌더링 (33-1 머지 후)
+- [ ] 34-3. 풀·나무 브러시 배치 (인스턴싱)
+
+## Phase 35 — 편집 도구 (트랙 F, 2단계)
+
+- [x] 35-1. 애니메이션 그래프 편집기 `FAnimGraphEditor`(imgui-node-editor): 상태(클립/1D 블렌드)·"어느 상태든" 노드, 핀 끌어 전이, 우클릭 메뉴(추가/복제/시작 상태/우선순위), 파라미터(이름 바꾸면 참조 갱신)·상태·블렌드 축 위젯·전이 조건 속성, 저장 전 편집 상태 미리보기, 플레이 중 디버그(현재 상태 초록/섞이는 상태 노랑, 가중치, 실제 파라미터). `.eanimgraph` v2(`EditorPosition`, `Editor{PreviewModel, AnyStatePosition}` — 읽기 v1/v2, 쓰기 v2; `FoxCharacter.eanimgraph`는 v1 유지). 핫 리로드 = `FAnimGraphLibrary` 세대 번호 + `Invalidate(경로)` → 바뀐 컴포넌트만 다시 묶기(파라미터 유지, 같은 이름 상태에서 이어감), 편집기 저장·파일 감시 공용. 테스트 `AnimGraphTests` 3개 추가
+- [x] 35-2. 컷신 시퀀서: `.esequence` v1(`Scene/Sequence.*`, `SequencePlayer.*`) 트랙 Transform/Property(숫자·색·bool·정수)/CameraCut/Animation(클립 구간)/Event, 보간 계단/직선/곡선(3차 에르미트). `FSequencePlayerComponent`(자동 재생, 반복, 속도, RestoreState, 비복제). 카메라 컷 = 대상 카메라 bPrimary + Priority(1<<20), 끝나면 두 값만 복원. 갱신 순서 스크립트 → **시퀀스** → 물리 예측…. Lua `entity:PlaySequence/StopSequence/PauseSequence/...`, `OnSequenceEvent_<이름>`/`OnSequenceFinished`(다음 틱). 편집기 `FSequenceEditor`(타임라인 스크럽/확대, 키·구간 끌기 + 프레임 맞춤(Alt 끔), K/더블클릭 현재 값 키, 복사/붙여넣기, 뷰포트·카메라 미리보기 — 닫기/플레이/씬 열기 시 복원, 저장·자동 저장·Undo에는 원래 값). 멀티플레이는 로컬 연출(맞추려면 Multicast RPC로 PlaySequence). 대상 바인딩 = 엔티티 이름 경로(재생 엔티티 하위 → 씬 전체). 데모 `Demo_Cinematic` + `Sequences/Intro.esequence`(11초). 테스트 `Sequence_*` 7개, `SequenceScript_PlayEventsAndFinish`. 버전 변경 없음 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): 그래프 노드/핀 끌기·블렌드 마름모, Demo_Animation 플레이 중 Fox 그래프 저장 → 핫 리로드 상태·파라미터 유지, 시퀀서 키/구간 끌기·Alt·K, 미리보기 켠 채 Undo/저장 시 원래 값 유지, Demo_Cinematic 연출 타이밍·구도·R/P 키
+- 후속: 소리 트랙, 애니메이션 그래프가 붙은 모델엔 애니메이션 트랙 미적용(경고), 복제 엔티티를 시퀀스로 움직이면 클라이언트 보간과 충돌, 미리보기 중 직접 고친 값은 다음 평가에 덮임, 회전 오일러 성분 보간(±90° 피치 어색), 편집기가 매 프레임 에셋 JSON 재생성, 링크 위 우선순위 번호 표시·키 여러 개 선택 없음

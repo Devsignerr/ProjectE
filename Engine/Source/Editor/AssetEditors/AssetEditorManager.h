@@ -44,6 +44,10 @@ public:
 	// 자동 검증 (--verify-asset-close): 열린 편집 창마다 값을 바꾼 뒤 저장하지 않고 닫는다. 반환: 닫은 창 수
 	uint32 VerifyCloseWithoutSave(FEditorContext& Context);
 
+	// 편집 씬 미리보기(시퀀서): 씬 저장/스냅샷 앞뒤로 Swap(두 번 = 원상태), 플레이 시작·씬 교체 전 End
+	void SwapScenePreviews(FEditorContext& Context);
+	void EndScenePreviews(FEditorContext& Context);
+
 	bool HasFocusedEditor() const { return bEditorFocused; }
 	size_t GetOpenCount() const { return Editors.size(); }
 

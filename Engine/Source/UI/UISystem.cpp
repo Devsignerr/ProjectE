@@ -7,6 +7,7 @@
 #include "UI/UIComponent.h"
 #include "UI/UIFont.h"
 #include "UI/UIInstance.h"
+#include "UI/UIPlatform.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -111,6 +112,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 	std::vector<FOrderedUI> Ordered = CollectVisible(Scene);
 	bool                    bTaken  = false; // 위 UI가 포인터를 가져갔으면 아래 UI는 포인터 밖으로
 	bool                    bKeysTaken = false;
+	FUIInputResult          Result;
 	for (auto It = Ordered.rbegin(); It != Ordered.rend(); ++It)
 	{
 		FUIComponent& Component = *It->Component;
@@ -139,16 +141,28 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 		}
 		if (bInput)
 		{
+			if (Keys.bPaste && Keys.PasteText.empty() && Instance->WantsKeyboard())
+			{
+				Keys.PasteText = FUIPlatform::GetClipboardText(); // Ctrl+V + 포커스된 텍스트 상자일 때만 OS 클립보드를 읽는다
+			}
 			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds);
 			bTaken                         = bTaken || Component.Runtime.bPointerOver;
-			bKeysTaken                     = bKeysTaken || Instance->WantsKeyboard();
+			// 복사/잘라내기 → OS 클립보드
+			if (std::string Copied; Instance->GetInputRouter().TakeClipboardText(Copied))
+			{
+				FUIPlatform::SetClipboardText(Copied);
+			}
+			if (!bKeysTaken && Instance->WantsKeyboard())
+			{
+				bKeysTaken           = true;
+				Result.bHasTextCaret = Instance->GetTextCaretPixels(Result.TextCaret, Fonts);
+			}
 		}
 		else
 		{
 			Instance->Layout(Input.Viewport, Fonts);
 		}
 	}
-	FUIInputResult Result;
 	Result.bPointer  = bTaken;
 	Result.bKeyboard = bKeysTaken;
 	return Result;
@@ -192,6 +206,18 @@ FUIKeyInput FUISystem::MakeKeys(const FInput& Input)
 			Keys.Typed.push_back(Char); // 제어 문자(Backspace 0x08, Enter 0x0D, Tab 0x09 등)는 아래 키로
 		}
 	}
+	const bool bControl = Input.IsKeyDown(EKey::LeftControl) || Input.IsKeyDown(EKey::RightControl);
+	const bool bAlt     = Input.IsKeyDown(EKey::LeftAlt) || Input.IsKeyDown(EKey::RightAlt);
+	const bool bShortcut = bControl && !bAlt; // AltGr(= Ctrl+Alt) 글자 입력과 구분
+	Keys.bShift         = bShift;
+	Keys.bWordMove      = bShortcut;
+	Keys.bSelectAll     = bShortcut && Input.IsKeyPressed(EKey::A);
+	Keys.bCopy          = bShortcut && (Input.IsKeyPressed(EKey::C) || Input.IsKeyPressed(EKey::Insert));
+	Keys.bCut           = bShortcut && Input.IsKeyRepeated(EKey::X);
+	Keys.bPaste         = (bShortcut && Input.IsKeyRepeated(EKey::V)) || (bShift && !bControl && Input.IsKeyPressed(EKey::Insert));
+	// 붙여넣을 글자(OS 클립보드)는 FUISystem::Update가 텍스트 상자에 포커스가 있을 때만 읽는다
+	Keys.Composition       = Input.GetCompositionText();
+	Keys.CompositionCursor = Input.GetCompositionCursor();
 	Keys.bBackspace = Input.IsKeyRepeated(EKey::Backspace);
 	Keys.bDelete    = Input.IsKeyRepeated(EKey::Delete);
 	Keys.bLeft      = Input.IsKeyRepeated(EKey::Left);

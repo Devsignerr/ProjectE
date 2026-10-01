@@ -467,7 +467,7 @@ void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances, D3D1
 		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
 		{
 			const FMeshInstance& Instance = List[InstanceIndex];
-			if (Slice.IsCaster(Instance.WorldBounds))
+			if (Instance.bCastShadow && Slice.IsCaster(Instance.WorldBounds))
 			{
 				ShadowBatches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
 			}
@@ -478,6 +478,13 @@ void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances, D3D1
 		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, ShadowBatches.GetIndexBuffer());
 		DrawDepthBatches(CommandList, ShadowBatches, Instances, ShadowPipeline.Get(), ShadowSkinnedPipeline.Get(), ShadowParam_PassConstants, 16,
 		                 ShadowDrawCalls, ShadowTriangles);
+	}
+	// 추가 캐스터 (지형 등): 장마다 DSV를 다시 바인딩해 그린다
+	for (uint32 Index = 0; ExtraCasters && Index < ShadowSlices.size(); ++Index)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = ShadowDsvHeap.GetCpuHandle(Index);
+		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
+		ExtraCasters(CommandList, ShadowSlices[Index].ViewProjection, ShadowSlices[Index].Frustum, true);
 	}
 
 	const D3D12_RESOURCE_BARRIER ToShaderResource =

@@ -67,6 +67,14 @@ struct FNetworkSettings
 	float  PhysicsPredictionRadius = 300.0f;   // cm, 예측 캐릭터 중심에서 이 거리 안의 바디 중심이면 예측 대상
 };
 
+// "Localization" — 다국어 (UI 모듈 FLocalization이 처음 쓸 때 읽는다)
+struct FLocalizationSettings
+{
+	std::string DefaultLanguage = "ko";        // 현재 언어에 없는 문자열의 대체 언어, 처음 실행 언어
+	std::string StringTables;                  // Content 기준 .estrings (";" 구분). 비면 디스크의 Content/Localization/*.estrings
+	bool        bDetectSystemLanguage = false; // 사용자 설정이 없을 때 시스템 언어가 표에 있으면 그 언어
+};
+
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.
 // "Display" 섹션은 FGameUserSettings(창 모드/해상도/VSync)의 프로젝트 기본값이다 — 사용자 설정 파일이 그 위에 덮인다.
 class FProjectSettings
@@ -81,6 +89,7 @@ public:
 	FNetworkSettings     Network;
 	FGameUserSettings    Display;
 	FInputSettings       Input; // "Input" — 입력 액션/바인딩 (Config/Input.json, 사용자 재지정 포함)
+	FLocalizationSettings Localization;
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

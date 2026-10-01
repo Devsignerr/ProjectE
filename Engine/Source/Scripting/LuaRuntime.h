@@ -79,6 +79,7 @@ public:
 	void SetAIHooks(const FScriptAIHooks* InHooks) { AIHooks = InHooks; }                // 〃
 	void SetAppHooks(const FScriptAppHooks* InHooks) { AppHooks = InHooks; }             // 〃
 	void SetSteamHooks(const FScriptSteamHooks* InHooks) { SteamHooks = InHooks; }       // 〃
+	void SetPersistentValues(FScriptValueMap* InValues) { PersistentValues = InValues; } // 〃 (Game.SetPersistent)
 
 	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
 	uint32 CreateObject(const std::string& ScriptAsset, const std::string& Overrides, FEntity Entity);
@@ -91,6 +92,8 @@ public:
 	bool         RunString(std::string_view Code);
 	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
 	void         BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+	// InvokeMethod + 마지막 인자로 필드 표(Lua 테이블) — 충돌 정보 등 (ScriptPhysicsBindings.cpp)
+	bool         InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields);
 	void         RequestDestroy(FEntity Entity) { PendingDestroy.push_back(Entity); } // entity:Destroy()와 같은 지연 파괴
 	size_t       GetInstanceCount() const { return Instances.size(); }
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name);
@@ -135,8 +138,12 @@ private:
 	void RegisterGameBindings();   // Game 테이블: 종료, 화면 설정 + Steam 테이블 (ScriptGameBindings.cpp)
 	void RegisterGameplayBindings(); // 체력/데미지(entity:ApplyDamage 등), GameMode, SaveGame 테이블 (ScriptGameplayBindings.cpp)
 	void RegisterAnimationGraphBindings(); // entity:SetAnimParam/GetAnimParam/GetAnimState (ScriptAnimationBindings.cpp)
+	void RegisterPhysicsBindings();        // entity:EnableRagdoll/DisableRagdoll/IsRagdollActive (ScriptPhysicsBindings.cpp)
 	// 이번 프레임 게임 UI 이벤트를 스크립트 함수로 전달 (OnUIClicked_<위젯 이름> 등, ScriptUIBindings.cpp)
 	void DispatchUIEvents();
+	void RegisterSequenceBindings(); // entity:PlaySequence/StopSequence 등 (ScriptSequenceBindings.cpp)
+	// 직전 시퀀스 갱신의 이벤트 → OnSequenceEvent_<이름>, OnSequenceFinished (ScriptSequenceBindings.cpp)
+	void DispatchSequenceEvents();
 
 	// Scene.SpawnPrefab 요청: 스크립트 갱신 루프 밖에서 만든다 (ApplyPendingSpawns)
 	struct FPendingSpawn
@@ -175,6 +182,7 @@ private:
 	const FScriptAIHooks*      AIHooks      = nullptr;
 	const FScriptAppHooks*     AppHooks     = nullptr;
 	const FScriptSteamHooks*   SteamHooks   = nullptr;
+	FScriptValueMap*           PersistentValues = nullptr;
 	FVector2                   LocalControlRotation; // 훅이 없을 때(테스트) Net.SetControlRotation 값
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로

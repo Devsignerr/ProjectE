@@ -33,6 +33,8 @@ struct FMeshInstance
 	uint32                    PrevBoneOffset = 0; // 스킨: 같은 버퍼 안 이전 프레임 팔레트 (이력 없으면 BoneOffset)
 	uint32                    Lod         = 0; // 메인 카메라 화면 크기로 고른 LOD (그림자 패스도 같은 값)
 	bool                      bSkinned    = false;
+	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)
+	bool                      bFixedLod   = false; // true면 씬 렌더러 LOD 선택이 건드리지 않는다 (폴리지가 직접 고름)
 
 	bool IsSkinned() const { return bSkinned; }
 };
@@ -50,6 +52,8 @@ public:
 	void GatherEntities(FScene& Scene, const FResourceManager& Resources, const std::vector<FEntity>& Entities, const FSkinnedMeshPalette* SkinPalettes);
 	// 정적 인스턴스의 월드/법선 행렬, 스킨 인스턴스의 본 오프셋을 올린다 (Gather 뒤 한 번)
 	void Upload(FD3D12DynamicUploadBuffer& DynamicBuffer);
+	// 씬 컴포넌트 밖 인스턴스 추가 (Gather 뒤, Upload 전 — 폴리지). Mesh/Material/핸들/World/WorldBounds/Entity를 채워 넘긴다
+	void AddExternal(const FMeshInstance& Instance) { Instances.push_back(Instance); }
 
 	const std::vector<FMeshInstance>& GetInstances() const { return Instances; }
 	std::vector<FMeshInstance>&       GetInstances() { return Instances; } // LOD 지정용

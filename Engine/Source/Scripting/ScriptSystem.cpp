@@ -31,6 +31,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	PlayRuntime->SetAIHooks(&AIHooks);
 	PlayRuntime->SetAppHooks(&AppHooks);
 	PlayRuntime->SetSteamHooks(&SteamHooks);
+	PlayRuntime->SetPersistentValues(&PersistentValues);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;
@@ -226,4 +227,9 @@ bool FScriptSystem::RequestDestroy(FEntity Entity)
 	}
 	PlayRuntime->RequestDestroy(Entity);
 	return true;
+}
+
+bool FScriptSystem::InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields)
+{
+	return PlayRuntime != nullptr && PlayRuntime->InvokeMethodWithFields(Target, MethodName, Args, Fields);
 }

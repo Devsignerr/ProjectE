@@ -181,9 +181,21 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255), "파티클" };
 	}
+	if (Extension == ".eterrain")
+	{
+		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(150, 190, 110, 255), "지형" };
+	}
+	if (Extension == ".efoliage")
+	{
+		return { ICON_FA_TREE, IM_COL32(110, 200, 120, 255), "폴리지" };
+	}
 	if (Extension == ".eui")
 	{
 		return { ICON_FA_DISPLAY, IM_COL32(120, 200, 255, 255), "UI" };
+	}
+	if (Extension == ".estrings")
+	{
+		return { ICON_FA_LANGUAGE, IM_COL32(150, 210, 140, 255), "문자열 표" };
 	}
 	if (Extension == ".eprefab")
 	{
@@ -192,6 +204,14 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	if (Extension == ".ebt")
 	{
 		return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(120, 150, 255, 255), "비헤이비어 트리" };
+	}
+	if (Extension == ".eanimgraph")
+	{
+		return { ICON_FA_PERSON_RUNNING, IM_COL32(240, 150, 90, 255), "애니메이션 그래프" };
+	}
+	if (Extension == ".esequence")
+	{
+		return { ICON_FA_CLAPPERBOARD, IM_COL32(230, 200, 90, 255), "시퀀스" };
 	}
 	if (Extension == ".escene")
 	{
@@ -238,6 +258,7 @@ const char* FEditorTheme::GetComponentIcon(std::string_view TypeName)
 		{ "PointLightComponent", ICON_FA_LIGHTBULB },
 		{ "SpotLightComponent", ICON_FA_FILTER },
 		{ "SkyLightComponent", ICON_FA_CLOUD_MOON },
+		{ "SequencePlayerComponent", ICON_FA_CLAPPERBOARD },
 	};
 	for (const FEntry& Entry : Entries)
 	{

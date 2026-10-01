@@ -4,6 +4,7 @@
 #include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsMath.h"
 #include "Physics/PhysicsWorld.h"
+#include "Scene/CollisionEvents.h"
 
 #include <functional>
 #include <memory>
@@ -11,6 +12,8 @@
 #include <vector>
 
 class FScene;
+class FTerrainCollision;
+class FFoliageCollision;
 
 struct FPhysicsHit
 {
@@ -37,6 +40,20 @@ struct FPhysicsBodyMotion
 //     3) 고정 스텝 진행, 동적 바디의 직전/현재 상태 보관
 //     4) 동적: 보간된 결과를 트랜스폼에 쓴다 (부모가 있으면 로컬로 역변환). 스크립트가 트랜스폼을 직접 바꿨으면 순간이동으로 처리
 // 편집 모드에서는 쓰지 않는다 (플레이 시작 Begin, 정지 End).
+//
+// 충돌 알림 (Scene/CollisionEvents.h): 콜라이더 bIsTrigger = 트리거(센서, 부딪히지 않음), 그 밖은 일반 접촉.
+//   보고 대상 바디 = 트리거 || 강체 bReportContacts || SetContactReportFilter가 참인 엔티티(FGameWorld: 스크립트가 붙은 엔티티).
+//   쌍의 한쪽만 보고 대상이어도 양쪽 엔티티 이벤트가 생긴다. 보고 대상이 아닌 쌍은 Jolt 콜백에서 바로 버린다 (비용).
+//   Jolt 콜백(작업 스레드)에서 모은 것을 스텝 뒤 메인 스레드에서 정리해 GetCollisionEvents에 쌓는다 (Update마다 처음에 비움).
+//   전달(스크립트/게임 모듈)은 FGameWorld가 물리·UpdateTransforms 뒤에 한다. 캐릭터는 내부 키네마틱 바디로 감지된다
+//   (트리거에 들어옴, 동적 물체와 부딪힘 — 정적 벽에 닿는 것은 캐릭터 이동 쪽이라 알리지 않는다)
+//   바디를 다시 만들면(모양/운동 형식 변경) 그 쌍은 끝 → 다시 시작으로 보인다
+//
+// 관절 (FFixed/Hinge/Distance/BallJointComponent, 필드 설명은 PhysicsComponents.h): 바디 동기화 뒤 엔티티의 바디(Body2)와
+//   Target의 바디(Body1, 없으면 월드 · 캐릭터면 내부 키네마틱 바디)를 잇는다. 연결 지점/축은 만드는 순간의 바디 자세 기준.
+//   설정이나 양쪽 바디가 바뀌면 지금 자세로 다시 만든다. 둘 다 동적이 아니면(예: 클라이언트의 복제 키네마틱 바디끼리) 만들지 않는다.
+//   끊어짐: BreakForce > 0이면 스텝마다 위치 구속 힘(N)을 재서 넘으면 지우고 JointBreak 이벤트 (GetCollisionEvents) —
+//   컴포넌트를 지우거나 플레이를 다시 시작할 때까지 끊긴 채로 둔다
 class FPhysicsSystem
 {
 public:
@@ -60,6 +77,10 @@ public:
 	// 참을 돌려주는 엔티티의 동적 바디를 키네마틱으로 만든다 (네트워크 클라이언트: 서버가 시뮬레이션한 복제 엔티티는
 	// 복제된 트랜스폼을 따라가고, 로컬 물체와는 충돌한다). 바꾸면 다음 Update에서 해당 바디를 다시 만든다
 	void SetKinematicOverride(std::function<bool(const FScene&, FEntity)> Predicate) { KinematicOverride = std::move(Predicate); }
+
+	// ---- 충돌 알림 (클래스 주석). 필터: 이 밖의 엔티티도 보고 대상으로 (매 Sync 다시 묻는다, nullptr = 없음)
+	void SetContactReportFilter(std::function<bool(const FScene&, FEntity)> Predicate) { ContactReportFilter = std::move(Predicate); }
+	const std::vector<FCollisionEvent>& GetCollisionEvents() const { return CollisionEvents; } // 지난 Update에서 생긴 것
 
 	// ---- 게임플레이 API (cm, kg). 바디가 없는 엔티티는 무시 / false
 	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const;
@@ -105,6 +126,18 @@ public:
 	// 캐릭터가 동적 바디를 미는지 (모든 캐릭터). 예측 재조정에서 무브를 다시 적용하는 동안 끈다 — 이미 민 물체를 또 밀지 않게
 	void            SetCharactersPushBodies(bool bPush);
 
+	// ---- 관절 (클래스 주석)
+	uint32 GetJointCount() const;                // 지금 살아 있는 관절 수
+	bool   IsJointBroken(FEntity Entity) const;  // 이 엔티티의 관절 컴포넌트 중 하나라도 끊어졌는가
+	bool   HasJoint(FEntity Entity) const;       // 이 엔티티의 관절이 하나라도 만들어져 있는가
+
+	// ---- 래그돌 (규칙은 Physics/Ragdoll.h). Entity = 모델 루트(FAnimationComponent) 또는 그 조상 — 자신이 아니면 자손에서 찾는다
+	bool   EnableRagdoll(FScene& Scene, FEntity Entity); // 이미 켜져 있거나 뼈대가 없으면 false
+	void   DisableRagdoll(FScene& Scene, FEntity Entity);
+	bool   IsRagdollActive(const FScene& Scene, FEntity Entity) const;
+	uint32 GetRagdollPartCount(const FScene& Scene, FEntity Entity) const; // 켜진 래그돌의 캡슐 수 (0 = 꺼짐)
+	static FEntity FindRagdollModel(const FScene& Scene, FEntity Entity);   // 래그돌을 만들 모델 루트 (없으면 무효)
+
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
 	const FFixedStepper& GetStepper() const { return Stepper; }
 	FPhysicsWorld*       GetWorld() { return World.get(); }
@@ -149,4 +182,66 @@ private:
 	uint64                                    FrameCounter = 0;
 	bool                                      bInterpolate = true;
 	std::function<bool(const FScene&, FEntity)> KinematicOverride;
+
+	// 관절: (엔티티, 종류)마다 하나
+	struct FJointKey
+	{
+		FEntity Entity;
+		uint8   Kind = 0;
+		bool    operator==(const FJointKey& Other) const { return Entity == Other.Entity && Kind == Other.Kind; }
+	};
+	struct FJointKeyHash
+	{
+		size_t operator()(const FJointKey& Key) const noexcept { return std::hash<uint64>{}(Key.Entity.ToId() * 4u + Key.Kind); }
+	};
+	struct FJointState
+	{
+		uint32             Constraint = FPhysicsWorld::InvalidBody; // 실패/끊김이면 무효
+		uint32             Body1      = FPhysicsWorld::InvalidBody;
+		uint32             Body2      = FPhysicsWorld::InvalidBody;
+		std::vector<float> Signature; // 만들 때의 설정 (바뀌면 다시 만든다)
+		FEntity            Target;
+		float              BreakForce = 0.0f;
+		bool               bBroken    = false;
+		uint64             LastSeenFrame = 0;
+	};
+	void SyncJoints(FScene& Scene);
+	void CheckJointBreaks();
+	std::unordered_map<FJointKey, FJointState, FJointKeyHash> Joints;
+
+	// 래그돌 (Physics/PhysicsRagdoll.cpp)
+	struct FRagdollPart
+	{
+		int32      Node = -1;
+		uint32     Body = FPhysicsWorld::InvalidBody;
+		FMatrix4x4 BoneFromBody;   // 뼈 월드(강체) = BoneFromBody * 캡슐 월드 (행벡터: 뼈가 캡슐의 자식)
+		FVector3   BoneScale;      // 켤 때의 뼈 월드 스케일
+		FVector3   PreviousPosition, CurrentPosition;
+		FQuat      PreviousRotation, CurrentRotation;
+	};
+	struct FSavedNodePose
+	{
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale;
+	};
+	struct FRagdollState
+	{
+		std::vector<FRagdollPart>   Parts;
+		std::vector<uint32>         Constraints;
+		std::vector<int32>          PartOfNode; // 노드 → 캡슐 (-1 = 부모를 따라간다)
+		std::vector<int32>          NodeOrder;  // 부모 먼저
+		std::vector<FSavedNodePose> Saved;      // 켤 때의 노드 로컬 트랜스폼 (끄면 되돌린다)
+	};
+	std::unordered_map<FEntity, FRagdollState> Ragdolls; // 모델 루트 → 래그돌
+	void DestroyRagdollBodies(FRagdollState& State);
+	void SyncRagdolls(FScene& Scene);     // 사라진 모델 정리
+	void WriteRagdollPoses(FScene& Scene); // 캡슐 → 뼈 로컬 트랜스폼
+
+	void CollectContactEvents(); // 월드 이벤트 → 엔티티 기준 이벤트 (양쪽)
+	std::function<bool(const FScene&, FEntity)> ContactReportFilter;
+	std::vector<FCollisionEvent>                CollisionEvents;
+	std::vector<FPhysicsContactEvent>           ContactScratch;
+	std::unique_ptr<FTerrainCollision>          TerrainCollision; // 지형 높이맵 충돌 (TerrainCollision.h)
+	std::unique_ptr<FFoliageCollision>          FoliageCollision; // 나무 캡슐 충돌 (FoliageCollision.h)
 };

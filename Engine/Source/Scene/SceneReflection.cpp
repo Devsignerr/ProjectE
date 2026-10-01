@@ -6,6 +6,10 @@
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
+#include "Scene/SequencePlayer.h"
+#include "Scene/SubScene.h"
+#include "Scene/Foliage.h"
+#include "Scene/Terrain.h"
 
 void RegisterSceneTypes()
 {
@@ -225,4 +229,28 @@ void RegisterSceneTypes()
 		.Property(&FReflectionCaptureComponent::Priority, "Priority", "우선순위").Tooltip("겹치면 큰 값이 먼저")
 		.Property(&FReflectionCaptureComponent::CaptureAsset, "CaptureAsset", "구운 큐브맵").AssetFilter(".ecapture")
 		.AsComponent();
+	// 서브 씬 스트리밍 (Scene/SubScene.h, Phase 31-2)
+	Registry.RegisterType<FSubSceneVolumeComponent>("SubSceneVolumeComponent", "서브 씬 볼륨")
+		.Property(&FSubSceneVolumeComponent::SubScene, "SubScene", "서브 씬").AssetFilter(".escene")
+		.Property(&FSubSceneVolumeComponent::HalfExtents, "HalfExtents", "상자 반 크기 (cm)").Range(1.0f, 1.0e6f, 10.0f)
+		.Property(&FSubSceneVolumeComponent::UnloadMargin, "UnloadMargin", "내리기 여유 (cm)").Range(0.0f, 1.0e6f, 10.0f)
+		.Tooltip("기준이 상자 안이면 불러오고, 모든 기준이 상자 + 여유 밖이면 내린다")
+		.AsComponent();
+	Registry.RegisterType<FStreamingSourceComponent>("StreamingSourceComponent", "스트리밍 기준")
+		.AsComponent();
+
+	// 컷신 시퀀스 재생 (Scene/SequencePlayer.h, Phase 35-2): 복제하지 않는 로컬 연출 (각 프로세스가 자기 시계로 재생)
+	Registry.RegisterType<FSequencePlayerComponent>("SequencePlayerComponent", "시퀀스 재생")
+		.Property(&FSequencePlayerComponent::Sequence, "Sequence", "시퀀스").AssetFilter(".esequence")
+		.Property(&FSequencePlayerComponent::bAutoPlay, "AutoPlay", "자동 재생")
+		.Property(&FSequencePlayerComponent::bLoop, "Loop", "반복")
+		.Property(&FSequencePlayerComponent::PlayRate, "PlayRate", "재생 속도").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FSequencePlayerComponent::bRestoreState, "RestoreState", "끝나면 원래 값으로")
+		.Tooltip("끄면 마지막 값 유지 (열린 문 등). 카메라 컷은 항상 원래 카메라로 돌아간다")
+		.NoReplicate()
+		.AsComponent();
+	// 지형 (Scene/Terrain.h, Phase 34)
+	RegisterTerrainTypes();
+	// 풀·나무 (Scene/Foliage.h, Phase 34-3)
+	RegisterFoliageTypes();
 }

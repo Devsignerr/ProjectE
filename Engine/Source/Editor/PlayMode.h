@@ -12,6 +12,7 @@
 class FGameWorld;
 class FInput;
 struct FEditorContext;
+struct FSceneTravelTargets;
 
 // 플레이 시작 옵션 (기본 = 1인용: 편집 씬 복제)
 struct FPlayOptions
@@ -52,6 +53,11 @@ public:
 
 	// 게임 로직 한 프레임 (FGameWorld::TickGameplay). 실제로 진행했으면 true. Input은 nullptr 허용 (UI가 입력을 가져간 경우)
 	bool Tick(FEditorContext& Context, float DeltaSeconds, const FInput* Input);
+
+	// 플레이 중 맵 전환 (Game.OpenScene / 서버 지시 — 앱이 Tick 뒤 FGameWorldTravel::ConsumePending으로 꺼낸 것):
+	// PlayScene 내용만 새 씬 파일로 바꾼다 (Context.Scene 포인터는 그대로, 편집 씬은 건드리지 않음 → 정지하면 원래 편집 씬 복원).
+	// Targets의 World/Scene/Resources/ContentDirectory는 여기서 채운다 (네트워크 부분은 호출자가)
+	void Travel(FEditorContext& Context, FSceneTravelTargets Targets, const std::string& SceneAsset);
 
 	// 주 카메라 컴포넌트가 있으면 GameCamera를 그 시점으로 갱신하고 반환, 없으면 nullptr (에디터 카메라 사용)
 	FCamera* UpdateGameCamera(float AspectRatio);

@@ -109,4 +109,44 @@ namespace NetMessages
 		Message.Reason = Reader->ReadString();
 		return FinishRead(*Reader, std::move(Message));
 	}
+
+	std::vector<uint8> Encode(const FNetTravel& Message)
+	{
+		FBinaryWriter Writer = BeginMessage(ENetMessageType::Travel);
+		Writer.Write(Message.TravelId);
+		Writer.WriteString(Message.SceneAsset);
+		return Writer.GetBuffer();
+	}
+
+	std::vector<uint8> Encode(const FNetTravelAck& Message)
+	{
+		FBinaryWriter Writer = BeginMessage(ENetMessageType::TravelAck);
+		Writer.Write(Message.TravelId);
+		return Writer.GetBuffer();
+	}
+
+	std::optional<FNetTravel> DecodeTravel(const std::vector<uint8>& Data)
+	{
+		std::optional<FBinaryReader> Reader = BeginRead(Data, ENetMessageType::Travel);
+		if (!Reader)
+		{
+			return std::nullopt;
+		}
+		FNetTravel Message;
+		Message.TravelId   = Reader->Read<uint32>();
+		Message.SceneAsset = Reader->ReadString();
+		return FinishRead(*Reader, std::move(Message));
+	}
+
+	std::optional<FNetTravelAck> DecodeTravelAck(const std::vector<uint8>& Data)
+	{
+		std::optional<FBinaryReader> Reader = BeginRead(Data, ENetMessageType::TravelAck);
+		if (!Reader)
+		{
+			return std::nullopt;
+		}
+		FNetTravelAck Message;
+		Message.TravelId = Reader->Read<uint32>();
+		return FinishRead(*Reader, std::move(Message));
+	}
 }

@@ -48,6 +48,8 @@ struct FUIInputResult
 {
 	bool bPointer  = false;
 	bool bKeyboard = false; // 포커스된 텍스트 상자
+	bool    bHasTextCaret = false; // 키보드를 가져간 텍스트 상자의 캐럿 (화면 픽셀, Viewport와 같은 좌표계) → 앱이 IME 후보 창 위치로 (FWindow::SetTextInput)
+	FUIRect TextCaret;
 };
 
 // 씬의 UI 컴포넌트 처리 (상태는 컴포넌트 Runtime에 있다 — 시스템 자체는 상태 없음).

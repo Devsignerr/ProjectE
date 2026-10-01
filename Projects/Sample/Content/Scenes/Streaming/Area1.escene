@@ -1,0 +1,821 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Crate_0_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2600.0, -300.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_0_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2600.0, -150.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_0_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2600.0, 0.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_0_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2600.0, 150.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_0_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2600.0, 300.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_1_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2430.0, -300.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_1_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2430.0, -150.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_1_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2430.0, 0.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_1_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2430.0, 150.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_1_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2430.0, 300.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_2_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2260.0, -300.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_2_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2260.0, -150.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_2_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2260.0, 0.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_2_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2260.0, 150.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_2_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2260.0, 300.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_3_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2090.0, -300.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_3_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2090.0, -150.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_3_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2090.0, 0.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_3_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2090.0, 150.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_3_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2090.0, 300.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_4_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1920.0, -300.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_4_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1920.0, -150.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_4_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1920.0, 0.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_4_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1920.0, 150.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_4_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1920.0, 300.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_5_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1750.0, -300.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_5_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1750.0, -150.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_5_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1750.0, 0.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_5_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1750.0, 150.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_5_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1750.0, 300.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_6_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1580.0, -300.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_6_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1580.0, -150.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_6_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1580.0, 0.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_6_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1580.0, 150.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_6_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1580.0, 300.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_7_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1410.0, -300.0, 70.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_7_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1410.0, -150.0, 45.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_7_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1410.0, 0.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_7_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1410.0, 150.0, 57.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 1.15]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Crate_7_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1410.0, 300.0, 32.5],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.65]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    },
+    {
+      "Name": "Area1_Sign",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-2000.0, 0.0, 420.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.6, 0.2, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 #include "UI/Widget.h"
 
+#include "UI/Localization.h"
+
 #include <algorithm>
 
 namespace
@@ -12,6 +14,16 @@ namespace
 		return Brush;
 	}
 } // namespace
+
+const std::string& GetDisplayText(const FUIWidgetData& Widget)
+{
+	return Widget.Type == EUIWidgetType::Text && !Widget.TextKey.empty() ? FLocalization::Get().Lookup(Widget.TextKey) : Widget.Text;
+}
+
+const std::string& GetDisplayHintText(const FUIWidgetData& Widget)
+{
+	return !Widget.HintTextKey.empty() ? FLocalization::Get().Lookup(Widget.HintTextKey) : Widget.HintText;
+}
 
 EUIVisibility FUIWidget::GetDefaultVisibility(EUIWidgetType Type)
 {

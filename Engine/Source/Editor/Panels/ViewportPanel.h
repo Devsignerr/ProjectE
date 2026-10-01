@@ -7,6 +7,7 @@
 #include "UI/UIDrawList.h"
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -65,6 +66,9 @@ public:
 
 	// 표시할 내비메시 (FNavMesh::GetDebugTriangles, 엔진 좌표). 다음 렌더에서 GPU 버퍼로 올린다. 빈 목록 = 지움
 	void SetNavMeshTriangles(std::vector<FVector3> Triangles);
+
+	// 편집 도구 오버레이 (지형/폴리지 브러시): (Context, Input, 이미지 좌상단, 이미지 크기, 마우스 위) → true면 기즈모/클릭 선택 생략
+	std::function<bool(FEditorContext&, const FInput&, const FVector2&, const FVector2&, bool)> ToolOverlay;
 
 private:
 	using EGizmoOperation = ETransformTool;

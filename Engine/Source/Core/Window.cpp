@@ -3,6 +3,13 @@
 #include "Core/Assert.h"
 #include "Core/Platform/WindowsHeaders.h"
 
+#include <imm.h>
+
+#include <string>
+#include <vector>
+
+#pragma comment(lib, "imm32") // IME 조합 (게임 UI 텍스트 입력)
+
 namespace
 {
 	constexpr const wchar_t* GWindowClassName = L"ProjectEWindowClass";
@@ -307,8 +314,176 @@ int64 __stdcall FWindow::WndProc(HWND InHwnd, uint32 Message, uint64 WParam, int
 	return DefWindowProcW(InHwnd, Message, WParam, LParam);
 }
 
+void FWindow::SetTextInput(bool bActive, int32 CaretX, int32 CaretY, int32 CaretHeight)
+{
+	if (Hwnd == nullptr)
+	{
+		return;
+	}
+	if (!bActive)
+	{
+		if (bTextInput)
+		{
+			bTextInput = false;
+			TextCaret[0] = TextCaret[1] = TextCaret[2] = -1;
+			if (HIMC Himc = ImmGetContext(Hwnd))
+			{
+				ImmNotifyIME(Himc, NI_COMPOSITIONSTR, CPS_CANCEL, 0); // 포커스를 잃은 입력칸의 조합 중 글자는 버린다
+				ImmReleaseContext(Hwnd, Himc);
+			}
+			if (!ImeComposition.empty())
+			{
+				ImeComposition.clear();
+				DispatchComposition(0);
+			}
+		}
+		return;
+	}
+	bTextInput = true;
+	if (TextCaret[0] == CaretX && TextCaret[1] == CaretY && TextCaret[2] == CaretHeight)
+	{
+		return;
+	}
+	TextCaret[0] = CaretX;
+	TextCaret[1] = CaretY;
+	TextCaret[2] = CaretHeight;
+	if (HIMC Himc = ImmGetContext(Hwnd))
+	{
+		COMPOSITIONFORM Composition = {};
+		Composition.dwStyle         = CFS_FORCE_POSITION;
+		Composition.ptCurrentPos    = { CaretX, CaretY + CaretHeight };
+		ImmSetCompositionWindow(Himc, &Composition);
+		CANDIDATEFORM Candidate = {};
+		Candidate.dwIndex       = 0;
+		Candidate.dwStyle       = CFS_EXCLUDE; // 캐럿 줄을 가리지 않게 아래에
+		Candidate.ptCurrentPos  = { CaretX, CaretY + CaretHeight };
+		Candidate.rcArea        = { CaretX, CaretY, CaretX + 1, CaretY + CaretHeight };
+		ImmSetCandidateWindow(Himc, &Candidate);
+		ImmReleaseContext(Hwnd, Himc);
+	}
+}
+
+void FWindow::DispatchComposition(int32 Cursor)
+{
+	FWindowEvent Event{};
+	Event.Type              = EWindowEventType::ImeComposition;
+	Event.Composition       = ImeComposition.data();
+	Event.CompositionLength = static_cast<uint32>(ImeComposition.size());
+	Event.CompositionCursor = Cursor;
+	Dispatch(Event);
+}
+
+void FWindow::HandleImeComposition(int64 LParam)
+{
+	HIMC Himc = ImmGetContext(Hwnd);
+	if (Himc == nullptr)
+	{
+		return;
+	}
+	// UTF-16 → 코드 포인트. OutUnitsToPoints[i] = i번째 UTF-16 단위 앞까지의 코드 포인트 수
+	const auto ReadString = [Himc](DWORD Index, std::u32string& Out, std::vector<int32>* OutUnitsToPoints) {
+		Out.clear();
+		const LONG Bytes = ImmGetCompositionStringW(Himc, Index, nullptr, 0);
+		if (Bytes <= 0)
+		{
+			if (OutUnitsToPoints != nullptr)
+			{
+				OutUnitsToPoints->assign(1, 0);
+			}
+			return;
+		}
+		std::wstring Wide(static_cast<size_t>(Bytes) / sizeof(wchar_t), L'\0');
+		ImmGetCompositionStringW(Himc, Index, Wide.data(), static_cast<DWORD>(Bytes));
+		if (OutUnitsToPoints != nullptr)
+		{
+			OutUnitsToPoints->clear();
+		}
+		for (size_t Unit = 0; Unit < Wide.size(); ++Unit)
+		{
+			if (OutUnitsToPoints != nullptr)
+			{
+				OutUnitsToPoints->push_back(static_cast<int32>(Out.size()));
+			}
+			const uint32 Code = static_cast<uint32>(Wide[Unit]);
+			if (Code >= 0xD800 && Code <= 0xDBFF && Unit + 1 < Wide.size())
+			{
+				const uint32 Low = static_cast<uint32>(Wide[Unit + 1]);
+				Out.push_back(static_cast<char32_t>(0x10000 + ((Code - 0xD800) << 10) + (Low - 0xDC00)));
+				++Unit;
+				if (OutUnitsToPoints != nullptr)
+				{
+					OutUnitsToPoints->push_back(static_cast<int32>(Out.size()));
+				}
+				continue;
+			}
+			Out.push_back(static_cast<char32_t>(Code));
+		}
+		if (OutUnitsToPoints != nullptr)
+		{
+			OutUnitsToPoints->push_back(static_cast<int32>(Out.size()));
+		}
+	};
+
+	// 확정 글자 먼저 (WM_CHAR와 같은 Char 이벤트 — DefWindowProc에 넘기지 않으므로 WM_CHAR는 오지 않는다)
+	if ((LParam & GCS_RESULTSTR) != 0)
+	{
+		std::u32string Result;
+		ReadString(GCS_RESULTSTR, Result, nullptr);
+		for (const char32_t Char : Result)
+		{
+			FWindowEvent Event{};
+			Event.Type      = EWindowEventType::Char;
+			Event.Character = static_cast<uint32>(Char);
+			Dispatch(Event);
+		}
+	}
+	if ((LParam & GCS_COMPSTR) != 0)
+	{
+		std::vector<int32> UnitsToPoints;
+		ReadString(GCS_COMPSTR, ImeComposition, &UnitsToPoints);
+		int32 Cursor = static_cast<int32>(ImeComposition.size());
+		if ((LParam & GCS_CURSORPOS) != 0)
+		{
+			const LONG Units = ImmGetCompositionStringW(Himc, GCS_CURSORPOS, nullptr, 0);
+			if (Units >= 0 && static_cast<size_t>(Units) < UnitsToPoints.size())
+			{
+				Cursor = UnitsToPoints[static_cast<size_t>(Units)];
+			}
+		}
+		DispatchComposition(Cursor);
+	}
+	else if ((LParam & GCS_RESULTSTR) != 0 && !ImeComposition.empty())
+	{
+		ImeComposition.clear();
+		DispatchComposition(0);
+	}
+	ImmReleaseContext(Hwnd, Himc);
+}
+
 int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 {
+	// 게임 UI 텍스트 입력 중: IME 조합을 직접 받는다 (UI 훅(ImGui)보다 먼저 — 에디터 텍스트 필드는 이때 입력을 받지 않는다)
+	if (bTextInput)
+	{
+		switch (Message)
+		{
+		case WM_IME_STARTCOMPOSITION:
+			return 0; // DefWindowProc에 넘기지 않으면 시스템 조합 창이 뜨지 않는다
+		case WM_IME_COMPOSITION:
+			HandleImeComposition(LParam);
+			return 0;
+		case WM_IME_ENDCOMPOSITION:
+			if (!ImeComposition.empty())
+			{
+				ImeComposition.clear();
+				DispatchComposition(0);
+			}
+			return 0;
+		default:
+			break;
+		}
+	}
+
 	if (MessageHook && MessageHook(Hwnd, Message, WParam, LParam))
 	{
 		return 1;

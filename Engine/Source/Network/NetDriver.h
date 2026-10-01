@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -63,6 +64,9 @@ public:
 		FNetConnectionId Connection = InvalidNetConnection;
 		uint32           PlayerId   = 0;
 		std::string      Name;
+		// 서버의 현재 씬에 들어와 있음. 맵 이동(BeginServerTravel) 중에는 false — TravelAck가 올 때까지
+		// Broadcast/게임 메시지 수신에서 빠진다 (이전 씬의 NetId가 새 씬 엔티티에 섞이지 않게)
+		bool bInScene = true;
 	};
 
 	static constexpr float  HandshakeTimeoutSeconds = 5.0f;
@@ -103,6 +107,18 @@ public:
 	bool GetServerStats(FNetConnectionStats& OutStats) const { return GetStats(ServerConnection, OutStats); }
 	void SetSimulation(int32 LatencyMs, float LossPercent);
 
+	// ---- 맵 이동 (언리얼 ServerTravel 방식, 연결 유지)
+	//   서버: BeginServerTravel = 세션 씬을 바꾸고(이후 입장 확인 기준) 입장한 모두에게 Travel을 보낸 뒤 전원 bInScene = false.
+	//         앱은 곧바로 새 씬을 연다. 클라이언트의 TravelAck(이번 이동 번호)가 오면 bInScene = true 후 OnPlayerJoined를 다시 부른다
+	//         (앱의 입장 처리 = 폰 생성 + 전체 상태 전송이 그대로 새 씬 입장이 된다)
+	//   클라이언트: Travel을 받으면 이후 게임 메시지를 버리고 ConsumeServerTravel이 새 씬을 돌려준다. 앱이 새 씬을 연 뒤
+	//         CompleteClientTravel → TravelAck 전송, 세션 씬 갱신, 게임 메시지 수신 재개
+	void                       BeginServerTravel(const std::string& SceneAsset);
+	std::optional<std::string> ConsumeServerTravel();
+	void                       CompleteClientTravel();
+	bool                       IsClientTravelPending() const { return ClientTravelId != 0; }
+	const std::string&         GetSessionScene() const { return Session.SceneAsset; }
+
 	// 서버 이벤트 (Update 안에서 불린다)
 	std::function<void(const FRemotePlayer&)>                     OnPlayerJoined;
 	std::function<void(const FRemotePlayer&, const std::string&)> OnPlayerLeft; // 두 번째 인자: 사유
@@ -130,12 +146,16 @@ private:
 	std::vector<FPendingConnection> PendingConnections;
 	std::vector<FRemotePlayer>      Players;
 	uint32                          NextPlayerId = 1;
+	uint32                          TravelCount  = 0; // 서버: 마지막 맵 이동 번호 (TravelAck 대조)
 
 	// 클라이언트
 	FNetConnectionId ServerConnection = InvalidNetConnection;
 	EClientState     ClientState      = EClientState::Idle;
 	uint32           LocalPlayerId    = HostPlayerId;
 	std::string      FailureReason;
+	uint32           ClientTravelId = 0;          // 받은 이동 번호 (0 = 이동 중 아님). CompleteClientTravel까지 게임 메시지를 버린다
+	std::string      ClientTravelScene;
+	bool             bClientTravelConsumed = false; // ConsumeServerTravel로 앱에 넘겼음
 
 	std::vector<FNetEvent> EventBuffer; // Poll 재사용 버퍼
 };

@@ -1,0 +1,5 @@
+{
+  "DefaultLanguage": "ko",
+  "StringTables": "Localization/Strings.estrings",
+  "DetectSystemLanguage": false
+}

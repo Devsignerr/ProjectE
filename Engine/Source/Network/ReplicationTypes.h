@@ -27,6 +27,9 @@ struct FNetIdComponent
 
 inline constexpr uint32 InvalidNetId      = 0;
 inline constexpr uint32 DynamicNetIdBase  = 1u << 20;
+// 서브 씬 (Phase 31-2): 불러온 서브 씬마다 NetId 구간 = SubSceneNetIdBase + (번호 - 1) * SubSceneNetIdStride부터 하위 트리 순서
+inline constexpr uint32 SubSceneNetIdBase   = 1u << 26;
+inline constexpr uint32 SubSceneNetIdStride = 1u << 14; // 서브 씬 하나에 복제 엔티티 16384개까지
 
 // 복제 컴포넌트 타입 등록 (씬 로드 전에 앱이 호출, 여러 번 호출해도 된다)
 void RegisterNetworkTypes();
@@ -38,6 +41,11 @@ namespace NetReplication
 	void AssignStaticNetIds(FScene& Scene);
 
 	uint32 GetNetId(const FScene& Scene, FEntity Entity); // 없으면 InvalidNetId
+
+	// 서브 씬 루트 하위(부모 → 자식, 자식 목록 순서)의 복제 엔티티에 NetId를 매긴다. 서버와 클라이언트가 같은 파일을 붙였으면 같은 결과.
+	// OnAssigned(엔티티, NetId)는 매길 때마다 (복제 객체가 추적 목록에 넣는다). 구간을 넘는 엔티티는 경고 후 건너뛴다
+	uint32 GetSubSceneNetIdBase(uint32 InstanceId);
+	void   AssignSubSceneNetIds(FScene& Scene, FEntity Root, uint32 InstanceId, const std::function<void(FEntity, uint32)>& OnAssigned);
 
 	bool IsReplicated(const FTypeInfo& Type);
 	bool IsReplicated(const FPropertyInfo& Property);

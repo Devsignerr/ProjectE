@@ -37,8 +37,21 @@ struct FUIKeyInput
 	bool           bEnd       = false;
 	bool           bCommit    = false; // Enter
 	bool           bCancel    = false; // Esc
+	bool           bShift     = false; // 이동 키/클릭과 함께: 선택 넓히기
+	bool           bWordMove  = false; // Ctrl: ←/→/Backspace/Delete를 단어 단위로
+	bool           bSelectAll = false; // Ctrl+A
+	bool           bCopy      = false; // Ctrl+C (복사할 글자는 FUIInputRouter::TakeClipboardText)
+	bool           bCut       = false; // Ctrl+X
+	bool           bPaste     = false; // Ctrl+V
+	std::string    PasteText;          // bPaste일 때 클립보드 글자 (UTF-8, FUISystem::MakeKeys가 읽는다)
+	std::u32string Composition;        // IME 조합 중 글자 (확정 전 — 텍스트에 넣지 않고 캐럿 자리에 밑줄로 보인다)
+	int32          CompositionCursor = 0;
 
-	bool HasTextEdit() const { return !Typed.empty() || bBackspace || bDelete || bLeft || bRight || bHome || bEnd || bCommit || bCancel; }
+	bool HasTextEdit() const
+	{
+		return !Typed.empty() || bBackspace || bDelete || bLeft || bRight || bHome || bEnd || bCommit || bCancel || bSelectAll || bCopy || bCut ||
+		       bPaste || !Composition.empty();
+	}
 };
 
 enum class EUIEventType : uint8
@@ -82,9 +95,15 @@ public:
 	// 포커스가 텍스트 상자면 true (게임 키보드 입력을 막아야 함)
 	bool   WantsKeyboard(FUIWidget& Root);
 	void   Reset(FUIWidget& Root);
+	// 텍스트 상자에서 복사/잘라내기한 글자 (이번 Process에서). 있으면 true + 비운다 → 호출자가 OS 클립보드에 쓴다
+	bool   TakeClipboardText(std::string& Out);
 
 private:
-	uint32 HoveredId = 0;
-	uint32 PressedId = 0;
-	uint32 FocusedId = 0;
+	uint32      HoveredId   = 0;
+	uint32      PressedId   = 0;
+	uint32      FocusedId   = 0;
+	uint32      SelectingId = 0; // 마우스로 글자를 끌어 선택 중인 텍스트 상자 (뗄 때까지 포인터를 가져간다)
+	int32       SelectingAnchor = 0; // 끌기 시작 위치 (선택 앵커)
+	std::string ClipboardOut;
+	bool        bClipboardOut = false;
 };

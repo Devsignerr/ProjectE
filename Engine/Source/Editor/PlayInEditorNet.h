@@ -15,6 +15,7 @@ class FGameWorld;
 class FResourceManager;
 class FScene;
 struct FPlayOptions;
+struct FSceneTravelTargets;
 
 // 에디터 네트워크 플레이 설정 (네트워크 패널에서 고친다)
 struct FPlayNetSettings
@@ -67,6 +68,11 @@ public:
 	// 런타임 클라이언트 창 하나 실행 (Address 서버, SceneAsset = 서버가 연 씬)
 	bool                     LaunchRuntimeClient(const std::string& Address, const std::string& SceneAsset);
 	const std::string&       GetSceneAsset() const { return SceneAsset; }
+
+	// 맵 전환 (FPlayMode::Travel): 네트워크 플레이면 드라이버/복제/플레이어를 채운다 (아니면 그대로). 이후 런타임 클라이언트를 띄우면 새 씬으로
+	FNetDriver* GetActiveDriver() { return IsActive() ? &Net : nullptr; }
+	void        FillTravelTargets(FSceneTravelTargets& Targets);
+	void        OnTraveled(const std::string& NewSceneAsset);
 
 private:
 	bool LaunchProcess(const std::wstring& Executable, const std::wstring& Arguments);

@@ -11,6 +11,7 @@
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "Renderer/Image.h"
 #include "Renderer/UIRenderer.h"
+#include "UI/Localization.h"
 #include "UI/UIFont.h"
 #include "UI/UILayout.h"
 #include "UI/UIPainter.h"
@@ -107,6 +108,70 @@ namespace
 		return false;
 	}
 
+	// 문자열 표 키 입력 + 키 고르기 목록 (입력한 글자가 들어간 키만) + 현재 미리보기 언어의 값. 반환: 바뀜
+	bool DrawTextKeyField(const char* Label, std::string& Key)
+	{
+		bool bChanged = false;
+		char Buffer[256];
+		std::snprintf(Buffer, sizeof(Buffer), "%s", Key.c_str());
+		ImGui::PushID(Label);
+		const float ButtonWidth = ImGui::GetFrameHeight();
+		ImGui::SetNextItemWidth(FMath::Max(ImGui::CalcItemWidth() - ButtonWidth - ImGui::GetStyle().ItemInnerSpacing.x, 40.0f));
+		if (ImGui::InputTextWithHint("##Key", "(없음 — 고정 문자열)", Buffer, sizeof(Buffer)))
+		{
+			Key      = Buffer;
+			bChanged = true;
+		}
+		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		if (ImGui::ArrowButton("##Pick", ImGuiDir_Down))
+		{
+			ImGui::OpenPopup("##KeyList");
+		}
+		ImGui::SetItemTooltip("문자열 표의 키 고르기");
+		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		ImGui::TextUnformatted(Label);
+		if (ImGui::BeginPopup("##KeyList"))
+		{
+			if (ImGui::Selectable("(키 없음)", Key.empty()))
+			{
+				Key.clear();
+				bChanged = true;
+			}
+			const std::vector<std::string> Keys = FLocalization::Get().GetKeys();
+			if (Keys.empty())
+			{
+				ImGui::TextDisabled("문자열 표가 없습니다 (콘텐츠 브라우저 → 새 문자열 표)");
+			}
+			for (const std::string& Candidate : Keys)
+			{
+				if (!Key.empty() && Candidate.find(Key) == std::string::npos && Key != Candidate)
+				{
+					continue;
+				}
+				if (ImGui::Selectable(Candidate.c_str(), Candidate == Key))
+				{
+					Key      = Candidate;
+					bChanged = true;
+				}
+				ImGui::SetItemTooltip("%s", FLocalization::Get().Lookup(Candidate).c_str());
+			}
+			ImGui::EndPopup();
+		}
+		if (!Key.empty())
+		{
+			if (FLocalization::Get().Has(Key))
+			{
+				ImGui::TextDisabled("%s: %s", FLocalization::Get().GetLanguage().c_str(), FLocalization::Get().Lookup(Key).c_str());
+			}
+			else
+			{
+				ImGui::TextColored(FEditorTheme::Warning, ICON_FA_TRIANGLE_EXCLAMATION " 문자열 표에 없는 키 (키 이름이 그대로 보입니다)");
+			}
+		}
+		ImGui::PopID();
+		return bChanged;
+	}
+
 	bool IsCanvasChild(const FUIWidget* Widget) { return Widget != nullptr && Widget->Parent != nullptr && Widget->Parent->Type == EUIWidgetType::Canvas; }
 
 	ImVec2 ToImVec2(const FVector2& Value) { return ImVec2(Value.X, Value.Y); }
@@ -157,6 +222,7 @@ FWidgetEditor::FWidgetEditor(std::filesystem::path InPath)
 	AutoAnimation                  = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-animation"));
 	const std::wstring TimeArg     = CommandLine.GetValue(L"--ui-anim-time");
 	AutoAnimationTime              = TimeArg.empty() ? 0.0f : std::stof(TimeArg);
+	AutoTextDemo                   = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-text-demo"));
 }
 
 FWidgetEditor::~FWidgetEditor() = default;
@@ -616,6 +682,25 @@ void FWidgetEditor::DrawCanvasToolbar()
 			SelectedAnimation = 0;
 		}
 	}
+	// 미리보기 언어 (문자열 표 키를 쓰는 텍스트). 전역 현재 언어를 바꾼다 — 사용자 설정 파일에는 저장하지 않음
+	if (const std::vector<std::string> Languages = FLocalization::Get().GetLanguages(); !Languages.empty())
+	{
+		ImGui::SameLine();
+		const std::string& Current = FLocalization::Get().GetLanguage();
+		ImGui::SetNextItemWidth(110.0f);
+		if (ImGui::BeginCombo("##PreviewLanguage", (ICON_FA_LANGUAGE " " + FLocalization::GetLanguageDisplayName(Current)).c_str()))
+		{
+			for (const std::string& Language : Languages)
+			{
+				if (ImGui::Selectable(std::format("{} ({})", FLocalization::GetLanguageDisplayName(Language), Language).c_str(), Language == Current))
+				{
+					FLocalization::Get().SetLanguage(Language, false);
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::SetItemTooltip("미리보기 언어 — 문자열 키를 쓰는 텍스트가 이 언어로 보입니다 (플레이 중 게임 화면도 함께 바뀜)");
+	}
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60.0f);
 	ImGui::DragFloat("스냅", &SnapStep, 0.25f, 1.0f, 64.0f, "%.0f");
@@ -847,6 +932,20 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 				Zoom         = AutoZoom / GetUiScale();
 				Pan          = CanvasSize * 0.5f - Widget->State.Geometry.GetCenter() * (Zoom * GetUiScale());
 				bViewTouched = true;
+			}
+			if (!AutoTextDemo.empty() && Widget->Type == EUIWidgetType::TextBox)
+			{
+				// 미리보기 입력으로 포커스 + 예시 글자. select = "세상" 선택, compose = 캐럿 자리에 조합 중 "한"
+				bPreviewInput = true;
+				PreviewRouter.Reset(*Asset.Root);
+				PreviewRouter.SetFocus(*Asset.Root, Widget->State.Id);
+				Widget->Text             = "Hello 세상 world";
+				Widget->State.CaretIndex = 8;
+				Widget->State.SelectionAnchor = AutoTextDemo == "select" ? 6 : -1;
+				if (AutoTextDemo == "compose")
+				{
+					AutoComposition = U"한";
+				}
 			}
 		}
 		AutoSelectName.clear();
@@ -1100,9 +1199,35 @@ void FWidgetEditor::HandlePreviewInput(bool bHovered)
 		Keys.bEnd       = ImGui::IsKeyPressed(ImGuiKey_End, false);
 		Keys.bCommit    = ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false);
 		Keys.bCancel    = ImGui::IsKeyPressed(ImGuiKey_Escape, false);
+		// 선택/클립보드 (게임과 같은 키 — ImGui 클립보드 = OS 클립보드)
+		const bool bShortcut = Io.KeyCtrl && !Io.KeyAlt;
+		Keys.bShift          = Io.KeyShift;
+		Keys.bWordMove       = bShortcut;
+		Keys.bSelectAll      = bShortcut && ImGui::IsKeyPressed(ImGuiKey_A, false);
+		Keys.bCopy           = bShortcut && ImGui::IsKeyPressed(ImGuiKey_C, false);
+		Keys.bCut            = bShortcut && ImGui::IsKeyPressed(ImGuiKey_X, true);
+		Keys.bPaste          = bShortcut && ImGui::IsKeyPressed(ImGuiKey_V, true);
+		if (Keys.bPaste)
+		{
+			const char* Clipboard = ImGui::GetClipboardText();
+			Keys.PasteText        = Clipboard != nullptr ? Clipboard : "";
+		}
+	}
+	else
+	{
+		Keys.bShift = Io.KeyShift; // Shift+클릭 선택
+	}
+	if (!AutoComposition.empty())
+	{
+		Keys.Composition       = AutoComposition; // 자동 검증: IME 조합 표시
+		Keys.CompositionCursor = static_cast<int32>(AutoComposition.size());
 	}
 	std::vector<FUIEvent> Events;
 	PreviewRouter.Process(*Asset.Root, Pointer, Keys, Events);
+	if (std::string Copied; PreviewRouter.TakeClipboardText(Copied))
+	{
+		ImGui::SetClipboardText(Copied.c_str());
+	}
 	// 캐럿 깜빡임
 	if (FUIWidget* Focused = PreviewRouter.GetFocusedId() != 0 ? Asset.Root->FindById(PreviewRouter.GetFocusedId()) : nullptr)
 	{
@@ -1588,9 +1713,11 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 	case EUIWidgetType::Text:
 		if (ImGui::CollapsingHeader("텍스트", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			bChanged |= DrawTextKeyField("문자열 키", Widget.TextKey);
 			char Buffer[2048];
 			std::snprintf(Buffer, sizeof(Buffer), "%s", Widget.Text.c_str());
-			if (ImGui::InputTextMultiline("내용", Buffer, sizeof(Buffer), ImVec2(0.0f, ImGui::GetTextLineHeight() * 4.0f)))
+			if (ImGui::InputTextMultiline(Widget.TextKey.empty() ? "내용" : "내용 (키 없을 때)", Buffer, sizeof(Buffer),
+			                              ImVec2(0.0f, ImGui::GetTextLineHeight() * 4.0f)))
 			{
 				Widget.Text = Buffer;
 				bChanged    = true;
@@ -1669,7 +1796,9 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 				Widget.HintText = Buffer;
 				bChanged        = true;
 			}
+			bChanged |= DrawTextKeyField("안내 문구 키", Widget.HintTextKey);
 			bChanged |= ImGui::ColorEdit4("안내 색", &Widget.HintColor.X, ImGuiColorEditFlags_AlphaBar);
+			bChanged |= ImGui::ColorEdit4("선택 영역 색", &Widget.SelectionColor.X, ImGuiColorEditFlags_AlphaBar);
 			bChanged |= ImGui::DragInt("최대 글자 수", &Widget.MaxLength, 0.2f, 0, 10000);
 			ImGui::SetItemTooltip("0 = 제한 없음");
 			bChanged |= ImGui::DragFloat("글자 크기", &Widget.FontSize, 0.25f, 1.0f, 512.0f, "%.1f");

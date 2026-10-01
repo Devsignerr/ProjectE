@@ -19,15 +19,19 @@
 #include "AI/AIComponents.h"
 #include "Editor/EditorTheme.h"
 #include "Editor/SceneEditOps.h"
+#include "Editor/TerrainDemoGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/Prefab.h"
+#include "Scene/Sequence.h"
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
+#include "World/GameWorldTravel.h"
 
 #include <commdlg.h>
 #include <imgui.h>
@@ -157,11 +161,23 @@ bool FEditorApplication::OnInit()
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
 	}
 	PlayMode.Init(Scene, World);
+	// 지형 도구: 뷰포트 브러시 (모드가 켜져 있을 때만 마우스를 가져간다)
+	FTerrainLibrary::Get().SetContentDirectory(Context.ContentDirectory);
+	FFoliageLibrary::Get().SetContentDirectory(Context.ContentDirectory);
+	ViewportPanel.ToolOverlay = [this](FEditorContext& InContext, const FInput& InInput, const FVector2& ImageMin, const FVector2& ImageSize, bool bHovered) {
+		// 지형/폴리지 도구 중 켜진 하나만 (둘 다 켜면 지형 우선)
+		const bool bTerrain = TerrainToolPanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
+		return TerrainToolPanel.IsActive() ? bTerrain : FoliageToolPanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
+	};
 	NetPlay.Init(World, &Resources, Context.ContentDirectory);
 	Context.NetPlay = &NetPlay;
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	if (CommandLine.HasFlag(L"--generate-terrain-demo"))
+	{
+		GenerateTerrainDemo(Context.ContentDirectory); // 지형 데모 에셋 다시 만들기 (Terrain/, Scenes/Demo_Terrain.escene)
+	}
 	if (const std::wstring SceneArg = CommandLine.GetValue(L"--scene"); SceneArg.empty() || !OpenScene(Context.ContentDirectory / SceneArg))
 	{
 		OpenStartupScene();
@@ -275,6 +291,16 @@ bool FEditorApplication::OnInit()
 		E_LOG(LogEditor, Warning, "Content 디렉터리 감시를 시작하지 못했습니다. 스크립트 핫 리로드가 꺼집니다");
 	}
 
+	// 자동 검증: --terrain-brush-test 지형 스컬프트/칠하기 스트로크 → 실행 취소/다시 실행으로 높이·가중치가 맞는지 (카메라 복원 뒤 — 검증이 시점을 정한다)
+	if (CommandLine.HasFlag(L"--terrain-brush-test"))
+	{
+		VerifyTerrainBrush();
+	}
+	if (CommandLine.HasFlag(L"--foliage-brush-test"))
+	{
+		VerifyFoliageBrush();
+	}
+
 	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모(Alt+드래그 복제), End 바닥에 붙이기, Ctrl+C/V/D/Z, Ctrl+N/O/S 씬 파일, F5 재생/정지");
 
 	// 자동 검증: --play-net listen|dedicated [--play-clients N] 로 네트워크 플레이 설정 (--play와 함께)
@@ -351,6 +377,8 @@ void FEditorApplication::OnRender()
 	HandleToolShortcuts();
 	HandlePlayShortcuts();
 	DrawMainMenuBar();
+	TerrainToolPanel.Update(Context); // Undo/Redo로 바뀐 지형/폴리지 편집 버전 맞추기
+	FoliageToolPanel.Update(Context);
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
@@ -361,6 +389,8 @@ void FEditorApplication::OnRender()
 	}
 	PostProcessPanel.Draw(Context);
 	ShadowPanel.Draw(Context);
+	TerrainToolPanel.Draw(Context);
+	FoliageToolPanel.Draw(Context);
 	ProjectSettingsWindow.Draw(Context);
 	EditorPreferencesWindow.Draw(Context);
 	OutputLogPanel.Draw(Context);
@@ -447,6 +477,7 @@ void FEditorApplication::OnShutdown()
 void FEditorApplication::NewScene()
 {
 	StopPlay();
+	AssetEditors.EndScenePreviews(Context); // 시퀀서 미리보기 값을 되돌린 뒤 씬을 바꾼다
 	Scene.Clear();
 	Context.ClearSelection();
 	CurrentScenePath.clear();
@@ -464,6 +495,7 @@ void FEditorApplication::NewScene()
 bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
 {
 	StopPlay();
+	AssetEditors.EndScenePreviews(Context);
 	Context.ClearSelection();
 	if (!FSceneSerializer::LoadFromFile(Scene, Path))
 	{
@@ -483,10 +515,15 @@ bool FEditorApplication::SaveScene()
 		return SaveSceneAs();
 	}
 	FPrefabLibrary::Get().RecordAllOverrides(Scene); // 아직 커밋 안 된 인스턴스 편집도 오버라이드로
-	if (!FSceneSerializer::SaveToFile(Scene, CurrentScenePath))
+	AssetEditors.SwapScenePreviews(Context);         // 시퀀서 미리보기 값이 아니라 원래 값을 저장
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, CurrentScenePath);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return false;
 	}
+	FTerrainLibrary::Get().SaveAllUnsaved(); // 씬이 가리키는 지형/폴리지 데이터(.eterrain/.efoliage)도 함께
+	FFoliageLibrary::Get().SaveAllUnsaved();
 	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
 	return true;
@@ -500,11 +537,16 @@ bool FEditorApplication::SaveSceneAs()
 		return false;
 	}
 	FPrefabLibrary::Get().RecordAllOverrides(Scene);
-	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	AssetEditors.SwapScenePreviews(Context);
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, Path);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return false;
 	}
 	CurrentScenePath = Path;
+	FTerrainLibrary::Get().SaveAllUnsaved(); // 씬이 가리키는 지형/폴리지 데이터(.eterrain/.efoliage)도 함께
+	FFoliageLibrary::Get().SaveAllUnsaved();
 	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
 	RememberOpenedScene();
@@ -572,7 +614,10 @@ void FEditorApplication::UpdateAutoSave(float DeltaSeconds)
 	GetLocalTime(&Time);
 	const std::filesystem::path Path = Directory / std::format(L"{}_{:04}{:02}{:02}_{:02}{:02}{:02}.escene", Stem, Time.wYear, Time.wMonth, Time.wDay,
 	                                                           Time.wHour, Time.wMinute, Time.wSecond);
-	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	AssetEditors.SwapScenePreviews(Context);
+	const bool bSaved = FSceneSerializer::SaveToFile(Scene, Path);
+	AssetEditors.SwapScenePreviews(Context);
+	if (!bSaved)
 	{
 		return;
 	}
@@ -831,6 +876,8 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
 		ImGui::MenuItem("포스트 프로세스", nullptr, &PostProcessPanel.bOpen);
 		ImGui::MenuItem("그림자", nullptr, &ShadowPanel.bOpen);
+		ImGui::MenuItem("지형", nullptr, &TerrainToolPanel.bOpen);
+		ImGui::MenuItem("폴리지", nullptr, &FoliageToolPanel.bOpen);
 		ImGui::MenuItem("네트워크", nullptr, &NetworkPanel.bOpen);
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
@@ -1163,6 +1210,11 @@ void FEditorApplication::ResetUndoHistory()
 {
 	Context.PendingEdit = FPendingEdit{};
 	UndoHistory.Reset(FSceneSerializer::ToJsonString(Scene));
+	// 지형/폴리지: 씬 기록과 함께 편집 기록을 비우고 데이터를 파일에서 다시 읽는다 (저장 안 한 편집은 버리고, 따로 저장한 데이터는 그대로)
+	TerrainToolPanel.GetHistory().Clear();
+	FoliageToolPanel.GetHistory().Clear();
+	FTerrainLibrary::Get().Clear();
+	FFoliageLibrary::Get().Clear();
 	UpdateWindowTitle();
 }
 
@@ -1182,8 +1234,12 @@ void FEditorApplication::CommitPendingEdit()
 		return;
 	}
 	// 프리팹 인스턴스에서 원본과 달라진 항목을 오버라이드로 기록한 뒤 스냅샷 (인스턴스가 현재 원본에 맞춰져 있다는 전제 — ChangePrefabAsset 참고)
+	// 시퀀서 미리보기 중이면 미리보기 값 대신 원래 값으로 기록 (맞바꿨다가 되돌린다)
+	AssetEditors.SwapScenePreviews(Context);
 	FPrefabLibrary::Get().RecordAllOverrides(Scene);
-	if (UndoHistory.Commit(std::move(Label), FSceneSerializer::ToJsonString(Scene)))
+	std::string Snapshot = FSceneSerializer::ToJsonString(Scene);
+	AssetEditors.SwapScenePreviews(Context);
+	if (UndoHistory.Commit(std::move(Label), std::move(Snapshot)))
 	{
 		UpdateWindowTitle();
 	}
@@ -1360,6 +1416,7 @@ void FEditorApplication::StartPlay()
 	{
 		return;
 	}
+	AssetEditors.EndScenePreviews(Context); // 플레이 씬은 편집 씬 복제 — 시퀀서 미리보기 값을 먼저 되돌린다
 	FPlayOptions Options;
 	if (NetPlay.Prepare(NetPlay.PendingSettings, Scene, Options))
 	{
@@ -1370,6 +1427,8 @@ void FEditorApplication::StartPlay()
 	{
 		PlayMode.Play(Context);
 	}
+	// Game.GetCurrentScene: 편집 중인 씬 파일 (Content 기준, 저장 안 한 씬이면 "")
+	World.SetCurrentSceneAsset(CurrentScenePath.empty() ? std::string() : FPrefabLibrary::Get().MakeAssetPath(CurrentScenePath));
 	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임", false);
 }
 
@@ -1398,6 +1457,7 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	FInput BlockedInput;
 	ViewportPanel.bGameUIWantsPointer  = false;
 	ViewportPanel.bGameUIWantsKeyboard = false;
+	bool bGameTextInput                = false;
 	if (PlayMode.IsActive())
 	{
 		FUIFrameInput UIInput;
@@ -1410,6 +1470,13 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 		}
 		UIInput.DeltaSeconds          = DeltaSeconds;
 		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
+		// 게임 UI 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (뷰포트 이미지 위치만큼 옮김)
+		bGameTextInput = GameInput != nullptr && UIResult.bKeyboard && UIResult.bHasTextCaret;
+		if (bGameTextInput)
+		{
+			const FVector2 Caret = UIResult.TextCaret.Min + ViewportPanel.GetImageMin();
+			GetWindow().SetTextInput(true, static_cast<int32>(Caret.X), static_cast<int32>(Caret.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
+		}
 		if (GameInput != nullptr && (UIResult.bPointer || UIResult.bKeyboard))
 		{
 			ViewportPanel.bGameUIWantsPointer  = UIResult.bPointer;
@@ -1421,6 +1488,10 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 			}
 			GameInput = &BlockedInput;
 		}
+	}
+	if (!bGameTextInput)
+	{
+		GetWindow().SetTextInput(false, 0, 0, 0); // 플레이 정지/포커스 해제 → 시스템 IME 처리로 (ImGui 텍스트 필드)
 	}
 	PlayMode.Tick(Context, DeltaSeconds, GameInput);
 	NetPlay.PostTick(DeltaSeconds); // 리슨 서버 복제 전송
@@ -1434,6 +1505,19 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	if (World.ConsumeSessionRequest())
 	{
 		ShowNotification("에디터 플레이에서는 Net.Host/Connect/Disconnect를 지원하지 않습니다 (런타임에서 동작)", true);
+	}
+	// 맵 전환 (Game.OpenScene / 전용 서버의 이동 지시): 플레이 씬만 바꾼다 — 정지하면 편집 씬 복원
+	if (PlayMode.IsActive())
+	{
+		if (const std::optional<std::string> NextScene = FGameWorldTravel::ConsumePending(World, NetPlay.GetActiveDriver()))
+		{
+			FSceneTravelTargets Targets;
+			NetPlay.FillTravelTargets(Targets);
+			Targets.OnEndPlay = [this]() { AudioSystem.Reset(Audio); };
+			PlayMode.Travel(Context, Targets, *NextScene);
+			NetPlay.OnTraveled(*NextScene);
+			ShowNotification("맵 전환: " + *NextScene, false);
+		}
 	}
 
 	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라
@@ -1541,6 +1625,18 @@ void FEditorApplication::PollScriptChanges()
 			World.GetAI().ReloadBehaviorTree(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
+		// 애니메이션 그래프: 이 파일을 쓰는 컴포넌트가 다음 갱신에서 새 그래프로 다시 묶인다 (파라미터 유지, 편집 중·플레이 중 모두)
+		if (Extension == FAnimGraphAsset::Extension)
+		{
+			FAnimGraphLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
+		// 시퀀스: 재생 중인 SequencePlayerComponent가 다음 갱신에서 새 파일을 읽는다
+		if (Extension == FSequenceAsset::Extension)
+		{
+			FSequenceLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
 		if (Extension != L".lua")
 		{
 			continue;
@@ -1609,6 +1705,8 @@ void FEditorApplication::ApplyDefaultLayoutIfNeeded()
 	ImGui::DockBuilderDockWindow("###Inspector", RightBottom);
 	ImGui::DockBuilderDockWindow("###PostProcess", Bottom);
 	ImGui::DockBuilderDockWindow("###Shadows", Bottom);
+	ImGui::DockBuilderDockWindow("###Terrain", Bottom);
+	ImGui::DockBuilderDockWindow("###Foliage", Bottom);
 	ImGui::DockBuilderDockWindow("###Network", Bottom);
 	ImGui::DockBuilderFinish(DockSpace);
 }
@@ -1619,6 +1717,8 @@ void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
 	for (const FAssetMove& Move : Moves)
 	{
 		Resources.OnAssetMoved(Move.From, Move.To);
+		FTerrainLibrary::Get().OnAssetMoved(Move.From, Move.To);
+		FFoliageLibrary::Get().OnAssetMoved(Move.From, Move.To);
 	}
 
 	// 2) 열린 씬의 컴포넌트 문자열 (디스크의 씬 파일은 참조 갱신기가 이미 고쳤으므로 편집 기록은 남기지 않는다)

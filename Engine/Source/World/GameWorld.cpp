@@ -13,6 +13,7 @@
 #include "Scene/GameModuleHost.h"
 #include "Scene/Particles.h"
 #include "Scene/Scene.h"
+#include "Scene/SequencePlayer.h"
 #include "Scripting/ScriptSystem.h"
 
 #include <algorithm>
@@ -194,6 +195,14 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 		[Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); },
 		[Physics](FEntity Entity) { Physics->RequestJump(Entity); },
 		[Physics](FEntity Entity) { return Physics->IsGrounded(Entity); },
+		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); },
+		[this, Physics](FEntity Entity) {
+			if (Scene != nullptr)
+			{
+				Physics->DisableRagdoll(*Scene, Entity);
+			}
+		},
+		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->IsRagdollActive(*Scene, Entity); },
 	});
 }
 
@@ -214,7 +223,10 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	InputSequence = 0;
 	LastMatchState       = -1;
 	RespawnStartIndex    = 0;
+	RagdollDeadStates.clear();
 	PendingSessionRequest.reset();
+	PendingSceneRequest.reset();
+	ClearSubScenes();
 	PredictedBodies.clear();
 	PredictionClock        = 0.0f;
 	PredictionTimeOffset   = 0.0f;
@@ -241,6 +253,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 		{
 			Systems.Physics->SetKinematicOverride(nullptr);
 		}
+		Systems.Physics->SetContactReportFilter([this](const FScene& Target, FEntity Entity) { return ShouldReportContacts(Target, Entity); });
 		Systems.Physics->Begin();
 	}
 	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
@@ -280,6 +293,7 @@ void FGameWorld::EndPlay()
 	{
 		Systems.Physics->End();
 	}
+	ClearSubScenes();
 	Scene = nullptr;
 }
 
@@ -298,8 +312,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
+	TickSubScenes(); // 파싱이 끝난 서브 씬 붙이기 + 스트리밍 볼륨 판정 (스크립트 전 — 새 스크립트가 이번 틱에 OnStart)
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
-	TickPhysicsPrediction(DeltaSeconds);          // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
+	FSequenceSystem::Update(*Scene, DeltaSeconds); // 컷신: 스크립트 PlaySequence가 이번 틱에 반영, 쓴 트랜스폼은 이번 물리/트랜스폼 갱신에
+	TickPhysicsPrediction(DeltaSeconds);         // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
 	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
@@ -312,6 +328,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
 	TickGameplayRules(DeltaSeconds);  // 이번 프레임 데미지 이벤트·사망·리스폰·매치 (물리 전: 리스폰 순간이동이 이번 스텝에 반영)
+	TickRagdolls();                   // 사망/리스폰 → 래그돌 켜기/끄기 (모든 역할, 복제된 체력 기준 — 물리 전: 이번 스텝부터 쓰러진다)
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->Update(*Scene, DeltaSeconds);
@@ -319,6 +336,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	Scene->UpdateTransforms();
 	RecordPhysicsPrediction();               // 이번 스텝 결과 기록 (서버 스냅샷과 비교할 로컬 과거)
 	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
+	DispatchCollisionEvents();               // 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	Systems.Scripts->LateUpdate(DeltaSeconds, Input);
 	Scene->UpdateTransforms();

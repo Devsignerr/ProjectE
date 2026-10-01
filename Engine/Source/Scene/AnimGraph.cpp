@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cwctype>
 #include <format>
+#include <fstream>
 
 E_DECLARE_LOG_CATEGORY(LogScene)
 
@@ -62,6 +63,32 @@ namespace
 		bOutWrapped = true;
 		return Next - std::floor(Next);
 	}
+
+	const char* OpToString(EAnimConditionOp Op)
+	{
+		switch (Op)
+		{
+		case EAnimConditionOp::Less:         return "<";
+		case EAnimConditionOp::LessEqual:    return "<=";
+		case EAnimConditionOp::Greater:      return ">";
+		case EAnimConditionOp::GreaterEqual: return ">=";
+		case EAnimConditionOp::Equal:        return "==";
+		case EAnimConditionOp::NotEqual:     return "!=";
+		}
+		return "==";
+	}
+
+	std::optional<FVector2> ReadPosition(const json& Node, const char* Key)
+	{
+		const auto Found = Node.find(Key);
+		if (Found == Node.end() || !Found->is_array() || Found->size() != 2 || !(*Found)[0].is_number() || !(*Found)[1].is_number())
+		{
+			return std::nullopt;
+		}
+		return FVector2((*Found)[0].get<float>(), (*Found)[1].get<float>());
+	}
+
+	json WritePosition(const FVector2& Position) { return json::array({ Position.X, Position.Y }); }
 } // namespace
 
 // ---------------------------------------------------------------- 에셋
@@ -112,6 +139,15 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 		return Fail("JSON 객체가 아닙니다");
 	}
 	FAnimGraphAsset Asset;
+	if (const int32 FileVersion = Root.value("Version", 1); FileVersion > Version)
+	{
+		Warn(std::format("이 엔진보다 새 형식 버전입니다 ({} > {}) — 아는 필드만 읽습니다", FileVersion, Version));
+	}
+	if (const auto Editor = Root.find("Editor"); Editor != Root.end() && Editor->is_object())
+	{
+		Asset.PreviewModel           = Editor->value("PreviewModel", std::string());
+		Asset.AnyStateEditorPosition = ReadPosition(*Editor, "AnyStatePosition");
+	}
 
 	if (const auto Found = Root.find("Parameters"); Found != Root.end() && Found->is_array())
 	{
@@ -142,6 +178,7 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 		State.BlendParameter = Node.value("BlendParameter", std::string());
 		State.Speed          = Node.value("Speed", 1.0f);
 		State.bLoop          = Node.value("Loop", true);
+		State.EditorPosition = ReadPosition(Node, "EditorPosition");
 		if (const auto Samples = Node.find("Samples"); Samples != Node.end() && Samples->is_array())
 		{
 			for (const json& SampleNode : *Samples)
@@ -226,6 +263,188 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 	return true;
 }
 
+std::string FAnimGraphAsset::ToJsonString() const
+{
+	const auto IsBoolParameter = [this](const std::string& Name) {
+		const FAnimGraphParameter* Parameter = FindParameter(Name);
+		return Parameter != nullptr && Parameter->Type == EAnimParamType::Bool;
+	};
+	json Root     = json::object();
+	Root["Version"] = Version;
+
+	json ParameterArray = json::array();
+	for (const FAnimGraphParameter& Parameter : Parameters)
+	{
+		json Node    = json::object();
+		Node["Name"] = Parameter.Name;
+		Node["Type"] = Parameter.Type == EAnimParamType::Bool ? "Bool" : "Float";
+		if (Parameter.Type == EAnimParamType::Bool)
+		{
+			Node["Default"] = Parameter.Default != 0.0f;
+		}
+		else
+		{
+			Node["Default"] = Parameter.Default;
+		}
+		ParameterArray.push_back(std::move(Node));
+	}
+	Root["Parameters"] = std::move(ParameterArray);
+	if (EntryState >= 0 && EntryState < static_cast<int32>(States.size()))
+	{
+		Root["EntryState"] = States[static_cast<size_t>(EntryState)].Name;
+	}
+
+	json StateArray = json::array();
+	for (const FAnimGraphState& State : States)
+	{
+		json Node    = json::object();
+		Node["Name"] = State.Name;
+		if (State.BlendParameter.empty() && State.Samples.size() == 1)
+		{
+			Node["Clip"] = State.Samples.front().Clip;
+			if (State.Samples.front().Rate != 1.0f)
+			{
+				Node["Rate"] = State.Samples.front().Rate;
+			}
+		}
+		else
+		{
+			if (!State.BlendParameter.empty())
+			{
+				Node["BlendParameter"] = State.BlendParameter;
+			}
+			json Samples = json::array();
+			for (const FAnimBlendSample& Sample : State.Samples)
+			{
+				json SampleNode        = json::object();
+				SampleNode["Clip"]     = Sample.Clip;
+				SampleNode["Position"] = Sample.Position;
+				if (Sample.Rate != 1.0f)
+				{
+					SampleNode["Rate"] = Sample.Rate;
+				}
+				Samples.push_back(std::move(SampleNode));
+			}
+			Node["Samples"] = std::move(Samples);
+		}
+		if (State.Speed != 1.0f)
+		{
+			Node["Speed"] = State.Speed;
+		}
+		if (!State.bLoop)
+		{
+			Node["Loop"] = false;
+		}
+		if (State.EditorPosition)
+		{
+			Node["EditorPosition"] = WritePosition(*State.EditorPosition);
+		}
+		StateArray.push_back(std::move(Node));
+	}
+	Root["States"] = std::move(StateArray);
+
+	json TransitionArray = json::array();
+	for (const FAnimGraphTransition& Transition : Transitions)
+	{
+		const bool bValidTo   = Transition.To >= 0 && Transition.To < static_cast<int32>(States.size());
+		const bool bValidFrom = Transition.From < static_cast<int32>(States.size());
+		if (!bValidTo || !bValidFrom)
+		{
+			continue;
+		}
+		json Node        = json::object();
+		Node["From"]     = Transition.From < 0 ? std::string("*") : States[static_cast<size_t>(Transition.From)].Name;
+		Node["To"]       = States[static_cast<size_t>(Transition.To)].Name;
+		Node["Duration"] = Transition.Duration;
+		if (Transition.ExitTime >= 0.0f)
+		{
+			Node["ExitTime"] = Transition.ExitTime;
+		}
+		json Conditions = json::array();
+		for (const FAnimTransitionCondition& Condition : Transition.Conditions)
+		{
+			json ConditionNode         = json::object();
+			ConditionNode["Parameter"] = Condition.Parameter;
+			ConditionNode["Op"]        = OpToString(Condition.Op);
+			if (IsBoolParameter(Condition.Parameter))
+			{
+				ConditionNode["Value"] = Condition.Value != 0.0f;
+			}
+			else
+			{
+				ConditionNode["Value"] = Condition.Value;
+			}
+			Conditions.push_back(std::move(ConditionNode));
+		}
+		Node["Conditions"] = std::move(Conditions);
+		TransitionArray.push_back(std::move(Node));
+	}
+	Root["Transitions"] = std::move(TransitionArray);
+
+	json Editor = json::object();
+	if (!PreviewModel.empty())
+	{
+		Editor["PreviewModel"] = PreviewModel;
+	}
+	if (AnyStateEditorPosition)
+	{
+		Editor["AnyStatePosition"] = WritePosition(*AnyStateEditorPosition);
+	}
+	if (!Editor.empty())
+	{
+		Root["Editor"] = std::move(Editor);
+	}
+	return Root.dump(2) + "\n";
+}
+
+bool FAnimGraphAsset::SaveToFile(const std::filesystem::path& Path) const
+{
+	std::ofstream File(Path, std::ios::binary | std::ios::trunc);
+	if (!File)
+	{
+		return false;
+	}
+	const std::string Text = ToJsonString();
+	File.write(Text.data(), static_cast<std::streamsize>(Text.size()));
+	return File.good();
+}
+
+void FAnimGraphAsset::RemoveState(int32 Index)
+{
+	if (Index < 0 || Index >= static_cast<int32>(States.size()))
+	{
+		return;
+	}
+	States.erase(States.begin() + Index);
+	std::erase_if(Transitions, [Index](const FAnimGraphTransition& Transition) { return Transition.From == Index || Transition.To == Index; });
+	for (FAnimGraphTransition& Transition : Transitions)
+	{
+		Transition.From = Transition.From > Index ? Transition.From - 1 : Transition.From;
+		Transition.To   = Transition.To > Index ? Transition.To - 1 : Transition.To;
+	}
+	if (EntryState == Index)
+	{
+		EntryState = 0;
+	}
+	else if (EntryState > Index)
+	{
+		--EntryState;
+	}
+}
+
+FAnimGraphAsset FAnimGraphAsset::MakeDefault()
+{
+	FAnimGraphAsset Asset;
+	Asset.Parameters.push_back({ "Speed", EAnimParamType::Float, 0.0f });
+	FAnimGraphState Idle;
+	Idle.Name           = "Idle";
+	Idle.Samples        = { FAnimBlendSample{} };
+	Idle.EditorPosition = FVector2(260.0f, 0.0f);
+	Asset.States.push_back(std::move(Idle));
+	Asset.AnyStateEditorPosition = FVector2(0.0f, 0.0f);
+	return Asset;
+}
+
 // ---------------------------------------------------------------- 파라미터 / 바인딩
 
 void FAnimParameterSet::Set(std::string_view Name, float Value)
@@ -287,6 +506,31 @@ FAnimGraphBinding FAnimGraphBinding::Bind(const FAnimGraphAsset& Asset, const FA
 		}
 	}
 	return Binding;
+}
+
+void FAnimGraphRuntime::SetAsset(std::shared_ptr<const FAnimGraphAsset> NewAsset, bool bKeepState)
+{
+	if (NewAsset == Asset)
+	{
+		return;
+	}
+	ResumeState.clear();
+	const int32 Current = Instance.GetCurrentState();
+	if (bKeepState && Asset && Current >= 0 && Current < static_cast<int32>(Asset->States.size()))
+	{
+		ResumeState = Asset->States[static_cast<size_t>(Current)].Name;
+	}
+	Asset    = std::move(NewAsset);
+	BoundSet = nullptr; // 다음 갱신에서 Rebind
+}
+
+void FAnimGraphRuntime::Rebind(const FAnimationSet& Set, std::vector<std::string>* OutMissing)
+{
+	Binding   = FAnimGraphBinding::Bind(*Asset, Set, OutMissing);
+	BoundSet  = &Set;
+	NotifyKey = 0;
+	Instance.ResetToState(ResumeState.empty() ? -1 : Asset->FindState(ResumeState));
+	ResumeState.clear();
 }
 
 // ---------------------------------------------------------------- 순수 계산
@@ -403,7 +647,16 @@ void FAnimGraphInstance::Reset()
 	BlendElapsed  = 0.0f;
 	BlendDuration = 0.0f;
 	Contributions.clear();
-	NotifySource = {};
+	NotifySource    = {};
+	StartState      = -1;
+	LastTransition  = -1;
+	TransitionCount = 0;
+}
+
+void FAnimGraphInstance::ResetToState(int32 State)
+{
+	Reset();
+	StartState = State;
 }
 
 void FAnimGraphInstance::ComputeSampleWeights(const FAnimGraphAsset& Asset, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters,
@@ -513,7 +766,9 @@ void FAnimGraphInstance::Update(const FAnimGraphAsset& Asset, const FAnimGraphBi
 	if (Layers.empty())
 	{
 		FLayer Entry;
-		Entry.State       = FMath::Clamp(Asset.EntryState, 0, static_cast<int32>(Asset.States.size()) - 1);
+		const int32 First = StartState >= 0 && StartState < static_cast<int32>(Asset.States.size()) ? StartState : Asset.EntryState;
+		Entry.State       = FMath::Clamp(First, 0, static_cast<int32>(Asset.States.size()) - 1);
+		StartState        = -1;
 		Entry.Serial      = NextSerial++;
 		Entry.Weight      = 1.0f;
 		Entry.StartWeight = 1.0f;
@@ -553,6 +808,8 @@ void FAnimGraphInstance::Update(const FAnimGraphAsset& Asset, const FAnimGraphBi
 	if (const int32 Transition = AnimGraphMath::FindTransition(Asset, Layers.back().State, Layers.back().Phase, Parameters); Transition >= 0)
 	{
 		StartTransition(Asset.Transitions[Transition]);
+		LastTransition = Transition;
+		++TransitionCount;
 		ComputeSampleWeights(Asset, Binding, Parameters, Layers.back());
 		UpdateLayerWeights();
 	}
@@ -605,11 +862,29 @@ FAnimGraphLibrary& FAnimGraphLibrary::Get()
 	return Instance;
 }
 
+std::wstring FAnimGraphLibrary::MakeKey(const std::string& AssetPath)
+{
+	std::wstring Key = FPrefabLibrary::Get().ResolveAssetPath(AssetPath).lexically_normal().generic_wstring();
+	std::transform(Key.begin(), Key.end(), Key.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+	return Key;
+}
+
+void FAnimGraphLibrary::Invalidate()
+{
+	Cache.clear();
+	++Generation;
+}
+
+void FAnimGraphLibrary::Invalidate(const std::string& AssetPath)
+{
+	Cache.erase(MakeKey(AssetPath));
+	++Generation;
+}
+
 std::shared_ptr<const FAnimGraphAsset> FAnimGraphLibrary::Load(const std::string& AssetPath)
 {
 	const std::filesystem::path Path = FPrefabLibrary::Get().ResolveAssetPath(AssetPath);
-	std::wstring                Key  = Path.generic_wstring();
-	std::transform(Key.begin(), Key.end(), Key.begin(), [](wchar_t Char) { return static_cast<wchar_t>(std::towlower(Char)); });
+	const std::wstring          Key  = MakeKey(AssetPath);
 	if (const auto Found = Cache.find(Key); Found != Cache.end())
 	{
 		return Found->second;

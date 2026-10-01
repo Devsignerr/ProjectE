@@ -1,0 +1,166 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.949999988079071,
+            0.8600000143051147
+          ],
+          "Intensity": 3.200000047683716
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3000.0
+          ],
+          "Rotation": [
+            -0.25,
+            0.0669873058795929,
+            0.9330126643180847,
+            0.2500000298023224
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TerrainComponent": {
+          "Asset": "Terrain/DemoTerrain.eterrain",
+          "CastShadows": true,
+          "Collision": true,
+          "EditRevision": 0,
+          "HeightRange": 8000.0,
+          "Layer0Material": "Terrain/Materials/Grass.emat",
+          "Layer0Tiling": 350.0,
+          "Layer1Material": "Terrain/Materials/Dirt.emat",
+          "Layer1Tiling": 250.0,
+          "Layer2Material": "Terrain/Materials/Rock.emat",
+          "Layer2Tiling": 600.0,
+          "Layer3Material": "",
+          "Layer3Tiling": 400.0,
+          "Size": [
+            20000.0,
+            20000.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "FoliageComponent": {
+          "Asset": "Foliage/DemoFoliage.efoliage",
+          "EditRevision": 0,
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Foliage",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            120.06103515625
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "PlayerStart",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CameraComponent": {
+          "FarZ": 200000.0,
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "OrthoHeight": 1000.0,
+          "Orthographic": false,
+          "Primary": true,
+          "Priority": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            -2400.0,
+            900.0
+          ],
+          "Rotation": [
+            -0.01882699877023697,
+            0.04093405231833458,
+            0.41743242740631104,
+            0.9075902700424194
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Camera",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

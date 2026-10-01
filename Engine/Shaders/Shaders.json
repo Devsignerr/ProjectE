@@ -63,6 +63,11 @@
     { "File": "ScreenSpaceReflections.hlsl", "Entry": "CSHizDownsample", "Stage": "Compute" },
     { "File": "SsrTrace.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "SsrTrace.hlsl", "Entry": "PSTrace", "Stage": "Pixel" },
-    { "File": "Ibl.hlsl", "Entry": "EquirectCS", "Stage": "Compute" }
+    { "File": "Ibl.hlsl", "Entry": "EquirectCS", "Stage": "Compute" },
+    { "File": "Terrain.hlsl", "Entry": "TerrainVS", "Stage": "Vertex" },
+    { "File": "Terrain.hlsl", "Entry": "TerrainPS", "Stage": "Pixel" },
+    { "File": "Terrain.hlsl", "Entry": "TerrainShadowVS", "Stage": "Vertex" },
+    { "File": "Terrain.hlsl", "Entry": "TerrainMaskPS", "Stage": "Pixel" },
+    { "File": "Terrain.hlsl", "Entry": "TerrainPrepassPS", "Stage": "Pixel" }
   ]
 }

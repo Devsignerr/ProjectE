@@ -24,6 +24,8 @@
 #include "Renderer/FogRenderer.h"
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
+#include "Renderer/FoliageRenderer.h"
+#include "Renderer/TerrainRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -163,6 +165,8 @@ public:
 	bool IsCullingFrozen() const { return bCullingFrozen; }
 
 	const FSceneRenderStats& GetStats() const { return Stats; }
+	FTerrainRenderer&        GetTerrainRenderer() { return TerrainRenderer; }
+	FFoliageRenderer&        GetFoliageRenderer() { return FoliageRenderer; }
 
 	// 간이 환경광 (하늘/지면 반구, HDR 선형). 이후 IBL이 대체한다
 	FVector3 SkyColor         = FVector3(0.35f, 0.45f, 0.6f);
@@ -217,6 +221,8 @@ private:
 	bool                 bTaaRanLastFrame = false;
 	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
 	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)
+	FTerrainRenderer     TerrainRenderer;    // 지형 (Phase 34)
+	FFoliageRenderer     FoliageRenderer;    // 풀·나무 → 메시 인스턴스 목록 (Phase 34-3)
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor;    // HDR + 깊이, 출력 크기에 맞춰 재생성
 	std::unique_ptr<FD3D12RenderTarget> SceneNormal;   // 화면 공간 법선 (깊이 사전 패스)

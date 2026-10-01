@@ -1,0 +1,14 @@
+{
+  "Name": "Foliage",
+  "BaseColorFactor": [1.0, 1.0, 1.0, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 0.0,
+  "Roughness": 0.92,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

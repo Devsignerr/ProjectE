@@ -16,8 +16,12 @@
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/ModelMetadata.h"
+#include "Scene/Sequence.h"
 #include "Scene/Particles.h"
+#include "Core/Settings/ProjectSettings.h"
+#include "UI/Localization.h"
 #include "UI/UIAsset.h"
 #include "UI/UIComponent.h"
 #include "Scene/Scene.h"
@@ -751,6 +755,18 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewUI", FUIAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_LANGUAGE " 새 문자열 표"))
+	{
+		CreateAsset(Context, "NewStrings", FStringTable::Extension);
+	}
+	if (ImGui::MenuItem(ICON_FA_PERSON_RUNNING " 새 애니메이션 그래프"))
+	{
+		CreateAsset(Context, "NewAnimGraph", FAnimGraphAsset::Extension);
+	}
+	if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD " 새 시퀀스 (컷신)"))
+	{
+		CreateAsset(Context, "NewSequence", FSequenceAsset::Extension);
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
 	{
@@ -1106,6 +1122,21 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FUIAsset::Extension)
 	{
 		bOk = FUIAsset::MakeDefault().SaveToFile(Path);
+	}
+	else if (Extension == FStringTable::Extension)
+	{
+		FStringTable Table;
+		Table.AddLanguage(FProjectSettings::Get().Localization.DefaultLanguage);
+		Table.AddLanguage("en");
+		bOk = Table.SaveToFile(Path);
+	}
+	else if (Extension == FAnimGraphAsset::Extension)
+	{
+		bOk = FAnimGraphAsset::MakeDefault().SaveToFile(Path);
+	}
+	else if (Extension == FSequenceAsset::Extension)
+	{
+		bOk = FSequenceAsset::MakeDefault().SaveToFile(Path);
 	}
 	if (!bOk)
 	{

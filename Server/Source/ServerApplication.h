@@ -25,6 +25,9 @@ protected:
 	void OnShutdown() override;
 
 private:
+	void StartLanHost(const std::string& SceneAsset); // LAN 방 알림 (맵 전환 후 다시)
+
+	uint16          Port = 0;
 	FScene          Scene;
 	FScriptSystem   Scripts;
 	FGameModuleHost GameModule;

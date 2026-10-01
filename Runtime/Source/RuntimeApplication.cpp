@@ -15,6 +15,7 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
+#include "World/GameWorldTravel.h"
 
 E_DEFINE_LOG_CATEGORY(LogRuntime, Log)
 
@@ -182,6 +183,14 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
 
+	// 맵 전환: 직전 프레임이 검은 화면을 냈으므로 여기서 연다 (네트워크 수신 전 — 새 씬 기준으로 메시지를 받는다)
+	if (PendingTravel)
+	{
+		const std::string NextScene = std::move(*PendingTravel);
+		PendingTravel.reset();
+		TravelTo(NextScene);
+	}
+
 	FSteamSubsystem::Get().RunCallbacks();
 	Net.Update(DeltaSeconds); // 클라이언트: 여기서 복제 메시지 적용
 	if (Lan.IsHosting())
@@ -208,6 +217,9 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	FInput               BlockedInput;
 	const FInput*        GameInput = &InputState;
 	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	// 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (Phase 32-2)
+	GetWindow().SetTextInput(UIResult.bKeyboard && UIResult.bHasTextCaret, static_cast<int32>(UIResult.TextCaret.Min.X),
+	                         static_cast<int32>(UIResult.TextCaret.Min.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
 	if (UIResult.bPointer || UIResult.bKeyboard)
 	{
 		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;
@@ -240,6 +252,10 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	{
 		HandleSessionRequest(*Request); // 스크립트의 Net.Host/Connect/Disconnect (프레임 끝에 전환)
 	}
+	else if (std::optional<std::string> NextScene = FGameWorldTravel::ConsumePending(World, &Net))
+	{
+		PendingTravel = std::move(*NextScene); // Game.OpenScene / 서버의 맵 이동 지시 → 이번 프레임은 로딩 화면, 다음 프레임에 연다
+	}
 
 	// 주 카메라 컴포넌트가 있으면 그 시점, 없으면 자유 비행 카메라
 	const FEntity CameraEntity = FSceneCamera::FindPrimary(Scene);
@@ -255,6 +271,14 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 
 void FRuntimeApplication::OnRender()
 {
+	if (PendingTravel)
+	{
+		// 로딩 화면: 다음 프레임에 새 씬을 여는 동안 (동기 로드라 창이 멈춘다) 검은 화면을 보인다
+		const float Black[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		Rhi->BeginFrame(Black);
+		Rhi->EndFrame();
+		return;
+	}
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());

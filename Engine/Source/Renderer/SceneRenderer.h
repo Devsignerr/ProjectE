@@ -100,6 +100,7 @@ public:
 	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
 	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
 	int32                ForcedLod       = -1;    // 0 이상이면 모든 정적 메시를 그 LOD로 (확인용, --force-lod N)
+	float                LodHysteresis   = 0.1f;  // LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔, --lod-hysteresis X)
 	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
 	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)
 	bool                 bEnableOcclusion = false;
@@ -174,6 +175,13 @@ private:
 	std::unique_ptr<FD3D12RenderTarget> PixelArtColor; // 픽셀 아트: 저해상도 톤매핑 결과 (선형, 부동소수점)
 
 	FMeshInstanceList MeshInstances; // 프레임 메시 인스턴스 (모든 패스 공유)
+	// LOD 히스테리시스용 엔티티별 이전 LOD (엔티티 인덱스 칸, 세대로 검증 — 렌더러(= 카메라)마다 따로)
+	struct FLodHistory
+	{
+		uint32 Generation = 0;
+		uint32 Lod        = ~0u;
+	};
+	std::vector<FLodHistory> LodHistory;
 	FMeshPassBatches  MainBatches;
 	FSceneRenderStats Stats;
 

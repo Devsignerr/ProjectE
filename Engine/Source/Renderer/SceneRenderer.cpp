@@ -140,6 +140,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		ForcedLod = std::stoi(ForceLod); // LOD 모양 확인용
 	}
+	if (const std::wstring Hysteresis = CommandLine.GetValue(L"--lod-hysteresis"); !Hysteresis.empty())
+	{
+		LodHysteresis = std::stof(Hysteresis); // 비교용 (0 = 끔)
+	}
 	if (const std::wstring Warmup = CommandLine.GetValue(L"--perf-warmup"); !Warmup.empty())
 	{
 		PerfCapture.WarmupFrames = static_cast<uint32>(std::max(0, std::stoi(Warmup)));
@@ -858,7 +862,17 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 		const float ScreenSize =
 			bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
 			              : LodMath::ComputePerspectiveScreenSize(Radius, FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition), TanHalfFov);
-		Instance.Lod = LodMath::SelectLod(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale);
+		// 히스테리시스: 엔티티별 이전 LOD (처음이거나 엔티티가 바뀌었으면 없음)
+		const uint32 Index = Instance.Entity.Index;
+		if (Index >= LodHistory.size())
+		{
+			LodHistory.resize(Index + 1);
+		}
+		FLodHistory& History  = LodHistory[Index];
+		const uint32 Previous = History.Generation == Instance.Entity.Generation ? History.Lod : ~0u;
+		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale, Previous,
+		                                                LodHysteresis);
+		History = { Instance.Entity.Generation, Instance.Lod };
 	}
 }
 

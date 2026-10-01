@@ -904,6 +904,8 @@ void FEditorApplication::DrawStatsWindow()
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(120.0f);
 		ImGui::SliderFloat("LOD 배율", &SceneRenderer.LodScale, 0.25f, 4.0f, "%.2f");
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::SliderFloat("LOD 전환 여유", &SceneRenderer.LodHysteresis, 0.0f, 0.5f, "%.2f");
 		bool bFreeze = SceneRenderer.IsCullingFrozen();
 		if (ImGui::Checkbox("컬링 프러스텀 고정", &bFreeze))
 		{

@@ -82,6 +82,34 @@ E_TEST(Lod_ScreenSizeAndSelection)
 	E_EXPECT_EQ(LodMath::SelectLod(0.5f, Sizes, 4), 0u);      // 임계값과 같으면 높은 품질 유지
 }
 
+E_TEST(Lod_HysteresisKeepsPreviousInsideBand)
+{
+	const float* Sizes = LodMath::DefaultScreenSizes; // 1, 0.5, 0.25, 0.12 — 여유 10%: LOD0↔1 띠 [0.45, 0.55)
+	constexpr uint32 None = ~0u;
+	// 처음 보는 인스턴스는 그냥 선택
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.48f, Sizes, 4, 1.0f, None, 0.1f), 1u);
+	// 띠 안: 이전 LOD 유지 (내려가는 중 / 올라가는 중 모두)
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.48f, Sizes, 4, 1.0f, 0, 0.1f), 0u);
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.52f, Sizes, 4, 1.0f, 1, 0.1f), 1u);
+	// 띠 밖: 바뀐다
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.44f, Sizes, 4, 1.0f, 0, 0.1f), 1u);
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.56f, Sizes, 4, 1.0f, 1, 0.1f), 0u);
+	// 크게 바뀌면 여러 단계도 한 번에 (띠 밖으로 멀리)
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.01f, Sizes, 4, 1.0f, 0, 0.1f), 3u);
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(2.0f, Sizes, 4, 1.0f, 3, 0.1f), 0u);
+	// 왕복: 0.5 근처에서 흔들려도 한 번 바뀐 뒤 띠 안에서는 그대로
+	uint32 Lod = 0;
+	for (const float Size : { 0.53f, 0.47f, 0.44f, 0.47f, 0.53f, 0.47f, 0.56f, 0.52f })
+	{
+		Lod = LodMath::SelectLodWithHysteresis(Size, Sizes, 4, 1.0f, Lod, 0.1f);
+	}
+	E_EXPECT_EQ(Lod, 0u); // 0.44에서 1로, 0.56에서 0으로 — 두 번만 바뀜
+	// 여유 0 = 기존 선택, LOD 수 제한/배율도 같이 적용
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.48f, Sizes, 4, 1.0f, 0, 0.0f), 1u);
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.01f, Sizes, 2, 1.0f, 0, 0.1f), 1u);
+	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.24f, Sizes, 4, 2.0f, 0, 0.1f), 0u); // 배율 2 → 0.48, 띠 안이라 0 유지
+}
+
 E_TEST(Lod_SimplifySphereReducesTrianglesAndKeepsWinding)
 {
 	FMeshData Sphere = FPrimitiveShapes::MakeSphere(50.0f, 32, 16);

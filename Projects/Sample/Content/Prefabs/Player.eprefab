@@ -2,32 +2,24 @@
   "Entities": [
     {
       "Components": {
-        "CapsuleColliderComponent": {
-          "HalfHeight": 55.0,
-          "Offset": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "Radius": 35.0
+        "CharacterMovementComponent": {
+          "AirControl": 0.35,
+          "CapsuleHalfHeight": 55.0,
+          "CapsuleRadius": 35.0,
+          "FaceControlYaw": true,
+          "GravityScale": 1.0,
+          "JumpZVelocity": 520.0,
+          "Mass": 80.0,
+          "MaxSlopeAngle": 50.0,
+          "MaxStepHeight": 35.0,
+          "MaxWalkSpeed": 450.0,
+          "PushForce": 4000.0
         },
         "PrefabLinkComponent": {
           "Id": "1",
           "Root": -1
         },
         "ReplicatedComponent": {},
-        "RigidBodyComponent": {
-          "AngularDamping": 0.05,
-          "Density": 500.0,
-          "Friction": 0.0,
-          "LinearDamping": 0.0,
-          "LockRotation": true,
-          "Mass": 80.0,
-          "MotionType": 2,
-          "Restitution": 0.0,
-          "RollingResistance": 0.0,
-          "UseGravity": true
-        },
         "ScriptComponent": {
           "ExecutionLocation": 2,
           "PropertyOverrides": "",

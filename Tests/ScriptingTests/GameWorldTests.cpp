@@ -242,7 +242,8 @@ Net.Connect(Sessions[1].address)
 	World.EndPlay();
 }
 
-// 샘플 플레이어 캐릭터(Prefabs/Player.eprefab + Scripts/PlayerCharacter.lua): 서버 쪽 이동/점프/몸 방향을 물리와 함께 확인
+// 샘플 플레이어 캐릭터(Prefabs/Player.eprefab + Scripts/PlayerCharacter.lua + CharacterMovementComponent):
+// 로컬 플레이어(소유자 0 = Standalone의 로컬 플레이어)의 입력 → 엔진 캐릭터 이동/점프/몸 방향
 E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 {
 	RegisterPhysicsTypes();
@@ -262,13 +263,14 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	{
 		return;
 	}
+	Scene.GetRegistry().Get<FReplicatedComponent>(Player).OwnerPlayerId = 0; // 로컬 플레이어 소유 (스폰너가 하는 일)
 	Scene.UpdateTransforms();
 
 	FScriptSystem  Scripts;
 	FPhysicsSystem Physics;
 	FGameWorld     World;
 	World.Init({ &Scripts, &Physics, nullptr, nullptr, Content });
-	World.BeginPlay(Scene); // Standalone: 서버 쪽 이동이 로컬 입력으로 돈다
+	World.BeginPlay(Scene); // Standalone: 로컬 플레이어 0
 
 	FInput     Input;
 	const auto Run = [&](float Seconds) {
@@ -279,6 +281,7 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 		}
 	};
 	Run(1.0f); // 착지
+	E_EXPECT_TRUE(Physics.HasCharacter(Player));
 	const FVector3 Start = Scene.GetTransform(Player).Position;
 	E_EXPECT_NEAR(Start.Z, 90.0f, 3.0f); // 캡슐 중심 = 반지름 35 + 원기둥 절반 55
 
@@ -288,38 +291,25 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(1.0f);
 	const FVector3 Walked = Scene.GetTransform(Player).Position;
-	E_EXPECT_NEAR(Walked.X - Start.X, 450.0f, 30.0f);
+	E_EXPECT_NEAR(Walked.X - Start.X, 450.0f, 20.0f);
 	E_EXPECT_NEAR(Walked.Y, Start.Y, 1.0f);
 
-	// 시점을 오른쪽 90도로 돌리면 W가 +Y, 몸(Body)도 그쪽을 본다
-	E_EXPECT_TRUE(Scripts.RunString("Net.SetControlRotation(90, 0)"));
+	// 시점을 오른쪽 90도로 돌리면 W가 +Y, 몸(캐릭터 루트)도 그쪽을 본다
+	E_EXPECT_TRUE(Scripts.RunString("Scene.Find('Player'):GetScript().Yaw = 90"));
 	Run(0.5f);
 	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Y - Walked.Y > 150.0f);
-	FEntity Body;
-	for (const FEntity Child : Scene.GetChildren(Player))
-	{
-		if (Scene.GetRegistry().Get<FNameComponent>(Child).Name == "Body")
-		{
-			Body = Child;
-		}
-	}
-	E_EXPECT_TRUE(Body.IsValid());
-	if (Body.IsValid())
-	{
-		E_EXPECT_EQUALS(Scene.GetTransform(Body).Rotation.GetForwardVector(), FVector3::RightVector, 1.0e-3f);
-	}
+	E_EXPECT_EQUALS(Scene.GetTransform(Player).Rotation.GetForwardVector(), FVector3::RightVector, 1.0e-3f);
 
-	// 스페이스: 바닥에서만 점프 (위로 떠오른다)
+	// 스페이스: 바닥에서 점프 (눌린 프레임) → 떠오른다 → 다시 착지
 	Keys.reset();
 	Keys[static_cast<size_t>(EKey::Space)] = true;
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(0.25f);
 	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Z > Start.Z + 60.0f);
-	E_EXPECT_NEAR(Scene.GetTransform(Player).Rotation.GetForwardVector().X, 1.0f, 1.0e-3f); // 캡슐 자체는 회전 고정
 	Keys.reset();
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(1.5f);
-	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Z, 90.0f, 3.0f); // 다시 착지
+	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Z, 90.0f, 3.0f);
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }

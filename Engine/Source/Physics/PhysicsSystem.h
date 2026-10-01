@@ -73,6 +73,8 @@ public:
 	void            SetCharacterState(FScene& Scene, FEntity Entity, const FCharacterState& State); // 보정/재조정 시작점 (트랜스폼도)
 	void            FollowTransform(FScene& Scene, FEntity Entity); // 시뮬레이션 없이 캡슐을 현재 트랜스폼에 맞춘다 (복제로 움직이는 다른 플레이어)
 	bool            IsGrounded(FEntity Entity) const;
+	// 화면용 위치 오프셋 (시뮬레이션 위치는 그대로, 트랜스폼에만 더한다) — 예측 보정을 부드럽게 흡수할 때
+	void            SetCharacterVisualOffset(FScene& Scene, FEntity Entity, const FVector3& Offset);
 	uint32          GetCharacterCount() const { return static_cast<uint32>(Characters.size()); }
 
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
@@ -105,6 +107,7 @@ private:
 		FCharacterMovementComponent CreatedWith; // 이 설정으로 만들었다 (모양/질량이 바뀌면 다시 생성)
 		FVector2                    PendingInput;
 		bool                        bPendingJump = false;
+		FVector3                    VisualOffset;        // 트랜스폼에만 더하는 화면용 오프셋 (예측 보정 흡수)
 		float                       Yaw          = 0.0f; // 몸 방향 (도)
 		FVector3                    WrittenPosition;     // 마지막으로 트랜스폼에 쓴 값 (스크립트 순간이동 감지)
 		bool                        bWritten      = false;

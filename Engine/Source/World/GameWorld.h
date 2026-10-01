@@ -147,6 +147,7 @@ private:
 		std::deque<FCharacterMove> Moves;
 		uint32                     NextSequence    = 0;
 		uint32                     LastAckSequence = 0;
+		FVector3                   VisualOffset; // 보정으로 생긴 위치 차이를 화면에서만 천천히 흡수 (시뮬레이션은 즉시 보정)
 	};
 	struct FServerCharacter // 서버: 원격 플레이어 캐릭터
 	{

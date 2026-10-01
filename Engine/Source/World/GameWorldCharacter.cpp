@@ -21,7 +21,9 @@
 //     - 서버의 원격 플레이어 캐릭터: 받은 무브를 순번 순서대로 시뮬레이션하고 소유자에게 ack(마지막 순번 + 상태)
 //     - 클라이언트의 다른 캐릭터: 복제 스냅샷 보간 위치에 캡슐만 맞춘다 (FollowTransform)
 //   재조정 (ReceiveCharacterAck): ack 상태로 되돌린 뒤 순번이 그보다 큰 기록 무브를 다시 적용한다.
-//     같은 무브 → 같은 결과라 보통 차이가 없고, 서버만 아는 일(다른 캐릭터와 부딪힘, 순간이동)이 있었을 때만 위치가 바뀐다.
+//     같은 무브 → 같은 결과라 보통 차이가 없고, 서버만 아는 일(서버가 시뮬레이션하는 공/상자와 부딪힘, 다른 캐릭터, 순간이동)이 있었을 때만 위치가 바뀐다.
+//     바뀐 만큼은 화면 오프셋(VisualOffset)으로 옮겨 CorrectionSmoothingSeconds에 걸쳐 0으로 줄인다 (시뮬레이션은 즉시 서버를 따른다).
+//     SnapCorrectionDistance보다 크면(순간이동) 바로 옮긴다.
 //   메시지 (비신뢰):
 //     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 점프]...
 //     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥
@@ -32,6 +34,8 @@ namespace
 	constexpr uint8  MaxMovesPerPacket  = 8;   // 겹쳐 보내는 최근 무브 수 (손실 대비)
 	constexpr size_t MaxPredictedMoves  = 240; // 확인 안 된 무브 기록 상한 (4초 — 서버 응답이 끊기면 오래된 것부터 버린다)
 	constexpr size_t MaxQueuedMoves     = 120; // 서버가 한 캐릭터에 쌓아 두는 무브 상한
+	constexpr float  CorrectionSmoothingSeconds = 0.1f;   // 보정 오프셋이 1/e로 줄어드는 시간
+	constexpr float  SnapCorrectionDistance     = 150.0f; // cm, 이보다 큰 보정은 부드럽게 하지 않는다
 
 	bool IsFiniteMove(const FCharacterMove& Move)
 	{
@@ -79,6 +83,13 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 			{
 				FPredictedCharacter& Predicted = PredictedCharacters[Entity];
 				Move.Sequence                  = ++Predicted.NextSequence;
+				// 보정 오프셋을 시간에 따라 줄인다 (이번 프레임 트랜스폼에 반영)
+				Predicted.VisualOffset = Predicted.VisualOffset * std::exp(-DeltaSeconds / CorrectionSmoothingSeconds);
+				if (Predicted.VisualOffset.LengthSquared() < 0.01f)
+				{
+					Predicted.VisualOffset = FVector3();
+				}
+				Physics->SetCharacterVisualOffset(*Scene, Entity, Predicted.VisualOffset);
 				Physics->SimulateCharacter(*Scene, Entity, Move); // 예측: 바로 움직인다
 				Predicted.Moves.push_back(Move);
 				while (Predicted.Moves.size() > MaxPredictedMoves)
@@ -261,5 +272,12 @@ void FGameWorld::ReceiveCharacterAck(const std::vector<uint8>& Message)
 	{
 		++CharacterCorrections;
 		E_LOG(LogNet, Verbose, "캐릭터 재조정: {:.1f}cm (순번 {})", FVector3::Distance(Before, After), Sequence);
+		// 화면은 이전 위치에서 시작해 새 위치로 천천히 (큰 차이는 순간이동으로 보고 바로)
+		Predicted.VisualOffset = Predicted.VisualOffset + (Before - After);
+		if (Predicted.VisualOffset.Length() > SnapCorrectionDistance)
+		{
+			Predicted.VisualOffset = FVector3();
+		}
+		Systems.Physics->SetCharacterVisualOffset(*Scene, Entity, Predicted.VisualOffset);
 	}
 }

@@ -453,9 +453,10 @@ void FPhysicsSystem::SyncCharacters(FScene& Scene)
 		}
 		FCharacterSim& Sim = Found->second;
 		Sim.LastSeenFrame  = CharacterSyncCounter;
-		// 스크립트/에디터가 트랜스폼을 직접 바꿨으면 순간이동 (속도 유지)
+		// 스크립트/에디터가 트랜스폼을 직접 바꿨으면 순간이동 (속도 유지, 화면 오프셋은 버린다)
 		if (Sim.bWritten && FVector3::DistanceSquared(Scene.GetTransform(Entity).Position, Sim.WrittenPosition) > 0.01f)
 		{
+			Sim.VisualOffset = FVector3();
 			World->SetCharacterState(Sim.Character, Position, World->GetCharacterResult(Sim.Character).Velocity);
 			Sim.WrittenPosition = Scene.GetTransform(Entity).Position;
 		}
@@ -580,6 +581,15 @@ void FPhysicsSystem::FollowTransform(FScene& Scene, FEntity Entity)
 	}
 }
 
+void FPhysicsSystem::SetCharacterVisualOffset(FScene& Scene, FEntity Entity, const FVector3& Offset)
+{
+	if (const auto Found = Characters.find(Entity); World && Found != Characters.end())
+	{
+		Found->second.VisualOffset = Offset;
+		WriteCharacterTransform(Scene, Entity);
+	}
+}
+
 bool FPhysicsSystem::IsGrounded(FEntity Entity) const
 {
 	const auto Found = Characters.find(Entity);
@@ -589,8 +599,9 @@ bool FPhysicsSystem::IsGrounded(FEntity Entity) const
 void FPhysicsSystem::WriteCharacterTransform(FScene& Scene, FEntity Entity)
 {
 	FCharacterSim&                Sim       = Characters.at(Entity);
-	const FPhysicsCharacterResult Result    = World->GetCharacterResult(Sim.Character);
+	FPhysicsCharacterResult       Result    = World->GetCharacterResult(Sim.Character);
 	const FQuat                   Rotation  = FQuat::FromEuler(0.0f, Sim.Yaw, 0.0f);
+	Result.Position                         = Result.Position + Sim.VisualOffset;
 	FTransformComponent&          Transform = Scene.GetTransform(Entity);
 	if (Scene.GetParent(Entity).IsValid() || Scene.IsSocketAttached(Entity))
 	{

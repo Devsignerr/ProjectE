@@ -3,6 +3,7 @@
 #include "AI/AISystem.h"
 #include "AI/BehaviorTree/BehaviorTreeInstance.h"
 #include "Core/Assert.h"
+#include "Core/CommandLine.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
 #include "Physics/PhysicsComponents.h"
@@ -200,7 +201,9 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 {
 	if (IsPlaying())
 	{
+		FReplicationClient* const Keep = Replication; // 앱이 이번 BeginPlay 전에 연결한 것 (EndPlay가 비운다)
 		EndPlay();
+		Replication = Keep;
 	}
 	Scene = &InScene;
 	Mode  = InMode;
@@ -212,6 +215,15 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	LastMatchState       = -1;
 	RespawnStartIndex    = 0;
 	PendingSessionRequest.reset();
+	PredictedBodies.clear();
+	PredictionClock        = 0.0f;
+	PredictionTimeOffset   = 0.0f;
+	bPredictionTimingValid = false;
+	LastAckMoveTime        = -1.0f;
+	LastSnapshotTime       = -1.0f;
+	LastRecordTime         = 0.0f;
+	PredictionStats        = {};
+	PredictionStats.bEnabled = InMode == ENetMode::Client && FCommandLine::FromProcess().HasFlag(L"--net-physics-stats");
 	InstallScriptNetHooks();
 
 	const bool bClient = Mode == ENetMode::Client;
@@ -219,8 +231,11 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	{
 		if (bClient)
 		{
-			// 서버가 시뮬레이션하는 복제 엔티티(NetId 보유)는 키네마틱: 복제 트랜스폼을 따라가며 로컬 물체와 충돌
-			Systems.Physics->SetKinematicOverride([](const FScene& Target, FEntity Entity) { return Target.GetRegistry().Has<FNetIdComponent>(Entity); });
+			// 서버가 시뮬레이션하는 복제 엔티티(NetId 보유)는 키네마틱: 복제 트랜스폼을 따라가며 로컬 물체와 충돌.
+			// 물리 예측 중인 바디만 동적으로 로컬 시뮬레이션한다 (바뀌면 FPhysicsSystem이 바디를 다시 만든다)
+			Systems.Physics->SetKinematicOverride([this](const FScene& Target, FEntity Entity) {
+				return Target.GetRegistry().Has<FNetIdComponent>(Entity) && !IsPhysicsSimulatedLocally(Entity);
+			});
 		}
 		else
 		{
@@ -247,6 +262,12 @@ void FGameWorld::EndPlay()
 	{
 		return;
 	}
+	if (PredictionStats.bEnabled)
+	{
+		LogPhysicsPredictionStats("최종");
+	}
+	PredictedBodies.clear();
+	Replication = nullptr;
 	AI->End(); // Lua 노드 OnAbort가 스크립트를 부르므로 Lua 상태보다 먼저
 	Systems.Scripts->EndPlay();
 	SessionSearch.Stop();
@@ -278,6 +299,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	TickPhysicsPrediction(DeltaSeconds);          // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
 	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
@@ -295,6 +317,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
 	Scene->UpdateTransforms();
+	RecordPhysicsPrediction();               // 이번 스텝 결과 기록 (서버 스냅샷과 비교할 로컬 과거)
 	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	Systems.Scripts->LateUpdate(DeltaSeconds, Input);

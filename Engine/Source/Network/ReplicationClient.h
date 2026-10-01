@@ -30,15 +30,10 @@ public:
 
 	bool    ConsumeAssetsChanged();
 	FEntity FindEntity(uint32 NetId) const; // 없거나 파괴됐으면 NullEntity
-	// 거짓을 돌려주는 엔티티에는 스냅샷 보간 트랜스폼을 쓰지 않는다 (소유 클라이언트가 예측하는 캐릭터 — FGameWorld::IsPredicted)
+	// 거짓을 돌려주는 엔티티에는 스냅샷 보간 트랜스폼을 쓰지 않는다 (소유 클라이언트가 예측하는 캐릭터·물리 바디 — FGameWorld::IsPredicted)
 	void SetTransformFilter(std::function<bool(FEntity)> ShouldApply) { TransformFilter = std::move(ShouldApply); }
 
-private:
-	void ApplySpawn(const std::vector<uint8>& Message);
-	void ApplyDestroy(const std::vector<uint8>& Message);
-	void ApplyState(const std::vector<uint8>& Message);
-	void ApplyTransformSnapshot(const std::vector<uint8>& Message);
-
+	// 받은 스냅샷 (로컬 트랜스폼, 서버 시각순). 물리 예측이 서버 상태를 현재로 외삽할 때 읽는다
 	struct FTransformSample
 	{
 		float    ServerTime = 0.0f;
@@ -46,6 +41,19 @@ private:
 		FQuat    Rotation;
 		FVector3 Scale;
 	};
+	bool  HasServerClock() const { return bClockValid; }
+	float GetServerClock() const { return ServerClock; } // 추정한 현재 서버 시각 (가장 최근 스냅샷 시각을 따라간다)
+	float GetLatestSnapshotTime() const { return LatestSnapshotTime; } // 받은 가장 최근 스냅샷의 서버 시각 (없으면 음수)
+	const std::deque<FTransformSample>* FindTransformSamples(FEntity Entity) const; // 없으면 nullptr
+	// Update가 쓰는 것과 같은 보간 값 (필터와 무관). 스냅샷이 없으면 false
+	bool SampleTransform(FEntity Entity, FVector3& OutPosition, FQuat& OutRotation) const;
+
+private:
+	void ApplySpawn(const std::vector<uint8>& Message);
+	void ApplyDestroy(const std::vector<uint8>& Message);
+	void ApplyState(const std::vector<uint8>& Message);
+	void ApplyTransformSnapshot(const std::vector<uint8>& Message);
+	static FTransformSample Interpolate(const std::deque<FTransformSample>& Buffer, float RenderTime); // Buffer는 비어 있지 않다
 
 	FScene*                              Scene = nullptr;
 	std::unordered_map<uint32, FEntity>  Entities; // NetId → 엔티티
@@ -55,4 +63,5 @@ private:
 	std::function<bool(FEntity)>                             TransformFilter;
 	float                                                    ServerClock  = 0.0f; // 추정한 현재 서버 시각
 	bool                                                     bClockValid  = false;
+	float                                                    LatestSnapshotTime = -1.0f;
 };

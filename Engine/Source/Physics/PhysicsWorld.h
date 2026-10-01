@@ -6,6 +6,7 @@
 #include "Physics/PhysicsComponents.h"
 
 #include <memory>
+#include <vector>
 
 E_DECLARE_ENGINE_LOG_CATEGORY(LogPhysics)
 
@@ -97,6 +98,8 @@ public:
 	void     AddImpulse(uint32 Body, const FVector3& Impulse);
 	void     SetLinearVelocity(uint32 Body, const FVector3& Velocity);
 	FVector3 GetLinearVelocity(uint32 Body) const;
+	void     SetAngularVelocity(uint32 Body, const FVector3& RadiansPerSecond); // 각속도는 rad/s (축은 엔진 축 그대로)
+	FVector3 GetAngularVelocity(uint32 Body) const;
 	float    GetMass(uint32 Body) const; // kg, 정적/키네마틱은 0
 
 	// 한 스텝 진행 후 접촉 중인 동적 바디에 구르기 저항을 적용한다
@@ -119,6 +122,12 @@ public:
 	void SetCharacterState(uint32 Character, const FVector3& Position, const FVector3& Velocity);
 	void SetCharacterRotation(uint32 Character, const FQuat& Rotation);
 	FPhysicsCharacterResult GetCharacterResult(uint32 Character) const;
+	// 실제로 닿은 접촉 상대 바디의 UserData (지난 UpdateCharacter/SetCharacterState 기준, 다른 캐릭터 제외)
+	void GetCharacterContacts(uint32 Character, std::vector<uint64>& OutUserData) const;
+	// 동적 바디와 겹친 가장 깊은 거리 (cm, 0 = 겹침 없음). 지난 UpdateCharacter/SetCharacterState 기준
+	float GetCharacterDynamicPenetration(uint32 Character) const;
+	// 캐릭터가 동적 바디를 미는(충격량) 여부 — 모든 캐릭터 공용. 끄면 동적 바디도 밀리지 않는 벽처럼 막는다 (예측 재조정의 다시 적용)
+	void SetCharactersPushBodies(bool bPush);
 
 private:
 	struct FImpl;

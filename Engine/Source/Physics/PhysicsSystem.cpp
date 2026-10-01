@@ -166,6 +166,10 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 
 void FPhysicsSystem::SyncBodies(FScene& Scene)
 {
+	if (!World)
+	{
+		return;
+	}
 	FRegistry& Registry = Scene.GetRegistry();
 
 	// 콜라이더를 가진 엔티티 수집 (순회 중에는 컴포넌트를 바꾸지 않지만 바디 생성은 밖에서)
@@ -373,6 +377,83 @@ FVector3 FPhysicsSystem::GetVelocity(FEntity Entity) const
 		return World->GetLinearVelocity(Found->second.Body);
 	}
 	return FVector3();
+}
+
+bool FPhysicsSystem::IsDynamicBody(FEntity Entity) const
+{
+	const auto Found = Bodies.find(Entity);
+	return World && Found != Bodies.end() && Found->second.Motion == EPhysicsMotionType::Dynamic;
+}
+
+bool FPhysicsSystem::GetBodyMotion(FEntity Entity, FPhysicsBodyMotion& OutMotion) const
+{
+	const auto Found = Bodies.find(Entity);
+	if (!World || Found == Bodies.end() || Found->second.Motion != EPhysicsMotionType::Dynamic)
+	{
+		return false;
+	}
+	const FBodyState& State   = Found->second;
+	OutMotion.Position        = State.CurrentPosition;
+	OutMotion.Rotation        = State.CurrentRotation;
+	OutMotion.LinearVelocity  = World->GetLinearVelocity(State.Body);
+	OutMotion.AngularVelocity = World->GetAngularVelocity(State.Body);
+	return true;
+}
+
+void FPhysicsSystem::SetBodyMotion(FEntity Entity, const FPhysicsBodyMotion& Motion)
+{
+	const auto Found = Bodies.find(Entity);
+	if (!World || Found == Bodies.end() || Found->second.Motion != EPhysicsMotionType::Dynamic)
+	{
+		return;
+	}
+	FBodyState&  State    = Found->second;
+	const FQuat  Rotation = Motion.Rotation.GetNormalized();
+	World->SetTransform(State.Body, Motion.Position, Rotation);
+	World->SetLinearVelocity(State.Body, Motion.LinearVelocity);
+	World->SetAngularVelocity(State.Body, Motion.AngularVelocity);
+	State.PreviousPosition = State.CurrentPosition = Motion.Position;
+	State.PreviousRotation = State.CurrentRotation = Rotation;
+}
+
+void FPhysicsSystem::CorrectBody(FEntity Entity, const FVector3& DeltaPosition, const FQuat& DeltaRotation, const FVector3& DeltaVelocity,
+                                 const FVector3& DeltaAngularVelocity)
+{
+	const auto Found = Bodies.find(Entity);
+	if (!World || Found == Bodies.end() || Found->second.Motion != EPhysicsMotionType::Dynamic)
+	{
+		return;
+	}
+	FBodyState& State      = Found->second;
+	State.CurrentPosition  = State.CurrentPosition + DeltaPosition;
+	State.PreviousPosition = State.PreviousPosition + DeltaPosition;
+	State.CurrentRotation  = (DeltaRotation * State.CurrentRotation).GetNormalized();
+	State.PreviousRotation = (DeltaRotation * State.PreviousRotation).GetNormalized();
+	World->SetTransform(State.Body, State.CurrentPosition, State.CurrentRotation);
+	if (DeltaVelocity.LengthSquared() > 0.0f)
+	{
+		World->SetLinearVelocity(State.Body, World->GetLinearVelocity(State.Body) + DeltaVelocity);
+	}
+	if (DeltaAngularVelocity.LengthSquared() > 0.0f)
+	{
+		World->SetAngularVelocity(State.Body, World->GetAngularVelocity(State.Body) + DeltaAngularVelocity);
+	}
+}
+
+void FPhysicsSystem::PoseBody(FEntity Entity, const FVector3& Position, const FQuat& Rotation)
+{
+	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end() && Found->second.Motion == EPhysicsMotionType::Dynamic)
+	{
+		World->SetTransform(Found->second.Body, Position, Rotation.GetNormalized());
+	}
+}
+
+void FPhysicsSystem::RestoreBodyPose(FEntity Entity)
+{
+	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end() && Found->second.Motion == EPhysicsMotionType::Dynamic)
+	{
+		World->SetTransform(Found->second.Body, Found->second.CurrentPosition, Found->second.CurrentRotation);
+	}
 }
 
 float FPhysicsSystem::GetMass(FEntity Entity) const
@@ -587,6 +668,36 @@ void FPhysicsSystem::SetCharacterVisualOffset(FScene& Scene, FEntity Entity, con
 	{
 		Found->second.VisualOffset = Offset;
 		WriteCharacterTransform(Scene, Entity);
+	}
+}
+
+void FPhysicsSystem::GetCharacterContacts(FEntity Entity, std::vector<FEntity>& OutEntities) const
+{
+	OutEntities.clear();
+	const auto Found = Characters.find(Entity);
+	if (!World || Found == Characters.end())
+	{
+		return;
+	}
+	std::vector<uint64> UserData;
+	World->GetCharacterContacts(Found->second.Character, UserData);
+	for (const uint64 Id : UserData)
+	{
+		OutEntities.push_back(FEntity::FromId(Id));
+	}
+}
+
+float FPhysicsSystem::GetCharacterDynamicPenetration(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return World && Found != Characters.end() ? World->GetCharacterDynamicPenetration(Found->second.Character) : 0.0f;
+}
+
+void FPhysicsSystem::SetCharactersPushBodies(bool bPush)
+{
+	if (World)
+	{
+		World->SetCharactersPushBodies(bPush);
 	}
 }
 

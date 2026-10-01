@@ -63,6 +63,8 @@ struct FNetworkSettings
 	uint32 LanDiscoveryPort = 7778;
 	uint32 MaxPlayers       = 16; // 서버의 원격 플레이어 최대 수
 	bool   bClientPrediction = true; // 캐릭터 클라이언트 예측 (끄면 캐릭터별 설정과 무관하게 모두 끈다 — 비교/디버깅)
+	bool   bPhysicsPrediction = true;          // 물리 예측: 예측 캐릭터 근처/접촉한 복제 동적 바디를 클라이언트가 로컬로 시뮬레이션 (캐릭터 예측이 켜져 있어야)
+	float  PhysicsPredictionRadius = 300.0f;   // cm, 예측 캐릭터 중심에서 이 거리 안의 바디 중심이면 예측 대상
 };
 
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.

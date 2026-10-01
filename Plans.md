@@ -610,9 +610,11 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 30 — 충돌·영역 알림 / 관절 / 사망 래그돌 (트랙 A)
 
-- [~] 30-1. 충돌 시작/끝 + 트리거(센서) 영역 들어옴/나감 이벤트 → Lua/게임 모듈
-- [ ] 30-2. 물리 관절(고정/경첩/거리/구 관절 등) 컴포넌트
-- [ ] 30-3. 사망 래그돌 (스켈레톤 → 바디·관절 생성, 사망 시 전환)
+- [x] 30-1. 충돌·트리거 알림: 콜라이더 `bIsTrigger`, 강체 `bReportContacts`. Jolt 접촉 리스너는 보고 대상(트리거/ReportContacts/스크립트 엔티티/게임 모듈 `WantsCollisionEvents`) 바디가 낀 접촉만 잠금 아래 모으고, 스텝 뒤 메인 스레드에서 바디 쌍 단위로 시작 1회/끝 1회 정리(잠드는 "접촉 제거"는 끝 아님 — 깨어난 뒤 온전한 스텝 하나 동안 `WereBodiesInContact` 거짓이면 끝, 바디 삭제는 즉시 끝). 트리거 = 잠들지 않는 키네마틱 센서 + `CollideKinematicVsNonDynamic`, 전용 `Trigger` 레이어, 레이캐스트 무시. 전달은 `FGameWorld`(`World/GameWorldPhysicsEvents.cpp`)가 물리 → UpdateTransforms → 애니메이션 파라미터 뒤, `OnLateUpdate` 앞. Lua `OnCollisionBegin(other, info{Point,Normal,Impulse,Speed})`/`OnCollisionEnd`/`OnTriggerEnter`/`OnTriggerExit`(상대 파괴 시 nil), 게임 모듈 같은 이름. 클라이언트는 복제 엔티티 이벤트를 만들지 않음. 테스트 `PhysicsEvents_*` 4개, `CollisionScript_*` 2개
+- [x] 30-2. 관절: `Fixed/Hinge(제한·모터·마찰)/Distance(최소·최대·스프링)/BallJointComponent(원뿔)` + 공통 Target(비면 월드)/Anchor/BreakForce(N)/CollideConnected. `FPhysicsWorld`가 Jolt 관절 소유(바디보다 먼저 제거), 바디 쌍 충돌 끄기 = 충돌 그룹(ID = 바디 ID) + 참조 계수 GroupFilter. `FPhysicsSystem::SyncJoints`(바디 동기화 뒤, 설정/바디 변경 시 현재 자세로 재생성), 구속 힘 > BreakForce → 제거 + `OnJointBreak(other, force)`. 뷰포트 관절 표시. `Demo_Joints`(경첩 문, 사슬, 스프링, 모터 풍차, 끊어지는 판 — 충격 4804 → 5134 N에서 끊어짐, 트리거 램프). 테스트 `PhysicsJoints_*` 7개
+- [x] 30-3. 사망 래그돌: `FRagdollComponent`(`Physics/Ragdoll.h`), 순수 `RagdollMath::BuildLayout`(뼈 → 캡슐 + SwingTwist 관절, 짧은 뼈 합치기, 이웃/겹침/주인 바디 충돌 끄기 — CharacterVirtual 질의도 따름). `FAnimationRuntime::bPhysicsPose`면 애니메이션 갱신 생략 → 물리가 뼈 로컬 트랜스폼을 부모 먼저 씀, 끄면 원래 로컬로 복원. 사망 연동 `World/GameWorldRagdoll.cpp`(게임플레이 규칙 뒤·물리 앞, 자신/조상 `FHealthComponent` 살아 있음↔죽음 전환 때만). 래그돌은 비복제 로컬 연출(각자 복제된 체력으로 판단). Lua `entity:EnableRagdoll/DisableRagdoll/IsRagdollActive`. `Demo_Ragdoll`(Fox 뼈 24 → 캡슐 23·관절 22). 테스트 `RagdollMath_*` 2개, `Ragdoll_EnableFallsAndDisableRestores`, `RagdollScript_*` 2개. `GameModuleApiVersion` 8(머지 시 B의 7 위로) (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): Demo_Joints 문/사슬/스프링 손맛, Fox 래그돌 캡슐 굵기(`RadiusScale` 0.25)·쓰러지는 모양, `Player.eprefab`에 `RagdollComponent`를 달지(지금은 사망 시 모델 숨김)
+- 후속: 바디 재생성 시 쌍이 끝 → 다시 시작으로 보임, 캐릭터 ↔ 정적 벽 접촉 미보고, 예측 접촉 때문에 `CollisionBegin`이 한 스텝 먼저 올 수 있음(충격은 솔버 전 추정), 래그돌 켠 채 EndPlay 시 `bPhysicsPose` 남음(플레이 씬은 버려서 현재 안전), 래그돌 캡슐은 접촉 이벤트 없음, 전용 서버는 모델 데이터 없어 래그돌 안 만듦, 부분 래그돌/일어나기/`.emeta` 뼈별 설정 UI
 
 ## Phase 31 — 게임 중 맵 바꾸기 / 큰 맵 나눠 불러오기 (트랙 B)
 

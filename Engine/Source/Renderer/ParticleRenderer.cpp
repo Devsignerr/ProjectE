@@ -509,8 +509,8 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera)
 
 	// 프레임 업로드 버퍼(용량 고정)를 넘기면 남은 만큼만 그린다 (뒤따르는 패스 상수용 여유를 남긴다)
 	const auto AvailableBytes = [&]() {
-		const uint64 Used = AlignUp<uint64>(DynamicBuffer.GetUsed(), 256) + GUploadReserveBytes;
-		return DynamicBuffer.GetCapacity() > Used ? DynamicBuffer.GetCapacity() - Used : 0;
+		const uint64 Max = DynamicBuffer.GetMaxAllocation();
+		return Max > GUploadReserveBytes + 256 ? Max - GUploadReserveBytes - 256 : 0;
 	};
 	const auto WarnFull = [&]() {
 		if (!bWarnedBufferFull)

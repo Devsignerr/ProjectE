@@ -303,12 +303,14 @@ struct FSkinnedVertexInput
 	float4 Weights  : BLENDWEIGHT;
 };
 
-// 스킨 메시: 팔레트로 바로 월드 공간 (인스턴스 행렬 없음). 본 행렬은 균등 스케일 + 회전 + 이동을 가정해 법선도 같은 3x3으로 변환
-FPixelInput VSSkinned(FSkinnedVertexInput Input)
+// 스킨 메시 (인스턴싱): 인스턴스의 BoneOffset 팔레트로 바로 월드 공간 (인스턴스 행렬 없음).
+// 본 행렬은 균등 스케일 + 회전 + 이동을 가정해 법선도 같은 3x3으로 변환
+FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID)
 {
 	FPixelInput Output;
 
-	const float4x4 Skin          = ComputeSkinMatrix(Input.Joints, Input.Weights);
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	const float4x4      Skin     = ComputeSkinMatrix(Instance.BoneOffset, Input.Joints, Input.Weights);
 	const float4   WorldPosition = mul(float4(Input.Position, 1.0f), Skin);
 	const float3x3 Skin3         = (float3x3)Skin;
 	Output.Position      = mul(WorldPosition, ViewProjection);

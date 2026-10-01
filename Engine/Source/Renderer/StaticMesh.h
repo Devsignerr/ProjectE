@@ -37,8 +37,8 @@ public:
 	// 스킨 정점 스트림(슬롯 1) 추가. Init 이후 호출, 정점 수가 같아야 한다
 	bool InitSkin(FD3D12Device& Device, FD3D12CommandQueue& Queue, const std::vector<FSkinVertex>& SkinVertices, const wchar_t* DebugName);
 	bool IsSkinned() const { return bSkinned; }
-	// 슬롯 0 + 슬롯 1(스킨) 바인딩 후 드로우 (IsSkinned일 때만)
-	void DrawSkinned(ID3D12GraphicsCommandList* CommandList) const;
+	// 슬롯 0 + 슬롯 1(스킨) 바인딩 후 드로우 (IsSkinned일 때만, 항상 LOD0 — 스킨 메시는 LOD 없음). 인스턴스는 SV_InstanceID
+	void DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount = 1) const;
 
 	uint32      GetIndexCount() const { return IndexCount; } // LOD0
 	uint32      GetLodCount() const { return static_cast<uint32>(Lods.size()); }

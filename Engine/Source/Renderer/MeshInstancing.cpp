@@ -19,9 +19,9 @@ void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform
 		return;
 	}
 	const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
-	if (Mesh == nullptr)
+	if (Mesh == nullptr || (SkinPalettes != nullptr && SkinPalettes->IsCulled(Entity)))
 	{
-		return;
+		return; // 가시성 판정에서 빠진 스킨 메시는 정적 메시로 그리면 안 된다
 	}
 
 	FMeshInstance& Instance = Instances.emplace_back();
@@ -34,7 +34,8 @@ void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform
 	// 스킨 메시는 팔레트가 바로 월드로 보낸다 (경계도 팔레트 기준)
 	if (const FSkinnedDrawInfo* Skinned = SkinPalettes != nullptr ? SkinPalettes->Find(Entity) : nullptr)
 	{
-		Instance.SkinPalette = Skinned->Palette;
+		Instance.bSkinned    = true;
+		Instance.BoneOffset  = Skinned->BoneOffset;
 		Instance.WorldBounds = Skinned->WorldBounds;
 		Instance.World       = FMatrix4x4::Identity;
 	}
@@ -88,7 +89,8 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 	{
 		const FMeshInstance& Instance = Instances[Index];
 		FInstanceGpuData     Gpu;
-		Gpu.World = Instance.World;
+		Gpu.World      = Instance.World;
+		Gpu.BoneOffset = Instance.BoneOffset;
 		if (!Instance.IsSkinned())
 		{
 			const FMatrix4x4 Normal = Instance.World.GetInverse().GetTransposed();
@@ -100,6 +102,38 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 		std::memcpy(Data + Index, &Gpu, sizeof(Gpu)); // 업로드 힙(쓰기 결합)은 순차 쓰기만
 	}
 	GpuData = Allocation.GpuAddress;
+}
+
+void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& Batches, const FMeshInstanceList& Instances,
+                      ID3D12PipelineState* StaticPipeline, ID3D12PipelineState* SkinnedPipeline, uint32 RootIndex, uint32 DestOffset,
+                      uint32& InOutDrawCalls, uint64& InOutTriangles)
+{
+	bool bSkinnedBound = false;
+	for (const FInstanceBatch& Batch : Batches.GetBatches())
+	{
+		const FMeshInstance& Instance = Instances[Batch.Instance];
+		if (Instance.IsSkinned() != bSkinnedBound)
+		{
+			bSkinnedBound = Instance.IsSkinned();
+			CommandList->SetPipelineState(bSkinnedBound ? SkinnedPipeline : StaticPipeline);
+		}
+		CommandList->SetGraphicsRoot32BitConstant(RootIndex, Batch.First, DestOffset);
+		if (bSkinnedBound)
+		{
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
+			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+		}
+		else
+		{
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
+			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+		}
+		++InOutDrawCalls;
+	}
+	if (bSkinnedBound)
+	{
+		CommandList->SetPipelineState(StaticPipeline);
+	}
 }
 
 void FMeshPassBatches::Reset()

@@ -59,6 +59,9 @@ struct FSceneRenderStats
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
+	uint32 SkinnedDrawn  = 0; // 팔레트를 계산한 스킨 메시 (메인 프러스텀 ∪ 그림자 캐스터 볼륨)
+	uint32 SkinnedCulled = 0; // 가시성 판정에서 빠진 스킨 메시
+	uint64 UploadBytes   = 0; // 씬 렌더러가 이번 프레임 동적 업로드 버퍼에 쓴 양
 	// 오클루전 컬링 (GPU 리드백 — 몇 프레임 늦은 값): 검사한 정적 인스턴스, 1단계/2단계에서 그린 수
 	uint32 OcclusionTested = 0;
 	uint32 OcclusionPhase1 = 0;
@@ -99,6 +102,8 @@ public:
 	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
 	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)
 	bool                 bEnableOcclusion = false;
+	// 스킨 팔레트 가시성 컬링: 메인 프러스텀 ∪ 그림자 캐스터 볼륨 밖 스킨 메시는 팔레트/드로우 생략. 끄면 모두 계산 (--no-skin-culling)
+	bool                 bSkinVisibilityCulling = true;
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -178,6 +183,8 @@ private:
 	using FClock = std::chrono::steady_clock;
 	void BeginTimer(ERenderTimer Timer);
 	void EndTimer(ERenderTimer Timer);
+	void BeginCpuTimer(ERenderTimer Timer); // GPU 작업이 없는 구간 (같은 칸 CPU 시간에 더한다)
+	void EndCpuTimer(ERenderTimer Timer);
 	void AccumulatePerfCapture();
 	void LogPerfCapture() const;
 
@@ -205,6 +212,9 @@ private:
 		double OcclusionDrawn  = 0.0; // 1단계 + 2단계
 		double OcclusionPhase2 = 0.0; // 2단계에서 그린 수 (이전 프레임 HZB만 썼다면 한 프레임 늦게 나왔을 물체)
 		uint32 TotalMeshes     = 0;
+		double SkinnedDrawn    = 0.0;
+		double SkinnedCulled   = 0.0;
+		double UploadBytes     = 0.0;
 	};
 	FPerfCapture PerfCapture;
 };

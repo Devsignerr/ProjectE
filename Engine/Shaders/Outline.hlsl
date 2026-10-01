@@ -21,10 +21,11 @@ float4 MaskVS(float3 Position : POSITION, uint InstanceId : SV_InstanceID) : SV_
 	return mul(mul(float4(Position, 1.0f), Instance.World), ViewProjection);
 }
 
-// 스킨 메시: 팔레트가 바로 월드로 보낸다
-float4 MaskSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT) : SV_Position
+// 스킨 메시 (인스턴싱): 인스턴스 팔레트가 바로 월드로 보낸다
+float4 MaskSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT, uint InstanceId : SV_InstanceID) : SV_Position
 {
-	return mul(mul(float4(Position, 1.0f), ComputeSkinMatrix(Joints, Weights)), ViewProjection);
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	return mul(mul(float4(Position, 1.0f), ComputeSkinMatrix(Instance.BoneOffset, Joints, Weights)), ViewProjection);
 }
 
 float MaskPS() : SV_Target

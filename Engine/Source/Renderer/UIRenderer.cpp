@@ -196,9 +196,9 @@ void FUIRenderer::Render(const FUIDrawList& DrawList, const FRenderOutput& Outpu
 	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 
-	// 사각형 전체를 한 번에 올린다 (프레임 업로드 버퍼 용량을 넘으면 앞쪽만)
-	const uint64 Used      = AlignUp<uint64>(DynamicBuffer.GetUsed(), 256) + GUploadReserveBytes;
-	const uint64 Available = DynamicBuffer.GetCapacity() > Used ? DynamicBuffer.GetCapacity() - Used : 0;
+	// 사각형 전체를 한 번에 올린다 (프레임 업로드 버퍼 확장 상한을 넘으면 앞쪽만)
+	const uint64 MaxBytes  = DynamicBuffer.GetMaxAllocation();
+	const uint64 Available = MaxBytes > GUploadReserveBytes + 256 ? MaxBytes - GUploadReserveBytes - 256 : 0;
 	const uint64 MaxQuads  = Available / sizeof(FUIDrawQuad);
 	const uint64 QuadCount = std::min<uint64>(DrawList.Quads.size(), MaxQuads);
 	if (QuadCount < DrawList.Quads.size() && !bWarnedBufferFull)

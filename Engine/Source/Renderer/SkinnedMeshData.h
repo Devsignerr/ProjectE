@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/Math/Math.h"
 
@@ -14,7 +14,7 @@ struct FSkinVertex
 };
 static_assert(sizeof(FSkinVertex) == 24);
 
-// 셰이더 팔레트 크기 (SkinnedMesh.hlsli SkinBones와 일치). 초과 조인트는 임포트 시 경고 후 잘린다
+// 메시 하나의 최대 조인트 수 (프레임 팔레트 SkinnedMesh.hlsli SkinBones에서 인스턴스마다 이만큼까지). 초과 조인트는 임포트 시 경고 후 잘린다
 inline constexpr uint32 MaxSkinJoints = 256;
 
 // glTF 스킨 (엔진 좌표계/단위로 변환됨)

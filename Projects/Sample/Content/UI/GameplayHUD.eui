@@ -1,0 +1,386 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1920,
+    1080
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Visibility": "SelfHitTestInvisible",
+    "Enabled": true,
+    "Opacity": 1,
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "StatusPanel",
+        "Visibility": "SelfHitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            32,
+            32,
+            520,
+            200
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.05,
+            0.06,
+            0.09,
+            0.78
+          ],
+          "CornerRadius": 12,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            1,
+            1,
+            0.12
+          ]
+        },
+        "ContentPadding": [
+          18,
+          12,
+          18,
+          12
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "StatusBox",
+            "Visibility": "SelfHitTestInvisible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "StateText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "대기 중",
+                "FontSize": 30,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1.5,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "TimeText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "남은 시간 --",
+                "FontSize": 24,
+                "TextColor": [
+                  0.8,
+                  0.85,
+                  0.95,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1.5,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "ScoreText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "점수 0 / 15",
+                "FontSize": 24,
+                "TextColor": [
+                  1,
+                  0.85,
+                  0.35,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1.5,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "BestText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "최고 기록 -",
+                "FontSize": 20,
+                "TextColor": [
+                  0.7,
+                  0.75,
+                  0.8,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1.5,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  0
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "BannerText",
+        "Visibility": "HitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Text": "",
+        "FontSize": 64,
+        "TextColor": [
+          1,
+          0.9,
+          0.4,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 1.5,
+        "OutlineColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          0
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ],
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.3
+          ],
+          "AnchorMax": [
+            0.5,
+            0.3
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": true,
+          "ZOrder": 1
+        }
+      },
+      {
+        "Type": "Text",
+        "Name": "LogText",
+        "Visibility": "HitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Text": "",
+        "FontSize": 22,
+        "TextColor": [
+          0.9,
+          0.9,
+          0.9,
+          1
+        ],
+        "Justify": "Left",
+        "Wrap": false,
+        "OutlineWidth": 1.5,
+        "OutlineColor": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          0
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ],
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            32,
+            -32,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        }
+      }
+    ]
+  },
+  "Animations": []
+}

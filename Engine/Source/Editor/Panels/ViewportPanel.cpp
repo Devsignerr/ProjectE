@@ -38,7 +38,89 @@
 namespace
 {
 	constexpr uint32 GMinViewportSize = 16;
-}
+
+	// 선택한 점광원/스포트라이트의 영향 반경과 원뿔을 뷰포트 위에 선으로 그린다 (ImGui 오버레이, 깊이 무시)
+	void DrawSelectedLightShapes(FEditorContext& Context, const ImVec2& ImagePosition, const ImVec2& ImageSize)
+	{
+		const FMatrix4x4 ViewProjection = Context.Camera->GetViewProjectionMatrix();
+		ImDrawList*      DrawList       = ImGui::GetWindowDrawList();
+		const ImU32      OuterColor     = ImGui::ColorConvertFloat4ToU32(ImVec4(FEditorTheme::Warning.x, FEditorTheme::Warning.y, FEditorTheme::Warning.z, 0.85f));
+		const ImU32      InnerColor     = ImGui::ColorConvertFloat4ToU32(ImVec4(FEditorTheme::Warning.x, FEditorTheme::Warning.y, FEditorTheme::Warning.z, 0.4f));
+
+		auto Project = [&](const FVector3& P, ImVec2& Out) {
+			const FVector3 Clip = ViewProjection.TransformPosition(P);
+			const float    W    = P.X * ViewProjection.M[0][3] + P.Y * ViewProjection.M[1][3] + P.Z * ViewProjection.M[2][3] + ViewProjection.M[3][3];
+			if (W <= 1.0f)
+			{
+				return false; // 카메라 뒤/근평면 근처
+			}
+			Out = ImVec2(ImagePosition.x + (Clip.X / W * 0.5f + 0.5f) * ImageSize.x, ImagePosition.y + (0.5f - Clip.Y / W * 0.5f) * ImageSize.y);
+			return true;
+		};
+		auto Line = [&](const FVector3& A, const FVector3& B, ImU32 Color) {
+			ImVec2 SA;
+			ImVec2 SB;
+			if (Project(A, SA) && Project(B, SB))
+			{
+				DrawList->AddLine(SA, SB, Color, 1.5f);
+			}
+		};
+		auto Circle = [&](const FVector3& Center, const FVector3& AxisU, const FVector3& AxisV, float Radius, ImU32 Color) {
+			constexpr int32 Segments = 48;
+			FVector3        Previous = Center + AxisU * Radius;
+			for (int32 Index = 1; Index <= Segments; ++Index)
+			{
+				const float    Angle = FMath::TwoPi * static_cast<float>(Index) / static_cast<float>(Segments);
+				const FVector3 Point = Center + (AxisU * FMath::Cos(Angle) + AxisV * FMath::Sin(Angle)) * Radius;
+				Line(Previous, Point, Color);
+				Previous = Point;
+			}
+		};
+
+		DrawList->PushClipRect(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y), true);
+		const FRegistry& Registry = Context.Scene->GetRegistry();
+		for (const FEntity Entity : Context.Selection.GetEntities())
+		{
+			const FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity);
+			if (Transform == nullptr)
+			{
+				continue;
+			}
+			const FVector3 Position = Transform->GetWorldPosition();
+			if (const FPointLightComponent* Point = Registry.TryGet<FPointLightComponent>(Entity))
+			{
+				Circle(Position, FVector3::ForwardVector, FVector3::RightVector, Point->Radius, OuterColor);
+				Circle(Position, FVector3::ForwardVector, FVector3::UpVector, Point->Radius, OuterColor);
+				Circle(Position, FVector3::RightVector, FVector3::UpVector, Point->Radius, OuterColor);
+			}
+			if (const FSpotLightComponent* Spot = Registry.TryGet<FSpotLightComponent>(Entity))
+			{
+				const FVector3 Direction = Transform->GetWorldForward();
+				const FVector3 Helper    = FMath::Abs(Direction.Z) > 0.99f ? FVector3::ForwardVector : FVector3::UpVector;
+				const FVector3 AxisU     = FVector3::Cross(Helper, Direction).GetNormalized();
+				const FVector3 AxisV     = FVector3::Cross(Direction, AxisU);
+				const float    Cones[2]  = { Spot->OuterConeAngle, FMath::Min(Spot->InnerConeAngle, Spot->OuterConeAngle) };
+				for (int32 Cone = 0; Cone < 2; ++Cone)
+				{
+					const float    Angle  = FMath::DegreesToRadians(FMath::Clamp(Cones[Cone], 0.0f, 80.0f));
+					const FVector3 Center = Position + Direction * (Spot->Radius * FMath::Cos(Angle));
+					const float    Radius = Spot->Radius * FMath::Sin(Angle);
+					const ImU32    Color  = Cone == 0 ? OuterColor : InnerColor;
+					Circle(Center, AxisU, AxisV, Radius, Color);
+					if (Cone == 0)
+					{
+						for (int32 Edge = 0; Edge < 4; ++Edge)
+						{
+							const float EdgeAngle = FMath::HalfPi * static_cast<float>(Edge);
+							Line(Position, Center + (AxisU * FMath::Cos(EdgeAngle) + AxisV * FMath::Sin(EdgeAngle)) * Radius, Color);
+						}
+					}
+				}
+			}
+		}
+		DrawList->PopClipRect();
+	}
+} // namespace
 
 FViewportPanel::FViewportPanel()  = default;
 FViewportPanel::~FViewportPanel() = default;
@@ -123,6 +205,7 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				ImGui::EndDragDropTarget();
 			}
 
+			DrawSelectedLightShapes(Context, ImagePosition, ImageSize);
 			DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
 
 			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택 (툴바를 그린 뒤 처리)

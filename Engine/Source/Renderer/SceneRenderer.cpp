@@ -31,6 +31,8 @@ namespace
 		RootParam_Cluster         = 8, // b5 (클러스터 상수)
 		RootParam_LocalLights     = 9, // t9 (라이트 목록, 루트 SRV)
 		RootParam_ClusterData     = 10, // t10 (클러스터별 라이트 인덱스, 루트 SRV)
+		RootParam_LocalShadowMatrices = 11, // t11 (로컬 그림자 장별 뷰-투영, 루트 SRV)
+		RootParam_LocalShadowMap      = 12, // t12 (로컬 그림자 타일 배열)
 	};
 } // namespace
 
@@ -67,6 +69,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 LocalLightsIndex = RootSignature.AddShaderResourceView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 ClusterDataIndex = RootSignature.AddShaderResourceView(10, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(ClusterIndex == RootParam_Cluster && LocalLightsIndex == RootParam_LocalLights && ClusterDataIndex == RootParam_ClusterData);
+	const uint32 LocalShadowMatricesIndex = RootSignature.AddShaderResourceView(11, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LocalShadowMapIndex      = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 12) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(LocalShadowMatricesIndex == RootParam_LocalShadowMatrices && LocalShadowMapIndex == RootParam_LocalShadowMap);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -407,9 +413,10 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	// GPU 파티클 계산 (그리기 전에)
 	ParticleRenderer.Simulate(Scene);
 
-	// 점광원/스포트라이트 목록 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
-	LocalLightRenderer.Prepare(Scene, Camera, Width, Height);
-	Stats.LocalLights = LocalLightRenderer.GetLightCount();
+	// 점광원/스포트라이트 목록 + 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
+	LocalLightRenderer.Prepare(Scene, *Resources, Camera, Width, Height, LocalShadowSettings, &SkinPalettes);
+	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
+	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
 
 	// 0) 방향광 섀도우 패스
 	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
@@ -462,6 +469,8 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Cluster, LocalLightRenderer.GetConstants());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalLights, LocalLightRenderer.GetLightList());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_ClusterData, LocalLightRenderer.GetClusterData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;

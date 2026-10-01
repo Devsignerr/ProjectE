@@ -856,6 +856,7 @@ void FEditorApplication::DrawStatsWindow()
 		ImGui::Text("FPS: %.1f (%.2f ms)", SmoothedFps, SmoothedFps > 0.0f ? 1000.0f / SmoothedFps : 0.0f);
 		ImGui::Text("메시: %u / %u 표시, 드로우 %u", Stats.VisibleMeshes, Stats.TotalMeshes, Stats.DrawCalls);
 		ImGui::Text("파티클: %u", Stats.Particles);
+		ImGui::Text("점광원/스포트: %u (그림자 %u장)", Stats.LocalLights, Stats.LocalShadowSlices);
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
 		ImGui::Text("리소스: 메시 %zu, 머티리얼 %zu, 텍스처 %zu", Resources.GetMeshCount(), Resources.GetMaterialCount(),
 		            Resources.GetTextureCount());

@@ -33,6 +33,7 @@ struct FSceneRenderStats
 	uint32 DrawCalls     = 0;
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
+	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
 };
 
 // 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
@@ -52,6 +53,7 @@ public:
 
 	FPostProcessSettings PostProcessSettings;
 	FShadowSettings      ShadowSettings;
+	FLocalShadowSettings LocalShadowSettings; // 점광원/스포트라이트 그림자
 	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
 	bool                 bWireframe      = false; // 메시를 선으로 그린다 (에셋 미리보기용)
 	bool                 bDrawSkybox     = true;  // false면 하늘 대신 BackgroundColor (썸네일용, 환경광은 그대로)

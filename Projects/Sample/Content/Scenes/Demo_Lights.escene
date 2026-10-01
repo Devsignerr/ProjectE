@@ -3412,15 +3412,15 @@
             0.7,
             0.35
           ],
-          "Intensity": 20.0,
-          "Radius": 1000.0,
+          "Intensity": 30.0,
+          "Radius": 1100.0,
           "CastShadows": true
         },
         "TransformComponent": {
           "Position": [
-            150,
-            -380,
-            160
+            120,
+            -230,
+            130
           ],
           "Rotation": [
             0,

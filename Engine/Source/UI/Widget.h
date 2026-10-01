@@ -64,6 +64,7 @@ struct FUIWidgetData
 
 	// ---- 텍스트
 	std::string    Text;
+	std::string    TextKey;         // 문자열 표 키 (텍스트 위젯). 있으면 Text 대신 현재 언어 문자열을 표시 (Text는 키가 빌 때의 값)
 	std::string    Font;            // Content 기준 .ttf/.otf. 비면 기본 글꼴
 	float          FontSize = 24.0f; // UI 단위 줄 높이 기준 크기
 	FVector4       TextColor    = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -86,9 +87,11 @@ struct FUIWidgetData
 
 	// ---- 텍스트 상자 (Text/Font/FontSize/TextColor/ContentPadding 공유, Brush = 기본 배경)
 	std::string HintText;                                // 비어 있고 포커스가 없을 때 흐리게
+	std::string HintTextKey;                             // 문자열 표 키. 있으면 HintText 대신 (입력한 Text는 번역하지 않는다)
 	FVector4    HintColor = FVector4(1.0f, 1.0f, 1.0f, 0.35f);
 	int32       MaxLength = 0;                           // 글자 수 제한 (0 = 없음)
 	FUIBrush    FocusedBrush;                            // 포커스 중 배경
+	FVector4    SelectionColor = FVector4(0.25f, 0.5f, 1.0f, 0.45f); // 선택 영역 (sRGB + 알파)
 
 	// ---- 스크롤
 	EUIOrientation Orientation      = EUIOrientation::Vertical;
@@ -98,6 +101,11 @@ struct FUIWidgetData
 	// ---- 균일 그리드
 	FVector2 MinCellSize;
 };
+
+// 화면에 보일 글자: 텍스트 위젯은 TextKey, 텍스트 상자 안내 문구는 HintTextKey가 있으면 현재 언어 문자열(FLocalization::Lookup)
+// 그릴 때마다 찾으므로 언어를 바꾸면 바로 반영된다. 반환 참조는 다음 표/언어 변경 전까지 유효
+const std::string& GetDisplayText(const FUIWidgetData& Widget);
+const std::string& GetDisplayHintText(const FUIWidgetData& Widget);
 
 // 실행 중에만 쓰는 값 (저장/복제 안 함). 레이아웃/입력이 채운다.
 struct FUIWidgetState
@@ -119,6 +127,9 @@ struct FUIWidgetState
 	int32    CaretIndex   = 0;    // 텍스트 상자: 캐럿 위치 (코드 포인트)
 	float    TextScroll   = 0.0f; // 텍스트 상자: 가로 스크롤 (UI 단위, 캐럿이 보이도록)
 	float    CaretTime    = 0.0f; // 깜빡임 (편집하면 0)
+	int32    SelectionAnchor = -1; // 텍스트 상자: 선택 시작 (캐럿까지가 선택, -1 = 없음)
+	std::u32string Composition;   // 텍스트 상자: IME 조합 중 글자 (캐럿 자리에 표시만, Text에는 확정 후 들어간다)
+	int32    CompositionCursor = 0;
 };
 
 // 위젯 트리 노드. 자식을 소유하고 부모는 비소유 포인터(자식을 붙일 때 설정, 트리 수명 동안 유효).

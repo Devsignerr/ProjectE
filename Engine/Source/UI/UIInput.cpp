@@ -1,6 +1,7 @@
 #include "UI/UIInput.h"
 
 #include "UI/UIFont.h"
+#include "UI/UITextEdit.h"
 #include "UI/Widget.h"
 
 #include <algorithm>
@@ -109,64 +110,44 @@ namespace
 		return Best;
 	}
 
-	// 포커스된 텍스트 상자 편집. 반환: 내용이 바뀜
-	bool EditText(FUIWidget& Box, const FUIKeyInput& Keys)
+	// 포커스된 텍스트 상자 편집 (FUITextEdit). 반환: 내용이 바뀜
+	bool EditText(FUIWidget& Box, const FUIKeyInput& Keys, std::string* OutClipboard)
 	{
-		std::vector<uint32> Text  = DecodeUtf8(Box.Text);
-		int32&              Caret = Box.State.CaretIndex;
-		Caret                     = FMath::Clamp(Caret, 0, static_cast<int32>(Text.size()));
-		bool bChanged             = false;
-		bool bMoved               = false;
-		if (Keys.bBackspace && Caret > 0)
+		FUITextEdit Edit;
+		Edit.Text     = DecodeUtf8(Box.Text);
+		Edit.Caret    = FMath::Clamp(Box.State.CaretIndex, 0, static_cast<int32>(Edit.Text.size()));
+		Edit.Anchor   = Box.State.SelectionAnchor;
+		bool bMoved   = false;
+		bool bChanged = Edit.Apply(Keys, Box.MaxLength, OutClipboard, &bMoved);
+		// IME 조합이 시작되면 선택 영역은 지운다 (조합 글자가 그 자리에 들어간다)
+		if (!Keys.Composition.empty() && Edit.HasSelection())
 		{
-			Text.erase(Text.begin() + (Caret - 1));
-			--Caret;
-			bChanged = true;
+			bChanged |= Edit.DeleteSelection();
 		}
-		if (Keys.bDelete && Caret < static_cast<int32>(Text.size()))
+		Box.State.CaretIndex      = Edit.Caret;
+		Box.State.SelectionAnchor = Edit.Anchor;
+		if (Box.State.Composition != Keys.Composition || Box.State.CompositionCursor != Keys.CompositionCursor)
 		{
-			Text.erase(Text.begin() + Caret);
-			bChanged = true;
-		}
-		for (const char32_t Char : Keys.Typed)
-		{
-			if (Box.MaxLength > 0 && static_cast<int32>(Text.size()) >= Box.MaxLength)
-			{
-				break;
-			}
-			Text.insert(Text.begin() + Caret, static_cast<uint32>(Char));
-			++Caret;
-			bChanged = true;
-		}
-		if (Keys.bLeft && Caret > 0)
-		{
-			--Caret;
-			bMoved = true;
-		}
-		if (Keys.bRight && Caret < static_cast<int32>(Text.size()))
-		{
-			++Caret;
-			bMoved = true;
-		}
-		if (Keys.bHome)
-		{
-			Caret  = 0;
-			bMoved = true;
-		}
-		if (Keys.bEnd)
-		{
-			Caret  = static_cast<int32>(Text.size());
-			bMoved = true;
+			Box.State.Composition       = Keys.Composition;
+			Box.State.CompositionCursor = Keys.CompositionCursor;
+			bMoved                      = true;
 		}
 		if (bChanged)
 		{
-			Box.Text = EncodeUtf8(Text);
+			Box.Text = EncodeUtf8(Edit.Text);
 		}
 		if (bChanged || bMoved)
 		{
 			Box.State.CaretTime = 0.0f; // 편집 중에는 캐럿이 보이게
 		}
 		return bChanged;
+	}
+
+	void ClearTextSelection(FUIWidget& Box)
+	{
+		Box.State.SelectionAnchor = -1;
+		Box.State.Composition.clear();
+		Box.State.CompositionCursor = 0;
 	}
 } // namespace
 
@@ -186,8 +167,10 @@ void FUIInputRouter::SetFocus(FUIWidget& Root, uint32 WidgetId)
 	if (FUIWidget* Old = FocusedId != 0 ? Root.FindById(FocusedId) : nullptr)
 	{
 		Old->State.bFocused = false;
+		ClearTextSelection(*Old);
 	}
-	FocusedId = 0;
+	FocusedId   = 0;
+	SelectingId = 0;
 	if (FUIWidget* New = WidgetId != 0 ? Root.FindById(WidgetId) : nullptr)
 	{
 		New->State.bFocused = true;
@@ -201,13 +184,28 @@ void FUIInputRouter::Reset(FUIWidget& Root)
 		Widget.State.bHovered = false;
 		Widget.State.bPressed = false;
 		Widget.State.bFocused = false;
+		ClearTextSelection(Widget);
 	});
-	HoveredId = PressedId = FocusedId = 0;
+	HoveredId = PressedId = FocusedId = SelectingId = 0;
+	ClipboardOut.clear();
+	bClipboardOut = false;
+}
+
+bool FUIInputRouter::TakeClipboardText(std::string& Out)
+{
+	if (!bClipboardOut)
+	{
+		return false;
+	}
+	Out           = std::move(ClipboardOut);
+	ClipboardOut  = {};
+	bClipboardOut = false;
+	return true;
 }
 
 bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, const FUIKeyInput& Keys, std::vector<FUIEvent>& OutEvents)
 {
-	const bool bCaptured = PressedId != 0; // 버튼을 누른 채 밖으로 끌어도 뗄 때까지 포인터를 가져간다
+	const bool bCaptured = PressedId != 0 || SelectingId != 0; // 버튼을 누른 채(글자 선택 중) 밖으로 끌어도 뗄 때까지 포인터를 가져간다
 	FUIWidget* Hit       = Pointer.bInside ? HitTest(Root, Pointer.Position) : nullptr;
 	FUIWidget* Button    = FindAncestorOfType(Hit, EUIWidgetType::Button);
 	if (Button != nullptr && !Button->IsEnabledInHierarchy())
@@ -261,9 +259,22 @@ bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, co
 		}
 		else if (TextBox != nullptr)
 		{
+			// 클릭 = 캐럿 이동, Shift+클릭 = 선택 넓히기, 누른 채 끌면 선택 (뗄 때까지 포인터를 가져간다)
+			const bool  bSameBox  = FocusedId == TextBox->State.Id;
+			const int32 OldCaret  = TextBox->State.CaretIndex;
 			ChangeFocus(TextBox->State.Id);
 			TextBox->State.CaretIndex = CaretFromX(*TextBox, Pointer.Position.X);
-			TextBox->State.CaretTime  = 0.0f;
+			if (Keys.bShift && bSameBox)
+			{
+				TextBox->State.SelectionAnchor = TextBox->State.SelectionAnchor >= 0 ? TextBox->State.SelectionAnchor : OldCaret;
+			}
+			else
+			{
+				TextBox->State.SelectionAnchor = TextBox->State.CaretIndex;
+			}
+			TextBox->State.CaretTime = 0.0f;
+			SelectingId              = TextBox->State.Id;
+			SelectingAnchor          = TextBox->State.SelectionAnchor;
 		}
 		else if (Hit != nullptr || Pointer.bInside)
 		{
@@ -282,6 +293,28 @@ bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, co
 			}
 		}
 		PressedId = 0;
+	}
+	// 텍스트 상자 끌어 선택
+	if (SelectingId != 0)
+	{
+		FUIWidget* Selecting = Root.FindById(SelectingId);
+		if (Selecting != nullptr && SelectingId == FocusedId)
+		{
+			if (Pointer.bDown && !Pointer.bPressed)
+			{
+				const int32 Caret = CaretFromX(*Selecting, Pointer.Position.X);
+				if (Caret != Selecting->State.CaretIndex)
+				{
+					Selecting->State.CaretIndex = Caret;
+					Selecting->State.CaretTime  = 0.0f;
+				}
+				Selecting->State.SelectionAnchor = Caret != SelectingAnchor ? SelectingAnchor : -1; // 누른 자리 ~ 지금 자리
+			}
+		}
+		if (!Pointer.bDown || Selecting == nullptr)
+		{
+			SelectingId = 0;
+		}
 	}
 
 	// 휠 → 가장 가까운 스크롤 박스
@@ -325,7 +358,14 @@ bool FUIInputRouter::Process(FUIWidget& Root, const FUIPointerInput& Pointer, co
 		}
 		else
 		{
-			if (EditText(*Focused, Keys))
+			std::string Copied;
+			const bool  bEdited = EditText(*Focused, Keys, &Copied);
+			if (!Copied.empty())
+			{
+				ClipboardOut  = std::move(Copied);
+				bClipboardOut = true;
+			}
+			if (bEdited)
 			{
 				Emit(OutEvents, EUIEventType::TextChanged, *Focused);
 			}

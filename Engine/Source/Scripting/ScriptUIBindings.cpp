@@ -1,6 +1,7 @@
 #include "Scripting/LuaRuntime.h"
 
 #include "Scene/Scene.h"
+#include "UI/Localization.h"
 #include "UI/UIAnimation.h"
 #include "UI/UIComponent.h"
 #include "UI/UIInstance.h"
@@ -68,8 +69,16 @@ void FLuaRuntime::RegisterUIBindings()
 		sol::no_constructor,
 		"Name", sol::readonly_property([](const FScriptWidgetRef& Ref) { return Ref.Name; }),
 		"Type", sol::readonly_property([RequireWidget](const FScriptWidgetRef& Ref) { return std::string(ToString(RequireWidget(Ref).Type)); }),
-		"Text", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Text; },
-		                      [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Text = Value; }),
+		// 읽기 = 화면에 보이는 글자(문자열 표 키 반영), 쓰기 = 고정 문자열 (키를 떼어 언어를 바꿔도 덮어쓰지 않는다)
+		"Text", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetDisplayText(RequireWidget(Ref)); },
+		                      [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                      FUIWidget& Widget = RequireWidget(Ref);
+			                      Widget.Text       = Value;
+			                      if (Widget.Type == EUIWidgetType::Text)
+			                      {
+				                      Widget.TextKey.clear();
+			                      }
+		                      }),
 		"Percent", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Percent; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).Percent = FMath::Clamp(Value, 0.0f, 1.0f); }),
 		"Visible",
@@ -102,8 +111,12 @@ void FLuaRuntime::RegisterUIBindings()
 		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { FUIAnimMath::GetMainColor(RequireWidget(Ref)) = Value; }),
 		"Texture", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Brush.Texture; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Brush.Texture = Value; }),
-		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintText; },
-		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).HintText = Value; }),
+		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetDisplayHintText(RequireWidget(Ref)); },
+		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                          FUIWidget& Widget = RequireWidget(Ref);
+			                          Widget.HintText   = Value;
+			                          Widget.HintTextKey.clear(); // 고정 문자열 (Text와 같은 규칙)
+		                          }),
 		"FontSize", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).FontSize; },
 		                          [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).FontSize = FMath::Max(Value, 1.0f); }),
 		sol::meta_function::to_string, [](const FScriptWidgetRef& Ref) { return "UIWidget(" + Ref.Name + ")"; });
@@ -137,6 +150,70 @@ void FLuaRuntime::RegisterUIBindings()
 		const FUIComponent* Component = Scene != nullptr && Scene->GetRegistry().IsValid(Entity.Entity) ? Scene->GetRegistry().TryGet<FUIComponent>(Entity.Entity) : nullptr;
 		return Component != nullptr && Component->Runtime.bPointerOver;
 	};
+
+	// ---- 다국어 (Phase 32): 위젯 키 + Loc 테이블
+	//   Label.TextKey = "HUD.Title"            -- 문자열 표 키로 표시 (언어를 바꾸면 바로 바뀐다). "" = 키 해제
+	//   Loc.Get("HUD.Score", 120)               -- {0} 위치 인자, Loc.Get("HUD.Hello", { Name = "여우" }) -- {Name} 이름 인자
+	//   Loc.SetLanguage("en"[, 저장 = true])    -- 저장하면 다음 실행에도 (<Saved>/Config/Language.json). 표에 없으면 false
+	//   Loc.GetLanguage() / Loc.GetLanguages() / Loc.GetLanguageName("en") / Loc.Has("키")
+	sol::usertype<FScriptWidgetRef> WidgetType = Lua["UIWidget"];
+	WidgetType["TextKey"] = sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).TextKey; },
+	                                      [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).TextKey = Value; });
+	WidgetType["HintTextKey"] = sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintTextKey; },
+	                                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).HintTextKey = Value; });
+
+	sol::table LocTable = Lua.create_named_table("Loc");
+	LocTable["Get"]     = [this](const std::string& Key, sol::variadic_args Args) {
+		FLocFormatArgs           Format;
+		sol::protected_function ToString = Lua["tostring"];
+		const auto               Stringify = [&ToString](const sol::object& Value) -> std::string {
+			if (Value.get_type() == sol::type::string)
+			{
+				return Value.as<std::string>();
+			}
+			sol::protected_function_result Result = ToString(Value);
+			return Result.valid() ? Result.get<std::string>() : std::string();
+		};
+		for (const sol::stack_proxy Arg : Args)
+		{
+			const sol::object Value = Arg;
+			if (Value.get_type() == sol::type::table)
+			{
+				// 표: 문자열 키 = 이름 인자, 1부터 정수 키 = {0}부터 위치 인자
+				for (const auto& [TableKey, TableValue] : Value.as<sol::table>())
+				{
+					if (TableKey.get_type() == sol::type::string)
+					{
+						Format.Named.emplace_back(TableKey.as<std::string>(), Stringify(TableValue));
+					}
+					else if (TableKey.get_type() == sol::type::number)
+					{
+						const int64 Index = TableKey.as<int64>() - 1;
+						if (Index >= 0 && Index < 1024)
+						{
+							if (Format.Positional.size() <= static_cast<size_t>(Index))
+							{
+								Format.Positional.resize(static_cast<size_t>(Index) + 1);
+							}
+							Format.Positional[static_cast<size_t>(Index)] = Stringify(TableValue);
+						}
+					}
+				}
+			}
+			else
+			{
+				Format.Positional.push_back(Stringify(Value));
+			}
+		}
+		return FLocalization::Get().Get(Key, Format);
+	};
+	LocTable["SetLanguage"] = [](const std::string& Language, sol::optional<bool> bSave) {
+		return FLocalization::Get().SetLanguage(Language, bSave.value_or(true));
+	};
+	LocTable["GetLanguage"]     = []() { return FLocalization::Get().GetLanguage(); };
+	LocTable["GetLanguages"]    = []() { return sol::as_table(FLocalization::Get().GetLanguages()); };
+	LocTable["GetLanguageName"] = [](const std::string& Language) { return FLocalization::GetLanguageDisplayName(Language); };
+	LocTable["Has"]             = [](const std::string& Key) { return FLocalization::Get().Has(Key); };
 }
 
 void FLuaRuntime::DispatchUIEvents()

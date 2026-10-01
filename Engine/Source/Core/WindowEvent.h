@@ -16,6 +16,7 @@ enum class EWindowEventType : uint8
 	MouseWheel,
 	Char, // 문자 입력 (WM_CHAR, IME 조합 완료 글자 포함)
 	RawMouseMove, // 원시 마우스 이동 (WM_INPUT, 화면 가장자리/커서 잠금과 무관한 장치 이동량) — MouseX/MouseY = 델타
+	ImeComposition, // IME 조합 중 글자 (게임 텍스트 입력 중에만 — FWindow::SetTextInput). 빈 문자열 = 조합 끝
 };
 
 // 창에서 발생한 이벤트. 타입에 따라 관련 필드만 유효하다.
@@ -43,4 +44,9 @@ struct FWindowEvent
 
 	// Char
 	uint32 Character = 0; // 유니코드 코드 포인트 (UTF-16 서로게이트는 합쳐서 전달)
+
+	// ImeComposition: 조합 문자열 (코드 포인트, 이벤트 처리 중에만 유효한 창 버퍼) + 조합 안 커서 위치
+	const char32_t* Composition       = nullptr;
+	uint32          CompositionLength = 0;
+	int32           CompositionCursor = 0;
 };

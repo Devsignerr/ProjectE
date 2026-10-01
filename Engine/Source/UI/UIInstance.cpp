@@ -3,6 +3,7 @@
 #include "UI/UIFont.h"
 #include "UI/UILayout.h"
 #include "UI/UIPainter.h"
+#include "UI/UITextEdit.h"
 
 #include <algorithm>
 #include <cmath>
@@ -25,11 +26,11 @@ void FUIInstance::SetAsset(const FUIAsset& InAsset)
 	// 에셋에 들어 있는 글자는 지금 굽는다 (실행 중 바뀌는 글자만 처음 쓸 때 굽힌다)
 	FUIFontLibrary& Fonts = FUIFontLibrary::Get();
 	Asset.Root->ForEach([&Fonts](FUIWidget& Widget) {
-		if (Widget.Type == EUIWidgetType::Text && !Widget.Text.empty())
+		if (Widget.Type == EUIWidgetType::Text && !GetDisplayText(Widget).empty())
 		{
 			if (FUIFont* Font = Fonts.GetFont(Widget.Font))
 			{
-				Font->Prebake(Widget.Text);
+				Font->Prebake(GetDisplayText(Widget));
 			}
 		}
 	});
@@ -72,9 +73,13 @@ bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* Point
 		Focused->State.CaretTime += DeltaSeconds;
 		if (FUIFont* Font = Fonts.GetFont(Focused->Font))
 		{
+			int32             DisplayCaret = 0;
+			int32             CompositionBegin = 0;
+			int32             CompositionEnd   = 0;
+			const std::string Display          = BuildTextBoxDisplay(*Focused, DisplayCaret, CompositionBegin, CompositionEnd);
 			std::vector<float> Positions;
-			Font->GetCaretPositions(Focused->Text, Focused->FontSize, Positions);
-			const int32 Caret        = FMath::Clamp(Focused->State.CaretIndex, 0, static_cast<int32>(Positions.size()) - 1);
+			Font->GetCaretPositions(Display, Focused->FontSize, Positions);
+			const int32 Caret        = FMath::Clamp(DisplayCaret, 0, static_cast<int32>(Positions.size()) - 1);
 			const float CaretX       = Positions[static_cast<size_t>(Caret)];
 			const float ContentWidth = FMath::Max(Focused->State.Geometry.Inset(Focused->ContentPadding).GetWidth() - 2.0f, 1.0f);
 			float&      Scroll       = Focused->State.TextScroll;
@@ -83,6 +88,37 @@ bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* Point
 		}
 	}
 	return bPointerOver;
+}
+
+bool FUIInstance::GetTextCaretPixels(FUIRect& Out, FUIFontLibrary& Fonts)
+{
+	FUIWidget* Box = Router.GetFocusedId() != 0 ? Asset.Root->FindById(Router.GetFocusedId()) : nullptr;
+	if (Box == nullptr || Box->Type != EUIWidgetType::TextBox)
+	{
+		return false;
+	}
+	FUIFont* Font = Fonts.GetFont(Box->Font);
+	if (Font == nullptr)
+	{
+		return false;
+	}
+	int32             Caret = 0;
+	int32             CompositionBegin = 0;
+	int32             CompositionEnd   = 0;
+	const std::string Display          = BuildTextBoxDisplay(*Box, Caret, CompositionBegin, CompositionEnd);
+	std::vector<float> Positions;
+	Font->GetCaretPositions(Display, Box->FontSize, Positions);
+	// IME 후보 창은 조합 시작 자리에 (조합 중이 아니면 캐럿)
+	const int32   Index      = FMath::Clamp(CompositionBegin < CompositionEnd ? CompositionBegin : Caret, 0, static_cast<int32>(Positions.size()) - 1);
+	const FUIRect Content    = Box->State.Geometry.Inset(Box->ContentPadding);
+	const float   LineHeight = Font->GetLineHeight(Box->FontSize);
+	const float   Top        = Content.Min.Y + (Content.GetHeight() - LineHeight) * 0.5f;
+	const float   X          = Content.Min.X - Box->State.TextScroll + Positions[static_cast<size_t>(Index)];
+	// 레이아웃 좌표 → 렌더 변환 → 화면 픽셀
+	const FVector2 Min = Transform.ToPixels(FVector2(X, Top) * Box->State.VisualScale + Box->State.VisualOffset);
+	const FVector2 Max = Transform.ToPixels(FVector2(X + 1.0f, Top + LineHeight) * Box->State.VisualScale + Box->State.VisualOffset);
+	Out                = FUIRect(Min, Max);
+	return true;
 }
 
 void FUIInstance::Paint(FUIDrawList& Out, FUIFontLibrary& Fonts) const

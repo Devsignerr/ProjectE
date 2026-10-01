@@ -44,6 +44,8 @@ public:
 
 	// 포커스된 텍스트 상자가 있어 키보드를 가져감
 	bool                WantsKeyboard() { return Router.WantsKeyboard(*Asset.Root); }
+	// 포커스된 텍스트 상자의 캐럿 영역 (화면 픽셀, IME 조합 글자 포함). 없으면 false
+	bool                GetTextCaretPixels(FUIRect& Out, FUIFontLibrary& Fonts);
 
 private:
 	FUIAsset       Asset;

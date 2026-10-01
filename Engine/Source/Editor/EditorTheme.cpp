@@ -185,6 +185,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_DISPLAY, IM_COL32(120, 200, 255, 255), "UI" };
 	}
+	if (Extension == ".estrings")
+	{
+		return { ICON_FA_LANGUAGE, IM_COL32(150, 210, 140, 255), "문자열 표" };
+	}
 	if (Extension == ".eprefab")
 	{
 		return { ICON_FA_BOXES_STACKED, IM_COL32(115, 184, 255, 255), "프리팹" };

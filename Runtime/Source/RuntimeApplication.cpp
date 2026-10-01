@@ -208,6 +208,9 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	FInput               BlockedInput;
 	const FInput*        GameInput = &InputState;
 	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	// 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (Phase 32-2)
+	GetWindow().SetTextInput(UIResult.bKeyboard && UIResult.bHasTextCaret, static_cast<int32>(UIResult.TextCaret.Min.X),
+	                         static_cast<int32>(UIResult.TextCaret.Min.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
 	if (UIResult.bPointer || UIResult.bKeyboard)
 	{
 		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;

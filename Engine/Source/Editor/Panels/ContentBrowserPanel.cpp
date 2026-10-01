@@ -18,6 +18,8 @@
 #include "Renderer/ModelLoader.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Particles.h"
+#include "Core/Settings/ProjectSettings.h"
+#include "UI/Localization.h"
 #include "UI/UIAsset.h"
 #include "UI/UIComponent.h"
 #include "Scene/Scene.h"
@@ -751,6 +753,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewUI", FUIAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_LANGUAGE " 새 문자열 표"))
+	{
+		CreateAsset(Context, "NewStrings", FStringTable::Extension);
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
 	{
@@ -1106,6 +1112,13 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FUIAsset::Extension)
 	{
 		bOk = FUIAsset::MakeDefault().SaveToFile(Path);
+	}
+	else if (Extension == FStringTable::Extension)
+	{
+		FStringTable Table;
+		Table.AddLanguage(FProjectSettings::Get().Localization.DefaultLanguage);
+		Table.AddLanguage("en");
+		bOk = Table.SaveToFile(Path);
 	}
 	if (!bOk)
 	{

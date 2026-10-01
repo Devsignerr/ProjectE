@@ -1,0 +1,239 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 500.0],
+          "Rotation": [-0.10938165336847305, 0.4082179069519043, 0.23456971347332, 0.8754260540008545],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DirectionalLightComponent": {
+          "Color": [1.0, 0.92, 0.82],
+          "Intensity": 2.0
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, -10.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [20.0, 14.0, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "MainCamera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-900.0, -700.0, 450.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/OrbitCamera.lua",
+          "PropertyOverrides": "{\"Radius\": 1300.0, \"Height\": 550.0, \"Speed\": 6.0, \"StartAngle\": -125.0}"
+        }
+      }
+    },
+    {
+      "Name": "CamWide",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-1100.0, -800.0, 520.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": false
+        }
+      }
+    },
+    {
+      "Name": "CamDoor",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-420.0, -300.0, 170.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": false
+        }
+      }
+    },
+    {
+      "Name": "CamFox",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [450.0, 60.0, 100.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 50.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": false
+        }
+      }
+    },
+    {
+      "Name": "Gate",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        }
+      }
+    },
+    {
+      "Name": "WallLeft",
+      "Parent": 6,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, -260.0, 120.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.3, 3.2, 2.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "WallRight",
+      "Parent": 6,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 260.0, 120.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.3, 3.2, 2.4]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "DoorPivot",
+      "Parent": 6,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, -100.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        }
+      }
+    },
+    {
+      "Name": "Door",
+      "Parent": 9,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 100.0, 100.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.15, 2.0, 2.0]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Lamp",
+      "Parent": 6,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-90.0, 0.0, 250.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "PointLightComponent": {
+          "Color": [1.0, 0.75, 0.45],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        }
+      }
+    },
+    {
+      "Name": "Fox",
+      "Parent": -1,
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [-450.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.01, 0.01, 0.01]
+        }
+      }
+    },
+    {
+      "Name": "Cinematic",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "SequencePlayerComponent": {
+          "Sequence": "Sequences/Intro.esequence",
+          "AutoPlay": true,
+          "Loop": false,
+          "PlayRate": 1.0,
+          "RestoreState": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CinematicDirector.lua",
+          "PropertyOverrides": "{\"ReplayDelay\": 3.0}"
+        }
+      }
+    }
+  ]
+}

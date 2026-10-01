@@ -398,3 +398,157 @@ E_TEST(AnimGraph_SystemDrivesPoseAndNotifies)
 	std::error_code ErrorCode;
 	std::filesystem::remove_all(Directory, ErrorCode);
 }
+
+// 형식 왕복 (Phase 35-1): v1 → 구조체 → v2 JSON → 구조체가 같다. 편집기 정보(위치/미리보기 모델) 유지, bool 조건은 true/false
+E_TEST(AnimGraph_JsonRoundTripV2)
+{
+	FAnimGraphAsset Asset           = ParseTestGraph();
+	Asset.States[0].EditorPosition  = FVector2(10.0f, -20.0f);
+	Asset.AnyStateEditorPosition    = FVector2(-300.0f, 5.0f);
+	Asset.PreviewModel              = "Fox.glb";
+	Asset.States[2].Speed           = 0.5f;
+	Asset.States[1].Samples[0].Rate = 2.0f;
+
+	const std::string Text = Asset.ToJsonString();
+	E_EXPECT_TRUE(Text.find("\"Version\": 2") != std::string::npos);
+	E_EXPECT_TRUE(Text.find("\"Value\": false") != std::string::npos); // Grounded == false
+
+	FAnimGraphAsset          Loaded;
+	std::string              Error;
+	std::vector<std::string> Warnings;
+	E_EXPECT_TRUE(FAnimGraphAsset::FromJsonString(Text, Loaded, &Error, &Warnings));
+	E_EXPECT_TRUE(Warnings.empty());
+	E_EXPECT_EQ(Loaded.States.size(), Asset.States.size());
+	E_EXPECT_EQ(Loaded.Transitions.size(), Asset.Transitions.size());
+	E_EXPECT_EQ(Loaded.Parameters.size(), Asset.Parameters.size());
+	E_EXPECT_EQ(Loaded.EntryState, Asset.EntryState);
+	E_EXPECT_TRUE(Loaded.PreviewModel == "Fox.glb");
+	E_EXPECT_TRUE(Loaded.AnyStateEditorPosition.has_value() && Loaded.AnyStateEditorPosition->X == -300.0f);
+	E_EXPECT_TRUE(Loaded.States[0].EditorPosition.has_value() && Loaded.States[0].EditorPosition->Y == -20.0f);
+	E_EXPECT_FALSE(Loaded.States[1].EditorPosition.has_value());
+	for (size_t Index = 0; Index < Asset.States.size() && Index < Loaded.States.size(); ++Index)
+	{
+		const FAnimGraphState& A = Asset.States[Index];
+		const FAnimGraphState& B = Loaded.States[Index];
+		E_EXPECT_TRUE(A.Name == B.Name && A.BlendParameter == B.BlendParameter && A.bLoop == B.bLoop);
+		E_EXPECT_NEAR(A.Speed, B.Speed, Tol);
+		E_EXPECT_EQ(A.Samples.size(), B.Samples.size());
+		for (size_t Sample = 0; Sample < A.Samples.size() && Sample < B.Samples.size(); ++Sample)
+		{
+			E_EXPECT_TRUE(A.Samples[Sample].Clip == B.Samples[Sample].Clip);
+			E_EXPECT_NEAR(A.Samples[Sample].Position, B.Samples[Sample].Position, Tol);
+			E_EXPECT_NEAR(A.Samples[Sample].Rate, B.Samples[Sample].Rate, Tol);
+		}
+	}
+	for (size_t Index = 0; Index < Asset.Transitions.size() && Index < Loaded.Transitions.size(); ++Index)
+	{
+		const FAnimGraphTransition& A = Asset.Transitions[Index];
+		const FAnimGraphTransition& B = Loaded.Transitions[Index];
+		E_EXPECT_EQ(A.From, B.From);
+		E_EXPECT_EQ(A.To, B.To);
+		E_EXPECT_NEAR(A.Duration, B.Duration, Tol);
+		E_EXPECT_NEAR(A.ExitTime, B.ExitTime, Tol);
+		E_EXPECT_EQ(A.Conditions.size(), B.Conditions.size());
+		for (size_t Condition = 0; Condition < A.Conditions.size() && Condition < B.Conditions.size(); ++Condition)
+		{
+			E_EXPECT_TRUE(A.Conditions[Condition].Parameter == B.Conditions[Condition].Parameter);
+			E_EXPECT_TRUE(A.Conditions[Condition].Op == B.Conditions[Condition].Op);
+			E_EXPECT_NEAR(A.Conditions[Condition].Value, B.Conditions[Condition].Value, Tol);
+		}
+	}
+	// 다시 쓰면 같은 텍스트 (안정적인 출력 — 실행 취소 스냅샷 비교에 쓰인다)
+	E_EXPECT_TRUE(Loaded.ToJsonString() == Text);
+
+	// 기본 에셋도 왕복된다 (빈 클립 상태 허용)
+	FAnimGraphAsset Default;
+	E_EXPECT_TRUE(FAnimGraphAsset::FromJsonString(FAnimGraphAsset::MakeDefault().ToJsonString(), Default));
+	E_EXPECT_EQ(Default.States.size(), static_cast<size_t>(1));
+}
+
+// 상태 삭제: 그 상태를 쓰는 전이 제거 + 번호 당김 + 시작 상태 보정
+E_TEST(AnimGraph_RemoveStateFixesIndices)
+{
+	FAnimGraphAsset Asset = ParseTestGraph(); // Locomotion 0, Fall 1, Land 2
+	Asset.EntryState      = 2;
+	Asset.RemoveState(1); // Fall이 From/To인 전이(0, 1, 3)는 사라지고 Land → Locomotion만 남는다
+	E_EXPECT_EQ(Asset.States.size(), static_cast<size_t>(2));
+	E_EXPECT_EQ(Asset.Transitions.size(), static_cast<size_t>(1));
+	if (!Asset.Transitions.empty())
+	{
+		E_EXPECT_EQ(Asset.Transitions[0].From, 1);
+		E_EXPECT_EQ(Asset.Transitions[0].To, 0);
+	}
+	E_EXPECT_EQ(Asset.EntryState, 1);
+	Asset.RemoveState(1);
+	E_EXPECT_EQ(Asset.EntryState, 0);
+	E_EXPECT_TRUE(Asset.Transitions.empty());
+}
+
+// 핫 리로드: 파일을 바꾸고 Invalidate → 다음 갱신에서 새 그래프. 파라미터 값 유지, 같은 이름 상태에서 이어 간다
+E_TEST(AnimGraph_HotReloadKeepsParametersAndState)
+{
+	const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectEAnimGraphReload";
+	std::filesystem::create_directories(Directory);
+	const std::filesystem::path GraphPath  = Directory / L"Reload.eanimgraph";
+	const auto                  WriteGraph = [&](const char* Text) {
+		std::ofstream File(GraphPath, std::ios::binary | std::ios::trunc);
+		File << Text;
+	};
+	WriteGraph(R"({
+		"Parameters": [ { "Name": "Go", "Type": "Bool" } ],
+		"States": [ { "Name": "A", "Clip": "Still" }, { "Name": "B", "Clip": "Move" } ],
+		"Transitions": [ { "From": "A", "To": "B", "Duration": 0, "Conditions": [ { "Parameter": "Go", "Op": "==", "Value": true } ] } ]
+	})");
+	FAnimGraphLibrary::Get().Invalidate();
+
+	FAnimationClip Move;
+	Move.Name            = "Move";
+	Move.Duration        = 1.0f;
+	FAnimationClip Still = Move;
+	Still.Name           = "Still";
+
+	FScene               Scene;
+	const FEntity        Root      = Scene.CreateEntity("Model");
+	FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Root);
+	Animation.Runtime.Set          = MakeAnimationSet({ Move, Still }, { -1 }, std::vector<FNodePose>(1));
+	Scene.GetRegistry().Emplace<FAnimGraphComponent>(Root).Graph = GraphPath.string();
+
+	FAnimationSystem::SetAnimParam(Scene, Root, "Go", true);
+	FAnimationSystem::Update(Scene, 0.0f);
+	FAnimationSystem::Update(Scene, 0.1f);
+	E_EXPECT_TRUE(FAnimationSystem::GetAnimState(Scene, Root) == "B");
+	const std::shared_ptr<const FAnimGraphAsset> Before = Scene.GetRegistry().Get<FAnimGraphComponent>(Root).Runtime.Asset;
+
+	// 다른 파일 무효화로 세대만 바뀌면 같은 에셋 객체 그대로 (다시 시작하지 않음)
+	FAnimGraphLibrary::Get().Invalidate((Directory / L"Other.eanimgraph").string());
+	FAnimationSystem::Update(Scene, 0.1f);
+	E_EXPECT_TRUE(Scene.GetRegistry().Get<FAnimGraphComponent>(Root).Runtime.Asset == Before);
+
+	// 새 그래프: 상태 C 추가, 시작 상태 A. B가 남아 있으므로 B에서 이어 간다. 파라미터 Go는 그대로 true
+	WriteGraph(R"({
+		"Parameters": [ { "Name": "Go", "Type": "Bool" }, { "Name": "Extra" } ],
+		"EntryState": "A",
+		"States": [ { "Name": "A", "Clip": "Still" }, { "Name": "C", "Clip": "Still" }, { "Name": "B", "Clip": "Move" } ],
+		"Transitions": [ { "From": "B", "To": "C", "Duration": 0, "Conditions": [ { "Parameter": "Extra", "Op": ">", "Value": 1 } ] } ]
+	})");
+	FAnimGraphLibrary::Get().Invalidate(GraphPath.string());
+	FAnimationSystem::Update(Scene, 0.1f);
+	const FAnimGraphRuntime& Runtime = Scene.GetRegistry().Get<FAnimGraphComponent>(Root).Runtime;
+	E_EXPECT_TRUE(Runtime.Asset != Before);
+	E_EXPECT_TRUE(Runtime.Asset != nullptr && Runtime.Asset->States.size() == 3);
+	E_EXPECT_TRUE(FAnimationSystem::GetAnimState(Scene, Root) == "B");
+	E_EXPECT_NEAR(FAnimationSystem::GetAnimParam(Scene, Root, "Go").value_or(-1.0f), 1.0f, Tol);
+	FAnimationSystem::SetAnimParam(Scene, Root, "Extra", 5.0f);
+	FAnimationSystem::Update(Scene, 0.1f);
+	E_EXPECT_TRUE(FAnimationSystem::GetAnimState(Scene, Root) == "C");
+
+	// 이어 갈 상태가 없어지면 시작 상태부터. 선언에서 빠진 파라미터 값도 지우지 않는다
+	WriteGraph(R"({ "States": [ { "Name": "Z", "Clip": "Still" } ] })");
+	FAnimGraphLibrary::Get().Invalidate(GraphPath.string());
+	FAnimationSystem::Update(Scene, 0.1f);
+	E_EXPECT_TRUE(FAnimationSystem::GetAnimState(Scene, Root) == "Z");
+	E_EXPECT_NEAR(FAnimationSystem::GetAnimParam(Scene, Root, "Extra").value_or(-1.0f), 5.0f, Tol);
+
+	std::error_code ErrorCode;
+	std::filesystem::remove_all(Directory, ErrorCode);
+}

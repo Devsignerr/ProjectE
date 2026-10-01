@@ -59,6 +59,11 @@ public:
 	bool CanUndo() const { return History.CanUndo(); }
 	bool CanRedo() const { return History.CanRedo(); }
 
+	// 편집 씬에 미리보기 값을 쓰는 편집기(시퀀서)용: 씬 저장·실행 취소 스냅샷 직전/직후에 원래 값과 맞바꾸고(두 번 = 원상태),
+	// 플레이 시작·씬 교체 전에는 미리보기를 끝낸다 (FAssetEditorManager::SwapScenePreviews/EndScenePreviews)
+	virtual void SwapScenePreview(FAssetEditorEnvironment& Env) { (void)Env; }
+	virtual void EndScenePreview(FAssetEditorEnvironment& Env) { (void)Env; }
+
 	// 조작(드래그/텍스트 입력)이 끝나면 한 단계로 커밋. 창 Draw 뒤 매 프레임 호출
 	void CommitPendingEdit(bool bInteractionActive);
 	// 자동 검증용: 상태 JSON의 첫 숫자 값을 바꿔 편집 한 단계를 만든다 (저장 안 함 닫기 재현). 바꿀 값이 없으면 false

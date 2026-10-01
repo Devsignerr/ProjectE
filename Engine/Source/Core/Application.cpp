@@ -6,6 +6,7 @@
 #include "Core/Paths.h"
 #include "Core/Platform/CrashHandler.h"
 #include "Core/Platform/WindowsHeaders.h"
+#include "Core/SaveGame.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -116,6 +117,11 @@ int FApplication::Run()
 	{
 		E_LOG(LogCore, Display, "자동 검증 모드: {} {} 후 종료{}", ExitAfterFrames, Desc.bHeadless ? "틱" : "프레임",
 		      ScreenshotPath.empty() ? "" : ", 스크린샷 " + FStringConv::ToUtf8(ScreenshotPath.wstring()));
+		// 세이브 게임은 프로세스 전용 임시 폴더로 (사용자 세이브를 읽거나 쓰지 않고, 실행마다 빈 상태에서 시작)
+		std::error_code ErrorCode;
+		AutomationSaveDirectory = std::filesystem::temp_directory_path(ErrorCode) / std::format(L"ProjectE-AutomationSaveGames-{}", GetCurrentProcessId());
+		std::filesystem::remove_all(AutomationSaveDirectory, ErrorCode);
+		FSaveGame::SetDirectoryOverride(AutomationSaveDirectory);
 	}
 
 	if (!Desc.bHeadless)
@@ -153,6 +159,12 @@ int FApplication::Run()
 
 	E_LOG(LogCore, Display, "종료 중...");
 	OnShutdown();
+	if (!AutomationSaveDirectory.empty())
+	{
+		std::error_code ErrorCode;
+		std::filesystem::remove_all(AutomationSaveDirectory, ErrorCode);
+		FSaveGame::SetDirectoryOverride({});
+	}
 	Window.Destroy();
 	FLog::Shutdown();
 	return 0;

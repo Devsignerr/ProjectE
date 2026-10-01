@@ -1,3 +1,4 @@
+#include "Core/SaveGame.h"
 #include "Core/Testing/TestFramework.h"
 #include "Network/LoopbackTransport.h"
 #include "Network/NetDriver.h"
@@ -365,4 +366,38 @@ E_TEST(Gameplay_StateReplicatesToClient)
 
 	ClientWorld.EndPlay();
 	ServerWorld.EndPlay();
+}
+
+// Lua SaveGame: 테이블 왕복 (중첩/배열/숫자 정수·실수), 목록/삭제, 잘못된 슬롯 이름은 스크립트 오류
+E_TEST(Gameplay_LuaSaveGameRoundTrip)
+{
+	const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectEGameplaySaveGames";
+	std::filesystem::remove_all(Directory);
+	FSaveGame::SetDirectoryOverride(Directory);
+
+	FScene        Scene;
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, FTestRegistry::GetTempDirectory() });
+	World.BeginPlay(Scene);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+assert(SaveGame.Save("Slot_1", { Level = 3, Name = "용사", Ratio = 0.5, Items = { "검", "방패" }, Flags = { Boss = true }, [7] = "seven" }))
+assert(SaveGame.Exists("Slot_1") and not SaveGame.Exists("Other"))
+local Data = SaveGame.Load("Slot_1")
+assert(Data.Level == 3 and math.type(Data.Level) == "integer")
+assert(Data.Name == "용사" and Data.Ratio == 0.5)
+assert(#Data.Items == 2 and Data.Items[2] == "방패")
+assert(Data.Flags.Boss == true and Data["7"] == "seven")
+assert(SaveGame.Load("Missing") == nil)
+assert(SaveGame.Save("Slot_2", {}))
+local Slots = SaveGame.List()
+assert(#Slots == 2 and Slots[1] == "Slot_1" and Slots[2] == "Slot_2")
+assert(SaveGame.Delete("Slot_2") and not SaveGame.Delete("Slot_2"))
+)"));
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	E_EXPECT_FALSE(Scripts.RunString("SaveGame.Save('../Escape', { })"));
+	E_EXPECT_FALSE(Scripts.RunString("SaveGame.Save('Bad', { f = function() end })"));
+	E_EXPECT_FALSE(std::filesystem::exists(Directory.parent_path() / L"Escape.json"));
+	World.EndPlay();
+	FSaveGame::SetDirectoryOverride({});
 }

@@ -98,6 +98,39 @@ struct FTemporalMath
 		return CosAngle < FMath::Cos(FMath::DegreesToRadians(MaxAngleDegrees));
 	}
 
+	// ---- TAA 해상 (TemporalAA.hlsl과 같은 식)
+	// 밝은 픽셀이 이력을 지배하지 않게 섞는 공간: c / (1 + max(c)), 역변환 c / (1 - max(c))
+	static FVector3 TonemapForTaa(const FVector3& C)
+	{
+		return C / (1.0f + FMath::Max(C.X, FMath::Max(C.Y, C.Z)));
+	}
+	static FVector3 InverseTonemapForTaa(const FVector3& C)
+	{
+		return C / FMath::Max(1.0f - FMath::Max(C.X, FMath::Max(C.Y, C.Z)), 1.0e-4f);
+	}
+	static FVector3 RgbToYCoCg(const FVector3& C)
+	{
+		return FVector3(0.25f * C.X + 0.5f * C.Y + 0.25f * C.Z, 0.5f * C.X - 0.5f * C.Z, -0.25f * C.X + 0.5f * C.Y - 0.25f * C.Z);
+	}
+	static FVector3 YCoCgToRgb(const FVector3& C) { return FVector3(C.X + C.Y - C.Z, C.X + C.Z, C.X - C.Y - C.Z); }
+
+	// 이력을 상자 중심 방향으로 상자 안까지 당긴다 (안이면 그대로)
+	static FVector3 ClipToBox(const FVector3& History, const FVector3& BoxMin, const FVector3& BoxMax)
+	{
+		const FVector3 Center = (BoxMax + BoxMin) * 0.5f;
+		const FVector3 Extent = (BoxMax - BoxMin) * 0.5f + FVector3(1.0e-5f);
+		const FVector3 Offset = History - Center;
+		const float    Scale  = FMath::Max(FMath::Abs(Offset.X / Extent.X), FMath::Max(FMath::Abs(Offset.Y / Extent.Y), FMath::Abs(Offset.Z / Extent.Z)));
+		return Scale > 1.0f ? Center + Offset / Scale : History;
+	}
+
+	// 현재 프레임 비중: 기본값 → 반응형 마스크(0~1)만큼 ReactiveWeight로, 빠른 움직임(32픽셀에서 최대)이면 최소 0.25
+	static float ComputeTaaWeight(float CurrentWeight, float ReactiveWeight, float Reactive, float SpeedPixels)
+	{
+		const float Base = FMath::Lerp(CurrentWeight, ReactiveWeight, FMath::Clamp(Reactive, 0.0f, 1.0f));
+		return FMath::Lerp(Base, FMath::Max(Base, 0.25f), FMath::Clamp(SpeedPixels / 32.0f, 0.0f, 1.0f));
+	}
+
 	// 단위 법선 → 팔면체 [-1, 1]^2 (화면 공간 법선 버퍼 RG). Engine/Shaders/ScreenSpace.hlsli와 같은 식
 	static FVector2 EncodeOctahedral(const FVector3& Normal)
 	{

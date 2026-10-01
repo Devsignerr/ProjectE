@@ -32,7 +32,8 @@ namespace
 		uint32 bAutoExposure     = 0;
 		float  AutoExposureMinEV = -4.0f;
 		float  AutoExposureMaxEV = 6.0f;
-		float  Padding[2]        = {};
+		float  Sharpness         = 0.0f; // TAA 샤프닝 (0 = 끔)
+		float  Padding           = 0.0f;
 	};
 	static_assert(sizeof(FTonemapConstants) <= PostRootConstantCount * 4 && sizeof(FTonemapConstants) % 4 == 0);
 
@@ -515,7 +516,7 @@ void FPostProcessor::RenderAutoExposure(ID3D12GraphicsCommandList* CommandList, 
 }
 
 void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& HdrSceneColor, const FRenderOutput& Output,
-                            const FPostProcessSettings& Settings)
+                            const FPostProcessSettings& Settings, float Sharpness)
 {
 	E_CHECKF(Output.IsValid(), "포스트 프로세스 출력 대상이 유효하지 않습니다");
 
@@ -552,6 +553,7 @@ void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12
 	Constants.bAutoExposure     = Settings.bAutoExposure ? 1u : 0u;
 	Constants.AutoExposureMinEV = FMath::Min(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
 	Constants.AutoExposureMaxEV = FMath::Max(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
+	Constants.Sharpness         = FMath::Clamp(Sharpness, 0.0f, 1.0f);
 
 	// 블룸이 없으면 t1에 씬을 바인딩해 둔다 (강도 0이라 샘플링되지 않음)
 	const FD3D12DescriptorHandle& BloomSource = Constants.BloomIntensity > 0.0f ? BloomTargets[0]->GetSrv() : HdrSceneColor;

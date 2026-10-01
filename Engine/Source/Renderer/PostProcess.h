@@ -40,6 +40,11 @@ struct FPostProcessSettings
 	float BloomThreshold = 1.0f;  // HDR 밝기(최대 채널) 기준
 	float BloomKnee      = 0.5f;  // 임계값 부근 부드러운 전환 폭 (임계값 대비 비율)
 	float BloomIntensity = 0.08f;
+
+	// TAA: 서브픽셀 지터 + 이력 누적 (톤매핑 전 HDR). 픽셀 아트/와이어프레임/한 렌더러로 여러 뷰를 그릴 때는 자동으로 꺼진다
+	bool  bTemporalAA             = true;
+	float TemporalAACurrentWeight = 0.1f;  // 현재 프레임 비중 (작을수록 부드럽지만 고스팅 위험)
+	float TemporalAASharpness     = 0.25f; // TAA 흐림 보정 샤프닝 (톤매핑 패스, 0 = 끔, TAA일 때만)
 };
 
 // 픽셀 아트 합성 입력 (FSceneRenderer가 FPixelArtComponent + 카메라로 채운다). 식은 PixelArtMath.h / PixelArt.hlsl
@@ -74,8 +79,9 @@ public:
 	void Shutdown();
 
 	// HdrSceneColor: PIXEL_SHADER_RESOURCE 상태의 HDR 텍스처 SRV (셰이더 가시 힙). 크기는 Output과 같다고 가정
+	// Sharpness > 0이면 톤매핑 직전 4이웃 샤프닝 (TAA 결과일 때만 씬 렌더러가 넘긴다)
 	void Render(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& HdrSceneColor, const FRenderOutput& Output,
-	            const FPostProcessSettings& Settings);
+	            const FPostProcessSettings& Settings, float Sharpness = 0.0f);
 
 	// 픽셀 아트: 저해상도 톤매핑 결과(SourceColor, 선형) + 저해상도 깊이(SourceDepth의 깊이 버퍼)를
 	// 서브픽셀 보정 최근접 확대 + 1px 외곽선/모서리 하이라이트 + 양자화/디더로 Output에 합성한다

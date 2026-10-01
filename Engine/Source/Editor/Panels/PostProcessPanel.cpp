@@ -41,6 +41,15 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		ImGui::DragFloat("강도", &Settings.BloomIntensity, 0.005f, 0.0f, 2.0f, "%.3f");
 		ImGui::EndDisabled();
 
+		ImGui::SeparatorText("안티에일리어싱 (TAA)");
+		ImGui::Checkbox("TAA", &Settings.bTemporalAA);
+		ImGui::SetItemTooltip("프레임마다 화면을 조금씩 흔들어 그린 결과를 누적해 계단 현상을 없앱니다 (픽셀 아트에서는 꺼짐)");
+		ImGui::BeginDisabled(!Settings.bTemporalAA);
+		ImGui::SliderFloat("현재 프레임 비중", &Settings.TemporalAACurrentWeight, 0.02f, 0.5f, "%.2f");
+		ImGui::SetItemTooltip("작을수록 부드럽지만 움직일 때 잔상이 남기 쉽습니다");
+		ImGui::SliderFloat("샤프닝", &Settings.TemporalAASharpness, 0.0f, 1.0f, "%.2f");
+		ImGui::EndDisabled();
+
 		ImGui::Separator();
 		if (ImGui::Button("기본값으로"))
 		{

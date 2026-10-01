@@ -17,6 +17,8 @@
 #include "Renderer/OcclusionCuller.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
+#include "Renderer/ScreenPass.h"
+#include "Renderer/TemporalAA.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -45,6 +47,7 @@ enum class ERenderTimer : uint32
 	Particles,
 	PostProcess,
 	DepthPrepass, // 깊이 + 화면 공간 법선 + 움직임 벡터 (GPU: 오클루전이면 HZB·2단계 포함)
+	TemporalAA,
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -181,6 +184,11 @@ private:
 	FParticleRenderer    ParticleRenderer;
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
+	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)
+	FTemporalAA          TemporalAA;
+	bool                 bTaaRanLastFrame = false;
+	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
+	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor;    // HDR + 깊이, 출력 크기에 맞춰 재생성
 	std::unique_ptr<FD3D12RenderTarget> SceneNormal;   // 화면 공간 법선 (깊이 사전 패스)

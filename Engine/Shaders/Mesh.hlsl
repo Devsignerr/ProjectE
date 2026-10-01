@@ -382,7 +382,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 		Color *= CascadeDebugColor(Input.WorldPosition);
 	}
 
-	return float4(Color, BaseColor.a);
+	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클이 덮은 만큼 쌓인다)
 }
 
 // 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 움직임 벡터. 머티리얼 텍스처를 읽지 않는다

@@ -154,5 +154,7 @@ float4 PSAlpha(FParticleVSOutput Input) : SV_Target
 float4 PSAdditive(FParticleVSOutput Input) : SV_Target
 {
 	const float4 Texel = ParticleTexture.Sample(LinearClamp, Input.UV);
-	return float4(Texel.rgb * Input.Color.rgb * saturate(Texel.a * Input.Color.a), 0.0f);
+	// 알파는 색에 영향 없음(가산) — TAA 반응형 마스크로 덮인 정도를 남긴다
+	const float Coverage = saturate(Texel.a * Input.Color.a);
+	return float4(Texel.rgb * Input.Color.rgb * Coverage, Coverage);
 }

@@ -193,3 +193,57 @@ E_TEST(Temporal_ShaderTypeLayout)
 	E_EXPECT_EQ(offsetof(FPerFrameConstants, PrevViewProjection), static_cast<size_t>(208));
 	E_EXPECT_EQ(offsetof(FPerFrameConstants, JitterNdc), static_cast<size_t>(272));
 }
+
+E_TEST(Temporal_TaaColorSpaces)
+{
+	// 톤매핑 공간 왕복 + YCoCg 왕복
+	const FVector3 Colors[] = { FVector3(0.0f), FVector3(0.2f, 0.5f, 0.9f), FVector3(4.0f, 1.0f, 0.25f), FVector3(30.0f, 30.0f, 30.0f) };
+	for (const FVector3& Color : Colors)
+	{
+		const FVector3 Mapped = FTemporalMath::TonemapForTaa(Color);
+		E_EXPECT_TRUE(Mapped.X < 1.0f && Mapped.Y < 1.0f && Mapped.Z < 1.0f);
+		const FVector3 Back = FTemporalMath::InverseTonemapForTaa(Mapped);
+		E_EXPECT_NEAR(Back.X, Color.X, Color.X * 1.0e-3f + 1.0e-4f);
+		E_EXPECT_NEAR(Back.Z, Color.Z, Color.Z * 1.0e-3f + 1.0e-4f);
+		const FVector3 RoundTrip = FTemporalMath::YCoCgToRgb(FTemporalMath::RgbToYCoCg(Mapped));
+		E_EXPECT_NEAR(RoundTrip.X, Mapped.X, Tol);
+		E_EXPECT_NEAR(RoundTrip.Y, Mapped.Y, Tol);
+		E_EXPECT_NEAR(RoundTrip.Z, Mapped.Z, Tol);
+	}
+	// 회색은 Co = Cg = 0
+	const FVector3 Gray = FTemporalMath::RgbToYCoCg(FVector3(0.4f));
+	E_EXPECT_NEAR(Gray.X, 0.4f, Tol);
+	E_EXPECT_NEAR(Gray.Y, 0.0f, Tol);
+	E_EXPECT_NEAR(Gray.Z, 0.0f, Tol);
+}
+
+E_TEST(Temporal_TaaClipAndWeight)
+{
+	const FVector3 BoxMin(0.0f), BoxMax(1.0f);
+	// 안쪽은 그대로
+	const FVector3 Inside = FTemporalMath::ClipToBox(FVector3(0.2f, 0.7f, 0.5f), BoxMin, BoxMax);
+	E_EXPECT_NEAR(Inside.X, 0.2f, Tol);
+	E_EXPECT_NEAR(Inside.Y, 0.7f, Tol);
+	// 바깥은 중심 방향 선분과 상자 경계의 교점
+	const FVector3 Outside = FTemporalMath::ClipToBox(FVector3(2.5f, 0.5f, 0.5f), BoxMin, BoxMax);
+	E_EXPECT_NEAR(Outside.X, 1.0f, 1.0e-3f);
+	E_EXPECT_NEAR(Outside.Y, 0.5f, Tol);
+	const FVector3 Corner = FTemporalMath::ClipToBox(FVector3(3.5f, 3.5f, 0.5f), BoxMin, BoxMax);
+	E_EXPECT_NEAR(Corner.X, 1.0f, 1.0e-3f);
+	E_EXPECT_NEAR(Corner.Y, 1.0f, 1.0e-3f);
+
+	// 비중: 정지 + 반응형 없음 = 기본값, 반응형 1 = ReactiveWeight, 빠른 움직임 = 최소 0.25
+	E_EXPECT_NEAR(FTemporalMath::ComputeTaaWeight(0.1f, 0.6f, 0.0f, 0.0f), 0.1f, Tol);
+	E_EXPECT_NEAR(FTemporalMath::ComputeTaaWeight(0.1f, 0.6f, 1.0f, 0.0f), 0.6f, Tol);
+	E_EXPECT_NEAR(FTemporalMath::ComputeTaaWeight(0.1f, 0.6f, 0.0f, 64.0f), 0.25f, Tol);
+	E_EXPECT_NEAR(FTemporalMath::ComputeTaaWeight(0.1f, 0.6f, 0.5f, 0.0f), 0.35f, Tol);
+
+	// 정지 화면 수렴: 같은 값을 계속 섞으면 그 값, 지터 샘플 평균으로 수렴 (지수 이동 평균)
+	float History = 0.0f;
+	for (int32 Frame = 0; Frame < 200; ++Frame)
+	{
+		const float Sample = (Frame % 2 == 0) ? 0.0f : 1.0f; // 가장자리 픽셀: 지터마다 덮임/안 덮임
+		History            = FMath::Lerp(History, Sample, 0.1f);
+	}
+	E_EXPECT_NEAR(History, 0.5f, 0.06f);
+}

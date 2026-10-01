@@ -47,6 +47,8 @@
     { "File": "OcclusionCulling.hlsl", "Entry": "CullCS", "Stage": "Compute" },
     { "File": "Mesh.hlsl", "Entry": "PSPrepass", "Stage": "Pixel" },
     { "File": "ScreenDebug.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "ScreenDebug.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "ScreenDebug.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "TemporalAA.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "TemporalAA.hlsl", "Entry": "PSResolve", "Stage": "Pixel" }
   ]
 }

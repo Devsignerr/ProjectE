@@ -112,7 +112,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
-	    !OcclusionCuller.Init(*Rhi, ShaderLibrary))
+	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
 	{
 		return false;
 	}
@@ -145,6 +145,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	if (const std::wstring View = CommandLine.GetValue(L"--debug-view"); !View.empty())
 	{
 		DebugView = View == L"normal" ? 1u : View == L"velocity" ? 2u : View == L"depth" ? 3u : 0u;
+	}
+	if (CommandLine.HasFlag(L"--no-taa"))
+	{
+		PostProcessSettings.bTemporalAA = false; // 비교용
 	}
 	if (CommandLine.HasFlag(L"--jitter"))
 	{
@@ -187,6 +191,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Particles:   return "파티클";
 	case ERenderTimer::PostProcess: return "포스트";
 	case ERenderTimer::DepthPrepass: return "깊이 사전";
+	case ERenderTimer::TemporalAA:   return "TAA";
 	default:                        return "?";
 	}
 }
@@ -392,6 +397,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!TemporalAA.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 	if (!OcclusionCuller.ReloadShaders(bForceRecompile))
 	{
 		return false;
@@ -422,6 +431,8 @@ void FSceneRenderer::Shutdown()
 	ParticleRenderer.Shutdown();
 	LocalLightRenderer.Shutdown();
 	OcclusionCuller.Shutdown();
+	TemporalAA.Shutdown();
+	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
 	{
 		for (FD3D12PipelineState& Pipeline : PassPipelines)
@@ -446,6 +457,7 @@ void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 {
 	FRenderTargetDesc SceneDesc = FRenderTargetDesc::MakeHdr(true);
 	std::memcpy(SceneDesc.ClearColor, &BackgroundColor.X, sizeof(SceneDesc.ClearColor));
+	SceneDesc.ClearColor[3] = 0.0f; // 알파 = TAA 반응형 마스크
 	EnsureTarget(SceneColor, Width, Height, L"SceneColorHDR", SceneDesc);
 
 	FRenderTargetDesc NormalDesc = FRenderTargetDesc::MakeColor(SceneNormalFormat);
@@ -541,12 +553,37 @@ void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRe
 	if (PixelArt == nullptr)
 	{
 		RenderSceneColor(Scene, Camera, Output.Width, Output.Height, true);
+
+		// TAA: 톤매핑 전 HDR 이력과 섞은 결과가 포스트 입력. 한 렌더러가 여러 뷰를 그리는 경우(미리보기/썸네일)·와이어프레임은 끔
+		const bool                    bTaa      = PostProcessSettings.bTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
+		const FD3D12DescriptorHandle* PostInput = &SceneColor->GetSrv();
+		float                         Sharpness = 0.0f;
+		if (bTaa)
+		{
+			if (!bTaaRanLastFrame)
+			{
+				TemporalAA.ResetHistory(); // 꺼져 있던 동안의 이력은 낡았다
+			}
+			BeginTimer(ERenderTimer::TemporalAA);
+			FTemporalAAInputs Inputs;
+			Inputs.SceneColor    = SceneColor.get();
+			Inputs.Velocity      = SceneVelocity.get();
+			Inputs.Reprojection  = CurrentReprojection;
+			Inputs.bHistoryValid = bTemporalHistoryValid;
+			Inputs.CurrentWeight = PostProcessSettings.TemporalAACurrentWeight;
+			PostInput            = &TemporalAA.Resolve(Inputs).GetSrv();
+			Sharpness            = PostProcessSettings.TemporalAASharpness;
+			EndTimer(ERenderTimer::TemporalAA);
+		}
+		bTaaRanLastFrame = bTaa;
+
 		BeginTimer(ERenderTimer::PostProcess);
-		PostProcessor.Render(CommandList, SceneColor->GetSrv(), Output, PostProcessSettings);
+		PostProcessor.Render(CommandList, *PostInput, Output, PostProcessSettings, Sharpness);
 		EndTimer(ERenderTimer::PostProcess);
 		RenderDebugView(Output);
 		return;
 	}
+	bTaaRanLastFrame = false; // 픽셀 아트: 정수 격자 스냅과 충돌하므로 TAA 없음
 
 	// 픽셀 아트: 저해상도 씬 → 저해상도 포스트(톤매핑) → 합성 확대
 	const uint32 PixelSize    = FPixelArtMath::ClampPixelSize(PixelArt->PixelSize);
@@ -626,13 +663,13 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	// 시간 이력: 이 렌더러가 연속 프레임에 뷰 하나만 그리고, 같은 크기이고, 카메라 컷이 없을 때만 이전 프레임 값을 쓴다
 	const bool       bSingleView              = ViewsThisFrame == 1 && ViewsLastFrame == 1;
 	const FMatrix4x4 UnjitteredViewProjection = Camera.GetUnjitteredViewProjectionMatrix();
-	bTemporalHistoryValid = bSingleView && bHasPrevView && PrevTargetWidth == Width && PrevTargetHeight == Height &&
+	bTemporalHistoryValid = bSingleView && bHasPrevView && PrevScene == &Scene && PrevTargetWidth == Width && PrevTargetHeight == Height &&
 	                        !FTemporalMath::IsCameraCut(PrevCameraPosition, PrevCameraForward, Camera.GetPosition(), Camera.GetForwardVector(),
 	                                                    CameraCutDistance, CameraCutAngleDegrees);
 
 	// 지터는 씬 컬러에 그리는 패스(메시/파티클)에만: 그림자 캐스케이드·클러스터·컬링·LOD는 지터 없는 카메라 (그림자 떨림 방지)
 	CurrentJitterNdc = FVector2::ZeroVector;
-	if (bTemporalJitter && bAllowJitter && bSingleView)
+	if ((bTemporalJitter || (PostProcessSettings.bTemporalAA && !bWireframe)) && bAllowJitter && bSingleView)
 	{
 		CurrentJitterNdc = FTemporalMath::JitterPixelsToNdc(FTemporalMath::GetJitterPixels(TemporalFrameIndex++), Width, Height);
 	}
@@ -644,6 +681,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	PerFrame.PrevViewProjection       = bTemporalHistoryValid ? PrevUnjitteredViewProjection : UnjitteredViewProjection;
 	PerFrame.JitterNdc                = CurrentJitterNdc;
 	PerFrame.ScreenSize               = FVector2(static_cast<float>(Width), static_cast<float>(Height));
+	CurrentReprojection               = FTemporalMath::ComputeReprojectionMatrix(UnjitteredViewProjection, PerFrame.PrevViewProjection);
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	const uint64               UploadStart   = DynamicBuffer.GetUsed();
@@ -734,7 +772,8 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	}
 
 	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트) + 파티클
-	SceneColor->Begin(CommandList, &BackgroundColor.X, !bPrepass);
+	const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
+	SceneColor->Begin(CommandList, SceneClear, !bPrepass);
 	BeginTimer(ERenderTimer::MainDraw);
 	if (bDrawSkybox)
 	{
@@ -772,6 +811,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	PrevTargetWidth              = Width;
 	PrevTargetHeight             = Height;
 	bHasPrevView                 = true;
+	PrevScene                    = &Scene;
 }
 
 void FSceneRenderer::ApplyMotionHistory(bool bValid)

@@ -207,6 +207,9 @@ public:
 	bool InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
 	// MethodName을 정의한 모든 인스턴스에서 호출 (OnPlayerJoined 등 전역 이벤트). 정의하지 않은 인스턴스는 건너뛴다
 	void BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+	// 엔티티(자식 포함) 지연 파괴 — Lua entity:Destroy()와 같은 경로 (스크립트 OnDestroy 후 다음 Update/LateUpdate 끝에 파괴).
+	// 플레이 중이 아니면 false (호출한 쪽이 직접 파괴한다)
+	bool RequestDestroy(FEntity Entity);
 
 	bool         RunString(std::string_view Code);                             // 플레이 상태에서 Lua 코드 실행 (오류는 로그 + false)
 	size_t       GetInstanceCount() const;                                     // 살아 있는 스크립트 인스턴스 수

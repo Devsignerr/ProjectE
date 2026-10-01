@@ -46,14 +46,7 @@ FEntity FNetPlayerSpawner::SpawnPlayer(uint32 PlayerId)
 	Name.Name            = std::format("{} (플레이어 {})", Name.Name, PlayerId);
 
 	// 생성 위치: PlayerStart를 돌아가며 (엔티티 인덱스 순)
-	std::vector<FEntity> Starts;
-	Registry.View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Component) {
-		if (Component.Name == PlayerStartName)
-		{
-			Starts.push_back(Entity);
-		}
-	});
-	std::sort(Starts.begin(), Starts.end(), [](FEntity A, FEntity B) { return A.Index < B.Index; });
+	const std::vector<FEntity> Starts = FindPlayerStarts(*Scene);
 	FTransformComponent& Transform = Scene->GetTransform(Pawn);
 	if (!Starts.empty())
 	{
@@ -88,4 +81,17 @@ FEntity FNetPlayerSpawner::FindPawn(uint32 PlayerId) const
 {
 	const auto Found = Pawns.find(PlayerId);
 	return Found != Pawns.end() && Scene != nullptr && Scene->GetRegistry().IsValid(Found->second) ? Found->second : NullEntity;
+}
+
+std::vector<FEntity> FNetPlayerSpawner::FindPlayerStarts(FScene& Scene)
+{
+	std::vector<FEntity> Starts;
+	Scene.GetRegistry().View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Component) {
+		if (Component.Name == PlayerStartName)
+		{
+			Starts.push_back(Entity);
+		}
+	});
+	std::sort(Starts.begin(), Starts.end(), [](FEntity A, FEntity B) { return A.Index < B.Index; });
+	return Starts;
 }

@@ -93,4 +93,5 @@ private:
 	FGamepadState         HeldGamepad;
 	float                 HoldKeysDelay = 0.0f; // --hold-keys-delay (초)
 	bool                  bHoldKeysStarted = false;
+	std::filesystem::path AutomationSaveDirectory; // 자동 검증: 세이브 게임 임시 폴더 (종료 시 삭제)
 };

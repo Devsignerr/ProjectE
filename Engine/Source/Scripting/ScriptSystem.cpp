@@ -217,3 +217,13 @@ void FScriptSystem::BroadcastMethod(const std::string& MethodName, const FGameRp
 		PlayRuntime->BroadcastMethod(MethodName, Args);
 	}
 }
+
+bool FScriptSystem::RequestDestroy(FEntity Entity)
+{
+	if (!PlayRuntime)
+	{
+		return false;
+	}
+	PlayRuntime->RequestDestroy(Entity);
+	return true;
+}

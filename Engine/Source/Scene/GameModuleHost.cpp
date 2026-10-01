@@ -178,3 +178,27 @@ void FGameModuleHost::Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, cons
 		Module->OnRpc(Scene, Target, Kind, RpcName, Args);
 	}
 }
+
+void FGameModuleHost::Damaged(FScene& Scene, FEntity Target, float Amount, FEntity Instigator)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnDamaged(Scene, Target, Amount, Instigator);
+	}
+}
+
+void FGameModuleHost::Death(FScene& Scene, FEntity Target, FEntity Instigator)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnDeath(Scene, Target, Instigator);
+	}
+}
+
+void FGameModuleHost::Respawned(FScene& Scene, FEntity Target)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnRespawned(Scene, Target);
+	}
+}

@@ -91,6 +91,7 @@ public:
 	bool         RunString(std::string_view Code);
 	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
 	void         BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+	void         RequestDestroy(FEntity Entity) { PendingDestroy.push_back(Entity); } // entity:Destroy()와 같은 지연 파괴
 	size_t       GetInstanceCount() const { return Instances.size(); }
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name);
 
@@ -132,6 +133,7 @@ private:
 	int32 GetOwner(FEntity Entity) const;
 	void RegisterUIBindings();     // entity:GetWidget, UIWidget 값 (ScriptUIBindings.cpp)
 	void RegisterGameBindings();   // Game 테이블: 종료, 화면 설정 + Steam 테이블 (ScriptGameBindings.cpp)
+	void RegisterGameplayBindings(); // 체력/데미지(entity:ApplyDamage 등), GameMode, SaveGame 테이블 (ScriptGameplayBindings.cpp)
 	// 이번 프레임 게임 UI 이벤트를 스크립트 함수로 전달 (OnUIClicked_<위젯 이름> 등, ScriptUIBindings.cpp)
 	void DispatchUIEvents();
 

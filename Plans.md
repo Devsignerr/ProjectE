@@ -556,7 +556,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 25-1. `FHealthComponent` + 데미지/회복(서버만) + 이벤트(Lua/게임 모듈 `GameModuleApiVersion` 5) + 리스폰(폰 유지, PlayerStart)
 - [x] 25-2. `FGameModeComponent`(규칙 저장 + 상태 Transient 복제, 메시지 변경 없음), Lua `GameMode.*`
 - [x] 25-3. `FSaveGame` + Lua `SaveGame.*`, `Demo_Gameplay`(포탑·표적·HUD·최고 기록), Verify 오류 0 (2026-10-01 master 머지)
-- [ ] 통합: `Player.eprefab`에 `HealthComponent`, 사망 중 입력 막기, Demo_Multiplayer 게임 모드 (Phase 27과 함께)
+- [x] 통합: `Player.eprefab`에 `HealthComponent`, 사망 중 입력 막기, Demo_Multiplayer 게임 모드 (Phase 27-3)
 
 ## Phase 26 — 성능: 인스턴싱 / LOD / 오클루전 (트랙 A, Phase 23 뒤)
 
@@ -568,6 +568,8 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: 플레이어 캐릭터가 캡슐 대신 스켈레탈 모델을 쓰고, 이동 속도에 따라 대기·걷기·뛰기가 블렌드되며 점프/낙하 상태가 있는 간단한 상태 머신으로 재생된다. 멀티플레이에서 각 클라이언트가 복제된 속도/바닥 상태로 같은 애니메이션을 낸다. 플레이어에 체력(Phase 25) 통합.
 
-- [ ] 27-1. 블렌드(1D 블렌드 스페이스, 크로스페이드) + 상태 머신 에셋/런타임 + 테스트
-- [ ] 27-2. 캐릭터 이동 연동(속도/바닥/점프 → 애니 파라미터, 원격은 복제 값)
-- [ ] 27-3. 샘플 플레이어 모델 교체 + 체력 통합, 검증
+- [x] 27-1. `.eanimgraph` + `FAnimGraphComponent`, 1D 블렌드 스페이스·크로스페이드 상태 머신(순수 `FAnimGraphInstance`), Lua `SetAnimParam/GetAnimParam/GetAnimState`, `AnimGraphTests` 7개
+- [x] 27-2. `bUseCharacterMovement` → Speed/VerticalSpeed/Grounded 자동 공급(원격은 보간 위치 변화), 애니 상태 비복제
+- [x] 27-3. `Player.eprefab` Fox + `FoxCharacter.eanimgraph`, 플레이어 색 = 발밑 Marker, `HealthComponent` + 사망 중 입력 차단·숨김, Demo_Multiplayer 게임 모드(리스폰 3초), Demo_Animation `Fox_Graph`. Verify 멀티플레이(불량 망 포함) 오류 0 (2026-10-01 master 머지)
+- [ ] 사용자: 점프/낙하 애니메이션 에셋(현재 Jump = Run 0.35배속, Fall = Walk 0.3배속 대체), 걷기/뛰기 발 미끄러짐(블렌드 위치 Walk 120 / Run 450)
+- 후속: `.eanimgraph` 편집기·핫 리로드, 리스폰 순간 원격 보간 이동, 전용 서버 노티파이

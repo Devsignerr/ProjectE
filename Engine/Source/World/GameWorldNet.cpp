@@ -7,8 +7,6 @@
 #include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
 #include "Network/ReplicationTypes.h"
-#include "Physics/CharacterMovement.h"
-#include "Physics/PhysicsSystem.h"
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
@@ -277,6 +275,8 @@ bool FGameWorld::HandleNetMessage(FNetConnectionId Connection, const std::vector
 	switch (static_cast<ENetMessageType>(Message[0]))
 	{
 	case ENetMessageType::PlayerInput: ReceivePlayerInput(Connection, Message); return true;
+	case ENetMessageType::CharacterMoves: ReceiveCharacterMoves(Connection, Message); return true;
+	case ENetMessageType::CharacterAck: ReceiveCharacterAck(Message); return true;
 	case ENetMessageType::ScriptRpc:   ReceiveRpc(Connection, Message); return true;
 	default:                           return false;
 	}
@@ -428,32 +428,6 @@ bool FGameWorld::IsLocallyControlled(FEntity Entity) const
 		return Mode != ENetMode::Client;
 	}
 	return Owner == GetLocalPlayerId();
-}
-
-void FGameWorld::TickCharacters(float DeltaSeconds)
-{
-	FPhysicsSystem* Physics = Systems.Physics;
-	if (Physics == nullptr || !Physics->IsActive() || Scene == nullptr)
-	{
-		return;
-	}
-	Physics->SyncCharacters(*Scene);
-	std::vector<FEntity> Characters;
-	Scene->GetRegistry().View<FCharacterMovementComponent>().Each([&](FEntity Entity, FCharacterMovementComponent&) { Characters.push_back(Entity); });
-	for (const FEntity Entity : Characters)
-	{
-		if (IsLocallyControlled(Entity))
-		{
-			// 플레이어 캐릭터는 시점 방향(yaw)을 보고, 서버 소유(AI 등)는 이동 방향을 본다
-			const bool  bPlayer = GetOwner(Entity) >= 0;
-			const float Yaw     = LocalControlRotation.X;
-			Physics->SimulateCharacter(*Scene, Entity, Physics->ConsumePendingMove(Entity, DeltaSeconds, bPlayer ? &Yaw : nullptr));
-		}
-		else if (Mode == ENetMode::Client)
-		{
-			Physics->FollowTransform(*Scene, Entity); // 다른 플레이어: 복제 보간 위치에 캡슐만 맞춘다
-		}
-	}
 }
 
 FVector2 FGameWorld::GetControlRotation(FEntity Entity) const

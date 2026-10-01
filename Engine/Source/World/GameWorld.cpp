@@ -205,6 +205,9 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	Scene = &InScene;
 	Mode  = InMode;
 	RemoteInputs.clear();
+	PredictedCharacters.clear();
+	ServerCharacters.clear();
+	CharacterCorrections = 0;
 	InputSequence = 0;
 	PendingSessionRequest.reset();
 	InstallScriptNetHooks();

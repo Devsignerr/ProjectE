@@ -5,8 +5,10 @@
 #include "Core/Input.h"
 #include "Network/LanDiscovery.h"
 #include "Network/NetTypes.h"
+#include "Physics/CharacterMovement.h"
 #include "Scene/GameRpc.h"
 
+#include <deque>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -113,6 +115,10 @@ public:
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
 	bool  IsClient() const override { return Mode != ENetMode::DedicatedServer; }
 	int32 GetLocalPlayerId() const override;
+
+	// 소유 클라이언트가 예측하는 캐릭터인가 (복제 클라이언트는 이 엔티티의 스냅샷 트랜스폼을 쓰지 않는다)
+	bool   IsPredicted(FEntity Entity) const;
+	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
 
@@ -135,10 +141,31 @@ private:
 		uint32   LastSequence = 0;
 	};
 	FVector2 LocalControlRotation; // 로컬 플레이어 (Lua Net.SetControlRotation) — 클라이언트는 입력과 함께 보낸다
+
+	struct FPredictedCharacter // 클라이언트: 서버가 아직 확인하지 않은 내 무브
+	{
+		std::deque<FCharacterMove> Moves;
+		uint32                     NextSequence    = 0;
+		uint32                     LastAckSequence = 0;
+	};
+	struct FServerCharacter // 서버: 원격 플레이어 캐릭터
+	{
+		std::vector<FCharacterMove> Queue;            // 받았지만 아직 적용하지 않은 무브 (순번 순)
+		uint32                      LastQueued   = 0; // 큐에 넣은 마지막 순번 (겹쳐 온 무브 거르기)
+		uint32                      LastApplied  = 0;
+	};
+	std::unordered_map<FEntity, FPredictedCharacter> PredictedCharacters;
+	std::unordered_map<FEntity, FServerCharacter>    ServerCharacters;
+	uint32                                           CharacterCorrections = 0; // 재조정에서 1cm 넘게 고친 횟수 (테스트/통계)
 	FVector2 GetControlRotation(FEntity Entity) const;
 
 	// 캐릭터 이동 (FCharacterMovementComponent): 조종하는 쪽은 입력으로 시뮬레이션, 아니면 복제 트랜스폼을 따라간다
+	// 클라이언트 예측 (World/GameWorldCharacter.cpp 머리 주석): 소유 클라이언트는 무브를 바로 적용·기록·전송하고, 서버 ack로 재조정한다
 	void TickCharacters(float DeltaSeconds);
+	void SendCharacterMoves(FEntity Entity);
+	void ReceiveCharacterMoves(FNetConnectionId Connection, const std::vector<uint8>& Message);
+	void ReceiveCharacterAck(const std::vector<uint8>& Message);
+	void SendCharacterAck(FEntity Entity, uint32 Sequence);
 	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
 
 	FGameWorldSystems          Systems;

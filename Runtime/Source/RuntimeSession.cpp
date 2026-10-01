@@ -62,6 +62,7 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 	{
 		// 클라이언트: 게임 로직(서버 스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
+		ReplicationClient.SetTransformFilter([this](FEntity Entity) { return !World.IsPredicted(Entity); }); // 내 캐릭터는 예측으로
 		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
 			if (!ReplicationClient.HandleMessage(Message))
 			{

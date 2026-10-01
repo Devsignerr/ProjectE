@@ -264,9 +264,9 @@ void FReplicationClient::Update(float DeltaSeconds)
 		const std::deque<FTransformSample>& Buffer = It->second;
 		FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity);
 		++It;
-		if (Transform == nullptr)
+		if (Transform == nullptr || (TransformFilter && !TransformFilter(Entity)))
 		{
-			continue;
+			continue; // 예측 캐릭터는 클라이언트가 직접 움직인다
 		}
 
 		// RenderTime을 감싸는 두 스냅샷 사이 보간. 범위 밖이면 가장 가까운 끝 값 (외삽하지 않는다)

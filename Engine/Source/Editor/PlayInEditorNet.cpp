@@ -109,6 +109,7 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 		OutOptions.BeforeBeginPlay = [this, Session](FScene& Scene) {
 			PlayScene = &Scene;
 			ReplicationClient.Begin(Scene);
+			ReplicationClient.SetTransformFilter([this](FEntity Entity) { return World == nullptr || !World->IsPredicted(Entity); }); // 내 캐릭터는 예측으로
 			Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
 				if (!ReplicationClient.HandleMessage(Message))
 				{

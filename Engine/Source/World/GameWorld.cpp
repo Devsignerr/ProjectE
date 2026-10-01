@@ -209,6 +209,8 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	ServerCharacters.clear();
 	CharacterCorrections = 0;
 	InputSequence = 0;
+	LastMatchState       = -1;
+	RespawnStartIndex    = 0;
 	PendingSessionRequest.reset();
 	InstallScriptNetHooks();
 
@@ -286,6 +288,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.GameModule->Update(*Scene, DeltaSeconds);
 	}
 	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
+	TickGameplayRules(DeltaSeconds);  // 이번 프레임 데미지 이벤트·사망·리스폰·매치 (물리 전: 리스폰 순간이동이 이번 스텝에 반영)
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->Update(*Scene, DeltaSeconds);

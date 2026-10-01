@@ -58,7 +58,9 @@ enum class EWorldRole : uint8
 };
 
 // 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, 전용 서버가 같은 순서를 쓴다.
-//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 물리 → UpdateTransforms
+//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 게임플레이 규칙 → 물리 → UpdateTransforms
+//                                  게임플레이 규칙 (GameWorldGameplay.cpp, 서버): 데미지 이벤트 → OnDamaged/OnDeath, 사망 처리(점수/파괴/리스폰 예약),
+//                                  리스폰, 매치 진행. 모든 역할: 매치 상태가 바뀌면 스크립트 OnMatchStateChanged(state)
 //                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
 //   스크립트 ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
 //   입력: 클라이언트는 게임플레이 틱마다 로컬 입력 상태를 서버로 보낸다(비신뢰). 서버 스크립트의 Lua Input은
@@ -170,6 +172,15 @@ private:
 	void ReceiveCharacterAck(const std::vector<uint8>& Message);
 	void SendCharacterAck(FEntity Entity, uint32 Sequence);
 	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
+
+	// 게임플레이 규칙 (Scene/Gameplay.h 체력·게임 모드, World/GameWorldGameplay.cpp)
+	void  TickGameplayRules(float DeltaSeconds);
+	void  DispatchDamageEvents();
+	void  HandleDeath(FEntity Victim, FEntity Instigator);
+	void  Respawn(FEntity Entity);
+	int32 GetScoringPlayer(FEntity Instigator, FEntity Victim) const; // 처치 점수를 받을 플레이어 (-1 = 없음)
+	int32  LastMatchState    = -1; // OnMatchStateChanged 감지 (-1 = 게임 모드 없음/시작 전)
+	uint32 RespawnStartIndex = 0;  // 리스폰 PlayerStart 순번
 
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;

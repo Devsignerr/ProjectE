@@ -5,6 +5,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class FScene;
 
@@ -23,6 +24,9 @@ public:
 	FEntity SpawnPlayer(uint32 PlayerId); // 실패/프리팹 없음이면 NullEntity
 	void    DespawnPlayer(uint32 PlayerId);
 	FEntity FindPawn(uint32 PlayerId) const;
+
+	// 이름이 PlayerStart인 엔티티 (엔티티 인덱스 순 — 서버/리스폰이 돌아가며 쓴다)
+	static std::vector<FEntity> FindPlayerStarts(FScene& Scene);
 
 private:
 	FScene*                              Scene = nullptr;

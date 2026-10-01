@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/Components.h"
+#include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 
@@ -124,4 +125,27 @@ void RegisterSceneTypes()
 		.AsComponent(false)
 		.Hide()
 		.NoReplicate();
+
+	// 게임플레이 (Scene/Gameplay.h): 체력은 서버 권위 — 복제되면 클라이언트는 값만 읽는다
+	Registry.RegisterType<FHealthComponent>("HealthComponent", "체력")
+		.Property(&FHealthComponent::MaxHealth, "MaxHealth", "최대 체력").Range(1.0f, 100000.0f, 1.0f)
+		.Property(&FHealthComponent::Health, "Health", "체력").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FHealthComponent::bInvulnerable, "Invulnerable", "무적")
+		.Property(&FHealthComponent::DeathAction, "DeathAction", "사망 시")
+		.Enum({ { "Auto", "자동 (플레이어면 리스폰)" }, { "Destroy", "파괴" }, { "RespawnInPlace", "제자리 리스폰" }, { "RespawnAtPlayerStart", "PlayerStart 리스폰" } })
+		.Property(&FHealthComponent::ScoreValue, "ScoreValue", "처치 점수").Tooltip("처치한 플레이어가 받는 점수 (게임 모드 진행 중)")
+		.AsComponent();
+
+	// 게임 모드 + 게임 상태: 규칙은 저장, 상태는 저장하지 않고 복제 (멀티플레이는 ReplicatedComponent도 붙인다)
+	Registry.RegisterType<FGameModeComponent>("GameModeComponent", "게임 모드")
+		.Property(&FGameModeComponent::StartDelay, "StartDelay", "시작 대기 (초)").Range(0.0f, 3600.0f, 0.1f)
+		.Property(&FGameModeComponent::TimeLimit, "TimeLimit", "제한 시간 (초, 0 = 없음)").Range(0.0f, 36000.0f, 1.0f)
+		.Property(&FGameModeComponent::ScoreToWin, "ScoreToWin", "목표 점수 (0 = 없음)").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FGameModeComponent::RespawnDelay, "RespawnDelay", "리스폰 지연 (초)").Range(-1.0f, 600.0f, 0.1f).Tooltip("음수면 리스폰하지 않는다")
+		.Property(&FGameModeComponent::MatchState, "MatchState", "매치 상태", PF_Transient | PF_ReadOnly)
+		.Enum({ { "WaitingToStart", "대기" }, { "InProgress", "진행" }, { "Ended", "끝" } })
+		.Property(&FGameModeComponent::RemainingSeconds, "RemainingSeconds", "남은 시간 (초)", PF_Transient | PF_ReadOnly)
+		.Property(&FGameModeComponent::WinnerPlayerId, "WinnerPlayerId", "승자", PF_Transient | PF_ReadOnly)
+		.Property(&FGameModeComponent::Scores, "Scores", "점수", PF_Transient | PF_ReadOnly)
+		.AsComponent();
 }

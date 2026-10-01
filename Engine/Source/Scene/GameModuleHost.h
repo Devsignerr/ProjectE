@@ -42,6 +42,11 @@ public:
 	void PlayerLeft(FScene& Scene, uint32 PlayerId);
 	void Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, const std::string& RpcName, const FGameRpcArgs& Args);
 
+	// 게임플레이 이벤트 (플레이 중에만 전달)
+	void Damaged(FScene& Scene, FEntity Target, float Amount, FEntity Instigator);
+	void Death(FScene& Scene, FEntity Target, FEntity Instigator);
+	void Respawned(FScene& Scene, FEntity Target);
+
 private:
 	void*        Library = nullptr; // HMODULE (공개 헤더에 Windows.h 금지)
 	IGameModule* Module  = nullptr; // 모듈 DLL 안의 정적 인스턴스 (비소유)

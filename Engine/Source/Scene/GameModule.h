@@ -18,6 +18,9 @@ struct FAnimNotifyEvent;
 //   OnPlayerJoined/OnPlayerLeft: 플레이어 입장(폰 생성 직후)/퇴장
 //   OnRpc: 받은 RPC (Server RPC와 서버 자신의 Multicast). 같은 엔티티 스크립트의 Server_/Multicast_ 메서드와 함께 불린다
 //   GetNet(): RPC 보내기/소유권 조회 (OnBeginPlay ~ OnEndPlay 동안 유효, 그 밖에서는 nullptr)
+// 게임플레이 (Scene/Gameplay.h, 서버에서만): 데미지는 Gameplay::ApplyDamage(Scene, 대상, 양, 가해자)로 준다.
+//   OnDamaged/OnDeath: 같은 프레임 게임플레이 단계(AI 뒤, 물리 앞)에서 대상 스크립트의 OnDamaged/OnDeath 다음에 불린다
+//   OnRespawned: 리스폰 직후 (체력 회복 + 위치 이동 뒤)
 class IGameModule
 {
 public:
@@ -34,6 +37,10 @@ public:
 	virtual void OnPlayerLeft(FScene& /*Scene*/, uint32 /*PlayerId*/) {}
 	virtual void OnRpc(FScene& /*Scene*/, FEntity /*Target*/, EGameRpcKind /*Kind*/, const std::string& /*Name*/, const FGameRpcArgs& /*Args*/) {}
 
+	virtual void OnDamaged(FScene& /*Scene*/, FEntity /*Target*/, float /*Amount*/, FEntity /*Instigator*/) {}
+	virtual void OnDeath(FScene& /*Scene*/, FEntity /*Target*/, FEntity /*Instigator*/) {}
+	virtual void OnRespawned(FScene& /*Scene*/, FEntity /*Target*/) {}
+
 	IGameNet* GetNet() const { return Net; }
 	void      SetNet(IGameNet* InNet) { Net = InNet; } // 엔진(FGameModuleHost)만 부른다
 
@@ -42,7 +49,7 @@ private:
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 3; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet)
+inline constexpr uint32 GameModuleApiVersion = 4; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: 게임플레이 (OnDamaged/OnDeath/OnRespawned)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

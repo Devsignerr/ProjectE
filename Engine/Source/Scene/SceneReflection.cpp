@@ -6,6 +6,7 @@
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
+#include "Scene/Terrain.h"
 
 void RegisterSceneTypes()
 {
@@ -177,4 +178,7 @@ void RegisterSceneTypes()
 		.Property(&FAnimGraphComponent::bUseCharacterMovement, "UseCharacterMovement", "캐릭터 이동 파라미터")
 		.Tooltip("자신/조상의 캐릭터 이동 상태를 Speed·VerticalSpeed·Grounded 파라미터로 넣는다")
 		.AsComponent();
+
+	// 지형 (Scene/Terrain.h, Phase 34)
+	RegisterTerrainTypes();
 }

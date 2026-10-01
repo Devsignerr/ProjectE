@@ -714,3 +714,8 @@ FPhysicsCharacterResult FPhysicsWorld::GetCharacterResult(uint32 Character) cons
 	Result.bGrounded = Virtual.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 	return Result;
 }
+
+JPH::BodyInterface& FPhysicsWorld::GetJoltBodyInterface()
+{
+	return Impl->Bodies();
+}

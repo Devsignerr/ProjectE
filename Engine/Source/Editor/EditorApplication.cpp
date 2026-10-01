@@ -157,6 +157,11 @@ bool FEditorApplication::OnInit()
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
 	}
 	PlayMode.Init(Scene, World);
+	// 지형 도구: 뷰포트 브러시 (모드가 켜져 있을 때만 마우스를 가져간다)
+	FTerrainLibrary::Get().SetContentDirectory(Context.ContentDirectory);
+	ViewportPanel.ToolOverlay = [this](FEditorContext& InContext, const FInput& InInput, const FVector2& ImageMin, const FVector2& ImageSize, bool bHovered) {
+		return TerrainToolPanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
+	};
 	NetPlay.Init(World, &Resources, Context.ContentDirectory);
 	Context.NetPlay = &NetPlay;
 
@@ -249,6 +254,12 @@ bool FEditorApplication::OnInit()
 		{
 			E_LOG(LogEditor, Error, "Undo 검증 실패: {}", Summary);
 		}
+	}
+
+	// 자동 검증: --terrain-brush-test 지형 스컬프트/칠하기 스트로크 → 실행 취소/다시 실행으로 높이·가중치가 맞는지
+	if (FCommandLine::FromProcess().HasFlag(L"--terrain-brush-test"))
+	{
+		VerifyTerrainBrush();
 	}
 
 	// 셰이더 핫 리로드: 엔진 셰이더 디렉터리 감시 (실패해도 에디터는 계속)
@@ -351,6 +362,7 @@ void FEditorApplication::OnRender()
 	HandleToolShortcuts();
 	HandlePlayShortcuts();
 	DrawMainMenuBar();
+	TerrainToolPanel.Update(Context); // Undo/Redo로 바뀐 지형 편집 버전 맞추기
 	ViewportPanel.Draw(Context, GetInput());
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
@@ -361,6 +373,7 @@ void FEditorApplication::OnRender()
 	}
 	PostProcessPanel.Draw(Context);
 	ShadowPanel.Draw(Context);
+	TerrainToolPanel.Draw(Context);
 	ProjectSettingsWindow.Draw(Context);
 	EditorPreferencesWindow.Draw(Context);
 	OutputLogPanel.Draw(Context);
@@ -487,6 +500,7 @@ bool FEditorApplication::SaveScene()
 	{
 		return false;
 	}
+	FTerrainLibrary::Get().SaveAllUnsaved(); // 씬이 가리키는 지형 데이터(.eterrain)도 함께
 	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
 	return true;
@@ -505,6 +519,7 @@ bool FEditorApplication::SaveSceneAs()
 		return false;
 	}
 	CurrentScenePath = Path;
+	FTerrainLibrary::Get().SaveAllUnsaved(); // 씬이 가리키는 지형 데이터(.eterrain)도 함께
 	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
 	RememberOpenedScene();
@@ -831,6 +846,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("콘텐츠", nullptr, &ContentBrowserPanel.bOpen);
 		ImGui::MenuItem("포스트 프로세스", nullptr, &PostProcessPanel.bOpen);
 		ImGui::MenuItem("그림자", nullptr, &ShadowPanel.bOpen);
+		ImGui::MenuItem("지형", nullptr, &TerrainToolPanel.bOpen);
 		ImGui::MenuItem("네트워크", nullptr, &NetworkPanel.bOpen);
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
@@ -1615,6 +1631,7 @@ void FEditorApplication::ApplyDefaultLayoutIfNeeded()
 	ImGui::DockBuilderDockWindow("###Inspector", RightBottom);
 	ImGui::DockBuilderDockWindow("###PostProcess", Bottom);
 	ImGui::DockBuilderDockWindow("###Shadows", Bottom);
+	ImGui::DockBuilderDockWindow("###Terrain", Bottom);
 	ImGui::DockBuilderDockWindow("###Network", Bottom);
 	ImGui::DockBuilderFinish(DockSpace);
 }
@@ -1625,6 +1642,7 @@ void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
 	for (const FAssetMove& Move : Moves)
 	{
 		Resources.OnAssetMoved(Move.From, Move.To);
+		FTerrainLibrary::Get().OnAssetMoved(Move.From, Move.To);
 	}
 
 	// 2) 열린 씬의 컴포넌트 문자열 (디스크의 씬 파일은 참조 갱신기가 이미 고쳤으므로 편집 기록은 남기지 않는다)

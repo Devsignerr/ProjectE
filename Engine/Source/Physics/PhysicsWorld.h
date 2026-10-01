@@ -10,6 +10,11 @@
 
 E_DECLARE_ENGINE_LOG_CATEGORY(LogPhysics)
 
+namespace JPH
+{
+	class BodyInterface;
+}
+
 enum class EPhysicsShape : uint8
 {
 	Box,
@@ -128,6 +133,9 @@ public:
 	float GetCharacterDynamicPenetration(uint32 Character) const;
 	// 캐릭터가 동적 바디를 미는(충격량) 여부 — 모든 캐릭터 공용. 끄면 동적 바디도 밀리지 않는 벽처럼 막는다 (예측 재조정의 다시 적용)
 	void SetCharactersPushBodies(bool bPush);
+
+	// ---- 확장: 새 파일이 Jolt 바디를 직접 만들 때 (지형 높이맵 충돌 — TerrainCollision.cpp). 바디 ID = GetIndexAndSequenceNumber (DestroyBody로 지운다)
+	JPH::BodyInterface& GetJoltBodyInterface();
 
 private:
 	struct FImpl;

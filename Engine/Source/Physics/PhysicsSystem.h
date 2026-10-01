@@ -11,6 +11,7 @@
 #include <vector>
 
 class FScene;
+class FTerrainCollision;
 
 struct FPhysicsHit
 {
@@ -149,4 +150,5 @@ private:
 	uint64                                    FrameCounter = 0;
 	bool                                      bInterpolate = true;
 	std::function<bool(const FScene&, FEntity)> KinematicOverride;
+	std::unique_ptr<FTerrainCollision>          TerrainCollision; // 지형 높이맵 충돌 (TerrainCollision.h)
 };

@@ -1,0 +1,971 @@
+{
+    "Version":  1,
+    "Entities":  [
+                     {
+                         "Name":  "Sun",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        500
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        -0.1094,
+                                                                                        0.4082,
+                                                                                        0.2346,
+                                                                                        0.8754
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "DirectionalLightComponent":  {
+                                                                              "Color":  [
+                                                                                            1,
+                                                                                            0.96,
+                                                                                            0.9
+                                                                                        ],
+                                                                              "Intensity":  3
+                                                                          }
+                                        }
+                     },
+                     {
+                         "Name":  "Ground",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        -10
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     24,
+                                                                                     24,
+                                                                                     0.2
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Checker.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     }
+                                        }
+                     },
+                     {
+                         "Name":  "Camera",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -900,
+                                                                                        -700,
+                                                                                        500
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "CameraComponent":  {
+                                                                    "FovYDegrees":  60,
+                                                                    "NearZ":  10,
+                                                                    "FarZ":  100000,
+                                                                    "Primary":  true
+                                                                },
+                                            "ScriptComponent":  {
+                                                                    "ScriptAsset":  "Scripts/OrbitCamera.lua",
+                                                                    "PropertyOverrides":  "{\"Target\": [80.0, 0.0, 150.0], \"Radius\": 1250.0, \"Height\": 520.0, \"Speed\": 4.0, \"StartAngle\": -150.0}"
+                                                                }
+                                        }
+                     },
+                     {
+                         "Name":  "DoorPost",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        0,
+                                                                                        -360,
+                                                                                        110
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.12,
+                                                                                     0.12,
+                                                                                     2.2
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Purple.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     }
+                                        }
+                     },
+                     {
+                         "Name":  "Door",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        0,
+                                                                                        -290,
+                                                                                        105
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.08,
+                                                                                     1.2,
+                                                                                     2
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Orange.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  25,
+                                                                       "UseGravity":  true
+                                                                   },
+                                            "HingeJointComponent":  {
+                                                                        "Anchor":  [
+                                                                                       0,
+                                                                                       -50,
+                                                                                       0
+                                                                                   ],
+                                                                        "Axis":  [
+                                                                                     0,
+                                                                                     0,
+                                                                                     1
+                                                                                 ],
+                                                                        "Limit":  true,
+                                                                        "MinAngle":  -110,
+                                                                        "MaxAngle":  110,
+                                                                        "Friction":  4
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainHook",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        300,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.2,
+                                                                                     0.2,
+                                                                                     0.2
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Purple.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink0",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        320,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ]
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink1",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        360,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                       "Target":  6
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink2",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        400,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                       "Target":  7
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink3",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        440,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                       "Target":  8
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink4",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        480,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                       "Target":  9
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainLink5",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        520,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.4,
+                                                                                     0.06,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  1,
+                                                                       "LinearDamping":  0.1,
+                                                                       "AngularDamping":  0.3
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Anchor":  [
+                                                                                      -50,
+                                                                                      0,
+                                                                                      0
+                                                                                  ],
+                                                                       "Axis":  [
+                                                                                    -1,
+                                                                                    0,
+                                                                                    0
+                                                                                ],
+                                                                       "Target":  10
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "ChainWeight",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        560,
+                                                                                        300,
+                                                                                        520
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.3,
+                                                                                     0.3,
+                                                                                     0.3
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Blue.emat",
+                                                                        "MeshAsset":  "primitive:sphere",
+                                                                        "Visible":  true
+                                                                    },
+                                            "SphereColliderComponent":  {
+                                                                            "Radius":  50
+                                                                        },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  4
+                                                                   },
+                                            "BallJointComponent":  {
+                                                                       "Target":  11,
+                                                                       "Anchor":  [
+                                                                                      -60,
+                                                                                      0,
+                                                                                      0
+                                                                                  ]
+                                                                   }
+                                        }
+                     },
+                     {
+                         "Name":  "SpringHook",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        350,
+                                                                                        -300,
+                                                                                        460
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.2,
+                                                                                     0.2,
+                                                                                     0.2
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Purple.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "SpringWeight",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        350,
+                                                                                        -300,
+                                                                                        200
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.35,
+                                                                                     0.35,
+                                                                                     0.35
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Green.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  3
+                                                                   },
+                                            "DistanceJointComponent":  {
+                                                                           "Anchor":  [
+                                                                                          0,
+                                                                                          0,
+                                                                                          50
+                                                                                      ],
+                                                                           "TargetAnchor":  [
+                                                                                                350,
+                                                                                                -300,
+                                                                                                460
+                                                                                            ],
+                                                                           "MinDistance":  120,
+                                                                           "MaxDistance":  120,
+                                                                           "SpringFrequency":  1.2,
+                                                                           "SpringDamping":  0.15
+                                                                       }
+                                        }
+                     },
+                     {
+                         "Name":  "WindmillPost",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -250,
+                                                                                        300,
+                                                                                        120
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.15,
+                                                                                     0.15,
+                                                                                     2.4
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Purple.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     }
+                                        }
+                     },
+                     {
+                         "Name":  "WindmillBlade",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -250,
+                                                                                        230,
+                                                                                        240
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     2.2,
+                                                                                     0.08,
+                                                                                     0.25
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Green.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  8,
+                                                                       "UseGravity":  false
+                                                                   },
+                                            "HingeJointComponent":  {
+                                                                        "Axis":  [
+                                                                                     0,
+                                                                                     1,
+                                                                                     0
+                                                                                 ],
+                                                                        "Motor":  true,
+                                                                        "MotorSpeed":  90,
+                                                                        "MotorMaxTorque":  2000
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "BreakablePlank",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        140
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Yellow.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             50,
+                                                                                             50,
+                                                                                             50
+                                                                                         ]
+                                                                     },
+                                            "RigidBodyComponent":  {
+                                                                       "MotionType":  2,
+                                                                       "Mass":  6
+                                                                   },
+                                            "FixedJointComponent":  {
+                                                                        "BreakForce":  1500
+                                                                    },
+                                            "ScriptComponent":  {
+                                                                    "ScriptAsset":  "Scripts/JointBreakLogger.lua",
+                                                                    "PropertyOverrides":  "{}"
+                                                                }
+                                        }
+                     },
+                     {
+                         "Name":  "TriggerZone",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -350,
+                                                                                        -150,
+                                                                                        120
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "BoxColliderComponent":  {
+                                                                         "HalfExtents":  [
+                                                                                             60,
+                                                                                             260,
+                                                                                             120
+                                                                                         ],
+                                                                         "IsTrigger":  true
+                                                                     },
+                                            "ScriptComponent":  {
+                                                                    "ScriptAsset":  "Scripts/TriggerLamp.lua",
+                                                                    "PropertyOverrides":  "{\"Lamp\": \"TriggerLamp\"}"
+                                                                }
+                                        }
+                     },
+                     {
+                         "Name":  "TriggerFrame",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -350,
+                                                                                        -150,
+                                                                                        3
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1.2,
+                                                                                     5.2,
+                                                                                     0.06
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Purple.emat",
+                                                                        "MeshAsset":  "primitive:cube",
+                                                                        "Visible":  true
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "TriggerLamp",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -350,
+                                                                                        -150,
+                                                                                        290
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     0.35,
+                                                                                     0.35,
+                                                                                     0.35
+                                                                                 ]
+                                                                   },
+                                            "StaticMeshComponent":  {
+                                                                        "MaterialAsset":  "Materials/Green.emat",
+                                                                        "MeshAsset":  "primitive:sphere",
+                                                                        "Visible":  true
+                                                                    }
+                                        }
+                     },
+                     {
+                         "Name":  "LauncherDoor",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -750,
+                                                                                        -250,
+                                                                                        110
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "ScriptComponent":  {
+                                                                    "ScriptAsset":  "Scripts/Launcher.lua",
+                                                                    "PropertyOverrides":  "{\"Interval\": 2.5, \"Speed\": 1400.0, \"Lift\": 0.15, \"MaxCount\": 4}"
+                                                                }
+                                        }
+                     },
+                     {
+                         "Name":  "LauncherPlank",
+                         "Parent":  -1,
+                         "Components":  {
+                                            "TransformComponent":  {
+                                                                       "Position":  [
+                                                                                        -750,
+                                                                                        0,
+                                                                                        150
+                                                                                    ],
+                                                                       "Rotation":  [
+                                                                                        0,
+                                                                                        0,
+                                                                                        0,
+                                                                                        1
+                                                                                    ],
+                                                                       "Scale":  [
+                                                                                     1,
+                                                                                     1,
+                                                                                     1
+                                                                                 ]
+                                                                   },
+                                            "ScriptComponent":  {
+                                                                    "ScriptAsset":  "Scripts/Launcher.lua",
+                                                                    "PropertyOverrides":  "{\"Interval\": 1.7, \"Speed\": 1800.0, \"Lift\": 0.1, \"MaxCount\": 4}"
+                                                                }
+                                        }
+                     }
+                 ]
+}

@@ -80,6 +80,39 @@ struct FPhysicsCharacterDesc
 	uint64   UserData        = 0;       // 엔티티 ToId() (내부 바디 — 레이캐스트 결과)
 };
 
+enum class EPhysicsConstraintType : uint8
+{
+	Fixed,
+	Hinge,
+	Distance,
+	Cone,       // 구 관절 (원뿔 제한, 비틀림 자유)
+	SwingTwist, // 래그돌 관절 (원뿔 + 비틀림 제한)
+};
+
+// 관절 생성 정보 (월드 기준, cm / 라디안). Body1 = 대상(InvalidBody = 월드), Body2 = 이 엔티티 쪽. 한쪽 이상이 동적 바디여야 한다.
+// 기준(0도)은 생성 순간의 상대 자세
+struct FPhysicsConstraintDesc
+{
+	EPhysicsConstraintType Type  = EPhysicsConstraintType::Fixed;
+	uint32                 Body1 = ~0u;
+	uint32                 Body2 = ~0u;
+	FVector3               Point1;                          // 연결 지점 (Distance는 바디 1 쪽 점)
+	FVector3               Point2;                          // Distance: 바디 2 쪽 점 (나머지는 Point1을 쓴다)
+	FVector3               Axis = FVector3(1.0f, 0.0f, 0.0f); // Hinge 회전축 / Cone·SwingTwist 비틀림 축
+	FVector3               NormalAxis;                      // Axis에 수직 (0이면 자동) — SwingTwist 평면 축
+	bool                   bLimit   = false;                // Hinge 각도 제한
+	float                  MinAngle = 0.0f, MaxAngle = 0.0f;
+	bool                   bMotor         = false;          // Hinge 속도 모터
+	float                  MotorSpeed     = 0.0f;           // rad/s
+	float                  MotorMaxTorque = 0.0f;           // N·m
+	float                  FrictionTorque = 0.0f;           // N·m (Hinge, SwingTwist)
+	float                  MinDistance = -1.0f, MaxDistance = -1.0f; // cm (< 0 = 생성 시 거리)
+	float                  SpringFrequency = 0.0f, SpringDamping = 0.0f;
+	float                  ConeHalfAngle = 0.0f;                  // Cone/SwingTwist
+	float                  TwistMin = 0.0f, TwistMax = 0.0f;       // SwingTwist
+	bool                   bCollideConnected = false; // 끄면 두 바디 충돌을 막는다 (DisableCollision)
+};
+
 struct FPhysicsCharacterResult
 {
 	FVector3 Position; // cm
@@ -161,6 +194,17 @@ public:
 	void SetBodyReportsContacts(uint32 Body, bool bReport);
 	void ConsumeContactEvents(std::vector<FPhysicsContactEvent>& OutEvents); // OutEvents 끝에 붙이고 비운다
 	uint32 GetCharacterInnerBody(uint32 Character) const; // 다른 물체가 부딪히는 내부 키네마틱 바디 (없으면 InvalidBody)
+
+	// ---- 관절. 실패(동적 바디 없음 등) 시 InvalidBody. 바디를 지우면 그 바디의 관절도 함께 사라진다 (IsConstraintAlive로 확인)
+	uint32 CreateConstraint(const FPhysicsConstraintDesc& Desc);
+	void   DestroyConstraint(uint32 Constraint);
+	bool   IsConstraintAlive(uint32 Constraint) const;
+	uint32 GetConstraintCount() const;
+	// 지난 스텝에서 관절이 위치를 지키려고 쓴 힘 (N = 위치 구속 충격량 / 스텝 시간). 끊어짐 판정
+	float  GetConstraintForce(uint32 Constraint, float StepSeconds) const;
+	// 두 바디 충돌 끄기/켜기 (참조 횟수 — 여러 관절이 같은 쌍을 꺼도 된다). 바디를 지우면 그 바디 항목은 사라진다
+	void   DisableCollision(uint32 BodyA, uint32 BodyB);
+	void   EnableCollision(uint32 BodyA, uint32 BodyB);
 
 private:
 	struct FImpl;

@@ -1,7 +1,8 @@
 // FGameWorld의 물리 알림 전달 (충돌/트리거 — 규칙은 Physics/PhysicsSystem.h "충돌 알림", 이벤트 형식은 Scene/CollisionEvents.h).
 //
 // 시점: 게임플레이 틱의 물리 → UpdateTransforms 뒤, 스크립트 OnLateUpdate 앞. 물리 스텝 중(Jolt 작업 스레드)에는 아무것도 부르지 않는다.
-// 받는 쪽: 이벤트의 Self 엔티티 스크립트 (Lua OnCollisionBegin(other, info)/OnCollisionEnd(other)/OnTriggerEnter(other)/OnTriggerExit(other))
+// 받는 쪽: 이벤트의 Self 엔티티 스크립트 (Lua OnCollisionBegin(other, info)/OnCollisionEnd(other)/OnTriggerEnter(other)/OnTriggerExit(other),
+//   관절이 끊어지면 관절 엔티티의 OnJointBreak(other, force) — force는 N)
 //   → 게임 모듈 OnCollisionBegin 등. 쌍 하나는 양쪽 엔티티가 한 번씩 받는다. 처리 중 파괴된 엔티티는 건너뛰고, 상대가 없으면 other = nil.
 // 보고 대상(비용): 트리거·ReportContacts 강체 + 여기서 정하는 필터 = 스크립트가 붙은 엔티티, 게임 모듈 WantsCollisionEvents.
 // 역할: 서버/Standalone은 전부. 클라이언트는 게임 로직(서버 권위)을 내지 않는다 — 복제 엔티티(자신이나 조상에 NetId)의 이벤트는
@@ -81,6 +82,9 @@ void FGameWorld::DispatchCollisionEvents()
 		case ECollisionEventType::CollisionEnd: Systems.Scripts->InvokeMethod(Event.Self, "OnCollisionEnd", { Other }); break;
 		case ECollisionEventType::TriggerEnter: Systems.Scripts->InvokeMethod(Event.Self, "OnTriggerEnter", { Other }); break;
 		case ECollisionEventType::TriggerExit:  Systems.Scripts->InvokeMethod(Event.Self, "OnTriggerExit", { Other }); break;
+		case ECollisionEventType::JointBreak:
+			Systems.Scripts->InvokeMethod(Event.Self, "OnJointBreak", { Other, FGameRpcValue::MakeNumber(Event.Impulse) });
+			break;
 		default:                                break;
 		}
 		if (!bClient && Systems.GameModule != nullptr && Registry.IsValid(Event.Self))

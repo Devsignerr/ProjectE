@@ -46,6 +46,12 @@ struct FPhysicsBodyMotion
 //   전달(스크립트/게임 모듈)은 FGameWorld가 물리·UpdateTransforms 뒤에 한다. 캐릭터는 내부 키네마틱 바디로 감지된다
 //   (트리거에 들어옴, 동적 물체와 부딪힘 — 정적 벽에 닿는 것은 캐릭터 이동 쪽이라 알리지 않는다)
 //   바디를 다시 만들면(모양/운동 형식 변경) 그 쌍은 끝 → 다시 시작으로 보인다
+//
+// 관절 (FFixed/Hinge/Distance/BallJointComponent, 필드 설명은 PhysicsComponents.h): 바디 동기화 뒤 엔티티의 바디(Body2)와
+//   Target의 바디(Body1, 없으면 월드 · 캐릭터면 내부 키네마틱 바디)를 잇는다. 연결 지점/축은 만드는 순간의 바디 자세 기준.
+//   설정이나 양쪽 바디가 바뀌면 지금 자세로 다시 만든다. 둘 다 동적이 아니면(예: 클라이언트의 복제 키네마틱 바디끼리) 만들지 않는다.
+//   끊어짐: BreakForce > 0이면 스텝마다 위치 구속 힘(N)을 재서 넘으면 지우고 JointBreak 이벤트 (GetCollisionEvents) —
+//   컴포넌트를 지우거나 플레이를 다시 시작할 때까지 끊긴 채로 둔다
 class FPhysicsSystem
 {
 public:
@@ -118,6 +124,11 @@ public:
 	// 캐릭터가 동적 바디를 미는지 (모든 캐릭터). 예측 재조정에서 무브를 다시 적용하는 동안 끈다 — 이미 민 물체를 또 밀지 않게
 	void            SetCharactersPushBodies(bool bPush);
 
+	// ---- 관절 (클래스 주석)
+	uint32 GetJointCount() const;                // 지금 살아 있는 관절 수
+	bool   IsJointBroken(FEntity Entity) const;  // 이 엔티티의 관절 컴포넌트 중 하나라도 끊어졌는가
+	bool   HasJoint(FEntity Entity) const;       // 이 엔티티의 관절이 하나라도 만들어져 있는가
+
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
 	const FFixedStepper& GetStepper() const { return Stepper; }
 	FPhysicsWorld*       GetWorld() { return World.get(); }
@@ -162,6 +173,32 @@ private:
 	uint64                                    FrameCounter = 0;
 	bool                                      bInterpolate = true;
 	std::function<bool(const FScene&, FEntity)> KinematicOverride;
+
+	// 관절: (엔티티, 종류)마다 하나
+	struct FJointKey
+	{
+		FEntity Entity;
+		uint8   Kind = 0;
+		bool    operator==(const FJointKey& Other) const { return Entity == Other.Entity && Kind == Other.Kind; }
+	};
+	struct FJointKeyHash
+	{
+		size_t operator()(const FJointKey& Key) const noexcept { return std::hash<uint64>{}(Key.Entity.ToId() * 4u + Key.Kind); }
+	};
+	struct FJointState
+	{
+		uint32             Constraint = FPhysicsWorld::InvalidBody; // 실패/끊김이면 무효
+		uint32             Body1      = FPhysicsWorld::InvalidBody;
+		uint32             Body2      = FPhysicsWorld::InvalidBody;
+		std::vector<float> Signature; // 만들 때의 설정 (바뀌면 다시 만든다)
+		FEntity            Target;
+		float              BreakForce = 0.0f;
+		bool               bBroken    = false;
+		uint64             LastSeenFrame = 0;
+	};
+	void SyncJoints(FScene& Scene);
+	void CheckJointBreaks();
+	std::unordered_map<FJointKey, FJointState, FJointKeyHash> Joints;
 
 	void CollectContactEvents(); // 월드 이벤트 → 엔티티 기준 이벤트 (양쪽)
 	std::function<bool(const FScene&, FEntity)> ContactReportFilter;

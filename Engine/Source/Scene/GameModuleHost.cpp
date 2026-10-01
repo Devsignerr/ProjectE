@@ -220,6 +220,7 @@ void FGameModuleHost::CollisionEvent(FScene& Scene, const FCollisionEvent& Event
 	case ECollisionEventType::CollisionEnd:   Module->OnCollisionEnd(Scene, Event); break;
 	case ECollisionEventType::TriggerEnter:   Module->OnTriggerEnter(Scene, Event); break;
 	case ECollisionEventType::TriggerExit:    Module->OnTriggerExit(Scene, Event); break;
+	case ECollisionEventType::JointBreak:     Module->OnJointBreak(Scene, Event); break;
 	default:                                  break;
 	}
 }

@@ -10,6 +10,7 @@
 #include "Editor/EditorTheme.h"
 #include "Editor/EditorGrid.h"
 #include "Editor/NavMeshDebugRenderer.h"
+#include "Physics/PhysicsComponents.h"
 #include "AI/AISystem.h"
 #include "Editor/SceneEditOps.h"
 #include "Editor/SelectionOutline.h"
@@ -38,6 +39,73 @@
 namespace
 {
 	constexpr uint32 GMinViewportSize = 16;
+
+	// 선택한 엔티티의 물리 관절: 연결 지점(+), 대상까지 선, 경첩 축과 원, 구 관절 원뿔 (Line/Circle은 아래 오버레이 함수의 투영 선 그리기)
+	template <typename TLine, typename TCircle>
+	void DrawJointShape(const FScene* Scene, FEntity Entity, const FTransformComponent& Transform, const TLine& Line, const TCircle& Circle)
+	{
+		const FRegistry& Registry = Scene->GetRegistry();
+		const ImU32      Color    = ImGui::ColorConvertFloat4ToU32(ImVec4(FEditorTheme::Accent.x, FEditorTheme::Accent.y, FEditorTheme::Accent.z, 0.9f));
+		const ImU32      Faint    = ImGui::ColorConvertFloat4ToU32(ImVec4(FEditorTheme::Accent.x, FEditorTheme::Accent.y, FEditorTheme::Accent.z, 0.45f));
+		const FMatrix4x4& World   = Transform.WorldMatrix;
+
+		auto TargetPoint = [&](FEntity Target, const FVector3& Local) {
+			if (Target.IsValid() && Registry.IsValid(Target))
+			{
+				if (const FTransformComponent* TargetTransform = Registry.TryGet<FTransformComponent>(Target))
+				{
+					return TargetTransform->WorldMatrix.TransformPosition(Local);
+				}
+			}
+			return Local; // 대상 없음 = 월드 위치
+		};
+		auto Anchor = [&](const FVector3& Local, FEntity Target, bool bLineToTarget) {
+			constexpr float Size  = 6.0f;
+			const FVector3  Point = World.TransformPosition(Local);
+			Line(Point - FVector3(Size, 0.0f, 0.0f), Point + FVector3(Size, 0.0f, 0.0f), Color);
+			Line(Point - FVector3(0.0f, Size, 0.0f), Point + FVector3(0.0f, Size, 0.0f), Color);
+			Line(Point - FVector3(0.0f, 0.0f, Size), Point + FVector3(0.0f, 0.0f, Size), Color);
+			if (bLineToTarget && Target.IsValid() && Registry.IsValid(Target))
+			{
+				Line(Point, TargetPoint(Target, FVector3()), Faint);
+			}
+			return Point;
+		};
+		auto Perpendicular = [](const FVector3& Axis) {
+			const FVector3 Helper = FMath::Abs(Axis.Z) > 0.9f ? FVector3::ForwardVector : FVector3::UpVector;
+			return FVector3::Cross(Helper, Axis).GetNormalized();
+		};
+
+		if (const FFixedJointComponent* Fixed = Registry.TryGet<FFixedJointComponent>(Entity))
+		{
+			Anchor(Fixed->Anchor, Fixed->Target, true);
+		}
+		if (const FHingeJointComponent* Hinge = Registry.TryGet<FHingeJointComponent>(Entity))
+		{
+			const FVector3 Point = Anchor(Hinge->Anchor, Hinge->Target, true);
+			const FVector3 Axis  = World.TransformVector(Hinge->Axis).GetNormalized();
+			const FVector3 U     = Perpendicular(Axis);
+			Line(Point - Axis * 40.0f, Point + Axis * 40.0f, Color);
+			Circle(Point, U, FVector3::Cross(Axis, U), 20.0f, Faint);
+		}
+		if (const FDistanceJointComponent* Distance = Registry.TryGet<FDistanceJointComponent>(Entity))
+		{
+			const FVector3 Point = Anchor(Distance->Anchor, Distance->Target, false);
+			Line(Point, TargetPoint(Distance->Target, Distance->TargetAnchor), Color);
+		}
+		if (const FBallJointComponent* Ball = Registry.TryGet<FBallJointComponent>(Entity))
+		{
+			const FVector3 Point = Anchor(Ball->Anchor, Ball->Target, true);
+			const FVector3 Axis  = World.TransformVector(Ball->Axis).GetNormalized();
+			Line(Point, Point + Axis * 40.0f, Color);
+			if (Ball->ConeAngle < 179.0f)
+			{
+				const float    Angle = FMath::DegreesToRadians(FMath::Clamp(Ball->ConeAngle, 0.0f, 179.0f));
+				const FVector3 U     = Perpendicular(Axis);
+				Circle(Point + Axis * (30.0f * FMath::Cos(Angle)), U, FVector3::Cross(Axis, U), 30.0f * FMath::Sin(Angle), Faint);
+			}
+		}
+	}
 
 	// 선택한 점광원/스포트라이트의 영향 반경과 원뿔을 뷰포트 위에 선으로 그린다 (ImGui 오버레이, 깊이 무시)
 	void DrawSelectedLightShapes(FEditorContext& Context, const ImVec2& ImagePosition, const ImVec2& ImageSize)
@@ -117,6 +185,7 @@ namespace
 					}
 				}
 			}
+			DrawJointShape(Context.Scene, Entity, *Transform, Line, Circle);
 		}
 		DrawList->PopClipRect();
 	}

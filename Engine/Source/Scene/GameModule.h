@@ -53,13 +53,15 @@ public:
 	virtual void OnCollisionEnd(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
 	virtual void OnTriggerEnter(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
 	virtual void OnTriggerExit(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
+	// 관절이 끊어짐 (Event.Self = 관절 엔티티, Other = 대상, Impulse = 끊은 힘 N). 보고 대상과 무관하게 모든 끊어짐
+	virtual void OnJointBreak(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
 
 private:
 	IGameNet* Net = nullptr;
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 6; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit)
+inline constexpr uint32 GameModuleApiVersion = 6; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

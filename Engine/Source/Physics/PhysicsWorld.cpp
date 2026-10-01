@@ -12,6 +12,12 @@
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
+#include <Jolt/Physics/Collision/GroupFilter.h>
+#include <Jolt/Physics/Constraints/ConeConstraint.h>
+#include <Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <Jolt/Physics/Constraints/FixedConstraint.h>
+#include <Jolt/Physics/Constraints/HingeConstraint.h>
+#include <Jolt/Physics/Constraints/SwingTwistConstraint.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -368,6 +374,28 @@ namespace
 		return (static_cast<uint64>(Low) << 32) | High;
 	}
 
+	// 바디 쌍 충돌 끄기 (관절로 이은 바디, 래그돌 이웃 뼈). 모든 바디의 충돌 그룹 ID = 바디 ID(인덱스+시퀀스).
+	// Jolt 작업 스레드가 읽기만 하는 동안 메인 스레드는 스텝 밖에서만 고친다
+	class FPairGroupFilter final : public JPH::GroupFilter
+	{
+	public:
+		bool CanCollide(const JPH::CollisionGroup& Group1, const JPH::CollisionGroup& Group2) const override
+		{
+			return Disabled.empty() || !Disabled.contains(MakePairKey(Group1.GetGroupID(), Group2.GetGroupID()));
+		}
+
+		std::unordered_map<uint64, uint32> Disabled; // 쌍 → 끈 횟수
+	};
+
+	struct FConstraintEntry
+	{
+		JPH::Ref<JPH::TwoBodyConstraint> Constraint;
+		EPhysicsConstraintType           Type  = EPhysicsConstraintType::Fixed;
+		uint32                           Body1 = ~0u; // ~0 = 월드
+		uint32                           Body2 = ~0u;
+		bool                             bDisabledCollision = false;
+	};
+
 	struct FRollingBody
 	{
 		float Coefficient = 0.0f;
@@ -405,6 +433,12 @@ struct FPhysicsWorld::FImpl
 	std::unique_ptr<JPH::PhysicsSystem>        System;
 	std::unique_ptr<FContactTracker>           Contacts;
 	std::unordered_map<uint32, FRollingBody>   RollingBodies; // 바디 ID(인덱스+시퀀스) → 구르기 저항
+	JPH::Ref<FPairGroupFilter>                 PairFilter;    // 모든 바디의 충돌 그룹 필터
+	std::unordered_map<uint32, FConstraintEntry> Constraints; // 관절 ID → 관절
+	uint32                                     NextConstraintId = 1;
+
+	void RemoveConstraintsOf(uint32 Body);
+	void AssignCollisionGroup(JPH::BodyID Body) { Bodies().SetCollisionGroup(Body, JPH::CollisionGroup(PairFilter, Body.GetIndexAndSequenceNumber(), 0)); }
 	// 접촉 알림 (메인 스레드): 닿아 있는 쌍(키 → 센서 쌍인가), 아직 꺼내 가지 않은 이벤트.
 	// 쌍의 바디는 항상 살아 있다 (바디를 지울 때 그 쌍을 먼저 끝낸다) → UserData는 바디 인터페이스에서 읽는다
 	std::unordered_map<uint64, bool>           ActivePairs;
@@ -548,6 +582,7 @@ FPhysicsWorld::FPhysicsWorld()
 	                   Impl->ObjectPairs);
 	Impl->Contacts = std::make_unique<FContactTracker>(MaxBodies);
 	Impl->System->SetContactListener(Impl->Contacts.get());
+	Impl->PairFilter = new FPairGroupFilter(); // Jolt 참조 카운트 객체 (Ref가 소유)
 	// 침투 허용치: Jolt 기본 2cm는 cm 단위 장면에서 물체가 바닥에 눈에 띄게 박혀 보이므로 5mm로 줄인다
 	JPH::PhysicsSettings Settings = Impl->System->GetPhysicsSettings();
 	Settings.mPenetrationSlop     = 0.005f;
@@ -558,7 +593,12 @@ FPhysicsWorld::FPhysicsWorld()
 
 FPhysicsWorld::~FPhysicsWorld()
 {
-	// 캐릭터(내부 바디를 지운다) → 바디 → 시스템 → 작업/임시 할당기 순으로 해제한 뒤 Jolt 전역 해제
+	// 관절(바디를 가리킨다) → 캐릭터(내부 바디를 지운다) → 바디 → 시스템 → 작업/임시 할당기 순으로 해제한 뒤 Jolt 전역 해제
+	for (auto& [Id, Entry] : Impl->Constraints)
+	{
+		Impl->System->RemoveConstraint(Entry.Constraint);
+	}
+	Impl->Constraints.clear();
 	Impl->Characters.clear();
 	if (Impl->System)
 	{
@@ -623,6 +663,7 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 		Impl->RollingBodies[Id.GetIndexAndSequenceNumber()] = { Desc.RollingResistance, GetRollingRadius(Desc) };
 	}
 	Impl->Contacts->SetReport(Id, Desc.bIsTrigger || Desc.bReportContacts);
+	Impl->AssignCollisionGroup(Id);
 	return Id.GetIndexAndSequenceNumber();
 }
 
@@ -633,6 +674,7 @@ void FPhysicsWorld::DestroyBody(uint32 Body)
 		return;
 	}
 	const JPH::BodyID Id(Body);
+	Impl->RemoveConstraintsOf(Body);
 	Impl->EndPairsOf(Body);
 	Impl->Contacts->SetReport(Id, false);
 	Impl->RollingBodies.erase(Body);
@@ -838,6 +880,10 @@ uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
 	JPH::Ref<JPH::CharacterVirtual> Character =
 		new JPH::CharacterVirtual(Settings, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Desc.UserData, Impl->System.get());
 	Character->SetListener(&Impl->CharacterContacts);
+	if (!Character->GetInnerBodyID().IsInvalid())
+	{
+		Impl->AssignCollisionGroup(Character->GetInnerBodyID()); // 래그돌이 자기 캐릭터 캡슐과 부딪히지 않게 끌 수 있도록
+	}
 	const uint32 Id = Impl->NextCharacterId++;
 	Impl->Characters.emplace(Id, Character);
 	// 처음 바닥 상태
@@ -850,6 +896,7 @@ void FPhysicsWorld::DestroyCharacter(uint32 Character)
 {
 	if (const uint32 Inner = GetCharacterInnerBody(Character); Inner != InvalidBody)
 	{
+		Impl->RemoveConstraintsOf(Inner);
 		Impl->EndPairsOf(Inner);
 		Impl->Contacts->SetReport(JPH::BodyID(Inner), false);
 	}
@@ -997,4 +1044,236 @@ FPhysicsCharacterResult FPhysicsWorld::GetCharacterResult(uint32 Character) cons
 	Result.Velocity  = PhysicsMath::ToCentimeters(FromJoltVector(Virtual.GetLinearVelocity()));
 	Result.bGrounded = Virtual.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 	return Result;
+}
+
+// ---------------------------------------------------------------- 관절
+
+void FPhysicsWorld::FImpl::RemoveConstraintsOf(uint32 Body)
+{
+	for (auto It = Constraints.begin(); It != Constraints.end();)
+	{
+		if (It->second.Body1 == Body || It->second.Body2 == Body)
+		{
+			System->RemoveConstraint(It->second.Constraint);
+			It = Constraints.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+	// 이 바디가 낀 충돌 끄기 항목 (상대 바디는 남아 있다)
+	for (auto It = PairFilter->Disabled.begin(); It != PairFilter->Disabled.end();)
+	{
+		if (static_cast<uint32>(It->first >> 32) == Body || static_cast<uint32>(It->first & 0xFFFFFFFFu) == Body)
+		{
+			It = PairFilter->Disabled.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+}
+
+namespace
+{
+	JPH::Vec3 SafeAxis(const FVector3& Axis, const JPH::Vec3& Fallback)
+	{
+		const JPH::Vec3 Value = ToJoltVector(Axis);
+		return Value.LengthSq() > 1.0e-10f ? Value.Normalized() : Fallback;
+	}
+
+	// Axis에 수직인 단위 벡터 (Normal이 수직 성분을 가지면 그것을 쓴다)
+	JPH::Vec3 SafeNormal(const JPH::Vec3& Axis, const FVector3& Normal)
+	{
+		JPH::Vec3 Value = ToJoltVector(Normal);
+		Value -= Axis * Axis.Dot(Value);
+		return Value.LengthSq() > 1.0e-10f ? Value.Normalized() : Axis.GetNormalizedPerpendicular();
+	}
+} // namespace
+
+uint32 FPhysicsWorld::CreateConstraint(const FPhysicsConstraintDesc& Desc)
+{
+	const JPH::BodyID Id1 = Desc.Body1 == InvalidBody ? JPH::BodyID() : JPH::BodyID(Desc.Body1);
+	const JPH::BodyID Id2 = Desc.Body2 == InvalidBody ? JPH::BodyID() : JPH::BodyID(Desc.Body2);
+	JPH::BodyInterface& Bodies = Impl->Bodies();
+	const bool bDynamic1 = !Id1.IsInvalid() && Bodies.IsAdded(Id1) && Bodies.GetMotionType(Id1) == JPH::EMotionType::Dynamic;
+	const bool bDynamic2 = !Id2.IsInvalid() && Bodies.IsAdded(Id2) && Bodies.GetMotionType(Id2) == JPH::EMotionType::Dynamic;
+	if ((!Id1.IsInvalid() && !Bodies.IsAdded(Id1)) || (!Id2.IsInvalid() && !Bodies.IsAdded(Id2)) || (!bDynamic1 && !bDynamic2) || Id1 == Id2)
+	{
+		return InvalidBody; // 움직일 수 있는 쪽이 없거나 없는 바디
+	}
+
+	const JPH::RVec3 Point1 = ToJoltPosition(Desc.Point1);
+	const JPH::RVec3 Point2 = ToJoltPosition(Desc.Point2);
+	const JPH::Vec3  Axis   = SafeAxis(Desc.Axis, JPH::Vec3::sAxisX());
+	const JPH::Vec3  Normal = SafeNormal(Axis, Desc.NormalAxis);
+
+	JPH::TwoBodyConstraint* Created = nullptr;
+	switch (Desc.Type)
+	{
+	case EPhysicsConstraintType::Fixed:
+	{
+		JPH::FixedConstraintSettings Settings;
+		Settings.mAutoDetectPoint = true; // 지금 상대 자세 그대로 고정
+		Created                   = Bodies.CreateConstraint(&Settings, Id1, Id2);
+		break;
+	}
+	case EPhysicsConstraintType::Hinge:
+	{
+		JPH::HingeConstraintSettings Settings;
+		Settings.mPoint1 = Settings.mPoint2 = Point1;
+		Settings.mHingeAxis1 = Settings.mHingeAxis2 = Axis;
+		Settings.mNormalAxis1 = Settings.mNormalAxis2 = Normal;
+		if (Desc.bLimit)
+		{
+			Settings.mLimitsMin = std::clamp(std::min(Desc.MinAngle, Desc.MaxAngle), -FMath::Pi, 0.0f);
+			Settings.mLimitsMax = std::clamp(std::max(Desc.MinAngle, Desc.MaxAngle), 0.0f, FMath::Pi);
+		}
+		Settings.mMaxFrictionTorque = std::max(Desc.FrictionTorque, 0.0f);
+		Settings.mMotorSettings.SetTorqueLimit(std::max(Desc.MotorMaxTorque, 0.0f));
+		Created = Bodies.CreateConstraint(&Settings, Id1, Id2);
+		if (Created != nullptr && Desc.bMotor)
+		{
+			JPH::HingeConstraint* Hinge = static_cast<JPH::HingeConstraint*>(Created);
+			Hinge->SetMotorState(JPH::EMotorState::Velocity);
+			Hinge->SetTargetAngularVelocity(Desc.MotorSpeed);
+		}
+		break;
+	}
+	case EPhysicsConstraintType::Distance:
+	{
+		JPH::DistanceConstraintSettings Settings;
+		Settings.mPoint1      = Point1;
+		Settings.mPoint2      = Point2;
+		const float Current   = static_cast<float>((Point2 - Point1).Length()); // m
+		float       Minimum   = Desc.MinDistance >= 0.0f ? Desc.MinDistance * FUnits::UnitsToMeters : Current;
+		float       Maximum   = Desc.MaxDistance >= 0.0f ? Desc.MaxDistance * FUnits::UnitsToMeters : Current;
+		if (Minimum > Maximum)
+		{
+			std::swap(Minimum, Maximum);
+		}
+		Settings.mMinDistance                     = Minimum;
+		Settings.mMaxDistance                     = Maximum;
+		Settings.mLimitsSpringSettings.mFrequency = std::max(Desc.SpringFrequency, 0.0f);
+		Settings.mLimitsSpringSettings.mDamping   = std::max(Desc.SpringDamping, 0.0f);
+		Created                                   = Bodies.CreateConstraint(&Settings, Id1, Id2);
+		break;
+	}
+	case EPhysicsConstraintType::Cone:
+	{
+		JPH::ConeConstraintSettings Settings;
+		Settings.mPoint1 = Settings.mPoint2 = Point1;
+		Settings.mTwistAxis1 = Settings.mTwistAxis2 = Axis;
+		Settings.mHalfConeAngle = std::clamp(Desc.ConeHalfAngle, 0.0f, FMath::Pi);
+		Created                 = Bodies.CreateConstraint(&Settings, Id1, Id2);
+		break;
+	}
+	case EPhysicsConstraintType::SwingTwist:
+	{
+		JPH::SwingTwistConstraintSettings Settings;
+		Settings.mPosition1 = Settings.mPosition2 = Point1;
+		Settings.mTwistAxis1 = Settings.mTwistAxis2 = Axis;
+		Settings.mPlaneAxis1 = Settings.mPlaneAxis2 = Normal;
+		Settings.mNormalHalfConeAngle = Settings.mPlaneHalfConeAngle = std::clamp(Desc.ConeHalfAngle, 0.0f, FMath::Pi);
+		Settings.mTwistMinAngle     = std::clamp(std::min(Desc.TwistMin, Desc.TwistMax), -FMath::Pi, FMath::Pi);
+		Settings.mTwistMaxAngle     = std::clamp(std::max(Desc.TwistMin, Desc.TwistMax), -FMath::Pi, FMath::Pi);
+		Settings.mMaxFrictionTorque = std::max(Desc.FrictionTorque, 0.0f);
+		Created                     = Bodies.CreateConstraint(&Settings, Id1, Id2);
+		break;
+	}
+	}
+	if (Created == nullptr)
+	{
+		E_LOG(LogPhysics, Warning, "관절 생성 실패 (형식 {})", static_cast<uint32>(Desc.Type));
+		return InvalidBody;
+	}
+
+	FConstraintEntry Entry;
+	Entry.Constraint = Created; // Ref가 소유
+	Entry.Type       = Desc.Type;
+	Entry.Body1      = Desc.Body1;
+	Entry.Body2      = Desc.Body2;
+	Impl->System->AddConstraint(Created);
+	Bodies.ActivateConstraint(Created);
+	if (!Desc.bCollideConnected && Desc.Body1 != InvalidBody && Desc.Body2 != InvalidBody)
+	{
+		DisableCollision(Desc.Body1, Desc.Body2);
+		Entry.bDisabledCollision = true;
+	}
+	const uint32 Id = Impl->NextConstraintId++;
+	Impl->Constraints.emplace(Id, std::move(Entry));
+	return Id;
+}
+
+void FPhysicsWorld::DestroyConstraint(uint32 Constraint)
+{
+	const auto Found = Impl->Constraints.find(Constraint);
+	if (Found == Impl->Constraints.end())
+	{
+		return;
+	}
+	if (Found->second.bDisabledCollision)
+	{
+		EnableCollision(Found->second.Body1, Found->second.Body2);
+	}
+	Impl->System->RemoveConstraint(Found->second.Constraint);
+	// 끊긴 관절이 잡고 있던 잠든 바디를 깨운다 (끊어진 문이 공중에 멈춰 있지 않게)
+	const JPH::BodyID Ids[2] = { Found->second.Constraint->GetBody1()->GetID(), Found->second.Constraint->GetBody2()->GetID() };
+	for (const JPH::BodyID& Id : Ids)
+	{
+		if (!Id.IsInvalid() && Impl->Bodies().IsAdded(Id))
+		{
+			Impl->Bodies().ActivateBody(Id);
+		}
+	}
+	Impl->Constraints.erase(Found);
+}
+
+bool FPhysicsWorld::IsConstraintAlive(uint32 Constraint) const
+{
+	return Impl->Constraints.contains(Constraint);
+}
+
+uint32 FPhysicsWorld::GetConstraintCount() const
+{
+	return static_cast<uint32>(Impl->Constraints.size());
+}
+
+float FPhysicsWorld::GetConstraintForce(uint32 Constraint, float StepSeconds) const
+{
+	const auto Found = Impl->Constraints.find(Constraint);
+	if (Found == Impl->Constraints.end() || StepSeconds <= 0.0f)
+	{
+		return 0.0f;
+	}
+	const JPH::TwoBodyConstraint* Base   = Found->second.Constraint.GetPtr();
+	float                         Lambda = 0.0f; // N·s (위치 구속 충격량)
+	switch (Found->second.Type)
+	{
+	case EPhysicsConstraintType::Fixed:      Lambda = static_cast<const JPH::FixedConstraint*>(Base)->GetTotalLambdaPosition().Length(); break;
+	case EPhysicsConstraintType::Hinge:      Lambda = static_cast<const JPH::HingeConstraint*>(Base)->GetTotalLambdaPosition().Length(); break;
+	case EPhysicsConstraintType::Distance:   Lambda = std::abs(static_cast<const JPH::DistanceConstraint*>(Base)->GetTotalLambdaPosition()); break;
+	case EPhysicsConstraintType::Cone:       Lambda = static_cast<const JPH::ConeConstraint*>(Base)->GetTotalLambdaPosition().Length(); break;
+	case EPhysicsConstraintType::SwingTwist: Lambda = static_cast<const JPH::SwingTwistConstraint*>(Base)->GetTotalLambdaPosition().Length(); break;
+	}
+	return Lambda / StepSeconds;
+}
+
+void FPhysicsWorld::DisableCollision(uint32 BodyA, uint32 BodyB)
+{
+	if (BodyA != InvalidBody && BodyB != InvalidBody && BodyA != BodyB)
+	{
+		++Impl->PairFilter->Disabled[MakePairKey(BodyA, BodyB)];
+	}
+}
+
+void FPhysicsWorld::EnableCollision(uint32 BodyA, uint32 BodyB)
+{
+	const auto Found = Impl->PairFilter->Disabled.find(MakePairKey(BodyA, BodyB));
+	if (Found != Impl->PairFilter->Disabled.end() && --Found->second == 0)
+	{
+		Impl->PairFilter->Disabled.erase(Found);
+	}
 }

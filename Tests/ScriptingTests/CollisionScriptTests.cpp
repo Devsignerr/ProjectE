@@ -34,6 +34,7 @@ end
 function T:OnCollisionEnd(other) self.Properties.Log = self.Properties.Log .. "E:" .. Name(other) .. ";" end
 function T:OnTriggerEnter(other) self.Properties.Log = self.Properties.Log .. "TE:" .. Name(other) .. ";" end
 function T:OnTriggerExit(other) self.Properties.Log = self.Properties.Log .. "TX:" .. Name(other) .. ";" end
+function T:OnJointBreak(other, force) self.Properties.Log = self.Properties.Log .. "J:" .. Name(other) .. ";"; self.Properties.Impulse = force end
 return T
 )";
 		return Directory;
@@ -162,4 +163,58 @@ E_TEST(CollisionScript_ClientSkipsReplicatedEntities)
 	E_EXPECT_TRUE(LogOf(Scripts, Zone).empty());                                 // 복제 트리거 스크립트는 받지 않는다
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
+}
+
+// 관절 끊어짐 → 관절 엔티티 스크립트 OnJointBreak(other, force) + 게임 모듈 OnJointBreak. 관절 컴포넌트는 리플렉션으로 Lua에서 읽힌다
+E_TEST(CollisionScript_JointBreakEvent)
+{
+	const std::filesystem::path Content = WriteCollisionRecorder();
+	FScene                      Scene;
+	const FEntity Anchor = Scene.CreateEntity("Anchor");
+	Scene.GetTransform(Anchor).Position = FVector3(0.0f, 0.0f, 400.0f);
+	Scene.GetRegistry().Emplace<FBoxColliderComponent>(Anchor).HalfExtents = FVector3(10.0f, 10.0f, 10.0f);
+	Scene.GetRegistry().Emplace<FRigidBodyComponent>(Anchor).MotionType = static_cast<int32>(EPhysicsMotionType::Kinematic);
+
+	const FEntity Sign = AddScripted(Scene, "Sign");
+	Scene.GetTransform(Sign).Position = FVector3(0.0f, 0.0f, 300.0f);
+	Scene.GetRegistry().Emplace<FBoxColliderComponent>(Sign).HalfExtents = FVector3(20.0f, 5.0f, 20.0f);
+	Scene.GetRegistry().Emplace<FRigidBodyComponent>(Sign).Mass = 20.0f; // 196N
+	FFixedJointComponent& Joint = Scene.GetRegistry().Emplace<FFixedJointComponent>(Sign);
+	Joint.Target                = Anchor;
+	Joint.BreakForce            = 400.0f;
+	Scene.UpdateTransforms();
+
+	struct FBreakModule final : IGameModule
+	{
+		int32 Breaks = 0;
+		void  OnJointBreak(FScene&, const FCollisionEvent&) override { ++Breaks; }
+	} Module;
+	FGameModuleHost Host;
+	Host.Attach(Module, "JointBreakTestModule");
+	FScriptSystem  Scripts;
+	FPhysicsSystem Physics;
+	FGameWorld     World;
+	World.Init({ &Scripts, &Physics, &Host, nullptr, Content });
+	World.BeginPlay(Scene);
+	for (int32 Frame = 0; Frame < 30; ++Frame)
+	{
+		World.TickGameplay(Step, nullptr);
+	}
+	E_EXPECT_TRUE(LogOf(Scripts, Sign).empty()); // 무게(196N)는 버틴다
+	E_EXPECT_NEAR(Scene.GetTransform(Sign).Position.Z, 300.0f, 1.0f);
+	E_EXPECT_TRUE(Scripts.RunString("local J = Scene.Find('Sign'):GetComponent('FixedJointComponent'); assert(J.BreakForce == 400)"));
+
+	// 아래로 세게 치면 끊어진다
+	E_EXPECT_TRUE(Scripts.RunString("Scene.Find('Sign'):AddImpulse(Vector3(0, 0, -40000))")); // 20kg × 20m/s
+	for (int32 Frame = 0; Frame < 10; ++Frame)
+	{
+		World.TickGameplay(Step, nullptr);
+	}
+	E_EXPECT_TRUE(LogOf(Scripts, Sign) == "J:Anchor;");
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Sign, "Impulse").Number > 400.0);
+	E_EXPECT_EQ(Module.Breaks, 1);
+	E_EXPECT_TRUE(Physics.IsJointBroken(Sign));
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
+	Host.Unload();
 }

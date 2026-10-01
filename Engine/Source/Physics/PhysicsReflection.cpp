@@ -64,4 +64,53 @@ void RegisterPhysicsTypes()
 		.Property(&FCapsuleColliderComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f)
 		.Property(&FCapsuleColliderComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip("부딪히지 않고 들어옴/나감만 알린다 (OnTriggerEnter/Exit)")
 		.AsComponent();
+
+	// ---- 관절 (공통 필드 설명은 PhysicsComponents.h)
+	constexpr const char* TargetTip  = "연결 대상 엔티티 (바디 필요). 비우면 월드 그 자리에 고정";
+	constexpr const char* AnchorTip  = "이 엔티티 로컬 기준 연결 지점";
+	constexpr const char* BreakTip   = "이 힘(N)을 넘으면 끊어진다 (0 = 안 끊김). 끊기면 OnJointBreak(other, force)";
+	constexpr const char* CollideTip = "이은 두 바디끼리도 부딪힌다";
+	Registry.RegisterType<FFixedJointComponent>("FixedJointComponent", "고정 관절")
+		.Property(&FFixedJointComponent::Target, "Target", "대상").Tooltip(TargetTip)
+		.Property(&FFixedJointComponent::Anchor, "Anchor", "연결 지점 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(AnchorTip)
+		.Property(&FFixedJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
+		.Property(&FFixedJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
+
+	Registry.RegisterType<FHingeJointComponent>("HingeJointComponent", "경첩 관절")
+		.Property(&FHingeJointComponent::Target, "Target", "대상").Tooltip(TargetTip)
+		.Property(&FHingeJointComponent::Anchor, "Anchor", "연결 지점 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(AnchorTip)
+		.Property(&FHingeJointComponent::Axis, "Axis", "회전축 (로컬)").Range(-1.0f, 1.0f, 0.01f)
+		.Property(&FHingeJointComponent::bLimit, "Limit", "각도 제한")
+		.Property(&FHingeJointComponent::MinAngle, "MinAngle", "최소 각도 (도)").Range(-180.0f, 0.0f, 1.0f)
+		.Property(&FHingeJointComponent::MaxAngle, "MaxAngle", "최대 각도 (도)").Range(0.0f, 180.0f, 1.0f)
+		.Property(&FHingeJointComponent::bMotor, "Motor", "모터")
+		.Property(&FHingeJointComponent::MotorSpeed, "MotorSpeed", "모터 속도 (도/초)").Range(-3600.0f, 3600.0f, 1.0f)
+		.Property(&FHingeJointComponent::MotorMaxTorque, "MotorMaxTorque", "모터 최대 토크 (N·m)").Range(0.0f, 1000000.0f, 1.0f)
+		.Property(&FHingeJointComponent::Friction, "Friction", "마찰 토크 (N·m)").Range(0.0f, 100000.0f, 0.1f)
+		.Property(&FHingeJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
+		.Property(&FHingeJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
+
+	Registry.RegisterType<FDistanceJointComponent>("DistanceJointComponent", "거리 관절")
+		.Property(&FDistanceJointComponent::Target, "Target", "대상").Tooltip(TargetTip)
+		.Property(&FDistanceJointComponent::Anchor, "Anchor", "연결 지점 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(AnchorTip)
+		.Property(&FDistanceJointComponent::TargetAnchor, "TargetAnchor", "대상 연결 지점 (cm)").Range(-100000.0f, 100000.0f, 1.0f)
+		.Tooltip("대상 로컬 기준 (대상이 없으면 월드 위치)")
+		.Property(&FDistanceJointComponent::MinDistance, "MinDistance", "최소 거리 (cm, < 0 = 처음 거리)").Range(-1.0f, 100000.0f, 1.0f)
+		.Property(&FDistanceJointComponent::MaxDistance, "MaxDistance", "최대 거리 (cm, < 0 = 처음 거리)").Range(-1.0f, 100000.0f, 1.0f)
+		.Property(&FDistanceJointComponent::SpringFrequency, "SpringFrequency", "스프링 진동수 (Hz, 0 = 딱딱함)").Range(0.0f, 60.0f, 0.1f)
+		.Property(&FDistanceJointComponent::SpringDamping, "SpringDamping", "스프링 감쇠").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FDistanceJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
+		.Property(&FDistanceJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
+
+	Registry.RegisterType<FBallJointComponent>("BallJointComponent", "구 관절")
+		.Property(&FBallJointComponent::Target, "Target", "대상").Tooltip(TargetTip)
+		.Property(&FBallJointComponent::Anchor, "Anchor", "연결 지점 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(AnchorTip)
+		.Property(&FBallJointComponent::Axis, "Axis", "원뿔 축 (로컬)").Range(-1.0f, 1.0f, 0.01f)
+		.Property(&FBallJointComponent::ConeAngle, "ConeAngle", "원뿔 반각 (도, 180 = 자유)").Range(0.0f, 180.0f, 1.0f)
+		.Property(&FBallJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
+		.Property(&FBallJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
 }

@@ -141,6 +141,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterUIBindings();
 	RegisterGameBindings();
 	RegisterGameplayBindings();
+	RegisterAnimationGraphBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()

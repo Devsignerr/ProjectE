@@ -1,6 +1,7 @@
 #include "Scene/AnimationSystem.h"
 
 #include "Core/Log.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/Components.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
@@ -109,6 +110,114 @@ namespace
 		Runtime.NotifyClip = Runtime.CurrentClip;
 	}
 
+	// 애니메이션 대상 노드 엔티티에 포즈 기록
+	void WritePose(FScene& Scene, const FAnimationRuntime& Runtime, const std::vector<FNodePose>& Pose)
+	{
+		const FAnimationSet& Set       = *Runtime.Set;
+		const size_t         NodeCount = FMath::Min(Runtime.NodeEntities.size(), Pose.size());
+		const FRegistry&     Registry  = Scene.GetRegistry();
+		for (size_t Node = 0; Node < NodeCount; ++Node)
+		{
+			const FEntity NodeEntity = Runtime.NodeEntities[Node];
+			if (!Set.AnimatedNodes[Node] || !Registry.IsValid(NodeEntity))
+			{
+				continue;
+			}
+			const FNodePose&     NodePose  = Pose[Node];
+			FTransformComponent& Transform = Scene.GetTransform(NodeEntity);
+			Transform.Position = NodePose.Translation;
+			Transform.Rotation = NodePose.Rotation;
+			Transform.Scale    = NodePose.Scale;
+		}
+	}
+
+	// 그래프 에셋 해석 + 모델 클립에 묶기. 그래프로 재생할 수 있으면 true
+	bool ResolveGraph(FAnimGraphComponent& Graph, const FAnimationSet& Set)
+	{
+		FAnimGraphRuntime& Runtime = Graph.Runtime;
+		if (!Runtime.bResolved || Runtime.ResolvedGraph != Graph.Graph)
+		{
+			Runtime.bResolved     = true;
+			Runtime.ResolvedGraph = Graph.Graph;
+			Runtime.Asset         = Graph.Graph.empty() ? nullptr : FAnimGraphLibrary::Get().Load(Graph.Graph);
+			Runtime.BoundSet      = nullptr;
+		}
+		if (!Runtime.Asset)
+		{
+			return false;
+		}
+		if (Runtime.BoundSet != &Set)
+		{
+			std::vector<std::string> Missing;
+			Runtime.Binding  = FAnimGraphBinding::Bind(*Runtime.Asset, Set, &Missing);
+			Runtime.BoundSet = &Set;
+			Runtime.Instance.Reset();
+			Runtime.NotifyKey = 0;
+			for (const std::string& Clip : Missing)
+			{
+				E_LOG(LogAnimation, Warning, "애니메이션 그래프 {}: 모델에 클립 '{}'이 없습니다 (그 샘플은 빼고 섞습니다)", Graph.Graph, Clip);
+			}
+		}
+		return true;
+	}
+
+	// 그래프 재생 (규칙은 Scene/AnimGraph.h 머리 주석)
+	void UpdateGraphAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, FAnimGraphComponent& Graph, float DeltaSeconds)
+	{
+		FAnimationRuntime&   Runtime      = Animation.Runtime;
+		FAnimGraphRuntime&   GraphRuntime = Graph.Runtime;
+		const FAnimationSet& Set          = *Runtime.Set;
+		const float          Delta        = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
+
+		GraphRuntime.Instance.Update(*GraphRuntime.Asset, GraphRuntime.Binding, GraphRuntime.Parameters, Delta);
+		const std::vector<FAnimClipContribution>& Contributions = GraphRuntime.Instance.GetContributions();
+		const FAnimNotifySource&                  Source        = GraphRuntime.Instance.GetNotifySource();
+
+		// 노티파이: 가중치가 가장 큰 기여 하나 (바뀌면 이전 기여의 스테이트를 끝낸다)
+		if (Source.Key != GraphRuntime.NotifyKey)
+		{
+			if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Runtime.NotifyClip); Old != nullptr && GraphRuntime.NotifyKey != 0)
+			{
+				Runtime.ActiveStates.resize(Old->size(), 0);
+				AnimNotifyMath::EndAll(Runtime.ActiveStates, Runtime.HitScratch);
+				EmitNotifies(Runtime, Entity, *Old, Set.Clips[Runtime.NotifyClip].Name, 0.0f);
+			}
+			Runtime.ActiveStates.clear();
+			Runtime.NotifyClip    = Source.Clip;
+			Runtime.bResyncStates = true;
+			GraphRuntime.NotifyKey = Source.Key;
+		}
+		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Source.Clip); Notifies != nullptr && Source.Delta != 0.0f)
+		{
+			AnimNotifyMath::Collect(*Notifies, Source.PreviousTime, Source.NewTime, Source.Delta, Source.Duration, Source.bLoop, Source.bWrapped,
+			                        Runtime.bResyncStates, Runtime.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Notifies, Set.Clips[Source.Clip].Name, DeltaSeconds);
+			Runtime.bResyncStates = false;
+		}
+		// 인스펙터/GetCurrentClip용: 대표 클립
+		if (Source.Clip >= 0)
+		{
+			Runtime.CurrentClip = Source.Clip;
+			Runtime.CurrentTime = Source.NewTime;
+		}
+
+		// 포즈 = 기여의 가중 합
+		if (Contributions.empty())
+		{
+			return;
+		}
+		bool bFirst = true;
+		for (const FAnimClipContribution& Contribution : Contributions)
+		{
+			GraphRuntime.SampleScratch = Set.RestPose;
+			AnimationMath::SampleClip(Set.Clips[Contribution.Clip], Contribution.Time, GraphRuntime.SampleScratch);
+			AnimGraphMath::AddWeightedPose(GraphRuntime.PoseScratch, GraphRuntime.SampleScratch, Contribution.Weight, bFirst);
+			bFirst = false;
+		}
+		AnimGraphMath::FinishWeightedPose(GraphRuntime.PoseScratch);
+		WritePose(Scene, Runtime, GraphRuntime.PoseScratch);
+	}
+
 	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
 	{
 		FAnimationRuntime& Runtime = Animation.Runtime;
@@ -117,6 +226,11 @@ namespace
 			return;
 		}
 		Runtime.PendingNotifies.clear();
+		if (FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity); Graph != nullptr && ResolveGraph(*Graph, *Runtime.Set))
+		{
+			UpdateGraphAnimation(Scene, Entity, Animation, *Graph, DeltaSeconds);
+			return;
+		}
 		const FAnimationSet& Set = *Runtime.Set;
 		ResolveClipChange(Animation);
 		EndStatesIfClipChanged(Runtime, Entity, Runtime.bResyncStates);
@@ -185,22 +299,7 @@ namespace
 			}
 		}
 
-		// 애니메이션 대상 노드 엔티티에 기록
-		const size_t    NodeCount = FMath::Min(Runtime.NodeEntities.size(), Runtime.PoseScratch.size());
-		const FRegistry& Registry = Scene.GetRegistry();
-		for (size_t Node = 0; Node < NodeCount; ++Node)
-		{
-			const FEntity NodeEntity = Runtime.NodeEntities[Node];
-			if (!Set.AnimatedNodes[Node] || !Registry.IsValid(NodeEntity))
-			{
-				continue;
-			}
-			const FNodePose&     Pose      = Runtime.PoseScratch[Node];
-			FTransformComponent& Transform = Scene.GetTransform(NodeEntity);
-			Transform.Position = Pose.Translation;
-			Transform.Rotation = Pose.Rotation;
-			Transform.Scale    = Pose.Scale;
-		}
+		WritePose(Scene, Runtime, Runtime.PoseScratch);
 	}
 } // namespace
 
@@ -301,4 +400,94 @@ std::string FAnimationSystem::GetCurrentClip(FScene& Scene, FEntity Entity)
 		return {};
 	}
 	return Animation->Runtime.Set->Clips[Animation->Runtime.CurrentClip].Name;
+}
+
+// ---------------------------------------------------------------- 애니메이션 그래프
+
+FEntity FAnimationSystem::FindAnimGraph(const FScene& Scene, FEntity Entity)
+{
+	const FRegistry& Registry = Scene.GetRegistry();
+	if (!Registry.IsValid(Entity))
+	{
+		return NullEntity;
+	}
+	if (Registry.Has<FAnimGraphComponent>(Entity))
+	{
+		return Entity;
+	}
+	for (const FEntity Child : Scene.GetChildren(Entity))
+	{
+		if (const FEntity Found = FindAnimGraph(Scene, Child); Found.IsValid())
+		{
+			return Found;
+		}
+	}
+	return NullEntity;
+}
+
+bool FAnimationSystem::SetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name, float Value)
+{
+	const FEntity Target = FindAnimGraph(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return false;
+	}
+	Scene.GetRegistry().Get<FAnimGraphComponent>(Target).Runtime.Parameters.Set(Name, Value);
+	return true;
+}
+
+bool FAnimationSystem::SetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name, bool bValue)
+{
+	return SetAnimParam(Scene, Entity, Name, bValue ? 1.0f : 0.0f);
+}
+
+std::optional<float> FAnimationSystem::GetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name)
+{
+	const FEntity Target = FindAnimGraph(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return std::nullopt;
+	}
+	const FAnimGraphRuntime& Runtime = Scene.GetRegistry().Get<FAnimGraphComponent>(Target).Runtime;
+	float                    Value   = 0.0f;
+	if (Runtime.Parameters.TryGet(Name, Value))
+	{
+		return Value;
+	}
+	if (Runtime.Asset)
+	{
+		if (const FAnimGraphParameter* Parameter = Runtime.Asset->FindParameter(Name))
+		{
+			return Parameter->Default;
+		}
+	}
+	return std::nullopt;
+}
+
+bool FAnimationSystem::IsAnimParamBool(FScene& Scene, FEntity Entity, std::string_view Name)
+{
+	const FEntity Target = FindAnimGraph(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return false;
+	}
+	const FAnimGraphRuntime&   Runtime   = Scene.GetRegistry().Get<FAnimGraphComponent>(Target).Runtime;
+	const FAnimGraphParameter* Parameter = Runtime.Asset ? Runtime.Asset->FindParameter(Name) : nullptr;
+	return Parameter != nullptr && Parameter->Type == EAnimParamType::Bool;
+}
+
+std::string FAnimationSystem::GetAnimState(FScene& Scene, FEntity Entity)
+{
+	const FEntity Target = FindAnimGraph(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return {};
+	}
+	const FAnimGraphRuntime& Runtime = Scene.GetRegistry().Get<FAnimGraphComponent>(Target).Runtime;
+	const int32              State   = Runtime.Instance.GetCurrentState();
+	if (!Runtime.Asset || State < 0 || State >= static_cast<int32>(Runtime.Asset->States.size()))
+	{
+		return {};
+	}
+	return Runtime.Asset->States[State].Name;
 }

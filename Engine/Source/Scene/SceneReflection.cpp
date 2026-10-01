@@ -1,6 +1,7 @@
 #include "Scene/SceneReflection.h"
 
 #include "Core/Reflection/TypeInfo.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/Components.h"
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
@@ -168,5 +169,12 @@ void RegisterSceneTypes()
 		.Property(&FGameModeComponent::RemainingSeconds, "RemainingSeconds", "남은 시간 (초)", PF_Transient | PF_ReadOnly)
 		.Property(&FGameModeComponent::WinnerPlayerId, "WinnerPlayerId", "승자", PF_Transient | PF_ReadOnly)
 		.Property(&FGameModeComponent::Scores, "Scores", "점수", PF_Transient | PF_ReadOnly)
+		.AsComponent();
+
+	// 애니메이션 그래프 (Scene/AnimGraph.h): 모델 루트(애니메이션 컴포넌트와 같은 엔티티)에 붙인다. 파라미터는 런타임 값 (복제 안 됨)
+	Registry.RegisterType<FAnimGraphComponent>("AnimGraphComponent", "애니메이션 그래프")
+		.Property(&FAnimGraphComponent::Graph, "Graph", "그래프").AssetFilter(".eanimgraph")
+		.Property(&FAnimGraphComponent::bUseCharacterMovement, "UseCharacterMovement", "캐릭터 이동 파라미터")
+		.Tooltip("자신/조상의 캐릭터 이동 상태를 Speed·VerticalSpeed·Grounded 파라미터로 넣는다")
 		.AsComponent();
 }

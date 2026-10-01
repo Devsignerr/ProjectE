@@ -3,6 +3,7 @@
 #include "Core/CoreTypes.h"
 #include "Core/ECS/Entity.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -32,6 +33,15 @@ public:
 	static float GetCurrentClipDuration(FScene& Scene, FEntity Entity);
 
 	static std::vector<std::string> GetClipNames(FScene& Scene, FEntity Entity);
-	// 현재 재생 중인 클립 이름 (없으면 빈 문자열)
+	// 현재 재생 중인 클립 이름 (없으면 빈 문자열). 그래프 재생 중이면 가중치가 가장 큰 클립
 	static std::string GetCurrentClip(FScene& Scene, FEntity Entity);
+
+	// ---- 애니메이션 그래프 (Scene/AnimGraph.h). Entity = FAnimGraphComponent가 있는 엔티티 또는 그 조상(캐릭터 루트 등) —
+	//      자신부터 깊이 우선으로 처음 찾은 그래프 컴포넌트를 쓴다. 없으면 false / nullopt / 빈 문자열
+	static FEntity              FindAnimGraph(const FScene& Scene, FEntity Entity);
+	static bool                 SetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name, float Value);
+	static bool                 SetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name, bool bValue);
+	static std::optional<float> GetAnimParam(FScene& Scene, FEntity Entity, std::string_view Name); // bool은 0/1
+	static bool                 IsAnimParamBool(FScene& Scene, FEntity Entity, std::string_view Name); // 그래프에 bool로 선언됨
+	static std::string          GetAnimState(FScene& Scene, FEntity Entity); // 현재(들어가는 중인) 상태 이름
 };

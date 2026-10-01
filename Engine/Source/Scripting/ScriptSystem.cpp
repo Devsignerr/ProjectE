@@ -31,6 +31,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	PlayRuntime->SetAIHooks(&AIHooks);
 	PlayRuntime->SetAppHooks(&AppHooks);
 	PlayRuntime->SetSteamHooks(&SteamHooks);
+	PlayRuntime->SetPersistentValues(&PersistentValues);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;

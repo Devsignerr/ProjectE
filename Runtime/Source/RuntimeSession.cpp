@@ -7,6 +7,7 @@
 #include "Network/NetTransport.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
+#include "World/GameWorldTravel.h"
 
 #include <chrono>
 #include <format>
@@ -17,6 +18,7 @@ E_DECLARE_LOG_CATEGORY(LogRuntime)
 void FRuntimeApplication::LoadScene()
 {
 	Scene.Clear();
+	World.SetCurrentSceneAsset(SceneAsset);
 	if (FPaths::HasProject() && !SceneAsset.empty())
 	{
 		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(SceneAsset);
@@ -113,12 +115,40 @@ void FRuntimeApplication::StartListenServer(uint16 Port)
 	// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
 	Players.Begin(Scene, FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string());
 	World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
+	HostPort = Port;
+	StartLanHost();
+}
+
+void FRuntimeApplication::StartLanHost()
+{
+	Lan.Stop();
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} (호스트)", FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE");
 	LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);
-	LanInfo.GamePort   = Port;
+	LanInfo.GamePort   = HostPort;
 	LanInfo.MaxPlayers = Net.MaxPlayers;
 	Lan.StartHost(LanInfo);
+}
+
+void FRuntimeApplication::TravelTo(const std::string& NextScene)
+{
+	FSceneTravelTargets Targets;
+	Targets.World             = &World;
+	Targets.Scene             = &Scene;
+	Targets.Net               = &Net;
+	Targets.ReplicationServer = &ReplicationServer;
+	Targets.ReplicationClient = &ReplicationClient;
+	Targets.Players           = &Players;
+	Targets.Resources         = &Resources;
+	Targets.ContentDirectory  = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
+	Targets.PlayerPrefab      = FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string();
+	Targets.OnEndPlay         = [this]() { AudioSystem.Reset(Audio); };
+	SceneAsset                = NextScene; // 다시 접속/세션 전환도 이 씬으로
+	FGameWorldTravel::Travel(Targets, NextScene);
+	if (Lan.IsHosting())
+	{
+		StartLanHost(); // 방 목록의 씬 갱신
+	}
 }
 
 void FRuntimeApplication::EndSession()

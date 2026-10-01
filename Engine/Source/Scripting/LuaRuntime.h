@@ -79,6 +79,7 @@ public:
 	void SetAIHooks(const FScriptAIHooks* InHooks) { AIHooks = InHooks; }                // 〃
 	void SetAppHooks(const FScriptAppHooks* InHooks) { AppHooks = InHooks; }             // 〃
 	void SetSteamHooks(const FScriptSteamHooks* InHooks) { SteamHooks = InHooks; }       // 〃
+	void SetPersistentValues(FScriptValueMap* InValues) { PersistentValues = InValues; } // 〃 (Game.SetPersistent)
 
 	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
 	uint32 CreateObject(const std::string& ScriptAsset, const std::string& Overrides, FEntity Entity);
@@ -175,6 +176,7 @@ private:
 	const FScriptAIHooks*      AIHooks      = nullptr;
 	const FScriptAppHooks*     AppHooks     = nullptr;
 	const FScriptSteamHooks*   SteamHooks   = nullptr;
+	FScriptValueMap*           PersistentValues = nullptr;
 	FVector2                   LocalControlRotation; // 훅이 없을 때(테스트) Net.SetControlRotation 값
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로

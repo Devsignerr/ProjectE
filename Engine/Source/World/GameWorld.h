@@ -115,6 +115,14 @@ public:
 	void                              SetNetMode(ENetMode InMode);
 	void                              SetLanDiscoveryPort(uint16 Port) { LanDiscoveryPort = Port; } // 테스트용
 
+	// 맵 전환 요청 (Lua Game.OpenScene, 게임 모듈 IGameNet::OpenScene). 서버/Standalone에서만, 씬 파일(Content 기준)이 있어야 한다.
+	// 앱이 프레임 끝에 FGameWorldTravel::ConsumePending → Travel로 처리한다 (갱신 도중 씬을 부수지 않는다). 실패하면 false + 사유
+	bool                       RequestOpenScene(const std::string& SceneAsset, std::string* OutError = nullptr);
+	std::optional<std::string> ConsumeOpenSceneRequest();
+	// 지금 플레이 중인 씬 (Content 기준, Lua Game.GetCurrentScene). 앱이 씬을 열 때 정한다 (Travel은 자동)
+	void               SetCurrentSceneAsset(std::string SceneAsset) { CurrentSceneAsset = std::move(SceneAsset); }
+	const std::string& GetCurrentSceneAsset() const { return CurrentSceneAsset; }
+
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
 	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
@@ -138,6 +146,7 @@ public:
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
 	const FInput* GetInput(FEntity Entity) const override { return ResolveInput(Entity, TickLocalInput); }
+	bool          OpenScene(const std::string& SceneAsset) override;
 
 private:
 	// 잘못된 호출(클라이언트에서 Client/Multicast 등)은 std::runtime_error (Lua에서는 스크립트 오류가 된다)
@@ -282,4 +291,7 @@ private:
 	FLanDiscovery                     SessionSearch; // Net.FindSessions
 	uint16                            LanDiscoveryPort = 0; // 0 = 프로젝트 설정
 	std::optional<FNetSessionRequest> PendingSessionRequest;
+
+	std::optional<std::string> PendingSceneRequest; // 맵 전환 (프레임 끝에 앱이 처리)
+	std::string                CurrentSceneAsset;
 };

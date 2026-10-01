@@ -215,6 +215,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	LastMatchState       = -1;
 	RespawnStartIndex    = 0;
 	PendingSessionRequest.reset();
+	PendingSceneRequest.reset();
 	PredictedBodies.clear();
 	PredictionClock        = 0.0f;
 	PredictionTimeOffset   = 0.0f;

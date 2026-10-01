@@ -91,4 +91,78 @@ void FLuaRuntime::RegisterGameBindings()
 		return SteamHooks != nullptr && SteamHooks->ActivateOverlay && SteamHooks->ActivateOverlay(Dialog);
 	};
 	SteamTable["IsOverlayActive"] = [this]() { return SteamHooks != nullptr && SteamHooks->IsOverlayActive && SteamHooks->IsOverlayActive(); };
+
+	// ---- 맵 전환 (Phase 31)
+	//   Game.OpenScene("Scenes/Level2.escene")  -- 또는 Asset("...", ".escene") 값. 서버/Standalone에서만: 이번 프레임 끝에 현재 씬을 바꾼다
+	//                                             (모든 스크립트 OnDestroy → 새 씬 로드 → 새 Lua 상태). 접속한 클라이언트도 따라온다.
+	//                                             반환: 접수했는가 (클라이언트에서는 경고 후 false). 파일이 없으면 스크립트 오류
+	//   Game.GetCurrentScene()                   -- 지금 씬 (Content 기준 경로, 모르면 "")
+	//   Game.SetPersistent("Score", 10) / Game.GetPersistent("Score", 0) / Game.ClearPersistent()
+	//                                             -- 맵 전환(새 Lua 상태)에도 남는 값: nil/bool/숫자/문자열/Vector3/에셋. 이 프로세스에만 (복제·저장 안 함)
+	GameTable["OpenScene"] = [this](const sol::object& Target) {
+		std::string SceneAsset;
+		if (Target.is<FScriptAssetRef>())
+		{
+			SceneAsset = Target.as<const FScriptAssetRef&>().Path;
+		}
+		else if (Target.get_type() == sol::type::string)
+		{
+			SceneAsset = Target.as<std::string>();
+		}
+		if (SceneAsset.empty())
+		{
+			throw std::runtime_error("Game.OpenScene: 씬 경로(문자열 또는 Asset 값)가 필요합니다");
+		}
+		if (NetHooks == nullptr || !NetHooks->OpenScene)
+		{
+			throw std::runtime_error("Game.OpenScene: 이 앱은 맵 전환을 지원하지 않습니다");
+		}
+		const std::string Problem = NetHooks->OpenScene(SceneAsset);
+		if (Problem.empty())
+		{
+			return true;
+		}
+		if (NetHooks->bIsServer)
+		{
+			throw std::runtime_error("Game.OpenScene(" + SceneAsset + "): " + Problem); // 파일 없음 등 → 스크립트 오류
+		}
+		E_LOG(LogScript, Warning, "Game.OpenScene({}): {}", SceneAsset, Problem); // 클라이언트: 서버가 바꾸면 따라간다
+		return false;
+	};
+	GameTable["GetCurrentScene"] = [this]() {
+		return NetHooks != nullptr && NetHooks->GetCurrentScene ? NetHooks->GetCurrentScene() : std::string();
+	};
+	GameTable["SetPersistent"] = [this](const std::string& Key, const sol::object& Value) {
+		if (PersistentValues == nullptr)
+		{
+			return;
+		}
+		FScriptValue Converted = ToScriptValue(Value);
+		if (Converted.IsNil() && Value.valid() && Value.get_type() != sol::type::lua_nil)
+		{
+			throw std::runtime_error("Game.SetPersistent(" + Key + "): bool/숫자/문자열/Vector3/에셋 값만 넘길 수 있습니다 (테이블은 안 됨)");
+		}
+		if (Converted.IsNil())
+		{
+			PersistentValues->erase(Key);
+			return;
+		}
+		(*PersistentValues)[Key] = std::move(Converted);
+	};
+	GameTable["GetPersistent"] = [this](const std::string& Key, const sol::object& Default) -> sol::object {
+		if (PersistentValues != nullptr)
+		{
+			if (const auto Found = PersistentValues->find(Key); Found != PersistentValues->end())
+			{
+				return FromScriptValue(Found->second);
+			}
+		}
+		return Default;
+	};
+	GameTable["ClearPersistent"] = [this]() {
+		if (PersistentValues != nullptr)
+		{
+			PersistentValues->clear();
+		}
+	};
 }

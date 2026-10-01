@@ -11,6 +11,7 @@
 #include "Scene/Scene.h"
 #include "Scene/SceneSerializer.h"
 #include "World/GameWorld.h"
+#include "World/GameWorldTravel.h"
 
 #include <format>
 #include <fstream>
@@ -197,6 +198,40 @@ void FPlayInEditorNet::Stop()
 	if (World != nullptr)
 	{
 		World->SetNetDriver(nullptr);
+	}
+}
+
+void FPlayInEditorNet::FillTravelTargets(FSceneTravelTargets& Targets)
+{
+	if (!IsActive())
+	{
+		return;
+	}
+	Targets.Net = &Net;
+	if (Mode == ENetMode::ListenServer)
+	{
+		Targets.ReplicationServer = &ReplicationServer;
+		Targets.Players           = &Players;
+		Targets.PlayerPrefab      = FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string();
+	}
+	else
+	{
+		Targets.ReplicationClient = &ReplicationClient; // 전용 서버 모드: 서버 프로세스가 맵을 바꾸고 에디터는 따라간다
+	}
+}
+
+void FPlayInEditorNet::OnTraveled(const std::string& NewSceneAsset)
+{
+	SceneAsset = NewSceneAsset; // 나중에 띄우는 런타임 클라이언트도 이 씬으로 (핸드셰이크 씬 이름)
+	if (LanHost.IsHosting())
+	{
+		LanHost.Stop();
+		FLanHostInfo LanInfo;
+		LanInfo.Name       = std::format("{} (에디터)", FPaths::GetProjectName());
+		LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);
+		LanInfo.GamePort   = Settings.Port;
+		LanInfo.MaxPlayers = Net.MaxPlayers;
+		LanHost.StartHost(LanInfo);
 	}
 }
 

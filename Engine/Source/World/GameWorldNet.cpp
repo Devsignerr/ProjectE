@@ -139,6 +139,13 @@ void FGameWorld::InstallScriptNetHooks()
 		}
 	};
 	NetHooks.GetFailureReason = [this]() { return Systems.Net != nullptr ? Systems.Net->GetFailureReason() : std::string(); };
+
+	// 맵 전환 (World/GameWorldTravel.cpp)
+	NetHooks.OpenScene = [this](const std::string& SceneAsset) {
+		std::string Problem;
+		return RequestOpenScene(SceneAsset, &Problem) ? std::string() : Problem;
+	};
+	NetHooks.GetCurrentScene = [this]() { return CurrentSceneAsset; };
 	Systems.Scripts->SetNetHooks(std::move(NetHooks));
 }
 

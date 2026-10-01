@@ -179,3 +179,9 @@ struct FSpotLightComponent
 	float    OuterConeAngle = 35.0f;   // 도 (반각, 최대 80)
 	bool     bCastShadows   = false;   // 그림자 맵 1장
 };
+
+// 하늘광 (씬 전역 — 처음 찾은 것 하나만): 환경광(IBL)과 하늘 배경 밝기 배율. 없으면 1. 밤/실내 씬은 낮춘다
+struct FSkyLightComponent
+{
+	float Intensity = 1.0f;
+};

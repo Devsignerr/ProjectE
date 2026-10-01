@@ -1,8 +1,10 @@
 ﻿#include "Common.hlsli"
 #include "PBR.hlsli"
 #include "SkinnedMesh.hlsli"
+#include "Lighting.hlsli" // b5 클러스터 상수
 
-// 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + 간이 환경광. 출력은 선형 HDR
+// 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
+// + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
 
 struct FDirectionalLight
 {
@@ -71,6 +73,50 @@ TextureCube<float4> IblDiffuse : register(t5);
 TextureCube<float4> IblSpecular : register(t6);
 Texture2D<float2> IblBrdf : register(t7);
 SamplerState IblSampler : register(s1);
+
+// 점광원/스포트라이트 (LocalLightRenderer: 목록 + 클러스터별 인덱스)
+StructuredBuffer<FLocalLight> LocalLights : register(t9);
+StructuredBuffer<uint>        ClusterData : register(t10);
+
+uint GetClusterIndex(float2 PixelPosition, float3 WorldPosition)
+{
+	const uint  TileX     = min((uint)(PixelPosition.x / ClusterScreenSize.x * ClusterGridX), ClusterGridX - 1);
+	const uint  TileY     = min((uint)(PixelPosition.y / ClusterScreenSize.y * ClusterGridY), ClusterGridY - 1);
+	const float ViewDepth = mul(float4(WorldPosition, 1.0f), ClusterView).z;
+	const uint  Slice     = ClusterDepthToSlice(ViewDepth, ClusterSliceScale, ClusterSliceBias, ClusterGridZ);
+	return TileX + ClusterGridX * (TileY + ClusterGridY * Slice);
+}
+
+float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldPosition)
+{
+	if (LocalLightCount == 0)
+	{
+		return 0.0f;
+	}
+	const uint Base  = GetClusterIndex(PixelPosition, WorldPosition) * E_CLUSTER_STRIDE;
+	const uint Count = ClusterData[Base];
+
+	float3 Color = 0.0f;
+	for (uint Index = 0; Index < Count; ++Index)
+	{
+		const FLocalLight Light    = LocalLights[ClusterData[Base + 1 + Index]];
+		const float3      ToLight  = Light.Position - WorldPosition;
+		const float       Distance = length(ToLight);
+		if (Distance >= Light.Radius)
+		{
+			continue;
+		}
+		const float3 L           = ToLight / max(Distance, 1.0e-4f);
+		const float  Attenuation = LightDistanceAttenuation(Distance, Light.Radius) *
+		                          LightConeAttenuation(dot(Light.Direction, -L), Light.ConeScale, Light.ConeOffset);
+		if (Attenuation <= 0.0f)
+		{
+			continue;
+		}
+		Color += EvaluateDirectLight(Surface, L, Light.Color * Attenuation);
+	}
+	return Color;
+}
 
 float3 EvaluateImageBasedLighting(FSurface Surface)
 {
@@ -255,6 +301,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	const float Shadow = ComputeShadow(Input.WorldPosition, normalize(Input.WorldNormal), L);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
+	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition);
 	Color += EvaluateImageBasedLighting(Surface);
 	Color += Emissive;
 

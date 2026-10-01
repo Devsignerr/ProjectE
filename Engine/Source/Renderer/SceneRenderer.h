@@ -12,6 +12,7 @@
 #include "Renderer/ShadowRenderer.h"
 #include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
+#include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
 #include "Scene/ResourceHandles.h"
 
@@ -31,6 +32,7 @@ struct FSceneRenderStats
 	uint32 VisibleMeshes = 0; // 컬링 통과
 	uint32 DrawCalls     = 0;
 	uint32 Particles     = 0; // 그린 파티클 입자 수
+	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 };
 
 // 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
@@ -109,6 +111,7 @@ private:
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;
 	FParticleRenderer    ParticleRenderer;
+	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
 

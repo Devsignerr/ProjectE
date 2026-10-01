@@ -1,0 +1,3443 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "SkyLightComponent": {
+          "Intensity": 0.04
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "SkyLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            0.55,
+            0.65,
+            1.0
+          ],
+          "Intensity": 0.06
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            800
+          ],
+          "Rotation": [
+            -0.1093817,
+            0.4082179,
+            0.2345697,
+            0.8754261
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Moon",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 20000.0,
+          "Primary": true,
+          "Priority": 0,
+          "Orthographic": false,
+          "OrthoHeight": 1000.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -1150,
+            -750,
+            520
+          ],
+          "Rotation": [
+            -0.0458598,
+            0.1542697,
+            0.2812322,
+            0.9460477
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Camera",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            -10
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            40,
+            40,
+            0.2
+          ]
+        }
+      },
+      "Name": "Ground",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            1500,
+            0,
+            200
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            30,
+            4.2
+          ]
+        }
+      },
+      "Name": "WallX",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            1500,
+            200
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            30,
+            0.4,
+            4.2
+          ]
+        }
+      },
+      "Name": "WallY",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            646.7157,
+            267.8784,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            605.1411,
+            250.6576,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            267.8784,
+            646.7157,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            250.6576,
+            605.1411,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -267.8784,
+            646.7157,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -250.6576,
+            605.1411,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -646.7157,
+            267.8784,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -605.1411,
+            250.6576,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -646.7157,
+            -267.8784,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -605.1411,
+            -250.6576,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -267.8784,
+            -646.7157,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -250.6576,
+            -605.1411,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            267.8784,
+            -646.7157,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            250.6576,
+            -605.1411,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            646.7157,
+            -267.8784,
+            150
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            3.0
+          ]
+        }
+      },
+      "Name": "Pillar_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.22
+          ],
+          "Intensity": 6.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            605.1411,
+            -250.6576,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "Torch_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1150.0,
+            0.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1295.0531,
+            113.3025,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1132.5289,
+            199.6954,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1255.7036,
+            336.4648,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1080.6465,
+            393.3232,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1178.2001,
+            549.4037,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            995.9292,
+            575.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1064.8977,
+            745.6494,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            880.9511,
+            739.2058,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            919.2388,
+            919.2388,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            739.2058,
+            880.9511,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            745.6494,
+            1064.8977,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            575.0,
+            995.9292,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            549.4037,
+            1178.2001,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            393.3232,
+            1080.6465,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            336.4648,
+            1255.7036,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            199.6954,
+            1132.5289,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            113.3025,
+            1295.0531,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1150.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -113.3025,
+            1295.0531,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -199.6954,
+            1132.5289,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -336.4648,
+            1255.7036,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -393.3232,
+            1080.6465,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -549.4037,
+            1178.2001,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -575.0,
+            995.9292,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -745.6494,
+            1064.8977,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -739.2058,
+            880.9511,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -919.2388,
+            919.2388,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -880.9511,
+            739.2058,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1064.8977,
+            745.6494,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -995.9292,
+            575.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1178.2001,
+            549.4037,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1080.6465,
+            393.3232,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1255.7036,
+            336.4648,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1132.5289,
+            199.6954,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1295.0531,
+            113.3025,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1150.0,
+            0.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1295.0531,
+            -113.3025,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_37",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1132.5289,
+            -199.6954,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_38",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1255.7036,
+            -336.4648,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_39",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1080.6465,
+            -393.3232,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_40",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1178.2001,
+            -549.4037,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_41",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -995.9292,
+            -575.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_42",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1064.8977,
+            -745.6494,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_43",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -880.9511,
+            -739.2058,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_44",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -919.2388,
+            -919.2388,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_45",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -739.2058,
+            -880.9511,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_46",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -745.6494,
+            -1064.8977,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_47",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -575.0,
+            -995.9292,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_48",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -549.4037,
+            -1178.2001,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_49",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -393.3232,
+            -1080.6465,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_50",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -336.4648,
+            -1255.7036,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_51",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -199.6954,
+            -1132.5289,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_52",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -113.3025,
+            -1295.0531,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_53",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -0.0,
+            -1150.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_54",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            113.3025,
+            -1295.0531,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_55",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            199.6954,
+            -1132.5289,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_56",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            336.4648,
+            -1255.7036,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_57",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            393.3232,
+            -1080.6465,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_58",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            549.4037,
+            -1178.2001,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_59",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            575.0,
+            -995.9292,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_60",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            745.6494,
+            -1064.8977,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_61",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            739.2058,
+            -880.9511,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_62",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            919.2388,
+            -919.2388,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_63",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            880.9511,
+            -739.2058,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_64",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1064.8977,
+            -745.6494,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_65",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.2,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            995.9292,
+            -575.0,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_66",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1.0,
+            0.3
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1178.2001,
+            -549.4037,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_67",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.25,
+            0.4,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1080.6465,
+            -393.3232,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_68",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.9,
+            0.2
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1255.7036,
+            -336.4648,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_69",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.3,
+            0.9
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1132.5289,
+            -199.6954,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_70",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            0.9,
+            1.0
+          ],
+          "Intensity": 2.5,
+          "Radius": 260.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1295.0531,
+            -113.3025,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Glow_71",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            -120,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        }
+      },
+      "Name": "Fox_Walk",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -60,
+            140,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        }
+      },
+      "Name": "Fox_Survey",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Run",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 0.8
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200,
+            40,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        }
+      },
+      "Name": "Fox_Run",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -350,
+            -420,
+            110
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3420201,
+            0.9396926
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Helmet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            380,
+            -300,
+            60
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.1736482,
+            0.9848078
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Crate",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            1.0,
+            0.95,
+            0.85
+          ],
+          "Intensity": 450.0,
+          "Radius": 2200.0,
+          "InnerConeAngle": 22.0,
+          "OuterConeAngle": 34.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            950
+          ],
+          "Rotation": [
+            0.0,
+            0.6920737,
+            0.0,
+            0.7218268
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "SpotTop",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            0.45,
+            0.65,
+            1.0
+          ],
+          "Intensity": 350.0,
+          "Radius": 2600.0,
+          "InnerConeAngle": 15.0,
+          "OuterConeAngle": 26.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000,
+            -700,
+            450
+          ],
+          "Rotation": [
+            -0.0484976,
+            0.153852,
+            0.2967019,
+            0.9412468
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "SpotSide",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.35
+          ],
+          "Intensity": 20.0,
+          "Radius": 1000.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            150,
+            -380,
+            160
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "PointShadow",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

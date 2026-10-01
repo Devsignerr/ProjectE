@@ -141,4 +141,8 @@ void RegisterSceneTypes()
 		.Property(&FSpotLightComponent::OuterConeAngle, "OuterConeAngle", "외부 원뿔 (도)").Range(1.0f, 80.0f, 0.1f)
 		.Property(&FSpotLightComponent::bCastShadows, "CastShadows", "그림자")
 		.AsComponent();
+
+	Registry.RegisterType<FSkyLightComponent>("SkyLightComponent", "하늘광")
+		.Property(&FSkyLightComponent::Intensity, "Intensity", "환경광 배율").Range(0.0f, 10.0f, 0.01f).Tooltip("IBL 환경광과 하늘 배경 밝기 (씬에서 첫 하늘광만 사용)")
+		.AsComponent();
 }

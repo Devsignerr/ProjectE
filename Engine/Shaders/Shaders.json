@@ -40,6 +40,7 @@
     { "File": "Particle.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" },
     { "File": "ParticleSimulate.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "UI.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "UI.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "UI.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "ClusterCulling.hlsl", "Entry": "CSMain", "Stage": "Compute" }
   ]
 }

@@ -39,6 +39,20 @@ namespace
 	};
 	static_assert(sizeof(FSsrConstants) == 304);
 
+	// SsrResolve.hlsl SsrResolveConstants와 1:1
+	struct alignas(16) FSsrResolveConstants
+	{
+		FVector2 ScreenSize;
+		float    CurrentWeight = 0.1f;
+		uint32   bHistoryValid = 0;
+		float    VarianceGamma = 1.5f;
+		float    Padding[3]    = {};
+	};
+	static_assert(sizeof(FSsrResolveConstants) == 32);
+
+	constexpr float ResolveCurrentWeight = 0.1f; // 이번 프레임 비중 (정지 화면 ≈ 20프레임에 수렴)
+	constexpr float ResolveVarianceGamma = 1.5f; // 움직일 때 번짐(고스팅)과 남는 노이즈 사이의 타협
+
 	constexpr DXGI_FORMAT HizFormat = DXGI_FORMAT_R32_FLOAT;
 } // namespace
 
@@ -65,7 +79,7 @@ bool FScreenSpaceReflections::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, 
 	{
 		return false;
 	}
-	return CreatePipelines(HizCopyPipeline, HizDownsamplePipeline, TracePipeline, false);
+	return CreatePipelines(HizCopyPipeline, HizDownsamplePipeline, TracePipeline, ResolvePipeline, false);
 }
 
 void FScreenSpaceReflections::Shutdown()
@@ -76,15 +90,19 @@ void FScreenSpaceReflections::Shutdown()
 	}
 	ReleaseHiz();
 	Result.reset();
+	History[0].reset();
+	History[1].reset();
+	Output = nullptr;
 	HizCopyPipeline.Shutdown();
 	HizDownsamplePipeline.Shutdown();
 	TracePipeline.Shutdown();
+	ResolvePipeline.Shutdown();
 	HizRoot.Shutdown();
 	Rhi = nullptr;
 }
 
 bool FScreenSpaceReflections::CreatePipelines(FD3D12PipelineState& OutCopy, FD3D12PipelineState& OutDownsample, FD3D12PipelineState& OutTrace,
-                                              bool bForceRecompile)
+                                              FD3D12PipelineState& OutResolve, bool bForceRecompile)
 {
 	ID3D12Device* Device  = Rhi->GetDevice().GetDevice();
 	const auto    Compute = [&](const wchar_t* Entry) {
@@ -107,7 +125,9 @@ bool FScreenSpaceReflections::CreatePipelines(FD3D12PipelineState& OutCopy, FD3D
 	return OutCopy.InitCompute(Device, HizRoot.Get(), FD3D12ShaderCompiler::ToBytecode(Copy.Get()), L"SsrHizCopy") &&
 	       OutDownsample.InitCompute(Device, HizRoot.Get(), FD3D12ShaderCompiler::ToBytecode(Downsample.Get()), L"SsrHizDownsample") &&
 	       Root->CreateGraphicsPipeline(OutTrace, Device, *Library, L"SsrTrace.hlsl", L"PSTrace", { ResultFormat }, EBlendMode::Opaque, bForceRecompile,
-	                                    L"SsrTracePipeline");
+	                                    L"SsrTracePipeline") &&
+	       Root->CreateGraphicsPipeline(OutResolve, Device, *Library, L"SsrResolve.hlsl", L"PSResolve", { ResultFormat }, EBlendMode::Opaque,
+	                                    bForceRecompile, L"SsrResolvePipeline");
 }
 
 bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
@@ -115,7 +135,8 @@ bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
 	FD3D12PipelineState NewCopy;
 	FD3D12PipelineState NewDownsample;
 	FD3D12PipelineState NewTrace;
-	if (!CreatePipelines(NewCopy, NewDownsample, NewTrace, bForceRecompile))
+	FD3D12PipelineState NewResolve;
+	if (!CreatePipelines(NewCopy, NewDownsample, NewTrace, NewResolve, bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "SSR 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
@@ -126,6 +147,8 @@ bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
 	Rhi->DeferRelease(NewDownsample.Detach());
 	TracePipeline.Swap(NewTrace);
 	Rhi->DeferRelease(NewTrace.Detach());
+	ResolvePipeline.Swap(NewResolve);
+	Rhi->DeferRelease(NewResolve.Detach());
 	return true;
 }
 
@@ -161,6 +184,21 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 	{
 		E_LOG(LogRenderer, Fatal, "SSR 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		if (History[Index])
+		{
+			History[Index]->ShutdownDeferred(*Rhi);
+		}
+		History[Index] = std::make_unique<FD3D12RenderTarget>();
+		if (!History[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"SsrHistory0" : L"SsrHistory1",
+		                          FRenderTargetDesc::MakeColor(ResultFormat)))
+		{
+			E_LOG(LogRenderer, Fatal, "SSR 누적 버퍼 생성 실패 ({}x{})", Width, Height);
+		}
+	}
+	Output           = nullptr;
+	LastResolveFrame = 0; // 새 버퍼에는 이력이 없다
 
 	ReleaseHiz();
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
@@ -258,6 +296,35 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	DrawScreenPass(CommandList, *Root, TracePipeline, Address,
 	               { Inputs.SceneColor->GetDepthSrv(), HizSrv, Inputs.SceneNormal->GetSrv(), Inputs.SceneColor->GetSrv() }, Width, Height);
 	Result->End(CommandList);
+
+	// 3) 확률 반사면 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다
+	Output                    = nullptr;
+	const uint64 FrameNumber  = Rhi->GetFrameNumber();
+	if (Inputs.bStochastic && Inputs.Velocity != nullptr)
+	{
+		const bool bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
+		const FD3D12RenderTarget& Previous = *History[HistoryIndex];
+		HistoryIndex ^= 1u;
+		FD3D12RenderTarget& Current = *History[HistoryIndex];
+
+		FSsrResolveConstants ResolveConstants;
+		ResolveConstants.ScreenSize    = Constants.ScreenSize;
+		ResolveConstants.CurrentWeight = ResolveCurrentWeight;
+		ResolveConstants.bHistoryValid = bHistoryValid ? 1u : 0u;
+		ResolveConstants.VarianceGamma = ResolveVarianceGamma;
+		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(ResolveConstants).GpuAddress;
+
+		Current.Begin(CommandList, nullptr);
+		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv() }, Width,
+		               Height);
+		Current.End(CommandList);
+		Output           = &Current;
+		LastResolveFrame = FrameNumber;
+	}
+	else
+	{
+		LastResolveFrame = 0;
+	}
 
 	const D3D12_RESOURCE_BARRIER ToWrite = MakeTransitionBarrier(Depth, DepthRead, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	CommandList->ResourceBarrier(1, &ToWrite);

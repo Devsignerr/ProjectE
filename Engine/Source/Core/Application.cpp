@@ -72,6 +72,10 @@ int FApplication::Run()
 	      FPaths::HasProject() ? FStringConv::ToUtf8(FPaths::GetProjectFile().wstring()) : std::string("없음"), FFileSystem::GetMountedFileCount());
 	FCrashHandler::SetDumpDirectory(FPaths::GetCrashDirectory());
 	ScreenshotPath = CommandLine.GetValue(L"--screenshot");
+	if (const std::wstring Frames = CommandLine.GetValue(L"--screenshot-frames"); !Frames.empty())
+	{
+		ScreenshotFrames = static_cast<uint64>(std::clamp(std::stoll(Frames), 1LL, 64LL));
+	}
 	if (const std::wstring ExitAfter = CommandLine.GetValue(L"--exit-after"); !ExitAfter.empty())
 	{
 		ExitAfterFrames = static_cast<uint64>(std::max(1LL, std::stoll(ExitAfter)));
@@ -234,9 +238,16 @@ void FApplication::RunWindowedLoop()
 		}
 		else
 		{
-			if (!ScreenshotPath.empty() && ExitAfterFrames > 0 && FrameIndex + 1 == ExitAfterFrames)
+			if (!ScreenshotPath.empty() && ExitAfterFrames > 0 && FrameIndex + ScreenshotFrames >= ExitAfterFrames)
 			{
-				OnScreenshotRequested(ScreenshotPath);
+				// 연속 저장: 앞 프레임은 "<이름>_f<번호>", 마지막 프레임은 원래 경로
+				const uint64 Remaining = ExitAfterFrames - FrameIndex - 1;
+				std::filesystem::path Path = ScreenshotPath;
+				if (Remaining > 0)
+				{
+					Path.replace_filename(std::format(L"{}_f{}{}", ScreenshotPath.stem().wstring(), ScreenshotFrames - 1 - Remaining, ScreenshotPath.extension().wstring()));
+				}
+				OnScreenshotRequested(Path);
 			}
 			OnRender();
 			++FrameIndex;

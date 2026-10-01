@@ -185,13 +185,15 @@ E_TEST(Temporal_CameraCut)
 E_TEST(Temporal_ShaderTypeLayout)
 {
 	// HLSL FInstanceData / PerFrame cbuffer와 같은 크기·위치
-	E_EXPECT_EQ(sizeof(FInstanceGpuData), static_cast<size_t>(192));
-	E_EXPECT_EQ(offsetof(FInstanceGpuData, BoneOffset), static_cast<size_t>(112));
-	E_EXPECT_EQ(offsetof(FInstanceGpuData, PrevBoneOffset), static_cast<size_t>(116));
-	E_EXPECT_EQ(offsetof(FInstanceGpuData, PrevWorld), static_cast<size_t>(128));
-	E_EXPECT_EQ(offsetof(FPerFrameConstants, UnjitteredViewProjection), static_cast<size_t>(144));
-	E_EXPECT_EQ(offsetof(FPerFrameConstants, PrevViewProjection), static_cast<size_t>(208));
-	E_EXPECT_EQ(offsetof(FPerFrameConstants, JitterNdc), static_cast<size_t>(272));
+	// 컴파일 타임 상수라 런타임 비교는 C4127(상수 조건식)이 되므로 static_assert로 고정
+	static_assert(sizeof(FInstanceGpuData) == 192);
+	static_assert(offsetof(FInstanceGpuData, BoneOffset) == 112);
+	static_assert(offsetof(FInstanceGpuData, PrevBoneOffset) == 116);
+	static_assert(offsetof(FInstanceGpuData, PrevWorld) == 128);
+	static_assert(offsetof(FPerFrameConstants, UnjitteredViewProjection) == 144);
+	static_assert(offsetof(FPerFrameConstants, PrevViewProjection) == 208);
+	static_assert(offsetof(FPerFrameConstants, JitterNdc) == 272);
+	E_EXPECT_TRUE(true);
 }
 
 E_TEST(Temporal_TaaColorSpaces)

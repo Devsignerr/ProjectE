@@ -4,6 +4,8 @@
 
 // SSR 추적 (FScreenSpaceReflections, FScreenPassRootSignature). Hi-Z는 ScreenSpaceReflections.hlsl이 만든다. 식은 Renderer/ReflectionMath.h
 //   출력 R16G16B16A16_FLOAT: rgb = 반사 색 (이전 프레임 씬 컬러, 톤매핑 전 HDR), a = 신뢰도 (0 = 맞지 않음 → 캡처/하늘 IBL)
+//   SsrResolve.hlsl PSResolve: 확률 반사(bStochastic)일 때 SSR 전용 시간 누적. 거친 면의 광선 흔들기와 맞음/안 맞음이 픽셀·프레임마다 바뀌는 큰 노이즈는
+//     TAA의 이웃 색 클램프가 걸러 내지 못해 화면이 지글거리므로, 메인 패스가 읽기 전에 여기서 평균낸다 (언리얼 SSR 시간 필터와 같은 역할)
 
 cbuffer SsrConstants : register(b0)
 {
@@ -209,3 +211,4 @@ float4 PSTrace(FFullscreenVSOutput Input) : SV_Target
 	const float  TowardFade = bOrthographic != 0 ? 1.0f : saturate((R.z + 0.3f) / 0.3f);
 	return float4(max(Color, 0.0f), EdgeFade * TravelFade * TowardFade);
 }
+

@@ -86,6 +86,10 @@ bool FEditorGrid::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRe
 	Desc.bDepthEnable           = true;
 	Desc.bDepthWrite            = false; // 씬 깊이로 가려지기만 한다
 	Desc.DepthFunc              = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	// 씬 깊이는 TAA 지터(최대 반 픽셀)로 그려지고 그리드는 지터 없이 그리므로, Z=0 바닥과 겹치면 매 프레임 깊이 비교가 뒤집혀 선이 깜빡인다.
+	// 카메라 쪽으로 기울기 비례 바이어스(반 픽셀 × 두 축 + 여유)를 줘 바닥과 같은 평면에서는 항상 보이게 한다
+	Desc.DepthBias              = -8;
+	Desc.SlopeScaledDepthBias   = -1.5f;
 	Desc.BlendMode              = EBlendMode::Alpha;
 	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, L"EditorGridPipeline");
 }

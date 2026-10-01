@@ -86,6 +86,7 @@ private:
 	//   --hold-keys-delay S   위 키/패드를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
+	uint64                ScreenshotFrames = 1; // --screenshot-frames N: 마지막 N프레임을 연속 저장 (시간 떨림 확인, 마지막은 원래 경로)
 	uint64                FrameIndex = 0;
 	uint64                CrashTestFrame = 0; // --crash-test: 이 프레임(틱)에서 의도적 크래시 (덤프 검증)
 	std::vector<EKey>     HeldKeys;           // --hold-keys

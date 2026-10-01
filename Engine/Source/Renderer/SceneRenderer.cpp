@@ -915,6 +915,8 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 			Inputs.MaxRoughness  = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
 			Inputs.FrameIndex    = static_cast<uint32>(SceneFrameCount);
 			Inputs.bStochastic   = CurrentJitterNdc.X != 0.0f || CurrentJitterNdc.Y != 0.0f; // TAA가 누적할 때만 거친 반사를 흔든다
+			Inputs.Velocity      = SceneVelocity.get();
+			Inputs.bHistoryValid = bTemporalHistoryValid;
 			ScreenSpaceReflections.Render(Inputs);
 			EndTimer(ERenderTimer::Reflections);
 		}

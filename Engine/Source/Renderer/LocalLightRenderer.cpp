@@ -467,7 +467,7 @@ void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances, D3D1
 		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
 		{
 			const FMeshInstance& Instance = List[InstanceIndex];
-			if (Slice.IsCaster(Instance.WorldBounds))
+			if (Instance.bCastShadow && Slice.IsCaster(Instance.WorldBounds))
 			{
 				ShadowBatches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
 			}

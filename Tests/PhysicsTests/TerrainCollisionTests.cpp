@@ -4,6 +4,7 @@
 #include "Physics/TerrainCollision.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
+#include "Scene/Foliage.h"
 #include "Scene/Terrain.h"
 
 #include <cmath>
@@ -126,5 +127,44 @@ E_TEST(TerrainCollision_DisabledHasNoBody)
 	Physics.Update(Scene, Frame);
 	FPhysicsHit Hit;
 	E_EXPECT_FALSE(Physics.Raycast(FVector3(0.0f, 0.0f, 5000.0f), FVector3(0.0f, 0.0f, -1.0f), 20000.0f, Hit));
+	Physics.End();
+}
+
+E_TEST(FoliageCollision_TreeCapsulesInOneBody)
+{
+	const std::filesystem::path Path  = FTestRegistry::GetTempDirectory() / "Trees.efoliage";
+	const std::string           Asset = Path.generic_string();
+	FFoliageAsset               Initial;
+	FFoliageType&               Tree = Initial.Types.emplace_back();
+	Tree.bCollision                  = true;
+	Tree.CollisionRadius             = 20.0f;
+	Tree.CollisionHeight             = 400.0f;
+	FFoliageType& Grass              = Initial.Types.emplace_back();
+	Grass.bCollision                 = false;
+	Initial.EnsureInstanceLists();
+	for (const float X : { 300.0f, 600.0f })
+	{
+		FFoliageInstance& Instance = Initial.Instances[0].emplace_back();
+		Instance.Position          = FVector3(X, 0.0f, 0.0f);
+	}
+	Initial.Instances[1].push_back({ FVector3(-300.0f, 0.0f, 0.0f), 0.0f, 1.0f, FVector3::UpVector });
+	FFoliageLibrary::Get().Invalidate(Asset);
+	E_EXPECT_TRUE(FFoliageLibrary::Get().Create(Asset, Initial) != nullptr);
+
+	FScene        Scene;
+	const FEntity Foliage = Scene.CreateEntity("Foliage");
+	Scene.GetRegistry().Emplace<FFoliageComponent>(Foliage).Asset = Asset;
+	Scene.UpdateTransforms();
+	FPhysicsSystem Physics;
+	Physics.Begin();
+	Physics.Update(Scene, Frame);
+	E_EXPECT_EQ(Physics.GetBodyCount(), 1u); // 캡슐 2개 = 바디 1개
+
+	FPhysicsHit Hit;
+	E_EXPECT_TRUE(Physics.Raycast(FVector3(-1000.0f, 0.0f, 150.0f), FVector3(1.0f, 0.0f, 0.0f), 5000.0f, Hit));
+	E_EXPECT_TRUE(Hit.Entity == Foliage);
+	E_EXPECT_NEAR(Hit.Position.X, 280.0f, 1.0f); // 첫 나무 (풀은 충돌 없음)
+	// 캡슐 위(높이 400cm)를 넘으면 맞지 않는다
+	E_EXPECT_FALSE(Physics.Raycast(FVector3(-1000.0f, 0.0f, 450.0f), FVector3(1.0f, 0.0f, 0.0f), 5000.0f, Hit));
 	Physics.End();
 }

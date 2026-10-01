@@ -6,6 +6,7 @@
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
+#include "Scene/Foliage.h"
 #include "Scene/Terrain.h"
 
 void RegisterSceneTypes()
@@ -181,4 +182,6 @@ void RegisterSceneTypes()
 
 	// 지형 (Scene/Terrain.h, Phase 34)
 	RegisterTerrainTypes();
+	// 풀·나무 (Scene/Foliage.h, Phase 34-3)
+	RegisterFoliageTypes();
 }

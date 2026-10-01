@@ -119,6 +119,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	FoliageRenderer.Init(*Resources);
 	ShadowRenderer.ExtraCasters = LocalLightRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection,
 	                                                                       const FFrustum& Frustum, bool bLocalLight) {
 		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
@@ -439,6 +440,7 @@ void FSceneRenderer::Shutdown()
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
+	FoliageRenderer.Shutdown();
 	LocalLightRenderer.Shutdown();
 	OcclusionCuller.Shutdown();
 	PipelineState.Shutdown();
@@ -647,6 +649,10 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 		SkinPalettes.Build(Scene, *Resources, DynamicBuffer);
 	}
 	MeshInstances.Gather(Scene, *Resources, &SkinPalettes);
+	// 풀·나무 (Phase 34-3): 메인 프러스텀 ∪ 그림자 거리 안 캐스터 볼륨의 셀만 인스턴스 목록에 더한다
+	FoliageRenderer.Gather(Scene, Camera, FrozenFrustum, [this](const FBox& Bounds) {
+		return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds);
+	}, MeshInstances);
 	MeshInstances.Upload(DynamicBuffer);
 	SelectLods(Camera);
 	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum); // 지형 텍스처 갱신 + 청크 LOD/컬링 (그림자 패스 전)
@@ -866,7 +872,7 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 	const FVector3 CameraPosition = Camera.GetPosition();
 	for (FMeshInstance& Instance : MeshInstances.GetInstances())
 	{
-		if (Instance.IsSkinned() || Instance.Mesh->GetLodCount() <= 1)
+		if (Instance.IsSkinned() || Instance.bFixedLod || Instance.Mesh->GetLodCount() <= 1)
 		{
 			continue;
 		}

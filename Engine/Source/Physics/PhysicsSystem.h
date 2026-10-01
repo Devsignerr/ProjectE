@@ -12,6 +12,7 @@
 
 class FScene;
 class FTerrainCollision;
+class FFoliageCollision;
 
 struct FPhysicsHit
 {
@@ -151,4 +152,5 @@ private:
 	bool                                      bInterpolate = true;
 	std::function<bool(const FScene&, FEntity)> KinematicOverride;
 	std::unique_ptr<FTerrainCollision>          TerrainCollision; // 지형 높이맵 충돌 (TerrainCollision.h)
+	std::unique_ptr<FFoliageCollision>          FoliageCollision; // 나무 캡슐 충돌 (FoliageCollision.h)
 };

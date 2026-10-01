@@ -2,6 +2,7 @@
 
 #include "Core/Settings/ProjectSettings.h"
 #include "Physics/PhysicsComponents.h"
+#include "Physics/FoliageCollision.h"
 #include "Physics/TerrainCollision.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
@@ -106,7 +107,8 @@ void FPhysicsSystem::End()
 {
 	Characters.clear(); // 월드가 캐릭터와 함께 사라진다
 	Bodies.clear();
-	TerrainCollision.reset(); // 지형 바디도 월드와 함께 사라진다
+	TerrainCollision.reset(); // 지형/폴리지 바디도 월드와 함께 사라진다
+	FoliageCollision.reset();
 	World.reset();
 	Stepper.Reset();
 }
@@ -125,6 +127,11 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 		TerrainCollision = std::make_unique<FTerrainCollision>();
 	}
 	TerrainCollision->Sync(Scene, *World);
+	if (!FoliageCollision)
+	{
+		FoliageCollision = std::make_unique<FFoliageCollision>();
+	}
+	FoliageCollision->Sync(Scene, *World);
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
 	for (uint32 Step = 0; Step < Steps; ++Step)

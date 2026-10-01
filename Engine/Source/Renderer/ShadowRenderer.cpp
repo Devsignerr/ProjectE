@@ -325,7 +325,7 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTU
 		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
 		{
 			const FMeshInstance& Instance = List[InstanceIndex];
-			if (CascadeFrustum.Intersects(Instance.WorldBounds))
+			if (Instance.bCastShadow && CascadeFrustum.Intersects(Instance.WorldBounds))
 			{
 				Batches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
 			}

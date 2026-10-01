@@ -14,6 +14,7 @@
 #include "Editor/Panels/PostProcessPanel.h"
 #include "Editor/Panels/SettingsWindow.h"
 #include "Editor/Panels/ShadowPanel.h"
+#include "Editor/Panels/FoliageToolPanel.h"
 #include "Editor/Panels/TerrainToolPanel.h"
 #include "Editor/Panels/OutputLogPanel.h"
 #include "Editor/Panels/HierarchyPanel.h"
@@ -74,6 +75,7 @@ private:
 	void OnAssetsMoved(const std::vector<FAssetMove>& Moves); // 콘텐츠 브라우저 이동/이름 변경 후 열린 씬·기록·캐시 갱신
 	void VerifyAssetMove();                                   // 자동 검증 --verify-asset-move
 	void VerifyTerrainBrush();                                // 자동 검증 --terrain-brush-test (지형 브러시 + Undo/Redo)
+	void VerifyFoliageBrush();                                // 자동 검증 --foliage-brush-test (폴리지 칠하기/지우기 + Undo/Redo)
 	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신
 	void VerifyReimport(const std::filesystem::path& ModelPath); // 자동 검증 --verify-reimport
 	// 프리팹 원본을 바꾸는 작업 감싸기: 오버라이드 기록(옛 원본) → Change → 캐시 비우기 → 열린 씬 인스턴스 동기화 + 에셋 해석
@@ -127,6 +129,7 @@ private:
 	FPostProcessPanel    PostProcessPanel;
 	FShadowPanel         ShadowPanel;
 	FTerrainToolPanel    TerrainToolPanel; // 지형 스컬프트/칠하기 (Phase 34)
+	FFoliageToolPanel    FoliageToolPanel; // 풀·나무 칠하기 (Phase 34-3)
 	FSettingsWindow      ProjectSettingsWindow{ FSettingsWindow::EKind::ProjectSettings };     // 편집 → 프로젝트 설정
 	FSettingsWindow      EditorPreferencesWindow{ FSettingsWindow::EKind::EditorPreferences }; // 편집 → 에디터 환경설정
 	FOutputLogPanel      OutputLogPanel;

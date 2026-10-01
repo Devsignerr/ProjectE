@@ -1,6 +1,8 @@
 #include "Editor/TerrainDemoGenerator.h"
 
 #include "Core/Log.h"
+#include "Editor/Panels/FoliageToolPanel.h"
+#include "Scene/Foliage.h"
 #include "Core/StringConv.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
@@ -267,11 +269,91 @@ bool GenerateTerrainDemo(const std::filesystem::path& ContentDirectory)
 	}
 	FTerrainLibrary::Get().Invalidate("Terrain/DemoTerrain.eterrain"); // 열린 데이터가 있으면 새 파일로
 
+	// 폴리지: 기본 타입 5개(풀/덤불/활엽수/침엽수/바위)를 규칙으로 흩뿌린다 (레이어 가중치·경사·높이·잡음 무리)
+	FFoliageAsset Foliage = FFoliageToolPanel::MakeDefaultAsset();
+	{
+		uint32 State = 777u;
+		auto   Random = [&State]() {
+            State = Hash(static_cast<int32>(State), 17, 3u);
+            return static_cast<float>(State & 0xFFFFFFu) / static_cast<float>(0xFFFFFF);
+		};
+		const float Half = DemoSize * 0.5f;
+		// (타입, 표본 간격 cm, 기본 확률)
+		struct FScatter
+		{
+			uint32 Type;
+			float  Spacing;
+			float  Chance;
+		};
+		const FScatter Scatters[] = { { 0, 70.0f, 0.8f }, { 1, 450.0f, 0.5f }, { 2, 700.0f, 0.9f }, { 3, 600.0f, 1.0f }, { 4, 700.0f, 0.6f } };
+		for (const FScatter& Scatter : Scatters)
+		{
+			const FFoliageType& Type = Foliage.Types[Scatter.Type];
+			for (float Y = -Half + Scatter.Spacing * 0.5f; Y < Half; Y += Scatter.Spacing)
+			{
+				for (float X = -Half + Scatter.Spacing * 0.5f; X < Half; X += Scatter.Spacing)
+				{
+					const float PX = X + (Random() - 0.5f) * Scatter.Spacing;
+					const float PY = Y + (Random() - 0.5f) * Scatter.Spacing;
+					const FVector2 Grid = Frame.WorldToGrid(PX, PY);
+					if (Grid.X < 1.0f || Grid.Y < 1.0f || Grid.X > DemoResolution - 2.0f || Grid.Y > DemoResolution - 2.0f)
+					{
+						continue;
+					}
+					const FVector3 Normal = TerrainMath::ComputeNormal(Data, Frame, Grid.X, Grid.Y);
+					const FVector3 Position(PX, PY, TerrainMath::SampleWorldHeight(Data, Frame, PX, PY));
+					if (!FoliageMath::AcceptsSurface(Type, Position, Normal))
+					{
+						continue;
+					}
+					const uint32 Weight = Data.GetWeight(static_cast<int32>(Grid.X + 0.5f), static_cast<int32>(Grid.Y + 0.5f));
+					const float  Grass  = TerrainMath::GetLayerWeight(Weight, 0) / 255.0f;
+					const float  RockW  = TerrainMath::GetLayerWeight(Weight, 2) / 255.0f;
+					const float  XM = PX / 100.0f, YM = PY / 100.0f;
+					const float  Clump  = Fbm(XM / 14.0f + 3.0f, YM / 14.0f + 3.0f, 91u + Scatter.Type, 3, 0);
+					const float  CenterDistance = std::sqrt(XM * XM + YM * YM);
+					float        Chance = Scatter.Chance;
+					switch (Scatter.Type)
+					{
+					case 0: Chance *= Grass * SmoothStep(0.3f, 0.55f, Clump); break;                                        // 풀: 무리
+					case 1: Chance *= Grass * SmoothStep(0.45f, 0.65f, Clump); break;                                       // 덤불
+					case 2: Chance *= Grass * SmoothStep(0.42f, 0.55f, Clump) * SmoothStep(15.0f, 25.0f, CenterDistance); break; // 활엽수 숲
+					case 3: Chance *= SmoothStep(250.0f, 600.0f, Position.Z) * SmoothStep(2000.0f, 1600.0f, Position.Z); break; // 산 중턱 침엽수
+					default: Chance *= std::max(RockW, 0.08f) * SmoothStep(0.4f, 0.6f, Clump); break;                       // 바위
+					}
+					if (Random() >= Chance)
+					{
+						continue;
+					}
+					FFoliageInstance& Instance = Foliage.Instances[Scatter.Type].emplace_back();
+					Instance.Position          = Position;
+					Instance.Normal            = Normal;
+					Instance.Yaw               = Random() * 360.0f;
+					Instance.Scale             = FMath::Lerp(Type.MinScale, Type.MaxScale, Random());
+				}
+			}
+		}
+	}
+	// 내장 폴리지 메시용 머티리얼: 흰색(정점 색 그대로) + 거친 표면 (기본 머티리얼 거칠기 0.5는 잎이 번들거린다)
+	WriteText(ContentDirectory / L"Foliage" / L"Foliage.emat",
+	          "{\n  \"Name\": \"Foliage\",\n  \"BaseColorFactor\": [1.0, 1.0, 1.0, 1.0],\n  \"EmissiveFactor\": [0.0, 0.0, 0.0],\n  \"Metallic\": 0.0,\n"
+	          "  \"Roughness\": 0.92,\n  \"NormalScale\": 1.0,\n  \"OcclusionStrength\": 1.0,\n  \"BaseColorTexture\": \"\",\n"
+	          "  \"MetallicRoughnessTexture\": \"\",\n  \"NormalTexture\": \"\",\n  \"OcclusionTexture\": \"\",\n  \"EmissiveTexture\": \"\"\n}\n");
+	for (FFoliageType& Type : Foliage.Types)
+	{
+		Type.Material = "Foliage/Foliage.emat";
+	}
+	if (!FoliageIO::SaveToFile(Foliage, ContentDirectory / L"Foliage" / L"DemoFoliage.efoliage"))
+	{
+		return false;
+	}
+	FFoliageLibrary::Get().Invalidate("Foliage/DemoFoliage.efoliage");
+
 	// 씬
 	FScene        Scene;
 	const FEntity Sun = Scene.CreateEntity("Sun");
 	Scene.GetTransform(Sun).Position = FVector3(0.0f, 0.0f, 3000.0f);
-	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-28.0f, -110.0f, 0.0f);
+	Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-30.0f, 150.0f, 0.0f);
 	FDirectionalLightComponent& Light = Scene.GetRegistry().Emplace<FDirectionalLightComponent>(Sun);
 	Light.Color                       = FVector3(1.0f, 0.95f, 0.86f);
 	Light.Intensity                   = 3.2f;
@@ -287,12 +369,15 @@ bool GenerateTerrainDemo(const std::filesystem::path& ContentDirectory)
 	Terrain.Layer1Tiling             = 250.0f;
 	Terrain.Layer2Tiling             = 600.0f;
 
+	const FEntity FoliageEntity = Scene.CreateEntity("Foliage");
+	Scene.GetRegistry().Emplace<FFoliageComponent>(FoliageEntity).Asset = "Foliage/DemoFoliage.efoliage";
+
 	const FEntity Start = Scene.CreateEntity("PlayerStart");
 	Scene.GetTransform(Start).Position = FVector3(0.0f, 0.0f, TerrainMath::SampleWorldHeight(Data, Frame, 0.0f, 0.0f) + 120.0f);
 
 	const FEntity Camera = Scene.CreateEntity("Camera");
-	const FVector3 CameraPosition(1500.0f, -2600.0f, 1500.0f);
-	const FVector3 Target(5200.0f, 2800.0f, 700.0f);
+	const FVector3 CameraPosition(600.0f, -2400.0f, 900.0f);
+	const FVector3 Target(4200.0f, 1800.0f, 400.0f);
 	const FVector3 Direction = (Target - CameraPosition).GetNormalized();
 	Scene.GetTransform(Camera).Position = CameraPosition;
 	Scene.GetTransform(Camera).Rotation =

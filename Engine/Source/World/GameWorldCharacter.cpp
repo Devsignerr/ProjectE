@@ -25,7 +25,8 @@
 //     같은 무브 → 같은 결과라 보통 차이가 없고, 서버만 아는 일(서버가 시뮬레이션하는 공/상자와 부딪힘, 다른 캐릭터, 순간이동)이 있었을 때만 위치가 바뀐다.
 //     바뀐 만큼은 화면 오프셋(VisualOffset)으로 옮겨 CorrectionSmoothingSeconds에 걸쳐 0으로 줄인다 (시뮬레이션은 즉시 서버를 따른다).
 //     SnapCorrectionDistance보다 크면(순간이동) 바로 옮긴다.
-//     다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다). 물리 예측 바디는 되감지 않는다 — GameWorldPhysicsPrediction.cpp 머리 주석
+//     다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다). 물리 예측 바디가 있으면 바디를 기록 위치에 잠시 둔 다시 적용도
+//     해서 지금 예측에 가까운 쪽을 쓴다 (바디 재시뮬레이션 없음) — GameWorldPhysicsPrediction.cpp 머리 주석
 //     ack 무브의 로컬 시각(MoveTimes)은 물리 예측이 스냅샷 시각을 로컬 기록에 맞추는 데 쓴다.
 //   예측 옵션 (UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측): 끄면 소유 클라이언트는
 //     무브를 보내기만 하고 미리 움직이지 않으며, 자기 캐릭터도 스냅샷 보간으로 보여 준다 (IsPredicted = false). 서버 쪽은 같다.
@@ -41,6 +42,7 @@ namespace
 	constexpr size_t MaxQueuedMoves     = 120; // 서버가 한 캐릭터에 쌓아 두는 무브 상한
 	constexpr float  CorrectionSmoothingSeconds = 0.1f;   // 보정 오프셋이 1/e로 줄어드는 시간
 	constexpr float  SnapCorrectionDistance     = 150.0f; // cm, 이보다 큰 보정은 부드럽게 하지 않는다
+	constexpr float  MaxReplayPenetration       = 1.0f;   // cm, 예측 바디를 기록 위치에 둔 다시 적용 결과가 지금 바디와 이보다 깊이 겹치면 버린다
 
 	bool IsFiniteMove(const FCharacterMove& Move)
 	{
@@ -307,16 +309,52 @@ void FGameWorld::ReceiveCharacterAck(const std::vector<uint8>& Message)
 	}
 
 	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교.
-	// 다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다 — 물리 예측 바디는 되감지 않는다, GameWorldPhysicsPrediction.cpp)
+	// 다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다 — 물리 예측 바디는 재시뮬레이션하지 않는다, GameWorldPhysicsPrediction.cpp)
 	const FVector3 Before = Systems.Physics->GetCharacterState(Entity).Position;
 	Systems.Physics->SetCharactersPushBodies(false);
-	Systems.Physics->SetCharacterState(*Scene, Entity, State);
-	for (const FCharacterMove& Move : Predicted.Moves)
+	const auto Replay = [&](bool bPoseBodies) {
+		Systems.Physics->SetCharacterState(*Scene, Entity, State);
+		size_t TimeIndex = 0;
+		for (const FCharacterMove& Move : Predicted.Moves)
+		{
+			while (bPoseBodies && TimeIndex < Predicted.MoveTimes.size() && Predicted.MoveTimes[TimeIndex].first < Move.Sequence)
+			{
+				++TimeIndex;
+			}
+			if (bPoseBodies && TimeIndex < Predicted.MoveTimes.size() && Predicted.MoveTimes[TimeIndex].first == Move.Sequence)
+			{
+				PoseBodiesForReplay(Predicted.MoveTimes[TimeIndex].second);
+			}
+			Systems.Physics->SimulateCharacter(*Scene, Entity, Move);
+		}
+		if (bPoseBodies)
+		{
+			RestoreBodiesAfterReplay();
+		}
+		return Systems.Physics->GetCharacterState(Entity);
+	};
+	// 물리 예측 바디가 있으면 두 가지로 다시 적용해 지금 예측에 가까운 쪽을 쓴다 (둘 다 서버 상태에서 시작 — 서버만 아는 일은 둘 다 반영된다):
+	//   1) 바디를 지금 자리에 둔 채 — 밀던 바디의 "현재" 면에 막혀 밀기 중에 작은 보정(1~8cm)이 ack마다 생긴다
+	//   2) 무브마다 바디를 그 무브를 처음 시뮬레이션할 때의 기록 위치로 잠시 옮겨 (충돌 상대만 그때 자리에) — 상자 밀기는 원래 결과와 거의 같지만,
+	//      서버와 갈린 경우(가벼운 공에 올라탐 등) 지금 바디와 겹친 위치로 끝나 공을 튕겨 낼 수 있다
+	//   겹친 결과(바디를 되돌린 뒤 캡슐이 동적 바디에 MaxReplayPenetration 넘게 묻힘)는 쓰지 않는다
+	FCharacterState Replayed = Replay(false);
+	if (!PredictedBodies.empty())
 	{
-		Systems.Physics->SimulateCharacter(*Scene, Entity, Move);
+		const FCharacterState Posed = Replay(true);
+		Systems.Physics->SetCharacterState(*Scene, Entity, Posed); // 바디가 지금 자리에 돌아온 상태로 접촉 다시 계산
+		const bool bPosedClear = Systems.Physics->GetCharacterDynamicPenetration(Entity) <= MaxReplayPenetration;
+		if (!bPosedClear || FVector3::DistanceSquared(Posed.Position, Before) >= FVector3::DistanceSquared(Replayed.Position, Before))
+		{
+			Systems.Physics->SetCharacterState(*Scene, Entity, Replayed);
+		}
+		else
+		{
+			Replayed = Posed;
+		}
 	}
 	Systems.Physics->SetCharactersPushBodies(true);
-	const FVector3 After = Systems.Physics->GetCharacterState(Entity).Position;
+	const FVector3 After = Replayed.Position;
 	if (FVector3::DistanceSquared(Before, After) > 1.0f)
 	{
 		++CharacterCorrections;

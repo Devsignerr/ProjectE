@@ -5,7 +5,9 @@
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 // 캐릭터 이동 (FCharacterMovementComponent + Jolt CharacterVirtual). 위치 = 캡슐 중심, 바닥에 서면 z = 반지름 35 + 원기둥 절반 55 = 90
 namespace
@@ -226,4 +228,53 @@ E_TEST(Character_PushesBoxesAndBlocksCharacters)
 	}
 	const float Gap = World.Position(Right).X - World.Position(Left).X;
 	E_EXPECT_TRUE(Gap > 2.0f * 35.0f - 5.0f); // 서로 통과하지 않는다
+}
+
+// 물리 예측용 API: 캐릭터 밀기 끄기(재조정 다시 적용), 접촉 목록, 동적 바디 상태 읽기/설정/보정
+E_TEST(Character_PushToggleContactsAndBodyCorrection)
+{
+	FCharacterWorld World;
+	AddFloor(World.Scene);
+	const FEntity Pusher = AddCharacter(World.Scene, "Pusher", FVector3(0.0f, 0.0f, StandingZ + 1.0f));
+	const FEntity Box    = World.Scene.CreateEntity("Box");
+	World.Scene.GetTransform(Box).Position                          = FVector3(110.0f, 0.0f, 30.0f);
+	World.Scene.GetRegistry().Emplace<FBoxColliderComponent>(Box).HalfExtents = FVector3(30.0f, 30.0f, 30.0f);
+	World.Scene.GetRegistry().Emplace<FRigidBodyComponent>(Box).MotionType    = static_cast<int32>(EPhysicsMotionType::Dynamic);
+	World.Begin();
+	World.Run({ Pusher }, 0.5f, FVector2()); // 착지/안정
+	E_EXPECT_TRUE(World.Physics.IsDynamicBody(Box));
+
+	// 밀기 끔: 동적 상자도 벽처럼 막고 움직이지 않는다 + 접촉 목록에 나온다
+	World.Physics.SetCharactersPushBodies(false);
+	World.Run({ Pusher }, 0.5f, FVector2(1.0f, 0.0f));
+	E_EXPECT_NEAR(World.Position(Box).X, 110.0f, 1.0f);
+	E_EXPECT_NEAR(World.Position(Pusher).X, 110.0f - 30.0f - 35.0f, 3.0f);
+	std::vector<FEntity> Contacts;
+	World.Physics.GetCharacterContacts(Pusher, Contacts);
+	E_EXPECT_TRUE(std::find(Contacts.begin(), Contacts.end(), Box) != Contacts.end());
+	// 밀기 켬: 밀린다
+	World.Physics.SetCharactersPushBodies(true);
+	World.Run({ Pusher }, 0.5f, FVector2(1.0f, 0.0f));
+	E_EXPECT_TRUE(World.Position(Box).X > 140.0f);
+	World.Run({ Pusher }, 1.0f, FVector2()); // 멈춤
+
+	// 상태 설정 (순간이동 + 속도) / 보정 (위치·속도에 더함)
+	FPhysicsBodyMotion Motion;
+	E_EXPECT_TRUE(World.Physics.GetBodyMotion(Box, Motion));
+	Motion.Position       = FVector3(500.0f, 500.0f, 30.0f);
+	Motion.LinearVelocity = FVector3(100.0f, 0.0f, 0.0f);
+	World.Physics.SetBodyMotion(Box, Motion);
+	FPhysicsBodyMotion After;
+	E_EXPECT_TRUE(World.Physics.GetBodyMotion(Box, After));
+	E_EXPECT_NEAR(After.Position.X, 500.0f, 0.01f);
+	E_EXPECT_NEAR(After.LinearVelocity.X, 100.0f, 0.5f);
+	World.Physics.CorrectBody(Box, FVector3(0.0f, 10.0f, 0.0f), FQuat(), FVector3(0.0f, 300.0f, 0.0f), FVector3());
+	E_EXPECT_TRUE(World.Physics.GetBodyMotion(Box, After));
+	E_EXPECT_NEAR(After.Position.Y, 510.0f, 0.01f);
+	E_EXPECT_NEAR(After.LinearVelocity.Y, 300.0f, 0.5f);
+	World.Run({}, 0.1f, FVector2());
+	E_EXPECT_TRUE(World.Physics.GetBodyMotion(Box, After));
+	E_EXPECT_TRUE(After.Position.Y > 530.0f);       // 보정한 속도로 이어서 움직인다 (바닥 마찰로 줄면서)
+	E_EXPECT_TRUE(World.Position(Box).Y > 510.0f); // 화면도 보정 위치에서 이어진다
+	E_EXPECT_FALSE(World.Physics.GetBodyMotion(Pusher, After)); // 캐릭터는 바디가 아니다
 }

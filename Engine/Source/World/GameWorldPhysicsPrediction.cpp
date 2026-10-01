@@ -35,11 +35,14 @@
 //     화면 위치를 BlendOutSeconds에 걸쳐 스냅샷 보간 위치로 옮긴 뒤(멈춘 물체라 과거 = 현재) 보간에 넘긴다. 다시 가까워지면 블렌드 중에도 재진입.
 //   서버 권위: 서버 코드/메시지는 그대로다 (스냅샷에는 속도가 없어 차분으로 구한다). 서버 결과가 최종이고 클라이언트는 그쪽으로 수렴할 뿐이다.
 //     다른 클라이언트(관찰자) 화면은 바뀌지 않는다 — 자기 캐릭터 근처만 예측하므로 남의 캐릭터가 미는 물체는 계속 보간이다.
-//   한계 (전체 롤백 없음): 캐릭터 ack 재조정은 캐릭터만 되감아 기록 무브를 다시 적용한다. 예측 바디는 되감지 않고 다시 적용하는 동안
-//     캐릭터가 바디를 밀지 않는다(SetCharactersPushBodies(false) — 이미 그 무브로 밀었다). 그래서 다시 적용한 캐릭터는 바디의 "현재" 위치에
-//     막힌다 — 서버와 로컬 시뮬레이션이 같으면 결과가 같아 보정이 없고, 다르면(서버만 아는 충돌, 다른 플레이어가 같은 물체를 밀 때) 캐릭터 보정은
-//     화면 오프셋으로, 바디 차이는 위 수렴으로 따로 흡수한다. 로컬 결정론은 보장하지 않으므로 오차가 0이 되지는 않는다.
-//     원격 캐릭터(과거 보간 위치)와 예측 바디의 충돌은 과거·현재가 섞이므로 서로 밀 때는 보정이 커질 수 있다.
+//   캐릭터 재조정과의 관계 (전체 롤백 없음): ack 재조정은 캐릭터만 서버 상태로 되돌려 기록 무브를 다시 적용한다. 예측 바디는 재시뮬레이션하지
+//     않고, 다시 적용하는 동안 캐릭터가 바디를 밀지 않는다(SetCharactersPushBodies(false) — 이미 그 무브로 밀었다). 다시 적용은 두 번 해서
+//     지금 예측에 가까운 쪽을 쓴다 (GameWorldCharacter.cpp): ① 바디를 지금 자리에 둔 채 ② 무브마다 바디를 그 무브를 처음 시뮬레이션할 때의
+//     기록 위치로 잠시 옮겨(PoseBodiesForReplay — 충돌 상대만 그때 자리에, 끝나면 되돌림). ①만 쓰면 밀던 상자의 "현재" 면에 막혀 밀기 중에
+//     ack마다 1~8cm 보정이 생기고, ②만 쓰면 서버와 갈린 경우(가벼운 공에 올라탐 등) 지금 바디와 겹친 곳에서 끝나 공을 튕겨 낸다 (겹치면 ① 사용).
+//     서버만 아는 일(순간이동, 다른 플레이어가 같은 물체를 밈)은 둘 다 서버 상태에서 시작하므로 그대로 보정되고, 바디 차이는 위 수렴이 따로 흡수한다.
+//     로컬 결정론은 보장하지 않으므로 오차가 0이 되지는 않는다.
+//     원격 캐릭터·서버가 쏜 공(과거 보간 위치의 키네마틱)과 예측 바디의 충돌은 과거·현재가 섞여 크게 갈릴 수 있다 → 위치 스냅으로 끝난다 (드물게).
 //     서버는 받은 무브를 프레임마다 몰아서(0~여러 개) 적용한 뒤 물리 스텝을 한 번 하고, 클라이언트는 무브 하나 → 스텝이라 무브가 몰려 도착하면
 //     (손실 재전송, 지연 변동, 느린 프레임) 밀기 결과가 조금 달라진다 — 측정에서 남는 1~5cm 보정의 대부분. 가벼운 공(2kg)은 캐릭터가 걸쳐 올라타는
 //     계단 오르기가 갈리는 경우가 있어 보정이 20cm 안팎까지 생긴다 (서버 무브 적용 방식을 바꾸지 않는 한 남는다).
@@ -457,6 +460,41 @@ void FGameWorld::ApplyBodyCorrection(FEntity Entity, FPredictedBody& Body, float
 		if (AngularSpeed > 1.0e-6f)
 		{
 			Sample.Rotation = (FQuat::FromAxisAngle(DeltaAngular * (1.0f / AngularSpeed), AngularSpeed * Before) * Sample.Rotation).GetNormalized();
+		}
+	}
+}
+
+void FGameWorld::PoseBodiesForReplay(float MoveTime)
+{
+	if (Systems.Physics == nullptr)
+	{
+		return;
+	}
+	for (const auto& [Entity, Body] : PredictedBodies)
+	{
+		if (Body.bBlendingOut || Body.History.empty())
+		{
+			continue;
+		}
+		// 그 무브가 시뮬레이션될 때 바디가 있던 곳 = 그 프레임 전 기록 (기록은 프레임 끝 물리 스텝 결과). 기록보다 오래된 무브는 가장 오래된 기록
+		const auto After = std::lower_bound(Body.History.begin(), Body.History.end(), MoveTime,
+		                                    [](const FBodyHistorySample& Sample, float Value) { return Sample.Time < Value; });
+		const FBodyHistorySample& Sample = After == Body.History.begin() ? Body.History.front() : *(After - 1);
+		Systems.Physics->PoseBody(Entity, Sample.Position, Sample.Rotation);
+	}
+}
+
+void FGameWorld::RestoreBodiesAfterReplay()
+{
+	if (Systems.Physics == nullptr)
+	{
+		return;
+	}
+	for (const auto& [Entity, Body] : PredictedBodies)
+	{
+		if (!Body.bBlendingOut)
+		{
+			Systems.Physics->RestoreBodyPose(Entity);
 		}
 	}
 }

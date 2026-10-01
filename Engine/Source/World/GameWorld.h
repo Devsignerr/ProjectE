@@ -219,6 +219,9 @@ private:
 	void ProcessBodySnapshot(FEntity Entity, FPredictedBody& Body);
 	void ApplyBodyCorrection(FEntity Entity, FPredictedBody& Body, float DeltaSeconds);
 	void BeginBodyBlendOut(FEntity Entity, FPredictedBody& Body);
+	// 캐릭터 재조정의 다시 적용: 무브를 처음 시뮬레이션한 시계(MoveTime) 직전 기록 위치로 예측 바디를 옮긴다 (충돌 질의용, 끝나면 되돌린다)
+	void PoseBodiesForReplay(float MoveTime);
+	void RestoreBodiesAfterReplay();
 	bool IsPhysicsPredictionEnabled() const;
 	void CollectPredictionCharacters(std::vector<FEntity>& OutCharacters) const;
 	void TickPhysicsPredictionStats();

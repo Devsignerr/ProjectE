@@ -79,6 +79,9 @@ public:
 	void SetBodyMotion(FEntity Entity, const FPhysicsBodyMotion& Motion);
 	// 작은 보정: 위치/회전/속도에 더한다. 렌더 보간의 직전 상태도 같이 옮겨 화면이 끊기지 않는다
 	void CorrectBody(FEntity Entity, const FVector3& DeltaPosition, const FQuat& DeltaRotation, const FVector3& DeltaVelocity, const FVector3& DeltaAngularVelocity);
+	// 충돌 질의용으로만 잠시 옮긴다 (보간/스텝 상태는 그대로). RestoreBodyPose로 최신 스텝 위치로 되돌린다 — 예측 재조정에서 캐릭터 무브를 다시 적용할 때
+	void PoseBody(FEntity Entity, const FVector3& Position, const FQuat& Rotation);
+	void RestoreBodyPose(FEntity Entity);
 
 	// ---- 캐릭터 (FCharacterMovementComponent — 규칙은 CharacterMovement.h). 바디 대신 Jolt CharacterVirtual을 만든다.
 	// 누가 언제 SimulateCharacter를 부를지는 FGameWorld가 정한다 (소유자 입력/네트워크 무브/관찰자 따라가기)
@@ -98,6 +101,7 @@ public:
 	uint32          GetCharacterCount() const { return static_cast<uint32>(Characters.size()); }
 	// 캐릭터가 지난 이동에서 실제로 닿은 바디의 엔티티 (바닥 포함, 다른 캐릭터 제외)
 	void            GetCharacterContacts(FEntity Entity, std::vector<FEntity>& OutEntities) const;
+	float           GetCharacterDynamicPenetration(FEntity Entity) const; // 동적 바디와 겹친 깊이 (cm)
 	// 캐릭터가 동적 바디를 미는지 (모든 캐릭터). 예측 재조정에서 무브를 다시 적용하는 동안 끈다 — 이미 민 물체를 또 밀지 않게
 	void            SetCharactersPushBodies(bool bPush);
 

@@ -440,6 +440,22 @@ void FPhysicsSystem::CorrectBody(FEntity Entity, const FVector3& DeltaPosition, 
 	}
 }
 
+void FPhysicsSystem::PoseBody(FEntity Entity, const FVector3& Position, const FQuat& Rotation)
+{
+	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end() && Found->second.Motion == EPhysicsMotionType::Dynamic)
+	{
+		World->SetTransform(Found->second.Body, Position, Rotation.GetNormalized());
+	}
+}
+
+void FPhysicsSystem::RestoreBodyPose(FEntity Entity)
+{
+	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end() && Found->second.Motion == EPhysicsMotionType::Dynamic)
+	{
+		World->SetTransform(Found->second.Body, Found->second.CurrentPosition, Found->second.CurrentRotation);
+	}
+}
+
 float FPhysicsSystem::GetMass(FEntity Entity) const
 {
 	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end())
@@ -669,6 +685,12 @@ void FPhysicsSystem::GetCharacterContacts(FEntity Entity, std::vector<FEntity>& 
 	{
 		OutEntities.push_back(FEntity::FromId(Id));
 	}
+}
+
+float FPhysicsSystem::GetCharacterDynamicPenetration(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return World && Found != Characters.end() ? World->GetCharacterDynamicPenetration(Found->second.Character) : 0.0f;
 }
 
 void FPhysicsSystem::SetCharactersPushBodies(bool bPush)

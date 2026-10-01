@@ -683,6 +683,23 @@ void FPhysicsWorld::GetCharacterContacts(uint32 Character, std::vector<uint64>& 
 	}
 }
 
+float FPhysicsWorld::GetCharacterDynamicPenetration(uint32 Character) const
+{
+	const auto Found = Impl->Characters.find(Character);
+	float      Depth = 0.0f; // m
+	if (Found != Impl->Characters.end())
+	{
+		for (const JPH::CharacterContact& Contact : Found->second->GetActiveContacts())
+		{
+			if (Contact.mMotionTypeB == JPH::EMotionType::Dynamic && !Contact.mBodyB.IsInvalid())
+			{
+				Depth = std::max(Depth, -Contact.mDistance);
+			}
+		}
+	}
+	return Depth * FUnits::MetersToUnits;
+}
+
 FPhysicsCharacterResult FPhysicsWorld::GetCharacterResult(uint32 Character) const
 {
 	FPhysicsCharacterResult Result;

@@ -124,6 +124,8 @@ public:
 	FPhysicsCharacterResult GetCharacterResult(uint32 Character) const;
 	// 실제로 닿은 접촉 상대 바디의 UserData (지난 UpdateCharacter/SetCharacterState 기준, 다른 캐릭터 제외)
 	void GetCharacterContacts(uint32 Character, std::vector<uint64>& OutUserData) const;
+	// 동적 바디와 겹친 가장 깊은 거리 (cm, 0 = 겹침 없음). 지난 UpdateCharacter/SetCharacterState 기준
+	float GetCharacterDynamicPenetration(uint32 Character) const;
 	// 캐릭터가 동적 바디를 미는(충격량) 여부 — 모든 캐릭터 공용. 끄면 동적 바디도 밀리지 않는 벽처럼 막는다 (예측 재조정의 다시 적용)
 	void SetCharactersPushBodies(bool bPush);
 

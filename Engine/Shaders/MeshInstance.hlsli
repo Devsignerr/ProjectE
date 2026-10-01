@@ -11,7 +11,9 @@ struct FInstanceData
 	float4x4 World;
 	float4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3 행
 	uint     BoneOffset;      // 스킨 메시: 프레임 팔레트(t15, SkinnedMesh.hlsli) 안 첫 본 행렬 번호
-	uint3    Padding;
+	uint     PrevBoneOffset;  // 스킨 메시: 이전 프레임 팔레트 첫 본 (움직임 벡터, 이력 없으면 BoneOffset)
+	uint2    Padding;
+	float4x4 PrevWorld;       // 이전 프레임 월드 (움직임 벡터, 이력 없으면 World)
 };
 
 StructuredBuffer<FInstanceData> Instances       : register(t13);

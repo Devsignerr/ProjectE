@@ -42,6 +42,14 @@ namespace
 		TerrainParam_Layer1,              // t8~t12
 		TerrainParam_Layer2,              // t13~t17
 		TerrainParam_Layer3,              // t18~t22
+		// Phase 33 화면 효과 (공간 0, Mesh.hlsl과 같은 레지스터): SSAO, DBuffer, 반사 캡처, SSR
+		TerrainParam_AmbientOcclusion,    // t16 테이블
+		TerrainParam_DBufferA,            // t17~t19 테이블 3개
+		TerrainParam_DBufferB,
+		TerrainParam_DBufferC,
+		TerrainParam_ReflectionCaptures,  // t20 루트 SRV
+		TerrainParam_CaptureAtlas,        // t21 테이블
+		TerrainParam_ScreenReflection,    // t22 테이블
 	};
 
 	constexpr uint32 MaxChunkCells = 64;
@@ -143,6 +151,22 @@ bool FTerrainRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, F
 		Index = RootSignature.AddDescriptorTable({ FRange::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialSlot_Count, 3 + Layer * MaterialSlot_Count, 1) }, Pixel);
 	}
 	E_CHECK(Index == TerrainParam_Layer3);
+	// 화면 효과 (FSceneRenderer 메시 루트 파라미터 15~21과 같은 레지스터, 공간 0)
+	const auto VolatileTable = [&](uint32 Register) {
+		return RootSignature.AddDescriptorTable(
+			{ FRange::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, Register, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, Pixel);
+	};
+	Index = VolatileTable(16);
+	E_CHECK(Index == TerrainParam_AmbientOcclusion);
+	VolatileTable(17);
+	VolatileTable(18);
+	Index = VolatileTable(19);
+	E_CHECK(Index == TerrainParam_DBufferC);
+	Index = RootSignature.AddShaderResourceView(20, 0, Pixel);
+	E_CHECK(Index == TerrainParam_ReflectionCaptures);
+	VolatileTable(21);
+	Index = VolatileTable(22);
+	E_CHECK(Index == TerrainParam_ScreenReflection);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	D3D12_STATIC_SAMPLER_DESC ShadowSampler =
@@ -155,7 +179,7 @@ bool FTerrainRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, F
 	{
 		return false;
 	}
-	if (!CreatePipelines(MainPipeline, ShadowPipeline, LocalShadowPipeline, false))
+	if (!CreatePipelines(MainPipeline, ShadowPipeline, LocalShadowPipeline, false) || !CreatePassPipelines(MainEqualPipeline, PrepassPipeline, false))
 	{
 		return false;
 	}
@@ -226,6 +250,53 @@ bool FTerrainRenderer::CreatePipelines(FD3D12PipelineState& OutMain, FD3D12Pipel
 	return OutLocalShadow.InitGraphics(Device, Shadow, L"TerrainLocalShadowPipeline");
 }
 
+bool FTerrainRenderer::CreatePassPipelines(FD3D12PipelineState& OutMainEqual, FD3D12PipelineState& OutPrepass, bool bForceRecompile)
+{
+	FShaderCompileDesc VertexDesc;
+	VertexDesc.FileName   = L"Terrain.hlsl";
+	VertexDesc.EntryPoint = L"TerrainVS";
+	VertexDesc.Stage      = EShaderStage::Vertex;
+	FShaderCompileDesc MainDesc = VertexDesc;
+	MainDesc.EntryPoint         = L"TerrainPS";
+	MainDesc.Stage              = EShaderStage::Pixel;
+	FShaderCompileDesc PrepassDesc = MainDesc;
+	PrepassDesc.EntryPoint         = L"TerrainPrepassPS";
+	if (bForceRecompile && !ShaderLibrary->CookShader(PrepassDesc))
+	{
+		return false;
+	}
+	const ComPtr<IDxcBlob> VertexShader  = ShaderLibrary->GetShader(VertexDesc); // 메인 패스와 같은 바이트코드 (깊이 EQUAL)
+	const ComPtr<IDxcBlob> MainShader    = ShaderLibrary->GetShader(MainDesc);
+	const ComPtr<IDxcBlob> PrepassShader = ShaderLibrary->GetShader(PrepassDesc);
+	if (!VertexShader || !MainShader || !PrepassShader)
+	{
+		return false;
+	}
+	ID3D12Device*         Device = Rhi->GetDevice().GetDevice();
+	FGraphicsPipelineDesc Desc;
+	Desc.RootSignature          = RootSignature.Get();
+	Desc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
+	Desc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(MainShader.Get());
+	Desc.RenderTargetFormats[0] = ColorFormat;
+	Desc.DepthStencilFormat     = DepthFormat;
+	Desc.bDepthEnable           = true;
+	Desc.bDepthWrite            = false;
+	Desc.DepthFunc              = D3D12_COMPARISON_FUNC_EQUAL;
+	Desc.CullMode               = D3D12_CULL_MODE_NONE;
+	if (!OutMainEqual.InitGraphics(Device, Desc, L"TerrainDepthEqualPipeline"))
+	{
+		return false;
+	}
+	// 사전 패스: FSceneRenderer SceneNormal(R10G10B10A2) + SceneVelocity(R16G16_FLOAT) 포맷과 같아야 한다
+	Desc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(PrepassShader.Get());
+	Desc.NumRenderTargets       = 2;
+	Desc.RenderTargetFormats[0] = DXGI_FORMAT_R10G10B10A2_UNORM;
+	Desc.RenderTargetFormats[1] = DXGI_FORMAT_R16G16_FLOAT;
+	Desc.bDepthWrite            = true;
+	Desc.DepthFunc              = D3D12_COMPARISON_FUNC_LESS;
+	return OutPrepass.InitGraphics(Device, Desc, L"TerrainPrepassPipeline");
+}
+
 bool FTerrainRenderer::ReloadShaders(bool bForceRecompile)
 {
 	if (Rhi == nullptr)
@@ -239,6 +310,15 @@ bool FTerrainRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		E_LOG(LogRenderer, Error, "지형 셰이더 다시 로드 실패: 기존 파이프라인 유지");
 		return false;
+	}
+	FD3D12PipelineState NewMainEqual;
+	FD3D12PipelineState NewPrepass;
+	if (CreatePassPipelines(NewMainEqual, NewPrepass, bForceRecompile))
+	{
+		MainEqualPipeline.Swap(NewMainEqual);
+		PrepassPipeline.Swap(NewPrepass);
+		Rhi->DeferRelease(NewMainEqual.Detach());
+		Rhi->DeferRelease(NewPrepass.Detach());
 	}
 	MainPipeline.Swap(NewMain);
 	ShadowPipeline.Swap(NewShadow);
@@ -279,6 +359,8 @@ void FTerrainRenderer::Shutdown()
 	LayerMaterials.clear();
 	Frame.clear();
 	MainPipeline.Shutdown();
+	MainEqualPipeline.Shutdown();
+	PrepassPipeline.Shutdown();
 	ShadowPipeline.Shutdown();
 	LocalShadowPipeline.Shutdown();
 	MaskPipeline.Shutdown();
@@ -666,8 +748,9 @@ void FTerrainRenderer::DrawPatches(ID3D12GraphicsCommandList* CommandList, const
 	}
 }
 
-void FTerrainRenderer::RenderMain(D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants, const FShadowRenderer& Shadow,
-                                  const FIblRenderer& Ibl, const FLocalLightRenderer& LocalLights)
+void FTerrainRenderer::RenderMain(ETerrainPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants,
+                                  const FShadowRenderer& Shadow, const FIblRenderer& Ibl, const FLocalLightRenderer& LocalLights,
+                                  const FTerrainScreenInputs& Screen)
 {
 	DrawCalls = 0;
 	Triangles = 0;
@@ -677,7 +760,17 @@ void FTerrainRenderer::RenderMain(D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_
 	}
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-	CommandList->SetPipelineState(MainPipeline.Get());
+	CommandList->SetPipelineState(Pass == ETerrainPass::Prepass ? PrepassPipeline.Get()
+	                              : Pass == ETerrainPass::MainDepthEqual ? MainEqualPipeline.Get()
+	                                                                     : MainPipeline.Get());
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_AmbientOcclusion, Screen.AmbientOcclusion.Gpu);
+	for (uint32 Index = 0; Index < 3; ++Index)
+	{
+		CommandList->SetGraphicsRootDescriptorTable(TerrainParam_DBufferA + Index, Screen.DBuffer[Index].Gpu);
+	}
+	CommandList->SetGraphicsRootShaderResourceView(TerrainParam_ReflectionCaptures, Screen.ReflectionCaptures);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_CaptureAtlas, Screen.CaptureAtlas.Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_ScreenReflection, Screen.ScreenReflection.Gpu);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_PerFrame, PerFrame);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_Shadow, ShadowConstants);

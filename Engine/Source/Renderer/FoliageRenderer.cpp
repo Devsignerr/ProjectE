@@ -224,6 +224,7 @@ void FFoliageRenderer::Gather(FScene& Scene, const FCamera& Camera, const FFrust
 					Instance.Entity         = Set.Entity;
 					Instance.bCastShadow    = bShadow;
 					Instance.bFixedLod      = true;
+					Instance.PrevWorld      = Instance.World; // 정적 배치: 물체 움직임 없음 (움직임 벡터 = 카메라만, 페이드 축소는 무시)
 					if (Mesh->GetLodCount() > 1)
 					{
 						const float Radius     = Instance.WorldBounds.GetExtent().Length();

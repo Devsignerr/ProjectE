@@ -33,8 +33,15 @@ public:
 	FVector3 GetUpVector() const { return Rotation.GetUpVector(); }
 
 	FMatrix4x4 GetViewMatrix() const;
+	// 지터가 있으면 포함한다 (렌더용). 움직임 벡터·재투영·컬링은 GetUnjittered*를 쓴다
 	FMatrix4x4 GetProjectionMatrix() const;
 	FMatrix4x4 GetViewProjectionMatrix() const { return GetViewMatrix() * GetProjectionMatrix(); }
+	FMatrix4x4 GetUnjitteredProjectionMatrix() const;
+	FMatrix4x4 GetUnjitteredViewProjectionMatrix() const { return GetViewMatrix() * GetUnjitteredProjectionMatrix(); }
+
+	// 서브픽셀 지터 (NDC 오프셋, TAA). 씬 렌더러가 씬 컬러에 그리는 패스용 복사본에만 설정한다 (FTemporalMath::ApplyProjectionJitter)
+	void            SetProjectionJitter(const FVector2& InNdcOffset) { ProjectionJitter = InNdcOffset; }
+	const FVector2& GetProjectionJitter() const { return ProjectionJitter; }
 
 private:
 	FVector3 Position;
@@ -45,4 +52,5 @@ private:
 	float    FarZ        = 100000.0f; // cm
 	float    OrthoHeight = 1000.0f;   // cm (직교일 때만)
 	bool     bOrthographic = false;
+	FVector2 ProjectionJitter; // NDC (0 = 없음)
 };

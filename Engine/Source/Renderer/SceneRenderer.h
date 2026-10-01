@@ -17,11 +17,19 @@
 #include "Renderer/OcclusionCuller.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
+#include "Renderer/ScreenPass.h"
+#include "Renderer/TemporalAA.h"
+#include "Renderer/AmbientOcclusion.h"
+#include "Renderer/DecalRenderer.h"
+#include "Renderer/FogRenderer.h"
+#include "Renderer/ReflectionCaptures.h"
+#include "Renderer/ScreenSpaceReflections.h"
 #include "Renderer/FoliageRenderer.h"
 #include "Renderer/TerrainRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -46,6 +54,13 @@ enum class ERenderTimer : uint32
 	Hzb,         // 오클루전: HZB 만들기 + 2단계 컬링 (MainDraw 안)
 	Particles,
 	PostProcess,
+	DepthPrepass, // 깊이 + 화면 공간 법선 + 움직임 벡터 (GPU: 오클루전이면 HZB·2단계 포함)
+	TemporalAA,
+	AmbientOcclusion, // SSAO 계산 + 블러 (반해상도)
+	Decals,           // 데칼 → DBuffer
+	VolumetricFog,    // 안개 상수 + 볼류메트릭 주입·적분 (계산)
+	Fog,              // 안개 적용 (전체 화면)
+	Reflections,      // SSR (Hi-Z + 추적)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -55,6 +70,8 @@ struct FSceneRenderStats
 	uint32 TotalMeshes   = 0; // 씬의 정적 메시 컴포넌트 수
 	uint32 VisibleMeshes = 0; // 컬링 통과
 	uint32 DrawCalls     = 0; // 메인 패스
+	uint32 PrepassDrawCalls = 0; // 깊이 사전 패스
+	uint32 Decals           = 0; // 그린 데칼 수
 	uint32 ShadowDrawCalls = 0; // 방향광 + 로컬 그림자 패스
 	uint64 Triangles       = 0; // 메인 패스에서 그린 삼각형
 	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
@@ -82,6 +99,14 @@ struct FSceneRenderStats
 // 씬에 활성 FPixelArtComponent가 있으면 저해상도(출력 ÷ 도트 크기)로 렌더 → 포스트 → 픽셀 아트 합성(최근접 확대)으로 Output.
 // 호출 순서: Rhi.BeginFrame() → Render(..., Output) → (오버레이/UI) → Rhi.EndFrame()
 // Render가 끝나면 Output RTV가 깊이 없이 바인딩된 상태로 남는다 (에디터 오버레이가 그 위에 그린다).
+//
+// 씬 패스 순서 (RenderSceneColor): 로컬 라이트/그림자 → 방향광 그림자 → 메인 묶음 컬링·정렬(+오클루전 1단계)
+//   → [깊이 사전 패스] 씬 깊이 + 화면 공간 법선(SceneNormal) + 움직임 벡터(SceneVelocity) (오클루전이면 여기서 HZB + 2단계)
+//   → [메인 패스] 하늘 + 불투명 메시 (깊이 같음 테스트, 깊이 쓰기 없음) → 파티클 → (포스트)
+//   와이어프레임이거나 bDepthPrepass = false면 사전 패스 없이 예전처럼 메인 패스가 깊이를 쓴다 (법선/움직임 버퍼는 지운 값).
+// 움직임 벡터: 현재 UV - 이전 UV (지터 없는 위치), 하늘 등 기하가 없는 픽셀은 0 → 쓰는 쪽이 깊이로 카메라 재투영 (ScreenSpace.hlsli)
+// 시간 이력(이전 프레임 뷰-투영, 엔티티별 이전 월드/스킨 팔레트)은 렌더러가 한 프레임에 뷰 하나만 그리고 연속 프레임일 때만 유효하다
+//   (에셋 미리보기·썸네일처럼 한 렌더러로 여러 씬을 그리면 엔티티 번호가 겹치므로 이력을 쓰지 않는다 → 지터/TAA 꺼짐)
 class FSceneRenderer
 {
 public:
@@ -91,7 +116,18 @@ public:
 	void Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 
 	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 출력과 같은 크기 (픽셀 아트 모드에서는 저해상도)
+	// 깊이는 지터가 들어간 투영으로 그려진다 (TAA 켬일 때) — 오버레이가 깊이 테스트에 써도 서브픽셀 차이뿐
 	const FD3D12RenderTarget* GetSceneColor() const { return SceneColor.get(); }
+	// 화면 공간 법선 (R10G10B10A2, ScreenSpace.hlsli) / 움직임 벡터 (R16G16_FLOAT). 씬 컬러와 같은 크기, PIXEL_SHADER_RESOURCE
+	const FD3D12RenderTarget* GetSceneNormal() const { return SceneNormal.get(); }
+	const FD3D12RenderTarget* GetSceneVelocity() const { return SceneVelocity.get(); }
+	// 이번 프레임 이전 프레임 이력(뷰-투영, 엔티티 이전 월드)을 쓸 수 있었는지 (Render 이후)
+	bool IsTemporalHistoryValid() const { return bTemporalHistoryValid; }
+	// 이번 프레임 투영 지터 (NDC, 없으면 0)
+	const FVector2& GetJitterNdc() const { return CurrentJitterNdc; }
+
+	// 다음 Render에서 씬의 반사 캡처를 모두 굽는다 (에디터 도구 메뉴, --bake-captures). 파일은 몇 프레임 뒤(GPU 완료) 저장
+	void RequestReflectionCaptureBake() { bBakeCapturesRequested = true; }
 
 	FPostProcessSettings PostProcessSettings;
 	FShadowSettings      ShadowSettings;
@@ -108,6 +144,12 @@ public:
 	bool                 bEnableOcclusion = false;
 	// 스킨 팔레트 가시성 컬링: 메인 프러스텀 ∪ 그림자 캐스터 볼륨 밖 스킨 메시는 팔레트/드로우 생략. 끄면 모두 계산 (--no-skin-culling)
 	bool                 bSkinVisibilityCulling = true;
+	// 깊이 사전 패스 (깊이 + 화면 공간 법선 + 움직임 벡터, 메인 패스는 깊이 같음 테스트). 끄면 법선/움직임 버퍼가 비어 있다 (--no-depth-prepass)
+	bool                 bDepthPrepass = true;
+	// 화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림): 0 없음, 1 법선, 2 움직임 벡터, 3 깊이, 4 SSAO (--debug-view normal|velocity|depth|ao)
+	uint32               DebugView = 0;
+	// 서브픽셀 투영 지터 (Halton 2,3 8개). TAA가 켜질 때만 켠다 — 혼자 켜면 화면이 떨린다 (--jitter: 확인용 강제)
+	bool                 bTemporalJitter = false;
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -132,10 +174,18 @@ public:
 	float    AmbientIntensity = 1.0f;
 
 private:
-	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용). bWireframeFill이면 선 채우기 + 컬링 없음
-	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
-	// 스킨 메시 PSO (Mesh.hlsl VSSkinned + 스킨 입력 레이아웃)
-	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
+	// 메시 패스 PSO 종류 (정적/스킨 각각). 정점 셰이더는 모두 같은 바이트코드(VSMain/VSSkinned) → 사전 패스와 메인 패스 깊이가 비트 단위로 같다
+	enum class EMeshPass : uint8
+	{
+		Main,           // 깊이 LESS + 쓰기 (사전 패스 없음)
+		MainDepthEqual, // 사전 패스 뒤: 깊이 EQUAL, 쓰기 없음
+		Wireframe,      // 선 채우기, 컬링 없음
+		Prepass,        // PSPrepass: 깊이 + 법선 + 움직임 벡터 (MRT 2개)
+		Count
+	};
+	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
+	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, bool bSkinned, bool bForceRecompile);
+	FD3D12PipelineState& GetMeshPipeline(EMeshPass Pass, bool bSkinned) { return MeshPipelines[static_cast<uint32>(Pass)][bSkinned ? 1 : 0]; }
 
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
 
@@ -145,10 +195,7 @@ private:
 	FD3D12ShaderCompiler ShaderCompiler;
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
-	FD3D12PipelineState  PipelineState;
-	FD3D12PipelineState  SkinnedPipelineState;
-	FD3D12PipelineState  WireframePipelineState;
-	FD3D12PipelineState  SkinnedWireframePipelineState;
+	FD3D12PipelineState  MeshPipelines[static_cast<uint32>(EMeshPass::Count)][2]; // [패스][정적 0 / 스킨 1]
 	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
@@ -156,23 +203,77 @@ private:
 	FParticleRenderer    ParticleRenderer;
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
+	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)
+	FTemporalAA          TemporalAA;
+	FAmbientOcclusion    AmbientOcclusion;
+	FDecalRenderer       DecalRenderer;
+	FFogRenderer         FogRenderer;
+	FScreenSpaceReflections ScreenSpaceReflections;
+	FReflectionCaptures  ReflectionCaptures;
+	bool                 bBakeCapturesRequested = false;
+	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
+	// 하늘광 환경맵이 바뀌면 FAssetCache로 읽어 IBL을 다시 만든다 (Phase 33-7)
+	void                 UpdateEnvironment(FScene& Scene);
+	std::string          AppliedEnvironmentMap;
+	float                AppliedEnvironmentRotation = 0.0f;
+	// 씬의 반사 캡처마다 큐브 면 6개를 그려 프리필터 → 아틀라스 + .ecapture 저장 예약 (Render 안에서, 프레임 명령 목록에 기록)
+	void                 BakeReflectionCaptures(FScene& Scene);
+	bool                 bTaaRanLastFrame = false;
+	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
+	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)
 	FTerrainRenderer     TerrainRenderer;    // 지형 (Phase 34)
 	FFoliageRenderer     FoliageRenderer;    // 풀·나무 → 메시 인스턴스 목록 (Phase 34-3)
 
-	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
+	std::unique_ptr<FD3D12RenderTarget> SceneColor;    // HDR + 깊이, 출력 크기에 맞춰 재생성
+	std::unique_ptr<FD3D12RenderTarget> SceneNormal;   // 화면 공간 법선 (깊이 사전 패스)
+	std::unique_ptr<FD3D12RenderTarget> SceneVelocity; // 움직임 벡터 (깊이 사전 패스)
 
-	static constexpr DXGI_FORMAT SceneColorFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	static constexpr DXGI_FORMAT SceneColorFormat    = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	static constexpr DXGI_FORMAT SceneNormalFormat   = DXGI_FORMAT_R10G10B10A2_UNORM;
+	static constexpr DXGI_FORMAT SceneVelocityFormat = DXGI_FORMAT_R16G16_FLOAT;
 
 	void EnsureSceneColor(uint32 Width, uint32 Height);
 	void EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
 	                  const FRenderTargetDesc& Desc);
 	void RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
-	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height);
+	// bAllowJitter = false면 bTemporalJitter여도 지터 없음 (픽셀 아트)
+	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter);
 	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
 	void SelectLods(const FCamera& Camera);
-	// 메인 패스: 인스턴스 목록 프러스텀 컬링 → 묶음 → 인스턴싱 드로우
-	void DrawMeshes(const FCamera& Camera, const FPerFrameConstants& PerFrame);
+	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 판정). 사전 패스와 메인 패스가 같은 묶음을 그린다
+	void PrepareMainBatches(const FCamera& Camera, bool bOcclusion);
+	// 메인 묶음 기록. bBuildHzb면 1단계 뒤 HZB + 2단계 판정을 이 패스 깊이로 한다 (오클루전일 때 깊이를 처음 쓰는 패스)
+	void DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& PerFrame, bool bOcclusion, bool bBuildHzb,
+	                     uint32& OutDrawCalls, uint64& OutTriangles);
+	// DebugView가 켜져 있으면 화면 공간 버퍼를 Output에 덮어 그린다
+	void RenderDebugView(const FRenderOutput& Output);
+	// 깊이 사전 패스 렌더 타깃 바인딩 (법선 + 움직임 벡터 MRT + 씬 깊이)
+	void BindPrepassTargets();
+	// 엔티티별 이전 프레임 월드로 인스턴스 PrevWorld 채우기 (Upload 전). bValid = false면 이력을 쓰지 않고 현재로
+	void ApplyMotionHistory(bool bValid);
+
+	// ---- 시간 이력 (지터/움직임 벡터/TAA)
+	uint64     CurrentFrameNumber = ~0ull; // Rhi 프레임 번호
+	uint32     ViewsThisFrame     = 0;     // 이번 Rhi 프레임에 Render가 불린 횟수
+	uint32     ViewsLastFrame     = 0;     // 바로 앞 Rhi 프레임의 횟수 (연속이 아니면 0)
+	bool       bTemporalHistoryValid = false;
+	bool       bHasPrevView          = false;
+	FMatrix4x4 PrevUnjitteredViewProjection;
+	FVector3   PrevCameraPosition;
+	FVector3   PrevCameraForward = FVector3::ForwardVector;
+	uint32     PrevTargetWidth   = 0;
+	uint32     PrevTargetHeight  = 0;
+	uint64     TemporalFrameIndex = 0; // 지터 수열 번호
+	FVector2   CurrentJitterNdc;
+	uint64     SceneFrameCount = 0;     // RenderSceneColor 호출 번호 (엔티티 이력 연속성 확인)
+	struct FMotionHistory
+	{
+		uint32     Generation = 0;
+		uint64     Frame      = 0; // 기록한 SceneFrameCount
+		FMatrix4x4 World;
+	};
+	std::vector<FMotionHistory> MotionHistory; // 엔티티 인덱스 칸
 
 	// 픽셀 아트: 저해상도 렌더용 카메라(여백만큼 넓힌 투영 + 도트 격자 스냅)와 합성 인자
 	FCamera BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
@@ -220,6 +321,7 @@ private:
 		double FrameMs         = 0.0;
 		double DrawCalls       = 0.0;
 		double ShadowDrawCalls = 0.0;
+		double PrepassDrawCalls = 0.0;
 		double Triangles       = 0.0;
 		double ShadowTriangles = 0.0;
 		double VisibleMeshes   = 0.0;

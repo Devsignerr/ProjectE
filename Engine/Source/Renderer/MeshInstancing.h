@@ -27,8 +27,10 @@ struct FMeshInstance
 	FMaterialHandle           MaterialHandle; // 무효 핸들이면 기본 머티리얼 핸들로 바뀌어 있다
 	FBox                      WorldBounds;
 	FMatrix4x4                World;
+	FMatrix4x4                PrevWorld; // 이전 프레임 월드 (움직임 벡터, FSceneRenderer가 엔티티 이력으로 채움. 기본 = World)
 	FEntity                   Entity;
 	uint32                    BoneOffset  = 0; // 스킨: 프레임 팔레트 버퍼(FSkinnedMeshPalette::GetGpuData, t15) 안 첫 본
+	uint32                    PrevBoneOffset = 0; // 스킨: 같은 버퍼 안 이전 프레임 팔레트 (이력 없으면 BoneOffset)
 	uint32                    Lod         = 0; // 메인 카메라 화면 크기로 고른 LOD (그림자 패스도 같은 값)
 	bool                      bSkinned    = false;
 	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)

@@ -9,7 +9,7 @@
 class FD3D12GpuTimer
 {
 public:
-	static constexpr uint32 MaxScopes = 16;
+	static constexpr uint32 MaxScopes = 24;
 	static constexpr uint32 MaxSlots  = 4;
 
 	~FD3D12GpuTimer();

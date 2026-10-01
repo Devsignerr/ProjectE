@@ -3,6 +3,7 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12Buffer.h"
+#include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "RHI/D3D12/D3D12Texture.h"
@@ -26,6 +27,23 @@ struct FMaterial;
 struct FTerrainComponent;
 struct FTerrainData;
 
+enum class ETerrainPass : uint8
+{
+	Main,
+	MainDepthEqual,
+	Prepass,
+};
+
+// Phase 33 화면 효과 입력 (Terrain.hlsl이 Mesh.hlsl을 포함해 t16~t22 공간 0을 쓴다)
+struct FTerrainScreenInputs
+{
+	FD3D12DescriptorHandle    AmbientOcclusion;   // t16
+	FD3D12DescriptorHandle    DBuffer[3];         // t17~t19
+	D3D12_GPU_VIRTUAL_ADDRESS ReflectionCaptures = 0; // t20
+	FD3D12DescriptorHandle    CaptureAtlas;       // t21
+	FD3D12DescriptorHandle    ScreenReflection;   // t22
+};
+
 // 지형 렌더러 (Phase 34, Terrain.hlsl). FSceneRenderer가 소유하고 패스 사이에 호출한다:
 //   Prepare (메시 인스턴스 수집 뒤, 그림자 전): 높이/가중치 텍스처 생성·바뀐 영역 업로드, 청크 LOD 선택 + 메인 프러스텀 컬링
 //   RenderShadow (방향광 캐스케이드 / 로컬 그림자 장마다 — FShadowCasterHook): 장 프러스텀 컬링 후 깊이만
@@ -43,8 +61,10 @@ public:
 	bool ReloadShaders(bool bForceRecompile);
 
 	void Prepare(FScene& Scene, const FCamera& Camera, const FFrustum& Frustum);
-	void RenderMain(D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants, const FShadowRenderer& Shadow, const FIblRenderer& Ibl,
-	                const FLocalLightRenderer& LocalLights);
+	// 씬 렌더러 패스: Prepass = 깊이 + 법선/거칠기 + 움직임 벡터(MRT, TerrainPrepassPS), MainDepthEqual = 사전 패스 뒤 메인(EQUAL, 쓰기 없음),
+	// Main = 사전 패스 없음(LESS + 쓰기). 모두 같은 TerrainVS 바이트코드. Screen = SSAO/DBuffer/캡처/SSR (메시 루트 15~21과 같은 리소스)
+	void RenderMain(ETerrainPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants, const FShadowRenderer& Shadow,
+	                const FIblRenderer& Ibl, const FLocalLightRenderer& LocalLights, const FTerrainScreenInputs& Screen);
 	void RenderShadow(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight);
 	// 에디터 선택 아웃라인 마스크 (R8_UNORM 타깃이 바인딩된 상태): 지난 Prepare의 메인 패스 청크로 Entities에 든 지형만
 	void RenderMask(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const std::vector<FEntity>& Entities);
@@ -113,6 +133,7 @@ private:
 	};
 
 	bool CreatePipelines(FD3D12PipelineState& OutMain, FD3D12PipelineState& OutShadow, FD3D12PipelineState& OutLocalShadow, bool bForceRecompile);
+	bool CreatePassPipelines(FD3D12PipelineState& OutMainEqual, FD3D12PipelineState& OutPrepass, bool bForceRecompile);
 	FTerrainGpu* EnsureGpu(const FTerrainData& Data);
 	void         UploadRegion(FTerrainGpu& Gpu, const FTerrainData& Data, int32 MinX, int32 MinY, int32 MaxX, int32 MaxY);
 	void         UpdateChunkHeights(FTerrainGpu& Gpu, const FTerrainData& Data, int32 MinX, int32 MinY, int32 MaxX, int32 MaxY);
@@ -130,6 +151,8 @@ private:
 
 	FD3D12RootSignature RootSignature;
 	FD3D12PipelineState MainPipeline;
+	FD3D12PipelineState MainEqualPipeline; // 사전 패스 뒤 (깊이 EQUAL)
+	FD3D12PipelineState PrepassPipeline;   // 깊이 + 법선 + 움직임 벡터
 	FD3D12PipelineState ShadowPipeline;      // 방향광 (직교) 바이어스
 	FD3D12PipelineState LocalShadowPipeline; // 로컬 라이트 (원근) 바이어스
 	FD3D12PipelineState MaskPipeline;        // 선택 아웃라인 마스크 (처음 쓸 때)

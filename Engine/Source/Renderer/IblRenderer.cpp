@@ -3,13 +3,16 @@
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
+#include "Renderer/Image.h"
+#include "RHI/D3D12/D3D12Texture.h"
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
 namespace
 {
 	constexpr DXGI_FORMAT IblFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	const wchar_t* BakeEntries[] = { L"SkyCS", L"IrradianceCS", L"PrefilterCS", L"BrdfCS" };
+	const wchar_t* BakeEntries[] = { L"SkyCS", L"IrradianceCS", L"PrefilterCS", L"BrdfCS", L"EquirectCS" };
+	constexpr uint32 BakeEntryCount = 5;
 
 	FShaderCompileDesc ShaderDesc(const wchar_t* File, const wchar_t* Entry, EShaderStage Stage)
 	{
@@ -25,7 +28,7 @@ namespace
 		uint32 Size;
 		uint32 SampleCount = IblMath::IntegrationSampleCount;
 		float Roughness = 0.0f;
-		uint32 Padding = 0;
+		float Rotation = 0.0f; // EquirectCS (라디안)
 	};
 	static_assert(sizeof(FBakeConstants) == 16);
 
@@ -78,14 +81,14 @@ bool FIblRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& Library)
 }
 
 bool FIblRenderer::CreateTexture(uint32 Size, uint16 Slices, uint16 Mips, ComPtr<ID3D12Resource>& Texture,
-	D3D12_CPU_DESCRIPTOR_HANDLE Srv, const wchar_t* Name)
+	D3D12_CPU_DESCRIPTOR_HANDLE Srv, const wchar_t* Name, D3D12_RESOURCE_STATES InitialState)
 {
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	auto Desc = MakeTexture2DDesc(Size, Size, IblFormat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, Mips);
 	Desc.DepthOrArraySize = Slices;
 	const auto Heap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 	E_D3D_VERIFY(Device->CreateCommittedResource(&Heap, D3D12_HEAP_FLAG_NONE, &Desc,
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&Texture)));
+		InitialState, nullptr, IID_PPV_ARGS(&Texture)));
 	Texture->SetName(Name);
 	D3D12_SHADER_RESOURCE_VIEW_DESC View{};
 	View.Format = IblFormat;
@@ -133,14 +136,17 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
+	Root.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }); // t1 등장방형
 	Root.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
+	Root.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_SHADER_VISIBILITY_ALL));
 	if (!Root.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_NONE, L"IblBakeRoot"))
 	{
 		return false;
 	}
-	FD3D12PipelineState Pipelines[4];
-	for (uint32 Index = 0; Index < 4; ++Index)
+	FD3D12PipelineState Pipelines[BakeEntryCount];
+	for (uint32 Index = 0; Index < BakeEntryCount; ++Index)
 	{
 		const auto Shader = Library.GetShader(ShaderDesc(L"Ibl.hlsl", BakeEntries[Index], EShaderStage::Compute));
 		if (!Shader || !Pipelines[Index].InitCompute(Device, Root.Get(), FD3D12ShaderCompiler::ToBytecode(Shader.Get()), BakeEntries[Index]))
@@ -197,13 +203,25 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 		List->SetComputeRootDescriptorTable(3, UavGpu(PrefilterMipCount + 2));
 		const auto Dispatch = [&](uint32 Pipeline, uint32 Size, uint32 Slot, uint32 Slices, float Roughness)
 		{
-			const FBakeConstants Constants{ Size, IblMath::IntegrationSampleCount, Roughness, 0 };
+			const FBakeConstants Constants{ Size, IblMath::IntegrationSampleCount, Roughness, EnvironmentRotation };
 			List->SetPipelineState(Pipelines[Pipeline].Get());
 			List->SetComputeRoot32BitConstants(0, 4, &Constants, 0);
 			List->SetComputeRootDescriptorTable(2, UavGpu(Slot));
 			List->Dispatch((Size + 7) / 8, (Size + 7) / 8, Slices);
 		};
-		Dispatch(0, IblMath::SkyCubeSize, 0, 6, 0.0f);
+		// 하늘 큐브: 외부 환경맵이 있으면 등장방형 변환, 없으면 절차적 하늘
+		if (EnvironmentTexture)
+		{
+			// 업로드 후 PIXEL_SHADER_RESOURCE → 계산에서 읽는 동안만 NON_PIXEL
+			Transition(EnvironmentTexture->GetResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			List->SetComputeRootDescriptorTable(4, EnvironmentTexture->GetSrv().Gpu);
+			Dispatch(4, SkySize, 0, 6, 0.0f);
+			Transition(EnvironmentTexture->GetResource(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		}
+		else
+		{
+			Dispatch(0, SkySize, 0, 6, 0.0f);
+		}
 		Transition(Sky.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		Dispatch(1, IblMath::IrradianceSize, 1, 6, 0.0f);
 		for (uint32 Mip = 0; Mip < PrefilterMipCount; ++Mip)
@@ -219,6 +237,62 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 	});
 	Allocator.Free(Uavs);
 	return bSuccess;
+}
+
+bool FIblRenderer::RecreateSky(uint32 Size)
+{
+	if (Sky && SkySize == Size)
+	{
+		return true;
+	}
+	if (Sky)
+	{
+		Rhi->DeferRelease(Sky); // 진행 중인 프레임이 하늘을 그릴 수 있다
+		Sky.Reset();
+	}
+	SkySize = Size;
+	// Generate(bRebuild)가 PIXEL_SHADER_RESOURCE → UAV로 전이하므로 그 상태로 만든다. SRV는 같은 칸에 다시 기록
+	return CreateTexture(Size, 6, 1, Sky, SkySrv.Cpu, L"IblSky", D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
+
+bool FIblRenderer::SetEnvironment(const FEnvironmentImage* Image, float RotationDegrees)
+{
+	if (!bReady)
+	{
+		return false;
+	}
+	std::unique_ptr<FD3D12Texture> NewTexture;
+	if (Image != nullptr)
+	{
+		if (!Image->IsValid())
+		{
+			return false;
+		}
+		const FD3D12Texture::FMipData Mip{ Image->Pixels.data(), Image->Pixels.size() * sizeof(uint16) };
+		NewTexture = std::make_unique<FD3D12Texture>();
+		if (!NewTexture->Init2DFromMips(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Image->Width, Image->Height,
+		                                DXGI_FORMAT_R16G16B16A16_FLOAT, &Mip, 1, L"IblEnvironmentEquirect"))
+		{
+			E_LOG(LogRenderer, Error, "환경맵 텍스처 생성 실패 ({}x{})", Image->Width, Image->Height);
+			return false;
+		}
+	}
+	// 진행 중인 프레임이 하늘 SRV 칸·조도/프리필터를 읽고 있을 수 있으므로 GPU를 기다린 뒤 바꾼다 (바뀔 때만이라 드물다)
+	Rhi->GetGraphicsQueue().Flush();
+	if (EnvironmentTexture)
+	{
+		EnvironmentTexture->ShutdownDeferred(*Rhi);
+	}
+	EnvironmentTexture  = std::move(NewTexture);
+	EnvironmentRotation = FMath::DegreesToRadians(RotationDegrees);
+	if (!RecreateSky(EnvironmentTexture ? IblMath::EnvironmentSkyCubeSize : IblMath::SkyCubeSize) || !Generate(*ShaderLibrary, true))
+	{
+		E_LOG(LogRenderer, Error, "환경광 다시 생성 실패");
+		return false;
+	}
+	E_LOG(LogRenderer, Display, "환경광 다시 생성: {} (하늘 큐브 {}, 회전 {:.1f}도)", EnvironmentTexture ? "외부 HDR 환경맵" : "절차적 하늘", SkySize,
+	      RotationDegrees);
+	return true;
 }
 
 bool FIblRenderer::ReloadShaders(bool bForceRecompile)
@@ -276,6 +350,7 @@ void FIblRenderer::Shutdown()
 		return;
 	}
 	// 씬 렌더러가 GPU 완료를 기다린 뒤 호출한다. 부분 초기화 실패도 동일하게 정리한다.
+	EnvironmentTexture.reset();
 	Sky.Reset();
 	Irradiance.Reset();
 	Prefilter.Reset();

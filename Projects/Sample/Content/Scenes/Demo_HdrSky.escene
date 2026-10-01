@@ -1,0 +1,26 @@
+{
+  "Version": 1,
+  "Entities": [
+    { "Name": "Sun", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 800.0], "Rotation": [0.0687, 0.01211, -0.98241, 0.17322], "Scale": [1.0, 1.0, 1.0] },
+        "DirectionalLightComponent": { "Color": [1.0, 0.8, 0.6], "Intensity": 3.0 } } },
+    { "Name": "SkyLight", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "SkyLightComponent": { "Intensity": 1.0, "EnvironmentMap": "Environment/SunsetSky.hdr", "EnvironmentRotation": 20.0 } } },
+    { "Name": "Floor", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [16.0, 16.0, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "Reflections/GlossyFloor.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "ChromeBall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [100.0, -80.0, 75.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.5, 1.5, 1.5] },
+        "StaticMeshComponent": { "MaterialAsset": "Reflections/Chrome.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+    { "Name": "WarmBall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [50.0, 180.0, 50.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Reflections/WarmWall.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+    { "Name": "BlueBox", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [300.0, 60.0, 50.0], "Rotation": [0.0, 0.0, 0.3826834, 0.9238795], "Scale": [1.0, 1.0, 1.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Camera", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-700.0, -250.0, 250.0], "Rotation": [-0.01507, 0.09879, 0.15007, 0.98361], "Scale": [1.0, 1.0, 1.0] },
+        "CameraComponent": { "FovYDegrees": 60.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true } } }
+  ]
+}

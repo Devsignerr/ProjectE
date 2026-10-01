@@ -66,6 +66,20 @@ namespace IblMath
 		}
 	}
 
+	// 외부 HDR 환경맵을 쓸 때 하늘 큐브 크기 (배경으로 보이므로 절차적 하늘보다 크게)
+	constexpr uint32 EnvironmentSkyCubeSize = 512;
+
+	// 월드 방향 → 등장방형 UV (Ibl.hlsl EquirectCS와 같은 식). 경도 = atan2(y, x) (+X 앞 = U 0.5, +Y 오른쪽 = U 증가), V = 위가 0.
+	// RotationRadians: 환경을 Z축으로 돌린 양 (+면 오른쪽으로)
+	inline FVector2 DirectionToEquirectUV(const FVector3& Direction, float RotationRadians)
+	{
+		const float S = FMath::Sin(-RotationRadians);
+		const float C = FMath::Cos(-RotationRadians);
+		const FVector3 D(Direction.X * C - Direction.Y * S, Direction.X * S + Direction.Y * C, Direction.Z);
+		return FVector2(0.5f + FMath::Atan2(D.Y, D.X) / (2.0f * FMath::Pi),
+		                0.5f - FMath::Asin(FMath::Clamp(D.Z, -1.0f, 1.0f)) / FMath::Pi);
+	}
+
 	inline float MipToRoughness(uint32 Mip, uint32 MipCount)
 	{
 		return MipCount <= 1

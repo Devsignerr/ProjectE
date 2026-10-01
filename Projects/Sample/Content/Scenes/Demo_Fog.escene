@@ -1,0 +1,60 @@
+{
+  "Version": 1,
+  "Entities": [
+    { "Name": "Sun", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 800.0], "Rotation": [-0.1697, 0.2308, 0.5676, 0.7718], "Scale": [1.0, 1.0, 1.0] },
+        "DirectionalLightComponent": { "Color": [1.0, 0.85, 0.65], "Intensity": 3.0 } } },
+    { "Name": "SkyLight", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "SkyLightComponent": { "Intensity": 0.6 } } },
+    { "Name": "Fog", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "HeightFogComponent": {
+          "Color": [0.32, 0.38, 0.48], "Density": 0.02, "HeightFalloff": 0.3, "StartDistance": 0.0, "MaxOpacity": 1.0,
+          "DirectionalInscatteringColor": [0.6, 0.45, 0.25], "DirectionalInscatteringExponent": 6.0, "DirectionalInscatteringStartDistance": 500.0,
+          "Volumetric": true, "VolumetricDistance": 5000.0, "VolumetricAlbedo": [1.0, 1.0, 1.0], "VolumetricExtinctionScale": 1.0,
+          "VolumetricAnisotropy": 0.3, "VolumetricDirectionalScale": 1.0, "VolumetricLocalLightScale": 1.0 } } },
+    { "Name": "Ground", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [40.0, 40.0, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Checker.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_0", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-300.0, 250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_1", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_2", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [300.0, 250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_3", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [600.0, 250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_4", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-300.0, -250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_5", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, -250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_6", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [300.0, -250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Pillar_7", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [600.0, -250.0, 200.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.4, 0.4, 4.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Roof", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [150.0, 0.0, 420.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [10.0, 6.0, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "SpotLamp", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-600.0, 0.0, 380.0], "Rotation": [0.0, 0.70710678, 0.0, 0.70710678], "Scale": [1.0, 1.0, 1.0] },
+        "SpotLightComponent": { "Color": [0.4, 0.7, 1.0], "Intensity": 300.0, "Radius": 1200.0, "InnerConeAngle": 14.0, "OuterConeAngle": 24.0, "CastShadows": false } } },
+    { "Name": "WarmLamp", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [150.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "PointLightComponent": { "Color": [1.0, 0.55, 0.2], "Intensity": 20.0, "Radius": 700.0, "CastShadows": false } } },
+    { "Name": "Fire", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-450.0, -120.0, 30.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "ParticleSystemComponent": { "Asset": "Particles/Fire2.eparticle", "Playing": true, "Speed": 1.0 } } },
+    { "Name": "Camera", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-1200.0, -150.0, 220.0], "Rotation": [-0.003075, 0.04936, 0.0621, 0.99684], "Scale": [1.0, 1.0, 1.0] },
+        "CameraComponent": { "FovYDegrees": 60.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true } } }
+  ]
+}

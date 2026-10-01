@@ -1,0 +1,173 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 500.0],
+          "Rotation": [-0.10938165336847305, 0.4082179069519043, 0.23456971347332, 0.8754260540008545],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DirectionalLightComponent": {
+          "Color": [1.0, 0.96, 0.9],
+          "Intensity": 2.5
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, -10.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [20.0, 20.0, 0.2]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Box",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [40.0, -30.0, 25.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.5, 0.5, 0.5]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Wall",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [250.0, 120.0, 100.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.2, 3.0, 2.0]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Decal_Puddle",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-120.0, 140.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Puddle.emat",
+          "Size": [260.0, 320.0, 60.0],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        }
+      }
+    },
+    {
+      "Name": "Decal_Arrow",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [120.0, -160.0, 0.0],
+          "Rotation": [0.0, 0.0, 0.3826834, 0.9238795],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [200.0, 200.0, 60.0],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        }
+      }
+    },
+    {
+      "Name": "Decal_Splat",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [40.0, -60.0, 20.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Splat.emat",
+          "Size": [260.0, 260.0, 120.0],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        }
+      }
+    },
+    {
+      "Name": "Decal_Rivets",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [240.0, 120.0, 100.0],
+          "Rotation": [0.0, -0.70710678, 0.0, 0.70710678],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Rivets.emat",
+          "Size": [150.0, 220.0, 40.0],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-520.0, -300.0, 230.0],
+          "Rotation": [-0.026836, 0.113678, 0.22818, 0.966587],
+          "Scale": [1.0, 1.0, 1.0]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 100000.0,
+          "Primary": true
+        }
+      }
+    }
+  ]
+}

@@ -84,14 +84,20 @@ struct FTerrainPixelInput
 	float3                WorldPosition : POSITION0;
 	float2                Grid          : TEXCOORD0;
 	nointerpolation uint  Step          : TEXCOORD1;
+	// 움직임 벡터 (지터 없는 현재/이전 클립). 지형은 정적이라 이전 = 같은 월드 위치 × 이전 뷰-투영 (카메라 움직임만)
+	float4                CurrentClip   : TEXCOORD2;
+	float4                PreviousClip  : TEXCOORD3;
 };
 
+// 사전 패스(TerrainPrepassPS)와 메인 패스(TerrainPS)가 같은 바이트코드를 쓴다 → 메인 패스 깊이 EQUAL
 FTerrainPixelInput TerrainVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
 {
 	FTerrainPixelInput Output;
 	const float3       World = TerrainVertexPosition(VertexId, InstanceId, Output.Grid, Output.Step);
 	Output.Position          = mul(float4(World, 1.0f), ViewProjection);
 	Output.WorldPosition     = World;
+	Output.CurrentClip       = mul(float4(World, 1.0f), UnjitteredViewProjection);
+	Output.PreviousClip      = mul(float4(World, 1.0f), PrevViewProjection);
 	return Output;
 }
 
@@ -186,10 +192,16 @@ float4 TerrainPS(FTerrainPixelInput Input) : SV_Target
 	FSurface Surface;
 	Surface.Albedo    = Blend.Albedo;
 	Surface.Metallic  = Blend.Metallic;
-	Surface.Roughness = clamp(Blend.Roughness, 0.045f, 1.0f);
+	Surface.Roughness = Blend.Roughness;
 	Surface.N         = normalize(T * TangentNormal.x + B * TangentNormal.y + N * TangentNormal.z);
 	Surface.V         = normalize(CameraPosition - Input.WorldPosition);
-	Surface.Occlusion = Blend.Occlusion;
+	// 메시와 같은 자리: 데칼(DBuffer) → 거칠기 클램프 → SSAO는 간접광에만 (Mesh.hlsl PSMain)
+	if (DecalsEnabled != 0)
+	{
+		ApplyDecals(Input.Position.xy, Surface);
+	}
+	Surface.Roughness = clamp(Surface.Roughness, 0.045f, 1.0f);
+	Surface.Occlusion = Blend.Occlusion * SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition);
 
 	const float3 L        = -DirectionalLight.Direction;
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
@@ -197,7 +209,7 @@ float4 TerrainPS(FTerrainPixelInput Input) : SV_Target
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, N);
-	Color += EvaluateImageBasedLighting(Surface);
+	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy); // 캡처/SSR/하늘
 
 	if (VisualizeCascades != 0)
 	{
@@ -207,7 +219,23 @@ float4 TerrainPS(FTerrainPixelInput Input) : SV_Target
 	{
 		Color *= TerrainLodColor(Input.Step);
 	}
-	return float4(Color, 1.0f);
+	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0)
+}
+
+// 깊이 사전 패스: 깊이 + 화면 공간 법선(높이맵 법선) + 거칠기(레이어 가중 금속/거칠기 G × 팩터) + 움직임 벡터 (Mesh.hlsl PSPrepass와 같은 출력)
+FPrepassOutput TerrainPrepassPS(FTerrainPixelInput Input)
+{
+	const float2 WorldXY = Input.WorldPosition.xy;
+	float4       Weights = TerrainWeights.SampleLevel(IblSampler, TerrainGridToUv(Input.Grid), 0);
+	Weights /= max(dot(Weights, 1.0f), 1.0e-4f);
+	const float Roughness = Layer0Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[0]).g * LayerParams[0].y * Weights[0] +
+	                        Layer1Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[1]).g * LayerParams[1].y * Weights[1] +
+	                        Layer2Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[2]).g * LayerParams[2].y * Weights[2] +
+	                        Layer3Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[3]).g * LayerParams[3].y * Weights[3];
+	FPrepassOutput Output;
+	Output.Normal   = EncodeScreenNormal(ComputeTerrainNormal(Input.Grid), Roughness);
+	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
+	return Output;
 }
 
 // 에디터 선택 아웃라인 마스크 (R8): TerrainShadowVS(뷰-투영 = 편집 카메라)와 함께

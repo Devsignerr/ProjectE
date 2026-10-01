@@ -109,6 +109,7 @@ bool FThumbnailCache::EnsureRenderer(FEditorContext& Context)
 	Renderer.ShadowSettings.CascadeCount = 2;
 	Renderer.BackgroundColor             = FVector4(0.035f, 0.037f, 0.042f, 1.0f); // 하늘 없이 어두운 회색 (언리얼 썸네일처럼)
 	Renderer.bDrawSkybox                 = false;
+	Renderer.PostProcessSettings.bTemporalAA = false; // 같은 씬 객체에 매번 다른 에셋을 그린다 → 이력이 섞이면 안 된다
 
 	FMaterial Material;
 	Material.Name                     = "ThumbnailImage";

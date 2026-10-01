@@ -100,7 +100,7 @@ void FD3D12RenderTarget::ShutdownDeferred(FD3D12RHI& Rhi)
 	Height = 0;
 }
 
-void FD3D12RenderTarget::Begin(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4])
+void FD3D12RenderTarget::Begin(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4], bool bClearDepth)
 {
 	E_CHECKF(ColorResource != nullptr && !bInRenderState, "렌더 타깃 Begin/End 순서 오류");
 
@@ -114,7 +114,10 @@ void FD3D12RenderTarget::Begin(ID3D12GraphicsCommandList* CommandList, const flo
 	{
 		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
 		CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
-		CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+		if (bClearDepth)
+		{
+			CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+		}
 	}
 	else
 	{

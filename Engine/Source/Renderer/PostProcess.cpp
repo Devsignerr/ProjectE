@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <format>
+#include <iterator>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -31,7 +32,8 @@ namespace
 		uint32 bAutoExposure     = 0;
 		float  AutoExposureMinEV = -4.0f;
 		float  AutoExposureMaxEV = 6.0f;
-		float  Padding[2]        = {};
+		float  Sharpness         = 0.0f; // TAA 샤프닝 (0 = 끔)
+		float  Padding           = 0.0f;
 	};
 	static_assert(sizeof(FTonemapConstants) <= PostRootConstantCount * 4 && sizeof(FTonemapConstants) % 4 == 0);
 
@@ -259,9 +261,11 @@ bool FPostProcessor::CreatePipeline(EPipeline Pipeline, FD3D12PipelineState& Out
 
 bool FPostProcessor::CreateOutputPipeline(EOutputPass Pass, FD3D12PipelineState& OutPipeline, DXGI_FORMAT OutputFormat, bool bForceRecompile)
 {
-	const bool         bTonemap = Pass == EOutputPass::Tonemap;
+	const wchar_t* const Files[]      = { L"Tonemap.hlsl", L"PixelArt.hlsl", L"ScreenDebug.hlsl" };
+	const wchar_t* const DebugNames[] = { L"TonemapPipeline", L"PixelArtCompositePipeline", L"ScreenDebugPipeline" };
+	static_assert(std::size(Files) == static_cast<size_t>(EOutputPass::Count));
 	FShaderCompileDesc VertexDesc;
-	VertexDesc.FileName   = bTonemap ? L"Tonemap.hlsl" : L"PixelArt.hlsl";
+	VertexDesc.FileName   = Files[static_cast<size_t>(Pass)];
 	VertexDesc.EntryPoint = L"VSMain";
 	VertexDesc.Stage      = EShaderStage::Vertex;
 	FShaderCompileDesc PixelDesc = VertexDesc;
@@ -282,7 +286,7 @@ bool FPostProcessor::CreateOutputPipeline(EOutputPass Pass, FD3D12PipelineState&
 	PsoDesc.RenderTargetFormats[0] = OutputFormat;
 	PsoDesc.CullMode               = D3D12_CULL_MODE_NONE;
 	PsoDesc.bDepthEnable           = false;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, bTonemap ? L"TonemapPipeline" : L"PixelArtCompositePipeline");
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, DebugNames[static_cast<size_t>(Pass)]);
 }
 
 FD3D12PipelineState* FPostProcessor::GetOutputPipeline(EOutputPass Pass, DXGI_FORMAT OutputFormat)
@@ -296,8 +300,7 @@ FD3D12PipelineState* FPostProcessor::GetOutputPipeline(EOutputPass Pass, DXGI_FO
 	if (!CreateOutputPipeline(Pass, Pipeline, OutputFormat, false))
 	{
 		PassPipelines.erase(OutputFormat);
-		E_LOG(LogRenderer, Error, "{} 파이프라인 생성 실패 (포맷 {})", Pass == EOutputPass::Tonemap ? "톤매핑" : "픽셀 아트 합성",
-		      static_cast<int32>(OutputFormat));
+		E_LOG(LogRenderer, Error, "출력 패스 {} 파이프라인 생성 실패 (포맷 {})", static_cast<int32>(Pass), static_cast<int32>(OutputFormat));
 		return nullptr;
 	}
 	return &Pipeline;
@@ -513,7 +516,7 @@ void FPostProcessor::RenderAutoExposure(ID3D12GraphicsCommandList* CommandList, 
 }
 
 void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& HdrSceneColor, const FRenderOutput& Output,
-                            const FPostProcessSettings& Settings)
+                            const FPostProcessSettings& Settings, float Sharpness)
 {
 	E_CHECKF(Output.IsValid(), "포스트 프로세스 출력 대상이 유효하지 않습니다");
 
@@ -550,6 +553,7 @@ void FPostProcessor::Render(ID3D12GraphicsCommandList* CommandList, const FD3D12
 	Constants.bAutoExposure     = Settings.bAutoExposure ? 1u : 0u;
 	Constants.AutoExposureMinEV = FMath::Min(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
 	Constants.AutoExposureMaxEV = FMath::Max(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
+	Constants.Sharpness         = FMath::Clamp(Sharpness, 0.0f, 1.0f);
 
 	// 블룸이 없으면 t1에 씬을 바인딩해 둔다 (강도 0이라 샘플링되지 않음)
 	const FD3D12DescriptorHandle& BloomSource = Constants.BloomIntensity > 0.0f ? BloomTargets[0]->GetSrv() : HdrSceneColor;
@@ -616,4 +620,29 @@ void FPostProcessor::RenderPixelArtComposite(ID3D12GraphicsCommandList* CommandL
 	const D3D12_RESOURCE_BARRIER ToWrite =
 		MakeTransitionBarrier(SourceDepth.GetDepthResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	CommandList->ResourceBarrier(1, &ToWrite);
+}
+
+void FPostProcessor::RenderDebugView(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& Source, const FRenderOutput& Output,
+                                     uint32 Mode)
+{
+	FD3D12PipelineState* Pipeline = GetOutputPipeline(EOutputPass::DebugView, Output.Format);
+	if (Pipeline == nullptr)
+	{
+		return;
+	}
+	struct FDebugConstants
+	{
+		uint32 Mode          = 0;
+		float  VelocityScale = 50.0f;
+		float  Padding[2]    = {};
+	} Constants;
+	Constants.Mode = Mode;
+
+	CommandList->OMSetRenderTargets(1, &Output.Rtv, FALSE, nullptr);
+	SetFullscreenViewport(CommandList, Output.Width, Output.Height);
+	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	CommandList->SetPipelineState(Pipeline->Get());
+	SetGraphicsConstants(CommandList, Constants);
+	CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, Source.Gpu);
+	DrawFullscreen(CommandList);
 }

@@ -23,6 +23,7 @@
 #include "Core/StringConv.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Renderer/ModelLoader.h"
+#include "Renderer/DecalMath.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Editor/EditorActions.h"
 #include "Scene/Particles.h"
@@ -108,7 +109,7 @@ namespace
 		}
 	}
 
-	// 선택한 점광원/스포트라이트의 영향 반경과 원뿔을 뷰포트 위에 선으로 그린다 (ImGui 오버레이, 깊이 무시)
+	// 선택한 점광원/스포트라이트의 영향 반경과 원뿔, 데칼 상자를 뷰포트 위에 선으로 그린다 (ImGui 오버레이, 깊이 무시)
 	void DrawSelectedLightShapes(FEditorContext& Context, const ImVec2& ImagePosition, const ImVec2& ImageSize)
 	{
 		const FMatrix4x4 ViewProjection = Context.Camera->GetViewProjectionMatrix();
@@ -161,6 +162,26 @@ namespace
 				Circle(Position, FVector3::ForwardVector, FVector3::RightVector, Point->Radius, OuterColor);
 				Circle(Position, FVector3::ForwardVector, FVector3::UpVector, Point->Radius, OuterColor);
 				Circle(Position, FVector3::RightVector, FVector3::UpVector, Point->Radius, OuterColor);
+			}
+			if (const FDecalComponent* Decal = Registry.TryGet<FDecalComponent>(Entity))
+			{
+				// 데칼 상자 12모서리 + 투영 방향(로컬 -Z) 화살표
+				const FMatrix4x4 DecalToWorld = FDecalMath::MakeDecalToWorld(Transform->WorldMatrix, Decal->Size);
+				FVector3         Corners[8];
+				for (int32 Corner = 0; Corner < 8; ++Corner)
+				{
+					Corners[Corner] = DecalToWorld.TransformPosition(
+						FVector3((Corner & 1) ? 0.5f : -0.5f, (Corner & 2) ? 0.5f : -0.5f, (Corner & 4) ? 0.5f : -0.5f));
+				}
+				const int32 Edges[12][2] = { { 0, 1 }, { 2, 3 }, { 4, 5 }, { 6, 7 }, { 0, 2 }, { 1, 3 },
+				                             { 4, 6 }, { 5, 7 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
+				for (const auto& Edge : Edges)
+				{
+					Line(Corners[Edge[0]], Corners[Edge[1]], OuterColor);
+				}
+				const FVector3 Top    = DecalToWorld.TransformPosition(FVector3(0.0f, 0.0f, 0.5f));
+				const FVector3 Bottom = DecalToWorld.TransformPosition(FVector3(0.0f, 0.0f, -0.5f));
+				Line(Top, Bottom, InnerColor);
 			}
 			if (const FSpotLightComponent* Spot = Registry.TryGet<FSpotLightComponent>(Entity))
 			{

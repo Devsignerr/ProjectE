@@ -84,6 +84,7 @@ void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources
 {
 	Draws.clear();
 	Bones.clear();
+	PrevBones.clear();
 	CulledCount = 0;
 	++BuildCount;
 	FRegistry& Registry = Scene.GetRegistry();
@@ -145,12 +146,32 @@ void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources
 			Info.WorldBounds.AddBox(TransformBoxFast(LocalCenter, LocalExtent, Bone));
 		}
 		Bones.insert(Bones.end(), PaletteScratch.begin(), PaletteScratch.end());
+
+		// 이전 프레임 팔레트: 바로 앞 Build에서 같은 엔티티의 팔레트를 계산했을 때만 (PrevBones 안 위치, 업로드 때 Bones 뒤로 옮긴다)
+		Info.PrevBoneOffset = ~0u;
+		if (bTrackPrevious)
+		{
+			if (Slot.PaletteBuild + 1 == BuildCount && Slot.PaletteGeneration == Entity.Generation && Slot.PrevPalette.size() == PaletteScratch.size())
+			{
+				Info.PrevBoneOffset = static_cast<uint32>(PrevBones.size());
+				PrevBones.insert(PrevBones.end(), Slot.PrevPalette.begin(), Slot.PrevPalette.end());
+			}
+			Slot.PrevPalette       = PaletteScratch;
+			Slot.PaletteBuild      = BuildCount;
+			Slot.PaletteGeneration = Entity.Generation;
+		}
 		Slot.Draw = static_cast<int32>(Draws.size());
 		Draws.push_back(Info);
 	});
 
-	// 팔레트 한 번에 업로드 (빈 프레임도 루트 SRV가 유효한 주소를 가리키게 한 칸)
-	const size_t                  Count      = FMath::Max<size_t>(Bones.size(), 1);
+	const uint32 CurrentCount = static_cast<uint32>(Bones.size());
+	for (FSkinnedDrawInfo& Draw : Draws)
+	{
+		Draw.PrevBoneOffset = Draw.PrevBoneOffset == ~0u ? Draw.BoneOffset : Draw.PrevBoneOffset + CurrentCount;
+	}
+
+	// 팔레트 한 번에 업로드: [이번 프레임][이전 프레임] (빈 프레임도 루트 SRV가 유효한 주소를 가리키게 한 칸)
+	const size_t                  Count      = FMath::Max<size_t>(Bones.size() + PrevBones.size(), 1);
 	const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(FMatrix4x4) * Count, 16);
 	if (Bones.empty())
 	{
@@ -159,6 +180,10 @@ void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources
 	else
 	{
 		std::memcpy(Allocation.CpuAddress, Bones.data(), sizeof(FMatrix4x4) * Bones.size());
+		if (!PrevBones.empty())
+		{
+			std::memcpy(static_cast<FMatrix4x4*>(Allocation.CpuAddress) + Bones.size(), PrevBones.data(), sizeof(FMatrix4x4) * PrevBones.size());
+		}
 	}
 	GpuData = Allocation.GpuAddress;
 }

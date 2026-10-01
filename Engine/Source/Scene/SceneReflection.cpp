@@ -150,6 +150,8 @@ void RegisterSceneTypes()
 
 	Registry.RegisterType<FSkyLightComponent>("SkyLightComponent", "하늘광")
 		.Property(&FSkyLightComponent::Intensity, "Intensity", "환경광 배율").Range(0.0f, 10.0f, 0.01f).Tooltip("IBL 환경광과 하늘 배경 밝기 (씬에서 첫 하늘광만 사용)")
+		.Property(&FSkyLightComponent::EnvironmentMap, "EnvironmentMap", "환경맵 (HDR)").AssetFilter(".hdr").Tooltip("비우면 절차적 하늘")
+		.Property(&FSkyLightComponent::EnvironmentRotation, "EnvironmentRotation", "환경맵 회전 (도)").Range(-360.0f, 360.0f, 0.5f)
 		.AsComponent();
 
 	// 게임플레이 (Scene/Gameplay.h): 체력은 서버 권위 — 복제되면 클라이언트는 값만 읽는다
@@ -182,6 +184,51 @@ void RegisterSceneTypes()
 		.Tooltip("자신/조상의 캐릭터 이동 상태를 Speed·VerticalSpeed·Grounded 파라미터로 넣는다")
 		.AsComponent();
 
+	// 데칼 (Phase 33-4, Scene/Components.h FDecalComponent): 로컬 -Z로 찍는 상자. 머티리얼 핸들은 렌더러가 경로에서 해석
+	Registry.RegisterType<FDecalComponent>("DecalComponent", "데칼")
+		.Property(&FDecalComponent::MaterialAsset, "MaterialAsset", "머티리얼").AssetFilter(".emat")
+		.Property(&FDecalComponent::Size, "Size", "크기 (cm)").Range(1.0f, 100000.0f, 1.0f).Tooltip("X, Y = 찍히는 면, Z = 투영 깊이 (로컬 -Z로 찍힘)")
+		.Property(&FDecalComponent::Opacity, "Opacity", "불투명도").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FDecalComponent::SortOrder, "SortOrder", "정렬 순서").Tooltip("큰 값이 위에 그려진다")
+		.Property(&FDecalComponent::bAffectBaseColor, "AffectBaseColor", "베이스 색")
+		.Property(&FDecalComponent::bAffectNormal, "AffectNormal", "노멀")
+		.Property(&FDecalComponent::bAffectRoughness, "AffectRoughness", "거칠기/금속")
+		.Property(&FDecalComponent::FadeStartDistance, "FadeStartDistance", "페이드 시작 (cm)").Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FDecalComponent::FadeEndDistance, "FadeEndDistance", "페이드 끝 (cm)").Range(0.0f, 1000000.0f, 10.0f).Tooltip("시작보다 작거나 같으면 페이드 없음")
+		.Property(&FDecalComponent::Material, "Material", "머티리얼 핸들", PF_Transient | PF_ReadOnly)
+		.AsComponent();
+
+	// 높이 지수 안개 + 볼류메트릭 안개 (Phase 33-5, 씬 전역 — 첫 하나만). 기준 높이 = 엔티티 월드 Z
+	Registry.RegisterType<FHeightFogComponent>("HeightFogComponent", "높이 안개")
+		.Property(&FHeightFogComponent::Color, "Color", "안개 색", PF_Color)
+		.Property(&FHeightFogComponent::Density, "Density", "밀도 (1/m)").Range(0.0f, 10.0f, 0.001f).Tooltip("엔티티 높이(월드 Z)에서의 밀도")
+		.Property(&FHeightFogComponent::HeightFalloff, "HeightFalloff", "높이 감쇠 (1/m)").Range(0.0f, 10.0f, 0.005f)
+		.Property(&FHeightFogComponent::StartDistance, "StartDistance", "시작 거리 (cm)").Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FHeightFogComponent::MaxOpacity, "MaxOpacity", "최대 불투명도").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FHeightFogComponent::DirectionalInscatteringColor, "DirectionalInscatteringColor", "방향광 산란 색", PF_Color)
+		.Property(&FHeightFogComponent::DirectionalInscatteringExponent, "DirectionalInscatteringExponent", "방향광 산란 지수").Range(1.0f, 64.0f, 0.1f)
+		.Property(&FHeightFogComponent::DirectionalInscatteringStartDistance, "DirectionalInscatteringStartDistance", "방향광 산란 시작 (cm)")
+		.Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FHeightFogComponent::bVolumetric, "Volumetric", "볼류메트릭 안개").Tooltip("빛줄기·그림자가 보이는 3D 안개 (카메라 앞 거리까지)")
+		.Property(&FHeightFogComponent::VolumetricDistance, "VolumetricDistance", "볼류메트릭 거리 (cm)").Range(500.0f, 100000.0f, 10.0f)
+		.Property(&FHeightFogComponent::VolumetricAlbedo, "VolumetricAlbedo", "산란 비율 색", PF_Color)
+		.Property(&FHeightFogComponent::VolumetricExtinctionScale, "VolumetricExtinctionScale", "소멸 배율").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricAnisotropy, "VolumetricAnisotropy", "비등방성 (g)").Range(-0.9f, 0.9f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricDirectionalScale, "VolumetricDirectionalScale", "방향광 산란 배율").Range(0.0f, 20.0f, 0.01f)
+		.Property(&FHeightFogComponent::VolumetricLocalLightScale, "VolumetricLocalLightScale", "로컬 라이트 산란 배율").Range(0.0f, 20.0f, 0.01f)
+		.AsComponent();
+
+	// 반사 캡처 (Phase 33-6): 에디터 도구 → 반사 캡처 굽기로 CaptureAsset(.ecapture)에 큐브맵을 굽는다
+	Registry.RegisterType<FReflectionCaptureComponent>("ReflectionCaptureComponent", "반사 캡처")
+		.Property(&FReflectionCaptureComponent::Shape, "Shape", "모양")
+		.Enum({ { "Sphere", "구" }, { "Box", "상자 (시차 보정)" } })
+		.Property(&FReflectionCaptureComponent::Radius, "Radius", "반경 (cm)").Range(10.0f, 100000.0f, 1.0f)
+		.Property(&FReflectionCaptureComponent::BoxExtent, "BoxExtent", "상자 반 크기 (cm)").Range(10.0f, 100000.0f, 1.0f).Tooltip("월드 축 정렬 (회전 무시)")
+		.Property(&FReflectionCaptureComponent::FadeDistance, "FadeDistance", "경계 페이드 (cm)").Range(1.0f, 10000.0f, 1.0f)
+		.Property(&FReflectionCaptureComponent::Intensity, "Intensity", "세기").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FReflectionCaptureComponent::Priority, "Priority", "우선순위").Tooltip("겹치면 큰 값이 먼저")
+		.Property(&FReflectionCaptureComponent::CaptureAsset, "CaptureAsset", "구운 큐브맵").AssetFilter(".ecapture")
+		.AsComponent();
 	// 서브 씬 스트리밍 (Scene/SubScene.h, Phase 31-2)
 	Registry.RegisterType<FSubSceneVolumeComponent>("SubSceneVolumeComponent", "서브 씬 볼륨")
 		.Property(&FSubSceneVolumeComponent::SubScene, "SubScene", "서브 씬").AssetFilter(".escene")

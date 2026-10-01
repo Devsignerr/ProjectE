@@ -3,6 +3,7 @@
 #include "SkinnedMesh.hlsli"
 #include "Lighting.hlsli" // b5 클러스터 상수
 #include "MeshInstance.hlsli" // t13/t14 인스턴스
+#include "ScreenSpace.hlsli"
 
 // 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
 // + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
@@ -25,12 +26,20 @@ cbuffer PerFrame : register(b1)
 {
 	float4x4          ViewProjection;
 	float3            CameraPosition;
-	float             Padding0;
+	uint              DecalsEnabled; // 1 = DBuffer(t17~t19) 사용
 	FDirectionalLight DirectionalLight;
 	float3            SkyColor;
 	float             AmbientIntensity;
 	float3            GroundColor;
-	float             Padding1;
+	float             AmbientOcclusionEnabled; // 1 = SSAO(t16) 사용
+	float4x4          UnjitteredViewProjection; // 움직임 벡터용 (지터 없음)
+	float4x4          PrevViewProjection;       // 이전 프레임 (지터 없음)
+	float2            JitterNdc;
+	float2            ScreenSize;
+	uint              ReflectionCaptureCount; // t20 개수
+	uint              SsrEnabled;             // 1 = t22 사용
+	float             SsrMaxRoughness;
+	float             SsrIntensity;
 };
 
 cbuffer Material : register(b2)
@@ -52,19 +61,8 @@ Texture2D    OcclusionTexture         : register(t3); // 선형, R
 Texture2D    EmissiveTexture          : register(t4); // sRGB
 SamplerState LinearSampler            : register(s0);
 
-// 방향광 캐스케이드 섀도우 (ShadowRenderer.h FShadowConstants와 1:1)
-cbuffer ShadowConstants : register(b3)
-{
-	float4x4 CascadeViewProjection[4];
-	float4   CascadeSplits;     // 뷰 공간 far 거리
-	float4   CascadeTexelWorld; // 캐스케이드별 월드 텍셀 크기
-	float3   ShadowCameraForward;
-	float    ShadowEnabled;
-	float    ShadowTexelSize;   // 1 / 해상도
-	float    ShadowNormalOffset;
-	uint     CascadeCount;
-	uint     VisualizeCascades;
-};
+// 방향광 캐스케이드 섀도우 상수 b3 (ShadowCommon.hlsli — 볼류메트릭 안개와 공유)
+#include "ShadowCommon.hlsli"
 
 Texture2DArray<float>  ShadowMap     : register(t8);
 SamplerComparisonState ShadowSampler : register(s2);
@@ -174,7 +172,72 @@ float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldP
 	return Color;
 }
 
-float3 EvaluateImageBasedLighting(FSurface Surface)
+// 반사 캡처 (ReflectionCaptures.h, 식은 Renderer/ReflectionMath.h): 목록은 우선순위 순, 앞에서부터 남은 비중을 채운다
+struct FReflectionCaptureGpu
+{
+	float3 Position;
+	uint   Shape; // 0 구, 1 상자 (월드 축 정렬, 시차 보정)
+	float3 BoxExtent;
+	float  Radius;
+	float  FadeDistance;
+	float  Intensity;
+	uint   Slot;
+	float  Padding;
+};
+StructuredBuffer<FReflectionCaptureGpu> ReflectionCaptures       : register(t20);
+TextureCubeArray<float4>                ReflectionCaptureAtlas   : register(t21); // 프리필터 밉 = 하늘 IBL과 같은 거칠기 대응
+Texture2D<float4>                       ScreenSpaceReflection    : register(t22); // rgb 색, a 신뢰도 (SsrTrace.hlsl)
+
+float ComputeCaptureInfluence(FReflectionCaptureGpu Capture, float3 P)
+{
+	if (Capture.Shape == 0)
+	{
+		return saturate((Capture.Radius - distance(P, Capture.Position)) / Capture.FadeDistance);
+	}
+	const float3 D = Capture.BoxExtent - abs(P - Capture.Position);
+	return saturate(min(D.x, min(D.y, D.z)) / Capture.FadeDistance);
+}
+
+float3 ParallaxCorrect(FReflectionCaptureGpu Capture, float3 P, float3 R)
+{
+	const float3 BoxMin = Capture.Position - Capture.BoxExtent;
+	const float3 BoxMax = Capture.Position + Capture.BoxExtent;
+	const float3 Planes = select(R > 0.0f, BoxMax, BoxMin);
+	const float3 T      = select(abs(R) > 1.0e-6f, (Planes - P) / R, 1.0e30f);
+	const float  TExit  = max(min(T.x, min(T.y, T.z)), 0.0f);
+	return normalize(P + R * TExit - Capture.Position);
+}
+
+// 반사 광원: SSR(신뢰도 × 거칠기 페이드) → 캡처 → 하늘 프리필터 (AmbientIntensity는 하늘에만 — 캡처/SSR은 장면 밝기 그대로)
+float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition, float2 PixelPosition, float MipCount)
+{
+	const float Lod       = Roughness * (MipCount - 1);
+	float3      Color     = 0.0f;
+	float       Remaining = 1.0f;
+	for (uint Index = 0; Index < ReflectionCaptureCount && Remaining > 0.01f; ++Index)
+	{
+		const FReflectionCaptureGpu Capture = ReflectionCaptures[Index];
+		const float                 Weight  = ComputeCaptureInfluence(Capture, WorldPosition);
+		if (Weight <= 0.0f)
+		{
+			continue;
+		}
+		const float3 Dir = Capture.Shape == 1 ? ParallaxCorrect(Capture, WorldPosition, R) : R;
+		Color += ReflectionCaptureAtlas.SampleLevel(IblSampler, float4(Dir, (float)Capture.Slot), Lod).rgb * (Capture.Intensity * Weight * Remaining);
+		Remaining *= 1.0f - Weight;
+	}
+	Color += IblSpecular.SampleLevel(IblSampler, R, Lod).rgb * (AmbientIntensity * Remaining);
+
+	if (SsrEnabled != 0)
+	{
+		const float4 Ssr  = ScreenSpaceReflection.Load(int3(PixelPosition, 0));
+		const float  Fade = saturate((SsrMaxRoughness - Roughness) / max(SsrMaxRoughness * 0.5f, 1.0e-3f)); // ReflectionMath::ComputeSsrRoughnessFade
+		Color             = lerp(Color, Ssr.rgb * SsrIntensity, saturate(Ssr.a) * Fade);
+	}
+	return Color;
+}
+
+float3 EvaluateImageBasedLighting(FSurface Surface, float3 WorldPosition, float2 PixelPosition)
 {
 	const float NdotV = max(saturate(dot(Surface.N, Surface.V)), 1.0e-4f);
 	const float3 F0 = GetF0(Surface);
@@ -183,10 +246,10 @@ float3 EvaluateImageBasedLighting(FSurface Surface)
 	uint Width, Height, MipCount;
 	IblSpecular.GetDimensions(0, Width, Height, MipCount);
 	const float3 R = reflect(-Surface.V, Surface.N);
-	const float3 Prefiltered = IblSpecular.SampleLevel(IblSampler, R, Surface.Roughness * (MipCount - 1)).rgb;
+	const float3 Prefiltered = SampleSpecularEnvironment(R, Surface.Roughness, WorldPosition, PixelPosition, (float)MipCount);
 	const float2 Brdf = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Surface.Roughness), 0);
 	const float3 Specular = Prefiltered * (F0 * Brdf.x + Brdf.y);
-	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse + Specular) * Surface.Occlusion * AmbientIntensity;
+	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * AmbientIntensity + Specular) * Surface.Occlusion;
 }
 
 uint SelectCascade(float3 WorldPosition)
@@ -271,6 +334,9 @@ struct FPixelInput
 	float4 WorldTangent  : TANGENT;
 	float2 UV            : TEXCOORD0;
 	float4 Color         : COLOR;
+	// 움직임 벡터 (지터 없는 현재/이전 클립 좌표). 깊이 사전 패스와 메인 패스가 같은 정점 셰이더를 써야 깊이 같음 테스트가 맞는다
+	float4 CurrentClip   : TEXCOORD1;
+	float4 PreviousClip  : TEXCOORD2;
 };
 
 FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
@@ -280,6 +346,8 @@ FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
 	const FInstanceData Instance      = LoadInstance(InstanceOffset, InstanceId);
 	const float4        WorldPosition = mul(float4(Input.Position, 1.0f), Instance.World);
 	Output.Position      = mul(WorldPosition, ViewProjection);
+	Output.CurrentClip   = mul(WorldPosition, UnjitteredViewProjection);
+	Output.PreviousClip  = mul(mul(float4(Input.Position, 1.0f), Instance.PrevWorld), PrevViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
 	Output.WorldNormal   = normalize(mul(Input.Normal, GetNormalMatrix(Instance)));
 
@@ -314,6 +382,9 @@ FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID
 	const float4   WorldPosition = mul(float4(Input.Position, 1.0f), Skin);
 	const float3x3 Skin3         = (float3x3)Skin;
 	Output.Position      = mul(WorldPosition, ViewProjection);
+	Output.CurrentClip   = mul(WorldPosition, UnjitteredViewProjection);
+	const float4x4 PrevSkin = ComputeSkinMatrix(Instance.PrevBoneOffset, Input.Joints, Input.Weights);
+	Output.PreviousClip  = mul(mul(float4(Input.Position, 1.0f), PrevSkin), PrevViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
 	Output.WorldNormal   = normalize(mul(Input.Normal, Skin3));
 
@@ -322,6 +393,64 @@ FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID
 	Output.UV           = Input.UV;
 	Output.Color        = Input.Color;
 	return Output;
+}
+
+// SSAO (반해상도 R = 가시도, G = 뷰 깊이, AmbientOcclusion.hlsl): 4탭 깊이 가중 업샘플. 간접광에만 곱한다
+Texture2D<float2> ScreenAmbientOcclusion : register(t16);
+
+float SampleScreenAmbientOcclusion(float2 PixelPosition, float3 WorldPosition)
+{
+	if (AmbientOcclusionEnabled < 0.5f)
+	{
+		return 1.0f;
+	}
+	uint Width, Height;
+	ScreenAmbientOcclusion.GetDimensions(Width, Height);
+	const float  ViewDepth = mul(float4(WorldPosition, 1.0f), ClusterView).z;
+	// 반해상도 픽셀 i는 전체 해상도 픽셀 2i에서 계산됐다 → 전체 위치 x의 반해상도 좌표 = (x - 0.5) / 2
+	const float2 HalfPos = (PixelPosition - 0.5f) * 0.5f;
+	const int2   Base    = int2(floor(HalfPos));
+	const float2 F       = HalfPos - float2(Base);
+	const int2   MaxPixel = int2(Width, Height) - 1;
+
+	float Sum    = 0.0f;
+	float Weight = 0.0f;
+	float Nearest = 1.0f;
+	float NearestDelta = 1.0e30f;
+	[unroll]
+	for (int Tap = 0; Tap < 4; ++Tap)
+	{
+		const int2   Offset = int2(Tap & 1, Tap >> 1);
+		const float2 Sample = ScreenAmbientOcclusion.Load(int3(clamp(Base + Offset, int2(0, 0), MaxPixel), 0));
+		const float  Bilinear = (Offset.x == 1 ? F.x : 1.0f - F.x) * (Offset.y == 1 ? F.y : 1.0f - F.y);
+		const float  Delta    = abs(Sample.y - ViewDepth) / max(ViewDepth, 1.0e-3f);
+		const float  W        = Bilinear * exp(-Delta * 40.0f) + 1.0e-5f;
+		Sum += Sample.x * W;
+		Weight += W;
+		if (Delta < NearestDelta)
+		{
+			NearestDelta = Delta;
+			Nearest      = Sample.x;
+		}
+	}
+	return Weight > 1.0e-3f ? Sum / Weight : Nearest;
+}
+
+// 데칼 DBuffer (DecalRenderer/Decal.hlsl, 식은 Renderer/DecalMath.h): rgb = 값·불투명도 누적, a = 남은 원래 표면 비중
+Texture2D<float4> DBufferA : register(t17); // 베이스색 (sRGB → 선형으로 읽힘)
+Texture2D<float4> DBufferB : register(t18); // 월드 법선 * 0.5 + 0.5
+Texture2D<float4> DBufferC : register(t19); // R 거칠기, G 금속
+
+void ApplyDecals(float2 PixelPosition, inout FSurface Surface)
+{
+	const int3   Pixel = int3(PixelPosition, 0);
+	const float4 A     = DBufferA.Load(Pixel);
+	const float4 B     = DBufferB.Load(Pixel);
+	const float4 C     = DBufferC.Load(Pixel);
+	Surface.Albedo     = Surface.Albedo * A.a + A.rgb;
+	Surface.N          = normalize(Surface.N * B.a + B.rgb * 2.0f - (1.0f - B.a));
+	Surface.Roughness  = Surface.Roughness * C.a + C.r;
+	Surface.Metallic   = saturate(Surface.Metallic * C.a + C.g);
 }
 
 float3 GetShadingNormal(FPixelInput Input)
@@ -349,10 +478,15 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	FSurface Surface;
 	Surface.Albedo    = BaseColor.rgb;
 	Surface.Metallic  = saturate(MR.b * MetallicFactor);
-	Surface.Roughness = clamp(MR.g * RoughnessFactor, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
+	Surface.Roughness = MR.g * RoughnessFactor;
 	Surface.N         = GetShadingNormal(Input);
+	if (DecalsEnabled != 0)
+	{
+		ApplyDecals(Input.Position.xy, Surface);
+	}
+	Surface.Roughness = clamp(Surface.Roughness, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
 	Surface.V         = normalize(CameraPosition - Input.WorldPosition);
-	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength);
+	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength) * SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition); // IBL만 사용
 
 	const float3 L        = -DirectionalLight.Direction; // 표면 → 광원
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
@@ -361,7 +495,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, normalize(Input.WorldNormal));
-	Color += EvaluateImageBasedLighting(Surface);
+	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy);
 	Color += Emissive;
 
 	if (VisualizeCascades != 0)
@@ -369,5 +503,21 @@ float4 PSMain(FPixelInput Input) : SV_Target
 		Color *= CascadeDebugColor(Input.WorldPosition);
 	}
 
-	return float4(Color, BaseColor.a);
+	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클이 덮은 만큼 쌓인다)
+}
+
+// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 거칠기(금속/거칠기 텍스처 G × 팩터) + 움직임 벡터
+struct FPrepassOutput
+{
+	float4 Normal   : SV_Target0; // R10G10B10A2_UNORM (ScreenSpace.hlsli EncodeScreenNormal)
+	float2 Velocity : SV_Target1; // R16G16_FLOAT, UV 단위 현재 - 이전
+};
+
+FPrepassOutput PSPrepass(FPixelInput Input)
+{
+	FPrepassOutput Output;
+	const float Roughness = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV).g * RoughnessFactor;
+	Output.Normal   = EncodeScreenNormal(normalize(Input.WorldNormal), Roughness);
+	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
+	return Output;
 }

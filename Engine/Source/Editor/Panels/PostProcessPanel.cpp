@@ -41,6 +41,33 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		ImGui::DragFloat("강도", &Settings.BloomIntensity, 0.005f, 0.0f, 2.0f, "%.3f");
 		ImGui::EndDisabled();
 
+		ImGui::SeparatorText("안티에일리어싱 (TAA)");
+		ImGui::Checkbox("TAA", &Settings.bTemporalAA);
+		ImGui::SetItemTooltip("프레임마다 화면을 조금씩 흔들어 그린 결과를 누적해 계단 현상을 없앱니다 (픽셀 아트에서는 꺼짐)");
+		ImGui::BeginDisabled(!Settings.bTemporalAA);
+		ImGui::SliderFloat("현재 프레임 비중", &Settings.TemporalAACurrentWeight, 0.02f, 0.5f, "%.2f");
+		ImGui::SetItemTooltip("작을수록 부드럽지만 움직일 때 잔상이 남기 쉽습니다");
+		ImGui::SliderFloat("샤프닝", &Settings.TemporalAASharpness, 0.0f, 1.0f, "%.2f");
+		ImGui::EndDisabled();
+
+		ImGui::SeparatorText("주변광 차폐 (SSAO)");
+		ImGui::Checkbox("SSAO", &Settings.bAmbientOcclusion);
+		ImGui::SetItemTooltip("구석과 틈에 드는 하늘빛·환경광을 줄여 입체감을 살립니다 (직접광에는 영향 없음)");
+		ImGui::BeginDisabled(!Settings.bAmbientOcclusion);
+		ImGui::DragFloat("AO 세기", &Settings.AmbientOcclusionIntensity, 0.02f, 0.0f, 4.0f, "%.2f");
+		ImGui::DragFloat("AO 반경", &Settings.AmbientOcclusionRadius, 1.0f, 5.0f, 500.0f, "%.0f cm");
+		ImGui::EndDisabled();
+
+		ImGui::SeparatorText("화면 공간 반사 (SSR)");
+		ImGui::Checkbox("SSR", &Settings.bScreenSpaceReflections);
+		ImGui::SetItemTooltip("화면에 보이는 물체를 매끈한 표면에 비춥니다 (화면 밖은 반사 캡처 → 하늘)");
+		ImGui::BeginDisabled(!Settings.bScreenSpaceReflections);
+		ImGui::DragFloat("SSR 세기", &Settings.SsrIntensity, 0.01f, 0.0f, 4.0f, "%.2f");
+		ImGui::SliderFloat("SSR 최대 거칠기", &Settings.SsrMaxRoughness, 0.05f, 1.0f, "%.2f");
+		ImGui::DragFloat("SSR 최대 거리", &Settings.SsrMaxDistance, 10.0f, 50.0f, 20000.0f, "%.0f cm");
+		ImGui::DragFloat("SSR 두께", &Settings.SsrThickness, 1.0f, 1.0f, 500.0f, "%.0f cm");
+		ImGui::EndDisabled();
+
 		ImGui::Separator();
 		if (ImGui::Button("기본값으로"))
 		{

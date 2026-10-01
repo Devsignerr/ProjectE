@@ -30,5 +30,5 @@ float4 PSMain(FOutput In) : SV_Target0
 		+ Up * In.Ndc.y * TanHalfFov);
 
 	return float4(
-		Sky.SampleLevel(LinearSampler, Direction, 0).rgb * Intensity, 1);
+		Sky.SampleLevel(LinearSampler, Direction, 0).rgb * Intensity, 0); // 알파 0 = TAA 반응형 마스크 없음
 }

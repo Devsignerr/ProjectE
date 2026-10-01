@@ -1,0 +1,14 @@
+{
+  "Name": "DecalRivets",
+  "BaseColorFactor": [0.62, 0.63, 0.66, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 1.0,
+  "Roughness": 0.35,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "RivetsNormal.png",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

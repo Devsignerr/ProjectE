@@ -885,6 +885,13 @@ void FEditorApplication::DrawStatsWindow()
 		{
 			Rhi->SetVSync(bVSync);
 		}
+		ImGui::Checkbox("오클루전 컬링", &SceneRenderer.bEnableOcclusion);
+		if (SceneRenderer.bEnableOcclusion)
+		{
+			ImGui::SameLine();
+			ImGui::Text("정적 %u 중 그림 %u (+2단계 %u), 가려짐 %u", Stats.OcclusionTested, Stats.OcclusionPhase1, Stats.OcclusionPhase2,
+			            Stats.OcclusionTested - std::min(Stats.OcclusionTested, Stats.OcclusionPhase1 + Stats.OcclusionPhase2));
+		}
 		ImGui::Checkbox("메시 LOD", &SceneRenderer.bEnableLod);
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(120.0f);

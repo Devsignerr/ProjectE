@@ -41,6 +41,9 @@
     { "File": "ParticleSimulate.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "UI.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "UI.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
-    { "File": "ClusterCulling.hlsl", "Entry": "CSMain", "Stage": "Compute" }
+    { "File": "ClusterCulling.hlsl", "Entry": "CSMain", "Stage": "Compute" },
+    { "File": "OcclusionCulling.hlsl", "Entry": "HzbFromDepthCS", "Stage": "Compute" },
+    { "File": "OcclusionCulling.hlsl", "Entry": "HzbDownsampleCS", "Stage": "Compute" },
+    { "File": "OcclusionCulling.hlsl", "Entry": "CullCS", "Stage": "Compute" }
   ]
 }

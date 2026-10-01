@@ -29,6 +29,8 @@ public:
 
 	// 토폴로지/버퍼 바인딩 후 인덱스 드로우
 	void Draw(ID3D12GraphicsCommandList* CommandList) const;
+	// 토폴로지 + 정점/인덱스 버퍼만 바인딩 (간접 드로우용 — 인덱스 범위는 GetLod)
+	void Bind(ID3D12GraphicsCommandList* CommandList) const;
 	// 같은 메시를 InstanceCount번 (인스턴스 데이터는 셰이더가 SV_InstanceID로 읽는다). Lod는 범위 밖이면 마지막 LOD
 	void DrawInstanced(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount, uint32 Lod = 0) const;
 

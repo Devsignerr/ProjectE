@@ -105,6 +105,15 @@ void FStaticMesh::Draw(ID3D12GraphicsCommandList* CommandList) const
 	CommandList->DrawIndexedInstanced(IndexCount, 1, 0, 0, 0);
 }
 
+void FStaticMesh::Bind(ID3D12GraphicsCommandList* CommandList) const
+{
+	const D3D12_VERTEX_BUFFER_VIEW VertexView = VertexBuffer.GetVertexBufferView(sizeof(FVertex));
+	const D3D12_INDEX_BUFFER_VIEW  IndexView  = IndexBuffer.GetIndexBufferView(DXGI_FORMAT_R32_UINT);
+	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	CommandList->IASetVertexBuffers(0, 1, &VertexView);
+	CommandList->IASetIndexBuffer(&IndexView);
+}
+
 void FStaticMesh::DrawInstanced(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount, uint32 Lod) const
 {
 	const FLodRange& Range = GetLod(Lod);

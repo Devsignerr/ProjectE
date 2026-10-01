@@ -14,6 +14,7 @@
 #include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
 #include "Renderer/MeshInstancing.h"
+#include "Renderer/OcclusionCuller.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
 #include "Scene/ResourceHandles.h"
@@ -38,7 +39,9 @@ enum class ERenderTimer : uint32
 	Shadow,      // 방향광 캐스케이드 그림자
 	MainCull,    // 메인 패스 수집/컬링
 	MainSort,    // 메인 패스 정렬
-	MainDraw,    // 메인 패스 기록 (GPU: 하늘 + 메시)
+	Occlusion,   // 오클루전 1단계 (항목 업로드 + 이전 프레임 HZB 컬링)
+	MainDraw,    // 메인 패스 기록 (GPU: 하늘 + 메시, 오클루전이면 HZB·2단계 포함)
+	Hzb,         // 오클루전: HZB 만들기 + 2단계 컬링 (MainDraw 안)
 	Particles,
 	PostProcess,
 	Count
@@ -56,6 +59,10 @@ struct FSceneRenderStats
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
+	// 오클루전 컬링 (GPU 리드백 — 몇 프레임 늦은 값): 검사한 정적 인스턴스, 1단계/2단계에서 그린 수
+	uint32 OcclusionTested = 0;
+	uint32 OcclusionPhase1 = 0;
+	uint32 OcclusionPhase2 = 0;
 
 	float CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // 이번 프레임 CPU 기록 시간
 	float GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // GPU 시간 (타임스탬프, 몇 프레임 늦은 값)
@@ -89,6 +96,9 @@ public:
 	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
 	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
 	int32                ForcedLod       = -1;    // 0 이상이면 모든 정적 메시를 그 LOD로 (확인용, --force-lod N)
+	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
+	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)
+	bool                 bEnableOcclusion = false;
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -134,6 +144,7 @@ private:
 	FIblRenderer         IblRenderer;
 	FParticleRenderer    ParticleRenderer;
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
+	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
 
@@ -190,6 +201,9 @@ private:
 		double Triangles       = 0.0;
 		double ShadowTriangles = 0.0;
 		double VisibleMeshes   = 0.0;
+		double OcclusionTested = 0.0;
+		double OcclusionDrawn  = 0.0; // 1단계 + 2단계
+		double OcclusionPhase2 = 0.0; // 2단계에서 그린 수 (이전 프레임 HZB만 썼다면 한 프레임 늦게 나왔을 물체)
 		uint32 TotalMeshes     = 0;
 	};
 	FPerfCapture PerfCapture;

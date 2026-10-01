@@ -105,7 +105,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
-	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary))
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
+	    !OcclusionCuller.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -119,6 +120,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	PerfCapture                    = FPerfCapture{};
 	PerfCapture.bEnabled           = CommandLine.HasFlag(L"--perf-capture");
+	if (CommandLine.HasFlag(L"--occlusion"))
+	{
+		bEnableOcclusion = true; // 측정/비교용 (기본 끔)
+	}
 	if (CommandLine.HasFlag(L"--no-lod"))
 	{
 		bEnableLod = false; // 측정/비교용
@@ -146,6 +151,8 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Shadow:      return "방향광 그림자";
 	case ERenderTimer::MainCull:    return "메인 컬링";
 	case ERenderTimer::MainSort:    return "메인 정렬";
+	case ERenderTimer::Occlusion:   return "오클루전 1단계";
+	case ERenderTimer::Hzb:         return "HZB + 2단계";
 	case ERenderTimer::MainDraw:    return "메인 드로우";
 	case ERenderTimer::Particles:   return "파티클";
 	case ERenderTimer::PostProcess: return "포스트";
@@ -190,6 +197,9 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.Triangles += static_cast<double>(Stats.Triangles);
 	Capture.ShadowTriangles += static_cast<double>(Stats.ShadowTriangles);
 	Capture.VisibleMeshes += Stats.VisibleMeshes;
+	Capture.OcclusionTested += Stats.OcclusionTested;
+	Capture.OcclusionDrawn += Stats.OcclusionPhase1 + Stats.OcclusionPhase2;
+	Capture.OcclusionPhase2 += Stats.OcclusionPhase2;
 	Capture.TotalMeshes = Stats.TotalMeshes;
 }
 
@@ -217,6 +227,11 @@ void FSceneRenderer::LogPerfCapture() const
 	E_LOG(LogRenderer, Display, "[성능] {} 프레임 평균 ({}): 프레임 {:.3f} ms, 드로우 {:.1f} (그림자 {:.1f}), 삼각형 {:.0f} (그림자 {:.0f}), 메시 {:.1f}/{}",
 	      Capture.Frames, Config, Capture.FrameMs / Count, Capture.DrawCalls / Count, Capture.ShadowDrawCalls / Count, Capture.Triangles / Count,
 	      Capture.ShadowTriangles / Count, Capture.VisibleMeshes / Count, Capture.TotalMeshes);
+	if (Capture.OcclusionTested > 0.0)
+	{
+		E_LOG(LogRenderer, Display, "[성능] 오클루전: 정적 인스턴스 {:.1f} 중 그림 {:.1f} (2단계 {:.2f}), 가려짐 {:.1f}", Capture.OcclusionTested / Count,
+		      Capture.OcclusionDrawn / Count, Capture.OcclusionPhase2 / Count, (Capture.OcclusionTested - Capture.OcclusionDrawn) / Count);
+	}
 	E_LOG(LogRenderer, Display, "[성능] CPU ms: {}", Cpu);
 	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
 }
@@ -358,6 +373,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!OcclusionCuller.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
@@ -379,6 +398,7 @@ void FSceneRenderer::Shutdown()
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	LocalLightRenderer.Shutdown();
+	OcclusionCuller.Shutdown();
 	PipelineState.Shutdown();
 	SkinnedPipelineState.Shutdown();
 	WireframePipelineState.Shutdown();
@@ -625,6 +645,15 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 	MainBatches.Finalize(DynamicBuffer);
 	EndTimer(ERenderTimer::MainSort);
 
+	// 오클루전 1단계: 이전 프레임 HZB로 정적 인스턴스 판정 (와이어프레임은 깊이가 성겨 끔)
+	const bool bOcclusion = bEnableOcclusion && !bWireframe && SceneColor->GetDesc().bWithDepth;
+	if (bOcclusion)
+	{
+		BeginTimer(ERenderTimer::Occlusion);
+		OcclusionCuller.CullPhase1(MeshInstances, MainBatches, SceneColor->GetWidth(), SceneColor->GetHeight());
+		EndTimer(ERenderTimer::Occlusion);
+	}
+
 	BeginTimer(ERenderTimer::MainDraw);
 	if (bDrawSkybox)
 	{
@@ -649,7 +678,7 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
@@ -658,42 +687,92 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 	bool             bSkinnedBound = false;
 	Stats.DrawCalls                = 0;
 	Stats.Triangles                = 0;
+	uint64 SkinnedTriangles        = 0;
 
-	for (const FInstanceBatch& Batch : MainBatches.GetBatches())
-	{
-		const FMeshInstance& Instance = Instances[Batch.Instance];
-		const bool           bSkinned = Instance.IsSkinned();
-		if (bSkinned != bSkinnedBound)
+	// Phase 0 = 오클루전 없음(바로 그림), 1/2 = 오클루전 단계 (정적 묶음은 간접 드로우, 스킨 묶음은 1단계에서 바로)
+	auto DrawBatches = [&](uint32 Phase) {
+		const std::vector<FInstanceBatch>& Batches = MainBatches.GetBatches();
+		for (uint32 BatchIndex = 0; BatchIndex < static_cast<uint32>(Batches.size()); ++BatchIndex)
 		{
-			CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
-			bSkinnedBound = bSkinned;
-		}
-		if (Instance.Material != BoundMaterial)
-		{
-			const uint64 Key   = Instance.MaterialHandle.ToId();
-			auto         Found = MaterialConstantCache.find(Key);
-			if (Found == MaterialConstantCache.end())
+			const FInstanceBatch& Batch    = Batches[BatchIndex];
+			const FMeshInstance&  Instance = Instances[Batch.Instance];
+			const bool            bSkinned = Instance.IsSkinned();
+			if (bSkinned && Phase == 2)
 			{
-				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
+				continue;
 			}
-			CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
-			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
-			BoundMaterial = Instance.Material;
-		}
+			if (bSkinned != bSkinnedBound)
+			{
+				CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
+				bSkinnedBound = bSkinned;
+			}
+			if (Instance.Material != BoundMaterial)
+			{
+				const uint64 Key   = Instance.MaterialHandle.ToId();
+				auto         Found = MaterialConstantCache.find(Key);
+				if (Found == MaterialConstantCache.end())
+				{
+					Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
+				}
+				CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
+				CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
+				BoundMaterial = Instance.Material;
+			}
 
-		if (bSkinned)
-		{
-			CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Instance.SkinPalette);
-			Instance.Mesh->DrawSkinned(CommandList);
+			if (bSkinned)
+			{
+				CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Instance.SkinPalette);
+				Instance.Mesh->DrawSkinned(CommandList);
+				SkinnedTriangles += Instance.Mesh->GetIndexCount() / 3;
+			}
+			else
+			{
+				CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
+				if (Phase == 0)
+				{
+					Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
+					Stats.Triangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+				}
+				else
+				{
+					Instance.Mesh->Bind(CommandList);
+					OcclusionCuller.DrawIndirect(CommandList, BatchIndex, Phase);
+				}
+			}
+			++Stats.DrawCalls;
 		}
-		else
-		{
-			CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
-			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
-		}
-		++Stats.DrawCalls;
-		Stats.Triangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+	};
+
+	if (!bOcclusion)
+	{
+		DrawBatches(0);
+		Stats.Triangles += SkinnedTriangles;
+		Stats.OcclusionTested = Stats.OcclusionPhase1 = Stats.OcclusionPhase2 = 0;
+		EndTimer(ERenderTimer::MainDraw);
+		return;
 	}
+
+	DrawBatches(1);
+
+	// 1단계 깊이로 HZB → 1단계에서 가려진 것만 다시 검사 (새로 드러난 물체를 같은 프레임에 그린다)
+	BeginTimer(ERenderTimer::Hzb);
+	OcclusionCuller.BuildHzbAndCullPhase2(*SceneColor, ViewProjection);
+	EndTimer(ERenderTimer::Hzb);
+
+	// 계산 PSO로 바뀌었으므로 그래픽스 상태 복구 (그래픽스 루트 인자는 계산과 따로라 유지된다)
+	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SceneColor->GetRtv();
+	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = SceneColor->GetDsv();
+	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
+	CommandList->SetPipelineState(StaticPipeline.Get());
+	bSkinnedBound = false;
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, OcclusionCuller.GetIndices(2));
+	DrawBatches(2);
+	OcclusionCuller.FinishFrame();
+
+	Stats.Triangles       = OcclusionCuller.GetDrawnTriangles() + SkinnedTriangles;
+	Stats.OcclusionTested = OcclusionCuller.GetTestedInstances();
+	Stats.OcclusionPhase1 = OcclusionCuller.GetPhase1Instances();
+	Stats.OcclusionPhase2 = OcclusionCuller.GetPhase2Instances();
 	EndTimer(ERenderTimer::MainDraw);
 }
 

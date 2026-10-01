@@ -87,6 +87,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "체력 75 / 100",
+                "TextKey": "HUD.Health",
                 "FontSize": 24,
                 "TextColor": [
                   1,
@@ -194,6 +195,7 @@
         "Enabled": true,
         "Opacity": 1,
         "Text": "점수 12,340",
+        "TextKey": "HUD.Score",
         "FontSize": 40,
         "TextColor": [
           1,
@@ -364,6 +366,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "인게임 UI 샘플",
+                "TextKey": "Menu.Subtitle",
                 "FontSize": 26,
                 "TextColor": [
                   0.7,
@@ -499,6 +502,7 @@
                     "Enabled": true,
                     "Opacity": 1,
                     "Text": "게임 시작",
+                    "TextKey": "Menu.Play",
                     "FontSize": 30,
                     "TextColor": [
                       1,
@@ -634,6 +638,7 @@
                     "Enabled": true,
                     "Opacity": 1,
                     "Text": "설정",
+                    "TextKey": "Menu.Options",
                     "FontSize": 30,
                     "TextColor": [
                       1,
@@ -769,6 +774,7 @@
                     "Enabled": true,
                     "Opacity": 1,
                     "Text": "종료",
+                    "TextKey": "Menu.Quit",
                     "FontSize": 30,
                     "TextColor": [
                       1,
@@ -907,6 +913,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "여우가 숲에서 나타났습니다.",
+                "TextKey": "Log.Line0",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -953,6 +960,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "아이템을 얻었습니다: 오래된 열쇠",
+                "TextKey": "Log.Line1",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -999,6 +1007,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "체크포인트에 도착했습니다.",
+                "TextKey": "Log.Line2",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1045,6 +1054,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "스크롤 박스는 휠로 움직입니다. 긴 문장은 자동으로 줄바꿈되어 여러 줄에 걸쳐 표시됩니다.",
+                "TextKey": "Log.Line3",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1091,6 +1101,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "보물 상자를 열었습니다.",
+                "TextKey": "Log.Line4",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1137,6 +1148,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "새 기록을 세웠습니다!",
+                "TextKey": "Log.Line5",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1183,6 +1195,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "동료가 합류했습니다.",
+                "TextKey": "Log.Line6",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1229,6 +1242,7 @@
                 "Enabled": true,
                 "Opacity": 1,
                 "Text": "마지막 줄",
+                "TextKey": "Log.Line7",
                 "FontSize": 22,
                 "TextColor": [
                   0.85,
@@ -1344,6 +1358,7 @@
         ],
         "Text": "",
         "HintText": "채팅 입력 (클릭 후 Enter)",
+        "HintTextKey": "Chat.Hint",
         "HintColor": [
           1,
           1,

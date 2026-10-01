@@ -294,6 +294,10 @@ namespace
 			break;
 		case EUIWidgetType::Text:
 			Object["Text"] = Widget.Text;
+			if (!Widget.TextKey.empty())
+			{
+				Object["TextKey"] = Widget.TextKey;
+			}
 			if (!Widget.Font.empty())
 			{
 				Object["Font"] = Widget.Font;
@@ -326,6 +330,10 @@ namespace
 			Object["ContentPadding"] = ToJson(Widget.ContentPadding);
 			Object["Text"]           = Widget.Text;
 			Object["HintText"]       = Widget.HintText;
+			if (!Widget.HintTextKey.empty())
+			{
+				Object["HintTextKey"] = Widget.HintTextKey;
+			}
 			Object["HintColor"]      = ToJson(Widget.HintColor);
 			if (!Widget.Font.empty())
 			{
@@ -389,6 +397,7 @@ namespace
 		Read(Object, "ContentPadding", Widget->ContentPadding);
 		Read(Object, "ImageSize", Widget->ImageSize);
 		Read(Object, "Text", Widget->Text);
+		Read(Object, "TextKey", Widget->TextKey);
 		Read(Object, "Font", Widget->Font);
 		Read(Object, "FontSize", Widget->FontSize);
 		Read(Object, "TextColor", Widget->TextColor);
@@ -404,6 +413,7 @@ namespace
 		ReadBrush(Object, "FillBrush", Widget->FillBrush);
 		ReadBrush(Object, "FocusedBrush", Widget->FocusedBrush);
 		Read(Object, "HintText", Widget->HintText);
+		Read(Object, "HintTextKey", Widget->HintTextKey);
 		Read(Object, "HintColor", Widget->HintColor);
 		Read(Object, "MaxLength", Widget->MaxLength);
 		Read(Object, "Percent", Widget->Percent);

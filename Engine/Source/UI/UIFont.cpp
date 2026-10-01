@@ -602,11 +602,12 @@ std::vector<FUIFont*> FUIFontLibrary::GetLoadedFonts() const
 FVector2 FUIFontLibrary::MeasureText(const FUIWidgetData& TextWidget, float WrapWidth)
 {
 	FUIFont* Font = GetFont(TextWidget.Font);
-	if (Font == nullptr || TextWidget.Text.empty())
+	const std::string& Text = GetDisplayText(TextWidget);
+	if (Font == nullptr || Text.empty())
 	{
 		return FVector2(0.0f, Font != nullptr ? Font->GetLineHeight(TextWidget.FontSize) : TextWidget.FontSize);
 	}
-	return Font->Measure(TextWidget.Text, TextWidget.FontSize, TextWidget.bWrap ? WrapWidth : 0.0f);
+	return Font->Measure(Text, TextWidget.FontSize, TextWidget.bWrap ? WrapWidth : 0.0f);
 }
 
 void FUIFontLibrary::Clear()

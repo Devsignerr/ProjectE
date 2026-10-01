@@ -119,7 +119,7 @@ namespace
 		Line.ShadowOffset  = FVector2::ZeroVector;
 		if (bHint)
 		{
-			Line.Text      = Widget.HintText;
+			Line.Text      = GetDisplayHintText(Widget);
 			Line.TextColor = Widget.HintColor;
 		}
 		const FUIRect TextRect(FVector2(Left, Top), FVector2(Left + 100000.0f, Top + LineHeight));
@@ -296,7 +296,8 @@ void FUIPainter::PaintBrush(const FUIBrush& Brush, const FUIRect& Rect, float Op
 void FUIPainter::PaintText(const FUIWidgetData& TextWidget, const FUIRect& Geometry, float Opacity, const FUITransform& Transform,
                            const FUIRect& ClipPixels, FUIFontLibrary& Fonts, FUIDrawList& Out)
 {
-	if (TextWidget.Text.empty() || TextWidget.FontSize <= 0.0f)
+	const std::string& Text = GetDisplayText(TextWidget);
+	if (Text.empty() || TextWidget.FontSize <= 0.0f)
 	{
 		return;
 	}
@@ -306,7 +307,7 @@ void FUIPainter::PaintText(const FUIWidgetData& TextWidget, const FUIRect& Geome
 		return;
 	}
 	FUITextLayout Layout;
-	Font->Layout(TextWidget.Text, TextWidget.FontSize, TextWidget.bWrap ? Geometry.GetWidth() : 0.0f, Layout);
+	Font->Layout(Text, TextWidget.FontSize, TextWidget.bWrap ? Geometry.GetWidth() : 0.0f, Layout);
 	if (Layout.Glyphs.empty())
 	{
 		return;

@@ -83,6 +83,13 @@ FProjectSettings::FProjectSettings()
 			return true;
 		},
 		[this]() { return Input.GetProjectMapping().ToJson(); }, [this]() { Input.ResetProjectMapping(); });
+
+	Registry.Register(Localization, { "Localization", "다국어", GProjectCategory, "문자열 표와 언어. 플레이어가 고른 언어는 <Saved>/Config/Language.json" })
+		.Property(&FLocalizationSettings::DefaultLanguage, "DefaultLanguage", "기본 언어").Tooltip("언어 코드 (ko, en, ja ...). 현재 언어에 없는 문자열은 이 언어로 보여 준다")
+		.Property(&FLocalizationSettings::StringTables, "StringTables", "문자열 표")
+		.Tooltip("Content 기준 .estrings 경로 (\";\" 구분). 비면 Content/Localization 폴더의 모든 .estrings (패키지 pak에서는 폴더를 뒤질 수 없으므로 지정 권장)")
+		.Property(&FLocalizationSettings::bDetectSystemLanguage, "DetectSystemLanguage", "시스템 언어 자동 선택")
+		.Tooltip("플레이어가 언어를 고른 적이 없으면 Windows 표시 언어가 표에 있을 때 그 언어로 시작한다");
 }
 
 void FProjectSettings::ResetToDefaults()
@@ -93,6 +100,7 @@ void FProjectSettings::ResetToDefaults()
 	Physics   = {};
 	Network   = {};
 	Display   = {};
+	Localization = {};
 	Input.ResetProjectMapping(); // 사용자 재지정은 유지 (플레이어 파일)
 }
 

@@ -1,0 +1,89 @@
+{
+  "Version": 1,
+  "Languages": [
+    "ko",
+    "en"
+  ],
+  "Strings": {
+    "Chat.Hint": {
+      "en": "Chat (click, then Enter)",
+      "ko": "채팅 입력 (클릭 후 Enter)"
+    },
+    "Chat.Me": {
+      "en": "Me: {0}",
+      "ko": "나: {0}"
+    },
+    "HUD.Health": {
+      "en": "Health {0} / 100",
+      "ko": "체력 {0} / 100"
+    },
+    "HUD.Language": {
+      "en": "Language: {Name} (L to switch)",
+      "ko": "언어: {Name} (L 키로 전환)"
+    },
+    "HUD.Score": {
+      "en": "Score {0}",
+      "ko": "점수 {0}"
+    },
+    "Log.Line0": {
+      "en": "A fox appeared in the forest.",
+      "ko": "여우가 숲에서 나타났습니다."
+    },
+    "Log.Line1": {
+      "en": "Item acquired: Old Key",
+      "ko": "아이템을 얻었습니다: 오래된 열쇠"
+    },
+    "Log.Line2": {
+      "en": "Checkpoint reached.",
+      "ko": "체크포인트에 도착했습니다."
+    },
+    "Log.Line3": {
+      "en": "Scroll boxes move with the mouse wheel. Long sentences wrap automatically across several lines.",
+      "ko": "스크롤 박스는 휠로 움직입니다. 긴 문장은 자동으로 줄바꿈되어 여러 줄에 걸쳐 표시됩니다."
+    },
+    "Log.Line4": {
+      "en": "You opened a treasure chest.",
+      "ko": "보물 상자를 열었습니다."
+    },
+    "Log.Line5": {
+      "en": "New record!",
+      "ko": "새 기록을 세웠습니다!"
+    },
+    "Log.Line6": {
+      "en": "A companion joined the party.",
+      "ko": "동료가 합류했습니다."
+    },
+    "Log.Line7": {
+      "en": "Last line",
+      "ko": "마지막 줄"
+    },
+    "Log.Started": {
+      "en": "Game started. (M: menu, L: language)",
+      "ko": "게임을 시작했습니다. (M: 메뉴, L: 언어)"
+    },
+    "Menu.NoOptions": {
+      "en": "No options yet",
+      "ko": "설정은 아직 없습니다"
+    },
+    "Menu.Options": {
+      "en": "Options",
+      "ko": "설정"
+    },
+    "Menu.Play": {
+      "en": "Start Game",
+      "ko": "게임 시작"
+    },
+    "Menu.PlayHover": {
+      "en": "Click to close the menu",
+      "ko": "클릭하면 메뉴가 닫힙니다"
+    },
+    "Menu.Quit": {
+      "en": "Quit",
+      "ko": "종료"
+    },
+    "Menu.Subtitle": {
+      "en": "In-game UI sample",
+      "ko": "인게임 UI 샘플"
+    }
+  }
+}

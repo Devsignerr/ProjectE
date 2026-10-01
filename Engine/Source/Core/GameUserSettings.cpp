@@ -2,6 +2,7 @@
 
 #include "Core/Log.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -131,11 +132,7 @@ bool FGameUserSettings::SaveToFile(const std::filesystem::path& Path) const
 
 FGameUserSettings FGameUserSettings::Load()
 {
-	FGameUserSettings Settings;
-	if (FPaths::HasProject())
-	{
-		Settings.ApplyFile(FPaths::GetProjectConfigDirectory() / L"DefaultGameUserSettings.json");
-	}
+	FGameUserSettings Settings = FProjectSettings::Get().Display; // 프로젝트 기본값
 	Settings.ApplyFile(GetUserSettingsPath());
 	return Settings;
 }

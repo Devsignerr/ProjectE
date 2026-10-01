@@ -3,6 +3,7 @@
 #include "Core/CoreMinimal.h"
 #include "Core/Paths.h"
 #include "Core/Platform/ExecutableResources.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Renderer/Image.h"
 
@@ -14,15 +15,15 @@ E_DEFINE_LOG_CATEGORY(LogExeStamp, Log)
 namespace
 {
 	// 프로젝트 Icon(.ico 그대로 / 그 밖의 이미지는 여러 크기로 축소). 지정하지 않았으면 빈 목록
-	bool LoadProjectIcon(const FProjectDescriptor& Descriptor, std::vector<FIconEntry>& OutIcon)
+	bool LoadProjectIcon(const FProjectInfoSettings& Settings, std::vector<FIconEntry>& OutIcon)
 	{
 		OutIcon.clear();
-		if (Descriptor.Icon.empty())
+		if (Settings.Icon.empty())
 		{
-			E_LOG(LogExeStamp, Warning, "프로젝트에 Icon이 없어 기본 아이콘을 씁니다 (.eproject \"Icon\")");
+			E_LOG(LogExeStamp, Warning, "프로젝트 설정에 아이콘이 없어 기본 아이콘을 씁니다 (프로젝트 설정 → 프로젝트 정보 → 아이콘)");
 			return true;
 		}
-		const std::filesystem::path IconPath = FPaths::GetProjectDirectory() / FStringConv::ToWide(Descriptor.Icon);
+		const std::filesystem::path IconPath = FPaths::GetProjectDirectory() / FStringConv::ToWide(Settings.Icon);
 		std::wstring Extension = IconPath.extension().wstring();
 		for (wchar_t& Character : Extension)
 		{
@@ -63,21 +64,21 @@ int StampExecutable(const std::filesystem::path& ExecutablePath)
 		E_LOG(LogExeStamp, Error, "--stamp-exe에는 --project가 필요합니다");
 		return 1;
 	}
-	const FProjectDescriptor& Descriptor = FPaths::GetProjectDescriptor();
+	const FProjectSettings& Settings = FProjectSettings::Get();
 
 	std::vector<FIconEntry> Icon;
-	if (!LoadProjectIcon(Descriptor, Icon))
+	if (!LoadProjectIcon(Settings.Info, Icon))
 	{
 		return 1;
 	}
 
 	FExecutableVersionInfo Info;
-	Info.ProductName      = Descriptor.GetDisplayName();
-	Info.FileDescription  = Descriptor.GetDisplayName(); // 작업 관리자에 보이는 이름
-	Info.CompanyName      = Descriptor.Company;
-	Info.LegalCopyright   = Descriptor.Company.empty() ? std::string() : "Copyright (C) " + Descriptor.Company;
-	Info.Version          = Descriptor.GetVersion();
-	Info.InternalName     = Descriptor.GetExecutableName();
+	Info.ProductName      = Settings.GetDisplayName();
+	Info.FileDescription  = Settings.GetDisplayName(); // 작업 관리자에 보이는 이름
+	Info.CompanyName      = Settings.Info.Company;
+	Info.LegalCopyright   = Settings.Info.Company.empty() ? std::string() : "Copyright (C) " + Settings.Info.Company;
+	Info.Version          = Settings.Info.Version;
+	Info.InternalName     = Settings.GetExecutableName();
 	Info.OriginalFilename = FStringConv::ToUtf8(ExecutablePath.filename().wstring());
 	uint16 VersionParts[4] = {};
 	if (!FExecutableResources::ParseVersion(Info.Version, VersionParts))

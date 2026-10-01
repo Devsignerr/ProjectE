@@ -2,6 +2,7 @@
 
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/Serialization/BinaryArchive.h"
+#include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
 
 #include <winsock2.h>
@@ -109,6 +110,7 @@ FLanDiscovery::~FLanDiscovery()
 bool FLanDiscovery::StartHost(const FLanHostInfo& Info, uint16 DiscoveryPort)
 {
 	Stop();
+	DiscoveryPort = DiscoveryPort != 0 ? DiscoveryPort : GetConfiguredLanDiscoveryPort();
 	if (!Impl->bWinsock || (Impl->Socket = OpenUdpSocket(DiscoveryPort, false)) == INVALID_SOCKET)
 	{
 		E_LOG(LogNet, Warning, "LAN 탐색 포트 {}를 열지 못했습니다 (방 목록에 보이지 않지만 직접 접속은 된다)", DiscoveryPort);
@@ -130,6 +132,7 @@ void FLanDiscovery::SetPlayerCount(uint16 Players)
 bool FLanDiscovery::StartSearch(const std::string& ProjectName, uint16 DiscoveryPort)
 {
 	Stop();
+	DiscoveryPort = DiscoveryPort != 0 ? DiscoveryPort : GetConfiguredLanDiscoveryPort();
 	Sessions.clear();
 	if (!Impl->bWinsock || (Impl->Socket = OpenUdpSocket(0, true)) == INVALID_SOCKET)
 	{

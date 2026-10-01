@@ -18,17 +18,20 @@
     심볼: Build\Package\<프로젝트명>-Symbols\ 에 PDB + 같은 바이너리 (크래시 덤프 분석용, 배포하지 않는다)
     Content의 원본 모델/이미지는 쿠킹본이 있으면 제외한다 (쿠킹본은 원본이 없으면 그대로 신뢰됨).
     -IncludeSources: 셰이더 소스 + DXC + 원본 에셋까지 포함 (패키지에서 셰이더 핫 리로드/디버깅용)
+    기본값은 프로젝트 설정(에디터 → 편집 → 프로젝트 설정 → 패키징 = Config\Packaging.json)이고 명령줄 인자가 우선한다.
+    실행 파일 이름/아이콘/버전은 프로젝트 설정 → 프로젝트 정보(Config\Project.json).
 #>
 param(
     [string]$Project = "Projects\Sample",
     [ValidateSet("Debug", "Release")]
-    [string]$Config = "Release",
+    [string]$Config = "",
     [switch]$IncludeSources,
     [switch]$NoPak
 )
 
 $ErrorActionPreference = "Stop"
 $RootDir = Resolve-Path (Join-Path $PSScriptRoot "..")
+. (Join-Path $PSScriptRoot "ProjectSettings.ps1")
 
 # VS 설치 경로 (VC++ 재배포 DLL, dumpbin)
 function Get-VsInstallPath {
@@ -50,15 +53,18 @@ function Get-LatestVersionDirectory([string]$Parent) {
 Push-Location $RootDir
 try {
     # ---- 프로젝트 확인
-    $ProjectDir = Resolve-Path $Project
-    $ProjectFile = Get-ChildItem -Path $ProjectDir -Filter "*.eproject" | Select-Object -First 1
-    if (-not $ProjectFile) { throw "프로젝트 파일(.eproject)을 찾을 수 없습니다: $ProjectDir" }
+    $ProjectDir  = Resolve-Path $Project
+    $Settings    = Read-ProjectSettings $ProjectDir
+    $ProjectFile = $Settings.File
     $ProjectName = $ProjectFile.BaseName
-    $Descriptor  = Get-Content $ProjectFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-    $ExeName     = if ($Descriptor.ExecutableName) { $Descriptor.ExecutableName } elseif ($Descriptor.Name) { $Descriptor.Name } else { $ProjectName }
-    if ($ExeName -match '[<>:"/\\|?*]') { throw "ExecutableName에 파일 이름으로 쓸 수 없는 문자가 있습니다: $ExeName" }
-    $GameModule  = $Descriptor.GameModule
-    if ($GameModule -and ($ExeName -eq $GameModule)) { throw "ExecutableName($ExeName)이 게임 모듈 이름과 같으면 PDB가 겹칩니다. .eproject ExecutableName을 바꾸세요" }
+    $ExeName     = $Settings.Info.ExecutableName
+    if ($ExeName -match '[<>:"/\\|?*]') { throw "실행 파일 이름에 파일 이름으로 쓸 수 없는 문자가 있습니다: $ExeName" }
+    $GameModule  = $Settings.GameModule
+    if ($GameModule -and ($ExeName -eq $GameModule)) { throw "실행 파일 이름($ExeName)이 게임 모듈 이름과 같으면 PDB가 겹칩니다. 프로젝트 설정 → 프로젝트 정보 → 실행 파일 이름을 바꾸세요" }
+    # 명령줄 인자가 없으면 프로젝트 설정(패키징)
+    if (-not $Config) { $Config = $Settings.Packaging.Configuration }
+    if (-not $PSBoundParameters.ContainsKey("IncludeSources")) { $IncludeSources = [bool]$Settings.Packaging.IncludeSourceAssets }
+    if (-not $PSBoundParameters.ContainsKey("NoPak")) { $NoPak = -not [bool]$Settings.Packaging.UsePak }
     Write-Host "== 패키징: $ProjectName → $ExeName.exe ($Config) ==" -ForegroundColor Cyan
 
     # ---- 1. 빌드
@@ -98,7 +104,7 @@ try {
     $SteamDll = Join-Path $BinDir "steam_api64.dll"
     if (Test-Path $SteamDll) {
         Copy-Item $SteamDll $PackageDir
-        if (-not $Descriptor.SteamAppId) { Write-Host "주의: steam_api64.dll은 있지만 .eproject SteamAppId가 없어 Steam을 초기화하지 않습니다" -ForegroundColor Yellow }
+        if (-not [uint32]$Settings.Info.SteamAppId) { Write-Host "주의: steam_api64.dll은 있지만 프로젝트 설정에 Steam App ID가 없어 Steam을 초기화하지 않습니다" -ForegroundColor Yellow }
     }
 
     # VC++ 런타임 (app-local). 디버그 CRT는 재배포할 수 없으므로 Release만
@@ -138,9 +144,9 @@ try {
     # 패키지 표식 (FPaths::IsPackaged)
     $PackagedInfo = [ordered]@{
         Project       = $ProjectName
-        Version       = if ($Descriptor.Version) { $Descriptor.Version } else { "1.0.0" }
+        Version       = $Settings.Info.Version
         Config        = $Config
-        EngineVersion = $Descriptor.EngineVersion
+        EngineVersion = $Settings.EngineVersion
         PackagedAt    = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
     }
     [System.IO.File]::WriteAllText((Join-Path $PackageDir "Engine\Packaged.json"), ($PackagedInfo | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
@@ -170,6 +176,13 @@ try {
     }
     if (Test-Path (Join-Path $ProjectDir "Config")) {
         Copy-Item -Recurse -Force (Join-Path $ProjectDir "Config") (Join-Path $ProjectDst "Config")
+    }
+    # 프로젝트 설정 → 패키징 → 추가 폴더 (pak에 넣지 않고 파일로)
+    foreach ($Extra in ("$($Settings.Packaging.AdditionalDirectories)" -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+        $ExtraSrc = Join-Path $ProjectDir $Extra
+        if (-not (Test-Path $ExtraSrc)) { throw "프로젝트 설정의 추가 폴더가 없습니다: $ExtraSrc" }
+        Copy-Item -Recurse -Force $ExtraSrc (Join-Path $ProjectDst $Extra)
+        Write-Host "추가 폴더: $Extra" -ForegroundColor Green
     }
     # 쿠킹 에셋 (.emodel/.<용도>.etex, 이전 형식 .etex 제외). Copy-Item은 수정 시각을 보존하므로 원본보다 새롭다는 판정이 유지된다
     if (Test-Path (Join-Path $ProjectDir "Cooked")) {

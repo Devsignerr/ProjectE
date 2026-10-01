@@ -7,7 +7,7 @@
     .\Scripts\SteamUpload.ps1 -Account mybuilder -Preview                # 미리보기: 매니페스트만 만들고 올리지 않음
     .\Scripts\SteamUpload.ps1 -GenerateOnly -SkipPackage                 # vdf만 만들어 확인 (로그인 없음)
 .NOTES
-    - App ID는 .eproject "SteamAppId", Depot ID는 -DepotId (기본 App ID + 1 = Steamworks가 처음 만드는 디포).
+    - App ID/Depot ID는 프로젝트 설정 → 프로젝트 정보(Config\Project.json, Depot 0 = App ID + 1). -AppId/-DepotId가 우선.
     - 로그인: steamcmd가 비밀번호/Steam Guard를 직접 묻는다 (명령줄에 비밀번호를 넣지 않는다). 한 번 로그인하면 steamcmd가 자격을 기억한다.
       계정은 -Account 또는 환경 변수 STEAM_BUILD_ACCOUNT (빌드 전용 계정 권장 — Steamworks 앱 권한 "앱 메타데이터 편집/빌드 업로드").
     - steamcmd: -SteamCmd → 환경 변수 STEAMCMD → CMakeLocal.cmake의 E_STEAMWORKS_SDK_DIR\tools\ContentBuilder\builder\steamcmd.exe
@@ -31,6 +31,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $RootDir = Resolve-Path (Join-Path $PSScriptRoot "..")
+. (Join-Path $PSScriptRoot "ProjectSettings.ps1")
 
 # steamcmd 찾기
 function Find-SteamCmd([string]$Explicit) {
@@ -53,15 +54,13 @@ Push-Location $RootDir
 try {
     # ---- 프로젝트
     $ProjectDir  = Resolve-Path $Project
-    $ProjectFile = Get-ChildItem -Path $ProjectDir -Filter "*.eproject" | Select-Object -First 1
-    if (-not $ProjectFile) { throw "프로젝트 파일(.eproject)을 찾을 수 없습니다: $ProjectDir" }
-    $ProjectName = $ProjectFile.BaseName
-    $Descriptor  = Get-Content $ProjectFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($AppId -eq 0) { $AppId = [uint32]$Descriptor.SteamAppId }
-    if ($AppId -eq 0) { throw ".eproject에 SteamAppId가 없습니다 (-AppId로 지정 가능)" }
-    if ($DepotId -eq 0) { $DepotId = $AppId + 1 }
-    $ExeName = if ($Descriptor.ExecutableName) { $Descriptor.ExecutableName } elseif ($Descriptor.Name) { $Descriptor.Name } else { $ProjectName }
-    $Version = if ($Descriptor.Version) { $Descriptor.Version } else { "1.0.0" }
+    $Settings    = Read-ProjectSettings $ProjectDir
+    $ProjectName = $Settings.File.BaseName
+    if ($AppId -eq 0) { $AppId = [uint32]$Settings.Info.SteamAppId }
+    if ($AppId -eq 0) { throw "프로젝트 설정에 Steam App ID가 없습니다 (프로젝트 설정 → 프로젝트 정보, 또는 -AppId)" }
+    if ($DepotId -eq 0) { $DepotId = if ([uint32]$Settings.Info.SteamDepotId) { [uint32]$Settings.Info.SteamDepotId } else { $AppId + 1 } }
+    $ExeName = $Settings.Info.ExecutableName
+    $Version = $Settings.Info.Version
     if (-not $Description) { $Description = "$ProjectName $Version ($Config) $(Get-Date -Format 'yyyy-MM-dd HH:mm')" }
     if ($SetLive -eq "default") { throw "기본 브랜치 공개는 Steamworks 웹에서 합니다 (-SetLive는 베타 브랜치 이름만)" }
     if ($Config -eq "Debug") { Write-Host "주의: Debug 패키지는 디버그 CRT가 필요해 일반 PC에서 실행되지 않습니다" -ForegroundColor Yellow }

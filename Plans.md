@@ -473,3 +473,21 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [ ] 실제 업로드 (사용자): `.\Scripts\SteamUpload.ps1 -Account <빌드 계정> [-SetLive beta]` → Steamworks 웹에서 빌드 확인, 실행 옵션 실행 파일 `Sample.exe`
 
 후속 과제: 크래시 덤프 업로드(현재 로컬 보관만), pak 암호화/압축·패치 pak 우선순위, Steam 클라우드 저장·리치 프레즌스·통계, 스토어용 버전 번호 자동 증가, 설치형 엔진 배포(Phase 7 남은 항목)
+
+## Phase 20 — 프로젝트 설정 / 에디터 환경설정 (2026-10-01, 사용자 요청: "언리얼의 Project Settings, Editor Preferences처럼")
+
+**DoD**: 에디터 메뉴 "편집 → 프로젝트 설정 / 에디터 환경설정"이 언리얼처럼 왼쪽 카테고리 + 오른쪽 속성 창을 연다. 프로젝트 설정(커밋 대상, `Config/<섹션>.json`)에서 에디터 시작 맵·게임 기본 맵·서버 기본 맵·플레이어 프리팹, 프로젝트 정보(표시 이름/버전/회사/아이콘/실행 파일/Steam), 패키징, 물리, 네트워크, 화면 기본값을 고치면 에디터·런타임·서버·패키징이 그 값을 쓴다. 에디터 환경설정(개인, 커밋 안 함)에서 시작 시 마지막 씬 열기, 자동 저장, 뷰포트 카메라/스냅 기본값을 고칠 수 있다. 새 설정 항목은 구조체 필드 + 리플렉션 등록만으로 창·저장에 나타난다.
+
+결정 (2026-10-01 사용자 선택):
+- 프로젝트 설정 = `<프로젝트>/Config/<섹션 Id>.json` (언리얼 Config/Default*.ini 역할, 섹션마다 파일 — diff가 작다). `.eproject`에는 Name/EngineVersion/GameModule만 남기고, 기존 필드(DefaultScene, PlayerPrefab, DisplayName, Version, Company, Icon, ExecutableName, SteamAppId)는 로드할 때 설정으로 옮겨 읽는다(Config 파일이 우선). `Config/DefaultGameUserSettings.json`은 `Config/Display.json`이 없을 때 읽는다
+- 에디터 환경설정 = 전역 개인 설정 `%LOCALAPPDATA%/ProjectE/EditorPreferences/<섹션 Id>.json` + 프로젝트별 개인 상태 `<Saved>/Config/EditorPerProjectUserSettings.json`(마지막으로 연 씬 — 창에 표시하지 않음)
+- 설정 섹션 = 리플렉션 타입 + 객체 + 범위(Project/EditorUser) + 파일. 창은 리플렉션 속성을 인스펙터와 같은 위젯으로 그린다. 값이 바뀌면 바로 저장(언리얼과 같음)
+- 리플렉션 확장: enum 프로퍼티(4바이트 enum → Int32 + 선택지 이름), 툴팁
+
+- [x] 20-1. 기반: 리플렉션 enum(4바이트 enum → Int32 + `.Enum`, JSON은 이름)/`.Tooltip`, `FReflectionJson`(값 타입, 없는 키 유지·모르는 키 무시·타입 틀림 경고·범위 자르기), `FSettingsRegistry`/`FSettingsSection`(섹션 전용 FTypeInfo — 전역 FTypeRegistry에 넣지 않음, 범위 Project/EditorUser/ProjectUser, 숨김), `FProjectSettings`(Project/Maps/Packaging/Physics/Network/Display) — `FPaths::SetProject`가 로드: 기본값 → `.eproject` 예전 필드(`FProjectLegacyFields`) → `Config/<Id>.json`, `DefaultGameUserSettings.json`은 Display.json이 없을 때. `.eproject`는 Name/EngineVersion/GameModule만 저장. 테스트 `SettingsTests` 3개 + 기존 테스트 갱신
+- [x] 20-2. 소비자 연결: 맵(에디터 `GetEditorStartupMap`, 런타임 `GameDefaultMap`, 서버 `GetServerDefaultMap`, 플레이어 프리팹 — 런타임/서버/PIE), 프로젝트 정보(창 제목, Lua `Game.GetName/GetVersion`, exe 스탬프, Steam App ID, 사용자 Saved 회사 폴더), 물리(`FPhysicsSystem::Begin`이 중력·고정 스텝·서브스텝), 네트워크(`GetConfiguredNetPort/LanDiscoveryPort`, `MaxPlayers` 0 = 설정), 화면 기본값(`FGameUserSettings::Load` 바탕). `Scripts/ProjectSettings.ps1`(`Read-ProjectSettings`) → Package.ps1(구성/pak/원본 포함 기본값 + 추가 폴더)·SteamUpload.ps1(App/Depot ID). Sample: `Config/Project.json`, `Config/Maps.json`, `.eproject` 정리
+- [x] 20-3. 에디터 환경설정 `FEditorPreferences`: 일반(시작 시 마지막 씬, 자동 저장 — 저장 안 한 변경이 있을 때 간격마다 `<Saved>/Autosaves/<씬>_<시각>.escene`, 씬마다 N개 보관, 원본은 건드리지 않음), 뷰포트(기본 카메라 속도, 마우스 감도, 시야각, 스냅 켜기/값 — 설정 창 변경 즉시 반영, 툴바에서 바꾼 스냅은 종료 시 저장) + 프로젝트별 상태 `EditorPerProjectUserSettings`(마지막 씬, 열기/다른 이름 저장 시 기록). 자동 검증은 개인 설정을 읽고 쓰지 않음
+- [x] 20-4. `FSettingsWindow`(편집 → 프로젝트 설정 / 에디터 환경설정): 왼쪽 검색 + 카테고리별 섹션, 오른쪽 이름/값 표(툴팁, enum 콤보, 에셋 경로 칸은 콘텐츠 브라우저 드롭), 검색 시 모든 섹션 일치 항목, 섹션 기본값으로, 저장 위치 표시, 재시작 필요 표시, 값이 바뀌면 `OnChanged` 즉시 + 조작이 끝나면 저장. 값 위젯을 `FPropertyWidgets`로 분리해 인스펙터와 공유(인스펙터도 enum 콤보·툴팁 지원). 자동 검증 `--open-settings project|editor [--settings-section <Id>]`
+- [x] 20-5. 검증 (2026-10-01): Debug/Release 단위 테스트 전부 통과, Verify — 프로젝트 설정(맵 & 모드)/에디터 환경설정(뷰포트) 창 스크린샷, 에디터·런타임 디버그 레이어 오류 0, 런타임/패키지가 `Config/Maps.json`의 게임 기본 맵으로 시작, 전용 서버 서버 기본 맵·LAN 포트, 패키지 exe 스탬프가 `Config/Project.json`을 읽음. 덤으로 실제 Steam 연결 확인(사용자 이름 로그 — 통계는 Steamworks에 등록된 것이 없어 실패 경고 한 번)
+- [ ] 실행 검증 (사용자): 설정 창에서 값 바꾸기 → 파일 저장/에디터 반영, 마지막 씬으로 다시 열기, 자동 저장
+- 후속: 속성별 기본값 되돌리기 화살표, 배열/구조체 프로퍼티, 입력 매핑(키 바인딩) 섹션, 렌더링 기본값 섹션, 게임 모듈의 자체 설정 섹션 등록 예시

@@ -49,35 +49,28 @@ E_TEST(Project_DescriptorRoundtrip)
 	FProjectDescriptor Saved;
 	Saved.Name          = "테스트 프로젝트";
 	Saved.EngineVersion = "0.1.0";
-	Saved.DefaultScene  = "Scenes/Main.escene";
+	Saved.GameModule    = "TestGame";
 	E_EXPECT_TRUE(Saved.SaveToFile(File));
 
-	// 배포 필드: 비어 있으면 대체값, 값이 있으면 저장/로드된다
-	E_EXPECT_TRUE(Saved.GetDisplayName() == Saved.Name);
-	E_EXPECT_TRUE(Saved.GetExecutableName() == Saved.Name);
-	E_EXPECT_TRUE(Saved.GetVersion() == "1.0.0");
+	// 예전 .eproject 필드는 Legacy로만 읽히고, 저장하면 빠진다 (설정은 Config/ — FProjectSettings)
 	{
-		FProjectDescriptor WithDistribution = Saved;
-		WithDistribution.DisplayName    = "보이는 이름";
-		WithDistribution.Version        = "2.3.4";
-		WithDistribution.Company        = "Studio";
-		WithDistribution.ExecutableName = "MyGame";
-		WithDistribution.Icon           = "Build/Icon.png";
-		E_EXPECT_TRUE(WithDistribution.SaveToFile(Directory / L"배포.eproject"));
-		FProjectDescriptor Reloaded;
-		E_EXPECT_TRUE(Reloaded.LoadFromFile(Directory / L"배포.eproject"));
-		E_EXPECT_TRUE(Reloaded.GetDisplayName() == "보이는 이름");
-		E_EXPECT_TRUE(Reloaded.GetVersion() == "2.3.4");
-		E_EXPECT_TRUE(Reloaded.Company == "Studio");
-		E_EXPECT_TRUE(Reloaded.GetExecutableName() == "MyGame");
-		E_EXPECT_TRUE(Reloaded.Icon == "Build/Icon.png");
+		std::ofstream Old(Directory / L"예전.eproject", std::ios::binary | std::ios::trunc);
+		Old << R"({ "Name": "Old", "DefaultScene": "Scenes/A.escene", "DisplayName": "보이는 이름", "SteamAppId": 480 })";
 	}
+	FProjectDescriptor Legacy;
+	E_EXPECT_TRUE(Legacy.LoadFromFile(Directory / L"예전.eproject"));
+	E_EXPECT_TRUE(Legacy.Legacy.DefaultScene == "Scenes/A.escene" && Legacy.Legacy.DisplayName == "보이는 이름" && Legacy.Legacy.SteamAppId == 480u);
+	E_EXPECT_FALSE(Legacy.Legacy.IsEmpty());
+	E_EXPECT_TRUE(Legacy.SaveToFile(Directory / L"예전.eproject"));
+	FProjectDescriptor Resaved;
+	E_EXPECT_TRUE(Resaved.LoadFromFile(Directory / L"예전.eproject"));
+	E_EXPECT_TRUE(Resaved.Name == "Old" && Resaved.Legacy.IsEmpty());
 
 	FProjectDescriptor Loaded;
 	E_EXPECT_TRUE(Loaded.LoadFromFile(File));
 	E_EXPECT_TRUE(Loaded.Name == Saved.Name);
 	E_EXPECT_TRUE(Loaded.EngineVersion == Saved.EngineVersion);
-	E_EXPECT_TRUE(Loaded.DefaultScene == Saved.DefaultScene);
+	E_EXPECT_TRUE(Loaded.GameModule == Saved.GameModule);
 
 	// 잘못된 JSON은 실패
 	{

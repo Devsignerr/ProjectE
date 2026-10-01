@@ -7,11 +7,14 @@
 #include "Network/ReplicationTypes.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
+#include "Core/Settings/SettingsRegistry.h"
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Editor/EditorActions.h"
 #include "Editor/EditorCameraState.h"
+#include "Editor/EditorPreferences.h"
 #include "Editor/NavMeshBaker.h"
 #include "AI/AIComponents.h"
 #include "Editor/EditorTheme.h"
@@ -80,6 +83,7 @@ FEditorApplication::~FEditorApplication() = default;
 
 bool FEditorApplication::OnInit()
 {
+	FEditorPreferences::Get().Initialize(); // 개인 환경설정 (%LOCALAPPDATA%/ProjectE/EditorPreferences, <Saved>/Config)
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
 	RegisterAITypes();
@@ -182,6 +186,12 @@ bool FEditorApplication::OnInit()
 	}
 	// --reset-layout: 저장된 창 배치를 무시하고 기본 레이아웃으로 시작
 	bResetLayoutRequested = FCommandLine::FromProcess().HasFlag(L"--reset-layout");
+	// 자동 검증: --open-settings project|editor [--settings-section <Id>] 으로 설정 창 열기
+	if (const std::wstring SettingsArg = FCommandLine::FromProcess().GetValue(L"--open-settings"); !SettingsArg.empty())
+	{
+		const std::string Section = FStringConv::ToUtf8(FCommandLine::FromProcess().GetValue(L"--settings-section"));
+		(SettingsArg == L"editor" ? EditorPreferencesWindow : ProjectSettingsWindow).Open(Section);
+	}
 
 	// 자동 검증: --open-asset <Content 기준 경로>[,<경로>...] 으로 시작 시 에셋 편집 창 열기
 	if (const std::wstring AssetArgs = FCommandLine::FromProcess().GetValue(L"--open-asset"); !AssetArgs.empty())
@@ -247,10 +257,17 @@ bool FEditorApplication::OnInit()
 		E_LOG(LogEditor, Warning, "셰이더 디렉터리 감시를 시작하지 못했습니다. Ctrl+R로 수동 다시 로드만 가능합니다");
 	}
 
-	Camera.SetPerspective(60.0f, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
+	const FEditorViewportSettings& ViewportPrefs = FEditorPreferences::Get().Viewport;
+	Camera.SetPerspective(ViewportPrefs.FieldOfView, static_cast<float>(RhiDesc.Width) / static_cast<float>(RhiDesc.Height), 10.0f, 100000.0f); // cm: 근평면 10cm, 원평면 1km
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
+	CameraController.MoveSpeed = ViewportPrefs.DefaultCameraSpeed; // 저장된 편집 카메라가 있으면 아래에서 덮인다
+	ApplyViewportPreferences();
 	LoadEditorCamera();
+	if (FSettingsSection* Section = FSettingsRegistry::Get().Find("EditorViewport"))
+	{
+		Section->OnChanged = [this]() { ApplyViewportPreferences(); }; // 설정 창에서 바꾸면 바로
+	}
 
 	// 스크립트 핫 리로드: 프로젝트 Content의 .lua 감시
 	if (!ScriptWatcher.Start(Context.ContentDirectory, true))
@@ -281,6 +298,7 @@ bool FEditorApplication::OnInit()
 void FEditorApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
+	UpdateAutoSave(DeltaSeconds);
 
 	// (게임 UI 텍스트 상자에 입력 중이면 ESC는 UI가 받는다 — 직전 프레임 기준)
 	if (InputState.IsKeyPressed(EKey::Escape) && !ImGuiLayer.WantCaptureKeyboard() && !ViewportPanel.bGameUIWantsKeyboard)
@@ -343,6 +361,8 @@ void FEditorApplication::OnRender()
 	}
 	PostProcessPanel.Draw(Context);
 	ShadowPanel.Draw(Context);
+	ProjectSettingsWindow.Draw(Context);
+	EditorPreferencesWindow.Draw(Context);
 	OutputLogPanel.Draw(Context);
 	NetworkPanel.Draw(Context);
 	ContentBrowserPanel.Draw(Context);
@@ -397,6 +417,16 @@ void FEditorApplication::OnShutdown()
 	ScriptWatcher.Stop();
 	Audio.Shutdown();
 	SaveEditorCamera();
+	// 뷰포트 툴바에서 바꾼 스냅 값을 개인 환경설정에 (자동 검증은 개인 설정을 쓰지 않는다)
+	if (!IsAutomationRun())
+	{
+		FEditorViewportSettings& ViewportPrefs = FEditorPreferences::Get().Viewport;
+		ViewportPrefs.bSnapEnabled             = ViewportPanel.Snap.bEnabled;
+		ViewportPrefs.TranslateSnap            = ViewportPanel.Snap.TranslateStep;
+		ViewportPrefs.RotateSnap               = ViewportPanel.Snap.RotateStepDegree;
+		ViewportPrefs.ScaleSnap                = ViewportPanel.Snap.ScaleStep;
+		FEditorPreferences::Get().SaveViewport();
+	}
 	ShaderWatcher.Stop();
 	if (Rhi)
 	{
@@ -442,6 +472,7 @@ bool FEditorApplication::OpenScene(const std::filesystem::path& Path)
 	FSceneAssetResolver::Resolve(Scene, Resources, Context.ContentDirectory);
 	CurrentScenePath = Path;
 	ResetUndoHistory();
+	RememberOpenedScene();
 	return true;
 }
 
@@ -476,7 +507,94 @@ bool FEditorApplication::SaveSceneAs()
 	CurrentScenePath = Path;
 	UndoHistory.MarkSaved();
 	UpdateWindowTitle();
+	RememberOpenedScene();
 	return true;
+}
+
+void FEditorApplication::RememberOpenedScene()
+{
+	if (CurrentScenePath.empty() || IsAutomationRun())
+	{
+		return;
+	}
+	std::error_code             ErrorCode;
+	const std::filesystem::path Relative = std::filesystem::relative(CurrentScenePath, Context.ContentDirectory, ErrorCode);
+	if (ErrorCode || Relative.empty() || *Relative.begin() == L"..")
+	{
+		return; // Content 밖 씬은 기억하지 않는다
+	}
+	FEditorProjectState& State = FEditorPreferences::Get().ProjectState;
+	const std::string    SceneAsset = FStringConv::ToUtf8(Relative.generic_wstring());
+	if (State.LastOpenedScene != SceneAsset)
+	{
+		State.LastOpenedScene = SceneAsset;
+		FEditorPreferences::Get().SaveProjectState();
+	}
+}
+
+void FEditorApplication::ApplyViewportPreferences()
+{
+	const FEditorViewportSettings& Prefs = FEditorPreferences::Get().Viewport;
+	CameraController.LookSensitivity     = Prefs.MouseSensitivity;
+	if (!Camera.IsOrthographic())
+	{
+		Camera.SetPerspective(Prefs.FieldOfView, Camera.GetAspectRatio(), Camera.GetNearZ(), Camera.GetFarZ());
+	}
+	ViewportPanel.Snap.bEnabled         = Prefs.bSnapEnabled;
+	ViewportPanel.Snap.TranslateStep    = Prefs.TranslateSnap;
+	ViewportPanel.Snap.RotateStepDegree = Prefs.RotateSnap;
+	ViewportPanel.Snap.ScaleStep        = Prefs.ScaleSnap;
+}
+
+void FEditorApplication::UpdateAutoSave(float DeltaSeconds)
+{
+	const FEditorGeneralSettings& Prefs = FEditorPreferences::Get().General;
+	if (!Prefs.bAutoSave || PlayMode.IsActive() || IsAutomationRun())
+	{
+		AutoSaveElapsedSeconds = 0.0f;
+		return;
+	}
+	AutoSaveElapsedSeconds += DeltaSeconds;
+	if (AutoSaveElapsedSeconds < std::max(Prefs.AutoSaveIntervalMinutes, 1.0f) * 60.0f)
+	{
+		return;
+	}
+	AutoSaveElapsedSeconds = 0.0f;
+	if (!UndoHistory.IsDirty())
+	{
+		return;
+	}
+
+	// <Saved>/Autosaves/<씬 이름>_<시각>.escene — 원본 씬 파일은 건드리지 않는다
+	const std::wstring          Stem      = CurrentScenePath.empty() ? std::wstring(L"Untitled") : CurrentScenePath.stem().wstring();
+	const std::filesystem::path Directory = FPaths::GetSavedDirectory() / L"Autosaves";
+	SYSTEMTIME Time;
+	GetLocalTime(&Time);
+	const std::filesystem::path Path = Directory / std::format(L"{}_{:04}{:02}{:02}_{:02}{:02}{:02}.escene", Stem, Time.wYear, Time.wMonth, Time.wDay,
+	                                                           Time.wHour, Time.wMinute, Time.wSecond);
+	if (!FSceneSerializer::SaveToFile(Scene, Path))
+	{
+		return;
+	}
+	E_LOG(LogEditor, Display, "자동 저장: {}", FStringConv::ToUtf8(Path.wstring()));
+
+	// 이 씬의 오래된 사본 정리 (이름 = 시각이라 이름순 = 시간순)
+	std::vector<std::filesystem::path> Copies;
+	std::error_code                    ErrorCode;
+	for (const std::filesystem::directory_entry& Entry : std::filesystem::directory_iterator(Directory, ErrorCode))
+	{
+		const std::wstring Name = Entry.path().filename().wstring();
+		if (Entry.path().extension() == L".escene" && Name.size() == Stem.size() + 23 && Name.compare(0, Stem.size() + 1, Stem + L"_") == 0)
+		{
+			Copies.push_back(Entry.path());
+		}
+	}
+	std::sort(Copies.begin(), Copies.end());
+	const size_t Keep = std::max<size_t>(Prefs.AutoSaveKeepCount, 1);
+	for (size_t Index = 0; Index + Keep < Copies.size(); ++Index)
+	{
+		std::filesystem::remove(Copies[Index], ErrorCode);
+	}
 }
 
 void FEditorApplication::OpenStartupScene()
@@ -491,9 +609,22 @@ void FEditorApplication::OpenStartupScene()
 		E_LOG(LogEditor, Warning, "--scene 씬을 열지 못해 기본 씬을 엽니다: {}", FStringConv::ToUtf8(SceneArg));
 	}
 
-	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().DefaultScene.empty())
+	// 개인 환경설정: 이 프로젝트에서 마지막으로 연 씬 (자동 검증은 개인 상태를 쓰지 않는다)
+	const std::string& LastScene = FEditorPreferences::Get().ProjectState.LastOpenedScene;
+	if (FEditorPreferences::Get().General.bLoadLastSceneOnStartup && !LastScene.empty() && !IsAutomationRun())
 	{
-		const std::filesystem::path ScenePath = Context.ContentDirectory / FStringConv::ToWide(FPaths::GetProjectDescriptor().DefaultScene);
+		const std::filesystem::path LastPath = Context.ContentDirectory / FStringConv::ToWide(LastScene);
+		if (std::filesystem::exists(LastPath) && OpenScene(LastPath))
+		{
+			return;
+		}
+	}
+
+	// 프로젝트 설정 "에디터 시작 맵" (비면 게임 기본 맵)
+	const std::string StartupMap = FPaths::HasProject() ? FProjectSettings::Get().GetEditorStartupMap() : std::string();
+	if (!StartupMap.empty())
+	{
+		const std::filesystem::path ScenePath = Context.ContentDirectory / FStringConv::ToWide(StartupMap);
 		if (std::filesystem::exists(ScenePath))
 		{
 			if (OpenScene(ScenePath))
@@ -509,7 +640,7 @@ void FEditorApplication::OpenStartupScene()
 			if (FSceneSerializer::SaveToFile(Scene, ScenePath))
 			{
 				CurrentScenePath = ScenePath;
-				E_LOG(LogEditor, Display, "기본 씬 생성: {}", FPaths::GetProjectDescriptor().DefaultScene);
+				E_LOG(LogEditor, Display, "기본 씬 생성: {}", StartupMap);
 			}
 			ResetUndoHistory();
 			return;
@@ -1121,6 +1252,16 @@ void FEditorApplication::DrawEditMenu()
 	ImGui::Separator();
 	ImGui::MenuItem("그리드 표시", nullptr, &ViewportPanel.bShowGrid);
 	ImGui::MenuItem("기즈모 스냅", nullptr, &ViewportPanel.Snap.bEnabled);
+	ImGui::Separator();
+	if (ImGui::MenuItem(ICON_FA_SLIDERS " 프로젝트 설정..."))
+	{
+		ProjectSettingsWindow.Open();
+	}
+	if (ImGui::MenuItem(ICON_FA_GEAR " 에디터 환경설정..."))
+	{
+		EditorPreferencesWindow.Open();
+	}
+	ImGui::Separator();
 	ImGui::TextDisabled("실행 취소 %zu단계 / 다시 실행 %zu단계", UndoHistory.GetUndoCount(), UndoHistory.GetRedoCount());
 	ImGui::EndMenu();
 }

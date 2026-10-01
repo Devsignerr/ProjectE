@@ -1,5 +1,6 @@
 #include "Physics/PhysicsSystem.h"
 
+#include "Core/Settings/ProjectSettings.h"
 #include "Physics/PhysicsComponents.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
@@ -92,6 +93,11 @@ void FPhysicsSystem::Begin()
 {
 	End();
 	World = std::make_unique<FPhysicsWorld>();
+	// 프로젝트 설정 "물리" (플레이를 시작할 때마다 다시 읽는다)
+	const FPhysicsSettings& Settings = FProjectSettings::Get().Physics;
+	World->SetGravity(Settings.Gravity);
+	Stepper.StepSeconds = 1.0f / std::clamp(Settings.FixedStepHz, 15.0f, 240.0f);
+	Stepper.MaxSteps    = std::clamp(Settings.MaxSubSteps, 1u, 16u);
 	Stepper.Reset();
 }
 

@@ -1,4 +1,5 @@
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Testing/TestFramework.h"
 #include "Online/SteamSubsystem.h"
 #include "Scene/Scene.h"
@@ -25,7 +26,7 @@ assert(not Steam.ActivateOverlay('Achievements') and not Steam.IsOverlayActive()
 )"));
 	// 이름 = .eproject DisplayName (TestMain이 예제 프로젝트를 연다)
 	E_EXPECT_TRUE(FPaths::HasProject());
-	E_EXPECT_TRUE(Scripts.RunString("assert(Game.GetName() == '" + FPaths::GetProjectDescriptor().GetDisplayName() + "')"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(Game.GetName() == '" + FProjectSettings::Get().GetDisplayName() + "')"));
 	Scripts.EndPlay();
 
 	int32       QuitCount  = 0;
@@ -77,15 +78,4 @@ E_TEST(Steam_DisabledWithoutInit)
 	Steam.RunCallbacks(); // 초기화 전에도 안전
 	Steam.Shutdown();
 
-	// .eproject SteamAppId 저장/로드
-	const std::filesystem::path File = FTestRegistry::GetTempDirectory() / L"ProjectE_Steam" / L"Steam.eproject";
-	FProjectDescriptor Saved;
-	Saved.Name       = "Steam";
-	Saved.SteamAppId = 480;
-	E_EXPECT_TRUE(Saved.SaveToFile(File));
-	FProjectDescriptor Loaded;
-	E_EXPECT_TRUE(Loaded.LoadFromFile(File));
-	E_EXPECT_EQ(Loaded.SteamAppId, 480u);
-	std::error_code ErrorCode;
-	std::filesystem::remove_all(File.parent_path(), ErrorCode);
 }

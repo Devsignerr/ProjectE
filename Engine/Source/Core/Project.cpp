@@ -5,11 +5,16 @@
 
 #include <fstream>
 #include <sstream>
-#include <utility>
 
 #pragma warning(push, 0)
 #include <json.hpp>
 #pragma warning(pop)
+
+bool FProjectLegacyFields::IsEmpty() const
+{
+	return DefaultScene.empty() && PlayerPrefab.empty() && DisplayName.empty() && Version.empty() && Company.empty() && ExecutableName.empty() &&
+	       Icon.empty() && SteamAppId == 0;
+}
 
 bool FProjectDescriptor::LoadFromFile(const std::filesystem::path& Path)
 {
@@ -34,15 +39,17 @@ bool FProjectDescriptor::LoadFromFile(const std::filesystem::path& Path)
 
 	Name          = Json.value("Name", std::string());
 	EngineVersion = Json.value("EngineVersion", std::string("0.1.0"));
-	DefaultScene  = Json.value("DefaultScene", std::string());
 	GameModule    = Json.value("GameModule", std::string());
-	PlayerPrefab  = Json.value("PlayerPrefab", std::string());
-	DisplayName    = Json.value("DisplayName", std::string());
-	Version        = Json.value("Version", std::string());
-	Company        = Json.value("Company", std::string());
-	ExecutableName = Json.value("ExecutableName", std::string());
-	Icon           = Json.value("Icon", std::string());
-	SteamAppId     = Json.value("SteamAppId", 0u);
+
+	Legacy                = FProjectLegacyFields{};
+	Legacy.DefaultScene   = Json.value("DefaultScene", std::string());
+	Legacy.PlayerPrefab   = Json.value("PlayerPrefab", std::string());
+	Legacy.DisplayName    = Json.value("DisplayName", std::string());
+	Legacy.Version        = Json.value("Version", std::string());
+	Legacy.Company        = Json.value("Company", std::string());
+	Legacy.ExecutableName = Json.value("ExecutableName", std::string());
+	Legacy.Icon           = Json.value("Icon", std::string());
+	Legacy.SteamAppId     = Json.value("SteamAppId", 0u);
 
 	if (Name.empty())
 	{
@@ -60,30 +67,9 @@ bool FProjectDescriptor::SaveToFile(const std::filesystem::path& Path) const
 	nlohmann::json Json;
 	Json["Name"]          = Name;
 	Json["EngineVersion"] = EngineVersion;
-	Json["DefaultScene"]  = DefaultScene;
 	if (!GameModule.empty())
 	{
 		Json["GameModule"] = GameModule;
-	}
-	if (!PlayerPrefab.empty())
-	{
-		Json["PlayerPrefab"] = PlayerPrefab;
-	}
-	// 배포 필드는 값이 있을 때만 쓴다
-	const std::pair<const char*, const std::string*> OptionalFields[] = {
-		{ "DisplayName", &DisplayName }, { "Version", &Version }, { "Company", &Company },
-		{ "ExecutableName", &ExecutableName }, { "Icon", &Icon },
-	};
-	for (const auto& [Key, Value] : OptionalFields)
-	{
-		if (!Value->empty())
-		{
-			Json[Key] = *Value;
-		}
-	}
-	if (SteamAppId != 0)
-	{
-		Json["SteamAppId"] = SteamAppId;
 	}
 
 	std::ofstream File(Path, std::ios::binary | std::ios::trunc);

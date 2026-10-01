@@ -6,6 +6,7 @@
 #include "Core/Math/Math.h"
 
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 
 // 리플렉션이 이해하는 프로퍼티 값 타입.
@@ -62,6 +63,14 @@ E_DEFINE_PROPERTY_TYPE(FQuat, EPropertyType::Quat)
 E_DEFINE_PROPERTY_TYPE(FEntity, EPropertyType::Entity)
 
 #undef E_DEFINE_PROPERTY_TYPE
+
+// 4바이트 enum은 Int32 프로퍼티 (선택지 이름은 TTypeBuilder::Enum으로 붙인다 — 인스펙터 콤보, JSON은 이름 문자열)
+template <typename T>
+	requires(std::is_enum_v<T> && sizeof(T) == sizeof(int32))
+struct TPropertyTypeOf<T>
+{
+	static constexpr EPropertyType Value = EPropertyType::Int32;
+};
 
 template <typename TTag>
 struct TPropertyTypeOf<THandle<TTag>>

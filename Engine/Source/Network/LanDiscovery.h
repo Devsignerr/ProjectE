@@ -48,10 +48,11 @@ public:
 	FLanDiscovery(const FLanDiscovery&)            = delete;
 	FLanDiscovery& operator=(const FLanDiscovery&) = delete;
 
-	bool StartHost(const FLanHostInfo& Info, uint16 DiscoveryPort = DefaultLanDiscoveryPort);
+	// DiscoveryPort 0 = 프로젝트 설정 "네트워크 → LAN 검색 포트"
+	bool StartHost(const FLanHostInfo& Info, uint16 DiscoveryPort = 0);
 	void SetPlayerCount(uint16 Players);
 
-	bool StartSearch(const std::string& ProjectName, uint16 DiscoveryPort = DefaultLanDiscoveryPort);
+	bool StartSearch(const std::string& ProjectName, uint16 DiscoveryPort = 0);
 	const std::vector<FLanSession>& GetSessions() const { return Sessions; }
 
 	void Update();

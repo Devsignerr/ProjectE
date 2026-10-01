@@ -32,6 +32,7 @@ namespace
 		STEAM_CALLBACK(FSteamCallbacks, OnUserStatsReceived, UserStatsReceived_t);
 		STEAM_CALLBACK(FSteamCallbacks, OnOverlayActivated, GameOverlayActivated_t);
 
+		bool                      bStatsWarned = false;
 		bool&                     bStatsReady;
 		bool&                     bOverlayActive;
 		std::vector<std::string>& PendingAchievements;
@@ -45,7 +46,12 @@ namespace
 		}
 		if (Result->m_eResult != k_EResultOK)
 		{
-			E_LOG(LogOnline, Warning, "Steam 통계를 받지 못했습니다 (EResult {})", static_cast<int32>(Result->m_eResult));
+			// 같은 요청에 콜백이 여러 번 올 수 있어 한 번만 알린다 (Steamworks에 통계/업적이 없으면 실패한다)
+			if (!bStatsWarned)
+			{
+				E_LOG(LogOnline, Warning, "Steam 통계를 받지 못했습니다 (EResult {}) — Steamworks에 업적/통계가 등록되어 있는지 확인하세요", static_cast<int32>(Result->m_eResult));
+				bStatsWarned = true;
+			}
 			return;
 		}
 		bStatsReady = true;

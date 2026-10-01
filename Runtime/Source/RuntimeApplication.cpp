@@ -5,6 +5,7 @@
 #include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
@@ -38,18 +39,8 @@ FRuntimeApplication::~FRuntimeApplication() = default;
 
 void FRuntimeApplication::OnConfigureWindow(FWindowDesc& WindowDesc)
 {
-	// 프로젝트 기본값(Config/DefaultGameUserSettings.json) ← 사용자 설정. 자동 검증은 사용자 설정 없이 (결과가 PC마다 달라지지 않도록)
-	if (IsAutomationRun())
-	{
-		if (FPaths::HasProject())
-		{
-			UserSettings.ApplyFile(FPaths::GetProjectConfigDirectory() / L"DefaultGameUserSettings.json");
-		}
-	}
-	else
-	{
-		UserSettings = FGameUserSettings::Load();
-	}
+	// 프로젝트 기본값(설정 "화면 기본값") ← 사용자 설정. 자동 검증은 사용자 설정 없이 (결과가 PC마다 달라지지 않도록)
+	UserSettings = IsAutomationRun() ? FProjectSettings::Get().Display : FGameUserSettings::Load();
 	// --window-mode <Windowed|BorderlessFullscreen>: 이번 실행만 (저장하지 않음, 검증용)
 	if (const std::wstring ModeArg = FCommandLine::FromProcess().GetValue(L"--window-mode"); !ModeArg.empty())
 	{
@@ -72,7 +63,7 @@ bool FRuntimeApplication::OnInit()
 	// FApplication::Run이 FPaths를 초기화했으므로 여기서는 프로젝트만 확인
 	if (FPaths::HasProject())
 	{
-		GetWindow().SetTitle(FStringConv::ToWide(FPaths::GetProjectDescriptor().GetDisplayName()));
+		GetWindow().SetTitle(FStringConv::ToWide(FProjectSettings::Get().GetDisplayName()));
 		E_LOG(LogRuntime, Display, "프로젝트: {}", FPaths::GetProjectName());
 	}
 	else
@@ -85,7 +76,7 @@ bool FRuntimeApplication::OnInit()
 	if (FPaths::HasProject())
 	{
 		const bool bAllowRestart = FPaths::IsPackaged() && !IsAutomationRun() && !FCommandLine::FromProcess().HasFlag(L"--no-steam-restart");
-		if (FSteamSubsystem::Get().Init(FPaths::GetProjectDescriptor().SteamAppId, bAllowRestart) == FSteamSubsystem::EInitResult::RestartThroughSteam)
+		if (FSteamSubsystem::Get().Init(FProjectSettings::Get().Info.SteamAppId, bAllowRestart) == FSteamSubsystem::EInitResult::RestartThroughSteam)
 		{
 			return false; // Steam이 게임을 다시 실행한다
 		}
@@ -134,7 +125,7 @@ bool FRuntimeApplication::OnInit()
 	}
 
 	// 씬: --scene <Content 기준 상대 경로>가 있으면 그것, 아니면 프로젝트 기본 씬. 없거나 실패하면 자리표시 씬
-	SceneAsset = FPaths::HasProject() ? FPaths::GetProjectDescriptor().DefaultScene : std::string();
+	SceneAsset = FPaths::HasProject() ? FProjectSettings::Get().Maps.GameDefaultMap : std::string(); // 프로젝트 설정 "게임 기본 맵"
 	if (const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene"); !SceneArg.empty())
 	{
 		SceneAsset = FStringConv::ToUtf8(SceneArg);

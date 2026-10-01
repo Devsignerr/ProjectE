@@ -141,6 +141,6 @@ private:
 	uint32                                   InputSequence = 0; // 클라이언트: 보낸 입력 순번
 
 	FLanDiscovery                     SessionSearch; // Net.FindSessions
-	uint16                            LanDiscoveryPort = DefaultLanDiscoveryPort;
+	uint16                            LanDiscoveryPort = 0; // 0 = 프로젝트 설정
 	std::optional<FNetSessionRequest> PendingSessionRequest;
 };

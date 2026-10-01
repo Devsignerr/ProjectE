@@ -1,7 +1,7 @@
 #include "Scripting/LuaRuntime.h"
 
 #include "Core/Log.h"
-#include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 
 #include <stdexcept>
 
@@ -23,10 +23,10 @@ void FLuaRuntime::RegisterGameBindings()
 {
 	sol::table GameTable = Lua.create_named_table("Game");
 	GameTable["GetName"] = []() {
-		return FPaths::HasProject() ? FPaths::GetProjectDescriptor().GetDisplayName() : std::string("ProjectE");
+		return FProjectSettings::Get().GetDisplayName();
 	};
 	GameTable["GetVersion"] = []() {
-		return FPaths::HasProject() ? FPaths::GetProjectDescriptor().GetVersion() : std::string("1.0.0");
+		return FProjectSettings::Get().Info.Version;
 	};
 	GameTable["Quit"] = [this]() {
 		if (AppHooks != nullptr && AppHooks->Quit)

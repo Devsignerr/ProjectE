@@ -4,6 +4,7 @@
 #include "Audio/AudioReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Network/NetTransport.h"
 #include "Network/ReplicationTypes.h"
@@ -51,7 +52,7 @@ bool FServerApplication::OnInit()
 		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));
 	}
 
-	std::string SceneAsset = FPaths::GetProjectDescriptor().DefaultScene;
+	std::string SceneAsset = FProjectSettings::Get().GetServerDefaultMap(); // 프로젝트 설정 "서버 기본 맵" (비면 게임 기본 맵)
 	if (const std::wstring SceneArg = FCommandLine::FromProcess().GetValue(L"--scene"); !SceneArg.empty())
 	{
 		SceneAsset = FStringConv::ToUtf8(SceneArg);
@@ -68,7 +69,7 @@ bool FServerApplication::OnInit()
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory(), &Net });
 	Physics.SetInterpolation(false);
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
-	Players.Begin(Scene, FPaths::GetProjectDescriptor().PlayerPrefab);
+	Players.Begin(Scene, FProjectSettings::Get().Maps.PlayerPrefab);
 	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 		const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 		Replication.OnPlayerJoined(Player.Connection);

@@ -4,7 +4,10 @@
 #include "Core/ECS/Registry.h"
 #include "Core/Reflection/PropertyType.h"
 
+#include <algorithm>
+#include <cctype>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -29,6 +32,31 @@ struct FPropertyInfo
 
 	std::string HandleTypeName; // ResourceHandle일 때 태그 이름
 	std::string AssetFilter;    // 에셋 경로 문자열이면 허용 확장자 (";" 구분, 예 ".emat") — 에디터 드래그 앤 드롭 대상
+	std::string Tooltip;        // 에디터 마우스 오버 설명
+
+	// Int32 enum 선택지 (값 = 순번). 비어 있으면 일반 정수. Name은 직렬화 키(JSON 문자열), DisplayName은 콤보 표시
+	struct FEnumEntry
+	{
+		std::string Name;
+		std::string DisplayName;
+	};
+	std::vector<FEnumEntry> EnumEntries;
+
+	bool IsEnum() const { return !EnumEntries.empty(); }
+	// 이름 → 값 (대소문자 무시). 없으면 -1
+	int32 FindEnumValue(std::string_view EnumName) const
+	{
+		for (size_t Index = 0; Index < EnumEntries.size(); ++Index)
+		{
+			const std::string& Candidate = EnumEntries[Index].Name;
+			if (Candidate.size() == EnumName.size() &&
+			    std::equal(Candidate.begin(), Candidate.end(), EnumName.begin(), [](char A, char B) { return std::tolower(static_cast<unsigned char>(A)) == std::tolower(static_cast<unsigned char>(B)); }))
+			{
+				return static_cast<int32>(Index);
+			}
+		}
+		return -1;
+	}
 
 	bool HasFlag(EPropertyFlags Flag) const { return (Flags & Flag) != 0; }
 	bool HasRange() const { return MinValue < MaxValue; }
@@ -212,6 +240,22 @@ public:
 	{
 		E_CHECKF(!Info.Properties.empty(), "AssetFilter는 Property 다음에 호출해야 합니다");
 		Info.Properties.back().AssetFilter = Extensions;
+		return *this;
+	}
+
+	// 직전에 추가한 프로퍼티의 에디터 툴팁
+	TTypeBuilder& Tooltip(std::string Text)
+	{
+		E_CHECKF(!Info.Properties.empty(), "Tooltip은 Property 다음에 호출해야 합니다");
+		Info.Properties.back().Tooltip = std::move(Text);
+		return *this;
+	}
+
+	// 직전에 추가한 Int32(enum) 프로퍼티의 선택지 {직렬화 이름, 표시 이름} — 값은 순번 0, 1, 2…
+	TTypeBuilder& Enum(std::initializer_list<FPropertyInfo::FEnumEntry> Entries)
+	{
+		E_CHECKF(!Info.Properties.empty() && Info.Properties.back().Type == EPropertyType::Int32, "Enum은 Int32/enum Property 다음에 호출해야 합니다");
+		Info.Properties.back().EnumEntries.assign(Entries.begin(), Entries.end());
 		return *this;
 	}
 

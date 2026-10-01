@@ -2,6 +2,7 @@
 #include "RuntimeApplication.h"
 
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Network/NetTransport.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -108,7 +109,7 @@ void FRuntimeApplication::StartListenServer(uint16 Port)
 	}
 	World.SetNetMode(ENetMode::ListenServer);
 	// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
-	Players.Begin(Scene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
+	Players.Begin(Scene, FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string());
 	World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} (호스트)", FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE");
@@ -138,7 +139,7 @@ void FRuntimeApplication::HandleSessionRequest(const FNetSessionRequest& Request
 	switch (Request.Type)
 	{
 	case FNetSessionRequest::EType::Host:
-		Options.Port = Request.Port != 0 ? Request.Port : DefaultNetPort;
+		Options.Port = Request.Port != 0 ? Request.Port : GetConfiguredNetPort();
 		if (Net.GetMode() == ENetMode::Standalone)
 		{
 			StartListenServer(Options.Port); // 지금 씬 그대로 호스트가 된다
@@ -167,6 +168,6 @@ void FRuntimeApplication::HandleSessionRequest(const FNetSessionRequest& Request
 
 void FRuntimeApplication::UpdateWindowTitle()
 {
-	const std::string Project = FPaths::HasProject() ? FPaths::GetProjectDescriptor().GetDisplayName() : "ProjectE";
+	const std::string Project = FPaths::HasProject() ? FProjectSettings::Get().GetDisplayName() : "ProjectE";
 	GetWindow().SetTitle(FStringConv::ToWide(Net.GetMode() == ENetMode::Standalone ? Project : std::format("{} [{}]", Project, ToString(Net.GetMode()))));
 }

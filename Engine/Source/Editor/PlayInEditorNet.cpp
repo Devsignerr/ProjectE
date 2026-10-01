@@ -1,6 +1,7 @@
 #include "Editor/PlayInEditorNet.h"
 
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
 #include "Editor/PlayMode.h"
@@ -127,7 +128,7 @@ void FPlayInEditorNet::AfterPlay()
 	}
 	if (Mode == ENetMode::ListenServer && Net.GetMode() == ENetMode::ListenServer)
 	{
-		Players.Begin(*PlayScene, FPaths::HasProject() ? FPaths::GetProjectDescriptor().PlayerPrefab : std::string());
+		Players.Begin(*PlayScene, FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string());
 		World->OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
 		FLanHostInfo LanInfo;
 		LanInfo.Name       = std::format("{} (에디터)", FPaths::GetProjectName());

@@ -5,6 +5,7 @@
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Platform/WindowsHeaders.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 
 #include <string_view>
@@ -196,6 +197,7 @@ bool FPaths::SetProject(const std::filesystem::path& ProjectFileOrDirectory)
 	}
 	State.ProjectDescriptor = std::move(Descriptor);
 	State.bHasProject       = true;
+	FProjectSettings::Get().LoadForProject(State.ProjectDescriptor); // Config/<섹션>.json (+ .eproject 이전 필드)
 
 	E_LOG(LogCore, Display, "프로젝트 열림: {} ({})", State.ProjectDescriptor.Name, ToUtf8(State.ProjectFile));
 	return true;
@@ -245,8 +247,7 @@ std::filesystem::path FPaths::GetProjectSavedDirectory()
 		const std::filesystem::path LocalAppData = QueryLocalAppData();
 		if (!LocalAppData.empty())
 		{
-			const FProjectDescriptor& Descriptor = GetProjectDescriptor();
-			return EnsureDirectory(MakeUserSavedDirectory(LocalAppData, Descriptor.Company, Descriptor.Name));
+			return EnsureDirectory(MakeUserSavedDirectory(LocalAppData, FProjectSettings::Get().Info.Company, GetProjectDescriptor().Name));
 		}
 	}
 	return EnsureDirectory(GetProjectDirectory() / L"Saved");

@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 
-enum class EWindowMode : uint8
+enum class EWindowMode : int32 // 4바이트: 리플렉션 enum 프로퍼티 (설정 창)
 {
 	Windowed,
 	BorderlessFullscreen, // 모니터 전체를 덮는 테두리 없는 창 (전용 전체 화면은 쓰지 않는다 — flip 모델)
@@ -16,7 +16,7 @@ const char* ToString(EWindowMode Mode);
 bool        TryParseWindowMode(std::string_view Text, EWindowMode& OutMode); // "Windowed" / "BorderlessFullscreen" (대소문자 무시)
 
 // 게임 사용자 설정 (화면). 런타임이 시작할 때 읽고, 바뀌면 저장한다.
-//   기본값 ← 프로젝트 Config/DefaultGameUserSettings.json(선택) ← <Saved>/Config/GameUserSettings.json(사용자)
+//   프로젝트 설정 "Display" 섹션(Config/Display.json, FProjectSettings::Display) ← <Saved>/Config/GameUserSettings.json(사용자)
 // JSON: { "WindowMode": "Windowed", "WindowWidth": 1280, "WindowHeight": 720, "VSync": true }
 // 파일에 없는 키는 앞 단계 값을 유지한다.
 struct FGameUserSettings

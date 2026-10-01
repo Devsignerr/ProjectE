@@ -4,6 +4,7 @@
 #include "Core/StringConv.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
+#include "Editor/PropertyWidgets.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/AnimationSystem.h"
@@ -51,11 +52,6 @@ namespace
 		}
 		ImGui::PopID();
 		return bExpanded;
-	}
-
-	float DragSpeed(const FPropertyInfo& Property, float Default)
-	{
-		return Property.Step > 0.0f ? Property.Step : Default;
 	}
 } // namespace
 
@@ -517,80 +513,14 @@ bool FInspectorPanel::DrawProperty(const FPropertyInfo& Property, void* Componen
 {
 	const char* Label = Property.DisplayName.c_str();
 
+	// 값 타입(불/정수/enum/실수/문자열/벡터)은 설정 창과 같은 공용 위젯
+	if (FPropertyWidgets::IsValueType(Property.Type))
+	{
+		return FPropertyWidgets::DrawValue(Property, Component);
+	}
+
 	switch (Property.Type)
 	{
-	case EPropertyType::Bool:
-		return ImGui::Checkbox(Label, &Property.GetRef<bool>(Component));
-
-	case EPropertyType::Int32:
-	{
-		int32& Value = Property.GetRef<int32>(Component);
-		if (Property.HasRange())
-		{
-			return ImGui::SliderInt(Label, &Value, static_cast<int>(Property.MinValue), static_cast<int>(Property.MaxValue));
-		}
-		return ImGui::DragInt(Label, &Value, DragSpeed(Property, 1.0f));
-	}
-
-	case EPropertyType::UInt32:
-	{
-		uint32&      Value = Property.GetRef<uint32>(Component);
-		const uint32 Min   = static_cast<uint32>(FMath::Max(Property.MinValue, 0.0f));
-		const uint32 Max   = static_cast<uint32>(Property.MaxValue);
-		return ImGui::DragScalar(Label, ImGuiDataType_U32, &Value, DragSpeed(Property, 1.0f),
-		                         Property.HasRange() ? &Min : nullptr, Property.HasRange() ? &Max : nullptr);
-	}
-
-	case EPropertyType::Float:
-	{
-		float& Value = Property.GetRef<float>(Component);
-		if (Property.HasRange())
-		{
-			return ImGui::DragFloat(Label, &Value, DragSpeed(Property, 0.05f), Property.MinValue, Property.MaxValue);
-		}
-		return ImGui::DragFloat(Label, &Value, DragSpeed(Property, 0.05f));
-	}
-
-	case EPropertyType::String:
-	{
-		std::string& Value = Property.GetRef<std::string>(Component);
-		char         Buffer[256];
-		strncpy_s(Buffer, sizeof(Buffer), Value.c_str(), _TRUNCATE);
-		if (ImGui::InputText(Label, Buffer, sizeof(Buffer)))
-		{
-			Value = Buffer;
-			return true;
-		}
-		return false;
-	}
-
-	case EPropertyType::Vector2:
-		return ImGui::DragFloat2(Label, &Property.GetRef<FVector2>(Component).X, DragSpeed(Property, 0.05f));
-
-	case EPropertyType::Vector3:
-	{
-		FVector3& Value = Property.GetRef<FVector3>(Component);
-		if (Property.HasFlag(PF_Color))
-		{
-			return ImGui::ColorEdit3(Label, &Value.X);
-		}
-		if (Property.HasRange())
-		{
-			return ImGui::DragFloat3(Label, &Value.X, DragSpeed(Property, 0.05f), Property.MinValue, Property.MaxValue);
-		}
-		return ImGui::DragFloat3(Label, &Value.X, DragSpeed(Property, 0.05f));
-	}
-
-	case EPropertyType::Vector4:
-	{
-		FVector4& Value = Property.GetRef<FVector4>(Component);
-		if (Property.HasFlag(PF_Color))
-		{
-			return ImGui::ColorEdit4(Label, &Value.X);
-		}
-		return ImGui::DragFloat4(Label, &Value.X, DragSpeed(Property, 0.05f));
-	}
-
 	case EPropertyType::Quat:
 	{
 		FQuat& Value = Property.GetRef<FQuat>(Component);

@@ -10,7 +10,11 @@
 
 class FCommandLine;
 
-inline constexpr uint16 DefaultNetPort = 7777;
+inline constexpr uint16 DefaultNetPort = 7777; // 프로젝트 설정이 없을 때 (실제 기본값은 GetConfiguredNetPort)
+
+// 프로젝트 설정 "네트워크"의 값 (FProjectSettings::Network)
+uint16 GetConfiguredNetPort();
+uint16 GetConfiguredLanDiscoveryPort();
 
 // 서버와 클라이언트가 같아야 하는 값 + 플레이어 이름 (Hello에 실려 서버가 확인한다)
 struct FNetSessionInfo
@@ -62,7 +66,7 @@ public:
 	};
 
 	static constexpr float  HandshakeTimeoutSeconds = 5.0f;
-	uint16                  MaxPlayers              = 16; // 서버: 원격 플레이어 최대 수 (넘으면 "서버가 가득 참"으로 거부)
+	uint16                  MaxPlayers              = 0; // 서버: 원격 플레이어 최대 수 (넘으면 "서버가 가득 참"으로 거부). 0 = 프로젝트 설정 "네트워크 → 최대 인원" (StartServer에서 정함)
 	static constexpr uint32 HostPlayerId            = 0; // Standalone/리슨 서버의 로컬 플레이어. 원격 플레이어는 1부터
 
 	FNetDriver() = default;

@@ -2,7 +2,9 @@
 
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
+#include "Network/LanDiscovery.h"
 
 #include <algorithm>
 #include <charconv>
@@ -21,9 +23,22 @@ FNetSessionInfo FNetSessionInfo::FromProject(const std::string& SceneAsset, cons
 	return Info;
 }
 
+uint16 GetConfiguredNetPort()
+{
+	const uint32 Port = FProjectSettings::Get().Network.DefaultPort;
+	return Port >= 1 && Port <= 65535 ? static_cast<uint16>(Port) : DefaultNetPort;
+}
+
+uint16 GetConfiguredLanDiscoveryPort()
+{
+	const uint32 Port = FProjectSettings::Get().Network.LanDiscoveryPort;
+	return Port >= 1 && Port <= 65535 ? static_cast<uint16>(Port) : DefaultLanDiscoveryPort;
+}
+
 FNetLaunchOptions FNetLaunchOptions::FromCommandLine(const FCommandLine& CommandLine)
 {
 	FNetLaunchOptions Options;
+	Options.Port = GetConfiguredNetPort(); // 프로젝트 설정 기본 포트 (--port가 우선)
 	if (const std::string PortText = FStringConv::ToUtf8(CommandLine.GetValue(L"--port")); !PortText.empty())
 	{
 		uint16 Port = 0;
@@ -33,7 +48,7 @@ FNetLaunchOptions FNetLaunchOptions::FromCommandLine(const FCommandLine& Command
 		}
 		else
 		{
-			E_LOG(LogNet, Warning, "--port 값이 잘못되어 기본 포트 {}를 씁니다: {}", DefaultNetPort, PortText);
+			E_LOG(LogNet, Warning, "--port 값이 잘못되어 기본 포트 {}를 씁니다: {}", Options.Port, PortText);
 		}
 	}
 	if (const std::wstring Lag = CommandLine.GetValue(L"--net-lag"); !Lag.empty())
@@ -69,6 +84,10 @@ FNetDriver::~FNetDriver()
 bool FNetDriver::StartServer(std::unique_ptr<INetTransport> InTransport, uint16 Port, const FNetSessionInfo& Info, bool bDedicated)
 {
 	Shutdown();
+	if (MaxPlayers == 0)
+	{
+		MaxPlayers = static_cast<uint16>(std::clamp<uint32>(FProjectSettings::Get().Network.MaxPlayers, 1u, 0xFFFFu)); // 프로젝트 설정
+	}
 	if (InTransport == nullptr || !InTransport->Listen(Port))
 	{
 		return false;

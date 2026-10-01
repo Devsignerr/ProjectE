@@ -12,6 +12,7 @@
 #include "Editor/Panels/ContentBrowserPanel.h"
 #include "Editor/Panels/NetworkPanel.h"
 #include "Editor/Panels/PostProcessPanel.h"
+#include "Editor/Panels/SettingsWindow.h"
 #include "Editor/Panels/ShadowPanel.h"
 #include "Editor/Panels/OutputLogPanel.h"
 #include "Editor/Panels/HierarchyPanel.h"
@@ -58,7 +59,10 @@ private:
 	bool OpenScene(const std::filesystem::path& Path);
 	bool SaveScene();
 	bool SaveSceneAs();
-	void OpenStartupScene(); // 프로젝트 기본 씬 로드 (없으면 기본 씬 구성 후 생성)
+	void OpenStartupScene(); // --scene → 마지막 씬(환경설정) → 프로젝트 설정 "에디터 시작 맵" (없으면 기본 씬 구성 후 생성)
+	void RememberOpenedScene(); // 프로젝트별 개인 상태에 마지막 씬 기록
+	void UpdateAutoSave(float DeltaSeconds); // 환경설정 "자동 저장": 저장 안 한 변경을 <Saved>/Autosaves/에 사본으로
+	void ApplyViewportPreferences(); // 환경설정 "뷰포트" → 카메라 감도/시야각, 스냅
 	void UpdateWindowTitle();
 
 	void BuildDefaultScene();
@@ -120,6 +124,8 @@ private:
 	FContentBrowserPanel ContentBrowserPanel;
 	FPostProcessPanel    PostProcessPanel;
 	FShadowPanel         ShadowPanel;
+	FSettingsWindow      ProjectSettingsWindow{ FSettingsWindow::EKind::ProjectSettings };     // 편집 → 프로젝트 설정
+	FSettingsWindow      EditorPreferencesWindow{ FSettingsWindow::EKind::EditorPreferences }; // 편집 → 에디터 환경설정
 	FOutputLogPanel      OutputLogPanel;
 	FNetworkPanel        NetworkPanel;
 	FAssetEditorManager  AssetEditors; // 머티리얼/메시/애니메이션/파티클 편집 창
@@ -160,5 +166,6 @@ private:
 	bool  bLayoutChecked        = false;
 	bool  bResetLayoutRequested = false;
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
+	float AutoSaveElapsedSeconds   = 0.0f;
 	float SmoothedFps    = 0.0f;
 };

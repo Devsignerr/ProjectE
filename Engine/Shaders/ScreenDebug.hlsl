@@ -37,6 +37,10 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	{
 		Color = pow(saturate(1.0f - Value.r), 0.25f); // 가까울수록 밝게 (리버스 아님: 1 = 먼 평면)
 	}
+	else if (DebugMode == 5)
+	{
+		Color = sqrt(saturate(Value.rgb * Value.a)); // SSR 색 × 신뢰도 (아래 제곱과 상쇄해 그대로 보이게)
+	}
 	else
 	{
 		Color = Value.rrr;

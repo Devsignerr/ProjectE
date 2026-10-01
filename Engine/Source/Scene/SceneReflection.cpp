@@ -211,4 +211,16 @@ void RegisterSceneTypes()
 		.Property(&FHeightFogComponent::VolumetricDirectionalScale, "VolumetricDirectionalScale", "방향광 산란 배율").Range(0.0f, 20.0f, 0.01f)
 		.Property(&FHeightFogComponent::VolumetricLocalLightScale, "VolumetricLocalLightScale", "로컬 라이트 산란 배율").Range(0.0f, 20.0f, 0.01f)
 		.AsComponent();
+
+	// 반사 캡처 (Phase 33-6): 에디터 도구 → 반사 캡처 굽기로 CaptureAsset(.ecapture)에 큐브맵을 굽는다
+	Registry.RegisterType<FReflectionCaptureComponent>("ReflectionCaptureComponent", "반사 캡처")
+		.Property(&FReflectionCaptureComponent::Shape, "Shape", "모양")
+		.Enum({ { "Sphere", "구" }, { "Box", "상자 (시차 보정)" } })
+		.Property(&FReflectionCaptureComponent::Radius, "Radius", "반경 (cm)").Range(10.0f, 100000.0f, 1.0f)
+		.Property(&FReflectionCaptureComponent::BoxExtent, "BoxExtent", "상자 반 크기 (cm)").Range(10.0f, 100000.0f, 1.0f).Tooltip("월드 축 정렬 (회전 무시)")
+		.Property(&FReflectionCaptureComponent::FadeDistance, "FadeDistance", "경계 페이드 (cm)").Range(1.0f, 10000.0f, 1.0f)
+		.Property(&FReflectionCaptureComponent::Intensity, "Intensity", "세기").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FReflectionCaptureComponent::Priority, "Priority", "우선순위").Tooltip("겹치면 큰 값이 먼저")
+		.Property(&FReflectionCaptureComponent::CaptureAsset, "CaptureAsset", "구운 큐브맵").AssetFilter(".ecapture")
+		.AsComponent();
 }

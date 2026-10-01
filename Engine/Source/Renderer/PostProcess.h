@@ -50,6 +50,13 @@ struct FPostProcessSettings
 	bool  bAmbientOcclusion         = true;
 	float AmbientOcclusionIntensity = 1.0f;  // 가시도^세기
 	float AmbientOcclusionRadius    = 80.0f; // cm
+
+	// SSR (Hi-Z 레이마칭, 이전 프레임 색 재투영): 반사 우선순위 SSR → 반사 캡처 → 하늘. 사전 패스·시간 이력이 있어야 한다
+	bool  bScreenSpaceReflections = true;
+	float SsrIntensity            = 1.0f;
+	float SsrMaxRoughness         = 0.6f;    // 이 거칠기에서 SSR 0 (절반부터 페이드)
+	float SsrMaxDistance          = 2000.0f; // cm
+	float SsrThickness            = 40.0f;   // cm (교차 뒤 허용 두께)
 };
 
 // 픽셀 아트 합성 입력 (FSceneRenderer가 FPixelArtComponent + 카메라로 채운다). 식은 PixelArtMath.h / PixelArt.hlsl

@@ -8,6 +8,7 @@
 #include "Renderer/PixelArtMath.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
+#include "Renderer/ReflectionMath.h"
 #include "Renderer/TemporalMath.h"
 #include "Scene/Scene.h"
 
@@ -43,6 +44,9 @@ namespace
 		RootParam_DBufferA            = 16, // t17 (데칼 베이스색)
 		RootParam_DBufferB            = 17, // t18 (데칼 법선)
 		RootParam_DBufferC            = 18, // t19 (데칼 거칠기/금속)
+		RootParam_ReflectionCaptures  = 19, // t20 (반사 캡처 목록, 루트 SRV, 픽셀)
+		RootParam_CaptureAtlas        = 20, // t21 (반사 캡처 큐브 배열 표)
+		RootParam_ScreenReflection    = 21, // t22 (SSR 결과 표)
 	};
 } // namespace
 
@@ -97,6 +101,12 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 			D3D12_SHADER_VISIBILITY_PIXEL);
 		E_CHECK(DBufferIndex == RootParam_DBufferA + Index);
 	}
+	const uint32 CapturesIndex = RootSignature.AddShaderResourceView(20, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 AtlasIndex    = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 21, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 SsrIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 22, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(CapturesIndex == RootParam_ReflectionCaptures && AtlasIndex == RootParam_CaptureAtlas && SsrIndex == RootParam_ScreenReflection);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -129,7 +139,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
+	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
+	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -161,7 +172,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	}
 	if (const std::wstring View = CommandLine.GetValue(L"--debug-view"); !View.empty())
 	{
-		DebugView = View == L"normal" ? 1u : View == L"velocity" ? 2u : View == L"depth" ? 3u : View == L"ao" ? 4u : 0u;
+		DebugView = View == L"normal" ? 1u : View == L"velocity" ? 2u : View == L"depth" ? 3u : View == L"ao" ? 4u : View == L"ssr" ? 5u : 0u;
 	}
 	if (CommandLine.HasFlag(L"--no-taa"))
 	{
@@ -170,6 +181,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	if (CommandLine.HasFlag(L"--no-ssao"))
 	{
 		PostProcessSettings.bAmbientOcclusion = false; // 비교용
+	}
+	if (CommandLine.HasFlag(L"--no-ssr"))
+	{
+		PostProcessSettings.bScreenSpaceReflections = false; // 비교용
+	}
+	if (CommandLine.HasFlag(L"--bake-captures"))
+	{
+		bBakeCapturesRequested = true; // 첫 Render에서 반사 캡처 굽기 (자동 검증용)
 	}
 	if (CommandLine.HasFlag(L"--jitter"))
 	{
@@ -217,6 +236,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Decals:       return "데칼";
 	case ERenderTimer::VolumetricFog: return "볼류메트릭 안개";
 	case ERenderTimer::Fog:          return "안개 적용";
+	case ERenderTimer::Reflections:  return "SSR";
 	default:                        return "?";
 	}
 }
@@ -423,7 +443,8 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 		return false;
 	}
 	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile) ||
-	    !FogRenderer.ReloadShaders(bForceRecompile))
+	    !FogRenderer.ReloadShaders(bForceRecompile) || !ScreenSpaceReflections.ReloadShaders(bForceRecompile) ||
+	    !ReflectionCaptures.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -461,6 +482,8 @@ void FSceneRenderer::Shutdown()
 	AmbientOcclusion.Shutdown();
 	DecalRenderer.Shutdown();
 	FogRenderer.Shutdown();
+	ScreenSpaceReflections.Shutdown();
+	ReflectionCaptures.Shutdown();
 	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
 	{
@@ -496,6 +519,7 @@ void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 	EnsureTarget(SceneVelocity, Width, Height, L"SceneVelocity", FRenderTargetDesc::MakeColor(SceneVelocityFormat));
 	AmbientOcclusion.EnsureTargets(Width, Height);
 	DecalRenderer.EnsureTargets(Width, Height);
+	ScreenSpaceReflections.EnsureTargets(Width, Height);
 }
 
 void FSceneRenderer::EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
@@ -565,6 +589,14 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		ViewsThisFrame     = 0;
 	}
 	++ViewsThisFrame;
+
+	// 반사 캡처: 끝난 굽기 저장 + 요청된 굽기 (큐브 면 6개를 이번 프레임 명령 목록에 먼저 그린다)
+	ReflectionCaptures.ProcessPendingSaves();
+	if (bBakeCapturesRequested)
+	{
+		bBakeCapturesRequested = false;
+		BakeReflectionCaptures(Scene);
+	}
 
 	RenderFrame(Scene, Camera, Output);
 
@@ -760,6 +792,9 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 
 	// 점광원/스포트라이트 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
 	BeginTimer(ERenderTimer::LocalLights);
+	// 같은 프레임에 이 렌더러가 다시 그리면(반사 캡처 면) 지난 메시 패스의 루트 SRV(클러스터 버퍼)가 그래픽스 루트에 남아 있다 →
+	// 클러스터 버퍼가 UAV로 바뀌기 전에 다른 루트 시그니처로 바꿔 묶음을 끊는다 (디버그 레이어 1003)
+	CommandList->SetGraphicsRootSignature(ScreenPassRoot.Get());
 	LocalLightRenderer.Render(MeshInstances, SkinPalettes.GetGpuData(), Camera, Width, Height, LocalShadowSettings);
 	EndTimer(ERenderTimer::LocalLights);
 	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
@@ -832,6 +867,35 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	Stats.Decals           = bDecals ? DecalRenderer.GetDrawnCount() : 0;
 	PerFrame.DecalsEnabled = bDecals ? 1u : 0u;
 
+	// 2.65) 반사: 캡처 목록(굽는 중에는 쓰지 않음 — 하늘만) + SSR (사전 패스 깊이·법선, 이전 프레임 씬 컬러 = 아직 지우기 전 SceneColor)
+	{
+		const uint32 CaptureCount       = ReflectionCaptures.Gather(Scene);
+		PerFrame.ReflectionCaptureCount = bRenderingCaptures ? 0u : CaptureCount;
+		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bTemporalHistoryValid && !bRenderingCaptures;
+		if (bSsr)
+		{
+			BeginTimer(ERenderTimer::Reflections);
+			FScreenSpaceReflectionInputs Inputs;
+			Inputs.SceneColor    = SceneColor.get();
+			Inputs.SceneNormal   = SceneNormal.get();
+			Inputs.Projection    = RenderCamera.GetProjectionMatrix();
+			Inputs.View          = Camera.GetViewMatrix();
+			Inputs.Reprojection  = CurrentReprojection;
+			Inputs.NearZ         = Camera.GetNearZ();
+			Inputs.bOrthographic = Camera.IsOrthographic();
+			Inputs.MaxDistance   = PostProcessSettings.SsrMaxDistance;
+			Inputs.Thickness     = PostProcessSettings.SsrThickness;
+			Inputs.MaxRoughness  = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
+			Inputs.FrameIndex    = static_cast<uint32>(SceneFrameCount);
+			Inputs.bStochastic   = CurrentJitterNdc.X != 0.0f || CurrentJitterNdc.Y != 0.0f; // TAA가 누적할 때만 거친 반사를 흔든다
+			ScreenSpaceReflections.Render(Inputs);
+			EndTimer(ERenderTimer::Reflections);
+		}
+		PerFrame.SsrEnabled      = bSsr ? 1u : 0u;
+		PerFrame.SsrMaxRoughness = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
+		PerFrame.SsrIntensity    = FMath::Max(PostProcessSettings.SsrIntensity, 0.0f);
+	}
+
 	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분). 적용은 메인 패스 뒤, 파티클은 정점에서
 	{
 		BeginTimer(ERenderTimer::VolumetricFog);
@@ -903,6 +967,53 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	PrevScene                    = &Scene;
 }
 
+void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)
+{
+	struct FJob
+	{
+		FVector3    Position;
+		std::string AssetPath;
+	};
+	std::vector<FJob> Jobs;
+	FRegistry&        Registry = Scene.GetRegistry();
+	Registry.View<FTransformComponent, FReflectionCaptureComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FReflectionCaptureComponent& Capture) {
+		if (Capture.CaptureAsset.empty())
+		{
+			const FNameComponent* Name = Registry.TryGet<FNameComponent>(Entity);
+			Capture.CaptureAsset       = "Captures/" + (Name != nullptr && !Name->Name.empty() ? Name->Name : "Capture_" + std::to_string(Entity.Index)) + ".ecapture";
+		}
+		Jobs.push_back({ Transform.GetWorldPosition(), Capture.CaptureAsset });
+	});
+	if (Jobs.empty())
+	{
+		E_LOG(LogRenderer, Display, "반사 캡처 굽기: 씬에 반사 캡처가 없습니다");
+		return;
+	}
+	Scene.UpdateTransforms();
+
+	// 면마다 지터 없는 90도 카메라로 HDR 씬을 그려 원시 큐브 면으로 복사 → 프리필터 (캡처끼리는 서로 비추지 않고 하늘만)
+	bRenderingCaptures = true;
+	for (const FJob& Job : Jobs)
+	{
+		for (uint32 Face = 0; Face < 6; ++Face)
+		{
+			FVector3 Forward;
+			FVector3 Right;
+			FVector3 Up;
+			FReflectionMath::GetCubeFaceBasis(Face, Forward, Right, Up);
+			FCamera FaceCamera;
+			FaceCamera.SetPosition(Job.Position);
+			FaceCamera.SetRotation(FReflectionMath::MakeBasisRotation(Forward, Right, Up));
+			FaceCamera.SetPerspective(90.0f, 1.0f, 5.0f, 200000.0f);
+			RenderSceneColor(Scene, FaceCamera, FReflectionMath::CaptureSize, FReflectionMath::CaptureSize, false);
+			ReflectionCaptures.CopyFace(*SceneColor, Face);
+		}
+		ReflectionCaptures.FinishBake(Job.AssetPath);
+		E_LOG(LogRenderer, Display, "반사 캡처 굽기: {} ({:.0f}, {:.0f}, {:.0f})", Job.AssetPath, Job.Position.X, Job.Position.Y, Job.Position.Z);
+	}
+	bRenderingCaptures = false;
+}
+
 void FSceneRenderer::ApplyMotionHistory(bool bValid)
 {
 	// 정적 인스턴스만 (스킨은 팔레트가 이전 프레임 본을 따로 가진다). 엔티티 하나 = 인스턴스 하나
@@ -947,9 +1058,10 @@ void FSceneRenderer::RenderDebugView(const FRenderOutput& Output)
 		CommandList->ResourceBarrier(1, &ToWrite);
 		return;
 	}
-	if (DebugView == 4)
+	if (DebugView == 4 || DebugView == 5)
 	{
-		PostProcessor.RenderDebugView(CommandList, AmbientOcclusion.GetResultSrv(), Output, DebugView);
+		PostProcessor.RenderDebugView(CommandList, DebugView == 4 ? AmbientOcclusion.GetResultSrv() : ScreenSpaceReflections.GetResultSrv(), Output,
+		                              DebugView);
 		return;
 	}
 	const FD3D12RenderTarget* Source = DebugView == 1 ? SceneNormal.get() : SceneVelocity.get();
@@ -1032,8 +1144,11 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 	{
 		CommandList->SetGraphicsRootDescriptorTable(RootParam_DBufferA + Index, DecalRenderer.GetTarget(Index).GetSrv().Gpu);
 	}
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_ReflectionCaptures, ReflectionCaptures.GetCaptureList());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
 
-	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 머티리얼을 읽지 않는다)
+	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 거칠기만 읽는다)
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
 
 	const std::vector<FMeshInstance>& Instances     = MeshInstances.GetInstances();
@@ -1065,7 +1180,7 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 					CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
 				}
 			}
-			if (!bPrepassPass && Instance.Material != BoundMaterial)
+			if (Instance.Material != BoundMaterial) // 사전 패스도 거칠기(SSR)를 위해 금속/거칠기 텍스처를 읽는다
 			{
 				const uint64 Key   = Instance.MaterialHandle.ToId();
 				auto         Found = MaterialConstantCache.find(Key);

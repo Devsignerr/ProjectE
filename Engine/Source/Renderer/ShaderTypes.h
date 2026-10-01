@@ -31,8 +31,27 @@ struct alignas(16) FPerFrameConstants
 	FMatrix4x4                 PrevViewProjection;
 	FVector2                   JitterNdc;        // 이번 프레임 투영 지터 (NDC)
 	FVector2                   ScreenSize;       // 씬 타깃 픽셀 크기
+	// 반사 (Phase 33-6): 캡처 목록(t20) 개수, SSR 결과(t22) 사용 여부, SSR 거칠기 한계
+	uint32                     ReflectionCaptureCount = 0;
+	uint32                     SsrEnabled             = 0;
+	float                      SsrMaxRoughness        = 0.6f;
+	float                      SsrIntensity           = 1.0f;
 };
-static_assert(sizeof(FPerFrameConstants) == 288);
+static_assert(sizeof(FPerFrameConstants) == 304);
+
+// 반사 캡처 하나 (Mesh.hlsl t20 구조화 버퍼, FReflectionCaptureGpu와 1:1). Slot = 큐브 배열(t21) 안 큐브 번호
+struct FReflectionCaptureGpuData
+{
+	FVector3 Position;
+	uint32   Shape = 0; // 0 구, 1 상자
+	FVector3 BoxExtent;
+	float    Radius       = 0.0f;
+	float    FadeDistance = 1.0f;
+	float    Intensity    = 1.0f;
+	uint32   Slot         = 0;
+	float    Padding      = 0.0f;
+};
+static_assert(sizeof(FReflectionCaptureGpuData) == 48);
 
 // 안개 적용 상수 (Fog.hlsli FogConstants와 1:1 — 전체 화면 적용 패스 b0, 파티클 b2). 밀도/감쇠/거리는 cm 단위
 struct alignas(16) FFogConstants

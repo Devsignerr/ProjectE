@@ -1030,6 +1030,12 @@ void FEditorApplication::DrawToolsMenu()
 			BakeNavMesh();
 		}
 		ImGui::SetItemTooltip("씬의 정적 메시로 내비메시를 굽고 씬 옆 .enav로 저장합니다 (설정: NavMeshComponent)");
+		if (ImGui::MenuItem(ICON_FA_CAMERA " 반사 캡처 굽기", nullptr, false, !PlayMode.IsActive()))
+		{
+			SceneRenderer.RequestReflectionCaptureBake();
+			ShowNotification("반사 캡처를 굽습니다 (경로가 비어 있던 캡처는 Captures/<이름>.ecapture — 씬 저장 필요)", false);
+		}
+		ImGui::SetItemTooltip("반사 캡처 컴포넌트마다 주변을 큐브맵으로 그려 .ecapture로 저장합니다");
 		ImGui::TextDisabled(ShaderWatcher.IsWatching() ? "셰이더 자동 감시: 켜짐" : "셰이더 자동 감시: 꺼짐");
 		ImGui::EndMenu();
 	}

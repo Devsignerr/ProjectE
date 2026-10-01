@@ -58,6 +58,16 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		ImGui::DragFloat("AO 반경", &Settings.AmbientOcclusionRadius, 1.0f, 5.0f, 500.0f, "%.0f cm");
 		ImGui::EndDisabled();
 
+		ImGui::SeparatorText("화면 공간 반사 (SSR)");
+		ImGui::Checkbox("SSR", &Settings.bScreenSpaceReflections);
+		ImGui::SetItemTooltip("화면에 보이는 물체를 매끈한 표면에 비춥니다 (화면 밖은 반사 캡처 → 하늘)");
+		ImGui::BeginDisabled(!Settings.bScreenSpaceReflections);
+		ImGui::DragFloat("SSR 세기", &Settings.SsrIntensity, 0.01f, 0.0f, 4.0f, "%.2f");
+		ImGui::SliderFloat("SSR 최대 거칠기", &Settings.SsrMaxRoughness, 0.05f, 1.0f, "%.2f");
+		ImGui::DragFloat("SSR 최대 거리", &Settings.SsrMaxDistance, 10.0f, 50.0f, 20000.0f, "%.0f cm");
+		ImGui::DragFloat("SSR 두께", &Settings.SsrThickness, 1.0f, 1.0f, 500.0f, "%.0f cm");
+		ImGui::EndDisabled();
+
 		ImGui::Separator();
 		if (ImGui::Button("기본값으로"))
 		{

@@ -36,6 +36,10 @@ cbuffer PerFrame : register(b1)
 	float4x4          PrevViewProjection;       // 이전 프레임 (지터 없음)
 	float2            JitterNdc;
 	float2            ScreenSize;
+	uint              ReflectionCaptureCount; // t20 개수
+	uint              SsrEnabled;             // 1 = t22 사용
+	float             SsrMaxRoughness;
+	float             SsrIntensity;
 };
 
 cbuffer Material : register(b2)
@@ -168,7 +172,72 @@ float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldP
 	return Color;
 }
 
-float3 EvaluateImageBasedLighting(FSurface Surface)
+// 반사 캡처 (ReflectionCaptures.h, 식은 Renderer/ReflectionMath.h): 목록은 우선순위 순, 앞에서부터 남은 비중을 채운다
+struct FReflectionCaptureGpu
+{
+	float3 Position;
+	uint   Shape; // 0 구, 1 상자 (월드 축 정렬, 시차 보정)
+	float3 BoxExtent;
+	float  Radius;
+	float  FadeDistance;
+	float  Intensity;
+	uint   Slot;
+	float  Padding;
+};
+StructuredBuffer<FReflectionCaptureGpu> ReflectionCaptures       : register(t20);
+TextureCubeArray<float4>                ReflectionCaptureAtlas   : register(t21); // 프리필터 밉 = 하늘 IBL과 같은 거칠기 대응
+Texture2D<float4>                       ScreenSpaceReflection    : register(t22); // rgb 색, a 신뢰도 (SsrTrace.hlsl)
+
+float ComputeCaptureInfluence(FReflectionCaptureGpu Capture, float3 P)
+{
+	if (Capture.Shape == 0)
+	{
+		return saturate((Capture.Radius - distance(P, Capture.Position)) / Capture.FadeDistance);
+	}
+	const float3 D = Capture.BoxExtent - abs(P - Capture.Position);
+	return saturate(min(D.x, min(D.y, D.z)) / Capture.FadeDistance);
+}
+
+float3 ParallaxCorrect(FReflectionCaptureGpu Capture, float3 P, float3 R)
+{
+	const float3 BoxMin = Capture.Position - Capture.BoxExtent;
+	const float3 BoxMax = Capture.Position + Capture.BoxExtent;
+	const float3 Planes = select(R > 0.0f, BoxMax, BoxMin);
+	const float3 T      = select(abs(R) > 1.0e-6f, (Planes - P) / R, 1.0e30f);
+	const float  TExit  = max(min(T.x, min(T.y, T.z)), 0.0f);
+	return normalize(P + R * TExit - Capture.Position);
+}
+
+// 반사 광원: SSR(신뢰도 × 거칠기 페이드) → 캡처 → 하늘 프리필터 (AmbientIntensity는 하늘에만 — 캡처/SSR은 장면 밝기 그대로)
+float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition, float2 PixelPosition, float MipCount)
+{
+	const float Lod       = Roughness * (MipCount - 1);
+	float3      Color     = 0.0f;
+	float       Remaining = 1.0f;
+	for (uint Index = 0; Index < ReflectionCaptureCount && Remaining > 0.01f; ++Index)
+	{
+		const FReflectionCaptureGpu Capture = ReflectionCaptures[Index];
+		const float                 Weight  = ComputeCaptureInfluence(Capture, WorldPosition);
+		if (Weight <= 0.0f)
+		{
+			continue;
+		}
+		const float3 Dir = Capture.Shape == 1 ? ParallaxCorrect(Capture, WorldPosition, R) : R;
+		Color += ReflectionCaptureAtlas.SampleLevel(IblSampler, float4(Dir, (float)Capture.Slot), Lod).rgb * (Capture.Intensity * Weight * Remaining);
+		Remaining *= 1.0f - Weight;
+	}
+	Color += IblSpecular.SampleLevel(IblSampler, R, Lod).rgb * (AmbientIntensity * Remaining);
+
+	if (SsrEnabled != 0)
+	{
+		const float4 Ssr  = ScreenSpaceReflection.Load(int3(PixelPosition, 0));
+		const float  Fade = saturate((SsrMaxRoughness - Roughness) / max(SsrMaxRoughness * 0.5f, 1.0e-3f)); // ReflectionMath::ComputeSsrRoughnessFade
+		Color             = lerp(Color, Ssr.rgb * SsrIntensity, saturate(Ssr.a) * Fade);
+	}
+	return Color;
+}
+
+float3 EvaluateImageBasedLighting(FSurface Surface, float3 WorldPosition, float2 PixelPosition)
 {
 	const float NdotV = max(saturate(dot(Surface.N, Surface.V)), 1.0e-4f);
 	const float3 F0 = GetF0(Surface);
@@ -177,10 +246,10 @@ float3 EvaluateImageBasedLighting(FSurface Surface)
 	uint Width, Height, MipCount;
 	IblSpecular.GetDimensions(0, Width, Height, MipCount);
 	const float3 R = reflect(-Surface.V, Surface.N);
-	const float3 Prefiltered = IblSpecular.SampleLevel(IblSampler, R, Surface.Roughness * (MipCount - 1)).rgb;
+	const float3 Prefiltered = SampleSpecularEnvironment(R, Surface.Roughness, WorldPosition, PixelPosition, (float)MipCount);
 	const float2 Brdf = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Surface.Roughness), 0);
 	const float3 Specular = Prefiltered * (F0 * Brdf.x + Brdf.y);
-	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse + Specular) * Surface.Occlusion * AmbientIntensity;
+	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * AmbientIntensity + Specular) * Surface.Occlusion;
 }
 
 uint SelectCascade(float3 WorldPosition)
@@ -426,7 +495,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, normalize(Input.WorldNormal));
-	Color += EvaluateImageBasedLighting(Surface);
+	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy);
 	Color += Emissive;
 
 	if (VisualizeCascades != 0)
@@ -437,7 +506,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클이 덮은 만큼 쌓인다)
 }
 
-// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 움직임 벡터. 머티리얼 텍스처를 읽지 않는다
+// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 거칠기(금속/거칠기 텍스처 G × 팩터) + 움직임 벡터
 struct FPrepassOutput
 {
 	float4 Normal   : SV_Target0; // R10G10B10A2_UNORM (ScreenSpace.hlsli EncodeScreenNormal)
@@ -447,7 +516,8 @@ struct FPrepassOutput
 FPrepassOutput PSPrepass(FPixelInput Input)
 {
 	FPrepassOutput Output;
-	Output.Normal   = EncodeScreenNormal(normalize(Input.WorldNormal));
+	const float Roughness = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV).g * RoughnessFactor;
+	Output.Normal   = EncodeScreenNormal(normalize(Input.WorldNormal), Roughness);
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
 	return Output;
 }

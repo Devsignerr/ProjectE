@@ -209,6 +209,20 @@ struct FHeightFogComponent
 	float    VolumetricLocalLightScale   = 1.0f;    // 점광원/스포트 산란 배율
 };
 
+// 반사 캡처 (식은 Renderer/ReflectionMath.h): 위치에서 본 장면을 큐브맵으로 구워(에디터 도구 → 반사 캡처 굽기, --bake-captures)
+//   CaptureAsset 파일(.ecapture, 프리필터 밉 포함)로 저장하고, 영역 안 표면의 반사(IBL 반사)에 쓴다. 우선순위: SSR → 캡처 → 하늘
+//   Shape 0 = 구(Radius), 1 = 상자(BoxExtent 반 크기, 월드 축 정렬 — 회전 무시, 시차 보정). 경계 안쪽 FadeDistance에서 섞인다
+struct FReflectionCaptureComponent
+{
+	int32       Shape        = 1;
+	float       Radius       = 800.0f;                         // cm (구)
+	FVector3    BoxExtent    = FVector3(500.0f, 500.0f, 300.0f); // cm (상자 반 크기)
+	float       FadeDistance = 100.0f;                         // cm
+	float       Intensity    = 1.0f;
+	int32       Priority     = 0;  // 겹치면 큰 값이 먼저 (같으면 작은 영역이 먼저)
+	std::string CaptureAsset;      // Content 기준 .ecapture (비어 있으면 굽기가 Captures/<이름>.ecapture로 정한다)
+};
+
 // 박스 투영 데칼 (깊이 사전 패스 뒤 DBuffer에 그려 메인 패스가 베이스색/노멀/거칠기에 섞는다, 식은 Renderer/DecalMath.h).
 //   상자 = 엔티티 로컬 [-Size/2, Size/2]이고 로컬 -Z 방향으로 찍힌다 (회전 없으면 바닥). U = 로컬 +Y, 텍스처 위 = 로컬 +X
 //   머티리얼(.emat): 베이스색 텍스처 × BaseColorFactor (알파 = 불투명도), 노멀 맵, 금속/거칠기. SortOrder가 큰 데칼이 위에 그려진다

@@ -58,6 +58,10 @@
     { "File": "FogApply.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "FogApply.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
     { "File": "VolumetricFog.hlsl", "Entry": "CSInject", "Stage": "Compute" },
-    { "File": "VolumetricFog.hlsl", "Entry": "CSIntegrate", "Stage": "Compute" }
+    { "File": "VolumetricFog.hlsl", "Entry": "CSIntegrate", "Stage": "Compute" },
+    { "File": "ScreenSpaceReflections.hlsl", "Entry": "CSHizCopy", "Stage": "Compute" },
+    { "File": "ScreenSpaceReflections.hlsl", "Entry": "CSHizDownsample", "Stage": "Compute" },
+    { "File": "SsrTrace.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "SsrTrace.hlsl", "Entry": "PSTrace", "Stage": "Pixel" }
   ]
 }

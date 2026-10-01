@@ -1,0 +1,14 @@
+{
+  "Name": "Chrome",
+  "BaseColorFactor": [0.95, 0.95, 0.97, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 1.0,
+  "Roughness": 0.06,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

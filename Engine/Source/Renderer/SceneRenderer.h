@@ -22,6 +22,8 @@
 #include "Renderer/AmbientOcclusion.h"
 #include "Renderer/DecalRenderer.h"
 #include "Renderer/FogRenderer.h"
+#include "Renderer/ReflectionCaptures.h"
+#include "Renderer/ScreenSpaceReflections.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -55,6 +57,7 @@ enum class ERenderTimer : uint32
 	Decals,           // 데칼 → DBuffer
 	VolumetricFog,    // 안개 상수 + 볼류메트릭 주입·적분 (계산)
 	Fog,              // 안개 적용 (전체 화면)
+	Reflections,      // SSR (Hi-Z + 추적)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -119,6 +122,9 @@ public:
 	bool IsTemporalHistoryValid() const { return bTemporalHistoryValid; }
 	// 이번 프레임 투영 지터 (NDC, 없으면 0)
 	const FVector2& GetJitterNdc() const { return CurrentJitterNdc; }
+
+	// 다음 Render에서 씬의 반사 캡처를 모두 굽는다 (에디터 도구 메뉴, --bake-captures). 파일은 몇 프레임 뒤(GPU 완료) 저장
+	void RequestReflectionCaptureBake() { bBakeCapturesRequested = true; }
 
 	FPostProcessSettings PostProcessSettings;
 	FShadowSettings      ShadowSettings;
@@ -197,6 +203,12 @@ private:
 	FAmbientOcclusion    AmbientOcclusion;
 	FDecalRenderer       DecalRenderer;
 	FFogRenderer         FogRenderer;
+	FScreenSpaceReflections ScreenSpaceReflections;
+	FReflectionCaptures  ReflectionCaptures;
+	bool                 bBakeCapturesRequested = false;
+	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
+	// 씬의 반사 캡처마다 큐브 면 6개를 그려 프리필터 → 아틀라스 + .ecapture 저장 예약 (Render 안에서, 프레임 명령 목록에 기록)
+	void                 BakeReflectionCaptures(FScene& Scene);
 	bool                 bTaaRanLastFrame = false;
 	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
 	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)

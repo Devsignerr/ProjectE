@@ -16,7 +16,7 @@ if(E_ENGINE_SHARED)
     add_library(ProjectEEngine SHARED "${CMAKE_CURRENT_SOURCE_DIR}/EngineDll.cpp")
     target_link_libraries(ProjectEEngine PUBLIC ${E_ENGINE_RUNTIME_MODULES}) # OBJECT 직접 링크 → 객체가 DLL에 들어간다
     set_target_properties(ProjectEEngine PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON FOLDER "Engine")
-    target_compile_options(ProjectEEngine PRIVATE /WX)
+    target_compile_options(ProjectEEngine PRIVATE /W4 /WX)
     target_compile_definitions(ProjectEEngine PRIVATE E_ENGINE_EXPORTS)
     # 쿠킹 셰이더만 배포한 패키지는 dxcompiler.dll 없이 실행 (FD3D12ShaderCompiler가 존재 확인 후 사용)
     target_link_libraries(ProjectEEngine PRIVATE delayimp)

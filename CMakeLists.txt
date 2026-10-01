@@ -27,9 +27,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Lib")
 
-# 공통 컴파일 옵션 (모든 타깃)
+# 공통 컴파일 옵션 (모든 타깃). 경고 레벨(/W4 /WX)은 자체 타깃에만 e_set_target_defaults가 건다 —
+# 전역에 두면 서드파티의 /W0와 겹쳐 파일마다 D9025('/W4'을(를) '/W0'(으)로 재정의) 경고가 난다
 add_compile_options(
-    /W4             # 경고 레벨 4
     /permissive-    # 표준 준수 모드
     /utf-8          # 소스/실행 문자 집합 UTF-8 (한글 주석·로그)
     /Zc:preprocessor # 표준 준수 전처리기 (__VA_OPT__ 지원)

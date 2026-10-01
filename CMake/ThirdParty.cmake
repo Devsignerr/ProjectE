@@ -94,7 +94,7 @@ add_library(imgui STATIC
 add_library(ThirdParty::imgui ALIAS imgui)
 target_include_directories(imgui SYSTEM PUBLIC "${imgui_SOURCE_DIR}" "${imgui_SOURCE_DIR}/backends")
 target_link_libraries(imgui PUBLIC d3d12 dxgi)
-target_compile_options(imgui PRIVATE /W0) # 서드파티 경고 무시 (전역 /W4를 마지막 지정이 덮어씀)
+target_compile_options(imgui PRIVATE /W0) # 서드파티 경고 무시 (/W4는 자체 타깃에만 — e_set_target_defaults)
 set_target_properties(imgui PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- stb_truetype (imgui 동봉 imstb_truetype.h 재사용 — 게임 UI SDF 글꼴, 추가 다운로드 없음)
@@ -235,7 +235,8 @@ foreach(_Option
         DEBUG_RENDERER_IN_DEBUG_AND_RELEASE PROFILER_IN_DEBUG_AND_RELEASE ENABLE_OBJECT_STREAM FLOATING_POINT_EXCEPTIONS_ENABLED
         JPH_USE_DX12 JPH_USE_VK JPH_USE_MTL JPH_USE_CPU_COMPUTE
         USE_AVX USE_AVX2 USE_AVX512 USE_LZCNT USE_TZCNT USE_F16C USE_FMADD
-        TARGET_UNIT_TESTS TARGET_HELLO_WORLD TARGET_PERFORMANCE_TEST TARGET_SAMPLES TARGET_VIEWER)
+        TARGET_UNIT_TESTS TARGET_HELLO_WORLD TARGET_PERFORMANCE_TEST TARGET_SAMPLES TARGET_VIEWER
+        GENERATE_DEBUG_SYMBOLS) # 디버그 정보는 전역 CMAKE_MSVC_DEBUG_INFORMATION_FORMAT(Release /Z7)를 따른다 — 켜면 /Zi가 덧붙어 D9025 경고
     set(${_Option} OFF CACHE INTERNAL "")
 endforeach()
 foreach(_Option CPP_EXCEPTIONS_ENABLED CPP_RTTI_ENABLED USE_SSE4_1 USE_SSE4_2)
@@ -390,6 +391,10 @@ set_property(DIRECTORY "${gamenetworkingsockets_SOURCE_DIR}/src" PROPERTY COMPIL
 
 add_library(ThirdParty::gns ALIAS GameNetworkingSockets_s)
 target_compile_options(GameNetworkingSockets_s PRIVATE /W0)
+# GNS는 예외를 끈다(/EHs-c-). 전역 /EHsc가 함께 붙으면 파일마다 D9025('/EHs'을(를) '/EHs-'(으)로 재정의) 경고가 나므로 이 타깃에서만 뺀다
+get_target_property(_GnsOptions GameNetworkingSockets_s COMPILE_OPTIONS)
+list(REMOVE_ITEM _GnsOptions /EHsc)
+set_target_properties(GameNetworkingSockets_s PROPERTIES COMPILE_OPTIONS "${_GnsOptions}")
 set_target_properties(GameNetworkingSockets_s PROPERTIES FOLDER "ThirdParty")
 
 # ---------------------------------------------------------------- Steamworks SDK (선택, Valve 파트너 계정 전용 — 저장소/FetchContent에 넣지 않는다)

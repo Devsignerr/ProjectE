@@ -4,7 +4,7 @@
 #   - 소스 트리 구조를 IDE 필터로 반영
 function(e_set_target_defaults TargetName FolderName)
     set_target_properties(${TargetName} PROPERTIES FOLDER "${FolderName}")
-    target_compile_options(${TargetName} PRIVATE /WX)
+    target_compile_options(${TargetName} PRIVATE /W4 /WX) # 경고 레벨 4 + 경고 = 에러 (자체 타깃만, 서드파티는 /W0)
     get_target_property(_Sources ${TargetName} SOURCES)
     source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${_Sources})
 endfunction()

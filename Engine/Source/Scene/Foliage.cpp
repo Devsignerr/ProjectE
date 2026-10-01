@@ -12,6 +12,7 @@
 #include <json.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <cwchar>
@@ -83,6 +84,12 @@ namespace
 		Type.CollisionHeight = In.value("CollisionHeight", Defaults.CollisionHeight);
 	}
 } // namespace
+
+uint64 NextFoliageChangeCounter()
+{
+	static std::atomic<uint64> Counter{ 1 };
+	return ++Counter;
+}
 
 size_t FFoliageAsset::GetInstanceCount() const
 {
@@ -373,6 +380,8 @@ std::shared_ptr<FFoliageAsset> FFoliageLibrary::Load(const std::string& Asset)
 		Cache[Asset] = nullptr;
 		return nullptr;
 	}
+	Data->MarkChanged(); // 새 공용 번호 (캐시가 이전 객체와 섞이지 않게)
+	Data->bUnsaved = false;
 	E_LOG(LogTerrain, Log, "폴리지 로드: {} (타입 {}개, 인스턴스 {}개)", Asset, Data->Types.size(), Data->GetInstanceCount());
 	Cache[Asset] = Data;
 	return Data;
@@ -381,7 +390,7 @@ std::shared_ptr<FFoliageAsset> FFoliageLibrary::Load(const std::string& Asset)
 std::shared_ptr<FFoliageAsset> FFoliageLibrary::Create(const std::string& Asset, FFoliageAsset Initial)
 {
 	auto Data = std::make_shared<FFoliageAsset>(std::move(Initial));
-	Data->EnsureInstanceLists();
+	Data->MarkChanged();
 	Cache[Asset] = Data;
 	return Save(Asset) ? Data : nullptr;
 }

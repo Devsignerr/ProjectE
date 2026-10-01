@@ -27,6 +27,11 @@ public:
 	void Record(const std::string& AssetPath, FFoliageAsset& Asset, uint32 NewRevision, FSnapshot Before);
 	bool Reconcile(const std::string& AssetPath, FFoliageAsset& Asset, uint32 Target);
 
+	void   Clear()
+	{
+		Records.clear();
+		MemoryBytes = 0;
+	}
 	size_t GetRecordCount() const { return Records.size(); }
 	size_t GetMemorySize() const { return MemoryBytes; }
 

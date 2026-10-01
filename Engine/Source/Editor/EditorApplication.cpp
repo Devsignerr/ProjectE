@@ -1190,6 +1190,11 @@ void FEditorApplication::ResetUndoHistory()
 {
 	Context.PendingEdit = FPendingEdit{};
 	UndoHistory.Reset(FSceneSerializer::ToJsonString(Scene));
+	// 지형/폴리지: 씬 기록과 함께 편집 기록을 비우고 데이터를 파일에서 다시 읽는다 (저장 안 한 편집은 버리고, 따로 저장한 데이터는 그대로)
+	TerrainToolPanel.GetHistory().Clear();
+	FoliageToolPanel.GetHistory().Clear();
+	FTerrainLibrary::Get().Clear();
+	FFoliageLibrary::Get().Clear();
 	UpdateWindowTitle();
 }
 

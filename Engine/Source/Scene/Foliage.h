@@ -59,6 +59,8 @@ struct FFoliageInstance
 };
 static_assert(sizeof(FFoliageInstance) == 32);
 
+uint64 NextFoliageChangeCounter();
+
 struct FFoliageAsset
 {
 	std::vector<FFoliageType>                  Types;
@@ -72,7 +74,7 @@ struct FFoliageAsset
 	// TypeIndex < 0 이면 모든 타입 (타입 목록 자체가 바뀌었을 때 포함)
 	void MarkChanged(int32 TypeIndex = -1)
 	{
-		++ChangeCounter;
+		ChangeCounter = NextFoliageChangeCounter(); // 모든 에셋 공용 단조 번호 (해제된 주소가 재사용돼도 캐시가 착각하지 않게)
 		bUnsaved = true;
 		EnsureInstanceLists();
 		for (size_t Index = 0; Index < TypeCounters.size(); ++Index)
@@ -138,6 +140,7 @@ public:
 	void                           SaveAllUnsaved();
 	void                           OnAssetMoved(const std::filesystem::path& From, const std::filesystem::path& To);
 	void                           Invalidate(const std::string& Asset);
+	void                           Clear() { Cache.clear(); }
 
 private:
 	std::filesystem::path                                           ContentDirectory;

@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <cwchar>
@@ -175,6 +176,7 @@ void FTerrainData::Initialize(uint32 InResolution)
 	Heights.assign(static_cast<size_t>(Resolution) * Resolution, DefaultHeight);
 	Weights.assign(Heights.size(), 255u);
 	Revision = 0;
+	DroppedUpTo = ChangeCounter; // 이전 내용을 본 쪽은 전체를 다시
 	RecentChanges.clear();
 	MarkChanged(FTerrainRect::Full(static_cast<int32>(Resolution)));
 }
@@ -185,10 +187,13 @@ void FTerrainData::MarkChanged(const FTerrainRect& Rect)
 	{
 		return;
 	}
-	++ChangeCounter;
-	bUnsaved = true;
+	// 모든 데이터 객체가 함께 쓰는 단조 증가 번호: 해제된 데이터 주소가 재사용돼도 렌더러/물리 캐시가 옛 번호로 착각하지 않는다
+	static std::atomic<uint64> GChangeCounter{ 1 };
+	ChangeCounter = ++GChangeCounter;
+	bUnsaved      = true;
 	if (RecentChanges.size() >= MaxRecentChanges)
 	{
+		DroppedUpTo = RecentChanges.front().Counter;
 		RecentChanges.erase(RecentChanges.begin());
 	}
 	RecentChanges.push_back({ ChangeCounter, Rect.Clipped(static_cast<int32>(Resolution)) });
@@ -202,7 +207,8 @@ bool FTerrainData::GetChangesSince(uint64 Counter, FTerrainRect& OutRect) const
 		return false;
 	}
 	// 기록에 Counter 바로 다음 변경이 없으면(버려졌거나 기록 전 상태) 전체를 다시
-	if (RecentChanges.empty() || RecentChanges.front().Counter > Counter + 1)
+	// (번호는 모든 데이터 공용이라 이어지지 않는다 — 버린 기록 번호로 판단)
+	if (RecentChanges.empty() || Counter < DroppedUpTo)
 	{
 		OutRect = FTerrainRect::Full(static_cast<int32>(Resolution));
 		return true;

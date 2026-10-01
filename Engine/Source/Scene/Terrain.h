@@ -71,7 +71,7 @@ struct FTerrainData
 	uint32              Revision = 0; // 저장된 편집 버전 (컴포넌트 EditRevision과 비교)
 
 	// ---- 런타임 (저장 안 함)
-	uint64 ChangeCounter = 1; // MarkChanged마다 증가
+	uint64 ChangeCounter = 0; // MarkChanged마다 (모든 데이터 공용 단조 번호로) 바뀐다
 	bool   bUnsaved      = false;
 
 	void Initialize(uint32 InResolution); // 평평한 지형 (높이 32768, 레이어 0 = 255)
@@ -90,7 +90,8 @@ private:
 		uint64       Counter = 0;
 		FTerrainRect Rect;
 	};
-	std::vector<FChange> RecentChanges; // 최근 몇 개만 (오래된 것은 버림)
+	std::vector<FChange> RecentChanges;    // 최근 몇 개만 (오래된 것은 버림)
+	uint64               DroppedUpTo = 0;  // 버린 기록의 마지막 번호 (이보다 오래 본 쪽은 전체를 다시)
 };
 
 // 엔티티 트랜스폼 + 컴포넌트 → 월드 좌표 변환 정보 (순수 계산)

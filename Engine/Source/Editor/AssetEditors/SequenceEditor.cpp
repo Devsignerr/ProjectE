@@ -361,11 +361,10 @@ void FSequenceEditor::Update(FAssetEditorEnvironment& Env, float DeltaSeconds)
 	}
 	if (!bPreviewApplied || Time != AppliedTime || PublishedKey != AppliedKey || PreviewPlayer != AppliedPlayer)
 	{
-		if (PublishedKey != AppliedKey || PreviewPlayer != AppliedPlayer)
+		if (bPreviewApplied && (PublishedKey != AppliedKey || PreviewPlayer != AppliedPlayer))
 		{
-			PreviewState.Bindings.clear(); // 대상 이름이 바뀌었을 수 있다
-			PreviewState.CutCameras.clear();
-			PreviewState.WarnedTracks.clear();
+			// 내용/기준이 바뀜: 트랙을 지우거나 대상을 바꿨을 수 있으므로 원래 값으로 되돌린 뒤 새로 적용 (원래 값은 다시 기억된다)
+			FSequenceSystem::Restore(*Scene, PreviewState);
 		}
 		FSequenceSystem::Evaluate(*Scene, PreviewPlayer, *Published, Time, PreviewState);
 		Scene->UpdateTransforms();

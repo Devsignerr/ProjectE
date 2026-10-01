@@ -112,4 +112,13 @@ void FEditorApplication::VerifyTerrainBrush()
 		}
 	}
 	TerrainToolPanel.SetMode(FTerrainToolPanel::EMode::Sculpt); // 스크린샷에 브러시 원이 보이게
+	TerrainToolPanel.bAutomationCursor = true;
+	TerrainToolPanel.bRequestFocus     = true;
+	TerrainToolPanel.AutomationCursor  = FVector2(Center.X + Size * 0.2f, Center.Y);
+	Brush.Radius                       = Size * 0.08f;
+	// 편집 카메라: 칠한 곳을 비스듬히 내려다본다
+	const FVector3 Focus(Center.X + Size * 0.2f, Center.Y, Center.Z);
+	Camera.SetPosition(Focus + FVector3(-Size * 0.32f, -Size * 0.26f, Size * 0.2f));
+	Camera.LookAt(Focus);
+	CameraController.SyncFromCamera(Camera);
 }

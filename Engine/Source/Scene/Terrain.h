@@ -192,6 +192,7 @@ namespace TerrainIO
 	bool WriteRaw16(const std::filesystem::path& Path, const FTerrainData& Data);
 	// 16비트 회색조 PNG (무압축 deflate)
 	std::vector<uint8> EncodePng16(const std::vector<uint16>& Pixels, uint32 Width, uint32 Height);
+	std::vector<uint8> EncodePngRgba8(const std::vector<uint32>& Pixels, uint32 Width, uint32 Height); // 픽셀 = R | G<<8 | B<<16 | A<<24
 	bool               WritePng16(const std::filesystem::path& Path, const FTerrainData& Data);
 
 	std::string EncodeBase64(const uint8* Data, size_t Size);

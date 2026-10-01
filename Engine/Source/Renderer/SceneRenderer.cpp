@@ -114,6 +114,15 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	// 지형 (Phase 34): 그림자는 두 그림자 렌더러의 추가 캐스터 훅으로
+	if (!TerrainRenderer.Init(*Rhi, ShaderLibrary, *Resources, SceneColorFormat, FD3D12RHI::DepthBufferFormat))
+	{
+		return false;
+	}
+	ShadowRenderer.ExtraCasters = LocalLightRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection,
+	                                                                       const FFrustum& Frustum, bool bLocalLight) {
+		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
+	};
 
 	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
 
@@ -405,6 +414,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!TerrainRenderer.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
@@ -425,6 +438,7 @@ void FSceneRenderer::Shutdown()
 	ShadowRenderer.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
+	TerrainRenderer.Shutdown();
 	LocalLightRenderer.Shutdown();
 	OcclusionCuller.Shutdown();
 	PipelineState.Shutdown();
@@ -635,6 +649,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	MeshInstances.Gather(Scene, *Resources, &SkinPalettes);
 	MeshInstances.Upload(DynamicBuffer);
 	SelectLods(Camera);
+	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum); // 지형 텍스처 갱신 + 청크 LOD/컬링 (그림자 패스 전)
 	Stats.TotalMeshes   = MeshInstances.GetComponentCount();
 	Stats.SkinnedDrawn  = static_cast<uint32>(SkinPalettes.GetCount());
 	Stats.SkinnedCulled = SkinPalettes.GetCulledCount();
@@ -654,8 +669,8 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	BeginTimer(ERenderTimer::Shadow);
 	ShadowRenderer.Render(MeshInstances, SkinPalettes.GetGpuData());
 	EndTimer(ERenderTimer::Shadow);
-	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls();
-	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles();
+	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls() + TerrainRenderer.GetShadowDrawCalls();
+	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles() + TerrainRenderer.GetShadowTriangles();
 
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Width, Height);
@@ -717,6 +732,8 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 
 	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
 	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
+	// 지형: 메시보다 먼저 (큰 가림막 — 초기 깊이 기각). 자기 루트 시그니처를 쓰므로 아래에서 메시 상태를 다시 설정한다
+	TerrainRenderer.RenderMain(PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, ShadowRenderer, IblRenderer, LocalLightRenderer);
 
 	FD3D12PipelineState& StaticPipeline  = bWireframe ? WireframePipelineState : PipelineState;
 	FD3D12PipelineState& SkinnedPipeline = bWireframe ? SkinnedWireframePipelineState : SkinnedPipelineState;
@@ -741,8 +758,8 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 
 	const FMaterial* BoundMaterial = nullptr;
 	bool             bSkinnedBound = false;
-	Stats.DrawCalls                = 0;
-	Stats.Triangles                = 0;
+	Stats.DrawCalls                = TerrainRenderer.GetDrawCalls();
+	Stats.Triangles                = TerrainRenderer.GetTriangles();
 	uint64 SkinnedTriangles        = 0;
 
 	// Phase 0 = 오클루전 없음(바로 그림), 1/2 = 오클루전 단계 (정적 묶음은 간접 드로우, 스킨 묶음은 1단계에서 바로)

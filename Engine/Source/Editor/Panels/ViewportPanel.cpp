@@ -273,6 +273,15 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 		{
 			SelectionOutline.reset();
 		}
+		else
+		{
+			// 지형 선택 아웃라인: 씬 렌더러의 지형 렌더러가 이번 프레임 청크로 마스크를 그린다
+			FTerrainRenderer& Terrain         = Context.Renderer->GetTerrainRenderer();
+			SelectionOutline->ExtraMaskFilter = [&Terrain](const std::vector<FEntity>& Selected) { return Terrain.HasTerrain(Selected); };
+			SelectionOutline->ExtraMask = [&Terrain](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const std::vector<FEntity>& Selected) {
+				Terrain.RenderMask(List, ViewProjection, Selected);
+			};
+		}
 	}
 
 	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록 → 선택 아웃라인 합성

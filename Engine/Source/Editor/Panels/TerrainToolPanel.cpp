@@ -337,6 +337,18 @@ bool FTerrainToolPanel::HandleViewport(FEditorContext& Context, const FInput& In
 	{
 		bHasHit = RaycastTerrains(Context, Local, ImageSize, HitEntity, HitPoint);
 	}
+	else if (bAutomationCursor)
+	{
+		std::vector<FTerrainInstance> Terrains;
+		GatherTerrains(*Context.Scene, Terrains);
+		if (!Terrains.empty())
+		{
+			bHasHit   = true;
+			HitEntity = Terrains.front().Entity;
+			HitPoint  = FVector3(AutomationCursor.X, AutomationCursor.Y,
+                                TerrainMath::SampleWorldHeight(*Terrains.front().Data, Terrains.front().Frame, AutomationCursor.X, AutomationCursor.Y));
+		}
+	}
 
 	// 반경 단축키
 	if (bHovered && !ImGui::GetIO().KeyCtrl)
@@ -462,6 +474,11 @@ void FTerrainToolPanel::Draw(FEditorContext& Context)
 			EndStroke(Context, "지형 편집");
 		}
 		return;
+	}
+	if (bRequestFocus)
+	{
+		ImGui::SetNextWindowFocus(); // 탭 묶음에서 앞으로
+		bRequestFocus = false;
 	}
 	if (!ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_MOUNTAIN_SUN, "지형", "Terrain").c_str(), &bOpen))
 	{

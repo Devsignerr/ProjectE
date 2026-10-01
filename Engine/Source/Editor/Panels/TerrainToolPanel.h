@@ -47,6 +47,10 @@ public:
 	FTerrainEditHistory& GetHistory() { return History; }
 
 	bool bOpen = true;
+	// 자동 검증 스크린샷용: 마우스가 뷰포트 밖이면 이 월드 XY를 커서로 삼아 브러시 원을 그린다
+	bool     bAutomationCursor = false;
+	FVector2 AutomationCursor;
+	bool     bRequestFocus = false; // 다음 Draw에서 창을 앞으로
 
 private:
 	FEntity FindTarget(FEditorContext& Context) const;

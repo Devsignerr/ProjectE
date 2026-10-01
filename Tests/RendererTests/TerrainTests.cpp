@@ -2,6 +2,7 @@
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneSerializer.h"
+#include "Renderer/TerrainRenderer.h"
 #include "Scene/Terrain.h"
 
 #include <cmath>
@@ -286,4 +287,20 @@ E_TEST(Terrain_ComponentSerializes)
 		bFound = Component.Asset == "Terrain/Test.eterrain" && Component.Layer2Material == "Materials/Rock.emat" && Component.EditRevision == 99;
 	});
 	E_EXPECT_TRUE(bFound);
+}
+
+E_TEST(TerrainRenderer_ChunkSizeAndLod)
+{
+	E_EXPECT_EQ(FTerrainRenderer::ComputeChunkCells(512), 64u);
+	E_EXPECT_EQ(FTerrainRenderer::ComputeChunkCells(96), 32u);
+	E_EXPECT_EQ(FTerrainRenderer::ComputeChunkCells(8), 8u);
+	E_EXPECT_EQ(FTerrainRenderer::ComputeChunkCells(7), 0u); // 홀수 셀 수는 그릴 수 없다
+	// 청크 크기 1000cm: 1000 안 = LOD0, 1000~2000 = 1, 2000~4000 = 2, 상한
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(0.0f, 1000.0f, 1.0f, 5), 0u);
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(999.0f, 1000.0f, 1.0f, 5), 0u);
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(1500.0f, 1000.0f, 1.0f, 5), 1u);
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(3000.0f, 1000.0f, 1.0f, 5), 2u);
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(1.0e7f, 1000.0f, 1.0f, 5), 5u);
+	// 배율 2 = 같은 LOD를 두 배 멀리까지
+	E_EXPECT_EQ(FTerrainRenderer::SelectChunkLod(1500.0f, 1000.0f, 2.0f, 5), 0u);
 }

@@ -97,6 +97,48 @@ namespace
 		PutBigEndian32(Out, Crc);
 	}
 
+	// 필터 바이트가 붙은 스캔라인 → PNG (무압축 deflate 블록 + Adler-32). ColorType 0 = 회색조, 6 = RGBA
+	std::vector<uint8> EncodePngScanlines(const std::vector<uint8>& Raw, uint32 Width, uint32 Height, uint8 BitDepth, uint8 ColorType)
+	{
+		std::vector<uint8> Out = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
+		std::vector<uint8> Header;
+		PutBigEndian32(Header, Width);
+		PutBigEndian32(Header, Height);
+		Header.push_back(BitDepth);
+		Header.push_back(ColorType);
+		Header.push_back(0); // 압축
+		Header.push_back(0); // 필터
+		Header.push_back(0); // 비월 없음
+		PutPngChunk(Out, "IHDR", Header);
+
+		std::vector<uint8> Zlib = { 0x78, 0x01 };
+		uint32             A    = 1;
+		uint32             B    = 0;
+		for (const uint8 Byte : Raw)
+		{
+			A = (A + Byte) % 65521u;
+			B = (B + A) % 65521u;
+		}
+		size_t Offset = 0;
+		do
+		{
+			const size_t Chunk  = std::min<size_t>(Raw.size() - Offset, 65535);
+			const bool   bFinal = Offset + Chunk >= Raw.size();
+			Zlib.push_back(bFinal ? 1 : 0);
+			const uint16 Length = static_cast<uint16>(Chunk);
+			Zlib.push_back(static_cast<uint8>(Length & 0xFFu));
+			Zlib.push_back(static_cast<uint8>(Length >> 8));
+			Zlib.push_back(static_cast<uint8>(~Length & 0xFFu));
+			Zlib.push_back(static_cast<uint8>((~Length >> 8) & 0xFFu));
+			Zlib.insert(Zlib.end(), Raw.begin() + static_cast<ptrdiff_t>(Offset), Raw.begin() + static_cast<ptrdiff_t>(Offset + Chunk));
+			Offset += Chunk;
+		} while (Offset < Raw.size());
+		PutBigEndian32(Zlib, (B << 16) | A);
+		PutPngChunk(Out, "IDAT", Zlib);
+		PutPngChunk(Out, "IEND", {});
+		return Out;
+	}
+
 	constexpr char Base64Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 } // namespace
 
@@ -808,18 +850,6 @@ bool TerrainIO::WriteRaw16(const std::filesystem::path& Path, const FTerrainData
 
 std::vector<uint8> TerrainIO::EncodePng16(const std::vector<uint16>& Pixels, uint32 Width, uint32 Height)
 {
-	std::vector<uint8> Out = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
-
-	std::vector<uint8> Header;
-	PutBigEndian32(Header, Width);
-	PutBigEndian32(Header, Height);
-	Header.push_back(16); // 비트 깊이
-	Header.push_back(0);  // 회색조
-	Header.push_back(0);  // 압축
-	Header.push_back(0);  // 필터
-	Header.push_back(0);  // 비월 없음
-	PutPngChunk(Out, "IHDR", Header);
-
 	// 원시 스캔라인 (필터 0 + 빅 엔디언 16비트)
 	std::vector<uint8> Raw;
 	Raw.reserve(static_cast<size_t>(Height) * (1 + Width * 2));
@@ -833,34 +863,26 @@ std::vector<uint8> TerrainIO::EncodePng16(const std::vector<uint16>& Pixels, uin
 			Raw.push_back(static_cast<uint8>(Value & 0xFFu));
 		}
 	}
+	return EncodePngScanlines(Raw, Width, Height, 16, 0);
+}
 
-	// zlib: 무압축 블록 + Adler-32
-	std::vector<uint8> Zlib = { 0x78, 0x01 };
-	uint32             A = 1;
-	uint32             B = 0;
-	for (const uint8 Byte : Raw)
+std::vector<uint8> TerrainIO::EncodePngRgba8(const std::vector<uint32>& Pixels, uint32 Width, uint32 Height)
+{
+	std::vector<uint8> Raw;
+	Raw.reserve(static_cast<size_t>(Height) * (1 + Width * 4));
+	for (uint32 Y = 0; Y < Height; ++Y)
 	{
-		A = (A + Byte) % 65521u;
-		B = (B + A) % 65521u;
+		Raw.push_back(0);
+		for (uint32 X = 0; X < Width; ++X)
+		{
+			const uint32 Value = Pixels[static_cast<size_t>(Y) * Width + X]; // 바이트 순서 R, G, B, A
+			Raw.push_back(static_cast<uint8>(Value & 0xFFu));
+			Raw.push_back(static_cast<uint8>((Value >> 8) & 0xFFu));
+			Raw.push_back(static_cast<uint8>((Value >> 16) & 0xFFu));
+			Raw.push_back(static_cast<uint8>(Value >> 24));
+		}
 	}
-	size_t Offset = 0;
-	do
-	{
-		const size_t Chunk  = std::min<size_t>(Raw.size() - Offset, 65535);
-		const bool   bFinal = Offset + Chunk >= Raw.size();
-		Zlib.push_back(bFinal ? 1 : 0);
-		const uint16 Length = static_cast<uint16>(Chunk);
-		Zlib.push_back(static_cast<uint8>(Length & 0xFFu));
-		Zlib.push_back(static_cast<uint8>(Length >> 8));
-		Zlib.push_back(static_cast<uint8>(~Length & 0xFFu));
-		Zlib.push_back(static_cast<uint8>((~Length >> 8) & 0xFFu));
-		Zlib.insert(Zlib.end(), Raw.begin() + static_cast<ptrdiff_t>(Offset), Raw.begin() + static_cast<ptrdiff_t>(Offset + Chunk));
-		Offset += Chunk;
-	} while (Offset < Raw.size());
-	PutBigEndian32(Zlib, (B << 16) | A);
-	PutPngChunk(Out, "IDAT", Zlib);
-	PutPngChunk(Out, "IEND", {});
-	return Out;
+	return EncodePngScanlines(Raw, Width, Height, 8, 6);
 }
 
 bool TerrainIO::WritePng16(const std::filesystem::path& Path, const FTerrainData& Data)

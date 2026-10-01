@@ -19,6 +19,7 @@
 #include "AI/AIComponents.h"
 #include "Editor/EditorTheme.h"
 #include "Editor/SceneEditOps.h"
+#include "Editor/TerrainDemoGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
@@ -167,6 +168,10 @@ bool FEditorApplication::OnInit()
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	if (CommandLine.HasFlag(L"--generate-terrain-demo"))
+	{
+		GenerateTerrainDemo(Context.ContentDirectory); // 지형 데모 에셋 다시 만들기 (Terrain/, Scenes/Demo_Terrain.escene)
+	}
 	if (const std::wstring SceneArg = CommandLine.GetValue(L"--scene"); SceneArg.empty() || !OpenScene(Context.ContentDirectory / SceneArg))
 	{
 		OpenStartupScene();
@@ -256,12 +261,6 @@ bool FEditorApplication::OnInit()
 		}
 	}
 
-	// 자동 검증: --terrain-brush-test 지형 스컬프트/칠하기 스트로크 → 실행 취소/다시 실행으로 높이·가중치가 맞는지
-	if (FCommandLine::FromProcess().HasFlag(L"--terrain-brush-test"))
-	{
-		VerifyTerrainBrush();
-	}
-
 	// 셰이더 핫 리로드: 엔진 셰이더 디렉터리 감시 (실패해도 에디터는 계속)
 	if (!ShaderWatcher.Start(FPaths::GetEngineShaderDirectory(), true))
 	{
@@ -284,6 +283,12 @@ bool FEditorApplication::OnInit()
 	if (!ScriptWatcher.Start(Context.ContentDirectory, true))
 	{
 		E_LOG(LogEditor, Warning, "Content 디렉터리 감시를 시작하지 못했습니다. 스크립트 핫 리로드가 꺼집니다");
+	}
+
+	// 자동 검증: --terrain-brush-test 지형 스컬프트/칠하기 스트로크 → 실행 취소/다시 실행으로 높이·가중치가 맞는지 (카메라 복원 뒤 — 검증이 시점을 정한다)
+	if (CommandLine.HasFlag(L"--terrain-brush-test"))
+	{
+		VerifyTerrainBrush();
 	}
 
 	E_LOG(LogEditor, Display, "에디터 초기화 완료. 뷰포트: 우클릭 + WASD/QE 시점, 좌클릭 선택, W/E/R 기즈모(Alt+드래그 복제), End 바닥에 붙이기, Ctrl+C/V/D/Z, Ctrl+N/O/S 씬 파일, F5 재생/정지");

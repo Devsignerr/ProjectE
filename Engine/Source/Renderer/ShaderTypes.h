@@ -215,3 +215,30 @@ struct FHzbBuildConstants
 	uint32 DestHeight   = 0;
 };
 static_assert(sizeof(FHzbBuildConstants) == 16);
+
+// 지형 상수 (Terrain.hlsl b0 space1, Phase 34). 높이 Z = Origin.Z + (16비트 높이) * HeightScale, 격자 XY = Origin.XY + 격자 * CellSize
+struct alignas(16) FTerrainConstants
+{
+	FVector3 Origin;
+	float    HeightScale = 0.0f; // cm / 16비트 단위
+	FVector2 CellSize;
+	float    Resolution  = 0.0f; // 정점 격자 한 변
+	float    SkirtDepth  = 0.0f; // cm (LOD 단계 1당) — 청크 경계 균열 가리기
+	FVector4 LayerTiling;        // 레이어별 1 / 타일 크기 (cm)
+	FVector4 LayerBaseColor[4];  // 선형 (머티리얼 BaseColorFactor, 없으면 기본 지형 색)
+	FVector4 LayerParams[4];     // 금속, 거칠기, 노멀 배율, AO 세기
+	uint32   LayerCount = 4;
+	uint32   DebugLod   = 0;     // 1이면 LOD별 색
+	float    Padding[2] = {};
+};
+static_assert(sizeof(FTerrainConstants) == 192);
+
+// 지형 청크 그리기 항목 (Terrain.hlsl FTerrainChunk, 구조화 버퍼 t2 space1). 같은 Quads끼리 인스턴싱
+struct FTerrainChunkGpu
+{
+	uint32 X     = 0; // 시작 정점 (격자)
+	uint32 Y     = 0;
+	uint32 Step  = 1; // 정점 간격 (LOD 단계 = log2)
+	uint32 Quads = 0; // 패치 한 변 사각형 수
+};
+static_assert(sizeof(FTerrainChunkGpu) == 16);

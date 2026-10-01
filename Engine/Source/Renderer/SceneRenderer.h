@@ -17,6 +17,7 @@
 #include "Renderer/OcclusionCuller.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
+#include "Renderer/TerrainRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -121,6 +122,7 @@ public:
 	bool IsCullingFrozen() const { return bCullingFrozen; }
 
 	const FSceneRenderStats& GetStats() const { return Stats; }
+	FTerrainRenderer&        GetTerrainRenderer() { return TerrainRenderer; }
 
 	// 간이 환경광 (하늘/지면 반구, HDR 선형). 이후 IBL이 대체한다
 	FVector3 SkyColor         = FVector3(0.35f, 0.45f, 0.6f);
@@ -152,6 +154,7 @@ private:
 	FParticleRenderer    ParticleRenderer;
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
+	FTerrainRenderer     TerrainRenderer;    // 지형 (Phase 34)
 
 	std::unique_ptr<FD3D12RenderTarget> SceneColor; // HDR + 깊이, 출력 크기에 맞춰 재생성
 

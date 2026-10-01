@@ -336,6 +336,13 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTU
 		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, Batches.GetIndexBuffer());
 		DrawDepthBatches(CommandList, Batches, Instances, Pipeline.Get(), SkinnedPipeline.Get(), ShadowParam_PassConstants, 16, DrawCalls, Triangles);
 	}
+	// 추가 캐스터 (지형 등): 캐스케이드마다 DSV를 다시 바인딩해 그린다
+	for (uint32 Index = 0; ExtraCasters && Index < CascadeCount; ++Index)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
+		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
+		ExtraCasters(CommandList, Cascades[Index].ViewProjection, CascadeFrustums[Index], false);
+	}
 
 	const D3D12_RESOURCE_BARRIER ToShaderResource =
 		MakeTransitionBarrier(ShadowMap.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);

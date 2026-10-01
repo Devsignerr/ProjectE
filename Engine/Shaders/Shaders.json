@@ -62,6 +62,7 @@
     { "File": "ScreenSpaceReflections.hlsl", "Entry": "CSHizCopy", "Stage": "Compute" },
     { "File": "ScreenSpaceReflections.hlsl", "Entry": "CSHizDownsample", "Stage": "Compute" },
     { "File": "SsrTrace.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "SsrTrace.hlsl", "Entry": "PSTrace", "Stage": "Pixel" }
+    { "File": "SsrTrace.hlsl", "Entry": "PSTrace", "Stage": "Pixel" },
+    { "File": "Ibl.hlsl", "Entry": "EquirectCS", "Stage": "Compute" }
   ]
 }

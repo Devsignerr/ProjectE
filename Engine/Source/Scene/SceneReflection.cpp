@@ -146,6 +146,8 @@ void RegisterSceneTypes()
 
 	Registry.RegisterType<FSkyLightComponent>("SkyLightComponent", "하늘광")
 		.Property(&FSkyLightComponent::Intensity, "Intensity", "환경광 배율").Range(0.0f, 10.0f, 0.01f).Tooltip("IBL 환경광과 하늘 배경 밝기 (씬에서 첫 하늘광만 사용)")
+		.Property(&FSkyLightComponent::EnvironmentMap, "EnvironmentMap", "환경맵 (HDR)").AssetFilter(".hdr").Tooltip("비우면 절차적 하늘")
+		.Property(&FSkyLightComponent::EnvironmentRotation, "EnvironmentRotation", "환경맵 회전 (도)").Range(-360.0f, 360.0f, 0.5f)
 		.AsComponent();
 
 	// 게임플레이 (Scene/Gameplay.h): 체력은 서버 권위 — 복제되면 클라이언트는 값만 읽는다

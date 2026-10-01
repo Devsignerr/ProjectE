@@ -1,6 +1,9 @@
 #include "Renderer/SceneRenderer.h"
 
 #include "Core/CommandLine.h"
+#include "Core/Paths.h"
+#include "Core/StringConv.h"
+#include "Renderer/AssetCache.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/Camera.h"
 #include "Renderer/LodMath.h"
@@ -590,6 +593,9 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	}
 	++ViewsThisFrame;
 
+	// 하늘 환경맵 (하늘광 EnvironmentMap/회전이 바뀌면 IBL 다시 생성)
+	UpdateEnvironment(Scene);
+
 	// 반사 캡처: 끝난 굽기 저장 + 요청된 굽기 (큐브 면 6개를 이번 프레임 명령 목록에 먼저 그린다)
 	ReflectionCaptures.ProcessPendingSaves();
 	if (bBakeCapturesRequested)
@@ -965,6 +971,43 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	PrevTargetHeight             = Height;
 	bHasPrevView                 = true;
 	PrevScene                    = &Scene;
+}
+
+void FSceneRenderer::UpdateEnvironment(FScene& Scene)
+{
+	std::string Map;
+	float       Rotation = 0.0f;
+	bool        bFound   = false;
+	Scene.GetRegistry().View<FSkyLightComponent>().Each([&](FEntity, FSkyLightComponent& SkyLight) {
+		if (!bFound)
+		{
+			Map      = SkyLight.EnvironmentMap;
+			Rotation = SkyLight.EnvironmentRotation;
+			bFound   = true;
+		}
+	});
+	if (Map == AppliedEnvironmentMap && (Map.empty() || Rotation == AppliedEnvironmentRotation))
+	{
+		return;
+	}
+	AppliedEnvironmentMap      = Map;
+	AppliedEnvironmentRotation = Rotation;
+	if (Map.empty())
+	{
+		IblRenderer.SetEnvironment(nullptr, 0.0f);
+		return;
+	}
+	const std::filesystem::path Relative = FStringConv::ToWide(Map);
+	const std::filesystem::path Path =
+		Relative.is_absolute() ? Relative : (FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory()) / Relative;
+	FEnvironmentImage Image;
+	if (FAssetCache::LoadEnvironmentAsset(Path, Image) == FAssetCache::ESource::Failed)
+	{
+		E_LOG(LogRenderer, Warning, "환경맵을 읽지 못해 절차적 하늘을 씁니다: {}", Map);
+		IblRenderer.SetEnvironment(nullptr, 0.0f);
+		return;
+	}
+	IblRenderer.SetEnvironment(&Image, Rotation);
 }
 
 void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)

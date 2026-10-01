@@ -136,12 +136,32 @@ int main()
 
 			const bool bModel = Extension == L".glb" || Extension == L".gltf" || Extension == L".fbx";
 			const bool bImage = Extension == L".png" || Extension == L".jpg" || Extension == L".jpeg" || Extension == L".tga" || Extension == L".bmp";
-			if (!bModel && !bImage)
+			const bool bEnvironment = Extension == L".hdr"; // 하늘/IBL 환경맵 (Phase 33-7)
+			if (!bModel && !bImage && !bEnvironment)
 			{
 				continue;
 			}
 
 			const std::string DisplayName = FStringConv::ToUtf8(std::filesystem::relative(Entry.path(), FPaths::GetProjectContentDirectory()).wstring());
+			if (bEnvironment)
+			{
+				const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Entry.path(), FAssetCache::EnvironmentExtension);
+				if (!bForce && FAssetCache::IsCookedUpToDate(Entry.path(), CookedPath))
+				{
+					++Skipped;
+				}
+				else if (FAssetCache::CookEnvironmentAsset(Entry.path()))
+				{
+					++Cooked;
+					E_LOG(LogCook, Display, "환경맵 쿠킹: {}", DisplayName);
+				}
+				else
+				{
+					++AssetFailed;
+					E_LOG(LogCook, Error, "환경맵 쿠킹 실패: {}", DisplayName);
+				}
+				continue;
+			}
 			if (bModel)
 			{
 				const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Entry.path(), FAssetCache::ModelExtension);

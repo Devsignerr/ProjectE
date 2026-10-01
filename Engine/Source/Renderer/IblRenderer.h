@@ -3,7 +3,10 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "RHI/D3D12/D3D12Texture.h"
 #include "Renderer/IblMath.h"
+
+#include <memory>
 
 class FD3D12RHI;
 class FShaderLibrary;
@@ -29,6 +32,10 @@ public:
 
 	bool IsReady() const { return bReady; }
 
+	// 하늘 환경 (Phase 33-7): Image가 nullptr이면 절차적 하늘, 아니면 등장방형 HDR → 하늘 큐브(512, Z축 회전) → 조도/프리필터 다시 생성.
+	// GPU 동기 실행 (바뀔 때만 부른다). 실패하면 false (이전 환경 유지)
+	bool SetEnvironment(const struct FEnvironmentImage* Image, float RotationDegrees);
+
 	// 연속 SRV 3칸:
 	// TextureCube 확산(E/pi), TextureCube GGX 프리필터, Texture2D BRDF(A,B).
 	const FD3D12DescriptorHandle& GetLightingTable() const { return LightingTable; }
@@ -39,7 +46,14 @@ public:
 private:
 	bool CreateTexture(uint32 Size, uint16 Slices, uint16 Mips,
 	                   ComPtr<ID3D12Resource>& Texture,
-	                   D3D12_CPU_DESCRIPTOR_HANDLE Srv, const wchar_t* Name);
+	                   D3D12_CPU_DESCRIPTOR_HANDLE Srv, const wchar_t* Name,
+	                   D3D12_RESOURCE_STATES InitialState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	// 하늘 큐브를 Size로 다시 만든다 (이전 리소스는 지연 해제, SRV는 같은 칸에 다시 기록). 새 큐브는 PIXEL_SHADER_RESOURCE
+	bool RecreateSky(uint32 Size);
+
+	std::unique_ptr<FD3D12Texture>       EnvironmentTexture; // 등장방형 HDR (없으면 절차적 하늘)
+	float                               EnvironmentRotation = 0.0f; // 라디안
+	uint32                              SkySize = IblMath::SkyCubeSize;
 	bool Generate(FShaderLibrary& Library, bool bRebuild = false);
 	bool CreateSkyPipeline(FShaderLibrary& Library, FD3D12PipelineState& OutPipeline);
 	FShaderLibrary* ShaderLibrary = nullptr; // 비소유: 씬 렌더러가 소유

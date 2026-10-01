@@ -21,6 +21,9 @@ struct FAssetCache
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
 	static constexpr uint32 ModelVersion = 7; // 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
+	static constexpr uint32 EnvironmentMagic   = 0x564E4545; // "EENV"
+	static constexpr uint32 EnvironmentVersion = 1; // 1: 등장방형 RGBA16F, 폭 최대 2048 (상자 필터 축소)
+	static constexpr const wchar_t* EnvironmentExtension = L".eenv";
 
 	static constexpr const wchar_t* ModelExtension = L".emodel";
 	// 텍스처 쿠킹 확장자 (용도별): .color.etex / .linear.etex / .normal.etex / .mask.etex
@@ -38,9 +41,13 @@ struct FAssetCache
 	static ESource LoadTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage, FCompressedTexture& OutTexture,
 	                                bool bWriteCooked = true);
 
+	// HDR 환경맵 (.hdr 등 → 등장방형 RGBA16F .eenv, 하늘/IBL 소스)
+	static ESource LoadEnvironmentAsset(const std::filesystem::path& SourcePath, FEnvironmentImage& OutImage, bool bWriteCooked = true);
+
 	// 쿠킹 도구용: 캐시 상태와 무관하게 원본에서 다시 변환해 기록
 	static bool CookModelAsset(const std::filesystem::path& SourcePath);
 	static bool CookTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage);
+	static bool CookEnvironmentAsset(const std::filesystem::path& SourcePath);
 
 	// 캐시 대상이 아니면 빈 경로
 	static std::filesystem::path GetCookedPath(const std::filesystem::path& SourcePath, const wchar_t* CookedExtension);
@@ -66,4 +73,6 @@ struct FAssetCache
 	static bool ReadModel(FBinaryReader& Reader, FModelData& OutModel);
 	static void WriteTexture(FBinaryWriter& Writer, const FCompressedTexture& Texture);
 	static bool ReadTexture(FBinaryReader& Reader, FCompressedTexture& OutTexture);
+	static void WriteEnvironment(FBinaryWriter& Writer, const FEnvironmentImage& Image);
+	static bool ReadEnvironment(FBinaryReader& Reader, FEnvironmentImage& OutImage);
 };

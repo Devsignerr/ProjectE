@@ -4,13 +4,15 @@ cbuffer BakeConstants : register(b0)
 	uint Size;
 	uint SampleCount;
 	float Roughness;
-	uint Padding;
+	float Rotation; // EquirectCS: 환경맵 Z축 회전 (라디안, +면 오른쪽으로 돈다)
 };
 
 TextureCube<float4> Environment : register(t0);
+Texture2D<float4> EquirectSource : register(t1); // 등장방형 HDR (Phase 33-7)
 RWTexture2DArray<float4> CubeOutput : register(u0);
 RWTexture2D<float4> LutOutput : register(u1);
 SamplerState LinearSampler : register(s0);
+SamplerState WrapSampler : register(s1);
 
 static const float Pi = 3.14159265358979323846;
 
@@ -79,6 +81,24 @@ void SkyCS(uint3 Id : SV_DispatchThreadID)
 			   float3(0.035, 0.03, 0.025), pow(-N.z, 0.25));
 
 	CubeOutput[Id] = float4(Color, 1);
+}
+
+// 등장방형 HDR → 하늘 큐브 (Renderer/IblMath.h DirectionToEquirectUV와 같은 식): 경도 = atan2(y, x), U = 0.5 + 경도 / 2π, V = 0.5 - 위도 / π
+[numthreads(8, 8, 1)]
+void EquirectCS(uint3 Id : SV_DispatchThreadID)
+{
+	if (any(Id.xy >= Size) || Id.z >= 6) return;
+
+	float3 N = FaceDirection(
+		Id.z, (float2(Id.xy) + 0.5) / float(Size) * 2 - 1);
+
+	// 환경을 +Rotation만큼 돌리면 방향 N은 원본의 -Rotation 방향을 본다
+	float S, C;
+	sincos(-Rotation, S, C);
+	float3 D = float3(N.x * C - N.y * S, N.x * S + N.y * C, N.z);
+	float2 UV = float2(0.5 + atan2(D.y, D.x) / (2 * Pi), 0.5 - asin(clamp(D.z, -1, 1)) / Pi);
+
+	CubeOutput[Id] = float4(max(EquirectSource.SampleLevel(WrapSampler, UV, 0).rgb, 0), 1);
 }
 
 [numthreads(8, 8, 1)]

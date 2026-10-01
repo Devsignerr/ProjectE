@@ -27,6 +27,7 @@
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
+#include <string>
 #include <memory>
 #include <vector>
 
@@ -207,6 +208,10 @@ private:
 	FReflectionCaptures  ReflectionCaptures;
 	bool                 bBakeCapturesRequested = false;
 	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
+	// 하늘광 환경맵이 바뀌면 FAssetCache로 읽어 IBL을 다시 만든다 (Phase 33-7)
+	void                 UpdateEnvironment(FScene& Scene);
+	std::string          AppliedEnvironmentMap;
+	float                AppliedEnvironmentRotation = 0.0f;
 	// 씬의 반사 캡처마다 큐브 면 6개를 그려 프리필터 → 아틀라스 + .ecapture 저장 예약 (Render 안에서, 프레임 명령 목록에 기록)
 	void                 BakeReflectionCaptures(FScene& Scene);
 	bool                 bTaaRanLastFrame = false;

@@ -241,6 +241,73 @@ FAssetCache::ESource FAssetCache::LoadTextureAsset(const std::filesystem::path& 
 	return ESource::Converted;
 }
 
+void FAssetCache::WriteEnvironment(FBinaryWriter& Writer, const FEnvironmentImage& Image)
+{
+	WriteHeader(Writer, EnvironmentMagic, EnvironmentVersion);
+	Writer.Write(Image.Width);
+	Writer.Write(Image.Height);
+	Writer.WriteArray(Image.Pixels);
+}
+
+bool FAssetCache::ReadEnvironment(FBinaryReader& Reader, FEnvironmentImage& OutImage)
+{
+	OutImage = FEnvironmentImage{};
+	if (!ReadHeader(Reader, EnvironmentMagic, EnvironmentVersion))
+	{
+		return false;
+	}
+	OutImage.Width  = Reader.Read<uint32>();
+	OutImage.Height = Reader.Read<uint32>();
+	OutImage.Pixels = Reader.ReadArray<uint16>();
+	if (!Reader.IsOk() || !OutImage.IsValid())
+	{
+		OutImage = FEnvironmentImage{};
+		return false;
+	}
+	return true;
+}
+
+FAssetCache::ESource FAssetCache::LoadEnvironmentAsset(const std::filesystem::path& SourcePath, FEnvironmentImage& OutImage, bool bWriteCooked)
+{
+	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, EnvironmentExtension);
+	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath))
+	{
+		if (LoadCookedFile(CookedPath, [&](FBinaryReader& Reader) { return ReadEnvironment(Reader, OutImage); }))
+		{
+			E_LOG(LogRenderer, Verbose, "쿠킹 환경맵 사용: {}", ToDisplay(SourcePath));
+			return ESource::Cooked;
+		}
+		E_LOG(LogRenderer, Warning, "쿠킹 환경맵이 손상되었거나 형식이 달라 원본을 다시 읽습니다: {}", ToDisplay(CookedPath));
+	}
+	if (!FImageLoader::LoadEnvironmentFromFile(SourcePath, OutImage))
+	{
+		return ESource::Failed;
+	}
+	if (bWriteCooked && !CookedPath.empty())
+	{
+		FBinaryWriter Writer;
+		WriteEnvironment(Writer, OutImage);
+		if (!Writer.SaveToFile(CookedPath))
+		{
+			E_LOG(LogRenderer, Warning, "쿠킹 환경맵을 기록하지 못했습니다: {}", FStringConv::ToUtf8(CookedPath.wstring()));
+		}
+	}
+	return ESource::Converted;
+}
+
+bool FAssetCache::CookEnvironmentAsset(const std::filesystem::path& SourcePath)
+{
+	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, EnvironmentExtension);
+	FEnvironmentImage           Image;
+	if (CookedPath.empty() || !FImageLoader::LoadEnvironmentFromFile(SourcePath, Image))
+	{
+		return false;
+	}
+	FBinaryWriter Writer;
+	WriteEnvironment(Writer, Image);
+	return Writer.SaveToFile(CookedPath);
+}
+
 bool FAssetCache::CookTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage)
 {
 	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, GetTextureExtension(Usage));

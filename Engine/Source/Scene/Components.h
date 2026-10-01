@@ -181,9 +181,12 @@ struct FSpotLightComponent
 };
 
 // 하늘광 (씬 전역 — 처음 찾은 것 하나만): 환경광(IBL)과 하늘 배경 밝기 배율. 없으면 1. 밤/실내 씬은 낮춘다
+//   EnvironmentMap(Phase 33-7): Content 기준 등장방형 HDR(.hdr) → 하늘 배경 + IBL (비우면 절차적 하늘). 회전 = Z축(도, +면 오른쪽으로)
 struct FSkyLightComponent
 {
-	float Intensity = 1.0f;
+	float       Intensity = 1.0f;
+	std::string EnvironmentMap;
+	float       EnvironmentRotation = 0.0f;
 };
 
 // 높이 지수 안개 + 볼류메트릭 안개 (씬 전역 — 처음 찾은 것 하나만, 식은 Renderer/FogMath.h).

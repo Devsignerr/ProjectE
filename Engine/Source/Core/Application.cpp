@@ -102,7 +102,11 @@ int FApplication::Run()
 			}
 			Begin = End + 1;
 		}
-		E_LOG(LogCore, Display, "--hold-keys: 키 {}개를 누른 상태로 실행", HeldKeys.size());
+		if (const std::wstring Delay = CommandLine.GetValue(L"--hold-keys-delay"); !Delay.empty())
+		{
+			HoldKeysDelay = std::max(0.0f, std::stof(Delay));
+		}
+		E_LOG(LogCore, Display, "--hold-keys: 키 {}개를 {:.1f}초 뒤부터 누른 상태로 실행", HeldKeys.size(), HoldKeysDelay);
 	}
 	if (CommandLine.HasFlag(L"--crash-test"))
 	{
@@ -163,7 +167,12 @@ void FApplication::RunWindowedLoop()
 		{
 			break;
 		}
-		for (const EKey Key : HeldKeys) // 자동 검증: 누르고 있는 키
+		if (!HeldKeys.empty() && !bHoldKeysStarted && Timer.GetTotalSeconds() >= HoldKeysDelay)
+		{
+			bHoldKeysStarted = true;
+			E_LOG(LogCore, Display, "--hold-keys: 키 누르기 시작");
+		}
+		for (const EKey Key : bHoldKeysStarted ? HeldKeys : std::vector<EKey>{}) // 자동 검증: 누르고 있는 키
 		{
 			FWindowEvent Event;
 			Event.Type = EWindowEventType::KeyDown;

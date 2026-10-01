@@ -221,7 +221,12 @@ bool FPlayInEditorNet::LaunchRuntimeClient(const std::string& Address, const std
 	                               SimulationArguments(PendingSettings);
 	// 자동 검증: --play-client-hold-keys W,Space → 클라이언트마다 --hold-keys (에디터가 띄운 클라이언트의 입력이 서버에 가는지 확인)
 	const std::wstring HoldKeys = FCommandLine::FromProcess().GetValue(L"--play-client-hold-keys");
-	return LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectERuntime.exe", HoldKeys.empty() ? Arguments : Arguments + L" --hold-keys " + HoldKeys);
+	std::wstring HoldArguments = HoldKeys.empty() ? std::wstring() : L" --hold-keys " + HoldKeys;
+	if (const std::wstring Delay = FCommandLine::FromProcess().GetValue(L"--play-client-hold-keys-delay"); !HoldKeys.empty() && !Delay.empty())
+	{
+		HoldArguments += L" --hold-keys-delay " + Delay;
+	}
+	return LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectERuntime.exe", Arguments + HoldArguments);
 }
 
 bool FPlayInEditorNet::LaunchProcess(const std::wstring& Executable, const std::wstring& Arguments)

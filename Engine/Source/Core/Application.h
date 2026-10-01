@@ -77,9 +77,12 @@ private:
 	//   --screenshot <경로>   마지막 프레임을 PNG로 저장
 	//   --crash-test          30프레임 뒤 액세스 위반을 일으켜 크래시 덤프/대화 상자를 검증
 	//   --hold-keys W,Space   자동 검증: 그 키들을 누르고 있는 상태로 (A~Z, Space만) — 캐릭터 이동 등 입력 검증
+	//   --hold-keys-delay S   위 키를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
 	uint64                FrameIndex = 0;
 	uint64                CrashTestFrame = 0; // --crash-test: 이 프레임(틱)에서 의도적 크래시 (덤프 검증)
 	std::vector<EKey>     HeldKeys;           // --hold-keys
+	float                 HoldKeysDelay = 0.0f; // --hold-keys-delay (초)
+	bool                  bHoldKeysStarted = false;
 };

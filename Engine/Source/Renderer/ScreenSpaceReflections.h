@@ -26,9 +26,8 @@ struct FScreenSpaceReflectionInputs
 	float                     MaxDistance   = 2000.0f;
 	float                     Thickness     = 40.0f;
 	float                     MaxRoughness  = 0.6f;
-	uint32                    FrameIndex    = 0;
-	bool                      bStochastic   = false; // 거칠기만큼 반사 방향을 흔든다 (TAA가 누적할 때만)
-	const FD3D12RenderTarget* Velocity      = nullptr; // 움직임 벡터 (확률 반사 시간 누적용)
+	float                     MaxBlurRadius = 16.0f; // 거칠기 흐림 반경 상한 (픽셀)
+	const FD3D12RenderTarget* Velocity      = nullptr; // 표면 움직임 벡터 (반사가 맞지 않은 픽셀의 누적)
 	const FD3D12RenderTarget* PrevColor     = nullptr; // 반사 색 원본: 지난 프레임 TAA 결과 (지터·계단이 없어 반사가 덜 지글거림). 없으면 SceneColor
 	bool                      bHistoryValid = false;   // 씬 렌더러의 시간 이력 유효 (카메라 컷/크기 변경이면 false)
 };
@@ -36,13 +35,14 @@ struct FScreenSpaceReflectionInputs
 // 화면 공간 반사 (ScreenSpaceReflections.hlsl Hi-Z + SsrTrace.hlsl, 식은 Renderer/ReflectionMath.h).
 //   사전 패스 뒤·메인 패스 전: 사전 패스 깊이로 최소 깊이 밉 체인 → 픽셀마다 거울 반사 광선을 계층 추적 → (색, 신뢰도).
 //   색은 이전 프레임 씬 컬러를 재투영해 읽으므로 이력이 없는 프레임(첫 프레임/크기 변경/카메라 컷)은 끈다.
-//   SsrResolve.hlsl로 재투영 누적(이력 2장 핑퐁)한 결과를 내보낸다 — TAA만으로는 확률 반사 노이즈와 움직일 때 반사 윤곽 계단이 지글거림.
+//   거울 방향 한 번 추적(결정적) → SsrResolve.hlsl PSBlur 가로·세로로 거칠기 원뿔만큼 흐림 → PSResolve 반사 움직임 재투영 누적(이력 2장 핑퐁).
+//   확률 반사(픽셀마다 GGX 방향 하나 + 누적)는 TV 노이즈처럼 지글거려 쓰지 않는다.
 //   메인 패스가 t22로 읽어 거칠기 페이드 후 캡처/하늘 IBL 반사 대신 섞는다. 결과 타깃은 항상 있다 (끄면 읽지 않음)
 class FScreenSpaceReflections
 {
 public:
 	static constexpr DXGI_FORMAT ResultFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	static constexpr DXGI_FORMAT MotionFormat = DXGI_FORMAT_R16G16_FLOAT; // 반사 움직임 벡터 (가상 점 기준)
+	static constexpr DXGI_FORMAT MotionFormat = DXGI_FORMAT_R16G16B16A16_FLOAT; // xy = 반사 움직임 벡터 (가상 점 기준), z = 흐림 반경 (픽셀)
 
 	~FScreenSpaceReflections();
 
@@ -58,7 +58,7 @@ public:
 
 private:
 	bool CreatePipelines(FD3D12PipelineState& OutCopy, FD3D12PipelineState& OutDownsample, FD3D12PipelineState& OutTrace,
-	                     FD3D12PipelineState& OutResolve, bool bForceRecompile);
+	                     FD3D12PipelineState& OutBlur, FD3D12PipelineState& OutResolve, bool bForceRecompile);
 	void ReleaseHiz();
 
 	FD3D12RHI*                      Rhi     = nullptr;
@@ -68,10 +68,12 @@ private:
 	FD3D12PipelineState             HizCopyPipeline;
 	FD3D12PipelineState             HizDownsamplePipeline;
 	FD3D12PipelineState             TracePipeline;
+	FD3D12PipelineState             BlurPipeline;
 	FD3D12PipelineState             ResolvePipeline;
 
 	std::unique_ptr<FD3D12RenderTarget> Result;
 	std::unique_ptr<FD3D12RenderTarget> ReflectMotion; // 추적 2번째 출력
+	std::unique_ptr<FD3D12RenderTarget> BlurTargets[2]; // 거칠기 흐림 가로 → 세로
 	std::unique_ptr<FD3D12RenderTarget> History[2];           // 누적 결과 핑퐁
 	const FD3D12RenderTarget*           Output         = nullptr; // 이번 프레임 누적 결과 (없으면 Result)
 	uint32                              HistoryIndex   = 0;

@@ -97,3 +97,17 @@ E_TEST(Reflection_CaptureFileRoundTrip)
 	std::filesystem::remove(Path, Error);
 	E_EXPECT_FALSE(Loaded.Load(Path)); // 없는 파일
 }
+
+E_TEST(Reflection_SsrBlurRadius)
+{
+	// 거울은 흐리지 않고, 거칠수록 원뿔이 넓어진다 (거칠기 0.3 ≈ 6도)
+	E_EXPECT_NEAR(FReflectionMath::ComputeSpecularConeTangent(0.0f), 0.0f, 1.0e-6f);
+	const float Cone03 = FReflectionMath::ComputeSpecularConeTangent(0.3f);
+	E_EXPECT_NEAR(Cone03, 0.107f, 0.01f);
+	E_EXPECT_TRUE(FReflectionMath::ComputeSpecularConeTangent(0.1f) < Cone03 && Cone03 < FReflectionMath::ComputeSpecularConeTangent(0.5f));
+	// 교차 거리에 비례, 상한
+	const float Near = FReflectionMath::ComputeSsrBlurRadiusPixels(0.3f, 50.0f, 1.0f, 16.0f);
+	const float Far  = FReflectionMath::ComputeSsrBlurRadiusPixels(0.3f, 100.0f, 1.0f, 16.0f);
+	E_EXPECT_NEAR(Far, Near * 2.0f, 1.0e-3f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrBlurRadiusPixels(0.6f, 1000.0f, 2.0f, 16.0f), 16.0f, 1.0e-4f);
+}

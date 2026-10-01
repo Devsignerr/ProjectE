@@ -4,8 +4,9 @@
 
 // SSR 추적 (FScreenSpaceReflections, FScreenPassRootSignature). Hi-Z는 ScreenSpaceReflections.hlsl이 만든다. 식은 Renderer/ReflectionMath.h
 //   출력 R16G16B16A16_FLOAT: rgb = 반사 색 (이전 프레임 씬 컬러, 톤매핑 전 HDR), a = 신뢰도 (0 = 맞지 않음 → 캡처/하늘 IBL)
-//   SsrResolve.hlsl PSResolve: 확률 반사(bStochastic)일 때 SSR 전용 시간 누적. 거친 면의 광선 흔들기와 맞음/안 맞음이 픽셀·프레임마다 바뀌는 큰 노이즈는
-//     TAA의 이웃 색 클램프가 걸러 내지 못해 화면이 지글거리므로, 메인 패스가 읽기 전에 여기서 평균낸다 (언리얼 SSR 시간 필터와 같은 역할)
+//   SV_Target1 = (반사 움직임 벡터 xy, 흐림 반경 픽셀 z). 반사는 거울 방향 한 번만 추적하고(결정적 — 프레임마다 바뀌는 노이즈 없음)
+//   거칠기는 SsrResolve.hlsl이 GGX 반사 원뿔 크기만큼 화면에서 흐려 표현한다 (식은 ReflectionMath::ComputeSsrBlurRadiusPixels).
+//   예전 확률 반사(픽셀·프레임마다 GGX 방향 하나 + TAA 누적)는 광선 하나의 분산이 커서 누적해도 TV 노이즈처럼 지글거렸다
 
 cbuffer SsrConstants : register(b0)
 {
@@ -20,9 +21,9 @@ cbuffer SsrConstants : register(b0)
 	float    Thickness;       // cm (교차 뒤 허용 두께)
 	float    NearZ;
 	uint     bOrthographic;
-	uint     FrameIndex;      // 확률 반사 방향 (TAA가 누적)
+	float    ProjectionScale; // 투영[1][1] × 높이/2 (픽셀/거리 — 원근은 뷰 깊이로 더 나눈다)
 	float    MaxRoughness;    // 이보다 거친 픽셀은 추적하지 않음
-	uint     bStochastic;     // 1 = 거칠기만큼 GGX로 반사 방향을 흔든다 (TAA 켬일 때)
+	float    MaxBlurRadius;   // 거칠기 흐림 반경 상한 (픽셀)
 	float    SsrPadding;
 };
 
@@ -37,13 +38,6 @@ static const float SsrFloatMax = 3.402823466e+38f;
 FFullscreenVSOutput VSMain(uint VertexId : SV_VertexID)
 {
 	return FullscreenVS(VertexId);
-}
-
-uint PcgHash(uint V)
-{
-	const uint State = V * 747796405u + 2891336453u;
-	const uint Word  = ((State >> ((State >> 28u) + 4u)) ^ State) * 277803737u;
-	return (Word >> 22u) ^ Word;
 }
 
 float3 ViewFromDepth(float2 UV, float Depth)
@@ -123,18 +117,19 @@ float3 HierarchicalRaymarch(float3 Origin, float3 Direction, out bool bValid)
 	return Position;
 }
 
-// 픽셀 하나의 반사 추적. SurfaceView = 반사 표면 뷰 위치, HitDistance = 표면 → 교차점 거리 (cm, 맞지 않으면 0)
-float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance)
+// 픽셀 하나의 반사 추적. SurfaceView = 반사 표면 뷰 위치, HitDistance = 표면 → 교차점 거리 (cm, 맞지 않으면 0), Roughness = 표면 거칠기
+float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance, out float Roughness)
 {
 	SurfaceView = 0.0f;
 	HitDistance = 0.0f;
+	Roughness   = 0.0f;
 	const float Depth = SceneDepth.Load(int3(Pixel, 0));
 	if (Depth >= 1.0f)
 	{
 		return 0.0f;
 	}
 	const float4 NormalData = SceneNormal.Load(int3(Pixel, 0));
-	const float  Roughness  = DecodeScreenRoughness(NormalData);
+	Roughness               = DecodeScreenRoughness(NormalData);
 	if (Roughness > MaxRoughness)
 	{
 		return 0.0f; // 메인 패스가 어차피 0으로 페이드
@@ -144,24 +139,7 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	SurfaceView     = P;
 	const float3 N  = normalize(mul(DecodeScreenNormal(NormalData), (float3x3)View));
 	const float3 V  = bOrthographic != 0 ? float3(0.0f, 0.0f, 1.0f) : normalize(P); // 카메라 → 점
-	float3       R  = reflect(V, N);
-	if (bStochastic != 0 && Roughness > 0.05f)
-	{
-		// GGX 미세면 법선 하나 (픽셀·프레임마다 다른 표본) → TAA 누적이 거친 반사의 번짐이 된다
-		// 픽셀·프레임마다 서로 상관없는 표본 (PCG 해시). 이웃 픽셀 표본이 비슷하면(예: 픽셀 좌표의 느린 선형 식) 반사가 띠 모양으로
-		// 같이 흔들려 물결처럼 보이고, 3x3 분산이 작게 잡혀 누적(SsrResolve)이 이력을 버린다
-		const uint   Seed = PcgHash(uint(Pixel.x) + PcgHash(uint(Pixel.y) + PcgHash(FrameIndex)));
-		const float2 Xi   = float2(PcgHash(Seed), PcgHash(Seed ^ 0x9E3779B9u)) * (1.0f / 4294967296.0f);
-		const float  Alpha    = Roughness * Roughness;
-		const float  Phi      = 2.0f * 3.14159265f * Xi.x;
-		const float  CosTheta = sqrt((1.0f - Xi.y) / max(1.0f + (Alpha * Alpha - 1.0f) * Xi.y, 1.0e-6f));
-		const float  SinTheta = sqrt(saturate(1.0f - CosTheta * CosTheta));
-		const float3 Up       = abs(N.z) < 0.999f ? float3(0.0f, 0.0f, 1.0f) : float3(1.0f, 0.0f, 0.0f);
-		const float3 T        = normalize(cross(Up, N));
-		const float3 H        = T * (SinTheta * cos(Phi)) + cross(N, T) * (SinTheta * sin(Phi)) + N * CosTheta;
-		const float3 Jittered = reflect(V, H);
-		R                     = dot(Jittered, N) > 0.0f ? Jittered : R;
-	}
+	const float3 R  = reflect(V, N);
 	if (dot(R, N) <= 0.0f)
 	{
 		return 0.0f;
@@ -228,7 +206,7 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 struct FSsrTraceOutput
 {
 	float4 Color  : SV_Target0; // rgb = 반사 색, a = 신뢰도
-	float2 Motion : SV_Target1; // 반사 움직임 벡터 (현재 UV − 이전 UV, 맞지 않으면 0 → 누적은 표면 움직임)
+	float4 Motion : SV_Target1; // xy = 반사 움직임 벡터 (현재 UV − 이전 UV, 맞지 않으면 0 → 누적은 표면 움직임), z = 흐림 반경 (픽셀)
 };
 
 // 반사 움직임: 거울에 비친 상은 표면이 아니라 "시선 방향으로 표면 뒤 교차 거리만큼 간 가상 점"에 있는 것처럼 움직인다.
@@ -239,8 +217,9 @@ FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
 	const int2      Pixel = int2(Input.Position.xy);
 	float3          SurfaceView;
 	float           HitDistance;
+	float           Roughness;
 	FSsrTraceOutput Output;
-	Output.Color  = TraceReflection(Pixel, SurfaceView, HitDistance);
+	Output.Color  = TraceReflection(Pixel, SurfaceView, HitDistance, Roughness);
 	Output.Motion = 0.0f;
 	if (Output.Color.a > 0.0f && HitDistance > 0.0f)
 	{
@@ -250,7 +229,17 @@ FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
 		if (PrevClip.w > 1.0e-5f)
 		{
 			const float2 PrevUV = float2(PrevClip.x / PrevClip.w * 0.5f + 0.5f, 0.5f - PrevClip.y / PrevClip.w * 0.5f);
-			Output.Motion       = (float2(Pixel) + 0.5f) / ScreenSize - PrevUV;
+			Output.Motion.xy    = (float2(Pixel) + 0.5f) / ScreenSize - PrevUV;
+		}
+		// 거칠기 흐림 반경 (ReflectionMath::ComputeSpecularConeTangent / ComputeSsrBlurRadiusPixels와 같은 식)
+		const float Alpha = Roughness * Roughness;
+		if (Alpha >= 1.0e-3f)
+		{
+			const float Power         = max(2.0f / (Alpha * Alpha) - 2.0f, 0.0f);
+			const float CosAngle      = pow(0.244f, 1.0f / (Power + 1.0f));
+			const float ConeTangent   = sqrt(max(1.0f - CosAngle * CosAngle, 0.0f)) / max(CosAngle, 1.0e-4f);
+			const float PixelsPerUnit = bOrthographic != 0 ? ProjectionScale : ProjectionScale / max(SurfaceView.z, 1.0e-3f);
+			Output.Motion.z           = min(HitDistance * ConeTangent * PixelsPerUnit, MaxBlurRadius);
 		}
 	}
 	return Output;

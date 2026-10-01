@@ -72,6 +72,26 @@ struct FReflectionMath
 		return FMath::Clamp((MaxRoughness - Roughness) / FMath::Max(MaxRoughness - Start, 1.0e-3f), 0.0f, 1.0f);
 	}
 
+	// SSR 거칠기 흐림 (SsrTrace.hlsl과 같은 식): 거울 방향으로 한 번 추적한 반사를 GGX 반사 로브의 원뿔 크기만큼 화면에서 흐린다.
+	//   원뿔 반각 = acos(0.244^(1/(p+1))), p = 2/alpha^2 - 2 (alpha = 거칠기^2, 퐁 지수 근사). 반환은 tan(반각)
+	static float ComputeSpecularConeTangent(float Roughness)
+	{
+		const float Alpha = Roughness * Roughness;
+		if (Alpha < 1.0e-3f)
+		{
+			return 0.0f;
+		}
+		const float Power    = FMath::Max(2.0f / (Alpha * Alpha) - 2.0f, 0.0f);
+		const float CosAngle = std::pow(0.244f, 1.0f / (Power + 1.0f));
+		return std::sqrt(FMath::Max(1.0f - CosAngle * CosAngle, 0.0f)) / FMath::Max(CosAngle, 1.0e-4f);
+	}
+
+	// 화면 흐림 반경(픽셀) = 교차 거리 × tan(반각) × 픽셀/거리 (원근: 투영[1][1] × 높이/2 ÷ 뷰 깊이, 직교: 투영[1][1] × 높이/2)
+	static float ComputeSsrBlurRadiusPixels(float Roughness, float HitDistance, float PixelsPerUnit, float MaxRadius)
+	{
+		return FMath::Min(HitDistance * ComputeSpecularConeTangent(Roughness) * PixelsPerUnit, MaxRadius);
+	}
+
 	// Hi-Z 밉 수 (한 변이 1이 될 때까지, 최대 MaxMips)
 	static uint32 GetHizMipCount(uint32 Width, uint32 Height, uint32 MaxMips = 10)
 	{

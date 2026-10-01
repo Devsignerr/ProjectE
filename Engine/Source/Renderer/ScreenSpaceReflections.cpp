@@ -32,9 +32,9 @@ namespace
 		float      Thickness     = 40.0f;
 		float      NearZ         = 10.0f;
 		uint32     bOrthographic = 0;
-		uint32     FrameIndex    = 0;
+		float      ProjectionScale = 1.0f;
 		float      MaxRoughness  = 0.6f;
-		uint32     bStochastic   = 0;
+		float      MaxBlurRadius = 16.0f;
 		float      Padding       = 0.0f;
 	};
 	static_assert(sizeof(FSsrConstants) == 304);
@@ -46,11 +46,12 @@ namespace
 		float    CurrentWeight = 0.1f;
 		uint32   bHistoryValid = 0;
 		float    VarianceGamma = 1.5f;
-		float    Padding[3]    = {};
+		FVector2 BlurDirection;
+		float    Padding       = 0.0f;
 	};
 	static_assert(sizeof(FSsrResolveConstants) == 32);
 
-	constexpr float ResolveCurrentWeight = 0.05f; // 이번 프레임 비중 (정지 화면 ≈ 40프레임에 수렴, 확률 표본 노이즈를 충분히 평균)
+	constexpr float ResolveCurrentWeight = 0.1f;  // 이번 프레임 비중 (정지 화면 ≈ 20프레임에 수렴 — 지터로 반사 윤곽 계단을 평균)
 	constexpr float ResolveVarianceGamma = 1.5f; // 움직일 때 번짐(고스팅)과 남는 노이즈 사이의 타협
 
 	constexpr DXGI_FORMAT HizFormat = DXGI_FORMAT_R32_FLOAT;
@@ -79,7 +80,7 @@ bool FScreenSpaceReflections::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, 
 	{
 		return false;
 	}
-	return CreatePipelines(HizCopyPipeline, HizDownsamplePipeline, TracePipeline, ResolvePipeline, false);
+	return CreatePipelines(HizCopyPipeline, HizDownsamplePipeline, TracePipeline, BlurPipeline, ResolvePipeline, false);
 }
 
 void FScreenSpaceReflections::Shutdown()
@@ -91,19 +92,22 @@ void FScreenSpaceReflections::Shutdown()
 	ReleaseHiz();
 	Result.reset();
 	ReflectMotion.reset();
+	BlurTargets[0].reset();
+	BlurTargets[1].reset();
 	History[0].reset();
 	History[1].reset();
 	Output = nullptr;
 	HizCopyPipeline.Shutdown();
 	HizDownsamplePipeline.Shutdown();
 	TracePipeline.Shutdown();
+	BlurPipeline.Shutdown();
 	ResolvePipeline.Shutdown();
 	HizRoot.Shutdown();
 	Rhi = nullptr;
 }
 
 bool FScreenSpaceReflections::CreatePipelines(FD3D12PipelineState& OutCopy, FD3D12PipelineState& OutDownsample, FD3D12PipelineState& OutTrace,
-                                              FD3D12PipelineState& OutResolve, bool bForceRecompile)
+                                              FD3D12PipelineState& OutBlur, FD3D12PipelineState& OutResolve, bool bForceRecompile)
 {
 	ID3D12Device* Device  = Rhi->GetDevice().GetDevice();
 	const auto    Compute = [&](const wchar_t* Entry) {
@@ -127,6 +131,8 @@ bool FScreenSpaceReflections::CreatePipelines(FD3D12PipelineState& OutCopy, FD3D
 	       OutDownsample.InitCompute(Device, HizRoot.Get(), FD3D12ShaderCompiler::ToBytecode(Downsample.Get()), L"SsrHizDownsample") &&
 	       Root->CreateGraphicsPipeline(OutTrace, Device, *Library, L"SsrTrace.hlsl", L"PSTrace", { ResultFormat, MotionFormat }, EBlendMode::Opaque, bForceRecompile,
 	                                    L"SsrTracePipeline") &&
+	       Root->CreateGraphicsPipeline(OutBlur, Device, *Library, L"SsrResolve.hlsl", L"PSBlur", { ResultFormat }, EBlendMode::Opaque, bForceRecompile,
+	                                    L"SsrBlurPipeline") &&
 	       Root->CreateGraphicsPipeline(OutResolve, Device, *Library, L"SsrResolve.hlsl", L"PSResolve", { ResultFormat }, EBlendMode::Opaque,
 	                                    bForceRecompile, L"SsrResolvePipeline");
 }
@@ -136,8 +142,9 @@ bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
 	FD3D12PipelineState NewCopy;
 	FD3D12PipelineState NewDownsample;
 	FD3D12PipelineState NewTrace;
+	FD3D12PipelineState NewBlur;
 	FD3D12PipelineState NewResolve;
-	if (!CreatePipelines(NewCopy, NewDownsample, NewTrace, NewResolve, bForceRecompile))
+	if (!CreatePipelines(NewCopy, NewDownsample, NewTrace, NewBlur, NewResolve, bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "SSR 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
@@ -148,6 +155,8 @@ bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
 	Rhi->DeferRelease(NewDownsample.Detach());
 	TracePipeline.Swap(NewTrace);
 	Rhi->DeferRelease(NewTrace.Detach());
+	BlurPipeline.Swap(NewBlur);
+	Rhi->DeferRelease(NewBlur.Detach());
 	ResolvePipeline.Swap(NewResolve);
 	Rhi->DeferRelease(NewResolve.Detach());
 	return true;
@@ -193,6 +202,19 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 	if (!ReflectMotion->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrReflectMotion", FRenderTargetDesc::MakeColor(MotionFormat)))
 	{
 		E_LOG(LogRenderer, Fatal, "SSR 반사 움직임 버퍼 생성 실패 ({}x{})", Width, Height);
+	}
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		if (BlurTargets[Index])
+		{
+			BlurTargets[Index]->ShutdownDeferred(*Rhi);
+		}
+		BlurTargets[Index] = std::make_unique<FD3D12RenderTarget>();
+		if (!BlurTargets[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"SsrBlur0" : L"SsrBlur1",
+		                              FRenderTargetDesc::MakeColor(ResultFormat)))
+		{
+			E_LOG(LogRenderer, Fatal, "SSR 흐림 버퍼 생성 실패 ({}x{})", Width, Height);
+		}
 	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
@@ -297,9 +319,9 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	Constants.Thickness     = FMath::Max(Inputs.Thickness, 1.0f);
 	Constants.NearZ         = Inputs.NearZ;
 	Constants.bOrthographic = Inputs.bOrthographic ? 1u : 0u;
-	Constants.FrameIndex    = Inputs.FrameIndex;
+	Constants.ProjectionScale = Inputs.Projection.M[1][1] * static_cast<float>(Height) * 0.5f;
 	Constants.MaxRoughness  = Inputs.MaxRoughness;
-	Constants.bStochastic   = Inputs.bStochastic ? 1u : 0u;
+	Constants.MaxBlurRadius = FMath::Max(Inputs.MaxBlurRadius, 0.0f);
 	const D3D12_GPU_VIRTUAL_ADDRESS Address = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
 	// 색 + 반사 움직임 (전체 화면 삼각형이 모든 픽셀을 쓰므로 지우지 않는다)
@@ -314,29 +336,44 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	Result->End(CommandList);
 	ReflectMotion->End(CommandList);
 
-	// 3) 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다.
-	//    거울 반사도 누적한다 — 깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고(특히 곡면·스치는 각), TAA 지터마다 계단이 옮겨 다닌다.
-	//    정지 화면은 TAA가 평균내지만 움직이면 TAA가 반사 이력을 버려(표면 움직임 ≠ 반사 내용 움직임) 지글거린다
-	Output                    = nullptr;
-	const uint64 FrameNumber  = Rhi->GetFrameNumber();
+	// 3) 거칠기 흐림: 추적이 낸 픽셀별 원뿔 반경만큼 가로 → 세로 (결정적, 같은 면만 섞음)
+	FSsrResolveConstants PassConstants;
+	PassConstants.ScreenSize    = Constants.ScreenSize;
+	PassConstants.CurrentWeight = ResolveCurrentWeight;
+	PassConstants.VarianceGamma = ResolveVarianceGamma;
+	const FD3D12RenderTarget* BlurInput = Result.get();
+	for (uint32 Pass = 0; Pass < 2; ++Pass)
+	{
+		PassConstants.BlurDirection = Pass == 0 ? FVector2(1.0f, 0.0f) : FVector2(0.0f, 1.0f);
+		const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
+		FD3D12RenderTarget&             BlurOutput  = *BlurTargets[Pass];
+		BlurOutput.Begin(CommandList, nullptr);
+		DrawScreenPass(CommandList, *Root, BlurPipeline, BlurAddress,
+		               { BlurInput->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv() },
+		               Width, Height);
+		BlurOutput.End(CommandList);
+		BlurInput = &BlurOutput;
+	}
+	Output = BlurInput;
+
+	// 4) 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다.
+	//    깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고(특히 곡면·스치는 각) TAA 지터마다 계단이 옮겨 다닌다 — 정지 화면은 TAA가 평균내지만
+	//    움직이면 TAA가 반사 이력을 버리므로(표면 움직임 ≠ 반사 내용 움직임) 여기서 반사 움직임으로 재투영해 누적한다
+	const uint64 FrameNumber = Rhi->GetFrameNumber();
 	if (Inputs.Velocity != nullptr)
 	{
-		const bool bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
-		const FD3D12RenderTarget& Previous = *History[HistoryIndex];
+		const bool                bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
+		const FD3D12RenderTarget& Previous      = *History[HistoryIndex];
 		HistoryIndex ^= 1u;
 		FD3D12RenderTarget& Current = *History[HistoryIndex];
 
-		FSsrResolveConstants ResolveConstants;
-		ResolveConstants.ScreenSize    = Constants.ScreenSize;
-		ResolveConstants.CurrentWeight = ResolveCurrentWeight;
-		ResolveConstants.bHistoryValid = bHistoryValid ? 1u : 0u;
-		ResolveConstants.VarianceGamma = ResolveVarianceGamma;
-		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(ResolveConstants).GpuAddress;
+		PassConstants.bHistoryValid = bHistoryValid ? 1u : 0u;
+		PassConstants.BlurDirection = FVector2::ZeroVector;
+		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
 
 		Current.Begin(CommandList, nullptr);
-		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress, { Result->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv(),
-		                 Inputs.SceneNormal->GetSrv() }, Width,
-		               Height);
+		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress,
+		               { BlurInput->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv() }, Width, Height);
 		Current.End(CommandList);
 		Output           = &Current;
 		LastResolveFrame = FrameNumber;

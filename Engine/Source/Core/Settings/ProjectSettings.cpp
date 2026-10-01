@@ -53,7 +53,11 @@ FProjectSettings::FProjectSettings()
 		.Property(&FNetworkSettings::LanDiscoveryPort, "LanDiscoveryPort", "LAN 검색 포트").Range(1024.0f, 65535.0f).Tooltip("UDP. 같은 LAN의 방 목록 찾기")
 		.Property(&FNetworkSettings::MaxPlayers, "MaxPlayers", "최대 인원").Range(1.0f, 64.0f).Tooltip("서버의 원격 플레이어 최대 수 (리슨 서버 호스트 제외)")
 		.Property(&FNetworkSettings::bClientPrediction, "ClientPrediction", "클라이언트 예측")
-		.Tooltip("캐릭터를 소유 클라이언트가 입력 즉시 미리 움직인다. 끄면 모든 캐릭터가 서버 결과를 보간해 보여 준다 (캐릭터 이동 컴포넌트의 클라이언트 예측도 켜져 있어야 예측한다)");
+		.Tooltip("캐릭터를 소유 클라이언트가 입력 즉시 미리 움직인다. 끄면 모든 캐릭터가 서버 결과를 보간해 보여 준다 (캐릭터 이동 컴포넌트의 클라이언트 예측도 켜져 있어야 예측한다)")
+		.Property(&FNetworkSettings::bPhysicsPrediction, "PhysicsPrediction", "물리 예측")
+		.Tooltip("내 캐릭터 근처나 닿은 복제 물리 물체(상자/공)를 클라이언트가 미리 시뮬레이션하고 서버 상태로 부드럽게 수렴시킨다. 끄면 서버 결과를 보간해 보여 준다 (밀면 늦게 반응)")
+		.Property(&FNetworkSettings::PhysicsPredictionRadius, "PhysicsPredictionRadius", "물리 예측 반경 (cm)").Range(50.0f, 5000.0f, 10.0f)
+		.Tooltip("예측 캐릭터 중심에서 이 거리 안에 중심이 있는 물체를 예측한다 (닿은 물체는 거리와 무관)");
 
 	Registry.Register(Display, { "Display", "화면 기본값", GEngineCategory, "게임의 처음 화면 설정. 플레이어가 바꾼 값(<Saved>/Config/GameUserSettings.json)이 우선" })
 		.Property(&FGameUserSettings::WindowMode, "WindowMode", "창 모드").Enum({ { "Windowed", "창 모드" }, { "BorderlessFullscreen", "테두리 없는 전체 화면" } })

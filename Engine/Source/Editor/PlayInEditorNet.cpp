@@ -109,7 +109,11 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 		OutOptions.BeforeBeginPlay = [this, Session](FScene& Scene) {
 			PlayScene = &Scene;
 			ReplicationClient.Begin(Scene);
-			ReplicationClient.SetTransformFilter([this](FEntity Entity) { return World == nullptr || !World->IsPredicted(Entity); }); // 내 캐릭터는 예측으로
+			ReplicationClient.SetTransformFilter([this](FEntity Entity) { return World == nullptr || !World->IsPredicted(Entity); }); // 내 캐릭터·물리 예측 바디는 예측으로
+			if (World != nullptr)
+			{
+				World->SetReplicationClient(&ReplicationClient); // 물리 예측이 스냅샷을 읽는다
+			}
 			Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
 				if (!ReplicationClient.HandleMessage(Message))
 				{

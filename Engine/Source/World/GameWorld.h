@@ -20,6 +20,7 @@ class FAISystem;
 class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
+class FReplicationClient;
 class FResourceManager;
 class FScene;
 class FScriptSystem;
@@ -58,7 +59,8 @@ enum class EWorldRole : uint8
 };
 
 // 게임 월드 한 프레임의 갱신 순서. 런타임, 에디터 플레이 모드, 전용 서버가 같은 순서를 쓴다.
-//   게임플레이 틱 (플레이 중에만): 스크립트 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI → 게임플레이 규칙 → 물리 → UpdateTransforms
+//   게임플레이 틱 (플레이 중에만): 스크립트 → (클라이언트) 물리 예측 → 캐릭터 이동 → 스크립트가 구조를 바꿨으면 에셋 해석 → 게임 모듈 → AI
+//                                  → 게임플레이 규칙 → 물리 → UpdateTransforms → (클라이언트) 물리 예측 기록
 //                                  게임플레이 규칙 (GameWorldGameplay.cpp, 서버): 데미지 이벤트 → OnDamaged/OnDeath, 사망 처리(점수/파괴/리스폰 예약),
 //                                  리스폰, 매치 진행. 모든 역할: 매치 상태가 바뀌면 스크립트 OnMatchStateChanged(state)
 //                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
@@ -94,6 +96,9 @@ public:
 	void TickGameplay(float DeltaSeconds, const FInput* Input);
 	// 네트워크 드라이버를 나중에 연결/해제 (에디터 플레이: 네트워크 플레이를 시작할 때만 드라이버가 생긴다). BeginPlay 전에
 	void SetNetDriver(FNetDriver* InNet) { Systems.Net = InNet; }
+	// 클라이언트: 복제 클라이언트(스냅샷 버퍼) — 물리 예측이 서버 상태를 읽는다 (World/GameWorldPhysicsPrediction.cpp).
+	// 없으면 물리 예측 없음 (복제 동적 바디는 키네마틱 보간). 앱이 클라이언트 BeginPlay 전에 연결하고, EndPlay가 비운다 (비소유)
+	void SetReplicationClient(FReplicationClient* InReplication) { Replication = InReplication; }
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 
@@ -120,8 +125,13 @@ public:
 	bool  IsClient() const override { return Mode != ENetMode::DedicatedServer; }
 	int32 GetLocalPlayerId() const override;
 
-	// 소유 클라이언트가 예측하는 캐릭터인가 (복제 클라이언트는 이 엔티티의 스냅샷 트랜스폼을 쓰지 않는다)
+	// 이 클라이언트가 직접 움직이는 엔티티인가 — 소유 클라이언트가 예측하는 캐릭터, 또는 물리 예측 중인 복제 바디
+	// (복제 클라이언트는 이 엔티티의 스냅샷 트랜스폼을 쓰지 않는다 — FReplicationClient::SetTransformFilter)
 	bool   IsPredicted(FEntity Entity) const;
+	// 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction.cpp 머리 주석): 예측 캐릭터 근처/접촉한 복제 동적 바디를 로컬에서 동적으로 시뮬레이션
+	bool   IsPhysicsPredicted(FEntity Entity) const { return PredictedBodies.contains(Entity); }
+	bool   IsPhysicsSimulatedLocally(FEntity Entity) const; // 예측 중 + 동적 (해제 블렌드 중이면 false)
+	uint32 GetPhysicsPredictedBodyCount() const { return static_cast<uint32>(PredictedBodies.size()); }
 	// 예측 옵션: 캐릭터 이동 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
 	bool   UsesClientPrediction(FEntity Entity) const;
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
@@ -154,6 +164,7 @@ private:
 	struct FPredictedCharacter // 클라이언트: 서버가 아직 확인하지 않은 내 무브
 	{
 		std::deque<FCharacterMove> Moves;
+		std::deque<std::pair<uint32, float>> MoveTimes; // 순번 → 그 무브를 시뮬레이션한 물리 예측 시계 (ack ↔ 스냅샷 시각 맞추기)
 		uint32                     NextSequence    = 0;
 		uint32                     LastAckSequence = 0;
 		FVector3                   VisualOffset; // 보정으로 생긴 위치 차이를 화면에서만 천천히 흡수 (시뮬레이션은 즉시 보정)
@@ -179,6 +190,74 @@ private:
 	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
 	// 캐릭터 이동 → 애니메이션 그래프 파라미터 (World/GameWorldAnimation.cpp, FAnimGraphComponent::bUseCharacterMovement). 물리·트랜스폼 갱신 뒤
 	void UpdateCharacterAnimParams(float DeltaSeconds);
+
+	// 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction.cpp)
+	struct FBodyHistorySample
+	{
+		float    Time = 0.0f; // 물리 예측 시계
+		FVector3 Position;
+		FQuat    Rotation;
+	};
+	struct FPredictedBody
+	{
+		bool     bBlendingOut = false; // 해제 중: 키네마틱으로 돌아가 화면을 스냅샷 보간 위치로 옮기는 중
+		float    IdleSeconds  = 0.0f;  // 예측 캐릭터 근처/접촉이 없었던 시간
+		float    BlendSeconds = 0.0f;
+		FVector3 BlendFromPosition;
+		FQuat    BlendFromRotation;
+		float    LastSampleTime = -1.0f; // 처리한 마지막 스냅샷 서버 시각
+		FVector3 PositionError;          // 아직 적용하지 않은 보정 (매 프레임 일부씩)
+		FVector3 VelocityError;
+		FVector3 AngularError;           // rad/s
+		FQuat    RotationError;
+		FVector3 ServerVelocity;         // 마지막 스냅샷 두 개의 차분
+		std::deque<FBodyHistorySample> History; // 로컬 시뮬레이션 기록 (스텝 결과, 보정도 함께 옮긴다)
+	};
+	void TickPhysicsPrediction(float DeltaSeconds);   // 스크립트 뒤·캐릭터 이동 전: 대상 선정, 진입/해제, 서버 상태 수렴
+	void RecordPhysicsPrediction();                   // 물리·UpdateTransforms 뒤: 기록 + (--net-physics-stats) 측정
+	void UpdatePhysicsPredictionTiming();             // 새 스냅샷마다 로컬 시계 ↔ 서버 시각 오프셋
+	void ProcessBodySnapshot(FEntity Entity, FPredictedBody& Body);
+	void ApplyBodyCorrection(FEntity Entity, FPredictedBody& Body, float DeltaSeconds);
+	void BeginBodyBlendOut(FEntity Entity, FPredictedBody& Body);
+	bool IsPhysicsPredictionEnabled() const;
+	void CollectPredictionCharacters(std::vector<FEntity>& OutCharacters) const;
+	void TickPhysicsPredictionStats();
+	void LogPhysicsPredictionStats(const char* Label) const;
+	FReplicationClient*                         Replication = nullptr;
+	std::unordered_map<FEntity, FPredictedBody> PredictedBodies;
+	float  PredictionClock        = 0.0f;  // 물리 예측 시계 (게임플레이 틱 dt 누적)
+	float  PredictionTimeOffset   = 0.0f;  // 로컬 시계 = 서버 시각 + 오프셋 (서버가 이 스냅샷 상태를 만든 무브를 로컬이 시뮬레이션한 시각)
+	bool   bPredictionTimingValid = false;
+	float  LastAckMoveTime        = -1.0f; // 마지막 ack 무브를 시뮬레이션한 시계
+	float  LastSnapshotTime       = -1.0f; // 처리한 가장 최근 스냅샷 서버 시각
+	float  LastRecordTime         = 0.0f;
+	struct FMotionTrack // 측정: 화면 위치의 프레임당 튐 = 등속 외삽과의 차이
+	{
+		FVector3 Previous, Current;
+		float    PreviousDelta = 0.0f;
+		uint32   Samples       = 0;
+		float Push(const FVector3& Position, float DeltaSeconds); // 이번 튐 (cm, 첫 두 프레임은 0)
+	};
+	struct FBodyStats
+	{
+		FMotionTrack Track;
+		float        ContactTime = -1.0f; // 내 캐릭터가 닿은(닿을 위치에 온) 시각
+		float        MoveTime    = -1.0f; // 화면 위치가 멈춘 자리에서 움직이기 시작한 시각
+		FVector3     RestPosition, LastPosition;
+		bool         bInitialized = false;
+		bool         bReacted     = false;
+	};
+	struct FPhysicsPredictionStats
+	{
+		bool   bEnabled = false;
+		float  Elapsed = 0.0f, NextLog = 2.0f, LastDelta = 0.0f, InterpolationMargin = 0.0f; // 보간 여유 = 최근 스냅샷 - 보간 시각
+		std::unordered_map<FEntity, FMotionTrack> Characters;
+		std::unordered_map<FEntity, FBodyStats>   Bodies;
+		float  CharacterMaxJump = 0.0f, BodyMaxJump = 0.0f, CorrectionMax = 0.0f;
+		uint32 CharacterJumpFrames = 0, BodyJumpFrames = 0, Frames = 0, Snaps = 0, BigCorrections = 0; // BigCorrections: 5cm 초과 캐릭터 보정
+		std::vector<float> ReactionDelays;
+	};
+	FPhysicsPredictionStats PredictionStats;
 
 	// 게임플레이 규칙 (Scene/Gameplay.h 체력·게임 모드, World/GameWorldGameplay.cpp)
 	void  TickGameplayRules(float DeltaSeconds);

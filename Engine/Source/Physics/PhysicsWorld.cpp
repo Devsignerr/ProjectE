@@ -273,6 +273,22 @@ namespace
 	// 구르기 저항 계수 → 각감속 배율. 회전만 줄이면 마찰이 선속도를 끌어내리는데, 속이 찬 구(I = 2/5 m r²)의
 	// 선감속이 계수 × g가 되려면 각감속을 (I + m r²) / I = 3.5배로 줘야 한다
 	constexpr float RollingCouplingFactor = 3.5f;
+
+	// 모든 캐릭터 공용 접촉 리스너: 캐릭터가 동적 바디를 밀지(충격량) 끌 수 있게 한다 (재조정 다시 적용 중 — 같은 무브로 두 번 밀지 않게)
+	class FCharacterContacts final : public JPH::CharacterContactListener
+	{
+	public:
+		void OnContactAdded(const JPH::CharacterVirtual*, const JPH::CharacterContact&, JPH::CharacterContactSettings& ioSettings) override
+		{
+			ioSettings.mCanReceiveImpulses = bPushBodies;
+		}
+		void OnContactPersisted(const JPH::CharacterVirtual*, const JPH::CharacterContact&, JPH::CharacterContactSettings& ioSettings) override
+		{
+			ioSettings.mCanReceiveImpulses = bPushBodies;
+		}
+
+		bool bPushBodies = true;
+	};
 } // namespace
 
 struct FPhysicsWorld::FImpl
@@ -285,6 +301,7 @@ struct FPhysicsWorld::FImpl
 	std::unique_ptr<JPH::PhysicsSystem>        System;
 	std::unique_ptr<FContactTracker>           Contacts;
 	std::unordered_map<uint32, FRollingBody>   RollingBodies; // 바디 ID(인덱스+시퀀스) → 구르기 저항
+	FCharacterContacts                         CharacterContacts; // 모든 캐릭터의 리스너 (Characters보다 먼저 선언 — 나중에 해제)
 	std::unordered_map<uint32, JPH::Ref<JPH::CharacterVirtual>> Characters; // 캐릭터 ID → CharacterVirtual (내부 바디 포함)
 	uint32                                     NextCharacterId = 1;
 
@@ -459,6 +476,19 @@ FVector3 FPhysicsWorld::GetLinearVelocity(uint32 Body) const
 	return PhysicsMath::ToCentimeters(FromJoltVector(Impl->Bodies().GetLinearVelocity(JPH::BodyID(Body))));
 }
 
+void FPhysicsWorld::SetAngularVelocity(uint32 Body, const FVector3& RadiansPerSecond)
+{
+	if (Body != InvalidBody)
+	{
+		Impl->Bodies().SetAngularVelocity(JPH::BodyID(Body), ToJoltVector(RadiansPerSecond));
+	}
+}
+
+FVector3 FPhysicsWorld::GetAngularVelocity(uint32 Body) const
+{
+	return Body == InvalidBody ? FVector3() : FromJoltVector(Impl->Bodies().GetAngularVelocity(JPH::BodyID(Body)));
+}
+
 float FPhysicsWorld::GetMass(uint32 Body) const
 {
 	if (Body == InvalidBody)
@@ -573,6 +603,7 @@ uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
 
 	JPH::Ref<JPH::CharacterVirtual> Character =
 		new JPH::CharacterVirtual(Settings, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Desc.UserData, Impl->System.get());
+	Character->SetListener(&Impl->CharacterContacts);
 	const uint32 Id = Impl->NextCharacterId++;
 	Impl->Characters.emplace(Id, Character);
 	// 처음 바닥 상태
@@ -627,6 +658,28 @@ void FPhysicsWorld::SetCharacterRotation(uint32 Character, const FQuat& Rotation
 	if (const auto Found = Impl->Characters.find(Character); Found != Impl->Characters.end())
 	{
 		Found->second->SetRotation(ToJoltQuat(Rotation));
+	}
+}
+
+void FPhysicsWorld::SetCharactersPushBodies(bool bPush)
+{
+	Impl->CharacterContacts.bPushBodies = bPush;
+}
+
+void FPhysicsWorld::GetCharacterContacts(uint32 Character, std::vector<uint64>& OutUserData) const
+{
+	OutUserData.clear();
+	const auto Found = Impl->Characters.find(Character);
+	if (Found == Impl->Characters.end())
+	{
+		return;
+	}
+	for (const JPH::CharacterContact& Contact : Found->second->GetActiveContacts())
+	{
+		if (Contact.mHadCollision && !Contact.mBodyB.IsInvalid())
+		{
+			OutUserData.push_back(Contact.mUserData);
+		}
 	}
 }
 

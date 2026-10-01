@@ -25,6 +25,8 @@
 //     같은 무브 → 같은 결과라 보통 차이가 없고, 서버만 아는 일(서버가 시뮬레이션하는 공/상자와 부딪힘, 다른 캐릭터, 순간이동)이 있었을 때만 위치가 바뀐다.
 //     바뀐 만큼은 화면 오프셋(VisualOffset)으로 옮겨 CorrectionSmoothingSeconds에 걸쳐 0으로 줄인다 (시뮬레이션은 즉시 서버를 따른다).
 //     SnapCorrectionDistance보다 크면(순간이동) 바로 옮긴다.
+//     다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다). 물리 예측 바디는 되감지 않는다 — GameWorldPhysicsPrediction.cpp 머리 주석
+//     ack 무브의 로컬 시각(MoveTimes)은 물리 예측이 스냅샷 시각을 로컬 기록에 맞추는 데 쓴다.
 //   예측 옵션 (UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측): 끄면 소유 클라이언트는
 //     무브를 보내기만 하고 미리 움직이지 않으며, 자기 캐릭터도 스냅샷 보간으로 보여 준다 (IsPredicted = false). 서버 쪽은 같다.
 //   메시지 (비신뢰):
@@ -66,6 +68,10 @@ bool FGameWorld::UsesClientPrediction(FEntity Entity) const
 
 bool FGameWorld::IsPredicted(FEntity Entity) const
 {
+	if (IsPhysicsPredicted(Entity))
+	{
+		return true; // 물리 예측 바디 (해제 블렌드 중에도 화면은 물리 예측이 맡는다)
+	}
 	return Mode == ENetMode::Client && Scene != nullptr && Scene->GetRegistry().IsValid(Entity) &&
 	       Scene->GetRegistry().Has<FCharacterMovementComponent>(Entity) && GetOwner(Entity) >= 0 && IsLocallyControlled(Entity) &&
 	       UsesClientPrediction(Entity);
@@ -114,9 +120,14 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 				Physics->SetCharacterVisualOffset(*Scene, Entity, Predicted.VisualOffset);
 				Physics->SimulateCharacter(*Scene, Entity, Move); // 예측: 바로 움직인다
 				Predicted.Moves.push_back(Move);
+				Predicted.MoveTimes.emplace_back(Move.Sequence, PredictionClock); // 이 무브의 결과는 이번 프레임 물리 스텝 뒤에 기록된다
 				while (Predicted.Moves.size() > MaxPredictedMoves)
 				{
 					Predicted.Moves.pop_front();
+				}
+				while (Predicted.MoveTimes.size() > MaxPredictedMoves)
+				{
+					Predicted.MoveTimes.pop_front();
 				}
 				SendCharacterMoves(Entity);
 			}
@@ -285,18 +296,32 @@ void FGameWorld::ReceiveCharacterAck(const std::vector<uint8>& Message)
 	{
 		return; // 예측 끔: 위치는 스냅샷 보간이 맡는다
 	}
+	// 물리 예측: 이 ack 무브를 시뮬레이션한 시각 (같은 서버 프레임의 스냅샷 상태 ↔ 로컬 기록을 맞춘다)
+	while (!Predicted.MoveTimes.empty() && Predicted.MoveTimes.front().first < Sequence)
+	{
+		Predicted.MoveTimes.pop_front();
+	}
+	if (!Predicted.MoveTimes.empty() && Predicted.MoveTimes.front().first == Sequence)
+	{
+		LastAckMoveTime = Predicted.MoveTimes.front().second;
+	}
 
-	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교
+	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교.
+	// 다시 적용하는 동안 캐릭터는 동적 바디를 밀지 않는다 (그 무브로 이미 밀었다 — 물리 예측 바디는 되감지 않는다, GameWorldPhysicsPrediction.cpp)
 	const FVector3 Before = Systems.Physics->GetCharacterState(Entity).Position;
+	Systems.Physics->SetCharactersPushBodies(false);
 	Systems.Physics->SetCharacterState(*Scene, Entity, State);
 	for (const FCharacterMove& Move : Predicted.Moves)
 	{
 		Systems.Physics->SimulateCharacter(*Scene, Entity, Move);
 	}
+	Systems.Physics->SetCharactersPushBodies(true);
 	const FVector3 After = Systems.Physics->GetCharacterState(Entity).Position;
 	if (FVector3::DistanceSquared(Before, After) > 1.0f)
 	{
 		++CharacterCorrections;
+		PredictionStats.CorrectionMax = std::max(PredictionStats.CorrectionMax, FVector3::Distance(Before, After));
+		PredictionStats.BigCorrections += FVector3::DistanceSquared(Before, After) > 25.0f ? 1u : 0u;
 		E_LOG(LogNet, Verbose, "캐릭터 재조정: {:.1f}cm (순번 {})", FVector3::Distance(Before, After), Sequence);
 		// 화면은 이전 위치에서 시작해 새 위치로 천천히 (큰 차이는 순간이동으로 보고 바로)
 		Predicted.VisualOffset = Predicted.VisualOffset + (Before - After);

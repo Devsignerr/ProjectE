@@ -29,6 +29,7 @@ void FReplicationClient::End()
 	bAssetsChanged = false;
 	TransformBuffers.clear();
 	bClockValid = false;
+	LatestSnapshotTime = -1.0f;
 }
 
 bool FReplicationClient::HandleMessage(const std::vector<uint8>& Message)
@@ -216,6 +217,7 @@ void FReplicationClient::ApplyTransformSnapshot(const std::vector<uint8>& Messag
 	{
 		ServerClock += (Time - ServerClock) * 0.1f;
 	}
+	LatestSnapshotTime = std::max(LatestSnapshotTime, Time);
 
 	constexpr float KeepSeconds = 1.0f;
 	for (uint32 Index = 0; Index < Count && Reader.IsOk(); ++Index)
@@ -266,24 +268,58 @@ void FReplicationClient::Update(float DeltaSeconds)
 		++It;
 		if (Transform == nullptr || (TransformFilter && !TransformFilter(Entity)))
 		{
-			continue; // 예측 캐릭터는 클라이언트가 직접 움직인다
+			continue; // 예측 캐릭터/물리 바디는 클라이언트가 직접 움직인다
 		}
-
-		// RenderTime을 감싸는 두 스냅샷 사이 보간. 범위 밖이면 가장 가까운 끝 값 (외삽하지 않는다)
-		const FTransformSample* From = &Buffer.front();
-		const FTransformSample* To   = &Buffer.front();
-		for (size_t Index = 0; Index < Buffer.size(); ++Index)
-		{
-			if (Buffer[Index].ServerTime <= RenderTime)
-			{
-				From = &Buffer[Index];
-				To   = Index + 1 < Buffer.size() ? &Buffer[Index + 1] : &Buffer[Index];
-			}
-		}
-		const float Span  = To->ServerTime - From->ServerTime;
-		const float Alpha = Span > 0.0f ? std::clamp((RenderTime - From->ServerTime) / Span, 0.0f, 1.0f) : 0.0f;
-		Transform->Position = FVector3::Lerp(From->Position, To->Position, Alpha);
-		Transform->Rotation = FQuat::Slerp(From->Rotation, To->Rotation, Alpha).GetNormalized();
-		Transform->Scale    = FVector3::Lerp(From->Scale, To->Scale, Alpha);
+		const FTransformSample Sample = Interpolate(Buffer, RenderTime);
+		Transform->Position = Sample.Position;
+		Transform->Rotation = Sample.Rotation;
+		Transform->Scale    = Sample.Scale;
 	}
+}
+
+FReplicationClient::FTransformSample FReplicationClient::Interpolate(const std::deque<FTransformSample>& Buffer, float RenderTime)
+{
+	// RenderTime을 감싸는 두 스냅샷 사이 보간. 범위 밖이면 가장 가까운 끝 값 (외삽하지 않는다)
+	const FTransformSample* From = &Buffer.front();
+	const FTransformSample* To   = &Buffer.front();
+	for (size_t Index = 0; Index < Buffer.size(); ++Index)
+	{
+		if (Buffer[Index].ServerTime <= RenderTime)
+		{
+			From = &Buffer[Index];
+			To   = Index + 1 < Buffer.size() ? &Buffer[Index + 1] : &Buffer[Index];
+		}
+	}
+	const float      Span  = To->ServerTime - From->ServerTime;
+	const float      Alpha = Span > 0.0f ? std::clamp((RenderTime - From->ServerTime) / Span, 0.0f, 1.0f) : 0.0f;
+	FTransformSample Result;
+	Result.ServerTime = RenderTime;
+	Result.Position   = FVector3::Lerp(From->Position, To->Position, Alpha);
+	Result.Rotation   = FQuat::Slerp(From->Rotation, To->Rotation, Alpha).GetNormalized();
+	Result.Scale      = FVector3::Lerp(From->Scale, To->Scale, Alpha);
+	return Result;
+}
+
+const std::deque<FReplicationClient::FTransformSample>* FReplicationClient::FindTransformSamples(FEntity Entity) const
+{
+	const FNetIdComponent* NetId = Scene != nullptr && Scene->GetRegistry().IsValid(Entity) ? Scene->GetRegistry().TryGet<FNetIdComponent>(Entity) : nullptr;
+	if (NetId == nullptr)
+	{
+		return nullptr;
+	}
+	const auto Found = TransformBuffers.find(NetId->NetId);
+	return Found != TransformBuffers.end() && !Found->second.empty() ? &Found->second : nullptr;
+}
+
+bool FReplicationClient::SampleTransform(FEntity Entity, FVector3& OutPosition, FQuat& OutRotation) const
+{
+	const std::deque<FTransformSample>* Buffer = bClockValid ? FindTransformSamples(Entity) : nullptr;
+	if (Buffer == nullptr)
+	{
+		return false;
+	}
+	const FTransformSample Sample = Interpolate(*Buffer, ServerClock - InterpolationDelay);
+	OutPosition                   = Sample.Position;
+	OutRotation                   = Sample.Rotation;
+	return true;
 }

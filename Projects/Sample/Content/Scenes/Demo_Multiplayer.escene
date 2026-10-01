@@ -1132,6 +1132,105 @@
         },
         "ReplicatedComponent": {}
       }
+    },
+    {
+      "Name": "PushCrate",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -180.0,
+            -200.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0.0,
+          "Density": 120.0,
+          "Friction": 0.6,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "PushBall",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -180.0,
+            200.0,
+            25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50.0,
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 2.0,
+          "Friction": 0.6,
+          "Restitution": 0.5,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ReplicatedComponent": {}
+      }
     }
   ]
 }

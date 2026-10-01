@@ -1,6 +1,7 @@
 #include "World/GameWorld.h"
 
 #include "Core/Log.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Serialization/BinaryArchive.h"
 #include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
@@ -24,6 +25,8 @@
 //     같은 무브 → 같은 결과라 보통 차이가 없고, 서버만 아는 일(서버가 시뮬레이션하는 공/상자와 부딪힘, 다른 캐릭터, 순간이동)이 있었을 때만 위치가 바뀐다.
 //     바뀐 만큼은 화면 오프셋(VisualOffset)으로 옮겨 CorrectionSmoothingSeconds에 걸쳐 0으로 줄인다 (시뮬레이션은 즉시 서버를 따른다).
 //     SnapCorrectionDistance보다 크면(순간이동) 바로 옮긴다.
+//   예측 옵션 (UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측): 끄면 소유 클라이언트는
+//     무브를 보내기만 하고 미리 움직이지 않으며, 자기 캐릭터도 스냅샷 보간으로 보여 준다 (IsPredicted = false). 서버 쪽은 같다.
 //   메시지 (비신뢰):
 //     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 점프]...
 //     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥
@@ -55,10 +58,17 @@ namespace
 	}
 } // namespace
 
+bool FGameWorld::UsesClientPrediction(FEntity Entity) const
+{
+	const FCharacterMovementComponent* Movement = Scene != nullptr ? Scene->GetRegistry().TryGet<FCharacterMovementComponent>(Entity) : nullptr;
+	return Movement != nullptr && Movement->bClientPrediction && FProjectSettings::Get().Network.bClientPrediction;
+}
+
 bool FGameWorld::IsPredicted(FEntity Entity) const
 {
 	return Mode == ENetMode::Client && Scene != nullptr && Scene->GetRegistry().IsValid(Entity) &&
-	       Scene->GetRegistry().Has<FCharacterMovementComponent>(Entity) && GetOwner(Entity) >= 0 && IsLocallyControlled(Entity);
+	       Scene->GetRegistry().Has<FCharacterMovementComponent>(Entity) && GetOwner(Entity) >= 0 && IsLocallyControlled(Entity) &&
+	       UsesClientPrediction(Entity);
 }
 
 void FGameWorld::TickCharacters(float DeltaSeconds)
@@ -83,6 +93,18 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 			{
 				FPredictedCharacter& Predicted = PredictedCharacters[Entity];
 				Move.Sequence                  = ++Predicted.NextSequence;
+				if (!UsesClientPrediction(Entity))
+				{
+					// 예측 끔: 보내기만 하고 화면은 서버 결과(스냅샷 보간)를 따른다
+					Predicted.Moves.push_back(Move);
+					while (Predicted.Moves.size() > MaxPredictedMoves)
+					{
+						Predicted.Moves.pop_front();
+					}
+					SendCharacterMoves(Entity);
+					Physics->FollowTransform(*Scene, Entity);
+					continue;
+				}
 				// 보정 오프셋을 시간에 따라 줄인다 (이번 프레임 트랜스폼에 반영)
 				Predicted.VisualOffset = Predicted.VisualOffset * std::exp(-DeltaSeconds / CorrectionSmoothingSeconds);
 				if (Predicted.VisualOffset.LengthSquared() < 0.01f)
@@ -258,6 +280,10 @@ void FGameWorld::ReceiveCharacterAck(const std::vector<uint8>& Message)
 	while (!Predicted.Moves.empty() && Predicted.Moves.front().Sequence <= Sequence)
 	{
 		Predicted.Moves.pop_front();
+	}
+	if (!UsesClientPrediction(Entity))
+	{
+		return; // 예측 끔: 위치는 스냅샷 보간이 맡는다
 	}
 
 	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교

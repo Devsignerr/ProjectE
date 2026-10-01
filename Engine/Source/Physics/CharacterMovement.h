@@ -20,6 +20,8 @@ struct FCharacterMovementComponent
 	float Mass              = 80.0f;   // kg (밀기/밀리기)
 	float PushForce         = 4000.0f; // N, 부딪힌 동적 물체를 미는 최대 힘
 	bool  bFaceControlYaw   = true;    // 몸이 시점 방향(yaw)을 본다. 끄면 이동 방향을 본다
+	bool  bClientPrediction = true;    // 멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직인다 (프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야).
+	                                   // 끄면 무브를 보내기만 하고 서버 결과를 보간해 보여 준다 (반응은 늦지만 보정이 없다)
 };
 
 // 무브 하나 = 한 프레임 입력 (네트워크로 보내고 다시 적용하는 단위). 같은 무브 → 같은 결과

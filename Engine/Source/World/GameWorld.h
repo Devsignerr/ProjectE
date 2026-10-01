@@ -118,6 +118,8 @@ public:
 
 	// 소유 클라이언트가 예측하는 캐릭터인가 (복제 클라이언트는 이 엔티티의 스냅샷 트랜스폼을 쓰지 않는다)
 	bool   IsPredicted(FEntity Entity) const;
+	// 예측 옵션: 캐릭터 이동 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
+	bool   UsesClientPrediction(FEntity Entity) const;
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;

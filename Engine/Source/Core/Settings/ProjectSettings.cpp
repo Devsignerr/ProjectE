@@ -51,7 +51,9 @@ FProjectSettings::FProjectSettings()
 	Registry.Register(Network, { "Network", "네트워크", GEngineCategory, "다음 세션부터 적용. 명령줄 --port가 우선" })
 		.Property(&FNetworkSettings::DefaultPort, "DefaultPort", "기본 포트").Range(1024.0f, 65535.0f)
 		.Property(&FNetworkSettings::LanDiscoveryPort, "LanDiscoveryPort", "LAN 검색 포트").Range(1024.0f, 65535.0f).Tooltip("UDP. 같은 LAN의 방 목록 찾기")
-		.Property(&FNetworkSettings::MaxPlayers, "MaxPlayers", "최대 인원").Range(1.0f, 64.0f).Tooltip("서버의 원격 플레이어 최대 수 (리슨 서버 호스트 제외)");
+		.Property(&FNetworkSettings::MaxPlayers, "MaxPlayers", "최대 인원").Range(1.0f, 64.0f).Tooltip("서버의 원격 플레이어 최대 수 (리슨 서버 호스트 제외)")
+		.Property(&FNetworkSettings::bClientPrediction, "ClientPrediction", "클라이언트 예측")
+		.Tooltip("캐릭터를 소유 클라이언트가 입력 즉시 미리 움직인다. 끄면 모든 캐릭터가 서버 결과를 보간해 보여 준다 (캐릭터 이동 컴포넌트의 클라이언트 예측도 켜져 있어야 예측한다)");
 
 	Registry.Register(Display, { "Display", "화면 기본값", GEngineCategory, "게임의 처음 화면 설정. 플레이어가 바꾼 값(<Saved>/Config/GameUserSettings.json)이 우선" })
 		.Property(&FGameUserSettings::WindowMode, "WindowMode", "창 모드").Enum({ { "Windowed", "창 모드" }, { "BorderlessFullscreen", "테두리 없는 전체 화면" } })

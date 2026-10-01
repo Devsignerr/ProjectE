@@ -61,6 +61,7 @@ struct FNetworkSettings
 	uint32 DefaultPort      = 7777;
 	uint32 LanDiscoveryPort = 7778;
 	uint32 MaxPlayers       = 16; // 서버의 원격 플레이어 최대 수
+	bool   bClientPrediction = true; // 캐릭터 클라이언트 예측 (끄면 캐릭터별 설정과 무관하게 모두 끈다 — 비교/디버깅)
 };
 
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.

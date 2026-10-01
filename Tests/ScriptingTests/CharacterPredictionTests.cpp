@@ -1,3 +1,4 @@
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Testing/TestFramework.h"
 #include "Network/LoopbackTransport.h"
 #include "Network/NetDriver.h"
@@ -118,6 +119,26 @@ E_TEST(CharacterPrediction_ImmediateMatchAndCorrection)
 	E_EXPECT_NEAR(Client->Scene.GetTransform(Client->Pawn).Position.Y, Server->Scene.GetTransform(Server->Pawn).Position.Y, 1.0f);
 	E_EXPECT_NEAR(Client->Scene.GetTransform(Client->Pawn).Position.Y, 300.0f, 2.0f);
 	E_EXPECT_TRUE(Client->World.GetCharacterCorrectionCount() >= 1u);
+
+	// 4) 예측 끔 (캐릭터 컴포넌트): 클라이언트는 미리 움직이지 않고 보내기만, 서버는 그대로 움직인다
+	Client->Scene.GetRegistry().Get<FCharacterMovementComponent>(Client->Pawn).bClientPrediction = false;
+	E_EXPECT_FALSE(Client->World.IsPredicted(Client->Pawn));
+	const float    ClientBefore = Client->Scene.GetTransform(Client->Pawn).Position.X;
+	const float    ServerBefore = Server->Scene.GetTransform(Server->Pawn).Position.X;
+	const uint32   Corrections  = Client->World.GetCharacterCorrectionCount();
+	Client->Physics.AddMovementInput(Client->Pawn, FVector3(1.0f, 0.0f, 0.0f));
+	Client->World.TickGameplay(Step, &ClientInput);
+	E_EXPECT_NEAR(Client->Scene.GetTransform(Client->Pawn).Position.X, ClientBefore, 0.01f); // 즉시 움직이지 않는다
+	Pump(30, FVector3(1.0f, 0.0f, 0.0f));
+	E_EXPECT_TRUE(Server->Scene.GetTransform(Server->Pawn).Position.X - ServerBefore > 200.0f); // 서버는 무브로 움직였다
+	E_EXPECT_EQ(Client->World.GetCharacterCorrectionCount(), Corrections);                      // 재조정 없음
+
+	// 프로젝트 설정으로 끄면 컴포넌트가 켜져 있어도 끔
+	Client->Scene.GetRegistry().Get<FCharacterMovementComponent>(Client->Pawn).bClientPrediction = true;
+	E_EXPECT_TRUE(Client->World.IsPredicted(Client->Pawn));
+	FProjectSettings::Get().Network.bClientPrediction = false;
+	E_EXPECT_FALSE(Client->World.IsPredicted(Client->Pawn));
+	FProjectSettings::Get().Network.bClientPrediction = true;
 
 	Client->World.EndPlay();
 	Server->World.EndPlay();

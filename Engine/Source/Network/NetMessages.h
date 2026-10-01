@@ -8,7 +8,7 @@
 
 // 네트워크 메시지 형식: [uint8 종류][본문]. 본문은 FBinaryWriter 리틀 엔디언.
 // 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다
-inline constexpr uint32 NetProtocolVersion = 7; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측)
+inline constexpr uint32 NetProtocolVersion = 8; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값
 
 enum class ENetMessageType : uint8
 {

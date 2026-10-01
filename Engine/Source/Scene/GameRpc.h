@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+class FInput;
+
 // 네트워크 RPC — Lua(entity:CallServer 등)와 게임 모듈 C++(IGameNet::CallRpc)이 같은 경로를 쓴다.
 // 받는 쪽: 대상 엔티티 스크립트의 Server_/Client_/Multicast_<이름> 메서드 + 게임 모듈 IGameModule::OnRpc(서버에서만)
 enum class EGameRpcKind : uint8
@@ -63,4 +65,7 @@ public:
 	virtual int32 GetOwner(FEntity Entity) const  = 0; // 가장 가까운 복제 조상의 소유 플레이어, 없으면 -1
 	// Name은 접두사 없는 이름 ("Fire" → Server_Fire). 잘못된 호출(클라이언트에서 Client/Multicast)은 경고 후 무시
 	virtual void CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) = 0;
+	// 이 엔티티를 조종하는 플레이어의 입력 (키 + 입력 액션 — GetActionValue("Move"), WasActionPressed("Jump") 등. Lua Input과 같은 규칙:
+	// 서버는 소유 플레이어가 보낸 입력, 서버 소유/호스트 소유는 로컬 입력, 없으면 nullptr). OnUpdate 등 게임플레이 틱 안에서만 유효
+	virtual const FInput* GetInput(FEntity Entity) const = 0;
 };

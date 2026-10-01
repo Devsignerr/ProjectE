@@ -31,6 +31,7 @@ private:
 	// 섹션 속성 표 (Filter가 있으면 표시 이름에 들어간 것만). 반환: 그린 속성 수
 	int  DrawSectionProperties(FEditorContext& Context, FSettingsSection& Section, const std::string& Filter);
 	void SavePendingSections();
+	bool DrawCustomSection(FSettingsSection& Section); // 사용자 정의 JSON 섹션 (반환: 바뀜)
 
 	EKind                 Kind;
 	std::string           SelectedId;

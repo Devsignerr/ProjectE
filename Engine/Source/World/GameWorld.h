@@ -62,7 +62,8 @@ enum class EWorldRole : uint8
 //                                  (Client 역할: 게임 모듈·AI 없음 — 서버가 돌리고 복제로 받는다)
 //   스크립트 ExecutionLocation 필터: Standalone/리슨 = 전부, 전용 서버 = ServerOnly/Both, 클라이언트 = ClientOnly/Both
 //   입력: 클라이언트는 게임플레이 틱마다 로컬 입력 상태를 서버로 보낸다(비신뢰). 서버 스크립트의 Lua Input은
-//         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음)
+//         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음).
+//         입력 액션 값(Input.GetAction)도 함께 보낸다 — 클라이언트가 자기 바인딩으로 계산한 값. 게임 모듈은 IGameNet::GetInput
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
 // 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트(Lua 상태) → AI (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순.
 //   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
@@ -123,6 +124,7 @@ public:
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
+	const FInput* GetInput(FEntity Entity) const override { return ResolveInput(Entity, TickLocalInput); }
 
 private:
 	// 잘못된 호출(클라이언트에서 Client/Multicast 등)은 std::runtime_error (Lua에서는 스크립트 오류가 된다)
@@ -141,7 +143,9 @@ private:
 		FInput   Input;
 		FVector2 ControlRotation; // yaw, pitch (도)
 		uint32   LastSequence = 0;
+		bool     bWarnedActionLayout = false; // 액션 목록 불일치 경고는 한 번만
 	};
+	const FInput* TickLocalInput = nullptr; // TickGameplay 동안만: 앱이 넘긴 로컬 입력 (게임 모듈 GetInput)
 	FVector2 LocalControlRotation; // 로컬 플레이어 (Lua Net.SetControlRotation) — 클라이언트는 입력과 함께 보낸다
 
 	struct FPredictedCharacter // 클라이언트: 서버가 아직 확인하지 않은 내 무브

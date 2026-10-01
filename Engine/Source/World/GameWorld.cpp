@@ -266,6 +266,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		return;
 	}
+	TickLocalInput = Input;
 	if (Mode == ENetMode::Client && Input != nullptr)
 	{
 		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다
@@ -298,6 +299,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만
 	}
+	TickLocalInput = nullptr;
 }
 
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)

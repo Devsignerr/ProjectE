@@ -1,9 +1,11 @@
 #include "Editor/Panels/SettingsWindow.h"
 
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Settings/SettingsRegistry.h"
 #include "Core/StringConv.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
+#include "Editor/Panels/InputSettingsEditor.h"
 #include "Editor/PropertyWidgets.h"
 
 #include <imgui.h>
@@ -143,6 +145,14 @@ void FSettingsWindow::Draw(FEditorContext& Context)
 		ImGui::SetItemTooltip("이 섹션의 모든 값을 엔진 기본값으로 되돌리고 저장합니다");
 		ImGui::Separator();
 		DrawSectionProperties(Context, *Selected, std::string());
+		if (Selected->IsCustom() && DrawCustomSection(*Selected))
+		{
+			if (Selected->OnChanged)
+			{
+				Selected->OnChanged();
+			}
+			PendingSave.insert(Selected->Id);
+		}
 	}
 	ImGui::EndChild();
 	ImGui::End();
@@ -254,6 +264,16 @@ int FSettingsWindow::DrawSectionProperties(FEditorContext& Context, FSettingsSec
 	}
 	ImGui::PopID();
 	return static_cast<int>(Properties.size());
+}
+
+bool FSettingsWindow::DrawCustomSection(FSettingsSection& Section)
+{
+	// 리플렉션으로 그릴 수 없는 섹션의 전용 UI (Id별)
+	if (Section.Id == "Input")
+	{
+		return FInputSettingsEditor::Draw(FProjectSettings::Get().Input);
+	}
+	return false;
 }
 
 void FSettingsWindow::SavePendingSections()

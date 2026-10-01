@@ -1,3 +1,4 @@
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Testing/TestFramework.h"
 #include "Network/LoopbackTransport.h"
 #include "Network/NetDriver.h"
@@ -186,9 +187,12 @@ E_TEST(NetInput_ServerScriptsSeeOwnersInput)
 	{
 		std::ofstream File(Content / L"Scripts/Reader.lua", std::ios::binary | std::ios::trunc);
 		File << R"(
-local T = { Properties = { W = 0, Pressed = 0, Joined = -1, Left = -1, Yaw = 0, Pitch = 0 } }
+local T = { Properties = { W = 0, Pressed = 0, Joined = -1, Left = -1, Yaw = 0, Pitch = 0, MoveY = 0, Jumps = 0 } }
 function T:OnUpdate(dt)
 	self.Properties.W = Input.IsKeyDown("W") and 1 or 0
+	local _, MoveY = Input.GetAction("Move")
+	self.Properties.MoveY = MoveY
+	if Input.WasActionPressed("Jump") then self.Properties.Jumps = self.Properties.Jumps + 1 end
 	self.Properties.Yaw, self.Properties.Pitch = self.entity:GetControlRotation()
 	if Input.IsKeyPressed("W") then self.Properties.Pressed = self.Properties.Pressed + 1 end
 end
@@ -231,6 +235,13 @@ return T
 	FNetDriver    ClientNet;
 	FGameWorld    ClientWorld;
 	FInput        ClientInput;
+	// 클라이언트 쪽 바인딩만 다르게 (플레이어 재지정처럼 Jump = K): 서버는 클라이언트가 계산한 액션 값을 받는다
+	FInputMapping ClientMapping = FProjectSettings::Get().Input.GetEffectiveMapping();
+	E_EXPECT_TRUE(ClientMapping.Find("Jump") != nullptr && ClientMapping.Find("Move") != nullptr);
+	if (FInputAction* Jump = ClientMapping.Find("Jump"))
+	{
+		Jump->Bindings = { { FInputSource::Key(EKey::K), {} } };
+	}
 	BuildInputLevel(ClientScene);
 	ClientWorld.Init({ &ClientScripts, nullptr, nullptr, nullptr, Content, &ClientNet });
 	ClientWorld.BeginPlay(ClientScene, ENetMode::Client);
@@ -240,6 +251,7 @@ return T
 		for (int32 Round = 0; Round < Rounds; ++Round)
 		{
 			constexpr float Step = 1.0f / 60.0f;
+			ClientInput.UpdateActions(ClientMapping, Step);
 			ClientWorld.TickGameplay(Step, &ClientInput); // 입력 전송
 			ClientInput.EndFrame();
 			ClientNet.Update(Step);
@@ -259,6 +271,17 @@ return T
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "W").Number, 1.0, 1.0e-9);  // 소유 플레이어 입력
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "W").Number, 0.0, 1.0e-9); // 서버 소유: 전용 서버엔 입력 없음
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Pressed").Number, 1.0, 1.0e-9); // 눌림은 한 번만
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "MoveY").Number, 1.0, 1.0e-6);    // 입력 액션 (W → Move 앞)
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "MoveY").Number, 0.0, 1.0e-9);
+
+	// 서버 매핑에서는 Space가 점프지만 클라이언트 바인딩(K)으로 계산한 값이 온다
+	Keys[static_cast<size_t>(EKey::K)] = true;
+	ClientInput.SetState(Keys, {}, 0, 0, 0.0f);
+	Pump(3);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Jumps").Number, 1.0, 1.0e-9);
+	Keys[static_cast<size_t>(EKey::K)] = false;
+	ClientInput.SetState(Keys, {}, 0, 0, 0.0f);
+	Pump(2);
 
 	// 시점 방향: 클라이언트가 Net.SetControlRotation → 입력과 함께 서버로 → 소유 폰의 entity:GetControlRotation
 	E_EXPECT_TRUE(ClientScripts.RunString("Net.SetControlRotation(135.5, -20)"));
@@ -301,6 +324,12 @@ namespace
 			GetNet()->CallRpc(Pawn, EGameRpcKind::Multicast, "Boom", { FGameRpcValue::MakeString("C++") });
 		}
 		void OnPlayerLeft(FScene&, uint32 PlayerId) override { LeftPlayer = static_cast<int32>(PlayerId); }
+		FVector2 SeenMove; // GetNet()->GetInput(폰)의 입력 액션
+		void OnUpdate(FScene&, float) override
+		{
+			const FInput* Input = GetNet() != nullptr && JoinedPawn.IsValid() ? GetNet()->GetInput(JoinedPawn) : nullptr;
+			SeenMove            = Input != nullptr ? Input->GetActionValue("Move") : FVector2::ZeroVector;
+		}
 		void OnRpc(FScene&, FEntity, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override
 		{
 			LastRpc       = GetRpcMethodPrefix(Kind) + Name;
@@ -340,6 +369,18 @@ E_TEST(NetRpc_GameModuleReceivesEventsAndSendsRpc)
 	E_EXPECT_NEAR(Scripts.GetInstanceProperty(Pawn, "Fired").Number, 9.0, 1.0e-9);
 	E_EXPECT_TRUE(Module.LastRpc == "Multicast_Boom" || Module.LastRpc == "Server_Fire"); // Server_Fire 안에서 Multicast를 또 부른다
 	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Pawn, "Boomed").String == "펑1.0");
+
+	// C++ 입력 액션: 소유 플레이어(Standalone 로컬 0)의 입력 = 앱이 넘긴 로컬 입력
+	FInput       Input;
+	FWindowEvent KeyDown;
+	KeyDown.Type = EWindowEventType::KeyDown;
+	KeyDown.Key  = EKey::D;
+	Input.ProcessEvent(KeyDown);
+	Input.UpdateActions(FProjectSettings::Get().Input.GetEffectiveMapping(), 1.0f / 60.0f);
+	World.TickGameplay(1.0f / 60.0f, &Input);
+	E_EXPECT_EQUALS(Module.SeenMove, FVector2(1.0f, 0.0f), 1.0e-6f);
+	World.TickGameplay(1.0f / 60.0f, nullptr); // 입력 없음 (UI가 가져감 등)
+	E_EXPECT_EQUALS(Module.SeenMove, FVector2::ZeroVector, 1.0e-6f);
 
 	World.OnPlayerLeft(0);
 	E_EXPECT_EQ(Module.LeftPlayer, 0);

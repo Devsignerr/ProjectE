@@ -4,6 +4,7 @@
 #include "Core/Assert.h"
 #include "Core/Paths.h"
 #include "Core/Serialization/BinaryArchive.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
 #include "Network/ReplicationTypes.h"
@@ -20,8 +21,11 @@
 //   [uint8 태그(0 nil, 1 bool, 2 숫자, 3 문자열, 4 Vector3, 5 에셋, 6 엔티티), 값...]...
 //   숫자 = double + uint8 정수 여부, 에셋 = 경로 + 확장자, 엔티티 = NetId (복제되지 않았으면 0 → 받는 쪽 무효 엔티티)
 // 입력 커맨드 (ENetMessageType::PlayerInput, 비신뢰, 클라이언트 → 서버):
-//   uint32 순번, 키 비트(EKey::Count비트를 바이트로), 마우스 버튼 비트(1바이트), int32 마우스 X, int32 마우스 Y, float 휠
-//   상태 전체를 보내므로 손실돼도 다음 커맨드로 복구된다 (순번이 오래된 것은 버린다)
+//   uint32 순번, 키 비트(EKey::Count비트를 바이트로), 마우스 버튼 비트(1바이트), int32 마우스 X, int32 마우스 Y, float 휠,
+//   float yaw, float pitch (시점), uint32 액션 배치 해시(FInputMapping::GetLayoutHash), uint8 액션 수, [uint8 작동, float X, float Y]...
+//   상태 전체를 보내므로 손실돼도 다음 커맨드로 복구된다 (순번이 오래된 것은 버린다).
+//   액션 값은 클라이언트가 자기 바인딩(플레이어 재지정 포함)으로 계산한 것 — 서버는 다시 계산하지 않고 원격 FInput에 넣는다.
+//   배치 해시가 서버의 매핑과 다르면(프로젝트 입력 설정 불일치) 액션 값만 버린다 (키 상태는 그대로)
 namespace
 {
 	FEntity FindByNetId(FScene& Scene, uint32 NetId)
@@ -377,6 +381,16 @@ void FGameWorld::SendLocalInput(const FInput& Input)
 	Writer.Write(Input.GetMouseWheelDelta());
 	Writer.Write(LocalControlRotation.X); // 시점 방향 (yaw, pitch)
 	Writer.Write(LocalControlRotation.Y);
+	const std::vector<FInputActionState>& Actions = Input.GetActions();
+	const size_t                          Count   = std::min<size_t>(Actions.size(), 255);
+	Writer.Write(FProjectSettings::Get().Input.GetEffectiveMapping().GetLayoutHash());
+	Writer.Write(static_cast<uint8>(Count));
+	for (size_t Index = 0; Index < Count; ++Index)
+	{
+		Writer.Write(static_cast<uint8>(Actions[Index].bActive ? 1 : 0));
+		Writer.Write(Actions[Index].Value.X);
+		Writer.Write(Actions[Index].Value.Y);
+	}
 	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
 }
 
@@ -410,13 +424,36 @@ void FGameWorld::ReceivePlayerInput(FNetConnectionId Connection, const std::vect
 	const float               Wheel  = Reader.Read<float>();
 	const float               Yaw    = Reader.Read<float>();
 	const float               Pitch  = Reader.Read<float>();
-	FRemoteInput&             Remote = RemoteInputs[Sender->PlayerId];
+	const uint32              LayoutHash  = Reader.Read<uint32>();
+	const uint8               ActionCount = Reader.Read<uint8>();
+	std::vector<FInputActionState> Actions(Reader.IsOk() ? ActionCount : 0);
+	for (FInputActionState& Action : Actions)
+	{
+		Action.bActive = Reader.Read<uint8>() != 0;
+		Action.Value.X = Reader.Read<float>();
+		Action.Value.Y = Reader.Read<float>();
+		if (!std::isfinite(Action.Value.X) || !std::isfinite(Action.Value.Y))
+		{
+			Action.Value = FVector2::ZeroVector;
+		}
+	}
+	FRemoteInput& Remote = RemoteInputs[Sender->PlayerId];
 	if (!Reader.IsOk() || !Reader.IsAtEnd() || Sequence <= Remote.LastSequence)
 	{
 		return; // 잘렸거나 늦게 도착한(재정렬) 커맨드
 	}
 	Remote.LastSequence    = Sequence;
 	Remote.Input.SetState(Keys, Buttons, MouseX, MouseY, Wheel);
+	const FInputMapping& Mapping = FProjectSettings::Get().Input.GetEffectiveMapping();
+	if (LayoutHash == Mapping.GetLayoutHash() && Actions.size() == Mapping.Actions.size())
+	{
+		Remote.Input.SetActionValues(Mapping, Actions);
+	}
+	else if (!Remote.bWarnedActionLayout)
+	{
+		Remote.bWarnedActionLayout = true;
+		E_LOG(LogNet, Warning, "플레이어 {}의 입력 액션 목록이 서버와 달라 액션 값을 무시합니다 (프로젝트 입력 설정 확인)", Sender->PlayerId);
+	}
 	Remote.ControlRotation = std::isfinite(Yaw) && std::isfinite(Pitch) ? FVector2(Yaw, Pitch) : FVector2();
 }
 

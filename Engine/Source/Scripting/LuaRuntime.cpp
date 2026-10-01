@@ -4,6 +4,7 @@
 #include "Core/Input.h"
 #include "Core/Log.h"
 #include "Core/Reflection/TypeInfo.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/Components.h"
@@ -22,39 +23,25 @@ E_DEFINE_LOG_CATEGORY(LogScript, Log)
 
 namespace
 {
-	// EKey 순서와 1:1 (Lua: Input.IsKeyDown("W"), "Space", "LeftShift", "F1", "0" ...)
-	constexpr std::array<const char*, static_cast<size_t>(EKey::Count)> GKeyNames = {
-		"None",
-		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-		"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-		"F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
-		"Escape", "Tab", "CapsLock", "Space", "Enter", "Backspace",
-		"LeftShift", "RightShift", "LeftControl", "RightControl", "LeftAlt", "RightAlt",
-		"Insert", "Delete", "Home", "End", "PageUp", "PageDown",
-		"Left", "Right", "Up", "Down",
-		"Numpad0", "Numpad1", "Numpad2", "Numpad3", "Numpad4", "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9",
-		"NumpadAdd", "NumpadSubtract", "NumpadMultiply", "NumpadDivide", "NumpadDecimal", "NumpadEnter",
-		"Minus", "Equals", "LeftBracket", "RightBracket", "Backslash",
-		"Semicolon", "Apostrophe", "Comma", "Period", "Slash", "Grave",
-	};
-
+	// 키 이름은 InputNames와 같다 (Lua: Input.IsKeyDown("W"), "Space", "LeftShift", "F1", "0" ...)
 	EKey ParseKey(std::string_view Name)
 	{
-		static const std::unordered_map<std::string_view, EKey> Map = [] {
-			std::unordered_map<std::string_view, EKey> Result;
-			for (size_t Index = 1; Index < GKeyNames.size(); ++Index)
-			{
-				Result.emplace(GKeyNames[Index], static_cast<EKey>(Index));
-			}
-			return Result;
-		}();
-		const auto Found = Map.find(Name);
-		if (Found == Map.end())
+		EKey Key = EKey::None;
+		if (!InputNames::TryParseKey(Name, Key))
 		{
 			throw std::runtime_error(std::format("알 수 없는 키 이름: '{}'", Name));
 		}
-		return Found->second;
+		return Key;
+	}
+
+	FInputSource ParseInputSource(std::string_view Name)
+	{
+		FInputSource Source;
+		if (!InputNames::TryParseSource(Name, Source))
+		{
+			throw std::runtime_error(std::format("알 수 없는 입력 이름: '{}' (키 \"W\", 마우스 \"MouseLeft\", 게임패드 \"Gamepad_A\" 등)", Name));
+		}
+		return Source;
 	}
 
 	EMouseButton ParseMouseButton(std::string_view Name)
@@ -706,6 +693,85 @@ void FLuaRuntime::RegisterGlobals()
 	// 원시 마우스 이동량 (시점 회전용 — 화면 가장자리/커서 잠금과 무관). 서버의 원격 입력에는 없다(0): 시점은 Net.SetControlRotation으로 보낸다
 	InputTable["GetLookDelta"] = [this]() {
 		return Input ? std::make_tuple(Input->GetLookDeltaX(), Input->GetLookDeltaY()) : std::make_tuple(0.0f, 0.0f);
+	};
+
+	// ---- 입력 액션 (프로젝트 설정 "입력" + 플레이어 재지정). 서버에서는 소유 플레이어가 보낸 액션 값
+	//   Input.GetAction("Move") → 2D는 x, y / 1D는 숫자 / 버튼은 bool. 입력이 없으면 0/false, 모르는 액션은 오류
+	//   Input.IsActionPressed(이름) = 누르고 있음(작동 중), WasActionPressed/WasActionReleased = 이번 프레임에 시작/끝
+	const auto ResolveAction = [this](const std::string& Name) {
+		if (Input != nullptr)
+		{
+			if (const FInputActionState* State = Input->FindAction(Name))
+			{
+				return *State;
+			}
+		}
+		const FInputAction* Action = FProjectSettings::Get().Input.GetEffectiveMapping().Find(Name);
+		if (Action == nullptr)
+		{
+			throw std::runtime_error(std::format("알 수 없는 입력 액션: '{}' (프로젝트 설정 → 입력)", Name));
+		}
+		FInputActionState Empty;
+		Empty.Name = Action->Name;
+		Empty.Type = Action->Type;
+		return Empty;
+	};
+	InputTable["GetAction"] = [ResolveAction](const std::string& Name, sol::this_state State) {
+		const FInputActionState Action = ResolveAction(Name);
+		sol::variadic_results   Results;
+		switch (Action.Type)
+		{
+		case EInputActionType::Button:
+			Results.push_back(sol::make_object(State, Action.bActive));
+			break;
+		case EInputActionType::Axis1D:
+			Results.push_back(sol::make_object(State, Action.Value.X));
+			break;
+		case EInputActionType::Axis2D:
+			Results.push_back(sol::make_object(State, Action.Value.X));
+			Results.push_back(sol::make_object(State, Action.Value.Y));
+			break;
+		}
+		return Results;
+	};
+	InputTable["IsActionPressed"]   = [ResolveAction](const std::string& Name) { return ResolveAction(Name).bActive; };
+	InputTable["WasActionPressed"]  = [ResolveAction](const std::string& Name) {
+		const FInputActionState Action = ResolveAction(Name);
+		return Action.bActive && !Action.bWasActive;
+	};
+	InputTable["WasActionReleased"] = [ResolveAction](const std::string& Name) {
+		const FInputActionState Action = ResolveAction(Name);
+		return !Action.bActive && Action.bWasActive;
+	};
+	// 재지정 (플레이어 설정, <Saved>/Config/InputBindings.json에 저장 — 자동 검증 실행은 저장 안 함)
+	//   Input.Rebind("Jump", "Space", "K") → bool (이전 입력이 nil/""이면 새 바인딩 추가), Input.ResetBindings(["Jump"]),
+	//   Input.GetBindings("Jump") → { "Space", "Gamepad_A" }
+	InputTable["Rebind"] = [](const std::string& Action, sol::optional<std::string> OldSource, const std::string& NewSource) {
+		const FInputSource Old = OldSource && !OldSource->empty() ? ParseInputSource(*OldSource) : FInputSource();
+		return FProjectSettings::Get().Input.Rebind(Action, Old, ParseInputSource(NewSource));
+	};
+	InputTable["ResetBindings"] = [](sol::optional<std::string> Action) { FProjectSettings::Get().Input.ResetUserBindings(Action ? *Action : std::string()); };
+	InputTable["GetBindings"]   = [this](const std::string& Name) {
+		const FInputAction* Action = FProjectSettings::Get().Input.GetEffectiveMapping().Find(Name);
+		if (Action == nullptr)
+		{
+			throw std::runtime_error(std::format("알 수 없는 입력 액션: '{}'", Name));
+		}
+		sol::table Result = Lua.create_table();
+		for (size_t Index = 0; Index < Action->Bindings.size(); ++Index)
+		{
+			Result[Index + 1] = InputNames::ToString(Action->Bindings[Index].Source);
+		}
+		return Result;
+	};
+	InputTable["IsGamepadConnected"]  = [this]() { return Input && Input->IsGamepadConnected(); };
+	InputTable["IsGamepadButtonDown"] = [this](const std::string& Button) {
+		EGamepadButton Code;
+		if (!InputNames::TryParseGamepadButton(Button, Code))
+		{
+			throw std::runtime_error(std::format("알 수 없는 게임패드 버튼: '{}' (A/B/X/Y/LeftShoulder/...)", Button));
+		}
+		return Input && Input->IsGamepadButtonDown(Code);
 	};
 
 	// ---- Time (Update마다 갱신)

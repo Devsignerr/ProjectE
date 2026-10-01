@@ -72,6 +72,12 @@ namespace
 		}
 	}
 
+	// float를 JSON에 쓸 때 0.1f → 0.10000000149011612처럼 길어지지 않게 (소수 6자리 반올림한 double)
+	double RoundForJson(float Value)
+	{
+		return std::round(static_cast<double>(Value) * 1.0e6) / 1.0e6;
+	}
+
 	nlohmann::ordered_json ModifierToJson(const FInputModifier& Modifier)
 	{
 		nlohmann::ordered_json Json;
@@ -83,13 +89,13 @@ namespace
 			Json["Y"] = Modifier.bY;
 			break;
 		case EInputModifierType::DeadZone:
-			Json["Lower"]  = Modifier.Lower;
-			Json["Upper"]  = Modifier.Upper;
+			Json["Lower"]  = RoundForJson(Modifier.Lower);
+			Json["Upper"]  = RoundForJson(Modifier.Upper);
 			Json["Radial"] = Modifier.bRadial;
 			break;
 		case EInputModifierType::Scale:
-			Json["X"] = Modifier.Scale.X;
-			Json["Y"] = Modifier.Scale.Y;
+			Json["X"] = RoundForJson(Modifier.Scale.X);
+			Json["Y"] = RoundForJson(Modifier.Scale.Y);
 			break;
 		default:
 			break;
@@ -305,7 +311,7 @@ std::string FInputMapping::ToJson() const
 		{
 			ActionJson["Description"] = Action.Description;
 		}
-		ActionJson["ActuationThreshold"] = Action.ActuationThreshold;
+		ActionJson["ActuationThreshold"] = RoundForJson(Action.ActuationThreshold);
 		ActionJson["Bindings"]           = nlohmann::ordered_json::array();
 		for (const FInputBinding& Binding : Action.Bindings)
 		{

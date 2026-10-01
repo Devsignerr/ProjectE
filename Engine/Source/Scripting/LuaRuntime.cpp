@@ -142,6 +142,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterGameBindings();
 	RegisterGameplayBindings();
 	RegisterAnimationGraphBindings();
+	RegisterSequenceBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -1249,6 +1250,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생) → 게임 UI 이벤트 (이번 프레임 FUISystem::Update에서 발생)
 	DispatchAnimNotifies();
 	DispatchUIEvents();
+	DispatchSequenceEvents(); // 직전 게임플레이 틱 시퀀스 갱신에서 발생
 
 	// 4. 스크립트가 요청한 프리팹 생성 (갱신 순회·노티파이가 끝난 뒤) → 파괴
 	ApplyPendingSpawns();

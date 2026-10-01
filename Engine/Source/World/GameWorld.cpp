@@ -13,6 +13,7 @@
 #include "Scene/GameModuleHost.h"
 #include "Scene/Particles.h"
 #include "Scene/Scene.h"
+#include "Scene/SequencePlayer.h"
 #include "Scripting/ScriptSystem.h"
 
 #include <algorithm>
@@ -303,7 +304,8 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	TickSubScenes(); // 파싱이 끝난 서브 씬 붙이기 + 스트리밍 볼륨 판정 (스크립트 전 — 새 스크립트가 이번 틱에 OnStart)
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
-	TickPhysicsPrediction(DeltaSeconds);          // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
+	FSequenceSystem::Update(*Scene, DeltaSeconds); // 컷신: 스크립트 PlaySequence가 이번 틱에 반영, 쓴 트랜스폼은 이번 물리/트랜스폼 갱신에
+	TickPhysicsPrediction(DeltaSeconds);         // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
 	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{

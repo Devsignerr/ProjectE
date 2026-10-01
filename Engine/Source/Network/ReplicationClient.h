@@ -6,6 +6,7 @@
 
 #include <deque>
 #include <functional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -48,7 +49,19 @@ public:
 	// Update가 쓰는 것과 같은 보간 값 (필터와 무관). 스냅샷이 없으면 false
 	bool SampleTransform(FEntity Entity, FVector3& OutPosition, FQuat& OutRotation) const;
 
+	// 서버가 서브 씬을 불러오거나 내릴 때 (SubSceneLoad/Unload, HandleMessage 안에서 곧바로). Load는 같은 파일을 씬에 붙이고 루트를 돌려준다
+	// (실패 NullEntity) → 그 하위 복제 엔티티에 서버와 같은 구간 NetId. FGameWorld::SetReplicationClient가 연결한다. Begin/End에도 유지
+	struct FSubSceneHooks
+	{
+		std::function<FEntity(const std::string& Asset, uint32 InstanceId, const FVector3& Offset)> Load;
+		std::function<void(uint32 InstanceId)>                                                     Unload;
+	};
+	void SetSubSceneHooks(FSubSceneHooks Hooks) { SubSceneHooks = std::move(Hooks); }
+
 private:
+	void ApplySubSceneLoad(const std::vector<uint8>& Message);
+	void ApplySubSceneUnload(const std::vector<uint8>& Message);
+	FSubSceneHooks SubSceneHooks;
 	void ApplySpawn(const std::vector<uint8>& Message);
 	void ApplyDestroy(const std::vector<uint8>& Message);
 	void ApplyState(const std::vector<uint8>& Message);

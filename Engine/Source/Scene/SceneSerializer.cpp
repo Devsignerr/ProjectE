@@ -75,6 +75,57 @@ bool FSceneSerializer::SaveToFile(FScene& Scene, const std::filesystem::path& Pa
 	return true;
 }
 
+struct FSceneDocument
+{
+	nlohmann::json Entities; // 배열
+	std::string    Label;    // 로그 표시용 (파일 이름)
+};
+
+std::shared_ptr<const FSceneDocument> FSceneSerializer::ParseFile(const std::filesystem::path& Path, std::string* OutError)
+{
+	const auto Fail = [OutError](std::string Reason) -> std::shared_ptr<const FSceneDocument> {
+		if (OutError != nullptr)
+		{
+			*OutError = std::move(Reason);
+		}
+		return nullptr;
+	};
+	std::string Text;
+	if (!FFileSystem::ReadTextFile(Path, Text))
+	{
+		return Fail("씬 파일을 열 수 없습니다: " + FStringConv::ToUtf8(Path.wstring()));
+	}
+	nlohmann::json Document = nlohmann::json::parse(Text, nullptr, /*allow_exceptions*/ false, /*ignore_comments*/ true);
+	if (Document.is_discarded() || !Document.is_object())
+	{
+		return Fail("씬 JSON 파싱 실패: " + FStringConv::ToUtf8(Path.wstring()));
+	}
+	const auto EntitiesIt = Document.find("Entities");
+	if (EntitiesIt == Document.end() || !EntitiesIt->is_array())
+	{
+		return Fail("씬 JSON에 Entities 배열이 없습니다: " + FStringConv::ToUtf8(Path.wstring()));
+	}
+	auto Result      = std::make_shared<FSceneDocument>();
+	Result->Entities = std::move(*EntitiesIt);
+	Result->Label    = FStringConv::ToUtf8(Path.filename().wstring());
+	return Result;
+}
+
+std::vector<FEntity> FSceneSerializer::AppendDocument(FScene& Scene, const FSceneDocument& Document, FEntity Parent)
+{
+	const std::vector<FEntity> Entities = FEntityJson::Read(Scene, Document.Entities, Parent, Document.Label);
+	for (const FEntity Entity : Entities)
+	{
+		// 가장 바깥 인스턴스 루트만 (중첩 인스턴스는 바깥 루트 동기화가 함께 맞춘다)
+		if (Scene.GetRegistry().IsValid(Entity) && FPrefabLibrary::IsInstanceRoot(Scene, Entity) && FPrefabLibrary::FindInstanceRoot(Scene, Entity) == Entity)
+		{
+			FPrefabLibrary::Get().SyncInstance(Scene, Entity);
+		}
+	}
+	Scene.UpdateTransforms();
+	return Entities;
+}
+
 bool FSceneSerializer::LoadFromFile(FScene& OutScene, const std::filesystem::path& Path)
 {
 	std::string Text;

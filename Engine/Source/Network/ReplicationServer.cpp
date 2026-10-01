@@ -54,8 +54,66 @@ void FReplicationServer::End()
 	Scene  = nullptr;
 	Driver = nullptr;
 	Tracked.clear();
+	SubScenes.clear();
 	SendAccumulator = 0.0f;
 	ServerTime      = 0.0f;
+}
+
+namespace
+{
+	std::vector<uint8> EncodeSubSceneLoad(uint32 InstanceId, const std::string& Asset, const FVector3& Offset)
+	{
+		FBinaryWriter Writer;
+		Writer.Write(static_cast<uint8>(ENetMessageType::SubSceneLoad));
+		Writer.Write(InstanceId);
+		Writer.WriteString(Asset);
+		Writer.Write(Offset);
+		return Writer.GetBuffer();
+	}
+} // namespace
+
+void FReplicationServer::RegisterSubScene(FEntity Root, const std::string& Asset, uint32 InstanceId, const FVector3& Offset)
+{
+	if (Scene == nullptr || Driver == nullptr)
+	{
+		return;
+	}
+	// 클라이언트가 먼저 같은 파일을 붙이게 한다 (이후 이 NetId들의 상태/파괴 메시지는 신뢰 채널 순서상 뒤에 간다)
+	Driver->Broadcast(EncodeSubSceneLoad(InstanceId, Asset, Offset), ENetReliability::Reliable);
+	SubScenes.push_back({ InstanceId, Asset, Offset });
+
+	std::vector<uint32> NetIds;
+	NetReplication::AssignSubSceneNetIds(*Scene, Root, InstanceId, [&](FEntity Entity, uint32 NetId) {
+		FTracked& Entry = Tracked[NetId];
+		Entry       = FTracked{};
+		Entry.Entity = Entity;
+		Entry.Kind   = ESpawnKind::Static; // 클라이언트도 파일에서 만든다
+		if (const FTransformComponent* Transform = Scene->GetRegistry().TryGet<FTransformComponent>(Entity))
+		{
+			Entry.LastPosition = Transform->Position;
+			Entry.LastRotation = Transform->Rotation;
+			Entry.LastScale    = Transform->Scale;
+		}
+		NetIds.push_back(NetId);
+	});
+	BuildStateMessage(NetIds, false, true); // 파일 값 = 클라이언트가 가진 값 → "보낸 것"으로 기록
+}
+
+void FReplicationServer::UnregisterSubScene(uint32 InstanceId)
+{
+	const auto Found = std::find_if(SubScenes.begin(), SubScenes.end(), [InstanceId](const FSubSceneEntry& Entry) { return Entry.InstanceId == InstanceId; });
+	if (Found == SubScenes.end())
+	{
+		return;
+	}
+	SubScenes.erase(Found);
+	if (Driver != nullptr)
+	{
+		FBinaryWriter Writer;
+		Writer.Write(static_cast<uint8>(ENetMessageType::SubSceneUnload));
+		Writer.Write(InstanceId);
+		Driver->Broadcast(Writer.GetBuffer(), ENetReliability::Reliable);
+	}
 }
 
 void FReplicationServer::Tick(float DeltaSeconds)
@@ -112,6 +170,10 @@ void FReplicationServer::OnPlayerJoined(FNetConnectionId Connection)
 	if (Scene == nullptr || Driver == nullptr)
 	{
 		return;
+	}
+	for (const FSubSceneEntry& SubScene : SubScenes) // 불러온 서브 씬 먼저 (그 안 엔티티의 상태가 뒤따른다)
+	{
+		Driver->Send(Connection, EncodeSubSceneLoad(SubScene.InstanceId, SubScene.Asset, SubScene.Offset), ENetReliability::Reliable);
 	}
 	const std::vector<uint32> All = GetSortedNetIds();
 	std::vector<uint32>       Roots;

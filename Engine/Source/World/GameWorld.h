@@ -10,6 +10,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <optional>
 #include <string>
@@ -21,7 +22,9 @@ class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
 class FReplicationClient;
+class FReplicationServer;
 class FResourceManager;
+struct FSceneDocument;
 class FScene;
 class FScriptSystem;
 
@@ -98,7 +101,10 @@ public:
 	void SetNetDriver(FNetDriver* InNet) { Systems.Net = InNet; }
 	// 클라이언트: 복제 클라이언트(스냅샷 버퍼) — 물리 예측이 서버 상태를 읽는다 (World/GameWorldPhysicsPrediction.cpp).
 	// 없으면 물리 예측 없음 (복제 동적 바디는 키네마틱 보간). 앱이 클라이언트 BeginPlay 전에 연결하고, EndPlay가 비운다 (비소유)
-	void SetReplicationClient(FReplicationClient* InReplication) { Replication = InReplication; }
+	// 서브 씬 메시지 처리기도 여기서 연결한다 (서버가 불러온 서브 씬을 클라이언트가 곧바로 붙인다)
+	void SetReplicationClient(FReplicationClient* InReplication);
+	// 서버/Standalone: 복제 서버 (서브 씬 NetId·클라이언트 알림). 없으면 서브 씬은 로컬에만. 앱이 연결하고 해제한다 (EndPlay가 비우지 않음, 비소유)
+	void SetReplicationServer(FReplicationServer* InReplication) { ReplicationServer = InReplication; }
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 
@@ -122,6 +128,21 @@ public:
 	// 지금 플레이 중인 씬 (Content 기준, Lua Game.GetCurrentScene). 앱이 씬을 열 때 정한다 (Travel은 자동)
 	void               SetCurrentSceneAsset(std::string SceneAsset) { CurrentSceneAsset = std::move(SceneAsset); }
 	const std::string& GetCurrentSceneAsset() const { return CurrentSceneAsset; }
+
+	// 서브 씬 스트리밍 (World/GameWorldStreaming.cpp 머리 주석). 서버/Standalone에서만 요청 가능 (클라이언트는 서버를 따른다).
+	// Load: 파일 읽기·파싱은 백그라운드, 붙이기는 다음 게임플레이 틱 처음(메인 스레드). 이미 있거나 불러오는 중이면 true
+	// (UnloadSubScene/IsSubSceneLoaded는 IGameNet 구현과 같은 함수 — 아래). Unload: 불러온/불러오는 중이었으면 true (루트째 지연 파괴)
+	bool    RequestLoadSubScene(const std::string& Asset, const FVector3& Offset, std::string* OutError = nullptr);
+	FEntity GetSubSceneRoot(const std::string& Asset) const; // 붙기 전이면 NullEntity
+	bool    bAsyncSubSceneLoad = true; // false = 파싱도 붙이는 틱에 메인 스레드에서 (기다림 없이 결정적 — 테스트/측정)
+	struct FSubSceneStats
+	{
+		uint32 Loads = 0, Unloads = 0;
+		float  LastParseMs = 0.0f;  // 파일 읽기 + JSON 파싱 (백그라운드 스레드)
+		float  LastAttachMs = 0.0f; // 엔티티 생성 + 프리팹 동기화 + 에셋 해석 + 복제 등록 (메인 스레드 = 멈칫함)
+		float  MaxAttachMs = 0.0f;
+	};
+	const FSubSceneStats& GetSubSceneStats() const { return SubSceneStats; }
 
 	FScene*                  GetScene() const { return Scene; }
 	const FGameWorldSystems& GetSystems() const { return Systems; }
@@ -147,6 +168,9 @@ public:
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
 	const FInput* GetInput(FEntity Entity) const override { return ResolveInput(Entity, TickLocalInput); }
 	bool          OpenScene(const std::string& SceneAsset) override;
+	bool          LoadSubScene(const std::string& Asset, const FVector3& Offset) override;
+	bool          UnloadSubScene(const std::string& Asset) override;
+	bool          IsSubSceneLoaded(const std::string& Asset) const override;
 
 private:
 	// 잘못된 호출(클라이언트에서 Client/Multicast 등)은 std::runtime_error (Lua에서는 스크립트 오류가 된다)
@@ -294,4 +318,36 @@ private:
 
 	std::optional<std::string> PendingSceneRequest; // 맵 전환 (프레임 끝에 앱이 처리)
 	std::string                CurrentSceneAsset;
+
+	// 서브 씬 (World/GameWorldStreaming.cpp)
+	struct FParsedSubScene // 백그라운드 스레드 결과 (future 완료 후에만 읽는다)
+	{
+		std::shared_ptr<const FSceneDocument> Document;
+		std::string                           Error;
+		float                                 ParseMs = 0.0f;
+	};
+	struct FSubSceneInstance
+	{
+		std::string Asset;
+		uint32      InstanceId = 0;
+		FVector3    Offset;
+		FEntity     Root;              // 붙기 전 NullEntity
+		bool        bByScript = false; // 스크립트/게임 모듈 요청 (볼륨이 내리지 않는다)
+		bool        bByVolume = false;
+		std::future<FParsedSubScene> Pending; // 백그라운드 파싱 (붙이면 비운다)
+	};
+	void               TickSubScenes();      // 게임플레이 틱 처음: 파싱 끝난 것 붙이기 + 볼륨 판정 (서버/Standalone)
+	void               UpdateStreamingVolumes();
+	bool               StartSubSceneLoad(const std::string& Asset, const FVector3& Offset, bool bByScript, std::string* OutError);
+	FEntity            AttachSubScene(FSubSceneInstance& Instance, const FSceneDocument& Document);
+	void               DestroySubScene(FSubSceneInstance& Instance);
+	FEntity            ClientLoadSubScene(const std::string& Asset, uint32 InstanceId, const FVector3& Offset); // 서버 지시 (동기)
+	void               ClientUnloadSubScene(uint32 InstanceId);
+	FSubSceneInstance* FindSubScene(const std::string& Asset);
+	const FSubSceneInstance* FindSubScene(const std::string& Asset) const;
+	void               ClearSubScenes();
+	std::vector<std::unique_ptr<FSubSceneInstance>> SubScenes;
+	uint32                                          NextSubSceneId = 1;
+	FSubSceneStats                                  SubSceneStats;
+	FReplicationServer*                             ReplicationServer = nullptr;
 };

@@ -83,6 +83,7 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 			}
 			ApplySimulation();
 			ReplicationServer.Begin(Scene, Net); // 정적 NetId는 스크립트가 엔티티를 만들기 전에
+			World->SetReplicationServer(&ReplicationServer); // 서브 씬 NetId·클라이언트 알림
 			Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 				const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 				ReplicationServer.OnPlayerJoined(Player.Connection);
@@ -198,6 +199,7 @@ void FPlayInEditorNet::Stop()
 	if (World != nullptr)
 	{
 		World->SetNetDriver(nullptr);
+		World->SetReplicationServer(nullptr);
 	}
 }
 

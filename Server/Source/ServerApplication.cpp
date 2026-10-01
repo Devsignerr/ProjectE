@@ -71,6 +71,7 @@ bool FServerApplication::OnInit()
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory(), &Net });
 	Physics.SetInterpolation(false);
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
+	World.SetReplicationServer(&Replication); // 서브 씬 NetId·클라이언트 알림
 	Players.Begin(Scene, FProjectSettings::Get().Maps.PlayerPrefab);
 	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 		const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);

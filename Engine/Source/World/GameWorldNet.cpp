@@ -146,6 +146,15 @@ void FGameWorld::InstallScriptNetHooks()
 		return RequestOpenScene(SceneAsset, &Problem) ? std::string() : Problem;
 	};
 	NetHooks.GetCurrentScene = [this]() { return CurrentSceneAsset; };
+
+	// 서브 씬 (World/GameWorldStreaming.cpp)
+	NetHooks.LoadSubScene = [this](const std::string& Asset, const FVector3& Offset) {
+		std::string Problem;
+		return RequestLoadSubScene(Asset, Offset, &Problem) ? std::string() : Problem;
+	};
+	NetHooks.UnloadSubScene   = [this](const std::string& Asset) { return UnloadSubScene(Asset); };
+	NetHooks.IsSubSceneLoaded = [this](const std::string& Asset) { return IsSubSceneLoaded(Asset); };
+	NetHooks.GetSubSceneRoot  = [this](const std::string& Asset) { return GetSubSceneRoot(Asset); };
 	Systems.Scripts->SetNetHooks(std::move(NetHooks));
 }
 

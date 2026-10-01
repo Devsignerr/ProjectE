@@ -65,7 +65,8 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 		// 클라이언트: 게임 로직(서버 스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
 		ReplicationClient.SetTransformFilter([this](FEntity Entity) { return !World.IsPredicted(Entity); }); // 내 캐릭터·물리 예측 바디는 예측으로
-		World.SetReplicationClient(&ReplicationClient);                                                     // 물리 예측이 스냅샷을 읽는다
+		World.SetReplicationClient(&ReplicationClient);                                                     // 물리 예측이 스냅샷을 읽는다 + 서브 씬 따라 붙이기
+		World.SetReplicationServer(nullptr);
 		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
 			if (!ReplicationClient.HandleMessage(Message))
 			{
@@ -81,6 +82,7 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 			E_LOG(LogRuntime, Error, "서버 '{}'에 접속하지 못했습니다 (단독 실행으로 계속)", Options.ConnectAddress);
 		}
 		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
+		World.SetReplicationServer(&ReplicationServer); // 서브 씬 NetId·클라이언트 알림
 		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 			const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 			ReplicationServer.OnPlayerJoined(Player.Connection);

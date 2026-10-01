@@ -30,7 +30,12 @@ public:
 	void End();
 
 	void Tick(float DeltaSeconds);
-	void OnPlayerJoined(FNetConnectionId Connection);
+	void OnPlayerJoined(FNetConnectionId Connection); // 불러온 서브 씬 목록 → 동적 엔티티 생성 → 전체 상태
+
+	// 서브 씬 (Phase 31-2): 붙인 직후(같은 프레임, Tick 전) — 클라이언트에 SubSceneLoad를 보내고 하위 복제 엔티티에 구간 NetId를 매긴다
+	// (정적 엔티티처럼 파일 값을 보낸 것으로 기록). Unregister는 SubSceneUnload만 보낸다 (엔티티 파괴는 호출자, 파괴 메시지는 다음 Tick)
+	void RegisterSubScene(FEntity Root, const std::string& Asset, uint32 InstanceId, const FVector3& Offset);
+	void UnregisterSubScene(uint32 InstanceId);
 
 	float SendRate          = 30.0f;
 	float RestResendSeconds = 1.0f; // 트랜스폼이 멈춘 뒤에도 이만큼 계속 보낸다 (비신뢰 손실 대비)
@@ -74,6 +79,13 @@ private:
 	FScene*     Scene  = nullptr;
 	FNetDriver* Driver = nullptr;
 	std::unordered_map<uint32, FTracked> Tracked;
+	struct FSubSceneEntry
+	{
+		uint32      InstanceId = 0;
+		std::string Asset;
+		FVector3    Offset;
+	};
+	std::vector<FSubSceneEntry> SubScenes; // 불러온 서브 씬 (늦은 입장자에게 먼저 보낸다)
 	uint32      NextDynamicNetId = 0;
 	float       SendAccumulator  = 0.0f;
 	float       ServerTime       = 0.0f;

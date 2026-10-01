@@ -90,6 +90,12 @@ struct FScriptNetHooks
 	// 맵 전환 (Lua Game.OpenScene/GetCurrentScene, FGameWorld가 연결). OpenScene: 빈 문자열 = 접수(프레임 끝에 전환), 아니면 거절 사유
 	std::function<std::string(const std::string& SceneAsset)> OpenScene;
 	std::function<std::string()>                              GetCurrentScene;
+
+	// 서브 씬 (Lua Scene.LoadSubScene 등). Load: 빈 문자열 = 접수, 아니면 거절 사유
+	std::function<std::string(const std::string& Asset, const FVector3& Offset)> LoadSubScene;
+	std::function<bool(const std::string& Asset)>                                UnloadSubScene;
+	std::function<bool(const std::string& Asset)>                                IsSubSceneLoaded;
+	std::function<FEntity(const std::string& Asset)>                             GetSubSceneRoot;
 };
 
 // 스크립트가 쓰는 AI 기능 (블랙보드, 이동, 경로). 앱(FGameWorld)이 AI 모듈(FAISystem)과 연결한다 (Scripting은 AI에 비의존).

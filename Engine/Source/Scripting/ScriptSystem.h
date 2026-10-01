@@ -41,6 +41,10 @@ struct FScriptPhysicsHooks
 	std::function<void(FEntity, const FVector3&)> SetVelocity; // cm/s
 	std::function<FVector3(FEntity)>              GetVelocity;
 	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
+	// 캐릭터 이동 (FCharacterMovementComponent): 이번 프레임 이동 방향(월드)/점프 요청, 바닥 여부
+	std::function<void(FEntity, const FVector3&)> AddMovementInput;
+	std::function<void(FEntity)>                  Jump;
+	std::function<bool(FEntity)>                  IsGrounded;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

@@ -137,6 +137,10 @@ private:
 	FVector2 LocalControlRotation; // 로컬 플레이어 (Lua Net.SetControlRotation) — 클라이언트는 입력과 함께 보낸다
 	FVector2 GetControlRotation(FEntity Entity) const;
 
+	// 캐릭터 이동 (FCharacterMovementComponent): 조종하는 쪽은 입력으로 시뮬레이션, 아니면 복제 트랜스폼을 따라간다
+	void TickCharacters(float DeltaSeconds);
+	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
+
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)

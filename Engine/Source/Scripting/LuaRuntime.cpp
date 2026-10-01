@@ -554,6 +554,26 @@ void FLuaRuntime::RegisterEntityBindings()
 
 	// ---- 네트워크 소유권: 소유 플레이어 ID (-1 = 서버 소유), 이 기계가 조종 권한을 갖는가
 	//   서버 소유(-1)는 서버(Standalone 포함)에서 참, 플레이어 소유는 그 플레이어의 기계에서 참
+	// 캐릭터 이동 (CharacterMovementComponent): 이 캐릭터를 조종하는 쪽(소유 클라이언트/호스트, 서버 소유면 서버)에서 매 프레임 넘긴다
+	EntityType["AddMovementInput"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Direction) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->AddMovementInput)
+		{
+			PhysicsHooks->AddMovementInput(Entity.Entity, Direction);
+		}
+	};
+	EntityType["Jump"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->Jump)
+		{
+			PhysicsHooks->Jump(Entity.Entity);
+		}
+	};
+	EntityType["IsGrounded"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->IsGrounded && PhysicsHooks->IsGrounded(Entity.Entity);
+	};
+
 	EntityType["GetOwner"] = [RequireEntity, this](const FScriptEntity& Entity) {
 		RequireEntity(Entity);
 		return GetOwner(Entity.Entity);

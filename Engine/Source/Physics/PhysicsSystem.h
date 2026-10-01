@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/ECS/Entity.h"
+#include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsMath.h"
 #include "Physics/PhysicsWorld.h"
 
@@ -59,6 +60,21 @@ public:
 	float    GetMass(FEntity Entity) const; // 실제 바디 질량 (Mass 0 = 밀도 자동 계산 결과). 동적 바디가 아니면 0
 	bool     HasBody(FEntity Entity) const { return Bodies.contains(Entity); }
 
+	// ---- 캐릭터 (FCharacterMovementComponent — 규칙은 CharacterMovement.h). 바디 대신 Jolt CharacterVirtual을 만든다.
+	// 누가 언제 SimulateCharacter를 부를지는 FGameWorld가 정한다 (소유자 입력/네트워크 무브/관찰자 따라가기)
+	void SyncCharacters(FScene& Scene); // 새/사라진 캐릭터, 설정 변경, 스크립트 순간이동 (Update도 부른다)
+	bool HasCharacter(FEntity Entity) const { return Characters.contains(Entity); }
+	void AddMovementInput(FEntity Entity, const FVector3& WorldDirection); // 이번 프레임 입력에 더한다 (XY만, 무브에서 길이 1로 자름)
+	void RequestJump(FEntity Entity);
+	// 이번 프레임 입력 → 무브 (입력을 비운다). ControlYaw가 있고 bFaceControlYaw면 그 방향, 아니면 이동 방향을 본다
+	FCharacterMove  ConsumePendingMove(FEntity Entity, float DeltaSeconds, const float* ControlYaw);
+	void            SimulateCharacter(FScene& Scene, FEntity Entity, const FCharacterMove& Move); // 무브 하나 적용 + 트랜스폼 쓰기
+	FCharacterState GetCharacterState(FEntity Entity) const;
+	void            SetCharacterState(FScene& Scene, FEntity Entity, const FCharacterState& State); // 보정/재조정 시작점 (트랜스폼도)
+	void            FollowTransform(FScene& Scene, FEntity Entity); // 시뮬레이션 없이 캡슐을 현재 트랜스폼에 맞춘다 (복제로 움직이는 다른 플레이어)
+	bool            IsGrounded(FEntity Entity) const;
+	uint32          GetCharacterCount() const { return static_cast<uint32>(Characters.size()); }
+
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
 	const FFixedStepper& GetStepper() const { return Stepper; }
 	FPhysicsWorld*       GetWorld() { return World.get(); }
@@ -81,6 +97,21 @@ private:
 
 	void SyncBodies(FScene& Scene);
 	void WriteDynamicTransforms(FScene& Scene);
+	void WriteCharacterTransform(FScene& Scene, FEntity Entity);
+
+	struct FCharacterSim
+	{
+		uint32                      Character = FPhysicsWorld::InvalidBody;
+		FCharacterMovementComponent CreatedWith; // 이 설정으로 만들었다 (모양/질량이 바뀌면 다시 생성)
+		FVector2                    PendingInput;
+		bool                        bPendingJump = false;
+		float                       Yaw          = 0.0f; // 몸 방향 (도)
+		FVector3                    WrittenPosition;     // 마지막으로 트랜스폼에 쓴 값 (스크립트 순간이동 감지)
+		bool                        bWritten      = false;
+		uint64                      LastSeenFrame = 0;
+	};
+	std::unordered_map<FEntity, FCharacterSim> Characters;
+	uint64                                     CharacterSyncCounter = 0;
 
 	std::unique_ptr<FPhysicsWorld>            World;
 	std::unordered_map<FEntity, FBodyState>   Bodies;

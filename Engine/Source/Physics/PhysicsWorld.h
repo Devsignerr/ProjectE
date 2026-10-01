@@ -41,6 +41,26 @@ struct FPhysicsBodyDesc
 	uint64 UserData          = 0; // 엔티티 ToId()
 };
 
+// 캐릭터 (Jolt CharacterVirtual + 다른 물체가 부딪히는 내부 키네마틱 캡슐). 위치 = 캡슐 중심, Z축 캡슐
+struct FPhysicsCharacterDesc
+{
+	FVector3 Position;
+	FQuat    Rotation;
+	float    Radius          = 35.0f; // cm
+	float    HalfHeight      = 55.0f; // cm, 원기둥 절반
+	float    MaxSlopeDegrees = 50.0f;
+	float    Mass            = 80.0f;   // kg
+	float    MaxStrength     = 4000.0f; // N, 동적 물체를 미는 최대 힘
+	uint64   UserData        = 0;       // 엔티티 ToId() (내부 바디 — 레이캐스트 결과)
+};
+
+struct FPhysicsCharacterResult
+{
+	FVector3 Position; // cm
+	FVector3 Velocity; // cm/s
+	bool     bGrounded = false; // 걸을 수 있는 바닥 위
+};
+
 struct FPhysicsRayHit
 {
 	uint64   UserData = 0;
@@ -87,6 +107,18 @@ public:
 
 	// cm/s² (기본 -Z 980.665)
 	void SetGravity(const FVector3& Gravity);
+	FVector3 GetGravity() const;
+
+	// ---- 캐릭터 (cm). 실패 시 InvalidBody
+	uint32 CreateCharacter(const FPhysicsCharacterDesc& Desc);
+	void   DestroyCharacter(uint32 Character);
+	uint32 GetCharacterCount() const;
+	// 속도를 정한 뒤 한 번 이동: 미끄러짐/계단 오르기(StepUp cm)/바닥 붙기(StickDown cm, 0이면 끔 — 점프 직후 등)
+	void UpdateCharacter(uint32 Character, float DeltaSeconds, const FVector3& Velocity, float StepUp, float StickDown);
+	// 순간이동/보정: 위치·속도를 바꾸고 접촉(바닥 상태)을 다시 계산
+	void SetCharacterState(uint32 Character, const FVector3& Position, const FVector3& Velocity);
+	void SetCharacterRotation(uint32 Character, const FQuat& Rotation);
+	FPhysicsCharacterResult GetCharacterResult(uint32 Character) const;
 
 private:
 	struct FImpl;

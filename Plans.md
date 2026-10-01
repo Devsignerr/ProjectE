@@ -508,3 +508,18 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 사용자 피드백 수정 (2026-10-01): ① 에디터가 리슨 서버일 때 클라이언트 조작 안 됨 → 에디터 게임 월드에 네트워크 드라이버가 연결되지 않아 원격 입력 메시지를 버리고 있었음(`FGameWorld::SetNetDriver`, `FPlayInEditorNet` Prepare/Stop — 에디터 클라이언트 모드의 입력 전송·RPC도 같은 원인). ② 자기 캐릭터가 떨림 → 카메라를 `OnUpdate`에서 물리 전 월드 위치로 놓아 한 프레임 늦게 따라감(프레임 시간 12/18ms 교대 시 표시 속도 1.5배/0.67배 교대) → 스크립트 `OnLateUpdate` 단계 추가(물리·트랜스폼 뒤), 카메라를 거기서. 측정: 수정 후 프레임당 이동량/프레임 시간 비율 평균 1.00 표준편차 0.03. 자동 검증 입력 `--hold-keys`, `--play-client-hold-keys`. 테스트 `GameWorld_LateUpdateSeesPhysicsResult`
 - [ ] 실행 검증 (사용자): 직접 조작(WASD/마우스/스페이스), 상자 밀기, 서로 보이는지
 - 후속: 클라이언트 예측/보정(원격 클라이언트는 왕복 지연 + 보간 0.1초만큼 늦게 움직임), 경사·계단(Jolt CharacterVirtual), 공중 제어 감소, 애니메이션 캐릭터 모델
+
+## Phase 22 — 캐릭터 이동 컴포넌트 + 클라이언트 예측 (2026-10-01, 사용자 요청: "원격 클라이언트 조작이 한발 느림 → 위치 예측", 엔진 C++ 컴포넌트로)
+
+**DoD**: `FCharacterMovementComponent`(엔진 C++, 언리얼 CharacterMovement 역할)를 단 엔티티는 Jolt CharacterVirtual로 걷기·점프·중력·경사 제한·계단 오르기·벽 미끄러짐을 하고, 부딪힌 동적 물체를 민다. 스크립트/게임 모듈은 이동 방향과 점프만 넘긴다. 멀티플레이에서 소유 클라이언트는 입력 즉시 자기 캐릭터를 움직이고(예측), 서버가 같은 입력으로 계산한 결과와 다르면 보정한다. 원격 클라이언트에서도 에디터 호스트처럼 즉시 반응한다.
+
+결정 (2026-10-01):
+- 시뮬레이션: Jolt CharacterVirtual(쿼리 기반, 되감아 다시 돌릴 수 있음) + 내부 키네마틱 바디(다른 캐릭터/물체가 부딪히게). 동적 바디 밀기 = CharacterVirtual MaxStrength
+- 이동 = "무브" 단위 (순번, dt, 월드 XY 입력, yaw, 점프). 같은 무브 → 같은 결과를 내는 순수 경로 `FPhysicsSystem::SimulateCharacter`를 서버·클라이언트·Standalone이 공유
+- 네트워크: 소유 클라이언트가 무브를 만들어 즉시 적용하고 기록 + 서버로 전송(비신뢰, 최근 무브 여러 개를 겹쳐 보내 손실 대비). 서버는 소유자 확인 후 순서대로 적용, 처리한 순번과 상태를 소유자에게 ack. 클라이언트는 ack 상태로 되돌린 뒤 남은 무브를 다시 적용(재조정). 관찰자 클라이언트는 기존 스냅샷 보간
+- 제어 주체: 소유 플레이어(클라이언트/호스트), 서버 소유(owner < 0, AI 등)는 서버
+- 갱신 순서: 스크립트(입력) → 캐릭터 이동 → 게임 모듈 → AI → 물리 → 트랜스폼 → LateUpdate
+
+- [x] 22-1. 물리: `FCharacterMovementComponent`(Physics, 리플렉션 "캐릭터 이동"), `CharacterMovementMath::ComputeVelocity`(순수: 바닥/점프/공중 제어/중력, dt 상한 0.1초), `FPhysicsWorld` 캐릭터(CharacterVirtual Z-up 캡슐 + 내부 키네마틱 바디, 발밑 판정 평면 = 아래 반구 중심, MaxStrength로 동적 물체 밀기, ExtendedUpdate 계단/바닥 붙기), `FPhysicsSystem::SyncCharacters/AddMovementInput/RequestJump/ConsumePendingMove/SimulateCharacter/Get·SetCharacterState/FollowTransform/IsGrounded`(콜라이더가 있어도 캐릭터 우선, 스크립트 순간이동 감지), `FGameWorld::TickCharacters`(스크립트 직후: 조종하는 쪽은 무브 시뮬레이션, 클라이언트의 다른 플레이어는 복제 위치 따라가기), Lua `entity:AddMovementInput/Jump/IsGrounded`. 테스트 `CharacterMovementTests` 7개(속도 규칙, 착지·걷기·몸 방향, 벽 미끄러짐, 계단 30cm 오름/60cm 막힘, 경사 30도 오름/70도 못 오름, 점프 높이 ≈138cm·착지, 상자 밀기·캐릭터끼리 통과 안 함)
+- [ ] 22-2. 네트워크 예측: 무브 전송/서버 적용/ack/재조정, 복제 클라이언트가 예측 캐릭터 트랜스폼을 덮어쓰지 않음, `NetProtocolVersion` + 루프백 테스트(즉시 이동, 서버와 일치, 서버 보정 반영)
+- [ ] 22-3. 내용·검증: `PlayerCharacter.lua`/`Player.eprefab`를 컴포넌트로, 입력 지연 측정(`--hold-keys-delay`), 멀티플레이 Verify

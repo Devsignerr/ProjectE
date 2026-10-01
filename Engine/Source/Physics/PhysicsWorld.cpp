@@ -9,6 +9,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/NarrowPhaseQuery.h>
@@ -284,6 +285,8 @@ struct FPhysicsWorld::FImpl
 	std::unique_ptr<JPH::PhysicsSystem>        System;
 	std::unique_ptr<FContactTracker>           Contacts;
 	std::unordered_map<uint32, FRollingBody>   RollingBodies; // 바디 ID(인덱스+시퀀스) → 구르기 저항
+	std::unordered_map<uint32, JPH::Ref<JPH::CharacterVirtual>> Characters; // 캐릭터 ID → CharacterVirtual (내부 바디 포함)
+	uint32                                     NextCharacterId = 1;
 
 	JPH::BodyInterface& Bodies() { return System->GetBodyInterface(); }
 	const JPH::BodyInterface& Bodies() const { return System->GetBodyInterface(); }
@@ -317,7 +320,8 @@ FPhysicsWorld::FPhysicsWorld()
 
 FPhysicsWorld::~FPhysicsWorld()
 {
-	// 바디 → 시스템 → 작업/임시 할당기 순으로 해제한 뒤 Jolt 전역 해제
+	// 캐릭터(내부 바디를 지운다) → 바디 → 시스템 → 작업/임시 할당기 순으로 해제한 뒤 Jolt 전역 해제
+	Impl->Characters.clear();
 	if (Impl->System)
 	{
 		JPH::BodyIDVector BodyIds;
@@ -537,4 +541,106 @@ bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, f
 void FPhysicsWorld::SetGravity(const FVector3& Gravity)
 {
 	Impl->System->SetGravity(ToJoltVector(PhysicsMath::ToMeters(Gravity)));
+}
+
+FVector3 FPhysicsWorld::GetGravity() const
+{
+	return PhysicsMath::ToCentimeters(FromJoltVector(Impl->System->GetGravity()));
+}
+
+// ---------------------------------------------------------------- 캐릭터
+
+uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
+{
+	constexpr float MinSize = 0.01f; // m
+	const float     Radius  = std::max(Desc.Radius * FUnits::UnitsToMeters, MinSize);
+	const float     Half    = std::max(Desc.HalfHeight * FUnits::UnitsToMeters, MinSize);
+	// Jolt 캡슐은 +Y 축 → 엔진 +Z 축 (CreateShape와 같은 회전)
+	JPH::RefConst<JPH::Shape> Capsule = new JPH::CapsuleShape(Half, Radius);
+	JPH::RefConst<JPH::Shape> Shape   = new JPH::RotatedTranslatedShape(JPH::Vec3::sZero(), JPH::Quat::sRotation(JPH::Vec3::sAxisX(), 0.5f * FMath::Pi), Capsule);
+
+	JPH::Ref<JPH::CharacterVirtualSettings> Settings = new JPH::CharacterVirtualSettings();
+	Settings->mShape          = Shape;
+	Settings->mInnerBodyShape = Shape; // 다른 캐릭터/동적 물체가 이 캐릭터와 부딪히게
+	Settings->mInnerBodyLayer = ObjectLayers::Moving;
+	Settings->mUp             = JPH::Vec3::sAxisZ();
+	// 아래 반구의 중심보다 낮은 접촉만 "발밑"으로 본다 (위치 = 캡슐 중심)
+	Settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), Half);
+	Settings->mMaxSlopeAngle    = FMath::DegreesToRadians(std::clamp(Desc.MaxSlopeDegrees, 0.0f, 89.0f));
+	Settings->mMass             = std::max(Desc.Mass, 1.0f);
+	Settings->mMaxStrength      = std::max(Desc.MaxStrength, 0.0f);
+	Settings->mCharacterPadding = 0.01f;
+
+	JPH::Ref<JPH::CharacterVirtual> Character =
+		new JPH::CharacterVirtual(Settings, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Desc.UserData, Impl->System.get());
+	const uint32 Id = Impl->NextCharacterId++;
+	Impl->Characters.emplace(Id, Character);
+	// 처음 바닥 상태
+	Character->RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving), Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving),
+	                           JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
+	return Id;
+}
+
+void FPhysicsWorld::DestroyCharacter(uint32 Character)
+{
+	Impl->Characters.erase(Character); // 소멸자가 내부 바디를 지운다
+}
+
+uint32 FPhysicsWorld::GetCharacterCount() const
+{
+	return static_cast<uint32>(Impl->Characters.size());
+}
+
+void FPhysicsWorld::UpdateCharacter(uint32 Character, float DeltaSeconds, const FVector3& Velocity, float StepUp, float StickDown)
+{
+	const auto Found = Impl->Characters.find(Character);
+	if (Found == Impl->Characters.end() || DeltaSeconds <= 0.0f)
+	{
+		return;
+	}
+	JPH::CharacterVirtual& Virtual = *Found->second;
+	Virtual.SetLinearVelocity(ToJoltVector(PhysicsMath::ToMeters(Velocity)));
+
+	JPH::CharacterVirtual::ExtendedUpdateSettings Settings;
+	Settings.mStickToFloorStepDown = JPH::Vec3(0.0f, 0.0f, -std::max(StickDown, 0.0f) * FUnits::UnitsToMeters);
+	Settings.mWalkStairsStepUp     = JPH::Vec3(0.0f, 0.0f, std::max(StepUp, 0.0f) * FUnits::UnitsToMeters);
+	Virtual.ExtendedUpdate(DeltaSeconds, Impl->System->GetGravity(), Settings, Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving),
+	                       Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving), JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
+}
+
+void FPhysicsWorld::SetCharacterState(uint32 Character, const FVector3& Position, const FVector3& Velocity)
+{
+	const auto Found = Impl->Characters.find(Character);
+	if (Found == Impl->Characters.end())
+	{
+		return;
+	}
+	JPH::CharacterVirtual& Virtual = *Found->second;
+	Virtual.SetPosition(ToJoltPosition(Position));
+	Virtual.SetLinearVelocity(ToJoltVector(PhysicsMath::ToMeters(Velocity)));
+	Virtual.RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving), Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving),
+	                        JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
+}
+
+void FPhysicsWorld::SetCharacterRotation(uint32 Character, const FQuat& Rotation)
+{
+	if (const auto Found = Impl->Characters.find(Character); Found != Impl->Characters.end())
+	{
+		Found->second->SetRotation(ToJoltQuat(Rotation));
+	}
+}
+
+FPhysicsCharacterResult FPhysicsWorld::GetCharacterResult(uint32 Character) const
+{
+	FPhysicsCharacterResult Result;
+	const auto              Found = Impl->Characters.find(Character);
+	if (Found == Impl->Characters.end())
+	{
+		return Result;
+	}
+	const JPH::CharacterVirtual& Virtual = *Found->second;
+	Result.Position  = FromJoltPosition(Virtual.GetPosition());
+	Result.Velocity  = PhysicsMath::ToCentimeters(FromJoltVector(Virtual.GetLinearVelocity()));
+	Result.bGrounded = Virtual.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+	return Result;
 }

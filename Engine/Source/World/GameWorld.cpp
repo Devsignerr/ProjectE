@@ -190,6 +190,9 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 		[Physics](FEntity Entity, const FVector3& Velocity) { Physics->SetVelocity(Entity, Velocity); },
 		[Physics](FEntity Entity) { return Physics->GetVelocity(Entity); },
 		[Physics](FEntity Entity) { return Physics->GetMass(Entity); },
+		[Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); },
+		[Physics](FEntity Entity) { Physics->RequestJump(Entity); },
+		[Physics](FEntity Entity) { return Physics->IsGrounded(Entity); },
 	});
 }
 
@@ -269,6 +272,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
 		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원

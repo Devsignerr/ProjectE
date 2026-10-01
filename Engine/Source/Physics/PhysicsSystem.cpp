@@ -103,6 +103,7 @@ void FPhysicsSystem::Begin()
 
 void FPhysicsSystem::End()
 {
+	Characters.clear(); // 월드가 캐릭터와 함께 사라진다
 	Bodies.clear();
 	World.reset();
 	Stepper.Reset();
@@ -115,6 +116,7 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 		return 0;
 	}
 	++FrameCounter;
+	SyncCharacters(Scene);
 	SyncBodies(Scene);
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
@@ -181,6 +183,10 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 
 	for (FEntity Entity : Candidates)
 	{
+		if (Registry.Has<FCharacterMovementComponent>(Entity))
+		{
+			continue; // 캐릭터는 콜라이더가 있어도 CharacterVirtual (SyncCharacters)
+		}
 		FVector3 Position;
 		FQuat    Rotation;
 		FVector3 Scale;
@@ -358,6 +364,10 @@ void FPhysicsSystem::SetVelocity(FEntity Entity, const FVector3& Velocity)
 
 FVector3 FPhysicsSystem::GetVelocity(FEntity Entity) const
 {
+	if (const auto Character = Characters.find(Entity); World && Character != Characters.end())
+	{
+		return World->GetCharacterResult(Character->second.Character).Velocity;
+	}
 	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end())
 	{
 		return World->GetLinearVelocity(Found->second.Body);
@@ -372,4 +382,225 @@ float FPhysicsSystem::GetMass(FEntity Entity) const
 		return World->GetMass(Found->second.Body);
 	}
 	return 0.0f;
+}
+
+// ---------------------------------------------------------------- 캐릭터
+
+namespace
+{
+	bool NeedsCharacterRecreate(const FCharacterMovementComponent& A, const FCharacterMovementComponent& B)
+	{
+		return A.CapsuleRadius != B.CapsuleRadius || A.CapsuleHalfHeight != B.CapsuleHalfHeight || A.MaxSlopeAngle != B.MaxSlopeAngle || A.Mass != B.Mass ||
+		       A.PushForce != B.PushForce;
+	}
+
+	float YawFromDirection(const FVector2& Direction)
+	{
+		return FMath::RadiansToDegrees(std::atan2(Direction.Y, Direction.X));
+	}
+} // namespace
+
+void FPhysicsSystem::SyncCharacters(FScene& Scene)
+{
+	if (!World)
+	{
+		return;
+	}
+	++CharacterSyncCounter;
+	FRegistry&           Registry = Scene.GetRegistry();
+	std::vector<FEntity> Entities;
+	Registry.View<FCharacterMovementComponent, FTransformComponent>().Each(
+		[&](FEntity Entity, FCharacterMovementComponent&, FTransformComponent&) { Entities.push_back(Entity); });
+
+	for (const FEntity Entity : Entities)
+	{
+		const FCharacterMovementComponent& Movement = Registry.Get<FCharacterMovementComponent>(Entity);
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale;
+		PhysicsMath::DecomposeWorld(ComputeWorldMatrix(Scene, Entity), Position, Rotation, Scale);
+
+		auto Found = Characters.find(Entity);
+		if (Found == Characters.end() || NeedsCharacterRecreate(Found->second.CreatedWith, Movement))
+		{
+			FCharacterSim Sim;
+			if (Found != Characters.end())
+			{
+				World->DestroyCharacter(Found->second.Character);
+				Sim = Found->second;
+			}
+			FPhysicsCharacterDesc Desc;
+			Desc.Position        = Position;
+			Desc.Rotation        = FQuat::FromEuler(0.0f, Sim.Yaw, 0.0f);
+			Desc.Radius          = Movement.CapsuleRadius;
+			Desc.HalfHeight      = Movement.CapsuleHalfHeight;
+			Desc.MaxSlopeDegrees = Movement.MaxSlopeAngle;
+			Desc.Mass            = Movement.Mass;
+			Desc.MaxStrength     = Movement.PushForce;
+			Desc.UserData        = Entity.ToId();
+			if (Found == Characters.end())
+			{
+				// 처음: 몸 방향 = 트랜스폼의 yaw (PlayerStart 방향 등)
+				const FVector3 Forward = Rotation.GetForwardVector();
+				Sim.Yaw                = YawFromDirection(FVector2(Forward.X, Forward.Y));
+				Desc.Rotation          = FQuat::FromEuler(0.0f, Sim.Yaw, 0.0f);
+			}
+			Sim.Character     = World->CreateCharacter(Desc);
+			Sim.CreatedWith   = Movement;
+			Sim.bWritten      = false;
+			Characters[Entity] = Sim;
+			Found              = Characters.find(Entity);
+		}
+		FCharacterSim& Sim = Found->second;
+		Sim.LastSeenFrame  = CharacterSyncCounter;
+		// 스크립트/에디터가 트랜스폼을 직접 바꿨으면 순간이동 (속도 유지)
+		if (Sim.bWritten && FVector3::DistanceSquared(Scene.GetTransform(Entity).Position, Sim.WrittenPosition) > 0.01f)
+		{
+			World->SetCharacterState(Sim.Character, Position, World->GetCharacterResult(Sim.Character).Velocity);
+			Sim.WrittenPosition = Scene.GetTransform(Entity).Position;
+		}
+	}
+
+	for (auto It = Characters.begin(); It != Characters.end();)
+	{
+		if (It->second.LastSeenFrame != CharacterSyncCounter)
+		{
+			World->DestroyCharacter(It->second.Character);
+			It = Characters.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+}
+
+void FPhysicsSystem::AddMovementInput(FEntity Entity, const FVector3& WorldDirection)
+{
+	if (const auto Found = Characters.find(Entity); Found != Characters.end() && std::isfinite(WorldDirection.X) && std::isfinite(WorldDirection.Y))
+	{
+		Found->second.PendingInput = FVector2(Found->second.PendingInput.X + WorldDirection.X, Found->second.PendingInput.Y + WorldDirection.Y);
+	}
+}
+
+void FPhysicsSystem::RequestJump(FEntity Entity)
+{
+	if (const auto Found = Characters.find(Entity); Found != Characters.end())
+	{
+		Found->second.bPendingJump = true;
+	}
+}
+
+FCharacterMove FPhysicsSystem::ConsumePendingMove(FEntity Entity, float DeltaSeconds, const float* ControlYaw)
+{
+	FCharacterMove Move;
+	Move.DeltaSeconds = DeltaSeconds;
+	const auto Found  = Characters.find(Entity);
+	if (Found == Characters.end())
+	{
+		return Move;
+	}
+	FCharacterSim& Sim = Found->second;
+	Move.Input         = CharacterMovementMath::ClampInput(Sim.PendingInput);
+	Move.bJump         = Sim.bPendingJump;
+	if (ControlYaw != nullptr && Sim.CreatedWith.bFaceControlYaw)
+	{
+		Move.Yaw = *ControlYaw;
+	}
+	else
+	{
+		Move.Yaw = Move.Input.X * Move.Input.X + Move.Input.Y * Move.Input.Y > 1.0e-6f ? YawFromDirection(Move.Input) : Sim.Yaw;
+	}
+	Sim.PendingInput = FVector2(0.0f, 0.0f);
+	Sim.bPendingJump = false;
+	return Move;
+}
+
+void FPhysicsSystem::SimulateCharacter(FScene& Scene, FEntity Entity, const FCharacterMove& Move)
+{
+	const auto Found = Characters.find(Entity);
+	const FCharacterMovementComponent* Movement = Scene.GetRegistry().TryGet<FCharacterMovementComponent>(Entity);
+	if (!World || Found == Characters.end() || Movement == nullptr)
+	{
+		return;
+	}
+	FCharacterSim&                Sim          = Found->second;
+	const float                   DeltaSeconds = std::clamp(Move.DeltaSeconds, 0.0f, FCharacterMove::MaxMoveDeltaSeconds);
+	const FPhysicsCharacterResult Before       = World->GetCharacterResult(Sim.Character);
+	bool                          bJumped      = false;
+	const FVector3 Velocity = CharacterMovementMath::ComputeVelocity(*Movement, Before.Velocity, Before.bGrounded, Move, World->GetGravity().Z, bJumped);
+	if (std::isfinite(Move.Yaw))
+	{
+		Sim.Yaw = Move.Yaw;
+		World->SetCharacterRotation(Sim.Character, FQuat::FromEuler(0.0f, Sim.Yaw, 0.0f));
+	}
+	if (DeltaSeconds > 0.0f)
+	{
+		// 바닥에 붙이기는 걷는 중에만 (점프/공중이면 끔 — 계단 높이만큼 아래로 당긴다)
+		const float StickDown = Before.bGrounded && !bJumped ? Movement->MaxStepHeight : 0.0f;
+		World->UpdateCharacter(Sim.Character, DeltaSeconds, Velocity, Movement->MaxStepHeight, StickDown);
+	}
+	WriteCharacterTransform(Scene, Entity);
+}
+
+FCharacterState FPhysicsSystem::GetCharacterState(FEntity Entity) const
+{
+	FCharacterState State;
+	if (const auto Found = Characters.find(Entity); World && Found != Characters.end())
+	{
+		const FPhysicsCharacterResult Result = World->GetCharacterResult(Found->second.Character);
+		State.Position  = Result.Position;
+		State.Velocity  = Result.Velocity;
+		State.bGrounded = Result.bGrounded;
+	}
+	return State;
+}
+
+void FPhysicsSystem::SetCharacterState(FScene& Scene, FEntity Entity, const FCharacterState& State)
+{
+	if (const auto Found = Characters.find(Entity); World && Found != Characters.end())
+	{
+		World->SetCharacterState(Found->second.Character, State.Position, State.Velocity);
+		WriteCharacterTransform(Scene, Entity);
+	}
+}
+
+void FPhysicsSystem::FollowTransform(FScene& Scene, FEntity Entity)
+{
+	if (const auto Found = Characters.find(Entity); World && Found != Characters.end())
+	{
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale;
+		PhysicsMath::DecomposeWorld(ComputeWorldMatrix(Scene, Entity), Position, Rotation, Scale);
+		World->SetCharacterState(Found->second.Character, Position, FVector3());
+		World->SetCharacterRotation(Found->second.Character, Rotation);
+		Found->second.WrittenPosition = Scene.GetTransform(Entity).Position;
+		Found->second.bWritten        = true;
+	}
+}
+
+bool FPhysicsSystem::IsGrounded(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return World && Found != Characters.end() && World->GetCharacterResult(Found->second.Character).bGrounded;
+}
+
+void FPhysicsSystem::WriteCharacterTransform(FScene& Scene, FEntity Entity)
+{
+	FCharacterSim&                Sim       = Characters.at(Entity);
+	const FPhysicsCharacterResult Result    = World->GetCharacterResult(Sim.Character);
+	const FQuat                   Rotation  = FQuat::FromEuler(0.0f, Sim.Yaw, 0.0f);
+	FTransformComponent&          Transform = Scene.GetTransform(Entity);
+	if (Scene.GetParent(Entity).IsValid() || Scene.IsSocketAttached(Entity))
+	{
+		PhysicsMath::WorldToLocal(Scene.GetParentWorldMatrix(Entity), Result.Position, Rotation, Transform.Position, Transform.Rotation);
+	}
+	else
+	{
+		Transform.Position = Result.Position;
+		Transform.Rotation = Rotation;
+	}
+	Sim.WrittenPosition = Transform.Position;
+	Sim.bWritten        = true;
 }

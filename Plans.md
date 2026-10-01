@@ -536,26 +536,38 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: `FPointLightComponent`/`FSpotLightComponent`(색, 세기, 반경, 스포트 내/외 원뿔각, 그림자 여부)를 씬에 놓으면 PBR로 조명되고(정적·스킨 메시), 수십~수백 개여도 클러스터드 라이트 컬링으로 버틴다. 그림자를 켠 스포트는 그림자 맵, 포인트는 큐브 그림자를 그린다. 예제 씬 `Demo_Lights.escene`(밤/실내, 횃불형 포인트 다수 + 그림자 스포트) Verify 스크린샷·디버그 레이어 오류 0.
 
-- [ ] 23-1. 컴포넌트 + 리플렉션 + 감쇠/원뿔 순수 식(테스트) + 에디터 표시
-- [ ] 23-2. 클러스터드 라이팅(라이트 목록 버퍼, 클러스터 컬링, 메시 셰이더 적용)
-- [ ] 23-3. 스포트/포인트 그림자(그림자 아틀라스, 큐브), 예제 씬, 검증
+- [x] 23-1. 컴포넌트(점광원/스포트 + 하늘광 `FSkyLightComponent` — 밤 씬용 환경광 배율) + `LightMath.h`/`Lighting.hlsli` 식 + `LightTests` 9개, 에디터 아이콘·반경/원뿔 표시·통계
+- [x] 23-2. 클러스터드 라이팅(`FLocalLightRenderer`, 최대 1024 라이트, `ClusterCulling.hlsl` 16x9x24, 클러스터당 63개), 정적·스킨·픽셀 아트 경로
+- [x] 23-3. 그림자 타일 배열(스포트 1장/점광원 큐브 6장, 3x3 PCF, 스킨 캐스터), `Demo_Lights`(포인트 80 + 그림자 스포트 2·점광원 1), Verify 오류 0 (2026-10-01 master 머지)
 
 ## Phase 24 — 입력 매핑 + 게임패드 (트랙 B, 언리얼 Enhanced Input 방식)
 
 **DoD**: 프로젝트 설정 "입력"에 액션(버튼/1D/2D 축)과 바인딩(키, 마우스, 게임패드 버튼·스틱·트리거, 부정/축 바꿈/데드존, WASD 합성)이 있고, Lua·C++는 `Move`/`Jump`/`Look` 같은 액션을 읽는다. 플레이어 재지정은 `<Saved>/Config/` 사용자 파일. XInput 게임패드가 동작한다. 멀티플레이에서 서버 스크립트가 소유 플레이어의 액션 값을 읽는다. 샘플 `PlayerCharacter.lua`가 액션으로 동작(키보드/게임패드 모두).
 
-- [ ] 24-1. 액션/바인딩/수정자 순수 로직(테스트) + XInput
-- [ ] 24-2. 설정 섹션 + 사용자 재지정 파일 + Lua/C++ API + 네트워크 입력 커맨드
-- [ ] 24-3. 샘플 캐릭터 전환, 검증
+- [x] 24-1. `Core/InputActions` 순수 로직(Button/1D/2D, Negate/Swizzle/DeadZone/Scale/ScaleByDeltaTime) + XInput 동적 로드(`Core/GamepadInput`)
+- [x] 24-2. 설정 "Input"(`RegisterCustom`, `Config/Input.json`, 설정 창 전용 UI), `<Saved>/Config/InputBindings.json` 재지정, Lua/C++/게임 모듈 API, 입력 커맨드에 액션 값(`NetProtocolVersion` 8)
+- [x] 24-3. `PlayerCharacter.lua` Move/Look/Jump(키보드 + 게임패드), `--hold-gamepad`, Verify 멀티플레이 오류 0 (2026-10-01 master 머지)
+- [ ] 실행 검증 (사용자): 실물 XInput 게임패드(연결/해제, 데드존, 오른쪽 스틱 시점 속도, A 점프), 설정 창 바인딩 편집, `Input.Rebind` 유지
 
 ## Phase 25 — 게임플레이 기본 틀 (트랙 C)
 
 **DoD**: `FHealthComponent`(서버 권위, 복제) + 데미지 API(Lua/C++, 서버만) → 사망/리스폰 이벤트, 게임 모드(규칙·점수·승패, 복제되는 게임 상태), 세이브 게임 API(`<Saved>/SaveGames/`, Lua/C++). 예제 씬 `Demo_Gameplay.escene`, 단위 테스트.
 
-- [ ] 25-1. 체력·데미지·사망·리스폰
-- [ ] 25-2. 게임 모드 + 게임 상태(점수/승패) 복제
-- [ ] 25-3. 세이브 게임 API, 예제 씬, 검증
+- [x] 25-1. `FHealthComponent` + 데미지/회복(서버만) + 이벤트(Lua/게임 모듈 `GameModuleApiVersion` 5) + 리스폰(폰 유지, PlayerStart)
+- [x] 25-2. `FGameModeComponent`(규칙 저장 + 상태 Transient 복제, 메시지 변경 없음), Lua `GameMode.*`
+- [x] 25-3. `FSaveGame` + Lua `SaveGame.*`, `Demo_Gameplay`(포탑·표적·HUD·최고 기록), Verify 오류 0 (2026-10-01 master 머지)
+- [ ] 통합: `Player.eprefab`에 `HealthComponent`, 사망 중 입력 막기, Demo_Multiplayer 게임 모드 (Phase 27과 함께)
 
 ## Phase 26 — 성능: 인스턴싱 / LOD / 오클루전 (트랙 A, Phase 23 뒤)
 
+**DoD**: Demo_Stress 기준 측정치(프레임 시간 CPU/GPU, 드로우 콜 수)를 기록하고, 같은 메시·머티리얼은 인스턴싱으로 묶고(정적 메시 + 섀도우/로컬 그림자/아웃라인 패스), LOD(모델 임포트 생성 또는 수동 + 화면 크기 전환), 오클루전 컬링(HZB)로 개선 후 다시 측정
+
 - [ ] Demo_Stress 기준 측정 → GPU 인스턴싱 → LOD → 오클루전 컬링
+
+## Phase 27 — 애니메이션 캐릭터 (트랙 D, Phase 24 뒤)
+
+**DoD**: 플레이어 캐릭터가 캡슐 대신 스켈레탈 모델을 쓰고, 이동 속도에 따라 대기·걷기·뛰기가 블렌드되며 점프/낙하 상태가 있는 간단한 상태 머신으로 재생된다. 멀티플레이에서 각 클라이언트가 복제된 속도/바닥 상태로 같은 애니메이션을 낸다. 플레이어에 체력(Phase 25) 통합.
+
+- [ ] 27-1. 블렌드(1D 블렌드 스페이스, 크로스페이드) + 상태 머신 에셋/런타임 + 테스트
+- [ ] 27-2. 캐릭터 이동 연동(속도/바닥/점프 → 애니 파라미터, 원격은 복제 값)
+- [ ] 27-3. 샘플 플레이어 모델 교체 + 체력 통합, 검증

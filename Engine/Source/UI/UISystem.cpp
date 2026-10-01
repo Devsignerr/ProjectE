@@ -141,6 +141,10 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 		}
 		if (bInput)
 		{
+			if (Keys.bPaste && Keys.PasteText.empty() && Instance->WantsKeyboard())
+			{
+				Keys.PasteText = FUIPlatform::GetClipboardText(); // Ctrl+V + 포커스된 텍스트 상자일 때만 OS 클립보드를 읽는다
+			}
 			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds);
 			bTaken                         = bTaken || Component.Runtime.bPointerOver;
 			// 복사/잘라내기 → OS 클립보드
@@ -211,10 +215,7 @@ FUIKeyInput FUISystem::MakeKeys(const FInput& Input)
 	Keys.bCopy          = bShortcut && (Input.IsKeyPressed(EKey::C) || Input.IsKeyPressed(EKey::Insert));
 	Keys.bCut           = bShortcut && Input.IsKeyRepeated(EKey::X);
 	Keys.bPaste         = (bShortcut && Input.IsKeyRepeated(EKey::V)) || (bShift && !bControl && Input.IsKeyPressed(EKey::Insert));
-	if (Keys.bPaste)
-	{
-		Keys.PasteText = FUIPlatform::GetClipboardText(); // Ctrl+V를 누른 프레임에만 OS 클립보드를 읽는다
-	}
+	// 붙여넣을 글자(OS 클립보드)는 FUISystem::Update가 텍스트 상자에 포커스가 있을 때만 읽는다
 	Keys.Composition       = Input.GetCompositionText();
 	Keys.CompositionCursor = Input.GetCompositionCursor();
 	Keys.bBackspace = Input.IsKeyRepeated(EKey::Backspace);

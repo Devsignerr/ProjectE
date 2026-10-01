@@ -111,8 +111,12 @@ void FLuaRuntime::RegisterUIBindings()
 		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { FUIAnimMath::GetMainColor(RequireWidget(Ref)) = Value; }),
 		"Texture", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Brush.Texture; },
 		                         [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Brush.Texture = Value; }),
-		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintText; },
-		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).HintText = Value; }),
+		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetDisplayHintText(RequireWidget(Ref)); },
+		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                          FUIWidget& Widget = RequireWidget(Ref);
+			                          Widget.HintText   = Value;
+			                          Widget.HintTextKey.clear(); // 고정 문자열 (Text와 같은 규칙)
+		                          }),
 		"FontSize", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).FontSize; },
 		                          [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).FontSize = FMath::Max(Value, 1.0f); }),
 		sol::meta_function::to_string, [](const FScriptWidgetRef& Ref) { return "UIWidget(" + Ref.Name + ")"; });

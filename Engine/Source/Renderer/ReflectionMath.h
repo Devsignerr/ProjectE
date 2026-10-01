@@ -86,7 +86,15 @@ struct FReflectionMath
 		return std::sqrt(FMath::Max(1.0f - CosAngle * CosAngle, 0.0f)) / FMath::Max(CosAngle, 1.0e-4f);
 	}
 
-	// 화면 흐림 반경(픽셀) = 교차 거리 × tan(반각) × 픽셀/거리 (원근: 투영[1][1] × 높이/2 ÷ 뷰 깊이, 직교: 투영[1][1] × 높이/2)
+	// 반사된 상의 뷰 깊이 (원근): 거울에 비친 점은 시선 방향으로 표면 뒤 교차 거리만큼 간 가상 점에 보인다.
+	//   = 표면 뷰 깊이 × (1 + 교차 거리 / 카메라 → 표면 거리). 흐림 반경의 픽셀/거리는 표면이 아니라 이 깊이로 나눈다
+	static float ComputeSsrReflectionViewDepth(float SurfaceViewDepth, float SurfaceDistance, float HitDistance)
+	{
+		return SurfaceViewDepth * (1.0f + HitDistance / FMath::Max(SurfaceDistance, 1.0e-3f));
+	}
+
+	// 화면 흐림 반경(픽셀) = 교차 거리 × tan(반각) × 픽셀/거리
+	//   (원근: 투영[1][1] × 높이/2 ÷ 반사된 상의 뷰 깊이 ComputeSsrReflectionViewDepth, 직교: 투영[1][1] × 높이/2)
 	static float ComputeSsrBlurRadiusPixels(float Roughness, float HitDistance, float PixelsPerUnit, float MaxRadius)
 	{
 		return FMath::Min(HitDistance * ComputeSpecularConeTangent(Roughness) * PixelsPerUnit, MaxRadius);

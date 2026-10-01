@@ -15,16 +15,20 @@ cbuffer SsrResolveConstants : register(b0)
 	float  ResolveCurrentWeight; // 이번 프레임 비중 (나머지는 이력)
 	uint   bResolveHistoryValid;
 	float  ResolveVarianceGamma; // 이력을 이웃 평균 ± Gamma·표준편차로 자른다
-	float3 ResolvePadding;
+	uint   bResolveDecals;       // 1 = 같은 면 판정에 데칼 법선(t5, t6) 적용 (PSBlur)
+	float2 ResolvePadding;
 };
 
 // 입력 (패스별로 쓰는 것만 바인딩): t0 = 입력 반사 (rgb, 신뢰도), t1 = 지난 프레임 누적 결과, t2 = 표면 움직임 벡터 (현재 UV − 이전 UV),
-//   t3 = 추적 2번째 출력 (xy = 반사 움직임 벡터 — 맞지 않은 픽셀은 0, z = 흐림 반경 픽셀), t4 = 화면 법선/거칠기 (사전 패스)
+//   t3 = 추적 2번째 출력 (xy = 반사 움직임 벡터 — 맞지 않은 픽셀은 0, z = 흐림 반경 픽셀), t4 = 화면 법선/거칠기 (사전 패스),
+//   t5/t6 = 데칼 DBufferB/C (추적과 같은 표면 — 리벳 같은 데칼 노멀 경계를 넘어 섞지 않게)
 Texture2D<float4> SsrCurrent       : register(t0);
 Texture2D<float4> SsrHistory       : register(t1);
 Texture2D<float2> SsrVelocity      : register(t2);
 Texture2D<float4> SsrTraceExtra    : register(t3);
 Texture2D<float4> SsrSceneNormal   : register(t4);
+Texture2D<float4> SsrDecalNormal   : register(t5);
+Texture2D<float4> SsrDecalMaterial : register(t6);
 SamplerState      LinearSampler    : register(s0);
 
 static const int   BlurTaps            = 48;    // 원판 표본 수 (황금각 나선)
@@ -57,6 +61,18 @@ float4 FromResolveSpace(float4 V)
 	return float4(V.rgb / max(1.0f - dot(V.rgb, float3(0.2126f, 0.7152f, 0.0722f)), 1.0e-3f), V.a);
 }
 
+// 같은 면 판정용 법선 (사전 패스 기하 법선 + 데칼)
+float3 LoadBlurNormal(int2 Pixel)
+{
+	float3 N = DecodeScreenNormal(SsrSceneNormal.Load(int3(Pixel, 0)));
+	if (bResolveDecals != 0)
+	{
+		float Roughness = 0.0f;
+		ApplyScreenDecals(SsrDecalNormal, SsrDecalMaterial, Pixel, N, Roughness);
+	}
+	return N;
+}
+
 float4 PSBlur(FFullscreenVSOutput Input) : SV_Target
 {
 	const int2   Pixel  = int2(Input.Position.xy);
@@ -67,7 +83,7 @@ float4 PSBlur(FFullscreenVSOutput Input) : SV_Target
 	{
 		return Unpremultiply(Center); // 거울
 	}
-	const float3 CenterNormal = DecodeScreenNormal(SsrSceneNormal.Load(int3(Pixel, 0)));
+	const float3 CenterNormal = LoadBlurNormal(Pixel);
 	float4       Sum          = Center;
 	float        WeightSum    = 1.0f;
 	[loop] for (int Index = 0; Index < BlurTaps; ++Index)
@@ -77,7 +93,7 @@ float4 PSBlur(FFullscreenVSOutput Input) : SV_Target
 		const float  Angle  = (float)Index * 2.39996323f;
 		const float2 Offset = Radius * sqrt(T) * float2(cos(Angle), sin(Angle));
 		const int2   Tap    = clamp(int2(round(float2(Pixel) + Offset)), 0, MaxPix);
-		if (dot(DecodeScreenNormal(SsrSceneNormal.Load(int3(Tap, 0))), CenterNormal) > SameSurfaceMinDot)
+		if (dot(LoadBlurNormal(Tap), CenterNormal) > SameSurfaceMinDot)
 		{
 			const float W = exp(-2.0f * T); // 가우시안 (거리² / 반경² = T)
 			Sum          += Premultiply(SsrCurrent.Load(int3(Tap, 0))) * W;

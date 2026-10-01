@@ -41,6 +41,16 @@ float3 DecodeScreenNormal(float4 Encoded)
 	return DecodeOctahedral(Encoded.xy * 2.0f - 1.0f);
 }
 
+// 데칼 DBuffer(B = 법선, C = 거칠기, a = 남은 원래 표면 비중)를 화면 법선/거칠기에 적용 — Mesh.hlsl ApplyDecals와 같은 식.
+//   데칼은 사전 패스 뒤에 그려지므로 사전 패스 버퍼를 읽는 화면 효과(SSR)는 이걸로 메인 패스와 같은 표면을 본다
+void ApplyScreenDecals(Texture2D<float4> DecalNormal, Texture2D<float4> DecalMaterial, int2 Pixel, inout float3 N, inout float Roughness)
+{
+	const float4 B = DecalNormal.Load(int3(Pixel, 0));
+	const float4 C = DecalMaterial.Load(int3(Pixel, 0));
+	N              = normalize(N * B.a + B.rgb * 2.0f - (1.0f - B.a));
+	Roughness      = Roughness * C.a + C.r;
+}
+
 // 클립 좌표(지터 없음) 두 개 → UV 단위 움직임 벡터 (현재 - 이전)
 float2 ComputeVelocity(float4 CurrentClip, float4 PreviousClip)
 {

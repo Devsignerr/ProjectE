@@ -24,13 +24,15 @@ cbuffer SsrConstants : register(b0)
 	float    ProjectionScale; // 투영[1][1] × 높이/2 (픽셀/거리 — 원근은 뷰 깊이로 더 나눈다)
 	float    MaxRoughness;    // 이보다 거친 픽셀은 추적하지 않음
 	float    MaxBlurRadius;   // 거칠기 흐림 반경 상한 (픽셀)
-	float    SsrPadding;
+	uint     bDecals;         // 1 = 데칼 DBuffer(t4, t5)를 법선/거칠기에 적용
 };
 
 Texture2D<float>  SceneDepth     : register(t0);
 Texture2D<float>  Hiz            : register(t1); // 칸마다 가장 가까운 깊이 (밉 체인)
 Texture2D<float4> SceneNormal    : register(t2);
 Texture2D<float4> PrevSceneColor : register(t3); // 이전 프레임 씬 컬러 (메인 패스 전이라 아직 지난 프레임 내용)
+Texture2D<float4> DecalNormal    : register(t4); // DBufferB
+Texture2D<float4> DecalMaterial  : register(t5); // DBufferC
 SamplerState      LinearSampler  : register(s0);
 
 static const float SsrFloatMax = 3.402823466e+38f;
@@ -53,9 +55,12 @@ float3 ScreenFromView(float3 P)
 	return float3(Ndc.x * 0.5f + 0.5f, 0.5f - Ndc.y * 0.5f, Ndc.z);
 }
 
+// 밉 칸 수 (UV → 칸 변환용). 칸 크기는 정확히 2^밉 픽셀이므로 내림하지 않는다 — 실제 밉 크기 floor(크기/2^밉)로 나누면
+//   크기가 2^밉의 배수가 아닐 때 칸이 점점 밀려 다른 픽셀 영역의 최소 깊이를 읽고 광선이 물체를 뚫고 지나간다.
+//   화면 끝의 남는 칸은 마지막 실제 칸으로 자른다 (Hi-Z 내리기가 홀수 크기의 나머지를 마지막 칸에 넣는다)
 float2 MipResolution(uint Mip)
 {
-	return max(floor(ScreenSize / exp2((float)Mip)), 1.0f);
+	return ScreenSize / exp2((float)Mip);
 }
 
 // FidelityFX SSSR 계층 추적을 표준 깊이(가까울수록 작음, Hi-Z = 칸의 최소 깊이)로 옮긴 것.
@@ -102,7 +107,7 @@ float3 HierarchicalRaymarch(float3 Origin, float3 Direction, out bool bValid)
 			return Position; // 최대 거리 밖 또는 화면 밖
 		}
 		const float2 MipPosition = MipRes * Position.xy;
-		const float  SurfaceZ    = Hiz.Load(int3(min(int2(MipPosition), int2(MipRes) - 1), Mip));
+		const float  SurfaceZ    = Hiz.Load(int3(min(int2(MipPosition), max(int2(MipRes), 1) - 1), Mip));
 		const bool   bSkipped    = AdvanceRay(Origin, Direction, InvDirection, MipPosition, MipResInv, FloorOffset, UvOffset, SurfaceZ, Position, T);
 		const int    NextMip     = clamp(Mip + (bSkipped ? 1 : -1), -1, (int)HizMipCount - 1);
 		if (NextMip != Mip)
@@ -128,8 +133,13 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	{
 		return 0.0f;
 	}
-	const float4 NormalData = SceneNormal.Load(int3(Pixel, 0));
-	Roughness               = DecodeScreenRoughness(NormalData);
+	const float4 NormalData  = SceneNormal.Load(int3(Pixel, 0));
+	float3       WorldNormal = DecodeScreenNormal(NormalData);
+	Roughness                = DecodeScreenRoughness(NormalData);
+	if (bDecals != 0)
+	{
+		ApplyScreenDecals(DecalNormal, DecalMaterial, Pixel, WorldNormal, Roughness); // 메인 패스와 같은 표면 (데칼 거칠기/노멀)
+	}
 	if (Roughness > MaxRoughness)
 	{
 		return 0.0f; // 메인 패스가 어차피 0으로 페이드
@@ -137,7 +147,7 @@ float4 TraceReflection(int2 Pixel, out float3 SurfaceView, out float HitDistance
 	const float2 UV = (float2(Pixel) + 0.5f) / ScreenSize;
 	const float3 P  = ViewFromDepth(UV, Depth);
 	SurfaceView     = P;
-	const float3 N  = normalize(mul(DecodeScreenNormal(NormalData), (float3x3)View));
+	const float3 N  = normalize(mul(WorldNormal, (float3x3)View));
 	const float3 V  = bOrthographic != 0 ? float3(0.0f, 0.0f, 1.0f) : normalize(P); // 카메라 → 점
 	const float3 R  = reflect(V, N);
 	if (dot(R, N) <= 0.0f)
@@ -232,8 +242,9 @@ FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
 			Output.Motion.xy    = (float2(Pixel) + 0.5f) / ScreenSize - PrevUV;
 		}
 	}
-	// 거칠기 흐림 반경 (ReflectionMath::ComputeSpecularConeTangent / ComputeSsrBlurRadiusPixels와 같은 식).
-	//   빗나간 픽셀도 반경을 준다(최대 추적 거리 기준) — 0이면 맞음/빗나감 경계의 빗나간 쪽이 흐려지지 않아 반사 영역이 칼로 자른 다각형이 된다
+	// 거칠기 흐림 반경 (ReflectionMath::ComputeSpecularConeTangent / ComputeSsrReflectionViewDepth / ComputeSsrBlurRadiusPixels와 같은 식).
+	//   빗나간 픽셀도 반경을 준다(최대 추적 거리 기준) — 0이면 맞음/빗나감 경계의 빗나간 쪽이 흐려지지 않아 반사 영역이 칼로 자른 다각형이 된다.
+	//   원뿔 폭은 반사된 상(가상 점, 표면 뒤 교차 거리)의 깊이로 화면에 옮긴다 — 표면 깊이로 나누면 먼 반사일수록 과하게 흐려진다
 	const float Alpha = Roughness * Roughness;
 	if (SurfaceView.z > 0.0f && Alpha >= 1.0e-3f)
 	{
@@ -241,7 +252,8 @@ FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
 		const float Power         = max(2.0f / (Alpha * Alpha) - 2.0f, 0.0f);
 		const float CosAngle      = pow(0.244f, 1.0f / (Power + 1.0f));
 		const float ConeTangent   = sqrt(max(1.0f - CosAngle * CosAngle, 0.0f)) / max(CosAngle, 1.0e-4f);
-		const float PixelsPerUnit = bOrthographic != 0 ? ProjectionScale : ProjectionScale / max(SurfaceView.z, 1.0e-3f);
+		const float VirtualDepth  = SurfaceView.z * (1.0f + Distance / max(length(SurfaceView), 1.0e-3f));
+		const float PixelsPerUnit = bOrthographic != 0 ? ProjectionScale : ProjectionScale / max(VirtualDepth, 1.0e-3f);
 		Output.Motion.z           = min(Distance * ConeTangent * PixelsPerUnit, MaxBlurRadius);
 	}
 	return Output;

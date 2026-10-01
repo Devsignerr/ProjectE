@@ -905,6 +905,9 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 			FScreenSpaceReflectionInputs Inputs;
 			Inputs.SceneColor    = SceneColor.get();
 			Inputs.SceneNormal   = SceneNormal.get();
+			Inputs.DecalNormal   = &DecalRenderer.GetTarget(1);
+			Inputs.DecalMaterial = &DecalRenderer.GetTarget(2);
+			Inputs.bDecals       = bDecals;
 			Inputs.Projection    = RenderCamera.GetProjectionMatrix();
 			Inputs.View          = Camera.GetViewMatrix();
 			Inputs.Reprojection  = CurrentReprojection;

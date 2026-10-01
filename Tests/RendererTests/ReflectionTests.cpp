@@ -110,4 +110,8 @@ E_TEST(Reflection_SsrBlurRadius)
 	const float Far  = FReflectionMath::ComputeSsrBlurRadiusPixels(0.3f, 100.0f, 1.0f, 16.0f);
 	E_EXPECT_NEAR(Far, Near * 2.0f, 1.0e-3f);
 	E_EXPECT_NEAR(FReflectionMath::ComputeSsrBlurRadiusPixels(0.6f, 1000.0f, 2.0f, 16.0f), 16.0f, 1.0e-4f);
+	// 반사된 상의 깊이: 화면 가운데(뷰 깊이 = 거리) 표면 800cm, 교차 400cm → 1200cm. 비스듬하면 뷰 깊이 비율 유지
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrReflectionViewDepth(800.0f, 800.0f, 400.0f), 1200.0f, 1.0e-3f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrReflectionViewDepth(400.0f, 800.0f, 400.0f), 600.0f, 1.0e-3f);
+	E_EXPECT_NEAR(FReflectionMath::ComputeSsrReflectionViewDepth(800.0f, 800.0f, 0.0f), 800.0f, 1.0e-3f);
 }

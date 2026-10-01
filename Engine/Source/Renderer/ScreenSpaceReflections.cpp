@@ -35,7 +35,7 @@ namespace
 		float      ProjectionScale = 1.0f;
 		float      MaxRoughness  = 0.6f;
 		float      MaxBlurRadius = 16.0f;
-		float      Padding       = 0.0f;
+		uint32     bDecals       = 0;
 	};
 	static_assert(sizeof(FSsrConstants) == 304);
 
@@ -46,7 +46,8 @@ namespace
 		float    CurrentWeight = 0.1f;
 		uint32   bHistoryValid = 0;
 		float    VarianceGamma = 1.5f;
-		float    Padding[3]    = {};
+		uint32   bDecals       = 0;
+		float    Padding[2]    = {};
 	};
 	static_assert(sizeof(FSsrResolveConstants) == 32);
 
@@ -260,7 +261,9 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 
 void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 {
-	E_CHECKF(Inputs.SceneColor != nullptr && Inputs.SceneNormal != nullptr && Inputs.SceneColor->GetDesc().bWithDepth, "SSR 입력이 올바르지 않습니다");
+	E_CHECKF(Inputs.SceneColor != nullptr && Inputs.SceneNormal != nullptr && Inputs.SceneColor->GetDesc().bWithDepth && Inputs.DecalNormal != nullptr &&
+	             Inputs.DecalMaterial != nullptr,
+	         "SSR 입력이 올바르지 않습니다");
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	const uint32               Width       = Inputs.SceneColor->GetWidth();
 	const uint32               Height      = Inputs.SceneColor->GetHeight();
@@ -316,6 +319,7 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	Constants.ProjectionScale = Inputs.Projection.M[1][1] * static_cast<float>(Height) * 0.5f;
 	Constants.MaxRoughness  = Inputs.MaxRoughness;
 	Constants.MaxBlurRadius = FMath::Max(Inputs.MaxBlurRadius, 0.0f);
+	Constants.bDecals       = Inputs.bDecals ? 1u : 0u;
 	const D3D12_GPU_VIRTUAL_ADDRESS Address = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
 	// 색 + 반사 움직임 (전체 화면 삼각형이 모든 픽셀을 쓰므로 지우지 않는다)
@@ -325,7 +329,8 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	CommandList->OMSetRenderTargets(2, TraceTargets, FALSE, nullptr);
 	DrawScreenPass(CommandList, *Root, TracePipeline, Address,
 	               { Inputs.SceneColor->GetDepthSrv(), HizSrv, Inputs.SceneNormal->GetSrv(),
-	                 (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv() },
+	                 (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv(), Inputs.DecalNormal->GetSrv(),
+	                 Inputs.DecalMaterial->GetSrv() },
 	               Width, Height);
 	Result->End(CommandList);
 	ReflectMotion->End(CommandList);
@@ -335,11 +340,13 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	PassConstants.ScreenSize    = Constants.ScreenSize;
 	PassConstants.CurrentWeight = ResolveCurrentWeight;
 	PassConstants.VarianceGamma = ResolveVarianceGamma;
+	PassConstants.bDecals       = Constants.bDecals;
 	const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
 	Blurred->Begin(CommandList, nullptr);
 	DrawScreenPass(CommandList, *Root, BlurPipeline, BlurAddress,
-	               { Result->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv() }, Width,
-	               Height);
+	               { Result->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv(),
+	                 Inputs.DecalNormal->GetSrv(), Inputs.DecalMaterial->GetSrv() },
+	               Width, Height);
 	Blurred->End(CommandList);
 	const FD3D12RenderTarget* BlurInput = Blurred.get();
 	Output                              = BlurInput;

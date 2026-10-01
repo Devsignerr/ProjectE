@@ -18,6 +18,9 @@ struct FScreenSpaceReflectionInputs
 {
 	const FD3D12RenderTarget* SceneColor  = nullptr; // 깊이(사전 패스) + 이전 프레임 색 (메인 패스 전이라 지난 프레임 내용)
 	const FD3D12RenderTarget* SceneNormal = nullptr;
+	const FD3D12RenderTarget* DecalNormal   = nullptr; // DBufferB (항상 바인딩 — bDecals가 거짓이면 읽지 않음)
+	const FD3D12RenderTarget* DecalMaterial = nullptr; // DBufferC
+	bool                      bDecals       = false;   // 이번 프레임 데칼을 그렸음 → 추적/흐림이 데칼 법선·거칠기를 쓴다 (사전 패스 버퍼에는 데칼이 없다)
 	FMatrix4x4                Projection;   // 지터 포함
 	FMatrix4x4                View;
 	FMatrix4x4                Reprojection; // 현재 클립 → 이전 클립
@@ -34,6 +37,7 @@ struct FScreenSpaceReflectionInputs
 
 // 화면 공간 반사 (ScreenSpaceReflections.hlsl Hi-Z + SsrTrace.hlsl, 식은 Renderer/ReflectionMath.h).
 //   사전 패스 뒤·메인 패스 전: 사전 패스 깊이로 최소 깊이 밉 체인 → 픽셀마다 거울 반사 광선을 계층 추적 → (색, 신뢰도).
+//   표면 법선/거칠기 = 사전 패스 버퍼 + 데칼 DBuffer(B/C, 메인 패스 ApplyDecals와 같은 식) — 데칼 패스 뒤에 돌아야 한다.
 //   색은 이전 프레임 씬 컬러를 재투영해 읽으므로 이력이 없는 프레임(첫 프레임/크기 변경/카메라 컷)은 끈다.
 //   거울 방향 한 번 추적(결정적) → SsrResolve.hlsl PSBlur 거칠기 원뿔 반경 원판 흐림 → PSResolve 반사 움직임 재투영 누적(이력 2장 핑퐁).
 //   확률 반사(픽셀마다 GGX 방향 하나 + 누적)는 TV 노이즈처럼 지글거려 쓰지 않는다.

@@ -406,10 +406,14 @@ void FSequenceSystem::Evaluate(FScene& Scene, FEntity Context, const FSequenceAs
 		{
 			const FEntity        Target    = Resolve(Scene, Context, Track.Target, State.Bindings[TrackIndex]);
 			FAnimationComponent* Animation = Target.IsValid() ? Registry.TryGet<FAnimationComponent>(Target) : nullptr;
-			if (Animation == nullptr || !Animation->Runtime.Set || AnimType == nullptr)
+			if (Animation == nullptr || AnimType == nullptr)
 			{
 				WarnOnce(State, TrackIndex, "애니메이션 대상(모델 루트)을 찾을 수 없습니다: '" + Track.Target + "'");
 				break;
+			}
+			if (!Animation->Runtime.Set)
+			{
+				break; // 모델을 읽지 않은 프로세스 (GPU 없는 전용 서버) 또는 아직 로드 전
 			}
 			if (Registry.Has<FAnimGraphComponent>(Target))
 			{

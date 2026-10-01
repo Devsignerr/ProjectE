@@ -25,19 +25,24 @@ struct FRigidBodyComponent
 	float RollingResistance = 0.05f; // 구르기 저항 계수: 무언가에 닿아 있을 때만 회전을 줄인다 (구는 약 계수 × g로 감속). 0 = 없음
 	bool  bUseGravity       = true;
 	bool  bLockRotation     = false; // 동적 바디가 회전하지 않음 (캐릭터 캡슐 — 넘어지지 않게, 이동만)
+	bool  bReportContacts   = false; // 충돌 시작/끝 이벤트를 낸다 (스크립트가 붙은 엔티티는 켜지 않아도 FGameWorld가 보고시킨다)
 };
+
+// 콜라이더 공통: bIsTrigger = 트리거(센서) 영역 — 부딪히지 않고 들어옴/나감만 알린다 (Physics/PhysicsSystem.h 충돌 알림 규칙)
 
 // 박스 콜라이더. 크기는 트랜스폼 월드 스케일이 곱해진다 (바디 생성 시)
 struct FBoxColliderComponent
 {
 	FVector3 HalfExtents = FVector3(50.0f, 50.0f, 50.0f); // cm (기본: 100cm 큐브 = 내장 큐브 메시)
 	FVector3 Offset;                                       // cm, 엔티티 로컬
+	bool     bIsTrigger = false;
 };
 
 struct FSphereColliderComponent
 {
 	float    Radius = 50.0f; // cm (스케일 성분 중 최대값이 곱해진다)
 	FVector3 Offset;
+	bool     bIsTrigger = false;
 };
 
 // 캡슐: 엔티티 로컬 +Z 축 방향 (Jolt 캡슐은 +Y 축이므로 내부에서 회전)
@@ -46,4 +51,5 @@ struct FCapsuleColliderComponent
 	float    Radius     = 30.0f; // cm
 	float    HalfHeight = 60.0f; // cm, 원기둥 부분의 절반 (전체 높이 = 2 * (HalfHeight + Radius))
 	FVector3 Offset;
+	bool     bIsTrigger = false;
 };

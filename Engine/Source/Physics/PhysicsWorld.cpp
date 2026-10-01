@@ -35,11 +35,12 @@ E_DEFINE_LOG_CATEGORY(LogPhysics, Log)
 
 namespace
 {
-	// ---- 레이어: 정적(서로 충돌 안 함) / 움직이는 것
+	// ---- 레이어: 정적(서로 충돌 안 함) / 움직이는 것 / 트리거(움직이는 것과만 — 정적 바닥과 겹침 계산 안 함, 브로드페이즈는 Moving)
 	namespace ObjectLayers
 	{
 		constexpr JPH::ObjectLayer NonMoving = 0;
 		constexpr JPH::ObjectLayer Moving    = 1;
+		constexpr JPH::ObjectLayer Trigger   = 2;
 	}
 	namespace BroadPhaseLayers
 	{
@@ -69,6 +70,10 @@ namespace
 	public:
 		bool ShouldCollide(JPH::ObjectLayer Layer, JPH::BroadPhaseLayer BroadPhase) const override
 		{
+			if (Layer == ObjectLayers::Trigger)
+			{
+				return BroadPhase == BroadPhaseLayers::Moving;
+			}
 			return Layer == ObjectLayers::Moving || BroadPhase == BroadPhaseLayers::Moving;
 		}
 	};
@@ -78,8 +83,19 @@ namespace
 	public:
 		bool ShouldCollide(JPH::ObjectLayer A, JPH::ObjectLayer B) const override
 		{
+			if (A == ObjectLayers::Trigger || B == ObjectLayers::Trigger)
+			{
+				return A == ObjectLayers::Moving || B == ObjectLayers::Moving; // 트리거 ↔ 움직이는 것만
+			}
 			return A == ObjectLayers::Moving || B == ObjectLayers::Moving;
 		}
+	};
+
+	// 레이캐스트/질의에서 트리거 레이어를 뺀다 (트리거 영역은 총알·시야를 막지 않는다)
+	class FIgnoreTriggerLayerFilter final : public JPH::ObjectLayerFilter
+	{
+	public:
+		bool ShouldCollide(JPH::ObjectLayer Layer) const override { return Layer != ObjectLayers::Trigger; }
 	};
 
 	// ---- Jolt 전역 초기화 (월드 수 참조 카운트)
@@ -219,23 +235,95 @@ namespace
 		}
 	}
 
-	// 스텝마다 접촉 중인 동적 바디를 기록한다. 콜백은 Jolt 작업 스레드에서 동시에 불리므로 바디 인덱스별 원자 변수에 스텝 번호를 쓴다
+	// 콜백에서 모은 접촉 변화 (메인 스레드가 Step 뒤에 쌍 단위로 정리)
+	struct FRawContact
+	{
+		bool        bAdded = true;
+		JPH::BodyID Body1, Body2;
+		bool        bSensor = false;
+		FVector3    Position; // cm
+		FVector3    Normal;
+		float       ApproachSpeed = 0.0f; // cm/s
+		float       Impulse       = 0.0f; // kg·cm/s
+	};
+
+	// 스텝마다 접촉 중인 동적 바디를 기록한다. 콜백은 Jolt 작업 스레드에서 동시에 불리므로 바디 인덱스별 원자 변수에 스텝 번호를 쓴다.
+	// 접촉 알림: 보고 대상(ReportFlags — 메인 스레드가 스텝 밖에서만 쓴다) 바디가 낀 접촉 추가/제거를 잠금 아래 모은다
 	class FContactTracker final : public JPH::ContactListener
 	{
 	public:
 		explicit FContactTracker(JPH::uint MaxBodies)
 			: LastContactStep(std::make_unique<std::atomic<uint32>[]>(MaxBodies))
+			, ReportFlags(MaxBodies, 0)
 			, Capacity(MaxBodies)
 		{
 		}
 
-		void OnContactAdded(const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold&, JPH::ContactSettings&) override
+		void OnContactAdded(const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold, JPH::ContactSettings&) override
 		{
 			Mark(Body1, Body2);
+			if (!ShouldReport(Body1.GetID(), Body2.GetID()))
+			{
+				return;
+			}
+			FRawContact Contact;
+			Contact.Body1   = Body1.GetID();
+			Contact.Body2   = Body2.GetID();
+			Contact.bSensor = Body1.IsSensor() || Body2.IsSensor();
+			if (!Contact.bSensor && !Manifold.mRelativeContactPointsOn1.empty())
+			{
+				JPH::Vec3 Sum = JPH::Vec3::sZero();
+				for (JPH::uint Index = 0; Index < Manifold.mRelativeContactPointsOn1.size(); ++Index)
+				{
+					Sum += 0.5f * (Manifold.mRelativeContactPointsOn1[Index] + Manifold.mRelativeContactPointsOn2[Index]);
+				}
+				const JPH::RVec3 Point = Manifold.mBaseOffset + Sum / static_cast<float>(Manifold.mRelativeContactPointsOn1.size());
+				const JPH::Vec3  Normal = Manifold.mWorldSpaceNormal;
+				// 다가오는 속력: 바디 2가 1 쪽(-법선)으로 오는 상대 속도 (솔버 전 값)
+				const float Approach = std::max((Body1.GetPointVelocity(Point) - Body2.GetPointVelocity(Point)).Dot(Normal), 0.0f); // m/s
+				const float InverseMass1 = Body1.IsDynamic() ? Body1.GetMotionProperties()->GetInverseMass() : 0.0f;
+				const float InverseMass2 = Body2.IsDynamic() ? Body2.GetMotionProperties()->GetInverseMass() : 0.0f;
+				const float InverseSum   = InverseMass1 + InverseMass2;
+				Contact.Position      = FVector3(static_cast<float>(Point.GetX()), static_cast<float>(Point.GetY()), static_cast<float>(Point.GetZ())) * FUnits::MetersToUnits;
+				Contact.Normal        = FVector3(Normal.GetX(), Normal.GetY(), Normal.GetZ());
+				Contact.ApproachSpeed = Approach * FUnits::MetersToUnits;
+				Contact.Impulse       = InverseSum > 0.0f ? Approach / InverseSum * FUnits::MetersToUnits : 0.0f;
+			}
+			std::scoped_lock Lock(EventMutex);
+			Events.push_back(Contact);
 		}
 		void OnContactPersisted(const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold&, JPH::ContactSettings&) override
 		{
 			Mark(Body1, Body2);
+		}
+		void OnContactRemoved(const JPH::SubShapeIDPair& Pair) override
+		{
+			if (!ShouldReport(Pair.GetBody1ID(), Pair.GetBody2ID()))
+			{
+				return; // 제거된 바디의 인덱스가 재사용됐을 수도 있지만 메인 스레드가 쌍 목록으로 거른다
+			}
+			FRawContact Contact;
+			Contact.bAdded = false;
+			Contact.Body1  = Pair.GetBody1ID();
+			Contact.Body2  = Pair.GetBody2ID();
+			std::scoped_lock Lock(EventMutex);
+			Events.push_back(Contact);
+		}
+
+		void SetReport(JPH::BodyID Body, bool bReport)
+		{
+			if (Body.GetIndex() < Capacity)
+			{
+				ReportFlags[Body.GetIndex()] = bReport ? 1 : 0;
+			}
+		}
+		bool IsReporting(JPH::BodyID Body) const { return Body.GetIndex() < Capacity && ReportFlags[Body.GetIndex()] != 0; }
+		// Step 뒤 메인 스레드에서
+		void TakeEvents(std::vector<FRawContact>& Out)
+		{
+			std::scoped_lock Lock(EventMutex);
+			Out.swap(Events);
+			Events.clear();
 		}
 
 		// Update 전에 호출 (메인 스레드). 0은 "접촉 없음"이므로 1부터 센다
@@ -258,11 +346,27 @@ namespace
 				}
 			}
 		}
+		bool ShouldReport(JPH::BodyID Body1, JPH::BodyID Body2) const
+		{
+			const JPH::uint Index1 = Body1.GetIndex();
+			const JPH::uint Index2 = Body2.GetIndex();
+			return (Index1 < Capacity && ReportFlags[Index1] != 0) || (Index2 < Capacity && ReportFlags[Index2] != 0);
+		}
 
 		std::unique_ptr<std::atomic<uint32>[]> LastContactStep;
+		std::vector<uint8>                     ReportFlags; // 바디 인덱스 → 보고 대상 (스텝 중에는 읽기만)
+		std::mutex                             EventMutex;
+		std::vector<FRawContact>               Events;
 		JPH::uint                              Capacity  = 0;
 		uint32                                 StepIndex = 0;
 	};
+
+	uint64 MakePairKey(uint32 BodyA, uint32 BodyB)
+	{
+		const uint32 Low  = std::min(BodyA, BodyB);
+		const uint32 High = std::max(BodyA, BodyB);
+		return (static_cast<uint64>(Low) << 32) | High;
+	}
 
 	struct FRollingBody
 	{
@@ -301,6 +405,16 @@ struct FPhysicsWorld::FImpl
 	std::unique_ptr<JPH::PhysicsSystem>        System;
 	std::unique_ptr<FContactTracker>           Contacts;
 	std::unordered_map<uint32, FRollingBody>   RollingBodies; // 바디 ID(인덱스+시퀀스) → 구르기 저항
+	// 접촉 알림 (메인 스레드): 닿아 있는 쌍(키 → 센서 쌍인가), 아직 꺼내 가지 않은 이벤트.
+	// 쌍의 바디는 항상 살아 있다 (바디를 지울 때 그 쌍을 먼저 끝낸다) → UserData는 바디 인터페이스에서 읽는다
+	std::unordered_map<uint64, bool>           ActivePairs;
+	std::unordered_map<uint64, bool>           DormantPairs; // ActivePairs 중 둘 다 잠들어 Jolt가 접촉을 버린 쌍 → 깨어난 것을 봤는가
+	std::vector<FPhysicsContactEvent>          PendingContactEvents;
+	std::vector<FRawContact>                   RawScratch;
+
+	void ProcessRawContacts();
+	void EndPairsOf(uint32 Body);
+	void PushEvent(EPhysicsContactEventType Type, uint32 Body1, uint32 Body2, bool bSensor, const FRawContact* Info);
 	FCharacterContacts                         CharacterContacts; // 모든 캐릭터의 리스너 (Characters보다 먼저 선언 — 나중에 해제)
 	std::unordered_map<uint32, JPH::Ref<JPH::CharacterVirtual>> Characters; // 캐릭터 ID → CharacterVirtual (내부 바디 포함)
 	uint32                                     NextCharacterId = 1;
@@ -308,6 +422,113 @@ struct FPhysicsWorld::FImpl
 	JPH::BodyInterface& Bodies() { return System->GetBodyInterface(); }
 	const JPH::BodyInterface& Bodies() const { return System->GetBodyInterface(); }
 };
+
+void FPhysicsWorld::FImpl::PushEvent(EPhysicsContactEventType Type, uint32 Body1, uint32 Body2, bool bSensor, const FRawContact* Info)
+{
+	FPhysicsContactEvent Event;
+	Event.Type      = Type;
+	Event.Body1     = Body1;
+	Event.Body2     = Body2;
+	Event.bSensor   = bSensor;
+	Event.UserData1 = Bodies().GetUserData(JPH::BodyID(Body1));
+	Event.UserData2 = Bodies().GetUserData(JPH::BodyID(Body2));
+	if (Info != nullptr)
+	{
+		// 원본은 Jolt 순서(바디 1 → 2 법선) — 핸들 순서로 바꿨으면 법선을 뒤집는다
+		const bool bSwapped = Info->Body1.GetIndexAndSequenceNumber() != Body1;
+		Event.Position      = Info->Position;
+		Event.Normal        = bSwapped ? -Info->Normal : Info->Normal;
+		Event.ApproachSpeed = Info->ApproachSpeed;
+		Event.Impulse       = Info->Impulse;
+	}
+	PendingContactEvents.push_back(Event);
+}
+
+void FPhysicsWorld::FImpl::ProcessRawContacts()
+{
+	Contacts->TakeEvents(RawScratch);
+	for (const FRawContact& Raw : RawScratch)
+	{
+		const uint32 IdA  = Raw.Body1.GetIndexAndSequenceNumber();
+		const uint32 IdB  = Raw.Body2.GetIndexAndSequenceNumber();
+		const uint32 Low  = std::min(IdA, IdB);
+		const uint32 High = std::max(IdA, IdB);
+		const uint64 Key  = MakePairKey(Low, High);
+		if (Raw.bAdded)
+		{
+			DormantPairs.erase(Key);
+			if (ActivePairs.emplace(Key, Raw.bSensor).second) // 이미 닿아 있던 쌍(잠들었다 깸)은 다시 알리지 않는다
+			{
+				PushEvent(EPhysicsContactEventType::Begin, Low, High, Raw.bSensor, &Raw);
+			}
+			continue;
+		}
+		const auto Found = ActivePairs.find(Key);
+		if (Found == ActivePairs.end())
+		{
+			continue; // 제거된 바디(이미 끝냄) 또는 보고 전 쌍
+		}
+		// Jolt는 바디가 잠들 때도 제거를 알린다 → 둘 다 깨어 있지 않으면(정적 포함) 잠든 쌍으로 두고 깨어날 때 다시 확인한다
+		if (!Bodies().IsActive(JPH::BodyID(Low)) && !Bodies().IsActive(JPH::BodyID(High)))
+		{
+			DormantPairs[Key] = false;
+			continue;
+		}
+		const bool bSensor = Found->second;
+		ActivePairs.erase(Found);
+		PushEvent(EPhysicsContactEventType::End, Low, High, bSensor, nullptr);
+	}
+	RawScratch.clear();
+
+	// 잠든 쌍: 한쪽이 깨어난 뒤 온전한 스텝 하나(깨어난 스텝은 건너뜀 — 스텝 중에 깨면 그 스텝 접촉이 다 잡히지 않았을 수 있다)에서도
+	// 닿지 않았으면(순간이동, 밀려남) 끝 (Jolt는 이미 제거를 알렸으므로 다시 오지 않는다)
+	for (auto It = DormantPairs.begin(); It != DormantPairs.end();)
+	{
+		const JPH::BodyID Low(static_cast<uint32>(It->first >> 32));
+		const JPH::BodyID High(static_cast<uint32>(It->first & 0xFFFFFFFFu));
+		if (!Bodies().IsActive(Low) && !Bodies().IsActive(High))
+		{
+			It->second = false;
+			++It;
+			continue;
+		}
+		if (!It->second)
+		{
+			It->second = true; // 깨어남 — 다음 스텝 뒤에 확인
+			++It;
+			continue;
+		}
+		if (!System->WereBodiesInContact(Low, High))
+		{
+			const auto Found = ActivePairs.find(It->first);
+			if (Found != ActivePairs.end())
+			{
+				PushEvent(EPhysicsContactEventType::End, Low.GetIndexAndSequenceNumber(), High.GetIndexAndSequenceNumber(), Found->second, nullptr);
+				ActivePairs.erase(Found);
+			}
+		}
+		It = DormantPairs.erase(It);
+	}
+}
+
+void FPhysicsWorld::FImpl::EndPairsOf(uint32 Body)
+{
+	for (auto It = ActivePairs.begin(); It != ActivePairs.end();)
+	{
+		const uint32 Low  = static_cast<uint32>(It->first >> 32);
+		const uint32 High = static_cast<uint32>(It->first & 0xFFFFFFFFu);
+		if (Low == Body || High == Body)
+		{
+			PushEvent(EPhysicsContactEventType::End, Low, High, It->second, nullptr);
+			DormantPairs.erase(It->first);
+			It = ActivePairs.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+}
 
 FPhysicsWorld::FPhysicsWorld()
 	: Impl(std::make_unique<FImpl>())
@@ -363,9 +584,17 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 		return InvalidBody;
 	}
 
-	const JPH::EMotionType  Motion = ToJoltMotion(Desc.MotionType);
-	JPH::BodyCreationSettings Settings(Shape, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Motion,
-	                                   Motion == JPH::EMotionType::Static ? ObjectLayers::NonMoving : ObjectLayers::Moving);
+	// 트리거: 잠들지 않는 키네마틱 센서 (동적 트리거는 그대로 떨어지는 센서). 정적 운동 형식이어도 키네마틱으로 만들어
+	// 잠든 바디·캐릭터 내부 바디(키네마틱)를 계속 감지한다 — FPhysicsSystem은 정적처럼 순간이동으로 옮긴다
+	const JPH::EMotionType  Motion = Desc.bIsTrigger && Desc.MotionType != EPhysicsMotionType::Dynamic ? JPH::EMotionType::Kinematic : ToJoltMotion(Desc.MotionType);
+	const JPH::ObjectLayer  Layer  = Desc.bIsTrigger ? ObjectLayers::Trigger : (Motion == JPH::EMotionType::Static ? ObjectLayers::NonMoving : ObjectLayers::Moving);
+	JPH::BodyCreationSettings Settings(Shape, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Motion, Layer);
+	if (Desc.bIsTrigger)
+	{
+		Settings.mIsSensor                     = true;
+		Settings.mCollideKinematicVsNonDynamic = true; // 키네마틱(캐릭터 내부 바디, 키네마틱 강체)도 감지
+		Settings.mAllowSleeping                = false;
+	}
 	Settings.mFriction       = Desc.Friction;
 	Settings.mRestitution    = Desc.Restitution;
 	Settings.mLinearDamping  = Desc.LinearDamping;
@@ -389,10 +618,11 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 		E_LOG(LogPhysics, Error, "바디 생성 실패 (최대 바디 수 초과?)");
 		return InvalidBody;
 	}
-	if (Motion == JPH::EMotionType::Dynamic && Desc.RollingResistance > 0.0f)
+	if (Motion == JPH::EMotionType::Dynamic && Desc.RollingResistance > 0.0f && !Desc.bIsTrigger)
 	{
 		Impl->RollingBodies[Id.GetIndexAndSequenceNumber()] = { Desc.RollingResistance, GetRollingRadius(Desc) };
 	}
+	Impl->Contacts->SetReport(Id, Desc.bIsTrigger || Desc.bReportContacts);
 	return Id.GetIndexAndSequenceNumber();
 }
 
@@ -403,6 +633,8 @@ void FPhysicsWorld::DestroyBody(uint32 Body)
 		return;
 	}
 	const JPH::BodyID Id(Body);
+	Impl->EndPairsOf(Body);
+	Impl->Contacts->SetReport(Id, false);
 	Impl->RollingBodies.erase(Body);
 	Impl->Bodies().RemoveBody(Id);
 	Impl->Bodies().DestroyBody(Id);
@@ -512,6 +744,7 @@ void FPhysicsWorld::Step(float DeltaSeconds)
 	{
 		E_LOG(LogPhysics, Warning, "물리 스텝 경고 (코드 {}): 바디 쌍/접촉 제한 초과", static_cast<uint32>(Error));
 	}
+	Impl->ProcessRawContacts();
 
 	// 구르기 저항: Jolt에는 없으므로 이번 스텝에 접촉한 바디의 회전 속력을 일정하게 줄인다 (공중 회전에는 영향 없음)
 	const float Gravity = Impl->System->GetGravity().Length(); // m/s²
@@ -547,9 +780,10 @@ bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, f
 		return false;
 	}
 
-	const JPH::RRayCast Ray(ToJoltPosition(Origin), ToJoltVector(PhysicsMath::ToMeters(Normalized * MaxDistance)));
-	JPH::RayCastResult  Result;
-	if (!Impl->System->GetNarrowPhaseQuery().CastRay(Ray, Result))
+	const JPH::RRayCast             Ray(ToJoltPosition(Origin), ToJoltVector(PhysicsMath::ToMeters(Normalized * MaxDistance)));
+	JPH::RayCastResult              Result;
+	const FIgnoreTriggerLayerFilter IgnoreTriggers;
+	if (!Impl->System->GetNarrowPhaseQuery().CastRay(Ray, Result, JPH::BroadPhaseLayerFilter(), IgnoreTriggers))
 	{
 		return false;
 	}
@@ -614,7 +848,57 @@ uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
 
 void FPhysicsWorld::DestroyCharacter(uint32 Character)
 {
+	if (const uint32 Inner = GetCharacterInnerBody(Character); Inner != InvalidBody)
+	{
+		Impl->EndPairsOf(Inner);
+		Impl->Contacts->SetReport(JPH::BodyID(Inner), false);
+	}
 	Impl->Characters.erase(Character); // 소멸자가 내부 바디를 지운다
+}
+
+uint32 FPhysicsWorld::GetCharacterInnerBody(uint32 Character) const
+{
+	const auto Found = Impl->Characters.find(Character);
+	if (Found == Impl->Characters.end() || Found->second->GetInnerBodyID().IsInvalid())
+	{
+		return InvalidBody;
+	}
+	return Found->second->GetInnerBodyID().GetIndexAndSequenceNumber();
+}
+
+void FPhysicsWorld::SetBodyReportsContacts(uint32 Body, bool bReport)
+{
+	if (Body == InvalidBody || Impl->Contacts->IsReporting(JPH::BodyID(Body)) == bReport)
+	{
+		return;
+	}
+	Impl->Contacts->SetReport(JPH::BodyID(Body), bReport);
+	if (!bReport)
+	{
+		// 끝 통지를 더는 받지 못하는 쌍(상대도 보고 대상이 아님)은 지금 끝낸다
+		for (auto It = Impl->ActivePairs.begin(); It != Impl->ActivePairs.end();)
+		{
+			const uint32 Low   = static_cast<uint32>(It->first >> 32);
+			const uint32 High  = static_cast<uint32>(It->first & 0xFFFFFFFFu);
+			const uint32 Other = Low == Body ? High : (High == Body ? Low : InvalidBody);
+			if (Other != InvalidBody && !Impl->Contacts->IsReporting(JPH::BodyID(Other)))
+			{
+				Impl->PushEvent(EPhysicsContactEventType::End, Low, High, It->second, nullptr);
+				Impl->DormantPairs.erase(It->first);
+				It = Impl->ActivePairs.erase(It);
+			}
+			else
+			{
+				++It;
+			}
+		}
+	}
+}
+
+void FPhysicsWorld::ConsumeContactEvents(std::vector<FPhysicsContactEvent>& OutEvents)
+{
+	OutEvents.insert(OutEvents.end(), Impl->PendingContactEvents.begin(), Impl->PendingContactEvents.end());
+	Impl->PendingContactEvents.clear();
 }
 
 uint32 FPhysicsWorld::GetCharacterCount() const

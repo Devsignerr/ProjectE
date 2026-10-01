@@ -40,6 +40,31 @@ struct FPhysicsBodyDesc
 	bool   bUseGravity       = true;
 	bool   bLockRotation     = false; // 동적 바디: 이동만 (회전 자유도 없음)
 	uint64 UserData          = 0; // 엔티티 ToId()
+	// 트리거(센서): 부딪히지 않고 접촉만 알린다. 운동 형식과 무관하게 잠들지 않는 키네마틱 센서로 만든다
+	// (정적 센서는 상대가 잠들면 접촉을 잃는다 — Jolt). 트리거 레이어는 정적 바디와 겹침을 계산하지 않는다
+	bool   bIsTrigger        = false;
+	bool   bReportContacts   = false; // 접촉 시작/끝 이벤트 (트리거는 항상)
+};
+
+enum class EPhysicsContactEventType : uint8
+{
+	Begin,
+	End,
+};
+
+// 바디 쌍의 접촉 시작/끝 (GetContactEvents). Body1/2는 바디 핸들 순서(작은 쪽이 1), 한쪽 이상이 보고 대상일 때만 생긴다
+struct FPhysicsContactEvent
+{
+	EPhysicsContactEventType Type = EPhysicsContactEventType::Begin;
+	uint32   Body1 = ~0u, Body2 = ~0u;
+	uint64   UserData1 = 0, UserData2 = 0;
+	bool     bSensor = false; // 한쪽이 트리거
+	// Begin만 (트리거 제외): 접촉 지점 (cm), 법선 = 바디 2를 1에서 밀어내는 방향, 다가오던 속력 (cm/s, 법선 방향),
+	// 충격 세기 추정 (kg·cm/s = 다가오던 속력 × 유효 질량. 접촉이 처음 잡힌 순간 = 솔버 전 값이라 실제 충격량과 다를 수 있다)
+	FVector3 Position;
+	FVector3 Normal;
+	float    ApproachSpeed = 0.0f;
+	float    Impulse       = 0.0f;
 };
 
 // 캐릭터 (Jolt CharacterVirtual + 다른 물체가 부딪히는 내부 키네마틱 캡슐). 위치 = 캡슐 중심, Z축 캡슐
@@ -128,6 +153,14 @@ public:
 	float GetCharacterDynamicPenetration(uint32 Character) const;
 	// 캐릭터가 동적 바디를 미는(충격량) 여부 — 모든 캐릭터 공용. 끄면 동적 바디도 밀리지 않는 벽처럼 막는다 (예측 재조정의 다시 적용)
 	void SetCharactersPushBodies(bool bPush);
+
+	// ---- 접촉 알림. 콜백(Jolt 작업 스레드)에서 모은 것을 Step 끝에 메인 스레드에서 바디 쌍 단위로 정리한다:
+	//   같은 쌍의 시작은 한 번, 끝은 실제로 떨어졌을 때 (둘 다 잠들어 생긴 Jolt 제거 통지는 무시 — 계속 닿아 있음),
+	//   DestroyBody/DestroyCharacter는 그 바디가 닿아 있던 쌍의 끝을 바로 만든다.
+	// 이벤트는 ConsumeContactEvents까지 쌓인다 (Step 여러 번 + 바디 제거)
+	void SetBodyReportsContacts(uint32 Body, bool bReport);
+	void ConsumeContactEvents(std::vector<FPhysicsContactEvent>& OutEvents); // OutEvents 끝에 붙이고 비운다
+	uint32 GetCharacterInnerBody(uint32 Character) const; // 다른 물체가 부딪히는 내부 키네마틱 바디 (없으면 InvalidBody)
 
 private:
 	struct FImpl;

@@ -4,6 +4,7 @@
 #include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsMath.h"
 #include "Physics/PhysicsWorld.h"
+#include "Scene/CollisionEvents.h"
 
 #include <functional>
 #include <memory>
@@ -37,6 +38,14 @@ struct FPhysicsBodyMotion
 //     3) 고정 스텝 진행, 동적 바디의 직전/현재 상태 보관
 //     4) 동적: 보간된 결과를 트랜스폼에 쓴다 (부모가 있으면 로컬로 역변환). 스크립트가 트랜스폼을 직접 바꿨으면 순간이동으로 처리
 // 편집 모드에서는 쓰지 않는다 (플레이 시작 Begin, 정지 End).
+//
+// 충돌 알림 (Scene/CollisionEvents.h): 콜라이더 bIsTrigger = 트리거(센서, 부딪히지 않음), 그 밖은 일반 접촉.
+//   보고 대상 바디 = 트리거 || 강체 bReportContacts || SetContactReportFilter가 참인 엔티티(FGameWorld: 스크립트가 붙은 엔티티).
+//   쌍의 한쪽만 보고 대상이어도 양쪽 엔티티 이벤트가 생긴다. 보고 대상이 아닌 쌍은 Jolt 콜백에서 바로 버린다 (비용).
+//   Jolt 콜백(작업 스레드)에서 모은 것을 스텝 뒤 메인 스레드에서 정리해 GetCollisionEvents에 쌓는다 (Update마다 처음에 비움).
+//   전달(스크립트/게임 모듈)은 FGameWorld가 물리·UpdateTransforms 뒤에 한다. 캐릭터는 내부 키네마틱 바디로 감지된다
+//   (트리거에 들어옴, 동적 물체와 부딪힘 — 정적 벽에 닿는 것은 캐릭터 이동 쪽이라 알리지 않는다)
+//   바디를 다시 만들면(모양/운동 형식 변경) 그 쌍은 끝 → 다시 시작으로 보인다
 class FPhysicsSystem
 {
 public:
@@ -60,6 +69,10 @@ public:
 	// 참을 돌려주는 엔티티의 동적 바디를 키네마틱으로 만든다 (네트워크 클라이언트: 서버가 시뮬레이션한 복제 엔티티는
 	// 복제된 트랜스폼을 따라가고, 로컬 물체와는 충돌한다). 바꾸면 다음 Update에서 해당 바디를 다시 만든다
 	void SetKinematicOverride(std::function<bool(const FScene&, FEntity)> Predicate) { KinematicOverride = std::move(Predicate); }
+
+	// ---- 충돌 알림 (클래스 주석). 필터: 이 밖의 엔티티도 보고 대상으로 (매 Sync 다시 묻는다, nullptr = 없음)
+	void SetContactReportFilter(std::function<bool(const FScene&, FEntity)> Predicate) { ContactReportFilter = std::move(Predicate); }
+	const std::vector<FCollisionEvent>& GetCollisionEvents() const { return CollisionEvents; } // 지난 Update에서 생긴 것
 
 	// ---- 게임플레이 API (cm, kg). 바디가 없는 엔티티는 무시 / false
 	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const;
@@ -149,4 +162,9 @@ private:
 	uint64                                    FrameCounter = 0;
 	bool                                      bInterpolate = true;
 	std::function<bool(const FScene&, FEntity)> KinematicOverride;
+
+	void CollectContactEvents(); // 월드 이벤트 → 엔티티 기준 이벤트 (양쪽)
+	std::function<bool(const FScene&, FEntity)> ContactReportFilter;
+	std::vector<FCollisionEvent>                CollisionEvents;
+	std::vector<FPhysicsContactEvent>           ContactScratch;
 };

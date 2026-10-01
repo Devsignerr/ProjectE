@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Scene/CollisionEvents.h"
 #include "Scene/GameRpc.h"
 
 class FScene;
@@ -44,12 +45,21 @@ public:
 	IGameNet* GetNet() const { return Net; }
 	void      SetNet(IGameNet* InNet) { Net = InNet; } // 엔진(FGameModuleHost)만 부른다
 
+	// 물리 알림 (Scene/CollisionEvents.h, 규칙은 Physics/PhysicsSystem.h): 서버(Standalone 포함)에서 물리 스텝 뒤, 같은 엔티티 스크립트의
+	// OnCollisionBegin 등 다음에 불린다. 쌍 하나는 양쪽 엔티티(Event.Self)로 한 번씩 온다.
+	// 보고 대상: 트리거, RigidBody ReportContacts, 스크립트가 붙은 엔티티, 그리고 WantsCollisionEvents가 참인 엔티티 (플레이 중 매 프레임 묻는다)
+	virtual bool WantsCollisionEvents(const FScene& /*Scene*/, FEntity /*Entity*/) const { return false; }
+	virtual void OnCollisionBegin(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
+	virtual void OnCollisionEnd(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
+	virtual void OnTriggerEnter(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
+	virtual void OnTriggerExit(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
+
 private:
 	IGameNet* Net = nullptr;
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 5; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned)
+inline constexpr uint32 GameModuleApiVersion = 6; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

@@ -202,3 +202,24 @@ void FGameModuleHost::Respawned(FScene& Scene, FEntity Target)
 		Module->OnRespawned(Scene, Target);
 	}
 }
+
+bool FGameModuleHost::WantsCollisionEvents(const FScene& Scene, FEntity Entity) const
+{
+	return Module != nullptr && bPlaying && Module->WantsCollisionEvents(Scene, Entity);
+}
+
+void FGameModuleHost::CollisionEvent(FScene& Scene, const FCollisionEvent& Event)
+{
+	if (Module == nullptr || !bPlaying)
+	{
+		return;
+	}
+	switch (Event.Type)
+	{
+	case ECollisionEventType::CollisionBegin: Module->OnCollisionBegin(Scene, Event); break;
+	case ECollisionEventType::CollisionEnd:   Module->OnCollisionEnd(Scene, Event); break;
+	case ECollisionEventType::TriggerEnter:   Module->OnTriggerEnter(Scene, Event); break;
+	case ECollisionEventType::TriggerExit:    Module->OnTriggerExit(Scene, Event); break;
+	default:                                  break;
+	}
+}

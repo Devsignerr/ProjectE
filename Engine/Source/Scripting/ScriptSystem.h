@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 class FInput;
@@ -130,6 +131,9 @@ struct FScriptSteamHooks
 	std::function<bool()>                         IsOverlayActive;
 };
 
+// 이름 붙은 값 목록 → Lua 테이블 하나 (InvokeMethodWithFields의 마지막 인자: 충돌 정보 등)
+using FScriptEventFields = std::vector<std::pair<std::string, FGameRpcValue>>;
+
 // 컴포넌트가 아닌 스크립트 객체 (Lua 비헤이비어 트리 노드 등): 플레이 세션 안에서만 유효한 핸들. 0 = 무효
 using FScriptObjectHandle = uint64;
 
@@ -207,6 +211,8 @@ public:
 	bool InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
 	// MethodName을 정의한 모든 인스턴스에서 호출 (OnPlayerJoined 등 전역 이벤트). 정의하지 않은 인스턴스는 건너뛴다
 	void BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+	// InvokeMethod + 마지막 인자로 Fields를 담은 테이블 (예: OnCollisionBegin(other, info) — info.Point/Normal/Impulse)
+	bool InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields);
 	// 엔티티(자식 포함) 지연 파괴 — Lua entity:Destroy()와 같은 경로 (스크립트 OnDestroy 후 다음 Update/LateUpdate 끝에 파괴).
 	// 플레이 중이 아니면 false (호출한 쪽이 직접 파괴한다)
 	bool RequestDestroy(FEntity Entity);

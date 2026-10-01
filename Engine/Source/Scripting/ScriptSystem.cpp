@@ -227,3 +227,8 @@ bool FScriptSystem::RequestDestroy(FEntity Entity)
 	PlayRuntime->RequestDestroy(Entity);
 	return true;
 }
+
+bool FScriptSystem::InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields)
+{
+	return PlayRuntime != nullptr && PlayRuntime->InvokeMethodWithFields(Target, MethodName, Args, Fields);
+}

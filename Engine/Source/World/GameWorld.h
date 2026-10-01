@@ -68,7 +68,8 @@ enum class EWorldRole : uint8
 //   입력: 클라이언트는 게임플레이 틱마다 로컬 입력 상태를 서버로 보낸다(비신뢰). 서버 스크립트의 Lua Input은
 //         엔티티 소유 플레이어의 입력 (서버 소유/호스트 소유는 로컬 입력, 전용 서버의 서버 소유는 입력 없음).
 //         입력 액션 값(Input.GetAction)도 함께 보낸다 — 클라이언트가 자기 바인딩으로 계산한 값. 게임 모듈은 IGameNet::GetInput
-//                                  물리 → UpdateTransforms 뒤: 캐릭터 이동 상태 → 애니메이션 그래프 파라미터 (Speed/VerticalSpeed/Grounded) → 스크립트 OnLateUpdate
+//                                  물리 → UpdateTransforms 뒤: 캐릭터 이동 상태 → 애니메이션 그래프 파라미터 (Speed/VerticalSpeed/Grounded)
+//                                  → 충돌/트리거 알림 (GameWorldPhysicsEvents.cpp) → 스크립트 OnLateUpdate
 //   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
 // 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트(Lua 상태) → AI (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순.
 //   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
@@ -270,6 +271,10 @@ private:
 	int32 GetScoringPlayer(FEntity Instigator, FEntity Victim) const; // 처치 점수를 받을 플레이어 (-1 = 없음)
 	int32  LastMatchState    = -1; // OnMatchStateChanged 감지 (-1 = 게임 모드 없음/시작 전)
 	uint32 RespawnStartIndex = 0;  // 리스폰 PlayerStart 순번
+
+	// 물리 알림 (World/GameWorldPhysicsEvents.cpp): 물리·UpdateTransforms 뒤 충돌/트리거 이벤트 → 스크립트 + 게임 모듈
+	void DispatchCollisionEvents();
+	bool ShouldReportContacts(const FScene& Target, FEntity Entity) const; // FPhysicsSystem 보고 필터 (역할 규칙 포함)
 
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;

@@ -31,13 +31,15 @@ namespace
 			Desc.Shape       = EPhysicsShape::Box;
 			Desc.HalfExtents = FVector3(std::abs(Box->HalfExtents.X * Scale.X), std::abs(Box->HalfExtents.Y * Scale.Y), std::abs(Box->HalfExtents.Z * Scale.Z));
 			Desc.Offset      = FVector3(Box->Offset.X * Scale.X, Box->Offset.Y * Scale.Y, Box->Offset.Z * Scale.Z);
+			Desc.bIsTrigger  = Box->bIsTrigger;
 			return true;
 		}
 		if (const FSphereColliderComponent* Sphere = Registry.TryGet<FSphereColliderComponent>(Entity))
 		{
-			Desc.Shape  = EPhysicsShape::Sphere;
-			Desc.Radius = std::abs(Sphere->Radius) * MaxAbs(MaxAbs(Scale.X, Scale.Y), Scale.Z);
-			Desc.Offset = FVector3(Sphere->Offset.X * Scale.X, Sphere->Offset.Y * Scale.Y, Sphere->Offset.Z * Scale.Z);
+			Desc.Shape      = EPhysicsShape::Sphere;
+			Desc.Radius     = std::abs(Sphere->Radius) * MaxAbs(MaxAbs(Scale.X, Scale.Y), Scale.Z);
+			Desc.Offset     = FVector3(Sphere->Offset.X * Scale.X, Sphere->Offset.Y * Scale.Y, Sphere->Offset.Z * Scale.Z);
+			Desc.bIsTrigger = Sphere->bIsTrigger;
 			return true;
 		}
 		if (const FCapsuleColliderComponent* Capsule = Registry.TryGet<FCapsuleColliderComponent>(Entity))
@@ -46,6 +48,7 @@ namespace
 			Desc.Radius     = std::abs(Capsule->Radius) * MaxAbs(Scale.X, Scale.Y);
 			Desc.HalfHeight = std::abs(Capsule->HalfHeight * Scale.Z);
 			Desc.Offset     = FVector3(Capsule->Offset.X * Scale.X, Capsule->Offset.Y * Scale.Y, Capsule->Offset.Z * Scale.Z);
+			Desc.bIsTrigger = Capsule->bIsTrigger;
 			return true;
 		}
 		return false;
@@ -63,6 +66,7 @@ namespace
 	bool NeedsRecreate(const FPhysicsBodyDesc& Old, const FPhysicsBodyDesc& New)
 	{
 		if (Old.MotionType != New.MotionType || Old.Shape != New.Shape || Old.bUseGravity != New.bUseGravity || Old.Mass != New.Mass ||
+		    Old.bIsTrigger != New.bIsTrigger ||
 		    Old.Density != New.Density || Old.Friction != New.Friction || Old.Restitution != New.Restitution ||
 		    Old.LinearDamping != New.LinearDamping || Old.AngularDamping != New.AngularDamping || Old.RollingResistance != New.RollingResistance)
 		{
@@ -105,6 +109,7 @@ void FPhysicsSystem::End()
 {
 	Characters.clear(); // 월드가 캐릭터와 함께 사라진다
 	Bodies.clear();
+	CollisionEvents.clear();
 	World.reset();
 	Stepper.Reset();
 }
@@ -116,8 +121,10 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 		return 0;
 	}
 	++FrameCounter;
+	CollisionEvents.clear();
 	SyncCharacters(Scene);
 	SyncBodies(Scene);
+	CollectContactEvents(); // 사라진 바디의 접촉 끝 (밖에서 부른 SyncBodies 것도)
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
 	for (uint32 Step = 0; Step < Steps; ++Step)
@@ -139,6 +146,7 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 		}
 
 		World->Step(Stepper.StepSeconds);
+		CollectContactEvents();
 
 		for (auto& [Entity, State] : Bodies)
 		{
@@ -225,6 +233,10 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		{
 			Desc.MotionType = EPhysicsMotionType::Static;
 		}
+		// 접촉 보고 여부는 바디를 다시 만들지 않고 바꾼다 (NeedsRecreate 비교 대상 아님)
+		const FRigidBodyComponent* ReportBody = Registry.TryGet<FRigidBodyComponent>(Entity);
+		Desc.bReportContacts = Desc.bIsTrigger || (ReportBody != nullptr && ReportBody->bReportContacts) ||
+		                       (ContactReportFilter && ContactReportFilter(Scene, Entity));
 		auto Found = Bodies.find(Entity);
 		if (Found == Bodies.end() || NeedsRecreate(Found->second.CreatedDesc, Desc))
 		{
@@ -253,6 +265,7 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 
 		FBodyState& State   = Found->second;
 		State.LastSeenFrame = FrameCounter;
+		World->SetBodyReportsContacts(State.Body, Desc.bReportContacts);
 		switch (State.Motion)
 		{
 		case EPhysicsMotionType::Static:
@@ -297,6 +310,35 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		{
 			++It;
 		}
+	}
+}
+
+void FPhysicsSystem::CollectContactEvents()
+{
+	ContactScratch.clear();
+	World->ConsumeContactEvents(ContactScratch);
+	for (const FPhysicsContactEvent& Contact : ContactScratch)
+	{
+		const bool          bBegin = Contact.Type == EPhysicsContactEventType::Begin;
+		ECollisionEventType Type   = bBegin ? ECollisionEventType::CollisionBegin : ECollisionEventType::CollisionEnd;
+		if (Contact.bSensor)
+		{
+			Type = bBegin ? ECollisionEventType::TriggerEnter : ECollisionEventType::TriggerExit;
+		}
+		FCollisionEvent First;
+		First.Type          = Type;
+		First.Self          = FEntity::FromId(Contact.UserData1);
+		First.Other         = FEntity::FromId(Contact.UserData2);
+		First.Point         = Contact.Position;
+		First.Normal        = -Contact.Normal; // 법선은 바디 2를 1에서 밀어내는 방향 → 1 기준으로 뒤집는다
+		First.Impulse       = Contact.Impulse;
+		First.ApproachSpeed = Contact.ApproachSpeed;
+		FCollisionEvent Second = First;
+		Second.Self            = First.Other;
+		Second.Other           = First.Self;
+		Second.Normal          = Contact.Normal;
+		CollisionEvents.push_back(First);
+		CollisionEvents.push_back(Second);
 	}
 }
 
@@ -534,6 +576,7 @@ void FPhysicsSystem::SyncCharacters(FScene& Scene)
 		}
 		FCharacterSim& Sim = Found->second;
 		Sim.LastSeenFrame  = CharacterSyncCounter;
+		World->SetBodyReportsContacts(World->GetCharacterInnerBody(Sim.Character), ContactReportFilter && ContactReportFilter(Scene, Entity));
 		// 스크립트/에디터가 트랜스폼을 직접 바꿨으면 순간이동 (속도 유지, 화면 오프셋은 버린다)
 		if (Sim.bWritten && FVector3::DistanceSquared(Scene.GetTransform(Entity).Position, Sim.WrittenPosition) > 0.01f)
 		{

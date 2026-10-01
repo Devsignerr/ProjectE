@@ -91,6 +91,8 @@ public:
 	bool         RunString(std::string_view Code);
 	bool         InvokeMethod(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args);
 	void         BroadcastMethod(const std::string& MethodName, const FGameRpcArgs& Args);
+	// InvokeMethod + 마지막 인자로 필드 표(Lua 테이블) — 충돌 정보 등 (ScriptPhysicsBindings.cpp)
+	bool         InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields);
 	void         RequestDestroy(FEntity Entity) { PendingDestroy.push_back(Entity); } // entity:Destroy()와 같은 지연 파괴
 	size_t       GetInstanceCount() const { return Instances.size(); }
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name);

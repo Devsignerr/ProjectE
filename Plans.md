@@ -648,5 +648,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 35 — 편집 도구 (트랙 F, 2단계)
 
-- [~] 35-1. 애니메이션 그래프 편집기 + 핫 리로드
-- [ ] 35-2. 컷신(시퀀서) 편집기
+- [x] 35-1. 애니메이션 그래프 편집기 `FAnimGraphEditor`(imgui-node-editor): 상태(클립/1D 블렌드)·"어느 상태든" 노드, 핀 끌어 전이, 우클릭 메뉴(추가/복제/시작 상태/우선순위), 파라미터(이름 바꾸면 참조 갱신)·상태·블렌드 축 위젯·전이 조건 속성, 저장 전 편집 상태 미리보기, 플레이 중 디버그(현재 상태 초록/섞이는 상태 노랑, 가중치, 실제 파라미터). `.eanimgraph` v2(`EditorPosition`, `Editor{PreviewModel, AnyStatePosition}` — 읽기 v1/v2, 쓰기 v2; `FoxCharacter.eanimgraph`는 v1 유지). 핫 리로드 = `FAnimGraphLibrary` 세대 번호 + `Invalidate(경로)` → 바뀐 컴포넌트만 다시 묶기(파라미터 유지, 같은 이름 상태에서 이어감), 편집기 저장·파일 감시 공용. 테스트 `AnimGraphTests` 3개 추가
+- [x] 35-2. 컷신 시퀀서: `.esequence` v1(`Scene/Sequence.*`, `SequencePlayer.*`) 트랙 Transform/Property(숫자·색·bool·정수)/CameraCut/Animation(클립 구간)/Event, 보간 계단/직선/곡선(3차 에르미트). `FSequencePlayerComponent`(자동 재생, 반복, 속도, RestoreState, 비복제). 카메라 컷 = 대상 카메라 bPrimary + Priority(1<<20), 끝나면 두 값만 복원. 갱신 순서 스크립트 → **시퀀스** → 물리 예측…. Lua `entity:PlaySequence/StopSequence/PauseSequence/...`, `OnSequenceEvent_<이름>`/`OnSequenceFinished`(다음 틱). 편집기 `FSequenceEditor`(타임라인 스크럽/확대, 키·구간 끌기 + 프레임 맞춤(Alt 끔), K/더블클릭 현재 값 키, 복사/붙여넣기, 뷰포트·카메라 미리보기 — 닫기/플레이/씬 열기 시 복원, 저장·자동 저장·Undo에는 원래 값). 멀티플레이는 로컬 연출(맞추려면 Multicast RPC로 PlaySequence). 대상 바인딩 = 엔티티 이름 경로(재생 엔티티 하위 → 씬 전체). 데모 `Demo_Cinematic` + `Sequences/Intro.esequence`(11초). 테스트 `Sequence_*` 7개, `SequenceScript_PlayEventsAndFinish`. 버전 변경 없음 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): 그래프 노드/핀 끌기·블렌드 마름모, Demo_Animation 플레이 중 Fox 그래프 저장 → 핫 리로드 상태·파라미터 유지, 시퀀서 키/구간 끌기·Alt·K, 미리보기 켠 채 Undo/저장 시 원래 값 유지, Demo_Cinematic 연출 타이밍·구도·R/P 키
+- 후속: 소리 트랙, 애니메이션 그래프가 붙은 모델엔 애니메이션 트랙 미적용(경고), 복제 엔티티를 시퀀스로 움직이면 클라이언트 보간과 충돌, 미리보기 중 직접 고친 값은 다음 평가에 덮임, 회전 오일러 성분 보간(±90° 피치 어색), 편집기가 매 프레임 에셋 JSON 재생성, 링크 위 우선순위 번호 표시·키 여러 개 선택 없음

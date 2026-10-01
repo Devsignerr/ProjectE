@@ -1,5 +1,7 @@
 #include "Renderer/Camera.h"
 
+#include "Renderer/TemporalMath.h"
+
 void FCamera::LookAt(const FVector3& Target)
 {
 	const FVector3 Direction = (Target - Position).GetNormalized();
@@ -38,6 +40,15 @@ FMatrix4x4 FCamera::GetViewMatrix() const
 }
 
 FMatrix4x4 FCamera::GetProjectionMatrix() const
+{
+	if (ProjectionJitter.X == 0.0f && ProjectionJitter.Y == 0.0f)
+	{
+		return GetUnjitteredProjectionMatrix();
+	}
+	return FTemporalMath::ApplyProjectionJitter(GetUnjitteredProjectionMatrix(), ProjectionJitter);
+}
+
+FMatrix4x4 FCamera::GetUnjitteredProjectionMatrix() const
 {
 	if (bOrthographic)
 	{

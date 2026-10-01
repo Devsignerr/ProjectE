@@ -82,6 +82,9 @@ public:
 	void RenderPixelArtComposite(ID3D12GraphicsCommandList* CommandList, const FD3D12RenderTarget& SourceColor,
 	                             const FD3D12RenderTarget& SourceDepth, const FRenderOutput& Output, const FPixelArtCompositeParams& Params);
 
+	// 화면 공간 버퍼 확인 (ScreenDebug.hlsl): Source(PIXEL_SHADER_RESOURCE)를 Mode(1 법선, 2 움직임, 3 깊이, 4 단일 채널)로 Output에 그린다
+	void RenderDebugView(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& Source, const FRenderOutput& Output, uint32 Mode);
+
 	// 핫 리로드: 모든 PSO를 새 셰이더로 재생성 (하나라도 실패하면 해당 PSO는 기존 유지, false)
 	bool ReloadShaders(bool bForceRecompile);
 
@@ -103,6 +106,7 @@ private:
 	{
 		Tonemap,
 		PixelArtComposite,
+		DebugView,
 		Count
 	};
 

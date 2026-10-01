@@ -3,6 +3,7 @@
 #include "SkinnedMesh.hlsli"
 #include "Lighting.hlsli" // b5 클러스터 상수
 #include "MeshInstance.hlsli" // t13/t14 인스턴스
+#include "ScreenSpace.hlsli"
 
 // 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
 // + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
@@ -31,6 +32,10 @@ cbuffer PerFrame : register(b1)
 	float             AmbientIntensity;
 	float3            GroundColor;
 	float             Padding1;
+	float4x4          UnjitteredViewProjection; // 움직임 벡터용 (지터 없음)
+	float4x4          PrevViewProjection;       // 이전 프레임 (지터 없음)
+	float2            JitterNdc;
+	float2            ScreenSize;
 };
 
 cbuffer Material : register(b2)
@@ -271,6 +276,9 @@ struct FPixelInput
 	float4 WorldTangent  : TANGENT;
 	float2 UV            : TEXCOORD0;
 	float4 Color         : COLOR;
+	// 움직임 벡터 (지터 없는 현재/이전 클립 좌표). 깊이 사전 패스와 메인 패스가 같은 정점 셰이더를 써야 깊이 같음 테스트가 맞는다
+	float4 CurrentClip   : TEXCOORD1;
+	float4 PreviousClip  : TEXCOORD2;
 };
 
 FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
@@ -280,6 +288,8 @@ FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
 	const FInstanceData Instance      = LoadInstance(InstanceOffset, InstanceId);
 	const float4        WorldPosition = mul(float4(Input.Position, 1.0f), Instance.World);
 	Output.Position      = mul(WorldPosition, ViewProjection);
+	Output.CurrentClip   = mul(WorldPosition, UnjitteredViewProjection);
+	Output.PreviousClip  = mul(mul(float4(Input.Position, 1.0f), Instance.PrevWorld), PrevViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
 	Output.WorldNormal   = normalize(mul(Input.Normal, GetNormalMatrix(Instance)));
 
@@ -314,6 +324,9 @@ FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID
 	const float4   WorldPosition = mul(float4(Input.Position, 1.0f), Skin);
 	const float3x3 Skin3         = (float3x3)Skin;
 	Output.Position      = mul(WorldPosition, ViewProjection);
+	Output.CurrentClip   = mul(WorldPosition, UnjitteredViewProjection);
+	const float4x4 PrevSkin = ComputeSkinMatrix(Instance.PrevBoneOffset, Input.Joints, Input.Weights);
+	Output.PreviousClip  = mul(mul(float4(Input.Position, 1.0f), PrevSkin), PrevViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
 	Output.WorldNormal   = normalize(mul(Input.Normal, Skin3));
 
@@ -370,4 +383,19 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	}
 
 	return float4(Color, BaseColor.a);
+}
+
+// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 움직임 벡터. 머티리얼 텍스처를 읽지 않는다
+struct FPrepassOutput
+{
+	float4 Normal   : SV_Target0; // R10G10B10A2_UNORM (ScreenSpace.hlsli EncodeScreenNormal)
+	float2 Velocity : SV_Target1; // R16G16_FLOAT, UV 단위 현재 - 이전
+};
+
+FPrepassOutput PSPrepass(FPixelInput Input)
+{
+	FPrepassOutput Output;
+	Output.Normal   = EncodeScreenNormal(normalize(Input.WorldNormal));
+	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
+	return Output;
 }

@@ -26,20 +26,28 @@ struct alignas(16) FPerFrameConstants
 	float                      AmbientIntensity = 1.0f;
 	FVector3                   GroundColor      = FVector3(0.15f, 0.13f, 0.1f);
 	float                      Padding1         = 0.0f;
+	// 움직임 벡터 (지터 없음): 현재/이전 프레임 뷰-투영. 이력이 없으면 Prev = 현재
+	FMatrix4x4                 UnjitteredViewProjection;
+	FMatrix4x4                 PrevViewProjection;
+	FVector2                   JitterNdc;        // 이번 프레임 투영 지터 (NDC)
+	FVector2                   ScreenSize;       // 씬 타깃 픽셀 크기
 };
-static_assert(sizeof(FPerFrameConstants) % 16 == 0);
+static_assert(sizeof(FPerFrameConstants) == 288);
 
 // 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
 // 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다
 // 스킨 메시는 World/NormalMatrix 대신 BoneOffset(프레임 팔레트 버퍼 t15 안 첫 본 행렬 번호)을 쓴다
+// 움직임 벡터: PrevWorld / PrevBoneOffset = 이전 프레임 값 (이력이 없으면 현재와 같다 → 물체 움직임 0)
 struct FInstanceGpuData
 {
 	FMatrix4x4 World;
 	FVector4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3의 행 (w 미사용) — 비균등 스케일에서도 올바른 법선 변환
-	uint32     BoneOffset = 0;
-	uint32     Padding[3] = { 0, 0, 0 };
+	uint32     BoneOffset     = 0;
+	uint32     PrevBoneOffset = 0; // 스킨: 같은 팔레트 버퍼 안 이전 프레임 팔레트 첫 본
+	uint32     Padding[2]     = { 0, 0 };
+	FMatrix4x4 PrevWorld;
 };
-static_assert(sizeof(FInstanceGpuData) == 128);
+static_assert(sizeof(FInstanceGpuData) == 192);
 
 // 금속/거칠기 PBR 머티리얼 (glTF 2.0 규약). 텍스처 값에 곱해지는 팩터들
 struct alignas(16) FMaterialConstants

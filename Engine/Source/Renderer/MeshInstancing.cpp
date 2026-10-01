@@ -34,16 +34,18 @@ void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform
 	// 스킨 메시는 팔레트가 바로 월드로 보낸다 (경계도 팔레트 기준)
 	if (const FSkinnedDrawInfo* Skinned = SkinPalettes != nullptr ? SkinPalettes->Find(Entity) : nullptr)
 	{
-		Instance.bSkinned    = true;
-		Instance.BoneOffset  = Skinned->BoneOffset;
-		Instance.WorldBounds = Skinned->WorldBounds;
-		Instance.World       = FMatrix4x4::Identity;
+		Instance.bSkinned       = true;
+		Instance.BoneOffset     = Skinned->BoneOffset;
+		Instance.PrevBoneOffset = Skinned->PrevBoneOffset;
+		Instance.WorldBounds    = Skinned->WorldBounds;
+		Instance.World          = FMatrix4x4::Identity;
 	}
 	else
 	{
 		Instance.World       = Transform.WorldMatrix;
 		Instance.WorldBounds = Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix);
 	}
+	Instance.PrevWorld = Instance.World;
 }
 
 void FMeshInstanceList::Gather(FScene& Scene, const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes)
@@ -89,8 +91,10 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 	{
 		const FMeshInstance& Instance = Instances[Index];
 		FInstanceGpuData     Gpu;
-		Gpu.World      = Instance.World;
-		Gpu.BoneOffset = Instance.BoneOffset;
+		Gpu.World          = Instance.World;
+		Gpu.BoneOffset     = Instance.BoneOffset;
+		Gpu.PrevBoneOffset = Instance.PrevBoneOffset;
+		Gpu.PrevWorld      = Instance.PrevWorld;
 		if (!Instance.IsSkinned())
 		{
 			const FMatrix4x4 Normal = Instance.World.GetInverse().GetTransposed();

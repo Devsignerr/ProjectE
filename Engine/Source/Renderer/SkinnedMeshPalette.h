@@ -18,6 +18,7 @@ struct FSkinnedDrawInfo
 {
 	uint32 BoneOffset = 0; // 프레임 팔레트 버퍼(SkinnedMesh.hlsli SkinBones, t15) 안 첫 본 행렬 번호 (인스턴스 데이터 BoneOffset)
 	uint32 BoneCount  = 0;
+	uint32 PrevBoneOffset = 0; // 같은 버퍼 안 이전 프레임 팔레트 첫 본 (움직임 벡터). 이력이 없으면 BoneOffset
 	FBox   WorldBounds;    // 조인트별 바인드 경계를 팔레트로 변환한 합집합 (보수적)
 };
 
@@ -35,6 +36,11 @@ public:
 
 	// IsVisible이 비어 있으면 모두 보이는 것으로
 	void Build(FScene& Scene, const FResourceManager& Resources, FD3D12DynamicUploadBuffer& DynamicBuffer, const FVisibilityTest& IsVisible = {});
+
+	// 이전 프레임 팔레트도 올린다 (움직임 벡터). 엔티티가 바로 앞 Build에서도 팔레트가 계산됐고 본 수가 같을 때만 이력이 있다.
+	// 버퍼 = [이번 프레임 팔레트들][이전 프레임 팔레트들]. 한 렌더러가 여러 씬을 번갈아 그리면 엔티티 번호가 겹쳐 이력이 틀릴 수 있다
+	// (씬 렌더러는 그때 시간 누적 효과를 끈다)
+	bool bTrackPrevious = true;
 
 	// 스킨으로 그릴 엔티티면 정보, 아니면 nullptr (FSkinComponent + 스킨 스트림 메시가 모두 있어야 함)
 	const FSkinnedDrawInfo* Find(FEntity Entity) const;
@@ -69,6 +75,10 @@ private:
 		size_t             Count       = 0;
 		uint32             RadiiGeneration = ~0u;
 		std::vector<float> Radii;
+		// 이전 프레임 팔레트 (bTrackPrevious)
+		uint64                  PaletteBuild      = 0;
+		uint32                  PaletteGeneration = ~0u;
+		std::vector<FMatrix4x4> PrevPalette;
 	};
 	const FEntitySlot* FindSlot(FEntity Entity) const;
 
@@ -78,6 +88,7 @@ private:
 	std::vector<FMatrix4x4>                      Bones; // 이번 프레임 팔레트 (보이는 엔티티를 이어 붙임)
 	std::vector<FMatrix4x4>                      JointWorldScratch;
 	std::vector<FMatrix4x4>                      PaletteScratch;
+	std::vector<FMatrix4x4>                      PrevBones; // 이번 Build의 이전 프레임 팔레트 (Bones 뒤에 붙인다)
 	D3D12_GPU_VIRTUAL_ADDRESS                    GpuData    = 0;
 	uint64                                       BuildCount = 0;
 };

@@ -44,6 +44,9 @@
     { "File": "ClusterCulling.hlsl", "Entry": "CSMain", "Stage": "Compute" },
     { "File": "OcclusionCulling.hlsl", "Entry": "HzbFromDepthCS", "Stage": "Compute" },
     { "File": "OcclusionCulling.hlsl", "Entry": "HzbDownsampleCS", "Stage": "Compute" },
-    { "File": "OcclusionCulling.hlsl", "Entry": "CullCS", "Stage": "Compute" }
+    { "File": "OcclusionCulling.hlsl", "Entry": "CullCS", "Stage": "Compute" },
+    { "File": "Mesh.hlsl", "Entry": "PSPrepass", "Stage": "Pixel" },
+    { "File": "ScreenDebug.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "ScreenDebug.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
   ]
 }

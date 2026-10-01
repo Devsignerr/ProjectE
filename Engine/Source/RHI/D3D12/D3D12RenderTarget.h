@@ -31,6 +31,17 @@ struct FRenderTargetDesc
 		return Desc;
 	}
 
+	// 임의 단일 포맷 색 타깃 (리소스/RTV/SRV 같은 포맷: 화면 공간 법선, 움직임 벡터, AO 등)
+	static FRenderTargetDesc MakeColor(DXGI_FORMAT Format, bool bInWithDepth = false)
+	{
+		FRenderTargetDesc Desc;
+		Desc.ResourceFormat = Format;
+		Desc.RtvFormat      = Format;
+		Desc.SrvFormat      = Format;
+		Desc.bWithDepth     = bInWithDepth;
+		return Desc;
+	}
+
 	// 단일 채널 마스크 (선택 아웃라인 등)
 	static FRenderTargetDesc MakeMask(bool bInWithDepth = false)
 	{
@@ -66,7 +77,8 @@ public:
 	void ShutdownDeferred(FD3D12RHI& Rhi);
 
 	// 렌더 타깃 상태로 전이 + 바인딩 + 클리어(ClearColor가 nullptr이면 생략) + 뷰포트/시저
-	void Begin(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4]);
+	// bClearDepth = false면 깊이를 유지한다 (깊이 사전 패스 뒤 메인 패스)
+	void Begin(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4], bool bClearDepth = true);
 	// 픽셀 셰이더 리소스 상태로 전이 (이후 SRV로 샘플링 가능)
 	void End(ID3D12GraphicsCommandList* CommandList);
 

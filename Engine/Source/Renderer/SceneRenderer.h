@@ -20,6 +20,7 @@
 #include "Renderer/ScreenPass.h"
 #include "Renderer/TemporalAA.h"
 #include "Renderer/AmbientOcclusion.h"
+#include "Renderer/DecalRenderer.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -50,6 +51,7 @@ enum class ERenderTimer : uint32
 	DepthPrepass, // 깊이 + 화면 공간 법선 + 움직임 벡터 (GPU: 오클루전이면 HZB·2단계 포함)
 	TemporalAA,
 	AmbientOcclusion, // SSAO 계산 + 블러 (반해상도)
+	Decals,           // 데칼 → DBuffer
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -60,6 +62,7 @@ struct FSceneRenderStats
 	uint32 VisibleMeshes = 0; // 컬링 통과
 	uint32 DrawCalls     = 0; // 메인 패스
 	uint32 PrepassDrawCalls = 0; // 깊이 사전 패스
+	uint32 Decals           = 0; // 그린 데칼 수
 	uint32 ShadowDrawCalls = 0; // 방향광 + 로컬 그림자 패스
 	uint64 Triangles       = 0; // 메인 패스에서 그린 삼각형
 	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
@@ -189,6 +192,7 @@ private:
 	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)
 	FTemporalAA          TemporalAA;
 	FAmbientOcclusion    AmbientOcclusion;
+	FDecalRenderer       DecalRenderer;
 	bool                 bTaaRanLastFrame = false;
 	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
 	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)

@@ -40,6 +40,9 @@ namespace
 		RootParam_Instances           = 13, // t13 (인스턴스 목록, 정점 셰이더)
 		RootParam_InstanceIndices     = 14, // t14 (패스의 인스턴스 번호 목록, 정점 셰이더)
 		RootParam_AmbientOcclusion    = 15, // t16 (SSAO 결과 표, 픽셀)
+		RootParam_DBufferA            = 16, // t17 (데칼 베이스색)
+		RootParam_DBufferB            = 17, // t18 (데칼 법선)
+		RootParam_DBufferC            = 18, // t19 (데칼 거칠기/금속)
 	};
 } // namespace
 
@@ -87,6 +90,13 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 16, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) },
 		D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(AmbientOcclusionIndex == RootParam_AmbientOcclusion);
+	for (uint32 Index = 0; Index < 3; ++Index)
+	{
+		const uint32 DBufferIndex = RootSignature.AddDescriptorTable(
+			{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 17 + Index, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) },
+			D3D12_SHADER_VISIBILITY_PIXEL);
+		E_CHECK(DBufferIndex == RootParam_DBufferA + Index);
+	}
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -118,7 +128,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	}
 	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
+	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot))
 	{
 		return false;
 	}
@@ -203,6 +213,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::DepthPrepass: return "깊이 사전";
 	case ERenderTimer::TemporalAA:   return "TAA";
 	case ERenderTimer::AmbientOcclusion: return "SSAO";
+	case ERenderTimer::Decals:       return "데칼";
 	default:                        return "?";
 	}
 }
@@ -408,7 +419,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
-	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile))
+	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -444,6 +455,7 @@ void FSceneRenderer::Shutdown()
 	OcclusionCuller.Shutdown();
 	TemporalAA.Shutdown();
 	AmbientOcclusion.Shutdown();
+	DecalRenderer.Shutdown();
 	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
 	{
@@ -478,6 +490,7 @@ void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 	EnsureTarget(SceneNormal, Width, Height, L"SceneNormal", NormalDesc);
 	EnsureTarget(SceneVelocity, Width, Height, L"SceneVelocity", FRenderTargetDesc::MakeColor(SceneVelocityFormat));
 	AmbientOcclusion.EnsureTargets(Width, Height);
+	DecalRenderer.EnsureTargets(Width, Height);
 }
 
 void FSceneRenderer::EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
@@ -803,6 +816,17 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	}
 	PerFrame.AmbientOcclusionEnabled = bAmbientOcclusion ? 1.0f : 0.0f;
 
+	// 2.6) 데칼 → DBuffer (사전 패스 깊이·법선 필요). 보이는 데칼이 없으면 메인 패스가 읽지 않는다
+	bool bDecals = false;
+	if (bPrepass)
+	{
+		BeginTimer(ERenderTimer::Decals);
+		bDecals = DecalRenderer.Render(Scene, *Resources, RenderCamera, FrozenFrustum, *SceneColor, *SceneNormal);
+		EndTimer(ERenderTimer::Decals);
+	}
+	Stats.Decals           = bDecals ? DecalRenderer.GetDrawnCount() : 0;
+	PerFrame.DecalsEnabled = bDecals ? 1u : 0u;
+
 	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트) + 파티클
 	const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
 	SceneColor->Begin(CommandList, SceneClear, !bPrepass);
@@ -971,6 +995,10 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion, AmbientOcclusion.GetResultSrv().Gpu);
+	for (uint32 Index = 0; Index < 3; ++Index)
+	{
+		CommandList->SetGraphicsRootDescriptorTable(RootParam_DBufferA + Index, DecalRenderer.GetTarget(Index).GetSrv().Gpu);
+	}
 
 	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 머티리얼을 읽지 않는다)
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;

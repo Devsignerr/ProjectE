@@ -32,6 +32,13 @@ bool FD3D12PipelineState::InitGraphics(ID3D12Device* Device, const FGraphicsPipe
 			Target.SrcBlendAlpha  = D3D12_BLEND_ONE;
 			Target.DestBlendAlpha = D3D12_BLEND_ONE;
 		}
+		else if (BlendMode == EBlendMode::Remaining)
+		{
+			Target.SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+			Target.DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+			Target.SrcBlendAlpha  = D3D12_BLEND_ZERO;
+			Target.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+		}
 		else
 		{
 			Target.SrcBlend       = D3D12_BLEND_SRC_ALPHA;

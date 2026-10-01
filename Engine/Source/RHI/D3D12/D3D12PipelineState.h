@@ -10,6 +10,7 @@ enum class EBlendMode : uint8
 	Opaque,   // 블렌딩 없음
 	Alpha,    // Src * SrcAlpha + Dest * (1 - SrcAlpha)
 	Additive, // Src + Dest (HDR 누적, 블룸 업샘플 등)
+	Remaining, // 색 = Src * SrcAlpha + Dest * (1 - SrcAlpha), 알파 = Dest * (1 - SrcAlpha) (데칼 DBuffer: 알파 = 남은 원래 표면 비중)
 };
 
 // 그래픽스 파이프라인 설정. 자주 쓰는 값이 기본값이며 필요한 항목만 바꾼다.

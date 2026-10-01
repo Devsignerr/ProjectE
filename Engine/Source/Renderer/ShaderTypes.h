@@ -19,7 +19,7 @@ struct alignas(16) FPerFrameConstants
 {
 	FMatrix4x4                 ViewProjection;
 	FVector3                   CameraPosition;
-	float                      Padding0 = 0.0f;
+	uint32                     DecalsEnabled = 0; // 1이면 메인 패스가 DBuffer(t17~t19)를 섞는다
 	FDirectionalLightConstants DirectionalLight;
 	// 간이 환경광 (하늘/지면 반구). 이후 IBL이 대체한다
 	FVector3                   SkyColor         = FVector3(0.35f, 0.45f, 0.6f);

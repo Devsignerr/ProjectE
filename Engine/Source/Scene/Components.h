@@ -185,3 +185,23 @@ struct FSkyLightComponent
 {
 	float Intensity = 1.0f;
 };
+
+// 박스 투영 데칼 (깊이 사전 패스 뒤 DBuffer에 그려 메인 패스가 베이스색/노멀/거칠기에 섞는다, 식은 Renderer/DecalMath.h).
+//   상자 = 엔티티 로컬 [-Size/2, Size/2]이고 로컬 -Z 방향으로 찍힌다 (회전 없으면 바닥). U = 로컬 +Y, 텍스처 위 = 로컬 +X
+//   머티리얼(.emat): 베이스색 텍스처 × BaseColorFactor (알파 = 불투명도), 노멀 맵, 금속/거칠기. SortOrder가 큰 데칼이 위에 그려진다
+struct FDecalComponent
+{
+	std::string MaterialAsset;
+	FVector3    Size              = FVector3(200.0f, 200.0f, 100.0f); // cm (X, Y = 찍히는 면, Z = 투영 깊이)
+	float       Opacity           = 1.0f;
+	int32       SortOrder         = 0;
+	bool        bAffectBaseColor  = true;
+	bool        bAffectNormal     = true;
+	bool        bAffectRoughness  = true;
+	float       FadeStartDistance = 0.0f; // cm, 카메라 거리 페이드 (End <= Start면 없음)
+	float       FadeEndDistance   = 0.0f;
+
+	// 런타임 (렌더러가 MaterialAsset에서 해석, 직렬화 제외)
+	FMaterialHandle Material;
+	std::string     ResolvedMaterialAsset;
+};

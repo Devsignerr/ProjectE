@@ -177,4 +177,18 @@ void RegisterSceneTypes()
 		.Property(&FAnimGraphComponent::bUseCharacterMovement, "UseCharacterMovement", "캐릭터 이동 파라미터")
 		.Tooltip("자신/조상의 캐릭터 이동 상태를 Speed·VerticalSpeed·Grounded 파라미터로 넣는다")
 		.AsComponent();
+
+	// 데칼 (Phase 33-4, Scene/Components.h FDecalComponent): 로컬 -Z로 찍는 상자. 머티리얼 핸들은 렌더러가 경로에서 해석
+	Registry.RegisterType<FDecalComponent>("DecalComponent", "데칼")
+		.Property(&FDecalComponent::MaterialAsset, "MaterialAsset", "머티리얼").AssetFilter(".emat")
+		.Property(&FDecalComponent::Size, "Size", "크기 (cm)").Range(1.0f, 100000.0f, 1.0f).Tooltip("X, Y = 찍히는 면, Z = 투영 깊이 (로컬 -Z로 찍힘)")
+		.Property(&FDecalComponent::Opacity, "Opacity", "불투명도").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FDecalComponent::SortOrder, "SortOrder", "정렬 순서").Tooltip("큰 값이 위에 그려진다")
+		.Property(&FDecalComponent::bAffectBaseColor, "AffectBaseColor", "베이스 색")
+		.Property(&FDecalComponent::bAffectNormal, "AffectNormal", "노멀")
+		.Property(&FDecalComponent::bAffectRoughness, "AffectRoughness", "거칠기/금속")
+		.Property(&FDecalComponent::FadeStartDistance, "FadeStartDistance", "페이드 시작 (cm)").Range(0.0f, 1000000.0f, 10.0f)
+		.Property(&FDecalComponent::FadeEndDistance, "FadeEndDistance", "페이드 끝 (cm)").Range(0.0f, 1000000.0f, 10.0f).Tooltip("시작보다 작거나 같으면 페이드 없음")
+		.Property(&FDecalComponent::Material, "Material", "머티리얼 핸들", PF_Transient | PF_ReadOnly)
+		.AsComponent();
 }

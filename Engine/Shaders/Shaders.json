@@ -52,6 +52,8 @@
     { "File": "TemporalAA.hlsl", "Entry": "PSResolve", "Stage": "Pixel" },
     { "File": "AmbientOcclusion.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
     { "File": "AmbientOcclusion.hlsl", "Entry": "PSCompute", "Stage": "Pixel" },
-    { "File": "AmbientOcclusion.hlsl", "Entry": "PSBlur", "Stage": "Pixel" }
+    { "File": "AmbientOcclusion.hlsl", "Entry": "PSBlur", "Stage": "Pixel" },
+    { "File": "Decal.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "Decal.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
   ]
 }

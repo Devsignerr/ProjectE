@@ -26,7 +26,7 @@ cbuffer PerFrame : register(b1)
 {
 	float4x4          ViewProjection;
 	float3            CameraPosition;
-	float             Padding0;
+	uint              DecalsEnabled; // 1 = DBuffer(t17~t19) 사용
 	FDirectionalLight DirectionalLight;
 	float3            SkyColor;
 	float             AmbientIntensity;
@@ -378,6 +378,23 @@ float SampleScreenAmbientOcclusion(float2 PixelPosition, float3 WorldPosition)
 	return Weight > 1.0e-3f ? Sum / Weight : Nearest;
 }
 
+// 데칼 DBuffer (DecalRenderer/Decal.hlsl, 식은 Renderer/DecalMath.h): rgb = 값·불투명도 누적, a = 남은 원래 표면 비중
+Texture2D<float4> DBufferA : register(t17); // 베이스색 (sRGB → 선형으로 읽힘)
+Texture2D<float4> DBufferB : register(t18); // 월드 법선 * 0.5 + 0.5
+Texture2D<float4> DBufferC : register(t19); // R 거칠기, G 금속
+
+void ApplyDecals(float2 PixelPosition, inout FSurface Surface)
+{
+	const int3   Pixel = int3(PixelPosition, 0);
+	const float4 A     = DBufferA.Load(Pixel);
+	const float4 B     = DBufferB.Load(Pixel);
+	const float4 C     = DBufferC.Load(Pixel);
+	Surface.Albedo     = Surface.Albedo * A.a + A.rgb;
+	Surface.N          = normalize(Surface.N * B.a + B.rgb * 2.0f - (1.0f - B.a));
+	Surface.Roughness  = Surface.Roughness * C.a + C.r;
+	Surface.Metallic   = saturate(Surface.Metallic * C.a + C.g);
+}
+
 float3 GetShadingNormal(FPixelInput Input)
 {
 	const float3 N = normalize(Input.WorldNormal);
@@ -403,8 +420,13 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	FSurface Surface;
 	Surface.Albedo    = BaseColor.rgb;
 	Surface.Metallic  = saturate(MR.b * MetallicFactor);
-	Surface.Roughness = clamp(MR.g * RoughnessFactor, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
+	Surface.Roughness = MR.g * RoughnessFactor;
 	Surface.N         = GetShadingNormal(Input);
+	if (DecalsEnabled != 0)
+	{
+		ApplyDecals(Input.Position.xy, Surface);
+	}
+	Surface.Roughness = clamp(Surface.Roughness, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
 	Surface.V         = normalize(CameraPosition - Input.WorldPosition);
 	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength) * SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition); // IBL만 사용
 

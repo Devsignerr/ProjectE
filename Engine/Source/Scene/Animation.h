@@ -122,6 +122,7 @@ struct FAnimationRuntime
 	int32                                 NotifyClip = -1;  // ActiveStates가 가리키는 클립
 	bool                                  bResyncStates = false;
 	std::vector<FAnimNotifyEvent>         PendingNotifies;  // 직전 갱신에서 발생 (다음 갱신 시작에 비움)
+	bool                                  bPhysicsPose = false; // 래그돌이 뼈를 구동하는 중: 애니메이션 갱신을 건너뛴다 (Physics/Ragdoll.h)
 
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> BlendScratch;

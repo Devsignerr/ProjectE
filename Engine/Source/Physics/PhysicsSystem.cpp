@@ -31,13 +31,15 @@ namespace
 			Desc.Shape       = EPhysicsShape::Box;
 			Desc.HalfExtents = FVector3(std::abs(Box->HalfExtents.X * Scale.X), std::abs(Box->HalfExtents.Y * Scale.Y), std::abs(Box->HalfExtents.Z * Scale.Z));
 			Desc.Offset      = FVector3(Box->Offset.X * Scale.X, Box->Offset.Y * Scale.Y, Box->Offset.Z * Scale.Z);
+			Desc.bIsTrigger  = Box->bIsTrigger;
 			return true;
 		}
 		if (const FSphereColliderComponent* Sphere = Registry.TryGet<FSphereColliderComponent>(Entity))
 		{
-			Desc.Shape  = EPhysicsShape::Sphere;
-			Desc.Radius = std::abs(Sphere->Radius) * MaxAbs(MaxAbs(Scale.X, Scale.Y), Scale.Z);
-			Desc.Offset = FVector3(Sphere->Offset.X * Scale.X, Sphere->Offset.Y * Scale.Y, Sphere->Offset.Z * Scale.Z);
+			Desc.Shape      = EPhysicsShape::Sphere;
+			Desc.Radius     = std::abs(Sphere->Radius) * MaxAbs(MaxAbs(Scale.X, Scale.Y), Scale.Z);
+			Desc.Offset     = FVector3(Sphere->Offset.X * Scale.X, Sphere->Offset.Y * Scale.Y, Sphere->Offset.Z * Scale.Z);
+			Desc.bIsTrigger = Sphere->bIsTrigger;
 			return true;
 		}
 		if (const FCapsuleColliderComponent* Capsule = Registry.TryGet<FCapsuleColliderComponent>(Entity))
@@ -46,6 +48,7 @@ namespace
 			Desc.Radius     = std::abs(Capsule->Radius) * MaxAbs(Scale.X, Scale.Y);
 			Desc.HalfHeight = std::abs(Capsule->HalfHeight * Scale.Z);
 			Desc.Offset     = FVector3(Capsule->Offset.X * Scale.X, Capsule->Offset.Y * Scale.Y, Capsule->Offset.Z * Scale.Z);
+			Desc.bIsTrigger = Capsule->bIsTrigger;
 			return true;
 		}
 		return false;
@@ -63,6 +66,7 @@ namespace
 	bool NeedsRecreate(const FPhysicsBodyDesc& Old, const FPhysicsBodyDesc& New)
 	{
 		if (Old.MotionType != New.MotionType || Old.Shape != New.Shape || Old.bUseGravity != New.bUseGravity || Old.Mass != New.Mass ||
+		    Old.bIsTrigger != New.bIsTrigger ||
 		    Old.Density != New.Density || Old.Friction != New.Friction || Old.Restitution != New.Restitution ||
 		    Old.LinearDamping != New.LinearDamping || Old.AngularDamping != New.AngularDamping || Old.RollingResistance != New.RollingResistance)
 		{
@@ -105,6 +109,9 @@ void FPhysicsSystem::End()
 {
 	Characters.clear(); // 월드가 캐릭터와 함께 사라진다
 	Bodies.clear();
+	Joints.clear();
+	Ragdolls.clear(); // 바디는 월드와 함께 사라진다
+	CollisionEvents.clear();
 	World.reset();
 	Stepper.Reset();
 }
@@ -116,8 +123,12 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 		return 0;
 	}
 	++FrameCounter;
+	CollisionEvents.clear();
 	SyncCharacters(Scene);
 	SyncBodies(Scene);
+	SyncJoints(Scene);
+	SyncRagdolls(Scene);
+	CollectContactEvents(); // 사라진 바디의 접촉 끝 (밖에서 부른 SyncBodies 것도)
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
 	for (uint32 Step = 0; Step < Steps; ++Step)
@@ -137,14 +148,31 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 				State.PreviousRotation = State.CurrentRotation;
 			}
 		}
+		for (auto& [Model, Ragdoll] : Ragdolls)
+		{
+			for (FRagdollPart& Part : Ragdoll.Parts)
+			{
+				Part.PreviousPosition = Part.CurrentPosition;
+				Part.PreviousRotation = Part.CurrentRotation;
+			}
+		}
 
 		World->Step(Stepper.StepSeconds);
+		CollectContactEvents();
+		CheckJointBreaks();
 
 		for (auto& [Entity, State] : Bodies)
 		{
 			if (State.Motion == EPhysicsMotionType::Dynamic)
 			{
 				World->GetTransform(State.Body, State.CurrentPosition, State.CurrentRotation);
+			}
+		}
+		for (auto& [Model, Ragdoll] : Ragdolls)
+		{
+			for (FRagdollPart& Part : Ragdoll.Parts)
+			{
+				World->GetTransform(Part.Body, Part.CurrentPosition, Part.CurrentRotation);
 			}
 		}
 	}
@@ -161,6 +189,7 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 	}
 
 	WriteDynamicTransforms(Scene);
+	WriteRagdollPoses(Scene);
 	return Steps;
 }
 
@@ -225,6 +254,10 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		{
 			Desc.MotionType = EPhysicsMotionType::Static;
 		}
+		// 접촉 보고 여부는 바디를 다시 만들지 않고 바꾼다 (NeedsRecreate 비교 대상 아님)
+		const FRigidBodyComponent* ReportBody = Registry.TryGet<FRigidBodyComponent>(Entity);
+		Desc.bReportContacts = Desc.bIsTrigger || (ReportBody != nullptr && ReportBody->bReportContacts) ||
+		                       (ContactReportFilter && ContactReportFilter(Scene, Entity));
 		auto Found = Bodies.find(Entity);
 		if (Found == Bodies.end() || NeedsRecreate(Found->second.CreatedDesc, Desc))
 		{
@@ -253,6 +286,7 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 
 		FBodyState& State   = Found->second;
 		State.LastSeenFrame = FrameCounter;
+		World->SetBodyReportsContacts(State.Body, Desc.bReportContacts);
 		switch (State.Motion)
 		{
 		case EPhysicsMotionType::Static:
@@ -297,6 +331,35 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		{
 			++It;
 		}
+	}
+}
+
+void FPhysicsSystem::CollectContactEvents()
+{
+	ContactScratch.clear();
+	World->ConsumeContactEvents(ContactScratch);
+	for (const FPhysicsContactEvent& Contact : ContactScratch)
+	{
+		const bool          bBegin = Contact.Type == EPhysicsContactEventType::Begin;
+		ECollisionEventType Type   = bBegin ? ECollisionEventType::CollisionBegin : ECollisionEventType::CollisionEnd;
+		if (Contact.bSensor)
+		{
+			Type = bBegin ? ECollisionEventType::TriggerEnter : ECollisionEventType::TriggerExit;
+		}
+		FCollisionEvent First;
+		First.Type          = Type;
+		First.Self          = FEntity::FromId(Contact.UserData1);
+		First.Other         = FEntity::FromId(Contact.UserData2);
+		First.Point         = Contact.Position;
+		First.Normal        = -Contact.Normal; // 법선은 바디 2를 1에서 밀어내는 방향 → 1 기준으로 뒤집는다
+		First.Impulse       = Contact.Impulse;
+		First.ApproachSpeed = Contact.ApproachSpeed;
+		FCollisionEvent Second = First;
+		Second.Self            = First.Other;
+		Second.Other           = First.Self;
+		Second.Normal          = Contact.Normal;
+		CollisionEvents.push_back(First);
+		CollisionEvents.push_back(Second);
 	}
 }
 
@@ -534,6 +597,7 @@ void FPhysicsSystem::SyncCharacters(FScene& Scene)
 		}
 		FCharacterSim& Sim = Found->second;
 		Sim.LastSeenFrame  = CharacterSyncCounter;
+		World->SetBodyReportsContacts(World->GetCharacterInnerBody(Sim.Character), ContactReportFilter && ContactReportFilter(Scene, Entity));
 		// 스크립트/에디터가 트랜스폼을 직접 바꿨으면 순간이동 (속도 유지, 화면 오프셋은 버린다)
 		if (Sim.bWritten && FVector3::DistanceSquared(Scene.GetTransform(Entity).Position, Sim.WrittenPosition) > 0.01f)
 		{
@@ -725,4 +789,267 @@ void FPhysicsSystem::WriteCharacterTransform(FScene& Scene, FEntity Entity)
 	}
 	Sim.WrittenPosition = Transform.Position;
 	Sim.bWritten        = true;
+}
+
+// ---------------------------------------------------------------- 관절
+
+namespace
+{
+	enum class EJointKind : uint8
+	{
+		Fixed,
+		Hinge,
+		Distance,
+		Ball,
+	};
+
+	// 바디 자세 + 엔티티 스케일로 로컬 점/축을 월드로
+	struct FBodyFrame
+	{
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale = FVector3::OneVector;
+
+		FVector3 Point(const FVector3& Local) const { return Position + Rotation.RotateVector(FVector3(Local.X * Scale.X, Local.Y * Scale.Y, Local.Z * Scale.Z)); }
+		FVector3 Direction(const FVector3& Local) const { return Rotation.RotateVector(Local).GetNormalized(); }
+	};
+
+	void AppendCommon(std::vector<float>& Out, const FVector3& Anchor, float BreakForce, bool bCollide)
+	{
+		Out.insert(Out.end(), { Anchor.X, Anchor.Y, Anchor.Z, BreakForce, bCollide ? 1.0f : 0.0f });
+	}
+
+	std::vector<float> MakeSignature(const FFixedJointComponent& Joint)
+	{
+		std::vector<float> Out;
+		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
+		return Out;
+	}
+	std::vector<float> MakeSignature(const FHingeJointComponent& Joint)
+	{
+		std::vector<float> Out;
+		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y, Joint.Axis.Z, Joint.bLimit ? 1.0f : 0.0f, Joint.MinAngle, Joint.MaxAngle,
+		                        Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MotorMaxTorque, Joint.Friction });
+		return Out;
+	}
+	std::vector<float> MakeSignature(const FDistanceJointComponent& Joint)
+	{
+		std::vector<float> Out;
+		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.TargetAnchor.X, Joint.TargetAnchor.Y, Joint.TargetAnchor.Z, Joint.MinDistance, Joint.MaxDistance,
+		                        Joint.SpringFrequency, Joint.SpringDamping });
+		return Out;
+	}
+	std::vector<float> MakeSignature(const FBallJointComponent& Joint)
+	{
+		std::vector<float> Out;
+		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y, Joint.Axis.Z, Joint.ConeAngle });
+		return Out;
+	}
+
+	// 컴포넌트 → 관절 설정 (Self = 이 엔티티 바디 자세, TargetFrame = 대상 자세 — 월드면 원점)
+	void FillDesc(const FFixedJointComponent& Joint, const FBodyFrame& Self, const FBodyFrame&, FPhysicsConstraintDesc& Desc)
+	{
+		Desc.Type   = EPhysicsConstraintType::Fixed;
+		Desc.Point1 = Self.Point(Joint.Anchor);
+	}
+	void FillDesc(const FHingeJointComponent& Joint, const FBodyFrame& Self, const FBodyFrame&, FPhysicsConstraintDesc& Desc)
+	{
+		Desc.Type           = EPhysicsConstraintType::Hinge;
+		Desc.Point1         = Self.Point(Joint.Anchor);
+		Desc.Axis           = Self.Direction(Joint.Axis);
+		Desc.bLimit         = Joint.bLimit;
+		Desc.MinAngle       = FMath::DegreesToRadians(Joint.MinAngle);
+		Desc.MaxAngle       = FMath::DegreesToRadians(Joint.MaxAngle);
+		Desc.bMotor         = Joint.bMotor;
+		Desc.MotorSpeed     = FMath::DegreesToRadians(Joint.MotorSpeed);
+		Desc.MotorMaxTorque = Joint.MotorMaxTorque;
+		Desc.FrictionTorque = Joint.Friction;
+	}
+	void FillDesc(const FDistanceJointComponent& Joint, const FBodyFrame& Self, const FBodyFrame& Target, FPhysicsConstraintDesc& Desc)
+	{
+		Desc.Type            = EPhysicsConstraintType::Distance;
+		Desc.Point1          = Target.Point(Joint.TargetAnchor); // Body1 = 대상
+		Desc.Point2          = Self.Point(Joint.Anchor);
+		Desc.MinDistance     = Joint.MinDistance;
+		Desc.MaxDistance     = Joint.MaxDistance;
+		Desc.SpringFrequency = Joint.SpringFrequency;
+		Desc.SpringDamping   = Joint.SpringDamping;
+	}
+	void FillDesc(const FBallJointComponent& Joint, const FBodyFrame& Self, const FBodyFrame&, FPhysicsConstraintDesc& Desc)
+	{
+		Desc.Type          = EPhysicsConstraintType::Cone;
+		Desc.Point1        = Self.Point(Joint.Anchor);
+		Desc.Axis          = Self.Direction(Joint.Axis);
+		Desc.ConeHalfAngle = FMath::DegreesToRadians(FMath::Clamp(Joint.ConeAngle, 0.0f, 180.0f));
+	}
+} // namespace
+
+uint32 FPhysicsSystem::GetJointCount() const
+{
+	uint32 Count = 0;
+	for (const auto& [Key, State] : Joints)
+	{
+		Count += State.Constraint != FPhysicsWorld::InvalidBody ? 1u : 0u;
+	}
+	return Count;
+}
+
+bool FPhysicsSystem::IsJointBroken(FEntity Entity) const
+{
+	for (const auto& [Key, State] : Joints)
+	{
+		if (Key.Entity == Entity && State.bBroken)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool FPhysicsSystem::HasJoint(FEntity Entity) const
+{
+	for (const auto& [Key, State] : Joints)
+	{
+		if (Key.Entity == Entity && State.Constraint != FPhysicsWorld::InvalidBody)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void FPhysicsSystem::SyncJoints(FScene& Scene)
+{
+	if (!World)
+	{
+		return;
+	}
+	FRegistry& Registry = Scene.GetRegistry();
+
+	// 바디 자세 (없으면 엔티티 월드 트랜스폼 — 월드 고정 대상/바디 없는 대상)
+	auto FrameOf = [&](FEntity Entity, uint32 Body) {
+		FBodyFrame Frame;
+		FVector3   Position;
+		FQuat      Rotation;
+		PhysicsMath::DecomposeWorld(ComputeWorldMatrix(Scene, Entity), Position, Rotation, Frame.Scale);
+		if (Body == FPhysicsWorld::InvalidBody || !World->GetTransform(Body, Frame.Position, Frame.Rotation))
+		{
+			Frame.Position = Position;
+			Frame.Rotation = Rotation;
+		}
+		return Frame;
+	};
+	auto BodyOf = [&](FEntity Entity) {
+		if (!Entity.IsValid() || !Registry.IsValid(Entity))
+		{
+			return FPhysicsWorld::InvalidBody;
+		}
+		if (const auto Found = Bodies.find(Entity); Found != Bodies.end())
+		{
+			return Found->second.Body;
+		}
+		if (const auto Found = Characters.find(Entity); Found != Characters.end())
+		{
+			return World->GetCharacterInnerBody(Found->second.Character);
+		}
+		return FPhysicsWorld::InvalidBody;
+	};
+
+	auto SyncKind = [&]<typename TJoint>(EJointKind Kind) {
+		std::vector<FEntity> Entities;
+		Registry.View<TJoint>().Each([&](FEntity Entity, TJoint&) { Entities.push_back(Entity); });
+		for (const FEntity Entity : Entities)
+		{
+			const TJoint&     Joint     = Registry.Get<TJoint>(Entity);
+			const FJointKey   Key       = { Entity, static_cast<uint8>(Kind) };
+			const uint32      SelfBody  = BodyOf(Entity);
+			const bool        bHasTarget = Joint.Target.IsValid() && Registry.IsValid(Joint.Target) && Joint.Target != Entity;
+			const uint32      TargetBody = bHasTarget ? BodyOf(Joint.Target) : FPhysicsWorld::InvalidBody;
+			std::vector<float> Signature = MakeSignature(Joint);
+			FJointState&      State     = Joints[Key];
+			State.LastSeenFrame         = FrameCounter;
+			if (State.bBroken)
+			{
+				continue; // 끊어진 관절은 컴포넌트를 다시 달 때까지
+			}
+			const bool bAlive = State.Constraint != FPhysicsWorld::InvalidBody && World->IsConstraintAlive(State.Constraint);
+			const bool bSame  = State.Body1 == TargetBody && State.Body2 == SelfBody && State.Target == Joint.Target && State.Signature == Signature;
+			// 실패한 설정(동적 바디 없음)은 바뀔 때까지 다시 시도하지 않는다 — 살아 있던 관절이 바디 재생성으로 사라졌으면 다시 만든다
+			if (bSame && (bAlive || State.Constraint == FPhysicsWorld::InvalidBody))
+			{
+				continue;
+			}
+			if (bAlive)
+			{
+				World->DestroyConstraint(State.Constraint);
+			}
+			State.Constraint = FPhysicsWorld::InvalidBody;
+			State.Body1      = TargetBody;
+			State.Body2      = SelfBody;
+			State.Target     = Joint.Target;
+			State.Signature  = std::move(Signature);
+			State.BreakForce = Joint.BreakForce;
+			if (SelfBody == FPhysicsWorld::InvalidBody)
+			{
+				continue; // 이 엔티티에 바디가 아직 없다 (다음 동기화에서 다시)
+			}
+			FPhysicsConstraintDesc Desc;
+			Desc.Body1             = TargetBody;
+			Desc.Body2             = SelfBody;
+			Desc.bCollideConnected = Joint.bCollideConnected;
+			const FBodyFrame TargetFrame = bHasTarget ? FrameOf(Joint.Target, TargetBody) : FBodyFrame{};
+			FillDesc(Joint, FrameOf(Entity, SelfBody), TargetFrame, Desc);
+			State.Constraint = World->CreateConstraint(Desc);
+		}
+	};
+	SyncKind.operator()<FFixedJointComponent>(EJointKind::Fixed);
+	SyncKind.operator()<FHingeJointComponent>(EJointKind::Hinge);
+	SyncKind.operator()<FDistanceJointComponent>(EJointKind::Distance);
+	SyncKind.operator()<FBallJointComponent>(EJointKind::Ball);
+
+	// 사라진 컴포넌트/엔티티
+	for (auto It = Joints.begin(); It != Joints.end();)
+	{
+		if (It->second.LastSeenFrame != FrameCounter)
+		{
+			if (It->second.Constraint != FPhysicsWorld::InvalidBody)
+			{
+				World->DestroyConstraint(It->second.Constraint); // 바디와 함께 이미 사라졌으면 아무것도 하지 않는다
+			}
+			It = Joints.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+}
+
+void FPhysicsSystem::CheckJointBreaks()
+{
+	for (auto& [Key, State] : Joints)
+	{
+		if (State.BreakForce <= 0.0f || State.bBroken || State.Constraint == FPhysicsWorld::InvalidBody || !World->IsConstraintAlive(State.Constraint))
+		{
+			continue;
+		}
+		const float Force = World->GetConstraintForce(State.Constraint, Stepper.StepSeconds);
+		if (Force <= State.BreakForce)
+		{
+			continue;
+		}
+		World->DestroyConstraint(State.Constraint);
+		State.Constraint = FPhysicsWorld::InvalidBody;
+		State.bBroken    = true;
+		FCollisionEvent Event;
+		Event.Type    = ECollisionEventType::JointBreak;
+		Event.Self    = Key.Entity;
+		Event.Other   = State.Target;
+		Event.Impulse = Force;
+		CollisionEvents.push_back(Event);
+		E_LOG(LogPhysics, Display, "관절 끊어짐: 엔티티 {} (힘 {:.0f} N > {:.0f} N)", Key.Entity.Index, Force, State.BreakForce);
+	}
 }

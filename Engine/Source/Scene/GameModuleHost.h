@@ -47,6 +47,10 @@ public:
 	void Death(FScene& Scene, FEntity Target, FEntity Instigator);
 	void Respawned(FScene& Scene, FEntity Target);
 
+	// 물리 알림 (플레이 중에만). WantsCollisionEvents: 모듈이 없거나 플레이 중이 아니면 false
+	bool WantsCollisionEvents(const FScene& Scene, FEntity Entity) const;
+	void CollisionEvent(FScene& Scene, const FCollisionEvent& Event); // 종류별 OnCollisionBegin 등으로
+
 private:
 	void*        Library = nullptr; // HMODULE (공개 헤더에 Windows.h 금지)
 	IGameModule* Module  = nullptr; // 모듈 DLL 안의 정적 인스턴스 (비소유)

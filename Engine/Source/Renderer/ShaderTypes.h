@@ -137,3 +137,41 @@ struct alignas(16) FUIBatchConstants
 	uint32 Padding[3] = {};
 };
 static_assert(sizeof(FUIBatchConstants) == 16);
+
+// 점광원/스포트라이트 하나 (구조화 버퍼, Lighting.hlsli FLocalLight와 1:1). 식은 Renderer/LightMath.h
+struct FLocalLightGpuData
+{
+	FVector3 Position;
+	float    Radius = 0.0f;     // cm
+	FVector3 Color;             // 선형 색 × 강도
+	float    ConeScale  = 0.0f; // 점광원 0
+	FVector3 Direction  = FVector3::ForwardVector;
+	float    ConeOffset = 1.0f; // 점광원 1
+	int32    ShadowIndex       = -1; // 그림자 타일 배열의 첫 장 (-1 = 그림자 없음, 점광원은 6장 연속)
+	uint32   Type              = 0;  // LightMath::ELocalLightType
+	float    ShadowTexelFactor = 0.0f; // 그림자 텍셀 월드 크기 = 깊이 × 이 값
+	float    Padding0          = 0.0f;
+};
+static_assert(sizeof(FLocalLightGpuData) == 64);
+
+// 클러스터드 라이팅 상수 (Mesh.hlsl b5, ClusterCulling.hlsl b0)
+struct alignas(16) FClusterConstants
+{
+	FMatrix4x4 View;
+	uint32     GridX      = 0;
+	uint32     GridY      = 0;
+	uint32     GridZ      = 0;
+	uint32     LightCount = 0;
+	FVector2   ScreenSize;          // 렌더 타깃 픽셀 크기 (픽셀 아트 모드는 저해상도)
+	float      SliceScale = 0.0f;   // 조각 = floor(log(뷰 깊이) * SliceScale + SliceBias)
+	float      SliceBias  = 0.0f;
+	float      NearZ      = 0.0f;
+	float      FarZ       = 0.0f;
+	float      ProjScaleX = 0.0f;   // 원근: tan(반 시야각), 직교: 반 폭/높이
+	float      ProjScaleY = 0.0f;
+	uint32     bOrthographic      = 0;
+	float      ShadowNormalOffset = 0.0f; // 그림자 텍셀 배수
+	float      ShadowTexelSize    = 0.0f; // 1 / 그림자 타일 해상도
+	uint32     Padding0           = 0;
+};
+static_assert(sizeof(FClusterConstants) == 128);

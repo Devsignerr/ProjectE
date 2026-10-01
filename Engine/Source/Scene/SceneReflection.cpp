@@ -124,4 +124,25 @@ void RegisterSceneTypes()
 		.AsComponent(false)
 		.Hide()
 		.NoReplicate();
+
+	// 점광원/스포트라이트 (Phase 23): 색은 sRGB, 렌더러가 선형으로 바꾼다
+	Registry.RegisterType<FPointLightComponent>("PointLightComponent", "점광원")
+		.Property(&FPointLightComponent::Color, "Color", "색", PF_Color)
+		.Property(&FPointLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 1000.0f, 0.05f).Tooltip("1m 거리 밝기 (거리 제곱 반비례)")
+		.Property(&FPointLightComponent::Radius, "Radius", "반경 (cm)").Range(1.0f, 100000.0f, 1.0f)
+		.Property(&FPointLightComponent::bCastShadows, "CastShadows", "그림자")
+		.AsComponent();
+
+	Registry.RegisterType<FSpotLightComponent>("SpotLightComponent", "스포트라이트")
+		.Property(&FSpotLightComponent::Color, "Color", "색", PF_Color)
+		.Property(&FSpotLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 1000.0f, 0.05f).Tooltip("1m 거리 밝기 (거리 제곱 반비례)")
+		.Property(&FSpotLightComponent::Radius, "Radius", "반경 (cm)").Range(1.0f, 100000.0f, 1.0f)
+		.Property(&FSpotLightComponent::InnerConeAngle, "InnerConeAngle", "내부 원뿔 (도)").Range(0.0f, 80.0f, 0.1f)
+		.Property(&FSpotLightComponent::OuterConeAngle, "OuterConeAngle", "외부 원뿔 (도)").Range(1.0f, 80.0f, 0.1f)
+		.Property(&FSpotLightComponent::bCastShadows, "CastShadows", "그림자")
+		.AsComponent();
+
+	Registry.RegisterType<FSkyLightComponent>("SkyLightComponent", "하늘광")
+		.Property(&FSkyLightComponent::Intensity, "Intensity", "환경광 배율").Range(0.0f, 10.0f, 0.01f).Tooltip("IBL 환경광과 하늘 배경 밝기 (씬에서 첫 하늘광만 사용)")
+		.AsComponent();
 }

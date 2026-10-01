@@ -28,6 +28,11 @@ namespace
 		RootParam_ShadowMap       = 5, // t8 (섀도우 맵 배열)
 		RootParam_Ibl             = 6, // t5~t7
 		RootParam_SkinPalette     = 7, // b4 (스킨 메시 본 팔레트, 정점 셰이더)
+		RootParam_Cluster         = 8, // b5 (클러스터 상수)
+		RootParam_LocalLights     = 9, // t9 (라이트 목록, 루트 SRV)
+		RootParam_ClusterData     = 10, // t10 (클러스터별 라이트 인덱스, 루트 SRV)
+		RootParam_LocalShadowMatrices = 11, // t11 (로컬 그림자 장별 뷰-투영, 루트 SRV)
+		RootParam_LocalShadowMap      = 12, // t12 (로컬 그림자 타일 배열)
 	};
 } // namespace
 
@@ -60,6 +65,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	E_CHECK(IblIndex == RootParam_Ibl);
 	const uint32 SkinPaletteIndex = RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	E_CHECK(SkinPaletteIndex == RootParam_SkinPalette);
+	const uint32 ClusterIndex     = RootSignature.AddConstantBufferView(5, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LocalLightsIndex = RootSignature.AddShaderResourceView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 ClusterDataIndex = RootSignature.AddShaderResourceView(10, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(ClusterIndex == RootParam_Cluster && LocalLightsIndex == RootParam_LocalLights && ClusterDataIndex == RootParam_ClusterData);
+	const uint32 LocalShadowMatricesIndex = RootSignature.AddShaderResourceView(11, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LocalShadowMapIndex      = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 12) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(LocalShadowMatricesIndex == RootParam_LocalShadowMatrices && LocalShadowMapIndex == RootParam_LocalShadowMap);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -84,7 +97,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
-	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary))
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -230,6 +243,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!LocalLightRenderer.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
@@ -248,6 +265,7 @@ void FSceneRenderer::Shutdown()
 	ShadowRenderer.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
+	LocalLightRenderer.Shutdown();
 	PipelineState.Shutdown();
 	SkinnedPipelineState.Shutdown();
 	WireframePipelineState.Shutdown();
@@ -395,6 +413,11 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	// GPU 파티클 계산 (그리기 전에)
 	ParticleRenderer.Simulate(Scene);
 
+	// 점광원/스포트라이트 목록 + 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
+	LocalLightRenderer.Prepare(Scene, *Resources, Camera, Width, Height, LocalShadowSettings, &SkinPalettes);
+	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
+	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
+
 	// 0) 방향광 섀도우 패스
 	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
 
@@ -403,7 +426,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
 	if (bDrawSkybox)
 	{
-		IblRenderer.RenderSkybox(Camera, AmbientIntensity);
+		IblRenderer.RenderSkybox(Camera, PerFrame.AmbientIntensity);
 	}
 	DrawMeshes(Scene, Camera, PerFrame);
 	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
@@ -443,6 +466,11 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAllocation.GpuAddress);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_Ibl, IblRenderer.GetLightingTable().Gpu);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Cluster, LocalLightRenderer.GetConstants());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalLights, LocalLightRenderer.GetLightList());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_ClusterData, LocalLightRenderer.GetClusterData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
@@ -538,6 +566,16 @@ FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const F
 	PerFrame.SkyColor         = SkyColor;
 	PerFrame.GroundColor      = GroundColor;
 	PerFrame.AmbientIntensity = AmbientIntensity;
+
+	// 하늘광: 씬의 첫 FSkyLightComponent가 환경광/하늘 밝기를 곱한다
+	bool bFoundSkyLight = false;
+	Scene.GetRegistry().View<FSkyLightComponent>().Each([&](FEntity, FSkyLightComponent& SkyLight) {
+		if (!bFoundSkyLight)
+		{
+			PerFrame.AmbientIntensity *= FMath::Max(SkyLight.Intensity, 0.0f);
+			bFoundSkyLight = true;
+		}
+	});
 
 	// 첫 번째 방향광 사용 (여러 광원은 Phase 6)
 	bool bFoundLight = false;

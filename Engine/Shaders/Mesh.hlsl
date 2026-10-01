@@ -1,8 +1,10 @@
 ﻿#include "Common.hlsli"
 #include "PBR.hlsli"
 #include "SkinnedMesh.hlsli"
+#include "Lighting.hlsli" // b5 클러스터 상수
 
-// 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + 간이 환경광. 출력은 선형 HDR
+// 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
+// + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
 
 struct FDirectionalLight
 {
@@ -71,6 +73,105 @@ TextureCube<float4> IblDiffuse : register(t5);
 TextureCube<float4> IblSpecular : register(t6);
 Texture2D<float2> IblBrdf : register(t7);
 SamplerState IblSampler : register(s1);
+
+// 점광원/스포트라이트 (LocalLightRenderer: 목록 + 클러스터별 인덱스)
+StructuredBuffer<FLocalLight> LocalLights : register(t9);
+StructuredBuffer<uint>        ClusterData : register(t10);
+StructuredBuffer<float4x4>    LocalShadowMatrices : register(t11); // 그림자 장별 뷰-투영
+Texture2DArray<float>         LocalShadowMap      : register(t12); // 그림자 타일 배열 (스포트 1장, 점광원 6장: +X,-X,+Y,-Y,+Z,-Z)
+
+// 1 = 빛 받음, 0 = 그림자. 3x3 PCF + 법선 오프셋 (텍셀 월드 크기 = 광원 기준 깊이 × ShadowTexelFactor)
+float ComputeLocalShadow(FLocalLight Light, float3 WorldPosition, float3 GeometricNormal, float3 L)
+{
+	if (Light.ShadowIndex < 0)
+	{
+		return 1.0f;
+	}
+	const float3 FromLight = WorldPosition - Light.Position;
+	uint         Slice     = (uint)Light.ShadowIndex;
+	float        Depth;
+	if (Light.Type == 0)
+	{
+		Slice += SelectCubeFace(FromLight);
+		const float3 A = abs(FromLight);
+		Depth          = max(A.x, max(A.y, A.z));
+	}
+	else
+	{
+		Depth = dot(FromLight, Light.Direction);
+	}
+
+	const float  NdotL   = saturate(dot(GeometricNormal, L));
+	const float  Texel   = max(Depth, 1.0f) * Light.ShadowTexelFactor;
+	const float3 Offset  = GeometricNormal * Texel * LocalShadowNormalOffset * (1.0f - 0.5f * NdotL);
+	const float4 ClipPos = mul(float4(WorldPosition + Offset, 1.0f), LocalShadowMatrices[Slice]);
+	if (ClipPos.w <= 0.0f)
+	{
+		return 1.0f;
+	}
+	const float3 Ndc = ClipPos.xyz / ClipPos.w;
+	const float2 UV  = Ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+	if (any(UV < 0.0f) || any(UV > 1.0f) || Ndc.z > 1.0f)
+	{
+		return 1.0f;
+	}
+
+	float Lit = 0.0f;
+	[unroll]
+	for (int Y = -1; Y <= 1; ++Y)
+	{
+		[unroll]
+		for (int X = -1; X <= 1; ++X)
+		{
+			Lit += LocalShadowMap.SampleCmpLevelZero(ShadowSampler, float3(UV + float2(X, Y) * LocalShadowTexelSize, Slice), Ndc.z);
+		}
+	}
+	return Lit / 9.0f;
+}
+
+uint GetClusterIndex(float2 PixelPosition, float3 WorldPosition)
+{
+	const uint  TileX     = min((uint)(PixelPosition.x / ClusterScreenSize.x * ClusterGridX), ClusterGridX - 1);
+	const uint  TileY     = min((uint)(PixelPosition.y / ClusterScreenSize.y * ClusterGridY), ClusterGridY - 1);
+	const float ViewDepth = mul(float4(WorldPosition, 1.0f), ClusterView).z;
+	const uint  Slice     = ClusterDepthToSlice(ViewDepth, ClusterSliceScale, ClusterSliceBias, ClusterGridZ);
+	return TileX + ClusterGridX * (TileY + ClusterGridY * Slice);
+}
+
+float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldPosition, float3 GeometricNormal)
+{
+	if (LocalLightCount == 0)
+	{
+		return 0.0f;
+	}
+	const uint Base  = GetClusterIndex(PixelPosition, WorldPosition) * E_CLUSTER_STRIDE;
+	const uint Count = ClusterData[Base];
+
+	float3 Color = 0.0f;
+	for (uint Index = 0; Index < Count; ++Index)
+	{
+		const FLocalLight Light    = LocalLights[ClusterData[Base + 1 + Index]];
+		const float3      ToLight  = Light.Position - WorldPosition;
+		const float       Distance = length(ToLight);
+		if (Distance >= Light.Radius)
+		{
+			continue;
+		}
+		const float3 L           = ToLight / max(Distance, 1.0e-4f);
+		const float  Attenuation = LightDistanceAttenuation(Distance, Light.Radius) *
+		                          LightConeAttenuation(dot(Light.Direction, -L), Light.ConeScale, Light.ConeOffset);
+		if (Attenuation <= 0.0f)
+		{
+			continue;
+		}
+		const float3 Direct = EvaluateDirectLight(Surface, L, Light.Color * Attenuation);
+		if (any(Direct > 0.0f))
+		{
+			Color += Direct * ComputeLocalShadow(Light, WorldPosition, GeometricNormal, L);
+		}
+	}
+	return Color;
+}
 
 float3 EvaluateImageBasedLighting(FSurface Surface)
 {
@@ -255,6 +356,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	const float Shadow = ComputeShadow(Input.WorldPosition, normalize(Input.WorldNormal), L);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
+	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, normalize(Input.WorldNormal));
 	Color += EvaluateImageBasedLighting(Surface);
 	Color += Emissive;
 

@@ -157,3 +157,25 @@ struct FScriptComponent
 	std::string PropertyOverrides;
 	int32       ExecutionLocation = static_cast<int32>(EScriptExecution::ServerOnly); // EScriptExecution
 };
+
+// 점광원. 위치는 트랜스폼 월드 위치. 색은 sRGB로 저장하고 렌더러가 선형으로 바꿔 계산한다.
+//   Intensity: 1m(100cm) 거리에서의 밝기 (방향광 Intensity와 같은 단위), 거리 제곱에 반비례 + Radius에서 0으로 감쇠
+//   감쇠/원뿔 식은 Renderer/LightMath.h (셰이더 Lighting.hlsli와 같은 식)
+struct FPointLightComponent
+{
+	FVector3 Color        = FVector3::OneVector;
+	float    Intensity    = 10.0f;
+	float    Radius       = 1000.0f; // cm: 영향 반경 (이 거리에서 0)
+	bool     bCastShadows = false;   // 큐브 그림자 (6면)
+};
+
+// 스포트라이트. 방향은 트랜스폼의 Forward(+X) 축. 내부 원뿔 안은 최대 밝기, 외부 원뿔 밖은 0
+struct FSpotLightComponent
+{
+	FVector3 Color          = FVector3::OneVector;
+	float    Intensity      = 20.0f;
+	float    Radius         = 2000.0f; // cm
+	float    InnerConeAngle = 20.0f;   // 도 (중심축과의 반각)
+	float    OuterConeAngle = 35.0f;   // 도 (반각, 최대 80)
+	bool     bCastShadows   = false;   // 그림자 맵 1장
+};

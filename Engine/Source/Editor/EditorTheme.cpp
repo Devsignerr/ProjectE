@@ -235,6 +235,8 @@ const char* FEditorTheme::GetComponentIcon(std::string_view TypeName)
 		{ "SphereColliderComponent", ICON_FA_CIRCLE },
 		{ "CapsuleColliderComponent", ICON_FA_CAPSULES },
 		{ "AudioSourceComponent", ICON_FA_VOLUME_HIGH },
+		{ "PointLightComponent", ICON_FA_LIGHTBULB },
+		{ "SpotLightComponent", ICON_FA_FILTER },
 	};
 	for (const FEntry& Entry : Entries)
 	{

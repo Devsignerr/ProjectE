@@ -146,6 +146,8 @@ namespace
 	FEntityIcon GetEntityIcon(const FRegistry& Registry, FEntity Entity, bool bLeaf)
 	{
 		if (Registry.Has<FDirectionalLightComponent>(Entity)) return { ICON_FA_SUN, IM_COL32(250, 210, 90, 255) };
+		if (Registry.Has<FPointLightComponent>(Entity)) return { ICON_FA_LIGHTBULB, IM_COL32(250, 210, 90, 255) };
+		if (Registry.Has<FSpotLightComponent>(Entity)) return { ICON_FA_FILTER, IM_COL32(250, 210, 90, 255) };
 		if (Registry.Has<FCameraComponent>(Entity)) return { ICON_FA_VIDEO, IM_COL32(200, 200, 210, 255) };
 		if (Registry.Has<FParticleSystemComponent>(Entity)) return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255) };
 		if (Registry.Has<FModelComponent>(Entity)) return { ICON_FA_CUBES, IM_COL32(64, 170, 255, 255) };

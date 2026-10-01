@@ -81,7 +81,7 @@ struct FHingeJointComponent
 	float    MinAngle          = -90.0f; // 도 (-180 ~ 0)
 	float    MaxAngle          = 90.0f;  // 도 (0 ~ 180)
 	bool     bMotor            = false;
-	float    MotorSpeed        = 90.0f;  // 도/초 (축 기준 오른손 방향이 +)
+	float    MotorSpeed        = 90.0f;  // 도/초 (+ = FQuat::FromAxisAngle(Axis, +각) 방향, 예: +Z 축이면 +X → +Y)
 	float    MotorMaxTorque    = 100.0f; // N·m
 	float    Friction          = 0.0f;   // 모터가 없을 때 회전을 막는 마찰 토크 (N·m)
 	float    BreakForce        = 0.0f;

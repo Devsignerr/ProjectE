@@ -35,7 +35,7 @@ struct FScreenSpaceReflectionInputs
 // 화면 공간 반사 (ScreenSpaceReflections.hlsl Hi-Z + SsrTrace.hlsl, 식은 Renderer/ReflectionMath.h).
 //   사전 패스 뒤·메인 패스 전: 사전 패스 깊이로 최소 깊이 밉 체인 → 픽셀마다 거울 반사 광선을 계층 추적 → (색, 신뢰도).
 //   색은 이전 프레임 씬 컬러를 재투영해 읽으므로 이력이 없는 프레임(첫 프레임/크기 변경/카메라 컷)은 끈다.
-//   거울 방향 한 번 추적(결정적) → SsrResolve.hlsl PSBlur 가로·세로로 거칠기 원뿔만큼 흐림 → PSResolve 반사 움직임 재투영 누적(이력 2장 핑퐁).
+//   거울 방향 한 번 추적(결정적) → SsrResolve.hlsl PSBlur 거칠기 원뿔 반경 원판 흐림 → PSResolve 반사 움직임 재투영 누적(이력 2장 핑퐁).
 //   확률 반사(픽셀마다 GGX 방향 하나 + 누적)는 TV 노이즈처럼 지글거려 쓰지 않는다.
 //   메인 패스가 t22로 읽어 거칠기 페이드 후 캡처/하늘 IBL 반사 대신 섞는다. 결과 타깃은 항상 있다 (끄면 읽지 않음)
 class FScreenSpaceReflections
@@ -73,7 +73,7 @@ private:
 
 	std::unique_ptr<FD3D12RenderTarget> Result;
 	std::unique_ptr<FD3D12RenderTarget> ReflectMotion; // 추적 2번째 출력
-	std::unique_ptr<FD3D12RenderTarget> BlurTargets[2]; // 거칠기 흐림 가로 → 세로
+	std::unique_ptr<FD3D12RenderTarget> Blurred;        // 거칠기 흐림 결과
 	std::unique_ptr<FD3D12RenderTarget> History[2];           // 누적 결과 핑퐁
 	const FD3D12RenderTarget*           Output         = nullptr; // 이번 프레임 누적 결과 (없으면 Result)
 	uint32                              HistoryIndex   = 0;

@@ -46,8 +46,7 @@ namespace
 		float    CurrentWeight = 0.1f;
 		uint32   bHistoryValid = 0;
 		float    VarianceGamma = 1.5f;
-		FVector2 BlurDirection;
-		float    Padding       = 0.0f;
+		float    Padding[3]    = {};
 	};
 	static_assert(sizeof(FSsrResolveConstants) == 32);
 
@@ -92,8 +91,7 @@ void FScreenSpaceReflections::Shutdown()
 	ReleaseHiz();
 	Result.reset();
 	ReflectMotion.reset();
-	BlurTargets[0].reset();
-	BlurTargets[1].reset();
+	Blurred.reset();
 	History[0].reset();
 	History[1].reset();
 	Output = nullptr;
@@ -203,18 +201,14 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 	{
 		E_LOG(LogRenderer, Fatal, "SSR 반사 움직임 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
-	for (uint32 Index = 0; Index < 2; ++Index)
+	if (Blurred)
 	{
-		if (BlurTargets[Index])
-		{
-			BlurTargets[Index]->ShutdownDeferred(*Rhi);
-		}
-		BlurTargets[Index] = std::make_unique<FD3D12RenderTarget>();
-		if (!BlurTargets[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"SsrBlur0" : L"SsrBlur1",
-		                              FRenderTargetDesc::MakeColor(ResultFormat)))
-		{
-			E_LOG(LogRenderer, Fatal, "SSR 흐림 버퍼 생성 실패 ({}x{})", Width, Height);
-		}
+		Blurred->ShutdownDeferred(*Rhi);
+	}
+	Blurred = std::make_unique<FD3D12RenderTarget>();
+	if (!Blurred->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrBlurred", FRenderTargetDesc::MakeColor(ResultFormat)))
+	{
+		E_LOG(LogRenderer, Fatal, "SSR 흐림 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
@@ -336,25 +330,19 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	Result->End(CommandList);
 	ReflectMotion->End(CommandList);
 
-	// 3) 거칠기 흐림: 추적이 낸 픽셀별 원뿔 반경만큼 가로 → 세로 (결정적, 같은 면만 섞음)
+	// 3) 거칠기 흐림: 추적이 낸 픽셀별 원뿔 반경 안의 원판 평균 (한 패스, 결정적, 같은 면만 섞음)
 	FSsrResolveConstants PassConstants;
 	PassConstants.ScreenSize    = Constants.ScreenSize;
 	PassConstants.CurrentWeight = ResolveCurrentWeight;
 	PassConstants.VarianceGamma = ResolveVarianceGamma;
-	const FD3D12RenderTarget* BlurInput = Result.get();
-	for (uint32 Pass = 0; Pass < 2; ++Pass)
-	{
-		PassConstants.BlurDirection = Pass == 0 ? FVector2(1.0f, 0.0f) : FVector2(0.0f, 1.0f);
-		const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
-		FD3D12RenderTarget&             BlurOutput  = *BlurTargets[Pass];
-		BlurOutput.Begin(CommandList, nullptr);
-		DrawScreenPass(CommandList, *Root, BlurPipeline, BlurAddress,
-		               { BlurInput->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv() },
-		               Width, Height);
-		BlurOutput.End(CommandList);
-		BlurInput = &BlurOutput;
-	}
-	Output = BlurInput;
+	const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
+	Blurred->Begin(CommandList, nullptr);
+	DrawScreenPass(CommandList, *Root, BlurPipeline, BlurAddress,
+	               { Result->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv() }, Width,
+	               Height);
+	Blurred->End(CommandList);
+	const FD3D12RenderTarget* BlurInput = Blurred.get();
+	Output                              = BlurInput;
 
 	// 4) 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다.
 	//    깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고(특히 곡면·스치는 각) TAA 지터마다 계단이 옮겨 다닌다 — 정지 화면은 TAA가 평균내지만
@@ -368,7 +356,6 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 		FD3D12RenderTarget& Current = *History[HistoryIndex];
 
 		PassConstants.bHistoryValid = bHistoryValid ? 1u : 0u;
-		PassConstants.BlurDirection = FVector2::ZeroVector;
 		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
 
 		Current.Begin(CommandList, nullptr);

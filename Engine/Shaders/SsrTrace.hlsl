@@ -231,16 +231,18 @@ FSsrTraceOutput PSTrace(FFullscreenVSOutput Input)
 			const float2 PrevUV = float2(PrevClip.x / PrevClip.w * 0.5f + 0.5f, 0.5f - PrevClip.y / PrevClip.w * 0.5f);
 			Output.Motion.xy    = (float2(Pixel) + 0.5f) / ScreenSize - PrevUV;
 		}
-		// 거칠기 흐림 반경 (ReflectionMath::ComputeSpecularConeTangent / ComputeSsrBlurRadiusPixels와 같은 식)
-		const float Alpha = Roughness * Roughness;
-		if (Alpha >= 1.0e-3f)
-		{
-			const float Power         = max(2.0f / (Alpha * Alpha) - 2.0f, 0.0f);
-			const float CosAngle      = pow(0.244f, 1.0f / (Power + 1.0f));
-			const float ConeTangent   = sqrt(max(1.0f - CosAngle * CosAngle, 0.0f)) / max(CosAngle, 1.0e-4f);
-			const float PixelsPerUnit = bOrthographic != 0 ? ProjectionScale : ProjectionScale / max(SurfaceView.z, 1.0e-3f);
-			Output.Motion.z           = min(HitDistance * ConeTangent * PixelsPerUnit, MaxBlurRadius);
-		}
+	}
+	// 거칠기 흐림 반경 (ReflectionMath::ComputeSpecularConeTangent / ComputeSsrBlurRadiusPixels와 같은 식).
+	//   빗나간 픽셀도 반경을 준다(최대 추적 거리 기준) — 0이면 맞음/빗나감 경계의 빗나간 쪽이 흐려지지 않아 반사 영역이 칼로 자른 다각형이 된다
+	const float Alpha = Roughness * Roughness;
+	if (SurfaceView.z > 0.0f && Alpha >= 1.0e-3f)
+	{
+		const float Distance      = Output.Color.a > 0.0f && HitDistance > 0.0f ? HitDistance : MaxDistance;
+		const float Power         = max(2.0f / (Alpha * Alpha) - 2.0f, 0.0f);
+		const float CosAngle      = pow(0.244f, 1.0f / (Power + 1.0f));
+		const float ConeTangent   = sqrt(max(1.0f - CosAngle * CosAngle, 0.0f)) / max(CosAngle, 1.0e-4f);
+		const float PixelsPerUnit = bOrthographic != 0 ? ProjectionScale : ProjectionScale / max(SurfaceView.z, 1.0e-3f);
+		Output.Motion.z           = min(Distance * ConeTangent * PixelsPerUnit, MaxBlurRadius);
 	}
 	return Output;
 }

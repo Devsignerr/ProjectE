@@ -68,4 +68,12 @@ public:
 	// 이 엔티티를 조종하는 플레이어의 입력 (키 + 입력 액션 — GetActionValue("Move"), WasActionPressed("Jump") 등. Lua Input과 같은 규칙:
 	// 서버는 소유 플레이어가 보낸 입력, 서버 소유/호스트 소유는 로컬 입력, 없으면 nullptr). OnUpdate 등 게임플레이 틱 안에서만 유효
 	virtual const FInput* GetInput(FEntity Entity) const = 0;
+	// 맵 전환 (Lua Game.OpenScene과 같음): 서버에서만, 이번 프레임 끝에 현재 씬을 SceneAsset(Content 기준 .escene)으로 바꾼다.
+	// 접속한 클라이언트도 따라 이동하고 플레이어는 새 씬에서 다시 생성된다. 거절(클라이언트/파일 없음)이면 false + 경고 로그
+	virtual bool OpenScene(const std::string& SceneAsset) = 0;
+	// 서브 씬 (Lua Scene.LoadSubScene과 같음, 서버에서만): Asset(.escene)을 Offset 위치 루트 아래로 불러온다(파싱은 백그라운드, 붙이기는
+	// 다음 게임플레이 틱). 클라이언트도 같은 파일을 붙인다. Unload는 루트째 지연 파괴
+	virtual bool LoadSubScene(const std::string& Asset, const FVector3& Offset) = 0;
+	virtual bool UnloadSubScene(const std::string& Asset)                       = 0;
+	virtual bool IsSubSceneLoaded(const std::string& Asset) const               = 0;
 };

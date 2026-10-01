@@ -136,6 +136,10 @@ void FNetDriver::Shutdown()
 	ClientState      = EClientState::Idle;
 	LocalPlayerId    = HostPlayerId;
 	FailureReason.clear();
+	TravelCount           = 0;
+	ClientTravelId        = 0;
+	bClientTravelConsumed = false;
+	ClientTravelScene.clear();
 }
 
 void FNetDriver::Update(float DeltaSeconds)
@@ -217,8 +221,29 @@ void FNetDriver::HandleServerEvent(const FNetEvent& Event)
 		const auto Pending = FindPending(Event.Connection);
 		if (Pending == PendingConnections.end())
 		{
-			const std::optional<ENetMessageType> Type = NetMessages::PeekType(Event.Data);
-			if (FindPlayer(Event.Connection) != Players.end() && Type && *Type >= ENetMessageType::GameBase && OnGameMessage)
+			const std::optional<ENetMessageType> Type   = NetMessages::PeekType(Event.Data);
+			const auto                           Player = FindPlayer(Event.Connection);
+			if (Player == Players.end() || !Type)
+			{
+				break;
+			}
+			if (*Type == ENetMessageType::TravelAck)
+			{
+				const std::optional<FNetTravelAck> Ack = NetMessages::DecodeTravelAck(Event.Data);
+				if (Ack && Ack->TravelId == TravelCount && !Player->bInScene)
+				{
+					Player->bInScene            = true;
+					const FRemotePlayer Arrived = *Player; // 콜백이 목록을 바꿀 수 있으므로 복사
+					E_LOG(LogNet, Display, "플레이어 {} '{}' 맵 이동 완료: {}", Arrived.PlayerId, Arrived.Name, Session.SceneAsset);
+					if (OnPlayerJoined)
+					{
+						OnPlayerJoined(Arrived); // 새 씬 입장 (폰 생성 + 전체 상태)
+					}
+				}
+				break;
+			}
+			// 맵 이동 중인 플레이어의 메시지는 이전 씬 기준이므로 버린다
+			if (Player->bInScene && *Type >= ENetMessageType::GameBase && OnGameMessage)
 			{
 				OnGameMessage(Event.Connection, Event.Data);
 			}
@@ -280,7 +305,17 @@ void FNetDriver::HandleClientEvent(const FNetEvent& Event)
 		if (ClientState == EClientState::Joined)
 		{
 			const std::optional<ENetMessageType> Type = NetMessages::PeekType(Event.Data);
-			if (Type && *Type >= ENetMessageType::GameBase && OnGameMessage)
+			if (Type && *Type == ENetMessageType::Travel)
+			{
+				if (const std::optional<FNetTravel> Travel = NetMessages::DecodeTravel(Event.Data))
+				{
+					ClientTravelId        = Travel->TravelId != 0 ? Travel->TravelId : 1;
+					ClientTravelScene     = Travel->SceneAsset;
+					bClientTravelConsumed = false; // 앱이 아직 열지 않았으면 마지막 지시만 남는다
+					E_LOG(LogNet, Display, "서버가 맵을 바꿉니다: {}", ClientTravelScene);
+				}
+			}
+			else if (Type && *Type >= ENetMessageType::GameBase && ClientTravelId == 0 && OnGameMessage) // 이동 중에는 버린다 (이전 씬 기준)
 			{
 				OnGameMessage(Event.Connection, Event.Data);
 			}
@@ -316,6 +351,11 @@ bool FNetDriver::Send(FNetConnectionId Connection, const std::vector<uint8>& Mes
 	{
 		return SendToServer(Message, Reliability);
 	}
+	const auto Player = std::find_if(Players.begin(), Players.end(), [Connection](const FRemotePlayer& Remote) { return Remote.Connection == Connection; });
+	if (Player != Players.end() && !Player->bInScene)
+	{
+		return false; // 맵 이동 중 (새 씬을 열기 전)
+	}
 	return Transport->Send(Connection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
 }
 
@@ -327,8 +367,54 @@ void FNetDriver::Broadcast(const std::vector<uint8>& Message, ENetReliability Re
 	}
 	for (const FRemotePlayer& Player : Players)
 	{
-		Transport->Send(Player.Connection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
+		if (Player.bInScene)
+		{
+			Transport->Send(Player.Connection, Message.data(), static_cast<uint32>(Message.size()), Reliability);
+		}
 	}
+}
+
+void FNetDriver::BeginServerTravel(const std::string& SceneAsset)
+{
+	Session.SceneAsset = SceneAsset; // 이후 입장(Hello) 확인 기준
+	if (Transport == nullptr || !IsServer())
+	{
+		return;
+	}
+	const std::vector<uint8> Message = NetMessages::Encode(FNetTravel{ ++TravelCount, SceneAsset });
+	for (FRemotePlayer& Player : Players)
+	{
+		Transport->Send(Player.Connection, Message.data(), static_cast<uint32>(Message.size()), ENetReliability::Reliable);
+		Player.bInScene = false;
+	}
+	E_LOG(LogNet, Display, "맵 이동 {} → {} (따라올 플레이어 {}명)", TravelCount, SceneAsset, Players.size());
+}
+
+std::optional<std::string> FNetDriver::ConsumeServerTravel()
+{
+	if (ClientTravelId == 0 || bClientTravelConsumed)
+	{
+		return std::nullopt;
+	}
+	bClientTravelConsumed = true;
+	return ClientTravelScene;
+}
+
+void FNetDriver::CompleteClientTravel()
+{
+	if (ClientTravelId == 0 || Transport == nullptr || Mode != ENetMode::Client)
+	{
+		return;
+	}
+	if (!bClientTravelConsumed)
+	{
+		return; // 여는 동안 서버가 또 이동을 지시했다 → 앱이 그 씬을 마저 연 뒤에 확인한다
+	}
+	Session.SceneAsset             = ClientTravelScene; // 다시 접속할 때도 이 씬
+	const std::vector<uint8> Bytes = NetMessages::Encode(FNetTravelAck{ ClientTravelId });
+	Transport->Send(ServerConnection, Bytes.data(), static_cast<uint32>(Bytes.size()), ENetReliability::Reliable);
+	ClientTravelId        = 0;
+	bClientTravelConsumed = false;
 }
 
 bool FNetDriver::SendToServer(const std::vector<uint8>& Message, ENetReliability Reliability)

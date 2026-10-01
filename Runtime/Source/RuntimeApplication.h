@@ -22,6 +22,8 @@
 #include "World/GameWorld.h"
 
 #include <memory>
+#include <optional>
+#include <string>
 
 class FD3D12RHI;
 
@@ -55,9 +57,14 @@ private:
 	void EndSession();
 	void HandleSessionRequest(const FNetSessionRequest& Request);
 	void StartListenServer(uint16 Port); // 이미 World가 Standalone으로 도는 상태에서
+	void StartLanHost();                 // 리슨 서버 LAN 알림 (지금 씬으로)
 	void UpdateWindowTitle();
+	// 맵 전환 (Game.OpenScene / 서버 지시): 요청 프레임은 검은 화면만 그리고, 다음 프레임 처음에 FGameWorldTravel::Travel
+	void TravelTo(const std::string& NextScene);
 
-	std::string SceneAsset; // Content 기준 현재 씬
+	std::string                SceneAsset;    // Content 기준 현재 씬
+	std::optional<std::string> PendingTravel; // 다음 프레임에 열 씬 (이번 프레임은 로딩 화면)
+	uint16                     HostPort = 0;  // 리슨 서버 포트 (LAN 알림)
 
 	FGameUserSettings UserSettings;
 

@@ -11,6 +11,7 @@
 #include "Physics/PhysicsReflection.h"
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
+#include "World/GameWorldTravel.h"
 
 #include <format>
 
@@ -63,12 +64,14 @@ bool FServerApplication::OnInit()
 		return false;
 	}
 	Scene.UpdateTransforms();
+	World.SetCurrentSceneAsset(SceneAsset);
 	E_LOG(LogServer, Display, "씬 로드: {} (엔티티 {}개)", SceneAsset, Scene.GetRegistry().GetAliveCount());
 
 	// GPU 리소스 없음 → Resources = nullptr (에셋 해석 생략). 복제할 값에 렌더 보간이 섞이지 않도록 물리 보간을 끈다
 	World.Init({ &Scripts, &Physics, &GameModule, nullptr, FPaths::GetProjectContentDirectory(), &Net });
 	Physics.SetInterpolation(false);
 	Replication.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에
+	World.SetReplicationServer(&Replication); // 서브 씬 NetId·클라이언트 알림
 	Players.Begin(Scene, FProjectSettings::Get().Maps.PlayerPrefab);
 	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 		const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
@@ -92,14 +95,21 @@ bool FServerApplication::OnInit()
 	{
 		Net.SetSimulation(NetOptions.SimulatedLatencyMs, NetOptions.SimulatedLossPercent);
 	}
+	Port = NetOptions.Port;
+	StartLanHost(SceneAsset);
+	E_LOG(LogServer, Display, "서버 시작 (Ctrl+C 종료)");
+	return true;
+}
+
+void FServerApplication::StartLanHost(const std::string& SceneAsset)
+{
+	Lan.Stop();
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} 전용 서버", FPaths::GetProjectName());
 	LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);
-	LanInfo.GamePort   = NetOptions.Port;
+	LanInfo.GamePort   = Port;
 	LanInfo.MaxPlayers = Net.MaxPlayers;
 	Lan.StartHost(LanInfo);
-	E_LOG(LogServer, Display, "서버 시작 (Ctrl+C 종료)");
-	return true;
 }
 
 void FServerApplication::OnUpdate(float DeltaSeconds)
@@ -110,6 +120,21 @@ void FServerApplication::OnUpdate(float DeltaSeconds)
 	World.TickGameplay(DeltaSeconds, nullptr);
 	World.TickPresentation(Scene, DeltaSeconds); // 애니메이션(노티파이/소켓)은 게임 로직에 쓰이므로 서버도 돌린다
 	Replication.Tick(DeltaSeconds);
+
+	// 맵 전환 (Game.OpenScene / 게임 모듈): 틱 끝에. 클라이언트들은 Travel 메시지로 따라오고 TravelAck 때 폰이 다시 생긴다
+	if (const std::optional<std::string> NextScene = FGameWorldTravel::ConsumePending(World, &Net))
+	{
+		FSceneTravelTargets Targets;
+		Targets.World             = &World;
+		Targets.Scene             = &Scene;
+		Targets.Net               = &Net;
+		Targets.ReplicationServer = &Replication;
+		Targets.Players           = &Players;
+		Targets.ContentDirectory  = FPaths::GetProjectContentDirectory();
+		Targets.PlayerPrefab      = FProjectSettings::Get().Maps.PlayerPrefab;
+		FGameWorldTravel::Travel(Targets, *NextScene);
+		StartLanHost(*NextScene);
+	}
 }
 
 void FServerApplication::OnShutdown()

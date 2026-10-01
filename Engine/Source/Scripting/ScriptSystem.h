@@ -86,6 +86,16 @@ struct FScriptNetHooks
 	std::function<void()>                           Disconnect;
 	std::function<std::string()>                    GetState;         // Standalone / Hosting / Connecting / Connected / Failed
 	std::function<std::string()>                    GetFailureReason; // Failed일 때 사유
+
+	// 맵 전환 (Lua Game.OpenScene/GetCurrentScene, FGameWorld가 연결). OpenScene: 빈 문자열 = 접수(프레임 끝에 전환), 아니면 거절 사유
+	std::function<std::string(const std::string& SceneAsset)> OpenScene;
+	std::function<std::string()>                              GetCurrentScene;
+
+	// 서브 씬 (Lua Scene.LoadSubScene 등). Load: 빈 문자열 = 접수, 아니면 거절 사유
+	std::function<std::string(const std::string& Asset, const FVector3& Offset)> LoadSubScene;
+	std::function<bool(const std::string& Asset)>                                UnloadSubScene;
+	std::function<bool(const std::string& Asset)>                                IsSubSceneLoaded;
+	std::function<FEntity(const std::string& Asset)>                             GetSubSceneRoot;
 };
 
 // 스크립트가 쓰는 AI 기능 (블랙보드, 이동, 경로). 앱(FGameWorld)이 AI 모듈(FAISystem)과 연결한다 (Scripting은 AI에 비의존).
@@ -211,6 +221,11 @@ public:
 	// 플레이 중이 아니면 false (호출한 쪽이 직접 파괴한다)
 	bool RequestDestroy(FEntity Entity);
 
+	// ---- 씬 사이에 남는 값 (Lua Game.SetPersistent/GetPersistent): 플레이 세션(Lua 상태)이 바뀌어도 유지된다 — 맵 전환으로 점수 등을 넘긴다.
+	// 이 프로세스 메모리에만 있다 (복제·저장 안 함, 영구 저장은 SaveGame). 에디터는 플레이 정지 때 비운다
+	FScriptValueMap& GetPersistentValues() { return PersistentValues; }
+	void             ClearPersistentValues() { PersistentValues.clear(); }
+
 	bool         RunString(std::string_view Code);                             // 플레이 상태에서 Lua 코드 실행 (오류는 로그 + false)
 	size_t       GetInstanceCount() const;                                     // 살아 있는 스크립트 인스턴스 수
 	FScriptValue GetInstanceProperty(FEntity Entity, const std::string& Name); // self.Properties[Name]
@@ -228,4 +243,5 @@ private:
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)
 	uint32                       ErrorCount = 0;
+	FScriptValueMap              PersistentValues; // Game.SetPersistent (플레이 세션 사이 유지)
 };

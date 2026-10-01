@@ -1,0 +1,601 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Orb_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [520.0, 0.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [502.2814, 134.5859, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [450.3332, 260.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [367.6955, 367.6955, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [260.0, 450.3332, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_5",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [134.5859, 502.2814, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_6",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 520.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_7",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-134.5859, 502.2814, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_8",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-260.0, 450.3332, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_9",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-367.6955, 367.6955, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_10",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-450.3332, 260.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_11",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-502.2814, 134.5859, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_12",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-520.0, 0.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_13",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-502.2814, -134.5859, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_14",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-450.3332, -260.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_15",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-367.6955, -367.6955, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_16",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-260.0, -450.3332, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_17",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-134.5859, -502.2814, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_18",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, -520.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_19",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [134.5859, -502.2814, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_20",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [260.0, -450.3332, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_21",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [367.6955, -367.6955, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_22",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [450.3332, -260.0, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Orb_23",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [502.2814, -134.5859, 60.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.9, 0.9, 0.9]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [251.2614, 66.8409, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [184.1783, 183.5167, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [67.7447, 251.0192, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-66.8409, 251.2614, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-183.5167, 184.1783, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_5",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-251.0192, 67.7447, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_6",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-251.2614, -66.8409, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_7",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-184.1783, -183.5167, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_8",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [-67.7447, -251.0192, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_9",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [66.8409, -251.2614, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_10",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [183.5167, -184.1783, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "InnerOrb_11",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [251.0192, -67.7447, 160.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.6, 0.6, 0.6]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        }
+      }
+    },
+    {
+      "Name": "Area2_Pillar",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [0.0, 0.0, 150.0],
+          "Rotation": [0.0, 0.0, 0.0, 1.0],
+          "Scale": [0.8, 0.8, 3.0]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Visor.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [50.0, 50.0, 50.0],
+          "Offset": [0.0, 0.0, 0.0]
+        }
+      }
+    }
+  ]
+}

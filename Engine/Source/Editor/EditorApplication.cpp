@@ -28,6 +28,7 @@
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
+#include "World/GameWorldTravel.h"
 
 #include <commdlg.h>
 #include <imgui.h>
@@ -1364,6 +1365,8 @@ void FEditorApplication::StartPlay()
 	{
 		PlayMode.Play(Context);
 	}
+	// Game.GetCurrentScene: 편집 중인 씬 파일 (Content 기준, 저장 안 한 씬이면 "")
+	World.SetCurrentSceneAsset(CurrentScenePath.empty() ? std::string() : FPrefabLibrary::Get().MakeAssetPath(CurrentScenePath));
 	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임", false);
 }
 
@@ -1440,6 +1443,19 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	if (World.ConsumeSessionRequest())
 	{
 		ShowNotification("에디터 플레이에서는 Net.Host/Connect/Disconnect를 지원하지 않습니다 (런타임에서 동작)", true);
+	}
+	// 맵 전환 (Game.OpenScene / 전용 서버의 이동 지시): 플레이 씬만 바꾼다 — 정지하면 편집 씬 복원
+	if (PlayMode.IsActive())
+	{
+		if (const std::optional<std::string> NextScene = FGameWorldTravel::ConsumePending(World, NetPlay.GetActiveDriver()))
+		{
+			FSceneTravelTargets Targets;
+			NetPlay.FillTravelTargets(Targets);
+			Targets.OnEndPlay = [this]() { AudioSystem.Reset(Audio); };
+			PlayMode.Travel(Context, Targets, *NextScene);
+			NetPlay.OnTraveled(*NextScene);
+			ShowNotification("맵 전환: " + *NextScene, false);
+		}
 	}
 
 	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라

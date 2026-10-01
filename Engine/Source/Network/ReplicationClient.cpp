@@ -44,8 +44,56 @@ bool FReplicationClient::HandleMessage(const std::vector<uint8>& Message)
 	case ENetMessageType::ReplicationDestroy: ApplyDestroy(Message); return true;
 	case ENetMessageType::ReplicationState:   ApplyState(Message); return true;
 	case ENetMessageType::TransformSnapshot:  ApplyTransformSnapshot(Message); return true;
+	case ENetMessageType::SubSceneLoad:       ApplySubSceneLoad(Message); return true;
+	case ENetMessageType::SubSceneUnload:     ApplySubSceneUnload(Message); return true;
 	default:                                  return false;
 	}
+}
+
+void FReplicationClient::ApplySubSceneLoad(const std::vector<uint8>& Message)
+{
+	FBinaryReader Reader(Message.data(), Message.size());
+	Reader.Read<uint8>();
+	const uint32      InstanceId = Reader.Read<uint32>();
+	const std::string Asset      = Reader.ReadString();
+	const FVector3    Offset     = Reader.Read<FVector3>();
+	if (!Reader.IsOk() || !Reader.IsAtEnd() || InstanceId == 0)
+	{
+		E_LOG(LogNet, Warning, "잘못된 서브 씬 메시지");
+		return;
+	}
+	if (!SubSceneHooks.Load)
+	{
+		E_LOG(LogNet, Warning, "서버가 서브 씬을 불러왔지만 이 앱은 서브 씬을 지원하지 않습니다: {}", Asset);
+		return;
+	}
+	// 지금 바로 붙인다 (뒤따르는 상태 메시지가 이 엔티티들을 가리킨다)
+	const FEntity Root = SubSceneHooks.Load(Asset, InstanceId, Offset);
+	if (!Root.IsValid())
+	{
+		return;
+	}
+	NetReplication::AssignSubSceneNetIds(*Scene, Root, InstanceId, [this](FEntity Entity, uint32 NetId) { Entities[NetId] = Entity; });
+	bAssetsChanged = true;
+}
+
+void FReplicationClient::ApplySubSceneUnload(const std::vector<uint8>& Message)
+{
+	FBinaryReader Reader(Message.data(), Message.size());
+	Reader.Read<uint8>();
+	const uint32 InstanceId = Reader.Read<uint32>();
+	if (!Reader.IsOk() || !Reader.IsAtEnd())
+	{
+		return;
+	}
+	if (SubSceneHooks.Unload)
+	{
+		SubSceneHooks.Unload(InstanceId);
+	}
+	// 그 구간 NetId를 잊는다 (엔티티는 앱이 지우고, 서버의 파괴 메시지는 없는 NetId라 무시된다)
+	const uint32 Base = NetReplication::GetSubSceneNetIdBase(InstanceId);
+	std::erase_if(Entities, [Base](const auto& Entry) { return Entry.first >= Base && Entry.first < Base + SubSceneNetIdStride; });
+	std::erase_if(TransformBuffers, [Base](const auto& Entry) { return Entry.first >= Base && Entry.first < Base + SubSceneNetIdStride; });
 }
 
 bool FReplicationClient::ConsumeAssetsChanged()

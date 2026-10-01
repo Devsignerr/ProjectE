@@ -6,6 +6,7 @@
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
+#include "Scene/SubScene.h"
 
 void RegisterSceneTypes()
 {
@@ -176,5 +177,15 @@ void RegisterSceneTypes()
 		.Property(&FAnimGraphComponent::Graph, "Graph", "그래프").AssetFilter(".eanimgraph")
 		.Property(&FAnimGraphComponent::bUseCharacterMovement, "UseCharacterMovement", "캐릭터 이동 파라미터")
 		.Tooltip("자신/조상의 캐릭터 이동 상태를 Speed·VerticalSpeed·Grounded 파라미터로 넣는다")
+		.AsComponent();
+
+	// 서브 씬 스트리밍 (Scene/SubScene.h, Phase 31-2)
+	Registry.RegisterType<FSubSceneVolumeComponent>("SubSceneVolumeComponent", "서브 씬 볼륨")
+		.Property(&FSubSceneVolumeComponent::SubScene, "SubScene", "서브 씬").AssetFilter(".escene")
+		.Property(&FSubSceneVolumeComponent::HalfExtents, "HalfExtents", "상자 반 크기 (cm)").Range(1.0f, 1.0e6f, 10.0f)
+		.Property(&FSubSceneVolumeComponent::UnloadMargin, "UnloadMargin", "내리기 여유 (cm)").Range(0.0f, 1.0e6f, 10.0f)
+		.Tooltip("기준이 상자 안이면 불러오고, 모든 기준이 상자 + 여유 밖이면 내린다")
+		.AsComponent();
+	Registry.RegisterType<FStreamingSourceComponent>("StreamingSourceComponent", "스트리밍 기준")
 		.AsComponent();
 }

@@ -8,13 +8,16 @@
 
 // 네트워크 메시지 형식: [uint8 종류][본문]. 본문은 FBinaryWriter 리틀 엔디언.
 // 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다
-inline constexpr uint32 NetProtocolVersion = 8; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값
+inline constexpr uint32 NetProtocolVersion = 10; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값, 9: 맵 이동(Travel/TravelAck), 10: 서브 씬(SubSceneLoad/Unload)
 
 enum class ENetMessageType : uint8
 {
 	Hello   = 1, // 클라이언트 → 서버: 접속 요청 (버전/프로젝트/씬/이름)
 	Welcome = 2, // 서버 → 클라이언트: 입장 허락 (플레이어 ID)
 	Reject  = 3, // 서버 → 클라이언트: 거부 사유 (직후 연결을 닫는다)
+	// 맵 이동 (FNetDriver가 직접 처리, 게임 메시지로 넘기지 않음). 서버가 맵을 바꾸면 Travel → 클라이언트가 새 씬을 연 뒤 TravelAck
+	Travel    = 4, // 서버 → 클라이언트, 신뢰: uint32 이동 번호, string 새 씬
+	TravelAck = 5, // 클라이언트 → 서버, 신뢰: uint32 이동 번호 (그 씬을 열었음)
 
 	GameBase = 32, // 입장 후 게임 메시지는 여기부터 (FNetDriver::OnGameMessage로 전달)
 
@@ -27,6 +30,8 @@ enum class ENetMessageType : uint8
 	PlayerInput        = GameBase + 5, // 클라이언트 → 서버, 비신뢰 (매 틱 입력 상태 전체 + 시점 방향 yaw/pitch). 형식은 World/GameWorldNet.cpp
 	CharacterMoves     = GameBase + 6, // 클라이언트 → 서버, 비신뢰: 예측 캐릭터의 최근 무브들 (손실 대비로 겹쳐 보냄). 형식은 World/GameWorldCharacter.cpp
 	CharacterAck       = GameBase + 7, // 서버 → 소유 클라이언트, 비신뢰: 처리한 무브 순번 + 그때 상태 (재조정 기준)
+	SubSceneLoad       = GameBase + 8, // 서버 → 클라이언트, 신뢰: uint32 서브 씬 번호, string 에셋, FVector3 위치 (클라이언트도 같은 파일을 붙인다)
+	SubSceneUnload     = GameBase + 9, // 서버 → 클라이언트, 신뢰: uint32 서브 씬 번호
 };
 
 struct FNetHello
@@ -48,11 +53,24 @@ struct FNetReject
 	std::string Reason;
 };
 
+struct FNetTravel
+{
+	uint32      TravelId = 0;
+	std::string SceneAsset;
+};
+
+struct FNetTravelAck
+{
+	uint32 TravelId = 0;
+};
+
 namespace NetMessages
 {
 	std::vector<uint8> Encode(const FNetHello& Message);
 	std::vector<uint8> Encode(const FNetWelcome& Message);
 	std::vector<uint8> Encode(const FNetReject& Message);
+	std::vector<uint8> Encode(const FNetTravel& Message);
+	std::vector<uint8> Encode(const FNetTravelAck& Message);
 
 	// 첫 바이트(종류). 빈 메시지면 nullopt
 	std::optional<ENetMessageType> PeekType(const std::vector<uint8>& Data);
@@ -61,4 +79,6 @@ namespace NetMessages
 	std::optional<FNetHello>   DecodeHello(const std::vector<uint8>& Data);
 	std::optional<FNetWelcome> DecodeWelcome(const std::vector<uint8>& Data);
 	std::optional<FNetReject>  DecodeReject(const std::vector<uint8>& Data);
+	std::optional<FNetTravel>    DecodeTravel(const std::vector<uint8>& Data);
+	std::optional<FNetTravelAck> DecodeTravelAck(const std::vector<uint8>& Data);
 }

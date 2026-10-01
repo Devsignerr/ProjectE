@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Serialization/BinaryArchive.h"
+#include "Network/NetTypes.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
@@ -38,6 +39,52 @@ namespace NetReplication
 		for (const FEntity Entity : Entities)
 		{
 			Registry.GetOrEmplace<FNetIdComponent>(Entity).NetId = NextNetId++;
+		}
+	}
+
+	uint32 GetSubSceneNetIdBase(uint32 InstanceId)
+	{
+		return SubSceneNetIdBase + (InstanceId - 1) * SubSceneNetIdStride;
+	}
+
+	void AssignSubSceneNetIds(FScene& Scene, FEntity Root, uint32 InstanceId, const std::function<void(FEntity, uint32)>& OnAssigned)
+	{
+		FRegistry&   Registry = Scene.GetRegistry();
+		const uint32 Base     = GetSubSceneNetIdBase(InstanceId);
+		uint32       Index    = 0;
+		bool         bWarned  = false;
+		// 부모 → 자식 (자식 목록 순서) — 같은 파일을 붙이면 양쪽이 같은 순서
+		std::vector<FEntity> Stack = { Root };
+		while (!Stack.empty())
+		{
+			const FEntity Entity = Stack.back();
+			Stack.pop_back();
+			if (!Registry.IsValid(Entity))
+			{
+				continue;
+			}
+			if (Registry.Has<FReplicatedComponent>(Entity))
+			{
+				if (Index < SubSceneNetIdStride)
+				{
+					const uint32 NetId                             = Base + Index++;
+					Registry.GetOrEmplace<FNetIdComponent>(Entity).NetId = NetId;
+					if (OnAssigned)
+					{
+						OnAssigned(Entity, NetId);
+					}
+				}
+				else if (!bWarned)
+				{
+					bWarned = true;
+					E_LOG(LogNet, Warning, "서브 씬 {}의 복제 엔티티가 {}개를 넘어 나머지는 복제하지 않습니다", InstanceId, SubSceneNetIdStride);
+				}
+			}
+			const std::vector<FEntity>& Children = Scene.GetChildren(Entity);
+			for (auto It = Children.rbegin(); It != Children.rend(); ++It)
+			{
+				Stack.push_back(*It); // 첫 자식이 먼저 나오도록 역순으로 쌓는다
+			}
 		}
 	}
 

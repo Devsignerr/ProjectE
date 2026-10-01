@@ -5,7 +5,9 @@
 #include "Renderer/SceneAssetResolver.h"
 #include "Renderer/SceneCamera.h"
 #include "Scene/SceneSerializer.h"
+#include "Scripting/ScriptSystem.h"
 #include "World/GameWorld.h"
+#include "World/GameWorldTravel.h"
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
@@ -70,6 +72,8 @@ void FPlayMode::Stop(FEditorContext& Context)
 	World->EndPlay();
 	PlayScene.Clear();
 	EntityMap.clear();
+	World->GetSystems().Scripts->ClearPersistentValues(); // Game.SetPersistent 값은 플레이 한 번 동안만 (런타임 프로세스와 같게)
+	World->SetCurrentSceneAsset({});
 
 	Context.Scene = EditScene;
 	Context.Select(EditScene->GetRegistry().IsValid(EditSelection) ? EditSelection : NullEntity);
@@ -121,6 +125,22 @@ bool FPlayMode::Tick(FEditorContext& Context, float DeltaSeconds, const FInput* 
 
 	World->TickGameplay(StepDelta, Input);
 	return true;
+}
+
+void FPlayMode::Travel(FEditorContext& Context, FSceneTravelTargets Targets, const std::string& SceneAsset)
+{
+	if (!IsActive())
+	{
+		return;
+	}
+	Context.Select(NullEntity); // 이전 플레이 씬 엔티티 선택 해제 (정지 시에는 편집 씬 선택을 복원한다)
+	EntityMap.clear();
+	Targets.World            = World;
+	Targets.Scene            = &PlayScene;
+	Targets.Resources        = Context.Resources;
+	Targets.ContentDirectory = Context.ContentDirectory;
+	FGameWorldTravel::Travel(Targets, SceneAsset);
+	E_LOG(LogEditor, Display, "플레이 중 맵 전환: {} (정지하면 편집 씬으로 돌아갑니다)", SceneAsset);
 }
 
 FCamera* FPlayMode::UpdateGameCamera(float AspectRatio)

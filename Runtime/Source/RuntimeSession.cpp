@@ -7,6 +7,7 @@
 #include "Network/NetTransport.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SceneSerializer.h"
+#include "World/GameWorldTravel.h"
 
 #include <chrono>
 #include <format>
@@ -17,6 +18,7 @@ E_DECLARE_LOG_CATEGORY(LogRuntime)
 void FRuntimeApplication::LoadScene()
 {
 	Scene.Clear();
+	World.SetCurrentSceneAsset(SceneAsset);
 	if (FPaths::HasProject() && !SceneAsset.empty())
 	{
 		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(SceneAsset);
@@ -63,7 +65,8 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 		// 클라이언트: 게임 로직(서버 스크립트/게임 모듈)은 서버가 돌리고 결과만 받는다. 물리는 복제 엔티티를 키네마틱으로 둔 채 돌린다
 		ReplicationClient.Begin(Scene);
 		ReplicationClient.SetTransformFilter([this](FEntity Entity) { return !World.IsPredicted(Entity); }); // 내 캐릭터·물리 예측 바디는 예측으로
-		World.SetReplicationClient(&ReplicationClient);                                                     // 물리 예측이 스냅샷을 읽는다
+		World.SetReplicationClient(&ReplicationClient);                                                     // 물리 예측이 스냅샷을 읽는다 + 서브 씬 따라 붙이기
+		World.SetReplicationServer(nullptr);
 		Net.OnGameMessage = [this](FNetConnectionId Connection, const std::vector<uint8>& Message) {
 			if (!ReplicationClient.HandleMessage(Message))
 			{
@@ -79,6 +82,7 @@ void FRuntimeApplication::StartSession(FNetLaunchOptions Options)
 			E_LOG(LogRuntime, Error, "서버 '{}'에 접속하지 못했습니다 (단독 실행으로 계속)", Options.ConnectAddress);
 		}
 		ReplicationServer.Begin(Scene, Net); // 정적 NetId는 게임 시작(스크립트 생성) 전에. Standalone이면 보내지 않는다
+		World.SetReplicationServer(&ReplicationServer); // 서브 씬 NetId·클라이언트 알림
 		Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
 			const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 			ReplicationServer.OnPlayerJoined(Player.Connection);
@@ -113,12 +117,40 @@ void FRuntimeApplication::StartListenServer(uint16 Port)
 	// 플레이어 프리팹은 멀티플레이에서만 (1인용 씬은 플레이어를 씬에 직접 둔다). 호스트도 플레이어
 	Players.Begin(Scene, FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string());
 	World.OnPlayerJoined(FNetDriver::HostPlayerId, Players.SpawnPlayer(FNetDriver::HostPlayerId));
+	HostPort = Port;
+	StartLanHost();
+}
+
+void FRuntimeApplication::StartLanHost()
+{
+	Lan.Stop();
 	FLanHostInfo LanInfo;
 	LanInfo.Name       = std::format("{} (호스트)", FPaths::HasProject() ? FPaths::GetProjectName() : "ProjectE");
 	LanInfo.Session    = FNetSessionInfo::FromProject(SceneAsset);
-	LanInfo.GamePort   = Port;
+	LanInfo.GamePort   = HostPort;
 	LanInfo.MaxPlayers = Net.MaxPlayers;
 	Lan.StartHost(LanInfo);
+}
+
+void FRuntimeApplication::TravelTo(const std::string& NextScene)
+{
+	FSceneTravelTargets Targets;
+	Targets.World             = &World;
+	Targets.Scene             = &Scene;
+	Targets.Net               = &Net;
+	Targets.ReplicationServer = &ReplicationServer;
+	Targets.ReplicationClient = &ReplicationClient;
+	Targets.Players           = &Players;
+	Targets.Resources         = &Resources;
+	Targets.ContentDirectory  = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
+	Targets.PlayerPrefab      = FPaths::HasProject() ? FProjectSettings::Get().Maps.PlayerPrefab : std::string();
+	Targets.OnEndPlay         = [this]() { AudioSystem.Reset(Audio); };
+	SceneAsset                = NextScene; // 다시 접속/세션 전환도 이 씬으로
+	FGameWorldTravel::Travel(Targets, NextScene);
+	if (Lan.IsHosting())
+	{
+		StartLanHost(); // 방 목록의 씬 갱신
+	}
 }
 
 void FRuntimeApplication::EndSession()

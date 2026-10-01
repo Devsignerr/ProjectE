@@ -35,6 +35,10 @@ public:
 		return Allocation;
 	}
 
+	// 복사 원본으로 쓸 때 (CopyBufferRegion): 업로드 리소스와 할당의 바이트 위치
+	ID3D12Resource* GetResource() const { return Buffer.Get(); }
+	uint64          GetOffset(const FD3D12DynamicAllocation& Allocation) const { return Allocation.GpuAddress - GpuBase; }
+
 	uint64 GetCapacity() const { return Capacity; }
 	uint64 GetUsed() const { return Offset; }
 

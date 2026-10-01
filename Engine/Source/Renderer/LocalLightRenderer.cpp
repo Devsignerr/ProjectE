@@ -4,8 +4,6 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/LightMath.h"
-#include "Renderer/ResourceManager.h"
-#include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Scene.h"
 
@@ -32,8 +30,10 @@ namespace
 
 	enum EShadowRootParameter : uint32
 	{
-		ShadowParam_WorldViewProjection = 0, // b0 (16 상수)
-		ShadowParam_SkinPalette         = 1, // b4
+		ShadowParam_PassConstants   = 0, // b0 (루트 상수 17개: 장 뷰-투영 + 인스턴스 시작 위치, Shadow.hlsl)
+		ShadowParam_SkinPalette     = 1, // b4
+		ShadowParam_Instances       = 2, // t13
+		ShadowParam_InstanceIndices = 3, // t14
 	};
 } // namespace
 
@@ -59,9 +59,12 @@ bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary
 		return false;
 	}
 
-	const uint32 WvpIndex     = ShadowRootSignature.AddConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	const uint32 PaletteIndex = ShadowRootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	E_CHECK(WvpIndex == ShadowParam_WorldViewProjection && PaletteIndex == ShadowParam_SkinPalette);
+	const uint32 PassIndex      = ShadowRootSignature.AddConstants(17, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 PaletteIndex   = ShadowRootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 InstancesIndex = ShadowRootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 IndicesIndex   = ShadowRootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	E_CHECK(PassIndex == ShadowParam_PassConstants && PaletteIndex == ShadowParam_SkinPalette && InstancesIndex == ShadowParam_Instances &&
+	        IndicesIndex == ShadowParam_InstanceIndices);
 	if (!ShadowRootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"LocalShadowRootSignature"))
 	{
 		return false;
@@ -418,7 +421,7 @@ void FLocalLightRenderer::AssignShadows(const FLocalShadowSettings& Settings)
 	}
 }
 
-void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes)
+void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances)
 {
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	const uint32               Resolution  = ShadowMapResolution;
@@ -434,7 +437,9 @@ void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resourc
 	CommandList->SetGraphicsRootSignature(ShadowRootSignature.Get());
 	CommandList->SetPipelineState(ShadowPipeline.Get());
 
-	FRegistry& Registry = Scene.GetRegistry();
+	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_Instances, Instances.GetGpuData());
+	FD3D12DynamicUploadBuffer&        DynamicBuffer = Rhi->GetDynamicBuffer();
+	const std::vector<FMeshInstance>& List          = Instances.GetInstances();
 	for (uint32 Index = 0; Index < ShadowSlices.size(); ++Index)
 	{
 		const FShadowSlice&               Slice = ShadowSlices[Index];
@@ -446,42 +451,55 @@ void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resourc
 		const FBox     LightBounds(Slice.LightPosition - FVector3(Slice.Radius), Slice.LightPosition + FVector3(Slice.Radius));
 		auto           IsCaster = [&](const FBox& Bounds) { return Bounds.Intersects(LightBounds) && SliceFrustum.Intersects(Bounds); };
 
-		Registry.View<FTransformComponent, FStaticMeshComponent>().Each(
-			[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
-				if (!MeshComponent.bVisible || (SkinPalettes != nullptr && SkinPalettes->Find(Entity) != nullptr))
-				{
-					return; // 스킨 메시는 아래에서 스킨 PSO로
-				}
-				const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
-				if (Mesh == nullptr || !IsCaster(Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix)))
-				{
-					return;
-				}
-				const FMatrix4x4 WorldLightViewProjection = Transform.WorldMatrix * Slice.ViewProjection;
-				CommandList->SetGraphicsRoot32BitConstants(ShadowParam_WorldViewProjection, 16, &WorldLightViewProjection.M[0][0], 0);
-				Mesh->Draw(CommandList);
-			});
+		// 정적 메시: 메시·LOD별 묶음 (머티리얼 무관)
+		ShadowBatches.Reset();
+		bool bHasSkinned = false;
+		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
+		{
+			const FMeshInstance& Instance = List[InstanceIndex];
+			if (Instance.IsSkinned())
+			{
+				bHasSkinned = true;
+				continue; // 아래에서 스킨 PSO로
+			}
+			if (IsCaster(Instance.WorldBounds))
+			{
+				ShadowBatches.Add(InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, Instance.Lod), 0.0f, InstanceIndex);
+			}
+		}
+		ShadowBatches.Finalize(DynamicBuffer);
+
+		CommandList->SetGraphicsRoot32BitConstants(ShadowParam_PassConstants, 16, &Slice.ViewProjection.M[0][0], 0);
+		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, ShadowBatches.GetIndexBuffer());
+		for (const FInstanceBatch& Batch : ShadowBatches.GetBatches())
+		{
+			const FMeshInstance& Instance = List[Batch.Instance];
+			CommandList->SetGraphicsRoot32BitConstant(ShadowParam_PassConstants, Batch.First, 16);
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
+			++ShadowDrawCalls;
+			ShadowTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+		}
 
 		// 스킨 메시: 팔레트가 바로 월드로 보내므로 상수는 뷰-투영 그대로
-		if (SkinPalettes != nullptr && SkinPalettes->GetCount() > 0)
+		if (bHasSkinned)
 		{
 			bool bSkinnedBound = false;
-			Registry.View<FSkinComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FSkinComponent&, FStaticMeshComponent& MeshComponent) {
-				const FSkinnedDrawInfo* Skinned = SkinPalettes->Find(Entity);
-				const FStaticMesh*      Mesh    = Resources.GetMesh(MeshComponent.Mesh);
-				if (!MeshComponent.bVisible || Skinned == nullptr || Mesh == nullptr || !IsCaster(Skinned->WorldBounds))
+			for (const FMeshInstance& Instance : List)
+			{
+				if (!Instance.IsSkinned() || !IsCaster(Instance.WorldBounds))
 				{
-					return;
+					continue;
 				}
 				if (!bSkinnedBound)
 				{
 					CommandList->SetPipelineState(ShadowSkinnedPipeline.Get());
-					CommandList->SetGraphicsRoot32BitConstants(ShadowParam_WorldViewProjection, 16, &Slice.ViewProjection.M[0][0], 0);
 					bSkinnedBound = true;
 				}
-				CommandList->SetGraphicsRootConstantBufferView(ShadowParam_SkinPalette, Skinned->Palette);
-				Mesh->DrawSkinned(CommandList);
-			});
+				CommandList->SetGraphicsRootConstantBufferView(ShadowParam_SkinPalette, Instance.SkinPalette);
+				Instance.Mesh->DrawSkinned(CommandList);
+				++ShadowDrawCalls;
+				ShadowTriangles += Instance.Mesh->GetIndexCount() / 3;
+			}
 			if (bSkinnedBound)
 			{
 				CommandList->SetPipelineState(ShadowPipeline.Get());
@@ -494,12 +512,14 @@ void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resourc
 	CommandList->ResourceBarrier(1, &ToShaderResource);
 }
 
-void FLocalLightRenderer::Prepare(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, uint32 Width, uint32 Height,
-                                  const FLocalShadowSettings& ShadowSettings, const FSkinnedMeshPalette* SkinPalettes)
+void FLocalLightRenderer::Prepare(FScene& Scene, const FMeshInstanceList& Instances, const FCamera& Camera, uint32 Width, uint32 Height,
+                                  const FLocalShadowSettings& ShadowSettings)
 {
 	E_CHECKF(Rhi != nullptr, "로컬 라이트 렌더러가 초기화되지 않았습니다");
 
 	CollectLights(Scene, Camera);
+	ShadowDrawCalls = 0;
+	ShadowTriangles = 0;
 
 	// ---- 그림자: 바이어스는 PSO에 고정되므로 바뀌면 재생성, 타일 배열은 필요한 만큼 (8장 단위로 키운다)
 	if (ShadowSettings.DepthBias != BakedDepthBias || ShadowSettings.SlopeBias != BakedSlopeBias)
@@ -527,7 +547,7 @@ void FLocalLightRenderer::Prepare(FScene& Scene, FResourceManager& Resources, co
 		}
 		else
 		{
-			RenderShadows(Scene, Resources, SkinPalettes);
+			RenderShadows(Instances);
 		}
 	}
 

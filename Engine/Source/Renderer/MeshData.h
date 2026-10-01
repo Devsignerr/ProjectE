@@ -16,11 +16,19 @@ struct FVertex
 	FVector4 Tangent = FVector4(1.0f, 0.0f, 0.0f, 1.0f);
 };
 
+// 단순화 LOD 하나 (LOD1 이상). 정점은 LOD0과 공유하고 인덱스만 따로 (Renderer/MeshSimplifier)
+struct FMeshLod
+{
+	std::vector<uint32> Indices;
+	float               ScreenSize = 0.0f; // 화면 크기가 이보다 작으면 이 LOD (LodMath)
+};
+
 // CPU 측 메시 데이터. 인덱스는 삼각형 리스트, 앞면은 시계 방향(CW).
 struct FMeshData
 {
 	std::vector<FVertex> Vertices;
-	std::vector<uint32>  Indices;
+	std::vector<uint32>  Indices; // LOD0
+	std::vector<FMeshLod> Lods;   // LOD1.. (비어 있으면 LOD0만)
 
 	// 위치/UV/법선으로 탄젠트를 계산해 모든 정점에 채운다 (삼각형 단위 계산 → 정점 누적 → 그람-슈미트).
 	// UV가 퇴화한 정점은 법선에 수직인 임의 탄젠트를 쓴다.

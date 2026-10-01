@@ -1,25 +1,30 @@
 ﻿#include "Common.hlsli"
 #include "Fullscreen.hlsli"
 #include "SkinnedMesh.hlsli"
+#include "MeshInstance.hlsli"
 
 // 에디터 선택 아웃라인
 //   1) Mask 패스: 선택된 메시를 R8 마스크에 1로 기록
 //   2) Composite 패스: 마스크 경계(바깥쪽 Thickness 픽셀)를 출력 위에 알파 블렌드로 그린다
 
+// 루트 상수 17개: 뷰-투영 + 묶음의 인스턴스 번호 시작 위치
 cbuffer MaskConstants : register(b0)
 {
-	float4x4 WorldViewProjection;
+	float4x4 ViewProjection;
+	uint     InstanceOffset;
 };
 
-float4 MaskVS(float3 Position : POSITION) : SV_Position
+// 정적 메시 (인스턴싱)
+float4 MaskVS(float3 Position : POSITION, uint InstanceId : SV_InstanceID) : SV_Position
 {
-	return mul(float4(Position, 1.0f), WorldViewProjection);
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	return mul(mul(float4(Position, 1.0f), Instance.World), ViewProjection);
 }
 
-// 스킨 메시: 팔레트가 바로 월드로 보내므로 WorldViewProjection = 뷰-투영
+// 스킨 메시: 팔레트가 바로 월드로 보낸다
 float4 MaskSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT) : SV_Position
 {
-	return mul(mul(float4(Position, 1.0f), ComputeSkinMatrix(Joints, Weights)), WorldViewProjection);
+	return mul(mul(float4(Position, 1.0f), ComputeSkinMatrix(Joints, Weights)), ViewProjection);
 }
 
 float MaskPS() : SV_Target

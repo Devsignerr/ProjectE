@@ -90,7 +90,7 @@ bool FRuntimeApplication::OnInit()
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
 	RhiDesc.Width        = GetWindow().GetWidth();
 	RhiDesc.Height       = GetWindow().GetHeight();
-	RhiDesc.bVSync       = UserSettings.bVSync;
+	RhiDesc.bVSync       = UserSettings.bVSync && !FCommandLine::FromProcess().HasFlag(L"--no-vsync"); // --no-vsync: 성능 측정용 (이번 실행만)
 #if E_DEBUG
 	RhiDesc.bEnableDebugLayer = true;
 #endif

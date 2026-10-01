@@ -1,5 +1,7 @@
 #include "Renderer/StaticMesh.h"
 
+#include "Renderer/LodMath.h"
+
 #include <cstddef>
 #include <string>
 
@@ -20,6 +22,31 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 		CpuPositions.push_back(Vertex.Position);
 	}
 	CpuIndices = MeshData.Indices;
+	BoundingRadius = LocalBounds.GetExtent().Length();
+
+	// LOD: LOD0 뒤에 단순화 인덱스를 이어 붙인다 (정점 공유)
+	Lods.clear();
+	Lods.push_back({ 0, IndexCount, 1.0f });
+	std::vector<uint32> AllIndices;
+	const std::vector<uint32>* GpuIndices = &MeshData.Indices;
+	if (!MeshData.Lods.empty())
+	{
+		AllIndices = MeshData.Indices;
+		for (const FMeshLod& Lod : MeshData.Lods)
+		{
+			if (Lods.size() >= LodMath::MaxLods || Lod.Indices.empty() || Lod.Indices.size() % 3 != 0)
+			{
+				break;
+			}
+			Lods.push_back({ static_cast<uint32>(AllIndices.size()), static_cast<uint32>(Lod.Indices.size()), Lod.ScreenSize });
+			AllIndices.insert(AllIndices.end(), Lod.Indices.begin(), Lod.Indices.end());
+		}
+		GpuIndices = &AllIndices;
+	}
+	for (size_t Index = 0; Index < LodMath::MaxLods; ++Index)
+	{
+		LodScreenSizes[Index] = Index < Lods.size() ? Lods[Index].ScreenSize : 0.0f;
+	}
 
 	const std::wstring VertexName = std::wstring(DebugName) + L"_VB";
 	const std::wstring IndexName  = std::wstring(DebugName) + L"_IB";
@@ -29,8 +56,7 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 	{
 		return false;
 	}
-	if (!IndexBuffer.InitStatic(Device, Queue, MeshData.Indices.data(), MeshData.Indices.size() * sizeof(uint32),
-	                            IndexName.c_str()))
+	if (!IndexBuffer.InitStatic(Device, Queue, GpuIndices->data(), GpuIndices->size() * sizeof(uint32), IndexName.c_str()))
 	{
 		return false;
 	}
@@ -44,6 +70,7 @@ void FStaticMesh::Shutdown()
 	SkinBuffer.Shutdown();
 	bSkinned = false;
 	LocalBounds = FBox();
+	Lods.clear();
 	VertexCount = 0;
 	IndexCount  = 0;
 	CpuPositions.clear();
@@ -60,6 +87,7 @@ void FStaticMesh::ShutdownDeferred(FD3D12RHI& Rhi)
 		bSkinned = false;
 	}
 	LocalBounds = FBox();
+	Lods.clear();
 	VertexCount = 0;
 	IndexCount  = 0;
 	CpuPositions.clear();
@@ -77,15 +105,25 @@ void FStaticMesh::Draw(ID3D12GraphicsCommandList* CommandList) const
 	CommandList->DrawIndexedInstanced(IndexCount, 1, 0, 0, 0);
 }
 
-void FStaticMesh::DrawInstanced(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount) const
+void FStaticMesh::Bind(ID3D12GraphicsCommandList* CommandList) const
 {
+	const D3D12_VERTEX_BUFFER_VIEW VertexView = VertexBuffer.GetVertexBufferView(sizeof(FVertex));
+	const D3D12_INDEX_BUFFER_VIEW  IndexView  = IndexBuffer.GetIndexBufferView(DXGI_FORMAT_R32_UINT);
+	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	CommandList->IASetVertexBuffers(0, 1, &VertexView);
+	CommandList->IASetIndexBuffer(&IndexView);
+}
+
+void FStaticMesh::DrawInstanced(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount, uint32 Lod) const
+{
+	const FLodRange& Range = GetLod(Lod);
 	const D3D12_VERTEX_BUFFER_VIEW VertexView = VertexBuffer.GetVertexBufferView(sizeof(FVertex));
 	const D3D12_INDEX_BUFFER_VIEW  IndexView  = IndexBuffer.GetIndexBufferView(DXGI_FORMAT_R32_UINT);
 
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->IASetVertexBuffers(0, 1, &VertexView);
 	CommandList->IASetIndexBuffer(&IndexView);
-	CommandList->DrawIndexedInstanced(IndexCount, InstanceCount, 0, 0, 0);
+	CommandList->DrawIndexedInstanced(Range.IndexCount, InstanceCount, Range.IndexOffset, 0, 0);
 }
 
 const std::vector<D3D12_INPUT_ELEMENT_DESC>& FStaticMesh::GetInputLayout()

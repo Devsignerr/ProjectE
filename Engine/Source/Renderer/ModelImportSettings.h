@@ -22,6 +22,8 @@ struct FModelImportSettings
 	bool bImportAnimations = true;
 	bool bRecomputeNormals  = false; // 부드러운 법선을 새로 계산 (원본 법선 무시)
 	bool bRecomputeTangents = false; // UV로 탄젠트 새로 계산
+	bool   bGenerateLods = true; // 정적 메시 LOD 자동 생성 (정점 군집 단순화, 스킨 메시는 제외)
+	uint32 LodCount      = 4;    // LOD0 포함 단계 수 (1~4, LodMath 기본 비율/화면 크기)
 
 	// 이 모델에 덧붙일 애니메이션 파일들 (원본 폴더 기준 상대 경로). 채널은 노드 이름으로 맞춘다
 	std::vector<std::string> AnimationSources;

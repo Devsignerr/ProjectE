@@ -2,6 +2,7 @@
 #include "PBR.hlsli"
 #include "SkinnedMesh.hlsli"
 #include "Lighting.hlsli" // b5 클러스터 상수
+#include "MeshInstance.hlsli" // t13/t14 인스턴스
 
 // 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
 // + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
@@ -14,10 +15,10 @@ struct FDirectionalLight
 	float  Padding0;
 };
 
-cbuffer PerObject : register(b0)
+// 묶음 상수 (루트 상수): 인스턴스 번호 목록 안 시작 위치
+cbuffer DrawConstants : register(b0)
 {
-	float4x4 World;
-	float4x4 WorldInverseTranspose;
+	uint InstanceOffset;
 };
 
 cbuffer PerFrame : register(b1)
@@ -272,17 +273,18 @@ struct FPixelInput
 	float4 Color         : COLOR;
 };
 
-FPixelInput VSMain(FVertexInput Input)
+FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
 {
 	FPixelInput Output;
 
-	const float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
+	const FInstanceData Instance      = LoadInstance(InstanceOffset, InstanceId);
+	const float4        WorldPosition = mul(float4(Input.Position, 1.0f), Instance.World);
 	Output.Position      = mul(WorldPosition, ViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
-	Output.WorldNormal   = normalize(mul(Input.Normal, (float3x3)WorldInverseTranspose));
+	Output.WorldNormal   = normalize(mul(Input.Normal, GetNormalMatrix(Instance)));
 
 	// 탄젠트는 표면을 따라가는 벡터이므로 World로 변환. 반사(음수 스케일)면 바이탄젠트 부호도 뒤집는다
-	const float3x3 World3     = (float3x3)World;
+	const float3x3 World3     = (float3x3)Instance.World;
 	const float    Handedness = determinant(World3) < 0.0f ? -1.0f : 1.0f;
 	Output.WorldTangent = float4(normalize(mul(Input.Tangent.xyz, World3)), Input.Tangent.w * Handedness);
 	Output.UV           = Input.UV;
@@ -301,14 +303,14 @@ struct FSkinnedVertexInput
 	float4 Weights  : BLENDWEIGHT;
 };
 
-// 스킨 메시: 팔레트로 바로 월드 공간 (World 상수는 항등). 본 행렬은 균등 스케일 + 회전 + 이동을 가정해 법선도 같은 3x3으로 변환
+// 스킨 메시: 팔레트로 바로 월드 공간 (인스턴스 행렬 없음). 본 행렬은 균등 스케일 + 회전 + 이동을 가정해 법선도 같은 3x3으로 변환
 FPixelInput VSSkinned(FSkinnedVertexInput Input)
 {
 	FPixelInput Output;
 
 	const float4x4 Skin          = ComputeSkinMatrix(Input.Joints, Input.Weights);
-	const float4   WorldPosition = mul(mul(float4(Input.Position, 1.0f), Skin), World);
-	const float3x3 Skin3         = mul((float3x3)Skin, (float3x3)World);
+	const float4   WorldPosition = mul(float4(Input.Position, 1.0f), Skin);
+	const float3x3 Skin3         = (float3x3)Skin;
 	Output.Position      = mul(WorldPosition, ViewProjection);
 	Output.WorldPosition = WorldPosition.xyz;
 	Output.WorldNormal   = normalize(mul(Input.Normal, Skin3));

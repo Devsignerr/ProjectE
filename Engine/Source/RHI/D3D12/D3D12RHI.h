@@ -56,6 +56,10 @@ public:
 	// 현재 백버퍼의 sRGB RTV를 출력 대상으로 (BeginFrame 이후 유효)
 	FRenderOutput GetBackBufferOutput() const;
 
+	// 이번 프레임의 슬롯(백버퍼 칸, 프레임 리소스 인덱스)과 BeginFrame마다 1씩 느는 프레임 번호 (GPU 타이머 등)
+	uint32 GetFrameSlot() const { return CurrentBackBufferIndex; }
+	uint64 GetFrameNumber() const { return FrameNumber; }
+
 	void SetVSync(bool bEnabled) { bVSync = bEnabled; }
 	bool IsVSync() const { return bVSync; }
 
@@ -102,6 +106,7 @@ private:
 	bool                  WriteScreenshot(ID3D12Resource* Readback, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint);
 
 	uint32 CurrentBackBufferIndex = 0;
+	uint64 FrameNumber            = 0;
 	bool   bVSync                 = true;
 	bool   bInitialized           = false;
 };

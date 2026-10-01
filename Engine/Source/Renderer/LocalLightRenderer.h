@@ -4,16 +4,15 @@
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/MeshInstancing.h"
 #include "Renderer/ShaderTypes.h"
 
 #include <vector>
 
 class FCamera;
 class FD3D12RHI;
-class FResourceManager;
 class FScene;
 class FShaderLibrary;
-class FSkinnedMeshPalette;
 
 // 점광원/스포트라이트 그림자 설정 (씬 렌더러가 소유)
 struct FLocalShadowSettings
@@ -43,9 +42,9 @@ public:
 	bool ReloadShaders(bool bForceRecompile);
 
 	// 그래픽스 패스 전에 호출 (계산/그림자 루트 시그니처와 뷰포트를 바꾸므로 이후 패스는 자기 상태를 다시 설정한다).
-	// SkinPalettes가 있으면 스킨 메시 그림자를 GPU 스키닝으로 그린다
-	void Prepare(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, uint32 Width, uint32 Height,
-	             const FLocalShadowSettings& ShadowSettings, const FSkinnedMeshPalette* SkinPalettes);
+	// 그림자 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료): 정적 메시는 장마다 메시·LOD별 인스턴싱, 스킨 메시는 GPU 스키닝
+	void Prepare(FScene& Scene, const FMeshInstanceList& Instances, const FCamera& Camera, uint32 Width, uint32 Height,
+	             const FLocalShadowSettings& ShadowSettings);
 
 	D3D12_GPU_VIRTUAL_ADDRESS     GetConstants() const { return ConstantsAddress; }
 	D3D12_GPU_VIRTUAL_ADDRESS     GetLightList() const { return LightListAddress; }
@@ -54,6 +53,9 @@ public:
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return ShadowSrv; }
 	uint32                        GetLightCount() const { return static_cast<uint32>(Lights.size()); }
 	uint32                        GetShadowSliceCount() const { return static_cast<uint32>(ShadowMatrices.size()); }
+	// 지난 Prepare의 그림자 드로우 수 / 삼각형 수 (통계)
+	uint32                        GetShadowDrawCalls() const { return ShadowDrawCalls; }
+	uint64                        GetShadowTriangles() const { return ShadowTriangles; }
 
 private:
 	struct FShadowSlice
@@ -69,7 +71,7 @@ private:
 	void AssignShadows(const FLocalShadowSettings& Settings);
 	bool EnsureShadowMap(uint32 Resolution, uint32 Slices);
 	void ReleaseShadowMap();
-	void RenderShadows(FScene& Scene, FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes);
+	void RenderShadows(const FMeshInstanceList& Instances);
 	void TransitionClusters(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES After);
 
 	FD3D12RHI*      Rhi           = nullptr;
@@ -103,4 +105,7 @@ private:
 	D3D12_GPU_VIRTUAL_ADDRESS       ConstantsAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       LightListAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       ShadowMatricesAddress = 0;
+	uint32                          ShadowDrawCalls       = 0;
+	FMeshPassBatches                ShadowBatches; // 장마다 재사용
+	uint64                          ShadowTriangles       = 0;
 };

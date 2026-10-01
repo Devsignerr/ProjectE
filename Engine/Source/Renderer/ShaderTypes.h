@@ -29,12 +29,14 @@ struct alignas(16) FPerFrameConstants
 };
 static_assert(sizeof(FPerFrameConstants) % 16 == 0);
 
-struct alignas(16) FPerObjectConstants
+// 정적 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
+// 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다
+struct FInstanceGpuData
 {
 	FMatrix4x4 World;
-	FMatrix4x4 WorldInverseTranspose; // 비균등 스케일에서도 올바른 법선 변환
+	FVector4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3의 행 (w 미사용) — 비균등 스케일에서도 올바른 법선 변환
 };
-static_assert(sizeof(FPerObjectConstants) % 16 == 0);
+static_assert(sizeof(FInstanceGpuData) == 112);
 
 // 금속/거칠기 PBR 머티리얼 (glTF 2.0 규약). 텍스처 값에 곱해지는 팩터들
 struct alignas(16) FMaterialConstants
@@ -175,3 +177,38 @@ struct alignas(16) FClusterConstants
 	uint32     Padding0           = 0;
 };
 static_assert(sizeof(FClusterConstants) == 128);
+
+// 오클루전 컬링 항목 하나 = 메인 패스 정적 묶음의 인스턴스 하나 (OcclusionCulling.hlsl FOcclusionItem과 1:1)
+struct FOcclusionItem
+{
+	FVector3 BoundsMin;
+	uint32   Batch = 0;      // 메인 패스 묶음 번호 (간접 인자 = Batch * 2 + 단계)
+	FVector3 BoundsMax;
+	uint32   Instance = 0;   // 인스턴스 번호 (t13)
+	uint32   BatchFirst = 0; // 묶음의 인스턴스 번호 목록 시작 위치 (단계별 출력 목록도 같은 구간)
+	uint32   Padding[3] = {};
+};
+static_assert(sizeof(FOcclusionItem) == 48);
+
+// 오클루전 컬링 상수 (OcclusionCulling.hlsl CullCS b0). 판정 식은 Renderer/HzbMath.h
+struct alignas(16) FOcclusionCullConstants
+{
+	FMatrix4x4 ViewProjection;  // 1단계 = HZB를 만든 프레임의 뷰-투영, 2단계 = 현재
+	FVector2   DepthSize;       // HZB를 만든 깊이 버퍼 크기 (픽셀)
+	uint32     HzbMipCount = 0;
+	uint32     ItemCount   = 0;
+	uint32     Phase       = 1; // 1 = 이전 프레임 HZB로 검사, 2 = 1단계에서 가려진 항목을 이번 프레임 HZB로 다시 검사
+	uint32     bHzbValid   = 0; // 0이면 모두 보이는 것으로 (첫 프레임, 크기 변경)
+	uint32     Padding[2]  = {};
+};
+static_assert(sizeof(FOcclusionCullConstants) == 96);
+
+// HZB 한 단계 만들기 상수 (OcclusionCulling.hlsl Hzb*CS 루트 상수 4개)
+struct FHzbBuildConstants
+{
+	uint32 SourceWidth  = 0;
+	uint32 SourceHeight = 0;
+	uint32 DestWidth    = 0;
+	uint32 DestHeight   = 0;
+};
+static_assert(sizeof(FHzbBuildConstants) == 16);

@@ -298,6 +298,12 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 		Writer.WriteArray(Mesh.Data.Vertices);
 		Writer.WriteArray(Mesh.Data.Indices);
 		Writer.WriteArray(Mesh.SkinVertices);
+		Writer.Write(static_cast<uint32>(Mesh.Data.Lods.size()));
+		for (const FMeshLod& Lod : Mesh.Data.Lods)
+		{
+			Writer.WriteArray(Lod.Indices);
+			Writer.Write(Lod.ScreenSize);
+		}
 	}
 
 	Writer.Write(static_cast<uint32>(Model.Nodes.size()));
@@ -401,6 +407,17 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		Mesh.Data.Vertices = Reader.ReadArray<FVertex>();
 		Mesh.Data.Indices  = Reader.ReadArray<uint32>();
 		Mesh.SkinVertices  = Reader.ReadArray<FSkinVertex>();
+		const uint32 LodCount = Reader.Read<uint32>();
+		if (LodCount > 16)
+		{
+			return false;
+		}
+		Mesh.Data.Lods.resize(LodCount);
+		for (FMeshLod& Lod : Mesh.Data.Lods)
+		{
+			Lod.Indices    = Reader.ReadArray<uint32>();
+			Lod.ScreenSize = Reader.Read<float>();
+		}
 	}
 
 	const uint32 NodeCount = Reader.Read<uint32>();
@@ -489,6 +506,14 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		for (uint32 Index : Mesh.Data.Indices)
 		{
 			if (Index >= Mesh.Data.Vertices.size()) return false;
+		}
+		for (const FMeshLod& Lod : Mesh.Data.Lods)
+		{
+			if (Lod.Indices.size() % 3 != 0) return false;
+			for (uint32 Index : Lod.Indices)
+			{
+				if (Index >= Mesh.Data.Vertices.size()) return false;
+			}
 		}
 	}
 	for (const FModelNode& Node : OutModel.Nodes)

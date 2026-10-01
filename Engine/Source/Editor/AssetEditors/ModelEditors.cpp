@@ -457,6 +457,17 @@ void FModelEditorBase::DrawImportSettings(FAssetEditorEnvironment& Env)
 	ImGui::Checkbox("법선 다시 계산", &S.bRecomputeNormals);
 	ImGui::SameLine();
 	ImGui::Checkbox("탄젠트 다시 계산", &S.bRecomputeTangents);
+	ImGui::Checkbox("LOD 자동 생성", &S.bGenerateLods);
+	if (S.bGenerateLods)
+	{
+		ImGui::SameLine();
+		int32 LodCount = static_cast<int32>(S.LodCount);
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::SliderInt("LOD 단계", &LodCount, 1, 4))
+		{
+			S.LodCount = static_cast<uint32>(LodCount);
+		}
+	}
 
 	// 추가 애니메이션 파일 (같은 뼈대 이름을 가진 다른 모델 파일의 클립)
 	ImGui::TextUnformatted("추가 애니메이션 파일");

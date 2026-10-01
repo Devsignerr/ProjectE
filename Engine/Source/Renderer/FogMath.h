@@ -25,11 +25,13 @@ struct FFogMath
 		const float AtStart   = Density * std::exp(-Falloff * (StartZ - BaseHeight));
 		const float Exponent  = Falloff * DirZ * Length;
 		// ∫0^L σ(StartZ + DirZ t) dt = σ(StartZ) · (1 - e^{-f·DirZ·L}) / (f·DirZ), DirZ → 0이면 σ(StartZ)·L (테일러 1차 보정)
+		// = σ(StartZ) · L · (1 - e^{-x}) / x (x = f·DirZ·L). 나누는 값이 0이 되지 않게 따로 둔다 (최적화 빌드 C4723)
 		if (FMath::Abs(Exponent) < 1.0e-4f)
 		{
 			return AtStart * Length * (1.0f - 0.5f * Exponent);
 		}
-		return AtStart * (1.0f - std::exp(-Exponent)) / (Falloff * DirZ);
+		const float Denominator = Exponent > 0.0f ? FMath::Max(Exponent, 1.0e-4f) : FMath::Min(Exponent, -1.0e-4f); // 여기서는 항상 |x| >= 1e-4
+		return AtStart * Length * (1.0f - std::exp(-Denominator)) / Denominator;
 	}
 
 	// 투과율 → 안개 양 (MaxOpacity로 제한)

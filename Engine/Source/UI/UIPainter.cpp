@@ -1,5 +1,6 @@
 #include "UI/UIPainter.h"
 
+#include "UI/UITextEdit.h"
 #include "UI/Widget.h"
 
 #include <algorithm>
@@ -112,12 +113,40 @@ namespace
 		const float Left       = Content.Min.X - Widget.State.TextScroll;
 		const bool  bHint      = Widget.Text.empty() && !Widget.State.bFocused;
 
+		// 표시 글자 = 텍스트 + 캐럿 자리의 IME 조합 중 글자
+		int32             DisplayCaret     = 0;
+		int32             CompositionBegin = 0;
+		int32             CompositionEnd   = 0;
+		const std::string Display          = BuildTextBoxDisplay(Widget, DisplayCaret, CompositionBegin, CompositionEnd);
+		std::vector<float> Positions;
+		if (Font != nullptr && Widget.State.bFocused)
+		{
+			Font->GetCaretPositions(Display, Widget.FontSize, Positions);
+		}
+		const auto PositionAt = [&Positions, Left](int32 Index) {
+			return Left + Positions[static_cast<size_t>(FMath::Clamp(Index, 0, static_cast<int32>(Positions.size()) - 1))];
+		};
+		const float Thin = FMath::Max(1.5f, 1.0f / FMath::Max(Transform.GetUniformScale(), 0.01f));
+
+		// 선택 영역 (글자 뒤)
+		const int32 Anchor = Widget.State.SelectionAnchor;
+		if (!Positions.empty() && Anchor >= 0 && Anchor != Widget.State.CaretIndex && Widget.State.Composition.empty())
+		{
+			FUIBrush Selection;
+			Selection.Color = Widget.SelectionColor;
+			FUIPainter::PaintBrush(Selection,
+			                       FUIRect(FVector2(PositionAt(FMath::Min(Anchor, Widget.State.CaretIndex)), Top),
+			                               FVector2(PositionAt(FMath::Max(Anchor, Widget.State.CaretIndex)), Top + LineHeight)),
+			                       BoxOpacity, Transform, ContentClip, Out);
+		}
+
 		FUIWidgetData Line = Widget; // 한 줄, 왼쪽 정렬로 그린다
 		Line.Justify       = EUITextJustify::Left;
 		Line.bWrap         = false;
 		Line.OutlineWidth  = 0.0f;
 		Line.ShadowOffset  = FVector2::ZeroVector;
-		if (bHint)
+		Line.Text          = Display;
+		if (bHint && Widget.State.Composition.empty())
 		{
 			Line.Text      = GetDisplayHintText(Widget);
 			Line.TextColor = Widget.HintColor;
@@ -125,17 +154,25 @@ namespace
 		const FUIRect TextRect(FVector2(Left, Top), FVector2(Left + 100000.0f, Top + LineHeight));
 		FUIPainter::PaintText(Line, TextRect, BoxOpacity, Transform, ContentClip, Fonts, Out);
 
-		// 캐럿 (0.5초 켜짐 / 0.5초 꺼짐)
-		if (Widget.State.bFocused && Font != nullptr && std::fmod(Widget.State.CaretTime, 1.0f) < 0.5f)
+		if (Positions.empty())
 		{
-			std::vector<float> Positions;
-			Font->GetCaretPositions(Widget.Text, Widget.FontSize, Positions);
-			const int32 Caret = FMath::Clamp(Widget.State.CaretIndex, 0, static_cast<int32>(Positions.size()) - 1);
-			const float X     = Left + Positions[static_cast<size_t>(Caret)];
-			FUIBrush    CaretBrush;
-			CaretBrush.Color = Widget.TextColor;
-			FUIPainter::PaintBrush(CaretBrush, FUIRect(FVector2(X, Top + LineHeight * 0.1f), FVector2(X + FMath::Max(1.5f, 1.0f / Transform.GetUniformScale()), Top + LineHeight * 0.9f)),
-			                       BoxOpacity, Transform, ContentClip, Out);
+			return;
+		}
+		FUIBrush TextBrush;
+		TextBrush.Color = Widget.TextColor;
+		// IME 조합 중 글자 밑줄
+		if (CompositionEnd > CompositionBegin)
+		{
+			const float Y = Top + LineHeight * 0.92f;
+			FUIPainter::PaintBrush(TextBrush, FUIRect(FVector2(PositionAt(CompositionBegin), Y - Thin), FVector2(PositionAt(CompositionEnd), Y)), BoxOpacity,
+			                       Transform, ContentClip, Out);
+		}
+		// 캐럿 (0.5초 켜짐 / 0.5초 꺼짐)
+		if (std::fmod(Widget.State.CaretTime, 1.0f) < 0.5f)
+		{
+			const float X = PositionAt(DisplayCaret);
+			FUIPainter::PaintBrush(TextBrush, FUIRect(FVector2(X, Top + LineHeight * 0.1f), FVector2(X + Thin, Top + LineHeight * 0.9f)), BoxOpacity, Transform,
+			                       ContentClip, Out);
 		}
 	}
 

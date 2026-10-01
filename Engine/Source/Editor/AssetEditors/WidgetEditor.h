@@ -167,6 +167,9 @@ private:
 	float       AutoZoom = 0.0f;
 	std::string AutoAnimation; // --ui-animation <이름> [--ui-anim-time <초>]: 타임라인을 열고 그 시점 미리보기
 	float       AutoAnimationTime = 0.0f;
+	// 자동 검증 (Phase 32-2): --ui-text-demo select|compose — 선택한 텍스트 상자를 미리보기 입력으로 포커스해 선택 영역/IME 조합 표시를 보여 준다
+	std::string    AutoTextDemo;
+	std::u32string AutoComposition;
 
 	// 이름 편집 버퍼 (선택이 바뀌면 다시 채움)
 	char               NameBuffer[128] = {};

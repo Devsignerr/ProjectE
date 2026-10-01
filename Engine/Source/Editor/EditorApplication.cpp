@@ -1392,6 +1392,7 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	FInput BlockedInput;
 	ViewportPanel.bGameUIWantsPointer  = false;
 	ViewportPanel.bGameUIWantsKeyboard = false;
+	bool bGameTextInput                = false;
 	if (PlayMode.IsActive())
 	{
 		FUIFrameInput UIInput;
@@ -1404,6 +1405,13 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 		}
 		UIInput.DeltaSeconds          = DeltaSeconds;
 		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
+		// 게임 UI 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (뷰포트 이미지 위치만큼 옮김)
+		bGameTextInput = GameInput != nullptr && UIResult.bKeyboard && UIResult.bHasTextCaret;
+		if (bGameTextInput)
+		{
+			const FVector2 Caret = UIResult.TextCaret.Min + ViewportPanel.GetImageMin();
+			GetWindow().SetTextInput(true, static_cast<int32>(Caret.X), static_cast<int32>(Caret.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
+		}
 		if (GameInput != nullptr && (UIResult.bPointer || UIResult.bKeyboard))
 		{
 			ViewportPanel.bGameUIWantsPointer  = UIResult.bPointer;
@@ -1415,6 +1423,10 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 			}
 			GameInput = &BlockedInput;
 		}
+	}
+	if (!bGameTextInput)
+	{
+		GetWindow().SetTextInput(false, 0, 0, 0); // 플레이 정지/포커스 해제 → 시스템 IME 처리로 (ImGui 텍스트 필드)
 	}
 	PlayMode.Tick(Context, DeltaSeconds, GameInput);
 	NetPlay.PostTick(DeltaSeconds); // 리슨 서버 복제 전송

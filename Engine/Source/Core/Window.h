@@ -51,6 +51,11 @@ public:
 	void SetCursorLocked(bool bLock);
 	bool IsCursorLocked() const { return bCursorLocked; }
 
+	// 게임 UI 텍스트 입력 (매 프레임 불러도 된다). 켜져 있으면 IME 조합을 창이 직접 받아 ImeComposition/Char 이벤트로 보내고
+	// (시스템 조합 창 대신 UI가 그린다), 조합/후보 창을 캐럿(클라이언트 픽셀: 위쪽 X/Y, 높이) 아래에 둔다. 끄면 조합 중인 글자는 취소된다
+	void SetTextInput(bool bActive, int32 CaretX, int32 CaretY, int32 CaretHeight);
+	bool IsTextInputActive() const { return bTextInput; }
+
 	HWND   GetHandle() const { return Hwnd; }
 	uint32 GetWidth() const { return Width; }
 	uint32 GetHeight() const { return Height; }
@@ -78,4 +83,11 @@ private:
 	bool          bSavedMaximized = false;
 	FEventHandler EventHandler;
 	FMessageHook  MessageHook;
+
+	// IME (SetTextInput)
+	bool           bTextInput      = false;
+	int32          TextCaret[3]    = { -1, -1, -1 }; // 마지막으로 IME에 알린 캐럿 (X, Y, 높이)
+	std::u32string ImeComposition;                   // ImeComposition 이벤트가 가리키는 버퍼
+	void           HandleImeComposition(int64 LParam);
+	void           DispatchComposition(int32 Cursor);
 };

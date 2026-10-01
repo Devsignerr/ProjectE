@@ -342,6 +342,7 @@ namespace
 			Object["FontSize"]  = Widget.FontSize;
 			Object["TextColor"] = ToJson(Widget.TextColor);
 			Object["MaxLength"] = Widget.MaxLength;
+			Object["SelectionColor"] = ToJson(Widget.SelectionColor);
 			break;
 		case EUIWidgetType::ScrollBox:
 			Object["Orientation"]    = ToString(Widget.Orientation);
@@ -416,6 +417,7 @@ namespace
 		Read(Object, "HintTextKey", Widget->HintTextKey);
 		Read(Object, "HintColor", Widget->HintColor);
 		Read(Object, "MaxLength", Widget->MaxLength);
+		Read(Object, "SelectionColor", Widget->SelectionColor);
 		Read(Object, "Percent", Widget->Percent);
 		ReadEnum(Object, "FillDirection", Widget->FillDirection);
 		ReadEnum(Object, "Orientation", Widget->Orientation);

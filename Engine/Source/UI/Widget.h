@@ -91,6 +91,7 @@ struct FUIWidgetData
 	FVector4    HintColor = FVector4(1.0f, 1.0f, 1.0f, 0.35f);
 	int32       MaxLength = 0;                           // 글자 수 제한 (0 = 없음)
 	FUIBrush    FocusedBrush;                            // 포커스 중 배경
+	FVector4    SelectionColor = FVector4(0.25f, 0.5f, 1.0f, 0.45f); // 선택 영역 (sRGB + 알파)
 
 	// ---- 스크롤
 	EUIOrientation Orientation      = EUIOrientation::Vertical;
@@ -126,6 +127,9 @@ struct FUIWidgetState
 	int32    CaretIndex   = 0;    // 텍스트 상자: 캐럿 위치 (코드 포인트)
 	float    TextScroll   = 0.0f; // 텍스트 상자: 가로 스크롤 (UI 단위, 캐럿이 보이도록)
 	float    CaretTime    = 0.0f; // 깜빡임 (편집하면 0)
+	int32    SelectionAnchor = -1; // 텍스트 상자: 선택 시작 (캐럿까지가 선택, -1 = 없음)
+	std::u32string Composition;   // 텍스트 상자: IME 조합 중 글자 (캐럿 자리에 표시만, Text에는 확정 후 들어간다)
+	int32    CompositionCursor = 0;
 };
 
 // 위젯 트리 노드. 자식을 소유하고 부모는 비소유 포인터(자식을 붙일 때 설정, 트리 수명 동안 유효).

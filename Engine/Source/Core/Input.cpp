@@ -16,6 +16,11 @@ void FInput::ProcessEvent(const FWindowEvent& Event)
 		TypedText.push_back(static_cast<char32_t>(Event.Character));
 		break;
 
+	case EWindowEventType::ImeComposition:
+		CompositionText.assign(Event.Composition != nullptr ? Event.Composition : U"", Event.Composition != nullptr ? Event.CompositionLength : 0);
+		CompositionCursor = Event.CompositionCursor;
+		break;
+
 	case EWindowEventType::KeyUp:
 		if (Event.Key != EKey::None)
 		{
@@ -92,6 +97,8 @@ void FInput::ClearState()
 {
 	KeyStates.reset();
 	ButtonStates.reset();
+	CompositionText.clear();
+	CompositionCursor = 0;
 }
 
 bool FInput::IsKeyPressed(EKey Key) const
@@ -140,6 +147,8 @@ FInput FInput::WithoutKeyboard() const
 	Copy.PrevKeyStates.reset();
 	Copy.RepeatStates.reset();
 	Copy.TypedText.clear();
+	Copy.CompositionText.clear();
+	Copy.CompositionCursor = 0;
 	Copy.ReevaluateActions();
 	return Copy;
 }

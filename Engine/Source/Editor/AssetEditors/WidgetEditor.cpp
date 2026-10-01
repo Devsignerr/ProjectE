@@ -222,6 +222,7 @@ FWidgetEditor::FWidgetEditor(std::filesystem::path InPath)
 	AutoAnimation                  = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-animation"));
 	const std::wstring TimeArg     = CommandLine.GetValue(L"--ui-anim-time");
 	AutoAnimationTime              = TimeArg.empty() ? 0.0f : std::stof(TimeArg);
+	AutoTextDemo                   = FStringConv::ToUtf8(CommandLine.GetValue(L"--ui-text-demo"));
 }
 
 FWidgetEditor::~FWidgetEditor() = default;
@@ -932,6 +933,20 @@ void FWidgetEditor::DrawCanvas(FAssetEditorEnvironment& Env)
 				Pan          = CanvasSize * 0.5f - Widget->State.Geometry.GetCenter() * (Zoom * GetUiScale());
 				bViewTouched = true;
 			}
+			if (!AutoTextDemo.empty() && Widget->Type == EUIWidgetType::TextBox)
+			{
+				// 미리보기 입력으로 포커스 + 예시 글자. select = "세상" 선택, compose = 캐럿 자리에 조합 중 "한"
+				bPreviewInput = true;
+				PreviewRouter.Reset(*Asset.Root);
+				PreviewRouter.SetFocus(*Asset.Root, Widget->State.Id);
+				Widget->Text             = "Hello 세상 world";
+				Widget->State.CaretIndex = 8;
+				Widget->State.SelectionAnchor = AutoTextDemo == "select" ? 6 : -1;
+				if (AutoTextDemo == "compose")
+				{
+					AutoComposition = U"한";
+				}
+			}
 		}
 		AutoSelectName.clear();
 	}
@@ -1184,9 +1199,35 @@ void FWidgetEditor::HandlePreviewInput(bool bHovered)
 		Keys.bEnd       = ImGui::IsKeyPressed(ImGuiKey_End, false);
 		Keys.bCommit    = ImGui::IsKeyPressed(ImGuiKey_Enter, false) || ImGui::IsKeyPressed(ImGuiKey_KeypadEnter, false);
 		Keys.bCancel    = ImGui::IsKeyPressed(ImGuiKey_Escape, false);
+		// 선택/클립보드 (게임과 같은 키 — ImGui 클립보드 = OS 클립보드)
+		const bool bShortcut = Io.KeyCtrl && !Io.KeyAlt;
+		Keys.bShift          = Io.KeyShift;
+		Keys.bWordMove       = bShortcut;
+		Keys.bSelectAll      = bShortcut && ImGui::IsKeyPressed(ImGuiKey_A, false);
+		Keys.bCopy           = bShortcut && ImGui::IsKeyPressed(ImGuiKey_C, false);
+		Keys.bCut            = bShortcut && ImGui::IsKeyPressed(ImGuiKey_X, true);
+		Keys.bPaste          = bShortcut && ImGui::IsKeyPressed(ImGuiKey_V, true);
+		if (Keys.bPaste)
+		{
+			const char* Clipboard = ImGui::GetClipboardText();
+			Keys.PasteText        = Clipboard != nullptr ? Clipboard : "";
+		}
+	}
+	else
+	{
+		Keys.bShift = Io.KeyShift; // Shift+클릭 선택
+	}
+	if (!AutoComposition.empty())
+	{
+		Keys.Composition       = AutoComposition; // 자동 검증: IME 조합 표시
+		Keys.CompositionCursor = static_cast<int32>(AutoComposition.size());
 	}
 	std::vector<FUIEvent> Events;
 	PreviewRouter.Process(*Asset.Root, Pointer, Keys, Events);
+	if (std::string Copied; PreviewRouter.TakeClipboardText(Copied))
+	{
+		ImGui::SetClipboardText(Copied.c_str());
+	}
 	// 캐럿 깜빡임
 	if (FUIWidget* Focused = PreviewRouter.GetFocusedId() != 0 ? Asset.Root->FindById(PreviewRouter.GetFocusedId()) : nullptr)
 	{
@@ -1757,6 +1798,7 @@ void FWidgetEditor::DrawTypeProperties(FUIWidget& Widget)
 			}
 			bChanged |= DrawTextKeyField("안내 문구 키", Widget.HintTextKey);
 			bChanged |= ImGui::ColorEdit4("안내 색", &Widget.HintColor.X, ImGuiColorEditFlags_AlphaBar);
+			bChanged |= ImGui::ColorEdit4("선택 영역 색", &Widget.SelectionColor.X, ImGuiColorEditFlags_AlphaBar);
 			bChanged |= ImGui::DragInt("최대 글자 수", &Widget.MaxLength, 0.2f, 0, 10000);
 			ImGui::SetItemTooltip("0 = 제한 없음");
 			bChanged |= ImGui::DragFloat("글자 크기", &Widget.FontSize, 0.25f, 1.0f, 512.0f, "%.1f");

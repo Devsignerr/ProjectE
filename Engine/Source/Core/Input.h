@@ -61,6 +61,9 @@ public:
 	float GetLookDeltaY() const { return LookDeltaY; }
 	// 이번 프레임에 입력된 문자 (WM_CHAR, 제어 문자 포함)
 	const std::u32string& GetTypedText() const { return TypedText; }
+	// IME 조합 중인 글자 (확정 전, 프레임을 넘어 유지 — 게임 텍스트 입력 중에만 채워진다) + 조합 안 커서
+	const std::u32string& GetCompositionText() const { return CompositionText; }
+	int32                 GetCompositionCursor() const { return CompositionCursor; }
 
 	// 네트워크 입력 커맨드: 현재 상태를 통째로 읽고 쓴다 (서버는 원격 플레이어마다 FInput을 두고 받은 상태로 교체한다.
 	// 눌림/떼어짐 판정은 로컬과 같이 EndFrame 기준)
@@ -111,6 +114,8 @@ private:
 	float LookDeltaY = 0.0f;
 
 	std::u32string TypedText;
+	std::u32string CompositionText;
+	int32          CompositionCursor = 0;
 
 	FGamepadState Gamepad;
 	FGamepadState PrevGamepad;

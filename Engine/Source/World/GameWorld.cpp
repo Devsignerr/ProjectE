@@ -295,6 +295,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
 	Scene->UpdateTransforms();
+	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	Systems.Scripts->LateUpdate(DeltaSeconds, Input);
 	Scene->UpdateTransforms();

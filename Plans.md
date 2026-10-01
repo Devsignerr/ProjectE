@@ -616,8 +616,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 31 — 게임 중 맵 바꾸기 / 큰 맵 나눠 불러오기 (트랙 B)
 
-- [~] 31-1. 게임 중 맵 전환 (Lua/C++, 런타임·에디터 플레이·네트워크 서버 이동)
-- [ ] 31-2. 서브 레벨 스트리밍 (거리/영역 기준 불러오기·내리기)
+- [x] 31-1. 게임 중 맵 전환: Lua `Game.OpenScene/GetCurrentScene`, C++ `IGameNet::OpenScene`(서버·Standalone만, 클라이언트는 경고 + false). 처리는 `World/GameWorldTravel.h` `FGameWorldTravel::ConsumePending/Travel` 하나(런타임/서버/에디터 플레이/테스트 공용): 프레임 끝 → EndPlay → 정리 → 씬 비우기 → 로드 → 에셋 해석 → 정적 NetId → BeginPlay, 씬 객체는 유지하고 내용만 교체. 멀티플레이 = ServerTravel식(연결 유지, Travel/TravelAck, 이동 중 플레이어는 `FRemotePlayer::bInScene`으로 송수신 제외, Ack 후 `OnPlayerJoined` 재호출 → 폰 재생성·전체 상태). 씬 간 값 `Game.SetPersistent/GetPersistent/ClearPersistent`(프로세스 메모리만, 에디터는 정지 시 비움). 런타임 로딩 = 검은 화면 1프레임. `FPlayMode::Travel`(정지하면 편집 씬 복원). 샘플 `Demo_Travel_A/B`, `TravelPortal.lua`. 테스트 `SceneTravel_*` 4개
+- [x] 31-2. 서브 씬 스트리밍: `SubSceneVolumeComponent`(경로, HalfExtents, UnloadMargin) + `StreamingSourceComponent`(기준 = 주 카메라/캐릭터 이동/이 컴포넌트), Lua `Scene.LoadSubScene/UnloadSubScene/IsSubSceneLoaded/GetSubSceneRoot` + `OnSubSceneLoaded(path)`, `IGameNet` 3개. 파일 읽기·JSON 파싱만 `std::async`(`FSceneSerializer::ParseFile`), 엔티티 생성·프리팹 동기화·GPU는 다음 게임플레이 틱 메인 스레드(`AppendDocument`). 루트 엔티티 하나 아래(`FTransientComponent` — 메인 씬 저장 제외), 내릴 때 루트째 지연 파괴. 멀티플레이 SubSceneLoad/Unload, NetId = `1<<26 + (번호-1)*16384 + 하위 트리 순서`, 늦은 입장자에게 목록 먼저. 측정: 엔티티 1000개 Release 파싱 4.0ms + 붙이기 2.1ms, Demo_Streaming 붙이기 2.0~2.6ms. 데모 `Demo_Streaming` + `Streaming/Area1~3`. 테스트 `SubScene_*` 3개. `NetProtocolVersion` 10, `GameModuleApiVersion` 7 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): **pak 패키지에서 포털·스트리밍**(`.ps1` 막혀 미확인), 직접 조작으로 포털 진입, 인스펙터에서 서브 씬 볼륨 추가·편집, 실제 PC 2대로 전환 중 입장/퇴장
+- 후속: `FResourceManager` 메시/텍스처/머티리얼 캐시 해제 없음(맵마다 에셋이 다르면 메모리 누적), 이동 전 비신뢰 스냅샷이 이동 뒤 도착하는 경우(시퀀스 번호 없음), 클라이언트 서브 씬은 동기 처리, 서브 씬 붙일 때 씬 전체 에셋 해석 재실행, 파싱 중 내리면 대기, 같은 서브 씬 볼륨 2개/중첩 서브 씬 미정, 에디터 볼륨 표시·미리보기 없음, 로딩 화면 글자 없음
 
 ## Phase 32 — 다국어 / 입력창 마무리 (트랙 C)
 
@@ -644,5 +646,5 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 35 — 편집 도구 (트랙 F, 2단계)
 
-- [ ] 35-1. 애니메이션 그래프 편집기 + 핫 리로드
+- [~] 35-1. 애니메이션 그래프 편집기 + 핫 리로드
 - [ ] 35-2. 컷신(시퀀서) 편집기

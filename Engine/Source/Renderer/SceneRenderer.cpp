@@ -3,6 +3,7 @@
 #include "Core/CommandLine.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/Camera.h"
+#include "Renderer/LodMath.h"
 #include "Renderer/Material.h"
 #include "Renderer/PixelArtMath.h"
 #include "Renderer/ResourceManager.h"
@@ -118,6 +119,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	PerfCapture                    = FPerfCapture{};
 	PerfCapture.bEnabled           = CommandLine.HasFlag(L"--perf-capture");
+	if (CommandLine.HasFlag(L"--no-lod"))
+	{
+		bEnableLod = false; // 측정/비교용
+	}
+	if (const std::wstring ForceLod = CommandLine.GetValue(L"--force-lod"); !ForceLod.empty())
+	{
+		ForcedLod = std::stoi(ForceLod); // LOD 모양 확인용
+	}
 	if (const std::wstring Warmup = CommandLine.GetValue(L"--perf-warmup"); !Warmup.empty())
 	{
 		PerfCapture.WarmupFrames = static_cast<uint32>(std::max(0, std::stoi(Warmup)));
@@ -550,6 +559,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	SkinPalettes.Build(Scene, *Resources, Rhi->GetDynamicBuffer());
 	MeshInstances.Gather(Scene, *Resources, &SkinPalettes);
 	MeshInstances.Upload(Rhi->GetDynamicBuffer());
+	SelectLods(Camera);
 	Stats.TotalMeshes = MeshInstances.GetComponentCount();
 	EndTimer(ERenderTimer::Gather);
 
@@ -679,12 +689,41 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 		else
 		{
 			CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
-			Instance.Mesh->DrawInstanced(CommandList, Batch.Count);
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
 		}
 		++Stats.DrawCalls;
-		Stats.Triangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+		Stats.Triangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 	}
 	EndTimer(ERenderTimer::MainDraw);
+}
+
+void FSceneRenderer::SelectLods(const FCamera& Camera)
+{
+	if (!bEnableLod)
+	{
+		return; // 모두 LOD0 (Gather 기본값)
+	}
+	// 메인 카메라 화면 크기로 고르고 그림자 패스도 같은 LOD를 쓴다 (그림자와 본체 모양이 어긋나지 않게)
+	const bool     bOrthographic  = Camera.IsOrthographic();
+	const float    TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
+	const FVector3 CameraPosition = Camera.GetPosition();
+	for (FMeshInstance& Instance : MeshInstances.GetInstances())
+	{
+		if (Instance.IsSkinned() || Instance.Mesh->GetLodCount() <= 1)
+		{
+			continue;
+		}
+		if (ForcedLod >= 0)
+		{
+			Instance.Lod = std::min(static_cast<uint32>(ForcedLod), Instance.Mesh->GetLodCount() - 1);
+			continue;
+		}
+		const float Radius = Instance.WorldBounds.GetExtent().Length();
+		const float ScreenSize =
+			bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
+			              : LodMath::ComputePerspectiveScreenSize(Radius, FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition), TanHalfFov);
+		Instance.Lod = LodMath::SelectLod(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale);
+	}
 }
 
 FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const

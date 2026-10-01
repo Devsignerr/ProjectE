@@ -4,6 +4,10 @@
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Renderer/GltfLoader.h"
+#include "Renderer/LodMath.h"
+#include "Renderer/MeshSimplifier.h"
+
+#include <algorithm>
 
 #include <json.hpp>
 
@@ -48,6 +52,8 @@ std::string FModelImportSettings::ToJsonString() const
 	Document["ImportAnimations"]  = bImportAnimations;
 	Document["RecomputeNormals"]  = bRecomputeNormals;
 	Document["RecomputeTangents"] = bRecomputeTangents;
+	Document["GenerateLods"]      = bGenerateLods;
+	Document["LodCount"]          = LodCount;
 	Document["AnimationSources"]  = AnimationSources;
 	return Document.dump(2);
 }
@@ -67,6 +73,8 @@ bool FModelImportSettings::FromJsonString(const std::string& Json)
 	bImportAnimations  = Document.value("ImportAnimations", bImportAnimations);
 	bRecomputeNormals  = Document.value("RecomputeNormals", bRecomputeNormals);
 	bRecomputeTangents = Document.value("RecomputeTangents", bRecomputeTangents);
+	bGenerateLods      = Document.value("GenerateLods", bGenerateLods);
+	LodCount           = std::clamp<uint32>(Document.value("LodCount", LodCount), 1u, LodMath::MaxLods);
 	if (const auto It = Document.find("AnimationSources"); It != Document.end() && It->is_array())
 	{
 		for (const nlohmann::json& Item : *It)
@@ -154,6 +162,15 @@ void FModelImportSettings::Apply(FModelData& Model) const
 		if (bRecomputeNormals || bRecomputeTangents)
 		{
 			Mesh.Data.ComputeTangents();
+		}
+		// LOD: 정적 메시만 (스킨 메시는 항상 LOD0으로 그린다)
+		if (bGenerateLods && Mesh.SkinVertices.empty())
+		{
+			MeshSimplifier::GenerateLods(Mesh.Data, LodCount);
+		}
+		else
+		{
+			Mesh.Data.Lods.clear();
 		}
 	}
 

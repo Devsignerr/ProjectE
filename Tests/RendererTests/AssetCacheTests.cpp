@@ -201,6 +201,14 @@ E_TEST(AssetCache_DamagedHelmetCookedMatchesSource)
 		E_EXPECT_EQ(Second.Meshes[0].Data.Vertices.size(), First.Meshes[0].Data.Vertices.size());
 		E_EXPECT_TRUE(Second.Meshes[0].Data.Indices == First.Meshes[0].Data.Indices);
 		E_EXPECT_EQUALS(Second.Meshes[0].Data.Vertices.back().Position, First.Meshes[0].Data.Vertices.back().Position, 0.0f);
+		// 기본 임포트 설정: 정적 메시 LOD 자동 생성 (쿠킹본에 그대로 저장)
+		E_EXPECT_TRUE(!First.Meshes[0].Data.Lods.empty());
+		E_EXPECT_EQ(Second.Meshes[0].Data.Lods.size(), First.Meshes[0].Data.Lods.size());
+		if (!First.Meshes[0].Data.Lods.empty() && Second.Meshes[0].Data.Lods.size() == First.Meshes[0].Data.Lods.size())
+		{
+			E_EXPECT_TRUE(Second.Meshes[0].Data.Lods.back().Indices == First.Meshes[0].Data.Lods.back().Indices);
+			E_EXPECT_TRUE(First.Meshes[0].Data.Lods[0].Indices.size() < First.Meshes[0].Data.Indices.size());
+		}
 	}
 	if (!First.Images.empty() && Second.Images.size() == First.Images.size())
 	{

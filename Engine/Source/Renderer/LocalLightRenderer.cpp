@@ -475,9 +475,9 @@ void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances)
 		{
 			const FMeshInstance& Instance = List[Batch.Instance];
 			CommandList->SetGraphicsRoot32BitConstant(ShadowParam_PassConstants, Batch.First, 16);
-			Instance.Mesh->DrawInstanced(CommandList, Batch.Count);
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
 			++ShadowDrawCalls;
-			ShadowTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+			ShadowTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 		}
 
 		// 스킨 메시: 팔레트가 바로 월드로 보내므로 상수는 뷰-투영 그대로

@@ -86,6 +86,9 @@ public:
 	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
 	bool                 bWireframe      = false; // 메시를 선으로 그린다 (에셋 미리보기용)
 	bool                 bDrawSkybox     = true;  // false면 하늘 대신 BackgroundColor (썸네일용, 환경광은 그대로)
+	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
+	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
+	int32                ForcedLod       = -1;    // 0 이상이면 모든 정적 메시를 그 LOD로 (확인용, --force-lod N)
 
 	// 핫 리로드: 셰이더를 라이브러리에서 다시 얻어 PSO를 재생성한다. 성공 시 교체(이전 PSO는 지연 해제),
 	// 실패 시 기존 PSO를 유지하고 false. bForceRecompile이면 캐시·쿠킹 파일을 무시하고 컴파일한다.
@@ -142,6 +145,8 @@ private:
 	void RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
 	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height);
+	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
+	void SelectLods(const FCamera& Camera);
 	// 메인 패스: 인스턴스 목록 프러스텀 컬링 → 묶음 → 인스턴싱 드로우
 	void DrawMeshes(const FCamera& Camera, const FPerFrameConstants& PerFrame);
 

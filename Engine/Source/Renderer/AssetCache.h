@@ -19,7 +19,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
-	static constexpr uint32 ModelVersion = 6; // 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 7; // 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
 
 	static constexpr const wchar_t* ModelExtension = L".emodel";

@@ -3,7 +3,9 @@
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/AssetCache.h"
+#include "Renderer/LodMath.h"
 #include "Renderer/MaterialAsset.h"
+#include "Renderer/MeshSimplifier.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Scene/Particles.h"
 
@@ -265,12 +267,16 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	}
 	else if (Key == "sphere")
 	{
-		Handle = CreateMesh(FPrimitiveShapes::MakeSphere(0.5f * FUnits::MetersToUnits), L"Primitive_Sphere"); // 지름 1m 구
+		FMeshData Sphere = FPrimitiveShapes::MakeSphere(0.5f * FUnits::MetersToUnits); // 지름 1m 구
+		MeshSimplifier::GenerateLods(Sphere, LodMath::MaxLods);              // 곡면 도형은 LOD (정육면체는 12삼각형이라 불필요)
+		Handle = CreateMesh(Sphere, L"Primitive_Sphere");
 	}
 	else if (Key == "capsule")
 	{
 		// 반지름 50cm, 원기둥 절반 50cm → 높이 2m (캡슐 콜라이더 Radius 50 / HalfHeight 50과 같은 모양)
-		Handle = CreateMesh(FPrimitiveShapes::MakeCapsule(0.5f * FUnits::MetersToUnits, 0.5f * FUnits::MetersToUnits), L"Primitive_Capsule");
+		FMeshData Capsule = FPrimitiveShapes::MakeCapsule(0.5f * FUnits::MetersToUnits, 0.5f * FUnits::MetersToUnits);
+		MeshSimplifier::GenerateLods(Capsule, LodMath::MaxLods);
+		Handle = CreateMesh(Capsule, L"Primitive_Capsule");
 	}
 	else
 	{

@@ -885,6 +885,10 @@ void FEditorApplication::DrawStatsWindow()
 		{
 			Rhi->SetVSync(bVSync);
 		}
+		ImGui::Checkbox("메시 LOD", &SceneRenderer.bEnableLod);
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::SliderFloat("LOD 배율", &SceneRenderer.LodScale, 0.25f, 4.0f, "%.2f");
 		bool bFreeze = SceneRenderer.IsCullingFrozen();
 		if (ImGui::Checkbox("컬링 프러스텀 고정", &bFreeze))
 		{

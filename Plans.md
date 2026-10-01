@@ -621,8 +621,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 32 — 다국어 / 입력창 마무리 (트랙 C)
 
-- [~] 32-1. 문자열 표 + 언어 전환 (UI/Lua)
-- [ ] 32-2. 텍스트 상자 선택·클립보드·IME 조합 표시
+- [x] 32-1. 다국어: `.estrings`(한 파일에 모든 언어 `{Version, Languages, Strings:{키:{언어:값}}}` — 편집 창이 파일 단위이고 pak은 폴더 나열이 안 돼서), `FLocalization`(UI 모듈, 엔진 DLL 하나 — 게임 모듈 C++ API, `GameModuleApiVersion` 변경 없음), 형식 인자 `{0}`/`{이름}`/`{{`, 찾기 현재 언어 → 기본 언어 → 키 그대로(키마다 경고 1회), 언어 결정 `--language` > `<Saved>/Config/Language.json` > 시스템 언어(설정) > 기본 언어. 프로젝트 설정 "Localization"(DefaultLanguage/StringTables/DetectSystemLanguage — 비면 `Content/Localization/*.estrings`, pak은 설정 필수). 위젯 `TextKey`/`HintTextKey`(그릴 때마다 조회 → 즉시 반영), Lua `Loc.*` + `widget.TextKey`, 문자열 표 편집 창 `FStringTableEditor`, 디자이너 키 선택·미리보기 언어. 샘플 `Strings.estrings`(20키), HUD L 키 한/영 전환. 테스트 UITests 5개 + `UIScript_LocalizationKeysAndLocTable`
+- [x] 32-2. `FUITextEdit` 순수 편집 로직(Shift 선택, Ctrl 단어 이동/지우기, Ctrl+A, 복사/잘라내기/붙여넣기 — 줄바꿈 → 공백, 최대 길이), 마우스 클릭/Shift+클릭/끌기 선택, Win32 클립보드(`UI/UIPlatformWindows.cpp`), 선택 영역 `SelectionColor`, IME 조합 밑줄(`FWindow::SetTextInput` — 켜져 있을 때 IME 메시지를 직접 처리, 후보 창은 캐럿 아래, 끄면 조합 취소; `WindowEvent::ImeComposition`). 에디터는 플레이 + 뷰포트 포커스 + 텍스트 상자 포커스일 때만 켬. 자동 검증 `--ui-text-demo select|compose`. 테스트 UITests 6개 (2026-10-01 master 머지, 트랙 Debug/Release 경고 0·테스트 100%·화면 확인 오류 0)
+- [ ] 실행 검증 (사용자): 실제 한글 IME 입력(조합 밑줄, Enter 확정, 한자 후보 창 위치, 포커스 이동 시 취소, 창 재활성화 시 시스템 조합 창 깜빡임 — `WM_IME_SETCONTEXT` 미처리), Ctrl+C/X/V 실제 클립보드, Shift+클릭/끌기, L 키 언어 전환 후 다음 실행 유지, 디자이너 미리보기 언어·표 저장 즉시 반영
+- 후속: 더블클릭 단어 선택, `.estrings` 이동 시 `Config/Localization.json` 경로 미갱신, 설정 창 Localization 변경은 다음 실행부터, 한글 입력 모드에서 IME가 WASD를 가로챔(포커스 없을 때 `ImmAssociateContextEx`로 IME 끄기), ImGui 창을 메인 창 밖으로 떼면 캐럿 위치 어긋남, 여러 줄 텍스트 상자
 
 ## Phase 33 — 화면 품질 (트랙 D)
 
@@ -636,7 +638,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 ## Phase 34 — 지형 / 식생 (트랙 E, 2단계)
 
-- [ ] 34-1. 지형 데이터·스컬프트/페인트 브러시·높이맵 충돌
+- [~] 34-1. 지형 데이터·스컬프트/페인트 브러시·높이맵 충돌
 - [ ] 34-2. 지형 렌더링 (33-1 머지 후)
 - [ ] 34-3. 풀·나무 브러시 배치 (인스턴싱)
 

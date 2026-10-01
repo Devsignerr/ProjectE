@@ -44,6 +44,11 @@ void FInput::ProcessEvent(const FWindowEvent& Event)
 		WheelDelta += Event.WheelDelta;
 		break;
 
+	case EWindowEventType::RawMouseMove:
+		LookDeltaX += static_cast<float>(Event.MouseX);
+		LookDeltaY += static_cast<float>(Event.MouseY);
+		break;
+
 	case EWindowEventType::Focus:
 		if (!Event.bFocused)
 		{
@@ -63,6 +68,8 @@ void FInput::EndFrame()
 	PrevMouseX       = MouseX;
 	PrevMouseY       = MouseY;
 	WheelDelta       = 0.0f;
+	LookDeltaX       = 0.0f;
+	LookDeltaY       = 0.0f;
 	RepeatStates.reset();
 	TypedText.clear();
 }

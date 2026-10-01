@@ -24,6 +24,7 @@ void RegisterPhysicsTypes()
 		.Property(&FRigidBodyComponent::AngularDamping, "AngularDamping", "각 감쇠").Range(0.0f, 10.0f, 0.01f)
 		.Property(&FRigidBodyComponent::RollingResistance, "RollingResistance", "구르기 저항").Range(0.0f, 1.0f, 0.005f)
 		.Property(&FRigidBodyComponent::bUseGravity, "UseGravity", "중력 사용")
+		.Property(&FRigidBodyComponent::bLockRotation, "LockRotation", "회전 고정").Tooltip("동적 바디가 회전하지 않는다 (캐릭터 캡슐)")
 		.AsComponent();
 
 	Registry.RegisterType<FBoxColliderComponent>("BoxColliderComponent", "박스 콜라이더")

@@ -47,6 +47,10 @@ public:
 	void SetBorderlessFullscreen(bool bEnable);
 	bool IsBorderlessFullscreen() const { return bBorderlessFullscreen; }
 
+	// 커서 잠금 (FPS 시점): 커서를 숨기고 창 안에 가둔다. 포커스를 잃으면 자동으로 풀린다. 시점 회전은 원시 입력(RawMouseMove)으로 받는다
+	void SetCursorLocked(bool bLock);
+	bool IsCursorLocked() const { return bCursorLocked; }
+
 	HWND   GetHandle() const { return Hwnd; }
 	uint32 GetWidth() const { return Width; }
 	uint32 GetHeight() const { return Height; }
@@ -66,6 +70,8 @@ private:
 	bool          bInSizeMove = false; // 드래그 리사이즈 중에는 Resize 이벤트를 보류
 	uint32        PendingHighSurrogate = 0; // WM_CHAR UTF-16 서로게이트 앞쪽
 	bool          bBorderlessFullscreen = false;
+	bool          bCursorLocked         = false;
+	void          ApplyCursorClip() const; // 잠금 중이면 클라이언트 영역에 가둔다 (크기/위치가 바뀔 때마다)
 	// 전체 화면 전 창 상태 (WINDOWPLACEMENT 일부 — 헤더에 Windows.h를 넣지 않으려고 값으로 보관)
 	uint32        SavedStyle      = 0;
 	int32         SavedNormalRect[4] = {}; // left, top, right, bottom

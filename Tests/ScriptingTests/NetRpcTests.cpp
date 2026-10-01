@@ -186,9 +186,10 @@ E_TEST(NetInput_ServerScriptsSeeOwnersInput)
 	{
 		std::ofstream File(Content / L"Scripts/Reader.lua", std::ios::binary | std::ios::trunc);
 		File << R"(
-local T = { Properties = { W = 0, Pressed = 0, Joined = -1, Left = -1 } }
+local T = { Properties = { W = 0, Pressed = 0, Joined = -1, Left = -1, Yaw = 0, Pitch = 0 } }
 function T:OnUpdate(dt)
 	self.Properties.W = Input.IsKeyDown("W") and 1 or 0
+	self.Properties.Yaw, self.Properties.Pitch = self.entity:GetControlRotation()
 	if Input.IsKeyPressed("W") then self.Properties.Pressed = self.Properties.Pressed + 1 end
 end
 function T:OnPlayerJoined(id, pawn) self.Properties.Joined = id end
@@ -258,6 +259,13 @@ return T
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "W").Number, 1.0, 1.0e-9);  // 소유 플레이어 입력
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "W").Number, 0.0, 1.0e-9); // 서버 소유: 전용 서버엔 입력 없음
 	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Pressed").Number, 1.0, 1.0e-9); // 눌림은 한 번만
+
+	// 시점 방향: 클라이언트가 Net.SetControlRotation → 입력과 함께 서버로 → 소유 폰의 entity:GetControlRotation
+	E_EXPECT_TRUE(ClientScripts.RunString("Net.SetControlRotation(135.5, -20)"));
+	Pump(3);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Yaw").Number, 135.5, 1.0e-4);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerPawn, "Pitch").Number, -20.0, 1.0e-4);
+	E_EXPECT_NEAR(ServerScripts.GetInstanceProperty(ServerOther, "Yaw").Number, 0.0, 1.0e-9); // 서버 소유 (전용 서버 로컬 값 0)
 
 	ClientInput.SetState({}, {}, 0, 0, 0.0f);
 	Pump(3);

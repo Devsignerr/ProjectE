@@ -128,9 +128,12 @@ private:
 
 	struct FRemoteInput
 	{
-		FInput Input;
-		uint32 LastSequence = 0;
+		FInput   Input;
+		FVector2 ControlRotation; // yaw, pitch (도)
+		uint32   LastSequence = 0;
 	};
+	FVector2 LocalControlRotation; // 로컬 플레이어 (Lua Net.SetControlRotation) — 클라이언트는 입력과 함께 보낸다
+	FVector2 GetControlRotation(FEntity Entity) const;
 
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;

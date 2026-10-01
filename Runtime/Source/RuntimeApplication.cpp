@@ -71,9 +71,13 @@ bool FRuntimeApplication::OnInit()
 		E_LOG(LogRuntime, Warning, "프로젝트가 없습니다 (--project <경로>). 자리표시 씬만 표시합니다");
 	}
 
-	// Steam (.eproject SteamAppId): 오버레이가 D3D 장치를 잡도록 렌더러보다 먼저. 패키지 게임은 Steam 밖에서 실행되면 Steam으로 다시 실행
-	// (자동 검증과 --no-steam-restart는 제외). 실패해도 Steam 없이 계속한다
-	if (FPaths::HasProject())
+	// Steam (프로젝트 설정 Steam App ID): 오버레이가 D3D 장치를 잡도록 렌더러보다 먼저. 패키지 게임은 Steam 밖에서 실행되면 Steam으로 다시 실행
+	// (자동 검증과 --no-steam-restart는 제외). 실패해도 Steam 없이 계속한다.
+	// 자동 검증은 기본으로 Steam을 켜지 않는다 (오버레이가 D3D 객체를 프로세스 끝까지 잡아 종료 시 라이브 객체로 보고됨 — 확인하려면 --steam).
+	// --no-steam: 항상 끔
+	const FCommandLine SteamArgs    = FCommandLine::FromProcess();
+	const bool         bSteamWanted = !SteamArgs.HasFlag(L"--no-steam") && (!IsAutomationRun() || SteamArgs.HasFlag(L"--steam"));
+	if (FPaths::HasProject() && bSteamWanted)
 	{
 		const bool bAllowRestart = FPaths::IsPackaged() && !IsAutomationRun() && !FCommandLine::FromProcess().HasFlag(L"--no-steam-restart");
 		if (FSteamSubsystem::Get().Init(FProjectSettings::Get().Info.SteamAppId, bAllowRestart) == FSteamSubsystem::EInitResult::RestartThroughSteam)
@@ -159,6 +163,8 @@ bool FRuntimeApplication::OnInit()
 		},
 		[this]() { return UserSettings.bVSync; },
 		[this](bool bEnabled) { SetVSync(bEnabled); },
+		[this](bool bLocked) { GetWindow().SetCursorLocked(bLocked && !IsAutomationRun()); },
+		[this]() { return GetWindow().IsCursorLocked(); },
 	});
 	StartSession(FNetLaunchOptions::FromCommandLine(FCommandLine::FromProcess()));
 
@@ -213,7 +219,12 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 	// ESC 종료는 개발 실행에서만 — 패키지 게임은 ESC를 게임(일시정지 메뉴 등)에 넘기고 종료는 Game.Quit()로
 	// (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
-	if (!FPaths::IsPackaged() && !UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	// 커서가 잠겨 있으면 ESC는 잠금만 푼다 (게임 스크립트도 ESC를 볼 수 있다)
+	if (!UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape) && GetWindow().IsCursorLocked())
+	{
+		GetWindow().SetCursorLocked(false);
+	}
+	else if (!FPaths::IsPackaged() && !UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
 	{
 		RequestExit();
 	}
@@ -301,6 +312,8 @@ void FRuntimeApplication::OnShutdown()
 	SaveUserSettings();
 	EndSession();
 	Audio.Shutdown();
+	// Steam 오버레이가 스왑체인/큐를 잡고 있으므로 렌더러보다 먼저 끈다 (반대면 종료 시 라이브 D3D 객체 보고)
+	FSteamSubsystem::Get().Shutdown();
 
 	if (Rhi)
 	{
@@ -310,7 +323,6 @@ void FRuntimeApplication::OnShutdown()
 		Rhi->Shutdown();
 		Rhi.reset();
 	}
-	FSteamSubsystem::Get().Shutdown();
 	GameModule.Unload(); // 등록 타입 제거 (씬의 게임 컴포넌트는 앱 소멸 시 정리, DLL은 프로세스 종료까지 유지)
 }
 

@@ -351,6 +351,10 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 	Settings.mAngularDamping = Desc.AngularDamping;
 	Settings.mGravityFactor  = Desc.bUseGravity ? 1.0f : 0.0f;
 	Settings.mUserData       = Desc.UserData;
+	if (Motion == JPH::EMotionType::Dynamic && Desc.bLockRotation)
+	{
+		Settings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
+	}
 	if (Motion == JPH::EMotionType::Dynamic && Desc.Mass > 0.0f)
 	{
 		// 질량 직접 지정: 관성은 모양에서 계산해 질량에 맞춘다 (0이면 Jolt 기본 = 모양 부피 × 밀도)

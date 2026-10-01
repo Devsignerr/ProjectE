@@ -69,6 +69,10 @@ struct FScriptNetHooks
 	std::function<void(FEntity, EGameRpcKind, const std::string&, const FGameRpcArgs&)> SendRpc;
 	// 스크립트가 보는 Input (없으면 Update에 넘긴 로컬 입력). 서버는 엔티티 소유 플레이어의 입력을 돌려준다 (없으면 nullptr = 입력 없음)
 	std::function<const FInput*(FEntity, const FInput* LocalInput)> ResolveInput;
+	// 시점 방향 (언리얼 ControlRotation, 도): 로컬 플레이어가 정하고 입력과 함께 서버로 간다.
+	// Get = 엔티티 소유 플레이어의 값 (서버: 원격/호스트, 클라이언트: 자기 것만). 없으면 Standalone: 로컬 값
+	std::function<void(const FVector2& YawPitch)> SetLocalControlRotation;
+	std::function<FVector2(FEntity)>              GetControlRotation;
 
 	// 세션 (로비): 찾기/목록, 전환 요청(호스트/접속/끊기 — 앱이 프레임 끝에 처리), 상태 문자열
 	std::function<void()>                           FindSessions;
@@ -105,6 +109,8 @@ struct FScriptAppHooks
 	std::function<bool(const std::string& Mode)>  SetWindowMode; // 알 수 없는 이름이면 false
 	std::function<bool()>                         IsVSync;
 	std::function<void(bool)>                     SetVSync;
+	std::function<void(bool)>                     SetMouseLocked; // 런타임: 커서 숨김 + 창에 가둠 (포커스를 잃으면 풀림)
+	std::function<bool()>                         IsMouseLocked;
 };
 
 // 스크립트가 쓰는 Steam 기능 (Lua Steam 테이블). FGameWorld가 Online 모듈(FSteamSubsystem)과 연결한다 (비어 있으면 사용 불가)

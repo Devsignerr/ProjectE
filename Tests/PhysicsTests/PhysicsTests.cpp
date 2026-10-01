@@ -133,6 +133,35 @@ E_TEST(Physics_FreeFallMatchesGravity)
 	E_EXPECT_NEAR(Scene.GetTransform(Ball).Position.X, 0.0f, 1.0e-3f);
 }
 
+E_TEST(Physics_LockRotationKeepsCapsuleUpright)
+{
+	FScene Scene;
+	AddFloor(Scene);
+	// 둘 다 15도 기울여 떨어뜨린다: 회전 고정 캡슐은 그 자세 그대로, 자유 캡슐은 넘어진다
+	const FQuat Tilt       = FQuat::FromEuler(0.0f, 0.0f, 15.0f);
+	const auto  AddCapsule = [&Scene, &Tilt](const char* Name, float Y, bool bLock) {
+		const FEntity Entity = Scene.CreateEntity(Name);
+		Scene.GetTransform(Entity).Position = FVector3(0.0f, Y, 120.0f);
+		Scene.GetTransform(Entity).Rotation = Tilt;
+		Scene.GetRegistry().Emplace<FCapsuleColliderComponent>(Entity); // 반지름 30, 원기둥 절반 60
+		Scene.GetRegistry().Emplace<FRigidBodyComponent>(Entity).bLockRotation = bLock;
+		return Entity;
+	};
+	const FEntity Locked = AddCapsule("Locked", 0.0f, true);
+	const FEntity Free   = AddCapsule("Free", 400.0f, false);
+	Scene.UpdateTransforms();
+
+	FPhysicsSystem Physics;
+	Physics.Begin();
+	Physics.Update(Scene, Frame);
+	Physics.AddImpulse(Locked, FVector3(Physics.GetMass(Locked) * 200.0f, 0.0f, 0.0f)); // 2m/s로 밀기 (중심 — 이동만)
+	Simulate(Physics, Scene, 3.0f);
+	E_EXPECT_TRUE(Scene.GetTransform(Locked).Rotation.Equals(Tilt, 1.0e-3f));
+	E_EXPECT_TRUE(Scene.GetTransform(Locked).Position.X > 20.0f); // 이동은 된다
+	const FVector3 FreeUp = Scene.GetTransform(Free).Rotation.RotateVector(FVector3::UpVector);
+	E_EXPECT_TRUE(FreeUp.Z < 0.5f);
+}
+
 E_TEST(Physics_BoxRestsOnFloor)
 {
 	FScene Scene;

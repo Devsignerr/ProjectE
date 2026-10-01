@@ -393,6 +393,18 @@ void FLuaRuntime::RegisterEntityBindings()
 			const FEntity Parent = Scene->GetParent(Entity.Entity);
 			return Parent.IsValid() ? sol::make_object(Lua, FScriptEntity{ Parent }) : sol::object(sol::lua_nil);
 		},
+		"FindChild", [this, RequireEntity](const FScriptEntity& Entity, const std::string& Name) -> sol::object {
+			RequireEntity(Entity);
+			for (const FEntity Child : Scene->GetChildren(Entity.Entity))
+			{
+				const FNameComponent* ChildName = Scene->GetRegistry().TryGet<FNameComponent>(Child);
+				if (ChildName != nullptr && ChildName->Name == Name)
+				{
+					return sol::make_object(Lua, FScriptEntity{ Child });
+				}
+			}
+			return sol::lua_nil;
+		},
 		"SetParent", [this, RequireEntity](const FScriptEntity& Entity, sol::optional<FScriptEntity> Parent) {
 			RequireEntity(Entity);
 			Scene->SetParent(Entity.Entity, Parent ? Parent->Entity : NullEntity);
@@ -552,6 +564,13 @@ void FLuaRuntime::RegisterEntityBindings()
 		return Owner < 0 ? (NetHooks == nullptr || NetHooks->bIsServer) : Owner == GetLocalPlayerId();
 	};
 
+	// 시점 방향 (yaw, pitch 도): 서버에서는 소유 플레이어가 보낸 값, 클라이언트는 자기 소유 엔티티만
+	EntityType["GetControlRotation"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		const FVector2 Value = NetHooks != nullptr && NetHooks->GetControlRotation ? NetHooks->GetControlRotation(Entity.Entity) : LocalControlRotation;
+		return std::make_tuple(Value.X, Value.Y);
+	};
+
 	// ---- RPC: entity:CallServer("Fire", 인자...) → 그 엔티티 스크립트의 Server_Fire(self, 인자...) (Client_/Multicast_도 같은 규칙)
 	EntityType["CallServer"] = [RequireEntity, this](const FScriptEntity& Entity, const std::string& Name, sol::variadic_args Args) {
 		RequireEntity(Entity);
@@ -596,6 +615,10 @@ void FLuaRuntime::RegisterEntityBindings()
 				throw std::runtime_error(std::format("컴포넌트 '{}'에 프로퍼티 '{}'가 없습니다", Ref.Type->Name, Key));
 			}
 			WriteProperty(*Property, Component, Value);
+			if (Property->Type == EPropertyType::String && !Property->AssetFilter.empty())
+			{
+				bStructureChanged = true; // 에셋 경로가 바뀌었다 → 앱이 핸들을 다시 해석 (FSceneAssetResolver)
+			}
 		},
 		sol::meta_function::to_string, [](const FScriptComponentRef& Ref) { return std::format("Component({})", Ref.Type->Name); });
 
@@ -659,6 +682,10 @@ void FLuaRuntime::RegisterGlobals()
 	};
 	InputTable["GetMouseDelta"] = [this]() {
 		return Input ? std::make_tuple(Input->GetMouseDeltaX(), Input->GetMouseDeltaY()) : std::make_tuple(0, 0);
+	};
+	// 원시 마우스 이동량 (시점 회전용 — 화면 가장자리/커서 잠금과 무관). 서버의 원격 입력에는 없다(0): 시점은 Net.SetControlRotation으로 보낸다
+	InputTable["GetLookDelta"] = [this]() {
+		return Input ? std::make_tuple(Input->GetLookDeltaX(), Input->GetLookDeltaY()) : std::make_tuple(0.0f, 0.0f);
 	};
 
 	// ---- Time (Update마다 갱신)
@@ -1316,6 +1343,14 @@ void FLuaRuntime::RegisterNetBindings()
 	NetTable["IsClient"]           = [this]() { return NetHooks == nullptr || NetHooks->bIsClient; };
 	NetTable["GetMode"]            = [this]() { return NetHooks != nullptr ? NetHooks->ModeName : std::string("Standalone"); };
 	NetTable["GetLocalPlayerId"]   = [this]() { return GetLocalPlayerId(); };
+	// 로컬 플레이어의 시점 방향 (yaw, pitch 도) — 매 틱 입력과 함께 서버로 간다 (서버 스크립트는 entity:GetControlRotation)
+	NetTable["SetControlRotation"] = [this](float Yaw, float Pitch) {
+		LocalControlRotation = FVector2(Yaw, Pitch);
+		if (NetHooks != nullptr && NetHooks->SetLocalControlRotation)
+		{
+			NetHooks->SetLocalControlRotation(LocalControlRotation);
+		}
+	};
 
 	// ---- 세션 (로비). Host/Connect/Disconnect는 요청만 하고 앱이 이번 프레임 끝에 전환한다 (Connect/Disconnect는 씬을 다시 연다)
 	NetTable["FindSessions"] = [this]() {

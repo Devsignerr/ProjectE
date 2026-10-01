@@ -12,6 +12,7 @@
 #include "Scripting/ScriptSystem.h"
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 // RPC 메시지 (ENetMessageType::ScriptRpc, 신뢰):
@@ -100,6 +101,8 @@ void FGameWorld::InstallScriptNetHooks()
 	NetHooks.GetOwner          = [this](FEntity Entity) { return GetOwner(Entity); };
 	NetHooks.SendRpc           = [this](FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) { RouteRpc(Target, Kind, Name, Args); };
 	NetHooks.ResolveInput      = [this](FEntity Entity, const FInput* LocalInput) { return ResolveInput(Entity, LocalInput); };
+	NetHooks.SetLocalControlRotation = [this](const FVector2& YawPitch) { LocalControlRotation = YawPitch; };
+	NetHooks.GetControlRotation      = [this](FEntity Entity) { return GetControlRotation(Entity); };
 
 	// 세션 (로비)
 	NetHooks.FindSessions = [this]() { SessionSearch.StartSearch(FPaths::HasProject() ? FPaths::GetProjectName() : std::string(), LanDiscoveryPort); };
@@ -370,6 +373,8 @@ void FGameWorld::SendLocalInput(const FInput& Input)
 	Writer.Write(Input.GetMouseX());
 	Writer.Write(Input.GetMouseY());
 	Writer.Write(Input.GetMouseWheelDelta());
+	Writer.Write(LocalControlRotation.X); // 시점 방향 (yaw, pitch)
+	Writer.Write(LocalControlRotation.Y);
 	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
 }
 
@@ -401,13 +406,31 @@ void FGameWorld::ReceivePlayerInput(FNetConnectionId Connection, const std::vect
 	const int32               MouseX = Reader.Read<int32>();
 	const int32               MouseY = Reader.Read<int32>();
 	const float               Wheel  = Reader.Read<float>();
+	const float               Yaw    = Reader.Read<float>();
+	const float               Pitch  = Reader.Read<float>();
 	FRemoteInput&             Remote = RemoteInputs[Sender->PlayerId];
 	if (!Reader.IsOk() || !Reader.IsAtEnd() || Sequence <= Remote.LastSequence)
 	{
 		return; // 잘렸거나 늦게 도착한(재정렬) 커맨드
 	}
-	Remote.LastSequence = Sequence;
+	Remote.LastSequence    = Sequence;
 	Remote.Input.SetState(Keys, Buttons, MouseX, MouseY, Wheel);
+	Remote.ControlRotation = std::isfinite(Yaw) && std::isfinite(Pitch) ? FVector2(Yaw, Pitch) : FVector2();
+}
+
+FVector2 FGameWorld::GetControlRotation(FEntity Entity) const
+{
+	const int32 Owner = GetOwner(Entity);
+	if (Mode == ENetMode::Client)
+	{
+		return Owner >= 0 && Owner == GetLocalPlayerId() ? LocalControlRotation : FVector2();
+	}
+	if (Owner < 0 || Owner == GetLocalPlayerId())
+	{
+		return LocalControlRotation; // 서버 소유 또는 호스트 자신
+	}
+	const auto Found = RemoteInputs.find(static_cast<uint32>(Owner));
+	return Found != RemoteInputs.end() ? Found->second.ControlRotation : FVector2();
 }
 
 const FInput* FGameWorld::ResolveInput(FEntity Entity, const FInput* LocalInput) const

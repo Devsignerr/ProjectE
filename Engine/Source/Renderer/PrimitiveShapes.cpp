@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace
 {
@@ -110,6 +111,86 @@ FMeshData FPrimitiveShapes::MakeSphere(float Radius, uint32 Segments, uint32 Rin
 		for (uint32 Segment = 0; Segment < Segments; ++Segment)
 		{
 			const uint32 TopLeft     = Ring * Stride + Segment;
+			const uint32 TopRight    = TopLeft + 1;
+			const uint32 BottomLeft  = TopLeft + Stride;
+			const uint32 BottomRight = BottomLeft + 1;
+			AddTriangle(TopLeft, TopRight, BottomRight);
+			AddTriangle(TopLeft, BottomRight, BottomLeft);
+		}
+	}
+
+	Mesh.ComputeTangents();
+	return Mesh;
+}
+
+FMeshData FPrimitiveShapes::MakeCapsule(float Radius, float HalfHeight, uint32 Segments, uint32 HemisphereRings, const FVector4& Color)
+{
+	Segments        = std::max(Segments, 3u);
+	HemisphereRings = std::max(HemisphereRings, 1u);
+
+	// 행 = (극각, Z 오프셋): 위 반구(+HalfHeight) → 적도에서 한 번 더(-HalfHeight, 원기둥 옆면) → 아래 반구
+	struct FRow
+	{
+		float Theta;
+		float OffsetZ;
+	};
+	std::vector<FRow> Rows;
+	for (uint32 Ring = 0; Ring <= HemisphereRings; ++Ring)
+	{
+		Rows.push_back({ 0.5f * FMath::Pi * static_cast<float>(Ring) / static_cast<float>(HemisphereRings), HalfHeight });
+	}
+	for (uint32 Ring = 0; Ring <= HemisphereRings; ++Ring)
+	{
+		Rows.push_back({ 0.5f * FMath::Pi * (1.0f + static_cast<float>(Ring) / static_cast<float>(HemisphereRings)), -HalfHeight });
+	}
+
+	FMeshData Mesh;
+	Mesh.Vertices.reserve(Rows.size() * (Segments + 1));
+	Mesh.Indices.reserve((Rows.size() - 1) * Segments * 6);
+	const float TotalHeight = 2.0f * (HalfHeight + Radius);
+	for (const FRow& Row : Rows)
+	{
+		for (uint32 Segment = 0; Segment <= Segments; ++Segment)
+		{
+			const float    Phi = 2.0f * FMath::Pi * static_cast<float>(Segment) / static_cast<float>(Segments);
+			const FVector3 Direction(std::sin(Row.Theta) * std::cos(Phi), std::sin(Row.Theta) * std::sin(Phi), std::cos(Row.Theta));
+			FVertex        Vertex;
+			Vertex.Position = Direction * Radius + FVector3(0.0f, 0.0f, Row.OffsetZ);
+			Vertex.Normal   = Direction;
+			Vertex.UV       = FVector2(static_cast<float>(Segment) / static_cast<float>(Segments),
+			                           TotalHeight > 0.0f ? 0.5f - Vertex.Position.Z / TotalHeight : 0.0f);
+			Vertex.Color    = Color;
+			Mesh.Vertices.push_back(Vertex);
+		}
+	}
+
+	// 와인딩: 엔진 규약 Cross(P1-P0, P2-P0)·Normal > 0 (구와 같은 판정)
+	auto AddTriangle = [&Mesh](uint32 A, uint32 B, uint32 C) {
+		const FVector3& P0     = Mesh.Vertices[A].Position;
+		const FVector3& P1     = Mesh.Vertices[B].Position;
+		const FVector3& P2     = Mesh.Vertices[C].Position;
+		const FVector3  Cross  = FVector3::Cross(P1 - P0, P2 - P0);
+		const FVector3  Normal = Mesh.Vertices[A].Normal + Mesh.Vertices[B].Normal + Mesh.Vertices[C].Normal;
+		if (Cross.LengthSquared() <= 1.0e-12f)
+		{
+			return; // 극점의 퇴화 삼각형
+		}
+		if (FVector3::Dot(Cross, Normal) > 0.0f)
+		{
+			Mesh.Indices.insert(Mesh.Indices.end(), { A, B, C });
+		}
+		else
+		{
+			Mesh.Indices.insert(Mesh.Indices.end(), { A, C, B });
+		}
+	};
+
+	const uint32 Stride = Segments + 1;
+	for (uint32 Row = 0; Row + 1 < static_cast<uint32>(Rows.size()); ++Row)
+	{
+		for (uint32 Segment = 0; Segment < Segments; ++Segment)
+		{
+			const uint32 TopLeft     = Row * Stride + Segment;
 			const uint32 TopRight    = TopLeft + 1;
 			const uint32 BottomLeft  = TopLeft + Stride;
 			const uint32 BottomRight = BottomLeft + 1;

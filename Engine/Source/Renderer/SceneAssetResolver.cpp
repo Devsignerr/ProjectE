@@ -26,6 +26,15 @@ void FSceneAssetResolver::Resolve(FScene& Scene, FResourceManager& Resources, co
 
 	// 정적 메시: 내장 도형 + 머티리얼 에셋
 	Registry.View<FStaticMeshComponent>().Each([&](FEntity, FStaticMeshComponent& Mesh) {
+		// 핸들을 만든 뒤 경로가 바뀌었으면 (스크립트가 바꿈 / 복제로 받음) 다시 해석
+		if (Mesh.Mesh.IsValid() && !Mesh.ResolvedMeshAsset.empty() && Mesh.ResolvedMeshAsset != Mesh.MeshAsset)
+		{
+			Mesh.Mesh = {};
+		}
+		if (Mesh.Material.IsValid() && !Mesh.ResolvedMaterialAsset.empty() && Mesh.ResolvedMaterialAsset != Mesh.MaterialAsset)
+		{
+			Mesh.Material = {};
+		}
 		if (!Mesh.Mesh.IsValid() && !Mesh.MeshAsset.empty())
 		{
 			if (Mesh.MeshAsset.rfind(GPrimitivePrefix, 0) == 0)
@@ -41,6 +50,8 @@ void FSceneAssetResolver::Resolve(FScene& Scene, FResourceManager& Resources, co
 		{
 			Mesh.Material = Resources.LoadMaterial(ResolveContentPath(Mesh.MaterialAsset, ContentDirectory));
 		}
+		Mesh.ResolvedMeshAsset     = Mesh.Mesh.IsValid() ? Mesh.MeshAsset : std::string();
+		Mesh.ResolvedMaterialAsset = Mesh.Material.IsValid() ? Mesh.MaterialAsset : std::string();
 	});
 
 	// 모델: 자식이 없는 루트만 다시 인스턴스화 (순회 중 엔티티 생성 금지 → 먼저 수집)

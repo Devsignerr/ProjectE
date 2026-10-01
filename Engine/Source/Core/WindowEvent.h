@@ -15,6 +15,7 @@ enum class EWindowEventType : uint8
 	MouseButtonUp,
 	MouseWheel,
 	Char, // 문자 입력 (WM_CHAR, IME 조합 완료 글자 포함)
+	RawMouseMove, // 원시 마우스 이동 (WM_INPUT, 화면 가장자리/커서 잠금과 무관한 장치 이동량) — MouseX/MouseY = 델타
 };
 
 // 창에서 발생한 이벤트. 타입에 따라 관련 필드만 유효하다.

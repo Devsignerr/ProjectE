@@ -37,6 +37,7 @@ struct FPhysicsBodyDesc
 	float  AngularDamping    = 0.05f;
 	float  RollingResistance = 0.05f; // 동적 바디만. 접촉 중 회전 감속
 	bool   bUseGravity       = true;
+	bool   bLockRotation     = false; // 동적 바디: 이동만 (회전 자유도 없음)
 	uint64 UserData          = 0; // 엔티티 ToId()
 };
 

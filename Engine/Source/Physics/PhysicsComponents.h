@@ -24,6 +24,7 @@ struct FRigidBodyComponent
 	float AngularDamping    = 0.05f;
 	float RollingResistance = 0.05f; // 구르기 저항 계수: 무언가에 닿아 있을 때만 회전을 줄인다 (구는 약 계수 × g로 감속). 0 = 없음
 	bool  bUseGravity       = true;
+	bool  bLockRotation     = false; // 동적 바디가 회전하지 않음 (캐릭터 캡슐 — 넘어지지 않게, 이동만)
 };
 
 // 박스 콜라이더. 크기는 트랜스폼 월드 스케일이 곱해진다 (바디 생성 시)

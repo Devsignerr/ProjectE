@@ -13,6 +13,7 @@ E_DECLARE_LOG_CATEGORY(LogScript)
 //   Game.Quit()                          -- 런타임: 이번 프레임 끝에 종료 / 에디터: 플레이 정지
 //   Game.GetWindowMode() / Game.SetWindowMode("Windowed" | "BorderlessFullscreen")
 //   Game.IsVSync() / Game.SetVSync(true)
+//   Game.SetMouseLocked(true) / Game.IsMouseLocked()  -- FPS 시점: 커서 숨김 + 창에 가둠 (런타임만, 에디터는 항상 false — 우클릭 시점 등으로 대체)
 // 화면 설정은 런타임이 사용자 설정 파일(<Saved>/Config/GameUserSettings.json)에 저장한다. 앱이 지원하지 않으면 무시(경고 한 번)
 //
 // Steam (FSteamSubsystem — 런타임이 .eproject SteamAppId로 초기화했을 때만 동작, 아니면 false/빈 값)
@@ -60,6 +61,14 @@ void FLuaRuntime::RegisterGameBindings()
 			AppHooks->SetVSync(bEnabled);
 		}
 	};
+
+	GameTable["SetMouseLocked"] = [this](bool bLocked) {
+		if (AppHooks != nullptr && AppHooks->SetMouseLocked)
+		{
+			AppHooks->SetMouseLocked(bLocked);
+		}
+	};
+	GameTable["IsMouseLocked"] = [this]() { return AppHooks != nullptr && AppHooks->IsMouseLocked && AppHooks->IsMouseLocked(); };
 
 	sol::table SteamTable     = Lua.create_named_table("Steam");
 	SteamTable["IsAvailable"] = [this]() { return SteamHooks != nullptr && SteamHooks->IsAvailable && SteamHooks->IsAvailable(); };

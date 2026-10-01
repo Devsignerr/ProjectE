@@ -6,11 +6,13 @@
 FEntity FSceneCamera::FindPrimary(FScene& Scene)
 {
 	FEntity Found;
+	int32   FoundPriority = 0;
 	Scene.GetRegistry().View<FCameraComponent, FTransformComponent>().Each(
 		[&](FEntity Entity, FCameraComponent& Camera, FTransformComponent&) {
-			if (!Found.IsValid() && Camera.bPrimary)
+			if (Camera.bPrimary && (!Found.IsValid() || Camera.Priority > FoundPriority))
 			{
-				Found = Entity;
+				Found         = Entity;
+				FoundPriority = Camera.Priority;
 			}
 		});
 	return Found;

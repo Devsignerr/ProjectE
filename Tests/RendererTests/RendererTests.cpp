@@ -1,6 +1,11 @@
 #include "Core/Testing/TestFramework.h"
 #include "Renderer/Camera.h"
 #include "Renderer/PrimitiveShapes.h"
+#include "Renderer/SceneCamera.h"
+#include "Scene/Components.h"
+#include "Scene/Scene.h"
+
+#include <algorithm>
 
 namespace
 {
@@ -80,6 +85,56 @@ E_TEST(Camera_ProjectionClipRange)
 	const FVector4   FarClip  = ViewProj.TransformVector4(FVector4(100.0f, 0.0f, 0.0f, 1.0f));
 	E_EXPECT_NEAR(NearClip.Z / NearClip.W, 0.0f, Tol);
 	E_EXPECT_NEAR(FarClip.Z / FarClip.W, 1.0f, Tol);
+}
+
+E_TEST(PrimitiveShapes_CapsuleWindingAndShape)
+{
+	// 반지름 30, 원기둥 절반 60 → 높이 180 (캡슐 콜라이더와 같은 정의)
+	const FMeshData Capsule = FPrimitiveShapes::MakeCapsule(30.0f, 60.0f, 16, 6);
+	E_EXPECT_TRUE(!Capsule.Indices.empty() && Capsule.Indices.size() % 3 == 0);
+	bool bAllClockwise = true;
+	for (size_t Index = 0; Index < Capsule.Indices.size(); Index += 3)
+	{
+		const FVertex& V0     = Capsule.Vertices[Capsule.Indices[Index]];
+		const FVertex& V1     = Capsule.Vertices[Capsule.Indices[Index + 1]];
+		const FVertex& V2     = Capsule.Vertices[Capsule.Indices[Index + 2]];
+		const FVector3 Normal = V0.Normal + V1.Normal + V2.Normal;
+		bAllClockwise         = bAllClockwise && FVector3::Dot(FVector3::Cross(V1.Position - V0.Position, V2.Position - V0.Position), Normal) > 0.0f;
+	}
+	E_EXPECT_TRUE(bAllClockwise);
+	float MinZ = 1.0e9f;
+	float MaxZ = -1.0e9f;
+	for (const FVertex& Vertex : Capsule.Vertices)
+	{
+		MinZ = std::min(MinZ, Vertex.Position.Z);
+		MaxZ = std::max(MaxZ, Vertex.Position.Z);
+		// 축에서의 거리 = 반지름 (반구 부분은 반구 중심 기준)
+		const float    CenterZ = std::clamp(Vertex.Position.Z, -60.0f, 60.0f);
+		const FVector3 FromAxis(Vertex.Position.X, Vertex.Position.Y, Vertex.Position.Z - CenterZ);
+		E_EXPECT_NEAR(FromAxis.Length(), 30.0f, 1.0e-3f);
+	}
+	E_EXPECT_NEAR(MinZ, -90.0f, 1.0e-3f);
+	E_EXPECT_NEAR(MaxZ, 90.0f, 1.0e-3f);
+}
+
+E_TEST(SceneCamera_PriorityWins)
+{
+	FScene        Scene;
+	const FEntity Level  = Scene.CreateEntity("LevelCamera");
+	const FEntity Player = Scene.CreateEntity("PlayerCamera");
+	const FEntity Off    = Scene.CreateEntity("OffCamera");
+	Scene.GetRegistry().Emplace<FCameraComponent>(Level);
+	Scene.GetRegistry().Emplace<FCameraComponent>(Player);
+	Scene.GetRegistry().Emplace<FCameraComponent>(Off); // (Emplace는 저장소를 옮길 수 있어 참조는 다 넣은 뒤에 얻는다)
+	FCameraComponent& PlayerCamera = Scene.GetRegistry().Get<FCameraComponent>(Player);
+	FCameraComponent& OffCamera    = Scene.GetRegistry().Get<FCameraComponent>(Off);
+	OffCamera.bPrimary = false;
+	OffCamera.Priority = 100; // 주 카메라가 아니면 우선순위와 무관
+	E_EXPECT_TRUE(FSceneCamera::FindPrimary(Scene) == Level); // 같은 우선순위면 먼저 찾은 것
+	PlayerCamera.Priority = 10;
+	E_EXPECT_TRUE(FSceneCamera::FindPrimary(Scene) == Player);
+	PlayerCamera.bPrimary = false;
+	E_EXPECT_TRUE(FSceneCamera::FindPrimary(Scene) == Level);
 }
 
 E_TEST(PrimitiveShapes_SphereWindingAndRadius)

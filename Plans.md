@@ -491,3 +491,19 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 20-5. 검증 (2026-10-01): Debug/Release 단위 테스트 전부 통과, Verify — 프로젝트 설정(맵 & 모드)/에디터 환경설정(뷰포트) 창 스크린샷, 에디터·런타임 디버그 레이어 오류 0, 런타임/패키지가 `Config/Maps.json`의 게임 기본 맵으로 시작, 전용 서버 서버 기본 맵·LAN 포트, 패키지 exe 스탬프가 `Config/Project.json`을 읽음. 덤으로 실제 Steam 연결 확인(사용자 이름 로그 — 통계는 Steamworks에 등록된 것이 없어 실패 경고 한 번)
 - [ ] 실행 검증 (사용자): 설정 창에서 값 바꾸기 → 파일 저장/에디터 반영, 마지막 씬으로 다시 열기, 자동 저장
 - 후속: 속성별 기본값 되돌리기 화살표, 배열/구조체 프로퍼티, 입력 매핑(키 바인딩) 섹션, 렌더링 기본값 섹션, 게임 모듈의 자체 설정 섹션 등록 예시
+
+## Phase 21 — 멀티플레이 플레이어 캐릭터 (2026-10-01, 사용자 요청: "Demo_Multiplayer에서 클라이언트마다 WASD 이동, 마우스 시점, 스페이스 점프")
+
+**DoD**: Demo_Multiplayer를 리슨 서버 + 클라이언트 2개로 플레이하면 창마다 자기 캐릭터(캡슐)가 생기고, WASD로 보는 방향 기준 이동, 마우스로 3인칭 시점 회전, 스페이스로 점프한다. 다른 플레이어 캐릭터와 상자가 모든 창에서 같은 위치로 보이고, 캐릭터가 상자를 밀 수 있다.
+
+결정 (2026-10-01):
+- 권한: 서버 권위(기존 복제 모델 그대로) — 이동/점프는 서버가 물리로 계산하고 위치는 복제. 시점 방향만 클라이언트가 정해 입력과 함께 보낸다(언리얼 ControlRotation). 클라이언트 예측은 후속(원격 클라이언트는 왕복 지연 + 보간 0.1초만큼 늦게 움직인다)
+- 캐릭터 = 동적 강체 캡슐(회전 고정) + 자식 메시(서버가 몸 방향만 돌림, 프리팹 자식으로 복제). 이동은 수평 속도 지정, 점프는 바닥 레이캐스트 후 위쪽 속도
+- 카메라: 각 창의 로컬(비복제) 카메라 엔티티를 스크립트가 만든다. `FCameraComponent::Priority`가 높은 주 카메라가 이긴다
+- 시점 입력: 마우스 원시 입력(WM_INPUT). 런타임은 클릭하면 커서 잠금(ESC/포커스 잃으면 해제), 에디터 플레이 뷰포트는 우클릭 드래그
+
+- [x] 21-1. 엔진: 원시 마우스(`EWindowEventType::RawMouseMove`, `FInput::GetLookDelta`, Lua `Input.GetLookDelta`), 커서 잠금(`FWindow::SetCursorLocked` — 숨김 + 창 가운데에 가둠, 포커스 잃으면 해제, 런타임 ESC는 잠금 먼저 해제, `FScriptAppHooks::SetMouseLocked/IsMouseLocked` → Lua `Game.*`), 시점 방향(`FGameWorld` 로컬/원격 ControlRotation, 입력 커맨드에 yaw/pitch, `NetProtocolVersion` 6, Lua `Net.SetControlRotation`/`entity:GetControlRotation`), `FCameraComponent::Priority`, `FRigidBodyComponent::bLockRotation`(Jolt AllowedDOFs), `primitive:capsule`(`FPrimitiveShapes::MakeCapsule`), Lua `entity:FindChild`, 정적 메시 경로 변경 재해석(`ResolvedMeshAsset/ResolvedMaterialAsset`, Lua 에셋 경로 쓰기 → 재해석), 런타임 Steam 종료를 렌더러 앞으로 + 자동 검증은 Steam 끔(`--steam`/`--no-steam`). 테스트: 캡슐 와인딩/모양, 카메라 우선순위, 회전 고정, 네트워크 시점 방향
+- [x] 21-2. 내용: `Scripts/PlayerCharacter.lua`(Both — 서버: 소유자 입력 + 시점 yaw로 수평 속도, 바닥 레이캐스트 점프, 몸 회전, 플레이어 번호별 색 / 소유 클라이언트: 클릭 커서 잠금·우클릭 시점, `Net.SetControlRotation`, 로컬 3인칭 카메라(Priority 10, 벽 레이캐스트)), `Prefabs/Player.eprefab`(캡슐 콜라이더 35/55 + 동적 강체 80kg 회전 고정 + 복제, 자식 Body(복제, 몸 방향) → Mesh(복제, 캡슐) + Visor), 머티리얼 Green/Purple/Yellow/Visor, Demo_Multiplayer PlayerStart 높이 100. 예전 `PlayerController.lua` 제거
+- [x] 21-3. 검증 (2026-10-01): 단위 테스트 전부 통과(`PlayerCharacter_MovesJumpsAndFaces`: 착지 높이 90, W 1초 ≈ 450cm, 시점 90도 → +Y 이동·몸 방향, 점프·재착지, 캡슐 회전 고정), `Verify.ps1 -Multiplayer` — 클라이언트 2개 각자 자기 캐릭터 뒤 카메라, 상대 캐릭터·색·바이저 보임, 오류 0·라이브 객체 0, 에디터 리슨 서버 + 클라이언트 2 — 호스트 캐릭터 카메라. 발견/수정: 프리팹 자식 복제 표시, 소유자 복제 타이밍, 머티리얼 경로 변경 재해석, Steam 오버레이 라이브 객체
+- [ ] 실행 검증 (사용자): 직접 조작(WASD/마우스/스페이스), 상자 밀기, 서로 보이는지
+- 후속: 클라이언트 예측/보정(원격 클라이언트는 왕복 지연 + 보간 0.1초만큼 늦게 움직임), 경사·계단(Jolt CharacterVirtual), 공중 제어 감소, 애니메이션 캐릭터 모델

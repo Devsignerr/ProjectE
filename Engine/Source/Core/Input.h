@@ -42,6 +42,9 @@ public:
 	int32 GetMouseDeltaX() const { return MouseX - PrevMouseX; }
 	int32 GetMouseDeltaY() const { return MouseY - PrevMouseY; }
 	float GetMouseWheelDelta() const { return WheelDelta; }
+	// 이번 프레임 원시 마우스 이동량 (장치 카운트 — 화면 가장자리·커서 잠금과 무관, 시점 회전용)
+	float GetLookDeltaX() const { return LookDeltaX; }
+	float GetLookDeltaY() const { return LookDeltaY; }
 	// 이번 프레임에 입력된 문자 (WM_CHAR, 제어 문자 포함)
 	const std::u32string& GetTypedText() const { return TypedText; }
 
@@ -63,6 +66,8 @@ private:
 	int32 PrevMouseX = 0;
 	int32 PrevMouseY = 0;
 	float WheelDelta = 0.0f;
+	float LookDeltaX = 0.0f;
+	float LookDeltaY = 0.0f;
 
 	std::u32string TypedText;
 };

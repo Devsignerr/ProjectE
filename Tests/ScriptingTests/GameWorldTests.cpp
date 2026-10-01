@@ -3,8 +3,10 @@
 #include "Network/LanDiscovery.h"
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsComponents.h"
+#include "Physics/PhysicsReflection.h"
 #include "Physics/PhysicsSystem.h"
 #include "Scene/Components.h"
+#include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 #include "World/GameWorld.h"
@@ -236,6 +238,88 @@ Net.Connect(Sessions[1].address)
 	// 플레이 중 Standalone → 리슨 서버 전환 (스크립트는 그대로)
 	World.SetNetMode(ENetMode::ListenServer);
 	E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetMode() == 'ListenServer' and Net.IsServer() and Net.IsClient())"));
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
+}
+
+// 샘플 플레이어 캐릭터(Prefabs/Player.eprefab + Scripts/PlayerCharacter.lua): 서버 쪽 이동/점프/몸 방향을 물리와 함께 확인
+E_TEST(PlayerCharacter_MovesJumpsAndFaces)
+{
+	RegisterPhysicsTypes();
+	RegisterNetworkTypes();
+	const std::filesystem::path Content = FPaths::GetProjectContentDirectory();
+	FPrefabLibrary::Get().SetContentDirectory(Content);
+
+	FScene        Scene;
+	const FEntity Ground = Scene.CreateEntity("Ground");
+	Scene.GetTransform(Ground).Position = FVector3(0.0f, 0.0f, -10.0f);
+	Scene.GetRegistry().Emplace<FBoxColliderComponent>(Ground).HalfExtents = FVector3(3000.0f, 3000.0f, 10.0f);
+	Scene.GetRegistry().Emplace<FRigidBodyComponent>(Ground).MotionType   = static_cast<int32>(EPhysicsMotionType::Static);
+	std::string   Error;
+	const FEntity Player = FPrefabLibrary::Get().Instantiate(Scene, "Prefabs/Player.eprefab", NullEntity, &Error);
+	E_EXPECT_TRUE(Player.IsValid());
+	if (!Player.IsValid())
+	{
+		return;
+	}
+	Scene.UpdateTransforms();
+
+	FScriptSystem  Scripts;
+	FPhysicsSystem Physics;
+	FGameWorld     World;
+	World.Init({ &Scripts, &Physics, nullptr, nullptr, Content });
+	World.BeginPlay(Scene); // Standalone: 서버 쪽 이동이 로컬 입력으로 돈다
+
+	FInput     Input;
+	const auto Run = [&](float Seconds) {
+		for (int32 Frame = 0; Frame < static_cast<int32>(Seconds * 60.0f); ++Frame)
+		{
+			World.TickGameplay(1.0f / 60.0f, &Input);
+			Input.EndFrame();
+		}
+	};
+	Run(1.0f); // 착지
+	const FVector3 Start = Scene.GetTransform(Player).Position;
+	E_EXPECT_NEAR(Start.Z, 90.0f, 3.0f); // 캡슐 중심 = 반지름 35 + 원기둥 절반 55
+
+	// W: 시점 방향(yaw 0 = +X)으로 450cm/s
+	FInput::FKeyBits Keys;
+	Keys[static_cast<size_t>(EKey::W)] = true;
+	Input.SetState(Keys, {}, 0, 0, 0.0f);
+	Run(1.0f);
+	const FVector3 Walked = Scene.GetTransform(Player).Position;
+	E_EXPECT_NEAR(Walked.X - Start.X, 450.0f, 30.0f);
+	E_EXPECT_NEAR(Walked.Y, Start.Y, 1.0f);
+
+	// 시점을 오른쪽 90도로 돌리면 W가 +Y, 몸(Body)도 그쪽을 본다
+	E_EXPECT_TRUE(Scripts.RunString("Net.SetControlRotation(90, 0)"));
+	Run(0.5f);
+	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Y - Walked.Y > 150.0f);
+	FEntity Body;
+	for (const FEntity Child : Scene.GetChildren(Player))
+	{
+		if (Scene.GetRegistry().Get<FNameComponent>(Child).Name == "Body")
+		{
+			Body = Child;
+		}
+	}
+	E_EXPECT_TRUE(Body.IsValid());
+	if (Body.IsValid())
+	{
+		E_EXPECT_EQUALS(Scene.GetTransform(Body).Rotation.GetForwardVector(), FVector3::RightVector, 1.0e-3f);
+	}
+
+	// 스페이스: 바닥에서만 점프 (위로 떠오른다)
+	Keys.reset();
+	Keys[static_cast<size_t>(EKey::Space)] = true;
+	Input.SetState(Keys, {}, 0, 0, 0.0f);
+	Run(0.25f);
+	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Z > Start.Z + 60.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Player).Rotation.GetForwardVector().X, 1.0f, 1.0e-3f); // 캡슐 자체는 회전 고정
+	Keys.reset();
+	Input.SetState(Keys, {}, 0, 0, 0.0f);
+	Run(1.5f);
+	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Z, 90.0f, 3.0f); // 다시 착지
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }

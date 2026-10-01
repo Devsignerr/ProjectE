@@ -171,6 +171,7 @@ private:
 	const FScriptAIHooks*      AIHooks      = nullptr;
 	const FScriptAppHooks*     AppHooks     = nullptr;
 	const FScriptSteamHooks*   SteamHooks   = nullptr;
+	FVector2                   LocalControlRotation; // 훅이 없을 때(테스트) Net.SetControlRotation 값
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
 

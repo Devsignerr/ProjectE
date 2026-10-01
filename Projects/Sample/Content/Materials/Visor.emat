@@ -1,0 +1,23 @@
+{
+  "Name": "Visor",
+  "BaseColorFactor": [
+    0.03,
+    0.04,
+    0.06,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.6,
+  "Roughness": 0.15,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

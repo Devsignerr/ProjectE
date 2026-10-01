@@ -2,31 +2,156 @@
   "Entities": [
     {
       "Components": {
+        "CapsuleColliderComponent": {
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Radius": 35.0
+        },
         "PrefabLinkComponent": {
           "Id": "1",
           "Root": -1
         },
         "ReplicatedComponent": {},
-        "ScriptComponent": {
-          "ExecutionLocation": 0,
-          "PropertyOverrides": "",
-          "ScriptAsset": "Scripts/PlayerController.lua"
+        "RigidBodyComponent": {
+          "AngularDamping": 0.05,
+          "Density": 500.0,
+          "Friction": 0.0,
+          "LinearDamping": 0.0,
+          "LockRotation": true,
+          "Mass": 80.0,
+          "MotionType": 2,
+          "Restitution": 0.0,
+          "RollingResistance": 0.0,
+          "UseGravity": true
         },
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "",
+          "ScriptAsset": "Scripts/PlayerCharacter.lua"
         },
         "TransformComponent": {
-          "Position": [0.0, 0.0, 30.0],
-          "Rotation": [0.0, 0.0, 0.0, 1.0],
-          "Scale": [0.6, 0.6, 0.6]
+          "Position": [
+            0.0,
+            0.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
         }
       },
       "Name": "Player",
       "Parent": -1
+    },
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "ReplicatedComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Body",
+      "Parent": 0
+    },
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "ReplicatedComponent": {},
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:capsule",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            0.9
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 1
+    },
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Visor.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            28.0,
+            0.0,
+            50.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.16,
+            0.44,
+            0.16
+          ]
+        }
+      },
+      "Name": "Visor",
+      "Parent": 1
     }
   ],
-  "NextId": 2,
+  "NextId": 5,
   "Version": 1
 }

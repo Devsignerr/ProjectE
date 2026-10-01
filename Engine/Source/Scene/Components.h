@@ -48,6 +48,10 @@ struct FStaticMeshComponent
 	bool            bVisible = true;
 	std::string     MeshAsset;
 	std::string     MaterialAsset;
+
+	// FSceneAssetResolver가 핸들을 만든 경로 (리플렉션/직렬화 제외 캐시) — 경로가 바뀌면(스크립트, 복제) 다시 해석한다
+	std::string ResolvedMeshAsset;
+	std::string ResolvedMaterialAsset;
 };
 
 // glTF 모델 인스턴스의 루트. 자식 노드 엔티티는 로드 시 생성되며(FTransientComponent) 직렬화되지 않는다.
@@ -117,6 +121,7 @@ struct FCameraComponent
 	float NearZ         = 10.0f;     // cm
 	float FarZ          = 100000.0f; // cm
 	bool  bPrimary      = true;
+	int32 Priority      = 0;         // 주 카메라가 여럿이면 큰 값이 이긴다 (같으면 먼저 찾은 것) — 플레이어별 로컬 카메라 등
 	bool  bOrthographic = false;     // 직교 투영 (픽셀 아트 텍셀 스냅은 직교에서만 정확)
 	float OrthoHeight   = 1000.0f;   // 직교일 때 화면 세로가 담는 월드 높이 (cm)
 };

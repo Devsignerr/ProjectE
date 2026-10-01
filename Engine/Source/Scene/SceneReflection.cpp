@@ -79,6 +79,7 @@ void RegisterSceneTypes()
 		.Property(&FCameraComponent::NearZ, "NearZ", "근평면 (cm)").Range(0.1f, 10000.0f, 0.5f)
 		.Property(&FCameraComponent::FarZ, "FarZ", "원평면 (cm)").Range(100.0f, 10000000.0f, 100.0f)
 		.Property(&FCameraComponent::bPrimary, "Primary", "주 카메라")
+		.Property(&FCameraComponent::Priority, "Priority", "우선순위").Tooltip("주 카메라가 여럿이면 큰 값이 이긴다")
 		.Property(&FCameraComponent::bOrthographic, "Orthographic", "직교 투영")
 		.Property(&FCameraComponent::OrthoHeight, "OrthoHeight", "직교 높이 (cm)").Range(1.0f, 100000.0f, 1.0f)
 		.AsComponent();

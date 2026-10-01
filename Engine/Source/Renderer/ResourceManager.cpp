@@ -267,6 +267,11 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	{
 		Handle = CreateMesh(FPrimitiveShapes::MakeSphere(0.5f * FUnits::MetersToUnits), L"Primitive_Sphere"); // 지름 1m 구
 	}
+	else if (Key == "capsule")
+	{
+		// 반지름 50cm, 원기둥 절반 50cm → 높이 2m (캡슐 콜라이더 Radius 50 / HalfHeight 50과 같은 모양)
+		Handle = CreateMesh(FPrimitiveShapes::MakeCapsule(0.5f * FUnits::MetersToUnits, 0.5f * FUnits::MetersToUnits), L"Primitive_Capsule");
+	}
 	else
 	{
 		E_LOG(LogRenderer, Warning, "알 수 없는 내장 도형: {}", Key);

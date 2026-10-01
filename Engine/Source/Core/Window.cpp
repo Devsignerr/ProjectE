@@ -141,6 +141,16 @@ bool FWindow::Create(const FWindowDesc& Desc)
 
 	ShowWindow(Hwnd, SW_SHOW);
 
+	// 원시 마우스 입력 (시점 회전용 이동량 — 포그라운드일 때만 받는다)
+	RAWINPUTDEVICE Mouse{};
+	Mouse.usUsagePage = 0x01; // HID_USAGE_PAGE_GENERIC
+	Mouse.usUsage     = 0x02; // HID_USAGE_GENERIC_MOUSE
+	Mouse.hwndTarget  = Hwnd;
+	if (!RegisterRawInputDevices(&Mouse, 1, sizeof(Mouse)))
+	{
+		E_LOG(LogCore, Warning, "원시 마우스 입력 등록 실패 (오류 코드 {}) — 시점 회전이 동작하지 않습니다", GetLastError());
+	}
+
 	// 실제 클라이언트 크기로 갱신 (DPI 등으로 요청과 다를 수 있음)
 	RECT ClientRect{};
 	if (GetClientRect(Hwnd, &ClientRect))
@@ -225,6 +235,47 @@ void FWindow::SetBorderlessFullscreen(bool bEnable)
 	}
 }
 
+void FWindow::SetCursorLocked(bool bLock)
+{
+	if (Hwnd == nullptr || bLock == bCursorLocked)
+	{
+		return;
+	}
+	if (bLock && GetForegroundWindow() != Hwnd)
+	{
+		return; // 다른 창이 앞에 있으면 잠그지 않는다
+	}
+	bCursorLocked = bLock;
+	ShowCursor(bLock ? FALSE : TRUE);
+	if (bLock)
+	{
+		ApplyCursorClip();
+	}
+	else
+	{
+		ClipCursor(nullptr);
+	}
+}
+
+void FWindow::ApplyCursorClip() const
+{
+	if (!bCursorLocked)
+	{
+		return;
+	}
+	RECT Client{};
+	GetClientRect(Hwnd, &Client);
+	POINT TopLeft{ Client.left, Client.top };
+	POINT BottomRight{ Client.right, Client.bottom };
+	ClientToScreen(Hwnd, &TopLeft);
+	ClientToScreen(Hwnd, &BottomRight);
+	// 가운데 한 점에 가둔다 (커서가 창 가장자리 UI에 걸리지 않게)
+	const LONG CenterX = (TopLeft.x + BottomRight.x) / 2;
+	const LONG CenterY = (TopLeft.y + BottomRight.y) / 2;
+	const RECT Clip{ CenterX, CenterY, CenterX + 1, CenterY + 1 };
+	ClipCursor(&Clip);
+}
+
 void FWindow::Dispatch(const FWindowEvent& Event)
 {
 	if (EventHandler)
@@ -274,6 +325,7 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		return 0;
 
 	case WM_SIZE:
+		ApplyCursorClip();
 		Width      = LOWORD(LParam);
 		Height     = HIWORD(LParam);
 		bMinimized = (WParam == SIZE_MINIMIZED);
@@ -309,8 +361,32 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		return 0;
 	}
 
+	case WM_INPUT:
+	{
+		RAWINPUT Raw{};
+		UINT     Size = sizeof(Raw);
+		if (GetRawInputData(reinterpret_cast<HRAWINPUT>(LParam), RID_INPUT, &Raw, &Size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1) &&
+		    Raw.header.dwType == RIM_TYPEMOUSE && (Raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) == 0 &&
+		    (Raw.data.mouse.lLastX != 0 || Raw.data.mouse.lLastY != 0))
+		{
+			Event.Type   = EWindowEventType::RawMouseMove;
+			Event.MouseX = Raw.data.mouse.lLastX;
+			Event.MouseY = Raw.data.mouse.lLastY;
+			Dispatch(Event);
+		}
+		break; // DefWindowProc가 정리한다
+	}
+
+	case WM_MOVE:
+		ApplyCursorClip();
+		break;
+
 	case WM_SETFOCUS:
 	case WM_KILLFOCUS:
+		if (Message == WM_KILLFOCUS)
+		{
+			SetCursorLocked(false); // 다른 창으로 가면 커서를 돌려준다
+		}
 		Event.Type     = EWindowEventType::Focus;
 		Event.bFocused = (Message == WM_SETFOCUS);
 		Dispatch(Event);

@@ -30,7 +30,7 @@ namespace
 		RootParam_Shadow          = 4, // b3 (캐스케이드 상수)
 		RootParam_ShadowMap       = 5, // t8 (섀도우 맵 배열)
 		RootParam_Ibl             = 6, // t5~t7
-		RootParam_SkinPalette     = 7, // b4 (스킨 메시 본 팔레트, 정점 셰이더)
+		RootParam_SkinPalette     = 7, // t15 (프레임 스킨 팔레트 구조화 버퍼, 정점 셰이더)
 		RootParam_Cluster         = 8, // b5 (클러스터 상수)
 		RootParam_LocalLights     = 9, // t9 (라이트 목록, 루트 SRV)
 		RootParam_ClusterData     = 10, // t10 (클러스터별 라이트 인덱스, 루트 SRV)
@@ -68,7 +68,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 IblIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 5) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(IblIndex == RootParam_Ibl);
-	const uint32 SkinPaletteIndex = RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 SkinPaletteIndex = RootSignature.AddShaderResourceView(15, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	E_CHECK(SkinPaletteIndex == RootParam_SkinPalette);
 	const uint32 ClusterIndex     = RootSignature.AddConstantBufferView(5, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 LocalLightsIndex = RootSignature.AddShaderResourceView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -124,6 +124,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		bEnableOcclusion = true; // 측정/비교용 (기본 끔)
 	}
+	if (CommandLine.HasFlag(L"--no-skin-culling"))
+	{
+		bSkinVisibilityCulling = false; // 측정/비교용
+	}
+	if (CommandLine.HasFlag(L"--no-particle-culling"))
+	{
+		ParticleRenderer.bEnableCulling = false; // 측정/비교용
+	}
 	if (CommandLine.HasFlag(L"--no-lod"))
 	{
 		bEnableLod = false; // 측정/비교용
@@ -131,6 +139,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	if (const std::wstring ForceLod = CommandLine.GetValue(L"--force-lod"); !ForceLod.empty())
 	{
 		ForcedLod = std::stoi(ForceLod); // LOD 모양 확인용
+	}
+	if (const std::wstring Hysteresis = CommandLine.GetValue(L"--lod-hysteresis"); !Hysteresis.empty())
+	{
+		LodHysteresis = std::stof(Hysteresis); // 비교용 (0 = 끔)
 	}
 	if (const std::wstring Warmup = CommandLine.GetValue(L"--perf-warmup"); !Warmup.empty())
 	{
@@ -167,6 +179,17 @@ void FSceneRenderer::BeginTimer(ERenderTimer Timer)
 	GpuTimer.BeginScope(Rhi->GetCommandList(), Index);
 }
 
+void FSceneRenderer::BeginCpuTimer(ERenderTimer Timer)
+{
+	TimerStarts[static_cast<uint32>(Timer)] = FClock::now();
+}
+
+void FSceneRenderer::EndCpuTimer(ERenderTimer Timer)
+{
+	const uint32 Index = static_cast<uint32>(Timer);
+	Stats.CpuMs[Index] += std::chrono::duration<float, std::milli>(FClock::now() - TimerStarts[Index]).count();
+}
+
 void FSceneRenderer::EndTimer(ERenderTimer Timer)
 {
 	const uint32 Index = static_cast<uint32>(Timer);
@@ -201,6 +224,9 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.OcclusionDrawn += Stats.OcclusionPhase1 + Stats.OcclusionPhase2;
 	Capture.OcclusionPhase2 += Stats.OcclusionPhase2;
 	Capture.TotalMeshes = Stats.TotalMeshes;
+	Capture.SkinnedDrawn += Stats.SkinnedDrawn;
+	Capture.SkinnedCulled += Stats.SkinnedCulled;
+	Capture.UploadBytes += static_cast<double>(Stats.UploadBytes);
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -232,6 +258,8 @@ void FSceneRenderer::LogPerfCapture() const
 		E_LOG(LogRenderer, Display, "[성능] 오클루전: 정적 인스턴스 {:.1f} 중 그림 {:.1f} (2단계 {:.2f}), 가려짐 {:.1f}", Capture.OcclusionTested / Count,
 		      Capture.OcclusionDrawn / Count, Capture.OcclusionPhase2 / Count, (Capture.OcclusionTested - Capture.OcclusionDrawn) / Count);
 	}
+	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
+	      Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
 	E_LOG(LogRenderer, Display, "[성능] CPU ms: {}", Cpu);
 	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
 }
@@ -574,28 +602,57 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 
 	const FPerFrameConstants PerFrame = BuildPerFrameConstants(Scene, Camera);
 
-	// 스킨 메시 본 팔레트 + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
+	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
+	const uint64               UploadStart   = DynamicBuffer.GetUsed();
+
+	// 컬링 프러스텀 (고정 중이면 고정 시점)
+	if (!bCullingFrozen)
+	{
+		FrozenFrustum = FFrustum::FromViewProjection(Camera.GetViewProjectionMatrix());
+	}
+
+	// 그림자 캐스터 볼륨 먼저 (CPU만): 점광원/스포트라이트 수집 + 그림자 장 배정, 방향광 캐스케이드
+	BeginCpuTimer(ERenderTimer::LocalLights);
+	LocalLightRenderer.PrepareLights(Scene, Camera, LocalShadowSettings);
+	EndCpuTimer(ERenderTimer::LocalLights);
+	BeginCpuTimer(ERenderTimer::Shadow);
+	ShadowRenderer.PrepareCascades(Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
+	EndCpuTimer(ERenderTimer::Shadow);
+
+	// 스킨 메시 본 팔레트(메인 프러스텀 ∪ 그림자 캐스터 볼륨에 드는 것만) + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
 	BeginTimer(ERenderTimer::Gather);
-	SkinPalettes.Build(Scene, *Resources, Rhi->GetDynamicBuffer());
+	if (bSkinVisibilityCulling)
+	{
+		SkinPalettes.Build(Scene, *Resources, DynamicBuffer, [this](const FBox& Bounds) {
+			return FrozenFrustum.Intersects(Bounds) || ShadowRenderer.IntersectsCasterVolume(Bounds) ||
+			       LocalLightRenderer.IntersectsShadowCaster(Bounds);
+		});
+	}
+	else
+	{
+		SkinPalettes.Build(Scene, *Resources, DynamicBuffer);
+	}
 	MeshInstances.Gather(Scene, *Resources, &SkinPalettes);
-	MeshInstances.Upload(Rhi->GetDynamicBuffer());
+	MeshInstances.Upload(DynamicBuffer);
 	SelectLods(Camera);
-	Stats.TotalMeshes = MeshInstances.GetComponentCount();
+	Stats.TotalMeshes   = MeshInstances.GetComponentCount();
+	Stats.SkinnedDrawn  = static_cast<uint32>(SkinPalettes.GetCount());
+	Stats.SkinnedCulled = SkinPalettes.GetCulledCount();
 	EndTimer(ERenderTimer::Gather);
 
 	// GPU 파티클 계산 (그리기 전에)
-	ParticleRenderer.Simulate(Scene);
+	ParticleRenderer.Simulate(Scene, FrozenFrustum);
 
-	// 점광원/스포트라이트 목록 + 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
+	// 점광원/스포트라이트 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
 	BeginTimer(ERenderTimer::LocalLights);
-	LocalLightRenderer.Prepare(Scene, MeshInstances, Camera, Width, Height, LocalShadowSettings);
+	LocalLightRenderer.Render(MeshInstances, SkinPalettes.GetGpuData(), Camera, Width, Height, LocalShadowSettings);
 	EndTimer(ERenderTimer::LocalLights);
 	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
 	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
 
 	// 0) 방향광 섀도우 패스
 	BeginTimer(ERenderTimer::Shadow);
-	ShadowRenderer.Render(MeshInstances, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
+	ShadowRenderer.Render(MeshInstances, SkinPalettes.GetGpuData());
 	EndTimer(ERenderTimer::Shadow);
 	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls();
 	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles();
@@ -605,23 +662,21 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
 	DrawMeshes(Camera, PerFrame);
 	BeginTimer(ERenderTimer::Particles);
-	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
+	Stats.Particles               = ParticleRenderer.Render(Scene, Camera, FrozenFrustum);
+	Stats.ParticleEmittersCulled  = ParticleRenderer.GetCulledEmitterCount();
 	EndTimer(ERenderTimer::Particles);
 	SceneColor->End(CommandList);
+	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;
 }
 
 void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants& PerFrame)
 {
 	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
-	if (!bCullingFrozen)
-	{
-		FrozenFrustum = FFrustum::FromViewProjection(ViewProjection);
-	}
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 
-	// 컬링 + 묶음 키: (정적/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
+	// 컬링 + 묶음 키: (정적/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각). 스킨도 인스턴싱
 	BeginTimer(ERenderTimer::MainCull);
 	const FVector3 CameraPosition = Camera.GetPosition();
 	MainBatches.Reset();
@@ -635,8 +690,8 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 			continue;
 		}
 		++Stats.VisibleMeshes;
-		const uint64 Key = Instance.IsSkinned() ? InstanceBatching::MakeUniqueKey(Index)
-		                                        : InstanceBatching::MakeKey(0, Instance.MaterialHandle.Index, Instance.MeshHandle.Index, Instance.Lod);
+		const uint64 Key = InstanceBatching::MakeKey(Instance.IsSkinned() ? 1 : 0, Instance.MaterialHandle.Index, Instance.MeshHandle.Index,
+		                                             Instance.IsSkinned() ? 0 : Instance.Lod);
 		MainBatches.Add(Key, FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition), Index);
 	}
 	EndTimer(ERenderTimer::MainCull);
@@ -679,6 +734,7 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
@@ -705,6 +761,11 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 			{
 				CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
 				bSkinnedBound = bSkinned;
+				if (bSkinned && Phase == 1)
+				{
+					// 오클루전 1단계 목록은 정적 묶음만 채운다 → 스킨 묶음은 메인 묶음의 번호 목록으로 (스킨은 정적 뒤에 정렬됨)
+					CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
+				}
 			}
 			if (Instance.Material != BoundMaterial)
 			{
@@ -721,9 +782,9 @@ void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants&
 
 			if (bSkinned)
 			{
-				CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Instance.SkinPalette);
-				Instance.Mesh->DrawSkinned(CommandList);
-				SkinnedTriangles += Instance.Mesh->GetIndexCount() / 3;
+				CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
+				Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
+				SkinnedTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
 			}
 			else
 			{
@@ -801,7 +862,17 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 		const float ScreenSize =
 			bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
 			              : LodMath::ComputePerspectiveScreenSize(Radius, FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition), TanHalfFov);
-		Instance.Lod = LodMath::SelectLod(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale);
+		// 히스테리시스: 엔티티별 이전 LOD (처음이거나 엔티티가 바뀌었으면 없음)
+		const uint32 Index = Instance.Entity.Index;
+		if (Index >= LodHistory.size())
+		{
+			LodHistory.resize(Index + 1);
+		}
+		FLodHistory& History  = LodHistory[Index];
+		const uint32 Previous = History.Generation == Instance.Entity.Generation ? History.Lod : ~0u;
+		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale, Previous,
+		                                                LodHysteresis);
+		History = { Instance.Entity.Generation, Instance.Lod };
 	}
 }
 

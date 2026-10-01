@@ -50,9 +50,13 @@ public:
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary);
 	void Shutdown();
 
-	// 섀도우 패스 기록. 끝나면 섀도우 맵은 PIXEL_SHADER_RESOURCE 상태. 비활성이면 상수만 채운다.
-	// 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료). 정적 메시는 캐스케이드마다 메시·LOD별 인스턴싱, 스킨 메시는 GPU 스키닝
-	void Render(const FMeshInstanceList& Instances, const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings);
+	// 1) 캐스케이드 계산 (CPU만, 상수 채움). 비활성이면 캐스케이드 0개 (ShadowEnabled = 0)
+	void PrepareCascades(const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings);
+	// 캐스케이드 캐스터 볼륨(라이트 프러스텀) 중 하나라도 겹치면 true — 스킨 팔레트 가시성 판정용 (PrepareCascades 뒤)
+	bool IntersectsCasterVolume(const FBox& WorldBounds) const;
+	// 2) 섀도우 패스 기록. 끝나면 섀도우 맵은 PIXEL_SHADER_RESOURCE 상태.
+	// 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료). 캐스케이드마다 (정적/스킨)·메시·LOD별 인스턴싱, 스킨은 프레임 팔레트(SkinPalettes, t15)
+	void Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 
 	const FShadowConstants&        GetConstants() const { return Constants; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
@@ -82,6 +86,9 @@ private:
 	uint32                 MapCascades   = 0;
 
 	FShadowConstants Constants;
+	ShadowMath::FCascade CascadeData[ShadowMath::MaxCascades];
+	FFrustum             CascadeFrustums[ShadowMath::MaxCascades];
+	uint32               ActiveCascades = 0; // PrepareCascades 결과 (0 = 그림자 없음)
 	FMeshPassBatches Batches; // 캐스케이드마다 재사용
 	uint32           DrawCalls = 0;
 	uint64           Triangles = 0;

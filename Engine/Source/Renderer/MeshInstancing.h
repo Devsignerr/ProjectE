@@ -18,7 +18,7 @@ struct FMaterial;
 struct FStaticMeshComponent;
 struct FTransformComponent;
 
-// 메시 인스턴스 하나 (이번 프레임). 스킨 메시는 SkinPalette != 0 (월드 = 팔레트, 인스턴스 버퍼의 행렬은 쓰지 않음)
+// 메시 인스턴스 하나 (이번 프레임). 스킨 메시는 bSkinned (월드 = 프레임 팔레트[BoneOffset..], 인스턴스 버퍼의 행렬은 쓰지 않음)
 struct FMeshInstance
 {
 	const FStaticMesh*        Mesh     = nullptr;
@@ -28,10 +28,11 @@ struct FMeshInstance
 	FBox                      WorldBounds;
 	FMatrix4x4                World;
 	FEntity                   Entity;
-	D3D12_GPU_VIRTUAL_ADDRESS SkinPalette = 0;
+	uint32                    BoneOffset  = 0; // 스킨: 프레임 팔레트 버퍼(FSkinnedMeshPalette::GetGpuData, t15) 안 첫 본
 	uint32                    Lod         = 0; // 메인 카메라 화면 크기로 고른 LOD (그림자 패스도 같은 값)
+	bool                      bSkinned    = false;
 
-	bool IsSkinned() const { return SkinPalette != 0; }
+	bool IsSkinned() const { return bSkinned; }
 };
 
 // 프레임 단위 메시 인스턴스 목록: 씬의 보이는 메시를 한 번 모아(컬링 전) 월드 행렬을 GPU 구조화 버퍼로 올린다.
@@ -40,11 +41,12 @@ struct FMeshInstance
 class FMeshInstanceList
 {
 public:
-	// 씬의 모든 FStaticMeshComponent (보이고 메시가 있는 것). SkinPalettes에 있는 엔티티는 스킨 인스턴스
+	// 씬의 모든 FStaticMeshComponent (보이고 메시가 있는 것). SkinPalettes에 있는 엔티티는 스킨 인스턴스,
+	// SkinPalettes가 가시성 판정으로 뺀 엔티티(IsCulled)는 넣지 않는다
 	void Gather(FScene& Scene, const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes);
 	// 지정한 엔티티만 (아웃라인 등)
 	void GatherEntities(FScene& Scene, const FResourceManager& Resources, const std::vector<FEntity>& Entities, const FSkinnedMeshPalette* SkinPalettes);
-	// 정적 인스턴스의 월드/법선 행렬을 올린다 (Gather 뒤 한 번)
+	// 정적 인스턴스의 월드/법선 행렬, 스킨 인스턴스의 본 오프셋을 올린다 (Gather 뒤 한 번)
 	void Upload(FD3D12DynamicUploadBuffer& DynamicBuffer);
 
 	const std::vector<FMeshInstance>& GetInstances() const { return Instances; }
@@ -62,6 +64,21 @@ private:
 	uint32                     ComponentCount = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS  GpuData        = 0;
 };
+
+// 깊이 전용 패스(그림자) 묶음 키: 종류(정적 0 / 스킨 1) | 메시 | LOD — 머티리얼 무관. 스킨 메시는 LOD 없음
+inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance)
+{
+	return Instance.IsSkinned() ? InstanceBatching::MakeKey(1, 0, Instance.MeshHandle.Index, 0)
+	                            : InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, Instance.Lod);
+}
+
+class FMeshPassBatches;
+
+// 깊이 패스 묶음 드로우 (그림자 공용): 루트 상수 RootIndex의 DestOffset 칸에 묶음 시작 위치를 넣고 묶음마다 인스턴싱 드로우.
+// 묶음은 키 순(정적 → 스킨)이라 PSO는 종류가 바뀔 때만 바꾼다. 끝나면 StaticPipeline이 바인딩된 상태
+void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& Batches, const FMeshInstanceList& Instances,
+                      ID3D12PipelineState* StaticPipeline, ID3D12PipelineState* SkinnedPipeline, uint32 RootIndex, uint32 DestOffset,
+                      uint32& InOutDrawCalls, uint64& InOutTriangles);
 
 // 패스 하나의 묶음: Add(키, 깊이, 인스턴스) → Finalize(정렬·묶음·인스턴스 번호 목록 업로드) → 묶음마다 DrawIndexedInstanced
 class FMeshPassBatches

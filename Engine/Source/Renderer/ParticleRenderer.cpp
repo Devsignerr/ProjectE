@@ -6,6 +6,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/Image.h"
+#include "Renderer/ParticleBounds.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Components.h"
@@ -16,6 +17,7 @@
 #include <bit>
 #include <cmath>
 #include <cstring>
+#include <deque>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -26,6 +28,12 @@ struct FParticleGpuBuffer final : public IParticleGpuState
 	uint32                 Capacity = 0;
 	D3D12_RESOURCE_STATES  State    = D3D12_RESOURCE_STATE_COMMON;
 	FD3D12RHI*             Rhi      = nullptr; // 렌더러 종료 후엔 nullptr (이미 해제됨)
+
+	// 화면 밖이라 미룬 계산 요청 (FParticleRenderer 머리 주석의 규칙) + 각 요청 끝 시각(이미터 절대 시간)
+	std::vector<FParticleGpuStep> Deferred;
+	std::vector<float>            DeferredTimes;
+	// 월드 공간 이미터의 최근 위치 (최대 수명 동안 — 경계에 포함): (이미터 절대 시간, 위치)
+	std::deque<std::pair<float, FVector3>> Trail;
 
 	~FParticleGpuBuffer() override
 	{
@@ -116,6 +124,61 @@ namespace
 	}
 
 	float AsFloat(uint32 Value) { return std::bit_cast<float>(Value); }
+
+	// 화면 밖 동안 미룬 요청 상한 (넘으면 이웃끼리 합쳐 절반으로 — 근사)
+	constexpr size_t GMaxDeferredSteps = 64;
+
+	// 이미터 절대 시간 (반복 횟수 포함, 컴포넌트 Speed가 이미 반영된 값)
+	float GetEmitterAbsoluteTime(const FParticleEmitter& Emitter, const FParticleEmitterInstance& Instance)
+	{
+		return Instance.EmitterTime + static_cast<float>(Instance.LoopIndex) * FMath::Max(Emitter.Duration, 0.01f);
+	}
+
+	// 메시 렌더러 메시의 원점 기준 반경 최댓값 (없으면 0)
+	float GetMaxMeshRadius(const FParticleEmitter& Emitter, const FResourceManager& Resources)
+	{
+		float Radius = 0.0f;
+		for (const FParticleRendererSettings& Renderer : Emitter.Renderers)
+		{
+			if (Renderer.bEnabled && Renderer.Type == EParticleRendererType::Mesh)
+			{
+				if (const FStaticMesh* Mesh = Resources.GetMesh(Renderer.Mesh))
+				{
+					const FBox& Bounds = Mesh->GetLocalBounds();
+					Radius = FMath::Max(Radius, FMath::Max(Bounds.Min.Length(), Bounds.Max.Length()));
+				}
+			}
+		}
+		return Radius;
+	}
+
+	// GPU 이미터 월드 경계: 고정 경계(이미터 로컬 상자) 또는 추정 반경 구. 월드 공간 이미터는 최근 위치 자취만큼 넓힌다
+	FBox ComputeGpuEmitterBounds(const FParticleRuntime& Runtime, const FParticleEmitter& Emitter, const FParticleGpuBuffer* Pool,
+	                             const FResourceManager& Resources)
+	{
+		const FMatrix4x4& World    = Runtime.LastWorld;
+		const FVector3    Position = World.TransformPosition(FVector3::ZeroVector);
+		FBox              Current;
+		if (Emitter.bFixedBounds)
+		{
+			Current = FBox(Emitter.FixedBoundsMin, Emitter.FixedBoundsMax).TransformBy(World);
+		}
+		else
+		{
+			const float Radius = ParticleBounds::EstimateLocalRadius(Emitter, GetMaxMeshRadius(Emitter, Resources)) * ParticleBounds::MaxAxisScale(World);
+			Current            = FBox(Position - FVector3(Radius), Position + FVector3(Radius));
+		}
+		FBox Result = Current;
+		if (!Emitter.bLocalSpace && Pool != nullptr)
+		{
+			for (const auto& [Time, TrailPosition] : Pool->Trail)
+			{
+				const FVector3 Shift = TrailPosition - Position;
+				Result.AddBox(FBox(Current.Min + Shift, Current.Max + Shift));
+			}
+		}
+		return Result;
+	}
 } // namespace
 
 FParticleRenderer::~FParticleRenderer()
@@ -349,8 +412,9 @@ void FParticleRenderer::BuildGpuProgram(const FParticleEmitter& Emitter, std::ve
 	OutConstants.Capacity    = Emitter.MaxParticles;
 }
 
-void FParticleRenderer::Simulate(FScene& Scene)
+void FParticleRenderer::Simulate(FScene& Scene, const FFrustum& CullFrustum)
 {
+	CulledGpuEmitters = 0;
 	if (Rhi == nullptr)
 	{
 		return;
@@ -370,7 +434,9 @@ void FParticleRenderer::Simulate(FScene& Scene)
 		{
 			const FParticleEmitter&   Emitter  = System.Emitters[Index];
 			FParticleEmitterInstance& Instance = Runtime.Emitters[Index];
-			if (Emitter.SimTarget != EParticleSimTarget::GPU || Instance.PendingGpuSteps.empty())
+			auto* ExistingPool = static_cast<FParticleGpuBuffer*>(Instance.GpuState.get());
+			if (Emitter.SimTarget != EParticleSimTarget::GPU ||
+			    (Instance.PendingGpuSteps.empty() && (ExistingPool == nullptr || ExistingPool->Deferred.empty())))
 			{
 				continue;
 			}
@@ -400,6 +466,51 @@ void FParticleRenderer::Simulate(FScene& Scene)
 				Pool              = NewPool.get();
 			}
 
+			// 새 요청을 풀의 대기열로 옮긴다 (요청마다 끝 시각을 거꾸로 계산 — 계산 셰이더 Time 입력)
+			const float Now      = GetEmitterAbsoluteTime(Emitter, Instance);
+			const float Lifetime = FMath::Max(ParticleBounds::MaxLifetime(Emitter), 0.0f);
+			{
+				float StepEnd = Now;
+				const size_t First = Pool->Deferred.size();
+				for (size_t Step = Instance.PendingGpuSteps.size(); Step-- > 0;)
+				{
+					Pool->DeferredTimes.insert(Pool->DeferredTimes.begin() + static_cast<std::ptrdiff_t>(First), StepEnd);
+					StepEnd -= Instance.PendingGpuSteps[Step].DeltaSeconds;
+				}
+				for (const FParticleGpuStep& Step : Instance.PendingGpuSteps)
+				{
+					Pool->Deferred.push_back(Step);
+					if (!Emitter.bLocalSpace)
+					{
+						// 자취는 성기게 (수명의 1/32 간격, 움직이지 않으면 시각만 갱신) — 사이 위치는 경계 상자 크기가 덮는다
+						const float    Time     = Pool->DeferredTimes[Pool->Deferred.size() - 1];
+						const FVector3 Position = Step.EmitterWorld.TransformPosition(FVector3::ZeroVector);
+						if (!Pool->Trail.empty() && FVector3::DistanceSquared(Pool->Trail.back().second, Position) < 1.0f)
+						{
+							Pool->Trail.back().first = Time;
+						}
+						else if (Pool->Trail.empty() || Time - Pool->Trail.back().first >= Lifetime / 32.0f)
+						{
+							Pool->Trail.emplace_back(Time, Position);
+						}
+					}
+				}
+				Instance.PendingGpuSteps.clear();
+				// 자취: 최대 수명보다 오래된 위치와 되감긴 시간(재시작)은 버린다
+				while (!Pool->Trail.empty() && (Now - Pool->Trail.front().first > Lifetime || Pool->Trail.front().first > Now))
+				{
+					Pool->Trail.pop_front();
+				}
+			}
+
+			// 화면 밖: 계산을 미룬다. 최대 수명을 넘는 오래된 요청은 버리고(정확 — 아래 머리 주석), 너무 많으면 이웃끼리 합친다
+			if (bEnableCulling && !CullFrustum.Intersects(ComputeGpuEmitterBounds(Runtime, Emitter, Pool, *Resources)))
+			{
+				++CulledGpuEmitters;
+				ParticleBounds::TrimDeferredSteps(Pool->Deferred, Pool->DeferredTimes, Lifetime, GMaxDeferredSteps, Emitter.MaxParticles);
+				continue;
+			}
+
 			FParticleSimConstants Constants;
 			BuildGpuProgram(Emitter, ProgramScratch, Constants);
 			const uint64                  ProgramBytes = sizeof(FVector4) * ProgramScratch.size();
@@ -415,13 +526,13 @@ void FParticleRenderer::Simulate(FScene& Scene)
 			Pool->Transition(CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			CommandList->SetComputeRootShaderResourceView(ComputeParam_Program, Program.GpuAddress);
 			CommandList->SetComputeRootUnorderedAccessView(ComputeParam_Particles, Pool->Buffer->GetGPUVirtualAddress());
-			const float Duration = FMath::Max(Emitter.Duration, 0.01f);
-			for (const FParticleGpuStep& Step : Instance.PendingGpuSteps)
+			for (size_t StepIndex = 0; StepIndex < Pool->Deferred.size(); ++StepIndex)
 			{
+				const FParticleGpuStep& Step = Pool->Deferred[StepIndex];
 				Constants.EmitterWorld = Step.EmitterWorld;
 				Constants.DeltaSeconds = Step.DeltaSeconds;
 				Constants.EmitterAlpha = Step.EmitterAlpha;
-				Constants.Time         = Instance.EmitterTime + static_cast<float>(Instance.LoopIndex) * Duration;
+				Constants.Time         = Pool->DeferredTimes[StepIndex];
 				Constants.SpawnStart   = Step.SpawnStart;
 				Constants.SpawnCount   = Step.SpawnCount;
 				CommandList->SetComputeRootConstantBufferView(ComputeParam_Constants, DynamicBuffer.AllocateConstants(Constants).GpuAddress);
@@ -429,14 +540,16 @@ void FParticleRenderer::Simulate(FScene& Scene)
 				const D3D12_RESOURCE_BARRIER Barrier = MakeUavBarrier(Pool->Buffer.Get());
 				CommandList->ResourceBarrier(1, &Barrier);
 			}
-			Instance.PendingGpuSteps.clear();
+			Pool->Deferred.clear();
+			Pool->DeferredTimes.clear();
 			Pool->Transition(CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 	});
 }
 
-uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera)
+uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum)
 {
+	CulledEmitters = 0;
 	if (Rhi == nullptr)
 	{
 		return 0;
@@ -470,6 +583,27 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera)
 				if (!Emitter.bEnabled || (bGpu ? (Instance.GpuState == nullptr) : Instance.Particles.empty()))
 				{
 					continue;
+				}
+				// 화면 밖 이미터는 그리지 않는다 (CPU = 실제 입자 경계, GPU = 고정/추정 경계)
+				if (bEnableCulling)
+				{
+					FBox Bounds;
+					if (bGpu)
+					{
+						Bounds = ComputeGpuEmitterBounds(Runtime, Emitter, static_cast<const FParticleGpuBuffer*>(Instance.GpuState.get()), *Resources);
+					}
+					else
+					{
+						float       StretchSeconds = 0.0f;
+						const float SizeFactor = ParticleBounds::RenderSizeFactor(Emitter, GetMaxMeshRadius(Emitter, *Resources), StretchSeconds);
+						Bounds = ParticleBounds::ComputeCpuBounds(Instance.Particles, Emitter.bLocalSpace ? Runtime.LastWorld : FMatrix4x4::Identity,
+						                                          SizeFactor, StretchSeconds);
+					}
+					if (!CullFrustum.Intersects(Bounds))
+					{
+						++CulledEmitters;
+						continue;
+					}
 				}
 				for (const FParticleRendererSettings& Renderer : Emitter.Renderers)
 				{
@@ -509,8 +643,8 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera)
 
 	// 프레임 업로드 버퍼(용량 고정)를 넘기면 남은 만큼만 그린다 (뒤따르는 패스 상수용 여유를 남긴다)
 	const auto AvailableBytes = [&]() {
-		const uint64 Used = AlignUp<uint64>(DynamicBuffer.GetUsed(), 256) + GUploadReserveBytes;
-		return DynamicBuffer.GetCapacity() > Used ? DynamicBuffer.GetCapacity() - Used : 0;
+		const uint64 Max = DynamicBuffer.GetMaxAllocation();
+		return Max > GUploadReserveBytes + 256 ? Max - GUploadReserveBytes - 256 : 0;
 	};
 	const auto WarnFull = [&]() {
 		if (!bWarnedBufferFull)

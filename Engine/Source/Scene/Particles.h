@@ -194,6 +194,11 @@ struct FParticleEmitter
 	bool               bLoop       = true;
 	uint32             MaxParticles = 1000;
 	uint32             Seed         = 1;
+	// 컬링 경계 고정 (이미터 로컬, cm): 켜면 GPU 이미터는 모듈 설정 추정 대신 이 상자로 화면 밖 판정 (CPU 이미터는 항상 실제 입자 경계).
+	// 파일에는 켰을 때만 "FixedBounds"로 저장 (없으면 끔 — 형식 버전 변화 없음)
+	bool               bFixedBounds   = false;
+	FVector3           FixedBoundsMin = FVector3(-200.0f);
+	FVector3           FixedBoundsMax = FVector3(200.0f);
 
 	std::array<std::vector<FParticleModule>, static_cast<size_t>(EParticleStage::Count)> Stages;
 	std::vector<FParticleRendererSettings>                                              Renderers;

@@ -44,4 +44,22 @@ namespace LodMath
 		}
 		return Lod;
 	}
+
+	constexpr float DefaultHysteresis = 0.1f; // 전환 여유: 임계값의 ±10% 띠 안에서는 이전 LOD 유지
+
+	// 히스테리시스 선택 (팝핑 완화): 임계값 T마다 [T × (1 - H), T × (1 + H)) 띠 안에서는 이전 LOD를 유지한다.
+	//   낮은 품질로 내려가려면 화면 크기 < T × (1 - H), 높은 품질로 올라가려면 >= T × (1 + H).
+	//   = clamp(이전, SelectLod(크기 / (1 - H)), SelectLod(크기 / (1 + H))). PreviousLod >= LodCount(처음 보는 인스턴스)면 SelectLod 그대로
+	inline uint32 SelectLodWithHysteresis(float ScreenSize, const float* Thresholds, uint32 LodCount, float Scale, uint32 PreviousLod,
+	                                      float Hysteresis = DefaultHysteresis)
+	{
+		const float H = FMath::Clamp(Hysteresis, 0.0f, 0.9f);
+		if (PreviousLod >= LodCount || H <= 0.0f)
+		{
+			return SelectLod(ScreenSize, Thresholds, LodCount, Scale);
+		}
+		const uint32 Finest   = SelectLod(ScreenSize / (1.0f - H), Thresholds, LodCount, Scale); // 이보다 높은 품질은 유지 불가
+		const uint32 Coarsest = SelectLod(ScreenSize / (1.0f + H), Thresholds, LodCount, Scale); // 이보다 낮은 품질은 유지 불가
+		return FMath::Clamp(PreviousLod, Finest, Coarsest);
+	}
 } // namespace LodMath

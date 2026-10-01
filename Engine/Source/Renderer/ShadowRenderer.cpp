@@ -16,7 +16,7 @@ namespace
 	enum EShadowRootParameter : uint32
 	{
 		ShadowParam_PassConstants   = 0, // b0 (루트 상수 17개: 라이트 뷰-투영 + 인스턴스 시작 위치)
-		ShadowParam_SkinPalette     = 1, // b4
+		ShadowParam_SkinPalette     = 1, // t15 (프레임 스킨 팔레트)
 		ShadowParam_Instances       = 2, // t13
 		ShadowParam_InstanceIndices = 3, // t14
 	};
@@ -35,7 +35,7 @@ bool FShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	ShaderLibrary = &InShaderLibrary;
 
 	const uint32 PassIndex      = RootSignature.AddConstants(ShadowPassConstantCount, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	const uint32 PaletteIndex   = RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX); // 스킨 팔레트 (SkinnedMesh.hlsli b4)
+	const uint32 PaletteIndex   = RootSignature.AddShaderResourceView(15, 0, D3D12_SHADER_VISIBILITY_VERTEX); // 스킨 팔레트 (SkinnedMesh.hlsli t15)
 	const uint32 InstancesIndex = RootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	const uint32 IndicesIndex   = RootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	E_CHECK(PassIndex == ShadowParam_PassConstants && PaletteIndex == ShadowParam_SkinPalette && InstancesIndex == ShadowParam_Instances &&
@@ -208,14 +208,12 @@ void FShadowRenderer::ReleaseShadowMap()
 	MapResolution = 0;
 }
 
-void FShadowRenderer::Render(const FMeshInstanceList& Instances, const FCamera& Camera, const FVector3& LightDirection,
-                             const FShadowSettings& Settings)
+void FShadowRenderer::PrepareCascades(const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings)
 {
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
 
 	Constants               = FShadowConstants{};
-	DrawCalls               = 0;
-	Triangles               = 0;
+	ActiveCascades          = 0;
 	Constants.CameraForward = Camera.GetForwardVector();
 	if (!Settings.bEnabled || LightDirection.IsNearlyZero())
 	{
@@ -245,8 +243,8 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, const FCamera& 
 	const float  FarZ         = FMath::Max(FMath::Min(Settings.ShadowDistance, Camera.GetFarZ()), NearZ + 1.0f);
 	const auto   Splits       = ShadowMath::ComputeCascadeSplits(NearZ, FarZ, CascadeCount, Settings.SplitLambda);
 
-	ShadowMath::FCascade Cascades[ShadowMath::MaxCascades];
-	float                SliceNear = NearZ;
+	ShadowMath::FCascade* Cascades  = CascadeData;
+	float                 SliceNear = NearZ;
 	for (uint32 Index = 0; Index < CascadeCount; ++Index)
 	{
 		const float HalfHeight = Camera.GetOrthoHeight() * 0.5f;
@@ -261,13 +259,41 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, const FCamera& 
 		Constants.CascadeViewProjection[Index] = Cascades[Index].ViewProjection;
 		Constants.CascadeSplits[Index]         = Splits[Index];
 		Constants.CascadeTexelWorld[Index]     = Cascades[Index].WorldTexelSize;
+		CascadeFrustums[Index]                 = FFrustum::FromViewProjection(Cascades[Index].ViewProjection);
 		SliceNear                              = Splits[Index];
 	}
+	ActiveCascades              = CascadeCount;
 	Constants.ShadowEnabled     = 1.0f;
 	Constants.TexelSize         = 1.0f / static_cast<float>(Resolution);
 	Constants.NormalOffset      = Settings.NormalOffset;
 	Constants.CascadeCount      = CascadeCount;
 	Constants.VisualizeCascades = Settings.bVisualizeCascades ? 1u : 0u;
+}
+
+bool FShadowRenderer::IntersectsCasterVolume(const FBox& WorldBounds) const
+{
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		if (CascadeFrustums[Index].Intersects(WorldBounds))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+{
+	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
+	DrawCalls = 0;
+	Triangles = 0;
+	if (ActiveCascades == 0 || !ShadowMap)
+	{
+		return;
+	}
+	const uint32                Resolution   = MapResolution;
+	const uint32                CascadeCount = ActiveCascades;
+	const ShadowMath::FCascade* Cascades     = CascadeData;
 
 	// ---- 깊이 패스
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
@@ -284,6 +310,7 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, const FCamera& 
 	CommandList->SetPipelineState(Pipeline.Get());
 
 	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_Instances, Instances.GetGpuData());
+	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_SkinPalette, SkinPalettes);
 	FD3D12DynamicUploadBuffer&        DynamicBuffer = Rhi->GetDynamicBuffer();
 	const std::vector<FMeshInstance>& List          = Instances.GetInstances();
 	for (uint32 Index = 0; Index < CascadeCount; ++Index)
@@ -292,61 +319,22 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, const FCamera& 
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-		// 정적 메시: 캐스케이드 프러스텀 컬링 → 메시·LOD별 묶음 (머티리얼 무관)
-		const FFrustum CascadeFrustum = FFrustum::FromViewProjection(Cascades[Index].ViewProjection);
+		// 캐스케이드 프러스텀 컬링 → (정적/스킨)·메시·LOD별 묶음 (머티리얼 무관), 스킨은 팔레트가 바로 월드로 보낸다
+		const FFrustum& CascadeFrustum = CascadeFrustums[Index];
 		Batches.Reset();
-		bool bHasSkinned = false;
 		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
 		{
 			const FMeshInstance& Instance = List[InstanceIndex];
-			if (Instance.IsSkinned())
-			{
-				bHasSkinned = true;
-				continue; // 아래에서 스킨 PSO로
-			}
 			if (CascadeFrustum.Intersects(Instance.WorldBounds))
 			{
-				Batches.Add(InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, Instance.Lod), 0.0f, InstanceIndex);
+				Batches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
 			}
 		}
 		Batches.Finalize(DynamicBuffer);
 
 		CommandList->SetGraphicsRoot32BitConstants(ShadowParam_PassConstants, 16, &Cascades[Index].ViewProjection.M[0][0], 0);
 		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, Batches.GetIndexBuffer());
-		for (const FInstanceBatch& Batch : Batches.GetBatches())
-		{
-			const FMeshInstance& Instance = List[Batch.Instance];
-			CommandList->SetGraphicsRoot32BitConstant(ShadowParam_PassConstants, Batch.First, 16);
-			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
-			++DrawCalls;
-			Triangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
-		}
-
-		// 스킨 메시 캐스터: 팔레트가 바로 월드로 보내므로 상수는 캐스케이드 뷰-투영 그대로
-		if (bHasSkinned)
-		{
-			bool bSkinnedPipelineBound = false;
-			for (const FMeshInstance& Instance : List)
-			{
-				if (!Instance.IsSkinned() || !CascadeFrustum.Intersects(Instance.WorldBounds))
-				{
-					continue;
-				}
-				if (!bSkinnedPipelineBound)
-				{
-					CommandList->SetPipelineState(SkinnedPipeline.Get());
-					bSkinnedPipelineBound = true;
-				}
-				CommandList->SetGraphicsRootConstantBufferView(ShadowParam_SkinPalette, Instance.SkinPalette);
-				Instance.Mesh->DrawSkinned(CommandList);
-				++DrawCalls;
-				Triangles += Instance.Mesh->GetIndexCount() / 3;
-			}
-			if (bSkinnedPipelineBound)
-			{
-				CommandList->SetPipelineState(Pipeline.Get());
-			}
-		}
+		DrawDepthBatches(CommandList, Batches, Instances, Pipeline.Get(), SkinnedPipeline.Get(), ShadowParam_PassConstants, 16, DrawCalls, Triangles);
 	}
 
 	const D3D12_RESOURCE_BARRIER ToShaderResource =

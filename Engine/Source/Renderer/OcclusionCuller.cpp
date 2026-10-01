@@ -383,7 +383,7 @@ void FOcclusionCuller::CullPhase1(const FMeshInstanceList& Instances, const FMes
 		const FD3D12DynamicAllocation Upload = DynamicBuffer.Allocate(Bytes, 16);
 		std::memcpy(Upload.CpuAddress, Arguments.data(), Bytes);
 		Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_COPY_DEST);
-		CommandList->CopyBufferRegion(DrawArguments.Resource.Get(), 0, DynamicBuffer.GetResource(), DynamicBuffer.GetOffset(Upload), Bytes);
+		CommandList->CopyBufferRegion(DrawArguments.Resource.Get(), 0, Upload.Resource, Upload.ResourceOffset, Bytes);
 	}
 	const size_t                  ItemBytes = std::max<size_t>(Items.size(), 1) * sizeof(FOcclusionItem);
 	const FD3D12DynamicAllocation ItemAlloc = DynamicBuffer.Allocate(ItemBytes, 16);

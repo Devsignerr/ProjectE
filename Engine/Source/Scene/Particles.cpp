@@ -574,6 +574,12 @@ std::string FParticleSystemAsset::ToJsonString() const
 		Node["Loop"]         = Emitter.bLoop;
 		Node["MaxParticles"] = Emitter.MaxParticles;
 		Node["Seed"]         = Emitter.Seed;
+		if (Emitter.bFixedBounds)
+		{
+			const FVector3& Min = Emitter.FixedBoundsMin;
+			const FVector3& Max = Emitter.FixedBoundsMax;
+			Node["FixedBounds"] = { { "Min", json::array({ Min.X, Min.Y, Min.Z }) }, { "Max", json::array({ Max.X, Max.Y, Max.Z }) } };
+		}
 		for (size_t Stage = 0; Stage < static_cast<size_t>(EParticleStage::Count); ++Stage)
 		{
 			json Modules = json::array();
@@ -655,6 +661,14 @@ bool FParticleSystemAsset::FromJsonString(const std::string& JsonText)
 			Emitter.bLoop        = Node.value("Loop", true);
 			Emitter.MaxParticles = std::clamp(Node.value("MaxParticles", 1000u), 1u, 1000000u);
 			Emitter.Seed         = Node.value("Seed", 1u);
+			if (const auto Bounds = Node.find("FixedBounds"); Bounds != Node.end() && Bounds->is_object())
+			{
+				const FVector4 Min     = ReadVector4(Bounds->value("Min", json()), FVector4(-200.0f, -200.0f, -200.0f, 0.0f));
+				const FVector4 Max     = ReadVector4(Bounds->value("Max", json()), FVector4(200.0f, 200.0f, 200.0f, 0.0f));
+				Emitter.bFixedBounds   = true;
+				Emitter.FixedBoundsMin = FVector3(Min.X, Min.Y, Min.Z);
+				Emitter.FixedBoundsMax = FVector3(Max.X, Max.Y, Max.Z);
+			}
 			for (size_t Stage = 0; Stage < static_cast<size_t>(EParticleStage::Count); ++Stage)
 			{
 				const auto Modules = Node.find(StageKey(static_cast<EParticleStage>(Stage)));

@@ -22,7 +22,7 @@ namespace
 	static_assert(sizeof(FCompositeConstants) == 48);
 
 	constexpr uint32 MaskRoot_Constants       = 0; // b0 (루트 상수 17개: 뷰-투영 + 인스턴스 시작 위치)
-	constexpr uint32 MaskRoot_SkinPalette     = 1; // b4 (스킨 팔레트)
+	constexpr uint32 MaskRoot_SkinPalette     = 1; // t15 (프레임 스킨 팔레트)
 	constexpr uint32 MaskRoot_Instances       = 2; // t13
 	constexpr uint32 MaskRoot_InstanceIndices = 3; // t14
 	constexpr uint32 CompositeRoot_Consts  = 0; // b0 (루트 상수 12개)
@@ -51,7 +51,7 @@ bool FSelectionOutline::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
 	MaskRootSignature.AddConstants(17, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
-	MaskRootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	MaskRootSignature.AddShaderResourceView(15, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	MaskRootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	MaskRootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	if (!MaskRootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"OutlineMaskRootSignature"))
@@ -269,8 +269,7 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 	for (uint32 Index = 0; Index < Instances.GetCount(); ++Index)
 	{
 		const FMeshInstance& Instance = Instances[Index];
-		Batches.Add(Instance.IsSkinned() ? InstanceBatching::MakeUniqueKey(Index) : InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, 0), 0.0f,
-		            Index);
+		Batches.Add(InstanceBatching::MakeKey(Instance.IsSkinned() ? 1 : 0, 0, Instance.MeshHandle.Index, 0), 0.0f, Index);
 	}
 	Batches.Finalize(DynamicBuffer);
 
@@ -278,14 +277,16 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 	CommandList->SetGraphicsRoot32BitConstants(MaskRoot_Constants, 16, &ViewProjection.M[0][0], 0);
 	CommandList->SetGraphicsRootShaderResourceView(MaskRoot_Instances, Instances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(MaskRoot_InstanceIndices, Batches.GetIndexBuffer());
+	// 스킨 인스턴스가 있으면 SkinPalettes가 있다 (없으면 정적으로 모였음). 루트 SRV는 항상 유효한 주소로
+	CommandList->SetGraphicsRootShaderResourceView(MaskRoot_SkinPalette, SkinPalettes != nullptr ? SkinPalettes->GetGpuData() : Instances.GetGpuData());
 	for (const FInstanceBatch& Batch : Batches.GetBatches())
 	{
 		const FMeshInstance& Instance = Instances[Batch.Instance];
 		if (Instance.IsSkinned())
 		{
 			CommandList->SetPipelineState(SkinnedMaskPipeline.Get());
-			CommandList->SetGraphicsRootConstantBufferView(MaskRoot_SkinPalette, Instance.SkinPalette);
-			Instance.Mesh->DrawSkinned(CommandList);
+			CommandList->SetGraphicsRoot32BitConstant(MaskRoot_Constants, Batch.First, 16);
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
 			CommandList->SetPipelineState(MaskPipeline.Get());
 			continue;
 		}

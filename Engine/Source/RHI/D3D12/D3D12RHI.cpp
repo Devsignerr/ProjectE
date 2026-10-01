@@ -1,5 +1,6 @@
 #include "RHI/D3D12/D3D12RHI.h"
 
+#include "Core/CommandLine.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -52,12 +53,18 @@ bool FD3D12RHI::Init(const FD3D12RHIDesc& Desc)
 		return false;
 	}
 
+	// 확인용: --dynamic-buffer-kb N (작게 잡아 업로드 버퍼 확장 경로를 시험)
+	uint64 DynamicBufferSize = Desc.DynamicBufferSize;
+	if (const std::wstring Override = FCommandLine::FromProcess().GetValue(L"--dynamic-buffer-kb"); !Override.empty())
+	{
+		DynamicBufferSize = static_cast<uint64>(std::max(64, std::stoi(Override))) * 1024;
+	}
 	for (uint32 Index = 0; Index < FrameCount; ++Index)
 	{
 		E_D3D_VERIFY(D3DDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CommandAllocators[Index])));
 		CommandAllocators[Index]->SetName(std::format(L"CommandAllocator_{}", Index).c_str());
 
-		if (!DynamicBuffers[Index].Init(D3DDevice, Desc.DynamicBufferSize, std::format(L"DynamicUploadBuffer_{}", Index).c_str()))
+		if (!DynamicBuffers[Index].Init(D3DDevice, DynamicBufferSize, std::format(L"DynamicUploadBuffer_{}", Index).c_str()))
 		{
 			return false;
 		}

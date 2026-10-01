@@ -27,8 +27,10 @@ struct FLocalShadowSettings
 };
 
 // 점광원/스포트라이트 + 클러스터드 컬링 + 그림자.
-//   Prepare: 씬 라이트 수집(카메라 프러스텀 밖 제외, 가까운 순 MaxLocalLights개) → 그림자 타일 배정·깊이 패스 →
-//            목록을 동적 업로드 버퍼에 올림 → 클러스터 컬링 계산 셰이더(ClusterCulling.hlsl) → 클러스터 버퍼를 PIXEL_SHADER_RESOURCE로.
+//   PrepareLights: 씬 라이트 수집(카메라 프러스텀 밖 제외, 가까운 순 MaxLocalLights개) → 그림자 타일 배정 (CPU만 — 이후
+//            IntersectsShadowCaster로 스킨 팔레트 가시성 판정에 쓴다)
+//   Render: 그림자 깊이 패스 → 목록을 동적 업로드 버퍼에 올림 → 클러스터 컬링 계산 셰이더(ClusterCulling.hlsl) →
+//            클러스터 버퍼를 PIXEL_SHADER_RESOURCE로.
 //   메시 패스는 GetConstants(b5) / GetLightList(t9) / GetClusterData(t10) / GetShadowMatrices(t11)를 루트 디스크립터로,
 //   GetShadowMapSrv(t12)를 테이블로 바인딩한다. 클러스터 화면 크기는 실제 렌더 타깃 크기(픽셀 아트 모드는 저해상도)여야 한다.
 //   그림자 타일 배열(Texture2DArray D32)은 그림자 라이트가 처음 나올 때 필요한 장 수만큼 만든다 (그 전엔 1x1 한 장).
@@ -41,10 +43,14 @@ public:
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
-	// 그래픽스 패스 전에 호출 (계산/그림자 루트 시그니처와 뷰포트를 바꾸므로 이후 패스는 자기 상태를 다시 설정한다).
-	// 그림자 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료): 정적 메시는 장마다 메시·LOD별 인스턴싱, 스킨 메시는 GPU 스키닝
-	void Prepare(FScene& Scene, const FMeshInstanceList& Instances, const FCamera& Camera, uint32 Width, uint32 Height,
-	             const FLocalShadowSettings& ShadowSettings);
+	// 1) 라이트 수집 + 그림자 장 배정 (CPU만)
+	void PrepareLights(FScene& Scene, const FCamera& Camera, const FLocalShadowSettings& ShadowSettings);
+	// 그림자 장 하나라도 캐스터로 판정하면 true (라이트 영향 구 ∩ 장 프러스텀) — 스킨 팔레트 가시성 판정용 (PrepareLights 뒤)
+	bool IntersectsShadowCaster(const FBox& WorldBounds) const;
+	// 2) 그래픽스 패스 전에 호출 (계산/그림자 루트 시그니처와 뷰포트를 바꾸므로 이후 패스는 자기 상태를 다시 설정한다).
+	// 그림자 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료): 장마다 (정적/스킨)·메시·LOD별 인스턴싱, 스킨은 프레임 팔레트(t15)
+	void Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes, const FCamera& Camera, uint32 Width, uint32 Height,
+	            const FLocalShadowSettings& ShadowSettings);
 
 	D3D12_GPU_VIRTUAL_ADDRESS     GetConstants() const { return ConstantsAddress; }
 	D3D12_GPU_VIRTUAL_ADDRESS     GetLightList() const { return LightListAddress; }
@@ -63,6 +69,10 @@ private:
 		FMatrix4x4 ViewProjection;
 		FVector3   LightPosition;
 		float      Radius = 0.0f;
+		FFrustum   Frustum;     // ViewProjection의 프러스텀
+		FBox       LightBounds; // 영향 구의 AABB
+
+		bool IsCaster(const FBox& Bounds) const { return Bounds.Intersects(LightBounds) && Frustum.Intersects(Bounds); }
 	};
 
 	bool CreateCullPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
@@ -71,7 +81,7 @@ private:
 	void AssignShadows(const FLocalShadowSettings& Settings);
 	bool EnsureShadowMap(uint32 Resolution, uint32 Slices);
 	void ReleaseShadowMap();
-	void RenderShadows(const FMeshInstanceList& Instances);
+	void RenderShadows(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 	void TransitionClusters(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES After);
 
 	FD3D12RHI*      Rhi           = nullptr;

@@ -21,6 +21,14 @@ struct FParticleGpuBuffer;
 //   Simulate: GPU 이미터의 쌓인 계산 요청을 계산 셰이더로 처리 (HDR 패스 전에 호출)
 //   Render: 이미터 × 렌더러(스프라이트/메시/리본)를 카메라에서 먼 순으로 그린다. CPU 반투명은 입자도 뒤→앞 정렬.
 //   CPU 입자는 프레임마다 동적 업로드 버퍼에 올리고, GPU 입자는 계산 결과 버퍼를 그대로 읽는다.
+// 화면 밖 컬링 (이미터 단위, 메인 카메라 프러스텀 — 경계 식은 Renderer/ParticleBounds.h):
+//   CPU 이미터: 실제 입자 AABB가 밖이면 그리기만 생략 (시뮬레이션은 Scene의 FParticleSystem이 계속 돌린다).
+//   GPU 이미터: 고정 경계(에셋 이미터 설정) 또는 모듈 추정 경계(월드 공간이면 최근 최대 수명 동안의 이미터 위치 자취 포함)가 밖이면
+//     그리기와 계산 디스패치를 모두 미룬다. 규칙: 계산 요청(Scene이 프레임마다 쌓음)을 풀의 대기열로 옮겨 두고, 숨어 있는 동안
+//     "뒤에서부터 합이 최대 수명 이상이 되는 요청"보다 오래된 것은 버린다 — 그 사이 만들어졌을 입자는 지금쯤 모두 죽었고,
+//     숨기 전부터 살던 입자도 남긴 요청을 다시 돌리면 최대 수명 이상 나이를 먹어 죽으므로 결과가 계속 계산한 것과 같다
+//     (요청마다 시각을 거꾸로 계산해 Time 입력도 같다). 대기열이 64개를 넘으면 이웃끼리 합쳐 절반으로 (근사: 합친 구간의 생성이
+//     한 번에 몰린다). 다시 보이는 프레임에 대기열을 모두 디스패치해 따라잡는다 (숨은 시간이 길수록 최대 64번 + 수명 분량).
 class FParticleRenderer
 {
 public:
@@ -30,9 +38,15 @@ public:
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
-	void Simulate(FScene& Scene);
+	void Simulate(FScene& Scene, const FFrustum& CullFrustum);
 	// 렌더 타깃(HDR + 깊이)이 바인딩된 상태에서 호출. 반환: 그린 입자 수 (GPU는 추정치)
-	uint32 Render(FScene& Scene, const FCamera& Camera);
+	uint32 Render(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum);
+
+	bool bEnableCulling = true; // 화면 밖 이미터 컬링 (끄면 모두 계산·그리기, --no-particle-culling)
+
+	// 지난 Render에서 화면 밖이라 그리지 않은 이미터 수, 지난 Simulate에서 계산을 미룬 GPU 이미터 수 (통계)
+	uint32 GetCulledEmitterCount() const { return CulledEmitters; }
+	uint32 GetCulledGpuEmitterCount() const { return CulledGpuEmitters; }
 
 	// 모듈 설정 → GPU 프로그램 (ParticleSimulate.hlsl 형식). 테스트용으로 공개
 	static void BuildGpuProgram(const FParticleEmitter& Emitter, std::vector<FVector4>& OutProgram, FParticleSimConstants& OutConstants);
@@ -71,5 +85,7 @@ private:
 	std::vector<FParticleRibbonVertex> RibbonScratch;
 	std::vector<FVector4>              ProgramScratch;
 	bool                               bWarnedBufferFull = false;
+	uint32                             CulledEmitters    = 0;
+	uint32                             CulledGpuEmitters = 0;
 	bool                               bWarnedGpuRibbon  = false;
 };

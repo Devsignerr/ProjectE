@@ -874,8 +874,15 @@ void FEditorApplication::DrawStatsWindow()
 			}
 			ImGui::EndTable();
 		}
-		ImGui::Text("파티클: %u", Stats.Particles);
+		ImGui::Text("파티클: %u (화면 밖 이미터 %u)", Stats.Particles, Stats.ParticleEmittersCulled);
 		ImGui::Text("점광원/스포트: %u (그림자 %u장)", Stats.LocalLights, Stats.LocalShadowSlices);
+		ImGui::Text("스킨 메시: %u 그림 (가시성 제외 %u)", Stats.SkinnedDrawn, Stats.SkinnedCulled);
+		{
+			const FD3D12DynamicUploadBuffer& Upload = Rhi->GetDynamicBuffer();
+			constexpr double                 Mb     = 1024.0 * 1024.0;
+			ImGui::Text("업로드 버퍼: 지난 프레임 %.2f / %.1f MB (씬 렌더러 %.2f MB, 확장 %u회)", static_cast<double>(Upload.GetLastFrameUsed()) / Mb,
+			            static_cast<double>(Upload.GetCapacity()) / Mb, static_cast<double>(Stats.UploadBytes) / Mb, Upload.GetGrowCount());
+		}
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
 		ImGui::Text("리소스: 메시 %zu, 머티리얼 %zu, 텍스처 %zu", Resources.GetMeshCount(), Resources.GetMaterialCount(),
 		            Resources.GetTextureCount());
@@ -892,10 +899,13 @@ void FEditorApplication::DrawStatsWindow()
 			ImGui::Text("정적 %u 중 그림 %u (+2단계 %u), 가려짐 %u", Stats.OcclusionTested, Stats.OcclusionPhase1, Stats.OcclusionPhase2,
 			            Stats.OcclusionTested - std::min(Stats.OcclusionTested, Stats.OcclusionPhase1 + Stats.OcclusionPhase2));
 		}
+		ImGui::Checkbox("스킨 가시성 컬링", &SceneRenderer.bSkinVisibilityCulling);
 		ImGui::Checkbox("메시 LOD", &SceneRenderer.bEnableLod);
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(120.0f);
 		ImGui::SliderFloat("LOD 배율", &SceneRenderer.LodScale, 0.25f, 4.0f, "%.2f");
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::SliderFloat("LOD 전환 여유", &SceneRenderer.LodHysteresis, 0.0f, 0.5f, "%.2f");
 		bool bFreeze = SceneRenderer.IsCullingFrozen();
 		if (ImGui::Checkbox("컬링 프러스텀 고정", &bFreeze))
 		{

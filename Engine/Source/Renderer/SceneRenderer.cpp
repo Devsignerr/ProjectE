@@ -128,6 +128,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		bSkinVisibilityCulling = false; // 측정/비교용
 	}
+	if (CommandLine.HasFlag(L"--no-particle-culling"))
+	{
+		ParticleRenderer.bEnableCulling = false; // 측정/비교용
+	}
 	if (CommandLine.HasFlag(L"--no-lod"))
 	{
 		bEnableLod = false; // 측정/비교용
@@ -633,7 +637,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	EndTimer(ERenderTimer::Gather);
 
 	// GPU 파티클 계산 (그리기 전에)
-	ParticleRenderer.Simulate(Scene);
+	ParticleRenderer.Simulate(Scene, FrozenFrustum);
 
 	// 점광원/스포트라이트 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
 	BeginTimer(ERenderTimer::LocalLights);
@@ -654,7 +658,8 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
 	DrawMeshes(Camera, PerFrame);
 	BeginTimer(ERenderTimer::Particles);
-	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
+	Stats.Particles               = ParticleRenderer.Render(Scene, Camera, FrozenFrustum);
+	Stats.ParticleEmittersCulled  = ParticleRenderer.GetCulledEmitterCount();
 	EndTimer(ERenderTimer::Particles);
 	SceneColor->End(CommandList);
 	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;

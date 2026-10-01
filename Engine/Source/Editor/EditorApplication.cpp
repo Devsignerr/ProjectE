@@ -874,7 +874,7 @@ void FEditorApplication::DrawStatsWindow()
 			}
 			ImGui::EndTable();
 		}
-		ImGui::Text("파티클: %u", Stats.Particles);
+		ImGui::Text("파티클: %u (화면 밖 이미터 %u)", Stats.Particles, Stats.ParticleEmittersCulled);
 		ImGui::Text("점광원/스포트: %u (그림자 %u장)", Stats.LocalLights, Stats.LocalShadowSlices);
 		ImGui::Text("스킨 메시: %u 그림 (가시성 제외 %u)", Stats.SkinnedDrawn, Stats.SkinnedCulled);
 		{

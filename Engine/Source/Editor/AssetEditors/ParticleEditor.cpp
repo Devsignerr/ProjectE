@@ -888,6 +888,17 @@ bool FParticleEditor::DrawEmitterSettings(FParticleEmitter& Emitter, bool& bOutR
 		Emitter.Seed = static_cast<uint32>(std::max(Seed, 0));
 		bEdited = bOutRestart = true;
 	}
+	// 화면 밖 컬링 경계 (GPU 이미터: 끄면 모듈 설정으로 추정)
+	bEdited |= ImGui::Checkbox("컬링 경계 고정 (이미터 로컬)", &Emitter.bFixedBounds);
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("GPU 이미터는 이 상자가 화면 밖이면 그리기와 계산을 미룹니다.\n끄면 수명/속도/힘 모듈로 보수적으로 추정합니다 (CPU 이미터는 항상 실제 입자 경계).");
+	}
+	if (Emitter.bFixedBounds)
+	{
+		bEdited |= ImGui::DragFloat3("경계 최소 (cm)", &Emitter.FixedBoundsMin.X, 1.0f);
+		bEdited |= ImGui::DragFloat3("경계 최대 (cm)", &Emitter.FixedBoundsMax.X, 1.0f);
+	}
 	return bEdited;
 }
 

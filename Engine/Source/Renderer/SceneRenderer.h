@@ -57,6 +57,7 @@ struct FSceneRenderStats
 	uint64 Triangles       = 0; // 메인 패스에서 그린 삼각형
 	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
 	uint32 Particles     = 0; // 그린 파티클 입자 수
+	uint32 ParticleEmittersCulled = 0; // 화면 밖이라 그리지 않은 이미터 (GPU 이미터는 계산도 미룸)
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
 	uint32 SkinnedDrawn  = 0; // 팔레트를 계산한 스킨 메시 (메인 프러스텀 ∪ 그림자 캐스터 볼륨)

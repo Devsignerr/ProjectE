@@ -242,7 +242,8 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 	{
 		CollectOutlinedEntities(Scene, Root, Entities);
 	}
-	if (Entities.empty())
+	const bool bExtraMask = ExtraMaskFilter && ExtraMask && ExtraMaskFilter(Selected); // 메시가 아닌 선택 대상 (지형)
+	if (Entities.empty() && !bExtraMask)
 	{
 		return;
 	}
@@ -292,6 +293,10 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 		}
 		CommandList->SetGraphicsRoot32BitConstant(MaskRoot_Constants, Batch.First, 16);
 		Instance.Mesh->DrawInstanced(CommandList, Batch.Count);
+	}
+	if (bExtraMask)
+	{
+		ExtraMask(CommandList, ViewProjection, Selected); // 자기 루트 시그니처/PSO (마스크가 바인딩된 상태)
 	}
 	Mask->End(CommandList);
 

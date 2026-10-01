@@ -20,7 +20,7 @@ namespace
 	enum class EReferenceBase : uint8
 	{
 		None,
-		ContentRoot, // .escene, .eproject, .eprefab, .eui, .eanimgraph (미리보기 모델)
+		ContentRoot, // .escene, .eproject, .eprefab, .eui, .eanimgraph (미리보기 모델), .efoliage(타입 머티리얼)
 		OwnFolder,   // .emat, .eparticle
 	};
 
@@ -34,7 +34,7 @@ namespace
 	{
 		const std::wstring Extension = Lower(File.extension().wstring());
 		if (Extension == L".escene" || Extension == L".eproject" || Extension == L".eprefab" || Extension == L".eui" ||
-		    Extension == L".eanimgraph")
+		    Extension == L".eanimgraph" || Extension == L".efoliage")
 		{
 			return EReferenceBase::ContentRoot;
 		}

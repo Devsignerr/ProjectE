@@ -181,6 +181,14 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255), "파티클" };
 	}
+	if (Extension == ".eterrain")
+	{
+		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(150, 190, 110, 255), "지형" };
+	}
+	if (Extension == ".efoliage")
+	{
+		return { ICON_FA_TREE, IM_COL32(110, 200, 120, 255), "폴리지" };
+	}
 	if (Extension == ".eui")
 	{
 		return { ICON_FA_DISPLAY, IM_COL32(120, 200, 255, 255), "UI" };

@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/MeshInstancing.h"
+#include "Renderer/ShadowCasterHook.h"
 #include "Renderer/ShadowMath.h"
 
 class FCamera;
@@ -62,6 +63,8 @@ public:
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
 
 	bool ReloadShaders(bool bForceRecompile);
+
+	FShadowCasterHook ExtraCasters; // 메시 인스턴스 밖 캐스터 (지형 — FTerrainRenderer::RenderShadow)
 
 	// 지난 Render의 드로우 수 / 삼각형 수 (통계)
 	uint32 GetDrawCalls() const { return DrawCalls; }

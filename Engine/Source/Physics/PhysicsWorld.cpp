@@ -1295,3 +1295,8 @@ void FPhysicsWorld::EnableCollision(uint32 BodyA, uint32 BodyB)
 		Impl->PairFilter->Disabled.erase(Found);
 	}
 }
+
+JPH::BodyInterface& FPhysicsWorld::GetJoltBodyInterface()
+{
+	return Impl->Bodies();
+}

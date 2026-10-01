@@ -6,6 +6,7 @@
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/MeshInstancing.h"
 #include "Renderer/ShaderTypes.h"
+#include "Renderer/ShadowCasterHook.h"
 
 #include <vector>
 
@@ -62,6 +63,8 @@ public:
 	// 지난 Prepare의 그림자 드로우 수 / 삼각형 수 (통계)
 	uint32                        GetShadowDrawCalls() const { return ShadowDrawCalls; }
 	uint64                        GetShadowTriangles() const { return ShadowTriangles; }
+
+	FShadowCasterHook ExtraCasters; // 메시 인스턴스 밖 캐스터 (지형 — FTerrainRenderer::RenderShadow)
 
 private:
 	struct FShadowSlice

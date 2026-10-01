@@ -7,6 +7,7 @@
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/MeshInstancing.h"
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -39,6 +40,10 @@ public:
 	FVector4 OutlineColor = FVector4(1.0f, 0.45f, 0.05f, 1.0f);  // 선형 주황
 	FVector4 FillColor    = FVector4(1.0f, 0.45f, 0.05f, 0.08f); // 내부 틴트
 	int32    Thickness    = 2;
+
+	// 메시가 아닌 선택 대상(지형)을 마스크에 더 그린다: Filter(선택)가 true면 메시 마스크 뒤 ExtraMask(커맨드 리스트, 뷰-투영, 선택)
+	std::function<bool(const std::vector<FEntity>&)>                                              ExtraMaskFilter;
+	std::function<void(ID3D12GraphicsCommandList*, const FMatrix4x4&, const std::vector<FEntity>&)> ExtraMask;
 
 	// 선택 엔티티와 모든 하위 엔티티 중 보이는 정적 메시를 가진 것 (테스트용 공개)
 	static void CollectOutlinedEntities(FScene& Scene, FEntity Root, std::vector<FEntity>& OutEntities);

@@ -8,6 +8,8 @@
 #include "Scene/Prefab.h"
 #include "Scene/SequencePlayer.h"
 #include "Scene/SubScene.h"
+#include "Scene/Foliage.h"
+#include "Scene/Terrain.h"
 
 void RegisterSceneTypes()
 {
@@ -200,4 +202,8 @@ void RegisterSceneTypes()
 		.Tooltip("끄면 마지막 값 유지 (열린 문 등). 카메라 컷은 항상 원래 카메라로 돌아간다")
 		.NoReplicate()
 		.AsComponent();
+	// 지형 (Scene/Terrain.h, Phase 34)
+	RegisterTerrainTypes();
+	// 풀·나무 (Scene/Foliage.h, Phase 34-3)
+	RegisterFoliageTypes();
 }

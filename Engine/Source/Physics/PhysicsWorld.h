@@ -10,6 +10,11 @@
 
 E_DECLARE_ENGINE_LOG_CATEGORY(LogPhysics)
 
+namespace JPH
+{
+	class BodyInterface;
+}
+
 enum class EPhysicsShape : uint8
 {
 	Box,
@@ -205,6 +210,8 @@ public:
 	// 두 바디 충돌 끄기/켜기 (참조 횟수 — 여러 관절이 같은 쌍을 꺼도 된다). 바디를 지우면 그 바디 항목은 사라진다
 	void   DisableCollision(uint32 BodyA, uint32 BodyB);
 	void   EnableCollision(uint32 BodyA, uint32 BodyB);
+	// ---- 확장: 새 파일이 Jolt 바디를 직접 만들 때 (지형 높이맵 충돌 — TerrainCollision.cpp). 바디 ID = GetIndexAndSequenceNumber (DestroyBody로 지운다)
+	JPH::BodyInterface& GetJoltBodyInterface();
 
 private:
 	struct FImpl;

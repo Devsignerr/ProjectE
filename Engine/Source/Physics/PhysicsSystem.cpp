@@ -2,6 +2,8 @@
 
 #include "Core/Settings/ProjectSettings.h"
 #include "Physics/PhysicsComponents.h"
+#include "Physics/FoliageCollision.h"
+#include "Physics/TerrainCollision.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 
@@ -112,6 +114,8 @@ void FPhysicsSystem::End()
 	Joints.clear();
 	Ragdolls.clear(); // 바디는 월드와 함께 사라진다
 	CollisionEvents.clear();
+	TerrainCollision.reset(); // 지형/폴리지 바디도 월드와 함께 사라진다
+	FoliageCollision.reset();
 	World.reset();
 	Stepper.Reset();
 }
@@ -126,6 +130,16 @@ uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 	CollisionEvents.clear();
 	SyncCharacters(Scene);
 	SyncBodies(Scene);
+	if (!TerrainCollision)
+	{
+		TerrainCollision = std::make_unique<FTerrainCollision>();
+	}
+	TerrainCollision->Sync(Scene, *World);
+	if (!FoliageCollision)
+	{
+		FoliageCollision = std::make_unique<FFoliageCollision>();
+	}
+	FoliageCollision->Sync(Scene, *World);
 	SyncJoints(Scene);
 	SyncRagdolls(Scene);
 	CollectContactEvents(); // 사라진 바디의 접촉 끝 (밖에서 부른 SyncBodies 것도)

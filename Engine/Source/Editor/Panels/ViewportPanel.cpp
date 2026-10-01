@@ -28,6 +28,7 @@
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
+#include "Scene/Terrain.h"
 #include "Renderer/UIRenderer.h"
 #include "UI/UIComponent.h"
 #include "UI/UISystem.h"
@@ -275,14 +276,20 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			}
 
 			DrawSelectedLightShapes(Context, ImagePosition, ImageSize);
-			DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+			// 편집 도구(지형/폴리지 브러시)가 마우스를 가져가면 기즈모/클릭 선택을 하지 않는다
+			const bool bToolCaptured =
+				ToolOverlay && ToolOverlay(Context, Input, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y), bHovered);
+			if (!bToolCaptured)
+			{
+				DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+			}
 
 			// 기즈모 위/사용 중이 아닌 곳에서 드래그 없이 좌클릭을 놓으면 선택 (툴바를 그린 뒤 처리)
 			const ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
 			const bool   bDragged  = (DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y) > 16.0f;
 			// 플레이 중 게임 UI가 포인터를 가져갔으면(버튼 클릭 등) 엔티티를 선택하지 않는다
 			const bool   bPick     = bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
-			                   !Input.IsMouseButtonDown(EMouseButton::Right) && !(Context.bPlaying && bGameUIWantsPointer);
+			                   !Input.IsMouseButtonDown(EMouseButton::Right) && !(Context.bPlaying && bGameUIWantsPointer) && !bToolCaptured;
 
 			// 단축키 (뷰포트 위, 카메라 조작 중 아님)
 			// Ctrl 조합(Ctrl+R 셰이더 재로드, Ctrl+S 저장 등)은 에디터 단축키이므로 제외
@@ -334,6 +341,15 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 		if (!SelectionOutline->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary()))
 		{
 			SelectionOutline.reset();
+		}
+		else
+		{
+			// 지형 선택 아웃라인: 씬 렌더러의 지형 렌더러가 이번 프레임 청크로 마스크를 그린다
+			FTerrainRenderer& Terrain         = Context.Renderer->GetTerrainRenderer();
+			SelectionOutline->ExtraMaskFilter = [&Terrain](const std::vector<FEntity>& Selected) { return Terrain.HasTerrain(Selected); };
+			SelectionOutline->ExtraMask = [&Terrain](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const std::vector<FEntity>& Selected) {
+				Terrain.RenderMask(List, ViewProjection, Selected);
+			};
 		}
 	}
 
@@ -688,6 +704,19 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 				Closest         = Entity;
 			}
 		});
+
+	// 지형: 높이맵 레이캐스트 (메시 경계 상자보다 가까우면 지형)
+	std::vector<FTerrainInstance> Terrains;
+	GatherTerrains(*Context.Scene, Terrains);
+	for (const FTerrainInstance& Terrain : Terrains)
+	{
+		float Distance = 0.0f;
+		if (TerrainMath::Raycast(*Terrain.Data, Terrain.Frame, Ray.Origin, Ray.Direction, ClosestDistance, Distance) && Distance < ClosestDistance)
+		{
+			ClosestDistance = Distance;
+			Closest         = Terrain.Entity;
+		}
+	}
 
 	// 모델에서 생성된 하위 노드(저장되지 않음)를 찍으면 모델 루트를 선택한다 (언리얼의 액터 선택과 같은 동작)
 	FRegistry& Registry = Context.Scene->GetRegistry();

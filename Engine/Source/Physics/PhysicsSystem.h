@@ -12,6 +12,8 @@
 #include <vector>
 
 class FScene;
+class FTerrainCollision;
+class FFoliageCollision;
 
 struct FPhysicsHit
 {
@@ -240,4 +242,6 @@ private:
 	std::function<bool(const FScene&, FEntity)> ContactReportFilter;
 	std::vector<FCollisionEvent>                CollisionEvents;
 	std::vector<FPhysicsContactEvent>           ContactScratch;
+	std::unique_ptr<FTerrainCollision>          TerrainCollision; // 지형 높이맵 충돌 (TerrainCollision.h)
+	std::unique_ptr<FFoliageCollision>          FoliageCollision; // 나무 캡슐 충돌 (FoliageCollision.h)
 };

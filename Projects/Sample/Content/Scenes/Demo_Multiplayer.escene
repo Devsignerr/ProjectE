@@ -1101,6 +1101,37 @@
           ]
         }
       }
+    },
+    {
+      "Name": "GameMode",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "GameModeComponent": {
+          "StartDelay": 0.0,
+          "TimeLimit": 0.0,
+          "ScoreToWin": 0,
+          "RespawnDelay": 3.0
+        },
+        "ReplicatedComponent": {}
+      }
     }
   ]
 }

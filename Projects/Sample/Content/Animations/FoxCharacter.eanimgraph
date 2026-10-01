@@ -1,0 +1,34 @@
+{
+  "Version": 1,
+  "Parameters": [
+    { "Name": "Speed", "Type": "Float", "Default": 0.0 },
+    { "Name": "VerticalSpeed", "Type": "Float", "Default": 0.0 },
+    { "Name": "Grounded", "Type": "Bool", "Default": true }
+  ],
+  "EntryState": "Locomotion",
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "Samples": [
+        { "Clip": "Survey", "Position": 0.0 },
+        { "Clip": "Walk", "Position": 120.0 },
+        { "Clip": "Run", "Position": 450.0 }
+      ]
+    },
+    { "Name": "Jump", "Clip": "Run", "Speed": 0.35 },
+    { "Name": "Fall", "Clip": "Walk", "Speed": 0.3 }
+  ],
+  "Transitions": [
+    { "From": "Locomotion", "To": "Jump", "Duration": 0.1, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": false }, { "Parameter": "VerticalSpeed", "Op": ">", "Value": 50.0 } ] },
+    { "From": "Locomotion", "To": "Fall", "Duration": 0.2, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": false }, { "Parameter": "VerticalSpeed", "Op": "<", "Value": -150.0 } ] },
+    { "From": "Jump", "To": "Fall", "Duration": 0.25, "Conditions": [
+      { "Parameter": "VerticalSpeed", "Op": "<", "Value": 0.0 } ] },
+    { "From": "Jump", "To": "Locomotion", "Duration": 0.15, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": true }, { "Parameter": "VerticalSpeed", "Op": "<=", "Value": 50.0 } ] },
+    { "From": "Fall", "To": "Locomotion", "Duration": 0.15, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": true } ] }
+  ]
+}

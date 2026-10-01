@@ -6,7 +6,9 @@
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsReflection.h"
 #include "Physics/PhysicsSystem.h"
+#include "Scene/AnimationSystem.h"
 #include "Scene/Components.h"
+#include "Scene/Gameplay.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
@@ -295,6 +297,10 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	const FVector3 Walked = Scene.GetTransform(Player).Position;
 	E_EXPECT_NEAR(Walked.X - Start.X, 450.0f, 20.0f);
 	E_EXPECT_NEAR(Walked.Y, Start.Y, 1.0f);
+	// 애니메이션 그래프 파라미터 (Body/Mesh의 AnimGraphComponent, 캐릭터 이동 자동 공급) — 캐릭터 루트에서 읽는다
+	const auto AnimParam = [&](const char* Name) { return FAnimationSystem::GetAnimParam(Scene, Player, Name).value_or(-1.0f); };
+	E_EXPECT_NEAR(AnimParam("Speed"), 450.0f, 5.0f);
+	E_EXPECT_NEAR(AnimParam("Grounded"), 1.0f, 1.0e-4f);
 
 	// 시점을 오른쪽 90도로 돌리면 W가 +Y, 몸(캐릭터 루트)도 그쪽을 본다
 	E_EXPECT_TRUE(Scripts.RunString("Scene.Find('Player'):GetScript().Yaw = 90"));
@@ -308,10 +314,14 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(0.25f);
 	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Z > Start.Z + 60.0f);
+	E_EXPECT_NEAR(AnimParam("Grounded"), 0.0f, 1.0e-4f);
+	E_EXPECT_TRUE(AnimParam("VerticalSpeed") > 50.0f);
 	Keys.reset();
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(1.5f);
 	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Z, 90.0f, 3.0f);
+	E_EXPECT_NEAR(AnimParam("Grounded"), 1.0f, 1.0e-4f);
+	E_EXPECT_NEAR(AnimParam("Speed"), 0.0f, 1.0f);
 
 	// 게임패드 (가짜 패드): 왼쪽 스틱 위 = 앞(+Y, 시점 90도), 반만 기울이면 절반 속도, A = 점프, 오른쪽 스틱 = 시점
 	FGamepadState Pad;
@@ -336,6 +346,33 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	Input.SetGamepadState(Pad);
 	Run(0.5f);
 	E_EXPECT_TRUE(Scripts.RunString("local Yaw = Scene.Find('Player'):GetScript().Yaw; assert(math.abs(Yaw - 180) < 5, 'yaw ' .. Yaw)")); // 90 + 0.5초 × 180
+
+	// 체력 (Phase 25 통합): 죽으면 입력이 막히고 몸(Body)이 숨는다 → 리스폰(기본 3초, PlayerStart가 없으면 제자리)에서 다시 보인다
+	Pad.RightX = 0.0f;
+	Input.SetGamepadState(Pad);
+	Run(1.0f); // 착지
+	FEntity Body;
+	for (const FEntity Child : Scene.GetChildren(Player))
+	{
+		if (Scene.GetRegistry().Get<FNameComponent>(Child).Name == "Body")
+		{
+			Body = Child;
+		}
+	}
+	E_EXPECT_TRUE(Gameplay::ApplyDamage(Scene, Player, 1000.0f, NullEntity) > 0.0f);
+	Run(0.1f);
+	E_EXPECT_TRUE(Gameplay::IsDead(Scene, Player));
+	E_EXPECT_TRUE(Scene.GetTransform(Body).Scale.X < 0.01f);
+	Pad.LeftY = 1.0f;
+	Input.SetGamepadState(Pad);
+	const FVector3 DeadAt = Scene.GetTransform(Player).Position;
+	Run(1.0f);
+	E_EXPECT_NEAR(FVector3::Distance(Scene.GetTransform(Player).Position, DeadAt), 0.0f, 1.0f);
+	Pad.LeftY = 0.0f;
+	Input.SetGamepadState(Pad);
+	Run(2.5f);
+	E_EXPECT_FALSE(Gameplay::IsDead(Scene, Player));
+	E_EXPECT_NEAR(Scene.GetTransform(Body).Scale.X, 1.0f, 1.0e-4f);
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }

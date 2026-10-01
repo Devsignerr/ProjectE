@@ -42,6 +42,13 @@
             1.0,
             1.0
           ]
+        },
+        "HealthComponent": {
+          "MaxHealth": 100.0,
+          "Health": 100.0,
+          "Invulnerable": false,
+          "DeathAction": 0,
+          "ScoreValue": 1
         }
       },
       "Name": "Player",
@@ -83,28 +90,38 @@
           "Root": -1
         },
         "ReplicatedComponent": {},
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:capsule",
-          "Visible": true
-        },
         "TransformComponent": {
           "Position": [
             0.0,
             0.0,
-            0.0
+            -90.0
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.0,
-            1.0
+            1.0,
+            0.0
           ],
           "Scale": [
-            0.7,
-            0.7,
-            0.9
+            0.01,
+            0.01,
+            0.01
           ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/FoxCharacter.eanimgraph",
+          "UseCharacterMovement": true
         }
       },
       "Name": "Mesh",
@@ -117,15 +134,15 @@
           "Root": -1
         },
         "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Visor.emat",
+          "MaterialAsset": "Materials/Orange.emat",
           "MeshAsset": "primitive:cube",
           "Visible": true
         },
         "TransformComponent": {
           "Position": [
-            28.0,
             0.0,
-            50.0
+            0.0,
+            -88.0
           ],
           "Rotation": [
             0.0,
@@ -134,13 +151,14 @@
             1.0
           ],
           "Scale": [
-            0.16,
-            0.44,
-            0.16
+            1.1,
+            0.7,
+            0.02
           ]
-        }
+        },
+        "ReplicatedComponent": {}
       },
-      "Name": "Visor",
+      "Name": "Marker",
       "Parent": 1
     }
   ],

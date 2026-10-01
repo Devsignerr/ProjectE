@@ -1,7 +1,11 @@
 -- 멀티플레이 3인칭 캐릭터 (ExecutionLocation = Both)
 --   이동/점프/중력/계단/밀기는 엔진 CharacterMovementComponent가 한다 (소유 클라이언트는 즉시 예측, 서버가 같은 입력으로 보정).
 --   이 스크립트는 "조종하는 쪽"(소유 클라이언트 또는 리슨 호스트)에서 입력을 이동 방향으로 바꿔 넘기고, 시점과 카메라만 맡는다.
---   서버는 플레이어 번호별 몸 색만 정한다.
+--   서버는 플레이어 번호별 발밑 표식(Marker 판) 색만 정한다.
+-- 몸은 스켈레탈 모델(Fox.glb, Body/Mesh)이고 애니메이션 그래프(Animations/FoxCharacter.eanimgraph)가 캐릭터 이동 상태
+--   (Speed/VerticalSpeed/Grounded — 엔진이 자동으로 넣는다)로 대기·걷기·뛰기 블렌드와 점프/낙하 상태를 고른다. 원격 플레이어도
+--   각 클라이언트가 복제된 움직임으로 같은 파라미터를 계산하므로 스크립트는 애니메이션에 손대지 않는다.
+-- 체력(HealthComponent): 죽어 있는 동안 입력을 막고, 서버가 OnDeath/OnRespawned에서 몸을 숨기고/보인다 (Body 스케일 — 트랜스폼 복제로 모두에게)
 -- 조작은 입력 액션으로 읽는다 (프로젝트 설정 → 입력, Config/Input.json — 플레이어 재지정은 Input.Rebind):
 --   Move = WASD / 왼쪽 스틱 (보는 방향 기준), Look = 마우스 / 오른쪽 스틱, Jump = 스페이스 / 게임패드 A
 --   마우스 시점: 런타임 창은 클릭하면 커서 잠금(마우스만 움직여도 시점), ESC로 잠금 해제. 에디터 플레이 뷰포트는 우클릭을 누른 채.
@@ -17,7 +21,7 @@ local PlayerCharacter = {
 	},
 }
 
--- 플레이어 번호별 몸 색 (서버가 정하면 복제된다)
+-- 플레이어 번호별 표식 색 (서버가 정하면 복제된다)
 local BodyMaterials = { "Materials/Orange.emat", "Materials/Blue.emat", "Materials/Green.emat", "Materials/Purple.emat", "Materials/Yellow.emat" }
 
 local CameraClearance = 40.0 -- cm, 카메라 벽 검사를 캡슐 바깥에서 시작
@@ -31,9 +35,9 @@ function PlayerCharacter:OnStart()
 	if Net.IsServer() then
 		local Owner = self.entity:GetOwner()
 		local Body = self.entity:FindChild("Body")
-		local Mesh = Body and Body:FindChild("Mesh")
-		if Mesh and Owner >= 0 then
-			Mesh:GetComponent("StaticMeshComponent").MaterialAsset = BodyMaterials[(Owner % #BodyMaterials) + 1]
+		local Marker = Body and Body:FindChild("Marker")
+		if Marker and Owner >= 0 then
+			Marker:GetComponent("StaticMeshComponent").MaterialAsset = BodyMaterials[(Owner % #BodyMaterials) + 1]
 		end
 	end
 end
@@ -53,10 +57,31 @@ function PlayerCharacter:OnUpdate(dt)
 	if not self.IsLocalPlayer and Net.IsClient() and self.entity:GetOwner() >= 0 and self.entity:IsLocallyOwned() then
 		self:BeginLocalPlayer()
 	end
+	if self.entity:IsDead() then return end -- 죽어 있는 동안 조작 없음 (리스폰까지)
 	if self.IsLocalPlayer then
 		self:UpdateView()
 		self:UpdateMovementInput()
 	end
+end
+
+-- ---- 체력 (서버에서만 불린다): 몸을 숨기고/보인다. Body는 ReplicatedComponent가 있어 스케일이 클라이언트로 복제된다
+local HiddenScale = 0.001 -- 0이면 행렬이 퇴화하므로 아주 작게
+
+function PlayerCharacter:SetBodyVisible(Visible)
+	local Body = self.entity:FindChild("Body")
+	if Body then
+		local S = Visible and 1.0 or HiddenScale
+		Body:SetScale(Vector3(S, S, S))
+	end
+end
+
+function PlayerCharacter:OnDeath(instigator)
+	Log.Info(self.entity:GetName(), "사망 — 리스폰 대기")
+	self:SetBodyVisible(false)
+end
+
+function PlayerCharacter:OnRespawned()
+	self:SetBodyVisible(true)
 end
 
 -- 카메라는 이동(캐릭터 이동 컴포넌트/물리/복제 보간)이 끝난 뒤에 (OnUpdate에서 놓으면 한 프레임 늦게 따라가 떨려 보인다)

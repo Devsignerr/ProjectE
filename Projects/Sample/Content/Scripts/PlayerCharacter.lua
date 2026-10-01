@@ -2,8 +2,10 @@
 --   이동/점프/중력/계단/밀기는 엔진 CharacterMovementComponent가 한다 (소유 클라이언트는 즉시 예측, 서버가 같은 입력으로 보정).
 --   이 스크립트는 "조종하는 쪽"(소유 클라이언트 또는 리슨 호스트)에서 입력을 이동 방향으로 바꿔 넘기고, 시점과 카메라만 맡는다.
 --   서버는 플레이어 번호별 몸 색만 정한다.
--- 조작: WASD 이동(보는 방향 기준), 마우스 시점, 스페이스 점프.
---   런타임 창: 클릭하면 커서 잠금(마우스만 움직여도 시점), ESC로 잠금 해제. 에디터 플레이 뷰포트: 우클릭을 누른 채 마우스
+-- 조작은 입력 액션으로 읽는다 (프로젝트 설정 → 입력, Config/Input.json — 플레이어 재지정은 Input.Rebind):
+--   Move = WASD / 왼쪽 스틱 (보는 방향 기준), Look = 마우스 / 오른쪽 스틱, Jump = 스페이스 / 게임패드 A
+--   마우스 시점: 런타임 창은 클릭하면 커서 잠금(마우스만 움직여도 시점), ESC로 잠금 해제. 에디터 플레이 뷰포트는 우클릭을 누른 채.
+--   게임패드 스틱 시점은 잠금과 관계없이 항상
 -- 속도/점프 높이/계단 높이 등은 프리팹의 CharacterMovementComponent 속성에서 바꾼다
 local PlayerCharacter = {
 	Properties = {
@@ -44,7 +46,7 @@ function PlayerCharacter:BeginLocalPlayer()
 	local Camera = self.Camera:AddComponent("CameraComponent")
 	Camera.Priority    = 10
 	Camera.FovYDegrees = 75.0
-	Log.Info("내 캐릭터:", self.entity:GetName(), "— 클릭: 마우스 잠금, ESC: 해제, WASD/마우스/스페이스")
+	Log.Info("내 캐릭터:", self.entity:GetName(), "— 클릭: 마우스 잠금, ESC: 해제, WASD/마우스/스페이스 또는 게임패드(스틱/A)")
 end
 
 function PlayerCharacter:OnUpdate(dt)
@@ -69,12 +71,16 @@ function PlayerCharacter:UpdateView()
 	if not Game.IsMouseLocked() and Input.IsMouseDown("Left") then
 		Game.SetMouseLocked(true) -- 런타임만 (에디터는 아무 일 없음 → 우클릭 시점)
 	end
-	if Game.IsMouseLocked() or Input.IsMouseDown("Right") then
-		local DeltaX, DeltaY = Input.GetLookDelta()
-		local P = self.Properties
-		self.Yaw = (self.Yaw + DeltaX * P.LookSensitivity) % 360
-		self.Pitch = math.max(P.MinPitch, math.min(P.MaxPitch, self.Pitch - DeltaY * P.LookSensitivity))
+	-- Look 액션 = 마우스 원시 이동 + 오른쪽 스틱(마우스 카운트 단위로 맞춰 둠). 마우스가 잡혀 있지 않으면 마우스 몫은 빼고 스틱만
+	-- (기본 바인딩의 MouseXY는 수정자가 없으므로 원시 이동량을 그대로 빼면 된다)
+	local LookX, LookY = Input.GetAction("Look")
+	if not (Game.IsMouseLocked() or Input.IsMouseDown("Right")) then
+		local MouseX, MouseY = Input.GetLookDelta()
+		LookX, LookY = LookX - MouseX, LookY - MouseY
 	end
+	local P = self.Properties
+	self.Yaw = (self.Yaw + LookX * P.LookSensitivity) % 360
+	self.Pitch = math.max(P.MinPitch, math.min(P.MaxPitch, self.Pitch - LookY * P.LookSensitivity))
 	Net.SetControlRotation(self.Yaw, self.Pitch) -- 몸 방향(yaw)도 이것을 따른다
 end
 
@@ -83,15 +89,12 @@ function PlayerCharacter:UpdateMovementInput()
 	local Radians = math.rad(self.Yaw)
 	local Forward = Vector3(math.cos(Radians), math.sin(Radians), 0)
 	local Right   = Vector3(-math.sin(Radians), math.cos(Radians), 0)
-	local Move = Vector3.Zero()
-	if Input.IsKeyDown("W") then Move = Move + Forward end
-	if Input.IsKeyDown("S") then Move = Move - Forward end
-	if Input.IsKeyDown("D") then Move = Move + Right end
-	if Input.IsKeyDown("A") then Move = Move - Right end
+	local MoveX, MoveY = Input.GetAction("Move") -- X = 오른쪽, Y = 앞 (스틱은 기울인 만큼 — 길이 1 넘는 대각선은 엔진이 자른다)
+	local Move = Forward * MoveY + Right * MoveX
 	if Move:LengthSquared() > 0 then
 		self.entity:AddMovementInput(Move)
 	end
-	if Input.IsKeyPressed("Space") then
+	if Input.WasActionPressed("Jump") then
 		self.entity:Jump() -- 바닥에 있을 때만 뛴다
 	end
 end

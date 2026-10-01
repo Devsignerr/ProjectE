@@ -1,4 +1,5 @@
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/Testing/TestFramework.h"
 #include "Network/LanDiscovery.h"
 #include "Network/ReplicationTypes.h"
@@ -276,6 +277,7 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	const auto Run = [&](float Seconds) {
 		for (int32 Frame = 0; Frame < static_cast<int32>(Seconds * 60.0f); ++Frame)
 		{
+			Input.UpdateActions(FProjectSettings::Get().Input.GetEffectiveMapping(), 1.0f / 60.0f); // 앱 루프와 같이 (예제 Config/Input.json)
 			World.TickGameplay(1.0f / 60.0f, &Input);
 			Input.EndFrame();
 		}
@@ -310,6 +312,30 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	Input.SetState(Keys, {}, 0, 0, 0.0f);
 	Run(1.5f);
 	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Z, 90.0f, 3.0f);
+
+	// 게임패드 (가짜 패드): 왼쪽 스틱 위 = 앞(+Y, 시점 90도), 반만 기울이면 절반 속도, A = 점프, 오른쪽 스틱 = 시점
+	FGamepadState Pad;
+	Pad.bConnected = true;
+	Pad.LeftY      = 1.0f;
+	Input.SetGamepadState(Pad);
+	const FVector3 PadStart = Scene.GetTransform(Player).Position;
+	Run(1.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Y - PadStart.Y, 450.0f, 25.0f);
+	Pad.LeftY = 0.625f; // 데드존 0.25 → (0.625-0.25)/0.75 = 0.5
+	Input.SetGamepadState(Pad);
+	const FVector3 HalfStart = Scene.GetTransform(Player).Position;
+	Run(1.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Player).Position.Y - HalfStart.Y, 225.0f, 25.0f);
+	Pad.LeftY = 0.0f;
+	Pad.SetButton(EGamepadButton::A, true);
+	Input.SetGamepadState(Pad);
+	Run(0.25f);
+	E_EXPECT_TRUE(Scene.GetTransform(Player).Position.Z > Start.Z + 60.0f);
+	Pad.SetButton(EGamepadButton::A, false);
+	Pad.RightX = 1.0f; // 1500카운트/초 × 0.12도 = 180도/초
+	Input.SetGamepadState(Pad);
+	Run(0.5f);
+	E_EXPECT_TRUE(Scripts.RunString("local Yaw = Scene.Find('Player'):GetScript().Yaw; assert(math.abs(Yaw - 180) < 5, 'yaw ' .. Yaw)")); // 90 + 0.5초 × 180
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }

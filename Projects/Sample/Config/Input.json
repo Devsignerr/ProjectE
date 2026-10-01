@@ -1,0 +1,107 @@
+{
+	"Version": 1,
+	"Actions": [
+		{
+			"Name": "Move",
+			"Type": "Axis2D",
+			"Description": "이동 (X = 오른쪽, Y = 앞)",
+			"ActuationThreshold": 0.1,
+			"Bindings": [
+				{
+					"Source": "W",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						}
+					]
+				},
+				{
+					"Source": "S",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						},
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "D"
+				},
+				{
+					"Source": "A",
+					"Modifiers": [
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "Gamepad_LeftStick",
+					"Modifiers": [
+						{
+							"Type": "DeadZone",
+							"Lower": 0.25,
+							"Upper": 1.0,
+							"Radial": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Name": "Look",
+			"Type": "Axis2D",
+			"Description": "시점 (마우스 카운트/프레임 단위, 오른쪽 +X, 아래 +Y)",
+			"ActuationThreshold": 0.01,
+			"Bindings": [
+				{
+					"Source": "MouseXY"
+				},
+				{
+					"Source": "Gamepad_RightStick",
+					"Modifiers": [
+						{
+							"Type": "DeadZone",
+							"Lower": 0.25,
+							"Upper": 1.0,
+							"Radial": true
+						},
+						{
+							"Type": "Negate",
+							"X": false,
+							"Y": true
+						},
+						{
+							"Type": "Scale",
+							"X": 1500.0,
+							"Y": 1000.0
+						},
+						{
+							"Type": "ScaleByDeltaTime"
+						}
+					]
+				}
+			]
+		},
+		{
+			"Name": "Jump",
+			"Type": "Button",
+			"Description": "점프",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Space"
+				},
+				{
+					"Source": "Gamepad_A"
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,8046 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.9599999785423279,
+            0.8999999761581421
+          ],
+          "Intensity": 3.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            500.0
+          ],
+          "Rotation": [
+            -0.10938165336847305,
+            0.4082179069519043,
+            0.23456971347332,
+            0.8754260540008545
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Checker.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            20.0,
+            0.20000000298023224
+          ]
+        }
+      },
+      "Name": "Ground",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -200.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Survey",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Run",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 0.800000011920929
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            200.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Run",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 0.5
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            250.0,
+            100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_WalkSlow",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.1083526611328,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            401.1058654785156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            580.8986206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            773.6473999023438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.845458984375,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk37",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk38",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk39",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk40",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            401.1058654785156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk41",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk42",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk43",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk44",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk45",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk46",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk47",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            580.8986206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk48",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk49",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk50",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk51",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk52",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk53",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk54",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            773.6473999023438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk55",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.95281982421875,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk56",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk57",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk58",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -59.494956970214844,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk59",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -102.62226104736328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk60",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk61",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.3907470703125,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk62",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk63",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk64",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk65",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            357.9792785644531,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk66",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            298.48431396484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk67",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            255.35699462890625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk68",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            401.1058654785156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk69",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk70",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk71",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk72",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            537.7732543945313,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk73",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            478.2783203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk74",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            435.1510009765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk75",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            580.8986206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk76",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk77",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk78",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk79",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            730.5236206054688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk80",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            671.0286865234375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk81",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            627.9013671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk82",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            773.6473999023438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk83",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2829284667969,
+            43.12757873535156,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk84",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -227.95147705078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk85",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -271.07879638671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk86",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -227.95147705078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk87",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -271.07879638671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk88",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -168.45654296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk89",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.33056640625,
+            -125.32933044433594,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk90",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            130.02774047851563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk91",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            86.90009307861328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk92",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            189.522705078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk93",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            189.522705078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk94",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            130.02774047851563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk95",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            86.90009307861328,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk96",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            232.6492919921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk97",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            309.82177734375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk98",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            266.6944580078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk99",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            369.31671142578125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            369.31671142578125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk101",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            309.82177734375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk102",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            266.6944580078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk103",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            412.44207763671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk104",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            502.572021484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk105",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            459.44464111328125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk106",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            562.0670166015625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk107",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            562.0670166015625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk108",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            502.572021484375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk109",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            459.44464111328125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk110",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            605.1907958984375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk111",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2183227539063,
+            -125.32844543457031,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk112",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk113",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk114",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk115",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk116",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -1041.347412109375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk117",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.1083526611328,
+            -998.2199096679688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk118",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk119",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk120",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk121",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk122",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk123",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk124",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -640.24169921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk125",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk126",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk127",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk128",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk129",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk130",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk131",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -460.44891357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk132",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk133",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk134",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -136.10870361328125,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk135",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk136",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk137",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk138",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -267.70013427734375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk139",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk140",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk141",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk142",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk143",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -1041.347412109375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk144",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.845458984375,
+            -998.2199096679688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk145",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk146",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk147",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk148",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk149",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk150",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk151",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -640.24169921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk152",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk153",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk154",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk155",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk156",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk157",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk158",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -460.44891357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk159",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk160",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk161",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            203.84510803222656,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk162",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk163",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk164",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk165",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.9538269042969,
+            -267.70013427734375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk166",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            339.95281982421875,
+            -998.2199096679688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk167",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk168",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk169",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -1100.842529296875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk170",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -1143.9697265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk171",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -1041.347412109375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk172",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.3907470703125,
+            -998.2199096679688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk173",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk174",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk175",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk176",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -683.3682250976563,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk177",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -742.8632202148438,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk178",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -785.9905395507813,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk179",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -640.24169921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk180",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk181",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk182",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk183",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -503.57427978515625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk184",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -563.0692138671875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk185",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -606.196533203125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk186",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -460.44891357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk187",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk188",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk189",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -425.39111328125,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk190",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -310.82391357421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk191",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -370.31884765625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk192",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -413.4461669921875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk193",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2825012207031,
+            -267.70013427734375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk194",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -289.2829284667969,
+            -998.2199096679688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk195",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -1269.299072265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk196",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -1312.42626953125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk197",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -1269.299072265625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk198",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -1312.42626953125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk199",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -1209.803955078125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk200",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.33056640625,
+            -1166.6767578125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk201",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -911.31982421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk202",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -954.4474487304688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk203",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -851.8248291015625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk204",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -851.8248291015625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk205",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -911.31982421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk206",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -954.4474487304688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk207",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -808.6982421875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk208",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -731.5257568359375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk209",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -774.653076171875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk210",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -672.0308227539063,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk211",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -672.0308227539063,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk212",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -731.5257568359375,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk213",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -774.653076171875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk214",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -628.9054565429688,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk215",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -538.7755126953125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk216",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -581.9028930664063,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk217",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -729.3309326171875,
+            -479.280517578125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk218",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -479.280517578125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk219",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -538.7755126953125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk220",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -581.9028930664063,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk221",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2222900390625,
+            -436.15673828125,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk222",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -593.2183227539063,
+            -1166.676025390625,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk223",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -998.2184448242188,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.009999999776482582,
+            0.009999999776482582,
+            0.009999999776482582
+          ]
+        }
+      },
+      "Name": "Fox_Walk224",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

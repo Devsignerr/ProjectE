@@ -150,7 +150,7 @@ Build/            CMake 빌드 출력 (git 제외)
 
 1. **Visual Studio에서 폴더 열기 (권장)**: VS 2022 → `파일 → 열기 → 폴더`로 프로젝트 루트를 연다. `CMakePresets.json`의 `ninja-debug`가 자동 선택되고, 솔루션 탐색기의 "CMake 대상 보기"에서 모듈 트리가 보인다. 시작 항목을 `ProjectEEditor.exe`로 고르고 F5. 빌드는 Ctrl+Shift+B.
 2. **.sln으로 빌드**: `GenerateSolution.bat` 더블클릭 → `Build\vs2022\ProjectE.sln`이 생성되어 열린다. 시작 프로젝트는 `ProjectEEditor`로 설정되어 있고 F5로 빌드+실행. 파일/모듈을 추가한 뒤에는 이 배치를 다시 실행하거나 VS의 ZERO_CHECK 프로젝트가 자동 재생성한다. 산출물은 `Build\vs2022\Bin\<Debug|Release>\`.
-3. **더블클릭**: 루트의 `Build.bat`(빌드), `RunEditor.bat`(빌드 후 에디터 실행). 둘 다 `Scripts\Build.bat`(cmd, `Build.ps1`과 같은 절차 — 옵션 `-Config Release`, `-Run`, `-RunSandbox`, `-Test`, `-Clean`)을 부른다. PowerShell 서명 정책(AllSigned)으로 `.ps1`이 막힌 PC에서도 동작한다
+3. **더블클릭**: 루트의 `Build.bat`(빌드), `RunEditor.bat`(Release 빌드 후 에디터 실행 — `Build\ninja-release\Bin`). 둘 다 `Scripts\Build.bat`(cmd, `Build.ps1`과 같은 절차 — 옵션 `-Config Release`, `-Run`, `-RunSandbox`, `-Test`, `-Clean`)을 부른다. PowerShell 서명 정책(AllSigned)으로 `.ps1`이 막힌 PC에서도 동작한다
 4. **명령줄**:
 
 ```powershell

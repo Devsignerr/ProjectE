@@ -29,12 +29,14 @@ struct alignas(16) FPerFrameConstants
 };
 static_assert(sizeof(FPerFrameConstants) % 16 == 0);
 
-struct alignas(16) FPerObjectConstants
+// 정적 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
+// 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다
+struct FInstanceGpuData
 {
 	FMatrix4x4 World;
-	FMatrix4x4 WorldInverseTranspose; // 비균등 스케일에서도 올바른 법선 변환
+	FVector4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3의 행 (w 미사용) — 비균등 스케일에서도 올바른 법선 변환
 };
-static_assert(sizeof(FPerObjectConstants) % 16 == 0);
+static_assert(sizeof(FInstanceGpuData) == 112);
 
 // 금속/거칠기 PBR 머티리얼 (glTF 2.0 규약). 텍스처 값에 곱해지는 팩터들
 struct alignas(16) FMaterialConstants

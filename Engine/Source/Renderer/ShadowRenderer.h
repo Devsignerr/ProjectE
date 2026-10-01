@@ -4,14 +4,12 @@
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/MeshInstancing.h"
 #include "Renderer/ShadowMath.h"
 
 class FCamera;
 class FD3D12RHI;
-class FResourceManager;
-class FScene;
 class FShaderLibrary;
-class FSkinnedMeshPalette;
 
 // 방향광 섀도우 설정 (씬 렌더러가 소유, 에디터가 조정)
 struct FShadowSettings
@@ -53,9 +51,8 @@ public:
 	void Shutdown();
 
 	// 섀도우 패스 기록. 끝나면 섀도우 맵은 PIXEL_SHADER_RESOURCE 상태. 비활성이면 상수만 채운다.
-	// SkinPalettes가 있으면 스킨 메시는 GPU 스키닝으로 그린다 (없으면 바인드 포즈 그대로)
-	void Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FVector3& LightDirection,
-	            const FShadowSettings& Settings, const FSkinnedMeshPalette* SkinPalettes = nullptr);
+	// 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료). 정적 메시는 캐스케이드마다 메시·LOD별 인스턴싱, 스킨 메시는 GPU 스키닝
+	void Render(const FMeshInstanceList& Instances, const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings);
 
 	const FShadowConstants&        GetConstants() const { return Constants; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
@@ -85,6 +82,7 @@ private:
 	uint32                 MapCascades   = 0;
 
 	FShadowConstants Constants;
+	FMeshPassBatches Batches; // 캐스케이드마다 재사용
 	uint32           DrawCalls = 0;
 	uint64           Triangles = 0;
 	int32            BakedDepthBias = FShadowSettings{}.DepthBias; // PSO에 고정된 바이어스

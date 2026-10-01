@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/MeshInstancing.h"
 
 #include <memory>
 #include <vector>
@@ -59,4 +60,6 @@ private:
 
 	std::unique_ptr<FD3D12RenderTarget> Mask;
 	std::vector<FEntity>                Entities; // 프레임 간 재사용
+	FMeshInstanceList                   Instances; // 선택 메시 인스턴스 (정적 메시는 메시별 인스턴싱)
+	FMeshPassBatches                    Batches;
 };

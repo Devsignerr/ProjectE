@@ -22,7 +22,7 @@ namespace
 	// Mesh.hlsl 루트 시그니처 레이아웃
 	enum ERootParameter : uint32
 	{
-		RootParam_PerObject       = 0, // b0
+		RootParam_DrawConstants   = 0, // b0 (루트 상수 1개: 묶음의 인스턴스 번호 시작 위치)
 		RootParam_PerFrame        = 1, // b1
 		RootParam_Material        = 2, // b2
 		RootParam_MaterialTexture = 3, // t0~t4 (머티리얼 텍스처 테이블)
@@ -35,6 +35,8 @@ namespace
 		RootParam_ClusterData     = 10, // t10 (클러스터별 라이트 인덱스, 루트 SRV)
 		RootParam_LocalShadowMatrices = 11, // t11 (로컬 그림자 장별 뷰-투영, 루트 SRV)
 		RootParam_LocalShadowMap      = 12, // t12 (로컬 그림자 타일 배열)
+		RootParam_Instances           = 13, // t13 (인스턴스 목록, 정점 셰이더)
+		RootParam_InstanceIndices     = 14, // t14 (패스의 인스턴스 번호 목록, 정점 셰이더)
 	};
 } // namespace
 
@@ -51,12 +53,12 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
-	const uint32 PerObjectIndex = RootSignature.AddConstantBufferView(0);
+	const uint32 DrawConstantsIndex = RootSignature.AddConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	const uint32 PerFrameIndex  = RootSignature.AddConstantBufferView(1);
 	const uint32 MaterialIndex  = RootSignature.AddConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 TextureIndex   = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, MaterialSlot_Count, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
-	E_CHECK(PerObjectIndex == RootParam_PerObject && PerFrameIndex == RootParam_PerFrame &&
+	E_CHECK(DrawConstantsIndex == RootParam_DrawConstants && PerFrameIndex == RootParam_PerFrame &&
 	        MaterialIndex == RootParam_Material && TextureIndex == RootParam_MaterialTexture);
 	const uint32 ShadowIndex    = RootSignature.AddConstantBufferView(3, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 ShadowMapIndex = RootSignature.AddDescriptorTable(
@@ -75,6 +77,9 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 LocalShadowMapIndex      = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 12) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(LocalShadowMatricesIndex == RootParam_LocalShadowMatrices && LocalShadowMapIndex == RootParam_LocalShadowMap);
+	const uint32 InstancesIndex       = RootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 InstanceIndicesIndex = RootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	E_CHECK(InstancesIndex == RootParam_Instances && InstanceIndicesIndex == RootParam_InstanceIndices);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -127,6 +132,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	switch (Timer)
 	{
 	case ERenderTimer::Total:       return "전체";
+	case ERenderTimer::Gather:      return "수집";
 	case ERenderTimer::LocalLights: return "로컬 라이트";
 	case ERenderTimer::Shadow:      return "방향광 그림자";
 	case ERenderTimer::MainCull:    return "메인 컬링";
@@ -371,7 +377,7 @@ void FSceneRenderer::Shutdown()
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
-	DrawCommands.clear();
+	MainBatches.Reset();
 	Rhi       = nullptr;
 	Resources = nullptr;
 }
@@ -539,22 +545,27 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 
 	const FPerFrameConstants PerFrame = BuildPerFrameConstants(Scene, Camera);
 
-	// 스킨 메시 본 팔레트 (섀도우/메인 패스 공유)
+	// 스킨 메시 본 팔레트 + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
+	BeginTimer(ERenderTimer::Gather);
 	SkinPalettes.Build(Scene, *Resources, Rhi->GetDynamicBuffer());
+	MeshInstances.Gather(Scene, *Resources, &SkinPalettes);
+	MeshInstances.Upload(Rhi->GetDynamicBuffer());
+	Stats.TotalMeshes = MeshInstances.GetComponentCount();
+	EndTimer(ERenderTimer::Gather);
 
 	// GPU 파티클 계산 (그리기 전에)
 	ParticleRenderer.Simulate(Scene);
 
 	// 점광원/스포트라이트 목록 + 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
 	BeginTimer(ERenderTimer::LocalLights);
-	LocalLightRenderer.Prepare(Scene, *Resources, Camera, Width, Height, LocalShadowSettings, &SkinPalettes);
+	LocalLightRenderer.Prepare(Scene, MeshInstances, Camera, Width, Height, LocalShadowSettings);
 	EndTimer(ERenderTimer::LocalLights);
 	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
 	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
 
 	// 0) 방향광 섀도우 패스
 	BeginTimer(ERenderTimer::Shadow);
-	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
+	ShadowRenderer.Render(MeshInstances, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
 	EndTimer(ERenderTimer::Shadow);
 	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls();
 	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles();
@@ -562,14 +573,14 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Width, Height);
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
-	DrawMeshes(Scene, Camera, PerFrame);
+	DrawMeshes(Camera, PerFrame);
 	BeginTimer(ERenderTimer::Particles);
 	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
 	EndTimer(ERenderTimer::Particles);
 	SceneColor->End(CommandList);
 }
 
-void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPerFrameConstants& PerFrame)
+void FSceneRenderer::DrawMeshes(const FCamera& Camera, const FPerFrameConstants& PerFrame)
 {
 	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
 	if (!bCullingFrozen)
@@ -577,18 +588,31 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 		FrozenFrustum = FFrustum::FromViewProjection(ViewProjection);
 	}
 
+	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
+	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
+
+	// 컬링 + 묶음 키: (정적/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
 	BeginTimer(ERenderTimer::MainCull);
-	CollectDrawCommands(Scene, FrozenFrustum, Camera.GetPosition());
+	const FVector3 CameraPosition = Camera.GetPosition();
+	MainBatches.Reset();
+	Stats.VisibleMeshes = 0;
+	const std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
+	for (uint32 Index = 0; Index < static_cast<uint32>(Instances.size()); ++Index)
+	{
+		const FMeshInstance& Instance = Instances[Index];
+		if (!FrozenFrustum.Intersects(Instance.WorldBounds))
+		{
+			continue;
+		}
+		++Stats.VisibleMeshes;
+		const uint64 Key = Instance.IsSkinned() ? InstanceBatching::MakeUniqueKey(Index)
+		                                        : InstanceBatching::MakeKey(0, Instance.MaterialHandle.Index, Instance.MeshHandle.Index, Instance.Lod);
+		MainBatches.Add(Key, FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition), Index);
+	}
 	EndTimer(ERenderTimer::MainCull);
 
-	// 정렬: (정적/스킨 PSO) → 머티리얼 → 메시 → 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
 	BeginTimer(ERenderTimer::MainSort);
-	std::sort(DrawCommands.begin(), DrawCommands.end(), [](const FMeshDrawCommand& A, const FMeshDrawCommand& B) {
-		const bool bSkinnedA = A.SkinPalette != 0;
-		const bool bSkinnedB = B.SkinPalette != 0;
-		return std::tie(bSkinnedA, A.MaterialHandle.Index, A.MeshHandle.Index, A.DistanceSquared) <
-		       std::tie(bSkinnedB, B.MaterialHandle.Index, B.MeshHandle.Index, B.DistanceSquared);
-	});
+	MainBatches.Finalize(DynamicBuffer);
 	EndTimer(ERenderTimer::MainSort);
 
 	BeginTimer(ERenderTimer::MainDraw);
@@ -596,9 +620,6 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	{
 		IblRenderer.RenderSkybox(Camera, PerFrame.AmbientIntensity);
 	}
-
-	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 
 	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
 	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
@@ -617,6 +638,8 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_ClusterData, LocalLightRenderer.GetClusterData());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
 
 	// 머티리얼 상수는 프레임 내에서 한 번만 업로드
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
@@ -626,85 +649,42 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	Stats.DrawCalls                = 0;
 	Stats.Triangles                = 0;
 
-	for (const FMeshDrawCommand& Command : DrawCommands)
+	for (const FInstanceBatch& Batch : MainBatches.GetBatches())
 	{
-		const bool bSkinned = Command.SkinPalette != 0;
+		const FMeshInstance& Instance = Instances[Batch.Instance];
+		const bool           bSkinned = Instance.IsSkinned();
 		if (bSkinned != bSkinnedBound)
 		{
 			CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
 			bSkinnedBound = bSkinned;
 		}
-		if (Command.Material != BoundMaterial)
+		if (Instance.Material != BoundMaterial)
 		{
-			const uint64 Key   = Command.MaterialHandle.ToId();
+			const uint64 Key   = Instance.MaterialHandle.ToId();
 			auto         Found = MaterialConstantCache.find(Key);
 			if (Found == MaterialConstantCache.end())
 			{
-				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Command.Material->Constants).GpuAddress).first;
+				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
 			}
 			CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
-			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Command.Material->TextureTable.Gpu);
-			BoundMaterial = Command.Material;
+			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
+			BoundMaterial = Instance.Material;
 		}
-
-		FPerObjectConstants PerObject;
-		PerObject.World                 = Command.World;
-		PerObject.WorldInverseTranspose = Command.World.GetInverse().GetTransposed();
-		CommandList->SetGraphicsRootConstantBufferView(RootParam_PerObject, DynamicBuffer.AllocateConstants(PerObject).GpuAddress);
 
 		if (bSkinned)
 		{
-			CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Command.SkinPalette);
-			Command.Mesh->DrawSkinned(CommandList);
+			CommandList->SetGraphicsRootConstantBufferView(RootParam_SkinPalette, Instance.SkinPalette);
+			Instance.Mesh->DrawSkinned(CommandList);
 		}
 		else
 		{
-			Command.Mesh->Draw(CommandList);
+			CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count);
 		}
 		++Stats.DrawCalls;
-		Stats.Triangles += Command.Mesh->GetIndexCount() / 3;
+		Stats.Triangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
 	}
 	EndTimer(ERenderTimer::MainDraw);
-}
-
-void FSceneRenderer::CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition)
-{
-	DrawCommands.clear();
-	Stats.TotalMeshes   = 0;
-	Stats.VisibleMeshes = 0;
-
-	Scene.GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
-		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
-			++Stats.TotalMeshes;
-			if (!MeshComponent.bVisible)
-			{
-				return;
-			}
-
-			const FStaticMesh* Mesh = Resources->GetMesh(MeshComponent.Mesh);
-			if (Mesh == nullptr)
-			{
-				return;
-			}
-
-			// 월드 AABB로 프러스텀 컬링 (스킨 메시는 팔레트 기준 경계)
-			const FSkinnedDrawInfo* Skinned     = SkinPalettes.Find(Entity);
-			const FBox              WorldBounds = Skinned ? Skinned->WorldBounds : Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix);
-			if (!Frustum.Intersects(WorldBounds))
-			{
-				return;
-			}
-			++Stats.VisibleMeshes;
-
-			FMeshDrawCommand& Command = DrawCommands.emplace_back();
-			Command.Mesh              = Mesh;
-			Command.MeshHandle        = MeshComponent.Mesh;
-			Command.Material          = &Resources->ResolveMaterial(MeshComponent.Material);
-			Command.MaterialHandle    = MeshComponent.Material.IsValid() ? MeshComponent.Material : Resources->GetDefaultMaterial();
-			Command.World             = Skinned ? FMatrix4x4::Identity : Transform.WorldMatrix;
-			Command.DistanceSquared   = FVector3::DistanceSquared(WorldBounds.GetCenter(), CameraPosition);
-			Command.SkinPalette       = Skinned ? Skinned->Palette : 0;
-		});
 }
 
 FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const

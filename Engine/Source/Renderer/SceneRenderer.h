@@ -13,6 +13,7 @@
 #include "Renderer/ShadowRenderer.h"
 #include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/IblRenderer.h"
+#include "Renderer/MeshInstancing.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
 #include "Scene/ResourceHandles.h"
@@ -28,10 +29,11 @@ class FScene;
 class FStaticMesh;
 struct FPixelArtComponent;
 
-// 렌더 구간 (CPU/GPU 시간 측정 칸). GPU는 Total/Shadow/LocalLights/Main/Particles/PostProcess만 잰다
+// 렌더 구간 (CPU/GPU 시간 측정 칸). GPU는 기록 구간이 GPU 작업을 담는 칸(Total/LocalLights/Shadow/MainDraw/Particles/PostProcess)만 의미가 있다
 enum class ERenderTimer : uint32
 {
 	Total,       // Render 전체
+	Gather,      // 스킨 팔레트 + 메시 인스턴스 수집/업로드
 	LocalLights, // 점광원/스포트 수집 + 로컬 그림자 + 클러스터 컬링
 	Shadow,      // 방향광 캐스케이드 그림자
 	MainCull,    // 메인 패스 수집/컬링
@@ -106,23 +108,11 @@ public:
 	float    AmbientIntensity = 1.0f;
 
 private:
-	struct FMeshDrawCommand
-	{
-		const FStaticMesh* Mesh     = nullptr;
-		const FMaterial*   Material = nullptr;
-		FMeshHandle        MeshHandle;
-		FMaterialHandle    MaterialHandle;
-		FMatrix4x4         World;
-		float              DistanceSquared = 0.0f;
-		D3D12_GPU_VIRTUAL_ADDRESS SkinPalette = 0; // 0이 아니면 스킨 메시 (World = 항등)
-	};
-
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용). bWireframeFill이면 선 채우기 + 컬링 없음
 	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
 	// 스킨 메시 PSO (Mesh.hlsl VSSkinned + 스킨 입력 레이아웃)
 	bool CreateSkinnedMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill);
 
-	void               CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition);
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
 
 	FD3D12RHI*        Rhi       = nullptr;
@@ -152,7 +142,8 @@ private:
 	void RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
 	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height);
-	void DrawMeshes(FScene& Scene, const FCamera& Camera, const FPerFrameConstants& PerFrame);
+	// 메인 패스: 인스턴스 목록 프러스텀 컬링 → 묶음 → 인스턴싱 드로우
+	void DrawMeshes(const FCamera& Camera, const FPerFrameConstants& PerFrame);
 
 	// 픽셀 아트: 저해상도 렌더용 카메라(여백만큼 넓힌 투영 + 도트 격자 스냅)와 합성 인자
 	FCamera BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
@@ -160,8 +151,9 @@ private:
 
 	std::unique_ptr<FD3D12RenderTarget> PixelArtColor; // 픽셀 아트: 저해상도 톤매핑 결과 (선형, 부동소수점)
 
-	std::vector<FMeshDrawCommand> DrawCommands;
-	FSceneRenderStats             Stats;
+	FMeshInstanceList MeshInstances; // 프레임 메시 인스턴스 (모든 패스 공유)
+	FMeshPassBatches  MainBatches;
+	FSceneRenderStats Stats;
 
 	FFrustum FrozenFrustum;
 	bool     bCullingFrozen = false;

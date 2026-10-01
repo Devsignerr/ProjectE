@@ -21,8 +21,10 @@ namespace
 	};
 	static_assert(sizeof(FCompositeConstants) == 48);
 
-	constexpr uint32 MaskRoot_Matrix       = 0; // b0 (루트 상수 16개)
-	constexpr uint32 MaskRoot_SkinPalette  = 1; // b4 (스킨 팔레트)
+	constexpr uint32 MaskRoot_Constants       = 0; // b0 (루트 상수 17개: 뷰-투영 + 인스턴스 시작 위치)
+	constexpr uint32 MaskRoot_SkinPalette     = 1; // b4 (스킨 팔레트)
+	constexpr uint32 MaskRoot_Instances       = 2; // t13
+	constexpr uint32 MaskRoot_InstanceIndices = 3; // t14
 	constexpr uint32 CompositeRoot_Consts  = 0; // b0 (루트 상수 12개)
 	constexpr uint32 CompositeRoot_Mask    = 1; // t0
 
@@ -48,8 +50,10 @@ bool FSelectionOutline::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	ShaderLibrary = &InShaderLibrary;
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
-	MaskRootSignature.AddConstants(16, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	MaskRootSignature.AddConstants(17, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	MaskRootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	MaskRootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	MaskRootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	if (!MaskRootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"OutlineMaskRootSignature"))
 	{
 		return false;
@@ -257,28 +261,36 @@ void FSelectionOutline::Render(FScene& Scene, FResourceManager& Resources, const
 	CommandList->SetGraphicsRootSignature(MaskRootSignature.Get());
 	CommandList->SetPipelineState(MaskPipeline.Get());
 
-	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
-	FRegistry&       Registry       = Scene.GetRegistry();
-	for (FEntity Entity : Entities)
+	// 선택 메시 인스턴스: 정적 메시는 메시별 인스턴싱, 스킨 메시는 현재 포즈 (팔레트가 월드까지 변환)
+	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
+	Instances.GatherEntities(Scene, Resources, Entities, SkinPalettes);
+	Instances.Upload(DynamicBuffer);
+	Batches.Reset();
+	for (uint32 Index = 0; Index < Instances.GetCount(); ++Index)
 	{
-		const FStaticMesh* Mesh = Resources.GetMesh(Registry.Get<FStaticMeshComponent>(Entity).Mesh);
-		if (Mesh == nullptr)
-		{
-			continue;
-		}
-		// 스킨 메시: 현재 포즈 (팔레트가 월드까지 변환)
-		if (const FSkinnedDrawInfo* Skinned = SkinPalettes ? SkinPalettes->Find(Entity) : nullptr)
+		const FMeshInstance& Instance = Instances[Index];
+		Batches.Add(Instance.IsSkinned() ? InstanceBatching::MakeUniqueKey(Index) : InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, 0), 0.0f,
+		            Index);
+	}
+	Batches.Finalize(DynamicBuffer);
+
+	const FMatrix4x4 ViewProjection = Camera.GetViewProjectionMatrix();
+	CommandList->SetGraphicsRoot32BitConstants(MaskRoot_Constants, 16, &ViewProjection.M[0][0], 0);
+	CommandList->SetGraphicsRootShaderResourceView(MaskRoot_Instances, Instances.GetGpuData());
+	CommandList->SetGraphicsRootShaderResourceView(MaskRoot_InstanceIndices, Batches.GetIndexBuffer());
+	for (const FInstanceBatch& Batch : Batches.GetBatches())
+	{
+		const FMeshInstance& Instance = Instances[Batch.Instance];
+		if (Instance.IsSkinned())
 		{
 			CommandList->SetPipelineState(SkinnedMaskPipeline.Get());
-			CommandList->SetGraphicsRoot32BitConstants(MaskRoot_Matrix, 16, &ViewProjection.M[0][0], 0);
-			CommandList->SetGraphicsRootConstantBufferView(MaskRoot_SkinPalette, Skinned->Palette);
-			Mesh->DrawSkinned(CommandList);
+			CommandList->SetGraphicsRootConstantBufferView(MaskRoot_SkinPalette, Instance.SkinPalette);
+			Instance.Mesh->DrawSkinned(CommandList);
 			CommandList->SetPipelineState(MaskPipeline.Get());
 			continue;
 		}
-		const FMatrix4x4 WorldViewProjection = Registry.Get<FTransformComponent>(Entity).WorldMatrix * ViewProjection;
-		CommandList->SetGraphicsRoot32BitConstants(MaskRoot_Matrix, 16, &WorldViewProjection.M[0][0], 0);
-		Mesh->Draw(CommandList);
+		CommandList->SetGraphicsRoot32BitConstant(MaskRoot_Constants, Batch.First, 16);
+		Instance.Mesh->DrawInstanced(CommandList, Batch.Count);
 	}
 	Mask->End(CommandList);
 

@@ -19,6 +19,7 @@
 #include "Renderer/ParticleRenderer.h"
 #include "Renderer/ScreenPass.h"
 #include "Renderer/TemporalAA.h"
+#include "Renderer/AmbientOcclusion.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -48,6 +49,7 @@ enum class ERenderTimer : uint32
 	PostProcess,
 	DepthPrepass, // 깊이 + 화면 공간 법선 + 움직임 벡터 (GPU: 오클루전이면 HZB·2단계 포함)
 	TemporalAA,
+	AmbientOcclusion, // SSAO 계산 + 블러 (반해상도)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -129,7 +131,7 @@ public:
 	bool                 bSkinVisibilityCulling = true;
 	// 깊이 사전 패스 (깊이 + 화면 공간 법선 + 움직임 벡터, 메인 패스는 깊이 같음 테스트). 끄면 법선/움직임 버퍼가 비어 있다 (--no-depth-prepass)
 	bool                 bDepthPrepass = true;
-	// 화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림): 0 없음, 1 법선, 2 움직임 벡터, 3 깊이 (--debug-view normal|velocity|depth)
+	// 화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림): 0 없음, 1 법선, 2 움직임 벡터, 3 깊이, 4 SSAO (--debug-view normal|velocity|depth|ao)
 	uint32               DebugView = 0;
 	// 서브픽셀 투영 지터 (Halton 2,3 8개). TAA가 켜질 때만 켠다 — 혼자 켜면 화면이 떨린다 (--jitter: 확인용 강제)
 	bool                 bTemporalJitter = false;
@@ -186,6 +188,7 @@ private:
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
 	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)
 	FTemporalAA          TemporalAA;
+	FAmbientOcclusion    AmbientOcclusion;
 	bool                 bTaaRanLastFrame = false;
 	FMatrix4x4           CurrentReprojection; // 이번 프레임 카메라 재투영 (현재 클립 → 이전 클립, 지터 없음)
 	const FScene*        PrevScene = nullptr;  // 이전 프레임에 그린 씬 (바뀌면 이력 무효)

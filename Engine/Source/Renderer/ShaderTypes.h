@@ -25,7 +25,7 @@ struct alignas(16) FPerFrameConstants
 	FVector3                   SkyColor         = FVector3(0.35f, 0.45f, 0.6f);
 	float                      AmbientIntensity = 1.0f;
 	FVector3                   GroundColor      = FVector3(0.15f, 0.13f, 0.1f);
-	float                      Padding1         = 0.0f;
+	float                      AmbientOcclusionEnabled = 0.0f; // 1이면 메인 패스가 SSAO(t16)를 간접광에 곱한다
 	// 움직임 벡터 (지터 없음): 현재/이전 프레임 뷰-투영. 이력이 없으면 Prev = 현재
 	FMatrix4x4                 UnjitteredViewProjection;
 	FMatrix4x4                 PrevViewProjection;

@@ -50,6 +50,14 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		ImGui::SliderFloat("샤프닝", &Settings.TemporalAASharpness, 0.0f, 1.0f, "%.2f");
 		ImGui::EndDisabled();
 
+		ImGui::SeparatorText("주변광 차폐 (SSAO)");
+		ImGui::Checkbox("SSAO", &Settings.bAmbientOcclusion);
+		ImGui::SetItemTooltip("구석과 틈에 드는 하늘빛·환경광을 줄여 입체감을 살립니다 (직접광에는 영향 없음)");
+		ImGui::BeginDisabled(!Settings.bAmbientOcclusion);
+		ImGui::DragFloat("AO 세기", &Settings.AmbientOcclusionIntensity, 0.02f, 0.0f, 4.0f, "%.2f");
+		ImGui::DragFloat("AO 반경", &Settings.AmbientOcclusionRadius, 1.0f, 5.0f, 500.0f, "%.0f cm");
+		ImGui::EndDisabled();
+
 		ImGui::Separator();
 		if (ImGui::Button("기본값으로"))
 		{

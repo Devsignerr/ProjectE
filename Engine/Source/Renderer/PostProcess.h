@@ -45,6 +45,11 @@ struct FPostProcessSettings
 	bool  bTemporalAA             = true;
 	float TemporalAACurrentWeight = 0.1f;  // 현재 프레임 비중 (작을수록 부드럽지만 고스팅 위험)
 	float TemporalAASharpness     = 0.25f; // TAA 흐림 보정 샤프닝 (톤매핑 패스, 0 = 끔, TAA일 때만)
+
+	// SSAO (GTAO, 반해상도 + 양방향 블러): 간접광(IBL/하늘광)에만 적용. 깊이 사전 패스가 있어야 한다 (와이어프레임에서는 꺼짐)
+	bool  bAmbientOcclusion         = true;
+	float AmbientOcclusionIntensity = 1.0f;  // 가시도^세기
+	float AmbientOcclusionRadius    = 80.0f; // cm
 };
 
 // 픽셀 아트 합성 입력 (FSceneRenderer가 FPixelArtComponent + 카메라로 채운다). 식은 PixelArtMath.h / PixelArt.hlsl

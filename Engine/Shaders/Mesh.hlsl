@@ -31,7 +31,7 @@ cbuffer PerFrame : register(b1)
 	float3            SkyColor;
 	float             AmbientIntensity;
 	float3            GroundColor;
-	float             Padding1;
+	float             AmbientOcclusionEnabled; // 1 = SSAO(t16) 사용
 	float4x4          UnjitteredViewProjection; // 움직임 벡터용 (지터 없음)
 	float4x4          PrevViewProjection;       // 이전 프레임 (지터 없음)
 	float2            JitterNdc;
@@ -337,6 +337,47 @@ FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID
 	return Output;
 }
 
+// SSAO (반해상도 R = 가시도, G = 뷰 깊이, AmbientOcclusion.hlsl): 4탭 깊이 가중 업샘플. 간접광에만 곱한다
+Texture2D<float2> ScreenAmbientOcclusion : register(t16);
+
+float SampleScreenAmbientOcclusion(float2 PixelPosition, float3 WorldPosition)
+{
+	if (AmbientOcclusionEnabled < 0.5f)
+	{
+		return 1.0f;
+	}
+	uint Width, Height;
+	ScreenAmbientOcclusion.GetDimensions(Width, Height);
+	const float  ViewDepth = mul(float4(WorldPosition, 1.0f), ClusterView).z;
+	// 반해상도 픽셀 i는 전체 해상도 픽셀 2i에서 계산됐다 → 전체 위치 x의 반해상도 좌표 = (x - 0.5) / 2
+	const float2 HalfPos = (PixelPosition - 0.5f) * 0.5f;
+	const int2   Base    = int2(floor(HalfPos));
+	const float2 F       = HalfPos - float2(Base);
+	const int2   MaxPixel = int2(Width, Height) - 1;
+
+	float Sum    = 0.0f;
+	float Weight = 0.0f;
+	float Nearest = 1.0f;
+	float NearestDelta = 1.0e30f;
+	[unroll]
+	for (int Tap = 0; Tap < 4; ++Tap)
+	{
+		const int2   Offset = int2(Tap & 1, Tap >> 1);
+		const float2 Sample = ScreenAmbientOcclusion.Load(int3(clamp(Base + Offset, int2(0, 0), MaxPixel), 0));
+		const float  Bilinear = (Offset.x == 1 ? F.x : 1.0f - F.x) * (Offset.y == 1 ? F.y : 1.0f - F.y);
+		const float  Delta    = abs(Sample.y - ViewDepth) / max(ViewDepth, 1.0e-3f);
+		const float  W        = Bilinear * exp(-Delta * 40.0f) + 1.0e-5f;
+		Sum += Sample.x * W;
+		Weight += W;
+		if (Delta < NearestDelta)
+		{
+			NearestDelta = Delta;
+			Nearest      = Sample.x;
+		}
+	}
+	return Weight > 1.0e-3f ? Sum / Weight : Nearest;
+}
+
 float3 GetShadingNormal(FPixelInput Input)
 {
 	const float3 N = normalize(Input.WorldNormal);
@@ -365,7 +406,7 @@ float4 PSMain(FPixelInput Input) : SV_Target
 	Surface.Roughness = clamp(MR.g * RoughnessFactor, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
 	Surface.N         = GetShadingNormal(Input);
 	Surface.V         = normalize(CameraPosition - Input.WorldPosition);
-	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength);
+	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength) * SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition); // IBL만 사용
 
 	const float3 L        = -DirectionalLight.Direction; // 표면 → 광원
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;

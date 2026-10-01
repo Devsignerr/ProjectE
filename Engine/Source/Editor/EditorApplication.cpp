@@ -24,6 +24,7 @@
 #include "Renderer/ModelLoader.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/Prefab.h"
 #include "Scene/SceneSerializer.h"
 #include "UI/UIReflection.h"
@@ -1561,6 +1562,12 @@ void FEditorApplication::PollScriptChanges()
 		if (Extension == L".ebt")
 		{
 			World.GetAI().ReloadBehaviorTree(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
+		// 애니메이션 그래프: 이 파일을 쓰는 컴포넌트가 다음 갱신에서 새 그래프로 다시 묶인다 (파라미터 유지, 편집 중·플레이 중 모두)
+		if (Extension == FAnimGraphAsset::Extension)
+		{
+			FAnimGraphLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
 		if (Extension != L".lua")

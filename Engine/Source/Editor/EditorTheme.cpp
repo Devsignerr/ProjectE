@@ -197,6 +197,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_DIAGRAM_PROJECT, IM_COL32(120, 150, 255, 255), "비헤이비어 트리" };
 	}
+	if (Extension == ".eanimgraph")
+	{
+		return { ICON_FA_PERSON_RUNNING, IM_COL32(240, 150, 90, 255), "애니메이션 그래프" };
+	}
 	if (Extension == ".escene")
 	{
 		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(230, 110, 90, 255), "씬" };

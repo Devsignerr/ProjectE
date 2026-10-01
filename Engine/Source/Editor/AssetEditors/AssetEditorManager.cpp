@@ -9,6 +9,8 @@
 #include "Editor/AssetEditors/PrefabEditor.h"
 #include "Editor/AssetEditors/WidgetEditor.h"
 #include "Editor/AssetEditors/StringTableEditor.h"
+#include "Editor/AssetEditors/AnimGraphEditor.h"
+#include "Scene/AnimGraph.h"
 #include "Scene/Prefab.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Scene/Particles.h"
@@ -74,6 +76,10 @@ namespace
 		{
 			return std::make_unique<FStringTableEditor>(Path);
 		}
+		if (Extension == FAnimGraphAsset::Extension)
+		{
+			return std::make_unique<FAnimGraphEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -116,7 +122,7 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 	const std::wstring Extension = ToLowerExtension(Path);
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
 	       Extension == BehaviorTreeExtension || Extension == FUIAsset::Extension || IsModelExtension(Extension) ||
-	       Extension == FStringTable::Extension;
+	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension;
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)

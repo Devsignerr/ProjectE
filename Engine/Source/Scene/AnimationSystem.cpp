@@ -134,13 +134,16 @@ namespace
 	// 그래프 에셋 해석 + 모델 클립에 묶기. 그래프로 재생할 수 있으면 true
 	bool ResolveGraph(FAnimGraphComponent& Graph, const FAnimationSet& Set)
 	{
-		FAnimGraphRuntime& Runtime = Graph.Runtime;
-		if (!Runtime.bResolved || Runtime.ResolvedGraph != Graph.Graph)
+		FAnimGraphRuntime& Runtime    = Graph.Runtime;
+		const uint32       Generation = FAnimGraphLibrary::Get().GetGeneration();
+		if (!Runtime.bResolved || Runtime.ResolvedGraph != Graph.Graph || Runtime.ResolvedGeneration != Generation)
 		{
-			Runtime.bResolved     = true;
-			Runtime.ResolvedGraph = Graph.Graph;
-			Runtime.Asset         = Graph.Graph.empty() ? nullptr : FAnimGraphLibrary::Get().Load(Graph.Graph);
-			Runtime.BoundSet      = nullptr;
+			// 같은 경로를 다시 읽는 것(핫 리로드)이면 파일이 바뀌었을 때만 새 에셋 — 파라미터 유지, 같은 이름 상태에서 이어 간다
+			const bool bReload         = Runtime.bResolved && Runtime.ResolvedGraph == Graph.Graph;
+			Runtime.bResolved          = true;
+			Runtime.ResolvedGraph      = Graph.Graph;
+			Runtime.ResolvedGeneration = Generation;
+			Runtime.SetAsset(Graph.Graph.empty() ? nullptr : FAnimGraphLibrary::Get().Load(Graph.Graph), bReload);
 		}
 		if (!Runtime.Asset)
 		{
@@ -149,10 +152,7 @@ namespace
 		if (Runtime.BoundSet != &Set)
 		{
 			std::vector<std::string> Missing;
-			Runtime.Binding  = FAnimGraphBinding::Bind(*Runtime.Asset, Set, &Missing);
-			Runtime.BoundSet = &Set;
-			Runtime.Instance.Reset();
-			Runtime.NotifyKey = 0;
+			Runtime.Rebind(Set, &Missing);
 			for (const std::string& Clip : Missing)
 			{
 				E_LOG(LogAnimation, Warning, "애니메이션 그래프 {}: 모델에 클립 '{}'이 없습니다 (그 샘플은 빼고 섞습니다)", Graph.Graph, Clip);

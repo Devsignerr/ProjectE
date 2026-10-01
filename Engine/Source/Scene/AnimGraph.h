@@ -4,7 +4,9 @@
 #include "Core/Math/Math.h"
 #include "Scene/Animation.h"
 
+#include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -29,6 +31,10 @@
 //   방금 들어간 상태는 그 프레임에 진행하지 않으므로 노티파이가 없다.
 // 파라미터: float/bool(0/1로 저장). Lua entity:SetAnimParam/GetAnimParam/GetAnimState, C++ FAnimationSystem::SetAnimParam 등.
 //   파라미터는 복제되지 않는다 — 각 프로세스가 자기 값으로 계산한다 (캐릭터 이동 자동 공급은 FAnimGraphComponent::bUseCharacterMovement).
+// 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}).
+//   읽기는 1/2 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 2. 전이 우선순위 = Transitions 목록 순서.
+// 핫 리로드: FAnimGraphLibrary::Invalidate가 세대 번호를 올리면 그 그래프를 쓰는 컴포넌트가 다음 갱신에서 다시 읽고, 파일이 바뀌었으면
+//   새 에셋으로 다시 묶는다. 파라미터 값은 유지되고, 같은 이름의 상태가 새 그래프에 있으면 그 상태에서 다시 시작한다 (없으면 시작 상태).
 
 enum class EAnimParamType : uint8
 {
@@ -57,6 +63,8 @@ struct FAnimGraphState
 	std::vector<FAnimBlendSample> Samples;        // Position 오름차순
 	float                         Speed = 1.0f;
 	bool                          bLoop = true;
+
+	std::optional<FVector2> EditorPosition; // 편집기 노드 위치 (실행에 쓰지 않음)
 };
 
 enum class EAnimConditionOp : uint8
@@ -87,12 +95,17 @@ struct FAnimGraphTransition
 
 struct FAnimGraphAsset
 {
-	static constexpr int32 Version = 1;
+	static constexpr int32          Version   = 2;
+	static constexpr const wchar_t* Extension = L".eanimgraph";
 
 	std::vector<FAnimGraphParameter>  Parameters;
 	std::vector<FAnimGraphState>      States;
 	std::vector<FAnimGraphTransition> Transitions;
 	int32                             EntryState = 0;
+
+	// 편집기 정보 (버전 2, 실행에 쓰지 않음)
+	std::string             PreviewModel;           // 미리보기 모델 (Content 기준)
+	std::optional<FVector2> AnyStateEditorPosition; // "어느 상태든" 노드 위치
 
 	int32                      FindState(std::string_view Name) const;
 	const FAnimGraphParameter* FindParameter(std::string_view Name) const;
@@ -100,6 +113,14 @@ struct FAnimGraphAsset
 	// 형식이 틀리면 false + 이유. 이름을 못 찾는 전이/조건은 건너뛰고 경고 목록(OutWarnings)에 남긴다
 	static bool FromJsonString(const std::string& Text, FAnimGraphAsset& Out, std::string* OutError = nullptr,
 	                           std::vector<std::string>* OutWarnings = nullptr);
+	// 버전 2 JSON (들여쓰기 2). bool 파라미터 조건/기본값은 true/false로 쓴다
+	std::string ToJsonString() const;
+	bool        SaveToFile(const std::filesystem::path& Path) const;
+
+	// 상태 Index 삭제: 그 상태가 From/To인 전이를 지우고 나머지 전이·시작 상태 번호를 당긴다
+	void RemoveState(int32 Index);
+	// 편집기 "새 애니메이션 그래프" 기본값 (파라미터 Speed + 빈 클립 상태 하나)
+	static FAnimGraphAsset MakeDefault();
 };
 
 // 파라미터 값 (이름 → 값). 그래프에 선언되지 않은 이름도 저장한다 (그래프가 나중에 로드돼도 유지)
@@ -166,6 +187,8 @@ class FAnimGraphInstance
 {
 public:
 	void Reset();
+	// Reset + 첫 Update는 EntryState 대신 State에서 시작 (핫 리로드로 상태 이어 가기). State < 0이면 Reset과 같다
+	void ResetToState(int32 State);
 
 	// DeltaSeconds만큼 진행 → 전이 판정 → 기여 계산. 처음 호출이면 EntryState로 시작
 	void Update(const FAnimGraphAsset& Asset, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters, float DeltaSeconds);
@@ -178,6 +201,12 @@ public:
 	float  GetStateElapsed() const { return Layers.empty() ? 0.0f : Layers.back().Elapsed; } // 현재 상태에 들어온 뒤 (초)
 	size_t GetLayerCount() const { return Layers.size(); }
 	bool   IsBlending() const { return Layers.size() > 1; }
+	// 레이어 Index의 상태/가중치 (0 = 가장 오래된 것, 마지막 = 현재). 편집기 디버그 표시용
+	int32 GetLayerState(size_t Index) const { return Layers[Index].State; }
+	float GetLayerWeight(size_t Index) const { return Layers[Index].Weight; }
+	// 마지막 전이 번호 (-1 = 없음)와 지금까지 전이 횟수 (새 전이 감지용)
+	int32  GetLastTransition() const { return LastTransition; }
+	uint32 GetTransitionCount() const { return TransitionCount; }
 
 private:
 	struct FLayer
@@ -202,6 +231,9 @@ private:
 	float                              BlendElapsed  = 0.0f;
 	float                              BlendDuration = 0.0f;
 	uint32                             NextSerial    = 1;
+	int32                              StartState      = -1; // ResetToState
+	int32                              LastTransition  = -1;
+	uint32                             TransitionCount = 0;
 	std::vector<FAnimClipContribution> Contributions;
 	FAnimNotifySource                  NotifySource;
 	std::vector<float>                 PositionScratch;
@@ -227,6 +259,14 @@ struct FAnimGraphRuntime
 
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> SampleScratch;
+
+	uint32      ResolvedGeneration = 0; // 읽을 때의 FAnimGraphLibrary 세대 (바뀌면 다시 읽는다 — 핫 리로드)
+	std::string ResumeState;            // 다시 묶을 때 이어 갈 상태 이름 (SetAsset)
+
+	// 에셋 교체 (같은 포인터면 무시) → 다음 Rebind. bKeepState면 현재 상태 이름을 기억해 그 상태에서 다시 시작한다
+	void SetAsset(std::shared_ptr<const FAnimGraphAsset> NewAsset, bool bKeepState);
+	// Set 클립에 다시 묶고 인스턴스를 처음부터 (ResumeState가 새 그래프에 있으면 그 상태에서). 모델에 없는 클립 이름은 OutMissing에
+	void Rebind(const FAnimationSet& Set, std::vector<std::string>* OutMissing);
 
 	FAnimGraphRuntime() = default;
 	FAnimGraphRuntime(const FAnimGraphRuntime&) {}
@@ -256,8 +296,14 @@ public:
 
 	// 실패하면 nullptr (경고 로그, 같은 경로는 Invalidate 전까지 다시 읽지 않는다)
 	std::shared_ptr<const FAnimGraphAsset> Load(const std::string& AssetPath);
-	void                                   Invalidate() { Cache.clear(); }
+	// 캐시 비우기 + 세대 증가 → 사용 중인 컴포넌트가 다음 갱신에서 다시 읽는다 (내용이 같아도 새 객체 = 다시 묶임)
+	void   Invalidate();
+	void   Invalidate(const std::string& AssetPath); // 경로 하나만 (Content 기준 또는 절대)
+	uint32 GetGeneration() const { return Generation; }
 
 private:
+	static std::wstring MakeKey(const std::string& AssetPath);
+
 	std::unordered_map<std::wstring, std::shared_ptr<const FAnimGraphAsset>> Cache;
+	uint32                                                                   Generation = 1;
 };

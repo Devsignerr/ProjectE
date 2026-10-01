@@ -204,6 +204,8 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
 
 	Constants               = FShadowConstants{};
+	DrawCalls               = 0;
+	Triangles               = 0;
 	Constants.CameraForward = Camera.GetForwardVector();
 	if (!Settings.bEnabled || LightDirection.IsNearlyZero())
 	{
@@ -298,6 +300,8 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 				const FMatrix4x4 WorldLightViewProjection = Transform.WorldMatrix * Cascades[Index].ViewProjection;
 				CommandList->SetGraphicsRoot32BitConstants(0, 16, &WorldLightViewProjection.M[0][0], 0);
 				Mesh->Draw(CommandList);
+				++DrawCalls;
+				Triangles += Mesh->GetIndexCount() / 3;
 			});
 
 		// 스킨 메시 캐스터: 팔레트가 바로 월드로 보내므로 상수는 캐스케이드 뷰-투영 그대로
@@ -319,6 +323,8 @@ void FShadowRenderer::Render(FScene& Scene, FResourceManager& Resources, const F
 				}
 				CommandList->SetGraphicsRootConstantBufferView(1, Skinned->Palette);
 				Mesh->DrawSkinned(CommandList);
+				++DrawCalls;
+				Triangles += Mesh->GetIndexCount() / 3;
 			});
 			if (bSkinnedPipelineBound)
 			{

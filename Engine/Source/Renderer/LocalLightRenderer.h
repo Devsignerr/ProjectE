@@ -54,6 +54,9 @@ public:
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return ShadowSrv; }
 	uint32                        GetLightCount() const { return static_cast<uint32>(Lights.size()); }
 	uint32                        GetShadowSliceCount() const { return static_cast<uint32>(ShadowMatrices.size()); }
+	// 지난 Prepare의 그림자 드로우 수 / 삼각형 수 (통계)
+	uint32                        GetShadowDrawCalls() const { return ShadowDrawCalls; }
+	uint64                        GetShadowTriangles() const { return ShadowTriangles; }
 
 private:
 	struct FShadowSlice
@@ -103,4 +106,6 @@ private:
 	D3D12_GPU_VIRTUAL_ADDRESS       ConstantsAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       LightListAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       ShadowMatricesAddress = 0;
+	uint32                          ShadowDrawCalls       = 0;
+	uint64                          ShadowTriangles       = 0;
 };

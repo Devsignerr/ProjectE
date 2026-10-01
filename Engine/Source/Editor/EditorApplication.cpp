@@ -854,7 +854,26 @@ void FEditorApplication::DrawStatsWindow()
 	{
 		const FSceneRenderStats& Stats = SceneRenderer.GetStats();
 		ImGui::Text("FPS: %.1f (%.2f ms)", SmoothedFps, SmoothedFps > 0.0f ? 1000.0f / SmoothedFps : 0.0f);
-		ImGui::Text("메시: %u / %u 표시, 드로우 %u", Stats.VisibleMeshes, Stats.TotalMeshes, Stats.DrawCalls);
+		ImGui::Text("메시: %u / %u 표시, 드로우 %u (그림자 %u)", Stats.VisibleMeshes, Stats.TotalMeshes, Stats.DrawCalls, Stats.ShadowDrawCalls);
+		ImGui::Text("삼각형: %llu (그림자 %llu)", static_cast<unsigned long long>(Stats.Triangles), static_cast<unsigned long long>(Stats.ShadowTriangles));
+		if (ImGui::BeginTable("RenderTimers", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg))
+		{
+			ImGui::TableSetupColumn("구간");
+			ImGui::TableSetupColumn("CPU ms");
+			ImGui::TableSetupColumn("GPU ms");
+			ImGui::TableHeadersRow();
+			for (uint32 Index = 0; Index < static_cast<uint32>(ERenderTimer::Count); ++Index)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(GetRenderTimerName(static_cast<ERenderTimer>(Index)));
+				ImGui::TableNextColumn();
+				ImGui::Text("%.3f", Stats.CpuMs[Index]);
+				ImGui::TableNextColumn();
+				ImGui::Text("%.3f", Stats.GpuMs[Index]);
+			}
+			ImGui::EndTable();
+		}
 		ImGui::Text("파티클: %u", Stats.Particles);
 		ImGui::Text("점광원/스포트: %u (그림자 %u장)", Stats.LocalLights, Stats.LocalShadowSlices);
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());

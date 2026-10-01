@@ -131,6 +131,7 @@ void FD3D12RHI::Resize(uint32 Width, uint32 Height)
 void FD3D12RHI::BeginFrame(const float ClearColor[4])
 {
 	CurrentBackBufferIndex = SwapChain.GetCurrentBackBufferIndex();
+	++FrameNumber;
 
 	// 이 백버퍼를 마지막으로 사용한 프레임이 GPU에서 끝날 때까지 대기
 	GraphicsQueue.WaitForFenceValue(FrameFenceValues[CurrentBackBufferIndex]);

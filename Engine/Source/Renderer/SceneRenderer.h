@@ -2,6 +2,7 @@
 
 #include "Core/Math/Math.h"
 #include "Renderer/Camera.h"
+#include "RHI/D3D12/D3D12GpuTimer.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
@@ -16,6 +17,7 @@
 #include "Renderer/ParticleRenderer.h"
 #include "Scene/ResourceHandles.h"
 
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -26,14 +28,39 @@ class FScene;
 class FStaticMesh;
 struct FPixelArtComponent;
 
+// 렌더 구간 (CPU/GPU 시간 측정 칸). GPU는 Total/Shadow/LocalLights/Main/Particles/PostProcess만 잰다
+enum class ERenderTimer : uint32
+{
+	Total,       // Render 전체
+	LocalLights, // 점광원/스포트 수집 + 로컬 그림자 + 클러스터 컬링
+	Shadow,      // 방향광 캐스케이드 그림자
+	MainCull,    // 메인 패스 수집/컬링
+	MainSort,    // 메인 패스 정렬
+	MainDraw,    // 메인 패스 기록 (GPU: 하늘 + 메시)
+	Particles,
+	PostProcess,
+	Count
+};
+const char* GetRenderTimerName(ERenderTimer Timer);
+
 struct FSceneRenderStats
 {
 	uint32 TotalMeshes   = 0; // 씬의 정적 메시 컴포넌트 수
 	uint32 VisibleMeshes = 0; // 컬링 통과
-	uint32 DrawCalls     = 0;
+	uint32 DrawCalls     = 0; // 메인 패스
+	uint32 ShadowDrawCalls = 0; // 방향광 + 로컬 그림자 패스
+	uint64 Triangles       = 0; // 메인 패스에서 그린 삼각형
+	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
+
+	float CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // 이번 프레임 CPU 기록 시간
+	float GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // GPU 시간 (타임스탬프, 몇 프레임 늦은 값)
+	float FrameIntervalMs = 0.0f; // 직전 Render와의 간격 (= 프레임 시간)
+
+	float GetCpuMs(ERenderTimer Timer) const { return CpuMs[static_cast<uint32>(Timer)]; }
+	float GetGpuMs(ERenderTimer Timer) const { return GpuMs[static_cast<uint32>(Timer)]; }
 };
 
 // 씬의 정적 메시를 수집 → 프러스텀 컬링 → 정렬 → HDR 버퍼에 드로우 → 포스트 프로세싱(톤매핑) → Output.
@@ -122,6 +149,7 @@ private:
 	void EnsureSceneColor(uint32 Width, uint32 Height);
 	void EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
 	                  const FRenderTargetDesc& Desc);
+	void RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
 	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height);
 	void DrawMeshes(FScene& Scene, const FCamera& Camera, const FPerFrameConstants& PerFrame);
@@ -137,4 +165,35 @@ private:
 
 	FFrustum FrozenFrustum;
 	bool     bCullingFrozen = false;
+
+	// ---- 측정 (통계 패널 + --perf-capture)
+	using FClock = std::chrono::steady_clock;
+	void BeginTimer(ERenderTimer Timer);
+	void EndTimer(ERenderTimer Timer);
+	void AccumulatePerfCapture();
+	void LogPerfCapture() const;
+
+	FD3D12GpuTimer     GpuTimer;
+	FClock::time_point TimerStarts[static_cast<uint32>(ERenderTimer::Count)];
+	FClock::time_point LastRenderTime;
+	bool               bHasLastRenderTime = false;
+
+	// --perf-capture [--perf-warmup N]: 워밍업 뒤 프레임 평균을 종료 때 로그로 남긴다 (단계별 성능 비교용)
+	struct FPerfCapture
+	{
+		bool   bEnabled      = false;
+		uint32 WarmupFrames  = 120;
+		uint32 SeenFrames    = 0;
+		uint32 Frames        = 0;
+		double CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {};
+		double GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {};
+		double FrameMs         = 0.0;
+		double DrawCalls       = 0.0;
+		double ShadowDrawCalls = 0.0;
+		double Triangles       = 0.0;
+		double ShadowTriangles = 0.0;
+		double VisibleMeshes   = 0.0;
+		uint32 TotalMeshes     = 0;
+	};
+	FPerfCapture PerfCapture;
 };

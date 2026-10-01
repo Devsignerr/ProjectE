@@ -62,6 +62,10 @@ public:
 
 	bool ReloadShaders(bool bForceRecompile);
 
+	// 지난 Render의 드로우 수 / 삼각형 수 (통계)
+	uint32 GetDrawCalls() const { return DrawCalls; }
+	uint64 GetTriangles() const { return Triangles; }
+
 private:
 	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned = false);
 	void EnsureShadowMap(uint32 Resolution, uint32 Cascades);
@@ -81,6 +85,8 @@ private:
 	uint32                 MapCascades   = 0;
 
 	FShadowConstants Constants;
+	uint32           DrawCalls = 0;
+	uint64           Triangles = 0;
 	int32            BakedDepthBias = FShadowSettings{}.DepthBias; // PSO에 고정된 바이어스
 	float            BakedSlopeBias = FShadowSettings{}.SlopeBias;
 };

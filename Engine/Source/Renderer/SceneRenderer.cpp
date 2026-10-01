@@ -1,5 +1,6 @@
 #include "Renderer/SceneRenderer.h"
 
+#include "Core/CommandLine.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/Camera.h"
 #include "Renderer/Material.h"
@@ -10,6 +11,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 
@@ -106,8 +108,102 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
+	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
+
+	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	PerfCapture                    = FPerfCapture{};
+	PerfCapture.bEnabled           = CommandLine.HasFlag(L"--perf-capture");
+	if (const std::wstring Warmup = CommandLine.GetValue(L"--perf-warmup"); !Warmup.empty())
+	{
+		PerfCapture.WarmupFrames = static_cast<uint32>(std::max(0, std::stoi(Warmup)));
+	}
+
 	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료 (HDR {}, 톤매핑)", "R16G16B16A16_FLOAT");
 	return true;
+}
+
+const char* GetRenderTimerName(ERenderTimer Timer)
+{
+	switch (Timer)
+	{
+	case ERenderTimer::Total:       return "전체";
+	case ERenderTimer::LocalLights: return "로컬 라이트";
+	case ERenderTimer::Shadow:      return "방향광 그림자";
+	case ERenderTimer::MainCull:    return "메인 컬링";
+	case ERenderTimer::MainSort:    return "메인 정렬";
+	case ERenderTimer::MainDraw:    return "메인 드로우";
+	case ERenderTimer::Particles:   return "파티클";
+	case ERenderTimer::PostProcess: return "포스트";
+	default:                        return "?";
+	}
+}
+
+void FSceneRenderer::BeginTimer(ERenderTimer Timer)
+{
+	const uint32 Index  = static_cast<uint32>(Timer);
+	TimerStarts[Index] = FClock::now();
+	GpuTimer.BeginScope(Rhi->GetCommandList(), Index);
+}
+
+void FSceneRenderer::EndTimer(ERenderTimer Timer)
+{
+	const uint32 Index = static_cast<uint32>(Timer);
+	Stats.CpuMs[Index] += std::chrono::duration<float, std::milli>(FClock::now() - TimerStarts[Index]).count();
+	GpuTimer.EndScope(Rhi->GetCommandList(), Index);
+}
+
+void FSceneRenderer::AccumulatePerfCapture()
+{
+	if (!PerfCapture.bEnabled)
+	{
+		return;
+	}
+	if (PerfCapture.SeenFrames++ < PerfCapture.WarmupFrames)
+	{
+		return;
+	}
+	FPerfCapture& Capture = PerfCapture;
+	++Capture.Frames;
+	for (uint32 Index = 0; Index < static_cast<uint32>(ERenderTimer::Count); ++Index)
+	{
+		Capture.CpuMs[Index] += Stats.CpuMs[Index];
+		Capture.GpuMs[Index] += Stats.GpuMs[Index];
+	}
+	Capture.FrameMs += Stats.FrameIntervalMs;
+	Capture.DrawCalls += Stats.DrawCalls;
+	Capture.ShadowDrawCalls += Stats.ShadowDrawCalls;
+	Capture.Triangles += static_cast<double>(Stats.Triangles);
+	Capture.ShadowTriangles += static_cast<double>(Stats.ShadowTriangles);
+	Capture.VisibleMeshes += Stats.VisibleMeshes;
+	Capture.TotalMeshes = Stats.TotalMeshes;
+}
+
+void FSceneRenderer::LogPerfCapture() const
+{
+	const FPerfCapture& Capture = PerfCapture;
+	if (!Capture.bEnabled || Capture.Frames == 0)
+	{
+		return;
+	}
+	const double Count = static_cast<double>(Capture.Frames);
+	std::string  Cpu;
+	std::string  Gpu;
+	for (uint32 Index = 0; Index < static_cast<uint32>(ERenderTimer::Count); ++Index)
+	{
+		const char* Name = GetRenderTimerName(static_cast<ERenderTimer>(Index));
+		Cpu += std::format("{}{} {:.3f}", Cpu.empty() ? "" : ", ", Name, Capture.CpuMs[Index] / Count);
+		Gpu += std::format("{}{} {:.3f}", Gpu.empty() ? "" : ", ", Name, Capture.GpuMs[Index] / Count);
+	}
+#if E_DEBUG
+	const char* Config = "Debug";
+#else
+	const char* Config = "Release";
+#endif
+	E_LOG(LogRenderer, Display, "[성능] {} 프레임 평균 ({}): 프레임 {:.3f} ms, 드로우 {:.1f} (그림자 {:.1f}), 삼각형 {:.0f} (그림자 {:.0f}), 메시 {:.1f}/{}",
+	      Capture.Frames, Config, Capture.FrameMs / Count, Capture.DrawCalls / Count, Capture.ShadowDrawCalls / Count, Capture.Triangles / Count,
+	      Capture.ShadowTriangles / Count, Capture.VisibleMeshes / Count, Capture.TotalMeshes);
+	E_LOG(LogRenderer, Display, "[성능] CPU ms: {}", Cpu);
+	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
 }
 
 bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bWireframeFill)
@@ -259,6 +355,8 @@ void FSceneRenderer::Shutdown()
 		return;
 	}
 	Rhi->GetGraphicsQueue().Flush();
+	LogPerfCapture();
+	GpuTimer.Shutdown();
 	SceneColor.reset();
 	PixelArtColor.reset();
 	PostProcessor.Shutdown();
@@ -332,11 +430,43 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 
+	// 측정: 지난 결과(GPU는 슬롯 수만큼 늦음)를 통계에 옮기고 이번 프레임 칸을 비운다
+	const FClock::time_point Now = FClock::now();
+	Stats.FrameIntervalMs        = bHasLastRenderTime ? std::chrono::duration<float, std::milli>(Now - LastRenderTime).count() : 0.0f;
+	LastRenderTime               = Now;
+	bHasLastRenderTime           = true;
+	std::fill(std::begin(Stats.CpuMs), std::end(Stats.CpuMs), 0.0f);
+	const bool bGpuTiming = GpuTimer.BeginFrame(Rhi->GetFrameSlot(), Rhi->GetFrameNumber());
+	if (bGpuTiming)
+	{
+		for (uint32 Index = 0; Index < static_cast<uint32>(ERenderTimer::Count); ++Index)
+		{
+			Stats.GpuMs[Index] = GpuTimer.GetScopeMs(Index);
+		}
+	}
+	BeginTimer(ERenderTimer::Total);
+
+	RenderFrame(Scene, Camera, Output);
+
+	EndTimer(ERenderTimer::Total);
+	GpuTimer.EndFrame(CommandList);
+	if (bGpuTiming)
+	{
+		AccumulatePerfCapture();
+	}
+}
+
+void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
+{
+	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+
 	const FPixelArtComponent* PixelArt = FindPixelArtSettings(Scene);
 	if (PixelArt == nullptr)
 	{
 		RenderSceneColor(Scene, Camera, Output.Width, Output.Height);
+		BeginTimer(ERenderTimer::PostProcess);
 		PostProcessor.Render(CommandList, SceneColor->GetSrv(), Output, PostProcessSettings);
+		EndTimer(ERenderTimer::PostProcess);
 		return;
 	}
 
@@ -349,12 +479,14 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	const FCamera            SourceCamera = BuildPixelArtCamera(*PixelArt, Camera, Output, SourceWidth, SourceHeight, Params);
 	RenderSceneColor(Scene, SourceCamera, SourceWidth, SourceHeight);
 
+	BeginTimer(ERenderTimer::PostProcess);
 	EnsureTarget(PixelArtColor, SourceWidth, SourceHeight, L"PixelArtColor", FRenderTargetDesc::MakeHdr(false));
 	PixelArtColor->Begin(CommandList, nullptr); // 톤매핑이 전체를 덮어쓴다
 	PostProcessor.Render(CommandList, SceneColor->GetSrv(), PixelArtColor->GetOutput(), PostProcessSettings);
 	PixelArtColor->End(CommandList);
 
 	PostProcessor.RenderPixelArtComposite(CommandList, *PixelArtColor, *SceneColor, Output, Params);
+	EndTimer(ERenderTimer::PostProcess);
 }
 
 FCamera FSceneRenderer::BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
@@ -414,22 +546,26 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	ParticleRenderer.Simulate(Scene);
 
 	// 점광원/스포트라이트 목록 + 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
+	BeginTimer(ERenderTimer::LocalLights);
 	LocalLightRenderer.Prepare(Scene, *Resources, Camera, Width, Height, LocalShadowSettings, &SkinPalettes);
+	EndTimer(ERenderTimer::LocalLights);
 	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
 	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
 
 	// 0) 방향광 섀도우 패스
+	BeginTimer(ERenderTimer::Shadow);
 	ShadowRenderer.Render(Scene, *Resources, Camera, PerFrame.DirectionalLight.Direction, ShadowSettings, &SkinPalettes);
+	EndTimer(ERenderTimer::Shadow);
+	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls();
+	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles();
 
 	// 1) HDR 씬 패스
 	EnsureSceneColor(Width, Height);
 	SceneColor->Begin(CommandList, &BackgroundColor.X);
-	if (bDrawSkybox)
-	{
-		IblRenderer.RenderSkybox(Camera, PerFrame.AmbientIntensity);
-	}
 	DrawMeshes(Scene, Camera, PerFrame);
+	BeginTimer(ERenderTimer::Particles);
 	Stats.Particles = ParticleRenderer.Render(Scene, Camera);
+	EndTimer(ERenderTimer::Particles);
 	SceneColor->End(CommandList);
 }
 
@@ -441,15 +577,25 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 		FrozenFrustum = FFrustum::FromViewProjection(ViewProjection);
 	}
 
+	BeginTimer(ERenderTimer::MainCull);
 	CollectDrawCommands(Scene, FrozenFrustum, Camera.GetPosition());
+	EndTimer(ERenderTimer::MainCull);
 
 	// 정렬: (정적/스킨 PSO) → 머티리얼 → 메시 → 가까운 순 (상태 변경 최소화 + 초기 깊이 기각)
+	BeginTimer(ERenderTimer::MainSort);
 	std::sort(DrawCommands.begin(), DrawCommands.end(), [](const FMeshDrawCommand& A, const FMeshDrawCommand& B) {
 		const bool bSkinnedA = A.SkinPalette != 0;
 		const bool bSkinnedB = B.SkinPalette != 0;
 		return std::tie(bSkinnedA, A.MaterialHandle.Index, A.MeshHandle.Index, A.DistanceSquared) <
 		       std::tie(bSkinnedB, B.MaterialHandle.Index, B.MeshHandle.Index, B.DistanceSquared);
 	});
+	EndTimer(ERenderTimer::MainSort);
+
+	BeginTimer(ERenderTimer::MainDraw);
+	if (bDrawSkybox)
+	{
+		IblRenderer.RenderSkybox(Camera, PerFrame.AmbientIntensity);
+	}
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
@@ -478,6 +624,7 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 	const FMaterial* BoundMaterial = nullptr;
 	bool             bSkinnedBound = false;
 	Stats.DrawCalls                = 0;
+	Stats.Triangles                = 0;
 
 	for (const FMeshDrawCommand& Command : DrawCommands)
 	{
@@ -515,7 +662,9 @@ void FSceneRenderer::DrawMeshes(FScene& Scene, const FCamera& Camera, const FPer
 			Command.Mesh->Draw(CommandList);
 		}
 		++Stats.DrawCalls;
+		Stats.Triangles += Command.Mesh->GetIndexCount() / 3;
 	}
+	EndTimer(ERenderTimer::MainDraw);
 }
 
 void FSceneRenderer::CollectDrawCommands(FScene& Scene, const FFrustum& Frustum, const FVector3& CameraPosition)

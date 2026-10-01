@@ -460,6 +460,8 @@ void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resourc
 				const FMatrix4x4 WorldLightViewProjection = Transform.WorldMatrix * Slice.ViewProjection;
 				CommandList->SetGraphicsRoot32BitConstants(ShadowParam_WorldViewProjection, 16, &WorldLightViewProjection.M[0][0], 0);
 				Mesh->Draw(CommandList);
+				++ShadowDrawCalls;
+				ShadowTriangles += Mesh->GetIndexCount() / 3;
 			});
 
 		// 스킨 메시: 팔레트가 바로 월드로 보내므로 상수는 뷰-투영 그대로
@@ -481,6 +483,8 @@ void FLocalLightRenderer::RenderShadows(FScene& Scene, FResourceManager& Resourc
 				}
 				CommandList->SetGraphicsRootConstantBufferView(ShadowParam_SkinPalette, Skinned->Palette);
 				Mesh->DrawSkinned(CommandList);
+				++ShadowDrawCalls;
+				ShadowTriangles += Mesh->GetIndexCount() / 3;
 			});
 			if (bSkinnedBound)
 			{
@@ -500,6 +504,8 @@ void FLocalLightRenderer::Prepare(FScene& Scene, FResourceManager& Resources, co
 	E_CHECKF(Rhi != nullptr, "로컬 라이트 렌더러가 초기화되지 않았습니다");
 
 	CollectLights(Scene, Camera);
+	ShadowDrawCalls = 0;
+	ShadowTriangles = 0;
 
 	// ---- 그림자: 바이어스는 PSO에 고정되므로 바뀌면 재생성, 타일 배열은 필요한 만큼 (8장 단위로 키운다)
 	if (ShadowSettings.DepthBias != BakedDepthBias || ShadowSettings.SlopeBias != BakedSlopeBias)

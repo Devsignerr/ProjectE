@@ -72,6 +72,11 @@ void FInput::EndFrame()
 	LookDeltaY       = 0.0f;
 	RepeatStates.reset();
 	TypedText.clear();
+	PrevGamepad = Gamepad;
+	for (FInputActionState& Action : Actions)
+	{
+		Action.bWasActive = Action.bActive;
+	}
 }
 
 void FInput::SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel)
@@ -124,6 +129,7 @@ FInput FInput::WithoutMouseButtons() const
 	Copy.ButtonStates.reset();
 	Copy.PrevButtonStates.reset();
 	Copy.WheelDelta = 0.0f;
+	Copy.ReevaluateActions();
 	return Copy;
 }
 
@@ -134,5 +140,146 @@ FInput FInput::WithoutKeyboard() const
 	Copy.PrevKeyStates.reset();
 	Copy.RepeatStates.reset();
 	Copy.TypedText.clear();
+	Copy.ReevaluateActions();
 	return Copy;
+}
+
+FVector2 FInput::ReadSource(const FInputSource& Source) const
+{
+	const auto Button = [](bool bDown) { return FVector2(bDown ? 1.0f : 0.0f, 0.0f); };
+	switch (Source.Type)
+	{
+	case EInputSourceType::Key:
+		return Source.Code < static_cast<uint16>(EKey::Count) ? Button(KeyStates[Source.Code]) : FVector2::ZeroVector;
+	case EInputSourceType::MouseButton:
+		return Source.Code < static_cast<uint16>(EMouseButton::Count) ? Button(ButtonStates[Source.Code]) : FVector2::ZeroVector;
+	case EInputSourceType::MouseAxis:
+		switch (static_cast<EMouseAxis>(Source.Code))
+		{
+		case EMouseAxis::XY:    return FVector2(LookDeltaX, LookDeltaY);
+		case EMouseAxis::X:     return FVector2(LookDeltaX, 0.0f);
+		case EMouseAxis::Y:     return FVector2(LookDeltaY, 0.0f);
+		case EMouseAxis::Wheel: return FVector2(WheelDelta, 0.0f);
+		default:                return FVector2::ZeroVector;
+		}
+	case EInputSourceType::GamepadButton:
+		return Source.Code < static_cast<uint16>(EGamepadButton::Count) ? Button(Gamepad.IsButtonDown(static_cast<EGamepadButton>(Source.Code)))
+		                                                                 : FVector2::ZeroVector;
+	case EInputSourceType::GamepadAxis:
+		switch (static_cast<EGamepadAxis>(Source.Code))
+		{
+		case EGamepadAxis::LeftStick:    return FVector2(Gamepad.LeftX, Gamepad.LeftY);
+		case EGamepadAxis::RightStick:   return FVector2(Gamepad.RightX, Gamepad.RightY);
+		case EGamepadAxis::LeftX:        return FVector2(Gamepad.LeftX, 0.0f);
+		case EGamepadAxis::LeftY:        return FVector2(Gamepad.LeftY, 0.0f);
+		case EGamepadAxis::RightX:       return FVector2(Gamepad.RightX, 0.0f);
+		case EGamepadAxis::RightY:       return FVector2(Gamepad.RightY, 0.0f);
+		case EGamepadAxis::LeftTrigger:  return FVector2(Gamepad.LeftTrigger, 0.0f);
+		case EGamepadAxis::RightTrigger: return FVector2(Gamepad.RightTrigger, 0.0f);
+		default:                         return FVector2::ZeroVector;
+		}
+	default:
+		return FVector2::ZeroVector;
+	}
+}
+
+namespace
+{
+	// 액션 목록을 매핑 순서에 맞춘다 (같은 이름의 이전 켜짐 상태는 유지 — 매핑을 고쳐도 눌림 판정이 튀지 않게)
+	void SyncActionLayout(std::vector<FInputActionState>& Actions, const FInputMapping& Mapping)
+	{
+		bool bSame = Actions.size() == Mapping.Actions.size();
+		for (size_t Index = 0; bSame && Index < Actions.size(); ++Index)
+		{
+			bSame = Actions[Index].Name == Mapping.Actions[Index].Name && Actions[Index].Type == Mapping.Actions[Index].Type;
+		}
+		if (bSame)
+		{
+			return;
+		}
+		std::vector<FInputActionState> Synced(Mapping.Actions.size());
+		for (size_t Index = 0; Index < Synced.size(); ++Index)
+		{
+			Synced[Index].Name = Mapping.Actions[Index].Name;
+			Synced[Index].Type = Mapping.Actions[Index].Type;
+			for (const FInputActionState& Old : Actions)
+			{
+				if (Old.Name == Synced[Index].Name && Old.Type == Synced[Index].Type)
+				{
+					Synced[Index].bWasActive = Old.bWasActive;
+				}
+			}
+		}
+		Actions = std::move(Synced);
+	}
+} // namespace
+
+void FInput::UpdateActions(const FInputMapping& Mapping, float DeltaSeconds)
+{
+	ActionMapping      = &Mapping;
+	ActionDeltaSeconds = DeltaSeconds;
+	ReevaluateActions();
+}
+
+void FInput::ReevaluateActions()
+{
+	if (ActionMapping == nullptr)
+	{
+		return;
+	}
+	SyncActionLayout(Actions, *ActionMapping);
+	const auto Read = [this](const FInputSource& Source) { return ReadSource(Source); };
+	for (size_t Index = 0; Index < Actions.size(); ++Index)
+	{
+		const InputActionMath::FResult Result = InputActionMath::Evaluate(ActionMapping->Actions[Index], Read, ActionDeltaSeconds);
+		Actions[Index].Value                  = Result.Value;
+		Actions[Index].bActive                = Result.bActive;
+	}
+}
+
+void FInput::SetActionValues(const FInputMapping& Mapping, const std::vector<FInputActionState>& Values)
+{
+	ActionMapping = nullptr; // 받은 값이므로 다시 계산하지 않는다
+	SyncActionLayout(Actions, Mapping);
+	for (size_t Index = 0; Index < Actions.size() && Index < Values.size(); ++Index)
+	{
+		Actions[Index].Value   = Values[Index].Value;
+		Actions[Index].bActive = Values[Index].bActive;
+	}
+}
+
+const FInputActionState* FInput::FindAction(std::string_view Name) const
+{
+	for (const FInputActionState& Action : Actions)
+	{
+		if (Action.Name == Name)
+		{
+			return &Action;
+		}
+	}
+	return nullptr;
+}
+
+FVector2 FInput::GetActionValue(std::string_view Name) const
+{
+	const FInputActionState* Action = FindAction(Name);
+	return Action != nullptr ? Action->Value : FVector2::ZeroVector;
+}
+
+bool FInput::IsActionDown(std::string_view Name) const
+{
+	const FInputActionState* Action = FindAction(Name);
+	return Action != nullptr && Action->bActive;
+}
+
+bool FInput::WasActionPressed(std::string_view Name) const
+{
+	const FInputActionState* Action = FindAction(Name);
+	return Action != nullptr && Action->bActive && !Action->bWasActive;
+}
+
+bool FInput::WasActionReleased(std::string_view Name) const
+{
+	const FInputActionState* Action = FindAction(Name);
+	return Action != nullptr && !Action->bActive && Action->bWasActive;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/GamepadInput.h"
 #include "Core/Input.h"
 #include "Core/Timer.h"
 #include "Core/Window.h"
@@ -64,11 +65,14 @@ private:
 	void RunWindowedLoop();
 	void RunHeadlessLoop();
 	void UpdateCrashTest();
+	void UpdateHeldInputAndActions(float DeltaSeconds);
 
 	FApplicationDesc Desc;
 	FWindow          Window;
 	FInput           Input;
+	FGamepadInput    Gamepads;
 	FTimer           Timer;
+	bool             bWindowFocused = true; // 포커스가 없으면 게임패드 입력을 비운다 (뒤에 있는 창이 패드에 반응하지 않게)
 	std::atomic<bool> bExitRequested = false;
 
 	// 자동 검증 인자 (명령줄):
@@ -76,13 +80,17 @@ private:
 	//   --exit-after <N>      N 프레임 렌더 후 종료 (--screenshot만 주면 기본 90, 헤드리스는 N 틱)
 	//   --screenshot <경로>   마지막 프레임을 PNG로 저장
 	//   --crash-test          30프레임 뒤 액세스 위반을 일으켜 크래시 덤프/대화 상자를 검증
-	//   --hold-keys W,Space   자동 검증: 그 키들을 누르고 있는 상태로 (A~Z, Space만) — 캐릭터 이동 등 입력 검증
-	//   --hold-keys-delay S   위 키를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
+	//   --hold-keys W,Space   자동 검증: 그 키들을 누르고 있는 상태로 (키 이름은 Lua Input.IsKeyDown과 같음) — 캐릭터 이동 등 입력 검증.
+	//                         입력 액션에도 그대로 반영된다
+	//   --hold-gamepad A,LeftY=1  자동 검증: 가짜 게임패드(연결됨)의 버튼(이름)/축(이름=값: LeftX/LeftY/RightX/RightY/LeftTrigger/RightTrigger)
+	//   --hold-keys-delay S   위 키/패드를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
 	uint64                FrameIndex = 0;
 	uint64                CrashTestFrame = 0; // --crash-test: 이 프레임(틱)에서 의도적 크래시 (덤프 검증)
 	std::vector<EKey>     HeldKeys;           // --hold-keys
+	bool                  bHoldGamepad = false; // --hold-gamepad
+	FGamepadState         HeldGamepad;
 	float                 HoldKeysDelay = 0.0f; // --hold-keys-delay (초)
 	bool                  bHoldKeysStarted = false;
 };

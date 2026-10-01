@@ -43,7 +43,8 @@ bool FSettingsSection::LoadFrom(const std::filesystem::path& Path) const
 	}
 	std::string Text;
 	std::string Error;
-	if (!FFileSystem::ReadTextFile(Path, Text) || !FReflectionJson::Apply(*Type, Object, Text, &Error))
+	const bool  bRead = FFileSystem::ReadTextFile(Path, Text);
+	if (!bRead || !(IsCustom() ? ReadJson(Text, &Error) : FReflectionJson::Apply(*Type, Object, Text, &Error)))
 	{
 		E_LOG(LogCore, Warning, "설정 파일을 읽지 못해 기본값을 씁니다: {} ({})", FStringConv::ToUtf8(Path.wstring()), Error);
 		return false;
@@ -61,7 +62,7 @@ bool FSettingsSection::SaveTo(const std::filesystem::path& Path) const
 		E_LOG(LogCore, Error, "설정을 저장할 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
 		return false;
 	}
-	File << FReflectionJson::Write(*Type, Object);
+	File << (WriteJson ? WriteJson() : FReflectionJson::Write(*Type, Object));
 	return static_cast<bool>(File);
 }
 
@@ -95,6 +96,17 @@ FSettingsSection& FSettingsRegistry::AddSection(FDesc Desc)
 	}
 	Sections.push_back(std::move(Section));
 	return *Sections.back();
+}
+
+FSettingsSection& FSettingsRegistry::RegisterCustom(void* Object, FDesc Desc, std::function<bool(std::string_view, std::string*)> ReadJson,
+                                                    std::function<std::string()> WriteJson, std::function<void()> ResetToDefaults)
+{
+	FSettingsSection& Section = AddSection(std::move(Desc));
+	Section.Object            = Object;
+	Section.ReadJson          = std::move(ReadJson);
+	Section.WriteJson         = std::move(WriteJson);
+	Section.ResetToDefaults   = std::move(ResetToDefaults);
+	return Section;
 }
 
 FSettingsSection* FSettingsRegistry::Find(std::string_view Id)

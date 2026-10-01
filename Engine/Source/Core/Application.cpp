@@ -6,6 +6,7 @@
 #include "Core/Paths.h"
 #include "Core/Platform/CrashHandler.h"
 #include "Core/Platform/WindowsHeaders.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -84,30 +85,73 @@ int FApplication::Run()
 	}
 	// 크래시 알림 대화 상자는 패키지 게임 창에서만 (개발/자동 검증은 로그와 덤프로 충분, 서버는 사람이 없다)
 	FCrashHandler::SetShowDialog(FPaths::IsPackaged() && !Desc.bHeadless && ExitAfterFrames == 0);
-	if (const std::wstring HoldKeys = CommandLine.GetValue(L"--hold-keys"); !HoldKeys.empty())
-	{
-		// "W,Space" → 키 목록 (A~Z, Space)
-		size_t Begin = 0;
-		while (Begin <= HoldKeys.size())
+	// 쉼표 목록 "W,Space" / "A,LeftY=1"
+	const auto SplitList = [](const std::wstring& List) {
+		std::vector<std::string> Items;
+		size_t                   Begin = 0;
+		while (Begin <= List.size())
 		{
-			const size_t       End  = std::min(HoldKeys.find(L',', Begin), HoldKeys.size());
-			const std::wstring Name = HoldKeys.substr(Begin, End - Begin);
-			if (Name.size() == 1 && Name[0] >= L'A' && Name[0] <= L'Z')
+			const size_t End = std::min(List.find(L',', Begin), List.size());
+			if (End > Begin)
 			{
-				HeldKeys.push_back(static_cast<EKey>(static_cast<uint16>(EKey::A) + (Name[0] - L'A')));
-			}
-			else if (Name == L"Space")
-			{
-				HeldKeys.push_back(EKey::Space);
+				Items.push_back(FStringConv::ToUtf8(List.substr(Begin, End - Begin)));
 			}
 			Begin = End + 1;
 		}
-		if (const std::wstring Delay = CommandLine.GetValue(L"--hold-keys-delay"); !Delay.empty())
+		return Items;
+	};
+	if (const std::wstring HoldKeys = CommandLine.GetValue(L"--hold-keys"); !HoldKeys.empty())
+	{
+		for (const std::string& Name : SplitList(HoldKeys))
 		{
-			HoldKeysDelay = std::max(0.0f, std::stof(Delay));
+			EKey Key = EKey::None;
+			if (InputNames::TryParseKey(Name, Key))
+			{
+				HeldKeys.push_back(Key);
+			}
+			else
+			{
+				E_LOG(LogCore, Warning, "--hold-keys: 알 수 없는 키 '{}'", Name);
+			}
 		}
-		E_LOG(LogCore, Display, "--hold-keys: 키 {}개를 {:.1f}초 뒤부터 누른 상태로 실행", HeldKeys.size(), HoldKeysDelay);
+		E_LOG(LogCore, Display, "--hold-keys: 키 {}개를 누른 상태로 실행", HeldKeys.size());
 	}
+	if (const std::wstring HoldPad = CommandLine.GetValue(L"--hold-gamepad"); !HoldPad.empty())
+	{
+		bHoldGamepad            = true;
+		HeldGamepad.bConnected = true;
+		for (const std::string& Item : SplitList(HoldPad))
+		{
+			const size_t         Equals = Item.find('=');
+			const std::string    Name   = Item.substr(0, Equals);
+			const float          Value  = Equals == std::string::npos ? 1.0f : std::strtof(Item.c_str() + Equals + 1, nullptr);
+			EGamepadButton       Button;
+			EGamepadAxis         Axis;
+			if (InputNames::TryParseGamepadButton(Name, Button))
+			{
+				HeldGamepad.SetButton(Button, true);
+			}
+			else if (InputNames::TryParseGamepadAxis(Name, Axis) && Axis != EGamepadAxis::LeftStick && Axis != EGamepadAxis::RightStick)
+			{
+				float* const Targets[] = { nullptr, nullptr, &HeldGamepad.LeftX, &HeldGamepad.LeftY, &HeldGamepad.RightX, &HeldGamepad.RightY,
+				                           &HeldGamepad.LeftTrigger, &HeldGamepad.RightTrigger };
+				*Targets[static_cast<size_t>(Axis)] = std::clamp(Value, -1.0f, 1.0f);
+			}
+			else
+			{
+				E_LOG(LogCore, Warning, "--hold-gamepad: 알 수 없는 버튼/축 '{}'", Name);
+			}
+		}
+		E_LOG(LogCore, Display, "--hold-gamepad: 가짜 게임패드 상태로 실행");
+	}
+	if (const std::wstring Delay = CommandLine.GetValue(L"--hold-keys-delay"); !Delay.empty())
+	{
+		HoldKeysDelay = std::max(0.0f, std::stof(Delay));
+	}
+	// 플레이어 입력 재지정 파일 (<Saved>/Config/InputBindings.json) — 자동 검증 실행은 읽지도 쓰지도 않는다
+	FInputSettings& InputSettings = FProjectSettings::Get().Input;
+	InputSettings.SetUserFileEnabled(ExitAfterFrames == 0 && !Desc.bHeadless);
+	InputSettings.LoadUserBindings();
 	if (CommandLine.HasFlag(L"--crash-test"))
 	{
 		CrashTestFrame = 30; // 패키지 크래시 덤프 검증: 30프레임(틱) 뒤 의도적 액세스 위반
@@ -167,20 +211,8 @@ void FApplication::RunWindowedLoop()
 		{
 			break;
 		}
-		if (!HeldKeys.empty() && !bHoldKeysStarted && Timer.GetTotalSeconds() >= HoldKeysDelay)
-		{
-			bHoldKeysStarted = true;
-			E_LOG(LogCore, Display, "--hold-keys: 키 누르기 시작");
-		}
-		for (const EKey Key : bHoldKeysStarted ? HeldKeys : std::vector<EKey>{}) // 자동 검증: 누르고 있는 키
-		{
-			FWindowEvent Event;
-			Event.Type = EWindowEventType::KeyDown;
-			Event.Key  = Key;
-			Input.ProcessEvent(Event);
-		}
-
 		Timer.Tick();
+		UpdateHeldInputAndActions(Timer.GetDeltaSeconds());
 		OnUpdate(Timer.GetDeltaSeconds());
 
 		if (Window.IsMinimized())
@@ -277,6 +309,38 @@ void FApplication::RunHeadlessLoop()
 	GHeadlessApp = nullptr;
 }
 
+void FApplication::UpdateHeldInputAndActions(float DeltaSeconds)
+{
+	if ((!HeldKeys.empty() || bHoldGamepad) && !bHoldKeysStarted && Timer.GetTotalSeconds() >= HoldKeysDelay)
+	{
+		bHoldKeysStarted = true;
+		E_LOG(LogCore, Display, "--hold-keys: 키 누르기 시작");
+	}
+	for (const EKey Key : bHoldKeysStarted ? HeldKeys : std::vector<EKey>{}) // 자동 검증: 누르고 있는 키
+	{
+		FWindowEvent Event;
+		Event.Type = EWindowEventType::KeyDown;
+		Event.Key  = Key;
+		Input.ProcessEvent(Event);
+	}
+
+	// 게임패드: 첫 번째 연결 패드 (창 포커스가 없으면 중립). 자동 검증 가짜 패드가 있으면 그것
+	Gamepads.Poll(DeltaSeconds);
+	FGamepadState Pad = Gamepads.GetPrimary();
+	if (!bWindowFocused)
+	{
+		Pad = FGamepadState{ .bConnected = Pad.bConnected };
+	}
+	if (bHoldGamepad)
+	{
+		Pad = bHoldKeysStarted ? HeldGamepad : FGamepadState{ .bConnected = true };
+	}
+	Input.SetGamepadState(Pad);
+
+	// 입력 액션 (유효 매핑 = 프로젝트 설정 "입력" + 플레이어 재지정)
+	Input.UpdateActions(FProjectSettings::Get().Input.GetEffectiveMapping(), DeltaSeconds);
+}
+
 void FApplication::UpdateCrashTest()
 {
 	if (CrashTestFrame != 0 && FrameIndex == CrashTestFrame)
@@ -290,6 +354,10 @@ void FApplication::UpdateCrashTest()
 void FApplication::HandleWindowEvent(const FWindowEvent& Event)
 {
 	Input.ProcessEvent(Event);
+	if (Event.Type == EWindowEventType::Focus)
+	{
+		bWindowFocused = Event.bFocused;
+	}
 
 	switch (Event.Type)
 	{

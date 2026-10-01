@@ -60,6 +60,25 @@ FProjectSettings::FProjectSettings()
 		.Property(&FGameUserSettings::WindowWidth, "WindowWidth", "창 너비").Range(320.0f, 7680.0f)
 		.Property(&FGameUserSettings::WindowHeight, "WindowHeight", "창 높이").Range(240.0f, 7680.0f)
 		.Property(&FGameUserSettings::bVSync, "VSync", "수직 동기화");
+
+	// 액션 목록은 리플렉션 값 타입이 아니므로 사용자 정의 JSON 섹션 (설정 창은 전용 편집 UI — Editor/Panels/InputSettingsEditor)
+	Registry.RegisterCustom(
+		&Input, { "Input", "입력", GEngineCategory, "입력 액션(버튼/1D/2D 축)과 바인딩(키, 마우스, 게임패드). 플레이어 재지정은 <Saved>/Config/InputBindings.json" },
+		[this](std::string_view Json, std::string* Error) {
+			FInputMapping Mapping;
+			if (!FInputMapping::FromJson(Json, Mapping, Error))
+			{
+				return false;
+			}
+			if (Error != nullptr && !Error->empty())
+			{
+				E_LOG(LogCore, Warning, "입력 설정 일부를 건너뜀: {}", *Error);
+				Error->clear();
+			}
+			Input.SetProjectMapping(std::move(Mapping));
+			return true;
+		},
+		[this]() { return Input.GetProjectMapping().ToJson(); }, [this]() { Input.ResetProjectMapping(); });
 }
 
 void FProjectSettings::ResetToDefaults()
@@ -70,6 +89,7 @@ void FProjectSettings::ResetToDefaults()
 	Physics   = {};
 	Network   = {};
 	Display   = {};
+	Input.ResetProjectMapping(); // 사용자 재지정은 유지 (플레이어 파일)
 }
 
 void FProjectSettings::LoadForProject(const FProjectDescriptor& Descriptor)

@@ -34,6 +34,12 @@ struct FSettingsSection
 	std::function<void()>      ResetToDefaults;  // 기본값으로 되돌리기
 	std::function<void()>      OnChanged;        // 창에서 값이 바뀐 뒤 (적용이 필요한 섹션만)
 
+	// 리플렉션 값 타입으로 기술할 수 없는 섹션 (입력 액션 목록 등): 있으면 Type 대신 이 함수로 파일을 읽고 쓴다.
+	// 설정 창은 이런 섹션에 Id별 전용 편집 UI를 그린다 (FSettingsWindow)
+	std::function<bool(std::string_view Json, std::string* Error)> ReadJson;
+	std::function<std::string()>                                    WriteJson;
+	bool IsCustom() const { return static_cast<bool>(ReadJson); }
+
 	std::filesystem::path GetFilePath() const;
 	bool Load() const; // 파일이 없으면 true (값 유지), JSON 오류면 경고 + false
 	bool Save() const;
@@ -69,6 +75,10 @@ public:
 		Section.ResetToDefaults   = [&Object]() { Object = T{}; };
 		return TTypeBuilder<T>(*Section.Type);
 	}
+
+	// 사용자 정의 JSON 섹션 등록 (ReadJson/WriteJson/ResetToDefaults를 채운다)
+	FSettingsSection& RegisterCustom(void* Object, FDesc Desc, std::function<bool(std::string_view, std::string*)> ReadJson,
+	                                 std::function<std::string()> WriteJson, std::function<void()> ResetToDefaults);
 
 	FSettingsSection*                                     Find(std::string_view Id);
 	const std::vector<std::unique_ptr<FSettingsSection>>& GetSections() const { return Sections; }

@@ -1,13 +1,27 @@
 #pragma once
 
 #include "Core/CoreTypes.h"
+#include "Core/InputActions.h"
 #include "Core/InputTypes.h"
 #include "Core/WindowEvent.h"
 
 #include <bitset>
 #include <string>
+#include <string_view>
+#include <vector>
 
-// 프레임 단위 키보드/마우스 상태 관리
+// 액션 하나의 이번 프레임 값 (FInput::UpdateActions가 매핑으로 계산, 서버의 원격 입력은 받은 값)
+struct FInputActionState
+{
+	std::string      Name;
+	EInputActionType Type = EInputActionType::Button;
+	FVector2         Value;              // Button = (0|1, 0), Axis1D = (x, 0), Axis2D = (x, y)
+	bool             bActive    = false; // 작동 중 (문턱 이상)
+	bool             bWasActive = false; // 이전 프레임 (EndFrame에서 갱신)
+};
+
+// 프레임 단위 키보드/마우스/게임패드 상태 + 입력 액션 값 (Core/InputActions.h)
+//   앱 루프(FApplication): 창 이벤트 → 게임패드 폴링(SetGamepadState) → UpdateActions(유효 매핑) → OnUpdate → EndFrame
 class FInput
 {
 public:
@@ -54,7 +68,34 @@ public:
 	const FButtonBits& GetButtonStates() const { return ButtonStates; }
 	void               SetState(const FKeyBits& Keys, const FButtonBits& Buttons, int32 InMouseX, int32 InMouseY, float Wheel);
 
+	// ---- 게임패드 (첫 번째로 연결된 패드 — 앱이 매 프레임 폴링해 넣는다)
+	void                 SetGamepadState(const FGamepadState& State) { Gamepad = State; }
+	const FGamepadState& GetGamepad() const { return Gamepad; }
+	bool                 IsGamepadConnected() const { return Gamepad.bConnected; }
+	bool                 IsGamepadButtonDown(EGamepadButton Button) const { return Gamepad.IsButtonDown(Button); }
+	bool                 IsGamepadButtonPressed(EGamepadButton Button) const { return Gamepad.IsButtonDown(Button) && !PrevGamepad.IsButtonDown(Button); }
+	bool                 IsGamepadButtonReleased(EGamepadButton Button) const { return !Gamepad.IsButtonDown(Button) && PrevGamepad.IsButtonDown(Button); }
+
+	// 입력 소스의 이번 프레임 원시 값 (키/버튼 = (1|0, 0), 1D 축 = (값, 0), 2D = (X, Y). MouseXY = 원시 마우스 이동)
+	FVector2 ReadSource(const FInputSource& Source) const;
+
+	// ---- 입력 액션
+	// 현재 원시 상태로 액션 값을 계산한다. Mapping은 비소유 — 이 FInput(과 사본)보다 오래 살아야 한다 (보통 FInputSettings의 유효 매핑).
+	// WithoutMouseButtons/WithoutKeyboard 사본은 이 매핑으로 다시 계산한다
+	void UpdateActions(const FInputMapping& Mapping, float DeltaSeconds);
+	// 네트워크: 받은 액션 값으로 교체 (서버의 원격 플레이어 입력 — 클라이언트가 자기 바인딩으로 계산한 값). Values는 Mapping.Actions 순서
+	void SetActionValues(const FInputMapping& Mapping, const std::vector<FInputActionState>& Values);
+
+	const std::vector<FInputActionState>& GetActions() const { return Actions; }
+	const FInputActionState*              FindAction(std::string_view Name) const;
+	FVector2 GetActionValue(std::string_view Name) const;  // 없으면 0
+	bool     IsActionDown(std::string_view Name) const;     // 작동 중 (누르고 있음)
+	bool     WasActionPressed(std::string_view Name) const; // 이번 프레임에 작동 시작
+	bool     WasActionReleased(std::string_view Name) const; // 이번 프레임에 작동 끝
+
 private:
+	void ReevaluateActions();
+
 	FKeyBits    KeyStates;
 	FKeyBits    PrevKeyStates;
 	FKeyBits    RepeatStates; // 이번 프레임에 KeyDown(반복 포함)이 온 키
@@ -70,4 +111,11 @@ private:
 	float LookDeltaY = 0.0f;
 
 	std::u32string TypedText;
+
+	FGamepadState Gamepad;
+	FGamepadState PrevGamepad;
+
+	std::vector<FInputActionState> Actions;
+	const FInputMapping*           ActionMapping     = nullptr; // 비소유 (UpdateActions 참고)
+	float                          ActionDeltaSeconds = 0.0f;
 };

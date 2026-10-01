@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/GameUserSettings.h"
+#include "Core/Settings/InputSettings.h"
 #include "Core/Math/Math.h"
 
 #include <string>
@@ -77,6 +78,7 @@ public:
 	FPhysicsSettings     Physics;
 	FNetworkSettings     Network;
 	FGameUserSettings    Display;
+	FInputSettings       Input; // "Input" — 입력 액션/바인딩 (Config/Input.json, 사용자 재지정 포함)
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

@@ -1167,6 +1167,27 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	ApplyPendingDestroys();
 }
 
+void FLuaRuntime::LateUpdate(float DeltaSeconds, const FInput* InInput)
+{
+	if (Scene == nullptr)
+	{
+		return;
+	}
+	FRegistry& Registry = Scene->GetRegistry();
+	for (FEntity Entity : UpdateOrder) // 이번 프레임 Update 순서 그대로
+	{
+		const auto Found = Instances.find(Entity.ToId());
+		if (Found == Instances.end() || Found->second.bFaulted || !Found->second.bStarted || !Registry.IsValid(Entity))
+		{
+			continue;
+		}
+		Input = NetHooks != nullptr && NetHooks->ResolveInput ? NetHooks->ResolveInput(Entity, InInput) : InInput;
+		CallMethod(Found->second, "OnLateUpdate", DeltaSeconds, true);
+	}
+	Input = InInput;
+	ApplyPendingDestroys();
+}
+
 void FLuaRuntime::DispatchAnimNotifies()
 {
 	FRegistry& Registry = Scene->GetRegistry();

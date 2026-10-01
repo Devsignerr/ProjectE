@@ -85,6 +85,7 @@ public:
 	bool   CallObject(uint32 Id, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound);
 	void   DestroyObject(uint32 Id);
 	void Update(float DeltaSeconds, const FInput* Input);
+	void LateUpdate(float DeltaSeconds, const FInput* Input); // 시작된 인스턴스의 OnLateUpdate(dt)
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
 	bool         RunString(std::string_view Code);

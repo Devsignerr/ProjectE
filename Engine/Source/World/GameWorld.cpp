@@ -284,6 +284,9 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
 	Scene->UpdateTransforms();
+	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
+	Systems.Scripts->LateUpdate(DeltaSeconds, Input);
+	Scene->UpdateTransforms();
 	for (auto& [PlayerId, Remote] : RemoteInputs)
 	{
 		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만

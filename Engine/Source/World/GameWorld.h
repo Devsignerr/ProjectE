@@ -86,6 +86,8 @@ public:
 
 	// 게임플레이 한 프레임 (플레이 중이 아니면 무시). Input은 nullptr 허용 (UI가 입력을 가져간 경우)
 	void TickGameplay(float DeltaSeconds, const FInput* Input);
+	// 네트워크 드라이버를 나중에 연결/해제 (에디터 플레이: 네트워크 플레이를 시작할 때만 드라이버가 생긴다). BeginPlay 전에
+	void SetNetDriver(FNetDriver* InNet) { Systems.Net = InNet; }
 	// 표시용 갱신. 플레이 여부와 무관하게 대상 씬을 갱신한다 (에디터는 편집 씬도)
 	void TickPresentation(FScene& TargetScene, float DeltaSeconds);
 

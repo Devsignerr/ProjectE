@@ -1,5 +1,6 @@
 #include "Editor/PlayInEditorNet.h"
 
+#include "Core/CommandLine.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/Platform/WindowsHeaders.h"
@@ -68,6 +69,7 @@ bool FPlayInEditorNet::Prepare(const FPlayNetSettings& InSettings, FScene& EditS
 
 	const FNetSessionInfo Session = FNetSessionInfo::FromProject(SceneAsset, "에디터");
 	OutOptions.SceneJson          = &SceneJson;
+	World->SetNetDriver(&Net); // 게임 월드가 원격 입력/RPC/로컬 플레이어 ID를 이 드라이버로 처리한다 (빠지면 클라이언트 입력이 버려진다)
 	if (Settings.Mode == FPlayNetSettings::EMode::ListenServer)
 	{
 		Mode               = ENetMode::ListenServer;
@@ -187,6 +189,10 @@ void FPlayInEditorNet::Stop()
 	TerminateChildren();
 	Mode      = ENetMode::Standalone;
 	PlayScene = nullptr;
+	if (World != nullptr)
+	{
+		World->SetNetDriver(nullptr);
+	}
 }
 
 void FPlayInEditorNet::ApplySimulation()
@@ -213,7 +219,9 @@ bool FPlayInEditorNet::LaunchRuntimeClient(const std::string& Address, const std
 	const std::wstring          Arguments = std::format(L"--project {} --scene {} --connect {} --log {}", Quote(FPaths::GetProjectFile().wstring()),
 	                                                    Quote(FStringConv::ToWide(ClientSceneAsset)), FStringConv::ToWide(Address), Quote(LogPath.wstring())) +
 	                               SimulationArguments(PendingSettings);
-	return LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectERuntime.exe", Arguments);
+	// 자동 검증: --play-client-hold-keys W,Space → 클라이언트마다 --hold-keys (에디터가 띄운 클라이언트의 입력이 서버에 가는지 확인)
+	const std::wstring HoldKeys = FCommandLine::FromProcess().GetValue(L"--play-client-hold-keys");
+	return LaunchProcess(FPaths::GetExecutableDirectory() / L"ProjectERuntime.exe", HoldKeys.empty() ? Arguments : Arguments + L" --hold-keys " + HoldKeys);
 }
 
 bool FPlayInEditorNet::LaunchProcess(const std::wstring& Executable, const std::wstring& Arguments)

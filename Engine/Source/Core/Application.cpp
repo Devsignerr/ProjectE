@@ -84,6 +84,26 @@ int FApplication::Run()
 	}
 	// 크래시 알림 대화 상자는 패키지 게임 창에서만 (개발/자동 검증은 로그와 덤프로 충분, 서버는 사람이 없다)
 	FCrashHandler::SetShowDialog(FPaths::IsPackaged() && !Desc.bHeadless && ExitAfterFrames == 0);
+	if (const std::wstring HoldKeys = CommandLine.GetValue(L"--hold-keys"); !HoldKeys.empty())
+	{
+		// "W,Space" → 키 목록 (A~Z, Space)
+		size_t Begin = 0;
+		while (Begin <= HoldKeys.size())
+		{
+			const size_t       End  = std::min(HoldKeys.find(L',', Begin), HoldKeys.size());
+			const std::wstring Name = HoldKeys.substr(Begin, End - Begin);
+			if (Name.size() == 1 && Name[0] >= L'A' && Name[0] <= L'Z')
+			{
+				HeldKeys.push_back(static_cast<EKey>(static_cast<uint16>(EKey::A) + (Name[0] - L'A')));
+			}
+			else if (Name == L"Space")
+			{
+				HeldKeys.push_back(EKey::Space);
+			}
+			Begin = End + 1;
+		}
+		E_LOG(LogCore, Display, "--hold-keys: 키 {}개를 누른 상태로 실행", HeldKeys.size());
+	}
 	if (CommandLine.HasFlag(L"--crash-test"))
 	{
 		CrashTestFrame = 30; // 패키지 크래시 덤프 검증: 30프레임(틱) 뒤 의도적 액세스 위반
@@ -142,6 +162,13 @@ void FApplication::RunWindowedLoop()
 		if (bExitRequested)
 		{
 			break;
+		}
+		for (const EKey Key : HeldKeys) // 자동 검증: 누르고 있는 키
+		{
+			FWindowEvent Event;
+			Event.Type = EWindowEventType::KeyDown;
+			Event.Key  = Key;
+			Input.ProcessEvent(Event);
 		}
 
 		Timer.Tick();

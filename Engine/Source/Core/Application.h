@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <filesystem>
+#include <vector>
 
 struct FApplicationDesc
 {
@@ -75,8 +76,10 @@ private:
 	//   --exit-after <N>      N 프레임 렌더 후 종료 (--screenshot만 주면 기본 90, 헤드리스는 N 틱)
 	//   --screenshot <경로>   마지막 프레임을 PNG로 저장
 	//   --crash-test          30프레임 뒤 액세스 위반을 일으켜 크래시 덤프/대화 상자를 검증
+	//   --hold-keys W,Space   자동 검증: 그 키들을 누르고 있는 상태로 (A~Z, Space만) — 캐릭터 이동 등 입력 검증
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
 	uint64                FrameIndex = 0;
 	uint64                CrashTestFrame = 0; // --crash-test: 이 프레임(틱)에서 의도적 크래시 (덤프 검증)
+	std::vector<EKey>     HeldKeys;           // --hold-keys
 };

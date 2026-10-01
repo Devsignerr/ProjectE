@@ -135,6 +135,7 @@ using FScriptObjectHandle = uint64;
 //   local Rotator = { Properties = { Speed = 90.0 } }  -- 기본값 선언 (인스펙터에 표시, 씬에서 덮어쓰기)
 //   function Rotator:OnStart() end                     -- 첫 OnUpdate 직전 한 번
 //   function Rotator:OnUpdate(dt) end                  -- 매 프레임
+//   function Rotator:OnLateUpdate(dt) end              -- 매 프레임, 물리/트랜스폼 갱신 뒤 (카메라 따라가기)
 //   function Rotator:OnDestroy() end                   -- 엔티티/컴포넌트 제거 또는 플레이 종료 시
 //   return Rotator
 // 인스턴스(self)마다 self.entity(엔티티 핸들)와 self.Properties(기본값 + 오버라이드 복사본)가 있다.
@@ -165,6 +166,9 @@ public:
 	// DeltaSeconds는 MaxDeltaSeconds로 제한한다 (로딩/중단점 뒤 한 프레임에 크게 튀지 않도록, Unity maximumDeltaTime과 같은 목적)
 	static constexpr float MaxDeltaSeconds = 0.25f;
 	void Update(float DeltaSeconds, const FInput* Input);
+	// 물리·트랜스폼 갱신이 끝난 뒤 (FGameWorld::TickGameplay 끝): 스크립트 OnLateUpdate(dt) — 캐릭터를 따라가는 카메라처럼
+	// "이번 프레임 최종 위치"가 필요한 일 (OnUpdate에서 읽는 월드 위치는 물리가 움직이기 전 값이다)
+	void LateUpdate(float DeltaSeconds, const FInput* Input);
 	// 모든 인스턴스 OnDestroy 후 Lua 상태 파괴
 	void EndPlay();
 	bool IsPlaying() const { return PlayRuntime != nullptr; }

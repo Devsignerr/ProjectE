@@ -323,3 +323,45 @@ E_TEST(PlayerCharacter_MovesJumpsAndFaces)
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }
+
+// OnLateUpdate는 물리·트랜스폼 갱신 뒤에 불린다: 같은 프레임에 OnUpdate가 본 위치보다 물리가 옮긴 뒤의 위치를 본다 (카메라 따라가기)
+E_TEST(GameWorld_LateUpdateSeesPhysicsResult)
+{
+	const std::filesystem::path Content = FTestRegistry::GetTempDirectory() / L"ProjectELateUpdateTests";
+	std::filesystem::create_directories(Content / L"Scripts");
+	{
+		std::ofstream File(Content / L"Scripts/LateReader.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { UpdateZ = 0, LateZ = 0, LateCount = 0 } }
+function T:OnUpdate(dt) self.Properties.UpdateZ = self.entity:GetWorldPosition().Z end
+function T:OnLateUpdate(dt)
+	self.Properties.LateZ = self.entity:GetWorldPosition().Z
+	self.Properties.LateCount = self.Properties.LateCount + 1
+end
+return T
+)";
+	}
+	FScene        Scene;
+	const FEntity Ball = Scene.CreateEntity("Ball");
+	Scene.GetTransform(Ball).Position = FVector3(0.0f, 0.0f, 500.0f);
+	Scene.GetRegistry().Emplace<FSphereColliderComponent>(Ball).Radius = 25.0f;
+	Scene.GetRegistry().Emplace<FRigidBodyComponent>(Ball);
+	Scene.GetRegistry().Emplace<FScriptComponent>(Ball).ScriptAsset = "Scripts/LateReader.lua";
+	Scene.UpdateTransforms();
+
+	FScriptSystem  Scripts;
+	FPhysicsSystem Physics;
+	FGameWorld     World;
+	World.Init({ &Scripts, &Physics, nullptr, nullptr, Content });
+	World.BeginPlay(Scene);
+	for (int32 Frame = 0; Frame < 30; ++Frame)
+	{
+		World.TickGameplay(1.0f / 60.0f, nullptr);
+	}
+	const double UpdateZ = Scripts.GetInstanceProperty(Ball, "UpdateZ").Number;
+	const double LateZ   = Scripts.GetInstanceProperty(Ball, "LateZ").Number;
+	E_EXPECT_TRUE(LateZ < UpdateZ - 1.0);                                            // 떨어지는 중: 늦은 갱신이 이번 프레임 물리 결과
+	E_EXPECT_NEAR(LateZ, static_cast<double>(Scene.GetTransform(Ball).Position.Z), 1.0e-3); // = 프레임 최종 위치
+	E_EXPECT_NEAR(Scripts.GetInstanceProperty(Ball, "LateCount").Number, 30.0, 1.0e-9);
+	World.EndPlay();
+}

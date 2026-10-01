@@ -44,6 +44,14 @@ void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 	}
 }
 
+void FScriptSystem::LateUpdate(float DeltaSeconds, const FInput* Input)
+{
+	if (PlayRuntime)
+	{
+		PlayRuntime->LateUpdate(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
+	}
+}
+
 void FScriptSystem::EndPlay()
 {
 	if (!PlayRuntime)

@@ -61,8 +61,12 @@ function PlayerCharacter:OnUpdate(dt)
 	if Net.IsServer() then
 		self:ServerMove(dt)
 	end
+end
+
+-- 카메라는 물리/복제 보간이 캐릭터를 옮긴 뒤에 (OnUpdate에서 놓으면 한 프레임 늦게 따라가 떨려 보인다)
+function PlayerCharacter:OnLateUpdate(dt)
 	if self.IsLocalPlayer then
-		self:PlaceCamera() -- 이번 프레임 위치 기준
+		self:PlaceCamera()
 	end
 end
 

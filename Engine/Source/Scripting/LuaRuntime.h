@@ -14,6 +14,7 @@
 
 class FInput;
 class FScene;
+class FScriptDebugger;
 struct FScriptComponent;
 struct FTypeInfo;
 
@@ -59,7 +60,8 @@ public:
 		std::vector<FScriptPropertyDecl> Decls;     // Class.Properties (이름순)
 	};
 
-	FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErrorCounter);
+	// InDebugger: 연결할 스크립트 디버거 (비소유, 이 런타임보다 오래 산다). 없으면 오류 처리기도 원래 debug.traceback
+	FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErrorCounter, FScriptDebugger* InDebugger = nullptr);
 	~FLuaRuntime();
 
 	FLuaRuntime(const FLuaRuntime&)            = delete;
@@ -254,7 +256,8 @@ private:
 	void          CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const sol::variadic_args& Args);
 
 	sol::state            Lua;
-	sol::protected_function Traceback; // 오류 메시지에 콜스택 추가 (debug.traceback)
+	FScriptDebugger*      Debugger = nullptr; // 연결된 디버거 (비소유, 없으면 nullptr)
+	sol::protected_function Traceback; // 오류 메시지에 콜스택 추가 (debug.traceback, 디버거가 있으면 오류 정지 후 같은 동작)
 	std::filesystem::path ContentDirectory;
 	uint32&               ErrorCounter;
 	const FScriptAudioHooks* AudioHooks = nullptr;

@@ -16,6 +16,7 @@
 class FInput;
 class FLuaRuntime;
 class FScene;
+class FScriptDebugger;
 
 // 스크립트가 쓰는 오디오 기능. 앱이 Audio 모듈(FAudioSystem/FAudioEngine)과 연결한다 (비어 있으면 무시)
 struct FScriptAudioHooks
@@ -252,6 +253,11 @@ public:
 	bool CallObject(FScriptObjectHandle Handle, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound = nullptr);
 	void DestroyObject(FScriptObjectHandle Handle);
 
+	// ---- 스크립트 디버거 (Scripting/ScriptDebugger.h): 다음 BeginPlay의 Lua 상태에 연결한다 (비소유, 이 시스템보다 오래 산다).
+	// 에디터만 연결한다 — 런타임/서버/테스트 기본은 없음 (중단점·오류 정지 없음, 훅 비용 없음)
+	void             SetDebugger(FScriptDebugger* InDebugger) { Debugger = InDebugger; }
+	FScriptDebugger* GetDebugger() const { return Debugger; }
+
 	// ---- 핫 리로드: 변경된 .lua 파일 (절대 경로). 실패하면 기존 스크립트를 유지한다. 반환: 성공 여부
 	bool ReloadScript(const std::filesystem::path& ScriptPath);
 
@@ -289,6 +295,7 @@ private:
 	FScriptAppHooks              AppHooks;
 	FScriptSteamHooks            SteamHooks;
 	FScriptDebugDrawHooks        DebugDrawHooks;
+	FScriptDebugger*             Debugger = nullptr; // 비소유 (에디터)
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)

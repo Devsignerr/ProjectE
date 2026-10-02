@@ -52,6 +52,7 @@ void FPlayMode::Play(FEditorContext& Context, const FPlayOptions& Options)
 
 	State          = EState::Playing;
 	bStepRequested = false;
+	bPossessed     = true;
 	SyncContextFlags(Context);
 
 	if (Options.BeforeBeginPlay)
@@ -79,9 +80,21 @@ void FPlayMode::Stop(FEditorContext& Context)
 	Context.Select(EditScene->GetRegistry().IsValid(EditSelection) ? EditSelection : NullEntity);
 	EditSelection = NullEntity;
 
-	State = EState::Editing;
+	State      = EState::Editing;
+	bPossessed = false;
 	SyncContextFlags(Context);
 	E_LOG(LogEditor, Display, "플레이 정지 — 편집 씬 복원");
+}
+
+void FPlayMode::SetPossessed(FEditorContext& Context, bool bInPossessed)
+{
+	if (!IsActive() || bPossessed == bInPossessed)
+	{
+		return;
+	}
+	bPossessed = bInPossessed;
+	SyncContextFlags(Context);
+	E_LOG(LogEditor, Display, "{}", bPossessed ? "뷰포트 빙의 — 입력이 게임으로 갑니다" : "빙의 해제 — 게임은 계속, 편집 카메라로 선택/편집");
 }
 
 void FPlayMode::TogglePause()
@@ -159,6 +172,7 @@ FCamera* FPlayMode::UpdateGameCamera(float AspectRatio)
 
 void FPlayMode::SyncContextFlags(FEditorContext& Context) const
 {
-	Context.bPlaying = State != EState::Editing;
-	Context.bPaused  = State == EState::Paused;
+	Context.bPlaying   = State != EState::Editing;
+	Context.bPaused    = State == EState::Paused;
+	Context.bPossessed = IsPossessed();
 }

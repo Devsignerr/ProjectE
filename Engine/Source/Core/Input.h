@@ -41,6 +41,9 @@ public:
 	FInput WithoutMouseButtons() const;
 	// 게임 UI 텍스트 상자가 키보드를 가져간 프레임: 키/문자를 비운다 (마우스는 그대로)
 	FInput WithoutKeyboard() const;
+	// 게임이 입력을 받지 않는 프레임 (입력 모드 UIOnly, 에디터 플레이 빙의 해제): 키/마우스 버튼/휠/시점/문자/게임패드/액션을 모두 비운다
+	// (마우스 위치만 유지, 이전 상태도 비워 떼어짐 판정이 생기지 않는다)
+	FInput WithoutAnyInput() const;
 
 	bool IsKeyDown(EKey Key) const { return KeyStates[static_cast<size_t>(Key)]; }
 	bool IsKeyPressed(EKey Key) const;  // 이번 프레임에 눌림

@@ -5,6 +5,7 @@
 #include "AI/BehaviorTree/BehaviorTreeInstance.h"
 #include "Core/Assert.h"
 #include "Core/CommandLine.h"
+#include "Core/InputMode.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
 #include "Physics/PhysicsComponents.h"
@@ -269,6 +270,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	RagdollDeadStates.clear();
 	PendingSessionRequest.reset();
 	PendingSceneRequest.reset();
+	FInputModeState::Reset(); // 입력 모드는 플레이(맵)마다 기본값에서 시작 — 게임 모듈/스크립트 시작 전에
 	ClearSubScenes();
 	PredictedBodies.clear();
 	PredictionClock        = 0.0f;
@@ -342,6 +344,7 @@ void FGameWorld::EndPlay()
 		Systems.Physics->End();
 	}
 	ClearSubScenes();
+	FInputModeState::Reset();
 	FDebugDraw::Get().Clear(); // 플레이 정지 후 편집 화면에 남지 않게
 	Scene = nullptr;
 }

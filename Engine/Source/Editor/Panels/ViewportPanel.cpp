@@ -301,11 +301,16 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				ImGui::EndDragDropTarget();
 			}
 
-			DrawSelectedLightShapes(Context, ImagePosition, ImageSize);
+			// 플레이 중 빙의(F8로 전환): 뷰포트 입력은 게임 것 — 라이트 모양/편집 도구/기즈모/클릭 선택/단축키/툴바 없음
+			const bool bCanEdit = Context.CanEditInViewport();
+			if (bCanEdit)
+			{
+				DrawSelectedLightShapes(Context, ImagePosition, ImageSize);
+			}
 			// 편집 도구(지형/폴리지 브러시)가 마우스를 가져가면 기즈모/클릭 선택을 하지 않는다
-			const bool bToolCaptured =
-				ToolOverlay && ToolOverlay(Context, Input, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y), bHovered);
-			if (!bToolCaptured)
+			const bool bToolCaptured = bCanEdit && ToolOverlay &&
+			                           ToolOverlay(Context, Input, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y), bHovered);
+			if (bCanEdit && !bToolCaptured)
 			{
 				DrawGizmo(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
 			}
@@ -314,12 +319,12 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			const ImVec2 DragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
 			const bool   bDragged  = (DragDelta.x * DragDelta.x + DragDelta.y * DragDelta.y) > 16.0f;
 			// 플레이 중 게임 UI가 포인터를 가져갔으면(버튼 클릭 등) 엔티티를 선택하지 않는다
-			const bool   bPick     = bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
+			const bool   bPick     = bCanEdit && bHovered && !bGizmoOver && !bUsingGizmo && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !bDragged &&
 			                   !Input.IsMouseButtonDown(EMouseButton::Right) && !(Context.bPlaying && bGameUIWantsPointer) && !bToolCaptured;
 
 			// 단축키 (뷰포트 위, 카메라 조작 중 아님)
 			// Ctrl 조합(Ctrl+R 셰이더 재로드, Ctrl+S 저장 등)은 에디터 단축키이므로 제외
-			if (bHovered && !Input.IsMouseButtonDown(EMouseButton::Right) && !ImGui::GetIO().KeyCtrl)
+			if (bCanEdit && bHovered && !Input.IsMouseButtonDown(EMouseButton::Right) && !ImGui::GetIO().KeyCtrl)
 			{
 				if (ImGui::IsKeyPressed(ImGuiKey_W)) GizmoOperation = EGizmoOperation::Translate;
 				if (ImGui::IsKeyPressed(ImGuiKey_E)) GizmoOperation = EGizmoOperation::Rotate;
@@ -327,17 +332,32 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				if (ImGui::IsKeyPressed(ImGuiKey_F)) FocusSelection(Context);
 			}
 
-			// 플레이 모드 표시: 뷰포트 테두리 (재생 초록, 일시정지 노랑)
+			// 플레이 모드 표시: 뷰포트 테두리 (재생 초록, 일시정지 노랑, 빙의 해제 강조색)
 			if (Context.bPlaying)
 			{
-				const ImU32 BorderColor = Context.bPaused ? IM_COL32(255, 200, 70, 255) : IM_COL32(90, 230, 110, 255);
+				const ImU32 BorderColor = !Context.bPossessed ? ImGui::GetColorU32(FEditorTheme::Accent)
+				                          : Context.bPaused   ? IM_COL32(255, 200, 70, 255)
+				                                              : IM_COL32(90, 230, 110, 255);
 				ImGui::GetWindowDrawList()->AddRect(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y),
 				                                    BorderColor, 0.0f, 0, 3.0f);
 			}
 
-			// 툴바 오버레이
-			ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
-			DrawToolbar(Context);
+			// 툴바 오버레이 (빙의 중에는 게임 화면만)
+			if (bCanEdit)
+			{
+				ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
+				DrawToolbar(Context);
+			}
+			if (Context.bPlaying)
+			{
+				// 빙의 상태 안내 (오른쪽 아래)
+				const char* const Label = Context.bPossessed ? ICON_FA_GAMEPAD " 빙의 중 — F8 빙의 해제" : ICON_FA_ARROW_POINTER " 빙의 해제됨 — F8 다시 빙의";
+				const ImVec2      Size  = ImGui::CalcTextSize(Label);
+				const ImVec2      Pos(ImagePosition.x + ImageSize.x - Size.x - 12.0f, ImagePosition.y + ImageSize.y - Size.y - 10.0f);
+				ImDrawList* const List = ImGui::GetWindowDrawList();
+				List->AddRectFilled(ImVec2(Pos.x - 6.0f, Pos.y - 3.0f), ImVec2(Pos.x + Size.x + 6.0f, Pos.y + Size.y + 3.0f), IM_COL32(0, 0, 0, 150), 4.0f);
+				List->AddText(Pos, Context.bPossessed ? ImGui::GetColorU32(FEditorTheme::Success) : IM_COL32(235, 235, 235, 255), Label);
+			}
 			if (StatOverlay)
 			{
 				StatOverlay(FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
@@ -386,19 +406,19 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 	// 씬 렌더러가 HDR로 그린 뒤 톤매핑해 뷰포트 타깃(sRGB RTV)에 기록 → 선택 아웃라인 합성
 	RenderTarget->Begin(CommandList, nullptr);
 	Context.Renderer->Render(*Context.Scene, *Context.Camera, RenderTarget->GetOutput());
-	if (bShowGrid)
+	if (bShowGrid && Context.CanEditInViewport()) // 빙의 중에는 게임 화면 그대로
 	{
 		RenderGrid(Context);
 	}
 	RenderNavMeshDebug(Context);
 	RenderDebugDraw(Context);
-	if (SelectionOutline)
+	if (SelectionOutline && Context.CanEditInViewport()) // 빙의 중에는 선택 아웃라인 없음 (계층 창 선택은 유지)
 	{
 		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.Selection.GetEntities(), RenderTarget->GetOutput(),
 		                         &Context.Renderer->GetSkinPalettes());
 	}
-	// 플레이 중: 게임 UI를 맨 위에 (레이아웃/입력은 OnUpdate의 FUISystem::Update가 이미 처리)
-	if (Context.bPlaying)
+	// 플레이 중: 게임 UI를 맨 위에 (레이아웃/입력은 OnUpdate의 FUISystem::Update가 이미 처리). 빙의 해제 중에는 편집 화면이므로 그리지 않는다
+	if (Context.bPlaying && Context.bPossessed)
 	{
 		RenderGameUI(Context);
 	}
@@ -621,7 +641,7 @@ void FViewportPanel::DrawToolbar(FEditorContext& Context)
 
 	// 편집 카메라 투영 (플레이 중에는 게임 카메라 설정을 따른다)
 	ImGui::SameLine();
-	ImGui::BeginDisabled(Context.bPlaying);
+	ImGui::BeginDisabled(!Context.CanEditInViewport()); // 빙의 해제 중에는 편집 카메라
 	const bool bOrthographic = Context.Camera->IsOrthographic();
 	if (ImGui::Button(bOrthographic ? ICON_FA_VECTOR_SQUARE " 직교" : ICON_FA_VIDEO " 원근"))
 	{

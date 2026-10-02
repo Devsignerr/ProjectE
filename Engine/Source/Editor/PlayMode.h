@@ -29,6 +29,7 @@ struct FPlayOptions
 //   Play:  편집 씬을 PlayScene으로 복제(FSceneCloner) → Context.Scene을 PlayScene으로 전환 → FGameWorld::BeginPlay
 //   Stop:  FGameWorld::EndPlay(스크립트 OnDestroy, 물리 파괴) → PlayScene 폐기 → Context.Scene을 편집 씬으로 되돌림 (선택 복원)
 //   Pause/Step: 일시정지 중에는 게임 로직을 멈추고, Step은 한 프레임(1/60초)만 진행
+//   Possess/Eject: 플레이는 빙의로 시작한다(뷰포트 입력 → 게임). 빙의를 풀면 게임은 계속 돌고 편집 카메라로 플레이 씬을 고른다
 //   게임 로직 순서(스크립트/게임 모듈/물리)는 FGameWorld::TickGameplay가 정한다 (편집 모드에서는 돌지 않음)
 // 플레이 중 편집(기즈모/인스펙터)은 PlayScene에만 적용되고 정지하면 사라진다 (Unity/UE와 동일).
 class FPlayMode
@@ -62,6 +63,10 @@ public:
 	// 주 카메라 컴포넌트가 있으면 GameCamera를 그 시점으로 갱신하고 반환, 없으면 nullptr (에디터 카메라 사용)
 	FCamera* UpdateGameCamera(float AspectRatio);
 
+	// 뷰포트 빙의 (FEditorContext::bPossessed): Play가 빙의로 시작, Stop이 해제. 카메라/커서 처리는 앱이 (FEditorApplication::SetPlayPossessed)
+	void SetPossessed(FEditorContext& Context, bool bInPossessed);
+	bool IsPossessed() const { return IsActive() && bPossessed; }
+
 	EState GetState() const { return State; }
 	bool   IsActive() const { return State != EState::Editing; }
 	bool   IsPaused() const { return State == EState::Paused; }
@@ -80,4 +85,5 @@ private:
 	FCamera                  GameCamera;
 	EState                   State         = EState::Editing;
 	bool                     bStepRequested = false;
+	bool                     bPossessed     = false;
 };

@@ -1,5 +1,6 @@
 #include "Core/Input.h"
 #include "Core/InputActions.h"
+#include "Core/InputMode.h"
 #include "Core/Settings/InputSettings.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/Settings/SettingsRegistry.h"
@@ -222,6 +223,62 @@ E_TEST(InputActions_SetActionValues)
 	Remote.EndFrame();
 	E_EXPECT_TRUE(Remote.IsActionDown("Jump") && !Remote.WasActionPressed("Jump"));
 	E_EXPECT_TRUE(Remote.WithoutKeyboard().IsActionDown("Jump")); // 원격 값은 키 상태와 무관
+}
+
+// 입력 모드: 이름 변환, 모드별 배분 규칙, 게임 입력 선택 (GameOnly = 그대로, GameAndUI = UI가 가져간 것만 뺌, UIOnly = 빈 입력)
+E_TEST(InputMode_Routing)
+{
+	EInputMode Mode = EInputMode::GameAndUI;
+	E_EXPECT_TRUE(TryParseInputMode("gameonly", Mode) && Mode == EInputMode::GameOnly);
+	E_EXPECT_TRUE(TryParseInputMode("UIOnly", Mode) && Mode == EInputMode::UIOnly);
+	E_EXPECT_FALSE(TryParseInputMode("GameAndUi2", Mode));
+	E_EXPECT_TRUE(std::string_view(ToString(EInputMode::GameAndUI)) == "GameAndUI");
+	E_EXPECT_TRUE(!GetInputModeRouting(EInputMode::GameOnly).bUIInput && GetInputModeRouting(EInputMode::GameOnly).bLockCursor);
+	E_EXPECT_TRUE(GetInputModeRouting(EInputMode::GameAndUI).bUIInput && GetInputModeRouting(EInputMode::GameAndUI).bGameInput &&
+	              !GetInputModeRouting(EInputMode::GameAndUI).bLockCursor);
+	E_EXPECT_TRUE(GetInputModeRouting(EInputMode::UIOnly).bUIInput && !GetInputModeRouting(EInputMode::UIOnly).bGameInput);
+
+	const FInputMapping Mapping = FInputSettings::MakeDefaultMapping();
+	FInput              Input;
+	PressKey(Input, EKey::Space, true);
+	FWindowEvent Click;
+	Click.Type   = EWindowEventType::MouseButtonDown;
+	Click.Button = EMouseButton::Left;
+	Input.ProcessEvent(Click);
+	FWindowEvent Look;
+	Look.Type   = EWindowEventType::RawMouseMove;
+	Look.MouseX = 5;
+	Input.ProcessEvent(Look);
+	Input.UpdateActions(Mapping, 0.016f);
+
+	FInput Storage;
+	// GameAndUI: UI가 포인터를 가져가면 마우스 버튼만 빠진다
+	const FInput& Shared = SelectGameInput(EInputMode::GameAndUI, Input, true, false, Storage);
+	E_EXPECT_TRUE(!Shared.IsMouseButtonDown(EMouseButton::Left) && Shared.IsKeyDown(EKey::Space) && Shared.IsActionDown("Jump"));
+	E_EXPECT_TRUE(&SelectGameInput(EInputMode::GameAndUI, Input, false, false, Storage) == &Input);
+	// GameOnly: 그대로 (UI는 입력을 받지 않았다)
+	E_EXPECT_TRUE(&SelectGameInput(EInputMode::GameOnly, Input, false, false, Storage) == &Input);
+	// UIOnly: 키/버튼/시점/액션 모두 없음, 눌림·떼어짐 판정도 없음
+	const FInput& Empty = SelectGameInput(EInputMode::UIOnly, Input, false, false, Storage);
+	E_EXPECT_TRUE(!Empty.IsKeyDown(EKey::Space) && !Empty.IsKeyReleased(EKey::Space) && !Empty.IsMouseButtonDown(EMouseButton::Left));
+	E_EXPECT_TRUE(!Empty.IsActionDown("Jump") && !Empty.WasActionReleased("Jump"));
+	E_EXPECT_NEAR(Empty.GetLookDeltaX(), 0.0f, 1.0e-6f);
+	E_EXPECT_EQUALS(Empty.GetActionValue("Look"), FVector2::ZeroVector, 1.0e-6f);
+
+	// 원격 입력(받은 액션 값)도 비운다
+	std::vector<FInputActionState> Values(Mapping.Actions.size());
+	Values[2].Value   = FVector2(1.0f, 0.0f); // Jump
+	Values[2].bActive = true;
+	FInput Remote;
+	Remote.SetActionValues(Mapping, Values);
+	E_EXPECT_FALSE(Remote.WithoutAnyInput().IsActionDown("Jump"));
+
+	// 전역 상태: Set/Reset마다 리비전이 오른다
+	const uint32 Revision = FInputModeState::GetRevision();
+	FInputModeState::Set(EInputMode::UIOnly);
+	E_EXPECT_TRUE(FInputModeState::Get() == EInputMode::UIOnly && FInputModeState::GetRevision() == Revision + 1);
+	FInputModeState::Reset();
+	E_EXPECT_TRUE(FInputModeState::Get() == EInputMode::GameAndUI && FInputModeState::GetRevision() == Revision + 2);
 }
 
 // 플레이어 재지정: 바인딩 교체/추가/되돌리기, 사용자 파일 꺼짐(기본)이면 파일을 쓰지 않는다

@@ -4,6 +4,7 @@
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Core/GameUserSettings.h"
+#include "Core/InputMode.h"
 #include "Network/LanDiscovery.h"
 #include "Network/NetDriver.h"
 #include "Network/NetPlayerSpawner.h"
@@ -53,6 +54,8 @@ private:
 	void ApplyWindowMode(EWindowMode Mode, bool bSave);
 	void SetVSync(bool bEnabled);
 	void SaveUserSettings() const;
+	// 입력 모드 (Core/InputMode.h): 모드가 바뀌면 커서 기본값(GameOnly = 잠금)을 적용하고, GameOnly에서 잠금이 풀렸으면 클릭으로 다시 잠근다
+	void UpdateInputModeCursor(const FInput& InputState);
 
 	// ---- 세션 (RuntimeSession.cpp): 씬 로드 + 넷 모드별 시작/종료, 스크립트 요청(Net.Host/Connect/Disconnect) 처리
 	void LoadScene(); // SceneAsset (없거나 실패하면 자리표시 씬)
@@ -68,6 +71,8 @@ private:
 	std::string                SceneAsset;    // Content 기준 현재 씬
 	std::optional<std::string> PendingTravel; // 다음 프레임에 열 씬 (이번 프레임은 로딩 화면)
 	uint16                     HostPort = 0;  // 리슨 서버 포트 (LAN 알림)
+	uint32                     AppliedInputModeRevision = 0; // 커서 기본값을 마지막으로 적용한 FInputModeState 리비전
+	EInputMode                 AppliedInputMode         = EInputMode::GameAndUI;
 
 	FGameUserSettings UserSettings;
 

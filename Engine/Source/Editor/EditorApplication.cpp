@@ -155,8 +155,13 @@ bool FEditorApplication::OnInit()
 		[this](FEntity Entity) { AudioSystem.Stop(Audio, Entity); },
 		[this](const std::string& ClipAsset) { Audio.PlayOneShot(Scripts.GetContentDirectory() / FStringConv::ToWide(ClipAsset)); },
 	});
-	// Lua Game.Quit()은 에디터에서 플레이 정지 (창 모드/VSync는 에디터 창에 적용하지 않는다)
-	Scripts.SetAppHooks({ [this]() { bScriptStopPlayRequested = true; } });
+	// Lua Game.Quit()은 에디터에서 플레이 정지 (창 모드/VSync는 에디터 창에 적용하지 않는다).
+	// Game.SetMouseLocked는 뷰포트에 빙의 중일 때만 (뷰포트 가운데에 가둠 — Shift+F1/F8/ESC/포커스 이동으로 풀림)
+	Scripts.SetAppHooks({
+		.Quit           = [this]() { bScriptStopPlayRequested = true; },
+		.SetMouseLocked = [this](bool bLocked) { SetPlayCursorLocked(bLocked); },
+		.IsMouseLocked  = [this]() { return GetWindow().IsCursorLocked(); },
+	});
 	if (Audio.Init() && IsAutomationRun())
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
@@ -374,6 +379,11 @@ bool FEditorApplication::OnInit()
 	if (CommandLine.HasFlag(L"--play"))
 	{
 		StartPlay();
+		// 자동 검증: --play-eject 로 플레이 몇 프레임 뒤 빙의 해제 (편집 카메라 + 선택/기즈모/아웃라인 확인)
+		if (CommandLine.HasFlag(L"--play-eject"))
+		{
+			VerifyEjectFrame = GetFrameIndex() + 10;
+		}
 	}
 	return true;
 }
@@ -410,6 +420,11 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	FEditorActions::PruneSelection(Context);
 	SyncNavMeshDisplay();
 
+	if (VerifyEjectFrame != 0 && GetFrameIndex() >= VerifyEjectFrame)
+	{
+		VerifyEjectFrame = 0;
+		SetPlayPossessed(false);
+	}
 	UpdatePlayMode(DeltaSeconds);
 	// 애니메이션/파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
 	World.TickPresentation(*Context.Scene, DeltaSeconds);
@@ -854,7 +869,8 @@ void FEditorApplication::HandleShortcuts()
 
 	// 선택 대상 편집 (뷰포트/계층 창에 포커스가 있을 때만 — 콘텐츠 브라우저 등은 자체 Delete/복사를 쓴다).
 	// ImGui 키보드 내비게이션이 켜져 있어 창 포커스 중에는 WantCaptureKeyboard가 항상 참이므로 창 포커스로 판정한다
-	if (!ViewportPanel.IsFocused() && !HierarchyPanel.IsFocused())
+	// 빙의 중인 뷰포트의 키는 게임 것 (Delete/End/복사·붙여넣기를 편집에 쓰지 않는다)
+	if (!(ViewportPanel.IsFocused() && Context.CanEditInViewport()) && !HierarchyPanel.IsFocused())
 	{
 		return;
 	}
@@ -1509,7 +1525,9 @@ void FEditorApplication::StartPlay()
 	}
 	// Game.GetCurrentScene: 편집 중인 씬 파일 (Content 기준, 저장 안 한 씬이면 "")
 	World.SetCurrentSceneAsset(CurrentScenePath.empty() ? std::string() : FPrefabLibrary::Get().MakeAssetPath(CurrentScenePath));
-	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임", false);
+	ShowNotification("플레이 시작 — F5/ESC 정지, F6 일시정지, F7 한 프레임, F8 빙의 해제", false);
+	AppliedInputModeRevision = FInputModeState::GetRevision(); // BeginPlay가 GameAndUI로 되돌렸다
+	AppliedInputMode         = FInputModeState::Get();
 }
 
 void FEditorApplication::StopPlay()
@@ -1521,6 +1539,14 @@ void FEditorApplication::StopPlay()
 	PlayMode.Stop(Context);
 	NetPlay.Stop(); // 네트워크 종료 + 서버/클라이언트 창 닫기
 	AudioSystem.Reset(Audio);
+	SetPlayCursorLocked(false);
+	// 빙의를 풀었던 플레이: 편집 카메라를 플레이 전 시점으로 되돌린다
+	if (EditCameraBeforeEject)
+	{
+		Camera = *EditCameraBeforeEject;
+		EditCameraBeforeEject.reset();
+		CameraController.SyncFromCamera(Camera);
+	}
 	// 플레이 중 뷰포트 크기가 바뀌었을 수 있으므로 에디터 카메라 종횡비를 맞춘다
 	Context.Camera = &Camera;
 	Camera.SetAspectRatio(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));
@@ -1528,9 +1554,26 @@ void FEditorApplication::StopPlay()
 
 void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 {
+	// 입력 모드(Game.SetInputMode)와 빙의: 빙의를 풀면 게임은 빈 입력, 게임 UI도 입력 없음
+	const EInputMode InputMode  = FInputModeState::Get();
+	const bool       bPossessed = PlayMode.IsPossessed();
+	// 게임 마우스 버튼은 뷰포트에서 누른 것만 (계층/인스펙터 클릭은 게임 입력이 아니다). 누르고 있는 동안은 누를 때의 판정을 유지한다
+	// (ImGui는 창 본문을 누르고 있으면 창 이동 ID가 활성이라 IsHovered가 거짓이 된다)
+	if (!bPlayMouseButtonsHeld)
+	{
+		bPlayMouseInViewport = ViewportPanel.IsHovered() || GetWindow().IsCursorLocked();
+	}
+	bPlayMouseButtonsHeld = GetInput().GetButtonStates().any();
+	UpdatePlayCursor(GetInput());
 	// 텍스트 입력 중에는 게임에 키 입력을 주지 않는다
 	const bool    bGameInput = !ImGui::GetIO().WantTextInput;
 	const FInput* GameInput  = bGameInput ? &GetInput() : nullptr;
+	FInput        ViewportMouseInput;
+	if (GameInput != nullptr && !bPlayMouseInViewport)
+	{
+		ViewportMouseInput = GameInput->WithoutMouseButtons();
+		GameInput          = &ViewportMouseInput;
+	}
 
 	// 게임 UI가 먼저 입력을 본다 (뷰포트 이미지 위 포인터만). 포인터를 가져가면 게임에는 마우스 버튼/휠을 뺀 입력
 	NetPlay.Update(DeltaSeconds); // 네트워크 플레이: 수신/클라이언트 보간 (게임플레이 틱 전)
@@ -1540,10 +1583,11 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 	bool bGameTextInput                = false;
 	if (PlayMode.IsActive())
 	{
+		const bool    bUIInput = GameInput != nullptr && bPossessed && GetInputModeRouting(InputMode).bUIInput;
 		FUIFrameInput UIInput;
 		UIInput.Viewport    = ViewportPanel.GetGameUIViewport();
-		UIInput.bHasPointer = GameInput != nullptr;
-		if (GameInput != nullptr)
+		UIInput.bHasPointer = bUIInput;
+		if (bUIInput)
 		{
 			UIInput.Pointer = FUISystem::MakePointer(*GameInput, -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
 			UIInput.Keys    = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
@@ -1551,22 +1595,18 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 		UIInput.DeltaSeconds          = DeltaSeconds;
 		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
 		// 게임 UI 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (뷰포트 이미지 위치만큼 옮김)
-		bGameTextInput = GameInput != nullptr && UIResult.bKeyboard && UIResult.bHasTextCaret;
+		bGameTextInput = bUIInput && UIResult.bKeyboard && UIResult.bHasTextCaret;
 		if (bGameTextInput)
 		{
 			const FVector2 Caret = UIResult.TextCaret.Min + ViewportPanel.GetImageMin();
 			GetWindow().SetTextInput(true, static_cast<int32>(Caret.X), static_cast<int32>(Caret.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
 		}
-		if (GameInput != nullptr && (UIResult.bPointer || UIResult.bKeyboard))
+		if (GameInput != nullptr)
 		{
 			ViewportPanel.bGameUIWantsPointer  = UIResult.bPointer;
 			ViewportPanel.bGameUIWantsKeyboard = UIResult.bKeyboard;
-			BlockedInput                       = UIResult.bPointer ? GameInput->WithoutMouseButtons() : *GameInput;
-			if (UIResult.bKeyboard)
-			{
-				BlockedInput = BlockedInput.WithoutKeyboard();
-			}
-			GameInput = &BlockedInput;
+			// 빙의 해제 중에는 UIOnly처럼 빈 입력 (nullptr이 아니라 빈 입력 — 클라이언트는 이것을 서버로 보내 누르던 키가 남지 않는다)
+			GameInput = &SelectGameInput(bPossessed ? InputMode : EInputMode::UIOnly, *GameInput, UIResult.bPointer, UIResult.bKeyboard, BlockedInput);
 		}
 	}
 	if (!bGameTextInput)
@@ -1600,9 +1640,9 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 		}
 	}
 
-	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라
+	// 주 카메라 컴포넌트가 있으면 그 시점으로 보고, 없으면 에디터 카메라. 빙의를 풀면 항상 에디터 카메라
 	FCamera* GameCamera = PlayMode.UpdateGameCamera(ViewportPanel.GetAspectRatio(Camera.GetAspectRatio()));
-	Context.Camera      = GameCamera != nullptr ? GameCamera : &Camera;
+	Context.Camera      = GameCamera != nullptr && PlayMode.IsPossessed() ? GameCamera : &Camera;
 
 	// 오디오: 플레이 중에만, 보고 있는 카메라가 청자 (트랜스폼은 직전 프레임 갱신 기준)
 	if (PlayMode.IsActive())
@@ -1637,13 +1677,106 @@ void FEditorApplication::HandlePlayShortcuts()
 	{
 		PlayMode.RequestStep();
 	}
+	// F8: 빙의 ↔ 빙의 해제 (언리얼 PIE Possess/Eject)
+	if (ImGui::IsKeyPressed(ImGuiKey_F8, false) && PlayMode.IsActive())
+	{
+		SetPlayPossessed(!PlayMode.IsPossessed());
+	}
+	// Shift+F1: 빙의는 유지하고 커서만 풀기 (뷰포트를 클릭하면 GameOnly는 다시 잠근다)
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Shift | ImGuiKey_F1))
+	{
+		SetPlayCursorLocked(false);
+	}
+}
+
+void FEditorApplication::SetPlayPossessed(bool bPossessed)
+{
+	if (!PlayMode.IsActive() || PlayMode.IsPossessed() == bPossessed)
+	{
+		return;
+	}
+	if (!bPossessed)
+	{
+		// 편집 카메라를 지금 보던 게임 카메라 시점으로 (처음 풀 때의 편집 카메라는 기억했다가 정지하면 되돌린다)
+		if (!EditCameraBeforeEject)
+		{
+			EditCameraBeforeEject = Camera;
+		}
+		if (Context.Camera != nullptr && Context.Camera != &Camera)
+		{
+			Camera = *Context.Camera;
+		}
+		CameraController.SyncFromCamera(Camera);
+		Context.Camera = &Camera;
+		SetPlayCursorLocked(false);
+	}
+	PlayMode.SetPossessed(Context, bPossessed);
+	if (bPossessed && GetInputModeRouting(FInputModeState::Get()).bLockCursor)
+	{
+		SetPlayCursorLocked(true); // 다시 빙의: 입력 모드 기본값 (GameOnly = 잠금)
+	}
+	AppliedInputModeRevision = FInputModeState::GetRevision();
+	AppliedInputMode         = FInputModeState::Get();
+	ShowNotification(bPossessed ? "뷰포트 빙의 — 입력이 게임으로 갑니다 (F8 빙의 해제)" : "빙의 해제 — 게임은 계속 진행, 클릭으로 선택/기즈모 (F8 다시 빙의)", false);
+}
+
+void FEditorApplication::SetPlayCursorLocked(bool bLocked)
+{
+	if (bLocked && (!PlayMode.IsPossessed() || IsAutomationRun() || (!GetWindow().IsCursorLocked() && !bPlayMouseInViewport)))
+	{
+		return; // 빙의 중 + 마우스가 뷰포트에 있을 때만 (자동 검증은 잠그지 않는다 — 런타임과 같게). 밖이면 뷰포트를 클릭할 때 잠근다
+	}
+	if (bLocked)
+	{
+		// 뷰포트 이미지 가운데에 가둔다 (ImGui 좌표 = 창 클라이언트 좌표, 멀티 뷰포트 꺼짐)
+		const FUIRect  Area   = ViewportPanel.GetGameUIViewport();
+		const FVector2 Center = ViewportPanel.GetImageMin() + (Area.Max - Area.Min) * 0.5f;
+		GetWindow().SetCursorLockPoint(static_cast<int32>(Center.X), static_cast<int32>(Center.Y));
+	}
+	GetWindow().SetCursorLocked(bLocked);
+}
+
+void FEditorApplication::UpdatePlayCursor(const FInput& InputState)
+{
+	if (!PlayMode.IsPossessed())
+	{
+		if (GetWindow().IsCursorLocked())
+		{
+			SetPlayCursorLocked(false);
+		}
+		return; // 다시 빙의할 때 SetPlayPossessed가 그때의 모드로 적용한다
+	}
+	const EInputMode        InputMode = FInputModeState::Get();
+	const FInputModeRouting Routing   = GetInputModeRouting(InputMode);
+	if (FInputModeState::GetRevision() != AppliedInputModeRevision)
+	{
+		// 모드에 들어갈 때의 기본값만 (런타임과 같은 규칙 — GameAndUI 재설정은 스크립트가 잠근 커서를 건드리지 않는다)
+		if (Routing.bLockCursor)
+		{
+			SetPlayCursorLocked(true);
+		}
+		else if (GetInputModeRouting(AppliedInputMode).bLockCursor)
+		{
+			SetPlayCursorLocked(false);
+		}
+		AppliedInputModeRevision = FInputModeState::GetRevision();
+		AppliedInputMode         = InputMode;
+	}
+	else if (Routing.bLockCursor && !GetWindow().IsCursorLocked() && bPlayMouseInViewport && InputState.IsMouseButtonPressed(EMouseButton::Left))
+	{
+		SetPlayCursorLocked(true); // Shift+F1/포커스 상실로 풀린 잠금: 뷰포트를 클릭하면 다시
+	}
+	else if (GetWindow().IsCursorLocked())
+	{
+		SetPlayCursorLocked(true); // 뷰포트가 움직였으면 가두는 점을 따라간다
+	}
 }
 
 void FEditorApplication::DrawPlayControls()
 {
 	// 메뉴 바 가운데 아이콘 버튼 (언리얼처럼 재생/일시정지/한 프레임/정지 자리가 고정)
 	const float ButtonWidth = ImGui::GetFrameHeight() * 1.4f;
-	const float GroupWidth  = ButtonWidth * 4.0f + ImGui::GetStyle().ItemSpacing.x * 3.0f;
+	const float GroupWidth  = ButtonWidth * 5.0f + ImGui::GetStyle().ItemSpacing.x * 4.0f;
 	ImGui::SetCursorPosX(FMath::Max(ImGui::GetCursorPosX() + 16.0f, (ImGui::GetWindowWidth() - GroupWidth) * 0.5f));
 
 	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -1679,11 +1812,23 @@ void FEditorApplication::DrawPlayControls()
 	{
 		StopPlay();
 	}
+	// 빙의/해제 (언리얼 F8): 빙의 중(또는 편집 중)이면 해제 버튼, 해제 중이면 다시 빙의 버튼
+	const bool bPossessed  = PlayMode.IsPossessed();
+	const bool bShowEject  = bPossessed || !bActive;
+	if (IconButton(bShowEject ? ICON_FA_EJECT : ICON_FA_GAMEPAD, bShowEject ? ImVec4(0.8f, 0.8f, 0.8f, 1.0f) : FEditorTheme::Accent, bActive,
+	               bShowEject ? "빙의 해제 (F8): 게임은 계속 진행, 편집 카메라로 오브젝트를 클릭해 선택/기즈모"
+	                          : "다시 빙의 (F8): 게임 카메라와 입력으로 돌아갑니다"))
+	{
+		SetPlayPossessed(!bPossessed);
+	}
 	ImGui::PopStyleColor(2);
 
 	if (bActive)
 	{
 		ImGui::TextColored(bPaused ? FEditorTheme::Warning : FEditorTheme::Success, bPaused ? "일시정지됨" : "플레이 중");
+		ImGui::TextColored(bPossessed ? FEditorTheme::Success : FEditorTheme::Accent, bPossessed ? ICON_FA_GAMEPAD " 빙의" : ICON_FA_ARROW_POINTER " 빙의 해제");
+		ImGui::TextDisabled("입력 %s", ToString(FInputModeState::Get()));
+		ImGui::SetItemTooltip("입력 모드 (Lua Game.SetInputMode): GameOnly / GameAndUI / UIOnly");
 	}
 	if (bActive && Scripts.GetErrorCount() > 0)
 	{

@@ -1,0 +1,17 @@
+Universal Animation Library 2 [Standard] (Quaternius)
+
+	UAL2_Standard.glb  - 마네킹 + 애니메이션 43개 (UE식 뼈 이름, _RM = 루트 모션 클립)
+	Mannequin_F.glb    - 여성 마네킹 (같은 뼈대, 애니메이션 없음)
+
+	Models by @Quaternius
+	https://quaternius.com/packs/universalanimationlibrary2.html
+	Downloaded from: https://opengameart.org/content/universal-animation-library-2
+	(universal_animation_library_2standard.zip, "Unreal-Godot" 폴더의 glb — 수정 없음)
+
+			------------------------------
+
+	License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+	https://creativecommons.org/publicdomain/zero/1.0/
+
+	This content is free to use in personal, educational and commercial projects.
+	Consider supporting the creator on Patreon: https://www.patreon.com/quaternius

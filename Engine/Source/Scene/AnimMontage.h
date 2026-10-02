@@ -30,6 +30,15 @@ struct FMontagePlayParams
 	bool        bLoop     = false;
 };
 
+// 이번 진행 구간 (노티파이 판정·루트 모션 인자)
+struct FMontageStep
+{
+	float PreviousTime = 0.0f;
+	float NewTime      = 0.0f;
+	float Delta        = 0.0f; // 부호 있는 클립 시각 진행량 (초)
+	bool  bWrapped     = false;
+};
+
 // 재생 중인 몽타주 하나 (FAnimationRuntime::Montages). 시간/가중치 진행은 순수 함수 AnimMontageMath::Advance
 struct FAnimMontageInstance
 {
@@ -48,6 +57,7 @@ struct FAnimMontageInstance
 	bool  bFinished          = false; // 다 빠짐 → 끝 이벤트 후 목록에서 제거
 
 	FAnimNotifyTrack Notify;
+	FMontageStep     LastStep; // 직전 갱신의 진행 구간 (루트 모션 — FAnimationSystem이 채운다)
 };
 
 // 끝 이벤트 (FAnimationRuntime::PendingMontageEvents — 직전 애니메이션 갱신에서 끝난 것)
@@ -57,15 +67,6 @@ struct FAnimMontageEvent
 	std::string Clip;
 	std::string Slot;
 	bool        bInterrupted = false;
-};
-
-// 이번 진행 구간 (노티파이 판정 인자)
-struct FMontageStep
-{
-	float PreviousTime = 0.0f;
-	float NewTime      = 0.0f;
-	float Delta        = 0.0f; // 부호 있는 클립 시각 진행량 (초)
-	bool  bWrapped     = false;
 };
 
 namespace AnimMontageMath

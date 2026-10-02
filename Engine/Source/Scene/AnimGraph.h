@@ -225,6 +225,10 @@ struct FAnimClipContribution
 	int32 Clip   = -1;
 	float Time   = 0.0f; // 초
 	float Weight = 0.0f; // 합 = 1
+	// 이번 진행 구간 (루트 모션 — Scene/AnimRootMotion.h)
+	float PreviousTime = 0.0f;
+	float Delta        = 0.0f; // 부호 있는 진행량 (초)
+	bool  bWrapped     = false;
 };
 
 // 노티파이를 판정할 기여 (가중치 최대) — AnimNotifyMath::Collect 인자

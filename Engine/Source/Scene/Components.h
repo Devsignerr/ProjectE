@@ -3,6 +3,7 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "Scene/Animation.h"
+#include "Scene/AnimRootMotion.h"
 #include "Scene/ResourceHandles.h"
 
 #include <memory>
@@ -101,15 +102,21 @@ struct FSkinComponent
 
 // 모델 루트의 애니메이션 재생 상태. 로직은 FAnimationSystem (Scene/AnimationSystem.h)
 //   Clip을 바꾸면 BlendTime 동안 이전 클립에서 크로스페이드한다. 비어 있으면 첫 클립
-//   bRootMotion: 루트 본의 수평 이동을 엔티티 트랜스폼으로 옮긴다 (본은 제자리)
+//   bRootMotion: (이전 설정) 켜면 RootMotionMode = All과 같다
+//   RootMotionMode/RootMotionBone/bRootMotionRotation: 루트 모션 (Scene/AnimRootMotion.h)
+//   RetargetSources: 클립을 리타기팅해 덧붙일 다른 모델 경로 (Content 기준, ';' 또는 ',' 구분 — Scene/AnimRetarget.h)
 struct FAnimationComponent
 {
-	std::string Clip;
-	float       Speed       = 1.0f;
-	float       BlendTime   = 0.25f; // 초
-	bool        bPlaying    = true;
-	bool        bLoop       = true;
-	bool        bRootMotion = false;
+	std::string     Clip;
+	float           Speed       = 1.0f;
+	float           BlendTime   = 0.25f; // 초
+	bool            bPlaying    = true;
+	bool            bLoop       = true;
+	bool            bRootMotion = false;
+	ERootMotionMode RootMotionMode = ERootMotionMode::None;
+	std::string     RootMotionBone;           // 비면 클립마다 자동 (최상위 이동 채널 노드)
+	bool            bRootMotionRotation = false; // 루트의 Z축 회전도 추출
+	std::string     RetargetSources;
 
 	FAnimationRuntime Runtime; // 직렬화 제외 (모델 로드 시 채워짐)
 };

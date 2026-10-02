@@ -20,7 +20,7 @@ class FModelEditorBase : public FAssetEditor
 public:
 	using FAssetEditor::FAssetEditor;
 
-	// 애니메이션이 있으면 애니메이션 편집기로 연다
+	// 애니메이션(또는 스킨 — 리타기팅 미리보기)이 있으면 애니메이션 편집기로 연다
 	static bool HasAnimations(const std::filesystem::path& Path, FResourceManager& Resources);
 
 	// 다시 가져온 뒤: 미리보기 모델을 새 리소스로 다시 배치 (저장 안 한 노티파이/소켓 편집은 유지)
@@ -45,6 +45,8 @@ protected:
 
 	// 노드(뼈) 월드 행렬. Bone이 비면 모델 루트. 없으면 false
 	bool GetBoneWorld(const std::string& Bone, FMatrix4x4& OutWorld);
+	// .emeta 리타기팅 매핑이 바뀌었을 때 (편집/저장/되돌리기): 이 모델이 소스·대상인 리타기팅 결과를 다시 만들게 한다
+	void InvalidateRetargeting() const;
 
 	const FModelResources*          Model = nullptr; // FResourceManager 모델 캐시 (주소 고정)
 	std::shared_ptr<FModelMetadata> Metadata;        // Model->Metadata (공유)
@@ -73,7 +75,9 @@ protected:
 	void DrawProperties(FAssetEditorEnvironment& Env) override;
 };
 
-// 스킨/애니메이션 모델: 클립 선택, 재생/일시정지/한 프레임, 타임라인 스크럽, 속도·루프, 뼈대 표시, 노티파이 트랙
+// 스킨/애니메이션 모델: 클립 선택, 재생/일시정지/한 프레임, 타임라인 스크럽, 속도·루프, 뼈대 표시, 노티파이 트랙,
+// 리타기팅 (휴머노이드 본 매핑 확인/수정 — .emeta, 다른 모델 클립을 이 모델에서 미리보기)
+//   자동 검증: --retarget-preview <소스 모델(Content 기준)>[:<클립>] — 열 때 그 모델을 미리보기 소스로 (클립이 있으면 재생)
 class FAnimationEditor final : public FModelEditorBase
 {
 public:
@@ -92,6 +96,12 @@ private:
 	void DrawBones();
 	// 현재 클립 노티파이 트랙 (추가/끌기/삭제/이름) + 선택 항목 속성 + 최근 발생 이벤트
 	void DrawNotifyTrack(const std::string& Clip, float Duration, float Time);
+	// 리타기팅: 리그 뼈 → 노드 매핑 표 (자동/수동), 미리보기 소스 모델
+	void DrawRetargeting(FAssetEditorEnvironment& Env);
+	void SetPreviewSource(const std::string& Source);
+
+	std::string PreviewSource; // 미리보기 리타기팅 소스 모델 (Content 기준, 비면 없음 — 파일에 저장하지 않음)
+	bool        bCommandLineApplied = false;
 
 	struct FRecentEvent
 	{

@@ -1233,7 +1233,7 @@ void FAnimGraphInstance::Update(const FAnimGraphAsset& Asset, const FAnimStateMa
 				continue;
 			}
 			const float Duration = Binding.ClipDurations[Clips[Index]];
-			Contributions.push_back({ Clips[Index], Layer.Phase * Duration, Weight });
+			Contributions.push_back({ Clips[Index], Layer.Phase * Duration, Weight, Layer.PreviousPhase * Duration, Layer.PhaseDelta * Duration, Layer.bWrapped });
 			Total += Weight;
 			if (Weight > BestWeight)
 			{

@@ -10,11 +10,14 @@
 --     달리는 중 공격은 상체 슬롯(UpperBody)으로 다리는 계속 달린다. 노티파이가 오지 않으면 예상 시각 + 여유에 대신 판정한다.
 --   조작 (Config/Input.json 액션): Move, Attack(마우스 왼쪽/J), Skill1(Q 회전베기), Skill2(R 돌진 찌르기), Dodge(Space 구르기),
 --     Sprint(왼쪽 Shift), Block(마우스 오른쪽/K)
+--   밸런스 수치 (Phase 46-C) = BalanceAsset(Data/RPG/PlayerBalance.edata): OnStart에서 같은 이름의 Properties를 덮어쓰고
+--     MaxHealth는 HealthComponent에, ComboDamage는 3연타 피해 배율에. 에셋이 비었거나 읽지 못하면 아래 Properties 값을 쓴다
 -- 공개 메서드 (Phase 45 공통 계약): GetStats, GetSkillCooldowns, EquipWeapon, EquipShield, RestoreHealth, RestoreMana, IsDead,
 --   GetAttackPower, Respawn([위치])
 local PlayerController = {
 	Properties = {
 		Camera               = "Camera", -- 따라갈 카메라 엔티티 이름 (직교 쿼터뷰)
+		BalanceAsset         = Asset("Data/RPG/PlayerBalance.edata", ".edata"), -- 아래 수치를 덮어쓰는 밸런스 데이터
 		RunSpeed             = 345.0,    -- cm/s, Running_A 발 속도
 		SprintSpeed          = 520.0,    -- cm/s, Running_A ×1.5
 		Acceleration         = 7.0,      -- 이동 속도 크기 램프 (지수, 1/초) — 방향은 입력을 바로 따른다
@@ -28,14 +31,18 @@ local PlayerController = {
 		SprintCost           = 16.0,     -- 초당
 		BaseAttack           = 10.0,
 		CritChance           = 0.12,
+		CritMultiplier       = 1.5,      -- 치명타 피해 배율
 		DefaultWeapon        = "Asset/KayKit/Weapons/sword_1handed.gltf",
 		DefaultWeaponDamage  = 8.0,
 		DefaultShield        = "Asset/KayKit/Weapons/shield_badge.gltf",
 		DefaultShieldDefense = 2.0,
 		SpinCost             = 30.0,     -- 마나
 		SpinCooldown         = 6.0,
+		SpinDamage           = 1.15,     -- 회전베기 한 타 피해 배율 (공격력 ×)
+		SpinRadius           = 230.0,    -- 회전베기 반경 (cm)
 		DashCost             = 20.0,     -- 마나
 		DashCooldown         = 4.0,
+		DashDamage           = 2.2,      -- 돌진 찌르기 피해 배율 (공격력 ×)
 		DodgeCost            = 22.0,     -- 스태미나
 		DodgeCooldown        = 0.7,
 		BlockCost            = 12.0,     -- 막을 때마다 스태미나
@@ -45,10 +52,13 @@ local PlayerController = {
 
 -- ---------------------------------------------------------------- 데이터
 
+local RPGData = Script.Require("Scripts/RPG/RPGData.lua")
+
 local AudioDir    = "Audio/RPG/"
 local ParticleDir = "Particles/RPG/"
 
 -- 3연타: 클립, 배속, 노티파이 시각(클립 초 — Knight*.glb.emeta와 같게), 판정 반경/거리, 데미지 배율, 연타 가능 시점·끝 시점(실제 초)
+--   Damage = 기본 배율 (밸런스 데이터 ComboDamage가 있으면 그 값)
 local Combo = {
 	{ Clip = "1H_Melee_Attack_Slice_Diagonal",   Speed = 1.35, HitTime = 0.38, Reach = 95, Radius = 105, Damage = 1.0, Chain = 0.34, End = 0.62, Sound = "Swing1.wav", Lunge = 0.35 },
 	{ Clip = "1H_Melee_Attack_Slice_Horizontal", Speed = 1.35, HitTime = 0.24, Reach = 90, Radius = 115, Damage = 1.1, Chain = 0.26, End = 0.58, Sound = "Swing2.wav", Lunge = 0.35 },
@@ -102,6 +112,25 @@ end
 
 -- ---------------------------------------------------------------- 시작
 
+-- 밸런스 데이터 → Properties (+ 최대 체력, 콤보 배율)
+function PlayerController:ApplyBalance()
+	local Path    = self.Properties.BalanceAsset
+	local Balance = RPGData.LoadAsset(Path and Path.Path or "")
+	self.ComboDamage = {}
+	if Balance == nil then
+		if Path ~= nil and not Path:IsEmpty() then
+			Log.Warn("PlayerController: 밸런스 데이터를 읽지 못해 프로퍼티 값을 씁니다", Path.Path)
+		end
+		return
+	end
+	RPGData.ApplyFields(self.Properties, Balance, { BalanceAsset = true })
+	self.ComboDamage = Balance.ComboDamage or {}
+	if self.Health ~= nil and (Balance.MaxHealth or 0) > 0 then
+		self.Health.MaxHealth = Balance.MaxHealth
+		self.Health.Health    = Balance.MaxHealth
+	end
+end
+
 function PlayerController:OnStart()
 	self.IsPlayer  = true
 	self.Movement  = self.entity:GetComponent("CharacterMovementComponent")
@@ -111,6 +140,7 @@ function PlayerController:OnStart()
 		Log.Error("PlayerController: CharacterMovementComponent / HealthComponent / 자식 PlayerMesh가 필요합니다")
 	end
 	self.MeshAnim  = self.Mesh and self.Mesh:GetComponent("AnimationComponent")
+	self:ApplyBalance()
 
 	local P = self.Properties
 	self.Mana          = P.MaxMana
@@ -550,7 +580,7 @@ function PlayerController:TickAction(dt, MoveDir, MoveMag)
 			self:SetMoveSpeed(DashMoveSpeed * (1.0 - 0.5 * T * T))
 			self.SmoothInput = A.Dir
 			self.entity:AddMovementInput(A.Dir)
-			self:DamageInSphere(self.entity:GetWorldPosition() + A.Dir * 60.0, 85.0, nil, 2.2, A.HitSet, false, "Dash")
+			self:DamageInSphere(self.entity:GetWorldPosition() + A.Dir * 60.0, 85.0, nil, P.DashDamage, A.HitSet, false, "Dash")
 		else
 			self:SetMoveSpeed(P.RunSpeed)
 			self.SmoothInput = Vector3(0, 0, 0)
@@ -666,7 +696,7 @@ function PlayerController:DealDamage(Script, Target, Multiplier, bHeavy, Label)
 	local Amount = self:GetAttackPower() * Multiplier * (0.9 + math.random() * 0.2)
 	local bCrit  = math.random() < P.CritChance
 	if bCrit then
-		Amount = Amount * 1.5
+		Amount = Amount * P.CritMultiplier
 	end
 	Amount = math.floor(Amount + 0.5)
 	local Dealt = Target:ApplyDamage(Amount, self.entity)
@@ -701,7 +731,8 @@ function PlayerController:DoAttackHit()
 	local Def    = A.Def
 	local Facing = A.Dir -- 몸이 아직 다 돌지 않았어도 공격 방향 기준
 	local Center = self.entity:GetWorldPosition() + Facing * Def.Reach
-	self:DamageInSphere(Center, Def.Radius, Facing, Def.Damage, nil, Def.Heavy, string.format("%d타", A.Stage))
+	local Multiplier = (self.ComboDamage and self.ComboDamage[A.Stage]) or Def.Damage
+	self:DamageInSphere(Center, Def.Radius, Facing, Multiplier, nil, Def.Heavy, string.format("%d타", A.Stage))
 end
 
 function PlayerController:DoSpinHit()
@@ -709,7 +740,7 @@ function PlayerController:DoSpinHit()
 	if not A or A.Kind ~= "Skill1" or A.HitsDone >= #SpinHitTimes then return end
 	A.HitsDone = A.HitsDone + 1
 	local Center = self.entity:GetWorldPosition()
-	self:DamageInSphere(Center, 230.0, nil, 1.15, nil, A.HitsDone == #SpinHitTimes, "회전베기")
+	self:DamageInSphere(Center, self.Properties.SpinRadius, nil, self.Properties.SpinDamage, nil, A.HitsDone == #SpinHitTimes, "회전베기")
 	self:SpawnEffect("SpinWave", self:GetFootPosition() + Vector3(0, 0, 45), 1.0)
 	if A.HitsDone > 1 then
 		Audio.PlayOneShot(AudioDir .. "Swing2.wav")
@@ -721,7 +752,7 @@ function PlayerController:DoDashThrust()
 	if not A or A.Kind ~= "Skill2" or A.HitDone then return end
 	A.HitDone = true
 	local Facing = self:GetFacing()
-	self:DamageInSphere(self.entity:GetWorldPosition() + Facing * 100.0, 100.0, Facing, 2.2, A.HitSet, true, "돌진 찌르기")
+	self:DamageInSphere(self.entity:GetWorldPosition() + Facing * 100.0, 100.0, Facing, self.Properties.DashDamage, A.HitSet, true, "돌진 찌르기")
 end
 
 -- 애니메이션 노티파이 (Knight*.glb.emeta) — 모델 루트에 스크립트가 없으므로 조상인 이 스크립트가 받는다

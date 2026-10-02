@@ -1,0 +1,33 @@
+{
+  "Version": 1,
+  "Name": "EnemyStats",
+  "Description": "적 스탯 (Enemies.etable, 행 이름 = EnemyController StatsRow). 필드 이름 = EnemyController Properties 이름 (+ MaxHealth)",
+  "Fields": [
+    {"Name":"DisplayName","Type":"String","Default":"스켈레톤","Description":"화면 표시 이름"},
+    {"Name":"MaxHealth","Type":"Float","Default":100,"Description":"최대 체력 (HealthComponent에 적용)"},
+    {"Name":"Damage","Type":"Float","Default":10,"Description":"근접 한 대 / 투사체 한 발"},
+    {"Name":"AttackRange","Type":"Float","Default":140,"Description":"cm (원거리는 사거리)"},
+    {"Name":"MinRange","Type":"Float","Default":0,"Description":"원거리: 이보다 가까우면 물러난다 (0 = 안 물러남)"},
+    {"Name":"AggroRange","Type":"Float","Default":800,"Description":"플레이어 발견 거리 (cm)"},
+    {"Name":"LoseRange","Type":"Float","Default":1400,"Description":"이보다 멀어지면 놓친다"},
+    {"Name":"LeashRange","Type":"Float","Default":1600,"Description":"집에서 이보다 멀어지면 포기하고 돌아간다"},
+    {"Name":"AlertRadius","Type":"Float","Default":700,"Description":"발견/피격 시 주변 동료도 깨운다 (0 = 안 함)"},
+    {"Name":"AttackCooldown","Type":"Float","Default":1.5,"Description":"초 (공격 시작 간격)"},
+    {"Name":"AttackClips","Type":"Array","Element":"String","Default":["1H_Melee_Attack_Chop"],"Description":"공격 몽타주 클립 (돌아가며)"},
+    {"Name":"AttackSpeed","Type":"Float","Default":1,"Description":"공격 몽타주 배속"},
+    {"Name":"WalkSpeed","Type":"Float","Default":75,"Description":"순찰 속도 (cm/s, 걷기 클립 보폭에 맞춤)"},
+    {"Name":"RunSpeed","Type":"Float","Default":240,"Description":"추적 속도 (cm/s)"},
+    {"Name":"TurnSpeed","Type":"Float","Default":540,"Description":"제자리에서 대상을 바라보는 회전 속도 (도/초)"},
+    {"Name":"PatrolRadius","Type":"Float","Default":350,"Description":"집 주변 순찰 반경 (0 = 제자리 대기)"},
+    {"Name":"Poise","Type":"Float","Default":0,"Description":"0~1: 공격 중 피격 경직을 버틸 확률"},
+    {"Name":"HitStun","Type":"Float","Default":0.45,"Description":"피격 경직 시간 (초)"},
+    {"Name":"Ranged","Type":"Bool","Default":false,"Description":"원거리 공격 (투사체)"},
+    {"Name":"Projectile","Type":"Enum","Values":["Bolt","Magic"],"Default":"Bolt","Description":"Bolt = 석궁(빠름), Magic = 마법 구체(느리고 약간 유도)"},
+    {"Name":"ProjectileSpeed","Type":"Float","Default":1200,"Description":"cm/s"},
+    {"Name":"AoeDamage","Type":"Float","Default":0,"Description":"> 0이면 광역 마법 (Spellcast_Long, Cast 노티파이에 폭발)"},
+    {"Name":"AoeRadius","Type":"Float","Default":170,"Description":"광역 반경 (cm)"},
+    {"Name":"AoeCooldown","Type":"Float","Default":7,"Description":"광역 간격 (초)"},
+    {"Name":"DeathCorpseTime","Type":"Float","Default":3,"Description":"사망 후 가라앉기 시작까지 (초)"},
+    {"Name":"LootTable","Type":"RowRef","Table":"Data/RPG/LootTables.etable","Default":"","Description":"죽을 때 굴리는 전리품 표 (빈 값 = 없음)"}
+  ]
+}

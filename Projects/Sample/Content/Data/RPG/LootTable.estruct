@@ -1,0 +1,9 @@
+{
+  "Version": 1,
+  "Name": "LootTable",
+  "Description": "전리품 표 (LootTables.etable, 행 이름 = 표 ID — 적 스탯 LootTable·GameManager:SpawnLoot). 골드는 항상, 아이템은 LootEntries.etable",
+  "Fields": [
+    {"Name":"GoldMin","Type":"Int","Default":0,"Description":"항상 떨어뜨리는 골드 최소"},
+    {"Name":"GoldMax","Type":"Int","Default":0,"Description":"골드 최대 (0이면 골드 없음)"}
+  ]
+}

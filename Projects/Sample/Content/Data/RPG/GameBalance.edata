@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Struct": "Data/RPG/GameBalance.estruct",
+  "Values": {
+    "StartGold": 30,
+    "StartItems": ["potion_hp_small","potion_mp"],
+    "StartItemCounts": [3,1],
+    "StartWeapon": "sword_1handed",
+    "StartShield": "shield_badge"
+  }
+}

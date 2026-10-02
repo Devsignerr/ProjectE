@@ -1,0 +1,33 @@
+{
+  "Version": 1,
+  "Name": "PlayerBalance",
+  "Description": "플레이어 밸런스 (PlayerBalance.edata — PlayerController BalanceAsset). 필드 이름 = PlayerController Properties 이름",
+  "Fields": [
+    {"Name":"MaxHealth","Type":"Float","Default":150,"Description":"최대 체력 (HealthComponent에 적용)"},
+    {"Name":"RunSpeed","Type":"Float","Default":345,"Description":"cm/s, Running_A 발 속도 (클립과 함께 바꾼다)"},
+    {"Name":"SprintSpeed","Type":"Float","Default":520,"Description":"cm/s, Running_A ×1.5"},
+    {"Name":"Acceleration","Type":"Float","Default":7,"Description":"이동 속도 크기 램프 (지수, 1/초)"},
+    {"Name":"Deceleration","Type":"Float","Default":12,"Description":"감속 램프 (지수, 1/초)"},
+    {"Name":"TurnRate","Type":"Float","Default":1500,"Description":"몸 회전 속도 (도/초)"},
+    {"Name":"MaxMana","Type":"Float","Default":100},
+    {"Name":"MaxStamina","Type":"Float","Default":100},
+    {"Name":"ManaRegen","Type":"Float","Default":4,"Description":"초당"},
+    {"Name":"StaminaRegen","Type":"Float","Default":32,"Description":"초당"},
+    {"Name":"StaminaRegenDelay","Type":"Float","Default":0.7,"Description":"스태미나를 쓴 뒤 회복 시작까지 (초)"},
+    {"Name":"SprintCost","Type":"Float","Default":16,"Description":"질주 스태미나 (초당)"},
+    {"Name":"BaseAttack","Type":"Float","Default":10,"Description":"기본 공격력 (+ 무기 Damage)"},
+    {"Name":"CritChance","Type":"Float","Default":0.12,"Description":"치명타 확률 (0~1)"},
+    {"Name":"CritMultiplier","Type":"Float","Default":1.5,"Description":"치명타 피해 배율"},
+    {"Name":"SpinCost","Type":"Float","Default":30,"Description":"회전베기 마나"},
+    {"Name":"SpinCooldown","Type":"Float","Default":6,"Description":"회전베기 재사용 (초)"},
+    {"Name":"SpinDamage","Type":"Float","Default":1.15,"Description":"회전베기 한 타 피해 배율 (공격력 ×)"},
+    {"Name":"SpinRadius","Type":"Float","Default":230,"Description":"회전베기 반경 (cm)"},
+    {"Name":"DashCost","Type":"Float","Default":20,"Description":"돌진 찌르기 마나"},
+    {"Name":"DashCooldown","Type":"Float","Default":4,"Description":"돌진 찌르기 재사용 (초)"},
+    {"Name":"DashDamage","Type":"Float","Default":2.2,"Description":"돌진 찌르기 피해 배율 (공격력 ×)"},
+    {"Name":"DodgeCost","Type":"Float","Default":22,"Description":"구르기 스태미나"},
+    {"Name":"DodgeCooldown","Type":"Float","Default":0.7,"Description":"구르기 재사용 (초)"},
+    {"Name":"BlockCost","Type":"Float","Default":12,"Description":"막을 때마다 스태미나"},
+    {"Name":"ComboDamage","Type":"Array","Element":"Float","Default":[1.0,1.1,1.7],"Description":"3연타 단계별 피해 배율 (공격력 ×) — 단계 수는 스크립트 콤보 표"}
+  ]
+}

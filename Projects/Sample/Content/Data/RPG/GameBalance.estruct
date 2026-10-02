@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Name": "GameBalance",
+  "Description": "새 게임 시작 상태 (GameBalance.edata — GameManager BalanceAsset, 저장이 없을 때)",
+  "Fields": [
+    {"Name":"StartGold","Type":"Int","Default":0,"Description":"시작 골드"},
+    {"Name":"StartItems","Type":"Array","Element":"RowRef","Table":"Data/RPG/Items.etable","Default":[],"Description":"시작 가방 아이템 (StartItemCounts와 같은 순서)"},
+    {"Name":"StartItemCounts","Type":"Array","Element":"Int","Default":[],"Description":"StartItems 각각의 개수 (없으면 1)"},
+    {"Name":"StartWeapon","Type":"RowRef","Table":"Data/RPG/Items.etable","Default":"","Description":"시작 장착 무기 (빈 값 = 맨손)"},
+    {"Name":"StartShield","Type":"RowRef","Table":"Data/RPG/Items.etable","Default":"","Description":"시작 장착 방패 (빈 값 = 없음)"}
+  ]
+}

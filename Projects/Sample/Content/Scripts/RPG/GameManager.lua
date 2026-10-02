@@ -13,7 +13,8 @@
 -- 다른 스크립트보다 OnStart가 늦게 돌 수 있으므로 모든 공개 함수는 EnsureInit()으로 상태를 먼저 만든다.
 local GameManager = {
 	Properties = {
-		StartGold     = 30,       -- 저장이 없을 때 시작 골드
+		BalanceAsset  = Asset("Data/RPG/GameBalance.edata", ".edata"), -- 새 게임 시작 상태 (시작 골드/가방/장비)
+		StartGold     = 30,       -- BalanceAsset을 읽지 못할 때의 시작 골드
 		SaveSlot      = "RPGDemo",
 		LoadOnStart   = true,     -- 시작 시 저장 불러오기
 		AutoSave      = true,     -- 바뀌면 잠시 뒤 저장
@@ -26,97 +27,16 @@ local GameManager = {
 local SlotCount     = 20
 local ToastDuration = 3.5
 local MaxToasts     = 4
-local IconDir       = "Asset/Icons/7Soul_RPG_Icons/"
 
--- ---------------------------------------------------------------- 아이템 정의
--- Price = 상점 구매가 (판매가는 절반), MaxStack = 한 칸에 겹치는 수, Model = 줍는 아이템/장착 모델 (Content 기준)
-local Items = {
-	gold = { Name = "골드", Type = "Loot", bCurrency = true, Icon = IconDir .. "I_GoldCoin.png",
-		Model = "Asset/KayKit/Dungeon/coin.glb", ModelScale = 1.6, Price = 1, Description = "어디서나 쓰이는 금화." },
+-- ---------------------------------------------------------------- 아이템 정의 / 전리품 표 (Phase 46-C: 데이터 테이블)
+-- 아이템 = Data/RPG/Items.etable (행 이름 = id, Price = 상점 구매가 — 판매가는 절반, MaxStack = 한 칸에 겹치는 수, Model = 줍는 아이템/장착 모델)
+-- 전리품 = Data/RPG/LootTables.etable(골드 범위) + LootEntries.etable(항목: 아이템, 확률, 최소, 최대). 읽기는 RPGData 모듈(세대별 캐시)
+local RPGData = Script.Require("Scripts/RPG/RPGData.lua")
 
-	potion_hp_small = { Name = "체력 물약(소)", Type = "Consumable", Icon = IconDir .. "P_Red02.png",
-		Model = "Asset/KayKit/Dungeon/bottle_A_labeled_brown.glb", ModelScale = 1.4, Price = 15, Heal = 30, MaxStack = 20,
-		Description = "붉은 약초를 달인 물약. 체력을 조금 회복한다." },
-	potion_hp_large = { Name = "체력 물약(대)", Type = "Consumable", Icon = IconDir .. "P_Red01.png",
-		Model = "Asset/KayKit/Dungeon/bottle_A_labeled_brown.glb", ModelScale = 2.0, Price = 40, Heal = 80, MaxStack = 20,
-		Description = "진하게 졸인 물약. 체력을 크게 회복한다." },
-	potion_mp = { Name = "마나 물약", Type = "Consumable", Icon = IconDir .. "P_Blue01.png",
-		Model = "Asset/KayKit/Dungeon/bottle_A_labeled_green.glb", ModelScale = 1.4, Price = 20, Mana = 40, MaxStack = 20,
-		Description = "푸른 빛이 도는 물약. 마나를 회복한다." },
-
-	dagger = { Name = "단검", Type = "Weapon", Icon = IconDir .. "W_Dagger002.png",
-		Model = "Asset/KayKit/Weapons/dagger.gltf", ModelScale = 1.0, Price = 30, Damage = 8,
-		Description = "가볍고 빠른 단검." },
-	sword_1handed = { Name = "기사의 검", Type = "Weapon", Icon = IconDir .. "W_Sword001.png",
-		Model = "Asset/KayKit/Weapons/sword_1handed.gltf", ModelScale = 0.8, Price = 60, Damage = 12,
-		Description = "균형 잡힌 한손검. 기사단의 표준 장비." },
-	axe_1handed = { Name = "손도끼", Type = "Weapon", Icon = IconDir .. "W_Axe001.png",
-		Model = "Asset/KayKit/Weapons/axe_1handed.gltf", ModelScale = 0.8, Price = 80, Damage = 15,
-		Description = "묵직한 한손 도끼. 뼈도 쪼갠다." },
-	sword_2handed = { Name = "대검", Type = "Weapon", Icon = IconDir .. "W_Sword007.png",
-		Model = "Asset/KayKit/Weapons/sword_2handed.gltf", ModelScale = 0.7, Price = 150, Damage = 22, bTwoHanded = true,
-		Description = "두 손으로 휘두르는 거대한 검. 방패와 함께 쓸 수 없다." },
-
-	shield_round = { Name = "원형 방패", Type = "Shield", Icon = IconDir .. "E_Wood02.png",
-		Model = "Asset/KayKit/Weapons/shield_round.gltf", ModelScale = 0.8, Price = 40, Defense = 1,
-		Description = "나무로 만든 둥근 방패." },
-	shield_square = { Name = "사각 방패", Type = "Shield", Icon = IconDir .. "E_Wood03.png",
-		Model = "Asset/KayKit/Weapons/shield_square.gltf", ModelScale = 0.8, Price = 70, Defense = 2,
-		Description = "몸을 넓게 가려 주는 사각 방패." },
-	shield_badge = { Name = "문장 방패", Type = "Shield", Icon = IconDir .. "E_Metal08.png",
-		Model = "Asset/KayKit/Weapons/shield_badge.gltf", ModelScale = 0.8, Price = 110, Defense = 3,
-		Description = "왕국의 문장이 새겨진 강철 방패." },
-	shield_spikes = { Name = "가시 방패", Type = "Shield", Icon = IconDir .. "E_Metal02.png",
-		Model = "Asset/KayKit/Weapons/shield_spikes.gltf", ModelScale = 0.8, Price = 160, Defense = 4,
-		Description = "가시가 박힌 방패. 막는 것만으로도 위협적이다." },
-
-	bone = { Name = "뼈 조각", Type = "Loot", Icon = IconDir .. "I_Bone.png",
-		Model = "Asset/KayKit/Village/sack.gltf", ModelScale = 0.35, Price = 6, MaxStack = 99,
-		Description = "해골 병사에게서 떨어진 뼈. 상인이 사 간다." },
-	fang = { Name = "날카로운 송곳니", Type = "Loot", Icon = IconDir .. "I_Fang.png",
-		Model = "Asset/KayKit/Village/sack.gltf", ModelScale = 0.35, Price = 12, MaxStack = 99,
-		Description = "해골 도적의 송곳니. 장신구 재료로 쓰인다." },
-	magic_shard = { Name = "마력 결정", Type = "Loot", Icon = IconDir .. "I_Crystal01.png",
-		Model = "Asset/KayKit/Village/sack.gltf", ModelScale = 0.35, Price = 24, MaxStack = 99,
-		Description = "해골 마법사의 마력이 굳은 결정." },
-	ruby = { Name = "루비", Type = "Loot", Icon = IconDir .. "I_Ruby.png",
-		Model = "Asset/KayKit/Dungeon/coin_stack_small.glb", ModelScale = 1.2, Price = 80, MaxStack = 99,
-		Description = "붉게 빛나는 보석. 비싸게 팔린다." },
-}
-for Id, Def in pairs(Items) do
-	Def.Id          = Id
-	Def.Damage      = Def.Damage or 0
-	Def.Defense     = Def.Defense or 0
-	Def.Heal        = Def.Heal or 0
-	Def.Mana        = Def.Mana or 0
-	Def.MaxStack    = Def.MaxStack or 1
-	Def.ModelScale  = Def.ModelScale or 1.0
-	Def.Description = Def.Description or ""
-end
+-- Items[id] → 현재 데이터의 정의 (상태 없는 대리 테이블 — 핫 리로드 뒤에도 새 데이터를 본다)
+local Items = setmetatable({}, { __index = function(_, Id) return RPGData.GetItem(Id) end })
 
 local TypeNames = { Weapon = "무기", Shield = "방패", Consumable = "소모품", Loot = "전리품" }
-
--- ---------------------------------------------------------------- 전리품 표
--- Gold = { 최소, 최대 } (항상), Drops = { 아이템, 확률(0~1), 최소, 최대 }
-local LootTables = {
-	skeletonwarrior = { Gold = { 5, 12 }, Drops = {
-		{ "bone", 0.6, 1, 2 }, { "potion_hp_small", 0.25, 1, 1 }, { "sword_1handed", 0.06, 1, 1 }, { "shield_round", 0.06, 1, 1 } } },
-	skeletonminion = { Gold = { 2, 6 }, Drops = {
-		{ "bone", 0.7, 1, 2 }, { "potion_hp_small", 0.15, 1, 1 }, { "axe_1handed", 0.04, 1, 1 } } },
-	skeletonrogue = { Gold = { 4, 10 }, Drops = {
-		{ "fang", 0.5, 1, 1 }, { "potion_mp", 0.2, 1, 1 }, { "dagger", 0.08, 1, 1 } } },
-	skeletonmage = { Gold = { 6, 14 }, Drops = {
-		{ "magic_shard", 0.5, 1, 1 }, { "potion_mp", 0.35, 1, 1 }, { "ruby", 0.05, 1, 1 }, { "shield_badge", 0.03, 1, 1 } } },
-	chest = { Gold = { 20, 40 }, Drops = {
-		{ "potion_hp_large", 0.5, 1, 1 }, { "ruby", 0.2, 1, 1 }, { "shield_square", 0.15, 1, 1 } } },
-	-- 시험용: 모든 종류가 확실히 나온다
-	test = { Gold = { 5, 5 }, Drops = { { "potion_hp_small", 1.0, 2, 2 }, { "bone", 1.0, 1, 1 }, { "sword_2handed", 1.0, 1, 1 } } },
-}
-
--- "Skeleton_Warrior", "SkeletonWarrior", "skeleton warrior" 모두 같은 표
-local function NormalizeTableId(Id)
-	return (tostring(Id or ""):lower():gsub("[%s_%-]", ""))
-end
 
 -- 다른 스크립트(플레이어 등)의 메서드를 안전하게 부른다: 없거나 오류면 nil (오류는 경고 로그 한 번)
 local function SafeCall(Target, Method, ...)
@@ -158,12 +78,7 @@ function GameManager:EnsureInit()
 		bLoaded = self:Load()
 	end
 	if not bLoaded then
-		self.Gold = self.Properties.StartGold
-		self:GiveItem("potion_hp_small", 3)
-		self:GiveItem("potion_mp", 1)
-		-- 새 게임 장비 = 플레이어 프리팹 기본 장비 (비워 두면 ApplyEquipment가 맨손으로 만든다)
-		self.Equipped.Weapon = "sword_1handed"
-		self.Equipped.Shield = "shield_badge"
+		self:StartNewGame()
 	end
 	if self.Properties.DebugFillBag then
 		self:GiveItem("potion_hp_large", 2)
@@ -178,6 +93,24 @@ function GameManager:EnsureInit()
 		self.Gold = self.Gold + 250
 	end
 	self.SaveTimer = -1 -- 시작 상태는 저장하지 않는다
+end
+
+-- 새 게임 시작 상태 = GameBalance.edata (StartGold, StartItems + StartItemCounts, StartWeapon/StartShield — 비우면 맨손/방패 없음)
+function GameManager:StartNewGame()
+	local Path    = self.Properties.BalanceAsset
+	local Balance = RPGData.LoadAsset(Path and Path.Path or "")
+	if Balance == nil then
+		Log.Warn("GameManager: 게임 밸런스 데이터를 읽지 못해 기본 시작 상태를 씁니다")
+		Balance = { StartGold = self.Properties.StartGold, StartItems = { "potion_hp_small", "potion_mp" }, StartItemCounts = { 3, 1 },
+			StartWeapon = "sword_1handed", StartShield = "shield_badge" }
+	end
+	self.Gold = Balance.StartGold
+	for Index, Id in ipairs(Balance.StartItems) do
+		self:GiveItem(Id, Balance.StartItemCounts[Index] or 1)
+	end
+	-- 새 게임 장비 (비워 두면 ApplyEquipment가 맨손으로 만든다)
+	self.Equipped.Weapon = Items[Balance.StartWeapon] and Balance.StartWeapon or nil
+	self.Equipped.Shield = Items[Balance.StartShield] and Balance.StartShield or nil
 end
 
 function GameManager:OnStart()
@@ -282,7 +215,7 @@ end
 
 function GameManager:GetItemIds()
 	local Ids = {}
-	for Id in pairs(Items) do
+	for Id in pairs(RPGData.GetItems()) do
 		Ids[#Ids + 1] = Id
 	end
 	table.sort(Ids)
@@ -701,7 +634,7 @@ function GameManager:SpawnLoot(Position, LootTableId)
 	if Position == nil then
 		return
 	end
-	local Table = LootTables[NormalizeTableId(LootTableId)]
+	local Table = RPGData.GetLootTable(LootTableId)
 	if Table == nil then
 		Log.Warn("GameManager: 알 수 없는 전리품 표", LootTableId)
 		return

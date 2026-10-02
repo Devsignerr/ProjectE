@@ -1,0 +1,26 @@
+{
+  "Version": 1,
+  "Struct": "Data/RPG/LootEntry.estruct",
+  "Rows": [
+    {"Name":"Skeleton_Warrior.bone","Values":{"LootTable":"Skeleton_Warrior","Item":"bone","Chance":0.6,"MinCount":1,"MaxCount":2}},
+    {"Name":"Skeleton_Warrior.potion_hp_small","Values":{"LootTable":"Skeleton_Warrior","Item":"potion_hp_small","Chance":0.25,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Warrior.sword_1handed","Values":{"LootTable":"Skeleton_Warrior","Item":"sword_1handed","Chance":0.06,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Warrior.shield_round","Values":{"LootTable":"Skeleton_Warrior","Item":"shield_round","Chance":0.06,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Minion.bone","Values":{"LootTable":"Skeleton_Minion","Item":"bone","Chance":0.7,"MinCount":1,"MaxCount":2}},
+    {"Name":"Skeleton_Minion.potion_hp_small","Values":{"LootTable":"Skeleton_Minion","Item":"potion_hp_small","Chance":0.15,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Minion.axe_1handed","Values":{"LootTable":"Skeleton_Minion","Item":"axe_1handed","Chance":0.04,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Rogue.fang","Values":{"LootTable":"Skeleton_Rogue","Item":"fang","Chance":0.5,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Rogue.potion_mp","Values":{"LootTable":"Skeleton_Rogue","Item":"potion_mp","Chance":0.2,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Rogue.dagger","Values":{"LootTable":"Skeleton_Rogue","Item":"dagger","Chance":0.08,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Mage.magic_shard","Values":{"LootTable":"Skeleton_Mage","Item":"magic_shard","Chance":0.5,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Mage.potion_mp","Values":{"LootTable":"Skeleton_Mage","Item":"potion_mp","Chance":0.35,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Mage.ruby","Values":{"LootTable":"Skeleton_Mage","Item":"ruby","Chance":0.05,"MinCount":1,"MaxCount":1}},
+    {"Name":"Skeleton_Mage.shield_badge","Values":{"LootTable":"Skeleton_Mage","Item":"shield_badge","Chance":0.03,"MinCount":1,"MaxCount":1}},
+    {"Name":"Chest.potion_hp_large","Values":{"LootTable":"Chest","Item":"potion_hp_large","Chance":0.5,"MinCount":1,"MaxCount":1}},
+    {"Name":"Chest.ruby","Values":{"LootTable":"Chest","Item":"ruby","Chance":0.2,"MinCount":1,"MaxCount":1}},
+    {"Name":"Chest.shield_square","Values":{"LootTable":"Chest","Item":"shield_square","Chance":0.15,"MinCount":1,"MaxCount":1}},
+    {"Name":"Test.potion_hp_small","Values":{"LootTable":"Test","Item":"potion_hp_small","Chance":1.0,"MinCount":2,"MaxCount":2}},
+    {"Name":"Test.bone","Values":{"LootTable":"Test","Item":"bone","Chance":1.0,"MinCount":1,"MaxCount":1}},
+    {"Name":"Test.sword_2handed","Values":{"LootTable":"Test","Item":"sword_2handed","Chance":1.0,"MinCount":1,"MaxCount":1}}
+  ]
+}

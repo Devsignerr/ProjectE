@@ -24,7 +24,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 도적\", \"Damage\": 10, \"AttackRange\": 750, \"AggroRange\": 950, \"LeashRange\": 1800, \"AttackCooldown\": 2.2, \"AttackClips\": \"1H_Ranged_Shoot\", \"AttackSpeed\": 1.0, \"RunSpeed\": 260, \"WalkSpeed\": 75, \"Poise\": 0.2, \"Ranged\": true, \"Projectile\": \"Bolt\", \"ProjectileSpeed\": 1400, \"MinRange\": 300, \"LootTable\": \"Skeleton_Rogue\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Rogue\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         },
         "HealthComponent": {

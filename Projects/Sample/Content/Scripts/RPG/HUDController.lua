@@ -57,6 +57,155 @@ function HUDController:OnStart()
 	self.bDeadShown    = nil
 end
 
+-- ---------------------------------------------------------------- 머리 위 체력바 / 데미지 숫자 (Camera.WorldToScreen + 위젯 복제)
+-- 적은 GameManager:TrackEnemy → AddEnemyBar, 피해는 GameManager:ShowDamageNumber → AddDamageNumber로 들어온다.
+-- 위젯은 OnLateUpdate에서 만든다(UI 인스턴스가 준비되기 전에 불릴 수 있음). 위치 계산도 같은 프레임 위치를 쓰려고 OnLateUpdate에서.
+local BarHeight      = 235  -- cm: 적 발 기준 체력바 높이
+local BarShowTime    = 4.0  -- 초: 맞은 뒤 전투가 아니어도 보이는 시간
+local DamageLife     = 0.9  -- 초
+local DamageRise     = 60   -- UI 단위: 떠오르는 높이
+local DamageHeight   = 0    -- cm: 호출하는 쪽이 이미 머리 높이를 준다 (적 +170)
+local MaxDamageCount = 24
+local DamageStyles = {
+	Normal = { Color = Vector4(1, 1, 1, 1),        Size = 32 },
+	Crit   = { Color = Vector4(1, 0.82, 0.2, 1),   Size = 42 },
+	Heal   = { Color = Vector4(0.45, 1, 0.5, 1),   Size = 32 },
+	Player = { Color = Vector4(1, 0.35, 0.3, 1),   Size = 34 },
+}
+
+function HUDController:EnsureOverlay()
+	if self.EnemyBars == nil then
+		self.EnemyBars     = {}
+		self.PendingBars   = {}
+		self.DamageNumbers = {}
+		self.OverlaySerial = 0
+	end
+end
+
+function HUDController:AddEnemyBar(Entity)
+	self:EnsureOverlay()
+	table.insert(self.PendingBars, Entity)
+end
+
+function HUDController:AddDamageNumber(WorldPos, Amount, Kind)
+	self:EnsureOverlay()
+	if #self.DamageNumbers >= MaxDamageCount then
+		self:RemoveDamageNumber(1)
+	end
+	local Value = math.floor((tonumber(Amount) or 0) + 0.5)
+	local Text  = tostring(Value)
+	if Kind == "Heal" then
+		Text = "+" .. Text
+	elseif Kind == "Crit" then
+		Text = Text .. "!"
+	end
+	table.insert(self.DamageNumbers, {
+		Pos = WorldPos + Vector3(0, 0, DamageHeight), Text = Text, Style = DamageStyles[Kind] or DamageStyles.Normal,
+		Age = 0, Jitter = (math.random() - 0.5) * 36,
+	})
+end
+
+function HUDController:NextOverlayName(Prefix)
+	self.OverlaySerial = self.OverlaySerial + 1
+	return Prefix .. self.OverlaySerial
+end
+
+function HUDController:OnLateUpdate(dt)
+	self:EnsureOverlay()
+	self:UpdateEnemyBars(dt)
+	self:UpdateDamageNumbers(dt)
+end
+
+function HUDController:UpdateEnemyBars(dt)
+	-- 새로 등록된 적: 위젯 만들기
+	for _, Entity in ipairs(self.PendingBars) do
+		local bKnown = false
+		for _, Bar in ipairs(self.EnemyBars) do
+			bKnown = bKnown or Bar.Entity == Entity
+		end
+		if not bKnown and Entity:IsValid() then
+			local Name   = self:NextOverlayName("EnemyBar")
+			local Widget = self.entity:CloneWidget("EnemyBarTemplate", Name)
+			local Script = Entity:GetScript()
+			local Label  = self.entity:GetWidget(Name .. ".Name")
+			if Label ~= nil then
+				Label.Text = CallOptional(Script, "GetDisplayName") or Entity:GetName()
+			end
+			Widget.Visible = false
+			table.insert(self.EnemyBars, { Entity = Entity, Name = Name, Widget = Widget, Hp = self.entity:GetWidget(Name .. ".Hp"),
+			                               LastFraction = 1, ShowTime = 0 })
+		end
+	end
+	self.PendingBars = {}
+
+	for Index = #self.EnemyBars, 1, -1 do
+		local Bar    = self.EnemyBars[Index]
+		local Script = Bar.Entity:IsValid() and Bar.Entity:GetScript() or nil
+		if Script == nil or CallOptional(Script, "IsDead") then
+			self.entity:RemoveWidget(Bar.Name)
+			table.remove(self.EnemyBars, Index)
+		else
+			local Fraction = CallOptional(Script, "GetHealthFraction") or 1
+			if Fraction < Bar.LastFraction - 0.0001 then
+				Bar.ShowTime = BarShowTime
+			end
+			Bar.LastFraction = Fraction
+			Bar.ShowTime     = math.max(0, Bar.ShowTime - dt)
+			local State      = Script.State
+			local bCombat    = State == "Chase" or State == "Attack" or State == "Retreat"
+			local bVisible   = false
+			if bCombat or Bar.ShowTime > 0 then
+				local X, Y, bOnScreen = Camera.WorldToScreen(Bar.Entity:GetWorldPosition() + Vector3(0, 0, BarHeight), self.entity)
+				if bOnScreen then
+					Bar.Widget.Position = Vector2(X, Y)
+					if Bar.Hp ~= nil then
+						Bar.Hp.Percent = Fraction
+					end
+					bVisible = true
+				end
+			end
+			if Bar.Widget.Visible ~= bVisible then
+				Bar.Widget.Visible = bVisible
+			end
+		end
+	end
+end
+
+function HUDController:RemoveDamageNumber(Index)
+	local Number = self.DamageNumbers[Index]
+	if Number.Name ~= nil then
+		self.entity:RemoveWidget(Number.Name)
+	end
+	table.remove(self.DamageNumbers, Index)
+end
+
+function HUDController:UpdateDamageNumbers(dt)
+	for Index = #self.DamageNumbers, 1, -1 do
+		local Number = self.DamageNumbers[Index]
+		Number.Age = Number.Age + dt
+		if Number.Age >= DamageLife then
+			self:RemoveDamageNumber(Index)
+		else
+			if Number.Widget == nil then
+				Number.Name   = self:NextOverlayName("Dmg")
+				Number.Widget = self.entity:CloneWidget("DmgTemplate", Number.Name)
+				Number.Widget.Text     = Number.Text
+				Number.Widget.Color    = Number.Style.Color
+				Number.Widget.FontSize = Number.Style.Size
+				Number.Widget.Visible  = true
+			end
+			local T = Number.Age / DamageLife
+			local X, Y, bOnScreen = Camera.WorldToScreen(Number.Pos, self.entity)
+			Number.Widget.Visible = bOnScreen
+			if bOnScreen then
+				local Rise = DamageRise * (1 - (1 - T) * (1 - T)) -- 빠르게 떠올라 천천히 멈춤
+				Number.Widget.Position = Vector2(X + Number.Jitter, Y - Rise)
+				Number.Widget.Opacity  = T < 0.6 and 1 or (1 - (T - 0.6) / 0.4)
+			end
+		end
+	end
+end
+
 function HUDController:OnUpdate(dt)
 	if self.Player == nil or not self.Player:IsValid() then
 		self.Player = Scene.Find(self.Properties.PlayerName) -- 리스폰 등으로 바뀌었을 수 있다 (실패 시 다음 프레임에 다시)

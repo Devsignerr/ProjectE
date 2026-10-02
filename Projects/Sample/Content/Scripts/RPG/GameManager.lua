@@ -6,7 +6,7 @@
 --     gm:GiveItem(id, count) → bool (전부 들어갈 때만 넣는다, "gold"는 골드) / gm:RemoveItem(id, count) → bool / gm:CountItem(id)
 --     gm:GetItemDef(id) → { Id, Name, Type("Weapon"|"Shield"|"Consumable"|"Loot"), Icon, Model, Price, Damage, Defense, Heal, Mana, Description, ... }
 --     gm:SpawnLoot(pos, lootTableId) — 전리품 표(Skeleton_Warrior/Minion/Rogue/Mage, Chest)를 굴려 줍는 아이템(Prefabs/RPG/Pickup.eprefab)을 흩뿌린다
---     gm:Notify(text) — 화면 알림(HUD) / gm:ShowDamageNumber(worldPos, amount, kind) — 지금은 로그만 (통합 단계에서 화면 표시)
+--     gm:Notify(text) — 화면 알림(HUD) / gm:ShowDamageNumber(worldPos, amount, kind), gm:TrackEnemy(entity) — 화면 표시는 HUD(머리 위 체력바·데미지 숫자)
 --   UI/상호작용용 추가 API: GetSlot/UseSlot/UseItem/UseQuickPotion/EquipSlot/Unequip/GetEquipped/GetEquipmentStats,
 --     BuyItem/SellSlot/GetSellPrice/ParseStock, SetPrompt/ClearPrompt/GetPrompt, GetToasts, OpenWindow/CloseWindow/IsAnyWindowOpen,
 --     PlaySound, GetPlayer/GetPlayerScript, Save/Load. 화면은 Revision이 바뀔 때만 다시 그리면 된다.
@@ -58,16 +58,16 @@ local Items = {
 		Description = "두 손으로 휘두르는 거대한 검. 방패와 함께 쓸 수 없다." },
 
 	shield_round = { Name = "원형 방패", Type = "Shield", Icon = IconDir .. "E_Wood02.png",
-		Model = "Asset/KayKit/Weapons/shield_round.gltf", ModelScale = 0.8, Price = 40, Defense = 4,
+		Model = "Asset/KayKit/Weapons/shield_round.gltf", ModelScale = 0.8, Price = 40, Defense = 1,
 		Description = "나무로 만든 둥근 방패." },
 	shield_square = { Name = "사각 방패", Type = "Shield", Icon = IconDir .. "E_Wood03.png",
-		Model = "Asset/KayKit/Weapons/shield_square.gltf", ModelScale = 0.8, Price = 70, Defense = 6,
+		Model = "Asset/KayKit/Weapons/shield_square.gltf", ModelScale = 0.8, Price = 70, Defense = 2,
 		Description = "몸을 넓게 가려 주는 사각 방패." },
 	shield_badge = { Name = "문장 방패", Type = "Shield", Icon = IconDir .. "E_Metal08.png",
-		Model = "Asset/KayKit/Weapons/shield_badge.gltf", ModelScale = 0.8, Price = 110, Defense = 8,
+		Model = "Asset/KayKit/Weapons/shield_badge.gltf", ModelScale = 0.8, Price = 110, Defense = 3,
 		Description = "왕국의 문장이 새겨진 강철 방패." },
 	shield_spikes = { Name = "가시 방패", Type = "Shield", Icon = IconDir .. "E_Metal02.png",
-		Model = "Asset/KayKit/Weapons/shield_spikes.gltf", ModelScale = 0.8, Price = 160, Defense = 10,
+		Model = "Asset/KayKit/Weapons/shield_spikes.gltf", ModelScale = 0.8, Price = 160, Defense = 4,
 		Description = "가시가 박힌 방패. 막는 것만으로도 위협적이다." },
 
 	bone = { Name = "뼈 조각", Type = "Loot", Icon = IconDir .. "I_Bone.png",
@@ -161,6 +161,9 @@ function GameManager:EnsureInit()
 		self.Gold = self.Properties.StartGold
 		self:GiveItem("potion_hp_small", 3)
 		self:GiveItem("potion_mp", 1)
+		-- 새 게임 장비 = 플레이어 프리팹 기본 장비 (비워 두면 ApplyEquipment가 맨손으로 만든다)
+		self.Equipped.Weapon = "sword_1handed"
+		self.Equipped.Shield = "shield_badge"
 	end
 	if self.Properties.DebugFillBag then
 		self:GiveItem("potion_hp_large", 2)
@@ -762,9 +765,28 @@ function GameManager:GetPrompt()
 	return self.Prompt
 end
 
+-- 화면 표시는 HUD(HUDController:AddDamageNumber/AddEnemyBar)가 한다 — 위젯 복제 + Camera.WorldToScreen
+function GameManager:GetHUDScript()
+	if self.HUDScript == nil then
+		local HUD = Scene.Find("HUD")
+		self.HUDScript = HUD and HUD:GetScript() or nil
+	end
+	return self.HUDScript
+end
+
 function GameManager:ShowDamageNumber(WorldPos, Amount, Kind)
-	-- 엔진 트랙(Camera.WorldToScreen, 위젯 Position) 머지 전에는 로그만
-	Log.Info(string.format("[RPG 데미지] %s %s at %s", tostring(Kind or "Normal"), tostring(Amount), tostring(WorldPos)))
+	local HUD = self:GetHUDScript()
+	if HUD ~= nil and type(HUD.AddDamageNumber) == "function" then
+		HUD:AddDamageNumber(WorldPos, Amount, Kind)
+	end
+end
+
+-- 적 머리 위 체력바 등록 (적 스크립트 OnStart에서). 파괴되거나 죽으면 HUD가 알아서 치운다
+function GameManager:TrackEnemy(Entity)
+	local HUD = self:GetHUDScript()
+	if HUD ~= nil and type(HUD.AddEnemyBar) == "function" then
+		HUD:AddEnemyBar(Entity)
+	end
 end
 
 -- ---------------------------------------------------------------- 창 (가방/상점) — 열린 동안 입력 모드 GameAndUI

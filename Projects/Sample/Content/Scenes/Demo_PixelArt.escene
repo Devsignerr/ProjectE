@@ -1455,77 +1455,57 @@
             -0.3826834323650897
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "CharacterMovementComponent": {
-          "AirControl": 0.35,
-          "CapsuleHalfHeight": 55,
-          "CapsuleRadius": 35,
-          "FaceControlYaw": false,
-          "GravityScale": 1,
-          "JumpZVelocity": 520,
-          "Mass": 80,
-          "MaxSlopeAngle": 50,
-          "MaxStepHeight": 35,
-          "MaxWalkSpeed": 450,
-          "PushForce": 4000,
-          "Layer": "Character"
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Player.eprefab",
+          "Overrides": ""
         },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/IsoPlayer.lua",
-          "PropertyOverrides": ""
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 32
         }
       }
     },
     {
-      "Name": "PlayerMesh",
-      "Parent": 32,
+      "Name": "GameManager",
+      "Parent": -1,
       "Components": {
         "TransformComponent": {
           "Position": [
-            0.0,
-            0.0,
-            -90.0
+            0,
+            0,
+            0
           ],
           "Rotation": [
-            0.0,
-            0.0,
-            1.0,
-            6.123233995736766e-17
+            0,
+            0,
+            0,
+            1
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/Knight.glb"
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/GameSystems.eprefab",
+          "Overrides": ""
         },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Idle",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1
-        },
-        "AnimGraphComponent": {
-          "Graph": "Animations/KnightCharacter.eanimgraph",
-          "UseCharacterMovement": true
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 33
         }
       }
     },
     {
-      "Name": "Barbarian",
+      "Name": "Merchant",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/Barbarian.glb"
-        },
         "TransformComponent": {
           "Position": [
             247.5,
@@ -1539,18 +1519,18 @@
             0.9238795325112867
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Idle",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1.0
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Merchant.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 34
         }
       }
     },
@@ -5860,301 +5840,306 @@
       }
     },
     {
-      "Name": "SkeletonWarrior",
+      "Name": "NavMesh",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/SkeletonWarrior.glb"
-        },
         "TransformComponent": {
           "Position": [
-            2021.3000000000002,
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "NavMeshComponent": {
+          "NavMeshAsset": "Scenes/Demo_PixelArt.enav",
+          "AgentRadius": 40.0,
+          "AgentHeight": 160.0,
+          "AgentMaxClimb": 40.0,
+          "AgentMaxSlopeDegrees": 45.0,
+          "CellSize": 20.0,
+          "CellHeight": 5.0
+        }
+      }
+    },
+    {
+      "Name": "Dungeon_Warrior",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2021.3,
             -1776.3,
-            0.0
+            0
           ],
           "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
+            0,
+            0,
+            0,
+            1
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Walking_D_Skeletons",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1.0
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Enemy_SkeletonWarrior.eprefab",
+          "Overrides": ""
         },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/CircleWalker.lua",
-          "PropertyOverrides": "{\"Radius\": 200, \"Speed\": 20, \"StartAngle\": 90, \"FacingYaw\": 180.0}"
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 135
         }
       }
     },
     {
-      "Name": "SkeletonWarrior_Skeleton_Blade",
+      "Name": "Dungeon_Mage",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Blade.gltf"
-        },
-        "SocketAttachmentComponent": {
-          "Target": 134,
-          "Socket": "HandR"
-        },
-        "TransformComponent": {
-          "Position": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      }
-    },
-    {
-      "Name": "SkeletonWarrior_Skeleton_Shield_Small_A",
-      "Parent": -1,
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Shield_Small_A.gltf"
-        },
-        "SocketAttachmentComponent": {
-          "Target": 134,
-          "Socket": "HandL"
-        },
-        "TransformComponent": {
-          "Position": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      }
-    },
-    {
-      "Name": "SkeletonMinion",
-      "Parent": -1,
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/SkeletonMinion.glb"
-        },
-        "TransformComponent": {
-          "Position": [
-            2321.3,
-            -1476.3,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.3826834323650898,
-            0.9238795325112867
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Idle_Combat",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1.0
-        }
-      }
-    },
-    {
-      "Name": "SkeletonMinion_Skeleton_Axe",
-      "Parent": -1,
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Axe.gltf"
-        },
-        "SocketAttachmentComponent": {
-          "Target": 137,
-          "Socket": "HandR"
-        },
-        "TransformComponent": {
-          "Position": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      }
-    },
-    {
-      "Name": "SkeletonMage",
-      "Parent": -1,
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/SkeletonMage.glb"
-        },
         "TransformComponent": {
           "Position": [
             2401.3,
             -1746.3,
-            0.0
+            0
           ],
           "Rotation": [
-            0.0,
-            0.0,
-            0.21643961393810288,
-            0.9762960071199334
+            0,
+            0,
+            0,
+            1
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Spellcasting",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1.0
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Enemy_SkeletonMage.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 136
         }
       }
     },
     {
-      "Name": "SkeletonMage_Skeleton_Staff",
+      "Name": "Dungeon_Rogue",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Staff.gltf"
-        },
-        "SocketAttachmentComponent": {
-          "Target": 139,
-          "Socket": "HandR"
-        },
         "TransformComponent": {
           "Position": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      }
-    },
-    {
-      "Name": "SkeletonRogue",
-      "Parent": -1,
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/SkeletonRogue.glb"
-        },
-        "TransformComponent": {
-          "Position": [
-            1871.3000000000002,
+            1871.3,
             -1376.3,
-            0.0
+            0
           ],
           "Rotation": [
-            0.0,
-            0.0,
-            0.6087614290087207,
-            0.7933533402912352
+            0,
+            0,
+            0,
+            1
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
         },
-        "AnimationComponent": {
-          "BlendTime": 0.25,
-          "Clip": "Idle_B",
-          "Loop": true,
-          "Playing": true,
-          "RootMotion": false,
-          "Speed": 1.0
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Enemy_SkeletonRogue.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 137
         }
       }
     },
     {
-      "Name": "SkeletonRogue_Skeleton_Crossbow",
+      "Name": "Dungeon_MinionSpawner",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Crossbow.gltf"
-        },
-        "SocketAttachmentComponent": {
-          "Target": 141,
-          "Socket": "HandR"
-        },
         "TransformComponent": {
           "Position": [
-            0.0,
-            0.0,
+            2200,
+            -1450,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/EnemySpawner.eprefab",
+          "Overrides": "{\"Entities\": {\"1\": {\"Properties\": [\"ScriptComponent.PropertyOverrides\"]}}}"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 138
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"EnemyPrefab\": {\"Asset\": \"Prefabs/RPG/Enemy_SkeletonMinion.eprefab\"}, \"MaxAlive\": 2, \"SpawnRadius\": 200, \"RespawnDelay\": 15.0, \"ActivationRange\": 1800}",
+          "ScriptAsset": "Scripts/RPG/EnemySpawner.lua"
+        }
+      }
+    },
+    {
+      "Name": "Road_MinionSpawner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            848.5,
+            -1272.8,
             0.0
           ],
           "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
+            0,
+            0,
+            0,
+            1
           ],
           "Scale": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/EnemySpawner.eprefab",
+          "Overrides": "{\"Entities\": {\"1\": {\"Properties\": [\"ScriptComponent.PropertyOverrides\"]}}}"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 139
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"EnemyPrefab\": {\"Asset\": \"Prefabs/RPG/Enemy_SkeletonMinion.eprefab\"}, \"MaxAlive\": 2, \"SpawnRadius\": 220, \"RespawnDelay\": 12.0, \"ActivationRange\": 1500}",
+          "ScriptAsset": "Scripts/RPG/EnemySpawner.lua"
+        }
+      }
+    },
+    {
+      "Name": "Forest_MinionSpawner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1767.8,
+            1767.8,
+            0.0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/EnemySpawner.eprefab",
+          "Overrides": "{\"Entities\": {\"1\": {\"Properties\": [\"ScriptComponent.PropertyOverrides\"]}}}"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 140
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"EnemyPrefab\": {\"Asset\": \"Prefabs/RPG/Enemy_SkeletonMinion.eprefab\"}, \"MaxAlive\": 3, \"SpawnRadius\": 250, \"RespawnDelay\": 10.0, \"ActivationRange\": 1800}",
+          "ScriptAsset": "Scripts/RPG/EnemySpawner.lua"
+        }
+      }
+    },
+    {
+      "Name": "Forest_Rogue",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1555.6,
+            2545.6,
+            0.0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Enemy_SkeletonRogue.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 141
+        }
+      }
+    },
+    {
+      "Name": "Forest_Warrior",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2121.3,
+            2404.2,
+            0.0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/RPG/Enemy_SkeletonWarrior.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 142
         }
       }
     }

@@ -35,7 +35,7 @@ local EnemyController = {
 		SpawnAnimation  = "Spawn_Ground_Skeletons", -- 시작 시 몽타주 클립 / "Dormant"(누워 있다가 깨어남) / ""(없음)
 		DeathCorpseTime = 3.0,    -- 사망 후 가라앉기 시작까지 (초)
 		LootTable       = "",     -- GameManager:SpawnLoot에 넘기는 전리품 표 ID
-		ShowDamageNumbers = true, -- 받은 피해를 GameManager:ShowDamageNumber로 표시
+		ShowDamageNumbers = false, -- 받은 피해를 GameManager:ShowDamageNumber로 표시 (플레이어 공격이 이미 표시하므로 기본 끔)
 		TargetName      = "Player",
 	},
 }
@@ -138,6 +138,13 @@ function EnemyController:OnStart()
 	self.IdleWait    = 0.5 + math.random() * 1.5
 	self.FindTimer   = 0
 	self:FindPlayer()
+
+	-- 머리 위 체력바 (GameManager → HUD). GameManager가 없으면 건너뛴다
+	local Manager = Scene.Find("GameManager")
+	local GM = Manager and Manager:GetScript() or nil
+	if GM ~= nil and type(GM.TrackEnemy) == "function" then
+		pcall(GM.TrackEnemy, GM, self.entity)
+	end
 
 	if P.SpawnAnimation == "Dormant" then
 		self.entity:SetAnimParam("Dormant", true)

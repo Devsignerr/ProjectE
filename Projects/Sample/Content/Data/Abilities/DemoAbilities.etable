@@ -1,0 +1,10 @@
+{
+  "Version": 1,
+  "Struct": "Data/Abilities/AbilityDef.estruct",
+  "Rows": [
+    {"Name":"Dash","Values":{"DisplayName":"대시","Script":"Abilities/Dash.lua","Native":"","CostEffect":"Cost_Dash","CooldownEffect":"Cooldown_Dash","ActivationEffects":["Dashing"],"InputAction":"","AbilityTags":["Ability.Movement.Dash"],"ActivationRequiredTags":[],"ActivationBlockedTags":["State.Stunned"],"ActivationOwnedTags":[],"CancelAbilitiesWithTags":[],"BlockAbilitiesWithTags":[],"Predicted":true,"ManualCommit":false}},
+    {"Name":"Fireball","Values":{"DisplayName":"화염구","Script":"Abilities/Fireball.lua","Native":"","CostEffect":"Cost_Fireball","CooldownEffect":"Cooldown_Fireball","ActivationEffects":[],"InputAction":"","AbilityTags":["Ability.Attack.Fireball"],"ActivationRequiredTags":[],"ActivationBlockedTags":["State.Stunned"],"ActivationOwnedTags":["State.Casting"],"CancelAbilitiesWithTags":[],"BlockAbilitiesWithTags":[],"Predicted":true,"ManualCommit":false}},
+    {"Name":"Shield","Values":{"DisplayName":"방어막","Script":"","Native":"","CostEffect":"Cost_Shield","CooldownEffect":"Cooldown_Shield","ActivationEffects":["Shield"],"InputAction":"","AbilityTags":["Ability.Defense.Shield"],"ActivationRequiredTags":[],"ActivationBlockedTags":["State.Stunned"],"ActivationOwnedTags":[],"CancelAbilitiesWithTags":[],"BlockAbilitiesWithTags":[],"Predicted":true,"ManualCommit":false}},
+    {"Name":"HealZone","Values":{"DisplayName":"치유 지대","Script":"Abilities/HealZone.lua","Native":"","CostEffect":"Cost_HealZone","CooldownEffect":"Cooldown_HealZone","ActivationEffects":[],"InputAction":"","AbilityTags":["Ability.Support.HealZone"],"ActivationRequiredTags":[],"ActivationBlockedTags":["State.Stunned"],"ActivationOwnedTags":["State.Channeling"],"CancelAbilitiesWithTags":[],"BlockAbilitiesWithTags":[],"Predicted":true,"ManualCommit":false}}
+  ]
+}

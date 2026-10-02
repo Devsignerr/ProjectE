@@ -284,6 +284,17 @@ void FLuaRuntime::RegisterAbilityBindings()
 		}
 		return sol::lua_nil;
 	};
+	AbilitiesTable["IsAutoCast"] = []() { return FAbilitySystem::IsAutoCastEnabled(); };
+	// 마지막 발동 실패: 능력, 이유, 지난 초 (없으면 nil)
+	EntityType["GetLastAbilityFailure"] = [System](const FScriptEntity& Entity) -> std::tuple<sol::optional<std::string>, sol::optional<std::string>, sol::optional<double>> {
+		FAbilitySystem*                Abilities = System();
+		const FAbilitySystemComponent* Component = Abilities != nullptr ? Abilities->Find(Entity.Entity) : nullptr;
+		if (Component == nullptr || Component->Runtime.LastFailedTime < 0.0)
+		{
+			return { sol::nullopt, sol::nullopt, sol::nullopt };
+		}
+		return { Component->Runtime.LastFailedAbility, Component->Runtime.LastFailedReason, Abilities->GetClock() - Component->Runtime.LastFailedTime };
+	};
 	AbilitiesTable["Describe"] = [System](const FScriptEntity& Entity) {
 		FAbilitySystem* Abilities = System();
 		return Abilities != nullptr ? Abilities->Describe(Entity.Entity) : std::string();

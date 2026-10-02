@@ -106,6 +106,10 @@ struct FAbilitySystemRuntime
 	// ---- 권한: 복제 문자열을 다시 쓸지 (효과 구조가 바뀔 때만 남은 시간을 갱신)
 	std::string                         EffectsStructureKey;
 
+	// ---- 마지막 발동 실패 (HUD 표시용, Lua entity:GetLastAbilityFailure)
+	std::string                         LastFailedAbility, LastFailedReason;
+	double                              LastFailedTime = -1.0;
+
 	// ---- 이벤트 감지 (지난번 알린 값)
 	std::map<std::string, float>        NotifiedAttributes;
 	std::map<std::string, int32>        NotifiedTags;

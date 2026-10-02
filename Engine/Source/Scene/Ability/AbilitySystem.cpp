@@ -56,6 +56,8 @@ namespace
 	TAutoConsoleVariable<bool>  CVarClientSkipChecks("ability.ClientSkipChecks", false,
 	                                                 "검증용: 소유 클라이언트가 쿨다운·비용 검사 없이 예측 발동 → 서버 거절·되돌림 확인", EConsoleFlags::Cheat);
 
+	TAutoConsoleVariable<int32> CVarAbilityAutoCast("ability.AutoCast", 0, "검증용: 1이면 능력 데모 스크립트(Demo_Abilities HUD)가 로컬 폰의 능력을 순서대로 자동 발동");
+
 	FAutoConsoleCommand CmdAbilityDump("ability.Dump", "능력 시스템 상태 출력 (속성·태그·활성 효과·능력). 인자: 엔티티 이름 일부 (없으면 전부)",
 		[](const std::vector<std::string>& Args, const FConsoleOutput& Output) {
 			FAbilitySystem* System = FAbilitySystem::GetActive();
@@ -252,6 +254,11 @@ FAbilitySystem* FAbilitySystem::GetActive()
 	return GActiveSystem;
 }
 
+bool FAbilitySystem::IsAutoCastEnabled()
+{
+	return CVarAbilityAutoCast.Get() != 0;
+}
+
 void FAbilitySystem::Begin(FScene& InScene, bool bInAuthority)
 {
 	End();
@@ -261,6 +268,7 @@ void FAbilitySystem::Begin(FScene& InScene, bool bInAuthority)
 	Events.clear();
 	RejectedCount   = 0;
 	RolledBackCount = 0;
+	Clock           = 0.0;
 	FGameplayTagRegistry::Get().LoadFromProjectSettings();
 	// 이전 플레이의 런타임이 남아 있으면(같은 씬으로 다시 시작) 처음부터
 	InScene.GetRegistry().View<FAbilitySystemComponent>().Each([](FEntity, FAbilitySystemComponent& Component) {
@@ -482,6 +490,7 @@ void FAbilitySystem::Tick(float DeltaSeconds)
 	{
 		return;
 	}
+	Clock += DeltaSeconds;
 	const std::vector<FEntity> Entities = GetEntities();
 	const uint32               Generation = FAbilityLibrary::Get().GetGeneration();
 
@@ -496,6 +505,12 @@ void FAbilitySystem::Tick(float DeltaSeconds)
 		if (!Component->Runtime.bInitialized)
 		{
 			InitializeComponent(Entity, *Component);
+			continue;
+		}
+		if (!Component->Runtime.bCodeDefinitions && Component->Runtime.DefinitionKey != FAbilityLibrary::MakeKey(Component->AttributeTable, Component->EffectTable, Component->AbilityTable))
+		{
+			Component->Runtime = FAbilitySystemRuntime();
+			InitializeComponent(Entity, *Component); // 표 경로가 바뀜 (스크립트가 컴포넌트를 붙인 뒤 채움, 복제로 늦게 옴) → 처음부터
 			continue;
 		}
 		if (!Component->Runtime.bCodeDefinitions && Component->Runtime.DefinitionGeneration != Generation)
@@ -675,6 +690,12 @@ void FAbilitySystem::PushFailed(FEntity Entity, std::string_view Ability, std::s
 	Event.Name   = std::string(Ability);
 	Event.Reason = std::move(Reason);
 	Events.push_back(std::move(Event));
+	if (FAbilitySystemComponent* Component = Find(Entity))
+	{
+		Component->Runtime.LastFailedAbility = std::string(Ability);
+		Component->Runtime.LastFailedReason  = Events.back().Reason;
+		Component->Runtime.LastFailedTime    = Clock;
+	}
 }
 
 const std::vector<std::string>* FAbilitySystem::GetGrantedAbilities(FEntity Entity) const
@@ -1638,7 +1659,7 @@ void FAbilitySystem::RecomputeAttributes(FEntity Entity, FAbilitySystemComponent
 			Modifiers.clear();
 			for (const FActiveGameplayEffect& Effect : Runtime.Effects)
 			{
-				for (size_t Index = 0; Effect.Def != nullptr && Index < Effect.Def->Modifiers.size(); ++Index)
+				for (size_t Index = 0; Effect.Def != nullptr && !Effect.Def->IsPeriodic() && Index < Effect.Def->Modifiers.size(); ++Index) // 주기 효과 수정자는 주기마다 기본값에만
 				{
 					if (Effect.Def->Modifiers[Index].Attribute == Name)
 					{
@@ -2175,7 +2196,7 @@ void FAbilitySystem::RebuildClientView(FEntity Entity, FAbilitySystemComponent& 
 		Modifiers.clear();
 		for (const FActiveGameplayEffect& Effect : Runtime.Effects)
 		{
-			for (size_t Index = 0; Effect.Def != nullptr && Index < Effect.Def->Modifiers.size(); ++Index)
+			for (size_t Index = 0; Effect.Def != nullptr && !Effect.Def->IsPeriodic() && Index < Effect.Def->Modifiers.size(); ++Index) // 주기 효과 수정자는 주기마다 기본값에만
 			{
 				if (Effect.Def->Modifiers[Index].Attribute == Name)
 				{

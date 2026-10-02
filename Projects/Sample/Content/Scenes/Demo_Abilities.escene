@@ -1,0 +1,74 @@
+{
+  "Version": 1,
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [0,0,500], "Rotation": [-0.10938165336847305,0.4082179069519043,0.23456971347332,0.8754260540008545], "Scale": [1.0,1.0,1.0] },
+        "DirectionalLightComponent": { "Color": [1.0,0.96,0.9], "Intensity": 3.0 }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [0,0,-10], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [30,30,0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Checker.emat", "MeshAsset": "primitive:cube", "Visible": true },
+        "BoxColliderComponent": { "HalfExtents": [50.0,50.0,50.0], "Offset": [0.0,0.0,0.0] }
+      }
+    },
+    {
+      "Name": "Camera",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [-900,-600,600], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [1.0,1.0,1.0] },
+        "CameraComponent": { "FovYDegrees": 60.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true },
+        "ScriptComponent": { "ScriptAsset": "Scripts/OrbitCamera.lua", "PropertyOverrides": "{\"Radius\":1300.0,\"Height\":700.0,\"Speed\":3.0}", "ExecutionLocation": 1 }
+      }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [-450,-120,100], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [1.0,1.0,1.0] }
+      }
+    },
+    {
+      "Name": "PlayerStart",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [-450,120,100], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [1.0,1.0,1.0] }
+      }
+    },
+    {
+      "Name": "AbilityRules",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [0,0,0], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [1.0,1.0,1.0] },
+        "ScriptComponent": { "ScriptAsset": "Scripts/AbilityDemoRules.lua", "PropertyOverrides": "", "ExecutionLocation": 0 }
+      }
+    },
+    {
+      "Name": "TrainingDummy",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [450,0,90], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [0.8,0.8,1.8] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Purple.emat", "MeshAsset": "primitive:cube", "Visible": true },
+        "BoxColliderComponent": { "HalfExtents": [50.0,50.0,50.0], "Offset": [0.0,0.0,0.0] },
+        "HealthComponent": { "MaxHealth": 300.0, "Health": 300.0, "Invulnerable": false, "DeathAction": 2, "ScoreValue": 0 },
+        "AbilitySystemComponent": { "AttributeTable": "Data/Abilities/DemoAttributes.etable", "EffectTable": "Data/Abilities/DemoEffects.etable", "AbilityTable": "Data/Abilities/DemoAbilities.etable", "GrantedAbilities": "", "StartupEffects": "", "Level": 1.0, "AcceptInput": false },
+        "ReplicatedComponent": {}
+      }
+    },
+    {
+      "Name": "HUD",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [0,0,0], "Rotation": [0.0,0.0,0.0,1.0], "Scale": [1.0,1.0,1.0] },
+        "UIComponent": { "Asset": "UI/AbilityHUD.eui", "ZOrder": 0, "Visible": true, "ReceiveInput": false, "KeyboardFocus": false },
+        "ScriptComponent": { "ScriptAsset": "Scripts/AbilityHud.lua", "PropertyOverrides": "", "ExecutionLocation": 1 }
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "Version": 1,
+  "Name": "AbilityDef",
+  "Description": "능력 (행 이름 = 능력 이름). 로직은 Lua 스크립트(OnActivate(ctx)) 또는 C++(Native)",
+  "Fields": [
+    {"Name":"DisplayName","Type":"String","Default":""},
+    {"Name":"Script","Type":"Asset","Filter":".lua","Default":""},
+    {"Name":"Native","Type":"String","Default":""},
+    {"Name":"CostEffect","Type":"RowRef","Table":"Data/Abilities/DemoEffects.etable","Default":""},
+    {"Name":"CooldownEffect","Type":"RowRef","Table":"Data/Abilities/DemoEffects.etable","Default":""},
+    {"Name":"ActivationEffects","Type":"Array","Element":"RowRef","Table":"Data/Abilities/DemoEffects.etable","Default":[]},
+    {"Name":"InputAction","Type":"String","Default":"","Description":"Config/Input.json 액션 이름"},
+    {"Name":"AbilityTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"ActivationRequiredTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"ActivationBlockedTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"ActivationOwnedTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"CancelAbilitiesWithTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"BlockAbilitiesWithTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"Predicted","Type":"Bool","Default":true},
+    {"Name":"ManualCommit","Type":"Bool","Default":false}
+  ]
+}

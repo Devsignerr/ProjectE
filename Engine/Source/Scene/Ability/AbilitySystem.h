@@ -213,6 +213,8 @@ public:
 	std::string Describe(FEntity Entity) const;
 	std::vector<FEntity> GetEntities() const; // 컴포넌트가 있는 엔티티 (인덱스 순)
 	static FAbilitySystem* GetActive();       // 가장 최근 Begin한 시스템 (콘솔 명령용, 메인 스레드)
+	double GetClock() const { return Clock; } // 플레이 시작 뒤 능력 틱 시간 합 (초)
+	static bool IsAutoCastEnabled();          // 콘솔 ability.AutoCast (검증용 데모 자동 발동 — 데모 스크립트가 읽는다)
 	uint32 GetRejectedCount() const { return RejectedCount; }   // 테스트/통계: 클라이언트가 받은 거절 수
 	uint32 GetRolledBackCount() const { return RolledBackCount; } // 테스트/통계: 거절로 되돌린 예측 효과/값 수
 
@@ -272,4 +274,5 @@ private:
 	void ExecuteMeta(FEntity Target, FAbilitySystemComponent& Component, const std::string& Attribute, float Amount, FEntity Source);
 	uint32                   RejectedCount   = 0;
 	uint32                   RolledBackCount = 0;
+	double                   Clock           = 0.0;
 };

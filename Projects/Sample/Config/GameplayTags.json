@@ -1,0 +1,4 @@
+{
+  "Tags": "State.Stunned;State.Casting;State.Channeling;State.Dashing;State.Burning;State.Shielded;Ability.Cooldown.Dash;Ability.Cooldown.Fireball;Ability.Cooldown.Shield;Ability.Cooldown.HealZone;Ability.Movement.Dash;Ability.Attack.Fireball;Ability.Defense.Shield;Ability.Support.HealZone;Effect.Cooldown;Effect.Buff.Dash;Effect.Buff.Shield;Effect.Fire.Burn;Effect.Heal;Effect.Regen",
+  "WarnUnknownTags": true
+}

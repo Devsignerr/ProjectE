@@ -140,6 +140,9 @@ FLuaRuntime::~FLuaRuntime()
 	CoroutineResume = sol::lua_nil;
 	CoroutineStatus = sol::lua_nil;
 	WaitToken       = sol::table();
+	AbilityTasks.clear();
+	AbilityContextMeta = sol::table();
+	AbilityRunner      = sol::lua_nil;
 	Traceback = sol::lua_nil;
 	if (Debugger != nullptr)
 	{

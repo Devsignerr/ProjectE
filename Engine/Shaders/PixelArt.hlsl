@@ -67,8 +67,9 @@ float TexelWorldSize(float Depth)
 	return bOrthographic != 0 ? PixelViewScale : PixelViewScale * Depth;
 }
 
-// 축 방향 깊이 2차 차분 (앞뒤 이웃이 모두 같은 물체일 때만, 아니면 0). 볼록 능선(양옆이 뒤로 물러남)이면 양수
-float RidgeCurvature(int2 Texel, int2 Axis, int2 SourceSize)
+// 축 방향 단면의 꺾인 각도(라디안, 앞뒤 이웃이 모두 같은 물체일 때만, 아니면 0). 볼록 능선(양옆이 뒤로 물러남)이면 양수.
+// 깊이 차 대신 각도로 재야 구 가장자리처럼 화면에 비스듬한 곡면이 모서리로 잘못 잡히지 않는다(구는 도트당 수십 도 미만)
+float RidgeBend(int2 Texel, int2 Axis, int2 SourceSize)
 {
 	const float Center = GetViewPosition(Texel, SourceSize).z;
 	const float Next   = GetViewPosition(Texel + Axis, SourceSize).z;
@@ -77,7 +78,8 @@ float RidgeCurvature(int2 Texel, int2 Axis, int2 SourceSize)
 	{
 		return 0.0f;
 	}
-	return Next + Prev - 2.0f * Center;
+	const float Texel1 = TexelWorldSize(Center);
+	return atan((Next - Center) / Texel1) - atan((Center - Prev) / Texel1);
 }
 
 float3 LinearToSrgbApprox(float3 Color)
@@ -122,21 +124,20 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 			}
 		}
 
-		// 볼록 모서리 하이라이트: 가로/세로 깊이 능선(2차 차분 > 문턱). 판정값이 확실히 양수인 곳만 켜므로 카메라가 도트 단위로
-		// 움직일 때 생기는 미세 오차에 흔들리지 않는다(같은 평면 = 0). 모서리 양쪽 두 픽셀 중 능선 값이 큰 쪽 하나만,
-		// 비슷하면(여유 Tie 이내) 축의 앞쪽(왼쪽/위) 픽셀로 고정. 완만한 곡면(구 등)은 문턱 아래라 칠하지 않는다
-		const float Texel1     = TexelWorldSize(Center.z);
-		const float Tie        = 0.02f * Texel1;
+		// 볼록 모서리 하이라이트: 가로/세로 단면이 30도 넘게 꺾인 능선(60도에서 최대). 판정값이 확실히 양수인 곳만 켜므로 카메라가
+		// 도트 단위로 움직일 때 생기는 미세 오차에 흔들리지 않는다(같은 평면 = 0). 모서리 양쪽 두 픽셀 중 꺾임이 큰 쪽 하나만,
+		// 비슷하면(여유 Tie 이내) 축의 앞쪽(왼쪽/위) 픽셀로 고정
+		const float Tie        = 0.02f; // 라디안
 		const int2  Axes[2]    = { int2(1, 0), int2(0, 1) };
 		float       NormalEdge = 0.0f;
 		[unroll]
 		for (int AxisIndex = 0; AxisIndex < 2; ++AxisIndex)
 		{
 			const int2  Axis  = Axes[AxisIndex];
-			const float Ridge = RidgeCurvature(Texel, Axis, SourceSize);
-			if (Ridge > Tie && Ridge + Tie >= RidgeCurvature(Texel + Axis, Axis, SourceSize) && Ridge > RidgeCurvature(Texel - Axis, Axis, SourceSize) + Tie)
+			const float Bend = RidgeBend(Texel, Axis, SourceSize);
+			if (Bend > Tie && Bend + Tie >= RidgeBend(Texel + Axis, Axis, SourceSize) && Bend > RidgeBend(Texel - Axis, Axis, SourceSize) + Tie)
 			{
-				NormalEdge = max(NormalEdge, smoothstep(0.4f, 1.0f, Ridge / Texel1));
+				NormalEdge = max(NormalEdge, smoothstep(0.52f, 1.05f, Bend));
 			}
 		}
 

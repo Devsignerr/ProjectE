@@ -69,6 +69,12 @@ struct FPixelArtMath
 		return Result;
 	}
 
+	// 물체 스냅: 위치를 카메라와 같은 격자에 맞추는 이동량 (Right/Up 평면 안, 각 성분 |d| <= 텍셀 반 개)
+	static FVector3 ComputeObjectSnapDelta(const FVector3& Position, const FVector3& Right, const FVector3& Up, float TexelWorldSize)
+	{
+		return SnapToTexelGrid(Position, Right, Up, TexelWorldSize).SnappedPosition - Position;
+	}
+
 	// 스냅 나머지 → 확대 단계의 소스 좌표 오프셋 (텍셀). 화면 Y는 아래가 +
 	static FVector2 GetSubPixelOffset(const FVector2& Remainder)
 	{

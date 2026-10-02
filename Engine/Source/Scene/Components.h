@@ -138,6 +138,7 @@ struct FPixelArtComponent
 	float DepthThreshold    = 25.0f;  // 외곽선 판정 깊이 차 (cm)
 	int32 ColorLevels       = 0;      // 채널당 색 단계 수 (0 = 양자화 끔, 2 이상)
 	float DitherStrength    = 0.5f;   // 양자화 Bayer 디더 세기 (0~1)
+	bool  bSnapMovingObjects = true;  // 한 번이라도 움직인 최상위 물체(하위 트리 통째로)를 도트 격자에 맞춰 그림 (직교, 렌더만)
 };
 
 // Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.

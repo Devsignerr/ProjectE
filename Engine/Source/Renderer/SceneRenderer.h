@@ -17,6 +17,7 @@
 #include "Renderer/OcclusionCuller.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/ParticleRenderer.h"
+#include "Renderer/PixelArtObjectSnap.h"
 #include "Renderer/ScreenPass.h"
 #include "Renderer/TemporalAA.h"
 #include "Renderer/AmbientOcclusion.h"
@@ -306,6 +307,7 @@ private:
 	                            uint32 SourceWidth, uint32 SourceHeight, FPixelArtCompositeParams& OutParams) const;
 
 	std::unique_ptr<FD3D12RenderTarget> PixelArtColor; // 픽셀 아트: 저해상도 톤매핑 결과 (선형, 부동소수점)
+	FPixelArtObjectSnap                 PixelArtObjectSnap; // 픽셀 아트: 움직인 물체 도트 스냅 (씬 렌더 동안만 적용)
 
 	FMeshInstanceList MeshInstances; // 프레임 메시 인스턴스 (모든 패스 공유)
 	// LOD 히스테리시스용 엔티티별 이전 LOD (엔티티 인덱스 칸, 세대로 검증 — 렌더러(= 카메라)마다 따로)

@@ -100,6 +100,7 @@ void RegisterSceneTypes()
 		.Property(&FPixelArtComponent::DepthThreshold, "DepthThreshold", "외곽선 깊이 차 (cm)").Range(0.1f, 1000.0f, 0.5f)
 		.Property(&FPixelArtComponent::ColorLevels, "ColorLevels", "색 단계 (0 = 끔)").Range(0.0f, 32.0f)
 		.Property(&FPixelArtComponent::DitherStrength, "DitherStrength", "디더").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FPixelArtComponent::bSnapMovingObjects, "SnapMovingObjects", "움직이는 물체 도트 스냅")
 		.AsComponent();
 
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다

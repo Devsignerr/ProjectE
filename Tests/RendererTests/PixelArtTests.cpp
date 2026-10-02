@@ -1,5 +1,7 @@
 #include "Core/Testing/TestFramework.h"
 #include "Renderer/PixelArtMath.h"
+#include "Renderer/PixelArtObjectSnap.h"
+#include "Scene/Scene.h"
 
 #include <cmath>
 
@@ -118,4 +120,68 @@ E_TEST(PixelArt_SnapPlusOffsetMatchesIdealProjection)
 		E_EXPECT_NEAR(Mapped.X, Source.X, 1.0e-2f);
 		E_EXPECT_NEAR(Mapped.Y, Source.Y, 1.0e-2f);
 	}
+}
+
+E_TEST(PixelArt_ObjectSnapLandsOnCameraGrid)
+{
+	// 카메라와 물체를 같은 격자에 맞추면 둘의 Right/Up 차이가 정수 텍셀 → 소스에서 물체가 도트 사이에 걸치지 않는다
+	const float    Texel   = FPixelArtMath::GetTexelWorldSize(900.0f, 720, 4);
+	const FVector3 Forward = FVector3(1.0f, 1.0f, -1.0f).GetNormalized();
+	const FVector3 Right   = FVector3::Cross(FVector3::UpVector, Forward).GetNormalized();
+	const FVector3 Up      = FVector3::Cross(Forward, Right);
+	const FVector3 Camera  = FPixelArtMath::SnapToTexelGrid(FVector3(-501.3f, -477.9f, 601.7f), Right, Up, Texel).SnappedPosition;
+
+	const FVector3 Objects[] = { FVector3(200.0f, -50.0f, 30.0f), FVector3(200.7f, -49.1f, 30.3f), FVector3(-9876.5f, 4321.0f, -12.3f) };
+	for (const FVector3& Object : Objects)
+	{
+		const FVector3 Delta = FPixelArtMath::ComputeObjectSnapDelta(Object, Right, Up, Texel);
+		E_EXPECT_NEAR(FVector3::Dot(Delta, Forward), 0.0f, Tol); // 깊이 방향은 그대로
+		E_EXPECT_TRUE(std::fabs(FVector3::Dot(Delta, Right)) <= Texel * 0.5f + Tol);
+		E_EXPECT_TRUE(std::fabs(FVector3::Dot(Delta, Up)) <= Texel * 0.5f + Tol);
+
+		const FVector3 Offset    = Object + Delta - Camera;
+		const float    AlongRight = FVector3::Dot(Offset, Right) / Texel;
+		const float    AlongUp    = FVector3::Dot(Offset, Up) / Texel;
+		E_EXPECT_NEAR(AlongRight, std::round(AlongRight), 1.0e-2f);
+		E_EXPECT_NEAR(AlongUp, std::round(AlongUp), 1.0e-2f);
+	}
+}
+
+E_TEST(PixelArt_ObjectSnapOnlyMovedRootsAndRestores)
+{
+	FScene        Scene;
+	const FEntity Mover  = Scene.CreateEntity("Mover");
+	const FEntity Child  = Scene.CreateEntity("Child");
+	const FEntity Static = Scene.CreateEntity("Static");
+	Scene.SetParent(Child, Mover);
+	Scene.GetTransform(Mover).Position  = FVector3(10.3f, 20.6f, 0.0f);
+	Scene.GetTransform(Child).Position  = FVector3(0.0f, 1.0f, 0.0f);
+	Scene.GetTransform(Static).Position = FVector3(5.1f, 7.7f, 0.0f);
+	Scene.UpdateTransforms();
+
+	const FVector3      Right(0.0f, 1.0f, 0.0f);
+	const FVector3      Up(0.0f, 0.0f, 1.0f);
+	const float         Texel = 4.0f;
+	FPixelArtObjectSnap Snap;
+
+	// 첫 프레임: 아직 움직인 적 없음 → 아무도 바뀌지 않음
+	Snap.Apply(Scene, Right, Up, Texel);
+	E_EXPECT_NEAR(Scene.GetTransform(Mover).GetWorldPosition().Y, 20.6f, Tol);
+	Snap.Restore(Scene);
+
+	// 움직이면 루트와 자식이 같은 이동량으로 격자에 맞고, 정적 물체는 그대로
+	Scene.GetTransform(Mover).Position.Y = 21.3f;
+	Scene.UpdateTransforms();
+	Snap.Apply(Scene, Right, Up, Texel);
+	E_EXPECT_NEAR(Scene.GetTransform(Mover).GetWorldPosition().Y, 20.0f, Tol);
+	E_EXPECT_NEAR(Scene.GetTransform(Child).GetWorldPosition().Y, 21.0f, Tol); // 22.3 + (-1.3)
+	E_EXPECT_NEAR(Scene.GetTransform(Static).GetWorldPosition().Y, 7.7f, Tol);
+	Snap.Restore(Scene);
+	E_EXPECT_NEAR(Scene.GetTransform(Mover).GetWorldPosition().Y, 21.3f, Tol);
+	E_EXPECT_NEAR(Scene.GetTransform(Child).GetWorldPosition().Y, 22.3f, Tol);
+
+	// 멈춰도 계속 스냅 (멈출 때 튐 방지)
+	Snap.Apply(Scene, Right, Up, Texel);
+	E_EXPECT_NEAR(Scene.GetTransform(Mover).GetWorldPosition().Y, 20.0f, Tol);
+	Snap.Restore(Scene);
 }

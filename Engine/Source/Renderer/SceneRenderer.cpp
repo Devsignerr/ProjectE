@@ -723,7 +723,19 @@ void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRe
 
 	FPixelArtCompositeParams Params;
 	const FCamera            SourceCamera = BuildPixelArtCamera(*PixelArt, Camera, Output, SourceWidth, SourceHeight, Params);
+
+	// 움직인 물체를 카메라와 같은 도트 격자에 맞춰 그린다 (씬 렌더 동안만, 직교 전용 — 원근은 깊이마다 도트 크기가 다름)
+	const bool bSnapObjects = PixelArt->bSnapMovingObjects && Camera.IsOrthographic();
+	if (bSnapObjects)
+	{
+		const float TexelWorldSize = FPixelArtMath::GetTexelWorldSize(Camera.GetOrthoHeight(), Output.Height, PixelSize);
+		PixelArtObjectSnap.Apply(Scene, Camera.GetRightVector(), Camera.GetUpVector(), TexelWorldSize);
+	}
 	RenderSceneColor(Scene, SourceCamera, SourceWidth, SourceHeight, false); // 지터는 정수 격자 스냅과 충돌
+	if (bSnapObjects)
+	{
+		PixelArtObjectSnap.Restore(Scene);
+	}
 
 	BeginTimer(ERenderTimer::PostProcess);
 	EnsureTarget(PixelArtColor, SourceWidth, SourceHeight, L"PixelArtColor", FRenderTargetDesc::MakeHdr(false));

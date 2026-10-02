@@ -65,6 +65,7 @@ struct FPixelArtCompositeParams
 	uint32   PixelSize = 1;
 	FVector2 SubPixelOffset;            // 소스 텍셀 단위
 	uint32   DitherOrigin[2]   = {};    // 0~3, 월드 격자 기준 디더 무늬 원점
+	int32    GridOrigin[2]     = {};    // 소스 픽셀 (0,0)의 월드 격자 번호 (Right, -Up) — 화면 효과 노이즈를 월드에 고정
 	float    OutlineStrength   = 0.0f;
 	float    HighlightStrength = 0.0f;
 	float    DepthThreshold    = 25.0f; // cm

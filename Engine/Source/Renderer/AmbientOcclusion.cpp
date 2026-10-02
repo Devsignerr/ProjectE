@@ -21,8 +21,11 @@ namespace
 		uint32     FrameIndex    = 0;
 		float      BlurSharpness = 40.0f;
 		FVector2   BlurDirection;
+		uint32     ResolutionDivisor = 2;
+		uint32     bGridNoise        = 0;
+		int32      GridOrigin[2]     = {};
 	};
-	static_assert(sizeof(FAoConstants) == 176);
+	static_assert(sizeof(FAoConstants) == 192);
 } // namespace
 
 FAmbientOcclusion::~FAmbientOcclusion()
@@ -74,10 +77,11 @@ bool FAmbientOcclusion::ReloadShaders(bool bForceRecompile)
 	return true;
 }
 
-void FAmbientOcclusion::EnsureTargets(uint32 FullWidth, uint32 FullHeight)
+void FAmbientOcclusion::EnsureTargets(uint32 FullWidth, uint32 FullHeight, uint32 ResolutionDivisor)
 {
-	const uint32 Width  = FMath::Max(1u, (FullWidth + 1) / 2);
-	const uint32 Height = FMath::Max(1u, (FullHeight + 1) / 2);
+	const uint32 Divisor = ResolutionDivisor == 1 ? 1u : 2u;
+	const uint32 Width   = FMath::Max(1u, (FullWidth + Divisor - 1) / Divisor);
+	const uint32 Height  = FMath::Max(1u, (FullHeight + Divisor - 1) / Divisor);
 	if (Targets[0] && Targets[0]->GetWidth() == Width && Targets[0]->GetHeight() == Height)
 	{
 		return;
@@ -105,7 +109,7 @@ void FAmbientOcclusion::Render(const FAmbientOcclusionInputs& Inputs)
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	const uint32               FullWidth   = Inputs.SceneDepth->GetWidth();
 	const uint32               FullHeight  = Inputs.SceneDepth->GetHeight();
-	EnsureTargets(FullWidth, FullHeight);
+	EnsureTargets(FullWidth, FullHeight, Inputs.ResolutionDivisor);
 	const uint32 Width  = Targets[0]->GetWidth();
 	const uint32 Height = Targets[0]->GetHeight();
 
@@ -119,6 +123,10 @@ void FAmbientOcclusion::Render(const FAmbientOcclusionInputs& Inputs)
 	Constants.PixelsPerUnit = 0.5f * static_cast<float>(FullHeight) * Inputs.Projection.M[1][1];
 	Constants.bOrthographic = Inputs.bOrthographic ? 1u : 0u;
 	Constants.FrameIndex    = Inputs.FrameIndex;
+	Constants.ResolutionDivisor = Inputs.ResolutionDivisor == 1 ? 1u : 2u;
+	Constants.bGridNoise        = Inputs.bGridNoise ? 1u : 0u;
+	Constants.GridOrigin[0]     = Inputs.GridOrigin[0];
+	Constants.GridOrigin[1]     = Inputs.GridOrigin[1];
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	const D3D12_GPU_VIRTUAL_ADDRESS ComputeConstants = DynamicBuffer.AllocateConstants(Constants).GpuAddress;

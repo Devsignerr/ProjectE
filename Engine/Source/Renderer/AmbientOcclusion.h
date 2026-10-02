@@ -21,6 +21,9 @@ struct FAmbientOcclusionInputs
 	float                     Radius        = 80.0f; // cm
 	float                     Intensity     = 1.0f;
 	uint32                    FrameIndex    = 0;     // 방향 회전 (TAA가 누적), TAA 없으면 0 고정
+	uint32                    ResolutionDivisor = 2;  // 2 = 반해상도(기본), 1 = 전체 해상도 (픽셀 아트: 도트 한 칸 이동에 반 칸씩 어긋나지 않게)
+	bool                      bGridNoise        = false; // 노이즈를 화면 대신 월드 도트 격자에 고정 (픽셀 아트 카메라 스냅)
+	int32                     GridOrigin[2]     = {};    // 소스 픽셀 (0,0)의 격자 번호 (Right, -Up)
 };
 
 // SSAO (GTAO 방식, AmbientOcclusion.hlsl): 반해상도 계산 → 양방향 블러 가로/세로 → 결과(R = 가시도, G = 뷰 깊이).
@@ -36,8 +39,8 @@ public:
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
-	// 전체 해상도 크기에 맞춰 반해상도 버퍼를 만든다 (씬 컬러를 맞출 때 같이)
-	void EnsureTargets(uint32 FullWidth, uint32 FullHeight);
+	// 전체 해상도 ÷ ResolutionDivisor(1 또는 2) 크기 버퍼를 만든다 (씬 컬러를 맞출 때 같이)
+	void EnsureTargets(uint32 FullWidth, uint32 FullHeight, uint32 ResolutionDivisor);
 	void Render(const FAmbientOcclusionInputs& Inputs);
 
 	// 결과 SRV (PIXEL_SHADER_RESOURCE). EnsureTargets 이후 유효

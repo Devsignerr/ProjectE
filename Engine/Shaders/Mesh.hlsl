@@ -422,7 +422,9 @@ float SampleScreenAmbientOcclusion(float2 PixelPosition, float3 WorldPosition)
 	ScreenAmbientOcclusion.GetDimensions(Width, Height);
 	const float  ViewDepth = mul(float4(WorldPosition, 1.0f), ClusterView).z;
 	// 반해상도 픽셀 i는 전체 해상도 픽셀 2i에서 계산됐다 → 전체 위치 x의 반해상도 좌표 = (x - 0.5) / 2
-	const float2 HalfPos = (PixelPosition - 0.5f) * 0.5f;
+	// 픽셀 아트는 전체 해상도(버퍼 폭 = 씬 폭)로 계산하므로 나눗셈 1 → 자기 픽셀 그대로
+	const float  Divisor = (float)Width * 2.0f > ScreenSize.x + 1.5f ? 1.0f : 2.0f;
+	const float2 HalfPos = (PixelPosition - 0.5f) / Divisor;
 	const int2   Base    = int2(floor(HalfPos));
 	const float2 F       = HalfPos - float2(Base);
 	const int2   MaxPixel = int2(Width, Height) - 1;

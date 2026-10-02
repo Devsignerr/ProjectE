@@ -19,6 +19,9 @@ cbuffer AoConstants : register(b0)
 	uint     FrameIndex;       // 방향 회전 (TAA 누적)
 	float    BlurSharpness;    // 깊이 경계 보존 강도
 	float2   BlurDirection;    // 블러: (1, 0) 또는 (0, 1) 반해상도 텍셀
+	uint     ResolutionDivisor; // 2 = 반해상도, 1 = 전체 해상도 (픽셀 아트)
+	uint     bGridNoise;        // 1 = 노이즈를 월드 도트 격자에 고정 (픽셀 아트 카메라 스냅)
+	int2     GridOrigin;        // 소스 픽셀 (0,0)의 격자 번호
 };
 
 Texture2D<float>  SceneDepth    : register(t0); // 전체 해상도 깊이 (블러 패스는 안 씀)
@@ -52,10 +55,19 @@ float InterleavedGradientNoise(float2 Pixel, uint Frame)
 	return frac(52.9829189f * frac(0.06711056f * Pixel.x + 0.00583715f * Pixel.y));
 }
 
+// 격자 칸 해시 (PCG) → [0, 1). 카메라가 도트 단위로 움직여도 같은 월드 칸은 같은 값
+float GridCellNoise(int2 Cell)
+{
+	uint H = asuint(Cell.x) * 747796405u + asuint(Cell.y) * 2891336453u;
+	H      = ((H >> ((H >> 28u) + 4u)) ^ H) * 277803737u;
+	H      = (H >> 22u) ^ H;
+	return (float)(H >> 8u) * (1.0f / 16777216.0f);
+}
+
 float2 PSCompute(FFullscreenVSOutput Input) : SV_Target
 {
 	const int2  HalfPixel = int2(Input.Position.xy);
-	const int2  FullPixel = min(HalfPixel * 2, int2(FullSize) - 1);
+	const int2  FullPixel = min(HalfPixel * (int)ResolutionDivisor, int2(FullSize) - 1);
 	const float Depth     = SceneDepth.Load(int3(FullPixel, 0));
 	if (Depth >= 1.0f)
 	{
@@ -74,7 +86,7 @@ float2 PSCompute(FFullscreenVSOutput Input) : SV_Target
 		return float2(1.0f, P.z);
 	}
 	const float StepPixels = RadiusPixels / 4.0f;
-	const float Noise      = InterleavedGradientNoise(float2(HalfPixel), FrameIndex);
+	const float Noise      = bGridNoise != 0 ? GridCellNoise(HalfPixel + GridOrigin) : InterleavedGradientNoise(float2(HalfPixel), FrameIndex);
 	const float Jitter     = frac(Noise * 1.618034f + 0.5f);
 
 	float Visibility = 0.0f;

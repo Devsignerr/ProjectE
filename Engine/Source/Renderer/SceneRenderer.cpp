@@ -580,7 +580,7 @@ void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 	NormalDesc.ClearColor[1]     = 0.5f;
 	EnsureTarget(SceneNormal, Width, Height, L"SceneNormal", NormalDesc);
 	EnsureTarget(SceneVelocity, Width, Height, L"SceneVelocity", FRenderTargetDesc::MakeColor(SceneVelocityFormat));
-	AmbientOcclusion.EnsureTargets(Width, Height);
+	AmbientOcclusion.EnsureTargets(Width, Height, AoResolutionDivisor);
 	DecalRenderer.EnsureTargets(Width, Height);
 	ScreenSpaceReflections.EnsureTargets(Width, Height);
 }
@@ -731,7 +731,14 @@ void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRe
 		const float TexelWorldSize = FPixelArtMath::GetTexelWorldSize(Camera.GetOrthoHeight(), Output.Height, PixelSize);
 		PixelArtObjectSnap.Apply(Scene, Camera.GetRightVector(), Camera.GetUpVector(), TexelWorldSize);
 	}
+	// SSAO: 반해상도면 도트 한 칸 이동에 반 칸씩 어긋나고 화면 고정 노이즈가 물체 위에서 흘러 자글거린다 → 전체 해상도 + 격자 노이즈
+	AoResolutionDivisor = 1;
+	bAoGridNoise        = PixelArt->bSnapCamera && Camera.IsOrthographic();
+	AoGridOrigin[0]     = Params.GridOrigin[0];
+	AoGridOrigin[1]     = Params.GridOrigin[1];
 	RenderSceneColor(Scene, SourceCamera, SourceWidth, SourceHeight, false); // 지터는 정수 격자 스냅과 충돌
+	AoResolutionDivisor = 2;
+	bAoGridNoise        = false;
 	if (bSnapObjects)
 	{
 		PixelArtObjectSnap.Restore(Scene);
@@ -777,6 +784,8 @@ FCamera FSceneRenderer::BuildPixelArtCamera(const FPixelArtComponent& PixelArt, 
 			OutParams.SubPixelOffset  = FPixelArtMath::GetSubPixelOffset(Snap.Remainder);
 			OutParams.DitherOrigin[0] = FPixelArtMath::PositiveMod4(Snap.IndexRight);
 			OutParams.DitherOrigin[1] = FPixelArtMath::PositiveMod4(-Snap.IndexUp); // 화면 Y는 아래가 +
+			OutParams.GridOrigin[0]   = static_cast<int32>(Snap.IndexRight); // 넘치면 감기지만 프레임 사이 차이는 그대로
+			OutParams.GridOrigin[1]   = static_cast<int32>(-Snap.IndexUp);
 		}
 		SourceCamera.SetOrthographic(Camera.GetOrthoHeight() * ExtentScale, SourceAspect, Camera.GetNearZ(), Camera.GetFarZ());
 		OutParams.PixelViewScale = TexelWorldSize;
@@ -936,6 +945,10 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 		Inputs.Radius        = PostProcessSettings.AmbientOcclusionRadius;
 		Inputs.Intensity     = PostProcessSettings.AmbientOcclusionIntensity;
 		Inputs.FrameIndex    = (CurrentJitterNdc.X != 0.0f || CurrentJitterNdc.Y != 0.0f) ? static_cast<uint32>(SceneFrameCount) : 0u; // TAA가 누적
+		Inputs.ResolutionDivisor = AoResolutionDivisor;
+		Inputs.bGridNoise        = bAoGridNoise;
+		Inputs.GridOrigin[0]     = AoGridOrigin[0];
+		Inputs.GridOrigin[1]     = AoGridOrigin[1];
 		AmbientOcclusion.Render(Inputs);
 		EndTimer(ERenderTimer::AmbientOcclusion);
 	}

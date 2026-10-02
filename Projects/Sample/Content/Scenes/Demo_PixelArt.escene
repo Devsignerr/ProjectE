@@ -10,7 +10,7 @@
           "SnapCamera": true,
           "OutlineStrength": 0.6,
           "HighlightStrength": 0.35,
-          "DepthThreshold": 25.0,
+          "DepthThreshold": 25,
           "ColorLevels": 0,
           "DitherStrength": 0.5
         },
@@ -40,11 +40,11 @@
       "Components": {
         "DirectionalLightComponent": {
           "Color": [
-            1.0,
+            1,
             0.95,
             0.88
           ],
-          "Intensity": 3.0
+          "Intensity": 3
         },
         "TransformComponent": {
           "Position": [
@@ -71,12 +71,12 @@
       "Parent": -1,
       "Components": {
         "CameraComponent": {
-          "FovYDegrees": 60.0,
-          "NearZ": 10.0,
-          "FarZ": 5000.0,
+          "FovYDegrees": 60,
+          "NearZ": 10,
+          "FarZ": 5000,
           "Primary": true,
           "Orthographic": true,
-          "OrthoHeight": 700.0
+          "OrthoHeight": 700
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/CameraPan.lua",
@@ -86,7 +86,7 @@
           "Position": [
             -1224.7448713915892,
             -1224.7448713915892,
-            1060.0
+            1060
           ],
           "Rotation": [
             -0.09904576054128762,
@@ -128,6 +128,28 @@
             12,
             0.2
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -157,6 +179,10 @@
             1,
             1
           ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":45}"
         }
       }
     },
@@ -200,8 +226,8 @@
         },
         "TransformComponent": {
           "Position": [
-            180,
-            -180,
+            300,
+            -380,
             100
           ],
           "Rotation": [
@@ -213,8 +239,12 @@
           "Scale": [
             0.6,
             0.6,
-            2.0
+            2
           ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":60,\"Frequency\":0.25}"
         }
       }
     },
@@ -234,14 +264,14 @@
             30
           ],
           "Rotation": [
-            0.0,
-            0.0,
+            0,
+            0,
             0.25881904510252074,
             0.9659258262890683
           ],
           "Scale": [
             1.6,
-            1.0,
+            1,
             0.6
           ]
         }
@@ -273,6 +303,10 @@
             0.8,
             0.8
           ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CircleMover.lua",
+          "PropertyOverrides": "{\"Radius\":90,\"Speed\":60,\"Bob\":25,\"BobPeriod\":2}"
         }
       }
     },
@@ -286,7 +320,7 @@
           "Loop": true,
           "Playing": true,
           "RootMotion": false,
-          "Speed": 1.0
+          "Speed": 1
         },
         "ModelComponent": {
           "AssetPath": "Fox.glb"
@@ -298,8 +332,8 @@
             0
           ],
           "Rotation": [
-            0.0,
-            0.0,
+            0,
+            0,
             0.984807753012208,
             -0.1736481776669303
           ],
@@ -308,6 +342,847 @@
             0.012,
             0.012
           ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CircleWalker.lua",
+          "PropertyOverrides": "{\"Radius\":110,\"Speed\":28,\"FacingYaw\":0}"
+        }
+      }
+    },
+    {
+      "Name": "KinematicPaddle",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            330,
+            60,
+            22
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            2.2,
+            0.22,
+            0.4
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":70}"
+        }
+      }
+    },
+    {
+      "Name": "PaddleHub",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:capsule",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            330,
+            60,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.3,
+            0.3,
+            0.5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "PaddleWall0",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Green.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            330,
+            210,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            3,
+            0.16,
+            0.3
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PaddleWall1",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Green.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            330,
+            -90,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            3,
+            0.16,
+            0.3
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PaddleWall2",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Green.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            480,
+            60,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.16,
+            3,
+            0.3
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PaddleWall3",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Green.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            180,
+            60,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.16,
+            3,
+            0.3
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysBall0",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            390,
+            150,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.32,
+            0.32,
+            0.32
+          ]
+        },
+        "SphereColliderComponent": {
+          "Radius": 50,
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.4,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysBall1",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            240,
+            130,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.32,
+            0.32,
+            0.32
+          ]
+        },
+        "SphereColliderComponent": {
+          "Radius": 50,
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.4,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysBall2",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            430,
+            0,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.32,
+            0.32,
+            0.32
+          ]
+        },
+        "SphereColliderComponent": {
+          "Radius": 50,
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.4,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysBall3",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            280,
+            -40,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.32,
+            0.32,
+            0.32
+          ]
+        },
+        "SphereColliderComponent": {
+          "Radius": 50,
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.4,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysBall4",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:sphere",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            350,
+            -60,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.32,
+            0.32,
+            0.32
+          ]
+        },
+        "SphereColliderComponent": {
+          "Radius": 50,
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.4,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysCrate0",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            220,
+            40,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysCrate1",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            440,
+            90,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "PhysCrate2",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Yellow.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            330,
+            170,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "KinematicElevator",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Purple.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -330,
+            -300,
+            70
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            0.15
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":55,\"Frequency\":0.2}"
+        }
+      }
+    },
+    {
+      "Name": "ElevatorRider",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Orange.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -330,
+            -300,
+            110
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.9,
+          "Restitution": 0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        }
+      }
+    },
+    {
+      "Name": "KinematicSlider",
+      "Parent": -1,
+      "Components": {
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Blue.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -330,
+            260,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.9,
+            0.9,
+            0.3
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.2,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CameraPan.lua",
+          "PropertyOverrides": "{\"Amplitude\":140,\"Frequency\":0.18,\"Direction\":[0,1,0]}"
         }
       }
     }

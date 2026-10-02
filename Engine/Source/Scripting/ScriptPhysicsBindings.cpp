@@ -65,12 +65,12 @@ bool FLuaRuntime::InvokeMethodWithFields(FEntity Target, const std::string& Meth
 	Values.push_back(Table);
 	const sol::table               Self = Instance.Self;
 	sol::protected_function        Function(Method.as<sol::function>(), Traceback);
+	const FInstanceScope           Scope(*this, Instance.Entity);
 	sol::protected_function_result Result = Function(Self, sol::as_args(Values));
 	if (!Result.valid())
 	{
 		const sol::error Error = Result;
-		Instance.bFaulted      = true;
-		ReportError(std::format("스크립트 오류 ({}:{}) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, MethodName, Error.what()));
+		FaultInstance(Instance, MethodName, Error.what());
 		return false;
 	}
 	return true;

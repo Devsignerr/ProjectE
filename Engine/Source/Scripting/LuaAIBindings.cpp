@@ -173,6 +173,7 @@ bool FLuaRuntime::CallObject(uint32 Id, const char* Method, const float* DeltaSe
 	const sol::table               Self = Found->second.Self;
 	const std::string              ScriptAsset = Found->second.ScriptAsset;
 	sol::protected_function        Protected(Function.as<sol::function>(), Traceback);
+	const FInstanceScope           Scope(*this, NullEntity); // 스크립트 객체는 인스턴스가 아니다 (Timer/Coroutine 사용 불가)
 	sol::protected_function_result Result = DeltaSeconds ? Protected(Self, *DeltaSeconds) : Protected(Self);
 	if (!Result.valid())
 	{

@@ -116,9 +116,14 @@ FLuaRuntime::~FLuaRuntime()
 {
 	// sol 참조(테이블/함수)는 상태보다 먼저 해제되어야 한다
 	PendingSpawns.clear();
-	Instances.clear();
+	Instances.clear(); // 인스턴스의 타이머/코루틴 참조도 함께
+	Tasks.clear();
 	Objects.clear();
 	Classes.clear();
+	CoroutineCreate = sol::lua_nil;
+	CoroutineResume = sol::lua_nil;
+	CoroutineStatus = sol::lua_nil;
+	WaitToken       = sol::table();
 	Traceback = sol::lua_nil;
 }
 
@@ -144,6 +149,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterAnimationGraphBindings();
 	RegisterPhysicsBindings();
 	RegisterSequenceBindings();
+	RegisterTimerBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -1015,6 +1021,7 @@ bool FLuaRuntime::ReloadClass(const std::filesystem::path& ScriptPath, bool& bOu
 		{
 			continue;
 		}
+		ClearInstanceTasks(Instance); // 옛 코드 클로저를 가진 타이머/코루틴은 버린다 (Timer/Coroutine 규칙 — ScriptTimerBindings.cpp)
 		if (!bWasValid || !Instance.Self.valid())
 		{
 			Recreate.push_back(Id);
@@ -1119,12 +1126,12 @@ bool FLuaRuntime::CallMethod(FScriptInstance& Instance, const char* MethodName, 
 	// 호출 중 Instances가 바뀔 수 있으므로(다른 스크립트의 GetScript 등은 읽기만 하지만) 필요한 값은 복사해 둔다
 	const sol::table        Self = Instance.Self;
 	sol::protected_function Function(Method.as<sol::function>(), Traceback);
+	const FInstanceScope    Scope(*this, Instance.Entity);
 	sol::protected_function_result Result = bPassDelta ? Function(Self, DeltaSeconds) : Function(Self);
 	if (!Result.valid())
 	{
 		const sol::error Error = Result;
-		Instance.bFaulted      = true;
-		ReportError(std::format("스크립트 오류 ({}:{}) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, MethodName, Error.what()));
+		FaultInstance(Instance, MethodName, Error.what());
 		return false;
 	}
 	return true;
@@ -1142,6 +1149,7 @@ void FLuaRuntime::DestroyInstance(uint64 EntityId)
 	{
 		CallMethod(Instance, "OnDestroy");
 	}
+	ClearInstanceTasks(Instance); // OnDestroy가 만든 것까지
 	Instances.erase(EntityId);
 }
 
@@ -1248,6 +1256,9 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	}
 	Input = InInput;
 
+	// 3.2 타이머 발사 / 코루틴 재개 (모든 OnUpdate 뒤, ScriptTimerBindings.cpp)
+	UpdateTasks(DeltaSeconds, InInput);
+
 	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생) → 게임 UI 이벤트 (이번 프레임 FUISystem::Update에서 발생)
 	DispatchAnimNotifies();
 	DispatchUIEvents();
@@ -1326,6 +1337,7 @@ void FLuaRuntime::DestroyAllInstances()
 		DestroyInstance(Id);
 	}
 	Instances.clear();
+	Tasks.clear();
 	PendingDestroy.clear();
 	PendingSpawns.clear();
 }
@@ -1402,6 +1414,7 @@ void FLuaRuntime::RegisterPrefabBindings()
 		if (OnSpawned)
 		{
 			Spawn.OnSpawned = sol::protected_function(*OnSpawned, Traceback);
+			Spawn.Owner     = CurrentInstance; // 콜백도 요청한 인스턴스 코드로 (Timer/Coroutine 소유자)
 		}
 		PendingSpawns.push_back(std::move(Spawn));
 	};
@@ -1435,6 +1448,7 @@ void FLuaRuntime::ApplyPendingSpawns()
 		bStructureChanged = true; // 앱이 메시/머티리얼/모델 참조를 해석한다
 		if (Spawn.OnSpawned.valid())
 		{
+			const FInstanceScope           Scope(*this, Spawn.Owner);
 			sol::protected_function_result Result = Spawn.OnSpawned(FScriptEntity{ Root });
 			if (!Result.valid())
 			{
@@ -1631,12 +1645,12 @@ bool FLuaRuntime::InvokeMethod(FEntity Target, const std::string& MethodName, co
 	}
 	const sol::table               Self = Instance.Self;
 	sol::protected_function        Function(Method.as<sol::function>(), Traceback);
+	const FInstanceScope           Scope(*this, Instance.Entity);
 	sol::protected_function_result Result = Function(Self, sol::as_args(Values));
 	if (!Result.valid())
 	{
 		const sol::error Error = Result;
-		Instance.bFaulted      = true;
-		ReportError(std::format("스크립트 오류 ({}:{}) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, MethodName, Error.what()));
+		FaultInstance(Instance, MethodName, Error.what());
 		return false;
 	}
 	return true;

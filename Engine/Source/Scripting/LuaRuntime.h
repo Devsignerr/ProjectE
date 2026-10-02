@@ -109,6 +109,34 @@ public:
 	sol::state& GetState() { return Lua; }
 
 private:
+	// Timer.After/Every (ScriptTimerBindings.cpp). 인스턴스가 소유한다 — 인스턴스와 함께 사라진다
+	struct FScriptTimer
+	{
+		uint32                  Id           = 0;
+		double                  Remaining    = 0.0; // 초
+		double                  Interval     = 0.0; // Every 간격 (After는 0)
+		bool                    bRepeat      = false;
+		int64                   CreatedFrame = 0;   // 만든 프레임에는 시간을 빼지 않는다 (지금부터 센다)
+		sol::protected_function Callback;
+	};
+	enum class EScriptWait : uint8
+	{
+		Frames,  // WaitFrames(n) / Wait() / Wait(0)
+		Seconds, // Wait(초)
+		Until,   // WaitUntil(함수) — 매 프레임 확인
+	};
+	// Coroutine.Start (ScriptTimerBindings.cpp). Lua 스레드(코루틴)를 참조로 잡아 대기 중에 GC되지 않게 한다
+	struct FScriptCoroutine
+	{
+		uint32                  Id         = 0;
+		sol::object             Thread;
+		EScriptWait             Wait       = EScriptWait::Frames;
+		double                  Seconds    = 0.0;
+		int32                   Frames     = 0;
+		sol::protected_function Predicate;
+		int64                   YieldFrame = 0; // 대기를 시작한 프레임 (그 프레임에는 다시 깨우지 않는다)
+	};
+
 	struct FScriptInstance
 	{
 		FEntity       Entity;
@@ -117,7 +145,32 @@ private:
 		sol::table    Self;
 		bool          bStarted = false;
 		bool          bFaulted = false; // 오류 후 정지 (핫 리로드 시 해제)
+		std::vector<FScriptTimer>     Timers;     // 인스턴스 소유 (OnDestroy·엔티티 파괴·핫 리로드·EndPlay에서 정리)
+		std::vector<FScriptCoroutine> Coroutines; // 〃
 	};
+
+	// 지금 실행 중인 인스턴스 코드의 주인 (Timer/Coroutine 소유자). 인스턴스 메서드·콜백을 부르는 모든 곳에서 건다 (중첩 가능)
+	class FInstanceScope
+	{
+	public:
+		FInstanceScope(FLuaRuntime& InRuntime, FEntity Entity);
+		~FInstanceScope();
+		FInstanceScope(const FInstanceScope&)            = delete;
+		FInstanceScope& operator=(const FInstanceScope&) = delete;
+
+	private:
+		FLuaRuntime& Runtime;
+		FEntity      Previous;
+	};
+
+	// ---- 타이머/코루틴 (ScriptTimerBindings.cpp)
+	void             RegisterTimerBindings();                                // Timer/Coroutine 테이블, Wait/WaitFrames/WaitUntil
+	void             UpdateTasks(float DeltaSeconds, const FInput* InInput); // Update 3단계(OnUpdate) 뒤: 타이머 발사, 코루틴 재개
+	void             ClearInstanceTasks(FScriptInstance& Instance);          // 인스턴스의 타이머/코루틴 모두 취소
+	FScriptInstance& RequireCurrentInstance(const char* ApiName);            // 인스턴스 코드 밖이면 std::runtime_error
+	// 코루틴 한 번 재개 + 다음 대기 설정. 반환: 계속 대기 중인가 (끝났거나 오류면 false — 항목 제거는 호출자). 오류면 OutError
+	bool ResumeCoroutine(FScriptCoroutine& Coroutine, const std::vector<sol::object>& Args, std::string& OutError);
+	void FaultInstance(FScriptInstance& Instance, const std::string& Where, const std::string& Message);
 
 	// 직전 애니메이션 갱신의 노티파이를 스크립트 함수로 전달 (OnAnimNotify_<이름> 등)
 	void DispatchAnimNotifies();
@@ -152,6 +205,7 @@ private:
 		bool                    bHasPosition = false;
 		FVector3                Position;
 		sol::protected_function OnSpawned; // 만든 뒤 루트 엔티티로 호출 (없을 수 있음)
+		FEntity                 Owner;     // 요청한 스크립트 인스턴스 (콜백의 FInstanceScope)
 	};
 	void ApplyPendingSpawns();
 
@@ -207,6 +261,20 @@ private:
 	};
 	std::unordered_map<uint32, FScriptObject> Objects; // 스크립트 객체 (컴포넌트 없음)
 	uint32                                    NextObjectId = 1;
+
+	// 타이머/코루틴: 번호 → 소유 인스턴스 (취소·발사 전 확인. 번호는 세션 안에서 다시 쓰지 않는다)
+	struct FTaskOwner
+	{
+		uint64 InstanceId = 0;
+		bool   bCoroutine = false;
+	};
+	std::unordered_map<uint32, FTaskOwner> Tasks;
+	uint32                                 NextTaskId = 1;
+	FEntity                                CurrentInstance; // FInstanceScope (무효 = 인스턴스 코드 밖: RunString, 스크립트 객체)
+	sol::protected_function                CoroutineCreate; // 스크립트가 전역 coroutine을 바꿔도 영향 없도록 미리 잡아 둔다
+	sol::protected_function                CoroutineResume;
+	sol::protected_function                CoroutineStatus;
+	sol::table                             WaitToken;       // Wait 계열이 yield하는 표식 (사용자 yield와 구분)
 
 	friend struct FLuaBindings;
 };

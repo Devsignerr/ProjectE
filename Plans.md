@@ -812,7 +812,8 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 - [x] 46-A. 핵심: `Scene/DataTable.h`(FDataValue/FDataField/FDataStruct/FDataTable/FDataAsset — 편집·`Rebind` 마이그레이션·JSON 왕복), `Scene/DataLibrary.h`(`FDataLibrary::Get()` 경로 캐시·세대·Invalidate·참조 검증·`Save*`·`SaveStructAndMigrate`), `Scene/DataCsv.h`(CSV/TSV, BOM, `|` 배열), Lua `Data.GetRow/GetRows/GetRowNames/HasRow/Load/ResolveRef/GetGeneration`(매 호출 새 테이블), 에디터 핫 리로드, 참조 갱신(Content 기준), 콘텐츠 브라우저 아이콘, 예제 `Data/Samples/`, 테스트 13개 (2026-10-03 머지: 트랙 Debug 11개 묶음·Release·에디터 Verify 0건, DLL 내보내기 61282/65535)
 - 후속(46-A): 중첩 Struct, Enum 값 이름 변경 마이그레이션, 숫자 Min/Max, 런타임 핫 리로드, 파일 기준 상대 경로
-- [~] 46-B. 편집기: 테이블 편집기(스프레드시트 — 행 추가/삭제/복제/이름 변경, 정렬·검색, 셀 위젯은 필드 타입별, 행 참조 콤보, Undo), 데이터 에셋 편집기(인스펙터식), 구조체 편집기, CSV 가져오기/내보내기, 콘텐츠 브라우저 새로 만들기
+- [x] 46-B. 편집기: 테이블 편집기(고정 행 이름 열·스크롤·타입별 칸 위젯·RowRef 콤보·배열/긴 글 팝업·행 추가/복제/삭제/이름 변경(자기 참조 RowRef 따라감)/이동·검색·보기 정렬 + "정렬 적용"·칸별 참조 경고·CSV 내보내기/가져오기(교체/병합)), 데이터 에셋 편집기(인스펙터식, 기본값으로), 구조체 편집기(필드 표·상세·사용 파일 목록·`SaveStructAndMigrate` + 확인), 공통 `FDataEditorBase`(디스크 변경 감시·세대 재바인드), 콘텐츠 브라우저 열기/새로 만들기, 검증 인자 `--data-select/--data-popup/--verify-data-roundtrip`, 테스트 `DataTableView_*` 6개 (2026-10-03 머지: Debug 11개 묶음, Release, RPG `Items/Enemies/PlayerBalance` 편집기 화면·디버그 레이어 0건)
+- 후속(46-B): 다중 선택·드래그 순서, 다른 파일이 가리키는 행 이름 자동 변경, 에셋 칸 썸네일
 - [x] 46-C. RPG 이전: `Data/RPG/` — Items(17행)·LootTables+LootEntries(RowRef)·Enemies(4행, 프리팹은 `StatsRow`만)·PlayerBalance.edata·GameBalance.edata·Shops(Merchant `ShopRow`), 읽기는 `Script.Require("Scripts/RPG/RPGData.lua")`(세대별 캐시), 하드코딩 수치(치명타·스킬·콤보 배율)도 데이터로. 값 동일 확인 (2026-10-03 머지: Debug 11개 묶음, Release, Demo_PixelArt `[데이터]` 경고 0·시작 상태 동일)
 - 후속(46-C): 적·플레이어 스탯은 OnStart 한 번 적용(핫 리로드는 새로 생긴 적부터), 시작 아이템은 배열 두 개 짝(중첩 구조체 없음)
 
@@ -820,3 +821,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 - [x] 원인: 실제 소켓 단위 테스트(GNS 서버·클라이언트, LAN UDP)가 0.0.0.0에 바인드 — 방화벽 허용은 exe 경로별이라 워크트리마다 새로 물음. 에디터/런타임 단독 실행·Tracy(localhost)는 소켓을 열지 않음. 수정: 실제 소켓 테스트 4곳은 `E_TEST_SOCKETS=1`(`Build.ps1/Build.bat -Test -SocketTests`)일 때만, 기본은 건너뜀 로그
 - 남음: 에디터 네트워크 플레이/`Verify.ps1 -Multiplayer`/런타임 `--host`는 실제 LAN용이라 처음 한 번은 확인 창이 뜬다(정상)
+
+## 서드파티 소스 캐시 손상 (2026-10-03)
+
+- [x] 46-C 트랙이 워크트리 `Build/_deps`를 메인 `Build/_deps`에 정션으로 이었고, 워크트리를 `git worktree remove --force`로 지우며 정션 너머 메인 소스 일부가 삭제됨(표식 `.populated`는 남아 구성 실패). 복구: `Build/_deps/*-src`·`*.populated` 삭제 + 빌드 폴더 CMakeCache의 `FETCHCONTENT_SOURCE_DIR_*` 비우기 → 커밋 고정 버전 재다운로드, Debug 11개 묶음·Release 통과

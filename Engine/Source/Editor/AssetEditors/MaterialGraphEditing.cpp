@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <format>
 #include <limits>
 #include <map>
@@ -303,7 +304,9 @@ namespace MaterialGraphEditing
 		std::string Base = Type;
 		Base[0]          = static_cast<char>(std::tolower(static_cast<unsigned char>(Base[0])));
 		Node.Id          = MakeUniqueNodeId(Graph, Base + "1");
-		Node.EditorPosition = IsMissing(Position) ? FVector2(1.0f, 0.0f) : Position;
+		// 노드 편집기는 위치를 정수로 내리므로 미리 내린다 (다음 프레임 위치 동기화가 "이동"으로 보지 않게)
+		const FVector2 Floored = FVector2(std::floor(Position.X), std::floor(Position.Y));
+		Node.EditorPosition    = IsMissing(Floored) ? FVector2(1.0f, 0.0f) : Floored;
 		if ((Info->Settings & MaterialNodeSetting_Tiling) != 0)
 		{
 			Node.Value      = FVector4(1.0f, 1.0f, 0.0f, 0.0f);
@@ -602,7 +605,7 @@ namespace MaterialGraphEditing
 					Input.Node = Remap[Input.Node];
 				}
 			}
-			Node.EditorPosition = Node.EditorPosition - Min + Anchor;
+			Node.EditorPosition = Node.EditorPosition - Min + FVector2(std::floor(Anchor.X), std::floor(Anchor.Y));
 			if (IsMissing(Node.EditorPosition))
 			{
 				Node.EditorPosition = FVector2(1.0f, 0.0f);

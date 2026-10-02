@@ -211,7 +211,12 @@ void FMaterialGraphPanel::BuildStatus(const FContext& Context)
 {
 	NodeMessages.clear();
 	NodeSeverity.clear();
-	const auto Add = [&](const std::string& Node, const std::string& Message, int32 Severity) {
+	const auto Add = [&](const std::string& Node, std::string Message, int32 Severity) {
+		// 노드 위·상세 패널에는 "[Id] " 앞머리를 뗀다
+		if (const std::string Prefix = "[" + Node + "] "; Message.starts_with(Prefix))
+		{
+			Message.erase(0, Prefix.size());
+		}
 		std::vector<std::string>& Messages = NodeMessages[Node];
 		if (std::find(Messages.begin(), Messages.end(), Message) == Messages.end())
 		{
@@ -595,7 +600,7 @@ void FMaterialGraphPanel::DrawNode(FContext& Context, const FMaterialGraphNode& 
 	if (const auto Messages = NodeMessages.find(Node.Id); Messages != NodeMessages.end())
 	{
 		ImGui::SetCursorScreenPos(ImVec2(Start.x, Bottom + 4.0f));
-		ImGui::PushTextWrapPos(Start.x + MaterialGraphEditing::NodeWidth + 60.0f);
+		ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + MaterialGraphEditing::NodeWidth + 16.0f); // 창 기준 좌표 (자동 배치 열 간격 안에 들게)
 		for (const std::string& Message : Messages->second)
 		{
 			ImGui::TextColored(Level == 2 ? FEditorTheme::Danger : FEditorTheme::Warning, "%s", Message.c_str());
@@ -628,7 +633,6 @@ void FMaterialGraphPanel::DrawOutputNode(FContext& Context)
 	NodeEditor::PushStyleVar(NodeEditor::StyleVar_NodeBorderWidth, 2.0f);
 	NodeEditor::BeginNode(NodeIdOf(OutputKey));
 	ImGui::PushID("MaterialOutput");
-	const ImVec2 Start = ImGui::GetCursorScreenPos();
 	ImGui::TextUnformatted(ICON_FA_PALETTE " 머티리얼 출력");
 	const float TitleBottom = ImGui::GetItemRectMax().y;
 	ImGui::Dummy(ImVec2(MaterialGraphEditing::NodeWidth * 0.85f, 2.0f));
@@ -657,7 +661,7 @@ void FMaterialGraphPanel::DrawOutputNode(FContext& Context)
 	}
 	if (const auto Messages = NodeMessages.find(FMaterialGraphCompiler::OutputNodeId); Messages != NodeMessages.end())
 	{
-		ImGui::PushTextWrapPos(Start.x + MaterialGraphEditing::NodeWidth + 60.0f);
+		ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + MaterialGraphEditing::NodeWidth + 16.0f); // 창 기준 좌표 (자동 배치 열 간격 안에 들게)
 		for (const std::string& Message : Messages->second)
 		{
 			ImGui::TextColored(Level == 2 ? FEditorTheme::Danger : FEditorTheme::Warning, "%s", Message.c_str());

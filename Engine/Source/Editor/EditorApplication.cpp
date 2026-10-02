@@ -463,6 +463,10 @@ void FEditorApplication::OnRender()
 	{
 		VerifyReimport(Context.ContentDirectory / ReimportArg);
 	}
+	if (const std::wstring PickArg = FCommandLine::FromProcess().GetValue(L"--verify-pick"); GetFrameIndex() == 40 && !PickArg.empty())
+	{
+		VerifyPick(FStringConv::ToUtf8(PickArg));
+	}
 	if (GetFrameIndex() == 20 && FCommandLine::FromProcess().HasFlag(L"--verify-asset-move"))
 	{
 		VerifyAssetMove();
@@ -508,7 +512,8 @@ void FEditorApplication::OnShutdown()
 	StopPlay();
 	ScriptWatcher.Stop();
 	Audio.Shutdown();
-	if (VerifyCameraPanPerFrame == 0.0f) // 검증용으로 민 카메라는 저장하지 않는다 (다음 실행 시점이 밀림)
+	// 검증용으로 민/맞춘 카메라는 저장하지 않는다 (다음 실행 시점이 밀림)
+	if (VerifyCameraPanPerFrame == 0.0f && !FCommandLine::FromProcess().HasFlag(L"--verify-pick"))
 	{
 		SaveEditorCamera();
 	}
@@ -2022,4 +2027,62 @@ void FEditorApplication::VerifyReimport(const std::filesystem::path& ModelPath)
 	{
 		E_LOG(LogEditor, Error, "자동 검증 (다시 가져오기): 실패 — {}", Summary);
 	}
+}
+
+// 자동 검증: 이름으로 지정한 엔티티마다 그 메시 경계 중심을 클릭한 것처럼 선택해 대상이 선택되는지 확인한다.
+//   기본은 편집 카메라를 대상에 맞춘 뒤(F) 클릭, --verify-pick-no-focus면 현재 카메라 그대로(플레이 중 게임 카메라 포함),
+//   --verify-pick-ortho면 편집 카메라를 직교로 바꾼 뒤
+void FEditorApplication::VerifyPick(const std::string& Targets)
+{
+	const FCommandLine& CommandLine = FCommandLine::FromProcess();
+	const bool          bFocus      = !CommandLine.HasFlag(L"--verify-pick-no-focus") && Context.Camera == &Camera;
+	if (CommandLine.HasFlag(L"--verify-pick-ortho") && Context.Camera == &Camera && !Camera.IsOrthographic())
+	{
+		Camera.SetOrthographic(2000.0f, Camera.GetAspectRatio(), Camera.GetNearZ(), Camera.GetFarZ());
+	}
+
+	int32  Passed  = 0;
+	int32  Checked = 0;
+	size_t Start   = 0;
+	while (Start <= Targets.size())
+	{
+		const size_t      End  = Targets.find(',', Start);
+		const std::string Name = Targets.substr(Start, End == std::string::npos ? std::string::npos : End - Start);
+		Start                  = End == std::string::npos ? Targets.size() + 1 : End + 1;
+		if (Name.empty())
+		{
+			continue;
+		}
+		FEntity Target;
+		Context.Scene->GetRegistry().View<FNameComponent>().Each([&](FEntity Entity, FNameComponent& Component) {
+			if (!Target.IsValid() && Component.Name == Name && !Context.Scene->GetRegistry().Has<FTransientComponent>(Entity))
+			{
+				Target = Entity;
+			}
+		});
+		if (!Target.IsValid())
+		{
+			E_LOG(LogEditor, Error, "클릭 선택 검증: 엔티티 '{}' 없음", Name);
+			continue;
+		}
+		FEntity Picked;
+		if (!ViewportPanel.VerifyPick(Context, Target, bFocus, Picked))
+		{
+			E_LOG(LogEditor, Display, "클릭 선택 검증: '{}' 화면 밖 (건너뜀)", Name);
+			continue;
+		}
+		const FNameComponent* PickedName = Picked.IsValid() ? Context.Scene->GetRegistry().TryGet<FNameComponent>(Picked) : nullptr;
+		++Checked;
+		if (Picked == Target)
+		{
+			++Passed;
+			E_LOG(LogEditor, Display, "클릭 선택 검증: '{}' → 일치", Name);
+		}
+		else
+		{
+			E_LOG(LogEditor, Warning, "클릭 선택 검증: '{}' → '{}' 선택됨 (불일치)", Name, PickedName ? PickedName->Name : std::string("(없음)"));
+		}
+	}
+	E_LOG(LogEditor, Display, "클릭 선택 검증: {}/{} 일치 (카메라 {}, {})", Passed, Checked, Context.Camera->IsOrthographic() ? "직교" : "원근",
+	      Context.bPlaying ? "플레이 중" : "편집");
 }

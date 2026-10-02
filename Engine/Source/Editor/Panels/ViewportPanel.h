@@ -38,6 +38,9 @@ public:
 	// UI 기술 (ImGui 프레임 안에서). 기즈모 조작 결과는 즉시 씬에 반영된다.
 	void Draw(FEditorContext& Context, const FInput& Input);
 
+	// 스크립트 디버거 정지 중: 마지막으로 그린 화면을 그대로 보여 주고 안내만 겹친다 (입력·기즈모·선택·드롭 없음, 렌더 타깃 크기 유지)
+	void DrawFrozen(const char* Message);
+
 	// 씬을 렌더 타깃에 그린다 (RHI BeginFrame 이후)
 	void RenderScene(FEditorContext& Context);
 

@@ -125,6 +125,8 @@ public:
 	bool IsPaused() const { return bPaused; }
 	bool IsAttached() const { return MainState != nullptr; }
 	const FScriptPauseState& GetPauseState() const { return PauseState; }
+	// 정지 처리기 안에서 재개 명령이 내려졌는가 (앱의 중첩 루프 종료 조건)
+	bool IsResumeRequested() const { return ResumeCommand != EResume::None; }
 	void Continue();
 	void StepOver();
 	void StepInto();

@@ -586,8 +586,8 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		Event.Key     = TranslateKey(WParam, LParam);
 		Event.bRepeat = (LParam & (1LL << 30)) != 0;
 		Dispatch(Event);
-		// Alt+F4 등 시스템 키 기본 동작은 유지
-		return Message == WM_SYSKEYDOWN ? DefWindowProcW(Hwnd, Message, WParam, LParam) : 0;
+		// Alt+F4 등 시스템 키 기본 동작은 유지. F10 단독은 창 메뉴 모드로 들어가 다음 키를 삼키므로 넘기지 않는다 (디버거 단계 실행 키)
+		return Message == WM_SYSKEYDOWN && WParam != VK_F10 ? DefWindowProcW(Hwnd, Message, WParam, LParam) : 0;
 
 	case WM_CHAR:
 	{
@@ -622,7 +622,7 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		Event.Type = EWindowEventType::KeyUp;
 		Event.Key  = TranslateKey(WParam, LParam);
 		Dispatch(Event);
-		return Message == WM_SYSKEYUP ? DefWindowProcW(Hwnd, Message, WParam, LParam) : 0;
+		return Message == WM_SYSKEYUP && WParam != VK_F10 ? DefWindowProcW(Hwnd, Message, WParam, LParam) : 0;
 
 	case WM_MOUSEMOVE:
 		Event.Type   = EWindowEventType::MouseMove;

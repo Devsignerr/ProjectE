@@ -88,6 +88,20 @@
       }
     },
     {
+      "Name": "MannequinF_GraphBlendSpace",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": { "Position": [0.0, 480.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "ModelComponent": { "AssetPath": "Asset/Quaternius/UAL2/Mannequin_F.glb" },
+        "AnimationComponent": { "BlendTime": 0.25, "Clip": "", "Loop": true, "Playing": true, "RootMotion": false, "Speed": 1.0 },
+        "AnimGraphComponent": { "Graph": "Animations/Retarget/MannequinLocomotion.eanimgraph", "UseCharacterMovement": false },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/AnimBlendDemo.lua",
+          "PropertyOverrides": "{\"MaxSpeed\": 345.0, \"Period\": 6.0}"
+        }
+      }
+    },
+    {
       "Name": "Knight_RootMotionCharacter",
       "Parent": -1,
       "Components": {
@@ -104,7 +118,7 @@
     },
     {
       "Name": "Knight_RootMotionMesh",
-      "Parent": 8,
+      "Parent": 9,
       "Components": {
         "TransformComponent": { "Position": [0.0, 0.0, -90.0], "Rotation": [0.0, 0.0, 1.0, 0.0], "Scale": [1.0, 1.0, 1.0] },
         "ModelComponent": { "AssetPath": "Asset/KayKit/Characters/KnightBare.glb" },

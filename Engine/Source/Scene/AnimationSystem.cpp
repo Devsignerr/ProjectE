@@ -145,9 +145,17 @@ namespace
 		{
 			AddUniqueSource(Sources, Requested);
 		}
-		if (Graph != nullptr && Graph->Runtime.Asset)
+		// 그래프 샘플 이름 (아직 묶기 전이면 라이브러리 캐시에서 읽는다 — 같은 경로는 한 번만 읽음)
+		std::shared_ptr<const FAnimGraphAsset> GraphAsset;
+		if (Graph != nullptr)
 		{
-			const FAnimGraphAsset& Asset = *Graph->Runtime.Asset;
+			GraphAsset = Graph->Runtime.Asset && Graph->Runtime.ResolvedGraph == Graph->Graph ? Graph->Runtime.Asset
+			             : Graph->Graph.empty()                                             ? nullptr
+			                                                                                : FAnimGraphLibrary::Get().Load(Graph->Graph);
+		}
+		if (GraphAsset)
+		{
+			const FAnimGraphAsset& Asset = *GraphAsset;
 			for (int32 Layer = -1; Layer < static_cast<int32>(Asset.Layers.size()); ++Layer)
 			{
 				for (const FAnimGraphState& State : Asset.GetMachine(Layer).States)
@@ -1045,15 +1053,12 @@ namespace
 			return;
 		}
 		Runtime.RootMotion = {};
+		// 리타기팅 소스(컴포넌트 목록 / "<모델>:<클립>" 이름)가 바뀌면 세트를 다시 만든다 — 그래프를 묶기 전에 (없는 클립 경고 방지)
 		FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity);
+		ResolveRetargeting(Scene, Entity, Animation, Graph);
 		if (Graph != nullptr && !ResolveGraph(Scene, *Graph, Runtime))
 		{
 			Graph = nullptr;
-		}
-		// 리타기팅 소스(컴포넌트 목록 / "<모델>:<클립>" 이름)가 바뀌면 세트를 다시 만들고 그래프를 다시 묶는다
-		if (ResolveRetargeting(Scene, Entity, Animation, Graph) && Graph != nullptr)
-		{
-			ResolveGraph(Scene, *Graph, Runtime);
 		}
 		if (Runtime.Set->Clips.empty())
 		{

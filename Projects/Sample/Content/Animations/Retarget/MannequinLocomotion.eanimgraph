@@ -1,0 +1,32 @@
+{
+  "Editor": {
+    "AnyStatePosition": [-380.0, -105.0],
+    "PreviewModel": "Asset/Quaternius/UAL2/Mannequin_F.glb"
+  },
+  "EntryState": "Locomotion",
+  "Parameters": [
+    { "Name": "Speed", "Type": "Float", "Default": 0.0 }
+  ],
+  "Slots": [
+    {
+      "Name": "UpperBody",
+      "Mask": [
+        { "Bone": "spine_02", "Weight": 1.0, "BlendDepth": 2 }
+      ]
+    }
+  ],
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "EditorPosition": [0.0, 0.0],
+      "Samples": [
+        { "Clip": "Asset/KayKit/Characters/KnightBare.glb:Idle", "Position": 0.0 },
+        { "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_A", "Position": 100.0, "Rate": 1.5 },
+        { "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_A", "Position": 345.0 }
+      ]
+    }
+  ],
+  "Transitions": [],
+  "Version": 3
+}

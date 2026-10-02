@@ -18,15 +18,8 @@ namespace
 		uint32      Width = 0;
 	};
 
-	// 핀 기본값 (연결하지 않았을 때)
-	enum class EPinDefault : uint8
-	{
-		Required,    // 연결 또는 상수 필수
-		Constant,    // 표의 상수
-		TexCoord,    // In.UV0
-		Time,        // E_MATERIAL_TIME
-		WorldNormal, // In.WorldNormal
-	};
+	// 핀 기본값 (연결하지 않았을 때): Required / Constant(표의 상수) / TexCoord(In.UV0) / Time(E_MATERIAL_TIME) / WorldNormal(In.WorldNormal)
+	using EPinDefault = EMaterialPinDefault;
 
 	struct FPinDesc
 	{
@@ -42,10 +35,13 @@ namespace
 
 	struct FNodeDesc
 	{
-		const char*           Type;
-		std::vector<FPinDesc> Pins;
-		uint32                OutputCount = 1;
-		FEmitFunction         Emit;
+		const char*            Type;
+		std::vector<FPinDesc>  Pins;
+		uint32                 OutputCount = 1;
+		FEmitFunction          Emit;
+		uint32                 Settings      = MaterialNodeSetting_None; // 편집기 상세 패널이 보일 설정 (EMaterialNodeSetting)
+		EMaterialParameterType ParameterType = EMaterialParameterType::Scalar;
+		const char*            Category      = ""; // 편집기 팔레트 범주 (GetNodeTable의 Section이 채운다)
 	};
 
 	const std::vector<FNodeDesc>& GetNodeTable();
@@ -113,11 +109,14 @@ namespace
 		}
 
 		FMaterialGraphCompileResult Run();
+		// 편집기 분석: 모든 노드를 평가해 출력 너비와 오류를 모은다 (코드는 쓰지 않음)
+		FMaterialGraphAnalysis Analyze();
 
 		// ---- 노드 코드 생성 도우미
 		void Error(const FMaterialGraphNode* Node, const std::string& Message)
 		{
 			Errors.push_back(Node != nullptr ? std::format("[{}] {}", Node->Id, Message) : Message);
+			ErrorNodes.push_back(Node != nullptr ? Node->Id : NullNodeContext);
 		}
 
 		// 지역 변수로 남긴다 (같은 키 = 같은 식이면 이전 변수 재사용)
@@ -206,11 +205,15 @@ namespace
 		bool Evaluate(uint32 NodeIndex, uint32 Output, const FMaterialGraphNode* Consumer, FValue& OutValue);
 		bool EvaluateInput(const FMaterialGraphNode* Node, const FMaterialGraphInput& Input, FValue& OutValue);
 		bool EvaluatePin(const FMaterialGraphNode& Node, const FPinDesc& Pin, FValue& OutValue);
+		// 머티리얼 출력 핀 대입문 (출력 핀 순서). 오류는 Errors에
+		std::string EvaluateOutputs();
 		std::string Finalize(const std::string& Body, FMaterialParameterLayout& OutLayout);
 
 		const FMaterialGraph&                  Graph;
 		const std::vector<FMaterialParameter>& Parameters;
 		std::vector<std::string>               Errors;
+		std::vector<std::string>               ErrorNodes;
+		std::string                            NullNodeContext; // 노드 없는 오류의 위치 (머티리얼 출력 평가 중 = OutputNodeId)
 		std::unordered_map<std::string, uint32> NodeIndexById;
 		std::vector<std::vector<FValue>>       NodeOutputs; // 노드별 계산 결과 (계산 전 비어 있음)
 		std::vector<uint8>                     NodeFailed;
@@ -257,6 +260,7 @@ namespace
 				}
 			}
 		}
+		NullNodeContext = FMaterialGraphCompiler::OutputNodeId;
 		for (const FMaterialGraphInput& Output : Graph.Outputs)
 		{
 			bool bKnown = false;
@@ -273,6 +277,7 @@ namespace
 				Error(nullptr, std::format("출력 {}: 없는 노드 {}", Output.Pin, Output.Node));
 			}
 		}
+		NullNodeContext.clear();
 		if (!Errors.empty())
 		{
 			return false;
@@ -475,21 +480,13 @@ namespace
 		return Hlsl;
 	}
 
-	FMaterialGraphCompileResult FCompiler::Run()
+	std::string FCompiler::EvaluateOutputs()
 	{
-		FMaterialGraphCompileResult Result;
-		if (!CheckStructure())
-		{
-			Result.Errors = std::move(Errors);
-			return Result;
-		}
-		NodeOutputs.assign(Graph.Nodes.size(), {});
-		NodeFailed.assign(Graph.Nodes.size(), 0);
-
 		// 출력 핀 순서대로 (결정적). 연결 안 된 출력은 기본값
 		static const FVector4 Defaults[] = { FVector4(0.5f, 0.5f, 0.5f, 0.0f), FVector4::ZeroVector, FVector4(0.5f, 0.0f, 0.0f, 0.0f),
 			                                 FVector4(0.0f, 0.0f, 1.0f, 0.0f), FVector4::OneVector,  FVector4::ZeroVector,
 			                                 FVector4::OneVector,                FVector4::OneVector };
+		NullNodeContext = FMaterialGraphCompiler::OutputNodeId;
 		std::string Assignments;
 		for (uint32 Index = 0; Index < static_cast<uint32>(EMaterialOutput::Count); ++Index)
 		{
@@ -511,9 +508,59 @@ namespace
 			}
 			Assignments += std::format("\tOut.{} = {};\n", Name, Code);
 		}
+		NullNodeContext.clear();
+		return Assignments;
+	}
+
+	FMaterialGraphAnalysis FCompiler::Analyze()
+	{
+		FMaterialGraphAnalysis Result;
+		for (const FMaterialGraphNode& Node : Graph.Nodes)
+		{
+			Result.NodeIds.push_back(Node.Id);
+		}
+		Result.OutputWidths.resize(Graph.Nodes.size());
+		if (CheckStructure())
+		{
+			NodeOutputs.assign(Graph.Nodes.size(), {});
+			NodeFailed.assign(Graph.Nodes.size(), 0);
+			// 출력부터 (출력에서 닿는 노드의 오류가 먼저) → 나머지 노드
+			EvaluateOutputs();
+			for (uint32 Index = 0; Index < static_cast<uint32>(Graph.Nodes.size()); ++Index)
+			{
+				FValue Ignored;
+				if (NodeOutputs[Index].empty() && NodeFailed[Index] == 0)
+				{
+					Evaluate(Index, 0, nullptr, Ignored);
+				}
+				for (const FValue& Value : NodeOutputs[Index])
+				{
+					Result.OutputWidths[Index].push_back(Value.Width);
+				}
+			}
+		}
+		Result.Errors     = std::move(Errors);
+		Result.ErrorNodes = std::move(ErrorNodes);
+		return Result;
+	}
+
+	FMaterialGraphCompileResult FCompiler::Run()
+	{
+		FMaterialGraphCompileResult Result;
+		if (!CheckStructure())
+		{
+			Result.Errors     = std::move(Errors);
+			Result.ErrorNodes = std::move(ErrorNodes);
+			return Result;
+		}
+		NodeOutputs.assign(Graph.Nodes.size(), {});
+		NodeFailed.assign(Graph.Nodes.size(), 0);
+
+		const std::string Assignments = EvaluateOutputs();
 		if (!Errors.empty())
 		{
-			Result.Errors = std::move(Errors);
+			Result.Errors     = std::move(Errors);
+			Result.ErrorNodes = std::move(ErrorNodes);
 			return Result;
 		}
 
@@ -523,6 +570,7 @@ namespace
 		if (Shader->Layout.TextureCount > MaterialTextureMax)
 		{
 			Result.Errors.push_back(std::format("텍스처 파라미터가 너무 많습니다 ({} > {})", Shader->Layout.TextureCount, MaterialTextureMax));
+			Result.ErrorNodes.emplace_back();
 			return Result;
 		}
 		Result.Shader   = std::move(Shader);
@@ -584,16 +632,26 @@ namespace
 	FPinDesc Pin(const char* Name) { return { Name }; }
 	FPinDesc PinDefault(const char* Name, float Value) { return { Name, EPinDefault::Constant, FVector4(Value, 0.0f, 0.0f, 0.0f), 1 }; }
 
-	const std::vector<FNodeDesc>& GetNodeTable()
+	// 표 범주: Section(범주, 노드들)로 묶어 넣는다 (편집기 팔레트가 이 범주와 순서로 보인다)
+	void Section(std::vector<FNodeDesc>& Table, const char* Category, std::vector<FNodeDesc> Nodes)
 	{
-		static const std::vector<FNodeDesc> Table = {
-			// ---- 상수 / 파라미터
+		for (FNodeDesc& Node : Nodes)
+		{
+			Node.Category = Category;
+			Table.push_back(std::move(Node));
+		}
+	}
+
+	std::vector<FNodeDesc> BuildNodeTable()
+	{
+		std::vector<FNodeDesc> Table;
+		Section(Table, "상수·파라미터", {
 			{ "Constant", {}, 1,
 			  [](FCompiler&, const FMaterialGraphNode& Node, const std::vector<FValue>&, std::vector<FValue>& Out) {
 				  const uint32 Width = std::clamp(Node.ValueWidth, 1u, 4u);
 				  Out.push_back({ FormatConstant(Node.Value, Width), Width });
 				  return true;
-			  } },
+			  }, MaterialNodeSetting_Value },
 			{ "ScalarParameter", {}, 1,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>&, std::vector<FValue>& Out) {
 				  const FMaterialParameter* Parameter = C.FindParameter(Node, EMaterialParameterType::Scalar);
@@ -603,8 +661,8 @@ namespace
 				  }
 				  Out.push_back({ C.ParameterToken(*Parameter), 1 });
 				  return true;
-			  } },
-			{ "VectorParameter", {}, 1,
+			  }, MaterialNodeSetting_Parameter, EMaterialParameterType::Scalar },
+			{ "VectorParameter", {}, 6,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>&, std::vector<FValue>& Out) {
 				  const FMaterialParameter* Parameter = C.FindParameter(Node, EMaterialParameterType::Vector);
 				  if (Parameter == nullptr)
@@ -614,9 +672,10 @@ namespace
 				  const FValue Value{ C.ParameterToken(*Parameter), 4 };
 				  PushColorOutputs(Value, Out); // 0 = RGBA, 1 = RGB, 2~5 = 성분
 				  return true;
-			  } },
-			{ "StaticSwitch", { Pin("True"), Pin("False") }, 1, nullptr }, // Evaluate가 직접 처리 (고른 쪽만)
-			// ---- 텍스처 / 정점 / 장면 입력
+			  }, MaterialNodeSetting_Parameter, EMaterialParameterType::Vector },
+			{ "StaticSwitch", { Pin("True"), Pin("False") }, 1, nullptr, MaterialNodeSetting_Parameter, EMaterialParameterType::StaticSwitch }, // Evaluate가 직접 처리 (고른 쪽만)
+		});
+		Section(Table, "텍스처·입력", {
 			{ "TextureSample", { { "UV", EPinDefault::TexCoord } }, 6,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>& In, std::vector<FValue>& Out) {
 				  const FMaterialParameter* Parameter = C.FindParameter(Node, EMaterialParameterType::Texture);
@@ -642,7 +701,7 @@ namespace
 				  }
 				  PushColorOutputs(C.Local(Node.Type, 4, Sample), Out);
 				  return true;
-			  } },
+			  }, MaterialNodeSetting_Parameter | MaterialNodeSetting_Sampler, EMaterialParameterType::Texture },
 			{ "TexCoord", {}, 1,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>&, std::vector<FValue>& Out) {
 				  if (Node.Index != 0)
@@ -659,7 +718,7 @@ namespace
 					  Out.push_back(C.Local(Node.Type, 2, std::format("In.UV0 * {}", FormatConstant(Node.Value, 2))));
 				  }
 				  return true;
-			  } },
+			  }, MaterialNodeSetting_Tiling },
 			{ "VertexColor", {}, 6,
 			  [](FCompiler&, const FMaterialGraphNode&, const std::vector<FValue>&, std::vector<FValue>& Out) {
 				  PushColorOutputs({ "In.VertexColor", 4 }, Out);
@@ -685,8 +744,9 @@ namespace
 				  Out.push_back({ "E_MATERIAL_TIME", 1 });
 				  return true;
 			  } },
-			// ---- 산술
-			{ "Add", { Pin("A"), Pin("B") }, 1, Binary("+") },
+		});
+		Section(Table, "산술", {
+			{ "Add",{ Pin("A"), Pin("B") }, 1, Binary("+") },
 			{ "Subtract", { Pin("A"), Pin("B") }, 1, Binary("-") },
 			{ "Multiply", { Pin("A"), Pin("B") }, 1, Binary("*") },
 			{ "Divide", { Pin("A"), Pin("B") }, 1, Binary("/") },
@@ -731,7 +791,9 @@ namespace
 				  Out.push_back(C.Local(Node.Type, Width, std::format("lerp({}, {}, {})", A, B, Alpha)));
 				  return true;
 			  } },
-			{ "Dot", { Pin("A"), Pin("B") }, 1,
+		});
+		Section(Table, "벡터", {
+			{ "Dot",{ Pin("A"), Pin("B") }, 1,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>& In, std::vector<FValue>& Out) {
 				  uint32      Width = 0;
 				  std::string A;
@@ -787,7 +849,7 @@ namespace
 				  // 입력이 float1이면 HLSL 스칼라 스위즐(.x)도 유효
 				  Out.push_back({ std::format("({}).{}", In[0].Code, Swizzle), static_cast<uint32>(Swizzle.size()) });
 				  return true;
-			  } },
+			  }, MaterialNodeSetting_Channels },
 			{ "Split", { Pin("A") }, 4,
 			  [](FCompiler&, const FMaterialGraphNode&, const std::vector<FValue>& In, std::vector<FValue>& Out) {
 				  for (uint32 Index = 0; Index < 4; ++Index)
@@ -797,7 +859,8 @@ namespace
 				  }
 				  return true;
 			  } },
-			// ---- 머티리얼 함수
+		});
+		Section(Table, "머티리얼 함수", {
 			{ "Fresnel", { PinDefault("Exponent", 5.0f), PinDefault("BaseReflectFraction", 0.04f), { "Normal", EPinDefault::WorldNormal } }, 1,
 			  [](FCompiler& C, const FMaterialGraphNode& Node, const std::vector<FValue>& In, std::vector<FValue>& Out) {
 				  std::string Exponent;
@@ -861,8 +924,14 @@ namespace
 				  }
 				  Out.push_back(C.Local(Node.Type, Width, std::format("({} {} {}) ? {} : {}", A, Operator, B, True, False)));
 				  return true;
-			  } },
-		};
+			  }, MaterialNodeSetting_CompareOp },
+		});
+		return Table;
+	}
+
+	const std::vector<FNodeDesc>& GetNodeTable()
+	{
+		static const std::vector<FNodeDesc> Table = BuildNodeTable();
 		return Table;
 	}
 } // namespace
@@ -871,6 +940,56 @@ FMaterialGraphCompileResult FMaterialGraphCompiler::Compile(const FMaterialGraph
 {
 	FCompiler Compiler(Graph, Parameters);
 	return Compiler.Run();
+}
+
+FMaterialGraphAnalysis FMaterialGraphCompiler::Analyze(const FMaterialGraph& Graph, const std::vector<FMaterialParameter>& Parameters)
+{
+	FCompiler Compiler(Graph, Parameters);
+	return Compiler.Analyze();
+}
+
+const std::vector<FMaterialGraphNodeInfo>& FMaterialGraphCompiler::GetNodeInfos()
+{
+	static const std::vector<FMaterialGraphNodeInfo> Infos = [] {
+		std::vector<FMaterialGraphNodeInfo> Result;
+		for (const FNodeDesc& Desc : GetNodeTable())
+		{
+			FMaterialGraphNodeInfo Info;
+			Info.Type          = Desc.Type;
+			Info.Category      = Desc.Category;
+			Info.Settings      = Desc.Settings;
+			Info.ParameterType = Desc.ParameterType;
+			for (const FPinDesc& Pin : Desc.Pins)
+			{
+				Info.Inputs.push_back({ Pin.Name, Pin.Default, Pin.Constant, Pin.ConstantWidth });
+			}
+			// 출력 이름: 6개 = 색 출력 규약(PushColorOutputs), 4개 = 성분(Split), 그 밖은 번호 (1개면 이름 없음)
+			static const char* const ColorNames[]     = { "RGBA", "RGB", "R", "G", "B", "A" };
+			static const char* const ComponentNames[] = { "X", "Y", "Z", "W" };
+			for (uint32 Output = 0; Output < Desc.OutputCount; ++Output)
+			{
+				Info.Outputs.push_back(Desc.OutputCount == 1   ? std::string()
+				                       : Desc.OutputCount == 6 ? std::string(ColorNames[Output])
+				                       : Desc.OutputCount == 4 ? std::string(ComponentNames[Output])
+				                                               : std::to_string(Output));
+			}
+			Result.push_back(std::move(Info));
+		}
+		return Result;
+	}();
+	return Infos;
+}
+
+const FMaterialGraphNodeInfo* FMaterialGraphCompiler::FindNodeInfo(std::string_view Type)
+{
+	for (const FMaterialGraphNodeInfo& Info : GetNodeInfos())
+	{
+		if (Info.Type == Type)
+		{
+			return &Info;
+		}
+	}
+	return nullptr;
 }
 
 std::vector<std::string> FMaterialGraphCompiler::GetNodeTypes()

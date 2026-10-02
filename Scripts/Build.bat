@@ -28,6 +28,9 @@ echo 알 수 없는 인자: %~1
 exit /b 1
 :parsed
 
+rem 저장소 소유자 PC면 이 저장소의 커밋 작성자를 Devsignerr로 (이미 지정됐으면 조용히 넘어감, 실패해도 빌드는 계속)
+call "%~dp0SetupGit.bat" -Auto
+
 if /i "%CONFIG%"=="Debug" (
     set "PRESET=ninja-debug"
 ) else if /i "%CONFIG%"=="Release" (

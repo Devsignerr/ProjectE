@@ -3,7 +3,7 @@
 
 // 픽셀 아트 합성: 저해상도 톤매핑 결과 → 출력 (sRGB RTV이므로 선형 값을 쓴다)
 //   1) 서브픽셀 보정 최근접 확대 — FPixelArtMath::OutputToSource와 같은 식
-//   2) 저해상도 깊이로 1px 외곽선(실루엣, 앞 물체 쪽 픽셀을 어둡게) + 볼록 모서리 하이라이트(한쪽 픽셀만 밝게)
+//   2) 저해상도 깊이로 1px 외곽선(실루엣, 앞 물체 쪽 픽셀을 어둡게) + 볼록 모서리 하이라이트(깊이 능선, 한쪽 픽셀만 밝게)
 //   3) 채널별 색 단계 양자화 + 4x4 Bayer 디더 (무늬 원점은 월드 격자에 고정 → 카메라가 움직여도 무늬가 화면에 붙지 않음)
 // 모든 판정은 도트(소스 텍셀) 단위라 출력 픽셀 N×N이 같은 결과를 낸다.
 
@@ -61,19 +61,23 @@ float3 GetViewPosition(int2 Texel, int2 SourceSize)
 	return float3(Grid * Scale, Depth);
 }
 
-// 깊이에서 노멀 재구성: 좌우/상하 중 깊이 변화가 작은 쪽 차분을 써서 경계 너머 면을 섞지 않는다. 카메라를 향하도록(-Z) 맞춤
-float3 ReconstructNormal(int2 Texel, int2 SourceSize)
+// 텍셀 하나의 월드 크기(cm) — 판정 문턱값의 기준
+float TexelWorldSize(float Depth)
 {
-	const float3 Center = GetViewPosition(Texel, SourceSize);
-	const float3 Right  = GetViewPosition(Texel + int2(1, 0), SourceSize);
-	const float3 Left   = GetViewPosition(Texel + int2(-1, 0), SourceSize);
-	const float3 Down   = GetViewPosition(Texel + int2(0, 1), SourceSize);
-	const float3 Up     = GetViewPosition(Texel + int2(0, -1), SourceSize);
+	return bOrthographic != 0 ? PixelViewScale : PixelViewScale * Depth;
+}
 
-	const float3 DeltaX = abs(Right.z - Center.z) < abs(Center.z - Left.z) ? Right - Center : Center - Left;
-	const float3 DeltaY = abs(Up.z - Center.z) < abs(Center.z - Down.z) ? Up - Center : Center - Down;
-	float3       Normal = normalize(cross(DeltaY, DeltaX));
-	return Normal.z > 0.0f ? -Normal : Normal;
+// 축 방향 깊이 2차 차분 (앞뒤 이웃이 모두 같은 물체일 때만, 아니면 0). 볼록 능선(양옆이 뒤로 물러남)이면 양수
+float RidgeCurvature(int2 Texel, int2 Axis, int2 SourceSize)
+{
+	const float Center = GetViewPosition(Texel, SourceSize).z;
+	const float Next   = GetViewPosition(Texel + Axis, SourceSize).z;
+	const float Prev   = GetViewPosition(Texel - Axis, SourceSize).z;
+	if (abs(Next - Center) >= DepthThreshold || abs(Prev - Center) >= DepthThreshold)
+	{
+		return 0.0f;
+	}
+	return Next + Prev - 2.0f * Center;
 }
 
 float3 LinearToSrgbApprox(float3 Color)
@@ -105,36 +109,34 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	const bool bBackground = LoadDeviceDepth(Texel, SourceSize) >= 1.0f;
 	if (!bBackground && (OutlineStrength > 0.0f || HighlightStrength > 0.0f))
 	{
-		const float3 Center       = GetViewPosition(Texel, SourceSize);
-		const float3 CenterNormal = ReconstructNormal(Texel, SourceSize);
+		const float3 Center = GetViewPosition(Texel, SourceSize);
 
-		float DepthEdge  = 0.0f;
-		float NormalEdge = 0.0f;
+		// 이웃이 충분히 멀면 이 픽셀은 앞 물체의 가장자리 → 외곽선은 앞 물체 쪽 1px에 생긴다
+		float DepthEdge = 0.0f;
 		[unroll]
 		for (int Index = 0; Index < 4; ++Index)
 		{
-			const int2   NeighborTexel = Texel + NeighborOffsets[Index];
-			const float3 Neighbor      = GetViewPosition(NeighborTexel, SourceSize);
-			const float  DepthDelta    = Neighbor.z - Center.z;
-
-			// 이웃이 충분히 멀면 이 픽셀은 앞 물체의 가장자리 → 외곽선은 앞 물체 쪽 1px에 생긴다
-			if (DepthDelta > DepthThreshold)
+			if (GetViewPosition(Texel + NeighborOffsets[Index], SourceSize).z - Center.z > DepthThreshold)
 			{
 				DepthEdge = 1.0f;
 			}
+		}
 
-			// 같은 면 근처(깊이 차 작음)에서 노멀이 꺾이고, 이웃이 내 접평면 뒤로 떨어지면(볼록) 하이라이트.
-			// 모서리 양쪽 중 한 픽셀만 칠하도록 오른쪽/위/카메라를 향한 노멀 쪽을 고른다
-			if (abs(DepthDelta) < DepthThreshold)
+		// 볼록 모서리 하이라이트: 가로/세로 깊이 능선(2차 차분 > 문턱). 판정값이 확실히 양수인 곳만 켜므로 카메라가 도트 단위로
+		// 움직일 때 생기는 미세 오차에 흔들리지 않는다(같은 평면 = 0). 모서리 양쪽 두 픽셀 중 능선 값이 큰 쪽 하나만,
+		// 비슷하면(여유 Tie 이내) 축의 앞쪽(왼쪽/위) 픽셀로 고정. 완만한 곡면(구 등)은 문턱 아래라 칠하지 않는다
+		const float Texel1     = TexelWorldSize(Center.z);
+		const float Tie        = 0.02f * Texel1;
+		const int2  Axes[2]    = { int2(1, 0), int2(0, 1) };
+		float       NormalEdge = 0.0f;
+		[unroll]
+		for (int AxisIndex = 0; AxisIndex < 2; ++AxisIndex)
+		{
+			const int2  Axis  = Axes[AxisIndex];
+			const float Ridge = RidgeCurvature(Texel, Axis, SourceSize);
+			if (Ridge > Tie && Ridge + Tie >= RidgeCurvature(Texel + Axis, Axis, SourceSize) && Ridge > RidgeCurvature(Texel - Axis, Axis, SourceSize) + Tie)
 			{
-				const float3 NeighborNormal = ReconstructNormal(NeighborTexel, SourceSize);
-				const float  Crease         = smoothstep(0.1f, 0.4f, 1.0f - dot(CenterNormal, NeighborNormal));
-				const bool   bConvex        = dot(Neighbor - Center, CenterNormal) < 0.0f;
-				const bool   bPreferredSide = dot(CenterNormal - NeighborNormal, float3(1.0f, 1.0f, -1.0f)) > 0.0f;
-				if (bConvex && bPreferredSide)
-				{
-					NormalEdge = max(NormalEdge, Crease);
-				}
+				NormalEdge = max(NormalEdge, smoothstep(0.4f, 1.0f, Ridge / Texel1));
 			}
 		}
 

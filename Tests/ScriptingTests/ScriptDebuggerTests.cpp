@@ -278,12 +278,32 @@ return S
 		[](FScriptDebugger& D) { D.Continue(); },
 	};
 
+	// Helper 안에서 멈췄을 때 바깥 프레임(OnUpdate)의 지역 변수와 upvalue(Helper 지역 함수)
+	std::string OuterA, OuterUpvalue;
+	Harness.Inspect = [&](FScriptDebugger& Debugger) {
+		if (Harness.Pauses.size() != 2)
+		{
+			return;
+		}
+		if (const std::vector<FScriptVariable> Outer = Debugger.GetLocals(1); FindVariable(Outer, "a") != nullptr)
+		{
+			OuterA = FindVariable(Outer, "a")->Value;
+		}
+		if (const std::vector<FScriptVariable> Up = Debugger.GetUpvalues(1); FindVariable(Up, "Helper") != nullptr)
+		{
+			OuterUpvalue = FindVariable(Up, "Helper")->Type;
+		}
+	};
+
 	FScriptSystem Scripts;
 	Scripts.SetContentDirectory(GetDebuggerTestContentDirectory());
 	Scripts.SetDebugger(&Harness.Debugger);
 	Scripts.BeginPlay(Scene);
 	Scripts.Update(0.1f, nullptr);
 	Scripts.Update(0.1f, nullptr);
+	E_EXPECT_EQ(OuterA, std::string("1"));
+	E_EXPECT_EQ(OuterUpvalue, std::string("function"));
+	Harness.Inspect = nullptr;
 
 	const std::vector<int32> ExpectedLines = { 8, 3, 4, 9, 10, 8, 9 };
 	E_EXPECT_EQ(Harness.Pauses.size(), ExpectedLines.size());

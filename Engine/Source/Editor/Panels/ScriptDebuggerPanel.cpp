@@ -763,9 +763,11 @@ void FScriptDebuggerPanel::DrawVariableRow(const FScriptVariable& Variable, int3
 		}
 		// 펼칠 때 받은 목록 사본으로 그린다 (아래 펼치기가 맵을 바꿀 수 있다)
 		const std::vector<FScriptVariable> Items = Found->second;
-		for (const FScriptVariable& Child : Items)
+		for (size_t Index = 0; Index < Items.size(); ++Index)
 		{
-			DrawVariableRow(Child, Depth + 1);
+			ImGui::PushID(static_cast<int>(Index)); // 같은 이름 항목 구분
+			DrawVariableRow(Items[Index], Depth + 1);
+			ImGui::PopID();
 		}
 		ImGui::TreePop();
 	}
@@ -785,18 +787,22 @@ void FScriptDebuggerPanel::DrawVariables()
 		ImGui::TableSetupColumn("값", ImGuiTableColumnFlags_WidthStretch, 0.5f);
 		ImGui::TableSetupColumn("타입", ImGuiTableColumnFlags_WidthStretch, 0.15f);
 		ImGui::TableHeadersRow();
-		for (const FScriptVariable& Variable : Locals)
+		for (size_t Index = 0; Index < Locals.size(); ++Index)
 		{
-			DrawVariableRow(Variable, 0);
+			ImGui::PushID(static_cast<int>(Index)); // 같은 이름 지역 변수(가린 변수) 구분
+			DrawVariableRow(Locals[Index], 0);
+			ImGui::PopID();
 		}
 		if (!Upvalues.empty())
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
 			ImGui::TextColored(FEditorTheme::Accent, "upvalue");
-			for (const FScriptVariable& Variable : Upvalues)
+			for (size_t Index = 0; Index < Upvalues.size(); ++Index)
 			{
-				DrawVariableRow(Variable, 0);
+				ImGui::PushID(static_cast<int>(10000 + Index));
+				DrawVariableRow(Upvalues[Index], 0);
+				ImGui::PopID();
 			}
 		}
 		ImGui::EndTable();

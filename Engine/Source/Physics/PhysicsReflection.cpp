@@ -1,6 +1,7 @@
 #include "Physics/PhysicsReflection.h"
 
 #include "Core/Reflection/TypeInfo.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/Ragdoll.h"
@@ -15,6 +16,9 @@ void RegisterPhysicsTypes()
 	bRegistered = true;
 
 	FTypeRegistry& Registry = FTypeRegistry::Get();
+	// 충돌 레이어: 이름 문자열 (칸 순서를 바꿔도 씬이 깨지지 않게) + 인스펙터는 프로젝트 레이어 콤보
+	const auto LayerOptions = []() { return FProjectSettings::Get().Collision.GetLayerNames(); };
+	constexpr const char* LayerTip = "충돌 레이어 (프로젝트 설정 → 충돌 레이어). 행렬에서 꺼진 레이어끼리는 통과하고 트리거 알림도 없다. 비면 Default";
 
 	Registry.RegisterType<FRigidBodyComponent>("RigidBodyComponent", "강체")
 		.Property(&FRigidBodyComponent::MotionType, "MotionType", "운동 (0 정적, 1 키네마틱, 2 동적)").Range(0.0f, 2.0f, 1.0f)
@@ -45,18 +49,21 @@ void RegisterPhysicsTypes()
 		.Property(&FCharacterMovementComponent::bFaceControlYaw, "FaceControlYaw", "시점 방향 보기").Tooltip("끄면 이동 방향을 본다")
 		.Property(&FCharacterMovementComponent::bClientPrediction, "ClientPrediction", "클라이언트 예측")
 		.Tooltip("멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직이고 서버 결과로 보정한다. 끄면 서버 결과를 보간해 보여 준다(반응이 왕복 지연 + 0.1초 늦음). 프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야 한다")
+		.Property(&FCharacterMovementComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.AsComponent();
 
 	Registry.RegisterType<FBoxColliderComponent>("BoxColliderComponent", "박스 콜라이더")
 		.Property(&FBoxColliderComponent::HalfExtents, "HalfExtents", "반 크기 (cm)").Range(0.1f, 100000.0f, 1.0f)
 		.Property(&FBoxColliderComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f)
 		.Property(&FBoxColliderComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip("부딪히지 않고 들어옴/나감만 알린다 (OnTriggerEnter/Exit)")
+		.Property(&FBoxColliderComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.AsComponent();
 
 	Registry.RegisterType<FSphereColliderComponent>("SphereColliderComponent", "구 콜라이더")
 		.Property(&FSphereColliderComponent::Radius, "Radius", "반지름 (cm)").Range(0.1f, 100000.0f, 1.0f)
 		.Property(&FSphereColliderComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f)
 		.Property(&FSphereColliderComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip("부딪히지 않고 들어옴/나감만 알린다 (OnTriggerEnter/Exit)")
+		.Property(&FSphereColliderComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.AsComponent();
 
 	Registry.RegisterType<FCapsuleColliderComponent>("CapsuleColliderComponent", "캡슐 콜라이더")
@@ -64,6 +71,7 @@ void RegisterPhysicsTypes()
 		.Property(&FCapsuleColliderComponent::HalfHeight, "HalfHeight", "원기둥 반 높이 (cm)").Range(0.0f, 100000.0f, 1.0f)
 		.Property(&FCapsuleColliderComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f)
 		.Property(&FCapsuleColliderComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip("부딪히지 않고 들어옴/나감만 알린다 (OnTriggerEnter/Exit)")
+		.Property(&FCapsuleColliderComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.AsComponent();
 
 	// ---- 관절 (공통 필드 설명은 PhysicsComponents.h)

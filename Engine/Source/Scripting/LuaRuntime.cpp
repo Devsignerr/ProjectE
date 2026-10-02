@@ -794,11 +794,54 @@ void FLuaRuntime::RegisterGlobals()
 		}
 	};
 
-	// ---- Physics.Raycast(origin, direction, maxDistance) → { entity, position, normal, distance } 또는 nil (cm)
+	// ---- Physics.Raycast(origin, direction, maxDistance, layers?) → { entity, position, normal, distance } 또는 nil (cm)
+	//   layers: 충돌 레이어 이름 표 {"Ground", "Prop"} 또는 이름 하나 (프로젝트 설정 → 충돌 레이어). 생략 = 모든 레이어. 트리거는 항상 제외.
+	//   없는 레이어 이름은 Lua 오류
 	sol::table PhysicsTable   = Lua.create_named_table("Physics");
-	PhysicsTable["Raycast"]   = [this](const FVector3& Origin, const FVector3& Direction, float MaxDistance) -> sol::object {
+	PhysicsTable["Raycast"]   = [this](const FVector3& Origin, const FVector3& Direction, float MaxDistance, sol::object Layers) -> sol::object {
+		uint32 LayerMask = FCollisionLayerSettings::AllLayersMask;
+		if (Layers.valid() && Layers.get_type() != sol::type::lua_nil && Layers.get_type() != sol::type::none)
+		{
+			std::vector<std::string> Names;
+			if (Layers.is<std::string>())
+			{
+				Names.push_back(Layers.as<std::string>());
+			}
+			else if (Layers.get_type() == sol::type::table)
+			{
+				for (const auto& [Key, Value] : Layers.as<sol::table>())
+				{
+					if (!Value.is<std::string>())
+					{
+						throw std::runtime_error("Physics.Raycast: 레이어 표에는 이름 문자열만 넣습니다");
+					}
+					Names.push_back(Value.as<std::string>());
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Physics.Raycast: 네 번째 인자는 레이어 이름 표나 이름이어야 합니다");
+			}
+			std::string Unknown;
+			if (!FProjectSettings::Get().Collision.MakeMask(Names, LayerMask, &Unknown))
+			{
+				throw std::runtime_error(std::format("Physics.Raycast: 없는 충돌 레이어 '{}' (프로젝트 설정 → 충돌 레이어)", Unknown));
+			}
+		}
 		FScriptRayHit Hit;
-		if (!PhysicsHooks || !PhysicsHooks->Raycast || !PhysicsHooks->Raycast(Origin, Direction, MaxDistance, Hit))
+		bool          bHit = false;
+		if (PhysicsHooks != nullptr)
+		{
+			if (LayerMask != FCollisionLayerSettings::AllLayersMask && PhysicsHooks->RaycastLayers)
+			{
+				bHit = PhysicsHooks->RaycastLayers(Origin, Direction, MaxDistance, LayerMask, Hit);
+			}
+			else if (LayerMask == FCollisionLayerSettings::AllLayersMask && PhysicsHooks->Raycast)
+			{
+				bHit = PhysicsHooks->Raycast(Origin, Direction, MaxDistance, Hit);
+			}
+		}
+		if (!bHit)
 		{
 			return sol::lua_nil;
 		}

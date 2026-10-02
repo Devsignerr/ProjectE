@@ -4,6 +4,8 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 
+#include <string>
+
 // 강체 운동 형식 (직렬화 값 고정)
 enum class EPhysicsMotionType : int32
 {
@@ -30,6 +32,7 @@ struct FRigidBodyComponent
 };
 
 // 콜라이더 공통: bIsTrigger = 트리거(센서) 영역 — 부딪히지 않고 들어옴/나감만 알린다 (Physics/PhysicsSystem.h 충돌 알림 규칙)
+//   Layer = 충돌 레이어 이름 (프로젝트 설정 "충돌 레이어", Core/Settings/CollisionSettings.h). 비었거나 없는 이름 = Default
 
 // 박스 콜라이더. 크기는 트랜스폼 월드 스케일이 곱해진다 (바디 생성 시)
 struct FBoxColliderComponent
@@ -37,6 +40,7 @@ struct FBoxColliderComponent
 	FVector3 HalfExtents = FVector3(50.0f, 50.0f, 50.0f); // cm (기본: 100cm 큐브 = 내장 큐브 메시)
 	FVector3 Offset;                                       // cm, 엔티티 로컬
 	bool     bIsTrigger = false;
+	std::string Layer;
 };
 
 struct FSphereColliderComponent
@@ -44,6 +48,7 @@ struct FSphereColliderComponent
 	float    Radius = 50.0f; // cm (스케일 성분 중 최대값이 곱해진다)
 	FVector3 Offset;
 	bool     bIsTrigger = false;
+	std::string Layer;
 };
 
 // 캡슐: 엔티티 로컬 +Z 축 방향 (Jolt 캡슐은 +Y 축이므로 내부에서 회전)
@@ -53,6 +58,7 @@ struct FCapsuleColliderComponent
 	float    HalfHeight = 60.0f; // cm, 원기둥 부분의 절반 (전체 높이 = 2 * (HalfHeight + Radius))
 	FVector3 Offset;
 	bool     bIsTrigger = false;
+	std::string Layer;
 };
 
 // ---- 물리 관절 (규칙은 Physics/PhysicsSystem.h "관절" 절). 이 엔티티(바디 필요)를 Target 엔티티의 바디에 잇는다.

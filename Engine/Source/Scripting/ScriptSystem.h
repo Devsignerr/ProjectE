@@ -71,6 +71,8 @@ struct FScriptPhysicsHooks
 	std::function<bool(const FScriptQueryShape&, const FVector3& Start, const FVector3& Direction, float MaxDistance, FEntity Ignore,
 	                   FScriptRayHit& OutHit)>
 		Sweep;
+	// 충돌 레이어로 거른 레이캐스트 (LayerMask 비트 i = 레이어 칸 i, FCollisionLayerSettings). 없으면 레이어를 준 Physics.Raycast는 nil
+	std::function<bool(const FVector3& Origin, const FVector3& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit& OutHit)> RaycastLayers;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

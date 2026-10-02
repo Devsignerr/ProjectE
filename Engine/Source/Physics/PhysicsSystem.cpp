@@ -26,8 +26,8 @@ namespace
 
 	float MaxAbs(float A, float B) { return std::max(std::abs(A), std::abs(B)); }
 
-	// 콜라이더 → 바디 모양 (스케일 적용). 박스 > 구 > 캡슐 순으로 하나만 사용
-	bool FillShape(const FRegistry& Registry, FEntity Entity, const FVector3& Scale, FPhysicsBodyDesc& Desc)
+	// 콜라이더 → 바디 모양 (스케일 적용). 박스 > 구 > 캡슐 순으로 하나만 사용. OutLayer = 그 콜라이더의 충돌 레이어 이름
+	bool FillShape(const FRegistry& Registry, FEntity Entity, const FVector3& Scale, FPhysicsBodyDesc& Desc, std::string& OutLayer)
 	{
 		if (const FBoxColliderComponent* Box = Registry.TryGet<FBoxColliderComponent>(Entity))
 		{
@@ -35,6 +35,7 @@ namespace
 			Desc.HalfExtents = FVector3(std::abs(Box->HalfExtents.X * Scale.X), std::abs(Box->HalfExtents.Y * Scale.Y), std::abs(Box->HalfExtents.Z * Scale.Z));
 			Desc.Offset      = FVector3(Box->Offset.X * Scale.X, Box->Offset.Y * Scale.Y, Box->Offset.Z * Scale.Z);
 			Desc.bIsTrigger  = Box->bIsTrigger;
+			OutLayer         = Box->Layer;
 			return true;
 		}
 		if (const FSphereColliderComponent* Sphere = Registry.TryGet<FSphereColliderComponent>(Entity))
@@ -43,6 +44,7 @@ namespace
 			Desc.Radius     = std::abs(Sphere->Radius) * MaxAbs(MaxAbs(Scale.X, Scale.Y), Scale.Z);
 			Desc.Offset     = FVector3(Sphere->Offset.X * Scale.X, Sphere->Offset.Y * Scale.Y, Sphere->Offset.Z * Scale.Z);
 			Desc.bIsTrigger = Sphere->bIsTrigger;
+			OutLayer        = Sphere->Layer;
 			return true;
 		}
 		if (const FCapsuleColliderComponent* Capsule = Registry.TryGet<FCapsuleColliderComponent>(Entity))
@@ -52,6 +54,7 @@ namespace
 			Desc.HalfHeight = std::abs(Capsule->HalfHeight * Scale.Z);
 			Desc.Offset     = FVector3(Capsule->Offset.X * Scale.X, Capsule->Offset.Y * Scale.Y, Capsule->Offset.Z * Scale.Z);
 			Desc.bIsTrigger = Capsule->bIsTrigger;
+			OutLayer        = Capsule->Layer;
 			return true;
 		}
 		return false;
@@ -69,7 +72,7 @@ namespace
 	bool NeedsRecreate(const FPhysicsBodyDesc& Old, const FPhysicsBodyDesc& New)
 	{
 		if (Old.MotionType != New.MotionType || Old.Shape != New.Shape || Old.bUseGravity != New.bUseGravity || Old.Mass != New.Mass ||
-		    Old.bIsTrigger != New.bIsTrigger ||
+		    Old.bIsTrigger != New.bIsTrigger || Old.CollisionLayer != New.CollisionLayer ||
 		    Old.Density != New.Density || Old.Friction != New.Friction || Old.Restitution != New.Restitution ||
 		    Old.LinearDamping != New.LinearDamping || Old.AngularDamping != New.AngularDamping || Old.RollingResistance != New.RollingResistance)
 		{
@@ -106,6 +109,20 @@ void FPhysicsSystem::Begin()
 	Stepper.StepSeconds = 1.0f / std::clamp(Settings.FixedStepHz, 15.0f, 240.0f);
 	Stepper.MaxSteps    = std::clamp(Settings.MaxSubSteps, 1u, 16u);
 	Stepper.Reset();
+	// 충돌 레이어 (프로젝트 설정 "충돌 레이어") — 이번 플레이 동안 고정
+	CollisionLayers = FProjectSettings::Get().Collision;
+	World->SetCollisionLayers(CollisionLayers);
+	WarnedLayerNames.clear();
+}
+
+uint8 FPhysicsSystem::ResolveCollisionLayer(const std::string& Name) const
+{
+	const int32 Found = CollisionLayers.FindLayer(Name);
+	if (Found < 0 && !Name.empty() && WarnedLayerNames.insert(Name).second)
+	{
+		E_LOG(LogPhysics, Warning, "없는 충돌 레이어 '{}' → Default로 처리합니다 (프로젝트 설정 → 충돌 레이어)", Name);
+	}
+	return static_cast<uint8>(Found < 0 ? 0 : Found);
 }
 
 void FPhysicsSystem::End()
@@ -242,10 +259,12 @@ void FPhysicsSystem::SyncBodies(FScene& Scene)
 		PhysicsMath::DecomposeWorld(ComputeWorldMatrix(Scene, Entity), Position, Rotation, Scale);
 
 		FPhysicsBodyDesc Desc;
-		if (!FillShape(Registry, Entity, Scale, Desc))
+		std::string      LayerName;
+		if (!FillShape(Registry, Entity, Scale, Desc, LayerName))
 		{
 			continue;
 		}
+		Desc.CollisionLayer = ResolveCollisionLayer(LayerName);
 		Desc.Position = Position;
 		Desc.Rotation = Rotation;
 		Desc.UserData = Entity.ToId();
@@ -407,10 +426,10 @@ void FPhysicsSystem::WriteDynamicTransforms(FScene& Scene)
 	}
 }
 
-bool FPhysicsSystem::Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const
+bool FPhysicsSystem::Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit, uint32 LayerMask) const
 {
 	FPhysicsRayHit Hit;
-	if (!World || !World->Raycast(Origin, Direction, MaxDistance, Hit))
+	if (!World || !World->Raycast(Origin, Direction, MaxDistance, Hit, LayerMask))
 	{
 		return false;
 	}
@@ -644,7 +663,7 @@ namespace
 	bool NeedsCharacterRecreate(const FCharacterMovementComponent& A, const FCharacterMovementComponent& B)
 	{
 		return A.CapsuleRadius != B.CapsuleRadius || A.CapsuleHalfHeight != B.CapsuleHalfHeight || A.MaxSlopeAngle != B.MaxSlopeAngle || A.Mass != B.Mass ||
-		       A.PushForce != B.PushForce;
+		       A.PushForce != B.PushForce || A.Layer != B.Layer;
 	}
 
 	float YawFromDirection(const FVector2& Direction)
@@ -691,6 +710,7 @@ void FPhysicsSystem::SyncCharacters(FScene& Scene)
 			Desc.Mass            = Movement.Mass;
 			Desc.MaxStrength     = Movement.PushForce;
 			Desc.UserData        = Entity.ToId();
+			Desc.CollisionLayer  = ResolveCollisionLayer(Movement.Layer);
 			if (Found == Characters.end())
 			{
 				// 처음: 몸 방향 = 트랜스폼의 yaw (PlayerStart 방향 등)

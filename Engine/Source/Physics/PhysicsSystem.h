@@ -8,7 +8,9 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class FScene;
@@ -83,7 +85,9 @@ public:
 	const std::vector<FCollisionEvent>& GetCollisionEvents() const { return CollisionEvents; } // 지난 Update에서 생긴 것
 
 	// ---- 게임플레이 API (cm, kg). 바디가 없는 엔티티는 무시 / false
-	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit) const;
+	// LayerMask: 맞을 수 있는 충돌 레이어 (비트 i = 칸 i, FCollisionLayerSettings::MakeMask로 이름 → 마스크). 트리거는 항상 제외
+	bool     Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit,
+	                 uint32 LayerMask = FCollisionLayerSettings::AllLayersMask) const;
 	void     AddForce(FEntity Entity, const FVector3& Force);
 	void     AddImpulse(FEntity Entity, const FVector3& Impulse);
 	void     SetVelocity(FEntity Entity, const FVector3& Velocity);
@@ -178,7 +182,11 @@ private:
 		bool     bWritten = false;
 	};
 
-	uint32 FindQueryIgnoreBody(FEntity Entity) const; // 모양 질의 IgnoreEntity → 바디 (캐릭터 내부 바디, 없으면 InvalidBody)
+	uint32 FindQueryIgnoreBody(FEntity Entity) const;
+	// 충돌 레이어 이름 → 칸 (없으면 Default + 이름마다 한 번 경고). 표는 Begin에서 프로젝트 설정을 복사한 것
+	uint8 ResolveCollisionLayer(const std::string& Name) const;
+	FCollisionLayerSettings                 CollisionLayers;
+	mutable std::unordered_set<std::string> WarnedLayerNames; // 모양 질의 IgnoreEntity → 바디 (캐릭터 내부 바디, 없으면 InvalidBody)
 	void WriteDynamicTransforms(FScene& Scene);
 	void WriteCharacterTransform(FScene& Scene, FEntity Entity);
 

@@ -19,6 +19,8 @@ namespace
 		ShadowParam_SkinPalette     = 1, // t15 (프레임 스킨 팔레트)
 		ShadowParam_Instances       = 2, // t13
 		ShadowParam_InstanceIndices = 3, // t14
+		ShadowParam_MaskConstants   = 4, // b1 (루트 상수 2개: 베이스 컬러 알파 팩터, 알파 컷오프 — Masked만)
+		ShadowParam_MaskTexture     = 5, // t0 (머티리얼 텍스처 테이블 첫 칸 — Masked만)
 	};
 	constexpr uint32 ShadowPassConstantCount = 17;
 } // namespace
@@ -38,16 +40,23 @@ bool FShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	const uint32 PaletteIndex   = RootSignature.AddShaderResourceView(15, 0, D3D12_SHADER_VISIBILITY_VERTEX); // 스킨 팔레트 (SkinnedMesh.hlsli t15)
 	const uint32 InstancesIndex = RootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	const uint32 IndicesIndex   = RootSignature.AddShaderResourceView(14, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+	const uint32 MaskIndex      = RootSignature.AddConstants(2, 1, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 MaskTexture    = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) },
+	                                                               D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(PassIndex == ShadowParam_PassConstants && PaletteIndex == ShadowParam_SkinPalette && InstancesIndex == ShadowParam_Instances &&
-	        IndicesIndex == ShadowParam_InstanceIndices);
+	        IndicesIndex == ShadowParam_InstanceIndices && MaskIndex == ShadowParam_MaskConstants && MaskTexture == ShadowParam_MaskTexture);
+	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR));
 	if (!RootSignature.Finalize(Rhi->GetDevice().GetDevice(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
 	                            L"ShadowRootSignature"))
 	{
 		return false;
 	}
-	if (!CreatePipeline(Pipeline, false) || !CreatePipeline(SkinnedPipeline, false, true))
+	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
-		return false;
+		if (!CreatePipeline(Pipelines[Variant], false, Variant))
+		{
+			return false;
+		}
 	}
 
 	// 셰이더가 항상 유효한 SRV를 참조하도록 기본 해상도로 미리 생성
@@ -67,26 +76,35 @@ void FShadowRenderer::Shutdown()
 	}
 	ShadowMap.Reset();
 	DsvHeap.Shutdown();
-	Pipeline.Shutdown();
-	SkinnedPipeline.Shutdown();
+	for (FD3D12PipelineState& VariantPipeline : Pipelines)
+	{
+		VariantPipeline.Shutdown();
+	}
 	RootSignature.Shutdown();
 	MapResolution = 0;
 	Rhi           = nullptr;
 	ShaderLibrary = nullptr;
 }
 
-bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned)
+bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, uint32 Variant)
 {
+	const bool         bSkinned = (Variant & DepthVariantSkinned) != 0;
+	const bool         bMasked  = (Variant & DepthVariantMasked) != 0;
 	FShaderCompileDesc VertexDesc;
 	VertexDesc.FileName   = L"Shadow.hlsl";
-	VertexDesc.EntryPoint = bSkinned ? L"ShadowSkinnedVS" : L"ShadowVS";
+	VertexDesc.EntryPoint = bMasked ? (bSkinned ? L"ShadowSkinnedMaskedVS" : L"ShadowMaskedVS") : (bSkinned ? L"ShadowSkinnedVS" : L"ShadowVS");
 	VertexDesc.Stage      = EShaderStage::Vertex;
-	if (bForceRecompile && !ShaderLibrary->CookShader(VertexDesc))
+	FShaderCompileDesc PixelDesc;
+	PixelDesc.FileName   = L"Shadow.hlsl";
+	PixelDesc.EntryPoint = L"ShadowMaskedPS";
+	PixelDesc.Stage      = EShaderStage::Pixel;
+	if (bForceRecompile && (!ShaderLibrary->CookShader(VertexDesc) || (bMasked && !ShaderLibrary->CookShader(PixelDesc))))
 	{
 		return false;
 	}
 	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary->GetShader(VertexDesc);
-	if (!VertexShader)
+	const ComPtr<IDxcBlob> PixelShader  = bMasked ? ShaderLibrary->GetShader(PixelDesc) : ComPtr<IDxcBlob>();
+	if (!VertexShader || (bMasked && !PixelShader))
 	{
 		return false;
 	}
@@ -94,7 +112,11 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	FGraphicsPipelineDesc Desc;
 	Desc.RootSignature        = RootSignature.Get();
 	Desc.VertexShader         = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
-	Desc.InputLayout          = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // POSITION(+스킨)만 사용
+	if (bMasked)
+	{
+		Desc.PixelShader = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
+	}
+	Desc.InputLayout          = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // POSITION(+UV/COLOR, 스킨)만 사용
 	Desc.NumRenderTargets     = 0;
 	Desc.DepthStencilFormat   = ShadowDsvFormat;
 	Desc.bDepthEnable         = true;
@@ -102,7 +124,9 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	Desc.bDepthClip           = false;                // 광원 근평면 뒤 캐스터를 근평면에 붙여 그린다 (팬케이킹)
 	Desc.DepthBias            = BakedDepthBias;
 	Desc.SlopeScaledDepthBias = BakedSlopeBias;
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, bSkinned ? L"ShadowSkinnedPipeline" : L"ShadowPipeline");
+	static const wchar_t* const Names[DepthVariantCount] = { L"ShadowPipeline", L"ShadowSkinnedPipeline", L"ShadowMaskedPipeline",
+	                                                         L"ShadowSkinnedMaskedPipeline" };
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, Names[Variant]);
 }
 
 bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
@@ -111,23 +135,17 @@ bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return true;
 	}
-	FD3D12PipelineState NewPipeline;
-	if (!CreatePipeline(NewPipeline, bForceRecompile))
+	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
-		E_LOG(LogRenderer, Error, "섀도우 셰이더 다시 로드 실패: 기존 파이프라인 유지");
-		return false;
+		FD3D12PipelineState NewPipeline;
+		if (!CreatePipeline(NewPipeline, bForceRecompile, Variant))
+		{
+			E_LOG(LogRenderer, Error, "섀도우 셰이더 다시 로드 실패 (변형 {}): 기존 파이프라인 유지", Variant);
+			return false;
+		}
+		Pipelines[Variant].Swap(NewPipeline);
+		Rhi->DeferRelease(NewPipeline.Detach());
 	}
-	Pipeline.Swap(NewPipeline);
-	Rhi->DeferRelease(NewPipeline.Detach());
-
-	FD3D12PipelineState NewSkinnedPipeline;
-	if (!CreatePipeline(NewSkinnedPipeline, bForceRecompile, true))
-	{
-		E_LOG(LogRenderer, Error, "스킨 섀도우 셰이더 다시 로드 실패: 기존 파이프라인 유지");
-		return false;
-	}
-	SkinnedPipeline.Swap(NewSkinnedPipeline);
-	Rhi->DeferRelease(NewSkinnedPipeline.Detach());
 	return true;
 }
 
@@ -307,25 +325,35 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTU
 	CommandList->RSSetViewports(1, &Viewport);
 	CommandList->RSSetScissorRects(1, &Scissor);
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-	CommandList->SetPipelineState(Pipeline.Get());
+	CommandList->SetPipelineState(Pipelines[0].Get());
 
 	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_Instances, Instances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_SkinPalette, SkinPalettes);
 	FD3D12DynamicUploadBuffer&        DynamicBuffer = Rhi->GetDynamicBuffer();
 	const std::vector<FMeshInstance>& List          = Instances.GetInstances();
+	FDepthPassBindings                Bindings;
+	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
+	{
+		Bindings.Pipelines[Variant] = Pipelines[Variant].Get();
+	}
+	Bindings.InstanceRootIndex  = ShadowParam_PassConstants;
+	Bindings.InstanceDestOffset = 16;
+	Bindings.MaskRootIndex      = ShadowParam_MaskConstants;
+	Bindings.MaskTextureRoot    = ShadowParam_MaskTexture;
 	for (uint32 Index = 0; Index < CascadeCount; ++Index)
 	{
 		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-		// 캐스케이드 프러스텀 컬링 → (정적/스킨)·메시·LOD별 묶음 (머티리얼 무관), 스킨은 팔레트가 바로 월드로 보낸다
+		// 캐스케이드 프러스텀 컬링 → (정적/스킨 × 불투명/Masked)·메시·LOD별 묶음 (Masked만 머티리얼별), 스킨은 팔레트가 바로 월드로 보낸다
+		// 반투명 머티리얼은 그림자를 드리우지 않는다
 		const FFrustum& CascadeFrustum = CascadeFrustums[Index];
 		Batches.Reset();
 		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
 		{
 			const FMeshInstance& Instance = List[InstanceIndex];
-			if (Instance.bCastShadow && CascadeFrustum.Intersects(Instance.WorldBounds))
+			if (Instance.CastsShadow() && CascadeFrustum.Intersects(Instance.WorldBounds))
 			{
 				Batches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
 			}
@@ -334,7 +362,7 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTU
 
 		CommandList->SetGraphicsRoot32BitConstants(ShadowParam_PassConstants, 16, &Cascades[Index].ViewProjection.M[0][0], 0);
 		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, Batches.GetIndexBuffer());
-		DrawDepthBatches(CommandList, Batches, Instances, Pipeline.Get(), SkinnedPipeline.Get(), ShadowParam_PassConstants, 16, DrawCalls, Triangles);
+		DrawDepthBatches(CommandList, Batches, Instances, Bindings, DrawCalls, Triangles);
 	}
 	// 추가 캐스터 (지형 등): 캐스케이드마다 DSV를 다시 바인딩해 그린다
 	for (uint32 Index = 0; ExtraCasters && Index < CascadeCount; ++Index)

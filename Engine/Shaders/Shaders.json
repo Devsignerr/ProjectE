@@ -72,6 +72,13 @@
     { "File": "Terrain.hlsl", "Entry": "TerrainPS", "Stage": "Pixel" },
     { "File": "Terrain.hlsl", "Entry": "TerrainShadowVS", "Stage": "Vertex" },
     { "File": "Terrain.hlsl", "Entry": "TerrainMaskPS", "Stage": "Pixel" },
-    { "File": "Terrain.hlsl", "Entry": "TerrainPrepassPS", "Stage": "Pixel" }
+    { "File": "Terrain.hlsl", "Entry": "TerrainPrepassPS", "Stage": "Pixel" },
+    { "File": "Shadow.hlsl", "Entry": "ShadowMaskedVS", "Stage": "Vertex" },
+    { "File": "Shadow.hlsl", "Entry": "ShadowSkinnedMaskedVS", "Stage": "Vertex" },
+    { "File": "Shadow.hlsl", "Entry": "ShadowMaskedPS", "Stage": "Pixel" },
+    { "File": "Mesh.hlsl", "Entry": "PSMainMasked", "Stage": "Pixel" },
+    { "File": "Mesh.hlsl", "Entry": "PSPrepassMasked", "Stage": "Pixel" },
+    { "File": "Mesh.hlsl", "Entry": "PSTranslucent", "Stage": "Pixel" },
+    { "File": "Mesh.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" }
   ]
 }

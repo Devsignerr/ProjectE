@@ -38,4 +38,6 @@ namespace InstanceBatching
 
 	// Items를 정렬하고 묶음을 만든다 (Items 순서는 바뀐다)
 	void Build(std::vector<FInstanceSortItem>& Items, std::vector<uint32>& OutIndices, std::vector<FInstanceBatch>& OutBatches);
+	// 반투명 패스: 깊이 큰(먼) 것부터 정렬하고, 정렬 결과에서 바로 이웃한 같은 키끼리만 묶는다 (그리기 순서 = 뒤→앞 유지)
+	void BuildBackToFront(std::vector<FInstanceSortItem>& Items, std::vector<uint32>& OutIndices, std::vector<FInstanceBatch>& OutBatches);
 } // namespace InstanceBatching

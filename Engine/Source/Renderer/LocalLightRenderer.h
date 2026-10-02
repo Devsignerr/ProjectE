@@ -79,7 +79,7 @@ private:
 	};
 
 	bool CreateCullPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
-	bool CreateShadowPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned);
+	bool CreateShadowPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, uint32 Variant); // Variant = DepthVariant*
 	void CollectLights(FScene& Scene, const FCamera& Camera);
 	void AssignShadows(const FLocalShadowSettings& Settings);
 	bool EnsureShadowMap(uint32 Resolution, uint32 Slices);
@@ -98,8 +98,7 @@ private:
 
 	// ---- 그림자 (Shadow.hlsl ShadowVS/ShadowSkinnedVS, 루트: 16 상수 + 스킨 팔레트 CBV)
 	FD3D12RootSignature    ShadowRootSignature;
-	FD3D12PipelineState    ShadowPipeline;
-	FD3D12PipelineState    ShadowSkinnedPipeline;
+	FD3D12PipelineState    ShadowPipelines[DepthVariantCount]; // [GetDepthVariant]: 정적/스킨 × 불투명/Masked
 	ComPtr<ID3D12Resource> ShadowMap;
 	FD3D12DescriptorHeap   ShadowDsvHeap; // 장마다 DSV
 	FD3D12DescriptorHandle ShadowSrv;

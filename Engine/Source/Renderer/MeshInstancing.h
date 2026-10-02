@@ -4,6 +4,7 @@
 #include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12Common.h"
 #include "Renderer/InstanceBatching.h"
+#include "Renderer/Material.h"
 #include "Renderer/ShaderTypes.h"
 #include "Scene/ResourceHandles.h"
 
@@ -14,7 +15,6 @@ class FResourceManager;
 class FScene;
 class FSkinnedMeshPalette;
 class FStaticMesh;
-struct FMaterial;
 struct FStaticMeshComponent;
 struct FTransformComponent;
 
@@ -35,8 +35,26 @@ struct FMeshInstance
 	bool                      bSkinned    = false;
 	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)
 	bool                      bFixedLod   = false; // true면 씬 렌더러 LOD 선택이 건드리지 않는다 (폴리지가 직접 고름)
+	EMaterialBlendMode        BlendMode   = EMaterialBlendMode::Opaque; // 머티리얼 렌더 상태 사본 (Gather/AddExternal이 Material에서 채움)
+	bool                      bTwoSided   = false;
 
 	bool IsSkinned() const { return bSkinned; }
+	bool IsMasked() const { return BlendMode == EMaterialBlendMode::Masked; }
+	bool IsTranslucent() const { return MaterialRender::IsTranslucent(BlendMode); }
+	// 그림자 패스(방향광/로컬)에 넣는가: 반투명은 그림자를 드리우지 않는다
+	bool CastsShadow() const { return bCastShadow && !IsTranslucent(); }
+	// 메시 패스 PSO 변형 (MaterialRender::MakeVariant — 불투명 패스는 Masked, 반투명 패스는 Additive 비트)
+	uint32 GetPipelineVariant() const
+	{
+		const bool bVariantBit = IsTranslucent() ? BlendMode == EMaterialBlendMode::Additive : IsMasked();
+		return MaterialRender::MakeVariant(bSkinned, bVariantBit, bTwoSided);
+	}
+	// Material의 블렌드 모드/양면을 사본으로 옮긴다
+	void CopyMaterialState()
+	{
+		BlendMode = Material != nullptr ? Material->BlendMode : EMaterialBlendMode::Opaque;
+		bTwoSided = Material != nullptr && Material->bTwoSided;
+	}
 };
 
 // 프레임 단위 메시 인스턴스 목록: 씬의 보이는 메시를 한 번 모아(컬링 전) 월드 행렬을 GPU 구조화 버퍼로 올린다.
@@ -53,7 +71,11 @@ public:
 	// 정적 인스턴스의 월드/법선 행렬, 스킨 인스턴스의 본 오프셋을 올린다 (Gather 뒤 한 번)
 	void Upload(FD3D12DynamicUploadBuffer& DynamicBuffer);
 	// 씬 컴포넌트 밖 인스턴스 추가 (Gather 뒤, Upload 전 — 폴리지). Mesh/Material/핸들/World/WorldBounds/Entity를 채워 넘긴다
-	void AddExternal(const FMeshInstance& Instance) { Instances.push_back(Instance); }
+	void AddExternal(const FMeshInstance& Instance)
+	{
+		Instances.push_back(Instance);
+		Instances.back().CopyMaterialState();
+	}
 
 	const std::vector<FMeshInstance>& GetInstances() const { return Instances; }
 	std::vector<FMeshInstance>&       GetInstances() { return Instances; } // LOD 지정용
@@ -71,20 +93,45 @@ private:
 	D3D12_GPU_VIRTUAL_ADDRESS  GpuData        = 0;
 };
 
-// 깊이 전용 패스(그림자) 묶음 키: 종류(정적 0 / 스킨 1) | 메시 | LOD — 머티리얼 무관. 스킨 메시는 LOD 없음
+// 메인/사전/반투명 패스 묶음 키: PSO 변형(GetPipelineVariant) | 머티리얼 | 메시 | LOD. 스킨 메시는 LOD 없음
+inline uint64 MakeMainBatchKey(const FMeshInstance& Instance)
+{
+	return InstanceBatching::MakeKey(Instance.GetPipelineVariant(), Instance.MaterialHandle.Index, Instance.MeshHandle.Index,
+	                                 Instance.IsSkinned() ? 0 : Instance.Lod);
+}
+
+// 깊이 전용 패스(그림자) PSO 변형: bit0 = 스킨, bit1 = Masked (알파 테스트 픽셀 셰이더)
+constexpr uint32 DepthVariantSkinned = 1u;
+constexpr uint32 DepthVariantMasked  = 2u;
+constexpr uint32 DepthVariantCount   = 4u;
+inline uint32 GetDepthVariant(const FMeshInstance& Instance)
+{
+	return (Instance.IsSkinned() ? DepthVariantSkinned : 0u) | (Instance.IsMasked() ? DepthVariantMasked : 0u);
+}
+
+// 깊이 전용 패스(그림자) 묶음 키: 변형 | 머티리얼(Masked만 — 나머지는 머티리얼 무관) | 메시 | LOD. 스킨 메시는 LOD 없음
 inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance)
 {
-	return Instance.IsSkinned() ? InstanceBatching::MakeKey(1, 0, Instance.MeshHandle.Index, 0)
-	                            : InstanceBatching::MakeKey(0, 0, Instance.MeshHandle.Index, Instance.Lod);
+	return InstanceBatching::MakeKey(GetDepthVariant(Instance), Instance.IsMasked() ? Instance.MaterialHandle.Index : 0u, Instance.MeshHandle.Index,
+	                                 Instance.IsSkinned() ? 0 : Instance.Lod);
 }
 
 class FMeshPassBatches;
 
-// 깊이 패스 묶음 드로우 (그림자 공용): 루트 상수 RootIndex의 DestOffset 칸에 묶음 시작 위치를 넣고 묶음마다 인스턴싱 드로우.
-// 묶음은 키 순(정적 → 스킨)이라 PSO는 종류가 바뀔 때만 바꾼다. 끝나면 StaticPipeline이 바인딩된 상태
+// 깊이 패스 PSO/루트 인자 (그림자 공용). Masked 변형은 픽셀 셰이더가 베이스 컬러 알파로 잘라낸다 (Shadow.hlsl ShadowMaskedPS)
+struct FDepthPassBindings
+{
+	ID3D12PipelineState* Pipelines[DepthVariantCount] = {}; // GetDepthVariant 순서
+	uint32               InstanceRootIndex  = 0; // 루트 상수: InstanceDestOffset 칸에 묶음 시작 위치
+	uint32               InstanceDestOffset = 0;
+	uint32               MaskRootIndex      = 0; // 루트 상수 2개 (b1: 베이스 컬러 알파 팩터, 알파 컷오프)
+	uint32               MaskTextureRoot    = 0; // 디스크립터 테이블 t0 (머티리얼 텍스처 테이블 첫 칸 = 베이스 컬러)
+};
+
+// 깊이 패스 묶음 드로우: 묶음마다 인스턴싱 드로우. 묶음은 키 순(변형 -> 머티리얼)이라 PSO는 변형이 바뀔 때만,
+// 마스크 인자는 Masked 머티리얼이 바뀔 때만 바꾼다. 부른 쪽이 Pipelines[0]을 바인딩해 두고, 끝나면 다시 Pipelines[0]이 바인딩된 상태
 void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& Batches, const FMeshInstanceList& Instances,
-                      ID3D12PipelineState* StaticPipeline, ID3D12PipelineState* SkinnedPipeline, uint32 RootIndex, uint32 DestOffset,
-                      uint32& InOutDrawCalls, uint64& InOutTriangles);
+                      const FDepthPassBindings& Bindings, uint32& InOutDrawCalls, uint64& InOutTriangles);
 
 // 패스 하나의 묶음: Add(키, 깊이, 인스턴스) → Finalize(정렬·묶음·인스턴스 번호 목록 업로드) → 묶음마다 DrawIndexedInstanced
 class FMeshPassBatches
@@ -92,7 +139,8 @@ class FMeshPassBatches
 public:
 	void Reset();
 	void Add(uint64 Key, float Depth, uint32 Instance) { Items.push_back({ Key, Depth, Instance }); }
-	void Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer);
+	// bBackToFront: 반투명 패스 — 먼 것부터 그리는 순서 (InstanceBatching::BuildBackToFront)
+	void Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer, bool bBackToFront = false);
 
 	const std::vector<FInstanceBatch>& GetBatches() const { return Batches; }
 	const std::vector<uint32>&         GetIndices() const { return Indices; }

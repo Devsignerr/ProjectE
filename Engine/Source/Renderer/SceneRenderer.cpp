@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <format>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -50,6 +51,8 @@ namespace
 		RootParam_ReflectionCaptures  = 19, // t20 (반사 캡처 목록, 루트 SRV, 픽셀)
 		RootParam_CaptureAtlas        = 20, // t21 (반사 캡처 큐브 배열 표)
 		RootParam_ScreenReflection    = 21, // t22 (SSR 결과 표)
+		RootParam_Fog                 = 22, // b6 (안개 상수 — 반투명 패스, Fog.hlsli)
+		RootParam_FogVolume           = 23, // t23 (볼류메트릭 안개 결과 표 — 반투명 패스)
 	};
 } // namespace
 
@@ -110,6 +113,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 SsrIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 22, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(CapturesIndex == RootParam_ReflectionCaptures && AtlasIndex == RootParam_CaptureAtlas && SsrIndex == RootParam_ScreenReflection);
+	const uint32 FogIndex       = RootSignature.AddConstantBufferView(6, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 FogVolumeIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 23, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(FogIndex == RootParam_Fog && FogVolumeIndex == RootParam_FogVolume);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -120,6 +127,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	ShadowSamplerDesc.BorderColor    = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
 	ShadowSamplerDesc.MaxAnisotropy  = 1;
 	RootSignature.AddStaticSampler(ShadowSamplerDesc);
+	// s3: 안개 볼륨 (선형 클램프, Fog.hlsli FogLinearSampler)
+	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(3, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	if (!RootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"MeshRootSignature"))
 	{
 		return false;
@@ -127,9 +136,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 
 	for (uint32 Pass = 0; Pass < static_cast<uint32>(EMeshPass::Count); ++Pass)
 	{
-		for (uint32 Skinned = 0; Skinned < 2; ++Skinned)
+		for (uint32 Variant = 0; Variant < MaterialRender::VariantCount; ++Variant)
 		{
-			if (!CreateMeshPipeline(MeshPipelines[Pass][Skinned], static_cast<EMeshPass>(Pass), Skinned != 0, false))
+			if (IsMeshPipelineUsed(static_cast<EMeshPass>(Pass), Variant) &&
+			    !CreateMeshPipeline(MeshPipelines[Pass][Variant], static_cast<EMeshPass>(Pass), Variant))
 			{
 				return false;
 			}
@@ -250,6 +260,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::VolumetricFog: return "볼류메트릭 안개";
 	case ERenderTimer::Fog:          return "안개 적용";
 	case ERenderTimer::Reflections:  return "SSR";
+	case ERenderTimer::Translucent:  return "반투명";
 	default:                        return "?";
 	}
 }
@@ -348,21 +359,34 @@ void FSceneRenderer::LogPerfCapture() const
 	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
 }
 
-bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, bool bSkinned, bool bForceRecompile)
+bool FSceneRenderer::IsMeshPipelineUsed(EMeshPass Pass, uint32 Variant)
+{
+	return Pass != EMeshPass::Wireframe || (Variant & ~MaterialRender::VariantSkinned) == 0;
+}
+
+void FSceneRenderer::GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel)
+{
+	const bool bVariantBit = (Variant & MaterialRender::VariantMaskedOrAdditive) != 0; // 불투명 패스: Masked, 반투명 패스: 가산
+	OutVertex            = FShaderCompileDesc{};
+	OutVertex.FileName   = L"Mesh.hlsl";
+	OutVertex.EntryPoint = (Variant & MaterialRender::VariantSkinned) != 0 ? L"VSSkinned" : L"VSMain";
+	OutVertex.Stage      = EShaderStage::Vertex;
+	OutPixel             = OutVertex;
+	OutPixel.Stage       = EShaderStage::Pixel;
+	switch (Pass)
+	{
+	case EMeshPass::Prepass:     OutPixel.EntryPoint = bVariantBit ? L"PSPrepassMasked" : L"PSPrepass"; break;
+	case EMeshPass::Translucent: OutPixel.EntryPoint = bVariantBit ? L"PSAdditive" : L"PSTranslucent"; break;
+	case EMeshPass::Wireframe:   OutPixel.EntryPoint = L"PSMain"; break;
+	default:                     OutPixel.EntryPoint = bVariantBit ? L"PSMainMasked" : L"PSMain"; break;
+	}
+}
+
+bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant)
 {
 	FShaderCompileDesc VertexDesc;
-	VertexDesc.FileName   = L"Mesh.hlsl";
-	VertexDesc.EntryPoint = bSkinned ? L"VSSkinned" : L"VSMain";
-	VertexDesc.Stage      = EShaderStage::Vertex;
-	FShaderCompileDesc PixelDesc = VertexDesc;
-	PixelDesc.EntryPoint         = Pass == EMeshPass::Prepass ? L"PSPrepass" : L"PSMain";
-	PixelDesc.Stage              = EShaderStage::Pixel;
-
-	if (bForceRecompile && (!ShaderLibrary.CookShader(VertexDesc) || !ShaderLibrary.CookShader(PixelDesc)))
-	{
-		return false;
-	}
-
+	FShaderCompileDesc PixelDesc;
+	GetMeshShaderDescs(Pass, Variant, VertexDesc, PixelDesc);
 	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
 	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
 	if (!VertexShader || !PixelShader)
@@ -370,6 +394,9 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshP
 		return false;
 	}
 
+	const bool            bSkinned  = (Variant & MaterialRender::VariantSkinned) != 0;
+	const bool            bTwoSided = (Variant & MaterialRender::VariantTwoSided) != 0;
+	const bool            bVariantBit = (Variant & MaterialRender::VariantMaskedOrAdditive) != 0;
 	FGraphicsPipelineDesc PsoDesc;
 	PsoDesc.RootSignature          = RootSignature.Get();
 	PsoDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
@@ -378,52 +405,89 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshP
 	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
-	const wchar_t* DebugName       = bSkinned ? L"SkinnedMeshPipeline" : L"MeshPipeline";
+	PsoDesc.CullMode               = bTwoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK; // 양면: 뒷면은 셰이더가 법선을 뒤집는다
+	const wchar_t* PassName        = L"Main";
 	switch (Pass)
 	{
 	case EMeshPass::MainDepthEqual:
 		PsoDesc.DepthFunc   = D3D12_COMPARISON_FUNC_EQUAL; // 사전 패스와 같은 정점 셰이더 → 같은 깊이
 		PsoDesc.bDepthWrite = false;
-		DebugName           = bSkinned ? L"SkinnedMeshDepthEqualPipeline" : L"MeshDepthEqualPipeline";
+		PassName            = L"DepthEqual";
 		break;
 	case EMeshPass::Wireframe:
 		PsoDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
 		PsoDesc.CullMode = D3D12_CULL_MODE_NONE;
-		DebugName        = bSkinned ? L"SkinnedMeshWireframePipeline" : L"MeshWireframePipeline";
+		PassName         = L"Wireframe";
 		break;
 	case EMeshPass::Prepass:
 		PsoDesc.NumRenderTargets       = 2;
 		PsoDesc.RenderTargetFormats[0] = SceneNormalFormat;
 		PsoDesc.RenderTargetFormats[1] = SceneVelocityFormat;
-		DebugName                      = bSkinned ? L"SkinnedMeshPrepassPipeline" : L"MeshPrepassPipeline";
+		PassName                       = L"Prepass";
+		break;
+	case EMeshPass::Translucent:
+		// 알파 블렌드의 알파 = 덮인 정도 누적 (TAA 반응형 마스크), 가산은 색·알파 모두 더한다 (파티클과 같음)
+		PsoDesc.bDepthWrite = false;
+		PsoDesc.BlendMode   = bVariantBit ? EBlendMode::Additive : EBlendMode::Alpha;
+		PassName            = bVariantBit ? L"Additive" : L"Translucent";
 		break;
 	default:
 		break;
 	}
-	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, DebugName);
+	const std::wstring DebugName = std::format(L"Mesh{}{}{}{}Pipeline", PassName, bVariantBit && Pass != EMeshPass::Translucent ? L"Masked" : L"",
+	                                           bTwoSided ? L"TwoSided" : L"", bSkinned ? L"Skinned" : L"");
+	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, DebugName.c_str());
 }
 
 bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 {
 	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
 
-	// 패스·종류별로 새 PSO를 만들고 성공한 것만 교체 (이전 PSO는 진행 중인 프레임이 참조할 수 있으므로 지연 해제).
-	// 강제 재컴파일은 셰이더 조합(정점 2 × 픽셀 2)마다 한 번: Main(VS + PSMain), Prepass(VS + PSPrepass)
+	// 강제 재컴파일은 셰이더(엔트리)마다 한 번: 정점 2 (VSMain/VSSkinned) × 픽셀 6 (패스·변형별 엔트리)
+	if (bForceRecompile)
+	{
+		std::vector<std::wstring> Cooked;
+		for (uint32 Pass = 0; Pass < static_cast<uint32>(EMeshPass::Count); ++Pass)
+		{
+			for (uint32 Variant = 0; Variant < MaterialRender::VariantCount; ++Variant)
+			{
+				FShaderCompileDesc Descs[2];
+				GetMeshShaderDescs(static_cast<EMeshPass>(Pass), Variant, Descs[0], Descs[1]);
+				for (const FShaderCompileDesc& Desc : Descs)
+				{
+					if (std::find(Cooked.begin(), Cooked.end(), Desc.EntryPoint) != Cooked.end())
+					{
+						continue;
+					}
+					Cooked.push_back(Desc.EntryPoint);
+					if (!ShaderLibrary.CookShader(Desc))
+					{
+						E_LOG(LogRenderer, Error, "메시 셰이더 다시 컴파일 실패 ({}): 기존 파이프라인을 유지합니다", FStringConv::ToUtf8(Desc.EntryPoint));
+						return false;
+					}
+				}
+			}
+		}
+	}
+
+	// 패스·변형별로 새 PSO를 만들고 성공한 것만 교체 (이전 PSO는 진행 중인 프레임이 참조할 수 있으므로 지연 해제)
 	bool bMeshOk = true;
 	for (uint32 Pass = 0; Pass < static_cast<uint32>(EMeshPass::Count); ++Pass)
 	{
-		const EMeshPass MeshPass = static_cast<EMeshPass>(Pass);
-		const bool      bCook    = bForceRecompile && (MeshPass == EMeshPass::Main || MeshPass == EMeshPass::Prepass);
-		for (uint32 Skinned = 0; Skinned < 2; ++Skinned)
+		for (uint32 Variant = 0; Variant < MaterialRender::VariantCount; ++Variant)
 		{
-			FD3D12PipelineState NewPipeline;
-			if (!CreateMeshPipeline(NewPipeline, MeshPass, Skinned != 0, bCook))
+			if (!IsMeshPipelineUsed(static_cast<EMeshPass>(Pass), Variant))
 			{
-				E_LOG(LogRenderer, Error, "메시 셰이더 다시 로드 실패 (패스 {}, 스킨 {}): 기존 파이프라인을 유지합니다", Pass, Skinned);
+				continue;
+			}
+			FD3D12PipelineState NewPipeline;
+			if (!CreateMeshPipeline(NewPipeline, static_cast<EMeshPass>(Pass), Variant))
+			{
+				E_LOG(LogRenderer, Error, "메시 셰이더 다시 로드 실패 (패스 {}, 변형 {}): 기존 파이프라인을 유지합니다", Pass, Variant);
 				bMeshOk = false;
 				continue;
 			}
-			MeshPipelines[Pass][Skinned].Swap(NewPipeline);
+			MeshPipelines[Pass][Variant].Swap(NewPipeline);
 			Rhi->DeferRelease(NewPipeline.Detach());
 		}
 	}
@@ -515,6 +579,7 @@ void FSceneRenderer::Shutdown()
 	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
 	MainBatches.Reset();
+	TranslucentBatches.Reset();
 	Rhi       = nullptr;
 	Resources = nullptr;
 }
@@ -986,6 +1051,17 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	}
 	ParticleRenderer.SetFog(FogRenderer.GetConstantsAddress(), FogRenderer.GetVolumeSrv());
 
+	// 반투명/가산 메시 (먼 것부터, 깊이 테스트만): 안개는 셰이더가 직접, 파티클보다 먼저
+	Stats.TranslucentDrawCalls = 0;
+	if (!TranslucentBatches.IsEmpty())
+	{
+		BeginTimer(ERenderTimer::Translucent);
+		uint64 TranslucentTriangles = 0;
+		DrawTranslucentBatches(PerFrame, Stats.TranslucentDrawCalls, TranslucentTriangles);
+		Stats.Triangles += TranslucentTriangles;
+		EndTimer(ERenderTimer::Translucent);
+	}
+
 	BeginTimer(ERenderTimer::Particles);
 	Stats.Particles              = ParticleRenderer.Render(Scene, RenderCamera, FrozenFrustum);
 	Stats.ParticleEmittersCulled = ParticleRenderer.GetCulledEmitterCount();
@@ -1152,10 +1228,12 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 {
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 
-	// 컬링 + 묶음 키: (정적/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각). 스킨도 인스턴싱
+	// 컬링 + 묶음 키: PSO 변형(Masked/양면/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각). 스킨도 인스턴싱
+	// 반투명/가산은 따로 먼 것부터 (와이어프레임은 모두 메인 묶음)
 	BeginTimer(ERenderTimer::MainCull);
 	const FVector3 CameraPosition = Camera.GetPosition();
 	MainBatches.Reset();
+	TranslucentBatches.Reset();
 	Stats.VisibleMeshes = 0;
 	const std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
 	for (uint32 Index = 0; Index < static_cast<uint32>(Instances.size()); ++Index)
@@ -1166,14 +1244,19 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 			continue;
 		}
 		++Stats.VisibleMeshes;
-		const uint64 Key = InstanceBatching::MakeKey(Instance.IsSkinned() ? 1 : 0, Instance.MaterialHandle.Index, Instance.MeshHandle.Index,
-		                                             Instance.IsSkinned() ? 0 : Instance.Lod);
-		MainBatches.Add(Key, FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition), Index);
+		const float Depth = FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition);
+		if (Instance.IsTranslucent() && !bWireframe)
+		{
+			TranslucentBatches.Add(MakeMainBatchKey(Instance), Depth, Index);
+			continue;
+		}
+		MainBatches.Add(MakeMainBatchKey(Instance), Depth, Index);
 	}
 	EndTimer(ERenderTimer::MainCull);
 
 	BeginTimer(ERenderTimer::MainSort);
 	MainBatches.Finalize(DynamicBuffer);
+	TranslucentBatches.Finalize(DynamicBuffer, true);
 	EndTimer(ERenderTimer::MainSort);
 
 	// 오클루전 1단계: 이전 프레임 HZB로 정적 인스턴스 판정
@@ -1212,38 +1295,16 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 		                           Screen);
 	}
 
-	FD3D12PipelineState& StaticPipeline  = GetMeshPipeline(Pass, false);
-	FD3D12PipelineState& SkinnedPipeline = GetMeshPipeline(Pass, true);
-
-	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-	CommandList->SetPipelineState(StaticPipeline.Get());
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAllocation.GpuAddress);
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAllocation.GpuAddress);
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_Ibl, IblRenderer.GetLightingTable().Gpu);
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_Cluster, LocalLightRenderer.GetConstants());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalLights, LocalLightRenderer.GetLightList());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_ClusterData, LocalLightRenderer.GetClusterData());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion, AmbientOcclusion.GetResultSrv().Gpu);
-	for (uint32 Index = 0; Index < 3; ++Index)
-	{
-		CommandList->SetGraphicsRootDescriptorTable(RootParam_DBufferA + Index, DecalRenderer.GetTarget(Index).GetSrv().Gpu);
-	}
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_ReflectionCaptures, ReflectionCaptures.GetCaptureList());
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
+	CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
+	BindMeshPassRoot(PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
 
 	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 거칠기만 읽는다)
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
 
 	const std::vector<FMeshInstance>& Instances     = MeshInstances.GetInstances();
 	const FMaterial*                  BoundMaterial = nullptr;
-	bool                              bSkinnedBound = false;
+	uint32                            BoundVariant  = 0;     // 변형 0(정적 불투명)이 바인딩된 상태로 시작
+	bool                              bSkinnedIndices = false; // 오클루전 1단계: 스킨 묶음용 번호 목록으로 바꿨는가
 	OutDrawCalls                                    = TerrainRenderer.GetDrawCalls(); // 지형 포함
 	OutTriangles                                    = TerrainRenderer.GetTriangles();
 
@@ -1260,15 +1321,17 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 			{
 				continue;
 			}
-			if (bSkinned != bSkinnedBound)
+			const uint32 Variant = Instance.GetPipelineVariant();
+			if (Variant != BoundVariant)
 			{
-				CommandList->SetPipelineState(bSkinned ? SkinnedPipeline.Get() : StaticPipeline.Get());
-				bSkinnedBound = bSkinned;
-				if (bSkinned && Phase == 1)
-				{
-					// 오클루전 1단계 목록은 정적 묶음만 채운다 → 스킨 묶음은 메인 묶음의 번호 목록으로 (스킨은 정적 뒤에 정렬됨)
-					CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
-				}
+				CommandList->SetPipelineState(GetMeshPipeline(Pass, Variant).Get());
+				BoundVariant = Variant;
+			}
+			if (bSkinned && Phase == 1 && !bSkinnedIndices)
+			{
+				// 오클루전 1단계 목록은 정적 묶음만 채운다 → 스킨 묶음은 메인 묶음의 번호 목록으로 (스킨 변형 비트가 최상위라 정적 뒤에 정렬됨)
+				CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
+				bSkinnedIndices = true;
 			}
 			if (Instance.Material != BoundMaterial) // 사전 패스도 거칠기(SSR)를 위해 금속/거칠기 텍스처를 읽는다
 			{
@@ -1330,10 +1393,93 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 			CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
 		}
 	}
-	CommandList->SetPipelineState(StaticPipeline.Get());
-	bSkinnedBound = false;
+	CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
+	BoundVariant = 0;
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, OcclusionCuller.GetIndices(2));
 	DrawBatches(2);
+}
+
+void FSceneRenderer::BindMeshPassRoot(D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress,
+                                      D3D12_GPU_VIRTUAL_ADDRESS InstanceIndices)
+{
+	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAddress);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAddress);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_ShadowMap, ShadowRenderer.GetShadowMapSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_Ibl, IblRenderer.GetLightingTable().Gpu);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Cluster, LocalLightRenderer.GetConstants());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalLights, LocalLightRenderer.GetLightList());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_ClusterData, LocalLightRenderer.GetClusterData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_LocalShadowMatrices, LocalLightRenderer.GetShadowMatrices());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, InstanceIndices);
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion, AmbientOcclusion.GetResultSrv().Gpu);
+	for (uint32 Index = 0; Index < 3; ++Index)
+	{
+		CommandList->SetGraphicsRootDescriptorTable(RootParam_DBufferA + Index, DecalRenderer.GetTarget(Index).GetSrv().Gpu);
+	}
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_ReflectionCaptures, ReflectionCaptures.GetCaptureList());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
+	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩 (볼륨은 RenderVolumetric 뒤에야 셰이더 리소스 상태)
+}
+
+void FSceneRenderer::DrawTranslucentBatches(const FPerFrameConstants& PerFrame, uint32& OutDrawCalls, uint64& OutTriangles)
+{
+	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
+	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
+
+	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
+	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
+	CommandList->SetPipelineState(GetMeshPipeline(EMeshPass::Translucent, 0).Get());
+	BindMeshPassRoot(PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, TranslucentBatches.GetIndexBuffer());
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogRenderer.GetConstantsAddress()); // RenderVolumetric이 프레임마다 올림
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogRenderer.GetVolumeSrv().Gpu);
+
+	// 정렬 순서(먼 것부터)를 지키므로 PSO/머티리얼은 바뀔 때마다 바꾼다
+	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
+	const std::vector<FMeshInstance>&                     Instances     = MeshInstances.GetInstances();
+	const FMaterial*                                      BoundMaterial = nullptr;
+	uint32                                                BoundVariant  = 0;
+	OutDrawCalls                                                        = 0;
+	OutTriangles                                                        = 0;
+	for (const FInstanceBatch& Batch : TranslucentBatches.GetBatches())
+	{
+		const FMeshInstance& Instance = Instances[Batch.Instance];
+		const uint32         Variant  = Instance.GetPipelineVariant();
+		if (Variant != BoundVariant)
+		{
+			CommandList->SetPipelineState(GetMeshPipeline(EMeshPass::Translucent, Variant).Get());
+			BoundVariant = Variant;
+		}
+		if (Instance.Material != BoundMaterial)
+		{
+			const uint64 Key   = Instance.MaterialHandle.ToId();
+			auto         Found = MaterialConstantCache.find(Key);
+			if (Found == MaterialConstantCache.end())
+			{
+				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
+			}
+			CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
+			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
+			BoundMaterial = Instance.Material;
+		}
+		CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
+		if (Instance.IsSkinned())
+		{
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
+			OutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+		}
+		else
+		{
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
+			OutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+		}
+		++OutDrawCalls;
+	}
 }
 
 void FSceneRenderer::SelectLods(const FCamera& Camera)

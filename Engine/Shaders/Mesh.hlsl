@@ -4,9 +4,17 @@
 #include "Lighting.hlsli" // b5 클러스터 상수
 #include "MeshInstance.hlsli" // t13/t14 인스턴스
 #include "ScreenSpace.hlsli"
+// 반투명 패스 안개 (FogRenderer 상수 b6 + 볼류메트릭 결과 t23, 선형 클램프 s3) — 불투명은 FogApply 전체 화면 패스
+#define E_FOG_CONSTANTS_REGISTER b6
+#define E_FOG_VOLUME_REGISTER t23
+#define E_FOG_SAMPLER_REGISTER s3
+#include "Fog.hlsli"
 
 // 정적 메시 기본 셰이더: 금속/거칠기 PBR (glTF 2.0 텍스처 규약), 방향광 1개(캐스케이드 섀도우) + IBL
 // + 점광원/스포트라이트(클러스터드: 픽셀의 클러스터 목록만 순회). 출력은 선형 HDR
+// 머티리얼 블렌드 모드별 픽셀 셰이더 (Renderer/Material.h EMaterialBlendMode):
+//   Opaque PSMain/PSPrepass, Masked PSMainMasked/PSPrepassMasked (베이스 알파 < AlphaCutoff 버림 — Shadow.hlsl ShadowMaskedPS와 같은 식),
+//   Translucent PSTranslucent (알파 블렌드), Additive PSAdditive (가산). 양면 머티리얼은 뒷면(SV_IsFrontFace = false)에서 법선을 뒤집는다
 
 struct FDirectionalLight
 {
@@ -50,7 +58,7 @@ cbuffer Material : register(b2)
 	float  RoughnessFactor;
 	float  NormalScale;
 	float  OcclusionStrength;
-	float  AlphaCutoff;
+	float  AlphaCutoff;     // Masked: 베이스 컬러 알파(텍스처 × 정점 색 × 팩터)가 이보다 작으면 버린다
 };
 
 // 머티리얼 텍스처 테이블 (EMaterialTextureSlot 순서)
@@ -209,7 +217,8 @@ float3 ParallaxCorrect(FReflectionCaptureGpu Capture, float3 P, float3 R)
 }
 
 // 반사 광원: SSR(신뢰도 × 거칠기 페이드) → 캡처 → 하늘 프리필터 (AmbientIntensity는 하늘에만 — 캡처/SSR은 장면 밝기 그대로)
-float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition, float2 PixelPosition, float MipCount)
+// bScreenReflections = false: SSR 결과를 쓰지 않는다 (반투명 — SSR 표는 불투명 표면 기준)
+float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition, float2 PixelPosition, float MipCount, bool bScreenReflections)
 {
 	const float Lod       = Roughness * (MipCount - 1);
 	float3      Color     = 0.0f;
@@ -228,7 +237,7 @@ float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition
 	}
 	Color += IblSpecular.SampleLevel(IblSampler, R, Lod).rgb * (AmbientIntensity * Remaining);
 
-	if (SsrEnabled != 0)
+	if (bScreenReflections && SsrEnabled != 0)
 	{
 		const float4 Ssr  = ScreenSpaceReflection.Load(int3(PixelPosition, 0));
 		const float  Fade = saturate((SsrMaxRoughness - Roughness) / max(SsrMaxRoughness * 0.5f, 1.0e-3f)); // ReflectionMath::ComputeSsrRoughnessFade
@@ -237,7 +246,7 @@ float3 SampleSpecularEnvironment(float3 R, float Roughness, float3 WorldPosition
 	return Color;
 }
 
-float3 EvaluateImageBasedLighting(FSurface Surface, float3 WorldPosition, float2 PixelPosition)
+float3 EvaluateImageBasedLightingEx(FSurface Surface, float3 WorldPosition, float2 PixelPosition, bool bScreenReflections)
 {
 	const float NdotV = max(saturate(dot(Surface.N, Surface.V)), 1.0e-4f);
 	const float3 F0 = GetF0(Surface);
@@ -246,10 +255,15 @@ float3 EvaluateImageBasedLighting(FSurface Surface, float3 WorldPosition, float2
 	uint Width, Height, MipCount;
 	IblSpecular.GetDimensions(0, Width, Height, MipCount);
 	const float3 R = reflect(-Surface.V, Surface.N);
-	const float3 Prefiltered = SampleSpecularEnvironment(R, Surface.Roughness, WorldPosition, PixelPosition, (float)MipCount);
+	const float3 Prefiltered = SampleSpecularEnvironment(R, Surface.Roughness, WorldPosition, PixelPosition, (float)MipCount, bScreenReflections);
 	const float2 Brdf = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Surface.Roughness), 0);
 	const float3 Specular = Prefiltered * (F0 * Brdf.x + Brdf.y);
 	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * AmbientIntensity + Specular) * Surface.Occlusion;
+}
+
+float3 EvaluateImageBasedLighting(FSurface Surface, float3 WorldPosition, float2 PixelPosition)
+{
+	return EvaluateImageBasedLightingEx(Surface, WorldPosition, PixelPosition, true);
 }
 
 uint SelectCascade(float3 WorldPosition)
@@ -468,44 +482,125 @@ float3 GetShadingNormal(FPixelInput Input)
 	return normalize(T * TangentNormal.x + B * TangentNormal.y + N * TangentNormal.z);
 }
 
-float4 PSMain(FPixelInput Input) : SV_Target
+// 머티리얼 표면 (텍스처 × 팩터 × 정점 색) + 기하 법선 + 발광 + 알파
+struct FMeshSurface
+{
+	FSurface Surface;
+	float3   GeometricNormal;
+	float3   Emissive;
+	float    Alpha;
+};
+
+// 베이스 컬러 알파 (Masked 판정 — 텍스처 × 정점 색 × 팩터)
+float GetBaseAlpha(FPixelInput Input)
+{
+	return BaseColorTexture.Sample(LinearSampler, Input.UV).a * Input.Color.a * BaseColorFactor.a;
+}
+
+// bScreenEffects: 불투명 표면 기준 화면 버퍼(데칼 DBuffer, SSAO)를 쓴다 (반투명은 false)
+FMeshSurface SampleMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenEffects)
 {
 	const float4 BaseColor = BaseColorTexture.Sample(LinearSampler, Input.UV) * Input.Color * BaseColorFactor;
 	const float4 MR        = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV);
 	const float  AO        = OcclusionTexture.Sample(LinearSampler, Input.UV).r;
-	const float3 Emissive  = EmissiveTexture.Sample(LinearSampler, Input.UV).rgb * EmissiveFactor;
 
-	FSurface Surface;
-	Surface.Albedo    = BaseColor.rgb;
-	Surface.Metallic  = saturate(MR.b * MetallicFactor);
-	Surface.Roughness = MR.g * RoughnessFactor;
-	Surface.N         = GetShadingNormal(Input);
-	if (DecalsEnabled != 0)
+	FMeshSurface Result;
+	Result.Emissive         = EmissiveTexture.Sample(LinearSampler, Input.UV).rgb * EmissiveFactor;
+	Result.Alpha            = BaseColor.a;
+	Result.GeometricNormal  = normalize(Input.WorldNormal);
+	Result.Surface.Albedo    = BaseColor.rgb;
+	Result.Surface.Metallic  = saturate(MR.b * MetallicFactor);
+	Result.Surface.Roughness = MR.g * RoughnessFactor;
+	Result.Surface.N         = GetShadingNormal(Input);
+	if (!bFrontFace)
 	{
-		ApplyDecals(Input.Position.xy, Surface);
+		// 양면 머티리얼의 뒷면 (한 면 머티리얼은 뒷면을 컬링하므로 여기 오지 않는다): 표면 반대쪽에서 보므로 법선을 뒤집는다
+		Result.Surface.N       = -Result.Surface.N;
+		Result.GeometricNormal = -Result.GeometricNormal;
 	}
-	Surface.Roughness = clamp(Surface.Roughness, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
-	Surface.V         = normalize(CameraPosition - Input.WorldPosition);
-	Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength) * SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition); // IBL만 사용
+	if (bScreenEffects && DecalsEnabled != 0)
+	{
+		ApplyDecals(Input.Position.xy, Result.Surface);
+	}
+	Result.Surface.Roughness = clamp(Result.Surface.Roughness, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
+	Result.Surface.V         = normalize(CameraPosition - Input.WorldPosition);
+	Result.Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength); // IBL만 사용
+	if (bScreenEffects)
+	{
+		Result.Surface.Occlusion *= SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition);
+	}
+	return Result;
+}
 
+// 방향광(그림자) + 로컬 라이트 + IBL. bScreenReflections = false면 SSR 없이 캡처/하늘만
+float3 EvaluateMeshLighting(FSurface Surface, float3 WorldPosition, float3 GeometricNormal, float2 PixelPosition, bool bScreenReflections)
+{
 	const float3 L        = -DirectionalLight.Direction; // 표면 → 광원
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
-
-	const float Shadow = ComputeShadow(Input.WorldPosition, normalize(Input.WorldNormal), L);
+	const float  Shadow   = ComputeShadow(WorldPosition, GeometricNormal, L);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
-	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, normalize(Input.WorldNormal));
-	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy);
-	Color += Emissive;
+	Color += EvaluateLocalLights(Surface, PixelPosition, WorldPosition, GeometricNormal);
+	Color += EvaluateImageBasedLightingEx(Surface, WorldPosition, PixelPosition, bScreenReflections);
+	return Color;
+}
 
+float4 ShadeOpaque(FPixelInput Input, FMeshSurface Mesh)
+{
+	float3 Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, true) + Mesh.Emissive;
 	if (VisualizeCascades != 0)
 	{
 		Color *= CascadeDebugColor(Input.WorldPosition);
 	}
-
-	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클이 덮은 만큼 쌓인다)
+	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클/반투명이 덮은 만큼 쌓인다)
 }
 
+float4 PSMain(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
+{
+	return ShadeOpaque(Input, SampleMeshSurface(Input, bFrontFace, true));
+}
+
+float4 PSMainMasked(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
+{
+	clip(GetBaseAlpha(Input) - AlphaCutoff);
+	return ShadeOpaque(Input, SampleMeshSurface(Input, bFrontFace, true));
+}
+
+// 반투명 (알파 블렌드 Src·SrcA + Dst·(1 - SrcA), 깊이 쓰기 없음): 확산은 알파만큼, 반사(스펙큘러)는 알파와 무관하게 더한다.
+//   반사 성분 = 같은 F0의 금속 표면(확산 0)으로 한 번 더 조명 → 프리멀티플라이드 색 P = Spec + (Full - Spec)·a + 발광·a
+//   배경 투과 = (1 - a)(1 - 반사율 평균) → 출력 알파(덮인 정도 = TAA 반응형 마스크) C = 1 - 투과, 색 = P / C
+//   안개는 파티클과 같이 직접: 색 × 투과율 + 산란 (Fog.hlsli EvaluateFog). 화면 버퍼(SSAO/데칼/SSR)는 쓰지 않는다
+float4 PSTranslucent(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
+{
+	const FMeshSurface Mesh  = SampleMeshSurface(Input, bFrontFace, false);
+	const float        Alpha = saturate(Mesh.Alpha);
+
+	FSurface Reflective  = Mesh.Surface;
+	Reflective.Albedo    = GetF0(Mesh.Surface);
+	Reflective.Metallic  = 1.0f;
+	const float3 Full    = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, false);
+	const float3 Specular = EvaluateMeshLighting(Reflective, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, false);
+	const float3 Premultiplied = Specular + (Full - Specular) * Alpha + Mesh.Emissive * Alpha;
+
+	const float  NdotV       = max(saturate(dot(Mesh.Surface.N, Mesh.Surface.V)), 1.0e-4f);
+	const float2 Brdf        = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Mesh.Surface.Roughness), 0);
+	const float3 Reflectance = GetF0(Mesh.Surface) * Brdf.x + Brdf.y;
+	const float  Reflect     = saturate((Reflectance.r + Reflectance.g + Reflectance.b) / 3.0f);
+	const float  Coverage    = max(1.0f - (1.0f - Alpha) * (1.0f - Reflect), 1.0e-3f);
+
+	const float4 Fog = EvaluateFog(Input.WorldPosition);
+	return float4(Premultiplied * Fog.a / Coverage + Fog.rgb, Coverage);
+}
+
+// 가산 (Src + Dst, 깊이 쓰기 없음): 조명된 색 × 알파를 더한다. 알파 = 덮인 정도 (TAA 반응형 마스크 — 파티클 PSAdditive와 같음)
+// 안개: 빛을 더하므로 투과율만 곱한다
+float4 PSAdditive(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
+{
+	const FMeshSurface Mesh  = SampleMeshSurface(Input, bFrontFace, false);
+	const float        Alpha = saturate(Mesh.Alpha);
+	const float3       Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, false) + Mesh.Emissive;
+	return float4(Color * Alpha * EvaluateFog(Input.WorldPosition).a, Alpha);
+}
 // 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 거칠기(금속/거칠기 텍스처 G × 팩터) + 움직임 벡터
 struct FPrepassOutput
 {
@@ -513,11 +608,19 @@ struct FPrepassOutput
 	float2 Velocity : SV_Target1; // R16G16_FLOAT, UV 단위 현재 - 이전
 };
 
-FPrepassOutput PSPrepass(FPixelInput Input)
+FPrepassOutput PSPrepass(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
 {
 	FPrepassOutput Output;
-	const float Roughness = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV).g * RoughnessFactor;
-	Output.Normal   = EncodeScreenNormal(normalize(Input.WorldNormal), Roughness);
+	const float  Roughness = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV).g * RoughnessFactor;
+	const float3 Normal    = normalize(Input.WorldNormal);
+	Output.Normal   = EncodeScreenNormal(bFrontFace ? Normal : -Normal, Roughness); // 양면 뒷면은 뒤집은 법선 (메인 패스와 같게)
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
 	return Output;
+}
+
+// Masked: 메인 패스와 같은 알파 판정으로 잘라 깊이를 쓰지 않는다 (메인은 깊이 같음 테스트라 같은 픽셀만 남는다)
+FPrepassOutput PSPrepassMasked(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
+{
+	clip(GetBaseAlpha(Input) - AlphaCutoff);
+	return PSPrepass(Input, bFrontFace);
 }

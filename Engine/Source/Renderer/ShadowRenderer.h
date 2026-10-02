@@ -72,7 +72,8 @@ public:
 	uint64 GetTriangles() const { return Triangles; }
 
 private:
-	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, bool bSkinned = false);
+	// Variant = DepthVariant* (스킨/Masked)
+	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, uint32 Variant);
 	void EnsureShadowMap(uint32 Resolution, uint32 Cascades);
 	void ReleaseShadowMap();
 
@@ -80,8 +81,7 @@ private:
 	FShaderLibrary* ShaderLibrary = nullptr;
 
 	FD3D12RootSignature RootSignature;
-	FD3D12PipelineState Pipeline;
-	FD3D12PipelineState SkinnedPipeline; // ShadowSkinnedVS + 스킨 입력 레이아웃
+	FD3D12PipelineState Pipelines[DepthVariantCount]; // [GetDepthVariant]: 정적/스킨 × 불투명/Masked(ShadowMaskedPS)
 
 	ComPtr<ID3D12Resource> ShadowMap;
 	FD3D12DescriptorHeap   DsvHeap; // 캐스케이드별 DSV

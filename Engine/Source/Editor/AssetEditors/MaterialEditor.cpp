@@ -68,6 +68,33 @@ void FMaterialEditor::ApplyToMaterial(FAssetEditorEnvironment& Env)
 	// 해석(부모 체인) + 텍스처 변경 시에만 테이블 재작성은 리소스 관리자가 한다. 이 머티리얼을 부모로 둔 열린 인스턴스도 함께 갱신된다
 	Env.Resources->ApplyMaterialAsset(Material, Asset, Path.parent_path());
 	RefreshInherited(Env);
+	RefreshGraphStatus(Env);
+}
+
+void FMaterialEditor::RefreshGraphStatus(FAssetEditorEnvironment& Env)
+{
+	FMaterialAsset Resolved;
+	Env.Resources->ResolveMaterialAsset(Asset, Path, Resolved);
+	bGraphMaterial     = Resolved.IsGraphMaterial();
+	ResolvedParameters = Resolved.Parameters;
+	GraphNodeCount     = Resolved.Graph.Nodes.size();
+	GraphErrors.clear();
+	GraphHlsl.clear();
+	GraphHash = 0;
+	if (!bGraphMaterial)
+	{
+		return;
+	}
+	const FMaterialGraphCompileResult Result = FMaterialGraphCompiler::Compile(Resolved.Graph, Resolved.Parameters);
+	if (Result.bSuccess)
+	{
+		GraphHlsl = Result.Shader->Hlsl;
+		GraphHash = Result.Shader->Hash;
+	}
+	else
+	{
+		GraphErrors = Result.JoinErrors();
+	}
 }
 
 void FMaterialEditor::RefreshInherited(FAssetEditorEnvironment& Env)
@@ -81,6 +108,7 @@ void FMaterialEditor::RefreshInherited(FAssetEditorEnvironment& Env)
 	// 덮어쓰는 항목이 없는 사본을 해석 = 부모 체인 값
 	FMaterialAsset ParentOnly = Asset;
 	ParentOnly.OverrideMask   = 0;
+	ParentOnly.Parameters.clear(); // 그래프 파라미터 덮어쓰기도 빼고
 	Env.Resources->ResolveMaterialAsset(ParentOnly, Path, Inherited, nullptr, &ParentError);
 }
 
@@ -300,6 +328,21 @@ void FMaterialEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	bChanged |= DrawOverrideToggle(FMaterialAsset::Field_TwoSided);
 	Edited(FMaterialAsset::Field_TwoSided, ImGui::Checkbox("양면 (컬링 없음)", &Asset.bTwoSided));
 
+	if (bGraphMaterial)
+	{
+		bool bGraphTextures = false;
+		bChanged |= DrawGraphSection(Env, bGraphTextures);
+		bTextures |= bGraphTextures;
+		if (bChanged || bTextures)
+		{
+			ApplyToMaterial(Env);
+			MarkEdited(bTextures ? "텍스처 변경" : "머티리얼 값 변경");
+		}
+		ImGui::Spacing();
+		FAssetEditorWidgets::Hint("그래프 머티리얼: 표면은 그래프가 만든다 (고정 PBR 값은 쓰지 않음). 노드는 .emat의 Graph를 고치면 저장 시 다시 컴파일된다 (노드 편집기는 Phase 51).");
+		return;
+	}
+
 	ImGui::SeparatorText("표면");
 	bChanged |= DrawOverrideToggle(FMaterialAsset::Field_BaseColorFactor);
 	Edited(FMaterialAsset::Field_BaseColorFactor, ImGui::ColorEdit4("베이스 컬러", &Constants.BaseColorFactor.X));
@@ -333,6 +376,107 @@ void FMaterialEditor::DrawProperties(FAssetEditorEnvironment& Env)
 
 	ImGui::Spacing();
 	FAssetEditorWidgets::Hint("열린 씬에 바로 반영됩니다(이 머티리얼을 부모로 둔 인스턴스 포함). 저장하지 않고 닫으면 원래대로 돌아갑니다.");
+}
+
+bool FMaterialEditor::DrawGraphSection(FAssetEditorEnvironment& Env, bool& bOutTextures)
+{
+	(void)Env;
+	bool bChanged = false;
+	bOutTextures  = false;
+	ImGui::SeparatorText("그래프");
+	if (GraphErrors.empty())
+	{
+		ImGui::TextColored(FEditorTheme::Success, "컴파일 성공 — 노드 %zu개, 셰이더 %016llx", GraphNodeCount, static_cast<unsigned long long>(GraphHash));
+	}
+	else
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::Danger);
+		ImGui::TextWrapped("컴파일 오류 (렌더러는 이전 셰이더 유지):\n%s", GraphErrors.c_str());
+		ImGui::PopStyleColor();
+	}
+
+	ImGui::SeparatorText("파라미터");
+	for (const FMaterialParameter& Shown : ResolvedParameters)
+	{
+		ImGui::PushID(Shown.Name.c_str());
+		// 일반 머티리얼: 자기 목록을 고친다. 인스턴스: 덮어쓰기 목록(체크하면 추가, 끄면 부모 값)
+		FMaterialParameter* Target = Asset.FindParameter(Shown.Name);
+		if (Asset.IsInstance())
+		{
+			bool bOverride = Target != nullptr;
+			if (ImGui::Checkbox("##Override", &bOverride))
+			{
+				if (bOverride)
+				{
+					Asset.Parameters.push_back(Shown);
+				}
+				else
+				{
+					std::erase_if(Asset.Parameters, [&](const FMaterialParameter& Parameter) { return Parameter.Name == Shown.Name; });
+				}
+				bChanged      = true;
+				bOutTextures |= Shown.Type == EMaterialParameterType::Texture;
+				ImGui::PopID();
+				continue;
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("덮어쓰기 (끄면 부모 값을 따른다)");
+			}
+			ImGui::SameLine();
+		}
+		FMaterialParameter  ShownCopy = Shown;
+		FMaterialParameter& Edit      = Target != nullptr ? *Target : ShownCopy;
+		ImGui::BeginDisabled(Target == nullptr);
+		const char* Label = Shown.Name.c_str();
+		switch (Shown.Type)
+		{
+		case EMaterialParameterType::Scalar:
+			bChanged |= ImGui::DragFloat(Label, &Edit.Value.X, 0.01f);
+			break;
+		case EMaterialParameterType::Vector:
+			bChanged |= ImGui::ColorEdit4(Label, &Edit.Value.X, ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float);
+			break;
+		case EMaterialParameterType::StaticSwitch:
+		{
+			bool bValue = Edit.GetBool();
+			if (ImGui::Checkbox(Label, &bValue))
+			{
+				Edit.Value.X = bValue ? 1.0f : 0.0f;
+				bChanged     = true;
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("(정적 — 셰이더 변형)");
+			break;
+		}
+		case EMaterialParameterType::Texture:
+			ImGui::TextUnformatted(Label);
+			ImGui::SameLine();
+			ImGui::TextDisabled("(%s)", GetTextureUsageName(Shown.Usage));
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (FAssetEditorWidgets::TextureCombo("##Texture", Edit.Texture, TextureFiles, "(기본 텍스처)"))
+			{
+				bChanged     = true;
+				bOutTextures = true;
+			}
+			break;
+		default:
+			break;
+		}
+		ImGui::EndDisabled();
+		ImGui::PopID();
+	}
+	if (ResolvedParameters.empty())
+	{
+		ImGui::TextDisabled("(파라미터 없음)");
+	}
+
+	if (!GraphHlsl.empty() && ImGui::CollapsingHeader("생성 HLSL (읽기 전용)"))
+	{
+		ImGui::InputTextMultiline("##Hlsl", GraphHlsl.data(), GraphHlsl.size() + 1, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 18.0f),
+		                          ImGuiInputTextFlags_ReadOnly);
+	}
+	return bChanged;
 }
 
 void FMaterialEditor::CollectResourceRoots(FResourceRoots& Roots)

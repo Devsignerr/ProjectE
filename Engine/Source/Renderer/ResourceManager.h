@@ -111,6 +111,9 @@ public:
 	// 인스턴스 해석 (편집 중 원본 → 디스크 순으로 부모를 읽는다). AssetPath = 그 .emat 경로. 실패(순환/부모 없음)면 false + 오류 로그
 	bool            ResolveMaterialAsset(const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, FMaterialAsset& OutResolved,
 	                                     std::vector<std::filesystem::path>* OutChain = nullptr, std::string* OutError = nullptr) const;
+	// 디스크의 .emat가 바뀜 (에디터 파일 감시 — 핫 리로드): 캐시된 머티리얼과 이 파일을 조상으로 둔 인스턴스를 다시 읽는다.
+	// 그래프 컴파일 오류면 이전 셰이더 유지 + 오류 로그. 반환: 다시 읽은 머티리얼이 있으면 true
+	bool            ReloadMaterialFile(const std::filesystem::path& Path);
 	void            DestroyMaterial(FMaterialHandle Handle);
 	FMaterial*      GetMaterial(FMaterialHandle Handle) const { return Materials.Get(Handle); }
 	FMaterialHandle GetDefaultMaterial() const { return DefaultMaterial; }

@@ -836,6 +836,51 @@ bool FResourceManager::FillGraphMaterial(FMaterial& Material, const FMaterialAss
 	return bChanged;
 }
 
+bool FResourceManager::ReloadMaterialFile(const std::filesystem::path& Path)
+{
+	std::error_code       ErrorCode;
+	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	if (ErrorCode)
+	{
+		Canonical = Path;
+	}
+	FMaterialAsset Asset;
+	if (!Asset.LoadFromFile(Canonical))
+	{
+		return false;
+	}
+	const std::wstring PathKey = FMaterialAsset::MakePathKey(Canonical);
+	EditedMaterialSources.erase(PathKey); // 디스크가 기준
+	if (const auto Found = MaterialCache.find(Canonical.wstring()); Found != MaterialCache.end() && Materials.IsValid(Found->second))
+	{
+		ApplyMaterialAsset(Found->second, Asset, Canonical.parent_path()); // 이 파일을 조상으로 둔 인스턴스도 함께
+		E_LOG(LogRenderer, Log, "머티리얼 다시 로드: {}", Asset.Name);
+		return true;
+	}
+	// 직접 쓰이지는 않지만 인스턴스의 부모일 수 있다
+	bool bReloaded = false;
+	for (const auto& [Key, Cached] : MaterialCache)
+	{
+		FMaterial* Child = Materials.Get(Cached);
+		if (Child == nullptr || std::find(Child->ParentChain.begin(), Child->ParentChain.end(), PathKey) == Child->ParentChain.end())
+		{
+			continue;
+		}
+		FMaterialAsset ChildAsset;
+		if (const auto Edited = EditedMaterialSources.find(FMaterialAsset::MakePathKey(Key)); Edited != EditedMaterialSources.end())
+		{
+			ChildAsset = Edited->second;
+		}
+		else if (!ChildAsset.LoadFromFile(Key))
+		{
+			continue;
+		}
+		ResolveAndFillMaterial(*Child, ChildAsset, Key, true);
+		bReloaded = true;
+	}
+	return bReloaded;
+}
+
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)
 {
 	if (Handle == DefaultMaterial)

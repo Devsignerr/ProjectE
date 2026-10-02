@@ -37,10 +37,20 @@ private:
 	// 인스턴스면 "덮어쓰기" 체크박스를 그린다. 체크를 끄면 그 항목은 부모 값으로 돌아간다. 반환: 체크가 바뀌었으면 true
 	bool DrawOverrideToggle(uint32 Field);
 	bool DrawParent(FAssetEditorEnvironment& Env);
+	// 그래프 머티리얼(Phase 49 사이드): 컴파일 상태 + 파라미터 값(인스턴스는 덮어쓰기 체크) + 생성 HLSL 보기. 노드 편집 UI는 Phase 51
+	// 반환: 값이 바뀌었으면 true (bOutTextures = 텍스처 경로가 바뀜)
+	bool DrawGraphSection(FAssetEditorEnvironment& Env, bool& bOutTextures);
+	void RefreshGraphStatus(FAssetEditorEnvironment& Env);
 
 	FMaterialAsset           Asset;
 	FMaterialAsset           Inherited; // 인스턴스: 부모 체인만 해석한 값 (덮어쓰지 않은 항목에 보여 준다)
 	std::string              ParentError;
+	bool                     bGraphMaterial = false; // 해석 결과가 그래프 머티리얼 (인스턴스는 부모 그래프)
+	std::string              GraphErrors;           // 그래프 컴파일 오류 (비면 성공)
+	std::string              GraphHlsl;             // 생성 HLSL (읽기 전용 보기)
+	uint64                   GraphHash = 0;
+	size_t                   GraphNodeCount = 0;
+	std::vector<FMaterialParameter> ResolvedParameters; // 해석된 전체 파라미터 (인스턴스: 부모 값 + 덮어쓰기)
 	FMaterialHandle          Material;
 	FEntity                  PreviewEntity;
 	std::string              PreviewShape = "sphere";

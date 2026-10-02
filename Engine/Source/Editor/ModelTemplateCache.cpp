@@ -1,6 +1,7 @@
 #include "Editor/ModelTemplateCache.h"
 
 #include "Editor/SceneEditOps.h"
+#include "Renderer/ResourceCollector.h"
 
 #include <vector>
 
@@ -46,4 +47,9 @@ void FModelTemplateCache::Clear()
 {
 	TemplateScene.Clear();
 	Templates.clear();
+}
+
+void FModelTemplateCache::CollectResourceRoots(FResourceRoots& Roots)
+{
+	Roots.AddScene(TemplateScene);
 }

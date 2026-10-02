@@ -461,6 +461,14 @@ void FAssetEditorManager::SwapScenePreviews(FEditorContext& Context)
 	}
 }
 
+void FAssetEditorManager::CollectResourceRoots(FResourceRoots& Roots)
+{
+	for (FOpenEditor& Open : Editors)
+	{
+		Open.Editor->CollectResourceRoots(Roots);
+	}
+}
+
 void FAssetEditorManager::EndScenePreviews(FEditorContext& Context)
 {
 	FAssetEditorEnvironment Env = MakeEnvironment(Context);

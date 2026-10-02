@@ -133,6 +133,18 @@ bool FEditorApplication::OnInit()
 	Context.Camera           = &Camera;
 	Context.ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
 	Context.DefaultCubeMesh  = Resources.GetOrCreatePrimitiveMesh("cube");
+	// 리소스 수거 루트 (Phase 37): 편집 씬 + 플레이 씬 + 실행 취소용 모델 템플릿 + 열린 에셋 편집 창.
+	// 썸네일 씬은 그린 직후 비우므로 넣지 않는다 (썸네일이 불러온 에셋은 대기열이 비면 수거된다)
+	Resources.AddRootProvider([this](FResourceRoots& Roots) {
+		Roots.AddScene(Scene);
+		if (Context.Scene != nullptr && Context.Scene != &Scene)
+		{
+			Roots.AddScene(*Context.Scene);
+		}
+		ModelTemplates.CollectResourceRoots(Roots);
+		AssetEditors.CollectResourceRoots(Roots);
+	});
+	StatOverlay.SetResources(&Resources);
 	Context.OpenSceneRequest = [this](const std::filesystem::path& Path) { OpenScene(Path); };
 	Context.OpenAssetEditorRequest = [this](const std::filesystem::path& Path) {
 		if (!AssetEditors.Open(Context, Path))
@@ -391,6 +403,7 @@ bool FEditorApplication::OnInit()
 void FEditorApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
+	Resources.Tick(); // 요청된 리소스 수거 (씬 열기/플레이 정지 몇 프레임 뒤) + VRAM 예산 경고
 	UpdateAutoSave(DeltaSeconds);
 
 	// (게임 UI 텍스트 상자에 입력 중이면 ESC는 UI가 받는다 — 직전 프레임 기준)
@@ -1021,8 +1034,7 @@ void FEditorApplication::DrawStatsWindow()
 			            static_cast<double>(Upload.GetCapacity()) / Mb, static_cast<double>(Stats.UploadBytes) / Mb, Upload.GetGrowCount());
 		}
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
-		ImGui::Text("리소스: 메시 %zu, 머티리얼 %zu, 텍스처 %zu", Resources.GetMeshCount(), Resources.GetMaterialCount(),
-		            Resources.GetTextureCount());
+		DrawResourceMemoryStats();
 
 		bool bVSync = Rhi->IsVSync();
 		if (ImGui::Checkbox("VSync", &bVSync))
@@ -1061,6 +1073,61 @@ void FEditorApplication::DrawStatsWindow()
 		}
 	}
 	ImGui::End();
+}
+
+void FEditorApplication::DrawResourceMemoryStats()
+{
+	// 텍스처마다 할당 크기를 묻으므로 0.5초마다만
+	const double Now = ImGui::GetTime();
+	if (ResourceMemoryStatsTime < 0.0 || Now - ResourceMemoryStatsTime > 0.5)
+	{
+		ResourceMemoryStats     = Resources.GetMemoryStats();
+		ResourceMemoryStatsTime = Now;
+	}
+	const FResourceMemoryStats& Memory = ResourceMemoryStats;
+	if (!ImGui::CollapsingHeader("리소스 메모리", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		return;
+	}
+	if (Memory.bHasVideoMemory && Memory.LocalBudget > 0)
+	{
+		const float       Fraction = static_cast<float>(static_cast<double>(Memory.LocalUsage) / static_cast<double>(Memory.LocalBudget));
+		const std::string Label    = std::format("VRAM {} / 예산 {}", ResourceGc::FormatBytes(Memory.LocalUsage), ResourceGc::FormatBytes(Memory.LocalBudget));
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram,
+		                      Memory.IsOverBudget() ? FEditorTheme::Danger : (Fraction > 0.85f ? FEditorTheme::Warning : FEditorTheme::Accent));
+		ImGui::ProgressBar(std::min(Fraction, 1.0f), ImVec2(-1.0f, 0.0f), Label.c_str());
+		ImGui::PopStyleColor();
+		ImGui::Text("공유 메모리 %s / %s", ResourceGc::FormatBytes(Memory.NonLocalUsage).c_str(), ResourceGc::FormatBytes(Memory.NonLocalBudget).c_str());
+	}
+	if (ImGui::BeginTable("ResourceMemory", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg))
+	{
+		ImGui::TableSetupColumn("종류");
+		ImGui::TableSetupColumn("개수");
+		ImGui::TableSetupColumn("GPU 바이트");
+		ImGui::TableHeadersRow();
+		const auto Row = [](const char* Name, const std::string& Count, const std::string& Bytes) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(Name);
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(Count.c_str());
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(Bytes.c_str());
+		};
+		Row("텍스처", std::format("{} (경로 {})", Memory.Textures, Memory.PathTextures), ResourceGc::FormatBytes(Memory.TextureBytes));
+		Row("메시", std::to_string(Memory.Meshes), ResourceGc::FormatBytes(Memory.MeshBytes));
+		Row("머티리얼", std::format("{} (경로 {})", Memory.Materials, Memory.PathMaterials), "-");
+		Row("모델", std::to_string(Memory.Models), "-");
+		Row("파티클 에셋", std::to_string(Memory.ParticleSystems), "-");
+		ImGui::EndTable();
+	}
+	if (ImGui::Button(ICON_FA_BROOM " 쓰지 않는 리소스 수거"))
+	{
+		Resources.RequestGarbageCollection("통계 창", 1, true);
+		ResourceMemoryStatsTime = -1.0;
+	}
+	ImGui::SameLine();
+	ConsoleVariableWidgets::Checkbox("자동 수거", "r.ResourceAutoCollect");
 }
 
 // ---------------------------------------------------------------- 셰이더 핫 리로드
@@ -1316,6 +1383,9 @@ void FEditorApplication::ResetUndoHistory()
 	FoliageToolPanel.GetHistory().Clear();
 	FTerrainLibrary::Get().Clear();
 	FFoliageLibrary::Get().Clear();
+	// 실행 취소용 모델 템플릿은 이전 씬 기록용이므로 버리고, 이전 씬만 쓰던 리소스를 몇 프레임 뒤 수거한다
+	ModelTemplates.Clear();
+	Resources.RequestGarbageCollection("씬 열기");
 	UpdateWindowTitle();
 }
 
@@ -1543,6 +1613,7 @@ void FEditorApplication::StopPlay()
 	}
 	PlayMode.Stop(Context);
 	NetPlay.Stop(); // 네트워크 종료 + 서버/클라이언트 창 닫기
+	Resources.RequestGarbageCollection("플레이 정지"); // 플레이 중 맵 전환·스크립트가 불러온 리소스
 	AudioSystem.Reset(Audio);
 	SetPlayCursorLocked(false);
 	// 빙의를 풀었던 플레이: 편집 카메라를 플레이 전 시점으로 되돌린다

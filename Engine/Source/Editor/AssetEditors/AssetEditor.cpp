@@ -55,6 +55,11 @@ void FAssetEditor::Close(FAssetEditorEnvironment& Env)
 	}
 }
 
+void FAssetEditor::CollectResourceRoots(FResourceRoots& Roots)
+{
+	Roots.AddScene(Preview.GetScene());
+}
+
 void FAssetEditor::OnClose(FAssetEditorEnvironment& Env)
 {
 	(void)Env;

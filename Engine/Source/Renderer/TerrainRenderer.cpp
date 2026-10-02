@@ -5,6 +5,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/IblRenderer.h"
+#include "Renderer/ResourceCollector.h"
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
@@ -555,6 +556,14 @@ void FTerrainRenderer::UpdateChunkHeights(FTerrainGpu& Gpu, const FTerrainData& 
 	}
 }
 
+void FTerrainRenderer::CollectResourceRoots(FResourceRoots& Roots) const
+{
+	for (const FMaterialHandle Handle : FrameLayerMaterials)
+	{
+		Roots.Add(Handle);
+	}
+}
+
 FMaterialHandle FTerrainRenderer::ResolveLayerMaterial(const std::string& Asset)
 {
 	if (Asset.empty())
@@ -574,6 +583,7 @@ void FTerrainRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FFrus
 {
 	++FrameCounter;
 	Frame.clear();
+	FrameLayerMaterials.clear();
 	DrawCalls = 0;
 	Triangles = 0;
 	VisibleChunks = 0;
@@ -626,6 +636,7 @@ void FTerrainRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FFrus
 		for (uint32 Layer = 0; Layer < TerrainMaxLayers; ++Layer)
 		{
 			const FMaterialHandle Handle   = ResolveLayerMaterial(GetLayerAsset(*Instance.Component, Layer));
+			FrameLayerMaterials.push_back(Handle);
 			const FMaterial&      Material = Resources->ResolveMaterial(Handle);
 			Terrain.LayerTables[Layer]     = Material.TextureTable.Gpu;
 			Constants.LayerTiling[Layer]   = GetLayerTiling(*Instance.Component, Layer);

@@ -73,6 +73,7 @@ private:
 	void BuildDefaultScene();
 	void DrawMainMenuBar();
 	void DrawStatsWindow();
+	void DrawResourceMemoryStats(); // 통계 창 "리소스 메모리" (Phase 37)
 	void HandleShortcuts();
 	void ApplyDefaultLayoutIfNeeded(); // 첫 실행 / 메뉴 요청 시 언리얼 풍 기본 도킹 배치
 	void OnAssetsMoved(const std::vector<FAssetMove>& Moves); // 콘텐츠 브라우저 이동/이름 변경 후 열린 씬·기록·캐시 갱신
@@ -191,5 +192,7 @@ private:
 	uint64                 VerifyEjectFrame         = 0; // --play-eject: 이 프레임에 빙의 해제 (자동 검증, 0 = 없음)
 	float AutoSaveElapsedSeconds   = 0.0f;
 	float SmoothedFps    = 0.0f;
+	FResourceMemoryStats ResourceMemoryStats;            // 통계 창 표시용 (0.5초마다 갱신)
+	double               ResourceMemoryStatsTime = -1.0; // ImGui 시각
 	FStatOverlay StatOverlay; // 콘솔 stat fps/gpu → 뷰포트 오른쪽 위
 };

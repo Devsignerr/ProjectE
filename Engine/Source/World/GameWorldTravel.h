@@ -37,7 +37,7 @@ struct FSceneTravelTargets
 //         → World.EndPlay(스크립트 OnDestroy, 게임 모듈 OnEndPlay, 물리/AI 정리) → OnEndPlay → 복제/플레이어 정리
 //         → Scene.Clear → 씬 파일 로드 → 에셋 해석 → (서버) 정적 NetId → BeginPlay → (리슨) 호스트 폰
 //         / (클라이언트) 정적 NetId → BeginPlay → TravelAck. 서버는 TravelAck가 온 플레이어마다 FNetDriver::OnPlayerJoined를 다시 부른다
-//   GPU 리소스: 씬 엔티티가 사라지며 핸들 참조만 끊긴다. FResourceManager 경로 캐시는 유지 (같은 에셋은 다음 맵에서 재사용, 해제는 후속)
+//   GPU 리소스: 같은 에셋은 다음 맵에서 재사용하고, 이전 맵만 쓰던 것은 몇 프레임 뒤 수거된다 (FResourceManager::RequestGarbageCollection)
 struct FGameWorldTravel
 {
 	static std::optional<std::string> ConsumePending(FGameWorld& World, FNetDriver* Net);

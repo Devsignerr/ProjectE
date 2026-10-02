@@ -21,4 +21,5 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> LodHysteresis;    // r.LODHysteresis  (--lod-hysteresis X)
 	extern TAutoConsoleVariable<bool>  Jitter;           // r.Jitter         (--jitter)
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr)
+	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
 } // namespace RendererCVars

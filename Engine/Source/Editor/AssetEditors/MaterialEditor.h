@@ -16,6 +16,7 @@ public:
 	using FAssetEditor::FAssetEditor;
 
 	const char* GetTypeName() const override { return "머티리얼"; }
+	void        CollectResourceRoots(FResourceRoots& Roots) override;
 
 protected:
 	bool        LoadAsset(FAssetEditorEnvironment& Env) override;

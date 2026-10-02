@@ -47,6 +47,8 @@ public:
 	// 편집 씬 미리보기(시퀀서): 씬 저장/스냅샷 앞뒤로 Swap(두 번 = 원상태), 플레이 시작·씬 교체 전 End
 	void SwapScenePreviews(FEditorContext& Context);
 	void EndScenePreviews(FEditorContext& Context);
+	// 리소스 수거 루트: 열린 편집 창마다 (미리보기 씬 + 편집 중인 핸들)
+	void CollectResourceRoots(FResourceRoots& Roots);
 
 	bool HasFocusedEditor() const { return bEditorFocused; }
 	size_t GetOpenCount() const { return Editors.size(); }

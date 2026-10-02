@@ -6,6 +6,7 @@
 #include "Renderer/FoliageMeshes.h"
 #include "Renderer/LodMath.h"
 #include "Renderer/MeshInstancing.h"
+#include "Renderer/ResourceCollector.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Foliage.h"
@@ -45,6 +46,22 @@ void FFoliageRenderer::Shutdown()
 	Materials.clear();
 	Caches.clear();
 	Resources = nullptr;
+}
+
+void FFoliageRenderer::CollectResourceRoots(FResourceRoots& Roots) const
+{
+	for (const auto& [Asset, Cache] : Caches)
+	{
+		if (Cache.LastUsedFrame != FrameCounter)
+		{
+			continue; // 지난 맵/지운 폴리지 (오래되면 Gather가 비운다)
+		}
+		for (const FTypeCache& Type : Cache.Types)
+		{
+			Roots.Add(Type.Mesh);
+			Roots.Add(Type.Material);
+		}
+	}
 }
 
 FMeshHandle FFoliageRenderer::ResolveMesh(const std::string& Name)

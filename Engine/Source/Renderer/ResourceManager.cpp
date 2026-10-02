@@ -62,6 +62,7 @@ bool FResourceManager::Init(FD3D12RHI& InRhi)
 	FMaterial Default;
 	Default.Name    = "DefaultMaterial";
 	DefaultMaterial = CreateMaterial(Default);
+	InitCollector();
 
 	E_LOG(LogRenderer, Display, "리소스 관리자 초기화 완료");
 	return true;
@@ -74,6 +75,7 @@ void FResourceManager::Shutdown()
 		return;
 	}
 
+	ShutdownCollector();
 	// 즉시 해제 전에 GPU 작업 완료 보장
 	Rhi->GetGraphicsQueue().Flush();
 

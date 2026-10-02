@@ -1,6 +1,7 @@
 #include "Renderer/StatOverlay.h"
 
 #include "Core/Console/Console.h"
+#include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 
 #include <algorithm>
@@ -34,11 +35,26 @@ void FStatOverlay::Tick(float DeltaSeconds)
 		WorstWindowMs = 0.0f;
 		WindowSeconds = 0.0f;
 	}
+
+	// 리소스 메모리 (텍스처마다 할당 크기를 묻으므로 매 프레임 하지 않는다)
+	if (Resources != nullptr && IsStatEnabled("stat.Memory"))
+	{
+		MemorySeconds -= DeltaSeconds;
+		if (MemorySeconds <= 0.0f || MemoryLines.empty())
+		{
+			MemoryLines   = ResourceGc::FormatMemoryStats(Resources->GetMemoryStats());
+			MemorySeconds = 0.5f;
+		}
+	}
+	else
+	{
+		MemoryLines.clear();
+	}
 }
 
 bool FStatOverlay::IsVisible() const
 {
-	return IsStatEnabled("stat.FPS") || IsStatEnabled("stat.GPU");
+	return IsStatEnabled("stat.FPS") || IsStatEnabled("stat.GPU") || IsStatEnabled("stat.Memory");
 }
 
 std::vector<std::string> FStatOverlay::BuildLines(const FSceneRenderStats* Stats) const
@@ -66,6 +82,10 @@ std::vector<std::string> FStatOverlay::BuildLines(const FSceneRenderStats* Stats
 			}
 			Lines.push_back(std::format("{}\t{:.3f}\t{:.3f}", GetRenderTimerName(static_cast<ERenderTimer>(Index)), Cpu, Gpu));
 		}
+	}
+	if (IsStatEnabled("stat.Memory"))
+	{
+		Lines.insert(Lines.end(), MemoryLines.begin(), MemoryLines.end());
 	}
 	return Lines;
 }

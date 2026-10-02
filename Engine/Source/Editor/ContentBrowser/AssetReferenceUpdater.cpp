@@ -21,7 +21,8 @@ namespace
 	{
 		None,
 		ContentRoot, // .escene, .eproject, .eprefab, .eui, .eanimgraph (미리보기 모델), .efoliage(타입 머티리얼),
-		             // .estruct(RowRef Table)/.etable·.edata(Struct, Asset/RowRef 값 — 행 이름은 확장자가 없으면 경로 후보가 아님)
+		             // .estruct(RowRef Table)/.etable·.edata(Struct, Asset/RowRef 값 — 행 이름은 확장자가 없으면 경로 후보가 아님),
+		             // .ebuilding(키트 프리팹·방 종류 바닥·소품 테이블)
 		OwnFolder,   // .emat, .eparticle
 	};
 
@@ -35,7 +36,8 @@ namespace
 	{
 		const std::wstring Extension = Lower(File.extension().wstring());
 		if (Extension == L".escene" || Extension == L".eproject" || Extension == L".eprefab" || Extension == L".eui" ||
-		    Extension == L".eanimgraph" || Extension == L".efoliage" || Extension == L".estruct" || Extension == L".etable" || Extension == L".edata")
+		    Extension == L".eanimgraph" || Extension == L".efoliage" || Extension == L".estruct" || Extension == L".etable" || Extension == L".edata" ||
+		    Extension == L".ebuilding")
 		{
 			return EReferenceBase::ContentRoot;
 		}

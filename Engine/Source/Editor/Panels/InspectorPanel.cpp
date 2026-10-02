@@ -2,12 +2,14 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
+#include "Editor/BuildingEditorTools.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
 #include "Editor/PropertyWidgets.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/AnimationSystem.h"
+#include "Scene/Building/BuildingScene.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
@@ -367,6 +369,10 @@ void FInspectorPanel::DrawComponent(FEditorContext& Context, FEntity Entity, con
 	else if (&Type == Registry.Find<FSocketAttachmentComponent>())
 	{
 		DrawSocketAttachmentExtras(Context, Entity);
+	}
+	else if (&Type == Registry.Find<FProceduralBuildingComponent>())
+	{
+		FBuildingEditorTools::DrawInspector(Context, Entity); // 생성/다시 생성/지우기
 	}
 }
 

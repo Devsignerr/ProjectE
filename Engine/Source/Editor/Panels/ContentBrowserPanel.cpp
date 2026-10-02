@@ -18,6 +18,7 @@
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/Building/BuildingScene.h"
 #include "Scene/DataLibrary.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Sequence.h"
@@ -62,6 +63,7 @@ namespace
 	bool IsParticleExtension(const std::string& Extension) { return Extension == ".eparticle"; }
 	bool IsPrefabExtension(const std::string& Extension) { return Extension == ".eprefab"; }
 	bool IsUIExtension(const std::string& Extension) { return Extension == ".eui"; }
+	bool IsBuildingExtension(const std::string& Extension) { return Extension == ".ebuilding"; }
 
 	// 종류 필터 (0 = 전체). FEditorTheme::GetAssetStyle의 Label과 같은 이름
 	constexpr const char* GTypeFilters[] = { "전체", "모델", "머티리얼", "텍스처", "파티클", "프리팹", "씬", "스크립트", "오디오" };
@@ -716,7 +718,8 @@ void FContentBrowserPanel::DrawItemContextMenu(FEditorContext& Context, const FE
 			OpenEntry(Context, Entry);
 		}
 	}
-	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension) || IsPrefabExtension(Entry.Extension) || IsUIExtension(Entry.Extension))
+	if (IsModelExtension(Entry.Extension) || IsParticleExtension(Entry.Extension) || IsPrefabExtension(Entry.Extension) || IsUIExtension(Entry.Extension) ||
+	    IsBuildingExtension(Entry.Extension))
 	{
 		if (ImGui::MenuItem(ICON_FA_PLUS " 씬에 추가", nullptr, false, !Context.bPlaying))
 		{
@@ -865,6 +868,11 @@ void FContentBrowserPanel::OpenEntry(FEditorContext& Context, const FEntry& Entr
 	{
 		Context.OpenSceneRequest(Entry.Path);
 	}
+	else if (IsBuildingExtension(Entry.Extension))
+	{
+		// 건물 설정(JSON)은 전용 편집 창이 없어 메모장으로 연다 (씬에 놓을 때는 "씬에 추가")
+		ShellExecuteW(nullptr, L"open", L"notepad.exe", (L"\"" + std::filesystem::absolute(Entry.Path).wstring() + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
+	}
 }
 
 void FContentBrowserPanel::AddToScene(FEditorContext& Context, const FEntry& Entry)
@@ -889,6 +897,12 @@ void FContentBrowserPanel::AddToScene(FEditorContext& Context, const FEntry& Ent
 		// 화면 UI (플레이 중 화면 전체 위)
 		Added = Scene.CreateEntity(FStringConv::ToUtf8(Entry.Path.stem().wstring()));
 		Scene.GetRegistry().Emplace<FUIComponent>(Added).Asset = FModelLoader::MakeAssetPath(Entry.Path);
+	}
+	else if (IsBuildingExtension(Entry.Extension))
+	{
+		// 절차적 건물: 설정만 지정 (인스펙터의 "생성"으로 하위에 층/호실을 만든다)
+		Added = Scene.CreateEntity(FStringConv::ToUtf8(Entry.Path.stem().wstring()));
+		Scene.GetRegistry().Emplace<FProceduralBuildingComponent>(Added).Config = FModelLoader::MakeAssetPath(Entry.Path);
 	}
 	if (!Scene.GetRegistry().IsValid(Added))
 	{

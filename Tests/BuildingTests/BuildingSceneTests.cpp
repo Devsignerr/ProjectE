@@ -68,7 +68,8 @@ namespace
 		std::vector<FEntity> Groups;
 		for (const FEntity Child : Scene.GetChildren(Building))
 		{
-			if (Scene.GetRegistry().Has<FBuildingGroupComponent>(Child))
+			const FBuildingPartComponent* Part = Scene.GetRegistry().TryGet<FBuildingPartComponent>(Child);
+			if (Part != nullptr && Part->Floor >= 0)
 			{
 				Groups.push_back(Child);
 			}
@@ -92,7 +93,7 @@ namespace
 		{
 			for (const FEntity Child : Scene.GetChildren(FloorGroup))
 			{
-				const FBuildingGroupComponent* Group = Scene.GetRegistry().TryGet<FBuildingGroupComponent>(Child);
+				const FBuildingPartComponent* Group = Scene.GetRegistry().TryGet<FBuildingPartComponent>(Child);
 				if (Group != nullptr && Group->Unit >= 0 && !Scene.GetChildren(Child).empty())
 				{
 					if (OutGroup != nullptr)
@@ -136,7 +137,7 @@ E_TEST(BuildingScene_GenerateCreatesGroups)
 	FScene            Loaded;
 	E_EXPECT_TRUE(FSceneSerializer::FromJsonString(Loaded, Json));
 	size_t Groups = 0, Buildings = 0;
-	Loaded.GetRegistry().View<FBuildingGroupComponent>().Each([&](FEntity, FBuildingGroupComponent&) { ++Groups; });
+	Loaded.GetRegistry().View<FBuildingPartComponent>().Each([&](FEntity, FBuildingPartComponent& Part) { Groups += Part.Floor >= 0 && !Part.bKeep ? 1 : 0; });
 	Loaded.GetRegistry().View<FProceduralBuildingComponent>().Each([&](FEntity, FProceduralBuildingComponent& Component) {
 		++Buildings;
 		E_EXPECT_EQ(Component.Seed, 3);
@@ -156,8 +157,8 @@ E_TEST(BuildingScene_RegenerateKeepsMarkedEntities)
 	// 손으로 고친 생성물 하나에 유지 표식 + 위치 변경, 그룹 밖 사용자 엔티티 하나
 	FEntity       UnitGroup;
 	const FEntity Kept = FirstUnitPiece(Scene, Building, &UnitGroup);
-	const FBuildingGroupComponent OldGroup = Scene.GetRegistry().Get<FBuildingGroupComponent>(UnitGroup);
-	Scene.GetRegistry().Emplace<FBuildingKeepComponent>(Kept);
+	const FBuildingPartComponent OldGroup = Scene.GetRegistry().Get<FBuildingPartComponent>(UnitGroup);
+	E_EXPECT_TRUE(Scene.GetRegistry().Emplace<FBuildingPartComponent>(Kept).bKeep); // 인스펙터로 붙이면 기본이 유지
 	Scene.GetTransform(Kept).Position = FVector3(12.0f, 34.0f, 56.0f);
 	const FEntity UserChild = Scene.CreateEntity("UserLamp");
 	Scene.SetParent(UserChild, Building);
@@ -174,7 +175,7 @@ E_TEST(BuildingScene_RegenerateKeepsMarkedEntities)
 	E_EXPECT_FALSE(Discarded != Kept && Scene.GetRegistry().IsValid(Discarded));
 	// 같은 (층, 호실) 새 그룹 아래로 옮겨졌다
 	const FEntity NewParent = Scene.GetParent(Kept);
-	const FBuildingGroupComponent* NewGroup = Scene.GetRegistry().TryGet<FBuildingGroupComponent>(NewParent);
+	const FBuildingPartComponent* NewGroup = Scene.GetRegistry().TryGet<FBuildingPartComponent>(NewParent);
 	E_EXPECT_TRUE(NewGroup != nullptr);
 	if (NewGroup != nullptr)
 	{
@@ -187,6 +188,49 @@ E_TEST(BuildingScene_RegenerateKeepsMarkedEntities)
 	E_EXPECT_TRUE(GroupsOf(Scene, Building).empty());
 	E_EXPECT_TRUE(Scene.GetParent(Kept) == Building);
 	E_EXPECT_TRUE(Scene.GetRegistry().IsValid(UserChild));
+}
+
+E_TEST(BuildingScene_KeptGroupsArePinned)
+{
+	PrepareContent();
+	FScene        Scene;
+	const FEntity Building = MakeBuilding(Scene, 5);
+	std::string   Error;
+	E_EXPECT_TRUE(FBuildingSceneBuilder::Generate(Scene, Building, nullptr, &Error));
+
+	// 호실 그룹 하나 고정 + 손으로 하나 지우기 (고정 호실은 손으로 꾸민 그대로 남아야 한다)
+	FEntity UnitGroup;
+	FirstUnitPiece(Scene, Building, &UnitGroup);
+	FBuildingPartComponent& Part = Scene.GetRegistry().Get<FBuildingPartComponent>(UnitGroup);
+	Part.bKeep                   = true;
+	const int32 Floor            = Part.Floor;
+	const int32 Unit             = Part.Unit;
+	Scene.DestroyEntity(Scene.GetChildren(UnitGroup).front());
+	const size_t Children = Scene.GetChildren(UnitGroup).size();
+
+	Scene.GetRegistry().Get<FProceduralBuildingComponent>(Building).Seed = 77;
+	FBuildingApplyStats Stats;
+	E_EXPECT_TRUE(FBuildingSceneBuilder::Generate(Scene, Building, &Stats, &Error));
+	E_EXPECT_TRUE(Scene.GetRegistry().IsValid(UnitGroup));
+	E_EXPECT_EQ(Scene.GetChildren(UnitGroup).size(), Children);
+	E_EXPECT_TRUE(Stats.Skipped > 0);
+	// 같은 (층, 호실) 그룹은 고정 그룹 하나뿐이고, 새 층 그룹 아래에 있다
+	int32 Same = 0;
+	Scene.GetRegistry().View<FBuildingPartComponent>().Each([&](FEntity, FBuildingPartComponent& Other) {
+		Same += (Other.Floor == Floor && Other.Unit == Unit) ? 1 : 0;
+	});
+	E_EXPECT_EQ(Same, 1);
+	const FBuildingPartComponent* Parent = Scene.GetRegistry().TryGet<FBuildingPartComponent>(Scene.GetParent(UnitGroup));
+	E_EXPECT_TRUE(Parent != nullptr && Parent->Floor == Floor && Parent->Unit == -1 && !Parent->bKeep);
+
+	// 층 그룹 고정: 그 층은 다시 생성해도 그대로 (엔티티 수 유지)
+	const FEntity FloorGroup = Scene.GetParent(UnitGroup);
+	Scene.GetRegistry().Get<FBuildingPartComponent>(FloorGroup).bKeep = true;
+	const uint32 Before = Scene.GetRegistry().GetAliveCount();
+	E_EXPECT_TRUE(FBuildingSceneBuilder::Generate(Scene, Building, &Stats, &Error));
+	E_EXPECT_TRUE(Scene.GetRegistry().IsValid(FloorGroup));
+	E_EXPECT_TRUE(Scene.GetRegistry().IsValid(UnitGroup));
+	E_EXPECT_EQ(Scene.GetRegistry().GetAliveCount(), Before); // 같은 시드: 다른 층은 같은 수로 교체
 }
 
 E_TEST(BuildingScene_MissingConfigFails)

@@ -54,7 +54,8 @@ namespace
 
 	// ---------------------------------------------------------------- 공용
 
-	constexpr int32 GDirX[4] = { -1, 1, 0, 0 }; // -X, +X, -Y, +Y
+	constexpr int32 GRoomSplitTries = 6; // 호실마다 방 분할 시도 수 (가장 높은 배정 점수)
+	constexpr int32 GDirX[4]        = { -1, 1, 0, 0 }; // -X, +X, -Y, +Y
 	constexpr int32 GDirY[4] = { 0, 0, -1, 1 };
 
 	bool HasWallPiece(EBuildingEdge Edge)
@@ -666,98 +667,112 @@ namespace
 			{
 			}
 
-			// BSP: 가장 큰 잎을 긴 축으로 (변 ≥ Side)
-			std::vector<FCellRect> Leaves{ { MinU, MinV, SpanU, SpanV } };
-			const size_t           Target = std::max<size_t>(1, Types.size());
-			while (Leaves.size() < Target)
+			// 분할 + 배정을 여러 번 해 보고 점수가 가장 높은 것을 쓴다 (면적 비율·인접 규칙에 더 맞는 배치 — 시도 수가 고정이라 결정적)
+			const std::vector<const FBuildingRoomType*> PickedTypes  = Types;
+			const std::map<int32, int32>                InitialLabel = Label;
+			std::map<int32, int32>                      BestLabel;
+			std::vector<std::string>                    BestNames;
+			float                                       BestScore = 0.0f;
+			for (int32 Try = 0; Try < GRoomSplitTries; ++Try)
 			{
-				int32 Best = -1;
-				for (int32 Leaf = 0; Leaf < static_cast<int32>(Leaves.size()); ++Leaf)
+				Types = PickedTypes;
+				Label = InitialLabel;
+				// BSP: 가장 큰 잎을 긴 축으로 (변 ≥ Side)
+				std::vector<FCellRect> Leaves{ { MinU, MinV, SpanU, SpanV } };
+				const size_t           Target = std::max<size_t>(1, Types.size());
+				while (Leaves.size() < Target)
 				{
-					const FCellRect& Rect = Leaves[static_cast<size_t>(Leaf)];
-					if ((Rect.W >= 2 * Side || Rect.D >= 2 * Side) &&
-					    (Best < 0 || Rect.W * Rect.D > Leaves[static_cast<size_t>(Best)].W * Leaves[static_cast<size_t>(Best)].D))
+					int32 Best = -1;
+					for (int32 Leaf = 0; Leaf < static_cast<int32>(Leaves.size()); ++Leaf)
 					{
-						Best = Leaf;
+						const FCellRect& Rect = Leaves[static_cast<size_t>(Leaf)];
+						if ((Rect.W >= 2 * Side || Rect.D >= 2 * Side) &&
+						    (Best < 0 || Rect.W * Rect.D > Leaves[static_cast<size_t>(Best)].W * Leaves[static_cast<size_t>(Best)].D))
+						{
+							Best = Leaf;
+						}
 					}
-				}
-				if (Best < 0)
-				{
-					break;
-				}
-				const FCellRect Rect   = Leaves[static_cast<size_t>(Best)];
-				const bool      bCanU  = Rect.W >= 2 * Side;
-				const bool      bCanV  = Rect.D >= 2 * Side;
-				bool            bAlongU = bCanU && (!bCanV || Rect.W > Rect.D || (Rect.W == Rect.D && (Rng.Next() & 1) != 0));
-				if (bAlongU)
-				{
-					const int32 Cut                       = Rng.Range(Side, Rect.W - Side);
-					Leaves[static_cast<size_t>(Best)]     = { Rect.X, Rect.Y, Cut, Rect.D };
-					Leaves.push_back({ Rect.X + Cut, Rect.Y, Rect.W - Cut, Rect.D });
-				}
-				else
-				{
-					const int32 Cut                   = Rng.Range(Side, Rect.D - Side);
-					Leaves[static_cast<size_t>(Best)] = { Rect.X, Rect.Y, Rect.W, Cut };
-					Leaves.push_back({ Rect.X, Rect.Y + Cut, Rect.W, Rect.D - Cut });
-				}
-			}
-
-			// 잎 → 칸 (외곽이 사각형이 아니면 빈 잎/끊긴 조각이 생길 수 있다 — 조각은 이웃에 붙인다)
-			std::vector<int32> LeafArea(Leaves.size(), 0);
-			for (int32 Cell : Unit.Cells)
-			{
-				int32 U, V;
-				ToUV(Unit.Frame, Cell, U, V);
-				for (size_t Leaf = 0; Leaf < Leaves.size(); ++Leaf)
-				{
-					const FCellRect& Rect = Leaves[Leaf];
-					if (U >= Rect.X && U < Rect.X + Rect.W && V >= Rect.Y && V < Rect.Y + Rect.D)
+					if (Best < 0)
 					{
-						Label[Cell] = static_cast<int32>(Leaf);
 						break;
 					}
+					const FCellRect Rect   = Leaves[static_cast<size_t>(Best)];
+					const bool      bCanU  = Rect.W >= 2 * Side;
+					const bool      bCanV  = Rect.D >= 2 * Side;
+					bool            bAlongU = bCanU && (!bCanV || Rect.W > Rect.D || (Rect.W == Rect.D && (Rng.Next() & 1) != 0));
+					if (bAlongU)
+					{
+						const int32 Cut                       = Rng.Range(Side, Rect.W - Side);
+						Leaves[static_cast<size_t>(Best)]     = { Rect.X, Rect.Y, Cut, Rect.D };
+						Leaves.push_back({ Rect.X + Cut, Rect.Y, Rect.W - Cut, Rect.D });
+					}
+					else
+					{
+						const int32 Cut                   = Rng.Range(Side, Rect.D - Side);
+						Leaves[static_cast<size_t>(Best)] = { Rect.X, Rect.Y, Rect.W, Cut };
+						Leaves.push_back({ Rect.X, Rect.Y + Cut, Rect.W, Rect.D - Cut });
+					}
 				}
-			}
-			KeepLargestComponents(Unit.Cells, Label, static_cast<int32>(Leaves.size()));
-			FillOrphans(W, Unit.Cells, Label);
 
-			// 빈 잎 제거 (라벨 다시 매김)
-			std::vector<int32> Remap(Leaves.size(), -1);
-			int32              LeafCount = 0;
-			for (const auto& [Cell, Leaf] : Label)
-			{
-				if (Leaf >= 0)
+				// 잎 → 칸 (외곽이 사각형이 아니면 빈 잎/끊긴 조각이 생길 수 있다 — 조각은 이웃에 붙인다)
+				std::vector<int32> LeafArea(Leaves.size(), 0);
+				for (int32 Cell : Unit.Cells)
 				{
-					++LeafArea[static_cast<size_t>(Leaf)];
+					int32 U, V;
+					ToUV(Unit.Frame, Cell, U, V);
+					for (size_t Leaf = 0; Leaf < Leaves.size(); ++Leaf)
+					{
+						const FCellRect& Rect = Leaves[Leaf];
+						if (U >= Rect.X && U < Rect.X + Rect.W && V >= Rect.Y && V < Rect.Y + Rect.D)
+						{
+							Label[Cell] = static_cast<int32>(Leaf);
+							break;
+						}
+					}
 				}
-			}
-			for (size_t Leaf = 0; Leaf < Leaves.size(); ++Leaf)
-			{
-				if (LeafArea[Leaf] > 0)
-				{
-					Remap[Leaf] = LeafCount++;
-				}
-			}
-			for (auto& [Cell, Leaf] : Label)
-			{
-				Leaf = Leaf >= 0 ? Remap[static_cast<size_t>(Leaf)] : -1;
-			}
-			while (static_cast<int32>(Types.size()) > LeafCount && DropOne())
-			{
-			}
-			while (static_cast<int32>(Types.size()) > LeafCount)
-			{
-				Types.pop_back();
-			}
-			if (Types.empty())
-			{
-				// 방 종류가 하나도 없으면 이름 없는 방 하나
-				std::vector<std::string> Names(static_cast<size_t>(LeafCount), "Room");
-				return Names;
-			}
+				KeepLargestComponents(Unit.Cells, Label, static_cast<int32>(Leaves.size()));
+				FillOrphans(W, Unit.Cells, Label);
 
-			return AssignTypes(Label, LeafCount, Types);
+				// 빈 잎 제거 (라벨 다시 매김)
+				std::vector<int32> Remap(Leaves.size(), -1);
+				int32              LeafCount = 0;
+				for (const auto& [Cell, Leaf] : Label)
+				{
+					if (Leaf >= 0)
+					{
+						++LeafArea[static_cast<size_t>(Leaf)];
+					}
+				}
+				for (size_t Leaf = 0; Leaf < Leaves.size(); ++Leaf)
+				{
+					if (LeafArea[Leaf] > 0)
+					{
+						Remap[Leaf] = LeafCount++;
+					}
+				}
+				for (auto& [Cell, Leaf] : Label)
+				{
+					Leaf = Leaf >= 0 ? Remap[static_cast<size_t>(Leaf)] : -1;
+				}
+				while (static_cast<int32>(Types.size()) > LeafCount && DropOne())
+				{
+				}
+				while (static_cast<int32>(Types.size()) > LeafCount)
+				{
+					Types.pop_back();
+				}
+				float                    Score = 0.0f;
+				std::vector<std::string> Names = Types.empty() ? std::vector<std::string>(static_cast<size_t>(LeafCount), "Room") // 방 종류가 없으면 이름 없는 방
+				                                               : AssignTypes(Label, LeafCount, Types, Score);
+				if (Try == 0 || Score > BestScore)
+				{
+					BestScore = Score;
+					BestNames = std::move(Names);
+					BestLabel = Label;
+				}
+			}
+			Label = std::move(BestLabel);
+			return BestNames;
 		}
 
 		// 잎마다 가장 큰 연결 조각만 남기고 나머지 칸은 -1
@@ -817,7 +832,7 @@ namespace
 			}
 		}
 
-		std::vector<std::string> AssignTypes(const std::map<int32, int32>& Label, int32 LeafCount, const std::vector<const FBuildingRoomType*>& Types)
+		std::vector<std::string> AssignTypes(const std::map<int32, int32>& Label, int32 LeafCount, const std::vector<const FBuildingRoomType*>& Types, float& OutScore)
 		{
 			const size_t                    N = static_cast<size_t>(LeafCount);
 			std::vector<std::vector<int32>> Cells(N);
@@ -869,8 +884,30 @@ namespace
 				Value = Rng.Float() * 0.05f;
 			}
 
+			// 인접 선호: (종류, 원하는 이름) → 그 이름의 종류 번호들 (점수 계산에서 문자열 비교를 피한다)
+			std::vector<std::vector<std::vector<int32>>> WantedTypes(Types.size());
+			for (size_t Type = 0; Type < Types.size(); ++Type)
+			{
+				for (const std::string& Wanted : Types[Type]->Adjacent)
+				{
+					std::vector<int32>& Matches = WantedTypes[Type].emplace_back();
+					for (size_t Other = 0; Other < Types.size(); ++Other)
+					{
+						if (Types[Other]->Name == Wanted)
+						{
+							Matches.push_back(static_cast<int32>(Other));
+						}
+					}
+				}
+			}
+			std::vector<int32> LeafOfType(Types.size(), -1);
+
 			const auto Score = [&](const std::vector<int32>& Assign) {
 				float Sum = 0.0f;
+				for (size_t Leaf = 0; Leaf < N; ++Leaf)
+				{
+					LeafOfType[static_cast<size_t>(Assign[Leaf])] = static_cast<int32>(Leaf);
+				}
 				for (size_t Leaf = 0; Leaf < N; ++Leaf)
 				{
 					const FBuildingRoomType& Type    = *Types[static_cast<size_t>(Assign[Leaf])];
@@ -892,11 +929,12 @@ namespace
 					{
 						Sum += bExterior[Leaf] ? 2.0f : -2.0f;
 					}
-					for (const std::string& Wanted : Type.Adjacent)
+					for (const std::vector<int32>& Matches : WantedTypes[static_cast<size_t>(Assign[Leaf])])
 					{
-						for (size_t Other = 0; Other < N; ++Other)
+						for (const int32 Match : Matches)
 						{
-							if (bAdjacent[Leaf][Other] && Types[static_cast<size_t>(Assign[Other])]->Name == Wanted)
+							const int32 Other = LeafOfType[static_cast<size_t>(Match)];
+							if (Other >= 0 && bAdjacent[Leaf][static_cast<size_t>(Other)])
 							{
 								Sum += 1.5f;
 								break;
@@ -910,10 +948,11 @@ namespace
 
 			std::vector<int32> Assign(N);
 			std::iota(Assign.begin(), Assign.end(), 0);
-			std::vector<int32> Best = Assign;
-			if (N <= 7)
+			std::vector<int32> Best      = Assign;
+			float              BestScore = Score(Assign);
+			if (N <= 6)
 			{
-				float BestScore = Score(Assign);
+				// 모든 순열 (6! = 720)
 				while (std::next_permutation(Assign.begin(), Assign.end()))
 				{
 					const float Value = Score(Assign);
@@ -924,11 +963,37 @@ namespace
 					}
 				}
 			}
+			else
+			{
+				// 방이 많으면 두 방 맞바꾸기 국소 탐색 (더 나아지는 교환이 없을 때까지)
+				for (bool bImproved = true; bImproved;)
+				{
+					bImproved = false;
+					for (size_t A = 0; A < N; ++A)
+					{
+						for (size_t B = A + 1; B < N; ++B)
+						{
+							std::swap(Best[A], Best[B]);
+							const float Value = Score(Best);
+							if (Value > BestScore + 1.0e-4f)
+							{
+								BestScore = Value;
+								bImproved = true;
+							}
+							else
+							{
+								std::swap(Best[A], Best[B]);
+							}
+						}
+					}
+				}
+			}
 			std::vector<std::string> Names(N);
 			for (size_t Leaf = 0; Leaf < N; ++Leaf)
 			{
 				Names[Leaf] = Types[static_cast<size_t>(Best[Leaf])]->Name;
 			}
+			OutScore = BestScore;
 			return Names;
 		}
 
@@ -1492,7 +1557,11 @@ namespace
 						continue;
 					}
 					const FVector2 Min = CellMin(X, Y);
-					Props_.KeepFree.push_back(FRect2{ Min.X, Min.Y, Min.X + CellSize(), Min.Y + CellSize() }.Expanded(-1.0f));
+					// 문 앞 칸은 비운다. 트임(Open) 경계는 칸 전체를 막지 않고 통로 연결 검사로만 지킨다 (트인 거실·주방 경계 전체가 막히지 않게)
+					if (Edge != EBuildingEdge::Open)
+					{
+						Props_.KeepFree.push_back(FRect2{ Min.X, Min.Y, Min.X + CellSize(), Min.Y + CellSize() }.Expanded(-1.0f));
+					}
 					const float Inset = CellSize() * 0.125f;
 					FVector2    Sample(Min.X + CellSize() * 0.5f, Min.Y + CellSize() * 0.5f);
 					Sample.X += static_cast<float>(GDirX[Dir]) * (CellSize() * 0.5f - Inset);
@@ -1710,11 +1779,21 @@ namespace
 					const bool     bLongX = Largest->W >= Largest->D;
 					// 너비(로컬 Y)를 긴 축으로: 긴 축이 X면 앞 = ±Y
 					const int32 Front = bLongX ? 2 + static_cast<int32>(Rng.Next() & 1) : static_cast<int32>(Rng.Next() & 1);
-					for (const FVector2 Offset : { FVector2(0.0f, 0.0f), FVector2(bLongX ? Half : 0.0f, bLongX ? 0.0f : Half),
-					                               FVector2(bLongX ? -Half : 0.0f, bLongX ? 0.0f : -Half) })
+					// 가운데에서 가까운 순서로 반 칸 격자 (가운데가 막히면 조금 비켜 놓는다)
+					const int32 StepsX = Largest->W;
+					const int32 StepsY = Largest->D;
+					for (int32 Sy = -StepsY; Sy <= StepsY; ++Sy)
 					{
-						Candidates.push_back({ FVector2(Center.X + Offset.X, Center.Y + Offset.Y), Front });
+						for (int32 Sx = -StepsX; Sx <= StepsX; ++Sx)
+						{
+							Candidates.push_back({ FVector2(Center.X + static_cast<float>(Sx) * Half * 0.5f, Center.Y + static_cast<float>(Sy) * Half * 0.5f), Front });
+						}
 					}
+					std::stable_sort(Candidates.begin(), Candidates.end(), [&Center](const FCandidate& A, const FCandidate& B) {
+						const float DistA = std::abs(A.Center.X - Center.X) + std::abs(A.Center.Y - Center.Y);
+						const float DistB = std::abs(B.Center.X - Center.X) + std::abs(B.Center.Y - Center.Y);
+						return DistA < DistB;
+					});
 					return Candidates; // 가운데 우선 순서 유지 (섞지 않음)
 				}
 			}

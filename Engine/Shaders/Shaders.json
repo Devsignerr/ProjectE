@@ -91,6 +91,14 @@
     { "File": "Water.hlsl", "Entry": "VSWater", "Stage": "Vertex" },
     { "File": "Water.hlsl", "Entry": "PSWater", "Stage": "Pixel" },
     { "File": "Water.hlsl", "Entry": "VSUnderwater", "Stage": "Vertex" },
-    { "File": "Water.hlsl", "Entry": "PSUnderwater", "Stage": "Pixel" }
+    { "File": "Water.hlsl", "Entry": "PSUnderwater", "Stage": "Pixel" },
+    { "File": "CloudNoise.hlsl", "Entry": "ShapeNoiseCS", "Stage": "Compute" },
+    { "File": "CloudNoise.hlsl", "Entry": "DetailNoiseCS", "Stage": "Compute" },
+    { "File": "CloudNoise.hlsl", "Entry": "WeatherCS", "Stage": "Compute" },
+    { "File": "VolumetricClouds.hlsl", "Entry": "TraceCS", "Stage": "Compute" },
+    { "File": "VolumetricClouds.hlsl", "Entry": "ResolveCS", "Stage": "Compute" },
+    { "File": "VolumetricClouds.hlsl", "Entry": "CubeCS", "Stage": "Compute" },
+    { "File": "VolumetricClouds.hlsl", "Entry": "VSComposite", "Stage": "Vertex" },
+    { "File": "VolumetricClouds.hlsl", "Entry": "PSComposite", "Stage": "Pixel" }
   ]
 }

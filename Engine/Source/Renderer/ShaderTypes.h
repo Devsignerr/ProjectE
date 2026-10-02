@@ -159,6 +159,42 @@ struct alignas(16) FAtmosphereConstants
 };
 static_assert(sizeof(FAtmosphereConstants) == 240);
 
+// 볼류메트릭 구름 상수 (Phase 49, VolumetricClouds.hlsl CloudConstants b0). 거리 km (대기 좌표), 카메라 월드 위치만 cm
+struct alignas(16) FCloudConstants
+{
+	FMatrix4x4 InvViewProjection;   // 지터 없음
+	FMatrix4x4 PrevViewProjection;  // 지터 없음
+	FMatrix4x4 ViewProjection;      // 지터 없음
+	FVector3   CameraPositionWorld; // cm
+	float      LayerBottomRadius = 6361.5f;
+	FVector3   WindOffset;          // km
+	float      LayerTopRadius = 6364.0f;
+	float      Coverage   = 0.45f;
+	float      CloudType  = 0.75f;
+	float      Extinction = 40.0f;  // 1/km
+	float      ShapeTile  = 18.0f;  // km
+	float      DetailTile = 1.2f;
+	float      WeatherTile = 40.0f;
+	float      DetailStrength = 0.35f;
+	float      SilverLining = 0.6f;
+	FVector3   Albedo = FVector3::OneVector;
+	float      AmbientScale = 1.0f;
+	FVector3   LightDirection = FVector3(0.0f, 0.0f, 1.0f);
+	float      CirrusCoverage = 0.0f;
+	FVector3   LightIlluminance;
+	float      CirrusRadius = 6368.0f;
+	FVector2   TraceSize;
+	FVector2   InvTraceSize;
+	FVector2   Jitter = FVector2(0.5f, 0.5f);
+	uint32     MaxSteps   = 48;
+	uint32     FrameIndex = 0;
+	float      HistoryWeight = 0.0f;
+	uint32     bHistoryValid = 0;
+	float      MaxDistance = 60.0f; // km
+	float      CubeSize    = 32.0f;
+};
+static_assert(sizeof(FCloudConstants) == 352);
+
 // 물 패스 프레임 상수 (Phase 49, Water.hlsl WaterFrame b0)
 struct alignas(16) FWaterFrameConstants
 {

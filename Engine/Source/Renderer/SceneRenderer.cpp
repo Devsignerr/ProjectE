@@ -162,7 +162,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary))
+	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary) || !Clouds.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -513,7 +513,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	}
 	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile) ||
 	    !FogRenderer.ReloadShaders(bForceRecompile) || !ScreenSpaceReflections.ReloadShaders(bForceRecompile) ||
-	    !ReflectionCaptures.ReloadShaders(bForceRecompile) || !SkyAtmosphere.ReloadShaders(bForceRecompile) || !Water.ReloadShaders(bForceRecompile))
+	    !ReflectionCaptures.ReloadShaders(bForceRecompile) || !SkyAtmosphere.ReloadShaders(bForceRecompile) || !Water.ReloadShaders(bForceRecompile) || !Clouds.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -553,6 +553,7 @@ void FSceneRenderer::Shutdown()
 	IblRenderer.SetLightingOverride(nullptr);
 	SkyAtmosphere.Shutdown();
 	Water.Shutdown();
+	Clouds.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
@@ -1328,7 +1329,23 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 
 	// 2.8) 대기 LUT (투과율/다중 산란은 매질이 바뀔 때만, 하늘 뷰는 매 렌더) + 실시간 IBL 한 단계 (뒤쪽 버퍼 — 이번 프레임 메시는 앞쪽을 읽는다)
 	SkyAtmosphere.AddLutPasses(Graph, ERGQueue::Graphics, TimerId(ERenderTimer::Atmosphere));
-	SkyAtmosphere.AddEnvironmentPasses(Graph, FRGResourceRef{}, FD3D12DescriptorHandle{}, false, !bRenderingCaptures, TimerId(ERenderTimer::Atmosphere));
+	// 2.9) 볼류메트릭 구름: 추적(저해상도) + 시간 누적 (+ IBL용 저해상도 큐브) — 합성은 메인 패스 뒤
+	FVolumetricCloudRenderer::FPrepareInputs CloudInputs;
+	CloudInputs.Camera                   = &Camera;
+	CloudInputs.UnjitteredViewProjection = UnjitteredViewProjection;
+	CloudInputs.PrevViewProjection       = PerFrame.PrevViewProjection;
+	CloudInputs.Width                    = Width;
+	CloudInputs.Height                   = Height;
+	CloudInputs.bHistoryValid            = bTemporalHistoryValid;
+	CloudInputs.bAllowTemporal           = bAllowJitter && !bRenderingCaptures && !bWireframe && bSingleView;
+	const bool bClouds                   = Clouds.Prepare(Scene, SkyAtmosphere, CloudInputs);
+	if (bClouds)
+	{
+		Clouds.AddPasses(Graph, SkyAtmosphere, FogRenderer.GetConstantsAddress(), TimerId(ERenderTimer::Clouds));
+	}
+	const bool bCloudCube = bClouds && Clouds.AffectsEnvironment();
+	SkyAtmosphere.AddEnvironmentPasses(Graph, bCloudCube ? Clouds.GetCubeRef() : FRGResourceRef{}, Clouds.GetCubeSrv(), bClouds && Clouds.IsChanging(),
+	                                   !bRenderingCaptures, TimerId(ERenderTimer::Atmosphere));
 
 	// 메시 패스(메인/반투명)가 묶는 조명 리소스 선언 (그림자 맵·로컬 그림자·클러스터 + SSAO·DBuffer·SSR — 꺼져 있어도 묶이므로 항상)
 	if (!AmbientOcclusionRef.IsValid())
@@ -1405,6 +1422,12 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		if (bOcclusion)
 		{
 			OcclusionCuller.AddFinishPass(Graph, OcclusionRefs);
+		}
+
+		// 구름 합성 (하늘 + 구름보다 먼 기하, 안개 적용 전 — 높이 안개는 하늘처럼 구름 위에도)
+		if (bClouds)
+		{
+			Clouds.AddCompositePass(Graph, *SceneColor, OutRefs.Color, OutRefs.Depth, TimerId(ERenderTimer::Clouds));
 		}
 
 		// 안개 적용 (불투명 메시 + 하늘, 씬 깊이) → 파티클은 정점에서 같은 식

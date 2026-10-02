@@ -7,6 +7,7 @@
     { "Name": "Sky", "Parent": -1, "Components": {
         "TransformComponent": { "Position": [0.0, 0.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
         "SkyAtmosphereComponent": { },
+        "VolumetricCloudComponent": { "Coverage": 0.45, "WindSpeed": 12.0 },
         "TimeOfDayComponent": { "TimeOfDay": 15.0, "DayLengthMinutes": 0.0, "MaxSunElevation": 55.0, "NorthAzimuth": 120.0, "AnimateInEditor": false } } },
     { "Name": "Ground", "Parent": -1, "Components": {
         "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [400.0, 400.0, 0.2] },

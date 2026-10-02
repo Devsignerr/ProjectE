@@ -11,6 +11,7 @@
 #include "Network/ReplicationServer.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
+#include "Renderer/DebugDrawRenderer.h"
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
@@ -73,6 +74,7 @@ private:
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
+	FDebugDrawRenderer         DebugDrawRenderer; // 3D 디버그 선 (씬 위, 게임 UI 아래 — Renderer/DebugDraw.h)
 	FUIRenderer                UIRenderer; // 게임 UI (씬 위)
 	FUIDrawList                UIDrawList; // 프레임마다 다시 채움
 	FUIConsoleOverlay          Console;     // ` 키 개발자 콘솔 (게임 UI 위, 패키지 게임은 프로젝트 설정 Console.EnableInPackagedGame)

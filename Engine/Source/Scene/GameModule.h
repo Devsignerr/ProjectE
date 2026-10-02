@@ -5,6 +5,7 @@
 #include "Scene/GameRpc.h"
 
 class FScene;
+class FPhysicsSystem;
 struct FAnimNotifyEvent;
 
 // 게임 모듈 인터페이스. 프로젝트의 C++ 게임 코드(<프로젝트>/Source → <이름>.dll)가 구현한다.
@@ -44,6 +45,10 @@ public:
 
 	IGameNet* GetNet() const { return Net; }
 	void      SetNet(IGameNet* InNet) { Net = InNet; } // 엔진(FGameModuleHost)만 부른다
+	// 물리 (Physics/PhysicsSystem.h를 포함해 쓴다): 레이캐스트, 겹침 검사/쓸어 보기(Overlap*/Sweep/*Cast), 힘/속도.
+	// GetNet()과 같은 수명 (OnBeginPlay ~ OnEndPlay, 물리 없는 앱이면 nullptr)
+	FPhysicsSystem* GetPhysics() const { return Physics; }
+	void            SetPhysics(FPhysicsSystem* InPhysics) { Physics = InPhysics; } // 엔진(FGameModuleHost)만 부른다
 
 	// 물리 알림 (Scene/CollisionEvents.h, 규칙은 Physics/PhysicsSystem.h): 서버(Standalone 포함)에서 물리 스텝 뒤, 같은 엔티티 스크립트의
 	// OnCollisionBegin 등 다음에 불린다. 쌍 하나는 양쪽 엔티티(Event.Self)로 한 번씩 온다.
@@ -57,11 +62,12 @@ public:
 	virtual void OnJointBreak(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
 
 private:
-	IGameNet* Net = nullptr;
+	IGameNet*       Net     = nullptr;
+	FPhysicsSystem* Physics = nullptr;
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 8; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak)
+inline constexpr uint32 GameModuleApiVersion = 9; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

@@ -90,6 +90,26 @@ public:
 	FVector3 GetVelocity(FEntity Entity) const;
 	float    GetMass(FEntity Entity) const; // 실제 바디 질량 (Mass 0 = 밀도 자동 계산 결과). 동적 바디가 아니면 0
 	bool     HasBody(FEntity Entity) const { return Bodies.contains(Entity); }
+
+	// ---- 모양 질의 (cm, 규칙은 FPhysicsWorld::Overlap/Sweep — 트리거 제외). IgnoreEntity(NullEntity = 없음)의 바디
+	// (캐릭터면 내부 바디)와 그 바디와 충돌을 끈 쌍은 뺀다. 게임 모듈은 IGameModule::GetPhysics()로 부른다
+	// 겹침: 닿거나 겹친 엔티티 (중복 없음, OutEntities 끝에 붙인다). 반환: 찾은 엔티티 수
+	uint32 Overlap(const FPhysicsQueryShape& Shape, const FVector3& Position, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+	               FEntity IgnoreEntity = NullEntity) const;
+	uint32 OverlapSphere(const FVector3& Center, float Radius, std::vector<FEntity>& OutEntities, FEntity IgnoreEntity = NullEntity) const;
+	uint32 OverlapBox(const FVector3& Center, const FVector3& HalfExtents, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+	                  FEntity IgnoreEntity = NullEntity) const;
+	uint32 OverlapCapsule(const FVector3& Center, float Radius, float HalfHeight, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+	                      FEntity IgnoreEntity = NullEntity) const;
+	// 쓸어 보기: 처음 닿는 것. OutHit.Position = 닿은 점, Distance = 이동 거리 (그때 모양 가운데 = Start + 방향 × Distance)
+	bool Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+	           FPhysicsHit& OutHit, FEntity IgnoreEntity = NullEntity) const;
+	bool SphereCast(const FVector3& Start, float Radius, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit,
+	                FEntity IgnoreEntity = NullEntity) const;
+	bool BoxCast(const FVector3& Start, const FVector3& HalfExtents, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+	             FPhysicsHit& OutHit, FEntity IgnoreEntity = NullEntity) const;
+	bool CapsuleCast(const FVector3& Start, float Radius, float HalfHeight, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+	                 FPhysicsHit& OutHit, FEntity IgnoreEntity = NullEntity) const;
 	bool     IsDynamicBody(FEntity Entity) const;
 
 	// ---- 동적 바디 상태 직접 다루기 (네트워크 클라이언트의 물리 예측 — World/GameWorldPhysicsPrediction.cpp). 동적 바디가 아니면 무시 / false
@@ -158,6 +178,7 @@ private:
 		bool     bWritten = false;
 	};
 
+	uint32 FindQueryIgnoreBody(FEntity Entity) const; // 모양 질의 IgnoreEntity → 바디 (캐릭터 내부 바디, 없으면 InvalidBody)
 	void WriteDynamicTransforms(FScene& Scene);
 	void WriteCharacterTransform(FScene& Scene, FEntity Entity);
 

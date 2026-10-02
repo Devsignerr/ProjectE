@@ -15,6 +15,7 @@ class FCamera;
 class FD3D12RenderTarget;
 class FEditorGrid;
 class FNavMeshDebugRenderer;
+class FDebugDrawRenderer;
 class FSelectionOutline;
 class FUIRenderer;
 class FInput;
@@ -80,6 +81,7 @@ private:
 	void ToggleOrthographic(FCamera& Camera);
 	void RenderGrid(FEditorContext& Context);
 	void RenderNavMeshDebug(FEditorContext& Context);
+	void RenderDebugDraw(FEditorContext& Context); // FDebugDraw 선 (Lua Debug.* / 게임 모듈 — 편집·플레이 모두)
 	void RenderGameUI(FEditorContext& Context);
 	void DrawGizmo(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize);
 	void PickEntity(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize);
@@ -93,6 +95,7 @@ private:
 	std::unique_ptr<FEditorGrid>        Grid;
 	std::unique_ptr<FUIRenderer>        UIRenderer; // 플레이 중 게임 UI (처음 필요할 때)
 	std::unique_ptr<FNavMeshDebugRenderer> NavMeshDebug;           // 내비메시 표시를 켤 때 만든다
+	std::unique_ptr<FDebugDrawRenderer>    DebugDrawRenderer;      // 디버그 선이 처음 생길 때 만든다
 	std::vector<FVector3>                  PendingNavMeshTriangles;
 	bool                                   bNavMeshTrianglesDirty = false;
 	FUIDrawList                         GameUIDrawList;

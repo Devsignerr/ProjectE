@@ -155,6 +155,14 @@ void FGameModuleHost::SetNet(IGameNet* Net)
 	}
 }
 
+void FGameModuleHost::SetPhysics(FPhysicsSystem* Physics)
+{
+	if (Module != nullptr)
+	{
+		Module->SetPhysics(Physics);
+	}
+}
+
 void FGameModuleHost::PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn)
 {
 	if (Module != nullptr && bPlaying)

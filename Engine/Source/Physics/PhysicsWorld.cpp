@@ -11,6 +11,9 @@
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
 #include <Jolt/Physics/Collision/GroupFilter.h>
 #include <Jolt/Physics/Constraints/ConeConstraint.h>
@@ -401,6 +404,26 @@ namespace
 	private:
 		const FPairGroupFilter& Pairs;
 		JPH::BodyID             Inner;
+	};
+
+	// 모양 질의의 제외 바디: 무시할 바디 자신 + 그 바디와 충돌을 끈 쌍 (FCharacterBodyFilter와 같은 규칙, 자신도 뺀다)
+	class FQueryBodyFilter final : public JPH::BodyFilter
+	{
+	public:
+		FQueryBodyFilter(const FPairGroupFilter& InPairs, uint32 InIgnore) : Pairs(InPairs), Ignore(InIgnore) {}
+		bool ShouldCollide(const JPH::BodyID& Body) const override
+		{
+			if (Ignore == FPhysicsWorld::InvalidBody)
+			{
+				return true;
+			}
+			const uint32 Id = Body.GetIndexAndSequenceNumber();
+			return Id != Ignore && (Pairs.Disabled.empty() || !Pairs.Disabled.contains(MakePairKey(Ignore, Id)));
+		}
+
+	private:
+		const FPairGroupFilter& Pairs;
+		uint32                  Ignore;
 	};
 
 	struct FConstraintEntry
@@ -857,6 +880,127 @@ bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, f
 	OutHit.Position = FromJoltPosition(Point);
 	OutHit.Normal   = FromJoltVector(Body.GetWorldSpaceSurfaceNormal(Result.mSubShapeID2, Point));
 	OutHit.Distance = Result.mFraction * MaxDistance;
+	return true;
+}
+
+FPhysicsQueryShape FPhysicsQueryShape::MakeSphere(float InRadius)
+{
+	FPhysicsQueryShape Shape;
+	Shape.Shape  = EPhysicsShape::Sphere;
+	Shape.Radius = InRadius;
+	return Shape;
+}
+
+FPhysicsQueryShape FPhysicsQueryShape::MakeBox(const FVector3& InHalfExtents)
+{
+	FPhysicsQueryShape Shape;
+	Shape.Shape       = EPhysicsShape::Box;
+	Shape.HalfExtents = InHalfExtents;
+	return Shape;
+}
+
+FPhysicsQueryShape FPhysicsQueryShape::MakeCapsule(float InRadius, float InHalfHeight)
+{
+	FPhysicsQueryShape Shape;
+	Shape.Shape      = EPhysicsShape::Capsule;
+	Shape.Radius     = InRadius;
+	Shape.HalfHeight = InHalfHeight;
+	return Shape;
+}
+
+namespace
+{
+	// 질의 모양 = 콜라이더와 같은 생성 경로 (캡슐 +Y → +Z 회전, 최소 크기/볼록 반지름 보정)
+	JPH::RefConst<JPH::Shape> CreateQueryShape(const FPhysicsQueryShape& Query)
+	{
+		FPhysicsBodyDesc Desc;
+		Desc.Shape       = Query.Shape;
+		Desc.HalfExtents = Query.HalfExtents;
+		Desc.Radius      = Query.Radius;
+		Desc.HalfHeight  = Query.HalfHeight;
+		return CreateShape(Desc);
+	}
+} // namespace
+
+uint32 FPhysicsWorld::Overlap(const FPhysicsQueryShape& Shape, const FVector3& Position, const FQuat& Rotation, std::vector<uint64>& OutUserData,
+                              uint32 IgnoreBody) const
+{
+	const JPH::RefConst<JPH::Shape> Query = CreateQueryShape(Shape);
+	if (Query == nullptr)
+	{
+		return 0;
+	}
+	const JPH::RMat44 CenterOfMass = JPH::RMat44::sRotationTranslation(ToJoltQuat(Rotation), ToJoltPosition(Position)).PreTranslated(Query->GetCenterOfMass());
+	JPH::CollideShapeSettings Settings;
+	JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> Collector;
+	const FIgnoreTriggerLayerFilter IgnoreTriggers;
+	const FQueryBodyFilter          Bodies(*Impl->PairFilter, IgnoreBody);
+	Impl->System->GetNarrowPhaseQuery().CollideShape(Query, JPH::Vec3::sReplicate(1.0f), CenterOfMass, Settings, JPH::RVec3::sZero(), Collector,
+	                                                 JPH::BroadPhaseLayerFilter(), IgnoreTriggers, Bodies);
+
+	// 바디마다 한 번 (하위 모양 여러 개가 맞을 수 있다). 바디 ID 순으로 정렬해 결과 순서를 고정한다
+	std::vector<JPH::BodyID> Hits;
+	Hits.reserve(Collector.mHits.size());
+	for (const JPH::CollideShapeResult& Hit : Collector.mHits)
+	{
+		Hits.push_back(Hit.mBodyID2);
+	}
+	std::sort(Hits.begin(), Hits.end());
+	Hits.erase(std::unique(Hits.begin(), Hits.end()), Hits.end());
+	uint32 Count = 0;
+	for (const JPH::BodyID Id : Hits)
+	{
+		JPH::BodyLockRead Lock(Impl->System->GetBodyLockInterface(), Id);
+		if (Lock.Succeeded())
+		{
+			OutUserData.push_back(Lock.GetBody().GetUserData());
+			++Count;
+		}
+	}
+	return Count;
+}
+
+bool FPhysicsWorld::Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+                          FPhysicsRayHit& OutHit, uint32 IgnoreBody) const
+{
+	const FVector3 Normalized = Direction.GetNormalized();
+	if (Normalized.LengthSquared() < 0.5f || MaxDistance <= 0.0f)
+	{
+		return false;
+	}
+	const JPH::RefConst<JPH::Shape> Query = CreateQueryShape(Shape);
+	if (Query == nullptr)
+	{
+		return false;
+	}
+	const JPH::RMat44 World = JPH::RMat44::sRotationTranslation(ToJoltQuat(Rotation), ToJoltPosition(Start));
+	const JPH::RShapeCast Cast = JPH::RShapeCast::sFromWorldTransform(Query, JPH::Vec3::sReplicate(1.0f), World,
+	                                                                  ToJoltVector(PhysicsMath::ToMeters(Normalized * MaxDistance)));
+	JPH::ShapeCastSettings Settings;
+	Settings.mReturnDeepestPoint = true; // 시작부터 겹치면 가장 깊은 점/축 (법선이 의미 있게)
+	JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> Collector;
+	const FIgnoreTriggerLayerFilter IgnoreTriggers;
+	const FQueryBodyFilter          Bodies(*Impl->PairFilter, IgnoreBody);
+	Impl->System->GetNarrowPhaseQuery().CastShape(Cast, Settings, JPH::RVec3::sZero(), Collector, JPH::BroadPhaseLayerFilter(), IgnoreTriggers, Bodies);
+	if (!Collector.HadHit())
+	{
+		return false;
+	}
+
+	const JPH::ShapeCastResult& Hit = Collector.mHit;
+	JPH::BodyLockRead           Lock(Impl->System->GetBodyLockInterface(), Hit.mBodyID2);
+	if (!Lock.Succeeded())
+	{
+		return false;
+	}
+	const JPH::RVec3 Point = JPH::RVec3(Hit.mContactPointOn2);
+	OutHit.UserData        = Lock.GetBody().GetUserData();
+	OutHit.Position        = FromJoltPosition(Point);
+	// 침투 축 = 모양을 상대 쪽으로 미는 방향 → 법선은 반대 (상대 표면에서 모양 쪽)
+	const JPH::Vec3 Axis = Hit.mPenetrationAxis;
+	OutHit.Normal        = Axis.LengthSq() > 1.0e-12f ? FromJoltVector(-Axis.Normalized())
+	                                                  : FromJoltVector(Lock.GetBody().GetWorldSpaceSurfaceNormal(Hit.mSubShapeID2, Point));
+	OutHit.Distance      = std::max(Hit.mFraction, 0.0f) * MaxDistance;
 	return true;
 }
 

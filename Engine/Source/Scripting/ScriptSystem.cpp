@@ -32,6 +32,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	PlayRuntime->SetAIHooks(&AIHooks);
 	PlayRuntime->SetAppHooks(&AppHooks);
 	PlayRuntime->SetSteamHooks(&SteamHooks);
+	PlayRuntime->SetDebugDrawHooks(&DebugDrawHooks);
 	PlayRuntime->SetPersistentValues(&PersistentValues);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
@@ -175,6 +176,11 @@ void FScriptSystem::SetAppHooks(FScriptAppHooks Hooks)
 void FScriptSystem::SetSteamHooks(FScriptSteamHooks Hooks)
 {
 	SteamHooks = std::move(Hooks);
+}
+
+void FScriptSystem::SetDebugDrawHooks(FScriptDebugDrawHooks Hooks)
+{
+	DebugDrawHooks = std::move(Hooks);
 }
 
 FScriptObjectHandle FScriptSystem::CreateObject(const std::string& ScriptAsset, const std::string& PropertyOverrides, FEntity Entity)

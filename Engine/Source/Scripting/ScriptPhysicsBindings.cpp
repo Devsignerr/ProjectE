@@ -36,6 +36,80 @@ void FLuaRuntime::RegisterPhysicsBindings()
 		Require(Entity);
 		return PhysicsHooks != nullptr && PhysicsHooks->IsRagdollActive && PhysicsHooks->IsRagdollActive(Entity.Entity);
 	};
+
+	// ---- 모양 질의 (Phase 41-2, cm — FScriptPhysicsHooks::Overlap/Sweep). 트리거 제외, ignore 엔티티(와 충돌을 끈 쌍) 제외
+	//   Physics.OverlapSphere(center, radius, ignore?) / OverlapBox(center, halfExtents, rotation?, ignore?) /
+	//   OverlapCapsule(center, radius, halfHeight, rotation?, ignore?) → 엔티티 배열 (없으면 빈 표)
+	//   Physics.SphereCast(start, radius, direction, maxDistance, ignore?) / BoxCast(start, halfExtents, direction, maxDistance, rotation?, ignore?) /
+	//   CapsuleCast(start, radius, halfHeight, direction, maxDistance, rotation?, ignore?)
+	//     → { entity, position(닿은 점), normal, distance(이동 거리 — 그때 가운데 = start + 방향 × distance) } 또는 nil
+	//   캡슐은 회전 전 +Z 축 (콜라이더와 같음). 물리 훅이 없으면 빈 표 / nil
+	const auto IgnoreOf = [](const sol::optional<FScriptEntity>& Ignore) { return Ignore ? Ignore->Entity : NullEntity; };
+	const auto RunOverlap = [this](const FScriptQueryShape& Shape, const FVector3& Position, FEntity Ignore) {
+		sol::table Result = Lua.create_table();
+		if (PhysicsHooks == nullptr || !PhysicsHooks->Overlap)
+		{
+			return Result;
+		}
+		std::vector<FEntity> Entities;
+		PhysicsHooks->Overlap(Shape, Position, Ignore, Entities);
+		int32 Index = 1;
+		for (const FEntity Entity : Entities)
+		{
+			if (Scene != nullptr && Scene->GetRegistry().IsValid(Entity))
+			{
+				Result[Index++] = FScriptEntity{ Entity };
+			}
+		}
+		return Result;
+	};
+	const auto RunSweep = [this](const FScriptQueryShape& Shape, const FVector3& Start, const FVector3& Direction, float MaxDistance,
+	                             FEntity Ignore) -> sol::object {
+		FScriptRayHit Hit;
+		if (PhysicsHooks == nullptr || !PhysicsHooks->Sweep || !PhysicsHooks->Sweep(Shape, Start, Direction, MaxDistance, Ignore, Hit))
+		{
+			return sol::lua_nil;
+		}
+		sol::table Result  = Lua.create_table();
+		Result["entity"]   = Scene != nullptr && Scene->GetRegistry().IsValid(Hit.Entity) ? sol::make_object(Lua, FScriptEntity{ Hit.Entity }) : sol::object(sol::lua_nil);
+		Result["position"] = Hit.Position;
+		Result["normal"]   = Hit.Normal;
+		Result["distance"] = Hit.Distance;
+		return Result;
+	};
+	const auto MakeShape = [](EScriptQueryShape Type, const FVector3& HalfExtents, float Radius, float HalfHeight, const sol::optional<FQuat>& Rotation) {
+		FScriptQueryShape Shape;
+		Shape.Shape       = Type;
+		Shape.HalfExtents = HalfExtents;
+		Shape.Radius      = Radius;
+		Shape.HalfHeight  = HalfHeight;
+		Shape.Rotation    = Rotation ? Rotation->GetNormalized() : FQuat::Identity;
+		return Shape;
+	};
+
+	sol::table PhysicsTable = Lua["Physics"];
+	PhysicsTable["OverlapSphere"] = [=](const FVector3& Center, float Radius, sol::optional<FScriptEntity> Ignore) {
+		return RunOverlap(MakeShape(EScriptQueryShape::Sphere, FVector3::ZeroVector, Radius, 0.0f, sol::nullopt), Center, IgnoreOf(Ignore));
+	};
+	PhysicsTable["OverlapBox"] = [=](const FVector3& Center, const FVector3& HalfExtents, sol::optional<FQuat> Rotation, sol::optional<FScriptEntity> Ignore) {
+		return RunOverlap(MakeShape(EScriptQueryShape::Box, HalfExtents, 0.0f, 0.0f, Rotation), Center, IgnoreOf(Ignore));
+	};
+	PhysicsTable["OverlapCapsule"] = [=](const FVector3& Center, float Radius, float HalfHeight, sol::optional<FQuat> Rotation,
+	                                     sol::optional<FScriptEntity> Ignore) {
+		return RunOverlap(MakeShape(EScriptQueryShape::Capsule, FVector3::ZeroVector, Radius, HalfHeight, Rotation), Center, IgnoreOf(Ignore));
+	};
+	PhysicsTable["SphereCast"] = [=](const FVector3& Start, float Radius, const FVector3& Direction, float MaxDistance, sol::optional<FScriptEntity> Ignore) {
+		return RunSweep(MakeShape(EScriptQueryShape::Sphere, FVector3::ZeroVector, Radius, 0.0f, sol::nullopt), Start, Direction, MaxDistance, IgnoreOf(Ignore));
+	};
+	PhysicsTable["BoxCast"] = [=](const FVector3& Start, const FVector3& HalfExtents, const FVector3& Direction, float MaxDistance,
+	                              sol::optional<FQuat> Rotation, sol::optional<FScriptEntity> Ignore) {
+		return RunSweep(MakeShape(EScriptQueryShape::Box, HalfExtents, 0.0f, 0.0f, Rotation), Start, Direction, MaxDistance, IgnoreOf(Ignore));
+	};
+	PhysicsTable["CapsuleCast"] = [=](const FVector3& Start, float Radius, float HalfHeight, const FVector3& Direction, float MaxDistance,
+	                                  sol::optional<FQuat> Rotation, sol::optional<FScriptEntity> Ignore) {
+		return RunSweep(MakeShape(EScriptQueryShape::Capsule, FVector3::ZeroVector, Radius, HalfHeight, Rotation), Start, Direction, MaxDistance,
+		                IgnoreOf(Ignore));
+	};
 }
 
 bool FLuaRuntime::InvokeMethodWithFields(FEntity Target, const std::string& MethodName, const FGameRpcArgs& Args, const FScriptEventFields& Fields)
@@ -65,12 +139,12 @@ bool FLuaRuntime::InvokeMethodWithFields(FEntity Target, const std::string& Meth
 	Values.push_back(Table);
 	const sol::table               Self = Instance.Self;
 	sol::protected_function        Function(Method.as<sol::function>(), Traceback);
+	const FInstanceScope           Scope(*this, Instance.Entity);
 	sol::protected_function_result Result = Function(Self, sol::as_args(Values));
 	if (!Result.valid())
 	{
 		const sol::error Error = Result;
-		Instance.bFaulted      = true;
-		ReportError(std::format("스크립트 오류 ({}:{}) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, MethodName, Error.what()));
+		FaultInstance(Instance, MethodName, Error.what());
 		return false;
 	}
 	return true;

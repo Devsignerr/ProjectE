@@ -1,0 +1,26 @@
+{
+  "Name": "Glass",
+  "BaseColorFactor": [
+    0.75,
+    0.9,
+    1.0,
+    0.12
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.05,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Translucent",
+  "AlphaCutoff": 0.5,
+  "TwoSided": false,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

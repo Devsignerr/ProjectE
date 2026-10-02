@@ -9,6 +9,7 @@
 
 // .emat 머티리얼 편집기. 씬과 같은 머티리얼 리소스(경로 캐시)를 직접 고치므로 열린 씬에 즉시 반영되고,
 // 저장하지 않고 닫으면 파일 상태로 되돌린다.
+// 머티리얼 인스턴스(부모 지정)는 항목마다 "덮어쓰기" 체크로 부모 값을 따를지 고르고, 덮어쓰지 않은 항목은 부모 값을 흐리게 보여 준다.
 class FMaterialEditor final : public FAssetEditor
 {
 public:
@@ -25,15 +26,23 @@ protected:
 	void        DrawPreviewToolbar(FAssetEditorEnvironment& Env) override;
 
 private:
-	// 편집 값 → 공유 머티리얼 (텍스처가 바뀌었으면 디스크립터 테이블도 다시 만든다)
-	void ApplyToMaterial(FAssetEditorEnvironment& Env, bool bTexturesChanged);
+	// 편집 값 → 공유 머티리얼 (리소스 관리자가 부모 체인을 해석하고, 텍스처가 바뀐 경우에만 디스크립터 테이블을 다시 만든다)
+	void ApplyToMaterial(FAssetEditorEnvironment& Env);
+	// 부모에게서 물려받는 값(Inherited)과 해석 오류를 다시 계산한다
+	void RefreshInherited(FAssetEditorEnvironment& Env);
 	void SetPreviewShape(FAssetEditorEnvironment& Env, const char* PrimitiveName);
-	void ScanTextureFiles(const std::filesystem::path& ContentDirectory);
+	void ScanFiles(const std::filesystem::path& ContentDirectory);
 	bool DrawTextureSlot(FAssetEditorEnvironment& Env, uint32 Slot, const char* Label);
+	// 인스턴스면 "덮어쓰기" 체크박스를 그린다. 체크를 끄면 그 항목은 부모 값으로 돌아간다. 반환: 체크가 바뀌었으면 true
+	bool DrawOverrideToggle(uint32 Field);
+	bool DrawParent(FAssetEditorEnvironment& Env);
 
 	FMaterialAsset           Asset;
+	FMaterialAsset           Inherited; // 인스턴스: 부모 체인만 해석한 값 (덮어쓰지 않은 항목에 보여 준다)
+	std::string              ParentError;
 	FMaterialHandle          Material;
 	FEntity                  PreviewEntity;
 	std::string              PreviewShape = "sphere";
-	std::vector<std::string> TextureFiles; // .emat 폴더 기준 상대 경로 ('/' 구분)
+	std::vector<std::string> TextureFiles;  // .emat 폴더 기준 상대 경로 ('/' 구분)
+	std::vector<std::string> MaterialFiles; // 부모 후보 .emat (같은 기준, 자기 자신 제외)
 };

@@ -1,0 +1,11 @@
+{
+  "Name": "GlassGreen",
+  "Parent": "Glass.emat",
+  "BaseColorFactor": [
+    0.35,
+    1.0,
+    0.45,
+    0.35
+  ],
+  "Roughness": 0.2
+}

@@ -1,0 +1,26 @@
+{
+  "Name": "Leaves",
+  "BaseColorFactor": [
+    0.3,
+    0.75,
+    0.2,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.65,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Masked",
+  "AlphaCutoff": 0.4,
+  "TwoSided": true,
+  "BaseColorTexture": "Leaves.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

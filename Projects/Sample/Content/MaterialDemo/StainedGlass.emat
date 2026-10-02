@@ -1,0 +1,26 @@
+{
+  "Name": "StainedGlass",
+  "BaseColorFactor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.1,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Translucent",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "BaseColorTexture": "StainedGlass.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

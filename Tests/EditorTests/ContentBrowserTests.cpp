@@ -110,6 +110,43 @@ E_TEST(AssetReference_RenameSceneUpdatesProjectAndFindsReferences)
 	E_EXPECT_FALSE(FAssetReferenceUpdater::RemapContentPath("Fox.glb", Temp.Content, { { Temp.Content / "Scenes", Temp.Content / "X" } }).has_value());
 }
 
+E_TEST(AssetReference_DataTablesFollowMovedFiles)
+{
+	// 데이터 구조체/테이블/에셋: Struct 경로, RowRef Table, Asset 값은 Content 기준. 행 이름(확장자 없음)과 필터 문자열은 그대로
+	FTempContent Temp("DataTables");
+	WriteText(Temp.Content / "Data/Item.estruct",
+	          "{\"Version\": 1, \"Fields\": [{\"Name\":\"Icon\",\"Type\":\"Asset\",\"Filter\":\".png;.jpg\",\"Default\":\"\"},"
+	          "{\"Name\":\"Next\",\"Type\":\"RowRef\",\"Table\":\"Data/Items.etable\",\"Default\":\"\"}]}");
+	WriteText(Temp.Content / "Data/Items.etable",
+	          "{\"Version\": 1, \"Struct\": \"Data/Item.estruct\", \"Rows\": [{\"Name\":\"Textures\",\"Values\":{\"Icon\":\"Textures/UV.png\",\"Next\":\"Textures\"}}]}");
+	WriteText(Temp.Content / "Data/Config.edata", "{\"Version\": 1, \"Struct\": \"Data/Item.estruct\", \"Values\": {\"Icon\":\"Textures/UV.png\"}}");
+
+	fs::create_directories(Temp.Content / "Art");
+	fs::path MovedTextures;
+	E_EXPECT_TRUE(FAssetFileOps::Move(Temp.Content / "Textures", Temp.Content / "Art", MovedTextures) == FAssetFileOps::EResult::Ok);
+	fs::path MovedTable;
+	E_EXPECT_TRUE(FAssetFileOps::Rename(Temp.Content / "Data/Items.etable", L"Loot.etable", MovedTable) == FAssetFileOps::EResult::Ok);
+	fs::create_directories(Temp.Content / "Data/Defs");
+	fs::path MovedStruct;
+	E_EXPECT_TRUE(FAssetFileOps::Move(Temp.Content / "Data/Item.estruct", Temp.Content / "Data/Defs", MovedStruct) == FAssetFileOps::EResult::Ok);
+	FAssetReferenceUpdater::UpdateAfterMove(Temp.Content, Temp.Project,
+	                                        { { Temp.Content / "Textures", MovedTextures },
+	                                          { Temp.Content / "Data/Items.etable", MovedTable },
+	                                          { Temp.Content / "Data/Item.estruct", MovedStruct } });
+
+	const std::string Struct = ReadText(MovedStruct);
+	E_EXPECT_TRUE(Contains(Struct, "\"Table\":\"Data/Loot.etable\""));
+	E_EXPECT_TRUE(Contains(Struct, "\".png;.jpg\""));
+	const std::string Table = ReadText(MovedTable);
+	E_EXPECT_TRUE(Contains(Table, "\"Struct\": \"Data/Defs/Item.estruct\""));
+	E_EXPECT_TRUE(Contains(Table, "\"Icon\":\"Art/Textures/UV.png\""));
+	E_EXPECT_TRUE(Contains(Table, "\"Name\":\"Textures\"") && Contains(Table, "\"Next\":\"Textures\"")); // 폴더와 같은 이름의 행은 그대로
+	const std::string Asset = ReadText(Temp.Content / "Data/Config.edata");
+	E_EXPECT_TRUE(Contains(Asset, "\"Struct\": \"Data/Defs/Item.estruct\"") && Contains(Asset, "\"Art/Textures/UV.png\""));
+	// 삭제 확인: 구조체를 참조하는 파일
+	E_EXPECT_EQ(FAssetReferenceUpdater::FindReferencingFiles(Temp.Content, Temp.Project, { MovedStruct }).size(), static_cast<size_t>(2));
+}
+
 E_TEST(AssetFileOps_GuardsAndUniqueNames)
 {
 	FTempContent Temp("FileOps");

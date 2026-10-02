@@ -156,6 +156,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterDebugDrawBindings();
 	RegisterModuleBindings();
 	RegisterCameraBindings();
+	RegisterDataBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()

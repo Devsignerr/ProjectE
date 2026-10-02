@@ -27,6 +27,7 @@
 #include "Renderer/StaticMesh.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/DataLibrary.h"
 #include "Scene/Prefab.h"
 #include "Scene/Sequence.h"
 #include "Scene/SceneSerializer.h"
@@ -1939,6 +1940,12 @@ void FEditorApplication::PollScriptChanges()
 			FSequenceLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
+		// 데이터 테이블/에셋/구조체: 캐시 무효화 → 다음 Data.* / LoadTable이 새 파일을 읽는다 (구조체면 그 구조체를 쓰는 테이블도)
+		if (FDataLibrary::IsDataExtension(Extension))
+		{
+			FDataLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
 		if (Extension != L".lua")
 		{
 			continue;
@@ -2060,6 +2067,7 @@ void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
 
 	// 프리팹 원본 캐시는 경로가 키이므로 비운다 (다음 사용 시 새 경로로 다시 읽음)
 	FPrefabLibrary::Get().Invalidate();
+	FDataLibrary::Get().Invalidate(); // 데이터 테이블 캐시도 경로가 키 (참조 갱신기가 고친 Struct/RowRef 경로를 다시 읽게)
 
 	// 4) 열려 있는 씬 파일 자체가 옮겨졌으면 저장 경로도
 	if (!CurrentScenePath.empty())

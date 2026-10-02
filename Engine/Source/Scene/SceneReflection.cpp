@@ -11,6 +11,7 @@
 #include "Scene/SubScene.h"
 #include "Scene/Foliage.h"
 #include "Scene/Terrain.h"
+#include "Scene/Building/BuildingScene.h"
 
 void RegisterSceneTypes()
 {
@@ -280,4 +281,6 @@ void RegisterSceneTypes()
 		.Property(&FLookAtComponent::BlendSpeed, "BlendSpeed", "켜고 끄는 속도").Range(0.0f, 100.0f, 0.1f)
 		.NoReplicate()
 		.AsComponent();
+	// 실내 절차적 생성 (Scene/Building/BuildingScene.h, Phase 50 사이드)
+	RegisterBuildingTypes();
 }

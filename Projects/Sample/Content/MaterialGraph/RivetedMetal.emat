@@ -1,0 +1,35 @@
+{
+  "Name": "RivetedMetal",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    { "Name": "BaseTexture", "Type": "Texture", "Value": "../Terrain/Textures/Rock_Base.png", "Usage": "Color" },
+    { "Name": "BaseNormal", "Type": "Texture", "Value": "../Terrain/Textures/Rock_Normal.png", "Usage": "Normal" },
+    { "Name": "DetailNormal", "Type": "Texture", "Value": "../Decals/RivetsNormal.png", "Usage": "Normal" },
+    { "Name": "Tint", "Type": "Vector", "Value": [0.8, 0.75, 0.7, 1.0] },
+    { "Name": "DetailTiling", "Type": "Scalar", "Value": 4.0 },
+    { "Name": "Metallic", "Type": "Scalar", "Value": 0.85 }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "uv", "Type": "TexCoord" },
+      { "Id": "tiling", "Type": "ScalarParameter", "Parameter": "DetailTiling" },
+      { "Id": "detailUv", "Type": "Multiply", "Inputs": { "A": "uv", "B": "tiling" } },
+      { "Id": "base", "Type": "TextureSample", "Texture": "BaseTexture", "Inputs": { "UV": "uv" } },
+      { "Id": "baseNormal", "Type": "TextureSample", "Texture": "BaseNormal", "Inputs": { "UV": "uv" } },
+      { "Id": "detailNormal", "Type": "TextureSample", "Texture": "DetailNormal", "Inputs": { "UV": "detailUv" } },
+      { "Id": "normal", "Type": "BlendNormals", "Inputs": { "A": "baseNormal:1", "B": "detailNormal:1" } },
+      { "Id": "tint", "Type": "VectorParameter", "Parameter": "Tint" },
+      { "Id": "gray", "Type": "Dot", "Inputs": { "A": "base:1", "B": [0.33, 0.33, 0.33] } },
+      { "Id": "color", "Type": "Multiply", "Inputs": { "A": "tint:1", "B": "gray" } },
+      { "Id": "brightened", "Type": "Multiply", "Inputs": { "A": "color", "B": 2.0 } },
+      { "Id": "metallic", "Type": "ScalarParameter", "Parameter": "Metallic" },
+      { "Id": "roughness", "Type": "Lerp", "Inputs": { "A": 0.25, "B": 0.6, "Alpha": "gray" } }
+    ],
+    "Output": {
+      "BaseColor": "brightened",
+      "Metallic": "metallic",
+      "Roughness": "roughness",
+      "Normal": "normal"
+    }
+  }
+}

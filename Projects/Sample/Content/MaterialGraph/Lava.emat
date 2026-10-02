@@ -1,0 +1,50 @@
+{
+  "Name": "Lava",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    { "Name": "RockTexture", "Type": "Texture", "Value": "../Terrain/Textures/Rock_Base.png", "Usage": "Color" },
+    { "Name": "FlowSpeed", "Type": "Vector", "Value": [0.03, 0.012, -0.018, 0.025] },
+    { "Name": "GlowColor", "Type": "Vector", "Value": [1.0, 0.32, 0.05, 1.0] },
+    { "Name": "GlowIntensity", "Type": "Scalar", "Value": 4.0 },
+    { "Name": "CrackThreshold", "Type": "Scalar", "Value": 0.0175 },
+    { "Name": "CrackContrast", "Type": "Scalar", "Value": 160.0 }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "uvA", "Type": "TexCoord", "Tiling": [2, 2] },
+      { "Id": "uvB", "Type": "TexCoord", "Tiling": [3.1, 2.7] },
+      { "Id": "speed", "Type": "VectorParameter", "Parameter": "FlowSpeed" },
+      { "Id": "speedA", "Type": "ComponentMask", "Channels": "xy", "Inputs": { "A": "speed" } },
+      { "Id": "speedB", "Type": "ComponentMask", "Channels": "zw", "Inputs": { "A": "speed" } },
+      { "Id": "panA", "Type": "Panner", "Inputs": { "UV": "uvA", "Speed": "speedA" } },
+      { "Id": "panB", "Type": "Panner", "Inputs": { "UV": "uvB", "Speed": "speedB" } },
+      { "Id": "rockA", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "panA" } },
+      { "Id": "rockB", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "panB" } },
+      { "Id": "rockStill", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "uvA" } },
+      { "Id": "cracks", "Type": "Multiply", "Inputs": { "A": "rockA:3", "B": "rockB:3" } },
+      { "Id": "threshold", "Type": "ScalarParameter", "Parameter": "CrackThreshold" },
+      { "Id": "contrast", "Type": "ScalarParameter", "Parameter": "CrackContrast" },
+      { "Id": "below", "Type": "Subtract", "Inputs": { "A": "threshold", "B": "cracks" } },
+      { "Id": "heatLinear", "Type": "Multiply", "Inputs": { "A": "below", "B": "contrast" } },
+      { "Id": "heatClamped", "Type": "Saturate", "Inputs": { "A": "heatLinear" } },
+      { "Id": "heat", "Type": "Power", "Inputs": { "A": "heatClamped", "B": 1.5 } },
+      { "Id": "time", "Type": "Time" },
+      { "Id": "pulseArg", "Type": "Multiply", "Inputs": { "A": "time", "B": 1.7 } },
+      { "Id": "pulseSin", "Type": "Sine", "Inputs": { "A": "pulseArg" } },
+      { "Id": "pulse", "Type": "Lerp", "Inputs": { "A": 0.75, "B": 1.0, "Alpha": "pulseSin" } },
+      { "Id": "glowColor", "Type": "VectorParameter", "Parameter": "GlowColor" },
+      { "Id": "glowIntensity", "Type": "ScalarParameter", "Parameter": "GlowIntensity" },
+      { "Id": "glowHeat", "Type": "Multiply", "Inputs": { "A": "glowColor:1", "B": "heat" } },
+      { "Id": "glowScaled", "Type": "Multiply", "Inputs": { "A": "glowHeat", "B": "glowIntensity" } },
+      { "Id": "emissive", "Type": "Multiply", "Inputs": { "A": "glowScaled", "B": "pulse" } },
+      { "Id": "crust", "Type": "Multiply", "Inputs": { "A": "rockStill:1", "B": [0.18, 0.13, 0.12] } },
+      { "Id": "base", "Type": "Lerp", "Inputs": { "A": "crust", "B": [0.35, 0.08, 0.02], "Alpha": "heat" } },
+      { "Id": "rough", "Type": "Lerp", "Inputs": { "A": 0.92, "B": 0.45, "Alpha": "heat" } }
+    ],
+    "Output": {
+      "BaseColor": "base",
+      "Roughness": "rough",
+      "Emissive": "emissive"
+    }
+  }
+}

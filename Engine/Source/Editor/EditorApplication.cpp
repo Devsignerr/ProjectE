@@ -2061,6 +2061,7 @@ void FEditorApplication::RunScriptDebugLoop()
 		return;
 	}
 	SetPlayCursorLocked(false); // 디버거를 조작할 수 있게 커서를 풀어 준다
+	ScriptDebuggerPanel.bOpen = true;
 	const FScriptPauseState& State = Debugger.GetPauseState();
 	ShowNotification(std::format("스크립트 정지 ({}) {}:{} — F5 계속, F10 넘기기, F11 들어가기, Shift+F11 나가기", ToString(State.Reason), State.File, State.Line),
 	                 State.Reason == EScriptPauseReason::Error);

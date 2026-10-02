@@ -35,7 +35,7 @@ public:
 	std::function<void()> OnPaused;
 	// 툴바 "플레이 정지" (정지 중이면 재개 후 정지)
 	std::function<void()> OnStopPlay;
-	bool bOpen = true;
+	bool bOpen = false; // 기본 닫힘 — 창 메뉴, .lua 열기, 정지 시 열린다 (떠 있는 창이 뷰포트를 가리지 않게)
 
 private:
 	struct FSourceFile

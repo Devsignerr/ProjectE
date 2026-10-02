@@ -8,6 +8,8 @@
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Renderer/StaticMesh.h"
+#include "Core/CommandLine.h"
+#include "Scene/AnimRetarget.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/ModelMetadata.h"
 
@@ -23,7 +25,12 @@
 bool FModelEditorBase::HasAnimations(const std::filesystem::path& Path, FResourceManager& Resources)
 {
 	const FModelResources* ModelResources = FModelLoader::LoadModelResources(Path, Resources);
-	return ModelResources != nullptr && !ModelResources->Model.Animations.empty();
+	return ModelResources != nullptr && (!ModelResources->Model.Animations.empty() || !ModelResources->Model.Skins.empty());
+}
+
+void FModelEditorBase::InvalidateRetargeting() const
+{
+	FAnimRetargetLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
 }
 
 bool FModelEditorBase::LoadAsset(FAssetEditorEnvironment& Env)
@@ -54,7 +61,9 @@ bool FModelEditorBase::LoadAsset(FAssetEditorEnvironment& Env)
 bool FModelEditorBase::SaveAsset(FAssetEditorEnvironment& Env)
 {
 	(void)Env;
-	return Metadata && Metadata->SaveForSource(Path);
+	const bool bSaved = Metadata && Metadata->SaveForSource(Path);
+	InvalidateRetargeting(); // 소스로 쓰일 때는 파일을 다시 읽는다
+	return bSaved;
 }
 
 std::string FModelEditorBase::CaptureState() const
@@ -70,6 +79,7 @@ void FModelEditorBase::RestoreState(FAssetEditorEnvironment& Env, const std::str
 		SelectedSocket = std::min(SelectedSocket, static_cast<int32>(Metadata->Sockets.size()) - 1);
 		SocketNameFor  = -1;
 		SocketEulerFor = -1;
+		InvalidateRetargeting();
 	}
 }
 
@@ -247,10 +257,44 @@ bool FAnimationEditor::LoadAsset(FAssetEditorEnvironment& Env)
 			}
 		}
 	});
+	// 자동 검증: --retarget-preview <모델>[:<클립>]
+	if (!bCommandLineApplied)
+	{
+		bCommandLineApplied            = true;
+		const std::string Requested    = FStringConv::ToUtf8(FCommandLine::FromProcess().GetValue(L"--retarget-preview"));
+		std::string       SourceModel  = Requested;
+		std::string       SourceClip;
+		FAnimRetargetLibrary::SplitQualifiedName(Requested, SourceModel, SourceClip);
+		if (!SourceModel.empty())
+		{
+			SetPreviewSource(SourceModel);
+			if (!SourceClip.empty() && !FAnimationSystem::Play(Scene, ModelRoot, Requested, 0.0f))
+			{
+				FAnimationSystem::Play(Scene, ModelRoot, SourceClip, 0.0f);
+			}
+		}
+	}
+	else if (!PreviewSource.empty())
+	{
+		SetPreviewSource(PreviewSource); // 다시 배치(다시 가져오기) 뒤에도 유지
+	}
 	// 첫 포즈를 미리 써 둔다 (경계 계산/첫 화면)
 	FAnimationSystem::Update(Scene, 0.0f);
 	Scene.UpdateTransforms();
+	ClipNames = FAnimationSystem::GetClipNames(Scene, ModelRoot);
 	return true;
+}
+
+void FAnimationEditor::SetPreviewSource(const std::string& Source)
+{
+	PreviewSource = Source;
+	FScene& Scene = Preview.GetScene();
+	if (FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(ModelRoot))
+	{
+		Animation->RetargetSources = Source;
+		FAnimationSystem::RefreshRetargeting(Scene, ModelRoot);
+	}
+	ClipNames = FAnimationSystem::GetClipNames(Scene, ModelRoot);
 }
 
 void FAnimationEditor::Update(FAssetEditorEnvironment& Env, float DeltaSeconds)
@@ -328,9 +372,11 @@ void FAnimationEditor::DrawProperties(FAssetEditorEnvironment& Env)
 {
 	FScene&              Scene     = Preview.GetScene();
 	FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(ModelRoot);
+	ClipNames                      = FAnimationSystem::GetClipNames(Scene, ModelRoot); // 리타기팅 소스가 바뀌면 늘어난다
 	if (Animation == nullptr || ClipNames.empty())
 	{
-		ImGui::TextDisabled("애니메이션 클립이 없습니다");
+		ImGui::TextDisabled("애니메이션 클립이 없습니다 — 아래 리타기팅에서 다른 모델의 클립을 미리볼 수 있습니다");
+		DrawRetargeting(Env);
 		DrawModelInfo(Env);
 		return;
 	}
@@ -339,12 +385,21 @@ void FAnimationEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	const std::string Current = FAnimationSystem::GetCurrentClip(Scene, ModelRoot);
 	if (ImGui::BeginListBox("##Clips", ImVec2(-FLT_MIN, ImGui::GetTextLineHeightWithSpacing() * std::min<float>(6.0f, static_cast<float>(ClipNames.size()) + 0.5f))))
 	{
-		for (const std::string& Name : ClipNames)
+		const int32 OwnClips = Animation->Runtime.Set ? Animation->Runtime.Set->OwnClipCount : 0;
+		for (size_t Index = 0; Index < ClipNames.size(); ++Index)
 		{
-			if (ImGui::Selectable(Name.c_str(), Name == Current))
+			const std::string& Name      = ClipNames[Index];
+			const bool         bRetarget = static_cast<int32>(Index) >= OwnClips;
+			const std::string  Label     = (bRetarget ? std::string(ICON_FA_PEOPLE_ARROWS " ") : std::string()) + Name + "##" + std::to_string(Index);
+			const bool         bCurrent  = Animation->Runtime.CurrentClip == static_cast<int32>(Index) || (Animation->Runtime.CurrentClip < 0 && Name == Current);
+			if (ImGui::Selectable(Label.c_str(), bCurrent))
 			{
 				FAnimationSystem::Play(Scene, ModelRoot, Name, 0.0f);
 				FAnimationSystem::SetTime(Scene, ModelRoot, 0.0f);
+			}
+			if (bRetarget)
+			{
+				ImGui::SetItemTooltip("리타기팅 클립 (%s)", PreviewSource.c_str());
 			}
 		}
 		ImGui::EndListBox();
@@ -387,7 +442,14 @@ void FAnimationEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	const int32 Frame      = static_cast<int32>(std::floor(Time / StepSeconds + 0.5f));
 	const int32 FrameCount = static_cast<int32>(std::floor(Duration / StepSeconds + 0.5f));
 	ImGui::TextDisabled("프레임 %d / %d, 길이 %.2f초", Frame, FrameCount, Duration);
-	DrawNotifyTrack(Current, Duration, FAnimationSystem::GetTime(Scene, ModelRoot));
+	if (Animation->Runtime.Set && Animation->Runtime.CurrentClip >= Animation->Runtime.Set->OwnClipCount)
+	{
+		FAssetEditorWidgets::Hint("리타기팅 클립의 노티파이는 소스 모델(.emeta)의 것을 씁니다 — 소스 모델 편집 창에서 고칩니다.");
+	}
+	else
+	{
+		DrawNotifyTrack(Current, Duration, FAnimationSystem::GetTime(Scene, ModelRoot));
+	}
 
 	ImGui::DragFloat("속도", &Animation->Speed, 0.01f, 0.0f, 5.0f, "%.2fx");
 	ImGui::Checkbox("반복", &Animation->bLoop);
@@ -397,12 +459,151 @@ void FAnimationEditor::DrawProperties(FAssetEditorEnvironment& Env)
 
 	ImGui::Spacing();
 	DrawAddToScene(Env);
+	DrawRetargeting(Env);
 	DrawImportSettings(Env);
 	DrawSockets();
 	if (ImGui::CollapsingHeader("모델 정보"))
 	{
 		DrawModelInfo(Env);
 	}
+}
+
+// ---------------------------------------------------------------- 리타기팅
+
+void FAnimationEditor::DrawRetargeting(FAssetEditorEnvironment& Env)
+{
+	if (!Metadata || Model == nullptr || !ImGui::CollapsingHeader(ICON_FA_PEOPLE_ARROWS " 리타기팅 (휴머노이드 본 매핑)", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		return;
+	}
+	FScene&                    Scene     = Preview.GetScene();
+	const FAnimationComponent* Animation = Scene.GetRegistry().TryGet<FAnimationComponent>(ModelRoot);
+	const std::shared_ptr<const FAnimationSet> Set =
+		Animation != nullptr ? (Animation->Runtime.BaseSet ? Animation->Runtime.BaseSet : Animation->Runtime.Set) : nullptr;
+	if (!Set)
+	{
+		ImGui::TextDisabled("뼈대가 없는 모델입니다");
+		return;
+	}
+
+	// 미리보기 소스: 다른 모델의 클립을 이 모델에 맞춰 재생
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	const std::string SourceLabel = PreviewSource.empty() ? std::string("(미리보기 소스 모델 없음)") : PreviewSource;
+	if (ImGui::BeginCombo("##RetargetSource", (ICON_FA_PERSON_RUNNING " " + SourceLabel).c_str(), ImGuiComboFlags_HeightLarge))
+	{
+		if (ImGui::Selectable("(없음)", PreviewSource.empty()))
+		{
+			SetPreviewSource({});
+		}
+		std::error_code             ErrorCode;
+		const std::filesystem::path Root = Env.Editor != nullptr ? Env.Editor->ContentDirectory : Path.parent_path();
+		for (auto It = std::filesystem::recursive_directory_iterator(Root, ErrorCode); !ErrorCode && It != std::filesystem::recursive_directory_iterator();
+		     It.increment(ErrorCode))
+		{
+			if (!It->is_regular_file(ErrorCode) || !FModelLoader::IsModelFile(It->path()) || std::filesystem::equivalent(It->path(), Path, ErrorCode))
+			{
+				continue;
+			}
+			const std::string Asset = FModelLoader::MakeAssetPath(It->path());
+			if (ImGui::Selectable(Asset.c_str(), Asset == PreviewSource))
+			{
+				SetPreviewSource(Asset);
+			}
+		}
+		ImGui::EndCombo();
+	}
+	FAssetEditorWidgets::Hint("소스 모델의 클립이 위 클립 목록에 " ICON_FA_PEOPLE_ARROWS " 표시로 붙습니다 (미리보기 전용 — 씬에서는 애니메이션 컴포넌트의 "
+	                          "'리타기팅 소스' 또는 클립 이름 \"<모델 경로>:<클립>\").");
+
+	// 본 매핑 표: 리그 뼈 | 노드 (자동 추정 / 수동 지정)
+	const FHumanoidMapping Auto     = AnimRetargetMath::AutoMap(Set->NodeNames, Set->NodeParents, Set->RestModelMatrices);
+	const FHumanoidMapping Resolved = AnimRetargetMath::ResolveMapping(*Set, Metadata.get());
+	const auto NodeName = [&](int32 Node) -> std::string {
+		return Node >= 0 && Node < static_cast<int32>(Set->NodeNames.size()) ? Set->NodeNames[static_cast<size_t>(Node)] : std::string("(없음)");
+	};
+	int32 MappedCount = 0;
+	for (const int32 Node : Resolved)
+	{
+		MappedCount += Node >= 0 ? 1 : 0;
+	}
+	ImGui::Text("매핑 %d / %d", MappedCount, static_cast<int32>(HumanoidBoneCount));
+	ImGui::SameLine();
+	ImGui::BeginDisabled(Metadata->RetargetBones.empty());
+	if (ImGui::SmallButton(ICON_FA_WAND_MAGIC_SPARKLES " 모두 자동으로"))
+	{
+		Metadata->RetargetBones.clear();
+		MarkEdited("본 매핑 자동");
+		InvalidateRetargeting();
+	}
+	ImGui::EndDisabled();
+	if (Resolved[static_cast<size_t>(EHumanoidBone::Hips)] < 0)
+	{
+		ImGui::TextColored(FEditorTheme::Warning, "Hips를 찾지 못했습니다 — 리타기팅하려면 Hips를 지정하세요");
+	}
+
+	if (!ImGui::BeginTable("##RetargetBones", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp))
+	{
+		return;
+	}
+	ImGui::TableSetupColumn("리그 뼈", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+	ImGui::TableSetupColumn("모델 노드", ImGuiTableColumnFlags_WidthStretch, 0.6f);
+	ImGui::TableHeadersRow();
+	for (size_t Index = 0; Index < HumanoidBoneCount; ++Index)
+	{
+		const EHumanoidBone          Bone     = static_cast<EHumanoidBone>(Index);
+		const char*                  BoneName = AnimRetargetMath::GetBoneName(Bone);
+		const FRetargetBoneOverride* Override = Metadata->FindRetargetBone(BoneName);
+		ImGui::PushID(static_cast<int>(Index));
+		ImGui::TableNextRow();
+		ImGui::TableNextColumn();
+		ImGui::AlignTextToFramePadding();
+		if (Resolved[Index] < 0)
+		{
+			ImGui::TextDisabled("%s", BoneName);
+		}
+		else
+		{
+			ImGui::TextUnformatted(BoneName);
+		}
+		ImGui::TableNextColumn();
+		const std::string Shown = Override != nullptr ? NodeName(Resolved[Index]) + "  (수동)" : NodeName(Resolved[Index]) + "  (자동)";
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if (ImGui::BeginCombo("##Node", Shown.c_str(), ImGuiComboFlags_HeightLarge))
+		{
+			if (ImGui::Selectable(("(자동: " + NodeName(Auto[Index]) + ")").c_str(), Override == nullptr))
+			{
+				Metadata->SetRetargetBone(BoneName, nullptr);
+				MarkEdited("본 매핑");
+				InvalidateRetargeting();
+			}
+			if (ImGui::Selectable("(매핑 안 함)", Override != nullptr && Override->Node.empty()))
+			{
+				const std::string None;
+				Metadata->SetRetargetBone(BoneName, &None);
+				MarkEdited("본 매핑");
+				InvalidateRetargeting();
+			}
+			std::unordered_set<std::string> Seen;
+			for (const std::string& Name : Set->NodeNames)
+			{
+				if (Name.empty() || !Seen.insert(Name).second)
+				{
+					continue;
+				}
+				if (ImGui::Selectable(Name.c_str(), Override != nullptr && Override->Node == Name))
+				{
+					Metadata->SetRetargetBone(BoneName, &Name);
+					MarkEdited("본 매핑");
+					InvalidateRetargeting();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::PopID();
+	}
+	ImGui::EndTable();
+	FAssetEditorWidgets::Hint("자동 추정 = 이름 규칙(Mixamo/UE/KayKit/Blender) + 계층. 수동으로 고른 뼈만 .emeta에 저장됩니다 (저장하면 이 모델을 소스로 쓰는 "
+	                          "리타기팅도 다시 만들어짐).");
 }
 
 // ---------------------------------------------------------------- 임포트 설정

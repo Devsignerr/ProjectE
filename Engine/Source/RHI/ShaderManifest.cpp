@@ -151,13 +151,42 @@ uint64 HashShaderDefines(std::span<const std::wstring> Defines)
 	return Hash;
 }
 
+uint64 HashShaderVariant(const FShaderCompileDesc& Desc)
+{
+	uint64 Hash = HashShaderDefines(Desc.Defines);
+	if (Desc.VirtualFiles.empty())
+	{
+		return Hash;
+	}
+	if (Hash == 0)
+	{
+		Hash = 14695981039346656037ull;
+	}
+	const auto Mix = [&Hash](const void* Data, size_t Size) {
+		const uint8* Bytes = static_cast<const uint8*>(Data);
+		for (size_t Index = 0; Index < Size; ++Index)
+		{
+			Hash ^= Bytes[Index];
+			Hash *= 1099511628211ull;
+		}
+	};
+	for (const FShaderVirtualFile& File : Desc.VirtualFiles)
+	{
+		const uint64 Sizes[2] = { File.Name.size(), File.Content.size() };
+		Mix(Sizes, sizeof(Sizes));
+		Mix(File.Name.data(), File.Name.size() * sizeof(wchar_t));
+		Mix(File.Content.data(), File.Content.size());
+	}
+	return Hash == 0 ? 1 : Hash;
+}
+
 std::wstring GetCookedShaderFileName(const FShaderCompileDesc& Desc, bool bDebugVariant)
 {
 	std::wstring Name = std::filesystem::path(Desc.FileName).stem().wstring();
 	Name += L"_" + Desc.EntryPoint;
 	Name += L"_" + FStringConv::ToWide(ShaderStageToString(Desc.Stage));
 
-	const uint64 DefineHash = HashShaderDefines(Desc.Defines);
+	const uint64 DefineHash = HashShaderVariant(Desc);
 	if (DefineHash != 0)
 	{
 		Name += std::format(L"_{:016x}", DefineHash);

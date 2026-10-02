@@ -134,6 +134,17 @@ struct alignas(16) FMaterialConstants
 };
 static_assert(sizeof(FMaterialConstants) == 48);
 
+// 그래프 머티리얼 상수 버퍼 머리 (MaterialCommon.hlsli / 생성 cbuffer MaterialGraphParameters의 MaterialHeader — b2).
+// 뒤에 float4 MaterialParams[FMaterialParameterLayout::ConstantRegisters]가 이어진다 (MaterialRender::UploadMaterialConstants)
+struct alignas(16) FMaterialGraphHeader
+{
+	float Time        = 0.0f; // 초 (E_MATERIAL_TIME)
+	float AlphaCutoff = 0.5f; // Masked 컷오프 (E_MATERIAL_ALPHA_CUTOFF)
+	float Padding0    = 0.0f;
+	float Padding1    = 0.0f;
+};
+static_assert(sizeof(FMaterialGraphHeader) == 16);
+
 // 파티클 카메라 상수 (Particle.hlsl b0)
 struct alignas(16) FParticleFrameConstants
 {

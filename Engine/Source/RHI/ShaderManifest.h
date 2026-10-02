@@ -49,6 +49,10 @@ std::wstring GetCookedShaderFileName(const FShaderCompileDesc& Desc, bool bDebug
 // 디파인 목록 해시 (순서 포함). 비어 있으면 0
 uint64 HashShaderDefines(std::span<const std::wstring> Defines);
 
+// 변형 해시 = 디파인 해시에 가상 포함 파일(이름 + 내용)을 이어 섞은 값. 가상 파일이 없으면 HashShaderDefines와 같다
+// (쿠킹 파일명 _<해시>, 캐시 키 — 같은 생성 소스는 같은 파일을 공유)
+uint64 HashShaderVariant(const FShaderCompileDesc& Desc);
+
 // 셰이더 소스와 그것이 #include "..." 로 참조하는 파일들(재귀). 첫 원소는 소스 자신.
 // 존재하지 않는 포함 파일은 목록에 넣지 않는다.
 std::vector<std::filesystem::path> CollectShaderDependencies(const std::filesystem::path& SourcePath,

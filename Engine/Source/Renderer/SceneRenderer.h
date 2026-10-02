@@ -33,6 +33,7 @@
 #include <chrono>
 #include <string>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 class FD3D12RHI;
@@ -200,7 +201,8 @@ private:
 	// 패스가 실제로 쓰는 변형인가 (Wireframe은 Masked/양면 비트 없음)
 	static bool IsMeshPipelineUsed(EMeshPass Pass, uint32 Variant);
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
-	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant);
+	// GraphShader: 그래프 머티리얼 픽셀 셰이더 변형 (nullptr = 고정 PBR). 정점 셰이더는 항상 기본 바이트코드
+	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant, const FMaterialShader* GraphShader = nullptr);
 	static void GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel);
 	FD3D12PipelineState& GetMeshPipeline(EMeshPass Pass, uint32 Variant)
 	{
@@ -210,6 +212,12 @@ private:
 		}
 		return MeshPipelines[static_cast<uint32>(Pass)][Variant];
 	}
+	// 머티리얼의 메시 PSO: 고정 PBR = MeshPipelines, 그래프 = 셰이더 해시별 (처음 쓸 때 만든다). 실패하면 nullptr (호출자는 기본 머티리얼로 그린다)
+	ID3D12PipelineState* GetMaterialPipeline(EMeshPass Pass, uint32 Variant, const FMaterial& Material);
+	// 머티리얼 상수(b2, 패스 안 캐시) + 텍스처 테이블(t0~t4 / 공간 2) 바인딩
+	void BindMeshMaterial(ID3D12GraphicsCommandList* CommandList, const FMaterial& Material,
+	                      std::unordered_map<const FMaterial*, D3D12_GPU_VIRTUAL_ADDRESS>& ConstantCache);
+	void ReleaseGraphPipelines();
 
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
 
@@ -221,6 +229,14 @@ private:
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
 	FD3D12PipelineState  MeshPipelines[static_cast<uint32>(EMeshPass::Count)][MaterialRender::VariantCount]; // [패스][머티리얼 변형]
+	// 그래프 머티리얼 메시 PSO (Phase 49 사이드): 셰이더 해시 → [패스][변형]. 오래 안 쓴 세트는 새 세트를 만들 때 지연 해제
+	struct FGraphPipelineSet
+	{
+		FD3D12PipelineState Pipelines[static_cast<uint32>(EMeshPass::Count)][MaterialRender::VariantCount];
+		uint8               State[static_cast<uint32>(EMeshPass::Count)][MaterialRender::VariantCount] = {}; // 0 미생성, 1 성공, 2 실패
+		uint64              LastUsedFrame = 0;
+	};
+	std::unordered_map<uint64, std::unique_ptr<FGraphPipelineSet>> GraphPipelines;
 	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;

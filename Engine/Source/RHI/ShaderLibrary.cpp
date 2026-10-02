@@ -86,6 +86,10 @@ std::wstring FShaderLibrary::MakeCacheKey(const FShaderCompileDesc& Desc)
 	{
 		Key += L"|" + Define;
 	}
+	if (!Desc.VirtualFiles.empty())
+	{
+		Key += std::format(L"|V{:016x}", HashShaderVariant(Desc)); // 생성 소스 내용
+	}
 	return Key;
 }
 

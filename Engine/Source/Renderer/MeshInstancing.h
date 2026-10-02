@@ -11,6 +11,7 @@
 #include <vector>
 
 class FD3D12DynamicUploadBuffer;
+class FMaterialDepthPipelines;
 class FResourceManager;
 class FScene;
 class FSkinnedMeshPalette;
@@ -126,6 +127,12 @@ struct FDepthPassBindings
 	uint32               InstanceDestOffset = 0;
 	uint32               MaskRootIndex      = 0; // 루트 상수 2개 (b1: 베이스 컬러 알파 팩터, 알파 컷오프)
 	uint32               MaskTextureRoot    = 0; // 디스크립터 테이블 t0 (머티리얼 텍스처 테이블 첫 칸 = 베이스 컬러)
+	// 그래프 머티리얼 Masked (Shadow.hlsl ShadowMaterialPS): PSO는 머티리얼 셰이더별, b2 상수 + 공간 2 텍스처 테이블.
+	// MaterialPipelines가 없거나 PSO가 실패하면 알파 테스트 없는 변형으로 그린다
+	FMaterialDepthPipelines*   MaterialPipelines    = nullptr;
+	FD3D12DynamicUploadBuffer* DynamicBuffer        = nullptr;
+	uint32                     MaterialConstantRoot = 0; // 루트 CBV b2
+	uint32                     MaterialTextureRoot  = 0; // 디스크립터 테이블 공간 2 t0~
 };
 
 // 깊이 패스 묶음 드로우: 묶음마다 인스턴싱 드로우. 묶음은 키 순(변형 -> 머티리얼)이라 PSO는 변형이 바뀔 때만,

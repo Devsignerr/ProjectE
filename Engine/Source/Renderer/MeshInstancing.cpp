@@ -2,6 +2,7 @@
 
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
 #include "Renderer/Material.h"
+#include "Renderer/MaterialRender.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SkinnedMeshPalette.h"
 #include "Renderer/StaticMesh.h"
@@ -112,23 +113,46 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& Batches, const FMeshInstanceList& Instances,
                       const FDepthPassBindings& Bindings, uint32& InOutDrawCalls, uint64& InOutTriangles)
 {
-	uint32           BoundVariant  = 0; // 부른 쪽이 Pipelines[0]을 바인딩해 둔다
-	const FMaterial* BoundMaterial = nullptr;
+	ID3D12PipelineState* BoundPipeline = Bindings.Pipelines[0]; // 부른 쪽이 Pipelines[0]을 바인딩해 둔다
+	const FMaterial*     BoundMaterial = nullptr;
 	for (const FInstanceBatch& Batch : Batches.GetBatches())
 	{
 		const FMeshInstance& Instance = Instances[Batch.Instance];
-		const uint32         Variant  = GetDepthVariant(Instance);
-		if (Variant != BoundVariant)
+		uint32               Variant  = GetDepthVariant(Instance);
+		ID3D12PipelineState* Pipeline = Bindings.Pipelines[Variant];
+		const bool           bGraph   = (Variant & DepthVariantMasked) != 0 && Instance.Material->IsGraphMaterial();
+		if (bGraph)
 		{
-			BoundVariant = Variant;
-			CommandList->SetPipelineState(Bindings.Pipelines[Variant]);
+			// 그래프 머티리얼 Masked: 머티리얼 셰이더별 PSO (실패하면 알파 테스트 없이)
+			Pipeline = Bindings.MaterialPipelines != nullptr && Bindings.DynamicBuffer != nullptr
+			               ? Bindings.MaterialPipelines->Get(*Instance.Material->Shader, Instance.IsSkinned())
+			               : nullptr;
+			if (Pipeline == nullptr)
+			{
+				Variant &= ~DepthVariantMasked;
+				Pipeline = Bindings.Pipelines[Variant];
+			}
+		}
+		if (Pipeline != BoundPipeline)
+		{
+			BoundPipeline = Pipeline;
+			CommandList->SetPipelineState(Pipeline);
 		}
 		if ((Variant & DepthVariantMasked) != 0 && Instance.Material != BoundMaterial)
 		{
-			BoundMaterial         = Instance.Material;
-			const float Values[2] = { Instance.Material->Constants.BaseColorFactor.W, Instance.Material->Constants.AlphaCutoff };
-			CommandList->SetGraphicsRoot32BitConstants(Bindings.MaskRootIndex, 2, Values, 0);
-			CommandList->SetGraphicsRootDescriptorTable(Bindings.MaskTextureRoot, Instance.Material->TextureTable.Gpu);
+			BoundMaterial = Instance.Material;
+			if (bGraph)
+			{
+				CommandList->SetGraphicsRootConstantBufferView(Bindings.MaterialConstantRoot,
+				                                               MaterialRender::UploadMaterialConstants(*Bindings.DynamicBuffer, *Instance.Material));
+				CommandList->SetGraphicsRootDescriptorTable(Bindings.MaterialTextureRoot, Instance.Material->TextureTable.Gpu);
+			}
+			else
+			{
+				const float Values[2] = { Instance.Material->Constants.BaseColorFactor.W, Instance.Material->Constants.AlphaCutoff };
+				CommandList->SetGraphicsRoot32BitConstants(Bindings.MaskRootIndex, 2, Values, 0);
+				CommandList->SetGraphicsRootDescriptorTable(Bindings.MaskTextureRoot, Instance.Material->TextureTable.Gpu);
+			}
 		}
 		CommandList->SetGraphicsRoot32BitConstant(Bindings.InstanceRootIndex, Batch.First, Bindings.InstanceDestOffset);
 		if (Instance.IsSkinned())
@@ -143,7 +167,7 @@ void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBat
 		}
 		++InOutDrawCalls;
 	}
-	if (BoundVariant != 0)
+	if (BoundPipeline != Bindings.Pipelines[0])
 	{
 		CommandList->SetPipelineState(Bindings.Pipelines[0]);
 	}

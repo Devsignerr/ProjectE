@@ -3,6 +3,7 @@
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
+#include "Renderer/MaterialGraphJson.h"
 
 #include <json.hpp>
 
@@ -10,6 +11,7 @@
 #include <format>
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -125,7 +127,33 @@ std::string FMaterialAsset::ToJsonString() const
 			Document[GetTextureKey(Slot)] = TexturePaths[Slot];
 		}
 	}
+	// 그래프 머티리얼: 파라미터(인스턴스는 덮어쓰는 값만) + 그래프(일반 머티리얼만)
+	if (!Parameters.empty() || (bHasGraph && !IsInstance()))
+	{
+		Document["Parameters"] = MaterialGraphJson::WriteParameters(Parameters);
+	}
+	if (bHasGraph && !IsInstance())
+	{
+		Document["Graph"] = MaterialGraphJson::WriteGraph(Graph);
+	}
 	return Document.dump(2);
+}
+
+const FMaterialParameter* FMaterialAsset::FindParameter(std::string_view ParameterName) const
+{
+	for (const FMaterialParameter& Parameter : Parameters)
+	{
+		if (Parameter.Name == ParameterName)
+		{
+			return &Parameter;
+		}
+	}
+	return nullptr;
+}
+
+FMaterialParameter* FMaterialAsset::FindParameter(std::string_view ParameterName)
+{
+	return const_cast<FMaterialParameter*>(std::as_const(*this).FindParameter(ParameterName));
 }
 
 bool FMaterialAsset::FromJsonString(const std::string& JsonText)
@@ -175,6 +203,25 @@ bool FMaterialAsset::FromJsonString(const std::string& JsonText)
 	if (!IsInstance())
 	{
 		OverrideMask = Field_All; // 일반 머티리얼: 없는 키는 기본값이 자기 값
+	}
+
+	// 그래프 머티리얼 (형식 오류는 경고만 — 그래프 의미 오류는 컴파일 때)
+	std::vector<std::string> Warnings;
+	Parameters.clear();
+	Graph     = FMaterialGraph{};
+	bHasGraph = false;
+	if (const auto Found = Document.find("Parameters"); Found != Document.end())
+	{
+		MaterialGraphJson::ReadParameters(*Found, Parameters, Warnings);
+	}
+	if (const auto Found = Document.find("Graph"); Found != Document.end())
+	{
+		MaterialGraphJson::ReadGraph(*Found, Graph, Warnings);
+		bHasGraph = true;
+	}
+	for (const std::string& Warning : Warnings)
+	{
+		E_LOG(LogRenderer, Warning, "머티리얼 {}: {}", Name, Warning);
 	}
 	return true;
 }
@@ -241,9 +288,50 @@ bool FMaterialAsset::Resolve(const FMaterialAsset& Asset, const std::filesystem:
 	// 2) 가장 먼 조상부터 덮어쓰기 (일반 머티리얼 고리는 모든 필드, 인스턴스 고리는 OverrideMask 필드만)
 	const std::filesystem::path BaseDirectory = Chain.front().Path.parent_path();
 	FMaterialAsset              Result;
+	// 조상 폴더 기준 텍스처 경로 → 이 파일 폴더 기준 (상대 경로를 만들 수 없으면(드라이브가 다름) 절대 경로)
+	const auto Rebase = [&BaseDirectory](const std::string& Texture, const std::filesystem::path& LinkPath) {
+		if (Texture.empty() || LinkPath.parent_path() == BaseDirectory)
+		{
+			return Texture;
+		}
+		const std::filesystem::path Absolute = (LinkPath.parent_path() / FStringConv::ToWide(Texture)).lexically_normal();
+		const std::filesystem::path Relative = Absolute.lexically_relative(BaseDirectory);
+		return FStringConv::ToUtf8((Relative.empty() ? Absolute : Relative).generic_wstring());
+	};
 	for (auto It = Chain.rbegin(); It != Chain.rend(); ++It)
 	{
 		const FMaterialAsset& Link = It->Asset;
+		// 그래프 머티리얼: 그래프와 파라미터 목록은 일반 머티리얼(체인 맨 위)에서, 인스턴스는 이름이 같은 파라미터 값만 덮어쓴다
+		const std::string LinkName = FStringConv::ToUtf8(It->Path.filename().wstring());
+		if (!Link.IsInstance())
+		{
+			Result.bHasGraph  = Link.bHasGraph;
+			Result.Graph      = Link.Graph;
+			Result.Parameters = Link.Parameters;
+			for (FMaterialParameter& Parameter : Result.Parameters)
+			{
+				Parameter.Texture = Rebase(Parameter.Texture, It->Path);
+			}
+		}
+		else
+		{
+			if (Link.bHasGraph)
+			{
+				E_LOG(LogRenderer, Warning, "머티리얼 인스턴스 {}의 Graph는 무시합니다 (그래프는 부모 것)", LinkName);
+			}
+			for (const FMaterialParameter& Override : Link.Parameters)
+			{
+				FMaterialParameter* Target = Result.FindParameter(Override.Name);
+				if (Target == nullptr || Target->Type != Override.Type)
+				{
+					E_LOG(LogRenderer, Warning, "머티리얼 인스턴스 {}: 부모에 {} 파라미터 {}가 없어 무시합니다", LinkName,
+					      GetMaterialParameterTypeName(Override.Type), Override.Name);
+					continue;
+				}
+				Target->Value   = Override.Value;
+				Target->Texture = Rebase(Override.Texture, It->Path);
+			}
+		}
 		if (Link.Overrides(Field_BaseColorFactor)) Result.Constants.BaseColorFactor = Link.Constants.BaseColorFactor;
 		if (Link.Overrides(Field_EmissiveFactor)) Result.Constants.EmissiveFactor = Link.Constants.EmissiveFactor;
 		if (Link.Overrides(Field_Metallic)) Result.Constants.Metallic = Link.Constants.Metallic;
@@ -259,16 +347,7 @@ bool FMaterialAsset::Resolve(const FMaterialAsset& Asset, const std::filesystem:
 			{
 				continue;
 			}
-			const std::string& Texture = Link.TexturePaths[Slot];
-			if (Texture.empty() || It->Path.parent_path() == BaseDirectory)
-			{
-				Result.TexturePaths[Slot] = Texture;
-				continue;
-			}
-			// 조상 폴더 기준 → 이 파일 폴더 기준 (상대 경로를 만들 수 없으면(드라이브가 다름) 절대 경로)
-			const std::filesystem::path Absolute = (It->Path.parent_path() / FStringConv::ToWide(Texture)).lexically_normal();
-			const std::filesystem::path Relative = Absolute.lexically_relative(BaseDirectory);
-			Result.TexturePaths[Slot]            = FStringConv::ToUtf8((Relative.empty() ? Absolute : Relative).generic_wstring());
+			Result.TexturePaths[Slot] = Rebase(Link.TexturePaths[Slot], It->Path);
 		}
 	}
 	Result.Name         = Asset.Name;

@@ -49,6 +49,7 @@ private:
 	FD3D12RHI*        Rhi           = nullptr;
 	FShaderLibrary*   ShaderLibrary = nullptr;
 	FResourceManager* Resources     = nullptr;
+	uint32            ResourceRootProviderId = 0; // FResourceManager::AddRootProvider (FileTextures)
 	DXGI_FORMAT       ColorFormat   = DXGI_FORMAT_UNKNOWN;
 
 	FD3D12RootSignature RootSignature;

@@ -12,6 +12,7 @@ class FResourceManager;
 class FSceneRenderer;
 class FUIRenderer;
 struct FEditorContext;
+struct FResourceRoots;
 
 // 에셋 편집 창이 쓰는 공유 객체 (소유하지 않음)
 struct FAssetEditorEnvironment
@@ -63,6 +64,9 @@ public:
 	// 플레이 시작·씬 교체 전에는 미리보기를 끝낸다 (FAssetEditorManager::SwapScenePreviews/EndScenePreviews)
 	virtual void SwapScenePreview(FAssetEditorEnvironment& Env) { (void)Env; }
 	virtual void EndScenePreview(FAssetEditorEnvironment& Env) { (void)Env; }
+
+	// 리소스 수거 루트 (Phase 37): 기본 = 미리보기 씬. 씬 밖에서 핸들을 드는 편집기는 덧붙인다
+	virtual void CollectResourceRoots(FResourceRoots& Roots);
 
 	// 조작(드래그/텍스트 입력)이 끝나면 한 단계로 커밋. 창 Draw 뒤 매 프레임 호출
 	void CommitPendingEdit(bool bInteractionActive);

@@ -29,4 +29,6 @@ namespace RendererCVars
 	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr" },
 	                                        .Range       = std::pair(0.0f, 5.0f),
 	                                        .CommandLine = { { L"--debug-view", "" } } });
+	TAutoConsoleVariable<bool> ResourceAutoCollect("r.ResourceAutoCollect", true,
+	                                               "맵 전환·서브 씬 내림·에디터 씬 열기 뒤 쓰지 않는 메시/텍스처/머티리얼/모델/파티클 자동 수거 (끄면 비교용으로 쌓임 — r.CollectResources는 계속 동작)");
 } // namespace RendererCVars

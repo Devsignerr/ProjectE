@@ -18,6 +18,7 @@
 #include "Network/ReplicationClient.h"
 #include "Network/ReplicationServer.h"
 #include "Physics/CharacterMovement.h"
+#include "Renderer/ResourceManager.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneSerializer.h"
@@ -284,6 +285,10 @@ void FGameWorld::DestroySubScene(FSubSceneInstance& Instance)
 	}
 	++SubSceneStats.Unloads;
 	E_LOG(LogTravel, Display, "서브 씬 내림: {}", Instance.Asset);
+	if (Systems.Resources != nullptr)
+	{
+		Systems.Resources->RequestGarbageCollection("서브 씬 내림"); // 파괴는 프레임 끝 — 수거는 몇 프레임 뒤
+	}
 }
 
 bool FGameWorld::UnloadSubScene(const std::string& Asset)

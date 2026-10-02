@@ -334,3 +334,9 @@ void FMaterialEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	ImGui::Spacing();
 	FAssetEditorWidgets::Hint("열린 씬에 바로 반영됩니다(이 머티리얼을 부모로 둔 인스턴스 포함). 저장하지 않고 닫으면 원래대로 돌아갑니다.");
 }
+
+void FMaterialEditor::CollectResourceRoots(FResourceRoots& Roots)
+{
+	FAssetEditor::CollectResourceRoots(Roots);
+	Roots.Add(Material); // 편집 중인 공유 머티리얼 (미리보기 모양을 바꾸는 중에도)
+}

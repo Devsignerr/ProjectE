@@ -121,6 +121,9 @@ bool FRuntimeApplication::OnInit()
 	{
 		return false;
 	}
+	// 리소스 수거 루트: 플레이 중인 씬 (서브 씬 포함 — 루트 엔티티 아래). 렌더러/UI 렌더러 캐시는 각자 등록한다
+	Resources.AddRootProvider([this](FResourceRoots& Roots) { Roots.AddScene(Scene); });
+	StatOverlay.SetResources(&Resources);
 	if (!SceneRenderer.Init(*Rhi, Resources))
 	{
 		return false;
@@ -228,6 +231,7 @@ void FRuntimeApplication::UpdateInputModeCursor(const FInput& InputState)
 void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
+	Resources.Tick(); // 요청된 리소스 수거 (맵 전환 몇 프레임 뒤) + VRAM 예산 경고
 
 	// 맵 전환: 직전 프레임이 검은 화면을 냈으므로 여기서 연다 (네트워크 수신 전 — 새 씬 기준으로 메시지를 받는다)
 	if (PendingTravel)

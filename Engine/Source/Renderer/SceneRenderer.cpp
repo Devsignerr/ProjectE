@@ -63,6 +63,11 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	E_CHECKF(Rhi == nullptr, "씬 렌더러가 이미 초기화되어 있습니다");
 	Rhi       = &InRhi;
 	Resources = &InResources;
+	// 리소스 수거 루트: 렌더러 내부 캐시가 지금 그리는 지형/폴리지 머티리얼 (씬 컴포넌트는 앱/편집기가 씬째 넣는다)
+	ResourceRootProviderId = Resources->AddRootProvider([this](FResourceRoots& Roots) {
+		TerrainRenderer.CollectResourceRoots(Roots);
+		FoliageRenderer.CollectResourceRoots(Roots);
+	});
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
@@ -560,6 +565,8 @@ void FSceneRenderer::Shutdown()
 	MainBatches.Reset();
 	TranslucentBatches.Reset();
 	Rhi       = nullptr;
+	Resources->RemoveRootProvider(ResourceRootProviderId);
+	ResourceRootProviderId = 0;
 	Resources = nullptr;
 }
 

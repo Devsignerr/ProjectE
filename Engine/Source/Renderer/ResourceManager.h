@@ -6,6 +6,7 @@
 #include "Renderer/Image.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialAsset.h"
+#include "Renderer/ResourceCollector.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/TextureCompression.h"
 #include "Scene/ResourceHandles.h"
@@ -105,6 +106,20 @@ public:
 	size_t GetMeshCount() const { return Meshes.GetCount(); }
 	size_t GetMaterialCount() const { return Materials.GetCount(); }
 
+	// ---- 수거 / 통계 (Phase 37 — 규칙은 Renderer/ResourceCollector.h 머리 주석, 구현은 ResourceCollector.cpp)
+	// 루트 제공자: 수거 때마다 불린다 (씬·편집기·렌더러 캐시가 지금 쓰는 핸들). 반환 ID로 해제 (제공자 수명 안에서)
+	uint32 AddRootProvider(FResourceRootProvider Provider);
+	void   RemoveRootProvider(uint32 Id);
+	// DelayFrames번의 Tick 뒤 수거 (새 씬이 해석·렌더되어 루트가 채워진 뒤). 겹친 요청은 하나로 합친다.
+	// bForce = 콘솔/통계 창 요청 (r.ResourceAutoCollect가 꺼져 있어도)
+	void   RequestGarbageCollection(std::string_view Reason, uint32 DelayFrames = 2, bool bForce = false);
+	// 앱이 프레임마다 한 번 (렌더링 기록 밖): 요청된 수거 + VRAM 예산 초과 경고
+	void   Tick();
+	// 즉시 수거 (해제는 지연 — GPU 안전). 렌더링 기록 밖에서만 부른다
+	FResourceCollectResult CollectGarbage(std::string_view Reason);
+	FResourceMemoryStats   GetMemoryStats();
+	size_t                 GetParticleSystemCount() const { return ParticleCache.size(); }
+
 private:
 	// 슬롯별 해석된 텍스처로 새 디스크립터 테이블 작성 (이전 테이블은 지연 해제)
 	void BuildMaterialTable(FMaterial& Material);
@@ -113,6 +128,9 @@ private:
 	// 경로의 .emat를 해석해 머티리얼에 채운다 (ParentChain 갱신, 텍스처가 바뀌면 테이블 재작성)
 	void ResolveAndFillMaterial(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, bool bBuildTable);
 	const FD3D12Texture& ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const;
+	// 수거 (ResourceCollector.cpp): Init/Shutdown에서 콘솔 명령 등록/해제
+	void InitCollector();
+	void ShutdownCollector();
 
 	FD3D12RHI* Rhi = nullptr;
 
@@ -130,4 +148,18 @@ private:
 	FTextureHandle  WhiteTexture;
 	FTextureHandle  FlatNormalTexture;
 	FMaterialHandle DefaultMaterial;
+
+	// 수거 (Phase 37)
+	struct FRootProviderEntry
+	{
+		uint32                Id = 0;
+		FResourceRootProvider Provider;
+	};
+	std::vector<FRootProviderEntry> RootProviders;
+	uint32                          NextRootProviderId  = 1;
+	int32                           PendingCollectTicks = -1; // < 0 = 요청 없음
+	std::string                     PendingCollectReason;
+	uint64                          TickCount            = 0;
+	bool                            bWarnedOverBudget    = false;
+	bool                            bOwnsConsoleCommands = false;
 };

@@ -155,3 +155,23 @@ bool FD3D12Device::SelectAdapter()
 	E_LOG(LogD3D12, Error, "D3D12를 지원하는 그래픽 어댑터를 찾지 못했습니다");
 	return false;
 }
+
+bool FD3D12Device::QueryVideoMemory(FVideoMemoryInfo& OutInfo) const
+{
+	if (!Adapter)
+	{
+		return false;
+	}
+	DXGI_QUERY_VIDEO_MEMORY_INFO Local{};
+	DXGI_QUERY_VIDEO_MEMORY_INFO NonLocal{};
+	if (FAILED(Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &Local)) ||
+	    FAILED(Adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &NonLocal)))
+	{
+		return false;
+	}
+	OutInfo.LocalUsage     = Local.CurrentUsage;
+	OutInfo.LocalBudget    = Local.Budget;
+	OutInfo.NonLocalUsage  = NonLocal.CurrentUsage;
+	OutInfo.NonLocalBudget = NonLocal.Budget;
+	return true;
+}

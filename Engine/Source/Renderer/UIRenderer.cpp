@@ -50,6 +50,13 @@ bool FUIRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResou
 	ShaderLibrary = &InShaderLibrary;
 	Resources     = &InResources;
 	ColorFormat   = InColorFormat;
+	// 리소스 수거 루트: UI 이미지 파일 텍스처 (경로별로 기억해 다시 읽지 않으므로 살려 둔다)
+	ResourceRootProviderId = Resources->AddRootProvider([this](FResourceRoots& Roots) {
+		for (const auto& [Key, Handle] : FileTextures)
+		{
+			Roots.Add(Handle);
+		}
+	});
 
 	const uint32 FrameIndex   = RootSignature.AddConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
 	const uint32 BatchIndex   = RootSignature.AddConstantBufferView(1, 0, D3D12_SHADER_VISIBILITY_VERTEX);
@@ -87,6 +94,8 @@ void FUIRenderer::Shutdown()
 	}
 	FontTextures.clear();
 	FileTextures.clear(); // 파일 텍스처는 리소스 관리자 캐시가 소유
+	Resources->RemoveRootProvider(ResourceRootProviderId);
+	ResourceRootProviderId = 0;
 	Pipeline.Shutdown();
 	RootSignature.Shutdown();
 	Rhi           = nullptr;

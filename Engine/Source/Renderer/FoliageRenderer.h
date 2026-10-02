@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+struct FResourceRoots;
+
 class FCamera;
 class FMeshInstanceList;
 class FResourceManager;
@@ -26,6 +28,8 @@ class FFoliageRenderer
 public:
 	void Init(FResourceManager& InResources) { Resources = &InResources; }
 	void Shutdown();
+	// 리소스 수거 루트: 직전 Gather에서 쓴 폴리지 타입의 머티리얼 (Phase 37)
+	void CollectResourceRoots(FResourceRoots& Roots) const;
 
 	// ShadowCaster(경계): 그림자 캐스터 볼륨과 겹치나 (방향광 캐스케이드 ∪ 로컬 그림자 장)
 	void Gather(FScene& Scene, const FCamera& Camera, const FFrustum& Frustum, const std::function<bool(const FBox&)>& ShadowCaster, FMeshInstanceList& OutInstances);

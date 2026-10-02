@@ -15,6 +15,8 @@
 #include <unordered_map>
 #include <vector>
 
+struct FResourceRoots;
+
 class FCamera;
 class FD3D12RHI;
 class FIblRenderer;
@@ -58,6 +60,8 @@ public:
 
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources, DXGI_FORMAT ColorFormat, DXGI_FORMAT DepthFormat);
 	void Shutdown();
+	// 리소스 수거 루트: 직전 Prepare에서 쓴 레이어 머티리얼 (Phase 37)
+	void CollectResourceRoots(FResourceRoots& Roots) const;
 	bool ReloadShaders(bool bForceRecompile);
 
 	void Prepare(FScene& Scene, const FCamera& Camera, const FFrustum& Frustum);
@@ -163,6 +167,7 @@ private:
 	std::vector<FFrameTerrain>                                Frame;     // 이번 프레임 지형
 	std::vector<FTerrainChunkGpu>                             ChunkScratch;
 	uint64                                                    FrameCounter = 0;
+	std::vector<FMaterialHandle>                              FrameLayerMaterials; // 직전 Prepare에서 쓴 레이어 머티리얼 (수거 루트)
 
 	uint32 DrawCalls = 0;
 	uint64 Triangles = 0;

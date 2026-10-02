@@ -24,6 +24,16 @@ public:
 	ID3D12Device*  GetDevice() const { return Device.Get(); }
 	IDXGIFactory6* GetFactory() const { return Factory.Get(); }
 
+	// 어댑터 비디오 메모리 사용량/예산 (IDXGIAdapter3::QueryVideoMemoryInfo, 바이트). Local = 전용 VRAM, NonLocal = 공유 시스템 메모리
+	struct FVideoMemoryInfo
+	{
+		uint64 LocalUsage     = 0;
+		uint64 LocalBudget    = 0;
+		uint64 NonLocalUsage  = 0;
+		uint64 NonLocalBudget = 0;
+	};
+	bool QueryVideoMemory(FVideoMemoryInfo& OutInfo) const;
+
 	bool   IsTearingSupported() const { return bTearingSupported; }
 	bool   IsDebugLayerEnabled() const { return bDebugLayerEnabled; }
 	uint32 GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const { return DescriptorSizes[Type]; }

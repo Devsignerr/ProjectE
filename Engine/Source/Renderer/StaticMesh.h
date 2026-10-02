@@ -48,6 +48,8 @@ public:
 	float        GetBoundingRadius() const { return BoundingRadius; } // 로컬 경계 상자 반 대각선
 	uint32      GetVertexCount() const { return VertexCount; }
 	const FBox& GetLocalBounds() const { return LocalBounds; }
+	// GPU 버퍼 바이트 (정점 + 인덱스 + 스킨) — 리소스 통계용
+	uint64      GetGpuBytes() const { return VertexBuffer.GetSize() + IndexBuffer.GetSize() + SkinBuffer.GetSize(); }
 	// CPU 사본 (로컬 위치 + 삼각형 인덱스, CW 앞면): 내비메시 굽기 등 CPU 지오메트리 처리용
 	const std::vector<FVector3>& GetCpuPositions() const { return CpuPositions; }
 	const std::vector<uint32>&   GetCpuIndices() const { return CpuIndices; }

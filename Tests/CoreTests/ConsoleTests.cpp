@@ -169,8 +169,12 @@ E_TEST(Console_CommandsAndBuiltins)
 	E_EXPECT_TRUE(StatFps->GetBool());
 	E_EXPECT_TRUE(Console.Execute("stat gpu", &Capture.Output));
 	E_EXPECT_TRUE(StatGpu->GetBool());
+	FConsoleVariable* StatMemory = Console.FindVariable("stat.Memory");
+	E_EXPECT_TRUE(StatMemory != nullptr);
+	E_EXPECT_TRUE(Console.Execute("stat memory", &Capture.Output));
+	E_EXPECT_TRUE(StatMemory != nullptr && StatMemory->GetBool());
 	E_EXPECT_TRUE(Console.Execute("stat none", &Capture.Output));
-	E_EXPECT_FALSE(StatFps->GetBool() || StatGpu->GetBool());
+	E_EXPECT_FALSE(StatFps->GetBool() || StatGpu->GetBool() || (StatMemory != nullptr && StatMemory->GetBool()));
 
 	E_EXPECT_TRUE(Console.UnregisterCommand("t.echo"));
 	E_EXPECT_FALSE(Console.Execute("t.Echo", &Capture.Output));

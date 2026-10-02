@@ -4,6 +4,8 @@
 #include "Scene/Scene.h"
 
 #include <string>
+
+struct FResourceRoots;
 #include <unordered_map>
 
 // 스냅샷 복원(Undo/Redo) 시 모델 하위 노드를 다시 로드하지 않기 위한 캐시.
@@ -19,6 +21,9 @@ public:
 	uint32 Instantiate(FScene& Scene);
 
 	void Clear();
+
+	// 리소스 수거 루트 (템플릿이 든 모델 메시/머티리얼 — 씬을 열면 Clear되어 함께 풀린다)
+	void CollectResourceRoots(FResourceRoots& Roots);
 
 	size_t Num() const { return Templates.size(); }
 

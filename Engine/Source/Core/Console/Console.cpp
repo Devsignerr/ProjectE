@@ -903,6 +903,7 @@ void FConsoleManager::RegisterBuiltins()
 {
 	RegisterVariable("stat.FPS", EConsoleVariableType::Bool, "0", "화면 통계: 프레임 시간/FPS (stat fps로 켜고 끔)");
 	RegisterVariable("stat.GPU", EConsoleVariableType::Bool, "0", "화면 통계: 렌더 구간별 CPU/GPU 시간 (stat gpu로 켜고 끔)");
+	RegisterVariable("stat.Memory", EConsoleVariableType::Bool, "0", "화면 통계: VRAM 사용량/예산과 리소스 수·바이트 (stat memory로 켜고 끔)");
 
 	RegisterCommand({ "help", "명령/변수 목록 (help <이름>: 그 항목 설명)",
 	                  [this](const std::vector<std::string>& Args, const FConsoleOutput& Output) {
@@ -956,13 +957,14 @@ void FConsoleManager::RegisterBuiltins()
 		                  Output.Printf("{}개 (* = 기본값과 다름)", Count);
 	                  } });
 
-	RegisterCommand({ "stat", "화면 통계 켜고 끄기: stat fps | stat gpu | stat none",
+	RegisterCommand({ "stat", "화면 통계 켜고 끄기: stat fps | stat gpu | stat memory | stat none",
 	                  [this](const std::vector<std::string>& Args, const FConsoleOutput& Output) {
-		                  FConsoleVariable* Fps = FindVariable("stat.FPS");
-		                  FConsoleVariable* Gpu = FindVariable("stat.GPU");
-		                  if (Args.empty() || Fps == nullptr || Gpu == nullptr)
+		                  FConsoleVariable* Fps    = FindVariable("stat.FPS");
+		                  FConsoleVariable* Gpu    = FindVariable("stat.GPU");
+		                  FConsoleVariable* Memory = FindVariable("stat.Memory");
+		                  if (Args.empty() || Fps == nullptr || Gpu == nullptr || Memory == nullptr)
 		                  {
-			                  Output.Print("사용: stat fps | stat gpu | stat none");
+			                  Output.Print("사용: stat fps | stat gpu | stat memory | stat none");
 			                  return;
 		                  }
 		                  const std::string& Mode = Args.front();
@@ -974,17 +976,23 @@ void FConsoleManager::RegisterBuiltins()
 		                  {
 			                  Gpu->SetBool(!Gpu->GetBool());
 		                  }
+		                  else if (ConsoleParsing::EqualsIgnoreCase(Mode, "memory"))
+		                  {
+			                  Memory->SetBool(!Memory->GetBool());
+		                  }
 		                  else if (ConsoleParsing::EqualsIgnoreCase(Mode, "none"))
 		                  {
 			                  Fps->SetBool(false);
 			                  Gpu->SetBool(false);
+			                  Memory->SetBool(false);
 		                  }
 		                  else
 		                  {
-			                  Output.Printf("알 수 없는 통계: {} (fps | gpu | none)", Mode);
+			                  Output.Printf("알 수 없는 통계: {} (fps | gpu | memory | none)", Mode);
 			                  return;
 		                  }
-		                  Output.Printf("화면 통계: fps {}, gpu {}", Fps->GetBool() ? "켬" : "끔", Gpu->GetBool() ? "켬" : "끔");
+		                  Output.Printf("화면 통계: fps {}, gpu {}, memory {}", Fps->GetBool() ? "켬" : "끔", Gpu->GetBool() ? "켬" : "끔",
+		                                Memory->GetBool() ? "켬" : "끔");
 	                  },
-	                  { "fps", "gpu", "none" } });
+	                  { "fps", "gpu", "memory", "none" } });
 }

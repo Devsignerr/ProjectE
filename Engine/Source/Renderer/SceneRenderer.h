@@ -209,6 +209,7 @@ private:
 
 	FD3D12RHI*        Rhi       = nullptr;
 	FResourceManager* Resources = nullptr;
+	uint32            ResourceRootProviderId = 0; // FResourceManager::AddRootProvider (지형/폴리지 캐시)
 
 	FD3D12ShaderCompiler ShaderCompiler;
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일

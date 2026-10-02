@@ -132,6 +132,7 @@ uint64 FThumbnailCache::Request(const std::filesystem::path& Path)
 	const std::filesystem::file_time_type WriteTime = std::filesystem::last_write_time(Path, ErrorCode);
 	FEntry&                               Entry     = Entries[MakeKey(Path)];
 	const bool                            bStale    = Entry.WriteTime != WriteTime;
+	Entry.LastUsedFrame                             = FrameClock;
 	if ((bStale || (!Entry.Target && !Entry.bFailed)) && !Entry.bQueued)
 	{
 		Entry.bQueued = true;
@@ -241,8 +242,38 @@ bool FThumbnailCache::BuildScene(FEditorContext& Context, const std::filesystem:
 	return false;
 }
 
+void FThumbnailCache::EvictLeastRecentlyUsed(FEditorContext& Context)
+{
+	if (Entries.size() <= MaxEntries || Context.Rhi == nullptr)
+	{
+		return;
+	}
+	// 지난 프레임에도 요청된(화면에 보이는) 것과 대기 중인 것은 남긴다
+	std::vector<std::pair<uint64, std::wstring>> Candidates;
+	for (const auto& [Key, Entry] : Entries)
+	{
+		if (!Entry.bQueued && Entry.LastUsedFrame + 1 < FrameClock)
+		{
+			Candidates.emplace_back(Entry.LastUsedFrame, Key);
+		}
+	}
+	std::sort(Candidates.begin(), Candidates.end());
+	const size_t Excess = Entries.size() - MaxEntries;
+	for (size_t Index = 0; Index < Candidates.size() && Index < Excess; ++Index)
+	{
+		const auto Found = Entries.find(Candidates[Index].second);
+		if (Found->second.Target)
+		{
+			Found->second.Target->ShutdownDeferred(*Context.Rhi); // 지난 프레임 UI가 읽었을 수 있다
+		}
+		Entries.erase(Found);
+	}
+}
+
 void FThumbnailCache::RenderPending(FEditorContext& Context, uint32 Budget)
 {
+	++FrameClock;
+	EvictLeastRecentlyUsed(Context);
 	if (Queue.empty() || Context.Rhi == nullptr || !EnsureRenderer(Context))
 	{
 		return;
@@ -315,6 +346,13 @@ void FThumbnailCache::RenderPending(FEditorContext& Context, uint32 Budget)
 
 		Scene.Clear();
 		++Rendered;
+		bLoadedAssets = true; // 썸네일 씬이 불러온 모델/머티리얼/텍스처/파티클은 이 씬에서만 쓴다
+	}
+	// 대기열을 다 그렸으면 썸네일만 쓰던 에셋을 수거 (씬/편집기가 쓰는 것은 루트라 남는다)
+	if (Queue.empty() && bLoadedAssets && Context.Resources != nullptr)
+	{
+		bLoadedAssets = false;
+		Context.Resources->RequestGarbageCollection("썸네일");
 	}
 }
 

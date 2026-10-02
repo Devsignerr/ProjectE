@@ -8,6 +8,7 @@
 #include "Network/NetPlayerSpawner.h"
 #include "Network/ReplicationClient.h"
 #include "Network/ReplicationServer.h"
+#include "Renderer/ResourceManager.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneSerializer.h"
@@ -174,5 +175,10 @@ bool FGameWorldTravel::Travel(const FSceneTravelTargets& Targets, const std::str
 	const auto  Ms      = [](auto From, auto To) { return std::chrono::duration<float, std::milli>(To - From).count(); };
 	E_LOG(LogTravel, Display, "맵 전환 완료: {} (엔티티 {}개 — 이전 씬 정리 {:.1f}ms, 씬 파일 {:.1f}ms, 에셋·시작 {:.1f}ms, 전체 {:.1f}ms)", SceneAsset,
 	      Scene.GetRegistry().GetAliveCount(), Ms(Start, Cleared), Ms(Cleared, Loaded), Ms(Loaded, End), Ms(Start, End));
+	// 이전 맵만 쓰던 GPU 리소스 수거 (새 씬이 해석·렌더되어 루트가 채워진 몇 프레임 뒤 — Renderer/ResourceCollector.h)
+	if (Targets.Resources != nullptr)
+	{
+		Targets.Resources->RequestGarbageCollection("맵 전환");
+	}
 	return bLoaded;
 }

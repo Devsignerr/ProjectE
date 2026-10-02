@@ -22,6 +22,8 @@ class FThumbnailCache
 {
 public:
 	static constexpr uint32 Size = 256;
+	// 보관 상한 (LRU): 256 x 256 RGBA8 ≈ 256KB → 최대 약 64MB. 넘으면 지난 프레임에 보이지 않은 오래된 것부터 지연 해제
+	static constexpr size_t MaxEntries = 256;
 
 	FThumbnailCache();
 	~FThumbnailCache();
@@ -35,6 +37,7 @@ public:
 	// Rhi BeginFrame 이후: 대기열에서 Budget개까지 그린다
 	void RenderPending(FEditorContext& Context, uint32 Budget);
 	void Invalidate(const std::filesystem::path& Path);
+	size_t GetEntryCount() const { return Entries.size(); }
 	bool ReloadShaders(const std::vector<std::filesystem::path>* ChangedFiles);
 
 private:
@@ -44,7 +47,9 @@ private:
 		std::filesystem::file_time_type     WriteTime{};
 		bool                                bQueued = false;
 		bool                                bFailed = false;
+		uint64                              LastUsedFrame = 0; // 마지막 Request 때 FrameClock
 	};
+	void EvictLeastRecentlyUsed(FEditorContext& Context);
 
 	bool EnsureRenderer(FEditorContext& Context);
 	bool BuildScene(FEditorContext& Context, const std::filesystem::path& Path, bool& bOutImage);
@@ -56,6 +61,8 @@ private:
 	FCamera                                  Camera;
 	FOrbitCamera                             Orbit;
 	FMaterialHandle                          ImageMaterial; // 이미지 썸네일용 (발광 슬롯에 이미지)
+	uint64                                   FrameClock = 1; // RenderPending마다 1 (프레임 시계)
+	bool                                     bLoadedAssets = false; // 이번 대기열에서 에셋을 불러 그렸다 → 비면 리소스 수거 요청
 	bool                                     bReady  = false;
 	bool                                     bFailed = false;
 };

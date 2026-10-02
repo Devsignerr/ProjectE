@@ -535,13 +535,13 @@ void FViewportPanel::RenderNavMeshDebug(FEditorContext& Context)
 			}
 		});
 	}
-	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
-	if (SceneColor == nullptr || !SceneColor->GetDesc().bWithDepth || SceneColor->GetWidth() != RenderTarget->GetWidth() ||
-	    SceneColor->GetHeight() != RenderTarget->GetHeight())
+	// 뷰포트 크기 깊이 (TAAU면 출력 해상도로 옮긴 깊이)
+	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = Context.Renderer->GetOverlayDepthDsv(RenderTarget->GetWidth(), RenderTarget->GetHeight());
+	if (Dsv.ptr == 0)
 	{
 		return; // 씬 깊이를 쓸 수 없는 모드 (픽셀 아트 등)
 	}
-	NavMeshDebug->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv(), true);
+	NavMeshDebug->Render(*Context.Camera, RenderTarget->GetOutput(), Dsv, true);
 }
 
 void FViewportPanel::RenderDebugDraw(FEditorContext& Context)
@@ -564,10 +564,8 @@ void FViewportPanel::RenderDebugDraw(FEditorContext& Context)
 		return; // 셰이더 오류: 매 프레임 다시 시도하지 않는다 (셰이더 다시 로드로는 복구 안 됨 — 에디터 재시작)
 	}
 	// 씬 깊이는 뷰포트와 같은 크기일 때만 (픽셀 아트 모드는 깊이 테스트 선을 그리지 않는다)
-	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
-	const bool bDepth = SceneColor != nullptr && SceneColor->GetDesc().bWithDepth && SceneColor->GetWidth() == RenderTarget->GetWidth() &&
-	                    SceneColor->GetHeight() == RenderTarget->GetHeight();
-	DebugDrawRenderer->Render(Lines, *Context.Camera, RenderTarget->GetOutput(), bDepth ? SceneColor->GetDsv() : D3D12_CPU_DESCRIPTOR_HANDLE{});
+	DebugDrawRenderer->Render(Lines, *Context.Camera, RenderTarget->GetOutput(),
+	                          Context.Renderer->GetOverlayDepthDsv(RenderTarget->GetWidth(), RenderTarget->GetHeight()));
 }
 
 FUIRect FViewportPanel::GetGameUIViewport() const
@@ -607,14 +605,13 @@ void FViewportPanel::RenderGrid(FEditorContext& Context)
 			return;
 		}
 	}
-	// 씬 렌더러의 HDR 버퍼 깊이를 그대로 사용 (뷰포트와 같은 크기일 때만)
-	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
-	if (SceneColor == nullptr || !SceneColor->GetDesc().bWithDepth || SceneColor->GetWidth() != RenderTarget->GetWidth() ||
-	    SceneColor->GetHeight() != RenderTarget->GetHeight())
+	// 씬 렌더러의 깊이를 그대로 사용 (뷰포트와 같은 크기일 때만 — TAAU면 출력 해상도로 옮긴 깊이)
+	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = Context.Renderer->GetOverlayDepthDsv(RenderTarget->GetWidth(), RenderTarget->GetHeight());
+	if (Dsv.ptr == 0)
 	{
 		return;
 	}
-	Grid->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv());
+	Grid->Render(*Context.Camera, RenderTarget->GetOutput(), Dsv);
 }
 
 void FViewportPanel::ToggleOrthographic(FCamera& Camera)

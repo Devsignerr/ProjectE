@@ -36,8 +36,11 @@ struct alignas(16) FPerFrameConstants
 	uint32                     SsrEnabled             = 0;
 	float                      SsrMaxRoughness        = 0.6f;
 	float                      SsrIntensity           = 1.0f;
+	// TAAU (Phase 48): 머티리얼/지형/폴리지 텍스처 샘플 밉 바이어스 (FUpscaleMath::ComputeMipBias, 네이티브 해상도면 0)
+	float                      MaterialMipBias        = 0.0f;
+	float                      PerFramePadding[3]     = {};
 };
-static_assert(sizeof(FPerFrameConstants) == 304);
+static_assert(sizeof(FPerFrameConstants) == 320);
 
 // 반사 캡처 하나 (Mesh.hlsl t20 구조화 버퍼, FReflectionCaptureGpu와 1:1). Slot = 큐브 배열(t21) 안 큐브 번호
 struct FReflectionCaptureGpuData

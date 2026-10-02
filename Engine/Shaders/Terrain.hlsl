@@ -143,12 +143,12 @@ struct FLayerBlend
 #define E_ACCUMULATE_LAYER(Index, Textures)                                                                              \
 	{                                                                                                                     \
 		const float2 LayerUv = WorldXY * LayerTiling[Index];                                                              \
-		const float4 Near    = Textures[0].Sample(LinearSampler, LayerUv);                                                \
-		const float4 Far     = Textures[0].Sample(LinearSampler, LayerUv * 0.123f);                                       \
+		const float4 Near    = Textures[0].SampleBias(LinearSampler, LayerUv, MaterialMipBias);                                                \
+		const float4 Far     = Textures[0].SampleBias(LinearSampler, LayerUv * 0.123f, MaterialMipBias);                                       \
 		const float4 Base    = lerp(Near, Far, 0.35f) * LayerBaseColor[Index]; /* 큰 배율 한 번 더 섞어 반복 무늬 줄이기 */         \
-		const float4 MR      = Textures[1].Sample(LinearSampler, LayerUv);                                                \
-		const float2 NXY     = (Textures[2].Sample(LinearSampler, LayerUv).xy * 2.0f - 1.0f) * LayerParams[Index].z;      \
-		const float  AO      = lerp(1.0f, Textures[3].Sample(LinearSampler, LayerUv).r, LayerParams[Index].w);            \
+		const float4 MR      = Textures[1].SampleBias(LinearSampler, LayerUv, MaterialMipBias);                                                \
+		const float2 NXY     = (Textures[2].SampleBias(LinearSampler, LayerUv, MaterialMipBias).xy * 2.0f - 1.0f) * LayerParams[Index].z;      \
+		const float  AO      = lerp(1.0f, Textures[3].SampleBias(LinearSampler, LayerUv, MaterialMipBias).r, LayerParams[Index].w);            \
 		const float  W       = Weights[Index];                                                                            \
 		Blend.Albedo += Base.rgb * W;                                                                                     \
 		Blend.Metallic += saturate(MR.b * LayerParams[Index].x) * W;                                                      \
@@ -228,10 +228,10 @@ FPrepassOutput TerrainPrepassPS(FTerrainPixelInput Input)
 	const float2 WorldXY = Input.WorldPosition.xy;
 	float4       Weights = TerrainWeights.SampleLevel(IblSampler, TerrainGridToUv(Input.Grid), 0);
 	Weights /= max(dot(Weights, 1.0f), 1.0e-4f);
-	const float Roughness = Layer0Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[0]).g * LayerParams[0].y * Weights[0] +
-	                        Layer1Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[1]).g * LayerParams[1].y * Weights[1] +
-	                        Layer2Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[2]).g * LayerParams[2].y * Weights[2] +
-	                        Layer3Textures[1].Sample(LinearSampler, WorldXY * LayerTiling[3]).g * LayerParams[3].y * Weights[3];
+	const float Roughness = Layer0Textures[1].SampleBias(LinearSampler, WorldXY * LayerTiling[0], MaterialMipBias).g * LayerParams[0].y * Weights[0] +
+	                        Layer1Textures[1].SampleBias(LinearSampler, WorldXY * LayerTiling[1], MaterialMipBias).g * LayerParams[1].y * Weights[1] +
+	                        Layer2Textures[1].SampleBias(LinearSampler, WorldXY * LayerTiling[2], MaterialMipBias).g * LayerParams[2].y * Weights[2] +
+	                        Layer3Textures[1].SampleBias(LinearSampler, WorldXY * LayerTiling[3], MaterialMipBias).g * LayerParams[3].y * Weights[3];
 	FPrepassOutput Output;
 	Output.Normal   = EncodeScreenNormal(ComputeTerrainNormal(Input.Grid), Roughness);
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);

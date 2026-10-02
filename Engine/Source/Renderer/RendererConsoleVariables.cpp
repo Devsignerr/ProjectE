@@ -48,6 +48,23 @@ namespace RendererCVars
 	TAutoConsoleVariable<bool> RenderGraphAsyncParticles("r.RenderGraph.AsyncParticles", true,
 	                                                     "GPU 파티클 계산을 비동기 계산 큐 후보로 (r.RenderGraph.AsyncCompute와 AND)");
 
+	TAutoConsoleVariable<float> ScreenPercentage("r.ScreenPercentage", 100.0f,
+	                                             "화면 비율(%): 씬을 출력 × 비율 해상도로 그리고 TAA 단계에서 출력 해상도로 시간 업샘플(TAAU). 100 = 네이티브. "
+	                                             "프리셋 품질 77 / 균형 67 / 성능 50. 픽셀 아트·미리보기 렌더러에는 적용 안 됨",
+	                                             EConsoleFlags::None, { .Range = std::pair(25.0f, 100.0f), .CommandLine = { { L"--screen-percentage", "" } } });
+	TAutoConsoleVariable<float> UpscaleMipBiasOffset("r.Upscale.MipBiasOffset", -0.3f,
+	                                                 "TAAU 텍스처 밉 바이어스 보정: 바이어스 = log2(내부/출력) + 이 값 (음수 = 더 선명, 지글거리면 0 쪽으로). 네이티브는 항상 0");
+	TAutoConsoleVariable<bool> DynamicResolution("r.DynamicResolution", false,
+	                                             "동적 해상도: GPU 씬 렌더 시간이 목표(r.DynamicResolution.TargetMs)에 맞게 화면 비율을 Min~Max 사이 5% 단계로 조절 "
+	                                             "(r.ScreenPercentage 대신). 기본 끔",
+	                                             EConsoleFlags::None, { .CommandLine = { { L"--dynamic-resolution", "1" } } });
+	TAutoConsoleVariable<float> DynamicResolutionTargetMs("r.DynamicResolution.TargetMs", 16.6f, "동적 해상도 목표 GPU 씬 렌더 시간(ms)", EConsoleFlags::None,
+	                                                      { .Range = std::pair(1.0f, 100.0f), .CommandLine = { { L"--dynamic-resolution-target", "" } } });
+	TAutoConsoleVariable<float> DynamicResolutionMin("r.DynamicResolution.MinPercentage", 50.0f, "동적 해상도 최소 화면 비율(%)", EConsoleFlags::None,
+	                                                 { .Range = std::pair(25.0f, 100.0f) });
+	TAutoConsoleVariable<float> DynamicResolutionMax("r.DynamicResolution.MaxPercentage", 100.0f, "동적 해상도 최대 화면 비율(%)", EConsoleFlags::None,
+	                                                 { .Range = std::pair(25.0f, 100.0f) });
+
 	namespace
 	{
 		uint32 GRenderGraphDumpSerial = 0;

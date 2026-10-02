@@ -122,6 +122,7 @@ bool FEditorApplication::OnInit()
 	{
 		return false;
 	}
+	SceneRenderer.bAllowScreenPercentage = true; // 뷰포트: r.ScreenPercentage / r.DynamicResolution (TAAU, 통계 창)
 	if (!ImGuiLayer.Init(GetWindow(), *Rhi, FPaths::GetSavedDirectory() / L"EditorLayout.ini"))
 	{
 		return false;
@@ -1133,6 +1134,23 @@ void FEditorApplication::DrawStatsWindow()
 			ImGui::Text("정적 %u 중 그림 %u (+2단계 %u), 가려짐 %u", Stats.OcclusionTested, Stats.OcclusionPhase1, Stats.OcclusionPhase2,
 			            Stats.OcclusionTested - std::min(Stats.OcclusionTested, Stats.OcclusionPhase1 + Stats.OcclusionPhase2));
 		}
+		// TAAU / 동적 해상도 (Phase 48): 화면 비율 = 씬 해상도 / 뷰포트 해상도
+		ImGui::Text("화면 비율 %.0f%% (씬 %ux%u)", Stats.ScreenPercentage, Stats.InternalWidth, Stats.InternalHeight);
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(120.0f);
+		ConsoleVariableWidgets::SliderFloat("##화면 비율", "r.ScreenPercentage", 25.0f, 100.0f, "%.0f%%");
+		for (const auto& [Label, Percent] : { std::pair("네이티브", "100"), std::pair("품질", "77"), std::pair("균형", "67"), std::pair("성능", "50") })
+		{
+			ImGui::SameLine();
+			if (ImGui::SmallButton(Label))
+			{
+				FConsoleManager::Get().Execute(std::string("r.ScreenPercentage ") + Percent);
+			}
+		}
+		ConsoleVariableWidgets::Checkbox("동적 해상도", "r.DynamicResolution");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(120.0f);
+		ConsoleVariableWidgets::SliderFloat("목표 GPU ms", "r.DynamicResolution.TargetMs", 4.0f, 33.3f, "%.1f");
 		ConsoleVariableWidgets::Checkbox("스킨 가시성 컬링", "r.SkinCulling");
 		ConsoleVariableWidgets::Checkbox("메시 LOD", "r.LOD");
 		ImGui::SameLine();

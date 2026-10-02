@@ -679,9 +679,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: 맵 전환·서브 씬 언로드·에디터 씬 열기 뒤 어디서도 참조하지 않는 메시/텍스처/머티리얼/모델/파티클이 지연 해제된다(도달성 표시 → 수거, 썸네일·편집기·고정 목록은 루트). 텍스처/버퍼 업로드는 복사 큐 + 업로드 링으로 펜스 대기 없이 진행하고 디코드/BC 압축은 백그라운드 스레드. VRAM 사용량(`QueryVideoMemoryInfo`)과 리소스 바이트 통계 표시. 맵 전환 반복 시 메모리 평탄 확인(테스트 + 로그).
 
-- [~] 37-1. 수거: 참조 수집(씬·서브 씬·편집기·고정) → 표시 → 지연 해제, 경로 캐시 정리, 썸네일 LRU
+- [x] 37-1. 수거: 참조 수집(씬·서브 씬·편집기·렌더러 캐시·UI, `AddRootProvider`) → 표시(`ResourceGc::Compute`) → `Destroy*` 지연 해제, 경로/모델/파티클 캐시와 `EditedMaterialSources` 정리, 썸네일 LRU 256. 트리거 = 맵 전환·서브 씬 내림·에디터 씬 열기/플레이 정지·썸네일 대기열 비움(2틱 지연) + `r.CollectResources`. 측정: 런타임 Demo_Travel A↔B 6회 평탄(이전 맵 머티리얼/텍스처만 오감), 에디터 썸네일 해제 VRAM 354.6 → 203.7MB, Showcase/PixelArt 오해제 0
 - [~] 37-2. 비동기 업로드: 복사 큐 + 업로드 링 + 상태 전이, 백그라운드 디코드 작업 큐
-- [~] 37-3. 예산/통계: VRAM 조회, 리소스별 바이트, 통계 창
+- [x] 37-3. 예산/통계: `FD3D12Device::QueryVideoMemory`, `GetMemoryStats`(텍스처 `GetResourceAllocationInfo`, 메시 `GetGpuBytes`), 통계 창 "리소스 메모리"(VRAM 막대·종류별 표·수거 버튼·자동 수거), `stat memory`/`r.ResourceStats`, 예산 초과 경고. 테스트 `ResourceCollector_*` 7개 + Console `stat memory` (2026-10-02 트랙 A master 머지: Debug 11개 묶음 통과, Release 빌드, 런타임 Travel/PixelArt·에디터 Showcase 화면·디버그 레이어 0건)
+- 후속(37-1/3): 직접 만든(`Create*`) 리소스는 수거 안 함, 루트 미등록 코드가 경로 핸들을 오래 들면 기본 리소스로 대체됨, 프리팹 템플릿 씬 루트 아님, Sandbox Tick 없음
 
 ## Phase 38 — CVar / 콘솔 / Tracy (트랙 C)
 

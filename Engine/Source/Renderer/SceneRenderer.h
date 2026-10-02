@@ -103,6 +103,9 @@ struct FSceneRenderStats
 // 씬에 활성 FPixelArtComponent가 있으면 저해상도(출력 ÷ 도트 크기)로 렌더 → 포스트 → 픽셀 아트 합성(최근접 확대)으로 Output.
 // 호출 순서: Rhi.BeginFrame() → Render(..., Output) → (오버레이/UI) → Rhi.EndFrame()
 // Render가 끝나면 Output RTV가 깊이 없이 바인딩된 상태로 남는다 (에디터 오버레이가 그 위에 그린다).
+// Render마다 렌더 그래프(Renderer/RenderGraph/RenderGraph.h) 하나: 아래 패스를 CPU 준비와 함께 등록 → 컴파일(안 쓰는 패스 제거·상태 전이·
+//   비동기 계산 포크/조인) → 실행. Output은 RENDER_TARGET 상태로 받아 그대로 돌려주고(FRenderOutput::Resource), 씬 타깃은 평소 상태
+//   (색 PIXEL_SHADER_RESOURCE, 깊이 DEPTH_WRITE)로 끝난다. 그래프 덤프 r.RenderGraph.Dump, 요약 GetGraphStats.
 //
 // 씬 패스 순서 (RenderSceneColor): 로컬 라이트/그림자 → 방향광 그림자 → 메인 묶음 컬링·정렬(+오클루전 1단계)
 //   → [깊이 사전 패스] 씬 깊이 + 화면 공간 법선(SceneNormal) + 움직임 벡터(SceneVelocity) (오클루전이면 여기서 HZB + 2단계)

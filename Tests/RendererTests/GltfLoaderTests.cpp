@@ -65,7 +65,7 @@ namespace
 "asset":{{"version":"2.0"}},"scene":0,"scenes":[{{"nodes":[0]}}],
 "nodes":[{{"name":"Root","translation":[1,2,3],"rotation":[0,0.7071068,0,0.7071068],"children":[1]}},{{"name":"Tri","mesh":0,"scale":[2,3,4]}}],
 "meshes":[{{"name":"TriMesh","primitives":[{{"attributes":{{"POSITION":0,"NORMAL":1,"TEXCOORD_0":2}},"indices":3,"material":0}}]}}],
-"materials":[{{"name":"Mat","pbrMetallicRoughness":{{"baseColorFactor":[0.5,0.25,1,1],"metallicFactor":0,"roughnessFactor":0.5}}}}],
+"materials":[{{"name":"Mat","pbrMetallicRoughness":{{"baseColorFactor":[0.5,0.25,1,1],"metallicFactor":0,"roughnessFactor":0.5}},"alphaMode":"MASK","alphaCutoff":0.25,"doubleSided":true}}],
 "accessors":[
  {{"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,1,0]}},
  {{"bufferView":1,"componentType":5126,"count":3,"type":"VEC3"}},
@@ -175,6 +175,10 @@ E_TEST(Gltf_LoadTriangleFile)
 	E_EXPECT_EQUALS(Model.Materials[0].BaseColorFactor, FVector4(0.5f, 0.25f, 1.0f, 1.0f), Tol);
 	E_EXPECT_NEAR(Model.Materials[0].RoughnessFactor, 0.5f, Tol);
 	E_EXPECT_EQ(Model.Materials[0].BaseColorImage, -1);
+	// alphaMode MASK → Masked, alphaCutoff, doubleSided (Phase 36)
+	E_EXPECT_TRUE(Model.Materials[0].BlendMode == EMaterialBlendMode::Masked);
+	E_EXPECT_NEAR(Model.Materials[0].AlphaCutoff, 0.25f, Tol);
+	E_EXPECT_TRUE(Model.Materials[0].bTwoSided);
 }
 
 // 실제 샘플 에셋 (Projects/Sample/Content/DamagedHelmet.glb, Khronos CC-BY 4.0). 파일이 없으면 건너뛴다.

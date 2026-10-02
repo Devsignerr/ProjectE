@@ -1,0 +1,26 @@
+{
+  "Name": "Glow",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    6.0,
+    3.0,
+    1.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.5,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Additive",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "BaseColorTexture": "Glow.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": "Glow.png"
+}

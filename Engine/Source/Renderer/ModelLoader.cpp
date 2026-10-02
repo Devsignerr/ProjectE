@@ -242,6 +242,9 @@ FModelResources FModelLoader::CreateResources(FModelData Model, FResourceManager
 		Material.Constants.Roughness                   = Source.RoughnessFactor;
 		Material.Constants.NormalScale                 = Source.NormalScale;
 		Material.Constants.OcclusionStrength           = Source.OcclusionStrength;
+		Material.Constants.AlphaCutoff                 = Source.AlphaCutoff;
+		Material.BlendMode                             = Source.BlendMode;
+		Material.bTwoSided                             = Source.bTwoSided;
 		Material.Textures[MaterialSlot_BaseColor]         = GetOrCreateTexture(Source.BaseColorImage, true);
 		Material.Textures[MaterialSlot_MetallicRoughness] = GetOrCreateTexture(Source.MetallicRoughnessImage, false);
 		Material.Textures[MaterialSlot_Normal]            = GetOrCreateTexture(Source.NormalImage, false);

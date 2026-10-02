@@ -61,6 +61,7 @@ enum class ERenderTimer : uint32
 	VolumetricFog,    // 안개 상수 + 볼류메트릭 주입·적분 (계산)
 	Fog,              // 안개 적용 (전체 화면)
 	Reflections,      // SSR (Hi-Z + 추적)
+	Translucent,      // 반투명/가산 메시 패스
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -70,6 +71,7 @@ struct FSceneRenderStats
 	uint32 TotalMeshes   = 0; // 씬의 정적 메시 컴포넌트 수
 	uint32 VisibleMeshes = 0; // 컬링 통과
 	uint32 DrawCalls     = 0; // 메인 패스
+	uint32 TranslucentDrawCalls = 0; // 반투명 패스
 	uint32 PrepassDrawCalls = 0; // 깊이 사전 패스
 	uint32 Decals           = 0; // 그린 데칼 수
 	uint32 ShadowDrawCalls = 0; // 방향광 + 로컬 그림자 패스
@@ -102,7 +104,9 @@ struct FSceneRenderStats
 //
 // 씬 패스 순서 (RenderSceneColor): 로컬 라이트/그림자 → 방향광 그림자 → 메인 묶음 컬링·정렬(+오클루전 1단계)
 //   → [깊이 사전 패스] 씬 깊이 + 화면 공간 법선(SceneNormal) + 움직임 벡터(SceneVelocity) (오클루전이면 여기서 HZB + 2단계)
-//   → [메인 패스] 하늘 + 불투명 메시 (깊이 같음 테스트, 깊이 쓰기 없음) → 파티클 → (포스트)
+//   → [메인 패스] 하늘 + 불투명 메시 (깊이 같음 테스트, 깊이 쓰기 없음) → 안개 적용 → [반투명 패스] 반투명/가산 메시 (먼 것부터, 깊이 쓰기 없음)
+//   → 파티클 → (포스트)
+// 머티리얼 블렌드 모드 (Material.h): Opaque/Masked는 사전·메인·그림자 패스(Masked는 알파로 잘라냄), Translucent/Additive는 반투명 패스만
 //   와이어프레임이거나 bDepthPrepass = false면 사전 패스 없이 예전처럼 메인 패스가 깊이를 쓴다 (법선/움직임 버퍼는 지운 값).
 // 움직임 벡터: 현재 UV - 이전 UV (지터 없는 위치), 하늘 등 기하가 없는 픽셀은 0 → 쓰는 쪽이 깊이로 카메라 재투영 (ScreenSpace.hlsli)
 // 시간 이력(이전 프레임 뷰-투영, 엔티티별 이전 월드/스킨 팔레트)은 렌더러가 한 프레임에 뷰 하나만 그리고 연속 프레임일 때만 유효하다
@@ -174,18 +178,30 @@ public:
 	float    AmbientIntensity = 1.0f;
 
 private:
-	// 메시 패스 PSO 종류 (정적/스킨 각각). 정점 셰이더는 모두 같은 바이트코드(VSMain/VSSkinned) → 사전 패스와 메인 패스 깊이가 비트 단위로 같다
+	// 메시 패스 PSO 종류. 패스마다 머티리얼 변형(MaterialRender::MakeVariant: Masked|Additive / 양면 / 스킨) 8개.
+	// 정점 셰이더는 모두 같은 바이트코드(VSMain/VSSkinned) → 사전 패스와 메인 패스 깊이가 비트 단위로 같다
 	enum class EMeshPass : uint8
 	{
 		Main,           // 깊이 LESS + 쓰기 (사전 패스 없음)
 		MainDepthEqual, // 사전 패스 뒤: 깊이 EQUAL, 쓰기 없음
-		Wireframe,      // 선 채우기, 컬링 없음
+		Wireframe,      // 선 채우기, 컬링 없음 (변형은 스킨만 — 머티리얼 무관)
 		Prepass,        // PSPrepass: 깊이 + 법선 + 움직임 벡터 (MRT 2개)
+		Translucent,    // 반투명/가산 (변형 bit0 = 가산): 깊이 LESS, 쓰기 없음, 블렌드
 		Count
 	};
+	// 패스가 실제로 쓰는 변형인가 (Wireframe은 Masked/양면 비트 없음)
+	static bool IsMeshPipelineUsed(EMeshPass Pass, uint32 Variant);
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
-	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, bool bSkinned, bool bForceRecompile);
-	FD3D12PipelineState& GetMeshPipeline(EMeshPass Pass, bool bSkinned) { return MeshPipelines[static_cast<uint32>(Pass)][bSkinned ? 1 : 0]; }
+	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant);
+	static void GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel);
+	FD3D12PipelineState& GetMeshPipeline(EMeshPass Pass, uint32 Variant)
+	{
+		if (Pass == EMeshPass::Wireframe)
+		{
+			Variant &= MaterialRender::VariantSkinned;
+		}
+		return MeshPipelines[static_cast<uint32>(Pass)][Variant];
+	}
 
 	FPerFrameConstants BuildPerFrameConstants(FScene& Scene, const FCamera& Camera) const;
 
@@ -195,7 +211,7 @@ private:
 	FD3D12ShaderCompiler ShaderCompiler;
 	FShaderLibrary       ShaderLibrary; // 쿠킹된 DXIL 우선, 없으면 컴파일
 	FD3D12RootSignature  RootSignature;
-	FD3D12PipelineState  MeshPipelines[static_cast<uint32>(EMeshPass::Count)][2]; // [패스][정적 0 / 스킨 1]
+	FD3D12PipelineState  MeshPipelines[static_cast<uint32>(EMeshPass::Count)][MaterialRender::VariantCount]; // [패스][머티리얼 변형]
 	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
@@ -246,6 +262,10 @@ private:
 	// 메인 묶음 기록. bBuildHzb면 1단계 뒤 HZB + 2단계 판정을 이 패스 깊이로 한다 (오클루전일 때 깊이를 처음 쓰는 패스)
 	void DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& PerFrame, bool bOcclusion, bool bBuildHzb,
 	                     uint32& OutDrawCalls, uint64& OutTriangles);
+	// 반투명 묶음 기록 (안개 적용 뒤, 파티클 전 — 씬 컬러 + 깊이가 바인딩된 상태)
+	void DrawTranslucentBatches(const FPerFrameConstants& PerFrame, uint32& OutDrawCalls, uint64& OutTriangles);
+	// 메시 루트 시그니처 + 패스 공용 루트 인자 (프레임/그림자/IBL/로컬 라이트/인스턴스/화면 버퍼/안개)
+	void BindMeshPassRoot(D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, D3D12_GPU_VIRTUAL_ADDRESS InstanceIndices);
 	// DebugView가 켜져 있으면 화면 공간 버퍼를 Output에 덮어 그린다
 	void RenderDebugView(const FRenderOutput& Output);
 	// 깊이 사전 패스 렌더 타깃 바인딩 (법선 + 움직임 벡터 MRT + 씬 깊이)
@@ -290,6 +310,7 @@ private:
 	};
 	std::vector<FLodHistory> LodHistory;
 	FMeshPassBatches  MainBatches;
+	FMeshPassBatches  TranslucentBatches; // 반투명/가산 (먼 것부터, PrepareMainBatches가 함께 만든다)
 	FSceneRenderStats Stats;
 
 	FFrustum FrozenFrustum;

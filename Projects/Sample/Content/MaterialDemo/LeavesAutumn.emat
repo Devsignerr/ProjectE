@@ -1,0 +1,10 @@
+{
+  "Name": "LeavesAutumn",
+  "Parent": "Leaves.emat",
+  "BaseColorFactor": [
+    1.0,
+    0.45,
+    0.08,
+    1.0
+  ]
+}

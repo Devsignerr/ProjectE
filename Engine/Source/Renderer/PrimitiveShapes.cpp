@@ -60,6 +60,14 @@ FMeshData FPrimitiveShapes::MakeCube(float Size, const FVector4& Color)
 	return Mesh;
 }
 
+FMeshData FPrimitiveShapes::MakePlane(float Size, const FVector4& Color)
+{
+	FMeshData Mesh;
+	AddQuadFace(Mesh, FVector3::ZeroVector, FVector3::UpVector, FVector3::ForwardVector, Size * 0.5f, Color);
+	Mesh.ComputeTangents();
+	return Mesh;
+}
+
 FMeshData FPrimitiveShapes::MakeSphere(float Radius, uint32 Segments, uint32 Rings, const FVector4& Color)
 {
 	Segments = std::max(Segments, 3u);

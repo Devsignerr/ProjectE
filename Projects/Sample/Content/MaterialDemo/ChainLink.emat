@@ -1,0 +1,26 @@
+{
+  "Name": "ChainLink",
+  "BaseColorFactor": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.9,
+  "Roughness": 0.35,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Masked",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "BaseColorTexture": "ChainLink.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

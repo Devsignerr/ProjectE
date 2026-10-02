@@ -335,6 +335,16 @@ namespace
 			Material.OcclusionStrength = GltfMaterial.occlusion_texture.texture ? GltfMaterial.occlusion_texture.scale : 1.0f;
 			Material.EmissiveImage     = ImageIndexOf(GltfMaterial.emissive_texture);
 
+			// 알파 모드: MASK = 알파 테스트, BLEND = 반투명 패스. 양면이면 컬링 없이 뒷면 법선을 뒤집는다
+			switch (GltfMaterial.alpha_mode)
+			{
+			case cgltf_alpha_mode_mask:  Material.BlendMode = EMaterialBlendMode::Masked; break;
+			case cgltf_alpha_mode_blend: Material.BlendMode = EMaterialBlendMode::Translucent; break;
+			default:                     Material.BlendMode = EMaterialBlendMode::Opaque; break;
+			}
+			Material.AlphaCutoff = GltfMaterial.alpha_cutoff;
+			Material.bTwoSided   = GltfMaterial.double_sided != 0;
+
 			const float EmissiveStrength = GltfMaterial.has_emissive_strength ? GltfMaterial.emissive_strength.emissive_strength : 1.0f;
 			Material.EmissiveFactor = FVector3(GltfMaterial.emissive_factor[0], GltfMaterial.emissive_factor[1], GltfMaterial.emissive_factor[2]) * EmissiveStrength;
 		}

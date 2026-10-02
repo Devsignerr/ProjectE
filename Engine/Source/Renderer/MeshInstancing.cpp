@@ -30,6 +30,7 @@ void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform
 	Instance.Material       = &Resources.ResolveMaterial(MeshComponent.Material);
 	Instance.MaterialHandle = MeshComponent.Material.IsValid() ? MeshComponent.Material : Resources.GetDefaultMaterial();
 	Instance.Entity         = Entity;
+	Instance.CopyMaterialState();
 
 	// 스킨 메시는 팔레트가 바로 월드로 보낸다 (경계도 팔레트 기준)
 	if (const FSkinnedDrawInfo* Skinned = SkinPalettes != nullptr ? SkinPalettes->Find(Entity) : nullptr)
@@ -109,20 +110,28 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 }
 
 void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& Batches, const FMeshInstanceList& Instances,
-                      ID3D12PipelineState* StaticPipeline, ID3D12PipelineState* SkinnedPipeline, uint32 RootIndex, uint32 DestOffset,
-                      uint32& InOutDrawCalls, uint64& InOutTriangles)
+                      const FDepthPassBindings& Bindings, uint32& InOutDrawCalls, uint64& InOutTriangles)
 {
-	bool bSkinnedBound = false;
+	uint32           BoundVariant  = 0; // 부른 쪽이 Pipelines[0]을 바인딩해 둔다
+	const FMaterial* BoundMaterial = nullptr;
 	for (const FInstanceBatch& Batch : Batches.GetBatches())
 	{
 		const FMeshInstance& Instance = Instances[Batch.Instance];
-		if (Instance.IsSkinned() != bSkinnedBound)
+		const uint32         Variant  = GetDepthVariant(Instance);
+		if (Variant != BoundVariant)
 		{
-			bSkinnedBound = Instance.IsSkinned();
-			CommandList->SetPipelineState(bSkinnedBound ? SkinnedPipeline : StaticPipeline);
+			BoundVariant = Variant;
+			CommandList->SetPipelineState(Bindings.Pipelines[Variant]);
 		}
-		CommandList->SetGraphicsRoot32BitConstant(RootIndex, Batch.First, DestOffset);
-		if (bSkinnedBound)
+		if ((Variant & DepthVariantMasked) != 0 && Instance.Material != BoundMaterial)
+		{
+			BoundMaterial         = Instance.Material;
+			const float Values[2] = { Instance.Material->Constants.BaseColorFactor.W, Instance.Material->Constants.AlphaCutoff };
+			CommandList->SetGraphicsRoot32BitConstants(Bindings.MaskRootIndex, 2, Values, 0);
+			CommandList->SetGraphicsRootDescriptorTable(Bindings.MaskTextureRoot, Instance.Material->TextureTable.Gpu);
+		}
+		CommandList->SetGraphicsRoot32BitConstant(Bindings.InstanceRootIndex, Batch.First, Bindings.InstanceDestOffset);
+		if (Instance.IsSkinned())
 		{
 			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
 			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
@@ -134,9 +143,9 @@ void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBat
 		}
 		++InOutDrawCalls;
 	}
-	if (bSkinnedBound)
+	if (BoundVariant != 0)
 	{
-		CommandList->SetPipelineState(StaticPipeline);
+		CommandList->SetPipelineState(Bindings.Pipelines[0]);
 	}
 }
 
@@ -148,9 +157,16 @@ void FMeshPassBatches::Reset()
 	IndexBuffer = 0;
 }
 
-void FMeshPassBatches::Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer)
+void FMeshPassBatches::Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer, bool bBackToFront)
 {
-	InstanceBatching::Build(Items, Indices, Batches);
+	if (bBackToFront)
+	{
+		InstanceBatching::BuildBackToFront(Items, Indices, Batches);
+	}
+	else
+	{
+		InstanceBatching::Build(Items, Indices, Batches);
+	}
 	const size_t                  Count      = std::max<size_t>(Indices.size(), 1);
 	const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(uint32) * Count, 16);
 	if (Indices.empty())

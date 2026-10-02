@@ -271,6 +271,10 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 		MeshSimplifier::GenerateLods(Sphere, LodMath::MaxLods);              // 곡면 도형은 LOD (정육면체는 12삼각형이라 불필요)
 		Handle = CreateMesh(Sphere, L"Primitive_Sphere");
 	}
+	else if (Key == "plane")
+	{
+		Handle = CreateMesh(FPrimitiveShapes::MakePlane(FUnits::MetersToUnits), L"Primitive_Plane"); // 1m 사각형 한 장 (법선 +Z)
+	}
 	else if (Key == "capsule")
 	{
 		// 반지름 50cm, 원기둥 절반 50cm → 높이 2m (캡슐 콜라이더 Radius 50 / HalfHeight 50과 같은 모양)
@@ -357,32 +361,105 @@ FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path
 	}
 
 	FMaterial Material;
-	FillMaterialFromAsset(Material, Asset, Canonical.parent_path());
+	ResolveAndFillMaterial(Material, Asset, Canonical, false);
 	const FMaterialHandle Handle = CreateMaterial(Material);
 	MaterialCache[CacheKey]      = Handle;
-	E_LOG(LogRenderer, Log, "머티리얼 로드: {}", Asset.Name);
+	E_LOG(LogRenderer, Log, "머티리얼 로드: {}{}", Asset.Name, Asset.IsInstance() ? " (인스턴스)" : "");
 	return Handle;
+}
+
+bool FResourceManager::ResolveMaterialAsset(const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, FMaterialAsset& OutResolved,
+                                            std::vector<std::filesystem::path>* OutChain, std::string* OutError) const
+{
+	// 부모는 편집 중 원본(에디터가 아직 저장하지 않은 값) → 디스크 순
+	const FMaterialAsset::FLoader Loader = [this](const std::filesystem::path& ParentPath, FMaterialAsset& OutAsset) {
+		if (const auto Found = EditedMaterialSources.find(FMaterialAsset::MakePathKey(ParentPath)); Found != EditedMaterialSources.end())
+		{
+			OutAsset = Found->second;
+			return true;
+		}
+		return OutAsset.LoadFromFile(ParentPath);
+	};
+	return FMaterialAsset::Resolve(Asset, AssetPath, Loader, OutResolved, OutChain, OutError);
+}
+
+void FResourceManager::ResolveAndFillMaterial(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, bool bBuildTable)
+{
+	FMaterialAsset                     Resolved;
+	std::vector<std::filesystem::path> Chain;
+	ResolveMaterialAsset(Asset, AssetPath, Resolved, &Chain); // 실패해도 읽은 데까지의 값으로 채운다 (오류 로그)
+	Material.ParentChain.clear();
+	for (const std::filesystem::path& Parent : Chain)
+	{
+		Material.ParentChain.push_back(FMaterialAsset::MakePathKey(Parent));
+	}
+	const bool bTexturesChanged = FillMaterialFromAsset(Material, Resolved, AssetPath.parent_path());
+	if (bBuildTable && (bTexturesChanged || !Material.TextureTable.IsValid()))
+	{
+		BuildMaterialTable(Material);
+	}
 }
 
 void FResourceManager::ApplyMaterialAsset(FMaterialHandle Handle, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
 {
-	if (FMaterial* Material = Materials.Get(Handle))
+	FMaterial* Material = Materials.Get(Handle);
+	if (Material == nullptr)
 	{
-		FillMaterialFromAsset(*Material, Asset, BaseDirectory);
-		BuildMaterialTable(*Material);
+		return;
+	}
+	// 이 머티리얼의 파일 경로 (경로 캐시에서 찾고, 없으면 BaseDirectory 안 이름 없는 파일로 본다)
+	std::filesystem::path AssetPath = BaseDirectory / L"_.emat";
+	for (const auto& [Key, Cached] : MaterialCache)
+	{
+		if (Cached == Handle)
+		{
+			AssetPath = Key;
+			break;
+		}
+	}
+	const std::wstring PathKey      = FMaterialAsset::MakePathKey(AssetPath);
+	EditedMaterialSources[PathKey]  = Asset;
+	ResolveAndFillMaterial(*Material, Asset, AssetPath, true);
+
+	// 이 머티리얼을 조상으로 둔 캐시된 인스턴스를 다시 해석 (체인에 조상이 모두 들어 있으므로 한 번 돌면 된다)
+	for (const auto& [Key, Cached] : MaterialCache)
+	{
+		FMaterial* Child = Materials.Get(Cached);
+		if (Child == nullptr || Cached == Handle ||
+		    std::find(Child->ParentChain.begin(), Child->ParentChain.end(), PathKey) == Child->ParentChain.end())
+		{
+			continue;
+		}
+		const std::filesystem::path ChildPath = Key;
+		FMaterialAsset              ChildAsset;
+		if (const auto Edited = EditedMaterialSources.find(FMaterialAsset::MakePathKey(ChildPath)); Edited != EditedMaterialSources.end())
+		{
+			ChildAsset = Edited->second;
+		}
+		else if (!ChildAsset.LoadFromFile(ChildPath))
+		{
+			continue;
+		}
+		ResolveAndFillMaterial(*Child, ChildAsset, ChildPath, true);
 	}
 }
 
-void FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
+bool FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
 {
 	Material.Name      = Asset.Name;
 	Material.Constants = Asset.Constants;
+	Material.BlendMode = Asset.BlendMode;
+	Material.bTwoSided = Asset.bTwoSided;
+	bool bChanged      = false;
 	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
 	{
-		Material.Textures[Slot] = Asset.TexturePaths[Slot].empty()
-		                              ? FTextureHandle{}
-		                              : LoadTexture(BaseDirectory / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
+		const FTextureHandle Texture = Asset.TexturePaths[Slot].empty()
+		                                   ? FTextureHandle{}
+		                                   : LoadTexture(BaseDirectory / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
+		bChanged |= Texture != Material.Textures[Slot];
+		Material.Textures[Slot] = Texture;
 	}
+	return bChanged;
 }
 
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)

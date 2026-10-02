@@ -350,6 +350,9 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 		Writer.Write(Material.RoughnessFactor);
 		Writer.Write(Material.NormalScale);
 		Writer.Write(Material.OcclusionStrength);
+		Writer.Write(static_cast<uint32>(Material.BlendMode));
+		Writer.Write(Material.AlphaCutoff);
+		Writer.Write(static_cast<uint32>(Material.bTwoSided ? 1u : 0u));
 		Writer.Write(Material.BaseColorImage);
 		Writer.Write(Material.MetallicRoughnessImage);
 		Writer.Write(Material.NormalImage);
@@ -454,6 +457,11 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		Material.RoughnessFactor        = Reader.Read<float>();
 		Material.NormalScale            = Reader.Read<float>();
 		Material.OcclusionStrength      = Reader.Read<float>();
+		const uint32 BlendMode          = Reader.Read<uint32>();
+		Material.BlendMode              = BlendMode < static_cast<uint32>(EMaterialBlendMode::Count) ? static_cast<EMaterialBlendMode>(BlendMode)
+		                                                                                              : EMaterialBlendMode::Opaque;
+		Material.AlphaCutoff            = Reader.Read<float>();
+		Material.bTwoSided              = Reader.Read<uint32>() != 0;
 		Material.BaseColorImage         = Reader.Read<int32>();
 		Material.MetallicRoughnessImage = Reader.Read<int32>();
 		Material.NormalImage            = Reader.Read<int32>();

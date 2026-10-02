@@ -1,7 +1,8 @@
 @echo off
 rem Build.ps1과 같은 절차(Ninja 구성 + 빌드)를 cmd로 수행한다.
 rem 회사 PC 그룹 정책(AllSigned)이 서명 없는 .ps1 실행을 막아 루트 배치 파일은 이 스크립트를 쓴다.
-rem 사용법: Build.bat [-Config Debug^|Release] [-Run] [-RunSandbox] [-Test] [-Clean]
+rem 사용법: Build.bat [-Config Debug^|Release] [-Run] [-RunSandbox] [-Test] [-SocketTests] [-Clean]
+rem   -SocketTests: 실제 소켓(GNS/LAN) 테스트까지 (방화벽 확인 창이 뜰 수 있음)
 setlocal EnableExtensions
 chcp 65001 >nul
 
@@ -10,6 +11,7 @@ set "CONFIG=Debug"
 set "RUN="
 set "RUNSANDBOX="
 set "TEST="
+set "SOCKETTESTS="
 set "CLEAN="
 
 :parse
@@ -23,6 +25,7 @@ if /i "%~1"=="-Config" (
 if /i "%~1"=="-Run" (set "RUN=1" & shift & goto parse)
 if /i "%~1"=="-RunSandbox" (set "RUNSANDBOX=1" & shift & goto parse)
 if /i "%~1"=="-Test" (set "TEST=1" & shift & goto parse)
+if /i "%~1"=="-SocketTests" (set "SOCKETTESTS=1" & shift & goto parse)
 if /i "%~1"=="-Clean" (set "CLEAN=1" & shift & goto parse)
 echo 알 수 없는 인자: %~1
 exit /b 1
@@ -94,6 +97,7 @@ echo == 완료: %BINDIR%\ProjectEEditor.exe ==
 
 if defined TEST (
     echo == 테스트 (%PRESET%^) ==
+    if defined SOCKETTESTS (set "E_TEST_SOCKETS=1") else (set "E_TEST_SOCKETS=")
     "%CMAKEBIN%\ctest.exe" --preset %PRESET%
     if errorlevel 1 (
         echo 테스트 실패

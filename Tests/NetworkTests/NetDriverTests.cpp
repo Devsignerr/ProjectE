@@ -189,6 +189,11 @@ E_TEST(NetDriver_HandshakeTimeout)
 
 E_TEST(NetDriver_JoinOverGns)
 {
+	if (!FTestRegistry::AllowRealSockets())
+	{
+		FTestRegistry::ReportSkipped("NetDriver_JoinOverGns", "실제 소켓 — E_TEST_SOCKETS=1(-SocketTests)일 때만");
+		return;
+	}
 	// 실제 소켓(GNS)으로 서버 + 클라이언트 입장, 거부 사유 전달까지
 	FNetDriver Server;
 	uint16     Port = 0;

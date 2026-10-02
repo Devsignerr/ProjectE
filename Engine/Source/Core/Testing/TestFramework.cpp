@@ -1,6 +1,7 @@
 #include "Core/Testing/TestFramework.h"
 
 #include <process.h>
+#include <stdlib.h>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -84,4 +85,22 @@ void FTestRegistry::ReportFailure(const char* File, int32 Line, const std::strin
 {
 	++GCurrentTestFailures;
 	E_LOG(LogTest, Error, "  {}({}): {}", File, Line, Message);
+}
+
+bool FTestRegistry::AllowRealSockets()
+{
+	char*  Value  = nullptr;
+	size_t Length = 0;
+	if (_dupenv_s(&Value, &Length, "E_TEST_SOCKETS") != 0 || Value == nullptr)
+	{
+		return false;
+	}
+	const bool bAllowed = std::string(Value) == "1";
+	free(Value); // _dupenv_s가 malloc한 CRT 버퍼
+	return bAllowed;
+}
+
+void FTestRegistry::ReportSkipped(const char* TestName, const char* Reason)
+{
+	E_LOG(LogTest, Display, "  건너뜀: {} ({})", TestName, Reason);
 }

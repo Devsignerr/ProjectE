@@ -24,6 +24,11 @@ namespace
 // GameNetworkingSockets 전송 계층: localhost 연결 → 신뢰 메시지 에코 → 끊김 이벤트
 E_TEST(Gns_LocalhostEcho)
 {
+	if (!FTestRegistry::AllowRealSockets())
+	{
+		FTestRegistry::ReportSkipped("Gns_LocalhostEcho", "실제 소켓 — E_TEST_SOCKETS=1(-SocketTests)일 때만");
+		return;
+	}
 	std::unique_ptr<INetTransport> Server = CreateGnsTransport();
 	std::unique_ptr<INetTransport> Client = CreateGnsTransport();
 	const uint16                   Port   = ListenOnFreePort(*Server);

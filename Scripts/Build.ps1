@@ -7,6 +7,7 @@
     .\Scripts\Build.ps1 -Run                  # Debug 빌드 후 에디터(ProjectEEditor) 실행
     .\Scripts\Build.ps1 -RunSandbox           # Debug 빌드 후 Sandbox(런타임 데모) 실행
     .\Scripts\Build.ps1 -Test                 # Debug 빌드 후 단위 테스트(ctest) 실행
+    .\Scripts\Build.ps1 -Test -SocketTests    # 실제 소켓(GNS/LAN) 테스트까지 (방화벽 확인 창이 뜰 수 있음 — 네트워크 코드를 고쳤을 때)
     .\Scripts\Build.ps1 -VisualStudio         # .sln 생성 (Build\vs2022\ProjectE.sln) + 빌드
     .\Scripts\Build.ps1 -Clean                # 빌드 디렉터리 삭제 후 처음부터
 #>
@@ -16,6 +17,7 @@ param(
     [switch]$Run,
     [switch]$RunSandbox,
     [switch]$Test,
+    [switch]$SocketTests,
     [switch]$Clean,
     [switch]$VisualStudio
 )
@@ -81,6 +83,7 @@ try {
 
     if ($Test) {
         Write-Host "== 테스트 ($BuildPreset) ==" -ForegroundColor Cyan
+        if ($SocketTests) { $env:E_TEST_SOCKETS = "1" } else { Remove-Item Env:E_TEST_SOCKETS -ErrorAction SilentlyContinue }
         & $CTest --preset $BuildPreset
         if ($LASTEXITCODE -ne 0) { throw "테스트 실패 ($LASTEXITCODE)" }
     }

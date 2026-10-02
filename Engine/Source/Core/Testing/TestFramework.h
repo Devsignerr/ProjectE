@@ -27,6 +27,12 @@ public:
 	// 테스트용 임시 폴더: %TEMP%/ProjectE_Tests/<프로세스 ID> (없으면 만든다). RunAll이 끝나면 지운다.
 	// 테스트는 temp_directory_path() 대신 이 경로 아래에 파일을 만든다 (동시에 도는 다른 테스트 실행과 충돌 방지)
 	static std::filesystem::path GetTempDirectory();
+
+	// 실제 소켓(GNS/LAN UDP)을 여는 테스트를 돌릴지: 환경 변수 E_TEST_SOCKETS=1 (Build.ps1 -Test -SocketTests)일 때만.
+	// 0.0.0.0에 바인드하는 소켓은 실행 파일 경로마다 Windows 방화벽 확인 창을 띄우므로(워크트리마다 새 경로) 기본은 건너뛴다
+	static bool AllowRealSockets();
+	// 건너뛴 테스트 기록 (로그 한 줄)
+	static void ReportSkipped(const char* TestName, const char* Reason);
 };
 
 struct FTestAutoRegister

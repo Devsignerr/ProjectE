@@ -7,6 +7,11 @@
 // LAN 세션 찾기: 호스트가 같은 PC(루프백 질의)에서 응답하고, 다른 프로젝트 검색에는 보이지 않는다
 E_TEST(LanDiscovery_FindsHostOnSameMachine)
 {
+	if (!FTestRegistry::AllowRealSockets())
+	{
+		FTestRegistry::ReportSkipped("LanDiscovery_FindsHostOnSameMachine", "실제 소켓 — E_TEST_SOCKETS=1(-SocketTests)일 때만");
+		return;
+	}
 	constexpr uint16 DiscoveryPort = 27790; // 실제 기본 포트(7778)와 겹치지 않게
 	FLanDiscovery    Host;
 	FLanHostInfo     Info;

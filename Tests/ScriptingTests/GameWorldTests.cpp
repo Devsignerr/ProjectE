@@ -206,7 +206,15 @@ E_TEST(GameWorld_LuaSessionApi)
 	Info.Name                = "로비 테스트";
 	Info.Session.ProjectName = FPaths::GetProjectName(); // 테스트는 기본 예제 프로젝트(Sample)로 실행된다
 	Info.GamePort            = 27797;
-	E_EXPECT_TRUE(LanHost.StartHost(Info, DiscoveryPort));
+	const bool bSockets      = FTestRegistry::AllowRealSockets(); // LAN 검색은 실제 UDP 소켓 — 없으면 세션 요청 부분만
+	if (bSockets)
+	{
+		E_EXPECT_TRUE(LanHost.StartHost(Info, DiscoveryPort));
+	}
+	else
+	{
+		FTestRegistry::ReportSkipped("GameWorld_LuaSessionApi (LAN 검색 부분)", "실제 소켓 — E_TEST_SOCKETS=1(-SocketTests)일 때만");
+	}
 
 	FScene        Scene;
 	FScriptSystem Scripts;
@@ -215,18 +223,25 @@ E_TEST(GameWorld_LuaSessionApi)
 	World.SetLanDiscoveryPort(DiscoveryPort);
 	World.BeginPlay(Scene);
 
-	E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetState() == 'Standalone'); Net.FindSessions()"));
-	for (int32 Frame = 0; Frame < 60; ++Frame)
+	if (bSockets)
 	{
-		LanHost.Update();
-		World.TickGameplay(1.0f / 60.0f, nullptr);
-		std::this_thread::sleep_for(std::chrono::milliseconds(5));
-	}
-	E_EXPECT_TRUE(Scripts.RunString(R"(
+		E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetState() == 'Standalone'); Net.FindSessions()"));
+		for (int32 Frame = 0; Frame < 60; ++Frame)
+		{
+			LanHost.Update();
+			World.TickGameplay(1.0f / 60.0f, nullptr);
+			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		}
+		E_EXPECT_TRUE(Scripts.RunString(R"(
 local Sessions = Net.GetSessions()
 assert(#Sessions == 1 and Sessions[1].name == '로비 테스트' and Sessions[1].address:sub(-6) == ':27797')
 Net.Connect(Sessions[1].address)
 )"));
+	}
+	else
+	{
+		E_EXPECT_TRUE(Scripts.RunString("assert(Net.GetState() == 'Standalone'); Net.Connect('127.0.0.1:27797')"));
+	}
 	std::optional<FNetSessionRequest> Request = World.ConsumeSessionRequest();
 	E_EXPECT_TRUE(Request.has_value() && Request->Type == FNetSessionRequest::EType::Connect && Request->Address.ends_with(":27797"));
 	E_EXPECT_FALSE(World.ConsumeSessionRequest().has_value()); // 한 번만 꺼내진다

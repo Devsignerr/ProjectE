@@ -2,6 +2,7 @@
 #include "Core/Paths.h"
 #include "Core/Testing/TestFramework.h"
 #include "Physics/CharacterMovement.h"
+#include "Renderer/AssetCache.h"
 #include "Renderer/GltfLoader.h"
 #include "Renderer/ModelLoader.h"
 #include "Scene/AnimRetarget.h"
@@ -384,62 +385,162 @@ E_TEST(AnimRetarget_SystemAppendsClipsWithAliasesAndSourceNotifies)
 	Library.Invalidate();
 }
 
-// 실제 에셋: KayKit(T 포즈, .l 이름) 클립 → UAL2 마네킹(UE 이름) — 뼈 방향이 소스와 같아야 한다
-E_TEST(AnimRetarget_KayKitToMannequinBoneDirections)
+// 실제 에셋 (KayKit: T 포즈 Y축 로컬 뼈, ".l" 이름 ↔ UAL2: UE 이름, 다른 로컬 축·비율·클라비클):
+//   리타기팅한 클립의 팔/다리 뼈 월드 방향(관절 → 다음 관절)이 같은 시각의 소스와 같아야 한다 (시작/중간/끝 무렵 프레임).
+//   ※ KayKit 걷기/대기는 원래 팔을 수평 가까이 앞뒤로 흔든다 (치비 비율) — 대상에서도 같은 각도가 나오는 것이 맞다
+namespace
+{
+	struct FRealSkeleton
+	{
+		std::shared_ptr<const FAnimationSet> Set;
+	};
+
+	std::shared_ptr<const FAnimationSet> LoadRealSet(const wchar_t* Relative)
+	{
+		const std::filesystem::path Path = FPaths::GetProjectContentDirectory() / Relative;
+		FModelData                  Model;
+		if (!std::filesystem::exists(Path) || FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+		{
+			return nullptr;
+		}
+		return FModelLoader::MakeModelAnimationSet(Model);
+	}
+
+	using FBonePair = std::pair<const char*, const char*>;
+
+	// 소스 클립을 대상에 리타기팅해 Times(클립 길이 비율)마다 뼈 쌍 방향 비교. 각 쌍 = (소스 시작, 소스 끝) ↔ (대상 시작, 대상 끝)
+	void ExpectRealBoneDirections(const FAnimationSet& Source, const FAnimationSet& Target, const char* ClipName,
+	                              const std::vector<std::pair<FBonePair, FBonePair>>& Pairs)
+	{
+		const FRetargetSkeleton SourceSkeleton = AnimRetargetMath::MakeSkeleton(Source, AnimRetargetMath::ResolveMapping(Source, nullptr));
+		const FRetargetSkeleton TargetSkeleton = AnimRetargetMath::MakeSkeleton(Target, AnimRetargetMath::ResolveMapping(Target, nullptr));
+		const FRetargetPlan     Plan           = AnimRetargetMath::MakePlan(SourceSkeleton, TargetSkeleton);
+		const int32             Clip           = Source.FindClip(ClipName);
+		E_EXPECT_TRUE(Clip >= 0);
+		if (Clip < 0)
+		{
+			return;
+		}
+		const FAnimationClip& SourceClip = Source.Clips[static_cast<size_t>(Clip)];
+		const FAnimationClip  Retargeted = AnimRetargetMath::RetargetClip(SourceClip, Plan);
+		for (const float Fraction : { 0.0f, 0.25f, 0.5f, 0.8f })
+		{
+			const float            Time       = SourceClip.Duration * Fraction;
+			std::vector<FNodePose> SourcePose = Source.RestPose;
+			AnimationMath::SampleClip(SourceClip, Time, SourcePose);
+			std::vector<FMatrix4x4> SourceMatrices;
+			AnimationMath::ComputeModelMatrices(SourcePose, Source.NodeParents, SourceMatrices);
+			const std::vector<FMatrix4x4> TargetMatrices = EvaluateTarget(Target, Retargeted, Time);
+			for (const auto& [SourcePair, TargetPair] : Pairs)
+			{
+				const int32 SourceFrom = Source.FindNode(SourcePair.first);
+				const int32 SourceTo   = Source.FindNode(SourcePair.second);
+				const int32 TargetFrom = Target.FindNode(TargetPair.first);
+				const int32 TargetTo   = Target.FindNode(TargetPair.second);
+				E_EXPECT_TRUE(SourceFrom >= 0 && SourceTo >= 0 && TargetFrom >= 0 && TargetTo >= 0);
+				if (SourceFrom < 0 || SourceTo < 0 || TargetFrom < 0 || TargetTo < 0)
+				{
+					continue;
+				}
+				const FVector3 Expected = Direction(SourceMatrices, SourceFrom, SourceTo);
+				const FVector3 Actual   = Direction(TargetMatrices, TargetFrom, TargetTo);
+				const float    Dot      = FVector3::Dot(Expected, Actual);
+				if (Dot < 0.98f)
+				{
+					E_LOG(LogRetargetTest, Error, "{} {:.2f}초 {}: 기대 ({:.2f},{:.2f},{:.2f}) 실제 ({:.2f},{:.2f},{:.2f})", ClipName, Time, TargetPair.first,
+					      Expected.X, Expected.Y, Expected.Z, Actual.X, Actual.Y, Actual.Z);
+				}
+				E_EXPECT_TRUE(Dot > 0.98f);
+			}
+		}
+	}
+} // namespace
+
+E_TEST(AnimRetarget_RealAssetsArmAndLegDirectionsBothWays)
 {
 	if (!FPaths::HasProject())
 	{
 		return;
 	}
-	const std::filesystem::path Content = FPaths::GetProjectContentDirectory();
-	const std::filesystem::path KayKit  = Content / L"Asset/KayKit/Characters/KnightBare.glb";
-	const std::filesystem::path Ual     = Content / L"Asset/Quaternius/UAL2/UAL2_Standard.glb";
-	if (!std::filesystem::exists(KayKit) || !std::filesystem::exists(Ual))
+	const std::shared_ptr<const FAnimationSet> KayKit = LoadRealSet(L"Asset/KayKit/Characters/KnightBare.glb");
+	const std::shared_ptr<const FAnimationSet> Ual    = LoadRealSet(L"Asset/Quaternius/UAL2/UAL2_Standard.glb");
+	if (!KayKit || !Ual)
 	{
 		return;
 	}
-	FModelData SourceModel;
-	FModelData TargetModel;
-	E_EXPECT_TRUE(FGltfLoader::Load(KayKit, SourceModel));
-	E_EXPECT_TRUE(FGltfLoader::Load(Ual, TargetModel));
-	const std::shared_ptr<const FAnimationSet> Source = FModelLoader::MakeModelAnimationSet(SourceModel);
-	const std::shared_ptr<const FAnimationSet> Target = FModelLoader::MakeModelAnimationSet(TargetModel);
-	E_EXPECT_TRUE(Source != nullptr && Target != nullptr);
+	// KayKit → UAL: 양팔 위팔/아래팔, 양다리 허벅지/정강이
+	const std::vector<std::pair<FBonePair, FBonePair>> KayKitToUal = {
+		{ { "upperarm.l", "lowerarm.l" }, { "upperarm_l", "lowerarm_l" } }, { { "lowerarm.l", "wrist.l" }, { "lowerarm_l", "hand_l" } },
+		{ { "upperarm.r", "lowerarm.r" }, { "upperarm_r", "lowerarm_r" } }, { { "lowerarm.r", "wrist.r" }, { "lowerarm_r", "hand_r" } },
+		{ { "upperleg.l", "lowerleg.l" }, { "thigh_l", "calf_l" } },        { { "lowerleg.r", "foot.r" }, { "calf_r", "foot_r" } },
+	};
+	ExpectRealBoneDirections(*KayKit, *Ual, "Walking_A", KayKitToUal);
+	ExpectRealBoneDirections(*KayKit, *Ual, "Unarmed_Idle", KayKitToUal);
+	// UAL → KayKit (반대 방향): 데모가 쓰는 좀비 걷기 / 검 연속 공격
+	std::vector<std::pair<FBonePair, FBonePair>> UalToKayKit;
+	for (const auto& [KayKitPair, UalPair] : KayKitToUal)
+	{
+		UalToKayKit.push_back({ UalPair, KayKitPair });
+	}
+	ExpectRealBoneDirections(*Ual, *KayKit, "Zombie_Walk_Fwd_Loop", UalToKayKit);
+	ExpectRealBoneDirections(*Ual, *KayKit, "Sword_Regular_Combo", UalToKayKit);
+}
+
+// 시스템 경로 (라이브러리 로더 + 노드 엔티티 기록): KayKit Walking_A 중간 프레임의 엔티티 월드 방향
+E_TEST(AnimRetarget_RealAssetsSystemPath)
+{
+	if (!FPaths::HasProject())
+	{
+		return;
+	}
+	const std::shared_ptr<const FAnimationSet> Source = LoadRealSet(L"Asset/KayKit/Characters/KnightBare.glb");
+	const std::shared_ptr<const FAnimationSet> Target = LoadRealSet(L"Asset/Quaternius/UAL2/UAL2_Standard.glb");
 	if (!Source || !Target)
 	{
 		return;
 	}
-	const FRetargetSkeleton SourceSkeleton = AnimRetargetMath::MakeSkeleton(*Source, AnimRetargetMath::ResolveMapping(*Source, nullptr));
-	const FRetargetSkeleton TargetSkeleton = AnimRetargetMath::MakeSkeleton(*Target, AnimRetargetMath::ResolveMapping(*Target, nullptr));
-	const FRetargetPlan     Plan           = AnimRetargetMath::MakePlan(SourceSkeleton, TargetSkeleton);
-	const int32             Clip           = Source->FindClip("Walking_A");
-	E_EXPECT_TRUE(Clip >= 0);
-	if (Clip < 0)
+	FScene               Scene;
+	const FEntity        Root = Scene.CreateEntity("Mannequin");
+	std::vector<FEntity> Nodes(Target->NodeParents.size());
+	for (size_t Node = 0; Node < Nodes.size(); ++Node)
 	{
-		return;
+		Nodes[Node] = Scene.CreateEntity(Target->NodeNames[Node]);
 	}
-	const FAnimationClip Retargeted = AnimRetargetMath::RetargetClip(Source->Clips[static_cast<size_t>(Clip)], Plan);
-	const std::pair<const char*, const char*> SourcePairs[] = { { "upperarm.l", "lowerarm.l" }, { "lowerarm.l", "wrist.l" }, { "upperleg.r", "lowerleg.r" } };
-	const std::pair<const char*, const char*> TargetPairs[] = { { "upperarm_l", "lowerarm_l" }, { "lowerarm_l", "hand_l" }, { "thigh_r", "calf_r" } };
-	for (const float Time : { 0.0f, 0.3f, 0.7f })
+	for (size_t Node = 0; Node < Nodes.size(); ++Node)
 	{
-		std::vector<FNodePose> SourcePose = Source->RestPose;
-		AnimationMath::SampleClip(Source->Clips[static_cast<size_t>(Clip)], Time, SourcePose);
-		std::vector<FMatrix4x4> SourceMatrices;
-		AnimationMath::ComputeModelMatrices(SourcePose, Source->NodeParents, SourceMatrices);
-		const std::vector<FMatrix4x4> TargetMatrices = EvaluateTarget(*Target, Retargeted, Time);
-		for (size_t Pair = 0; Pair < std::size(SourcePairs); ++Pair)
-		{
-			const FVector3 Expected = Direction(SourceMatrices, Source->FindNode(SourcePairs[Pair].first), Source->FindNode(SourcePairs[Pair].second));
-			const FVector3 Actual   = Direction(TargetMatrices, Target->FindNode(TargetPairs[Pair].first), Target->FindNode(TargetPairs[Pair].second));
-			if (FVector3::Dot(Expected, Actual) < 0.97f)
-			{
-				E_LOG(LogRetargetTest, Error, "{} 시각 {}: 기대 ({:.2f},{:.2f},{:.2f}) 실제 ({:.2f},{:.2f},{:.2f})", TargetPairs[Pair].first, Time, Expected.X, Expected.Y,
-				      Expected.Z, Actual.X, Actual.Y, Actual.Z);
-			}
-			E_EXPECT_TRUE(FVector3::Dot(Expected, Actual) > 0.97f);
-		}
+		const int32 Parent = Target->NodeParents[Node];
+		Scene.SetParent(Nodes[Node], Parent >= 0 ? Nodes[static_cast<size_t>(Parent)] : Root);
+		FTransformComponent& Transform = Scene.GetTransform(Nodes[Node]);
+		Transform.Position             = Target->RestPose[Node].Translation;
+		Transform.Rotation             = Target->RestPose[Node].Rotation;
+		Transform.Scale                = Target->RestPose[Node].Scale;
 	}
+	Scene.GetRegistry().Emplace<FModelComponent>(Root).AssetPath = "Asset/Quaternius/UAL2/UAL2_Standard.glb";
+	FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Root);
+	Animation.Runtime.Set          = Target;
+	Animation.Runtime.NodeEntities = Nodes;
+	Animation.Clip                 = "Asset/KayKit/Characters/KnightBare.glb:Walking_A";
+	FAnimationSystem::Update(Scene, 0.0f);
+	FAnimationSystem::Update(Scene, 0.5f); // 중간 프레임
+	Scene.UpdateTransforms();
+	const float Time = FAnimationSystem::GetTime(Scene, Root);
+	E_EXPECT_NEAR(Time, 0.5f, 1.0e-3f);
+
+	const int32            Clip       = Source->FindClip("Walking_A");
+	std::vector<FNodePose> SourcePose = Source->RestPose;
+	AnimationMath::SampleClip(Source->Clips[static_cast<size_t>(Clip)], Time, SourcePose);
+	std::vector<FMatrix4x4> SourceMatrices;
+	AnimationMath::ComputeModelMatrices(SourcePose, Source->NodeParents, SourceMatrices);
+	const FBonePair SourcePairs[] = { { "upperarm.l", "lowerarm.l" }, { "lowerarm.l", "wrist.l" }, { "upperarm.r", "lowerarm.r" }, { "upperleg.r", "lowerleg.r" } };
+	const FBonePair TargetPairs[] = { { "upperarm_l", "lowerarm_l" }, { "lowerarm_l", "hand_l" }, { "upperarm_r", "lowerarm_r" }, { "thigh_r", "calf_r" } };
+	for (size_t Pair = 0; Pair < std::size(SourcePairs); ++Pair)
+	{
+		const FVector3 Expected = Direction(SourceMatrices, Source->FindNode(SourcePairs[Pair].first), Source->FindNode(SourcePairs[Pair].second));
+		const FVector3 From     = Scene.GetTransform(Nodes[static_cast<size_t>(Target->FindNode(TargetPairs[Pair].first))]).GetWorldPosition();
+		const FVector3 To       = Scene.GetTransform(Nodes[static_cast<size_t>(Target->FindNode(TargetPairs[Pair].second))]).GetWorldPosition();
+		E_EXPECT_TRUE(FVector3::Dot(Expected, (To - From).GetNormalized()) > 0.98f);
+	}
+	FAnimRetargetLibrary::Get().Invalidate();
 }
 
 // ---------------------------------------------------------------- 루트 모션

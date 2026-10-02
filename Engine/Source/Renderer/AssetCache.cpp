@@ -1,5 +1,6 @@
 #include "Renderer/AssetCache.h"
 
+#include "Core/Profiling.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
@@ -207,6 +208,7 @@ void FAssetCache::CompressModelImages(FModelData& Model)
 FAssetCache::ESource FAssetCache::LoadTextureAsset(const std::filesystem::path& SourcePath, ETextureUsage Usage,
                                                    FCompressedTexture& OutTexture, bool bWriteCooked)
 {
+	E_PROFILE_SCOPE("텍스처 에셋 로드");
 	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, GetTextureExtension(Usage));
 	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath))
 	{
@@ -269,6 +271,7 @@ bool FAssetCache::ReadEnvironment(FBinaryReader& Reader, FEnvironmentImage& OutI
 
 FAssetCache::ESource FAssetCache::LoadEnvironmentAsset(const std::filesystem::path& SourcePath, FEnvironmentImage& OutImage, bool bWriteCooked)
 {
+	E_PROFILE_SCOPE("환경맵 에셋 로드");
 	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, EnvironmentExtension);
 	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath))
 	{
@@ -636,6 +639,7 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 
 FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& SourcePath, FModelData& OutModel, bool bWriteCooked)
 {
+	E_PROFILE_SCOPE("모델 에셋 로드");
 	const std::filesystem::path CookedPath = GetCookedPath(SourcePath, ModelExtension);
 	if (!CookedPath.empty() && IsCookedUpToDate(SourcePath, CookedPath) && IsCookedNewerThanImportInputs(SourcePath, CookedPath) &&
 	    IsCookedWithCurrentImportSettings(SourcePath, CookedPath))

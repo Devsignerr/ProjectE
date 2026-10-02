@@ -4,6 +4,7 @@
 #include "Audio/AudioReflection.h"
 #include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
+#include "Core/Console/Console.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
@@ -13,6 +14,7 @@
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "UI/UIDebugDraw.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
 #include "World/GameWorldTravel.h"
@@ -61,6 +63,18 @@ void FRuntimeApplication::OnConfigureWindow(FWindowDesc& WindowDesc)
 
 bool FRuntimeApplication::OnInit()
 {
+	// 개발자 콘솔: 개발 실행은 항상, 패키지 게임은 프로젝트 설정으로. 출력은 로그 기록을 그대로 보여 준다
+	Console.bEnabled = !FPaths::IsPackaged() || FProjectSettings::Get().Console.bEnableInPackagedGame;
+	if (Console.bEnabled)
+	{
+		FLog::EnableHistory();
+	}
+	if (const std::wstring ConsoleText = FCommandLine::FromProcess().GetValue(L"--console-input"); !ConsoleText.empty() && Console.bEnabled)
+	{
+		Console.SetOpen(true); // 자동 검증: 콘솔을 연 상태 + 입력 줄 (자동 완성 후보 확인)
+		Console.SetInputText(FStringConv::ToUtf8(ConsoleText));
+	}
+
 	// FApplication::Run이 FPaths를 초기화했으므로 여기서는 프로젝트만 확인
 	if (FPaths::HasProject())
 	{
@@ -206,24 +220,36 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
 		}
 	}
+	// 콘솔(` 키)이 가장 먼저 키보드를 본다: 열려 있으면 게임 UI/게임에는 키 없음
+	StatOverlay.Tick(DeltaSeconds);
+	const bool bConsoleKeyboard = Console.Update(InputState, DeltaSeconds, FConsoleManager::Get());
+
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
 	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
 	FUIFrameInput       UIInput;
 	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
 	UIInput.bHasPointer = true;
 	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
-	UIInput.Keys         = FUISystem::MakeKeys(InputState);
+	UIInput.Keys         = bConsoleKeyboard ? FUIKeyInput{} : FUISystem::MakeKeys(InputState);
 	UIInput.DeltaSeconds = DeltaSeconds;
 	FInput               BlockedInput;
 	const FInput*        GameInput = &InputState;
 	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	// 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (Phase 32-2)
-	GetWindow().SetTextInput(UIResult.bKeyboard && UIResult.bHasTextCaret, static_cast<int32>(UIResult.TextCaret.Min.X),
-	                         static_cast<int32>(UIResult.TextCaret.Min.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
-	if (UIResult.bPointer || UIResult.bKeyboard)
+	if (Console.IsOpen())
+	{
+		const FUIRect& Caret = Console.GetCaretRect();
+		GetWindow().SetTextInput(true, static_cast<int32>(Caret.Min.X), static_cast<int32>(Caret.Min.Y), static_cast<int32>(Caret.GetHeight()));
+	}
+	else
+	{
+		GetWindow().SetTextInput(UIResult.bKeyboard && UIResult.bHasTextCaret, static_cast<int32>(UIResult.TextCaret.Min.X),
+		                         static_cast<int32>(UIResult.TextCaret.Min.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
+	}
+	if (UIResult.bPointer || UIResult.bKeyboard || bConsoleKeyboard)
 	{
 		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;
-		if (UIResult.bKeyboard)
+		if (UIResult.bKeyboard || bConsoleKeyboard)
 		{
 			BlockedInput = BlockedInput.WithoutKeyboard();
 		}
@@ -232,11 +258,12 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	// ESC 종료는 개발 실행에서만 — 패키지 게임은 ESC를 게임(일시정지 메뉴 등)에 넘기고 종료는 Game.Quit()로
 	// (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
 	// 커서가 잠겨 있으면 ESC는 잠금만 푼다 (게임 스크립트도 ESC를 볼 수 있다)
-	if (!UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape) && GetWindow().IsCursorLocked())
+	// (콘솔이 열려 있으면 ESC는 콘솔을 닫는다)
+	if (!UIResult.bKeyboard && !bConsoleKeyboard && InputState.IsKeyPressed(EKey::Escape) && GetWindow().IsCursorLocked())
 	{
 		GetWindow().SetCursorLocked(false);
 	}
-	else if (!FPaths::IsPackaged() && !UIResult.bKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	else if (!FPaths::IsPackaged() && !UIResult.bKeyboard && !bConsoleKeyboard && InputState.IsKeyPressed(EKey::Escape))
 	{
 		RequestExit();
 	}
@@ -284,6 +311,12 @@ void FRuntimeApplication::OnRender()
 	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
 	UIDrawList.Clear();
 	FUISystem::Paint(Scene, UIDrawList);
+	// 화면 통계(stat fps/gpu)와 콘솔은 게임 UI 위에
+	const FRenderOutput Output = Rhi->GetBackBufferOutput();
+	const FUIRect       Screen(FVector2::ZeroVector, FVector2(static_cast<float>(Output.Width), static_cast<float>(Output.Height)));
+	const std::vector<std::string> StatLines = StatOverlay.BuildLines(&SceneRenderer.GetStats());
+	FUIDebugDraw::AddTextPanel(UIDrawList, StatLines, FVector2(Screen.Max.X - 12.0f, 12.0f), true, 15.0f, { 140.0f, 70.0f }, Screen);
+	Console.Paint(Screen, UIDrawList);
 	UIRenderer.Render(UIDrawList, Rhi->GetBackBufferOutput(), FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	Rhi->EndFrame();
 }

@@ -12,6 +12,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
+#include "Editor/ConsoleVariableWidgets.h"
 #include "Editor/EditorActions.h"
 #include "Editor/EditorCameraState.h"
 #include "Editor/EditorPreferences.h"
@@ -171,6 +172,45 @@ bool FEditorApplication::OnInit()
 	};
 	NetPlay.Init(World, &Resources, Context.ContentDirectory);
 	Context.NetPlay = &NetPlay;
+	// 콘솔 stat fps/gpu: 뷰포트 오른쪽 위 (표 줄은 '\t'로 열 구분)
+	ViewportPanel.StatOverlay = [this](const FVector2& ImageMin, const FVector2& ImageSize) {
+		const std::vector<std::string> Lines = StatOverlay.BuildLines(&SceneRenderer.GetStats());
+		if (Lines.empty())
+		{
+			return;
+		}
+		const float FontSize      = ImGui::GetFontSize();
+		const float Columns[]     = { FontSize * 9.0f, FontSize * 4.5f };
+		const float LineHeight    = ImGui::GetTextLineHeightWithSpacing();
+		float       Width         = 0.0f;
+		for (const std::string& Line : Lines)
+		{
+			const size_t Tab = Line.find('\t');
+			Width = std::max(Width, Tab == std::string::npos ? ImGui::CalcTextSize(Line.c_str()).x : Columns[0] + Columns[1] + FontSize * 4.0f);
+		}
+		ImDrawList*  DrawList = ImGui::GetWindowDrawList();
+		const ImVec2 Min(ImageMin.X + ImageSize.X - Width - 20.0f, ImageMin.Y + 44.0f);
+		DrawList->AddRectFilled(Min, ImVec2(Min.x + Width + 12.0f, Min.y + LineHeight * static_cast<float>(Lines.size()) + 8.0f), IM_COL32(0, 0, 0, 150), 4.0f);
+		float Y = Min.y + 4.0f;
+		for (const std::string& Line : Lines)
+		{
+			float  X     = Min.x + 6.0f;
+			size_t Begin = 0;
+			for (size_t Column = 0;; ++Column)
+			{
+				const size_t End = Line.find('\t', Begin);
+				const std::string Cell = Line.substr(Begin, End == std::string::npos ? std::string::npos : End - Begin);
+				DrawList->AddText(ImVec2(X, Y), IM_COL32(215, 255, 215, 255), Cell.c_str());
+				if (End == std::string::npos)
+				{
+					break;
+				}
+				X += Columns[std::min<size_t>(Column, 1)];
+				Begin = End + 1;
+			}
+			Y += LineHeight;
+		}
+	};
 
 	// --scene <Content 기준 경로>: 시작 씬 지정 (데모/자동 검증). 없거나 실패하면 프로젝트 기본 씬
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
@@ -181,6 +221,11 @@ bool FEditorApplication::OnInit()
 	if (const std::wstring SceneArg = CommandLine.GetValue(L"--scene"); SceneArg.empty() || !OpenScene(Context.ContentDirectory / SceneArg))
 	{
 		OpenStartupScene();
+	}
+	// 자동 검증: --console-input <글자> 출력 로그 콘솔 줄에 넣고 포커스 (자동 완성 팝업 확인)
+	if (const std::wstring ConsoleText = CommandLine.GetValue(L"--console-input"); !ConsoleText.empty())
+	{
+		OutputLogPanel.FocusConsole(FStringConv::ToUtf8(ConsoleText));
 	}
 
 	// 자동 검증: --select <이름>[,<이름>...] 으로 시작 시 엔티티 선택 (선택 아웃라인/인스펙터 확인용, 같은 이름은 모두)
@@ -369,6 +414,7 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	PollShaderChanges();
 	PollScriptChanges();
 
+	StatOverlay.Tick(DeltaSeconds);
 	const float InstantFps = DeltaSeconds > 0.0f ? 1.0f / DeltaSeconds : 0.0f;
 	SmoothedFps            = SmoothedFps <= 0.0f ? InstantFps : FMath::Lerp(SmoothedFps, InstantFps, 0.05f);
 }
@@ -964,20 +1010,25 @@ void FEditorApplication::DrawStatsWindow()
 				Section->Save();
 			}
 		}
-		ImGui::Checkbox("오클루전 컬링", &SceneRenderer.bEnableOcclusion);
-		if (SceneRenderer.bEnableOcclusion)
+		// 렌더 토글은 콘솔 변수 (r.* — 콘솔/명령줄과 같은 값, 렌더러가 매 프레임 읽는다)
+		ConsoleVariableWidgets::Checkbox("오클루전 컬링", "r.Occlusion");
+		if (ConsoleVariableWidgets::GetBool("r.Occlusion"))
 		{
 			ImGui::SameLine();
 			ImGui::Text("정적 %u 중 그림 %u (+2단계 %u), 가려짐 %u", Stats.OcclusionTested, Stats.OcclusionPhase1, Stats.OcclusionPhase2,
 			            Stats.OcclusionTested - std::min(Stats.OcclusionTested, Stats.OcclusionPhase1 + Stats.OcclusionPhase2));
 		}
-		ImGui::Checkbox("스킨 가시성 컬링", &SceneRenderer.bSkinVisibilityCulling);
-		ImGui::Checkbox("메시 LOD", &SceneRenderer.bEnableLod);
+		ConsoleVariableWidgets::Checkbox("스킨 가시성 컬링", "r.SkinCulling");
+		ConsoleVariableWidgets::Checkbox("메시 LOD", "r.LOD");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(120.0f);
 		ImGui::SliderFloat("LOD 배율", &SceneRenderer.LodScale, 0.25f, 4.0f, "%.2f");
 		ImGui::SetNextItemWidth(120.0f);
-		ImGui::SliderFloat("LOD 전환 여유", &SceneRenderer.LodHysteresis, 0.0f, 0.5f, "%.2f");
+		ConsoleVariableWidgets::SliderFloat("LOD 전환 여유", "r.LODHysteresis", 0.0f, 0.5f);
+		ConsoleVariableWidgets::Checkbox("깊이 사전 패스", "r.DepthPrepass");
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(120.0f);
+		ConsoleVariableWidgets::Combo("버퍼 확인", "r.DebugView");
 		bool bFreeze = SceneRenderer.IsCullingFrozen();
 		if (ImGui::Checkbox("컬링 프러스텀 고정", &bFreeze))
 		{

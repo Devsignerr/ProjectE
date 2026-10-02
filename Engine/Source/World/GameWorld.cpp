@@ -1,5 +1,6 @@
 #include "World/GameWorld.h"
 
+#include "Core/Profiling.h"
 #include "AI/AISystem.h"
 #include "AI/BehaviorTree/BehaviorTreeInstance.h"
 #include "Core/Assert.h"
@@ -299,6 +300,7 @@ void FGameWorld::EndPlay()
 
 void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 {
+	E_PROFILE_SCOPE("게임플레이 틱");
 	if (!IsPlaying())
 	{
 		return;
@@ -324,6 +326,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
+		E_PROFILE_SCOPE("게임 모듈");
 		Systems.GameModule->Update(*Scene, DeltaSeconds);
 	}
 	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
@@ -349,6 +352,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 {
+	E_PROFILE_SCOPE("표시 틱");
 	FAnimationSystem::Update(TargetScene, DeltaSeconds);
 	TargetScene.UpdateTransforms();
 	if (Systems.Resources != nullptr)

@@ -69,6 +69,8 @@ public:
 
 	// 편집 도구 오버레이 (지형/폴리지 브러시): (Context, Input, 이미지 좌상단, 이미지 크기, 마우스 위) → true면 기즈모/클릭 선택 생략
 	std::function<bool(FEditorContext&, const FInput&, const FVector2&, const FVector2&, bool)> ToolOverlay;
+	// 화면 통계 오버레이 (콘솔 stat fps/gpu): (이미지 좌상단, 이미지 크기) — 툴바 뒤에 같은 창 그리기 목록에
+	std::function<void(const FVector2&, const FVector2&)> StatOverlay;
 
 private:
 	using EGizmoOperation = ETransformTool;

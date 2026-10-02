@@ -14,10 +14,12 @@
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/StatOverlay.h"
 #include "Renderer/UIRenderer.h"
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
+#include "UI/UIConsoleOverlay.h"
 #include "UI/UIDrawList.h"
 #include "World/GameWorld.h"
 
@@ -73,6 +75,8 @@ private:
 	FSceneRenderer             SceneRenderer;
 	FUIRenderer                UIRenderer; // 게임 UI (씬 위)
 	FUIDrawList                UIDrawList; // 프레임마다 다시 채움
+	FUIConsoleOverlay          Console;     // ` 키 개발자 콘솔 (게임 UI 위, 패키지 게임은 프로젝트 설정 Console.EnableInPackagedGame)
+	FStatOverlay               StatOverlay; // 콘솔 stat fps/gpu → 오른쪽 위
 	FScene                     Scene;
 
 	FCamera              Camera;

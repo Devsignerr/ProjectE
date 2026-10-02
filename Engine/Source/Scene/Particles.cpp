@@ -1,5 +1,6 @@
 #include "Scene/Particles.h"
 
+#include "Core/Profiling.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
@@ -1133,6 +1134,7 @@ void FParticleSimulation::Update(const FParticleEmitter& Emitter, FParticleEmitt
 
 void FParticleSystem::Update(FScene& Scene, float DeltaSeconds)
 {
+	E_PROFILE_SCOPE("파티클 갱신");
 	Scene.GetRegistry().View<FTransformComponent, FParticleSystemComponent>().Each([&](FEntity, FTransformComponent& Transform, FParticleSystemComponent& Component) {
 		FParticleRuntime& Runtime = Component.Runtime;
 		if (!Runtime.System || !Component.bPlaying)

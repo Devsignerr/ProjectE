@@ -1,5 +1,6 @@
 #include "Scene/AnimationSystem.h"
 
+#include "Core/Profiling.h"
 #include "Core/Log.h"
 #include "Scene/AnimGraph.h"
 #include "Scene/Components.h"
@@ -309,6 +310,7 @@ namespace
 
 void FAnimationSystem::Update(FScene& Scene, float DeltaSeconds)
 {
+	E_PROFILE_SCOPE("애니메이션");
 	Scene.GetRegistry().View<FAnimationComponent>().Each([&](FEntity Entity, FAnimationComponent& Animation) {
 		UpdateAnimation(Scene, Entity, Animation, DeltaSeconds);
 	});

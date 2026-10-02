@@ -28,6 +28,7 @@
 #include "Renderer/FlyCameraController.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
+#include "Renderer/StatOverlay.h"
 #include "Scene/GameModuleHost.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
@@ -176,4 +177,5 @@ private:
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
 	float AutoSaveElapsedSeconds   = 0.0f;
 	float SmoothedFps    = 0.0f;
+	FStatOverlay StatOverlay; // 콘솔 stat fps/gpu → 뷰포트 오른쪽 위
 };

@@ -1,5 +1,7 @@
 #include "Editor/Panels/PostProcessPanel.h"
 
+#include "Core/Console/Console.h"
+#include "Editor/ConsoleVariableWidgets.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
 #include "Renderer/SceneRenderer.h"
@@ -42,26 +44,24 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		ImGui::EndDisabled();
 
 		ImGui::SeparatorText("안티에일리어싱 (TAA)");
-		ImGui::Checkbox("TAA", &Settings.bTemporalAA);
-		ImGui::SetItemTooltip("프레임마다 화면을 조금씩 흔들어 그린 결과를 누적해 계단 현상을 없앱니다 (픽셀 아트에서는 꺼짐)");
-		ImGui::BeginDisabled(!Settings.bTemporalAA);
+		// 켜고 끄기는 콘솔 변수 r.TAA/r.SSAO/r.SSR (모든 렌더러 공통, 콘솔·--no-* 플래그와 같은 값)
+		ConsoleVariableWidgets::Checkbox("TAA", "r.TAA");
+		ImGui::BeginDisabled(!ConsoleVariableWidgets::GetBool("r.TAA", true));
 		ImGui::SliderFloat("현재 프레임 비중", &Settings.TemporalAACurrentWeight, 0.02f, 0.5f, "%.2f");
 		ImGui::SetItemTooltip("작을수록 부드럽지만 움직일 때 잔상이 남기 쉽습니다");
 		ImGui::SliderFloat("샤프닝", &Settings.TemporalAASharpness, 0.0f, 1.0f, "%.2f");
 		ImGui::EndDisabled();
 
 		ImGui::SeparatorText("주변광 차폐 (SSAO)");
-		ImGui::Checkbox("SSAO", &Settings.bAmbientOcclusion);
-		ImGui::SetItemTooltip("구석과 틈에 드는 하늘빛·환경광을 줄여 입체감을 살립니다 (직접광에는 영향 없음)");
-		ImGui::BeginDisabled(!Settings.bAmbientOcclusion);
+		ConsoleVariableWidgets::Checkbox("SSAO", "r.SSAO");
+		ImGui::BeginDisabled(!ConsoleVariableWidgets::GetBool("r.SSAO", true));
 		ImGui::DragFloat("AO 세기", &Settings.AmbientOcclusionIntensity, 0.02f, 0.0f, 4.0f, "%.2f");
 		ImGui::DragFloat("AO 반경", &Settings.AmbientOcclusionRadius, 1.0f, 5.0f, 500.0f, "%.0f cm");
 		ImGui::EndDisabled();
 
 		ImGui::SeparatorText("화면 공간 반사 (SSR)");
-		ImGui::Checkbox("SSR", &Settings.bScreenSpaceReflections);
-		ImGui::SetItemTooltip("화면에 보이는 물체를 매끈한 표면에 비춥니다 (화면 밖은 반사 캡처 → 하늘)");
-		ImGui::BeginDisabled(!Settings.bScreenSpaceReflections);
+		ConsoleVariableWidgets::Checkbox("SSR", "r.SSR");
+		ImGui::BeginDisabled(!ConsoleVariableWidgets::GetBool("r.SSR", true));
 		ImGui::DragFloat("SSR 세기", &Settings.SsrIntensity, 0.01f, 0.0f, 4.0f, "%.2f");
 		ImGui::SliderFloat("SSR 최대 거칠기", &Settings.SsrMaxRoughness, 0.05f, 1.0f, "%.2f");
 		ImGui::DragFloat("SSR 최대 거리", &Settings.SsrMaxDistance, 10.0f, 50.0f, 20000.0f, "%.0f cm");
@@ -72,6 +72,13 @@ void FPostProcessPanel::Draw(FEditorContext& Context)
 		if (ImGui::Button("기본값으로"))
 		{
 			Settings = FPostProcessSettings{};
+			for (const char* Name : { "r.TAA", "r.SSAO", "r.SSR" })
+			{
+				if (FConsoleVariable* Variable = FConsoleManager::Get().FindVariable(Name))
+				{
+					Variable->Reset();
+				}
+			}
 		}
 	}
 	ImGui::End();

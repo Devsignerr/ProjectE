@@ -1,5 +1,6 @@
 #include "Scene/SceneSerializer.h"
 
+#include "Core/Profiling.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
@@ -28,6 +29,7 @@ std::string FSceneSerializer::ToJsonString(FScene& Scene)
 
 bool FSceneSerializer::FromJsonString(FScene& OutScene, const std::string& JsonText)
 {
+	E_PROFILE_SCOPE("씬 로드");
 	const nlohmann::json Document = nlohmann::json::parse(JsonText, nullptr, /*allow_exceptions*/ false, /*ignore_comments*/ true);
 	if (Document.is_discarded() || !Document.is_object())
 	{

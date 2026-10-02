@@ -75,6 +75,12 @@ struct FLocalizationSettings
 	bool        bDetectSystemLanguage = false; // 사용자 설정이 없을 때 시스템 언어가 표에 있으면 그 언어
 };
 
+// "Console" — 개발자 콘솔 (런타임 ` 키 오버레이, Core/Console). 개발 실행은 항상 켜짐
+struct FConsoleSettings
+{
+	bool bEnableInPackagedGame = false; // 패키지 게임에서도 ` 키 콘솔 (치트 변수는 여전히 막힘)
+};
+
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.
 // "Display" 섹션은 FGameUserSettings(창 모드/해상도/VSync)의 프로젝트 기본값이다 — 사용자 설정 파일이 그 위에 덮인다.
 class FProjectSettings
@@ -90,6 +96,7 @@ public:
 	FGameUserSettings    Display;
 	FInputSettings       Input; // "Input" — 입력 액션/바인딩 (Config/Input.json, 사용자 재지정 포함)
 	FLocalizationSettings Localization;
+	FConsoleSettings      Console;
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

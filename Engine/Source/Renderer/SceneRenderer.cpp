@@ -12,6 +12,8 @@
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/ReflectionMath.h"
+#include "Renderer/RenderProfiling.h"
+#include "Renderer/RendererConsoleVariables.h"
 #include "Renderer/TemporalMath.h"
 #include "Scene/Scene.h"
 
@@ -174,68 +176,40 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 
 	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
 
+	RenderProfiling::AddRef(); // Tracy GPU 컨텍스트 공유 (Shutdown에서 Release)
+
+	// 렌더 토글(--no-ssr 등)은 콘솔 변수 별칭 (RendererConsoleVariables.cpp) → Render마다 ApplyConsoleVariables
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	PerfCapture                    = FPerfCapture{};
 	PerfCapture.bEnabled           = CommandLine.HasFlag(L"--perf-capture");
-	if (CommandLine.HasFlag(L"--occlusion"))
-	{
-		bEnableOcclusion = true; // 측정/비교용 (기본 끔)
-	}
-	if (CommandLine.HasFlag(L"--no-skin-culling"))
-	{
-		bSkinVisibilityCulling = false; // 측정/비교용
-	}
-	if (CommandLine.HasFlag(L"--no-particle-culling"))
-	{
-		ParticleRenderer.bEnableCulling = false; // 측정/비교용
-	}
-	if (CommandLine.HasFlag(L"--no-depth-prepass"))
-	{
-		bDepthPrepass = false; // 측정/비교용
-	}
-	if (const std::wstring View = CommandLine.GetValue(L"--debug-view"); !View.empty())
-	{
-		DebugView = View == L"normal" ? 1u : View == L"velocity" ? 2u : View == L"depth" ? 3u : View == L"ao" ? 4u : View == L"ssr" ? 5u : 0u;
-	}
-	if (CommandLine.HasFlag(L"--no-taa"))
-	{
-		PostProcessSettings.bTemporalAA = false; // 비교용
-	}
-	if (CommandLine.HasFlag(L"--no-ssao"))
-	{
-		PostProcessSettings.bAmbientOcclusion = false; // 비교용
-	}
-	if (CommandLine.HasFlag(L"--no-ssr"))
-	{
-		PostProcessSettings.bScreenSpaceReflections = false; // 비교용
-	}
 	if (CommandLine.HasFlag(L"--bake-captures"))
 	{
 		bBakeCapturesRequested = true; // 첫 Render에서 반사 캡처 굽기 (자동 검증용)
-	}
-	if (CommandLine.HasFlag(L"--jitter"))
-	{
-		bTemporalJitter = true; // 지터 확인용 (TAA 없이 켜면 화면이 떨린다)
-	}
-	if (CommandLine.HasFlag(L"--no-lod"))
-	{
-		bEnableLod = false; // 측정/비교용
-	}
-	if (const std::wstring ForceLod = CommandLine.GetValue(L"--force-lod"); !ForceLod.empty())
-	{
-		ForcedLod = std::stoi(ForceLod); // LOD 모양 확인용
-	}
-	if (const std::wstring Hysteresis = CommandLine.GetValue(L"--lod-hysteresis"); !Hysteresis.empty())
-	{
-		LodHysteresis = std::stof(Hysteresis); // 비교용 (0 = 끔)
 	}
 	if (const std::wstring Warmup = CommandLine.GetValue(L"--perf-warmup"); !Warmup.empty())
 	{
 		PerfCapture.WarmupFrames = static_cast<uint32>(std::max(0, std::stoi(Warmup)));
 	}
+	ApplyConsoleVariables();
 
 	E_LOG(LogRenderer, Display, "씬 렌더러 초기화 완료 (HDR {}, 톤매핑)", "R16G16B16A16_FLOAT");
 	return true;
+}
+
+void FSceneRenderer::ApplyConsoleVariables()
+{
+	bEnableOcclusion                = RendererCVars::Occlusion.Get();
+	bSkinVisibilityCulling          = RendererCVars::SkinCulling.Get();
+	ParticleRenderer.bEnableCulling = RendererCVars::ParticleCulling.Get();
+	bDepthPrepass                   = RendererCVars::DepthPrepass.Get();
+	DebugView                       = static_cast<uint32>(std::max(0, RendererCVars::DebugView.Get()));
+	bTemporalJitter                 = RendererCVars::Jitter.Get();
+	bEnableLod                      = RendererCVars::Lod.Get();
+	ForcedLod                       = RendererCVars::ForceLod.Get();
+	LodHysteresis                   = RendererCVars::LodHysteresis.Get();
+	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
+	bConsoleAmbientOcclusion        = RendererCVars::AmbientOcclusion.Get();
+	bConsoleReflections             = RendererCVars::Reflections.Get();
 }
 
 const char* GetRenderTimerName(ERenderTimer Timer)
@@ -270,23 +244,27 @@ void FSceneRenderer::BeginTimer(ERenderTimer Timer)
 	const uint32 Index  = static_cast<uint32>(Timer);
 	TimerStarts[Index] = FClock::now();
 	GpuTimer.BeginScope(Rhi->GetCommandList(), Index);
+	RenderProfiling::BeginZone(Rhi->GetCommandList(), Index, GetRenderTimerName(Timer), true);
 }
 
 void FSceneRenderer::BeginCpuTimer(ERenderTimer Timer)
 {
 	TimerStarts[static_cast<uint32>(Timer)] = FClock::now();
+	RenderProfiling::BeginZone(nullptr, static_cast<uint32>(Timer), GetRenderTimerName(Timer), false);
 }
 
 void FSceneRenderer::EndCpuTimer(ERenderTimer Timer)
 {
 	const uint32 Index = static_cast<uint32>(Timer);
 	Stats.CpuMs[Index] += std::chrono::duration<float, std::milli>(FClock::now() - TimerStarts[Index]).count();
+	RenderProfiling::EndZone(Index);
 }
 
 void FSceneRenderer::EndTimer(ERenderTimer Timer)
 {
 	const uint32 Index = static_cast<uint32>(Timer);
 	Stats.CpuMs[Index] += std::chrono::duration<float, std::milli>(FClock::now() - TimerStarts[Index]).count();
+	RenderProfiling::EndZone(Index);
 	GpuTimer.EndScope(Rhi->GetCommandList(), Index);
 }
 
@@ -547,6 +525,7 @@ void FSceneRenderer::Shutdown()
 	Rhi->GetGraphicsQueue().Flush();
 	LogPerfCapture();
 	GpuTimer.Shutdown();
+	RenderProfiling::Release(); // GPU Flush 뒤 (마지막 렌더러면 Tracy GPU 컨텍스트 파괴)
 	SceneColor.reset();
 	SceneNormal.reset();
 	SceneVelocity.reset();
@@ -647,6 +626,8 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	E_CHECKF(Output.IsValid(), "씬 렌더러 출력 대상이 유효하지 않습니다");
 
 	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+	ApplyConsoleVariables(); // 콘솔에서 바꾼 값은 이번 프레임부터
+	RenderProfiling::BeginFrame(Rhi->GetDevice().GetDevice(), Rhi->GetGraphicsQueue().GetQueue(), Rhi->GetFrameNumber());
 
 	// 측정: 지난 결과(GPU는 슬롯 수만큼 늦음)를 통계에 옮기고 이번 프레임 칸을 비운다
 	const FClock::time_point Now = FClock::now();
@@ -705,7 +686,7 @@ void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRe
 		RenderSceneColor(Scene, Camera, Output.Width, Output.Height, true);
 
 		// TAA: 톤매핑 전 HDR 이력과 섞은 결과가 포스트 입력. 한 렌더러가 여러 뷰를 그리는 경우(미리보기/썸네일)·와이어프레임은 끔
-		const bool                    bTaa      = PostProcessSettings.bTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
+		const bool                    bTaa      = PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
 		const FD3D12DescriptorHandle* PostInput = &SceneColor->GetSrv();
 		float                         Sharpness = 0.0f;
 		if (bTaa)
@@ -819,7 +800,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 
 	// 지터는 씬 컬러에 그리는 패스(메시/파티클)에만: 그림자 캐스케이드·클러스터·컬링·LOD는 지터 없는 카메라 (그림자 떨림 방지)
 	CurrentJitterNdc = FVector2::ZeroVector;
-	if ((bTemporalJitter || (PostProcessSettings.bTemporalAA && !bWireframe)) && bAllowJitter && bSingleView)
+	if ((bTemporalJitter || (PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe)) && bAllowJitter && bSingleView)
 	{
 		CurrentJitterNdc = FTemporalMath::JitterPixelsToNdc(FTemporalMath::GetJitterPixels(TemporalFrameIndex++), Width, Height);
 	}
@@ -930,7 +911,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	}
 
 	// 2.5) SSAO: 사전 패스 깊이 + 법선 → 반해상도 가시도 (메인 패스가 간접광에만 곱한다)
-	const bool bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion;
+	const bool bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && bConsoleAmbientOcclusion;
 	if (bAmbientOcclusion)
 	{
 		BeginTimer(ERenderTimer::AmbientOcclusion);
@@ -963,7 +944,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	{
 		const uint32 CaptureCount       = ReflectionCaptures.Gather(Scene);
 		PerFrame.ReflectionCaptureCount = bRenderingCaptures ? 0u : CaptureCount;
-		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bTemporalHistoryValid && !bRenderingCaptures;
+		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid && !bRenderingCaptures;
 		if (bSsr)
 		{
 			BeginTimer(ERenderTimer::Reflections);

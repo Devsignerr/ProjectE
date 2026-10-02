@@ -84,6 +84,9 @@ private:
 	//                         입력 액션에도 그대로 반영된다
 	//   --hold-gamepad A,LeftY=1  자동 검증: 가짜 게임패드(연결됨)의 버튼(이름)/축(이름=값: LeftX/LeftY/RightX/RightY/LeftTrigger/RightTrigger)
 	//   --hold-keys-delay S   위 키/패드를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
+	//   --cvar a=1,b=2        콘솔 변수 설정 (여러 번 가능, Core/Console). 변수별 예전 플래그(--no-ssr 등)도 같은 경로
+	//   --exec "명령;명령"    초기화 직후 콘솔 명령 실행 (예: --exec "stat fps;r.SSR 0")
+	//   --tracy / --no-tracy  Tracy 프로파일러 (개발 실행은 기본 켬, 패키지 게임은 --tracy일 때만)
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
 	uint64                ScreenshotFrames = 1; // --screenshot-frames N: 마지막 N프레임을 연속 저장 (시간 떨림 확인, 마지막은 원래 경로)

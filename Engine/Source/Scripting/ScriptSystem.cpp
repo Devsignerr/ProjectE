@@ -1,5 +1,6 @@
 #include "Scripting/ScriptSystem.h"
 
+#include "Core/Profiling.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/StringConv.h"
@@ -39,6 +40,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 
 void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 {
+	E_PROFILE_SCOPE("스크립트 OnUpdate");
 	if (PlayRuntime)
 	{
 		PlayRuntime->Update(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
@@ -47,6 +49,7 @@ void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 
 void FScriptSystem::LateUpdate(float DeltaSeconds, const FInput* Input)
 {
+	E_PROFILE_SCOPE("스크립트 OnLateUpdate");
 	if (PlayRuntime)
 	{
 		PlayRuntime->LateUpdate(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);

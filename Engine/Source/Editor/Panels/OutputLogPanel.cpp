@@ -24,6 +24,18 @@ void FOutputLogPanel::Draw(FEditorContext&)
 	}
 
 	ImGui::SetNextWindowSize(ImVec2(900.0f, 260.0f), ImGuiCond_FirstUseEver);
+	// 탭 묶음에서 앞으로 (처음 몇 프레임은 기본 배치가 덮으므로 그 뒤에) → 다음 프레임에 입력 줄 포커스
+	if (bFocusInput)
+	{
+		ConsoleInput.SetText(PendingConsoleText, true);
+		bFocusInput = false;
+	}
+	if (bFocusWindow && ImGui::GetFrameCount() > 3)
+	{
+		ImGui::SetNextWindowFocus();
+		bFocusWindow = false;
+		bFocusInput  = true;
+	}
 	if (ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_TERMINAL, "출력 로그", "OutputLog").c_str(), &bOpen))
 	{
 		ImGui::SetNextItemWidth(280.0f);
@@ -39,7 +51,8 @@ void FOutputLogPanel::Draw(FEditorContext&)
 		ImGui::TextDisabled("최근 %zu개", Messages.size());
 		ImGui::Separator();
 
-		if (ImGui::BeginChild("LogLines", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar))
+		// 아래 한 줄은 콘솔 입력
+		if (ImGui::BeginChild("LogLines", ImVec2(0.0f, -ImGui::GetFrameHeightWithSpacing()), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar))
 		{
 			const bool bWasAtBottom = ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f;
 			for (const FLogMessage& Message : Messages)
@@ -56,12 +69,25 @@ void FOutputLogPanel::Draw(FEditorContext&)
 				ImGui::TextUnformatted(Message.Text.data(), Message.Text.data() + DisplayLength);
 				ImGui::PopStyleColor();
 			}
-			if (bAutoScroll && bWasAtBottom && bHasNewMessages)
+			if ((bAutoScroll && bWasAtBottom && bHasNewMessages) || (bScrollToBottom && bHasNewMessages))
 			{
 				ImGui::SetScrollHereY(1.0f);
+				bScrollToBottom = false;
 			}
 		}
 		ImGui::EndChild();
+		if (ConsoleInput.Draw())
+		{
+			bScrollToBottom = true; // 실행 결과(다음 프레임에 읽힘)까지 맨 아래로
+		}
 	}
 	ImGui::End();
+}
+
+void FOutputLogPanel::FocusConsole(std::string_view Text)
+{
+	bOpen              = true;
+	bFocusWindow       = true;
+	PendingConsoleText = Text;
+	ConsoleInput.SetText(Text, false);
 }

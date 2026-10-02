@@ -333,6 +333,10 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			// 툴바 오버레이
 			ImGui::SetCursorScreenPos(ImVec2(ImagePosition.x + 8.0f, ImagePosition.y + 8.0f));
 			DrawToolbar(Context);
+			if (StatOverlay)
+			{
+				StatOverlay(FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+			}
 
 			if (bPick && !ImGui::IsAnyItemHovered())
 			{

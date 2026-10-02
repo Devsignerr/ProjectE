@@ -4138,7 +4138,7 @@
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/ShowcasePhysicsCycle.lua",
-          "PropertyOverrides": "{\"Period\":10,\"LaunchDelay\":2.5}"
+          "PropertyOverrides": "{\"Period\":9,\"LaunchDelay\":2}"
         }
       },
       "Name": "PhysicsTower",
@@ -4148,8 +4148,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1781.506,
-            -2585.66,
+            1676.506,
+            -2403.794,
             100
           ],
           "Rotation": [
@@ -4189,8 +4189,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1781.506,
-            -2585.66,
+            1676.506,
+            -2403.794,
             5
           ],
           "Rotation": [
@@ -4218,8 +4218,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1972.032,
-            -2475.66,
+            1867.032,
+            -2293.794,
             110
           ],
           "Rotation": [
@@ -4259,8 +4259,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1972.032,
-            -2475.66,
+            1867.032,
+            -2293.794,
             235
           ],
           "Rotation": [
@@ -4391,8 +4391,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1104.212,
-            -2572.551,
+            989.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4420,8 +4420,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1094.212,
-            -2572.551,
+            979.667,
+            -2754.153,
             210
           ],
           "Rotation": [
@@ -4461,8 +4461,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1124.212,
-            -2572.551,
+            1009.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4520,8 +4520,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1164.212,
-            -2572.551,
+            1049.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4580,8 +4580,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1204.212,
-            -2572.551,
+            1089.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4640,8 +4640,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1244.212,
-            -2572.551,
+            1129.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4700,8 +4700,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1284.212,
-            -2572.551,
+            1169.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4760,8 +4760,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1324.212,
-            -2572.551,
+            1209.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4820,8 +4820,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1364.212,
-            -2572.551,
+            1249.667,
+            -2754.153,
             420
           ],
           "Rotation": [
@@ -4864,8 +4864,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            934.212,
-            -2278.102,
+            859.308,
+            -2448.365,
             400
           ],
           "Rotation": [
@@ -4893,8 +4893,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            934.212,
-            -2278.102,
+            859.308,
+            -2448.365,
             410
           ],
           "Rotation": [
@@ -4922,8 +4922,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            809.212,
-            -2278.102,
+            734.308,
+            -2448.365,
             205
           ],
           "Rotation": [
@@ -4963,8 +4963,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1059.212,
-            -2278.102,
+            984.308,
+            -2448.365,
             205
           ],
           "Rotation": [
@@ -5004,8 +5004,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            934.212,
-            -2278.102,
+            859.308,
+            -2448.365,
             180
           ],
           "Rotation": [
@@ -5048,8 +5048,8 @@
             50
           ],
           "TargetAnchor": [
-            934.2116167511355,
-            -2278.10198523403,
+            859.3078061834697,
+            -2448.3647796503183,
             400
           ],
           "MinDistance": 140,
@@ -5306,8 +5306,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1380,
-            -1991.858,
+            1318.038,
+            -2004.538,
             30
           ],
           "Rotation": [
@@ -5347,8 +5347,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1150,
-            -1761.858,
+            1088.038,
+            -1774.538,
             30
           ],
           "Rotation": [
@@ -5388,8 +5388,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            920,
-            -2129.858,
+            858.038,
+            -2142.538,
             30
           ],
           "Rotation": [
@@ -5429,8 +5429,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1265,
-            -2221.858,
+            1203.038,
+            -2234.538,
             30
           ],
           "Rotation": [
@@ -5470,8 +5470,8 @@
       "Components": {
         "TransformComponent": {
           "Position": [
-            1150,
-            -1991.858,
+            1088.038,
+            -2004.538,
             80
           ],
           "Rotation": [

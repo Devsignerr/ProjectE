@@ -75,6 +75,7 @@ private:
 	void ApplyDefaultLayoutIfNeeded(); // 첫 실행 / 메뉴 요청 시 언리얼 풍 기본 도킹 배치
 	void OnAssetsMoved(const std::vector<FAssetMove>& Moves); // 콘텐츠 브라우저 이동/이름 변경 후 열린 씬·기록·캐시 갱신
 	void VerifyAssetMove();                                   // 자동 검증 --verify-asset-move
+	void VerifyPick(const std::string& Targets);              // 자동 검증 --verify-pick <이름>[,<이름>...] [--verify-pick-ortho] [--verify-pick-no-focus]
 	void VerifyTerrainBrush();                                // 자동 검증 --terrain-brush-test (지형 브러시 + Undo/Redo)
 	void VerifyFoliageBrush();                                // 자동 검증 --foliage-brush-test (폴리지 칠하기/지우기 + Undo/Redo)
 	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신

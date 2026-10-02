@@ -96,7 +96,15 @@ bool FMatrix4x4::TryGetInverse(FMatrix4x4& OutInverse) const
 {
 	float       Adjugate[4][4];
 	const float Det = ComputeAdjugate(M, Adjugate);
-	if (FMath::Abs(Det) <= FMath::SmallNumber)
+	// 특이 판정은 행렬 크기에 상대적으로 한다: |det| / (행 길이의 곱)은 행마다 배율을 바꿔도 같고 직교 행렬이면 1.
+	//   절대값(|det| <= 1e-8)으로 판정하면 직교 투영 뷰-투영(det ≈ 4 / (폭 × 높이 × 깊이 범위) ≈ 1e-11)처럼
+	//   멀쩡한 행렬을 특이로 보고 항등 행렬을 돌려준다 (에디터 직교 카메라 클릭 선택이 늘 원점 위로 쏘던 원인)
+	float RowLengthProduct = 1.0f;
+	for (int32 Row = 0; Row < 4; ++Row)
+	{
+		RowLengthProduct *= FMath::Sqrt(M[Row][0] * M[Row][0] + M[Row][1] * M[Row][1] + M[Row][2] * M[Row][2] + M[Row][3] * M[Row][3]);
+	}
+	if (!(RowLengthProduct > 0.0f) || !(FMath::Abs(Det) > RowLengthProduct * 1.0e-6f))
 	{
 		return false;
 	}

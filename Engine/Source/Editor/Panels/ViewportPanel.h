@@ -53,6 +53,9 @@ public:
 	// 뷰포트 렌더 타깃 종횡비 (타깃이 없으면 Fallback)
 	float GetAspectRatio(float Fallback) const;
 	bool IsUsingGizmo() const { return bUsingGizmo; }
+	// 자동 검증(--verify-pick): Target 메시 경계 중심이 보이는 화면 위치를 클릭한 것처럼 선택하고 선택된 엔티티를 돌려준다.
+	//   bFocus면 먼저 편집 카메라를 대상에 맞춘다(F). 대상이 화면 밖이면 false (선택하지 않음)
+	bool VerifyPick(FEditorContext& Context, FEntity Target, bool bFocus, FEntity& OutPicked);
 	// 플레이 중 게임 UI: 뷰포트 이미지 좌상단(화면 좌표, 직전 프레임)과 UI 영역(렌더 타깃 픽셀, 이미지와 1:1)
 	FVector2 GetImageMin() const { return ImageMin; }
 	FUIRect  GetGameUIViewport() const;

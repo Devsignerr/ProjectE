@@ -46,6 +46,30 @@ namespace
 {
 	constexpr uint32 GMinViewportSize = 16;
 
+	// 광선에 닿는 가장 가까운 보이는 메시 엔티티 (모델 하위 노드 그대로). InOutDistance보다 먼 것은 무시하고, 찾으면 그 거리로 줄인다.
+	//   경계 상자로 거른 뒤 삼각형으로 정확히 판정한다 — 상자만 쓰면 넓은 바닥/회전된 길/큰 지붕 상자가 그 위·안의 물체를 가린다.
+	//   스킨 메시는 정점이 본으로 움직이므로(CPU 정점 = 바인드 포즈) 경계 상자로만 판정한다
+	FEntity RaycastVisibleMeshes(FEditorContext& Context, const FRay& Ray, float& InOutDistance)
+	{
+		FEntity    Closest;
+		FRegistry& Registry = Context.Scene->GetRegistry();
+		Registry.View<FTransformComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
+			const FStaticMesh* Mesh = MeshComponent.bVisible ? Context.Resources->GetMesh(MeshComponent.Mesh) : nullptr;
+			float              Distance = 0.0f;
+			if (Mesh == nullptr || !Ray.Intersects(Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix), Distance) || Distance >= InOutDistance)
+			{
+				return;
+			}
+			const bool bUseBounds = Mesh->IsSkinned() || Registry.Has<FSkinComponent>(Entity) || Mesh->GetCpuIndices().empty();
+			if (bUseBounds || Ray.IntersectsMesh(Transform.WorldMatrix, Mesh->GetCpuPositions(), Mesh->GetCpuIndices(), Distance, InOutDistance))
+			{
+				InOutDistance = Distance;
+				Closest       = Entity;
+			}
+		});
+		return Closest;
+	}
+
 	// 선택한 엔티티의 물리 관절: 연결 지점(+), 대상까지 선, 경첩 축과 원, 구 관절 원뿔 (Line/Circle은 아래 오버레이 함수의 투영 선 그리기)
 	template <typename TLine, typename TCircle>
 	void DrawJointShape(const FScene* Scene, FEntity Entity, const FTransformComponent& Transform, const TLine& Line, const TCircle& Circle)
@@ -741,29 +765,10 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 	const float NdcY = 1.0f - (LocalPixel.Y / ImageSize.Y) * 2.0f;
 	const FRay  Ray  = FRay::FromNdc(NdcX, NdcY, Context.Camera->GetViewProjectionMatrix().GetInverse());
 
-	FEntity Closest;
 	float   ClosestDistance = std::numeric_limits<float>::max();
+	FEntity Closest         = RaycastVisibleMeshes(Context, Ray, ClosestDistance);
 
-	Context.Scene->GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
-		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
-			if (!MeshComponent.bVisible)
-			{
-				return;
-			}
-			const FStaticMesh* Mesh = Context.Resources->GetMesh(MeshComponent.Mesh);
-			if (Mesh == nullptr)
-			{
-				return;
-			}
-			float Distance = 0.0f;
-			if (Ray.Intersects(Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix), Distance) && Distance < ClosestDistance)
-			{
-				ClosestDistance = Distance;
-				Closest         = Entity;
-			}
-		});
-
-	// 지형: 높이맵 레이캐스트 (메시 경계 상자보다 가까우면 지형)
+	// 지형: 높이맵 레이캐스트 (메시보다 가까우면 지형)
 	std::vector<FTerrainInstance> Terrains;
 	GatherTerrains(*Context.Scene, Terrains);
 	for (const FTerrainInstance& Terrain : Terrains)
@@ -840,6 +845,51 @@ void FViewportPanel::FocusSelection(FEditorContext& Context)
 	}
 }
 
+bool FViewportPanel::VerifyPick(FEditorContext& Context, FEntity Target, bool bFocus, FEntity& OutPicked)
+{
+	OutPicked = FEntity();
+	if (!RenderTarget || !Context.Scene->GetRegistry().IsValid(Target))
+	{
+		return false;
+	}
+	if (bFocus)
+	{
+		Context.Select(Target);
+		FocusSelection(Context);
+	}
+
+	// 대상 메시들의 월드 경계 중심 → 화면 픽셀
+	FBox                 Bounds;
+	std::vector<FEntity> Meshes;
+	FSelectionOutline::CollectOutlinedEntities(*Context.Scene, Target, Meshes);
+	for (FEntity MeshEntity : Meshes)
+	{
+		if (const FStaticMesh* Mesh = Context.Resources->GetMesh(Context.Scene->GetRegistry().Get<FStaticMeshComponent>(MeshEntity).Mesh))
+		{
+			Bounds.AddBox(Mesh->GetLocalBounds().TransformBy(Context.Scene->GetTransform(MeshEntity).WorldMatrix));
+		}
+	}
+	if (!Bounds.IsValid())
+	{
+		return false;
+	}
+	const FVector2 ImageSize(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight()));
+	const FVector4 Clip = Context.Camera->GetViewProjectionMatrix().TransformVector4(FVector4(Bounds.GetCenter(), 1.0f));
+	if (Clip.W <= 0.0f)
+	{
+		return false;
+	}
+	const FVector2 Pixel((Clip.X / Clip.W * 0.5f + 0.5f) * ImageSize.X, (0.5f - Clip.Y / Clip.W * 0.5f) * ImageSize.Y);
+	if (Pixel.X < 0.0f || Pixel.Y < 0.0f || Pixel.X >= ImageSize.X || Pixel.Y >= ImageSize.Y)
+	{
+		return false;
+	}
+	Context.ClearSelection();
+	PickEntity(Context, Pixel, ImageSize);
+	OutPicked = Context.SelectedEntity;
+	return true;
+}
+
 FEntity FViewportPanel::RaycastMesh(FEditorContext& Context, const FVector2& LocalPixel, const FVector2& ImageSize, FRay& OutRay, float& OutDistance) const
 {
 	const float NdcX = (LocalPixel.X / ImageSize.X) * 2.0f - 1.0f;
@@ -847,18 +897,7 @@ FEntity FViewportPanel::RaycastMesh(FEditorContext& Context, const FVector2& Loc
 	OutRay           = FRay::FromNdc(NdcX, NdcY, Context.Camera->GetViewProjectionMatrix().GetInverse());
 	OutDistance      = std::numeric_limits<float>::max();
 
-	FEntity Closest;
-	Context.Scene->GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
-		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
-			const FStaticMesh* Mesh = MeshComponent.bVisible ? Context.Resources->GetMesh(MeshComponent.Mesh) : nullptr;
-			float              Distance = 0.0f;
-			if (Mesh != nullptr && OutRay.Intersects(Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix), Distance) && Distance < OutDistance)
-			{
-				OutDistance = Distance;
-				Closest     = Entity;
-			}
-		});
-	return Closest;
+	return RaycastVisibleMeshes(Context, OutRay, OutDistance);
 }
 
 void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, const FVector2& LocalPixel,
@@ -883,7 +922,7 @@ void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<
 	FRay          Ray;
 	float         HitDistance = 0.0f;
 	const FEntity Hit         = RaycastMesh(Context, LocalPixel, ImageSize, Ray, HitDistance);
-	// 놓을 위치: 메시에 닿으면 그 표면(경계 상자) 근처, 아니면 바닥면(Z = 0), 하늘을 향하면 카메라 앞 5m
+	// 놓을 위치: 메시에 닿으면 그 표면(스킨 메시는 경계 상자), 아니면 바닥면(Z = 0), 하늘을 향하면 카메라 앞 5m
 	FVector3 DropPoint = Ray.GetPoint(500.0f);
 	if (Hit.IsValid())
 	{

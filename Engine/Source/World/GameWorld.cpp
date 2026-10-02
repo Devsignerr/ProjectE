@@ -388,6 +388,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	Scene->UpdateTransforms();
 	RecordPhysicsPrediction();               // 이번 스텝 결과 기록 (서버 스냅샷과 비교할 로컬 과거)
 	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
+	UpdateFootIkProbes();                    // 발 IK 바닥 (이번 프레임 최종 위치 기준 — 다음 표시 틱 애니메이션이 쓴다)
 	DispatchCollisionEvents();               // 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	Systems.Scripts->LateUpdate(DeltaSeconds, Input);

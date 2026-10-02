@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Scene/AnimMontage.h"
 #include "Scene/AnimNotify.h"
 
 #include <memory>
@@ -118,13 +119,19 @@ struct FAnimationRuntime
 
 	// 노티파이 (.emeta 공유 데이터, 규칙은 Scene/AnimNotify.h)
 	std::shared_ptr<const FModelMetadata> Metadata;
-	std::vector<uint8>                    ActiveStates;     // 현재 클립 노티파이별 스테이트 진행 중
-	int32                                 NotifyClip = -1;  // ActiveStates가 가리키는 클립
-	bool                                  bResyncStates = false;
+	FAnimNotifyTrack                      Notify;           // 클립 재생(그래프 아님)의 노티파이 진행 상태
 	std::vector<FAnimNotifyEvent>         PendingNotifies;  // 직전 갱신에서 발생 (다음 갱신 시작에 비움)
 	bool                                  bPhysicsPose = false; // 래그돌이 뼈를 구동하는 중: 애니메이션 갱신을 건너뛴다 (Physics/Ragdoll.h)
 
+	// 몽타주 (Scene/AnimMontage.h, 로컬 전용). 시작 순서대로 덮어 섞는다
+	std::vector<FAnimMontageInstance> Montages;
+	std::vector<FAnimMontageEvent>    PendingMontageEvents; // 직전 갱신에서 끝난 몽타주 (다음 갱신 시작에 비움)
+
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> BlendScratch;
+	std::vector<FNodePose> MontageScratch;
+	std::vector<uint8>     IkTouched;      // IK가 바꾼 적 있는 노드 (채널이 없어도 계속 기록)
+	std::vector<FMatrix4x4> IkMatrices;
+	std::vector<FQuat>      IkRotations;
 	std::vector<FAnimNotifyHit> HitScratch;
 };

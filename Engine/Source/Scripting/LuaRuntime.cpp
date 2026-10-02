@@ -1264,6 +1264,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	DispatchAnimNotifies();
 	DispatchUIEvents();
 	DispatchSequenceEvents(); // 직전 게임플레이 틱 시퀀스 갱신에서 발생
+	DispatchMontageEvents();
 
 	// 4. 스크립트가 요청한 프리팹 생성 (갱신 순회·노티파이가 끝난 뒤) → 파괴
 	ApplyPendingSpawns();

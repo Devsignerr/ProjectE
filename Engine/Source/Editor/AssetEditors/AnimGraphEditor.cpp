@@ -68,7 +68,16 @@ namespace
 			const std::string& Clip = State.Samples.empty() ? std::string() : State.Samples.front().Clip;
 			return Clip.empty() ? std::string("(클립 없음)") : Clip;
 		}
+		if (State.Is2D())
+		{
+			return std::format("{} × {} · 샘플 {}개", State.BlendParameter, State.BlendParameterY, State.Samples.size());
+		}
 		return std::format("{} · 샘플 {}개", State.BlendParameter, State.Samples.size());
+	}
+
+	const char* StateIcon(const FAnimGraphState& State)
+	{
+		return State.Is2D() ? ICON_FA_TABLE_CELLS : IsBlendSpace(State) ? ICON_FA_ARROWS_LEFT_RIGHT : ICON_FA_FILM;
 	}
 } // namespace
 
@@ -111,8 +120,17 @@ bool FAnimGraphEditor::LoadAsset(FAssetEditorEnvironment& Env)
 	Asset           = std::move(Loaded);
 	bApplyPositions = true;
 	NavigateFrames  = 2;
-	if ((Selection.Kind == ESelectionKind::State && Selection.Index >= static_cast<int32>(Asset.States.size())) ||
-	    (Selection.Kind == ESelectionKind::Transition && Selection.Index >= static_cast<int32>(Asset.Transitions.size())))
+	// 자동 검증: --animgraph-layer <레이어 이름> 의 상태 머신을 그래프에 보인다
+	if (const std::wstring Layer = FCommandLine::FromProcess().GetValue(L"--animgraph-layer"); !Layer.empty())
+	{
+		EditLayer = Asset.FindLayer(FStringConv::ToUtf8(Layer));
+	}
+	if (EditLayer >= static_cast<int32>(Asset.Layers.size()))
+	{
+		EditLayer = -1;
+	}
+	if ((Selection.Kind == ESelectionKind::State && Selection.Index >= static_cast<int32>(Machine().States.size())) ||
+	    (Selection.Kind == ESelectionKind::Transition && Selection.Index >= static_cast<int32>(Machine().Transitions.size())))
 	{
 		Selection = {};
 	}
@@ -144,7 +162,7 @@ bool FAnimGraphEditor::LoadAsset(FAssetEditorEnvironment& Env)
 		const size_t      Arrow = Arg.find("->");
 		if (Arrow == std::string::npos)
 		{
-			if (const int32 State = Asset.FindState(Arg); State >= 0)
+			if (const int32 State = Machine().FindState(Arg); State >= 0)
 			{
 				Selection = { ESelectionKind::State, State };
 			}
@@ -152,11 +170,11 @@ bool FAnimGraphEditor::LoadAsset(FAssetEditorEnvironment& Env)
 		else
 		{
 			const std::string From = Arg.substr(0, Arrow);
-			const int32       FromIndex = From == "*" ? -1 : Asset.FindState(From);
-			const int32       ToIndex   = Asset.FindState(Arg.substr(Arrow + 2));
-			for (size_t Index = 0; Index < Asset.Transitions.size(); ++Index)
+			const int32       FromIndex = From == "*" ? -1 : Machine().FindState(From);
+			const int32       ToIndex   = Machine().FindState(Arg.substr(Arrow + 2));
+			for (size_t Index = 0; Index < Machine().Transitions.size(); ++Index)
 			{
-				if (Asset.Transitions[Index].From == FromIndex && Asset.Transitions[Index].To == ToIndex)
+				if (Machine().Transitions[Index].From == FromIndex && Machine().Transitions[Index].To == ToIndex)
 				{
 					Selection = { ESelectionKind::Transition, static_cast<int32>(Index) };
 					break;
@@ -181,16 +199,27 @@ bool FAnimGraphEditor::LoadAsset(FAssetEditorEnvironment& Env)
 bool FAnimGraphEditor::SaveAsset(FAssetEditorEnvironment& Env)
 {
 	// 상태 이름은 전이가 이름으로 참조하므로 비거나 겹치면 저장하지 않는다 (다시 읽을 수 없는 파일이 된다)
-	std::set<std::string> Names;
-	for (const FAnimGraphState& State : Asset.States)
-	{
-		if (State.Name.empty() || !Names.insert(State.Name).second)
+	const auto Reject = [&Env](const std::string& Message) {
+		if (Env.Editor && Env.Editor->Notify)
 		{
-			if (Env.Editor && Env.Editor->Notify)
+			Env.Editor->Notify(Message + " — 저장하지 않았습니다", true);
+		}
+		return false;
+	};
+	std::set<std::string> LayerNames;
+	for (int32 Layer = -1; Layer < static_cast<int32>(Asset.Layers.size()); ++Layer)
+	{
+		if (Layer >= 0 && (Asset.Layers[static_cast<size_t>(Layer)].Name.empty() || !LayerNames.insert(Asset.Layers[static_cast<size_t>(Layer)].Name).second))
+		{
+			return Reject("레이어 이름이 비었거나 겹칩니다: '" + Asset.Layers[static_cast<size_t>(Layer)].Name + "'");
+		}
+		std::set<std::string> Names;
+		for (const FAnimGraphState& State : Asset.GetMachine(Layer).States)
+		{
+			if (State.Name.empty() || !Names.insert(State.Name).second)
 			{
-				Env.Editor->Notify("상태 이름이 비었거나 겹칩니다: '" + State.Name + "' — 저장하지 않았습니다", true);
+				return Reject("상태 이름이 비었거나 겹칩니다: '" + State.Name + "'");
 			}
-			return false;
 		}
 	}
 	if (!Asset.SaveToFile(Path))
@@ -215,8 +244,13 @@ void FAnimGraphEditor::RestoreState(FAssetEditorEnvironment& Env, const std::str
 	{
 		Asset           = std::move(Restored);
 		bApplyPositions = true;
-		if ((Selection.Kind == ESelectionKind::State && Selection.Index >= static_cast<int32>(Asset.States.size())) ||
-		    (Selection.Kind == ESelectionKind::Transition && Selection.Index >= static_cast<int32>(Asset.Transitions.size())))
+		if (EditLayer >= static_cast<int32>(Asset.Layers.size()))
+		{
+			EditLayer = -1;
+			Selection = {};
+		}
+		if ((Selection.Kind == ESelectionKind::State && Selection.Index >= static_cast<int32>(Machine().States.size())) ||
+		    (Selection.Kind == ESelectionKind::Transition && Selection.Index >= static_cast<int32>(Machine().Transitions.size())))
 		{
 			Selection = {};
 		}
@@ -313,6 +347,7 @@ void FAnimGraphEditor::EnsurePreviewModel(FAssetEditorEnvironment& Env)
 	ModelRoot   = FEntity{};
 	LoadedModel = Desired;
 	ClipNames.clear();
+	BoneNames.clear();
 	if (Desired.empty())
 	{
 		return;
@@ -329,6 +364,15 @@ void FAnimGraphEditor::EnsurePreviewModel(FAssetEditorEnvironment& Env)
 	Component.Graph                 = FModelLoader::MakeAssetPath(Path);
 	Component.bUseCharacterMovement = false;
 	ClipNames                       = FAnimationSystem::GetClipNames(Scene, ModelRoot);
+	BoneNames.clear();
+	if (const FAnimationComponent* Animation = Registry.TryGet<FAnimationComponent>(ModelRoot))
+	{
+		for (const FEntity Node : Animation->Runtime.NodeEntities)
+		{
+			const FNameComponent* Name = Registry.IsValid(Node) ? Registry.TryGet<FNameComponent>(Node) : nullptr;
+			BoneNames.push_back(Name != nullptr ? Name->Name : std::string());
+		}
+	}
 	PublishIfChanged();
 	Update(Env, 0.0f);
 	FAssetEditor::FramePreview(Env);
@@ -339,11 +383,18 @@ void FAnimGraphEditor::PublishIfChanged()
 	// 실행에 쓰는 내용만 비교한다 (노드를 옮겨도 미리보기가 다시 시작하지 않게). 샘플은 위치순으로 (실행 규칙)
 	FAnimGraphAsset Copy = Asset;
 	Copy.PreviewModel.clear();
-	Copy.AnyStateEditorPosition.reset();
-	for (FAnimGraphState& State : Copy.States)
+	for (int32 Layer = -1; Layer < static_cast<int32>(Copy.Layers.size()); ++Layer)
 	{
-		State.EditorPosition.reset();
-		std::stable_sort(State.Samples.begin(), State.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
+		FAnimStateMachine& Edited = Copy.GetMachine(Layer);
+		Edited.AnyStateEditorPosition.reset();
+		for (FAnimGraphState& State : Edited.States)
+		{
+			State.EditorPosition.reset();
+			if (!State.Is2D())
+			{
+				std::stable_sort(State.Samples.begin(), State.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
+			}
+		}
 	}
 	std::string Key = Copy.ToJsonString();
 	if (Published && Key == PublishedKey)
@@ -446,26 +497,34 @@ FAnimGraphEditor::FDebugView FAnimGraphEditor::MakeDebugView(FAssetEditorEnviron
 	{
 		return View;
 	}
-	// 실행 중 에셋 번호 → 편집 중 에셋 번호 (저장 전이라 다를 수 있다 — 이름으로 맞춘다)
-	const FAnimGraphAsset& Running   = *View.Runtime->Asset;
-	const auto             MapState  = [&](int32 Index) {
-        return Index >= 0 && Index < static_cast<int32>(Running.States.size()) ? Asset.FindState(Running.States[static_cast<size_t>(Index)].Name) : -1;
+	// 실행 중 에셋 번호 → 편집 중 에셋 번호 (저장 전이라 다를 수 있다 — 이름으로 맞춘다). 레이어도 이름으로
+	const FAnimGraphAsset&    Running      = *View.Runtime->Asset;
+	const int32               RunningLayer = EditLayer < 0 ? -1 : Running.FindLayer(Asset.Layers[static_cast<size_t>(EditLayer)].Name);
+	if (EditLayer >= 0 && (RunningLayer < 0 || RunningLayer >= static_cast<int32>(View.Runtime->LayerInstances.size())))
+	{
+		return View; // 아직 실행본에 없는 레이어 (다음 미리보기 갱신에서 생긴다)
+	}
+	const FAnimStateMachine&  RunningMachine = Running.GetMachine(RunningLayer);
+	const FAnimGraphInstance& Instance = RunningLayer < 0 ? View.Runtime->Instance : View.Runtime->LayerInstances[static_cast<size_t>(RunningLayer)];
+	const auto                MapState = [&](int32 Index) {
+        return Index >= 0 && Index < static_cast<int32>(RunningMachine.States.size())
+                   ? Machine().FindState(RunningMachine.States[static_cast<size_t>(Index)].Name)
+                   : -1;
 	};
-	const FAnimGraphInstance& Instance = View.Runtime->Instance;
 	View.CurrentState                  = MapState(Instance.GetCurrentState());
 	for (size_t Layer = 0; Layer < Instance.GetLayerCount(); ++Layer)
 	{
 		View.Layers.emplace_back(MapState(Instance.GetLayerState(Layer)), Instance.GetLayerWeight(Layer));
 	}
 	View.TransitionCount = Instance.GetTransitionCount();
-	if (const int32 Last = Instance.GetLastTransition(); Last >= 0 && Last < static_cast<int32>(Running.Transitions.size()))
+	if (const int32 Last = Instance.GetLastTransition(); Last >= 0 && Last < static_cast<int32>(RunningMachine.Transitions.size()))
 	{
-		const FAnimGraphTransition& Transition = Running.Transitions[static_cast<size_t>(Last)];
+		const FAnimGraphTransition& Transition = RunningMachine.Transitions[static_cast<size_t>(Last)];
 		const int32                 From       = Transition.From < 0 ? -1 : MapState(Transition.From);
 		const int32                 To         = MapState(Transition.To);
-		for (size_t Index = 0; Index < Asset.Transitions.size(); ++Index)
+		for (size_t Index = 0; Index < Machine().Transitions.size(); ++Index)
 		{
-			if (Asset.Transitions[Index].From == From && Asset.Transitions[Index].To == To)
+			if (Machine().Transitions[Index].From == From && Machine().Transitions[Index].To == To)
 			{
 				View.LastTransition = static_cast<int32>(Index);
 				break;
@@ -491,6 +550,10 @@ void FAnimGraphEditor::DrawPreviewToolbar(FAssetEditorEnvironment& Env)
 		if (FAnimGraphRuntime* Runtime = GetPreviewRuntime())
 		{
 			Runtime->Instance.Reset();
+			for (FAnimGraphInstance& Layer : Runtime->LayerInstances)
+			{
+				Layer.Reset();
+			}
 		}
 	}
 	ImGui::SameLine();
@@ -511,6 +574,23 @@ void FAnimGraphEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 		}
 	}
 
+	// 그래프에 보이는 레이어 (기본 레이어 / 추가 레이어)
+	ImGui::SetNextItemWidth(170.0f);
+	const std::string LayerLabel = EditLayer < 0 ? std::string(ICON_FA_LAYER_GROUP " 기본 레이어") : ICON_FA_LAYER_GROUP " " + Asset.Layers[static_cast<size_t>(EditLayer)].Name;
+	if (ImGui::BeginCombo("##EditLayer", LayerLabel.c_str()))
+	{
+		for (int32 Layer = -1; Layer < static_cast<int32>(Asset.Layers.size()); ++Layer)
+		{
+			const std::string Name = Layer < 0 ? std::string("기본 레이어") : Asset.Layers[static_cast<size_t>(Layer)].Name;
+			if (ImGui::Selectable((Name + "##" + std::to_string(Layer)).c_str(), Layer == EditLayer))
+			{
+				SetEditLayer(Layer);
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("그래프에 보일 상태 머신 (레이어는 오른쪽 '레이어'에서 추가/마스크 편집)");
+	ImGui::SameLine();
 	if (ImGui::SmallButton(ICON_FA_EXPAND " 전체 보기 (F)"))
 	{
 		NavigateFrames = 0;
@@ -575,18 +655,18 @@ void FAnimGraphEditor::AutoLayoutMissing()
 	// 위치 없는 노드: "어느 상태든"은 왼쪽 위, 상태는 격자 (열 = √개수, 전이 화살표가 보이게 넉넉히)
 	constexpr float SpacingX = 380.0f;
 	constexpr float SpacingY = 210.0f;
-	if (!Asset.AnyStateEditorPosition)
+	if (!Machine().AnyStateEditorPosition)
 	{
-		Asset.AnyStateEditorPosition = FVector2(-SpacingX, -SpacingY * 0.5f);
+		Machine().AnyStateEditorPosition = FVector2(-SpacingX, -SpacingY * 0.5f);
 	}
-	const size_t Columns = FMath::Max<size_t>(1, static_cast<size_t>(std::ceil(std::sqrt(static_cast<float>(Asset.States.size())))));
-	for (size_t Index = 0; Index < Asset.States.size(); ++Index)
+	const size_t Columns = FMath::Max<size_t>(1, static_cast<size_t>(std::ceil(std::sqrt(static_cast<float>(Machine().States.size())))));
+	for (size_t Index = 0; Index < Machine().States.size(); ++Index)
 	{
-		if (!Asset.States[Index].EditorPosition)
+		if (!Machine().States[Index].EditorPosition)
 		{
 			const float Row = static_cast<float>(Index / Columns);
 			// 홀수 행은 반 칸 밀어 같은 열 노드 사이 화살표가 겹치지 않게
-			Asset.States[Index].EditorPosition =
+			Machine().States[Index].EditorPosition =
 				FVector2(static_cast<float>(Index % Columns) * SpacingX + (static_cast<size_t>(Row) % 2 == 1 ? SpacingX * 0.5f : 0.0f), Row * SpacingY);
 		}
 	}
@@ -601,26 +681,26 @@ void FAnimGraphEditor::DrawGraph(const FDebugView& Debug, float Height)
 	if (bApplyPositions)
 	{
 		AutoLayoutMissing();
-		NodeEditor::SetNodePosition(ToNode(AnyStateId), ImVec2(Asset.AnyStateEditorPosition->X, Asset.AnyStateEditorPosition->Y));
-		for (size_t Index = 0; Index < Asset.States.size(); ++Index)
+		NodeEditor::SetNodePosition(ToNode(AnyStateId), ImVec2(Machine().AnyStateEditorPosition->X, Machine().AnyStateEditorPosition->Y));
+		for (size_t Index = 0; Index < Machine().States.size(); ++Index)
 		{
-			const FVector2& Position = *Asset.States[Index].EditorPosition;
+			const FVector2& Position = *Machine().States[Index].EditorPosition;
 			NodeEditor::SetNodePosition(ToNode(StateNodeId(static_cast<int32>(Index))), ImVec2(Position.X, Position.Y));
 		}
 		bApplyPositions = false;
 	}
 	DrawAnyStateNode();
-	for (size_t Index = 0; Index < Asset.States.size(); ++Index)
+	for (size_t Index = 0; Index < Machine().States.size(); ++Index)
 	{
 		DrawStateNode(static_cast<int32>(Index), Debug);
 	}
 
 	// 전이 화살표 (방금 일어난 전이는 1초 동안 강조)
 	const bool bFlash = ImGui::GetTime() - TransitionFlashTime < 1.0;
-	for (size_t Index = 0; Index < Asset.Transitions.size(); ++Index)
+	for (size_t Index = 0; Index < Machine().Transitions.size(); ++Index)
 	{
-		const FAnimGraphTransition& Transition = Asset.Transitions[Index];
-		if (Transition.To < 0 || Transition.To >= static_cast<int32>(Asset.States.size()) || Transition.From >= static_cast<int32>(Asset.States.size()))
+		const FAnimGraphTransition& Transition = Machine().Transitions[Index];
+		if (Transition.To < 0 || Transition.To >= static_cast<int32>(Machine().States.size()) || Transition.From >= static_cast<int32>(Machine().States.size()))
 		{
 			continue;
 		}
@@ -629,7 +709,7 @@ void FAnimGraphEditor::DrawGraph(const FDebugView& Debug, float Height)
 		const ImVec4 Color       = bHighlight ? FEditorTheme::Success : (Transition.From < 0 ? ImVec4(0.95f, 0.72f, 0.4f, 0.8f) : ImVec4(0.75f, 0.75f, 0.78f, 0.85f));
 		NodeEditor::Link(ToLink(static_cast<int32>(Index)), ToOutputPin(FromId), ToInputPin(StateNodeId(Transition.To)), Color, bHighlight ? 3.5f : 2.0f);
 	}
-	if (bFlash && FlashTransition >= 0 && FlashTransition < static_cast<int32>(Asset.Transitions.size()) && ImGui::GetTime() - TransitionFlashTime < 0.05)
+	if (bFlash && FlashTransition >= 0 && FlashTransition < static_cast<int32>(Machine().Transitions.size()) && ImGui::GetTime() - TransitionFlashTime < 0.05)
 	{
 		NodeEditor::Flow(ToLink(FlashTransition));
 	}
@@ -722,7 +802,7 @@ void FAnimGraphEditor::DrawAnyStateNode()
 
 void FAnimGraphEditor::DrawStateNode(int32 Index, const FDebugView& Debug)
 {
-	const FAnimGraphState& State    = Asset.States[static_cast<size_t>(Index)];
+	const FAnimGraphState& State    = Machine().States[static_cast<size_t>(Index)];
 	const bool             bCurrent = Debug.CurrentState == Index;
 	float                  Weight   = -1.0f;
 	for (const auto& [LayerState, LayerWeight] : Debug.Layers)
@@ -749,12 +829,12 @@ void FAnimGraphEditor::DrawStateNode(int32 Index, const FDebugView& Debug)
 	ImGui::SameLine();
 
 	ImGui::BeginGroup();
-	if (Index == Asset.EntryState)
+	if (Index == Machine().EntryState)
 	{
 		ImGui::TextColored(FEditorTheme::Accent, ICON_FA_FLAG);
 		ImGui::SameLine();
 	}
-	ImGui::Text("%s %s", IsBlendSpace(State) ? ICON_FA_ARROWS_LEFT_RIGHT : ICON_FA_FILM, State.Name.c_str());
+	ImGui::Text("%s %s", StateIcon(State), State.Name.c_str());
 	ImGui::TextDisabled("%s", DescribeState(State).c_str());
 	if (Weight > 0.0f)
 	{
@@ -776,7 +856,7 @@ void FAnimGraphEditor::DrawStateNode(int32 Index, const FDebugView& Debug)
 
 void FAnimGraphEditor::HandleGraphEdits()
 {
-	const int32 StateCount = static_cast<int32>(Asset.States.size());
+	const int32 StateCount = static_cast<int32>(Machine().States.size());
 	// 출력 핀 → 입력 핀: 전이 추가 (목록 끝 = 가장 낮은 우선순위)
 	if (NodeEditor::BeginCreate(ImColor(255, 255, 255), 2.0f))
 	{
@@ -805,8 +885,8 @@ void FAnimGraphEditor::HandleGraphEdits()
 					FAnimGraphTransition Transition;
 					Transition.From = From;
 					Transition.To   = To;
-					Asset.Transitions.push_back(Transition);
-					Selection           = { ESelectionKind::Transition, static_cast<int32>(Asset.Transitions.size()) - 1 };
+					Machine().Transitions.push_back(Transition);
+					Selection           = { ESelectionKind::Transition, static_cast<int32>(Machine().Transitions.size()) - 1 };
 					bSyncGraphSelection = true;
 					MarkEdited("전이 추가");
 				};
@@ -849,15 +929,15 @@ void FAnimGraphEditor::HandleGraphEdits()
 				DeletedTransitions.erase(std::unique(DeletedTransitions.begin(), DeletedTransitions.end()), DeletedTransitions.end());
 				for (int32 Index : DeletedTransitions)
 				{
-					if (Index >= 0 && Index < static_cast<int32>(Asset.Transitions.size()))
+					if (Index >= 0 && Index < static_cast<int32>(Machine().Transitions.size()))
 					{
-						Asset.Transitions.erase(Asset.Transitions.begin() + Index);
+						Machine().Transitions.erase(Machine().Transitions.begin() + Index);
 					}
 				}
 				std::sort(DeletedStates.rbegin(), DeletedStates.rend());
 				for (int32 Index : DeletedStates)
 				{
-					Asset.RemoveState(Index);
+					Machine().RemoveState(Index);
 				}
 				Selection       = {};
 				bApplyPositions = true; // 노드 번호가 당겨졌다
@@ -872,42 +952,72 @@ void FAnimGraphEditor::HandleGraphEdits()
 std::string FAnimGraphEditor::MakeUniqueStateName(const std::string& BaseName) const
 {
 	std::string Name = BaseName;
-	for (int32 Suffix = 1; Asset.FindState(Name) >= 0; ++Suffix)
+	for (int32 Suffix = 1; Machine().FindState(Name) >= 0; ++Suffix)
 	{
 		Name = std::format("{}{}", BaseName, Suffix);
 	}
 	return Name;
 }
 
-int32 FAnimGraphEditor::AddState(const std::string& BaseName, bool bBlendSpace, const FVector2& Position)
+std::string FAnimGraphEditor::FindOrAddFloatParameter(const std::string& Fallback, const std::string& Exclude)
+{
+	for (const FAnimGraphParameter& Parameter : Asset.Parameters)
+	{
+		if (Parameter.Type == EAnimParamType::Float && Parameter.Name != Exclude)
+		{
+			return Parameter.Name;
+		}
+	}
+	std::string Name = Fallback;
+	for (int32 Suffix = 1; Asset.FindParameter(Name) != nullptr; ++Suffix)
+	{
+		Name = std::format("{}{}", Fallback, Suffix);
+	}
+	Asset.Parameters.push_back({ Name, EAnimParamType::Float, 0.0f });
+	return Name;
+}
+
+void FAnimGraphEditor::MakeBlendSpace2D(FAnimGraphState& State)
+{
+	if (State.BlendParameter.empty())
+	{
+		State.BlendParameter = FindOrAddFloatParameter("Speed", std::string());
+	}
+	State.BlendParameterY = FindOrAddFloatParameter("Direction", State.BlendParameter);
+	// 기본 배치: 기존 샘플은 Y 0 줄, 4개 미만이면 사각형 모서리를 채운다
+	const std::string First = State.Samples.empty() ? (ClipNames.empty() ? std::string() : ClipNames.front()) : State.Samples.front().Clip;
+	const FVector2    Corners[] = { FVector2(0.0f, -100.0f), FVector2(100.0f, -100.0f), FVector2(0.0f, 100.0f), FVector2(100.0f, 100.0f) };
+	for (FAnimBlendSample& Sample : State.Samples)
+	{
+		Sample.PositionY = 0.0f;
+	}
+	for (size_t Index = State.Samples.size(); Index < 4; ++Index)
+	{
+		State.Samples.push_back({ First, Corners[Index].X, Corners[Index].Y, 1.0f });
+	}
+}
+
+int32 FAnimGraphEditor::AddState(const std::string& BaseName, int32 BlendDimensions, const FVector2& Position)
 {
 	FAnimGraphState State;
 	State.Name           = MakeUniqueStateName(BaseName);
 	State.EditorPosition = Position;
-	if (bBlendSpace)
+	if (BlendDimensions == 2)
 	{
-		for (const FAnimGraphParameter& Parameter : Asset.Parameters)
-		{
-			if (Parameter.Type == EAnimParamType::Float)
-			{
-				State.BlendParameter = Parameter.Name;
-				break;
-			}
-		}
-		if (State.BlendParameter.empty())
-		{
-			Asset.Parameters.push_back({ "Speed", EAnimParamType::Float, 0.0f });
-			State.BlendParameter = "Speed";
-		}
+		MakeBlendSpace2D(State);
+	}
+	else if (BlendDimensions == 1)
+	{
+		State.BlendParameter    = FindOrAddFloatParameter("Speed", std::string());
 		const std::string First = ClipNames.empty() ? std::string() : ClipNames.front();
-		State.Samples           = { FAnimBlendSample{ First, 0.0f, 1.0f }, FAnimBlendSample{ First, 100.0f, 1.0f } };
+		State.Samples           = { FAnimBlendSample{ First, 0.0f, 0.0f, 1.0f }, FAnimBlendSample{ First, 100.0f, 0.0f, 1.0f } };
 	}
 	else
 	{
-		State.Samples = { FAnimBlendSample{ ClipNames.empty() ? std::string() : ClipNames.front(), 0.0f, 1.0f } };
+		State.Samples = { FAnimBlendSample{ ClipNames.empty() ? std::string() : ClipNames.front(), 0.0f, 0.0f, 1.0f } };
 	}
-	Asset.States.push_back(std::move(State));
-	return static_cast<int32>(Asset.States.size()) - 1;
+	Machine().States.push_back(std::move(State));
+	return static_cast<int32>(Machine().States.size()) - 1;
 }
 
 void FAnimGraphEditor::DrawGraphMenus()
@@ -935,24 +1045,24 @@ void FAnimGraphEditor::DrawGraphMenus()
 	if (ImGui::BeginPopup("##AGNodeMenu"))
 	{
 		const int32 State = ContextNodeId == AnyStateId ? -1 : static_cast<int32>(ContextNodeId) - 1;
-		if (State < static_cast<int32>(Asset.States.size()))
+		if (State < static_cast<int32>(Machine().States.size()))
 		{
-			if (State >= 0 && ImGui::MenuItem(ICON_FA_FLAG " 시작 상태로 지정", nullptr, State == Asset.EntryState))
+			if (State >= 0 && ImGui::MenuItem(ICON_FA_FLAG " 시작 상태로 지정", nullptr, State == Machine().EntryState))
 			{
-				Asset.EntryState = State;
+				Machine().EntryState = State;
 				MarkEdited("시작 상태");
 			}
 			if (ImGui::BeginMenu(ICON_FA_RIGHT_LONG " 전이 추가"))
 			{
-				for (size_t Target = 0; Target < Asset.States.size(); ++Target)
+				for (size_t Target = 0; Target < Machine().States.size(); ++Target)
 				{
-					if (static_cast<int32>(Target) != State && ImGui::MenuItem(Asset.States[Target].Name.c_str()))
+					if (static_cast<int32>(Target) != State && ImGui::MenuItem(Machine().States[Target].Name.c_str()))
 					{
 						FAnimGraphTransition Transition;
 						Transition.From = State;
 						Transition.To   = static_cast<int32>(Target);
-						Asset.Transitions.push_back(Transition);
-						Selection           = { ESelectionKind::Transition, static_cast<int32>(Asset.Transitions.size()) - 1 };
+						Machine().Transitions.push_back(Transition);
+						Selection           = { ESelectionKind::Transition, static_cast<int32>(Machine().Transitions.size()) - 1 };
 						bSyncGraphSelection = true;
 						MarkEdited("전이 추가");
 					}
@@ -963,17 +1073,17 @@ void FAnimGraphEditor::DrawGraphMenus()
 			{
 				if (ImGui::MenuItem(ICON_FA_COPY " 복제"))
 				{
-					FAnimGraphState Copy = Asset.States[static_cast<size_t>(State)];
+					FAnimGraphState Copy = Machine().States[static_cast<size_t>(State)];
 					Copy.Name            = MakeUniqueStateName(Copy.Name);
 					Copy.EditorPosition  = Copy.EditorPosition.value_or(FVector2()) + FVector2(40.0f, 60.0f);
-					Asset.States.push_back(std::move(Copy));
+					Machine().States.push_back(std::move(Copy));
 					bApplyPositions     = true;
-					Selection           = { ESelectionKind::State, static_cast<int32>(Asset.States.size()) - 1 };
+					Selection           = { ESelectionKind::State, static_cast<int32>(Machine().States.size()) - 1 };
 					bSyncGraphSelection = true;
 					MarkEdited("상태 복제");
 				}
 				ImGui::Separator();
-				if (ImGui::MenuItem(ICON_FA_TRASH " 삭제", "Del", false, Asset.States.size() > 1))
+				if (ImGui::MenuItem(ICON_FA_TRASH " 삭제", "Del", false, Machine().States.size() > 1))
 				{
 					NodeEditor::DeleteNode(ToNode(ContextNodeId)); // 다음 프레임 BeginDelete에서 처리
 				}
@@ -985,7 +1095,7 @@ void FAnimGraphEditor::DrawGraphMenus()
 	if (ImGui::BeginPopup("##AGLinkMenu"))
 	{
 		const int32 Transition = static_cast<int32>(DecodeId(ContextLinkId)) - 1;
-		if (Transition >= 0 && Transition < static_cast<int32>(Asset.Transitions.size()))
+		if (Transition >= 0 && Transition < static_cast<int32>(Machine().Transitions.size()))
 		{
 			if (ImGui::MenuItem(ICON_FA_ARROW_UP " 먼저 검사 (우선순위 올림)"))
 			{
@@ -1006,8 +1116,8 @@ void FAnimGraphEditor::DrawGraphMenus()
 
 	if (ImGui::BeginPopup("##AGBackgroundMenu"))
 	{
-		const auto AddAt = [this](const char* BaseName, bool bBlend, const char* Label) {
-			const int32 Added   = AddState(BaseName, bBlend, ContextCanvasPosition);
+		const auto AddAt = [this](const char* BaseName, int32 BlendDimensions, const char* Label) {
+			const int32 Added   = AddState(BaseName, BlendDimensions, ContextCanvasPosition);
 			bApplyPositions     = true;
 			Selection           = { ESelectionKind::State, Added };
 			bSyncGraphSelection = true;
@@ -1015,11 +1125,15 @@ void FAnimGraphEditor::DrawGraphMenus()
 		};
 		if (ImGui::MenuItem(ICON_FA_FILM " 클립 상태 추가"))
 		{
-			AddAt("State", false, "상태 추가");
+			AddAt("State", 0, "상태 추가");
 		}
 		if (ImGui::MenuItem(ICON_FA_ARROWS_LEFT_RIGHT " 1D 블렌드 스페이스 상태 추가"))
 		{
-			AddAt("Blend", true, "블렌드 스페이스 추가");
+			AddAt("Blend", 1, "블렌드 스페이스 추가");
+		}
+		if (ImGui::MenuItem(ICON_FA_TABLE_CELLS " 2D 블렌드 스페이스 상태 추가"))
+		{
+			AddAt("Blend2D", 2, "2D 블렌드 스페이스 추가");
 		}
 		ImGui::Separator();
 		if (ImGui::MenuItem(ICON_FA_EXPAND " 전체 보기", "F"))
@@ -1046,10 +1160,10 @@ void FAnimGraphEditor::SyncPositionsFromGraph()
             bMoved = true;
         }
 	};
-	Sync(AnyStateId, Asset.AnyStateEditorPosition);
-	for (size_t Index = 0; Index < Asset.States.size(); ++Index)
+	Sync(AnyStateId, Machine().AnyStateEditorPosition);
+	for (size_t Index = 0; Index < Machine().States.size(); ++Index)
 	{
-		Sync(StateNodeId(static_cast<int32>(Index)), Asset.States[Index].EditorPosition);
+		Sync(StateNodeId(static_cast<int32>(Index)), Machine().States[Index].EditorPosition);
 	}
 	if (bMoved)
 	{
@@ -1060,16 +1174,16 @@ void FAnimGraphEditor::SyncPositionsFromGraph()
 void FAnimGraphEditor::MoveTransition(int32 Index, int32 Delta)
 {
 	// 같은 출발(From)의 전이 사이에서만 순서를 바꾼다 (다른 상태의 전이와는 서로 영향이 없어서)
-	if (Index < 0 || Index >= static_cast<int32>(Asset.Transitions.size()))
+	if (Index < 0 || Index >= static_cast<int32>(Machine().Transitions.size()))
 	{
 		return;
 	}
-	const int32 From = Asset.Transitions[static_cast<size_t>(Index)].From;
-	for (int32 Other = Index + Delta; Other >= 0 && Other < static_cast<int32>(Asset.Transitions.size()); Other += Delta)
+	const int32 From = Machine().Transitions[static_cast<size_t>(Index)].From;
+	for (int32 Other = Index + Delta; Other >= 0 && Other < static_cast<int32>(Machine().Transitions.size()); Other += Delta)
 	{
-		if (Asset.Transitions[static_cast<size_t>(Other)].From == From)
+		if (Machine().Transitions[static_cast<size_t>(Other)].From == From)
 		{
-			std::swap(Asset.Transitions[static_cast<size_t>(Index)], Asset.Transitions[static_cast<size_t>(Other)]);
+			std::swap(Machine().Transitions[static_cast<size_t>(Index)], Machine().Transitions[static_cast<size_t>(Other)]);
 			if (Selection.Kind == ESelectionKind::Transition && Selection.Index == Index)
 			{
 				Selection.Index     = Other;
@@ -1091,6 +1205,22 @@ void FAnimGraphEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	{
 		DrawParameters();
 	}
+	if (ImGui::CollapsingHeader(ICON_FA_LAYER_GROUP " 레이어", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		DrawLayers(Debug);
+	}
+	// 자동 검증: --animgraph-slots 면 이 섹션을 펼치고 거기까지 내린다
+	static const bool bShowSlots = FCommandLine::FromProcess().HasFlag(L"--animgraph-slots");
+	if (bShowSlots && !bSlotsShown)
+	{
+		ImGui::SetNextItemOpen(true);
+		ImGui::SetScrollHereY(0.0f);
+		bSlotsShown = true;
+	}
+	if (ImGui::CollapsingHeader(ICON_FA_CLAPPERBOARD " 몽타주 슬롯"))
+	{
+		DrawSlots();
+	}
 	if (bScrollToSelection)
 	{
 		ImGui::SetScrollHereY(0.0f);
@@ -1101,13 +1231,13 @@ void FAnimGraphEditor::DrawProperties(FAssetEditorEnvironment& Env)
 		switch (Selection.Kind)
 		{
 		case ESelectionKind::State:
-			if (Selection.Index >= 0 && Selection.Index < static_cast<int32>(Asset.States.size()))
+			if (Selection.Index >= 0 && Selection.Index < static_cast<int32>(Machine().States.size()))
 			{
 				DrawStateProperties(Selection.Index);
 			}
 			break;
 		case ESelectionKind::Transition:
-			if (Selection.Index >= 0 && Selection.Index < static_cast<int32>(Asset.Transitions.size()))
+			if (Selection.Index >= 0 && Selection.Index < static_cast<int32>(Machine().Transitions.size()))
 			{
 				DrawTransitionProperties(Selection.Index);
 			}
@@ -1160,12 +1290,12 @@ void FAnimGraphEditor::DrawPreviewSection(FAssetEditorEnvironment& Env, const FD
 
 	if (Debug.Runtime != nullptr)
 	{
-		const char* StateName = Debug.CurrentState >= 0 ? Asset.States[static_cast<size_t>(Debug.CurrentState)].Name.c_str() : "-";
+		const char* StateName = Debug.CurrentState >= 0 ? Machine().States[static_cast<size_t>(Debug.CurrentState)].Name.c_str() : "-";
 		ImGui::TextColored(Debug.bPlaying ? FEditorTheme::Success : ImVec4(0.8f, 0.8f, 0.8f, 1.0f), "%s %s: %s", Debug.bPlaying ? ICON_FA_PLAY : ICON_FA_EYE,
 		                   Debug.Label.c_str(), StateName);
 		for (const auto& [State, Weight] : Debug.Layers)
 		{
-			const std::string Label = std::format("{} {:.2f}", State >= 0 ? Asset.States[static_cast<size_t>(State)].Name : std::string("(삭제된 상태)"), Weight);
+			const std::string Label = std::format("{} {:.2f}", State >= 0 ? Machine().States[static_cast<size_t>(State)].Name : std::string("(삭제된 상태)"), Weight);
 			ImGui::ProgressBar(Weight, ImVec2(-FLT_MIN, 0.0f), Label.c_str());
 		}
 		if (Debug.bPlaying)
@@ -1187,21 +1317,33 @@ void FAnimGraphEditor::DrawPreviewSection(FAssetEditorEnvironment& Env, const FD
 
 void FAnimGraphEditor::RenameParameter(const std::string& OldName, const std::string& NewName)
 {
-	for (FAnimGraphState& State : Asset.States)
+	for (int32 Layer = -1; Layer < static_cast<int32>(Asset.Layers.size()); ++Layer)
 	{
-		if (State.BlendParameter == OldName)
+		FAnimStateMachine& Edited = Asset.GetMachine(Layer);
+		for (FAnimGraphState& State : Edited.States)
 		{
-			State.BlendParameter = NewName;
-		}
-	}
-	for (FAnimGraphTransition& Transition : Asset.Transitions)
-	{
-		for (FAnimTransitionCondition& Condition : Transition.Conditions)
-		{
-			if (Condition.Parameter == OldName)
+			if (State.BlendParameter == OldName)
 			{
-				Condition.Parameter = NewName;
+				State.BlendParameter = NewName;
 			}
+			if (State.BlendParameterY == OldName)
+			{
+				State.BlendParameterY = NewName;
+			}
+		}
+		for (FAnimGraphTransition& Transition : Edited.Transitions)
+		{
+			for (FAnimTransitionCondition& Condition : Transition.Conditions)
+			{
+				if (Condition.Parameter == OldName)
+				{
+					Condition.Parameter = NewName;
+				}
+			}
+		}
+		if (Layer >= 0 && Asset.Layers[static_cast<size_t>(Layer)].WeightParameter == OldName)
+		{
+			Asset.Layers[static_cast<size_t>(Layer)].WeightParameter = NewName;
 		}
 	}
 	for (auto& [Key, Value] : PreviewValues)
@@ -1363,61 +1505,64 @@ bool FAnimGraphEditor::ParameterCombo(const char* Id, std::string& Parameter, bo
 
 void FAnimGraphEditor::DrawStateProperties(int32 Index)
 {
-	FAnimGraphState& State = Asset.States[static_cast<size_t>(Index)];
+	FAnimGraphState& State = Machine().States[static_cast<size_t>(Index)];
 	std::string      Name  = State.Name;
 	if (InputString("이름", Name))
 	{
 		// 비거나 겹치는 이름은 적용하지 않는다 (입력 중에는 그대로 보이고, 끝나면 원래 이름으로)
-		if (!Name.empty() && Asset.FindState(Name) < 0)
+		if (!Name.empty() && Machine().FindState(Name) < 0)
 		{
 			State.Name = Name;
 			MarkEdited("상태 이름");
 		}
 	}
-	if (Index == Asset.EntryState)
+	if (Index == Machine().EntryState)
 	{
 		ImGui::TextColored(FEditorTheme::Accent, ICON_FA_FLAG " 시작 상태");
 	}
 	else if (ImGui::SmallButton(ICON_FA_FLAG " 시작 상태로 지정"))
 	{
-		Asset.EntryState = Index;
+		Machine().EntryState = Index;
 		MarkEdited("시작 상태");
 	}
 
-	int32 Kind = IsBlendSpace(State) ? 1 : 0;
-	if (ImGui::RadioButton("클립", &Kind, 0) && IsBlendSpace(State))
-	{
-		State.BlendParameter.clear();
-		State.Samples.resize(1);
-		MarkEdited("상태 종류");
-	}
+	const int32 OldKind = State.Is2D() ? 2 : IsBlendSpace(State) ? 1 : 0;
+	int32       Kind    = OldKind;
+	ImGui::RadioButton("클립", &Kind, 0);
 	ImGui::SameLine();
-	if (ImGui::RadioButton("1D 블렌드 스페이스", &Kind, 1) && !IsBlendSpace(State))
+	ImGui::RadioButton("1D 블렌드", &Kind, 1);
+	ImGui::SameLine();
+	ImGui::RadioButton("2D 블렌드", &Kind, 2);
+	if (Kind != OldKind)
 	{
-		std::string Parameter;
-		for (const FAnimGraphParameter& Candidate : Asset.Parameters)
+		FAnimGraphState& Changed = Machine().States[static_cast<size_t>(Index)];
+		if (Kind == 0)
 		{
-			if (Candidate.Type == EAnimParamType::Float)
+			Changed.BlendParameter.clear();
+			Changed.BlendParameterY.clear();
+			Changed.Samples.resize(1);
+		}
+		else if (Kind == 1)
+		{
+			Changed.BlendParameterY.clear();
+			if (Changed.BlendParameter.empty())
 			{
-				Parameter = Candidate.Name;
-				break;
+				Changed.BlendParameter = FindOrAddFloatParameter("Speed", std::string());
 			}
+			if (Changed.Samples.size() < 2)
+			{
+				Changed.Samples.push_back({ Changed.Samples.front().Clip, Changed.Samples.front().Position + 100.0f, 0.0f, 1.0f });
+			}
+			std::stable_sort(Changed.Samples.begin(), Changed.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
 		}
-		if (Parameter.empty())
+		else
 		{
-			Asset.Parameters.push_back({ "Speed", EAnimParamType::Float, 0.0f });
-			Parameter = "Speed";
-		}
-		FAnimGraphState& Edited = Asset.States[static_cast<size_t>(Index)];
-		Edited.BlendParameter   = Parameter;
-		if (Edited.Samples.size() < 2)
-		{
-			Edited.Samples.push_back({ Edited.Samples.front().Clip, Edited.Samples.front().Position + 100.0f, 1.0f });
+			MakeBlendSpace2D(Changed);
 		}
 		MarkEdited("상태 종류");
 	}
 
-	FAnimGraphState& Edited = Asset.States[static_cast<size_t>(Index)];
+	FAnimGraphState& Edited = Machine().States[static_cast<size_t>(Index)];
 	if (!IsBlendSpace(Edited))
 	{
 		if (ClipCombo("클립", Edited.Samples.front().Clip))
@@ -1431,16 +1576,32 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 	}
 	else
 	{
-		if (ParameterCombo("블렌드 파라미터", Edited.BlendParameter, true))
+		const bool b2D = Edited.Is2D();
+		if (ParameterCombo(b2D ? "X축 파라미터" : "블렌드 파라미터", Edited.BlendParameter, true))
 		{
 			MarkEdited("블렌드 파라미터");
 		}
-		DrawBlendSpaceAxis(Edited);
+		if (b2D && ParameterCombo("Y축 파라미터", Edited.BlendParameterY, true))
+		{
+			MarkEdited("블렌드 파라미터");
+		}
+		if (b2D)
+		{
+			DrawBlendSpace2D(Edited);
+		}
+		else
+		{
+			DrawBlendSpaceAxis(Edited);
+		}
 		int32 RemoveSample = -1;
-		if (ImGui::BeginTable("##Samples", 4, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
+		if (ImGui::BeginTable("##Samples", b2D ? 5 : 4, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
 		{
 			ImGui::TableSetupColumn("클립", ImGuiTableColumnFlags_WidthStretch, 1.6f);
-			ImGui::TableSetupColumn("위치", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			ImGui::TableSetupColumn(b2D ? "X" : "위치", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			if (b2D)
+			{
+				ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			}
 			ImGui::TableSetupColumn("배속", ImGuiTableColumnFlags_WidthStretch, 0.8f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
 			ImGui::TableHeadersRow();
@@ -1460,6 +1621,15 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 				if (ImGui::DragFloat("##Position", &Item.Position, 1.0f))
 				{
 					MarkEdited("샘플 위치");
+				}
+				if (b2D)
+				{
+					ImGui::TableNextColumn();
+					ImGui::SetNextItemWidth(-FLT_MIN);
+					if (ImGui::DragFloat("##PositionY", &Item.PositionY, 1.0f))
+					{
+						MarkEdited("샘플 위치");
+					}
 				}
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-FLT_MIN);
@@ -1490,7 +1660,9 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 			{
 				Last = FMath::Max(Last, Sample.Position);
 			}
-			Edited.Samples.push_back({ ClipNames.empty() ? std::string() : ClipNames.front(), Last + 100.0f, 1.0f });
+			// 2D는 미리보기 값 위치에 추가 (축 그림에서 끌어 옮긴다)
+			const FVector2 At = b2D ? FVector2(PreviewValue(Edited.BlendParameter), PreviewValue(Edited.BlendParameterY)) : FVector2(Last + 100.0f, 0.0f);
+			Edited.Samples.push_back({ ClipNames.empty() ? std::string() : ClipNames.front(), At.X, At.Y, 1.0f });
 			MarkEdited("샘플 추가");
 		}
 	}
@@ -1632,12 +1804,159 @@ void FAnimGraphEditor::DrawBlendSpaceAxis(FAnimGraphState& State)
 	ImGui::TextDisabled("범위 %.1f ~ %.1f · 현재 %.1f (빨간 선)", Lo + Pad, Hi - Pad, Value);
 }
 
+void FAnimGraphEditor::DrawBlendSpace2D(FAnimGraphState& State)
+{
+	if (State.Samples.empty())
+	{
+		return;
+	}
+	// 범위 = 샘플 경계 상자 ± 10% (끄는 동안은 고정). 화면 위 = +Y
+	FVector2 Lo(State.Samples.front().Position, State.Samples.front().PositionY);
+	FVector2 Hi = Lo;
+	for (const FAnimBlendSample& Sample : State.Samples)
+	{
+		Lo = FVector2(FMath::Min(Lo.X, Sample.Position), FMath::Min(Lo.Y, Sample.PositionY));
+		Hi = FVector2(FMath::Max(Hi.X, Sample.Position), FMath::Max(Hi.Y, Sample.PositionY));
+	}
+	if (Hi.X - Lo.X < 1.0e-3f)
+	{
+		Lo.X -= 100.0f;
+		Hi.X += 100.0f;
+	}
+	if (Hi.Y - Lo.Y < 1.0e-3f)
+	{
+		Lo.Y -= 100.0f;
+		Hi.Y += 100.0f;
+	}
+	const FVector2 Pad((Hi.X - Lo.X) * 0.1f, (Hi.Y - Lo.Y) * 0.1f);
+	Lo = Lo - Pad;
+	Hi = Hi + Pad;
+	if (AxisDragSample != -1)
+	{
+		Lo = FVector2(AxisLo, AxisLoY);
+		Hi = FVector2(AxisHi, AxisHiY);
+	}
+
+	const float  Width  = ImGui::GetContentRegionAvail().x;
+	const float  Height = FMath::Clamp(Width * 0.75f, 140.0f, 260.0f);
+	const ImVec2 Origin = ImGui::GetCursorScreenPos();
+	ImGui::InvisibleButton("##BlendSpace2D", ImVec2(Width, Height));
+	const bool    bHovered = ImGui::IsItemHovered();
+	ImDrawList*   Draw     = ImGui::GetWindowDrawList();
+	constexpr float Margin = 12.0f;
+	const auto    ToScreen = [&](float X, float Y) {
+        return ImVec2(Origin.x + Margin + (X - Lo.X) / (Hi.X - Lo.X) * (Width - Margin * 2.0f),
+                      Origin.y + Height - Margin - (Y - Lo.Y) / (Hi.Y - Lo.Y) * (Height - Margin * 2.0f));
+	};
+	const auto ToValue = [&](const ImVec2& Screen) {
+		return FVector2(Lo.X + (Screen.x - Origin.x - Margin) / FMath::Max(Width - Margin * 2.0f, 1.0f) * (Hi.X - Lo.X),
+		                Lo.Y + (Origin.y + Height - Margin - Screen.y) / FMath::Max(Height - Margin * 2.0f, 1.0f) * (Hi.Y - Lo.Y));
+	};
+
+	Draw->AddRectFilled(Origin, ImVec2(Origin.x + Width, Origin.y + Height), IM_COL32(28, 30, 34, 255), 4.0f);
+	for (int32 Line = 0; Line <= 4; ++Line)
+	{
+		const float T = static_cast<float>(Line) / 4.0f;
+		const ImVec2 A = ToScreen(Lo.X + (Hi.X - Lo.X) * T, Lo.Y);
+		const ImVec2 B = ToScreen(Lo.X + (Hi.X - Lo.X) * T, Hi.Y);
+		const ImVec2 C = ToScreen(Lo.X, Lo.Y + (Hi.Y - Lo.Y) * T);
+		const ImVec2 D = ToScreen(Hi.X, Lo.Y + (Hi.Y - Lo.Y) * T);
+		Draw->AddLine(A, B, IM_COL32(255, 255, 255, 22));
+		Draw->AddLine(C, D, IM_COL32(255, 255, 255, 22));
+	}
+	if (Lo.X < 0.0f && Hi.X > 0.0f)
+	{
+		Draw->AddLine(ToScreen(0.0f, Lo.Y), ToScreen(0.0f, Hi.Y), IM_COL32(255, 255, 255, 60));
+	}
+	if (Lo.Y < 0.0f && Hi.Y > 0.0f)
+	{
+		Draw->AddLine(ToScreen(Lo.X, 0.0f), ToScreen(Hi.X, 0.0f), IM_COL32(255, 255, 255, 60));
+	}
+
+	// 현재 미리보기 값의 가중치
+	float&                Value  = PreviewValue(State.BlendParameter);
+	float&                ValueY = PreviewValue(State.BlendParameterY);
+	std::vector<FVector2> Positions;
+	for (const FAnimBlendSample& Sample : State.Samples)
+	{
+		Positions.emplace_back(Sample.Position, Sample.PositionY);
+	}
+	std::vector<float> Weights;
+	AnimGraphMath::ComputeBlendSpace2DWeights(Positions, FVector2(Value, ValueY), Weights);
+
+	int32        Hovered = -1;
+	const ImVec2 Mouse   = ImGui::GetIO().MousePos;
+	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+	{
+		const ImVec2 Point = ToScreen(State.Samples[Index].Position, State.Samples[Index].PositionY);
+		if (bHovered && FMath::Abs(Mouse.x - Point.x) < 7.0f && FMath::Abs(Mouse.y - Point.y) < 7.0f)
+		{
+			Hovered = static_cast<int32>(Index);
+		}
+	}
+	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+	{
+		const ImVec2 Point  = ToScreen(State.Samples[Index].Position, State.Samples[Index].PositionY);
+		const bool   bHot   = Hovered == static_cast<int32>(Index) || AxisDragSample == static_cast<int32>(Index);
+		const float  Radius = 6.0f;
+		if (Weights[Index] > 0.001f)
+		{
+			Draw->AddCircleFilled(Point, Radius + 14.0f * Weights[Index], ImGui::ColorConvertFloat4ToU32(ImVec4(0.3f, 0.85f, 0.45f, 0.35f)));
+		}
+		Draw->AddQuadFilled(ImVec2(Point.x, Point.y - Radius), ImVec2(Point.x + Radius, Point.y), ImVec2(Point.x, Point.y + Radius), ImVec2(Point.x - Radius, Point.y),
+		                    bHot ? IM_COL32(255, 255, 255, 255) : ToU32(FEditorTheme::Accent));
+		const std::string Label = State.Samples[Index].Clip.empty() ? std::string("?") : State.Samples[Index].Clip;
+		Draw->AddText(ImVec2(Point.x + 8.0f, Point.y - 16.0f), IM_COL32(220, 220, 220, 255), Label.c_str());
+	}
+	const ImVec2 ValuePoint(FMath::Clamp(ToScreen(Value, ValueY).x, Origin.x + 2.0f, Origin.x + Width - 2.0f),
+	                        FMath::Clamp(ToScreen(Value, ValueY).y, Origin.y + 2.0f, Origin.y + Height - 2.0f));
+	Draw->AddCircle(ValuePoint, 5.0f, ToU32(FEditorTheme::Danger), 0, 2.0f);
+	Draw->AddLine(ImVec2(ValuePoint.x - 9.0f, ValuePoint.y), ImVec2(ValuePoint.x + 9.0f, ValuePoint.y), ToU32(FEditorTheme::Danger), 1.5f);
+	Draw->AddLine(ImVec2(ValuePoint.x, ValuePoint.y - 9.0f), ImVec2(ValuePoint.x, ValuePoint.y + 9.0f), ToU32(FEditorTheme::Danger), 1.5f);
+
+	// 끌기: 샘플 마름모 = 위치 바꾸기, 빈 곳 = 미리보기 값
+	if (ImGui::IsItemActivated())
+	{
+		AxisDragSample = Hovered >= 0 ? Hovered : -2;
+		AxisLo         = Lo.X;
+		AxisHi         = Hi.X;
+		AxisLoY        = Lo.Y;
+		AxisHiY        = Hi.Y;
+	}
+	if (ImGui::IsItemActive() && AxisDragSample != -1)
+	{
+		const FVector2 Dragged = ToValue(Mouse);
+		if (AxisDragSample >= 0 && AxisDragSample < static_cast<int32>(State.Samples.size()))
+		{
+			State.Samples[static_cast<size_t>(AxisDragSample)].Position  = std::round(Dragged.X);
+			State.Samples[static_cast<size_t>(AxisDragSample)].PositionY = std::round(Dragged.Y);
+			MarkEdited("샘플 위치");
+		}
+		else
+		{
+			Value  = Dragged.X;
+			ValueY = Dragged.Y;
+		}
+	}
+	else if (!ImGui::IsItemActive())
+	{
+		AxisDragSample = -1;
+	}
+	if (bHovered)
+	{
+		ImGui::SetTooltip("마름모를 끌어 샘플 위치 변경 · 빈 곳을 끌어 미리보기 값\n%s = %.1f, %s = %.1f", State.BlendParameter.c_str(), Value,
+		                  State.BlendParameterY.c_str(), ValueY);
+	}
+	ImGui::TextDisabled("X %s %.1f ~ %.1f · Y %s %.1f ~ %.1f · 현재 (%.1f, %.1f)", State.BlendParameter.c_str(), Lo.X + Pad.X, Hi.X - Pad.X,
+	                    State.BlendParameterY.c_str(), Lo.Y + Pad.Y, Hi.Y - Pad.Y, Value, ValueY);
+}
+
 void FAnimGraphEditor::DrawTransitionList(int32 FromState, bool bOnlyFrom)
 {
 	std::vector<int32> Shown;
-	for (size_t Index = 0; Index < Asset.Transitions.size(); ++Index)
+	for (size_t Index = 0; Index < Machine().Transitions.size(); ++Index)
 	{
-		if (!bOnlyFrom || Asset.Transitions[Index].From == FromState)
+		if (!bOnlyFrom || Machine().Transitions[Index].From == FromState)
 		{
 			Shown.push_back(static_cast<int32>(Index));
 		}
@@ -1648,12 +1967,12 @@ void FAnimGraphEditor::DrawTransitionList(int32 FromState, bool bOnlyFrom)
 		return;
 	}
 	const auto StateName = [this](int32 State) {
-		return State < 0 ? std::string("*") : State < static_cast<int32>(Asset.States.size()) ? Asset.States[static_cast<size_t>(State)].Name : std::string("?");
+		return State < 0 ? std::string("*") : State < static_cast<int32>(Machine().States.size()) ? Machine().States[static_cast<size_t>(State)].Name : std::string("?");
 	};
 	for (size_t Row = 0; Row < Shown.size(); ++Row)
 	{
 		const int32                 Index      = Shown[Row];
-		const FAnimGraphTransition& Transition = Asset.Transitions[static_cast<size_t>(Index)];
+		const FAnimGraphTransition& Transition = Machine().Transitions[static_cast<size_t>(Index)];
 		ImGui::PushID(Index);
 		const std::string Label = std::format("{}. {} → {}  (조건 {}개{}, {:.2f}초)", Row + 1, StateName(Transition.From), StateName(Transition.To),
 		                                      Transition.Conditions.size(), Transition.ExitTime >= 0.0f ? ", 종료 시점" : "", Transition.Duration);
@@ -1679,13 +1998,13 @@ void FAnimGraphEditor::DrawTransitionList(int32 FromState, bool bOnlyFrom)
 
 void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 {
-	FAnimGraphTransition& Transition = Asset.Transitions[static_cast<size_t>(Index)];
+	FAnimGraphTransition& Transition = Machine().Transitions[static_cast<size_t>(Index)];
 	const auto            StateLabel = [this](int32 State) {
-        return State < 0 ? std::string(ICON_FA_ASTERISK " 어느 상태든") : Asset.States[static_cast<size_t>(State)].Name;
+        return State < 0 ? std::string(ICON_FA_ASTERISK " 어느 상태든") : Machine().States[static_cast<size_t>(State)].Name;
 	};
 	if (ImGui::BeginCombo("출발", StateLabel(Transition.From).c_str()))
 	{
-		for (int32 State = -1; State < static_cast<int32>(Asset.States.size()); ++State)
+		for (int32 State = -1; State < static_cast<int32>(Machine().States.size()); ++State)
 		{
 			if (State != Transition.To && ImGui::Selectable(StateLabel(State).c_str(), State == Transition.From))
 			{
@@ -1697,7 +2016,7 @@ void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 	}
 	if (ImGui::BeginCombo("도착", StateLabel(Transition.To).c_str()))
 	{
-		for (int32 State = 0; State < static_cast<int32>(Asset.States.size()); ++State)
+		for (int32 State = 0; State < static_cast<int32>(Machine().States.size()); ++State)
 		{
 			if (State != Transition.From && ImGui::Selectable(StateLabel(State).c_str(), State == Transition.To))
 			{
@@ -1726,9 +2045,9 @@ void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 	// 우선순위: 같은 출발 전이 중 몇 번째인지 (목록 순서대로 검사, 처음 맞는 하나만)
 	int32 Rank  = 0;
 	int32 Count = 0;
-	for (size_t Other = 0; Other < Asset.Transitions.size(); ++Other)
+	for (size_t Other = 0; Other < Machine().Transitions.size(); ++Other)
 	{
-		if (Asset.Transitions[Other].From == Transition.From)
+		if (Machine().Transitions[Other].From == Transition.From)
 		{
 			++Count;
 			if (static_cast<int32>(Other) <= Index)
@@ -1737,7 +2056,7 @@ void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 			}
 		}
 	}
-	ImGui::TextWrapped("우선순위: %s에서 나가는 전이 %d개 중 %d번째", Transition.From < 0 ? "어느 상태든" : Asset.States[static_cast<size_t>(Transition.From)].Name.c_str(), Count,
+	ImGui::TextWrapped("우선순위: %s에서 나가는 전이 %d개 중 %d번째", Transition.From < 0 ? "어느 상태든" : Machine().States[static_cast<size_t>(Transition.From)].Name.c_str(), Count,
 	            Rank);
 	ImGui::TextDisabled("검사 순서");
 	ImGui::SameLine();
@@ -1754,7 +2073,7 @@ void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 	}
 
 	ImGui::SeparatorText("조건 (모두 참이어야 전이)");
-	FAnimGraphTransition& Edited          = Asset.Transitions[static_cast<size_t>(Index)];
+	FAnimGraphTransition& Edited          = Machine().Transitions[static_cast<size_t>(Index)];
 	int32                 RemoveCondition = -1;
 	for (size_t ConditionIndex = 0; ConditionIndex < Edited.Conditions.size(); ++ConditionIndex)
 	{
@@ -1827,9 +2146,322 @@ void FAnimGraphEditor::DrawTransitionProperties(int32 Index)
 	ImGui::Spacing();
 	if (ImGui::Button(ICON_FA_TRASH " 전이 삭제"))
 	{
-		Asset.Transitions.erase(Asset.Transitions.begin() + Index);
+		Machine().Transitions.erase(Machine().Transitions.begin() + Index);
 		Selection           = {};
 		bSyncGraphSelection = true;
 		MarkEdited("전이 삭제");
+	}
+}
+
+// ---------------------------------------------------------------- 레이어 / 본 마스크
+
+FAnimStateMachine& FAnimGraphEditor::Machine()
+{
+	return Asset.GetMachine(EditLayer < static_cast<int32>(Asset.Layers.size()) ? EditLayer : -1);
+}
+
+const FAnimStateMachine& FAnimGraphEditor::Machine() const
+{
+	return Asset.GetMachine(EditLayer < static_cast<int32>(Asset.Layers.size()) ? EditLayer : -1);
+}
+
+void FAnimGraphEditor::SetEditLayer(int32 Layer)
+{
+	if (Layer == EditLayer)
+	{
+		return;
+	}
+	EditLayer           = Layer;
+	Selection           = {};
+	bApplyPositions     = true; // 노드 번호가 같아도 다른 머신이므로 위치를 다시 넣는다
+	NavigateFrames      = 2;
+	bSyncGraphSelection = true;
+	LastGraphNode       = 0;
+	LastGraphLink       = 0;
+}
+
+bool FAnimGraphEditor::BoneCombo(const char* Id, std::string& Bone)
+{
+	const bool bKnown = BoneNames.empty() || std::find(BoneNames.begin(), BoneNames.end(), Bone) != BoneNames.end();
+	if (!bKnown)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::Warning);
+	}
+	bool bChanged = false;
+	if (ImGui::BeginCombo(Id, Bone.empty() ? "(없음)" : Bone.c_str(), ImGuiComboFlags_HeightLarge))
+	{
+		for (const std::string& Name : BoneNames)
+		{
+			if (!Name.empty() && ImGui::Selectable(Name.c_str(), Name == Bone))
+			{
+				Bone     = Name;
+				bChanged = true;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	if (!bKnown)
+	{
+		ImGui::PopStyleColor();
+		ImGui::SetItemTooltip("미리보기 모델에 이 뼈가 없습니다");
+	}
+	return bChanged;
+}
+
+void FAnimGraphEditor::DrawMaskEditor(FAnimBoneMask& Mask, const char* Id)
+{
+	ImGui::PushID(Id);
+	if (Mask.IsFullBody())
+	{
+		ImGui::TextDisabled("마스크 없음 = 몸 전체");
+	}
+	int32 Remove = -1;
+	if (!Mask.Bones.empty() && ImGui::BeginTable("##Mask", 4, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
+	{
+		ImGui::TableSetupColumn("뼈 (자손 포함)", ImGuiTableColumnFlags_WidthStretch, 1.8f);
+		ImGui::TableSetupColumn("가중치", ImGuiTableColumnFlags_WidthStretch, 0.9f);
+		ImGui::TableSetupColumn("경사 깊이", ImGuiTableColumnFlags_WidthStretch, 0.8f);
+		ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
+		ImGui::TableHeadersRow();
+		for (size_t Index = 0; Index < Mask.Bones.size(); ++Index)
+		{
+			FAnimBoneMaskEntry& Entry = Mask.Bones[Index];
+			ImGui::PushID(static_cast<int>(Index));
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (BoneCombo("##Bone", Entry.Bone))
+			{
+				MarkEdited("마스크 뼈");
+			}
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::SliderFloat("##Weight", &Entry.Weight, 0.0f, 1.0f, "%.2f"))
+			{
+				MarkEdited("마스크 가중치");
+			}
+			ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			if (ImGui::DragInt("##Depth", &Entry.BlendDepth, 0.1f, 0, 16))
+			{
+				Entry.BlendDepth = FMath::Clamp(Entry.BlendDepth, 0, 16);
+				MarkEdited("마스크 경사");
+			}
+			ImGui::SetItemTooltip("0 = 이 뼈부터 바로 가중치 전부, N = 아래로 N세대에 걸쳐 1/N씩 커진다");
+			ImGui::TableNextColumn();
+			if (ImGui::SmallButton(ICON_FA_XMARK))
+			{
+				Remove = static_cast<int32>(Index);
+			}
+			ImGui::PopID();
+		}
+		ImGui::EndTable();
+	}
+	if (Remove >= 0)
+	{
+		Mask.Bones.erase(Mask.Bones.begin() + Remove);
+		MarkEdited("마스크 항목 삭제");
+	}
+	if (ImGui::SmallButton(ICON_FA_BONE " 마스크 뼈 추가"))
+	{
+		FAnimBoneMaskEntry Entry;
+		Entry.Bone = BoneNames.size() > 1 ? BoneNames[1] : (BoneNames.empty() ? std::string() : BoneNames.front());
+		Mask.Bones.push_back(std::move(Entry));
+		MarkEdited("마스크 항목 추가");
+	}
+	ImGui::SetItemTooltip("뼈마다 가장 가까운 조상 항목이 가중치를 정한다 — 하위 가지를 가중치 0 항목으로 뺄 수 있다");
+	ImGui::PopID();
+}
+
+void FAnimGraphEditor::DrawLayers(const FDebugView& Debug)
+{
+	FAssetEditorWidgets::Hint("기본 레이어(몸 전체) 위에 추가 레이어가 순서대로 덮인다. 레이어마다 상태 머신이 따로 돌고, 본 마스크 × 레이어 가중치만큼 섞인다.");
+	const auto RunningWeight = [&](const std::string& Name) -> float {
+		if (Debug.Runtime == nullptr || !Debug.Runtime->Asset)
+		{
+			return -1.0f;
+		}
+		const int32 Index = Debug.Runtime->Asset->FindLayer(Name);
+		return Index >= 0 && Index < static_cast<int32>(Debug.Runtime->LayerWeights.size()) ? Debug.Runtime->LayerWeights[static_cast<size_t>(Index)] : -1.0f;
+	};
+
+	int32 Remove = -1;
+	int32 MoveUp = -1;
+	for (int32 Layer = -1; Layer < static_cast<int32>(Asset.Layers.size()); ++Layer)
+	{
+		ImGui::PushID(Layer);
+		const std::string Name  = Layer < 0 ? std::string("기본 레이어 (몸 전체)") : Asset.Layers[static_cast<size_t>(Layer)].Name;
+		const float       Shown = Layer < 0 ? 1.0f : RunningWeight(Name);
+		const std::string Label = Shown >= 0.0f ? std::format("{}  ·  가중치 {:.2f}", Name, Shown) : Name;
+		if (ImGui::Selectable(Label.c_str(), EditLayer == Layer, 0, ImVec2(ImGui::GetContentRegionAvail().x - ImGui::GetFrameHeight() * 2.4f, 0.0f)))
+		{
+			SetEditLayer(Layer);
+		}
+		if (Layer >= 0)
+		{
+			ImGui::SameLine();
+			ImGui::BeginDisabled(Layer == 0);
+			if (ImGui::SmallButton(ICON_FA_ARROW_UP))
+			{
+				MoveUp = Layer;
+			}
+			ImGui::EndDisabled();
+			ImGui::SetItemTooltip("먼저 섞기 (나중 레이어가 위에 덮인다)");
+			ImGui::SameLine();
+			if (ImGui::SmallButton(ICON_FA_XMARK))
+			{
+				Remove = Layer;
+			}
+		}
+		ImGui::PopID();
+	}
+	if (MoveUp > 0)
+	{
+		std::swap(Asset.Layers[static_cast<size_t>(MoveUp)], Asset.Layers[static_cast<size_t>(MoveUp - 1)]);
+		if (EditLayer == MoveUp || EditLayer == MoveUp - 1)
+		{
+			EditLayer = EditLayer == MoveUp ? MoveUp - 1 : MoveUp;
+		}
+		MarkEdited("레이어 순서");
+	}
+	if (Remove >= 0)
+	{
+		Asset.Layers.erase(Asset.Layers.begin() + Remove);
+		SetEditLayer(-1);
+		MarkEdited("레이어 삭제");
+	}
+	if (ImGui::Button(ICON_FA_PLUS " 레이어 추가"))
+	{
+		FAnimGraphLayer Layer;
+		Layer.Name = "Layer";
+		for (int32 Suffix = 1; Asset.FindLayer(Layer.Name) >= 0; ++Suffix)
+		{
+			Layer.Name = std::format("Layer{}", Suffix);
+		}
+		FAnimGraphState State;
+		State.Name           = "Idle";
+		State.Samples        = { FAnimBlendSample{ ClipNames.empty() ? std::string() : ClipNames.front(), 0.0f, 0.0f, 1.0f } };
+		State.EditorPosition = FVector2(260.0f, 0.0f);
+		Layer.States.push_back(std::move(State));
+		Layer.AnyStateEditorPosition = FVector2(0.0f, 0.0f);
+		Asset.Layers.push_back(std::move(Layer));
+		SetEditLayer(static_cast<int32>(Asset.Layers.size()) - 1);
+		MarkEdited("레이어 추가");
+	}
+
+	if (EditLayer < 0 || EditLayer >= static_cast<int32>(Asset.Layers.size()))
+	{
+		return;
+	}
+	FAnimGraphLayer& Layer = Asset.Layers[static_cast<size_t>(EditLayer)];
+	ImGui::SeparatorText(("레이어: " + Layer.Name).c_str());
+	std::string Name = Layer.Name;
+	if (InputString("이름##Layer", Name) && !Name.empty() && Asset.FindLayer(Name) < 0)
+	{
+		Layer.Name = Name;
+		MarkEdited("레이어 이름");
+	}
+	if (ImGui::SliderFloat("가중치##Layer", &Layer.Weight, 0.0f, 1.0f, "%.2f"))
+	{
+		MarkEdited("레이어 가중치");
+	}
+	const std::string Parameter = Layer.WeightParameter;
+	if (ImGui::BeginCombo("가중치 파라미터", Parameter.empty() ? "(없음 = 1)" : Parameter.c_str()))
+	{
+		if (ImGui::Selectable("(없음 = 1)", Parameter.empty()))
+		{
+			Layer.WeightParameter.clear();
+			MarkEdited("레이어 가중치 파라미터");
+		}
+		for (const FAnimGraphParameter& Candidate : Asset.Parameters)
+		{
+			if (Candidate.Type == EAnimParamType::Float && ImGui::Selectable(Candidate.Name.c_str(), Candidate.Name == Parameter))
+			{
+				Layer.WeightParameter = Candidate.Name;
+				MarkEdited("레이어 가중치 파라미터");
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("실제 가중치 = clamp(가중치 × 파라미터 값, 0, 1). 레이어 노티파이는 실제 가중치 0.5 이상일 때만");
+	ImGui::TextDisabled("본 마스크");
+	DrawMaskEditor(Layer.Mask, "LayerMask");
+}
+
+void FAnimGraphEditor::DrawSlots()
+{
+	FAssetEditorWidgets::Hint("Lua entity:PlayMontage(clip, {Slot='이름'})으로 재생한 몽타주는 그 슬롯 마스크 부분만 덮는다. 없는 슬롯 이름은 몸 전체.");
+	int32 Remove = -1;
+	for (size_t Index = 0; Index < Asset.Slots.size(); ++Index)
+	{
+		FAnimGraphSlot& Slot = Asset.Slots[Index];
+		ImGui::PushID(static_cast<int>(Index));
+		const bool bOpen = ImGui::TreeNodeEx("##Slot", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap, "%s %s", ICON_FA_CLAPPERBOARD,
+		                                     Slot.Name.c_str());
+		ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::GetFrameHeight());
+		if (ImGui::SmallButton(ICON_FA_XMARK))
+		{
+			Remove = static_cast<int32>(Index);
+		}
+		if (bOpen)
+		{
+			std::string Name = Slot.Name;
+			if (InputString("이름", Name) && !Name.empty() && Asset.FindSlot(Name) < 0)
+			{
+				Slot.Name = Name;
+				MarkEdited("슬롯 이름");
+			}
+			DrawMaskEditor(Slot.Mask, "SlotMask");
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+	}
+	if (Remove >= 0)
+	{
+		Asset.Slots.erase(Asset.Slots.begin() + Remove);
+		MarkEdited("슬롯 삭제");
+	}
+	if (ImGui::Button(ICON_FA_PLUS " 슬롯 추가"))
+	{
+		FAnimGraphSlot Slot;
+		Slot.Name = "Slot";
+		for (int32 Suffix = 1; Asset.FindSlot(Slot.Name) >= 0; ++Suffix)
+		{
+			Slot.Name = std::format("Slot{}", Suffix);
+		}
+		Asset.Slots.push_back(std::move(Slot));
+		MarkEdited("슬롯 추가");
+	}
+
+	// 미리보기 모델로 시험 재생
+	ImGui::SeparatorText("미리보기 재생");
+	ClipCombo("클립##Montage", PreviewMontageClip);
+	if (ImGui::BeginCombo("슬롯##Montage", PreviewMontageSlot.empty() ? FAnimationSystem::DefaultMontageSlot : PreviewMontageSlot.c_str()))
+	{
+		if (ImGui::Selectable(FAnimationSystem::DefaultMontageSlot, PreviewMontageSlot.empty()))
+		{
+			PreviewMontageSlot.clear();
+		}
+		for (const FAnimGraphSlot& Slot : Asset.Slots)
+		{
+			if (ImGui::Selectable(Slot.Name.c_str(), Slot.Name == PreviewMontageSlot))
+			{
+				PreviewMontageSlot = Slot.Name;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::BeginDisabled(PreviewMontageClip.empty() || !Preview.GetScene().GetRegistry().IsValid(ModelRoot));
+	if (ImGui::Button(ICON_FA_PLAY " 몽타주 재생"))
+	{
+		FMontagePlayParams Params;
+		Params.Slot = PreviewMontageSlot;
+		FAnimationSystem::PlayMontage(Preview.GetScene(), ModelRoot, PreviewMontageClip, Params);
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	if (ImGui::Button(ICON_FA_STOP " 멈춤"))
+	{
+		FAnimationSystem::StopMontage(Preview.GetScene(), ModelRoot, std::string_view(), -1.0f);
 	}
 }

@@ -57,6 +57,17 @@ struct FAnimNotifyHit
 	EAnimNotifyEventType Type  = EAnimNotifyEventType::Notify;
 };
 
+// 노티파이 판정 출처 하나의 진행 상태 (클립 재생 / 그래프 레이어마다 / 몽타주마다 따로 둔다)
+struct FAnimNotifyTrack
+{
+	uint32             Key  = 0;  // 직전 판정 기여 식별 (0 = 없음 — 그래프만 사용)
+	int32              Clip = -1; // ActiveStates가 가리키는 클립
+	std::vector<uint8> ActiveStates;
+	bool               bResync = false; // 다음 진행에서 시작 시각이 스테이트 안이면 Begin
+
+	void Reset() { *this = FAnimNotifyTrack(); }
+};
+
 namespace AnimNotifyMath
 {
 	// 이름이 식별자 규칙에 맞는지

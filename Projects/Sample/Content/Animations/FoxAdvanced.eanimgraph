@@ -1,0 +1,111 @@
+{
+  "Editor": {
+    "AnyStatePosition": [-380.0, -105.0],
+    "PreviewModel": "Fox.glb"
+  },
+  "EntryState": "Locomotion",
+  "Layers": [
+    {
+      "Editor": {
+        "AnyStatePosition": [-380.0, -105.0]
+      },
+      "EntryState": "LookAround",
+      "Mask": [
+        {
+          "BlendDepth": 2,
+          "Bone": "b_Neck_04"
+        }
+      ],
+      "Name": "Head",
+      "States": [
+        {
+          "Clip": "Survey",
+          "EditorPosition": [0.0, 0.0],
+          "Name": "LookAround"
+        }
+      ],
+      "Transitions": [],
+      "WeightParameter": "HeadLayer"
+    }
+  ],
+  "Parameters": [
+    {
+      "Default": 0.0,
+      "Name": "Speed",
+      "Type": "Float"
+    },
+    {
+      "Default": 0.0,
+      "Name": "Direction",
+      "Type": "Float"
+    },
+    {
+      "Default": 0.0,
+      "Name": "HeadLayer",
+      "Type": "Float"
+    }
+  ],
+  "Slots": [
+    {
+      "Mask": [
+        {
+          "BlendDepth": 2,
+          "Bone": "b_Spine02_03"
+        },
+        {
+          "Bone": "b_RightUpperArm_06",
+          "Weight": 0.0
+        },
+        {
+          "Bone": "b_LeftUpperArm_09",
+          "Weight": 0.0
+        }
+      ],
+      "Name": "Upper"
+    }
+  ],
+  "States": [
+    {
+      "BlendParameter": "Speed",
+      "BlendParameterY": "Direction",
+      "EditorPosition": [0.0, 0.0],
+      "Name": "Locomotion",
+      "Samples": [
+        {
+          "Clip": "Survey",
+          "Position": [0.0, 0.0]
+        },
+        {
+          "Clip": "Walk",
+          "Position": [120.0, 0.0]
+        },
+        {
+          "Clip": "Run",
+          "Position": [450.0, 0.0]
+        },
+        {
+          "Clip": "Walk",
+          "Position": [120.0, -90.0],
+          "Rate": 0.75
+        },
+        {
+          "Clip": "Walk",
+          "Position": [120.0, 90.0],
+          "Rate": 0.75
+        },
+        {
+          "Clip": "Run",
+          "Position": [450.0, -90.0],
+          "Rate": 0.8
+        },
+        {
+          "Clip": "Run",
+          "Position": [450.0, 90.0],
+          "Rate": 0.8
+        }
+      ]
+    }
+  ],
+  "Transitions": [],
+  "Version": 3
+}

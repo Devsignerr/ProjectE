@@ -18,21 +18,35 @@
 //   FAnimGraphComponent(Graph = 에셋 경로)를 붙이면 FAnimationSystem이 FAnimationComponent의 Clip 대신 그래프로 포즈를 만든다
 //   (FAnimationComponent의 Speed/Playing은 전체 배속/정지로 계속 쓰이고 Clip/Loop/BlendTime/RootMotion은 쓰지 않는다).
 //
-// 상태 = 클립 하나 또는 1D 블렌드 스페이스 (BlendParameter 값 → 위치가 이웃한 두 샘플을 선형 가중. 범위 밖은 끝 샘플).
-//   재생 위치는 상태마다 정규화 시간(Phase, 0~1) 하나: 샘플들은 같은 Phase로 샘플링된다 (동기화 — 걷기/뛰기 발이 맞는다).
+// 상태 = 클립 하나, 1D 블렌드 스페이스 (BlendParameter 값 → 위치가 이웃한 두 샘플을 선형 가중. 범위 밖은 끝 샘플),
+//   또는 2D 블렌드 스페이스 (BlendParameterY도 있음. 샘플 위치 (Position, PositionY) — 가중치는 그래디언트 밴드
+//   (Freeform Cartesian, AnimGraphMath::ComputeBlendSpace2DWeights): 축마다 샘플 범위로 정규화한 뒤 계산, 샘플 위치에서 정확히 그 샘플,
+//   어떤 점 배치든 삼각분할 없이 연속, 범위 밖은 가까운 쪽 샘플로 수렴. 샘플 순서는 의미 없음).
+//   재생 위치는 상태마다 정규화 시간(Phase, 0~1) 하나: 샘플들은 같은 Phase로 샘플링된다 (동기화 — 걷기/뛰기 발이 맞는다, 2D도 같음).
 //   한 바퀴 길이 = Σ 가중치 × (클립 길이 / Rate), Phase += dt × 상태 Speed / 한 바퀴 길이. Loop가 아니면 1에서 멈춘다.
 // 전이: 목록 순서대로 처음 맞는 하나만 (프레임당 최대 한 번). From = 상태 이름 또는 "*"(어느 상태든, To 자신 제외).
 //   조건 = 파라미터 비교 (모두 참이어야 함), ExitTime >= 0이면 현재 상태 Phase가 그 이상일 때만.
 //   크로스페이드: Duration 동안 smoothstep 가중치. 페이드 중 다른 전이가 오면 그 순간의 가중치들을 출발점으로 다시 섞는다
 //   (튀지 않음, 이전 상태들도 계속 진행). 이미 섞이고 있는 상태로 돌아가면 그 상태의 재생 위치와 가중치를 이어 간다.
 // 포즈 섞기: 기여(클립, 시각, 가중치) 전부의 가중 합 — 이동/스케일은 선형, 회전은 nlerp(첫 기여와 같은 반구로 맞춘 가중 합 → 정규화).
-// 노티파이 (Scene/AnimNotify.h 규칙 위에): 이번 프레임 최종 가중치가 가장 큰 기여(상태 레이어 × 샘플) 하나의 클립에서만 판정한다.
-//   그 기여가 바뀌면 이전 기여의 진행 중 스테이트는 End, 새 기여는 이번 진행 구간부터 판정(시작 시각이 스테이트 안이면 Begin).
+// 레이어 (언리얼 Layered blend per bone): 최상위 States/Transitions = 기본 레이어(몸 전체, 가중치 1). "Layers" 목록의 추가 레이어마다
+//   자기 상태 머신(같은 파라미터 공유)이 따로 돌고, 순서대로 기본 포즈 위에 노드마다 BlendPose(아래, 레이어, 마스크[노드] × 레이어 가중치)
+//   (로컬 공간 — 이동/스케일 선형, 회전 slerp). 레이어 가중치 = clamp(Weight × WeightParameter 값, 0, 1), 0이어도 머신은 계속 진행한다.
+//   본 마스크 = 뼈 이름 + Weight + BlendDepth 목록 (FAnimBoneMask, 뼈 이름 = 모델 노드 엔티티 이름). 비면 몸 전체.
+//   기본 레이어 기여가 없으면(클립이 모델에 없음) 이번 프레임 포즈를 쓰지 않는다 (레이어도 섞지 않음).
+// 노티파이 (Scene/AnimNotify.h 규칙 위에): 출처(기본 레이어, 추가 레이어마다)가 각자 판정한다 — 출처 안에서는 이번 프레임 가중치가 가장
+//   큰 기여(크로스페이드 상태 × 샘플) 하나의 클립에서만. 그 기여가 바뀌면 이전 기여의 진행 중 스테이트는 End, 새 기여는 이번 진행 구간부터
+//   판정(시작 시각이 스테이트 안이면 Begin). 추가 레이어는 레이어 가중치 >= 0.5일 때만 판정한다 (아래로 내려가면 진행 중 스테이트 End).
+//   기본 레이어는 몸 전체 몽타주(슬롯 마스크 없음) 가중치가 0.5 이상인 동안 판정하지 않는다. 몽타주는 몽타주마다 따로 (AnimMontage.h).
 //   방금 들어간 상태는 그 프레임에 진행하지 않으므로 노티파이가 없다.
+// 최종 포즈 순서 (FAnimationSystem): 기본 레이어 → 추가 레이어 → 몽타주(시작 순서대로, 슬롯 마스크 × 몽타주 가중치) → IK → 노드 기록.
 // 파라미터: float/bool(0/1로 저장). Lua entity:SetAnimParam/GetAnimParam/GetAnimState, C++ FAnimationSystem::SetAnimParam 등.
 //   파라미터는 복제되지 않는다 — 각 프로세스가 자기 값으로 계산한다 (캐릭터 이동 자동 공급은 FAnimGraphComponent::bUseCharacterMovement).
-// 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}).
-//   읽기는 1/2 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 2. 전이 우선순위 = Transitions 목록 순서.
+// 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}),
+//   3 = 2D 블렌드 스페이스 (상태 "BlendParameterY", 2D 샘플 "Position": [x, y]) + 레이어 ("Layers": [{Name, Weight, WeightParameter,
+//       Mask: [{Bone, Weight, BlendDepth}], EntryState, States, Transitions, Editor: {AnyStatePosition}}])
+//       + 몽타주 슬롯 ("Slots": [{Name, Mask}] — 몽타주 규칙은 Scene/AnimMontage.h).
+//   읽기는 1/2/3 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 3. 전이 우선순위 = Transitions 목록 순서.
 // 핫 리로드: FAnimGraphLibrary::Invalidate가 세대 번호를 올리면 그 그래프를 쓰는 컴포넌트가 다음 갱신에서 다시 읽고, 파일이 바뀌었으면
 //   새 에셋으로 다시 묶는다. 파라미터 값은 유지되고, 같은 이름의 상태가 새 그래프에 있으면 그 상태에서 다시 시작한다 (없으면 시작 상태).
 
@@ -52,19 +66,24 @@ struct FAnimGraphParameter
 struct FAnimBlendSample
 {
 	std::string Clip;
-	float       Position = 0.0f; // 블렌드 파라미터 값
-	float       Rate     = 1.0f; // 이 샘플의 재생 배속 (한 바퀴 길이 계산에 들어간다)
+	float       Position  = 0.0f; // 블렌드 파라미터 값 (2D면 X축)
+	float       PositionY = 0.0f; // 2D 블렌드 스페이스의 Y축 값
+	float       Rate      = 1.0f; // 이 샘플의 재생 배속 (한 바퀴 길이 계산에 들어간다)
 };
 
 struct FAnimGraphState
 {
 	std::string                   Name;
-	std::string                   BlendParameter; // 비면 단일 클립 (Samples[0])
-	std::vector<FAnimBlendSample> Samples;        // Position 오름차순
+	std::string                   BlendParameter;  // 비면 단일 클립 (Samples[0])
+	std::string                   BlendParameterY; // 있으면 2D 블렌드 스페이스 (BlendParameter = X축)
+	std::vector<FAnimBlendSample> Samples;         // 1D는 Position 오름차순, 2D는 순서 무관
 	float                         Speed = 1.0f;
 	bool                          bLoop = true;
 
 	std::optional<FVector2> EditorPosition; // 편집기 노드 위치 (실행에 쓰지 않음)
+
+	bool IsBlendSpace() const { return !BlendParameter.empty(); }
+	bool Is2D() const { return !BlendParameter.empty() && !BlendParameterY.empty(); }
 };
 
 enum class EAnimConditionOp : uint8
@@ -93,22 +112,74 @@ struct FAnimGraphTransition
 	std::vector<FAnimTransitionCondition> Conditions;
 };
 
-struct FAnimGraphAsset
+// 본 마스크 항목: Bone과 그 자손에 Weight. BlendDepth > 0이면 Bone에서 아래로 BlendDepth 세대에 걸쳐 1/BlendDepth씩 커진다
+struct FAnimBoneMaskEntry
 {
-	static constexpr int32          Version   = 2;
-	static constexpr const wchar_t* Extension = L".eanimgraph";
+	std::string Bone;
+	float       Weight     = 1.0f;
+	int32       BlendDepth = 0;
+};
 
-	std::vector<FAnimGraphParameter>  Parameters;
+// 본 마스크 (레이어/몽타주 슬롯). 비면 몸 전체 1. 노드 가중치 = 자신 또는 가장 가까운 조상 중 목록에 있는 뼈의 항목 (없으면 0)
+//   → 하위 가지를 Weight 0 항목으로 빼낼 수 있다 (예: 상체 Spine + 꼬리 0)
+struct FAnimBoneMask
+{
+	std::vector<FAnimBoneMaskEntry> Bones;
+
+	bool IsFullBody() const { return Bones.empty(); }
+};
+
+// 상태 머신 하나 (기본 레이어 = 에셋 자신, 추가 레이어마다 하나)
+struct FAnimStateMachine
+{
 	std::vector<FAnimGraphState>      States;
 	std::vector<FAnimGraphTransition> Transitions;
 	int32                             EntryState = 0;
+	std::optional<FVector2>           AnyStateEditorPosition; // 편집기 "어느 상태든" 노드 위치 (실행에 쓰지 않음)
+
+	int32 FindState(std::string_view Name) const;
+	// 상태 Index 삭제: 그 상태가 From/To인 전이를 지우고 나머지 전이·시작 상태 번호를 당긴다
+	void RemoveState(int32 Index);
+};
+
+// 추가 레이어: 기본 레이어 포즈 위에 Mask × 레이어 가중치로 덮어 섞는다 (로컬 공간, 이동/스케일 선형·회전 slerp)
+//   레이어 가중치 = clamp(Weight × (WeightParameter가 있으면 그 파라미터 값), 0, 1)
+struct FAnimGraphLayer : FAnimStateMachine
+{
+	std::string   Name;
+	FAnimBoneMask Mask;
+	float         Weight = 1.0f;
+	std::string   WeightParameter;
+};
+
+// 몽타주 슬롯 (Scene/AnimMontage.h): 이 이름으로 재생한 몽타주는 Mask 부분만 덮는다 (비면 몸 전체)
+struct FAnimGraphSlot
+{
+	std::string   Name;
+	FAnimBoneMask Mask;
+};
+
+struct FAnimGraphAsset : FAnimStateMachine
+{
+	static constexpr int32          Version   = 3;
+	static constexpr const wchar_t* Extension = L".eanimgraph";
+
+	std::vector<FAnimGraphParameter> Parameters;
+	std::vector<FAnimGraphLayer>     Layers; // 기본 레이어(States/Transitions) 위에 순서대로
+	std::vector<FAnimGraphSlot>      Slots;  // 몽타주 슬롯 마스크
 
 	// 편집기 정보 (버전 2, 실행에 쓰지 않음)
-	std::string             PreviewModel;           // 미리보기 모델 (Content 기준)
-	std::optional<FVector2> AnyStateEditorPosition; // "어느 상태든" 노드 위치
+	std::string PreviewModel; // 미리보기 모델 (Content 기준)
 
-	int32                      FindState(std::string_view Name) const;
 	const FAnimGraphParameter* FindParameter(std::string_view Name) const;
+	int32                      FindLayer(std::string_view Name) const;
+	int32                      FindSlot(std::string_view Name) const;
+	// Layer -1 = 기본 레이어(자신), 0.. = Layers[Layer]
+	FAnimStateMachine&       GetMachine(int32 Layer) { return Layer < 0 ? static_cast<FAnimStateMachine&>(*this) : Layers[static_cast<size_t>(Layer)]; }
+	const FAnimStateMachine& GetMachine(int32 Layer) const
+	{
+		return Layer < 0 ? static_cast<const FAnimStateMachine&>(*this) : Layers[static_cast<size_t>(Layer)];
+	}
 
 	// 형식이 틀리면 false + 이유. 이름을 못 찾는 전이/조건은 건너뛰고 경고 목록(OutWarnings)에 남긴다
 	static bool FromJsonString(const std::string& Text, FAnimGraphAsset& Out, std::string* OutError = nullptr,
@@ -117,8 +188,6 @@ struct FAnimGraphAsset
 	std::string ToJsonString() const;
 	bool        SaveToFile(const std::filesystem::path& Path) const;
 
-	// 상태 Index 삭제: 그 상태가 From/To인 전이를 지우고 나머지 전이·시작 상태 번호를 당긴다
-	void RemoveState(int32 Index);
 	// 편집기 "새 애니메이션 그래프" 기본값 (파라미터 Speed + 빈 클립 상태 하나)
 	static FAnimGraphAsset MakeDefault();
 };
@@ -142,8 +211,12 @@ struct FAnimGraphBinding
 {
 	std::vector<std::vector<int32>> SampleClips;   // [상태][샘플] → 클립 번호 (-1 = 모델에 없음 — 그 샘플은 빼고 섞는다)
 	std::vector<float>              ClipDurations; // 클립 번호 → 길이 (초)
+	std::vector<FAnimGraphBinding>  Layers;        // 추가 레이어별 (Bind만 채운다)
 
+	// 기본 레이어 + 추가 레이어 전부
 	static FAnimGraphBinding Bind(const FAnimGraphAsset& Asset, const FAnimationSet& Set, std::vector<std::string>* OutMissing = nullptr);
+	// 상태 머신 하나 (Layers는 비움)
+	static FAnimGraphBinding BindMachine(const FAnimStateMachine& Machine, const FAnimationSet& Set, std::vector<std::string>* OutMissing);
 };
 
 // 이번 프레임 포즈에 들어가는 클립 하나
@@ -171,11 +244,25 @@ namespace AnimGraphMath
 {
 	// 1D 블렌드 스페이스 가중치 (Positions 오름차순). 이웃한 두 샘플만 0이 아니고 합 = 1. 범위 밖은 끝 샘플 1
 	void ComputeBlendSpace1DWeights(const std::vector<float>& Positions, float Value, std::vector<float>& OutWeights);
+	// 2D 블렌드 스페이스 가중치 (그래디언트 밴드). 축마다 샘플 범위로 정규화 → w_i = min_j clamp(1 - (p-p_i)·(p_j-p_i)/|p_j-p_i|², 0, 1)
+	// → 합 1로 정규화. 겹친 샘플 쌍은 건너뛰고, 모두 0이면 가장 가까운 샘플 1
+	void ComputeBlendSpace2DWeights(const std::vector<FVector2>& Positions, const FVector2& Value, std::vector<float>& OutWeights);
 
 	bool EvaluateCondition(EAnimConditionOp Op, float Parameter, float Value);
 
-	// 처음 맞는 전이 번호 (-1 = 없음). CurrentPhase = 현재 상태 정규화 시간
-	int32 FindTransition(const FAnimGraphAsset& Asset, int32 CurrentState, float CurrentPhase, const FAnimParameterSet& Parameters);
+	// 처음 맞는 전이 번호 (-1 = 없음). CurrentPhase = 현재 상태 정규화 시간. Asset = 파라미터 기본값, Machine = 상태/전이
+	int32 FindTransition(const FAnimGraphAsset& Asset, const FAnimStateMachine& Machine, int32 CurrentState, float CurrentPhase,
+	                     const FAnimParameterSet& Parameters);
+	int32 FindTransition(const FAnimGraphAsset& Asset, int32 CurrentState, float CurrentPhase, const FAnimParameterSet& Parameters); // 기본 레이어
+
+	// 본 마스크 → 노드별 가중치 [0, 1] (FAnimBoneMask 주석 규칙). Parents = FAnimationSet::NodeParents, NodeNames = 노드 이름
+	// (모델 노드 엔티티 이름). 이름을 못 찾은 항목의 뼈 이름은 OutMissing에
+	void ComputeBoneMaskWeights(const FAnimBoneMask& Mask, const std::vector<int32>& Parents, const std::vector<std::string>& NodeNames,
+	                            std::vector<float>& OutWeights, std::vector<std::string>* OutMissing);
+	// 레이어 가중치 = clamp(Weight × 파라미터, 0, 1) (WeightParameter가 비면 Weight만)
+	float ComputeLayerWeight(const FAnimGraphAsset& Asset, const FAnimGraphLayer& Layer, const FAnimParameterSet& Parameters);
+	// Base의 노드마다 Base = BlendPose(Base, Overlay, Weights[노드] × Alpha). Weights가 비면 모두 1
+	void BlendMasked(std::vector<FNodePose>& Base, const std::vector<FNodePose>& Overlay, const std::vector<float>& Weights, float Alpha);
 
 	// 가중 포즈 합: 첫 호출은 bFirst = true. 가중치 합이 1이 되게 넘기고 마지막에 FinishWeightedPose (회전 정규화)
 	void AddWeightedPose(std::vector<FNodePose>& Accumulator, const std::vector<FNodePose>& Pose, float Weight, bool bFirst);
@@ -191,7 +278,13 @@ public:
 	void ResetToState(int32 State);
 
 	// DeltaSeconds만큼 진행 → 전이 판정 → 기여 계산. 처음 호출이면 EntryState로 시작
-	void Update(const FAnimGraphAsset& Asset, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters, float DeltaSeconds);
+	//   Machine = 실행할 상태 머신 (기본 레이어면 Asset 자신), Binding = 그 머신의 바인딩. Asset은 파라미터 기본값에 쓴다
+	void Update(const FAnimGraphAsset& Asset, const FAnimStateMachine& Machine, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters,
+	            float DeltaSeconds);
+	void Update(const FAnimGraphAsset& Asset, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters, float DeltaSeconds)
+	{
+		Update(Asset, Asset, Binding, Parameters, DeltaSeconds);
+	}
 
 	const std::vector<FAnimClipContribution>& GetContributions() const { return Contributions; }
 	const FAnimNotifySource&                  GetNotifySource() const { return NotifySource; }
@@ -223,7 +316,8 @@ private:
 		std::vector<float> SampleWeights;
 	};
 
-	void ComputeSampleWeights(const FAnimGraphAsset& Asset, const FAnimGraphBinding& Binding, const FAnimParameterSet& Parameters, FLayer& Layer);
+	void ComputeSampleWeights(const FAnimGraphAsset& Asset, const FAnimStateMachine& Machine, const FAnimGraphBinding& Binding,
+	                          const FAnimParameterSet& Parameters, FLayer& Layer);
 	void StartTransition(const FAnimGraphTransition& Transition);
 	void UpdateLayerWeights();
 
@@ -237,6 +331,7 @@ private:
 	std::vector<FAnimClipContribution> Contributions;
 	FAnimNotifySource                  NotifySource;
 	std::vector<float>                 PositionScratch;
+	std::vector<FVector2>              Position2DScratch;
 	std::vector<float>                 WeightScratch;
 };
 
@@ -249,24 +344,34 @@ struct FAnimGraphRuntime
 	const FAnimationSet*                   BoundSet  = nullptr; // Binding을 만든 세트 (모델이 다시 인스턴스화되면 다시 묶는다)
 	FAnimGraphBinding                      Binding;
 	FAnimParameterSet                      Parameters;
-	FAnimGraphInstance                     Instance;
-	uint32                                 NotifyKey = 0; // 직전 프레임 노티파이 기준 기여
+	FAnimGraphInstance                     Instance;   // 기본 레이어
+	FAnimNotifyTrack                       BaseNotify; // 기본 레이어 노티파이 (직전 기준 기여, 진행 중 스테이트)
+
+	// 추가 레이어 (Asset->Layers와 같은 순서·개수, Rebind가 맞춘다)
+	std::vector<FAnimGraphInstance> LayerInstances;
+	std::vector<FAnimNotifyTrack>   LayerNotify;
+	std::vector<std::vector<float>> LayerMasks; // [레이어][노드] 본 마스크 가중치
+	std::vector<float>              LayerWeights; // 직전 갱신의 레이어 가중치 (편집기 표시용)
+	std::vector<std::vector<float>> SlotMasks;    // [슬롯][노드] 몽타주 슬롯 마스크 가중치 (Asset->Slots 순서)
 
 	// 캐릭터 이동 자동 공급 (FGameWorld): 위치 변화로 속도를 계산할 때의 직전 월드 위치
 	FVector3 PreviousMovementPosition;
 	FVector3 SmoothedMovementVelocity;
 	bool     bHasMovementSample = false;
 
-	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> SampleScratch;
+	std::vector<FNodePose> LayerPoseScratch;
 
 	uint32      ResolvedGeneration = 0; // 읽을 때의 FAnimGraphLibrary 세대 (바뀌면 다시 읽는다 — 핫 리로드)
 	std::string ResumeState;            // 다시 묶을 때 이어 갈 상태 이름 (SetAsset)
+	std::vector<std::pair<std::string, std::string>> LayerResumeStates; // (레이어 이름, 상태 이름)
 
-	// 에셋 교체 (같은 포인터면 무시) → 다음 Rebind. bKeepState면 현재 상태 이름을 기억해 그 상태에서 다시 시작한다
+	// 에셋 교체 (같은 포인터면 무시) → 다음 Rebind. bKeepState면 현재 상태 이름을 기억해 그 상태에서 다시 시작한다 (레이어도 이름으로)
 	void SetAsset(std::shared_ptr<const FAnimGraphAsset> NewAsset, bool bKeepState);
-	// Set 클립에 다시 묶고 인스턴스를 처음부터 (ResumeState가 새 그래프에 있으면 그 상태에서). 모델에 없는 클립 이름은 OutMissing에
-	void Rebind(const FAnimationSet& Set, std::vector<std::string>* OutMissing);
+	// Set 클립에 다시 묶고 인스턴스를 처음부터 (ResumeState가 새 그래프에 있으면 그 상태에서). 모델에 없는 클립 이름은 OutMissing, 못 찾은 마스크 뼈는 OutMissingBones에
+	//   NodeNames = 노드 이름 (본 마스크용, 비면 마스크 항목은 아무 뼈에도 닿지 않는다)
+	void Rebind(const FAnimationSet& Set, const std::vector<std::string>& NodeNames, std::vector<std::string>* OutMissing,
+	            std::vector<std::string>* OutMissingBones);
 
 	FAnimGraphRuntime() = default;
 	FAnimGraphRuntime(const FAnimGraphRuntime&) {}

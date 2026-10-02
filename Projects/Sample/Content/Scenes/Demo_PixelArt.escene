@@ -73,19 +73,19 @@
         "CameraComponent": {
           "FovYDegrees": 60,
           "NearZ": 10,
-          "FarZ": 5000,
+          "FarZ": 8000,
           "Primary": true,
           "Orthographic": true,
-          "OrthoHeight": 700
+          "OrthoHeight": 1500
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/CameraPan.lua",
-          "PropertyOverrides": ""
+          "PropertyOverrides": "{\"Amplitude\": 2600, \"Frequency\": 0.02, \"Phase\": 0.0}"
         },
         "TransformComponent": {
           "Position": [
-            -1224.7448713915892,
-            -1224.7448713915892,
+            -871.1448713915892,
+            -871.1448713915892,
             1060
           ],
           "Rotation": [
@@ -107,7 +107,7 @@
       "Parent": -1,
       "Components": {
         "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Checker.emat",
+          "MaterialAsset": "Materials/Grass.emat",
           "MeshAsset": "primitive:cube",
           "Visible": true
         },
@@ -124,8 +124,8 @@
             1
           ],
           "Scale": [
-            12,
-            12,
+            100.0,
+            100.0,
             0.2
           ]
         },
@@ -154,1035 +154,3856 @@
       }
     },
     {
-      "Name": "CrateA",
+      "Name": "Path",
       "Parent": -1,
       "Components": {
         "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
+          "MaterialAsset": "Materials/Dirt.emat",
           "MeshAsset": "primitive:cube",
           "Visible": true
         },
         "TransformComponent": {
           "Position": [
-            -150,
-            -120,
-            50
+            -318.2,
+            -318.2,
+            -9.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            -0.3826834323650898,
+            0.9238795325112867
           ],
           "Scale": [
-            1,
-            1,
-            1
-          ]
-        },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/Rotator.lua",
-          "PropertyOverrides": "{\"Speed\":45}"
-        }
-      }
-    },
-    {
-      "Name": "CrateB",
-      "Parent": -1,
-      "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Blue.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
-        },
-        "TransformComponent": {
-          "Position": [
-            -150,
-            -20,
-            25
-          ],
-          "Rotation": [
-            0,
-            0,
-            0,
-            1
-          ],
-          "Scale": [
-            1,
-            1,
-            0.5
+            56.0,
+            3.2,
+            0.2
           ]
         }
       }
     },
     {
-      "Name": "Pillar",
+      "Name": "Plaza",
       "Parent": -1,
       "Components": {
         "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Blue.emat",
-          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Dirt.emat",
+          "MeshAsset": "primitive:sphere",
           "Visible": true
         },
         "TransformComponent": {
           "Position": [
-            300,
-            -380,
-            100
+            176.8,
+            176.8,
+            -1.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.6,
-            0.6,
-            2
+            13.0,
+            13.0,
+            0.04
           ]
-        },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/Bobber.lua",
-          "PropertyOverrides": "{\"Amplitude\":60,\"Frequency\":0.25}"
         }
       }
     },
     {
-      "Name": "Ramp",
+      "Name": "Tavern",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_tavern_yellow.gltf"
         },
         "TransformComponent": {
           "Position": [
-            160,
-            140,
-            30
+            459.6,
+            954.6,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
+            0.0,
+            0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "HomeA",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_home_A_blue.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1060.7,
+            70.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.49999999999999994,
+            0.8660254037844387
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "HomeB",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_home_B_red.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -388.9,
+            1025.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
             0.25881904510252074,
             0.9659258262890683
           ],
           "Scale": [
-            1.6,
-            1,
-            0.6
+            4.0,
+            4.0,
+            4.0
           ]
         }
       }
     },
     {
-      "Name": "Ball",
+      "Name": "Blacksmith",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_blacksmith_blue.gltf"
         },
         "TransformComponent": {
           "Position": [
-            -40,
-            180,
-            40
+            742.5,
+            -601.0,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.6087614290087207,
+            0.7933533402912352
           ],
           "Scale": [
-            0.8,
-            0.8,
-            0.8
+            4.0,
+            4.0,
+            4.0
           ]
-        },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/CircleMover.lua",
-          "PropertyOverrides": "{\"Radius\":90,\"Speed\":60,\"Bob\":25,\"BobPeriod\":2}"
         }
       }
     },
     {
-      "Name": "Fox",
+      "Name": "Windmill",
       "Parent": -1,
       "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_windmill_green.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            636.4,
+            1909.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Church",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_church_green.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1626.3,
+            1060.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.42261826174069944,
+            0.9063077870366499
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Market",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_market_red.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -636.4,
+            565.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Well",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_well_blue.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            176.8,
+            176.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Grain",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/building_grain.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1838.5,
+            70.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.08715574274765817,
+            0.9961946980917455
+          ],
+          "Scale": [
+            4.0,
+            4.0,
+            4.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop0_barrel",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/barrel.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            353.6,
+            707.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop1_barrel",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/barrel.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            431.3,
+            685.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop2_crate_A_big",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/crate_A_big.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            742.5,
+            -106.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop3_crate_B_small",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/crate_B_small.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            735.4,
+            -198.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.42261826174069944,
+            0.9063077870366499
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop4_sack",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/sack.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            763.7,
+            -28.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop5_wheelbarrow",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/wheelbarrow.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -318.2,
+            671.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.49999999999999994,
+            0.8660254037844387
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop6_resource_lumber",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/resource_lumber.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            742.5,
+            -883.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop7_weaponrack",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/weaponrack.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            480.8,
+            -650.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop8_bucket_water",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/bucket_water.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            219.2,
+            35.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop9_flag_blue",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/flag_blue.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1025.3,
+            601.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            5,
+            5,
+            5
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Prop10_tent",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tent.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -919.2,
+            707.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1343.5,
+            1979.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1470.8,
+            1852.6,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence2",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1598.1,
+            1725.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence3",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight_gate.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1725.3,
+            1598.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence4",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1852.6,
+            1470.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Fence5",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1979.9,
+            1343.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Knight",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Knight.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            70.7,
+            282.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
         "AnimationComponent": {
           "BlendTime": 0.25,
-          "Clip": "Walk",
+          "Clip": "Walking_A",
           "Loop": true,
           "Playing": true,
           "RootMotion": false,
-          "Speed": 1
-        },
-        "ModelComponent": {
-          "AssetPath": "Fox.glb"
-        },
-        "TransformComponent": {
-          "Position": [
-            40,
-            -40,
-            0
-          ],
-          "Rotation": [
-            0,
-            0,
-            0.984807753012208,
-            -0.1736481776669303
-          ],
-          "Scale": [
-            0.012,
-            0.012,
-            0.012
-          ]
+          "Speed": 1.0
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/CircleWalker.lua",
-          "PropertyOverrides": "{\"Radius\":110,\"Speed\":28,\"FacingYaw\":0}"
+          "PropertyOverrides": "{\"Radius\": 380, \"Speed\": 22, \"StartAngle\": 200, \"FacingYaw\": 180.0}"
         }
       }
     },
     {
-      "Name": "KinematicPaddle",
+      "Name": "Barbarian",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Purple.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Barbarian.glb"
         },
         "TransformComponent": {
           "Position": [
-            330,
-            60,
-            22
+            247.5,
+            671.8,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.3826834323650898,
+            0.9238795325112867
           ],
           "Scale": [
-            2.2,
-            0.22,
-            0.4
+            1.0,
+            1.0,
+            1.0
           ]
         },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Mage",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Mage.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            459.6,
+            -247.5,
+            0.0
           ],
-          "Offset": [
-            0,
-            0,
-            0
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5372996083468238,
+            0.8433914458128857
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
           ]
         },
-        "RigidBodyComponent": {
-          "MotionType": 1,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Spellcasting",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Tree0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2847.7,
+            1755.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.1511151430853829,
+            0.9885161675614033
+          ],
+          "Scale": [
+            2.5348920043939156,
+            2.5348920043939156,
+            2.5348920043939156
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2152.3,
+            3198.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6245023768309426,
+            0.7810229070472282
+          ],
+          "Scale": [
+            2.02016306358242,
+            2.02016306358242,
+            2.02016306358242
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree2",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2705.2,
+            1159.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.37920347842912333,
+            0.9253133101535141
+          ],
+          "Scale": [
+            2.11626727522491,
+            2.11626727522491,
+            2.11626727522491
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree3",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -381.8,
+            3234.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9641071939389165,
+            -0.26551331152171703
+          ],
+          "Scale": [
+            1.9947125193728399,
+            1.9947125193728399,
+            1.9947125193728399
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree4",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2010.4,
+            2927.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7894020964675924,
+            0.6138764778785468
+          ],
+          "Scale": [
+            2.9442550833574375,
+            2.9442550833574375,
+            2.9442550833574375
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree5",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1220.6,
+            2544.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.30133000256491355,
+            0.953519915656841
+          ],
+          "Scale": [
+            3.5121107657461534,
+            3.5121107657461534,
+            3.5121107657461534
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree6",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1331.3,
+            1797.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9069324627426383,
+            0.4212760472939008
+          ],
+          "Scale": [
+            3.048426584857549,
+            3.048426584857549,
+            3.048426584857549
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree7",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1525.3,
+            3546.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9727909718253276,
+            -0.23168453797164518
+          ],
+          "Scale": [
+            3.3251965038114513,
+            3.3251965038114513,
+            3.3251965038114513
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree8",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -519.1,
+            2291.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.941983523114317,
+            -0.33565911604057336
+          ],
+          "Scale": [
+            2.873200867459668,
+            2.873200867459668,
+            2.873200867459668
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree9",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2506.8,
+            1484.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4595367092619072,
+            0.8881587768190649
+          ],
+          "Scale": [
+            3.2889631004758053,
+            3.2889631004758053,
+            3.2889631004758053
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree10",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2030.2,
+            3499.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9737989681622928,
+            -0.22741057496531217
+          ],
+          "Scale": [
+            2.5728344682816218,
+            2.5728344682816218,
+            2.5728344682816218
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree11",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1516.6,
+            3119.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9999454364558614,
+            0.010446248661452582
+          ],
+          "Scale": [
+            2.5178243830751157,
+            2.5178243830751157,
+            2.5178243830751157
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree12",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3404.2,
+            2029.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9966910867585409,
+            0.08128270157960205
+          ],
+          "Scale": [
+            3.464152205474674,
+            3.464152205474674,
+            3.464152205474674
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree13",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1912.9,
+            3546.6,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9701675627978055,
+            -0.24243535240341102
+          ],
+          "Scale": [
+            2.4368660223137386,
+            2.4368660223137386,
+            2.4368660223137386
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree14",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1249.3,
+            2958.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8866958898410026,
+            0.462353110662265
+          ],
+          "Scale": [
+            2.6184539966522653,
+            2.6184539966522653,
+            2.6184539966522653
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree15",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1657.6,
+            2843.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.184153703570707,
+            0.9828974582636747
+          ],
+          "Scale": [
+            3.568232988472521,
+            3.568232988472521,
+            3.568232988472521
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree16",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -955.2,
+            3430.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4991825224938907,
+            0.8664968604886207
+          ],
+          "Scale": [
+            3.201644256334304,
+            3.201644256334304,
+            3.201644256334304
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree17",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2956.9,
+            1796.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.41441998446212097,
+            -0.9100857522664638
+          ],
+          "Scale": [
+            3.078421064513897,
+            3.078421064513897,
+            3.078421064513897
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree18",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2184.3,
+            2121.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.13240141948556614,
+            -0.9911961784219142
+          ],
+          "Scale": [
+            2.9509209057911088,
+            2.9509209057911088,
+            2.9509209057911088
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree19",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2168.0,
+            2729.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5420267786169526,
+            0.8403612147535898
+          ],
+          "Scale": [
+            2.157351505628716,
+            2.157351505628716,
+            2.157351505628716
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree20",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2187.7,
+            2995.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9783596602861141,
+            -0.20691151520599177
+          ],
+          "Scale": [
+            2.6271685478675666,
+            2.6271685478675666,
+            2.6271685478675666
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree21",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1069.7,
+            2578.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9907380552261137,
+            0.13578698732492042
+          ],
+          "Scale": [
+            3.6709795011577713,
+            3.6709795011577713,
+            3.6709795011577713
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree22",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -515.2,
+            2045.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.94338604646774,
+            0.3316968003010686
+          ],
+          "Scale": [
+            2.2392851826241906,
+            2.2392851826241906,
+            2.2392851826241906
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree23",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2009.5,
+            3310.6,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5636661384216615,
+            0.826002714521455
+          ],
+          "Scale": [
+            3.784667600756609,
+            3.784667600756609,
+            3.784667600756609
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree24",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2759.0,
+            1464.6,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.16442113528462388,
+            0.9863902322467084
+          ],
+          "Scale": [
+            1.9601632973309493,
+            1.9601632973309493,
+            1.9601632973309493
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree25",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3250.5,
+            1914.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9368389031586133,
+            -0.34976116069193053
+          ],
+          "Scale": [
+            2.8703155761534895,
+            2.8703155761534895,
+            2.8703155761534895
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree26",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2478.3,
+            2502.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7121044259926361,
+            0.7020735620159032
+          ],
+          "Scale": [
+            2.2031726822375908,
+            2.2031726822375908,
+            2.2031726822375908
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree27",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2851.4,
+            1621.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.021666743229993755,
+            -0.9997652485647845
+          ],
+          "Scale": [
+            3.2659894591599334,
+            3.2659894591599334,
+            3.2659894591599334
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree28",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2748.2,
+            1334.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7078307766873795,
+            -0.7063820436379602
+          ],
+          "Scale": [
+            3.540351224428094,
+            3.540351224428094,
+            3.540351224428094
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree29",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1256.5,
+            2843.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.07249370046449638,
+            0.9973688702746661
+          ],
+          "Scale": [
+            2.6256899010122914,
+            2.6256899010122914,
+            2.6256899010122914
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree30",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2525.7,
+            1412.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2664605853952244,
+            -0.9638458156940011
+          ],
+          "Scale": [
+            2.490700071675156,
+            2.490700071675156,
+            2.490700071675156
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree31",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1671.7,
+            3015.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8159820270705512,
+            -0.5780772712171222
+          ],
+          "Scale": [
+            3.0611151972293618,
+            3.0611151972293618,
+            3.0611151972293618
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree32",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2737.9,
+            1726.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9947625137012402,
+            -0.10221321506923586
+          ],
+          "Scale": [
+            3.579054891338177,
+            3.579054891338177,
+            3.579054891338177
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree33",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            9.7,
+            3027.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5722296772389983,
+            -0.820093407171983
+          ],
+          "Scale": [
+            3.618332943325373,
+            3.618332943325373,
+            3.618332943325373
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree34",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2025.8,
+            1947.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.03265548898515363,
+            -0.9994666672976846
+          ],
+          "Scale": [
+            3.5901141366319247,
+            3.5901141366319247,
+            3.5901141366319247
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree35",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1911.4,
+            1777.1,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.03757070398335303,
+            -0.9992939718632327
+          ],
+          "Scale": [
+            2.628500441924933,
+            2.628500441924933,
+            2.628500441924933
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree36",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_A_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1870.8,
+            3121.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.48055421752640903,
+            -0.8769650186966301
+          ],
+          "Scale": [
+            2.2956313983830765,
+            2.2956313983830765,
+            2.2956313983830765
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree37",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -706.7,
+            2826.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.49641673030050587,
+            -0.8680843449099602
+          ],
+          "Scale": [
+            2.9199036308361377,
+            2.9199036308361377,
+            2.9199036308361377
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree38",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1354.9,
+            3038.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9976196052997054,
+            0.06895740077511568
+          ],
+          "Scale": [
+            2.978521718337573,
+            2.978521718337573,
+            2.978521718337573
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Tree39",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/trees_B_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1641.3,
+            1448.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9469353418561985,
+            0.32142410977349606
+          ],
+          "Scale": [
+            2.240970772507391,
+            2.240970772507391,
+            2.240970772507391
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1820.1,
+            1196.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.38859181107595187,
+            0.9214100088259904
+          ],
+          "Scale": [
+            3.3023014007629796,
+            3.3023014007629796,
+            3.3023014007629796
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_D.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1732.7,
+            1018.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5184466567167676,
+            -0.8551099719563596
+          ],
+          "Scale": [
+            4.9606118868940605,
+            4.9606118868940605,
+            4.9606118868940605
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock2",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2023.1,
+            2843.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.06716902454150826,
+            0.9977416109104312
+          ],
+          "Scale": [
+            4.598714023394736,
+            4.598714023394736,
+            4.598714023394736
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock3",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -684.5,
+            2976.7,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9784574847703504,
+            0.2064484209115667
+          ],
+          "Scale": [
+            4.7434858559788085,
+            4.7434858559788085,
+            4.7434858559788085
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock4",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2871.6,
+            2411.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9999933377396598,
+            -0.003650270715245233
+          ],
+          "Scale": [
+            4.527359568870621,
+            4.527359568870621,
+            4.527359568870621
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock5",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2101.6,
+            2428.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.40024126160192885,
+            0.9164098059881814
+          ],
+          "Scale": [
+            4.820034112631113,
+            4.820034112631113,
+            4.820034112631113
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock6",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_C.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -598.6,
+            1855.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5488993158686253,
+            -0.8358884740436101
+          ],
+          "Scale": [
+            4.03352167339069,
+            4.03352167339069,
+            4.03352167339069
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock7",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1459.0,
+            2185.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.05872926231646987,
+            0.9982739472448248
+          ],
+          "Scale": [
+            3.8802498247698867,
+            3.8802498247698867,
+            3.8802498247698867
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock8",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_B.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -852.1,
+            2542.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4534375321515711,
+            0.8912880591796868
+          ],
+          "Scale": [
+            3.283117942117049,
+            3.283117942117049,
+            3.283117942117049
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rock9",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/rock_single_A.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1796.0,
+            1767.9,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9983390342016469,
+            -0.057612262490921384
+          ],
+          "Scale": [
+            4.110883749760494,
+            4.110883749760494,
+            4.110883749760494
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Stump",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/tree_single_A_cut.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1534.4,
+            2071.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Lumber",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/resource_lumber.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1555.6,
+            2404.2,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            4,
+            4,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Mountain0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/mountain_A_grass_trees.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            565.7,
+            3959.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            9,
+            9,
+            9
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Mountain1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/mountain_B_grass_trees.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2545.6,
+            2545.6,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.49999999999999994,
+            0.8660254037844387
+          ],
+          "Scale": [
+            10,
+            10,
+            10
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Hills0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Village/hills_A_trees.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3959.8,
+            282.8,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            8,
+            8,
+            8
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Rogue",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Rogue.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1591.0,
+            2227.4,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walking_B",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
         },
         "ScriptComponent": {
-          "ScriptAsset": "Scripts/Rotator.lua",
-          "PropertyOverrides": "{\"Speed\":70}"
+          "ScriptAsset": "Scripts/CircleWalker.lua",
+          "PropertyOverrides": "{\"Radius\": 260, \"Speed\": -25, \"StartAngle\": 0, \"FacingYaw\": 180.0}"
         }
       }
     },
     {
-      "Name": "PaddleHub",
+      "Name": "DFloor00",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Blue.emat",
-          "MeshAsset": "primitive:capsule",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
         },
         "TransformComponent": {
           "Position": [
-            330,
-            60,
-            25
+            1721.3000000000002,
+            -2026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.3,
-            0.3,
-            0.5
+            1.0,
+            1.0,
+            1.0
           ]
         }
       }
     },
     {
-      "Name": "PaddleWall0",
+      "Name": "DFloor01",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Green.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large_rocks.glb"
         },
         "TransformComponent": {
           "Position": [
-            330,
-            210,
-            15
+            1721.3000000000002,
+            -1626.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            3,
-            0.16,
-            0.3
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 0,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PaddleWall1",
+      "Name": "DFloor02",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Green.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
         },
         "TransformComponent": {
           "Position": [
-            330,
-            -90,
-            15
+            1721.3000000000002,
+            -1226.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            3,
-            0.16,
-            0.3
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 0,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PaddleWall2",
+      "Name": "DFloor10",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Green.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large_rocks.glb"
         },
         "TransformComponent": {
           "Position": [
-            480,
-            60,
-            15
+            2121.3,
+            -2026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.16,
-            3,
-            0.3
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 0,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PaddleWall3",
+      "Name": "DFloor11",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Green.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
         },
         "TransformComponent": {
           "Position": [
-            180,
-            60,
-            15
+            2121.3,
+            -1626.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.16,
-            3,
-            0.3
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 0,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysBall0",
+      "Name": "DFloor12",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large_rocks.glb"
         },
         "TransformComponent": {
           "Position": [
-            390,
-            150,
-            20
+            2121.3,
+            -1226.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.32,
-            0.32,
-            0.32
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "SphereColliderComponent": {
-          "Radius": 50,
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.4,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysBall1",
+      "Name": "DFloor20",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Yellow.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
         },
         "TransformComponent": {
           "Position": [
-            240,
-            130,
-            20
+            2521.3,
+            -2026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.32,
-            0.32,
-            0.32
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "SphereColliderComponent": {
-          "Radius": 50,
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.4,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysBall2",
+      "Name": "DFloor21",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large_rocks.glb"
         },
         "TransformComponent": {
           "Position": [
-            430,
-            0,
-            20
+            2521.3,
+            -1626.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.32,
-            0.32,
-            0.32
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "SphereColliderComponent": {
-          "Radius": 50,
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.4,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysBall3",
+      "Name": "DFloor22",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Yellow.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
         },
         "TransformComponent": {
           "Position": [
-            280,
-            -40,
-            20
+            2521.3,
+            -1226.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.32,
-            0.32,
-            0.32
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "SphereColliderComponent": {
-          "Radius": 50,
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.4,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysBall4",
+      "Name": "DWallX0",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:sphere",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
         },
         "TransformComponent": {
           "Position": [
-            350,
-            -60,
-            20
+            2721.3,
+            -2026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.32,
-            0.32,
-            0.32
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "SphereColliderComponent": {
-          "Radius": 50,
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.4,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysCrate0",
+      "Name": "DWallX1",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Yellow.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_window_open.glb"
         },
         "TransformComponent": {
           "Position": [
-            220,
-            40,
-            20
+            2721.3,
+            -1626.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.35,
-            0.35,
-            0.35
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysCrate1",
+      "Name": "DWallX2",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Yellow.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_doorway.glb"
         },
         "TransformComponent": {
           "Position": [
-            440,
-            90,
-            20
+            2721.3,
+            -1226.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.35,
-            0.35,
-            0.35
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "PhysCrate2",
+      "Name": "DWallY0",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Yellow.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_arched.glb"
         },
         "TransformComponent": {
           "Position": [
-            330,
-            170,
-            20
+            1721.3000000000002,
+            -1026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
           ],
           "Scale": [
-            0.35,
-            0.35,
-            0.35
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "KinematicElevator",
+      "Name": "DWallY1",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Purple.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
         },
         "TransformComponent": {
           "Position": [
-            -330,
-            -300,
-            70
+            2121.3,
+            -1026.3,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
           ],
           "Scale": [
-            1.1,
-            1.1,
-            0.15
+            1.0,
+            1.0,
+            1.0
           ]
+        }
+      }
+    },
+    {
+      "Name": "DWallY2",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_broken.glb"
         },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
+        "TransformComponent": {
+          "Position": [
+            2521.3,
+            -1026.3,
+            0.0
           ],
-          "Offset": [
-            0,
-            0,
-            0
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DCorner",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_corner.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2721.3,
+            -1026.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DHalf0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_half.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1521.3000000000002,
+            -1426.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DHalf1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_broken.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2321.3,
+            -2226.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DRubble0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/rubble_half.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1441.3000000000002,
+            -1976.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DRubble1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/rubble_half.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2821.3,
+            -2126.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DPillar0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/pillar_decorated.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1521.3000000000002,
+            -2226.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DPillar1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/pillar.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2521.3,
+            -2026.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DColumn",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/column.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1721.3000000000002,
+            -1226.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_barrel_large",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/barrel_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2591.3,
+            -1776.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_barrel_small_stack",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/barrel_small_stack.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2601.3,
+            -1506.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_crates_stacked",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/crates_stacked.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2421.3,
+            -1156.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_box_large",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/box_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2241.3,
+            -1146.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_chest_gold",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/chest_gold.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2541.3,
+            -1206.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_coin_stack_large",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/coin_stack_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2451.3,
+            -1296.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_table_medium_decorated_A",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/table_medium_decorated_A.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2071.3,
+            -1376.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_stool",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/stool.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1971.3000000000002,
+            -1296.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_keg_decorated",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/keg_decorated.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2601.3,
+            -1346.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_shelf_small_candles",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/shelf_small_candles.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2151.3,
+            -1086.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "D_banner_patternA_red",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/banner_patternA_red.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2691.3,
+            -2006.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorch0",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2666.3,
+            -1826.3,
+            180.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorchLight0",
+      "Parent": -1,
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.2
+          ],
+          "Intensity": 8.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            2626.3,
+            -1826.3,
+            230.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorch1",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2666.3,
+            -1426.3,
+            180.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorchLight1",
+      "Parent": -1,
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.2
+          ],
+          "Intensity": 8.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            2626.3,
+            -1426.3,
+            230.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorch2",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1921.3000000000002,
+            -1081.3,
+            180.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorchLight2",
+      "Parent": -1,
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.2
+          ],
+          "Intensity": 8.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1921.3000000000002,
+            -1121.3,
+            230.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorch3",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2321.3,
+            -1081.3,
+            180.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "DTorchLight3",
+      "Parent": -1,
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.2
+          ],
+          "Intensity": 8.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            2321.3,
+            -1121.3,
+            230.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "SkeletonWarrior",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/SkeletonWarrior.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2021.3000000000002,
+            -1776.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
           ]
         },
-        "RigidBodyComponent": {
-          "MotionType": 1,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walking_D_Skeletons",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
         },
         "ScriptComponent": {
-          "ScriptAsset": "Scripts/Bobber.lua",
-          "PropertyOverrides": "{\"Amplitude\":55,\"Frequency\":0.2}"
+          "ScriptAsset": "Scripts/CircleWalker.lua",
+          "PropertyOverrides": "{\"Radius\": 200, \"Speed\": 20, \"StartAngle\": 90, \"FacingYaw\": 180.0}"
         }
       }
     },
     {
-      "Name": "ElevatorRider",
+      "Name": "SkeletonWarrior_Skeleton_Blade",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Orange.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Blade.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 133,
+          "Socket": "HandR"
         },
         "TransformComponent": {
           "Position": [
-            -330,
-            -300,
-            110
+            0.0,
+            0.0,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.5,
-            0.5,
-            0.5
+            1.0,
+            1.0,
+            1.0
           ]
-        },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
-          ],
-          "Offset": [
-            0,
-            0,
-            0
-          ]
-        },
-        "RigidBodyComponent": {
-          "MotionType": 2,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.9,
-          "Restitution": 0,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
         }
       }
     },
     {
-      "Name": "KinematicSlider",
+      "Name": "SkeletonWarrior_Skeleton_Shield_Small_A",
       "Parent": -1,
       "Components": {
-        "StaticMeshComponent": {
-          "MaterialAsset": "Materials/Blue.emat",
-          "MeshAsset": "primitive:cube",
-          "Visible": true
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Shield_Small_A.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 133,
+          "Socket": "HandL"
         },
         "TransformComponent": {
           "Position": [
-            -330,
-            260,
-            15
+            0.0,
+            0.0,
+            0.0
           ],
           "Rotation": [
-            0,
-            0,
-            0,
-            1
+            0.0,
+            0.0,
+            0.0,
+            1.0
           ],
           "Scale": [
-            0.9,
-            0.9,
-            0.3
+            1.0,
+            1.0,
+            1.0
           ]
+        }
+      }
+    },
+    {
+      "Name": "SkeletonMinion",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/SkeletonMinion.glb"
         },
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            50,
-            50,
-            50
+        "TransformComponent": {
+          "Position": [
+            2321.3,
+            -1476.3,
+            0.0
           ],
-          "Offset": [
-            0,
-            0,
-            0
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
           ]
         },
-        "RigidBodyComponent": {
-          "MotionType": 1,
-          "Mass": 0,
-          "Density": 300,
-          "Friction": 0.5,
-          "Restitution": 0.2,
-          "LinearDamping": 0.05,
-          "AngularDamping": 0.05,
-          "UseGravity": true
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle_Combat",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "SkeletonMinion_Skeleton_Axe",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Axe.gltf"
         },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/CameraPan.lua",
-          "PropertyOverrides": "{\"Amplitude\":140,\"Frequency\":0.18,\"Direction\":[0,1,0]}"
+        "SocketAttachmentComponent": {
+          "Target": 136,
+          "Socket": "HandR"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "SkeletonMage",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/SkeletonMage.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2401.3,
+            -1746.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.21643961393810288,
+            0.9762960071199334
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Spellcasting",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "SkeletonMage_Skeleton_Staff",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Staff.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 138,
+          "Socket": "HandR"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "SkeletonRogue",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/SkeletonRogue.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1871.3000000000002,
+            -1376.3,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6087614290087207,
+            0.7933533402912352
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle_B",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        }
+      }
+    },
+    {
+      "Name": "SkeletonRogue_Skeleton_Crossbow",
+      "Parent": -1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Crossbow.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 140,
+          "Socket": "HandR"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
         }
       }
     }

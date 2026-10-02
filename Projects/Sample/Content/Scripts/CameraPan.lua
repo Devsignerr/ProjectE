@@ -4,12 +4,13 @@ local CameraPan = {
 		Amplitude = 150.0,           -- cm
 		Frequency = 0.08,            -- Hz
 		Direction = Vector3(1, -1, 0), -- 이동 방향 (정규화하지 않아도 됨)
+		Phase     = 0.0,             -- 시작 위상 (주기 비율 0~1)
 	},
 }
 
 function CameraPan:OnStart()
 	self.Origin = self.entity:GetPosition()
-	self.Time   = 0.0
+	self.Time   = self.Properties.Phase / math.max(self.Properties.Frequency, 0.0001)
 end
 
 function CameraPan:OnUpdate(dt)

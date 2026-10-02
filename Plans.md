@@ -859,7 +859,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - 원래 DoD: 48. 업스케일러/동적 해상도(TAA 기반 자체 업스케일, 목표 프레임 시간으로 해상도 조절) + PSO 캐시(디스크 저장·시작 시 워밍, 첫 등장 끊김 측정 `--log-hitches`) / 사이드: C++ 게임 모듈 핫 리로드
   - [x] 48 사이드. C++ 게임 모듈 핫 리로드 — 그림자 복사 로드(PDB 경로 바꾸기), 다시 로드(씬/에셋 창 JSON 보존, ECS 타입 ID 폐기 `RetireComponentTypeId`), 에디터 안 빌드 연동, 자동 감지, miniaudio 구현 파일 `file(CONFIGURE)`(빌드마다 엔진 DLL 재링크 방지) (2026-10-04 머지: Debug 11개 묶음, Release, `--verify-hot-reload` PASS·디버그 레이어 0건, `GameModuleApiVersion` 9 유지, 내보내기 약 61378)
   - 후속: 엔진 DLL 변경은 재시작 필요, 썸네일/모델 템플릿 씬은 다시 로드 후 게임 컴포넌트 빠짐(재생성 전까지), VS 디버거 부착 상태 PDB 확인은 수동 필요
-- [ ] 49. 물리 기반 대기 산란 + 볼류메트릭 구름 + 물 표면 + HDR10/scRGB 출력 / 사이드: 머티리얼 코드 생성 구조
+- [~] 49. 물리 기반 대기 산란 + 볼류메트릭 구름 + 물 표면 + HDR10/scRGB 출력 / 사이드: 머티리얼 코드 생성 구조
+  - [x] 49 사이드. 머티리얼 코드 생성 구조 — `.emat` Graph/Parameters, 노드 34종 컴파일러(결정적 HLSL·해시), `EvaluateMaterial` 단일 인터페이스(기본 머티리얼도 `MaterialDefault.hlsli`로), `MATERIAL_SAMPLE` 매크로(래스터 SampleBias / RT SampleLevel 교체), 가변 텍스처 테이블(최대 16), 가상 파일 셰이더 쿠킹, `.emat` 핫 리로드, 예제 8개 + `Demo_MaterialGraph`, 테스트 12개 (2026-10-04 머지: Debug 13개 묶음, Release, Demo_Materials·Decals 기준 비트 동일(PSO 캐시 끔 조건), 런타임·에디터 디버그 레이어 0건)
+  - 후속: 스킨 메시 그래프 머티리얼 화면 미확인, UV 채널 0만, 머티리얼 시간 1시간 되감김, 노드 편집기 UI(Phase 51 사이드)
+  - [!] PSO 캐시를 켜면 화면이 실행마다 번갈아 달라짐(Demo_Materials MD5 DF6C60C2/507EE925 교대, `--no-pso-cache`면 항상 기준과 동일) — Phase 48 트랙이 조사 중
 - [ ] 50. DXR 기반 + RT 반사·그림자 (Phase 40-2 흡수) / 사이드: 실내 절차적 생성
   - [x] 50 사이드. 실내 절차적 생성 — `Scene/Building/`(`.ebuilding`, 시드 결정적 생성기: 뼈대→호실 분할→BSP 방 분할·종류 배정→문(연결성 보장)→창→격자 모듈→소품(데이터 테이블 규칙)), `FProceduralBuildingComponent` + 인스펙터 생성/새 시드/지우기/내비메시, 재생성 보존(`BuildingPartComponent` 유지), Lua `entity:GenerateBuilding`, Kenney Furniture Kit(CC0), `Demo_Apartment`(5층, 인스턴스 2239 → 메인 드로우 112), 테스트 16+1 (2026-10-04 머지: Debug 12개 묶음, Release, 런타임 화면·디버그 레이어 0건)
   - 후속: 계단 단순형(층참 없음), 외벽 얇음·창 늘어남, 소품 짝 맞춤·최소 개수 보장 없음, `.ebuilding` 전용 편집 창 없음(메모장), 멀티플레이 시드 자동 동기화, 씬 파일 큼(약 2.95MB — 프리팹 인스턴스 펼침 저장)
@@ -868,6 +871,8 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] 52 사이드. 리타기팅 + 루트 모션 — 휴머노이드 리그 23뼈 자동/수동 매핑(`.emeta` v2), 모델 공간 바인드 보정 회전 + A/T 포즈 Align + 키 비율, `RetargetSources`/`"모델:클립"` 이름으로 그래프·몽타주·노티파이 그대로, 편집기 리타기팅 패널, 루트 모션(None/MontagesOnly/All, 캐릭터 이동 연동, 소유 클라 예측 무브 — `NetProtocolVersion` 11), Quaternius UAL2(CC0), `Demo_Retarget`, 테스트 12개 (2026-10-04 머지: Debug 12개 묶음, Release, 런타임·에디터·멀티플레이 디버그 레이어 0건). 보고된 "팔 T포즈"는 KayKit Walking_A 원본 자세(팔 수평)로 확인 — 버그 아님
   - 후속: 본 마스크 이름의 리그 경유 해석, 체인별 보정(체형 차 과장 동작), 루트 모션 회전의 캐릭터 적용, 전용 서버 루트 모션, 실제 네트워크 루트 모션 예측 검증, 소스 모델 첫 사용 끊김
 - [ ] 53. 밉 스트리밍 / 사이드: 능력 시스템
+  - [x] 53 사이드. 능력 시스템(GAS식, `Scene/Ability/`) — 게임플레이 태그(프로젝트 설정), 속성(체력 컴포넌트가 진실), 효과(즉시/지속/무한·수정자·주기·쌓기·면역), Lua 능력(ctx 코루틴), C++ 능력 등록, 정의 = 데이터 테이블 4종, 서버 권한 + 클라이언트 예측(예측 키·확정/거절 되돌림), Rep* 복제, `Demo_Abilities`(대시·화염구·방어막·치유 지대 + HUD), 테스트 11개, `NetProtocolVersion` 12·`GameModuleApiVersion` 10 (2026-10-04 머지: Debug 13개 묶음, Release, 런타임·멀티플레이 불량 망 디버그 레이어 0건)
+  - 후속: 대시 MoveSpeed 예측 끝 시점 RTT 차, 원격 클라이언트 능력 스크립트 미실행(이벤트는 복제 누적 수로), 예측 창 밖 자기 효과는 서버 확정 뒤, 씬별 플레이어 프리팹 없음, 데모 키는 RPG 액션 재사용. 에이전트가 남긴 `E:\abt_debug.log`·`E:\abt_crash\`(테스트 디버그 로그·덤프)는 경로 보호로 삭제 못 함 — 사용자가 지워도 됨
 - [ ] 54. 오디오 믹서 ∥ 천·헤어 (병렬 2트랙)
 - [ ] 55. 동영상 재생
 - 각 Phase의 세부 DoD는 착수 시 설계 확정 후 채운다

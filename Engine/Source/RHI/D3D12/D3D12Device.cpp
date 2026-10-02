@@ -1,6 +1,9 @@
 #include "RHI/D3D12/D3D12Device.h"
 
+#include "Core/CommandLine.h"
+#include "Core/Paths.h"
 #include "Core/StringConv.h"
+#include "RHI/D3D12/D3D12PipelineCache.h"
 #include "RHI/D3D12/D3D12MipGenerator.h"
 
 #include <dxgidebug.h>
@@ -101,6 +104,17 @@ bool FD3D12Device::Init(bool bEnableDebugLayer)
 	bTearingSupported = (bAllowTearing == TRUE);
 
 	E_LOG(LogD3D12, Display, "D3D12 디바이스 생성 완료 (테어링 지원: {})", bTearingSupported);
+	// PSO 캐시 (Phase 48): 프로젝트가 있는 앱만 (테스트·도구는 캐시 없이 바로 생성). 쓰기는 항상 <Saved>/ShaderCache
+	const FCommandLine CommandLine = FCommandLine::FromProcess();
+	if (FPaths::IsInitialized() && FPaths::HasProject() && !CommandLine.HasFlag(L"--no-pso-cache"))
+	{
+		FD3D12PipelineCache::FOptions Options;
+		Options.UserDirectory     = FPaths::GetSavedDirectory() / L"ShaderCache";
+		Options.ProjectRecipeFile = FPaths::GetProjectConfigDirectory() / L"PipelineRecipes.epso";
+		Options.bWarm             = !CommandLine.HasFlag(L"--no-pso-warm");
+		Options.bRecordProject    = CommandLine.HasFlag(L"--record-pso");
+		FD3D12PipelineCache::Get().Initialize(Device.Get(), Adapter.Get(), Options);
+	}
 	return true;
 }
 
@@ -109,6 +123,7 @@ void FD3D12Device::Shutdown()
 	// 디바이스보다 먼저 파생 오브젝트 해제
 	MipGenerator.reset();
 	bMipGeneratorFailed = false;
+	FD3D12PipelineCache::Get().Shutdown(); // 저장 + 캐시가 쥔 PSO/루트 시그니처 해제 (디바이스보다 먼저)
 
 	Device.Reset();
 	Adapter.Reset();

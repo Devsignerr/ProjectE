@@ -6,7 +6,9 @@
 
 class FScene;
 class FPhysicsSystem;
+class FAbilitySystem;
 struct FAnimNotifyEvent;
+struct FAbilityEvent;
 
 // 게임 모듈 인터페이스. 프로젝트의 C++ 게임 코드(<프로젝트>/Source → <이름>.dll)가 구현한다.
 // 게임 모듈은 엔진 DLL(ProjectEEngine.dll)을 링크하고 같은 컴파일러/CRT로 빌드되어야 한다 (STL 객체가 경계를 넘는다).
@@ -61,13 +63,21 @@ public:
 	// 관절이 끊어짐 (Event.Self = 관절 엔티티, Other = 대상, Impulse = 끊은 힘 N). 보고 대상과 무관하게 모든 끊어짐
 	virtual void OnJointBreak(FScene& /*Scene*/, const FCollisionEvent& /*Event*/) {}
 
+	// 능력 시스템 (Scene/Ability/AbilitySystem.h, 서버에서만): 같은 틱 능력 단계 끝에 이벤트마다 (속성/태그 변화, 능력 발동/종료/실패).
+	// 같은 엔티티 스크립트의 OnAttributeChanged 등 다음에 불린다. C++ 능력은 OnLoad에서 FAbilityNativeRegistry::Get().Register(이름, ...)
+	virtual void OnAbilityEvent(FScene& /*Scene*/, const FAbilityEvent& /*Event*/) {}
+	// 능력 시스템 (발동/효과/속성/태그 API). GetNet()과 같은 수명
+	FAbilitySystem* GetAbilities() const { return Abilities; }
+	void            SetAbilities(FAbilitySystem* InAbilities) { Abilities = InAbilities; } // 엔진(FGameModuleHost)만 부른다
+
 private:
 	IGameNet*       Net     = nullptr;
 	FPhysicsSystem* Physics = nullptr;
+	FAbilitySystem* Abilities = nullptr;
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 9; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙)
+inline constexpr uint32 GameModuleApiVersion = 10; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙), 10: 능력 시스템 (OnAbilityEvent, GetAbilities)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

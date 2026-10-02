@@ -13,8 +13,10 @@
 #include <utility>
 #include <vector>
 
+class FAbilitySystem;
 class FInput;
 class FLuaRuntime;
+struct FAbilityScriptStart;
 class FScene;
 class FScriptDebugger;
 
@@ -244,6 +246,12 @@ public:
 	void SetAppHooks(FScriptAppHooks Hooks);
 	void SetSteamHooks(FScriptSteamHooks Hooks);
 	void SetDebugDrawHooks(FScriptDebugDrawHooks Hooks);
+	// 능력 시스템 (Scene/Ability, FGameWorld 소유 — 비소유). Lua entity:TryActivateAbility 등이 쓴다
+	void SetAbilitySystem(FAbilitySystem* InSystem);
+	// 능력 스크립트 호스트 (FAbilityScriptHooks로 연결, 규칙은 Scripting/ScriptAbilityBindings.cpp 머리 주석)
+	bool StartAbilityScript(const FAbilityScriptStart& Start);
+	void StopAbilityScript(uint32 InstanceId, bool bCancelled);
+	void TickAbilityScripts(float DeltaSeconds);
 
 	// ---- 스크립트 객체 (컴포넌트 없이 스크립트 클래스의 인스턴스를 만든다 — Lua 비헤이비어 트리 노드용)
 	// self.entity = Entity, self.Properties = 선언 기본값 + PropertyOverrides(JSON, FScriptComponent와 같은 형식).
@@ -295,6 +303,7 @@ private:
 	FScriptAppHooks              AppHooks;
 	FScriptSteamHooks            SteamHooks;
 	FScriptDebugDrawHooks        DebugDrawHooks;
+	FAbilitySystem*              AbilitySystem = nullptr; // 비소유
 	FScriptDebugger*             Debugger = nullptr; // 비소유 (에디터)
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)

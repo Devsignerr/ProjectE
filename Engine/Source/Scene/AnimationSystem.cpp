@@ -643,7 +643,7 @@ namespace
 			const FQuat    NewRoot = Result.RootDelta * Rotations[Root];
 			const FQuat    NewMid  = Result.MidDelta * Result.RootDelta * Rotations[Mid];
 			const FVector3 NormalModel = WorldToModel.TransformVector(Foot.Normal).GetNormalized();
-			const FQuat    Align = AnimIKMath::ComputeLookAtDelta(UpDirection, NormalModel, MaxAlignAngle, 1.0f);
+			const FQuat    Align = AnimIKMath::ComputeLookAtDelta(UpDirection, NormalModel, MaxAlignAngle, FMath::Clamp(FootIk.Weight, 0.0f, 1.0f));
 			const FQuat    NewEnd = Align * Rotations[End]; // 발은 애니메이션 방향 유지 + 바닥 기울기
 			Pose[Root].Rotation = (ParentRotation.Inverse() * NewRoot).GetNormalized();
 			Pose[Mid].Rotation  = (NewRoot.Inverse() * NewMid).GetNormalized();

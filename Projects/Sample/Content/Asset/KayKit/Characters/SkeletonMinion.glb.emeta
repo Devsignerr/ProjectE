@@ -1,6 +1,70 @@
 {
   "Version": 1,
-  "Clips": [],
+  "Clips": [
+    {
+      "Clip": "1H_Melee_Attack_Chop",
+      "Notifies": [
+        {
+          "Name": "Hit",
+          "Time": 0.55
+        }
+      ]
+    },
+    {
+      "Clip": "1H_Melee_Attack_Slice_Diagonal",
+      "Notifies": [
+        {
+          "Name": "Hit",
+          "Time": 0.38
+        }
+      ]
+    },
+    {
+      "Clip": "1H_Melee_Attack_Slice_Horizontal",
+      "Notifies": [
+        {
+          "Name": "Hit",
+          "Time": 0.25
+        }
+      ]
+    },
+    {
+      "Clip": "1H_Melee_Attack_Stab",
+      "Notifies": [
+        {
+          "Name": "Hit",
+          "Time": 0.37
+        }
+      ]
+    },
+    {
+      "Clip": "1H_Ranged_Shoot",
+      "Notifies": [
+        {
+          "Name": "Shoot",
+          "Time": 0.35
+        }
+      ]
+    },
+    {
+      "Clip": "Spellcast_Shoot",
+      "Notifies": [
+        {
+          "Name": "Shoot",
+          "Time": 0.26
+        }
+      ]
+    },
+    {
+      "Clip": "Spellcast_Long",
+      "Notifies": [
+        {
+          "Name": "Cast",
+          "Time": 1.5
+        }
+      ]
+    }
+  ],
   "Sockets": [
     {
       "Name": "HandR",

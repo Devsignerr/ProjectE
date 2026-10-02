@@ -1,0 +1,39 @@
+{
+  "Entities": [
+    {
+      "Name": "EnemySpawner",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "",
+          "ScriptAsset": "Scripts/RPG/EnemySpawner.lua"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

@@ -1,0 +1,175 @@
+{
+  "Version": 1,
+  "Parameters": [
+    {
+      "Name": "Speed",
+      "Type": "Float",
+      "Default": 0.0
+    },
+    {
+      "Name": "Combat",
+      "Type": "Bool",
+      "Default": false
+    },
+    {
+      "Name": "Dormant",
+      "Type": "Bool",
+      "Default": false
+    },
+    {
+      "Name": "Dead",
+      "Type": "Bool",
+      "Default": false
+    },
+    {
+      "Name": "DeathVariant",
+      "Type": "Float",
+      "Default": 0.0
+    }
+  ],
+  "EntryState": "Locomotion",
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "Samples": [
+        {
+          "Clip": "Idle",
+          "Position": 0.0
+        },
+        {
+          "Clip": "Walking_D_Skeletons",
+          "Position": 75.0
+        },
+        {
+          "Clip": "Running_B",
+          "Position": 240.0
+        },
+        {
+          "Clip": "Running_A",
+          "Position": 450.0
+        }
+      ]
+    },
+    {
+      "Name": "CombatLocomotion",
+      "BlendParameter": "Speed",
+      "Samples": [
+        {
+          "Clip": "Idle_Combat",
+          "Position": 0.0
+        },
+        {
+          "Clip": "Walking_D_Skeletons",
+          "Position": 75.0
+        },
+        {
+          "Clip": "Running_B",
+          "Position": 240.0
+        },
+        {
+          "Clip": "Running_A",
+          "Position": 450.0
+        }
+      ]
+    },
+    {
+      "Name": "Dormant",
+      "Clip": "Skeletons_Inactive_Floor_Pose"
+    },
+    {
+      "Name": "DeadA",
+      "Clip": "Death_A",
+      "Loop": false
+    },
+    {
+      "Name": "DeadC",
+      "Clip": "Death_C_Skeletons",
+      "Loop": false
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "*",
+      "To": "DeadC",
+      "Duration": 0.15,
+      "Conditions": [
+        {
+          "Parameter": "Dead",
+          "Op": "==",
+          "Value": true
+        },
+        {
+          "Parameter": "DeathVariant",
+          "Op": ">=",
+          "Value": 0.5
+        }
+      ]
+    },
+    {
+      "From": "*",
+      "To": "DeadA",
+      "Duration": 0.15,
+      "Conditions": [
+        {
+          "Parameter": "Dead",
+          "Op": "==",
+          "Value": true
+        },
+        {
+          "Parameter": "DeathVariant",
+          "Op": "<",
+          "Value": 0.5
+        }
+      ]
+    },
+    {
+      "From": "Locomotion",
+      "To": "Dormant",
+      "Duration": 0.0,
+      "Conditions": [
+        {
+          "Parameter": "Dormant",
+          "Op": "==",
+          "Value": true
+        }
+      ]
+    },
+    {
+      "From": "Dormant",
+      "To": "Locomotion",
+      "Duration": 0.25,
+      "Conditions": [
+        {
+          "Parameter": "Dormant",
+          "Op": "==",
+          "Value": false
+        }
+      ]
+    },
+    {
+      "From": "Locomotion",
+      "To": "CombatLocomotion",
+      "Duration": 0.35,
+      "Conditions": [
+        {
+          "Parameter": "Combat",
+          "Op": "==",
+          "Value": true
+        }
+      ]
+    },
+    {
+      "From": "CombatLocomotion",
+      "To": "Locomotion",
+      "Duration": 0.5,
+      "Conditions": [
+        {
+          "Parameter": "Combat",
+          "Op": "==",
+          "Value": false
+        }
+      ]
+    }
+  ]
+}

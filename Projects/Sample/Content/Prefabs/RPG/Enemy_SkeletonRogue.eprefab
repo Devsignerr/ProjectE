@@ -1,0 +1,151 @@
+{
+  "Entities": [
+    {
+      "Name": "SkeletonRogue",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 도적\", \"Damage\": 10, \"AttackRange\": 750, \"AggroRange\": 950, \"LeashRange\": 1800, \"AttackCooldown\": 2.2, \"AttackClips\": \"1H_Ranged_Shoot\", \"AttackSpeed\": 1.0, \"RunSpeed\": 260, \"WalkSpeed\": 75, \"Poise\": 0.2, \"Ranged\": true, \"Projectile\": \"Bolt\", \"ProjectileSpeed\": 1400, \"MinRange\": 300, \"LootTable\": \"Skeleton_Rogue\"}",
+          "ScriptAsset": "Scripts/RPG/EnemyController.lua"
+        },
+        "HealthComponent": {
+          "MaxHealth": 60.0,
+          "Health": 60.0,
+          "Invulnerable": false,
+          "DeathAction": 0,
+          "ScoreValue": 0
+        },
+        "NavAgentComponent": {
+          "MaxSpeed": 75.0,
+          "AcceptanceRadius": 20.0,
+          "TurnSpeedDegrees": 420.0,
+          "OrientToMovement": true
+        },
+        "CapsuleColliderComponent": {
+          "Radius": 32.0,
+          "HalfHeight": 42.0,
+          "Offset": [
+            0.0,
+            0.0,
+            74.0
+          ],
+          "IsTrigger": false,
+          "Layer": "Enemy"
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0.0,
+          "Density": 300.0,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Mesh",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/SkeletonRogue.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/RPG/SkeletonCrossbow.eanimgraph",
+          "UseCharacterMovement": false
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Weapon",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/Skeleton_Crossbow.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 1,
+          "Socket": "HandR"
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        }
+      }
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

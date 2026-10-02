@@ -1,0 +1,26 @@
+{
+  "Name": "EnemyMagic",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    4.0,
+    1.2,
+    6.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.6,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Additive",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

@@ -11,4 +11,8 @@ target_link_libraries(ERenderer
     PUBLIC  ProjectE::Core ProjectE::RHI ProjectE::Scene ProjectE::UI
     PRIVATE ThirdParty::stb_image ThirdParty::cgltf ThirdParty::ufbx ThirdParty::nlohmann_json ThirdParty::bc7enc)
 
+if(E_TRACY)
+    target_link_libraries(ERenderer PRIVATE ThirdParty::tracy) # GPU 존 (RenderProfiling.cpp의 TracyD3D12)
+endif()
+
 e_set_engine_module_defaults(ERenderer)

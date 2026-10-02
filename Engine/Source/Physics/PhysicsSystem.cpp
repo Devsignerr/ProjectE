@@ -1,5 +1,6 @@
 #include "Physics/PhysicsSystem.h"
 
+#include "Core/Profiling.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/FoliageCollision.h"
@@ -122,6 +123,7 @@ void FPhysicsSystem::End()
 
 uint32 FPhysicsSystem::Update(FScene& Scene, float DeltaSeconds)
 {
+	E_PROFILE_SCOPE("물리");
 	if (!World)
 	{
 		return 0;

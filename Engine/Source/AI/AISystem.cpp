@@ -1,5 +1,6 @@
 #include "AI/AISystem.h"
 
+#include "Core/Profiling.h"
 #include "AI/AIComponents.h"
 #include "AI/AIModule.h"
 #include "AI/BehaviorTree/BehaviorTreeAsset.h"
@@ -102,6 +103,7 @@ void FAISystem::End()
 
 void FAISystem::Update(FScene& InScene, float DeltaSeconds)
 {
+	E_PROFILE_SCOPE("AI");
 	if (Scene != &InScene)
 	{
 		return;

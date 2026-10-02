@@ -1,11 +1,13 @@
 #include "Core/Application.h"
 
 #include "Core/CommandLine.h"
+#include "Core/Console/Console.h"
 #include "Core/FileSystem.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Platform/CrashHandler.h"
 #include "Core/Platform/WindowsHeaders.h"
+#include "Core/Profiling.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/SaveGame.h"
 #include "Core/StringConv.h"
@@ -71,6 +73,14 @@ int FApplication::Run()
 	E_LOG(LogCore, Display, "엔진: {}{}, 프로젝트: {}, pak 파일 {}개", FStringConv::ToUtf8(FPaths::GetEngineDirectory().wstring()), FPaths::IsPackaged() ? " (패키지)" : "",
 	      FPaths::HasProject() ? FStringConv::ToUtf8(FPaths::GetProjectFile().wstring()) : std::string("없음"), FFileSystem::GetMountedFileCount());
 	FCrashHandler::SetDumpDirectory(FPaths::GetCrashDirectory());
+	// 콘솔 변수: --cvar 이름=값,... + 변수별 예전 플래그(--no-ssr 등). 패키지 게임은 치트 변수를 콘솔로 바꿀 수 없다
+	FConsoleManager::Get().SetCheatsAllowed(!FPaths::IsPackaged());
+	FConsoleManager::Get().ApplyCommandLine(CommandLine);
+	// Tracy: 개발 실행은 항상(뷰어가 붙어야 기록), 패키지 게임은 --tracy일 때만, --no-tracy면 끔
+	if (!CommandLine.HasFlag(L"--no-tracy") && (!FPaths::IsPackaged() || CommandLine.HasFlag(L"--tracy")))
+	{
+		Profiling::Startup();
+	}
 	ScreenshotPath = CommandLine.GetValue(L"--screenshot");
 	if (const std::wstring Frames = CommandLine.GetValue(L"--screenshot-frames"); !Frames.empty())
 	{
@@ -190,8 +200,25 @@ int FApplication::Run()
 	{
 		E_LOG(LogCore, Error, "애플리케이션 초기화에 실패하여 종료합니다");
 		Window.Destroy();
+		Profiling::Shutdown();
 		FLog::Shutdown();
 		return -1;
+	}
+
+	// --exec "명령;명령": 초기화 직후 콘솔 명령 실행 (자동 검증, 예: --exec "stat fps;r.SSR 0")
+	for (const std::wstring& Commands : CommandLine.GetValues(L"--exec"))
+	{
+		const std::string Utf8 = FStringConv::ToUtf8(Commands);
+		size_t            Begin = 0;
+		while (Begin <= Utf8.size())
+		{
+			const size_t End = std::min(Utf8.find(';', Begin), Utf8.size());
+			if (End > Begin)
+			{
+				FConsoleManager::Get().Execute(std::string_view(Utf8).substr(Begin, End - Begin));
+			}
+			Begin = End + 1;
+		}
 	}
 
 	E_LOG(LogCore, Display, "메인 루프 시작{}", Desc.bHeadless ? " (헤드리스)" : "");
@@ -214,6 +241,7 @@ int FApplication::Run()
 		FSaveGame::SetDirectoryOverride({});
 	}
 	Window.Destroy();
+	Profiling::Shutdown();
 	FLog::Shutdown();
 	return 0;
 }
@@ -222,14 +250,20 @@ void FApplication::RunWindowedLoop()
 {
 	while (!bExitRequested)
 	{
-		Window.PumpMessages();
+		{
+			E_PROFILE_SCOPE("메시지 처리");
+			Window.PumpMessages();
+		}
 		if (bExitRequested)
 		{
 			break;
 		}
 		Timer.Tick();
 		UpdateHeldInputAndActions(Timer.GetDeltaSeconds());
-		OnUpdate(Timer.GetDeltaSeconds());
+		{
+			E_PROFILE_SCOPE("앱 갱신");
+			OnUpdate(Timer.GetDeltaSeconds());
+		}
 
 		if (Window.IsMinimized())
 		{
@@ -259,6 +293,7 @@ void FApplication::RunWindowedLoop()
 		}
 
 		Input.EndFrame();
+		E_PROFILE_FRAME();
 	}
 }
 
@@ -292,7 +327,11 @@ void FApplication::RunHeadlessLoop()
 	while (!bExitRequested)
 	{
 		Timer.Tick();
-		OnUpdate(Timer.GetDeltaSeconds());
+		{
+			E_PROFILE_SCOPE("서버 틱");
+			OnUpdate(Timer.GetDeltaSeconds());
+		}
+		E_PROFILE_FRAME();
 		++FrameIndex;
 		UpdateCrashTest();
 		if (ExitAfterFrames > 0 && FrameIndex >= ExitAfterFrames)

@@ -135,6 +135,7 @@ public:
 	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
 	bool                 bWireframe      = false; // 메시를 선으로 그린다 (에셋 미리보기용)
 	bool                 bDrawSkybox     = true;  // false면 하늘 대신 BackgroundColor (썸네일용, 환경광은 그대로)
+	// ---- 아래 디버그/비교 토글(LodScale 제외)은 Render마다 콘솔 변수에서 다시 읽는다 (RendererConsoleVariables.h — 바꾸려면 r.* 변수, 예전 --no-* 플래그는 별칭)
 	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
 	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
 	int32                ForcedLod       = -1;    // 0 이상이면 모든 정적 메시를 그 LOD로 (확인용, --force-lod N)
@@ -212,6 +213,11 @@ private:
 	FReflectionCaptures  ReflectionCaptures;
 	bool                 bBakeCapturesRequested = false;
 	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
+	// 콘솔 변수 → 위 디버그 토글 + 아래 r.TAA/r.SSAO/r.SSR (FPostProcessSettings와 AND). Init과 Render 시작에서
+	void                 ApplyConsoleVariables();
+	bool                 bConsoleTemporalAA       = true;
+	bool                 bConsoleAmbientOcclusion = true;
+	bool                 bConsoleReflections      = true;
 	// 하늘광 환경맵이 바뀌면 FAssetCache로 읽어 IBL을 다시 만든다 (Phase 33-7)
 	void                 UpdateEnvironment(FScene& Scene);
 	std::string          AppliedEnvironmentMap;

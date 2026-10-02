@@ -109,3 +109,26 @@ std::wstring FCommandLine::GetValue(std::wstring_view InKey) const
 	}
 	return {};
 }
+
+std::vector<std::wstring> FCommandLine::GetValues(std::wstring_view InKey) const
+{
+	std::vector<std::wstring> Values;
+	for (size_t Index = 0; Index < Arguments.size(); ++Index)
+	{
+		std::wstring_view Key, Value;
+		SplitKeyValue(Arguments[Index], Key, Value);
+		if (Key != InKey)
+		{
+			continue;
+		}
+		if (!Value.empty())
+		{
+			Values.emplace_back(Value);
+		}
+		else if (Index + 1 < Arguments.size() && Arguments[Index + 1].rfind(L"--", 0) != 0)
+		{
+			Values.push_back(Arguments[++Index]);
+		}
+	}
+	return Values;
+}

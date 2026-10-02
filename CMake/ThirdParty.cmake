@@ -422,3 +422,26 @@ if(NOT "${E_STEAMWORKS_SDK_DIR}" STREQUAL "")
         message(WARNING "E_STEAMWORKS_SDK_DIR에 Steamworks SDK가 없습니다 (public/steam/steam_api.h, redistributable_bin/win64): ${E_STEAMWORKS_SDK_DIR} — Steam 기능 없이 빌드합니다")
     endif()
 endif()
+
+# ---------------------------------------------------------------- Tracy v0.11.1 (BSD-3) — 프레임 프로파일러 클라이언트 (뷰어는 저장소에 넣지 않는다 — 같은 버전 tracy-profiler.exe)
+# 클라이언트는 엔진 DLL 안 하나 (정적 라이브러리를 Core/Renderer가 PRIVATE 링크 — 실행 파일/게임 모듈은 Core/Profiling.h 함수로 같은 인스턴스를 쓴다).
+#   ON_DEMAND: 뷰어가 붙기 전에는 기록하지 않음, ONLY_LOCALHOST: 127.0.0.1만 받음, DELAYED_INIT + MANUAL_LIFETIME: FApplication이 시작/종료
+#   (테스트·패키지 게임은 시작하지 않으면 스레드/포트 없음), 크래시 처리기·시스템 추적·콜스택 샘플링은 끔 (FCrashHandler/dbghelp와 겹치지 않게)
+# E_TRACY=OFF면 받지도 않고 E_PROFILE_* 매크로가 비어 비용 0
+option(E_TRACY "Tracy 프로파일러 존 (끄면 E_PROFILE_* 매크로가 비어 비용 0)" ON)
+if(E_TRACY)
+    e_fetchcontent_declare(tracy
+        URL      "https://github.com/wolfpld/tracy/archive/refs/tags/v0.11.1.zip"
+        URL_HASH SHA256=2213f8c39ccbda555ec646a6bfa77daabce5837733770937578c06ad20e747cd
+        SOURCE_SUBDIR "_none") # 자체 CMakeLists(설치/옵션)를 쓰지 않고 TracyClient.cpp만 빌드
+    e_fetchcontent_make_available(tracy)
+
+    add_library(tracy STATIC "${tracy_SOURCE_DIR}/public/TracyClient.cpp")
+    add_library(ThirdParty::tracy ALIAS tracy)
+    target_include_directories(tracy SYSTEM PUBLIC "${tracy_SOURCE_DIR}/public")
+    target_compile_definitions(tracy PUBLIC
+        TRACY_ENABLE TRACY_ON_DEMAND TRACY_ONLY_LOCALHOST TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME
+        TRACY_NO_CRASH_HANDLER TRACY_NO_SYSTEM_TRACING TRACY_NO_CALLSTACK TRACY_NO_SAMPLING)
+    target_compile_options(tracy PRIVATE /W0)
+    set_target_properties(tracy PROPERTIES FOLDER "ThirdParty")
+endif()

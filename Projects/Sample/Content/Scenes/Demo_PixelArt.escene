@@ -135,7 +135,8 @@
             0,
             0,
             0
-          ]
+          ],
+          "Layer": "Ground"
         },
         "RigidBodyComponent": {
           "MotionType": 0,
@@ -1470,7 +1471,8 @@
           "MaxSlopeAngle": 50,
           "MaxStepHeight": 35,
           "MaxWalkSpeed": 450,
-          "PushForce": 4000
+          "PushForce": 4000,
+          "Layer": "Character"
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/IsoPlayer.lua",

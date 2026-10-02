@@ -33,6 +33,8 @@ struct FPropertyInfo
 	std::string HandleTypeName; // ResourceHandle일 때 태그 이름
 	std::string AssetFilter;    // 에셋 경로 문자열이면 허용 확장자 (";" 구분, 예 ".emat") — 에디터 드래그 앤 드롭 대상
 	std::string Tooltip;        // 에디터 마우스 오버 설명
+	// String 프로퍼티의 선택지 (있으면 에디터가 콤보로 그린다 — 예: 충돌 레이어 이름). 값이 비면 첫 선택지로 표시
+	std::function<std::vector<std::string>()> StringOptions;
 
 	// Int32 enum 선택지 (값 = 순번). 비어 있으면 일반 정수. Name은 직렬화 키(JSON 문자열), DisplayName은 콤보 표시
 	struct FEnumEntry
@@ -248,6 +250,14 @@ public:
 	{
 		E_CHECKF(!Info.Properties.empty(), "Tooltip은 Property 다음에 호출해야 합니다");
 		Info.Properties.back().Tooltip = std::move(Text);
+		return *this;
+	}
+
+	// 직전에 추가한 String 프로퍼티의 선택지 공급자 (에디터 콤보 — 목록은 그릴 때마다 다시 묻는다)
+	TTypeBuilder& StringOptions(std::function<std::vector<std::string>()> Provider)
+	{
+		E_CHECKF(!Info.Properties.empty() && Info.Properties.back().Type == EPropertyType::String, "StringOptions는 String Property 다음에 호출해야 합니다");
+		Info.Properties.back().StringOptions = std::move(Provider);
 		return *this;
 	}
 

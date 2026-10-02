@@ -3,6 +3,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
+#include "Editor/EditorTheme.h"
 #include "Renderer/ModelLoader.h"
 
 #include <imgui.h>
@@ -11,6 +12,7 @@
 #include <cstring>
 #include <cwctype>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -29,6 +31,37 @@ namespace
 			return true;
 		}
 		return false;
+	}
+
+	// 선택지 콤보 (값이 비면 첫 선택지로 표시, 목록에 없는 값은 그대로 보이고 경고 색)
+	bool DrawStringOptions(const char* Label, std::string& Value, const std::vector<std::string>& Options)
+	{
+		const bool        bKnown  = Value.empty() || std::find(Options.begin(), Options.end(), Value) != Options.end();
+		const std::string Preview = Value.empty() ? (Options.empty() ? std::string() : Options.front()) : (bKnown ? Value : Value + " (없음)");
+		bool              bChanged = false;
+		if (!bKnown)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, FEditorTheme::Warning);
+		}
+		const bool bOpen = ImGui::BeginCombo(Label, Preview.c_str());
+		if (!bKnown)
+		{
+			ImGui::PopStyleColor();
+		}
+		if (bOpen)
+		{
+			for (size_t Index = 0; Index < Options.size(); ++Index)
+			{
+				const bool bSelected = Value == Options[Index] || (Value.empty() && Index == 0);
+				if (ImGui::Selectable(Options[Index].c_str(), bSelected) && Value != Options[Index])
+				{
+					Value    = Options[Index];
+					bChanged = true;
+				}
+			}
+			ImGui::EndCombo();
+		}
+		return bChanged;
 	}
 
 	bool DrawWidget(const FPropertyInfo& Property, void* Object, const char* Label)
@@ -87,6 +120,10 @@ namespace
 		}
 
 		case EPropertyType::String:
+			if (Property.StringOptions)
+			{
+				return DrawStringOptions(Label, Property.GetRef<std::string>(Object), Property.StringOptions());
+			}
 			return DrawText(Label, Property.GetRef<std::string>(Object));
 
 		case EPropertyType::Vector2:

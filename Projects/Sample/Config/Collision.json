@@ -1,0 +1,14 @@
+{
+  "Layers": [
+    "Default",
+    "Ground",
+    "Character",
+    "Prop"
+  ],
+  "DisabledPairs": [
+    [
+      "Character",
+      "Character"
+    ]
+  ]
+}

@@ -5,6 +5,7 @@
 #include "Core/StringConv.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
+#include "Editor/Panels/CollisionSettingsEditor.h"
 #include "Editor/Panels/InputSettingsEditor.h"
 #include "Editor/PropertyWidgets.h"
 
@@ -272,6 +273,10 @@ bool FSettingsWindow::DrawCustomSection(FSettingsSection& Section)
 	if (Section.Id == "Input")
 	{
 		return FInputSettingsEditor::Draw(FProjectSettings::Get().Input);
+	}
+	if (Section.Id == "Collision")
+	{
+		return FCollisionSettingsEditor::Draw(FProjectSettings::Get().Collision);
 	}
 	return false;
 }

@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/GameUserSettings.h"
+#include "Core/Settings/CollisionSettings.h"
 #include "Core/Settings/InputSettings.h"
 #include "Core/Math/Math.h"
 
@@ -92,6 +93,7 @@ public:
 	FMapsSettings        Maps;
 	FPackagingSettings   Packaging;
 	FPhysicsSettings     Physics;
+	FCollisionLayerSettings Collision; // "Collision" — 충돌 레이어 이름 + 레이어 × 레이어 충돌 행렬 (Config/Collision.json, 다음 플레이부터)
 	FNetworkSettings     Network;
 	FGameUserSettings    Display;
 	FInputSettings       Input; // "Input" — 입력 액션/바인딩 (Config/Input.json, 사용자 재지정 포함)

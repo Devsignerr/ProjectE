@@ -3,6 +3,7 @@
 #include "Core/CoreTypes.h"
 #include "Core/Log.h"
 #include "Core/Math/Math.h"
+#include "Core/Settings/CollisionSettings.h"
 #include "Physics/PhysicsComponents.h"
 
 #include <memory>
@@ -49,6 +50,7 @@ struct FPhysicsBodyDesc
 	// (정적 센서는 상대가 잠들면 접촉을 잃는다 — Jolt). 트리거 레이어는 정적 바디와 겹침을 계산하지 않는다
 	bool   bIsTrigger        = false;
 	bool   bReportContacts   = false; // 접촉 시작/끝 이벤트 (트리거는 항상)
+	uint8  CollisionLayer    = 0;     // 충돌 레이어 칸 (0 = Default, FCollisionLayerSettings — 행렬은 SetCollisionLayers)
 };
 
 enum class EPhysicsContactEventType : uint8
@@ -83,6 +85,7 @@ struct FPhysicsCharacterDesc
 	float    Mass            = 80.0f;   // kg
 	float    MaxStrength     = 4000.0f; // N, 동적 물체를 미는 최대 힘
 	uint64   UserData        = 0;       // 엔티티 ToId() (내부 바디 — 레이캐스트 결과)
+	uint8    CollisionLayer  = 0;       // 충돌 레이어 칸: 이동 질의(무엇에 막히나)와 내부 바디(무엇이 부딪히나) 모두
 };
 
 enum class EPhysicsConstraintType : uint8
@@ -181,8 +184,13 @@ public:
 	// 한 스텝 진행 후 접촉 중인 동적 바디에 구르기 저항을 적용한다
 	void Step(float DeltaSeconds);
 
-	// Direction은 정규화하지 않아도 된다. MaxDistance cm
-	bool Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsRayHit& OutHit) const;
+	// Direction은 정규화하지 않아도 된다. MaxDistance cm. LayerMask = 맞을 수 있는 충돌 레이어 (비트 i = 칸 i, 트리거는 항상 제외)
+	bool Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsRayHit& OutHit,
+	             uint32 LayerMask = FCollisionLayerSettings::AllLayersMask) const;
+
+	// 충돌 레이어 행렬 (기본 모두 켬). 바디가 있어도 바꿀 수 있지만 스텝 밖에서 (FPhysicsSystem::Begin이 프로젝트 설정으로 부른다).
+	// 꺼진 레이어 쌍은 바디끼리·캐릭터와·트리거와 모두 부딪히지/알리지 않는다
+	void SetCollisionLayers(const FCollisionLayerSettings& Layers);
 
 	// ---- 모양 질의 (cm). 레이캐스트와 같이 트리거 레이어 제외. IgnoreBody(InvalidBody = 없음)는 그 바디 자신과
 	// 그 바디와 충돌을 끈 쌍(DisableCollision — 관절/래그돌 이웃)도 뺀다 (예: 캐릭터 자신과 자기 래그돌)

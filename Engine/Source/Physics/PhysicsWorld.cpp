@@ -33,6 +33,7 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdarg>
 #include <cstdio>
@@ -44,12 +45,23 @@ E_DEFINE_LOG_CATEGORY(LogPhysics, Log)
 
 namespace
 {
-	// ---- 레이어: 정적(서로 충돌 안 함) / 움직이는 것 / 트리거(움직이는 것과만 — 정적 바닥과 겹침 계산 안 함, 브로드페이즈는 Moving)
+	// ---- 레이어. Jolt 오브젝트 레이어 = 종류(하위 2비트) | 충돌 레이어 칸 << 2 (Core/Settings/CollisionSettings.h).
+	//   종류: 정적(서로 충돌 안 함) / 움직이는 것 / 트리거(움직이는 것과만 — 정적 바닥과 겹침 계산 안 함, 브로드페이즈는 Moving).
+	//   종류 규칙을 통과한 쌍만 충돌 행렬을 본다. 칸 0(Default) = 예전 레이어 번호와 같다 (지형/폴리지의 레이어 0 = 정적 Default)
 	namespace ObjectLayers
 	{
 		constexpr JPH::ObjectLayer NonMoving = 0;
 		constexpr JPH::ObjectLayer Moving    = 1;
 		constexpr JPH::ObjectLayer Trigger   = 2;
+		constexpr uint32           KindBits  = 2;
+		constexpr uint32           KindMask  = (1u << KindBits) - 1u;
+
+		constexpr JPH::ObjectLayer Make(JPH::ObjectLayer Kind, uint32 CollisionLayer)
+		{
+			return static_cast<JPH::ObjectLayer>(Kind | ((CollisionLayer % FCollisionLayerSettings::MaxLayers) << KindBits));
+		}
+		constexpr JPH::ObjectLayer KindOf(JPH::ObjectLayer Layer) { return static_cast<JPH::ObjectLayer>(Layer & KindMask); }
+		constexpr uint32           CollisionLayerOf(JPH::ObjectLayer Layer) { return static_cast<uint32>(Layer) >> KindBits; }
 	}
 	namespace BroadPhaseLayers
 	{
@@ -64,7 +76,7 @@ namespace
 		JPH::uint            GetNumBroadPhaseLayers() const override { return BroadPhaseLayers::Count; }
 		JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer Layer) const override
 		{
-			return Layer == ObjectLayers::NonMoving ? BroadPhaseLayers::NonMoving : BroadPhaseLayers::Moving;
+			return ObjectLayers::KindOf(Layer) == ObjectLayers::NonMoving ? BroadPhaseLayers::NonMoving : BroadPhaseLayers::Moving;
 		}
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
 		const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer Layer) const override
@@ -79,32 +91,56 @@ namespace
 	public:
 		bool ShouldCollide(JPH::ObjectLayer Layer, JPH::BroadPhaseLayer BroadPhase) const override
 		{
-			if (Layer == ObjectLayers::Trigger)
+			const JPH::ObjectLayer Kind = ObjectLayers::KindOf(Layer);
+			if (Kind == ObjectLayers::Trigger)
 			{
 				return BroadPhase == BroadPhaseLayers::Moving;
 			}
-			return Layer == ObjectLayers::Moving || BroadPhase == BroadPhaseLayers::Moving;
+			return Kind == ObjectLayers::Moving || BroadPhase == BroadPhaseLayers::Moving;
 		}
 	};
 
+	// 종류 규칙 + 충돌 행렬. 행렬은 메인 스레드가 스텝 밖에서만 바꾼다 (SetCollisionLayers)
 	class FObjectPairFilter final : public JPH::ObjectLayerPairFilter
 	{
 	public:
 		bool ShouldCollide(JPH::ObjectLayer A, JPH::ObjectLayer B) const override
 		{
-			if (A == ObjectLayers::Trigger || B == ObjectLayers::Trigger)
+			const JPH::ObjectLayer KindA = ObjectLayers::KindOf(A);
+			const JPH::ObjectLayer KindB = ObjectLayers::KindOf(B);
+			// 트리거 ↔ 움직이는 것만, 그 밖은 한쪽 이상이 움직이는 것
+			if (KindA != ObjectLayers::Moving && KindB != ObjectLayers::Moving)
 			{
-				return A == ObjectLayers::Moving || B == ObjectLayers::Moving; // 트리거 ↔ 움직이는 것만
+				return false;
 			}
-			return A == ObjectLayers::Moving || B == ObjectLayers::Moving;
+			const uint32 LayerA = ObjectLayers::CollisionLayerOf(A);
+			const uint32 LayerB = ObjectLayers::CollisionLayerOf(B);
+			return ((Matrix[LayerA] >> LayerB) & 1u) != 0;
+		}
+
+		std::array<uint16, FCollisionLayerSettings::MaxLayers> Matrix = MakeAllOn();
+
+	private:
+		static std::array<uint16, FCollisionLayerSettings::MaxLayers> MakeAllOn()
+		{
+			std::array<uint16, FCollisionLayerSettings::MaxLayers> Result;
+			Result.fill(static_cast<uint16>(FCollisionLayerSettings::AllLayersMask));
+			return Result;
 		}
 	};
 
-	// 레이캐스트/질의에서 트리거 레이어를 뺀다 (트리거 영역은 총알·시야를 막지 않는다)
-	class FIgnoreTriggerLayerFilter final : public JPH::ObjectLayerFilter
+	// 레이캐스트/질의: 트리거 레이어를 빼고(트리거 영역은 총알·시야를 막지 않는다) 마스크에 든 충돌 레이어만
+	class FQueryLayerFilter final : public JPH::ObjectLayerFilter
 	{
 	public:
-		bool ShouldCollide(JPH::ObjectLayer Layer) const override { return Layer != ObjectLayers::Trigger; }
+		explicit FQueryLayerFilter(uint32 InMask = FCollisionLayerSettings::AllLayersMask) : Mask(InMask) {}
+		bool ShouldCollide(JPH::ObjectLayer Layer) const override
+		{
+			return ObjectLayers::KindOf(Layer) != ObjectLayers::Trigger && ((Mask >> ObjectLayers::CollisionLayerOf(Layer)) & 1u) != 0;
+		}
+
+	private:
+		uint32 Mask;
 	};
 
 	// ---- Jolt 전역 초기화 (월드 수 참조 카운트)
@@ -490,6 +526,12 @@ struct FPhysicsWorld::FImpl
 	void PushEvent(EPhysicsContactEventType Type, uint32 Body1, uint32 Body2, bool bSensor, const FRawContact* Info);
 	FCharacterContacts                         CharacterContacts; // 모든 캐릭터의 리스너 (Characters보다 먼저 선언 — 나중에 해제)
 	std::unordered_map<uint32, JPH::Ref<JPH::CharacterVirtual>> Characters; // 캐릭터 ID → CharacterVirtual (내부 바디 포함)
+	std::unordered_map<uint32, JPH::ObjectLayer> CharacterLayers; // 캐릭터 ID → 오브젝트 레이어 (Moving + 충돌 레이어 — 이동 질의와 내부 바디)
+	JPH::ObjectLayer GetCharacterLayer(uint32 Character) const
+	{
+		const auto Found = CharacterLayers.find(Character);
+		return Found != CharacterLayers.end() ? Found->second : ObjectLayers::Moving;
+	}
 	uint32                                     NextCharacterId = 1;
 
 	JPH::BodyInterface& Bodies() { return System->GetBodyInterface(); }
@@ -666,7 +708,8 @@ uint32 FPhysicsWorld::CreateBody(const FPhysicsBodyDesc& Desc)
 	// 트리거: 잠들지 않는 키네마틱 센서 (동적 트리거는 그대로 떨어지는 센서). 정적 운동 형식이어도 키네마틱으로 만들어
 	// 잠든 바디·캐릭터 내부 바디(키네마틱)를 계속 감지한다 — FPhysicsSystem은 정적처럼 순간이동으로 옮긴다
 	const JPH::EMotionType  Motion = Desc.bIsTrigger && Desc.MotionType != EPhysicsMotionType::Dynamic ? JPH::EMotionType::Kinematic : ToJoltMotion(Desc.MotionType);
-	const JPH::ObjectLayer  Layer  = Desc.bIsTrigger ? ObjectLayers::Trigger : (Motion == JPH::EMotionType::Static ? ObjectLayers::NonMoving : ObjectLayers::Moving);
+	const JPH::ObjectLayer  Kind   = Desc.bIsTrigger ? ObjectLayers::Trigger : (Motion == JPH::EMotionType::Static ? ObjectLayers::NonMoving : ObjectLayers::Moving);
+	const JPH::ObjectLayer  Layer  = ObjectLayers::Make(Kind, Desc.CollisionLayer);
 	JPH::BodyCreationSettings Settings(Shape, ToJoltPosition(Desc.Position), ToJoltQuat(Desc.Rotation), Motion, Layer);
 	if (Desc.bIsTrigger)
 	{
@@ -853,7 +896,7 @@ void FPhysicsWorld::Step(float DeltaSeconds)
 	}
 }
 
-bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsRayHit& OutHit) const
+bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsRayHit& OutHit, uint32 LayerMask) const
 {
 	const FVector3 Normalized = Direction.GetNormalized();
 	if (Normalized.LengthSquared() < 0.5f || MaxDistance <= 0.0f)
@@ -862,9 +905,9 @@ bool FPhysicsWorld::Raycast(const FVector3& Origin, const FVector3& Direction, f
 	}
 
 	const JPH::RRayCast             Ray(ToJoltPosition(Origin), ToJoltVector(PhysicsMath::ToMeters(Normalized * MaxDistance)));
-	JPH::RayCastResult              Result;
-	const FIgnoreTriggerLayerFilter IgnoreTriggers;
-	if (!Impl->System->GetNarrowPhaseQuery().CastRay(Ray, Result, JPH::BroadPhaseLayerFilter(), IgnoreTriggers))
+	JPH::RayCastResult      Result;
+	const FQueryLayerFilter Layers(LayerMask);
+	if (!Impl->System->GetNarrowPhaseQuery().CastRay(Ray, Result, JPH::BroadPhaseLayerFilter(), Layers))
 	{
 		return false;
 	}
@@ -933,7 +976,7 @@ uint32 FPhysicsWorld::Overlap(const FPhysicsQueryShape& Shape, const FVector3& P
 	const JPH::RMat44 CenterOfMass = JPH::RMat44::sRotationTranslation(ToJoltQuat(Rotation), ToJoltPosition(Position)).PreTranslated(Query->GetCenterOfMass());
 	JPH::CollideShapeSettings Settings;
 	JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> Collector;
-	const FIgnoreTriggerLayerFilter IgnoreTriggers;
+	const FQueryLayerFilter        IgnoreTriggers;
 	const FQueryBodyFilter          Bodies(*Impl->PairFilter, IgnoreBody);
 	Impl->System->GetNarrowPhaseQuery().CollideShape(Query, JPH::Vec3::sReplicate(1.0f), CenterOfMass, Settings, JPH::RVec3::sZero(), Collector,
 	                                                 JPH::BroadPhaseLayerFilter(), IgnoreTriggers, Bodies);
@@ -979,7 +1022,7 @@ bool FPhysicsWorld::Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start
 	JPH::ShapeCastSettings Settings;
 	Settings.mReturnDeepestPoint = true; // 시작부터 겹치면 가장 깊은 점/축 (법선이 의미 있게)
 	JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> Collector;
-	const FIgnoreTriggerLayerFilter IgnoreTriggers;
+	const FQueryLayerFilter        IgnoreTriggers;
 	const FQueryBodyFilter          Bodies(*Impl->PairFilter, IgnoreBody);
 	Impl->System->GetNarrowPhaseQuery().CastShape(Cast, Settings, JPH::RVec3::sZero(), Collector, JPH::BroadPhaseLayerFilter(), IgnoreTriggers, Bodies);
 	if (!Collector.HadHit())
@@ -1002,6 +1045,14 @@ bool FPhysicsWorld::Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start
 	                                                  : FromJoltVector(Lock.GetBody().GetWorldSpaceSurfaceNormal(Hit.mSubShapeID2, Point));
 	OutHit.Distance      = std::max(Hit.mFraction, 0.0f) * MaxDistance;
 	return true;
+}
+
+void FPhysicsWorld::SetCollisionLayers(const FCollisionLayerSettings& Layers)
+{
+	for (uint32 Index = 0; Index < FCollisionLayerSettings::MaxLayers; ++Index)
+	{
+		Impl->ObjectPairs.Matrix[Index] = Layers.GetCollisionMask(Index);
+	}
 }
 
 void FPhysicsWorld::SetGravity(const FVector3& Gravity)
@@ -1028,7 +1079,8 @@ uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
 	JPH::Ref<JPH::CharacterVirtualSettings> Settings = new JPH::CharacterVirtualSettings();
 	Settings->mShape          = Shape;
 	Settings->mInnerBodyShape = Shape; // 다른 캐릭터/동적 물체가 이 캐릭터와 부딪히게
-	Settings->mInnerBodyLayer = ObjectLayers::Moving;
+	const JPH::ObjectLayer Layer = ObjectLayers::Make(ObjectLayers::Moving, Desc.CollisionLayer);
+	Settings->mInnerBodyLayer = Layer; // 다른 물체가 이 캐릭터와 부딪히는지도 행렬을 따른다
 	Settings->mUp             = JPH::Vec3::sAxisZ();
 	// 아래 반구의 중심보다 낮은 접촉만 "발밑"으로 본다 (위치 = 캡슐 중심)
 	Settings->mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), Half);
@@ -1046,8 +1098,9 @@ uint32 FPhysicsWorld::CreateCharacter(const FPhysicsCharacterDesc& Desc)
 	}
 	const uint32 Id = Impl->NextCharacterId++;
 	Impl->Characters.emplace(Id, Character);
+	Impl->CharacterLayers.emplace(Id, Layer);
 	// 처음 바닥 상태
-	Character->RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving), Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving),
+	Character->RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(Layer), Impl->System->GetDefaultLayerFilter(Layer),
 	                           JPH::BodyFilter(), JPH::ShapeFilter(), *Impl->TempAllocator);
 	return Id;
 }
@@ -1061,6 +1114,7 @@ void FPhysicsWorld::DestroyCharacter(uint32 Character)
 		Impl->Contacts->SetReport(JPH::BodyID(Inner), false);
 	}
 	Impl->Characters.erase(Character); // 소멸자가 내부 바디를 지운다
+	Impl->CharacterLayers.erase(Character);
 }
 
 uint32 FPhysicsWorld::GetCharacterInnerBody(uint32 Character) const
@@ -1127,8 +1181,9 @@ void FPhysicsWorld::UpdateCharacter(uint32 Character, float DeltaSeconds, const 
 	Settings.mStickToFloorStepDown = JPH::Vec3(0.0f, 0.0f, -std::max(StickDown, 0.0f) * FUnits::UnitsToMeters);
 	Settings.mWalkStairsStepUp     = JPH::Vec3(0.0f, 0.0f, std::max(StepUp, 0.0f) * FUnits::UnitsToMeters);
 	const FCharacterBodyFilter BodyFilter(*Impl->PairFilter, Virtual.GetInnerBodyID());
-	Virtual.ExtendedUpdate(DeltaSeconds, Impl->System->GetGravity(), Settings, Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving),
-	                       Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving), BodyFilter, JPH::ShapeFilter(), *Impl->TempAllocator);
+	const JPH::ObjectLayer     Layer = Impl->GetCharacterLayer(Character);
+	Virtual.ExtendedUpdate(DeltaSeconds, Impl->System->GetGravity(), Settings, Impl->System->GetDefaultBroadPhaseLayerFilter(Layer),
+	                       Impl->System->GetDefaultLayerFilter(Layer), BodyFilter, JPH::ShapeFilter(), *Impl->TempAllocator);
 }
 
 void FPhysicsWorld::SetCharacterState(uint32 Character, const FVector3& Position, const FVector3& Velocity)
@@ -1142,7 +1197,8 @@ void FPhysicsWorld::SetCharacterState(uint32 Character, const FVector3& Position
 	Virtual.SetPosition(ToJoltPosition(Position));
 	Virtual.SetLinearVelocity(ToJoltVector(PhysicsMath::ToMeters(Velocity)));
 	const FCharacterBodyFilter BodyFilter(*Impl->PairFilter, Virtual.GetInnerBodyID());
-	Virtual.RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(ObjectLayers::Moving), Impl->System->GetDefaultLayerFilter(ObjectLayers::Moving),
+	const JPH::ObjectLayer     Layer = Impl->GetCharacterLayer(Character);
+	Virtual.RefreshContacts(Impl->System->GetDefaultBroadPhaseLayerFilter(Layer), Impl->System->GetDefaultLayerFilter(Layer),
 	                        BodyFilter, JPH::ShapeFilter(), *Impl->TempAllocator);
 }
 

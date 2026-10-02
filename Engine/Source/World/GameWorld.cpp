@@ -246,6 +246,15 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
 			return true;
 		},
+		[Physics](const FVector3& Origin, const FVector3& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit& OutHit) {
+			FPhysicsHit Hit;
+			if (!Physics->Raycast(Origin, Direction, MaxDistance, Hit, LayerMask))
+			{
+				return false;
+			}
+			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			return true;
+		},
 	});
 }
 

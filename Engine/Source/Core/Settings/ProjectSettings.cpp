@@ -48,6 +48,23 @@ FProjectSettings::FProjectSettings()
 		.Property(&FPhysicsSettings::FixedStepHz, "FixedStepHz", "고정 스텝 (Hz)").Range(15.0f, 240.0f, 1.0f).Tooltip("물리 시뮬레이션 빈도. 높을수록 정확하지만 비싸다")
 		.Property(&FPhysicsSettings::MaxSubSteps, "MaxSubSteps", "최대 서브스텝").Range(1.0f, 16.0f).Tooltip("느린 프레임에서 한 번에 따라잡는 물리 스텝 상한");
 
+	// 레이어 이름 + 행렬은 리플렉션 값 타입이 아니므로 사용자 정의 JSON 섹션 (설정 창 전용 UI — Editor/Panels/CollisionSettingsEditor)
+	Registry.RegisterCustom(
+		&Collision, { "Collision", "충돌 레이어", GEngineCategory, "콜라이더/캐릭터 레이어 이름과 레이어끼리 부딪히는지 (유니티식). 다음 플레이(물리 시작)부터 적용" },
+		[this](std::string_view Json, std::string* Error) {
+			if (!Collision.FromJson(Json, Error))
+			{
+				return false;
+			}
+			if (Error != nullptr && !Error->empty())
+			{
+				E_LOG(LogCore, Warning, "충돌 레이어 설정 일부를 건너뜀: {}", *Error);
+				Error->clear();
+			}
+			return true;
+		},
+		[this]() { return Collision.ToJson(); }, [this]() { Collision = {}; });
+
 	Registry.Register(Network, { "Network", "네트워크", GEngineCategory, "다음 세션부터 적용. 명령줄 --port가 우선" })
 		.Property(&FNetworkSettings::DefaultPort, "DefaultPort", "기본 포트").Range(1024.0f, 65535.0f)
 		.Property(&FNetworkSettings::LanDiscoveryPort, "LanDiscoveryPort", "LAN 검색 포트").Range(1024.0f, 65535.0f).Tooltip("UDP. 같은 LAN의 방 목록 찾기")
@@ -102,6 +119,7 @@ void FProjectSettings::ResetToDefaults()
 	Maps      = {};
 	Packaging = {};
 	Physics   = {};
+	Collision = {};
 	Network   = {};
 	Display   = {};
 	Localization = {};

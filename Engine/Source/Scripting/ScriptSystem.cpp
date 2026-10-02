@@ -34,6 +34,7 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	PlayRuntime->SetSteamHooks(&SteamHooks);
 	PlayRuntime->SetDebugDrawHooks(&DebugDrawHooks);
 	PlayRuntime->SetPersistentValues(&PersistentValues);
+	PlayRuntime->SetAbilitySystem(AbilitySystem);
 	PlayRuntime->SetScene(&Scene);
 	E_LOG(LogScript, Display, "스크립트 플레이 시작");
 	return true;
@@ -181,6 +182,36 @@ void FScriptSystem::SetSteamHooks(FScriptSteamHooks Hooks)
 void FScriptSystem::SetDebugDrawHooks(FScriptDebugDrawHooks Hooks)
 {
 	DebugDrawHooks = std::move(Hooks);
+}
+
+void FScriptSystem::SetAbilitySystem(FAbilitySystem* InSystem)
+{
+	AbilitySystem = InSystem;
+	if (PlayRuntime)
+	{
+		PlayRuntime->SetAbilitySystem(InSystem);
+	}
+}
+
+bool FScriptSystem::StartAbilityScript(const FAbilityScriptStart& Start)
+{
+	return PlayRuntime != nullptr && PlayRuntime->StartAbility(Start);
+}
+
+void FScriptSystem::StopAbilityScript(uint32 InstanceId, bool bCancelled)
+{
+	if (PlayRuntime)
+	{
+		PlayRuntime->StopAbility(InstanceId, bCancelled);
+	}
+}
+
+void FScriptSystem::TickAbilityScripts(float DeltaSeconds)
+{
+	if (PlayRuntime)
+	{
+		PlayRuntime->TickAbilities(std::min(DeltaSeconds, MaxDeltaSeconds));
+	}
 }
 
 FScriptObjectHandle FScriptSystem::CreateObject(const std::string& ScriptAsset, const std::string& PropertyOverrides, FEntity Entity)

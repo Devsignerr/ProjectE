@@ -118,6 +118,12 @@ FProjectSettings::FProjectSettings()
 	Registry.Register(Console, { "Console", "개발자 콘솔", GEngineCategory, "런타임 ` 키 콘솔과 화면 통계(stat fps). 개발 실행에서는 항상 켜짐" })
 		.Property(&FConsoleSettings::bEnableInPackagedGame, "EnableInPackagedGame", "패키지 게임에서 켜기")
 		.Tooltip("패키지(배포) 게임에서도 ` 키로 콘솔을 연다. 치트 변수는 패키지에서 계속 막힌다");
+
+	Registry.Register(GameplayTags, { "GameplayTags", "게임플레이 태그", GProjectCategory, "능력 시스템 태그 목록 (State.Stunned, Ability.Cooldown.Dash 처럼 점으로 계층). 다음 플레이부터 적용" })
+		.Property(&FGameplayTagSettings::Tags, "Tags", "태그 목록")
+		.Tooltip("\";\" 또는 줄바꿈으로 구분. 부모(State)는 자식(State.Stunned)을 등록하면 자동. 비면 검사하지 않는다")
+		.Property(&FGameplayTagSettings::bWarnUnknownTags, "WarnUnknownTags", "미등록 태그 경고")
+		.Tooltip("효과/능력 데이터에 목록에 없는 태그가 있으면 로그 경고 (오타 잡기)");
 }
 
 void FProjectSettings::ResetToDefaults()
@@ -131,6 +137,7 @@ void FProjectSettings::ResetToDefaults()
 	Display   = {};
 	Localization = {};
 	Console      = {};
+	GameplayTags = {};
 	Input.ResetProjectMapping(); // 사용자 재지정은 유지 (플레이어 파일)
 }
 

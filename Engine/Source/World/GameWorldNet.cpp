@@ -298,6 +298,8 @@ bool FGameWorld::HandleNetMessage(FNetConnectionId Connection, const std::vector
 	case ENetMessageType::CharacterMoves: ReceiveCharacterMoves(Connection, Message); return true;
 	case ENetMessageType::CharacterAck: ReceiveCharacterAck(Message); return true;
 	case ENetMessageType::ScriptRpc:   ReceiveRpc(Connection, Message); return true;
+	case ENetMessageType::AbilityActivate: ReceiveAbilityActivate(Connection, Message); return true;
+	case ENetMessageType::AbilityResult:   ReceiveAbilityResult(Message); return true;
 	default:                           return false;
 	}
 }

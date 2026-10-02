@@ -18,6 +18,7 @@
 #include <vector>
 
 class FAISystem;
+class FAbilitySystem;
 class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
@@ -151,6 +152,8 @@ public:
 	const FGameWorldSystems& GetSystems() const { return Systems; }
 	// 트리 블랙보드/이동 요청/내비메시 지정 (스크립트, 에디터 디버그 표시). 항상 유효
 	FAISystem& GetAI() { return *AI; }
+	// 능력 시스템 (Scene/Ability, World/GameWorldAbilities.cpp). 항상 유효 — 플레이 중에만 돈다
+	FAbilitySystem& GetAbilities() { return *Abilities; }
 
 	// ---- IGameNet (게임 모듈용)
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
@@ -312,6 +315,14 @@ private:
 	// 물리 알림 (World/GameWorldPhysicsEvents.cpp): 물리·UpdateTransforms 뒤 충돌/트리거 이벤트 → 스크립트 + 게임 모듈
 	void DispatchCollisionEvents();
 	bool ShouldReportContacts(const FScene& Target, FEntity Entity) const; // FPhysicsSystem 보고 필터 (역할 규칙 포함)
+
+	// 능력 시스템 (World/GameWorldAbilities.cpp): 스크립트 갱신 뒤·캐릭터 이동 전. 입력 발동 → FAbilitySystem::Tick → MoveSpeed → 이벤트
+	void ConnectAbilities();
+	void TickAbilities(float DeltaSeconds);
+	void DispatchAbilityEvents();
+	void ReceiveAbilityActivate(FNetConnectionId Connection, const std::vector<uint8>& Message);
+	void ReceiveAbilityResult(const std::vector<uint8>& Message);
+	std::unique_ptr<FAbilitySystem> Abilities;
 
 	// 사망 래그돌 (World/GameWorldRagdoll.cpp): FRagdollComponent bEnableOnDeath 모델의 체력 변화 → 켜기/끄기
 	void TickRagdolls();

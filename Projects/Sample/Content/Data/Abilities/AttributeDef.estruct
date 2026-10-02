@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Name": "AttributeDef",
+  "Description": "능력 시스템 속성 정의 (행 이름 = 속성 이름). 규칙은 Engine/Source/Scene/Ability/AbilityTypes.h 머리 주석",
+  "Fields": [
+    {"Name":"Base","Type":"Float","Default":0,"Description":"기본값"},
+    {"Name":"Min","Type":"Float","Default":0,"Description":"최소"},
+    {"Name":"Max","Type":"Float","Default":100000,"Description":"최대"},
+    {"Name":"MaxAttribute","Type":"String","Default":"","Description":"최대를 이 속성의 현재값으로 (Health → MaxHealth)"},
+    {"Name":"Meta","Type":"Bool","Default":false,"Description":"메타 속성 (IncomingDamage/IncomingHeal은 자동)"}
+  ]
+}

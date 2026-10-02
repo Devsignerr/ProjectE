@@ -261,3 +261,19 @@ void FGameModuleHost::CollisionEvent(FScene& Scene, const FCollisionEvent& Event
 	default:                                  break;
 	}
 }
+
+void FGameModuleHost::SetAbilities(FAbilitySystem* Abilities)
+{
+	if (Module != nullptr)
+	{
+		Module->SetAbilities(Abilities);
+	}
+}
+
+void FGameModuleHost::AbilityEvent(FScene& Scene, const FAbilityEvent& Event)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnAbilityEvent(Scene, Event);
+	}
+}

@@ -82,6 +82,13 @@ struct FConsoleSettings
 	bool bEnableInPackagedGame = false; // 패키지 게임에서도 ` 키 콘솔 (치트 변수는 여전히 막힘)
 };
 
+// "GameplayTags" — 능력 시스템 게임플레이 태그 목록 (Scene/Ability/GameplayTags.h). 다음 플레이부터 적용
+struct FGameplayTagSettings
+{
+	std::string Tags;                   // 등록 태그 (";" 또는 줄바꿈 구분, 예: "State.Stunned;Ability.Cooldown.Dash"). 비면 검사하지 않는다
+	bool        bWarnUnknownTags = true; // 정의 데이터에 목록에 없는 태그가 있으면 경고 (오타 잡기)
+};
+
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.
 // "Display" 섹션은 FGameUserSettings(창 모드/해상도/VSync)의 프로젝트 기본값이다 — 사용자 설정 파일이 그 위에 덮인다.
 class FProjectSettings
@@ -99,6 +106,7 @@ public:
 	FInputSettings       Input; // "Input" — 입력 액션/바인딩 (Config/Input.json, 사용자 재지정 포함)
 	FLocalizationSettings Localization;
 	FConsoleSettings      Console;
+	FGameplayTagSettings  GameplayTags;
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

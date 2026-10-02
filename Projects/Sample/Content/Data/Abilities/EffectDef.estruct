@@ -1,0 +1,22 @@
+{
+  "Version": 1,
+  "Name": "EffectDef",
+  "Description": "게임플레이 효과 (행 이름 = 효과 이름)",
+  "Fields": [
+    {"Name":"DurationPolicy","Type":"Enum","Values":["Instant","HasDuration","Infinite"],"Default":"Instant"},
+    {"Name":"Duration","Type":"Float","Default":0},
+    {"Name":"Period","Type":"Float","Default":0,"Description":"> 0이면 주기 실행 (수정자를 기본값에)"},
+    {"Name":"ExecutePeriodicOnApply","Type":"Bool","Default":false},
+    {"Name":"Modifiers","Type":"Array","Element":"RowRef","Table":"Data/Abilities/DemoModifiers.etable","Default":[]},
+    {"Name":"Stacking","Type":"Enum","Values":["None","ByTarget","BySource"],"Default":"None"},
+    {"Name":"StackLimit","Type":"Int","Default":1},
+    {"Name":"RefreshDurationOnStack","Type":"Bool","Default":true},
+    {"Name":"StackExpiration","Type":"Enum","Values":["ClearAll","RemoveOneAndRefresh"],"Default":"ClearAll"},
+    {"Name":"AssetTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"GrantedTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"ApplicationRequiredTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"ApplicationBlockedTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"RemoveEffectsWithTags","Type":"Array","Element":"String","Default":[]},
+    {"Name":"GrantedImmunityTags","Type":"Array","Element":"String","Default":[]}
+  ]
+}

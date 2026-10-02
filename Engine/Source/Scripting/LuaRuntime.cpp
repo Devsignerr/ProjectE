@@ -140,6 +140,9 @@ FLuaRuntime::~FLuaRuntime()
 	CoroutineResume = sol::lua_nil;
 	CoroutineStatus = sol::lua_nil;
 	WaitToken       = sol::table();
+	AbilityTasks.clear();
+	AbilityContextMeta = sol::table();
+	AbilityRunner      = sol::lua_nil;
 	Traceback = sol::lua_nil;
 	if (Debugger != nullptr)
 	{
@@ -192,6 +195,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterCameraBindings();
 	RegisterDataBindings();
 	RegisterBuildingBindings();
+	RegisterAbilityBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -1424,6 +1428,7 @@ void FLuaRuntime::DispatchAnimNotifies()
 
 void FLuaRuntime::DestroyAllInstances()
 {
+	ClearAbilities(); // 능력 코루틴은 FAbilitySystem::End가 먼저 끝낸다 — 남은 것만 버린다
 	std::vector<uint64> Ids;
 	Ids.reserve(Instances.size());
 	for (const auto& [Id, Instance] : Instances)

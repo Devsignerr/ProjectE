@@ -7,6 +7,7 @@
 #include "Editor/AssetEditors/AssetEditorManager.h"
 #include "Editor/AssetEditors/BehaviorTreeEditor.h"
 #include "Editor/AssetEditors/DataValueWidgets.h"
+#include "Editor/AssetEditors/MaterialGraphEditing.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
@@ -760,6 +761,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	{
 		CreateAsset(Context, "NewMaterial", FMaterialAsset::Extension);
 	}
+	if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT " 새 머티리얼 (노드 그래프)"))
+	{
+		CreateAsset(Context, "NewMaterialGraph", FMaterialAsset::Extension, true);
+	}
 	if (ImGui::MenuItem(ICON_FA_FIRE " 새 파티클"))
 	{
 		CreateAsset(Context, "NewParticle", FParticleSystemAsset::Extension);
@@ -1156,7 +1161,7 @@ void FContentBrowserPanel::DrawRenamePopup(FEditorContext& Context)
 	ImGui::EndPopup();
 }
 
-void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::string& BaseName, const std::wstring& Extension)
+void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::string& BaseName, const std::wstring& Extension, bool bGraphMaterial)
 {
 	// 현재 폴더에 겹치지 않는 이름으로 기본 에셋 파일을 만들고 편집 창을 연다
 	const std::filesystem::path Path = FAssetFileOps::MakeUniquePath(CurrentDirectory, FStringConv::ToWide(BaseName), Extension);
@@ -1164,9 +1169,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	bool                        bOk  = false;
 	if (Extension == FMaterialAsset::Extension)
 	{
-		FMaterialAsset Asset;
-		Asset.Name = Name;
-		bOk        = Asset.SaveToFile(Path);
+		// 그래프 머티리얼: 고정 PBR과 같은 출력의 기본 그래프 (BaseColor 파라미터 + 텍스처 등 — MaterialGraphEditing::MakeDefaultGraphMaterial)
+		FMaterialAsset Asset = bGraphMaterial ? MaterialGraphEditing::MakeDefaultGraphMaterial(Name) : FMaterialAsset{};
+		Asset.Name           = Name;
+		bOk                  = Asset.SaveToFile(Path);
 	}
 	else if (Extension == FParticleSystemAsset::Extension)
 	{

@@ -218,6 +218,10 @@ bool FEditorApplication::OnInit()
 	{
 		GenerateTerrainDemo(Context.ContentDirectory); // 지형 데모 에셋 다시 만들기 (Terrain/, Scenes/Demo_Terrain.escene)
 	}
+	if (CommandLine.HasFlag(L"--generate-showcase-terrain"))
+	{
+		GenerateShowcaseTerrain(Context.ContentDirectory); // 쇼케이스 지형/폴리지 다시 만들기 (씬은 그대로)
+	}
 	if (const std::wstring SceneArg = CommandLine.GetValue(L"--scene"); SceneArg.empty() || !OpenScene(Context.ContentDirectory / SceneArg))
 	{
 		OpenStartupScene();

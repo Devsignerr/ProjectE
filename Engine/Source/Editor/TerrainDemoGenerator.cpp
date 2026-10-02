@@ -393,3 +393,201 @@ bool GenerateTerrainDemo(const std::filesystem::path& ContentDirectory)
 	E_LOG(LogEditor, Display, "지형 데모 생성: Terrain/DemoTerrain.eterrain ({}x{}), 머티리얼 3개, Scenes/Demo_Terrain.escene", DemoResolution, DemoResolution);
 	return true;
 }
+
+// ---------------------------------------------------------------- 쇼케이스 지형 (Demo_Showcase)
+namespace
+{
+	constexpr uint32 ShowcaseResolution  = 513;
+	constexpr float  ShowcaseSize        = 32000.0f; // cm (320m)
+	constexpr float  ShowcaseRange       = 8000.0f;  // cm (±40m)
+	constexpr float  ShowcaseFlatRadius  = 4400.0f;  // cm: 이 안은 정확히 Z = 0 (광장 + 구역)
+	constexpr float  ShowcaseHillStart   = 6200.0f;  // cm: 여기까지 언덕이 서서히 올라온다
+	constexpr float  ShowcasePlazaRadius = 1700.0f;  // cm: 광장 (바닥 판 아래는 흙)
+	constexpr float  ShowcaseZoneRadius  = 2700.0f;  // cm: 구역 중심까지 거리 (광장 둘레 60도 간격 6곳)
+	constexpr float  ShowcaseZonePad     = 800.0f;   // cm: 구역 바닥 반경 (풀/나무 없음)
+	constexpr float  ShowcaseSunAzimuth  = 20.0f;    // 도: 노을 해 방향 (이쪽은 낮은 언덕만 — 해를 가리지 않게)
+
+	float AngleDistance(float A, float B)
+	{
+		const float D = std::fmod(std::abs(A - B), 360.0f);
+		return D > 180.0f ? 360.0f - D : D;
+	}
+
+	// 가장 가까운 구역 중심까지 거리 (cm)
+	float ZoneDistance(float X, float Y)
+	{
+		float Best = 1.0e9f;
+		for (int32 Zone = 0; Zone < 6; ++Zone)
+		{
+			const float Angle = FMath::DegreesToRadians(60.0f * static_cast<float>(Zone));
+			const float DX    = X - std::cos(Angle) * ShowcaseZoneRadius;
+			const float DY    = Y - std::sin(Angle) * ShowcaseZoneRadius;
+			Best              = std::min(Best, std::sqrt(DX * DX + DY * DY));
+		}
+		return Best;
+	}
+
+	// 광장에서 구역으로 가는 흙길까지 거리 (cm): 구역 방향 선분 (광장 끝 ~ 구역 중심)
+	float ShowcasePathDistance(float X, float Y)
+	{
+		float Best = 1.0e9f;
+		for (int32 Zone = 0; Zone < 6; ++Zone)
+		{
+			const float Angle = FMath::DegreesToRadians(60.0f * static_cast<float>(Zone));
+			const float DirX  = std::cos(Angle);
+			const float DirY  = std::sin(Angle);
+			const float Along = std::clamp(X * DirX + Y * DirY, ShowcasePlazaRadius - 200.0f, ShowcaseZoneRadius);
+			const float DX    = X - DirX * Along;
+			const float DY    = Y - DirY * Along;
+			Best              = std::min(Best, std::sqrt(DX * DX + DY * DY));
+		}
+		return Best;
+	}
+
+	// 쇼케이스 높이 (cm): 둘레 언덕 + 해 반대쪽 산맥, 가운데 평지
+	float ShowcaseHeight(float X, float Y)
+	{
+		const float XM      = X / 100.0f;
+		const float YM      = Y / 100.0f;
+		const float R       = std::sqrt(XM * XM + YM * YM);
+		const float Azimuth = FMath::RadiansToDegrees(std::atan2(YM, XM));
+		float       H       = (Fbm(XM / 38.0f + 5.0f, YM / 38.0f + 5.0f, 23u, 5, 0) - 0.42f) * 1400.0f; // 구르는 언덕
+		H += SmoothStep(48.0f, 70.0f, R) * 350.0f;                                                       // 광장을 감싸는 둔덕
+		// 산맥: 해 반대쪽 (해 방향 ±70도는 낮게 — 낮은 해가 광장을 비추도록)
+		const float Ridge  = 1.0f - std::abs(Fbm(XM / 22.0f, YM / 22.0f, 41u, 4, 0) * 2.0f - 1.0f);
+		const float Behind = SmoothStep(70.0f, 120.0f, AngleDistance(Azimuth, ShowcaseSunAzimuth));
+		H += Behind * SmoothStep(62.0f, 105.0f, R) * (1500.0f + Ridge * 1300.0f);
+		// 해 쪽: 가까이는 낮게, 멀리(100m~)는 해를 가리지 않는 낮은 능선 (지형 끝이 보이지 않게)
+		H += (1.0f - Behind) * (SmoothStep(100.0f, 150.0f, R) * (500.0f + Ridge * 500.0f) - SmoothStep(60.0f, 90.0f, R) * 250.0f);
+		H *= SmoothStep(ShowcaseFlatRadius / 100.0f, ShowcaseHillStart / 100.0f, R);
+		return std::clamp(H, -ShowcaseRange * 0.45f, ShowcaseRange * 0.45f);
+	}
+} // namespace
+
+bool GenerateShowcaseTerrain(const std::filesystem::path& ContentDirectory)
+{
+	FTerrainComponent Component;
+	Component.Size        = FVector2(ShowcaseSize, ShowcaseSize);
+	Component.HeightRange = ShowcaseRange;
+	FTerrainData Data;
+	Data.Initialize(ShowcaseResolution);
+	const FTerrainFrame Frame = FTerrainFrame::Make(FVector3(), Component, ShowcaseResolution);
+	for (uint32 Y = 0; Y < ShowcaseResolution; ++Y)
+	{
+		for (uint32 X = 0; X < ShowcaseResolution; ++X)
+		{
+			const FVector3 World = Frame.GridToWorld(static_cast<float>(X), static_cast<float>(Y), 0.0f);
+			Data.Heights[Y * ShowcaseResolution + X] =
+				static_cast<uint16>(std::clamp(std::lround(Frame.WorldZToHeight(ShowcaseHeight(World.X, World.Y))), 0L, 65535L));
+		}
+	}
+	// 레이어: 0 풀, 1 흙 (광장 아래 + 길 + 구역 바닥), 2 바위 비탈
+	for (uint32 Y = 0; Y < ShowcaseResolution; ++Y)
+	{
+		for (uint32 X = 0; X < ShowcaseResolution; ++X)
+		{
+			const FVector3 World  = Frame.GridToWorld(static_cast<float>(X), static_cast<float>(Y), 0.0f);
+			const FVector3 Normal = TerrainMath::ComputeNormal(Data, Frame, static_cast<float>(X), static_cast<float>(Y));
+			const float    Radius = std::sqrt(World.X * World.X + World.Y * World.Y);
+			const float    Jitter = Fbm(World.X / 600.0f, World.Y / 600.0f, 57u, 3, 0) - 0.5f;
+			const float    Rock   = SmoothStep(0.82f, 0.70f, Normal.Z + Jitter * 0.12f);
+			const float    Plaza  = SmoothStep(ShowcasePlazaRadius + 150.0f, ShowcasePlazaRadius - 50.0f, Radius + Jitter * 120.0f);
+			const float    Path   = SmoothStep(170.0f, 90.0f, ShowcasePathDistance(World.X, World.Y) + Jitter * 60.0f);
+			const float    Pad    = SmoothStep(ShowcaseZonePad, ShowcaseZonePad - 250.0f, ZoneDistance(World.X, World.Y) + Jitter * 200.0f) * 0.85f;
+			const float    Dirt   = std::max({ Plaza, Path, Pad }) * (1.0f - Rock);
+			float          W[4]   = { 1.0f, Dirt, Rock, 0.0f };
+			W[0]                  = std::max(0.0f, 1.0f - W[1] - W[2]);
+			uint32 Packed         = 0;
+			for (uint32 Layer = 0; Layer < 4; ++Layer)
+			{
+				Packed |= static_cast<uint32>(std::lround(std::clamp(W[Layer], 0.0f, 1.0f) * 255.0f)) << (Layer * 8);
+			}
+			Data.Weights[Y * ShowcaseResolution + X] = TerrainMath::NormalizeWeight(Packed);
+		}
+	}
+	if (!TerrainIO::SaveToFile(Data, ContentDirectory / L"Terrain" / L"ShowcaseTerrain.eterrain"))
+	{
+		E_LOG(LogEditor, Error, "쇼케이스 지형: Terrain/ShowcaseTerrain.eterrain 쓰기 실패");
+		return false;
+	}
+	FTerrainLibrary::Get().Invalidate("Terrain/ShowcaseTerrain.eterrain");
+
+	// 폴리지: 기본 타입 5개(풀/덤불/활엽수/침엽수/바위). 광장·구역 바닥에는 심지 않는다
+	FFoliageAsset Foliage = FFoliageToolPanel::MakeDefaultAsset();
+	{
+		uint32 State  = 4242u;
+		auto   Random = [&State]() {
+            State = Hash(static_cast<int32>(State), 29, 5u);
+            return static_cast<float>(State & 0xFFFFFFu) / static_cast<float>(0xFFFFFF);
+		};
+		struct FScatter
+		{
+			uint32 Type;
+			float  Spacing;
+			float  Chance;
+		};
+		const FScatter Scatters[] = { { 0, 85.0f, 0.75f }, { 1, 420.0f, 0.6f }, { 2, 650.0f, 0.95f }, { 3, 560.0f, 1.0f }, { 4, 600.0f, 0.7f } };
+		const float    Half       = ShowcaseSize * 0.5f;
+		for (const FScatter& Scatter : Scatters)
+		{
+			const FFoliageType& Type = Foliage.Types[Scatter.Type];
+			for (float Y = -Half + Scatter.Spacing * 0.5f; Y < Half; Y += Scatter.Spacing)
+			{
+				for (float X = -Half + Scatter.Spacing * 0.5f; X < Half; X += Scatter.Spacing)
+				{
+					const float    PX   = X + (Random() - 0.5f) * Scatter.Spacing;
+					const float    PY   = Y + (Random() - 0.5f) * Scatter.Spacing;
+					const FVector2 Grid = Frame.WorldToGrid(PX, PY);
+					if (Grid.X < 1.0f || Grid.Y < 1.0f || Grid.X > ShowcaseResolution - 2.0f || Grid.Y > ShowcaseResolution - 2.0f)
+					{
+						continue;
+					}
+					const FVector3 Normal = TerrainMath::ComputeNormal(Data, Frame, Grid.X, Grid.Y);
+					const FVector3 Position(PX, PY, TerrainMath::SampleWorldHeight(Data, Frame, PX, PY));
+					if (!FoliageMath::AcceptsSurface(Type, Position, Normal))
+					{
+						continue;
+					}
+					const uint32 Weight = Data.GetWeight(static_cast<int32>(Grid.X + 0.5f), static_cast<int32>(Grid.Y + 0.5f));
+					const float  Grass  = TerrainMath::GetLayerWeight(Weight, 0) / 255.0f;
+					const float  RockW  = TerrainMath::GetLayerWeight(Weight, 2) / 255.0f;
+					const float  Radius = std::sqrt(PX * PX + PY * PY);
+					const float  Clump  = Fbm(PX / 1400.0f + 3.0f, PY / 1400.0f + 3.0f, 97u + Scatter.Type, 3, 0);
+					const float  Open   = SmoothStep(ShowcasePlazaRadius + 100.0f, ShowcasePlazaRadius + 400.0f, Radius) *
+					                   SmoothStep(ShowcaseZonePad, ShowcaseZonePad + 300.0f, ZoneDistance(PX, PY));
+					float Chance = Scatter.Chance * Open;
+					switch (Scatter.Type)
+					{
+					case 0: Chance *= Grass * SmoothStep(0.32f, 0.5f, Clump) * SmoothStep(9000.0f, 7000.0f, Radius); break;          // 풀 (먼 곳은 어차피 안 보임)
+					case 1: Chance *= Grass * SmoothStep(0.45f, 0.62f, Clump) * (Radius < ShowcaseFlatRadius ? 0.35f : 1.0f); break; // 덤불
+					case 2: Chance *= Grass * SmoothStep(0.40f, 0.55f, Clump) * SmoothStep(4800.0f, 5800.0f, Radius); break;        // 활엽수 숲
+					case 3: Chance *= SmoothStep(300.0f, 700.0f, Position.Z) * SmoothStep(2600.0f, 2000.0f, Position.Z); break;      // 산 중턱 침엽수
+					default: Chance *= std::max(RockW, 0.06f) * SmoothStep(0.4f, 0.6f, Clump) * SmoothStep(4200.0f, 5200.0f, Radius); break; // 바위
+					}
+					if (Random() >= Chance)
+					{
+						continue;
+					}
+					FFoliageInstance& Instance = Foliage.Instances[Scatter.Type].emplace_back();
+					Instance.Position          = Position;
+					Instance.Normal            = Normal;
+					Instance.Yaw               = Random() * 360.0f;
+					Instance.Scale             = FMath::Lerp(Type.MinScale, Type.MaxScale, Random());
+				}
+			}
+		}
+	}
+	for (FFoliageType& Type : Foliage.Types)
+	{
+		Type.Material = "Foliage/Foliage.emat";
+	}
+	if (!FoliageIO::SaveToFile(Foliage, ContentDirectory / L"Foliage" / L"ShowcaseFoliage.efoliage"))
+	{
+		E_LOG(LogEditor, Error, "쇼케이스 지형: Foliage/ShowcaseFoliage.efoliage 쓰기 실패");
+		return false;
+	}
+	FFoliageLibrary::Get().Invalidate("Foliage/ShowcaseFoliage.efoliage");
+	E_LOG(LogEditor, Display, "쇼케이스 지형 생성: Terrain/ShowcaseTerrain.eterrain ({}x{}), 폴리지 {}개", ShowcaseResolution, ShowcaseResolution,
+	      Foliage.GetInstanceCount());
+	return true;
+}

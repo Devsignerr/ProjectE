@@ -160,6 +160,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 		}
 		else
 		{
+			Instance->TickAnimations(Input.DeltaSeconds, Component.Runtime.Events); // 입력을 받지 않는 UI(HUD)도 애니메이션은 진행
 			Instance->Layout(Input.Viewport, Fonts);
 		}
 	}

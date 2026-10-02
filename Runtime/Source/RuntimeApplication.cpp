@@ -387,6 +387,7 @@ void FRuntimeApplication::OnShutdown()
 
 	if (Rhi)
 	{
+		Rhi->GetGraphicsQueue().Flush(); // 마지막 프레임이 쓰던 PSO/리소스를 즉시 해제하기 전에 GPU 완료 대기 (디버그 레이어 CORRUPTION 방지)
 		UIRenderer.Shutdown();
 		DebugDrawRenderer.Shutdown();
 		SceneRenderer.Shutdown();

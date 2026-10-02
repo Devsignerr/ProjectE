@@ -421,6 +421,99 @@ bool FPhysicsSystem::Raycast(const FVector3& Origin, const FVector3& Direction, 
 	return true;
 }
 
+uint32 FPhysicsSystem::FindQueryIgnoreBody(FEntity Entity) const
+{
+	if (!World || !Entity.IsValid())
+	{
+		return FPhysicsWorld::InvalidBody;
+	}
+	if (const auto Body = Bodies.find(Entity); Body != Bodies.end())
+	{
+		return Body->second.Body;
+	}
+	if (const auto Character = Characters.find(Entity); Character != Characters.end())
+	{
+		return World->GetCharacterInnerBody(Character->second.Character);
+	}
+	return FPhysicsWorld::InvalidBody;
+}
+
+uint32 FPhysicsSystem::Overlap(const FPhysicsQueryShape& Shape, const FVector3& Position, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+                               FEntity IgnoreEntity) const
+{
+	if (!World)
+	{
+		return 0;
+	}
+	std::vector<uint64> UserData;
+	World->Overlap(Shape, Position, Rotation, UserData, FindQueryIgnoreBody(IgnoreEntity));
+	// 엔티티 하나가 바디 여럿일 수 있다 (래그돌 캡슐 등) → 엔티티마다 한 번, 바디 순서 유지
+	const size_t First = OutEntities.size();
+	for (const uint64 Data : UserData)
+	{
+		const FEntity Entity = FEntity::FromId(Data);
+		if (Entity == IgnoreEntity && IgnoreEntity.IsValid())
+		{
+			continue;
+		}
+		if (std::find(OutEntities.begin() + static_cast<std::ptrdiff_t>(First), OutEntities.end(), Entity) == OutEntities.end())
+		{
+			OutEntities.push_back(Entity);
+		}
+	}
+	return static_cast<uint32>(OutEntities.size() - First);
+}
+
+uint32 FPhysicsSystem::OverlapSphere(const FVector3& Center, float Radius, std::vector<FEntity>& OutEntities, FEntity IgnoreEntity) const
+{
+	return Overlap(FPhysicsQueryShape::MakeSphere(Radius), Center, FQuat::Identity, OutEntities, IgnoreEntity);
+}
+
+uint32 FPhysicsSystem::OverlapBox(const FVector3& Center, const FVector3& HalfExtents, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+                                  FEntity IgnoreEntity) const
+{
+	return Overlap(FPhysicsQueryShape::MakeBox(HalfExtents), Center, Rotation, OutEntities, IgnoreEntity);
+}
+
+uint32 FPhysicsSystem::OverlapCapsule(const FVector3& Center, float Radius, float HalfHeight, const FQuat& Rotation, std::vector<FEntity>& OutEntities,
+                                      FEntity IgnoreEntity) const
+{
+	return Overlap(FPhysicsQueryShape::MakeCapsule(Radius, HalfHeight), Center, Rotation, OutEntities, IgnoreEntity);
+}
+
+bool FPhysicsSystem::Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+                           FPhysicsHit& OutHit, FEntity IgnoreEntity) const
+{
+	FPhysicsRayHit Hit;
+	if (!World || !World->Sweep(Shape, Start, Rotation, Direction, MaxDistance, Hit, FindQueryIgnoreBody(IgnoreEntity)))
+	{
+		return false;
+	}
+	OutHit.Entity   = FEntity::FromId(Hit.UserData);
+	OutHit.Position = Hit.Position;
+	OutHit.Normal   = Hit.Normal;
+	OutHit.Distance = Hit.Distance;
+	return true;
+}
+
+bool FPhysicsSystem::SphereCast(const FVector3& Start, float Radius, const FVector3& Direction, float MaxDistance, FPhysicsHit& OutHit,
+                                FEntity IgnoreEntity) const
+{
+	return Sweep(FPhysicsQueryShape::MakeSphere(Radius), Start, FQuat::Identity, Direction, MaxDistance, OutHit, IgnoreEntity);
+}
+
+bool FPhysicsSystem::BoxCast(const FVector3& Start, const FVector3& HalfExtents, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+                             FPhysicsHit& OutHit, FEntity IgnoreEntity) const
+{
+	return Sweep(FPhysicsQueryShape::MakeBox(HalfExtents), Start, Rotation, Direction, MaxDistance, OutHit, IgnoreEntity);
+}
+
+bool FPhysicsSystem::CapsuleCast(const FVector3& Start, float Radius, float HalfHeight, const FQuat& Rotation, const FVector3& Direction,
+                                 float MaxDistance, FPhysicsHit& OutHit, FEntity IgnoreEntity) const
+{
+	return Sweep(FPhysicsQueryShape::MakeCapsule(Radius, HalfHeight), Start, Rotation, Direction, MaxDistance, OutHit, IgnoreEntity);
+}
+
 void FPhysicsSystem::AddForce(FEntity Entity, const FVector3& Force)
 {
 	if (const auto Found = Bodies.find(Entity); World && Found != Bodies.end())

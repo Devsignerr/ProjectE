@@ -25,6 +25,16 @@
 
 namespace
 {
+	FPhysicsQueryShape ToPhysicsQueryShape(const FScriptQueryShape& Shape)
+	{
+		switch (Shape.Shape)
+		{
+		case EScriptQueryShape::Box:     return FPhysicsQueryShape::MakeBox(Shape.HalfExtents);
+		case EScriptQueryShape::Capsule: return FPhysicsQueryShape::MakeCapsule(Shape.Radius, Shape.HalfHeight);
+		default:                         return FPhysicsQueryShape::MakeSphere(Shape.Radius);
+		}
+	}
+
 	const char* ToString(EAIMoveStatus Status)
 	{
 		switch (Status)
@@ -204,6 +214,18 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 			}
 		},
 		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->IsRagdollActive(*Scene, Entity); },
+		[Physics](const FScriptQueryShape& Shape, const FVector3& Position, FEntity Ignore, std::vector<FEntity>& OutEntities) {
+			Physics->Overlap(ToPhysicsQueryShape(Shape), Position, Shape.Rotation, OutEntities, Ignore);
+		},
+		[Physics](const FScriptQueryShape& Shape, const FVector3& Start, const FVector3& Direction, float MaxDistance, FEntity Ignore, FScriptRayHit& OutHit) {
+			FPhysicsHit Hit;
+			if (!Physics->Sweep(ToPhysicsQueryShape(Shape), Start, Shape.Rotation, Direction, MaxDistance, Hit, Ignore))
+			{
+				return false;
+			}
+			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			return true;
+		},
 	});
 }
 
@@ -260,6 +282,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
 	{
 		Systems.GameModule->SetNet(this);
+		Systems.GameModule->SetPhysics(Systems.Physics);
 		Systems.GameModule->BeginPlay(InScene);
 	}
 	// 스크립트 BeginPlay는 Lua 상태만 만든다 (OnStart는 첫 TickGameplay). AI는 그 뒤 — 트리 시작 시 Lua 노드가 스크립트 객체를 만든다
@@ -289,6 +312,7 @@ void FGameWorld::EndPlay()
 	{
 		Systems.GameModule->EndPlay(*Scene);
 		Systems.GameModule->SetNet(nullptr);
+		Systems.GameModule->SetPhysics(nullptr);
 	}
 	if (Systems.Physics != nullptr)
 	{

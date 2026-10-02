@@ -38,6 +38,7 @@ public:
 
 	// 멀티플레이 (플레이 중에만 전달). Net은 BeginPlay 전에 넘기고 EndPlay 뒤에 nullptr로 되돌린다
 	void SetNet(IGameNet* Net);
+	void SetPhysics(FPhysicsSystem* Physics); // Net과 같은 수명 (BeginPlay 전 ~ EndPlay 뒤 nullptr)
 	void PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn);
 	void PlayerLeft(FScene& Scene, uint32 PlayerId);
 	void Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, const std::string& RpcName, const FGameRpcArgs& Args);

@@ -133,6 +133,19 @@ struct FPhysicsRayHit
 	float    Distance = 0.0f; // cm
 };
 
+// 겹침 검사/쓸어 보기 모양 (cm). 위치 = 모양 가운데, 캡슐은 회전 전 +Z 축 (콜라이더와 같음)
+struct FPhysicsQueryShape
+{
+	EPhysicsShape Shape       = EPhysicsShape::Sphere;
+	FVector3      HalfExtents = FVector3(50.0f, 50.0f, 50.0f); // 상자
+	float         Radius      = 50.0f;                         // 구/캡슐
+	float         HalfHeight  = 50.0f;                         // 캡슐 원기둥 절반 (반구 제외)
+
+	static FPhysicsQueryShape MakeSphere(float InRadius);
+	static FPhysicsQueryShape MakeBox(const FVector3& InHalfExtents);
+	static FPhysicsQueryShape MakeCapsule(float InRadius, float InHalfHeight);
+};
+
 // Jolt PhysicsSystem 래퍼. 엔진 단위(cm)로 입출력하고 내부에서 m로 변환한다.
 // 여러 인스턴스를 만들 수 있다 (Jolt 전역 초기화는 참조 카운트).
 class FPhysicsWorld
@@ -170,6 +183,17 @@ public:
 
 	// Direction은 정규화하지 않아도 된다. MaxDistance cm
 	bool Raycast(const FVector3& Origin, const FVector3& Direction, float MaxDistance, FPhysicsRayHit& OutHit) const;
+
+	// ---- 모양 질의 (cm). 레이캐스트와 같이 트리거 레이어 제외. IgnoreBody(InvalidBody = 없음)는 그 바디 자신과
+	// 그 바디와 충돌을 끈 쌍(DisableCollision — 관절/래그돌 이웃)도 뺀다 (예: 캐릭터 자신과 자기 래그돌)
+	// 겹침: 모양과 닿거나 겹친 바디마다 한 번 (하위 모양이 여럿 맞아도 한 번). OutUserData 끝에 붙인다. 반환: 찾은 바디 수
+	uint32 Overlap(const FPhysicsQueryShape& Shape, const FVector3& Position, const FQuat& Rotation, std::vector<uint64>& OutUserData,
+	               uint32 IgnoreBody = InvalidBody) const;
+	// 쓸어 보기: Start에서 Direction(정규화 안 해도 됨)으로 MaxDistance까지 모양을 옮겨 처음 닿는 바디.
+	// OutHit.Position = 닿은 점(상대 표면), Normal = 상대 표면에서 모양 쪽으로, Distance = 닿을 때까지 이동 거리
+	// (그때 모양 가운데 = Start + 방향 × Distance). 시작부터 겹쳐 있으면 Distance 0
+	bool Sweep(const FPhysicsQueryShape& Shape, const FVector3& Start, const FQuat& Rotation, const FVector3& Direction, float MaxDistance,
+	           FPhysicsRayHit& OutHit, uint32 IgnoreBody = InvalidBody) const;
 
 	// cm/s² (기본 -Z 980.665)
 	void SetGravity(const FVector3& Gravity);

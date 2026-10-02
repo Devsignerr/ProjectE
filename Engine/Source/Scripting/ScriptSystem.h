@@ -33,6 +33,22 @@ struct FScriptRayHit
 	float    Distance = 0.0f; // cm
 };
 
+// 겹침/쓸어 보기 모양 (Physics의 FPhysicsQueryShape와 같은 뜻, cm). 캡슐은 회전 전 +Z 축
+enum class EScriptQueryShape : uint8
+{
+	Sphere,
+	Box,
+	Capsule,
+};
+struct FScriptQueryShape
+{
+	EScriptQueryShape Shape = EScriptQueryShape::Sphere;
+	FVector3          HalfExtents;       // 상자
+	float             Radius     = 0.0f; // 구/캡슐
+	float             HalfHeight = 0.0f; // 캡슐 원기둥 절반
+	FQuat             Rotation;
+};
+
 // 스크립트가 쓰는 물리 기능. 앱이 Physics 모듈(FPhysicsSystem)과 연결한다 (비어 있으면 무시). 단위 cm, kg
 struct FScriptPhysicsHooks
 {
@@ -50,6 +66,11 @@ struct FScriptPhysicsHooks
 	std::function<bool(FEntity)>                  EnableRagdoll;
 	std::function<void(FEntity)>                  DisableRagdoll;
 	std::function<bool(FEntity)>                  IsRagdollActive;
+	// 모양 질의 (FPhysicsSystem::Overlap/Sweep — 트리거 제외, Ignore(NullEntity = 없음)의 바디와 충돌을 끈 쌍 제외)
+	std::function<void(const FScriptQueryShape&, const FVector3& Position, FEntity Ignore, std::vector<FEntity>& OutEntities)> Overlap;
+	std::function<bool(const FScriptQueryShape&, const FVector3& Start, const FVector3& Direction, float MaxDistance, FEntity Ignore,
+	                   FScriptRayHit& OutHit)>
+		Sweep;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

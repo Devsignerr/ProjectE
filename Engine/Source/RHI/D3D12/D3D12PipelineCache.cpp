@@ -249,22 +249,20 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 {
 	const auto                  Start = FClock::now();
 	ComPtr<ID3D12PipelineState> Pipeline;
-	bool                        bFromLibrary  = false;
+	// 워밍은 드라이버 캐시(파이프라인 라이브러리)를 읽지 않고 항상 Create*PipelineState로 만든다 (드라이버 자체 셰이더 캐시는 쓴다).
+	// 2026-10-04 측정: 작업 스레드가 블롭으로 만든 루트 시그니처로 라이브러리 Load한 PSO를 쓰면(또는 같은 이름을 나중에 메인 스레드가
+	// 다시 Load해도) Demo_Materials/Decals/Terrain 화면이 실행마다 0.1~0.8% 픽셀 달라졌다 (파티클·반투명·조명 미세 차이, MD5가 실행마다 바뀜).
+	// 라이브러리만(--no-pso-warm) 또는 워밍만(라이브러리 없음)은 각각 비트 동일 — 드라이버 내부 원인은 미확인, 조합을 피한다
 	ID3D12RootSignature*        RootSignature = GetWarmRootSignature(Recipe.RootSignatureHash);
 	if (RootSignature != nullptr)
 	{
-		const std::wstring Name = PipelineCache::MakeLibraryName(Key);
 		if (Recipe.Type == PipelineCache::EPipelineType::Graphics)
 		{
 			std::vector<D3D12_INPUT_ELEMENT_DESC>    Elements;
 			const D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = PipelineCache::ToGraphicsDesc(
 				Recipe, RootSignature, BlobBytecode(WarmSource, Recipe.Shaders[0]), BlobBytecode(WarmSource, Recipe.Shaders[1]), Elements);
-			if (Library && LibraryKeys.contains(Key))
-			{
-				std::lock_guard Lock(LibraryMutex);
-				bFromLibrary = SUCCEEDED(Library->LoadGraphicsPipeline(Name.c_str(), &Desc, IID_PPV_ARGS(&Pipeline)));
-			}
-			if (!bFromLibrary && FAILED(Device->CreateGraphicsPipelineState(&Desc, IID_PPV_ARGS(&Pipeline))))
+			if (FAILED(Device->CreateGraphicsPipelineState(&Desc, IID_PPV_ARGS(&Pipeline))))
+
 			{
 				Pipeline.Reset();
 			}
@@ -272,12 +270,8 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 		else
 		{
 			const D3D12_COMPUTE_PIPELINE_STATE_DESC Desc = PipelineCache::ToComputeDesc(Recipe, RootSignature, BlobBytecode(WarmSource, Recipe.Shaders[0]));
-			if (Library && LibraryKeys.contains(Key))
-			{
-				std::lock_guard Lock(LibraryMutex);
-				bFromLibrary = SUCCEEDED(Library->LoadComputePipeline(Name.c_str(), &Desc, IID_PPV_ARGS(&Pipeline)));
-			}
-			if (!bFromLibrary && FAILED(Device->CreateComputePipelineState(&Desc, IID_PPV_ARGS(&Pipeline))))
+			if (FAILED(Device->CreateComputePipelineState(&Desc, IID_PPV_ARGS(&Pipeline))))
+
 			{
 				Pipeline.Reset();
 			}
@@ -295,8 +289,7 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 		if (Pipeline)
 		{
 			++Stats.WarmCreated;
-			Stats.WarmFromLibrary += bFromLibrary ? 1u : 0u;
-			bLibraryDirty |= !bFromLibrary;
+			bLibraryDirty |= !LibraryKeys.contains(Key); // 라이브러리에 없던 PSO면 종료 때 다시 쓴다
 		}
 		Stats.WarmMs += ElapsedMs(Start);
 	}
@@ -596,7 +589,7 @@ void FD3D12PipelineCache::LogStats(const char* When) const
 {
 	const FStats S = GetStats();
 	E_LOG(LogD3D12, Display,
-	      "[PSO 캐시] {}: 요청 {} (메모리 {} — 워밍 대기 {}, 드라이버 캐시 {}, 새로 컴파일 {} {:.1f}ms), 우회 {}, 요청 스레드 총 {:.1f}ms / 워밍 스레드 PSO {} (캐시 {}) {:.1f}ms",
-	      When, S.Requests, S.WarmHits, S.WarmWaits, S.LibraryHits, S.Created, S.CreateMs, S.Bypassed, S.RequestMs, S.WarmCreated, S.WarmFromLibrary,
+	      "[PSO 캐시] {}: 요청 {} (메모리 {} — 워밍 대기 {}, 드라이버 캐시 {}, 새로 컴파일 {} {:.1f}ms), 우회 {}, 요청 스레드 총 {:.1f}ms / 워밍 스레드 PSO {} {:.1f}ms",
+	      When, S.Requests, S.WarmHits, S.WarmWaits, S.LibraryHits, S.Created, S.CreateMs, S.Bypassed, S.RequestMs, S.WarmCreated,
 	      S.WarmMs);
 }

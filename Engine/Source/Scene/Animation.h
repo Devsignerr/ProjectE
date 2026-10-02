@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Scene/AnimMontage.h"
 #include "Scene/AnimNotify.h"
 
 #include <memory>
@@ -122,7 +123,13 @@ struct FAnimationRuntime
 	std::vector<FAnimNotifyEvent>         PendingNotifies;  // 직전 갱신에서 발생 (다음 갱신 시작에 비움)
 	bool                                  bPhysicsPose = false; // 래그돌이 뼈를 구동하는 중: 애니메이션 갱신을 건너뛴다 (Physics/Ragdoll.h)
 
+	// 몽타주 (Scene/AnimMontage.h, 로컬 전용). 시작 순서대로 덮어 섞는다
+	std::vector<FAnimMontageInstance> Montages;
+	std::vector<FAnimMontageEvent>    PendingMontageEvents; // 직전 갱신에서 끝난 몽타주 (다음 갱신 시작에 비움)
+
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> BlendScratch;
+	std::vector<FNodePose> MontageScratch;
+	std::vector<float>     MaskScratch;
 	std::vector<FAnimNotifyHit> HitScratch;
 };

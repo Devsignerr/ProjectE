@@ -236,8 +236,141 @@ namespace
 		return true;
 	}
 
+	// 진행 중 스테이트를 모두 End
+	void EndNotifyTrack(FAnimationRuntime& Runtime, FEntity Entity, FAnimNotifyTrack& Track)
+	{
+		if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Track.Clip); Old != nullptr && !Track.ActiveStates.empty())
+		{
+			Track.ActiveStates.resize(Old->size(), 0);
+			AnimNotifyMath::EndAll(Track.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Old, Runtime.Set->Clips[Track.Clip].Name, 0.0f);
+		}
+		Track.ActiveStates.clear();
+	}
+
+	// ---- 몽타주 (규칙은 Scene/AnimMontage.h)
+
+	std::string NormalizeSlot(std::string_view Slot)
+	{
+		return Slot.empty() ? std::string(FAnimationSystem::DefaultMontageSlot) : std::string(Slot);
+	}
+
+	// 슬롯 마스크 (nullptr = 몸 전체: 그래프 없음 / 슬롯 없음 / 빈 마스크)
+	const std::vector<float>* FindSlotMask(const FAnimGraphComponent* Graph, const std::string& Slot)
+	{
+		if (Graph == nullptr || !Graph->Runtime.Asset)
+		{
+			return nullptr;
+		}
+		const int32 Index = Graph->Runtime.Asset->FindSlot(Slot);
+		if (Index < 0 || Index >= static_cast<int32>(Graph->Runtime.SlotMasks.size()) || Graph->Runtime.Asset->Slots[static_cast<size_t>(Index)].Mask.IsFullBody())
+		{
+			return nullptr;
+		}
+		return &Graph->Runtime.SlotMasks[static_cast<size_t>(Index)];
+	}
+
+	// 몽타주 진행 구간의 노티파이. 부분 구간 반복이 감기면 (이전 → 구간 끝) + (구간 시작 → 새 시각)으로 나눠 판정한다
+	void CollectMontageNotifies(FAnimationRuntime& Runtime, FEntity Entity, FAnimMontageInstance& Montage, const FMontageStep& Step, float DeltaSeconds)
+	{
+		const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Montage.ClipIndex);
+		if (Notifies == nullptr || Step.Delta == 0.0f)
+		{
+			return;
+		}
+		FAnimNotifyTrack& Track = Montage.Notify;
+		Track.Clip              = Montage.ClipIndex;
+		const float Start       = AnimMontageMath::GetStartTime(Montage);
+		const float End         = AnimMontageMath::GetEndTime(Montage);
+		const bool  bSubRange   = Start > 0.0f || End < Montage.Duration;
+		if (Step.bWrapped && bSubRange)
+		{
+			const bool  bForward = Step.Delta > 0.0f;
+			const float Edge     = bForward ? End : Start;
+			const float Restart  = bForward ? Start : End;
+			AnimNotifyMath::Collect(*Notifies, Step.PreviousTime, Edge, Edge - Step.PreviousTime, Montage.Duration, false, false, Track.bResync,
+			                        Track.ActiveStates, Runtime.HitScratch);
+			Track.bResync = false;
+			AnimNotifyMath::Collect(*Notifies, Restart, Step.NewTime, Step.NewTime - Restart, Montage.Duration, false, false, true, Track.ActiveStates,
+			                        Runtime.HitScratch);
+		}
+		else
+		{
+			AnimNotifyMath::Collect(*Notifies, Step.PreviousTime, Step.NewTime, Step.Delta, Montage.Duration, Montage.Params.bLoop, Step.bWrapped,
+			                        Track.bResync, Track.ActiveStates, Runtime.HitScratch);
+		}
+		EmitNotifies(Runtime, Entity, *Notifies, Montage.Clip, DeltaSeconds);
+		Track.bResync = false;
+	}
+
+	// 몽타주 시각/가중치/노티파이/끝 이벤트. 반환 = 몸 전체 몽타주 가중치 >= 0.5 (아래 원천의 노티파이를 멈춘다)
+	bool UpdateMontages(FAnimationRuntime& Runtime, FEntity Entity, const FAnimGraphComponent* Graph, float Delta, float DeltaSeconds)
+	{
+		const FAnimationSet& Set       = *Runtime.Set;
+		bool                 bSuppress = false;
+		for (FAnimMontageInstance& Montage : Runtime.Montages)
+		{
+			// 모델이 다시 인스턴스화되면 클립 번호가 바뀔 수 있다 — 이름으로 다시 찾고, 없으면 중단
+			if (Montage.ClipIndex < 0 || Montage.ClipIndex >= static_cast<int32>(Set.Clips.size()) || Set.Clips[static_cast<size_t>(Montage.ClipIndex)].Name != Montage.Clip)
+			{
+				Montage.ClipIndex = Set.FindClip(Montage.Clip);
+				if (Montage.ClipIndex < 0)
+				{
+					Montage.Notify.ActiveStates.clear();
+					AnimMontageMath::BeginBlendOut(Montage, 0.0f, true);
+				}
+			}
+			const FMontageStep Step = AnimMontageMath::Advance(Montage, Delta);
+			if (Montage.bInterrupted)
+			{
+				EndNotifyTrack(Runtime, Entity, Montage.Notify); // 중단 뒤에는 노티파이 없음
+			}
+			else
+			{
+				CollectMontageNotifies(Runtime, Entity, Montage, Step, DeltaSeconds);
+			}
+			if (Montage.bFinished)
+			{
+				EndNotifyTrack(Runtime, Entity, Montage.Notify);
+				Runtime.PendingMontageEvents.push_back({ Entity, Montage.Clip, Montage.Params.Slot, Montage.bInterrupted });
+			}
+			else if (Montage.Weight >= 0.5f && FindSlotMask(Graph, Montage.Params.Slot) == nullptr)
+			{
+				bSuppress = true;
+			}
+		}
+		std::erase_if(Runtime.Montages, [](const FAnimMontageInstance& Montage) { return Montage.bFinished; });
+		return bSuppress;
+	}
+
+	// 몽타주 포즈를 시작 순서대로 덮는다 (슬롯 마스크 × 가중치). 원천 포즈가 없었으면 기본 포즈에서 시작
+	bool ApplyMontages(FAnimationRuntime& Runtime, const FAnimGraphComponent* Graph, bool bHavePose)
+	{
+		static const std::vector<float> FullBody;
+		const FAnimationSet&            Set = *Runtime.Set;
+		for (const FAnimMontageInstance& Montage : Runtime.Montages)
+		{
+			if (Montage.Weight <= 0.0f || Montage.ClipIndex < 0 || Montage.ClipIndex >= static_cast<int32>(Set.Clips.size()))
+			{
+				continue;
+			}
+			if (!bHavePose)
+			{
+				Runtime.PoseScratch = Set.RestPose;
+				bHavePose           = true;
+			}
+			Runtime.MontageScratch = Set.RestPose;
+			AnimationMath::SampleClip(Set.Clips[static_cast<size_t>(Montage.ClipIndex)], Montage.Time, Runtime.MontageScratch);
+			const std::vector<float>* Mask = FindSlotMask(Graph, Montage.Params.Slot);
+			AnimGraphMath::BlendMasked(Runtime.PoseScratch, Runtime.MontageScratch, Mask != nullptr ? *Mask : FullBody, Montage.Weight);
+		}
+		return bHavePose;
+	}
+
 	// 그래프 재생 → OutPose (규칙은 Scene/AnimGraph.h 머리 주석). 기본 레이어 기여가 없으면 false (포즈를 쓰지 않는다)
-	bool EvaluateGraph(FEntity Entity, FAnimationComponent& Animation, FAnimGraphComponent& Graph, float DeltaSeconds, std::vector<FNodePose>& OutPose)
+	//   bSuppressBaseNotifies: 몸 전체 몽타주가 덮는 중 — 기본 레이어 노티파이를 판정하지 않는다
+	bool EvaluateGraph(FEntity Entity, FAnimationComponent& Animation, FAnimGraphComponent& Graph, float DeltaSeconds, bool bSuppressBaseNotifies,
+	                   std::vector<FNodePose>& OutPose)
 	{
 		FAnimationRuntime&     Runtime      = Animation.Runtime;
 		FAnimGraphRuntime&     GraphRuntime = Graph.Runtime;
@@ -248,7 +381,7 @@ namespace
 		// 기본 레이어: 노티파이는 가중치가 가장 큰 기여 하나
 		GraphRuntime.Instance.Update(Asset, GraphRuntime.Binding, GraphRuntime.Parameters, Delta);
 		const FAnimNotifySource& Source = GraphRuntime.Instance.GetNotifySource();
-		UpdateNotifyTrack(Runtime, Entity, GraphRuntime.BaseNotify, Source, true, DeltaSeconds);
+		UpdateNotifyTrack(Runtime, Entity, GraphRuntime.BaseNotify, Source, !bSuppressBaseNotifies, DeltaSeconds);
 		// 인스펙터/GetCurrentClip용: 대표 클립
 		if (Source.Clip >= 0)
 		{
@@ -280,8 +413,8 @@ namespace
 		return bHavePose;
 	}
 
-	// 클립 재생(크로스페이드, 루트 모션) → Runtime.PoseScratch
-	bool EvaluateClip(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
+	// 클립 재생(크로스페이드, 루트 모션) → Runtime.PoseScratch. bSuppressNotifies: 몸 전체 몽타주가 덮는 중
+	bool EvaluateClip(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds, bool bSuppressNotifies)
 	{
 		FAnimationRuntime&   Runtime = Animation.Runtime;
 		const FAnimationSet& Set     = *Runtime.Set;
@@ -295,8 +428,13 @@ namespace
 		bool        bWrapped            = false;
 		Runtime.CurrentTime = AnimationMath::AdvanceTime(Runtime.CurrentTime, Delta, Clip.Duration, Animation.bLoop, bWrapped);
 
-		// 노티파이: 이번 진행 구간에서 지나간 시점/구간
-		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Runtime.CurrentClip); Notifies != nullptr && Delta != 0.0f)
+		// 노티파이: 이번 진행 구간에서 지나간 시점/구간 (몽타주가 덮는 동안은 멈추고, 끝나면 그 시각부터 다시)
+		if (bSuppressNotifies)
+		{
+			EndNotifyTrack(Runtime, Entity, Runtime.Notify);
+			Runtime.Notify.bResync = true;
+		}
+		else if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Runtime.CurrentClip); Notifies != nullptr && Delta != 0.0f)
 		{
 			AnimNotifyMath::Collect(*Notifies, PreviousCurrentTime, Runtime.CurrentTime, Delta, Clip.Duration, Animation.bLoop, bWrapped,
 			                        Runtime.Notify.bResync, Runtime.Notify.ActiveStates, Runtime.HitScratch);
@@ -363,19 +501,23 @@ namespace
 			return;
 		}
 		Runtime.PendingNotifies.clear();
+		Runtime.PendingMontageEvents.clear();
 		if (Runtime.bPhysicsPose)
 		{
-			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이도 멈춘다)
+			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이·몽타주·IK도 멈춘다)
 		}
-		bool bHavePose = false;
-		if (FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity); Graph != nullptr && ResolveGraph(Scene, *Graph, Runtime))
+		FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity);
+		if (Graph != nullptr && !ResolveGraph(Scene, *Graph, Runtime))
 		{
-			bHavePose = EvaluateGraph(Entity, Animation, *Graph, DeltaSeconds, Runtime.PoseScratch);
+			Graph = nullptr;
 		}
-		else
-		{
-			bHavePose = EvaluateClip(Scene, Entity, Animation, DeltaSeconds);
-		}
+		// 몽타주 진행을 먼저 (몸 전체 몽타주가 덮는 중이면 아래 원천의 노티파이를 멈춘다)
+		const float Delta     = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
+		const bool  bSuppress = !Runtime.Montages.empty() && UpdateMontages(Runtime, Entity, Graph, Delta, DeltaSeconds);
+
+		bool bHavePose = Graph != nullptr ? EvaluateGraph(Entity, Animation, *Graph, DeltaSeconds, bSuppress, Runtime.PoseScratch)
+		                                  : EvaluateClip(Scene, Entity, Animation, DeltaSeconds, bSuppress);
+		bHavePose = ApplyMontages(Runtime, Graph, bHavePose);
 		if (bHavePose)
 		{
 			WritePose(Scene, Runtime, Runtime.PoseScratch);
@@ -571,4 +713,98 @@ std::string FAnimationSystem::GetAnimState(FScene& Scene, FEntity Entity)
 		return {};
 	}
 	return Runtime.Asset->States[State].Name;
+}
+
+// ---------------------------------------------------------------- 몽타주
+
+FEntity FAnimationSystem::FindAnimation(const FScene& Scene, FEntity Entity)
+{
+	const FRegistry& Registry = Scene.GetRegistry();
+	if (!Registry.IsValid(Entity))
+	{
+		return NullEntity;
+	}
+	if (Registry.Has<FAnimationComponent>(Entity))
+	{
+		return Entity;
+	}
+	for (const FEntity Child : Scene.GetChildren(Entity))
+	{
+		if (const FEntity Found = FindAnimation(Scene, Child); Found.IsValid())
+		{
+			return Found;
+		}
+	}
+	return NullEntity;
+}
+
+bool FAnimationSystem::PlayMontage(FScene& Scene, FEntity Entity, std::string_view ClipName, const FMontagePlayParams& Params)
+{
+	const FEntity Target = FindAnimation(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return false;
+	}
+	FAnimationRuntime& Runtime = Scene.GetRegistry().Get<FAnimationComponent>(Target).Runtime;
+	const int32        Clip    = Runtime.Set ? Runtime.Set->FindClip(ClipName) : -1;
+	if (Clip < 0)
+	{
+		E_LOG(LogAnimation, Warning, "몽타주: 모델에 클립 '{}'이 없습니다", ClipName);
+		return false;
+	}
+	FAnimMontageInstance Montage;
+	Montage.Clip        = std::string(ClipName);
+	Montage.ClipIndex   = Clip;
+	Montage.Params      = Params;
+	Montage.Params.Slot = NormalizeSlot(Params.Slot);
+	Montage.Params.BlendIn  = FMath::Max(Montage.Params.BlendIn, 0.0f);
+	Montage.Params.BlendOut = FMath::Max(Montage.Params.BlendOut, 0.0f);
+	Montage.Duration    = Runtime.Set->Clips[static_cast<size_t>(Clip)].Duration;
+	AnimMontageMath::Start(Montage);
+	// 같은 슬롯의 재생 중 몽타주는 새 BlendIn 시간으로 빠진다 (중단)
+	for (FAnimMontageInstance& Other : Runtime.Montages)
+	{
+		if (Other.Params.Slot == Montage.Params.Slot)
+		{
+			AnimMontageMath::BeginBlendOut(Other, Montage.Params.BlendIn, true);
+		}
+	}
+	Runtime.Montages.push_back(std::move(Montage));
+	return true;
+}
+
+bool FAnimationSystem::StopMontage(FScene& Scene, FEntity Entity, std::string_view Slot, float BlendOut)
+{
+	const FEntity Target = FindAnimation(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return false;
+	}
+	bool bStopped = false;
+	for (FAnimMontageInstance& Montage : Scene.GetRegistry().Get<FAnimationComponent>(Target).Runtime.Montages)
+	{
+		if ((Slot.empty() || Montage.Params.Slot == Slot) && !Montage.bInterrupted)
+		{
+			AnimMontageMath::BeginBlendOut(Montage, BlendOut, true);
+			bStopped = true;
+		}
+	}
+	return bStopped;
+}
+
+bool FAnimationSystem::IsMontagePlaying(FScene& Scene, FEntity Entity, std::string_view Slot)
+{
+	const FEntity Target = FindAnimation(Scene, Entity);
+	if (!Target.IsValid())
+	{
+		return false;
+	}
+	for (const FAnimMontageInstance& Montage : Scene.GetRegistry().Get<FAnimationComponent>(Target).Runtime.Montages)
+	{
+		if ((Slot.empty() || Montage.Params.Slot == Slot) && !Montage.bInterrupted && !Montage.bFinished)
+		{
+			return true;
+		}
+	}
+	return false;
 }

@@ -45,6 +45,25 @@
       "Type": "Float"
     }
   ],
+  "Slots": [
+    {
+      "Mask": [
+        {
+          "BlendDepth": 2,
+          "Bone": "b_Spine02_03"
+        },
+        {
+          "Bone": "b_RightUpperArm_06",
+          "Weight": 0.0
+        },
+        {
+          "Bone": "b_LeftUpperArm_09",
+          "Weight": 0.0
+        }
+      ],
+      "Name": "Upper"
+    }
+  ],
   "States": [
     {
       "BlendParameter": "Speed",

@@ -1209,6 +1209,10 @@ void FAnimGraphEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	{
 		DrawLayers(Debug);
 	}
+	if (ImGui::CollapsingHeader(ICON_FA_CLAPPERBOARD " 몽타주 슬롯"))
+	{
+		DrawSlots();
+	}
 	if (bScrollToSelection)
 	{
 		ImGui::SetScrollHereY(0.0f);
@@ -2374,4 +2378,82 @@ void FAnimGraphEditor::DrawLayers(const FDebugView& Debug)
 	ImGui::SetItemTooltip("실제 가중치 = clamp(가중치 × 파라미터 값, 0, 1). 레이어 노티파이는 실제 가중치 0.5 이상일 때만");
 	ImGui::TextDisabled("본 마스크");
 	DrawMaskEditor(Layer.Mask, "LayerMask");
+}
+
+void FAnimGraphEditor::DrawSlots()
+{
+	FAssetEditorWidgets::Hint("Lua entity:PlayMontage(clip, {Slot='이름'})으로 재생한 몽타주는 그 슬롯 마스크 부분만 덮는다. 없는 슬롯 이름은 몸 전체.");
+	int32 Remove = -1;
+	for (size_t Index = 0; Index < Asset.Slots.size(); ++Index)
+	{
+		FAnimGraphSlot& Slot = Asset.Slots[Index];
+		ImGui::PushID(static_cast<int>(Index));
+		const bool bOpen = ImGui::TreeNodeEx("##Slot", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap, "%s %s", ICON_FA_CLAPPERBOARD,
+		                                     Slot.Name.c_str());
+		ImGui::SameLine(ImGui::GetContentRegionMax().x - ImGui::GetFrameHeight());
+		if (ImGui::SmallButton(ICON_FA_XMARK))
+		{
+			Remove = static_cast<int32>(Index);
+		}
+		if (bOpen)
+		{
+			std::string Name = Slot.Name;
+			if (InputString("이름", Name) && !Name.empty() && Asset.FindSlot(Name) < 0)
+			{
+				Slot.Name = Name;
+				MarkEdited("슬롯 이름");
+			}
+			DrawMaskEditor(Slot.Mask, "SlotMask");
+			ImGui::TreePop();
+		}
+		ImGui::PopID();
+	}
+	if (Remove >= 0)
+	{
+		Asset.Slots.erase(Asset.Slots.begin() + Remove);
+		MarkEdited("슬롯 삭제");
+	}
+	if (ImGui::Button(ICON_FA_PLUS " 슬롯 추가"))
+	{
+		FAnimGraphSlot Slot;
+		Slot.Name = "Slot";
+		for (int32 Suffix = 1; Asset.FindSlot(Slot.Name) >= 0; ++Suffix)
+		{
+			Slot.Name = std::format("Slot{}", Suffix);
+		}
+		Asset.Slots.push_back(std::move(Slot));
+		MarkEdited("슬롯 추가");
+	}
+
+	// 미리보기 모델로 시험 재생
+	ImGui::SeparatorText("미리보기 재생");
+	ClipCombo("클립##Montage", PreviewMontageClip);
+	if (ImGui::BeginCombo("슬롯##Montage", PreviewMontageSlot.empty() ? FAnimationSystem::DefaultMontageSlot : PreviewMontageSlot.c_str()))
+	{
+		if (ImGui::Selectable(FAnimationSystem::DefaultMontageSlot, PreviewMontageSlot.empty()))
+		{
+			PreviewMontageSlot.clear();
+		}
+		for (const FAnimGraphSlot& Slot : Asset.Slots)
+		{
+			if (ImGui::Selectable(Slot.Name.c_str(), Slot.Name == PreviewMontageSlot))
+			{
+				PreviewMontageSlot = Slot.Name;
+			}
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::BeginDisabled(PreviewMontageClip.empty() || !Preview.GetScene().GetRegistry().IsValid(ModelRoot));
+	if (ImGui::Button(ICON_FA_PLAY " 몽타주 재생"))
+	{
+		FMontagePlayParams Params;
+		Params.Slot = PreviewMontageSlot;
+		FAnimationSystem::PlayMontage(Preview.GetScene(), ModelRoot, PreviewMontageClip, Params);
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	if (ImGui::Button(ICON_FA_STOP " 멈춤"))
+	{
+		FAnimationSystem::StopMontage(Preview.GetScene(), ModelRoot, std::string_view(), -1.0f);
+	}
 }

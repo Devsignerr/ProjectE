@@ -142,6 +142,18 @@ const FAnimGraphParameter* FAnimGraphAsset::FindParameter(std::string_view Name)
 	return nullptr;
 }
 
+int32 FAnimGraphAsset::FindSlot(std::string_view Name) const
+{
+	for (size_t Index = 0; Index < Slots.size(); ++Index)
+	{
+		if (Slots[Index].Name == Name)
+		{
+			return static_cast<int32>(Index);
+		}
+	}
+	return -1;
+}
+
 int32 FAnimGraphAsset::FindLayer(std::string_view Name) const
 {
 	for (size_t Index = 0; Index < Layers.size(); ++Index)
@@ -505,6 +517,24 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 			Asset.Layers.push_back(std::move(Layer));
 		}
 	}
+	if (const auto Found = Root.find("Slots"); Found != Root.end() && Found->is_array())
+	{
+		for (const json& Node : *Found)
+		{
+			FAnimGraphSlot Slot;
+			Slot.Name = Node.value("Name", std::string());
+			if (const auto Mask = Node.find("Mask"); Mask != Node.end())
+			{
+				Slot.Mask = ParseMask(*Mask);
+			}
+			if (Slot.Name.empty() || Asset.FindSlot(Slot.Name) >= 0)
+			{
+				Warn(std::format("몽타주 슬롯 {}번: 이름이 비었거나 겹쳐 건너뜁니다 ('{}')", Asset.Slots.size(), Slot.Name));
+				continue;
+			}
+			Asset.Slots.push_back(std::move(Slot));
+		}
+	}
 	Out = std::move(Asset);
 	return true;
 }
@@ -557,6 +587,15 @@ std::string FAnimGraphAsset::ToJsonString() const
 			LayerArray.push_back(std::move(Node));
 		}
 		Root["Layers"] = std::move(LayerArray);
+	}
+	if (!Slots.empty())
+	{
+		json SlotArray = json::array();
+		for (const FAnimGraphSlot& Slot : Slots)
+		{
+			SlotArray.push_back(json{ { "Name", Slot.Name }, { "Mask", WriteMask(Slot.Mask) } });
+		}
+		Root["Slots"] = std::move(SlotArray);
 	}
 
 	json Editor = json::object();
@@ -728,6 +767,12 @@ void FAnimGraphRuntime::Rebind(const FAnimationSet& Set, const std::vector<std::
 		}
 	}
 	LayerResumeStates.clear();
+
+	SlotMasks.assign(Asset->Slots.size(), std::vector<float>());
+	for (size_t Slot = 0; Slot < Asset->Slots.size(); ++Slot)
+	{
+		AnimGraphMath::ComputeBoneMaskWeights(Asset->Slots[Slot].Mask, Set.NodeParents, NodeNames, SlotMasks[Slot], OutMissingBones);
+	}
 }
 
 // ---------------------------------------------------------------- 순수 계산

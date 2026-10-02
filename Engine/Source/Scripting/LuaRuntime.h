@@ -144,6 +144,8 @@ private:
 	void RegisterSequenceBindings(); // entity:PlaySequence/StopSequence 등 (ScriptSequenceBindings.cpp)
 	// 직전 시퀀스 갱신의 이벤트 → OnSequenceEvent_<이름>, OnSequenceFinished (ScriptSequenceBindings.cpp)
 	void DispatchSequenceEvents();
+	// 직전 애니메이션 갱신에서 끝난 몽타주 → OnMontageEnded(clip, interrupted, slot) (ScriptAnimationBindings.cpp)
+	void DispatchMontageEvents();
 
 	// Scene.SpawnPrefab 요청: 스크립트 갱신 루프 밖에서 만든다 (ApplyPendingSpawns)
 	struct FPendingSpawn

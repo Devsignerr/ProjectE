@@ -37,12 +37,15 @@
 // 노티파이 (Scene/AnimNotify.h 규칙 위에): 출처(기본 레이어, 추가 레이어마다)가 각자 판정한다 — 출처 안에서는 이번 프레임 가중치가 가장
 //   큰 기여(크로스페이드 상태 × 샘플) 하나의 클립에서만. 그 기여가 바뀌면 이전 기여의 진행 중 스테이트는 End, 새 기여는 이번 진행 구간부터
 //   판정(시작 시각이 스테이트 안이면 Begin). 추가 레이어는 레이어 가중치 >= 0.5일 때만 판정한다 (아래로 내려가면 진행 중 스테이트 End).
+//   기본 레이어는 몸 전체 몽타주(슬롯 마스크 없음) 가중치가 0.5 이상인 동안 판정하지 않는다. 몽타주는 몽타주마다 따로 (AnimMontage.h).
 //   방금 들어간 상태는 그 프레임에 진행하지 않으므로 노티파이가 없다.
+// 최종 포즈 순서 (FAnimationSystem): 기본 레이어 → 추가 레이어 → 몽타주(시작 순서대로, 슬롯 마스크 × 몽타주 가중치) → IK → 노드 기록.
 // 파라미터: float/bool(0/1로 저장). Lua entity:SetAnimParam/GetAnimParam/GetAnimState, C++ FAnimationSystem::SetAnimParam 등.
 //   파라미터는 복제되지 않는다 — 각 프로세스가 자기 값으로 계산한다 (캐릭터 이동 자동 공급은 FAnimGraphComponent::bUseCharacterMovement).
 // 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}),
 //   3 = 2D 블렌드 스페이스 (상태 "BlendParameterY", 2D 샘플 "Position": [x, y]) + 레이어 ("Layers": [{Name, Weight, WeightParameter,
-//       Mask: [{Bone, Weight, BlendDepth}], EntryState, States, Transitions, Editor: {AnyStatePosition}}]).
+//       Mask: [{Bone, Weight, BlendDepth}], EntryState, States, Transitions, Editor: {AnyStatePosition}}])
+//       + 몽타주 슬롯 ("Slots": [{Name, Mask}] — 몽타주 규칙은 Scene/AnimMontage.h).
 //   읽기는 1/2/3 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 3. 전이 우선순위 = Transitions 목록 순서.
 // 핫 리로드: FAnimGraphLibrary::Invalidate가 세대 번호를 올리면 그 그래프를 쓰는 컴포넌트가 다음 갱신에서 다시 읽고, 파일이 바뀌었으면
 //   새 에셋으로 다시 묶는다. 파라미터 값은 유지되고, 같은 이름의 상태가 새 그래프에 있으면 그 상태에서 다시 시작한다 (없으면 시작 상태).
@@ -149,6 +152,13 @@ struct FAnimGraphLayer : FAnimStateMachine
 	std::string   WeightParameter;
 };
 
+// 몽타주 슬롯 (Scene/AnimMontage.h): 이 이름으로 재생한 몽타주는 Mask 부분만 덮는다 (비면 몸 전체)
+struct FAnimGraphSlot
+{
+	std::string   Name;
+	FAnimBoneMask Mask;
+};
+
 struct FAnimGraphAsset : FAnimStateMachine
 {
 	static constexpr int32          Version   = 3;
@@ -156,12 +166,14 @@ struct FAnimGraphAsset : FAnimStateMachine
 
 	std::vector<FAnimGraphParameter> Parameters;
 	std::vector<FAnimGraphLayer>     Layers; // 기본 레이어(States/Transitions) 위에 순서대로
+	std::vector<FAnimGraphSlot>      Slots;  // 몽타주 슬롯 마스크
 
 	// 편집기 정보 (버전 2, 실행에 쓰지 않음)
 	std::string PreviewModel; // 미리보기 모델 (Content 기준)
 
 	const FAnimGraphParameter* FindParameter(std::string_view Name) const;
 	int32                      FindLayer(std::string_view Name) const;
+	int32                      FindSlot(std::string_view Name) const;
 	// Layer -1 = 기본 레이어(자신), 0.. = Layers[Layer]
 	FAnimStateMachine&       GetMachine(int32 Layer) { return Layer < 0 ? static_cast<FAnimStateMachine&>(*this) : Layers[static_cast<size_t>(Layer)]; }
 	const FAnimStateMachine& GetMachine(int32 Layer) const
@@ -340,6 +352,7 @@ struct FAnimGraphRuntime
 	std::vector<FAnimNotifyTrack>   LayerNotify;
 	std::vector<std::vector<float>> LayerMasks; // [레이어][노드] 본 마스크 가중치
 	std::vector<float>              LayerWeights; // 직전 갱신의 레이어 가중치 (편집기 표시용)
+	std::vector<std::vector<float>> SlotMasks;    // [슬롯][노드] 몽타주 슬롯 마스크 가중치 (Asset->Slots 순서)
 
 	// 캐릭터 이동 자동 공급 (FGameWorld): 위치 변화로 속도를 계산할 때의 직전 월드 위치
 	FVector3 PreviousMovementPosition;

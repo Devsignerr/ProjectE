@@ -1,0 +1,38 @@
+{
+  "Entities": [
+    {
+      "Name": "Pickup",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/Pickup.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

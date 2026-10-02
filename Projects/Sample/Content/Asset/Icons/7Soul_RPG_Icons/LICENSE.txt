@@ -1,0 +1,8 @@
+496 pixel art icons for medieval/fantasy RPG
+Author: Henrique Lazarini (7Soul1)
+Source: https://opengameart.org/content/496-pixel-art-icons-for-medievalfantasy-rpg
+License: CC0 1.0 Universal (Public Domain Dedication)
+         https://creativecommons.org/publicdomain/zero/1.0/
+
+Only the icons used by the RPG demo are included. Each icon was upscaled 4x
+(34x34 -> 136x136, nearest neighbor) so it stays crisp under the UI's linear sampler.

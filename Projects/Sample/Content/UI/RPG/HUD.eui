@@ -1,0 +1,1580 @@
+{
+  "Version": 2,
+  "DesignSize": [1920, 1080],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Enabled": true,
+    "Opacity": 1,
+    "Visibility": "SelfHitTestInvisible",
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "StatusPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Brush": {
+          "Color": [1, 1, 1, 1],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [0, 0, 0, 1],
+          "Texture": "UI/RPG/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [0.25, 0.25, 0.25, 0.25],
+          "TextureSize": [64, 64]
+        },
+        "ContentPadding": [20, 18, 20, 12],
+        "Slot": {
+          "AnchorMin": [0, 0],
+          "AnchorMax": [0, 0],
+          "Offsets": [24, 24, 0, 0],
+          "Alignment": [0, 0],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "StatusBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Overlay",
+                "Name": "HealthRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "MinSize": [340, 26],
+                "Slot": {
+                  "Padding": [0, 0, 0, 6],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "HealthBar",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0.08, 0.06, 0.05, 0.95],
+                      "CornerRadius": 0,
+                      "BorderWidth": 2,
+                      "BorderColor": [0.03, 0.02, 0.01, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.82, 0.18, 0.16, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "HealthText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "HP 100 / 100",
+                    "FontSize": 18,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "ManaRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "MinSize": [340, 26],
+                "Slot": {
+                  "Padding": [0, 0, 0, 6],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "ManaBar",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0.08, 0.06, 0.05, 0.95],
+                      "CornerRadius": 0,
+                      "BorderWidth": 2,
+                      "BorderColor": [0.03, 0.02, 0.01, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.22, 0.42, 0.92, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "ManaText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "MP 50 / 50",
+                    "FontSize": 18,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "StaminaRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "MinSize": [340, 26],
+                "Slot": {
+                  "Padding": [0, 0, 0, 6],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "StaminaBar",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0.08, 0.06, 0.05, 0.95],
+                      "CornerRadius": 0,
+                      "BorderWidth": 2,
+                      "BorderColor": [0.03, 0.02, 0.01, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.88, 0.72, 0.2, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "StaminaText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "SP 100 / 100",
+                    "FontSize": 18,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "GoldPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Brush": {
+          "Color": [1, 1, 1, 1],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [0, 0, 0, 1],
+          "Texture": "UI/RPG/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [0.25, 0.25, 0.25, 0.25],
+          "TextureSize": [64, 64]
+        },
+        "ContentPadding": [18, 12, 22, 12],
+        "Slot": {
+          "AnchorMin": [1, 0],
+          "AnchorMax": [1, 0],
+          "Offsets": [-24, 24, 0, 0],
+          "Alignment": [1, 0],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "GoldBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Image",
+                "Name": "GoldIcon",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Brush": {
+                  "Color": [1, 1, 1, 1],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [0, 0, 0, 1],
+                  "Texture": "Asset/Icons/7Soul_RPG_Icons/I_GoldCoin.png"
+                },
+                "ImageSize": [40, 40],
+                "Slot": {
+                  "Padding": [0, 0, 10, 0],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "GoldText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Text": "0",
+                "FontSize": 30,
+                "TextColor": [1.0, 0.84, 0.36, 1],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [0.05, 0.03, 0.02, 1],
+                "ShadowOffset": [0, 2],
+                "ShadowColor": [0, 0, 0, 0.7],
+                "Slot": {
+                  "Padding": [0, 0, 0, 0],
+                  "HAlign": "Left",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "ActionBarPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Brush": {
+          "Color": [1, 1, 1, 1],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [0, 0, 0, 1],
+          "Texture": "UI/RPG/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [0.25, 0.25, 0.25, 0.25],
+          "TextureSize": [64, 64]
+        },
+        "ContentPadding": [16, 14, 16, 14],
+        "Slot": {
+          "AnchorMin": [0.5, 1],
+          "AnchorMax": [0.5, 1],
+          "Offsets": [0, -20, 0, 0],
+          "Alignment": [0.5, 1],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "ActionBar",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Overlay",
+                "Name": "Skill1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [4, 0, 4, 0],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Border",
+                    "Name": "Skill1Bg",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [84, 84],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "Skill1Icon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/S_Physic01.png"
+                    },
+                    "ImageSize": [64, 64],
+                    "Slot": {
+                      "Padding": [10, 10, 10, 10],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Skill1Cooldown",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0, 0, 0, 0],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.02, 0.02, 0.04, 0.72],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 0.0,
+                    "FillDirection": "BottomToTop",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [6, 6, 6, 6],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill1CooldownText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 26,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill1Key",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "Q",
+                    "FontSize": 18,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [7, 4, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Top"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill1Count",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 20,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Right",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 7, 3],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Skill2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [4, 0, 4, 0],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Border",
+                    "Name": "Skill2Bg",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [84, 84],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "Skill2Icon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/S_Fire01.png"
+                    },
+                    "ImageSize": [64, 64],
+                    "Slot": {
+                      "Padding": [10, 10, 10, 10],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Skill2Cooldown",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0, 0, 0, 0],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.02, 0.02, 0.04, 0.72],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 0.0,
+                    "FillDirection": "BottomToTop",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [6, 6, 6, 6],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill2CooldownText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 26,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill2Key",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "R",
+                    "FontSize": 18,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [7, 4, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Top"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Skill2Count",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 20,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Right",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 7, 3],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Dodge",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [4, 0, 4, 0],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Border",
+                    "Name": "DodgeBg",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [84, 84],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "DodgeIcon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/S_Wind01.png"
+                    },
+                    "ImageSize": [64, 64],
+                    "Slot": {
+                      "Padding": [10, 10, 10, 10],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "DodgeCooldown",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0, 0, 0, 0],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.02, 0.02, 0.04, 0.72],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 0.0,
+                    "FillDirection": "BottomToTop",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [6, 6, 6, 6],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "DodgeCooldownText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 26,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "DodgeKey",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "Spc",
+                    "FontSize": 18,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [7, 4, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Top"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "DodgeCount",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 20,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Right",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 7, 3],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Border",
+                "Name": "ActionSeparator",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Brush": {
+                  "Color": [0.72, 0.53, 0.18, 0.8],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [0, 0, 0, 1]
+                },
+                "ContentPadding": [0, 0, 0, 0],
+                "MinSize": [4, 60],
+                "Slot": {
+                  "Padding": [10, 8, 10, 8],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Potion1",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [4, 0, 4, 0],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Border",
+                    "Name": "Potion1Bg",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [84, 84],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "Potion1Icon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/P_Red02.png"
+                    },
+                    "ImageSize": [64, 64],
+                    "Slot": {
+                      "Padding": [10, 10, 10, 10],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Potion1Cooldown",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0, 0, 0, 0],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.02, 0.02, 0.04, 0.72],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 0.0,
+                    "FillDirection": "BottomToTop",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [6, 6, 6, 6],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion1CooldownText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 26,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion1Key",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "1",
+                    "FontSize": 18,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [7, 4, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Top"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion1Count",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 20,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Right",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 7, 3],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Overlay",
+                "Name": "Potion2",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [4, 0, 4, 0],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Border",
+                    "Name": "Potion2Bg",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [84, 84],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Image",
+                    "Name": "Potion2Icon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/P_Blue01.png"
+                    },
+                    "ImageSize": [64, 64],
+                    "Slot": {
+                      "Padding": [10, 10, 10, 10],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Potion2Cooldown",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [0, 0, 0, 0],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "FillBrush": {
+                      "Color": [0.02, 0.02, 0.04, 0.72],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1]
+                    },
+                    "Percent": 0.0,
+                    "FillDirection": "BottomToTop",
+                    "MinSize": [100, 16],
+                    "Slot": {
+                      "Padding": [6, 6, 6, 6],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion2CooldownText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 26,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion2Key",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "2",
+                    "FontSize": 18,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [7, 4, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Top"
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "Potion2Count",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "",
+                    "FontSize": 20,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Right",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 7, 3],
+                      "HAlign": "Right",
+                      "VAlign": "Bottom"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "ToastBox",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [0.5, 0],
+          "AnchorMax": [0.5, 0],
+          "Offsets": [0, 26, 900, 160],
+          "Alignment": [0.5, 0],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "Toast1",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Text": "",
+            "FontSize": 26,
+            "TextColor": [0.96, 0.91, 0.8, 1],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [0.05, 0.03, 0.02, 1],
+            "ShadowOffset": [0, 2],
+            "ShadowColor": [0, 0, 0, 0.7],
+            "Slot": {
+              "Padding": [0, 2, 0, 2],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            }
+          },
+          {
+            "Type": "Text",
+            "Name": "Toast2",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Text": "",
+            "FontSize": 26,
+            "TextColor": [0.96, 0.91, 0.8, 1],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [0.05, 0.03, 0.02, 1],
+            "ShadowOffset": [0, 2],
+            "ShadowColor": [0, 0, 0, 0.7],
+            "Slot": {
+              "Padding": [0, 2, 0, 2],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            }
+          },
+          {
+            "Type": "Text",
+            "Name": "Toast3",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Text": "",
+            "FontSize": 26,
+            "TextColor": [0.96, 0.91, 0.8, 1],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [0.05, 0.03, 0.02, 1],
+            "ShadowOffset": [0, 2],
+            "ShadowColor": [0, 0, 0, 0.7],
+            "Slot": {
+              "Padding": [0, 2, 0, 2],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            }
+          },
+          {
+            "Type": "Text",
+            "Name": "Toast4",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Text": "",
+            "FontSize": 26,
+            "TextColor": [0.96, 0.91, 0.8, 1],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [0.05, 0.03, 0.02, 1],
+            "ShadowOffset": [0, 2],
+            "ShadowColor": [0, 0, 0, 0.7],
+            "Slot": {
+              "Padding": [0, 2, 0, 2],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            }
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "PromptPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Brush": {
+          "Color": [1, 1, 1, 1],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [0, 0, 0, 1],
+          "Texture": "UI/RPG/FrameDark.png",
+          "DrawAs": "NineSlice",
+          "Margin": [0.25, 0.25, 0.25, 0.25],
+          "TextureSize": [48, 48]
+        },
+        "ContentPadding": [16, 10, 20, 10],
+        "Slot": {
+          "AnchorMin": [0.5, 1],
+          "AnchorMax": [0.5, 1],
+          "Offsets": [0, -330, 0, 0],
+          "Alignment": [0.5, 1],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "HorizontalBox",
+            "Name": "PromptBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Border",
+                "Name": "PromptKeyBg",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Brush": {
+                  "Color": [0.95, 0.8, 0.35, 1],
+                  "CornerRadius": 3,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.2, 0.12, 0.04, 1]
+                },
+                "ContentPadding": [10, 0, 10, 0],
+                "MinSize": [36, 36],
+                "Slot": {
+                  "Padding": [0, 0, 12, 0],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "PromptKey",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "E",
+                    "FontSize": 24,
+                    "TextColor": [0.15, 0.09, 0.03, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 0,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "PromptText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Text": "거래",
+                "FontSize": 26,
+                "TextColor": [0.96, 0.91, 0.8, 1],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [0.05, 0.03, 0.02, 1],
+                "ShadowOffset": [0, 2],
+                "ShadowColor": [0, 0, 0, 0.7],
+                "Slot": {
+                  "Padding": [0, 0, 0, 0],
+                  "HAlign": "Left",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "HintText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Text": "WASD 이동   E 상호작용   I/Tab 가방   1·2 물약",
+        "FontSize": 18,
+        "TextColor": [0.7, 0.64, 0.55, 1],
+        "Justify": "Left",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [0.05, 0.03, 0.02, 1],
+        "ShadowOffset": [0, 2],
+        "ShadowColor": [0, 0, 0, 0.7],
+        "Slot": {
+          "AnchorMin": [0, 1],
+          "AnchorMax": [0, 1],
+          "Offsets": [24, -20, 0, 0],
+          "Alignment": [0, 1],
+          "AutoSize": true,
+          "ZOrder": 0
+        }
+      },
+      {
+        "Type": "Overlay",
+        "Name": "DeathScreen",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [0, 0],
+          "AnchorMax": [1, 1],
+          "Offsets": [0, 0, 0, 0],
+          "Alignment": [0, 0],
+          "AutoSize": false,
+          "ZOrder": 10
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "DeathShade",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Brush": {
+              "Color": [0.08, 0.0, 0.0, 0.62],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [0, 0, 0, 1]
+            },
+            "ContentPadding": [0, 0, 0, 0],
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            }
+          },
+          {
+            "Type": "VerticalBox",
+            "Name": "DeathBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Center",
+              "VAlign": "Center"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "DeathTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Text": "쓰러졌습니다",
+                "FontSize": 72,
+                "TextColor": [0.92, 0.25, 0.2, 1],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 3,
+                "OutlineColor": [0.05, 0.03, 0.02, 1],
+                "ShadowOffset": [0, 2],
+                "ShadowColor": [0, 0, 0, 0.7],
+                "Slot": {
+                  "Padding": [0, 0, 0, 24],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Button",
+                "Name": "RespawnButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Brush": {
+                  "Color": [0.42, 0.29, 0.13, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.12, 0.08, 0.04, 1]
+                },
+                "HoveredBrush": {
+                  "Color": [0.58, 0.41, 0.18, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.95, 0.78, 0.35, 1]
+                },
+                "PressedBrush": {
+                  "Color": [0.3, 0.2, 0.09, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.12, 0.08, 0.04, 1]
+                },
+                "DisabledBrush": {
+                  "Color": [0.25, 0.23, 0.21, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.1, 0.1, 0.1, 1]
+                },
+                "ContentPadding": [36, 12, 36, 12],
+                "MinSize": [260, 64],
+                "Slot": {
+                  "Padding": [0, 0, 0, 0],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "RespawnText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "R  부활",
+                    "FontSize": 30,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "Animations": [
+    {
+      "Name": "Pulse",
+      "Length": 0.3,
+      "Tracks": [
+        {
+          "Widget": "GoldPanel",
+          "Property": "ScaleX",
+          "Keys": [
+            [
+              0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.1,
+              1.12,
+              "EaseInOut"
+            ],
+            [
+              0.3,
+              1.0,
+              "EaseIn"
+            ]
+          ]
+        },
+        {
+          "Widget": "GoldPanel",
+          "Property": "ScaleY",
+          "Keys": [
+            [
+              0,
+              1.0,
+              "EaseOut"
+            ],
+            [
+              0.1,
+              1.12,
+              "EaseInOut"
+            ],
+            [
+              0.3,
+              1.0,
+              "EaseIn"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

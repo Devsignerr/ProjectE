@@ -1,0 +1,2834 @@
+{
+  "Version": 2,
+  "DesignSize": [1920, 1080],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Enabled": true,
+    "Opacity": 1,
+    "Visibility": "SelfHitTestInvisible",
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "Window",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Visible",
+        "Brush": {
+          "Color": [1, 1, 1, 1],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [0, 0, 0, 1],
+          "Texture": "UI/RPG/Frame.png",
+          "DrawAs": "NineSlice",
+          "Margin": [0.25, 0.25, 0.25, 0.25],
+          "TextureSize": [64, 64]
+        },
+        "ContentPadding": [0, 0, 0, 0],
+        "Slot": {
+          "AnchorMin": [0.5, 0.5],
+          "AnchorMax": [0.5, 0.5],
+          "Offsets": [0, 0, 1060, 600],
+          "Alignment": [0.5, 0.5],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Canvas",
+            "Name": "WindowCanvas",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [0, 0, 0, 0],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "Title",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Text": "가방",
+                "FontSize": 36,
+                "TextColor": [1.0, 0.84, 0.36, 1],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [0.05, 0.03, 0.02, 1],
+                "ShadowOffset": [0, 2],
+                "ShadowColor": [0, 0, 0, 0.7],
+                "Slot": {
+                  "AnchorMin": [0, 0],
+                  "AnchorMax": [0, 0],
+                  "Offsets": [28, 18, 0, 0],
+                  "Alignment": [0, 0],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                }
+              },
+              {
+                "Type": "Button",
+                "Name": "CloseButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Brush": {
+                  "Color": [0.42, 0.29, 0.13, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.12, 0.08, 0.04, 1]
+                },
+                "HoveredBrush": {
+                  "Color": [0.58, 0.41, 0.18, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.95, 0.78, 0.35, 1]
+                },
+                "PressedBrush": {
+                  "Color": [0.3, 0.2, 0.09, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.12, 0.08, 0.04, 1]
+                },
+                "DisabledBrush": {
+                  "Color": [0.25, 0.23, 0.21, 1],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [0.1, 0.1, 0.1, 1]
+                },
+                "ContentPadding": [0, 0, 0, 0],
+                "Slot": {
+                  "AnchorMin": [1, 0],
+                  "AnchorMax": [1, 0],
+                  "Offsets": [-18, 18, 44, 44],
+                  "Alignment": [1, 0],
+                  "AutoSize": false,
+                  "ZOrder": 2
+                },
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "CloseButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "X",
+                    "FontSize": 24,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center"
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "VerticalBox",
+                "Name": "EquipColumn",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [0, 0],
+                  "AnchorMax": [0, 0],
+                  "Offsets": [36, 90, 150, 400],
+                  "Alignment": [0, 0],
+                  "AutoSize": false,
+                  "ZOrder": 0
+                },
+                "Children": [
+                  {
+                    "Type": "VerticalBox",
+                    "Name": "EquipWeaponBox",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [0, 0, 0, 16],
+                      "HAlign": "Center",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Text",
+                        "Name": "EquipWeaponLabel",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "무기",
+                        "FontSize": 18,
+                        "TextColor": [0.7, 0.64, 0.55, 1],
+                        "Justify": "Center",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 4],
+                          "HAlign": "Center",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Button",
+                        "Name": "EquipWeapon",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Brush": {
+                          "Color": [1, 1, 1, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "HoveredBrush": {
+                          "Color": [1.35, 1.25, 1.1, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "PressedBrush": {
+                          "Color": [0.75, 0.7, 0.65, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "DisabledBrush": {
+                          "Color": [0.6, 0.6, 0.6, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "ContentPadding": [0, 0, 0, 0],
+                        "MinSize": [92, 92],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 0],
+                          "HAlign": "Center",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Overlay",
+                            "Name": "EquipWeaponInner",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "SelfHitTestInvisible",
+                            "Children": [
+                              {
+                                "Type": "Image",
+                                "Name": "EquipWeaponIcon",
+                                "Enabled": true,
+                                "Opacity": 1,
+                                "Visibility": "Hidden",
+                                "Brush": {
+                                  "Color": [1, 1, 1, 1],
+                                  "CornerRadius": 0,
+                                  "BorderWidth": 0,
+                                  "BorderColor": [0, 0, 0, 1],
+                                  "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                                },
+                                "ImageSize": [72, 72],
+                                "Slot": {
+                                  "Padding": [8, 8, 8, 8],
+                                  "HAlign": "Center",
+                                  "VAlign": "Center"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "VerticalBox",
+                    "Name": "EquipShieldBox",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [0, 0, 0, 16],
+                      "HAlign": "Center",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Children": [
+                      {
+                        "Type": "Text",
+                        "Name": "EquipShieldLabel",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "방패",
+                        "FontSize": 18,
+                        "TextColor": [0.7, 0.64, 0.55, 1],
+                        "Justify": "Center",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 4],
+                          "HAlign": "Center",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Button",
+                        "Name": "EquipShield",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Brush": {
+                          "Color": [1, 1, 1, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "HoveredBrush": {
+                          "Color": [1.35, 1.25, 1.1, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "PressedBrush": {
+                          "Color": [0.75, 0.7, 0.65, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "DisabledBrush": {
+                          "Color": [0.6, 0.6, 0.6, 1],
+                          "CornerRadius": 0,
+                          "BorderWidth": 0,
+                          "BorderColor": [0, 0, 0, 1],
+                          "Texture": "UI/RPG/Slot.png",
+                          "DrawAs": "NineSlice",
+                          "Margin": [0.25, 0.25, 0.25, 0.25],
+                          "TextureSize": [24, 24]
+                        },
+                        "ContentPadding": [0, 0, 0, 0],
+                        "MinSize": [92, 92],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 0],
+                          "HAlign": "Center",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        },
+                        "Children": [
+                          {
+                            "Type": "Overlay",
+                            "Name": "EquipShieldInner",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "SelfHitTestInvisible",
+                            "Children": [
+                              {
+                                "Type": "Image",
+                                "Name": "EquipShieldIcon",
+                                "Enabled": true,
+                                "Opacity": 1,
+                                "Visibility": "Hidden",
+                                "Brush": {
+                                  "Color": [1, 1, 1, 1],
+                                  "CornerRadius": 0,
+                                  "BorderWidth": 0,
+                                  "BorderColor": [0, 0, 0, 1],
+                                  "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                                },
+                                "ImageSize": [72, 72],
+                                "Slot": {
+                                  "Padding": [8, 8, 8, 8],
+                                  "HAlign": "Center",
+                                  "VAlign": "Center"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "StatsText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "공격력 0\n방어력 0",
+                    "FontSize": 22,
+                    "TextColor": [0.96, 0.91, 0.8, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 8, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "UniformGrid",
+                "Name": "SlotGrid",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "MinCellSize": [88, 88],
+                "Slot": {
+                  "AnchorMin": [0, 0],
+                  "AnchorMax": [0, 0],
+                  "Offsets": [210, 84, 0, 0],
+                  "Alignment": [0, 0],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Children": [
+                  {
+                    "Type": "Button",
+                    "Name": "Slot1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 0,
+                      "Column": 0,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner1",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount1",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 0,
+                      "Column": 1,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner2",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount2",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot3",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 0,
+                      "Column": 2,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner3",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount3",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot4",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 0,
+                      "Column": 3,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner4",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount4",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot5",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 0,
+                      "Column": 4,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner5",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount5",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot6",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 1,
+                      "Column": 0,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner6",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount6",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot7",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 1,
+                      "Column": 1,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner7",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon7",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount7",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot8",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 1,
+                      "Column": 2,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner8",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount8",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot9",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 1,
+                      "Column": 3,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner9",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount9",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot10",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 1,
+                      "Column": 4,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner10",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon10",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount10",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot11",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 2,
+                      "Column": 0,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner11",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon11",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount11",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot12",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 2,
+                      "Column": 1,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner12",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon12",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount12",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot13",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 2,
+                      "Column": 2,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner13",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon13",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount13",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot14",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 2,
+                      "Column": 3,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner14",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon14",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount14",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot15",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 2,
+                      "Column": 4,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner15",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon15",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount15",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot16",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 3,
+                      "Column": 0,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner16",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon16",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount16",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot17",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 3,
+                      "Column": 1,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner17",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon17",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount17",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot18",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 3,
+                      "Column": 2,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner18",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon18",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount18",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot19",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 3,
+                      "Column": 3,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner19",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon19",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount19",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Type": "Button",
+                    "Name": "Slot20",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "HoveredBrush": {
+                      "Color": [1.35, 1.25, 1.1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "PressedBrush": {
+                      "Color": [0.75, 0.7, 0.65, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "DisabledBrush": {
+                      "Color": [0.6, 0.6, 0.6, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "UI/RPG/Slot.png",
+                      "DrawAs": "NineSlice",
+                      "Margin": [0.25, 0.25, 0.25, 0.25],
+                      "TextureSize": [24, 24]
+                    },
+                    "ContentPadding": [0, 0, 0, 0],
+                    "MinSize": [88, 88],
+                    "Slot": {
+                      "Row": 3,
+                      "Column": 4,
+                      "Padding": [4, 4, 4, 4],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Overlay",
+                        "Name": "SlotInner20",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "SelfHitTestInvisible",
+                        "Children": [
+                          {
+                            "Type": "Image",
+                            "Name": "SlotIcon20",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "Hidden",
+                            "Brush": {
+                              "Color": [1, 1, 1, 1],
+                              "CornerRadius": 0,
+                              "BorderWidth": 0,
+                              "BorderColor": [0, 0, 0, 1],
+                              "Texture": "Asset/Icons/7Soul_RPG_Icons/W_Sword001.png"
+                            },
+                            "ImageSize": [72, 72],
+                            "Slot": {
+                              "Padding": [6, 6, 6, 6],
+                              "HAlign": "Center",
+                              "VAlign": "Center"
+                            }
+                          },
+                          {
+                            "Type": "Text",
+                            "Name": "SlotCount20",
+                            "Enabled": true,
+                            "Opacity": 1,
+                            "Visibility": "HitTestInvisible",
+                            "Text": "",
+                            "FontSize": 20,
+                            "TextColor": [0.96, 0.91, 0.8, 1],
+                            "Justify": "Right",
+                            "Wrap": false,
+                            "OutlineWidth": 2,
+                            "OutlineColor": [0.05, 0.03, 0.02, 1],
+                            "ShadowOffset": [0, 2],
+                            "ShadowColor": [0, 0, 0, 0.7],
+                            "Slot": {
+                              "Padding": [0, 0, 6, 2],
+                              "HAlign": "Right",
+                              "VAlign": "Bottom"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Border",
+                "Name": "Tooltip",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Brush": {
+                  "Color": [1, 1, 1, 1],
+                  "CornerRadius": 0,
+                  "BorderWidth": 0,
+                  "BorderColor": [0, 0, 0, 1],
+                  "Texture": "UI/RPG/FrameDark.png",
+                  "DrawAs": "NineSlice",
+                  "Margin": [0.25, 0.25, 0.25, 0.25],
+                  "TextureSize": [48, 48]
+                },
+                "ContentPadding": [18, 14, 18, 14],
+                "Slot": {
+                  "AnchorMin": [1, 0],
+                  "AnchorMax": [1, 0],
+                  "Offsets": [-28, 84, 300, 420],
+                  "Alignment": [1, 0],
+                  "AutoSize": false,
+                  "ZOrder": 0
+                },
+                "Children": [
+                  {
+                    "Type": "VerticalBox",
+                    "Name": "TooltipBox",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "SelfHitTestInvisible",
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill"
+                    },
+                    "Children": [
+                      {
+                        "Type": "Text",
+                        "Name": "TooltipName",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "",
+                        "FontSize": 28,
+                        "TextColor": [1.0, 0.84, 0.36, 1],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 4],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TooltipType",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [0.7, 0.64, 0.55, 1],
+                        "Justify": "Left",
+                        "Wrap": false,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 10],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TooltipStats",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "",
+                        "FontSize": 22,
+                        "TextColor": [0.6, 0.9, 0.55, 1],
+                        "Justify": "Left",
+                        "Wrap": true,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 10],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TooltipDesc",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "",
+                        "FontSize": 20,
+                        "TextColor": [0.96, 0.91, 0.8, 1],
+                        "Justify": "Left",
+                        "Wrap": true,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 10],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      },
+                      {
+                        "Type": "Text",
+                        "Name": "TooltipHint",
+                        "Enabled": true,
+                        "Opacity": 1,
+                        "Visibility": "HitTestInvisible",
+                        "Text": "",
+                        "FontSize": 18,
+                        "TextColor": [0.7, 0.64, 0.55, 1],
+                        "Justify": "Left",
+                        "Wrap": true,
+                        "OutlineWidth": 2,
+                        "OutlineColor": [0.05, 0.03, 0.02, 1],
+                        "ShadowOffset": [0, 2],
+                        "ShadowColor": [0, 0, 0, 0.7],
+                        "Slot": {
+                          "Padding": [0, 0, 0, 0],
+                          "HAlign": "Fill",
+                          "VAlign": "Fill",
+                          "SizeRule": "Auto",
+                          "FillWeight": 1
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "HorizontalBox",
+                "Name": "GoldBox",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "Slot": {
+                  "AnchorMin": [0, 1],
+                  "AnchorMax": [0, 1],
+                  "Offsets": [214, -26, 0, 0],
+                  "Alignment": [0, 1],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "GoldIcon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Brush": {
+                      "Color": [1, 1, 1, 1],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [0, 0, 0, 1],
+                      "Texture": "Asset/Icons/7Soul_RPG_Icons/I_GoldCoin.png"
+                    },
+                    "ImageSize": [36, 36],
+                    "Slot": {
+                      "Padding": [0, 0, 8, 0],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    }
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "GoldText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Text": "0",
+                    "FontSize": 28,
+                    "TextColor": [1.0, 0.84, 0.36, 1],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [0.05, 0.03, 0.02, 1],
+                    "ShadowOffset": [0, 2],
+                    "ShadowColor": [0, 0, 0, 0.7],
+                    "Slot": {
+                      "Padding": [0, 0, 0, 0],
+                      "HAlign": "Left",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    }
+                  }
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "WindowHint",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Text": "클릭: 사용/장착   장비 칸 클릭: 해제   I/Tab: 닫기",
+                "FontSize": 18,
+                "TextColor": [0.7, 0.64, 0.55, 1],
+                "Justify": "Right",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [0.05, 0.03, 0.02, 1],
+                "ShadowOffset": [0, 2],
+                "ShadowColor": [0, 0, 0, 0.7],
+                "Slot": {
+                  "AnchorMin": [1, 1],
+                  "AnchorMax": [1, 1],
+                  "Offsets": [-30, -30, 0, 0],
+                  "Alignment": [1, 1],
+                  "AutoSize": true,
+                  "ZOrder": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "Animations": []
+}

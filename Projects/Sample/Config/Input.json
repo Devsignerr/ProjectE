@@ -102,6 +102,56 @@
 					"Source": "Gamepad_A"
 				}
 			]
+		},
+		{
+			"Name": "Interact",
+			"Type": "Button",
+			"Description": "상호작용 (상인과 거래 등)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "E"
+				},
+				{
+					"Source": "Gamepad_X"
+				}
+			]
+		},
+		{
+			"Name": "Inventory",
+			"Type": "Button",
+			"Description": "가방 열기/닫기",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "I"
+				},
+				{
+					"Source": "Tab"
+				}
+			]
+		},
+		{
+			"Name": "UsePotion1",
+			"Type": "Button",
+			"Description": "체력 물약 사용",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "1"
+				}
+			]
+		},
+		{
+			"Name": "UsePotion2",
+			"Type": "Button",
+			"Description": "마나 물약 사용",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "2"
+				}
+			]
 		}
 	]
 }

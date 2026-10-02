@@ -1,0 +1,4 @@
+Kenney - RPG Audio (CC0, see License.txt)
+Source: https://kenney.nl/assets/rpg-audio
+Converted from .ogg to 16-bit PCM .wav (the engine audio does not decode Ogg Vorbis) and renamed:
+  handleCoins -> coins_buy, handleCoins2 -> coins_pickup, drawKnife1 -> equip, beltHandle1 -> item_drop

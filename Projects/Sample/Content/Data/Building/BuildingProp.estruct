@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Name": "BuildingProp",
+  "Description": "절차적 건물 소품 규칙 (행 하나 = 규칙 하나, 위에서부터 순서대로 놓는다). 프리팹 앞 = 로컬 +X, 원점 = 바닥 자리 가운데",
+  "Fields": [
+    {"Name":"RoomType","Type":"String","Default":"Living","Description":"방 종류 이름 (.ebuilding Rooms의 Type)"},
+    {"Name":"Prefab","Type":"Asset","Filter":".eprefab","Default":"","Description":"놓을 프리팹"},
+    {"Name":"Placement","Type":"Enum","Values":["Wall","Corner","Center"],"Default":"Wall","Description":"Wall = 등을 벽에, Corner = 안쪽 모서리, Center = 방 가운데"},
+    {"Name":"Width","Type":"Float","Default":100,"Description":"벽을 따라 너비 (cm, 로컬 Y)"},
+    {"Name":"Depth","Type":"Float","Default":50,"Description":"앞뒤 깊이 (cm, 로컬 X)"},
+    {"Name":"Clearance","Type":"Float","Default":0,"Description":"앞에 비워 둘 거리 (cm)"},
+    {"Name":"MinCount","Type":"Int","Default":1,"Description":"방마다 최소 개수 (자리가 없으면 덜 놓일 수 있다)"},
+    {"Name":"MaxCount","Type":"Int","Default":1,"Description":"방마다 최대 개수"},
+    {"Name":"Chance","Type":"Float","Default":1,"Description":"방마다 이 규칙을 쓸 확률 (0~1)"},
+    {"Name":"Blocking","Type":"Bool","Default":true,"Description":"false = 깔개처럼 겹침·통로 검사에서 뺀다"}
+  ]
+}

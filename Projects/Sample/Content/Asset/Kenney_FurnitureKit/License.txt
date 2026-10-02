@@ -1,0 +1,29 @@
+Kenney Furniture Kit 2.0 — https://kenney.nl/assets/furniture-kit
+다운로드: https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip (2026-10-03)
+라이선스: CC0 1.0 (Public Domain) — 원본 License.txt 아래 그대로. 사용: GLTF format/*.glb 전체 (수정 없음)
+절차적 건물 데모(Phase 50 사이드)의 모듈 키트·가구. 프리팹(Prefabs/Interior)이 칸 크기 100cm·층고 260cm에 맞게 스케일/오프셋을 준다.
+
+	
+
+	Furniture Kit (2.0)
+
+	Created/distributed by Kenney (www.kenney.nl)
+	Creation date: 20-10-2018 16:21
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	This content is free to use in personal, educational and commercial projects.
+
+	Support us by crediting Kenney or www.kenney.nl (this is not mandatory)
+
+			------------------------------
+
+	Donate:   http://support.kenney.nl
+	Request:  http://request.kenney.nl
+	Patreon:  http://patreon.com/kenney/
+
+	Follow on Twitter for updates:
+	http://twitter.com/KenneyNL

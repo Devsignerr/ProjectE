@@ -1,0 +1,100 @@
+{
+  "Entities": [
+    {
+      "Name": "Railing",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Rail",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            97
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.05,
+            1.0,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Interior/Railing.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    },
+    {
+      "Name": "Panel",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            50
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            0.96,
+            0.9
+          ]
+        },
+        "StaticMeshComponent": {
+          "MaterialAsset": "Materials/Interior/Railing.emat",
+          "MeshAsset": "primitive:cube",
+          "Visible": true
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

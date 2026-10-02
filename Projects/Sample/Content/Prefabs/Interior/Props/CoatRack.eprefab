@@ -1,0 +1,65 @@
+{
+  "Entities": [
+    {
+      "Name": "CoatRack",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/coatRackStanding.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

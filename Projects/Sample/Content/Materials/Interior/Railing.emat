@@ -1,0 +1,23 @@
+{
+  "Name": "Railing",
+  "BaseColorFactor": [
+    0.55,
+    0.56,
+    0.58,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.8,
+  "Roughness": 0.4,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

@@ -1,0 +1,65 @@
+{
+  "Entities": [
+    {
+      "Name": "CoffeeTable",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            -23.49,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/tableCoffee.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

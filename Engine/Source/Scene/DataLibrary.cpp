@@ -265,10 +265,9 @@ std::shared_ptr<const FDataAsset> FDataLibrary::LoadDataAsset(const std::string&
 
 namespace
 {
-	// 레코드 하나의 RowRef/Asset 값 검사. Self = 자기 자신 테이블(경로 키가 같으면 캐시 대신 이것)
-	void ValidateRecord(FDataLibrary& Library, const FDataStruct& Struct, const FDataRecord& Record, const std::string& Context,
-	                    const std::wstring& SelfKey, const FDataTable* Self, FWarnings& Warnings,
-	                    const std::function<std::wstring(const std::string&)>& MakeKey)
+	// 레코드 하나의 RowRef/Asset 값 검사. Self = 자기 자신 테이블(경로 키가 같으면 캐시 대신 이것). Report(필드 칸, "필드 '...': ...")
+	void ValidateRecord(FDataLibrary& Library, const FDataStruct& Struct, const FDataRecord& Record, const std::wstring& SelfKey, const FDataTable* Self,
+	                    const std::function<void(int32, std::string)>& Report, const std::function<std::wstring(const std::string&)>& MakeKey)
 	{
 		for (size_t Index = 0; Index < Struct.Fields.size() && Index < Record.Values.size(); ++Index)
 		{
@@ -316,12 +315,12 @@ namespace
 					}
 					if (Target == nullptr)
 					{
-						Warnings.Add(std::format("{} 필드 '{}': 대상 테이블을 읽을 수 없습니다 ({})", Context, Field.Name, Field.Table));
+						Report(static_cast<int32>(Index), std::format("필드 '{}': 대상 테이블을 읽을 수 없습니다 ({})", Field.Name, Field.Table));
 						break;
 					}
 					if (!Target->HasRow(Value))
 					{
-						Warnings.Add(std::format("{} 필드 '{}': 없는 행 '{}' ({})", Context, Field.Name, Value, Field.Table));
+						Report(static_cast<int32>(Index), std::format("필드 '{}': 없는 행 '{}' ({})", Field.Name, Value, Field.Table));
 					}
 				}
 				continue;
@@ -338,11 +337,11 @@ namespace
 				if (!Extensions.empty() &&
 				    std::find(Extensions.begin(), Extensions.end(), FStringConv::ToUtf8(Extension)) == Extensions.end())
 				{
-					Warnings.Add(std::format("{} 필드 '{}': 필터({})에 맞지 않는 에셋 '{}'", Context, Field.Name, Field.Filter, Value));
+					Report(static_cast<int32>(Index), std::format("필드 '{}': 필터({})에 맞지 않는 에셋 '{}'", Field.Name, Field.Filter, Value));
 				}
 				else if (!FFileSystem::Exists(Library.ResolvePath(Value)))
 				{
-					Warnings.Add(std::format("{} 필드 '{}': 에셋 파일이 없습니다 '{}'", Context, Field.Name, Value));
+					Report(static_cast<int32>(Index), std::format("필드 '{}': 에셋 파일이 없습니다 '{}'", Field.Name, Value));
 				}
 			}
 		}
@@ -372,7 +371,8 @@ std::vector<std::string> FDataLibrary::ValidateReferences(const FDataTable& Tabl
 	const std::wstring SelfKey = SelfPath.empty() ? std::wstring() : MakeKey(SelfPath);
 	for (const FDataRow& Row : Table.GetRows())
 	{
-		ValidateRecord(*this, *Table.Struct, Row.Record, "행 '" + Row.Name + "'", SelfKey, &Table, Warnings, &FDataLibrary::MakeKey);
+		ValidateRecord(*this, *Table.Struct, Row.Record, SelfKey, &Table,
+		               [&](int32, std::string Message) { Warnings.Add("행 '" + Row.Name + "' " + Message); }, &FDataLibrary::MakeKey);
 	}
 	return Warnings.Finish();
 }
@@ -385,8 +385,19 @@ std::vector<std::string> FDataLibrary::ValidateReferences(const FDataAsset& Asse
 		return {};
 	}
 	ValidateStructFields(*Asset.Struct, Warnings);
-	ValidateRecord(*this, *Asset.Struct, Asset.Record, "값", std::wstring(), nullptr, Warnings, &FDataLibrary::MakeKey);
+	ValidateRecord(*this, *Asset.Struct, Asset.Record, std::wstring(), nullptr, [&](int32, std::string Message) { Warnings.Add("값 " + Message); },
+	               &FDataLibrary::MakeKey);
 	return Warnings.Finish();
+}
+
+std::vector<FDataReferenceIssue> FDataLibrary::ValidateRecordReferences(const FDataStruct& Struct, const FDataRecord& Record, const std::string& SelfPath,
+                                                                        const FDataTable* Self)
+{
+	std::vector<FDataReferenceIssue> Issues;
+	const std::wstring               SelfKey = SelfPath.empty() ? std::wstring() : MakeKey(SelfPath);
+	ValidateRecord(*this, Struct, Record, SelfKey, Self, [&](int32 Field, std::string Message) { Issues.push_back({ Field, std::move(Message) }); },
+	               &FDataLibrary::MakeKey);
+	return Issues;
 }
 
 bool FDataLibrary::SaveStruct(const std::string& AssetPath, const FDataStruct& Struct, std::string* OutError)

@@ -184,7 +184,11 @@ bool FAssetEditor::Save(FAssetEditorEnvironment& Env)
 	CommitPendingEdit(false);
 	if (!SaveAsset(Env))
 	{
-		E_LOG(LogEditor, Error, "에셋 저장 실패: {}", FStringConv::ToUtf8(Path.wstring()));
+		if (!bSaveDeferred)
+		{
+			E_LOG(LogEditor, Error, "에셋 저장 실패: {}", FStringConv::ToUtf8(Path.wstring()));
+		}
+		bSaveDeferred = false;
 		return false;
 	}
 	History.MarkSaved();

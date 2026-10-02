@@ -101,4 +101,6 @@ protected:
 	std::filesystem::path Path;
 	FUndoHistory          History;
 	FPendingEdit          PendingEdit;
+	// SaveAsset이 확인 대화상자를 띄우느라 false를 반환할 때 켠다 (오류 로그 없음 — 확인 후 다시 Save)
+	bool                  bSaveDeferred = false;
 };

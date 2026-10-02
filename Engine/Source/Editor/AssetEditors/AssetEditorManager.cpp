@@ -4,6 +4,9 @@
 #include "Core/Log.h"
 #include "Core/StringConv.h"
 #include "Editor/AssetEditors/BehaviorTreeEditor.h"
+#include "Editor/AssetEditors/DataAssetEditor.h"
+#include "Editor/AssetEditors/DataStructEditor.h"
+#include "Editor/AssetEditors/DataTableEditor.h"
 #include "Editor/AssetEditors/MaterialEditor.h"
 #include "Editor/AssetEditors/ModelEditors.h"
 #include "Editor/AssetEditors/ParticleEditor.h"
@@ -87,6 +90,18 @@ namespace
 		{
 			return std::make_unique<FSequenceEditor>(Path);
 		}
+		if (Extension == FDataTable::Extension)
+		{
+			return std::make_unique<FDataTableEditor>(Path);
+		}
+		if (Extension == FDataAsset::Extension)
+		{
+			return std::make_unique<FDataAssetEditor>(Path);
+		}
+		if (Extension == FDataStruct::Extension)
+		{
+			return std::make_unique<FDataStructEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -129,7 +144,8 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 	const std::wstring Extension = ToLowerExtension(Path);
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
 	       Extension == BehaviorTreeExtension || Extension == FUIAsset::Extension || IsModelExtension(Extension) ||
-	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension || Extension == FSequenceAsset::Extension;
+	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension || Extension == FSequenceAsset::Extension ||
+	       Extension == FDataTable::Extension || Extension == FDataAsset::Extension || Extension == FDataStruct::Extension;
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)

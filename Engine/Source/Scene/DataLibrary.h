@@ -8,6 +8,13 @@
 #include <unordered_map>
 #include <vector>
 
+// 참조 문제 하나 (편집기 칸 표시) — Field = 구조체 필드 칸
+struct FDataReferenceIssue
+{
+	int32       Field = -1;
+	std::string Message; // "필드 'X': 없는 행 'Y' (...)"
+};
+
 // .estruct/.etable/.edata 공유 캐시 (엔진 DLL 전역 하나, 메인 스레드 전용). 경로는 Content 기준(FPrefabLibrary의 Content 폴더) 또는 절대.
 //   - 읽기는 FFileSystem(pak → 디스크). 경로마다 한 번 읽고, 실패(파일 없음/파싱 실패)도 nullptr로 캐시해 경고를 한 번만 낸다
 //   - 읽을 때 형식 경고(FDataLoadReport)와 참조 경고(ValidateReferences: 구조체 없음, 없는 행을 가리키는 RowRef, RowRef 필드의 Table 없음,
@@ -35,6 +42,10 @@ public:
 	// 참조 검증 (Load가 자동으로 부르고 로그한다 — 편집기 표시용으로 따로 불러도 된다). 반환 = 경고 목록
 	std::vector<std::string> ValidateReferences(const FDataTable& Table, const std::string& SelfPath = {});
 	std::vector<std::string> ValidateReferences(const FDataAsset& Asset);
+	// 편집기 칸 표시용: 레코드 하나(행/에셋 값)의 참조 문제를 필드 칸별로 (상한 없음, 구조체 수준 경고 제외).
+	// Self/SelfPath = 편집 중인 테이블 (자기 테이블을 가리키는 RowRef는 디스크 대신 이것으로 확인)
+	std::vector<FDataReferenceIssue> ValidateRecordReferences(const FDataStruct& Struct, const FDataRecord& Record, const std::string& SelfPath = {},
+	                                                          const FDataTable* Self = nullptr);
 
 	// ---- 저장 (편집기): 파일 쓰기 + 해당 경로 Invalidate
 	bool SaveStruct(const std::string& AssetPath, const FDataStruct& Struct, std::string* OutError = nullptr);

@@ -6,6 +6,7 @@
 #include "Core/StringConv.h"
 #include "Editor/AssetEditors/AssetEditorManager.h"
 #include "Editor/AssetEditors/BehaviorTreeEditor.h"
+#include "Editor/AssetEditors/DataValueWidgets.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
@@ -17,6 +18,7 @@
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/DataLibrary.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Sequence.h"
 #include "Scene/Particles.h"
@@ -694,6 +696,18 @@ void FContentBrowserPanel::DrawItemContextMenu(FEditorContext& Context, const FE
 		{
 			OpenEntry(Context, Entry);
 		}
+		if (Entry.Extension == ".estruct")
+		{
+			const std::string StructPath = FModelLoader::MakeAssetPath(Entry.Path);
+			if (ImGui::MenuItem(ICON_FA_TABLE " 이 구조체로 데이터 테이블 만들기"))
+			{
+				CreateDataFile(Context, FDataTable::Extension, StructPath);
+			}
+			if (ImGui::MenuItem(ICON_FA_DATABASE " 이 구조체로 데이터 에셋 만들기"))
+			{
+				CreateDataFile(Context, FDataAsset::Extension, StructPath);
+			}
+		}
 	}
 	else if (IsSceneExtension(Entry.Extension))
 	{
@@ -766,6 +780,31 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD " 새 시퀀스 (컷신)"))
 	{
 		CreateAsset(Context, "NewSequence", FSequenceAsset::Extension);
+	}
+	// 데이터: 구조체 → 그 구조체를 고르는 테이블/데이터 에셋
+	if (ImGui::MenuItem(ICON_FA_TABLE_LIST " 새 데이터 구조체"))
+	{
+		CreateAsset(Context, "NewStruct", FDataStruct::Extension);
+	}
+	for (const bool bTable : { true, false })
+	{
+		if (ImGui::BeginMenu(bTable ? ICON_FA_TABLE " 새 데이터 테이블" : ICON_FA_DATABASE " 새 데이터 에셋"))
+		{
+			const std::vector<std::string>& Structs = DataValueWidgets::ScanContentFiles(Context.ContentDirectory, FDataStruct::Extension);
+			if (Structs.empty())
+			{
+				ImGui::TextDisabled("구조체(.estruct)가 없습니다 — 먼저 데이터 구조체를 만드세요");
+			}
+			ImGui::TextDisabled("구조체 고르기");
+			for (const std::string& StructPath : Structs)
+			{
+				if (ImGui::MenuItem(StructPath.c_str()))
+				{
+					CreateDataFile(Context, bTable ? FDataTable::Extension : FDataAsset::Extension, StructPath);
+				}
+			}
+			ImGui::EndMenu();
+		}
 	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_ARROWS_ROTATE " 새로 고침"))
@@ -1138,9 +1177,62 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	{
 		bOk = FSequenceAsset::MakeDefault().SaveToFile(Path);
 	}
+	else if (Extension == FDataStruct::Extension)
+	{
+		FDataStruct Struct;
+		Struct.Name = Name;
+		FDataField Field;
+		Field.Name    = "Value";
+		Field.Type    = EDataFieldType::Float;
+		Field.Default = FDataValue::MakeFloat(0.0f);
+		Struct.AddField(std::move(Field));
+		bOk = FDataLibrary::Get().SaveStruct(FStringConv::ToUtf8(Path.wstring()), Struct);
+	}
 	if (!bOk)
 	{
 		Notify(Context, "에셋을 만들지 못했습니다: " + FStringConv::ToUtf8(Path.wstring()), true);
+		return;
+	}
+	Notify(Context, "새 에셋: " + FStringConv::ToUtf8(Path.filename().wstring()), false);
+	bNeedsRefresh = true;
+	if (Context.OpenAssetEditorRequest)
+	{
+		Context.OpenAssetEditorRequest(Path);
+	}
+}
+
+void FContentBrowserPanel::CreateDataFile(FEditorContext& Context, const std::wstring& Extension, const std::string& StructPath)
+{
+	// 구조체 기본값으로 채운 테이블(행 없음)/데이터 에셋을 현재 폴더에 만들고 편집 창을 연다
+	const std::shared_ptr<const FDataStruct> Struct = FDataLibrary::Get().LoadStruct(StructPath);
+	if (Struct == nullptr)
+	{
+		Notify(Context, "구조체를 읽을 수 없습니다: " + StructPath, true);
+		return;
+	}
+	const std::string BaseName = (Struct->Name.empty() ? std::string("New") : Struct->Name) + (Extension == FDataTable::Extension ? "Table" : "Data");
+	const std::filesystem::path Path = FAssetFileOps::MakeUniquePath(CurrentDirectory, FStringConv::ToWide(BaseName), Extension);
+	const std::string           File = FStringConv::ToUtf8(Path.wstring());
+	std::string                 Error;
+	bool                        bOk = false;
+	if (Extension == FDataTable::Extension)
+	{
+		FDataTable Table;
+		Table.StructPath = StructPath;
+		Table.Rebind(Struct);
+		bOk = FDataLibrary::Get().SaveTable(File, Table, &Error);
+	}
+	else
+	{
+		FDataAsset Asset;
+		Asset.StructPath = StructPath;
+		Asset.Rebind(Struct);
+		Asset.ResetToDefaults();
+		bOk = FDataLibrary::Get().SaveDataAsset(File, Asset, &Error);
+	}
+	if (!bOk)
+	{
+		Notify(Context, "데이터 파일을 만들지 못했습니다: " + Error, true);
 		return;
 	}
 	Notify(Context, "새 에셋: " + FStringConv::ToUtf8(Path.filename().wstring()), false);

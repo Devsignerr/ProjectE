@@ -88,6 +88,7 @@ private:
 	void RequestDelete(FEditorContext& Context, const std::vector<std::filesystem::path>& Targets);
 	void BeginRename(const std::filesystem::path& Path);
 	void CreateAsset(FEditorContext& Context, const std::string& BaseName, const std::wstring& Extension);
+	void CreateDataFile(FEditorContext& Context, const std::wstring& Extension, const std::string& StructPath); // .etable/.edata (구조체 지정)
 	void CreateFolder(FEditorContext& Context);
 
 	std::vector<std::filesystem::path> GetSelectedPaths() const;

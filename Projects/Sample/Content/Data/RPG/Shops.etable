@@ -1,0 +1,7 @@
+{
+  "Version": 1,
+  "Struct": "Data/RPG/Shop.estruct",
+  "Rows": [
+    {"Name":"Merchant_Bron","Values":{"Stock":["potion_hp_small","potion_hp_large","potion_mp","dagger","sword_1handed","axe_1handed","sword_2handed","shield_round","shield_square","shield_badge"]}}
+  ]
+}

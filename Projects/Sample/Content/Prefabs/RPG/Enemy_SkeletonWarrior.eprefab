@@ -24,7 +24,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 전사\", \"Damage\": 14, \"AttackRange\": 150, \"AggroRange\": 750, \"LeashRange\": 1600, \"AttackCooldown\": 1.6, \"AttackClips\": \"1H_Melee_Attack_Chop,1H_Melee_Attack_Slice_Diagonal\", \"AttackSpeed\": 1.0, \"RunSpeed\": 240, \"WalkSpeed\": 75, \"Poise\": 0.6, \"LootTable\": \"Skeleton_Warrior\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Warrior\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         },
         "HealthComponent": {

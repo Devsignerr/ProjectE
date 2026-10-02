@@ -24,7 +24,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 마법사\", \"Damage\": 12, \"AttackRange\": 650, \"AggroRange\": 900, \"LeashRange\": 1700, \"AttackCooldown\": 2.6, \"AttackClips\": \"Spellcast_Shoot\", \"AttackSpeed\": 1.0, \"RunSpeed\": 220, \"WalkSpeed\": 75, \"Poise\": 0.2, \"Ranged\": true, \"Projectile\": \"Magic\", \"ProjectileSpeed\": 500, \"MinRange\": 280, \"AoeDamage\": 20, \"AoeRadius\": 170, \"AoeCooldown\": 7.0, \"LootTable\": \"Skeleton_Mage\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Mage\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         },
         "HealthComponent": {

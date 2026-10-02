@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Struct": "Data/RPG/LootTable.estruct",
+  "Rows": [
+    {"Name":"Skeleton_Warrior","Values":{"GoldMin":5,"GoldMax":12}},
+    {"Name":"Skeleton_Minion","Values":{"GoldMin":2,"GoldMax":6}},
+    {"Name":"Skeleton_Rogue","Values":{"GoldMin":4,"GoldMax":10}},
+    {"Name":"Skeleton_Mage","Values":{"GoldMin":6,"GoldMax":14}},
+    {"Name":"Chest","Values":{"GoldMin":20,"GoldMax":40}},
+    {"Name":"Test","Values":{"GoldMin":5,"GoldMax":5}}
+  ]
+}

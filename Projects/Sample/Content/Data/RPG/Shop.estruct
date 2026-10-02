@@ -1,0 +1,8 @@
+{
+  "Version": 1,
+  "Name": "Shop",
+  "Description": "상점 목록 (Shops.etable, 행 이름 = Merchant ShopRow)",
+  "Fields": [
+    {"Name":"Stock","Type":"Array","Element":"RowRef","Table":"Data/RPG/Items.etable","Default":[],"Description":"파는 아이템 (표시 순서)"}
+  ]
+}

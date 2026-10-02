@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Name": "LootEntry",
+  "Description": "전리품 항목 (LootEntries.etable) — 표마다 파일 순서대로 각각 확률을 굴린다. 행 이름은 구분용(아무 이름)",
+  "Fields": [
+    {"Name":"LootTable","Type":"RowRef","Table":"Data/RPG/LootTables.etable","Default":"","Description":"속한 전리품 표"},
+    {"Name":"Item","Type":"RowRef","Table":"Data/RPG/Items.etable","Default":"","Description":"떨어뜨릴 아이템"},
+    {"Name":"Chance","Type":"Float","Default":1,"Description":"확률 (0~1)"},
+    {"Name":"MinCount","Type":"Int","Default":1,"Description":"개수 최소"},
+    {"Name":"MaxCount","Type":"Int","Default":1,"Description":"개수 최대"}
+  ]
+}

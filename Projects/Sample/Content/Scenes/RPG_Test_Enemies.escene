@@ -548,7 +548,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 전사\", \"Damage\": 14, \"AttackRange\": 150, \"AggroRange\": 750, \"LeashRange\": 1600, \"AttackCooldown\": 1.6, \"AttackClips\": \"1H_Melee_Attack_Chop,1H_Melee_Attack_Slice_Diagonal\", \"AttackSpeed\": 1.0, \"RunSpeed\": 240, \"WalkSpeed\": 75, \"Poise\": 0.6, \"LootTable\": \"Skeleton_Warrior\", \"SpawnAnimation\": \"Skeletons_Awaken_Standing\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Warrior\", \"SpawnAnimation\": \"Skeletons_Awaken_Standing\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         }
       }
@@ -585,7 +585,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 마법사\", \"Damage\": 12, \"AttackRange\": 650, \"AggroRange\": 900, \"LeashRange\": 1700, \"AttackCooldown\": 2.6, \"AttackClips\": \"Spellcast_Shoot\", \"AttackSpeed\": 1.0, \"RunSpeed\": 220, \"WalkSpeed\": 75, \"Poise\": 0.2, \"Ranged\": true, \"Projectile\": \"Magic\", \"ProjectileSpeed\": 500, \"MinRange\": 280, \"AoeDamage\": 20, \"AoeRadius\": 170, \"AoeCooldown\": 7.0, \"LootTable\": \"Skeleton_Mage\", \"SpawnAnimation\": \"Dormant\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Mage\", \"SpawnAnimation\": \"Dormant\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         }
       }
@@ -622,7 +622,7 @@
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"DisplayName\": \"스켈레톤 도적\", \"Damage\": 10, \"AttackRange\": 750, \"AggroRange\": 950, \"LeashRange\": 1800, \"AttackCooldown\": 2.2, \"AttackClips\": \"1H_Ranged_Shoot\", \"AttackSpeed\": 1.0, \"RunSpeed\": 260, \"WalkSpeed\": 75, \"Poise\": 0.2, \"Ranged\": true, \"Projectile\": \"Bolt\", \"ProjectileSpeed\": 1400, \"MinRange\": 300, \"LootTable\": \"Skeleton_Rogue\", \"SpawnAnimation\": \"\"}",
+          "PropertyOverrides": "{\"StatsRow\": \"Skeleton_Rogue\", \"SpawnAnimation\": \"\"}",
           "ScriptAsset": "Scripts/RPG/EnemyController.lua"
         }
       }

@@ -1,4 +1,6 @@
--- 액션 RPG 적 (Phase 45 트랙 C): 스켈레톤 전사/졸개/도적/마법사 공용 두뇌. 프리팹 Prefabs/RPG/Enemy_*.eprefab가 값을 정한다.
+-- 액션 RPG 적 (Phase 45 트랙 C): 스켈레톤 전사/졸개/도적/마법사 공용 두뇌. 프리팹 Prefabs/RPG/Enemy_*.eprefab가 StatsRow를 정한다.
+--   스탯 = Data/RPG/Enemies.etable의 StatsRow 행 (Phase 46-C): OnStart에서 같은 이름의 Properties를 덮어쓰고 MaxHealth는 HealthComponent에.
+--   StatsRow가 비었거나 행이 없으면 아래 Properties 값을 그대로 쓴다 (TargetName/SpawnAnimation/ShowDamageNumbers는 배치별 값)
 --   구성: 루트(이 스크립트 + HealthComponent + NavAgentComponent + 키네마틱 캡슐 콜라이더, 레이어 Enemy)
 --         └ Mesh(모델 + AnimGraph Animations/RPG/Skeleton*.eanimgraph, 파라미터 Speed/Combat/Dormant/Dead/DeathVariant)
 --         └ 무기(소켓 부착 HandR/HandL)
@@ -9,6 +11,7 @@
 -- 공개 계약 (다른 스크립트가 GetScript()로 부른다): IsEnemy = true, GetDisplayName(), IsDead(), GetHealthFraction(), Alert(target)
 local EnemyController = {
 	Properties = {
+		StatsRow        = "",     -- Data/RPG/Enemies.etable 행 이름 (예: "Skeleton_Warrior")
 		DisplayName     = "스켈레톤",
 		Damage          = 10.0,   -- 근접 한 대 / 투사체 한 발
 		AttackRange     = 140.0,  -- cm (원거리는 사거리)
@@ -39,6 +42,8 @@ local EnemyController = {
 		TargetName      = "Player",
 	},
 }
+
+local RPGData = Script.Require("Scripts/RPG/RPGData.lua")
 
 local WorldLayers = { "Default", "Ground", "Prop" } -- 시야/투사체를 막는 레이어
 
@@ -118,7 +123,28 @@ end
 
 -- ---------------------------------------------------------------- 수명
 
+-- 데이터 행 → Properties (+ HealthComponent 최대 체력). 배열 AttackClips는 쉼표 목록으로
+function EnemyController:ApplyStatsRow()
+	local P = self.Properties
+	if P.StatsRow == "" then
+		return
+	end
+	local Row = RPGData.GetEnemyStats(P.StatsRow)
+	if Row == nil then
+		Log.Warn("적: 스탯 행을 찾지 못해 프로퍼티 값을 씁니다 —", P.StatsRow)
+		return
+	end
+	RPGData.ApplyFields(P, Row, { AttackClips = true })
+	P.AttackClips = table.concat(Row.AttackClips, ",")
+	local Health = self.entity:GetComponent("HealthComponent")
+	if Health ~= nil and Row.MaxHealth > 0 then
+		Health.MaxHealth = Row.MaxHealth
+		Health.Health    = Row.MaxHealth
+	end
+end
+
 function EnemyController:OnStart()
+	self:ApplyStatsRow()
 	local P = self.Properties
 	self.Home        = self.entity:GetWorldPosition()
 	self.Agent       = self.entity:GetComponent("NavAgentComponent")

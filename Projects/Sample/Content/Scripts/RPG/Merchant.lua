@@ -3,12 +3,15 @@
 local Merchant = {
 	Properties = {
 		DisplayName    = "떠돌이 상인 브론",
-		Stock          = "potion_hp_small,potion_hp_large,potion_mp,dagger,sword_1handed,axe_1handed,sword_2handed,shield_round,shield_square,shield_badge",
+		ShopRow        = "Merchant_Bron", -- Data/RPG/Shops.etable 행 (판매 목록). 비었거나 없으면 Stock
+		Stock          = "",       -- 쉼표 목록 (ShopRow를 쓰지 않을 때)
 		InteractRadius = 200.0,
 		PlayerName     = "Player",
 		TurnSpeed      = 6.0,  -- 플레이어 쪽으로 도는 빠르기
 	},
 }
+
+local RPGData = Script.Require("Scripts/RPG/RPGData.lua")
 
 local function ActionPressed(Action, FallbackKey)
 	local bOk, bPressed = pcall(Input.WasActionPressed, Action)
@@ -25,7 +28,7 @@ function Merchant:OnStart()
 	self.Shop   = ShopEntity and ShopEntity:GetScript() or nil
 	self.Player = Scene.Find(self.Properties.PlayerName)
 	self.Model  = self.entity:FindChild("Model")
-	self.Stock  = self.GM and self.GM:ParseStock(self.Properties.Stock) or {}
+	self.Stock  = self.GM and self.GM:ParseStock(self:GetStockText()) or {}
 	self.bNear  = false
 	self.bShopOpen = false
 	self.StartGold = 0
@@ -33,6 +36,19 @@ function Merchant:OnStart()
 	if self.GM == nil or self.Shop == nil then
 		Log.Warn("Merchant: GameManager 또는 ShopUI가 없어 거래할 수 없습니다")
 	end
+end
+
+-- 판매 목록 쉼표 문자열 (ShopRow 행이 있으면 그 Stock, 없으면 Stock 프로퍼티)
+function Merchant:GetStockText()
+	local Row = self.Properties.ShopRow
+	local Stock = RPGData.GetShopStock(Row)
+	if Stock ~= nil then
+		return table.concat(Stock, ",")
+	end
+	if Row ~= "" then
+		Log.Warn("Merchant: 상점 행을 찾지 못해 Stock 프로퍼티를 씁니다 —", Row)
+	end
+	return self.Properties.Stock
 end
 
 function Merchant:PlayClip(Clip, Duration)

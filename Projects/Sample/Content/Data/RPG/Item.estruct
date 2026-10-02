@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Name": "Item",
+  "Description": "RPG 아이템 정의 (Items.etable, 행 이름 = 아이템 id — 저장 파일·전리품·상점이 이 id를 쓴다)",
+  "Fields": [
+    {"Name":"DisplayName","Type":"String","Default":"","Description":"화면 표시 이름"},
+    {"Name":"Type","Type":"Enum","Values":["Weapon","Shield","Consumable","Loot"],"Default":"Loot","Description":"Weapon/Shield = 장착, Consumable = 사용(물약), Loot = 판매용"},
+    {"Name":"Icon","Type":"Asset","Filter":".png","Default":"","Description":"가방/상점 아이콘"},
+    {"Name":"Model","Type":"Asset","Filter":".glb;.gltf","Default":"","Description":"줍는 아이템/장착 모델"},
+    {"Name":"ModelScale","Type":"Float","Default":1,"Description":"모델 배율"},
+    {"Name":"Price","Type":"Int","Default":0,"Description":"상점 구매가 (판매가 = 절반, 최소 1)"},
+    {"Name":"Damage","Type":"Int","Default":0,"Description":"무기 공격력"},
+    {"Name":"Defense","Type":"Int","Default":0,"Description":"방패 방어력 (받는 피해 감소)"},
+    {"Name":"Heal","Type":"Int","Default":0,"Description":"사용 시 체력 회복"},
+    {"Name":"Mana","Type":"Int","Default":0,"Description":"사용 시 마나 회복"},
+    {"Name":"MaxStack","Type":"Int","Default":1,"Description":"가방 한 칸에 겹치는 수"},
+    {"Name":"bTwoHanded","Type":"Bool","Default":false,"Description":"양손 무기 (방패와 함께 못 씀)"},
+    {"Name":"bCurrency","Type":"Bool","Default":false,"Description":"화폐 (가방 대신 골드로 들어간다)"},
+    {"Name":"Description","Type":"Text","Default":"","Description":"툴팁 설명"}
+  ]
+}

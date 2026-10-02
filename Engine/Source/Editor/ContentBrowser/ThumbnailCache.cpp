@@ -263,6 +263,14 @@ void FThumbnailCache::RenderPending(FEditorContext& Context, uint32 Budget)
 			Scene.Clear();
 			continue;
 		}
+		if (Context.Resources->HasPendingLoads())
+		{
+			// 비동기 로딩 중인 텍스처/메시가 있으면 기본 텍스처로 찍혀 남으므로 다음 프레임에 다시 (리소스는 캐시되어 다시 만들지 않는다)
+			Scene.Clear();
+			Entry.bQueued = true;
+			Queue.push_front(Path);
+			break;
+		}
 		Scene.UpdateTransforms();
 
 		// 구도: 이미지는 판을 정면으로 꽉 차게, 나머지는 비스듬히 위에서 경계에 맞춤

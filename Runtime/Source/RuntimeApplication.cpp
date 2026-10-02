@@ -121,6 +121,7 @@ bool FRuntimeApplication::OnInit()
 	{
 		return false;
 	}
+	Resources.EnableAsyncLoading(IsAutomationRun()); // 텍스처 디코드/압축은 작업 스레드, 업로드는 복사 큐 (자동 검증은 프레임마다 비움)
 	if (!SceneRenderer.Init(*Rhi, Resources))
 	{
 		return false;

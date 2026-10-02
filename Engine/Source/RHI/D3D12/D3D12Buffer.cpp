@@ -3,6 +3,7 @@
 #include "RHI/D3D12/D3D12CommandQueue.h"
 #include "RHI/D3D12/D3D12Device.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "RHI/D3D12/D3D12UploadQueue.h"
 
 #include <cstring>
 
@@ -53,10 +54,31 @@ bool FD3D12Buffer::InitStatic(FD3D12Device& Device, FD3D12CommandQueue& Queue, c
 	return true;
 }
 
+bool FD3D12Buffer::InitStaticAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, const void* Data, uint64 InSizeInBytes,
+                                   const wchar_t* DebugName)
+{
+	E_CHECKF(Resource == nullptr, "버퍼가 이미 생성되어 있습니다");
+	E_CHECKF(Data != nullptr && InSizeInBytes > 0, "업로드할 데이터가 비어 있습니다");
+
+	SizeInBytes                             = InSizeInBytes;
+	const D3D12_HEAP_PROPERTIES DefaultHeap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	const D3D12_RESOURCE_DESC   BufferDesc  = MakeBufferDesc(SizeInBytes);
+	E_D3D_VERIFY(Device.GetDevice()->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &BufferDesc, D3D12_RESOURCE_STATE_COMMON,
+	                                                         nullptr, IID_PPV_ARGS(&Resource)));
+	Resource->SetName(DebugName);
+
+	const FD3D12UploadAllocation Staging = Uploader.Allocate(SizeInBytes, 16);
+	std::memcpy(Staging.Cpu, Data, static_cast<size_t>(SizeInBytes));
+	Uploader.GetCommandList()->CopyBufferRegion(Resource.Get(), 0, Staging.Resource, Staging.Offset, SizeInBytes);
+	UploadFence = Uploader.AddDestination(Resource.Get(), /*bTexture*/ false);
+	return true;
+}
+
 void FD3D12Buffer::Shutdown()
 {
 	Resource.Reset();
 	SizeInBytes = 0;
+	UploadFence = 0;
 }
 
 void FD3D12Buffer::ShutdownDeferred(FD3D12RHI& Rhi)
@@ -64,6 +86,7 @@ void FD3D12Buffer::ShutdownDeferred(FD3D12RHI& Rhi)
 	Rhi.DeferRelease(Resource);
 	Resource.Reset();
 	SizeInBytes = 0;
+	UploadFence = 0;
 }
 
 D3D12_VERTEX_BUFFER_VIEW FD3D12Buffer::GetVertexBufferView(uint32 StrideInBytes) const

@@ -2,10 +2,11 @@
 
 #include "Renderer/LodMath.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 
-bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FMeshData& MeshData, const wchar_t* DebugName)
+void FStaticMesh::PrepareCpuData(const FMeshData& MeshData, std::vector<uint32>& AllIndices)
 {
 	E_CHECKF(!MeshData.Vertices.empty() && !MeshData.Indices.empty(), "메시 데이터가 비어 있습니다");
 	E_CHECKF(MeshData.Indices.size() % 3 == 0, "인덱스 수가 3의 배수가 아닙니다");
@@ -27,8 +28,7 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 	// LOD: LOD0 뒤에 단순화 인덱스를 이어 붙인다 (정점 공유)
 	Lods.clear();
 	Lods.push_back({ 0, IndexCount, 1.0f });
-	std::vector<uint32> AllIndices;
-	const std::vector<uint32>* GpuIndices = &MeshData.Indices;
+	AllIndices.clear();
 	if (!MeshData.Lods.empty())
 	{
 		AllIndices = MeshData.Indices;
@@ -41,13 +41,18 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 			Lods.push_back({ static_cast<uint32>(AllIndices.size()), static_cast<uint32>(Lod.Indices.size()), Lod.ScreenSize });
 			AllIndices.insert(AllIndices.end(), Lod.Indices.begin(), Lod.Indices.end());
 		}
-		GpuIndices = &AllIndices;
 	}
 	for (size_t Index = 0; Index < LodMath::MaxLods; ++Index)
 	{
 		LodScreenSizes[Index] = Index < Lods.size() ? Lods[Index].ScreenSize : 0.0f;
 	}
+}
 
+bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FMeshData& MeshData, const wchar_t* DebugName)
+{
+	std::vector<uint32> AllIndices;
+	PrepareCpuData(MeshData, AllIndices);
+	const std::vector<uint32>* GpuIndices = AllIndices.empty() ? &MeshData.Indices : &AllIndices;
 	const std::wstring VertexName = std::wstring(DebugName) + L"_VB";
 	const std::wstring IndexName  = std::wstring(DebugName) + L"_IB";
 
@@ -63,12 +68,47 @@ bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FM
 	return true;
 }
 
+bool FStaticMesh::InitAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, const FMeshData& MeshData, const wchar_t* DebugName)
+{
+	std::vector<uint32> AllIndices;
+	PrepareCpuData(MeshData, AllIndices);
+	const std::vector<uint32>* GpuIndices = AllIndices.empty() ? &MeshData.Indices : &AllIndices;
+
+	const std::wstring VertexName = std::wstring(DebugName) + L"_VB";
+	const std::wstring IndexName  = std::wstring(DebugName) + L"_IB";
+	if (!VertexBuffer.InitStaticAsync(Device, Uploader, MeshData.Vertices.data(), MeshData.Vertices.size() * sizeof(FVertex), VertexName.c_str()) ||
+	    !IndexBuffer.InitStaticAsync(Device, Uploader, GpuIndices->data(), GpuIndices->size() * sizeof(uint32), IndexName.c_str()))
+	{
+		return false;
+	}
+	UploadFence    = std::max(VertexBuffer.GetUploadFence(), IndexBuffer.GetUploadFence());
+	bUploadPending = true;
+	return true;
+}
+
+bool FStaticMesh::InitSkinAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, const std::vector<FSkinVertex>& SkinVertices,
+                                const wchar_t* DebugName)
+{
+	E_CHECKF(SkinVertices.size() == VertexCount, "스킨 정점 수({})가 정점 수({})와 다릅니다", SkinVertices.size(), VertexCount);
+	const std::wstring SkinName = std::wstring(DebugName) + L"_Skin";
+	if (!SkinBuffer.InitStaticAsync(Device, Uploader, SkinVertices.data(), SkinVertices.size() * sizeof(FSkinVertex), SkinName.c_str()))
+	{
+		return false;
+	}
+	bSkinned       = true;
+	UploadFence    = std::max(UploadFence, SkinBuffer.GetUploadFence());
+	bUploadPending = true;
+	return true;
+}
+
 void FStaticMesh::Shutdown()
 {
 	VertexBuffer.Shutdown();
 	IndexBuffer.Shutdown();
 	SkinBuffer.Shutdown();
 	bSkinned = false;
+	bUploadPending = false;
+	UploadFence    = 0;
 	LocalBounds = FBox();
 	Lods.clear();
 	VertexCount = 0;
@@ -86,6 +126,8 @@ void FStaticMesh::ShutdownDeferred(FD3D12RHI& Rhi)
 		SkinBuffer.ShutdownDeferred(Rhi);
 		bSkinned = false;
 	}
+	bUploadPending = false;
+	UploadFence    = 0;
 	LocalBounds = FBox();
 	Lods.clear();
 	VertexCount = 0;

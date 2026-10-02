@@ -29,4 +29,9 @@ namespace RendererCVars
 	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr" },
 	                                        .Range       = std::pair(0.0f, 5.0f),
 	                                        .CommandLine = { { L"--debug-view", "" } } });
+	TAutoConsoleVariable<int32> AsyncLoading("r.AsyncLoading", -1,
+	                                         "리소스 로딩 방식: -1 자동(대화형 = 비동기, 자동 검증 = 비동기 + 프레임마다 비우기), 0 동기, 1 비동기, "
+	                                         "2 비동기 + 프레임마다 비우기 (EnableAsyncLoading을 부르지 않은 앱/테스트는 항상 동기)",
+	                                         EConsoleFlags::None,
+	                                         { .Range = std::pair(-1.0f, 2.0f), .CommandLine = { { L"--sync-loading", "0" }, { L"--async-loading", "1" } } });
 } // namespace RendererCVars

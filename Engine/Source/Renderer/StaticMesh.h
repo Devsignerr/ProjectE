@@ -10,6 +10,7 @@
 class FD3D12CommandQueue;
 class FD3D12Device;
 class FD3D12RHI;
+class FD3D12UploadQueue;
 
 // GPU에 올라간 정적 메시 (정점/인덱스 버퍼 + 로컬 경계).
 // LOD: 인덱스 버퍼 = LOD0 인덱스 뒤에 FMeshData::Lods 인덱스를 이어 붙인 것 (정점 버퍼는 공유). 스킨 드로우는 항상 LOD0
@@ -24,6 +25,14 @@ public:
 	};
 
 	bool Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FMeshData& MeshData, const wchar_t* DebugName);
+	// 비동기 업로드 (복사 큐): CPU 쪽 정보(경계/LOD/CPU 사본)는 바로 채워지고 GPU 버퍼는 묶음이 끝난 뒤 쓸 수 있다.
+	// 소유자(FResourceManager)가 펜스 <= GetFinalizedFence가 되면 MarkUploadComplete — 그 전에는 IsReady가 false(그리지 않음)
+	bool InitAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, const FMeshData& MeshData, const wchar_t* DebugName);
+	bool InitSkinAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, const std::vector<FSkinVertex>& SkinVertices, const wchar_t* DebugName);
+	// 그려도 되는지 (GPU 버퍼 업로드 완료). 렌더 패스 수집은 이것을 확인한다 — 경계/CPU 사본은 준비 전에도 유효
+	bool   IsReady() const { return VertexCount > 0 && !bUploadPending; }
+	uint64 GetUploadFence() const { return UploadFence; }
+	void   MarkUploadComplete() { bUploadPending = false; }
 	void Shutdown();
 	void ShutdownDeferred(FD3D12RHI& Rhi);
 
@@ -70,4 +79,9 @@ private:
 	uint32                VertexCount = 0;
 	uint32                IndexCount  = 0;
 	bool                  bSkinned    = false;
+	bool                  bUploadPending = false;
+	uint64                UploadFence    = 0;
+
+	// CPU 쪽 정보를 채우고 GPU에 올릴 인덱스(LOD 이어 붙임)를 OutIndices에 (LOD가 없으면 비워 두고 MeshData.Indices를 쓴다)
+	void PrepareCpuData(const FMeshData& MeshData, std::vector<uint32>& OutIndices);
 };

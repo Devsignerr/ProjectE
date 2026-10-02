@@ -175,7 +175,7 @@ void FFoliageRenderer::Gather(FScene& Scene, const FCamera& Camera, const FFrust
 			const FFoliageType& Type  = Set.Asset->Types[TypeIndex];
 			const FTypeCache&   Entry = Cache.Types[TypeIndex];
 			const FStaticMesh*  Mesh  = Resources->GetMesh(Entry.Mesh);
-			if (Mesh == nullptr)
+			if (Mesh == nullptr || !Mesh->IsReady()) // 업로드 중이면 이번 프레임은 건너뜀
 			{
 				continue;
 			}

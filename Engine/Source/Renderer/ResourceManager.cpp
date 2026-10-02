@@ -1,5 +1,6 @@
 #include "Renderer/ResourceManager.h"
 
+#include "Core/Profiling.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/AssetCache.h"
@@ -7,11 +8,13 @@
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/MeshSimplifier.h"
 #include "Renderer/PrimitiveShapes.h"
+#include "Renderer/RendererConsoleVariables.h"
 #include "Scene/Particles.h"
 
 #include <algorithm>
 #include <cwctype>
 #include <optional>
+#include <unordered_set>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -74,7 +77,18 @@ void FResourceManager::Shutdown()
 		return;
 	}
 
-	// 즉시 해제 전에 GPU 작업 완료 보장
+	// 작업 스레드를 먼저 멈춘다 (아직 시작하지 않은 로드와 완료 콜백은 버림)
+	LoadJobs.Shutdown();
+	if (BeginFrameCallbackId != 0)
+	{
+		Rhi->RemoveBeginFrameCallback(BeginFrameCallbackId);
+		BeginFrameCallbackId = 0;
+	}
+	bAsyncLoadingEnabled = false;
+	PendingUploads.clear();
+
+	// 즉시 해제 전에 GPU 작업 완료 보장 (복사 큐가 아직 쓰는 대상도)
+	Rhi->GetUploadQueue().WaitIdle();
 	Rhi->GetGraphicsQueue().Flush();
 
 	Materials.ForEach([this](FMaterialHandle, FMaterial& Material) { Rhi->GetSrvAllocator().Free(Material.TextureTable); });
@@ -87,6 +101,7 @@ void FResourceManager::Shutdown()
 	MaterialCache.clear();
 	PrimitiveMeshes.clear();
 	ModelCache.clear();
+	PrefetchedModels.clear();
 	ParticleCache.clear();
 
 	WhiteTexture      = FTextureHandle{};
@@ -108,6 +123,27 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 	if (const auto Found = TextureCache.find(CacheKey); Found != TextureCache.end() && Textures.IsValid(Found->second))
 	{
 		return Found->second;
+	}
+
+	if (IsAsyncUpload())
+	{
+		// 자리표시 핸들을 바로 캐시 (같은 파일 중복 로드 방지). 읽기/디코드/압축은 작업 스레드, GPU 생성은 메인 스레드 완료 콜백
+		const FTextureHandle Handle = Textures.Add(std::make_unique<FD3D12Texture>());
+		TextureCache[CacheKey]      = Handle;
+		struct FJobResult
+		{
+			FCompressedTexture Texture;
+			bool               bLoaded = false;
+		};
+		auto Result = std::make_shared<FJobResult>();
+		NoteAsyncRequest();
+		LoadJobs.Submit(
+			[Result, Canonical, Usage] {
+				E_PROFILE_SCOPE("텍스처 로드 작업");
+				Result->bLoaded = FAssetCache::LoadTextureAsset(Canonical, Usage, Result->Texture) != FAssetCache::ESource::Failed;
+			},
+			[this, Result, Handle, Name = Canonical.filename().wstring()] { FinishTextureLoad(Handle, Result->Texture, Result->bLoaded, Name); });
+		return Handle;
 	}
 
 	FCompressedTexture Texture;
@@ -165,21 +201,252 @@ FTextureHandle FResourceManager::CreateTexture(const FCompressedTexture& Texture
 		return FTextureHandle{};
 	}
 
+	const FTextureHandle Handle = Textures.Add(std::make_unique<FD3D12Texture>());
+	if (!UploadCompressedTexture(*Textures.Get(Handle), Handle, Texture, DebugName))
+	{
+		Textures.Remove(Handle);
+		return FTextureHandle{};
+	}
+	return Handle;
+}
+
+bool FResourceManager::UploadCompressedTexture(FD3D12Texture& Target, FTextureHandle Handle, const FCompressedTexture& Texture,
+                                               const std::wstring& DebugName)
+{
 	std::vector<FD3D12Texture::FMipData> Mips;
 	Mips.reserve(Texture.Mips.size());
 	for (const FTextureMip& Mip : Texture.Mips)
 	{
 		Mips.push_back({ Mip.Data.data(), Mip.Data.size() });
 	}
-
-	auto GpuTexture = std::make_unique<FD3D12Texture>();
-	if (!GpuTexture->Init2DFromMips(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Texture.GetWidth(),
-	                                Texture.GetHeight(), GetTextureFormat(Texture.Format, Texture.bSRGB), Mips.data(),
-	                                static_cast<uint32>(Mips.size()), DebugName.c_str()))
+	const DXGI_FORMAT Format = GetTextureFormat(Texture.Format, Texture.bSRGB);
+	if (!IsAsyncUpload())
 	{
-		return FTextureHandle{};
+		return Target.Init2DFromMips(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Texture.GetWidth(), Texture.GetHeight(),
+		                             Format, Mips.data(), static_cast<uint32>(Mips.size()), DebugName.c_str());
 	}
-	return Textures.Add(std::move(GpuTexture));
+	if (!Target.Init2DFromMipsAsync(Rhi->GetDevice(), Rhi->GetUploadQueue(), Rhi->GetSrvAllocator(), Texture.GetWidth(), Texture.GetHeight(),
+	                                Format, Mips.data(), static_cast<uint32>(Mips.size()), DebugName.c_str()))
+	{
+		return false;
+	}
+	NoteAsyncRequest();
+	PendingUploads.push_back({ Handle, FMeshHandle{}, Target.GetUploadFence() });
+	return true;
+}
+
+void FResourceManager::FinishTextureLoad(FTextureHandle Handle, const FCompressedTexture& Texture, bool bLoaded, const std::wstring& DebugName)
+{
+	FD3D12Texture* Target = Textures.Get(Handle);
+	if (Target == nullptr)
+	{
+		return; // 로드 중에 삭제됨
+	}
+	if (!bLoaded || !Texture.IsValid() || !UploadCompressedTexture(*Target, Handle, Texture, DebugName))
+	{
+		// 실패: 동기 경로와 같이 무효 핸들로 (쓰던 곳은 계속 기본 텍스처) — 캐시에서 빼 다음 요청이 다시 시도하게
+		if (std::unique_ptr<FD3D12Texture> Removed = Textures.Remove(Handle))
+		{
+			Removed->ShutdownDeferred(*Rhi);
+		}
+		std::erase_if(TextureCache, [Handle](const auto& Entry) { return Entry.second == Handle; });
+	}
+}
+
+void FResourceManager::EnableAsyncLoading(bool bInAutomationRun)
+{
+	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
+	if (bAsyncLoadingEnabled)
+	{
+		return;
+	}
+	bAsyncLoadingEnabled = true;
+	bAutomationRun       = bInAutomationRun;
+	LoadJobs.Init(FJobQueue::GetDefaultWorkerCount(), "리소스 로딩");
+	BeginFrameCallbackId = Rhi->AddBeginFrameCallback([this] { ProcessAsyncLoads(); });
+	static constexpr const char* ModeNames[] = { "동기", "비동기", "비동기 + 프레임마다 비우기" };
+	E_LOG(LogRenderer, Display, "비동기 리소스 로딩 사용 (작업 스레드 {}개, 현재 방식: {})", LoadJobs.GetWorkerCount(),
+	      ModeNames[static_cast<int32>(GetLoadMode())]);
+}
+
+EResourceLoadMode FResourceManager::GetLoadMode() const
+{
+	if (!bAsyncLoadingEnabled)
+	{
+		return EResourceLoadMode::Sync;
+	}
+	switch (RendererCVars::AsyncLoading.Get())
+	{
+	case 0:  return EResourceLoadMode::Sync;
+	case 1:  return EResourceLoadMode::Async;
+	case 2:  return EResourceLoadMode::AsyncDrain;
+	default: return bAutomationRun ? EResourceLoadMode::AsyncDrain : EResourceLoadMode::Async;
+	}
+}
+
+bool FResourceManager::IsReady(FTextureHandle Handle) const
+{
+	const FD3D12Texture* Texture = Textures.Get(Handle);
+	return Texture != nullptr && Texture->IsReady();
+}
+
+bool FResourceManager::IsReady(FMeshHandle Handle) const
+{
+	const FStaticMesh* Mesh = Meshes.Get(Handle);
+	return Mesh != nullptr && Mesh->IsReady();
+}
+
+uint32 FResourceManager::GetPendingLoadCount() const
+{
+	return LoadJobs.GetOutstandingCount() + static_cast<uint32>(PendingUploads.size());
+}
+
+void FResourceManager::WaitForPendingLoads()
+{
+	E_PROFILE_SCOPE("리소스 로딩 비우기");
+	while (GetPendingLoadCount() > 0)
+	{
+		LoadJobs.WaitIdle();
+		LoadJobs.PumpCompletions(); // 끝난 작업 → GPU 업로드 기록
+		if (!PendingUploads.empty())
+		{
+			Rhi->FlushUploads();
+			CompletePendingUploads(Rhi->GetUploadQueue().GetFinalizedFence());
+		}
+	}
+}
+
+void FResourceManager::ProcessAsyncLoads()
+{
+	E_PROFILE_SCOPE("비동기 로딩 처리");
+	if (GetLoadMode() == EResourceLoadMode::AsyncDrain)
+	{
+		WaitForPendingLoads();
+		bLoadBurstActive = false;
+		return;
+	}
+	LoadJobs.PumpCompletions();
+	CompletePendingUploads(Rhi->GetUploadQueue().GetFinalizedFence());
+	if (bLoadBurstActive && GetPendingLoadCount() == 0)
+	{
+		// 한 번에 몰린 로드(씬 로드/맵 전환 등)가 모두 준비될 때까지 걸린 시간 (측정용)
+		bLoadBurstActive = false;
+		E_LOG(LogRenderer, Display, "비동기 로딩 완료: 요청 {}개, 첫 요청부터 {:.1f}ms", LoadBurstRequests,
+		      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - LoadBurstStart).count());
+	}
+}
+
+void FResourceManager::PrefetchModels(const std::vector<std::filesystem::path>& Paths)
+{
+	if (!bAsyncLoadingEnabled || GetLoadMode() == EResourceLoadMode::Sync)
+	{
+		return;
+	}
+	struct FPrefetch
+	{
+		std::filesystem::path Path;
+		std::wstring          Key;
+		FModelData            Model;
+		bool                  bLoaded = false;
+	};
+	std::vector<std::unique_ptr<FPrefetch>> Work;
+	for (const std::filesystem::path& Path : Paths)
+	{
+		std::error_code             ErrorCode;
+		const std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+		std::wstring                Key       = (ErrorCode ? Path : Canonical).wstring();
+		const bool bQueued = std::any_of(Work.begin(), Work.end(), [&](const auto& Item) { return Item->Key == Key; });
+		if (!bQueued && !ModelCache.contains(Key) && !PrefetchedModels.contains(Key))
+		{
+			Work.push_back(std::make_unique<FPrefetch>(FPrefetch{ Path, std::move(Key), {}, false }));
+		}
+	}
+	if (Work.size() < 2)
+	{
+		return; // 하나는 그냥 메인 스레드에서 읽는 것과 같다
+	}
+	E_PROFILE_SCOPE("모델 미리 읽기");
+	const auto StartTime = std::chrono::steady_clock::now();
+	// 텍스처 작업 대기열과 섞이지 않게 이번 호출 전용 작업자 (끝까지 기다리므로 짧게 산다)
+	FJobQueue Prefetch;
+	Prefetch.Init(std::min<uint32>(FJobQueue::GetDefaultWorkerCount(), static_cast<uint32>(Work.size())), "모델 미리 읽기");
+	for (const std::unique_ptr<FPrefetch>& Item : Work)
+	{
+		FPrefetch* Target = Item.get();
+		Prefetch.Submit([Target] { Target->bLoaded = FAssetCache::LoadModelAsset(Target->Path, Target->Model) != FAssetCache::ESource::Failed; });
+	}
+	Prefetch.WaitIdle();
+	Prefetch.Shutdown();
+	uint32 Loaded = 0;
+	for (std::unique_ptr<FPrefetch>& Item : Work)
+	{
+		if (Item->bLoaded)
+		{
+			PrefetchedModels[Item->Key] = std::move(Item->Model);
+			++Loaded;
+		}
+	}
+	E_LOG(LogRenderer, Display, "모델 미리 읽기: {}개 병렬 ({:.1f}ms)", Loaded,
+	      std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count());
+}
+
+bool FResourceManager::TakePrefetchedModel(const std::wstring& Key, FModelData& OutModel)
+{
+	const auto Found = PrefetchedModels.find(Key);
+	if (Found == PrefetchedModels.end())
+	{
+		return false;
+	}
+	OutModel = std::move(Found->second);
+	PrefetchedModels.erase(Found);
+	return true;
+}
+
+void FResourceManager::NoteAsyncRequest()
+{
+	if (!bLoadBurstActive)
+	{
+		bLoadBurstActive  = true;
+		LoadBurstStart    = std::chrono::steady_clock::now();
+		LoadBurstRequests = 0;
+	}
+	++LoadBurstRequests;
+}
+
+void FResourceManager::CompletePendingUploads(uint64 FinalizedFence)
+{
+	std::unordered_set<uint64> ReadyTextures; // FTextureHandle::ToId
+	std::erase_if(PendingUploads, [&](const FPendingUpload& Pending) {
+		if (Pending.Fence > FinalizedFence)
+		{
+			return false;
+		}
+		if (FD3D12Texture* Texture = Textures.Get(Pending.Texture))
+		{
+			Texture->MarkUploadComplete();
+			ReadyTextures.insert(Pending.Texture.ToId());
+		}
+		if (FStaticMesh* Mesh = Meshes.Get(Pending.Mesh))
+		{
+			Mesh->MarkUploadComplete();
+		}
+		return true;
+	});
+	if (ReadyTextures.empty())
+	{
+		return;
+	}
+	// 기본 텍스처로 만들어 둔 테이블을 실제 텍스처로
+	Materials.ForEach([&](FMaterialHandle, FMaterial& Material) {
+		for (const FTextureHandle& Slot : Material.Textures)
+		{
+			if (Slot.IsValid() && ReadyTextures.contains(Slot.ToId()))
+			{
+				BuildMaterialTable(Material);
+				break;
+			}
+		}
+	});
 }
 
 void FResourceManager::DestroyTexture(FTextureHandle Handle)
@@ -212,7 +479,7 @@ void FResourceManager::DestroyTexture(FTextureHandle Handle)
 
 const FD3D12Texture& FResourceManager::ResolveTexture(FTextureHandle Handle) const
 {
-	if (const FD3D12Texture* Texture = Textures.Get(Handle))
+	if (const FD3D12Texture* Texture = Textures.Get(Handle); Texture != nullptr && Texture->IsReady())
 	{
 		return *Texture;
 	}
@@ -224,6 +491,18 @@ FMeshHandle FResourceManager::CreateMesh(const FMeshData& MeshData, const std::w
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 
 	auto Mesh = std::make_unique<FStaticMesh>();
+	if (IsAsyncUpload())
+	{
+		if (!Mesh->InitAsync(Rhi->GetDevice(), Rhi->GetUploadQueue(), MeshData, DebugName.c_str()))
+		{
+			return FMeshHandle{};
+		}
+		const uint64      Fence  = Mesh->GetUploadFence();
+		const FMeshHandle Handle = Meshes.Add(std::move(Mesh));
+		NoteAsyncRequest();
+		PendingUploads.push_back({ FTextureHandle{}, Handle, Fence });
+		return Handle;
+	}
 	if (!Mesh->Init(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), MeshData, DebugName.c_str()))
 	{
 		return FMeshHandle{};
@@ -236,6 +515,19 @@ FMeshHandle FResourceManager::CreateSkinnedMesh(const FMeshData& MeshData, const
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 
 	auto Mesh = std::make_unique<FStaticMesh>();
+	if (IsAsyncUpload())
+	{
+		if (!Mesh->InitAsync(Rhi->GetDevice(), Rhi->GetUploadQueue(), MeshData, DebugName.c_str()) ||
+		    !Mesh->InitSkinAsync(Rhi->GetDevice(), Rhi->GetUploadQueue(), SkinVertices, DebugName.c_str()))
+		{
+			return FMeshHandle{};
+		}
+		const uint64      Fence  = Mesh->GetUploadFence();
+		const FMeshHandle Handle = Meshes.Add(std::move(Mesh));
+		NoteAsyncRequest();
+		PendingUploads.push_back({ FTextureHandle{}, Handle, Fence });
+		return Handle;
+	}
 	if (!Mesh->Init(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), MeshData, DebugName.c_str()) ||
 	    !Mesh->InitSkin(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), SkinVertices, DebugName.c_str()))
 	{
@@ -293,9 +585,9 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 
 const FD3D12Texture& FResourceManager::ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const
 {
-	if (const FD3D12Texture* Texture = Textures.Get(Material.Textures[Slot]))
+	if (const FD3D12Texture* Texture = Textures.Get(Material.Textures[Slot]); Texture != nullptr && Texture->IsReady())
 	{
-		return *Texture;
+		return *Texture; // 로딩 중이면 아래 기본 텍스처 (준비되면 CompletePendingUploads가 테이블을 다시 만든다)
 	}
 	return *Textures.Get(Slot == MaterialSlot_Normal ? FlatNormalTexture : WhiteTexture);
 }

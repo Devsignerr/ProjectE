@@ -1,6 +1,7 @@
 #include "RHI/D3D12/D3D12RHI.h"
 
 #include "Core/CommandLine.h"
+#include "Core/Profiling.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -34,6 +35,11 @@ bool FD3D12RHI::Init(const FD3D12RHIDesc& Desc)
 	ID3D12Device* D3DDevice = Device.GetDevice();
 
 	if (!GraphicsQueue.Init(D3DDevice, D3D12_COMMAND_LIST_TYPE_DIRECT))
+	{
+		return false;
+	}
+
+	if (!UploadQueue.Init(D3DDevice, Desc.UploadRingSize))
 	{
 		return false;
 	}
@@ -91,6 +97,7 @@ void FD3D12RHI::Shutdown()
 
 	// GPU가 모든 리소스 사용을 끝낸 뒤 해제
 	GraphicsQueue.Flush();
+	UploadQueue.Shutdown(); // 복사 완료 대기 + 전이 대기 참조 해제
 
 	CommandList.Reset();
 	ProcessPendingReleases(RecordingReleases);
@@ -155,6 +162,23 @@ void FD3D12RHI::BeginFrame(const float ClearColor[4])
 	ID3D12DescriptorHeap* DescriptorHeaps[] = { SrvAllocator.GetHeap() };
 	CommandList->SetDescriptorHeaps(1, DescriptorHeaps);
 
+	// 비동기 업로드: 지난 프레임 동안 쌓인 복사를 제출하고, 끝난 텍스처를 이 프레임 맨 앞에서 셰이더 리소스 상태로 전이
+	{
+		E_PROFILE_SCOPE("업로드 완료 처리");
+		UploadQueue.Submit();
+		UploadQueue.Poll();
+		std::vector<ComPtr<ID3D12Resource>> KeepAlive;
+		UploadQueue.RecordFinalize(CommandList.Get(), KeepAlive);
+		for (ComPtr<ID3D12Resource>& Resource : KeepAlive)
+		{
+			DeferRelease(std::move(Resource)); // 이 프레임이 GPU에서 끝날 때까지
+		}
+		for (const auto& [Id, Callback] : BeginFrameCallbacks)
+		{
+			Callback();
+		}
+	}
+
 	ID3D12Resource* BackBuffer = SwapChain.GetCurrentBackBuffer();
 
 	const D3D12_RESOURCE_BARRIER ToRenderTarget =
@@ -188,6 +212,31 @@ FRenderOutput FD3D12RHI::GetBackBufferOutput() const
 	Output.Width  = SwapChain.GetWidth();
 	Output.Height = SwapChain.GetHeight();
 	return Output;
+}
+
+void FD3D12RHI::FlushUploads()
+{
+	E_PROFILE_SCOPE("업로드 비우기");
+	UploadQueue.WaitIdle();
+	if (!UploadQueue.HasPendingFinalize())
+	{
+		return;
+	}
+	std::vector<ComPtr<ID3D12Resource>> KeepAlive;
+	GraphicsQueue.ExecuteImmediate(Device.GetDevice(), [&](ID3D12GraphicsCommandList* List) { UploadQueue.RecordFinalize(List, KeepAlive); });
+	// ExecuteImmediate가 완료까지 기다렸으므로 KeepAlive는 여기서 놓아도 된다
+}
+
+uint32 FD3D12RHI::AddBeginFrameCallback(std::function<void()> Callback)
+{
+	const uint32 Id = NextBeginFrameCallbackId++;
+	BeginFrameCallbacks.emplace_back(Id, std::move(Callback));
+	return Id;
+}
+
+void FD3D12RHI::RemoveBeginFrameCallback(uint32 Id)
+{
+	std::erase_if(BeginFrameCallbacks, [Id](const auto& Entry) { return Entry.first == Id; });
 }
 
 void FD3D12RHI::DeferRelease(ComPtr<ID3D12Object> Object)
@@ -256,6 +305,13 @@ void FD3D12RHI::EndFrame()
 	CommandList->ResourceBarrier(1, &ToPresent);
 
 	E_D3D_CHECK(CommandList->Close());
+
+	// 이 프레임에 기록·참조한 업로드가 GPU에서 끝난 뒤 실행되도록 (전이는 복사 완료를 CPU로 확인한 것만 기록하므로 보통 바로 통과)
+	UploadQueue.Submit();
+	if (UploadQueue.GetFinalizedFence() > 0)
+	{
+		E_D3D_CHECK(GraphicsQueue.GetQueue()->Wait(UploadQueue.GetFence(), UploadQueue.GetFinalizedFence()));
+	}
 
 	FrameFenceValues[CurrentBackBufferIndex] = GraphicsQueue.ExecuteCommandList(CommandList.Get());
 

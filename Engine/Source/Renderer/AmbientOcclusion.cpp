@@ -43,10 +43,7 @@ bool FAmbientOcclusion::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, const 
 
 void FAmbientOcclusion::Shutdown()
 {
-	for (std::unique_ptr<FD3D12RenderTarget>& Target : Targets)
-	{
-		Target.reset();
-	}
+	Result.reset();
 	ComputePipeline.Shutdown();
 	BlurPipeline.Shutdown();
 	Rhi = nullptr;
@@ -82,36 +79,32 @@ void FAmbientOcclusion::EnsureTargets(uint32 FullWidth, uint32 FullHeight, uint3
 	const uint32 Divisor = ResolutionDivisor == 1 ? 1u : 2u;
 	const uint32 Width   = FMath::Max(1u, (FullWidth + Divisor - 1) / Divisor);
 	const uint32 Height  = FMath::Max(1u, (FullHeight + Divisor - 1) / Divisor);
-	if (Targets[0] && Targets[0]->GetWidth() == Width && Targets[0]->GetHeight() == Height)
+	if (Result && Result->GetWidth() == Width && Result->GetHeight() == Height)
 	{
 		return;
 	}
 	FRenderTargetDesc Desc = FRenderTargetDesc::MakeColor(Format);
 	Desc.ClearColor[0]     = 1.0f; // 가림 없음
-	for (uint32 Index = 0; Index < 2; ++Index)
+	if (Result)
 	{
-		if (Targets[Index])
-		{
-			Targets[Index]->ShutdownDeferred(*Rhi);
-		}
-		Targets[Index] = std::make_unique<FD3D12RenderTarget>();
-		if (!Targets[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"AmbientOcclusion" : L"AmbientOcclusionBlur",
-		                          Desc))
-		{
-			E_LOG(LogRenderer, Fatal, "SSAO 버퍼 생성 실패 ({}x{})", Width, Height);
-		}
+		Result->ShutdownDeferred(*Rhi);
+	}
+	Result = std::make_unique<FD3D12RenderTarget>();
+	if (!Result->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"AmbientOcclusion", Desc))
+	{
+		E_LOG(LogRenderer, Fatal, "SSAO 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
 }
 
-void FAmbientOcclusion::Render(const FAmbientOcclusionInputs& Inputs)
+FRGResourceRef FAmbientOcclusion::AddPasses(FRenderGraph& Graph, const FAmbientOcclusionInputs& Inputs, FRGResourceRef Depth, FRGResourceRef Normal,
+                                            int32 Timer)
 {
 	E_CHECKF(Inputs.SceneDepth != nullptr && Inputs.SceneNormal != nullptr && Inputs.SceneDepth->GetDesc().bWithDepth, "SSAO 입력이 올바르지 않습니다");
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	const uint32               FullWidth   = Inputs.SceneDepth->GetWidth();
-	const uint32               FullHeight  = Inputs.SceneDepth->GetHeight();
+	const uint32 FullWidth  = Inputs.SceneDepth->GetWidth();
+	const uint32 FullHeight = Inputs.SceneDepth->GetHeight();
 	EnsureTargets(FullWidth, FullHeight, Inputs.ResolutionDivisor);
-	const uint32 Width  = Targets[0]->GetWidth();
-	const uint32 Height = Targets[0]->GetHeight();
+	const uint32 Width  = Result->GetWidth();
+	const uint32 Height = Result->GetHeight();
 
 	FAoConstants Constants;
 	Constants.InvProjection = Inputs.Projection.GetInverse();
@@ -135,26 +128,45 @@ void FAmbientOcclusion::Render(const FAmbientOcclusionInputs& Inputs)
 	Constants.BlurDirection                             = FVector2(0.0f, 1.0f);
 	const D3D12_GPU_VIRTUAL_ADDRESS VerticalConstants   = DynamicBuffer.AllocateConstants(Constants).GpuAddress;
 
-	ID3D12Resource*              DepthResource = Inputs.SceneDepth->GetDepthResource();
-	const D3D12_RESOURCE_BARRIER ToRead =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToRead);
+	// 1) 계산 → 결과, 2) 가로 블러 결과 → 중간(그래프 풀), 3) 세로 블러 중간 → 결과
+	FRGTextureDesc TempDesc = FRGTextureDesc::MakeRenderTarget(Width, Height, Format);
+	TempDesc.ClearColor[0]  = 1.0f;
+	const FRGResourceRef    ResultRef = Graph.ImportColor("AmbientOcclusion", *Result);
+	const FRGResourceRef    TempRef   = Graph.CreateTexture("AmbientOcclusionBlur", TempDesc);
+	const FRGPooledTexture* Temp      = Graph.GetTexture(TempRef);
+	const FD3D12DescriptorHandle DepthSrv  = Inputs.SceneDepth->GetDepthSrv();
+	const FD3D12DescriptorHandle NormalSrv = Inputs.SceneNormal->GetSrv();
+	const FD3D12DescriptorHandle ResultSrv = Result->GetSrv();
+	const FD3D12DescriptorHandle TempSrv   = Temp->Srv;
+	const D3D12_CPU_DESCRIPTOR_HANDLE TempRtv = Temp->GetRtv();
+	FD3D12RenderTarget* const    Target    = Result.get();
 
-	// 1) 계산 → [0], 2) 가로 블러 [0] → [1], 3) 세로 블러 [1] → [0]
-	Targets[0]->Begin(CommandList, nullptr);
-	DrawScreenPass(CommandList, *Root, ComputePipeline, ComputeConstants, { Inputs.SceneDepth->GetDepthSrv(), Inputs.SceneNormal->GetSrv() }, Width,
-	               Height);
-	Targets[0]->End(CommandList);
-
-	const D3D12_RESOURCE_BARRIER ToWrite =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToWrite);
-
-	const FD3D12DescriptorHandle None;
-	Targets[1]->Begin(CommandList, nullptr);
-	DrawScreenPass(CommandList, *Root, BlurPipeline, HorizontalConstants, { None, None, Targets[0]->GetSrv() }, Width, Height);
-	Targets[1]->End(CommandList);
-	Targets[0]->Begin(CommandList, nullptr);
-	DrawScreenPass(CommandList, *Root, BlurPipeline, VerticalConstants, { None, None, Targets[1]->GetSrv() }, Width, Height);
-	Targets[0]->End(CommandList);
+	Graph.AddPass("SSAO")
+		.Read(Depth, ERGAccess::SrvPixel)
+		.Read(Normal, ERGAccess::SrvPixel)
+		.Write(ResultRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, Target, ComputeConstants, DepthSrv, NormalSrv, Width, Height](FRGContext& Context) {
+			Target->Bind(Context.CommandList, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, ComputePipeline, ComputeConstants, { DepthSrv, NormalSrv }, Width, Height);
+		});
+	Graph.AddPass("SSAO 가로 블러")
+		.Read(ResultRef, ERGAccess::SrvPixel)
+		.Write(TempRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, TempRtv, HorizontalConstants, ResultSrv, Width, Height](FRGContext& Context) {
+			Context.CommandList->OMSetRenderTargets(1, &TempRtv, FALSE, nullptr);
+			const FD3D12DescriptorHandle None;
+			DrawScreenPass(Context.CommandList, *Root, BlurPipeline, HorizontalConstants, { None, None, ResultSrv }, Width, Height);
+		});
+	Graph.AddPass("SSAO 세로 블러")
+		.Read(TempRef, ERGAccess::SrvPixel)
+		.Write(ResultRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, Target, VerticalConstants, TempSrv, Width, Height](FRGContext& Context) {
+			Target->Bind(Context.CommandList, nullptr);
+			const FD3D12DescriptorHandle None;
+			DrawScreenPass(Context.CommandList, *Root, BlurPipeline, VerticalConstants, { None, None, TempSrv }, Width, Height);
+		});
+	return ResultRef;
 }

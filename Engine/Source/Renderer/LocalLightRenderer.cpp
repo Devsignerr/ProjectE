@@ -228,14 +228,14 @@ D3D12_GPU_VIRTUAL_ADDRESS FLocalLightRenderer::GetClusterData() const
 	return ClusterBuffer ? ClusterBuffer->GetGPUVirtualAddress() : 0;
 }
 
-void FLocalLightRenderer::TransitionClusters(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES After)
+FRGResourceRef FLocalLightRenderer::ImportShadowMap(FRenderGraph& Graph) const
 {
-	if (ClusterState != After)
-	{
-		const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(ClusterBuffer.Get(), ClusterState, After);
-		CommandList->ResourceBarrier(1, &Barrier);
-		ClusterState = After;
-	}
+	return ShadowMap ? Graph.Import("LocalShadowMap", ShadowMap.Get(), ERGAccess::SrvPixel, ERGAccess::SrvPixel, 1, ShadowMapSlices) : FRGResourceRef{};
+}
+
+FRGResourceRef FLocalLightRenderer::ImportClusters(FRenderGraph& Graph)
+{
+	return Graph.ImportTracked("ClusterBuffer", ClusterBuffer.Get(), &ClusterState);
 }
 
 bool FLocalLightRenderer::EnsureShadowMap(uint32 Resolution, uint32 Slices)
@@ -461,14 +461,9 @@ bool FLocalLightRenderer::IntersectsShadowCaster(const FBox& WorldBounds) const
 	return false;
 }
 
-void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+void FLocalLightRenderer::RecordShadows(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
 {
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	const uint32               Resolution  = ShadowMapResolution;
-
-	const D3D12_RESOURCE_BARRIER ToDepth =
-		MakeTransitionBarrier(ShadowMap.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToDepth);
+	const uint32 Resolution = ShadowMapResolution;
 
 	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f, static_cast<float>(Resolution), static_cast<float>(Resolution), 0.0f, 1.0f };
 	const D3D12_RECT     Scissor{ 0, 0, static_cast<LONG>(Resolution), static_cast<LONG>(Resolution) };
@@ -520,10 +515,6 @@ void FLocalLightRenderer::RenderShadows(const FMeshInstanceList& Instances, D3D1
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		ExtraCasters(CommandList, ShadowSlices[Index].ViewProjection, ShadowSlices[Index].Frustum, true);
 	}
-
-	const D3D12_RESOURCE_BARRIER ToShaderResource =
-		MakeTransitionBarrier(ShadowMap.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToShaderResource);
 }
 
 void FLocalLightRenderer::PrepareLights(FScene& Scene, const FCamera& Camera, const FLocalShadowSettings& ShadowSettings)
@@ -559,17 +550,9 @@ void FLocalLightRenderer::PrepareLights(FScene& Scene, const FCamera& Camera, co
 	}
 }
 
-void FLocalLightRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes, const FCamera& Camera, uint32 Width,
-                                 uint32 Height, const FLocalShadowSettings& ShadowSettings)
+void FLocalLightRenderer::PrepareFrame(const FCamera& Camera, uint32 Width, uint32 Height, const FLocalShadowSettings& ShadowSettings)
 {
 	E_CHECKF(Rhi != nullptr, "로컬 라이트 렌더러가 초기화되지 않았습니다");
-
-	ShadowDrawCalls = 0;
-	ShadowTriangles = 0;
-	if (!ShadowSlices.empty())
-	{
-		RenderShadows(Instances, SkinPalettes);
-	}
 
 	// ---- 상수
 	const float NearZ = Camera.GetNearZ();
@@ -616,15 +599,37 @@ void FLocalLightRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_V
 	LightListAddress      = Upload(Lights.data(), sizeof(FLocalLightGpuData) * Lights.size(), sizeof(FLocalLightGpuData));
 	ShadowMatricesAddress = Upload(ShadowMatrices.data(), sizeof(FMatrix4x4) * ShadowMatrices.size(), sizeof(FMatrix4x4));
 	ConstantsAddress      = DynamicBuffer.AllocateConstants(Constants).GpuAddress;
+}
 
-	// ---- 클러스터 컬링
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	TransitionClusters(CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	CommandList->SetComputeRootSignature(ComputeRootSignature.Get());
-	CommandList->SetPipelineState(CullPipeline.Get());
-	CommandList->SetComputeRootConstantBufferView(ComputeParam_Constants, ConstantsAddress);
-	CommandList->SetComputeRootShaderResourceView(ComputeParam_Lights, LightListAddress);
-	CommandList->SetComputeRootUnorderedAccessView(ComputeParam_Clusters, ClusterBuffer->GetGPUVirtualAddress());
-	CommandList->Dispatch((LightMath::ClusterCount + GCullGroupSize - 1) / GCullGroupSize, 1, 1);
-	TransitionClusters(CommandList, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+void FLocalLightRenderer::AddPasses(FRenderGraph& Graph, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
+                                    ID3D12RootSignature* BreakRootSignature, int32 Timer)
+{
+	ShadowDrawCalls = 0;
+	ShadowTriangles = 0;
+	if (!ShadowSlices.empty())
+	{
+		// 장마다 지우고 그린다 (쓰지 않는 장은 셰이더가 읽지 않음)
+		Graph.AddPass("로컬 그림자")
+			.Write(ImportShadowMap(Graph), ERGAccess::DepthWrite, FRGSubresourceRange::All(), true)
+			.Timer(Timer)
+			.Execute([this, &Instances, SkinPalettes](FRGContext& Context) { RecordShadows(Context.CommandList, Instances, SkinPalettes); });
+	}
+
+	// ---- 클러스터 컬링 (전체 클러스터를 다시 쓴다)
+	Graph.AddPass("클러스터 컬링")
+		.Write(ImportClusters(Graph), ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, BreakRootSignature](FRGContext& Context) {
+			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+			if (BreakRootSignature != nullptr && !Context.bAsyncCompute)
+			{
+				CommandList->SetGraphicsRootSignature(BreakRootSignature);
+			}
+			CommandList->SetComputeRootSignature(ComputeRootSignature.Get());
+			CommandList->SetPipelineState(CullPipeline.Get());
+			CommandList->SetComputeRootConstantBufferView(ComputeParam_Constants, ConstantsAddress);
+			CommandList->SetComputeRootShaderResourceView(ComputeParam_Lights, LightListAddress);
+			CommandList->SetComputeRootUnorderedAccessView(ComputeParam_Clusters, ClusterBuffer->GetGPUVirtualAddress());
+			CommandList->Dispatch((LightMath::ClusterCount + GCullGroupSize - 1) / GCullGroupSize, 1, 1);
+		});
 }

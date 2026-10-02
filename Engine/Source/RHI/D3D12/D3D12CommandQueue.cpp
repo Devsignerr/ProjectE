@@ -5,13 +5,13 @@ FD3D12CommandQueue::~FD3D12CommandQueue()
 	Shutdown();
 }
 
-bool FD3D12CommandQueue::Init(ID3D12Device* Device, D3D12_COMMAND_LIST_TYPE InType)
+bool FD3D12CommandQueue::Init(ID3D12Device* Device, D3D12_COMMAND_LIST_TYPE InType, D3D12_COMMAND_QUEUE_PRIORITY Priority)
 {
 	Type = InType;
 
 	D3D12_COMMAND_QUEUE_DESC QueueDesc{};
 	QueueDesc.Type     = Type;
-	QueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+	QueueDesc.Priority = Priority;
 	QueueDesc.Flags    = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	QueueDesc.NodeMask = 0;
 

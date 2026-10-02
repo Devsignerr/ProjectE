@@ -6,6 +6,8 @@
 #include "Renderer/ReflectionMath.h"
 #include "Renderer/ScreenPass.h"
 
+#include <array>
+
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
 namespace
@@ -89,13 +91,8 @@ void FScreenSpaceReflections::Shutdown()
 	{
 		return;
 	}
-	ReleaseHiz();
-	Result.reset();
-	ReflectMotion.reset();
-	Blurred.reset();
 	History[0].reset();
 	History[1].reset();
-	Output = nullptr;
 	HizCopyPipeline.Shutdown();
 	HizDownsamplePipeline.Shutdown();
 	TracePipeline.Shutdown();
@@ -161,55 +158,12 @@ bool FScreenSpaceReflections::ReloadShaders(bool bForceRecompile)
 	return true;
 }
 
-void FScreenSpaceReflections::ReleaseHiz()
-{
-	if (Hiz)
-	{
-		Rhi->DeferRelease(Hiz);
-		Rhi->DeferFreeDescriptor(HizSrv);
-		for (const FD3D12DescriptorHandle& Uav : HizUavs)
-		{
-			Rhi->DeferFreeDescriptor(Uav);
-		}
-	}
-	Hiz.Reset();
-	HizSrv = FD3D12DescriptorHandle{};
-	HizUavs.clear();
-	HizWidth = HizHeight = HizMipCount = 0;
-}
 
 void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 {
-	if (Result && Result->GetWidth() == Width && Result->GetHeight() == Height)
+	if (History[0] && TargetWidth == Width && TargetHeight == Height)
 	{
 		return;
-	}
-	if (Result)
-	{
-		Result->ShutdownDeferred(*Rhi);
-	}
-	Result = std::make_unique<FD3D12RenderTarget>();
-	if (!Result->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrResult", FRenderTargetDesc::MakeColor(ResultFormat)))
-	{
-		E_LOG(LogRenderer, Fatal, "SSR 버퍼 생성 실패 ({}x{})", Width, Height);
-	}
-	if (ReflectMotion)
-	{
-		ReflectMotion->ShutdownDeferred(*Rhi);
-	}
-	ReflectMotion = std::make_unique<FD3D12RenderTarget>();
-	if (!ReflectMotion->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrReflectMotion", FRenderTargetDesc::MakeColor(MotionFormat)))
-	{
-		E_LOG(LogRenderer, Fatal, "SSR 반사 움직임 버퍼 생성 실패 ({}x{})", Width, Height);
-	}
-	if (Blurred)
-	{
-		Blurred->ShutdownDeferred(*Rhi);
-	}
-	Blurred = std::make_unique<FD3D12RenderTarget>();
-	if (!Blurred->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, L"SsrBlurred", FRenderTargetDesc::MakeColor(ResultFormat)))
-	{
-		E_LOG(LogRenderer, Fatal, "SSR 흐림 버퍼 생성 실패 ({}x{})", Width, Height);
 	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
@@ -224,84 +178,75 @@ void FScreenSpaceReflections::EnsureTargets(uint32 Width, uint32 Height)
 			E_LOG(LogRenderer, Fatal, "SSR 누적 버퍼 생성 실패 ({}x{})", Width, Height);
 		}
 	}
-	Output           = nullptr;
+	TargetWidth      = Width;
+	TargetHeight     = Height;
 	LastResolveFrame = 0; // 새 버퍼에는 이력이 없다
-
-	ReleaseHiz();
-	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
-	HizWidth             = Width;
-	HizHeight            = Height;
-	HizMipCount          = FReflectionMath::GetHizMipCount(Width, Height);
-	const D3D12_HEAP_PROPERTIES Heap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-	const D3D12_RESOURCE_DESC   Desc = MakeTexture2DDesc(Width, Height, HizFormat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, static_cast<uint16>(HizMipCount));
-	if (FAILED(Device->CreateCommittedResource(&Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, nullptr, IID_PPV_ARGS(&Hiz))))
-	{
-		E_LOG(LogRenderer, Fatal, "SSR Hi-Z 생성 실패 ({}x{})", Width, Height);
-	}
-	Hiz->SetName(L"SsrHiz");
-	FD3D12DescriptorAllocator&      Allocator = Rhi->GetSrvAllocator();
-	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
-	SrvDesc.Format                  = HizFormat;
-	SrvDesc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
-	SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	SrvDesc.Texture2D.MipLevels     = HizMipCount;
-	HizSrv                          = Allocator.Allocate();
-	Device->CreateShaderResourceView(Hiz.Get(), &SrvDesc, HizSrv.Cpu);
-	for (uint32 Mip = 0; Mip < HizMipCount; ++Mip)
-	{
-		D3D12_UNORDERED_ACCESS_VIEW_DESC UavDesc{};
-		UavDesc.Format             = HizFormat;
-		UavDesc.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE2D;
-		UavDesc.Texture2D.MipSlice = Mip;
-		const FD3D12DescriptorHandle Uav = Allocator.Allocate();
-		Device->CreateUnorderedAccessView(Hiz.Get(), nullptr, &UavDesc, Uav.Cpu);
-		HizUavs.push_back(Uav);
-	}
 }
 
-void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
+FRGResourceRef FScreenSpaceReflections::AddPasses(FRenderGraph& Graph, const FScreenSpaceReflectionInputs& Inputs, const FSsrGraphRefs& Refs, int32 Timer)
 {
 	E_CHECKF(Inputs.SceneColor != nullptr && Inputs.SceneNormal != nullptr && Inputs.SceneColor->GetDesc().bWithDepth && Inputs.DecalNormal != nullptr &&
-	             Inputs.DecalMaterial != nullptr,
+	             Inputs.DecalMaterial != nullptr && Inputs.Velocity != nullptr,
 	         "SSR 입력이 올바르지 않습니다");
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	const uint32               Width       = Inputs.SceneColor->GetWidth();
-	const uint32               Height      = Inputs.SceneColor->GetHeight();
+	const uint32 Width  = Inputs.SceneColor->GetWidth();
+	const uint32 Height = Inputs.SceneColor->GetHeight();
 	EnsureTargets(Width, Height);
 
-	ID3D12Resource*             Depth     = Inputs.SceneColor->GetDepthResource();
-	const D3D12_RESOURCE_STATES DepthRead = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	{
-		const D3D12_RESOURCE_BARRIER Barriers[] = {
-			MakeTransitionBarrier(Depth, D3D12_RESOURCE_STATE_DEPTH_WRITE, DepthRead),
-			MakeTransitionBarrier(Hiz.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-		};
-		CommandList->ResourceBarrier(2, Barriers);
-	}
+	// ---- 그래프 풀: Hi-Z 밉 체인 + 추적/흐림 중간 버퍼 (프레임 안에서만 쓴다)
+	const uint32   HizMipCount = FReflectionMath::GetHizMipCount(Width, Height);
+	FRGTextureDesc HizDesc;
+	HizDesc.Width            = Width;
+	HizDesc.Height           = Height;
+	HizDesc.MipCount         = static_cast<uint16>(HizMipCount);
+	HizDesc.Format           = HizFormat;
+	HizDesc.bUnorderedAccess = true;
+	const FRGResourceRef    HizRef     = Graph.CreateTexture("SsrHiz", HizDesc);
+	const FRGResourceRef    ResultRef  = Graph.CreateTexture("SsrResult", FRGTextureDesc::MakeRenderTarget(Width, Height, ResultFormat));
+	const FRGResourceRef    MotionRef  = Graph.CreateTexture("SsrReflectMotion", FRGTextureDesc::MakeRenderTarget(Width, Height, MotionFormat));
+	const FRGResourceRef    BlurredRef = Graph.CreateTexture("SsrBlurred", FRGTextureDesc::MakeRenderTarget(Width, Height, ResultFormat));
+	const FRGPooledTexture* Hiz        = Graph.GetTexture(HizRef);
+	const FRGPooledTexture* Result     = Graph.GetTexture(ResultRef);
+	const FRGPooledTexture* Motion     = Graph.GetTexture(MotionRef);
+	const FRGPooledTexture* Blurred    = Graph.GetTexture(BlurredRef);
 
-	// 1) Hi-Z: 깊이 → 밉 0 → 밉마다 2x2 최소
-	CommandList->SetComputeRootSignature(HizRoot.Get());
-	CommandList->SetComputeRootDescriptorTable(HizParam_Depth, Inputs.SceneColor->GetDepthSrv().Gpu);
+	const FD3D12DescriptorHandle DepthSrv     = Inputs.SceneColor->GetDepthSrv();
+	const FD3D12DescriptorHandle NormalSrv    = Inputs.SceneNormal->GetSrv();
+	const FD3D12DescriptorHandle ColorSrv     = (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv();
+	const FD3D12DescriptorHandle DecalNormal  = Inputs.DecalNormal->GetSrv();
+	const FD3D12DescriptorHandle DecalMat     = Inputs.DecalMaterial->GetSrv();
+	const FD3D12DescriptorHandle VelocitySrv  = Inputs.Velocity->GetSrv();
+
+	// 1) Hi-Z: 깊이 → 밉 0 → 밉마다 2x2 최소 (밉 k 패스는 밉 k-1을 UAV로 읽고 밉 k를 쓴다 — 서브리소스 단위 전이 + UAV 배리어는 그래프가)
 	uint32 SourceWidth  = Width;
 	uint32 SourceHeight = Height;
 	for (uint32 Mip = 0; Mip < HizMipCount; ++Mip)
 	{
 		const uint32 DestWidth  = FMath::Max(1u, Width >> Mip);
 		const uint32 DestHeight = FMath::Max(1u, Height >> Mip);
-		const uint32 Constants[4] = { SourceWidth, SourceHeight, DestWidth, DestHeight };
-		CommandList->SetPipelineState(Mip == 0 ? HizCopyPipeline.Get() : HizDownsamplePipeline.Get());
-		CommandList->SetComputeRoot32BitConstants(HizParam_Constants, 4, Constants, 0);
-		CommandList->SetComputeRootDescriptorTable(HizParam_Dest, HizUavs[Mip].Gpu);
-		CommandList->SetComputeRootDescriptorTable(HizParam_Source, HizUavs[Mip == 0 ? 0 : Mip - 1].Gpu);
-		CommandList->Dispatch((DestWidth + 7) / 8, (DestHeight + 7) / 8, 1);
-		const D3D12_RESOURCE_BARRIER UavBarrier = MakeUavBarrier(Hiz.Get());
-		CommandList->ResourceBarrier(1, &UavBarrier);
+		const std::array<uint32, 4> Constants = { SourceWidth, SourceHeight, DestWidth, DestHeight };
+		FRenderGraph::FPassBuilder Pass = Graph.AddPass(Mip == 0 ? "SSR Hi-Z 복사" : "SSR Hi-Z 축소");
+		if (Mip == 0)
+		{
+			Pass.Read(Refs.SceneDepth, ERGAccess::SrvNonPixel);
+		}
+		else
+		{
+			Pass.Write(HizRef, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip - 1)); // 원본 밉 (UAV로 읽음)
+		}
+		Pass.Write(HizRef, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip), true)
+			.Timer(Timer)
+			.Execute([this, Hiz, Mip, Constants, DepthSrv](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				CommandList->SetComputeRootSignature(HizRoot.Get());
+				CommandList->SetPipelineState(Mip == 0 ? HizCopyPipeline.Get() : HizDownsamplePipeline.Get());
+				CommandList->SetComputeRootDescriptorTable(HizParam_Depth, DepthSrv.Gpu);
+				CommandList->SetComputeRoot32BitConstants(HizParam_Constants, 4, Constants.data(), 0);
+				CommandList->SetComputeRootDescriptorTable(HizParam_Dest, Hiz->Uavs[Mip].Gpu);
+				CommandList->SetComputeRootDescriptorTable(HizParam_Source, Hiz->Uavs[Mip == 0 ? 0 : Mip - 1].Gpu);
+				CommandList->Dispatch((Constants[2] + 7) / 8, (Constants[3] + 7) / 8, 1);
+			});
 		SourceWidth  = DestWidth;
 		SourceHeight = DestHeight;
-	}
-	{
-		const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Hiz.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		CommandList->ResourceBarrier(1, &Barrier);
 	}
 
 	// 2) 추적 (전체 화면)
@@ -323,17 +268,22 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	const D3D12_GPU_VIRTUAL_ADDRESS Address = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
 	// 색 + 반사 움직임 (전체 화면 삼각형이 모든 픽셀을 쓰므로 지우지 않는다)
-	Result->Begin(CommandList, nullptr);
-	ReflectMotion->Begin(CommandList, nullptr);
-	const D3D12_CPU_DESCRIPTOR_HANDLE TraceTargets[] = { Result->GetRtv(), ReflectMotion->GetRtv() };
-	CommandList->OMSetRenderTargets(2, TraceTargets, FALSE, nullptr);
-	DrawScreenPass(CommandList, *Root, TracePipeline, Address,
-	               { Inputs.SceneColor->GetDepthSrv(), HizSrv, Inputs.SceneNormal->GetSrv(),
-	                 (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv(), Inputs.DecalNormal->GetSrv(),
-	                 Inputs.DecalMaterial->GetSrv() },
-	               Width, Height);
-	Result->End(CommandList);
-	ReflectMotion->End(CommandList);
+	Graph.AddPass("SSR 추적")
+		.Read(Refs.SceneDepth, ERGAccess::SrvPixel)
+		.Read(HizRef, ERGAccess::SrvPixel)
+		.Read(Refs.SceneNormal, ERGAccess::SrvPixel)
+		.Read(Refs.ColorSource, ERGAccess::SrvPixel)
+		.Read(Refs.DecalNormal, ERGAccess::SrvPixel)
+		.Read(Refs.DecalMaterial, ERGAccess::SrvPixel)
+		.Write(ResultRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Write(MotionRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, Result, Motion, Hiz, Address, DepthSrv, NormalSrv, ColorSrv, DecalNormal, DecalMat, Width, Height](FRGContext& Context) {
+			const D3D12_CPU_DESCRIPTOR_HANDLE TraceTargets[] = { Result->GetRtv(), Motion->GetRtv() };
+			Context.CommandList->OMSetRenderTargets(2, TraceTargets, FALSE, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, TracePipeline, Address, { DepthSrv, Hiz->Srv, NormalSrv, ColorSrv, DecalNormal, DecalMat }, Width,
+			               Height);
+		});
 
 	// 3) 거칠기 흐림: 추적이 낸 픽셀별 원뿔 반경 안의 원판 평균 (한 패스, 결정적, 같은 면만 섞음)
 	FSsrResolveConstants PassConstants;
@@ -342,41 +292,47 @@ void FScreenSpaceReflections::Render(const FScreenSpaceReflectionInputs& Inputs)
 	PassConstants.VarianceGamma = ResolveVarianceGamma;
 	PassConstants.bDecals       = Constants.bDecals;
 	const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
-	Blurred->Begin(CommandList, nullptr);
-	DrawScreenPass(CommandList, *Root, BlurPipeline, BlurAddress,
-	               { Result->GetSrv(), FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, ReflectMotion->GetSrv(), Inputs.SceneNormal->GetSrv(),
-	                 Inputs.DecalNormal->GetSrv(), Inputs.DecalMaterial->GetSrv() },
-	               Width, Height);
-	Blurred->End(CommandList);
-	const FD3D12RenderTarget* BlurInput = Blurred.get();
-	Output                              = BlurInput;
+	Graph.AddPass("SSR 흐림")
+		.Read(ResultRef, ERGAccess::SrvPixel)
+		.Read(MotionRef, ERGAccess::SrvPixel)
+		.Read(Refs.SceneNormal, ERGAccess::SrvPixel)
+		.Read(Refs.DecalNormal, ERGAccess::SrvPixel)
+		.Read(Refs.DecalMaterial, ERGAccess::SrvPixel)
+		.Write(BlurredRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, Result, Motion, Blurred, BlurAddress, NormalSrv, DecalNormal, DecalMat, Width, Height](FRGContext& Context) {
+			const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = Blurred->GetRtv();
+			Context.CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, BlurPipeline, BlurAddress,
+			               { Result->Srv, FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{}, Motion->Srv, NormalSrv, DecalNormal, DecalMat }, Width,
+			               Height);
+		});
 
 	// 4) 시간 누적: 지난 프레임에 연속으로 누적했고 씬 렌더러 이력도 유효할 때만 이력을 쓴다.
 	//    깊이 버퍼 픽셀 단위 교차라 반사 윤곽이 계단지고(특히 곡면·스치는 각) TAA 지터마다 계단이 옮겨 다닌다 — 정지 화면은 TAA가 평균내지만
 	//    움직이면 TAA가 반사 이력을 버리므로(표면 움직임 ≠ 반사 내용 움직임) 여기서 반사 움직임으로 재투영해 누적한다
-	const uint64 FrameNumber = Rhi->GetFrameNumber();
-	if (Inputs.Velocity != nullptr)
-	{
-		const bool                bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
-		const FD3D12RenderTarget& Previous      = *History[HistoryIndex];
-		HistoryIndex ^= 1u;
-		FD3D12RenderTarget& Current = *History[HistoryIndex];
-
-		PassConstants.bHistoryValid = bHistoryValid ? 1u : 0u;
-		const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
-
-		Current.Begin(CommandList, nullptr);
-		DrawScreenPass(CommandList, *Root, ResolvePipeline, ResolveAddress,
-		               { BlurInput->GetSrv(), Previous.GetSrv(), Inputs.Velocity->GetSrv(), ReflectMotion->GetSrv() }, Width, Height);
-		Current.End(CommandList);
-		Output           = &Current;
-		LastResolveFrame = FrameNumber;
-	}
-	else
-	{
-		LastResolveFrame = 0;
-	}
-
-	const D3D12_RESOURCE_BARRIER ToWrite = MakeTransitionBarrier(Depth, DepthRead, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToWrite);
+	const uint64 FrameNumber   = Rhi->GetFrameNumber();
+	const bool   bHistoryValid = Inputs.bHistoryValid && LastResolveFrame != 0 && LastResolveFrame + 1 == FrameNumber;
+	const FD3D12RenderTarget& Previous = *History[HistoryIndex];
+	HistoryIndex ^= 1u;
+	const FD3D12RenderTarget& Current = *History[HistoryIndex];
+	PassConstants.bHistoryValid                     = bHistoryValid ? 1u : 0u;
+	const D3D12_GPU_VIRTUAL_ADDRESS ResolveAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
+	const FRGResourceRef            PreviousRef    = Graph.ImportColor("SsrHistoryPrevious", Previous);
+	const FRGResourceRef            CurrentRef     = Graph.ImportColor("SsrHistory", Current);
+	const FD3D12DescriptorHandle    PreviousSrv    = Previous.GetSrv();
+	Graph.AddPass("SSR 누적")
+		.Read(BlurredRef, ERGAccess::SrvPixel)
+		.Read(PreviousRef, ERGAccess::SrvPixel)
+		.Read(Refs.Velocity, ERGAccess::SrvPixel)
+		.Read(MotionRef, ERGAccess::SrvPixel)
+		.Write(CurrentRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, &Current, Blurred, Motion, ResolveAddress, PreviousSrv, VelocitySrv, Width, Height](FRGContext& Context) {
+			Current.Bind(Context.CommandList, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, ResolvePipeline, ResolveAddress, { Blurred->Srv, PreviousSrv, VelocitySrv, Motion->Srv }, Width,
+			               Height);
+		});
+	LastResolveFrame = FrameNumber;
+	return CurrentRef;
 }

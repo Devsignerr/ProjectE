@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 #include "Scene/ResourceHandles.h"
 
@@ -12,15 +13,25 @@
 
 class FCamera;
 class FD3D12RHI;
+class FD3D12RenderTarget;
 class FResourceManager;
 class FScene;
 class FShaderLibrary;
 struct FParticleEmitter;
 struct FParticleGpuBuffer;
 
+// 파티클 그리기 패스 대상 (씬 컬러 + 깊이, 안개 볼륨 — 그래프 참조)
+struct FParticleRenderTargets
+{
+	const FD3D12RenderTarget* SceneColor = nullptr;
+	FRGResourceRef            SceneColorRef;
+	FRGResourceRef            DepthRef;
+	FRGResourceRef            FogVolume; // 정점 셰이더가 읽는다 (없으면 선언 안 함)
+};
+
 // 파티클 패스 (FSceneRenderer). 조명/그림자 없음.
-//   Simulate: GPU 이미터의 쌓인 계산 요청을 계산 셰이더로 처리 (HDR 패스 전에 호출)
-//   Render: 이미터 × 렌더러(스프라이트/메시/리본)를 카메라에서 먼 순으로 그린다. CPU 반투명은 입자도 뒤→앞 정렬.
+//   PrepareSimulation + AddSimulationPass: GPU 이미터의 쌓인 계산 요청을 계산 셰이더로 처리 (렌더 그래프 계산 패스, 비동기 계산 가능)
+//   AddRenderPass: 이미터 × 렌더러(스프라이트/메시/리본)를 카메라에서 먼 순으로 그린다. CPU 반투명은 입자도 뒤→앞 정렬.
 //   CPU 입자는 프레임마다 동적 업로드 버퍼에 올리고, GPU 입자는 계산 결과 버퍼를 그대로 읽는다.
 // 화면 밖 컬링 (이미터 단위, 메인 카메라 프러스텀 — 경계 식은 Renderer/ParticleBounds.h):
 //   CPU 이미터: 실제 입자 AABB가 밖이면 그리기만 생략 (시뮬레이션은 Scene의 FParticleSystem이 계속 돌린다).
@@ -39,9 +50,13 @@ public:
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
-	void Simulate(FScene& Scene, const FFrustum& CullFrustum);
-	// 렌더 타깃(HDR + 깊이)이 바인딩된 상태에서 호출. 반환: 그린 입자 수 (GPU는 추정치)
-	uint32 Render(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum);
+	// 1) GPU 이미터 계산 요청 정리 + 상수 업로드 (CPU, 풀 생성 포함)
+	void PrepareSimulation(FScene& Scene, const FFrustum& CullFrustum);
+	// 2) 계산 패스 등록 (풀마다 UAV 쓰기). 계산 셰이더만 쓰므로 Queue = AsyncCompute 가능
+	void AddSimulationPass(FRenderGraph& Graph, ERGQueue Queue, int32 Timer);
+	// 3) 그리기 패스 등록 (HDR 씬 컬러 + 깊이 테스트, GPU 풀·안개 볼륨 읽기). OutDrawn = 그린 입자 수 (실행 때 씀, GPU는 추정치)
+	void AddRenderPass(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum, const FParticleRenderTargets& Targets,
+	                   int32 Timer, uint32* OutDrawn);
 
 	bool bEnableCulling = true; // 화면 밖 이미터 컬링 (끄면 모두 계산·그리기, --no-particle-culling)
 
@@ -60,6 +75,19 @@ public:
 	static void BuildGpuProgram(const FParticleEmitter& Emitter, std::vector<FVector4>& OutProgram, FParticleSimConstants& OutConstants);
 
 private:
+	// 렌더 타깃(HDR + 깊이)이 바인딩된 상태에서 기록. 반환: 그린 입자 수 (GPU는 추정치)
+	uint32 Render(ID3D12GraphicsCommandList* CommandList, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum);
+
+	// PrepareSimulation 결과: 풀마다 프로그램 + 단계별 상수
+	struct FSimJob
+	{
+		FParticleGpuBuffer*                    Pool    = nullptr;
+		D3D12_GPU_VIRTUAL_ADDRESS              Program = 0;
+		uint32                                 Groups  = 0;
+		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> Steps;
+	};
+	std::vector<FSimJob> SimJobs;
+
 	D3D12_GPU_VIRTUAL_ADDRESS FogConstants = 0;
 	FD3D12DescriptorHandle    FogVolume;
 

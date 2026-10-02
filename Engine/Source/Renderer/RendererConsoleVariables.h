@@ -23,4 +23,12 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
 	extern TAutoConsoleVariable<int32> AsyncLoading;     // r.AsyncLoading   (--sync-loading = 0, --async-loading = 1) — FResourceManager가 프레임마다 읽음
+
+	// 렌더 그래프 (Phase 47)
+	extern TAutoConsoleVariable<bool> RenderGraphCull;          // r.RenderGraph.Cull          (안 쓰는 패스 제거, 끄면 모두 실행 — 비교용)
+	extern TAutoConsoleVariable<bool> RenderGraphAsyncCompute;  // r.RenderGraph.AsyncCompute  (계산 큐 패스를 비동기 계산 큐에서, --no-async-compute)
+	extern TAutoConsoleVariable<bool> RenderGraphAsyncFog;      // r.RenderGraph.AsyncFog      (볼류메트릭 안개 주입/적분을 계산 큐 후보로)
+	extern TAutoConsoleVariable<bool> RenderGraphAsyncParticles; // r.RenderGraph.AsyncParticles (GPU 파티클 계산을 계산 큐 후보로)
+	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
+	uint32 GetRenderGraphDumpSerial();
 } // namespace RendererCVars

@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 
 #include <algorithm>
@@ -51,10 +52,10 @@ public:
 	const FD3D12DescriptorHandle& GetAtlasSrv() const { return AtlasSrv; }
 
 	// ---- 굽기 (씬 렌더러)
-	// 면 Face 그림: SceneColor(HDR, CaptureSize 정사각, PIXEL_SHADER_RESOURCE)를 원시 큐브 면으로 복사
-	void CopyFace(const FD3D12RenderTarget& SceneColor, uint32 Face);
-	// 원시 큐브 → 프리필터 → Path에 해당하는 아틀라스 칸 + 저장 예약
-	void FinishBake(const std::string& AssetPath);
+	// 면 Face 그림: SceneColor(HDR, CaptureSize 정사각)를 원시 큐브 면으로 복사하는 그래프 패스 (면 그래프 끝에 등록)
+	void AddCopyFacePass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneColorRef, uint32 Face);
+	// 원시 큐브 → 프리필터 → Path에 해당하는 아틀라스 칸(서브리소스: 칸의 6장 × 모든 밉) + 리드백 저장 예약 (그래프 패스 2개)
+	void AddFinishBakePasses(FRenderGraph& Graph, const std::string& AssetPath);
 	// 리드백 완료된 굽기를 파일로 쓴다 (매 프레임)
 	void ProcessPendingSaves(bool bForce = false); // bForce: GPU 완료가 보장될 때 (종료)
 	bool HasPendingSaves() const { return !PendingSaves.empty(); }

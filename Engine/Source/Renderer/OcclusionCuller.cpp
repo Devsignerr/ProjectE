@@ -187,16 +187,6 @@ bool FOcclusionCuller::ReloadShaders(bool bForceRecompile)
 	return true;
 }
 
-void FOcclusionCuller::Transition(ID3D12Resource* Resource, D3D12_RESOURCE_STATES& State, D3D12_RESOURCE_STATES After)
-{
-	if (State != After)
-	{
-		const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Resource, State, After);
-		Rhi->GetCommandList()->ResourceBarrier(1, &Barrier);
-		State = After;
-	}
-}
-
 void FOcclusionCuller::EnsureBuffer(FBuffer& Buffer, uint64 Bytes, const wchar_t* DebugName)
 {
 	if (Buffer.Resource && Buffer.Capacity >= Bytes)
@@ -326,7 +316,7 @@ void FOcclusionCuller::ReadStats()
 	StatTested = ReadbackTested[Slot];
 }
 
-void FOcclusionCuller::CullPhase1(const FMeshInstanceList& Instances, const FMeshPassBatches& Batches, uint32 Width, uint32 Height)
+void FOcclusionCuller::PreparePhase1(const FMeshInstanceList& Instances, const FMeshPassBatches& Batches, uint32 Width, uint32 Height)
 {
 	E_CHECKF(Rhi != nullptr, "오클루전 컬러가 초기화되지 않았습니다");
 	ReadStats();
@@ -373,17 +363,14 @@ void FOcclusionCuller::CullPhase1(const FMeshInstanceList& Instances, const FMes
 		bHzbValid = false; // 다른 크기의 깊이로 만든 HZB
 	}
 
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 
-	// 간접 인자 초기화 (InstanceCount = 0): 업로드 → 복사
-	if (!Arguments.empty())
+	// 간접 인자 초기값 (InstanceCount = 0): 업로드 → 인자 초기화 패스가 복사
+	ArgumentsBytes = Arguments.size() * ArgumentStride;
+	if (ArgumentsBytes > 0)
 	{
-		const size_t                  Bytes  = Arguments.size() * ArgumentStride;
-		const FD3D12DynamicAllocation Upload = DynamicBuffer.Allocate(Bytes, 16);
-		std::memcpy(Upload.CpuAddress, Arguments.data(), Bytes);
-		Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_COPY_DEST);
-		CommandList->CopyBufferRegion(DrawArguments.Resource.Get(), 0, Upload.Resource, Upload.ResourceOffset, Bytes);
+		ArgumentsUpload = DynamicBuffer.Allocate(ArgumentsBytes, 16);
+		std::memcpy(ArgumentsUpload.CpuAddress, Arguments.data(), ArgumentsBytes);
 	}
 	const size_t                  ItemBytes = std::max<size_t>(Items.size(), 1) * sizeof(FOcclusionItem);
 	const FD3D12DynamicAllocation ItemAlloc = DynamicBuffer.Allocate(ItemBytes, 16);
@@ -394,114 +381,136 @@ void FOcclusionCuller::CullPhase1(const FMeshInstanceList& Instances, const FMes
 	}
 	ItemsAddress = ItemAlloc.GpuAddress;
 
-	Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Transition(Phase1Indices.Resource.Get(), Phase1Indices.State, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Transition(Phase2Indices.Resource.Get(), Phase2Indices.State, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Transition(Occluded.Resource.Get(), Occluded.State, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Transition(Hzb.Get(), HzbState, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-	if (ItemCount > 0)
-	{
-		FOcclusionCullConstants Constants;
-		Constants.ViewProjection = HzbViewProjection;
-		Constants.DepthSize      = FVector2(static_cast<float>(HzbDepthWidth), static_cast<float>(HzbDepthHeight));
-		Constants.HzbMipCount    = HzbMips;
-		Constants.ItemCount      = ItemCount;
-		Constants.Phase          = 1;
-		Constants.bHzbValid      = bHzbValid ? 1u : 0u;
-
-		CommandList->SetComputeRootSignature(CullRootSignature.Get());
-		CommandList->SetPipelineState(CullPipeline.Get());
-		CommandList->SetComputeRootConstantBufferView(CullParam_Constants, DynamicBuffer.AllocateConstants(Constants).GpuAddress);
-		CommandList->SetComputeRootShaderResourceView(CullParam_Items, ItemsAddress);
-		CommandList->SetComputeRootDescriptorTable(CullParam_Hzb, HzbSrv.Gpu);
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Arguments, DrawArguments.Resource->GetGPUVirtualAddress());
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase1, Phase1Indices.Resource->GetGPUVirtualAddress());
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase2, Phase2Indices.Resource->GetGPUVirtualAddress());
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Occluded, Occluded.Resource->GetGPUVirtualAddress());
-		CommandList->Dispatch((ItemCount + CullGroupSize - 1) / CullGroupSize, 1, 1);
-	}
-
-	Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-	Transition(Phase1Indices.Resource.Get(), Phase1Indices.State, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	FOcclusionCullConstants Constants;
+	Constants.ViewProjection = HzbViewProjection;
+	Constants.DepthSize      = FVector2(static_cast<float>(HzbDepthWidth), static_cast<float>(HzbDepthHeight));
+	Constants.HzbMipCount    = HzbMips;
+	Constants.ItemCount      = ItemCount;
+	Constants.Phase          = 1;
+	Constants.bHzbValid      = bHzbValid ? 1u : 0u;
+	Phase1Constants          = DynamicBuffer.AllocateConstants(Constants).GpuAddress;
 }
 
-void FOcclusionCuller::BuildHzbAndCullPhase2(FD3D12RenderTarget& SceneColor, const FMatrix4x4& ViewProjection)
+FOcclusionGraphRefs FOcclusionCuller::Import(FRenderGraph& Graph)
 {
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	ID3D12Resource*            Depth       = SceneColor.GetDepthResource();
-	const uint32               Width       = SceneColor.GetWidth();
-	const uint32               Height      = SceneColor.GetHeight();
+	FOcclusionGraphRefs Refs;
+	Refs.DrawArguments = Graph.ImportTracked("OcclusionDrawArguments", DrawArguments.Resource.Get(), &DrawArguments.State);
+	Refs.Phase1Indices = Graph.ImportTracked("OcclusionPhase1Indices", Phase1Indices.Resource.Get(), &Phase1Indices.State);
+	Refs.Phase2Indices = Graph.ImportTracked("OcclusionPhase2Indices", Phase2Indices.Resource.Get(), &Phase2Indices.State);
+	Refs.Occluded      = Graph.ImportTracked("OcclusionFlags", Occluded.Resource.Get(), &Occluded.State);
+	Refs.Hzb           = Graph.ImportTracked("HierarchicalZ", Hzb.Get(), &HzbState, HzbMips);
+	return Refs;
+}
 
-	// ---- HZB: 깊이 → 밉 0 → 밉 k
-	D3D12_RESOURCE_STATES DepthState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-	Transition(Depth, DepthState, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	Transition(Hzb.Get(), HzbState, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+void FOcclusionCuller::RecordCull(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress, uint32 Phase) const
+{
+	CommandList->SetComputeRootSignature(CullRootSignature.Get());
+	CommandList->SetPipelineState(CullPipeline.Get());
+	CommandList->SetComputeRootConstantBufferView(CullParam_Constants, ConstantsAddress);
+	CommandList->SetComputeRootShaderResourceView(CullParam_Items, ItemsAddress);
+	CommandList->SetComputeRootDescriptorTable(CullParam_Hzb, HzbSrv.Gpu);
+	CommandList->SetComputeRootUnorderedAccessView(CullParam_Arguments, DrawArguments.Resource->GetGPUVirtualAddress());
+	// 2단계: 1단계 목록은 이미 정점 셰이더 읽기 상태 → 쓰지 않으므로 같은 칸에 2단계 목록을 묶는다
+	CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase1, (Phase == 1 ? Phase1Indices : Phase2Indices).Resource->GetGPUVirtualAddress());
+	CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase2, Phase2Indices.Resource->GetGPUVirtualAddress());
+	CommandList->SetComputeRootUnorderedAccessView(CullParam_Occluded, Occluded.Resource->GetGPUVirtualAddress());
+	CommandList->Dispatch((ItemCount + CullGroupSize - 1) / CullGroupSize, 1, 1);
+}
 
-	CommandList->SetComputeRootSignature(HzbRootSignature.Get());
-	CommandList->SetPipelineState(HzbFromDepthPipeline.Get());
-	CommandList->SetComputeRootDescriptorTable(HzbParam_SourceDepth, SceneColor.GetDepthSrv().Gpu);
+void FOcclusionCuller::AddPhase1Passes(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs, int32 Timer)
+{
+	if (ArgumentsBytes > 0)
+	{
+		Graph.AddPass("오클루전 인자 초기화")
+			.Write(Refs.DrawArguments, ERGAccess::CopyDest, FRGSubresourceRange::All(), true)
+			.Timer(Timer)
+			.Execute([this](FRGContext& Context) {
+				Context.CommandList->CopyBufferRegion(DrawArguments.Resource.Get(), 0, ArgumentsUpload.Resource, ArgumentsUpload.ResourceOffset, ArgumentsBytes);
+			});
+	}
+	// 1단계: 이전 프레임 HZB로 판정 → 1단계 목록·간접 인자 (항목이 없어도 목록 상태는 맞춘다)
+	Graph.AddPass("오클루전 1단계")
+		.Read(Refs.Hzb, ERGAccess::SrvNonPixel)
+		.Write(Refs.DrawArguments, ERGAccess::Uav)
+		.Write(Refs.Phase1Indices, ERGAccess::Uav)
+		.Write(Refs.Phase2Indices, ERGAccess::Uav)
+		.Write(Refs.Occluded, ERGAccess::Uav)
+		.Timer(Timer)
+		.Execute([this](FRGContext& Context) {
+			if (ItemCount > 0)
+			{
+				RecordCull(Context.CommandList, Phase1Constants, 1);
+			}
+		});
+}
+
+void FOcclusionCuller::AddHzbAndPhase2Passes(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs, FRGResourceRef Depth, const FD3D12RenderTarget& SceneColor,
+                                             const FMatrix4x4& ViewProjection, int32 Timer)
+{
+	const uint32                 Width    = SceneColor.GetWidth();
+	const uint32                 Height   = SceneColor.GetHeight();
+	const FD3D12DescriptorHandle DepthSrv = SceneColor.GetDepthSrv();
+
+	// ---- HZB: 깊이 → 밉 0 → 밉 k (밉 k 패스는 밉 k-1을 UAV로 읽는다 — 서브리소스 전이·UAV 배리어는 그래프가)
 	uint32 SourceWidth  = Width;
 	uint32 SourceHeight = Height;
 	uint32 DestWidth    = HzbWidth;
 	uint32 DestHeight   = HzbHeight;
 	for (uint32 Mip = 0; Mip < HzbMips; ++Mip)
 	{
-		if (Mip == 1)
+		const FHzbBuildConstants   Constants{ SourceWidth, SourceHeight, DestWidth, DestHeight };
+		FRenderGraph::FPassBuilder Pass = Graph.AddPass(Mip == 0 ? "HZB 깊이 복사" : "HZB 축소");
+		if (Mip == 0)
 		{
-			CommandList->SetPipelineState(HzbDownsamplePipeline.Get());
+			Pass.Read(Depth, ERGAccess::SrvNonPixel);
 		}
-		if (Mip > 0)
+		else
 		{
-			const D3D12_RESOURCE_BARRIER Barrier = MakeUavBarrier(Hzb.Get()); // 위 밉 쓰기 완료
-			CommandList->ResourceBarrier(1, &Barrier);
+			Pass.Write(Refs.Hzb, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip - 1));
 		}
-		const FHzbBuildConstants Constants{ SourceWidth, SourceHeight, DestWidth, DestHeight };
-		CommandList->SetComputeRoot32BitConstants(HzbParam_Constants, 4, &Constants, 0);
-		CommandList->SetComputeRootDescriptorTable(HzbParam_DestMip, HzbMipUavs[Mip].Gpu);
-		CommandList->SetComputeRootDescriptorTable(HzbParam_SourceMip, HzbMipUavs[Mip > 0 ? Mip - 1 : 0].Gpu);
-		CommandList->Dispatch((DestWidth + HzbGroupSize - 1) / HzbGroupSize, (DestHeight + HzbGroupSize - 1) / HzbGroupSize, 1);
+		Pass.Write(Refs.Hzb, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip), true)
+			.Timer(Timer)
+			.Execute([this, Mip, Constants, DepthSrv](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				CommandList->SetComputeRootSignature(HzbRootSignature.Get());
+				CommandList->SetPipelineState(Mip == 0 ? HzbFromDepthPipeline.Get() : HzbDownsamplePipeline.Get());
+				CommandList->SetComputeRootDescriptorTable(HzbParam_SourceDepth, DepthSrv.Gpu);
+				CommandList->SetComputeRoot32BitConstants(HzbParam_Constants, 4, &Constants, 0);
+				CommandList->SetComputeRootDescriptorTable(HzbParam_DestMip, HzbMipUavs[Mip].Gpu);
+				CommandList->SetComputeRootDescriptorTable(HzbParam_SourceMip, HzbMipUavs[Mip > 0 ? Mip - 1 : 0].Gpu);
+				CommandList->Dispatch((Constants.DestWidth + HzbGroupSize - 1) / HzbGroupSize, (Constants.DestHeight + HzbGroupSize - 1) / HzbGroupSize, 1);
+			});
 		SourceWidth  = DestWidth;
 		SourceHeight = DestHeight;
 		DestWidth    = std::max(DestWidth / 2, 1u);
 		DestHeight   = std::max(DestHeight / 2, 1u);
 	}
-	Transition(Hzb.Get(), HzbState, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	Transition(Depth, DepthState, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	HzbViewProjection = ViewProjection;
 	HzbDepthWidth     = Width;
 	HzbDepthHeight    = Height;
 	bHzbValid         = true;
 
-	// ---- 2단계: 1단계에서 가려진 항목을 이번 프레임 HZB로
-	if (ItemCount > 0)
-	{
-		Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		const D3D12_RESOURCE_BARRIER FlagsBarrier = MakeUavBarrier(Occluded.Resource.Get()); // 1단계 플래그
-		CommandList->ResourceBarrier(1, &FlagsBarrier);
-
-		FOcclusionCullConstants Constants;
-		Constants.ViewProjection = ViewProjection;
-		Constants.DepthSize      = FVector2(static_cast<float>(Width), static_cast<float>(Height));
-		Constants.HzbMipCount    = HzbMips;
-		Constants.ItemCount      = ItemCount;
-		Constants.Phase          = 2;
-		Constants.bHzbValid      = 1;
-
-		CommandList->SetComputeRootSignature(CullRootSignature.Get());
-		CommandList->SetPipelineState(CullPipeline.Get());
-		CommandList->SetComputeRootConstantBufferView(CullParam_Constants, Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress);
-		CommandList->SetComputeRootShaderResourceView(CullParam_Items, ItemsAddress);
-		CommandList->SetComputeRootDescriptorTable(CullParam_Hzb, HzbSrv.Gpu);
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Arguments, DrawArguments.Resource->GetGPUVirtualAddress());
-		// 1단계 목록은 이미 정점 셰이더 읽기 상태 → 2단계에서 쓰지 않으므로 같은 칸에 2단계 목록을 묶는다
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase1, Phase2Indices.Resource->GetGPUVirtualAddress());
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Phase2, Phase2Indices.Resource->GetGPUVirtualAddress());
-		CommandList->SetComputeRootUnorderedAccessView(CullParam_Occluded, Occluded.Resource->GetGPUVirtualAddress());
-		CommandList->Dispatch((ItemCount + CullGroupSize - 1) / CullGroupSize, 1, 1);
-		Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-	}
-	Transition(Phase2Indices.Resource.Get(), Phase2Indices.State, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	// ---- 2단계: 1단계에서 가려진 항목을 이번 프레임 HZB로 (Occluded UAV → UAV 배리어는 그래프가)
+	FOcclusionCullConstants Constants;
+	Constants.ViewProjection = ViewProjection;
+	Constants.DepthSize      = FVector2(static_cast<float>(Width), static_cast<float>(Height));
+	Constants.HzbMipCount    = HzbMips;
+	Constants.ItemCount      = ItemCount;
+	Constants.Phase          = 2;
+	Constants.bHzbValid      = 1;
+	const D3D12_GPU_VIRTUAL_ADDRESS Phase2Constants = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
+	Graph.AddPass("오클루전 2단계")
+		.Read(Refs.Hzb, ERGAccess::SrvNonPixel)
+		.Write(Refs.DrawArguments, ERGAccess::Uav)
+		.Write(Refs.Phase2Indices, ERGAccess::Uav)
+		.Write(Refs.Occluded, ERGAccess::Uav)
+		.Timer(Timer)
+		.Execute([this, Phase2Constants](FRGContext& Context) {
+			if (ItemCount > 0)
+			{
+				RecordCull(Context.CommandList, Phase2Constants, 2);
+			}
+		});
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS FOcclusionCuller::GetIndices(uint32 Phase) const
@@ -515,7 +524,7 @@ void FOcclusionCuller::DrawIndirect(ID3D12GraphicsCommandList* CommandList, uint
 	                             nullptr, 0);
 }
 
-void FOcclusionCuller::FinishFrame()
+void FOcclusionCuller::AddFinishPass(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs)
 {
 	const uint32 Slot  = Rhi->GetFrameSlot();
 	const uint64 Bytes = static_cast<uint64>(BatchCount) * 2 * ArgumentStride;
@@ -542,8 +551,13 @@ void FOcclusionCuller::FinishFrame()
 		Readback[Slot]->SetName(L"OcclusionStatsReadback");
 		ReadbackCapacity[Slot] = Capacity;
 	}
-	Transition(DrawArguments.Resource.Get(), DrawArguments.State, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	Rhi->GetCommandList()->CopyBufferRegion(Readback[Slot].Get(), 0, DrawArguments.Resource.Get(), 0, Bytes);
 	ReadbackTriangles[Slot] = TrianglesPerInstance;
 	ReadbackTested[Slot]    = ItemCount;
+	ID3D12Resource* Target  = Readback[Slot].Get();
+	Graph.AddPass("오클루전 통계 복사")
+		.Read(Refs.DrawArguments, ERGAccess::CopySource)
+		.NeverCull() // 리드백 (CPU가 몇 프레임 뒤에 읽는다)
+		.Execute([this, Target, Bytes](FRGContext& Context) {
+			Context.CommandList->CopyBufferRegion(Target, 0, DrawArguments.Resource.Get(), 0, Bytes);
+		});
 }

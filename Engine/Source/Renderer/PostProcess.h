@@ -6,6 +6,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 
 #include <chrono>
 #include <memory>
@@ -77,11 +78,24 @@ struct FPixelArtCompositeParams
 	float    PixelViewScale    = 1.0f;  // 직교: 텍셀 월드 크기(cm), 원근: 깊이 1당 텍셀 크기
 };
 
+// 포스트 패스 입력: 그래프 참조 + 셰이더가 읽을 SRV
+struct FPostProcessGraphInput
+{
+	FRGResourceRef         Ref;
+	FD3D12DescriptorHandle Srv;
+};
+// 포스트 패스 출력: RTV 정보 + 그래프 참조 (Ref가 무효면 추적하지 않는 외부 RTV — 패스는 부수 효과로 남는다)
+struct FPostProcessGraphOutput
+{
+	FRGResourceRef Ref;
+	FRenderOutput  Output;
+};
+
 // HDR 씬 컬러 → 출력 대상(LDR, sRGB RTV).
 //   [블룸] 13탭 다운샘플 체인(첫 단계 Karis 평균 + 임계값) → 텐트 업샘플 가산 합성 (절반 해상도부터 최대 6단계)
 //   [자동 노출] 1/4 해상도 로그 휘도 히스토그램(픽셀 셰이더 UAV) → 컴퓨트 평균 + 시간 적응 (GPU 버퍼에 유지)
 //   [톤매핑] 씬 + 블룸 * 강도 → 노출 → 연산자
-// 씬 렌더러는 Render 한 번만 호출한다. 한 커맨드 리스트에서 여러 번 호출해도 안전하다(버퍼 상태를 매번 COMMON으로 복귀).
+// 씬 렌더러는 그래프마다 AddPasses 한 번. 노출 버퍼는 그래프 시작·끝 COMMON (명령 목록 사이 버퍼 감쇠와 맞춤).
 class FPostProcessor
 {
 public:
@@ -91,18 +105,18 @@ public:
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary);
 	void Shutdown();
 
-	// HdrSceneColor: PIXEL_SHADER_RESOURCE 상태의 HDR 텍스처 SRV (셰이더 가시 힙). 크기는 Output과 같다고 가정
-	// Sharpness > 0이면 톤매핑 직전 4이웃 샤프닝 (TAA 결과일 때만 씬 렌더러가 넘긴다)
-	void Render(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& HdrSceneColor, const FRenderOutput& Output,
-	            const FPostProcessSettings& Settings, float Sharpness = 0.0f);
+	// 렌더 그래프 패스 등록: [블룸 다운샘플/업샘플] → [자동 노출 히스토그램/평균] → 톤매핑(Output).
+	// SceneColor = HDR 씬(그래프 참조 + SRV), 크기는 Output과 같다고 가정. Sharpness > 0이면 톤매핑 직전 4이웃 샤프닝 (TAA 결과일 때만)
+	void AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor, const FPostProcessGraphOutput& Output, const FPostProcessSettings& Settings,
+	               float Sharpness, int32 Timer);
 
-	// 픽셀 아트: 저해상도 톤매핑 결과(SourceColor, 선형) + 저해상도 깊이(SourceDepth의 깊이 버퍼)를
+	// 픽셀 아트: 저해상도 톤매핑 결과(SourceColor, 선형) + 저해상도 깊이(SourceDepth = 깊이 참조 + 깊이 SRV)를
 	// 서브픽셀 보정 최근접 확대 + 1px 외곽선/모서리 하이라이트 + 양자화/디더로 Output에 합성한다
-	void RenderPixelArtComposite(ID3D12GraphicsCommandList* CommandList, const FD3D12RenderTarget& SourceColor,
-	                             const FD3D12RenderTarget& SourceDepth, const FRenderOutput& Output, const FPixelArtCompositeParams& Params);
+	void AddPixelArtCompositePass(FRenderGraph& Graph, const FPostProcessGraphInput& SourceColor, const FPostProcessGraphInput& SourceDepth,
+	                              const FPostProcessGraphOutput& Output, const FPixelArtCompositeParams& Params, int32 Timer);
 
-	// 화면 공간 버퍼 확인 (ScreenDebug.hlsl): Source(PIXEL_SHADER_RESOURCE)를 Mode(1 법선, 2 움직임, 3 깊이, 4 단일 채널)로 Output에 그린다
-	void RenderDebugView(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& Source, const FRenderOutput& Output, uint32 Mode);
+	// 화면 공간 버퍼 확인 (ScreenDebug.hlsl): Source를 Mode(1 법선, 2 움직임, 3 깊이, 4 단일 채널)로 Output에 그린다
+	void AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphInput& Source, const FPostProcessGraphOutput& Output, uint32 Mode, int32 Timer);
 
 	// 핫 리로드: 모든 PSO를 새 셰이더로 재생성 (하나라도 실패하면 해당 PSO는 기존 유지, false)
 	bool ReloadShaders(bool bForceRecompile);
@@ -134,12 +148,11 @@ private:
 
 	bool CreateExposureBuffers();
 	void EnsureBloomTargets(uint32 Width, uint32 Height);
-	void TransitionExposureBuffers(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After);
 
-	void RenderBloom(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& SceneColor, uint32 Width, uint32 Height,
-	                 const FPostProcessSettings& Settings);
-	void RenderAutoExposure(ID3D12GraphicsCommandList* CommandList, const FD3D12DescriptorHandle& SceneColor, uint32 Width, uint32 Height,
-	                        float DeltaSeconds, const FPostProcessSettings& Settings);
+	void AddBloomPasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor, uint32 Width, uint32 Height, const FPostProcessSettings& Settings,
+	                    int32 Timer, FRGResourceRef& OutBloom);
+	void AddAutoExposurePasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor, uint32 Width, uint32 Height, float DeltaSeconds,
+	                           const FPostProcessSettings& Settings, FRGResourceRef Histogram, FRGResourceRef Luminance, int32 Timer);
 
 	FD3D12RHI*      Rhi           = nullptr;
 	FShaderLibrary* ShaderLibrary = nullptr;

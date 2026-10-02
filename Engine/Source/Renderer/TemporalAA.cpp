@@ -88,12 +88,12 @@ void FTemporalAA::EnsureTargets(uint32 Width, uint32 Height)
 	bHasHistory = false; // 새 버퍼는 비어 있다
 }
 
-const FD3D12RenderTarget& FTemporalAA::Resolve(const FTemporalAAInputs& Inputs)
+const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTemporalAAInputs& Inputs, const FTemporalAAGraphRefs& Refs, int32 Timer,
+                                               FRGResourceRef& OutResult)
 {
 	E_CHECKF(Inputs.SceneColor != nullptr && Inputs.Velocity != nullptr && Inputs.SceneColor->GetDesc().bWithDepth, "TAA 입력이 올바르지 않습니다");
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	const uint32               Width       = Inputs.SceneColor->GetWidth();
-	const uint32               Height      = Inputs.SceneColor->GetHeight();
+	const uint32 Width  = Inputs.SceneColor->GetWidth();
+	const uint32 Height = Inputs.SceneColor->GetHeight();
 	EnsureTargets(Width, Height);
 
 	FD3D12RenderTarget& Read  = *HistoryTargets[WriteIndex ^ 1];
@@ -108,21 +108,26 @@ const FD3D12RenderTarget& FTemporalAA::Resolve(const FTemporalAAInputs& Inputs)
 	Constants.VarianceGamma  = FMath::Max(Inputs.VarianceGamma, 0.1f);
 	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
-	ID3D12Resource*              DepthResource = Inputs.SceneColor->GetDepthResource();
-	const D3D12_RESOURCE_BARRIER ToRead =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToRead);
-
-	Write.Begin(CommandList, nullptr); // 전체를 덮어쓴다
-	DrawScreenPass(CommandList, *Root, Pipeline, ConstantsAddress,
-	               { Inputs.SceneColor->GetSrv(), Read.GetSrv(), Inputs.Velocity->GetSrv(), Inputs.SceneColor->GetDepthSrv() }, Width, Height);
-	Write.End(CommandList);
-
-	const D3D12_RESOURCE_BARRIER ToWrite =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToWrite);
+	const FRGResourceRef ReadRef  = Graph.ImportColor("TaaHistoryRead", Read);
+	const FRGResourceRef WriteRef = Graph.ImportColor("TaaHistoryWrite", Write);
+	const FD3D12DescriptorHandle SceneSrv    = Inputs.SceneColor->GetSrv();
+	const FD3D12DescriptorHandle VelocitySrv = Inputs.Velocity->GetSrv();
+	const FD3D12DescriptorHandle DepthSrv    = Inputs.SceneColor->GetDepthSrv();
+	const FD3D12DescriptorHandle HistorySrv  = Read.GetSrv();
+	Graph.AddPass("TAA")
+		.Read(Refs.SceneColor, ERGAccess::SrvPixel)
+		.Read(Refs.Velocity, ERGAccess::SrvPixel)
+		.Read(Refs.SceneDepth, ERGAccess::SrvPixel)
+		.Read(ReadRef, ERGAccess::SrvPixel)
+		.Write(WriteRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true) // 전체를 덮어쓴다
+		.Timer(Timer)
+		.Execute([this, &Write, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, Width, Height](FRGContext& Context) {
+			Write.Bind(Context.CommandList, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, Pipeline, ConstantsAddress, { SceneSrv, HistorySrv, VelocitySrv, DepthSrv }, Width, Height);
+		});
 
 	bHasHistory = true;
 	WriteIndex ^= 1;
+	OutResult = WriteRef;
 	return Write;
 }

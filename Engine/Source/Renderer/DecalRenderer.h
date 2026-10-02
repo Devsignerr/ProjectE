@@ -3,7 +3,9 @@
 #include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -37,10 +39,13 @@ public:
 
 	void EnsureTargets(uint32 Width, uint32 Height);
 
-	// 씬 깊이(SceneDepth의 깊이, DEPTH_WRITE로 받는다) + 법선으로 데칼을 그린다. Camera = 깊이를 그린 카메라(지터 포함).
-	// 데칼 머티리얼 경로는 여기서 해석한다. 그린 데칼이 있으면 true
-	bool Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FFrustum& Frustum, const FD3D12RenderTarget& SceneDepth,
-	            const FD3D12RenderTarget& SceneNormal);
+	// 1) 수집 + 머티리얼 해석 + 데칼별 상수 업로드 (CPU). Camera = 깊이를 그린 카메라(지터 포함). 그릴 데칼이 있으면 true
+	bool Prepare(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FFrustum& Frustum, uint32 Width, uint32 Height);
+	// 2) DBuffer 패스 등록 (Prepare가 true일 때): 씬 깊이·법선 읽기 → DBuffer 3장 쓰기. OutTargets = DBuffer A/B/C 그래프 참조
+	void AddPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneDepth, const FD3D12RenderTarget& SceneNormal, FRGResourceRef Depth,
+	             FRGResourceRef Normal, int32 Timer, std::array<FRGResourceRef, 3>& OutTargets);
+	// DBuffer 3장 가져오기 (이미 가져왔으면 같은 참조)
+	std::array<FRGResourceRef, 3> ImportTargets(FRenderGraph& Graph) const;
 
 	const FD3D12RenderTarget& GetTarget(uint32 Index) const { return *Targets[Index]; }
 	uint32                    GetDrawnCount() const { return DrawnCount; }
@@ -63,4 +68,11 @@ private:
 		uint32 Index     = 0;
 	};
 	std::vector<FVisibleDecal> Visible;
+	// Prepare 결과 (그릴 순서대로): 상수 주소 + 머티리얼 텍스처 표
+	struct FPreparedDecal
+	{
+		D3D12_GPU_VIRTUAL_ADDRESS   Constants = 0;
+		D3D12_GPU_DESCRIPTOR_HANDLE TextureTable{};
+	};
+	std::vector<FPreparedDecal> Prepared;
 };

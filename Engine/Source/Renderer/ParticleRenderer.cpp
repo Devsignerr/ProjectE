@@ -1,6 +1,7 @@
 #include "Renderer/ParticleRenderer.h"
 
 #include "RHI/D3D12/D3D12RHI.h"
+#include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 #include "RHI/D3D12/D3D12Texture.h"
 #include "RHI/ShaderLibrary.h"
@@ -42,16 +43,7 @@ struct FParticleGpuBuffer final : public IParticleGpuState
 			Rhi->DeferRelease(Buffer);
 		}
 	}
-
-	void Transition(ID3D12GraphicsCommandList* CommandList, D3D12_RESOURCE_STATES After)
-	{
-		if (State != After)
-		{
-			const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Buffer.Get(), State, After);
-			CommandList->ResourceBarrier(1, &Barrier);
-			State = After;
-		}
-	}
+	// 상태 전이는 렌더 그래프가 한다 (ImportTracked(State))
 };
 
 namespace
@@ -420,16 +412,15 @@ void FParticleRenderer::BuildGpuProgram(const FParticleEmitter& Emitter, std::ve
 	OutConstants.Capacity    = Emitter.MaxParticles;
 }
 
-void FParticleRenderer::Simulate(FScene& Scene, const FFrustum& CullFrustum)
+void FParticleRenderer::PrepareSimulation(FScene& Scene, const FFrustum& CullFrustum)
 {
 	CulledGpuEmitters = 0;
+	SimJobs.clear();
 	if (Rhi == nullptr)
 	{
 		return;
 	}
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	bool                       bBound        = false;
 
 	Scene.GetRegistry().View<FParticleSystemComponent>().Each([&](FEntity, FParticleSystemComponent& Component) {
 		FParticleRuntime& Runtime = Component.Runtime;
@@ -525,15 +516,11 @@ void FParticleRenderer::Simulate(FScene& Scene, const FFrustum& CullFrustum)
 			const FD3D12DynamicAllocation Program      = DynamicBuffer.Allocate(ProgramBytes, 16);
 			std::memcpy(Program.CpuAddress, ProgramScratch.data(), ProgramBytes);
 
-			if (!bBound)
-			{
-				CommandList->SetComputeRootSignature(ComputeRootSignature.Get());
-				CommandList->SetPipelineState(Pipelines.Simulate.Get());
-				bBound = true;
-			}
-			Pool->Transition(CommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			CommandList->SetComputeRootShaderResourceView(ComputeParam_Program, Program.GpuAddress);
-			CommandList->SetComputeRootUnorderedAccessView(ComputeParam_Particles, Pool->Buffer->GetGPUVirtualAddress());
+			// 계산 요청을 상수로 올려 둔다 (기록은 그래프 패스 — 이미터마다 디스패치 순서대로)
+			FSimJob& Job = SimJobs.emplace_back();
+			Job.Pool     = Pool;
+			Job.Program  = Program.GpuAddress;
+			Job.Groups   = (Pool->Capacity + GSimulateGroupSize - 1) / GSimulateGroupSize;
 			for (size_t StepIndex = 0; StepIndex < Pool->Deferred.size(); ++StepIndex)
 			{
 				const FParticleGpuStep& Step = Pool->Deferred[StepIndex];
@@ -543,19 +530,96 @@ void FParticleRenderer::Simulate(FScene& Scene, const FFrustum& CullFrustum)
 				Constants.Time         = Pool->DeferredTimes[StepIndex];
 				Constants.SpawnStart   = Step.SpawnStart;
 				Constants.SpawnCount   = Step.SpawnCount;
-				CommandList->SetComputeRootConstantBufferView(ComputeParam_Constants, DynamicBuffer.AllocateConstants(Constants).GpuAddress);
-				CommandList->Dispatch((Pool->Capacity + GSimulateGroupSize - 1) / GSimulateGroupSize, 1, 1);
-				const D3D12_RESOURCE_BARRIER Barrier = MakeUavBarrier(Pool->Buffer.Get());
-				CommandList->ResourceBarrier(1, &Barrier);
+				Job.Steps.push_back(DynamicBuffer.AllocateConstants(Constants).GpuAddress);
 			}
 			Pool->Deferred.clear();
 			Pool->DeferredTimes.clear();
-			Pool->Transition(CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 	});
 }
 
-uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum)
+void FParticleRenderer::AddSimulationPass(FRenderGraph& Graph, ERGQueue Queue, int32 Timer)
+{
+	if (SimJobs.empty())
+	{
+		return;
+	}
+	struct FRecordJob
+	{
+		FRGResourceRef                         Ref;
+		D3D12_GPU_VIRTUAL_ADDRESS              Buffer  = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS              Program = 0;
+		uint32                                 Groups  = 0;
+		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> Steps;
+	};
+	std::vector<FRecordJob> Jobs;
+	Jobs.reserve(SimJobs.size());
+	FRenderGraph::FPassBuilder Pass = Graph.AddPass("GPU 파티클 계산", Queue);
+	for (FSimJob& Job : SimJobs)
+	{
+		FRecordJob& Record = Jobs.emplace_back();
+		Record.Ref         = Graph.ImportTracked("GpuParticlePool", Job.Pool->Buffer.Get(), &Job.Pool->State);
+		Record.Buffer      = Job.Pool->Buffer->GetGPUVirtualAddress();
+		Record.Program     = Job.Program;
+		Record.Groups      = Job.Groups;
+		Record.Steps       = std::move(Job.Steps);
+		Pass.Write(Record.Ref, ERGAccess::Uav);
+	}
+	SimJobs.clear();
+	Pass.Timer(Timer).Execute([this, Jobs = std::move(Jobs)](FRGContext& Context) {
+		ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+		CommandList->SetComputeRootSignature(ComputeRootSignature.Get());
+		CommandList->SetPipelineState(Pipelines.Simulate.Get());
+		for (const FRecordJob& Job : Jobs)
+		{
+			CommandList->SetComputeRootShaderResourceView(ComputeParam_Program, Job.Program);
+			CommandList->SetComputeRootUnorderedAccessView(ComputeParam_Particles, Job.Buffer);
+			for (size_t StepIndex = 0; StepIndex < Job.Steps.size(); ++StepIndex)
+			{
+				if (StepIndex > 0)
+				{
+					Context.UavBarrier(Job.Ref); // 같은 풀을 차례로 갱신 (상태는 그대로)
+				}
+				CommandList->SetComputeRootConstantBufferView(ComputeParam_Constants, Job.Steps[StepIndex]);
+				CommandList->Dispatch(Job.Groups, 1, 1);
+			}
+		}
+	});
+}
+
+void FParticleRenderer::AddRenderPass(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum,
+                                      const FParticleRenderTargets& Targets, int32 Timer, uint32* OutDrawn)
+{
+	// 그릴 수 있는 GPU 풀을 모두 읽기로 선언 (실제로 그릴지는 기록 때 컬링)
+	FRenderGraph::FPassBuilder Pass = Graph.AddPass("파티클");
+	Scene.GetRegistry().View<FParticleSystemComponent>().Each([&](FEntity, FParticleSystemComponent& Component) {
+		for (FParticleEmitterInstance& Instance : Component.Runtime.Emitters)
+		{
+			auto* Pool = static_cast<FParticleGpuBuffer*>(Instance.GpuState.get());
+			if (Pool != nullptr && Pool->Buffer)
+			{
+				Pass.Read(Graph.ImportTracked("GpuParticlePool", Pool->Buffer.Get(), &Pool->State), ERGAccess::SrvNonPixel);
+			}
+		}
+	});
+	if (Targets.FogVolume.IsValid())
+	{
+		Pass.Read(Targets.FogVolume, ERGAccess::SrvNonPixel);
+	}
+	Pass.Write(Targets.SceneColorRef, ERGAccess::RenderTarget)
+		.Write(Targets.DepthRef, ERGAccess::DepthWrite)
+		.Timer(Timer)
+		.Execute([this, &Scene, Camera, CullFrustum, SceneColor = Targets.SceneColor, OutDrawn](FRGContext& Context) {
+			SceneColor->Bind(Context.CommandList, nullptr);
+			const uint32 Drawn = Render(Context.CommandList, Scene, Camera, CullFrustum);
+			if (OutDrawn != nullptr)
+			{
+				*OutDrawn = Drawn;
+			}
+		});
+}
+
+uint32 FParticleRenderer::Render(ID3D12GraphicsCommandList* CommandList, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum)
 {
 	CulledEmitters = 0;
 	if (Rhi == nullptr)
@@ -630,7 +694,6 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFr
 		return A.DistanceSquared != B.DistanceSquared ? A.DistanceSquared > B.DistanceSquared : A.Order < B.Order;
 	});
 
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 
 	FParticleFrameConstants Frame;
@@ -708,8 +771,7 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFr
 			{
 				continue;
 			}
-			Pool->Transition(CommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			ParticleAddress = Pool->Buffer->GetGPUVirtualAddress();
+			ParticleAddress = Pool->Buffer->GetGPUVirtualAddress(); // 그래프가 NON_PIXEL_SHADER_RESOURCE로 전이 (AddRenderPass 선언)
 			InstanceCount   = Pool->Capacity;
 			VisibleCount    = Instance.GpuEstimatedAlive;
 		}

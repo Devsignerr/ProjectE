@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 
 class FCamera;
@@ -19,7 +20,6 @@ struct FVolumetricFogInputs
 {
 	D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants  = 0; // 방향광 캐스케이드 상수 (b1)
 	FD3D12DescriptorHandle    ShadowMapSrv;         // (t0)
-	ID3D12Resource*           ShadowMap        = nullptr; // 읽는 동안 PIXEL | NON_PIXEL로 전이
 	D3D12_GPU_VIRTUAL_ADDRESS ClusterConstants = 0; // 로컬 라이트 개수 (b2)
 	D3D12_GPU_VIRTUAL_ADDRESS LocalLights      = 0; // 라이트 목록 (t1, 루트 SRV — 업로드 힙)
 	FVector3                  LightDirection   = FVector3(0.0f, 0.0f, -1.0f);
@@ -31,9 +31,10 @@ struct FVolumetricFogInputs
 
 // 높이 지수 안개 + 볼류메트릭 안개 (FHeightFogComponent, 식은 Renderer/FogMath.h, 셰이더 Fog.hlsli/FogApply.hlsl/VolumetricFog.hlsl)
 //   Prepare: 씬의 첫 안개 컴포넌트 → FFogConstants (꺼져 있으면 bEnabled 0)
-//   RenderVolumetric (메인 패스 전): 주입(시간 누적, 이력 2장 번갈아) → 적분 → 결과 볼륨 (ALL_SHADER_RESOURCE)
-//   Apply (메인 패스·하늘 뒤, 파티클 전): 전체 화면, 씬 깊이로 월드 위치 → 색 = 원래 × 투과율 + 산란 (알파 = TAA 마스크 유지)
-//   파티클은 GetConstantsAddress/GetVolumeSrv로 정점에서 같은 식을 계산한다 (ParticleRenderer)
+//   PrepareVolumetric (CPU): 상수 업로드 + 볼륨 크기. AddVolumetricPasses (메인 패스 전 등록): 주입(시간 누적, 이력 2장 번갈아) → 적분 →
+//     결과 볼륨. 두 패스는 계산 셰이더만 쓰므로 ERGQueue::AsyncCompute로 등록할 수 있다 (그림자 맵만 그래픽스에서 받음 — 사전 패스·SSAO·SSR·메인과 겹침)
+//   AddApplyPass (메인 패스·하늘 뒤, 파티클 전): 전체 화면, 씬 깊이로 월드 위치 → 색 = 원래 × 투과율 + 산란 (알파 = TAA 마스크 유지)
+//   파티클은 GetConstantsAddress/GetVolumeSrv로 정점에서 같은 식을 계산한다 (ParticleRenderer) — 읽는 패스는 ImportVolume 참조로 선언
 class FFogRenderer
 {
 public:
@@ -50,9 +51,14 @@ public:
 	bool IsEnabled() const { return Constants.bEnabled != 0; }
 	bool IsVolumetric() const { return Constants.bVolumetric != 0; }
 
-	void RenderVolumetric(const FVolumetricFogInputs& Inputs);
-	// SceneColor RTV가 바인딩된 상태에서 호출 (깊이는 DEPTH_WRITE로 받아 읽는 동안만 전이), 끝나면 SceneColor RTV + DSV 다시 바인딩
-	void Apply(const FD3D12RenderTarget& SceneColor);
+	// 상수 업로드(적용/파티클용 포함) + 볼륨 준비 (CPU, 패스 등록 전)
+	void PrepareVolumetric(const FVolumetricFogInputs& Inputs);
+	// 볼류메트릭 주입/적분 패스 (볼류메트릭이 아니면 아무것도 등록하지 않음). ShadowMap = 방향광 그림자 맵 참조
+	void AddVolumetricPasses(FRenderGraph& Graph, FRGResourceRef ShadowMap, ERGQueue Queue, int32 Timer);
+	// 결과 볼륨 참조 (읽는 패스가 선언용으로 — 상태는 볼륨이 추적)
+	FRGResourceRef ImportVolume(FRenderGraph& Graph);
+	// 적용 패스: 씬 깊이·볼륨 읽기 → 씬 컬러에 섞기
+	void AddApplyPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneColorRef, FRGResourceRef DepthRef, int32 Timer);
 
 	// 이번 프레임 상수 (동적 업로드 버퍼, Prepare 이후 유효) / 결과 볼륨 (볼류메트릭이 꺼져 있어도 유효한 1칸 볼륨)
 	D3D12_GPU_VIRTUAL_ADDRESS     GetConstantsAddress() const { return ConstantsAddress; }
@@ -82,7 +88,11 @@ private:
 	bool CreatePipelines(FD3D12PipelineState& OutApply, FD3D12PipelineState& OutInject, FD3D12PipelineState& OutIntegrate, bool bForceRecompile);
 	void EnsureVolumes(uint32 GridX, uint32 GridY, uint32 GridZ);
 	void ReleaseVolumes();
-	void Transition(FVolume& Volume, D3D12_RESOURCE_STATES After);
+
+	// PrepareVolumetric 결과 (패스 람다가 읽는다)
+	D3D12_GPU_VIRTUAL_ADDRESS VolumeConstantsAddress = 0;
+	FVolumetricFogInputs      FrameInputs;
+	bool                      bVolumetricThisFrame = false;
 
 	FD3D12RHI*                      Rhi     = nullptr;
 	FShaderLibrary*                 Library = nullptr;

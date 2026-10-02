@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 
 #include <memory>
 #include <vector>
@@ -12,6 +13,17 @@
 class FD3D12RHI;
 class FScreenPassRootSignature;
 class FShaderLibrary;
+
+// SSR이 읽는 씬 리소스의 그래프 참조 (FSceneRenderer가 가져옴)
+struct FSsrGraphRefs
+{
+	FRGResourceRef SceneDepth;
+	FRGResourceRef SceneNormal;
+	FRGResourceRef ColorSource; // 반사 색 원본 (지난 프레임 TAA 결과 또는 씬 컬러)
+	FRGResourceRef DecalNormal;
+	FRGResourceRef DecalMaterial;
+	FRGResourceRef Velocity;
+};
 
 // SSR 입력 (FSceneRenderer)
 struct FScreenSpaceReflectionInputs
@@ -55,15 +67,17 @@ public:
 	bool ReloadShaders(bool bForceRecompile);
 
 	void EnsureTargets(uint32 Width, uint32 Height);
-	void Render(const FScreenSpaceReflectionInputs& Inputs);
+	// 렌더 그래프 패스 등록: Hi-Z 밉마다 계산 패스(그래프 풀 밉 체인, 서브리소스 단위 전이) → 추적 → 흐림 → 누적.
+	// 추적/흐림 중간 버퍼는 그래프 풀, 누적 이력 2장은 가져온 리소스. 반환 = 결과(이번 누적 이력) 참조 — 메인 패스가 읽는다
+	FRGResourceRef AddPasses(FRenderGraph& Graph, const FScreenSpaceReflectionInputs& Inputs, const FSsrGraphRefs& Refs, int32 Timer);
 
-	// 이번 프레임 결과: 누적했으면 이력 타깃, 아니면 추적 결과
-	const FD3D12DescriptorHandle& GetResultSrv() const { return Output != nullptr ? Output->GetSrv() : Result->GetSrv(); }
+	// 이번 프레임 결과 (누적 이력). SSR이 꺼져 있으면 마지막 이력 (메인 패스는 바인딩만 하고 읽지 않음)
+	const FD3D12DescriptorHandle& GetResultSrv() const { return History[HistoryIndex]->GetSrv(); }
+	const FD3D12RenderTarget&     GetResult() const { return *History[HistoryIndex]; }
 
 private:
 	bool CreatePipelines(FD3D12PipelineState& OutCopy, FD3D12PipelineState& OutDownsample, FD3D12PipelineState& OutTrace,
 	                     FD3D12PipelineState& OutBlur, FD3D12PipelineState& OutResolve, bool bForceRecompile);
-	void ReleaseHiz();
 
 	FD3D12RHI*                      Rhi     = nullptr;
 	FShaderLibrary*                 Library = nullptr;
@@ -75,17 +89,9 @@ private:
 	FD3D12PipelineState             BlurPipeline;
 	FD3D12PipelineState             ResolvePipeline;
 
-	std::unique_ptr<FD3D12RenderTarget> Result;
-	std::unique_ptr<FD3D12RenderTarget> ReflectMotion; // 추적 2번째 출력
-	std::unique_ptr<FD3D12RenderTarget> Blurred;        // 거칠기 흐림 결과
-	std::unique_ptr<FD3D12RenderTarget> History[2];           // 누적 결과 핑퐁
-	const FD3D12RenderTarget*           Output         = nullptr; // 이번 프레임 누적 결과 (없으면 Result)
+	std::unique_ptr<FD3D12RenderTarget> History[2];           // 누적 결과 핑퐁 (GetResultSrv = History[HistoryIndex])
 	uint32                              HistoryIndex   = 0;
 	uint64                              LastResolveFrame = 0;  // 마지막 누적의 Rhi 프레임 번호 (연속일 때만 이력 사용, 0 = 없음)
-	ComPtr<ID3D12Resource>              Hiz; // R32_FLOAT 밉 체인 (평소 PIXEL_SHADER_RESOURCE)
-	FD3D12DescriptorHandle              HizSrv;
-	std::vector<FD3D12DescriptorHandle> HizUavs;
-	uint32                              HizWidth    = 0;
-	uint32                              HizHeight   = 0;
-	uint32                              HizMipCount = 0;
+	uint32                              TargetWidth  = 0;
+	uint32                              TargetHeight = 0;
 };

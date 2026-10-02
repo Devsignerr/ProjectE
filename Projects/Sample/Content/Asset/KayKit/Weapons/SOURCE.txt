@@ -1,0 +1,6 @@
+KayKit : Adventurers Character Pack (1.0) — 무기 glTF (CC0, 라이선스는 상위 폴더 LICENSE.txt)
+출처: https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0
+      addons/kaykit_character_pack_adventures/Assets/gltf/
+가져온 파일 (Phase 45): sword_1handed, sword_2handed, axe_1handed, dagger, shield_badge, shield_round, shield_square (.gltf + .bin)
+      + knight_texture.png, barbarian_texture.png, rogue_texture.png (위 모델이 참조)
+캐릭터 손 소켓(handslot.r/l)에 붙이면 맞게 놓이도록 만들어져 있다. 위치 보정은 KnightBare.glb.emeta 소켓(HandR/HandL/Shield)에 있다.

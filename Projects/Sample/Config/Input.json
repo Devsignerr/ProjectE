@@ -102,6 +102,96 @@
 					"Source": "Gamepad_A"
 				}
 			]
+		},
+		{
+			"Name": "Attack",
+			"Type": "Button",
+			"Description": "공격 (누르고 있거나 연속 입력 = 3연타 콤보)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "MouseLeft"
+				},
+				{
+					"Source": "J"
+				},
+				{
+					"Source": "Gamepad_X"
+				}
+			]
+		},
+		{
+			"Name": "Skill1",
+			"Type": "Button",
+			"Description": "스킬 1: 회전베기",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Q"
+				},
+				{
+					"Source": "Gamepad_Y"
+				}
+			]
+		},
+		{
+			"Name": "Skill2",
+			"Type": "Button",
+			"Description": "스킬 2: 돌진 찌르기",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "R"
+				},
+				{
+					"Source": "Gamepad_RightShoulder"
+				}
+			]
+		},
+		{
+			"Name": "Dodge",
+			"Type": "Button",
+			"Description": "구르기 (입력 방향, 잠깐 무적)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Space"
+				},
+				{
+					"Source": "Gamepad_B"
+				}
+			]
+		},
+		{
+			"Name": "Sprint",
+			"Type": "Button",
+			"Description": "전력 질주 (누르는 동안, 스태미나 소모)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "LeftShift"
+				},
+				{
+					"Source": "Gamepad_LeftThumb"
+				}
+			]
+		},
+		{
+			"Name": "Block",
+			"Type": "Button",
+			"Description": "방패 막기 (누르는 동안)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "MouseRight"
+				},
+				{
+					"Source": "K"
+				},
+				{
+					"Source": "Gamepad_LeftShoulder"
+				}
+			]
 		}
 	]
 }

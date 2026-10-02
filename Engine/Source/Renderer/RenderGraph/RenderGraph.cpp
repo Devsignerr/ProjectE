@@ -245,6 +245,50 @@ bool FRGResourcePool::CreateTexture(FRGPooledTexture& Texture, const char* Name)
 	return true;
 }
 
+namespace
+{
+	uint64 HashKey(const std::vector<uint32>& Key)
+	{
+		uint64 Hash = 1469598103934665603ull; // FNV-1a
+		for (const uint32 Value : Key)
+		{
+			Hash = (Hash ^ Value) * 1099511628211ull;
+		}
+		return Hash;
+	}
+} // namespace
+
+std::shared_ptr<const FRGCompileResult> FRGResourcePool::FindCompiled(const std::vector<uint32>& Key)
+{
+	const uint64 Hash = HashKey(Key);
+	for (size_t Index = 0; Index < CompileCache.size(); ++Index)
+	{
+		if (CompileCache[Index].Hash == Hash && CompileCache[Index].Key == Key)
+		{
+			if (Index > 0)
+			{
+				std::rotate(CompileCache.begin(), CompileCache.begin() + static_cast<std::ptrdiff_t>(Index),
+				            CompileCache.begin() + static_cast<std::ptrdiff_t>(Index + 1)); // 앞으로
+			}
+			return CompileCache.front().Result;
+		}
+	}
+	return nullptr;
+}
+
+void FRGResourcePool::StoreCompiled(std::vector<uint32> Key, std::shared_ptr<const FRGCompileResult> Result)
+{
+	if (CompileCache.size() >= MaxCachedCompiles)
+	{
+		CompileCache.pop_back();
+	}
+	FCachedCompile Entry;
+	Entry.Hash   = HashKey(Key);
+	Entry.Key    = std::move(Key);
+	Entry.Result = std::move(Result);
+	CompileCache.insert(CompileCache.begin(), std::move(Entry));
+}
+
 void FRGResourcePool::ReleaseAll()
 {
 	for (std::unique_ptr<FRGPooledTexture>& Texture : Textures)
@@ -416,30 +460,50 @@ void FRenderGraph::Compile(const FRGCompileOptions& Options)
 {
 	E_PROFILE_SCOPE("렌더 그래프 컴파일");
 	const auto Start = std::chrono::steady_clock::now();
-	std::vector<FRGCompileResource> CompileResources(Resources.size());
-	for (size_t Index = 0; Index < Resources.size(); ++Index)
+
+	// 캐시 키: 컴파일 결과를 정하는 입력 전부 (리소스 서브리소스 수·가져옴·시작/끝 상태, 패스 큐·컬링 금지·접근, 옵션)
+	std::vector<uint32> Key;
+	Key.reserve(256);
+	Key.push_back((Options.bCullPasses ? 1u : 0u) | (Options.bAsyncCompute ? 2u : 0u) | (Options.bMergeAsyncBatches ? 4u : 0u));
+	Key.push_back(static_cast<uint32>(Resources.size()));
+	for (const FResource& Resource : Resources)
 	{
-		const FResource&    Source = Resources[Index];
-		FRGCompileResource& Target = CompileResources[Index];
-		Target.Name                = Source.Name.c_str();
-		Target.MipCount            = Source.MipCount;
-		Target.ArraySize           = Source.ArraySize;
-		Target.bImported           = Source.bImported;
-		Target.InitialStates       = Source.InitialStates;
-		Target.InitialState        = Source.InitialStates.empty() ? ERGAccess::Common : Source.InitialStates.front();
-		Target.FinalState          = Source.FinalState;
-		Target.bUniformFinal       = Source.TrackedState != nullptr;
+		Key.push_back(Resource.MipCount);
+		Key.push_back(Resource.ArraySize);
+		Key.push_back((Resource.bImported ? 1u : 0u) | (Resource.TrackedState != nullptr ? 2u : 0u));
+		Key.push_back(RGAccess::Bits(Resource.FinalState));
+		for (const ERGAccess State : Resource.InitialStates)
+		{
+			Key.push_back(RGAccess::Bits(State));
+		}
 	}
-	std::vector<FRGCompilePass> CompilePasses(Passes.size());
-	for (size_t Index = 0; Index < Passes.size(); ++Index)
+	Key.push_back(static_cast<uint32>(Passes.size()));
+	for (const FPass& Pass : Passes)
 	{
-		CompilePasses[Index].Name       = Passes[Index].Name.c_str();
-		CompilePasses[Index].Queue      = Passes[Index].Queue;
-		CompilePasses[Index].bNeverCull = Passes[Index].bNeverCull;
-		CompilePasses[Index].Accesses   = Passes[Index].Accesses;
+		Key.push_back(static_cast<uint32>(Pass.Queue) | (Pass.bNeverCull ? 0x100u : 0u));
+		Key.push_back(static_cast<uint32>(Pass.Accesses.size()));
+		for (const FRGCompileAccess& Access : Pass.Accesses)
+		{
+			Key.push_back(Access.Resource);
+			Key.push_back(RGAccess::Bits(Access.Access) | (Access.bOverwrite ? 0x80000000u : 0u));
+			Key.push_back(Access.Range.FirstMip);
+			Key.push_back(Access.Range.MipCount);
+			Key.push_back(Access.Range.FirstSlice);
+			Key.push_back(Access.Range.SliceCount);
+		}
 	}
-	Compiled  = RenderGraphCompiler::Compile(CompileResources, CompilePasses, Options);
-	bCompiled = true;
+	CompiledPtr        = CompileCacheEnabled ? Pool.FindCompiled(Key) : nullptr;
+	const bool bCached = CompiledPtr != nullptr;
+	if (!bCached)
+	{
+		CompileUncached(Options);
+		if (CompileCacheEnabled && CompiledPtr->Errors.empty())
+		{
+			Pool.StoreCompiled(std::move(Key), CompiledPtr);
+		}
+	}
+	bCompiled                         = true;
+	const FRGCompileResult& Compiled  = *CompiledPtr;
 	for (const std::string& Error : Compiled.Errors)
 	{
 		E_LOG(LogRenderer, Error, "렌더 그래프 '{}': {}", Name, Error);
@@ -462,7 +526,35 @@ void FRenderGraph::Compile(const FRGCompileOptions& Options)
 		Stats.ImportedResources += Resource.bImported ? 1u : 0u;
 	}
 	Stats.PooledTextures = Pool.GetTextureCount();
+	Stats.bCompileCached = bCached;
 	Stats.CompileMs      = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - Start).count();
+}
+
+void FRenderGraph::CompileUncached(const FRGCompileOptions& Options)
+{
+	std::vector<FRGCompileResource> CompileResources(Resources.size());
+	for (size_t Index = 0; Index < Resources.size(); ++Index)
+	{
+		const FResource&    Source = Resources[Index];
+		FRGCompileResource& Target = CompileResources[Index];
+		Target.Name                = Source.Name.c_str();
+		Target.MipCount            = Source.MipCount;
+		Target.ArraySize           = Source.ArraySize;
+		Target.bImported           = Source.bImported;
+		Target.InitialStates       = Source.InitialStates;
+		Target.InitialState        = Source.InitialStates.empty() ? ERGAccess::Common : Source.InitialStates.front();
+		Target.FinalState          = Source.FinalState;
+		Target.bUniformFinal       = Source.TrackedState != nullptr;
+	}
+	std::vector<FRGCompilePass> CompilePasses(Passes.size());
+	for (size_t Index = 0; Index < Passes.size(); ++Index)
+	{
+		CompilePasses[Index].Name       = Passes[Index].Name.c_str();
+		CompilePasses[Index].Queue      = Passes[Index].Queue;
+		CompilePasses[Index].bNeverCull = Passes[Index].bNeverCull;
+		CompilePasses[Index].Accesses   = Passes[Index].Accesses;
+	}
+	CompiledPtr = std::make_shared<const FRGCompileResult>(RenderGraphCompiler::Compile(CompileResources, CompilePasses, Options));
 }
 
 void FRenderGraph::RecordBarriers(ID3D12GraphicsCommandList* List, const std::vector<FRGBarrier>& Barriers)
@@ -504,7 +596,7 @@ void FRenderGraph::RunPass(uint32 PassIndex, ID3D12GraphicsCommandList* List, bo
 			OnTimerBegin(OpenTimer, List, bCompute);
 		}
 	}
-	RecordBarriers(List, Compiled.Passes[PassIndex].Barriers);
+	RecordBarriers(List, CompiledPtr->Passes[PassIndex].Barriers);
 	if (Pass.Function)
 	{
 		FRGContext Context;
@@ -518,6 +610,7 @@ void FRenderGraph::RunPass(uint32 PassIndex, ID3D12GraphicsCommandList* List, bo
 void FRenderGraph::Execute(ID3D12GraphicsCommandList* ExternalList)
 {
 	E_CHECKF(bCompiled && !bExecuted, "렌더 그래프: Compile 뒤 한 번만 Execute");
+	const FRGCompileResult& Compiled = *CompiledPtr;
 	E_CHECKF(ExternalList == nullptr || Compiled.Batches.empty(), "렌더 그래프 '{}': 외부 명령 목록 실행은 비동기 계산 없이 컴파일해야 합니다", Name);
 	E_PROFILE_SCOPE("렌더 그래프 실행");
 	bExecuted = true;
@@ -608,20 +701,26 @@ void FRenderGraph::Execute(ID3D12GraphicsCommandList* ExternalList)
 
 ERGAccess FRenderGraph::GetFinalState(FRGResourceRef Resource, uint32 Subresource) const
 {
-	if (!bCompiled || !Resource.IsValid() || Resource.Id >= Compiled.FinalStates.size() || Subresource >= Compiled.FinalStates[Resource.Id].size())
+	if (!bCompiled || !Resource.IsValid() || Resource.Id >= CompiledPtr->FinalStates.size() || Subresource >= CompiledPtr->FinalStates[Resource.Id].size())
 	{
 		return ERGAccess::None;
 	}
-	return Compiled.FinalStates[Resource.Id][Subresource];
+	return CompiledPtr->FinalStates[Resource.Id][Subresource];
 }
 
 std::vector<std::string> FRenderGraph::Dump() const
 {
 	std::vector<std::string> Lines;
+	if (!CompiledPtr)
+	{
+		return Lines;
+	}
+	const FRGCompileResult& Compiled = *CompiledPtr;
 	Lines.push_back(std::format("[렌더 그래프] '{}': 패스 {} (제거 {}, 비동기 계산 {} / 묶음 {}), 리소스 {} (가져옴 {}, 풀 {}), 전이 {}, UAV 배리어 {}, "
-	                            "배리어 호출 {}, 컴파일 {:.3f} ms",
+	                            "배리어 호출 {}, 컴파일 {:.3f} ms{}",
 	                            Name, Stats.Passes, Stats.CulledPasses, Stats.AsyncPasses, Stats.AsyncBatches, Stats.Resources, Stats.ImportedResources,
-	                            Stats.PooledTextures, Stats.Transitions, Stats.UavBarriers, Stats.BarrierBatches, Stats.CompileMs));
+	                            Stats.PooledTextures, Stats.Transitions, Stats.UavBarriers, Stats.BarrierBatches, Stats.CompileMs,
+	                            Stats.bCompileCached ? " (캐시)" : ""));
 	uint32 Order = 0;
 	for (uint32 StepIndex = 0; StepIndex < Compiled.Steps.size(); ++StepIndex)
 	{

@@ -91,11 +91,23 @@ public:
 	uint32 GetTextureCount() const { return static_cast<uint32>(Textures.size()); }
 	uint64 GetTotalBytes() const;
 
+	// 컴파일 결과 캐시: 입력(리소스 설명·시작 상태·패스 선언·옵션)이 지난번과 똑같으면 결과를 그대로 쓴다 (프레임마다 같은 그래프)
+	std::shared_ptr<const FRGCompileResult> FindCompiled(const std::vector<uint32>& Key);
+	void                                    StoreCompiled(std::vector<uint32> Key, std::shared_ptr<const FRGCompileResult> Result);
+
 private:
 	bool CreateTexture(FRGPooledTexture& Texture, const char* Name);
 
 	FD3D12RHI*                                     Rhi = nullptr;
 	std::vector<std::unique_ptr<FRGPooledTexture>> Textures;
+	struct FCachedCompile
+	{
+		uint64                Hash = 0;
+		std::vector<uint32>   Key;
+		std::shared_ptr<const FRGCompileResult> Result;
+	};
+	std::vector<FCachedCompile> CompileCache; // 최근 사용 순 (앞이 최근), 최대 MaxCachedCompiles
+	static constexpr size_t     MaxCachedCompiles = 8;
 };
 
 struct FRGContext
@@ -125,6 +137,7 @@ struct FRGStats
 	uint32 PooledTextures  = 0;
 	uint64 PooledBytes     = 0;
 	float  CompileMs       = 0.0f;
+	bool   bCompileCached  = false; // 지난 컴파일 결과를 그대로 썼다
 };
 
 class FRenderGraph
@@ -181,12 +194,14 @@ public:
 	// 마지막 비동기 묶음을 제출하기 직전 (계산 큐 타이머 쿼리 정리)
 	std::function<void(ID3D12GraphicsCommandList* List)> OnLastComputeBatchEnd;
 
+	// 입력이 지난번과 같으면 풀의 컴파일 캐시를 쓴다 (CompileCacheEnabled = false면 항상 새로)
 	void Compile(const FRGCompileOptions& Options);
+	bool CompileCacheEnabled = true;
 	// 프레임 명령 목록(Rhi)에 기록 (비동기 묶음이면 중간 제출 + 계산 큐). ExternalList를 주면 그 목록에만 기록한다
 	// (로딩 때 즉시 실행 목록 등 — 비동기 계산 없이 컴파일해야 한다)
 	void Execute(ID3D12GraphicsCommandList* ExternalList = nullptr);
 
-	const FRGCompileResult& GetCompileResult() const { return Compiled; }
+	const FRGCompileResult& GetCompileResult() const { return *CompiledPtr; }
 	const FRGStats&         GetStats() const { return Stats; }
 	ERGAccess               GetFinalState(FRGResourceRef Resource, uint32 Subresource = 0) const;
 	// 덤프 (패스 순서·큐·제거된 패스·전이 수·포크/조인·리소스 수명)
@@ -215,6 +230,7 @@ private:
 		FRGExecuteFn                  Function;
 	};
 
+	void CompileUncached(const FRGCompileOptions& Options);
 	void RecordBarriers(ID3D12GraphicsCommandList* List, const std::vector<FRGBarrier>& Barriers);
 	void RunPass(uint32 PassIndex, ID3D12GraphicsCommandList* List, bool bCompute, int32& OpenTimer);
 
@@ -223,7 +239,7 @@ private:
 	std::string            Name;
 	std::vector<FResource> Resources;
 	std::vector<FPass>     Passes;
-	FRGCompileResult       Compiled;
+	std::shared_ptr<const FRGCompileResult> CompiledPtr; // 풀 캐시와 공유 (프레임마다 복사하지 않음)
 	FRGStats               Stats;
 	bool                   bCompiled = false;
 	bool                   bExecuted = false;

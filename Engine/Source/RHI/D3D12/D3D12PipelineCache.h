@@ -21,7 +21,8 @@ class FJobQueue;
 //       — 목록에 있는 키만 Load*Pipeline (없는 이름 Load는 디버그 레이어 경고). 종료 때 이번 실행에서 요청된 PSO만으로 새로 써서 낡은 항목이 쌓이지 않는다
 //   (b) 워밍: 레시피 파일 = <Saved>/ShaderCache/PipelineRecipes.epso(사용자, 실행 번호로 나이 관리 — 8번 실행 동안 안 쓰면 제거) ∪
 //       <프로젝트>/Config/PipelineRecipes.epso(--record-pso로 기록, 패키지에 파일로 포함, FFileSystem으로 읽음). 시작할 때 작업 스레드가
-//       루트 시그니처(블롭)·PSO를 미리 만든다 (ID3D12Device는 자유 스레드). 같은 키를 메인 스레드가 요청하면 끝날 때까지 기다린다
+//       루트 시그니처(블롭)·PSO를 미리 만든다 (ID3D12Device는 자유 스레드). 같은 키를 메인 스레드가 요청하면 끝날 때까지 기다린다.
+//       워밍은 드라이버 캐시를 읽지 않고 항상 Create한다 — 작업 스레드 라이브러리 Load와 섞으면 화면이 실행마다 달라졌다 (WarmOne 주석)
 //   셰이더 핫 리로드·머티리얼 변형: 바이트코드가 바뀌면 키가 바뀌어 새 PSO (옛 항목은 다음 실행 정리에서 빠짐)
 //   쓰는 곳: FD3D12Device::Init(Initialize, 프로젝트가 있을 때만 — 테스트·도구는 캐시 없음) / Shutdown(저장, 디바이스 해제 전)
 //   끄기 --no-pso-cache, 워밍만 끄기 --no-pso-warm, 통계 로그 "[PSO 캐시]"
@@ -49,8 +50,7 @@ public:
 		uint32 Created        = 0; // 새로 컴파일한 것
 		double RequestMs      = 0.0; // 요청 스레드가 PSO 요청에 쓴 총 시간
 		double CreateMs       = 0.0; // 그중 새로 만들기
-		uint32 WarmCreated    = 0;   // 워밍 스레드가 만든 PSO (라이브러리 불러오기 포함)
-		uint32 WarmFromLibrary = 0;
+		uint32 WarmCreated    = 0;   // 워밍 스레드가 만든 PSO (항상 Create — 라이브러리를 읽지 않는다)
 		double WarmMs         = 0.0; // 워밍 스레드 총 시간
 	};
 

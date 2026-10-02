@@ -76,11 +76,7 @@
           "FarZ": 8000,
           "Primary": true,
           "Orthographic": true,
-          "OrthoHeight": 1500
-        },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/CameraPan.lua",
-          "PropertyOverrides": "{\"Amplitude\": 2600, \"Frequency\": 0.02, \"Phase\": 0.0}"
+          "OrthoHeight": 1000
         },
         "TransformComponent": {
           "Position": [
@@ -235,6 +231,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            53.3,
+            46.9,
+            69.8
+          ],
+          "Offset": [
+            3.6,
+            -0.9,
+            69.8
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -262,6 +280,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            34.1,
+            31.7,
+            46.5
+          ],
+          "Offset": [
+            4.2,
+            -0.0,
+            46.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -289,6 +329,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            43.9,
+            35.0,
+            64.0
+          ],
+          "Offset": [
+            -1.1,
+            -0.1,
+            64.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -316,6 +378,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            49.8,
+            51.5,
+            49.3
+          ],
+          "Offset": [
+            -6.3,
+            1.4,
+            48.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -343,6 +427,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            31.8,
+            45.0,
+            59.7
+          ],
+          "Offset": [
+            -1.8,
+            0.5,
+            9.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -370,6 +476,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            41.2,
+            82.3
+          ],
+          "Offset": [
+            -1.8,
+            -0.0,
+            82.3
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -397,6 +525,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            52.6,
+            72.0,
+            49.1
+          ],
+          "Offset": [
+            5.7,
+            -0.2,
+            48.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -424,6 +574,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.9,
+            14.7,
+            41.3
+          ],
+          "Offset": [
+            0.0,
+            1.1,
+            41.3
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -451,6 +623,28 @@
             4.0,
             4.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            83.7,
+            74.9,
+            19.7
+          ],
+          "Offset": [
+            0.0,
+            -0.0,
+            19.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -478,6 +672,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.1,
+            8.1,
+            10.6
+          ],
+          "Offset": [
+            0.0,
+            -0.0,
+            10.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -505,6 +721,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.1,
+            8.1,
+            10.6
+          ],
+          "Offset": [
+            0.0,
+            -0.0,
+            10.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -532,6 +770,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.4,
+            8.4,
+            10.5
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            10.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -559,6 +819,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            5.6,
+            5.6,
+            7.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            7.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -586,6 +868,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            6.4,
+            5.0,
+            5.0
+          ],
+          "Offset": [
+            0.6,
+            0.0,
+            3.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -613,6 +917,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            20.2,
+            9.5,
+            9.4
+          ],
+          "Offset": [
+            -4.0,
+            0.0,
+            9.4
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -640,6 +966,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.2,
+            27.4,
+            10.5
+          ],
+          "Offset": [
+            -0.2,
+            -0.2,
+            10.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -667,6 +1015,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            5.2,
+            8.0,
+            12.0
+          ],
+          "Offset": [
+            0.5,
+            0.0,
+            12.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -748,6 +1118,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            20.6,
+            20.6,
+            25.8
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            25.8
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -775,6 +1167,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            5.0,
+            27.5
+          ],
+          "Offset": [
+            0.0,
+            -100.0,
+            22.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -802,6 +1216,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            5.0,
+            27.5
+          ],
+          "Offset": [
+            0.0,
+            -100.0,
+            22.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -829,6 +1265,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            5.0,
+            27.5
+          ],
+          "Offset": [
+            0.0,
+            -100.0,
+            22.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -856,6 +1314,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            45.3,
+            32.5
+          ],
+          "Offset": [
+            0.0,
+            -50.4,
+            27.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -883,6 +1363,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            5.0,
+            27.5
+          ],
+          "Offset": [
+            0.0,
+            -100.0,
+            22.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -910,27 +1412,46 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            46.2,
+            5.0,
+            27.5
+          ],
+          "Offset": [
+            0.0,
+            -100.0,
+            22.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
     {
-      "Name": "Knight",
+      "Name": "Player",
       "Parent": -1,
       "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/KayKit/Characters/Knight.glb"
-        },
         "TransformComponent": {
           "Position": [
-            70.7,
-            282.8,
-            0.0
+            -318.2,
+            -35.4,
+            95.0
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.0,
-            1.0
+            0.9238795325112867,
+            -0.3826834323650897
           ],
           "Scale": [
             1.0,
@@ -938,17 +1459,61 @@
             1.0
           ]
         },
+        "CharacterMovementComponent": {
+          "AirControl": 0.35,
+          "CapsuleHalfHeight": 55,
+          "CapsuleRadius": 35,
+          "FaceControlYaw": false,
+          "GravityScale": 1,
+          "JumpZVelocity": 520,
+          "Mass": 80,
+          "MaxSlopeAngle": 50,
+          "MaxStepHeight": 35,
+          "MaxWalkSpeed": 450,
+          "PushForce": 4000
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/IsoPlayer.lua",
+          "PropertyOverrides": ""
+        }
+      }
+    },
+    {
+      "Name": "PlayerMesh",
+      "Parent": 32,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -90.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Knight.glb"
+        },
         "AnimationComponent": {
           "BlendTime": 0.25,
-          "Clip": "Walking_A",
+          "Clip": "Idle",
           "Loop": true,
           "Playing": true,
           "RootMotion": false,
-          "Speed": 1.0
+          "Speed": 1
         },
-        "ScriptComponent": {
-          "ScriptAsset": "Scripts/CircleWalker.lua",
-          "PropertyOverrides": "{\"Radius\": 380, \"Speed\": 22, \"StartAngle\": 200, \"FacingYaw\": 180.0}"
+        "AnimGraphComponent": {
+          "Graph": "Animations/KnightCharacter.eanimgraph",
+          "UseCharacterMovement": true
         }
       }
     },
@@ -1046,6 +1611,28 @@
             2.5348920043939156,
             2.5348920043939156
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1073,6 +1660,28 @@
             2.02016306358242,
             2.02016306358242
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1100,6 +1709,28 @@
             2.11626727522491,
             2.11626727522491
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1127,6 +1758,28 @@
             1.9947125193728399,
             1.9947125193728399
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1154,6 +1807,28 @@
             2.9442550833574375,
             2.9442550833574375
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1181,6 +1856,28 @@
             3.5121107657461534,
             3.5121107657461534
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1208,6 +1905,28 @@
             3.048426584857549,
             3.048426584857549
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1235,6 +1954,28 @@
             3.3251965038114513,
             3.3251965038114513
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1262,6 +2003,28 @@
             2.873200867459668,
             2.873200867459668
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1289,6 +2052,28 @@
             3.2889631004758053,
             3.2889631004758053
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1316,6 +2101,28 @@
             2.5728344682816218,
             2.5728344682816218
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1343,6 +2150,28 @@
             2.5178243830751157,
             2.5178243830751157
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1370,6 +2199,28 @@
             3.464152205474674,
             3.464152205474674
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1397,6 +2248,28 @@
             2.4368660223137386,
             2.4368660223137386
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1424,6 +2297,28 @@
             2.6184539966522653,
             2.6184539966522653
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1451,6 +2346,28 @@
             3.568232988472521,
             3.568232988472521
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1478,6 +2395,28 @@
             3.201644256334304,
             3.201644256334304
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1505,6 +2444,28 @@
             3.078421064513897,
             3.078421064513897
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1532,6 +2493,28 @@
             2.9509209057911088,
             2.9509209057911088
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1559,6 +2542,28 @@
             2.157351505628716,
             2.157351505628716
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1586,6 +2591,28 @@
             2.6271685478675666,
             2.6271685478675666
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1613,6 +2640,28 @@
             3.6709795011577713,
             3.6709795011577713
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1640,6 +2689,28 @@
             2.2392851826241906,
             2.2392851826241906
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1667,6 +2738,28 @@
             3.784667600756609,
             3.784667600756609
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1694,6 +2787,28 @@
             1.9601632973309493,
             1.9601632973309493
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1721,6 +2836,28 @@
             2.8703155761534895,
             2.8703155761534895
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1748,6 +2885,28 @@
             2.2031726822375908,
             2.2031726822375908
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1775,6 +2934,28 @@
             3.2659894591599334,
             3.2659894591599334
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1802,6 +2983,28 @@
             3.540351224428094,
             3.540351224428094
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1829,6 +3032,28 @@
             2.6256899010122914,
             2.6256899010122914
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1856,6 +3081,28 @@
             2.490700071675156,
             2.490700071675156
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1883,6 +3130,28 @@
             3.0611151972293618,
             3.0611151972293618
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1910,6 +3179,28 @@
             3.579054891338177,
             3.579054891338177
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1937,6 +3228,28 @@
             3.618332943325373,
             3.618332943325373
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1964,6 +3277,28 @@
             3.5901141366319247,
             3.5901141366319247
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -1991,6 +3326,28 @@
             2.628500441924933,
             2.628500441924933
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2018,6 +3375,28 @@
             2.2956313983830765,
             2.2956313983830765
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.2,
+            26.3,
+            64.8
+          ],
+          "Offset": [
+            -3.4,
+            1.4,
+            62.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2045,6 +3424,28 @@
             2.9199036308361377,
             2.9199036308361377
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.2,
+            8.6,
+            59.8
+          ],
+          "Offset": [
+            2.8,
+            -0.1,
+            49.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2072,6 +3473,28 @@
             2.978521718337573,
             2.978521718337573
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.8,
+            10.3,
+            60.6
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            50.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2099,6 +3522,28 @@
             2.240970772507391,
             2.240970772507391
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            27.5,
+            28.0,
+            58.7
+          ],
+          "Offset": [
+            5.7,
+            4.0,
+            56.6
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2126,6 +3571,28 @@
             3.3023014007629796,
             3.3023014007629796
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            11.3,
+            11.9,
+            5.0
+          ],
+          "Offset": [
+            1.5,
+            0.0,
+            3.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2153,6 +3620,28 @@
             4.9606118868940605,
             4.9606118868940605
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.0,
+            11.5,
+            8.1
+          ],
+          "Offset": [
+            0.5,
+            0.1,
+            8.1
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2180,6 +3669,28 @@
             4.598714023394736,
             4.598714023394736
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.8,
+            13.8,
+            9.7
+          ],
+          "Offset": [
+            1.0,
+            -1.3,
+            9.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2207,6 +3718,28 @@
             4.7434858559788085,
             4.7434858559788085
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            11.3,
+            11.9,
+            5.0
+          ],
+          "Offset": [
+            1.5,
+            0.0,
+            3.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2234,6 +3767,28 @@
             4.527359568870621,
             4.527359568870621
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.0,
+            11.5,
+            6.7
+          ],
+          "Offset": [
+            0.3,
+            0.1,
+            6.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2261,6 +3816,28 @@
             4.820034112631113,
             4.820034112631113
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.8,
+            13.8,
+            9.7
+          ],
+          "Offset": [
+            1.0,
+            -1.3,
+            9.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2288,6 +3865,28 @@
             4.03352167339069,
             4.03352167339069
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.8,
+            13.8,
+            9.7
+          ],
+          "Offset": [
+            1.0,
+            -1.3,
+            9.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2315,6 +3914,28 @@
             3.8802498247698867,
             3.8802498247698867
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.0,
+            11.5,
+            6.7
+          ],
+          "Offset": [
+            0.3,
+            0.1,
+            6.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2342,6 +3963,28 @@
             3.283117942117049,
             3.283117942117049
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.0,
+            11.5,
+            6.7
+          ],
+          "Offset": [
+            0.3,
+            0.1,
+            6.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2369,6 +4012,28 @@
             4.110883749760494,
             4.110883749760494
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            11.3,
+            11.9,
+            5.0
+          ],
+          "Offset": [
+            1.5,
+            0.0,
+            3.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2396,6 +4061,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            5.0,
+            5.0,
+            16.5
+          ],
+          "Offset": [
+            0.8,
+            -0.0,
+            6.3
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2423,6 +4110,28 @@
             4,
             4
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.2,
+            27.4,
+            10.5
+          ],
+          "Offset": [
+            -0.2,
+            -0.2,
+            10.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2813,6 +4522,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2840,6 +4571,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2867,6 +4620,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2894,6 +4669,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            -0.0,
+            -0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2921,6 +4718,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2948,6 +4767,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -2975,6 +4816,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            100.0,
+            100.0,
+            200.0
+          ],
+          "Offset": [
+            -75.0,
+            -75.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3002,6 +4865,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            80.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            100.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3029,6 +4914,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            160.0,
+            200.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3110,6 +5017,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            68.4,
+            89.3,
+            200.0
+          ],
+          "Offset": [
+            -10.5,
+            0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3137,6 +5066,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60.0,
+            60.0,
+            200.0
+          ],
+          "Offset": [
+            -0.0,
+            -0.0,
+            200.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3164,6 +5115,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            28.0,
+            28.0,
+            70.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            70.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3191,6 +5164,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            72.0,
+            72.0,
+            100.0
+          ],
+          "Offset": [
+            -0.0,
+            -0.0,
+            100.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3218,6 +5213,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            40.0,
+            74.0,
+            88.5
+          ],
+          "Offset": [
+            -0.0,
+            -0.0,
+            88.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3245,6 +5262,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            90.0,
+            83.6,
+            107.1
+          ],
+          "Offset": [
+            3.3,
+            -4.5,
+            107.1
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3272,6 +5311,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60.0,
+            60.0,
+            75.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            75.0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3299,6 +5360,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            76.4,
+            68.0,
+            60.3
+          ],
+          "Offset": [
+            -35.5,
+            0.0,
+            43.8
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3353,6 +5436,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            80.0,
+            80.0,
+            94.3
+          ],
+          "Offset": [
+            -0.0,
+            0.0,
+            94.3
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3407,6 +5512,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            80.0,
+            140.8,
+            102.5
+          ],
+          "Offset": [
+            -2.4,
+            -6.0,
+            102.5
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3434,6 +5561,28 @@
             1.0,
             1.0
           ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            20.0,
+            40.0,
+            49.7
+          ],
+          "Offset": [
+            -25.0,
+            -0.0,
+            19.7
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 0,
+          "Mass": 0,
+          "Density": 300,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
         }
       }
     },
@@ -3755,7 +5904,7 @@
           "AssetPath": "Asset/KayKit/Weapons/Skeleton_Blade.gltf"
         },
         "SocketAttachmentComponent": {
-          "Target": 133,
+          "Target": 134,
           "Socket": "HandR"
         },
         "TransformComponent": {
@@ -3786,7 +5935,7 @@
           "AssetPath": "Asset/KayKit/Weapons/Skeleton_Shield_Small_A.gltf"
         },
         "SocketAttachmentComponent": {
-          "Target": 133,
+          "Target": 134,
           "Socket": "HandL"
         },
         "TransformComponent": {
@@ -3852,7 +6001,7 @@
           "AssetPath": "Asset/KayKit/Weapons/Skeleton_Axe.gltf"
         },
         "SocketAttachmentComponent": {
-          "Target": 136,
+          "Target": 137,
           "Socket": "HandR"
         },
         "TransformComponent": {
@@ -3918,7 +6067,7 @@
           "AssetPath": "Asset/KayKit/Weapons/Skeleton_Staff.gltf"
         },
         "SocketAttachmentComponent": {
-          "Target": 138,
+          "Target": 139,
           "Socket": "HandR"
         },
         "TransformComponent": {
@@ -3984,7 +6133,7 @@
           "AssetPath": "Asset/KayKit/Weapons/Skeleton_Crossbow.gltf"
         },
         "SocketAttachmentComponent": {
-          "Target": 140,
+          "Target": 141,
           "Socket": "HandR"
         },
         "TransformComponent": {

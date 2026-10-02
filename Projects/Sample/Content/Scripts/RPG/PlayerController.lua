@@ -196,14 +196,19 @@ function PlayerController:OnUpdate(dt)
 	local MoveMag = math.min(1.0, Move:Length())
 	local MoveDir = MoveMag > 0.05 and Move:Normalized() or nil
 
+	-- 인벤토리/상점 창이 열려 있으면 전투 입력을 받지 않는다 (GameManager가 없으면 무시)
+	local GM = self:GetGameManager()
+	local bWindowOpen = GM ~= nil and GM.IsAnyWindowOpen ~= nil and GM:IsAnyWindowOpen()
 	for _, Name in ipairs({ "Attack", "Skill1", "Skill2", "Dodge" }) do
 		self.Buffered[Name] = math.max(0.0, (self.Buffered[Name] or 0.0) - dt)
-		if Input.WasActionPressed(Name) then
+		if bWindowOpen then
+			self.Buffered[Name] = 0.0
+		elseif Input.WasActionPressed(Name) then
 			self.Buffered[Name] = Name == "Attack" and 0.45 or 0.25
 		end
 	end
 	-- 공격을 누르고 있으면 계속 이어 친다 (버퍼를 짧게 유지)
-	if Input.IsActionPressed("Attack") and self.Buffered.Attack < 0.1 then
+	if not bWindowOpen and Input.IsActionPressed("Attack") and self.Buffered.Attack < 0.1 then
 		self.Buffered.Attack = 0.1
 	end
 
@@ -914,18 +919,21 @@ end
 -- ---------------------------------------------------------------- 장비
 
 -- 모델을 소켓에 붙인 새 엔티티를 만든다 (같은 모델이면 기존 엔티티 유지)
-function PlayerController:AttachItem(Old, Model, Socket, Name)
+function PlayerController:AttachItem(Old, Model, Socket, Name, Scale)
+	local ScaleVector = Vector3(Scale or 1.0, Scale or 1.0, Scale or 1.0)
 	if Old and Old:IsValid() then
 		local Existing = Old:GetComponent("ModelComponent")
 		if Model and Existing and Existing.AssetPath == Model then
+			Old:SetScale(ScaleVector)
 			return Old
 		end
-		Old:Destroy()
+		Old:Destroy() -- 해제(nil) 또는 다른 모델
 	end
 	if not Model or Model == "" or not self.Mesh then
 		return nil
 	end
 	local Item = Scene.Create(Name)
+	Item:SetScale(ScaleVector)
 	Item:SetParent(self.entity) -- 계층은 정리용 (소켓 부착이 위치를 정한다)
 	Item:AddComponent("ModelComponent").AssetPath = Model
 	local Attachment = Item:AddComponent("SocketAttachmentComponent")
@@ -938,7 +946,7 @@ end
 function PlayerController:EquipWeapon(ItemDef)
 	self.WeaponDef    = ItemDef
 	self.WeaponDamage = ItemDef and (ItemDef.Damage or 0.0) or 0.0
-	self.WeaponEntity = self:AttachItem(self.WeaponEntity, ItemDef and ItemDef.Model, "HandR", "Weapon")
+	self.WeaponEntity = self:AttachItem(self.WeaponEntity, ItemDef and ItemDef.Model, "HandR", "Weapon", ItemDef and ItemDef.ModelScale)
 	Log.Info("[Player] 무기 장착:", ItemDef and (ItemDef.Name or ItemDef.Model) or "없음", "공격력", self:GetAttackPower())
 end
 
@@ -946,7 +954,7 @@ end
 function PlayerController:EquipShield(ItemDef)
 	self.ShieldDef     = ItemDef
 	self.ShieldDefense = ItemDef and (ItemDef.Defense or 0.0) or 0.0
-	self.ShieldEntity  = self:AttachItem(self.ShieldEntity, ItemDef and ItemDef.Model, "Shield", "Shield")
+	self.ShieldEntity  = self:AttachItem(self.ShieldEntity, ItemDef and ItemDef.Model, "Shield", "Shield", ItemDef and ItemDef.ModelScale)
 end
 
 -- ---------------------------------------------------------------- 공개 상태

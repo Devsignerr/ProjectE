@@ -66,6 +66,7 @@ private:
 	void RunHeadlessLoop();
 	void UpdateCrashTest();
 	void UpdateHeldInputAndActions(float DeltaSeconds);
+	void LogHitch(float DeltaSeconds);
 
 	FApplicationDesc Desc;
 	FWindow          Window;
@@ -86,6 +87,7 @@ private:
 	//   --hold-keys-delay S   위 키/패드를 S초 뒤부터 누른다 (누르기 시작할 때 로그 — 입력 지연 측정)
 	//   --cvar a=1,b=2        콘솔 변수 설정 (여러 번 가능, Core/Console). 변수별 예전 플래그(--no-ssr 등)도 같은 경로
 	//   --exec "명령;명령"    초기화 직후 콘솔 명령 실행 (예: --exec "stat fps;r.SSR 0")
+	//   --log-hitches [ms]    이 시간(기본 50ms)을 넘는 프레임을 로그로 남기고 종료 때 개수/최대 요약 (로딩 끊김 측정)
 	//   --tracy / --no-tracy  Tracy 프로파일러 (개발 실행은 기본 켬, 패키지 게임은 --tracy일 때만)
 	uint64                ExitAfterFrames = 0;
 	std::filesystem::path ScreenshotPath;
@@ -97,5 +99,9 @@ private:
 	FGamepadState         HeldGamepad;
 	float                 HoldKeysDelay = 0.0f; // --hold-keys-delay (초)
 	bool                  bHoldKeysStarted = false;
+	float                 HitchThresholdMs = 0.0f; // --log-hitches
+	uint64                HitchCount       = 0;
+	float                 MaxHitchMs       = 0.0f;
+	uint64                MaxHitchFrame    = 0;
 	std::filesystem::path AutomationSaveDirectory; // 자동 검증: 세이브 게임 임시 폴더 (종료 시 삭제)
 };

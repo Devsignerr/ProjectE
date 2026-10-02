@@ -167,6 +167,10 @@ int FApplication::Run()
 	FInputSettings& InputSettings = FProjectSettings::Get().Input;
 	InputSettings.SetUserFileEnabled(ExitAfterFrames == 0 && !Desc.bHeadless);
 	InputSettings.LoadUserBindings();
+	if (const std::wstring Hitch = CommandLine.GetValue(L"--log-hitches"); !Hitch.empty() || CommandLine.HasFlag(L"--log-hitches"))
+	{
+		HitchThresholdMs = Hitch.empty() ? 50.0f : std::max(1.0f, std::stof(Hitch));
+	}
 	if (CommandLine.HasFlag(L"--crash-test"))
 	{
 		CrashTestFrame = 30; // 패키지 크래시 덤프 검증: 30프레임(틱) 뒤 의도적 액세스 위반
@@ -232,6 +236,10 @@ int FApplication::Run()
 		RunWindowedLoop();
 	}
 
+	if (HitchThresholdMs > 0.0f)
+	{
+		E_LOG(LogCore, Display, "[끊김] {}ms 넘는 프레임 {}개, 최대 {:.1f}ms (프레임 {})", HitchThresholdMs, HitchCount, MaxHitchMs, MaxHitchFrame);
+	}
 	E_LOG(LogCore, Display, "종료 중...");
 	OnShutdown();
 	if (!AutomationSaveDirectory.empty())
@@ -244,6 +252,22 @@ int FApplication::Run()
 	Profiling::Shutdown();
 	FLog::Shutdown();
 	return 0;
+}
+
+void FApplication::LogHitch(float DeltaSeconds)
+{
+	const float Ms = DeltaSeconds * 1000.0f;
+	if (HitchThresholdMs <= 0.0f || FrameIndex == 0 || Ms < HitchThresholdMs)
+	{
+		return;
+	}
+	++HitchCount;
+	if (Ms > MaxHitchMs)
+	{
+		MaxHitchMs    = Ms;
+		MaxHitchFrame = FrameIndex;
+	}
+	E_LOG(LogCore, Display, "[끊김] 프레임 {}: {:.1f}ms", FrameIndex, Ms);
 }
 
 void FApplication::RunWindowedLoop()
@@ -259,6 +283,7 @@ void FApplication::RunWindowedLoop()
 			break;
 		}
 		Timer.Tick();
+		LogHitch(Timer.GetDeltaSeconds());
 		UpdateHeldInputAndActions(Timer.GetDeltaSeconds());
 		{
 			E_PROFILE_SCOPE("앱 갱신");

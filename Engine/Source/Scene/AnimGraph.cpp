@@ -8,6 +8,7 @@
 #include <json.hpp>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <cwctype>
 #include <format>
@@ -174,19 +175,28 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 	for (const json& Node : *States)
 	{
 		FAnimGraphState State;
-		State.Name           = Node.value("Name", std::string());
-		State.BlendParameter = Node.value("BlendParameter", std::string());
-		State.Speed          = Node.value("Speed", 1.0f);
-		State.bLoop          = Node.value("Loop", true);
-		State.EditorPosition = ReadPosition(Node, "EditorPosition");
+		State.Name            = Node.value("Name", std::string());
+		State.BlendParameter  = Node.value("BlendParameter", std::string());
+		State.BlendParameterY = State.BlendParameter.empty() ? std::string() : Node.value("BlendParameterY", std::string());
+		State.Speed           = Node.value("Speed", 1.0f);
+		State.bLoop           = Node.value("Loop", true);
+		State.EditorPosition  = ReadPosition(Node, "EditorPosition");
 		if (const auto Samples = Node.find("Samples"); Samples != Node.end() && Samples->is_array())
 		{
 			for (const json& SampleNode : *Samples)
 			{
 				FAnimBlendSample Sample;
-				Sample.Clip     = SampleNode.value("Clip", std::string());
-				Sample.Position = SampleNode.value("Position", 0.0f);
-				Sample.Rate     = SampleNode.value("Rate", 1.0f);
+				Sample.Clip = SampleNode.value("Clip", std::string());
+				if (const auto Position = SampleNode.find("Position"); Position != SampleNode.end() && Position->is_array())
+				{
+					Sample.Position  = Position->size() > 0 && (*Position)[0].is_number() ? (*Position)[0].get<float>() : 0.0f;
+					Sample.PositionY = Position->size() > 1 && (*Position)[1].is_number() ? (*Position)[1].get<float>() : 0.0f;
+				}
+				else
+				{
+					Sample.Position = SampleNode.value("Position", 0.0f);
+				}
+				Sample.Rate = SampleNode.value("Rate", 1.0f);
 				State.Samples.push_back(std::move(Sample));
 			}
 		}
@@ -205,7 +215,10 @@ bool FAnimGraphAsset::FromJsonString(const std::string& Text, FAnimGraphAsset& O
 		{
 			return Fail(std::format("상태 이름이 겹칩니다: {}", State.Name));
 		}
-		std::stable_sort(State.Samples.begin(), State.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
+		if (!State.Is2D())
+		{
+			std::stable_sort(State.Samples.begin(), State.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
+		}
 		Asset.States.push_back(std::move(State));
 	}
 
@@ -313,12 +326,16 @@ std::string FAnimGraphAsset::ToJsonString() const
 			{
 				Node["BlendParameter"] = State.BlendParameter;
 			}
+			if (State.Is2D())
+			{
+				Node["BlendParameterY"] = State.BlendParameterY;
+			}
 			json Samples = json::array();
 			for (const FAnimBlendSample& Sample : State.Samples)
 			{
 				json SampleNode        = json::object();
 				SampleNode["Clip"]     = Sample.Clip;
-				SampleNode["Position"] = Sample.Position;
+				SampleNode["Position"] = State.Is2D() ? json::array({ Sample.Position, Sample.PositionY }) : json(Sample.Position);
 				if (Sample.Rate != 1.0f)
 				{
 					SampleNode["Rate"] = Sample.Rate;
@@ -564,6 +581,78 @@ namespace AnimGraphMath
 		OutWeights[Next]   = Alpha;
 	}
 
+	void ComputeBlendSpace2DWeights(const std::vector<FVector2>& Positions, const FVector2& Value, std::vector<float>& OutWeights)
+	{
+		const size_t Count = Positions.size();
+		OutWeights.assign(Count, 0.0f);
+		if (Count == 0)
+		{
+			return;
+		}
+		if (Count == 1)
+		{
+			OutWeights.front() = 1.0f;
+			return;
+		}
+		// 축 단위가 달라도(속도 cm/s vs 방향 도) 같은 비중이 되게 샘플 범위로 정규화
+		FVector2 Min = Positions.front();
+		FVector2 Max = Min;
+		for (const FVector2& Position : Positions)
+		{
+			Min = FVector2(FMath::Min(Min.X, Position.X), FMath::Min(Min.Y, Position.Y));
+			Max = FVector2(FMath::Max(Max.X, Position.X), FMath::Max(Max.Y, Position.Y));
+		}
+		const float ScaleX    = Max.X - Min.X > FMath::SmallNumber ? 1.0f / (Max.X - Min.X) : 1.0f;
+		const float ScaleY    = Max.Y - Min.Y > FMath::SmallNumber ? 1.0f / (Max.Y - Min.Y) : 1.0f;
+		const auto  Normalize = [&](const FVector2& Point) { return FVector2((Point.X - Min.X) * ScaleX, (Point.Y - Min.Y) * ScaleY); };
+
+		const FVector2 Target = Normalize(Value);
+		float          Total  = 0.0f;
+		for (size_t I = 0; I < Count; ++I)
+		{
+			const FVector2 Pi       = Normalize(Positions[I]);
+			const FVector2 ToTarget = Target - Pi;
+			float          Weight   = 1.0f;
+			for (size_t J = 0; J < Count && Weight > 0.0f; ++J)
+			{
+				if (J == I)
+				{
+					continue;
+				}
+				const FVector2 Edge    = Normalize(Positions[J]) - Pi;
+				const float    Length2 = FVector2::Dot(Edge, Edge);
+				if (Length2 < 1.0e-8f)
+				{
+					continue; // 같은 위치의 샘플: 서로 영향 없음 (둘이 나눠 갖는다)
+				}
+				Weight = FMath::Min(Weight, 1.0f - FVector2::Dot(ToTarget, Edge) / Length2);
+			}
+			OutWeights[I] = FMath::Max(Weight, 0.0f);
+			Total += OutWeights[I];
+		}
+		if (Total <= FMath::SmallNumber)
+		{
+			size_t Nearest  = 0;
+			float  Distance = FLT_MAX;
+			for (size_t I = 0; I < Count; ++I)
+			{
+				const FVector2 Delta = Normalize(Positions[I]) - Target;
+				if (const float D = FVector2::Dot(Delta, Delta); D < Distance)
+				{
+					Distance = D;
+					Nearest  = I;
+				}
+			}
+			OutWeights.assign(Count, 0.0f);
+			OutWeights[Nearest] = 1.0f;
+			return;
+		}
+		for (float& Weight : OutWeights)
+		{
+			Weight /= Total;
+		}
+	}
+
 	bool EvaluateCondition(EAnimConditionOp Op, float Parameter, float Value)
 	{
 		constexpr float EqualTolerance = 1.0e-4f;
@@ -667,16 +756,31 @@ void FAnimGraphInstance::ComputeSampleWeights(const FAnimGraphAsset& Asset, cons
 	Layer.SampleWeights.assign(State.Samples.size(), 0.0f);
 
 	// 모델에 있는 샘플만으로 블렌드 스페이스 가중치
-	PositionScratch.clear();
-	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
-	{
-		if (Clips[Index] >= 0)
-		{
-			PositionScratch.push_back(State.Samples[Index].Position);
-		}
-	}
 	const float Value = State.BlendParameter.empty() ? 0.0f : Parameters.Get(State.BlendParameter, Asset);
-	AnimGraphMath::ComputeBlendSpace1DWeights(PositionScratch, Value, WeightScratch);
+	if (State.Is2D())
+	{
+		Position2DScratch.clear();
+		for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+		{
+			if (Clips[Index] >= 0)
+			{
+				Position2DScratch.emplace_back(State.Samples[Index].Position, State.Samples[Index].PositionY);
+			}
+		}
+		AnimGraphMath::ComputeBlendSpace2DWeights(Position2DScratch, FVector2(Value, Parameters.Get(State.BlendParameterY, Asset)), WeightScratch);
+	}
+	else
+	{
+		PositionScratch.clear();
+		for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+		{
+			if (Clips[Index] >= 0)
+			{
+				PositionScratch.push_back(State.Samples[Index].Position);
+			}
+		}
+		AnimGraphMath::ComputeBlendSpace1DWeights(PositionScratch, Value, WeightScratch);
+	}
 	size_t Valid = 0;
 	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
 	{

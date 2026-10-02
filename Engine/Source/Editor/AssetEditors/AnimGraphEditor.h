@@ -15,7 +15,8 @@ namespace ax::NodeEditor
 }
 
 // .eanimgraph 애니메이션 그래프 편집기 (UE 애니메이션 블루프린트 상태 머신식, imgui-node-editor).
-//   - 위: 상태 노드 그래프. 노드 = 상태(클립 또는 1D 블렌드 스페이스) + "어느 상태든" 노드, 화살표 = 전이.
+//   - 위: 상태 노드 그래프. 노드 = 상태(클립 / 1D·2D 블렌드 스페이스) + "어느 상태든" 노드, 화살표 = 전이.
+//     2D 블렌드는 속성 패널의 점 배치 그림에서 샘플(마름모)을 끌어 놓고, 빈 곳을 끌어 미리보기 값을 바꾼다 (초록 원 = 가중치)
 //     출력 핀(오른쪽)을 다른 상태의 입력 핀(왼쪽)으로 끌면 전이 추가. 우클릭 메뉴(상태 추가/시작 상태/삭제), Delete = 선택 삭제
 //   - 아래: 미리보기 모델(에셋의 PreviewModel, 비면 첫 상태 클립을 가진 Content 모델 자동 선택)을 편집 중인 그래프로 재생
 //     (저장 전 편집도 즉시 반영). 파라미터 미리보기 값 슬라이더로 전이/블렌드를 시험한다
@@ -94,12 +95,16 @@ private:
 	void DrawTransitionProperties(int32 Index);
 	void DrawTransitionList(int32 FromState, bool bOnlyFrom);
 	void DrawBlendSpaceAxis(FAnimGraphState& State);
+	void DrawBlendSpace2D(FAnimGraphState& State); // 점 배치 그림 (샘플 끌기 + 미리보기 값 끌기 + 가중치 원)
+	void MakeBlendSpace2D(FAnimGraphState& State); // Y축 파라미터 + 사각형 모서리 샘플 채우기
+	// 첫 float 파라미터 (Exclude 제외), 없으면 Fallback 이름으로 추가
+	std::string FindOrAddFloatParameter(const std::string& Fallback, const std::string& Exclude);
 	bool ClipCombo(const char* Id, std::string& Clip);
 	bool ParameterCombo(const char* Id, std::string& Parameter, bool bFloatOnly);
 	void RenameParameter(const std::string& OldName, const std::string& NewName);
 	float& PreviewValue(const std::string& Name);
 
-	int32       AddState(const std::string& BaseName, bool bBlendSpace, const FVector2& Position);
+	int32       AddState(const std::string& BaseName, int32 BlendDimensions, const FVector2& Position); // 0 클립, 1/2 블렌드 스페이스
 	std::string MakeUniqueStateName(const std::string& BaseName) const;
 	void        MoveTransition(int32 Index, int32 Delta);
 
@@ -119,6 +124,7 @@ private:
 	bool                                                          bScrollToSelection  = false; // 자동 검증: 속성 패널을 선택 항목까지 내린다
 	int32                                                         AxisDragSample      = -1;    // 블렌드 축: 끄는 샘플 (-2 = 미리보기 값)
 	float                                                         AxisLo = 0.0f, AxisHi = 1.0f; // 끄는 동안 고정한 축 범위
+	float                                                         AxisLoY = 0.0f, AxisHiY = 1.0f; // 2D 블렌드의 Y축
 	uint32                                                        SeenTransitionCount = 0;
 	double                                                        TransitionFlashTime = -10.0; // 강조 시작 (ImGui 시각)
 	int32                                                         FlashTransition     = -1;

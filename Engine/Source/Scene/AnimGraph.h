@@ -18,8 +18,11 @@
 //   FAnimGraphComponent(Graph = 에셋 경로)를 붙이면 FAnimationSystem이 FAnimationComponent의 Clip 대신 그래프로 포즈를 만든다
 //   (FAnimationComponent의 Speed/Playing은 전체 배속/정지로 계속 쓰이고 Clip/Loop/BlendTime/RootMotion은 쓰지 않는다).
 //
-// 상태 = 클립 하나 또는 1D 블렌드 스페이스 (BlendParameter 값 → 위치가 이웃한 두 샘플을 선형 가중. 범위 밖은 끝 샘플).
-//   재생 위치는 상태마다 정규화 시간(Phase, 0~1) 하나: 샘플들은 같은 Phase로 샘플링된다 (동기화 — 걷기/뛰기 발이 맞는다).
+// 상태 = 클립 하나, 1D 블렌드 스페이스 (BlendParameter 값 → 위치가 이웃한 두 샘플을 선형 가중. 범위 밖은 끝 샘플),
+//   또는 2D 블렌드 스페이스 (BlendParameterY도 있음. 샘플 위치 (Position, PositionY) — 가중치는 그래디언트 밴드
+//   (Freeform Cartesian, AnimGraphMath::ComputeBlendSpace2DWeights): 축마다 샘플 범위로 정규화한 뒤 계산, 샘플 위치에서 정확히 그 샘플,
+//   어떤 점 배치든 삼각분할 없이 연속, 범위 밖은 가까운 쪽 샘플로 수렴. 샘플 순서는 의미 없음).
+//   재생 위치는 상태마다 정규화 시간(Phase, 0~1) 하나: 샘플들은 같은 Phase로 샘플링된다 (동기화 — 걷기/뛰기 발이 맞는다, 2D도 같음).
 //   한 바퀴 길이 = Σ 가중치 × (클립 길이 / Rate), Phase += dt × 상태 Speed / 한 바퀴 길이. Loop가 아니면 1에서 멈춘다.
 // 전이: 목록 순서대로 처음 맞는 하나만 (프레임당 최대 한 번). From = 상태 이름 또는 "*"(어느 상태든, To 자신 제외).
 //   조건 = 파라미터 비교 (모두 참이어야 함), ExitTime >= 0이면 현재 상태 Phase가 그 이상일 때만.
@@ -31,8 +34,9 @@
 //   방금 들어간 상태는 그 프레임에 진행하지 않으므로 노티파이가 없다.
 // 파라미터: float/bool(0/1로 저장). Lua entity:SetAnimParam/GetAnimParam/GetAnimState, C++ FAnimationSystem::SetAnimParam 등.
 //   파라미터는 복제되지 않는다 — 각 프로세스가 자기 값으로 계산한다 (캐릭터 이동 자동 공급은 FAnimGraphComponent::bUseCharacterMovement).
-// 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}).
-//   읽기는 1/2 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 2. 전이 우선순위 = Transitions 목록 순서.
+// 형식 버전: 1 = 실행 데이터만, 2 = 편집기 정보 추가 (상태 "EditorPosition", 최상위 "Editor": {PreviewModel, AnyStatePosition}),
+//   3 = 2D 블렌드 스페이스 (상태 "BlendParameterY", 2D 샘플 "Position": [x, y]).
+//   읽기는 1/2/3 모두 받고(편집기 정보가 없으면 편집기가 자동 배치), 쓰기는 항상 3. 전이 우선순위 = Transitions 목록 순서.
 // 핫 리로드: FAnimGraphLibrary::Invalidate가 세대 번호를 올리면 그 그래프를 쓰는 컴포넌트가 다음 갱신에서 다시 읽고, 파일이 바뀌었으면
 //   새 에셋으로 다시 묶는다. 파라미터 값은 유지되고, 같은 이름의 상태가 새 그래프에 있으면 그 상태에서 다시 시작한다 (없으면 시작 상태).
 
@@ -52,19 +56,24 @@ struct FAnimGraphParameter
 struct FAnimBlendSample
 {
 	std::string Clip;
-	float       Position = 0.0f; // 블렌드 파라미터 값
-	float       Rate     = 1.0f; // 이 샘플의 재생 배속 (한 바퀴 길이 계산에 들어간다)
+	float       Position  = 0.0f; // 블렌드 파라미터 값 (2D면 X축)
+	float       PositionY = 0.0f; // 2D 블렌드 스페이스의 Y축 값
+	float       Rate      = 1.0f; // 이 샘플의 재생 배속 (한 바퀴 길이 계산에 들어간다)
 };
 
 struct FAnimGraphState
 {
 	std::string                   Name;
-	std::string                   BlendParameter; // 비면 단일 클립 (Samples[0])
-	std::vector<FAnimBlendSample> Samples;        // Position 오름차순
+	std::string                   BlendParameter;  // 비면 단일 클립 (Samples[0])
+	std::string                   BlendParameterY; // 있으면 2D 블렌드 스페이스 (BlendParameter = X축)
+	std::vector<FAnimBlendSample> Samples;         // 1D는 Position 오름차순, 2D는 순서 무관
 	float                         Speed = 1.0f;
 	bool                          bLoop = true;
 
 	std::optional<FVector2> EditorPosition; // 편집기 노드 위치 (실행에 쓰지 않음)
+
+	bool IsBlendSpace() const { return !BlendParameter.empty(); }
+	bool Is2D() const { return !BlendParameter.empty() && !BlendParameterY.empty(); }
 };
 
 enum class EAnimConditionOp : uint8
@@ -95,7 +104,7 @@ struct FAnimGraphTransition
 
 struct FAnimGraphAsset
 {
-	static constexpr int32          Version   = 2;
+	static constexpr int32          Version   = 3;
 	static constexpr const wchar_t* Extension = L".eanimgraph";
 
 	std::vector<FAnimGraphParameter>  Parameters;
@@ -171,6 +180,9 @@ namespace AnimGraphMath
 {
 	// 1D 블렌드 스페이스 가중치 (Positions 오름차순). 이웃한 두 샘플만 0이 아니고 합 = 1. 범위 밖은 끝 샘플 1
 	void ComputeBlendSpace1DWeights(const std::vector<float>& Positions, float Value, std::vector<float>& OutWeights);
+	// 2D 블렌드 스페이스 가중치 (그래디언트 밴드). 축마다 샘플 범위로 정규화 → w_i = min_j clamp(1 - (p-p_i)·(p_j-p_i)/|p_j-p_i|², 0, 1)
+	// → 합 1로 정규화. 겹친 샘플 쌍은 건너뛰고, 모두 0이면 가장 가까운 샘플 1
+	void ComputeBlendSpace2DWeights(const std::vector<FVector2>& Positions, const FVector2& Value, std::vector<float>& OutWeights);
 
 	bool EvaluateCondition(EAnimConditionOp Op, float Parameter, float Value);
 
@@ -237,6 +249,7 @@ private:
 	std::vector<FAnimClipContribution> Contributions;
 	FAnimNotifySource                  NotifySource;
 	std::vector<float>                 PositionScratch;
+	std::vector<FVector2>              Position2DScratch;
 	std::vector<float>                 WeightScratch;
 };
 

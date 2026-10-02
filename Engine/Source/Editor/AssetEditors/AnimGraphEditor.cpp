@@ -68,7 +68,16 @@ namespace
 			const std::string& Clip = State.Samples.empty() ? std::string() : State.Samples.front().Clip;
 			return Clip.empty() ? std::string("(클립 없음)") : Clip;
 		}
+		if (State.Is2D())
+		{
+			return std::format("{} × {} · 샘플 {}개", State.BlendParameter, State.BlendParameterY, State.Samples.size());
+		}
 		return std::format("{} · 샘플 {}개", State.BlendParameter, State.Samples.size());
+	}
+
+	const char* StateIcon(const FAnimGraphState& State)
+	{
+		return State.Is2D() ? ICON_FA_TABLE_CELLS : IsBlendSpace(State) ? ICON_FA_ARROWS_LEFT_RIGHT : ICON_FA_FILM;
 	}
 } // namespace
 
@@ -754,7 +763,7 @@ void FAnimGraphEditor::DrawStateNode(int32 Index, const FDebugView& Debug)
 		ImGui::TextColored(FEditorTheme::Accent, ICON_FA_FLAG);
 		ImGui::SameLine();
 	}
-	ImGui::Text("%s %s", IsBlendSpace(State) ? ICON_FA_ARROWS_LEFT_RIGHT : ICON_FA_FILM, State.Name.c_str());
+	ImGui::Text("%s %s", StateIcon(State), State.Name.c_str());
 	ImGui::TextDisabled("%s", DescribeState(State).c_str());
 	if (Weight > 0.0f)
 	{
@@ -879,32 +888,62 @@ std::string FAnimGraphEditor::MakeUniqueStateName(const std::string& BaseName) c
 	return Name;
 }
 
-int32 FAnimGraphEditor::AddState(const std::string& BaseName, bool bBlendSpace, const FVector2& Position)
+std::string FAnimGraphEditor::FindOrAddFloatParameter(const std::string& Fallback, const std::string& Exclude)
+{
+	for (const FAnimGraphParameter& Parameter : Asset.Parameters)
+	{
+		if (Parameter.Type == EAnimParamType::Float && Parameter.Name != Exclude)
+		{
+			return Parameter.Name;
+		}
+	}
+	std::string Name = Fallback;
+	for (int32 Suffix = 1; Asset.FindParameter(Name) != nullptr; ++Suffix)
+	{
+		Name = std::format("{}{}", Fallback, Suffix);
+	}
+	Asset.Parameters.push_back({ Name, EAnimParamType::Float, 0.0f });
+	return Name;
+}
+
+void FAnimGraphEditor::MakeBlendSpace2D(FAnimGraphState& State)
+{
+	if (State.BlendParameter.empty())
+	{
+		State.BlendParameter = FindOrAddFloatParameter("Speed", std::string());
+	}
+	State.BlendParameterY = FindOrAddFloatParameter("Direction", State.BlendParameter);
+	// 기본 배치: 기존 샘플은 Y 0 줄, 4개 미만이면 사각형 모서리를 채운다
+	const std::string First = State.Samples.empty() ? (ClipNames.empty() ? std::string() : ClipNames.front()) : State.Samples.front().Clip;
+	const FVector2    Corners[] = { FVector2(0.0f, -100.0f), FVector2(100.0f, -100.0f), FVector2(0.0f, 100.0f), FVector2(100.0f, 100.0f) };
+	for (FAnimBlendSample& Sample : State.Samples)
+	{
+		Sample.PositionY = 0.0f;
+	}
+	for (size_t Index = State.Samples.size(); Index < 4; ++Index)
+	{
+		State.Samples.push_back({ First, Corners[Index].X, Corners[Index].Y, 1.0f });
+	}
+}
+
+int32 FAnimGraphEditor::AddState(const std::string& BaseName, int32 BlendDimensions, const FVector2& Position)
 {
 	FAnimGraphState State;
 	State.Name           = MakeUniqueStateName(BaseName);
 	State.EditorPosition = Position;
-	if (bBlendSpace)
+	if (BlendDimensions == 2)
 	{
-		for (const FAnimGraphParameter& Parameter : Asset.Parameters)
-		{
-			if (Parameter.Type == EAnimParamType::Float)
-			{
-				State.BlendParameter = Parameter.Name;
-				break;
-			}
-		}
-		if (State.BlendParameter.empty())
-		{
-			Asset.Parameters.push_back({ "Speed", EAnimParamType::Float, 0.0f });
-			State.BlendParameter = "Speed";
-		}
+		MakeBlendSpace2D(State);
+	}
+	else if (BlendDimensions == 1)
+	{
+		State.BlendParameter    = FindOrAddFloatParameter("Speed", std::string());
 		const std::string First = ClipNames.empty() ? std::string() : ClipNames.front();
-		State.Samples           = { FAnimBlendSample{ First, 0.0f, 1.0f }, FAnimBlendSample{ First, 100.0f, 1.0f } };
+		State.Samples           = { FAnimBlendSample{ First, 0.0f, 0.0f, 1.0f }, FAnimBlendSample{ First, 100.0f, 0.0f, 1.0f } };
 	}
 	else
 	{
-		State.Samples = { FAnimBlendSample{ ClipNames.empty() ? std::string() : ClipNames.front(), 0.0f, 1.0f } };
+		State.Samples = { FAnimBlendSample{ ClipNames.empty() ? std::string() : ClipNames.front(), 0.0f, 0.0f, 1.0f } };
 	}
 	Asset.States.push_back(std::move(State));
 	return static_cast<int32>(Asset.States.size()) - 1;
@@ -1006,8 +1045,8 @@ void FAnimGraphEditor::DrawGraphMenus()
 
 	if (ImGui::BeginPopup("##AGBackgroundMenu"))
 	{
-		const auto AddAt = [this](const char* BaseName, bool bBlend, const char* Label) {
-			const int32 Added   = AddState(BaseName, bBlend, ContextCanvasPosition);
+		const auto AddAt = [this](const char* BaseName, int32 BlendDimensions, const char* Label) {
+			const int32 Added   = AddState(BaseName, BlendDimensions, ContextCanvasPosition);
 			bApplyPositions     = true;
 			Selection           = { ESelectionKind::State, Added };
 			bSyncGraphSelection = true;
@@ -1015,11 +1054,15 @@ void FAnimGraphEditor::DrawGraphMenus()
 		};
 		if (ImGui::MenuItem(ICON_FA_FILM " 클립 상태 추가"))
 		{
-			AddAt("State", false, "상태 추가");
+			AddAt("State", 0, "상태 추가");
 		}
 		if (ImGui::MenuItem(ICON_FA_ARROWS_LEFT_RIGHT " 1D 블렌드 스페이스 상태 추가"))
 		{
-			AddAt("Blend", true, "블렌드 스페이스 추가");
+			AddAt("Blend", 1, "블렌드 스페이스 추가");
+		}
+		if (ImGui::MenuItem(ICON_FA_TABLE_CELLS " 2D 블렌드 스페이스 상태 추가"))
+		{
+			AddAt("Blend2D", 2, "2D 블렌드 스페이스 추가");
 		}
 		ImGui::Separator();
 		if (ImGui::MenuItem(ICON_FA_EXPAND " 전체 보기", "F"))
@@ -1192,6 +1235,10 @@ void FAnimGraphEditor::RenameParameter(const std::string& OldName, const std::st
 		if (State.BlendParameter == OldName)
 		{
 			State.BlendParameter = NewName;
+		}
+		if (State.BlendParameterY == OldName)
+		{
+			State.BlendParameterY = NewName;
 		}
 	}
 	for (FAnimGraphTransition& Transition : Asset.Transitions)
@@ -1384,35 +1431,38 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 		MarkEdited("시작 상태");
 	}
 
-	int32 Kind = IsBlendSpace(State) ? 1 : 0;
-	if (ImGui::RadioButton("클립", &Kind, 0) && IsBlendSpace(State))
-	{
-		State.BlendParameter.clear();
-		State.Samples.resize(1);
-		MarkEdited("상태 종류");
-	}
+	const int32 OldKind = State.Is2D() ? 2 : IsBlendSpace(State) ? 1 : 0;
+	int32       Kind    = OldKind;
+	ImGui::RadioButton("클립", &Kind, 0);
 	ImGui::SameLine();
-	if (ImGui::RadioButton("1D 블렌드 스페이스", &Kind, 1) && !IsBlendSpace(State))
+	ImGui::RadioButton("1D 블렌드", &Kind, 1);
+	ImGui::SameLine();
+	ImGui::RadioButton("2D 블렌드", &Kind, 2);
+	if (Kind != OldKind)
 	{
-		std::string Parameter;
-		for (const FAnimGraphParameter& Candidate : Asset.Parameters)
+		FAnimGraphState& Changed = Asset.States[static_cast<size_t>(Index)];
+		if (Kind == 0)
 		{
-			if (Candidate.Type == EAnimParamType::Float)
+			Changed.BlendParameter.clear();
+			Changed.BlendParameterY.clear();
+			Changed.Samples.resize(1);
+		}
+		else if (Kind == 1)
+		{
+			Changed.BlendParameterY.clear();
+			if (Changed.BlendParameter.empty())
 			{
-				Parameter = Candidate.Name;
-				break;
+				Changed.BlendParameter = FindOrAddFloatParameter("Speed", std::string());
 			}
+			if (Changed.Samples.size() < 2)
+			{
+				Changed.Samples.push_back({ Changed.Samples.front().Clip, Changed.Samples.front().Position + 100.0f, 0.0f, 1.0f });
+			}
+			std::stable_sort(Changed.Samples.begin(), Changed.Samples.end(), [](const FAnimBlendSample& A, const FAnimBlendSample& B) { return A.Position < B.Position; });
 		}
-		if (Parameter.empty())
+		else
 		{
-			Asset.Parameters.push_back({ "Speed", EAnimParamType::Float, 0.0f });
-			Parameter = "Speed";
-		}
-		FAnimGraphState& Edited = Asset.States[static_cast<size_t>(Index)];
-		Edited.BlendParameter   = Parameter;
-		if (Edited.Samples.size() < 2)
-		{
-			Edited.Samples.push_back({ Edited.Samples.front().Clip, Edited.Samples.front().Position + 100.0f, 1.0f });
+			MakeBlendSpace2D(Changed);
 		}
 		MarkEdited("상태 종류");
 	}
@@ -1431,16 +1481,32 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 	}
 	else
 	{
-		if (ParameterCombo("블렌드 파라미터", Edited.BlendParameter, true))
+		const bool b2D = Edited.Is2D();
+		if (ParameterCombo(b2D ? "X축 파라미터" : "블렌드 파라미터", Edited.BlendParameter, true))
 		{
 			MarkEdited("블렌드 파라미터");
 		}
-		DrawBlendSpaceAxis(Edited);
+		if (b2D && ParameterCombo("Y축 파라미터", Edited.BlendParameterY, true))
+		{
+			MarkEdited("블렌드 파라미터");
+		}
+		if (b2D)
+		{
+			DrawBlendSpace2D(Edited);
+		}
+		else
+		{
+			DrawBlendSpaceAxis(Edited);
+		}
 		int32 RemoveSample = -1;
-		if (ImGui::BeginTable("##Samples", 4, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
+		if (ImGui::BeginTable("##Samples", b2D ? 5 : 4, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
 		{
 			ImGui::TableSetupColumn("클립", ImGuiTableColumnFlags_WidthStretch, 1.6f);
-			ImGui::TableSetupColumn("위치", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			ImGui::TableSetupColumn(b2D ? "X" : "위치", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			if (b2D)
+			{
+				ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+			}
 			ImGui::TableSetupColumn("배속", ImGuiTableColumnFlags_WidthStretch, 0.8f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, ImGui::GetFrameHeight());
 			ImGui::TableHeadersRow();
@@ -1460,6 +1526,15 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 				if (ImGui::DragFloat("##Position", &Item.Position, 1.0f))
 				{
 					MarkEdited("샘플 위치");
+				}
+				if (b2D)
+				{
+					ImGui::TableNextColumn();
+					ImGui::SetNextItemWidth(-FLT_MIN);
+					if (ImGui::DragFloat("##PositionY", &Item.PositionY, 1.0f))
+					{
+						MarkEdited("샘플 위치");
+					}
 				}
 				ImGui::TableNextColumn();
 				ImGui::SetNextItemWidth(-FLT_MIN);
@@ -1490,7 +1565,9 @@ void FAnimGraphEditor::DrawStateProperties(int32 Index)
 			{
 				Last = FMath::Max(Last, Sample.Position);
 			}
-			Edited.Samples.push_back({ ClipNames.empty() ? std::string() : ClipNames.front(), Last + 100.0f, 1.0f });
+			// 2D는 미리보기 값 위치에 추가 (축 그림에서 끌어 옮긴다)
+			const FVector2 At = b2D ? FVector2(PreviewValue(Edited.BlendParameter), PreviewValue(Edited.BlendParameterY)) : FVector2(Last + 100.0f, 0.0f);
+			Edited.Samples.push_back({ ClipNames.empty() ? std::string() : ClipNames.front(), At.X, At.Y, 1.0f });
 			MarkEdited("샘플 추가");
 		}
 	}
@@ -1630,6 +1707,153 @@ void FAnimGraphEditor::DrawBlendSpaceAxis(FAnimGraphState& State)
 		ImGui::SetTooltip("마름모를 끌어 샘플 위치 변경 · 빈 곳을 끌어 미리보기 값 (%s = %.1f)", State.BlendParameter.c_str(), Value);
 	}
 	ImGui::TextDisabled("범위 %.1f ~ %.1f · 현재 %.1f (빨간 선)", Lo + Pad, Hi - Pad, Value);
+}
+
+void FAnimGraphEditor::DrawBlendSpace2D(FAnimGraphState& State)
+{
+	if (State.Samples.empty())
+	{
+		return;
+	}
+	// 범위 = 샘플 경계 상자 ± 10% (끄는 동안은 고정). 화면 위 = +Y
+	FVector2 Lo(State.Samples.front().Position, State.Samples.front().PositionY);
+	FVector2 Hi = Lo;
+	for (const FAnimBlendSample& Sample : State.Samples)
+	{
+		Lo = FVector2(FMath::Min(Lo.X, Sample.Position), FMath::Min(Lo.Y, Sample.PositionY));
+		Hi = FVector2(FMath::Max(Hi.X, Sample.Position), FMath::Max(Hi.Y, Sample.PositionY));
+	}
+	if (Hi.X - Lo.X < 1.0e-3f)
+	{
+		Lo.X -= 100.0f;
+		Hi.X += 100.0f;
+	}
+	if (Hi.Y - Lo.Y < 1.0e-3f)
+	{
+		Lo.Y -= 100.0f;
+		Hi.Y += 100.0f;
+	}
+	const FVector2 Pad((Hi.X - Lo.X) * 0.1f, (Hi.Y - Lo.Y) * 0.1f);
+	Lo = Lo - Pad;
+	Hi = Hi + Pad;
+	if (AxisDragSample != -1)
+	{
+		Lo = FVector2(AxisLo, AxisLoY);
+		Hi = FVector2(AxisHi, AxisHiY);
+	}
+
+	const float  Width  = ImGui::GetContentRegionAvail().x;
+	const float  Height = FMath::Clamp(Width * 0.75f, 140.0f, 260.0f);
+	const ImVec2 Origin = ImGui::GetCursorScreenPos();
+	ImGui::InvisibleButton("##BlendSpace2D", ImVec2(Width, Height));
+	const bool    bHovered = ImGui::IsItemHovered();
+	ImDrawList*   Draw     = ImGui::GetWindowDrawList();
+	constexpr float Margin = 12.0f;
+	const auto    ToScreen = [&](float X, float Y) {
+        return ImVec2(Origin.x + Margin + (X - Lo.X) / (Hi.X - Lo.X) * (Width - Margin * 2.0f),
+                      Origin.y + Height - Margin - (Y - Lo.Y) / (Hi.Y - Lo.Y) * (Height - Margin * 2.0f));
+	};
+	const auto ToValue = [&](const ImVec2& Screen) {
+		return FVector2(Lo.X + (Screen.x - Origin.x - Margin) / FMath::Max(Width - Margin * 2.0f, 1.0f) * (Hi.X - Lo.X),
+		                Lo.Y + (Origin.y + Height - Margin - Screen.y) / FMath::Max(Height - Margin * 2.0f, 1.0f) * (Hi.Y - Lo.Y));
+	};
+
+	Draw->AddRectFilled(Origin, ImVec2(Origin.x + Width, Origin.y + Height), IM_COL32(28, 30, 34, 255), 4.0f);
+	for (int32 Line = 0; Line <= 4; ++Line)
+	{
+		const float T = static_cast<float>(Line) / 4.0f;
+		const ImVec2 A = ToScreen(Lo.X + (Hi.X - Lo.X) * T, Lo.Y);
+		const ImVec2 B = ToScreen(Lo.X + (Hi.X - Lo.X) * T, Hi.Y);
+		const ImVec2 C = ToScreen(Lo.X, Lo.Y + (Hi.Y - Lo.Y) * T);
+		const ImVec2 D = ToScreen(Hi.X, Lo.Y + (Hi.Y - Lo.Y) * T);
+		Draw->AddLine(A, B, IM_COL32(255, 255, 255, 22));
+		Draw->AddLine(C, D, IM_COL32(255, 255, 255, 22));
+	}
+	if (Lo.X < 0.0f && Hi.X > 0.0f)
+	{
+		Draw->AddLine(ToScreen(0.0f, Lo.Y), ToScreen(0.0f, Hi.Y), IM_COL32(255, 255, 255, 60));
+	}
+	if (Lo.Y < 0.0f && Hi.Y > 0.0f)
+	{
+		Draw->AddLine(ToScreen(Lo.X, 0.0f), ToScreen(Hi.X, 0.0f), IM_COL32(255, 255, 255, 60));
+	}
+
+	// 현재 미리보기 값의 가중치
+	float&                Value  = PreviewValue(State.BlendParameter);
+	float&                ValueY = PreviewValue(State.BlendParameterY);
+	std::vector<FVector2> Positions;
+	for (const FAnimBlendSample& Sample : State.Samples)
+	{
+		Positions.emplace_back(Sample.Position, Sample.PositionY);
+	}
+	std::vector<float> Weights;
+	AnimGraphMath::ComputeBlendSpace2DWeights(Positions, FVector2(Value, ValueY), Weights);
+
+	int32        Hovered = -1;
+	const ImVec2 Mouse   = ImGui::GetIO().MousePos;
+	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+	{
+		const ImVec2 Point = ToScreen(State.Samples[Index].Position, State.Samples[Index].PositionY);
+		if (bHovered && FMath::Abs(Mouse.x - Point.x) < 7.0f && FMath::Abs(Mouse.y - Point.y) < 7.0f)
+		{
+			Hovered = static_cast<int32>(Index);
+		}
+	}
+	for (size_t Index = 0; Index < State.Samples.size(); ++Index)
+	{
+		const ImVec2 Point  = ToScreen(State.Samples[Index].Position, State.Samples[Index].PositionY);
+		const bool   bHot   = Hovered == static_cast<int32>(Index) || AxisDragSample == static_cast<int32>(Index);
+		const float  Radius = 6.0f;
+		if (Weights[Index] > 0.001f)
+		{
+			Draw->AddCircleFilled(Point, Radius + 14.0f * Weights[Index], ImGui::ColorConvertFloat4ToU32(ImVec4(0.3f, 0.85f, 0.45f, 0.35f)));
+		}
+		Draw->AddQuadFilled(ImVec2(Point.x, Point.y - Radius), ImVec2(Point.x + Radius, Point.y), ImVec2(Point.x, Point.y + Radius), ImVec2(Point.x - Radius, Point.y),
+		                    bHot ? IM_COL32(255, 255, 255, 255) : ToU32(FEditorTheme::Accent));
+		const std::string Label = State.Samples[Index].Clip.empty() ? std::string("?") : State.Samples[Index].Clip;
+		Draw->AddText(ImVec2(Point.x + 8.0f, Point.y - 16.0f), IM_COL32(220, 220, 220, 255), Label.c_str());
+	}
+	const ImVec2 ValuePoint(FMath::Clamp(ToScreen(Value, ValueY).x, Origin.x + 2.0f, Origin.x + Width - 2.0f),
+	                        FMath::Clamp(ToScreen(Value, ValueY).y, Origin.y + 2.0f, Origin.y + Height - 2.0f));
+	Draw->AddCircle(ValuePoint, 5.0f, ToU32(FEditorTheme::Danger), 0, 2.0f);
+	Draw->AddLine(ImVec2(ValuePoint.x - 9.0f, ValuePoint.y), ImVec2(ValuePoint.x + 9.0f, ValuePoint.y), ToU32(FEditorTheme::Danger), 1.5f);
+	Draw->AddLine(ImVec2(ValuePoint.x, ValuePoint.y - 9.0f), ImVec2(ValuePoint.x, ValuePoint.y + 9.0f), ToU32(FEditorTheme::Danger), 1.5f);
+
+	// 끌기: 샘플 마름모 = 위치 바꾸기, 빈 곳 = 미리보기 값
+	if (ImGui::IsItemActivated())
+	{
+		AxisDragSample = Hovered >= 0 ? Hovered : -2;
+		AxisLo         = Lo.X;
+		AxisHi         = Hi.X;
+		AxisLoY        = Lo.Y;
+		AxisHiY        = Hi.Y;
+	}
+	if (ImGui::IsItemActive() && AxisDragSample != -1)
+	{
+		const FVector2 Dragged = ToValue(Mouse);
+		if (AxisDragSample >= 0 && AxisDragSample < static_cast<int32>(State.Samples.size()))
+		{
+			State.Samples[static_cast<size_t>(AxisDragSample)].Position  = std::round(Dragged.X);
+			State.Samples[static_cast<size_t>(AxisDragSample)].PositionY = std::round(Dragged.Y);
+			MarkEdited("샘플 위치");
+		}
+		else
+		{
+			Value  = Dragged.X;
+			ValueY = Dragged.Y;
+		}
+	}
+	else if (!ImGui::IsItemActive())
+	{
+		AxisDragSample = -1;
+	}
+	if (bHovered)
+	{
+		ImGui::SetTooltip("마름모를 끌어 샘플 위치 변경 · 빈 곳을 끌어 미리보기 값\n%s = %.1f, %s = %.1f", State.BlendParameter.c_str(), Value,
+		                  State.BlendParameterY.c_str(), ValueY);
+	}
+	ImGui::TextDisabled("X %s %.1f ~ %.1f · Y %s %.1f ~ %.1f · 현재 (%.1f, %.1f)", State.BlendParameter.c_str(), Lo.X + Pad.X, Hi.X - Pad.X,
+	                    State.BlendParameterY.c_str(), Lo.Y + Pad.Y, Hi.Y - Pad.Y, Value, ValueY);
 }
 
 void FAnimGraphEditor::DrawTransitionList(int32 FromState, bool bOnlyFrom)

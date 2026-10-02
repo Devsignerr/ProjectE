@@ -1,0 +1,172 @@
+{
+  "Entities": [
+    {
+      "Name": "Player",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            95.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "CharacterMovementComponent": {
+          "AirControl": 0.35,
+          "CapsuleHalfHeight": 55.0,
+          "CapsuleRadius": 35.0,
+          "FaceControlYaw": false,
+          "GravityScale": 1.0,
+          "JumpZVelocity": 520.0,
+          "Mass": 80.0,
+          "MaxSlopeAngle": 50.0,
+          "MaxStepHeight": 35.0,
+          "MaxWalkSpeed": 345.0,
+          "PushForce": 4000.0,
+          "Layer": "Character"
+        },
+        "HealthComponent": {
+          "MaxHealth": 150.0,
+          "Health": 150.0,
+          "Invulnerable": false,
+          "DeathAction": 0,
+          "ScoreValue": 0
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/PlayerController.lua",
+          "PropertyOverrides": ""
+        }
+      }
+    },
+    {
+      "Name": "PlayerMesh",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -90.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/KnightBare.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/RPG/KnightRPG.eanimgraph",
+          "UseCharacterMovement": true
+        }
+      }
+    },
+    {
+      "Name": "Weapon",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/sword_1handed.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 1,
+          "Socket": "HandR"
+        }
+      }
+    },
+    {
+      "Name": "Shield",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Weapons/shield_badge.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 1,
+          "Socket": "Shield"
+        }
+      }
+    }
+  ],
+  "NextId": 5,
+  "Version": 1
+}

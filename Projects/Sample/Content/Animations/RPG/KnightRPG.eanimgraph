@@ -1,0 +1,66 @@
+{
+  "Editor": {
+    "AnyStatePosition": [-380.0, -105.0],
+    "PreviewModel": "Asset/KayKit/Characters/KnightBare.glb"
+  },
+  "EntryState": "Locomotion",
+  "Layers": [
+    {
+      "Editor": {
+        "AnyStatePosition": [-380.0, -105.0]
+      },
+      "EntryState": "Blocking",
+      "Mask": [
+        { "Bone": "spine", "Weight": 1.0, "BlendDepth": 2 }
+      ],
+      "Name": "Block",
+      "States": [
+        { "Name": "Blocking", "Clip": "Blocking", "EditorPosition": [0.0, 0.0] }
+      ],
+      "Transitions": [],
+      "Weight": 1.0,
+      "WeightParameter": "BlockWeight"
+    }
+  ],
+  "Parameters": [
+    { "Name": "Speed", "Type": "Float", "Default": 0.0 },
+    { "Name": "VerticalSpeed", "Type": "Float", "Default": 0.0 },
+    { "Name": "Grounded", "Type": "Bool", "Default": true },
+    { "Name": "Dead", "Type": "Bool", "Default": false },
+    { "Name": "BlockWeight", "Type": "Float", "Default": 0.0 }
+  ],
+  "Slots": [
+    {
+      "Name": "UpperBody",
+      "Mask": [
+        { "Bone": "spine", "Weight": 1.0, "BlendDepth": 2 }
+      ]
+    }
+  ],
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "EditorPosition": [0.0, 0.0],
+      "Samples": [
+        { "Clip": "Idle", "Position": 0.0 },
+        { "Clip": "Walking_A", "Position": 100.0, "Rate": 1.5 },
+        { "Clip": "Running_A", "Position": 345.0 },
+        { "Clip": "Running_A", "Position": 520.0, "Rate": 1.5 }
+      ]
+    },
+    { "Name": "Fall", "Clip": "Jump_Idle", "EditorPosition": [260.0, -120.0] },
+    { "Name": "Dead", "Clip": "Death_A", "Loop": false, "EditorPosition": [260.0, 120.0] }
+  ],
+  "Transitions": [
+    { "From": "*", "To": "Dead", "Duration": 0.12, "Conditions": [
+      { "Parameter": "Dead", "Op": "==", "Value": true } ] },
+    { "From": "Dead", "To": "Locomotion", "Duration": 0.3, "Conditions": [
+      { "Parameter": "Dead", "Op": "==", "Value": false } ] },
+    { "From": "Locomotion", "To": "Fall", "Duration": 0.2, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": false }, { "Parameter": "VerticalSpeed", "Op": "<", "Value": -250.0 } ] },
+    { "From": "Fall", "To": "Locomotion", "Duration": 0.15, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": true } ] }
+  ],
+  "Version": 3
+}

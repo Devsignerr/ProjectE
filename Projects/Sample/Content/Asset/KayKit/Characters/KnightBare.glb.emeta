@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Clips": [
+    { "Clip": "1H_Melee_Attack_Slice_Diagonal", "Notifies": [ { "Name": "AttackHit", "Time": 0.38 } ] },
+    { "Clip": "1H_Melee_Attack_Slice_Horizontal", "Notifies": [ { "Name": "AttackHit", "Time": 0.24 } ] },
+    { "Clip": "1H_Melee_Attack_Chop", "Notifies": [ { "Name": "AttackHit", "Time": 0.55 } ] },
+    { "Clip": "1H_Melee_Attack_Stab", "Notifies": [ { "Name": "AttackHit", "Time": 0.36 } ] },
+    { "Clip": "2H_Melee_Attack_Spin", "Notifies": [
+      { "Name": "SpinHit", "Time": 0.65 },
+      { "Name": "SpinHit", "Time": 0.92 },
+      { "Name": "SpinHit", "Time": 1.18 }
+    ] }
+  ],
+  "Sockets": [
+    { "Name": "HandR", "Bone": "handslot.r", "Position": [0.0, 0.0, 3.331], "Rotation": [0.0, 0.0, 1.0, 0.0], "Scale": [1.0, 1.0, 1.0] },
+    { "Name": "HandL", "Bone": "handslot.l", "Position": [0.0, 0.0, 1.701], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+    { "Name": "Shield", "Bone": "handslot.l", "Position": [-15.589, 0.0, 1.701], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] }
+  ]
+}

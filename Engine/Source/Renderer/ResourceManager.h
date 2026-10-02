@@ -5,6 +5,7 @@
 #include "Renderer/GltfLoader.h"
 #include "Renderer/Image.h"
 #include "Renderer/Material.h"
+#include "Renderer/MaterialAsset.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/TextureCompression.h"
 #include "Scene/ResourceHandles.h"
@@ -16,7 +17,6 @@
 #include <vector>
 
 class FD3D12RHI;
-struct FMaterialAsset;
 struct FModelMetadata;
 struct FParticleSystemAsset;
 
@@ -69,10 +69,15 @@ public:
 	FMaterialHandle CreateMaterial(const FMaterial& Material);
 	// 머티리얼의 텍스처 핸들을 바꾼 뒤 호출: 디스크립터 테이블을 새로 만들고 이전 것은 지연 해제
 	void            RefreshMaterialTextures(FMaterialHandle Handle);
-	// .emat 파일 로드 (경로별 캐시). 텍스처는 파일 위치 기준 상대 경로로 로드
+	// .emat 파일 로드 (경로별 캐시). 텍스처는 파일 위치 기준 상대 경로로 로드. 인스턴스(Parent)는 부모 체인을 해석해 채운다
 	FMaterialHandle LoadMaterial(const std::filesystem::path& Path);
-	// .emat 내용을 기존 머티리얼에 반영 (에디터 실시간 편집/되돌리기). 텍스처 경로는 BaseDirectory 기준
+	// .emat 내용을 기존 머티리얼에 반영 (에디터 실시간 편집/되돌리기). 텍스처 경로는 BaseDirectory 기준.
+	// 내용은 그 경로의 "편집 중 원본"으로 기억되어 이 머티리얼을 부모로 둔 인스턴스 해석에도 쓰이고, 캐시된 자식 인스턴스는 바로 다시 해석된다.
+	// 텍스처 핸들이 바뀐 경우에만 디스크립터 테이블을 다시 만든다 (상수 드래그 중 매 프레임 호출 가능)
 	void            ApplyMaterialAsset(FMaterialHandle Handle, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
+	// 인스턴스 해석 (편집 중 원본 → 디스크 순으로 부모를 읽는다). AssetPath = 그 .emat 경로. 실패(순환/부모 없음)면 false + 오류 로그
+	bool            ResolveMaterialAsset(const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, FMaterialAsset& OutResolved,
+	                                     std::vector<std::filesystem::path>* OutChain = nullptr, std::string* OutError = nullptr) const;
 	void            DestroyMaterial(FMaterialHandle Handle);
 	FMaterial*      GetMaterial(FMaterialHandle Handle) const { return Materials.Get(Handle); }
 	FMaterialHandle GetDefaultMaterial() const { return DefaultMaterial; }
@@ -103,7 +108,10 @@ public:
 private:
 	// 슬롯별 해석된 텍스처로 새 디스크립터 테이블 작성 (이전 테이블은 지연 해제)
 	void BuildMaterialTable(FMaterial& Material);
-	void FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
+	// Asset은 해석된(평탄한) 내용. 텍스처 핸들이 바뀌었으면 true
+	bool FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
+	// 경로의 .emat를 해석해 머티리얼에 채운다 (ParentChain 갱신, 텍스처가 바뀌면 테이블 재작성)
+	void ResolveAndFillMaterial(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, bool bBuildTable);
 	const FD3D12Texture& ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const;
 
 	FD3D12RHI* Rhi = nullptr;
@@ -114,6 +122,7 @@ private:
 
 	std::unordered_map<std::wstring, FTextureHandle>  TextureCache;   // 키: 정규화 경로 + 색공간
 	std::unordered_map<std::wstring, FMaterialHandle> MaterialCache;  // 키: 정규화 경로
+	std::unordered_map<std::wstring, FMaterialAsset>  EditedMaterialSources; // 키: FMaterialAsset::MakePathKey — ApplyMaterialAsset 내용 (인스턴스 해석이 디스크보다 먼저 읽는다)
 	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
 	std::unordered_map<std::wstring, std::unique_ptr<FModelResources>> ModelCache; // 키: 정규화 경로 (주소 고정)
 	std::unordered_map<std::wstring, std::shared_ptr<FParticleSystemAsset>> ParticleCache; // 키: 정규화 경로

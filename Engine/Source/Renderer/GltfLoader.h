@@ -2,6 +2,7 @@
 
 #include "Core/Math/Math.h"
 #include "Renderer/Image.h"
+#include "Renderer/Material.h"
 #include "Renderer/TextureCompression.h"
 #include "Renderer/MeshData.h"
 #include "Renderer/SkinnedMeshData.h"
@@ -30,6 +31,10 @@ struct FModelMaterial
 	float       RoughnessFactor   = 1.0f;
 	float       NormalScale       = 1.0f;
 	float       OcclusionStrength = 1.0f;
+	// glTF alphaMode (OPAQUE → Opaque, MASK → Masked, BLEND → Translucent) / alphaCutoff / doubleSided
+	EMaterialBlendMode BlendMode   = EMaterialBlendMode::Opaque;
+	float              AlphaCutoff = 0.5f;
+	bool               bTwoSided   = false;
 
 	int32 BaseColorImage         = -1; // sRGB
 	int32 MetallicRoughnessImage = -1; // 선형 (G=거칠기, B=금속)

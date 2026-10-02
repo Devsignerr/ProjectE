@@ -1,6 +1,6 @@
 -- 치유 지대 (능력 표 "HealZone"): 마나 30, 쿨다운 10초. 서버가 발밑에 지대를 깔고 5초 동안 1초마다
 -- 반경 안의 능력 시스템 엔티티에 HealZoneTick(IncomingHeal = 대상 MaxHealth × 8% + 2)을 건다. 발동 중 State.Channeling
-local HealZone = { Properties = { Radius = 350.0, Duration = 5.0, Interval = 1.0 } }
+local HealZone = { Properties = { Radius = 250.0, Duration = 5.0, Interval = 1.0 } }
 
 function HealZone:OnActivate(ctx)
 	if not ctx:HasAuthority() then

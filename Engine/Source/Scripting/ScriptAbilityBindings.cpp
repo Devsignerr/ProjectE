@@ -8,10 +8,12 @@
 //   서버만: entity:ApplyEffect(효과[, { Source = 엔티티, Level = 수, SetByCaller = { 이름 = 값 } }]) → 적용됨, 핸들(지속 효과)
 //           entity:RemoveEffect(핸들), entity:RemoveEffectsWithTags(태그 또는 배열) → 지운 수
 //   entity:GetActiveEffects() → { { Name, Handle, Stacks, Remaining(-1 = 무한), Duration, Predicted }, ... }
+//   entity:GetLastAbilityFailure() → 능력, 이유, 지난 초 (없으면 nil) — HUD 표시용 (서버 거절은 "Rejected:<이유>")
 //   이벤트(엔티티 스크립트 메서드, FGameWorld가 전달): OnAttributeChanged(이름, 새 값, 이전 값), OnTagChanged(태그, 수),
 //     OnAbilityActivated(이름), OnAbilityEnded(이름, 취소됨), OnAbilityFailed(이름, 이유)
 // Abilities 테이블: Abilities.FindInRadius(중심, 반경[, 제외 엔티티]) → 능력 시스템 엔티티 배열(가까운 순, 물리 없이 위치로),
-//   Abilities.FindLocal() → 이 프로세스가 조종하는 입력 폰(AcceptInput), Abilities.Describe(엔티티) → 디버그 글자
+//   Abilities.FindLocal() → 이 프로세스가 조종하는 입력 폰(AcceptInput), Abilities.Describe(엔티티) → 디버그 글자,
+//   Abilities.IsAutoCast() → 콘솔 ability.AutoCast (검증용 데모 자동 발동)
 //
 // 능력 스크립트 (능력 표 Script 칸): 클래스 테이블을 반환한다. 발동마다 새 self(Properties = 선언 기본값, self.entity = 소유자)
 //   function MyAbility:OnActivate(ctx) ... end   -- 코루틴으로 실행. 반환하면 능력이 끝난다 (ctx:EndAbility()로 일찍 끝낼 수 있다)

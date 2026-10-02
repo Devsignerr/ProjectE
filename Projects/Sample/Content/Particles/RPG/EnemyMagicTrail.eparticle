@@ -1,0 +1,51 @@
+{
+  "Name": "EnemyMagicTrail",
+  "SpawnRate": 60.0,
+  "BurstCount": 0,
+  "Duration": 1.0,
+  "Loop": true,
+  "MaxParticles": 120,
+  "Shape": 0,
+  "ShapeRadius": 8.0,
+  "ShapeExtent": [
+    10.0,
+    10.0,
+    10.0
+  ],
+  "LifetimeMin": 0.35,
+  "LifetimeMax": 0.6,
+  "Direction": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "ConeAngle": 180.0,
+  "SpeedMin": 5.0,
+  "SpeedMax": 25.0,
+  "RotationSpeedMin": 0.0,
+  "RotationSpeedMax": 0.0,
+  "RandomRotation": false,
+  "SizeStart": 14.0,
+  "SizeEnd": 2.0,
+  "ColorStart": [
+    3.0,
+    0.9,
+    5.0,
+    1.0
+  ],
+  "ColorEnd": [
+    0.8,
+    0.1,
+    1.5,
+    0.0
+  ],
+  "Acceleration": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Drag": 0.0,
+  "BlendMode": 1,
+  "Texture": "",
+  "Seed": 11
+}

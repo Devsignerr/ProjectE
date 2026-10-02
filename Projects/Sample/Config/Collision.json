@@ -3,12 +3,17 @@
     "Default",
     "Ground",
     "Character",
-    "Prop"
+    "Prop",
+    "Enemy"
   ],
   "DisabledPairs": [
     [
       "Character",
       "Character"
+    ],
+    [
+      "Enemy",
+      "Enemy"
     ]
   ]
 }

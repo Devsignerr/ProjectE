@@ -1,0 +1,26 @@
+{
+  "Name": "EnemyTelegraph",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.9,
+    0.06,
+    0.1
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.6,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BlendMode": "Additive",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

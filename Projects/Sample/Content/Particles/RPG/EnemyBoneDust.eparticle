@@ -1,0 +1,51 @@
+{
+  "Name": "EnemyBoneDust",
+  "SpawnRate": 0.0,
+  "BurstCount": 40,
+  "Duration": 1.5,
+  "Loop": false,
+  "MaxParticles": 200,
+  "Shape": 0,
+  "ShapeRadius": 35.0,
+  "ShapeExtent": [
+    10.0,
+    10.0,
+    10.0
+  ],
+  "LifetimeMin": 0.6,
+  "LifetimeMax": 1.2,
+  "Direction": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "ConeAngle": 70.0,
+  "SpeedMin": 40.0,
+  "SpeedMax": 140.0,
+  "RotationSpeedMin": 0.0,
+  "RotationSpeedMax": 0.0,
+  "RandomRotation": false,
+  "SizeStart": 18.0,
+  "SizeEnd": 30.0,
+  "ColorStart": [
+    0.55,
+    0.5,
+    0.42,
+    0.9
+  ],
+  "ColorEnd": [
+    0.4,
+    0.37,
+    0.3,
+    0.0
+  ],
+  "Acceleration": [
+    0.0,
+    0.0,
+    -60.0
+  ],
+  "Drag": 1.0,
+  "BlendMode": 0,
+  "Texture": "",
+  "Seed": 13
+}

@@ -13,6 +13,10 @@ bool RGAccess::IsValidCombination(ERGAccess Access)
 	{
 		return false;
 	}
+	if ((Value & AccelStructMask) != 0)
+	{
+		return Value == Bits(ERGAccess::AccelStructRead) || Value == Bits(ERGAccess::AccelStructWrite); // 가속 구조 상태는 단독
+	}
 	const uint32 Writes  = Value & WriteMask;
 	const uint32 Singles = Value & SingleMask;
 	if (Writes != 0)
@@ -42,6 +46,8 @@ const char* RGAccess::ToString(ERGAccess Access)
 	case ERGAccess::IndirectArgs: return "IndirectArgs";
 	case ERGAccess::Present:      return "Present";
 	case ERGAccess::Common:       return "Common";
+	case ERGAccess::AccelStructRead:  return "AccelStructRead";
+	case ERGAccess::AccelStructWrite: return "AccelStructWrite";
 	case ERGAccess::SrvAll:       return "SrvPixel|SrvNonPixel";
 	default:                      break;
 	}
@@ -475,6 +481,10 @@ FRGCompileResult RenderGraphCompiler::Compile(const std::vector<FRGCompileResour
 						continue;
 					}
 					Seen.push_back(Sub.Global);
+					if (RGAccess::IsAccelStruct(Sub.Access))
+					{
+						continue; // 가속 구조는 전이하지 않는다 (큐 사이 펜스가 배리어 — 묶음 안 순서는 아래 패스 단계의 UAV 배리어)
+					}
 					ERGAccess Target = Sub.Access;
 					if (RGAccess::IsReadOnly(Sub.Access))
 					{
@@ -512,6 +522,27 @@ FRGCompileResult RenderGraphCompiler::Compile(const std::vector<FRGCompileResour
 			for (const FSubAccess& Sub : PassSubs[PassIndex])
 			{
 				const ERGAccess Current = State[Sub.Global];
+				// 2.5) 가속 구조: 상태 전이 없음. 직전 접근 또는 이번 접근이 쓰기면(같은 큐, 다른 패스) UAV 배리어
+				if (RGAccess::IsAccelStruct(Sub.Access) || RGAccess::IsAccelStruct(Current))
+				{
+					if (!RGAccess::IsAccelStruct(Sub.Access) || !RGAccess::IsAccelStruct(Current))
+					{
+						Result.Errors.push_back(std::format("패스 '{}': 가속 구조 리소스 '{}'를 다른 상태로 쓸 수 없습니다 ({} → {})", Passes[PassIndex].Name,
+						                                    Resources[Sub.Resource].Name, RGAccess::ToString(Current), RGAccess::ToString(Sub.Access)));
+						continue;
+					}
+					const bool bHazard = IsWrite(Sub.Access) || IsWrite(Current);
+					if (bHazard && LastUavPass[Sub.Global] >= 0 && LastUavPass[Sub.Global] != static_cast<int32>(PassIndex) && LastUavAsync[Sub.Global] == bCompute &&
+					    std::find(PendingUav.begin(), PendingUav.end(), Sub.Resource) == PendingUav.end())
+					{
+						PendingUav.push_back(Sub.Resource);
+					}
+					// 같은 패스 안 여러 선언은 합쳐져 있다. 쓰기 뒤 읽기 전까지 상태 = 쓰기 (다음 읽기가 배리어를 받는다)
+					State[Sub.Global]        = Sub.Access;
+					LastUavPass[Sub.Global]  = static_cast<int32>(PassIndex);
+					LastUavAsync[Sub.Global] = bCompute;
+					continue;
+				}
 				if (IsWrite(Sub.Access) || (RGAccess::Bits(Sub.Access) & RGAccess::SingleMask) != 0)
 				{
 					if (Current == Sub.Access)
@@ -595,6 +626,20 @@ FRGCompileResult RenderGraphCompiler::Compile(const std::vector<FRGCompileResour
 			continue;
 		}
 		const ERGAccess Final = Resource.FinalState != ERGAccess::None ? Resource.FinalState : State[SubBase[ResourceIndex]];
+		if (RGAccess::IsAccelStruct(Final) || RGAccess::IsAccelStruct(State[SubBase[ResourceIndex]]))
+		{
+			// 가속 구조: 끝 상태도 같은 D3D12 상태. 마지막이 쓰기면 다음 그래프의 읽기를 위해 UAV 배리어 하나
+			if (IsWrite(State[SubBase[ResourceIndex]]))
+			{
+				Result.FinalBarriers.push_back({ true, ResourceIndex, FRGBarrier::AllSubresources, ERGAccess::AccelStructWrite, ERGAccess::AccelStructRead });
+				++Result.UavBarrierCount;
+			}
+			for (uint32 Global = SubBase[ResourceIndex]; Global < SubBase[ResourceIndex + 1]; ++Global)
+			{
+				State[Global] = RGAccess::IsAccelStruct(Final) ? Final : ERGAccess::AccelStructRead;
+			}
+			continue;
+		}
 		for (uint32 Global = SubBase[ResourceIndex]; Global < SubBase[ResourceIndex + 1]; ++Global)
 		{
 			if (State[Global] != Final)
@@ -605,7 +650,7 @@ FRGCompileResult RenderGraphCompiler::Compile(const std::vector<FRGCompileResour
 		}
 	}
 	EmitTransitions(Pending, Result.FinalBarriers);
-	Result.TransitionCount += static_cast<uint32>(Result.FinalBarriers.size());
+	Result.TransitionCount += static_cast<uint32>(std::count_if(Result.FinalBarriers.begin(), Result.FinalBarriers.end(), [](const FRGBarrier& Barrier) { return !Barrier.bUav; }));
 	Result.BarrierBatchCount += Result.FinalBarriers.empty() ? 0u : 1u;
 
 	Result.FinalStates.resize(ResourceCount);

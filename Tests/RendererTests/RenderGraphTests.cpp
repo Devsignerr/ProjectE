@@ -353,3 +353,68 @@ E_TEST(RenderGraph_AsyncBatchInternalTransitionsAreComputeLegal)
 	E_EXPECT_TRUE(HasTransition(Result.Passes[2].Barriers, 0, FRGBarrier::AllSubresources, ERGAccess::SrvNonPixel, ERGAccess::SrvPixel));
 	E_EXPECT_TRUE(HasTransition(Result.Passes[2].Barriers, 1, FRGBarrier::AllSubresources, ERGAccess::Uav, ERGAccess::SrvPixel));
 }
+
+// 가속 구조 (Phase 50, 규칙 2.5): 전이 없이 쓰기가 낀 순서에만 UAV 배리어. BLAS 빌드 → TLAS 빌드(BLAS 읽기) → 추적(TLAS 읽기)
+E_TEST(RenderGraph_AccelerationStructureUsesUavBarriersOnly)
+{
+	const std::vector<FRGCompileResource> Resources = {
+		MakeResource("Blas", true, ERGAccess::AccelStructRead, ERGAccess::AccelStructRead),
+		MakeResource("Tlas", true, ERGAccess::AccelStructRead, ERGAccess::AccelStructRead),
+		MakeResource("ShadowMask", true, ERGAccess::SrvPixel, ERGAccess::SrvPixel),
+	};
+	const std::vector<FRGCompilePass> Passes = {
+		MakePass("BuildBlas", { Access(0, ERGAccess::AccelStructWrite) }),
+		MakePass("BuildTlas", { Access(0, ERGAccess::AccelStructRead), Access(1, ERGAccess::AccelStructWrite) }),
+		MakePass("TraceShadows", { Access(1, ERGAccess::AccelStructRead), Access(2, ERGAccess::Uav) }),
+		MakePass("TraceReflections", { Access(1, ERGAccess::AccelStructRead), Access(2, ERGAccess::Uav) }),
+	};
+	const FRGCompileResult Result = RenderGraphCompiler::Compile(Resources, Passes);
+	E_EXPECT_TRUE(Result.Errors.empty());
+	E_EXPECT_FALSE(Result.Passes[0].bCulled); // 가져온 BLAS에 쓴다
+	for (const FRGCompiledPass& Pass : Result.Passes)
+	{
+		for (const FRGBarrier& Barrier : Pass.Barriers)
+		{
+			E_EXPECT_TRUE(Barrier.bUav || (Barrier.Resource != 0 && Barrier.Resource != 1)); // AS는 전이 없음
+		}
+	}
+	E_EXPECT_EQ(CountUav(Result.Passes[0].Barriers), 0u); // 그래프 처음 쓰기 (앞 접근 없음)
+	E_EXPECT_EQ(CountUav(Result.Passes[1].Barriers), 1u); // BLAS 쓰기 → 읽기
+	E_EXPECT_EQ(CountUav(Result.Passes[2].Barriers), 1u); // TLAS 쓰기 → 읽기 (ShadowMask는 첫 UAV라 전이만)
+	E_EXPECT_TRUE(HasTransition(Result.Passes[2].Barriers, 2, FRGBarrier::AllSubresources, ERGAccess::SrvPixel, ERGAccess::Uav));
+	E_EXPECT_EQ(CountUav(Result.Passes[3].Barriers), 1u); // TLAS 읽기 → 읽기는 배리어 없음, ShadowMask UAV → UAV 하나
+	E_EXPECT_TRUE(Result.FinalBarriers.size() == 1 && !Result.FinalBarriers[0].bUav && Result.FinalBarriers[0].Resource == 2);
+	E_EXPECT_TRUE(Result.FinalStates[1][0] == ERGAccess::AccelStructRead);
+}
+
+E_TEST(RenderGraph_AccelerationStructureRefitAndFinalBarrier)
+{
+	// 읽기 → 쓰기(갱신)도 UAV 배리어, 마지막이 쓰기면 끝에 UAV 배리어 하나 (다음 그래프의 읽기)
+	const std::vector<FRGCompileResource> Resources = { MakeResource("SkinBlas", true, ERGAccess::AccelStructRead, ERGAccess::AccelStructRead) };
+	FRGCompilePass Read  = MakePass("Trace", { Access(0, ERGAccess::AccelStructRead) });
+	Read.bNeverCull      = true;
+	const std::vector<FRGCompilePass> Passes = {
+		Read,
+		MakePass("Refit", { Access(0, ERGAccess::AccelStructWrite) }),
+	};
+	const FRGCompileResult Result = RenderGraphCompiler::Compile(Resources, Passes);
+	E_EXPECT_TRUE(Result.Errors.empty());
+	E_EXPECT_EQ(CountUav(Result.Passes[1].Barriers), 1u);
+	E_EXPECT_EQ(Result.FinalBarriers.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(Result.FinalBarriers[0].bUav);
+	E_EXPECT_EQ(Result.TransitionCount, 0u);
+}
+
+E_TEST(RenderGraph_AccelerationStructureRejectsOtherStates)
+{
+	// AS 버퍼를 SRV/UAV 등 다른 상태로 쓰거나 섞어 선언하면 오류
+	const std::vector<FRGCompileResource> Resources = { MakeResource("Tlas", true, ERGAccess::AccelStructRead, ERGAccess::AccelStructRead) };
+	FRGCompilePass                        Bad       = MakePass("Bad", { Access(0, ERGAccess::SrvNonPixel) });
+	Bad.bNeverCull                                  = true; // 읽기만 하는 패스는 컬링되므로 상태 검사까지 가게
+	const std::vector<FRGCompilePass>     Wrong     = { Bad };
+	E_EXPECT_FALSE(RenderGraphCompiler::Compile(Resources, Wrong).Errors.empty());
+	const std::vector<FRGCompilePass> Mixed = { MakePass("Mixed", { Access(0, ERGAccess::AccelStructRead), Access(0, ERGAccess::SrvNonPixel) }) };
+	E_EXPECT_FALSE(RenderGraphCompiler::Compile(Resources, Mixed).Errors.empty());
+	E_EXPECT_TRUE(RGAccess::IsComputeLegal(ERGAccess::AccelStructRead) && RGAccess::IsComputeLegal(ERGAccess::AccelStructWrite));
+	E_EXPECT_TRUE(RGAccess::HasWrite(ERGAccess::AccelStructWrite) && RGAccess::IsReadOnly(ERGAccess::AccelStructRead));
+}

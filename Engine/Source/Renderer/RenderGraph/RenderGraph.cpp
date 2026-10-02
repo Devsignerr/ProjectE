@@ -31,6 +31,8 @@ D3D12_RESOURCE_STATES RenderGraphD3D12::ToD3D12(ERGAccess Access)
 	Add(ERGAccess::CopySource, D3D12_RESOURCE_STATE_COPY_SOURCE);
 	Add(ERGAccess::CopyDest, D3D12_RESOURCE_STATE_COPY_DEST);
 	Add(ERGAccess::IndirectArgs, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+	Add(ERGAccess::AccelStructRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
+	Add(ERGAccess::AccelStructWrite, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
 	return States; // Present/Common = 0
 }
 
@@ -39,6 +41,10 @@ ERGAccess RenderGraphD3D12::FromD3D12(D3D12_RESOURCE_STATES States)
 	if (States == D3D12_RESOURCE_STATE_COMMON)
 	{
 		return ERGAccess::Common;
+	}
+	if (States == D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
+	{
+		return ERGAccess::AccelStructRead; // 가속 구조는 이 상태 하나뿐 (읽기로 본다 — 빌드는 AccelStructWrite 선언)
 	}
 	ERGAccess  Access = ERGAccess::None;
 	const auto Add    = [&](D3D12_RESOURCE_STATES State, ERGAccess Flag) {

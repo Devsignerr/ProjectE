@@ -180,6 +180,11 @@ public:
 	// 렌더 타깃 색 (평소 SrvPixel) / 깊이 (평소 DepthWrite)
 	FRGResourceRef ImportColor(const char* Name, const FD3D12RenderTarget& Target);
 	FRGResourceRef ImportDepth(const char* Name, const FD3D12RenderTarget& Target);
+	// 레이 트레이싱 가속 구조 버퍼 (평소 AccelStructRead — 빌드 패스는 Write(…, AccelStructWrite), 읽는 패스는 Read(…, AccelStructRead))
+	FRGResourceRef ImportAccelerationStructure(const char* InName, ID3D12Resource* Resource)
+	{
+		return Import(InName, Resource, ERGAccess::AccelStructRead, ERGAccess::AccelStructRead);
+	}
 	// 같은 ID3D12Resource를 이미 가져왔으면 그 참조 (없으면 무효)
 	FRGResourceRef FindImported(ID3D12Resource* Resource) const;
 

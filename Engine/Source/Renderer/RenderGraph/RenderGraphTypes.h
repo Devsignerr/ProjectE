@@ -20,6 +20,11 @@ enum class ERGAccess : uint32
 	IndirectArgs = 1u << 8,  // INDIRECT_ARGUMENT
 	Present      = 1u << 9,  // PRESENT (= COMMON)
 	Common       = 1u << 10, // COMMON
+	// 레이 트레이싱 가속 구조 (Phase 50): 둘 다 D3D12 RAYTRACING_ACCELERATION_STRUCTURE 상태 하나 — 가속 구조 버퍼는 만들 때부터 그 상태이고
+	//   다른 상태로 전이할 수 없다. 컴파일러는 AS 접근끼리 전이를 만들지 않고, 쓰기가 끼면(쓰기→읽기, 읽기→쓰기, 쓰기→쓰기) UAV 배리어를 넣는다.
+	//   다른 접근과 섞어 선언하면 오류 (RenderGraphCompiler.h 규칙 2.5)
+	AccelStructRead  = 1u << 11, // RayQuery/TraceRay가 TLAS를 읽음, TLAS 빌드가 BLAS를 읽음, 복사(압축) 원본
+	AccelStructWrite = 1u << 12, // 가속 구조 빌드/갱신(refit)/복사(압축) 대상
 
 	SrvAll = SrvPixel | SrvNonPixel,
 };
@@ -41,18 +46,21 @@ constexpr ERGAccess& operator|=(ERGAccess& A, ERGAccess B)
 namespace RGAccess
 {
 	inline constexpr uint32 WriteMask = static_cast<uint32>(ERGAccess::RenderTarget) | static_cast<uint32>(ERGAccess::DepthWrite) |
-	                                    static_cast<uint32>(ERGAccess::Uav) | static_cast<uint32>(ERGAccess::CopyDest);
+	                                    static_cast<uint32>(ERGAccess::Uav) | static_cast<uint32>(ERGAccess::CopyDest) |
+	                                    static_cast<uint32>(ERGAccess::AccelStructWrite);
 	inline constexpr uint32 ReadMask = static_cast<uint32>(ERGAccess::DepthRead) | static_cast<uint32>(ERGAccess::SrvPixel) |
 	                                   static_cast<uint32>(ERGAccess::SrvNonPixel) | static_cast<uint32>(ERGAccess::CopySource) |
-	                                   static_cast<uint32>(ERGAccess::IndirectArgs);
+	                                   static_cast<uint32>(ERGAccess::IndirectArgs) | static_cast<uint32>(ERGAccess::AccelStructRead);
+	inline constexpr uint32 AccelStructMask = static_cast<uint32>(ERGAccess::AccelStructRead) | static_cast<uint32>(ERGAccess::AccelStructWrite);
 	inline constexpr uint32 SingleMask = static_cast<uint32>(ERGAccess::Present) | static_cast<uint32>(ERGAccess::Common);
 	// 계산 큐 명령 목록에서 배리어의 전/후 상태로 쓸 수 있는 상태 (D3D12: 픽셀 셰이더·렌더 타깃·깊이 상태는 그래픽스 큐만)
 	inline constexpr uint32 ComputeLegalMask = static_cast<uint32>(ERGAccess::SrvNonPixel) | static_cast<uint32>(ERGAccess::Uav) |
 	                                           static_cast<uint32>(ERGAccess::CopySource) | static_cast<uint32>(ERGAccess::CopyDest) |
 	                                           static_cast<uint32>(ERGAccess::IndirectArgs) | static_cast<uint32>(ERGAccess::Common) |
-	                                           static_cast<uint32>(ERGAccess::Present);
+	                                           static_cast<uint32>(ERGAccess::Present) | AccelStructMask;
 
 	constexpr uint32 Bits(ERGAccess Access) { return static_cast<uint32>(Access); }
+	constexpr bool   IsAccelStruct(ERGAccess Access) { return (Bits(Access) & AccelStructMask) != 0; }
 	constexpr bool   HasWrite(ERGAccess Access) { return (Bits(Access) & WriteMask) != 0; }
 	constexpr bool   IsReadOnly(ERGAccess Access) { return Bits(Access) != 0 && (Bits(Access) & ~ReadMask) == 0; }
 	constexpr bool   IsComputeLegal(ERGAccess Access) { return Bits(Access) != 0 && (Bits(Access) & ~ComputeLegalMask) == 0; }

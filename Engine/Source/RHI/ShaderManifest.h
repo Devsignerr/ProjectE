@@ -18,6 +18,7 @@ struct FShaderManifestEntry
 	std::wstring              EntryPoint;
 	EShaderStage              Stage = EShaderStage::Vertex;
 	std::vector<std::wstring> Defines;
+	std::wstring              ShaderModel; // JSON "ShaderModel": "6_5" (비면 단계 기본 — FShaderCompileDesc::ShaderModel)
 
 	FShaderCompileDesc ToCompileDesc() const;
 };
@@ -35,14 +36,14 @@ struct FShaderManifest
 	bool ParseJson(std::string_view Json, std::string& OutError);
 };
 
-// "Vertex" / "Pixel" / "Compute" (대소문자 무시)
+// "Vertex" / "Pixel" / "Compute" / "Library" (대소문자 무시)
 bool        ParseShaderStage(std::string_view Text, EShaderStage& OutStage);
 const char* ShaderStageToString(EShaderStage Stage);
 
 // 쿠킹 디렉터리: <엔진>/Engine/Shaders/Cooked
 std::filesystem::path GetCookedShaderDirectory();
 
-// 쿠킹 파일명: <File 스템>_<Entry>_<Stage>[_<디파인 FNV-1a 64비트 16진>][.debug].dxil
+// 쿠킹 파일명: <File 스템>_<Entry>_<Stage>[_sm<모델>][_<디파인 FNV-1a 64비트 16진>][.debug].dxil
 // Debug 구성의 DXIL(-Zi -Od)과 Release(-O3)를 구분하기 위해 bDebugVariant가 접미사를 붙인다.
 std::wstring GetCookedShaderFileName(const FShaderCompileDesc& Desc, bool bDebugVariant = (E_DEBUG != 0));
 

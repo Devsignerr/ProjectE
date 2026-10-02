@@ -169,7 +169,8 @@ public:
 	void               SetRegistrationOwner(std::string Owner) { CurrentOwner = std::move(Owner); }
 	const std::string& GetRegistrationOwner() const { return CurrentOwner; }
 	// 소유자가 같은 타입 제거 (게임 모듈 언로드 전: 등록 정보의 함수 포인터가 모듈 코드를 가리키므로). 제거한 수 반환
-	size_t RemoveTypesByOwner(std::string_view Owner);
+	// bRetireComponentTypeIds: 컴포넌트 타입의 ECS 타입 ID도 버린다 (게임 모듈 핫 리로드 — FRegistry::RetireComponentTypeId)
+	size_t RemoveTypesByOwner(std::string_view Owner, bool bRetireComponentTypeIds = false);
 
 	// 컴포넌트 타입만 등록 순서대로 순회: Func(const FTypeInfo&)
 	template <typename TFunc>

@@ -184,6 +184,13 @@ public:
 		return TView<TComponents...>(*this);
 	}
 
+	// 게임 모듈 핫 리로드: 타입의 ECS 타입 ID를 버린다. 이후 처음 묻는 바이너리(새로 로드한 모듈 DLL)는 새 ID를 받는다.
+	// 옛 ID의 풀은 각 레지스트리에 그대로 남아 옛 DLL 코드만 접근한다(엔티티 파괴 시 함께 정리) — 새 코드가 배치가 다른 옛 풀을
+	// 자기 타입으로 캐스팅하지 않으므로 구조체 멤버가 바뀌어도 안전하다. 이미 ID를 캐시한 바이너리는 계속 옛 ID를 쓴다
+	static void RetireComponentTypeId(std::type_index Type);
+	// 타입 ID 조회(없으면 부여) — 진단/테스트용. 템플릿 GetTypeId<T>와 같은 표를 쓴다
+	static uint32 FindOrAssignComponentTypeId(std::type_index Type) { return AssignComponentTypeId(Type); }
+
 private:
 	// 컴포넌트 타입마다 프로세스 전역 고유 ID (최초 사용 순서대로 부여).
 	// 엔진 DLL과 게임 모듈 DLL이 같은 타입에 같은 ID를 쓰도록 ID 표는 Core(엔진 DLL) 한 곳에 둔다.

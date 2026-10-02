@@ -11,6 +11,7 @@
 FUIInstance::FUIInstance()
 {
 	Asset.Root->AssignIds();
+	NextWidgetId = 2;
 }
 
 FUIInstance::FUIInstance(const FUIAsset& InAsset)
@@ -23,6 +24,9 @@ void FUIInstance::SetAsset(const FUIAsset& InAsset)
 	Asset        = InAsset.Clone();
 	Router       = FUIInputRouter{};
 	bPointerOver = false;
+	bLayoutDirty = false;
+	NextWidgetId = 1;
+	Asset.Root->ForEach([this](const FUIWidget& Widget) { NextWidgetId = FMath::Max(NextWidgetId, Widget.State.Id + 1); });
 	// 에셋에 들어 있는 글자는 지금 굽는다 (실행 중 바뀌는 글자만 처음 쓸 때 굽힌다)
 	FUIFontLibrary& Fonts = FUIFontLibrary::Get();
 	Asset.Root->ForEach([&Fonts](FUIWidget& Widget) {
@@ -42,6 +46,67 @@ void FUIInstance::Layout(const FUIRect& InViewport, FUIFontLibrary& Fonts)
 	Transform.Scale  = FMath::Max(FUILayout::ComputeScale(Asset.ScaleMode, Asset.DesignSize, InViewport.GetSize()), 0.01f);
 	Transform.Offset = InViewport.Min;
 	FUILayout::Compute(*Asset.Root, InViewport.GetSize() / Transform.Scale, Fonts);
+	bLayoutDirty = false;
+}
+
+FUIWidget* FUIInstance::CloneWidget(std::string_view TemplateName, const std::string& NewName, std::string& OutError)
+{
+	const FUIWidget* Template = Asset.Root->FindByName(TemplateName);
+	if (Template == nullptr)
+	{
+		OutError = "템플릿 위젯이 없습니다: " + std::string(TemplateName);
+		return nullptr;
+	}
+	if (Template->Parent == nullptr)
+	{
+		OutError = "루트 위젯은 복제할 수 없습니다";
+		return nullptr;
+	}
+	if (!Template->Parent->CanAddChild())
+	{
+		OutError = "템플릿의 부모가 자식을 더 받을 수 없습니다: " + Template->Parent->Name;
+		return nullptr;
+	}
+	if (NewName.empty())
+	{
+		OutError = "새 위젯 이름이 비었습니다";
+		return nullptr;
+	}
+
+	std::unique_ptr<FUIWidget> Copy = Template->Clone();
+	Copy->Name                      = NewName;
+	bool bNameTaken                 = false;
+	Copy->ForEach([&](FUIWidget& Widget) {
+		if (&Widget != Copy.get() && !Widget.Name.empty())
+		{
+			Widget.Name = NewName + "." + Widget.Name;
+		}
+		if (!Widget.Name.empty() && Asset.Root->FindByName(Widget.Name) != nullptr)
+		{
+			bNameTaken = true;
+			OutError   = "같은 이름의 위젯이 이미 있습니다: " + Widget.Name;
+		}
+	});
+	if (bNameTaken)
+	{
+		return nullptr;
+	}
+	Copy->ForEach([this](FUIWidget& Widget) { Widget.State.Id = NextWidgetId++; });
+	FUIWidget* Added = Template->Parent->AddChild(std::move(Copy)); // 자손 Parent는 Clone이 맞춘다
+	bLayoutDirty = true;
+	return Added;
+}
+
+bool FUIInstance::RemoveWidget(std::string_view Name)
+{
+	FUIWidget* Widget = Asset.Root->FindByName(Name);
+	if (Widget == nullptr || Widget->Parent == nullptr)
+	{
+		return false;
+	}
+	Widget->Parent->RemoveChild(Widget); // 반환된 소유권을 버려 해제
+	bLayoutDirty = true;
+	return true;
 }
 
 bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,

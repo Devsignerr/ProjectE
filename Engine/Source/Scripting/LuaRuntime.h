@@ -197,6 +197,8 @@ private:
 	// 이번 프레임 게임 UI 이벤트를 스크립트 함수로 전달 (OnUIClicked_<위젯 이름> 등, ScriptUIBindings.cpp)
 	void DispatchUIEvents();
 	void RegisterSequenceBindings(); // entity:PlaySequence/StopSequence 등 (ScriptSequenceBindings.cpp)
+	void RegisterModuleBindings();   // Script.Require (ScriptModuleBindings.cpp)
+	void RegisterCameraBindings();   // Camera.WorldToScreen/ScreenToWorldRay (ScriptCameraBindings.cpp)
 	// 직전 시퀀스 갱신의 이벤트 → OnSequenceEvent_<이름>, OnSequenceFinished (ScriptSequenceBindings.cpp)
 	void DispatchSequenceEvents();
 	// 직전 애니메이션 갱신에서 끝난 몽타주 → OnMontageEnded(clip, interrupted, slot) (ScriptAnimationBindings.cpp)
@@ -215,12 +217,32 @@ private:
 
 	std::string MakeClassKey(const std::filesystem::path& AbsolutePath) const;
 	bool        ExecuteClassFile(FScriptClass& Class, const std::filesystem::path& AbsolutePath);
+	// 캐시된 클래스(Key) 다시 실행 + 인스턴스 갱신. 반환: 캐시에 있었는가
+	bool        ReloadClassByKey(const std::string& Key, const std::filesystem::path& ScriptPath, bool& bOutSucceeded);
+
+	// ---- Script.Require 모듈 (ScriptModuleBindings.cpp — 규칙은 그 파일 머리 주석)
+	struct FScriptModule
+	{
+		std::string AssetName;        // Content 기준 경로 (로그/오류 표시)
+		sol::object Value;            // 파일이 반환한 값 (nil이면 true)
+		bool        bLoading = false; // 실행 중 (다시 Require되면 순환)
+	};
+	sol::object RequireModule(const std::string& AssetPath);
+	// 모듈 파일이 바뀜: 새 코드를 실행해 성공하면 값 교체 + 의존하는 모듈 캐시 제거 + 의존하는 클래스 다시 로드. 반환: 모듈로 로드된 적 있는가
+	bool        ReloadModule(const std::string& Key, const std::filesystem::path& ScriptPath, bool& bOutSucceeded);
+	// 파일 하나를 모듈로 실행 (Key를 실행 스택에 올린다). 실패 시 OutError
+	bool        ExecuteModuleFile(const std::string& Key, const std::string& AssetName, const std::filesystem::path& AbsolutePath, sol::object& OutValue,
+	                              std::string& OutError);
+	// 지금 Require를 부른 쪽 (실행 중인 파일 키, 없으면 실행 중인 인스턴스의 클래스 키, 없으면 빈 문자열)
+	std::string GetRequireDependent() const;
 
 	void CreateInstance(FEntity Entity, const std::string& ScriptAsset, const std::string& Overrides);
 	bool CallMethod(FScriptInstance& Instance, const char* MethodName, float DeltaSeconds = 0.0f, bool bPassDelta = false);
 	void DestroyInstance(uint64 EntityId);
 	void ApplyPendingDestroys();
 	void ReportError(const std::string& Message);
+	// 스크립트 파일 읽기 (FFileSystem: pak → 디스크, UTF-8 BOM 제거)
+	static std::string ReadScriptSource(const std::filesystem::path& Path, bool& bOutOk);
 
 	// 값 변환
 	FScriptValue ToScriptValue(const sol::object& Object);
@@ -245,6 +267,10 @@ private:
 	FVector2                   LocalControlRotation; // 훅이 없을 때(테스트) Net.SetControlRotation 값
 
 	std::unordered_map<std::string, std::unique_ptr<FScriptClass>> Classes; // 키: 정규화된 절대 경로
+	std::unordered_map<std::string, FScriptModule>                 Modules; // Script.Require 캐시 (키: MakeClassKey)
+	std::unordered_map<std::string, std::vector<std::string>>      ModuleDependents; // 모듈 키 → 그 모듈을 Require한 파일 키 (클래스/모듈)
+	std::vector<std::string>                                       ExecutingFiles;   // 실행 중인 클래스/모듈 파일 키 (중첩 Require 추적)
+	sol::protected_function                                        ModuleCaller;     // 모듈 청크를 불러 반환값 하나로 맞추는 도우미 (Traceback 처리기)
 
 	// 플레이 상태 (비소유)
 	FScene*       Scene = nullptr;

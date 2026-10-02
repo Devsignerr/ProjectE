@@ -1,4 +1,5 @@
 #include "Core/Testing/TestFramework.h"
+#include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scripting/ScriptSystem.h"
 #include "UI/UIComponent.h"
@@ -169,5 +170,99 @@ return Anim
 	E_EXPECT_TRUE(Scripts.RunString("assert(Finished == 1 and Playing == false)"));
 	const FUIInstance* Instance = Scene.GetRegistry().Get<FUIComponent>(Entity).Runtime.Instance.get();
 	E_EXPECT_TRUE(Instance != nullptr && Instance->GetRoot().FindByName("Banner")->RenderOpacity == 0.0f);
+	Scripts.EndPlay();
+}
+
+// Phase 45: Camera.WorldToScreen/ScreenToWorldRay(UI 레이아웃 좌표) + 위젯 Position/Size + CloneWidget/RemoveWidget
+E_TEST(UIScript_WorldToScreenCloneAndPlaceWidgets)
+{
+	const fs::path Content = GetUIContent();
+	{
+		FUIAsset Asset;
+		Asset.DesignSize = FVector2(400.0f, 300.0f);
+		Asset.ScaleMode  = EUIScaleMode::Fit; // 800x600 뷰포트 → 배율 2 (레이아웃 400x300)
+		FUIWidget* Tag    = Asset.Root->AddChild(FUIWidget::Create(EUIWidgetType::Border));
+		Tag->Name         = "Tag";
+		Tag->Visibility   = EUIVisibility::Collapsed; // 숨긴 템플릿
+		Tag->Slot.Offsets = FUIMargin(0.0f, 0.0f, 40.0f, 10.0f);
+		FUIWidget* Icon   = Tag->AddChild(FUIWidget::Create(EUIWidgetType::Image));
+		Icon->Name        = "Icon";
+		FUIWidget* Stretch      = Asset.Root->AddChild(FUIWidget::Create(EUIWidgetType::Border));
+		Stretch->Name           = "Stretch";
+		Stretch->Slot.AnchorMax = FVector2(1.0f, 0.0f); // 가로 늘이기
+		E_EXPECT_TRUE(Asset.SaveToFile(Content / L"UI/Tags.eui"));
+	}
+	std::ofstream(Content / L"Scripts/Tags.lua", std::ios::binary | std::ios::trunc) << R"(
+local Tags = { Properties = {} }
+function Tags:OnStart()
+	CX, CY, CV = Camera.WorldToScreen(Vector3(1000, 0, 0))          -- 화면 가운데
+	RX, RY, RV = Camera.WorldToScreen(Vector3(1000, 1000, 500))     -- 오른쪽 위 (FOV 90, 4:3)
+	_, _, BV   = Camera.WorldToScreen(Vector3(-1000, 0, 0))         -- 카메라 뒤
+	_, _, OV   = Camera.WorldToScreen(Vector3(1000, 5000, 0))       -- 화면 밖
+	_, _, EV   = Camera.WorldToScreen(Vector3(1000, 0, 0), self.entity) -- UI 엔티티 명시
+	RayO, RayD = Camera.ScreenToWorldRay(200, 150)
+
+	local W = self.entity:CloneWidget("Tag", "Tag_1")
+	W.Visible  = true
+	W.Position = Vector2(RX, RY)
+	W.Size     = Vector2(50, 20)
+	PosX, SizeY = W.Position.X, W.Size.Y
+	ChildFound = self.entity:GetWidget("Tag_1.Icon") ~= nil
+	DupOk = pcall(self.entity.CloneWidget, self.entity, "Tag", "Tag_1")
+	StretchOk = pcall(function() self.entity:GetWidget("Stretch").Position = Vector2(1, 1) end)
+	self.entity:CloneWidget("Tag", "Tag_2")
+	Removed = self.entity:RemoveWidget("Tag_2")
+	RemovedAgain = self.entity:RemoveWidget("Tag_2")
+end
+return Tags
+)";
+
+	FScene            Scene;
+	const FEntity     CameraEntity = Scene.CreateEntity("Camera");
+	FCameraComponent& Camera       = Scene.GetRegistry().Emplace<FCameraComponent>(CameraEntity);
+	Camera.FovYDegrees             = 90.0f;
+	const FEntity Low              = Scene.CreateEntity("LowPriority");
+	Scene.GetRegistry().Emplace<FCameraComponent>(Low).Priority = -1; // 우선순위가 낮은 다른 주 카메라는 무시
+	Scene.GetTransform(Low).Position = FVector3(0.0f, 0.0f, 9999.0f);
+	Scene.UpdateTransforms();
+	const FEntity Entity = Scene.CreateEntity("Tags");
+	Scene.GetRegistry().Emplace<FUIComponent>(Entity).Asset            = "UI/Tags.eui";
+	Scene.GetRegistry().Emplace<FScriptComponent>(Entity).ScriptAsset = "Scripts/Tags.lua";
+
+	FScriptSystem Scripts;
+	Scripts.SetContentDirectory(Content);
+	E_EXPECT_TRUE(Scripts.BeginPlay(Scene));
+	FUISystem::Update(Scene, MakePointer(0.0f, 0.0f, false, false, false), Content);
+	Scripts.Update(0.016f, nullptr);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	E_EXPECT_TRUE(Scripts.RunString("assert(math.abs(CX - 200) < 1e-3 and math.abs(CY - 150) < 1e-3 and CV == true, CX .. ',' .. CY)"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(math.abs(RX - 350) < 1e-2 and math.abs(RY - 75) < 1e-2 and RV == true, RX .. ',' .. RY)"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(BV == false and OV == false and EV == true)"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(math.abs(RayO.X - 10) < 1e-2 and math.abs(RayD.X - 1) < 1e-4 and math.abs(RayD.Y) < 1e-4)"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(math.abs(PosX - RX) < 1e-4 and SizeY == 20 and ChildFound)"));
+	E_EXPECT_TRUE(Scripts.RunString("assert(DupOk == false and StretchOk == false and Removed == true and RemovedAgain == false)"));
+
+	// 쓰기 → 그리기 전에 다시 레이아웃 (같은 프레임)
+	FUIInstance* Instance = Scene.GetRegistry().Get<FUIComponent>(Entity).Runtime.Instance.get();
+	E_EXPECT_TRUE(Instance != nullptr && Instance->IsLayoutDirty());
+	if (Instance == nullptr)
+	{
+		return;
+	}
+	FUIDrawList DrawList;
+	FUISystem::Paint(Scene, DrawList);
+	E_EXPECT_FALSE(Instance->IsLayoutDirty());
+	const FUIWidget* Clone = Instance->FindWidget("Tag_1");
+	E_EXPECT_TRUE(Clone != nullptr && Instance->FindWidget("Tag_2") == nullptr && Instance->FindWidget("Tag")->Visibility == EUIVisibility::Collapsed);
+	if (Clone != nullptr)
+	{
+		E_EXPECT_NEAR(Clone->State.Geometry.Min.X, 350.0f, 1.0e-2f);
+		E_EXPECT_NEAR(Clone->State.Geometry.Min.Y, 75.0f, 1.0e-2f);
+		E_EXPECT_NEAR(Clone->State.Geometry.GetWidth(), 50.0f, 1.0e-3f);
+		// 화면 픽셀 = 레이아웃 × 배율 2 → 월드 점이 투영된 픽셀 (700, 150)
+		const FVector2 Pixel = Instance->GetTransform().ToPixels(Clone->State.Geometry.Min);
+		E_EXPECT_NEAR(Pixel.X, 700.0f, 2.0e-2f);
+		E_EXPECT_NEAR(Pixel.Y, 150.0f, 2.0e-2f);
+	}
 	Scripts.EndPlay();
 }

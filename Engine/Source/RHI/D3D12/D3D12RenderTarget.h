@@ -61,6 +61,7 @@ struct FRenderOutput
 	DXGI_FORMAT                 Format = DXGI_FORMAT_UNKNOWN;
 	uint32                      Width  = 0;
 	uint32                      Height = 0;
+	ID3D12Resource*             Resource = nullptr; // 렌더 그래프가 가져오는 리소스 (RENDER_TARGET 상태로 넘겨받고 그 상태로 돌려준다, 없으면 추적 안 함)
 
 	bool IsValid() const { return Rtv.ptr != 0 && Width > 0 && Height > 0; }
 };
@@ -81,6 +82,9 @@ public:
 	void Begin(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4], bool bClearDepth = true);
 	// 픽셀 셰이더 리소스 상태로 전이 (이후 SRV로 샘플링 가능)
 	void End(ID3D12GraphicsCommandList* CommandList);
+	// 렌더 그래프 패스용: 상태 전이 없이 바인딩 + 클리어(nullptr이면 생략) + 뷰포트/시저. 색은 RENDER_TARGET, 깊이(bBindDepth)는
+	// DEPTH_WRITE 상태여야 한다 (그래프가 패스 앞에서 전이). bBindDepth = false면 깊이 없이 색만
+	void Bind(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4], bool bClearDepth = false, bool bBindDepth = true) const;
 
 	// 현재 상태 그대로 렌더 타깃으로 쓰일 출력 정보 (Begin 이후 사용)
 	FRenderOutput GetOutput() const;

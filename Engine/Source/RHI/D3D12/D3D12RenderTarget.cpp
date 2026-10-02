@@ -144,12 +144,40 @@ void FD3D12RenderTarget::End(ID3D12GraphicsCommandList* CommandList)
 	bInRenderState = false;
 }
 
+void FD3D12RenderTarget::Bind(ID3D12GraphicsCommandList* CommandList, const float ClearColor[4], bool bClearDepth, bool bBindDepth) const
+{
+	E_CHECKF(ColorResource != nullptr, "렌더 타깃이 없습니다");
+	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = RtvHeap.GetCpuHandle(0);
+	if (Desc.bWithDepth && bBindDepth)
+	{
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
+		CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
+		if (bClearDepth)
+		{
+			CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+		}
+	}
+	else
+	{
+		CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+	}
+	if (ClearColor != nullptr)
+	{
+		CommandList->ClearRenderTargetView(Rtv, ClearColor, 0, nullptr);
+	}
+	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height), D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+	const D3D12_RECT     Scissor{ 0, 0, static_cast<LONG>(Width), static_cast<LONG>(Height) };
+	CommandList->RSSetViewports(1, &Viewport);
+	CommandList->RSSetScissorRects(1, &Scissor);
+}
+
 FRenderOutput FD3D12RenderTarget::GetOutput() const
 {
 	FRenderOutput Output;
-	Output.Rtv    = RtvHeap.GetCpuHandle(0);
-	Output.Format = Desc.RtvFormat;
-	Output.Width  = Width;
-	Output.Height = Height;
+	Output.Rtv      = RtvHeap.GetCpuHandle(0);
+	Output.Format   = Desc.RtvFormat;
+	Output.Width    = Width;
+	Output.Height   = Height;
+	Output.Resource = ColorResource.Get();
 	return Output;
 }

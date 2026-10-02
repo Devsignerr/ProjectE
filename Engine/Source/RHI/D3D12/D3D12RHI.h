@@ -68,8 +68,23 @@ public:
 
 	FD3D12Device&              GetDevice() { return Device; }
 	FD3D12CommandQueue&        GetGraphicsQueue() { return GraphicsQueue; }
+	FD3D12CommandQueue&        GetComputeQueue() { return ComputeQueue; }
 	FD3D12SwapChain&           GetSwapChain() { return SwapChain; }
+	// 프레임 그래픽스 명령 목록. SubmitGraphicsCommands로 중간 제출해도 같은 객체(새 할당자로 Reset)이므로 포인터를 들고 있어도 된다
 	ID3D12GraphicsCommandList* GetCommandList() const { return CommandList.Get(); }
+
+	// ---- 프레임 중간 제출 / 비동기 계산 (렌더 그래프 — Renderer/RenderGraph/RenderGraph.h)
+	// 지금까지 기록한 그래픽스 명령을 닫아 실행하고 그래픽스 큐 펜스 값을 돌려준다. 명령 목록은 같은 프레임 슬롯의 새 할당자로
+	// 다시 열리고 셰이더 가시 힙이 다시 바인딩된다 (그 밖의 파이프라인 상태·렌더 타깃 바인딩은 사라진다)
+	uint64 SubmitGraphicsCommands();
+	// 계산 큐 명령 목록 기록 시작: 계산 큐가 그래픽스 펜스 WaitGraphicsFence(0이면 대기 없음)를 기다린 뒤 실행된다
+	ID3D12GraphicsCommandList* BeginComputeCommands(uint64 WaitGraphicsFence);
+	// 계산 명령을 제출하고 계산 큐 펜스 값을 돌려준다 (이후 그래픽스 큐가 WaitForCompute로 기다린다)
+	uint64 SubmitComputeCommands();
+	// 이후 그래픽스 큐 제출이 계산 큐 펜스 값까지 기다리게 한다 (보통 SubmitGraphicsCommands 직후)
+	void WaitForCompute(uint64 ComputeFence);
+	// 이번 프레임 그래픽스 명령 목록 제출 횟수 (EndFrame 포함, 통계용)
+	uint32 GetGraphicsSubmitCount() const { return GraphicsSubmitsThisFrame; }
 
 	// 현재 프레임의 동적 업로드 버퍼 (BeginFrame 이후 유효)
 	FD3D12DynamicUploadBuffer& GetDynamicBuffer() { return DynamicBuffers[CurrentBackBufferIndex]; }
@@ -99,9 +114,15 @@ private:
 	};
 
 	void ProcessPendingReleases(FPendingReleases& Pending);
+	// 프레임 슬롯의 할당자 풀에서 다음 할당자 (없으면 만든다)
+	ID3D12CommandAllocator* AcquireAllocator(std::vector<ComPtr<ID3D12CommandAllocator>>& Pool, uint32& Used, D3D12_COMMAND_LIST_TYPE Type,
+	                                         const wchar_t* Prefix);
+	// 업로드 큐 제출 + 그래픽스 큐가 업로드 완료를 기다리게 (프레임 명령 제출 직전마다)
+	void WaitForUploadsBeforeSubmit();
 
 	FD3D12Device              Device;
 	FD3D12CommandQueue        GraphicsQueue;
+	FD3D12CommandQueue        ComputeQueue; // 비동기 계산 (렌더 그래프)
 	FD3D12SwapChain           SwapChain;
 	FD3D12DepthBuffer         DepthBuffer;
 	FD3D12DescriptorAllocator SrvAllocator;
@@ -109,13 +130,21 @@ private:
 	std::vector<std::pair<uint32, std::function<void()>>> BeginFrameCallbacks;
 	uint32                                                NextBeginFrameCallbackId = 1;
 
-	// 백버퍼마다 별도 할당자/동적 버퍼: GPU가 사용 중인 프레임의 메모리를 덮어쓰지 않기 위함
-	ComPtr<ID3D12CommandAllocator>    CommandAllocators[FrameCount];
+	// 백버퍼마다 별도 할당자/동적 버퍼: GPU가 사용 중인 프레임의 메모리를 덮어쓰지 않기 위함.
+	// 할당자는 슬롯마다 풀 (프레임 중간 제출마다 하나씩 더 쓴다 — BeginFrame에서 그 슬롯의 쓴 것만 Reset)
+	std::vector<ComPtr<ID3D12CommandAllocator>> CommandAllocators[FrameCount];
+	std::vector<ComPtr<ID3D12CommandAllocator>> ComputeAllocators[FrameCount];
+	uint32                            UsedCommandAllocators[FrameCount] = {};
+	uint32                            UsedComputeAllocators[FrameCount] = {};
 	FD3D12DynamicUploadBuffer         DynamicBuffers[FrameCount];
 	FPendingReleases                  PendingReleases[FrameCount];
 	FPendingReleases                  RecordingReleases; // 다음 EndFrame에 제출 프레임 칸으로 옮겨짐
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
-	uint64                            FrameFenceValues[FrameCount] = {};
+	ComPtr<ID3D12GraphicsCommandList> ComputeCommandList;
+	bool                              bComputeRecording = false;
+	uint64                            FrameFenceValues[FrameCount]   = {};
+	uint64                            ComputeFenceValues[FrameCount] = {}; // 슬롯이 마지막으로 제출한 계산 펜스 값
+	uint32                            GraphicsSubmitsThisFrame       = 0;
 
 	std::filesystem::path PendingScreenshot;
 	bool                  WriteScreenshot(ID3D12Resource* Readback, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& Footprint);

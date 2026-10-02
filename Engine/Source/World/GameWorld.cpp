@@ -9,6 +9,7 @@
 #include "Online/SteamSubsystem.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
+#include "Renderer/DebugDraw.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/GameModuleHost.h"
@@ -168,6 +169,25 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 		[&Steam](const std::string& Dialog) { return Steam.ActivateOverlay(Dialog); },
 		[&Steam]() { return Steam.IsOverlayActive(); },
 	});
+	// Lua Debug 테이블 → FDebugDraw (엔진 DLL 전역, 게임 모듈과 같은 저장소). GPU 없는 앱은 BeginPlay에서 꺼서 무시된다
+	FDebugDraw& DebugDraw = FDebugDraw::Get();
+	Systems.Scripts->SetDebugDrawHooks({
+		[&DebugDraw](const FVector3& Start, const FVector3& End, const FVector4& Color, float Duration, bool bDepthTest) {
+			DebugDraw.DrawLine(Start, End, Color, Duration, bDepthTest);
+		},
+		[&DebugDraw](const FVector3& From, const FVector3& To, const FVector4& Color, float Duration, bool bDepthTest) {
+			DebugDraw.DrawArrow(From, To, Color, Duration, bDepthTest);
+		},
+		[&DebugDraw](const FVector3& Center, const FVector3& HalfExtents, const FQuat& Rotation, const FVector4& Color, float Duration, bool bDepthTest) {
+			DebugDraw.DrawBox(Center, HalfExtents, Rotation, Color, Duration, bDepthTest);
+		},
+		[&DebugDraw](const FVector3& Center, float Radius, const FVector4& Color, float Duration, bool bDepthTest) {
+			DebugDraw.DrawSphere(Center, Radius, Color, Duration, bDepthTest);
+		},
+		[&DebugDraw](const FVector3& Center, float Radius, float HalfHeight, const FQuat& Rotation, const FVector4& Color, float Duration, bool bDepthTest) {
+			DebugDraw.DrawCapsule(Center, Radius, HalfHeight, Rotation, Color, Duration, bDepthTest);
+		},
+	});
 
 	FPhysicsSystem* Physics = Systems.Physics;
 	if (Physics == nullptr)
@@ -260,6 +280,9 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	PredictionStats        = {};
 	PredictionStats.bEnabled = InMode == ENetMode::Client && FCommandLine::FromProcess().HasFlag(L"--net-physics-stats");
 	InstallScriptNetHooks();
+	// 3D 디버그 선: 이전 플레이 것은 지우고, GPU(Resources) 없는 앱(전용 서버)은 그리기 호출을 무시한다
+	FDebugDraw::Get().Clear();
+	FDebugDraw::Get().SetEnabled(Systems.Resources != nullptr);
 
 	const bool bClient = Mode == ENetMode::Client;
 	if (Systems.Physics != nullptr)
@@ -319,6 +342,7 @@ void FGameWorld::EndPlay()
 		Systems.Physics->End();
 	}
 	ClearSubScenes();
+	FDebugDraw::Get().Clear(); // 플레이 정지 후 편집 화면에 남지 않게
 	Scene = nullptr;
 }
 
@@ -330,6 +354,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		return;
 	}
 	TickLocalInput = Input;
+	FDebugDraw::Get().Tick(DeltaSeconds); // 지난 틱에 그린 디버그 선 수명 (지속 시간 0 = 여기서 사라짐), 이번 틱 스크립트/게임 모듈이 다시 그린다
 	if (Mode == ENetMode::Client && Input != nullptr)
 	{
 		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다

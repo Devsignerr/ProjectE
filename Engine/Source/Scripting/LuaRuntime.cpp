@@ -150,6 +150,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterPhysicsBindings();
 	RegisterSequenceBindings();
 	RegisterTimerBindings();
+	RegisterDebugDrawBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()

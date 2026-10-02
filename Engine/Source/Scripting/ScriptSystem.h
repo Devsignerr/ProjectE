@@ -166,6 +166,21 @@ struct FScriptSteamHooks
 	std::function<bool()>                         IsOverlayActive;
 };
 
+// 스크립트가 쓰는 3D 디버그 그리기 (Lua Debug 테이블). FGameWorld가 Renderer의 FDebugDraw와 연결한다 (Scripting은 Renderer 비의존).
+// 단위 cm, 색 = sRGB 0~1 (RGBA), Duration 초 (0 = 한 프레임), bDepthTest = false면 항상 위. 비어 있으면 무시
+struct FScriptDebugDrawHooks
+{
+	std::function<void(const FVector3& Start, const FVector3& End, const FVector4& Color, float Duration, bool bDepthTest)> DrawLine;
+	std::function<void(const FVector3& From, const FVector3& To, const FVector4& Color, float Duration, bool bDepthTest)>   DrawArrow;
+	std::function<void(const FVector3& Center, const FVector3& HalfExtents, const FQuat& Rotation, const FVector4& Color, float Duration,
+	                   bool bDepthTest)>
+		DrawBox;
+	std::function<void(const FVector3& Center, float Radius, const FVector4& Color, float Duration, bool bDepthTest)> DrawSphere;
+	std::function<void(const FVector3& Center, float Radius, float HalfHeight, const FQuat& Rotation, const FVector4& Color, float Duration,
+	                   bool bDepthTest)>
+		DrawCapsule;
+};
+
 // 이름 붙은 값 목록 → Lua 테이블 하나 (InvokeMethodWithFields의 마지막 인자: 충돌 정보 등)
 using FScriptEventFields = std::vector<std::pair<std::string, FGameRpcValue>>;
 
@@ -225,6 +240,7 @@ public:
 	void SetAIHooks(FScriptAIHooks Hooks);
 	void SetAppHooks(FScriptAppHooks Hooks);
 	void SetSteamHooks(FScriptSteamHooks Hooks);
+	void SetDebugDrawHooks(FScriptDebugDrawHooks Hooks);
 
 	// ---- 스크립트 객체 (컴포넌트 없이 스크립트 클래스의 인스턴스를 만든다 — Lua 비헤이비어 트리 노드용)
 	// self.entity = Entity, self.Properties = 선언 기본값 + PropertyOverrides(JSON, FScriptComponent와 같은 형식).
@@ -270,6 +286,7 @@ private:
 	FScriptAIHooks               AIHooks;
 	FScriptAppHooks              AppHooks;
 	FScriptSteamHooks            SteamHooks;
+	FScriptDebugDrawHooks        DebugDrawHooks;
 	std::unique_ptr<FLuaRuntime> PlayRuntime;  // 플레이 중에만 존재
 	uint32                       PlaySession = 0; // BeginPlay마다 증가 (스크립트 객체 핸들 상위 32비트)
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)

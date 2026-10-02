@@ -17,6 +17,8 @@
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "Renderer/Camera.h"
+#include "Renderer/DebugDraw.h"
+#include "Renderer/DebugDrawRenderer.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Renderer/StaticMesh.h"
@@ -37,6 +39,8 @@
 #include <algorithm>
 #include <cwctype>
 #include <limits>
+
+E_DECLARE_LOG_CATEGORY(LogEditor)
 
 namespace
 {
@@ -220,6 +224,7 @@ void FViewportPanel::Shutdown()
 {
 	UIRenderer.reset();
 	NavMeshDebug.reset();
+	DebugDrawRenderer.reset();
 	Grid.reset();
 	SelectionOutline.reset();
 	RenderTarget.reset();
@@ -386,6 +391,7 @@ void FViewportPanel::RenderScene(FEditorContext& Context)
 		RenderGrid(Context);
 	}
 	RenderNavMeshDebug(Context);
+	RenderDebugDraw(Context);
 	if (SelectionOutline)
 	{
 		SelectionOutline->Render(*Context.Scene, *Context.Resources, *Context.Camera, Context.Selection.GetEntities(), RenderTarget->GetOutput(),
@@ -414,7 +420,8 @@ bool FViewportPanel::ReloadShaders(bool bForceRecompile)
 	const bool bGridOk    = !Grid || Grid->ReloadShaders(bForceRecompile);
 	const bool bUIOk      = !UIRenderer || UIRenderer->ReloadShaders(bForceRecompile);
 	const bool bNavOk     = !NavMeshDebug || NavMeshDebug->ReloadShaders(bForceRecompile);
-	return bOutlineOk && bGridOk && bUIOk && bNavOk;
+	const bool bDebugOk   = !DebugDrawRenderer || DebugDrawRenderer->ReloadShaders(bForceRecompile);
+	return bOutlineOk && bGridOk && bUIOk && bNavOk && bDebugOk;
 }
 
 void FViewportPanel::SetNavMeshTriangles(std::vector<FVector3> Triangles)
@@ -462,6 +469,32 @@ void FViewportPanel::RenderNavMeshDebug(FEditorContext& Context)
 		return; // 씬 깊이를 쓸 수 없는 모드 (픽셀 아트 등)
 	}
 	NavMeshDebug->Render(*Context.Camera, RenderTarget->GetOutput(), SceneColor->GetDsv(), true);
+}
+
+void FViewportPanel::RenderDebugDraw(FEditorContext& Context)
+{
+	const FDebugDraw& Lines = FDebugDraw::Get();
+	if (Lines.GetLines().empty())
+	{
+		return;
+	}
+	if (!DebugDrawRenderer)
+	{
+		DebugDrawRenderer = std::make_unique<FDebugDrawRenderer>();
+		if (!DebugDrawRenderer->Init(*Context.Rhi, Context.Renderer->GetShaderLibrary()))
+		{
+			E_LOG(LogEditor, Error, "디버그 선 렌더러 초기화 실패");
+		}
+	}
+	if (!DebugDrawRenderer->IsInitialized())
+	{
+		return; // 셰이더 오류: 매 프레임 다시 시도하지 않는다 (셰이더 다시 로드로는 복구 안 됨 — 에디터 재시작)
+	}
+	// 씬 깊이는 뷰포트와 같은 크기일 때만 (픽셀 아트 모드는 깊이 테스트 선을 그리지 않는다)
+	const FD3D12RenderTarget* SceneColor = Context.Renderer->GetSceneColor();
+	const bool bDepth = SceneColor != nullptr && SceneColor->GetDesc().bWithDepth && SceneColor->GetWidth() == RenderTarget->GetWidth() &&
+	                    SceneColor->GetHeight() == RenderTarget->GetHeight();
+	DebugDrawRenderer->Render(Lines, *Context.Camera, RenderTarget->GetOutput(), bDepth ? SceneColor->GetDsv() : D3D12_CPU_DESCRIPTOR_HANDLE{});
 }
 
 FUIRect FViewportPanel::GetGameUIViewport() const

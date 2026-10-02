@@ -11,6 +11,8 @@
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "RHI/D3D12/D3D12RenderTarget.h"
+#include "Renderer/DebugDraw.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -129,6 +131,10 @@ bool FRuntimeApplication::OnInit()
 	RegisterAITypes();
 	RegisterNetworkTypes();
 	RegisterUITypes();
+	if (!DebugDrawRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary()))
+	{
+		E_LOG(LogRuntime, Warning, "디버그 선 렌더러 초기화 실패: 3D 디버그 선을 그리지 않습니다");
+	}
 	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
 	{
 		E_LOG(LogRuntime, Warning, "UI 렌더러 초기화 실패: 게임 UI를 그리지 않습니다");
@@ -309,6 +315,13 @@ void FRuntimeApplication::OnRender()
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
+	{
+		// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만)
+		const FRenderOutput       Back       = Rhi->GetBackBufferOutput();
+		const FD3D12RenderTarget* SceneColor = SceneRenderer.GetSceneColor();
+		const bool bDepth = SceneColor != nullptr && SceneColor->GetDesc().bWithDepth && SceneColor->GetWidth() == Back.Width && SceneColor->GetHeight() == Back.Height;
+		DebugDrawRenderer.Render(FDebugDraw::Get(), Camera, Back, bDepth ? SceneColor->GetDsv() : D3D12_CPU_DESCRIPTOR_HANDLE{});
+	}
 	UIDrawList.Clear();
 	FUISystem::Paint(Scene, UIDrawList);
 	// 화면 통계(stat fps/gpu)와 콘솔은 게임 UI 위에
@@ -375,6 +388,7 @@ void FRuntimeApplication::OnShutdown()
 	if (Rhi)
 	{
 		UIRenderer.Shutdown();
+		DebugDrawRenderer.Shutdown();
 		SceneRenderer.Shutdown();
 		Resources.Shutdown();
 		Rhi->Shutdown();

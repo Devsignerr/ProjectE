@@ -79,6 +79,7 @@ public:
 	void SetAIHooks(const FScriptAIHooks* InHooks) { AIHooks = InHooks; }                // 〃
 	void SetAppHooks(const FScriptAppHooks* InHooks) { AppHooks = InHooks; }             // 〃
 	void SetSteamHooks(const FScriptSteamHooks* InHooks) { SteamHooks = InHooks; }       // 〃
+	void SetDebugDrawHooks(const FScriptDebugDrawHooks* InHooks) { DebugDrawHooks = InHooks; } // 〃
 	void SetPersistentValues(FScriptValueMap* InValues) { PersistentValues = InValues; } // 〃 (Game.SetPersistent)
 
 	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
@@ -165,6 +166,7 @@ private:
 
 	// ---- 타이머/코루틴 (ScriptTimerBindings.cpp)
 	void             RegisterTimerBindings();                                // Timer/Coroutine 테이블, Wait/WaitFrames/WaitUntil
+	void             RegisterDebugDrawBindings();                            // Debug 테이블 (ScriptDebugDrawBindings.cpp)
 	void             UpdateTasks(float DeltaSeconds, const FInput* InInput); // Update 3단계(OnUpdate) 뒤: 타이머 발사, 코루틴 재개
 	void             ClearInstanceTasks(FScriptInstance& Instance);          // 인스턴스의 타이머/코루틴 모두 취소
 	FScriptInstance& RequireCurrentInstance(const char* ApiName);            // 인스턴스 코드 밖이면 std::runtime_error
@@ -236,6 +238,7 @@ private:
 	const FScriptAIHooks*      AIHooks      = nullptr;
 	const FScriptAppHooks*     AppHooks     = nullptr;
 	const FScriptSteamHooks*   SteamHooks   = nullptr;
+	const FScriptDebugDrawHooks* DebugDrawHooks = nullptr;
 	FScriptValueMap*           PersistentValues = nullptr;
 	FVector2                   LocalControlRotation; // 훅이 없을 때(테스트) Net.SetControlRotation 값
 

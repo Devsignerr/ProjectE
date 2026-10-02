@@ -798,8 +798,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 설계: 씬 파일(`Demo_PixelArt.escene`) 충돌을 피하려고 트랙은 프리팹(`Prefabs/RPG/`)·스크립트(`Scripts/RPG/`)·UI(`UI/RPG/`)·자기 테스트 씬만 만들고, 씬 통합(배치·내비메시 굽기·HUD 연결)은 메인이 마지막에 한다. 트랙 간 계약: 씬의 `GameManager` 엔티티 스크립트(`Scripts/RPG/GameManager.lua`, 트랙 D 소유)가 골드/인벤토리/아이템 정의/전리품 생성/알림을 제공하고 다른 트랙은 `Scene.Find("GameManager")`가 없을 때도 동작하게 쓴다. 플레이어 스크립트(트랙 B)는 체력(`HealthComponent`)·마나/스태미나·장비 교체·물약 사용 메서드를 공개한다. 외부 에셋은 CC0만(출처·라이선스 파일 동봉).
 
-- [~] 45-A. 엔진: Lua 모듈 불러오기(`Script.Require`), 월드 → 화면 좌표(Lua), UI 위젯 위치/크기 스크립트 제어 + 템플릿 복제 (트랙 A)
-- [~] 45-B. 플레이어 전투·모션: 이동(걷기/달리기/전력질주) 블렌드, 구르기, 3연타 콤보(노티파이로 타격 시점), 스킬 2개(회전베기 범위, 돌진 찌르기), 피격/사망, 스태미나·마나, 무기 장착(소켓), 타격 이펙트·효과음 (트랙 B)
-- [~] 45-C. 적: 스켈레톤 4종 프리팹(체력, BT 순찰 → 발견 → 추격 → 공격, 마법사는 투사체), 피격·사망 모션, 전리품 드롭, 스포너 재등장 (트랙 C)
-- [~] 45-D. 아이템/인벤토리/상인/HUD: 아이템 정의, 인벤토리·장비, 줍기(코인·물약·무기), 상인 NPC 상점 UI, HUD(체력/마나/스태미나 바, 골드, 스킬·물약 단축칸 쿨다운), 인벤토리 창, 아이콘(CC0) (트랙 D)
-- [ ] 45-E. 통합(메인): Demo_PixelArt 배치, 내비메시 굽기, 적 머리 위 체력바·데미지 숫자, 밸런스, 화면 검증
+- [x] 45-A. 엔진: `Script.Require`(상태별 캐시, 순환 오류, 핫 리로드 전파), `Camera.WorldToScreen/ScreenToWorldRay`(게임 UI 레이아웃 좌표, 픽셀 아트 포함), 위젯 `Position/Size`, `CloneWidget/RemoveWidget`. 테스트 `ScriptModule_*`/`CameraProjection_*`/UI 편집, 검증 씬 `RPG_Test_EngineAPI(_PixelArt)` (트랙 A)
+- [x] 45-B. 플레이어 `Scripts/RPG/PlayerController.lua` + `Prefabs/RPG/Player.eprefab`: 가감속·몸 방향 보간(PlayerMesh 로컬 회전)·질주, 발 속도 맞춘 블렌드(Running_A 345cm/s), 3연타(AttackHit 노티파이, 달리며 상체 슬롯), Q 회전베기·R 돌진 찌르기·Space 구르기(무적)·막기(Block 레이어), 피격/사망/Respawn, 마나·스태미나, 무기·방패 소켓(KnightBare.glb), 파티클 5종, 효과음 WAV(절차 생성 — miniaudio에 Vorbis 없음) (트랙 B)
+- [x] 45-C. 적 `Scripts/RPG/EnemyController.lua`(Lua 상태 머신 + `entity:MoveTo`, BT 미사용): 전사/졸개/도적(석궁)/마법사(유도탄 + 광역 예고), 등장·깨어남·순찰·발견(동료 경보)·포위 고리·피격 경직(Poise)·리시·사망 + 전리품, `EnemySpawner`, 그래프 `Skeleton(Crossbow).eanimgraph`, 스켈레톤 `.emeta` 노티파이 Hit/Shoot/Cast, 레이어 `Enemy`(Enemy×Enemy 끔) (트랙 C)
+- [x] 45-D. `GameManager.lua`(아이템 17종·전리품 표·20칸 가방·장비·저장 `RPGDemo`), 줍기(`Pickup`, 자석·포물선), 상인(`Merchant`, 상점 구매/판매), HUD/가방/상점 `.eui`(`GameSystems.eprefab`), 아이콘 7Soul CC0, Kenney 효과음 CC0(wav 변환) (트랙 D)
+- [x] 45-E. 통합: Demo_PixelArt에 Player/GameSystems/Merchant 프리팹(번호 32~34 유지), 던전 적 3 + 스포너, 길목·숲 스포너, `.enav` 굽기, HUD 머리 위 체력바·데미지 숫자(`GameManager:TrackEnemy` → HUD 위젯 복제 + WorldToScreen), 새 게임 기본 장비 버그 수정, 방패 방어력 1~4, 중복 데미지 숫자 제거 (2026-10-03: Debug 11개 묶음 통과, Release 빌드, 런타임 전투(발견→피격→3연타→사망→골드 줍기)·에디터 플레이 화면·디버그 레이어 0건)
+- [ ] 실행 검증 (사용자): 직접 플레이 손맛(콤보·스킬·구르기·막기), 상인 거래, 가방/장비, 사망·부활, 밸런스
+- 후속: 막기·방어력은 ApplyDamage 뒤 Heal로 되돌리는 방식(감소 전 피해로 죽는 일격은 못 막음), 적끼리·적과 플레이어 물리적 밀어내기 없음(포위 고리로만 간격), 다국어 키 미사용(한국어 고정), 개발 런타임 ESC = 종료라 창은 E/I/Tab으로 닫음, 효과음은 절차 생성음, 체력바 글자 720p에서 작음

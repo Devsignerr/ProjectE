@@ -199,6 +199,7 @@ private:
 	void RegisterSequenceBindings(); // entity:PlaySequence/StopSequence 등 (ScriptSequenceBindings.cpp)
 	void RegisterModuleBindings();   // Script.Require (ScriptModuleBindings.cpp)
 	void RegisterCameraBindings();   // Camera.WorldToScreen/ScreenToWorldRay (ScriptCameraBindings.cpp)
+	void RegisterDataBindings();     // Data.GetRow/GetRows/Load 등 데이터 테이블·에셋 (ScriptDataBindings.cpp)
 	// 직전 시퀀스 갱신의 이벤트 → OnSequenceEvent_<이름>, OnSequenceFinished (ScriptSequenceBindings.cpp)
 	void DispatchSequenceEvents();
 	// 직전 애니메이션 갱신에서 끝난 몽타주 → OnMontageEnded(clip, interrupted, slot) (ScriptAnimationBindings.cpp)

@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Name": "Balance",
+  "Description": "예제 게임 밸런스 값 (Balance.edata)",
+  "Fields": [
+    {"Name":"StartGold","Type":"Int","Default":0},
+    {"Name":"StarterWeapon","Type":"RowRef","Table":"Data/Samples/Weapons.etable","Default":""},
+    {"Name":"XpPerLevel","Type":"Array","Element":"Int","Default":[]},
+    {"Name":"DifficultyScale","Type":"Vector2","Default":[1,1],"Description":"(적 체력 배율, 적 피해 배율)"},
+    {"Name":"HudColor","Type":"Color","Default":[1,1,1,1]}
+  ]
+}

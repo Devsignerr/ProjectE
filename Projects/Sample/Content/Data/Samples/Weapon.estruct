@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Name": "Weapon",
+  "Description": "예제 무기 행 구조체 (Weapons.etable)",
+  "Fields": [
+    {"Name":"DisplayName","Type":"String","Default":"","Description":"화면 표시 이름"},
+    {"Name":"Description","Type":"Text","Default":""},
+    {"Name":"Damage","Type":"Float","Default":10,"Description":"한 번 공격 피해"},
+    {"Name":"AttackSpeed","Type":"Float","Default":1,"Description":"초당 공격 횟수"},
+    {"Name":"Price","Type":"Int","Default":0},
+    {"Name":"Rarity","Type":"Enum","Values":["Common","Rare","Epic","Legendary"],"Default":"Common"},
+    {"Name":"TwoHanded","Type":"Bool","Default":false},
+    {"Name":"Icon","Type":"Asset","Filter":".png","Default":""},
+    {"Name":"Tint","Type":"Color","Default":[1,1,1,1]},
+    {"Name":"GripOffset","Type":"Vector3","Default":[0,0,0]},
+    {"Name":"UpgradesTo","Type":"RowRef","Table":"Data/Samples/Weapons.etable","Default":"","Description":"강화 결과 (빈 값 = 없음)"},
+    {"Name":"Tags","Type":"Array","Element":"String","Default":[]}
+  ]
+}

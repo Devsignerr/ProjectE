@@ -1,0 +1,10 @@
+{
+  "Version": 1,
+  "Struct": "Data/Samples/Weapon.estruct",
+  "Rows": [
+    {"Name":"Sword","Values":{"DisplayName":"검","Description":"균형 잡힌 한손검","Damage":12,"AttackSpeed":1.2,"Price":50,"Rarity":"Common","TwoHanded":false,"Icon":"Asset/Icons/7Soul_RPG_Icons/W_Sword001.png","Tint":[1,1,1,1],"GripOffset":[0,0,0],"UpgradesTo":"Greatsword","Tags":["melee","blade"]}},
+    {"Name":"Greatsword","Values":{"DisplayName":"대검","Description":"느리지만 강한 양손검","Damage":30,"AttackSpeed":0.6,"Price":180,"Rarity":"Rare","TwoHanded":true,"Icon":"Asset/Icons/7Soul_RPG_Icons/W_Sword007.png","Tint":[1,0.85,0.7,1],"GripOffset":[0,0,-10],"UpgradesTo":"","Tags":["melee","blade","heavy"]}},
+    {"Name":"Dagger","Values":{"DisplayName":"단검","Description":"빠른 찌르기","Damage":6,"AttackSpeed":2,"Price":30,"Rarity":"Common","TwoHanded":false,"Icon":"Asset/Icons/7Soul_RPG_Icons/W_Dagger002.png","Tint":[1,1,1,1],"GripOffset":[0,0,0],"UpgradesTo":"Sword","Tags":["melee","fast"]}},
+    {"Name":"Axe","Values":{"DisplayName":"도끼","Description":"방패를 부수는 도끼","Damage":18,"AttackSpeed":0.9,"Price":90,"Rarity":"Epic","TwoHanded":false,"Icon":"Asset/Icons/7Soul_RPG_Icons/W_Axe001.png","Tint":[0.9,0.9,1,1],"GripOffset":[0,0,0],"UpgradesTo":"","Tags":["melee"]}}
+  ]
+}

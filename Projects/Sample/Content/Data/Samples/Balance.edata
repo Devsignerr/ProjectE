@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Struct": "Data/Samples/Balance.estruct",
+  "Values": {
+    "StartGold": 50,
+    "StarterWeapon": "Dagger",
+    "XpPerLevel": [100,250,500,900],
+    "DifficultyScale": [1.2,1],
+    "HudColor": [1,0.85,0.3,1]
+  }
+}

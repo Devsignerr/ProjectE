@@ -72,17 +72,23 @@ FMaterialDepthPipelines::~FMaterialDepthPipelines()
 
 void FMaterialDepthPipelines::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, const wchar_t* InDebugName)
 {
-	Rhi           = &InRhi;
-	ShaderLibrary = &InShaderLibrary;
-	DebugName     = InDebugName;
+	Rhi                  = &InRhi;
+	State                = std::make_unique<FState>();
+	State->ShaderLibrary = &InShaderLibrary;
+	State->DebugName     = InDebugName;
 }
 
 void FMaterialDepthPipelines::SetBaseDesc(const FGraphicsPipelineDesc& Desc)
 {
+	if (!State)
+	{
+		return;
+	}
+	const FGraphicsPipelineDesc& BaseDesc = State->BaseDesc;
 	const bool bSame = BaseDesc.RootSignature == Desc.RootSignature && BaseDesc.DepthBias == Desc.DepthBias &&
 	                   BaseDesc.SlopeScaledDepthBias == Desc.SlopeScaledDepthBias && BaseDesc.bDepthClip == Desc.bDepthClip &&
 	                   BaseDesc.DepthStencilFormat == Desc.DepthStencilFormat && BaseDesc.CullMode == Desc.CullMode;
-	BaseDesc = Desc;
+	State->BaseDesc = Desc;
 	if (!bSame)
 	{
 		Reset();
@@ -91,11 +97,11 @@ void FMaterialDepthPipelines::SetBaseDesc(const FGraphicsPipelineDesc& Desc)
 
 ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader, bool bSkinned)
 {
-	if (Rhi == nullptr || BaseDesc.RootSignature == nullptr)
+	if (Rhi == nullptr || !State || State->BaseDesc.RootSignature == nullptr)
 	{
 		return nullptr;
 	}
-	std::unique_ptr<FEntry>& Entry = Entries[Shader.Hash];
+	std::unique_ptr<FEntry>& Entry = State->Entries[Shader.Hash];
 	if (!Entry)
 	{
 		Entry = std::make_unique<FEntry>();
@@ -109,16 +115,16 @@ ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader,
 		VertexDesc.EntryPoint               = bSkinned ? L"ShadowMaterialSkinnedVS" : L"ShadowMaterialVS";
 		VertexDesc.Stage                    = EShaderStage::Vertex;
 		const FShaderCompileDesc PixelDesc  = MaterialRender::MakeGraphShaderDesc(L"Shadow.hlsl", L"ShadowMaterialPS", EShaderStage::Pixel, Shader);
-		const ComPtr<IDxcBlob>   VertexBlob = ShaderLibrary->GetShader(VertexDesc);
-		const ComPtr<IDxcBlob>   PixelBlob  = ShaderLibrary->GetShader(PixelDesc);
+		const ComPtr<IDxcBlob>   VertexBlob = State->ShaderLibrary->GetShader(VertexDesc);
+		const ComPtr<IDxcBlob>   PixelBlob  = State->ShaderLibrary->GetShader(PixelDesc);
 		bool                     bOk        = VertexBlob && PixelBlob;
 		if (bOk)
 		{
-			FGraphicsPipelineDesc Desc = BaseDesc;
+			FGraphicsPipelineDesc Desc = State->BaseDesc;
 			Desc.VertexShader          = FD3D12ShaderCompiler::ToBytecode(VertexBlob.Get());
 			Desc.PixelShader           = FD3D12ShaderCompiler::ToBytecode(PixelBlob.Get());
 			Desc.InputLayout           = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
-			const std::wstring Name    = std::format(L"{}{}_{:016x}", DebugName, bSkinned ? L"Skinned" : L"", Shader.Hash);
+			const std::wstring Name    = std::format(L"{}{}_{:016x}", State->DebugName, bSkinned ? L"Skinned" : L"", Shader.Hash);
 			bOk                        = Entry->Pipelines[Index].InitGraphics(Rhi->GetDevice().GetDevice(), Desc, Name.c_str());
 		}
 		if (!bOk)
@@ -132,7 +138,11 @@ ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader,
 
 void FMaterialDepthPipelines::Reset()
 {
-	for (auto& [Hash, Entry] : Entries)
+	if (!State)
+	{
+		return;
+	}
+	for (auto& [Hash, Entry] : State->Entries)
 	{
 		for (FD3D12PipelineState& Pipeline : Entry->Pipelines)
 		{
@@ -142,12 +152,11 @@ void FMaterialDepthPipelines::Reset()
 			}
 		}
 	}
-	Entries.clear();
+	State->Entries.clear();
 }
 
 void FMaterialDepthPipelines::Shutdown()
 {
-	Entries.clear(); // 호출자가 GPU Flush 이후 종료
-	Rhi           = nullptr;
-	ShaderLibrary = nullptr;
+	State.reset(); // 호출자가 GPU Flush 이후 종료
+	Rhi = nullptr;
 }

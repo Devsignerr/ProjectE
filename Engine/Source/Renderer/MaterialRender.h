@@ -52,10 +52,15 @@ private:
 		bool                bTried[2]  = {};
 		bool                bFailed[2] = {};
 	};
+	struct FState
+	{
+		FShaderLibrary*                                     ShaderLibrary = nullptr;
+		const wchar_t*                                      DebugName     = L"MaterialDepthPipeline";
+		FGraphicsPipelineDesc                               BaseDesc;
+		std::unordered_map<uint64, std::unique_ptr<FEntry>> Entries;
+	};
 
-	FD3D12RHI*                                          Rhi           = nullptr;
-	FShaderLibrary*                                     ShaderLibrary = nullptr;
-	const wchar_t*                                      DebugName     = L"MaterialDepthPipeline";
-	FGraphicsPipelineDesc                               BaseDesc;
-	std::unordered_map<uint64, std::unique_ptr<FEntry>> Entries;
+	// 16바이트 (포인터 2개): 이 객체를 품은 렌더러의 정렬/채움이 바뀌지 않게 상태는 힙에 둔다 (C4324)
+	FD3D12RHI*              Rhi = nullptr;
+	std::unique_ptr<FState> State;
 };

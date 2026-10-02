@@ -26,6 +26,7 @@
 #include "Renderer/FogRenderer.h"
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
+#include "Renderer/SkyAtmosphereRenderer.h"
 #include "Renderer/FoliageRenderer.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/TerrainRenderer.h"
@@ -65,6 +66,9 @@ enum class ERenderTimer : uint32
 	Fog,              // 안개 적용 (전체 화면)
 	Reflections,      // SSR (Hi-Z + 추적)
 	Translucent,      // 반투명/가산 메시 패스
+	Atmosphere,       // 대기 LUT + 실시간 IBL 갱신 (Phase 49)
+	Clouds,           // 볼류메트릭 구름 추적 + 누적 + 합성
+	Water,            // 물 (굴절 복사 + 수면 + 물속)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -248,6 +252,7 @@ private:
 	FFogRenderer         FogRenderer;
 	FScreenSpaceReflections ScreenSpaceReflections;
 	FReflectionCaptures  ReflectionCaptures;
+	FSkyAtmosphereRenderer SkyAtmosphere; // 물리 기반 대기 (Phase 49)
 	bool                 bBakeCapturesRequested = false;
 	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
 	// 콘솔 변수 → 위 디버그 토글 + 아래 r.TAA/r.SSAO/r.SSR (FPostProcessSettings와 AND). Init과 Render 시작에서

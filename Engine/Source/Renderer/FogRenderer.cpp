@@ -255,6 +255,21 @@ bool FFogRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FMatrix4x
 	Constants.ScreenSize        = FVector2(static_cast<float>(Width), static_cast<float>(Height));
 	Constants.ViewProjection    = UnjitteredViewProjection;
 	Constants.InvViewProjection = Camera.GetViewProjectionMatrix().GetInverse();
+	if (bAerial)
+	{
+		Constants.AerialRayleighScattering  = AerialParams.RayleighScattering;
+		Constants.AerialRayleighScaleHeight = AerialParams.RayleighScaleHeight;
+		Constants.AerialMieScattering       = AerialParams.MieScattering;
+		Constants.AerialMieScaleHeight      = AerialParams.MieScaleHeight;
+		Constants.AerialMieExtinction       = AerialParams.MieExtinction;
+		Constants.AerialMieAnisotropy       = AerialParams.MieAnisotropy;
+		Constants.AerialSunIlluminance      = AerialParams.SunIlluminance;
+		Constants.AerialEnabled             = 1;
+		Constants.AerialSunDirection        = AerialParams.SunDirection;
+		Constants.AerialGroundHeight        = AerialParams.GroundHeight;
+		Constants.AerialMultiScattering     = AerialParams.MultiScattering;
+		Constants.AerialDistanceScale       = AerialParams.DistanceScale;
+	}
 	return Constants.bEnabled != 0;
 }
 
@@ -368,7 +383,7 @@ void FFogRenderer::AddVolumetricPasses(FRenderGraph& Graph, FRGResourceRef Shado
 void FFogRenderer::AddApplyPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneColorRef, FRGResourceRef DepthRef,
                                 int32 Timer)
 {
-	if (Constants.bEnabled == 0 || ConstantsAddress == 0)
+	if ((Constants.bEnabled == 0 && Constants.AerialEnabled == 0) || ConstantsAddress == 0)
 	{
 		return;
 	}

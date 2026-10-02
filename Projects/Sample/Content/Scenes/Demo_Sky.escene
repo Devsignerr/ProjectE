@@ -1,0 +1,33 @@
+{
+  "Version": 1,
+  "Entities": [
+    { "Name": "Sun", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 800.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "DirectionalLightComponent": { "Color": [1.0, 1.0, 1.0], "Intensity": 3.0 } } },
+    { "Name": "Sky", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 0.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "SkyAtmosphereComponent": { },
+        "TimeOfDayComponent": { "TimeOfDay": 15.0, "DayLengthMinutes": 0.0, "MaxSunElevation": 55.0, "NorthAzimuth": 120.0, "AnimateInEditor": false } } },
+    { "Name": "Ground", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [400.0, 400.0, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Grass.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "ChromeBall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [100.0, -80.0, 75.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.5, 1.5, 1.5] },
+        "StaticMeshComponent": { "MaterialAsset": "Reflections/Chrome.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+    { "Name": "WarmBall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [50.0, 180.0, 50.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Reflections/WarmWall.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+    { "Name": "BlueBox", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [300.0, 60.0, 50.0], "Rotation": [0.0, 0.0, 0.3826834, 0.9238795], "Scale": [1.0, 1.0, 1.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "FarTower1", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [300000.0, 60000.0, 15000.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [200.0, 200.0, 300.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Checker.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "FarTower2", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [800000.0, 300000.0, 30000.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [600.0, 600.0, 600.0] },
+        "StaticMeshComponent": { "MaterialAsset": "Materials/Checker.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Camera", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-700.0, -250.0, 180.0], "Rotation": [0.006831, -0.051888, 0.130347, 0.990086], "Scale": [1.0, 1.0, 1.0] },
+        "CameraComponent": { "FovYDegrees": 60.0, "NearZ": 10.0, "FarZ": 2000000.0, "Primary": true } } }
+  ]
+}

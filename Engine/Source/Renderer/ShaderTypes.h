@@ -78,8 +78,21 @@ struct alignas(16) FFogConstants
 	FVector2   ScreenSize;
 	FMatrix4x4 ViewProjection;            // 지터 없음 (볼륨 좌표)
 	FMatrix4x4 InvViewProjection;         // 지터 포함 투영의 역 (깊이 → 월드)
+	// 공중 원근 (Phase 49, 대기 컴포넌트 — FAtmosphereMath::FAerialParams, cm 단위). AerialEnabled 0이면 안개 결과 그대로
+	FVector3   AerialRayleighScattering;  // 1/cm (지면 밀도)
+	float      AerialRayleighScaleHeight = 800000.0f; // cm
+	FVector3   AerialMieScattering;
+	float      AerialMieScaleHeight = 120000.0f;
+	FVector3   AerialMieExtinction;
+	float      AerialMieAnisotropy = 0.8f;
+	FVector3   AerialSunIlluminance;      // 카메라 고도 투과율 × 하늘 밝기 배율 포함
+	uint32     AerialEnabled = 0;
+	FVector3   AerialSunDirection = FVector3(0.0f, 0.0f, 1.0f);
+	float      AerialGroundHeight = 0.0f; // cm (행성 표면 월드 Z)
+	FVector3   AerialMultiScattering;     // Ψms × 태양 조도
+	float      AerialDistanceScale = 1.0f;
 };
-static_assert(sizeof(FFogConstants) == 240);
+static_assert(sizeof(FFogConstants) == 336);
 
 // 볼류메트릭 안개 계산 상수 (VolumetricFog.hlsl b0)
 struct alignas(16) FVolumetricFogConstants
@@ -108,6 +121,43 @@ struct alignas(16) FVolumetricFogConstants
 	uint32     bHistoryValid    = 0;
 };
 static_assert(sizeof(FVolumetricFogConstants) == 256);
+
+// 물리 기반 대기 (Phase 49, Atmosphere.hlsli AtmosphereConstants와 1:1 — LUT 계산·하늘 패스·하늘 큐브·구름 공용). 거리 km, 계수 1/km
+//   좌표는 행성 중심 원점 Z-up (AtmosphereMath.h). SunIlluminance = 대기 위 태양 조도 × 하늘 밝기 배율 (하늘·공중 원근용)
+struct alignas(16) FAtmosphereConstants
+{
+	FVector3 RayleighScattering;
+	float    BottomRadius = 6360.0f;
+	FVector3 MieScattering;
+	float    TopRadius = 6460.0f;
+	FVector3 MieExtinction;
+	float    RayleighDensityExpScale = -1.0f / 8.0f; // 밀도 = exp(고도 × 이 값)
+	FVector3 MieAbsorption;
+	float    MieDensityExpScale = -1.0f / 1.2f;
+	FVector3 OzoneAbsorption;
+	float    MiePhaseG = 0.8f;
+	FVector3 GroundAlbedo;
+	float    OzoneCenterHeight = 25.0f;
+	FVector3 SunDirection = FVector3(0.0f, 0.0f, 1.0f); // 태양 쪽 (정규화)
+	float    OzoneHalfWidth = 15.0f;
+	FVector3 SunIlluminance;
+	float    SunDiskCosHalfAngle = 0.99999f;
+	FVector3 CameraPosition;            // km (대기 좌표)
+	float    SunDiskLuminance = 0.0f;   // 원반 휘도 = 조도 × 이 값 (= 배율 / 입체각)
+	FVector3 NightSkyLuminance;         // × 하늘 밝기 배율
+	float    StarIntensity = 0.0f;
+	FVector3 SkyCameraForward = FVector3::ForwardVector; // 하늘 패스 시선 (지터 없음 — 하늘 상자와 같은 규약)
+	float    SkyTanHalfFov = 1.0f;
+	FVector3 SkyCameraRight = FVector3::RightVector;
+	float    SkyAspect = 1.0f;
+	FVector3 SkyCameraUp = FVector3::UpVector;
+	uint32   bOrthographic = 0;
+	FVector3 MoonDirection = FVector3(0.0f, 0.0f, -1.0f); // 달 쪽 (태양 반대)
+	float    MoonDiskLuminance = 0.0f; // 달 원반 휘도 배율 (조도 = MoonIlluminance)
+	FVector3 MoonIlluminance;           // 달빛 조도 × 색 (밤에만 0이 아님)
+	float    AtmospherePadding0 = 0.0f;
+};
+static_assert(sizeof(FAtmosphereConstants) == 240);
 
 // 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
 // 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다

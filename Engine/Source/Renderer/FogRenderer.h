@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/AtmosphereMath.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 
@@ -48,7 +49,10 @@ public:
 
 	// 씬 안개 설정 + 카메라(Camera = 깊이를 그린 지터 카메라, UnjitteredViewProjection = 볼륨 좌표) → 상수. 안개가 있으면 true
 	bool Prepare(FScene& Scene, const FCamera& Camera, const FMatrix4x4& UnjitteredViewProjection, uint32 Width, uint32 Height);
-	bool IsEnabled() const { return Constants.bEnabled != 0; }
+	// 안개 또는 공중 원근 (적용 패스를 그릴지)
+	bool IsEnabled() const { return Constants.bEnabled != 0 || Constants.AerialEnabled != 0; }
+	// 공중 원근 (Phase 49, 대기 렌더러 → Fog.hlsli 상수): Prepare 전에. nullptr = 끔
+	void SetAerialPerspective(const FAtmosphereMath::FAerialParams* Params) { AerialParams = Params != nullptr ? *Params : FAtmosphereMath::FAerialParams{}; bAerial = Params != nullptr; }
 	bool IsVolumetric() const { return Constants.bVolumetric != 0; }
 
 	// 상수 업로드(적용/파티클용 포함) + 볼륨 준비 (CPU, 패스 등록 전)
@@ -108,6 +112,8 @@ private:
 	bool    bHasHistory  = false;
 
 	D3D12_GPU_VIRTUAL_ADDRESS   ConstantsAddress = 0;
+	FAtmosphereMath::FAerialParams AerialParams;
+	bool                        bAerial = false;
 	uint32                      TargetWidth  = 0;
 	uint32                      TargetHeight = 0;
 };

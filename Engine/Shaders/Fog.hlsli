@@ -38,7 +38,22 @@ cbuffer FogConstants : register(E_FOG_CONSTANTS_REGISTER)
 	float2   FogScreenSize;
 	float4x4 FogViewProjection;    // 지터 없음
 	float4x4 FogInvViewProjection; // 지터 포함 투영의 역
+	// 공중 원근 (Phase 49, AerialPerspective.hlsli — 대기 컴포넌트가 있을 때만 FogAerialEnabled)
+	float3   FogAerialRayleighScattering;
+	float    FogAerialRayleighScaleHeight;
+	float3   FogAerialMieScattering;
+	float    FogAerialMieScaleHeight;
+	float3   FogAerialMieExtinction;
+	float    FogAerialMieAnisotropy;
+	float3   FogAerialSunIlluminance;
+	uint     FogAerialEnabled;
+	float3   FogAerialSunDirection;
+	float    FogAerialGroundHeight;
+	float3   FogAerialMultiScattering;
+	float    FogAerialDistanceScale;
 };
+
+#include "AerialPerspective.hlsli"
 
 Texture3D<float4> FogVolume        : register(E_FOG_VOLUME_REGISTER); // RGB = 누적 산란, A = 투과율 (조각 끝까지)
 SamplerState      FogLinearSampler : register(E_FOG_SAMPLER_REGISTER);
@@ -97,8 +112,8 @@ float4 SampleVolumetricFog(float3 WorldPosition)
 	return lerp(float4(0.0f, 0.0f, 0.0f, 1.0f), Value, NearBlend);
 }
 
-// 합성 결과 (더할 산란, 곱할 투과율)
-float4 EvaluateFog(float3 WorldPosition)
+// 높이 + 볼류메트릭 안개만 (더할 산란, 곱할 투과율) — 하늘 픽셀(FogApply)은 공중 원근 없이 이것만
+float4 EvaluateHeightAndVolumetricFog(float3 WorldPosition)
 {
 	if (FogEnabled == 0)
 	{
@@ -111,6 +126,39 @@ float4 EvaluateFog(float3 WorldPosition)
 	}
 	const float4 Volume = SampleVolumetricFog(WorldPosition);
 	return float4(Height.rgb * Volume.a + Volume.rgb, Height.a * Volume.a);
+}
+
+// 공중 원근 (Phase 49): 투과율은 합성 경로가 스칼라 알파라 휘도 가중 평균 하나 (FAtmosphereMath::ComputeAerialTransmittanceScalar)
+float4 EvaluateAerialFog(float3 WorldPosition)
+{
+	FAerialPerspectiveInputs Inputs;
+	Inputs.RayleighScattering  = FogAerialRayleighScattering;
+	Inputs.RayleighScaleHeight = FogAerialRayleighScaleHeight;
+	Inputs.MieScattering       = FogAerialMieScattering;
+	Inputs.MieScaleHeight      = FogAerialMieScaleHeight;
+	Inputs.MieExtinction       = FogAerialMieExtinction;
+	Inputs.MieAnisotropy       = FogAerialMieAnisotropy;
+	Inputs.SunIlluminance      = FogAerialSunIlluminance;
+	Inputs.SunDirection        = FogAerialSunDirection;
+	Inputs.MultiScattering     = FogAerialMultiScattering;
+	Inputs.GroundHeight        = FogAerialGroundHeight;
+	Inputs.DistanceScale       = FogAerialDistanceScale;
+	float3       Transmittance;
+	const float3 Inscatter = EvaluateAerialPerspective(Inputs, FogCameraPosition, WorldPosition, Transmittance);
+	return float4(Inscatter, dot(Transmittance, float3(0.2126f, 0.7152f, 0.0722f)));
+}
+
+// 합성 결과 (더할 산란, 곱할 투과율). 시선 순서: 카메라 ← 볼류메트릭(가까움) ← 높이 안개 ← 공중 원근(멀리) ← 표면
+//   색 = ((표면 × T공중 + S공중) × T높이 + S높이) × T볼륨 + S볼륨
+float4 EvaluateFog(float3 WorldPosition)
+{
+	float4 Fog = EvaluateHeightAndVolumetricFog(WorldPosition);
+	if (FogAerialEnabled != 0)
+	{
+		const float4 Aerial = EvaluateAerialFog(WorldPosition);
+		Fog                 = float4(Aerial.rgb * Fog.a + Fog.rgb, Aerial.a * Fog.a);
+	}
+	return Fog;
 }
 
 #endif // E_FOG_HLSLI

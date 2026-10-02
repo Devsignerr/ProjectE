@@ -65,6 +65,20 @@ namespace RendererCVars
 	TAutoConsoleVariable<float> DynamicResolutionMax("r.DynamicResolution.MaxPercentage", 100.0f, "동적 해상도 최대 화면 비율(%)", EConsoleFlags::None,
 	                                                 { .Range = std::pair(25.0f, 100.0f) });
 
+	TAutoConsoleVariable<bool> SkyAtmosphere("r.SkyAtmosphere", true, "물리 기반 대기 (SkyAtmosphereComponent): 0이면 컴포넌트가 있어도 예전 하늘(하늘광 환경맵/절차적)로 그린다 (비교용)");
+	TAutoConsoleVariable<int32> SkyAtmosphereIblSamples("r.SkyAtmosphere.IblSamples", 64,
+	                                                    "대기 실시간 IBL 적분 표본 수 (조도/프리필터, 필터드 중요도 샘플링 — 굽기 IBL은 256)", EConsoleFlags::None,
+	                                                    { .Range = std::pair(8.0f, 1024.0f) });
+	TAutoConsoleVariable<bool> VolumetricClouds("r.VolumetricClouds", true, "볼류메트릭 구름 (VolumetricCloudComponent)", EConsoleFlags::None,
+	                                            { .CommandLine = { { L"--no-clouds", "0" } } });
+	TAutoConsoleVariable<int32> VolumetricCloudsDivisor("r.VolumetricClouds.Divisor", 4,
+	                                                    "구름 추적 해상도 = 씬(내부) 해상도 ÷ 이 값 (가로·세로 각각). 시간 누적 후 업샘플 합성", EConsoleFlags::None,
+	                                                    { .Range = std::pair(1.0f, 8.0f) });
+	TAutoConsoleVariable<int32> VolumetricCloudsSteps("r.VolumetricClouds.Steps", 48, "구름 레이마칭 최대 단계 수", EConsoleFlags::None,
+	                                                  { .Range = std::pair(8.0f, 256.0f) });
+	TAutoConsoleVariable<bool> VolumetricCloudsTemporal("r.VolumetricClouds.Temporal", true, "구름 시간 누적 (끄면 매 프레임 지터 없이 추적 — 비교용)");
+	TAutoConsoleVariable<bool> Water("r.Water", true, "소규모 물 (WaterBodyComponent) 패스", EConsoleFlags::None, { .CommandLine = { { L"--no-water", "0" } } });
+	TAutoConsoleVariable<bool> WaterScreenReflections("r.Water.SSR", true, "물 반사: 화면 공간 추적 (끄면 반사 캡처/하늘만)");
 	namespace
 	{
 		uint32 GRenderGraphDumpSerial = 0;

@@ -12,6 +12,7 @@
 #include "Scene/Foliage.h"
 #include "Scene/Terrain.h"
 #include "Scene/Building/BuildingScene.h"
+#include "Scene/SkyAtmosphere.h"
 
 void RegisterSceneTypes()
 {
@@ -290,4 +291,6 @@ void RegisterSceneTypes()
 		.AsComponent();
 	// 실내 절차적 생성 (Scene/Building/BuildingScene.h, Phase 50 사이드)
 	RegisterBuildingTypes();
+	// 하늘·대기·구름·시간대·물 (Scene/SkyAtmosphere.h, Phase 49)
+	RegisterSkyTypes();
 }

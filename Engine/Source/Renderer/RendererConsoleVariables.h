@@ -36,6 +36,15 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> DynamicResolutionTargetMs; // r.DynamicResolution.TargetMs (--dynamic-resolution-target ms)
 	extern TAutoConsoleVariable<float> DynamicResolutionMin;    // r.DynamicResolution.MinPercentage
 	extern TAutoConsoleVariable<float> DynamicResolutionMax;    // r.DynamicResolution.MaxPercentage
+	// 하늘·대기·구름·물 (Phase 49)
+	extern TAutoConsoleVariable<bool>  SkyAtmosphere;           // r.SkyAtmosphere              (대기 컴포넌트 무시 = 0, 비교용)
+	extern TAutoConsoleVariable<int32> SkyAtmosphereIblSamples; // r.SkyAtmosphere.IblSamples   (실시간 IBL 적분 표본 수)
+	extern TAutoConsoleVariable<bool>  VolumetricClouds;        // r.VolumetricClouds           (--no-clouds)
+	extern TAutoConsoleVariable<int32> VolumetricCloudsDivisor; // r.VolumetricClouds.Divisor   (추적 해상도 = 씬 ÷ 이 값)
+	extern TAutoConsoleVariable<int32> VolumetricCloudsSteps;   // r.VolumetricClouds.Steps
+	extern TAutoConsoleVariable<bool>  VolumetricCloudsTemporal; // r.VolumetricClouds.Temporal (시간 누적)
+	extern TAutoConsoleVariable<bool>  Water;                   // r.Water                      (--no-water)
+	extern TAutoConsoleVariable<bool>  WaterScreenReflections;  // r.Water.SSR
 	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
 	uint32 GetRenderGraphDumpSerial();
 } // namespace RendererCVars

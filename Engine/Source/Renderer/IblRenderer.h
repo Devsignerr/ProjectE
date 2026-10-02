@@ -38,7 +38,11 @@ public:
 
 	// 연속 SRV 3칸:
 	// TextureCube 확산(E/pi), TextureCube GGX 프리필터, Texture2D BRDF(A,B).
-	const FD3D12DescriptorHandle& GetLightingTable() const { return LightingTable; }
+	// 대기(FSkyAtmosphereRenderer)가 실시간으로 만든 조명 표가 있으면 그것 (같은 배치 3칸), 없으면 이 렌더러의 표
+	const FD3D12DescriptorHandle& GetLightingTable() const { return LightingOverride != nullptr ? *LightingOverride : LightingTable; }
+	// 조명 표 덮기 (Phase 49): 표는 덮는 쪽이 소유하고 계속 유효해야 한다. nullptr = 해제
+	void SetLightingOverride(const FD3D12DescriptorHandle* Table) { LightingOverride = Table; }
+	ID3D12Resource* GetBrdfLut() const { return BrdfLut.Get(); }
 	const FD3D12DescriptorHandle& GetSkySrv() const { return SkySrv; }
 
 	static constexpr uint32 PrefilterMipCount = IblMath::PrefilterMipCount;
@@ -68,6 +72,7 @@ private:
 
 	FD3D12DescriptorHandle SkySrv;
 	FD3D12DescriptorHandle LightingTable;
+	const FD3D12DescriptorHandle* LightingOverride = nullptr; // 비소유 (FSkyAtmosphereRenderer)
 
 	FD3D12RootSignature SkyRoot;
 	FD3D12PipelineState SkyPipeline;

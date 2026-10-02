@@ -81,6 +81,11 @@
     { "File": "Mesh.hlsl", "Entry": "PSMainMasked", "Stage": "Pixel" },
     { "File": "Mesh.hlsl", "Entry": "PSPrepassMasked", "Stage": "Pixel" },
     { "File": "Mesh.hlsl", "Entry": "PSTranslucent", "Stage": "Pixel" },
-    { "File": "Mesh.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" }
-  ]
+    { "File": "Mesh.hlsl", "Entry": "PSAdditive", "Stage": "Pixel" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "TransmittanceLutCS", "Stage": "Compute" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "MultiScatteringLutCS", "Stage": "Compute" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "SkyViewLutCS", "Stage": "Compute" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "SkyCubeCS", "Stage": "Compute" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "VSSky", "Stage": "Vertex" },
+    { "File": "SkyAtmosphere.hlsl", "Entry": "PSSky", "Stage": "Pixel" }  ]
 }

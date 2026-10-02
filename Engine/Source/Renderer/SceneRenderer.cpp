@@ -162,7 +162,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary))
+	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -244,6 +244,9 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Fog:          return "안개 적용";
 	case ERenderTimer::Reflections:  return "SSR";
 	case ERenderTimer::Translucent:  return "반투명";
+	case ERenderTimer::Atmosphere:   return "대기";
+	case ERenderTimer::Clouds:       return "구름";
+	case ERenderTimer::Water:        return "물";
 	default:                        return "?";
 	}
 }
@@ -510,7 +513,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	}
 	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile) ||
 	    !FogRenderer.ReloadShaders(bForceRecompile) || !ScreenSpaceReflections.ReloadShaders(bForceRecompile) ||
-	    !ReflectionCaptures.ReloadShaders(bForceRecompile))
+	    !ReflectionCaptures.ReloadShaders(bForceRecompile) || !SkyAtmosphere.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -547,6 +550,8 @@ void FSceneRenderer::Shutdown()
 	bHasPrevView = false;
 	PostProcessor.Shutdown();
 	ShadowRenderer.Shutdown();
+	IblRenderer.SetLightingOverride(nullptr);
+	SkyAtmosphere.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
@@ -1025,7 +1030,15 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	FCamera RenderCamera = Camera;
 	RenderCamera.SetProjectionJitter(CurrentJitterNdc);
 
+	// 대기 (Phase 49): 씬의 첫 대기 컴포넌트 + 태양 → 상수·태양 투과율·공중 원근. 실시간 IBL 결과가 있으면 조명 표를 덮는다 (메시/지형/물)
+	SkyAtmosphere.Prepare(Scene, Camera, RendererCVars::SkyAtmosphere.Get());
+	SkyAtmosphere.ApplyEnvironmentOverride(IblRenderer);
+
 	FPerFrameConstants PerFrame       = BuildPerFrameConstants(Scene, RenderCamera);
+	if (SkyAtmosphere.IsActive())
+	{
+		SkyAtmosphere.ApplyToDirectionalLight(PerFrame.DirectionalLight); // 해질녘 붉은 빛, 밤에는 달빛 (방향까지)
+	}
 	PerFrame.UnjitteredViewProjection = UnjitteredViewProjection;
 	PerFrame.PrevViewProjection       = bTemporalHistoryValid ? PrevUnjitteredViewProjection : UnjitteredViewProjection;
 	PerFrame.JitterNdc                = CurrentJitterNdc;
@@ -1292,6 +1305,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분, 계산 셰이더만 → 비동기 계산 가능). 적용은 메인 패스 뒤, 파티클은 정점에서
 	{
 		BeginCpuTimer(ERenderTimer::VolumetricFog);
+		FogRenderer.SetAerialPerspective(SkyAtmosphere.GetAerialParams()); // 공중 원근 = 안개 식에 합성 (Fog.hlsli EvaluateFog)
 		FogRenderer.Prepare(Scene, RenderCamera, UnjitteredViewProjection, Width, Height);
 		FVolumetricFogInputs FogInputs;
 		FogInputs.ShadowConstants    = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
@@ -1310,6 +1324,10 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		                                TimerId(ERenderTimer::VolumetricFog));
 	}
 	const FRGResourceRef FogVolumeRef = FogRenderer.ImportVolume(Graph);
+
+	// 2.8) 대기 LUT (투과율/다중 산란은 매질이 바뀔 때만, 하늘 뷰는 매 렌더) + 실시간 IBL 한 단계 (뒤쪽 버퍼 — 이번 프레임 메시는 앞쪽을 읽는다)
+	SkyAtmosphere.AddLutPasses(Graph, ERGQueue::Graphics, TimerId(ERenderTimer::Atmosphere));
+	SkyAtmosphere.AddEnvironmentPasses(Graph, FRGResourceRef{}, FD3D12DescriptorHandle{}, false, !bRenderingCaptures, TimerId(ERenderTimer::Atmosphere));
 
 	// 메시 패스(메인/반투명)가 묶는 조명 리소스 선언 (그림자 맵·로컬 그림자·클러스터 + SSAO·DBuffer·SSR — 꺼져 있어도 묶이므로 항상)
 	if (!AmbientOcclusionRef.IsValid())
@@ -1336,6 +1354,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		const EMeshPass                 MainPass        = bWireframe ? EMeshPass::Wireframe : (bPrepass ? EMeshPass::MainDepthEqual : EMeshPass::Main);
 		const float                     SkyIntensity     = PerFrame.AmbientIntensity;
 		const FCamera                   SkyCamera        = Camera;
+		const bool                      bAtmosphereSky   = SkyAtmosphere.IsActive();
 		const auto AddMainPass = [&](EMeshPhase Phase) {
 			const bool bFirst = Phase != EMeshPhase::Phase2;
 			FRenderGraph::FPassBuilder Pass = Graph.AddPass(Phase == EMeshPhase::Phase2 ? "메인 패스 (2단계)" : "메인 패스");
@@ -1344,13 +1363,21 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 				.Timer(TimerId(ERenderTimer::MainDraw));
 			DeclareLighting(Pass);
 			DeclareOcclusion(Pass, Phase);
-			Pass.Execute([this, Phase, bFirst, bPrepass, MainPass, PerFrameAddress, ShadowAddress, SkyIntensity, SkyCamera](FRGContext& Context) {
+			if (bFirst)
+			{
+				SkyAtmosphere.DeclareSkyReads(Pass);
+			}
+			Pass.Execute([this, Phase, bFirst, bPrepass, MainPass, PerFrameAddress, ShadowAddress, SkyIntensity, SkyCamera, bAtmosphereSky](FRGContext& Context) {
 				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
 				if (bFirst)
 				{
 					const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
 					SceneColor->Bind(CommandList, SceneClear, !bPrepass);
-					if (bDrawSkybox)
+					if (bDrawSkybox && bAtmosphereSky)
+					{
+						SkyAtmosphere.RenderSky(CommandList); // 대기 하늘 (하늘 뷰 LUT + 태양 원반 + 별)
+					}
+					else if (bDrawSkybox)
 					{
 						IblRenderer.RenderSkybox(SkyCamera, SkyIntensity);
 					}

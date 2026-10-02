@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/MaterialRender.h"
 #include "Renderer/MeshInstancing.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShadowCasterHook.h"
@@ -86,6 +87,7 @@ private:
 
 	FD3D12RootSignature RootSignature;
 	FD3D12PipelineState Pipelines[DepthVariantCount]; // [GetDepthVariant]: 정적/스킨 × 불투명/Masked(ShadowMaskedPS)
+	FMaterialDepthPipelines MaterialPipelines;          // 그래프 머티리얼 Masked (ShadowMaterialPS, 셰이더 해시별)
 
 	ComPtr<ID3D12Resource> ShadowMap;
 	FD3D12DescriptorHeap   DsvHeap; // 캐스케이드별 DSV

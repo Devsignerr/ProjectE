@@ -1,0 +1,9 @@
+{
+  "Name": "LavaCold",
+  "Parent": "Lava.emat",
+  "Parameters": [
+    { "Name": "GlowColor", "Type": "Vector", "Value": [0.1, 0.45, 1.0, 1.0] },
+    { "Name": "FlowSpeed", "Type": "Vector", "Value": [-0.01, 0.006, 0.008, -0.01] },
+    { "Name": "GlowIntensity", "Type": "Scalar", "Value": 3.0 }
+  ]
+}

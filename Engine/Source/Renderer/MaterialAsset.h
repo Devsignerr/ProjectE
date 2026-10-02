@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Material.h"
+#include "Renderer/MaterialGraph.h"
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/TextureCompression.h"
 
@@ -20,6 +21,11 @@
 // 머티리얼 인스턴스: "Parent"(부모 .emat, 이 파일 폴더 기준 상대 경로)가 있으면 파일에 적힌 키만 부모 값을 덮어쓴다
 //   (OverrideMask). 부모도 인스턴스일 수 있다(체인). 해석은 Resolve — 순환/깊이 초과/부모 없음은 오류 로그 후 그때까지의 값으로.
 //   이름은 상속하지 않는다. 부모의 텍스처 경로는 해석 결과에서 이 파일 폴더 기준으로 다시 쓴다.
+//
+// 그래프 머티리얼(Phase 49 사이드): "Graph" + "Parameters"가 있으면 고정 PBR 키(팩터/텍스처 슬롯) 대신 그래프가 표면을 만든다
+//   (BlendMode/AlphaCutoff/TwoSided는 그대로 쓴다). 형식과 컴파일 규칙은 Renderer/MaterialGraph.h.
+//   인스턴스는 "Parameters"에 덮어쓸 값만 적는다(이름으로 찾음, 부모에 없는 이름·타입이 다른 값은 경고 후 무시).
+//   그래프는 체인 맨 위(일반 머티리얼) 것만 쓰고 인스턴스의 "Graph"는 무시한다(경고).
 struct FMaterialAsset
 {
 	static constexpr const wchar_t* Extension = L".emat";
@@ -50,7 +56,15 @@ struct FMaterialAsset
 	std::string        Parent;                  // 비어 있으면 일반 머티리얼
 	uint32             OverrideMask = Field_All; // 인스턴스가 덮어쓰는 필드 (Parent가 없으면 무시 — 모든 필드가 자기 값)
 
+	// 그래프 머티리얼 (bHasGraph). 인스턴스의 Parameters = 덮어쓰는 값 목록, 해석 결과(Resolve)는 그래프 + 전체 파라미터(부모 값 + 덮어쓰기)
+	bool                            bHasGraph = false;
+	FMaterialGraph                  Graph;
+	std::vector<FMaterialParameter> Parameters;
+
 	bool IsInstance() const { return !Parent.empty(); }
+	bool IsGraphMaterial() const { return bHasGraph; }
+	const FMaterialParameter* FindParameter(std::string_view ParameterName) const;
+	FMaterialParameter*       FindParameter(std::string_view ParameterName);
 	bool Overrides(uint32 Field) const { return !IsInstance() || (OverrideMask & Field) != 0; }
 
 	static const char*        GetBlendModeName(EMaterialBlendMode Mode);

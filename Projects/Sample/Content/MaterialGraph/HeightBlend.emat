@@ -1,0 +1,35 @@
+{
+  "Name": "HeightBlend",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    { "Name": "LowTexture", "Type": "Texture", "Value": "../Terrain/Textures/Dirt_Base.png", "Usage": "Color" },
+    { "Name": "HighTexture", "Type": "Texture", "Value": "../Terrain/Textures/Grass_Base.png", "Usage": "Color" },
+    { "Name": "SplitHeight", "Type": "Scalar", "Value": 60.0 },
+    { "Name": "BandColor", "Type": "Vector", "Value": [1.0, 0.85, 0.3, 1.0] }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "uv", "Type": "TexCoord", "Tiling": [2, 2] },
+      { "Id": "low", "Type": "TextureSample", "Texture": "LowTexture", "Inputs": { "UV": "uv" } },
+      { "Id": "high", "Type": "TextureSample", "Texture": "HighTexture", "Inputs": { "UV": "uv" } },
+      { "Id": "pos", "Type": "WorldPosition" },
+      { "Id": "z", "Type": "ComponentMask", "Channels": "z", "Inputs": { "A": "pos" } },
+      { "Id": "split", "Type": "ScalarParameter", "Parameter": "SplitHeight" },
+      { "Id": "blended", "Type": "Compare", "Op": "Greater", "Inputs": { "A": "z", "B": "split", "True": "high:1", "False": "low:1" } },
+      { "Id": "vertexColor", "Type": "VertexColor" },
+      { "Id": "tinted", "Type": "Multiply", "Inputs": { "A": "blended", "B": "vertexColor:1" } },
+      { "Id": "dist", "Type": "Subtract", "Inputs": { "A": "z", "B": "split" } },
+      { "Id": "absDist", "Type": "Abs", "Inputs": { "A": "dist" } },
+      { "Id": "bandRaw", "Type": "Subtract", "Inputs": { "A": 1.0, "B": "absDist" } },
+      { "Id": "band", "Type": "Clamp", "Inputs": { "A": "bandRaw" } },
+      { "Id": "bandColor", "Type": "VectorParameter", "Parameter": "BandColor" },
+      { "Id": "bandGlow", "Type": "Multiply", "Inputs": { "A": "bandColor:1", "B": "band" } },
+      { "Id": "emissive", "Type": "Multiply", "Inputs": { "A": "bandGlow", "B": 4.0 } }
+    ],
+    "Output": {
+      "BaseColor": "tinted",
+      "Roughness": 0.8,
+      "Emissive": "emissive"
+    }
+  }
+}

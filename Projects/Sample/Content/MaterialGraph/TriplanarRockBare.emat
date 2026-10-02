@@ -1,0 +1,7 @@
+{
+  "Name": "TriplanarRockBare",
+  "Parent": "TriplanarRock.emat",
+  "Parameters": [
+    { "Name": "MossOnTop", "Type": "StaticSwitch", "Value": false }
+  ]
+}

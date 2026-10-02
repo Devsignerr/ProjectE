@@ -15,12 +15,20 @@ enum class EShaderStage : uint8
 	Compute,
 };
 
+// 디스크에 없는 포함 파일 (생성 소스 — 예: 머티리얼 그래프 MaterialGraph.generated.hlsli). #include "Name"을 이 내용으로 푼다
+struct FShaderVirtualFile
+{
+	std::wstring Name;    // 파일 이름 (경로 없이)
+	std::string  Content; // UTF-8
+};
+
 struct FShaderCompileDesc
 {
 	std::wstring              FileName;   // 엔진 셰이더 디렉터리 기준 상대 경로 (예: L"Triangle.hlsl")
 	std::wstring              EntryPoint; // 예: L"VSMain"
 	EShaderStage              Stage = EShaderStage::Vertex;
 	std::vector<std::wstring> Defines;    // "NAME" 또는 "NAME=VALUE"
+	std::vector<FShaderVirtualFile> VirtualFiles; // 생성 소스 포함 파일 (내용 해시가 캐시 키·쿠킹 파일명에 들어간다)
 };
 
 // DXC 기반 HLSL → DXIL 런타임 컴파일러 (Shader Model 6.0).

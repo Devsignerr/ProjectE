@@ -1,0 +1,47 @@
+{
+  "Name": "TriplanarRock",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    { "Name": "RockTexture", "Type": "Texture", "Value": "../Terrain/Textures/Rock_Base.png", "Usage": "Color" },
+    { "Name": "MossTexture", "Type": "Texture", "Value": "../Terrain/Textures/Grass_Base.png", "Usage": "Color" },
+    { "Name": "WorldScale", "Type": "Scalar", "Value": 0.006 },
+    { "Name": "BlendSharpness", "Type": "Scalar", "Value": 4.0 },
+    { "Name": "MossOnTop", "Type": "StaticSwitch", "Value": true }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "worldPos", "Type": "WorldPosition" },
+      { "Id": "scale", "Type": "ScalarParameter", "Parameter": "WorldScale" },
+      { "Id": "scaledPos", "Type": "Multiply", "Inputs": { "A": "worldPos", "B": "scale" } },
+      { "Id": "uvX", "Type": "ComponentMask", "Channels": "yz", "Inputs": { "A": "scaledPos" } },
+      { "Id": "uvY", "Type": "ComponentMask", "Channels": "xz", "Inputs": { "A": "scaledPos" } },
+      { "Id": "uvZ", "Type": "ComponentMask", "Channels": "xy", "Inputs": { "A": "scaledPos" } },
+      { "Id": "rockX", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "uvX" } },
+      { "Id": "rockY", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "uvY" } },
+      { "Id": "rockZ", "Type": "TextureSample", "Texture": "RockTexture", "Inputs": { "UV": "uvZ" } },
+      { "Id": "normal", "Type": "WorldNormal" },
+      { "Id": "absNormal", "Type": "Abs", "Inputs": { "A": "normal" } },
+      { "Id": "sharp", "Type": "ScalarParameter", "Parameter": "BlendSharpness" },
+      { "Id": "weightsRaw", "Type": "Power", "Inputs": { "A": "absNormal", "B": "sharp" } },
+      { "Id": "weightSum", "Type": "Dot", "Inputs": { "A": "weightsRaw", "B": 1.0 } },
+      { "Id": "weights", "Type": "Divide", "Inputs": { "A": "weightsRaw", "B": "weightSum" } },
+      { "Id": "w", "Type": "Split", "Inputs": { "A": "weights" } },
+      { "Id": "partX", "Type": "Multiply", "Inputs": { "A": "rockX:1", "B": "w:0" } },
+      { "Id": "partY", "Type": "Multiply", "Inputs": { "A": "rockY:1", "B": "w:1" } },
+      { "Id": "partZ", "Type": "Multiply", "Inputs": { "A": "rockZ:1", "B": "w:2" } },
+      { "Id": "sumXY", "Type": "Add", "Inputs": { "A": "partX", "B": "partY" } },
+      { "Id": "rock", "Type": "Add", "Inputs": { "A": "sumXY", "B": "partZ" } },
+      { "Id": "moss", "Type": "TextureSample", "Texture": "MossTexture", "Inputs": { "UV": "uvZ" } },
+      { "Id": "up", "Type": "Split", "Inputs": { "A": "normal" } },
+      { "Id": "mossAmountRaw", "Type": "Multiply", "Inputs": { "A": "up:2", "B": 3.0 } },
+      { "Id": "mossAmountBiased", "Type": "Subtract", "Inputs": { "A": "mossAmountRaw", "B": 2.0 } },
+      { "Id": "mossAmount", "Type": "Saturate", "Inputs": { "A": "mossAmountBiased" } },
+      { "Id": "mossy", "Type": "Lerp", "Inputs": { "A": "rock", "B": "moss:1", "Alpha": "mossAmount" } },
+      { "Id": "final", "Type": "StaticSwitch", "Parameter": "MossOnTop", "Inputs": { "True": "mossy", "False": "rock" } }
+    ],
+    "Output": {
+      "BaseColor": "final",
+      "Roughness": 0.85
+    }
+  }
+}

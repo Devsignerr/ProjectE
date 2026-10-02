@@ -591,17 +591,29 @@ const FD3D12Texture& FResourceManager::ResolveSlotTexture(const FMaterial& Mater
 	{
 		return *Texture; // 로딩 중이면 아래 기본 텍스처 (준비되면 CompletePendingUploads가 테이블을 다시 만든다)
 	}
-	return *Textures.Get(Slot == MaterialSlot_Normal ? FlatNormalTexture : WhiteTexture);
+	// 기본 텍스처: 노멀 용도는 평면 노멀, 나머지 흰색 (그래프 머티리얼은 레이아웃의 텍스처 용도)
+	bool bNormal = Slot == MaterialSlot_Normal;
+	if (Material.Shader != nullptr)
+	{
+		bNormal = false;
+		for (const FMaterialParameterSlot& Parameter : Material.Shader->Layout.Slots)
+		{
+			bNormal |= Parameter.Type == EMaterialParameterType::Texture && Parameter.Register == Slot && Parameter.Usage == ETextureUsage::Normal;
+		}
+	}
+	return *Textures.Get(bNormal ? FlatNormalTexture : WhiteTexture);
 }
 
 void FResourceManager::BuildMaterialTable(FMaterial& Material)
 {
 	FD3D12DescriptorAllocator& Allocator = Rhi->GetSrvAllocator();
-	const FD3D12DescriptorHandle NewTable = Allocator.AllocateRange(MaterialSlot_Count);
+	// 칸 수: 고정 PBR 5, 그래프 = 텍스처 파라미터 수. 최소 5칸 (지형 레이어 테이블 등 5칸 범위로 묶는 쪽이 넘어가지 않게 — 남는 칸은 기본 텍스처)
+	const uint32                 TableSize = std::max(std::min(Material.TextureCount, MaterialTextureMax), static_cast<uint32>(MaterialSlot_Count));
+	const FD3D12DescriptorHandle NewTable  = Allocator.AllocateRange(TableSize);
 
 	// 디스크립터 복사 대신 SRV를 직접 기록 (셰이더 가시 힙은 읽기가 느려 복사 원본으로 부적합)
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
-	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
+	for (uint32 Slot = 0; Slot < TableSize; ++Slot)
 	{
 		const FD3D12Texture& Texture = ResolveSlotTexture(Material, Slot);
 
@@ -740,11 +752,38 @@ void FResourceManager::ApplyMaterialAsset(FMaterialHandle Handle, const FMateria
 
 bool FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
 {
+	// 그래프 머티리얼: 컴파일 실패면 이전 셰이더/값을 그대로 둔다 (편집 중 실수로 화면이 깨지지 않게 — 오류 로그).
+	// 처음부터 실패면 고정 PBR 기본값으로 그린다
+	if (Asset.IsGraphMaterial())
+	{
+		const FMaterialGraphCompileResult Compiled = FMaterialGraphCompiler::Compile(Asset.Graph, Asset.Parameters);
+		if (Compiled.bSuccess)
+		{
+			return FillGraphMaterial(Material, Asset, Compiled.Shader, BaseDirectory);
+		}
+		E_LOG(LogRenderer, Error, "머티리얼 그래프 컴파일 실패 ({}){}:\n{}", Asset.Name, Material.Shader != nullptr ? " — 이전 셰이더 유지" : "",
+		      Compiled.JoinErrors());
+		if (Material.Shader != nullptr)
+		{
+			Material.Name      = Asset.Name;
+			Material.BlendMode = Asset.BlendMode;
+			Material.bTwoSided = Asset.bTwoSided;
+			return false;
+		}
+	}
+
 	Material.Name      = Asset.Name;
 	Material.Constants = Asset.Constants;
 	Material.BlendMode = Asset.BlendMode;
 	Material.bTwoSided = Asset.bTwoSided;
-	bool bChanged      = false;
+	bool bChanged      = Material.Shader != nullptr || Material.TextureCount != MaterialSlot_Count; // 그래프 → 고정: 테이블 다시
+	Material.Shader.reset();
+	Material.GraphConstants.clear();
+	Material.TextureCount = MaterialSlot_Count;
+	for (uint32 Slot = MaterialSlot_Count; Slot < MaterialTextureMax; ++Slot)
+	{
+		Material.Textures[Slot] = FTextureHandle{};
+	}
 	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
 	{
 		const FTextureHandle Texture = Asset.TexturePaths[Slot].empty()
@@ -754,6 +793,92 @@ bool FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMateria
 		Material.Textures[Slot] = Texture;
 	}
 	return bChanged;
+}
+
+bool FResourceManager::FillGraphMaterial(FMaterial& Material, const FMaterialAsset& Asset, std::shared_ptr<const FMaterialShader> Shader,
+                                         const std::filesystem::path& BaseDirectory)
+{
+	Material.Name      = Asset.Name;
+	Material.Constants = Asset.Constants; // AlphaCutoff만 쓴다
+	Material.BlendMode = Asset.BlendMode;
+	Material.bTwoSided = Asset.bTwoSided;
+	// 같은 HLSL이면 기존 셰이더 객체를 공유 (렌더러 PSO 키 = 해시)
+	if (const auto Found = GraphShaders.find(Shader->Hash); Found != GraphShaders.end())
+	{
+		if (std::shared_ptr<const FMaterialShader> Existing = Found->second.lock())
+		{
+			Shader = std::move(Existing);
+		}
+	}
+	GraphShaders[Shader->Hash] = Shader;
+
+	const FMaterialParameterLayout& Layout = Shader->Layout;
+	bool bChanged           = Material.Shader == nullptr || Material.TextureCount != Layout.TextureCount;
+	Material.GraphConstants = Layout.BuildConstants(Asset.Parameters);
+	Material.TextureCount   = Layout.TextureCount;
+	for (uint32 Slot = 0; Slot < MaterialTextureMax; ++Slot)
+	{
+		FTextureHandle Texture;
+		if (Slot < Layout.TextureCount)
+		{
+			const FMaterialParameter* Parameter = Layout.FindTextureParameter(Slot, Asset.Parameters);
+			if (Parameter != nullptr && !Parameter->Texture.empty())
+			{
+				Texture = LoadTexture(BaseDirectory / FStringConv::ToWide(Parameter->Texture), Parameter->Usage);
+			}
+		}
+		bChanged |= Texture != Material.Textures[Slot];
+		Material.Textures[Slot] = Texture;
+	}
+	// 레이아웃(텍스처 용도)이 바뀌면 기본 텍스처가 달라질 수 있으므로 셰이더가 바뀌어도 테이블을 다시 만든다
+	bChanged |= Material.Shader == nullptr || Material.Shader->Hash != Shader->Hash;
+	Material.Shader = std::move(Shader);
+	return bChanged;
+}
+
+bool FResourceManager::ReloadMaterialFile(const std::filesystem::path& Path)
+{
+	std::error_code       ErrorCode;
+	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
+	if (ErrorCode)
+	{
+		Canonical = Path;
+	}
+	FMaterialAsset Asset;
+	if (!Asset.LoadFromFile(Canonical))
+	{
+		return false;
+	}
+	const std::wstring PathKey = FMaterialAsset::MakePathKey(Canonical);
+	EditedMaterialSources.erase(PathKey); // 디스크가 기준
+	if (const auto Found = MaterialCache.find(Canonical.wstring()); Found != MaterialCache.end() && Materials.IsValid(Found->second))
+	{
+		ApplyMaterialAsset(Found->second, Asset, Canonical.parent_path()); // 이 파일을 조상으로 둔 인스턴스도 함께
+		E_LOG(LogRenderer, Log, "머티리얼 다시 로드: {}", Asset.Name);
+		return true;
+	}
+	// 직접 쓰이지는 않지만 인스턴스의 부모일 수 있다
+	bool bReloaded = false;
+	for (const auto& [Key, Cached] : MaterialCache)
+	{
+		FMaterial* Child = Materials.Get(Cached);
+		if (Child == nullptr || std::find(Child->ParentChain.begin(), Child->ParentChain.end(), PathKey) == Child->ParentChain.end())
+		{
+			continue;
+		}
+		FMaterialAsset ChildAsset;
+		if (const auto Edited = EditedMaterialSources.find(FMaterialAsset::MakePathKey(Key)); Edited != EditedMaterialSources.end())
+		{
+			ChildAsset = Edited->second;
+		}
+		else if (!ChildAsset.LoadFromFile(Key))
+		{
+			continue;
+		}
+		ResolveAndFillMaterial(*Child, ChildAsset, Key, true);
+		bReloaded = true;
+	}
+	return bReloaded;
 }
 
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)

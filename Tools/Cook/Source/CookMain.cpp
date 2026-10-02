@@ -10,6 +10,7 @@
 #include "RHI/ShaderManifest.h"
 #include "Renderer/AssetCache.h"
 #include "Renderer/MaterialAsset.h"
+#include "Renderer/MaterialRender.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -24,6 +25,8 @@ E_DEFINE_LOG_CATEGORY(LogCook, Log)
 //   1) Engine/Shaders/Shaders.json의 모든 셰이더를 DXC로 컴파일해 Engine/Shaders/Cooked/에 DXIL 기록
 //   2) 프로젝트 Content의 모델(glTF/GLB)과 이미지(PNG/JPG/TGA/BMP)를 <프로젝트>/Cooked/에 엔진 바이너리로 기록
 //      이미지는 .emat가 참조하는 슬롯 용도(색상/선형/노멀/마스크)별로, 참조되지 않으면 색상으로 압축 쿠킹
+//   3) 그래프 머티리얼(.emat Graph, 인스턴스는 부모 체인 해석 후)의 픽셀 셰이더 변형을 모두 Engine/Shaders/Cooked/에 기록
+//      (패키지는 DXC 없이 쿠킹 DXIL만 읽는다 — 같은 생성 소스 해시는 한 번만)
 int main()
 {
 	FLog::Init();
@@ -95,6 +98,47 @@ int main()
 	E_LOG(LogCook, Display, "셰이더 쿠킹 완료: 성공 {}, 실패 {} → {}", Succeeded, Failed,
 	      FStringConv::ToUtf8(Library.GetCookedDirectory().wstring()));
 
+	// ---- 그래프 머티리얼 셰이더 변형 (프로젝트 Content의 .emat 전부, 인스턴스는 해석 결과 — 정적 스위치 덮어쓰기는 다른 변형)
+	if (FPaths::HasProject())
+	{
+		std::set<uint64> CookedHashes;
+		uint32           GraphMaterials = 0;
+		std::error_code  ErrorCode;
+		const auto       Loader = [](const std::filesystem::path& ParentPath, FMaterialAsset& OutAsset) { return OutAsset.LoadFromFile(ParentPath); };
+		for (const auto& Entry : std::filesystem::recursive_directory_iterator(FPaths::GetProjectContentDirectory(), ErrorCode))
+		{
+			FMaterialAsset Asset;
+			FMaterialAsset Resolved;
+			if (!Entry.is_regular_file(ErrorCode) || Entry.path().extension() != FMaterialAsset::Extension || !Asset.LoadFromFile(Entry.path()) ||
+			    !FMaterialAsset::Resolve(Asset, Entry.path(), Loader, Resolved) || !Resolved.IsGraphMaterial())
+			{
+				continue;
+			}
+			++GraphMaterials;
+			const FMaterialGraphCompileResult Compiled = FMaterialGraphCompiler::Compile(Resolved.Graph, Resolved.Parameters);
+			if (!Compiled.bSuccess)
+			{
+				++Failed;
+				E_LOG(LogCook, Error, "머티리얼 그래프 컴파일 실패: {}\n{}", FStringConv::ToUtf8(Entry.path().filename().wstring()), Compiled.JoinErrors());
+				continue;
+			}
+			if (!CookedHashes.insert(Compiled.Shader->Hash).second)
+			{
+				continue; // 같은 그래프 (인스턴스 등)
+			}
+			for (const FShaderCompileDesc& Desc : MaterialRender::GetGraphShaderDescs(*Compiled.Shader))
+			{
+				if (!Library.CookShader(Desc))
+				{
+					++Failed;
+					E_LOG(LogCook, Error, "그래프 머티리얼 셰이더 쿠킹 실패: {} ({})", FStringConv::ToUtf8(Entry.path().filename().wstring()),
+					      FStringConv::ToUtf8(Desc.EntryPoint));
+				}
+			}
+		}
+		E_LOG(LogCook, Display, "그래프 머티리얼 셰이더 쿠킹: 머티리얼 {}개, 셰이더 {}종", GraphMaterials, CookedHashes.size());
+	}
+
 	Library.Shutdown();
 	Compiler.Shutdown();
 
@@ -114,6 +158,14 @@ int main()
 			FMaterialAsset Material;
 			if (Entry.is_regular_file(ErrorCode) && Entry.path().extension() == L".emat" && Material.LoadFromFile(Entry.path()))
 			{
+				for (const FMaterialParameter& Parameter : Material.Parameters) // 그래프 텍스처 파라미터 (적힌 Usage)
+				{
+					if (Parameter.Type == EMaterialParameterType::Texture && !Parameter.Texture.empty())
+					{
+						TextureUsages[std::filesystem::weakly_canonical(Entry.path().parent_path() / FStringConv::ToWide(Parameter.Texture), ErrorCode)]
+							.insert(Parameter.Usage);
+					}
+				}
 				for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
 				{
 					if (!Material.TexturePaths[Slot].empty())

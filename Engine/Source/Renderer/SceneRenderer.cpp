@@ -8,6 +8,7 @@
 #include "Renderer/Camera.h"
 #include "Renderer/LodMath.h"
 #include "Renderer/Material.h"
+#include "Renderer/MaterialRender.h"
 #include "Renderer/PixelArtMath.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
@@ -57,6 +58,7 @@ namespace
 		RootParam_ScreenReflection    = 21, // t22 (SSR 결과 표)
 		RootParam_Fog                 = 22, // b6 (안개 상수 — 반투명 패스, Fog.hlsli)
 		RootParam_FogVolume           = 23, // t23 (볼류메트릭 안개 결과 표 — 반투명 패스)
+		RootParam_MaterialGraphTextures = 24, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위 — MaterialCommon.hlsli)
 	};
 } // namespace
 
@@ -126,6 +128,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 FogVolumeIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 23, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(FogIndex == RootParam_Fog && FogVolumeIndex == RootParam_FogVolume);
+	const uint32 GraphTexturesIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
+		D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(GraphTexturesIndex == RootParam_MaterialGraphTextures);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -371,11 +377,15 @@ void FSceneRenderer::GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderC
 	}
 }
 
-bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant)
+bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant, const FMaterialShader* GraphShader)
 {
 	FShaderCompileDesc VertexDesc;
 	FShaderCompileDesc PixelDesc;
 	GetMeshShaderDescs(Pass, Variant, VertexDesc, PixelDesc);
+	if (GraphShader != nullptr)
+	{
+		PixelDesc = MaterialRender::MakeGraphShaderDesc(PixelDesc.FileName.c_str(), PixelDesc.EntryPoint.c_str(), EShaderStage::Pixel, *GraphShader);
+	}
 	const ComPtr<IDxcBlob> VertexShader = ShaderLibrary.GetShader(VertexDesc);
 	const ComPtr<IDxcBlob> PixelShader  = ShaderLibrary.GetShader(PixelDesc);
 	if (!VertexShader || !PixelShader)
@@ -423,8 +433,12 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshP
 	default:
 		break;
 	}
-	const std::wstring DebugName = std::format(L"Mesh{}{}{}{}Pipeline", PassName, bVariantBit && Pass != EMeshPass::Translucent ? L"Masked" : L"",
-	                                           bTwoSided ? L"TwoSided" : L"", bSkinned ? L"Skinned" : L"");
+	std::wstring DebugName = std::format(L"Mesh{}{}{}{}Pipeline", PassName, bVariantBit && Pass != EMeshPass::Translucent ? L"Masked" : L"",
+	                                     bTwoSided ? L"TwoSided" : L"", bSkinned ? L"Skinned" : L"");
+	if (GraphShader != nullptr)
+	{
+		DebugName += std::format(L"_Graph{:016x}", GraphShader->Hash);
+	}
 	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), PsoDesc, DebugName.c_str());
 }
 
@@ -458,6 +472,8 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 			}
 		}
 	}
+
+	ReleaseGraphPipelines(); // 그래프 머티리얼 PSO는 다음 그리기에 새 셰이더로 다시 만든다
 
 	// 패스·변형별로 새 PSO를 만들고 성공한 것만 교체 (이전 PSO는 진행 중인 프레임이 참조할 수 있으므로 지연 해제)
 	bool bMeshOk = true;
@@ -567,6 +583,7 @@ void FSceneRenderer::Shutdown()
 			Pipeline.Shutdown();
 		}
 	}
+	GraphPipelines.clear(); // GPU Flush 이후
 	RootSignature.Shutdown();
 	ShaderLibrary.Shutdown();
 	ShaderCompiler.Shutdown();
@@ -1609,7 +1626,6 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, EMeshPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress,
                                        D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, EMeshPhase Phase, uint32& InOutDrawCalls, uint64& InOutTriangles)
 {
-	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	const bool                 bPrepassPass  = Pass == EMeshPass::Prepass;
 
 	// 지형: 메시보다 먼저 (큰 가림막 — 초기 깊이 기각). 자기 루트 시그니처를 쓰므로 아래에서 메시 상태를 다시 설정한다
@@ -1639,11 +1655,11 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 	BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, bOcclusion ? OcclusionCuller.GetIndices(FirstPhase) : MainBatches.GetIndexBuffer());
 
 	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 거칠기만 읽는다)
-	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
+	std::unordered_map<const FMaterial*, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
 
 	const std::vector<FMeshInstance>& Instances     = MeshInstances.GetInstances();
 	const FMaterial*                  BoundMaterial = nullptr;
-	uint32                            BoundVariant  = 0;     // 변형 0(정적 불투명)이 바인딩된 상태로 시작
+	ID3D12PipelineState*              BoundPipeline = GetMeshPipeline(Pass, 0).Get(); // 변형 0(정적 불투명)이 바인딩된 상태로 시작
 	bool                              bSkinnedIndices = false; // 오클루전 1단계: 스킨 묶음용 번호 목록으로 바꿨는가
 
 	// DrawPhase 0 = 오클루전 없음(바로 그림), 1/2 = 오클루전 단계 (정적 묶음은 간접 드로우, 스킨 묶음은 1단계에서 바로)
@@ -1659,11 +1675,18 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 			{
 				continue;
 			}
-			const uint32 Variant = Instance.GetPipelineVariant();
-			if (Variant != BoundVariant)
+			const uint32         Variant  = Instance.GetPipelineVariant();
+			const FMaterial*     Material = Instance.Material;
+			ID3D12PipelineState* Pipeline = GetMaterialPipeline(Pass, Variant, *Material);
+			if (Pipeline == nullptr) // 그래프 셰이더 실패: 기본 머티리얼로
 			{
-				CommandList->SetPipelineState(GetMeshPipeline(Pass, Variant).Get());
-				BoundVariant = Variant;
+				Material = &Resources->ResolveMaterial(Resources->GetDefaultMaterial());
+				Pipeline = GetMeshPipeline(Pass, Variant).Get();
+			}
+			if (Pipeline != BoundPipeline)
+			{
+				CommandList->SetPipelineState(Pipeline);
+				BoundPipeline = Pipeline;
 			}
 			if (bSkinned && DrawPhase == 1 && !bSkinnedIndices)
 			{
@@ -1671,17 +1694,10 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 				CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
 				bSkinnedIndices = true;
 			}
-			if (Instance.Material != BoundMaterial) // 사전 패스도 거칠기(SSR)를 위해 금속/거칠기 텍스처를 읽는다
+			if (Material != BoundMaterial) // 사전 패스도 거칠기(SSR)를 위해 머티리얼을 평가한다
 			{
-				const uint64 Key   = Instance.MaterialHandle.ToId();
-				auto         Found = MaterialConstantCache.find(Key);
-				if (Found == MaterialConstantCache.end())
-				{
-					Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
-				}
-				CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
-				CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
-				BoundMaterial = Instance.Material;
+				BindMeshMaterial(CommandList, *Material, MaterialConstantCache);
+				BoundMaterial = Material;
 			}
 
 			CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
@@ -1718,7 +1734,7 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 	case EMeshPhase::Both:
 		DrawBatches(1);
 		CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
-		BoundVariant = 0;
+		BoundPipeline = GetMeshPipeline(Pass, 0).Get();
 		CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, OcclusionCuller.GetIndices(2));
 		DrawBatches(2);
 		break;
@@ -1756,7 +1772,6 @@ void FSceneRenderer::DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandLi
                                             D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, uint32& OutDrawCalls,
                                             uint64& OutTriangles)
 {
-	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 
 	CommandList->SetPipelineState(GetMeshPipeline(EMeshPass::Translucent, 0).Get());
 	BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, TranslucentBatches.GetIndexBuffer());
@@ -1764,32 +1779,32 @@ void FSceneRenderer::DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandLi
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogRenderer.GetVolumeSrv().Gpu);
 
 	// 정렬 순서(먼 것부터)를 지키므로 PSO/머티리얼은 바뀔 때마다 바꾼다
-	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
-	const std::vector<FMeshInstance>&                     Instances     = MeshInstances.GetInstances();
-	const FMaterial*                                      BoundMaterial = nullptr;
-	uint32                                                BoundVariant  = 0;
+	std::unordered_map<const FMaterial*, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
+	const std::vector<FMeshInstance>&                               Instances     = MeshInstances.GetInstances();
+	const FMaterial*                                                BoundMaterial = nullptr;
+	ID3D12PipelineState*                                            BoundPipeline = GetMeshPipeline(EMeshPass::Translucent, 0).Get();
 	OutDrawCalls                                                        = 0;
 	OutTriangles                                                        = 0;
 	for (const FInstanceBatch& Batch : TranslucentBatches.GetBatches())
 	{
 		const FMeshInstance& Instance = Instances[Batch.Instance];
 		const uint32         Variant  = Instance.GetPipelineVariant();
-		if (Variant != BoundVariant)
+		const FMaterial*     Material = Instance.Material;
+		ID3D12PipelineState* Pipeline = GetMaterialPipeline(EMeshPass::Translucent, Variant, *Material);
+		if (Pipeline == nullptr) // 그래프 셰이더 실패: 기본 머티리얼로
 		{
-			CommandList->SetPipelineState(GetMeshPipeline(EMeshPass::Translucent, Variant).Get());
-			BoundVariant = Variant;
+			Material = &Resources->ResolveMaterial(Resources->GetDefaultMaterial());
+			Pipeline = GetMeshPipeline(EMeshPass::Translucent, Variant).Get();
 		}
-		if (Instance.Material != BoundMaterial)
+		if (Pipeline != BoundPipeline)
 		{
-			const uint64 Key   = Instance.MaterialHandle.ToId();
-			auto         Found = MaterialConstantCache.find(Key);
-			if (Found == MaterialConstantCache.end())
-			{
-				Found = MaterialConstantCache.emplace(Key, DynamicBuffer.AllocateConstants(Instance.Material->Constants).GpuAddress).first;
-			}
-			CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
-			CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Instance.Material->TextureTable.Gpu);
-			BoundMaterial = Instance.Material;
+			CommandList->SetPipelineState(Pipeline);
+			BoundPipeline = Pipeline;
+		}
+		if (Material != BoundMaterial)
+		{
+			BindMeshMaterial(CommandList, *Material, MaterialConstantCache);
+			BoundMaterial = Material;
 		}
 		CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
 		if (Instance.IsSkinned())
@@ -1884,4 +1899,91 @@ FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const F
 		PerFrame.DirectionalLight.Intensity = 3.0f; // HDR 단위 (확산 BRDF에 1/π가 있어 흰 면 ≈ 0.95)
 	}
 	return PerFrame;
+}
+
+ID3D12PipelineState* FSceneRenderer::GetMaterialPipeline(EMeshPass Pass, uint32 Variant, const FMaterial& Material)
+{
+	if (Material.Shader == nullptr)
+	{
+		return GetMeshPipeline(Pass, Variant).Get();
+	}
+	if (Pass == EMeshPass::Wireframe)
+	{
+		Variant &= MaterialRender::VariantSkinned;
+	}
+	std::unique_ptr<FGraphPipelineSet>& Set = GraphPipelines[Material.Shader->Hash];
+	if (!Set)
+	{
+		// 오래 쓰지 않은 세트 정리 (편집하며 해시가 바뀐 옛 셰이더) — 진행 중인 프레임이 참조할 수 있어 지연 해제
+		constexpr uint64 UnusedFrames = 600;
+		for (auto It = GraphPipelines.begin(); It != GraphPipelines.end();)
+		{
+			if (It->second && It->second->LastUsedFrame + UnusedFrames < SceneFrameCount)
+			{
+				for (auto& PassPipelines : It->second->Pipelines)
+				{
+					for (FD3D12PipelineState& Pipeline : PassPipelines)
+					{
+						if (Pipeline.Get() != nullptr)
+						{
+							Rhi->DeferRelease(Pipeline.Detach());
+						}
+					}
+				}
+				It = GraphPipelines.erase(It);
+			}
+			else
+			{
+				++It;
+			}
+		}
+		std::unique_ptr<FGraphPipelineSet>& NewSet = GraphPipelines[Material.Shader->Hash];
+		NewSet                                     = std::make_unique<FGraphPipelineSet>();
+		return GetMaterialPipeline(Pass, Variant, Material);
+	}
+	Set->LastUsedFrame = SceneFrameCount;
+	const uint32 PassIndex = static_cast<uint32>(Pass);
+	uint8&       State     = Set->State[PassIndex][Variant];
+	if (State == 0)
+	{
+		State = CreateMeshPipeline(Set->Pipelines[PassIndex][Variant], Pass, Variant, Material.Shader.get()) ? 1 : 2;
+		if (State == 2)
+		{
+			E_LOG(LogRenderer, Error, "그래프 머티리얼 셰이더 PSO 생성 실패 ({}, {:016x}, 패스 {}, 변형 {}) — 기본 머티리얼로 그립니다", Material.Name,
+			      Material.Shader->Hash, PassIndex, Variant);
+		}
+	}
+	return State == 1 ? Set->Pipelines[PassIndex][Variant].Get() : nullptr;
+}
+
+void FSceneRenderer::BindMeshMaterial(ID3D12GraphicsCommandList* CommandList, const FMaterial& Material,
+                                      std::unordered_map<const FMaterial*, D3D12_GPU_VIRTUAL_ADDRESS>& ConstantCache)
+{
+	auto Found = ConstantCache.find(&Material);
+	if (Found == ConstantCache.end())
+	{
+		Found = ConstantCache.emplace(&Material, MaterialRender::UploadMaterialConstants(Rhi->GetDynamicBuffer(), Material)).first;
+	}
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Material, Found->second);
+	// 테이블은 항상 5칸 이상(BuildMaterialTable)이라 두 자리에 같은 테이블을 묶는다 — 고정 PBR은 t0~t4, 그래프는 공간 2만 읽는다
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialTexture, Material.TextureTable.Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_MaterialGraphTextures, Material.TextureTable.Gpu);
+}
+
+void FSceneRenderer::ReleaseGraphPipelines()
+{
+	for (auto& [Hash, Set] : GraphPipelines)
+	{
+		for (auto& PassPipelines : Set->Pipelines)
+		{
+			for (FD3D12PipelineState& Pipeline : PassPipelines)
+			{
+				if (Pipeline.Get() != nullptr)
+				{
+					Rhi->DeferRelease(Pipeline.Detach());
+				}
+			}
+		}
+	}
+	GraphPipelines.clear();
 }

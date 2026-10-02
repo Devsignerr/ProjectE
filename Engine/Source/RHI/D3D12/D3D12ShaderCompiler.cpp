@@ -37,6 +37,44 @@ namespace
 	private:
 		std::vector<uint8> Bytes;
 	};
+
+	// 가상 포함 파일(FShaderCompileDesc::VirtualFiles)을 먼저 찾고, 없으면 기본 핸들러(디스크)에 넘긴다
+	class FVirtualIncludeHandler final
+		: public Microsoft::WRL::RuntimeClass<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, IDxcIncludeHandler>
+	{
+	public:
+		FVirtualIncludeHandler(IDxcUtils* InUtils, IDxcIncludeHandler* InFallback, const std::vector<FShaderVirtualFile>* InFiles)
+			: Utils(InUtils)
+			, Fallback(InFallback)
+			, Files(InFiles)
+		{
+		}
+
+		HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR FileName, IDxcBlob** OutSource) override
+		{
+			const std::wstring Name = std::filesystem::path(FileName).filename().wstring();
+			for (const FShaderVirtualFile& File : *Files)
+			{
+				if (_wcsicmp(File.Name.c_str(), Name.c_str()) == 0)
+				{
+					ComPtr<IDxcBlobEncoding> Blob;
+					const HRESULT Result = Utils->CreateBlob(File.Content.data(), static_cast<UINT32>(File.Content.size()), DXC_CP_UTF8, &Blob);
+					if (FAILED(Result))
+					{
+						return Result;
+					}
+					*OutSource = Blob.Detach();
+					return S_OK;
+				}
+			}
+			return Fallback->LoadSource(FileName, OutSource);
+		}
+
+	private:
+		IDxcUtils*                             Utils;
+		IDxcIncludeHandler*                    Fallback;
+		const std::vector<FShaderVirtualFile>* Files;
+	};
 } // namespace
 
 FD3D12ShaderCompiler::~FD3D12ShaderCompiler()
@@ -81,8 +119,21 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 	const std::filesystem::path FullPath  = ShaderDir / Desc.FileName;
 	const std::string           DisplayName = FStringConv::ToUtf8(Desc.FileName) + ":" + FStringConv::ToUtf8(Desc.EntryPoint);
 
+	// 진입 파일도 가상 파일일 수 있다 (생성 소스 — 포함 경로는 엔진 셰이더 폴더)
+	const FShaderVirtualFile* VirtualSource = nullptr;
+	for (const FShaderVirtualFile& File : Desc.VirtualFiles)
+	{
+		VirtualSource = _wcsicmp(File.Name.c_str(), Desc.FileName.c_str()) == 0 ? &File : VirtualSource;
+	}
 	ComPtr<IDxcBlobEncoding> Source;
-	if (FAILED(Utils->LoadFile(FullPath.c_str(), nullptr, &Source)))
+	if (VirtualSource != nullptr)
+	{
+		if (FAILED(Utils->CreateBlob(VirtualSource->Content.data(), static_cast<UINT32>(VirtualSource->Content.size()), DXC_CP_UTF8, &Source)))
+		{
+			return nullptr;
+		}
+	}
+	else if (FAILED(Utils->LoadFile(FullPath.c_str(), nullptr, &Source)))
 	{
 		E_LOG(LogD3D12, Error, "셰이더 파일을 열 수 없습니다: {}", FStringConv::ToUtf8(FullPath.wstring()));
 		return nullptr;
@@ -132,9 +183,15 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 		Args.push_back(Arg.c_str());
 	}
 
+	ComPtr<IDxcIncludeHandler> Includes = IncludeHandler;
+	if (!Desc.VirtualFiles.empty())
+	{
+		Includes = Microsoft::WRL::Make<FVirtualIncludeHandler>(Utils.Get(), IncludeHandler.Get(), &Desc.VirtualFiles);
+	}
+
 	ComPtr<IDxcResult> Result;
 	const HRESULT CompileHr = Compiler->Compile(&SourceBuffer, Args.data(), static_cast<UINT32>(Args.size()),
-	                                            IncludeHandler.Get(), IID_PPV_ARGS(&Result));
+	                                            Includes.Get(), IID_PPV_ARGS(&Result));
 	if (FAILED(CompileHr) || Result == nullptr)
 	{
 		E_LOG(LogD3D12, Error, "셰이더 컴파일 호출 실패: {} ({})", DisplayName, HResultToString(CompileHr));

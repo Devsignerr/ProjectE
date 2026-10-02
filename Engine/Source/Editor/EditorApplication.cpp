@@ -2027,6 +2027,12 @@ void FEditorApplication::PollScriptChanges()
 			World.GetAI().ReloadBehaviorTree(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
+		// 머티리얼(.emat, 그래프 포함): 캐시된 머티리얼을 다시 읽어 그래프를 다시 컴파일한다 (오류면 이전 셰이더 유지 — 로그)
+		if (Extension == FMaterialAsset::Extension)
+		{
+			Resources.ReloadMaterialFile(Path);
+			continue;
+		}
 		// 애니메이션 그래프: 이 파일을 쓰는 컴포넌트가 다음 갱신에서 새 그래프로 다시 묶인다 (파라미터 유지, 편집 중·플레이 중 모두)
 		if (Extension == FAnimGraphAsset::Extension)
 		{

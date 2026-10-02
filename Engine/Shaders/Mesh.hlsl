@@ -52,24 +52,19 @@ cbuffer PerFrame : register(b1)
 	float3            PerFramePadding;
 };
 
-cbuffer Material : register(b2)
-{
-	float4 BaseColorFactor;
-	float3 EmissiveFactor;
-	float  MetallicFactor;
-	float  RoughnessFactor;
-	float  NormalScale;
-	float  OcclusionStrength;
-	float  AlphaCutoff;     // Masked: 베이스 컬러 알파(텍스처 × 정점 색 × 팩터)가 이보다 작으면 버린다
-};
+SamplerState LinearSampler : register(s0); // 이방성 반복 (머티리얼 E_MATERIAL_SAMPLER_WRAP)
+SamplerState IblSampler    : register(s1); // 선형 클램프 (IBL, 머티리얼 E_MATERIAL_SAMPLER_CLAMP)
 
-// 머티리얼 텍스처 테이블 (EMaterialTextureSlot 순서)
-Texture2D    BaseColorTexture         : register(t0); // sRGB
-Texture2D    MetallicRoughnessTexture : register(t1); // 선형, G=거칠기 B=금속
-Texture2D    NormalTexture            : register(t2); // 선형, 탄젠트 공간
-Texture2D    OcclusionTexture         : register(t3); // 선형, R
-Texture2D    EmissiveTexture          : register(t4); // sRGB
-SamplerState LinearSampler            : register(s0);
+// 머티리얼 평가 (MaterialCommon.hlsli EvaluateMaterial): 고정 PBR(b2 Material + t0~t4) 또는 그래프 생성 코드(b2 + 공간 2 t0~)
+// 래스터 메시 패스는 TAAU 밉 바이어스(PerFrame MaterialMipBias, 네이티브 0)를 모든 머티리얼 텍스처 샘플에 건다 → MATERIAL_SAMPLE = SampleBias
+#define E_MATERIAL_MIP_BIAS MaterialMipBias
+#include "MaterialCommon.hlsli"
+#ifdef E_MATERIAL_GRAPH
+#include "MaterialGraph.generated.hlsli"
+#define E_MATERIAL_ALPHA_CUTOFF (E_MATERIAL_HEADER.y)
+#else
+#include "MaterialDefault.hlsli"
+#endif
 
 // 방향광 캐스케이드 섀도우 상수 b3 (ShadowCommon.hlsli — 볼류메트릭 안개와 공유)
 #include "ShadowCommon.hlsli"
@@ -81,7 +76,6 @@ SamplerComparisonState ShadowSampler : register(s2);
 TextureCube<float4> IblDiffuse : register(t5);
 TextureCube<float4> IblSpecular : register(t6);
 Texture2D<float2> IblBrdf : register(t7);
-SamplerState IblSampler : register(s1);
 
 // 점광원/스포트라이트 (LocalLightRenderer: 목록 + 클러스터별 인덱스)
 StructuredBuffer<FLocalLight> LocalLights : register(t9);
@@ -471,22 +465,7 @@ void ApplyDecals(float2 PixelPosition, inout FSurface Surface)
 	Surface.Metallic   = saturate(Surface.Metallic * C.a + C.g);
 }
 
-float3 GetShadingNormal(FPixelInput Input)
-{
-	const float3 N = normalize(Input.WorldNormal);
-	// 보간으로 틀어진 탄젠트를 법선에 다시 직교화
-	const float3 T = normalize(Input.WorldTangent.xyz - N * dot(N, Input.WorldTangent.xyz));
-	const float3 B = cross(N, T) * Input.WorldTangent.w;
-
-	// XY만 사용하고 Z는 재구성 (BC5 노멀 맵은 RG만 저장)
-	float3 TangentNormal;
-	TangentNormal.xy = NormalTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).xy * 2.0f - 1.0f;
-	TangentNormal.z  = sqrt(saturate(1.0f - dot(TangentNormal.xy, TangentNormal.xy)));
-	TangentNormal.xy *= NormalScale;
-	return normalize(T * TangentNormal.x + B * TangentNormal.y + N * TangentNormal.z);
-}
-
-// 머티리얼 표면 (텍스처 × 팩터 × 정점 색) + 기하 법선 + 발광 + 알파
+// 머티리얼 표면 (EvaluateMaterial 결과를 월드 공간으로) + 기하 법선 + 발광 + 알파
 struct FMeshSurface
 {
 	FSurface Surface;
@@ -495,27 +474,39 @@ struct FMeshSurface
 	float    Alpha;
 };
 
-// 베이스 컬러 알파 (Masked 판정 — 텍스처 × 정점 색 × 팩터)
-float GetBaseAlpha(FPixelInput Input)
+// 메시 정점 보간값 → 머티리얼 입력 (DXR 히트 셰이더는 무게중심 보간으로 같은 값을 채운다 — MaterialCommon.hlsli)
+FMaterialPixelInputs MakeMaterialInputs(FPixelInput Input, bool bFrontFace)
 {
-	return BaseColorTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).a * Input.Color.a * BaseColorFactor.a;
+	FMaterialPixelInputs In;
+	In.WorldPosition = Input.WorldPosition;
+	In.WorldNormal   = normalize(Input.WorldNormal);
+	In.WorldTangent  = Input.WorldTangent;
+	In.UV0           = Input.UV;
+	In.VertexColor   = Input.Color;
+	In.CameraVector  = normalize(CameraPosition - Input.WorldPosition);
+	In.PixelPosition = Input.Position.xy;
+	In.bFrontFace    = bFrontFace;
+	return In;
+}
+
+FMaterialSurface EvaluateMeshMaterial(FPixelInput Input, bool bFrontFace)
+{
+	FMaterialSurface Material;
+	EvaluateMaterial(MakeMaterialInputs(Input, bFrontFace), Material);
+	return Material;
 }
 
 // bScreenEffects: 불투명 표면 기준 화면 버퍼(데칼 DBuffer, SSAO)를 쓴다 (반투명은 false)
-FMeshSurface SampleMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenEffects)
+FMeshSurface MakeMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenEffects, FMaterialSurface Material)
 {
-	const float4 BaseColor = BaseColorTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias) * Input.Color * BaseColorFactor;
-	const float4 MR        = MetallicRoughnessTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias);
-	const float  AO        = OcclusionTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).r;
-
 	FMeshSurface Result;
-	Result.Emissive         = EmissiveTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).rgb * EmissiveFactor;
-	Result.Alpha            = BaseColor.a;
+	Result.Emissive         = Material.Emissive;
+	Result.Alpha            = Material.Opacity;
 	Result.GeometricNormal  = normalize(Input.WorldNormal);
-	Result.Surface.Albedo    = BaseColor.rgb;
-	Result.Surface.Metallic  = saturate(MR.b * MetallicFactor);
-	Result.Surface.Roughness = MR.g * RoughnessFactor;
-	Result.Surface.N         = GetShadingNormal(Input);
+	Result.Surface.Albedo    = Material.BaseColor;
+	Result.Surface.Metallic  = saturate(Material.Metallic);
+	Result.Surface.Roughness = Material.Roughness;
+	Result.Surface.N         = MaterialTangentToWorld(normalize(Input.WorldNormal), Input.WorldTangent, Material.Normal);
 	if (!bFrontFace)
 	{
 		// 양면 머티리얼의 뒷면 (한 면 머티리얼은 뒷면을 컬링하므로 여기 오지 않는다): 표면 반대쪽에서 보므로 법선을 뒤집는다
@@ -528,7 +519,7 @@ FMeshSurface SampleMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenE
 	}
 	Result.Surface.Roughness = clamp(Result.Surface.Roughness, 0.045f, 1.0f); // 너무 작은 거칠기는 하이라이트 에일리어싱
 	Result.Surface.V         = normalize(CameraPosition - Input.WorldPosition);
-	Result.Surface.Occlusion = lerp(1.0f, AO, OcclusionStrength); // IBL만 사용
+	Result.Surface.Occlusion = Material.AmbientOcclusion; // IBL만 사용
 	if (bScreenEffects)
 	{
 		Result.Surface.Occlusion *= SampleScreenAmbientOcclusion(Input.Position.xy, Input.WorldPosition);
@@ -561,13 +552,14 @@ float4 ShadeOpaque(FPixelInput Input, FMeshSurface Mesh)
 
 float4 PSMain(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
 {
-	return ShadeOpaque(Input, SampleMeshSurface(Input, bFrontFace, true));
+	return ShadeOpaque(Input, MakeMeshSurface(Input, bFrontFace, true, EvaluateMeshMaterial(Input, bFrontFace)));
 }
 
 float4 PSMainMasked(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
 {
-	clip(GetBaseAlpha(Input) - AlphaCutoff);
-	return ShadeOpaque(Input, SampleMeshSurface(Input, bFrontFace, true));
+	const FMaterialSurface Material = EvaluateMeshMaterial(Input, bFrontFace);
+	clip(Material.OpacityMask - E_MATERIAL_ALPHA_CUTOFF);
+	return ShadeOpaque(Input, MakeMeshSurface(Input, bFrontFace, true, Material));
 }
 
 // 반투명 (알파 블렌드 Src·SrcA + Dst·(1 - SrcA), 깊이 쓰기 없음): 확산은 알파만큼, 반사(스펙큘러)는 알파와 무관하게 더한다.
@@ -576,7 +568,7 @@ float4 PSMainMasked(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Ta
 //   안개는 파티클과 같이 직접: 색 × 투과율 + 산란 (Fog.hlsli EvaluateFog). 화면 버퍼(SSAO/데칼/SSR)는 쓰지 않는다
 float4 PSTranslucent(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
 {
-	const FMeshSurface Mesh  = SampleMeshSurface(Input, bFrontFace, false);
+	const FMeshSurface Mesh  = MakeMeshSurface(Input, bFrontFace, false, EvaluateMeshMaterial(Input, bFrontFace));
 	const float        Alpha = saturate(Mesh.Alpha);
 
 	FSurface Reflective  = Mesh.Surface;
@@ -600,31 +592,37 @@ float4 PSTranslucent(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_T
 // 안개: 빛을 더하므로 투과율만 곱한다
 float4 PSAdditive(FPixelInput Input, bool bFrontFace : SV_IsFrontFace) : SV_Target
 {
-	const FMeshSurface Mesh  = SampleMeshSurface(Input, bFrontFace, false);
+	const FMeshSurface Mesh  = MakeMeshSurface(Input, bFrontFace, false, EvaluateMeshMaterial(Input, bFrontFace));
 	const float        Alpha = saturate(Mesh.Alpha);
 	const float3       Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, false) + Mesh.Emissive;
 	return float4(Color * Alpha * EvaluateFog(Input.WorldPosition).a, Alpha);
 }
-// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 거칠기(금속/거칠기 텍스처 G × 팩터) + 움직임 벡터
+// 깊이 사전 패스 (FSceneRenderer): 깊이 + 화면 공간 법선(기하 법선, 팔면체) + 거칠기(머티리얼 Roughness) + 움직임 벡터
 struct FPrepassOutput
 {
 	float4 Normal   : SV_Target0; // R10G10B10A2_UNORM (ScreenSpace.hlsli EncodeScreenNormal)
 	float2 Velocity : SV_Target1; // R16G16_FLOAT, UV 단위 현재 - 이전
 };
 
-FPrepassOutput PSPrepass(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
+FPrepassOutput MakePrepassOutput(FPixelInput Input, bool bFrontFace, FMaterialSurface Material)
 {
 	FPrepassOutput Output;
-	const float  Roughness = MetallicRoughnessTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).g * RoughnessFactor;
+	const float  Roughness = Material.Roughness;
 	const float3 Normal    = normalize(Input.WorldNormal);
 	Output.Normal   = EncodeScreenNormal(bFrontFace ? Normal : -Normal, Roughness); // 양면 뒷면은 뒤집은 법선 (메인 패스와 같게)
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
 	return Output;
 }
 
+FPrepassOutput PSPrepass(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
+{
+	return MakePrepassOutput(Input, bFrontFace, EvaluateMeshMaterial(Input, bFrontFace));
+}
+
 // Masked: 메인 패스와 같은 알파 판정으로 잘라 깊이를 쓰지 않는다 (메인은 깊이 같음 테스트라 같은 픽셀만 남는다)
 FPrepassOutput PSPrepassMasked(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
 {
-	clip(GetBaseAlpha(Input) - AlphaCutoff);
-	return PSPrepass(Input, bFrontFace);
+	const FMaterialSurface Material = EvaluateMeshMaterial(Input, bFrontFace);
+	clip(Material.OpacityMask - E_MATERIAL_ALPHA_CUTOFF);
+	return MakePrepassOutput(Input, bFrontFace, Material);
 }

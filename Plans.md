@@ -670,9 +670,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: `.emat`에 `BlendMode`(Opaque/Masked/Translucent/Additive)·`AlphaCutoff`·`TwoSided`·`Parent`(인스턴스: 부모 값 위에 지정한 값만 덮어씀)가 있고 머티리얼 편집기에서 바꾸면 즉시 반영. Masked는 메인/사전 패스/그림자(방향광·로컬)에서 잘리고, Translucent/Additive는 불투명 뒤 정렬된 전방 패스(방향광·로컬 라이트·IBL·안개, 깊이 쓰기 없음, TAA 반응형 마스크). glTF `alphaMode/alphaCutoff/doubleSided` 반영. 데모 씬(철망/잎/유리) 화면 확인, 디버그 레이어 0건.
 
-- [ ] 36-1. 에셋/런타임: `FMaterialAsset` 필드 + 인스턴스 해석(부모 체인, 순환 검출) + `FMaterial` 렌더 상태, glTF 로더
-- [ ] 36-2. 렌더: 배치 키 파이프라인 비트에 변형(블렌드·컬), PSO 변형, Masked clip(메인/사전/그림자 — 그림자 배치 키에 머티리얼), 반투명 정렬 패스
-- [ ] 36-3. 편집기/데모/테스트
+- [x] 36-1. 에셋/런타임: `FMaterialAsset` 필드 + 인스턴스 해석(부모 체인, 순환 검출) + `FMaterial` 렌더 상태, glTF 로더
+- [x] 36-2. 렌더: 배치 키 파이프라인 비트에 변형(블렌드·컬), PSO 변형, Masked clip(메인/사전/그림자 — 그림자 배치 키에 머티리얼), 반투명 정렬 패스
+- [x] 36-3. 편집기/데모/테스트 (2026-10-02 머지: `Demo_Materials`, `MaterialTests` 10개, `ModelVersion` 8, 화면·디버그 레이어 0건)
+- 후속: Masked 밉 알파 커버리지 감소(먼 잎이 얇아짐 — 커버리지 보존 밉/알파 투 커버리지), 반투명 정렬은 인스턴스 중심 기준(교차·자기 정렬 없음, 움직임 벡터 없음), `OnAssetMoved`가 `ParentChain`/편집 중 원본 키 미갱신, `EditedMaterialSources` 비우지 않음(37 수거와 연결), 선택 아웃라인이 컷아웃 무시, FBX 알파 모드, 통계 창 반투명 드로우, Demo_Terrain 폴리지 Masked 잎 적용
 
 ## Phase 37 — 리소스 수거 / 비동기 업로드 / VRAM 예산 (트랙 B)
 

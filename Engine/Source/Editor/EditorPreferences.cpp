@@ -28,7 +28,9 @@ void FEditorPreferences::Initialize()
 		.Property(&FEditorGeneralSettings::bAutoSave, "AutoSave", "자동 저장")
 		.Tooltip("저장 안 한 변경이 있으면 주기적으로 <Saved>/Autosaves/에 사본을 남긴다 (원본 씬 파일은 건드리지 않는다)")
 		.Property(&FEditorGeneralSettings::AutoSaveIntervalMinutes, "AutoSaveIntervalMinutes", "자동 저장 간격 (분)").Range(1.0f, 120.0f, 1.0f)
-		.Property(&FEditorGeneralSettings::AutoSaveKeepCount, "AutoSaveKeepCount", "자동 저장 보관 수").Range(1.0f, 50.0f).Tooltip("씬마다 최근 사본을 이만큼 남긴다");
+		.Property(&FEditorGeneralSettings::AutoSaveKeepCount, "AutoSaveKeepCount", "자동 저장 보관 수").Range(1.0f, 50.0f).Tooltip("씬마다 최근 사본을 이만큼 남긴다")
+		.Property(&FEditorGeneralSettings::bAutoReloadGameModule, "AutoReloadGameModule", "C++ 게임 모듈 자동 다시 로드")
+		.Tooltip("게임 모듈 DLL이 다시 빌드되면(VS 등 외부 빌드 포함) 감지해 다시 로드한다. 플레이 중이면 정지한 뒤 진행. 수동: 도구 → C++ 다시 로드 (Ctrl+Alt+F11)");
 
 	Registry.Register(Viewport, { "EditorViewport", "뷰포트", GEditorCategory, "편집 카메라와 기즈모 스냅 (모든 프로젝트 공통)", ESettingsScope::EditorUser })
 		.Property(&FEditorViewportSettings::DefaultCameraSpeed, "DefaultCameraSpeed", "기본 카메라 속도 (cm/초)").Range(10.0f, 20000.0f, 10.0f)

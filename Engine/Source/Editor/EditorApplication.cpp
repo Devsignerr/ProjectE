@@ -95,11 +95,8 @@ bool FEditorApplication::OnInit()
 	RegisterAITypes();
 	RegisterNetworkTypes();
 	RegisterUITypes();
-	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
-	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
-	{
-		GameModule.Load(FGameModuleHost::GetDefaultModulePath(FPaths::GetProjectDescriptor().GameModule));
-	}
+	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다 (핫 리로드용 복사본으로)
+	InitGameModule();
 
 	FD3D12RHIDesc RhiDesc;
 	RhiDesc.WindowHandle = GetWindow().GetHandle();
@@ -440,6 +437,7 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 		VerifyEjectFrame = 0;
 		SetPlayPossessed(false);
 	}
+	UpdateGameModuleHotReload(); // 플레이 중이면 정지 후 다시 로드하므로 플레이 갱신 전에
 	UpdatePlayMode(DeltaSeconds);
 	// 애니메이션/파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
 	World.TickPresentation(*Context.Scene, DeltaSeconds);
@@ -510,6 +508,7 @@ void FEditorApplication::OnRender()
 	{
 		ImGui::ShowDemoWindow(&bShowImGuiDemo);
 	}
+	DrawGameModuleBuildStatus();
 	DrawNotification();
 	CommitPendingEdit();
 
@@ -1232,6 +1231,10 @@ void FEditorApplication::HandleToolShortcuts()
 	{
 		ReloadAllShaders();
 	}
+	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Alt | ImGuiKey_F11) && HotReload.IsConfigured())
+	{
+		PendingGameModuleReload = "단축키";
+	}
 }
 
 void FEditorApplication::DrawToolsMenu()
@@ -1254,6 +1257,7 @@ void FEditorApplication::DrawToolsMenu()
 		}
 		ImGui::SetItemTooltip("반사 캡처 컴포넌트마다 주변을 큐브맵으로 그려 .ecapture로 저장합니다");
 		ImGui::TextDisabled(ShaderWatcher.IsWatching() ? "셰이더 자동 감시: 켜짐" : "셰이더 자동 감시: 꺼짐");
+		DrawGameModuleMenuItems();
 		ImGui::EndMenu();
 	}
 }

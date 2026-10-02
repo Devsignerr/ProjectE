@@ -20,7 +20,8 @@
 //                         { "Id": "tint", "Type": "Multiply", "Inputs": { "A": "rock:1", "B": [1, 0.8, 0.7] } } ],
 //              "Output": { "BaseColor": "tint", "Roughness": 0.7 } }
 //   입력 값 = 연결 "노드Id"(출력 0) / "노드Id:출력번호" 또는 상수(숫자 = float1, 배열 2~4개 = float2~4).
-//   "EditorPosition": [x, y]는 노드 편집기(Phase 51) 정보 — 실행·코드 생성에 쓰지 않는다.
+//   "EditorPosition": [x, y](노드), Graph의 "EditorOutputPosition"(출력 노드)·"EditorComments"(주석 상자)는
+//   노드 편집기(Phase 51, Editor/AssetEditors/MaterialGraphPanel) 정보 — 실행·코드 생성에 쓰지 않는다.
 //   텍스처 파라미터 경로는 .emat 폴더 기준 상대 경로(기존 텍스처 키와 같음 → 콘텐츠 브라우저 이동 시 참조 갱신 대상).
 //   머티리얼 인스턴스(Parent)는 Parameters에 덮어쓸 값만 적는다(이름으로 찾음, 타입은 부모 것). 그래프는 항상 체인 맨 위(일반 머티리얼) 것.
 //
@@ -40,6 +41,8 @@
 //
 // 새 노드를 추가하려면 MaterialGraphCompiler.cpp의 노드 표(GetNodeTable)에 핀과 코드 생성 함수를 넣고,
 // MaterialGraphTests에 타입/코드 케이스를 추가한다(노드 Type 이름은 JSON에 그대로 저장되므로 바꾸지 않는다).
+// 표의 범주(Category)·설정 종류(Settings)는 노드 편집기 팔레트/상세 패널이 GetNodeInfos로 읽는다 — 새 설정 종류(새 JSON 키)를
+// 쓰는 노드는 EMaterialNodeSetting과 MaterialGraph.cpp 읽기/쓰기, 편집기 상세 패널(MaterialGraphPanel.cpp)을 함께 고친다.
 
 // 머티리얼 텍스처 테이블 칸 상한 (그래프 텍스처 파라미터 수 상한). 셰이더는 공간 2 t0~t(N-1)
 constexpr uint32 MaterialTextureMax = 16;
@@ -100,13 +103,25 @@ struct FMaterialGraphNode
 	const FMaterialGraphInput* FindInput(std::string_view Pin) const;
 };
 
+// 노드 편집기 주석 상자 (코드 생성에 쓰지 않음). JSON "Graph"."EditorComments": [ { "Text", "Position": [x,y], "Size": [w,h] } ]
+struct FMaterialGraphComment
+{
+	std::string Text;
+	FVector2    Position = FVector2::ZeroVector;
+	FVector2    Size     = FVector2(300.0f, 200.0f);
+};
+
 struct FMaterialGraph
 {
 	std::vector<FMaterialGraphNode>  Nodes;
 	std::vector<FMaterialGraphInput> Outputs; // Pin = 머티리얼 출력 이름
+	// 노드 편집기 전용 (코드 생성에 쓰지 않음): 출력 노드 위치 ("EditorOutputPosition") + 주석 상자
+	FVector2                           OutputEditorPosition = FVector2::ZeroVector;
+	std::vector<FMaterialGraphComment> Comments;
 
 	bool IsEmpty() const { return Nodes.empty() && Outputs.empty(); }
 	const FMaterialGraphNode* FindNode(std::string_view Id) const;
+	FMaterialGraphNode*       FindNode(std::string_view Id);
 };
 
 // 머티리얼 출력 (생성 함수의 FMaterialSurface 필드와 같은 이름·순서)
@@ -160,10 +175,61 @@ struct FMaterialShader
 struct FMaterialGraphCompileResult
 {
 	bool                     bSuccess = false;
-	std::vector<std::string> Errors; // "[노드 Id] 메시지"
+	std::vector<std::string> Errors;     // "[노드 Id] 메시지"
+	std::vector<std::string> ErrorNodes; // Errors와 같은 순서: 오류 위치 노드 Id (비면 그래프 전체, OutputNodeId = 머티리얼 출력)
 	std::shared_ptr<const FMaterialShader> Shader;
 
 	std::string JoinErrors() const;
+};
+
+// ---- 노드 편집기용 조회 (Phase 51 사이드). 노드 표(GetNodeTable)에서 만들어지므로 새 노드는 자동으로 들어온다
+enum EMaterialNodeSetting : uint32
+{
+	MaterialNodeSetting_None      = 0,
+	MaterialNodeSetting_Value     = 1u << 0, // Constant: Value/ValueWidth
+	MaterialNodeSetting_Tiling    = 1u << 1, // TexCoord: Value.XY + Index(채널)
+	MaterialNodeSetting_Parameter = 1u << 2, // Name = 파라미터 이름 (FMaterialGraphNodeInfo::ParameterType)
+	MaterialNodeSetting_Sampler   = 1u << 3, // Option = Wrap|Clamp
+	MaterialNodeSetting_Channels  = 1u << 4, // Option = 채널 문자 (xyzw/rgba 1~4개)
+	MaterialNodeSetting_CompareOp = 1u << 5, // Option = Greater|GreaterEqual|Less|LessEqual|Equal|NotEqual
+};
+
+enum class EMaterialPinDefault : uint8
+{
+	Required,    // 연결 또는 상수 필수
+	Constant,    // 표의 상수 (FMaterialGraphPinInfo::Constant)
+	TexCoord,    // In.UV0
+	Time,        // 시간
+	WorldNormal, // 월드 노멀
+};
+
+struct FMaterialGraphPinInfo
+{
+	std::string         Name;
+	EMaterialPinDefault Default       = EMaterialPinDefault::Required;
+	FVector4            Constant      = FVector4::ZeroVector;
+	uint32              ConstantWidth = 1;
+};
+
+struct FMaterialGraphNodeInfo
+{
+	std::string                        Type;
+	std::string                        Category; // 팔레트 범주 (표에 적힌 한국어 이름)
+	std::vector<FMaterialGraphPinInfo> Inputs;   // 표의 핀 순서
+	std::vector<std::string>           Outputs;  // 출력 이름 (출력 1개면 "", 6개 = RGBA/RGB/R/G/B/A, 4개 = X/Y/Z/W)
+	uint32                             Settings      = MaterialNodeSetting_None;
+	EMaterialParameterType             ParameterType = EMaterialParameterType::Scalar; // Settings에 Parameter가 있을 때
+};
+
+// 편집기 분석: 출력에서 닿지 않는 노드까지 모두 평가해 출력 너비(핀 색)와 노드별 오류를 얻는다 (코드는 버림)
+struct FMaterialGraphAnalysis
+{
+	std::vector<std::string>          NodeIds;      // Graph.Nodes 순서
+	std::vector<std::vector<uint32>>  OutputWidths; // 노드별 출력 너비 (0 = 알 수 없음/오류)
+	std::vector<std::string>          Errors;
+	std::vector<std::string>          ErrorNodes;   // Errors와 같은 순서 (FMaterialGraphCompileResult::ErrorNodes와 같은 규칙)
+
+	const std::vector<uint32>* FindOutputWidths(std::string_view NodeId) const;
 };
 
 class FMaterialGraphCompiler
@@ -171,11 +237,17 @@ class FMaterialGraphCompiler
 public:
 	// 생성 HLSL을 담는 가상 포함 파일 이름 (Mesh.hlsl/Shadow.hlsl이 E_MATERIAL_GRAPH일 때 #include)
 	static constexpr const char* GeneratedFileName = "MaterialGraph.generated.hlsli";
+	// 오류 위치가 머티리얼 출력(노드 아님)일 때 ErrorNodes에 들어가는 이름
+	static constexpr const char* OutputNodeId = "@Output";
 
 	static FMaterialGraphCompileResult Compile(const FMaterialGraph& Graph, const std::vector<FMaterialParameter>& Parameters);
+	static FMaterialGraphAnalysis      Analyze(const FMaterialGraph& Graph, const std::vector<FMaterialParameter>& Parameters);
 
 	// 노드 종류 목록 (편집기/테스트용, 표 순서)
 	static std::vector<std::string> GetNodeTypes();
+	// 노드 표 정보 (표 순서) / 종류로 찾기 (없으면 nullptr)
+	static const std::vector<FMaterialGraphNodeInfo>& GetNodeInfos();
+	static const FMaterialGraphNodeInfo*              FindNodeInfo(std::string_view Type);
 	// 64비트 FNV-1a (HLSL 문자열 → 해시, 0이면 1)
 	static uint64 HashText(std::string_view Text);
 };

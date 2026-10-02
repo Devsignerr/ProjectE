@@ -17,10 +17,9 @@ local PlayerController = {
 		Camera               = "Camera", -- 따라갈 카메라 엔티티 이름 (직교 쿼터뷰)
 		RunSpeed             = 345.0,    -- cm/s, Running_A 발 속도
 		SprintSpeed          = 520.0,    -- cm/s, Running_A ×1.5
-		Acceleration         = 7.0,      -- 입력 크기 램프 (지수, 1/초)
+		Acceleration         = 7.0,      -- 이동 속도 크기 램프 (지수, 1/초) — 방향은 입력을 바로 따른다
 		Deceleration         = 12.0,
-		TurnSpeed            = 14.0,     -- 몸 방향 보간 (지수, 1/초)
-		MaxTurnRate          = 1080.0,   -- 도/초
+		TurnRate             = 1500.0,   -- 몸 회전 속도 (도/초, 일정 속도 — 180도 약 0.12초)
 		MaxMana              = 100.0,
 		MaxStamina           = 100.0,
 		ManaRegen            = 4.0,      -- 초당
@@ -281,11 +280,15 @@ function PlayerController:TickLocomotion(dt, MoveDir, MoveMag)
 	end
 	self:SetMoveSpeed(bSprint and P.SprintSpeed or P.RunSpeed)
 
-	local Scale  = self.bBlocking and 0.35 or 1.0
-	local Target = MoveDir and (MoveDir * (MoveMag * Scale)) or Vector3(0, 0, 0)
-	local Rate   = Target:LengthSquared() >= self.SmoothInput:LengthSquared() and P.Acceleration or P.Deceleration
-	self.SmoothInput = Vector3.Lerp(self.SmoothInput, Target, 1.0 - math.exp(-Rate * dt))
-	if self.SmoothInput:LengthSquared() > 0.0004 then
+	-- 크기만 램프하고 방향은 입력을 바로 따른다: 벡터 전체를 보간하면 반대로 꺾을 때 0을 거쳐 멈칫한다(반대 90%까지 0.43초)
+	local Scale     = self.bBlocking and 0.35 or 1.0
+	local TargetMag = MoveDir and (MoveMag * Scale) or 0.0
+	local CurrentMag = self.SmoothInput:Length()
+	local Rate      = TargetMag >= CurrentMag and P.Acceleration or P.Deceleration
+	local NewMag    = CurrentMag + (TargetMag - CurrentMag) * (1.0 - math.exp(-Rate * dt))
+	local Dir       = MoveDir or (CurrentMag > 0.0001 and self.SmoothInput * (1.0 / CurrentMag) or nil)
+	if Dir ~= nil and NewMag > 0.02 then
+		self.SmoothInput = Dir * NewMag
 		self.entity:AddMovementInput(self.SmoothInput)
 	else
 		self.SmoothInput = Vector3(0, 0, 0)
@@ -310,11 +313,11 @@ function PlayerController:TickFacing(dt)
 		return
 	end
 	local P     = self.Properties
+	-- 일정 속도 회전: 지수 보간은 끝 몇 도가 느리게 남아 덜 돌아선 느낌이 난다
 	local Delta = WrapAngle(self.TargetYaw - self.FacingYaw)
-	local Boost = self.Action and 2.5 or 1.0 -- 공격/스킬은 빨리 돌아선다
-	local Step  = Delta * (1.0 - math.exp(-P.TurnSpeed * Boost * dt))
-	local Max   = P.MaxTurnRate * Boost * dt
-	self.FacingYaw = WrapAngle(self.FacingYaw + Clamp(Step, -Max, Max))
+	local Boost = self.Action and 2.0 or 1.0 -- 공격/스킬은 더 빨리 돌아선다
+	local Max   = P.TurnRate * Boost * dt
+	self.FacingYaw = WrapAngle(self.FacingYaw + Clamp(Delta, -Max, Max))
 end
 
 function PlayerController:GetFacing()

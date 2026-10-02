@@ -13,6 +13,7 @@ struct FEditorGeneralSettings
 	bool   bAutoSave               = true;
 	float  AutoSaveIntervalMinutes = 10.0f; // 저장 안 한 변경이 있을 때 이 간격으로 <Saved>/Autosaves/에 사본 (원본 파일은 건드리지 않는다)
 	uint32 AutoSaveKeepCount       = 5;     // 씬마다 남길 자동 저장 사본 수
+	bool   bAutoReloadGameModule   = true;  // C++ 게임 모듈 DLL이 다시 빌드되면(외부 빌드 포함) 감지해 자동으로 다시 로드
 };
 
 // "EditorViewport" — 공통

@@ -41,7 +41,7 @@ std::filesystem::path FGameModuleHost::GetDefaultModulePath(const std::string& N
 	return std::filesystem::path(Buffer).parent_path() / (FStringConv::ToWide(Name) + L".dll");
 }
 
-bool FGameModuleHost::Load(const std::filesystem::path& DllPath)
+bool FGameModuleHost::Load(const std::filesystem::path& DllPath, std::string LogicalName)
 {
 	E_CHECKF(Module == nullptr, "게임 모듈이 이미 로드되어 있습니다: {}", Name);
 
@@ -67,9 +67,10 @@ bool FGameModuleHost::Load(const std::filesystem::path& DllPath)
 		return false;
 	}
 
-	Library = Handle;
-	Module  = Create();
-	Name    = FStringConv::ToUtf8(DllPath.stem().wstring());
+	Library    = Handle;
+	Module     = Create();
+	Name       = LogicalName.empty() ? FStringConv::ToUtf8(DllPath.stem().wstring()) : std::move(LogicalName);
+	LoadedPath = DllPath;
 
 	FTypeRegistry&    Registry      = FTypeRegistry::Get();
 	const std::string PreviousOwner = Registry.GetRegistrationOwner();
@@ -96,12 +97,17 @@ void FGameModuleHost::Attach(IGameModule& InModule, std::string InName)
 
 void FGameModuleHost::Unload()
 {
+	UnloadInternal(false);
+}
+
+void FGameModuleHost::UnloadInternal(bool bRetireComponentTypeIds)
+{
 	if (Module == nullptr)
 	{
 		return;
 	}
 	Module->OnUnload();
-	const size_t Removed = FTypeRegistry::Get().RemoveTypesByOwner(Name);
+	const size_t Removed = FTypeRegistry::Get().RemoveTypesByOwner(Name, bRetireComponentTypeIds);
 	for (const FOwnerCleanup& Cleanup : GetUnloadCleanups())
 	{
 		Cleanup(Name);
@@ -110,6 +116,29 @@ void FGameModuleHost::Unload()
 	Module   = nullptr;
 	Library  = nullptr; // DLL은 프로세스 종료까지 유지 (클래스 주석 참고)
 	bPlaying = false;
+}
+
+bool FGameModuleHost::Reload(const std::filesystem::path& NewDllPath)
+{
+	E_CHECKF(!bPlaying, "플레이 중에는 게임 모듈을 다시 로드할 수 없습니다: {}", Name);
+	if (Module == nullptr)
+	{
+		return Load(NewDllPath);
+	}
+	const std::string           ModuleName   = Name;
+	const std::filesystem::path PreviousPath = LoadedPath;
+	UnloadInternal(true);
+	if (Load(NewDllPath, ModuleName))
+	{
+		++ReloadCount;
+		E_LOG(LogScene, Display, "게임 모듈 다시 로드: {} ← {} (이전 DLL {}개는 프로세스 종료까지 메모리에 유지)", ModuleName,
+		      FStringConv::ToUtf8(NewDllPath.filename().wstring()), ReloadCount);
+		return true;
+	}
+	// 새 DLL 실패 (버전 불일치 등): 이전 DLL을 다시 붙인다 (같은 경로 → 같은 핸들·같은 정적 모듈 인스턴스)
+	E_LOG(LogScene, Error, "게임 모듈 다시 로드 실패 — 이전 DLL로 되돌립니다: {}", FStringConv::ToUtf8(PreviousPath.wstring()));
+	Load(PreviousPath, ModuleName);
+	return false;
 }
 
 void FGameModuleHost::BeginPlay(FScene& Scene)

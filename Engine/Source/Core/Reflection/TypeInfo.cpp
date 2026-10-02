@@ -54,7 +54,7 @@ FTypeInfo& FTypeRegistry::AddType(std::type_index Index, std::string Name, std::
 	return Result;
 }
 
-size_t FTypeRegistry::RemoveTypesByOwner(std::string_view Owner)
+size_t FTypeRegistry::RemoveTypesByOwner(std::string_view Owner, bool bRetireComponentTypeIds)
 {
 	size_t Removed = 0;
 	for (auto It = Types.begin(); It != Types.end();)
@@ -66,7 +66,17 @@ size_t FTypeRegistry::RemoveTypesByOwner(std::string_view Owner)
 			continue;
 		}
 		ByName.erase(Type.Name);
-		std::erase_if(ByType, [&Type](const auto& Entry) { return Entry.second == &Type; });
+		std::erase_if(ByType, [&Type, bRetireComponentTypeIds](const auto& Entry) {
+			if (Entry.second != &Type)
+			{
+				return false;
+			}
+			if (bRetireComponentTypeIds && Type.bIsComponent)
+			{
+				FRegistry::RetireComponentTypeId(Entry.first);
+			}
+			return true;
+		});
 		It = Types.erase(It);
 		++Removed;
 	}

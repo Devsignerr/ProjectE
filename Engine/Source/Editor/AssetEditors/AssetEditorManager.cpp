@@ -494,6 +494,29 @@ void FAssetEditorManager::EndScenePreviews(FEditorContext& Context)
 	}
 }
 
+std::vector<std::string> FAssetEditorManager::CaptureEditorStates() const
+{
+	std::vector<std::string> States;
+	States.reserve(Editors.size());
+	for (const FOpenEditor& Open : Editors)
+	{
+		States.push_back(Open.Editor->CaptureEditState());
+	}
+	return States;
+}
+
+void FAssetEditorManager::RestoreEditorStates(FEditorContext& Context, const std::vector<std::string>& States)
+{
+	FAssetEditorEnvironment Env = MakeEnvironment(Context);
+	for (size_t Index = 0; Index < Editors.size() && Index < States.size(); ++Index)
+	{
+		if (!States[Index].empty())
+		{
+			Editors[Index].Editor->RestoreEditState(Env, States[Index]);
+		}
+	}
+}
+
 void FAssetEditorManager::OnModelReimported(FEditorContext& Context, const std::filesystem::path& Path)
 {
 	FAssetEditorEnvironment Env = MakeEnvironment(Context);

@@ -158,8 +158,10 @@ e_fetchcontent_declare(miniaudio
 e_fetchcontent_make_available(miniaudio)
 
 # 구현부는 한 번만 컴파일 (프로젝트 언어가 CXX뿐이므로 C++로). 백엔드 설정 매크로는 구조체 배치에 영향을 주므로 PUBLIC으로 모든 사용처에 전파
-file(WRITE "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp"
-    "#define MINIAUDIO_IMPLEMENTATION\n#include \"miniaudio.h\"\n")
+# file(CONFIGURE)는 내용이 같으면 파일을 다시 쓰지 않는다 — file(WRITE)는 구성할 때마다 시각을 바꿔 miniaudio → 엔진 DLL을
+# 다시 링크시켰다 (에디터가 엔진 DLL을 잡고 있는 동안 게임 모듈만 다시 빌드하려 해도 LNK1168로 실패)
+file(CONFIGURE OUTPUT "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp"
+    CONTENT "#define MINIAUDIO_IMPLEMENTATION\n#include \"miniaudio.h\"\n")
 add_library(miniaudio STATIC "${CMAKE_BINARY_DIR}/ThirdParty/miniaudio_impl.cpp")
 add_library(ThirdParty::miniaudio ALIAS miniaudio)
 target_include_directories(miniaudio SYSTEM PUBLIC "${miniaudio_SOURCE_DIR}")

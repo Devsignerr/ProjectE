@@ -8,6 +8,7 @@
 #include "Editor/AssetEditors/AssetEditorManager.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/EditorContext.h"
+#include "Editor/GameModuleHotReload.h"
 #include "Editor/ImGuiLayer.h"
 #include "Editor/ModelTemplateCache.h"
 #include "Editor/Panels/ContentBrowserPanel.h"
@@ -122,6 +123,15 @@ private:
 	void DrawPlayControls(); // 메인 메뉴 바 안의 재생/일시정지/진행/정지 버튼
 	void PollScriptChanges(); // Content의 .lua 저장 감지 → 핫 리로드
 
+	// ---- C++ 게임 모듈 핫 리로드 (EditorHotReload.cpp, Phase 48 사이드)
+	void InitGameModule();                            // 그림자 복사본 로드 (씬 로드 전)
+	bool ReloadGameModule(const std::string& Reason); // 플레이 정지 → 씬 JSON → 모듈 교체 → 복원 (머리 주석 참고)
+	void StartGameModuleBuild();                      // 도구 → 게임 모듈 빌드 후 다시 로드
+	void UpdateGameModuleHotReload();                 // OnUpdate: 요청 처리, 빌드 출력/완료, 원본 변경 감지
+	void DrawGameModuleMenuItems();                   // 도구 메뉴 항목
+	void DrawGameModuleBuildStatus();                 // 빌드 중 표시 (ImGui 프레임 안)
+	void UpdateVerifyHotReload();                     // 자동 검증 --verify-hot-reload
+
 	std::unique_ptr<FD3D12RHI> Rhi;
 	FResourceManager           Resources;
 	FSceneRenderer             SceneRenderer;
@@ -165,6 +175,13 @@ private:
 
 	// 프로젝트 C++ 게임 모듈: 타입은 시작 시 등록, 시스템은 플레이 중에만 (FGameWorld)
 	FGameModuleHost GameModule;
+	// 핫 리로드: 원본 DLL 대신 <Saved>/HotReload 복사본을 로드, 원본 변경 감지, 백그라운드 빌드
+	FGameModuleHotReload HotReload;
+	std::string          PendingGameModuleReload; // 비어 있지 않으면 다음 OnUpdate에서 다시 로드 (메뉴/단축키 — 이유)
+	bool                 bReloadAfterBuild  = false;
+	std::string          LastBuildErrorLine;
+	uint32               VerifyHotReloadStage = 0; // --verify-hot-reload 진행 단계
+	uint64               VerifyHotReloadFrame = 0;
 
 	// 게임 월드 갱신 순서 (플레이 중 게임플레이 틱 + 항상 표시 틱). 위 시스템들을 비소유로 참조
 	FGameWorld World;

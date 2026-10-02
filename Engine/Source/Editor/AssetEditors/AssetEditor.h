@@ -73,6 +73,9 @@ public:
 	// 자동 검증용: 상태 JSON의 첫 숫자 값을 바꿔 편집 한 단계를 만든다 (저장 안 함 닫기 재현). 바꿀 값이 없으면 false
 	bool ApplyTestEdit(FAssetEditorEnvironment& Env);
 	void MarkEdited(std::string_view Label) { PendingEdit.Mark(Label); }
+	// 게임 모듈 다시 로드 전후 (FAssetEditorManager::CaptureEditorStates/RestoreEditorStates): 실행 취소 기록은 건드리지 않는다
+	std::string CaptureEditState() const { return CaptureState(); }
+	void        RestoreEditState(FAssetEditorEnvironment& Env, const std::string& State) { RestoreState(Env, State); }
 
 	bool                         IsDirty() const { return History.IsDirty() || PendingEdit.IsPending(); }
 	const std::filesystem::path& GetPath() const { return Path; }

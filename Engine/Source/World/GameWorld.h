@@ -226,6 +226,8 @@ private:
 	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
 	// 캐릭터 이동 → 애니메이션 그래프 파라미터 (World/GameWorldAnimation.cpp, FAnimGraphComponent::bUseCharacterMovement). 물리·트랜스폼 갱신 뒤
 	void UpdateCharacterAnimParams(float DeltaSeconds);
+	// 발 IK 바닥 탐색 (Scene/AnimIK.h): 직전 애니메이션의 발 위치에서 FPhysicsSystem::Raycast → FFootIkComponent::Runtime. 물리·트랜스폼 갱신 뒤
+	void UpdateFootIkProbes();
 
 	// 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction.cpp)
 	struct FBodyHistorySample

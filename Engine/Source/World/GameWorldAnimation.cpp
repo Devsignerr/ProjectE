@@ -3,6 +3,7 @@
 #include "Physics/CharacterMovement.h"
 #include "Physics/PhysicsSystem.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/AnimIK.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 
@@ -87,4 +88,71 @@ void FGameWorld::UpdateCharacterAnimParams(float DeltaSeconds)
 		Runtime.Parameters.Set("VerticalSpeed", Velocity.Z);
 		Runtime.Parameters.Set("Grounded", bGrounded ? 1.0f : 0.0f);
 	}
+}
+
+// 발 IK 바닥 탐색 (규칙은 Scene/AnimIK.h): 기존 FPhysicsSystem::Raycast만 쓴다 (새 물리 질의 없음)
+//   발마다 직전 애니메이션의 IK 전 발 위치(모델 공간) → 모델 루트 월드 행렬로 월드 → 위 TraceUp에서 아래로 TraceUp + TraceDown.
+//   자기 몸(모델 루트의 조상/자손 — 강체 캡슐, 래그돌 바디)에 맞으면 맞은 점 1cm 아래에서 다시 (최대 3번)
+void FGameWorld::UpdateFootIkProbes()
+{
+	FPhysicsSystem* Physics = Systems.Physics;
+	if (Scene == nullptr || Physics == nullptr)
+	{
+		return;
+	}
+	FRegistry& Registry = Scene->GetRegistry();
+	const auto IsSelf   = [&](FEntity ModelRoot, FEntity Hit) {
+		for (FEntity Current = ModelRoot; Registry.IsValid(Current); Current = Scene->GetParent(Current))
+		{
+			if (Current == Hit)
+			{
+				return true; // 조상 (캐릭터 루트 등)
+			}
+		}
+		for (FEntity Current = Hit; Registry.IsValid(Current); Current = Scene->GetParent(Current))
+		{
+			if (Current == ModelRoot)
+			{
+				return true; // 자손
+			}
+		}
+		return false;
+	};
+	Registry.View<FFootIkComponent>().Each([&](FEntity Entity, FFootIkComponent& FootIk) {
+		const FAnimationComponent* Animation = Registry.TryGet<FAnimationComponent>(Entity);
+		if (!FootIk.bEnabled || Animation == nullptr || !Animation->Runtime.Set || Animation->Runtime.bPhysicsPose)
+		{
+			return;
+		}
+		const FMatrix4x4& RootWorld = Scene->GetTransform(Entity).WorldMatrix;
+		const float       Distance  = FMath::Max(FootIk.TraceUp + FootIk.TraceDown, 1.0f);
+		for (FFootIkFoot& Foot : FootIk.Runtime.Feet)
+		{
+			Foot.bHit = false;
+			if (!Foot.bHasProbePosition)
+			{
+				continue;
+			}
+			FVector3 Origin = RootWorld.TransformPosition(Foot.ProbeModelPosition) + FVector3::UpVector * FootIk.TraceUp;
+			float    Left   = Distance;
+			for (int32 Try = 0; Try < 3 && Left > 0.0f; ++Try)
+			{
+				FPhysicsHit Hit;
+				if (!Physics->Raycast(Origin, -FVector3::UpVector, Left, Hit))
+				{
+					break;
+				}
+				if (!IsSelf(Entity, Hit.Entity))
+				{
+					Foot.bHit      = true;
+					Foot.HitPoint  = Hit.Position;
+					Foot.HitNormal = Hit.Normal.GetNormalized().IsNearlyZero() ? FVector3::UpVector : Hit.Normal.GetNormalized();
+					break;
+				}
+				Left -= Hit.Distance + 1.0f;
+				Origin = Hit.Position - FVector3::UpVector * 1.0f;
+			}
+		}
+		FootIk.Runtime.ProbeAge = 0.0f;
+	});
 }

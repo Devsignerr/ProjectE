@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/ECS/Entity.h"
+#include "Core/Math/Math.h"
 #include "Scene/AnimMontage.h"
 
 #include <optional>
@@ -55,4 +56,10 @@ public:
 	static bool StopMontage(FScene& Scene, FEntity Entity, std::string_view Slot, float BlendOut);
 	// Slot이 비면 아무 슬롯. 중단되어 빠지는 중인 것은 재생 중이 아니다 (저절로 빠지는 끝부분은 재생 중)
 	static bool IsMontagePlaying(FScene& Scene, FEntity Entity, std::string_view Slot);
+
+	// ---- 시선 IK (Scene/AnimIK.h). Entity = FLookAtComponent가 있는 모델 루트 또는 그 조상. 컴포넌트가 없으면 false
+	//      스크립트 목표가 있으면 컴포넌트 Target 엔티티보다 먼저 쓴다. 엔티티 목표는 매 프레임 그 위치를 따라간다
+	static bool SetLookAtTarget(FScene& Scene, FEntity Entity, const FVector3& WorldPosition);
+	static bool SetLookAtTargetEntity(FScene& Scene, FEntity Entity, FEntity Target);
+	static bool ClearLookAtTarget(FScene& Scene, FEntity Entity);
 };

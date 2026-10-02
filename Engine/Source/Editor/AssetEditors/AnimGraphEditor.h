@@ -22,7 +22,7 @@ namespace ax::NodeEditor
 //     (저장 전 편집도 즉시 반영). 파라미터 미리보기 값 슬라이더로 전이/블렌드를 시험한다
 //   - 레이어: 그래프 위 콤보/오른쪽 '레이어'에서 고른 레이어의 상태 머신을 그래프에 보인다. 레이어 추가/순서/삭제, 가중치(+파라미터),
 //     본 마스크(뼈 + 가중치 + 경사 깊이) 편집. 자동 검증 인자 --animgraph-layer <이름>
-//   - 몽타주 슬롯: 슬롯 이름 + 본 마스크 편집, 미리보기 모델에 클립/슬롯을 골라 몽타주 시험 재생
+//   - 몽타주 슬롯: 슬롯 이름 + 본 마스크 편집, 미리보기 모델에 클립/슬롯을 골라 몽타주 시험 재생 (자동 검증 --animgraph-slots)
 //   - 오른쪽: 파라미터 목록, 선택한 상태/전이 속성 (전이 조건·크로스페이드·종료 시점·우선순위 = 목록 순서), 블렌드 스페이스 축 편집
 //   - 플레이 중: 이 에셋을 쓰는 엔티티(선택 엔티티 우선)의 현재 상태·섞이는 상태·방금 일어난 전이를 강조한다
 //   저장하면 FAnimGraphLibrary::Invalidate → 이 그래프를 쓰는 컴포넌트가 새 그래프로 다시 묶인다 (핫 리로드, 파라미터 유지)
@@ -156,5 +156,6 @@ private:
 	bool                                     bPreviewPlaying = true;
 	std::string                              PreviewMontageClip; // 몽타주 슬롯 미리보기 재생
 	std::string                              PreviewMontageSlot;
+	bool                                     bSlotsShown = false; // 자동 검증 --animgraph-slots 처리함
 	float                                    PreviewSpeed    = 1.0f;
 };

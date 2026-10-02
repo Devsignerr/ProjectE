@@ -1209,6 +1209,14 @@ void FAnimGraphEditor::DrawProperties(FAssetEditorEnvironment& Env)
 	{
 		DrawLayers(Debug);
 	}
+	// 자동 검증: --animgraph-slots 면 이 섹션을 펼치고 거기까지 내린다
+	static const bool bShowSlots = FCommandLine::FromProcess().HasFlag(L"--animgraph-slots");
+	if (bShowSlots && !bSlotsShown)
+	{
+		ImGui::SetNextItemOpen(true);
+		ImGui::SetScrollHereY(0.0f);
+		bSlotsShown = true;
+	}
 	if (ImGui::CollapsingHeader(ICON_FA_CLAPPERBOARD " 몽타주 슬롯"))
 	{
 		DrawSlots();

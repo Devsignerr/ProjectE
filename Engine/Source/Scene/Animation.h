@@ -130,6 +130,8 @@ struct FAnimationRuntime
 	std::vector<FNodePose> PoseScratch;
 	std::vector<FNodePose> BlendScratch;
 	std::vector<FNodePose> MontageScratch;
-	std::vector<float>     MaskScratch;
+	std::vector<uint8>     IkTouched;      // IK가 바꾼 적 있는 노드 (채널이 없어도 계속 기록)
+	std::vector<FMatrix4x4> IkMatrices;
+	std::vector<FQuat>      IkRotations;
 	std::vector<FAnimNotifyHit> HitScratch;
 };

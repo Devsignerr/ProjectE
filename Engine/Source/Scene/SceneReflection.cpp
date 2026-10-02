@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/AnimIK.h"
 #include "Scene/Components.h"
 #include "Scene/Gameplay.h"
 #include "Scene/Particles.h"
@@ -253,4 +254,29 @@ void RegisterSceneTypes()
 	RegisterTerrainTypes();
 	// 풀·나무 (Scene/Foliage.h, Phase 34-3)
 	RegisterFoliageTypes();
+	// 애니메이션 IK (Scene/AnimIK.h, Phase 42-4): 모델 루트(애니메이션 컴포넌트와 같은 엔티티)에 붙인다. 로컬 연출 (복제 안 함)
+	Registry.RegisterType<FFootIkComponent>("FootIkComponent", "발 IK")
+		.Property(&FFootIkComponent::bEnabled, "Enabled", "켜기")
+		.Property(&FFootIkComponent::FootBones, "FootBones", "발 뼈 (쉼표)").Tooltip("끝 뼈 이름들. 각 끝 뼈의 부모(무릎)와 조부모(허벅지)가 2본 체인")
+		.Property(&FFootIkComponent::PelvisBone, "PelvisBone", "골반 뼈").Tooltip("낮은 발에 맞춰 내린다 (비면 골반 보정 없음)")
+		.Property(&FFootIkComponent::TraceUp, "TraceUp", "위로 탐색 (cm)").Range(0.0f, 500.0f, 1.0f)
+		.Property(&FFootIkComponent::TraceDown, "TraceDown", "아래로 탐색 (cm)").Range(0.0f, 500.0f, 1.0f)
+		.Property(&FFootIkComponent::MaxAdjust, "MaxAdjust", "최대 보정 (cm)").Range(0.0f, 200.0f, 0.5f)
+		.Property(&FFootIkComponent::InterpSpeed, "InterpSpeed", "따라가기 속도").Range(0.0f, 100.0f, 0.1f)
+		.Property(&FFootIkComponent::Weight, "Weight", "가중치").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FFootIkComponent::bAlignToGround, "AlignToGround", "바닥 기울기 맞춤")
+		.Property(&FFootIkComponent::MaxAlignAngle, "MaxAlignAngle", "최대 기울기 (도)").Range(0.0f, 90.0f, 0.5f)
+		.Property(&FFootIkComponent::KneeDirection, "KneeDirection", "무릎 방향 (모델)").Tooltip("0이면 애니메이션의 무릎 방향")
+		.NoReplicate()
+		.AsComponent();
+	Registry.RegisterType<FLookAtComponent>("LookAtComponent", "시선")
+		.Property(&FLookAtComponent::bEnabled, "Enabled", "켜기")
+		.Property(&FLookAtComponent::Bones, "Bones", "뼈 (위 → 아래, 쉼표)").Tooltip("마지막 뼈가 목표를 본다. 회전은 뼈 개수로 나눠 위부터")
+		.Property(&FLookAtComponent::Target, "Target", "목표 엔티티").Tooltip("Lua entity:SetLookAtTarget이 있으면 그쪽이 먼저")
+		.Property(&FLookAtComponent::ForwardAxis, "ForwardAxis", "앞 방향 (모델)").Tooltip("기본 포즈에서 캐릭터가 보는 방향 (모델 공간)")
+		.Property(&FLookAtComponent::MaxAngle, "MaxAngle", "최대 각 (도)").Range(0.0f, 180.0f, 0.5f)
+		.Property(&FLookAtComponent::Weight, "Weight", "가중치").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FLookAtComponent::BlendSpeed, "BlendSpeed", "켜고 끄는 속도").Range(0.0f, 100.0f, 0.1f)
+		.NoReplicate()
+		.AsComponent();
 }

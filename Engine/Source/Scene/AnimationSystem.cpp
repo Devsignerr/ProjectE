@@ -3,6 +3,7 @@
 #include "Core/Profiling.h"
 #include "Core/Log.h"
 #include "Scene/AnimGraph.h"
+#include "Scene/AnimIK.h"
 #include "Scene/Components.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
@@ -179,8 +180,8 @@ namespace
 		return Names;
 	}
 
-	// 애니메이션 대상 노드 엔티티에 포즈 기록
-	void WritePose(FScene& Scene, const FAnimationRuntime& Runtime, const std::vector<FNodePose>& Pose)
+	// 애니메이션 대상 노드 엔티티에 포즈 기록 (Touched = IK가 바꾼 노드 — 채널이 없어도 기록)
+	void WritePose(FScene& Scene, const FAnimationRuntime& Runtime, const std::vector<FNodePose>& Pose, const std::vector<uint8>& Touched)
 	{
 		const FAnimationSet& Set       = *Runtime.Set;
 		const size_t         NodeCount = FMath::Min(Runtime.NodeEntities.size(), Pose.size());
@@ -188,7 +189,8 @@ namespace
 		for (size_t Node = 0; Node < NodeCount; ++Node)
 		{
 			const FEntity NodeEntity = Runtime.NodeEntities[Node];
-			if (!Set.AnimatedNodes[Node] || !Registry.IsValid(NodeEntity))
+			const bool    bTouched   = Node < Touched.size() && Touched[Node] != 0;
+			if ((!Set.AnimatedNodes[Node] && !bTouched) || !Registry.IsValid(NodeEntity))
 			{
 				continue;
 			}
@@ -492,6 +494,279 @@ namespace
 		return true;
 	}
 
+	// ---- IK (규칙은 Scene/AnimIK.h)
+
+	int32 FindNodeIndex(const std::vector<std::string>& Names, const std::string& Name)
+	{
+		for (size_t Node = 0; Node < Names.size(); ++Node)
+		{
+			if (Names[Node] == Name)
+			{
+				return static_cast<int32>(Node);
+			}
+		}
+		return -1;
+	}
+
+	// 노드별 모델 공간 회전 (모델 회전 = 부모 모델 회전 * 로컬 회전, 균등 스케일 가정 — 부모 순서와 무관)
+	void ComputeModelRotations(const std::vector<FNodePose>& Pose, const std::vector<int32>& Parents, std::vector<FQuat>& Out)
+	{
+		const size_t       Count = FMath::Min(Pose.size(), Parents.size());
+		std::vector<uint8> Done(Count, 0);
+		Out.assign(Count, FQuat::Identity);
+		std::vector<int32> Chain;
+		for (size_t Node = 0; Node < Count; ++Node)
+		{
+			Chain.clear();
+			for (int32 Current = static_cast<int32>(Node); Current >= 0 && Current < static_cast<int32>(Count) && !Done[static_cast<size_t>(Current)] &&
+			                                                Chain.size() <= Count;
+			     Current = Parents[static_cast<size_t>(Current)])
+			{
+				Chain.push_back(Current);
+			}
+			for (auto It = Chain.rbegin(); It != Chain.rend(); ++It)
+			{
+				const int32 Parent = Parents[static_cast<size_t>(*It)];
+				const FQuat ParentRotation = Parent >= 0 && Parent < static_cast<int32>(Count) ? Out[static_cast<size_t>(Parent)] : FQuat::Identity;
+				Out[static_cast<size_t>(*It)]  = (ParentRotation * Pose[static_cast<size_t>(*It)].Rotation).GetNormalized();
+				Done[static_cast<size_t>(*It)] = 1;
+			}
+		}
+	}
+
+	void ResolveFootIk(const FScene& Scene, const FAnimationRuntime& Animation, FFootIkComponent& FootIk)
+	{
+		FFootIkRuntime& Runtime = FootIk.Runtime;
+		if (Runtime.ResolvedSet == Animation.Set.get() && Runtime.ResolvedFeet == FootIk.FootBones && Runtime.ResolvedPelvis == FootIk.PelvisBone)
+		{
+			return;
+		}
+		Runtime.ResolvedSet    = Animation.Set.get();
+		Runtime.ResolvedFeet   = FootIk.FootBones;
+		Runtime.ResolvedPelvis = FootIk.PelvisBone;
+		Runtime.Feet.clear();
+		const std::vector<std::string> Names   = GetNodeNames(Scene, Animation);
+		const std::vector<int32>&      Parents = Animation.Set->NodeParents;
+		for (const std::string& Bone : AnimIKMath::SplitBoneList(FootIk.FootBones))
+		{
+			FFootIkFoot Foot;
+			Foot.End  = FindNodeIndex(Names, Bone);
+			Foot.Mid  = Foot.End >= 0 ? Parents[static_cast<size_t>(Foot.End)] : -1;
+			Foot.Root = Foot.Mid >= 0 ? Parents[static_cast<size_t>(Foot.Mid)] : -1;
+			if (Foot.Root < 0)
+			{
+				E_LOG(LogAnimation, Warning, "발 IK: 뼈 '{}'를 찾을 수 없거나 부모 두 단계가 없습니다", Bone);
+				continue;
+			}
+			Runtime.Feet.push_back(Foot);
+		}
+		Runtime.Pelvis = FootIk.PelvisBone.empty() ? -1 : FindNodeIndex(Names, FootIk.PelvisBone);
+		if (!FootIk.PelvisBone.empty() && Runtime.Pelvis < 0)
+		{
+			E_LOG(LogAnimation, Warning, "발 IK: 골반 뼈 '{}'를 찾을 수 없습니다", FootIk.PelvisBone);
+		}
+	}
+
+	void ApplyFootIk(FScene& Scene, FEntity Entity, FAnimationRuntime& Animation, FFootIkComponent& FootIk, float DeltaSeconds)
+	{
+		ResolveFootIk(Scene, Animation, FootIk);
+		FFootIkRuntime& Runtime = FootIk.Runtime;
+		if (Runtime.Feet.empty())
+		{
+			return;
+		}
+		const std::vector<int32>& Parents  = Animation.Set->NodeParents;
+		std::vector<FNodePose>&   Pose     = Animation.PoseScratch;
+		std::vector<FMatrix4x4>&  Matrices = Animation.IkMatrices;
+		const FMatrix4x4&         RootWorld = Scene.GetTransform(Entity).WorldMatrix;
+		const FMatrix4x4          WorldToModel = RootWorld.GetInverse();
+		AnimationMath::ComputeModelMatrices(Pose, Parents, Matrices);
+
+		// 바닥 탐색 위치 (IK 전 발) → World가 다음 게임플레이 틱에 쓴다
+		for (FFootIkFoot& Foot : Runtime.Feet)
+		{
+			Foot.ProbeModelPosition = Matrices[static_cast<size_t>(Foot.End)].GetOrigin();
+			Foot.bHasProbePosition  = true;
+		}
+		Runtime.ProbeAge += DeltaSeconds;
+		const bool  bActive = FootIk.bEnabled && FootIk.Weight > 0.0f && Runtime.ProbeAge <= FFootIkRuntime::ProbeMaxAge;
+		const float BaseZ   = RootWorld.GetOrigin().Z;
+		float       Lowest  = 0.0f;
+		bool        bAny    = false;
+		for (FFootIkFoot& Foot : Runtime.Feet)
+		{
+			const bool  bUse   = bActive && Foot.bHit;
+			const float Target = bUse ? FMath::Clamp(Foot.HitPoint.Z - BaseZ, -FootIk.MaxAdjust, FootIk.MaxAdjust) * FMath::Clamp(FootIk.Weight, 0.0f, 1.0f) : 0.0f;
+			Foot.Offset        = AnimIKMath::SmoothTowards(Foot.Offset, Target, FootIk.InterpSpeed, DeltaSeconds);
+			const FVector3 TargetNormal = bUse && FootIk.bAlignToGround ? Foot.HitNormal : FVector3::UpVector;
+			const float    Alpha        = AnimIKMath::SmoothTowards(0.0f, 1.0f, FootIk.InterpSpeed, DeltaSeconds);
+			Foot.Normal                 = (Foot.Normal + (TargetNormal - Foot.Normal) * Alpha).GetNormalized();
+			if (Foot.Normal.IsNearlyZero())
+			{
+				Foot.Normal = FVector3::UpVector;
+			}
+			Lowest = FMath::Min(Lowest, Foot.Offset);
+			bAny   = bAny || FMath::Abs(Foot.Offset) > 0.01f || FVector3::Dot(Foot.Normal, FVector3::UpVector) < 0.9999f;
+		}
+		Runtime.PelvisOffset = Runtime.Pelvis >= 0 ? Lowest : 0.0f;
+		if (!bAny)
+		{
+			return; // 평지: 애니메이션 그대로
+		}
+
+		// 골반 내리기 (모델 공간 위 방향 × cm → 골반 부모 공간)
+		const FVector3 UpModel = WorldToModel.TransformVector(FVector3::UpVector); // 월드 1cm 위 (모델 단위)
+		if (Runtime.Pelvis >= 0 && Runtime.PelvisOffset < -0.01f)
+		{
+			const int32      Parent      = Parents[static_cast<size_t>(Runtime.Pelvis)];
+			const FMatrix4x4 ParentInverse = Parent >= 0 ? Matrices[static_cast<size_t>(Parent)].GetInverse() : FMatrix4x4::Identity;
+			Pose[static_cast<size_t>(Runtime.Pelvis)].Translation += ParentInverse.TransformVector(UpModel * Runtime.PelvisOffset);
+			Animation.IkTouched[static_cast<size_t>(Runtime.Pelvis)] = 1;
+			AnimationMath::ComputeModelMatrices(Pose, Parents, Matrices);
+		}
+
+		// 발마다 2본 IK → 허벅지/무릎/발 로컬 회전
+		std::vector<FQuat>& Rotations = Animation.IkRotations;
+		ComputeModelRotations(Pose, Parents, Rotations);
+		const FVector3 UpDirection   = UpModel.GetNormalized();
+		const float    MaxAlignAngle = FMath::DegreesToRadians(FootIk.MaxAlignAngle);
+		for (const FFootIkFoot& Foot : Runtime.Feet)
+		{
+			const size_t   End  = static_cast<size_t>(Foot.End);
+			const size_t   Mid  = static_cast<size_t>(Foot.Mid);
+			const size_t   Root = static_cast<size_t>(Foot.Root);
+			const FVector3 Target = Foot.ProbeModelPosition + UpModel * Foot.Offset;
+			const AnimIKMath::FTwoBoneResult Result =
+				AnimIKMath::SolveTwoBone(Matrices[Root].GetOrigin(), Matrices[Mid].GetOrigin(), Matrices[End].GetOrigin(), Target, FootIk.KneeDirection);
+			const int32    RootParent = Parents[Root];
+			const FQuat    ParentRotation = RootParent >= 0 ? Rotations[static_cast<size_t>(RootParent)] : FQuat::Identity;
+			const FQuat    NewRoot = Result.RootDelta * Rotations[Root];
+			const FQuat    NewMid  = Result.MidDelta * Result.RootDelta * Rotations[Mid];
+			const FVector3 NormalModel = WorldToModel.TransformVector(Foot.Normal).GetNormalized();
+			const FQuat    Align = AnimIKMath::ComputeLookAtDelta(UpDirection, NormalModel, MaxAlignAngle, 1.0f);
+			const FQuat    NewEnd = Align * Rotations[End]; // 발은 애니메이션 방향 유지 + 바닥 기울기
+			Pose[Root].Rotation = (ParentRotation.Inverse() * NewRoot).GetNormalized();
+			Pose[Mid].Rotation  = (NewRoot.Inverse() * NewMid).GetNormalized();
+			Pose[End].Rotation  = (NewMid.Inverse() * NewEnd).GetNormalized();
+			Animation.IkTouched[Root] = 1;
+			Animation.IkTouched[Mid]  = 1;
+			Animation.IkTouched[End]  = 1;
+		}
+	}
+
+	void ResolveLookAt(const FScene& Scene, const FAnimationRuntime& Animation, FLookAtComponent& LookAt)
+	{
+		FLookAtRuntime& Runtime = LookAt.Runtime;
+		if (Runtime.ResolvedSet == Animation.Set.get() && Runtime.ResolvedBones == LookAt.Bones && Runtime.ResolvedForwardAxis == LookAt.ForwardAxis)
+		{
+			return;
+		}
+		Runtime.ResolvedSet         = Animation.Set.get();
+		Runtime.ResolvedBones       = LookAt.Bones;
+		Runtime.ResolvedForwardAxis = LookAt.ForwardAxis;
+		Runtime.Bones.clear();
+		const std::vector<std::string> Names = GetNodeNames(Scene, Animation);
+		for (const std::string& Bone : AnimIKMath::SplitBoneList(LookAt.Bones))
+		{
+			const int32 Node = FindNodeIndex(Names, Bone);
+			if (Node < 0)
+			{
+				E_LOG(LogAnimation, Warning, "시선: 뼈 '{}'를 찾을 수 없습니다", Bone);
+				continue;
+			}
+			Runtime.Bones.push_back(Node);
+		}
+		if (Runtime.Bones.empty())
+		{
+			return;
+		}
+		// 마지막 뼈 로컬 앞 축 = 기본 포즈에서 모델 공간 ForwardAxis
+		std::vector<FQuat> RestRotations;
+		ComputeModelRotations(Animation.Set->RestPose, Animation.Set->NodeParents, RestRotations);
+		const FVector3 Forward = LookAt.ForwardAxis.IsNearlyZero() ? FVector3::ForwardVector : LookAt.ForwardAxis.GetNormalized();
+		Runtime.LocalForward   = RestRotations[static_cast<size_t>(Runtime.Bones.back())].UnrotateVector(Forward);
+	}
+
+	void ApplyLookAt(FScene& Scene, FEntity Entity, FAnimationRuntime& Animation, FLookAtComponent& LookAt, float DeltaSeconds)
+	{
+		ResolveLookAt(Scene, Animation, LookAt);
+		FLookAtRuntime& Runtime = LookAt.Runtime;
+		if (Runtime.Bones.empty())
+		{
+			return;
+		}
+		// 목표: Lua 점/엔티티 → Target 엔티티
+		const FRegistry& Registry = Scene.GetRegistry();
+		bool             bTarget  = false;
+		FVector3         Target;
+		if (Runtime.bHasScriptTarget)
+		{
+			bTarget = true;
+			Target  = Registry.IsValid(Runtime.ScriptTargetEntity) ? Scene.GetTransform(Runtime.ScriptTargetEntity).GetWorldPosition() : Runtime.ScriptTarget;
+		}
+		else if (Registry.IsValid(LookAt.Target))
+		{
+			bTarget = true;
+			Target  = Scene.GetTransform(LookAt.Target).GetWorldPosition();
+		}
+		if (bTarget)
+		{
+			Runtime.LastTarget     = Target;
+			Runtime.bHasLastTarget = true;
+		}
+		const float Desired   = LookAt.bEnabled && bTarget ? FMath::Clamp(LookAt.Weight, 0.0f, 1.0f) : 0.0f;
+		Runtime.CurrentWeight = AnimIKMath::SmoothTowards(Runtime.CurrentWeight, Desired, LookAt.BlendSpeed, DeltaSeconds);
+		if (Runtime.CurrentWeight < 1.0e-3f || !Runtime.bHasLastTarget)
+		{
+			return;
+		}
+
+		const std::vector<int32>& Parents  = Animation.Set->NodeParents;
+		std::vector<FNodePose>&   Pose     = Animation.PoseScratch;
+		std::vector<FMatrix4x4>&  Matrices = Animation.IkMatrices;
+		std::vector<FQuat>&       Rotations = Animation.IkRotations;
+		AnimationMath::ComputeModelMatrices(Pose, Parents, Matrices);
+		ComputeModelRotations(Pose, Parents, Rotations);
+		const size_t   Head        = static_cast<size_t>(Runtime.Bones.back());
+		const FVector3 TargetModel = Scene.GetTransform(Entity).WorldMatrix.GetInverse().TransformPosition(Runtime.LastTarget);
+		const FVector3 Forward     = Rotations[Head].RotateVector(Runtime.LocalForward);
+		const FQuat    Delta = AnimIKMath::ComputeLookAtDelta(Forward, TargetModel - Matrices[Head].GetOrigin(), FMath::DegreesToRadians(LookAt.MaxAngle),
+		                                                      Runtime.CurrentWeight);
+		// 뼈 개수로 나눠 위 뼈부터 (모델 공간 — 아래 뼈들도 함께 돈다)
+		const FQuat Part = FQuat::Slerp(FQuat::Identity, Delta, 1.0f / static_cast<float>(Runtime.Bones.size()));
+		for (const int32 Bone : Runtime.Bones)
+		{
+			const int32 Parent         = Parents[static_cast<size_t>(Bone)];
+			const FQuat ParentRotation = Parent >= 0 ? Rotations[static_cast<size_t>(Parent)] : FQuat::Identity;
+			Pose[static_cast<size_t>(Bone)].Rotation = (ParentRotation.Inverse() * Part * Rotations[static_cast<size_t>(Bone)]).GetNormalized();
+			Animation.IkTouched[static_cast<size_t>(Bone)] = 1;
+			ComputeModelRotations(Pose, Parents, Rotations);
+		}
+	}
+
+	// IK 단계 (발 → 시선). 래그돌 중에는 호출되지 않는다
+	void ApplyIk(FScene& Scene, FEntity Entity, FAnimationRuntime& Animation, float DeltaSeconds)
+	{
+		FRegistry& Registry = Scene.GetRegistry();
+		// 한 번 IK가 바꾼 노드는 계속 기록한다 (IK가 꺼져도 채널 없는 노드가 IK 자세로 남지 않게 — 기본 포즈로 돌아간다)
+		if (Animation.IkTouched.size() != Animation.PoseScratch.size())
+		{
+			Animation.IkTouched.assign(Animation.PoseScratch.size(), 0);
+		}
+		if (Animation.PoseScratch.size() != Animation.Set->NodeParents.size())
+		{
+			return;
+		}
+		if (FFootIkComponent* FootIk = Registry.TryGet<FFootIkComponent>(Entity))
+		{
+			ApplyFootIk(Scene, Entity, Animation, *FootIk, DeltaSeconds);
+		}
+		if (FLookAtComponent* LookAt = Registry.TryGet<FLookAtComponent>(Entity))
+		{
+			ApplyLookAt(Scene, Entity, Animation, *LookAt, DeltaSeconds);
+		}
+	}
+
 	// 포즈 단계: 원천(그래프 | 클립) → (몽타주) → (IK) → 노드 엔티티에 기록
 	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
 	{
@@ -504,7 +779,16 @@ namespace
 		Runtime.PendingMontageEvents.clear();
 		if (Runtime.bPhysicsPose)
 		{
-			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이·몽타주·IK도 멈춘다)
+			// 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이·몽타주·IK도 멈춘다). 끝났을 때 튀지 않게 IK 보정은 0으로
+			if (FFootIkComponent* FootIk = Scene.GetRegistry().TryGet<FFootIkComponent>(Entity))
+			{
+				FootIk->Runtime.ResetBlend();
+			}
+			if (FLookAtComponent* LookAt = Scene.GetRegistry().TryGet<FLookAtComponent>(Entity))
+			{
+				LookAt->Runtime.CurrentWeight = 0.0f;
+			}
+			return;
 		}
 		FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity);
 		if (Graph != nullptr && !ResolveGraph(Scene, *Graph, Runtime))
@@ -520,7 +804,8 @@ namespace
 		bHavePose = ApplyMontages(Runtime, Graph, bHavePose);
 		if (bHavePose)
 		{
-			WritePose(Scene, Runtime, Runtime.PoseScratch);
+			ApplyIk(Scene, Entity, Runtime, DeltaSeconds);
+			WritePose(Scene, Runtime, Runtime.PoseScratch, Runtime.IkTouched);
 		}
 	}
 } // namespace
@@ -807,4 +1092,54 @@ bool FAnimationSystem::IsMontagePlaying(FScene& Scene, FEntity Entity, std::stri
 		}
 	}
 	return false;
+}
+
+// ---------------------------------------------------------------- 시선 IK
+
+namespace
+{
+	FLookAtRuntime* FindLookAtRuntime(FScene& Scene, FEntity Entity)
+	{
+		const FEntity    Target   = FAnimationSystem::FindAnimation(Scene, Entity);
+		FLookAtComponent* LookAt  = Target.IsValid() ? Scene.GetRegistry().TryGet<FLookAtComponent>(Target) : nullptr;
+		return LookAt != nullptr ? &LookAt->Runtime : nullptr;
+	}
+} // namespace
+
+bool FAnimationSystem::SetLookAtTarget(FScene& Scene, FEntity Entity, const FVector3& WorldPosition)
+{
+	FLookAtRuntime* Runtime = FindLookAtRuntime(Scene, Entity);
+	if (Runtime == nullptr)
+	{
+		return false;
+	}
+	Runtime->bHasScriptTarget   = true;
+	Runtime->ScriptTarget       = WorldPosition;
+	Runtime->ScriptTargetEntity = NullEntity;
+	return true;
+}
+
+bool FAnimationSystem::SetLookAtTargetEntity(FScene& Scene, FEntity Entity, FEntity Target)
+{
+	FLookAtRuntime* Runtime = FindLookAtRuntime(Scene, Entity);
+	if (Runtime == nullptr || !Scene.GetRegistry().IsValid(Target))
+	{
+		return false;
+	}
+	Runtime->bHasScriptTarget   = true;
+	Runtime->ScriptTargetEntity = Target;
+	Runtime->ScriptTarget       = Scene.GetTransform(Target).GetWorldPosition();
+	return true;
+}
+
+bool FAnimationSystem::ClearLookAtTarget(FScene& Scene, FEntity Entity)
+{
+	FLookAtRuntime* Runtime = FindLookAtRuntime(Scene, Entity);
+	if (Runtime == nullptr)
+	{
+		return false;
+	}
+	Runtime->bHasScriptTarget   = false;
+	Runtime->ScriptTargetEntity = NullEntity;
+	return true;
 }

@@ -717,9 +717,11 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: Lua에서 타이머(`Timer.After/Every/Cancel` 류)와 코루틴 대기(`Wait(초)`, 다음 프레임 대기)를 쓸 수 있고 스크립트 인스턴스별로 관리되어 OnDestroy·핫 리로드·EndPlay에서 정리된다(플레이 정지 후 편집 씬에 남는 것 없음). `FPhysicsWorld`에 구/상자/캡슐 겹침 검사와 쓸어 보기(sweep)가 있고(트리거 레이어 제외, 충돌 끄기 그룹 존중, cm↔m은 경계에서만) Lua는 `FScriptPhysicsHooks`로만 부른다. 스크립트/C++에서 월드 3D 선·상자·구를 지속 시간과 함께 그릴 수 있고 에디터 뷰포트와 런타임 둘 다 보이며 GPU 없는 서버에서는 무시된다. 순수 로직은 테스트, 화면 확인 + 디버그 레이어 0건.
 
-- [ ] 41-1. 타이머 / 코루틴 대기 (Lua) + 테스트
-- [ ] 41-2. 겹침 검사 / 쓸어 보기 (C++ + Lua) + 테스트
-- [ ] 41-3. 3D 디버그 선 그리기 (C++ + Lua, 에디터/런타임) + 데모 씬
+- [x] 41-1. 타이머 / 코루틴 대기 (Lua) + 테스트 — `Timer.*`, `Coroutine.*`, `Wait/WaitFrames/WaitUntil`, 인스턴스 소유(`FInstanceScope`)
+- [x] 41-2. 겹침 검사 / 쓸어 보기 (C++ + Lua) + 테스트 — `FPhysicsWorld::Overlap/Sweep`, Lua `Physics.Overlap*/…Cast`, 게임 모듈 `GetPhysics()`(API 9)
+- [x] 41-3. 3D 디버그 선 그리기 (C++ + Lua, 에디터/런타임) + 데모 씬 — `FDebugDraw`/`FDebugDrawRenderer`(NavMeshDebug.hlsl 재사용), `Demo_ScriptUtils` (2026-10-02 master 머지: 11개 테스트 묶음 통과(ScriptingTests 64·PhysicsTests 49·RendererTests 196), 런타임/에디터 플레이 화면 확인, 디버그 레이어 0건)
+- [ ] 실행 검증 (사용자): Demo_ScriptUtils 직접 플레이(코루틴 순찰, 상자 위에서 탐지 구가 빨강), Lua에서 Timer/Wait 실사용 손맛
+- 후속: 타이머·코루틴은 Update에서만 진행(LateUpdate 없음), `Every`는 밀린 횟수를 몰아 부르지 않음, 핫 리로드 시 타이머 취소(OnStart 반복 타이머 재생성 안 됨), 사용자 `coroutine.wrap` 안 `Wait`는 사용자 코루틴이 받음, `Physics.Raycast` ignore 인자 없음, 쓸어 보기는 첫 닿음만, 플레이 밖 C++ 디버그 선은 Clear 전까지 남음, `FNavMeshDebugRenderer`와 선 파이프라인 중복(통합 후속), 런타임 셰이더 리로드 경로 미연결
 
 ## Phase 42 — 애니메이션 고급: 2D 블렌드 / 레이어·본 마스크 / 몽타주 / IK (트랙 B, 순서대로)
 

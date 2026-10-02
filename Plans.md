@@ -772,16 +772,20 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 결정 (2026-10-02 사용자 선택): 언리얼식 오브젝트 채널/트레이스 채널/프로파일 대신 유니티식. 콜라이더·캐릭터 이동마다 레이어 하나(이름은 프로젝트 설정, 최대 16), 프로젝트 설정의 레이어×레이어 충돌 표 하나(대칭, 기본 전부 켬). 겹침 알림은 기존 `IsTrigger` 그대로. 레이캐스트는 선택 인자 레이어 목록(없으면 전부). 레이어 미지정 = Default → 기존 씬 동작 불변.
 **DoD**: 설정 창에서 레이어 이름/충돌 표 편집·저장, 인스펙터 레이어 드롭다운, 물리(바디·트리거·캐릭터 이동·레이캐스트)가 표를 따른다, Lua `Physics.Raycast(..., {레이어})`, 테스트 추가, Demo_PixelArt에서 캐릭터끼리 통과 같은 예 확인.
 
-- [~] 43-1. 레이어 설정 + 충돌 표 + Jolt 레이어/필터 + 컴포넌트 프로퍼티
-- [~] 43-2. 레이캐스트/캐릭터 이동 필터 + Lua + 설정 창 표 위젯 + 테스트
+- [x] 43-1. `FCollisionLayerSettings`(Core/Settings/CollisionSettings.h): 16칸(0 = Default 고정) + 대칭 행렬, 이름 기반 JSON(`Config/Collision.json` — `Layers` + `DisabledPairs`), 프로젝트 설정 "충돌 레이어" 섹션 + 전용 UI(이름 칸, 유니티식 삼각 체크 행렬). 콜라이더/캐릭터 이동 `Layer`(이름) + 인스펙터 콤보(리플렉션 `StringOptions`), 없는/빈 이름 = Default. Jolt 레이어 = 종류 | 칸 << 2, 쌍 필터가 행렬 확인(바디·캐릭터 이동/내부 바디·트리거)
+- [x] 43-2. 레이캐스트 마스크(C++ `LayerMask` 기본 전체, Lua `Physics.Raycast(..., {"Ground"})`), 테스트 `CollisionLayerTests` 7개, Sample 레이어 Ground/Character/Prop(Character×Character 끔) + Demo_PixelArt 적용 (2026-10-02 master 머지: Debug 11개 묶음 통과, Release 빌드, 설정 창·Demo_PixelArt 이동/충돌·Demo_Showcase 플레이 화면·디버그 레이어 0건)
+- [ ] 실행 검증 (사용자): 인스펙터 Layer 콤보로 바꿔 보기
+- 후속: Overlap/Sweep 레이어 마스크, 래그돌 캡슐 레이어(항상 Default), 행렬은 플레이 시작 시 고정
 
 ## Phase 44 — 입력 모드 / 에디터 플레이 빙의·해제 (트랙 B)
 
 결정 (2026-10-02 사용자 요청): 언리얼 GameOnly / GameAndUI / UIOnly 입력 모드. 에디터 플레이는 "빙의(게임 조작)"와 "해제(편집 — 클릭 선택·기즈모·편집 카메라)"를 구분 — 빙의 중에는 뷰포트 클릭이 선택/기즈모/아웃라인을 만들지 않는다.
 **DoD**: Lua/C++ 입력 모드 API(런타임·에디터 플레이 공통), 에디터 플레이 시작 = 빙의, 단축키·툴바로 해제/재빙의, 해제 중 게임은 계속 돌고 입력은 게임에 가지 않음, 상태 표시, 자동 검증 인자, 화면 확인.
 
-- [~] 44-1. 입력 모드 (`GameOnly/GameAndUI/UIOnly`) + 커서 규칙 + Lua `Game.SetInputMode/GetInputMode`
-- [~] 44-2. 에디터 플레이 빙의/해제 (단축키·툴바·표시, 빙의 중 선택/기즈모/아웃라인 없음)
+- [x] 44-1. `EInputMode` + `FInputModeState` + 순수 `SelectGameInput` + `FInput::WithoutAnyInput`(테스트 `InputMode_Routing`), Lua `Game.SetInputMode/GetInputMode`, Begin/EndPlay에 GameAndUI로 초기화, 런타임/에디터 플레이 공통(GameOnly 들어갈 때 커서 잠금, 풀리면 클릭 시 다시)
+- [x] 44-2. 에디터 플레이 빙의/해제: 시작 = 빙의, F8·메뉴 바 버튼·상태 표시, 해제 시 게임은 빈 입력으로 계속 + 편집 카메라(게임 시점에서 시작, 정지 시 복원) + 선택/기즈모/아웃라인, 빙의 중 뷰포트 편집 상호작용 차단(`Context.CanEditInViewport()`), Shift+F1 커서만 해제, 에디터 `Game.SetMouseLocked`(빙의 중 뷰포트 가운데), 게임 마우스 버튼은 뷰포트에서 누른 것만. 검증 `--play-eject` + 테스트 `PlayMode_PossessEjectAndInputMode` (2026-10-02 master 머지: Debug 11개 묶음 통과, Release 빌드, 빙의/해제 화면·디버그 레이어 0건)
+- [ ] 실행 검증 (사용자): 실제 마우스로 F8 / Shift+F1 / 커서 잠금
+- 후속: 샘플 스크립트(PlayerCharacter/ShowcasePlayer)의 "런타임만" 커서 잠금 주석 정리(이제 에디터 플레이도 잠금), 해제 중 게임 UI 미표시
 
 ## 버그 — 뷰포트 클릭이 항상 Ground 선택 (트랙 C, 2026-10-02 사용자 보고: "어딜 클릭해도 무조건 ground가 선택돼")
 

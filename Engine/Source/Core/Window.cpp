@@ -5,6 +5,7 @@
 
 #include <imm.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -264,6 +265,17 @@ void FWindow::SetCursorLocked(bool bLock)
 	}
 }
 
+void FWindow::SetCursorLockPoint(int32 X, int32 Y)
+{
+	if (CursorLockPoint[0] == X && CursorLockPoint[1] == Y)
+	{
+		return;
+	}
+	CursorLockPoint[0] = X;
+	CursorLockPoint[1] = Y;
+	ApplyCursorClip();
+}
+
 void FWindow::ApplyCursorClip() const
 {
 	if (!bCursorLocked)
@@ -276,9 +288,10 @@ void FWindow::ApplyCursorClip() const
 	POINT BottomRight{ Client.right, Client.bottom };
 	ClientToScreen(Hwnd, &TopLeft);
 	ClientToScreen(Hwnd, &BottomRight);
-	// 가운데 한 점에 가둔다 (커서가 창 가장자리 UI에 걸리지 않게)
-	const LONG CenterX = (TopLeft.x + BottomRight.x) / 2;
-	const LONG CenterY = (TopLeft.y + BottomRight.y) / 2;
+	// 가운데 한 점에 가둔다 (커서가 창 가장자리 UI에 걸리지 않게). 지정한 점이 있으면 그 점 (클라이언트 영역 안으로 자름)
+	const bool bCustomPoint = CursorLockPoint[0] >= 0 && CursorLockPoint[1] >= 0;
+	const LONG CenterX      = bCustomPoint ? std::min<LONG>(TopLeft.x + CursorLockPoint[0], BottomRight.x - 1) : (TopLeft.x + BottomRight.x) / 2;
+	const LONG CenterY      = bCustomPoint ? std::min<LONG>(TopLeft.y + CursorLockPoint[1], BottomRight.y - 1) : (TopLeft.y + BottomRight.y) / 2;
 	const RECT Clip{ CenterX, CenterY, CenterX + 1, CenterY + 1 };
 	ClipCursor(&Clip);
 }

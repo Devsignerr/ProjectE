@@ -50,6 +50,8 @@ public:
 	// 커서 잠금 (FPS 시점): 커서를 숨기고 창 안에 가둔다. 포커스를 잃으면 자동으로 풀린다. 시점 회전은 원시 입력(RawMouseMove)으로 받는다
 	void SetCursorLocked(bool bLock);
 	bool IsCursorLocked() const { return bCursorLocked; }
+	// 잠금 중 커서를 둘 점 (클라이언트 픽셀 — 에디터는 뷰포트 가운데). 음수 = 클라이언트 영역 가운데 (기본). 매 프레임 불러도 된다
+	void SetCursorLockPoint(int32 X, int32 Y);
 
 	// 게임 UI 텍스트 입력 (매 프레임 불러도 된다). 켜져 있으면 IME 조합을 창이 직접 받아 ImeComposition/Char 이벤트로 보내고
 	// (시스템 조합 창 대신 UI가 그린다), 조합/후보 창을 캐럿(클라이언트 픽셀: 위쪽 X/Y, 높이) 아래에 둔다. 끄면 조합 중인 글자는 취소된다
@@ -76,6 +78,7 @@ private:
 	uint32        PendingHighSurrogate = 0; // WM_CHAR UTF-16 서로게이트 앞쪽
 	bool          bBorderlessFullscreen = false;
 	bool          bCursorLocked         = false;
+	int32         CursorLockPoint[2]    = { -1, -1 }; // SetCursorLockPoint
 	void          ApplyCursorClip() const; // 잠금 중이면 클라이언트 영역에 가둔다 (크기/위치가 바뀔 때마다)
 	// 전체 화면 전 창 상태 (WINDOWPLACEMENT 일부 — 헤더에 Windows.h를 넣지 않으려고 값으로 보관)
 	uint32        SavedStyle      = 0;

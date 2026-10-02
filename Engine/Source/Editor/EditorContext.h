@@ -41,6 +41,12 @@ struct FEditorContext
 	// 플레이 모드 (FPlayMode가 갱신). 플레이 중 Scene은 복제된 플레이 씬을 가리킨다
 	bool bPlaying = false;
 	bool bPaused  = false;
+	// 플레이 중 뷰포트 빙의 (언리얼 PIE Possess/Eject — FPlayMode가 갱신, F8로 전환. 플레이 시작 = 빙의).
+	//   빙의: 뷰포트 입력이 게임으로 가고 게임 카메라로 본다 — 클릭 선택/기즈모/선택 아웃라인/편집 단축키/편집 카메라 없음
+	//   빙의 해제: 게임은 계속 돌지만 입력을 받지 않고, 편집 카메라로 플레이 씬을 고르고 고칠 수 있다
+	bool bPossessed = false;
+	// 뷰포트에서 씬 편집 상호작용(클릭 선택, 기즈모, 선택 아웃라인, W/E/R/F, 편집 도구)을 허용하는가: 편집 중이거나 빙의 해제된 플레이
+	bool CanEditInViewport() const { return !bPlaying || !bPossessed; }
 
 	std::filesystem::path ContentDirectory;
 	std::string           EntityClipboard; // 복사한 엔티티 (FSceneEditOps::Copy 형식). 씬을 바꿔도 유지

@@ -199,6 +199,32 @@ bool FRuntimeApplication::OnInit()
 	return true;
 }
 
+void FRuntimeApplication::UpdateInputModeCursor(const FInput& InputState)
+{
+	const EInputMode        InputMode = FInputModeState::Get();
+	const FInputModeRouting Routing   = GetInputModeRouting(InputMode);
+	const bool              bAllowLock = !IsAutomationRun(); // Game.SetMouseLocked와 같이 자동 검증에서는 잠그지 않는다
+	if (FInputModeState::GetRevision() != AppliedInputModeRevision)
+	{
+		// 모드에 들어갈 때의 기본값만 적용한다 (GameAndUI → GameAndUI 재설정은 스크립트가 잠근 커서를 건드리지 않는다)
+		if (Routing.bLockCursor)
+		{
+			GetWindow().SetCursorLocked(bAllowLock);
+		}
+		else if (GetInputModeRouting(AppliedInputMode).bLockCursor)
+		{
+			GetWindow().SetCursorLocked(false);
+		}
+		AppliedInputModeRevision = FInputModeState::GetRevision();
+		AppliedInputMode         = InputMode;
+	}
+	else if (Routing.bLockCursor && bAllowLock && !GetWindow().IsCursorLocked() && !Console.IsOpen() &&
+	         InputState.IsMouseButtonPressed(EMouseButton::Left))
+	{
+		GetWindow().SetCursorLocked(true); // ESC/포커스 상실로 풀린 잠금: 창을 클릭하면 다시 (언리얼 GameOnly 캡처)
+	}
+}
+
 void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 {
 	const FInput& InputState = GetInput();
@@ -230,16 +256,20 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	StatOverlay.Tick(DeltaSeconds);
 	const bool bConsoleKeyboard = Console.Update(InputState, DeltaSeconds, FConsoleManager::Get());
 
+	// 입력 모드 (Game.SetInputMode): GameOnly = UI는 입력 없음, GameAndUI = UI 먼저, UIOnly = 게임은 빈 입력
+	const EInputMode        InputMode = FInputModeState::Get();
+	const FInputModeRouting Routing   = GetInputModeRouting(InputMode);
+	UpdateInputModeCursor(InputState);
+
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
 	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
 	FUIFrameInput       UIInput;
 	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
-	UIInput.bHasPointer = true;
+	UIInput.bHasPointer = Routing.bUIInput;
 	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
-	UIInput.Keys         = bConsoleKeyboard ? FUIKeyInput{} : FUISystem::MakeKeys(InputState);
+	UIInput.Keys         = bConsoleKeyboard || !Routing.bUIInput ? FUIKeyInput{} : FUISystem::MakeKeys(InputState);
 	UIInput.DeltaSeconds = DeltaSeconds;
 	FInput               BlockedInput;
-	const FInput*        GameInput = &InputState;
 	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	// 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (Phase 32-2)
 	if (Console.IsOpen())
@@ -252,15 +282,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 		GetWindow().SetTextInput(UIResult.bKeyboard && UIResult.bHasTextCaret, static_cast<int32>(UIResult.TextCaret.Min.X),
 		                         static_cast<int32>(UIResult.TextCaret.Min.Y), static_cast<int32>(UIResult.TextCaret.GetHeight()));
 	}
-	if (UIResult.bPointer || UIResult.bKeyboard || bConsoleKeyboard)
-	{
-		BlockedInput = UIResult.bPointer ? InputState.WithoutMouseButtons() : InputState;
-		if (UIResult.bKeyboard || bConsoleKeyboard)
-		{
-			BlockedInput = BlockedInput.WithoutKeyboard();
-		}
-		GameInput = &BlockedInput;
-	}
+	const FInput* GameInput = &SelectGameInput(InputMode, InputState, UIResult.bPointer, UIResult.bKeyboard || bConsoleKeyboard, BlockedInput);
 	// ESC 종료는 개발 실행에서만 — 패키지 게임은 ESC를 게임(일시정지 메뉴 등)에 넘기고 종료는 Game.Quit()로
 	// (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
 	// 커서가 잠겨 있으면 ESC는 잠금만 푼다 (게임 스크립트도 ESC를 볼 수 있다)

@@ -1,5 +1,6 @@
 #include "Scripting/LuaRuntime.h"
 
+#include "Core/InputMode.h"
 #include "Core/Log.h"
 #include "Core/Settings/ProjectSettings.h"
 
@@ -13,7 +14,10 @@ E_DECLARE_LOG_CATEGORY(LogScript)
 //   Game.Quit()                          -- 런타임: 이번 프레임 끝에 종료 / 에디터: 플레이 정지
 //   Game.GetWindowMode() / Game.SetWindowMode("Windowed" | "BorderlessFullscreen")
 //   Game.IsVSync() / Game.SetVSync(true)
-//   Game.SetMouseLocked(true) / Game.IsMouseLocked()  -- FPS 시점: 커서 숨김 + 창에 가둠 (런타임만, 에디터는 항상 false — 우클릭 시점 등으로 대체)
+//   Game.SetMouseLocked(true) / Game.IsMouseLocked()  -- FPS 시점: 커서 숨김 + 창에 가둠 (에디터는 뷰포트에 빙의 중일 때만, 뷰포트 안에 가둠)
+//   Game.SetInputMode("GameOnly" | "GameAndUI" | "UIOnly") / Game.GetInputMode()  -- 입력 모드 (Core/InputMode.h).
+//       GameOnly = 게임만 입력(UI는 그리기만, 커서 잠금), GameAndUI = 기본(UI 먼저), UIOnly = UI만(게임은 빈 입력).
+//       플레이 시작/정지·맵 전환마다 GameAndUI로 돌아간다. 커서 잠금은 모드에 들어갈 때의 기본값이며 이후 SetMouseLocked로 바꿀 수 있다
 // 화면 설정은 런타임이 사용자 설정 파일(<Saved>/Config/GameUserSettings.json)에 저장한다. 앱이 지원하지 않으면 무시(경고 한 번)
 //
 // Steam (FSteamSubsystem — 런타임이 .eproject SteamAppId로 초기화했을 때만 동작, 아니면 false/빈 값)
@@ -69,6 +73,15 @@ void FLuaRuntime::RegisterGameBindings()
 		}
 	};
 	GameTable["IsMouseLocked"] = [this]() { return AppHooks != nullptr && AppHooks->IsMouseLocked && AppHooks->IsMouseLocked(); };
+	GameTable["SetInputMode"]  = [](const std::string& ModeName) {
+		EInputMode Mode = EInputMode::GameAndUI;
+		if (!TryParseInputMode(ModeName, Mode))
+		{
+			throw std::runtime_error("Game.SetInputMode: 알 수 없는 입력 모드 \"" + ModeName + "\" (GameOnly / GameAndUI / UIOnly)");
+		}
+		FInputModeState::Set(Mode);
+	};
+	GameTable["GetInputMode"] = []() { return std::string(ToString(FInputModeState::Get())); };
 
 	sol::table SteamTable     = Lua.create_named_table("Steam");
 	SteamTable["IsAvailable"] = [this]() { return SteamHooks != nullptr && SteamHooks->IsAvailable && SteamHooks->IsAvailable(); };

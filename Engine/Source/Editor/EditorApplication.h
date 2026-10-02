@@ -4,6 +4,7 @@
 #include "Audio/AudioSystem.h"
 #include "Core/Application.h"
 #include "Core/FileWatcher.h"
+#include "Core/InputMode.h"
 #include "Editor/AssetEditors/AssetEditorManager.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/EditorContext.h"
@@ -37,6 +38,7 @@
 #include <chrono>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 
 class FD3D12RHI;
@@ -111,6 +113,11 @@ private:
 	void StopPlay();
 	void UpdatePlayMode(float DeltaSeconds);
 	void HandlePlayShortcuts();
+	// 플레이 중 뷰포트 빙의/해제 (F8, 툴바): 해제하면 편집 카메라를 지금 게임 카메라 시점으로 옮기고 커서 잠금을 푼다
+	void SetPlayPossessed(bool bPossessed);
+	// 플레이 커서 잠금 (입력 모드 GameOnly 기본값, Lua Game.SetMouseLocked): 빙의 중일 때만, 뷰포트 가운데에 가둔다
+	void UpdatePlayCursor(const FInput& InputState);
+	void SetPlayCursorLocked(bool bLocked);
 	void DrawPlayControls(); // 메인 메뉴 바 안의 재생/일시정지/진행/정지 버튼
 	void PollScriptChanges(); // Content의 .lua 저장 감지 → 핫 리로드
 
@@ -176,6 +183,12 @@ private:
 	float  VerifyCameraPanPerFrame = 0.0f; // --verify-camera-pan <cm/프레임>: 편집 카메라를 오른쪽으로 일정하게 민다 (움직일 때 시간 떨림 확인)
 	uint64 VerifyCameraPanStart    = 0;    // --verify-camera-pan-start <프레임>: 이 프레임부터 민다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
+	std::optional<FCamera> EditCameraBeforeEject;    // 플레이 중 처음 빙의를 풀 때의 편집 카메라 (정지하면 되돌린다)
+	uint32                 AppliedInputModeRevision = 0; // 커서 기본값을 마지막으로 적용한 FInputModeState 리비전
+	EInputMode             AppliedInputMode         = EInputMode::GameAndUI;
+	bool                   bPlayMouseInViewport     = false; // 플레이: 지금(또는 누르기 시작할 때) 마우스가 뷰포트 위 → 게임이 마우스 버튼을 받는다
+	bool                   bPlayMouseButtonsHeld    = false;
+	uint64                 VerifyEjectFrame         = 0; // --play-eject: 이 프레임에 빙의 해제 (자동 검증, 0 = 없음)
 	float AutoSaveElapsedSeconds   = 0.0f;
 	float SmoothedFps    = 0.0f;
 	FStatOverlay StatOverlay; // 콘솔 stat fps/gpu → 뷰포트 오른쪽 위

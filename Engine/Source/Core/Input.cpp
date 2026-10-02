@@ -153,6 +153,30 @@ FInput FInput::WithoutKeyboard() const
 	return Copy;
 }
 
+FInput FInput::WithoutAnyInput() const
+{
+	FInput Copy = WithoutKeyboard();
+	Copy.ButtonStates.reset();
+	Copy.PrevButtonStates.reset();
+	Copy.WheelDelta         = 0.0f;
+	Copy.LookDeltaX         = 0.0f;
+	Copy.LookDeltaY         = 0.0f;
+	Copy.PrevMouseX         = Copy.MouseX;
+	Copy.PrevMouseY         = Copy.MouseY;
+	Copy.Gamepad            = FGamepadState{};
+	Copy.Gamepad.bConnected = Gamepad.bConnected;
+	Copy.PrevGamepad        = Copy.Gamepad;
+	Copy.ReevaluateActions();
+	// 받은 값(원격 입력)처럼 매핑이 없어 다시 계산하지 않는 경우도 비운다
+	for (FInputActionState& Action : Copy.Actions)
+	{
+		Action.Value      = FVector2::ZeroVector;
+		Action.bActive    = false;
+		Action.bWasActive = false;
+	}
+	return Copy;
+}
+
 FVector2 FInput::ReadSource(const FInputSource& Source) const
 {
 	const auto Button = [](bool bDown) { return FVector2(bDown ? 1.0f : 0.0f, 0.0f); };

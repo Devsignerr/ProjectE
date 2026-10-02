@@ -42,6 +42,18 @@ public:
 	// 재생 진행 (Update가 부른다). 끝난 애니메이션은 AnimationFinished 이벤트 (WidgetName = 애니메이션 이름)
 	void TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents);
 
+	// ---- 실행 중 트리 편집 (스크립트 entity:CloneWidget/RemoveWidget). 규칙:
+	//   CloneWidget: 템플릿(루트가 아닌 위젯)을 자식까지 깊은 복사해 템플릿의 부모 끝에 붙인다. 복제 루트 이름 = NewName,
+	//                자손 이름 = NewName + "." + 원래 이름 (빈 이름은 그대로). 이름이 이미 있거나 부모가 자식을 더 받을 수 없으면 nullptr + OutError.
+	//                값(보이기 포함)은 템플릿 그대로 — 숨겨 둔 템플릿이면 복제본도 숨겨져 있다. 애니메이션 트랙은 원래 이름만 대상
+	//   RemoveWidget: 이름으로 찾은 위젯(루트 제외)과 자손을 뗀다. 없으면 false
+	//   위젯 번호는 이 인스턴스 안에서 다시 쓰지 않는다 (입력 상태가 지워진 위젯 번호를 가리켜도 다른 위젯과 섞이지 않음)
+	FUIWidget* CloneWidget(std::string_view TemplateName, const std::string& NewName, std::string& OutError);
+	bool       RemoveWidget(std::string_view Name);
+	// 스크립트가 레이아웃에 영향을 주는 값을 바꿈 → FUISystem::Paint가 그리기 전에 같은 뷰포트로 다시 레이아웃 (한 프레임 늦지 않게)
+	void MarkLayoutDirty() { bLayoutDirty = true; }
+	bool IsLayoutDirty() const { return bLayoutDirty; }
+
 	// 포커스된 텍스트 상자가 있어 키보드를 가져감
 	bool                WantsKeyboard() { return Router.WantsKeyboard(*Asset.Root); }
 	// 포커스된 텍스트 상자의 캐럿 영역 (화면 픽셀, IME 조합 글자 포함). 없으면 false
@@ -53,6 +65,8 @@ private:
 	FUITransform   Transform;
 	FUIRect        Viewport;
 	bool           bPointerOver = false;
+	bool           bLayoutDirty = false;
+	uint32         NextWidgetId = 1; // 복제 위젯에 줄 다음 번호 (SetAsset 때 최대 번호 + 1)
 
 	std::vector<FUIAnimationPlayback> Playing;
 };

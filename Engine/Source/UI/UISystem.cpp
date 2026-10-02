@@ -174,8 +174,12 @@ void FUISystem::Paint(FScene& Scene, FUIDrawList& Out)
 	FUIFontLibrary& Fonts = FUIFontLibrary::Get();
 	for (const FOrderedUI& Entry : CollectVisible(Scene))
 	{
-		if (const FUIInstance* Instance = Entry.Component->Runtime.Instance.get(); Instance != nullptr && Entry.Component->Runtime.LoadedAsset == Entry.Component->Asset)
+		if (FUIInstance* Instance = Entry.Component->Runtime.Instance.get(); Instance != nullptr && Entry.Component->Runtime.LoadedAsset == Entry.Component->Asset)
 		{
+			if (Instance->IsLayoutDirty() && !Instance->GetViewport().IsEmpty())
+			{
+				Instance->Layout(Instance->GetViewport(), Fonts); // 스크립트가 위치/크기/트리를 바꿨다 → 이번 프레임 그림에 반영
+			}
 			Instance->Paint(Out, Fonts);
 		}
 	}

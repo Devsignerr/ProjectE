@@ -1,21 +1,12 @@
 #include "Renderer/SceneCamera.h"
 
 #include "Renderer/Camera.h"
+#include "Scene/CameraProjection.h"
 #include "Scene/Scene.h"
 
 FEntity FSceneCamera::FindPrimary(FScene& Scene)
 {
-	FEntity Found;
-	int32   FoundPriority = 0;
-	Scene.GetRegistry().View<FCameraComponent, FTransformComponent>().Each(
-		[&](FEntity Entity, FCameraComponent& Camera, FTransformComponent&) {
-			if (Camera.bPrimary && (!Found.IsValid() || Camera.Priority > FoundPriority))
-			{
-				Found         = Entity;
-				FoundPriority = Camera.Priority;
-			}
-		});
-	return Found;
+	return FCameraProjection::FindActiveCamera(Scene); // 스크립트(Camera.WorldToScreen)와 같은 규칙
 }
 
 bool FSceneCamera::ApplyToCamera(FScene& Scene, FEntity CameraEntity, float AspectRatio, FCamera& OutCamera)

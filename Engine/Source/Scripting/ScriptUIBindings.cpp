@@ -16,7 +16,10 @@
 //                                                         텍스트 상자: OnUITextChanged_/OnUITextCommitted_<이름> (값은 widget.Text)
 //   self.entity:PlayUIAnimation("Intro") / StopUIAnimation / IsUIAnimationPlaying, 끝나면 OnUIAnimationFinished_<애니메이션 이름>
 //   (이름이 Lua 식별자가 아니면 Hud["OnUIClicked_시작"] = function(self) ... end)
+//   Bar.Position = Vector2(x, y); Bar.Size = Vector2(w, h)   -- 캔버스 자식 배치 (UI 레이아웃 단위, Camera.WorldToScreen과 같은 공간)
+//   local Label = self.entity:CloneWidget("LabelTemplate", "Label_3"); self.entity:RemoveWidget("Label_3")
 // 위젯 값은 접근할 때마다 이름으로 다시 찾는다 (인스턴스가 다시 만들어져도 같은 이름이면 계속 유효)
+// 값을 쓰면 인스턴스에 레이아웃 갱신을 표시해 그리기 전에 다시 레이아웃한다 (FUIInstance::MarkLayoutDirty)
 
 namespace
 {
@@ -64,6 +67,18 @@ void FLuaRuntime::RegisterUIBindings()
 		return *Widget;
 	};
 
+	// 쓰기: 값을 바꾼 뒤 레이아웃을 다시 하도록 표시 (그리기 전에 반영 — 같은 프레임)
+	const auto EditWidget = [FindInstance](const FScriptWidgetRef& Ref) -> FUIWidget& {
+		FUIInstance* Instance = FindInstance(Ref.Entity);
+		FUIWidget*   Widget   = Instance != nullptr ? Instance->FindWidget(Ref.Name) : nullptr;
+		if (Widget == nullptr)
+		{
+			throw std::runtime_error("UI 위젯을 찾을 수 없습니다: " + Ref.Name + " (엔티티의 UIComponent가 사라졌거나 에셋이 바뀌었습니다)");
+		}
+		Instance->MarkLayoutDirty();
+		return *Widget;
+	};
+
 	Lua.new_usertype<FScriptWidgetRef>(
 		"UIWidget",
 		sol::no_constructor,
@@ -71,8 +86,8 @@ void FLuaRuntime::RegisterUIBindings()
 		"Type", sol::readonly_property([RequireWidget](const FScriptWidgetRef& Ref) { return std::string(ToString(RequireWidget(Ref).Type)); }),
 		// 읽기 = 화면에 보이는 글자(문자열 표 키 반영), 쓰기 = 고정 문자열 (키를 떼어 언어를 바꿔도 덮어쓰지 않는다)
 		"Text", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetDisplayText(RequireWidget(Ref)); },
-		                      [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
-			                      FUIWidget& Widget = RequireWidget(Ref);
+		                      [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                      FUIWidget& Widget = EditWidget(Ref);
 			                      Widget.Text       = Value;
 			                      if (Widget.Type == EUIWidgetType::Text)
 			                      {
@@ -80,15 +95,15 @@ void FLuaRuntime::RegisterUIBindings()
 			                      }
 		                      }),
 		"Percent", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Percent; },
-		                         [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).Percent = FMath::Clamp(Value, 0.0f, 1.0f); }),
+		                         [EditWidget](const FScriptWidgetRef& Ref, float Value) { EditWidget(Ref).Percent = FMath::Clamp(Value, 0.0f, 1.0f); }),
 		"Visible",
 		sol::property(
 			[RequireWidget](const FScriptWidgetRef& Ref) {
 				const EUIVisibility Visibility = RequireWidget(Ref).Visibility;
 				return Visibility != EUIVisibility::Collapsed && Visibility != EUIVisibility::Hidden;
 			},
-			[RequireWidget](const FScriptWidgetRef& Ref, bool bVisible) {
-				FUIWidget& Widget = RequireWidget(Ref);
+			[EditWidget](const FScriptWidgetRef& Ref, bool bVisible) {
+				FUIWidget& Widget = EditWidget(Ref);
 				const bool bNow   = Widget.Visibility != EUIVisibility::Collapsed && Widget.Visibility != EUIVisibility::Hidden;
 				if (bVisible != bNow)
 				{
@@ -96,29 +111,29 @@ void FLuaRuntime::RegisterUIBindings()
 				}
 			}),
 		"Visibility", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return std::string(ToString(RequireWidget(Ref).Visibility)); },
-		                            [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
-			                            if (!FromString(Value, RequireWidget(Ref).Visibility))
+		                            [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                            if (!FromString(Value, EditWidget(Ref).Visibility))
 			                            {
 				                            throw std::runtime_error("알 수 없는 Visibility: " + Value +
 				                                                     " (Visible/Collapsed/Hidden/HitTestInvisible/SelfHitTestInvisible)");
 			                            }
 		                            }),
 		"Enabled", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).bEnabled; },
-		                         [RequireWidget](const FScriptWidgetRef& Ref, bool bValue) { RequireWidget(Ref).bEnabled = bValue; }),
+		                         [EditWidget](const FScriptWidgetRef& Ref, bool bValue) { EditWidget(Ref).bEnabled = bValue; }),
 		"Opacity", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).RenderOpacity; },
-		                         [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).RenderOpacity = FMath::Clamp(Value, 0.0f, 1.0f); }),
+		                         [EditWidget](const FScriptWidgetRef& Ref, float Value) { EditWidget(Ref).RenderOpacity = FMath::Clamp(Value, 0.0f, 1.0f); }),
 		"Color", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return FUIAnimMath::GetMainColor(RequireWidget(Ref)); },
-		                       [RequireWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { FUIAnimMath::GetMainColor(RequireWidget(Ref)) = Value; }),
+		                       [EditWidget](const FScriptWidgetRef& Ref, const FVector4& Value) { FUIAnimMath::GetMainColor(EditWidget(Ref)) = Value; }),
 		"Texture", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).Brush.Texture; },
-		                         [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).Brush.Texture = Value; }),
+		                         [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) { EditWidget(Ref).Brush.Texture = Value; }),
 		"HintText", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return GetDisplayHintText(RequireWidget(Ref)); },
-		                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
-			                          FUIWidget& Widget = RequireWidget(Ref);
+		                          [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) {
+			                          FUIWidget& Widget = EditWidget(Ref);
 			                          Widget.HintText   = Value;
 			                          Widget.HintTextKey.clear(); // 고정 문자열 (Text와 같은 규칙)
 		                          }),
 		"FontSize", sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).FontSize; },
-		                          [RequireWidget](const FScriptWidgetRef& Ref, float Value) { RequireWidget(Ref).FontSize = FMath::Max(Value, 1.0f); }),
+		                          [EditWidget](const FScriptWidgetRef& Ref, float Value) { EditWidget(Ref).FontSize = FMath::Max(Value, 1.0f); }),
 		sol::meta_function::to_string, [](const FScriptWidgetRef& Ref) { return "UIWidget(" + Ref.Name + ")"; });
 
 	sol::usertype<FScriptEntity> EntityType = Lua["Entity"];
@@ -158,9 +173,73 @@ void FLuaRuntime::RegisterUIBindings()
 	//   Loc.GetLanguage() / Loc.GetLanguages() / Loc.GetLanguageName("en") / Loc.Has("키")
 	sol::usertype<FScriptWidgetRef> WidgetType = Lua["UIWidget"];
 	WidgetType["TextKey"] = sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).TextKey; },
-	                                      [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).TextKey = Value; });
+	                                      [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) { EditWidget(Ref).TextKey = Value; });
 	WidgetType["HintTextKey"] = sol::property([RequireWidget](const FScriptWidgetRef& Ref) { return RequireWidget(Ref).HintTextKey; },
-	                                          [RequireWidget](const FScriptWidgetRef& Ref, const std::string& Value) { RequireWidget(Ref).HintTextKey = Value; });
+	                                          [EditWidget](const FScriptWidgetRef& Ref, const std::string& Value) { EditWidget(Ref).HintTextKey = Value; });
+
+	// ---- 실행 중 배치 (Phase 45): 캔버스 자식만. 단위 = UI 레이아웃 단위 (Camera.WorldToScreen과 같은 공간)
+	//   widget.Position = Vector2(x, y)  -- 앵커가 점인 축: 앵커점 기준 위치 (피벗 = 슬롯 Alignment). 늘이기 축: 읽기 = 왼쪽/위 여백, 쓰기 = 오류
+	//   widget.Size     = Vector2(w, h)  -- 앵커가 점인 축: 너비/높이 (쓰면 슬롯 AutoSize를 끈다). 늘이기 축: 읽기 = 배치된 크기, 쓰기 = 오류
+	//   값을 쓰면 그리기 전에 다시 레이아웃되어 같은 프레임에 반영된다
+	const auto RequireCanvasSlot = [](FUIWidget& Widget) -> FUISlot& {
+		if (Widget.Parent == nullptr || Widget.Parent->Type != EUIWidgetType::Canvas)
+		{
+			throw std::runtime_error("Position/Size는 캔버스의 자식 위젯만 쓸 수 있습니다: " + Widget.Name);
+		}
+		return Widget.Slot;
+	};
+	WidgetType["Position"] = sol::property(
+		[RequireWidget, RequireCanvasSlot](const FScriptWidgetRef& Ref) {
+			const FUISlot& Slot = RequireCanvasSlot(RequireWidget(Ref));
+			return FVector2(Slot.Offsets.Left, Slot.Offsets.Top);
+		},
+		[EditWidget, RequireCanvasSlot](const FScriptWidgetRef& Ref, const FVector2& Value) {
+			FUISlot& Slot = RequireCanvasSlot(EditWidget(Ref));
+			if (!Slot.IsAnchorPointX() || !Slot.IsAnchorPointY())
+			{
+				throw std::runtime_error("늘이기 앵커 축이 있는 위젯은 Position을 쓸 수 없습니다: " + Ref.Name);
+			}
+			Slot.Offsets.Left = Value.X;
+			Slot.Offsets.Top  = Value.Y;
+		});
+	WidgetType["Size"] = sol::property(
+		[RequireWidget, RequireCanvasSlot](const FScriptWidgetRef& Ref) {
+			FUIWidget&     Widget = RequireWidget(Ref);
+			const FUISlot& Slot   = RequireCanvasSlot(Widget);
+			const FVector2 Laid   = Widget.State.Geometry.GetSize();
+			return FVector2(Slot.IsAnchorPointX() && !Slot.bAutoSize ? Slot.Offsets.Right : Laid.X,
+			                Slot.IsAnchorPointY() && !Slot.bAutoSize ? Slot.Offsets.Bottom : Laid.Y);
+		},
+		[EditWidget, RequireCanvasSlot](const FScriptWidgetRef& Ref, const FVector2& Value) {
+			FUISlot& Slot = RequireCanvasSlot(EditWidget(Ref));
+			if (!Slot.IsAnchorPointX() || !Slot.IsAnchorPointY())
+			{
+				throw std::runtime_error("늘이기 앵커 축이 있는 위젯은 Size를 쓸 수 없습니다: " + Ref.Name);
+			}
+			Slot.bAutoSize      = false;
+			Slot.Offsets.Right  = FMath::Max(Value.X, 0.0f);
+			Slot.Offsets.Bottom = FMath::Max(Value.Y, 0.0f);
+		});
+
+	// entity:CloneWidget("템플릿", "새 이름") → 새 위젯 (템플릿의 부모 끝에 붙음, 자손 이름 = "새 이름.원래 이름" — FUIInstance::CloneWidget 규칙)
+	//   이름이 겹치거나 템플릿이 없으면 Lua 오류. entity:RemoveWidget("이름") → 지웠으면 true (루트/없는 이름은 false)
+	EntityType["CloneWidget"] = [FindInstance](const FScriptEntity& Entity, const std::string& TemplateName, const std::string& NewName) {
+		FUIInstance* Instance = FindInstance(Entity.Entity);
+		if (Instance == nullptr)
+		{
+			throw std::runtime_error("CloneWidget: 엔티티에 UIComponent(읽은 UI 에셋)가 없습니다");
+		}
+		std::string Error;
+		if (Instance->CloneWidget(TemplateName, NewName, Error) == nullptr)
+		{
+			throw std::runtime_error("CloneWidget: " + Error);
+		}
+		return FScriptWidgetRef{ Entity.Entity, NewName };
+	};
+	EntityType["RemoveWidget"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name) {
+		FUIInstance* Instance = FindInstance(Entity.Entity);
+		return Instance != nullptr && Instance->RemoveWidget(Name);
+	};
 
 	sol::table LocTable = Lua.create_named_table("Loc");
 	LocTable["Get"]     = [this](const std::string& Key, sol::variadic_args Args) {

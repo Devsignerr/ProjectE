@@ -80,22 +80,6 @@ namespace
 		return sol::stack::push(L, Description);
 	}
 
-	std::string ReadTextFile(const std::filesystem::path& Path, bool& bOutOk)
-	{
-		std::string Text;
-		bOutOk = FFileSystem::ReadTextFile(Path, Text);
-		if (!bOutOk)
-		{
-			return std::string();
-		}
-		// UTF-8 BOM 제거 (Lua 파서는 BOM을 모른다)
-		if (Text.size() >= 3 && static_cast<unsigned char>(Text[0]) == 0xEF && static_cast<unsigned char>(Text[1]) == 0xBB &&
-		    static_cast<unsigned char>(Text[2]) == 0xBF)
-		{
-			Text.erase(0, 3);
-		}
-		return Text;
-	}
 } // namespace
 
 FLuaRuntime::FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErrorCounter)
@@ -120,11 +104,30 @@ FLuaRuntime::~FLuaRuntime()
 	Tasks.clear();
 	Objects.clear();
 	Classes.clear();
+	Modules.clear();
+	ModuleCaller = sol::lua_nil;
 	CoroutineCreate = sol::lua_nil;
 	CoroutineResume = sol::lua_nil;
 	CoroutineStatus = sol::lua_nil;
 	WaitToken       = sol::table();
 	Traceback = sol::lua_nil;
+}
+
+std::string FLuaRuntime::ReadScriptSource(const std::filesystem::path& Path, bool& bOutOk)
+{
+	std::string Text;
+	bOutOk = FFileSystem::ReadTextFile(Path, Text);
+	if (!bOutOk)
+	{
+		return std::string();
+	}
+	// UTF-8 BOM 제거 (Lua 파서는 BOM을 모른다)
+	if (Text.size() >= 3 && static_cast<unsigned char>(Text[0]) == 0xEF && static_cast<unsigned char>(Text[1]) == 0xBB &&
+	    static_cast<unsigned char>(Text[2]) == 0xBF)
+	{
+		Text.erase(0, 3);
+	}
+	return Text;
 }
 
 void FLuaRuntime::ReportError(const std::string& Message)
@@ -151,6 +154,8 @@ void FLuaRuntime::RegisterBindings()
 	RegisterSequenceBindings();
 	RegisterTimerBindings();
 	RegisterDebugDrawBindings();
+	RegisterModuleBindings();
+	RegisterCameraBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -945,7 +950,7 @@ std::string FLuaRuntime::MakeClassKey(const std::filesystem::path& AbsolutePath)
 bool FLuaRuntime::ExecuteClassFile(FScriptClass& Class, const std::filesystem::path& AbsolutePath)
 {
 	bool              bRead  = false;
-	const std::string Source = ReadTextFile(AbsolutePath, bRead);
+	const std::string Source = ReadScriptSource(AbsolutePath, bRead);
 	if (!bRead)
 	{
 		Class.Error = "스크립트 파일을 열 수 없습니다: " + FStringConv::ToUtf8(AbsolutePath.wstring());
@@ -960,8 +965,10 @@ bool FLuaRuntime::ExecuteClassFile(FScriptClass& Class, const std::filesystem::p
 		return false;
 	}
 
-	sol::protected_function        Function(Chunk.get<sol::function>(), Traceback);
+	sol::protected_function Function(Chunk.get<sol::function>(), Traceback);
+	ExecutingFiles.push_back(MakeClassKey(AbsolutePath)); // 파일 맨 위의 Script.Require가 이 클래스를 의존자로 기록한다
 	sol::protected_function_result Result = Function();
+	ExecutingFiles.pop_back();
 	if (!Result.valid())
 	{
 		const sol::error Error = Result;
@@ -1028,8 +1035,18 @@ FLuaRuntime::FScriptClass& FLuaRuntime::LoadClass(const std::string& ScriptAsset
 
 bool FLuaRuntime::ReloadClass(const std::filesystem::path& ScriptPath, bool& bOutSucceeded)
 {
+	bOutSucceeded         = false;
+	const std::string Key = MakeClassKey(ScriptPath);
+	if (Modules.contains(Key) && !Classes.contains(Key))
+	{
+		return ReloadModule(Key, ScriptPath, bOutSucceeded); // Script.Require로 읽은 파일 (클래스가 아님)
+	}
+	return ReloadClassByKey(Key, ScriptPath, bOutSucceeded);
+}
+
+bool FLuaRuntime::ReloadClassByKey(const std::string& Key, const std::filesystem::path& ScriptPath, bool& bOutSucceeded)
+{
 	bOutSucceeded    = false;
-	const std::string Key   = MakeClassKey(ScriptPath);
 	const auto        Found = Classes.find(Key);
 	if (Found == Classes.end())
 	{

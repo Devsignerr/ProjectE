@@ -6,6 +6,7 @@
 #include "Physics/PhysicsReflection.h"
 #include "Network/ReplicationTypes.h"
 #include "Core/CommandLine.h"
+#include "Core/Console/Console.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/Settings/SettingsRegistry.h"
@@ -1036,6 +1037,23 @@ void FEditorApplication::DrawStatsWindow()
 			            static_cast<double>(Upload.GetCapacity()) / Mb, static_cast<double>(Stats.UploadBytes) / Mb, Upload.GetGrowCount());
 		}
 		ImGui::Text("엔티티: %u", Context.Scene->GetRegistry().GetAliveCount());
+		// 렌더 그래프 요약 (뷰포트 씬 렌더러의 마지막 그래프 — 전체 덤프는 r.RenderGraph.Dump)
+		if (ImGui::CollapsingHeader("렌더 그래프", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			const FRGStats& Graph = SceneRenderer.GetGraphStats();
+			ImGui::Text("패스 %u (제거 %u), 비동기 계산 %u (묶음 %u), 그래픽스 제출 %u회", Graph.Passes, Graph.CulledPasses, Graph.AsyncPasses,
+			            Graph.AsyncBatches, Rhi->GetGraphicsSubmitCount());
+			ImGui::Text("리소스 %u (가져옴 %u, 풀 텍스처 %u), 전이 %u, UAV 배리어 %u, 배리어 호출 %u, 컴파일 %.3f ms", Graph.Resources,
+			            Graph.ImportedResources, Graph.PooledTextures, Graph.Transitions, Graph.UavBarriers, Graph.BarrierBatches, Graph.CompileMs);
+			ConsoleVariableWidgets::Checkbox("비동기 계산", "r.RenderGraph.AsyncCompute");
+			ImGui::SameLine();
+			ConsoleVariableWidgets::Checkbox("안 쓰는 패스 제거", "r.RenderGraph.Cull");
+			ImGui::SameLine();
+			if (ImGui::Button("그래프 덤프 (로그)"))
+			{
+				FConsoleManager::Get().Execute("r.RenderGraph.Dump");
+			}
+		}
 		DrawResourceMemoryStats();
 
 		bool bVSync = Rhi->IsVSync();

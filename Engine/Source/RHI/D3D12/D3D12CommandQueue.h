@@ -10,7 +10,7 @@ class FD3D12CommandQueue
 public:
 	~FD3D12CommandQueue();
 
-	bool Init(ID3D12Device* Device, D3D12_COMMAND_LIST_TYPE InType);
+	bool Init(ID3D12Device* Device, D3D12_COMMAND_LIST_TYPE InType, D3D12_COMMAND_QUEUE_PRIORITY Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL);
 	void Shutdown();
 
 	// 커맨드 리스트 실행 후 Signal. 완료 대기에 사용할 펜스 값을 반환.

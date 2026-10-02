@@ -4,6 +4,7 @@
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Camera.h"
 #include "Renderer/Image.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "RHI/D3D12/D3D12Texture.h"
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
@@ -189,67 +190,102 @@ bool FIblRenderer::Generate(FShaderLibrary& Library, bool bRebuild)
 	}
 	CreateUav(BrdfLut.Get(), BrdfSlot, 0, false);
 
-	const bool bSuccess = Rhi->GetGraphicsQueue().ExecuteImmediate(Device, [&](ID3D12GraphicsCommandList* List)
-	{
-		const auto Transition = [&](ID3D12Resource* Resource, D3D12_RESOURCE_STATES Before, D3D12_RESOURCE_STATES After)
-		{
-			const auto Barrier = MakeTransitionBarrier(Resource, Before, After);
-			List->ResourceBarrier(1, &Barrier);
-		};
-		if (bRebuild)
-		{
-			for (ID3D12Resource* Resource : { Sky.Get(), Irradiance.Get(), Prefilter.Get(), BrdfLut.Get() })
-			{
-				Transition(Resource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-			}
-		}
+	// 렌더 그래프로 기록해 즉시 실행 목록에서 실행 (로딩 시점 — 비동기 계산 없음). 끝 상태는 모두 PIXEL_SHADER_RESOURCE.
+	// 처음 만든 텍스처는 UNORDERED_ACCESS, 다시 만들 때(bRebuild)는 PIXEL_SHADER_RESOURCE 상태다
+	FRGResourcePool Pool;
+	Pool.Init(*Rhi);
+	FRenderGraph    Graph(*Rhi, Pool, "IblBake");
+	const ERGAccess Initial    = bRebuild ? ERGAccess::SrvPixel : ERGAccess::Uav;
+	const auto      ImportIbl  = [&](const char* Name, ID3D12Resource* Resource, uint32 Mips, uint32 Slices) {
+        return Graph.Import(Name, Resource, Initial, ERGAccess::SrvPixel, Mips, Slices);
+	};
+	const FRGResourceRef SkyRef        = ImportIbl("IblSky", Sky.Get(), SkyMipCount, 6);
+	const FRGResourceRef IrradianceRef = ImportIbl("IblIrradiance", Irradiance.Get(), 1, 6);
+	const FRGResourceRef PrefilterRef  = ImportIbl("IblPrefilter", Prefilter.Get(), PrefilterMipCount, 6);
+	const FRGResourceRef BrdfRef       = ImportIbl("IblBrdf", BrdfLut.Get(), 1, 1);
+	const FRGResourceRef EnvironmentRef =
+		EnvironmentTexture ? Graph.Import("IblEnvironment", EnvironmentTexture->GetResource(), ERGAccess::SrvPixel, ERGAccess::SrvPixel) : FRGResourceRef{};
+
+	// 루트 공용 인자 (u1 = BRDF 칸이 모든 디스패치에 묶여 있으므로 패스마다 BRDF를 UAV로 선언한다)
+	const auto Bind = [this, &Root, &Allocator, UavGpu, BrdfSlot](ID3D12GraphicsCommandList* List) {
 		ID3D12DescriptorHeap* Heaps[] = { Allocator.GetHeap() };
 		List->SetDescriptorHeaps(1, Heaps);
 		List->SetComputeRootSignature(Root.Get());
 		List->SetComputeRootDescriptorTable(1, SkySrv.Gpu);
 		List->SetComputeRootDescriptorTable(3, UavGpu(BrdfSlot));
-		const auto Dispatch = [&](uint32 Pipeline, uint32 Size, uint32 Slot, uint32 Slices, float Roughness)
-		{
-			const FBakeConstants Constants{ Size, IblMath::IntegrationSampleCount, Roughness, EnvironmentRotation };
-			List->SetPipelineState(Pipelines[Pipeline].Get());
-			List->SetComputeRoot32BitConstants(0, 4, &Constants, 0);
-			List->SetComputeRootDescriptorTable(2, UavGpu(Slot));
-			List->Dispatch((Size + 7) / 8, (Size + 7) / 8, Slices);
-		};
-		// 하늘 큐브: 외부 환경맵이 있으면 등장방형 변환, 없으면 절차적 하늘
+	};
+	const auto Dispatch = [this, &Pipelines, UavGpu](ID3D12GraphicsCommandList* List, uint32 Pipeline, uint32 Size, uint32 Slot, uint32 Slices,
+	                                                  float Roughness) {
+		const FBakeConstants Constants{ Size, IblMath::IntegrationSampleCount, Roughness, EnvironmentRotation };
+		List->SetPipelineState(Pipelines[Pipeline].Get());
+		List->SetComputeRoot32BitConstants(0, 4, &Constants, 0);
+		List->SetComputeRootDescriptorTable(2, UavGpu(Slot));
+		List->Dispatch((Size + 7) / 8, (Size + 7) / 8, Slices);
+	};
+
+	// 하늘 큐브 밉 0: 외부 환경맵이 있으면 등장방형 변환, 없으면 절차적 하늘
+	FRenderGraph::FPassBuilder SkyPass = Graph.AddPass("IBL 하늘 큐브", ERGQueue::Graphics);
+	SkyPass.Write(SkyRef, ERGAccess::Uav, FRGSubresourceRange::Mip(0), true).Write(BrdfRef, ERGAccess::Uav);
+	if (EnvironmentRef.IsValid())
+	{
+		SkyPass.Read(EnvironmentRef, ERGAccess::SrvNonPixel);
+	}
+	SkyPass.Execute([this, Bind, Dispatch](FRGContext& Context) {
+		Bind(Context.CommandList);
 		if (EnvironmentTexture)
 		{
-			// 업로드 후 PIXEL_SHADER_RESOURCE → 계산에서 읽는 동안만 NON_PIXEL
-			Transition(EnvironmentTexture->GetResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			List->SetComputeRootDescriptorTable(4, EnvironmentTexture->GetSrv().Gpu);
-			Dispatch(4, SkySize, 0, 6, 0.0f);
-			Transition(EnvironmentTexture->GetResource(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			Context.CommandList->SetComputeRootDescriptorTable(4, EnvironmentTexture->GetSrv().Gpu);
+			Dispatch(Context.CommandList, 4, SkySize, 0, 6, 0.0f);
 		}
 		else
 		{
-			Dispatch(0, SkySize, 0, 6, 0.0f);
-		}
-		// 하늘 밉 체인 (조도/프리필터가 표본 입체각만큼 흐린 밉을 읽는다 — 필터드 중요도 샘플링)
-		for (uint32 Mip = 1; Mip < SkyMipCount; ++Mip)
-		{
-			const auto UavBarrier = MakeUavBarrier(Sky.Get());
-			List->ResourceBarrier(1, &UavBarrier);
-			List->SetComputeRootDescriptorTable(5, UavGpu(Mip - 1));
-			Dispatch(5, FMath::Max(SkySize >> Mip, 1u), Mip, 6, 0.0f);
-		}
-		Transition(Sky.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		Dispatch(1, IblMath::IrradianceSize, IrradianceSlot, 6, 0.0f);
-		for (uint32 Mip = 0; Mip < PrefilterMipCount; ++Mip)
-		{
-			Dispatch(2, IblMath::PrefilterSize >> Mip, PrefilterSlot + Mip, 6, IblMath::MipToRoughness(Mip, PrefilterMipCount));
-		}
-		Dispatch(3, IblMath::BrdfLutSize, IrradianceSlot, 1, 0.0f); // u0는 쓰지 않음 (UAV 상태인 칸)
-		Transition(Sky.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		for (ID3D12Resource* Resource : { Irradiance.Get(), Prefilter.Get(), BrdfLut.Get() })
-		{
-			Transition(Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			Dispatch(Context.CommandList, 0, SkySize, 0, 6, 0.0f);
 		}
 	});
+	// 하늘 밉 체인 (조도/프리필터가 표본 입체각만큼 흐린 밉을 읽는다 — 필터드 중요도 샘플링). 원본 밉은 UAV로 읽는다
+	for (uint32 Mip = 1; Mip < SkyMipCount; ++Mip)
+	{
+		Graph.AddPass("IBL 하늘 밉")
+			.Write(SkyRef, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip - 1))
+			.Write(SkyRef, ERGAccess::Uav, FRGSubresourceRange::Mip(Mip), true)
+			.Write(BrdfRef, ERGAccess::Uav)
+			.Execute([this, Bind, Dispatch, UavGpu, Mip](FRGContext& Context) {
+				Bind(Context.CommandList);
+				Context.CommandList->SetComputeRootDescriptorTable(5, UavGpu(Mip - 1));
+				Dispatch(Context.CommandList, 5, FMath::Max(SkySize >> Mip, 1u), Mip, 6, 0.0f);
+			});
+	}
+	Graph.AddPass("IBL 조도")
+		.Read(SkyRef, ERGAccess::SrvNonPixel)
+		.Write(IrradianceRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Write(BrdfRef, ERGAccess::Uav)
+		.Execute([Bind, Dispatch, IrradianceSlot](FRGContext& Context) {
+			Bind(Context.CommandList);
+			Dispatch(Context.CommandList, 1, IblMath::IrradianceSize, IrradianceSlot, 6, 0.0f);
+		});
+	Graph.AddPass("IBL 프리필터")
+		.Read(SkyRef, ERGAccess::SrvNonPixel)
+		.Write(PrefilterRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Write(BrdfRef, ERGAccess::Uav)
+		.Execute([this, Bind, Dispatch, PrefilterSlot](FRGContext& Context) {
+			Bind(Context.CommandList);
+			for (uint32 Mip = 0; Mip < PrefilterMipCount; ++Mip)
+			{
+				Dispatch(Context.CommandList, 2, IblMath::PrefilterSize >> Mip, PrefilterSlot + Mip, 6, IblMath::MipToRoughness(Mip, PrefilterMipCount));
+			}
+		});
+	Graph.AddPass("IBL BRDF")
+		.Read(SkyRef, ERGAccess::SrvNonPixel)
+		.Write(BrdfRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Write(IrradianceRef, ERGAccess::Uav) // u0는 쓰지 않음 (UAV 상태인 칸)
+		.Execute([Bind, Dispatch, IrradianceSlot](FRGContext& Context) {
+			Bind(Context.CommandList);
+			Dispatch(Context.CommandList, 3, IblMath::BrdfLutSize, IrradianceSlot, 1, 0.0f);
+		});
+	FRGCompileOptions Options;
+	Options.bAsyncCompute = false;
+	Graph.Compile(Options);
+	const bool bSuccess = Rhi->GetGraphicsQueue().ExecuteImmediate(Device, [&](ID3D12GraphicsCommandList* List) { Graph.Execute(List); });
 	Allocator.Free(Uavs);
 	return bSuccess;
 }

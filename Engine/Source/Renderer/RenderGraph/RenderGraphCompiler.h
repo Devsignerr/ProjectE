@@ -22,6 +22,7 @@
 //     실행 타임라인 = 그래픽스 패스 순서 + 포크 위치에 묶음. 묶음이 처음 쓰는 상태로의 전이는 포크 앞 그래픽스 큐에서 하고(계산 큐는
 //     픽셀 셰이더/렌더 타깃/깊이 상태로 전이할 수 없다), 묶음 안 전이는 계산 큐에서 계산 큐 합법 상태로만 한다.
 //     묶음끼리는 등록 순서를 지킨다 (포크 위치가 앞 묶음보다 앞이 될 수 없다).
+//     뒤 묶음의 포크가 앞 묶음의 조인보다 앞이면 두 묶음을 하나로 합친다 (포크 = 뒤 묶음 포크, 조인 = 이른 쪽 — 제출 수 절약).
 //  4. 끝: 가져온 리소스는 FinalState(None이면 그대로 두고 FinalStates로 알림)로, 내부 리소스는 그대로 둔다(풀이 다음 사용 때 시작 상태로 받음).
 //  5. 수명: 리소스별 실행 타임라인상 첫/마지막 사용 패스 (메모리 별칭 2차 작업용).
 struct FRGCompileResource
@@ -56,8 +57,9 @@ struct FRGCompilePass
 
 struct FRGCompileOptions
 {
-	bool bCullPasses   = true;
-	bool bAsyncCompute = true; // 끄면 AsyncCompute 패스도 그래픽스 큐에서 등록 순서대로
+	bool bCullPasses        = true;
+	bool bAsyncCompute      = true; // 끄면 AsyncCompute 패스도 그래픽스 큐에서 등록 순서대로
+	bool bMergeAsyncBatches = true; // 실행 구간이 겹치는 묶음을 하나로 (규칙 3.5)
 };
 
 struct FRGBarrier

@@ -515,13 +515,14 @@ void FRenderGraph::RunPass(uint32 PassIndex, ID3D12GraphicsCommandList* List, bo
 	}
 }
 
-void FRenderGraph::Execute()
+void FRenderGraph::Execute(ID3D12GraphicsCommandList* ExternalList)
 {
 	E_CHECKF(bCompiled && !bExecuted, "렌더 그래프: Compile 뒤 한 번만 Execute");
+	E_CHECKF(ExternalList == nullptr || Compiled.Batches.empty(), "렌더 그래프 '{}': 외부 명령 목록 실행은 비동기 계산 없이 컴파일해야 합니다", Name);
 	E_PROFILE_SCOPE("렌더 그래프 실행");
 	bExecuted = true;
 
-	ID3D12GraphicsCommandList* List          = Rhi.GetCommandList();
+	ID3D12GraphicsCommandList* List          = ExternalList != nullptr ? ExternalList : Rhi.GetCommandList();
 	int32                      OpenTimer     = -1;
 	std::vector<uint64>        BatchFences(Compiled.Batches.size(), 0);
 	std::vector<bool>          BatchJoined(Compiled.Batches.size(), false);

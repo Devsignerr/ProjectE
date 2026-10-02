@@ -277,6 +277,38 @@ E_TEST(RenderGraph_AsyncComputeForkJoin)
 	E_EXPECT_EQ(Result.Lifetimes[1].FirstPass, 2);
 }
 
+E_TEST(RenderGraph_AsyncBatchesMergeWhenWindowsOverlap)
+{
+	// 파티클 계산(의존 없음, 파티클 그리기 앞 조인) + 안개 계산(그림자 뒤 포크, 안개 적용 앞 조인) → 한 묶음 (그림자 뒤 포크, 안개 적용 앞 조인)
+	const std::vector<FRGCompileResource> Resources = {
+		MakeResource("ParticlePool", true, ERGAccess::SrvNonPixel, ERGAccess::None),
+		MakeResource("ShadowMap", true, ERGAccess::SrvPixel, ERGAccess::SrvPixel),
+		MakeResource("FogVolume", true, ERGAccess::SrvAll, ERGAccess::None),
+		MakeResource("SceneColor", true, ERGAccess::SrvPixel, ERGAccess::SrvPixel),
+	};
+	const std::vector<FRGCompilePass> Passes = {
+		MakePass("ParticleSim", { Access(0, ERGAccess::Uav) }, ERGQueue::AsyncCompute),
+		MakePass("Shadow", { Access(1, ERGAccess::DepthWrite) }),
+		MakePass("Fog", { Access(1, ERGAccess::SrvNonPixel), Access(2, ERGAccess::Uav) }, ERGQueue::AsyncCompute),
+		MakePass("Main", { Access(1, ERGAccess::SrvPixel), Access(3, ERGAccess::RenderTarget) }),
+		MakePass("FogApply", { Access(2, ERGAccess::SrvPixel), Access(3, ERGAccess::RenderTarget) }),
+		MakePass("Particles", { Access(0, ERGAccess::SrvNonPixel), Access(3, ERGAccess::RenderTarget) }),
+	};
+	const FRGCompileResult Merged = RenderGraphCompiler::Compile(Resources, Passes);
+	E_EXPECT_TRUE(Merged.Errors.empty());
+	E_EXPECT_EQ(Merged.Batches.size(), static_cast<size_t>(1));
+	E_EXPECT_EQ(Merged.Batches[0].ForkAfterPass, 1);
+	E_EXPECT_EQ(Merged.Batches[0].JoinBeforePass, 4);
+	E_EXPECT_EQ(Merged.Batches[0].Passes.size(), static_cast<size_t>(2));
+
+	FRGCompileOptions Options;
+	Options.bMergeAsyncBatches     = false;
+	const FRGCompileResult Separate = RenderGraphCompiler::Compile(Resources, Passes, Options);
+	E_EXPECT_EQ(Separate.Batches.size(), static_cast<size_t>(2));
+	E_EXPECT_EQ(Separate.Batches[0].ForkAfterPass, -1);
+	E_EXPECT_EQ(Separate.Batches[0].JoinBeforePass, 5);
+}
+
 E_TEST(RenderGraph_AsyncComputeDisabledRunsInOrder)
 {
 	std::vector<FRGCompileResource> Resources;

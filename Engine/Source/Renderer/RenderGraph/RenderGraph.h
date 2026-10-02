@@ -182,7 +182,9 @@ public:
 	std::function<void(ID3D12GraphicsCommandList* List)> OnLastComputeBatchEnd;
 
 	void Compile(const FRGCompileOptions& Options);
-	void Execute();
+	// 프레임 명령 목록(Rhi)에 기록 (비동기 묶음이면 중간 제출 + 계산 큐). ExternalList를 주면 그 목록에만 기록한다
+	// (로딩 때 즉시 실행 목록 등 — 비동기 계산 없이 컴파일해야 한다)
+	void Execute(ID3D12GraphicsCommandList* ExternalList = nullptr);
 
 	const FRGCompileResult& GetCompileResult() const { return Compiled; }
 	const FRGStats&         GetStats() const { return Stats; }

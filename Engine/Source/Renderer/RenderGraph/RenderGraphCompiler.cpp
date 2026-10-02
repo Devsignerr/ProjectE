@@ -302,6 +302,29 @@ FRGCompileResult RenderGraphCompiler::Compile(const std::vector<FRGCompileResour
 		}
 	}
 
+	// 3.5) 묶음 합치기: 뒤 묶음의 포크가 앞 묶음의 조인보다 먼저면 앞 묶음의 포크를 뒤 묶음 포크까지 늦춰 한 번에 제출한다
+	//      (늦춘 구간의 그래픽스 패스는 앞 묶음과 충돌하지 않는다 — 포크/조인 정의). 조인은 둘 중 이른 쪽. 큐 제출·펜스 수를 줄인다
+	if (Options.bMergeAsyncBatches)
+	{
+		for (size_t Index = 0; Index + 1 < Result.Batches.size();)
+		{
+			FRGAsyncBatch& First  = Result.Batches[Index];
+			FRGAsyncBatch& Second = Result.Batches[Index + 1];
+			if (First.JoinBeforePass >= 0 && First.JoinBeforePass <= Second.ForkAfterPass)
+			{
+				++Index;
+				continue;
+			}
+			First.ForkAfterPass = Second.ForkAfterPass;
+			if (First.JoinBeforePass < 0 || (Second.JoinBeforePass >= 0 && Second.JoinBeforePass < First.JoinBeforePass))
+			{
+				First.JoinBeforePass = Second.JoinBeforePass;
+			}
+			First.Passes.insert(First.Passes.end(), Second.Passes.begin(), Second.Passes.end());
+			Result.Batches.erase(Result.Batches.begin() + static_cast<std::ptrdiff_t>(Index + 1));
+		}
+	}
+
 	// 4) 실행 타임라인: 그래픽스 패스 순서 + 포크 위치에 묶음
 	{
 		uint32     NextBatch = 0;

@@ -38,10 +38,12 @@ namespace RendererCVars
 	                                         { .Range = std::pair(-1.0f, 2.0f), .CommandLine = { { L"--sync-loading", "0" }, { L"--async-loading", "1" } } });
 
 	TAutoConsoleVariable<bool> RenderGraphCull("r.RenderGraph.Cull", true, "렌더 그래프: 결과를 아무도 읽지 않는 패스 제거 (끄면 모두 실행 — 비교용)");
-	TAutoConsoleVariable<bool> RenderGraphAsyncCompute("r.RenderGraph.AsyncCompute", true,
+	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),
+	// GPU 입자 15만 개 장면에서만 GPU 프레임 -1% 안팎 — 계산 작업이 작아 겹쳐도 이득이 제출 비용보다 작다
+	TAutoConsoleVariable<bool> RenderGraphAsyncCompute("r.RenderGraph.AsyncCompute", false,
 	                                                   "렌더 그래프: 계산 큐 후보 패스(볼류메트릭 안개, GPU 파티클)를 비동기 계산 큐에서 그래픽스와 겹쳐 실행 "
-	                                                   "(끄면 그래픽스 큐에서 순서대로)",
-	                                                   EConsoleFlags::None, { .CommandLine = { { L"--no-async-compute", "0" } } });
+	                                                   "(끄면 그래픽스 큐에서 순서대로). 기본 끔 — 측정에서 이득이 제출 비용보다 작았다",
+	                                                   EConsoleFlags::None, { .CommandLine = { { L"--no-async-compute", "0" }, { L"--async-compute", "1" } } });
 	TAutoConsoleVariable<bool> RenderGraphAsyncFog("r.RenderGraph.AsyncFog", true, "볼류메트릭 안개 주입/적분을 비동기 계산 큐 후보로 (r.RenderGraph.AsyncCompute와 AND)");
 	TAutoConsoleVariable<bool> RenderGraphAsyncParticles("r.RenderGraph.AsyncParticles", true,
 	                                                     "GPU 파티클 계산을 비동기 계산 큐 후보로 (r.RenderGraph.AsyncCompute와 AND)");

@@ -34,7 +34,11 @@ bool FD3D12RHI::Init(const FD3D12RHIDesc& Desc)
 
 	ID3D12Device* D3DDevice = Device.GetDevice();
 
-	if (!GraphicsQueue.Init(D3DDevice, D3D12_COMMAND_LIST_TYPE_DIRECT) || !ComputeQueue.Init(D3DDevice, D3D12_COMMAND_LIST_TYPE_COMPUTE))
+	// 비동기 계산 큐 우선순위 (측정용 --compute-queue-priority high|normal)
+	const bool bHighComputePriority = FCommandLine::FromProcess().GetValue(L"--compute-queue-priority") == L"high";
+	if (!GraphicsQueue.Init(D3DDevice, D3D12_COMMAND_LIST_TYPE_DIRECT) ||
+	    !ComputeQueue.Init(D3DDevice, D3D12_COMMAND_LIST_TYPE_COMPUTE,
+	                       bHighComputePriority ? D3D12_COMMAND_QUEUE_PRIORITY_HIGH : D3D12_COMMAND_QUEUE_PRIORITY_NORMAL))
 	{
 		return false;
 	}

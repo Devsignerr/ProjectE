@@ -1,5 +1,7 @@
 #include "RHI/D3D12/D3D12RootSignature.h"
 
+#include "RHI/D3D12/D3D12PipelineCache.h"
+
 FD3D12RootSignature::~FD3D12RootSignature()
 {
 	Shutdown();
@@ -126,11 +128,16 @@ bool FD3D12RootSignature::Finalize(ID3D12Device* Device, D3D12_ROOT_SIGNATURE_FL
 	E_D3D_VERIFY(Device->CreateRootSignature(0, SerializedBlob->GetBufferPointer(), SerializedBlob->GetBufferSize(),
 	                                         IID_PPV_ARGS(&RootSignature)));
 	RootSignature->SetName(DebugName);
+	FD3D12PipelineCache::Get().RegisterRootSignature(RootSignature.Get(), SerializedBlob->GetBufferPointer(), SerializedBlob->GetBufferSize()); // PSO 캐시 키
 	return true;
 }
 
 void FD3D12RootSignature::Shutdown()
 {
+	if (RootSignature)
+	{
+		FD3D12PipelineCache::Get().UnregisterRootSignature(RootSignature.Get());
+	}
 	RootSignature.Reset();
 	Parameters.clear();
 	TableRanges.clear();

@@ -1,5 +1,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 
+#include "RHI/D3D12/D3D12PipelineCache.h"
+
 FD3D12PipelineState::~FD3D12PipelineState()
 {
 	Shutdown();
@@ -102,7 +104,7 @@ bool FD3D12PipelineState::InitGraphics(ID3D12Device* Device, const FGraphicsPipe
 	PsoDesc.NodeMask   = 0;
 	PsoDesc.Flags      = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	E_D3D_VERIFY(Device->CreateGraphicsPipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
+	E_D3D_VERIFY(FD3D12PipelineCache::Get().CreateGraphics(Device, PsoDesc, PipelineState)); // PSO 캐시 (워밍/드라이버 캐시, 꺼져 있으면 바로 생성)
 	PipelineState->SetName(DebugName);
 	return true;
 }
@@ -120,7 +122,7 @@ bool FD3D12PipelineState::InitCompute(ID3D12Device* Device, ID3D12RootSignature*
 	PsoDesc.NodeMask       = 0;
 	PsoDesc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	E_D3D_VERIFY(Device->CreateComputePipelineState(&PsoDesc, IID_PPV_ARGS(&PipelineState)));
+	E_D3D_VERIFY(FD3D12PipelineCache::Get().CreateCompute(Device, PsoDesc, PipelineState));
 	PipelineState->SetName(DebugName);
 	return true;
 }

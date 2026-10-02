@@ -15,6 +15,7 @@
 #include "Renderer/RenderProfiling.h"
 #include "Renderer/RendererConsoleVariables.h"
 #include "Renderer/TemporalMath.h"
+#include "Renderer/UpscaleMath.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
@@ -330,6 +331,8 @@ void FSceneRenderer::LogPerfCapture() const
 #else
 	const char* Config = "Release";
 #endif
+	E_LOG(LogRenderer, Display, "[성능] 화면 비율 {:.0f}% (씬 {}x{}){}", Stats.ScreenPercentage, Stats.InternalWidth, Stats.InternalHeight,
+	      bDynamicResolutionActive ? std::format(", 동적 해상도 변경 {}회", DynamicResolution.GetChangeCount()) : std::string());
 	E_LOG(LogRenderer, Display,
 	      "[성능] {} 프레임 평균 ({}): 프레임 {:.3f} ms, 드로우 {:.1f} (그림자 {:.1f}, 깊이 사전 {:.1f}), 삼각형 {:.0f} (그림자 {:.0f}), 메시 {:.1f}/{}",
 	      Capture.Frames, Config, Capture.FrameMs / Count, Capture.DrawCalls / Count, Capture.ShadowDrawCalls / Count, Capture.PrepassDrawCalls / Count,
@@ -580,6 +583,52 @@ void FSceneRenderer::SetFreezeCulling(bool bFreeze)
 	bCullingFrozen = bFreeze;
 }
 
+D3D12_CPU_DESCRIPTOR_HANDLE FSceneRenderer::GetOverlayDepthDsv(uint32 Width, uint32 Height) const
+{
+	if (SceneColor && SceneColor->GetDesc().bWithDepth && SceneColor->GetWidth() == Width && SceneColor->GetHeight() == Height)
+	{
+		return SceneColor->GetDsv();
+	}
+	if (const FD3D12RenderTarget* Overlay = TemporalAA.GetOverlayDepth();
+	    bFrameUpscaled && Overlay != nullptr && Overlay->GetWidth() == Width && Overlay->GetHeight() == Height)
+	{
+		return Overlay->GetDsv();
+	}
+	return D3D12_CPU_DESCRIPTOR_HANDLE{};
+}
+
+float FSceneRenderer::ComputeScreenPercentage()
+{
+	if (!bAllowScreenPercentage || bWireframe)
+	{
+		bDynamicResolutionActive = false;
+		return 100.0f;
+	}
+	if (!RendererCVars::DynamicResolution.Get())
+	{
+		bDynamicResolutionActive = false;
+		return FUpscaleMath::ClampScreenPercentage(RendererCVars::ScreenPercentage.Get());
+	}
+	// 동적 해상도: GPU 씬 렌더 시간(타이머 — 몇 프레임 늦은 값)으로 5% 단계 조절. 켤 때는 최대 비율부터
+	FDynamicResolutionSettings Settings;
+	Settings.TargetGpuMs   = RendererCVars::DynamicResolutionTargetMs.Get();
+	Settings.MinPercentage = RendererCVars::DynamicResolutionMin.Get();
+	Settings.MaxPercentage = RendererCVars::DynamicResolutionMax.Get();
+	if (!bDynamicResolutionActive)
+	{
+		DynamicResolution.Reset(FUpscaleMath::ClampScreenPercentage(FMath::Max(Settings.MinPercentage, Settings.MaxPercentage)));
+		bDynamicResolutionActive = true;
+	}
+	const float Previous   = DynamicResolution.GetPercentage();
+	const float Percentage = DynamicResolution.Update(Stats.GetGpuMs(ERenderTimer::Total), Settings);
+	if (Percentage != Previous)
+	{
+		E_LOG(LogRenderer, Log, "[동적 해상도] {:.0f}% → {:.0f}% (GPU 평활 {:.2f}ms, 목표 {:.2f}ms)", Previous, Percentage,
+		      DynamicResolution.GetSmoothedGpuMs(), Settings.TargetGpuMs);
+	}
+	return Percentage;
+}
+
 void FSceneRenderer::EnsureSceneColor(uint32 Width, uint32 Height)
 {
 	FRenderTargetDesc SceneDesc = FRenderTargetDesc::MakeHdr(true);
@@ -798,14 +847,24 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 	const FPixelArtComponent* PixelArt = FindPixelArtSettings(Scene);
 	if (PixelArt == nullptr)
 	{
+		// TAAU (Phase 48): 씬은 내부 해상도(출력 × 화면 비율)로, TAA 단계가 출력 해상도로 시간 업샘플. 이후 패스(블룸·톤매핑·오버레이)는 출력 해상도
+		const float  Percentage     = ComputeScreenPercentage();
+		const uint32 InternalWidth  = FUpscaleMath::ComputeInternalDimension(Output.Width, Percentage);
+		const uint32 InternalHeight = FUpscaleMath::ComputeInternalDimension(Output.Height, Percentage);
+		const bool   bUpscale       = InternalWidth != Output.Width || InternalHeight != Output.Height;
+		Stats.ScreenPercentage      = Percentage;
+		Stats.InternalWidth         = InternalWidth;
+		Stats.InternalHeight        = InternalHeight;
+
 		FSceneGraphRefs Refs;
-		RenderSceneColor(Graph, Scene, Camera, Output.Width, Output.Height, true, Refs);
+		RenderSceneColor(Graph, Scene, Camera, InternalWidth, InternalHeight, true, Refs, Output.Width, Output.Height);
 
 		// TAA: 톤매핑 전 HDR 이력과 섞은 결과가 포스트 입력. 한 렌더러가 여러 뷰를 그리는 경우(미리보기/썸네일)·와이어프레임은 끔
+		// 업스케일인데 TAA가 꺼져 있으면 같은 패스가 이력 없이 공간 재구성만 한다 (지터도 없음)
 		const bool             bTaa      = PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
 		FPostProcessGraphInput PostInput{ Refs.Color, SceneColor->GetSrv() };
 		float                  Sharpness = 0.0f;
-		if (bTaa)
+		if (bTaa || bUpscale)
 		{
 			if (!bTaaRanLastFrame)
 			{
@@ -815,21 +874,31 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 			Inputs.SceneColor    = SceneColor.get();
 			Inputs.Velocity      = SceneVelocity.get();
 			Inputs.Reprojection  = CurrentReprojection;
-			Inputs.bHistoryValid = bTemporalHistoryValid;
+			Inputs.bHistoryValid = bTemporalHistoryValid && bTaa;
 			Inputs.CurrentWeight = PostProcessSettings.TemporalAACurrentWeight;
+			Inputs.OutputWidth   = Output.Width;
+			Inputs.OutputHeight  = Output.Height;
+			Inputs.JitterNdc     = CurrentJitterNdc;
 			FRGResourceRef            ResultRef;
 			const FD3D12RenderTarget& Result =
 				TemporalAA.AddPass(Graph, Inputs, { Refs.Color, Refs.Depth, Refs.Velocity }, static_cast<int32>(ERenderTimer::TemporalAA), ResultRef);
 			PostInput = { ResultRef, Result.GetSrv() };
-			Sharpness = PostProcessSettings.TemporalAASharpness;
+			Sharpness = bTaa ? PostProcessSettings.TemporalAASharpness : 0.0f;
+		}
+		if (bUpscale)
+		{
+			TemporalAA.AddOverlayDepthPass(Graph, *SceneColor, Refs.Depth, CurrentJitterNdc, Output.Width, Output.Height,
+			                               static_cast<int32>(ERenderTimer::TemporalAA));
 		}
 		bTaaRanLastFrame = bTaa;
+		bFrameUpscaled   = bUpscale;
 
 		PostProcessor.AddPasses(Graph, PostInput, PostOutput, PostProcessSettings, Sharpness, static_cast<int32>(ERenderTimer::PostProcess));
 		AddDebugViewPass(Graph, PostOutput, Refs);
 		return;
 	}
-	bTaaRanLastFrame = false; // 픽셀 아트: 정수 격자 스냅과 충돌하므로 TAA 없음
+	bTaaRanLastFrame = false; // 픽셀 아트: 정수 격자 스냅과 충돌하므로 TAA 없음 (TAAU도 없음 — 화면 비율 무시)
+	bFrameUpscaled   = false;
 
 	// 픽셀 아트: 저해상도 씬 → 저해상도 포스트(톤매핑) → 합성 확대
 	const uint32 PixelSize    = FPixelArtMath::ClampPixelSize(PixelArt->PixelSize);
@@ -853,7 +922,10 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 	AoGridOrigin[0]     = Params.GridOrigin[0];
 	AoGridOrigin[1]     = Params.GridOrigin[1];
 	FSceneGraphRefs Refs;
-	RenderSceneColor(Graph, Scene, SourceCamera, SourceWidth, SourceHeight, false, Refs); // 지터는 정수 격자 스냅과 충돌
+	Stats.ScreenPercentage = 100.0f;
+	Stats.InternalWidth    = SourceWidth;
+	Stats.InternalHeight   = SourceHeight;
+	RenderSceneColor(Graph, Scene, SourceCamera, SourceWidth, SourceHeight, false, Refs, SourceWidth, SourceHeight); // 지터는 정수 격자 스냅과 충돌
 	AoResolutionDivisor = 2;
 	bAoGridNoise        = false;
 
@@ -928,14 +1000,17 @@ namespace
 } // namespace
 
 void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter,
-                                      FSceneGraphRefs& OutRefs)
+                                      FSceneGraphRefs& OutRefs, uint32 OutputWidth, uint32 OutputHeight)
 {
 	++SceneFrameCount;
 
-	// 시간 이력: 이 렌더러가 연속 프레임에 뷰 하나만 그리고, 같은 크기이고, 카메라 컷이 없을 때만 이전 프레임 값을 쓴다
+	// 시간 이력: 이 렌더러가 연속 프레임에 뷰 하나만 그리고, 같은 (출력) 크기이고, 카메라 컷이 없을 때만 이전 프레임 값을 쓴다.
+	// 이전 프레임 뷰-투영·움직임 벡터는 UV 단위라 내부 해상도와 무관 (동적 해상도로 내부 크기가 바뀌어도 이어짐 — 내부 크기 버퍼를 쓰는
+	// 효과(SSR 누적·볼류메트릭 안개)는 버퍼를 다시 만들 때 스스로 이력을 버린다)
 	const bool       bSingleView              = ViewsThisFrame == 1 && ViewsLastFrame == 1;
+	const bool       bInternalSizeStable      = SceneColor && SceneColor->GetWidth() == Width && SceneColor->GetHeight() == Height;
 	const FMatrix4x4 UnjitteredViewProjection = Camera.GetUnjitteredViewProjectionMatrix();
-	bTemporalHistoryValid = bSingleView && bHasPrevView && PrevScene == &Scene && PrevTargetWidth == Width && PrevTargetHeight == Height &&
+	bTemporalHistoryValid = bSingleView && bHasPrevView && PrevScene == &Scene && PrevTargetWidth == OutputWidth && PrevTargetHeight == OutputHeight &&
 	                        !FTemporalMath::IsCameraCut(PrevCameraPosition, PrevCameraForward, Camera.GetPosition(), Camera.GetForwardVector(),
 	                                                    CameraCutDistance, CameraCutAngleDegrees);
 
@@ -943,7 +1018,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	CurrentJitterNdc = FVector2::ZeroVector;
 	if ((bTemporalJitter || (PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe)) && bAllowJitter && bSingleView)
 	{
-		CurrentJitterNdc = FTemporalMath::JitterPixelsToNdc(FTemporalMath::GetJitterPixels(TemporalFrameIndex++), Width, Height);
+		// 지터는 내부 해상도 픽셀 기준. TAAU면 출력/내부 면적비만큼 표본 수를 늘린다 (네이티브는 8 그대로)
+		const uint32 SampleCount = FUpscaleMath::GetJitterSampleCount(Height, OutputHeight);
+		CurrentJitterNdc         = FTemporalMath::JitterPixelsToNdc(FTemporalMath::GetJitterPixels(TemporalFrameIndex++, SampleCount), Width, Height);
 	}
 	FCamera RenderCamera = Camera;
 	RenderCamera.SetProjectionJitter(CurrentJitterNdc);
@@ -953,6 +1030,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	PerFrame.PrevViewProjection       = bTemporalHistoryValid ? PrevUnjitteredViewProjection : UnjitteredViewProjection;
 	PerFrame.JitterNdc                = CurrentJitterNdc;
 	PerFrame.ScreenSize               = FVector2(static_cast<float>(Width), static_cast<float>(Height));
+	PerFrame.MaterialMipBias          = FUpscaleMath::ComputeMipBias(Height, OutputHeight, RendererCVars::UpscaleMipBiasOffset.Get()); // 네이티브 0
 	CurrentReprojection               = FTemporalMath::ComputeReprojectionMatrix(UnjitteredViewProjection, PerFrame.PrevViewProjection);
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
@@ -1165,7 +1243,15 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	{
 		const uint32 CaptureCount       = ReflectionCaptures.Gather(Scene);
 		PerFrame.ReflectionCaptureCount = bRenderingCaptures ? 0u : CaptureCount;
-		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid && !bRenderingCaptures;
+		// 반사 색 원본 = 지난 프레임 TAA 결과 (지난 프레임에 TAA가 돌았고 그 이력이 이번 출력 크기일 때 — UV로 읽으므로 TAAU의 출력 해상도 이력도 됨),
+		// 아니면 지난 프레임 SceneColor (내부 크기가 그대로일 때만 — 동적 해상도로 방금 다시 만든 SceneColor는 비어 있다)
+		const FD3D12RenderTarget* LastTaa = bTaaRanLastFrame ? TemporalAA.GetLastOutput() : nullptr;
+		if (LastTaa != nullptr && (LastTaa->GetWidth() != OutputWidth || LastTaa->GetHeight() != OutputHeight))
+		{
+			LastTaa = nullptr;
+		}
+		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid && !bRenderingCaptures &&
+		                  (LastTaa != nullptr || bInternalSizeStable);
 		if (bSsr)
 		{
 			FScreenSpaceReflectionInputs Inputs;
@@ -1191,9 +1277,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			SsrRefs.DecalNormal   = DBufferRefs[1];
 			SsrRefs.DecalMaterial = DBufferRefs[2];
 			SsrRefs.Velocity      = OutRefs.Velocity;
-			// 반사 색은 지난 프레임 TAA 결과에서 (지난 프레임에 TAA가 돌았고 크기가 같을 때만 — 아니면 지터된 SceneColor)
-			if (const FD3D12RenderTarget* LastTaa = bTaaRanLastFrame ? TemporalAA.GetLastOutput() : nullptr;
-			    LastTaa != nullptr && LastTaa->GetWidth() == SceneColor->GetWidth() && LastTaa->GetHeight() == SceneColor->GetHeight())
+			if (LastTaa != nullptr)
 			{
 				Inputs.PrevColor    = LastTaa;
 				SsrRefs.ColorSource = Graph.ImportColor("TaaLastOutput", *LastTaa);
@@ -1328,8 +1412,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	PrevUnjitteredViewProjection = UnjitteredViewProjection;
 	PrevCameraPosition           = Camera.GetPosition();
 	PrevCameraForward            = Camera.GetForwardVector();
-	PrevTargetWidth              = Width;
-	PrevTargetHeight             = Height;
+	PrevTargetWidth              = OutputWidth;
+	PrevTargetHeight             = OutputHeight;
 	bHasPrevView                 = true;
 	PrevScene                    = &Scene;
 }
@@ -1413,7 +1497,8 @@ void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)
 			FRenderGraph FaceGraph(*Rhi, GraphPool, "ReflectionCaptureFace");
 			SetupGraph(FaceGraph);
 			FSceneGraphRefs Refs;
-			RenderSceneColor(FaceGraph, Scene, FaceCamera, FReflectionMath::CaptureSize, FReflectionMath::CaptureSize, false, Refs);
+			RenderSceneColor(FaceGraph, Scene, FaceCamera, FReflectionMath::CaptureSize, FReflectionMath::CaptureSize, false, Refs, FReflectionMath::CaptureSize,
+			                 FReflectionMath::CaptureSize);
 			ReflectionCaptures.AddCopyFacePass(FaceGraph, *SceneColor, Refs.Color, Face);
 			ExecuteGraph(FaceGraph);
 		}

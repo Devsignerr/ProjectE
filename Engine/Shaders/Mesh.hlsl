@@ -48,6 +48,8 @@ cbuffer PerFrame : register(b1)
 	uint              SsrEnabled;             // 1 = t22 사용
 	float             SsrMaxRoughness;
 	float             SsrIntensity;
+	float             MaterialMipBias; // 머티리얼/지형 텍스처 밉 바이어스 (TAAU: log2(내부/출력), 네이티브 0)
+	float3            PerFramePadding;
 };
 
 cbuffer Material : register(b2)
@@ -478,7 +480,7 @@ float3 GetShadingNormal(FPixelInput Input)
 
 	// XY만 사용하고 Z는 재구성 (BC5 노멀 맵은 RG만 저장)
 	float3 TangentNormal;
-	TangentNormal.xy = NormalTexture.Sample(LinearSampler, Input.UV).xy * 2.0f - 1.0f;
+	TangentNormal.xy = NormalTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).xy * 2.0f - 1.0f;
 	TangentNormal.z  = sqrt(saturate(1.0f - dot(TangentNormal.xy, TangentNormal.xy)));
 	TangentNormal.xy *= NormalScale;
 	return normalize(T * TangentNormal.x + B * TangentNormal.y + N * TangentNormal.z);
@@ -496,18 +498,18 @@ struct FMeshSurface
 // 베이스 컬러 알파 (Masked 판정 — 텍스처 × 정점 색 × 팩터)
 float GetBaseAlpha(FPixelInput Input)
 {
-	return BaseColorTexture.Sample(LinearSampler, Input.UV).a * Input.Color.a * BaseColorFactor.a;
+	return BaseColorTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).a * Input.Color.a * BaseColorFactor.a;
 }
 
 // bScreenEffects: 불투명 표면 기준 화면 버퍼(데칼 DBuffer, SSAO)를 쓴다 (반투명은 false)
 FMeshSurface SampleMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenEffects)
 {
-	const float4 BaseColor = BaseColorTexture.Sample(LinearSampler, Input.UV) * Input.Color * BaseColorFactor;
-	const float4 MR        = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV);
-	const float  AO        = OcclusionTexture.Sample(LinearSampler, Input.UV).r;
+	const float4 BaseColor = BaseColorTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias) * Input.Color * BaseColorFactor;
+	const float4 MR        = MetallicRoughnessTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias);
+	const float  AO        = OcclusionTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).r;
 
 	FMeshSurface Result;
-	Result.Emissive         = EmissiveTexture.Sample(LinearSampler, Input.UV).rgb * EmissiveFactor;
+	Result.Emissive         = EmissiveTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).rgb * EmissiveFactor;
 	Result.Alpha            = BaseColor.a;
 	Result.GeometricNormal  = normalize(Input.WorldNormal);
 	Result.Surface.Albedo    = BaseColor.rgb;
@@ -613,7 +615,7 @@ struct FPrepassOutput
 FPrepassOutput PSPrepass(FPixelInput Input, bool bFrontFace : SV_IsFrontFace)
 {
 	FPrepassOutput Output;
-	const float  Roughness = MetallicRoughnessTexture.Sample(LinearSampler, Input.UV).g * RoughnessFactor;
+	const float  Roughness = MetallicRoughnessTexture.SampleBias(LinearSampler, Input.UV, MaterialMipBias).g * RoughnessFactor;
 	const float3 Normal    = normalize(Input.WorldNormal);
 	Output.Normal   = EncodeScreenNormal(bFrontFace ? Normal : -Normal, Roughness); // 양면 뒷면은 뒤집은 법선 (메인 패스와 같게)
 	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);

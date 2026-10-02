@@ -12,6 +12,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/StringConv.h"
+#include "Editor/BuildingEditorTools.h"
 #include "Editor/ConsoleVariableWidgets.h"
 #include "Editor/EditorActions.h"
 #include "Editor/EditorCameraState.h"
@@ -156,6 +157,7 @@ bool FEditorApplication::OnInit()
 	Context.Notify             = [this](const std::string& Message, bool bError) { ShowNotification(Message, bError); };
 	Context.ReimportModel      = [this](const std::filesystem::path& Path) { return ReimportModelAsset(Path); };
 	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
+	Context.BakeNavMeshRequest = [this]() { BakeNavMesh(); };
 	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
 	Context.AI               = &World.GetAI();
@@ -346,6 +348,11 @@ bool FEditorApplication::OnInit()
 		}
 	}
 
+	// 자동 검증: --generate-building <건물 엔티티 이름>[,...] [--building-seed N] [--building-section=N] [--building-bake-navmesh] [--building-save]
+	if (FBuildingEditorTools::RunCommandLine(Context) > 0 && FCommandLine::FromProcess().HasFlag(L"--building-save"))
+	{
+		SaveScene(); // 데모 씬을 생성 결과로 다시 굽는다 (명시한 경우만)
+	}
 	// 자동 검증: --bake-navmesh 시작 씬 내비메시 굽기(저장), --show-navmesh 뷰포트 내비메시 표시
 	if (FCommandLine::FromProcess().HasFlag(L"--bake-navmesh"))
 	{

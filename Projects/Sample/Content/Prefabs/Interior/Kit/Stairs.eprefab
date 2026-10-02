@@ -1,0 +1,65 @@
+{
+  "Entities": [
+    {
+      "Name": "Stairs",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -50.0,
+            50.0,
+            -0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.7071068,
+            0.7071068
+          ],
+          "Scale": [
+            1.266,
+            0.548,
+            1.941
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/stairs.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

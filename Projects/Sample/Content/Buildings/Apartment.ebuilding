@@ -1,0 +1,50 @@
+{
+  "Version": 1,
+  "CellSize": 100,
+  "Width": 26,
+  "Depth": 14,
+  "Floors": 5,
+  "FloorHeight": 260,
+  "Seed": 1,
+  "VaryFloors": true,
+  "Core": {"X": 11, "Y": 8, "Width": 3, "Depth": 6},
+  "Corridor": {"Type": "Center", "Width": 2, "Entrance": true},
+  "Units": {"MinWidth": 6, "MaxWidth": 9},
+  "MinRoomSide": 2,
+  "Rooms": [
+    {"Type": "Entry", "Weight": 0.8, "MinArea": 4, "Required": true, "Entry": true, "WindowChance": 0},
+    {"Type": "Living", "Weight": 4, "MinArea": 9, "Required": true, "Hub": true, "NeedsWindow": true, "WindowChance": 0.6, "Adjacent": ["Entry", "Kitchen"], "OpenTo": ["Kitchen"]},
+    {"Type": "Bathroom", "Weight": 1.2, "MinArea": 4, "Required": true, "WindowChance": 0.2, "Adjacent": ["Entry", "Living"], "Floor": "Prefabs/Interior/Kit/Floor_Tile.eprefab"},
+    {"Type": "Kitchen", "Weight": 2, "MinArea": 4, "Required": true, "WindowChance": 0.4, "Adjacent": ["Living"], "Floor": "Prefabs/Interior/Kit/Floor_Tile.eprefab"},
+    {"Type": "Bedroom", "Weight": 3, "MinArea": 6, "Required": true, "NeedsWindow": true, "WindowChance": 0.5},
+    {"Type": "KidsRoom", "Weight": 2, "MinArea": 4, "Chance": 0.5, "NeedsWindow": true, "WindowChance": 0.5},
+    {"Type": "Study", "Weight": 1.5, "MinArea": 4, "Chance": 0.35, "WindowChance": 0.5},
+    {"Type": "Corridor", "WindowChance": 0.5},
+    {"Type": "Core", "WindowChance": 0.3}
+  ],
+  "Templates": [
+    {"Name": "Studio", "Width": 6, "Depth": 6, "Rooms": [
+      {"Type": "Entry", "X": 0, "Y": 0, "Width": 2, "Depth": 2},
+      {"Type": "Bathroom", "X": 0, "Y": 2, "Width": 2, "Depth": 2},
+      {"Type": "Study", "X": 0, "Y": 4, "Width": 2, "Depth": 2},
+      {"Type": "Kitchen", "X": 2, "Y": 0, "Width": 4, "Depth": 2},
+      {"Type": "Living", "X": 2, "Y": 2, "Width": 4, "Depth": 4}
+    ]}
+  ],
+  "FixedUnits": [
+    {"Floor": 0, "Unit": 0, "Template": "Studio"}
+  ],
+  "Kit": {
+    "Floor": "Prefabs/Interior/Kit/Floor_Wood.eprefab",
+    "CorridorFloor": "Prefabs/Interior/Kit/Floor_Concrete.eprefab",
+    "Ceiling": "Prefabs/Interior/Kit/Ceiling.eprefab",
+    "Roof": "Prefabs/Interior/Kit/Roof.eprefab",
+    "Wall": "Prefabs/Interior/Kit/Wall.eprefab",
+    "Door": "Prefabs/Interior/Kit/Door.eprefab",
+    "EntranceDoor": "Prefabs/Interior/Kit/EntranceDoor.eprefab",
+    "Window": "Prefabs/Interior/Kit/Window.eprefab",
+    "Stairs": "Prefabs/Interior/Kit/Stairs.eprefab",
+    "Railing": "Prefabs/Interior/Kit/Railing.eprefab"
+  },
+  "PropTable": "Data/Building/ApartmentProps.etable"
+}

@@ -1,0 +1,96 @@
+{
+  "Entities": [
+    {
+      "Name": "TVSet",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Cabinet",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            22.5,
+            72.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/cabinetTelevision.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    },
+    {
+      "Name": "Television",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            55.8
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/televisionModern.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

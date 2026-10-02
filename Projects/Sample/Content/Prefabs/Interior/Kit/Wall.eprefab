@@ -1,0 +1,65 @@
+{
+  "Entities": [
+    {
+      "Name": "Wall",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2.5,
+            -50.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            2.016
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/wall.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

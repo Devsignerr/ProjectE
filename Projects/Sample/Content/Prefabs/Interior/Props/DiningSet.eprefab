@@ -1,0 +1,127 @@
+{
+  "Entities": [
+    {
+      "Name": "DiningSet",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Table",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            40.264,
+            75.734,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/table.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    },
+    {
+      "Name": "ChairFront",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            32.264,
+            -18.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/chair.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    },
+    {
+      "Name": "ChairBack",
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -32.264,
+            18.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Kenney_FurnitureKit/chair.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        }
+      },
+      "Parent": 0
+    }
+  ],
+  "NextId": 5,
+  "Version": 1
+}

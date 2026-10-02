@@ -813,4 +813,10 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [x] 46-A. 핵심: `Scene/DataTable.h`(FDataValue/FDataField/FDataStruct/FDataTable/FDataAsset — 편집·`Rebind` 마이그레이션·JSON 왕복), `Scene/DataLibrary.h`(`FDataLibrary::Get()` 경로 캐시·세대·Invalidate·참조 검증·`Save*`·`SaveStructAndMigrate`), `Scene/DataCsv.h`(CSV/TSV, BOM, `|` 배열), Lua `Data.GetRow/GetRows/GetRowNames/HasRow/Load/ResolveRef/GetGeneration`(매 호출 새 테이블), 에디터 핫 리로드, 참조 갱신(Content 기준), 콘텐츠 브라우저 아이콘, 예제 `Data/Samples/`, 테스트 13개 (2026-10-03 머지: 트랙 Debug 11개 묶음·Release·에디터 Verify 0건, DLL 내보내기 61282/65535)
 - 후속(46-A): 중첩 Struct, Enum 값 이름 변경 마이그레이션, 숫자 Min/Max, 런타임 핫 리로드, 파일 기준 상대 경로
 - [~] 46-B. 편집기: 테이블 편집기(스프레드시트 — 행 추가/삭제/복제/이름 변경, 정렬·검색, 셀 위젯은 필드 타입별, 행 참조 콤보, Undo), 데이터 에셋 편집기(인스펙터식), 구조체 편집기, CSV 가져오기/내보내기, 콘텐츠 브라우저 새로 만들기
-- [~] 46-C. RPG 이전: 아이템/전리품 표/적 스탯을 `Data/RPG/*.etable`·`.edata`로, 스크립트는 `Data.*`로 읽기
+- [x] 46-C. RPG 이전: `Data/RPG/` — Items(17행)·LootTables+LootEntries(RowRef)·Enemies(4행, 프리팹은 `StatsRow`만)·PlayerBalance.edata·GameBalance.edata·Shops(Merchant `ShopRow`), 읽기는 `Script.Require("Scripts/RPG/RPGData.lua")`(세대별 캐시), 하드코딩 수치(치명타·스킬·콤보 배율)도 데이터로. 값 동일 확인 (2026-10-03 머지: Debug 11개 묶음, Release, Demo_PixelArt `[데이터]` 경고 0·시작 상태 동일)
+- 후속(46-C): 적·플레이어 스탯은 OnStart 한 번 적용(핫 리로드는 새로 생긴 적부터), 시작 아이템은 배열 두 개 짝(중첩 구조체 없음)
+
+## 방화벽 확인 창 (2026-10-03, 사용자 보고: "개인/공용 네트워크에서 실행 허용 창이 자꾸 뜸")
+
+- [x] 원인: 실제 소켓 단위 테스트(GNS 서버·클라이언트, LAN UDP)가 0.0.0.0에 바인드 — 방화벽 허용은 exe 경로별이라 워크트리마다 새로 물음. 에디터/런타임 단독 실행·Tracy(localhost)는 소켓을 열지 않음. 수정: 실제 소켓 테스트 4곳은 `E_TEST_SOCKETS=1`(`Build.ps1/Build.bat -Test -SocketTests`)일 때만, 기본은 건너뜀 로그
+- 남음: 에디터 네트워크 플레이/`Verify.ps1 -Multiplayer`/런타임 `--host`는 실제 LAN용이라 처음 한 번은 확인 창이 뜬다(정상)

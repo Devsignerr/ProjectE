@@ -7,10 +7,10 @@
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
+#include <algorithm>
 #include <chrono>
 #include <format>
-#include <map>
-#include <set>
+#include <vector>
 
 E_DECLARE_LOG_CATEGORY(LogScene)
 
@@ -90,6 +90,47 @@ namespace
 		Result.Removed = static_cast<int32>(Groups.size());
 		return Result;
 	}
+
+	// (층, 호실) → 그룹 엔티티 (익명 네임스페이스 타입 — 컨테이너 인스턴스가 엔진 DLL 내보내기에 들어가지 않는다)
+	struct FGroupSlot
+	{
+		int32   Floor  = -1;
+		int32   Unit   = -1;
+		FEntity Entity;
+		bool    bFixed = false;
+	};
+
+	struct FGroupTable
+	{
+		std::vector<FGroupSlot> Slots;
+
+		const FGroupSlot* Find(int32 Floor, int32 Unit) const
+		{
+			for (const FGroupSlot& Slot : Slots)
+			{
+				if (Slot.Floor == Floor && Slot.Unit == Unit)
+				{
+					return &Slot;
+				}
+			}
+			return nullptr;
+		}
+		bool IsFixed(int32 Floor, int32 Unit) const
+		{
+			const FGroupSlot* Slot = Find(Floor, Unit);
+			return Slot != nullptr && Slot->bFixed;
+		}
+		// 같은 (층, 호실) 그룹 → 층 그룹 → Fallback
+		FEntity FindParent(int32 Floor, int32 Unit, FEntity Fallback) const
+		{
+			const FGroupSlot* Slot = Find(Floor, Unit);
+			if (Slot == nullptr || !Slot->Entity.IsValid())
+			{
+				Slot = Find(Floor, -1);
+			}
+			return Slot != nullptr && Slot->Entity.IsValid() ? Slot->Entity : Fallback;
+		}
+	};
 
 	FEntity MakeGroup(FScene& Scene, FEntity Parent, const std::string& Name, int32 Floor, int32 Unit)
 	{
@@ -196,65 +237,50 @@ void FBuildingSceneBuilder::Apply(FScene& Scene, FEntity Building, const FBuildi
 	FPrefabLibrary&      Library  = FPrefabLibrary::Get();
 	FRegistry&           Registry = Scene.GetRegistry();
 
-	// 고정(유지) 그룹: 층 전체 또는 (층, 호실) 자리 — 그 자리의 새 그룹·배치는 만들지 않는다
-	std::set<int32>                   FixedFloors;
-	std::set<std::pair<int32, int32>> FixedUnits;
-	std::map<int32, FEntity>          KeptFloorGroups;
+	// 그룹 표 (층, 호실) → 엔티티. 고정(유지) 그룹 자리는 bFixed — 그 자리의 새 그룹·배치는 만들지 않는다
+	FGroupTable Groups;
 	for (const FKeptEntity& Entry : Removed.Kept)
 	{
-		if (Entry.bGroup && Entry.Unit < 0)
+		if (Entry.bGroup)
 		{
-			FixedFloors.insert(Entry.Floor);
-			KeptFloorGroups[Entry.Floor] = Entry.Entity;
-		}
-		else if (Entry.bGroup)
-		{
-			FixedUnits.insert({ Entry.Floor, Entry.Unit });
+			Groups.Slots.push_back({ Entry.Floor, Entry.Unit, Entry.Unit < 0 ? Entry.Entity : NullEntity, true }); // 고정 층 그룹은 그대로 부모로 쓴다
 		}
 	}
-
-	// 그룹: 층 → 호실
-	std::map<std::pair<int32, int32>, FEntity> Groups;
 	for (int32 Floor = 0; Floor < static_cast<int32>(Result.Floors.size()); ++Floor)
 	{
-		if (FixedFloors.contains(Floor))
+		if (Groups.IsFixed(Floor, -1))
 		{
-			Groups[{ Floor, -1 }] = KeptFloorGroups[Floor];
 			continue;
 		}
 		const FEntity FloorGroup = MakeGroup(Scene, Building, std::format("Floor {}", Floor + 1), Floor, -1);
-		Groups[{ Floor, -1 }]    = FloorGroup;
+		Groups.Slots.push_back({ Floor, -1, FloorGroup, false });
 		for (int32 Unit = 0; Unit < Result.Floors[static_cast<size_t>(Floor)].UnitCount; ++Unit)
 		{
-			if (!FixedUnits.contains({ Floor, Unit }))
+			if (!Groups.IsFixed(Floor, Unit))
 			{
-				Groups[{ Floor, Unit }] = MakeGroup(Scene, FloorGroup, std::format("Unit {}{:02}", Floor + 1, Unit + 1), Floor, Unit);
+				Groups.Slots.push_back({ Floor, Unit, MakeGroup(Scene, FloorGroup, std::format("Unit {}{:02}", Floor + 1, Unit + 1), Floor, Unit), false });
 			}
 		}
 	}
 
-	std::set<std::string> FailedAssets;
+	std::vector<std::string> FailedAssets;
 	Stats.Placements = static_cast<int32>(Result.Placements.size());
 	for (const FBuildingPlacement& Placement : Result.Placements)
 	{
-		if (FixedFloors.contains(Placement.Floor) || FixedUnits.contains({ Placement.Floor, Placement.Unit }))
+		if (Groups.IsFixed(Placement.Floor, -1) || Groups.IsFixed(Placement.Floor, Placement.Unit))
 		{
 			++Stats.Skipped;
 			continue;
 		}
-		auto Found = Groups.find({ Placement.Floor, Placement.Unit });
-		if (Found == Groups.end())
-		{
-			Found = Groups.find({ Placement.Floor, -1 });
-		}
-		const FEntity Parent = Found != Groups.end() ? Found->second : Building;
+		const FEntity Parent = Groups.FindParent(Placement.Floor, Placement.Unit, Building);
 		std::string   Error;
 		const FEntity Root   = Library.Instantiate(Scene, Placement.Asset, Parent, &Error);
 		if (!Root.IsValid())
 		{
 			++Stats.Failed;
-			if (FailedAssets.insert(Placement.Asset).second)
+			if (std::find(FailedAssets.begin(), FailedAssets.end(), Placement.Asset) == FailedAssets.end())
 			{
+				FailedAssets.push_back(Placement.Asset);
 				Stats.Warnings.push_back(std::format("프리팹을 만들지 못했습니다 ({}): {}", ToString(Placement.Piece), Error));
 			}
 			continue;
@@ -274,14 +300,10 @@ void FBuildingSceneBuilder::Apply(FScene& Scene, FEntity Building, const FBuildi
 		{
 			continue;
 		}
-		auto Found = Entry.bGroup ? Groups.end() : Groups.find({ Entry.Floor, Entry.Unit });
-		if (Found == Groups.end())
+		const FEntity Parent = Groups.FindParent(Entry.Floor, Entry.bGroup ? -1 : Entry.Unit, NullEntity);
+		if (Parent.IsValid() && Parent != Entry.Entity)
 		{
-			Found = Groups.find({ Entry.Floor, -1 });
-		}
-		if (Found != Groups.end() && Found->second != Entry.Entity)
-		{
-			Scene.SetParent(Entry.Entity, Found->second);
+			Scene.SetParent(Entry.Entity, Parent);
 		}
 	}
 	Scene.UpdateTransforms();

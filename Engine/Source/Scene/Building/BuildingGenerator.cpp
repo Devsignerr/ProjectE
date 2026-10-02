@@ -131,6 +131,37 @@ namespace
 		return Rects;
 	}
 
+	// 호실 칸 → 방(잎) 번호. -2 = 호실 밖, -1 = 아직 없음 (std::map 대신 — 익명 네임스페이스 타입이라 DLL 내보내기에 안 들어간다)
+	struct FLabelMap
+	{
+		std::vector<int32> Values;
+
+		FLabelMap() = default;
+		FLabelMap(int32 CellCount, const std::vector<int32>& UnitCells)
+			: Values(static_cast<size_t>(CellCount), -2)
+		{
+			for (const int32 Cell : UnitCells)
+			{
+				Values[static_cast<size_t>(Cell)] = -1;
+			}
+		}
+		int32&       operator[](int32 Cell) { return Values[static_cast<size_t>(Cell)]; }
+		const int32& operator[](int32 Cell) const { return Values[static_cast<size_t>(Cell)]; }
+		// 호실 밖/범위 밖이면 -2
+		int32 Find(int32 Cell) const { return Cell >= 0 && Cell < static_cast<int32>(Values.size()) ? Values[static_cast<size_t>(Cell)] : -2; }
+	};
+
+	struct FWantedTypes
+	{
+		std::vector<std::vector<int32>> Lists; // 원하는 이름마다 그 이름의 종류 번호들
+	};
+
+	struct FPairCost
+	{
+		std::pair<int32, int32> Pair;
+		float                   Cost = 0.0f;
+	};
+
 	struct FRect2
 	{
 		float MinX = 0.0f, MinY = 0.0f, MaxX = 0.0f, MaxY = 0.0f;
@@ -514,7 +545,7 @@ namespace
 		}
 
 		// Label(-1 = 아직 없음)인 칸을 이웃 라벨로 채운다 (인덱스 순서로 반복 — 결정적)
-		static void FillOrphans(int32 Width, const std::vector<int32>& Cells, std::map<int32, int32>& Label)
+		static void FillOrphans(int32 Width, const std::vector<int32>& Cells, FLabelMap& Label)
 		{
 			for (bool bChanged = true; bChanged;)
 			{
@@ -533,10 +564,9 @@ namespace
 						{
 							continue;
 						}
-						const auto Found = Label.find(Ny * Width + Nx);
-						if (Found != Label.end() && Found->second >= 0)
+						if (const int32 Found = Label.Find(Ny * Width + Nx); Found >= 0)
 						{
-							Label[Cell] = Found->second;
+							Label[Cell] = Found;
 							bChanged    = true;
 							break;
 						}
@@ -561,12 +591,8 @@ namespace
 			const int32 SpanU = MaxU - MinU + 1;
 			const int32 SpanV = MaxV - MinV + 1;
 
-			std::map<int32, int32>   Label; // 칸 → 방(지역) 번호
+			FLabelMap                Label(W * D, Unit.Cells); // 칸 → 방(지역) 번호
 			std::vector<std::string> LeafTypes;
-			for (int32 Cell : Unit.Cells)
-			{
-				Label[Cell] = -1;
-			}
 
 			if (const FBuildingUnitTemplate* Template = FindFixedTemplate(UnitIndex); Template != nullptr && Template->Width > 0 && Template->Depth > 0)
 			{
@@ -599,8 +625,9 @@ namespace
 
 			// 라벨 → 방 (빈 라벨은 버림, 라벨 순서 유지)
 			std::vector<std::vector<int32>> LeafCells(LeafTypes.size());
-			for (const auto& [Cell, Leaf] : Label)
+			for (const int32 Cell : Unit.Cells)
 			{
+				const int32 Leaf = Label[Cell];
 				if (Leaf >= 0 && Leaf < static_cast<int32>(LeafCells.size()))
 				{
 					LeafCells[static_cast<size_t>(Leaf)].push_back(Cell);
@@ -613,7 +640,7 @@ namespace
 					continue;
 				}
 				const int32 Room = AddRoom(LeafTypes[Leaf], UnitIndex);
-				for (int32 Cell : LeafCells[Leaf]) // std::map 순회라 오름차순
+				for (int32 Cell : LeafCells[Leaf]) // 호실 칸 목록이 오름차순
 				{
 					AssignCell(Cell, Room);
 				}
@@ -621,7 +648,7 @@ namespace
 		}
 
 		// 무작위 분할 + 종류 배정. 반환 = 라벨별 종류
-		std::vector<std::string> SplitRandomRooms(const FUnitInfo& Unit, int32 MinU, int32 MinV, int32 SpanU, int32 SpanV, std::map<int32, int32>& Label)
+		std::vector<std::string> SplitRandomRooms(const FUnitInfo& Unit, int32 MinU, int32 MinV, int32 SpanU, int32 SpanV, FLabelMap& Label)
 		{
 			// 종류 고르기 (필수 + 확률 — 필수가 아닌 종류마다 난수 하나를 항상 쓴다)
 			std::vector<const FBuildingRoomType*> Types;
@@ -669,8 +696,8 @@ namespace
 
 			// 분할 + 배정을 여러 번 해 보고 점수가 가장 높은 것을 쓴다 (면적 비율·인접 규칙에 더 맞는 배치 — 시도 수가 고정이라 결정적)
 			const std::vector<const FBuildingRoomType*> PickedTypes  = Types;
-			const std::map<int32, int32>                InitialLabel = Label;
-			std::map<int32, int32>                      BestLabel;
+			const FLabelMap                             InitialLabel = Label;
+			FLabelMap                                   BestLabel    = Label;
 			std::vector<std::string>                    BestNames;
 			float                                       BestScore = 0.0f;
 			for (int32 Try = 0; Try < GRoomSplitTries; ++Try)
@@ -736,9 +763,9 @@ namespace
 				// 빈 잎 제거 (라벨 다시 매김)
 				std::vector<int32> Remap(Leaves.size(), -1);
 				int32              LeafCount = 0;
-				for (const auto& [Cell, Leaf] : Label)
+				for (const int32 Cell : Unit.Cells)
 				{
-					if (Leaf >= 0)
+					if (const int32 Leaf = Label[Cell]; Leaf >= 0)
 					{
 						++LeafArea[static_cast<size_t>(Leaf)];
 					}
@@ -750,9 +777,10 @@ namespace
 						Remap[Leaf] = LeafCount++;
 					}
 				}
-				for (auto& [Cell, Leaf] : Label)
+				for (const int32 Cell : Unit.Cells)
 				{
-					Leaf = Leaf >= 0 ? Remap[static_cast<size_t>(Leaf)] : -1;
+					int32& Leaf = Label[Cell];
+					Leaf        = Leaf >= 0 ? Remap[static_cast<size_t>(Leaf)] : -1;
 				}
 				while (static_cast<int32>(Types.size()) > LeafCount && DropOne())
 				{
@@ -763,7 +791,7 @@ namespace
 				}
 				float                    Score = 0.0f;
 				std::vector<std::string> Names = Types.empty() ? std::vector<std::string>(static_cast<size_t>(LeafCount), "Room") // 방 종류가 없으면 이름 없는 방
-				                                               : AssignTypes(Label, LeafCount, Types, Score);
+				                                               : AssignTypes(Label, Unit.Cells, LeafCount, Types, Score);
 				if (Try == 0 || Score > BestScore)
 				{
 					BestScore = Score;
@@ -776,21 +804,21 @@ namespace
 		}
 
 		// 잎마다 가장 큰 연결 조각만 남기고 나머지 칸은 -1
-		void KeepLargestComponents(const std::vector<int32>& Cells, std::map<int32, int32>& Label, int32 LeafCount) const
+		void KeepLargestComponents(const std::vector<int32>& Cells, FLabelMap& Label, int32 LeafCount) const
 		{
+			std::vector<int32> Component(static_cast<size_t>(W * D), -1); // 칸 → 조각 (-1 = 아직)
 			for (int32 Leaf = 0; Leaf < LeafCount; ++Leaf)
 			{
-				std::map<int32, int32> Component; // 칸 → 조각
-				int32                  ComponentCount = 0;
-				std::vector<int32>     Sizes;
+				int32              ComponentCount = 0;
+				std::vector<int32> Sizes;
 				for (int32 Start : Cells)
 				{
-					if (Label[Start] != Leaf || Component.contains(Start))
+					if (Label[Start] != Leaf || Component[static_cast<size_t>(Start)] >= 0)
 					{
 						continue;
 					}
 					std::vector<int32> Stack{ Start };
-					Component[Start] = ComponentCount;
+					Component[static_cast<size_t>(Start)] = ComponentCount;
 					int32 Size       = 0;
 					while (!Stack.empty())
 					{
@@ -805,11 +833,10 @@ namespace
 							{
 								continue;
 							}
-							const int32 Next  = Ny * W + Nx;
-							const auto  Found = Label.find(Next);
-							if (Found != Label.end() && Found->second == Leaf && !Component.contains(Next))
+							const int32 Next = Ny * W + Nx;
+							if (Label.Find(Next) == Leaf && Component[static_cast<size_t>(Next)] < 0)
 							{
-								Component[Next] = ComponentCount;
+								Component[static_cast<size_t>(Next)] = ComponentCount;
 								Stack.push_back(Next);
 							}
 						}
@@ -817,34 +844,38 @@ namespace
 					Sizes.push_back(Size);
 					++ComponentCount;
 				}
-				if (ComponentCount <= 1)
+				if (ComponentCount > 1)
 				{
-					continue;
-				}
-				const int32 Keep = static_cast<int32>(std::max_element(Sizes.begin(), Sizes.end()) - Sizes.begin());
-				for (const auto& [Cell, Piece] : Component)
-				{
-					if (Piece != Keep)
+					const int32 Keep = static_cast<int32>(std::max_element(Sizes.begin(), Sizes.end()) - Sizes.begin());
+					for (const int32 Cell : Cells)
 					{
-						Label[Cell] = -1;
+						if (Label[Cell] == Leaf && Component[static_cast<size_t>(Cell)] != Keep)
+						{
+							Label[Cell] = -1;
+						}
 					}
+				}
+				for (const int32 Cell : Cells)
+				{
+					Component[static_cast<size_t>(Cell)] = -1;
 				}
 			}
 		}
 
-		std::vector<std::string> AssignTypes(const std::map<int32, int32>& Label, int32 LeafCount, const std::vector<const FBuildingRoomType*>& Types, float& OutScore)
+		std::vector<std::string> AssignTypes(const FLabelMap& Label, const std::vector<int32>& UnitCells, int32 LeafCount,
+		                                     const std::vector<const FBuildingRoomType*>& Types, float& OutScore)
 		{
 			const size_t                    N = static_cast<size_t>(LeafCount);
 			std::vector<std::vector<int32>> Cells(N);
-			for (const auto& [Cell, Leaf] : Label)
+			for (const int32 Cell : UnitCells)
 			{
-				if (Leaf >= 0)
+				if (const int32 Leaf = Label[Cell]; Leaf >= 0)
 				{
 					Cells[static_cast<size_t>(Leaf)].push_back(Cell);
 				}
 			}
-			std::vector<bool>              bAccess(N), bExterior(N);
-			std::vector<std::vector<bool>> bAdjacent(N, std::vector<bool>(N, false));
+			std::vector<bool> bAccess(N), bExterior(N);
+			std::vector<bool> bAdjacent(N * N, false); // [Leaf * N + Other]
 			for (size_t Leaf = 0; Leaf < N; ++Leaf)
 			{
 				bAccess[Leaf]   = TouchesAccess(Cells[Leaf]);
@@ -859,10 +890,10 @@ namespace
 						{
 							continue;
 						}
-						const auto Found = Label.find(Ny * W + Nx);
-						if (Found != Label.end() && Found->second >= 0 && static_cast<size_t>(Found->second) != Leaf)
+						const int32 Other = Label.Find(Ny * W + Nx);
+						if (Other >= 0 && static_cast<size_t>(Other) != Leaf)
 						{
-							bAdjacent[Leaf][static_cast<size_t>(Found->second)] = true;
+							bAdjacent[Leaf * N + static_cast<size_t>(Other)] = true;
 						}
 					}
 				}
@@ -885,12 +916,12 @@ namespace
 			}
 
 			// 인접 선호: (종류, 원하는 이름) → 그 이름의 종류 번호들 (점수 계산에서 문자열 비교를 피한다)
-			std::vector<std::vector<std::vector<int32>>> WantedTypes(Types.size());
+			std::vector<FWantedTypes> WantedTypes(Types.size());
 			for (size_t Type = 0; Type < Types.size(); ++Type)
 			{
 				for (const std::string& Wanted : Types[Type]->Adjacent)
 				{
-					std::vector<int32>& Matches = WantedTypes[Type].emplace_back();
+					std::vector<int32>& Matches = WantedTypes[Type].Lists.emplace_back();
 					for (size_t Other = 0; Other < Types.size(); ++Other)
 					{
 						if (Types[Other]->Name == Wanted)
@@ -929,12 +960,12 @@ namespace
 					{
 						Sum += bExterior[Leaf] ? 2.0f : -2.0f;
 					}
-					for (const std::vector<int32>& Matches : WantedTypes[static_cast<size_t>(Assign[Leaf])])
+					for (const std::vector<int32>& Matches : WantedTypes[static_cast<size_t>(Assign[Leaf])].Lists)
 					{
 						for (const int32 Match : Matches)
 						{
 							const int32 Other = LeafOfType[static_cast<size_t>(Match)];
-							if (Other >= 0 && bAdjacent[Leaf][static_cast<size_t>(Other)])
+							if (Other >= 0 && bAdjacent[Leaf * N + static_cast<size_t>(Other)])
 							{
 								Sum += 1.5f;
 								break;
@@ -1156,7 +1187,7 @@ namespace
 				}
 
 				// Prim: 허브와 잇는 간선이 싸다 (같은 비용이면 미리 뽑은 잡음 순)
-				std::map<std::pair<int32, int32>, float> Cost;
+				std::vector<FPairCost> Cost; // Shared 키 순서 그대로 (동점은 앞쪽 — 결정적)
 				for (const auto& [Pair, Edges] : Shared)
 				{
 					if (Plan.Rooms[static_cast<size_t>(Pair.first)].Unit != Unit || Plan.Rooms[static_cast<size_t>(Pair.second)].Unit != Unit)
@@ -1167,7 +1198,7 @@ namespace
 					const FBuildingRoomType* B    = TypeOf(Pair.second);
 					const bool               bHub = (A != nullptr && (A->bHub || A->bEntry)) || (B != nullptr && (B->bHub || B->bEntry));
 					const bool               bOpen = EdgeAt(Edges.front()) == EBuildingEdge::Open;
-					Cost[Pair]                     = (bOpen ? 0.0f : (bHub ? 1.0f : 3.0f)) + Rng.Float() * 0.5f;
+					Cost.push_back({ Pair, (bOpen ? 0.0f : (bHub ? 1.0f : 3.0f)) + Rng.Float() * 0.5f });
 				}
 				std::vector<bool> InTree(Plan.Rooms.size(), false);
 				InTree[static_cast<size_t>(Entry)] = true;
@@ -1175,12 +1206,12 @@ namespace
 				{
 					std::pair<int32, int32> BestPair{ -1, -1 };
 					float                   BestCost = 1.0e9f;
-					for (const auto& [Pair, Value] : Cost)
+					for (const FPairCost& Candidate : Cost)
 					{
-						if (InTree[static_cast<size_t>(Pair.first)] != InTree[static_cast<size_t>(Pair.second)] && Value < BestCost)
+						if (InTree[static_cast<size_t>(Candidate.Pair.first)] != InTree[static_cast<size_t>(Candidate.Pair.second)] && Candidate.Cost < BestCost)
 						{
-							BestCost = Value;
-							BestPair = Pair;
+							BestCost = Candidate.Cost;
+							BestPair = Candidate.Pair;
 						}
 					}
 					if (BestPair.first < 0)

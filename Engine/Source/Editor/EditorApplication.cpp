@@ -173,6 +173,50 @@ bool FEditorApplication::OnInit()
 		.SetMouseLocked = [this](bool bLocked) { SetPlayCursorLocked(bLocked); },
 		.IsMouseLocked  = [this]() { return GetWindow().IsCursorLocked(); },
 	});
+	// 스크립트 디버거 (Phase 47 사이드): 플레이 Lua 상태에만 연결. 자동 검증은 저장된 중단점을 읽거나 쓰지 않고 오류 시 멈춤도 끈다
+	// (--debug-script <Content 기준 경로>:<줄> [--debug-script-condition <식>]만 — 정지 화면을 그린 뒤 --debug-script-resume <프레임>(기본 60) 뒤 재개)
+	{
+		ScriptDebuggerPanel.Initialize(!IsAutomationRun());
+		FScriptDebugger& Debugger = ScriptDebuggerPanel.GetDebugger();
+		Scripts.SetDebugger(&Debugger);
+		ScriptDebuggerPanel.OnPaused   = [this]() { RunScriptDebugLoop(); };
+		ScriptDebuggerPanel.OnStopPlay = [this]() {
+			FScriptDebugger& Target = ScriptDebuggerPanel.GetDebugger();
+			if (Target.IsPaused())
+			{
+				bStopPlayAfterDebugResume = true;
+				Target.SuspendUntilNextSession(); // 남은 코드는 중단점 없이 이번 프레임 끝까지
+				Target.Continue();
+			}
+			else
+			{
+				StopPlay();
+			}
+		};
+		Context.OpenScriptRequest = [this](const std::filesystem::path& Path) { ScriptDebuggerPanel.OpenFile(Context, Path); };
+		if (IsAutomationRun())
+		{
+			Debugger.SetBreakOnError(FCommandLine::FromProcess().HasFlag(L"--debug-script-break-on-error"));
+		}
+		if (const std::wstring DebugScript = FCommandLine::FromProcess().GetValue(L"--debug-script"); !DebugScript.empty())
+		{
+			const size_t Colon = DebugScript.find_last_of(L':');
+			const int32  Line  = Colon != std::wstring::npos ? std::stoi(DebugScript.substr(Colon + 1)) : 0;
+			const std::string File = FStringConv::ToUtf8(DebugScript.substr(0, Colon));
+			if (Line > 0 && !File.empty())
+			{
+				FScriptBreakpoint Breakpoint;
+				Breakpoint.File      = File;
+				Breakpoint.Line      = Line;
+				Breakpoint.Condition = FStringConv::ToUtf8(FCommandLine::FromProcess().GetValue(L"--debug-script-condition")); // 선택: 조건식
+				Debugger.AddBreakpoint(Breakpoint);
+				ScriptDebuggerPanel.OpenFile(Context, FStringConv::ToWide(File));
+				const std::wstring Resume = FCommandLine::FromProcess().GetValue(L"--debug-script-resume");
+				DebugAutoResumeFrames     = IsAutomationRun() ? (Resume.empty() ? 60 : std::stoull(Resume)) : 0;
+				E_LOG(LogEditor, Display, "스크립트 디버거: 중단점 {}:{} (자동 재개 {}프레임)", File, Line, DebugAutoResumeFrames);
+			}
+		}
+	}
 	if (Audio.Init() && IsAutomationRun())
 	{
 		Audio.SetMasterVolume(0.0f); // 자동 검증 중에는 소리를 내지 않는다
@@ -445,6 +489,12 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 
 	PollShaderChanges();
 	PollScriptChanges();
+	// 스크립트 디버거 정지 중 '플레이 정지': 재개된 스크립트가 이번 프레임을 마친 뒤 정지
+	if (bStopPlayAfterDebugResume)
+	{
+		bStopPlayAfterDebugResume = false;
+		StopPlay();
+	}
 
 	StatOverlay.Tick(DeltaSeconds);
 	const float InstantFps = DeltaSeconds > 0.0f ? 1.0f / DeltaSeconds : 0.0f;
@@ -485,6 +535,7 @@ void FEditorApplication::OnRender()
 	EditorPreferencesWindow.Draw(Context);
 	OutputLogPanel.Draw(Context);
 	NetworkPanel.Draw(Context);
+	ScriptDebuggerPanel.Draw(Context);
 	ContentBrowserPanel.Draw(Context);
 	AssetEditors.Draw(Context);
 	if (const std::wstring ReimportArg = FCommandLine::FromProcess().GetValue(L"--verify-reimport"); GetFrameIndex() == 20 && !ReimportArg.empty())
@@ -984,6 +1035,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("폴리지", nullptr, &FoliageToolPanel.bOpen);
 		ImGui::MenuItem("네트워크", nullptr, &NetworkPanel.bOpen);
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
+		ImGui::MenuItem("스크립트 디버거", nullptr, &ScriptDebuggerPanel.bOpen);
 		ImGui::MenuItem("통계", nullptr, &bShowStats);
 		ImGui::Separator();
 		if (ImGui::MenuItem("기본 레이아웃으로 되돌리기"))
@@ -1955,6 +2007,7 @@ void FEditorApplication::PollScriptChanges()
 			continue;
 		}
 		const std::string Name = FStringConv::ToUtf8(Path.filename().wstring());
+		ScriptDebuggerPanel.OnScriptFileChanged(Context, Path); // 소스 보기 갱신 + 줄 수를 넘는 중단점 제거
 		if (Scripts.ReloadScript(Path))
 		{
 			ShowNotification("스크립트 다시 로드됨: " + Name, false);
@@ -1970,6 +2023,71 @@ void FEditorApplication::PollScriptChanges()
 		ChangePrefabAsset([] { return true; });
 		E_LOG(LogEditor, Log, "프리팹 파일 변경 감지 — 열린 씬 인스턴스 다시 맞춤");
 	}
+}
+
+void FEditorApplication::RunScriptDebugLoop()
+{
+	FScriptDebugger& Debugger = ScriptDebuggerPanel.GetDebugger();
+	if (ImGuiLayer.IsFrameActive())
+	{
+		// UI 그리기 중에 실행된 스크립트: 중첩 루프는 UI 프레임 밖에서만 돌 수 있으므로 알리고 계속한다
+		E_LOG(LogEditor, Warning, "스크립트 디버거: UI 그리기 중에는 멈출 수 없어 계속합니다 ({}:{})", Debugger.GetPauseState().File, Debugger.GetPauseState().Line);
+		Debugger.Continue();
+		return;
+	}
+	SetPlayCursorLocked(false); // 디버거를 조작할 수 있게 커서를 풀어 준다
+	const FScriptPauseState& State = Debugger.GetPauseState();
+	ShowNotification(std::format("스크립트 정지 ({}) {}:{} — F5 계속, F10 넘기기, F11 들어가기, Shift+F11 나가기", ToString(State.Reason), State.File, State.Line),
+	                 State.Reason == EScriptPauseReason::Error);
+	uint64 NestedFrames = 0;
+	while (!Debugger.IsResumeRequested())
+	{
+		if (!RunNestedFrame([this]() { DrawScriptDebugPausedFrame(); }))
+		{
+			// 창 닫기/종료: 남은 스크립트는 멈추지 않고 끝까지 → 메인 루프가 끝나며 플레이 정지
+			Debugger.SuspendUntilNextSession();
+			Debugger.Continue();
+			break;
+		}
+		if (DebugAutoResumeFrames > 0 && ++NestedFrames >= DebugAutoResumeFrames)
+		{
+			E_LOG(LogEditor, Display, "자동 검증: 스크립트 디버거 정지 화면 {}프레임 → 중단점 제거 후 재개", NestedFrames);
+			Debugger.ClearBreakpoints();
+			Debugger.Continue();
+		}
+	}
+	NotificationExpiry = std::chrono::steady_clock::now(); // 정지 안내를 지운다
+	DiscardElapsedTime(); // 다음 프레임 DeltaSeconds에 멈춰 있던 시간이 들어가지 않게
+}
+
+void FEditorApplication::DrawScriptDebugPausedFrame()
+{
+	ImGuiLayer.BeginFrame();
+	ApplyDefaultLayoutIfNeeded();
+	ScriptDebuggerPanel.HandlePausedShortcuts();
+	// 메뉴 바는 정지 안내만 (파일/편집/엔티티 메뉴처럼 씬을 바꾸는 명령은 정지 중에 쓰지 않는다)
+	if (ImGui::BeginMainMenuBar())
+	{
+		const FScriptPauseState& State = ScriptDebuggerPanel.GetDebugger().GetPauseState();
+		ImGui::TextColored(FEditorTheme::Warning, ICON_FA_BUG " 스크립트 디버거 정지 (%s) %s:%d", ToString(State.Reason), State.File.c_str(), State.Line);
+		ImGui::TextDisabled("F5 계속 · F10 넘기기 · F11 들어가기 · Shift+F11 나가기 — 게임·물리·스크립트 멈춤, 편집 잠김");
+		ImGui::EndMainMenuBar();
+	}
+	ViewportPanel.DrawFrozen(ICON_FA_PAUSE " 스크립트 디버거 정지 중 — 마지막 화면");
+	// 계층/인스펙터는 보기만 (Lua가 실행 도중이므로 씬을 바꾸지 않는다). 콘텐츠 브라우저(파일 조작·단축키)는 그리지 않는다
+	ImGui::BeginDisabled();
+	HierarchyPanel.Draw(Context);
+	InspectorPanel.Draw(Context);
+	ImGui::EndDisabled();
+	OutputLogPanel.Draw(Context);
+	ScriptDebuggerPanel.Draw(Context);
+	DrawNotification();
+
+	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
+	Rhi->BeginFrame(ClearColor);
+	Rhi->SetRenderTargetToBackBuffer(true);
+	ImGuiLayer.EndFrame(Rhi->GetCommandList());
+	Rhi->EndFrame();
 }
 
 bool FEditorApplication::ChangePrefabAsset(const std::function<bool()>& Change)
@@ -2021,6 +2139,7 @@ void FEditorApplication::ApplyDefaultLayoutIfNeeded()
 	ImGui::DockBuilderDockWindow("###Terrain", Bottom);
 	ImGui::DockBuilderDockWindow("###Foliage", Bottom);
 	ImGui::DockBuilderDockWindow("###Network", Bottom);
+	ImGui::DockBuilderDockWindow("###ScriptDebugger", Bottom);
 	ImGui::DockBuilderFinish(DockSpace);
 }
 

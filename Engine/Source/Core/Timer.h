@@ -15,6 +15,8 @@ public:
 
 	// 프레임마다 한 번 호출. 델타/누적 시간 갱신
 	void Tick();
+	// 지난 Tick 이후 흐른 시간을 버린다 (다음 Tick의 델타가 지금부터). 누적 시간은 그대로 실제 시각을 따른다
+	void DiscardElapsed() { LastTime = FClock::now(); }
 
 	float  GetDeltaSeconds() const { return DeltaSeconds; }
 	double GetTotalSeconds() const { return TotalSeconds; }

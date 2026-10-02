@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <filesystem>
+#include <functional>
 #include <vector>
 
 struct FApplicationDesc
@@ -60,9 +61,18 @@ protected:
 	// 현재까지 렌더한 프레임 수 (헤드리스는 틱 수)
 	uint64 GetFrameIndex() const { return FrameIndex; }
 
+	// 중첩 프레임 (OnUpdate 안에서 메인 루프를 잠시 대신할 때 — 스크립트 디버거 정지 등): 창 메시지 처리 → Render() → 입력 프레임 경계.
+	// 프레임 수와 자동 검증(--screenshot/--exit-after)을 메인 루프와 같게 센다. OnUpdate/OnRender는 부르지 않는다.
+	// 종료 요청(창 닫기 등)이 있으면 Render 없이 false — 호출한 쪽은 중첩 루프를 끝내고 메인 루프로 돌아가야 한다. 창 모드 전용
+	bool RunNestedFrame(const std::function<void()>& Render);
+	// 중첩 루프가 끝난 뒤: 다음 프레임 DeltaSeconds에 멈춰 있던 시간이 들어가지 않게 타이머 기준을 지금으로
+	void DiscardElapsedTime() { Timer.DiscardElapsed(); }
+	bool IsExitRequested() const { return bExitRequested; }
+
 private:
 	void HandleWindowEvent(const FWindowEvent& Event);
 	void RunWindowedLoop();
+	void RequestScreenshotIfDue(); // 자동 검증 --screenshot: 마지막 프레임(들)이면 OnScreenshotRequested
 	void RunHeadlessLoop();
 	void UpdateCrashTest();
 	void UpdateHeldInputAndActions(float DeltaSeconds);

@@ -401,6 +401,35 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 	ImGui::End();
 }
 
+void FViewportPanel::DrawFrozen(const char* Message)
+{
+	bHovered    = false;
+	bUsingGizmo = false;
+	bGizmoOver  = false;
+	bFocused    = false;
+	if (!bOpen)
+	{
+		return;
+	}
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	const bool bVisible = ImGui::Begin(FEditorTheme::PanelTitle(ICON_FA_CAMERA, "뷰포트", "Viewport").c_str(), &bOpen, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	ImGui::PopStyleVar();
+	if (bVisible && RenderTarget)
+	{
+		const ImVec2 ImagePosition = ImGui::GetCursorScreenPos();
+		const ImVec2 ImageSize(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight()));
+		ImGui::Image(static_cast<ImTextureID>(RenderTarget->GetSrv().Gpu.ptr), ImageSize);
+		ImDrawList* const List = ImGui::GetWindowDrawList();
+		List->AddRectFilled(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y), IM_COL32(0, 0, 0, 70));
+		List->AddRect(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y), IM_COL32(255, 200, 70, 255), 0.0f, 0, 3.0f);
+		const ImVec2 Size = ImGui::CalcTextSize(Message);
+		const ImVec2 Pos(ImagePosition.x + (ImageSize.x - Size.x) * 0.5f, ImagePosition.y + 16.0f);
+		List->AddRectFilled(ImVec2(Pos.x - 10.0f, Pos.y - 5.0f), ImVec2(Pos.x + Size.x + 10.0f, Pos.y + Size.y + 5.0f), IM_COL32(0, 0, 0, 190), 4.0f);
+		List->AddText(Pos, ImGui::GetColorU32(FEditorTheme::Warning), Message);
+	}
+	ImGui::End();
+}
+
 void FViewportPanel::RenderScene(FEditorContext& Context)
 {
 	if (!RenderTarget)

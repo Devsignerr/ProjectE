@@ -14,6 +14,7 @@
 #include "Editor/Panels/ContentBrowserPanel.h"
 #include "Editor/Panels/NetworkPanel.h"
 #include "Editor/Panels/PostProcessPanel.h"
+#include "Editor/Panels/ScriptDebuggerPanel.h"
 #include "Editor/Panels/SettingsWindow.h"
 #include "Editor/Panels/ShadowPanel.h"
 #include "Editor/Panels/FoliageToolPanel.h"
@@ -122,6 +123,10 @@ private:
 	void SetPlayCursorLocked(bool bLocked);
 	void DrawPlayControls(); // 메인 메뉴 바 안의 재생/일시정지/진행/정지 버튼
 	void PollScriptChanges(); // Content의 .lua 저장 감지 → 핫 리로드
+	// 스크립트 디버거 정지 (Phase 47 사이드): Lua 훅 안에서 중첩 루프 — 창 메시지 + UI만 그린다 (게임/물리/스크립트 정지, 뷰포트는 마지막 화면).
+	// 계속/단계 명령이 내려지면 돌아온다. 창 닫기면 이번 플레이 동안 디버거를 끄고 돌아온다 (메인 루프가 종료하며 플레이 정지)
+	void RunScriptDebugLoop();
+	void DrawScriptDebugPausedFrame();
 
 	// ---- C++ 게임 모듈 핫 리로드 (EditorHotReload.cpp, Phase 48 사이드)
 	void InitGameModule();                            // 그림자 복사본 로드 (씬 로드 전)
@@ -154,6 +159,7 @@ private:
 	FSettingsWindow      EditorPreferencesWindow{ FSettingsWindow::EKind::EditorPreferences }; // 편집 → 에디터 환경설정
 	FOutputLogPanel      OutputLogPanel;
 	FNetworkPanel        NetworkPanel;
+	FScriptDebuggerPanel ScriptDebuggerPanel; // Lua 디버거 (디버거 코어 소유 — Scripts보다 먼저 선언해 나중에 파괴)
 	FAssetEditorManager  AssetEditors; // 머티리얼/메시/애니메이션/파티클 편집 창
 
 	std::filesystem::path CurrentScenePath; // 비어 있으면 저장된 적 없는 씬
@@ -201,6 +207,8 @@ private:
 	float  VerifyCameraPanPerFrame = 0.0f; // --verify-camera-pan <cm/프레임>: 편집 카메라를 오른쪽으로 일정하게 민다 (움직일 때 시간 떨림 확인)
 	uint64 VerifyCameraPanStart    = 0;    // --verify-camera-pan-start <프레임>: 이 프레임부터 민다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
+	bool  bStopPlayAfterDebugResume = false; // 스크립트 디버거 정지 중 '플레이 정지' → 재개 후 이번 프레임 끝에 정지
+	uint64 DebugAutoResumeFrames    = 0;     // 자동 검증 --debug-script: 정지 후 이만큼 중첩 프레임을 그리고 재개 (0 = 사람이 재개)
 	std::optional<FCamera> EditCameraBeforeEject;    // 플레이 중 처음 빙의를 풀 때의 편집 카메라 (정지하면 되돌린다)
 	uint32                 AppliedInputModeRevision = 0; // 커서 기본값을 마지막으로 적용한 FInputModeState 리비전
 	EInputMode             AppliedInputMode         = EInputMode::GameAndUI;

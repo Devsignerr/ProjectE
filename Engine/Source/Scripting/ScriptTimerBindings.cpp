@@ -20,6 +20,7 @@
 
 #include "Core/Log.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptDebugger.h"
 
 #include <algorithm>
 #include <format>
@@ -229,6 +230,19 @@ bool FLuaRuntime::ResumeCoroutine(FScriptCoroutine& Coroutine, const std::vector
 	{
 		// resume이 false, 메시지 → 코루틴 쪽 콜스택을 붙인다
 		const sol::object       Message      = Result.return_count() > 1 ? Result.get<sol::object>(1) : sol::object(sol::lua_nil);
+		if (Debugger != nullptr)
+		{
+			// 오류 정지: 끝난 코루틴의 스택은 닫기 전까지 남아 있으므로 그 자리를 보여 준다 (값 작업은 주 스레드에서)
+			lua_State* const Main = Lua.lua_state();
+			Coroutine.Thread.push(Main);
+			lua_State* const Thread = lua_tothread(Main, -1);
+			lua_pop(Main, 1);
+			if (Thread != nullptr)
+			{
+				const std::string Text = Message.is<std::string>() ? Message.as<std::string>() : std::string();
+				Debugger->OnCoroutineError(Thread, Main, Text.empty() ? nullptr : Text.c_str());
+			}
+		}
 		sol::protected_function TracebackFn  = Lua["debug"]["traceback"];
 		sol::protected_function_result Trace = TracebackFn.valid() ? TracebackFn(Coroutine.Thread, Message) : sol::protected_function_result();
 		OutError = Trace.valid() && Trace.return_count() > 0 && Trace.get_type(0) == sol::type::string

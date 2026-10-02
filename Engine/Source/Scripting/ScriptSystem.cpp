@@ -24,7 +24,7 @@ void FScriptSystem::SetContentDirectory(const std::filesystem::path& Directory)
 bool FScriptSystem::BeginPlay(FScene& Scene)
 {
 	EndPlay();
-	PlayRuntime = std::make_unique<FLuaRuntime>(ContentDirectory, ErrorCount);
+	PlayRuntime = std::make_unique<FLuaRuntime>(ContentDirectory, ErrorCount, Debugger);
 	++PlaySession;
 	PlayRuntime->SetAudioHooks(&AudioHooks);
 	PlayRuntime->SetPhysicsHooks(&PhysicsHooks);

@@ -10,6 +10,7 @@
 #include "Scene/Components.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
+#include "Scripting/ScriptDebugger.h"
 
 #include <algorithm>
 #include <array>
@@ -80,17 +81,46 @@ namespace
 		return sol::stack::push(L, Description);
 	}
 
+	// 디버거가 연결된 상태의 오류 메시지 처리기: 오류 지점(스택 보존)에서 디버거 오류 정지 → debug.traceback(msg, 1)과 같은 결과
+	int DebugErrorHandler(lua_State* L)
+	{
+		const char* Message = lua_tostring(L, 1);
+		if (FScriptDebugger* Debugger = FScriptDebugger::FromState(L))
+		{
+			Debugger->OnUnhandledError(L, Message, 1); // 1 = 이 처리기 프레임
+		}
+		if (Message == nullptr && !lua_isnoneornil(L, 1))
+		{
+			lua_pushvalue(L, 1); // 문자열이 아닌 오류 값은 그대로 (debug.traceback과 같음)
+			return 1;
+		}
+		luaL_traceback(L, L, Message, 1);
+		return 1;
+	}
+
 } // namespace
 
-FLuaRuntime::FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErrorCounter)
+FLuaRuntime::FLuaRuntime(std::filesystem::path InContentDirectory, uint32& InErrorCounter, FScriptDebugger* InDebugger)
 	: ContentDirectory(std::move(InContentDirectory))
 	, ErrorCounter(InErrorCounter)
+	, Debugger(InDebugger)
 {
 	// io/os/package는 열지 않는다 (콘텐츠 스크립트에 파일 시스템/프로세스 접근을 주지 않음)
 	Lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table, sol::lib::coroutine, sol::lib::utf8,
 	                   sol::lib::debug);
 	Lua.set_exception_handler(&HandleBindingException);
-	Traceback = Lua["debug"]["traceback"];
+	if (Debugger != nullptr)
+	{
+		// 바인딩 등록 전 (Coroutine.Start가 잡아 두는 coroutine.create도 디버거 것이어야 코루틴에 훅을 걸 수 있다)
+		Debugger->Attach(Lua.lua_state());
+		lua_pushcfunction(Lua.lua_state(), &DebugErrorHandler);
+		Traceback = sol::protected_function(Lua.lua_state(), -1);
+		lua_pop(Lua.lua_state(), 1);
+	}
+	else
+	{
+		Traceback = Lua["debug"]["traceback"];
+	}
 	Lua["dofile"]   = sol::lua_nil;
 	Lua["loadfile"] = sol::lua_nil;
 	RegisterBindings();
@@ -111,6 +141,10 @@ FLuaRuntime::~FLuaRuntime()
 	CoroutineStatus = sol::lua_nil;
 	WaitToken       = sol::table();
 	Traceback = sol::lua_nil;
+	if (Debugger != nullptr)
+	{
+		Debugger->Detach(Lua.lua_state());
+	}
 }
 
 std::string FLuaRuntime::ReadScriptSource(const std::filesystem::path& Path, bool& bOutOk)

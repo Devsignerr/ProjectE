@@ -33,6 +33,8 @@ public:
 	std::vector<std::filesystem::path> ConsumeDroppedFiles() { return std::exchange(DroppedFiles, {}); }
 
 	float GetDpiScale() const { return DpiScale; }
+	// BeginFrame~EndFrame 사이인가 (스크립트 디버거 중첩 루프는 UI 프레임 밖에서만 돌 수 있다)
+	bool IsFrameActive() const { return bFrameBegun; }
 	// 메인 도크스페이스 ID (BeginFrame 이후 유효 — 기본 레이아웃 구성용)
 	uint32 GetDockSpaceId() const { return DockSpaceId; }
 

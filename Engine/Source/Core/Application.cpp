@@ -297,17 +297,7 @@ void FApplication::RunWindowedLoop()
 		}
 		else
 		{
-			if (!ScreenshotPath.empty() && ExitAfterFrames > 0 && FrameIndex + ScreenshotFrames >= ExitAfterFrames)
-			{
-				// 연속 저장: 앞 프레임은 "<이름>_f<번호>", 마지막 프레임은 원래 경로
-				const uint64 Remaining = ExitAfterFrames - FrameIndex - 1;
-				std::filesystem::path Path = ScreenshotPath;
-				if (Remaining > 0)
-				{
-					Path.replace_filename(std::format(L"{}_f{}{}", ScreenshotPath.stem().wstring(), ScreenshotFrames - 1 - Remaining, ScreenshotPath.extension().wstring()));
-				}
-				OnScreenshotRequested(Path);
-			}
+			RequestScreenshotIfDue();
 			OnRender();
 			++FrameIndex;
 			UpdateCrashTest();
@@ -320,6 +310,47 @@ void FApplication::RunWindowedLoop()
 		Input.EndFrame();
 		E_PROFILE_FRAME();
 	}
+}
+
+void FApplication::RequestScreenshotIfDue()
+{
+	if (!ScreenshotPath.empty() && ExitAfterFrames > 0 && FrameIndex + ScreenshotFrames >= ExitAfterFrames)
+	{
+		// 연속 저장: 앞 프레임은 "<이름>_f<번호>", 마지막 프레임은 원래 경로
+		const uint64 Remaining = ExitAfterFrames - FrameIndex - 1;
+		std::filesystem::path Path = ScreenshotPath;
+		if (Remaining > 0)
+		{
+			Path.replace_filename(std::format(L"{}_f{}{}", ScreenshotPath.stem().wstring(), ScreenshotFrames - 1 - Remaining, ScreenshotPath.extension().wstring()));
+		}
+		OnScreenshotRequested(Path);
+	}
+}
+
+bool FApplication::RunNestedFrame(const std::function<void()>& Render)
+{
+	Window.PumpMessages();
+	if (bExitRequested)
+	{
+		return false;
+	}
+	if (Window.IsMinimized())
+	{
+		Sleep(10);
+	}
+	else
+	{
+		RequestScreenshotIfDue();
+		Render();
+		++FrameIndex;
+		if (ExitAfterFrames > 0 && FrameIndex >= ExitAfterFrames)
+		{
+			RequestExit();
+		}
+	}
+	Input.EndFrame();
+	E_PROFILE_FRAME();
+	return !bExitRequested;
 }
 
 namespace

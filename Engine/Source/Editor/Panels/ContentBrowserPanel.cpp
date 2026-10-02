@@ -865,6 +865,10 @@ void FContentBrowserPanel::OpenEntry(FEditorContext& Context, const FEntry& Entr
 	{
 		Context.OpenSceneRequest(Entry.Path);
 	}
+	else if (Entry.Extension == ".lua" && Context.OpenScriptRequest)
+	{
+		Context.OpenScriptRequest(Entry.Path); // 스크립트 디버거 소스 보기 (중단점)
+	}
 }
 
 void FContentBrowserPanel::AddToScene(FEditorContext& Context, const FEntry& Entry)

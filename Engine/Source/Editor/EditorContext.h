@@ -55,6 +55,7 @@ struct FEditorContext
 	// 패널 → 애플리케이션 요청 (씬 파일 열기 등)
 	std::function<void(const std::filesystem::path&)> OpenSceneRequest;
 	std::function<void(const std::filesystem::path&)> OpenAssetEditorRequest; // 에셋 편집 창 열기 (지원하지 않는 형식이면 무시)
+	std::function<void(const std::filesystem::path&)> OpenScriptRequest;      // .lua를 스크립트 디버거 소스 보기로 열기
 	// 에셋 파일 조작 전: 해당 경로(폴더면 안쪽 전부)의 편집 창을 닫는다. 저장 안 한 창이 있으면 닫지 않고 false
 	std::function<bool(const std::vector<std::filesystem::path>&)> PrepareAssetChange;
 	// 에셋 이동/이름 변경 후: 열린 씬·실행 취소 기록·리소스 캐시·현재 씬 경로를 새 경로로

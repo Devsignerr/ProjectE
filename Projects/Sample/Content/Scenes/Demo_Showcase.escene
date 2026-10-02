@@ -1,0 +1,9456 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            3000
+          ],
+          "Rotation": [
+            0.069,
+            0.012,
+            -0.982,
+            0.173
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DirectionalLightComponent": {
+          "Color": [
+            1,
+            0.8,
+            0.6
+          ],
+          "Intensity": 3.2
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "SkyLightComponent": {
+          "Intensity": 1,
+          "EnvironmentMap": "Environment/SunsetSky.hdr",
+          "EnvironmentRotation": 20
+        }
+      },
+      "Name": "SkyLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.5,
+            0.45,
+            0.48
+          ],
+          "Density": 0.0015,
+          "HeightFalloff": 0.2,
+          "StartDistance": 800,
+          "MaxOpacity": 0.7,
+          "DirectionalInscatteringColor": [
+            0.55,
+            0.32,
+            0.16
+          ],
+          "DirectionalInscatteringExponent": 8,
+          "DirectionalInscatteringStartDistance": 3000,
+          "Volumetric": true,
+          "VolumetricDistance": 6000,
+          "VolumetricAlbedo": [
+            1,
+            1,
+            1
+          ],
+          "VolumetricExtinctionScale": 0.6,
+          "VolumetricAnisotropy": 0.55,
+          "VolumetricDirectionalScale": 1.2,
+          "VolumetricLocalLightScale": 3
+        }
+      },
+      "Name": "Fog",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "TerrainComponent": {
+          "Asset": "Terrain/ShowcaseTerrain.eterrain",
+          "CastShadows": true,
+          "Collision": true,
+          "EditRevision": 0,
+          "HeightRange": 8000,
+          "Layer0Material": "Terrain/Materials/Grass.emat",
+          "Layer0Tiling": 350,
+          "Layer1Material": "Terrain/Materials/Dirt.emat",
+          "Layer1Tiling": 250,
+          "Layer2Material": "Terrain/Materials/Rock.emat",
+          "Layer2Tiling": 600,
+          "Layer3Material": "",
+          "Layer3Tiling": 400,
+          "Size": [
+            32000,
+            32000
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "FoliageComponent": {
+          "Asset": "Foliage/ShowcaseFoliage.efoliage",
+          "EditRevision": 0,
+          "Visible": true
+        }
+      },
+      "Name": "Foliage",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "NavMeshComponent": {
+          "NavMeshAsset": "Scenes/Demo_Showcase.enav",
+          "AgentRadius": 40,
+          "AgentHeight": 150,
+          "AgentMaxClimb": 30,
+          "AgentMaxSlopeDegrees": 40,
+          "CellSize": 20,
+          "CellHeight": 10
+        }
+      },
+      "Name": "NavMesh",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2200,
+            -900,
+            650
+          ],
+          "Rotation": [
+            -0.018,
+            0.087,
+            0.2,
+            0.976
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": true,
+          "Priority": 0
+        }
+      },
+      "Name": "OverviewCamera",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Plaza",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1250,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_0",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1250,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_1",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1250,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_2",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1250,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_3",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            -1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_4",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_5",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_6",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_7",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_8",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750,
+            1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_9",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            -1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_10",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_11",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_12",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_13",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_14",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -250,
+            1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_15",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            -1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_16",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_17",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_18",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_19",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_20",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_21",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            -1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_22",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_23",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_24",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_25",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_26",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750,
+            1250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_27",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1250,
+            -750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_28",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1250,
+            -250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_29",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1250,
+            250,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_30",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1250,
+            750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_31",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1750,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            9.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_32",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1750,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4.94,
+            9.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_33",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            1750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            9.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_34",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            -1750,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            9.94,
+            4.94,
+            0.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Tile_35",
+      "Parent": 7
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            17
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            7,
+            7,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Dais_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            17
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.383,
+            0.924
+          ],
+          "Scale": [
+            7,
+            7,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Dais_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            40
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.195,
+            0.981
+          ],
+          "Scale": [
+            4.2,
+            4.2,
+            0.22
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Dais_Top",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            311
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.383,
+            0.924
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            5.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Obelisk",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            25.456,
+            25.456,
+            281
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.383,
+            0.924
+          ],
+          "Scale": [
+            0.04,
+            0.14,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ObeliskStrip_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -25.456,
+            25.456,
+            281
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.924,
+            0.383
+          ],
+          "Scale": [
+            0.04,
+            0.14,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ObeliskStrip_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -25.456,
+            -25.456,
+            281
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.924,
+            -0.383
+          ],
+          "Scale": [
+            0.04,
+            0.14,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ObeliskStrip_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            25.456,
+            -25.456,
+            281
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.383,
+            -0.924
+          ],
+          "Scale": [
+            0.04,
+            0.14,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ObeliskStrip_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            660
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/Chrome.emat",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Bobber.lua",
+          "PropertyOverrides": "{\"Amplitude\":18,\"Frequency\":0.25}"
+        }
+      },
+      "Name": "Beacon",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            600
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PointLightComponent": {
+          "Color": [
+            0.45,
+            0.8,
+            1
+          ],
+          "Intensity": 10,
+          "Radius": 900,
+          "CastShadows": false
+        }
+      },
+      "Name": "BeaconLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1576.166,
+            910,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.966,
+            -0.259
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 54
+        }
+      },
+      "Name": "LampPost_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            1820,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            -0.707
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 55
+        }
+      },
+      "Name": "LampPost_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1576.166,
+            910,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.259,
+            -0.966
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 56
+        }
+      },
+      "Name": "LampPost_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1576.166,
+            -910,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.259,
+            -0.966
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 57
+        }
+      },
+      "Name": "LampPost_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            -1820,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.707,
+            -0.707
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 58
+        }
+      },
+      "Name": "LampPost_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1576.166,
+            -910,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.966,
+            -0.259
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/ShowcaseLampPost.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 59
+        }
+      },
+      "Name": "LampPost_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            0,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_Campfire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            675,
+            1169.134,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            0.866
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_Materials",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -675,
+            1169.134,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_Lights",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1350,
+            0,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_Character",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -675,
+            -1169.134,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_AI",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            675,
+            -1169.134,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Arrow.emat",
+          "Size": [
+            220,
+            220,
+            60
+          ],
+          "Opacity": 0.85,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Arrow_Physics",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -620,
+            820,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.216,
+            0.976
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Puddle.emat",
+          "Size": [
+            300,
+            380,
+            60
+          ],
+          "Opacity": 1,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Puddle_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            700,
+            -560,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.574,
+            0.819
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Puddle.emat",
+          "Size": [
+            260,
+            340,
+            60
+          ],
+          "Opacity": 1,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Puddle_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            520,
+            900,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.94,
+            0.342
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Puddle.emat",
+          "Size": [
+            220,
+            260,
+            60
+          ],
+          "Opacity": 1,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Puddle_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1000,
+            0,
+            97
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CharacterMovementComponent": {
+          "AirControl": 0.35,
+          "CapsuleHalfHeight": 55,
+          "CapsuleRadius": 35,
+          "FaceControlYaw": true,
+          "GravityScale": 1,
+          "JumpZVelocity": 520,
+          "Mass": 80,
+          "MaxSlopeAngle": 50,
+          "MaxStepHeight": 35,
+          "MaxWalkSpeed": 450,
+          "PushForce": 4000
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcasePlayer.lua",
+          "PropertyOverrides": ""
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      },
+      "Name": "Body",
+      "Parent": 69
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            -90
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/FoxCharacter.eanimgraph",
+          "UseCharacterMovement": true
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "b_LeftHand_011, b_RightHand_08, b_LeftFoot02_018, b_RightFoot02_022",
+          "PelvisBone": "b_Hip_01",
+          "TraceUp": 30,
+          "TraceDown": 40,
+          "MaxAdjust": 20,
+          "InterpSpeed": 12,
+          "Weight": 1,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30,
+          "KneeDirection": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PlayerMesh",
+      "Parent": 70
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2550,
+            380,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            -1,
+            0
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/FoxAdvanced.eanimgraph",
+          "UseCharacterMovement": false
+        },
+        "LookAtComponent": {
+          "Bones": "b_Neck_04, b_Head_05",
+          "ForwardAxis": [
+            -1,
+            0,
+            0
+          ],
+          "MaxAngle": 70,
+          "Weight": 1,
+          "BlendSpeed": 6,
+          "Enabled": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/AnimAdvancedDemo.lua",
+          "PropertyOverrides": "{\"LookTarget\":\"LookOrb\",\"AutoMontagePeriod\":5}"
+        }
+      },
+      "Name": "Fox_Walker",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2550,
+            380,
+            70
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            0.14
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/CircleMover.lua",
+          "PropertyOverrides": "{\"Radius\":120,\"Speed\":50,\"Bob\":35,\"BobPeriod\":3}"
+        },
+        "PointLightComponent": {
+          "Color": [
+            0.5,
+            0.85,
+            1
+          ],
+          "Intensity": 3,
+          "Radius": 350,
+          "CastShadows": false
+        }
+      },
+      "Name": "LookOrb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2620,
+            95,
+            6
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            0.707
+          ],
+          "Scale": [
+            1.1,
+            1.2,
+            0.12
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Step_IK",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2620,
+            40,
+            6
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            -0.707
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "b_LeftHand_011, b_RightHand_08, b_LeftFoot02_018, b_RightFoot02_022",
+          "PelvisBone": "b_Hip_01",
+          "TraceUp": 30,
+          "TraceDown": 40,
+          "MaxAdjust": 20,
+          "InterpSpeed": 12,
+          "Weight": 1,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30,
+          "KneeDirection": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Fox_StepIK",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2620,
+            -105,
+            6
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            0.707
+          ],
+          "Scale": [
+            1.1,
+            1.2,
+            0.12
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Step_NoIK",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2620,
+            -160,
+            6
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            -0.707
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "FootIkComponent": {
+          "Enabled": false,
+          "FootBones": "b_LeftHand_011, b_RightHand_08, b_LeftFoot02_018, b_RightFoot02_022",
+          "PelvisBone": "b_Hip_01",
+          "TraceUp": 30,
+          "TraceDown": 40,
+          "MaxAdjust": 20,
+          "InterpSpeed": 12,
+          "Weight": 1,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30,
+          "KneeDirection": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Fox_StepNoIK",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2640,
+            -420,
+            -2
+          ],
+          "Rotation": [
+            -0.092,
+            -0.092,
+            0.701,
+            -0.701
+          ],
+          "Scale": [
+            2,
+            1.2,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Slope",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2640,
+            -420,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.707,
+            -0.707
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "b_LeftHand_011, b_RightHand_08, b_LeftFoot02_018, b_RightFoot02_022",
+          "PelvisBone": "b_Hip_01",
+          "TraceUp": 30,
+          "TraceDown": 40,
+          "MaxAdjust": 20,
+          "InterpSpeed": 12,
+          "Weight": 1,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30,
+          "KneeDirection": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Fox_Slope",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            250,
+            7.5
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            0.5,
+            0.15
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            200,
+            15
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            0.5,
+            0.3
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            150,
+            22.5
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            0.5,
+            0.45
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            100,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            0.5,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            50,
+            37.5
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            0.5,
+            0.75
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            -100,
+            37.5
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            2.4,
+            2.5,
+            0.75
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_Top",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            -400,
+            36
+          ],
+          "Rotation": [
+            0,
+            -0.096,
+            0.995,
+            0
+          ],
+          "Scale": [
+            2.4,
+            3.8,
+            0.12
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Stair_Ramp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3030,
+            -100,
+            75
+          ],
+          "Rotation": [
+            0,
+            0,
+            -1,
+            0
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 0.8
+        }
+      },
+      "Name": "Fox_Stairs",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            632.837,
+            -2146.105,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_0_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            935.946,
+            -1971.105,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_0_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1239.054,
+            -1796.105,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_0_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1542.163,
+            -1621.105,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_0_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            807.837,
+            -2449.214,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_1_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1110.946,
+            -2274.214,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_1_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1414.054,
+            -2099.214,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_1_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1717.163,
+            -1924.214,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_1_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            982.837,
+            -2752.323,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_2_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1285.946,
+            -2577.323,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_2_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1589.054,
+            -2402.323,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_2_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1892.163,
+            -2227.323,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_2_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1157.837,
+            -3055.432,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_3_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1460.946,
+            -2880.432,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_3_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1764.054,
+            -2705.432,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_3_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2067.163,
+            -2530.432,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.44,
+            3.44,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "PhysicsTile_3_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1566.506,
+            -2213.269,
+            4
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcasePhysicsCycle.lua",
+          "PropertyOverrides": "{\"Period\":9,\"LaunchDelay\":2}"
+        }
+      },
+      "Name": "PhysicsTower",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1676.506,
+            -2403.794,
+            100
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            110,
+            180,
+            100
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ],
+          "IsTrigger": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/TriggerLamp.lua",
+          "PropertyOverrides": "{\"Lamp\":\"TriggerLamp\"}"
+        }
+      },
+      "Name": "TriggerZone",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1676.506,
+            -2403.794,
+            5
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            -0.866
+          ],
+          "Scale": [
+            3.6,
+            2.2,
+            0.03
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "TriggerFrame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1867.032,
+            -2293.794,
+            110
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.12,
+            0.12,
+            2.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "TriggerPost",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1867.032,
+            -2293.794,
+            235
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.36,
+            0.36,
+            0.36
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/LampTeal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "TriggerLamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1169.308,
+            -3055.301,
+            110
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.12,
+            0.12,
+            2.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "DoorPost",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1169.308,
+            -2985.301,
+            105
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.08,
+            1.2,
+            2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 25,
+          "UseGravity": true
+        },
+        "HingeJointComponent": {
+          "Anchor": [
+            0,
+            -50,
+            0
+          ],
+          "Axis": [
+            0,
+            0,
+            1
+          ],
+          "Limit": true,
+          "MinAngle": -110,
+          "MaxAngle": 110,
+          "Friction": 4
+        }
+      },
+      "Name": "Door",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            989.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.2,
+            0.2,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ChainHook",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            979.667,
+            -2754.153,
+            210
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.16,
+            0.16,
+            4.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ChainPost",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1009.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ChainLink0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1049.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ],
+          "Target": 113
+        }
+      },
+      "Name": "ChainLink1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1089.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ],
+          "Target": 114
+        }
+      },
+      "Name": "ChainLink2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1129.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ],
+          "Target": 115
+        }
+      },
+      "Name": "ChainLink3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1169.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ],
+          "Target": 116
+        }
+      },
+      "Name": "ChainLink4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1209.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.06,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 1,
+          "LinearDamping": 0.1,
+          "AngularDamping": 0.3
+        },
+        "BallJointComponent": {
+          "Anchor": [
+            -50,
+            0,
+            0
+          ],
+          "Axis": [
+            -1,
+            0,
+            0
+          ],
+          "Target": 117
+        }
+      },
+      "Name": "ChainLink5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1249.667,
+            -2754.153,
+            420
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.3,
+            0.3,
+            0.3
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/Chrome.emat",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 4
+        },
+        "BallJointComponent": {
+          "Target": 118,
+          "Anchor": [
+            -60,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ChainWeight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            859.308,
+            -2448.365,
+            400
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.2,
+            0.2,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "SpringHook",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            859.308,
+            -2448.365,
+            410
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            2.6,
+            0.14,
+            0.14
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "SpringFrame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            734.308,
+            -2448.365,
+            205
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            4.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "SpringLegA",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            984.308,
+            -2448.365,
+            205
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            4.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "SpringLegB",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            859.308,
+            -2448.365,
+            180
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.35,
+            0.35,
+            0.35
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 3
+        },
+        "DistanceJointComponent": {
+          "Anchor": [
+            0,
+            0,
+            50
+          ],
+          "TargetAnchor": [
+            859.3078061834697,
+            -2448.3647796503183,
+            400
+          ],
+          "MinDistance": 140,
+          "MaxDistance": 140,
+          "SpringFrequency": 1.2,
+          "SpringDamping": 0.15
+        }
+      },
+      "Name": "SpringWeight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            585.026,
+            -2133.294,
+            130
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.16,
+            0.16,
+            2.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "WindmillPost",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            585.026,
+            -2113.294,
+            255
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            2.2,
+            0.08,
+            0.22
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 8,
+          "UseGravity": false
+        },
+        "HingeJointComponent": {
+          "Axis": [
+            0,
+            1,
+            0
+          ],
+          "Motor": true,
+          "MotorSpeed": 90,
+          "MotorMaxTorque": 2000
+        }
+      },
+      "Name": "WindmillBlade",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            -2338.269,
+            50
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcaseKicker.lua",
+          "PropertyOverrides": "{\"Targets\":\"ChainWeight,SpringWeight,Door\",\"Interval\":3.5,\"Speed\":260}"
+        }
+      },
+      "Name": "JointKicker",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1462.679,
+            -2573.435,
+            4
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.5,
+            0.866
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "HealthComponent": {
+          "MaxHealth": 100,
+          "Health": 100,
+          "DeathAction": 2
+        },
+        "RagdollComponent": {
+          "EnableOnDeath": true,
+          "Mass": 25
+        }
+      },
+      "Name": "Fox_RagdollA",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1404.115,
+            -2791.999,
+            4
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.707,
+            0.707
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Run",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1
+        },
+        "HealthComponent": {
+          "MaxHealth": 100,
+          "Health": 100,
+          "DeathAction": 2
+        },
+        "RagdollComponent": {
+          "EnableOnDeath": true,
+          "Mass": 25
+        }
+      },
+      "Name": "Fox_RagdollB",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            -2338.269,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RagdollDemo.lua",
+          "PropertyOverrides": "{\"Victims\":\"Fox_RagdollA,Fox_RagdollB\",\"LuaTarget\":\"\",\"Delay\":2,\"HoldSeconds\":4,\"Repeat\":8}"
+        }
+      },
+      "Name": "RagdollDirector",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1318.038,
+            -2004.538,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ScanCrate_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1088.038,
+            -1774.538,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.216,
+            0.976
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ScanCrate_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            858.038,
+            -2142.538,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.423,
+            0.906
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ScanCrate_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1203.038,
+            -2234.538,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.609,
+            0.793
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "ScanCrate_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1088.038,
+            -2004.538,
+            80
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.2,
+            0.2,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/LampRed.emat",
+          "Visible": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcaseScanner.lua",
+          "PropertyOverrides": "{\"Radius\":70,\"Distance\":230}"
+        }
+      },
+      "Name": "Scanner",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            2338.269,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            0.866
+          ],
+          "Scale": [
+            10,
+            10,
+            0.04
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Reflections/GlossyFloor.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Gallery_Floor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            2338.269,
+            55
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.793,
+            0.609
+          ],
+          "Scale": [
+            0.9,
+            0.9,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pedestal",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            2338.269,
+            113
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.793,
+            0.609
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            0.06
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        }
+      },
+      "Name": "PedestalCap",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            2338.269,
+            170
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "DamagedHelmet.glb"
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Rotator.lua",
+          "PropertyOverrides": "{\"Speed\":18}"
+        }
+      },
+      "Name": "DamagedHelmet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1635.167,
+            2312.192,
+            62
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/Chrome.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ChromeBall_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1570.788,
+            2060.685,
+            37
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/Chrome.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ChromeBall_M",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1583.923,
+            2503.435,
+            25
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.46,
+            0.46,
+            0.46
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Brass.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ChromeBall_S",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1385.096,
+            2699.057,
+            50
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.96,
+            0.96,
+            0.96
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/WarmWall.emat",
+          "Visible": true
+        }
+      },
+      "Name": "WarmBall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1124.212,
+            2607.192,
+            52
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "MaterialDemo/GlassGreen.emat",
+          "Visible": true
+        }
+      },
+      "Name": "GlassSphere",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1050.192,
+            2418.987,
+            82
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.676,
+            0.737
+          ],
+          "Scale": [
+            0.03,
+            1.6,
+            1.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "MaterialDemo/Glass.emat",
+          "Visible": true
+        }
+      },
+      "Name": "GlassPane",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1040.91,
+            2562.91,
+            32
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.574,
+            0.819
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        }
+      },
+      "Name": "BehindGlass",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1480.359,
+            2644.057,
+            150
+          ],
+          "Rotation": [
+            0.706,
+            0.031,
+            0.031,
+            0.706
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/StainedGlass.emat",
+          "Visible": true
+        }
+      },
+      "Name": "StainedGlass",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1480.359,
+            2644.057,
+            234
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.676,
+            -0.737
+          ],
+          "Scale": [
+            0.1,
+            1.72,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "StainedFrameTop",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1396.679,
+            2636.736,
+            112
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.676,
+            -0.737
+          ],
+          "Scale": [
+            0.1,
+            0.08,
+            2.46
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "StainedFrameL",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1564.039,
+            2651.378,
+            112
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.676,
+            -0.737
+          ],
+          "Scale": [
+            0.1,
+            0.08,
+            2.46
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "StainedFrameR",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1303.923,
+            2018.461,
+            62
+          ],
+          "Rotation": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.25,
+            1.25,
+            1.25
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/Leaves.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LeafBush_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1303.923,
+            2018.461,
+            62
+          ],
+          "Rotation": [
+            0.271,
+            0.653,
+            0.653,
+            0.271
+          ],
+          "Scale": [
+            1.25,
+            1.25,
+            1.25
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/Leaves.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LeafBush_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1303.923,
+            2018.461,
+            62
+          ],
+          "Rotation": [
+            0,
+            0.707,
+            0.707,
+            0
+          ],
+          "Scale": [
+            1.25,
+            1.25,
+            1.25
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/Leaves.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LeafBush_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1303.923,
+            2018.461,
+            62
+          ],
+          "Rotation": [
+            -0.271,
+            0.653,
+            0.653,
+            -0.271
+          ],
+          "Scale": [
+            1.25,
+            1.25,
+            1.25
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/Leaves.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LeafBush_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            917.513,
+            2149.179,
+            55
+          ],
+          "Rotation": [
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/LeavesAutumn.emat",
+          "Visible": true
+        }
+      },
+      "Name": "AutumnBush_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            917.513,
+            2149.179,
+            55
+          ],
+          "Rotation": [
+            0.271,
+            0.653,
+            0.653,
+            0.271
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/LeavesAutumn.emat",
+          "Visible": true
+        }
+      },
+      "Name": "AutumnBush_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            917.513,
+            2149.179,
+            55
+          ],
+          "Rotation": [
+            0,
+            0.707,
+            0.707,
+            0
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/LeavesAutumn.emat",
+          "Visible": true
+        }
+      },
+      "Name": "AutumnBush_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            917.513,
+            2149.179,
+            55
+          ],
+          "Rotation": [
+            -0.271,
+            0.653,
+            0.653,
+            -0.271
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/LeavesAutumn.emat",
+          "Visible": true
+        }
+      },
+      "Name": "AutumnBush_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1787.032,
+            2155.23,
+            90
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.966,
+            0.259
+          ],
+          "Scale": [
+            0.02,
+            3.2,
+            1.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "MaterialDemo/ChainLink.emat",
+          "Visible": true
+        }
+      },
+      "Name": "ChainLinkFence",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1799.808,
+            2517.358,
+            160
+          ],
+          "Rotation": [
+            0.683,
+            -0.183,
+            -0.183,
+            0.683
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:plane",
+          "MaterialAsset": "MaterialDemo/Glow.emat",
+          "Visible": true
+        }
+      },
+      "Name": "GlowSign",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1350,
+            2338.269,
+            160
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.5,
+            0.866
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ReflectionCaptureComponent": {
+          "Shape": 1,
+          "Radius": 800,
+          "BoxExtent": [
+            560,
+            560,
+            300
+          ],
+          "FadeDistance": 120,
+          "Intensity": 1,
+          "Priority": 0,
+          "CaptureAsset": "Captures/Demo_Showcase_Gallery.ecapture"
+        }
+      },
+      "Name": "GalleryCapture",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1350,
+            2338.269,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            10,
+            7.6,
+            0.04
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Colonnade_Floor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -942.513,
+            2192.48,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1052.513,
+            2383.006,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1162.513,
+            2573.531,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1272.513,
+            2764.057,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1427.487,
+            1912.48,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1537.487,
+            2103.006,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1647.487,
+            2293.531,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1757.487,
+            2484.057,
+            202
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "Pillar_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1107.513,
+            2478.269,
+            412
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            7.6,
+            0.5,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Beam_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1592.487,
+            2198.269,
+            412
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            7.6,
+            0.5,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Beam_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1175,
+            2035.16,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1225,
+            2121.762,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1275,
+            2208.365,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1325,
+            2294.967,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1375,
+            2381.57,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1425,
+            2468.172,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1475,
+            2554.775,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1525,
+            2641.377,
+            432
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            0.24,
+            6.4,
+            0.18
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Rafter_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1255.359,
+            2254.346,
+            700
+          ],
+          "Rotation": [
+            -0.572,
+            0.201,
+            0.751,
+            0.264
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "SpotLightComponent": {
+          "Color": [
+            0.55,
+            0.75,
+            1
+          ],
+          "Intensity": 1100,
+          "Radius": 1400,
+          "InnerConeAngle": 9,
+          "OuterConeAngle": 17,
+          "CastShadows": true
+        }
+      },
+      "Name": "SpotLamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1240,
+            2147.743,
+            325
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            1.9
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LanternCord_Red",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1240,
+            2147.743,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.26
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/LampRed.emat",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            1,
+            0.25,
+            0.15
+          ],
+          "Intensity": 12,
+          "Radius": 520,
+          "CastShadows": false
+        }
+      },
+      "Name": "Lantern_Red",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1350,
+            2338.269,
+            325
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            1.9
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LanternCord_Teal",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1350,
+            2338.269,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.26
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/LampTeal.emat",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            0.2,
+            1,
+            0.85
+          ],
+          "Intensity": 12,
+          "Radius": 520,
+          "CastShadows": true
+        }
+      },
+      "Name": "Lantern_Teal",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1460,
+            2528.794,
+            325
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            1.9
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/DarkMetal.emat",
+          "Visible": true
+        }
+      },
+      "Name": "LanternCord_Violet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1460,
+            2528.794,
+            230
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.26
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/LampViolet.emat",
+          "Visible": true
+        },
+        "PointLightComponent": {
+          "Color": [
+            0.65,
+            0.3,
+            1
+          ],
+          "Intensity": 12,
+          "Radius": 520,
+          "CastShadows": false
+        }
+      },
+      "Name": "Lantern_Violet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1323.397,
+            2492.192,
+            4
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.966,
+            0.259
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Puddle.emat",
+          "Size": [
+            300,
+            360,
+            60
+          ],
+          "Opacity": 1,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_ColonnadePuddle",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1757.032,
+            2103.269,
+            90
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            0.5
+          ],
+          "Scale": [
+            7,
+            0.3,
+            1.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Concrete.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "RivetWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1744.042,
+            2110.769,
+            90
+          ],
+          "Rotation": [
+            0.354,
+            0.612,
+            0.612,
+            0.354
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DecalComponent": {
+          "MaterialAsset": "Decals/Rivets.emat",
+          "Size": [
+            600,
+            160,
+            40
+          ],
+          "Opacity": 1,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0,
+          "FadeEndDistance": 0
+        }
+      },
+      "Name": "Decal_Rivets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2772,
+            0,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2755.155,
+            46.281,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.317,
+            0.948
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2712.503,
+            70.906,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.602,
+            0.799
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2664,
+            62.354,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.824,
+            0.566
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2632.342,
+            24.625,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.961,
+            0.276
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2632.342,
+            -24.625,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.999,
+            -0.044
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2664,
+            -62.354,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.934,
+            -0.358
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2712.503,
+            -70.906,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.772,
+            -0.636
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2755.155,
+            -46.281,
+            8
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.53,
+            -0.848
+          ],
+          "Scale": [
+            0.38,
+            0.3,
+            0.24
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/FireRock.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireStone_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            2
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Ember.emat",
+          "Visible": true
+        }
+      },
+      "Name": "Embers",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            16
+          ],
+          "Rotation": [
+            0.38,
+            0.38,
+            0.596,
+            0.596
+          ],
+          "Scale": [
+            0.13,
+            0.13,
+            0.42
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:capsule",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireLog_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            19
+          ],
+          "Rotation": [
+            0.139,
+            0.519,
+            0.815,
+            0.218
+          ],
+          "Scale": [
+            0.13,
+            0.13,
+            0.42
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:capsule",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireLog_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            22
+          ],
+          "Rotation": [
+            -0.139,
+            0.519,
+            0.815,
+            -0.218
+          ],
+          "Scale": [
+            0.13,
+            0.13,
+            0.42
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:capsule",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        }
+      },
+      "Name": "FireLog_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            22
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Fire2.eparticle",
+          "Playing": true,
+          "Speed": 1
+        }
+      },
+      "Name": "Fire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            120
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Smoke.eparticle",
+          "Playing": true,
+          "Speed": 1
+        }
+      },
+      "Name": "Smoke",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            30
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Sparks.eparticle",
+          "Playing": true,
+          "Speed": 1
+        }
+      },
+      "Name": "Sparks",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            80
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PointLightComponent": {
+          "Color": [
+            1,
+            0.55,
+            0.22
+          ],
+          "Intensity": 40,
+          "Radius": 1100,
+          "CastShadows": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcaseFlicker.lua",
+          "PropertyOverrides": "{\"BaseIntensity\":40,\"Amount\":0.35}"
+        }
+      },
+      "Name": "FireLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2700,
+            0,
+            40
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/Hum.wav",
+          "Volume": 0.6,
+          "Pitch": 0.8,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": true,
+          "MinDistance": 150,
+          "MaxDistance": 3000
+        }
+      },
+      "Name": "FireSound",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2474.474,
+            -82.085,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.574,
+            -0.819
+          ],
+          "Scale": [
+            1.9,
+            0.42,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "LogBench_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2883.851,
+            -154.269,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.423,
+            -0.906
+          ],
+          "Scale": [
+            1.9,
+            0.42,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "LogBench_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2741.676,
+            236.354,
+            20
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.996,
+            -0.087
+          ],
+          "Scale": [
+            1.9,
+            0.42,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "LogBench_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2635.016,
+            -178.542,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.819,
+            -0.574
+          ],
+          "Scale": [
+            0.01,
+            0.01,
+            0.01
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Survey",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 0.6
+        }
+      },
+      "Name": "Fox_Campfire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1514.711,
+            -1723.557,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_0_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1254.904,
+            -1873.557,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_0_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -995.096,
+            -2023.557,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_0_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -735.289,
+            -2173.557,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_0_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1664.711,
+            -1983.365,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_1_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1404.904,
+            -2133.365,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_1_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1145.096,
+            -2283.365,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_1_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -885.289,
+            -2433.365,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_1_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1814.711,
+            -2243.172,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_2_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1554.904,
+            -2393.172,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_2_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1295.096,
+            -2543.172,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_2_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1035.289,
+            -2693.172,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_2_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1964.711,
+            -2502.98,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_3_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1704.904,
+            -2652.98,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_3_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1445.096,
+            -2802.98,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_3_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1185.289,
+            -2952.98,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.94,
+            2.94,
+            0.08
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AITile_3_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1350,
+            -2338.269,
+            52
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.766,
+            -0.643
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Crate_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1238.038,
+            -2264.346,
+            37
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.924,
+            -0.383
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Crate_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1513.923,
+            -2382.192,
+            62
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            0.4,
+            2.6,
+            1.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Wall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1466.506,
+            -2040.064,
+            42
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.676,
+            -0.737
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/Wood.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Crate_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1265.814,
+            -2652.454,
+            110
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            2.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Pillar_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1009.833,
+            -2269.083,
+            110
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            2.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneA.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_Pillar_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1060.192,
+            -2436.307,
+            37
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.866,
+            -0.5
+          ],
+          "Scale": [
+            2.2,
+            0.3,
+            0.7
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Showcase/StoneB.emat",
+          "Visible": true
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "Name": "AI_LowWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1532.391,
+            -1794.179,
+            3
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.03
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "PatrolMarker_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1912.391,
+            -2452.358,
+            3
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.03
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "PatrolMarker_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1167.609,
+            -2882.358,
+            3
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.03
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "PatrolMarker_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -787.609,
+            -2224.179,
+            3
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.03
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Showcase/Beacon.emat",
+          "Visible": true
+        }
+      },
+      "Name": "PatrolMarker_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1532.391,
+            -1794.179,
+            2
+          ],
+          "Rotation": [
+            0,
+            0,
+            0.259,
+            -0.966
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "BehaviorTreeComponent": {
+          "Asset": "AI/ShowcasePatrol.ebt",
+          "AutoStart": true
+        },
+        "NavAgentComponent": {
+          "MaxSpeed": 170,
+          "AcceptanceRadius": 25,
+          "TurnSpeedDegrees": 360,
+          "OrientToMovement": true
+        }
+      },
+      "Name": "Guard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "Scale": [
+            0.013,
+            0.013,
+            0.013
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Fox.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Walk",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.1
+        }
+      },
+      "Name": "GuardFox",
+      "Parent": 240
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            120
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "PointLightComponent": {
+          "Color": [
+            1,
+            0.3,
+            0.2
+          ],
+          "Intensity": 4,
+          "Radius": 400,
+          "CastShadows": false
+        }
+      },
+      "Name": "GuardLight",
+      "Parent": 240
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "SequencePlayerComponent": {
+          "Sequence": "Sequences/ShowcaseTour.esequence",
+          "AutoPlay": true,
+          "Loop": false,
+          "PlayRate": 1,
+          "RestoreState": false
+        },
+        "UIComponent": {
+          "Asset": "UI/ShowcaseHUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": false,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/ShowcaseDirector.lua",
+          "PropertyOverrides": ""
+        }
+      },
+      "Name": "Showcase",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -5200,
+            -4300,
+            2300
+          ],
+          "Rotation": [
+            -0.049,
+            0.135,
+            0.335,
+            0.931
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamIntro",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2080,
+            -320,
+            230
+          ],
+          "Rotation": [
+            -0.156,
+            0.028,
+            0.972,
+            0.174
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 50,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamCharacter",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -1159.808,
+            -1408.846,
+            520
+          ],
+          "Rotation": [
+            0.192,
+            0.157,
+            -0.751,
+            0.612
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamAI",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            692.872,
+            -1840.089,
+            300
+          ],
+          "Rotation": [
+            0.028,
+            0.124,
+            -0.22,
+            0.967
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamPhysics",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            2140,
+            -320,
+            180
+          ],
+          "Rotation": [
+            -0.025,
+            0.096,
+            0.255,
+            0.962
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 50,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamCampfire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            1425.788,
+            1809.538,
+            190
+          ],
+          "Rotation": [
+            -0.028,
+            0.024,
+            0.755,
+            0.655
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 45,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamMaterials",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -574.667,
+            2035.352,
+            260
+          ],
+          "Rotation": [
+            -0.059,
+            0.011,
+            0.981,
+            0.185
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 55,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamLights",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -200,
+            -1500,
+            1300
+          ],
+          "Rotation": [
+            -0.19,
+            0.217,
+            0.631,
+            0.721
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60,
+          "NearZ": 10,
+          "FarZ": 200000,
+          "Primary": false,
+          "Priority": 0
+        }
+      },
+      "Name": "CamPlaza",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

@@ -1,0 +1,26 @@
+{
+  "Name": "ShowcaseBeacon",
+  "BaseColorFactor": [
+    0.02,
+    0.05,
+    0.08,
+    1
+  ],
+  "EmissiveFactor": [
+    0.6,
+    3.5,
+    7
+  ],
+  "Metallic": 0,
+  "Roughness": 0.3,
+  "NormalScale": 1,
+  "OcclusionStrength": 1,
+  "BlendMode": "Opaque",
+  "AlphaCutoff": 0.5,
+  "TwoSided": false,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

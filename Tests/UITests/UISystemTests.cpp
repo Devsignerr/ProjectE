@@ -131,6 +131,37 @@ E_TEST(UISystem_CopyDoesNotShareRuntimeAndAssetReloads)
 	E_EXPECT_TRUE(FUISystem::EnsureInstance(Missing, GetContent()) == nullptr);
 }
 
+E_TEST(UISystem_AnimationTicksWithoutInput)
+{
+	// 입력을 받지 않는 UI(HUD)도 UI 애니메이션이 진행되고 끝 이벤트가 난다
+	FUIAsset Asset;
+	Asset.DesignSize   = FVector2(1000.0f, 500.0f);
+	Asset.ScaleMode    = EUIScaleMode::None;
+	FUIWidget* Panel   = Asset.Root->AddChild(FUIWidget::Create(EUIWidgetType::Border));
+	Panel->Name        = "Panel";
+	FUIAnimation& Fade = Asset.Animations.emplace_back();
+	Fade.Name          = "FadeIn";
+	Fade.Length        = 0.5f;
+	Fade.GetOrAddTrack("Panel", EUIAnimProperty::Opacity).Keys = { { 0.0f, 0.0f }, { 0.5f, 1.0f } };
+	E_EXPECT_TRUE(Asset.SaveToFile(GetContent() / L"UI/Hud.eui"));
+
+	FScene        Scene;
+	const FEntity Entity     = Scene.CreateEntity("Hud");
+	FUIComponent& Component  = Scene.GetRegistry().Emplace<FUIComponent>(Entity);
+	Component.Asset          = "UI/Hud.eui";
+	Component.bReceiveInput  = false;
+	FUIInstance* Instance    = FUISystem::EnsureInstance(Component, GetContent());
+	E_EXPECT_TRUE(Instance != nullptr && Instance->PlayAnimation("FadeIn"));
+	FUIFrameInput Input      = MakeInput(0.0f, 0.0f);
+	Input.DeltaSeconds       = 0.25f;
+	FUISystem::Update(Scene, Input, GetContent());
+	const FUIWidget* Widget  = Instance->FindWidget("Panel");
+	E_EXPECT_TRUE(Widget != nullptr && Widget->RenderOpacity > 0.4f && Widget->RenderOpacity < 0.6f);
+	FUISystem::Update(Scene, Input, GetContent());
+	E_EXPECT_NEAR(Widget->RenderOpacity, 1.0f, 1.0e-4f);
+	E_EXPECT_TRUE(HasEvent(Scene.GetRegistry().Get<FUIComponent>(Entity), EUIEventType::AnimationFinished, "FadeIn"));
+}
+
 E_TEST(UISystem_InputWithoutMouseButtons)
 {
 	FInput       Input;

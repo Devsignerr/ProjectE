@@ -1,0 +1,607 @@
+{
+  "Version": 1,
+  "Duration": 63,
+  "FrameRate": 30,
+  "Tracks": [
+    {
+      "Type": "CameraCut",
+      "Keys": [
+        {
+          "Time": 0,
+          "Camera": "CamIntro"
+        },
+        {
+          "Time": 9,
+          "Camera": "CamCharacter"
+        },
+        {
+          "Time": 17,
+          "Camera": "CamAI"
+        },
+        {
+          "Time": 24,
+          "Camera": "CamPhysics"
+        },
+        {
+          "Time": 32,
+          "Camera": "CamCampfire"
+        },
+        {
+          "Time": 39,
+          "Camera": "CamMaterials"
+        },
+        {
+          "Time": 47,
+          "Camera": "CamLights"
+        },
+        {
+          "Time": 55,
+          "Camera": "CamPlaza"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamIntro",
+      "Keys": [
+        {
+          "Time": 0,
+          "Position": [
+            -5200,
+            -4300,
+            2300
+          ],
+          "Rotation": [
+            -16.51,
+            39.588,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 9,
+          "Position": [
+            -3300,
+            -2400,
+            900
+          ],
+          "Rotation": [
+            -8.934,
+            33.024,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamIntro 시야각",
+      "Target": "CamIntro",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 0,
+          "Value": [
+            55,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 9,
+          "Value": [
+            50,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamCharacter",
+      "Keys": [
+        {
+          "Time": 9,
+          "Position": [
+            -2080,
+            -320,
+            230
+          ],
+          "Rotation": [
+            -18.26,
+            159.677,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 17,
+          "Position": [
+            -2140,
+            300,
+            190
+          ],
+          "Rotation": [
+            -17.633,
+            177.397,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamCharacter 시야각",
+      "Target": "CamCharacter",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 9,
+          "Value": [
+            50,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 17,
+          "Value": [
+            45,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamAI",
+      "Keys": [
+        {
+          "Time": 17,
+          "Position": [
+            -1159.808,
+            -1408.846,
+            520
+          ],
+          "Rotation": [
+            -28.728,
+            -101.565,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 24,
+          "Position": [
+            -646.891,
+            -1820.448,
+            420
+          ],
+          "Rotation": [
+            -26.177,
+            -140.556,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamPhysics",
+      "Keys": [
+        {
+          "Time": 24,
+          "Position": [
+            692.872,
+            -1840.089,
+            300
+          ],
+          "Rotation": [
+            -14.608,
+            -25.62,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 32,
+          "Position": [
+            1074.641,
+            -1781.333,
+            260
+          ],
+          "Rotation": [
+            -10.291,
+            -62.974,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamPhysics 시야각",
+      "Target": "CamPhysics",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 24,
+          "Value": [
+            55,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 32,
+          "Value": [
+            50,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamCampfire",
+      "Keys": [
+        {
+          "Time": 32,
+          "Position": [
+            2140,
+            -320,
+            180
+          ],
+          "Rotation": [
+            -11.396,
+            29.745,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 39,
+          "Position": [
+            2260,
+            260,
+            150
+          ],
+          "Rotation": [
+            -9.987,
+            -30.579,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamCampfire 시야각",
+      "Target": "CamCampfire",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 32,
+          "Value": [
+            50,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 39,
+          "Value": [
+            45,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamMaterials",
+      "Keys": [
+        {
+          "Time": 39,
+          "Position": [
+            1425.788,
+            1809.538,
+            190
+          ],
+          "Rotation": [
+            -4.283,
+            98.157,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 47,
+          "Position": [
+            880.192,
+            2124.538,
+            170
+          ],
+          "Rotation": [
+            -2.219,
+            24.462,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamMaterials 시야각",
+      "Target": "CamMaterials",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 39,
+          "Value": [
+            45,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 47,
+          "Value": [
+            38,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamLights",
+      "Keys": [
+        {
+          "Time": 47,
+          "Position": [
+            -574.667,
+            2035.352,
+            260
+          ],
+          "Rotation": [
+            -6.85,
+            158.66,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 55,
+          "Position": [
+            -1453.731,
+            1677.935,
+            240
+          ],
+          "Rotation": [
+            -7.95,
+            84.09,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Transform",
+      "Target": "CamPlaza",
+      "Keys": [
+        {
+          "Time": 55,
+          "Position": [
+            -200,
+            -1500,
+            1300
+          ],
+          "Rotation": [
+            -33.457,
+            82.405,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 63,
+          "Position": [
+            -1357.083,
+            0,
+            336.968
+          ],
+          "Rotation": [
+            -20.002,
+            0,
+            0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Property",
+      "Name": "CamPlaza 시야각",
+      "Target": "CamPlaza",
+      "Component": "CameraComponent",
+      "Property": "FovYDegrees",
+      "Keys": [
+        {
+          "Time": 55,
+          "Value": [
+            60,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        },
+        {
+          "Time": 63,
+          "Value": [
+            70,
+            0,
+            0,
+            0
+          ],
+          "Interp": "Smooth"
+        }
+      ]
+    },
+    {
+      "Type": "Event",
+      "Keys": [
+        {
+          "Time": 0.01,
+          "Name": "Zone_Intro"
+        },
+        {
+          "Time": 9.01,
+          "Name": "Zone_Character"
+        },
+        {
+          "Time": 17.01,
+          "Name": "Zone_AI"
+        },
+        {
+          "Time": 24.01,
+          "Name": "Zone_Physics"
+        },
+        {
+          "Time": 32.01,
+          "Name": "Zone_Campfire"
+        },
+        {
+          "Time": 39.01,
+          "Name": "Zone_Materials"
+        },
+        {
+          "Time": 47.01,
+          "Name": "Zone_Lights"
+        },
+        {
+          "Time": 55.01,
+          "Name": "Zone_Plaza"
+        }
+      ]
+    }
+  ]
+}

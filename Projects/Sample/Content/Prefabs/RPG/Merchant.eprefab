@@ -1,0 +1,77 @@
+{
+  "Entities": [
+    {
+      "Name": "Merchant",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/Merchant.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Characters/Barbarian.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.25,
+          "Clip": "Idle",
+          "Loop": true,
+          "Playing": true,
+          "RootMotion": false,
+          "Speed": 1.0
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      }
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

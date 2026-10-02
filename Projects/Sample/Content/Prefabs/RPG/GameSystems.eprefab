@@ -1,0 +1,155 @@
+{
+  "Entities": [
+    {
+      "Name": "GameManager",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/GameManager.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "HUD",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "UIComponent": {
+          "Asset": "UI/RPG/HUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/HUDController.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "InventoryUI",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "UIComponent": {
+          "Asset": "UI/RPG/Inventory.eui",
+          "ZOrder": 10,
+          "Visible": false,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/InventoryController.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        }
+      }
+    },
+    {
+      "Name": "ShopUI",
+      "Parent": 0,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "UIComponent": {
+          "Asset": "UI/RPG/Shop.eui",
+          "ZOrder": 20,
+          "Visible": false,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/RPG/ShopController.lua",
+          "PropertyOverrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "4",
+          "Root": -1
+        }
+      }
+    }
+  ],
+  "NextId": 5,
+  "Version": 1
+}

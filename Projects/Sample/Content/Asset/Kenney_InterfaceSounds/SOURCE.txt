@@ -1,0 +1,5 @@
+Kenney - Interface Sounds (CC0, see License.txt)
+Source: https://kenney.nl/assets/interface-sounds
+Converted from .ogg to 16-bit PCM .wav (the engine audio does not decode Ogg Vorbis) and renamed:
+  click_002 -> click, open_001 -> open, close_001 -> close, error_004 -> error,
+  select_001 -> pickup_item, glass_002 -> potion, confirmation_001 -> confirm

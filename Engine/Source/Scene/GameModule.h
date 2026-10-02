@@ -67,7 +67,7 @@ private:
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 9; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의)
+inline constexpr uint32 GameModuleApiVersion = 9; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

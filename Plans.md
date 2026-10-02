@@ -727,7 +727,9 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 **DoD**: 애니메이션 그래프에 2D 블렌드 스페이스 상태, 본 마스크로 부분만 섞는 레이어(예: 상체 따로), 그래프와 별개로 한 번 재생하는 몽타주(슬롯·블렌드 인/아웃·Lua `PlayMontage` 류, 로컬 전용)가 있고 그래프 편집기에서 편집된다. 2본 IK(발 바닥 맞춤 — 탐색은 World, 시선 Look-At)가 래그돌(`bPhysicsPose`) 중에는 꺼진다. `.eanimgraph` 형식이 바뀌면 버전을 올리고 이전 파일을 읽는다. `Scene/AnimGraph.h` 머리 주석(노티파이 판정 포함)과 `AnimGraphTests`를 함께 갱신. 화면 확인 + 디버그 레이어 0건.
 
-- [ ] 42-1. 2D 블렌드 스페이스 (순수 식 + 테스트)
-- [ ] 42-2. 레이어 블렌드 / 본 마스크
-- [ ] 42-3. 몽타주 (슬롯, Lua)
-- [ ] 42-4. 2본 IK(발) + Look-At
+- [x] 42-1. 2D 블렌드 스페이스 (순수 식 + 테스트) — 상태 `BlendParameterY` + 샘플 `PositionY`, 그래디언트 밴드 `AnimGraphMath::ComputeBlendSpace2DWeights`, 편집기 점 배치
+- [x] 42-2. 레이어 블렌드 / 본 마스크 — `FAnimStateMachine`(에셋 = 기본 레이어) + `Layers`(마스크, `Weight × WeightParameter`), `FAnimBoneMask{Bone, Weight, BlendDepth}`, 로컬 공간 `BlendMasked`, 노티파이 진행 `FAnimNotifyTrack`
+- [x] 42-3. 몽타주 (슬롯, Lua) — `Scene/AnimMontage.h`, 슬롯 = `.eanimgraph` `Slots`, `FAnimationSystem::PlayMontage/StopMontage/IsMontagePlaying`, Lua `entity:PlayMontage/StopMontage/IsMontagePlaying` + `OnMontageEnded(clip, interrupted, slot)`, 로컬 전용
+- [x] 42-4. 2본 IK(발) + Look-At — `Scene/AnimIK.h`, `FFootIkComponent`/`FLookAtComponent`, 바닥 탐색 `FGameWorld::UpdateFootIkProbes`(기존 Raycast, 한 프레임 늦음), Lua `SetLookAtTarget/ClearLookAtTarget`, `Demo_AnimAdvanced` (2026-10-02 master 머지: `.eanimgraph` v3, 새 테스트 12개, 11개 테스트 묶음 통과, 런타임/에디터 플레이 화면·디버그 레이어 0건, `GameModuleApiVersion` 9 유지 — A의 9에 함께 포함, 미배포)
+- [ ] 실행 검증 (사용자): Demo_AnimAdvanced 직접 플레이(E 키 몽타주, 계단/경사 발 IK, 공을 따라가는 시선), 그래프 편집기 2D 점 끌기·레이어·마스크·슬롯 편집 손맛
+- 후속: Fox에 방향 전환 클립이 없어 2D Direction 축은 보폭 속도만 바뀜(연출용 아님), 몽타주 이름 섹션/섹션 점프 없음, 게임 모듈 몽타주 끝 콜백 없음(`IsMontagePlaying` 폴링), 골반은 내리기만, IK 균등 스케일 가정, 발 탐색 한 프레임 늦음

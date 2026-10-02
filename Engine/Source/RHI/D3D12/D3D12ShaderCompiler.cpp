@@ -119,8 +119,21 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 	const std::filesystem::path FullPath  = ShaderDir / Desc.FileName;
 	const std::string           DisplayName = FStringConv::ToUtf8(Desc.FileName) + ":" + FStringConv::ToUtf8(Desc.EntryPoint);
 
+	// 진입 파일도 가상 파일일 수 있다 (생성 소스 — 포함 경로는 엔진 셰이더 폴더)
+	const FShaderVirtualFile* VirtualSource = nullptr;
+	for (const FShaderVirtualFile& File : Desc.VirtualFiles)
+	{
+		VirtualSource = _wcsicmp(File.Name.c_str(), Desc.FileName.c_str()) == 0 ? &File : VirtualSource;
+	}
 	ComPtr<IDxcBlobEncoding> Source;
-	if (FAILED(Utils->LoadFile(FullPath.c_str(), nullptr, &Source)))
+	if (VirtualSource != nullptr)
+	{
+		if (FAILED(Utils->CreateBlob(VirtualSource->Content.data(), static_cast<UINT32>(VirtualSource->Content.size()), DXC_CP_UTF8, &Source)))
+		{
+			return nullptr;
+		}
+	}
+	else if (FAILED(Utils->LoadFile(FullPath.c_str(), nullptr, &Source)))
 	{
 		E_LOG(LogD3D12, Error, "셰이더 파일을 열 수 없습니다: {}", FStringConv::ToUtf8(FullPath.wstring()));
 		return nullptr;

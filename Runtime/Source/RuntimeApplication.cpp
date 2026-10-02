@@ -16,6 +16,7 @@
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Renderer/UpscaleMath.h"
 #include "UI/UIDebugDraw.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
@@ -128,6 +129,23 @@ bool FRuntimeApplication::OnInit()
 	if (!SceneRenderer.Init(*Rhi, Resources))
 	{
 		return false;
+	}
+	// TAAU/동적 해상도 (Phase 48): 사용자 설정 → 콘솔 변수. 명령줄(--screen-percentage, --dynamic-resolution, --cvar)로 정한 값은 그대로
+	SceneRenderer.bAllowScreenPercentage = true;
+	{
+		FConsoleManager& Cvars = FConsoleManager::Get();
+		if (FConsoleVariable* Var = Cvars.FindVariable("r.ScreenPercentage"); Var != nullptr && Var->IsDefault())
+		{
+			Var->SetFloat(FUpscaleMath::GetPresetScreenPercentage(static_cast<int32>(UserSettings.ResolutionQuality)));
+		}
+		if (FConsoleVariable* Var = Cvars.FindVariable("r.DynamicResolution"); Var != nullptr && Var->IsDefault())
+		{
+			Var->SetBool(UserSettings.bDynamicResolution);
+		}
+		if (FConsoleVariable* Var = Cvars.FindVariable("r.DynamicResolution.TargetMs"); Var != nullptr && Var->IsDefault())
+		{
+			Var->SetFloat(UserSettings.DynamicResolutionTargetMs);
+		}
 	}
 
 	RegisterAudioTypes(); // 씬 로드 전에
@@ -345,9 +363,8 @@ void FRuntimeApplication::OnRender()
 	{
 		// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만)
 		const FRenderOutput       Back       = Rhi->GetBackBufferOutput();
-		const FD3D12RenderTarget* SceneColor = SceneRenderer.GetSceneColor();
-		const bool bDepth = SceneColor != nullptr && SceneColor->GetDesc().bWithDepth && SceneColor->GetWidth() == Back.Width && SceneColor->GetHeight() == Back.Height;
-		DebugDrawRenderer.Render(FDebugDraw::Get(), Camera, Back, bDepth ? SceneColor->GetDsv() : D3D12_CPU_DESCRIPTOR_HANDLE{});
+		DebugDrawRenderer.Render(FDebugDraw::Get(), Camera, Back, SceneRenderer.GetOverlayDepthDsv(Back.Width, Back.Height)); // TAAU면 출력 해상도로 옮긴 깊이
+
 	}
 	UIDrawList.Clear();
 	FUISystem::Paint(Scene, UIDrawList);

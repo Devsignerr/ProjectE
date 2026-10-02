@@ -2,12 +2,13 @@
 
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/ScreenPass.h"
+#include "Renderer/UpscaleMath.h"
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
 namespace
 {
-	// TemporalAA.hlsl TaaConstants와 1:1
+	// TemporalAA.hlsl TaaConstants와 1:1 (앞 88바이트는 Phase 33 그대로 — PSResolve 결과 불변)
 	struct alignas(16) FTaaConstants
 	{
 		FMatrix4x4 Reprojection;
@@ -16,9 +17,13 @@ namespace
 		uint32     bHistoryValid  = 0;
 		float      ReactiveWeight = 0.6f;
 		float      VarianceGamma  = 1.25f;
-		float      Padding[2]     = {};
+		FVector2   InputSize;
+		FVector2   InputTexelSize;
+		FVector2   JitterUv;
+		float      UpsampleScale = 1.0f;
+		float      Padding[3]    = {};
 	};
-	static_assert(sizeof(FTaaConstants) == 96);
+	static_assert(sizeof(FTaaConstants) == 128);
 
 	constexpr DXGI_FORMAT HistoryFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
 } // namespace
@@ -33,7 +38,7 @@ bool FTemporalAA::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, const FScree
 	Rhi     = &InRhi;
 	Library = &InLibrary;
 	Root    = &InRoot;
-	return CreatePipeline(Pipeline, false);
+	return CreatePipelines(Pipeline, UpsamplePipeline, DepthPipeline, false);
 }
 
 void FTemporalAA::Shutdown()
@@ -42,27 +47,41 @@ void FTemporalAA::Shutdown()
 	{
 		Target.reset();
 	}
+	OverlayDepth.reset();
 	Pipeline.Shutdown();
+	UpsamplePipeline.Shutdown();
+	DepthPipeline.Shutdown();
 	bHasHistory = false;
 	Rhi         = nullptr;
 }
 
-bool FTemporalAA::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
+bool FTemporalAA::CreatePipelines(FD3D12PipelineState& OutResolve, FD3D12PipelineState& OutUpsample, FD3D12PipelineState& OutDepth, bool bForceRecompile)
 {
-	return Root->CreateGraphicsPipeline(OutPipeline, Rhi->GetDevice().GetDevice(), *Library, L"TemporalAA.hlsl", L"PSResolve", { HistoryFormat },
-	                                    EBlendMode::Opaque, bForceRecompile, L"TemporalAAPipeline");
+	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
+	return Root->CreateGraphicsPipeline(OutResolve, Device, *Library, L"TemporalAA.hlsl", L"PSResolve", { HistoryFormat }, EBlendMode::Opaque,
+	                                    bForceRecompile, L"TemporalAAPipeline") &&
+	       Root->CreateGraphicsPipeline(OutUpsample, Device, *Library, L"TemporalAA.hlsl", L"PSResolveUpsample", { HistoryFormat }, EBlendMode::Opaque,
+	                                    bForceRecompile, L"TemporalUpsamplePipeline") &&
+	       Root->CreateDepthOutputPipeline(OutDepth, Device, *Library, L"TemporalAA.hlsl", L"PSUpscaleDepth", FD3D12RHI::DepthBufferFormat, bForceRecompile,
+	                                       L"UpscaleDepthPipeline");
 }
 
 bool FTemporalAA::ReloadShaders(bool bForceRecompile)
 {
-	FD3D12PipelineState NewPipeline;
-	if (!CreatePipeline(NewPipeline, bForceRecompile))
+	FD3D12PipelineState NewResolve;
+	FD3D12PipelineState NewUpsample;
+	FD3D12PipelineState NewDepth;
+	if (!CreatePipelines(NewResolve, NewUpsample, NewDepth, bForceRecompile))
 	{
 		E_LOG(LogRenderer, Error, "TAA 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
 	}
-	Pipeline.Swap(NewPipeline);
-	Rhi->DeferRelease(NewPipeline.Detach());
+	Pipeline.Swap(NewResolve);
+	UpsamplePipeline.Swap(NewUpsample);
+	DepthPipeline.Swap(NewDepth);
+	Rhi->DeferRelease(NewResolve.Detach());
+	Rhi->DeferRelease(NewUpsample.Detach());
+	Rhi->DeferRelease(NewDepth.Detach());
 	return true;
 }
 
@@ -92,8 +111,11 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
                                                FRGResourceRef& OutResult)
 {
 	E_CHECKF(Inputs.SceneColor != nullptr && Inputs.Velocity != nullptr && Inputs.SceneColor->GetDesc().bWithDepth, "TAA 입력이 올바르지 않습니다");
-	const uint32 Width  = Inputs.SceneColor->GetWidth();
-	const uint32 Height = Inputs.SceneColor->GetHeight();
+	const uint32 InputWidth  = Inputs.SceneColor->GetWidth();
+	const uint32 InputHeight = Inputs.SceneColor->GetHeight();
+	const uint32 Width       = Inputs.OutputWidth > 0 ? Inputs.OutputWidth : InputWidth;
+	const uint32 Height      = Inputs.OutputHeight > 0 ? Inputs.OutputHeight : InputHeight;
+	const bool   bUpsample   = Width != InputWidth || Height != InputHeight;
 	EnsureTargets(Width, Height);
 
 	FD3D12RenderTarget& Read  = *HistoryTargets[WriteIndex ^ 1];
@@ -106,6 +128,13 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	Constants.bHistoryValid  = (Inputs.bHistoryValid && bHasHistory) ? 1u : 0u;
 	Constants.ReactiveWeight = FMath::Clamp(Inputs.ReactiveWeight, Constants.CurrentWeight, 1.0f);
 	Constants.VarianceGamma  = FMath::Max(Inputs.VarianceGamma, 0.1f);
+	if (bUpsample)
+	{
+		Constants.InputSize      = FVector2(static_cast<float>(InputWidth), static_cast<float>(InputHeight));
+		Constants.InputTexelSize = FVector2(1.0f / Constants.InputSize.X, 1.0f / Constants.InputSize.Y);
+		Constants.JitterUv       = FUpscaleMath::JitterNdcToUv(Inputs.JitterNdc);
+		Constants.UpsampleScale  = static_cast<float>(Height) / static_cast<float>(InputHeight);
+	}
 	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
 	const FRGResourceRef ReadRef  = Graph.ImportColor("TaaHistoryRead", Read);
@@ -114,20 +143,59 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	const FD3D12DescriptorHandle VelocitySrv = Inputs.Velocity->GetSrv();
 	const FD3D12DescriptorHandle DepthSrv    = Inputs.SceneColor->GetDepthSrv();
 	const FD3D12DescriptorHandle HistorySrv  = Read.GetSrv();
-	Graph.AddPass("TAA")
+	const FD3D12PipelineState*   UsedPipeline = bUpsample ? &UpsamplePipeline : &Pipeline;
+	Graph.AddPass(bUpsample ? "TAAU" : "TAA")
 		.Read(Refs.SceneColor, ERGAccess::SrvPixel)
 		.Read(Refs.Velocity, ERGAccess::SrvPixel)
 		.Read(Refs.SceneDepth, ERGAccess::SrvPixel)
 		.Read(ReadRef, ERGAccess::SrvPixel)
 		.Write(WriteRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true) // 전체를 덮어쓴다
 		.Timer(Timer)
-		.Execute([this, &Write, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, Width, Height](FRGContext& Context) {
+		.Execute([this, &Write, UsedPipeline, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, Width, Height](FRGContext& Context) {
 			Write.Bind(Context.CommandList, nullptr);
-			DrawScreenPass(Context.CommandList, *Root, Pipeline, ConstantsAddress, { SceneSrv, HistorySrv, VelocitySrv, DepthSrv }, Width, Height);
+			DrawScreenPass(Context.CommandList, *Root, *UsedPipeline, ConstantsAddress, { SceneSrv, HistorySrv, VelocitySrv, DepthSrv }, Width, Height);
 		});
 
 	bHasHistory = true;
 	WriteIndex ^= 1;
 	OutResult = WriteRef;
 	return Write;
+}
+
+void FTemporalAA::AddOverlayDepthPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneDepth, const FVector2& JitterNdc,
+                                      uint32 OutputWidth, uint32 OutputHeight, int32 Timer)
+{
+	if (!OverlayDepth || OverlayDepth->GetWidth() != OutputWidth || OverlayDepth->GetHeight() != OutputHeight)
+	{
+		if (OverlayDepth)
+		{
+			OverlayDepth->ShutdownDeferred(*Rhi);
+		}
+		OverlayDepth = std::make_unique<FD3D12RenderTarget>();
+		if (!OverlayDepth->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), OutputWidth, OutputHeight, L"UpscaledOverlayDepth",
+		                        FRenderTargetDesc::MakeMask(true)))
+		{
+			E_LOG(LogRenderer, Fatal, "오버레이 깊이 버퍼 생성 실패 ({}x{})", OutputWidth, OutputHeight);
+		}
+	}
+
+	FTaaConstants Constants;
+	Constants.InputSize      = FVector2(static_cast<float>(SceneColor.GetWidth()), static_cast<float>(SceneColor.GetHeight()));
+	Constants.InputTexelSize = FVector2(1.0f / Constants.InputSize.X, 1.0f / Constants.InputSize.Y);
+	Constants.JitterUv       = FUpscaleMath::JitterNdcToUv(JitterNdc);
+	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
+
+	const FRGResourceRef         OverlayRef = Graph.ImportDepth("OverlayDepth", *OverlayDepth);
+	const FD3D12DescriptorHandle DepthSrv   = SceneColor.GetDepthSrv();
+	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv   = OverlayDepth->GetDsv();
+	Graph.AddPass("오버레이 깊이 업스케일")
+		.Read(SceneDepth, ERGAccess::SrvPixel)
+		.Write(OverlayRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.NeverCull() // 그래프 밖(에디터 오버레이·디버그 선)이 읽는다
+		.Execute([this, ConstantsAddress, DepthSrv, Dsv, OutputWidth, OutputHeight](FRGContext& Context) {
+			Context.CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
+			DrawScreenPass(Context.CommandList, *Root, DepthPipeline, ConstantsAddress, { FD3D12DescriptorHandle{}, FD3D12DescriptorHandle{},
+			                                                                              FD3D12DescriptorHandle{}, DepthSrv }, OutputWidth, OutputHeight);
+		});
 }

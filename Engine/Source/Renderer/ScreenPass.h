@@ -36,6 +36,9 @@ public:
 	bool CreateGraphicsPipeline(FD3D12PipelineState& OutPipeline, ID3D12Device* Device, FShaderLibrary& Library, const wchar_t* File,
 	                            const wchar_t* PixelEntry, std::initializer_list<DXGI_FORMAT> Formats, EBlendMode BlendMode,
 	                            bool bForceRecompile, const wchar_t* DebugName) const;
+	// 전체 화면 깊이 출력 PSO (VSMain + PixelEntry가 SV_Depth를 쓴다): 렌더 타깃 없음, 깊이 항상 통과 + 쓰기
+	bool CreateDepthOutputPipeline(FD3D12PipelineState& OutPipeline, ID3D12Device* Device, FShaderLibrary& Library, const wchar_t* File,
+	                               const wchar_t* PixelEntry, DXGI_FORMAT DepthFormat, bool bForceRecompile, const wchar_t* DebugName) const;
 	bool CreateComputePipeline(FD3D12PipelineState& OutPipeline, ID3D12Device* Device, FShaderLibrary& Library, const wchar_t* File,
 	                           const wchar_t* Entry, bool bForceRecompile, const wchar_t* DebugName) const;
 

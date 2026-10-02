@@ -29,6 +29,13 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncCompute;  // r.RenderGraph.AsyncCompute  (계산 큐 패스를 비동기 계산 큐에서, --no-async-compute)
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncFog;      // r.RenderGraph.AsyncFog      (볼류메트릭 안개 주입/적분을 계산 큐 후보로)
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncParticles; // r.RenderGraph.AsyncParticles (GPU 파티클 계산을 계산 큐 후보로)
+	// TAAU / 동적 해상도 (Phase 48) — 화면 비율을 쓰는 렌더러(FSceneRenderer::bAllowScreenPercentage)만
+	extern TAutoConsoleVariable<float> ScreenPercentage;        // r.ScreenPercentage          (--screen-percentage N)
+	extern TAutoConsoleVariable<float> UpscaleMipBiasOffset;    // r.Upscale.MipBiasOffset
+	extern TAutoConsoleVariable<bool>  DynamicResolution;       // r.DynamicResolution         (--dynamic-resolution)
+	extern TAutoConsoleVariable<float> DynamicResolutionTargetMs; // r.DynamicResolution.TargetMs (--dynamic-resolution-target ms)
+	extern TAutoConsoleVariable<float> DynamicResolutionMin;    // r.DynamicResolution.MinPercentage
+	extern TAutoConsoleVariable<float> DynamicResolutionMax;    // r.DynamicResolution.MaxPercentage
 	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
 	uint32 GetRenderGraphDumpSerial();
 } // namespace RendererCVars

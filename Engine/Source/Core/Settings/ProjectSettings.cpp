@@ -80,7 +80,14 @@ FProjectSettings::FProjectSettings()
 		.Property(&FGameUserSettings::WindowMode, "WindowMode", "창 모드").Enum({ { "Windowed", "창 모드" }, { "BorderlessFullscreen", "테두리 없는 전체 화면" } })
 		.Property(&FGameUserSettings::WindowWidth, "WindowWidth", "창 너비").Range(320.0f, 7680.0f)
 		.Property(&FGameUserSettings::WindowHeight, "WindowHeight", "창 높이").Range(240.0f, 7680.0f)
-		.Property(&FGameUserSettings::bVSync, "VSync", "수직 동기화");
+		.Property(&FGameUserSettings::bVSync, "VSync", "수직 동기화")
+		.Property(&FGameUserSettings::ResolutionQuality, "ResolutionQuality", "해상도 품질")
+		.Enum({ { "Native", "네이티브 (100%)" }, { "Quality", "품질 (77%)" }, { "Balanced", "균형 (67%)" }, { "Performance", "성능 (50%)" } })
+		.Tooltip("씬을 화면 × 비율 해상도로 그리고 TAA 단계에서 화면 해상도로 시간 업샘플(TAAU). 픽셀 아트 씬에는 적용 안 됨")
+		.Property(&FGameUserSettings::bDynamicResolution, "DynamicResolution", "동적 해상도")
+		.Tooltip("GPU 씬 렌더 시간이 목표에 맞도록 화면 비율을 50~100% 사이에서 자동 조절 (해상도 품질 대신)")
+		.Property(&FGameUserSettings::DynamicResolutionTargetMs, "DynamicResolutionTargetMs", "동적 해상도 목표 GPU ms")
+		.Range(1.0f, 100.0f);
 
 	// 액션 목록은 리플렉션 값 타입이 아니므로 사용자 정의 JSON 섹션 (설정 창은 전용 편집 UI — Editor/Panels/InputSettingsEditor)
 	Registry.RegisterCustom(

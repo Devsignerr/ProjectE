@@ -48,12 +48,16 @@ cbuffer PerFrame : register(b1)
 	uint              SsrEnabled;             // 1 = t22 사용
 	float             SsrMaxRoughness;
 	float             SsrIntensity;
+	float             MaterialMipBias; // 머티리얼/지형 텍스처 밉 바이어스 (TAAU: log2(내부/출력), 네이티브 0)
+	float3            PerFramePadding;
 };
 
 SamplerState LinearSampler : register(s0); // 이방성 반복 (머티리얼 E_MATERIAL_SAMPLER_WRAP)
 SamplerState IblSampler    : register(s1); // 선형 클램프 (IBL, 머티리얼 E_MATERIAL_SAMPLER_CLAMP)
 
 // 머티리얼 평가 (MaterialCommon.hlsli EvaluateMaterial): 고정 PBR(b2 Material + t0~t4) 또는 그래프 생성 코드(b2 + 공간 2 t0~)
+// 래스터 메시 패스는 TAAU 밉 바이어스(PerFrame MaterialMipBias, 네이티브 0)를 모든 머티리얼 텍스처 샘플에 건다 → MATERIAL_SAMPLE = SampleBias
+#define E_MATERIAL_MIP_BIAS MaterialMipBias
 #include "MaterialCommon.hlsli"
 #ifdef E_MATERIAL_GRAPH
 #include "MaterialGraph.generated.hlsli"

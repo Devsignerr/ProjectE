@@ -1,5 +1,6 @@
 #include "Scripting/LuaRuntime.h"
 
+#include "Core/Console/Console.h"
 #include "Core/InputMode.h"
 #include "Core/Log.h"
 #include "Core/Settings/ProjectSettings.h"
@@ -14,6 +15,8 @@ E_DECLARE_LOG_CATEGORY(LogScript)
 //   Game.Quit()                          -- 런타임: 이번 프레임 끝에 종료 / 에디터: 플레이 정지
 //   Game.GetWindowMode() / Game.SetWindowMode("Windowed" | "BorderlessFullscreen")
 //   Game.IsVSync() / Game.SetVSync(true)
+//   Game.GetResolutionScale() / Game.SetResolutionScale(0.67)  -- TAAU 화면 비율 (콘솔 변수 r.ScreenPercentage / 100, 0.25~1, 저장하지 않음).
+//       Game.IsDynamicResolution() / Game.SetDynamicResolution(true)  -- r.DynamicResolution
 //   Game.SetMouseLocked(true) / Game.IsMouseLocked()  -- FPS 시점: 커서 숨김 + 창에 가둠 (에디터는 뷰포트에 빙의 중일 때만, 뷰포트 안에 가둠)
 //   Game.SetInputMode("GameOnly" | "GameAndUI" | "UIOnly") / Game.GetInputMode()  -- 입력 모드 (Core/InputMode.h).
 //       GameOnly = 게임만 입력(UI는 그리기만, 커서 잠금), GameAndUI = 기본(UI 먼저), UIOnly = UI만(게임은 빈 입력).
@@ -66,6 +69,27 @@ void FLuaRuntime::RegisterGameBindings()
 		}
 	};
 
+	// TAAU / 동적 해상도 (Phase 48): 렌더러 콘솔 변수를 직접 (Scripting → Renderer 비의존 — 변수가 없으면 기본값)
+	GameTable["GetResolutionScale"] = []() {
+		const FConsoleVariable* Var = FConsoleManager::Get().FindVariable("r.ScreenPercentage");
+		return Var != nullptr ? Var->GetFloat() / 100.0f : 1.0f;
+	};
+	GameTable["SetResolutionScale"] = [](float Scale) {
+		if (FConsoleVariable* Var = FConsoleManager::Get().FindVariable("r.ScreenPercentage"))
+		{
+			Var->SetFloat(Scale * 100.0f); // 범위(25~100%)는 변수가 자른다
+		}
+	};
+	GameTable["IsDynamicResolution"] = []() {
+		const FConsoleVariable* Var = FConsoleManager::Get().FindVariable("r.DynamicResolution");
+		return Var != nullptr && Var->GetBool();
+	};
+	GameTable["SetDynamicResolution"] = [](bool bEnabled) {
+		if (FConsoleVariable* Var = FConsoleManager::Get().FindVariable("r.DynamicResolution"))
+		{
+			Var->SetBool(bEnabled);
+		}
+	};
 	GameTable["SetMouseLocked"] = [this](bool bLocked) {
 		if (AppHooks != nullptr && AppHooks->SetMouseLocked)
 		{

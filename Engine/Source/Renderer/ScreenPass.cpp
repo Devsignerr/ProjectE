@@ -77,6 +77,29 @@ bool FScreenPassRootSignature::CreateGraphicsPipeline(FD3D12PipelineState& OutPi
 	return OutPipeline.InitGraphics(Device, Desc, DebugName);
 }
 
+bool FScreenPassRootSignature::CreateDepthOutputPipeline(FD3D12PipelineState& OutPipeline, ID3D12Device* Device, FShaderLibrary& Library,
+                                                         const wchar_t* File, const wchar_t* PixelEntry, DXGI_FORMAT DepthFormat, bool bForceRecompile,
+                                                         const wchar_t* DebugName) const
+{
+	const ComPtr<IDxcBlob> VertexShader = LoadScreenShader(Library, File, L"VSMain", EShaderStage::Vertex, bForceRecompile);
+	const ComPtr<IDxcBlob> PixelShader  = LoadScreenShader(Library, File, PixelEntry, EShaderStage::Pixel, bForceRecompile);
+	if (!VertexShader || !PixelShader)
+	{
+		return false;
+	}
+	FGraphicsPipelineDesc Desc;
+	Desc.RootSignature      = RootSignature.Get();
+	Desc.VertexShader       = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
+	Desc.PixelShader        = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
+	Desc.CullMode           = D3D12_CULL_MODE_NONE;
+	Desc.NumRenderTargets   = 0;
+	Desc.DepthStencilFormat = DepthFormat;
+	Desc.bDepthEnable       = true;
+	Desc.bDepthWrite        = true;
+	Desc.DepthFunc          = D3D12_COMPARISON_FUNC_ALWAYS; // SV_Depth를 그대로 쓴다
+	return OutPipeline.InitGraphics(Device, Desc, DebugName);
+}
+
 bool FScreenPassRootSignature::CreateComputePipeline(FD3D12PipelineState& OutPipeline, ID3D12Device* Device, FShaderLibrary& Library,
                                                      const wchar_t* File, const wchar_t* Entry, bool bForceRecompile, const wchar_t* DebugName) const
 {

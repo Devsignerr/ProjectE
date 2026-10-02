@@ -22,6 +22,7 @@
 #include "Renderer/TemporalAA.h"
 #include "Renderer/AmbientOcclusion.h"
 #include "Renderer/DecalRenderer.h"
+#include "Renderer/DynamicResolution.h"
 #include "Renderer/FogRenderer.h"
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
@@ -95,6 +96,10 @@ struct FSceneRenderStats
 	float CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // 이번 프레임 CPU 기록 시간
 	float GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // GPU 시간 (타임스탬프, 몇 프레임 늦은 값)
 	float FrameIntervalMs = 0.0f; // 직전 Render와의 간격 (= 프레임 시간)
+	// TAAU/동적 해상도 (Phase 48): 이번 프레임 화면 비율과 씬(내부) 해상도. 출력과 같으면 업샘플 없음
+	float  ScreenPercentage = 100.0f;
+	uint32 InternalWidth    = 0;
+	uint32 InternalHeight   = 0;
 
 	float GetCpuMs(ERenderTimer Timer) const { return CpuMs[static_cast<uint32>(Timer)]; }
 	float GetGpuMs(ERenderTimer Timer) const { return GpuMs[static_cast<uint32>(Timer)]; }
@@ -125,9 +130,17 @@ public:
 
 	void Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 
-	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 출력과 같은 크기 (픽셀 아트 모드에서는 저해상도)
-	// 깊이는 지터가 들어간 투영으로 그려진다 (TAA 켬일 때) — 오버레이가 깊이 테스트에 써도 서브픽셀 차이뿐
+	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 씬(내부) 해상도: 화면 비율 100%면 출력과 같은 크기, TAAU면 출력 × 비율,
+	// 픽셀 아트 모드에서는 저해상도. 깊이는 지터가 들어간 투영으로 그려진다 (TAA 켬일 때)
 	const FD3D12RenderTarget* GetSceneColor() const { return SceneColor.get(); }
+	// 오버레이(에디터 그리드·내비메시·디버그 선)가 깊이 테스트에 쓸 Width x Height 깊이 DSV (상태 DEPTH_WRITE).
+	// 씬 깊이가 그 크기면 그것, TAAU 프레임이면 출력 해상도로 옮긴 깊이(지터 없음), 둘 다 아니면(픽셀 아트) ptr 0
+	D3D12_CPU_DESCRIPTOR_HANDLE GetOverlayDepthDsv(uint32 Width, uint32 Height) const;
+
+	// TAAU/동적 해상도 (Phase 48): true인 렌더러만 r.ScreenPercentage / r.DynamicResolution을 쓴다 (에디터 뷰포트·런타임이 켠다.
+	// 에셋 미리보기·썸네일 렌더러는 false = 항상 네이티브). 와이어프레임·픽셀 아트는 켜져 있어도 네이티브
+	bool bAllowScreenPercentage = false;
+	const FDynamicResolutionController& GetDynamicResolution() const { return DynamicResolution; }
 	// 화면 공간 법선 (R10G10B10A2, ScreenSpace.hlsli) / 움직임 벡터 (R16G16_FLOAT). 씬 컬러와 같은 크기, PIXEL_SHADER_RESOURCE
 	const FD3D12RenderTarget* GetSceneNormal() const { return SceneNormal.get(); }
 	const FD3D12RenderTarget* GetSceneVelocity() const { return SceneVelocity.get(); }
@@ -308,9 +321,15 @@ private:
 	// 씬 → (TAA) → 포스트/픽셀 아트 합성 → Output 패스 등록
 	void RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
 	// 섀도우 → HDR 씬 패스 등록 (SceneColor를 Width x Height로 맞춘다). CPU 준비(수집·컬링·상수 업로드)는 여기서 바로, GPU 기록은 그래프 실행 때
-	// bAllowJitter = false면 bTemporalJitter여도 지터 없음 (픽셀 아트)
+	// bAllowJitter = false면 bTemporalJitter여도 지터 없음 (픽셀 아트). OutputWidth/Height = TAA 결과(이력) 크기 — 다르면 TAAU
+	// (지터 표본 수·밉 바이어스, 시간 이력 연속성은 출력 크기 기준)
 	void RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter,
-	                      FSceneGraphRefs& OutRefs);
+	                      FSceneGraphRefs& OutRefs, uint32 OutputWidth, uint32 OutputHeight);
+	// 이번 프레임 화면 비율 (r.ScreenPercentage 또는 동적 해상도 제어기). bAllowScreenPercentage가 아니면 100
+	float ComputeScreenPercentage();
+	FDynamicResolutionController DynamicResolution;
+	bool                         bDynamicResolutionActive = false;
+	bool                         bFrameUpscaled           = false; // 이번 프레임 TAAU (오버레이 깊이 = TemporalAA.GetOverlayDepth)
 	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
 	void SelectLods(const FCamera& Camera);
 	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 준비). 사전 패스와 메인 패스가 같은 묶음을 그린다
@@ -350,7 +369,7 @@ private:
 	FMatrix4x4 PrevUnjitteredViewProjection;
 	FVector3   PrevCameraPosition;
 	FVector3   PrevCameraForward = FVector3::ForwardVector;
-	uint32     PrevTargetWidth   = 0;
+	uint32     PrevTargetWidth   = 0; // 이전 프레임 출력(TAA 이력) 크기 — 동적 해상도로 내부 크기가 바뀌어도 이력은 이어진다
 	uint32     PrevTargetHeight  = 0;
 	uint64     TemporalFrameIndex = 0; // 지터 수열 번호
 	FVector2   CurrentJitterNdc;

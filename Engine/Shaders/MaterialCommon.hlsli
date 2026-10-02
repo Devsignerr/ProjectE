@@ -12,7 +12,8 @@
 // ---- 레이 트레이싱(DXR 히트 셰이더)·계산 셰이더(DDGI 표면 평가)에서 쓰는 법
 //   1) 파생 함수가 없으므로 샘플 매크로를 먼저 정의한다 (밉 선택: 광선 원뿔/거리로 고른 LOD 또는 SampleGrad):
 //        #define MATERIAL_SAMPLE(Texture, Sampler, Uv) (Texture).SampleLevel(Sampler, Uv, MaterialLod)   // static float MaterialLod = ...
-//      래스터 기본값은 Sample, TAAU 등 밉 바이어스가 필요하면 E_MATERIAL_MIP_BIAS를 정의하면 SampleBias가 된다.
+//      E_MATERIAL_MIP_BIAS를 정의하면 SampleBias(바이어스)가 된다 — 래스터 메시 패스(Mesh.hlsl)는 PerFrame MaterialMipBias(TAAU log2(내부/출력),
+//      네이티브 0)로 항상 정의한다. 정의가 없으면 Sample (그림자 Masked 패스).
 //      생성 코드와 MaterialDefault는 ddx/ddy/Sample을 직접 쓰지 않는다 (모든 텍스처 읽기가 이 매크로).
 //   2) 리소스: 기본은 생성 코드가 cbuffer(E_MATERIAL_CBUFFER_REGISTER = b2)와 Texture2D MaterialTexture<i>(t<i>, E_MATERIAL_TEXTURE_SPACE = space2)를 선언한다.
 //      바인드리스/로컬 루트 시그니처로 바꾸려면 E_MATERIAL_CUSTOM_RESOURCES를 정의하고 다음 매크로를 직접 정의한다:

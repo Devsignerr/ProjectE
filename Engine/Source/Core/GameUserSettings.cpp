@@ -54,6 +54,32 @@ bool TryParseWindowMode(std::string_view Text, EWindowMode& OutMode)
 	return false;
 }
 
+const char* ToString(EResolutionQuality Quality)
+{
+	switch (Quality)
+	{
+	case EResolutionQuality::Native:      return "Native";
+	case EResolutionQuality::Quality:     return "Quality";
+	case EResolutionQuality::Balanced:    return "Balanced";
+	case EResolutionQuality::Performance: return "Performance";
+	}
+	return "Native";
+}
+
+bool TryParseResolutionQuality(std::string_view Text, EResolutionQuality& OutQuality)
+{
+	for (const EResolutionQuality Quality :
+	     { EResolutionQuality::Native, EResolutionQuality::Quality, EResolutionQuality::Balanced, EResolutionQuality::Performance })
+	{
+		if (EqualsIgnoreCase(Text, ToString(Quality)))
+		{
+			OutQuality = Quality;
+			return true;
+		}
+	}
+	return false;
+}
+
 bool FGameUserSettings::ApplyJson(std::string_view Json)
 {
 	const nlohmann::json Root = nlohmann::json::parse(Json, nullptr, /*allow_exceptions*/ false, /*ignore_comments*/ true);
@@ -85,6 +111,26 @@ bool FGameUserSettings::ApplyJson(std::string_view Json)
 	{
 		bVSync = It->get<bool>();
 	}
+	if (const auto It = Root.find("ResolutionQuality"); It != Root.end() && It->is_string())
+	{
+		EResolutionQuality Quality = ResolutionQuality;
+		if (TryParseResolutionQuality(It->get<std::string>(), Quality))
+		{
+			ResolutionQuality = Quality;
+		}
+		else
+		{
+			E_LOG(LogCore, Warning, "알 수 없는 ResolutionQuality \"{}\" — 무시합니다", It->get<std::string>());
+		}
+	}
+	if (const auto It = Root.find("DynamicResolution"); It != Root.end() && It->is_boolean())
+	{
+		bDynamicResolution = It->get<bool>();
+	}
+	if (const auto It = Root.find("DynamicResolutionTargetMs"); It != Root.end() && It->is_number())
+	{
+		DynamicResolutionTargetMs = std::clamp(It->get<float>(), 1.0f, 100.0f);
+	}
 	return true;
 }
 
@@ -95,6 +141,9 @@ std::string FGameUserSettings::ToJson() const
 	Root["WindowWidth"]  = WindowWidth;
 	Root["WindowHeight"] = WindowHeight;
 	Root["VSync"]        = bVSync;
+	Root["ResolutionQuality"]         = ToString(ResolutionQuality);
+	Root["DynamicResolution"]         = bDynamicResolution;
+	Root["DynamicResolutionTargetMs"] = DynamicResolutionTargetMs;
 	return Root.dump(2) + "\n";
 }
 

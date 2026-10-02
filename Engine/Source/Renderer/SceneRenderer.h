@@ -27,6 +27,7 @@
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
 #include "Renderer/SkyAtmosphereRenderer.h"
+#include "Renderer/WaterRenderer.h"
 #include "Renderer/FoliageRenderer.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/TerrainRenderer.h"
@@ -253,6 +254,7 @@ private:
 	FScreenSpaceReflections ScreenSpaceReflections;
 	FReflectionCaptures  ReflectionCaptures;
 	FSkyAtmosphereRenderer SkyAtmosphere; // 물리 기반 대기 (Phase 49)
+	FWaterRenderer       Water;            // 소규모 물 (Phase 49)
 	bool                 bBakeCapturesRequested = false;
 	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
 	// 콘솔 변수 → 위 디버그 토글 + 아래 r.TAA/r.SSAO/r.SSR (FPostProcessSettings와 AND). Init과 Render 시작에서

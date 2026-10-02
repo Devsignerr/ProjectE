@@ -87,5 +87,10 @@
     { "File": "SkyAtmosphere.hlsl", "Entry": "SkyViewLutCS", "Stage": "Compute" },
     { "File": "SkyAtmosphere.hlsl", "Entry": "SkyCubeCS", "Stage": "Compute" },
     { "File": "SkyAtmosphere.hlsl", "Entry": "VSSky", "Stage": "Vertex" },
-    { "File": "SkyAtmosphere.hlsl", "Entry": "PSSky", "Stage": "Pixel" }  ]
+    { "File": "SkyAtmosphere.hlsl", "Entry": "PSSky", "Stage": "Pixel" },
+    { "File": "Water.hlsl", "Entry": "VSWater", "Stage": "Vertex" },
+    { "File": "Water.hlsl", "Entry": "PSWater", "Stage": "Pixel" },
+    { "File": "Water.hlsl", "Entry": "VSUnderwater", "Stage": "Vertex" },
+    { "File": "Water.hlsl", "Entry": "PSUnderwater", "Stage": "Pixel" }
+  ]
 }

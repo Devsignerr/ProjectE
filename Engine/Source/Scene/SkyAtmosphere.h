@@ -81,7 +81,7 @@ struct FWaterBodyComponent
 	FVector3 Size               = FVector3(1000.0f, 1000.0f, 200.0f); // cm (전체 크기)
 	FVector3 ScatterColor       = FVector3(0.02f, 0.09f, 0.10f);      // 물속 산란 색 (선형, 조명 곱)
 	FVector3 Absorption         = FVector3(0.45f, 0.09f, 0.065f);     // 1/m (빨강이 먼저 사라짐)
-	float    NormalStrength     = 0.6f;
+	float    NormalStrength     = 0.4f;
 	float    WaveScale          = 300.0f; // cm (잔물결 노멀 한 장)
 	float    WaveSpeed          = 15.0f;  // cm/s
 	float    FlowDirection      = 0.0f;   // 도 (로컬, 강 흐름)

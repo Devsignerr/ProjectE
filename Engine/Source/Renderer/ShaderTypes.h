@@ -159,6 +159,50 @@ struct alignas(16) FAtmosphereConstants
 };
 static_assert(sizeof(FAtmosphereConstants) == 240);
 
+// 물 패스 프레임 상수 (Phase 49, Water.hlsl WaterFrame b0)
+struct alignas(16) FWaterFrameConstants
+{
+	FMatrix4x4 ViewProjection;           // 지터 포함
+	FMatrix4x4 UnjitteredViewProjection;
+	FMatrix4x4 PrevViewProjection;
+	FMatrix4x4 InvViewProjection;        // 지터 포함 투영의 역
+	FVector3   CameraPosition;
+	float      Time = 0.0f;
+	FVector3   SunDirection = FVector3(0.0f, 0.0f, 1.0f); // 태양 쪽
+	float      AmbientIntensity = 1.0f;
+	FVector3   SunColor;                 // 색 × 강도 (대기 투과율 포함)
+	uint32     ReflectionCaptureCount = 0;
+	FVector2   ScreenSize;
+	FVector2   InvScreenSize;
+	uint32     bScreenReflections = 1;
+	float      ReactiveMask = 0.2f;
+	float      Padding[2] = {};
+};
+static_assert(sizeof(FWaterFrameConstants) == 336);
+
+// 물 상자 하나 (Water.hlsl WaterBody b1). 식은 Renderer/WaterMath.h
+struct alignas(16) FWaterBodyConstants
+{
+	FVector3 Center;
+	float    CosYaw = 1.0f;
+	FVector3 HalfSize;
+	float    SinYaw = 0.0f;
+	FVector3 ScatterColor;
+	float    NormalStrength = 0.4f;
+	FVector3 Absorption;               // 1/m
+	float    WaveScale = 300.0f;       // cm
+	FVector2 FlowDirection = FVector2(1.0f, 0.0f); // 월드 XY
+	float    FlowSpeed = 0.0f;
+	float    WaveSpeed = 15.0f;
+	float    FoamIntensity = 0.6f;
+	float    FoamDistance  = 25.0f;
+	float    RefractionStrength = 0.04f;
+	float    ReflectionIntensity = 1.0f;
+	float    Roughness = 0.06f;
+	float    Padding[3] = {};
+};
+static_assert(sizeof(FWaterBodyConstants) == 112);
+
 // 메시 인스턴스 하나 (구조화 버퍼 t13, MeshInstance.hlsli FInstanceData와 1:1).
 // 패스는 인스턴스 번호 목록(t14)의 [InstanceOffset, + 인스턴스 수) 구간을 DrawIndexedInstanced로 그린다
 // 스킨 메시는 World/NormalMatrix 대신 BoneOffset(프레임 팔레트 버퍼 t15 안 첫 본 행렬 번호)을 쓴다

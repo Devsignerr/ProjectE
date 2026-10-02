@@ -162,7 +162,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary))
+	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -513,7 +513,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	}
 	if (!TemporalAA.ReloadShaders(bForceRecompile) || !AmbientOcclusion.ReloadShaders(bForceRecompile) || !DecalRenderer.ReloadShaders(bForceRecompile) ||
 	    !FogRenderer.ReloadShaders(bForceRecompile) || !ScreenSpaceReflections.ReloadShaders(bForceRecompile) ||
-	    !ReflectionCaptures.ReloadShaders(bForceRecompile) || !SkyAtmosphere.ReloadShaders(bForceRecompile))
+	    !ReflectionCaptures.ReloadShaders(bForceRecompile) || !SkyAtmosphere.ReloadShaders(bForceRecompile) || !Water.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -552,6 +552,7 @@ void FSceneRenderer::Shutdown()
 	ShadowRenderer.Shutdown();
 	IblRenderer.SetLightingOverride(nullptr);
 	SkyAtmosphere.Shutdown();
+	Water.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
@@ -1347,6 +1348,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		}
 	};
 
+	FWaterPassInputs WaterInputs; // 물 패스 입력 (수면은 반투명 앞, 물속은 파티클 뒤)
+
 	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트). 오클루전이고 사전 패스가 없으면 여기서 1단계 → HZB → 2단계
 	{
 		const D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress = DynamicBuffer.AllocateConstants(PerFrame).GpuAddress;
@@ -1411,6 +1414,34 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		}
 		ParticleRenderer.SetFog(FogRenderer.GetConstantsAddress(), FogRenderer.GetVolumeSrv());
 
+		// 물 (Phase 49): 안개 적용 뒤·반투명 메시 전 — 굴절 원본 복사 + 수면 (씬 컬러 + 움직임 벡터, 깊이는 셰이더 비교)
+		if (Water.Prepare(Scene, FrozenFrustum, Camera.GetPosition()) > 0)
+		{
+			WaterInputs.SceneColor               = SceneColor.get();
+			WaterInputs.SceneVelocity            = SceneVelocity.get();
+			WaterInputs.ColorRef                 = OutRefs.Color;
+			WaterInputs.DepthRef                 = OutRefs.Depth;
+			WaterInputs.VelocityRef              = OutRefs.Velocity;
+			WaterInputs.ShadowMapRef             = ShadowMapRef;
+			WaterInputs.FogVolumeRef             = FogVolumeRef;
+			WaterInputs.ViewProjection           = PerFrame.ViewProjection;
+			WaterInputs.UnjitteredViewProjection = UnjitteredViewProjection;
+			WaterInputs.PrevViewProjection       = PerFrame.PrevViewProjection;
+			WaterInputs.CameraPosition           = Camera.GetPosition();
+			WaterInputs.SunDirection             = -PerFrame.DirectionalLight.Direction;
+			WaterInputs.SunColor                 = PerFrame.DirectionalLight.Color * PerFrame.DirectionalLight.Intensity;
+			WaterInputs.AmbientIntensity         = PerFrame.AmbientIntensity;
+			WaterInputs.ReflectionCaptureCount   = PerFrame.ReflectionCaptureCount;
+			WaterInputs.ShadowConstants          = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
+			WaterInputs.FogConstants             = FogRenderer.GetConstantsAddress();
+			WaterInputs.CaptureList              = ReflectionCaptures.GetCaptureList();
+			WaterInputs.ShadowMapSrv             = ShadowRenderer.GetShadowMapSrv();
+			WaterInputs.FogVolumeSrv             = FogRenderer.GetVolumeSrv();
+			WaterInputs.IblTable                 = IblRenderer.GetLightingTable();
+			WaterInputs.CaptureAtlasSrv          = ReflectionCaptures.GetAtlasSrv();
+			Water.AddSurfacePass(Graph, WaterInputs, TimerId(ERenderTimer::Water));
+		}
+
 		// 반투명/가산 메시 (먼 것부터, 깊이 테스트만): 안개는 셰이더가 직접, 파티클보다 먼저
 		Stats.TranslucentDrawCalls = 0;
 		if (!TranslucentBatches.IsEmpty())
@@ -1434,6 +1465,12 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	ParticleTargets.DepthRef      = OutRefs.Depth;
 	ParticleTargets.FogVolume     = FogVolumeRef;
 	ParticleRenderer.AddRenderPass(Graph, Scene, RenderCamera, FrozenFrustum, ParticleTargets, TimerId(ERenderTimer::Particles), &Stats.Particles);
+
+	// 물속 카메라 (Phase 49): 씬 컬러의 마지막 — 카메라 → 장면/상자 출구 물속 흡수·산란
+	if (Water.IsCameraUnderwater() && WaterInputs.SceneColor != nullptr)
+	{
+		Water.AddUnderwaterPass(Graph, WaterInputs, TimerId(ERenderTimer::Water));
+	}
 
 	// 다음 프레임 이력
 	PrevUnjitteredViewProjection = UnjitteredViewProjection;

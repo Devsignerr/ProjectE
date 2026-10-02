@@ -192,6 +192,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterCameraBindings();
 	RegisterDataBindings();
 	RegisterBuildingBindings();
+	RegisterSkyBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()

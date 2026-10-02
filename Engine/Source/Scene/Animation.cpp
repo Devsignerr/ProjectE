@@ -12,19 +12,88 @@ int32 FAnimationSet::FindClip(std::string_view Name) const
 			return static_cast<int32>(Index);
 		}
 	}
+	for (const auto& [Alias, Index] : ClipAliases)
+	{
+		if (Alias == Name)
+		{
+			return Index;
+		}
+	}
 	return -1;
 }
 
-std::shared_ptr<const FAnimationSet> MakeAnimationSet(std::vector<FAnimationClip> Clips, std::vector<int32> NodeParents,
-                                                      std::vector<FNodePose> RestPose)
+int32 FAnimationSet::FindNode(std::string_view Name) const
 {
-	auto Set         = std::make_shared<FAnimationSet>();
-	Set->Clips       = std::move(Clips);
-	Set->NodeParents = std::move(NodeParents);
-	Set->RestPose    = std::move(RestPose);
+	for (size_t Index = 0; Index < NodeNames.size(); ++Index)
+	{
+		if (NodeNames[Index] == Name)
+		{
+			return static_cast<int32>(Index);
+		}
+	}
+	return -1;
+}
+
+namespace
+{
+	// 클립 안에서 조상에 이동 채널이 없는 최상위 이동 채널 노드 (-1 = 없음)
+	int32 FindTopTranslatedNode(const std::vector<uint8>& HasTranslation, const std::vector<int32>& Parents)
+	{
+		const size_t NodeCount = Parents.size();
+		int32        Best      = -1;
+		int32        BestDepth = -1;
+		for (size_t Node = 0; Node < NodeCount; ++Node)
+		{
+			if (!HasTranslation[Node])
+			{
+				continue;
+			}
+			bool  bAncestorAnimated = false;
+			int32 Depth             = 0;
+			for (int32 Parent = Parents[Node]; Parent >= 0 && Depth <= static_cast<int32>(NodeCount); Parent = Parents[Parent])
+			{
+				bAncestorAnimated |= HasTranslation[Parent] != 0;
+				++Depth;
+			}
+			if (!bAncestorAnimated && (BestDepth < 0 || Depth < BestDepth))
+			{
+				BestDepth = Depth;
+				Best      = static_cast<int32>(Node);
+			}
+		}
+		return Best;
+	}
+} // namespace
+
+std::shared_ptr<FAnimationSet> MakeAnimationSet(std::vector<FAnimationClip> Clips, std::vector<int32> NodeParents,
+                                                      std::vector<FNodePose> RestPose, std::vector<std::string> NodeNames)
+{
+	auto Set          = std::make_shared<FAnimationSet>();
+	Set->Clips        = std::move(Clips);
+	Set->NodeParents  = std::move(NodeParents);
+	Set->RestPose     = std::move(RestPose);
+	Set->NodeNames    = std::move(NodeNames);
+	Set->OwnClipCount = static_cast<int32>(Set->Clips.size());
 	Set->RestPose.resize(Set->NodeParents.size());
+	Set->ClipNotifySources.resize(Set->Clips.size());
+	AnimationMath::ComputeModelMatrices(Set->RestPose, Set->NodeParents, Set->RestModelMatrices);
 
 	const size_t NodeCount = Set->NodeParents.size();
+	Set->ClipRootMotionNodes.assign(Set->Clips.size(), -1);
+	std::vector<uint8> ClipHasTranslation;
+	for (size_t ClipIndex = 0; ClipIndex < Set->Clips.size(); ++ClipIndex)
+	{
+		ClipHasTranslation.assign(NodeCount, 0);
+		for (const FAnimationChannel& Channel : Set->Clips[ClipIndex].Channels)
+		{
+			if (Channel.Path == EAnimationPath::Translation && Channel.Node >= 0 && static_cast<size_t>(Channel.Node) < NodeCount)
+			{
+				ClipHasTranslation[Channel.Node] = 1;
+			}
+		}
+		Set->ClipRootMotionNodes[ClipIndex] = FindTopTranslatedNode(ClipHasTranslation, Set->NodeParents);
+	}
+
 	Set->AnimatedNodes.assign(NodeCount, 0);
 	std::vector<uint8> HasTranslation(NodeCount, 0);
 	for (const FAnimationClip& Clip : Set->Clips)
@@ -43,32 +112,11 @@ std::shared_ptr<const FAnimationSet> MakeAnimationSet(std::vector<FAnimationClip
 	}
 
 	// 루트 모션 노드: 조상에 이동 채널이 없는 이동 애니메이션 노드 중 가장 얕은 것
-	int32 BestDepth = -1;
-	for (size_t Node = 0; Node < NodeCount; ++Node)
-	{
-		if (!HasTranslation[Node])
-		{
-			continue;
-		}
-		bool  bAncestorAnimated = false;
-		int32 Depth             = 0;
-		for (int32 Parent = Set->NodeParents[Node]; Parent >= 0 && Depth <= static_cast<int32>(NodeCount); Parent = Set->NodeParents[Parent])
-		{
-			bAncestorAnimated |= HasTranslation[Parent] != 0;
-			++Depth;
-		}
-		if (!bAncestorAnimated && (BestDepth < 0 || Depth < BestDepth))
-		{
-			BestDepth           = Depth;
-			Set->RootMotionNode = static_cast<int32>(Node);
-		}
-	}
+	Set->RootMotionNode = FindTopTranslatedNode(HasTranslation, Set->NodeParents);
 	if (Set->RootMotionNode >= 0)
 	{
-		std::vector<FMatrix4x4> RestMatrices;
-		AnimationMath::ComputeModelMatrices(Set->RestPose, Set->NodeParents, RestMatrices);
 		const int32 Parent            = Set->NodeParents[Set->RootMotionNode];
-		Set->RootMotionParentToModel = Parent >= 0 ? RestMatrices[Parent] : FMatrix4x4::Identity;
+		Set->RootMotionParentToModel = Parent >= 0 ? Set->RestModelMatrices[Parent] : FMatrix4x4::Identity;
 	}
 	return Set;
 }
@@ -226,5 +274,30 @@ namespace AnimationMath
 			return Sample(NewTime) - Sample(PreviousTime);
 		}
 		return (Sample(Duration) - Sample(PreviousTime)) + (Sample(NewTime) - Sample(0.0f));
+	}
+
+	void ComputeModelRotations(const std::vector<FNodePose>& Pose, const std::vector<int32>& Parents, std::vector<FQuat>& Out)
+	{
+		const size_t       Count = FMath::Min(Pose.size(), Parents.size());
+		std::vector<uint8> Done(Count, 0);
+		Out.assign(Count, FQuat::Identity);
+		std::vector<int32> Chain;
+		for (size_t Node = 0; Node < Count; ++Node)
+		{
+			Chain.clear();
+			for (int32 Current = static_cast<int32>(Node); Current >= 0 && Current < static_cast<int32>(Count) && !Done[static_cast<size_t>(Current)] &&
+			                                                Chain.size() <= Count;
+			     Current = Parents[static_cast<size_t>(Current)])
+			{
+				Chain.push_back(Current);
+			}
+			for (auto It = Chain.rbegin(); It != Chain.rend(); ++It)
+			{
+				const int32 Parent         = Parents[static_cast<size_t>(*It)];
+				const FQuat ParentRotation = Parent >= 0 && Parent < static_cast<int32>(Count) ? Out[static_cast<size_t>(Parent)] : FQuat::Identity;
+				Out[static_cast<size_t>(*It)]  = (ParentRotation * Pose[static_cast<size_t>(*It)].Rotation).GetNormalized();
+				Done[static_cast<size_t>(*It)] = 1;
+			}
+		}
 	}
 } // namespace AnimationMath

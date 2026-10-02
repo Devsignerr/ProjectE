@@ -4,6 +4,7 @@
 #include "Renderer/GltfLoader.h"
 
 #include <filesystem>
+#include <memory>
 
 class FResourceManager;
 class FScene;
@@ -36,4 +37,7 @@ struct FModelLoader
 
 	// 프로젝트 Content 안의 경로면 Content 기준 상대 경로('/' 구분), 아니면 절대 경로 문자열
 	static std::string MakeAssetPath(const std::filesystem::path& Path);
+
+	// 모델 노드/클립 → 애니메이션 세트 (노드 이름 포함). 클립도 스킨도 없으면 nullptr
+	static std::shared_ptr<const FAnimationSet> MakeModelAnimationSet(const FModelData& Model);
 };

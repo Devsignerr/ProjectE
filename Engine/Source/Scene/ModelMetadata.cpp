@@ -82,9 +82,43 @@ const FModelSocket* FModelMetadata::FindSocket(std::string_view Name) const
 	return nullptr;
 }
 
+const FRetargetBoneOverride* FModelMetadata::FindRetargetBone(std::string_view Bone) const
+{
+	for (const FRetargetBoneOverride& Entry : RetargetBones)
+	{
+		if (Entry.Bone == Bone)
+		{
+			return &Entry;
+		}
+	}
+	return nullptr;
+}
+
+void FModelMetadata::SetRetargetBone(std::string_view Bone, const std::string* Node)
+{
+	const auto Found = std::find_if(RetargetBones.begin(), RetargetBones.end(), [&](const FRetargetBoneOverride& Entry) { return Entry.Bone == Bone; });
+	if (Node == nullptr)
+	{
+		if (Found != RetargetBones.end())
+		{
+			RetargetBones.erase(Found);
+		}
+		return;
+	}
+	if (Found != RetargetBones.end())
+	{
+		Found->Node = *Node;
+	}
+	else
+	{
+		RetargetBones.push_back({ std::string(Bone), *Node });
+	}
+}
+
 bool FModelMetadata::IsEmpty() const
 {
-	return Sockets.empty() && std::all_of(Clips.begin(), Clips.end(), [](const FClipNotifies& Entry) { return Entry.Notifies.empty(); });
+	return Sockets.empty() && RetargetBones.empty() &&
+	       std::all_of(Clips.begin(), Clips.end(), [](const FClipNotifies& Entry) { return Entry.Notifies.empty(); });
 }
 
 std::string FModelMetadata::ToJsonString() const
@@ -123,6 +157,15 @@ std::string FModelMetadata::ToJsonString() const
 		                        { "Scale", ToJson(Socket.Scale) } });
 	}
 	Document["Sockets"] = SocketArray;
+	if (!RetargetBones.empty())
+	{
+		json Bones = json::object();
+		for (const FRetargetBoneOverride& Entry : RetargetBones)
+		{
+			Bones[Entry.Bone] = Entry.Node;
+		}
+		Document["Retarget"] = { { "Bones", Bones } };
+	}
 	return Document.dump(2);
 }
 
@@ -168,6 +211,19 @@ bool FModelMetadata::FromJsonString(const std::string& Json)
 			Socket.Rotation = ReadQuat(Node.value("Rotation", json()));
 			Socket.Scale    = ReadVector3(Node.value("Scale", json()), FVector3::OneVector);
 			Sockets.push_back(std::move(Socket));
+		}
+	}
+	if (const auto It = Document.find("Retarget"); It != Document.end() && It->is_object())
+	{
+		if (const auto Bones = It->find("Bones"); Bones != It->end() && Bones->is_object())
+		{
+			for (const auto& [Bone, Node] : Bones->items())
+			{
+				if (Node.is_string())
+				{
+					RetargetBones.push_back({ Bone, Node.get<std::string>() });
+				}
+			}
 		}
 	}
 	return true;

@@ -4,6 +4,7 @@
 #include "Core/StringConv.h"
 #include "Renderer/AssetCache.h"
 #include "Renderer/ResourceManager.h"
+#include "Scene/AnimRetarget.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
 
@@ -98,32 +99,68 @@ namespace
 		}
 	}
 
-	// 애니메이션이 있으면 루트에 FAnimationComponent (이미 있으면 설정 유지 — 씬 파일에서 복원된 경우) + 런타임 연결
+	// 애니메이션(또는 스킨 — 다른 모델 클립을 리타기팅해 재생할 수 있다)이 있으면 루트에 FAnimationComponent
+	// (이미 있으면 설정 유지 — 씬 파일에서 복원된 경우) + 런타임 연결
 	void AttachAnimation(const FModelData& Model, FScene& Scene, FEntity Root, std::vector<FEntity> NodeEntities,
 	                     const std::shared_ptr<const FModelMetadata>& Metadata)
 	{
-		if (Model.Animations.empty())
+		std::shared_ptr<const FAnimationSet> Set = FModelLoader::MakeModelAnimationSet(Model);
+		if (!Set)
 		{
 			return;
 		}
-		std::vector<int32>     Parents(Model.Nodes.size());
-		std::vector<FNodePose> RestPose(Model.Nodes.size());
-		for (size_t Index = 0; Index < Model.Nodes.size(); ++Index)
-		{
-			const FModelNode& Node = Model.Nodes[Index];
-			Parents[Index]              = Node.Parent;
-			RestPose[Index].Translation = Node.Translation;
-			RestPose[Index].Rotation    = Node.Rotation;
-			RestPose[Index].Scale       = Node.Scale;
-		}
-
 		FAnimationComponent& Animation = Scene.GetRegistry().GetOrEmplace<FAnimationComponent>(Root);
 		Animation.Runtime              = FAnimationRuntime{};
-		Animation.Runtime.Set          = MakeAnimationSet(Model.Animations, std::move(Parents), std::move(RestPose));
+		Animation.Runtime.Set          = std::move(Set);
 		Animation.Runtime.NodeEntities = std::move(NodeEntities);
 		Animation.Runtime.Metadata     = Metadata;
 	}
+
+	// 리타기팅 소스 모델 로더 (FAnimRetargetLibrary): 쿠킹 모델에서 클립/스켈레톤만 (GPU 리소스 없음)
+	bool LoadAnimationSource(const std::string& AssetPath, FAnimSourceModel& Out)
+	{
+		std::filesystem::path Path = FStringConv::ToWide(AssetPath);
+		if (!Path.is_absolute() && FPaths::IsInitialized() && FPaths::HasProject())
+		{
+			Path = FPaths::GetProjectContentDirectory() / Path;
+		}
+		FModelData Model;
+		if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+		{
+			return false;
+		}
+		Out.Set      = FModelLoader::MakeModelAnimationSet(Model);
+		Out.Metadata = std::make_shared<const FModelMetadata>(FModelMetadata::LoadForSource(Path));
+		return Out.Set != nullptr;
+	}
+
+	// 엔진 DLL 로드 시 등록 (Scene은 Renderer에 의존하지 않으므로 여기서 연결한다)
+	[[maybe_unused]] const bool GAnimationSourceLoaderRegistered = [] {
+		FAnimRetargetLibrary::Get().SetLoader(&LoadAnimationSource);
+		return true;
+	}();
 } // namespace
+
+std::shared_ptr<const FAnimationSet> FModelLoader::MakeModelAnimationSet(const FModelData& Model)
+{
+	if (Model.Animations.empty() && Model.Skins.empty())
+	{
+		return nullptr;
+	}
+	std::vector<int32>       Parents(Model.Nodes.size());
+	std::vector<FNodePose>   RestPose(Model.Nodes.size());
+	std::vector<std::string> Names(Model.Nodes.size());
+	for (size_t Index = 0; Index < Model.Nodes.size(); ++Index)
+	{
+		const FModelNode& Node = Model.Nodes[Index];
+		Parents[Index]              = Node.Parent;
+		RestPose[Index].Translation = Node.Translation;
+		RestPose[Index].Rotation    = Node.Rotation;
+		RestPose[Index].Scale       = Node.Scale;
+		Names[Index]                = Node.Name;
+	}
+	return MakeAnimationSet(Model.Animations, std::move(Parents), std::move(RestPose), std::move(Names));
+}
 
 std::string FModelLoader::MakeAssetPath(const std::filesystem::path& Path)
 {

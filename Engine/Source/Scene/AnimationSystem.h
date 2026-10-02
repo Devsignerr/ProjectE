@@ -4,6 +4,7 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "Scene/AnimMontage.h"
+#include "Scene/AnimRootMotion.h"
 
 #include <optional>
 #include <string>
@@ -62,4 +63,13 @@ public:
 	static bool SetLookAtTarget(FScene& Scene, FEntity Entity, const FVector3& WorldPosition);
 	static bool SetLookAtTargetEntity(FScene& Scene, FEntity Entity, FEntity Target);
 	static bool ClearLookAtTarget(FScene& Scene, FEntity Entity);
+
+	// ---- 루트 모션 (Scene/AnimRootMotion.h). 수신자는 프로세스에 하나 (Physics가 시작 때 캐릭터 이동 연결을 등록한다)
+	static void SetRootMotionReceiver(FRootMotionReceiver Receiver);
+	// 직전 갱신에서 추출한 루트 모션 (모델 공간). Entity = FAnimationComponent가 있는 엔티티 또는 그 조상
+	static FRootMotionDelta GetLastRootMotion(FScene& Scene, FEntity Entity);
+
+	// ---- 리타기팅 (Scene/AnimRetarget.h): 소스 모델을 바꾸지 않고 지금 세트를 다시 만든다 (편집기 매핑 변경 뒤 등).
+	//      Entity = FAnimationComponent가 있는 엔티티. 세트가 바뀌었으면 true
+	static bool RefreshRetargeting(FScene& Scene, FEntity Entity);
 };

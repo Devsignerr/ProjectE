@@ -31,7 +31,8 @@
 //   예측 옵션 (UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측): 끄면 소유 클라이언트는
 //     무브를 보내기만 하고 미리 움직이지 않으며, 자기 캐릭터도 스냅샷 보간으로 보여 준다 (IsPredicted = false). 서버 쪽은 같다.
 //   메시지 (비신뢰):
-//     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 점프]...
+//     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 플래그(1 점프, 2 루트 모션)
+//                     (+ 루트 모션이면 float 속도 X, float 속도 Y — 서버가 MaxRootMotionSpeed로 자른다)]...
 //     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥
 //   서버는 무브 dt를 FCharacterMove::MaxMoveDeltaSeconds로 자르고, 소유자가 아닌 연결이 보낸 무브는 버린다.
 
@@ -97,6 +98,11 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 			// 플레이어 캐릭터는 시점 방향(yaw)을 보고, 서버 소유(AI 등)는 이동 방향을 본다
 			const float    Yaw  = LocalControlRotation.X;
 			FCharacterMove Move = Physics->ConsumePendingMove(Entity, DeltaSeconds, Owner >= 0 ? &Yaw : nullptr);
+			// 루트 모션 (직전 애니메이션 갱신이 쌓아 둔 것 — 규칙은 CharacterMovement.h)
+			if (FCharacterMovementComponent* Movement = Scene->GetRegistry().TryGet<FCharacterMovementComponent>(Entity))
+			{
+				CharacterMovementMath::ConsumeRootMotion(*Movement, Move);
+			}
 			if (Mode == ENetMode::Client)
 			{
 				FPredictedCharacter& Predicted = PredictedCharacters[Entity];
@@ -187,7 +193,12 @@ void FGameWorld::SendCharacterMoves(FEntity Entity)
 		Writer.Write(Move.Input.X);
 		Writer.Write(Move.Input.Y);
 		Writer.Write(Move.Yaw);
-		Writer.Write(static_cast<uint8>(Move.bJump ? 1 : 0));
+		Writer.Write(static_cast<uint8>((Move.bJump ? 1 : 0) | (Move.bRootMotion ? 2 : 0)));
+		if (Move.bRootMotion)
+		{
+			Writer.Write(Move.RootMotionVelocity.X);
+			Writer.Write(Move.RootMotionVelocity.Y);
+		}
 	}
 	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
 }
@@ -223,7 +234,15 @@ void FGameWorld::ReceiveCharacterMoves(FNetConnectionId Connection, const std::v
 		Move.Input.X      = Reader.Read<float>();
 		Move.Input.Y      = Reader.Read<float>();
 		Move.Yaw          = Reader.Read<float>();
-		Move.bJump        = Reader.Read<uint8>() != 0;
+		const uint8 Flags = Reader.Read<uint8>();
+		Move.bJump        = (Flags & 1) != 0;
+		Move.bRootMotion  = (Flags & 2) != 0;
+		if (Move.bRootMotion)
+		{
+			Move.RootMotionVelocity.X = Reader.Read<float>();
+			Move.RootMotionVelocity.Y = Reader.Read<float>();
+			Move.RootMotionVelocity   = CharacterMovementMath::ClampRootMotionVelocity(Move.RootMotionVelocity);
+		}
 		if (!Reader.IsOk() || !IsFiniteMove(Move))
 		{
 			return;

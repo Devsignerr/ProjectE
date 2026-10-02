@@ -571,6 +571,186 @@ E_TEST(AnimGraph_JsonRoundTripV2)
 	E_EXPECT_EQ(Default.States.size(), static_cast<size_t>(1));
 }
 
+// 본 마스크 (Phase 42-2): 가장 가까운 조상 항목, BlendDepth 경사, Weight 0으로 하위 가지 빼기, 못 찾은 뼈, 빈 마스크 = 몸 전체
+E_TEST(AnimGraph_BoneMaskWeights)
+{
+	// 0 Root → 1 Hip → 2 Spine1 → 3 Spine2 → 4 Head
+	//                  └ 5 Leg      Spine2 → 6 Arm → 7 Hand
+	const std::vector<int32>       Parents = { -1, 0, 1, 2, 3, 1, 3, 6 };
+	const std::vector<std::string> Names   = { "Root", "Hip", "Spine1", "Spine2", "Head", "Leg", "Arm", "Hand" };
+	std::vector<float>             Weights;
+	std::vector<std::string>       Missing;
+
+	FAnimBoneMask FullBody;
+	AnimGraphMath::ComputeBoneMaskWeights(FullBody, Parents, Names, Weights, &Missing);
+	E_EXPECT_EQ(Weights.size(), Parents.size());
+	E_EXPECT_NEAR(Weights[5], 1.0f, Tol);
+
+	FAnimBoneMask Upper;
+	Upper.Bones = { { "Spine1", 1.0f, 3 }, { "Arm", 0.0f, 0 }, { "Nope", 1.0f, 0 } };
+	AnimGraphMath::ComputeBoneMaskWeights(Upper, Parents, Names, Weights, &Missing);
+	E_EXPECT_NEAR(Weights[0], 0.0f, Tol); // 마스크 위
+	E_EXPECT_NEAR(Weights[1], 0.0f, Tol);
+	E_EXPECT_NEAR(Weights[5], 0.0f, Tol); // 다른 가지
+	E_EXPECT_NEAR(Weights[2], 1.0f / 3.0f, Tol); // 경사 3세대: 1/3, 2/3, 1
+	E_EXPECT_NEAR(Weights[3], 2.0f / 3.0f, Tol);
+	E_EXPECT_NEAR(Weights[4], 1.0f, Tol);
+	E_EXPECT_NEAR(Weights[6], 0.0f, Tol); // Arm 항목(0)이 가장 가까운 조상 항목
+	E_EXPECT_NEAR(Weights[7], 0.0f, Tol);
+	E_EXPECT_EQ(Missing.size(), static_cast<size_t>(1));
+	if (!Missing.empty())
+	{
+		E_EXPECT_TRUE(Missing[0] == "Nope");
+	}
+
+	// 섞기: Weights × Alpha, Weights 비면 몸 전체
+	std::vector<FNodePose> Base(2), Overlay(2);
+	Overlay[0].Translation = FVector3(100, 0, 0);
+	Overlay[1].Translation = FVector3(100, 0, 0);
+	AnimGraphMath::BlendMasked(Base, Overlay, { 0.0f, 1.0f }, 0.5f);
+	E_EXPECT_NEAR(Base[0].Translation.X, 0.0f, Tol);
+	E_EXPECT_NEAR(Base[1].Translation.X, 50.0f, Tol);
+	AnimGraphMath::BlendMasked(Base, Overlay, {}, 1.0f);
+	E_EXPECT_NEAR(Base[0].Translation.X, 100.0f, Tol);
+}
+
+// 레이어 형식: v3 Layers 왕복 + v2 파일(레이어 없음)은 그대로 + 레이어 오류
+E_TEST(AnimGraph_LayerJson)
+{
+	const char* const Json = R"({
+		"Version": 3,
+		"Parameters": [ { "Name": "Aim" }, { "Name": "Shoot", "Type": "Bool" } ],
+		"States": [ { "Name": "Idle", "Clip": "Idle" } ],
+		"Layers": [ { "Name": "Upper", "WeightParameter": "Aim", "Weight": 0.8,
+			"Mask": [ { "Bone": "Spine", "BlendDepth": 2 }, { "Bone": "Tail", "Weight": 0 } ],
+			"EntryState": "Hold",
+			"States": [ { "Name": "Rest", "Clip": "Walk" }, { "Name": "Hold", "Clip": "Run" } ],
+			"Transitions": [ { "From": "Hold", "To": "Rest", "Duration": 0.1, "Conditions": [ { "Parameter": "Shoot", "Op": "==", "Value": true } ] },
+			                 { "From": "Nowhere", "To": "Rest" } ],
+			"Editor": { "AnyStatePosition": [ 1, 2 ] } } ]
+	})";
+	FAnimGraphAsset          Asset;
+	std::string              Error;
+	std::vector<std::string> Warnings;
+	E_EXPECT_TRUE(FAnimGraphAsset::FromJsonString(Json, Asset, &Error, &Warnings));
+	E_EXPECT_EQ(Warnings.size(), static_cast<size_t>(1)); // Nowhere
+	E_EXPECT_EQ(Asset.Layers.size(), static_cast<size_t>(1));
+	if (Asset.Layers.size() == 1)
+	{
+		const FAnimGraphLayer& Layer = Asset.Layers[0];
+		E_EXPECT_TRUE(Layer.Name == "Upper" && Layer.WeightParameter == "Aim");
+		E_EXPECT_NEAR(Layer.Weight, 0.8f, Tol);
+		E_EXPECT_EQ(Layer.EntryState, 1);
+		E_EXPECT_EQ(Layer.Mask.Bones.size(), static_cast<size_t>(2));
+		E_EXPECT_EQ(Layer.Mask.Bones[0].BlendDepth, 2);
+		E_EXPECT_NEAR(Layer.Mask.Bones[1].Weight, 0.0f, Tol);
+		E_EXPECT_EQ(Layer.Transitions.size(), static_cast<size_t>(1));
+		E_EXPECT_TRUE(Layer.AnyStateEditorPosition.has_value());
+		E_EXPECT_EQ(Asset.FindLayer("Upper"), 0);
+		E_EXPECT_TRUE(&Asset.GetMachine(0) == static_cast<const FAnimStateMachine*>(&Asset.Layers[0]));
+		E_EXPECT_TRUE(&Asset.GetMachine(-1) == static_cast<const FAnimStateMachine*>(&Asset));
+
+		// 가중치 = clamp(0.8 × Aim)
+		FAnimParameterSet Parameters;
+		E_EXPECT_NEAR(AnimGraphMath::ComputeLayerWeight(Asset, Layer, Parameters), 0.0f, Tol);
+		Parameters.Set("Aim", 0.5f);
+		E_EXPECT_NEAR(AnimGraphMath::ComputeLayerWeight(Asset, Layer, Parameters), 0.4f, Tol);
+		Parameters.Set("Aim", 5.0f);
+		E_EXPECT_NEAR(AnimGraphMath::ComputeLayerWeight(Asset, Layer, Parameters), 1.0f, Tol);
+		// 레이어 머신의 전이
+		Parameters.Set("Shoot", 1.0f);
+		E_EXPECT_EQ(AnimGraphMath::FindTransition(Asset, Layer, 1, 0.0f, Parameters), 0);
+	}
+	const std::string Text = Asset.ToJsonString();
+	FAnimGraphAsset   Loaded;
+	E_EXPECT_TRUE(FAnimGraphAsset::FromJsonString(Text, Loaded));
+	E_EXPECT_TRUE(Loaded.ToJsonString() == Text);
+
+	// 레이어 없는 v2는 "Layers"를 쓰지 않는다
+	E_EXPECT_TRUE(ParseTestGraph().ToJsonString().find("\"Layers\"") == std::string::npos);
+	// 이름 겹침 / 상태 없는 레이어는 실패
+	FAnimGraphAsset Bad;
+	E_EXPECT_FALSE(FAnimGraphAsset::FromJsonString(R"({"States":[{"Name":"A","Clip":"X"}],"Layers":[{"Name":"L","States":[]}]})", Bad));
+	E_EXPECT_FALSE(FAnimGraphAsset::FromJsonString(
+		R"({"States":[{"Name":"A","Clip":"X"}],"Layers":[{"Name":"L","States":[{"Name":"A","Clip":"X"}]},{"Name":"L","States":[{"Name":"A","Clip":"X"}]}]})", Bad));
+}
+
+// 레이어 시스템 연동: 마스크 뼈만 레이어 포즈, 레이어 가중치 파라미터, 레이어 노티파이는 가중치 >= 0.5일 때만
+E_TEST(AnimGraph_LayerSystemMaskAndNotifies)
+{
+	const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectEAnimGraphLayers";
+	std::filesystem::create_directories(Directory);
+	const std::filesystem::path GraphPath = Directory / L"Layer.eanimgraph";
+	{
+		std::ofstream File(GraphPath, std::ios::binary | std::ios::trunc);
+		File << R"({
+			"Parameters": [ { "Name": "Upper" } ],
+			"States": [ { "Name": "Base", "Clip": "Still" } ],
+			"Layers": [ { "Name": "Arm", "WeightParameter": "Upper", "Mask": [ { "Bone": "ArmNode" }, { "Bone": "Missing" } ],
+				"States": [ { "Name": "Wave", "Clip": "Move" } ] } ]
+		})";
+	}
+	FAnimGraphLibrary::Get().Invalidate();
+
+	// 노드 0 Body(루트), 1 ArmNode(자식). Move: 두 노드 X 0→100 (1초), Still: 0 고정
+	FAnimationClip Move;
+	Move.Name     = "Move";
+	Move.Duration = 1.0f;
+	for (int32 Node = 0; Node < 2; ++Node)
+	{
+		FAnimationChannel Channel;
+		Channel.Node   = Node;
+		Channel.Path   = EAnimationPath::Translation;
+		Channel.Times  = { 0.0f, 1.0f };
+		Channel.Values = { FVector4(0, 0, 0, 0), FVector4(100, 0, 0, 0) };
+		Move.Channels.push_back(Channel);
+	}
+	FAnimationClip Still = Move;
+	Still.Name           = "Still";
+	for (FAnimationChannel& Channel : Still.Channels)
+	{
+		Channel.Values = { FVector4(0, 0, 0, 0), FVector4(0, 0, 0, 0) };
+	}
+
+	FScene        Scene;
+	const FEntity Root = Scene.CreateEntity("Model");
+	const FEntity Body = Scene.CreateEntity("Body");
+	const FEntity Arm  = Scene.CreateEntity("ArmNode");
+	Scene.SetParent(Body, Root);
+	Scene.SetParent(Arm, Body);
+	FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Root);
+	Animation.Runtime.Set          = MakeAnimationSet({ Move, Still }, { -1, 0 }, std::vector<FNodePose>(2));
+	Animation.Runtime.NodeEntities = { Body, Arm };
+	auto Metadata                  = std::make_shared<FModelMetadata>();
+	Metadata->GetOrAddNotifies("Move").push_back({ "Wave", EAnimNotifyKind::Notify, 0.5f, 0.0f });
+	Animation.Runtime.Metadata = Metadata;
+	Scene.GetRegistry().Emplace<FAnimGraphComponent>(Root).Graph = GraphPath.string();
+
+	FAnimationSystem::Update(Scene, 0.0f);
+	// 레이어 가중치 0.25: Arm만 25% 레이어 쪽. 노티파이 없음 (< 0.5)
+	FAnimationSystem::SetAnimParam(Scene, Root, "Upper", 0.25f);
+	FAnimationSystem::Update(Scene, 0.6f);
+	E_EXPECT_NEAR(Scene.GetTransform(Body).Position.X, 0.0f, 1.0e-2f);
+	E_EXPECT_NEAR(Scene.GetTransform(Arm).Position.X, 15.0f, 1.0e-2f); // 60 × 0.25
+	E_EXPECT_TRUE(Animation.Runtime.PendingNotifies.empty());
+
+	// 가중치 1: Arm = 레이어 포즈 그대로, 노티파이는 레이어 클립 것 (다음 바퀴의 0.5를 지날 때)
+	FAnimationSystem::SetAnimParam(Scene, Root, "Upper", 1.0f);
+	FAnimationSystem::Update(Scene, 0.2f); // 0.8
+	E_EXPECT_NEAR(Scene.GetTransform(Arm).Position.X, 80.0f, 1.0e-2f);
+	FAnimationSystem::Update(Scene, 0.6f); // 1.4 → 0.4
+	E_EXPECT_TRUE(Animation.Runtime.PendingNotifies.empty());
+	FAnimationSystem::Update(Scene, 0.2f); // 0.6 — Wave 지남
+	E_EXPECT_EQ(Animation.Runtime.PendingNotifies.size(), static_cast<size_t>(1));
+	E_EXPECT_NEAR(Scene.GetTransform(Body).Position.X, 0.0f, 1.0e-2f);
+	const FAnimGraphRuntime& Runtime = Scene.GetRegistry().Get<FAnimGraphComponent>(Root).Runtime;
+	E_EXPECT_EQ(Runtime.LayerMasks.size(), static_cast<size_t>(1));
+	E_EXPECT_NEAR(Runtime.LayerWeights[0], 1.0f, Tol);
+
+	std::error_code ErrorCode;
+	std::filesystem::remove_all(Directory, ErrorCode);
+}
+
 // 상태 삭제: 그 상태를 쓰는 전이 제거 + 번호 당김 + 시작 상태 보정
 E_TEST(AnimGraph_RemoveStateFixesIndices)
 {

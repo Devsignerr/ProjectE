@@ -97,18 +97,86 @@ namespace
 	// 클립이 바뀌었으면 이전 클립의 진행 중 스테이트를 끝낸다 (사라지는 클립의 노티파이는 발생시키지 않는다)
 	void EndStatesIfClipChanged(FAnimationRuntime& Runtime, FEntity Entity, bool bForceEnd)
 	{
-		if (Runtime.NotifyClip == Runtime.CurrentClip && !bForceEnd)
+		FAnimNotifyTrack& Track = Runtime.Notify;
+		if (Track.Clip == Runtime.CurrentClip && !bForceEnd)
 		{
 			return;
 		}
-		if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Runtime.NotifyClip))
+		if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Track.Clip))
 		{
-			Runtime.ActiveStates.resize(Old->size(), 0);
-			AnimNotifyMath::EndAll(Runtime.ActiveStates, Runtime.HitScratch);
-			EmitNotifies(Runtime, Entity, *Old, Runtime.Set->Clips[Runtime.NotifyClip].Name, 0.0f);
+			Track.ActiveStates.resize(Old->size(), 0);
+			AnimNotifyMath::EndAll(Track.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Old, Runtime.Set->Clips[Track.Clip].Name, 0.0f);
 		}
-		Runtime.ActiveStates.clear();
-		Runtime.NotifyClip = Runtime.CurrentClip;
+		Track.ActiveStates.clear();
+		Track.Clip = Runtime.CurrentClip;
+	}
+
+	// 그래프 레이어 하나의 노티파이 판정 (기준 기여가 바뀌면 이전 기여의 진행 중 스테이트 End). bEnabled = false면 기준 없음
+	void UpdateNotifyTrack(FAnimationRuntime& Runtime, FEntity Entity, FAnimNotifyTrack& Track, const FAnimNotifySource& Source, bool bEnabled,
+	                       float DeltaSeconds)
+	{
+		const uint32 Key = bEnabled ? Source.Key : 0u;
+		if (Key != Track.Key)
+		{
+			if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Track.Clip); Old != nullptr && Track.Key != 0)
+			{
+				Track.ActiveStates.resize(Old->size(), 0);
+				AnimNotifyMath::EndAll(Track.ActiveStates, Runtime.HitScratch);
+				EmitNotifies(Runtime, Entity, *Old, Runtime.Set->Clips[Track.Clip].Name, 0.0f);
+			}
+			Track.ActiveStates.clear();
+			Track.Clip    = Key != 0 ? Source.Clip : -1;
+			Track.bResync = true;
+			Track.Key     = Key;
+		}
+		if (Key == 0)
+		{
+			return;
+		}
+		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Source.Clip); Notifies != nullptr && Source.Delta != 0.0f)
+		{
+			AnimNotifyMath::Collect(*Notifies, Source.PreviousTime, Source.NewTime, Source.Delta, Source.Duration, Source.bLoop, Source.bWrapped,
+			                        Track.bResync, Track.ActiveStates, Runtime.HitScratch);
+			EmitNotifies(Runtime, Entity, *Notifies, Runtime.Set->Clips[Source.Clip].Name, DeltaSeconds);
+			Track.bResync = false;
+		}
+	}
+
+	// 기여 목록의 가중 포즈 → Out. 기여가 없으면 false (Out 그대로)
+	bool BuildContributionPose(const FAnimationSet& Set, const std::vector<FAnimClipContribution>& Contributions, std::vector<FNodePose>& Sample,
+	                           std::vector<FNodePose>& Out)
+	{
+		if (Contributions.empty())
+		{
+			return false;
+		}
+		bool bFirst = true;
+		for (const FAnimClipContribution& Contribution : Contributions)
+		{
+			Sample = Set.RestPose;
+			AnimationMath::SampleClip(Set.Clips[Contribution.Clip], Contribution.Time, Sample);
+			AnimGraphMath::AddWeightedPose(Out, Sample, Contribution.Weight, bFirst);
+			bFirst = false;
+		}
+		AnimGraphMath::FinishWeightedPose(Out);
+		return true;
+	}
+
+	// 모델 노드 이름 (노드 엔티티 이름 — 본 마스크/IK 뼈 찾기)
+	std::vector<std::string> GetNodeNames(const FScene& Scene, const FAnimationRuntime& Runtime)
+	{
+		std::vector<std::string> Names(Runtime.Set ? Runtime.Set->NodeParents.size() : 0);
+		const FRegistry&         Registry = Scene.GetRegistry();
+		for (size_t Node = 0; Node < Names.size() && Node < Runtime.NodeEntities.size(); ++Node)
+		{
+			const FEntity Entity = Runtime.NodeEntities[Node];
+			if (const FNameComponent* Name = Registry.IsValid(Entity) ? Registry.TryGet<FNameComponent>(Entity) : nullptr)
+			{
+				Names[Node] = Name->Name;
+			}
+		}
+		return Names;
 	}
 
 	// 애니메이션 대상 노드 엔티티에 포즈 기록
@@ -133,8 +201,9 @@ namespace
 	}
 
 	// 그래프 에셋 해석 + 모델 클립에 묶기. 그래프로 재생할 수 있으면 true
-	bool ResolveGraph(FAnimGraphComponent& Graph, const FAnimationSet& Set)
+	bool ResolveGraph(const FScene& Scene, FAnimGraphComponent& Graph, const FAnimationRuntime& Animation)
 	{
+		const FAnimationSet& Set = *Animation.Set;
 		FAnimGraphRuntime& Runtime    = Graph.Runtime;
 		const uint32       Generation = FAnimGraphLibrary::Get().GetGeneration();
 		if (!Runtime.bResolved || Runtime.ResolvedGraph != Graph.Graph || Runtime.ResolvedGeneration != Generation)
@@ -153,92 +222,71 @@ namespace
 		if (Runtime.BoundSet != &Set)
 		{
 			std::vector<std::string> Missing;
-			Runtime.Rebind(Set, &Missing);
+			std::vector<std::string> MissingBones;
+			Runtime.Rebind(Set, GetNodeNames(Scene, Animation), &Missing, &MissingBones);
 			for (const std::string& Clip : Missing)
 			{
 				E_LOG(LogAnimation, Warning, "애니메이션 그래프 {}: 모델에 클립 '{}'이 없습니다 (그 샘플은 빼고 섞습니다)", Graph.Graph, Clip);
+			}
+			for (const std::string& Bone : MissingBones)
+			{
+				E_LOG(LogAnimation, Warning, "애니메이션 그래프 {}: 본 마스크의 뼈 '{}'를 모델에서 찾을 수 없습니다", Graph.Graph, Bone);
 			}
 		}
 		return true;
 	}
 
-	// 그래프 재생 (규칙은 Scene/AnimGraph.h 머리 주석)
-	void UpdateGraphAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, FAnimGraphComponent& Graph, float DeltaSeconds)
+	// 그래프 재생 → OutPose (규칙은 Scene/AnimGraph.h 머리 주석). 기본 레이어 기여가 없으면 false (포즈를 쓰지 않는다)
+	bool EvaluateGraph(FEntity Entity, FAnimationComponent& Animation, FAnimGraphComponent& Graph, float DeltaSeconds, std::vector<FNodePose>& OutPose)
 	{
-		FAnimationRuntime&   Runtime      = Animation.Runtime;
-		FAnimGraphRuntime&   GraphRuntime = Graph.Runtime;
-		const FAnimationSet& Set          = *Runtime.Set;
-		const float          Delta        = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
+		FAnimationRuntime&     Runtime      = Animation.Runtime;
+		FAnimGraphRuntime&     GraphRuntime = Graph.Runtime;
+		const FAnimationSet&   Set          = *Runtime.Set;
+		const FAnimGraphAsset& Asset        = *GraphRuntime.Asset;
+		const float            Delta        = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
 
-		GraphRuntime.Instance.Update(*GraphRuntime.Asset, GraphRuntime.Binding, GraphRuntime.Parameters, Delta);
-		const std::vector<FAnimClipContribution>& Contributions = GraphRuntime.Instance.GetContributions();
-		const FAnimNotifySource&                  Source        = GraphRuntime.Instance.GetNotifySource();
-
-		// 노티파이: 가중치가 가장 큰 기여 하나 (바뀌면 이전 기여의 스테이트를 끝낸다)
-		if (Source.Key != GraphRuntime.NotifyKey)
-		{
-			if (const std::vector<FAnimNotify>* Old = FindClipNotifies(Runtime, Runtime.NotifyClip); Old != nullptr && GraphRuntime.NotifyKey != 0)
-			{
-				Runtime.ActiveStates.resize(Old->size(), 0);
-				AnimNotifyMath::EndAll(Runtime.ActiveStates, Runtime.HitScratch);
-				EmitNotifies(Runtime, Entity, *Old, Set.Clips[Runtime.NotifyClip].Name, 0.0f);
-			}
-			Runtime.ActiveStates.clear();
-			Runtime.NotifyClip    = Source.Clip;
-			Runtime.bResyncStates = true;
-			GraphRuntime.NotifyKey = Source.Key;
-		}
-		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Source.Clip); Notifies != nullptr && Source.Delta != 0.0f)
-		{
-			AnimNotifyMath::Collect(*Notifies, Source.PreviousTime, Source.NewTime, Source.Delta, Source.Duration, Source.bLoop, Source.bWrapped,
-			                        Runtime.bResyncStates, Runtime.ActiveStates, Runtime.HitScratch);
-			EmitNotifies(Runtime, Entity, *Notifies, Set.Clips[Source.Clip].Name, DeltaSeconds);
-			Runtime.bResyncStates = false;
-		}
+		// 기본 레이어: 노티파이는 가중치가 가장 큰 기여 하나
+		GraphRuntime.Instance.Update(Asset, GraphRuntime.Binding, GraphRuntime.Parameters, Delta);
+		const FAnimNotifySource& Source = GraphRuntime.Instance.GetNotifySource();
+		UpdateNotifyTrack(Runtime, Entity, GraphRuntime.BaseNotify, Source, true, DeltaSeconds);
 		// 인스펙터/GetCurrentClip용: 대표 클립
 		if (Source.Clip >= 0)
 		{
 			Runtime.CurrentClip = Source.Clip;
 			Runtime.CurrentTime = Source.NewTime;
 		}
+		const bool bHavePose = BuildContributionPose(Set, GraphRuntime.Instance.GetContributions(), GraphRuntime.SampleScratch, OutPose);
 
-		// 포즈 = 기여의 가중 합
-		if (Contributions.empty())
+		// 추가 레이어: 순서대로 마스크 × 레이어 가중치로 덮어 섞는다. 노티파이는 레이어 가중치 >= 0.5일 때만
+		const size_t LayerCount = Asset.Layers.size();
+		if (GraphRuntime.LayerInstances.size() != LayerCount || GraphRuntime.Binding.Layers.size() != LayerCount)
 		{
-			return;
+			return bHavePose;
 		}
-		bool bFirst = true;
-		for (const FAnimClipContribution& Contribution : Contributions)
+		for (size_t Layer = 0; Layer < LayerCount; ++Layer)
 		{
-			GraphRuntime.SampleScratch = Set.RestPose;
-			AnimationMath::SampleClip(Set.Clips[Contribution.Clip], Contribution.Time, GraphRuntime.SampleScratch);
-			AnimGraphMath::AddWeightedPose(GraphRuntime.PoseScratch, GraphRuntime.SampleScratch, Contribution.Weight, bFirst);
-			bFirst = false;
+			const FAnimGraphLayer& Data   = Asset.Layers[Layer];
+			const float            Weight = AnimGraphMath::ComputeLayerWeight(Asset, Data, GraphRuntime.Parameters);
+			FAnimGraphInstance&    Instance = GraphRuntime.LayerInstances[Layer];
+			GraphRuntime.LayerWeights[Layer] = Weight;
+			Instance.Update(Asset, Data, GraphRuntime.Binding.Layers[Layer], GraphRuntime.Parameters, Delta);
+			UpdateNotifyTrack(Runtime, Entity, GraphRuntime.LayerNotify[Layer], Instance.GetNotifySource(), Weight >= 0.5f, DeltaSeconds);
+			if (bHavePose && Weight > 0.0f &&
+			    BuildContributionPose(Set, Instance.GetContributions(), GraphRuntime.SampleScratch, GraphRuntime.LayerPoseScratch))
+			{
+				AnimGraphMath::BlendMasked(OutPose, GraphRuntime.LayerPoseScratch, GraphRuntime.LayerMasks[Layer], Weight);
+			}
 		}
-		AnimGraphMath::FinishWeightedPose(GraphRuntime.PoseScratch);
-		WritePose(Scene, Runtime, GraphRuntime.PoseScratch);
+		return bHavePose;
 	}
 
-	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
+	// 클립 재생(크로스페이드, 루트 모션) → Runtime.PoseScratch
+	bool EvaluateClip(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
 	{
-		FAnimationRuntime& Runtime = Animation.Runtime;
-		if (!Runtime.Set || Runtime.Set->Clips.empty())
-		{
-			return;
-		}
-		Runtime.PendingNotifies.clear();
-		if (Runtime.bPhysicsPose)
-		{
-			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이도 멈춘다)
-		}
-		if (FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity); Graph != nullptr && ResolveGraph(*Graph, *Runtime.Set))
-		{
-			UpdateGraphAnimation(Scene, Entity, Animation, *Graph, DeltaSeconds);
-			return;
-		}
-		const FAnimationSet& Set = *Runtime.Set;
+		FAnimationRuntime&   Runtime = Animation.Runtime;
+		const FAnimationSet& Set     = *Runtime.Set;
 		ResolveClipChange(Animation);
-		EndStatesIfClipChanged(Runtime, Entity, Runtime.bResyncStates);
+		EndStatesIfClipChanged(Runtime, Entity, Runtime.Notify.bResync);
 
 		const FAnimationClip& Clip  = Set.Clips[Runtime.CurrentClip];
 		const float           Delta = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
@@ -251,9 +299,9 @@ namespace
 		if (const std::vector<FAnimNotify>* Notifies = FindClipNotifies(Runtime, Runtime.CurrentClip); Notifies != nullptr && Delta != 0.0f)
 		{
 			AnimNotifyMath::Collect(*Notifies, PreviousCurrentTime, Runtime.CurrentTime, Delta, Clip.Duration, Animation.bLoop, bWrapped,
-			                        Runtime.bResyncStates, Runtime.ActiveStates, Runtime.HitScratch);
+			                        Runtime.Notify.bResync, Runtime.Notify.ActiveStates, Runtime.HitScratch);
 			EmitNotifies(Runtime, Entity, *Notifies, Clip.Name, DeltaSeconds);
-			Runtime.bResyncStates = false;
+			Runtime.Notify.bResync = false;
 		}
 
 		// 현재 클립 포즈
@@ -303,8 +351,35 @@ namespace
 				RootPose.Translation      = ParentToModel.GetInverse().TransformPosition(Current);
 			}
 		}
+		return true;
+	}
 
-		WritePose(Scene, Runtime, Runtime.PoseScratch);
+	// 포즈 단계: 원천(그래프 | 클립) → (몽타주) → (IK) → 노드 엔티티에 기록
+	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
+	{
+		FAnimationRuntime& Runtime = Animation.Runtime;
+		if (!Runtime.Set || Runtime.Set->Clips.empty())
+		{
+			return;
+		}
+		Runtime.PendingNotifies.clear();
+		if (Runtime.bPhysicsPose)
+		{
+			return; // 래그돌: 물리가 뼈 트랜스폼을 쓴다 (재생 시간·노티파이도 멈춘다)
+		}
+		bool bHavePose = false;
+		if (FAnimGraphComponent* Graph = Scene.GetRegistry().TryGet<FAnimGraphComponent>(Entity); Graph != nullptr && ResolveGraph(Scene, *Graph, Runtime))
+		{
+			bHavePose = EvaluateGraph(Entity, Animation, *Graph, DeltaSeconds, Runtime.PoseScratch);
+		}
+		else
+		{
+			bHavePose = EvaluateClip(Scene, Entity, Animation, DeltaSeconds);
+		}
+		if (bHavePose)
+		{
+			WritePose(Scene, Runtime, Runtime.PoseScratch);
+		}
 	}
 } // namespace
 
@@ -365,7 +440,7 @@ void FAnimationSystem::SetTime(FScene& Scene, FEntity Entity, float Seconds)
 	Runtime.CurrentTime        = FMath::Clamp(Seconds, 0.0f, Runtime.Set->Clips[Runtime.CurrentClip].Duration);
 	Runtime.PreviousClip       = -1;
 	// 스크럽: 점 노티파이는 건너뛰고, 진행 중 스테이트는 다음 갱신에서 End 후 그 시각 기준으로 다시 Begin
-	Runtime.bResyncStates = true;
+	Runtime.Notify.bResync = true;
 }
 
 float FAnimationSystem::GetTime(FScene& Scene, FEntity Entity)

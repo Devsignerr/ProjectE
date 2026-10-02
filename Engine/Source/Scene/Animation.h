@@ -118,9 +118,7 @@ struct FAnimationRuntime
 
 	// 노티파이 (.emeta 공유 데이터, 규칙은 Scene/AnimNotify.h)
 	std::shared_ptr<const FModelMetadata> Metadata;
-	std::vector<uint8>                    ActiveStates;     // 현재 클립 노티파이별 스테이트 진행 중
-	int32                                 NotifyClip = -1;  // ActiveStates가 가리키는 클립
-	bool                                  bResyncStates = false;
+	FAnimNotifyTrack                      Notify;           // 클립 재생(그래프 아님)의 노티파이 진행 상태
 	std::vector<FAnimNotifyEvent>         PendingNotifies;  // 직전 갱신에서 발생 (다음 갱신 시작에 비움)
 	bool                                  bPhysicsPose = false; // 래그돌이 뼈를 구동하는 중: 애니메이션 갱신을 건너뛴다 (Physics/Ragdoll.h)
 

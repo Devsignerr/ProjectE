@@ -20,6 +20,8 @@ namespace ax::NodeEditor
 //     출력 핀(오른쪽)을 다른 상태의 입력 핀(왼쪽)으로 끌면 전이 추가. 우클릭 메뉴(상태 추가/시작 상태/삭제), Delete = 선택 삭제
 //   - 아래: 미리보기 모델(에셋의 PreviewModel, 비면 첫 상태 클립을 가진 Content 모델 자동 선택)을 편집 중인 그래프로 재생
 //     (저장 전 편집도 즉시 반영). 파라미터 미리보기 값 슬라이더로 전이/블렌드를 시험한다
+//   - 레이어: 그래프 위 콤보/오른쪽 '레이어'에서 고른 레이어의 상태 머신을 그래프에 보인다. 레이어 추가/순서/삭제, 가중치(+파라미터),
+//     본 마스크(뼈 + 가중치 + 경사 깊이) 편집. 자동 검증 인자 --animgraph-layer <이름>
 //   - 오른쪽: 파라미터 목록, 선택한 상태/전이 속성 (전이 조건·크로스페이드·종료 시점·우선순위 = 목록 순서), 블렌드 스페이스 축 편집
 //   - 플레이 중: 이 에셋을 쓰는 엔티티(선택 엔티티 우선)의 현재 상태·섞이는 상태·방금 일어난 전이를 강조한다
 //   저장하면 FAnimGraphLibrary::Invalidate → 이 그래프를 쓰는 컴포넌트가 새 그래프로 다시 묶인다 (핫 리로드, 파라미터 유지)
@@ -104,11 +106,20 @@ private:
 	void RenameParameter(const std::string& OldName, const std::string& NewName);
 	float& PreviewValue(const std::string& Name);
 
+	// 레이어: 그래프와 상태/전이 속성은 EditLayer의 상태 머신을 편집한다
+	FAnimStateMachine&       Machine();
+	const FAnimStateMachine& Machine() const;
+	void                     SetEditLayer(int32 Layer); // -1 = 기본 레이어
+	void                     DrawLayers(const FDebugView& Debug);
+	void                     DrawMaskEditor(FAnimBoneMask& Mask, const char* Id);
+	bool                     BoneCombo(const char* Id, std::string& Bone);
+
 	int32       AddState(const std::string& BaseName, int32 BlendDimensions, const FVector2& Position); // 0 클립, 1/2 블렌드 스페이스
 	std::string MakeUniqueStateName(const std::string& BaseName) const;
 	void        MoveTransition(int32 Index, int32 Delta);
 
 	FAnimGraphAsset                                               Asset;
+	int32                                                         EditLayer = -1; // 그래프에 보이는 레이어 (-1 = 기본)
 	std::unique_ptr<ax::NodeEditor::EditorContext, FGraphDeleter> Graph;
 	FSelection                                                    Selection;
 	bool                                                          bApplyPositions = true;
@@ -135,6 +146,7 @@ private:
 	bool                                     bAutoModelSearched = false;
 	FEntity                                  ModelRoot;
 	std::vector<std::string>                 ClipNames;
+	std::vector<std::string>                 BoneNames;  // 미리보기 모델 노드 이름 (본 마스크 콤보)
 	std::vector<std::string>                 ModelFiles; // Content 안 모델 (콤보)
 	std::shared_ptr<const FAnimGraphAsset>   Published;  // 미리보기가 재생하는 편집 상태 사본 (편집기 정보 제외 비교)
 	std::string                              PublishedKey;

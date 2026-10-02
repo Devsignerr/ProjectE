@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class FJobQueue;
@@ -16,7 +17,8 @@ class FJobQueue;
 //   키 = 레시피(PSO 설명 + 루트 시그니처 블롭 해시 + 바이트코드 해시) 해시 — D3D12PipelineRecipe.h
 //   요청 순서: ① 워밍으로 미리 만든 PSO(같은 루트 시그니처 객체일 때) → ② 드라이버 캐시(ID3D12PipelineLibrary) 불러오기 → ③ 새로 만들기 + 라이브러리에 저장
 //   (a) 디스크 캐시 <Saved>/ShaderCache/PipelineLibrary.bin: FLibraryHeader(어댑터 Vendor/Device/SubSys/Revision + UMD 드라이버 버전 + 형식 버전)가
-//       다르거나 CreatePipelineLibrary가 거부(드라이버/어댑터 불일치)하면 버린다. 종료 때 이번 실행에서 요청된 PSO만으로 새로 써서 낡은 항목이 쌓이지 않는다
+//       다르거나 CreatePipelineLibrary가 거부(드라이버/어댑터 불일치)하면 버린다. 파일 = 머리 + 라이브러리 블롭 + 저장된 키 목록(uint32 개수 + uint64 키들)
+//       — 목록에 있는 키만 Load*Pipeline (없는 이름 Load는 디버그 레이어 경고). 종료 때 이번 실행에서 요청된 PSO만으로 새로 써서 낡은 항목이 쌓이지 않는다
 //   (b) 워밍: 레시피 파일 = <Saved>/ShaderCache/PipelineRecipes.epso(사용자, 실행 번호로 나이 관리 — 8번 실행 동안 안 쓰면 제거) ∪
 //       <프로젝트>/Config/PipelineRecipes.epso(--record-pso로 기록, 패키지에 파일로 포함, FFileSystem으로 읽음). 시작할 때 작업 스레드가
 //       루트 시그니처(블롭)·PSO를 미리 만든다 (ID3D12Device는 자유 스레드). 같은 키를 메인 스레드가 요청하면 끝날 때까지 기다린다
@@ -102,6 +104,7 @@ private:
 	std::unordered_map<uint64, ComPtr<ID3D12RootSignature>> WarmRootSignatures; // 블롭 해시 → 워밍용 객체
 	ComPtr<ID3D12PipelineLibrary> Library;
 	std::vector<uint8>            LibraryData; // 라이브러리가 참조하는 직렬화 바이트 (라이브러리보다 오래 살아야 함)
+	std::unordered_set<uint64>    LibraryKeys; // 디스크 라이브러리에 저장된 키 (없는 이름을 Load하면 디버그 레이어 경고 — 있을 때만 불러온다, 읽은 뒤 읽기 전용)
 	std::mutex                    LibraryMutex;
 	PipelineCache::FRecipeFile    UserRecipes;   // 읽은 사용자 레시피 (+ 이번 실행 기록)
 	PipelineCache::FRecipeFile    SessionRecipes; // 이번 실행 요청 레시피 (+ 블롭)

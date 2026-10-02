@@ -158,12 +158,24 @@ void FD3D12PipelineCache::LoadLibrary()
 	{
 		PipelineCache::FLibraryHeader Stored;
 		std::memcpy(&Stored, Bytes.data(), sizeof(Stored));
-		if (PipelineCache::IsLibraryCompatible(Stored, CurrentHeader) && Stored.DataSize == Bytes.size() - sizeof(Stored))
+		// 머리 + 라이브러리 블롭(DataSize) + 키 개수(uint32) + 키(uint64 × 개수)
+		const size_t KeysOffset = sizeof(Stored) + static_cast<size_t>(Stored.DataSize);
+		uint32       KeyCount   = 0;
+		const bool   bSizeOk    = Bytes.size() >= KeysOffset + sizeof(uint32) &&
+		                     (std::memcpy(&KeyCount, Bytes.data() + KeysOffset, sizeof(uint32)), Bytes.size() == KeysOffset + sizeof(uint32) + KeyCount * sizeof(uint64));
+		if (PipelineCache::IsLibraryCompatible(Stored, CurrentHeader) && bSizeOk)
 		{
-			LibraryData.assign(Bytes.begin() + sizeof(Stored), Bytes.end());
+			LibraryData.assign(Bytes.begin() + sizeof(Stored), Bytes.begin() + static_cast<std::ptrdiff_t>(KeysOffset));
 			const HRESULT Result = Device1->CreatePipelineLibrary(LibraryData.data(), LibraryData.size(), IID_PPV_ARGS(&Library));
 			if (SUCCEEDED(Result))
 			{
+				LibraryKeys.reserve(KeyCount);
+				for (uint32 Index = 0; Index < KeyCount; ++Index)
+				{
+					uint64 Key = 0;
+					std::memcpy(&Key, Bytes.data() + KeysOffset + sizeof(uint32) + Index * sizeof(uint64), sizeof(uint64));
+					LibraryKeys.insert(Key);
+				}
 				bLibraryFromDisk = true;
 				return;
 			}
@@ -247,7 +259,7 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 			std::vector<D3D12_INPUT_ELEMENT_DESC>    Elements;
 			const D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = PipelineCache::ToGraphicsDesc(
 				Recipe, RootSignature, BlobBytecode(WarmSource, Recipe.Shaders[0]), BlobBytecode(WarmSource, Recipe.Shaders[1]), Elements);
-			if (Library)
+			if (Library && LibraryKeys.contains(Key))
 			{
 				std::lock_guard Lock(LibraryMutex);
 				bFromLibrary = SUCCEEDED(Library->LoadGraphicsPipeline(Name.c_str(), &Desc, IID_PPV_ARGS(&Pipeline)));
@@ -260,7 +272,7 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 		else
 		{
 			const D3D12_COMPUTE_PIPELINE_STATE_DESC Desc = PipelineCache::ToComputeDesc(Recipe, RootSignature, BlobBytecode(WarmSource, Recipe.Shaders[0]));
-			if (Library)
+			if (Library && LibraryKeys.contains(Key))
 			{
 				std::lock_guard Lock(LibraryMutex);
 				bFromLibrary = SUCCEEDED(Library->LoadComputePipeline(Name.c_str(), &Desc, IID_PPV_ARGS(&Pipeline)));
@@ -417,7 +429,7 @@ HRESULT FD3D12PipelineCache::Request(ID3D12Device* InDevice, PipelineCache::FRec
 	HRESULT      Result       = E_FAIL;
 	bool         bFromLibrary = false;
 	const std::wstring Name   = PipelineCache::MakeLibraryName(Key);
-	if (Library)
+	if (Library && LibraryKeys.contains(Key))
 	{
 		std::lock_guard Lock(LibraryMutex);
 		Result = Recipe.Type == PipelineCache::EPipelineType::Graphics
@@ -471,12 +483,15 @@ void FD3D12PipelineCache::SaveLibrary()
 	{
 		return;
 	}
-	uint32 Stored = 0;
+	uint32              Stored = 0;
+	std::vector<uint64> StoredKeys;
+	StoredKeys.reserve(Entries.size());
 	for (const auto& [Key, Entry] : Entries)
 	{
 		if (Entry.Pipeline && SUCCEEDED(Fresh->StorePipeline(PipelineCache::MakeLibraryName(Key).c_str(), Entry.Pipeline.Get())))
 		{
 			++Stored;
+			StoredKeys.push_back(Key);
 		}
 	}
 	const SIZE_T       Size = Fresh->GetSerializedSize();
@@ -484,6 +499,15 @@ void FD3D12PipelineCache::SaveLibrary()
 	if (Size == 0 || FAILED(Fresh->Serialize(Data.data(), Size)))
 	{
 		return;
+	}
+	// 블롭 뒤에 저장된 키 목록 (불러올 때 있는 이름만 Load)
+	const uint32 KeyCount = static_cast<uint32>(StoredKeys.size());
+	const size_t KeysAt   = Data.size();
+	Data.resize(KeysAt + sizeof(uint32) + StoredKeys.size() * sizeof(uint64));
+	std::memcpy(Data.data() + KeysAt, &KeyCount, sizeof(uint32));
+	if (!StoredKeys.empty())
+	{
+		std::memcpy(Data.data() + KeysAt + sizeof(uint32), StoredKeys.data(), StoredKeys.size() * sizeof(uint64));
 	}
 	PipelineCache::FLibraryHeader Header = CurrentHeader;
 	Header.DataSize                      = Size;

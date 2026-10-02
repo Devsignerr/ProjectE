@@ -109,7 +109,7 @@ namespace PipelineCache
 	struct FLibraryHeader
 	{
 		static constexpr uint32 Magic   = 0x4C535045; // "EPSL"
-		static constexpr uint32 Version = 1;
+		static constexpr uint32 Version = 2; // 2: 라이브러리 블롭 뒤 저장 키 목록
 
 		uint32 FileMagic     = Magic;
 		uint32 FileVersion   = Version;

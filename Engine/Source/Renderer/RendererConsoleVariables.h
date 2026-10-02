@@ -22,4 +22,5 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  Jitter;           // r.Jitter         (--jitter)
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
+	extern TAutoConsoleVariable<int32> AsyncLoading;     // r.AsyncLoading   (--sync-loading = 0, --async-loading = 1) — FResourceManager가 프레임마다 읽음
 } // namespace RendererCVars

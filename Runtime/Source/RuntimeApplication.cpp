@@ -124,6 +124,7 @@ bool FRuntimeApplication::OnInit()
 	// 리소스 수거 루트: 플레이 중인 씬 (서브 씬 포함 — 루트 엔티티 아래). 렌더러/UI 렌더러 캐시는 각자 등록한다
 	Resources.AddRootProvider([this](FResourceRoots& Roots) { Roots.AddScene(Scene); });
 	StatOverlay.SetResources(&Resources);
+	Resources.EnableAsyncLoading(IsAutomationRun()); // 텍스처 디코드/압축은 작업 스레드, 업로드는 복사 큐 (자동 검증은 프레임마다 비움)
 	if (!SceneRenderer.Init(*Rhi, Resources))
 	{
 		return false;

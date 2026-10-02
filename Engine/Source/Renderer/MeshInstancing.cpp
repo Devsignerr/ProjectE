@@ -19,7 +19,7 @@ void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform
 		return;
 	}
 	const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
-	if (Mesh == nullptr || (SkinPalettes != nullptr && SkinPalettes->IsCulled(Entity)))
+	if (Mesh == nullptr || !Mesh->IsReady() || (SkinPalettes != nullptr && SkinPalettes->IsCulled(Entity))) // 업로드 중인 메시는 그리지 않는다
 	{
 		return; // 가시성 판정에서 빠진 스킨 메시는 정적 메시로 그리면 안 된다
 	}

@@ -176,7 +176,7 @@ const FModelResources* FModelLoader::LoadModelResources(const std::filesystem::p
 	}
 
 	FModelData Model;
-	if (FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
+	if (!Resources.TakePrefetchedModel(Key, Model) && FAssetCache::LoadModelAsset(Path, Model) == FAssetCache::ESource::Failed)
 	{
 		return nullptr;
 	}

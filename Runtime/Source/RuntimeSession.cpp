@@ -22,10 +22,14 @@ void FRuntimeApplication::LoadScene()
 	if (FPaths::HasProject() && !SceneAsset.empty())
 	{
 		const std::filesystem::path ScenePath = FPaths::GetProjectContentDirectory() / FStringConv::ToWide(SceneAsset);
+		const auto StartTime = std::chrono::steady_clock::now();
 		if (FSceneSerializer::LoadFromFile(Scene, ScenePath))
 		{
+			const auto LoadedTime = std::chrono::steady_clock::now();
 			FSceneAssetResolver::Resolve(Scene, Resources, FPaths::GetProjectContentDirectory());
-			E_LOG(LogRuntime, Display, "씬 로드: {}", SceneAsset);
+			const auto Ms = [](auto Duration) { return std::chrono::duration<double, std::milli>(Duration).count(); };
+			E_LOG(LogRuntime, Display, "씬 로드: {} (씬 파일 {:.1f}ms, 에셋 해석 {:.1f}ms)", SceneAsset, Ms(LoadedTime - StartTime),
+			      Ms(std::chrono::steady_clock::now() - LoadedTime));
 			return;
 		}
 		E_LOG(LogRuntime, Warning, "씬을 열지 못해 자리표시 씬을 표시합니다: {}", SceneAsset);

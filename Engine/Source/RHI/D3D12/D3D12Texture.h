@@ -6,6 +6,7 @@
 class FD3D12CommandQueue;
 class FD3D12Device;
 class FD3D12RHI;
+class FD3D12UploadQueue;
 
 // GPU 2D 텍스처 + SRV. 초기 데이터를 업로드 힙을 거쳐 동기 복사하고, 필요 시 컴퓨트로 밉 체인을 생성한다 (로딩 시점용).
 class FD3D12Texture
@@ -27,6 +28,16 @@ public:
 	bool Init2DFromMips(FD3D12Device& Device, FD3D12CommandQueue& Queue, FD3D12DescriptorAllocator& InSrvAllocator,
 	                    uint32 InWidth, uint32 InHeight, DXGI_FORMAT InFormat, const FMipData* Mips, uint32 InMipCount,
 	                    const wchar_t* DebugName);
+	// 비동기 업로드 (복사 큐): 리소스/SRV는 바로 만들고 데이터는 Uploader의 열린 묶음에 기록한다.
+	// 그 묶음이 끝나고 RHI가 전이를 기록하면(펜스 <= GetFinalizedFence) 소유자가 MarkUploadComplete를 부른다 — 그 전에는 IsReady가 false
+	bool Init2DFromMipsAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, FD3D12DescriptorAllocator& InSrvAllocator, uint32 InWidth,
+	                         uint32 InHeight, DXGI_FORMAT InFormat, const FMipData* Mips, uint32 InMipCount, const wchar_t* DebugName);
+	// 셰이더가 읽어도 되는지 (리소스가 있고 비동기 업로드가 끝남). 기본 생성(로딩 중 자리표시)이면 false
+	bool   IsReady() const { return Resource != nullptr && !bUploadPending; }
+	bool   IsUploadPending() const { return bUploadPending; }
+	uint64 GetUploadFence() const { return UploadFence; }
+	void   MarkUploadComplete() { bUploadPending = false; }
+
 	// 즉시 해제 (GPU가 더 이상 사용하지 않음이 보장될 때)
 	void Shutdown();
 	// 지연 해제 (렌더링 중 교체/삭제 시)
@@ -47,4 +58,6 @@ private:
 	uint32                     Height       = 0;
 	uint32                     MipCount     = 1;
 	DXGI_FORMAT                Format       = DXGI_FORMAT_UNKNOWN;
+	uint64                     UploadFence  = 0; // 비동기 업로드 묶음 펜스 (0 = 동기 업로드)
+	bool                       bUploadPending = false;
 };

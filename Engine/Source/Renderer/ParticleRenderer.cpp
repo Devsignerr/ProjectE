@@ -692,7 +692,7 @@ uint32 FParticleRenderer::Render(FScene& Scene, const FCamera& Camera, const FFr
 			Kind = Pipeline_Ribbon;
 		}
 		const FStaticMesh* Mesh = Kind == Pipeline_Mesh ? Resources->GetMesh(Settings.Mesh) : nullptr;
-		if (Kind == Pipeline_Mesh && Mesh == nullptr)
+		if (Kind == Pipeline_Mesh && (Mesh == nullptr || !Mesh->IsReady()))
 		{
 			continue;
 		}

@@ -62,6 +62,17 @@ void FSceneAssetResolver::Resolve(FScene& Scene, FResourceManager& Resources, co
 			PendingModels.emplace_back(Entity, Model.AssetPath);
 		}
 	});
+	if (PendingModels.size() > 1)
+	{
+		// 모델 파일 읽기/파싱을 병렬로 먼저 (비동기 로딩일 때만 — 배치·업로드는 아래 메인 스레드)
+		std::vector<std::filesystem::path> Paths;
+		Paths.reserve(PendingModels.size());
+		for (const auto& [Entity, AssetPath] : PendingModels)
+		{
+			Paths.push_back(ResolveContentPath(AssetPath, ContentDirectory));
+		}
+		Resources.PrefetchModels(Paths);
+	}
 	for (const auto& [Entity, AssetPath] : PendingModels)
 	{
 		if (!FModelLoader::LoadIntoEntity(ResolveContentPath(AssetPath, ContentDirectory), Scene, Resources, Entity))

@@ -28,6 +28,10 @@ public:
 	// 큐에 제출된 모든 작업이 끝날 때까지 대기
 	void Flush();
 
+	// 다음 Signal이 쓸 펜스 값 (이 큐에 신호하는 쪽이 하나뿐일 때, 제출 전에 작업에 펜스 값을 붙이는 데 쓴다)
+	uint64                  GetNextFenceValue() const { return NextFenceValue; }
+	uint64                  GetCompletedFenceValue() const { return Fence->GetCompletedValue(); }
+	ID3D12Fence*            GetFence() const { return Fence.Get(); }
 	ID3D12CommandQueue*     GetQueue() const { return Queue.Get(); }
 	D3D12_COMMAND_LIST_TYPE GetType() const { return Type; }
 

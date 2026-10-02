@@ -2,6 +2,7 @@
 
 #include "Core/Profiling.h"
 #include "Core/FileSystem.h"
+#include "Core/Jobs/JobQueue.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Serialization/BinaryArchive.h"
@@ -191,14 +192,29 @@ void FAssetCache::CompressModelImages(FModelData& Model)
 
 	const auto StartTime = std::chrono::steady_clock::now();
 	size_t     TotalBytes = 0;
+	// 이미지끼리 독립이므로 여러 장이면 작업 스레드로 나눠 압축 (결과는 같다 — 순서와 무관)
+	std::vector<size_t> ToCompress;
 	for (size_t Index = 0; Index < Model.Images.size(); ++Index)
 	{
-		FModelImage& Image = Model.Images[Index];
-		if (Image.Image.IsValid() && Priority[Index] != NotUsed)
+		if (Model.Images[Index].Image.IsValid() && Priority[Index] != NotUsed)
 		{
-			Image.Texture = TextureCompression::Compress(Image.Image, Usages[Index]);
-			TotalBytes += Image.Texture.GetTotalBytes();
+			ToCompress.push_back(Index);
 		}
+	}
+	FJobQueue Workers;
+	Workers.Init(ToCompress.size() > 1 ? std::min<uint32>(FJobQueue::GetDefaultWorkerCount(), static_cast<uint32>(ToCompress.size())) : 0,
+	             "모델 텍스처 압축");
+	for (const size_t Index : ToCompress)
+	{
+		FModelImage*        Image = &Model.Images[Index];
+		const ETextureUsage Usage = Usages[Index];
+		Workers.Submit([Image, Usage] { Image->Texture = TextureCompression::Compress(Image->Image, Usage); });
+	}
+	Workers.WaitIdle();
+	Workers.Shutdown();
+	for (FModelImage& Image : Model.Images)
+	{
+		TotalBytes += Image.Texture.IsValid() ? Image.Texture.GetTotalBytes() : 0;
 		Image.Image = FImage{};
 	}
 	E_LOG(LogRenderer, Display, "모델 텍스처 압축: {} — 이미지 {}개 → {} KB ({:.0f} ms)", Model.Name, Model.Images.size(), TotalBytes / 1024,

@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12Device.h"
 #include "RHI/D3D12/D3D12MipGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "RHI/D3D12/D3D12UploadQueue.h"
 #include "RHI/TextureUtils.h"
 
 #include <cstring>
@@ -231,6 +232,89 @@ bool FD3D12Texture::Init2DFromMips(FD3D12Device& Device, FD3D12CommandQueue& Que
 	return true;
 }
 
+bool FD3D12Texture::Init2DFromMipsAsync(FD3D12Device& Device, FD3D12UploadQueue& Uploader, FD3D12DescriptorAllocator& InSrvAllocator,
+                                        uint32 InWidth, uint32 InHeight, DXGI_FORMAT InFormat, const FMipData* Mips, uint32 InMipCount,
+                                        const wchar_t* DebugName)
+{
+	E_CHECKF(Resource == nullptr, "텍스처가 이미 생성되어 있습니다");
+	E_CHECKF(Mips != nullptr && InMipCount > 0 && InMipCount <= CalculateMipCount(InWidth, InHeight), "잘못된 밉 데이터");
+
+	ID3D12Device*             D3DDevice   = Device.GetDevice();
+	const D3D12_RESOURCE_DESC TextureDesc = MakeTexture2DDesc(InWidth, InHeight, InFormat, D3D12_RESOURCE_FLAG_NONE, static_cast<uint16>(InMipCount));
+
+	std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> Footprints(InMipCount);
+	std::vector<UINT>                               NumRows(InMipCount);
+	std::vector<UINT64>                             RowSizes(InMipCount);
+	UINT64                                          TotalBytes = 0;
+	D3DDevice->GetCopyableFootprints(&TextureDesc, 0, InMipCount, 0, Footprints.data(), NumRows.data(), RowSizes.data(), &TotalBytes);
+	for (uint32 Mip = 0; Mip < InMipCount; ++Mip)
+	{
+		if (Mips[Mip].Data == nullptr || Mips[Mip].Size != RowSizes[Mip] * NumRows[Mip])
+		{
+			E_LOG(LogD3D12, Error, "밉 {} 데이터 크기 불일치 ({} != {})", Mip, Mips[Mip].Size, RowSizes[Mip] * NumRows[Mip]);
+			return false;
+		}
+	}
+
+	// 복사 큐 규칙: 대상은 COMMON으로 만든다 (복사 큐에서 COPY_DEST로 암시적 승격 → 실행이 끝나면 COMMON으로 감쇠)
+	const D3D12_HEAP_PROPERTIES DefaultHeap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	E_D3D_VERIFY(D3DDevice->CreateCommittedResource(&DefaultHeap, D3D12_HEAP_FLAG_NONE, &TextureDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
+	                                                IID_PPV_ARGS(&Resource)));
+	Resource->SetName(DebugName);
+	SrvAllocator = &InSrvAllocator;
+	Width        = InWidth;
+	Height       = InHeight;
+	Format       = InFormat;
+	MipCount     = InMipCount;
+
+	// 스테이징 (링, 512바이트 배치 정렬) → 밉별 행 복사
+	const FD3D12UploadAllocation Staging = Uploader.Allocate(TotalBytes, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+	for (uint32 Mip = 0; Mip < MipCount; ++Mip)
+	{
+		const uint8* Source = static_cast<const uint8*>(Mips[Mip].Data);
+		for (UINT Row = 0; Row < NumRows[Mip]; ++Row)
+		{
+			std::memcpy(Staging.Cpu + Footprints[Mip].Offset + static_cast<uint64>(Row) * Footprints[Mip].Footprint.RowPitch,
+			            Source + Row * RowSizes[Mip], static_cast<size_t>(RowSizes[Mip]));
+		}
+	}
+
+	ID3D12GraphicsCommandList* CopyList = Uploader.GetCommandList();
+	for (uint32 Mip = 0; Mip < MipCount; ++Mip)
+	{
+		D3D12_TEXTURE_COPY_LOCATION Destination{};
+		Destination.pResource        = Resource.Get();
+		Destination.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		Destination.SubresourceIndex = Mip;
+
+		D3D12_TEXTURE_COPY_LOCATION SourceLocation{};
+		SourceLocation.pResource       = Staging.Resource;
+		SourceLocation.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		SourceLocation.PlacedFootprint = Footprints[Mip];
+		SourceLocation.PlacedFootprint.Offset += Staging.Offset;
+
+		CopyList->CopyTextureRegion(&Destination, 0, 0, 0, &SourceLocation, nullptr);
+	}
+	UploadFence    = Uploader.AddDestination(Resource.Get(), /*bTexture*/ true);
+	bUploadPending = true;
+
+	// SRV는 지금 만들어도 된다 (데이터를 읽는 것은 준비된 뒤 — 소유자가 그때까지 대체 텍스처를 쓴다)
+	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
+	SrvDesc.Format                        = Format;
+	SrvDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+	SrvDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	SrvDesc.Texture2D.MostDetailedMip     = 0;
+	SrvDesc.Texture2D.MipLevels           = MipCount;
+	SrvDesc.Texture2D.PlaneSlice          = 0;
+	SrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	Srv = SrvAllocator->Allocate();
+	D3DDevice->CreateShaderResourceView(Resource.Get(), &SrvDesc, Srv.Cpu);
+
+	E_LOG(LogD3D12, Verbose, "텍스처 비동기 업로드: {}x{}, 밉 {}개, 포맷 {} ({} bytes, 펜스 {})", Width, Height, MipCount,
+	      static_cast<uint32>(Format), TotalBytes, UploadFence);
+	return true;
+}
+
 void FD3D12Texture::Shutdown()
 {
 	if (SrvAllocator != nullptr)
@@ -243,6 +327,8 @@ void FD3D12Texture::Shutdown()
 	Height   = 0;
 	MipCount = 1;
 	Format   = DXGI_FORMAT_UNKNOWN;
+	UploadFence    = 0;
+	bUploadPending = false;
 }
 
 void FD3D12Texture::ShutdownDeferred(FD3D12RHI& Rhi)
@@ -256,4 +342,6 @@ void FD3D12Texture::ShutdownDeferred(FD3D12RHI& Rhi)
 	Height   = 0;
 	MipCount = 1;
 	Format   = DXGI_FORMAT_UNKNOWN;
+	UploadFence    = 0;
+	bUploadPending = false;
 }

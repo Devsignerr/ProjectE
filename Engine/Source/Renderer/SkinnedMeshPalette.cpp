@@ -91,7 +91,7 @@ void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources
 
 	Registry.View<FSkinComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FSkinComponent& Skin, FStaticMeshComponent& MeshComponent) {
 		const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
-		if (Mesh == nullptr || !Mesh->IsSkinned() || Skin.Joints.empty())
+		if (Mesh == nullptr || !Mesh->IsReady() || !Mesh->IsSkinned() || Skin.Joints.empty())
 		{
 			return;
 		}

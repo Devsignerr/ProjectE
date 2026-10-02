@@ -8,8 +8,10 @@
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12SwapChain.h"
+#include "RHI/D3D12/D3D12UploadQueue.h"
 
 #include <filesystem>
+#include <functional>
 #include <vector>
 
 struct FD3D12RHIDesc
@@ -21,6 +23,7 @@ struct FD3D12RHIDesc
 	bool   bVSync            = true;
 	uint64 DynamicBufferSize = 4 * 1024 * 1024; // 프레임당 동적 업로드 버퍼 크기
 	uint32 SrvDescriptorCount = 4096;           // 셰이더 가시 CBV/SRV/UAV 힙 크기
+	uint64 UploadRingSize     = FD3D12UploadQueue::DefaultRingSize; // 비동기 업로드 링 크기
 };
 
 // D3D12 렌더링 파사드: 디바이스/큐/스왑체인/깊이 버퍼와 프레임 단위 커맨드 리스트를 묶는다.
@@ -74,6 +77,15 @@ public:
 	// 셰이더 가시 CBV/SRV/UAV 디스크립터 할당자. BeginFrame에서 힙이 바인딩된다.
 	FD3D12DescriptorAllocator& GetSrvAllocator() { return SrvAllocator; }
 
+	// 비동기 업로드 (복사 큐 + 업로드 링). 제출/완료 확인/텍스처 전이는 BeginFrame이 한다 — D3D12UploadQueue.h 머리 주석
+	FD3D12UploadQueue& GetUploadQueue() { return UploadQueue; }
+	// 업로드를 지금 끝낸다 (CPU 대기): 제출 → 복사 완료 대기 → 텍스처 전이를 즉시 실행 명령 리스트로 → 그 완료까지 대기.
+	// 동기 로딩/자동 검증 비우기용. 프레임 기록 중에 불러도 된다 (프레임 리스트보다 먼저 실행됨)
+	void FlushUploads();
+	// BeginFrame 안(명령 리스트 기록 시작 직후, 업로드 전이 기록 뒤)에 불리는 콜백. 반환 = 제거용 ID
+	uint32 AddBeginFrameCallback(std::function<void()> Callback);
+	void   RemoveBeginFrameCallback(uint32 Id);
+
 	// 지연 해제: 요청한 뒤 처음 제출되는 프레임(EndFrame)을 GPU가 끝낸 뒤 실제로 해제한다.
 	// BeginFrame 전(UI 단계)에 요청해도 그 프레임이 아직 쓰는 리소스를 먼저 지우지 않는다
 	void DeferRelease(ComPtr<ID3D12Object> Object);
@@ -93,6 +105,9 @@ private:
 	FD3D12SwapChain           SwapChain;
 	FD3D12DepthBuffer         DepthBuffer;
 	FD3D12DescriptorAllocator SrvAllocator;
+	FD3D12UploadQueue         UploadQueue;
+	std::vector<std::pair<uint32, std::function<void()>>> BeginFrameCallbacks;
+	uint32                                                NextBeginFrameCallbackId = 1;
 
 	// 백버퍼마다 별도 할당자/동적 버퍼: GPU가 사용 중인 프레임의 메모리를 덮어쓰지 않기 위함
 	ComPtr<ID3D12CommandAllocator>    CommandAllocators[FrameCount];

@@ -26,6 +26,7 @@
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
 #include "Renderer/FoliageRenderer.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/TerrainRenderer.h"
 #include "Scene/ResourceHandles.h"
 
@@ -171,6 +172,8 @@ public:
 	bool IsCullingFrozen() const { return bCullingFrozen; }
 
 	const FSceneRenderStats& GetStats() const { return Stats; }
+	// 마지막으로 실행한 렌더 그래프 요약 (패스·제거·비동기·전이 수 — 통계 창, r.RenderGraph.Dump는 전체 덤프)
+	const FRGStats&          GetGraphStats() const { return LastGraphStats; }
 	FTerrainRenderer&        GetTerrainRenderer() { return TerrainRenderer; }
 	FFoliageRenderer&        GetFoliageRenderer() { return FoliageRenderer; }
 
@@ -256,28 +259,66 @@ private:
 	static constexpr DXGI_FORMAT SceneNormalFormat   = DXGI_FORMAT_R10G10B10A2_UNORM;
 	static constexpr DXGI_FORMAT SceneVelocityFormat = DXGI_FORMAT_R16G16_FLOAT;
 
+	// 씬 타깃의 그래프 참조 (RenderSceneColor가 가져온다)
+	struct FSceneGraphRefs
+	{
+		FRGResourceRef Color;
+		FRGResourceRef Depth;
+		FRGResourceRef Normal;
+		FRGResourceRef Velocity;
+	};
+	// 메시 패스의 오클루전 단계: All = 오클루전 없음, Phase1/Phase2 = 그 단계만, Both = 1 → 2를 한 패스에서 (HZB를 만들지 않는 패스)
+	enum class EMeshPhase : uint8
+	{
+		All,
+		Phase1,
+		Phase2,
+		Both,
+	};
+
 	void EnsureSceneColor(uint32 Width, uint32 Height);
 	void EnsureTarget(std::unique_ptr<FD3D12RenderTarget>& Target, uint32 Width, uint32 Height, const wchar_t* DebugName,
 	                  const FRenderTargetDesc& Desc);
-	void RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
-	// 섀도우 → HDR 씬 패스 (SceneColor를 Width x Height로 맞춘다)
+	// 렌더 그래프: 측정 훅 연결 / 컴파일(CVar 옵션) + 실행 + 통계·덤프
+	void SetupGraph(FRenderGraph& Graph);
+	void ExecuteGraph(FRenderGraph& Graph);
+	void BeginGraphTimer(ERenderTimer Timer, ID3D12GraphicsCommandList* List, bool bCompute);
+	void EndGraphTimer(ERenderTimer Timer, ID3D12GraphicsCommandList* List, bool bCompute);
+	// 그래프 실행 뒤 하위 렌더러 통계 모으기 (그림자 드로우·오클루전·파티클 등)
+	void FinalizeFrameStats();
+	// 씬 → (TAA) → 포스트/픽셀 아트 합성 → Output 패스 등록
+	void RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
+	// 섀도우 → HDR 씬 패스 등록 (SceneColor를 Width x Height로 맞춘다). CPU 준비(수집·컬링·상수 업로드)는 여기서 바로, GPU 기록은 그래프 실행 때
 	// bAllowJitter = false면 bTemporalJitter여도 지터 없음 (픽셀 아트)
-	void RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter);
+	void RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter,
+	                      FSceneGraphRefs& OutRefs);
 	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
 	void SelectLods(const FCamera& Camera);
-	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 판정). 사전 패스와 메인 패스가 같은 묶음을 그린다
+	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 준비). 사전 패스와 메인 패스가 같은 묶음을 그린다
 	void PrepareMainBatches(const FCamera& Camera, bool bOcclusion);
-	// 메인 묶음 기록. bBuildHzb면 1단계 뒤 HZB + 2단계 판정을 이 패스 깊이로 한다 (오클루전일 때 깊이를 처음 쓰는 패스)
-	void DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& PerFrame, bool bOcclusion, bool bBuildHzb,
-	                     uint32& OutDrawCalls, uint64& OutTriangles);
+	// 메인 묶음 기록 (지형 포함 — 2단계 패스 제외). 드로우/삼각형 수를 더한다
+	void RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, EMeshPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress,
+	                       D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, EMeshPhase Phase, uint32& InOutDrawCalls, uint64& InOutTriangles);
 	// 반투명 묶음 기록 (안개 적용 뒤, 파티클 전 — 씬 컬러 + 깊이가 바인딩된 상태)
-	void DrawTranslucentBatches(const FPerFrameConstants& PerFrame, uint32& OutDrawCalls, uint64& OutTriangles);
-	// 메시 루트 시그니처 + 패스 공용 루트 인자 (프레임/그림자/IBL/로컬 라이트/인스턴스/화면 버퍼/안개)
-	void BindMeshPassRoot(D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, D3D12_GPU_VIRTUAL_ADDRESS InstanceIndices);
-	// DebugView가 켜져 있으면 화면 공간 버퍼를 Output에 덮어 그린다
-	void RenderDebugView(const FRenderOutput& Output);
-	// 깊이 사전 패스 렌더 타깃 바인딩 (법선 + 움직임 벡터 MRT + 씬 깊이)
-	void BindPrepassTargets();
+	void DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress,
+	                            D3D12_GPU_VIRTUAL_ADDRESS FogConstants, uint32& OutDrawCalls, uint64& OutTriangles);
+	// 메시 루트 시그니처 + 패스 공용 루트 인자 (프레임/그림자/IBL/로컬 라이트/인스턴스/화면 버퍼)
+	void BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress,
+	                      D3D12_GPU_VIRTUAL_ADDRESS InstanceIndices);
+	// DebugView가 켜져 있으면 화면 공간 버퍼를 Output에 덮어 그리는 패스
+	void AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphOutput& Output, const FSceneGraphRefs& Refs);
+	// 깊이 사전 패스 렌더 타깃 바인딩 (법선 + 움직임 벡터 MRT + 씬 깊이) + 뷰포트
+	void BindPrepassTargets(ID3D12GraphicsCommandList* CommandList);
+
+	// ---- 렌더 그래프 (Phase 47)
+	FRGResourcePool GraphPool;          // 그래프 내부 텍스처 풀 (크기·형식 키)
+	FRGStats        LastGraphStats;
+	uint32          SeenDumpSerial      = 0;     // r.RenderGraph.Dump 요청 번호 (마지막으로 덤프한)
+	bool            bPendingSnapRestore = false; // 픽셀 아트 물체 스냅: 그래프 실행 뒤 되돌린다
+	bool            bFrameOcclusion     = false; // 이번 씬 렌더가 오클루전을 썼는가 (통계)
+	uint64          FrameMainTriangles        = 0;
+	uint64          FrameTranslucentTriangles = 0;
+	FD3D12GpuTimer  ComputeGpuTimer;    // 비동기 계산 큐 패스 구간 (같은 ERenderTimer 칸 — Stats.GpuMs는 그래픽스 + 계산)
 	// 엔티티별 이전 프레임 월드로 인스턴스 PrevWorld 채우기 (Upload 전). bValid = false면 이력을 쓰지 않고 현재로
 	void ApplyMotionHistory(bool bValid);
 
@@ -307,8 +348,7 @@ private:
 	FCamera BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
 	                            uint32 SourceWidth, uint32 SourceHeight, FPixelArtCompositeParams& OutParams) const;
 
-	std::unique_ptr<FD3D12RenderTarget> PixelArtColor; // 픽셀 아트: 저해상도 톤매핑 결과 (선형, 부동소수점)
-	FPixelArtObjectSnap                 PixelArtObjectSnap; // 픽셀 아트: 움직인 물체 도트 스냅 (씬 렌더 동안만 적용)
+	FPixelArtObjectSnap                 PixelArtObjectSnap; // 픽셀 아트: 움직인 물체 도트 스냅 (씬 렌더 동안만 적용, 저해상도 톤매핑 결과는 그래프 풀)
 	uint32                              AoResolutionDivisor = 2;     // 이번 씬 렌더의 SSAO 해상도 (픽셀 아트 렌더 동안만 1)
 	bool                                bAoGridNoise        = false; // 픽셀 아트: SSAO 노이즈를 월드 도트 격자에 고정
 	int32                               AoGridOrigin[2]     = {};

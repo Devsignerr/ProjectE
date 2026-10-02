@@ -149,10 +149,10 @@ void FDecalRenderer::EnsureTargets(uint32 Width, uint32 Height)
 	}
 }
 
-bool FDecalRenderer::Render(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FFrustum& Frustum,
-                            const FD3D12RenderTarget& SceneDepth, const FD3D12RenderTarget& SceneNormal)
+bool FDecalRenderer::Prepare(FScene& Scene, FResourceManager& Resources, const FCamera& Camera, const FFrustum& Frustum, uint32 Width, uint32 Height)
 {
 	DrawnCount = 0;
+	Prepared.clear();
 	FRegistry& Registry = Scene.GetRegistry();
 
 	// 수집: 머티리얼 해석 (경로가 바뀌면 다시) + 상자 컬링
@@ -190,9 +190,6 @@ bool FDecalRenderer::Render(FScene& Scene, FResourceManager& Resources, const FC
 		return A.SortOrder != B.SortOrder ? A.SortOrder < B.SortOrder : A.Entity < B.Entity;
 	});
 
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	const uint32               Width       = SceneDepth.GetWidth();
-	const uint32               Height      = SceneDepth.GetHeight();
 	EnsureTargets(Width, Height);
 
 	const FMatrix4x4 ViewProjection    = Camera.GetViewProjectionMatrix();
@@ -201,25 +198,6 @@ bool FDecalRenderer::Render(FScene& Scene, FResourceManager& Resources, const FC
 	                                         ? Camera.GetOrthoHeight() / static_cast<float>(Height)
 	                                         : 2.0f * FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f) / static_cast<float>(Height);
 
-	ID3D12Resource*              DepthResource = SceneDepth.GetDepthResource();
-	const D3D12_RESOURCE_BARRIER ToRead =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToRead);
-
-	for (uint32 Index = 0; Index < 3; ++Index)
-	{
-		Targets[Index]->Begin(CommandList, Targets[Index]->GetDesc().ClearColor);
-	}
-	const D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[3] = { Targets[0]->GetRtv(), Targets[1]->GetRtv(), Targets[2]->GetRtv() };
-	CommandList->OMSetRenderTargets(3, Rtvs, FALSE, nullptr);
-	SetScreenPassViewport(CommandList, Width, Height);
-	CommandList->SetGraphicsRootSignature(Root->Get());
-	CommandList->SetPipelineState(Pipeline.Get());
-	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 0, SceneDepth.GetDepthSrv().Gpu);
-	CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 1, SceneNormal.GetSrv().Gpu);
-
-	const uint32               Increment     = Rhi->GetSrvAllocator().GetIncrementSize();
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
 	for (const FVisibleDecal& Item : Visible)
 	{
@@ -252,24 +230,63 @@ bool FDecalRenderer::Render(FScene& Scene, FResourceManager& Resources, const FC
 		const float TextureWidth    = Base != nullptr ? static_cast<float>(Base->GetHeight()) : 1.0f; // 텍스처 위 = 로컬 X
 		Constants.TexelsPerUnit     = TextureWidth / FMath::Max(Decal.Size.X, 1.0f);
 
-		CommandList->SetGraphicsRootConstantBufferView(FScreenPassRootSignature::Root_Constants, DynamicBuffer.AllocateConstants(Constants).GpuAddress);
-		// 머티리얼 테이블(연속 5칸)의 베이스/금속거칠기/노멀 칸을 t2~t4로
-		for (uint32 Slot = 0; Slot < 3; ++Slot)
-		{
-			D3D12_GPU_DESCRIPTOR_HANDLE Handle = Material.TextureTable.Gpu;
-			Handle.ptr += static_cast<UINT64>(Slot) * Increment;
-			CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 2 + Slot, Handle);
-		}
-		CommandList->DrawInstanced(36, 1, 0, 0);
-		++DrawnCount;
+		Prepared.push_back({ DynamicBuffer.AllocateConstants(Constants).GpuAddress, Material.TextureTable.Gpu });
 	}
+	DrawnCount = static_cast<uint32>(Prepared.size());
+	return true;
+}
 
+std::array<FRGResourceRef, 3> FDecalRenderer::ImportTargets(FRenderGraph& Graph) const
+{
+	static constexpr const char* Names[3] = { "DBufferA", "DBufferB", "DBufferC" };
+	std::array<FRGResourceRef, 3> Refs;
 	for (uint32 Index = 0; Index < 3; ++Index)
 	{
-		Targets[Index]->End(CommandList);
+		Refs[Index] = Graph.ImportColor(Names[Index], *Targets[Index]);
 	}
-	const D3D12_RESOURCE_BARRIER ToWrite =
-		MakeTransitionBarrier(DepthResource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToWrite);
-	return true;
+	return Refs;
+}
+
+void FDecalRenderer::AddPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneDepth, const FD3D12RenderTarget& SceneNormal, FRGResourceRef Depth,
+                             FRGResourceRef Normal, int32 Timer, std::array<FRGResourceRef, 3>& OutTargets)
+{
+	OutTargets = ImportTargets(Graph);
+	const uint32                 Width     = SceneDepth.GetWidth();
+	const uint32                 Height    = SceneDepth.GetHeight();
+	const FD3D12DescriptorHandle DepthSrv  = SceneDepth.GetDepthSrv();
+	const FD3D12DescriptorHandle NormalSrv = SceneNormal.GetSrv();
+	FRenderGraph::FPassBuilder   Pass      = Graph.AddPass("데칼 DBuffer");
+	Pass.Read(Depth, ERGAccess::SrvPixel).Read(Normal, ERGAccess::SrvPixel).Timer(Timer);
+	for (const FRGResourceRef& Target : OutTargets)
+	{
+		Pass.Write(Target, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true); // 지우고 그린다
+	}
+	Pass.Execute([this, Width, Height, DepthSrv, NormalSrv](FRGContext& Context) {
+		ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+		const D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[3] = { Targets[0]->GetRtv(), Targets[1]->GetRtv(), Targets[2]->GetRtv() };
+		for (uint32 Index = 0; Index < 3; ++Index)
+		{
+			CommandList->ClearRenderTargetView(Rtvs[Index], Targets[Index]->GetDesc().ClearColor, 0, nullptr);
+		}
+		CommandList->OMSetRenderTargets(3, Rtvs, FALSE, nullptr);
+		SetScreenPassViewport(CommandList, Width, Height);
+		CommandList->SetGraphicsRootSignature(Root->Get());
+		CommandList->SetPipelineState(Pipeline.Get());
+		CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 0, DepthSrv.Gpu);
+		CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 1, NormalSrv.Gpu);
+		const uint32 Increment = Rhi->GetSrvAllocator().GetIncrementSize();
+		for (const FPreparedDecal& Decal : Prepared)
+		{
+			CommandList->SetGraphicsRootConstantBufferView(FScreenPassRootSignature::Root_Constants, Decal.Constants);
+			// 머티리얼 테이블(연속 5칸)의 베이스/금속거칠기/노멀 칸을 t2~t4로
+			for (uint32 Slot = 0; Slot < 3; ++Slot)
+			{
+				D3D12_GPU_DESCRIPTOR_HANDLE Handle = Decal.TextureTable;
+				Handle.ptr += static_cast<UINT64>(Slot) * Increment;
+				CommandList->SetGraphicsRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + 2 + Slot, Handle);
+			}
+			CommandList->DrawInstanced(36, 1, 0, 0);
+		}
+	});
 }

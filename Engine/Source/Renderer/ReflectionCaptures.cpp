@@ -366,35 +366,28 @@ uint32 FReflectionCaptures::Gather(FScene& Scene)
 	return static_cast<uint32>(FrameCaptures.size());
 }
 
-void FReflectionCaptures::CopyFace(const FD3D12RenderTarget& SceneColor, uint32 Face)
+void FReflectionCaptures::AddCopyFacePass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneColorRef, uint32 Face)
 {
 	E_CHECKF(SceneColor.GetWidth() == FReflectionMath::CaptureSize && SceneColor.GetHeight() == FReflectionMath::CaptureSize, "캡처 면 크기가 다릅니다");
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	std::vector<D3D12_RESOURCE_BARRIER> Barriers;
-	Barriers.push_back(MakeTransitionBarrier(SceneColor.GetColorResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE));
-	if (RawCubeState != D3D12_RESOURCE_STATE_COPY_DEST)
-	{
-		Barriers.push_back(MakeTransitionBarrier(RawCube.Get(), RawCubeState, D3D12_RESOURCE_STATE_COPY_DEST));
-		RawCubeState = D3D12_RESOURCE_STATE_COPY_DEST;
-	}
-	CommandList->ResourceBarrier(static_cast<UINT>(Barriers.size()), Barriers.data());
-
-	D3D12_TEXTURE_COPY_LOCATION Dest{};
-	Dest.pResource        = RawCube.Get();
-	Dest.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	Dest.SubresourceIndex = Face;
-	D3D12_TEXTURE_COPY_LOCATION Src{};
-	Src.pResource        = SceneColor.GetColorResource();
-	Src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	Src.SubresourceIndex = 0;
-	CommandList->CopyTextureRegion(&Dest, 0, 0, 0, &Src, nullptr);
-
-	const D3D12_RESOURCE_BARRIER Back =
-		MakeTransitionBarrier(SceneColor.GetColorResource(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &Back);
+	const FRGResourceRef RawRef = Graph.ImportTracked("ReflectionCaptureRaw", RawCube.Get(), &RawCubeState, 1, 6);
+	ID3D12Resource*      Source = SceneColor.GetColorResource();
+	Graph.AddPass("반사 캡처 면 복사")
+		.Read(SceneColorRef, ERGAccess::CopySource)
+		.Write(RawRef, ERGAccess::CopyDest, FRGSubresourceRange::Slice(Face), true)
+		.Execute([this, Source, Face](FRGContext& Context) {
+			D3D12_TEXTURE_COPY_LOCATION Dest{};
+			Dest.pResource        = RawCube.Get();
+			Dest.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			Dest.SubresourceIndex = Face;
+			D3D12_TEXTURE_COPY_LOCATION Src{};
+			Src.pResource        = Source;
+			Src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+			Src.SubresourceIndex = 0;
+			Context.CommandList->CopyTextureRegion(&Dest, 0, 0, 0, &Src, nullptr);
+		});
 }
 
-void FReflectionCaptures::FinishBake(const std::string& AssetPath)
+void FReflectionCaptures::AddFinishBakePasses(FRenderGraph& Graph, const std::string& AssetPath)
 {
 	const int32 SlotIndex = FindOrAssignSlot(AssetPath);
 	if (SlotIndex < 0)
@@ -402,19 +395,17 @@ void FReflectionCaptures::FinishBake(const std::string& AssetPath)
 		E_LOG(LogRenderer, Warning, "반사 캡처 칸이 모자라 굽기 결과를 올리지 못했습니다: {}", AssetPath);
 		return;
 	}
-	const uint32               Slot        = static_cast<uint32>(SlotIndex);
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	ID3D12Device*              Device      = Rhi->GetDevice().GetDevice();
-	FD3D12DescriptorAllocator& Allocator   = Rhi->GetSrvAllocator();
+	const uint32               Slot      = static_cast<uint32>(SlotIndex);
+	ID3D12Device*              Device    = Rhi->GetDevice().GetDevice();
+	FD3D12DescriptorAllocator& Allocator = Rhi->GetSrvAllocator();
+
+	// 아틀라스: 밉 × (캡처 × 6면) 서브리소스 — 이 칸의 6장만 쓴다 (평소 PIXEL_SHADER_RESOURCE)
+	const FRGResourceRef RawRef   = Graph.ImportTracked("ReflectionCaptureRaw", RawCube.Get(), &RawCubeState, 1, 6);
+	const FRGResourceRef AtlasRef = Graph.Import("ReflectionCaptureAtlas", Atlas.Get(), ERGAccess::SrvPixel, ERGAccess::SrvPixel,
+	                                             FReflectionMath::CaptureMipCount, 6 * FReflectionMath::MaxCaptures);
+	const FRGSubresourceRange SlotRange{ 0, FRGSubresourceRange::Remaining, Slot * 6, 6 };
 
 	// 1) 프리필터: 원시 큐브(SRV) → 아틀라스 칸의 밉마다 (UAV = 배열 조각 Slot*6부터 6장)
-	const D3D12_RESOURCE_BARRIER ToFilter[] = {
-		MakeTransitionBarrier(RawCube.Get(), RawCubeState, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
-		MakeTransitionBarrier(Atlas.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-	};
-	CommandList->ResourceBarrier(2, ToFilter);
-	RawCubeState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-
 	const FD3D12DescriptorHandle Uavs = Allocator.AllocateRange(FReflectionMath::CaptureMipCount);
 	for (uint32 Mip = 0; Mip < FReflectionMath::CaptureMipCount; ++Mip)
 	{
@@ -426,24 +417,29 @@ void FReflectionCaptures::FinishBake(const std::string& AssetPath)
 		Desc.Texture2DArray.ArraySize       = 6;
 		Device->CreateUnorderedAccessView(Atlas.Get(), nullptr, &Desc, Allocator.GetCpuHandle(Uavs.Index + Mip));
 	}
-	CommandList->SetComputeRootSignature(PrefilterRoot.Get());
-	CommandList->SetPipelineState(PrefilterPipeline.Get());
-	CommandList->SetComputeRootDescriptorTable(1, RawCubeSrv.Gpu);
-	CommandList->SetComputeRootDescriptorTable(3, Uavs.Gpu); // u1 (프리필터는 쓰지 않음)
-	for (uint32 Mip = 0; Mip < FReflectionMath::CaptureMipCount; ++Mip)
-	{
-		FBakeConstants Constants;
-		Constants.Size      = FReflectionMath::CaptureSize >> Mip;
-		Constants.Roughness = IblMath::MipToRoughness(Mip, FReflectionMath::CaptureMipCount);
-		CommandList->SetComputeRoot32BitConstants(0, 4, &Constants, 0);
-		CommandList->SetComputeRootDescriptorTable(2, D3D12_GPU_DESCRIPTOR_HANDLE{ Uavs.Gpu.ptr + static_cast<UINT64>(Mip) * Allocator.GetIncrementSize() });
-		CommandList->Dispatch((Constants.Size + 7) / 8, (Constants.Size + 7) / 8, 6);
-	}
+	const uint32 Increment = Allocator.GetIncrementSize();
+	Graph.AddPass("반사 캡처 프리필터")
+		.Read(RawRef, ERGAccess::SrvNonPixel)
+		.Write(AtlasRef, ERGAccess::Uav, SlotRange, true)
+		.Execute([this, Uavs, Increment](FRGContext& Context) {
+			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+			CommandList->SetComputeRootSignature(PrefilterRoot.Get());
+			CommandList->SetPipelineState(PrefilterPipeline.Get());
+			CommandList->SetComputeRootDescriptorTable(1, RawCubeSrv.Gpu);
+			CommandList->SetComputeRootDescriptorTable(3, Uavs.Gpu); // u1 (프리필터는 쓰지 않음)
+			for (uint32 Mip = 0; Mip < FReflectionMath::CaptureMipCount; ++Mip)
+			{
+				FBakeConstants Constants;
+				Constants.Size      = FReflectionMath::CaptureSize >> Mip;
+				Constants.Roughness = IblMath::MipToRoughness(Mip, FReflectionMath::CaptureMipCount);
+				CommandList->SetComputeRoot32BitConstants(0, 4, &Constants, 0);
+				CommandList->SetComputeRootDescriptorTable(2, D3D12_GPU_DESCRIPTOR_HANDLE{ Uavs.Gpu.ptr + static_cast<UINT64>(Mip) * Increment });
+				CommandList->Dispatch((Constants.Size + 7) / 8, (Constants.Size + 7) / 8, 6);
+			}
+		});
 	Rhi->DeferFreeDescriptor(Uavs);
 
-	// 2) 리드백 (저장용) → 3) 셰이더 리소스로
-	const D3D12_RESOURCE_BARRIER ToCopy = MakeTransitionBarrier(Atlas.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	CommandList->ResourceBarrier(1, &ToCopy);
+	// 2) 리드백 (저장용) — 그래프 끝에 아틀라스는 셰이더 리소스로 돌아간다
 	FPendingSave Pending;
 	Pending.AssetPath = AssetPath;
 	Pending.Footprints.resize(FaceMipCount);
@@ -455,23 +451,28 @@ void FReflectionCaptures::FinishBake(const std::string& AssetPath)
 	if (SUCCEEDED(Device->CreateCommittedResource(&ReadbackHeap, D3D12_HEAP_FLAG_NONE, &BufferDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
 	                                              IID_PPV_ARGS(&Pending.Readback))))
 	{
-		for (uint32 Index = 0; Index < FaceMipCount; ++Index)
-		{
-			D3D12_TEXTURE_COPY_LOCATION Dest{};
-			Dest.pResource       = Pending.Readback.Get();
-			Dest.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-			Dest.PlacedFootprint = Pending.Footprints[Index];
-			D3D12_TEXTURE_COPY_LOCATION Src{};
-			Src.pResource        = Atlas.Get();
-			Src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-			Src.SubresourceIndex = FirstSubresource(Slot) + Index;
-			CommandList->CopyTextureRegion(&Dest, 0, 0, 0, &Src, nullptr);
-		}
+		ID3D12Resource* const                           Readback   = Pending.Readback.Get();
+		const std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> Footprints = Pending.Footprints;
+		Graph.AddPass("반사 캡처 리드백")
+			.Read(AtlasRef, ERGAccess::CopySource, SlotRange)
+			.NeverCull() // CPU가 몇 프레임 뒤에 파일로 저장
+			.Execute([this, Readback, Footprints, Slot](FRGContext& Context) {
+				for (uint32 Index = 0; Index < FaceMipCount; ++Index)
+				{
+					D3D12_TEXTURE_COPY_LOCATION Dest{};
+					Dest.pResource       = Readback;
+					Dest.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+					Dest.PlacedFootprint = Footprints[Index];
+					D3D12_TEXTURE_COPY_LOCATION Src{};
+					Src.pResource        = Atlas.Get();
+					Src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+					Src.SubresourceIndex = FirstSubresource(Slot) + Index;
+					Context.CommandList->CopyTextureRegion(&Dest, 0, 0, 0, &Src, nullptr);
+				}
+			});
 		Pending.ReadyFrame = Rhi->GetFrameNumber() + FD3D12RHI::FrameCount;
 		PendingSaves.push_back(std::move(Pending));
 	}
-	const D3D12_RESOURCE_BARRIER ToRead = MakeTransitionBarrier(Atlas.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToRead);
 
 	Slots[Slot].bLoaded       = true;
 	Slots[Slot].LastUsedFrame = GatherCount;

@@ -3,6 +3,7 @@
 #include "Core/Math/Math.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 
 #include <memory>
 
@@ -28,6 +29,7 @@ struct FAmbientOcclusionInputs
 
 // SSAO (GTAO 방식, AmbientOcclusion.hlsl): 반해상도 계산 → 양방향 블러 가로/세로 → 결과(R = 가시도, G = 뷰 깊이).
 //   메인 패스가 t16으로 읽어 간접광(IBL)에만 곱한다 (직접광 제외). 결과 타깃은 씬 컬러 크기에 맞춰 항상 있다 (끄면 읽지 않음)
+//   렌더 그래프 패스 3개: 계산(깊이·법선 → 결과) → 가로 블러(결과 → 그래프 풀 중간 텍스처) → 세로 블러(중간 → 결과)
 class FAmbientOcclusion
 {
 public:
@@ -41,11 +43,12 @@ public:
 
 	// 전체 해상도 ÷ ResolutionDivisor(1 또는 2) 크기 버퍼를 만든다 (씬 컬러를 맞출 때 같이)
 	void EnsureTargets(uint32 FullWidth, uint32 FullHeight, uint32 ResolutionDivisor);
-	void Render(const FAmbientOcclusionInputs& Inputs);
+	// 패스 등록. Depth/Normal = 씬 깊이·법선의 그래프 참조. 반환 = 결과 그래프 참조 (메인 패스가 읽는다)
+	FRGResourceRef AddPasses(FRenderGraph& Graph, const FAmbientOcclusionInputs& Inputs, FRGResourceRef Depth, FRGResourceRef Normal, int32 Timer);
 
 	// 결과 SRV (PIXEL_SHADER_RESOURCE). EnsureTargets 이후 유효
-	const FD3D12DescriptorHandle& GetResultSrv() const { return Targets[0]->GetSrv(); }
-	const FD3D12RenderTarget*     GetResult() const { return Targets[0].get(); }
+	const FD3D12DescriptorHandle& GetResultSrv() const { return Result->GetSrv(); }
+	const FD3D12RenderTarget*     GetResult() const { return Result.get(); }
 
 private:
 	bool CreatePipelines(FD3D12PipelineState& OutCompute, FD3D12PipelineState& OutBlur, bool bForceRecompile);
@@ -56,5 +59,5 @@ private:
 	FD3D12PipelineState             ComputePipeline;
 	FD3D12PipelineState             BlurPipeline;
 
-	std::unique_ptr<FD3D12RenderTarget> Targets[2]; // [0] = 결과(계산 → 세로 블러), [1] = 가로 블러 중간
+	std::unique_ptr<FD3D12RenderTarget> Result; // 계산 → 세로 블러 결과 (가로 블러 중간은 그래프 풀)
 };

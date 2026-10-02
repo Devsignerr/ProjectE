@@ -18,6 +18,7 @@
 #include "Scene/Scene.h"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <format>
 #include <string>
@@ -180,6 +181,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	};
 
 	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
+	ComputeGpuTimer.Init(Device, Rhi->GetComputeQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererComputeTimestamps"); // 비동기 계산 패스 구간
+	GraphPool.Init(*Rhi);
 
 	RenderProfiling::AddRef(); // Tracy GPU 컨텍스트 공유 (Shutdown에서 Release)
 
@@ -527,14 +530,16 @@ void FSceneRenderer::Shutdown()
 	{
 		return;
 	}
+	Rhi->GetComputeQueue().Flush();
 	Rhi->GetGraphicsQueue().Flush();
 	LogPerfCapture();
 	GpuTimer.Shutdown();
+	ComputeGpuTimer.Shutdown();
 	RenderProfiling::Release(); // GPU Flush 뒤 (마지막 렌더러면 Tracy GPU 컨텍스트 파괴)
+	GraphPool.Shutdown();
 	SceneColor.reset();
 	SceneNormal.reset();
 	SceneVelocity.reset();
-	PixelArtColor.reset();
 	MotionHistory.clear();
 	bHasPrevView = false;
 	PostProcessor.Shutdown();
@@ -636,21 +641,24 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	ApplyConsoleVariables(); // 콘솔에서 바꾼 값은 이번 프레임부터
 	RenderProfiling::BeginFrame(Rhi->GetDevice().GetDevice(), Rhi->GetGraphicsQueue().GetQueue(), Rhi->GetFrameNumber());
 
-	// 측정: 지난 결과(GPU는 슬롯 수만큼 늦음)를 통계에 옮기고 이번 프레임 칸을 비운다
+	// 측정: 지난 결과(GPU는 슬롯 수만큼 늦음)를 통계에 옮기고 이번 프레임 칸을 비운다 (계산 큐 구간은 계산 큐 타이머)
 	const FClock::time_point Now = FClock::now();
 	Stats.FrameIntervalMs        = bHasLastRenderTime ? std::chrono::duration<float, std::milli>(Now - LastRenderTime).count() : 0.0f;
 	LastRenderTime               = Now;
 	bHasLastRenderTime           = true;
 	std::fill(std::begin(Stats.CpuMs), std::end(Stats.CpuMs), 0.0f);
 	const bool bGpuTiming = GpuTimer.BeginFrame(Rhi->GetFrameSlot(), Rhi->GetFrameNumber());
+	ComputeGpuTimer.BeginFrame(Rhi->GetFrameSlot(), Rhi->GetFrameNumber());
 	if (bGpuTiming)
 	{
 		for (uint32 Index = 0; Index < static_cast<uint32>(ERenderTimer::Count); ++Index)
 		{
-			Stats.GpuMs[Index] = GpuTimer.GetScopeMs(Index);
+			Stats.GpuMs[Index] = GpuTimer.GetScopeMs(Index) + ComputeGpuTimer.GetScopeMs(Index);
 		}
 	}
 	BeginTimer(ERenderTimer::Total);
+	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
+	const uint64               UploadStart   = DynamicBuffer.GetUsed();
 
 	// 한 Rhi 프레임에 몇 번 불렸는지 (여러 뷰/씬을 번갈아 그리는 렌더러는 시간 이력을 쓰지 않는다)
 	const uint64 FrameNumber = Rhi->GetFrameNumber();
@@ -659,13 +667,14 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		ViewsLastFrame     = CurrentFrameNumber + 1 == FrameNumber ? ViewsThisFrame : 0;
 		CurrentFrameNumber = FrameNumber;
 		ViewsThisFrame     = 0;
+		GraphPool.Trim(FrameNumber); // 오래 안 쓴 그래프 풀 텍스처 정리 (프레임당 한 번)
 	}
 	++ViewsThisFrame;
 
 	// 하늘 환경맵 (하늘광 EnvironmentMap/회전이 바뀌면 IBL 다시 생성)
 	UpdateEnvironment(Scene);
 
-	// 반사 캡처: 끝난 굽기 저장 + 요청된 굽기 (큐브 면 6개를 이번 프레임 명령 목록에 먼저 그린다)
+	// 반사 캡처: 끝난 굽기 저장 + 요청된 굽기 (큐브 면 6개를 면마다 그래프로 이번 프레임 명령 목록에 먼저 그린다)
 	ReflectionCaptures.ProcessPendingSaves();
 	if (bBakeCapturesRequested)
 	{
@@ -673,7 +682,24 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		BakeReflectionCaptures(Scene);
 	}
 
-	RenderFrame(Scene, Camera, Output);
+	// 렌더 그래프: 패스 등록(CPU 준비 포함) → 컴파일(컬링·전이·비동기 포크/조인) → 실행(기록)
+	{
+		FRenderGraph Graph(*Rhi, GraphPool, "SceneRenderer");
+		SetupGraph(Graph);
+		RenderFrame(Graph, Scene, Camera, Output);
+		ExecuteGraph(Graph);
+	}
+	if (bPendingSnapRestore)
+	{
+		PixelArtObjectSnap.Restore(Scene); // 씬 렌더(그래프 실행) 동안만 스냅 위치
+		bPendingSnapRestore = false;
+	}
+	FinalizeFrameStats();
+	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;
+
+	// 그래프가 마지막에 출력 RTV를 바인딩한 채 끝나지 않을 수 있다 (출력 대상 바인딩 보장 — 에디터 오버레이가 이어서 그린다)
+	CommandList->OMSetRenderTargets(1, &Output.Rtv, FALSE, nullptr);
+	SetScreenPassViewport(CommandList, Output.Width, Output.Height);
 
 	EndTimer(ERenderTimer::Total);
 	GpuTimer.EndFrame(CommandList);
@@ -683,42 +709,124 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	}
 }
 
-void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
+void FSceneRenderer::SetupGraph(FRenderGraph& Graph)
 {
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+	Graph.OnTimerBegin = [this](int32 Timer, ID3D12GraphicsCommandList* List, bool bCompute) {
+		BeginGraphTimer(static_cast<ERenderTimer>(Timer), List, bCompute);
+	};
+	Graph.OnTimerEnd = [this](int32 Timer, ID3D12GraphicsCommandList* List, bool bCompute) {
+		EndGraphTimer(static_cast<ERenderTimer>(Timer), List, bCompute);
+	};
+	Graph.OnLastComputeBatchEnd = [this](ID3D12GraphicsCommandList* List) { ComputeGpuTimer.EndFrame(List); };
+}
+
+void FSceneRenderer::ExecuteGraph(FRenderGraph& Graph)
+{
+	FRGCompileOptions Options;
+	Options.bCullPasses   = RendererCVars::RenderGraphCull.Get();
+	Options.bAsyncCompute = RendererCVars::RenderGraphAsyncCompute.Get();
+	Graph.Compile(Options);
+	Graph.Execute();
+	LastGraphStats = Graph.GetStats();
+	// 콘솔 r.RenderGraph.Dump: 요청 뒤 이 렌더러가 처음 실행하는 그래프를 로그로
+	if (const uint32 Serial = RendererCVars::GetRenderGraphDumpSerial(); Serial != SeenDumpSerial)
+	{
+		SeenDumpSerial = Serial;
+		for (const std::string& Line : Graph.Dump())
+		{
+			E_LOG(LogRenderer, Display, "{}", Line);
+		}
+	}
+}
+
+void FSceneRenderer::BeginGraphTimer(ERenderTimer Timer, ID3D12GraphicsCommandList* List, bool bCompute)
+{
+	const uint32 Index = static_cast<uint32>(Timer);
+	TimerStarts[Index] = FClock::now();
+	if (bCompute)
+	{
+		ComputeGpuTimer.BeginScope(List, Index);
+		RenderProfiling::BeginZone(nullptr, Index, GetRenderTimerName(Timer), false); // Tracy GPU 컨텍스트는 그래픽스 큐 전용
+	}
+	else
+	{
+		GpuTimer.BeginScope(List, Index);
+		RenderProfiling::BeginZone(List, Index, GetRenderTimerName(Timer), true);
+	}
+}
+
+void FSceneRenderer::EndGraphTimer(ERenderTimer Timer, ID3D12GraphicsCommandList* List, bool bCompute)
+{
+	const uint32 Index = static_cast<uint32>(Timer);
+	Stats.CpuMs[Index] += std::chrono::duration<float, std::milli>(FClock::now() - TimerStarts[Index]).count();
+	RenderProfiling::EndZone(Index);
+	(bCompute ? ComputeGpuTimer : GpuTimer).EndScope(List, Index);
+}
+
+void FSceneRenderer::FinalizeFrameStats()
+{
+	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
+	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
+	Stats.ShadowDrawCalls   = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls() + TerrainRenderer.GetShadowDrawCalls();
+	Stats.ShadowTriangles   = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles() + TerrainRenderer.GetShadowTriangles();
+	if (bFrameOcclusion)
+	{
+		Stats.Triangles       = OcclusionCuller.GetDrawnTriangles() + FrameMainTriangles; // 간접 드로우(정적) + 바로 그린 스킨
+		Stats.OcclusionTested = OcclusionCuller.GetTestedInstances();
+		Stats.OcclusionPhase1 = OcclusionCuller.GetPhase1Instances();
+		Stats.OcclusionPhase2 = OcclusionCuller.GetPhase2Instances();
+	}
+	else
+	{
+		Stats.Triangles       = FrameMainTriangles;
+		Stats.OcclusionTested = Stats.OcclusionPhase1 = Stats.OcclusionPhase2 = 0;
+	}
+	Stats.Triangles += FrameTranslucentTriangles;
+	Stats.ParticleEmittersCulled = ParticleRenderer.GetCulledEmitterCount();
+}
+
+void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
+{
+	// 출력: 넘겨받은 RENDER_TARGET 상태 그대로 돌려준다 (리소스가 없으면 추적하지 않음 — 출력 패스는 부수 효과)
+	FPostProcessGraphOutput PostOutput;
+	PostOutput.Output = Output;
+	if (Output.Resource != nullptr)
+	{
+		PostOutput.Ref = Graph.Import("Output", Output.Resource, ERGAccess::RenderTarget, ERGAccess::RenderTarget);
+	}
 
 	const FPixelArtComponent* PixelArt = FindPixelArtSettings(Scene);
 	if (PixelArt == nullptr)
 	{
-		RenderSceneColor(Scene, Camera, Output.Width, Output.Height, true);
+		FSceneGraphRefs Refs;
+		RenderSceneColor(Graph, Scene, Camera, Output.Width, Output.Height, true, Refs);
 
 		// TAA: 톤매핑 전 HDR 이력과 섞은 결과가 포스트 입력. 한 렌더러가 여러 뷰를 그리는 경우(미리보기/썸네일)·와이어프레임은 끔
-		const bool                    bTaa      = PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
-		const FD3D12DescriptorHandle* PostInput = &SceneColor->GetSrv();
-		float                         Sharpness = 0.0f;
+		const bool             bTaa      = PostProcessSettings.bTemporalAA && bConsoleTemporalAA && !bWireframe && ViewsThisFrame == 1 && ViewsLastFrame == 1;
+		FPostProcessGraphInput PostInput{ Refs.Color, SceneColor->GetSrv() };
+		float                  Sharpness = 0.0f;
 		if (bTaa)
 		{
 			if (!bTaaRanLastFrame)
 			{
 				TemporalAA.ResetHistory(); // 꺼져 있던 동안의 이력은 낡았다
 			}
-			BeginTimer(ERenderTimer::TemporalAA);
 			FTemporalAAInputs Inputs;
 			Inputs.SceneColor    = SceneColor.get();
 			Inputs.Velocity      = SceneVelocity.get();
 			Inputs.Reprojection  = CurrentReprojection;
 			Inputs.bHistoryValid = bTemporalHistoryValid;
 			Inputs.CurrentWeight = PostProcessSettings.TemporalAACurrentWeight;
-			PostInput            = &TemporalAA.Resolve(Inputs).GetSrv();
-			Sharpness            = PostProcessSettings.TemporalAASharpness;
-			EndTimer(ERenderTimer::TemporalAA);
+			FRGResourceRef            ResultRef;
+			const FD3D12RenderTarget& Result =
+				TemporalAA.AddPass(Graph, Inputs, { Refs.Color, Refs.Depth, Refs.Velocity }, static_cast<int32>(ERenderTimer::TemporalAA), ResultRef);
+			PostInput = { ResultRef, Result.GetSrv() };
+			Sharpness = PostProcessSettings.TemporalAASharpness;
 		}
 		bTaaRanLastFrame = bTaa;
 
-		BeginTimer(ERenderTimer::PostProcess);
-		PostProcessor.Render(CommandList, *PostInput, Output, PostProcessSettings, Sharpness);
-		EndTimer(ERenderTimer::PostProcess);
-		RenderDebugView(Output);
+		PostProcessor.AddPasses(Graph, PostInput, PostOutput, PostProcessSettings, Sharpness, static_cast<int32>(ERenderTimer::PostProcess));
+		AddDebugViewPass(Graph, PostOutput, Refs);
 		return;
 	}
 	bTaaRanLastFrame = false; // 픽셀 아트: 정수 격자 스냅과 충돌하므로 TAA 없음
@@ -731,34 +839,37 @@ void FSceneRenderer::RenderFrame(FScene& Scene, const FCamera& Camera, const FRe
 	FPixelArtCompositeParams Params;
 	const FCamera            SourceCamera = BuildPixelArtCamera(*PixelArt, Camera, Output, SourceWidth, SourceHeight, Params);
 
-	// 움직인 물체를 카메라와 같은 도트 격자에 맞춰 그린다 (씬 렌더 동안만, 직교 전용 — 원근은 깊이마다 도트 크기가 다름)
+	// 움직인 물체를 카메라와 같은 도트 격자에 맞춰 그린다 (씬 렌더 동안만 — 그래프 실행 뒤 Render가 되돌린다, 직교 전용 — 원근은 깊이마다 도트 크기가 다름)
 	const bool bSnapObjects = PixelArt->bSnapMovingObjects && Camera.IsOrthographic();
 	if (bSnapObjects)
 	{
 		const float TexelWorldSize = FPixelArtMath::GetTexelWorldSize(Camera.GetOrthoHeight(), Output.Height, PixelSize);
 		PixelArtObjectSnap.Apply(Scene, Camera.GetRightVector(), Camera.GetUpVector(), TexelWorldSize);
+		bPendingSnapRestore = true;
 	}
 	// SSAO: 반해상도면 도트 한 칸 이동에 반 칸씩 어긋나고 화면 고정 노이즈가 물체 위에서 흘러 자글거린다 → 전체 해상도 + 격자 노이즈
 	AoResolutionDivisor = 1;
 	bAoGridNoise        = PixelArt->bSnapCamera && Camera.IsOrthographic();
 	AoGridOrigin[0]     = Params.GridOrigin[0];
 	AoGridOrigin[1]     = Params.GridOrigin[1];
-	RenderSceneColor(Scene, SourceCamera, SourceWidth, SourceHeight, false); // 지터는 정수 격자 스냅과 충돌
+	FSceneGraphRefs Refs;
+	RenderSceneColor(Graph, Scene, SourceCamera, SourceWidth, SourceHeight, false, Refs); // 지터는 정수 격자 스냅과 충돌
 	AoResolutionDivisor = 2;
 	bAoGridNoise        = false;
-	if (bSnapObjects)
-	{
-		PixelArtObjectSnap.Restore(Scene);
-	}
 
-	BeginTimer(ERenderTimer::PostProcess);
-	EnsureTarget(PixelArtColor, SourceWidth, SourceHeight, L"PixelArtColor", FRenderTargetDesc::MakeHdr(false));
-	PixelArtColor->Begin(CommandList, nullptr); // 톤매핑이 전체를 덮어쓴다
-	PostProcessor.Render(CommandList, SceneColor->GetSrv(), PixelArtColor->GetOutput(), PostProcessSettings);
-	PixelArtColor->End(CommandList);
-
-	PostProcessor.RenderPixelArtComposite(CommandList, *PixelArtColor, *SceneColor, Output, Params);
-	EndTimer(ERenderTimer::PostProcess);
+	// 저해상도 톤매핑 결과 = 그래프 풀 텍스처 (선형 부동소수점)
+	const FRGResourceRef    PixelColorRef = Graph.CreateTexture("PixelArtColor", FRGTextureDesc::MakeRenderTarget(SourceWidth, SourceHeight, SceneColorFormat));
+	const FRGPooledTexture* PixelColor    = Graph.GetTexture(PixelColorRef);
+	FPostProcessGraphOutput PixelOutput;
+	PixelOutput.Ref             = PixelColorRef;
+	PixelOutput.Output.Rtv      = PixelColor->GetRtv();
+	PixelOutput.Output.Format   = SceneColorFormat;
+	PixelOutput.Output.Width    = SourceWidth;
+	PixelOutput.Output.Height   = SourceHeight;
+	PixelOutput.Output.Resource = PixelColor->Resource.Get();
+	PostProcessor.AddPasses(Graph, { Refs.Color, SceneColor->GetSrv() }, PixelOutput, PostProcessSettings, 0.0f, static_cast<int32>(ERenderTimer::PostProcess));
+	PostProcessor.AddPixelArtCompositePass(Graph, { PixelColorRef, PixelColor->Srv }, { Refs.Depth, SceneColor->GetDepthSrv() }, PostOutput, Params,
+	                                       static_cast<int32>(ERenderTimer::PostProcess));
 }
 
 FCamera FSceneRenderer::BuildPixelArtCamera(const FPixelArtComponent& PixelArt, const FCamera& Camera, const FRenderOutput& Output,
@@ -812,11 +923,13 @@ namespace
 	// 카메라 컷 판정 (이력 리셋): 한 프레임에 이 거리(cm)·각도(도)를 넘게 바뀌면 이전 프레임과 이어지지 않는 것으로 본다
 	constexpr float CameraCutDistance     = 2000.0f;
 	constexpr float CameraCutAngleDegrees = 60.0f;
+
+	constexpr int32 TimerId(ERenderTimer Timer) { return static_cast<int32>(Timer); }
 } // namespace
 
-void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter)
+void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, uint32 Width, uint32 Height, bool bAllowJitter,
+                                      FSceneGraphRefs& OutRefs)
 {
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	++SceneFrameCount;
 
 	// 시간 이력: 이 렌더러가 연속 프레임에 뷰 하나만 그리고, 같은 크기이고, 카메라 컷이 없을 때만 이전 프레임 값을 쓴다
@@ -843,7 +956,6 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	CurrentReprojection               = FTemporalMath::ComputeReprojectionMatrix(UnjitteredViewProjection, PerFrame.PrevViewProjection);
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	const uint64               UploadStart   = DynamicBuffer.GetUsed();
 
 	// 컬링 프러스텀 (고정 중이면 고정 시점)
 	if (!bCullingFrozen)
@@ -861,7 +973,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 
 	// 스킨 메시 본 팔레트(메인 프러스텀 ∪ 그림자 캐스터 볼륨에 드는 것만) + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
 	// 이전 프레임 팔레트/월드는 한 뷰만 그릴 때만 (여러 씬을 번갈아 그리면 엔티티 번호가 겹친다)
-	BeginTimer(ERenderTimer::Gather);
+	BeginCpuTimer(ERenderTimer::Gather);
 	SkinPalettes.bTrackPrevious = bSingleView;
 	if (bSkinVisibilityCulling)
 	{
@@ -882,67 +994,135 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	}, MeshInstances);
 	MeshInstances.Upload(DynamicBuffer);
 	SelectLods(Camera);
-	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum); // 지형 텍스처 갱신 + 청크 LOD/컬링 (그림자 패스 전)
+	// 지형 텍스처 갱신(업로드 복사 — 그래프 밖, 이 프레임 명령 목록 맨 앞) + 청크 LOD/컬링 (그림자 패스 전)
+	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum);
 	Stats.TotalMeshes   = MeshInstances.GetComponentCount();
 	Stats.SkinnedDrawn  = static_cast<uint32>(SkinPalettes.GetCount());
 	Stats.SkinnedCulled = SkinPalettes.GetCulledCount();
-	EndTimer(ERenderTimer::Gather);
+	EndCpuTimer(ERenderTimer::Gather);
 
-	// GPU 파티클 계산 (그리기 전에)
-	ParticleRenderer.Simulate(Scene, FrozenFrustum);
+	// GPU 파티클 계산 (그리기 전에, 계산 셰이더만 → 비동기 계산 가능)
+	const bool bAsyncAllowed = RendererCVars::RenderGraphAsyncCompute.Get();
+	ParticleRenderer.PrepareSimulation(Scene, FrozenFrustum);
+	ParticleRenderer.AddSimulationPass(Graph, bAsyncAllowed && RendererCVars::RenderGraphAsyncParticles.Get() ? ERGQueue::AsyncCompute : ERGQueue::Graphics,
+	                                   TimerId(ERenderTimer::Particles));
 
 	// 점광원/스포트라이트 그림자 + 클러스터 컬링 (화면 크기 = 이번 씬 타깃)
-	BeginTimer(ERenderTimer::LocalLights);
+	BeginCpuTimer(ERenderTimer::LocalLights);
+	LocalLightRenderer.PrepareFrame(Camera, Width, Height, LocalShadowSettings);
+	EndCpuTimer(ERenderTimer::LocalLights);
 	// 같은 프레임에 이 렌더러가 다시 그리면(반사 캡처 면) 지난 메시 패스의 루트 SRV(클러스터 버퍼)가 그래픽스 루트에 남아 있다 →
-	// 클러스터 버퍼가 UAV로 바뀌기 전에 다른 루트 시그니처로 바꿔 묶음을 끊는다 (디버그 레이어 1003)
-	CommandList->SetGraphicsRootSignature(ScreenPassRoot.Get());
-	LocalLightRenderer.Render(MeshInstances, SkinPalettes.GetGpuData(), Camera, Width, Height, LocalShadowSettings);
-	EndTimer(ERenderTimer::LocalLights);
-	Stats.LocalLights       = LocalLightRenderer.GetLightCount();
-	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
+	// 클러스터 패스가 다른 루트 시그니처로 바꿔 묶음을 끊는다 (디버그 레이어 1003)
+	LocalLightRenderer.AddPasses(Graph, MeshInstances, SkinPalettes.GetGpuData(), ScreenPassRoot.Get(), TimerId(ERenderTimer::LocalLights));
+	const FRGResourceRef LocalShadowRef = LocalLightRenderer.ImportShadowMap(Graph);
+	const FRGResourceRef ClustersRef    = LocalLightRenderer.ImportClusters(Graph);
 
 	// 0) 방향광 섀도우 패스
-	BeginTimer(ERenderTimer::Shadow);
-	ShadowRenderer.Render(MeshInstances, SkinPalettes.GetGpuData());
-	EndTimer(ERenderTimer::Shadow);
-	Stats.ShadowDrawCalls = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls() + TerrainRenderer.GetShadowDrawCalls();
-	Stats.ShadowTriangles = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles() + TerrainRenderer.GetShadowTriangles();
+	const FRGResourceRef ShadowMapRef = ShadowRenderer.ImportShadowMap(Graph);
+	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow));
+
+	// 씬 타깃 (평소 상태: 색 PIXEL_SHADER_RESOURCE, 깊이 DEPTH_WRITE)
+	EnsureSceneColor(Width, Height);
+	OutRefs.Color    = Graph.ImportColor("SceneColor", *SceneColor);
+	OutRefs.Depth    = Graph.ImportDepth("SceneDepth", *SceneColor);
+	OutRefs.Normal   = Graph.ImportColor("SceneNormal", *SceneNormal);
+	OutRefs.Velocity = Graph.ImportColor("SceneVelocity", *SceneVelocity);
 
 	// 1) 메인 묶음 (사전 패스와 메인 패스 공유). 오클루전은 와이어프레임에서 끈다 (깊이가 성김)
-	EnsureSceneColor(Width, Height);
 	const bool bOcclusion = bEnableOcclusion && !bWireframe;
 	const bool bPrepass   = bDepthPrepass && !bWireframe;
+	bFrameOcclusion       = bOcclusion;
 	PrepareMainBatches(Camera, bOcclusion);
+	FOcclusionGraphRefs OcclusionRefs;
+	if (bOcclusion)
+	{
+		OcclusionRefs = OcclusionCuller.Import(Graph);
+		OcclusionCuller.AddPhase1Passes(Graph, OcclusionRefs, TimerId(ERenderTimer::Occlusion));
+	}
 
-	// 2) 깊이 사전 패스: 깊이 + 법선 + 움직임 벡터 (오클루전이면 여기서 HZB + 2단계 판정)
-	uint64 PrepassTriangles = 0;
-	Stats.PrepassDrawCalls  = 0;
+	// 메시 패스 공용 선언 — 셰이더가 실제로 읽지 않아도 루트에 묶인 리소스는 모두 선언한다 (디버그 레이어가 그리기 때 묶인 표·루트 SRV의
+	// 상태를 검사한다). 그림자 맵·로컬 그림자·클러스터는 이 프레임 앞 패스가 쓰므로 사전 패스도 선언해야 한다
+	const auto DeclareShadowReads = [&](FRenderGraph::FPassBuilder& Pass) {
+		for (const FRGResourceRef& Ref : { ShadowMapRef, LocalShadowRef, ClustersRef })
+		{
+			if (Ref.IsValid())
+			{
+				Pass.Read(Ref, ERGAccess::SrvPixel);
+			}
+		}
+	};
+	// 오클루전 단계 목록·간접 인자 (정점 셰이더 / ExecuteIndirect)
+	const auto DeclareOcclusion = [&](FRenderGraph::FPassBuilder& Pass, EMeshPhase Phase) {
+		if (Phase == EMeshPhase::All)
+		{
+			return;
+		}
+		Pass.Read(OcclusionRefs.DrawArguments, ERGAccess::IndirectArgs);
+		if (Phase != EMeshPhase::Phase2)
+		{
+			Pass.Read(OcclusionRefs.Phase1Indices, ERGAccess::SrvNonPixel);
+		}
+		if (Phase != EMeshPhase::Phase1)
+		{
+			Pass.Read(OcclusionRefs.Phase2Indices, ERGAccess::SrvNonPixel);
+		}
+	};
+
+	// 2) 깊이 사전 패스: 깊이 + 법선 + 움직임 벡터 (오클루전이면 1단계 → HZB + 2단계 판정 → 2단계)
+	Stats.PrepassDrawCalls = 0;
+	Stats.DrawCalls        = 0;
+	FrameMainTriangles     = 0;
+	FrameTranslucentTriangles = 0;
 	if (bPrepass)
 	{
-		BeginTimer(ERenderTimer::DepthPrepass);
-		SceneNormal->Begin(CommandList, SceneNormal->GetDesc().ClearColor);
-		SceneVelocity->Begin(CommandList, SceneVelocity->GetDesc().ClearColor);
-		CommandList->ClearDepthStencilView(SceneColor->GetDsv(), D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
-		BindPrepassTargets();
-		DrawMainBatches(EMeshPass::Prepass, PerFrame, bOcclusion, true, Stats.PrepassDrawCalls, PrepassTriangles);
-		SceneNormal->End(CommandList);
-		SceneVelocity->End(CommandList);
-		EndTimer(ERenderTimer::DepthPrepass);
+		const D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress = DynamicBuffer.AllocateConstants(PerFrame).GpuAddress;
+		const D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
+		const auto AddPrepass = [&](EMeshPhase Phase) {
+			const bool bFirst = Phase != EMeshPhase::Phase2;
+			FRenderGraph::FPassBuilder Pass = Graph.AddPass(Phase == EMeshPhase::Phase2 ? "깊이 사전 패스 (2단계)" : "깊이 사전 패스");
+			Pass.Write(OutRefs.Normal, ERGAccess::RenderTarget, FRGSubresourceRange::All(), bFirst)
+				.Write(OutRefs.Velocity, ERGAccess::RenderTarget, FRGSubresourceRange::All(), bFirst)
+				.Write(OutRefs.Depth, ERGAccess::DepthWrite, FRGSubresourceRange::All(), bFirst)
+				.Timer(TimerId(ERenderTimer::DepthPrepass));
+			DeclareShadowReads(Pass);
+			DeclareOcclusion(Pass, Phase);
+			Pass.Execute([this, Phase, bFirst, PerFrameAddress, ShadowAddress](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				if (bFirst)
+				{
+					CommandList->ClearRenderTargetView(SceneNormal->GetRtv(), SceneNormal->GetDesc().ClearColor, 0, nullptr);
+					CommandList->ClearRenderTargetView(SceneVelocity->GetRtv(), SceneVelocity->GetDesc().ClearColor, 0, nullptr);
+					CommandList->ClearDepthStencilView(SceneColor->GetDsv(), D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
+				}
+				BindPrepassTargets(CommandList);
+				uint64 Triangles = 0;
+				RecordMeshBatches(CommandList, EMeshPass::Prepass, PerFrameAddress, ShadowAddress, Phase, Stats.PrepassDrawCalls, Triangles);
+			});
+		};
+		AddPrepass(bOcclusion ? EMeshPhase::Phase1 : EMeshPhase::All);
+		if (bOcclusion)
+		{
+			OcclusionCuller.AddHzbAndPhase2Passes(Graph, OcclusionRefs, OutRefs.Depth, *SceneColor, PerFrame.ViewProjection, TimerId(ERenderTimer::Hzb));
+			AddPrepass(EMeshPhase::Phase2);
+		}
 	}
 	else
 	{
 		// 쓰는 쪽(TAA 등)이 있어도 안전하게 지운 값 (+Z 법선, 움직임 0)
-		SceneNormal->Begin(CommandList, SceneNormal->GetDesc().ClearColor);
-		SceneNormal->End(CommandList);
-		SceneVelocity->Begin(CommandList, SceneVelocity->GetDesc().ClearColor);
-		SceneVelocity->End(CommandList);
+		Graph.AddPass("법선·움직임 지우기")
+			.Write(OutRefs.Normal, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Write(OutRefs.Velocity, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Execute([this](FRGContext& Context) {
+				Context.CommandList->ClearRenderTargetView(SceneNormal->GetRtv(), SceneNormal->GetDesc().ClearColor, 0, nullptr);
+				Context.CommandList->ClearRenderTargetView(SceneVelocity->GetRtv(), SceneVelocity->GetDesc().ClearColor, 0, nullptr);
+			});
 	}
 
 	// 2.5) SSAO: 사전 패스 깊이 + 법선 → 반해상도 가시도 (메인 패스가 간접광에만 곱한다)
-	const bool bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && bConsoleAmbientOcclusion;
+	const bool     bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && bConsoleAmbientOcclusion;
+	FRGResourceRef AmbientOcclusionRef;
 	if (bAmbientOcclusion)
 	{
-		BeginTimer(ERenderTimer::AmbientOcclusion);
 		FAmbientOcclusionInputs Inputs;
 		Inputs.SceneDepth    = SceneColor.get();
 		Inputs.SceneNormal   = SceneNormal.get();
@@ -956,8 +1136,7 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 		Inputs.bGridNoise        = bAoGridNoise;
 		Inputs.GridOrigin[0]     = AoGridOrigin[0];
 		Inputs.GridOrigin[1]     = AoGridOrigin[1];
-		AmbientOcclusion.Render(Inputs);
-		EndTimer(ERenderTimer::AmbientOcclusion);
+		AmbientOcclusionRef = AmbientOcclusion.AddPasses(Graph, Inputs, OutRefs.Depth, OutRefs.Normal, TimerId(ERenderTimer::AmbientOcclusion));
 	}
 	PerFrame.AmbientOcclusionEnabled = bAmbientOcclusion ? 1.0f : 0.0f;
 
@@ -965,21 +1144,30 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 	bool bDecals = false;
 	if (bPrepass)
 	{
-		BeginTimer(ERenderTimer::Decals);
-		bDecals = DecalRenderer.Render(Scene, *Resources, RenderCamera, FrozenFrustum, *SceneColor, *SceneNormal);
-		EndTimer(ERenderTimer::Decals);
+		BeginCpuTimer(ERenderTimer::Decals);
+		bDecals = DecalRenderer.Prepare(Scene, *Resources, RenderCamera, FrozenFrustum, Width, Height);
+		EndCpuTimer(ERenderTimer::Decals);
+	}
+	std::array<FRGResourceRef, 3> DBufferRefs;
+	if (bDecals)
+	{
+		DecalRenderer.AddPass(Graph, *SceneColor, *SceneNormal, OutRefs.Depth, OutRefs.Normal, TimerId(ERenderTimer::Decals), DBufferRefs);
+	}
+	else
+	{
+		DBufferRefs = DecalRenderer.ImportTargets(Graph);
 	}
 	Stats.Decals           = bDecals ? DecalRenderer.GetDrawnCount() : 0;
 	PerFrame.DecalsEnabled = bDecals ? 1u : 0u;
 
 	// 2.65) 반사: 캡처 목록(굽는 중에는 쓰지 않음 — 하늘만) + SSR (사전 패스 깊이·법선, 이전 프레임 씬 컬러 = 아직 지우기 전 SceneColor)
+	FRGResourceRef ReflectionRef;
 	{
 		const uint32 CaptureCount       = ReflectionCaptures.Gather(Scene);
 		PerFrame.ReflectionCaptureCount = bRenderingCaptures ? 0u : CaptureCount;
 		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid && !bRenderingCaptures;
 		if (bSsr)
 		{
-			BeginTimer(ERenderTimer::Reflections);
 			FScreenSpaceReflectionInputs Inputs;
 			Inputs.SceneColor    = SceneColor.get();
 			Inputs.SceneNormal   = SceneNormal.get();
@@ -996,28 +1184,34 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 			Inputs.MaxRoughness  = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
 			Inputs.Velocity      = SceneVelocity.get();
 			Inputs.bHistoryValid = bTemporalHistoryValid;
+			FSsrGraphRefs SsrRefs;
+			SsrRefs.SceneDepth    = OutRefs.Depth;
+			SsrRefs.SceneNormal   = OutRefs.Normal;
+			SsrRefs.ColorSource   = OutRefs.Color;
+			SsrRefs.DecalNormal   = DBufferRefs[1];
+			SsrRefs.DecalMaterial = DBufferRefs[2];
+			SsrRefs.Velocity      = OutRefs.Velocity;
 			// 반사 색은 지난 프레임 TAA 결과에서 (지난 프레임에 TAA가 돌았고 크기가 같을 때만 — 아니면 지터된 SceneColor)
 			if (const FD3D12RenderTarget* LastTaa = bTaaRanLastFrame ? TemporalAA.GetLastOutput() : nullptr;
 			    LastTaa != nullptr && LastTaa->GetWidth() == SceneColor->GetWidth() && LastTaa->GetHeight() == SceneColor->GetHeight())
 			{
-				Inputs.PrevColor = LastTaa;
+				Inputs.PrevColor    = LastTaa;
+				SsrRefs.ColorSource = Graph.ImportColor("TaaLastOutput", *LastTaa);
 			}
-			ScreenSpaceReflections.Render(Inputs);
-			EndTimer(ERenderTimer::Reflections);
+			ReflectionRef = ScreenSpaceReflections.AddPasses(Graph, Inputs, SsrRefs, TimerId(ERenderTimer::Reflections));
 		}
 		PerFrame.SsrEnabled      = bSsr ? 1u : 0u;
 		PerFrame.SsrMaxRoughness = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
 		PerFrame.SsrIntensity    = FMath::Max(PostProcessSettings.SsrIntensity, 0.0f);
 	}
 
-	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분). 적용은 메인 패스 뒤, 파티클은 정점에서
+	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분, 계산 셰이더만 → 비동기 계산 가능). 적용은 메인 패스 뒤, 파티클은 정점에서
 	{
-		BeginTimer(ERenderTimer::VolumetricFog);
+		BeginCpuTimer(ERenderTimer::VolumetricFog);
 		FogRenderer.Prepare(Scene, RenderCamera, UnjitteredViewProjection, Width, Height);
 		FVolumetricFogInputs FogInputs;
 		FogInputs.ShadowConstants    = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
 		FogInputs.ShadowMapSrv       = ShadowRenderer.GetShadowMapSrv();
-		FogInputs.ShadowMap          = ShadowRenderer.GetShadowMapResource();
 		FogInputs.ClusterConstants   = LocalLightRenderer.GetConstants();
 		FogInputs.LocalLights        = LocalLightRenderer.GetLightList();
 		FogInputs.LightDirection     = PerFrame.DirectionalLight.Direction;
@@ -1025,62 +1219,110 @@ void FSceneRenderer::RenderSceneColor(FScene& Scene, const FCamera& Camera, uint
 		FogInputs.PrevViewProjection = PerFrame.PrevViewProjection;
 		FogInputs.bHistoryValid      = bTemporalHistoryValid;
 		FogInputs.FrameIndex         = SceneFrameCount;
-		FogRenderer.RenderVolumetric(FogInputs);
-		EndTimer(ERenderTimer::VolumetricFog);
+		FogRenderer.PrepareVolumetric(FogInputs);
+		EndCpuTimer(ERenderTimer::VolumetricFog);
+		FogRenderer.AddVolumetricPasses(Graph, ShadowMapRef,
+		                                bAsyncAllowed && RendererCVars::RenderGraphAsyncFog.Get() ? ERGQueue::AsyncCompute : ERGQueue::Graphics,
+		                                TimerId(ERenderTimer::VolumetricFog));
+	}
+	const FRGResourceRef FogVolumeRef = FogRenderer.ImportVolume(Graph);
+
+	// 메시 패스(메인/반투명)가 묶는 조명 리소스 선언 (그림자 맵·로컬 그림자·클러스터 + SSAO·DBuffer·SSR — 꺼져 있어도 묶이므로 항상)
+	if (!AmbientOcclusionRef.IsValid())
+	{
+		AmbientOcclusionRef = Graph.ImportColor("AmbientOcclusion", *AmbientOcclusion.GetResult());
+	}
+	if (!ReflectionRef.IsValid())
+	{
+		ReflectionRef = Graph.ImportColor("SsrHistory", ScreenSpaceReflections.GetResult());
+	}
+	const auto DeclareLighting = [&](FRenderGraph::FPassBuilder& Pass) {
+		DeclareShadowReads(Pass);
+		Pass.Read(AmbientOcclusionRef, ERGAccess::SrvPixel).Read(ReflectionRef, ERGAccess::SrvPixel);
+		for (const FRGResourceRef& Ref : DBufferRefs)
+		{
+			Pass.Read(Ref, ERGAccess::SrvPixel);
+		}
+	};
+
+	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트). 오클루전이고 사전 패스가 없으면 여기서 1단계 → HZB → 2단계
+	{
+		const D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress = DynamicBuffer.AllocateConstants(PerFrame).GpuAddress;
+		const D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants()).GpuAddress;
+		const EMeshPass                 MainPass        = bWireframe ? EMeshPass::Wireframe : (bPrepass ? EMeshPass::MainDepthEqual : EMeshPass::Main);
+		const float                     SkyIntensity     = PerFrame.AmbientIntensity;
+		const FCamera                   SkyCamera        = Camera;
+		const auto AddMainPass = [&](EMeshPhase Phase) {
+			const bool bFirst = Phase != EMeshPhase::Phase2;
+			FRenderGraph::FPassBuilder Pass = Graph.AddPass(Phase == EMeshPhase::Phase2 ? "메인 패스 (2단계)" : "메인 패스");
+			Pass.Write(OutRefs.Color, ERGAccess::RenderTarget, FRGSubresourceRange::All(), bFirst)
+				.Write(OutRefs.Depth, ERGAccess::DepthWrite, FRGSubresourceRange::All(), bFirst && !bPrepass)
+				.Timer(TimerId(ERenderTimer::MainDraw));
+			DeclareLighting(Pass);
+			DeclareOcclusion(Pass, Phase);
+			Pass.Execute([this, Phase, bFirst, bPrepass, MainPass, PerFrameAddress, ShadowAddress, SkyIntensity, SkyCamera](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				if (bFirst)
+				{
+					const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
+					SceneColor->Bind(CommandList, SceneClear, !bPrepass);
+					if (bDrawSkybox)
+					{
+						IblRenderer.RenderSkybox(SkyCamera, SkyIntensity);
+					}
+				}
+				else
+				{
+					SceneColor->Bind(CommandList, nullptr);
+				}
+				RecordMeshBatches(CommandList, MainPass, PerFrameAddress, ShadowAddress, Phase, Stats.DrawCalls, FrameMainTriangles);
+			});
+		};
+		if (bOcclusion && !bPrepass)
+		{
+			AddMainPass(EMeshPhase::Phase1);
+			OcclusionCuller.AddHzbAndPhase2Passes(Graph, OcclusionRefs, OutRefs.Depth, *SceneColor, PerFrame.ViewProjection, TimerId(ERenderTimer::Hzb));
+			AddMainPass(EMeshPhase::Phase2);
+		}
+		else
+		{
+			AddMainPass(bOcclusion ? EMeshPhase::Both : EMeshPhase::All);
+		}
+		if (bOcclusion)
+		{
+			OcclusionCuller.AddFinishPass(Graph, OcclusionRefs);
+		}
+
+		// 안개 적용 (불투명 메시 + 하늘, 씬 깊이) → 파티클은 정점에서 같은 식
+		if (FogRenderer.IsEnabled())
+		{
+			FogRenderer.AddApplyPass(Graph, *SceneColor, OutRefs.Color, OutRefs.Depth, TimerId(ERenderTimer::Fog));
+		}
+		ParticleRenderer.SetFog(FogRenderer.GetConstantsAddress(), FogRenderer.GetVolumeSrv());
+
+		// 반투명/가산 메시 (먼 것부터, 깊이 테스트만): 안개는 셰이더가 직접, 파티클보다 먼저
+		Stats.TranslucentDrawCalls = 0;
+		if (!TranslucentBatches.IsEmpty())
+		{
+			const D3D12_GPU_VIRTUAL_ADDRESS FogConstants = FogRenderer.GetConstantsAddress();
+			FRenderGraph::FPassBuilder      Pass         = Graph.AddPass("반투명");
+			Pass.Write(OutRefs.Color, ERGAccess::RenderTarget).Write(OutRefs.Depth, ERGAccess::DepthWrite).Read(FogVolumeRef, ERGAccess::SrvPixel)
+				.Timer(TimerId(ERenderTimer::Translucent));
+			DeclareLighting(Pass);
+			Pass.Execute([this, PerFrameAddress, ShadowAddress, FogConstants](FRGContext& Context) {
+				SceneColor->Bind(Context.CommandList, nullptr);
+				DrawTranslucentBatches(Context.CommandList, PerFrameAddress, ShadowAddress, FogConstants, Stats.TranslucentDrawCalls, FrameTranslucentTriangles);
+			});
+		}
 	}
 
-	// 3) HDR 씬 패스: 하늘 + 불투명 메시 (사전 패스 뒤면 깊이 같음 테스트) + 파티클
-	const float SceneClear[4] = { BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, 0.0f }; // 알파 0 = TAA 반응형 마스크 없음
-	SceneColor->Begin(CommandList, SceneClear, !bPrepass);
-	BeginTimer(ERenderTimer::MainDraw);
-	if (bDrawSkybox)
-	{
-		IblRenderer.RenderSkybox(Camera, PerFrame.AmbientIntensity);
-	}
-	const EMeshPass MainPass = bWireframe ? EMeshPass::Wireframe : (bPrepass ? EMeshPass::MainDepthEqual : EMeshPass::Main);
-	uint64          MainTriangles = 0;
-	DrawMainBatches(MainPass, PerFrame, bOcclusion, !bPrepass, Stats.DrawCalls, MainTriangles);
-	if (bOcclusion)
-	{
-		OcclusionCuller.FinishFrame();
-		Stats.Triangles       = OcclusionCuller.GetDrawnTriangles() + MainTriangles; // 간접 드로우(정적) + 바로 그린 스킨
-		Stats.OcclusionTested = OcclusionCuller.GetTestedInstances();
-		Stats.OcclusionPhase1 = OcclusionCuller.GetPhase1Instances();
-		Stats.OcclusionPhase2 = OcclusionCuller.GetPhase2Instances();
-	}
-	else
-	{
-		Stats.Triangles       = MainTriangles;
-		Stats.OcclusionTested = Stats.OcclusionPhase1 = Stats.OcclusionPhase2 = 0;
-	}
-	EndTimer(ERenderTimer::MainDraw);
-
-	// 안개 적용 (불투명 메시 + 하늘, 씬 깊이) → 파티클은 정점에서 같은 식
-	if (FogRenderer.IsEnabled())
-	{
-		BeginTimer(ERenderTimer::Fog);
-		FogRenderer.Apply(*SceneColor);
-		EndTimer(ERenderTimer::Fog);
-	}
-	ParticleRenderer.SetFog(FogRenderer.GetConstantsAddress(), FogRenderer.GetVolumeSrv());
-
-	// 반투명/가산 메시 (먼 것부터, 깊이 테스트만): 안개는 셰이더가 직접, 파티클보다 먼저
-	Stats.TranslucentDrawCalls = 0;
-	if (!TranslucentBatches.IsEmpty())
-	{
-		BeginTimer(ERenderTimer::Translucent);
-		uint64 TranslucentTriangles = 0;
-		DrawTranslucentBatches(PerFrame, Stats.TranslucentDrawCalls, TranslucentTriangles);
-		Stats.Triangles += TranslucentTriangles;
-		EndTimer(ERenderTimer::Translucent);
-	}
-
-	BeginTimer(ERenderTimer::Particles);
-	Stats.Particles              = ParticleRenderer.Render(Scene, RenderCamera, FrozenFrustum);
-	Stats.ParticleEmittersCulled = ParticleRenderer.GetCulledEmitterCount();
-	EndTimer(ERenderTimer::Particles);
-	SceneColor->End(CommandList);
-	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;
+	// 파티클 (씬 컬러 + 깊이 테스트, GPU 풀·안개 볼륨 읽기)
+	FParticleRenderTargets ParticleTargets;
+	ParticleTargets.SceneColor    = SceneColor.get();
+	ParticleTargets.SceneColorRef = OutRefs.Color;
+	ParticleTargets.DepthRef      = OutRefs.Depth;
+	ParticleTargets.FogVolume     = FogVolumeRef;
+	ParticleRenderer.AddRenderPass(Graph, Scene, RenderCamera, FrozenFrustum, ParticleTargets, TimerId(ERenderTimer::Particles), &Stats.Particles);
 
 	// 다음 프레임 이력
 	PrevUnjitteredViewProjection = UnjitteredViewProjection;
@@ -1153,7 +1395,8 @@ void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)
 	}
 	Scene.UpdateTransforms();
 
-	// 면마다 지터 없는 90도 카메라로 HDR 씬을 그려 원시 큐브 면으로 복사 → 프리필터 (캡처끼리는 서로 비추지 않고 하늘만)
+	// 면마다 지터 없는 90도 카메라로 HDR 씬을 그려 원시 큐브 면으로 복사 (면마다 그래프 하나) → 프리필터 그래프
+	// (캡처끼리는 서로 비추지 않고 하늘만)
 	bRenderingCaptures = true;
 	for (const FJob& Job : Jobs)
 	{
@@ -1167,10 +1410,17 @@ void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)
 			FaceCamera.SetPosition(Job.Position);
 			FaceCamera.SetRotation(FReflectionMath::MakeBasisRotation(Forward, Right, Up));
 			FaceCamera.SetPerspective(90.0f, 1.0f, 5.0f, 200000.0f);
-			RenderSceneColor(Scene, FaceCamera, FReflectionMath::CaptureSize, FReflectionMath::CaptureSize, false);
-			ReflectionCaptures.CopyFace(*SceneColor, Face);
+			FRenderGraph FaceGraph(*Rhi, GraphPool, "ReflectionCaptureFace");
+			SetupGraph(FaceGraph);
+			FSceneGraphRefs Refs;
+			RenderSceneColor(FaceGraph, Scene, FaceCamera, FReflectionMath::CaptureSize, FReflectionMath::CaptureSize, false, Refs);
+			ReflectionCaptures.AddCopyFacePass(FaceGraph, *SceneColor, Refs.Color, Face);
+			ExecuteGraph(FaceGraph);
 		}
-		ReflectionCaptures.FinishBake(Job.AssetPath);
+		FRenderGraph BakeGraph(*Rhi, GraphPool, "ReflectionCaptureBake");
+		SetupGraph(BakeGraph);
+		ReflectionCaptures.AddFinishBakePasses(BakeGraph, Job.AssetPath);
+		ExecuteGraph(BakeGraph);
 		E_LOG(LogRenderer, Display, "반사 캡처 굽기: {} ({:.0f}, {:.0f}, {:.0f})", Job.AssetPath, Job.Position.X, Job.Position.Y, Job.Position.Z);
 	}
 	bRenderingCaptures = false;
@@ -1201,40 +1451,30 @@ void FSceneRenderer::ApplyMotionHistory(bool bValid)
 	}
 }
 
-void FSceneRenderer::RenderDebugView(const FRenderOutput& Output)
+void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphOutput& Output, const FSceneGraphRefs& Refs)
 {
-	if (DebugView == 0 || !SceneColor || SceneColor->GetWidth() != Output.Width || SceneColor->GetHeight() != Output.Height)
+	if (DebugView == 0 || !SceneColor || SceneColor->GetWidth() != Output.Output.Width || SceneColor->GetHeight() != Output.Output.Height)
 	{
 		return;
 	}
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-	if (DebugView == 3)
+	FPostProcessGraphInput Source;
+	switch (DebugView)
 	{
-		// 깊이는 평소 DEPTH_WRITE → 읽는 동안만 셰이더 리소스
-		const D3D12_RESOURCE_BARRIER ToRead = MakeTransitionBarrier(SceneColor->GetDepthResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		                                                            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		CommandList->ResourceBarrier(1, &ToRead);
-		PostProcessor.RenderDebugView(CommandList, SceneColor->GetDepthSrv(), Output, DebugView);
-		const D3D12_RESOURCE_BARRIER ToWrite = MakeTransitionBarrier(SceneColor->GetDepthResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-		                                                             D3D12_RESOURCE_STATE_DEPTH_WRITE);
-		CommandList->ResourceBarrier(1, &ToWrite);
-		return;
+	case 1:  Source = { Refs.Normal, SceneNormal->GetSrv() }; break;
+	case 2:  Source = { Refs.Velocity, SceneVelocity->GetSrv() }; break;
+	case 3:  Source = { Refs.Depth, SceneColor->GetDepthSrv() }; break; // 깊이는 읽는 동안만 셰이더 리소스 (그래프가 전이)
+	case 4:  Source = { Graph.ImportColor("AmbientOcclusion", *AmbientOcclusion.GetResult()), AmbientOcclusion.GetResultSrv() }; break;
+	default: Source = { Graph.ImportColor("SsrHistory", ScreenSpaceReflections.GetResult()), ScreenSpaceReflections.GetResultSrv() }; break;
 	}
-	if (DebugView == 4 || DebugView == 5)
-	{
-		PostProcessor.RenderDebugView(CommandList, DebugView == 4 ? AmbientOcclusion.GetResultSrv() : ScreenSpaceReflections.GetResultSrv(), Output,
-		                              DebugView);
-		return;
-	}
-	const FD3D12RenderTarget* Source = DebugView == 1 ? SceneNormal.get() : SceneVelocity.get();
-	PostProcessor.RenderDebugView(CommandList, Source->GetSrv(), Output, DebugView);
+	PostProcessor.AddDebugViewPass(Graph, Source, Output, DebugView, -1);
 }
 
-void FSceneRenderer::BindPrepassTargets()
+void FSceneRenderer::BindPrepassTargets(ID3D12GraphicsCommandList* CommandList)
 {
 	const D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[] = { SceneNormal->GetRtv(), SceneVelocity->GetRtv() };
 	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv    = SceneColor->GetDsv();
-	Rhi->GetCommandList()->OMSetRenderTargets(2, Rtvs, FALSE, &Dsv);
+	CommandList->OMSetRenderTargets(2, Rtvs, FALSE, &Dsv);
+	SetScreenPassViewport(CommandList, SceneNormal->GetWidth(), SceneNormal->GetHeight());
 }
 
 void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
@@ -1243,7 +1483,7 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 
 	// 컬링 + 묶음 키: PSO 변형(Masked/양면/스킨) → 머티리얼 → 메시 → LOD, 묶음 안은 가까운 순 (상태 변경 최소화 + 초기 깊이 기각). 스킨도 인스턴싱
 	// 반투명/가산은 따로 먼 것부터 (와이어프레임은 모두 메인 묶음)
-	BeginTimer(ERenderTimer::MainCull);
+	BeginCpuTimer(ERenderTimer::MainCull);
 	const FVector3 CameraPosition = Camera.GetPosition();
 	MainBatches.Reset();
 	TranslucentBatches.Reset();
@@ -1265,33 +1505,31 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 		}
 		MainBatches.Add(MakeMainBatchKey(Instance), Depth, Index);
 	}
-	EndTimer(ERenderTimer::MainCull);
+	EndCpuTimer(ERenderTimer::MainCull);
 
-	BeginTimer(ERenderTimer::MainSort);
+	BeginCpuTimer(ERenderTimer::MainSort);
 	MainBatches.Finalize(DynamicBuffer);
 	TranslucentBatches.Finalize(DynamicBuffer, true);
-	EndTimer(ERenderTimer::MainSort);
+	EndCpuTimer(ERenderTimer::MainSort);
 
-	// 오클루전 1단계: 이전 프레임 HZB로 정적 인스턴스 판정
+	// 오클루전 1단계 준비 (항목·간접 인자 업로드 — 판정은 그래프 계산 패스)
 	if (bOcclusion)
 	{
-		BeginTimer(ERenderTimer::Occlusion);
-		OcclusionCuller.CullPhase1(MeshInstances, MainBatches, SceneColor->GetWidth(), SceneColor->GetHeight());
-		EndTimer(ERenderTimer::Occlusion);
+		BeginCpuTimer(ERenderTimer::Occlusion);
+		OcclusionCuller.PreparePhase1(MeshInstances, MainBatches, SceneColor->GetWidth(), SceneColor->GetHeight());
+		EndCpuTimer(ERenderTimer::Occlusion);
 	}
 }
 
-void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& PerFrame, bool bOcclusion, bool bBuildHzb, uint32& OutDrawCalls,
-                                     uint64& OutTriangles)
+void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, EMeshPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress,
+                                       D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, EMeshPhase Phase, uint32& InOutDrawCalls, uint64& InOutTriangles)
 {
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 	const bool                 bPrepassPass  = Pass == EMeshPass::Prepass;
 
-	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
-	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
 	// 지형: 메시보다 먼저 (큰 가림막 — 초기 깊이 기각). 자기 루트 시그니처를 쓰므로 아래에서 메시 상태를 다시 설정한다
-	// 사전 패스에도 그린다 (지형 깊이가 없으면 TAA/SSAO/안개/SSR이 하늘로 본다), 메인은 같은 VS로 깊이 EQUAL
+	// 사전 패스에도 그린다 (지형 깊이가 없으면 TAA/SSAO/안개/SSR이 하늘로 본다), 메인은 같은 VS로 깊이 EQUAL. 오클루전 2단계 패스는 그리지 않음
+	if (Phase != EMeshPhase::Phase2)
 	{
 		FTerrainScreenInputs Screen;
 		Screen.AmbientOcclusion = AmbientOcclusion.GetResultSrv();
@@ -1304,12 +1542,16 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 		Screen.ScreenReflection   = ScreenSpaceReflections.GetResultSrv();
 		const ETerrainPass TerrainPass =
 			bPrepassPass ? ETerrainPass::Prepass : (Pass == EMeshPass::MainDepthEqual ? ETerrainPass::MainDepthEqual : ETerrainPass::Main);
-		TerrainRenderer.RenderMain(TerrainPass, PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, ShadowRenderer, IblRenderer, LocalLightRenderer,
-		                           Screen);
+		TerrainRenderer.RenderMain(TerrainPass, PerFrameAddress, ShadowAddress, ShadowRenderer, IblRenderer, LocalLightRenderer, Screen);
+		InOutDrawCalls += TerrainRenderer.GetDrawCalls();
+		InOutTriangles += TerrainRenderer.GetTriangles();
 	}
 
+	// 오클루전 단계별 첫 번호 목록 (Both = 1단계 → 2단계를 한 패스에서)
+	const bool bOcclusion   = Phase != EMeshPhase::All;
+	const uint32 FirstPhase = Phase == EMeshPhase::Phase2 ? 2u : (bOcclusion ? 1u : 0u);
 	CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
-	BindMeshPassRoot(PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, bOcclusion ? OcclusionCuller.GetIndices(1) : MainBatches.GetIndexBuffer());
+	BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, bOcclusion ? OcclusionCuller.GetIndices(FirstPhase) : MainBatches.GetIndexBuffer());
 
 	// 머티리얼 상수는 패스 안에서 한 번만 업로드 (사전 패스는 거칠기만 읽는다)
 	std::unordered_map<uint64, D3D12_GPU_VIRTUAL_ADDRESS> MaterialConstantCache;
@@ -1318,19 +1560,17 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 	const FMaterial*                  BoundMaterial = nullptr;
 	uint32                            BoundVariant  = 0;     // 변형 0(정적 불투명)이 바인딩된 상태로 시작
 	bool                              bSkinnedIndices = false; // 오클루전 1단계: 스킨 묶음용 번호 목록으로 바꿨는가
-	OutDrawCalls                                    = TerrainRenderer.GetDrawCalls(); // 지형 포함
-	OutTriangles                                    = TerrainRenderer.GetTriangles();
 
-	// Phase 0 = 오클루전 없음(바로 그림), 1/2 = 오클루전 단계 (정적 묶음은 간접 드로우, 스킨 묶음은 1단계에서 바로)
-	// OutTriangles = 바로 그린 삼각형 (간접 드로우 정적 삼각형은 오클루전 통계가 센다)
-	auto DrawBatches = [&](uint32 Phase) {
+	// DrawPhase 0 = 오클루전 없음(바로 그림), 1/2 = 오클루전 단계 (정적 묶음은 간접 드로우, 스킨 묶음은 1단계에서 바로)
+	// 삼각형 = 바로 그린 삼각형 (간접 드로우 정적 삼각형은 오클루전 통계가 센다)
+	auto DrawBatches = [&](uint32 DrawPhase) {
 		const std::vector<FInstanceBatch>& Batches = MainBatches.GetBatches();
 		for (uint32 BatchIndex = 0; BatchIndex < static_cast<uint32>(Batches.size()); ++BatchIndex)
 		{
 			const FInstanceBatch& Batch    = Batches[BatchIndex];
 			const FMeshInstance&  Instance = Instances[Batch.Instance];
 			const bool            bSkinned = Instance.IsSkinned();
-			if (bSkinned && Phase == 2)
+			if (bSkinned && DrawPhase == 2)
 			{
 				continue;
 			}
@@ -1340,7 +1580,7 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 				CommandList->SetPipelineState(GetMeshPipeline(Pass, Variant).Get());
 				BoundVariant = Variant;
 			}
-			if (bSkinned && Phase == 1 && !bSkinnedIndices)
+			if (bSkinned && DrawPhase == 1 && !bSkinnedIndices)
 			{
 				// 오클루전 1단계 목록은 정적 묶음만 채운다 → 스킨 묶음은 메인 묶음의 번호 목록으로 (스킨 변형 비트가 최상위라 정적 뒤에 정렬됨)
 				CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, MainBatches.GetIndexBuffer());
@@ -1363,59 +1603,46 @@ void FSceneRenderer::DrawMainBatches(EMeshPass Pass, const FPerFrameConstants& P
 			if (bSkinned)
 			{
 				Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
-				OutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+				InOutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
 			}
-			else if (Phase == 0)
+			else if (DrawPhase == 0)
 			{
 				Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
-				OutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+				InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 			}
 			else
 			{
 				Instance.Mesh->Bind(CommandList);
-				OcclusionCuller.DrawIndirect(CommandList, BatchIndex, Phase);
+				OcclusionCuller.DrawIndirect(CommandList, BatchIndex, DrawPhase);
 			}
-			++OutDrawCalls;
+			++InOutDrawCalls;
 		}
 	};
 
-	if (!bOcclusion)
+	switch (Phase)
 	{
+	case EMeshPhase::All:
 		DrawBatches(0);
-		return;
+		break;
+	case EMeshPhase::Phase1:
+		DrawBatches(1);
+		break;
+	case EMeshPhase::Phase2:
+		DrawBatches(2);
+		break;
+	case EMeshPhase::Both:
+		DrawBatches(1);
+		CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
+		BoundVariant = 0;
+		CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, OcclusionCuller.GetIndices(2));
+		DrawBatches(2);
+		break;
 	}
-
-	DrawBatches(1);
-
-	// 이 패스가 처음 깊이를 쓰는 패스면: 1단계 깊이로 HZB → 1단계에서 가려진 것만 다시 검사 (새로 드러난 물체를 같은 프레임에 그린다)
-	if (bBuildHzb)
-	{
-		BeginTimer(ERenderTimer::Hzb);
-		OcclusionCuller.BuildHzbAndCullPhase2(*SceneColor, PerFrame.ViewProjection);
-		EndTimer(ERenderTimer::Hzb);
-
-		// 계산 PSO로 바뀌었으므로 렌더 타깃 복구 (그래픽스 루트 인자는 계산과 따로라 유지된다)
-		if (bPrepassPass)
-		{
-			BindPrepassTargets();
-		}
-		else
-		{
-			const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SceneColor->GetRtv();
-			const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = SceneColor->GetDsv();
-			CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
-		}
-	}
-	CommandList->SetPipelineState(GetMeshPipeline(Pass, 0).Get());
-	BoundVariant = 0;
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, OcclusionCuller.GetIndices(2));
-	DrawBatches(2);
 }
 
-void FSceneRenderer::BindMeshPassRoot(D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress,
+void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress, D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress,
                                       D3D12_GPU_VIRTUAL_ADDRESS InstanceIndices)
 {
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_PerFrame, PerFrameAddress);
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_Shadow, ShadowAddress);
@@ -1437,19 +1664,18 @@ void FSceneRenderer::BindMeshPassRoot(D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress,
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_ReflectionCaptures, ReflectionCaptures.GetCaptureList());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
-	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩 (볼륨은 RenderVolumetric 뒤에야 셰이더 리소스 상태)
+	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩
 }
 
-void FSceneRenderer::DrawTranslucentBatches(const FPerFrameConstants& PerFrame, uint32& OutDrawCalls, uint64& OutTriangles)
+void FSceneRenderer::DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS PerFrameAddress,
+                                            D3D12_GPU_VIRTUAL_ADDRESS ShadowAddress, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, uint32& OutDrawCalls,
+                                            uint64& OutTriangles)
 {
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	ID3D12GraphicsCommandList* CommandList   = Rhi->GetCommandList();
 
-	const FD3D12DynamicAllocation PerFrameAllocation = DynamicBuffer.AllocateConstants(PerFrame);
-	const FD3D12DynamicAllocation ShadowAllocation   = DynamicBuffer.AllocateConstants(ShadowRenderer.GetConstants());
 	CommandList->SetPipelineState(GetMeshPipeline(EMeshPass::Translucent, 0).Get());
-	BindMeshPassRoot(PerFrameAllocation.GpuAddress, ShadowAllocation.GpuAddress, TranslucentBatches.GetIndexBuffer());
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogRenderer.GetConstantsAddress()); // RenderVolumetric이 프레임마다 올림
+	BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, TranslucentBatches.GetIndexBuffer());
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogConstants); // PrepareVolumetric이 프레임마다 올림
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogRenderer.GetVolumeSrv().Gpu);
 
 	// 정렬 순서(먼 것부터)를 지키므로 PSO/머티리얼은 바뀔 때마다 바꾼다

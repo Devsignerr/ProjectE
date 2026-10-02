@@ -207,17 +207,6 @@ void FFogRenderer::EnsureVolumes(uint32 GridX, uint32 GridY, uint32 GridZ)
 	bHasHistory = false;
 }
 
-void FFogRenderer::Transition(FVolume& Volume, D3D12_RESOURCE_STATES After)
-{
-	if (Volume.State == After)
-	{
-		return;
-	}
-	const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Volume.Resource.Get(), Volume.State, After);
-	Rhi->GetCommandList()->ResourceBarrier(1, &Barrier);
-	Volume.State = After;
-}
-
 bool FFogRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FMatrix4x4& UnjitteredViewProjection, uint32 Width, uint32 Height)
 {
 	Constants        = FFogConstants{};
@@ -269,17 +258,17 @@ bool FFogRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FMatrix4x
 	return Constants.bEnabled != 0;
 }
 
-void FFogRenderer::RenderVolumetric(const FVolumetricFogInputs& Inputs)
+void FFogRenderer::PrepareVolumetric(const FVolumetricFogInputs& Inputs)
 {
 	Constants.LightDirection = Inputs.LightDirection;
 	ConstantsAddress         = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress; // 적용/파티클용 (볼륨 여부와 무관)
-	if (Constants.bVolumetric == 0)
+	bVolumetricThisFrame     = Constants.bVolumetric != 0;
+	VolumeConstantsAddress   = 0;
+	FrameInputs              = Inputs;
+	if (!bVolumetricThisFrame)
 	{
-		// 파티클/적용 셰이더가 표를 바인딩하므로 결과 볼륨은 항상 셰이더 리소스 상태 (읽지는 않음)
-		Transition(Volumes[IntegratedVolume], D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		return;
 	}
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	const uint32 GridX = FFogMath::GetVolumeDimension(TargetWidth);
 	const uint32 GridY = FFogMath::GetVolumeDimension(TargetHeight);
 	const uint32 GridZ = FFogMath::VolumeSliceCount;
@@ -299,69 +288,99 @@ void FFogRenderer::RenderVolumetric(const FVolumetricFogInputs& Inputs)
 	// 이력이 있으면 조각 안 표본을 프레임마다 흔들고 많이 섞는다, 없으면 가운데 표본만
 	VolumeConstants.SliceJitter   = VolumeConstants.bHistoryValid ? FTemporalMath::Halton(static_cast<uint32>(Inputs.FrameIndex % 16) + 1, 2) : 0.5f;
 	VolumeConstants.HistoryWeight = 0.9f;
+	VolumeConstantsAddress        = Rhi->GetDynamicBuffer().AllocateConstants(VolumeConstants).GpuAddress;
+}
 
-	FVolume& Current  = Volumes[HistoryIndex];
-	FVolume& Previous = Volumes[HistoryIndex ^ 1];
-	FVolume& Result   = Volumes[IntegratedVolume];
+FRGResourceRef FFogRenderer::ImportVolume(FRenderGraph& Graph)
+{
+	FVolume& Result = Volumes[IntegratedVolume];
+	return Graph.ImportTracked("FogIntegratedVolume", Result.Resource.Get(), &Result.State);
+}
 
-	// 그림자 맵은 메인 패스용 PIXEL_SHADER_RESOURCE → 계산에서도 읽도록 잠깐 넓힌다
-	const D3D12_RESOURCE_STATES ShadowRead = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	if (Inputs.ShadowMap != nullptr)
+void FFogRenderer::AddVolumetricPasses(FRenderGraph& Graph, FRGResourceRef ShadowMap, ERGQueue Queue, int32 Timer)
+{
+	if (!bVolumetricThisFrame)
 	{
-		const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Inputs.ShadowMap, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, ShadowRead);
-		CommandList->ResourceBarrier(1, &Barrier);
+		return;
 	}
-	Transition(Current, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	Transition(Previous, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	FVolume&             Current     = Volumes[HistoryIndex];
+	FVolume&             Previous    = Volumes[HistoryIndex ^ 1];
+	FVolume&             Result      = Volumes[IntegratedVolume];
+	const FRGResourceRef CurrentRef  = Graph.ImportTracked(HistoryIndex == 0 ? "FogInjectVolume0" : "FogInjectVolume1", Current.Resource.Get(), &Current.State);
+	const FRGResourceRef PreviousRef = Graph.ImportTracked(HistoryIndex == 0 ? "FogInjectVolume1" : "FogInjectVolume0", Previous.Resource.Get(), &Previous.State);
+	const FRGResourceRef ResultRef   = ImportVolume(Graph);
+	const uint32         GridX       = GridSize[0];
+	const uint32         GridY       = GridSize[1];
+	const uint32         GridZ       = GridSize[2];
 
-	CommandList->SetComputeRootSignature(VolumeRoot.Get());
-	CommandList->SetComputeRootConstantBufferView(VolumeParam_Constants, Rhi->GetDynamicBuffer().AllocateConstants(VolumeConstants).GpuAddress);
-	CommandList->SetComputeRootConstantBufferView(VolumeParam_ShadowConstants, Inputs.ShadowConstants);
-	CommandList->SetComputeRootConstantBufferView(VolumeParam_ClusterConstants, Inputs.ClusterConstants);
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_ShadowMap, Inputs.ShadowMapSrv.Gpu);
-	CommandList->SetComputeRootShaderResourceView(VolumeParam_LocalLights, Inputs.LocalLights);
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_History, Previous.Srv.Gpu);
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_Inject, Previous.Srv.Gpu); // 주입 단계는 읽지 않음 (유효한 표만)
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_Output, Current.Uav.Gpu);
-	CommandList->SetPipelineState(InjectPipeline.Get());
-	CommandList->Dispatch((GridX + 3) / 4, (GridY + 3) / 4, (GridZ + 3) / 4);
+	// 볼륨 루트 공용 인자 (계산 큐 명령 목록에서도 그대로)
+	const auto BindCommon = [this](ID3D12GraphicsCommandList* CommandList) {
+		CommandList->SetComputeRootSignature(VolumeRoot.Get());
+		CommandList->SetComputeRootConstantBufferView(VolumeParam_Constants, VolumeConstantsAddress);
+		CommandList->SetComputeRootConstantBufferView(VolumeParam_ShadowConstants, FrameInputs.ShadowConstants);
+		CommandList->SetComputeRootConstantBufferView(VolumeParam_ClusterConstants, FrameInputs.ClusterConstants);
+		CommandList->SetComputeRootDescriptorTable(VolumeParam_ShadowMap, FrameInputs.ShadowMapSrv.Gpu);
+		CommandList->SetComputeRootShaderResourceView(VolumeParam_LocalLights, FrameInputs.LocalLights);
+	};
+
+	// 주입: 그림자 맵 + 이전 이력 → 이번 이력
+	FRenderGraph::FPassBuilder Inject = Graph.AddPass("볼류메트릭 안개 주입", Queue);
+	if (ShadowMap.IsValid())
+	{
+		Inject.Read(ShadowMap, ERGAccess::SrvNonPixel);
+	}
+	Inject.Read(PreviousRef, ERGAccess::SrvNonPixel)
+		.Write(CurrentRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, BindCommon, &Current, &Previous, GridX, GridY, GridZ](FRGContext& Context) {
+			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+			BindCommon(CommandList);
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_History, Previous.Srv.Gpu);
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_Inject, Previous.Srv.Gpu); // 주입 단계는 읽지 않음 (유효한 표만)
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_Output, Current.Uav.Gpu);
+			CommandList->SetPipelineState(InjectPipeline.Get());
+			CommandList->Dispatch((GridX + 3) / 4, (GridY + 3) / 4, (GridZ + 3) / 4);
+		});
 
 	// 적분: 이번 주입 결과 → 결과 볼륨
-	Transition(Current, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	Transition(Result, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_Inject, Current.Srv.Gpu);
-	CommandList->SetComputeRootDescriptorTable(VolumeParam_Output, Result.Uav.Gpu);
-	CommandList->SetPipelineState(IntegratePipeline.Get());
-	CommandList->Dispatch((GridX + 7) / 8, (GridY + 7) / 8, 1);
-
-	Transition(Result, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	if (Inputs.ShadowMap != nullptr)
+	FRenderGraph::FPassBuilder Integrate = Graph.AddPass("볼류메트릭 안개 적분", Queue);
+	if (ShadowMap.IsValid())
 	{
-		const D3D12_RESOURCE_BARRIER Barrier = MakeTransitionBarrier(Inputs.ShadowMap, ShadowRead, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		CommandList->ResourceBarrier(1, &Barrier);
+		Integrate.Read(ShadowMap, ERGAccess::SrvNonPixel); // 루트 표가 그대로 묶여 있다 (읽지는 않음)
 	}
+	Integrate.Read(CurrentRef, ERGAccess::SrvNonPixel)
+		.Read(PreviousRef, ERGAccess::SrvNonPixel)
+		.Write(ResultRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, BindCommon, &Current, &Previous, &Result, GridX, GridY](FRGContext& Context) {
+			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+			BindCommon(CommandList);
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_History, Previous.Srv.Gpu);
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_Inject, Current.Srv.Gpu);
+			CommandList->SetComputeRootDescriptorTable(VolumeParam_Output, Result.Uav.Gpu);
+			CommandList->SetPipelineState(IntegratePipeline.Get());
+			CommandList->Dispatch((GridX + 7) / 8, (GridY + 7) / 8, 1);
+		});
 	HistoryIndex ^= 1;
 	bHasHistory = true;
 }
 
-void FFogRenderer::Apply(const FD3D12RenderTarget& SceneColor)
+void FFogRenderer::AddApplyPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef SceneColorRef, FRGResourceRef DepthRef,
+                                int32 Timer)
 {
 	if (Constants.bEnabled == 0 || ConstantsAddress == 0)
 	{
 		return;
 	}
-	ID3D12GraphicsCommandList*   CommandList = Rhi->GetCommandList();
-	ID3D12Resource*              Depth  = SceneColor.GetDepthResource();
-	const D3D12_RESOURCE_BARRIER ToRead = MakeTransitionBarrier(Depth, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToRead);
-
-	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SceneColor.GetRtv();
-	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
-	DrawScreenPass(CommandList, *Root, ApplyPipeline, ConstantsAddress, { SceneColor.GetDepthSrv(), GetVolumeSrv() }, SceneColor.GetWidth(),
-	               SceneColor.GetHeight());
-
-	const D3D12_RESOURCE_BARRIER ToWrite = MakeTransitionBarrier(Depth, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToWrite);
-	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = SceneColor.GetDsv();
-	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
+	const FRGResourceRef VolumeRef = ImportVolume(Graph);
+	Graph.AddPass("안개 적용")
+		.Read(DepthRef, ERGAccess::SrvPixel)
+		.Read(VolumeRef, ERGAccess::SrvPixel)
+		.Write(SceneColorRef, ERGAccess::RenderTarget)
+		.Timer(Timer)
+		.Execute([this, &SceneColor](FRGContext& Context) {
+			SceneColor.Bind(Context.CommandList, nullptr, false, false);
+			DrawScreenPass(Context.CommandList, *Root, ApplyPipeline, ConstantsAddress, { SceneColor.GetDepthSrv(), GetVolumeSrv() }, SceneColor.GetWidth(),
+			               SceneColor.GetHeight());
+		});
 }

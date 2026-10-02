@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/MeshInstancing.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShadowCasterHook.h"
 #include "Renderer/ShadowMath.h"
 
@@ -55,9 +56,11 @@ public:
 	void PrepareCascades(const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings);
 	// 캐스케이드 캐스터 볼륨(라이트 프러스텀) 중 하나라도 겹치면 true — 스킨 팔레트 가시성 판정용 (PrepareCascades 뒤)
 	bool IntersectsCasterVolume(const FBox& WorldBounds) const;
-	// 2) 섀도우 패스 기록. 끝나면 섀도우 맵은 PIXEL_SHADER_RESOURCE 상태.
+	// 2) 섀도우 패스 등록 (캐스케이드가 있을 때만, 그림자 맵 깊이 쓰기). 그래프 실행 뒤 섀도우 맵은 평소 상태(PIXEL_SHADER_RESOURCE).
 	// 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료). 캐스케이드마다 (정적/스킨)·메시·LOD별 인스턴싱, 스킨은 프레임 팔레트(SkinPalettes, t15)
-	void Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
+	void AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes, int32 Timer);
+	// 섀도우 맵 가져오기 (없으면 무효 참조). 평소 상태 PIXEL_SHADER_RESOURCE (캐스케이드 = 배열 장)
+	FRGResourceRef ImportShadowMap(FRenderGraph& Graph) const;
 
 	const FShadowConstants&        GetConstants() const { return Constants; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return Srv; }
@@ -74,6 +77,7 @@ public:
 private:
 	// Variant = DepthVariant* (스킨/Masked)
 	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, uint32 Variant);
+	void Record(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 	void EnsureShadowMap(uint32 Resolution, uint32 Cascades);
 	void ReleaseShadowMap();
 

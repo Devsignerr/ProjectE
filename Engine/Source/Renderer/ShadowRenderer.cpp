@@ -300,26 +300,35 @@ bool FShadowRenderer::IntersectsCasterVolume(const FBox& WorldBounds) const
 	return false;
 }
 
-void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+FRGResourceRef FShadowRenderer::ImportShadowMap(FRenderGraph& Graph) const
+{
+	return ShadowMap ? Graph.Import("CascadedShadowMap", ShadowMap.Get(), ERGAccess::SrvPixel, ERGAccess::SrvPixel, 1, MapCascades) : FRGResourceRef{};
+}
+
+void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
+                              int32 Timer)
 {
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
 	DrawCalls = 0;
 	Triangles = 0;
-	if (ActiveCascades == 0 || !ShadowMap)
+	if (ActiveCascades == 0 || !ShadowMap || !ShadowMapRef.IsValid())
 	{
 		return;
 	}
+	// 캐스케이드마다 지우고 그리므로 덮어쓰기 (쓰지 않는 캐스케이드 장은 셰이더가 읽지 않는다)
+	Graph.AddPass("방향광 그림자")
+		.Write(ShadowMapRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, &Instances, SkinPalettes](FRGContext& Context) { Record(Context.CommandList, Instances, SkinPalettes); });
+}
+
+void FShadowRenderer::Record(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+{
 	const uint32                Resolution   = MapResolution;
 	const uint32                CascadeCount = ActiveCascades;
 	const ShadowMath::FCascade* Cascades     = CascadeData;
 
-	// ---- 깊이 패스
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
-
-	const D3D12_RESOURCE_BARRIER ToDepth =
-		MakeTransitionBarrier(ShadowMap.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-	CommandList->ResourceBarrier(1, &ToDepth);
-
+	// ---- 깊이 패스 (섀도우 맵은 그래프가 DEPTH_WRITE로 전이)
 	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f, static_cast<float>(Resolution), static_cast<float>(Resolution), 0.0f, 1.0f };
 	const D3D12_RECT     Scissor{ 0, 0, static_cast<LONG>(Resolution), static_cast<LONG>(Resolution) };
 	CommandList->RSSetViewports(1, &Viewport);
@@ -371,8 +380,4 @@ void FShadowRenderer::Render(const FMeshInstanceList& Instances, D3D12_GPU_VIRTU
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		ExtraCasters(CommandList, Cascades[Index].ViewProjection, CascadeFrustums[Index], false);
 	}
-
-	const D3D12_RESOURCE_BARRIER ToShaderResource =
-		MakeTransitionBarrier(ShadowMap.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-	CommandList->ResourceBarrier(1, &ToShaderResource);
 }

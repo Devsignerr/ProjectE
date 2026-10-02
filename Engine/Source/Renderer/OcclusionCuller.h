@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 
 #include <vector>
@@ -13,6 +14,16 @@ class FD3D12RenderTarget;
 class FMeshInstanceList;
 class FMeshPassBatches;
 class FShaderLibrary;
+
+// 오클루전 버퍼들의 그래프 참조
+struct FOcclusionGraphRefs
+{
+	FRGResourceRef DrawArguments;
+	FRGResourceRef Phase1Indices;
+	FRGResourceRef Phase2Indices;
+	FRGResourceRef Occluded;
+	FRGResourceRef Hzb;
+};
 
 // HZB 오클루전 컬링 (메인 패스의 정적 메시 묶음만, GPU 계산 + ExecuteIndirect). 식은 Renderer/HzbMath.h
 //   흐름 (FSceneRenderer::DrawMeshes):
@@ -33,17 +44,23 @@ public:
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
-	// 정적 묶음 항목을 올리고 1단계 컬링 (계산 PSO로 바꾸므로 이후 그래픽스 PSO를 다시 설정한다). Width/Height = 이번 깊이 크기
-	void CullPhase1(const FMeshInstanceList& Instances, const FMeshPassBatches& Batches, uint32 Width, uint32 Height);
-	// SceneColor 깊이(DEPTH_WRITE)로 HZB → 2단계 컬링. 끝나면 깊이는 DEPTH_WRITE로 돌아오지만 렌더 타깃/PSO는 호출자가 다시 바인딩
-	void BuildHzbAndCullPhase2(FD3D12RenderTarget& SceneColor, const FMatrix4x4& ViewProjection);
+	// 렌더 그래프 흐름 (FSceneRenderer):
+	//   PreparePhase1(CPU: 항목·간접 인자 업로드, 버퍼/HZB 준비) → Import → AddPhase1Passes(인자 초기화 복사 + 1단계 컬링)
+	//   → [1단계 드로우 패스: GetIndices(1) + 간접 인자] → AddHzbAndPhase2Passes(HZB 밉마다 계산 패스 + 2단계 컬링)
+	//   → [2단계 드로우 패스: GetIndices(2)] → AddFinishPass(통계 리드백 복사, 부수 효과)
+	// 드로우 패스는 DrawArguments를 IndirectArgs, 쓰는 단계 목록을 SrvNonPixel로 선언한다.
+	void PreparePhase1(const FMeshInstanceList& Instances, const FMeshPassBatches& Batches, uint32 Width, uint32 Height);
+	FOcclusionGraphRefs Import(FRenderGraph& Graph);
+	void AddPhase1Passes(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs, int32 Timer);
+	// 깊이(1단계를 그린 씬 깊이)로 HZB → 2단계 컬링
+	void AddHzbAndPhase2Passes(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs, FRGResourceRef Depth, const FD3D12RenderTarget& SceneColor,
+	                           const FMatrix4x4& ViewProjection, int32 Timer);
+	void AddFinishPass(FRenderGraph& Graph, const FOcclusionGraphRefs& Refs);
 
 	// 단계(1/2) 인스턴스 번호 목록 (NON_PIXEL_SHADER_RESOURCE, 정점 셰이더 t14)
 	D3D12_GPU_VIRTUAL_ADDRESS GetIndices(uint32 Phase) const;
 	// 묶음 하나의 단계 드로우 (메시 버퍼·루트 상수는 호출자가 바인딩)
 	void DrawIndirect(ID3D12GraphicsCommandList* CommandList, uint32 Batch, uint32 Phase) const;
-	// 2단계 드로우 뒤: 간접 인자를 통계 리드백으로 복사
-	void FinishFrame();
 
 	// 통계 (GPU 인자 리드백 — 몇 프레임 늦은 값)
 	uint32 GetTestedInstances() const { return StatTested; }
@@ -56,8 +73,14 @@ private:
 	void EnsureBuffers(uint32 SlotCount, uint32 ItemCount, uint32 BatchCount);
 	void EnsureHzb(uint32 Width, uint32 Height);
 	void ReleaseHzb();
-	void Transition(ID3D12Resource* Resource, D3D12_RESOURCE_STATES& State, D3D12_RESOURCE_STATES After);
 	void ReadStats();
+	// 컬링 디스패치 기록 (Phase 1/2)
+	void RecordCull(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress, uint32 Phase) const;
+
+	// PreparePhase1 결과 (패스 람다가 읽는다)
+	FD3D12DynamicAllocation ArgumentsUpload;
+	uint64                  ArgumentsBytes  = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS Phase1Constants = 0;
 
 	struct FBuffer
 	{

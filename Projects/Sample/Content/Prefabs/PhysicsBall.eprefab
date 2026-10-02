@@ -1,0 +1,51 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Reflections/Chrome.emat",
+          "Visible": true
+        },
+        "SphereColliderComponent": {
+          "Radius": 50
+        },
+        "RigidBodyComponent": {
+          "MotionType": 2,
+          "Mass": 12,
+          "Friction": 0.5,
+          "Restitution": 0.35,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "PhysicsBall",
+      "Parent": -1
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

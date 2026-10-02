@@ -1,0 +1,26 @@
+{
+  "Name": "ShowcaseLantern",
+  "BaseColorFactor": [
+    0.1,
+    0.08,
+    0.05,
+    1
+  ],
+  "EmissiveFactor": [
+    9,
+    5.5,
+    2.2
+  ],
+  "Metallic": 0,
+  "Roughness": 0.4,
+  "NormalScale": 1,
+  "OcclusionStrength": 1,
+  "BlendMode": "Opaque",
+  "AlphaCutoff": 0.5,
+  "TwoSided": false,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

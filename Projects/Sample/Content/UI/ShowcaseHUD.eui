@@ -1,0 +1,368 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1920,
+    1080
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Visibility": "SelfHitTestInvisible",
+    "Enabled": true,
+    "Opacity": 1,
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "ZonePanel",
+        "Visibility": "SelfHitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            40,
+            40,
+            700,
+            176
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.02,
+            0.025,
+            0.035,
+            0.82
+          ],
+          "CornerRadius": 14,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            0.75,
+            0.45,
+            0.35
+          ]
+        },
+        "ContentPadding": [
+          24,
+          16,
+          24,
+          16
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "ZoneBox",
+            "Visibility": "SelfHitTestInvisible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill"
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "TitleText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "",
+                "TextKey": "Showcase.Title",
+                "FontSize": 22,
+                "TextColor": [
+                  1,
+                  0.72,
+                  0.4,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  0.8
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "ZoneText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "",
+                "TextKey": "Showcase.Zone.Intro",
+                "FontSize": 48,
+                "TextColor": [
+                  1,
+                  1,
+                  1,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": false,
+                "OutlineWidth": 1,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  0.8
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              },
+              {
+                "Type": "Text",
+                "Name": "DescText",
+                "Visibility": "HitTestInvisible",
+                "Enabled": true,
+                "Opacity": 1,
+                "Text": "",
+                "TextKey": "Showcase.Zone.Intro.Desc",
+                "FontSize": 25,
+                "TextColor": [
+                  0.82,
+                  0.85,
+                  0.92,
+                  1
+                ],
+                "Justify": "Left",
+                "Wrap": true,
+                "OutlineWidth": 1,
+                "OutlineColor": [
+                  0,
+                  0,
+                  0,
+                  0.8
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ],
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "HintPanel",
+        "Visibility": "SelfHitTestInvisible",
+        "Enabled": true,
+        "Opacity": 1,
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -36,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.03,
+            0.035,
+            0.05,
+            0.65
+          ],
+          "CornerRadius": 20,
+          "BorderWidth": 1,
+          "BorderColor": [
+            1,
+            1,
+            1,
+            0.12
+          ]
+        },
+        "ContentPadding": [
+          26,
+          10,
+          26,
+          12
+        ],
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "HintText",
+            "Visibility": "HitTestInvisible",
+            "Enabled": true,
+            "Opacity": 1,
+            "Text": "",
+            "TextKey": "Showcase.Hint.Tour",
+            "FontSize": 24,
+            "TextColor": [
+              0.95,
+              0.95,
+              0.95,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 1,
+            "OutlineColor": [
+              0,
+              0,
+              0,
+              0.8
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ],
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "Animations": [
+    {
+      "Name": "ZoneIn",
+      "Length": 0.6,
+      "Tracks": [
+        {
+          "Widget": "ZonePanel",
+          "Property": "Opacity",
+          "Keys": [
+            [
+              0,
+              0,
+              "EaseOut"
+            ],
+            [
+              0.6,
+              1,
+              "Linear"
+            ]
+          ]
+        },
+        {
+          "Widget": "ZonePanel",
+          "Property": "TranslationX",
+          "Keys": [
+            [
+              0,
+              -40,
+              "EaseOut"
+            ],
+            [
+              0.6,
+              0,
+              "Linear"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

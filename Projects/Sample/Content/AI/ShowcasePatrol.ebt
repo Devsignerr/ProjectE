@@ -1,0 +1,227 @@
+{
+  "Version": 1,
+  "Blackboard": [
+    {
+      "Name": "Target",
+      "Type": "Entity"
+    },
+    {
+      "Name": "PatrolPoint",
+      "Type": "Vector"
+    }
+  ],
+  "Root": {
+    "Type": "Selector",
+    "Id": 1,
+    "Services": [
+      {
+        "Type": "LuaService",
+        "Id": 2,
+        "Params": [
+          {
+            "Name": "Script",
+            "Value": "AI/SeePlayer.lua"
+          },
+          {
+            "Name": "Interval",
+            "Value": 0.2
+          }
+        ]
+      }
+    ],
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Id": 3,
+        "Decorators": [
+          {
+            "Type": "Blackboard",
+            "Id": 4,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "Target"
+              },
+              {
+                "Name": "Operation",
+                "Value": "IsSet"
+              },
+              {
+                "Name": "AbortMode",
+                "Value": "Both"
+              }
+            ]
+          }
+        ],
+        "Children": [
+          {
+            "Type": "MoveTo",
+            "Id": 5,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "Target"
+              },
+              {
+                "Name": "AcceptanceRadius",
+                "Value": 130
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 6,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Id": 7,
+        "Children": [
+          {
+            "Type": "SetBlackboard",
+            "Id": 8,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "PatrolPoint"
+              },
+              {
+                "Name": "Value",
+                "Value": "-1532,-1794,0"
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 9,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "PatrolPoint"
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 10,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.8
+              }
+            ]
+          },
+          {
+            "Type": "SetBlackboard",
+            "Id": 11,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "PatrolPoint"
+              },
+              {
+                "Name": "Value",
+                "Value": "-1912,-2452,0"
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 12,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "PatrolPoint"
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 13,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.4
+              }
+            ]
+          },
+          {
+            "Type": "SetBlackboard",
+            "Id": 14,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "PatrolPoint"
+              },
+              {
+                "Name": "Value",
+                "Value": "-1168,-2882,0"
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 15,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "PatrolPoint"
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 16,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.8
+              }
+            ]
+          },
+          {
+            "Type": "SetBlackboard",
+            "Id": 17,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "PatrolPoint"
+              },
+              {
+                "Name": "Value",
+                "Value": "-788,-2224,0"
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 18,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "PatrolPoint"
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 19,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.4
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

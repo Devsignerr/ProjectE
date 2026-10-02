@@ -1,0 +1,26 @@
+{
+  "Name": "ShowcaseStoneA",
+  "BaseColorFactor": [
+    0.17,
+    0.15,
+    0.13,
+    1
+  ],
+  "EmissiveFactor": [
+    0,
+    0,
+    0
+  ],
+  "Metallic": 0,
+  "Roughness": 0.55,
+  "NormalScale": 1,
+  "OcclusionStrength": 1,
+  "BlendMode": "Opaque",
+  "AlphaCutoff": 0.5,
+  "TwoSided": false,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

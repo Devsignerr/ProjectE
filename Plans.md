@@ -810,6 +810,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 
 설계: 구조체 정의 `.estruct`(필드 이름·타입·기본값·설명 — 여러 테이블이 공유, 언리얼 Row Struct처럼), 데이터 테이블 `.etable`(구조체 + 행 이름 → 값), 데이터 에셋 `.edata`(구조체 값 하나). 필드 타입: bool/int/float/string/Vector2·3·4/색/enum/에셋 경로(필터)/행 참조(테이블+행)/배열. 읽기는 `FFileSystem`(pak), 경로 캐시 + 핫 리로드, Lua `Data.*` + C++ API. 순서: 46-A 핵심 → 46-B 편집기 · 46-C RPG 이전 병렬.
 
-- [~] 46-A. 핵심: 형식/로더/캐시/검증(구조체 기본값 채움, 타입 오류 경고), 핫 리로드, Lua `Data.GetRow/GetRows/GetRowNames/Load`, C++ `FDataTable/FDataAsset/FDataStruct`, 에셋 이동 참조 갱신, 테스트
-- [ ] 46-B. 편집기: 테이블 편집기(스프레드시트 — 행 추가/삭제/복제/이름 변경, 정렬·검색, 셀 위젯은 필드 타입별, 행 참조 콤보, Undo), 데이터 에셋 편집기(인스펙터식), 구조체 편집기, CSV 가져오기/내보내기, 콘텐츠 브라우저 새로 만들기
-- [ ] 46-C. RPG 이전: 아이템/전리품 표/적 스탯을 `Data/RPG/*.etable`·`.edata`로, 스크립트는 `Data.*`로 읽기
+- [x] 46-A. 핵심: `Scene/DataTable.h`(FDataValue/FDataField/FDataStruct/FDataTable/FDataAsset — 편집·`Rebind` 마이그레이션·JSON 왕복), `Scene/DataLibrary.h`(`FDataLibrary::Get()` 경로 캐시·세대·Invalidate·참조 검증·`Save*`·`SaveStructAndMigrate`), `Scene/DataCsv.h`(CSV/TSV, BOM, `|` 배열), Lua `Data.GetRow/GetRows/GetRowNames/HasRow/Load/ResolveRef/GetGeneration`(매 호출 새 테이블), 에디터 핫 리로드, 참조 갱신(Content 기준), 콘텐츠 브라우저 아이콘, 예제 `Data/Samples/`, 테스트 13개 (2026-10-03 머지: 트랙 Debug 11개 묶음·Release·에디터 Verify 0건, DLL 내보내기 61282/65535)
+- 후속(46-A): 중첩 Struct, Enum 값 이름 변경 마이그레이션, 숫자 Min/Max, 런타임 핫 리로드, 파일 기준 상대 경로
+- [~] 46-B. 편집기: 테이블 편집기(스프레드시트 — 행 추가/삭제/복제/이름 변경, 정렬·검색, 셀 위젯은 필드 타입별, 행 참조 콤보, Undo), 데이터 에셋 편집기(인스펙터식), 구조체 편집기, CSV 가져오기/내보내기, 콘텐츠 브라우저 새로 만들기
+- [~] 46-C. RPG 이전: 아이템/전리품 표/적 스탯을 `Data/RPG/*.etable`·`.edata`로, 스크립트는 `Data.*`로 읽기

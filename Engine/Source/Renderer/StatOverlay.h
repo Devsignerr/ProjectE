@@ -8,7 +8,8 @@
 class FResourceManager;
 struct FSceneRenderStats;
 
-// 화면 통계 (콘솔 "stat fps" / "stat gpu" / "stat memory" → 변수 stat.FPS / stat.GPU / stat.Memory). 문자열만 만들고 그리기는 앱이 한다
+// 화면 통계 (콘솔 "stat fps" / "stat gpu" / "stat memory" / "stat streaming" → 변수 stat.FPS / stat.GPU / stat.Memory / stat.Streaming).
+// 문자열만 만들고 그리기는 앱이 한다
 // (에디터 = 뷰포트 ImGui 그리기 목록, 런타임 = 게임 UI 그리기 목록 FUIDebugDraw).
 class FStatOverlay
 {
@@ -34,4 +35,6 @@ private:
 	FResourceManager*        Resources = nullptr;
 	std::vector<std::string> MemoryLines;
 	float                    MemorySeconds = 0.0f; // 다음 갱신까지 남은 시간
+	std::vector<std::string> StreamingLines;      // stat streaming (텍스처 밉 스트리밍)
+	float                    StreamingSeconds = 0.0f;
 };

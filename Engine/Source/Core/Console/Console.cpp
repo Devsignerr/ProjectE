@@ -957,7 +957,7 @@ void FConsoleManager::RegisterBuiltins()
 		                  Output.Printf("{}개 (* = 기본값과 다름)", Count);
 	                  } });
 
-	RegisterCommand({ "stat", "화면 통계 켜고 끄기: stat fps | stat gpu | stat memory | stat none",
+	RegisterCommand({ "stat", "화면 통계 켜고 끄기: stat fps | stat gpu | stat memory | stat streaming | stat none",
 	                  [this](const std::vector<std::string>& Args, const FConsoleOutput& Output) {
 		                  FConsoleVariable* Fps    = FindVariable("stat.FPS");
 		                  FConsoleVariable* Gpu    = FindVariable("stat.GPU");
@@ -982,17 +982,32 @@ void FConsoleManager::RegisterBuiltins()
 		                  }
 		                  else if (ConsoleParsing::EqualsIgnoreCase(Mode, "none"))
 		                  {
-			                  Fps->SetBool(false);
-			                  Gpu->SetBool(false);
-			                  Memory->SetBool(false);
+			                  // 다른 모듈이 등록한 화면 통계(stat.<이름> 불 변수 — 예: 렌더러 stat.Streaming)도 함께 끈다
+			                  for (const FConsoleVariable* Variable : GetVariables())
+			                  {
+				                  if (Variable->GetType() == EConsoleVariableType::Bool && ConsoleParsing::ContainsIgnoreCase(Variable->GetName(), "stat."))
+				                  {
+					                  if (FConsoleVariable* Writable = FindVariable(Variable->GetName()))
+					                  {
+						                  Writable->SetBool(false);
+					                  }
+				                  }
+			                  }
+		                  }
+		                  else if (FConsoleVariable* Other = FindVariable("stat." + Mode);
+		                           Other != nullptr && Other->GetType() == EConsoleVariableType::Bool)
+		                  {
+			                  Other->SetBool(!Other->GetBool()); // 다른 모듈의 화면 통계 (stat streaming → stat.Streaming)
+			                  Output.Printf("화면 통계 {}: {}", Mode, Other->GetBool() ? "켬" : "끔");
+			                  return;
 		                  }
 		                  else
 		                  {
-			                  Output.Printf("알 수 없는 통계: {} (fps | gpu | memory | none)", Mode);
+			                  Output.Printf("알 수 없는 통계: {} (fps | gpu | memory | streaming | none)", Mode);
 			                  return;
 		                  }
 		                  Output.Printf("화면 통계: fps {}, gpu {}, memory {}", Fps->GetBool() ? "켬" : "끔", Gpu->GetBool() ? "켬" : "끔",
 		                                Memory->GetBool() ? "켬" : "끔");
 	                  },
-	                  { "fps", "gpu", "memory", "none" } });
+	                  { "fps", "gpu", "memory", "streaming", "none" } });
 }

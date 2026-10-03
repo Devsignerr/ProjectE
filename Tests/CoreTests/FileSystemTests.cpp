@@ -2,6 +2,7 @@
 #include "Core/Serialization/BinaryArchive.h"
 #include "Core/Testing/TestFramework.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -113,5 +114,57 @@ E_TEST(FileSystem_PakMountAndRead)
 	E_EXPECT_FALSE(FFileSystem::Mount(Source / L"Game" / L"Content" / L"Scene.escene", Mount));
 	E_EXPECT_FALSE(FFileSystem::Mount(Base / L"없음.epak", Mount));
 	E_EXPECT_EQ(FFileSystem::GetMountedFileCount(), static_cast<size_t>(0));
+	fs::remove_all(Base, ErrorCode);
+}
+
+E_TEST(FileSystem_ReadFileRange)
+{
+	// 텍스처 밉 스트리밍: 디스크 파일과 pak 항목 모두 [오프셋, 오프셋 + 크기) 범위 읽기
+	const fs::path Base   = FTestRegistry::GetTempDirectory() / L"ProjectE_RangeTest";
+	const fs::path Source = Base / L"Source";
+	const fs::path Mount  = Base / L"Mounted";
+	std::error_code ErrorCode;
+	fs::remove_all(Base, ErrorCode);
+	fs::create_directories(Source / L"Cooked", ErrorCode);
+	std::vector<uint8> Binary(5000);
+	for (size_t Index = 0; Index < Binary.size(); ++Index)
+	{
+		Binary[Index] = static_cast<uint8>(Index * 7 + 3);
+	}
+	const fs::path File = Source / L"Cooked" / L"Brick.png.color.etex";
+	{
+		std::ofstream Stream(File, std::ios::binary | std::ios::trunc);
+		Stream.write(reinterpret_cast<const char*>(Binary.data()), static_cast<std::streamsize>(Binary.size()));
+	}
+	// 앞에 다른 항목을 두어 pak 안 오프셋이 0이 아니게
+	WriteText(Source / L"A.txt", "first entry");
+
+	const auto Expect = [&](const fs::path& Path, uint64 Offset, uint64 Size) {
+		std::vector<uint8> Range;
+		const bool         bOk = FFileSystem::ReadFileRange(Path, Offset, Size, Range);
+		return bOk && Range.size() == Size && std::equal(Range.begin(), Range.end(), Binary.begin() + static_cast<std::ptrdiff_t>(Offset));
+	};
+	std::vector<uint8> Range;
+	E_EXPECT_TRUE(Expect(File, 0, 14));
+	E_EXPECT_TRUE(Expect(File, 1234, 2000));
+	E_EXPECT_TRUE(Expect(File, 4990, 10)); // 끝까지
+	E_EXPECT_TRUE(Expect(File, 5000, 0));
+	E_EXPECT_FALSE(FFileSystem::ReadFileRange(File, 4990, 11, Range)); // 파일 밖
+	E_EXPECT_FALSE(FFileSystem::ReadFileRange(Source / L"None.etex", 0, 1, Range));
+	E_EXPECT_TRUE(FFileSystem::GetFileSize(File).value_or(0) == 5000);
+
+	std::vector<std::pair<std::string, fs::path>> Files = { { FFileSystem::MakeKey(Source / L"A.txt", Source), Source / L"A.txt" },
+	                                                        { FFileSystem::MakeKey(File, Source), File } };
+	std::string Error;
+	E_EXPECT_TRUE(FPakWriter::Write(Base / L"Range.epak", Files, Error));
+	E_EXPECT_TRUE(FFileSystem::Mount(Base / L"Range.epak", Mount));
+	const fs::path InPak = Mount / L"Cooked" / L"Brick.png.color.etex";
+	E_EXPECT_TRUE(FFileSystem::IsInPak(InPak));
+	E_EXPECT_TRUE(Expect(InPak, 0, 14));
+	E_EXPECT_TRUE(Expect(InPak, 1234, 2000));
+	E_EXPECT_TRUE(Expect(InPak, 4990, 10));
+	E_EXPECT_FALSE(FFileSystem::ReadFileRange(InPak, 4990, 11, Range)); // 항목 밖 (다음 항목/색인을 읽지 않는다)
+	E_EXPECT_TRUE(FFileSystem::GetFileSize(InPak).value_or(0) == 5000);
+	FFileSystem::UnmountAll();
 	fs::remove_all(Base, ErrorCode);
 }

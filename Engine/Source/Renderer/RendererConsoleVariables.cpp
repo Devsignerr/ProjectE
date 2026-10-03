@@ -1,5 +1,7 @@
 #include "Renderer/RendererConsoleVariables.h"
 
+#include "Renderer/TextureStreamingMath.h"
+
 namespace RendererCVars
 {
 	TAutoConsoleVariable<bool> TemporalAA("r.TAA", true, "TAA (서브픽셀 지터 + 이력 누적). 픽셀 아트/와이어프레임/여러 뷰 렌더러는 자동으로 꺼짐",
@@ -25,9 +27,12 @@ namespace RendererCVars
 	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f), .CommandLine = { { L"--lod-hysteresis", "" } } });
 	TAutoConsoleVariable<bool> Jitter("r.Jitter", false, "TAA 없이도 서브픽셀 투영 지터 (확인용 — 혼자 켜면 화면이 떨린다)", EConsoleFlags::None,
 	                                  { .CommandLine = { { L"--jitter", "1" } } });
-	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0, "화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림)", EConsoleFlags::None,
-	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr" },
-	                                        .Range       = std::pair(0.0f, 5.0f),
+	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0,
+	                                      "화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림). mip = 텍스처 밉 스트리밍 상주 밉 색칠 (메시 패스가 고정 PBR 베이스 컬러 기준으로 "
+	                                      "빨강 = 필요한 밉이 없음, 초록 = 알맞음, 파랑 = 2밉 이상 여유, 회색 = 텍스처 없음/그래프 머티리얼)",
+	                                      EConsoleFlags::None,
+	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr", "mip" },
+	                                        .Range       = std::pair(0.0f, 6.0f),
 	                                        .CommandLine = { { L"--debug-view", "" } } });
 	TAutoConsoleVariable<bool> ResourceAutoCollect("r.ResourceAutoCollect", true,
 	                                               "맵 전환·서브 씬 내림·에디터 씬 열기 뒤 쓰지 않는 메시/텍스처/머티리얼/모델/파티클 자동 수거 (끄면 비교용으로 쌓임 — r.CollectResources는 계속 동작)");
@@ -36,6 +41,25 @@ namespace RendererCVars
 	                                         "2 비동기 + 프레임마다 비우기 (EnableAsyncLoading을 부르지 않은 앱/테스트는 항상 동기)",
 	                                         EConsoleFlags::None,
 	                                         { .Range = std::pair(-1.0f, 2.0f), .CommandLine = { { L"--sync-loading", "0" }, { L"--async-loading", "1" } } });
+
+	TAutoConsoleVariable<bool> Streaming("r.Streaming", true,
+	                                     "텍스처 밉 스트리밍: 머티리얼 텍스처를 화면에 필요한 밉까지만 VRAM에 둔다 (끄면 새 텍스처는 전체 밉, 줄어든 텍스처는 전체로 되돌림). "
+	                                     "비동기 로딩을 켠 앱만 (테스트·도구는 항상 전체)",
+	                                     EConsoleFlags::None, { .CommandLine = { { L"--no-texture-streaming", "0" }, { L"--texture-streaming", "1" } } });
+	TAutoConsoleVariable<int32> StreamingPoolSizeMB("r.Streaming.PoolSizeMB", 0,
+	                                                "텍스처 스트리밍 예산(MB): 스트리밍 텍스처 상주 합이 넘으면 우선순위가 낮은 텍스처부터 밉을 줄인다. "
+	                                                "0 = 자동 (VRAM 예산의 40%, 256MB~4GB)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 65536.0f), .CommandLine = { { L"--streaming-pool-mb", "" } } });
+	TAutoConsoleVariable<float> StreamingMaxUploadMBPerFrame("r.Streaming.MaxUploadMBPerFrame", 32.0f,
+	                                                         "텍스처 스트리밍 프레임당 새 요청 상한(MB, 비동기만 — 끊김 방지). 요청 하나는 상한보다 커도 보낸다",
+	                                                         EConsoleFlags::None, { .Range = std::pair(1.0f, 1024.0f) });
+	TAutoConsoleVariable<float> StreamingDropDelay("r.Streaming.DropDelay", 2.0f,
+	                                               "텍스처 스트리밍: 덜 세밀한 밉으로 내리기 전 기다리는 시간(초). 예산 초과면 기다리지 않는다",
+	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 60.0f) });
+	TAutoConsoleVariable<int32> StreamingMipMargin("r.Streaming.MipMargin", TextureStreamingMath::DefaultMipMargin,
+	                                               "텍스처 스트리밍 필요 밉 여유(밉 수): 계산한 필요 밉보다 이만큼 더 세밀하게 둔다 (이방성·UV 밀도 분포)",
+	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 4.0f) });
+	TAutoConsoleVariable<bool> StatStreaming("stat.Streaming", false, "화면 통계: 텍스처 밉 스트리밍 (stat streaming으로 켜고 끔)");
 
 	TAutoConsoleVariable<bool> RenderGraphCull("r.RenderGraph.Cull", true, "렌더 그래프: 결과를 아무도 읽지 않는 패스 제거 (끄면 모두 실행 — 비교용)");
 	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),

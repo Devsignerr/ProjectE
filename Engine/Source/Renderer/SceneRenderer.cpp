@@ -1048,6 +1048,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	PerFrame.JitterNdc                = CurrentJitterNdc;
 	PerFrame.ScreenSize               = FVector2(static_cast<float>(Width), static_cast<float>(Height));
 	PerFrame.MaterialMipBias          = FUpscaleMath::ComputeMipBias(Height, OutputHeight, RendererCVars::UpscaleMipBiasOffset.Get()); // 네이티브 0
+	PerFrame.DebugMipView             = DebugView == DebugViewMip ? 1u : 0u; // 메시 패스가 상주 밉 색칠 (화면 패스 없음)
 	CurrentReprojection               = FTemporalMath::ComputeReprojectionMatrix(UnjitteredViewProjection, PerFrame.PrevViewProjection);
 
 	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
@@ -1091,6 +1092,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	SelectLods(Camera);
 	// 지형 텍스처 갱신(업로드 복사 — 그래프 밖, 이 프레임 명령 목록 맨 앞) + 청크 LOD/컬링 (그림자 패스 전)
 	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum);
+	// 텍스처 밉 스트리밍: 필요 밉 보고 (자동 검증·동기 로딩은 부족한 밉을 여기서 바로 채워 이 프레임에 그린다)
+	ReportTextureStreaming(Scene, Camera, Height, PerFrame.MaterialMipBias);
 	Stats.TotalMeshes   = MeshInstances.GetComponentCount();
 	Stats.SkinnedDrawn  = static_cast<uint32>(SkinPalettes.GetCount());
 	Stats.SkinnedCulled = SkinPalettes.GetCulledCount();
@@ -1555,7 +1558,8 @@ void FSceneRenderer::ApplyMotionHistory(bool bValid)
 
 void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphOutput& Output, const FSceneGraphRefs& Refs)
 {
-	if (DebugView == 0 || !SceneColor || SceneColor->GetWidth() != Output.Output.Width || SceneColor->GetHeight() != Output.Output.Height)
+	if (DebugView == 0 || DebugView == DebugViewMip || !SceneColor || SceneColor->GetWidth() != Output.Output.Width ||
+	    SceneColor->GetHeight() != Output.Output.Height)
 	{
 		return;
 	}
@@ -1819,6 +1823,39 @@ void FSceneRenderer::DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandLi
 		}
 		++OutDrawCalls;
 	}
+}
+
+void FSceneRenderer::ReportTextureStreaming(FScene& Scene, const FCamera& Camera, uint32 Height, float MipBias)
+{
+	if (!Resources->IsTextureStreamingActive())
+	{
+		return;
+	}
+	FTextureStreamingView View;
+	View.Instances      = &MeshInstances;
+	View.CameraPosition = Camera.GetPosition();
+	View.CameraForward  = Camera.GetForwardVector();
+	View.bOrthographic  = Camera.IsOrthographic();
+	View.TanHalfFovY    = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
+	View.OrthoHeight    = Camera.GetOrthoHeight();
+	View.NearZ          = Camera.GetNearZ();
+	View.ScreenHeight   = Height;
+	View.MipBias        = MipBias;
+	View.IsInMainView   = [this](const FBox& Bounds) { return FrozenFrustum.Intersects(Bounds); };
+	View.IsShadowCaster = [this](const FBox& Bounds) {
+		return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds);
+	};
+	// 메시 인스턴스 밖에서 그리는 머티리얼 (지형 레이어 — 이번 Prepare가 쓴 것, 데칼): 화면 크기 식을 적용할 수 없어 전체 밉
+	FResourceRoots Roots;
+	TerrainRenderer.CollectResourceRoots(Roots);
+	View.FullResidencyMaterials.assign(Roots.Materials.begin(), Roots.Materials.end());
+	Scene.GetRegistry().View<FDecalComponent>().Each([&](FEntity, FDecalComponent& Decal) {
+		if (Decal.Material.IsValid())
+		{
+			View.FullResidencyMaterials.push_back(Decal.Material);
+		}
+	});
+	Resources->ReportTextureStreamingView(View);
 }
 
 void FSceneRenderer::SelectLods(const FCamera& Camera)

@@ -10,6 +10,7 @@
 #include "Renderer/ResourceCollector.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/TextureCompression.h"
+#include "Renderer/TextureStreaming.h"
 #include "Scene/ResourceHandles.h"
 
 #include <chrono>
@@ -73,12 +74,16 @@ public:
 	void              ProcessAsyncLoads();
 
 	// ---- 텍스처
-	// 경로 + 용도로 캐시 (쿠킹: 밉 + BC 압축). 실패 시 무효 핸들 (Resolve 시 흰색 텍스처로 대체)
+	// 경로 + 용도로 캐시 (쿠킹: 밉 + BC 압축). 실패 시 무효 핸들 (Resolve 시 흰색 텍스처로 대체).
+	// 머티리얼 밖(UI·파티클·썸네일 등)에서 부르는 창구 — 이렇게 얻은 텍스처는 밉 스트리밍하지 않는다(항상 전체 밉, TextureStreaming.h)
 	FTextureHandle LoadTexture(const std::filesystem::path& Path, ETextureUsage Usage);
 	// 비압축 이미지 (밉은 GPU에서 생성)
 	FTextureHandle CreateTexture(const FImage& Image, bool bSRGB, const std::wstring& DebugName);
 	// 쿠킹된 텍스처 (전체 밉 체인 업로드)
 	FTextureHandle CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName);
+	// 쿠킹 파일에서 밉 단위로 다시 읽을 수 있는 텍스처 (모델 이미지): 밉 스트리밍 대상 (Source 무효면 CreateTexture와 같다).
+	// 비동기 로딩 + r.Streaming이면 꼬리 밉만 올리고 필요에 따라 올린다
+	FTextureHandle CreateStreamingTexture(const FCompressedTexture& Texture, const FTextureStreamSource& Source, const std::wstring& DebugName);
 	// 밉 1개 원시 텍스처 (UI 글꼴 아틀라스 R8 등). Pixels는 행 단위로 빈틈없이 (Width * BytesPerPixel)
 	FTextureHandle CreateTexture(uint32 Width, uint32 Height, DXGI_FORMAT Format, const void* Pixels, uint32 BytesPerPixel, const std::wstring& DebugName);
 	void           DestroyTexture(FTextureHandle Handle);
@@ -161,6 +166,14 @@ public:
 	FResourceMemoryStats   GetMemoryStats();
 	size_t                 GetParticleSystemCount() const { return ParticleCache.size(); }
 
+	// ---- 텍스처 밉 스트리밍 (Phase 53 — 규칙은 Renderer/TextureStreaming.h 머리 주석, 구현은 TextureStreaming.cpp)
+	// 씬 렌더러가 뷰마다 (메시 인스턴스 수집·LOD 선택 뒤, 그래프 실행 전). 자동 검증/동기 로딩이면 부족한 밉을 여기서 바로 채운다
+	void                   ReportTextureStreamingView(const FTextureStreamingView& View);
+	FTextureStreamingStats GetTextureStreamingStats() const;
+	// 스트리밍 항목이면 상주 최상위 밉 (아니면 0 — 전체). 테스트/디버그
+	uint32                 GetTextureResidentTopMip(FTextureHandle Handle) const;
+	bool                   IsTextureStreamingActive() const { return bAsyncLoadingEnabled; }
+
 private:
 	struct FPendingUpload
 	{
@@ -169,6 +182,26 @@ private:
 		uint64         Fence = 0;
 	};
 	bool IsAsyncUpload() const { return GetLoadMode() != EResourceLoadMode::Sync; }
+	// bStreamable: 머티리얼이 부름 (밉 스트리밍 대상). false면 고정(전체 밉) — 이미 스트리밍 중이면 고정으로 바꾼다
+	FTextureHandle LoadTextureInternal(const std::filesystem::path& Path, ETextureUsage Usage, bool bStreamable);
+	// 스트리밍 (TextureStreaming.cpp)
+	bool IsStreamingEnabled() const;                 // 비동기 로딩 사용 + r.Streaming
+	bool IsStreamingDeterministic() const;           // Sync/AsyncDrain: 처음 전체 + 보고 안에서 바로 채움
+	void RegisterStreamingTexture(FTextureHandle Handle, const FTextureStreamSource& Source, const TextureStreamingMath::FPayloadLayout& Layout,
+	                              uint32 ResidentTop, bool bPinned, const std::wstring& DebugName);
+	void UnregisterStreamingTexture(FTextureHandle Handle);
+	void PinStreamingTexture(FTextureHandle Handle);
+	void ProcessTextureStreaming();                  // BeginFrame (ProcessAsyncLoads)
+	// bFinal = BeginFrame (지난 프레임 보고 확정: 히스테리시스 진행 + 보고 비움), false = 보고 중간 (더 세밀해진 것만)
+	void UpdateStreamingTargets(float DeltaSeconds, bool bFinal);
+	void IssueStreamingRequests(bool bAllowDrops, bool bUnlimited);
+	void IssueStreamingRequest(FTextureStreamingState::FEntry& Entry, uint32 NewTop);
+	void CompleteStreamUploads(uint64 FinalizedFence);
+	void FinishStreamingNow();                       // 결정적 모드: 진행 중 요청을 CPU 대기로 모두 끝낸다
+	uint32 GetStreamingPendingCount() const;
+	uint64 GetStreamingPoolBytes() const;
+	void InitStreamingConsole();
+	void ShutdownStreaming();
 	// 쿠킹 텍스처를 Target에 만든다 (비동기면 복사 큐 + 대기 목록, 아니면 동기)
 	bool UploadCompressedTexture(FD3D12Texture& Target, FTextureHandle Handle, const FCompressedTexture& Texture, const std::wstring& DebugName);
 	void FinishTextureLoad(FTextureHandle Handle, const FCompressedTexture& Texture, bool bLoaded, const std::wstring& DebugName);
@@ -231,4 +264,7 @@ private:
 	uint64                          TickCount            = 0;
 	bool                            bWarnedOverBudget    = false;
 	bool                            bOwnsConsoleCommands = false;
+
+	// 텍스처 밉 스트리밍 (Phase 53)
+	FTextureStreamingState Streaming;
 };

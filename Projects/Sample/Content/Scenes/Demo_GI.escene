@@ -2,52 +2,249 @@
   "Version": 1,
   "Entities": [
     { "Name": "Sun", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 0.0, 900.0], "Rotation": [0.2465, 0.0903, -0.906, 0.3319], "Scale": [1.0, 1.0, 1.0] },
-        "DirectionalLightComponent": { "Color": [1.0, 0.95, 0.85], "Intensity": 6.0 },
-        "ScriptComponent": { "ScriptAsset": "Scripts/GiSunStep.lua", "PropertyOverrides": "{\"StepFrame\":0}" } } },
+        "TransformComponent": {"Position": [0, 0, 900], "Rotation": [0.2465, 0.0903, -0.906, 0.3319], "Scale": [1, 1, 1]},
+        "DirectionalLightComponent": {"Color": [1.0, 0.95, 0.85], "Intensity": 6.0},
+        "ScriptComponent": {"ScriptAsset": "Scripts/GiSunStep.lua", "PropertyOverrides": "{\"StepFrame\":0}"} } },
     { "Name": "OutdoorGround", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 0.0, -25.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [60.0, 60.0, 0.1] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [0, 0, -25], "Rotation": [0, 0, 0, 1], "Scale": [60, 60, 0.1]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "Floor", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.4, 6.4, 0.2] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [0, 0, -10], "Rotation": [0, 0, 0, 1], "Scale": [8.4, 6.4, 0.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "Ceiling", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 0.0, 310.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.4, 6.4, 0.2] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [0, 0, 310], "Rotation": [0, 0, 0, 1], "Scale": [8.4, 6.4, 0.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "RedWall", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, -310.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.0, 0.2, 3.0] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [0, -310, 150], "Rotation": [0, 0, 0, 1], "Scale": [8.0, 0.2, 3.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "GreenWall", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 310.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.0, 0.2, 3.0] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/GreenWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [0, 310, 150], "Rotation": [0, 0, 0, 1], "Scale": [8.0, 0.2, 3.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/GreenWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "FrontWall", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [-410.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 3.0] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [-410, 0, 150], "Rotation": [0, 0, 0, 1], "Scale": [0.2, 6.4, 3.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WindowWallBottom", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [410.0, 0.0, 40.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 0.8] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [410, 0, 40], "Rotation": [0, 0, 0, 1], "Scale": [0.2, 6.4, 0.8]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WindowWallTop", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [410.0, 0.0, 260.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 0.8] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [410, 0, 260], "Rotation": [0, 0, 0, 1], "Scale": [0.2, 6.4, 0.8]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WindowWallLeft", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [410.0, -210.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 2.2, 1.4] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [410, -210, 150], "Rotation": [0, 0, 0, 1], "Scale": [0.2, 2.2, 1.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WindowWallRight", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [410.0, 210.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 2.2, 1.4] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [410, 210, 150], "Rotation": [0, 0, 0, 1], "Scale": [0.2, 2.2, 1.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WhiteBox", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [150.0, 120.0, 60.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.2, 1.2, 1.2] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+        "TransformComponent": {"Position": [150, 120, 60], "Rotation": [0, 0, 0, 1], "Scale": [1.2, 1.2, 1.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
     { "Name": "WhiteSphere", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [-20.0, -170.0, 60.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.2, 1.2, 1.2] },
-        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+        "TransformComponent": {"Position": [-20, -170, 60], "Rotation": [0, 0, 0, 1], "Scale": [1.2, 1.2, 1.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:sphere", "Visible": true} } },
+    { "Name": "WindowBar0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [410.0, -50.0, 150.0], "Rotation": [0, 0, 0, 1], "Scale": [0.16, 0.04, 1.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "WindowBar1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [410.0, 0.0, 150.0], "Rotation": [0, 0, 0, 1], "Scale": [0.16, 0.04, 1.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "WindowBar2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [410.0, 50.0, 150.0], "Rotation": [0, 0, 0, 1], "Scale": [0.16, 0.04, 1.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "WindowTransom", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [410.0, 0.0, 150.0], "Rotation": [0, 0, 0, 1], "Scale": [0.16, 2.0, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "FloorCapsule", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-130, -40, 50], "Rotation": [0, 0, 0, 1], "Scale": [0.5, 0.5, 0.5]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:capsule", "Visible": true} } },
+    { "Name": "FloorBookA", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [67.5, -215.0, 2.0], "Rotation": [0, 0, 0, 1], "Scale": [0.15, 0.1, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "FloorBookB", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [65.0, -216.5, 5.5], "Rotation": [0, 0, 0, 1], "Scale": [0.14, 0.11, 0.03]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "FloorBookC", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [67.5, -215.5, 9.0], "Rotation": [0, 0, 0, 1], "Scale": [0.13, 0.07, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/GreenWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "FloorCup", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [94.0, -196.0, 5.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.08, 0.1]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "FloorBall", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [40, -185, 6], "Rotation": [0, 0, 0, 1], "Scale": [0.12, 0.12, 0.12]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:sphere", "Visible": true} } },
+    { "Name": "TableTop", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [0.0, 60.0, 73.0], "Rotation": [0, 0, 0, 1], "Scale": [1.2, 0.7, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableLeg0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-55.0, 30.0, 35.5], "Rotation": [0, 0, 0, 1], "Scale": [0.05, 0.05, 0.71]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableLeg1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [55.0, 30.0, 35.5], "Rotation": [0, 0, 0, 1], "Scale": [0.05, 0.05, 0.71]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableLeg2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-55.0, 90.0, 35.5], "Rotation": [0, 0, 0, 1], "Scale": [0.05, 0.05, 0.71]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableLeg3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [55.0, 90.0, 35.5], "Rotation": [0, 0, 0, 1], "Scale": [0.05, 0.05, 0.71]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableBook", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-12.5, 55.5, 77.0], "Rotation": [0, 0, 0, 1], "Scale": [0.15, 0.11, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableCup", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [24.0, 69.0, 80.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.08, 0.1]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "TableBall", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [40, 45, 80], "Rotation": [0, 0, 0, 1], "Scale": [0.1, 0.1, 0.1]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:sphere", "Visible": true} } },
+    { "Name": "Chair0Seat", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-25.0, -5.0, 44.0], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.4, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair0Leg0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-43.0, -23.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair0Leg1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-7.0, -23.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair0Leg2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-43.0, 13.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair0Leg3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-7.0, 13.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair0Back", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-25.0, -25.0, 68.0], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.03, 0.44]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Seat", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [25.0, -5.0, 44.0], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.4, 0.04]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Leg0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [7.0, -23.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Leg1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [43.0, -23.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Leg2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [7.0, 13.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Leg3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [43.0, 13.0, 21.0], "Rotation": [0, 0, 0, 1], "Scale": [0.03, 0.03, 0.42]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Chair1Back", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [25.0, -25.0, 68.0], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.03, 0.44]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfSideL", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-169.0, -285.0, 81.0], "Rotation": [0, 0, 0, 1], "Scale": [0.02, 0.3, 1.62]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfSideR", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-51.0, -285.0, 81.0], "Rotation": [0, 0, 0, 1], "Scale": [0.02, 0.3, 1.62]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBoard0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-110.0, -285.0, 1.0], "Rotation": [0, 0, 0, 1], "Scale": [1.16, 0.3, 0.02]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBoard1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-110.0, -285.0, 41.0], "Rotation": [0, 0, 0, 1], "Scale": [1.16, 0.3, 0.02]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBoard2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-110.0, -285.0, 81.0], "Rotation": [0, 0, 0, 1], "Scale": [1.16, 0.3, 0.02]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBoard3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-110.0, -285.0, 121.0], "Rotation": [0, 0, 0, 1], "Scale": [1.16, 0.3, 0.02]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBoard4", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-110.0, -285.0, 161.0], "Rotation": [0, 0, 0, 1], "Scale": [1.16, 0.3, 0.02]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-156.0, -286.5, 14.5], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.25]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-146.0, -286.5, 13.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.22]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-136.0, -286.5, 16.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.28]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/GreenWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-116.0, -286.5, 52.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook4", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-108.0, -286.5, 54.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.24]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook5", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-86.0, -286.5, 89.5], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.15]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook6", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-136.0, -286.5, 137.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.3]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "ShelfBook7", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-76.0, -286.5, 127.0], "Rotation": [0, 0, 0, 1], "Scale": [0.08, 0.17, 0.1]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "CabinetFoot0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [283.0, 260.0, 4.0], "Rotation": [0, 0, 0, 1], "Scale": [0.04, 0.04, 0.08]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "CabinetFoot1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [357.0, 260.0, 4.0], "Rotation": [0, 0, 0, 1], "Scale": [0.04, 0.04, 0.08]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "CabinetFoot2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [283.0, 294.0, 4.0], "Rotation": [0, 0, 0, 1], "Scale": [0.04, 0.04, 0.08]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "CabinetFoot3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [357.0, 294.0, 4.0], "Rotation": [0, 0, 0, 1], "Scale": [0.04, 0.04, 0.08]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Cabinet", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [320.0, 277.0, 98.0], "Rotation": [0, 0, 0, 1], "Scale": [0.8, 0.4, 1.8]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Wood.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "AlcoveSoffit", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-345.0, -235.0, 250.0], "Rotation": [0, 0, 0, 1], "Scale": [1.1, 1.3, 1.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "AlcoveSide", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-350.0, -167.0, 100.0], "Rotation": [0, 0, 0, 1], "Scale": [1.0, 0.1, 2.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "AlcoveBall", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-345, -240, 15], "Rotation": [0, 0, 0, 1], "Scale": [0.3, 0.3, 0.3]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:sphere", "Visible": true} } },
+    { "Name": "Partition", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-250.0, 235.0, 110.0], "Rotation": [0, 0, 0, 1], "Scale": [0.1, 1.3, 2.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "PartitionBall", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-320, 240, 20], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.4, 0.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:sphere", "Visible": true} } },
+    { "Name": "PartitionBox", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-350.0, 200.0, 20.0], "Rotation": [0, 0, 0, 1], "Scale": [0.4, 0.4, 0.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Blue.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair0", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [196.5, -260.0, 10.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 0.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair1", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [229.5, -260.0, 20.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 0.4]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair2", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [262.5, -260.0, 30.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 0.6]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair3", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [295.5, -260.0, 40.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 0.8]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair4", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [328.5, -260.0, 50.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 1.0]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "Stair5", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [361.5, -260.0, 60.0], "Rotation": [0, 0, 0, 1], "Scale": [0.33, 0.8, 1.2]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "HangingRod", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [0.0, -40.0, 256.0], "Rotation": [0, 0, 0, 1], "Scale": [0.02, 0.02, 0.88]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/Gray.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "HangingCube", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [0.0, -40.0, 200.0], "Rotation": [0, 0, 0, 1], "Scale": [0.24, 0.24, 0.24]},
+        "StaticMeshComponent": {"MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true} } },
+    { "Name": "CeilingLight", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-80, -40, 285], "Rotation": [0, 0, 0, 1], "Scale": [1, 1, 1]},
+        "PointLightComponent": {"Color": [1.0, 0.85, 0.65], "Intensity": 4.0, "Radius": 900.0, "CastShadows": true} } },
+    { "Name": "TableSpot", "Parent": -1, "Components": {
+        "TransformComponent": {"Position": [-390, -20, 285], "Rotation": [-0.024269, 0.23909, 0.098029, 0.965732], "Scale": [1, 1, 1]},
+        "SpotLightComponent": {"Color": [0.85, 0.9, 1.0], "Intensity": 30.0, "Radius": 1200.0, "InnerConeAngle": 14.0, "OuterConeAngle": 22.0, "CastShadows": true} } },
     { "Name": "RoomProbes", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [0.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
-        "IrradianceVolumeComponent": { "HalfExtents": [430.0, 330.0, 180.0], "Spacing": 100.0, "Intensity": 1.0, "FadeDistance": 20.0, "NormalBias": 10.0,
-          "ViewBias": 20.0, "Hysteresis": 0.99, "RaysPerProbe": 512, "ProbeUpdateBudget": 0, "MaxRayDistance": 10000.0, "Relocation": true,
-          "Classification": true, "Priority": 0, "DebugProbes": 0, "DebugProbeRadius": 8.0 } } },
+        "TransformComponent": {"Position": [0, 0, 150], "Rotation": [0, 0, 0, 1], "Scale": [1, 1, 1]},
+        "IrradianceVolumeComponent": {"HalfExtents": [430.0, 330.0, 180.0], "Spacing": 100.0, "Intensity": 1.0, "FadeDistance": 20.0, "NormalBias": 10.0, "ViewBias": 20.0, "Hysteresis": 0.99, "RaysPerProbe": 512, "ProbeUpdateBudget": 0, "MaxRayDistance": 10000.0, "Relocation": true, "Classification": true, "Priority": 0, "DebugProbes": 0, "DebugProbeRadius": 8.0} } },
     { "Name": "Camera", "Parent": -1, "Components": {
-        "TransformComponent": { "Position": [-380.0, 150.0, 170.0], "Rotation": [0.011377, 0.086413, -0.130033, 0.987663], "Scale": [1.0, 1.0, 1.0] },
-        "CameraComponent": { "FovYDegrees": 75.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true } } }
+        "TransformComponent": {"Position": [-385, -60, 200], "Rotation": [-0.013145, 0.141866, 0.091319, 0.985577], "Scale": [1, 1, 1]},
+        "CameraComponent": {"FovYDegrees": 75.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true},
+        "ScriptComponent": {"ScriptAsset": "Scripts/GiViewCycle.lua", "PropertyOverrides": "{\"StartView\":1}"} } }
   ]
 }

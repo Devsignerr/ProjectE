@@ -61,6 +61,7 @@ namespace
 		RootParam_FogVolume           = 23, // t23 (볼류메트릭 안개 결과 표 — 반투명 패스)
 		RootParam_MaterialGraphTextures = 24, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위 — MaterialCommon.hlsli)
 		RootParam_RayTracedShadowMask   = 25, // t24 (RT 방향광 그림자 마스크 — PerFrame RayTracedShadows = 1일 때 불투명 메인 패스가 읽음, Phase 50)
+		RootParam_LightTextures         = 26, // 공간 3 t0~ (셰이더 가시 힙 전체 — LTC 표·IES·쿠키, Lighting.hlsli LightTextures, Phase 52)
 	};
 } // namespace
 
@@ -73,6 +74,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	ResourceRootProviderId = Resources->AddRootProvider([this](FResourceRoots& Roots) {
 		TerrainRenderer.CollectResourceRoots(Roots);
 		FoliageRenderer.CollectResourceRoots(Roots);
+		LocalLightRenderer.CollectResourceRoots(Roots); // 라이트 쿠키 (Phase 52)
 	});
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
@@ -137,6 +139,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 RtShadowIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 24, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(RtShadowIndex == RootParam_RayTracedShadowMask);
+	const uint32 LightTexturesIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 3, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
+		D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(LightTexturesIndex == RootParam_LightTextures);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -169,7 +175,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
-	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary, *Resources) ||
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
@@ -2052,6 +2058,7 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_RayTracedShadowMask, RayTracingEffects.GetShadowMask().GetSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_LightTextures, Rhi->GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
 	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩
 }
 

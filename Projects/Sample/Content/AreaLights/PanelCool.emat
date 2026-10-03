@@ -1,0 +1,23 @@
+{
+  "Name": "PanelCool",
+  "BaseColorFactor": [
+    0,
+    0,
+    0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    30.0,
+    32.0,
+    34.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.9,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

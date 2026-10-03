@@ -49,12 +49,13 @@ E_TEST(SkinInstancing_SameMeshAndMaterialMergeAfterStatic)
 	E_EXPECT_TRUE(Indices == Expected);
 }
 
-E_TEST(SkinInstancing_DepthKeyIgnoresMaterialAndSkinLod)
+E_TEST(SkinInstancing_DepthKeyIgnoresMaterialAndKeepsLod)
 {
-	// 그림자 키: 머티리얼 무관, 정적은 LOD별, 스킨은 LOD 없음(같은 메시면 같은 키), 정적과 스킨은 다른 키
+	// 그림자 키: 머티리얼 무관, 정적·스킨 모두 LOD별(스킨 LOD는 인덱스만 다르고 팔레트는 BoneOffset), 정적과 스킨은 다른 키
 	E_EXPECT_EQ(MakeDepthBatchKey(MakeInstance(5, 1, 0, false)), MakeDepthBatchKey(MakeInstance(5, 9, 0, false)));
 	E_EXPECT_TRUE(MakeDepthBatchKey(MakeInstance(5, 1, 0, false)) != MakeDepthBatchKey(MakeInstance(5, 1, 2, false)));
-	E_EXPECT_EQ(MakeDepthBatchKey(MakeInstance(5, 1, 0, true, 0)), MakeDepthBatchKey(MakeInstance(5, 2, 3, true, 48)));
+	E_EXPECT_EQ(MakeDepthBatchKey(MakeInstance(5, 1, 3, true, 0)), MakeDepthBatchKey(MakeInstance(5, 2, 3, true, 48)));
+	E_EXPECT_TRUE(MakeDepthBatchKey(MakeInstance(5, 1, 0, true)) != MakeDepthBatchKey(MakeInstance(5, 1, 2, true)));
 	E_EXPECT_TRUE(MakeDepthBatchKey(MakeInstance(5, 1, 0, true)) != MakeDepthBatchKey(MakeInstance(5, 1, 0, false)));
 	E_EXPECT_TRUE(MakeDepthBatchKey(MakeInstance(5, 1, 0, true)) > MakeDepthBatchKey(MakeInstance(0xFFFFFF, 1, 15, false)));
 }

@@ -187,7 +187,9 @@ public:
 	// ---- 아래 디버그/비교 토글(LodScale 제외)은 Render마다 콘솔 변수에서 다시 읽는다 (RendererConsoleVariables.h — 바꾸려면 r.* 변수, 예전 --no-* 플래그는 별칭)
 	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
 	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
-	int32                ForcedLod       = -1;    // 0 이상이면 모든 정적 메시를 그 LOD로 (확인용, --force-lod N)
+	bool                 bSkinnedLod     = true;  // 스킨 메시 LOD (r.LOD.Skinned, --no-skinned-lod)
+	float                SkinnedLodScale = 2.0f;  // 스킨 메시 LOD 화면 크기 배율 (LodScale에 곱함, r.LOD.SkinnedScale)
+	int32                ForcedLod       = -1;    // 0 이상이면 모든 메시(스킨 포함)를 그 LOD로 (확인용, --force-lod N)
 	float                LodHysteresis   = 0.1f;  // LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔, --lod-hysteresis X)
 	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
 	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)

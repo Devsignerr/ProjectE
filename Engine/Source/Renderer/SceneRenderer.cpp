@@ -245,6 +245,8 @@ void FSceneRenderer::ApplyConsoleVariables()
 	DebugView                       = static_cast<uint32>(std::max(0, RendererCVars::DebugView.Get()));
 	bTemporalJitter                 = RendererCVars::Jitter.Get();
 	bEnableLod                      = RendererCVars::Lod.Get();
+	bSkinnedLod                     = RendererCVars::SkinnedLod.Get();
+	SkinnedLodScale                 = RendererCVars::SkinnedLodScale.Get();
 	ForcedLod                       = RendererCVars::ForceLod.Get();
 	LodHysteresis                   = RendererCVars::LodHysteresis.Get();
 	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
@@ -2114,8 +2116,8 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 			CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
 			if (bSkinned)
 			{
-				Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
-				InOutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+				Instance.Mesh->DrawSkinned(CommandList, Batch.Count, Instance.Lod);
+				InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 			}
 			else if (DrawPhase == 0)
 			{
@@ -2227,8 +2229,8 @@ void FSceneRenderer::DrawTranslucentBatches(ID3D12GraphicsCommandList* CommandLi
 		CommandList->SetGraphicsRoot32BitConstant(RootParam_DrawConstants, Batch.First, 0);
 		if (Instance.IsSkinned())
 		{
-			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
-			OutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count, Instance.Lod);
+			OutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 		}
 		else
 		{
@@ -2278,13 +2280,14 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 	{
 		return; // 모두 LOD0 (Gather 기본값)
 	}
-	// 메인 카메라 화면 크기로 고르고 그림자 패스도 같은 LOD를 쓴다 (그림자와 본체 모양이 어긋나지 않게)
+	// 메인 카메라 화면 크기로 고르고 그림자 패스도 같은 LOD를 쓴다 (그림자와 본체 모양이 어긋나지 않게).
+	// 스킨 메시도 같은 규칙 (경계 = 스킨 팔레트의 월드 경계). 레이 트레이싱 스킨 BLAS는 항상 LOD0
 	const bool     bOrthographic  = Camera.IsOrthographic();
 	const float    TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
 	const FVector3 CameraPosition = Camera.GetPosition();
 	for (FMeshInstance& Instance : MeshInstances.GetInstances())
 	{
-		if (Instance.IsSkinned() || Instance.bFixedLod || Instance.Mesh->GetLodCount() <= 1)
+		if ((Instance.IsSkinned() && !bSkinnedLod) || Instance.bFixedLod || Instance.Mesh->GetLodCount() <= 1)
 		{
 			continue;
 		}
@@ -2305,7 +2308,8 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 		}
 		FLodHistory& History  = LodHistory[Index];
 		const uint32 Previous = History.Generation == Instance.Entity.Generation ? History.Lod : ~0u;
-		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(), LodScale, Previous,
+		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(),
+		                                                Instance.IsSkinned() ? LodScale * SkinnedLodScale : LodScale, Previous,
 		                                                LodHysteresis);
 		History = { Instance.Entity.Generation, Instance.Lod };
 	}

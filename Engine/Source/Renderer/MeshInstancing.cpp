@@ -157,8 +157,8 @@ void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBat
 		CommandList->SetGraphicsRoot32BitConstant(Bindings.InstanceRootIndex, Batch.First, Bindings.InstanceDestOffset);
 		if (Instance.IsSkinned())
 		{
-			Instance.Mesh->DrawSkinned(CommandList, Batch.Count);
-			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetIndexCount() / 3) * Batch.Count;
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count, Instance.Lod);
+			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
 		}
 		else
 		{

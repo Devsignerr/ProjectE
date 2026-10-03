@@ -195,8 +195,9 @@ bool FStaticMesh::InitSkin(FD3D12Device& Device, FD3D12CommandQueue& Queue, cons
 	return true;
 }
 
-void FStaticMesh::DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount) const
+void FStaticMesh::DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount, uint32 Lod) const
 {
+	const FLodRange& Range = GetLod(Lod);
 	E_CHECKF(bSkinned, "스킨 스트림이 없는 메시입니다");
 	const D3D12_VERTEX_BUFFER_VIEW VertexViews[2] = { VertexBuffer.GetVertexBufferView(sizeof(FVertex)),
 	                                                  SkinBuffer.GetVertexBufferView(sizeof(FSkinVertex)) };
@@ -205,7 +206,7 @@ void FStaticMesh::DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 Ins
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->IASetVertexBuffers(0, 2, VertexViews);
 	CommandList->IASetIndexBuffer(&IndexView);
-	CommandList->DrawIndexedInstanced(IndexCount, InstanceCount, 0, 0, 0);
+	CommandList->DrawIndexedInstanced(Range.IndexCount, InstanceCount, Range.IndexOffset, 0, 0);
 }
 
 const std::vector<D3D12_INPUT_ELEMENT_DESC>& FStaticMesh::GetSkinnedInputLayout()

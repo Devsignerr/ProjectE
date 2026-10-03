@@ -51,6 +51,7 @@ namespace
 		TerrainParam_ReflectionCaptures,  // t20 루트 SRV
 		TerrainParam_CaptureAtlas,        // t21 테이블
 		TerrainParam_ScreenReflection,    // t22 테이블
+		TerrainParam_RayTracedShadowMask, // t24 테이블 (Phase 50 RT 방향광 그림자 — PerFrame RayTracedShadows)
 	};
 
 	constexpr uint32 MaxChunkCells = 64;
@@ -168,6 +169,8 @@ bool FTerrainRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, F
 	VolatileTable(21);
 	Index = VolatileTable(22);
 	E_CHECK(Index == TerrainParam_ScreenReflection);
+	Index = VolatileTable(24);
+	E_CHECK(Index == TerrainParam_RayTracedShadowMask);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	D3D12_STATIC_SAMPLER_DESC ShadowSampler =
@@ -782,6 +785,7 @@ void FTerrainRenderer::RenderMain(ETerrainPass Pass, D3D12_GPU_VIRTUAL_ADDRESS P
 	CommandList->SetGraphicsRootShaderResourceView(TerrainParam_ReflectionCaptures, Screen.ReflectionCaptures);
 	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_CaptureAtlas, Screen.CaptureAtlas.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_ScreenReflection, Screen.ScreenReflection.Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_RayTracedShadowMask, Screen.RayTracedShadowMask.Gpu);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_PerFrame, PerFrame);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_Shadow, ShadowConstants);

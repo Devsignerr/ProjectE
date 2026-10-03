@@ -11,10 +11,15 @@
 E_TEST(RayTracing_InstanceMaskAndFlags)
 {
 	using namespace RayTracingMath;
-	E_EXPECT_EQ(GetInstanceMask(false, false, false), MaskStatic);
-	E_EXPECT_EQ(GetInstanceMask(true, false, false), MaskSkinned);
-	E_EXPECT_EQ(GetInstanceMask(false, true, false), MaskFoliage);
-	E_EXPECT_EQ(GetInstanceMask(false, false, true), MaskTerrain);
+	E_EXPECT_EQ(GetInstanceMask(false, false, false, false), MaskStatic);
+	E_EXPECT_EQ(GetInstanceMask(true, false, false, false), MaskSkinned);
+	E_EXPECT_EQ(GetInstanceMask(false, true, false, false), MaskFoliage);
+	E_EXPECT_EQ(GetInstanceMask(false, false, true, false), MaskTerrain);
+	E_EXPECT_EQ(GetInstanceMask(false, false, false), static_cast<uint8>(MaskStatic | MaskShadowCaster));
+	// 그림자 광선(MaskShadowCaster)은 그림자를 끈 인스턴스를 빼고, 반사 광선(MaskTypes)은 모든 종류를 맞힌다
+	E_EXPECT_EQ(GetInstanceMask(false, true, false, false) & MaskShadowCaster, 0);
+	E_EXPECT_TRUE((GetInstanceMask(false, true, false, false) & MaskTypes) != 0);
+	E_EXPECT_TRUE((GetInstanceMask(true, false, false, true) & MaskShadowCaster) != 0);
 	// 마스크는 서로 겹치지 않는다 (광선 종류별 포함 마스크로 고를 수 있게)
 	static_assert((MaskStatic & MaskSkinned) == 0 && (MaskFoliage & MaskTerrain) == 0 && ((MaskStatic | MaskSkinned) & (MaskFoliage | MaskTerrain)) == 0);
 

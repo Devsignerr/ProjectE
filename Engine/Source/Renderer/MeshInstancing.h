@@ -36,6 +36,7 @@ struct FMeshInstance
 	bool                      bSkinned    = false;
 	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)
 	bool                      bFixedLod   = false; // true면 씬 렌더러 LOD 선택이 건드리지 않는다 (폴리지가 직접 고름)
+	bool                      bFoliage    = false; // 폴리지 인스턴스 (레이 트레이싱 인스턴스 마스크 — r.RayTracing.Foliage로 뺄 수 있다)
 	EMaterialBlendMode        BlendMode   = EMaterialBlendMode::Opaque; // 머티리얼 렌더 상태 사본 (Gather/AddExternal이 Material에서 채움)
 	bool                      bTwoSided   = false;
 

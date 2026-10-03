@@ -124,6 +124,14 @@ FProjectSettings::FProjectSettings()
 		.Tooltip("\";\" 또는 줄바꿈으로 구분. 부모(State)는 자식(State.Stunned)을 등록하면 자동. 비면 검사하지 않는다")
 		.Property(&FGameplayTagSettings::bWarnUnknownTags, "WarnUnknownTags", "미등록 태그 경고")
 		.Tooltip("효과/능력 데이터에 목록에 없는 태그가 있으면 로그 경고 (오타 잡기)");
+
+	Registry.Register(Rendering, { "Rendering", "렌더링", GEngineCategory, "레이 트레이싱(DXR 1.1) 기본값. 콘솔 변수 r.RayTracing*가 -1이면 이 값을 따른다" })
+		.Property(&FRenderingSettings::bRayTracing, "RayTracing", "레이 트레이싱")
+		.Tooltip("DXR 1.1(인라인 RayQuery)을 지원하는 GPU에서 가속 구조를 만들고 아래 효과를 쓴다. 미지원 GPU는 자동으로 꺼진다")
+		.Property(&FRenderingSettings::bRayTracedShadows, "RayTracedShadows", "RT 방향광 그림자")
+		.Tooltip("불투명 표면의 방향광 그림자를 레이 트레이싱으로 (반그림자 = r.RayTracing.Shadows.SunAngle). 반투명·볼류메트릭 안개는 섀도맵")
+		.Property(&FRenderingSettings::bRayTracedReflections, "RayTracedReflections", "RT 반사")
+		.Tooltip("화면 공간 반사(SSR) 대신 레이 트레이싱 반사 — 화면 밖·가려진 물체도 반사된다. 거칠기 한계 위는 반사 캡처/하늘");
 }
 
 void FProjectSettings::ResetToDefaults()
@@ -138,6 +146,7 @@ void FProjectSettings::ResetToDefaults()
 	Localization = {};
 	Console      = {};
 	GameplayTags = {};
+	Rendering    = {};
 	Input.ResetProjectMapping(); // 사용자 재지정은 유지 (플레이어 파일)
 }
 

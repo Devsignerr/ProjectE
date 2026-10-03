@@ -38,7 +38,9 @@ struct alignas(16) FPerFrameConstants
 	float                      SsrIntensity           = 1.0f;
 	// TAAU (Phase 48): 머티리얼/지형/폴리지 텍스처 샘플 밉 바이어스 (FUpscaleMath::ComputeMipBias, 네이티브 해상도면 0)
 	float                      MaterialMipBias        = 0.0f;
-	float                      PerFramePadding[3]     = {};
+	// 레이 트레이싱 (Phase 50): 1 = 불투명 메인 패스의 방향광 그림자를 RT 마스크(t24)로 (반투명은 계속 섀도맵)
+	uint32                     RayTracedShadows       = 0;
+	float                      PerFramePadding[2]     = {};
 };
 static_assert(sizeof(FPerFrameConstants) == 320);
 

@@ -15,11 +15,15 @@ namespace RayTracingMath
 	constexpr uint8 MaskSkinned = 0x02; // 스킨 메시 (계산 셰이더 스키닝 + BLAS 갱신)
 	constexpr uint8 MaskFoliage = 0x04; // 폴리지 인스턴스
 	constexpr uint8 MaskTerrain = 0x08; // 지형 타일
+	constexpr uint8 MaskShadowCaster = 0x10; // 그림자를 드리운다 (FMeshInstance::CastsShadow) — 그림자 광선은 이 비트만 포함
+	constexpr uint8 MaskTypes   = MaskStatic | MaskSkinned | MaskFoliage | MaskTerrain; // 반사/GI 광선 포함 마스크 (종류 비트 중 하나는 항상 있다)
 	constexpr uint8 MaskAll     = 0xFF;
 
-	inline uint8 GetInstanceMask(bool bSkinned, bool bFoliage, bool bTerrain)
+	// 종류 비트 하나 + 그림자 비트. 광선 포함 마스크는 OR 판정(인스턴스 마스크 & 광선 마스크 ≠ 0)이라 "그림자 캐스터"와 "종류"를 따로 고른다
+	inline uint8 GetInstanceMask(bool bSkinned, bool bFoliage, bool bTerrain, bool bCastShadow = true)
 	{
-		return bTerrain ? MaskTerrain : (bSkinned ? MaskSkinned : (bFoliage ? MaskFoliage : MaskStatic));
+		const uint8 Type = bTerrain ? MaskTerrain : (bSkinned ? MaskSkinned : (bFoliage ? MaskFoliage : MaskStatic));
+		return static_cast<uint8>(Type | (bCastShadow ? MaskShadowCaster : 0));
 	}
 
 	// ---- 히트 그룹 오프셋 (D3D12_RAYTRACING_INSTANCE_DESC::InstanceContributionToHitGroupIndex, 24비트)

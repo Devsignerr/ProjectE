@@ -203,18 +203,15 @@ FRGResourceRef FScreenSpaceReflections::AddPasses(FRenderGraph& Graph, const FSc
 	const FRGResourceRef    HizRef     = Graph.CreateTexture("SsrHiz", HizDesc);
 	const FRGResourceRef    ResultRef  = Graph.CreateTexture("SsrResult", FRGTextureDesc::MakeRenderTarget(Width, Height, ResultFormat));
 	const FRGResourceRef    MotionRef  = Graph.CreateTexture("SsrReflectMotion", FRGTextureDesc::MakeRenderTarget(Width, Height, MotionFormat));
-	const FRGResourceRef    BlurredRef = Graph.CreateTexture("SsrBlurred", FRGTextureDesc::MakeRenderTarget(Width, Height, ResultFormat));
 	const FRGPooledTexture* Hiz        = Graph.GetTexture(HizRef);
 	const FRGPooledTexture* Result     = Graph.GetTexture(ResultRef);
 	const FRGPooledTexture* Motion     = Graph.GetTexture(MotionRef);
-	const FRGPooledTexture* Blurred    = Graph.GetTexture(BlurredRef);
 
 	const FD3D12DescriptorHandle DepthSrv     = Inputs.SceneColor->GetDepthSrv();
 	const FD3D12DescriptorHandle NormalSrv    = Inputs.SceneNormal->GetSrv();
 	const FD3D12DescriptorHandle ColorSrv     = (Inputs.PrevColor != nullptr ? Inputs.PrevColor : Inputs.SceneColor)->GetSrv();
 	const FD3D12DescriptorHandle DecalNormal  = Inputs.DecalNormal->GetSrv();
 	const FD3D12DescriptorHandle DecalMat     = Inputs.DecalMaterial->GetSrv();
-	const FD3D12DescriptorHandle VelocitySrv  = Inputs.Velocity->GetSrv();
 
 	// 1) Hi-Z: 깊이 → 밉 0 → 밉마다 2x2 최소 (밉 k 패스는 밉 k-1을 UAV로 읽고 밉 k를 쓴다 — 서브리소스 단위 전이 + UAV 배리어는 그래프가)
 	uint32 SourceWidth  = Width;
@@ -285,12 +282,30 @@ FRGResourceRef FScreenSpaceReflections::AddPasses(FRenderGraph& Graph, const FSc
 			               Height);
 		});
 
+	return AddResolvePasses(Graph, Inputs, Refs, ResultRef, MotionRef, Timer);
+}
+
+FRGResourceRef FScreenSpaceReflections::AddResolvePasses(FRenderGraph& Graph, const FScreenSpaceReflectionInputs& Inputs, const FSsrGraphRefs& Refs,
+                                                         FRGResourceRef ResultRef, FRGResourceRef MotionRef, int32 Timer)
+{
+	const uint32 Width  = Inputs.SceneColor->GetWidth();
+	const uint32 Height = Inputs.SceneColor->GetHeight();
+	EnsureTargets(Width, Height);
+	const FRGResourceRef         BlurredRef  = Graph.CreateTexture("SsrBlurred", FRGTextureDesc::MakeRenderTarget(Width, Height, ResultFormat));
+	const FRGPooledTexture*      Result      = Graph.GetTexture(ResultRef);
+	const FRGPooledTexture*      Motion      = Graph.GetTexture(MotionRef);
+	const FRGPooledTexture*      Blurred     = Graph.GetTexture(BlurredRef);
+	const FD3D12DescriptorHandle NormalSrv   = Inputs.SceneNormal->GetSrv();
+	const FD3D12DescriptorHandle DecalNormal = Inputs.DecalNormal->GetSrv();
+	const FD3D12DescriptorHandle DecalMat    = Inputs.DecalMaterial->GetSrv();
+	const FD3D12DescriptorHandle VelocitySrv = Inputs.Velocity->GetSrv();
+
 	// 3) 거칠기 흐림: 추적이 낸 픽셀별 원뿔 반경 안의 원판 평균 (한 패스, 결정적, 같은 면만 섞음)
 	FSsrResolveConstants PassConstants;
-	PassConstants.ScreenSize    = Constants.ScreenSize;
+	PassConstants.ScreenSize    = FVector2(static_cast<float>(Width), static_cast<float>(Height));
 	PassConstants.CurrentWeight = ResolveCurrentWeight;
 	PassConstants.VarianceGamma = ResolveVarianceGamma;
-	PassConstants.bDecals       = Constants.bDecals;
+	PassConstants.bDecals       = Inputs.bDecals ? 1u : 0u;
 	const D3D12_GPU_VIRTUAL_ADDRESS BlurAddress = Rhi->GetDynamicBuffer().AllocateConstants(PassConstants).GpuAddress;
 	Graph.AddPass("SSR 흐림")
 		.Read(ResultRef, ERGAccess::SrvPixel)

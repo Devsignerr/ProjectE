@@ -26,6 +26,8 @@
 #include "Renderer/FogRenderer.h"
 #include "Renderer/ReflectionCaptures.h"
 #include "Renderer/ScreenSpaceReflections.h"
+#include "Renderer/RayTracingEffects.h"
+#include "Renderer/RayTracingScene.h"
 #include "Renderer/FoliageRenderer.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/TerrainRenderer.h"
@@ -66,6 +68,9 @@ enum class ERenderTimer : uint32
 	Fog,              // 안개 적용 (전체 화면)
 	Reflections,      // SSR (Hi-Z + 추적)
 	Translucent,      // 반투명/가산 메시 패스
+	RayTracingBuild,  // 레이 트레이싱: RT 스키닝 + BLAS 빌드/갱신/압축 + TLAS 빌드 (Phase 50)
+	RayTracedShadows, // RT 방향광 그림자: 추적 + 공간 필터 + 누적
+	RayTracedReflections, // RT 반사 추적 (흐림·누적은 Reflections 칸)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -92,6 +97,10 @@ struct FSceneRenderStats
 	uint32 OcclusionTested = 0;
 	uint32 OcclusionPhase1 = 0;
 	uint32 OcclusionPhase2 = 0;
+	// 레이 트레이싱 (Phase 50): 이번 프레임 켜진 효과와 가속 구조 (FRayTracingSceneStats — r.RayTracing.Stats로 로그)
+	bool                  bRayTracedShadows     = false;
+	bool                  bRayTracedReflections = false;
+	FRayTracingSceneStats RayTracing;
 
 	float CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // 이번 프레임 CPU 기록 시간
 	float GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // GPU 시간 (타임스탬프, 몇 프레임 늦은 값)
@@ -140,6 +149,10 @@ public:
 	// TAAU/동적 해상도 (Phase 48): true인 렌더러만 r.ScreenPercentage / r.DynamicResolution을 쓴다 (에디터 뷰포트·런타임이 켠다.
 	// 에셋 미리보기·썸네일 렌더러는 false = 항상 네이티브). 와이어프레임·픽셀 아트는 켜져 있어도 네이티브
 	bool bAllowScreenPercentage = false;
+	// 레이 트레이싱 (Phase 50): true인 렌더러만 r.RayTracing*/프로젝트 설정 Rendering을 따른다 (에디터 뷰포트·런타임이 켠다 — 미리보기·썸네일·
+	// 캡처 굽기는 항상 래스터). DXR 1.1 미지원, 와이어프레임, 픽셀 아트, 사전 패스 없음, 한 프레임 여러 뷰면 꺼진다
+	bool bAllowRayTracing = false;
+	const FRayTracingScene& GetRayTracingScene() const { return RayTracingScene; }
 	const FDynamicResolutionController& GetDynamicResolution() const { return DynamicResolution; }
 	// 화면 공간 법선 (R10G10B10A2, ScreenSpace.hlsli) / 움직임 벡터 (R16G16_FLOAT). 씬 컬러와 같은 크기, PIXEL_SHADER_RESOURCE
 	const FD3D12RenderTarget* GetSceneNormal() const { return SceneNormal.get(); }
@@ -264,6 +277,12 @@ private:
 	FFogRenderer         FogRenderer;
 	FScreenSpaceReflections ScreenSpaceReflections;
 	FReflectionCaptures  ReflectionCaptures;
+	FRayTracingScene     RayTracingScene;   // BLAS 캐시 + 프레임 TLAS (Phase 50)
+	FRayTracingEffects   RayTracingEffects; // RT 그림자/반사/디버그 패스
+	FRGResourceRef         FrameRtDebugRef; // --debug-view rt-instances 결과 (이번 그래프)
+	FD3D12DescriptorHandle FrameRtDebugSrv;
+	uint32                 SeenRtStatsSerial = 0;
+	void                   LogRayTracingStats() const;
 	bool                 bBakeCapturesRequested = false;
 	bool                 bRenderingCaptures     = false; // 굽는 중: 캡처/SSR 없이 하늘만 반사
 	// 콘솔 변수 → 위 디버그 토글 + 아래 r.TAA/r.SSAO/r.SSR (FPostProcessSettings와 AND). Init과 Render 시작에서

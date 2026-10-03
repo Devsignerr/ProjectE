@@ -44,6 +44,7 @@ struct FTerrainScreenInputs
 	D3D12_GPU_VIRTUAL_ADDRESS ReflectionCaptures = 0; // t20
 	FD3D12DescriptorHandle    CaptureAtlas;       // t21
 	FD3D12DescriptorHandle    ScreenReflection;   // t22
+	FD3D12DescriptorHandle    RayTracedShadowMask; // t24 (Phase 50 — PerFrame RayTracedShadows일 때 Terrain.hlsl이 읽음)
 };
 
 // 지형 렌더러 (Phase 34, Terrain.hlsl). FSceneRenderer가 소유하고 패스 사이에 호출한다:

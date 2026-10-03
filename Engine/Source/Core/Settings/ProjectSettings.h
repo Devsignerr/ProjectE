@@ -89,6 +89,14 @@ struct FGameplayTagSettings
 	bool        bWarnUnknownTags = true; // 정의 데이터에 목록에 없는 태그가 있으면 경고 (오타 잡기)
 };
 
+// "Rendering" — 렌더링 기능 기본값 (콘솔 변수 r.RayTracing* = -1이면 이 값, Phase 50). DXR 1.1 미지원 GPU에서는 켜도 꺼진다
+struct FRenderingSettings
+{
+	bool bRayTracing            = true;  // 레이 트레이싱 전체 (BLAS/TLAS 빌드 — 아래 효과 중 하나라도 켜져야 실제로 만든다)
+	bool bRayTracedShadows      = true;  // 방향광 그림자를 RT로 (불투명 표면, 반투명·안개는 섀도맵)
+	bool bRayTracedReflections  = true;  // SSR 대신 RT 반사
+};
+
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.
 // "Display" 섹션은 FGameUserSettings(창 모드/해상도/VSync)의 프로젝트 기본값이다 — 사용자 설정 파일이 그 위에 덮인다.
 class FProjectSettings
@@ -107,6 +115,7 @@ public:
 	FLocalizationSettings Localization;
 	FConsoleSettings      Console;
 	FGameplayTagSettings  GameplayTags;
+	FRenderingSettings    Rendering;
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

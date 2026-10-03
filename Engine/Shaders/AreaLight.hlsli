@@ -116,8 +116,8 @@ float3 EvaluateAreaLight(FLocalLight Light, FSurface Surface, float3 WorldPositi
 	}
 	const float  Distance = length(FromLight);
 	const float3 LocalDir = Local / max(Distance, 1.0e-4f);
-	// 문 덮개: 가운데 → 표면 방향 원뿔 (양면 뒤쪽은 뒤집은 법선 기준)
-	const float  Cone     = LightConeAttenuation(abs(LocalDir.x), Light.ConeScale, Light.ConeOffset);
+	// 문 덮개: 면에서 가장 가까운 점 → 표면 방향 원뿔 (양면 뒤쪽은 뒤집은 법선 기준, AreaLightMath::ComputeBarnDoorCos)
+	const float  Cone     = LightConeAttenuation(AreaLightBarnDoorCos(Light, Local), Light.ConeScale, Light.ConeOffset);
 	if (Cone <= 0.0f)
 	{
 		return 0.0f;

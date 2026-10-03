@@ -12,6 +12,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
+from AssetFixes import GLASS_FIX, FrameModel, WriteGlassFixedModel  # noqa: E402
 
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT = os.path.join(ROOT, "Projects", "Sample", "Content")
@@ -25,7 +26,8 @@ WINDOW_W, SILL_Z, HEAD_Z = 180.0, 100.0, 480.0
 
 
 def Model(Id):
-	return f"{PH}/{Id}/{Id}.gltf"
+	# 유리가 알파 없는 jpg라 그림을 가리는 액자는 공용 고친 사본 (AssetFixes — Gallery와 같은 파일)
+	return FrameModel(Id)
 
 
 def FaceYaw(DX, DY):
@@ -141,6 +143,15 @@ IMPORT_SETTINGS = {
 def WriteImportSettings():
 	for Id, Settings in IMPORT_SETTINGS.items():
 		WriteJson(os.path.join(CONTENT, "Asset", "PolyHaven", Id, f"{Id}.gltf.eimport"), Settings)
+
+
+USED_FRAMES = ["hanging_picture_frame_02"]  # 이 맵이 쓰는 유리 고침 액자 (사본은 Gallery와 공유 — 같은 내용)
+
+
+def WriteGlassFixedModels():
+	for Id in USED_FRAMES:
+		assert Id in GLASS_FIX
+		WriteGlassFixedModel(CONTENT, Id)
 
 
 # ---- 씬 -------------------------------------------------------------------------------------------------------------
@@ -385,6 +396,7 @@ def Main():
 			OVERVIEW_VIEW = tuple(float(V) for V in Arg.split("=", 1)[1].split(","))
 	WriteBaseMaterials()
 	WriteImportSettings()
+	WriteGlassFixedModels()
 	Scene, Mats = BuildScene()
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Demo", "Lighting.escene"))
 	print(f"Lighting 생성: 엔티티 {len(Scene.Entities)}개, 타일 머티리얼 {len(Mats.Written)}개")

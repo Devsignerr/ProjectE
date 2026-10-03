@@ -4742,7 +4742,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/hanging_picture_frame_02/hanging_picture_frame_02.gltf"
+          "AssetPath": "Asset/Gallery/hanging_picture_frame_02.gltf"
         },
         "TransformComponent": {
           "Position": [

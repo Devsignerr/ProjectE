@@ -254,6 +254,30 @@ E_TEST(AreaLight_BarnDoorCone)
 	E_EXPECT_TRUE(LightMath::ConeAttenuation(FMath::Cos(FMath::DegreesToRadians(30.0f)), Short) < 1.0f);
 }
 
+// 문 덮개 원뿔은 면에서 가장 가까운 점 기준 — 긴 면(27m × 20cm)의 끝 쪽 앞 표면도 원뿔 안 (가운데 기준이면 거의 0이었다)
+E_TEST(AreaLight_BarnDoorUsesNearestPoint)
+{
+	const auto  Rect       = LightMath::ELocalLightType::Rect;
+	const float HalfWidth  = 10.0f;
+	const float HalfHeight = 1350.0f;
+	const LightMath::FConeParams Door = AreaLightMath::ComputeBarnDoorCone(88.0f, 10.0f, HalfHeight);
+	// 면 끝 근처 바로 앞 110cm (가운데에서 본 각 ≈ 85°)
+	const FVector3 NearEnd(110.0f, 0.0f, 1300.0f);
+	E_EXPECT_NEAR(AreaLightMath::ComputeBarnDoorCos(Rect, NearEnd, HalfWidth, HalfHeight), 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(LightMath::ConeAttenuation(AreaLightMath::ComputeBarnDoorCos(Rect, NearEnd, HalfWidth, HalfHeight), Door), 1.0f, 1.0e-5f);
+	const float CenterCos = NearEnd.X / NearEnd.Length();
+	E_EXPECT_TRUE(LightMath::ConeAttenuation(CenterCos, Door) < 0.05f);
+	// 면 밖 옆쪽은 가장 가까운 모서리에서 본 각, 뒤쪽(양면)은 절댓값
+	const FVector3 Beside(100.0f, 110.0f, 0.0f); // 모서리(Y = 10)에서 (100, 100) → 45°
+	E_EXPECT_NEAR(AreaLightMath::ComputeBarnDoorCos(Rect, Beside, HalfWidth, HalfHeight), FMath::Cos(FMath::DegreesToRadians(45.0f)), 1.0e-5f);
+	E_EXPECT_NEAR(AreaLightMath::ComputeBarnDoorCos(Rect, FVector3(-100.0f, 110.0f, 0.0f), HalfWidth, HalfHeight),
+	              FMath::Cos(FMath::DegreesToRadians(45.0f)), 1.0e-5f);
+	// 거리는 같은 가장 가까운 점 기준
+	E_EXPECT_NEAR(AreaLightMath::DistanceToArea(Rect, Beside, HalfWidth, HalfHeight), std::sqrt(2.0f) * 100.0f, 1.0e-3f);
+	// 원판: 면 안 앞쪽은 1
+	E_EXPECT_NEAR(AreaLightMath::ComputeBarnDoorCos(LightMath::ELocalLightType::Disc, FVector3(50.0f, 30.0f, 0.0f), 40.0f, 40.0f), 1.0f, 1.0e-6f);
+}
+
 E_TEST(AreaLight_ShadowDepthAndPenumbra)
 {
 	// 원근 깊이 → 뷰 깊이 선형화는 투영의 역

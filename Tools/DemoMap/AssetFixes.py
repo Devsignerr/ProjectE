@@ -1,0 +1,78 @@
+# 데모 생성 스크립트 공용: Poly Haven glTF를 엔진에서 바로 쓸 수 없을 때 고친 사본(JSON만)을 만든다
+#   원본(.gltf/.bin/텍스처)은 저장소 밖(Scripts/FetchDemoAssets.ps1)이고 커밋되는 것은 고친 glTF JSON뿐이다.
+#   사본은 원본 폴더의 버퍼·텍스처를 상대 경로로 참조한다.
+import json
+import os
+
+PH = "Asset/PolyHaven"
+
+# ---- 액자 유리 ------------------------------------------------------------------------------------------------------
+# Poly Haven 2k jpg 텍스처에는 알파가 없어 "diff+opacity" 텍스처를 쓰는 유리(BLEND)가 불투명한 판이 되어 그림을 가린다.
+#   유리 머티리얼만 옅은 상수 알파로 바꾼 사본을 Asset/Gallery/<Id>.gltf에 쓴다 (Gallery가 처음 만든 자리 — 다른 맵도 같은 사본을 공유)
+GLASS_FIX_DIR = "Asset/Gallery"
+GLASS_FIX = {"hanging_picture_frame_01", "hanging_picture_frame_02", "hanging_picture_frame_03"}
+
+
+def WriteJson(Path, Doc):
+	os.makedirs(os.path.dirname(Path), exist_ok=True)
+	with open(Path, "w", encoding="utf-8", newline="\n") as File:
+		json.dump(Doc, File, indent=2, ensure_ascii=False)
+		File.write("\n")
+
+
+def RebaseUris(Gltf, Id):
+	# 사본 폴더(Asset/<폴더>/) 기준으로 원본 폴더의 버퍼·텍스처를 가리킨다
+	for Entry in Gltf.get("images", []) + Gltf.get("buffers", []):
+		if "uri" in Entry:
+			Entry["uri"] = f"../PolyHaven/{Id}/{Entry['uri']}"
+
+
+def LoadSource(Content, Id):
+	with open(os.path.join(Content, *PH.split("/"), Id, f"{Id}.gltf"), encoding="utf-8") as File:
+		return json.load(File)
+
+
+def WriteGlassFixedModel(Content, Id):
+	assert Id in GLASS_FIX, f"{Id}: 유리 고침 대상 아님"
+	Gltf = LoadSource(Content, Id)
+	for Material in Gltf["materials"]:
+		if Material.get("alphaMode") == "BLEND":
+			Material["pbrMetallicRoughness"] = {"baseColorFactor": [0.02, 0.02, 0.02, 0.1], "metallicFactor": 0.0, "roughnessFactor": 0.05}
+			Material.pop("normalTexture", None)
+			Material.pop("extensions", None)
+	RebaseUris(Gltf, Id)
+	WriteJson(os.path.join(Content, *GLASS_FIX_DIR.split("/"), f"{Id}.gltf"), Gltf)
+
+
+def FrameModel(Id):
+	# 액자 모델 경로: 유리를 고친 것은 사본, 나머지는 원본
+	return f"{GLASS_FIX_DIR}/{Id}.gltf" if Id in GLASS_FIX else f"{PH}/{Id}/{Id}.gltf"
+
+
+
+# ---- 잎 알파 --------------------------------------------------------------------------------------------------------
+# 잎·꽃잎 컷아웃 알파가 별도 맵인 에셋: 색 JPG에는 알파가 없어 마스크/블렌드 잎이 어두운 사각형 카드가 된다.
+#   잠금 파일 Scripts/DemoAssets.json "AlphaMaps"로 FetchDemoAssets.ps1이 합친 RGBA PNG(<줄기>_diffalpha_<해상도>.png)를 색 텍스처로 쓰는
+#   사본 <Id>.alpha.gltf를 원본 옆(Asset/PolyHaven/<Id>/)에 쓴다 (.gitignore 예외 — 커밋).
+#   접두사 "*" = 재질별이 아닌 단일 맵(줄기 <Id>), 그 밖 = 재질별 맵(줄기 <Id>_<접두사>). 알파 모드는 원본 그대로
+#   (BLEND 잎은 .eimport BlendAsMasked로 마스크). 잎이 실제 기하인 에셋(알파 맵이 있어도)은 대상이 아니다
+def AlphaStem(Id, Prefix):
+	return Id if Prefix == "*" else f"{Id}_{Prefix}"
+
+
+def AlphaModel(Id):
+	return f"{PH}/{Id}/{Id}.alpha.gltf"
+
+
+def WriteAlphaFixedModel(Content, Id, Prefixes, Res="2k"):
+	Gltf = LoadSource(Content, Id)
+	Swapped = 0
+	for Image in Gltf.get("images", []):
+		for Prefix in Prefixes:
+			Stem = AlphaStem(Id, Prefix)
+			if Image.get("uri") == f"textures/{Stem}_diff_{Res}.jpg":
+				Image["uri"] = f"textures/{Stem}_diffalpha_{Res}.png"
+				Image["mimeType"] = "image/png"
+				Swapped += 1
+	assert Swapped, f"{Id}: 바꿀 색 텍스처 없음 ({Prefixes})"
+	WriteJson(os.path.join(Content, *PH.split("/"), Id, f"{Id}.alpha.gltf"), Gltf)

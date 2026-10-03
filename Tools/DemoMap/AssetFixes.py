@@ -64,8 +64,8 @@ def AlphaModel(Id):
 	return f"{PH}/{Id}/{Id}.alpha.gltf"
 
 
-def WriteAlphaFixedModel(Content, Id, Prefixes, Res="2k"):
-	Gltf = LoadSource(Content, Id)
+def SwapAlphaImages(Gltf, Id, Prefixes, Res="2k"):
+	# glTF 문서(원본 폴더 기준 uri)의 색 JPG를 알파 합친 PNG로 바꾼다 — 사본·나눈 glTF(.part.gltf) 공용
 	Swapped = 0
 	for Image in Gltf.get("images", []):
 		for Prefix in Prefixes:
@@ -75,4 +75,9 @@ def WriteAlphaFixedModel(Content, Id, Prefixes, Res="2k"):
 				Image["mimeType"] = "image/png"
 				Swapped += 1
 	assert Swapped, f"{Id}: 바꿀 색 텍스처 없음 ({Prefixes})"
+
+
+def WriteAlphaFixedModel(Content, Id, Prefixes, Res="2k"):
+	Gltf = LoadSource(Content, Id)
+	SwapAlphaImages(Gltf, Id, Prefixes, Res)
 	WriteJson(os.path.join(Content, *PH.split("/"), Id, f"{Id}.alpha.gltf"), Gltf)

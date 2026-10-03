@@ -12,8 +12,10 @@
 #include <unordered_map>
 #include <vector>
 
+class FAbilitySystem;
 class FInput;
 class FScene;
+struct FAbilityScriptStart;
 class FScriptDebugger;
 struct FScriptComponent;
 struct FTypeInfo;
@@ -83,6 +85,13 @@ public:
 	void SetSteamHooks(const FScriptSteamHooks* InHooks) { SteamHooks = InHooks; }       // 〃
 	void SetDebugDrawHooks(const FScriptDebugDrawHooks* InHooks) { DebugDrawHooks = InHooks; } // 〃
 	void SetPersistentValues(FScriptValueMap* InValues) { PersistentValues = InValues; } // 〃 (Game.SetPersistent)
+	void SetAbilitySystem(FAbilitySystem* InSystem) { AbilitySystem = InSystem; } // 비소유 (FGameWorld 소유, 플레이 동안)
+
+	// 능력 스크립트 (ScriptAbilityBindings.cpp — 규칙은 그 파일 머리 주석)
+	bool StartAbility(const FAbilityScriptStart& Start);
+	void StopAbility(uint32 InstanceId, bool bCancelled);
+	void TickAbilities(float DeltaSeconds);
+	void ClearAbilities(); // 남은 능력 코루틴 버림 (OnEnd 없음 — 플레이 끝)
 
 	// 스크립트 객체 (LuaAIBindings.cpp). 0 = 실패. 호출 오류가 난 객체는 멈춘다(핫 리로드 성공 시 재개)
 	uint32 CreateObject(const std::string& ScriptAsset, const std::string& Overrides, FEntity Entity);
@@ -204,6 +213,27 @@ private:
 	void RegisterDataBindings();     // Data.GetRow/GetRows/Load 등 데이터 테이블·에셋 (ScriptDataBindings.cpp)
 	void RegisterBuildingBindings(); // entity:GenerateBuilding/ClearBuilding 절차적 건물 (ScriptBuildingBindings.cpp)
 	void RegisterSkyBindings();      // Sky.SetSunAngles/GetSunAngles/SetTimeOfDay/GetTimeOfDay (ScriptSkyBindings.cpp, Phase 49)
+	void RegisterAbilityBindings();  // 능력 시스템 entity:TryActivateAbility 등 + Abilities 테이블 + 능력 ctx (ScriptAbilityBindings.cpp)
+	struct FAbilityTask
+	{
+		uint32           Id = 0;
+		FEntity          Owner;
+		std::string      Script;
+		sol::table       Self;
+		sol::table       Context;
+		FScriptCoroutine Coroutine;
+		bool             bResuming      = false;
+		bool             bStopRequested = false;
+		bool             bStopCancelled = false;
+	};
+	void ResumeAbility(uint32 Id, bool bFirst);
+	void FinishAbility(uint32 Id, bool bCancelled); // OnEnd + 제거
+	std::unordered_map<uint32, FAbilityTask> AbilityTasks;
+	FAbilitySystem*                          AbilitySystem = nullptr;
+	sol::table                               AbilityContextMeta;
+	sol::protected_function                  AbilityRunner; // function(self, ctx) return self:OnActivate(ctx) end
+	double                                   AbilityClock = 0.0;
+	int64                                    AbilityTicks = 0; // TickAbilities 횟수 (재개한/시작한 틱에는 시간을 빼지 않는다)
 	// 직전 시퀀스 갱신의 이벤트 → OnSequenceEvent_<이름>, OnSequenceFinished (ScriptSequenceBindings.cpp)
 	void DispatchSequenceEvents();
 	// 직전 애니메이션 갱신에서 끝난 몽타주 → OnMontageEnded(clip, interrupted, slot) (ScriptAnimationBindings.cpp)

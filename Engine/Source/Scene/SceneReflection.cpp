@@ -13,6 +13,7 @@
 #include "Scene/Terrain.h"
 #include "Scene/Building/BuildingScene.h"
 #include "Scene/SkyAtmosphere.h"
+#include "Scene/Ability/AbilityReflection.h"
 
 void RegisterSceneTypes()
 {
@@ -293,4 +294,6 @@ void RegisterSceneTypes()
 	RegisterBuildingTypes();
 	// 하늘·대기·구름·시간대·물 (Scene/SkyAtmosphere.h, Phase 49)
 	RegisterSkyTypes();
+	// 능력 시스템 (Scene/Ability, Phase 53 사이드)
+	RegisterAbilityTypes();
 }

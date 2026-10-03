@@ -1,9 +1,11 @@
 #pragma once
 
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
+#include "Renderer/MaterialGraph.h"
 #include "Renderer/ShaderTypes.h"
 #include "Scene/ResourceHandles.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -53,17 +55,29 @@ namespace MaterialRender
 // PBR 머티리얼 (텍스처 핸들 + 상수). 리소스 관리자가 소유한다.
 // 무효 텍스처 핸들은 기본 텍스처로 대체된다: 노멀은 평면 노멀, 나머지는 흰색(팩터가 곧 값).
 // alignas(16) 상수를 첫 멤버로 두어 구조체 패딩 경고(C4324)를 피한다.
+//
+// 그래프 머티리얼(Shader != nullptr, Phase 49 사이드): 표면은 생성 함수 EvaluateMaterial(MaterialGraph.h)이 만든다.
+//   상수 = FMaterialGraphHeader(시간, 알파 컷오프) + GraphConstants(파라미터 레이아웃), 텍스처 = Textures[0..TextureCount) (셰이더 공간 2 t0~),
+//   Constants는 AlphaCutoff만 쓴다. 바인딩은 MaterialRender::BindMeshMaterial / 업로드는 UploadMaterialConstants.
 struct FMaterial
 {
 	FMaterialConstants Constants;
 	std::string        Name;
-	FTextureHandle     Textures[MaterialSlot_Count];
+	FTextureHandle     Textures[MaterialTextureMax]; // 고정 PBR: 0~4 = EMaterialTextureSlot, 그래프: 레이아웃 칸 순서
+	uint32             TextureCount = MaterialSlot_Count; // 테이블 칸 수 (고정 PBR 5, 그래프 = 레이아웃 텍스처 수, 최소 1)
 	EMaterialBlendMode BlendMode = EMaterialBlendMode::Opaque; // 알파 컷오프는 Constants.AlphaCutoff
 	bool               bTwoSided = false;                      // 컬링 없음 + 뒷면은 법선을 뒤집어 조명
+
+	// 그래프 머티리얼: 컴파일된 셰이더(해시가 같으면 다른 머티리얼과 공유)와 파라미터 상수 (MaterialParams[], 헤더 제외)
+	std::shared_ptr<const FMaterialShader> Shader;
+	std::vector<FVector4>                  GraphConstants;
 
 	// 인스턴스(.emat Parent)면 부모 체인의 정규화 경로 (가까운 부모부터). 부모가 바뀌면 FResourceManager가 다시 해석한다
 	std::vector<std::wstring> ParentChain;
 
-	// 셰이더 가시 힙의 연속 SRV 5칸 (t0~t4). FResourceManager가 생성/갱신/해제한다 — 직접 수정 금지
+	// 셰이더 가시 힙의 연속 SRV TextureCount칸 (고정 PBR t0~t4 / 그래프 공간 2 t0~). FResourceManager가 생성/갱신/해제한다 — 직접 수정 금지
 	FD3D12DescriptorHandle TextureTable;
+
+	bool IsGraphMaterial() const { return Shader != nullptr; }
+	uint64 GetShaderHash() const { return Shader != nullptr ? Shader->Hash : 0; }
 };

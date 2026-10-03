@@ -60,6 +60,10 @@ public:
 	bool WantsCollisionEvents(const FScene& Scene, FEntity Entity) const;
 	void CollisionEvent(FScene& Scene, const FCollisionEvent& Event); // 종류별 OnCollisionBegin 등으로
 
+	// 능력 시스템 (플레이 중에만). SetAbilities는 Net과 같은 수명
+	void SetAbilities(FAbilitySystem* Abilities);
+	void AbilityEvent(FScene& Scene, const FAbilityEvent& Event);
+
 private:
 	void UnloadInternal(bool bRetireComponentTypeIds);
 

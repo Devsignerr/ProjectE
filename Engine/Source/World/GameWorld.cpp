@@ -13,6 +13,7 @@
 #include "Renderer/DebugDraw.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Scene/SkyAtmosphere.h"
+#include "Scene/Ability/AbilitySystem.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/GameModuleHost.h"
 #include "Scene/Particles.h"
@@ -83,7 +84,7 @@ namespace
 	}
 } // namespace
 
-FGameWorld::FGameWorld() : AI(std::make_unique<FAISystem>()) {}
+FGameWorld::FGameWorld() : AI(std::make_unique<FAISystem>()), Abilities(std::make_unique<FAbilitySystem>()) {}
 FGameWorld::~FGameWorld() = default;
 
 void FGameWorld::ConnectScriptsAndAI()
@@ -159,6 +160,7 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 	Systems.Scripts->SetContentDirectory(Systems.ContentDirectory);
 	AI->SetContentDirectory(Systems.ContentDirectory);
 	ConnectScriptsAndAI();
+	ConnectAbilities();
 	// Lua Steam 테이블 → FSteamSubsystem (초기화하지 않은 앱에서는 모두 "사용 불가")
 	FSteamSubsystem& Steam = FSteamSubsystem::Get();
 	Systems.Scripts->SetSteamHooks({
@@ -322,6 +324,11 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	}
 	// 스크립트 BeginPlay는 Lua 상태만 만든다 (OnStart는 첫 TickGameplay). AI는 그 뒤 — 트리 시작 시 Lua 노드가 스크립트 객체를 만든다
 	Systems.Scripts->BeginPlay(InScene);
+	Abilities->Begin(InScene, !bClient); // 스크립트(Lua 상태) 뒤: 능력 스크립트를 그 상태에서 돌린다
+	if (Systems.GameModule != nullptr && !bClient)
+	{
+		Systems.GameModule->SetAbilities(Abilities.get());
+	}
 	if (!bClient) // AI도 서버에서만
 	{
 		AI->Begin(InScene);
@@ -341,6 +348,11 @@ void FGameWorld::EndPlay()
 	PredictedBodies.clear();
 	Replication = nullptr;
 	AI->End(); // Lua 노드 OnAbort가 스크립트를 부르므로 Lua 상태보다 먼저
+	Abilities->End(); // 발동 중 능력 취소 (능력 스크립트 OnEnd) — Lua 상태보다 먼저
+	if (Systems.GameModule != nullptr)
+	{
+		Systems.GameModule->SetAbilities(nullptr);
+	}
 	Systems.Scripts->EndPlay();
 	SessionSearch.Stop();
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
@@ -378,6 +390,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	TickSubScenes(); // 파싱이 끝난 서브 씬 붙이기 + 스트리밍 볼륨 판정 (스크립트 전 — 새 스크립트가 이번 틱에 OnStart)
 	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	TickAbilities(DeltaSeconds); // 능력: 입력 발동·효과 시간/주기·능력 스크립트 대기 재개 (캐릭터 이동 전 — 대시 이동 입력·MoveSpeed가 이번 무브에)
 	FSequenceSystem::Update(*Scene, DeltaSeconds); // 컷신: 스크립트 PlaySequence가 이번 틱에 반영, 쓴 트랜스폼은 이번 물리/트랜스폼 갱신에
 	TickPhysicsPrediction(DeltaSeconds);         // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
 	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)

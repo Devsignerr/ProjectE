@@ -1,0 +1,31 @@
+{
+  "Name": "RimGlass",
+  "BlendMode": "Translucent",
+  "Parameters": [
+    { "Name": "Tint", "Type": "Vector", "Value": [0.55, 0.85, 1.0, 1.0] },
+    { "Name": "RimColor", "Type": "Vector", "Value": [0.3, 0.8, 1.0, 1.0] },
+    { "Name": "RimPower", "Type": "Scalar", "Value": 3.0 },
+    { "Name": "RimIntensity", "Type": "Scalar", "Value": 2.5 },
+    { "Name": "MinOpacity", "Type": "Scalar", "Value": 0.08 }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "rimPower", "Type": "ScalarParameter", "Parameter": "RimPower" },
+      { "Id": "fresnel", "Type": "Fresnel", "Inputs": { "Exponent": "rimPower", "BaseReflectFraction": 0.0 } },
+      { "Id": "minOpacity", "Type": "ScalarParameter", "Parameter": "MinOpacity" },
+      { "Id": "opacity", "Type": "Lerp", "Inputs": { "A": "minOpacity", "B": 0.95, "Alpha": "fresnel" } },
+      { "Id": "tint", "Type": "VectorParameter", "Parameter": "Tint" },
+      { "Id": "rimColor", "Type": "VectorParameter", "Parameter": "RimColor" },
+      { "Id": "rimIntensity", "Type": "ScalarParameter", "Parameter": "RimIntensity" },
+      { "Id": "rim", "Type": "Multiply", "Inputs": { "A": "rimColor:1", "B": "fresnel" } },
+      { "Id": "emissive", "Type": "Multiply", "Inputs": { "A": "rim", "B": "rimIntensity" } }
+    ],
+    "Output": {
+      "BaseColor": "tint:1",
+      "Metallic": 0.0,
+      "Roughness": 0.05,
+      "Emissive": "emissive",
+      "Opacity": "opacity"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "Name": "MaskedLeaves",
+  "BlendMode": "Masked",
+  "AlphaCutoff": 0.4,
+  "TwoSided": true,
+  "Parameters": [
+    { "Name": "LeafTexture", "Type": "Texture", "Value": "../MaterialDemo/Leaves.png", "Usage": "Color" },
+    { "Name": "YoungColor", "Type": "Vector", "Value": [0.35, 0.8, 0.2, 1.0] },
+    { "Name": "OldColor", "Type": "Vector", "Value": [0.9, 0.45, 0.1, 1.0] }
+  ],
+  "Graph": {
+    "Nodes": [
+      { "Id": "leaf", "Type": "TextureSample", "Texture": "LeafTexture" },
+      { "Id": "pos", "Type": "WorldPosition" },
+      { "Id": "posScaled", "Type": "Multiply", "Inputs": { "A": "pos", "B": 0.02 } },
+      { "Id": "posSum", "Type": "Dot", "Inputs": { "A": "posScaled", "B": [1.0, 1.7, 0.6] } },
+      { "Id": "wave", "Type": "Sine", "Inputs": { "A": "posSum" } },
+      { "Id": "age", "Type": "Saturate", "Inputs": { "A": "wave" } },
+      { "Id": "young", "Type": "VectorParameter", "Parameter": "YoungColor" },
+      { "Id": "old", "Type": "VectorParameter", "Parameter": "OldColor" },
+      { "Id": "tint", "Type": "Lerp", "Inputs": { "A": "young:1", "B": "old:1", "Alpha": "age" } },
+      { "Id": "color", "Type": "Multiply", "Inputs": { "A": "leaf:1", "B": "tint" } }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Roughness": 0.65,
+      "OpacityMask": "leaf:5"
+    }
+  }
+}

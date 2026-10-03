@@ -4,6 +4,7 @@
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/MaterialRender.h"
 #include "Renderer/MeshInstancing.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
@@ -105,6 +106,7 @@ private:
 	// ---- 그림자 (Shadow.hlsl ShadowVS/ShadowSkinnedVS, 루트: 16 상수 + 스킨 팔레트 CBV)
 	FD3D12RootSignature    ShadowRootSignature;
 	FD3D12PipelineState    ShadowPipelines[DepthVariantCount]; // [GetDepthVariant]: 정적/스킨 × 불투명/Masked
+	FMaterialDepthPipelines MaterialPipelines;                 // 그래프 머티리얼 Masked (ShadowMaterialPS, 셰이더 해시별)
 	ComPtr<ID3D12Resource> ShadowMap;
 	FD3D12DescriptorHeap   ShadowDsvHeap; // 장마다 DSV
 	FD3D12DescriptorHandle ShadowSrv;

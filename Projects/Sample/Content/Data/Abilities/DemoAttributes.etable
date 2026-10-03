@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Struct": "Data/Abilities/AttributeDef.estruct",
+  "Rows": [
+    {"Name":"Health","Values":{"Base":100,"Min":0,"Max":100000,"MaxAttribute":"MaxHealth","Meta":false}},
+    {"Name":"MaxHealth","Values":{"Base":100,"Min":1,"Max":100000,"MaxAttribute":"","Meta":false}},
+    {"Name":"Mana","Values":{"Base":100,"Min":0,"Max":100000,"MaxAttribute":"MaxMana","Meta":false}},
+    {"Name":"MaxMana","Values":{"Base":100,"Min":0,"Max":100000,"MaxAttribute":"","Meta":false}},
+    {"Name":"Stamina","Values":{"Base":100,"Min":0,"Max":100000,"MaxAttribute":"MaxStamina","Meta":false}},
+    {"Name":"MaxStamina","Values":{"Base":100,"Min":0,"Max":100000,"MaxAttribute":"","Meta":false}},
+    {"Name":"MoveSpeed","Values":{"Base":450,"Min":0,"Max":5000,"MaxAttribute":"","Meta":false}},
+    {"Name":"DamageTaken","Values":{"Base":1,"Min":0,"Max":10,"MaxAttribute":"","Meta":false}},
+    {"Name":"IncomingDamage","Values":{"Base":0,"Min":0,"Max":100000,"MaxAttribute":"","Meta":true}},
+    {"Name":"IncomingHeal","Values":{"Base":0,"Min":0,"Max":100000,"MaxAttribute":"","Meta":true}}
+  ]
+}

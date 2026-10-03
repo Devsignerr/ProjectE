@@ -68,3 +68,70 @@ void ShadowMaskedPS(FShadowMaskedOutput Input)
 {
 	clip(MaskBaseColorTexture.Sample(MaskSampler, Input.UV).a * Input.Alpha * MaskBaseAlpha - MaskAlphaCutoff);
 }
+
+// ---- 그래프 머티리얼 Masked 캐스터 (Phase 49 사이드): 생성 함수 EvaluateMaterial의 OpacityMask로 자른다 (Mesh.hlsl PSMainMasked와 같은 식).
+// 정점 셰이더는 머티리얼과 무관(Shaders.json), 픽셀 셰이더는 머티리얼마다 E_MATERIAL_GRAPH + 가상 포함 파일로 컴파일한다.
+// 루트: b2 머티리얼 상수(헤더 + 파라미터), 공간 2 t0~ 머티리얼 텍스처, s0 반복 / s1 클램프. 시선 방향은 없으므로 CameraVector = 법선
+struct FShadowMaterialOutput
+{
+	float4 Position      : SV_Position;
+	float3 WorldPosition : POSITION0;
+	float3 WorldNormal   : NORMAL;
+	float4 WorldTangent  : TANGENT;
+	float2 UV            : TEXCOORD0;
+	float4 Color         : COLOR;
+};
+
+FShadowMaterialOutput MakeShadowMaterialOutput(float4 WorldPosition, float3 WorldNormal, float3x3 World3, float4 Tangent, float2 UV, float4 Color)
+{
+	FShadowMaterialOutput Output;
+	Output.Position      = mul(WorldPosition, LightViewProjection);
+	Output.WorldPosition = WorldPosition.xyz;
+	Output.WorldNormal   = normalize(WorldNormal);
+	const float Handedness = determinant(World3) < 0.0f ? -1.0f : 1.0f;
+	Output.WorldTangent  = float4(normalize(mul(Tangent.xyz, World3)), Tangent.w * Handedness);
+	Output.UV            = UV;
+	Output.Color         = Color;
+	return Output;
+}
+
+FShadowMaterialOutput ShadowMaterialVS(float3 Position : POSITION, float3 Normal : NORMAL, float2 UV : TEXCOORD0, float4 Color : COLOR, float4 Tangent : TANGENT,
+                                       uint InstanceId : SV_InstanceID)
+{
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	return MakeShadowMaterialOutput(mul(float4(Position, 1.0f), Instance.World), mul(Normal, GetNormalMatrix(Instance)), (float3x3)Instance.World, Tangent, UV,
+	                                Color);
+}
+
+FShadowMaterialOutput ShadowMaterialSkinnedVS(float3 Position : POSITION, float3 Normal : NORMAL, float2 UV : TEXCOORD0, float4 Color : COLOR,
+                                              float4 Tangent : TANGENT, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT,
+                                              uint InstanceId : SV_InstanceID)
+{
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	const float4x4      Skin     = ComputeSkinMatrix(Instance.BoneOffset, Joints, Weights);
+	return MakeShadowMaterialOutput(mul(float4(Position, 1.0f), Skin), mul(Normal, (float3x3)Skin), (float3x3)Skin, Tangent, UV, Color);
+}
+
+#ifdef E_MATERIAL_GRAPH
+SamplerState MaterialShadowClampSampler : register(s1);
+#define E_MATERIAL_SAMPLER_WRAP  MaskSampler
+#define E_MATERIAL_SAMPLER_CLAMP MaterialShadowClampSampler
+#include "MaterialCommon.hlsli"
+#include "MaterialGraph.generated.hlsli"
+
+void ShadowMaterialPS(FShadowMaterialOutput Input, bool bFrontFace : SV_IsFrontFace)
+{
+	FMaterialPixelInputs In;
+	In.WorldPosition = Input.WorldPosition;
+	In.WorldNormal   = normalize(Input.WorldNormal);
+	In.WorldTangent  = Input.WorldTangent;
+	In.UV0           = Input.UV;
+	In.VertexColor   = Input.Color;
+	In.CameraVector  = In.WorldNormal;
+	In.PixelPosition = Input.Position.xy;
+	In.bFrontFace    = bFrontFace;
+	FMaterialSurface Material;
+	EvaluateMaterial(In, Material);
+	clip(Material.OpacityMask - E_MATERIAL_HEADER.y);
+}
+#endif

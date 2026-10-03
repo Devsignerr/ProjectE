@@ -111,6 +111,9 @@ public:
 	// 인스턴스 해석 (편집 중 원본 → 디스크 순으로 부모를 읽는다). AssetPath = 그 .emat 경로. 실패(순환/부모 없음)면 false + 오류 로그
 	bool            ResolveMaterialAsset(const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, FMaterialAsset& OutResolved,
 	                                     std::vector<std::filesystem::path>* OutChain = nullptr, std::string* OutError = nullptr) const;
+	// 디스크의 .emat가 바뀜 (에디터 파일 감시 — 핫 리로드): 캐시된 머티리얼과 이 파일을 조상으로 둔 인스턴스를 다시 읽는다.
+	// 그래프 컴파일 오류면 이전 셰이더 유지 + 오류 로그. 반환: 다시 읽은 머티리얼이 있으면 true
+	bool            ReloadMaterialFile(const std::filesystem::path& Path);
 	void            DestroyMaterial(FMaterialHandle Handle);
 	FMaterial*      GetMaterial(FMaterialHandle Handle) const { return Materials.Get(Handle); }
 	FMaterialHandle GetDefaultMaterial() const { return DefaultMaterial; }
@@ -177,6 +180,9 @@ private:
 	void BuildMaterialTable(FMaterial& Material);
 	// Asset은 해석된(평탄한) 내용. 텍스처 핸들이 바뀌었으면 true
 	bool FillMaterialFromAsset(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory);
+	// 그래프 머티리얼 (컴파일 성공한 셰이더): 상수·텍스처 칸을 레이아웃대로. 반환: 테이블을 다시 만들어야 하면 true
+	bool FillGraphMaterial(FMaterial& Material, const FMaterialAsset& Asset, std::shared_ptr<const FMaterialShader> Shader,
+	                       const std::filesystem::path& BaseDirectory);
 	// 경로의 .emat를 해석해 머티리얼에 채운다 (ParentChain 갱신, 텍스처가 바뀌면 테이블 재작성)
 	void ResolveAndFillMaterial(FMaterial& Material, const FMaterialAsset& Asset, const std::filesystem::path& AssetPath, bool bBuildTable);
 	const FD3D12Texture& ResolveSlotTexture(const FMaterial& Material, uint32 Slot) const;
@@ -192,6 +198,7 @@ private:
 
 	std::unordered_map<std::wstring, FTextureHandle>  TextureCache;   // 키: 정규화 경로 + 색공간
 	std::unordered_map<std::wstring, FMaterialHandle> MaterialCache;  // 키: 정규화 경로
+	std::unordered_map<uint64, std::weak_ptr<const FMaterialShader>> GraphShaders; // 그래프 셰이더 공유 (키: HLSL 해시)
 	std::unordered_map<std::wstring, FMaterialAsset>  EditedMaterialSources; // 키: FMaterialAsset::MakePathKey — ApplyMaterialAsset 내용 (인스턴스 해석이 디스크보다 먼저 읽는다)
 	std::unordered_map<std::string, FMeshHandle>      PrimitiveMeshes; // 키: 도형 이름
 	std::unordered_map<std::wstring, std::unique_ptr<FModelResources>> ModelCache; // 키: 정규화 경로 (주소 고정)

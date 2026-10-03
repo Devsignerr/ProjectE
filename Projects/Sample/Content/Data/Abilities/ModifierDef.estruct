@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Name": "ModifierDef",
+  "Description": "효과 수정자 (효과 표 Modifiers가 가리킨다). 계산 순서: (Base + ΣAdd) × ΠMultiply, Override 우선",
+  "Fields": [
+    {"Name":"Attribute","Type":"String","Default":""},
+    {"Name":"Op","Type":"Enum","Values":["Add","Multiply","Override"],"Default":"Add"},
+    {"Name":"MagnitudeType","Type":"Enum","Values":["Constant","Curve","AttributeBased","SetByCaller"],"Default":"Constant"},
+    {"Name":"Value","Type":"Float","Default":0,"Description":"Constant 값 / AttributeBased 계수"},
+    {"Name":"Curve","Type":"Array","Element":"Vector2","Default":[],"Description":"(레벨, 값) 점 — 구간 선형"},
+    {"Name":"SourceAttribute","Type":"String","Default":"","Description":"AttributeBased: 읽을 속성"},
+    {"Name":"FromSource","Type":"Bool","Default":true,"Description":"AttributeBased: 원천(가해자) 속성이면 true, 대상이면 false"},
+    {"Name":"PostAdd","Type":"Float","Default":0},
+    {"Name":"SetByCallerName","Type":"String","Default":""}
+  ]
+}

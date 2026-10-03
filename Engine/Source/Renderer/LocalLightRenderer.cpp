@@ -36,6 +36,8 @@ namespace
 		ShadowParam_InstanceIndices = 3, // t14
 		ShadowParam_MaskConstants   = 4, // b1 (Masked: 알파 팩터, 컷오프)
 		ShadowParam_MaskTexture     = 5, // t0 (Masked: 베이스 컬러)
+		ShadowParam_MaterialConstants = 6, // b2 (그래프 머티리얼 Masked)
+		ShadowParam_MaterialTextures  = 7, // 공간 2 t0~ (그래프 머티리얼 텍스처, 무제한 범위)
 	};
 } // namespace
 
@@ -70,12 +72,19 @@ bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary
 	                                                                     D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(PassIndex == ShadowParam_PassConstants && PaletteIndex == ShadowParam_SkinPalette && InstancesIndex == ShadowParam_Instances &&
 	        IndicesIndex == ShadowParam_InstanceIndices && MaskIndex == ShadowParam_MaskConstants && MaskTexture == ShadowParam_MaskTexture);
+	const uint32 MaterialConstants = ShadowRootSignature.AddConstantBufferView(2, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 MaterialTextures  = ShadowRootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
+		D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(MaterialConstants == ShadowParam_MaterialConstants && MaterialTextures == ShadowParam_MaterialTextures);
 	ShadowRootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR));
+	ShadowRootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP)); // 그래프 Clamp
 	if (!ShadowRootSignature.Finalize(Device, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT, L"LocalShadowRootSignature"))
 	{
 		return false;
 	}
 
+	MaterialPipelines.Init(*Rhi, *ShaderLibrary, L"LocalShadowMaterialPipeline");
 	if (!CreateCullPipeline(CullPipeline, false) || !CreateShadowPipeline(ShadowPipelines[0], false, 0) ||
 	    !CreateShadowPipeline(ShadowPipelines[1], false, 1) || !CreateShadowPipeline(ShadowPipelines[2], false, 2) ||
 	    !CreateShadowPipeline(ShadowPipelines[3], false, 3))
@@ -126,6 +135,7 @@ void FLocalLightRenderer::Shutdown()
 	{
 		Pipeline.Shutdown();
 	}
+	MaterialPipelines.Shutdown();
 	ComputeRootSignature.Shutdown();
 	ShadowRootSignature.Shutdown();
 	Lights.clear();
@@ -190,6 +200,10 @@ bool FLocalLightRenderer::CreateShadowPipeline(FD3D12PipelineState& OutPipeline,
 	Desc.bDepthClip           = true;                 // 원근: 광원 뒤 지오메트리는 잘라야 한다
 	Desc.DepthBias            = BakedDepthBias;
 	Desc.SlopeScaledDepthBias = BakedSlopeBias;
+	if (Variant == 0)
+	{
+		MaterialPipelines.SetBaseDesc(Desc); // 그래프 머티리얼 Masked PSO도 같은 설정
+	}
 	static const wchar_t* const Names[DepthVariantCount] = { L"LocalShadowPipeline", L"LocalShadowSkinnedPipeline", L"LocalShadowMaskedPipeline",
 	                                                         L"LocalShadowSkinnedMaskedPipeline" };
 	return OutPipeline.InitGraphics(Rhi->GetDevice().GetDevice(), Desc, Names[Variant]);
@@ -201,6 +215,7 @@ bool FLocalLightRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return true;
 	}
+	MaterialPipelines.Reset(); // 그래프 머티리얼 PSO는 다음 그리기에 다시 만든다
 	FD3D12PipelineState NewCull;
 	FD3D12PipelineState NewShadow[DepthVariantCount];
 	bool                bOk = CreateCullPipeline(NewCull, bForceRecompile);
@@ -485,6 +500,10 @@ void FLocalLightRenderer::RecordShadows(ID3D12GraphicsCommandList* CommandList, 
 	Bindings.InstanceDestOffset = 16;
 	Bindings.MaskRootIndex      = ShadowParam_MaskConstants;
 	Bindings.MaskTextureRoot    = ShadowParam_MaskTexture;
+	Bindings.MaterialPipelines    = &MaterialPipelines;
+	Bindings.DynamicBuffer        = &Rhi->GetDynamicBuffer();
+	Bindings.MaterialConstantRoot = ShadowParam_MaterialConstants;
+	Bindings.MaterialTextureRoot  = ShadowParam_MaterialTextures;
 	for (uint32 Index = 0; Index < ShadowSlices.size(); ++Index)
 	{
 		const FShadowSlice&               Slice = ShadowSlices[Index];

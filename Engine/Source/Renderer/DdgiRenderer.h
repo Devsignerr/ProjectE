@@ -140,9 +140,9 @@ public:
 	void ImportFrame(FRenderGraph& Graph);
 	// 메시 패스가 묶는 아틀라스 읽기 선언 (사전·메인·반투명 — 루트에 항상 묶이므로)
 	void DeclareShadingReads(FRenderGraph::FPassBuilder& Pass) const;
-	// 추적 + 누적 (활성일 때만, ImportFrame 뒤)
+	// 추적 + 누적 (활성일 때만, ImportFrame 뒤). 누적은 계산 셰이더만 → BlendQueue = AsyncCompute 후보 (r.RenderGraph.AsyncCompute)
 	void AddUpdatePasses(FRenderGraph& Graph, const FRayTracingScene& Scene, FRGResourceRef Tlas, const FRayTracingLightingInputs& Lighting, int32 TraceTimer,
-	                     int32 BlendTimer);
+	                     int32 BlendTimer, ERGQueue BlendQueue = ERGQueue::Graphics);
 	// 프로브 구 표시 (메인 패스 뒤, 씬 컬러 + 깊이). 표시할 볼륨이 없으면 아무것도 안 한다
 	void AddProbeDebugPass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef ColorRef, FRGResourceRef DepthRef, int32 Timer);
 
@@ -154,10 +154,6 @@ public:
 	const FDdgiStats&             GetStats() const { return Stats; }
 
 private:
-	struct FPipelineSet
-	{
-		FD3D12PipelineState Trace;
-	};
 	bool CreateTracePipeline(FD3D12PipelineState& Out, bool bForceRecompile, const FRayTracingGraphVariant* Variant);
 	bool CreatePipelines(bool bForceRecompile);
 	ID3D12PipelineState* SelectTracePipeline(const FRayTracingScene& Scene);
@@ -184,10 +180,11 @@ private:
 	};
 	std::unordered_map<uint64, std::unique_ptr<FVariant>> Variants;
 
-	// 이력 2장 (조도/거리/상태) + 비활성용 1x1
-	std::unique_ptr<FD3D12RenderTarget> Irradiance[2];
-	std::unique_ptr<FD3D12RenderTarget> Distance[2];
-	std::unique_ptr<FD3D12RenderTarget> ProbeData[2];
+	// 이력 2장 (조도/거리/상태 — UAV + SRV, 평소 상태 PIXEL_SHADER_RESOURCE, 전용 풀) + 비활성용 1x1
+	FRGResourcePool   AtlasPool;
+	FRGPooledTexture* Irradiance[2] = {};
+	FRGPooledTexture* Distance[2]   = {};
+	FRGPooledTexture* ProbeData[2]  = {};
 	std::unique_ptr<FD3D12RenderTarget> DummyIrradiance;
 	std::unique_ptr<FD3D12RenderTarget> DummyDistance;
 	std::unique_ptr<FD3D12RenderTarget> DummyProbeData;

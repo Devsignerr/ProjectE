@@ -35,6 +35,7 @@ namespace DdgiMath
 	constexpr uint32 MaxRaysPerProbe    = 512;
 	constexpr float  BackfaceDistanceScale = 0.2f;  // 뒷면 히트 거리는 줄여 음수로 저장 (재배치·누수 방지)
 	constexpr float  DistanceExponent      = 50.0f; // 거리 누적 가중치 지수 (cos^50)
+	constexpr float  DistanceMinCosine     = 0.85f; // 이보다 비스듬한 광선은 거리 누적에서 뺀다 (0.85^50 ≈ 3e-4)
 	constexpr float  DistanceClampScale    = 1.5f;  // 거리 정규화 = 1.5 × |간격|
 	constexpr float  MaxRelocation         = 0.45f; // 재배치 오프셋 상한 (간격 비율)
 	constexpr float  WeightCrushThreshold  = 0.2f;

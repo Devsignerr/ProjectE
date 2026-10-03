@@ -1302,7 +1302,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			DdgiLighting.LocalLightCount  = LocalLightRenderer.GetLightCount();
 			DdgiLighting.IblTable         = IblRenderer.GetLightingTable();
 			DdgiLighting.CaptureAtlas     = ReflectionCaptures.GetAtlasSrv();
-			Ddgi.AddUpdatePasses(Graph, RayTracingScene, TlasRef, DdgiLighting, TimerId(ERenderTimer::DdgiTrace), TimerId(ERenderTimer::DdgiBlend));
+			Ddgi.AddUpdatePasses(Graph, RayTracingScene, TlasRef, DdgiLighting, TimerId(ERenderTimer::DdgiTrace), TimerId(ERenderTimer::DdgiBlend),
+			                     RendererCVars::RenderGraphAsyncCompute.Get() ? ERGQueue::AsyncCompute : ERGQueue::Graphics);
 		}
 		Stats.Ddgi = Ddgi.GetStats();
 	}

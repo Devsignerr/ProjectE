@@ -36,6 +36,7 @@ bool FDdgiRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, const FScr
 {
 	Rhi        = &InRhi;
 	Library    = &InLibrary;
+	AtlasPool.Init(InRhi);
 	ScreenRoot = &InScreenRoot;
 	RayTracing = &InRayTracing;
 	bSupported = false;
@@ -71,6 +72,7 @@ void FDdgiRenderer::Shutdown()
 	}
 	ReleaseVariants(true);
 	ReleaseAtlases();
+	AtlasPool.Shutdown();
 	DummyIrradiance.reset();
 	DummyDistance.reset();
 	DummyProbeData.reset();
@@ -123,12 +125,9 @@ bool FDdgiRenderer::CreatePipelines(bool bForceRecompile)
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	FD3D12PipelineState NewTrace, NewIrradiance, NewDistance, NewProbeData, NewDebug;
 	if (!CreateTracePipeline(NewTrace, bForceRecompile, nullptr) ||
-	    !ScreenRoot->CreateGraphicsPipeline(NewIrradiance, Device, *Library, L"DdgiBlend.hlsl", L"PSIrradiance", { IrradianceFormat }, EBlendMode::Opaque,
-	                                        bForceRecompile, L"DdgiBlendIrradiance") ||
-	    !ScreenRoot->CreateGraphicsPipeline(NewDistance, Device, *Library, L"DdgiBlend.hlsl", L"PSDistance", { DistanceFormat }, EBlendMode::Opaque,
-	                                        bForceRecompile, L"DdgiBlendDistance") ||
-	    !ScreenRoot->CreateGraphicsPipeline(NewProbeData, Device, *Library, L"DdgiBlend.hlsl", L"PSProbeData", { ProbeDataFormat }, EBlendMode::Opaque,
-	                                        bForceRecompile, L"DdgiProbeData"))
+	    !ScreenRoot->CreateComputePipeline(NewIrradiance, Device, *Library, L"DdgiBlend.hlsl", L"CSIrradiance", bForceRecompile, L"DdgiBlendIrradiance") ||
+	    !ScreenRoot->CreateComputePipeline(NewDistance, Device, *Library, L"DdgiBlend.hlsl", L"CSDistance", bForceRecompile, L"DdgiBlendDistance") ||
+	    !ScreenRoot->CreateComputePipeline(NewProbeData, Device, *Library, L"DdgiBlend.hlsl", L"CSProbeData", bForceRecompile, L"DdgiProbeData"))
 	{
 		return false;
 	}
@@ -242,16 +241,14 @@ ID3D12PipelineState* FDdgiRenderer::SelectTracePipeline(const FRayTracingScene& 
 
 void FDdgiRenderer::ReleaseAtlases()
 {
+	if (Irradiance[0] != nullptr)
+	{
+		AtlasPool.Shutdown(); // 지연 해제 (마지막 사용 프레임이 아직 GPU에 있을 수 있다)
+		AtlasPool.Init(*Rhi);
+	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
-		for (std::unique_ptr<FD3D12RenderTarget>* Target : { &Irradiance[Index], &Distance[Index], &ProbeData[Index] })
-		{
-			if (*Target)
-			{
-				(*Target)->ShutdownDeferred(*Rhi);
-				Target->reset();
-			}
-		}
+		Irradiance[Index] = Distance[Index] = ProbeData[Index] = nullptr;
 	}
 	AtlasProbes   = 0;
 	bHistoryValid = false;
@@ -268,19 +265,21 @@ void FDdgiRenderer::EnsureAtlases(uint32 TotalProbes)
 	}
 	ReleaseAtlases();
 	const uint32 Columns = AtlasTilesPerRow; // 행 단위로 만든다 (프로브 수가 조금 바뀌어도 같은 크기)
+	const auto MakeDesc = [](uint32 Width, uint32 Height, DXGI_FORMAT Format) {
+		FRGTextureDesc Desc;
+		Desc.Width            = Width;
+		Desc.Height           = Height;
+		Desc.Format           = Format;
+		Desc.bUnorderedAccess = true;
+		return Desc;
+	};
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
-		Irradiance[Index] = std::make_unique<FD3D12RenderTarget>();
-		Distance[Index]   = std::make_unique<FD3D12RenderTarget>();
-		ProbeData[Index]  = std::make_unique<FD3D12RenderTarget>();
-		const bool bOk =
-			Irradiance[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Columns * IrradianceTileSize, Rows * IrradianceTileSize,
-			                        Index == 0 ? L"DdgiIrradiance0" : L"DdgiIrradiance1", FRenderTargetDesc::MakeColor(IrradianceFormat)) &&
-			Distance[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Columns * DistanceTileSize, Rows * DistanceTileSize,
-			                      Index == 0 ? L"DdgiDistance0" : L"DdgiDistance1", FRenderTargetDesc::MakeColor(DistanceFormat)) &&
-			ProbeData[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Columns, Rows, Index == 0 ? L"DdgiProbeData0" : L"DdgiProbeData1",
-			                       FRenderTargetDesc::MakeColor(ProbeDataFormat));
-		if (!bOk)
+		Irradiance[Index] = AtlasPool.Acquire(MakeDesc(Columns * IrradianceTileSize, Rows * IrradianceTileSize, IrradianceFormat),
+		                                      Index == 0 ? "DdgiIrradiance0" : "DdgiIrradiance1");
+		Distance[Index]   = AtlasPool.Acquire(MakeDesc(Columns * DistanceTileSize, Rows * DistanceTileSize, DistanceFormat), Index == 0 ? "DdgiDistance0" : "DdgiDistance1");
+		ProbeData[Index]  = AtlasPool.Acquire(MakeDesc(Columns, Rows, ProbeDataFormat), Index == 0 ? "DdgiProbeData0" : "DdgiProbeData1");
+		if (Irradiance[Index] == nullptr || Distance[Index] == nullptr || ProbeData[Index] == nullptr)
 		{
 			E_LOG(LogRenderer, Fatal, "DDGI 아틀라스 생성 실패 (프로브 {})", TotalProbes);
 		}
@@ -405,8 +404,8 @@ bool FDdgiRenderer::Prepare(FScene& Scene, const FDdgiSettings& Settings, bool b
 	Constants.VolumeCount = static_cast<uint32>(Volumes.size());
 	Constants.Reset       = bHistoryValid ? 0u : 1u;
 	Constants.TotalProbes = TotalProbes;
-	Constants.IrradianceTexelSize = FVector2(1.0f / static_cast<float>(Irradiance[0]->GetWidth()), 1.0f / static_cast<float>(Irradiance[0]->GetHeight()));
-	Constants.DistanceTexelSize   = FVector2(1.0f / static_cast<float>(Distance[0]->GetWidth()), 1.0f / static_cast<float>(Distance[0]->GetHeight()));
+	Constants.IrradianceTexelSize = FVector2(1.0f / static_cast<float>(Irradiance[0]->Desc.Width), 1.0f / static_cast<float>(Irradiance[0]->Desc.Height));
+	Constants.DistanceTexelSize   = FVector2(1.0f / static_cast<float>(Distance[0]->Desc.Width), 1.0f / static_cast<float>(Distance[0]->Desc.Height));
 
 	uint32 ProbeOffset = 0;
 	uint32 RowOffset   = 0;
@@ -467,28 +466,27 @@ bool FDdgiRenderer::Prepare(FScene& Scene, const FDdgiSettings& Settings, bool b
 	Stats.Volumes          = Constants.VolumeCount;
 	Stats.Probes           = TotalProbes;
 	Stats.UpdatedProbes    = TraceRows;
-	Stats.IrradianceWidth  = Irradiance[0]->GetWidth();
-	Stats.IrradianceHeight = Irradiance[0]->GetHeight();
-	Stats.DistanceWidth    = Distance[0]->GetWidth();
-	Stats.DistanceHeight   = Distance[0]->GetHeight();
-	Stats.AtlasBytes = 2ull * (static_cast<uint64>(Stats.IrradianceWidth) * Stats.IrradianceHeight * 8 + static_cast<uint64>(Stats.DistanceWidth) * Stats.DistanceHeight * 4 +
-	                           static_cast<uint64>(ProbeData[0]->GetWidth()) * ProbeData[0]->GetHeight() * 16);
+	Stats.IrradianceWidth  = Irradiance[0]->Desc.Width;
+	Stats.IrradianceHeight = Irradiance[0]->Desc.Height;
+	Stats.DistanceWidth    = Distance[0]->Desc.Width;
+	Stats.DistanceHeight   = Distance[0]->Desc.Height;
+	Stats.AtlasBytes       = AtlasPool.GetTotalBytes();
 	return true;
 }
 
 const FD3D12DescriptorHandle& FDdgiRenderer::GetIrradianceSrv() const
 {
-	return bFrameActive ? Irradiance[WriteIndex]->GetSrv() : DummyIrradiance->GetSrv();
+	return bFrameActive ? Irradiance[WriteIndex]->Srv : DummyIrradiance->GetSrv();
 }
 
 const FD3D12DescriptorHandle& FDdgiRenderer::GetDistanceSrv() const
 {
-	return bFrameActive ? Distance[WriteIndex]->GetSrv() : DummyDistance->GetSrv();
+	return bFrameActive ? Distance[WriteIndex]->Srv : DummyDistance->GetSrv();
 }
 
 const FD3D12DescriptorHandle& FDdgiRenderer::GetProbeDataSrv() const
 {
-	return bFrameActive ? ProbeData[WriteIndex]->GetSrv() : DummyProbeData->GetSrv();
+	return bFrameActive ? ProbeData[WriteIndex]->Srv : DummyProbeData->GetSrv();
 }
 
 void FDdgiRenderer::ImportFrame(FRenderGraph& Graph)
@@ -508,9 +506,13 @@ void FDdgiRenderer::ImportFrame(FRenderGraph& Graph)
 	}
 	for (uint32 Index = 0; Index < 2; ++Index)
 	{
-		IrradianceRefs[Index] = Graph.ImportColor(Index == 0 ? "DdgiIrradiance0" : "DdgiIrradiance1", *Irradiance[Index]);
-		DistanceRefs[Index]   = Graph.ImportColor(Index == 0 ? "DdgiDistance0" : "DdgiDistance1", *Distance[Index]);
-		ProbeDataRefs[Index]  = Graph.ImportColor(Index == 0 ? "DdgiProbeData0" : "DdgiProbeData1", *ProbeData[Index]);
+		// 평소 상태 = PIXEL_SHADER_RESOURCE (메시 패스), 누적 패스만 UAV
+		IrradianceRefs[Index] = Graph.Import(Index == 0 ? "DdgiIrradiance0" : "DdgiIrradiance1", Irradiance[Index]->Resource.Get(), ERGAccess::SrvPixel,
+		                                     ERGAccess::SrvPixel);
+		DistanceRefs[Index]   = Graph.Import(Index == 0 ? "DdgiDistance0" : "DdgiDistance1", Distance[Index]->Resource.Get(), ERGAccess::SrvPixel,
+		                                     ERGAccess::SrvPixel);
+		ProbeDataRefs[Index]  = Graph.Import(Index == 0 ? "DdgiProbeData0" : "DdgiProbeData1", ProbeData[Index]->Resource.Get(), ERGAccess::SrvPixel,
+		                                     ERGAccess::SrvPixel);
 	}
 }
 
@@ -526,7 +528,7 @@ void FDdgiRenderer::DeclareShadingReads(FRenderGraph::FPassBuilder& Pass) const
 }
 
 void FDdgiRenderer::AddUpdatePasses(FRenderGraph& Graph, const FRayTracingScene& Scene, FRGResourceRef Tlas, const FRayTracingLightingInputs& Lighting,
-                                    int32 TraceTimer, int32 BlendTimer)
+                                    int32 TraceTimer, int32 BlendTimer, ERGQueue BlendQueue)
 {
 	if (!bFrameActive || TraceRows == 0 || TraceWidth == 0)
 	{
@@ -536,9 +538,9 @@ void FDdgiRenderer::AddUpdatePasses(FRenderGraph& Graph, const FRayTracingScene&
 	const uint32 Write = WriteIndex;
 	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = ShadingConstants;
 	const D3D12_GPU_VIRTUAL_ADDRESS LightingAddress  = RayTracing->UploadLighting(Lighting, FrameSettings.MaxHitLocalLights, FrameSettings.bHitShadows);
-	const FD3D12DescriptorHandle    PrevIrradiance   = Irradiance[Read]->GetSrv();
-	const FD3D12DescriptorHandle    PrevDistance     = Distance[Read]->GetSrv();
-	const FD3D12DescriptorHandle    PrevProbeData    = ProbeData[Read]->GetSrv();
+	const FD3D12DescriptorHandle    PrevIrradiance   = Irradiance[Read]->Srv;
+	const FD3D12DescriptorHandle    PrevDistance     = Distance[Read]->Srv;
+	const FD3D12DescriptorHandle    PrevProbeData    = ProbeData[Read]->Srv;
 
 	// 1) 프로브 광선 추적 → "광선 × 갱신 프로브" (RGBA32F)
 	const FRGResourceRef    RayRef  = Graph.CreateTexture("DdgiRayData", FRGTextureDesc::MakeRenderTarget(TraceWidth, TraceRows, RayDataFormat));
@@ -570,29 +572,36 @@ void FDdgiRenderer::AddUpdatePasses(FRenderGraph& Graph, const FRayTracingScene&
 			});
 	}
 
-	// 2) 누적: 이전 장 → 이번 장 (아틀라스 전체, 갱신 안 한 프로브는 복사)
-	const FD3D12DescriptorHandle RaySrv = RayData->Srv;
-	const auto AddBlend = [&](const char* Name, FRGResourceRef Target, const FD3D12RenderTarget& TargetRt, const FD3D12PipelineState& Pipeline) {
-		const FD3D12RenderTarget* Rt = &TargetRt;
-		Graph.AddPass(Name)
-			.Read(RayRef, ERGAccess::SrvPixel)
-			.Read(IrradianceRefs[Read], ERGAccess::SrvPixel)
-			.Read(DistanceRefs[Read], ERGAccess::SrvPixel)
-			.Read(ProbeDataRefs[Read], ERGAccess::SrvPixel)
-			.Write(Target, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+	// 2) 누적 (계산): 이전 장 → 이번 장 — 그룹 = 프로브 하나 (광선을 그룹 공유 메모리에 한 번), 갱신 안 한 프로브는 복사
+	const FD3D12DescriptorHandle RaySrv     = RayData->Srv;
+	const uint32                 ProbeCount = Constants.TotalProbes;
+	const auto AddBlend = [&](const char* Name, FRGResourceRef Target, const FRGPooledTexture& TargetTexture, const FD3D12PipelineState& Pipeline,
+	                          uint32 UavSlot, uint32 Groups) {
+		const FD3D12DescriptorHandle Uav = TargetTexture.Uavs[0];
+		Graph.AddPass(Name, BlendQueue)
+			.Read(RayRef, ERGAccess::SrvNonPixel)
+			.Read(IrradianceRefs[Read], ERGAccess::SrvNonPixel)
+			.Read(DistanceRefs[Read], ERGAccess::SrvNonPixel)
+			.Read(ProbeDataRefs[Read], ERGAccess::SrvNonPixel)
+			.Write(Target, ERGAccess::Uav, FRGSubresourceRange::All(), true)
 			.Timer(BlendTimer)
-			.Execute([this, Rt, &Pipeline, ConstantsAddress, RaySrv, PrevIrradiance, PrevDistance, PrevProbeData](FRGContext& Context) {
-				ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
-				const D3D12_CPU_DESCRIPTOR_HANDLE Rtv         = Rt->GetRtv();
-				CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
-				CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-				DrawScreenPass(CommandList, *ScreenRoot, Pipeline, ConstantsAddress, { RaySrv, PrevIrradiance, PrevDistance, PrevProbeData }, Rt->GetWidth(),
-				               Rt->GetHeight());
+			.Execute([this, &Pipeline, Uav, UavSlot, Groups, ConstantsAddress, RaySrv, PrevIrradiance, PrevDistance, PrevProbeData](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				CommandList->SetComputeRootSignature(ScreenRoot->Get());
+				CommandList->SetPipelineState(Pipeline.Get());
+				CommandList->SetComputeRootConstantBufferView(FScreenPassRootSignature::Root_Constants, ConstantsAddress);
+				const FD3D12DescriptorHandle Srvs[4] = { RaySrv, PrevIrradiance, PrevDistance, PrevProbeData };
+				for (uint32 Index = 0; Index < 4; ++Index)
+				{
+					CommandList->SetComputeRootDescriptorTable(FScreenPassRootSignature::Root_Srv0 + Index, Srvs[Index].Gpu);
+				}
+				CommandList->SetComputeRootDescriptorTable(FScreenPassRootSignature::Root_Uav0 + UavSlot, Uav.Gpu);
+				CommandList->Dispatch(Groups, 1, 1);
 			});
 	};
-	AddBlend("DDGI 조도 누적", IrradianceRefs[Write], *Irradiance[Write], IrradiancePipeline);
-	AddBlend("DDGI 거리 누적", DistanceRefs[Write], *Distance[Write], DistancePipeline);
-	AddBlend("DDGI 프로브 상태", ProbeDataRefs[Write], *ProbeData[Write], ProbeDataPipeline);
+	AddBlend("DDGI 조도 누적", IrradianceRefs[Write], *Irradiance[Write], IrradiancePipeline, 0, ProbeCount);
+	AddBlend("DDGI 거리 누적", DistanceRefs[Write], *Distance[Write], DistancePipeline, 1, ProbeCount);
+	AddBlend("DDGI 프로브 상태", ProbeDataRefs[Write], *ProbeData[Write], ProbeDataPipeline, 0, (ProbeCount + 63) / 64);
 	Stats.UpdatedProbes = TraceRows;
 }
 
@@ -605,7 +614,7 @@ void FDdgiRenderer::AddProbeDebugPass(FRenderGraph& Graph, const FD3D12RenderTar
 	const uint32                    Write            = WriteIndex;
 	const uint32                    ProbeCount       = Constants.TotalProbes;
 	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = ShadingConstants;
-	const FD3D12DescriptorHandle    Srvs[3]          = { Irradiance[Write]->GetSrv(), Distance[Write]->GetSrv(), ProbeData[Write]->GetSrv() };
+	const FD3D12DescriptorHandle    Srvs[3]          = { Irradiance[Write]->Srv, Distance[Write]->Srv, ProbeData[Write]->Srv };
 	const FD3D12RenderTarget*       Target           = &SceneColor;
 	Graph.AddPass("DDGI 프로브 표시")
 		.Read(IrradianceRefs[Write], ERGAccess::SrvPixel | ERGAccess::SrvNonPixel)

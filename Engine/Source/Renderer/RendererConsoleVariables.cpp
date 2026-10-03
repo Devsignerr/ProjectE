@@ -188,8 +188,9 @@ namespace RendererCVars
 	                                "동적 GI (IrradianceVolumeComponent 프로브 볼륨을 레이 트레이싱으로 갱신 → 간접 확산광). 볼륨이 있는 씬만, "
 	                                "RT가 켜진 렌더러만 (r.RayTracing). 끄면 하늘 IBL 조도 (비교용)",
 	                                EConsoleFlags::None, { .CommandLine = { { L"--no-ddgi", "0" }, { L"--ddgi", "1" } } });
-	TAutoConsoleVariable<int32> DdgiProbeBudget("r.DDGI.ProbeBudget", 2048,
-	                                            "DDGI 프레임당 갱신 프로브 전체 상한 (볼륨 프로브 수 비율로 나눔, 0 = 무제한). 줄이면 싸지만 조명 변화를 늦게 따라감",
+	TAutoConsoleVariable<int32> DdgiProbeBudget("r.DDGI.ProbeBudget", 1024,
+	                                            "DDGI 프레임당 갱신 프로브 전체 상한 (볼륨 프로브 수 비율로 나눔, 0 = 무제한). 줄이면 싸지만 조명 변화를 늦게 따라감. "
+	                                            "기본 1024 (1440p 측정: 6720 프로브 Demo_Apartment 추적 0.26 + 누적 0.34ms, 7프레임에 한 바퀴)",
 	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 16384.0f), .CommandLine = { { L"--ddgi-budget", "" } } });
 	TAutoConsoleVariable<float> DdgiBounceIntensity("r.DDGI.BounceIntensity", 1.0f,
 	                                                "DDGI 다중 반사: 프로브 광선 히트의 간접 확산(이전 프레임 프로브 조도) 배율 (0 = 한 번 반사만)", EConsoleFlags::None,

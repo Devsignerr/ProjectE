@@ -1,10 +1,8 @@
-﻿#include "Fullscreen.hlsli"
-
-// DDGI 프로브 누적 (Phase 51, FDdgiRenderer — FScreenPassRootSignature): 아틀라스 전체를 그리는 패스 3개 (이력 2장 핑퐁)
-//   PSIrradiance (조도 아틀라스) / PSDistance (거리 아틀라스) / PSProbeData (프로브 상태: 재배치 오프셋 + 분류)
-//   텍셀 → 프로브 (타일) → 이번 프레임 갱신 대상이면 추적 행의 광선을 모아 새 값 → 이전 값과 히스테리시스 섞기, 아니면 이전 값 복사.
-//   테두리 텍셀은 접힌 이웃 안쪽 텍셀과 같은 값을 직접 계산한다 (DdgiMath::MapBorderTexel — 따로 복사 패스 없음)
-// 바인딩: b0 DDGI 상수, t0 광선 결과 (DdgiTrace.hlsl), t1~t3 이전 아틀라스 (조도/거리/상태), s0 선형 클램프
+﻿// DDGI 프로브 누적 (Phase 51, FDdgiRenderer — FScreenPassRootSignature 계산): 이전 장 → 이번 장 (이력 2장 핑퐁)
+//   CSIrradiance (그룹 = 프로브 하나 = 10x10 타일) / CSDistance (18x18 타일) / CSProbeData (스레드 = 프로브 하나: 재배치 오프셋 + 분류)
+//   갱신 대상 프로브: 추적 행의 광선(휘도·거리)과 방향을 그룹 공유 메모리에 한 번 올린 뒤 텍셀마다 가중 합 → 이전 값과 히스테리시스 섞기.
+//   아니면 이전 값 복사. 테두리 텍셀은 접힌 이웃 안쪽 텍셀과 같은 값을 직접 계산한다 (DdgiMath::MapBorderTexel — 따로 복사 패스 없음)
+// 바인딩: b0 DDGI 상수, t0 광선 결과 (DdgiTrace.hlsl), t1~t3 이전 아틀라스 (조도/거리/상태), u0 이번 장, s0 선형 클램프
 
 SamplerState DdgiLinearClamp : register(s0);
 #define E_DDGI_CONSTANTS_REGISTER b0
@@ -14,12 +12,14 @@ SamplerState DdgiLinearClamp : register(s0);
 #define E_DDGI_SAMPLER DdgiLinearClamp
 #include "DdgiCommon.hlsli"
 
-Texture2D<float4> RayData : register(t0);
+#define E_DDGI_MAX_RAYS 512 // DdgiMath::MaxRaysPerProbe
 
-FFullscreenVSOutput VSMain(uint VertexId : SV_VertexID)
-{
-	return FullscreenVS(VertexId);
-}
+Texture2D<float4>   RayData        : register(t0);
+RWTexture2D<float4> OutputAtlas    : register(u0);
+RWTexture2D<float2> OutputDistance : register(u1);
+
+groupshared float4 SharedRays[E_DDGI_MAX_RAYS];       // rgb 휘도, a 거리 (뒷면 음수)
+groupshared float3 SharedDirections[E_DDGI_MAX_RAYS];
 
 // 테두리 → 안쪽 텍셀 (DdgiMath::MapBorderTexel, 타일 좌표 0..Texels+1)
 uint2 DdgiMapBorderTexel(uint2 T, uint Texels)
@@ -44,42 +44,6 @@ uint2 DdgiMapBorderTexel(uint2 T, uint Texels)
 	return T;
 }
 
-// 텍셀 공용 해석: 프로브 번호, 볼륨, 안쪽 텍셀 (0..Texels-1), 아틀라스 안 안쪽 텍셀 위치, 갱신 여부·행, 처음 여부
-struct FTexelInfo
-{
-	bool        bValid;
-	uint        Probe;
-	FDdgiVolume Volume;
-	uint2       Interior;      // 0..Texels-1
-	int2        InteriorPixel; // 아틀라스 좌표 (이전 값 읽기)
-	bool        bUpdated;
-	uint        Row;
-	bool        bFirst;        // 이전 값 없음 (초기화 / 아직 한 번도 갱신 안 됨)
-	uint        UpdateCount;   // 지금까지 갱신 횟수 (처음 몇 번은 누적 평균 — 수렴 가속)
-};
-
-FTexelInfo ResolveTexel(uint2 Pixel, uint Texels)
-{
-	FTexelInfo Info = (FTexelInfo)0;
-	const uint TileSize = Texels + 2;
-	const uint2 Tile    = Pixel / TileSize;
-	Info.Probe          = Tile.x + Tile.y * E_DDGI_TILES_PER_ROW;
-	Info.bValid         = Tile.x < E_DDGI_TILES_PER_ROW && Info.Probe < DdgiTotalProbes && DdgiVolumeCount != 0;
-	if (!Info.bValid)
-	{
-		return Info;
-	}
-	const uint2 Mapped = DdgiMapBorderTexel(Pixel - Tile * TileSize, Texels);
-	Info.Interior      = Mapped - 1;
-	Info.InteriorPixel = int2(Tile * TileSize + Mapped);
-	Info.Volume        = DdgiVolumes[DdgiFindVolume(Info.Probe)];
-	Info.bUpdated      = DdgiIsProbeUpdated(Info.Volume, Info.Probe - Info.Volume.ProbeOffset, Info.Row);
-	const float StateW = DdgiProbeData.Load(int3(DdgiGetDataTexel(Info.Probe), 0)).w;
-	Info.bFirst        = DdgiReset != 0 || DdgiGetProbeState(StateW) == E_DDGI_STATE_UNINITIALIZED;
-	Info.UpdateCount   = Info.bFirst ? 0u : DdgiGetProbeUpdateCount(StateW);
-	return Info;
-}
-
 // 히스테리시스 (DdgiMath::ComputeHysteresis): 처음 n번은 누적 평균 상한 n/(n+1)
 float ComputeHysteresis(float3 Previous, float3 Current, float Base, float ChangeThreshold, bool bFirst, uint UpdateCount)
 {
@@ -98,108 +62,160 @@ float ComputeHysteresis(float3 Previous, float3 Current, float Base, float Chang
 	return Base;
 }
 
-float4 PSIrradiance(FFullscreenVSOutput Input) : SV_Target
+// 그룹(= 프로브 하나) 공통: 볼륨, 갱신 여부·행, 처음 여부, 갱신 횟수
+struct FProbeInfo
 {
-	const FTexelInfo Info = ResolveTexel(uint2(Input.Position.xy), E_DDGI_IRRADIANCE_TEXELS);
-	if (!Info.bValid)
+	FDdgiVolume Volume;
+	bool        bUpdated;
+	uint        Row;
+	bool        bFirst;
+	uint        UpdateCount;
+};
+
+FProbeInfo ResolveProbe(uint Probe)
+{
+	FProbeInfo Info;
+	Info.Volume       = DdgiVolumes[DdgiFindVolume(Probe)];
+	Info.bUpdated     = DdgiIsProbeUpdated(Info.Volume, Probe - Info.Volume.ProbeOffset, Info.Row);
+	const float StateW = DdgiProbeData.Load(int3(DdgiGetDataTexel(Probe), 0)).w;
+	Info.bFirst       = DdgiReset != 0 || DdgiGetProbeState(StateW) == E_DDGI_STATE_UNINITIALIZED;
+	Info.UpdateCount  = Info.bFirst ? 0u : DdgiGetProbeUpdateCount(StateW);
+	return Info;
+}
+
+// 추적 행 광선 → 그룹 공유 메모리 (모든 스레드가 함께, 뒤에 그룹 동기화)
+void LoadRays(FProbeInfo Info, uint ThreadIndex, uint ThreadCount)
+{
+	for (uint Ray = ThreadIndex; Ray < Info.Volume.RaysPerProbe; Ray += ThreadCount)
 	{
-		return 0.0f;
+		SharedRays[Ray]       = RayData.Load(int3(Ray, Info.Row, 0));
+		SharedDirections[Ray] = DdgiGetRayDirection(Ray, Info.Volume.RaysPerProbe, Info.Volume.FixedRays);
 	}
-	const float3 Previous = Info.bFirst ? 0.0f : DdgiIrradianceAtlas.Load(int3(Info.InteriorPixel, 0)).rgb;
+}
+
+[numthreads(10, 10, 1)]
+void CSIrradiance(uint3 GroupId : SV_GroupID, uint3 ThreadId : SV_GroupThreadID, uint ThreadIndex : SV_GroupIndex)
+{
+	const uint Probe = GroupId.x;
+	if (Probe >= DdgiTotalProbes || DdgiVolumeCount == 0)
+	{
+		return; // 그룹 전체가 같은 판정 (동기화 전에 같이 빠진다)
+	}
+	const FProbeInfo Info     = ResolveProbe(Probe);
+	const uint2      Origin   = DdgiGetTileOrigin(Probe, E_DDGI_IRRADIANCE_TEXELS + 2);
+	const uint2      Mapped   = DdgiMapBorderTexel(ThreadId.xy, E_DDGI_IRRADIANCE_TEXELS);
+	const float3     Previous = Info.bFirst ? 0.0f : DdgiIrradianceAtlas.Load(int3(Origin + Mapped, 0)).rgb;
 	if (!Info.bUpdated)
 	{
-		return float4(Previous, 1.0f);
+		OutputAtlas[Origin + ThreadId.xy] = float4(Previous, 1.0f);
+		return;
 	}
+	LoadRays(Info, ThreadIndex, 100);
+	GroupMemoryBarrierWithGroupSync();
+
 	// 코사인 가중 평균 휘도 = 조도 / π (뒷면 히트는 뺀다 — 벽 속 방향이 조도를 깎지 않게)
-	const float3 Direction = DdgiOctDecode((float2(Info.Interior) + 0.5f) / (float)E_DDGI_IRRADIANCE_TEXELS * 2.0f - 1.0f);
+	const float3 Direction = DdgiOctDecode((float2(Mapped - 1) + 0.5f) / (float)E_DDGI_IRRADIANCE_TEXELS * 2.0f - 1.0f);
 	float3       Sum       = 0.0f;
 	float        WeightSum = 0.0f;
 	for (uint Ray = Info.Volume.FixedRays; Ray < Info.Volume.RaysPerProbe; ++Ray)
 	{
-		const float4 Sample = RayData.Load(int3(Ray, Info.Row, 0));
+		const float4 Sample = SharedRays[Ray];
 		if (Sample.a < 0.0f)
 		{
 			continue;
 		}
-		const float Weight = max(dot(Direction, DdgiGetRayDirection(Ray, Info.Volume.RaysPerProbe, Info.Volume.FixedRays)), 0.0f);
+		const float Weight = max(dot(Direction, SharedDirections[Ray]), 0.0f);
 		Sum += Sample.rgb * Weight;
 		WeightSum += Weight;
 	}
-	if (WeightSum <= 1.0e-5f)
+	float3 Result = Previous;
+	if (WeightSum > 1.0e-5f) // 이 방향 반구에 앞면 히트·하늘이 하나도 없으면(벽 속) 이전 값
 	{
-		return float4(Previous, 1.0f); // 이 방향 반구에 앞면 히트·하늘이 하나도 없음 (벽 속)
+		const float3 Current    = Sum / WeightSum;
+		const float  Hysteresis = ComputeHysteresis(Previous, Current, Info.Volume.Hysteresis, Info.Volume.ChangeThreshold, Info.bFirst, Info.UpdateCount);
+		Result                  = Current + (Previous - Current) * Hysteresis;
 	}
-	const float3 Current    = Sum / WeightSum;
-	const float  Hysteresis = ComputeHysteresis(Previous, Current, Info.Volume.Hysteresis, Info.Volume.ChangeThreshold, Info.bFirst, Info.UpdateCount);
-	return float4(Current + (Previous - Current) * Hysteresis, 1.0f);
+	OutputAtlas[Origin + ThreadId.xy] = float4(Result, 1.0f);
 }
 
-float2 PSDistance(FFullscreenVSOutput Input) : SV_Target
+[numthreads(18, 18, 1)]
+void CSDistance(uint3 GroupId : SV_GroupID, uint3 ThreadId : SV_GroupThreadID, uint ThreadIndex : SV_GroupIndex)
 {
-	const FTexelInfo Info = ResolveTexel(uint2(Input.Position.xy), E_DDGI_DISTANCE_TEXELS);
-	if (!Info.bValid)
+	const uint Probe = GroupId.x;
+	if (Probe >= DdgiTotalProbes || DdgiVolumeCount == 0)
 	{
-		return 0.0f;
+		return;
 	}
-	const float2 Previous = Info.bFirst ? 0.0f : DdgiDistanceAtlas.Load(int3(Info.InteriorPixel, 0));
+	const FProbeInfo Info     = ResolveProbe(Probe);
+	const uint2      Origin   = DdgiGetTileOrigin(Probe, E_DDGI_DISTANCE_TEXELS + 2);
+	const uint2      Mapped   = DdgiMapBorderTexel(ThreadId.xy, E_DDGI_DISTANCE_TEXELS);
+	const float2     Previous = Info.bFirst ? 0.0f : DdgiDistanceAtlas.Load(int3(Origin + Mapped, 0));
 	if (!Info.bUpdated)
 	{
-		return Previous;
+		OutputDistance[Origin + ThreadId.xy] = Previous;
+		return;
 	}
+	LoadRays(Info, ThreadIndex, 324);
+	GroupMemoryBarrierWithGroupSync();
+
 	// 거리 모멘트: cos^50 가중 (평균 거리, 제곱 평균) — 뒷면 히트는 줄인 거리 그대로(누수 방지), 정규화 = DistanceClamp
-	const float3 Direction = DdgiOctDecode((float2(Info.Interior) + 0.5f) / (float)E_DDGI_DISTANCE_TEXELS * 2.0f - 1.0f);
+	const float3 Direction = DdgiOctDecode((float2(Mapped - 1) + 0.5f) / (float)E_DDGI_DISTANCE_TEXELS * 2.0f - 1.0f);
 	float2       Sum       = 0.0f;
 	float        WeightSum = 0.0f;
 	for (uint Ray = Info.Volume.FixedRays; Ray < Info.Volume.RaysPerProbe; ++Ray)
 	{
-		const float Cosine = max(dot(Direction, DdgiGetRayDirection(Ray, Info.Volume.RaysPerProbe, Info.Volume.FixedRays)), 0.0f);
-		if (Cosine <= 0.0f)
+		const float Cosine = dot(Direction, SharedDirections[Ray]);
+		if (Cosine <= 0.85f)
 		{
-			continue;
+			continue; // cos^50 < 3e-4 (DdgiMath::DistanceMinCosine) — 대부분의 광선을 건너뛴다
 		}
 		const float Weight   = pow(Cosine, 50.0f);
-		const float Distance = min(abs(RayData.Load(int3(Ray, Info.Row, 0)).a), Info.Volume.DistanceClamp) / Info.Volume.DistanceClamp;
+		const float Distance = min(abs(SharedRays[Ray].a), Info.Volume.DistanceClamp) / Info.Volume.DistanceClamp;
 		Sum += float2(Distance, Distance * Distance) * Weight;
 		WeightSum += Weight;
 	}
-	if (WeightSum <= 1.0e-6f)
+	float2 Result = Previous;
+	if (WeightSum > 1.0e-6f)
 	{
-		return Previous;
+		const float2 Current    = Sum / WeightSum;
+		const float  Hysteresis = Info.bFirst ? 0.0f : min(Info.Volume.Hysteresis, (float)Info.UpdateCount / (float)(Info.UpdateCount + 1u));
+		Result                  = Current + (Previous - Current) * Hysteresis;
 	}
-	const float2 Current    = Sum / WeightSum;
-	const float  Hysteresis = Info.bFirst ? 0.0f : min(Info.Volume.Hysteresis, (float)Info.UpdateCount / (float)(Info.UpdateCount + 1u));
-	return Current + (Previous - Current) * Hysteresis;
+	OutputDistance[Origin + ThreadId.xy] = Result;
 }
 
 // 프로브 상태: 고정 광선(회전 없음)으로 재배치 + 분류 (RTXGI ProbeRelocation/Classification 방식, cm)
-float4 PSProbeData(FFullscreenVSOutput Input) : SV_Target
+[numthreads(64, 1, 1)]
+void CSProbeData(uint3 DispatchId : SV_DispatchThreadID)
 {
-	const uint2 Pixel = uint2(Input.Position.xy);
-	const uint  Probe = Pixel.x + Pixel.y * E_DDGI_TILES_PER_ROW;
-	if (Pixel.x >= E_DDGI_TILES_PER_ROW || Probe >= DdgiTotalProbes || DdgiVolumeCount == 0)
+	const uint Probe = DispatchId.x;
+	if (Probe >= DdgiTotalProbes || DdgiVolumeCount == 0)
 	{
-		return 0.0f;
+		return;
 	}
+	const uint2       Pixel        = DdgiGetDataTexel(Probe);
 	const float4      PreviousData = DdgiReset != 0 ? 0.0f : DdgiProbeData.Load(int3(Pixel, 0));
 	const FDdgiVolume Volume       = DdgiVolumes[DdgiFindVolume(Probe)];
 	uint              Row;
 	if (!DdgiIsProbeUpdated(Volume, Probe - Volume.ProbeOffset, Row))
 	{
-		return PreviousData;
+		OutputAtlas[Pixel] = PreviousData;
+		return;
 	}
 	float3     Offset      = PreviousData.xyz;
 	const uint UpdateCount = (DdgiReset != 0 || DdgiGetProbeState(PreviousData.w) == E_DDGI_STATE_UNINITIALIZED ? 0u : DdgiGetProbeUpdateCount(PreviousData.w)) + 1u;
 	if (Volume.FixedRays == 0)
 	{
-		return float4(Offset, DdgiEncodeProbeState(E_DDGI_STATE_ACTIVE, UpdateCount));
+		OutputAtlas[Pixel] = float4(Offset, DdgiEncodeProbeState(E_DDGI_STATE_ACTIVE, UpdateCount));
+		return;
 	}
 
-	uint   Backfaces           = 0;
-	float  ClosestBackface     = 1.0e27f;
-	float3 ClosestBackfaceDir  = 0.0f;
-	float  ClosestFrontface    = 1.0e27f;
-	float3 ClosestFrontfaceDir = 0.0f;
-	float  FarthestFrontface   = 0.0f;
+	uint   Backfaces            = 0;
+	float  ClosestBackface      = 1.0e27f;
+	float3 ClosestBackfaceDir   = 0.0f;
+	float  ClosestFrontface     = 1.0e27f;
+	float3 ClosestFrontfaceDir  = 0.0f;
+	float  FarthestFrontface    = 0.0f;
 	float3 FarthestFrontfaceDir = 0.0f;
 	for (uint Ray = 0; Ray < Volume.FixedRays; ++Ray)
 	{
@@ -266,5 +282,5 @@ float4 PSProbeData(FFullscreenVSOutput Input) : SV_Target
 	{
 		State = E_DDGI_STATE_INACTIVE;
 	}
-	return float4(Offset, DdgiEncodeProbeState(State, UpdateCount));
+	OutputAtlas[Pixel] = float4(Offset, DdgiEncodeProbeState(State, UpdateCount));
 }

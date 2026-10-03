@@ -116,6 +116,12 @@ namespace RendererCVars
 	TAutoConsoleVariable<float> RayTracingSkinnedDistance("r.RayTracing.Skinned.MaxDistance", 5000.0f,
 	                                                      "이 거리(cm)보다 먼 스킨 메시는 TLAS에서 뺀다 (갱신 비용 상한)", EConsoleFlags::None,
 	                                                      { .Range = std::pair(0.0f, 100000.0f) });
+	TAutoConsoleVariable<float> RayTracingSkinnedRefitDistance("r.RayTracing.Skinned.RefitDistance", 1500.0f,
+	                                                           "이 거리(cm) 안의 스킨 모델은 RT BLAS를 매 프레임 갱신, 밖은 거리에 따라 2~RefitInterval 프레임마다 (엇갈림)",
+	                                                           EConsoleFlags::None, { .Range = std::pair(0.0f, 100000.0f) });
+	TAutoConsoleVariable<int32> RayTracingSkinnedRefitInterval("r.RayTracing.Skinned.RefitInterval", 4,
+	                                                           "먼 스킨 모델 RT BLAS의 최대 갱신 주기 (프레임, 1 = 모두 매 프레임 — 갱신 안 하는 프레임은 스키닝도 건너뜀)",
+	                                                           EConsoleFlags::None, { .Range = std::pair(1.0f, 16.0f) });
 	TAutoConsoleVariable<bool> RayTracingFoliage("r.RayTracing.Foliage", true, "폴리지 인스턴스를 TLAS에 (끄면 RT 그림자/반사에 풀·나무 없음)");
 	TAutoConsoleVariable<bool> RayTracingTerrain("r.RayTracing.Terrain", true,
 	                                             "지형을 TLAS에 (높이장 타일 BLAS — 간격은 정점 13만 개 상한, 편집된 타일만 다시 빌드, 히트 표면은 레이어 0 근사)");

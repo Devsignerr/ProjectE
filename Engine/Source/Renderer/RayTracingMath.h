@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
+#include <cstddef>
+#include <vector>
 
 // 레이 트레이싱 순수 계산 (Phase 50 — RayTracingCommon.hlsli와 같은 식, 테스트 RayTracingTests).
 //   셰이더와 공유하는 식(광선 원점 오프셋, 표본 순서, 원판 표본, 반그림자 반경, 텍스처 LOD)을 바꾸면 HLSL 쪽도 같은 식으로 고친다.
@@ -57,6 +59,146 @@ namespace RayTracingMath
 	constexpr uint32 InstanceInfoMasked   = 1u << 1;
 	constexpr uint32 InstanceInfoSkinned  = 1u << 2; // 정점이 이미 월드 공간 (인스턴스 변환 = 항등)
 	constexpr uint32 InstanceInfoMirrored = 1u << 3; // 행렬식 < 0 (탄젠트 부호 반전)
+
+	// 스킨 모델 BLAS(지오메트리 여러 개) 인스턴스 플래그: 불투명/Masked는 지오메트리별 OPAQUE 플래그가 정하므로
+	//   Masked가 하나라도 있으면 FORCE_* 없음, 모두 불투명이면 FORCE_OPAQUE. 양면은 인스턴스 단위라 묶음 키로 나눈다
+	inline uint32 ComputeSkinnedGroupInstanceFlags(bool bAnyMasked, bool bTwoSided)
+	{
+		return (bTwoSided ? InstanceFlagCullDisable : 0u) | (bAnyMasked ? 0u : InstanceFlagForceOpaque);
+	}
+
+	// ---- 스킨 BLAS 갱신 주기: 카메라에서 RefitDistance 안이면 매 프레임, 밖이면 거리에 따라 2, 3, … MaxInterval 프레임마다.
+	//   묶음마다 고정 위상(Phase)으로 엇갈리게 갱신한다 (프레임 번호만의 결정적 함수 — 자동 검증 결정성).
+	//   갱신하지 않는 프레임에는 스키닝도 건너뛰어 BLAS와 히트 정점이 같은 시점에 머문다
+	inline uint32 GetSkinnedRefitInterval(float Distance, float RefitDistance, uint32 MaxInterval)
+	{
+		if (MaxInterval <= 1 || Distance <= RefitDistance || RefitDistance <= 0.0f)
+		{
+			return 1;
+		}
+		const float Steps = std::floor(Distance / RefitDistance);
+		return std::min(MaxInterval, 1u + static_cast<uint32>(std::min(Steps, 1.0e6f)));
+	}
+	// 이번 프레임 갱신 여부: 위상이 맞는 프레임, 또는 주기가 바뀌어 마지막 갱신에서 Interval 이상 지났을 때
+	inline bool ShouldRefitSkinned(uint64 FrameNumber, uint64 LastRefitFrame, uint32 Phase, uint32 Interval)
+	{
+		if (Interval <= 1)
+		{
+			return true;
+		}
+		return (FrameNumber + Phase) % Interval == 0 || FrameNumber >= LastRefitFrame + Interval;
+	}
+	inline uint32 ComputeRefitPhase(uint64 Key)
+	{
+		uint64 Hash = Key * 0x9E3779B97F4A7C15ull; // 피보나치 해시 (상위 비트)
+		return static_cast<uint32>(Hash >> 40);
+	}
+
+	// ---- 범위 하위 할당 (스킨 정점 풀/스킨 BLAS 풀): 오프셋 순 빈 칸 목록에서 결정적 첫 맞춤, 해제 시 이웃과 병합.
+	//   Grow는 기존 할당 위치를 유지하고 끝에 빈 칸을 늘린다
+	class FRangeAllocator
+	{
+	public:
+		static constexpr uint64 InvalidOffset = ~0ull;
+
+		void Reset(uint64 InCapacity)
+		{
+			Capacity = InCapacity;
+			FreeRanges.clear();
+			if (InCapacity > 0)
+			{
+				FreeRanges.push_back({ 0, InCapacity });
+			}
+		}
+		void Grow(uint64 NewCapacity)
+		{
+			if (NewCapacity <= Capacity)
+			{
+				return;
+			}
+			if (!FreeRanges.empty() && FreeRanges.back().Offset + FreeRanges.back().Size == Capacity)
+			{
+				FreeRanges.back().Size += NewCapacity - Capacity;
+			}
+			else
+			{
+				FreeRanges.push_back({ Capacity, NewCapacity - Capacity });
+			}
+			Capacity = NewCapacity;
+		}
+		uint64 Allocate(uint64 Size, uint64 Alignment)
+		{
+			Alignment = std::max<uint64>(Alignment, 1);
+			for (size_t Index = 0; Index < FreeRanges.size(); ++Index)
+			{
+				const FRange Range = FreeRanges[Index];
+				const uint64 Start = (Range.Offset + Alignment - 1) / Alignment * Alignment;
+				const uint64 End   = Range.Offset + Range.Size;
+				if (Size == 0 || Start + Size > End)
+				{
+					continue;
+				}
+				// 앞 여백 + 뒤 나머지를 빈 칸으로 남긴다
+				FreeRanges.erase(FreeRanges.begin() + static_cast<std::ptrdiff_t>(Index));
+				size_t Insert = Index;
+				if (Start > Range.Offset)
+				{
+					FreeRanges.insert(FreeRanges.begin() + static_cast<std::ptrdiff_t>(Insert++), { Range.Offset, Start - Range.Offset });
+				}
+				if (Start + Size < End)
+				{
+					FreeRanges.insert(FreeRanges.begin() + static_cast<std::ptrdiff_t>(Insert), { Start + Size, End - (Start + Size) });
+				}
+				return Start;
+			}
+			return InvalidOffset;
+		}
+		void Release(uint64 Offset, uint64 Size)
+		{
+			if (Size == 0 || Offset == InvalidOffset)
+			{
+				return;
+			}
+			auto It = std::lower_bound(FreeRanges.begin(), FreeRanges.end(), Offset, [](const FRange& Range, uint64 Value) { return Range.Offset < Value; });
+			It      = FreeRanges.insert(It, { Offset, Size });
+			// 뒤와 병합
+			if (auto Next = It + 1; Next != FreeRanges.end() && It->Offset + It->Size == Next->Offset)
+			{
+				It->Size += Next->Size;
+				FreeRanges.erase(Next);
+			}
+			// 앞과 병합
+			if (It != FreeRanges.begin())
+			{
+				auto Prev = It - 1;
+				if (Prev->Offset + Prev->Size == It->Offset)
+				{
+					Prev->Size += It->Size;
+					FreeRanges.erase(It);
+				}
+			}
+		}
+		uint64 GetCapacity() const { return Capacity; }
+		uint64 GetFreeBytes() const
+		{
+			uint64 Total = 0;
+			for (const FRange& Range : FreeRanges)
+			{
+				Total += Range.Size;
+			}
+			return Total;
+		}
+		size_t GetFreeRangeCount() const { return FreeRanges.size(); }
+
+	private:
+		struct FRange
+		{
+			uint64 Offset = 0;
+			uint64 Size   = 0;
+		};
+		std::vector<FRange> FreeRanges; // 오프셋 순, 겹치지 않고 붙어 있지 않다
+		uint64              Capacity = 0;
+	};
 
 	// ---- BLAS 캐시 키: 메시 핸들(번호 + 세대) + LOD. 같은 메시를 쓰는 인스턴스는 BLAS 하나를 공유한다.
 	//   세대가 바뀌면(메시 삭제 후 재사용) 다른 키 → 예전 항목은 쓰이지 않다가 수명(BlasEvictFrames)이 지나면 지연 해제

@@ -10,6 +10,7 @@
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Scene/ResourceHandles.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -18,6 +19,8 @@
 class FD3D12RHI;
 class FMeshInstanceList;
 class FResourceManager;
+class FScene;
+struct FMeshInstance;
 class FShaderLibrary;
 class FStaticMesh;
 struct FMaterial;
@@ -27,7 +30,7 @@ struct FTerrainRayTracingInput;
 
 // ---- GPU 구조 (RayTracingCommon.hlsli와 1:1)
 
-// TLAS 인스턴스 하나의 기하/머티리얼 정보 (StructuredBuffer, 번호 = TLAS InstanceID). 정점/인덱스는 바인드리스 힙 칸 (ByteAddressBuffer)
+// 지오메트리 하나의 기하/머티리얼 정보 (StructuredBuffer, 번호 = TLAS InstanceID + GeometryIndex — 정적/지형은 지오메트리 1개). 정점/인덱스는 바인드리스 힙 칸 (ByteAddressBuffer)
 struct FRayTracingInstanceGpu
 {
 	uint32 VertexBuffer = 0; // 힙 칸: FVertex 64B 정점 (스킨 = 이번 프레임 월드 공간 스키닝 결과)
@@ -35,7 +38,8 @@ struct FRayTracingInstanceGpu
 	uint32 FirstIndex   = 0; // LOD 시작 (인덱스 단위) — 삼각형 i = 인덱스 [FirstIndex + 3i, +3)
 	uint32 Material     = 0; // 머티리얼 표 번호
 	uint32 Flags        = 0; // RayTracingMath::InstanceInfo*
-	uint32 Padding[3]   = {};
+	uint32 BaseVertex   = 0; // 정점 버퍼 안 첫 정점 (스킨 = 정점 풀 하위 할당 위치, 정적 = 0) — 인덱스 값에 더한다
+	uint32 Padding[2]   = {};
 };
 static_assert(sizeof(FRayTracingInstanceGpu) == 32);
 
@@ -78,7 +82,9 @@ struct FRayTracingSceneOptions
 	FVector3 CameraPosition;
 	bool     bSkinned             = true;     // 스킨 메시 (계산 셰이더 스키닝 + BLAS 갱신)
 	bool     bFoliage             = true;     // 폴리지 인스턴스
-	float    SkinnedMaxDistance   = 5000.0f;  // cm, 카메라에서 이보다 먼 스킨 메시는 TLAS에서 뺀다 (갱신 비용 상한)
+	float    SkinnedMaxDistance   = 5000.0f;  // cm, 카메라에서 이보다 먼 스킨 모델은 TLAS에서 뺀다 (갱신 비용 상한)
+	float    SkinnedRefitDistance = 1500.0f;  // cm, 이 안의 스킨 모델은 매 프레임 갱신, 밖은 거리에 따라 2~SkinnedRefitInterval 프레임마다
+	uint32   SkinnedRefitInterval = 4;        // 먼 스킨 모델의 최대 갱신 주기 (1 = 모두 매 프레임)
 	uint32   MaxBuildsPerFrame    = 32;       // 새 BLAS 빌드 수 상한 (끊김 방지 — 나머지는 다음 프레임, 그동안 TLAS에 없음)
 	uint64   MaxBuildTriangles    = 2000000;  // 프레임당 새 BLAS 삼각형 상한
 	bool     bCompaction          = true;     // 정적 BLAS 압축 (빌드 → 몇 프레임 뒤 크기 읽기 → 복사)
@@ -91,11 +97,13 @@ struct FRayTracingSceneOptions
 struct FRayTracingSceneStats
 {
 	uint32 StaticBlas        = 0; // 캐시의 정적 BLAS 수
-	uint32 SkinnedBlas       = 0;
+	uint32 SkinnedBlas       = 0; // 스킨 모델 BLAS (모델마다 지오메트리 여러 개)
+	uint32 SkinnedPrimitives = 0; // 이번 프레임 TLAS에 든 스킨 프리미티브 (지오메트리)
+	uint32 SkinnedRefitSkipped = 0; // 갱신 주기 때문에 이번 프레임 갱신을 건너뛴 스킨 모델
 	uint32 TerrainTiles      = 0; // 지형 타일 BLAS (빌드된 것)
 	uint64 TerrainVertexBytes = 0;
 	uint64 BlasBytes         = 0; // 정적 + 스킨 BLAS 버퍼
-	uint64 SkinnedVertexBytes = 0; // 스키닝 결과 정점 버퍼
+	uint64 SkinnedVertexBytes = 0; // 스키닝 결과 정점 풀
 	uint64 TlasBytes         = 0;
 	uint64 ScratchBytes      = 0;
 	uint32 TlasInstances     = 0;
@@ -114,8 +122,13 @@ struct FRayTracingSceneStats
 //     자기 그림자 여드름 방지). 비동기 업로드가 끝난 메시(IsReady)만, 프레임당 빌드 상한(Options) — 넘친 인스턴스는 다음 프레임.
 //     PREFER_FAST_TRACE | ALLOW_COMPACTION → 빌드 프레임 슬롯의 리드백으로 압축 크기를 읽고(같은 슬롯이 돌아오면 GPU 완료가 보장됨)
 //     압축 복사 → 이전 버퍼는 지연 해제. BlasEvictFrames 동안 TLAS에 안 들어가면 해제(+ 바인드리스 SRV 지연 반환).
-//   스킨 메시: 엔티티별 월드 공간 정점 버퍼(계산 셰이더 RayTracingSkinning.hlsl — 프레임 팔레트 t15) + ALLOW_UPDATE BLAS를 프레임마다 갱신(refit).
-//     카메라에서 SkinnedMaxDistance 안 + 팔레트 가시성 컬링을 통과한 것만 (FMeshInstanceList가 이미 뺀다).
+//   스킨 메시: 모델(스켈레톤 = FSkinComponent::Joints[0], + 양면·그림자 여부) 하나 = ALLOW_UPDATE BLAS 하나, 프리미티브마다 지오메트리 하나
+//     (지오메트리별 OPAQUE 플래그 — Masked만 후보). 히트 정보 = InstanceID(첫 정보) + GeometryIndex. 월드 공간 정점은 정점 풀 하나에
+//     프리미티브별 하위 할당(계산 셰이더 RayTracingSkinning.hlsl — 프레임 팔레트 t15, 정보 BaseVertex), BLAS도 BLAS 풀 하나에 하위 할당
+//     → 렌더 그래프 리소스는 풀 2개뿐(엔티티 수와 무관). 멤버(순서·정점 위치·불투명) 서명이 같으면 갱신(refit), 다르면 다시 빌드.
+//     카메라에서 SkinnedMaxDistance 안 + 팔레트 가시성 컬링을 통과한 것만 (FMeshInstanceList가 이미 뺀다). SkinnedRefitDistance 밖은
+//     RayTracingMath::GetSkinnedRefitInterval 주기로 엇갈려 갱신 — 갱신하지 않는 프레임은 스키닝도 건너뛴다(정점·BLAS가 같은 시점).
+//     풀이 커지면 새 버퍼(기존 위치 유지) + 모든 스킨 BLAS 다시 빌드, 해제한 범위는 FrameCount 프레임 뒤에 재사용.
 //   지형/폴리지: 폴리지는 정적 메시 인스턴스 그대로 (마스크 MaskFoliage), 지형 높이장 BLAS는 후속.
 // TLAS
 //   프레임마다 다시 빌드 (PREFER_FAST_TRACE, 프레임 슬롯별 버퍼). InstanceID = 정보 버퍼 번호, 마스크 = RayTracingMath::GetInstanceMask
@@ -141,8 +154,9 @@ public:
 	bool IsSupported() const { return Device5 != nullptr; }
 
 	// 이번 프레임 TLAS 준비 (CPU, 등록 시점): 압축 크기 읽기 → 수명 정리 → 인스턴스 → BLAS 요청/스킨 갱신 + TLAS 인스턴스 + 정보 버퍼 업로드
+	//   Scene: 스킨 프리미티브를 모델로 묶는 데 쓴다 (FSkinComponent::Joints[0]) — 없으면 프리미티브마다 BLAS
 	void Prepare(const FMeshInstanceList& Instances, const FResourceManager& Resources, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
-	             const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains = nullptr);
+	             const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains = nullptr, const FScene* Scene = nullptr);
 	// 그래프 패스 등록. 반환 = TLAS 참조 (추적 패스가 Read(…, AccelStructRead))
 	FRGResourceRef AddBuildPasses(FRenderGraph& Graph, int32 Timer);
 	// 추적 패스가 읽는 리소스 선언: TLAS + 이번 프레임 스킨 정점 버퍼 (바인드리스로 읽음)
@@ -207,25 +221,69 @@ private:
 		std::vector<std::unique_ptr<FStaticBlas>> Tiles;
 		uint64                                    LastUsedFrame = 0;
 	};
-	struct FSkinnedBlas
+	// 스킨 프리미티브 (엔티티별): 정점 풀 안 월드 공간 정점 범위
+	struct FSkinnedPrimitive
 	{
-		FEntity                   Entity;
-		FMeshHandle               MeshHandle;
-		const FStaticMesh*        Mesh = nullptr;
-		ComPtr<ID3D12Resource>    Vertices; // 월드 공간 스키닝 결과 (FVertex)
-		D3D12_RESOURCE_STATES     VertexState = D3D12_RESOURCE_STATE_COMMON;
-		ComPtr<ID3D12Resource>    Blas;
-		uint64                    BlasSize    = 0;
-		uint64                    ScratchSize = 0; // 빌드/갱신 중 큰 값
-		uint32                    VertexCount = 0;
-		uint32                    IndexCount  = 0;
-		bool                      bBuilt      = false;
-		uint64                    LastUsedFrame = 0;
-		FD3D12DescriptorHandle    VertexSrv;
-		FD3D12DescriptorHandle    IndexSrv;
-		// 이번 프레임
-		bool                      bActive     = false;
-		uint32                    BoneOffset  = 0;
+		FMeshHandle        MeshHandle;
+		const FStaticMesh* Mesh          = nullptr;
+		uint32             VertexCount   = 0;
+		uint32             IndexCount    = 0;
+		uint64             VertexOffset  = RayTracingMath::FRangeAllocator::InvalidOffset; // 바이트 (정점 풀)
+		uint64             VertexBytes   = 0;
+		uint64             LastUsedFrame = 0;
+		bool               bActive       = false; // 이번 프레임 (같은 엔티티 중복 방지)
+	};
+	// 스킨 모델 BLAS의 지오메트리 하나 (서명: 바뀌면 다시 빌드)
+	struct FSkinnedGeometryKey
+	{
+		uint64                    Entity       = 0;
+		const FStaticMesh*        Mesh         = nullptr;
+		uint64                    VertexOffset = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS IndexAddress = 0;
+		uint32                    VertexCount  = 0;
+		uint32                    IndexCount   = 0;
+		bool                      bOpaque      = true;
+
+		bool operator==(const FSkinnedGeometryKey& Other) const = default;
+	};
+	// 스킨 모델 (묶음 키별): BLAS 풀 안 BLAS 하나
+	struct FSkinnedGroup
+	{
+		std::vector<FSkinnedGeometryKey> Geometries; // 지금 BLAS를 이룬 멤버 (순서 = 지오메트리 번호)
+		uint64 BlasOffset     = RayTracingMath::FRangeAllocator::InvalidOffset; // 바이트 (BLAS 풀)
+		uint64 BlasSize       = 0;
+		uint64 ScratchSize    = 0; // 빌드/갱신 중 큰 값
+		uint32 Phase          = 0; // 갱신 주기 위상
+		bool   bBuilt         = false;
+		uint64 LastRefitFrame = 0;
+		uint64 LastUsedFrame  = 0;
+	};
+	// 하위 할당 풀 (버퍼 하나)
+	struct FSkinnedPool
+	{
+		ComPtr<ID3D12Resource>          Buffer;
+		RayTracingMath::FRangeAllocator Allocator;
+	};
+	struct FPendingRangeFree
+	{
+		FSkinnedPool* Pool   = nullptr;
+		uint64        Offset = 0;
+		uint64        Size   = 0;
+		uint64        Frame  = 0; // 해제한 프레임 (FrameCount 프레임 뒤 재사용)
+	};
+	// 메시 인덱스 버퍼 SRV (스킨 지오메트리 공용 — 리소스를 붙잡아 주소 재사용을 막는다)
+	struct FIndexSrv
+	{
+		ComPtr<ID3D12Resource> Resource;
+		FD3D12DescriptorHandle Srv;
+		uint64                 LastUsedFrame = 0;
+	};
+	// 이번 프레임 스킨 후보 (Prepare 안)
+	struct FFrameSkinItem
+	{
+		const FMeshInstance* Instance   = nullptr;
+		uint64               GroupKey   = 0;
+		uint32               GroupOrder = 0; // 묶음 첫 등장 순서
 	};
 	// 프레임 슬롯별 (같은 슬롯이 돌아오면 그 프레임 GPU 작업이 끝나 있다 — RHI BeginFrame 대기)
 	struct FSlot
@@ -243,17 +301,19 @@ private:
 	// 이번 프레임 작업
 	struct FBuildOp
 	{
-		ID3D12Resource*                                     Dest   = nullptr;
-		D3D12_GPU_VIRTUAL_ADDRESS                           Source = 0; // 갱신이면 = Dest 주소
-		D3D12_RAYTRACING_GEOMETRY_DESC                      Geometry{};
+		ID3D12Resource*                                     Dest          = nullptr; // 그래프 선언용 (스킨 = BLAS 풀)
+		D3D12_GPU_VIRTUAL_ADDRESS                           DestAddress   = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS                           Source        = 0; // 갱신이면 = DestAddress
+		uint32                                              FirstGeometry = 0; // BuildGeometries 안
+		uint32                                              GeometryCount = 1;
 		D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS Flags   = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 		uint64                                              ScratchOffset = 0;
 		int32                                               PostbuildIndex = -1; // 압축 크기 기록 칸 (-1 = 없음)
+		bool                                                bScratchBarrier = false; // 스크래치 예산을 넘어 처음부터 재사용 — 이 빌드 앞에 UAV 배리어
 	};
 	struct FSkinOp
 	{
-		ID3D12Resource*           Output = nullptr;
-		D3D12_RESOURCE_STATES*    State  = nullptr;
+		uint64                    OutputOffset = 0; // 정점 풀 안 바이트
 		D3D12_GPU_VIRTUAL_ADDRESS BaseVertices = 0;
 		D3D12_GPU_VIRTUAL_ADDRESS SkinVertices = 0;
 		uint32                    VertexCount  = 0;
@@ -272,13 +332,19 @@ private:
 	void           ReleaseTerrain(FTerrainBlas& Terrain);
 	void           EvictUnused();
 	FStaticBlas*   FindOrCreateStatic(const FStaticMesh& Mesh, FMeshHandle Handle, uint32 Lod);
-	FSkinnedBlas*  FindOrCreateSkinned(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle);
+	FSkinnedPrimitive* FindOrCreateSkinnedPrimitive(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle);
+	uint64         AllocateSkinned(FSkinnedPool& Pool, uint64 Size, bool bVertexPool);
+	void           FreeSkinned(FSkinnedPool& Pool, uint64& Offset, uint64 Size);
+	void           ProcessPendingFrees();
+	uint32         GetIndexSrv(const FStaticMesh& Mesh);
+	void           PrepareSkinned(const FRayTracingSceneOptions& Options, const FResourceManager& Resources,
+	                              const std::function<uint64(uint64)>& AllocScratch);
 	uint32         RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources, bool bGraphMaterials);
 	bool           EnsureBuffer(ComPtr<ID3D12Resource>& Buffer, uint64& Capacity, uint64 Size, D3D12_RESOURCE_STATES State, const wchar_t* Name);
 	ComPtr<ID3D12Resource> CreateBuffer(uint64 Size, D3D12_HEAP_TYPE Heap, D3D12_RESOURCE_FLAGS Flags, D3D12_RESOURCE_STATES State, const wchar_t* Name) const;
 	FD3D12DescriptorHandle CreateRawSrv(ID3D12Resource* Resource, uint64 SizeInBytes);
 	void           ReleaseStatic(FStaticBlas& Entry);
-	void           ReleaseSkinned(FSkinnedBlas& Entry);
+	void           ReleaseSkinnedPools();
 	bool           CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 
 	FD3D12RHI*     Rhi     = nullptr;
@@ -288,7 +354,15 @@ private:
 	FD3D12PipelineState SkinningPipeline;
 
 	std::unordered_map<uint64, std::unique_ptr<FStaticBlas>>  StaticCache;  // HashBlasKey → 항목 (충돌은 Key 비교로 확인)
-	std::unordered_map<uint64, std::unique_ptr<FSkinnedBlas>> SkinnedCache; // 엔티티 Id → 항목
+	std::unordered_map<uint64, std::unique_ptr<FSkinnedPrimitive>> SkinnedPrimitives; // 엔티티 Id → 프리미티브
+	std::unordered_map<uint64, std::unique_ptr<FSkinnedGroup>>     SkinnedGroups;     // 묶음 키 → 모델 BLAS
+	std::unordered_map<ID3D12Resource*, FIndexSrv>                  IndexSrvs;         // 메시 인덱스 버퍼 → SRV
+	FSkinnedPool                                                    SkinVertexPool;    // 월드 공간 스킨 정점 (FVertex), 그래프 밖 상태 = SkinVertexState
+	D3D12_RESOURCE_STATES                                           SkinVertexState = D3D12_RESOURCE_STATE_COMMON;
+	FD3D12DescriptorHandle                                          SkinVertexSrv;     // 풀 전체 raw SRV
+	FSkinnedPool                                                    SkinBlasPool;      // 스킨 모델 BLAS
+	std::vector<FPendingRangeFree>                                  PendingFrees;
+	bool                                                            bScratchWrapped   = false; // Prepare 안 스크래치 할당이 처음으로 돌아감 (다음 빌드 op에 배리어)
 	std::unordered_map<const FTerrainData*, std::unique_ptr<FTerrainBlas>> TerrainCache; // 지형 데이터 → 타일
 	std::vector<std::unique_ptr<FSlot>>                        Slots;
 
@@ -303,11 +377,15 @@ private:
 	D3D12_GPU_VIRTUAL_ADDRESS                   GraphParamAddress = 0;
 	void                                        BuildGraphVariant(const FRayTracingSceneOptions& Options);
 	std::vector<FBuildOp>                       BuildOps;
+	std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> BuildGeometries;
+	std::vector<FFrameSkinItem>                 FrameSkinItems;
+	std::unordered_map<uint64, uint32>          FrameGroupOrder;    // 묶음 키 → 첫 등장 순서 (이번 프레임)
 	std::vector<FSkinOp>                        SkinOps;
 	std::vector<FCompactOp>                     CompactOps;
 	std::vector<ID3D12Resource*>                FrameWrittenBlas;   // 이번 프레임 쓰인 BLAS (TLAS 빌드가 읽기 선언)
-	std::vector<FSkinnedBlas*>                  FrameSkinned;       // 이번 프레임 활성 스킨 항목
-	std::vector<FRGResourceRef>                 FrameSkinVertexRefs; // 그 정점 버퍼의 그래프 참조 (AddBuildPasses → DeclareTraceReads)
+	bool                                        bFrameSkinned      = false; // 이번 프레임 TLAS에 스킨 지오메트리가 있다 (추적 패스가 정점 풀을 읽는다)
+	bool                                        bFrameSkinnedBuild = false; // 이번 프레임 스킨 BLAS 빌드/갱신이 있다
+	FRGResourceRef                              FrameSkinVertexRef; // 정점 풀의 그래프 참조 (AddBuildPasses → DeclareTraceReads)
 	uint32                                      FrameSlot      = 0;
 	uint64                                      FrameNumber    = 0;
 	uint64                                      TlasScratchOffset = 0;

@@ -11,12 +11,16 @@
 #include "Renderer/SkinnedMeshData.h"
 #include "Renderer/StaticMesh.h"
 #include "Renderer/TerrainRenderer.h"
+#include "Scene/Components.h"
+#include "Scene/Scene.h"
 #include "Scene/Terrain.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <format>
+#include <limits>
+#include <utility>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -34,6 +38,11 @@ namespace
 	constexpr uint32 SkinningGroupSize   = 64;   // RayTracingSkinning.hlsl numthreads
 	constexpr uint64 AsAlignment         = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT; // 256
 	constexpr uint64 SkinnedEvictFrames  = 60;   // 스킨 항목은 정점 버퍼가 커서 더 빨리 해제
+	constexpr uint64 SkinVertexPoolInitial = 32ull << 20; // 스킨 정점 풀 첫 크기 (커지면 2배)
+	constexpr uint64 SkinVertexPoolMax     = (1ull << 27) * 4; // raw SRV 원소 상한 2^27 × 4바이트
+	constexpr uint64 SkinBlasPoolInitial   = 16ull << 20;
+	constexpr uint64 ScratchBudget         = 32ull << 20; // 프레임 슬롯 스크래치 목표 (넘으면 배리어 + 재사용)
+	constexpr uint64 InvalidRange          = RayTracingMath::FRangeAllocator::InvalidOffset;
 	constexpr float  CompactionMinGain   = 0.9f; // 압축 크기가 이보다 크면(10% 미만 절약) 복사하지 않는다
 
 	static_assert(sizeof(FVertex) == 64, "RayTracingCommon.hlsli 정점 읽기는 FVertex 64바이트를 가정한다");
@@ -74,12 +83,12 @@ namespace
 	}
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS MakeBottomInputs(const D3D12_RAYTRACING_GEOMETRY_DESC* Geometry,
-	                                                                      D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS Flags)
+	                                                                      D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS Flags, uint32 Count = 1)
 	{
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs{};
 		Inputs.Type           = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
 		Inputs.Flags          = Flags;
-		Inputs.NumDescs       = 1;
+		Inputs.NumDescs       = Count;
 		Inputs.DescsLayout    = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		Inputs.pGeometryDescs = Geometry;
 		return Inputs;
@@ -177,17 +186,13 @@ void FRayTracingScene::Shutdown()
 	{
 		ReleaseStatic(*Entry);
 	}
-	for (auto& [Id, Entry] : SkinnedCache)
-	{
-		ReleaseSkinned(*Entry);
-	}
+	ReleaseSkinnedPools();
 	for (auto& [Data, Terrain] : TerrainCache)
 	{
 		ReleaseTerrain(*Terrain);
 	}
 	TerrainCache.clear();
 	StaticCache.clear();
-	SkinnedCache.clear();
 	for (std::unique_ptr<FSlot>& Slot : Slots)
 	{
 		Rhi->DeferRelease(Slot->Tlas);
@@ -278,22 +283,117 @@ void FRayTracingScene::ReleaseStatic(FStaticBlas& Entry)
 	}
 }
 
-void FRayTracingScene::ReleaseSkinned(FSkinnedBlas& Entry)
+void FRayTracingScene::ReleaseSkinnedPools()
 {
-	Rhi->DeferRelease(Entry.Blas);
-	Rhi->DeferRelease(Entry.Vertices);
-	Entry.Blas.Reset();
-	Entry.Vertices.Reset();
-	if (Entry.VertexSrv.IsValid())
+	for (auto& [Resource, Entry] : IndexSrvs)
 	{
-		Rhi->DeferFreeDescriptor(Entry.VertexSrv);
-		Entry.VertexSrv = {};
+		Rhi->DeferFreeDescriptor(Entry.Srv);
+		Rhi->DeferRelease(Entry.Resource);
 	}
-	if (Entry.IndexSrv.IsValid())
+	IndexSrvs.clear();
+	SkinnedPrimitives.clear();
+	SkinnedGroups.clear();
+	PendingFrees.clear();
+	if (SkinVertexSrv.IsValid())
 	{
-		Rhi->DeferFreeDescriptor(Entry.IndexSrv);
-		Entry.IndexSrv = {};
+		Rhi->DeferFreeDescriptor(SkinVertexSrv);
+		SkinVertexSrv = {};
 	}
+	for (FSkinnedPool* Pool : { &SkinVertexPool, &SkinBlasPool })
+	{
+		if (Pool->Buffer)
+		{
+			Rhi->DeferRelease(Pool->Buffer);
+			Pool->Buffer.Reset();
+		}
+		Pool->Allocator.Reset(0);
+	}
+	SkinVertexState = D3D12_RESOURCE_STATE_COMMON;
+}
+
+uint64 FRayTracingScene::AllocateSkinned(FSkinnedPool& Pool, uint64 Size, bool bVertexPool)
+{
+	const uint64 Offset = Pool.Allocator.Allocate(Size, AsAlignment);
+	if (Offset != InvalidRange)
+	{
+		return Offset;
+	}
+	// 풀 확장 (1.5배): 새 버퍼(기존 위치 유지 — 할당기는 끝에 빈 칸을 늘린다) + 모든 스킨 BLAS 다시 빌드(정점은 다시 스키닝). 이전 버퍼는 지연 해제
+	const uint64 OldCapacity = Pool.Allocator.GetCapacity();
+	uint64       NewCapacity = std::max({ OldCapacity + OldCapacity / 2, OldCapacity + Size * 2, bVertexPool ? SkinVertexPoolInitial : SkinBlasPoolInitial });
+	NewCapacity              = AlignUp<uint64>(NewCapacity, AsAlignment);
+	if (bVertexPool)
+	{
+		NewCapacity = std::min(NewCapacity, SkinVertexPoolMax);
+	}
+	if (NewCapacity <= OldCapacity)
+	{
+		return InvalidRange; // 상한
+	}
+	ComPtr<ID3D12Resource> Buffer =
+		CreateBuffer(NewCapacity, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+		             bVertexPool ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
+		             bVertexPool ? L"RtSkinnedVertexPool" : L"RtSkinnedBlasPool");
+	if (!Buffer)
+	{
+		return InvalidRange;
+	}
+	if (Pool.Buffer)
+	{
+		Rhi->DeferRelease(Pool.Buffer);
+	}
+	Pool.Buffer = std::move(Buffer);
+	Pool.Allocator.Grow(NewCapacity);
+	if (bVertexPool)
+	{
+		SkinVertexState = D3D12_RESOURCE_STATE_COMMON;
+		if (SkinVertexSrv.IsValid())
+		{
+			Rhi->DeferFreeDescriptor(SkinVertexSrv);
+		}
+		SkinVertexSrv = CreateRawSrv(Pool.Buffer.Get(), NewCapacity);
+	}
+	for (auto& [Key, Group] : SkinnedGroups)
+	{
+		Group->bBuilt = false;
+	}
+	E_LOG(LogRenderer, Log, "레이 트레이싱 스킨 {} 풀 확장: {:.1f} → {:.1f} MB", bVertexPool ? "정점" : "BLAS", static_cast<double>(OldCapacity) / (1 << 20),
+	      static_cast<double>(NewCapacity) / (1 << 20));
+	return Pool.Allocator.Allocate(Size, AsAlignment);
+}
+
+void FRayTracingScene::FreeSkinned(FSkinnedPool& Pool, uint64& Offset, uint64 Size)
+{
+	if (Offset != InvalidRange)
+	{
+		PendingFrees.push_back({ &Pool, Offset, Size, FrameNumber }); // 이전 프레임 GPU 작업이 아직 읽을 수 있다
+	}
+	Offset = InvalidRange;
+}
+
+void FRayTracingScene::ProcessPendingFrees()
+{
+	std::erase_if(PendingFrees, [this](const FPendingRangeFree& Free) {
+		if (FrameNumber < Free.Frame + FD3D12RHI::FrameCount)
+		{
+			return false;
+		}
+		Free.Pool->Allocator.Release(Free.Offset, Free.Size);
+		return true;
+	});
+}
+
+uint32 FRayTracingScene::GetIndexSrv(const FStaticMesh& Mesh)
+{
+	ID3D12Resource* Resource = Mesh.GetIndexBuffer().GetResource();
+	FIndexSrv&      Entry    = IndexSrvs[Resource];
+	if (!Entry.Srv.IsValid())
+	{
+		Entry.Resource = Resource;
+		Entry.Srv      = CreateRawSrv(Resource, Mesh.GetIndexBuffer().GetSize());
+	}
+	Entry.LastUsedFrame = FrameNumber;
+	return Entry.Srv.IsValid() ? Entry.Srv.Index : 0u;
 }
 
 void FRayTracingScene::ProcessCompactionReadback(FSlot& Slot)
@@ -543,13 +643,38 @@ void FRayTracingScene::EvictUnused()
 			++It;
 		}
 	}
-	for (auto It = SkinnedCache.begin(); It != SkinnedCache.end();)
+	for (auto It = SkinnedPrimitives.begin(); It != SkinnedPrimitives.end();)
 	{
 		It->second->bActive = false;
 		if (RayTracingMath::ShouldEvictBlas(It->second->LastUsedFrame, FrameNumber, SkinnedEvictFrames))
 		{
-			ReleaseSkinned(*It->second);
-			It = SkinnedCache.erase(It);
+			FreeSkinned(SkinVertexPool, It->second->VertexOffset, It->second->VertexBytes);
+			It = SkinnedPrimitives.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+	for (auto It = SkinnedGroups.begin(); It != SkinnedGroups.end();)
+	{
+		if (RayTracingMath::ShouldEvictBlas(It->second->LastUsedFrame, FrameNumber, SkinnedEvictFrames))
+		{
+			FreeSkinned(SkinBlasPool, It->second->BlasOffset, It->second->BlasSize);
+			It = SkinnedGroups.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+	for (auto It = IndexSrvs.begin(); It != IndexSrvs.end();)
+	{
+		if (RayTracingMath::ShouldEvictBlas(It->second.LastUsedFrame, FrameNumber, SkinnedEvictFrames))
+		{
+			Rhi->DeferFreeDescriptor(It->second.Srv);
+			Rhi->DeferRelease(It->second.Resource);
+			It = IndexSrvs.erase(It);
 		}
 		else
 		{
@@ -593,52 +718,35 @@ FRayTracingScene::FStaticBlas* FRayTracingScene::FindOrCreateStatic(const FStati
 	return Raw;
 }
 
-FRayTracingScene::FSkinnedBlas* FRayTracingScene::FindOrCreateSkinned(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle)
+FRayTracingScene::FSkinnedPrimitive* FRayTracingScene::FindOrCreateSkinnedPrimitive(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle)
 {
-	if (const auto Found = SkinnedCache.find(Entity.ToId()); Found != SkinnedCache.end())
+	std::unique_ptr<FSkinnedPrimitive>& Slot = SkinnedPrimitives[Entity.ToId()];
+	if (Slot && (Slot->MeshHandle != Handle || Slot->Mesh != &Mesh || Slot->VertexCount != Mesh.GetVertexCount() ||
+	             Slot->IndexCount != Mesh.GetLod(0).IndexCount))
 	{
-		FSkinnedBlas& Entry = *Found->second;
-		if (Entry.MeshHandle == Handle && Entry.Mesh == &Mesh && Entry.VertexCount == Mesh.GetVertexCount())
+		FreeSkinned(SkinVertexPool, Slot->VertexOffset, Slot->VertexBytes); // 메시가 바뀌었다
+		Slot.reset();
+	}
+	if (!Slot)
+	{
+		auto Entry          = std::make_unique<FSkinnedPrimitive>();
+		Entry->MeshHandle   = Handle;
+		Entry->Mesh         = &Mesh;
+		Entry->VertexCount  = Mesh.GetVertexCount();
+		Entry->IndexCount   = Mesh.GetLod(0).IndexCount;
+		Entry->VertexBytes  = AlignUp<uint64>(static_cast<uint64>(Entry->VertexCount) * sizeof(FVertex), AsAlignment);
+		Entry->VertexOffset = Entry->IndexCount >= 3 ? AllocateSkinned(SkinVertexPool, Entry->VertexBytes, true) : InvalidRange;
+		if (Entry->VertexOffset == InvalidRange)
 		{
-			return &Entry;
+			SkinnedPrimitives.erase(Entity.ToId());
+			return nullptr;
 		}
-		ReleaseSkinned(Entry);
-		SkinnedCache.erase(Found);
+		// 풀 확장 때 맵이 다시 해시되어도 unique_ptr 대상은 그대로 — Slot 참조 대신 다시 찾는다
+		std::unique_ptr<FSkinnedPrimitive>& Stored = SkinnedPrimitives[Entity.ToId()];
+		Stored                                     = std::move(Entry);
+		return Stored.get();
 	}
-	auto Entry         = std::make_unique<FSkinnedBlas>();
-	Entry->Entity      = Entity;
-	Entry->MeshHandle  = Handle;
-	Entry->Mesh        = &Mesh;
-	Entry->VertexCount = Mesh.GetVertexCount();
-	Entry->IndexCount  = Mesh.GetLod(0).IndexCount;
-	const uint64 VertexBytes = static_cast<uint64>(Entry->VertexCount) * sizeof(FVertex);
-	Entry->Vertices    = CreateBuffer(VertexBytes, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON,
-	                                  L"RtSkinnedVertices");
-	Entry->VertexState = D3D12_RESOURCE_STATE_COMMON;
-	if (!Entry->Vertices)
-	{
-		return nullptr;
-	}
-	const D3D12_RAYTRACING_GEOMETRY_DESC Geometry =
-		MakeTriangles(Entry->Vertices->GetGPUVirtualAddress(), Entry->VertexCount, Mesh.GetIndexBuffer().GetGpuAddress(), Entry->IndexCount);
-	const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(
-		&Geometry, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD);
-	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO Info{};
-	Device5->GetRaytracingAccelerationStructurePrebuildInfo(&Inputs, &Info);
-	Entry->BlasSize    = AlignUp<uint64>(Info.ResultDataMaxSizeInBytes, AsAlignment);
-	Entry->ScratchSize = AlignUp<uint64>(std::max(Info.ScratchDataSizeInBytes, Info.UpdateScratchDataSizeInBytes), AsAlignment);
-	Entry->Blas        = CreateBuffer(Entry->BlasSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-	                                  D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, L"RtSkinnedBlas");
-	Entry->VertexSrv   = CreateRawSrv(Entry->Vertices.Get(), VertexBytes);
-	Entry->IndexSrv    = CreateRawSrv(Mesh.GetIndexBuffer().GetResource(), Mesh.GetIndexBuffer().GetSize());
-	if (!Entry->Blas || !Entry->VertexSrv.IsValid() || !Entry->IndexSrv.IsValid())
-	{
-		ReleaseSkinned(*Entry);
-		return nullptr;
-	}
-	FSkinnedBlas* Raw = Entry.get();
-	SkinnedCache.emplace(Entity.ToId(), std::move(Entry));
-	return Raw;
+	return Slot.get();
 }
 
 uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources, bool bGraphMaterials)
@@ -689,7 +797,7 @@ uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FReso
 }
 
 void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResourceManager& Resources, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
-                               const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains)
+                               const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains, const FScene* Scene)
 {
 	bPrepared = false;
 	if (Device5 == nullptr)
@@ -709,22 +817,37 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	GraphParams.clear();
 	GraphMaterialShaders.clear();
 	BuildOps.clear();
+	BuildGeometries.clear();
 	SkinOps.clear();
 	CompactOps.clear();
 	FrameWrittenBlas.clear();
-	FrameSkinned.clear();
+	FrameSkinItems.clear();
+	FrameGroupOrder.clear();
+	bFrameSkinned      = false;
+	bFrameSkinnedBuild = false;
 	const uint64 SavedBytes = Stats.CompactionSavedBytes;
 	Stats                   = FRayTracingSceneStats{};
 	Stats.CompactionSavedBytes = SavedBytes;
 
 	ProcessCompactionReadback(Slot);
 	EvictUnused();
+	ProcessPendingFrees();
 
+	// 스크래치: 프레임 슬롯 버퍼 하나를 나눠 쓰고, ScratchBudget을 넘으면 처음으로 돌아가 재사용한다 (그 빌드 앞에 스크래치 UAV 배리어 —
+	//   FBuildOp::bScratchBarrier). 씬 로드 프레임에 스킨 모델 수백 개를 한꺼번에 빌드해도 스크래치가 예산 안에 머문다
 	uint64     ScratchCursor = 0;
-	const auto AllocScratch  = [&ScratchCursor](uint64 Size) {
-        const uint64 Offset = AlignUp<uint64>(ScratchCursor, AsAlignment);
-        ScratchCursor       = Offset + Size;
-        return Offset;
+	uint64     ScratchHigh   = 0;
+	bScratchWrapped          = false;
+	const auto AllocScratch  = [this, &ScratchCursor, &ScratchHigh](uint64 Size) {
+		uint64 Offset = AlignUp<uint64>(ScratchCursor, AsAlignment);
+		if (Offset > 0 && Offset + Size > ScratchBudget)
+		{
+			Offset          = 0;
+			bScratchWrapped = true;
+		}
+		ScratchCursor = Offset + Size;
+		ScratchHigh   = std::max(ScratchHigh, ScratchCursor);
+		return Offset;
 	};
 
 	const std::vector<FMeshInstance>& List = Instances.GetInstances();
@@ -748,53 +871,25 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 		bool                           bMirrored = false;
 		if (Instance.IsSkinned())
 		{
+			// 스킨: 모델별로 묶어 아래 PrepareSkinned에서 (묶음 키 = 스켈레톤 첫 조인트 + 양면·그림자 비트 — 인스턴스 플래그·마스크가 같아야 한다)
 			if (!Options.bSkinned || !Mesh.IsSkinned() || SkinPalettes == 0)
 			{
 				continue;
 			}
-			const float Distance = (Instance.WorldBounds.GetCenter() - Options.CameraPosition).Length() - Instance.WorldBounds.GetExtent().Length();
-			if (Distance > Options.SkinnedMaxDistance)
+			uint64 Skeleton = Instance.Entity.ToId();
+			if (Scene != nullptr)
 			{
-				continue;
+				const FSkinComponent* Skin = Scene->GetRegistry().TryGet<FSkinComponent>(Instance.Entity);
+				if (Skin != nullptr && !Skin->Joints.empty())
+				{
+					Skeleton = Skin->Joints.front().ToId();
+				}
 			}
-			FSkinnedBlas* Entry = FindOrCreateSkinned(Instance.Entity, Mesh, Instance.MeshHandle);
-			if (Entry == nullptr || Entry->bActive)
-			{
-				continue; // 생성 실패 또는 같은 엔티티 중복
-			}
-			Entry->bActive       = true;
-			Entry->BoneOffset    = Instance.BoneOffset;
-			Entry->LastUsedFrame = FrameNumber;
-			SkinOps.push_back({ Entry->Vertices.Get(), &Entry->VertexState, Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetSkinBuffer().GetGpuAddress(),
-			                    Entry->VertexCount, Instance.BoneOffset });
-			FBuildOp Op;
-			Op.Dest     = Entry->Blas.Get();
-			Op.Geometry = MakeTriangles(Entry->Vertices->GetGPUVirtualAddress(), Entry->VertexCount, Mesh.GetIndexBuffer().GetGpuAddress(), Entry->IndexCount);
-			Op.Flags    = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
-			if (Entry->bBuilt)
-			{
-				Op.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE; // 위상이 같으니 갱신(refit)
-				Op.Source = Entry->Blas->GetGPUVirtualAddress();
-				++Stats.RefitThisFrame;
-			}
-			else
-			{
-				++Stats.BuiltThisFrame;
-			}
-			Op.ScratchOffset = AllocScratch(Entry->ScratchSize);
-			BuildOps.push_back(Op);
-			Entry->bBuilt = true;
-			FrameWrittenBlas.push_back(Entry->Blas.Get());
-			FrameSkinned.push_back(Entry);
-
-			Info.VertexBuffer = Entry->VertexSrv.Index;
-			Info.IndexBuffer  = Entry->IndexSrv.Index;
-			Info.FirstIndex   = 0;
-			Info.Flags        = RayTracingMath::InstanceInfoSkinned;
-			ToInstanceTransform(FMatrix4x4::Identity, Desc.Transform); // 스키닝 결과가 이미 월드 공간
-			Desc.AccelerationStructure = Entry->Blas->GetGPUVirtualAddress();
+			const uint64 Key = (Skeleton << 2) | (Instance.bTwoSided ? 1u : 0u) | (Instance.CastsShadow() ? 2u : 0u);
+			const uint32 Order = FrameGroupOrder.try_emplace(Key, static_cast<uint32>(FrameGroupOrder.size())).first->second;
+			FrameSkinItems.push_back({ &Instance, Key, Order });
+			continue;
 		}
-		else
 		{
 			const uint32  Lod   = RayTracingMath::ClampLod(Instance.Lod, Mesh.GetLodCount());
 			FStaticBlas* Entry = FindOrCreateStatic(Mesh, Instance.MeshHandle, Lod);
@@ -814,12 +909,13 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 					continue;
 				}
 				FBuildOp Op;
-				Op.Geometry = MakeTriangles(Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetVertexCount(),
-				                            Mesh.GetIndexBuffer().GetGpuAddress() + static_cast<uint64>(Entry->FirstIndex) * sizeof(uint32), Entry->IndexCount);
+				const D3D12_RAYTRACING_GEOMETRY_DESC Geometry =
+					MakeTriangles(Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetVertexCount(),
+				                  Mesh.GetIndexBuffer().GetGpuAddress() + static_cast<uint64>(Entry->FirstIndex) * sizeof(uint32), Entry->IndexCount);
 				Op.Flags    = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE |
 				           (bCompact ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION
 				                     : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE);
-				const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(&Op.Geometry, Op.Flags);
+				const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(&Geometry, Op.Flags);
 				D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO      Info2{};
 				Device5->GetRaytracingAccelerationStructurePrebuildInfo(&Inputs, &Info2);
 				Entry->BlasSize    = AlignUp<uint64>(Info2.ResultDataMaxSizeInBytes, AsAlignment);
@@ -831,7 +927,11 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 					continue;
 				}
 				Op.Dest          = Entry->Blas.Get();
-				Op.ScratchOffset = AllocScratch(Entry->ScratchSize);
+				Op.DestAddress   = Entry->Blas->GetGPUVirtualAddress();
+				Op.FirstGeometry = static_cast<uint32>(BuildGeometries.size());
+				BuildGeometries.push_back(Geometry);
+				Op.ScratchOffset   = AllocScratch(Entry->ScratchSize);
+				Op.bScratchBarrier = std::exchange(bScratchWrapped, false);
 				if (bCompact)
 				{
 					Op.PostbuildIndex      = static_cast<int32>(Slot.PostbuildCount);
@@ -865,12 +965,15 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 		Info.Flags |= (Instance.bTwoSided ? RayTracingMath::InstanceInfoTwoSided : 0u) | (bMasked ? RayTracingMath::InstanceInfoMasked : 0u);
 
 		Desc.InstanceID   = static_cast<UINT>(InstanceInfos.size());
-		Desc.InstanceMask = RayTracingMath::GetInstanceMask(Instance.IsSkinned(), Instance.bFoliage, false, Instance.CastsShadow());
+		Desc.InstanceMask = RayTracingMath::GetInstanceMask(false, Instance.bFoliage, false, Instance.CastsShadow());
 		Desc.InstanceContributionToHitGroupIndex = RayTracingMath::ComputeHitGroupOffset(0);
 		Desc.Flags = RayTracingMath::ComputeInstanceFlags(bMasked, Instance.bTwoSided, bMirrored);
 		TlasDescs.push_back(Desc);
 		InstanceInfos.push_back(Info);
 	}
+
+	// 스킨: 모델 BLAS (풀 하위 할당, 지오메트리 여러 개)
+	PrepareSkinned(Options, Resources, AllocScratch);
 
 	// 지형: 높이장 타일 BLAS (위치 = 지형 원점 기준, TLAS 변환 = 이동). 편집된 타일만 다시 빌드 (빌드 상한 공유)
 	if (Options.bTerrain && Terrains != nullptr)
@@ -904,12 +1007,12 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 						else if (WriteTerrainTile(*Terrain, TileX, TileY, Tile))
 						{
 							FBuildOp Op;
-							Op.Geometry = MakeTriangles(Tile.OwnedVertices->GetGPUVirtualAddress(), Tile.VertexCount, Terrain->Indices->GetGPUVirtualAddress(),
-							                            Terrain->IndexCount);
+							const D3D12_RAYTRACING_GEOMETRY_DESC Geometry = MakeTriangles(
+								Tile.OwnedVertices->GetGPUVirtualAddress(), Tile.VertexCount, Terrain->Indices->GetGPUVirtualAddress(), Terrain->IndexCount);
 							Op.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE |
 							           (bCompact ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION
 							                     : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE);
-							const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(&Op.Geometry, Op.Flags);
+							const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(&Geometry, Op.Flags);
 							D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO      Prebuild{};
 							Device5->GetRaytracingAccelerationStructurePrebuildInfo(&Inputs, &Prebuild);
 							Tile.BlasSize    = AlignUp<uint64>(Prebuild.ResultDataMaxSizeInBytes, AsAlignment);
@@ -919,7 +1022,11 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 							if (Tile.Blas)
 							{
 								Op.Dest          = Tile.Blas.Get();
-								Op.ScratchOffset = AllocScratch(Tile.ScratchSize);
+								Op.DestAddress   = Tile.Blas->GetGPUVirtualAddress();
+								Op.FirstGeometry = static_cast<uint32>(BuildGeometries.size());
+								BuildGeometries.push_back(Geometry);
+								Op.ScratchOffset   = AllocScratch(Tile.ScratchSize);
+								Op.bScratchBarrier = std::exchange(bScratchWrapped, false);
 								if (bCompact)
 								{
 									Op.PostbuildIndex     = static_cast<int32>(Slot.PostbuildCount);
@@ -976,7 +1083,7 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	TlasScratchOffset = AllocScratch(TlasScratchSize);
 	if (!EnsureBuffer(Slot.Tlas, Slot.TlasCapacity, AlignUp<uint64>(TopInfo.ResultDataMaxSizeInBytes, AsAlignment),
 	                  D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, L"RtTlas") ||
-	    !EnsureBuffer(Slot.Scratch, Slot.ScratchCapacity, ScratchCursor, D3D12_RESOURCE_STATE_COMMON, L"RtScratch"))
+	    !EnsureBuffer(Slot.Scratch, Slot.ScratchCapacity, ScratchHigh, D3D12_RESOURCE_STATE_COMMON, L"RtScratch"))
 	{
 		return;
 	}
@@ -1000,7 +1107,7 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	// 통계
 	Stats.TlasInstances = static_cast<uint32>(TlasDescs.size());
 	Stats.StaticBlas    = static_cast<uint32>(StaticCache.size());
-	Stats.SkinnedBlas   = static_cast<uint32>(SkinnedCache.size());
+	Stats.SkinnedBlas   = static_cast<uint32>(SkinnedGroups.size());
 	for (const auto& [Hash, Entry] : StaticCache)
 	{
 		Stats.BlasBytes += Entry->Blas ? Entry->BlasSize : 0;
@@ -1014,11 +1121,8 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 			Stats.TerrainVertexBytes += Tile->OwnedVertices ? static_cast<uint64>(Tile->VertexCount) * sizeof(FVertex) : 0;
 		}
 	}
-	for (const auto& [Id, Entry] : SkinnedCache)
-	{
-		Stats.BlasBytes += Entry->BlasSize;
-		Stats.SkinnedVertexBytes += static_cast<uint64>(Entry->VertexCount) * sizeof(FVertex);
-	}
+	Stats.BlasBytes += SkinBlasPool.Allocator.GetCapacity();
+	Stats.SkinnedVertexBytes = SkinVertexPool.Allocator.GetCapacity();
 	for (const std::unique_ptr<FSlot>& Each : Slots)
 	{
 		Stats.TlasBytes += Each->TlasCapacity;
@@ -1026,6 +1130,207 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	}
 	Stats.PrepareCpuMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - CpuStart).count();
 	bPrepared          = true;
+}
+
+void FRayTracingScene::PrepareSkinned(const FRayTracingSceneOptions& Options, const FResourceManager& Resources,
+                                      const std::function<uint64(uint64)>& AllocScratch)
+{
+	if (FrameSkinItems.empty())
+	{
+		return;
+	}
+	// 묶음 첫 등장 순서로 (같은 묶음 안은 인스턴스 목록 순서 = 지오메트리 번호) — 결정적
+	std::stable_sort(FrameSkinItems.begin(), FrameSkinItems.end(),
+	                 [](const FFrameSkinItem& A, const FFrameSkinItem& B) { return A.GroupOrder < B.GroupOrder; });
+
+	struct FFrameGroup
+	{
+		FSkinnedGroup* Group = nullptr;
+		size_t         Begin = 0; // FrameGeometries 범위
+		size_t         End   = 0;
+		float          Distance = 0.0f;
+		bool           bTwoSided   = false;
+		bool           bCastShadow = false;
+	};
+	struct FFrameGeometry
+	{
+		const FMeshInstance* Instance  = nullptr;
+		FSkinnedPrimitive*   Primitive = nullptr;
+	};
+	std::vector<FFrameGroup>         Groups;
+	std::vector<FFrameGeometry>      Geometries;
+	std::vector<FSkinnedGeometryKey> Keys;
+	Groups.reserve(FrameGroupOrder.size());
+	Geometries.reserve(FrameSkinItems.size());
+
+	// 1) 거리 판정 + 정점 범위 + 서명 (풀 확장이 여기서만 일어난다 → 2)는 최종 버퍼 주소를 쓴다)
+	for (size_t Begin = 0; Begin < FrameSkinItems.size();)
+	{
+		size_t End = Begin + 1;
+		while (End < FrameSkinItems.size() && FrameSkinItems[End].GroupOrder == FrameSkinItems[Begin].GroupOrder)
+		{
+			++End;
+		}
+		const uint64 Key      = FrameSkinItems[Begin].GroupKey;
+		float        Distance = std::numeric_limits<float>::max();
+		for (size_t Index = Begin; Index < End; ++Index)
+		{
+			const FBox& Bounds = FrameSkinItems[Index].Instance->WorldBounds;
+			Distance           = std::min(Distance, (Bounds.GetCenter() - Options.CameraPosition).Length() - Bounds.GetExtent().Length());
+		}
+		const size_t ItemBegin = Begin;
+		Begin                  = End;
+		if (Distance > Options.SkinnedMaxDistance)
+		{
+			continue;
+		}
+		std::unique_ptr<FSkinnedGroup>& GroupSlot = SkinnedGroups[Key];
+		if (!GroupSlot)
+		{
+			GroupSlot        = std::make_unique<FSkinnedGroup>();
+			GroupSlot->Phase = RayTracingMath::ComputeRefitPhase(Key);
+		}
+		FSkinnedGroup* Group = GroupSlot.get(); // 맵이 다시 해시되어도 대상은 그대로
+		Group->LastUsedFrame = FrameNumber;
+
+		const size_t GeometryBegin = Geometries.size();
+		Keys.clear();
+		for (size_t Index = ItemBegin; Index < End; ++Index)
+		{
+			const FMeshInstance& Instance  = *FrameSkinItems[Index].Instance;
+			FSkinnedPrimitive*   Primitive = FindOrCreateSkinnedPrimitive(Instance.Entity, *Instance.Mesh, Instance.MeshHandle);
+			if (Primitive == nullptr || Primitive->bActive)
+			{
+				continue; // 생성 실패(풀 상한) 또는 같은 엔티티 중복
+			}
+			Primitive->bActive       = true;
+			Primitive->LastUsedFrame = FrameNumber;
+			Geometries.push_back({ &Instance, Primitive });
+			Keys.push_back({ Instance.Entity.ToId(), Instance.Mesh, Primitive->VertexOffset, Instance.Mesh->GetIndexBuffer().GetGpuAddress(),
+			                 Primitive->VertexCount, Primitive->IndexCount, !Instance.IsMasked() });
+		}
+		if (Keys.empty())
+		{
+			continue;
+		}
+		if (Keys != Group->Geometries || Group->BlasOffset == InvalidRange)
+		{
+			// 멤버가 바뀜: 새 크기로 다시 빌드 (이전 범위는 지연 해제)
+			FreeSkinned(SkinBlasPool, Group->BlasOffset, Group->BlasSize);
+			Group->Geometries = Keys;
+			Group->bBuilt     = false;
+			std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> Descs;
+			Descs.reserve(Keys.size());
+			for (const FSkinnedGeometryKey& Geometry : Keys)
+			{
+				Descs.push_back(MakeTriangles(Geometry.VertexOffset, Geometry.VertexCount, Geometry.IndexAddress, Geometry.IndexCount)); // 크기 계산은 주소를 보지 않는다
+			}
+			const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs =
+				MakeBottomInputs(Descs.data(),
+			                     D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD,
+			                     static_cast<uint32>(Descs.size()));
+			D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO Info{};
+			Device5->GetRaytracingAccelerationStructurePrebuildInfo(&Inputs, &Info);
+			Group->BlasSize    = AlignUp<uint64>(Info.ResultDataMaxSizeInBytes, AsAlignment);
+			Group->ScratchSize = AlignUp<uint64>(std::max(Info.ScratchDataSizeInBytes, Info.UpdateScratchDataSizeInBytes), AsAlignment);
+			Group->BlasOffset  = AllocateSkinned(SkinBlasPool, Group->BlasSize, false);
+			if (Group->BlasOffset == InvalidRange)
+			{
+				Group->Geometries.clear();
+				Geometries.resize(GeometryBegin);
+				continue;
+			}
+		}
+		const FMeshInstance& First = *FrameSkinItems[ItemBegin].Instance;
+		Groups.push_back({ Group, GeometryBegin, Geometries.size(), Distance, First.bTwoSided, First.CastsShadow() });
+	}
+	if (Groups.empty())
+	{
+		return;
+	}
+
+	// 2) 스키닝 + BLAS 빌드/갱신 (주기) + TLAS 인스턴스 + 지오메트리별 히트 정보
+	const D3D12_GPU_VIRTUAL_ADDRESS VertexBase = SkinVertexPool.Buffer->GetGPUVirtualAddress();
+	const D3D12_GPU_VIRTUAL_ADDRESS BlasBase   = SkinBlasPool.Buffer->GetGPUVirtualAddress();
+	const uint32                    VertexSrv  = SkinVertexSrv.IsValid() ? SkinVertexSrv.Index : 0u;
+	for (const FFrameGroup& Frame : Groups)
+	{
+		FSkinnedGroup& Group = *Frame.Group;
+		const uint32   Interval = RayTracingMath::GetSkinnedRefitInterval(Frame.Distance, Options.SkinnedRefitDistance, Options.SkinnedRefitInterval);
+		const bool     bUpdate  = !Group.bBuilt || RayTracingMath::ShouldRefitSkinned(FrameNumber, Group.LastRefitFrame, Group.Phase, Interval);
+		if (bUpdate)
+		{
+			FBuildOp Op;
+			Op.Dest          = SkinBlasPool.Buffer.Get();
+			Op.DestAddress   = BlasBase + Group.BlasOffset;
+			Op.FirstGeometry = static_cast<uint32>(BuildGeometries.size());
+			Op.GeometryCount = static_cast<uint32>(Frame.End - Frame.Begin);
+			Op.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+			if (Group.bBuilt)
+			{
+				Op.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE; // 위상이 같으니 갱신(refit)
+				Op.Source = Op.DestAddress;
+				++Stats.RefitThisFrame;
+			}
+			else
+			{
+				++Stats.BuiltThisFrame;
+			}
+			for (size_t Index = Frame.Begin; Index < Frame.End; ++Index)
+			{
+				const FFrameGeometry&    Geometry = Geometries[Index];
+				const FSkinnedPrimitive& Primitive = *Geometry.Primitive;
+				const FStaticMesh&       Mesh      = *Geometry.Instance->Mesh;
+				SkinOps.push_back({ Primitive.VertexOffset, Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetSkinBuffer().GetGpuAddress(), Primitive.VertexCount,
+				                    Geometry.Instance->BoneOffset });
+				D3D12_RAYTRACING_GEOMETRY_DESC Desc =
+					MakeTriangles(VertexBase + Primitive.VertexOffset, Primitive.VertexCount, Mesh.GetIndexBuffer().GetGpuAddress(), Primitive.IndexCount);
+				Desc.Flags = Geometry.Instance->IsMasked() ? D3D12_RAYTRACING_GEOMETRY_FLAG_NONE : D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+				BuildGeometries.push_back(Desc);
+			}
+			Op.ScratchOffset   = AllocScratch(Group.ScratchSize);
+			Op.bScratchBarrier = std::exchange(bScratchWrapped, false);
+			BuildOps.push_back(Op);
+			Group.bBuilt         = true;
+			Group.LastRefitFrame = FrameNumber;
+			bFrameSkinnedBuild   = true;
+		}
+		else
+		{
+			++Stats.SkinnedRefitSkipped;
+		}
+
+		D3D12_RAYTRACING_INSTANCE_DESC Desc{};
+		ToInstanceTransform(FMatrix4x4::Identity, Desc.Transform); // 스키닝 결과가 이미 월드 공간
+		Desc.InstanceID   = static_cast<UINT>(InstanceInfos.size());
+		Desc.InstanceMask = RayTracingMath::GetInstanceMask(true, false, false, Frame.bCastShadow);
+		Desc.InstanceContributionToHitGroupIndex = RayTracingMath::ComputeHitGroupOffset(0);
+		Desc.AccelerationStructure               = BlasBase + Group.BlasOffset;
+		bool bAnyMasked = false;
+		for (size_t Index = Frame.Begin; Index < Frame.End; ++Index)
+		{
+			const FFrameGeometry& Geometry = Geometries[Index];
+			const bool            bMasked  = Geometry.Instance->IsMasked();
+			bAnyMasked |= bMasked;
+			FRayTracingInstanceGpu Info;
+			Info.VertexBuffer = VertexSrv;
+			Info.BaseVertex   = static_cast<uint32>(Geometry.Primitive->VertexOffset / sizeof(FVertex));
+			Info.IndexBuffer  = GetIndexSrv(*Geometry.Instance->Mesh);
+			Info.FirstIndex   = 0;
+			Info.Material     = RegisterMaterial(Geometry.Instance->Material, Resources, Options.bGraphMaterials);
+			Info.Flags        = RayTracingMath::InstanceInfoSkinned | (Frame.bTwoSided ? RayTracingMath::InstanceInfoTwoSided : 0u) |
+			             (bMasked ? RayTracingMath::InstanceInfoMasked : 0u);
+			InstanceInfos.push_back(Info);
+		}
+		Desc.Flags = RayTracingMath::ComputeSkinnedGroupInstanceFlags(bAnyMasked, Frame.bTwoSided);
+		TlasDescs.push_back(Desc);
+		Stats.SkinnedPrimitives += static_cast<uint32>(Frame.End - Frame.Begin);
+	}
+	bFrameSkinned = true;
+	if (bFrameSkinnedBuild)
+	{
+		FrameWrittenBlas.push_back(SkinBlasPool.Buffer.Get());
+	}
 }
 
 void FRayTracingScene::BuildGraphVariant(const FRayTracingSceneOptions& Options)
@@ -1096,7 +1401,7 @@ void FRayTracingScene::BuildGraphVariant(const FRayTracingSceneOptions& Options)
 
 FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer)
 {
-	FrameSkinVertexRefs.clear();
+	FrameSkinVertexRef = {};
 	if (!bPrepared)
 	{
 		return {};
@@ -1107,18 +1412,16 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 	const FRGResourceRef TlasRef    = Graph.ImportAccelerationStructure("RtTlas", Slot.Tlas.Get());
 
 	// 1) 스키닝 (계산): 기본 정점 + 스킨 스트림 + 프레임 팔레트 → 월드 공간 정점 (BLAS 갱신·히트 보간 공용)
-	for (FSkinnedBlas* Entry : FrameSkinned)
+	if (bFrameSkinned)
 	{
-		FrameSkinVertexRefs.push_back(Graph.ImportTracked("RtSkinnedVertices", Entry->Vertices.Get(), &Entry->VertexState));
+		FrameSkinVertexRef = Graph.ImportTracked("RtSkinnedVertexPool", SkinVertexPool.Buffer.Get(), &SkinVertexState);
 	}
 	if (!SkinOps.empty())
 	{
+		// 정점 풀의 일부 범위만 쓴다 (갱신을 건너뛴 모델의 정점은 그대로) — 덮어쓰기 아님
 		FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 스키닝");
-		for (const FRGResourceRef& Ref : FrameSkinVertexRefs)
-		{
-			Pass.Write(Ref, ERGAccess::Uav, FRGSubresourceRange::All(), true);
-		}
-		Pass.Timer(Timer).Execute([this, Ops = SkinOps, Palette = PaletteAddress](FRGContext& Context) {
+		Pass.Write(FrameSkinVertexRef, ERGAccess::Uav);
+		Pass.Timer(Timer).Execute([this, Ops = SkinOps, Palette = PaletteAddress, Output = SkinVertexPool.Buffer->GetGPUVirtualAddress()](FRGContext& Context) {
 			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
 			CommandList->SetComputeRootSignature(SkinningRoot.Get());
 			CommandList->SetPipelineState(SkinningPipeline.Get());
@@ -1129,7 +1432,7 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 				CommandList->SetComputeRoot32BitConstants(SkinParam_Constants, 2, Constants, 0);
 				CommandList->SetComputeRootShaderResourceView(SkinParam_Base, Op.BaseVertices);
 				CommandList->SetComputeRootShaderResourceView(SkinParam_Skin, Op.SkinVertices);
-				CommandList->SetComputeRootUnorderedAccessView(SkinParam_Output, Op.Output->GetGPUVirtualAddress());
+				CommandList->SetComputeRootUnorderedAccessView(SkinParam_Output, Output + Op.OutputOffset);
 				CommandList->Dispatch((Op.VertexCount + SkinningGroupSize - 1) / SkinningGroupSize, 1, 1);
 			}
 		});
@@ -1147,20 +1450,25 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 	if (!BuildOps.empty())
 	{
 		FRenderGraph::FPassBuilder Pass = Graph.AddPass("BLAS 빌드");
+		ID3D12Resource* const SkinBlas = SkinBlasPool.Buffer.Get();
 		for (const FBuildOp& Op : BuildOps)
 		{
-			Pass.Write(Graph.FindImported(Op.Dest), ERGAccess::AccelStructWrite);
+			if (Op.Dest != SkinBlas) // 스킨 풀은 아래에서 한 번
+			{
+				Pass.Write(Graph.FindImported(Op.Dest), ERGAccess::AccelStructWrite);
+			}
 		}
-		for (const FRGResourceRef& Ref : FrameSkinVertexRefs)
+		if (bFrameSkinnedBuild)
 		{
-			Pass.Read(Ref, ERGAccess::SrvNonPixel);
+			Pass.Write(Graph.FindImported(SkinBlas), ERGAccess::AccelStructWrite);
+			Pass.Read(FrameSkinVertexRef, ERGAccess::SrvNonPixel);
 		}
 		Pass.Write(ScratchRef, ERGAccess::Uav);
 		if (bPostbuild)
 		{
 			Pass.Write(PostbuildRef, ERGAccess::Uav);
 		}
-		Pass.Timer(Timer).Execute([Ops = BuildOps, Scratch, Postbuild = Slot.PostbuildInfo.Get()](FRGContext& Context) {
+		Pass.Timer(Timer).Execute([Ops = BuildOps, Geometries = BuildGeometries, Scratch, ScratchRef, Postbuild = Slot.PostbuildInfo.Get()](FRGContext& Context) {
 			ComPtr<ID3D12GraphicsCommandList4> List4;
 			if (FAILED(Context.CommandList->QueryInterface(IID_PPV_ARGS(&List4))))
 			{
@@ -1169,9 +1477,13 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 			const D3D12_GPU_VIRTUAL_ADDRESS ScratchBase = Scratch->GetGPUVirtualAddress();
 			for (const FBuildOp& Op : Ops)
 			{
+				if (Op.bScratchBarrier)
+				{
+					Context.UavBarrier(ScratchRef); // 스크래치 예산을 넘어 앞 빌드의 스크래치 영역을 다시 쓴다
+				}
 				D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC Desc{};
-				Desc.Inputs                           = MakeBottomInputs(&Op.Geometry, Op.Flags);
-				Desc.DestAccelerationStructureData    = Op.Dest->GetGPUVirtualAddress();
+				Desc.Inputs                           = MakeBottomInputs(&Geometries[Op.FirstGeometry], Op.Flags, Op.GeometryCount);
+				Desc.DestAccelerationStructureData    = Op.DestAddress;
 				Desc.SourceAccelerationStructureData  = Op.Source;
 				Desc.ScratchAccelerationStructureData = ScratchBase + Op.ScratchOffset;
 				D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC PostbuildDesc{};
@@ -1252,8 +1564,8 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 void FRayTracingScene::DeclareTraceReads(FRenderGraph::FPassBuilder& Pass, FRGResourceRef Tlas) const
 {
 	Pass.Read(Tlas, ERGAccess::AccelStructRead);
-	for (const FRGResourceRef& Ref : FrameSkinVertexRefs)
+	if (FrameSkinVertexRef.IsValid())
 	{
-		Pass.Read(Ref, ERGAccess::SrvPixel);
+		Pass.Read(FrameSkinVertexRef, ERGAccess::SrvPixel);
 	}
 }

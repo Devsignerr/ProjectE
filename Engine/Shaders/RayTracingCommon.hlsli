@@ -6,7 +6,7 @@
 // 레이 트레이싱 공용 (Phase 50 — 인라인 RayQuery, SM 6.5). C++ 쪽은 Renderer/RayTracingScene.h(구조) + RayTracingMath.h(같은 식).
 //
 // 바인딩 (FRayTracingPassRoot — RayTracingEffects.h):
-//   t0 TLAS, t1 인스턴스 정보(InstanceID 번호), t2 머티리얼 표, t17 그래프 머티리얼 파라미터(float4),
+//   t0 TLAS, t1 인스턴스 정보(InstanceID + GeometryIndex 번호 — 스킨 모델 BLAS는 지오메트리마다 정보 하나), t2 머티리얼 표, t17 그래프 머티리얼 파라미터(float4),
 //   공간 1 t0~ 바인드리스 Texture2D, 공간 2 t0~ 바인드리스 ByteAddressBuffer
 //   (둘 다 셰이더 가시 힙 처음부터 — 힙 칸 번호 = FD3D12DescriptorHandle::Index), s0 선형 반복, s1 선형 클램프, s2 점 클램프
 //
@@ -30,7 +30,8 @@ struct FRayTracingInstance // FRayTracingInstanceGpu
 	uint FirstIndex;
 	uint Material;
 	uint Flags;
-	uint3 InstancePadding;
+	uint BaseVertex; // 정점 버퍼 안 첫 정점 (스킨 정점 풀 하위 할당, 정적 = 0) — 인덱스 값에 더한다
+	uint2 InstancePadding;
 };
 
 struct FRayTracingMaterial // FRayTracingMaterialGpu
@@ -200,9 +201,9 @@ FMaterialPixelInputs BuildHitInputs(FRayTracingInstance Instance, uint Primitive
 {
 	const uint3  Tri = LoadHitTriangle(Instance, Primitive);
 	const float3 W   = float3(1.0f - Barycentrics.x - Barycentrics.y, Barycentrics.x, Barycentrics.y);
-	const FHitVertex V0 = LoadHitVertex(Instance.VertexBuffer, Tri.x);
-	const FHitVertex V1 = LoadHitVertex(Instance.VertexBuffer, Tri.y);
-	const FHitVertex V2 = LoadHitVertex(Instance.VertexBuffer, Tri.z);
+	const FHitVertex V0 = LoadHitVertex(Instance.VertexBuffer, Instance.BaseVertex + Tri.x);
+	const FHitVertex V1 = LoadHitVertex(Instance.VertexBuffer, Instance.BaseVertex + Tri.y);
+	const FHitVertex V2 = LoadHitVertex(Instance.VertexBuffer, Instance.BaseVertex + Tri.z);
 
 	const float3 P0 = mul(ObjectToWorld, float4(V0.Position, 1.0f));
 	const float3 P1 = mul(ObjectToWorld, float4(V1.Position, 1.0f));
@@ -251,7 +252,7 @@ struct FRayHit
 {
 	bool   bHit;
 	float  T;
-	uint   Instance;   // InstanceID (정보 버퍼 번호)
+	uint   Instance;   // 정보 버퍼 번호 = InstanceID + GeometryIndex
 	uint   Primitive;
 	float2 Barycentrics;
 	bool   bFrontFace;
@@ -264,7 +265,7 @@ struct FRayHit
 	while (Query.Proceed())                                                                                                          \
 	{                                                                                                                                \
 		if (Query.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE &&                                                                \
-		    PassesAlphaTest(Query.CandidateInstanceID(), Query.CandidatePrimitiveIndex(), Query.CandidateTriangleBarycentrics(),     \
+		    PassesAlphaTest(Query.CandidateInstanceID() + Query.CandidateGeometryIndex(), Query.CandidatePrimitiveIndex(), Query.CandidateTriangleBarycentrics(),     \
 		                    Query.CandidateObjectToWorld3x4(), Query.CandidateWorldToObject3x4(), -Ray.Direction,                    \
 		                    Query.CandidateTriangleFrontFace()))                                                                     \
 		{                                                                                                                            \
@@ -285,7 +286,7 @@ struct FRayHit
 		if (Hit.bHit)                                                                                              \
 		{                                                                                                          \
 			Hit.T             = Query.CommittedRayT();                                                             \
-			Hit.Instance      = Query.CommittedInstanceID();                                                       \
+			Hit.Instance      = Query.CommittedInstanceID() + Query.CommittedGeometryIndex();                      \
 			Hit.Primitive     = Query.CommittedPrimitiveIndex();                                                   \
 			Hit.Barycentrics  = Query.CommittedTriangleBarycentrics();                                             \
 			Hit.bFrontFace    = Query.CommittedTriangleFrontFace();                                                \

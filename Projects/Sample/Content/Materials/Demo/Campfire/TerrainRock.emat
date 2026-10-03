@@ -1,0 +1,23 @@
+{
+  "Name": "CampfireTerrainRock",
+  "BaseColorFactor": [
+    0.9,
+    0.88,
+    0.85,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../Asset/PolyHaven/cliff_side/cliff_side_diff_2k.jpg",
+  "MetallicRoughnessTexture": "../../../Asset/PolyHaven/cliff_side/cliff_side_arm_2k.jpg",
+  "NormalTexture": "../../../Asset/PolyHaven/cliff_side/cliff_side_nor_gl_2k.jpg",
+  "OcclusionTexture": "../../../Asset/PolyHaven/cliff_side/cliff_side_arm_2k.jpg",
+  "EmissiveTexture": ""
+}

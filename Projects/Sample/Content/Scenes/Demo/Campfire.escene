@@ -1,0 +1,4696 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.82,
+            0.62
+          ],
+          "Intensity": 4.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3000.0
+          ],
+          "Rotation": [
+            -0.08682408883346517,
+            0.007596123493895966,
+            0.9924038765061041,
+            0.08682408883346514
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {
+          "MoonIntensity": 0.35,
+          "MoonColor": [
+            0.6,
+            0.72,
+            1.0
+          ],
+          "NightSkyColor": [
+            0.008,
+            0.012,
+            0.026
+          ],
+          "StarIntensity": 0.8
+        },
+        "VolumetricCloudComponent": {
+          "Coverage": 0.24,
+          "CloudType": 0.35,
+          "WindSpeed": 6.0,
+          "WindDirection": 60.0
+        },
+        "TimeOfDayComponent": {
+          "TimeOfDay": 18.1,
+          "DayLengthMinutes": 0.0,
+          "MaxSunElevation": 40.0,
+          "NorthAzimuth": 80.49999999999997,
+          "AnimateInEditor": false
+        },
+        "SkyLightComponent": {
+          "Intensity": 4.0
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.09,
+            0.1,
+            0.14
+          ],
+          "Density": 0.0018,
+          "HeightFalloff": 0.05,
+          "StartDistance": 0.0,
+          "MaxOpacity": 0.75,
+          "DirectionalInscatteringColor": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Volumetric": true,
+          "VolumetricDistance": 6000.0,
+          "VolumetricAlbedo": [
+            0.9,
+            0.92,
+            0.95
+          ],
+          "VolumetricExtinctionScale": 1.0,
+          "VolumetricAnisotropy": 0.4,
+          "VolumetricDirectionalScale": 0.6,
+          "VolumetricLocalLightScale": 0.25
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TerrainComponent": {
+          "Asset": "Terrain/Demo/Campfire.eterrain",
+          "Size": [
+            25600.0,
+            25600.0
+          ],
+          "HeightRange": 12000.0,
+          "Layer0Material": "Materials/Demo/Campfire/TerrainSand.emat",
+          "Layer1Material": "Materials/Demo/Campfire/TerrainWetSand.emat",
+          "Layer2Material": "Materials/Demo/Campfire/TerrainRock.emat",
+          "Layer3Material": "Materials/Demo/Campfire/TerrainGrass.emat",
+          "Layer0Tiling": 400.0,
+          "Layer1Tiling": 350.0,
+          "Layer2Tiling": 900.0,
+          "Layer3Tiling": 600.0,
+          "CastShadows": true,
+          "Collision": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "FoliageComponent": {
+          "Asset": "Foliage/Demo/Campfire.efoliage",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Foliage",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "WaterBodyComponent": {
+          "Size": [
+            80000.0,
+            80000.0,
+            1400.0
+          ],
+          "ScatterColor": [
+            0.012,
+            0.05,
+            0.065
+          ],
+          "Absorption": [
+            0.42,
+            0.1,
+            0.07
+          ],
+          "NormalStrength": 0.5,
+          "WaveScale": 380.0,
+          "WaveSpeed": 16.0,
+          "FlowDirection": 0.0,
+          "FlowSpeed": 0.0,
+          "FoamIntensity": 0.9,
+          "FoamDistance": 30.0,
+          "RefractionStrength": 0.04,
+          "ReflectionIntensity": 1.0,
+          "Roughness": 0.06
+        },
+        "TransformComponent": {
+          "Position": [
+            28000.0,
+            0.0,
+            -700.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sea",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/Demo/CampfireWaves.wav",
+          "Volume": 0.7,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": true,
+          "MinDistance": 800.0,
+          "MaxDistance": 6000.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2000.0,
+            0.0,
+            50.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "WavesSound",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/stone_fire_pit/stone_fire_pit.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            77.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FirePit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            85.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.08715574274765817,
+            0.9961946980917455
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "FirePit_Wood_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            88.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "FirePit_Wood_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            91.36065843383457
+          ],
+          "Rotation": [
+            0.04743248468498937,
+            -0.022118130853930232,
+            0.9050657237128571,
+            0.4220390781009014
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "FirePit_Wood_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            94.36065843383457
+          ],
+          "Rotation": [
+            -0.05213680212878224,
+            -0.0045613791387627105,
+            0.994829447880333,
+            -0.08703629883128326
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "FirePit_Wood_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            97.36065843383457
+          ],
+          "Rotation": [
+            0.05714115806989162,
+            0.04001066962257071,
+            0.8171566310795414,
+            -0.5721792329799459
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "FirePit_Wood_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireFire.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            91.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Campfire_FX",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.5,
+            0.18
+          ],
+          "Intensity": 18.0,
+          "Radius": 1500.0,
+          "CastShadows": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 18.0, \"Seed\": 4, \"Amount\": 0.35, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            159.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Campfire_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.36,
+            0.08
+          ],
+          "Intensity": 7.0,
+          "Radius": 500.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 7.0, \"Seed\": 8, \"Amount\": 0.35, \"Speed\": 1.6}"
+        },
+        "TransformComponent": {
+          "Position": [
+            10.0,
+            0.0,
+            124.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Campfire_Light_Low",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AudioSourceComponent": {
+          "ClipAsset": "Audio/Demo/CampfireCrackle.wav",
+          "Volume": 0.8,
+          "Pitch": 1.0,
+          "Loop": true,
+          "PlayOnStart": true,
+          "Spatial": true,
+          "MinDistance": 200.0,
+          "MaxDistance": 2500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            129.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Campfire_Sound",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            70.0,
+            70.0,
+            20.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            109.36065843383457
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FirePit_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/pot_enamel_01/pot_enamel_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -8.0,
+            58.0,
+            99.36065843383457
+          ],
+          "Rotation": [
+            0.04287110554622667,
+            0.030018671274852006,
+            0.5727903697794315,
+            0.8180294248815739
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FirePit_Pot",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk/dead_tree_trunk.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -240.0,
+            20.0,
+            129.7727145178764
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.03489949670250097,
+            0.9993908270190958
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Log_West",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk/dead_tree_trunk.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -250.0,
+            77.57587024093147
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7193398003386512,
+            0.6946583704589973
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Log_South",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            70.0,
+            290.0,
+            75.28678794870052
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6156614753256583,
+            0.7880107536067219
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Log_North",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fishermans_hat/fishermans_hat.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -236.0,
+            70.0,
+            112.36065843383457
+          ],
+          "Rotation": [
+            -0.03371032518943586,
+            -0.009032654411099872,
+            0.2586613795333009,
+            0.9653374103741355
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Hat",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -205.0,
+            -95.0,
+            122.69276354600649
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.984807753012208,
+            -0.1736481776669303
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/folding_wooden_stool/folding_wooden_stool.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            205.0,
+            150.0,
+            65.99210805871326
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9505341460616841,
+            -0.3106200849442692
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stool_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_01/wooden_stool_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            225.0,
+            -120.0,
+            59.02039827741095
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stool_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            -255.0,
+            64.88767139350139
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.08715574274765817,
+            0.9961946980917455
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Basket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -160.0,
+            -330.0,
+            104.23549057250662
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.42261826174069944,
+            0.9063077870366499
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "ChopStump",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/hatchet/hatchet.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -150.0,
+            -330.0,
+            130.23549057250662
+          ],
+          "Rotation": [
+            -0.5792279653395692,
+            -0.40557978767263886,
+            0.40557978767263886,
+            0.5792279653395692
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Hatchet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -316.95080849024436,
+            -250.0,
+            138.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8299036930636268,
+            0.5579066769983612
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -304.1453999357085,
+            -250.0,
+            138.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7566346251553181,
+            0.6538379340601701
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -292.9478366386856,
+            -250.0,
+            138.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7868270935580662,
+            0.6171734965493625
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -280.319471939292,
+            -250.0,
+            138.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7608866281140351,
+            0.6488848427550562
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -315.3480170547642,
+            -250.0,
+            149.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.788618431677136,
+            0.6148828906540613
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_c.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -302.1737649610567,
+            -250.0,
+            149.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7895155688255628,
+            0.6137305325483228
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dry_branches_medium_01/dry_branches_medium_01_b.part.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -290.3513981950626,
+            -250.0,
+            149.0962518391481
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7568375704045547,
+            0.6536030079674746
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Firewood_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_barrels_01/wooden_barrels_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -760.0,
+            560.0,
+            276.2002247427869
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9762960071199334,
+            -0.2164396139381028
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Barrels",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            190.0,
+            210.0,
+            50.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -760.0,
+            560.0,
+            330.2002247427869
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9762960071199334,
+            -0.2164396139381028
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Barrels_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            360.0,
+            174.00057639684823
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8433914458128856,
+            0.5372996083468239
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Crate_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.0,
+            8.0,
+            44.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.21643961393810288,
+            0.9762960071199334
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Crate_B",
+      "Parent": 37
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            34.0,
+            -6.0,
+            44.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Lantern",
+      "Parent": 37
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -470.0,
+            470.0,
+            194.2050227499675
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.984807753012208,
+            0.17364817766693041
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Crate_C",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/treasure_chest/treasure_chest.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -260.0,
+            420.0,
+            142.9600162500455
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8736001987798239,
+            0.48664431846252165
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Chest",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -560.0,
+            200.0,
+            209.70728232234
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_WineBarrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -610.0,
+            290.0,
+            222.75852088074365
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Barrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lifebuoy/lifebuoy.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -545.0,
+            180.0,
+            251.66714121394278
+          ],
+          "Rotation": [
+            -0.11037539816891617,
+            0.024587488240237862,
+            0.17702274455732123,
+            0.9776889458362934
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Lifebuoy",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -360.0,
+            230.0,
+            163.31321321387213
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Bucket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/cannon_01/cannon_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -350.0,
+            -720.0,
+            142.0821636749379
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.992507556682903,
+            0.12218326369570456
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Cannon",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            130.0,
+            110.0,
+            45.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -450.0,
+            400.0,
+            229.39108747496886
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cache_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1321.0,
+            -940.0,
+            389.65385484208525
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7901392225066789,
+            -0.6129274092880339
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "LanternPost_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1321.0,
+            -940.0,
+            408.65385484208525
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9695510326793255,
+            0.24488935262778064
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "LanternPost_0_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1125.0,
+            -1168.0,
+            358.2157283147986
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9992124297866924,
+            -0.03968022378684559
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "LanternPost_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1125.0,
+            -1168.0,
+            377.2157283147986
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7413010793997427,
+            -0.6711726377622798
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "LanternPost_1_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            -620.0,
+            29.13422095755294
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9034800626485613,
+            0.42863011606343265
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "LanternPost_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            -620.0,
+            48.13422095755294
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1798292684538091,
+            0.9836978368418667
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "LanternPost_2_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/modular_wooden_pier/modular_wooden_pier.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2036.5302662298786,
+            -1750.0,
+            -170.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Pier",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2936.5302662298786,
+            -1840.0,
+            97.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Pier_Barrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2816.5302662298786,
+            -1670.0,
+            97.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Pier_Crate",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3156.5302662298786,
+            -1650.0,
+            97.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Pier_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -428.9311741769639,
+            393.3501743296903,
+            235.00057639684823
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Cache_Flame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 2.5,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 2.5, \"Seed\": 20, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -428.9311741769639,
+            393.3501743296903,
+            240.00057639684823
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Cache_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -1321.0,
+            -940.0,
+            429.05385484208523
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post0_Flame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 2.5,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 2.5, \"Seed\": 21, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1321.0,
+            -940.0,
+            435.05385484208523
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post0_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -1125.0,
+            -1168.0,
+            397.61572831479856
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post1_Flame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 2.5,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 2.5, \"Seed\": 22, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1125.0,
+            -1168.0,
+            403.61572831479856
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post1_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            -620.0,
+            68.53422095755295
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post2_Flame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 2.5,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 2.5, \"Seed\": 23, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            -620.0,
+            74.53422095755295
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Post2_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3156.5302662298786,
+            -1650.0,
+            117.4
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Pier_Flame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 2.5,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 2.5, \"Seed\": 24, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            3156.5302662298786,
+            -1650.0,
+            123.4
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lantern_Pier_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk_02/dead_tree_trunk_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1477.7933920677287,
+            -1000.0,
+            -16.03242444333336
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.21643961393810288,
+            0.9762960071199334
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Driftwood_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk/dead_tree_trunk.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1931.8111936627647,
+            1500.0,
+            1.4778984943880094
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Driftwood_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dead_tree_trunk/dead_tree_trunk.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1830.7188077777178,
+            -2600.0,
+            5.4410472344454615
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        }
+      },
+      "Name": "Driftwood_C",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1814.4074776080383,
+            1415.5117808025207,
+            11.820727203108895
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.879446875599337,
+            -0.47599705145994786
+          ],
+          "Scale": [
+            1.3725948730828401,
+            1.3725948730828401,
+            1.3725948730828401
+          ]
+        }
+      },
+      "Name": "Shell_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2072.109785289853,
+            2353.676137894786,
+            6.759510003471761
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6850356361713772,
+            -0.7285095587398126
+          ],
+          "Scale": [
+            1.2212102888609242,
+            1.2212102888609242,
+            1.2212102888609242
+          ]
+        }
+      },
+      "Name": "Shell_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1563.239906231808,
+            360.2339059589044,
+            10.091039758760063
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8347556167904537,
+            0.5506206137049259
+          ],
+          "Scale": [
+            1.051441674594323,
+            1.051441674594323,
+            1.051441674594323
+          ]
+        }
+      },
+      "Name": "Shell_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1455.5869408930814,
+            -129.66788643480322,
+            7.510893553906575
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9597575385645905,
+            -0.2808299613083311
+          ],
+          "Scale": [
+            1.2684709355640007,
+            1.2684709355640007,
+            1.2684709355640007
+          ]
+        }
+      },
+      "Name": "Shell_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1801.3692314010968,
+            711.8923277998274,
+            5.286975878899963
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5319483406770863,
+            0.846776808167828
+          ],
+          "Scale": [
+            1.194047409325996,
+            1.194047409325996,
+            1.194047409325996
+          ]
+        }
+      },
+      "Name": "Shell_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1981.1109630296735,
+            1579.367463293207,
+            4.945713222095755
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3514203868836445,
+            0.9362177693691515
+          ],
+          "Scale": [
+            1.0591625187969615,
+            1.0591625187969615,
+            1.0591625187969615
+          ]
+        }
+      },
+      "Name": "Shell_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lambis_shell/lambis_shell.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1927.9203928344316,
+            -2305.3341519828846,
+            5.090394139067734
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9739445445085928,
+            -0.2267862963716055
+          ],
+          "Scale": [
+            1.4923979085235146,
+            1.4923979085235146,
+            1.4923979085235146
+          ]
+        }
+      },
+      "Name": "Shell_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2874.008570015152,
+            -3400.0,
+            -35.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            2.08,
+            2.08,
+            2.08
+          ]
+        }
+      },
+      "Name": "ShoreRock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireSeaSpray.eparticle",
+          "Playing": true,
+          "Speed": 0.85
+        },
+        "TransformComponent": {
+          "Position": [
+            3054.008570015152,
+            -3400.0,
+            20.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShoreRock_0_Spray",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2732.773528763311,
+            3500.0,
+            -35.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9659258262890683,
+            -0.25881904510252085
+          ],
+          "Scale": [
+            1.9500000000000002,
+            1.9500000000000002,
+            1.9500000000000002
+          ]
+        }
+      },
+      "Name": "ShoreRock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireSeaSpray.eparticle",
+          "Playing": true,
+          "Speed": 0.95
+        },
+        "TransformComponent": {
+          "Position": [
+            2912.773528763311,
+            3500.0,
+            20.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShoreRock_1_Spray",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3676.3127743465775,
+            -4700.0,
+            -35.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8660254037844386,
+            0.5000000000000001
+          ],
+          "Scale": [
+            1.8199999999999998,
+            1.8199999999999998,
+            1.8199999999999998
+          ]
+        }
+      },
+      "Name": "ShoreRock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireSeaSpray.eparticle",
+          "Playing": true,
+          "Speed": 1.05
+        },
+        "TransformComponent": {
+          "Position": [
+            3856.3127743465775,
+            -4700.0,
+            20.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShoreRock_2_Spray",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3492.000591264863,
+            4800.0,
+            -35.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.49999999999999994,
+            -0.8660254037844387
+          ],
+          "Scale": [
+            1.6900000000000002,
+            1.6900000000000002,
+            1.6900000000000002
+          ]
+        }
+      },
+      "Name": "ShoreRock_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireSeaSpray.eparticle",
+          "Playing": true,
+          "Speed": 1.15
+        },
+        "TransformComponent": {
+          "Position": [
+            3672.000591264863,
+            4800.0,
+            20.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShoreRock_3_Spray",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2622.3264624236767,
+            2927.137798882736,
+            -21.202941527911623
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9912429387643162,
+            -0.13205088545663787
+          ],
+          "Scale": [
+            1.0472696437596625,
+            1.0472696437596625,
+            1.0472696437596625
+          ]
+        }
+      },
+      "Name": "BeachRock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2659.39882106613,
+            4246.9804097331,
+            1.6094770399224512
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3302327269038478,
+            0.9438995423675386
+          ],
+          "Scale": [
+            0.9919045333541701,
+            0.9919045333541701,
+            0.9919045333541701
+          ]
+        }
+      },
+      "Name": "BeachRock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2452.3959191822396,
+            3314.079193657535,
+            -5.682794971685656
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2525123195008485,
+            -0.967593679444167
+          ],
+          "Scale": [
+            0.8963478680713031,
+            0.8963478680713031,
+            0.8963478680713031
+          ]
+        }
+      },
+      "Name": "BeachRock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2729.838201593364,
+            3101.779268294127,
+            -24.799787870401005
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17477501271493037,
+            0.9846083967397881
+          ],
+          "Scale": [
+            0.8081116601578215,
+            0.8081116601578215,
+            0.8081116601578215
+          ]
+        }
+      },
+      "Name": "BeachRock_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2211.8463962598357,
+            -3087.7090113512413,
+            1.1789387189196177
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.04000046182294949,
+            0.9991996612559227
+          ],
+          "Scale": [
+            0.7111011646872898,
+            0.7111011646872898,
+            0.7111011646872898
+          ]
+        }
+      },
+      "Name": "BeachRock_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3524.1107797559143,
+            -4215.7883691334555,
+            -25.43510244848799
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7092929218298892,
+            -0.7049138607248538
+          ],
+          "Scale": [
+            0.7730712764559998,
+            0.7730712764559998,
+            0.7730712764559998
+          ]
+        }
+      },
+      "Name": "BeachRock_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2379.6499811255535,
+            4071.7914356286947,
+            7.462465006912776
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7381849460868379,
+            0.6745983882064737
+          ],
+          "Scale": [
+            0.8741371251517718,
+            0.8741371251517718,
+            0.8741371251517718
+          ]
+        }
+      },
+      "Name": "BeachRock_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3585.383702639623,
+            5451.361057809974,
+            0.48323360744269017
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3194658010610482,
+            0.9475978060086583
+          ],
+          "Scale": [
+            0.8644849928077427,
+            0.8644849928077427,
+            0.8644849928077427
+          ]
+        }
+      },
+      "Name": "BeachRock_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3455.8630687683426,
+            -4671.8285786430915,
+            -6.255167443901094
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.681423005411918,
+            0.7318898057053324
+          ],
+          "Scale": [
+            0.6500055604493306,
+            0.6500055604493306,
+            0.6500055604493306
+          ]
+        }
+      },
+      "Name": "BeachRock_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_01/coastal_cliff_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4600.0,
+            -6050.0,
+            -150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Cliff_Inner_-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_02/coastal_cliff_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            9350.0,
+            -8800.0,
+            -250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "Cliff_Tip_-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            7200.0,
+            -5600.0,
+            -80.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "CliffRock_-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_01/coastal_cliff_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4600.0,
+            6050.0,
+            -150.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Cliff_Inner_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_02/coastal_cliff_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            9350.0,
+            8800.0,
+            -250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "Cliff_Tip_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            7200.0,
+            5600.0,
+            -80.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "CliffRock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_stove/barrel_stove.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5600.0,
+            7100.0,
+            1585.1811100621358
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Beacon",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleyStoveFire.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            5600.0,
+            7100.0,
+            1683.1811100621358
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Beacon_Fire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleyStoveSmoke.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            5600.0,
+            7100.0,
+            1718.1811100621358
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Beacon_Smoke",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.45,
+            0.14
+          ],
+          "Intensity": 30.0,
+          "Radius": 1500.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 30.0, \"Seed\": 31, \"Amount\": 0.35, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            5600.0,
+            7100.0,
+            1738.1811100621358
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Beacon_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ship_pinnace/ship_pinnace.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            6600.0,
+            -2300.0,
+            -70.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5224985647159488,
+            0.8526401643540923
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ship",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.62,
+            0.3
+          ],
+          "Intensity": 14.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 14.0, \"Seed\": 41, \"Amount\": 0.15, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            5805.5166254557935,
+            -3859.2614173296433,
+            550.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ship_SternLantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 8.0,
+          "Radius": 700.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 42, \"Amount\": 0.15, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            6736.197149921864,
+            -2032.6980427434896,
+            350.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ship_DeckLantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/CampfireFlare.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"LaunchAsset\": {\"Asset\": \"Particles/Demo/CampfireFlareLaunch.eparticle\"}, \"HeadAsset\": {\"Asset\": \"Particles/Demo/CampfireFlareHead.eparticle\"}, \"Apex\": 3919.9999999999995, \"RiseTime\": 2.8, \"BurnTime\": 5.5, \"Intensity\": 900.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            5919.01425039068,
+            -3636.5097862825514,
+            410.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Flare_Launcher",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.18,
+            0.08
+          ],
+          "Intensity": 0.0,
+          "Radius": 9000.0,
+          "CastShadows": false
+        },
+        "ParticleSystemComponent": {
+          "Asset": "",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            5919.01425039068,
+            -3636.5097862825514,
+            4330.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Flare_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ocean_buoy/ocean_buoy.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4300.0,
+            2300.0,
+            -45.0
+          ],
+          "Rotation": [
+            -0.03371032518943586,
+            -0.009032654411099872,
+            0.2586613795333009,
+            0.9653374103741355
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Buoy",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.3,
+            1.0,
+            0.45
+          ],
+          "Intensity": 3.0,
+          "Radius": 700.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Neon\", \"BaseIntensity\": 3.0, \"Seed\": 51, \"Amount\": 0.35, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            4300.0,
+            2300.0,
+            130.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Buoy_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1401.9995482720644,
+            -3752.7764045466174,
+            50.09263959787097
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.680128532461391,
+            -0.7330928858827609
+          ],
+          "Scale": [
+            0.86263698605397,
+            0.86263698605397,
+            0.86263698605397
+          ]
+        }
+      },
+      "Name": "DuneBush_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2425.728483047847,
+            1310.4686357284827,
+            545.7640574966326
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8217053315315657,
+            -0.5699125793773987
+          ],
+          "Scale": [
+            0.9319278475571189,
+            0.9319278475571189,
+            0.9319278475571189
+          ]
+        }
+      },
+      "Name": "DuneBush_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -257.8835330264792,
+            1562.5360753562181,
+            205.61609830183215
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9724492860753811,
+            0.23311453410605215
+          ],
+          "Scale": [
+            0.7195420288195182,
+            0.7195420288195182,
+            0.7195420288195182
+          ]
+        }
+      },
+      "Name": "DuneBush_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -925.3782969775534,
+            4037.006078954153,
+            467.63782977349626
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1611368380622739,
+            0.9869320743695041
+          ],
+          "Scale": [
+            0.7139429751290269,
+            0.7139429751290269,
+            0.7139429751290269
+          ]
+        }
+      },
+      "Name": "DuneBush_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1881.4017211088426,
+            -5316.562552229527,
+            124.15843331872813
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7527186322635373,
+            -0.658342358232637
+          ],
+          "Scale": [
+            0.7721821285735136,
+            0.7721821285735136,
+            0.7721821285735136
+          ]
+        }
+      },
+      "Name": "DuneBush_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1001.4959561890555,
+            -3748.3476440831873,
+            484.6109258954276
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.981077574061061,
+            -0.19361506572181678
+          ],
+          "Scale": [
+            0.8167259666730108,
+            0.8167259666730108,
+            0.8167259666730108
+          ]
+        }
+      },
+      "Name": "DuneBush_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1116.1339891249431,
+            -2967.097375291838,
+            459.9745656589879
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9957742975030817,
+            0.09183435322494653
+          ],
+          "Scale": [
+            0.7798379808316052,
+            0.7798379808316052,
+            0.7798379808316052
+          ]
+        }
+      },
+      "Name": "DuneBush_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            779.1716969181514,
+            2445.8581555465335,
+            47.30279623942172
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.07422032506670591,
+            0.9972418680275074
+          ],
+          "Scale": [
+            0.9826427940781812,
+            0.9826427940781812,
+            0.9826427940781812
+          ]
+        }
+      },
+      "Name": "DuneBush_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -617.8845006817382,
+            2790.7995947806285,
+            375.652176615406
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.09467314270590618,
+            0.9955084108384957
+          ],
+          "Scale": [
+            0.8618468476811766,
+            0.8618468476811766,
+            0.8618468476811766
+          ]
+        }
+      },
+      "Name": "DuneBush_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2672.5056622366073,
+            2753.386818860192,
+            664.8122669467626
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9685588010392272,
+            0.24878474416542234
+          ],
+          "Scale": [
+            0.7109051957135646,
+            0.7109051957135646,
+            0.7109051957135646
+          ]
+        }
+      },
+      "Name": "DuneBush_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3144.1445376969755,
+            1090.188226974812,
+            695.7825986493978
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9846352723663664,
+            -0.17462353911203218
+          ],
+          "Scale": [
+            0.810450677670342,
+            0.810450677670342,
+            0.810450677670342
+          ]
+        }
+      },
+      "Name": "DuneBush_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2742.7654098297803,
+            -2264.7011773826744,
+            547.221110361747
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6530174606067184,
+            0.7573428524405265
+          ],
+          "Scale": [
+            0.6248836185439349,
+            0.6248836185439349,
+            0.6248836185439349
+          ]
+        }
+      },
+      "Name": "DuneBush_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            133.67244569526292,
+            4368.615966852252,
+            296.0557173551281
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.056055012146859824,
+            0.9984276817142118
+          ],
+          "Scale": [
+            0.7827333051117467,
+            0.7827333051117467,
+            0.7827333051117467
+          ]
+        }
+      },
+      "Name": "DuneBush_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2283.6852742713995,
+            -987.1265406443281,
+            521.6646112046092
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8901208028679819,
+            0.45572464965333975
+          ],
+          "Scale": [
+            0.7208687015583787,
+            0.7208687015583787,
+            0.7208687015583787
+          ]
+        }
+      },
+      "Name": "DuneBush_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            871.8120781352991,
+            5148.6701549438,
+            296.88504455521434
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1340304489907889,
+            0.9909772140384094
+          ],
+          "Scale": [
+            0.9547534072890697,
+            0.9547534072890697,
+            0.9547534072890697
+          ]
+        }
+      },
+      "Name": "DuneBush_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2111.2280093256586,
+            1880.4943483389789,
+            503.39368485921443
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3581950460373483,
+            -0.9336467795661815
+          ],
+          "Scale": [
+            0.8155192264260944,
+            0.8155192264260944,
+            0.8155192264260944
+          ]
+        }
+      },
+      "Name": "DuneBush_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -686.4681504070945,
+            2139.4841387702936,
+            375.3533822861203
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.03756154666842468,
+            -0.9992943161110623
+          ],
+          "Scale": [
+            0.6585074886753258,
+            0.6585074886753258,
+            0.6585074886753258
+          ]
+        }
+      },
+      "Name": "DuneBush_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1418.2422923653953,
+            5485.46142395145,
+            255.92780466096224
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.02384451843372944,
+            0.9997156790511308
+          ],
+          "Scale": [
+            0.6148171015360149,
+            0.6148171015360149,
+            0.6148171015360149
+          ]
+        }
+      },
+      "Name": "DuneBush_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            557.410506599083,
+            3167.4675101761113,
+            103.20791251659887
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6789733742444815,
+            -0.7341628954578564
+          ],
+          "Scale": [
+            0.825559537512599,
+            0.825559537512599,
+            0.825559537512599
+          ]
+        }
+      },
+      "Name": "DuneBush_18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1252.5422522774043,
+            -341.7760098128638,
+            358.9104539553134
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7617236214934304,
+            0.6479020948098047
+          ],
+          "Scale": [
+            0.7448982374824895,
+            0.7448982374824895,
+            0.7448982374824895
+          ]
+        }
+      },
+      "Name": "DuneBush_19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1524.2887630261234,
+            -3958.264191697235,
+            477.68569399252056
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5367399767467551,
+            0.8437477095446795
+          ],
+          "Scale": [
+            0.80362460731186,
+            0.80362460731186,
+            0.80362460731186
+          ]
+        }
+      },
+      "Name": "DuneBush_20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -777.7457309320966,
+            1241.413900328841,
+            347.9455461453725
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.04374570517738331,
+            -0.999042698426115
+          ],
+          "Scale": [
+            0.8498829958294926,
+            0.8498829958294926,
+            0.8498829958294926
+          ]
+        }
+      },
+      "Name": "DuneBush_21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1492.722854308387,
+            2199.7749517352822,
+            531.012856552008
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0747259782745221,
+            -0.9972041055726333
+          ],
+          "Scale": [
+            0.9647270969917559,
+            0.9647270969917559,
+            0.9647270969917559
+          ]
+        }
+      },
+      "Name": "DuneBush_22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.4632309439235,
+            -3554.8543107429546,
+            50.68523851947204
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8392967817305715,
+            -0.5436735345560839
+          ],
+          "Scale": [
+            0.9728847346660198,
+            0.9728847346660198,
+            0.9728847346660198
+          ]
+        }
+      },
+      "Name": "DuneBush_23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2344.1707290016684,
+            -2295.5469848091648,
+            502.29229252169137
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.14862310241430518,
+            0.9888939141428402
+          ],
+          "Scale": [
+            0.6172288912621245,
+            0.6172288912621245,
+            0.6172288912621245
+          ]
+        }
+      },
+      "Name": "DuneBush_24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            518.9833278465826,
+            2910.2334635232255,
+            102.60053144399403
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4089071842826224,
+            0.9125759774627302
+          ],
+          "Scale": [
+            0.6369956349135435,
+            0.6369956349135435,
+            0.6369956349135435
+          ]
+        }
+      },
+      "Name": "DuneBush_25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            547.1878972606487,
+            3997.7710068206707,
+            169.66923764641908
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.02494060419095698,
+            -0.9996889347505002
+          ],
+          "Scale": [
+            0.9030106682170616,
+            0.9030106682170616,
+            0.9030106682170616
+          ]
+        }
+      },
+      "Name": "DuneBush_26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -520.4753388461936,
+            4914.209306863422,
+            407.4399332821338
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9950601495883903,
+            -0.09927385708800818
+          ],
+          "Scale": [
+            0.6877687953257637,
+            0.6877687953257637,
+            0.6877687953257637
+          ]
+        }
+      },
+      "Name": "DuneBush_27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2306.3038166613987,
+            682.1669754774002,
+            546.3692590231711
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.34913161499486006,
+            -0.9370736979614148
+          ],
+          "Scale": [
+            0.9925734548439178,
+            0.9925734548439178,
+            0.9925734548439178
+          ]
+        }
+      },
+      "Name": "DuneBush_28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1888.495152704213,
+            5402.584153026886,
+            123.3410686671975
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.05657431970412908,
+            -0.9983983905986703
+          ],
+          "Scale": [
+            0.7241456354589024,
+            0.7241456354589024,
+            0.7241456354589024
+          ]
+        }
+      },
+      "Name": "DuneBush_29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.93277706576282,
+            4727.878824193589,
+            346.28144172184074
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8913877925296777,
+            0.4532414404366267
+          ],
+          "Scale": [
+            0.6841407858082027,
+            0.6841407858082027,
+            0.6841407858082027
+          ]
+        }
+      },
+      "Name": "DuneBush_30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            50.444176107239855,
+            1688.768169231922,
+            140.23645287142637
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9574475200387136,
+            0.288607426050885
+          ],
+          "Scale": [
+            0.6234180123826102,
+            0.6234180123826102,
+            0.6234180123826102
+          ]
+        }
+      },
+      "Name": "DuneBush_31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1085.962810600783,
+            -2064.3603545237634,
+            392.16737821333
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9608747628063415,
+            -0.2769831948004371
+          ],
+          "Scale": [
+            0.765746278663107,
+            0.765746278663107,
+            0.765746278663107
+          ]
+        }
+      },
+      "Name": "DuneBush_32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -278.71781377703473,
+            -2845.5489434491087,
+            305.20747603776454
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8595393740967017,
+            -0.511069529885563
+          ],
+          "Scale": [
+            0.7781834269120755,
+            0.7781834269120755,
+            0.7781834269120755
+          ]
+        }
+      },
+      "Name": "DuneBush_33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1652.5126939568972,
+            -3661.0139990864027,
+            485.98744929820754
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.999984713758653,
+            0.005529217758842212
+          ],
+          "Scale": [
+            0.6065271453153638,
+            0.6065271453153638,
+            0.6065271453153638
+          ]
+        }
+      },
+      "Name": "DuneBush_34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -742.2419214283727,
+            4463.701514738503,
+            439.93453838256664
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5403295775693715,
+            0.8414534732257658
+          ],
+          "Scale": [
+            0.7760647534766497,
+            0.7760647534766497,
+            0.7760647534766497
+          ]
+        }
+      },
+      "Name": "DuneBush_35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            664.7360193071227,
+            5388.643532261425,
+            383.7517911954105
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.009918197055334912,
+            0.9999508134739286
+          ],
+          "Scale": [
+            0.8548358004762164,
+            0.8548358004762164,
+            0.8548358004762164
+          ]
+        }
+      },
+      "Name": "DuneBush_36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1894.6818447556548,
+            -2748.604626658026,
+            484.41935893452643
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9414502494992665,
+            0.3371519356577519
+          ],
+          "Scale": [
+            0.9898918179959606,
+            0.9898918179959606,
+            0.9898918179959606
+          ]
+        }
+      },
+      "Name": "DuneBush_37",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1776.1570128147246,
+            2694.4487416966113,
+            487.6758496699962
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3858866926419935,
+            -0.9225461833652685
+          ],
+          "Scale": [
+            0.8876854514141497,
+            0.8876854514141497,
+            0.8876854514141497
+          ]
+        }
+      },
+      "Name": "DuneBush_38",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2128.8937673825185,
+            2813.4607209746337,
+            519.5161218271438
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9936759496458836,
+            0.1122858276691738
+          ],
+          "Scale": [
+            0.9003727171460832,
+            0.9003727171460832,
+            0.9003727171460832
+          ]
+        }
+      },
+      "Name": "DuneBush_39",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireFireflies.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -2600.0,
+            0.0,
+            556.1780897181051
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Fireflies",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Hub.escene\"}, \"Label\": \"Hub로\", \"Ready\": true, \"RememberReturn\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1900.0,
+            -1500.0,
+            516.3214689010604
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9894003954974829,
+            -0.14521314468540478
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Door",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Post",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Lantern",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Post",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Lantern",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Glow",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.5,
+            0.75,
+            1.0
+          ],
+          "Intensity": 1.5,
+          "Radius": 350.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Light",
+      "Parent": 153
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Demo/DemoPlayer.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 161
+        },
+        "TransformComponent": {
+          "Position": [
+            -1450.0,
+            -1250.0,
+            561.95980257655
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3482743447337338,
+            0.9373926502807073
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

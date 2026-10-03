@@ -36,6 +36,8 @@ Projects/Sample/Content/Asset/PolyHaven/**/*.gltf
 Projects/Sample/Content/Asset/PolyHaven/**/*.bin
 Projects/Sample/Content/Asset/PolyHaven/**/*.jpg
 Projects/Sample/Content/Asset/PolyHaven/**/*.png
+# 여러 변형이 한 파일에 나란히 있는 에셋을 변형 하나씩 나눈 glTF (생성 스크립트가 원본 .bin/텍스처를 가리키게 씀 — 작아서 커밋)
+!Projects/Sample/Content/Asset/PolyHaven/**/*.part.gltf
 
 # 파이썬 캐시
 __pycache__/

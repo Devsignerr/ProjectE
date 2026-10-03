@@ -331,9 +331,12 @@ FWaterOutput PSWater(FWaterVSOutput Input, bool bFrontFace : SV_IsFrontFace)
 	const float3 SkyIrr     = IblDiffuse.SampleLevel(LinearClamp, float3(0, 0, 1), 0.0f).rgb * AmbientIntensity;
 	const float3 InLight    = SunColor * (SunUp * Shadow / E_PI) + SkyIrr;
 	const float3 T          = exp(-Absorption * (Thickness * 0.01f)); // FWaterMath::Transmittance (cm → m)
-	float3       Under      = Refracted * T + ScatterColor * InLight * (1.0f - T);
 
+	// 굴절된 뒤 장면 색(SceneColorCopy)은 안개 적용 뒤 값이라 수면 안개를 다시 얹으면 두 번 낀다(얕은 물이 회색 띠로 뜸 — 2026-10-04
+	// Alley 배수로). 그 몫(Direct, 가중치 DirectWeight)은 안개 합성에서 빼고 나머지(산란·반사·하이라이트·거품)에만 수면 안개를 건다
 	float3 Color;
+	float3 Direct       = 0.0f;
+	float3 DirectWeight = 0.0f;
 	if (bAbove)
 	{
 		// 반사: 화면 공간 → 캡처 → 하늘
@@ -345,7 +348,10 @@ FWaterOutput PSWater(FWaterVSOutput Input, bool bFrontFace : SV_IsFrontFace)
 		const float4 Ssr        = TraceScreenReflection(P + Up * 2.0f, Rup);
 		const float3 Reflection = lerp(Environment, Ssr.rgb, Ssr.a) * ReflectionIntensity;
 		const float  F          = WaterFresnel(dot(N, V));
-		Color = lerp(Under, Reflection, F);
+		// lerp(Refracted * T + 산란 * (1 - T), Reflection, F)를 굴절 몫과 나머지로 나눔
+		DirectWeight = T * (1.0f - F);
+		Direct       = Refracted * DirectWeight;
+		Color        = ScatterColor * InLight * ((1.0f - T) * (1.0f - F)) + Reflection * F;
 		Color += SunColor * (SunSpecular(N, V, SunDirection, max(Roughness, 0.02f)) * saturate(dot(N, SunDirection)) * Shadow);
 	}
 	else
@@ -364,13 +370,15 @@ FWaterOutput PSWater(FWaterVSOutput Input, bool bFrontFace : SV_IsFrontFace)
 		const float Foam = saturate(Edge * Edge * FoamIntensity * smoothstep(0.35f, 0.75f, FoamNoise + Edge * 0.3f));
 		const float3 FoamLit = (SunColor * (saturate(dot(Up, SunDirection)) * Shadow) + SkyIrr * E_PI) * (0.8f / E_PI);
 		Color = lerp(Color, FoamLit, Foam);
+		Direct *= 1.0f - Foam;
+		DirectWeight *= 1.0f - Foam;
 	}
 
 	// 안개 + 공중 원근 (수면 위치)
 	if (bAbove)
 	{
 		const float4 Fog = EvaluateFog(P);
-		Color            = Color * Fog.a + Fog.rgb;
+		Color            = Direct + Color * Fog.a + Fog.rgb * (1.0f - DirectWeight);
 	}
 
 	FWaterOutput Output;

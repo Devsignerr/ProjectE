@@ -29,8 +29,8 @@
       "Name": "Tint",
       "Type": "Vector",
       "Value": [
-        1.0,
-        1.0,
+        0.9,
+        0.95,
         1.0,
         1.0
       ]
@@ -105,7 +105,7 @@
         "Type": "Multiply",
         "Inputs": {
           "A": "dry",
-          "B": 0.4
+          "B": 0.08
         }
       },
       {
@@ -113,92 +113,14 @@
         "Type": "Multiply",
         "Inputs": {
           "A": "arm:3",
-          "B": 0.5
-        }
-      },
-      {
-        "Id": "uvBig",
-        "Type": "Multiply",
-        "Inputs": {
-          "A": "uv",
-          "B": 0.11
-        }
-      },
-      {
-        "Id": "maskTex",
-        "Type": "TextureSample",
-        "Texture": "Arm",
-        "Inputs": {
-          "UV": "uvBig"
-        }
-      },
-      {
-        "Id": "maskRaw",
-        "Type": "Subtract",
-        "Inputs": {
-          "A": "maskTex:3",
-          "B": 0.5
-        }
-      },
-      {
-        "Id": "maskSharp",
-        "Type": "Multiply",
-        "Inputs": {
-          "A": "maskRaw",
-          "B": 6.0
-        }
-      },
-      {
-        "Id": "wet",
-        "Type": "Saturate",
-        "Inputs": {
-          "A": "maskSharp"
-        }
-      },
-      {
-        "Id": "wetBase",
-        "Type": "Multiply",
-        "Inputs": {
-          "A": "dryBase",
-          "B": 0.55
-        }
-      },
-      {
-        "Id": "base",
-        "Type": "Lerp",
-        "Inputs": {
-          "A": "dryBase",
-          "B": "wetBase",
-          "Alpha": "wet"
-        }
-      },
-      {
-        "Id": "rough",
-        "Type": "Lerp",
-        "Inputs": {
-          "A": "dryRough",
-          "B": 0.05,
-          "Alpha": "wet"
-        }
-      },
-      {
-        "Id": "normal",
-        "Type": "Lerp",
-        "Inputs": {
-          "A": "nrm:1",
-          "B": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Alpha": "wet"
+          "B": 1.0
         }
       }
     ],
     "Output": {
-      "BaseColor": "base",
-      "Roughness": "rough",
-      "Normal": "normal",
+      "BaseColor": "dryBase",
+      "Roughness": "dryRough",
+      "Normal": "nrm:1",
       "AmbientOcclusion": "arm:2",
       "Metallic": 0.0
     }

@@ -301,7 +301,9 @@ def WriteMaterials():
 	Folder = os.path.join(CONTENT, MAT)
 	Graphs = {
 		"AlleyAsphalt": WorldUvGraph("asphalt_02", 1.0 / 260.0, False, 0.75, 0.6, Wet=True),
-		"AlleyConcrete": WorldUvGraph("concrete_floor_worn_001", 1.0 / 200.0, False, 0.4, 0.5, Wet=True),
+		# 배수로 바닥: 밝은 콘크리트 + 젖음 얼룩(거칠기 0.05)이 높은 시점에서 골목 위 하늘을 비춰 밝은 회색 띠로 떴다 → 어둡고 거친 콘크리트.
+		#   얇은 물 상자(Channel_Water, 4cm)는 흡수가 거의 없어 바닥이 그대로 비친다 (물의 안개 이중 적용은 Water.hlsl에서 고침)
+		"AlleyConcrete": WorldUvGraph("concrete_floor_worn_001", 1.0 / 200.0, False, 0.08, 1.0, Tint=(0.9, 0.95, 1.0)),
 		"AlleyBrick": WorldUvGraph("dark_brick_wall", 1.0 / 220.0, True, 0.8, 0.9),
 	}
 	for Name, Graph in Graphs.items():

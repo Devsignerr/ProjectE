@@ -202,7 +202,7 @@ Build/            CMake 빌드 출력 (git 제외)
 
 셰이더만 빠르게 검증할 때는 SDK의 dxc.exe를 직접 사용한다 (`-HV 2021 -Zpr -WX -I Engine/Shaders`). 에디터 실행 중에는 `Engine/Shaders/*.hlsl|hlsli`를 저장하면 자동 반영(핫 리로드, 실패 시 기존 셰이더 유지)되고, Ctrl+R(도구 → 셰이더 다시 로드)은 강제 재컴파일한다.
 
-자동 검증 실행(`--exit-after`/`--screenshot`)은 **창을 띄우지 않는다**(`FWindowDesc::bHidden` — 그리기·스크린샷은 그대로, 작업 중 포커스를 빼앗지 않음, 스크린샷은 보이는 창과 비트 동일). 화면을 보면서 확인하거나 GPU 성능을 잴 때는 `--show-window`(숨긴 창은 Present 속도가 달라질 수 있다). 창을 보이게 만드는 새 코드(ShowWindow·`SWP_SHOWWINDOW`·`WS_VISIBLE`)는 `FWindow::bHidden`을 존중한다.
+자동 검증 실행(`--exit-after`/`--screenshot`)은 **창을 띄우지 않는다**(`FWindowDesc::bHidden` — 그리기·스크린샷은 그대로, 작업 중 포커스를 빼앗지 않음, 스크린샷은 보이는 창과 비트 동일). `--show-window`는 **사용자가 직접 요청할 때만** 쓴다 — 작업·조사·성능 측정 중에는 쓰지 않는다(2026-10-04 사용자: "게임 화면이 계속 뜬다", 높은 fps 측정도 숨긴 창 + `--no-vsync`로 하고 로그 프레임 시간을 함께 기록). 창을 보이게 만드는 새 코드(ShowWindow·`SWP_SHOWWINDOW`·`WS_VISIBLE`)는 `FWindow::bHidden`을 존중한다.
 
 화면 자동 검증: `.\Scripts\Verify.ps1 [-Target Editor|Runtime|Sandbox] [-ExtraArgs "--select <이름>"] [-Name <이름>]` → `Saved/Verify/<이름>.png`와 로그, D3D12 디버그 레이어 오류/경고 요약(종료 코드 0 = 오류 없음). 앱 공통 인자: `--exit-after <N>`, `--screenshot <경로>`, `--log <경로>`, 에디터 `--select <엔티티 이름>`, `--open-asset <Content 기준 경로>[,...]`(에셋 편집 창 열기), `--verify-asset-close`(편집 후 저장 안 함 닫기 검증), `--reset-layout`(기본 창 배치), `--content-dir <폴더>`(콘텐츠 브라우저 시작 폴더), `--verify-asset-move`(임시 복사본으로 이동·이름 변경 참조 갱신 검증), `--bake-navmesh`(시작 씬 내비메시 굽기, 씬 옆 .enav 생성), `--show-navmesh`(뷰포트 내비메시 표시), `--play`(시작 시 플레이 모드), 에디터/런타임 `--scene <Content 기준 경로>`. 렌더링/에디터 변경 후에는 반드시 실행해 스크린샷을 직접 보고, 디버그 레이어 오류 0건을 확인한 뒤 커밋한다.
 

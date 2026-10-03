@@ -135,6 +135,7 @@ bool FRuntimeApplication::OnInit()
 	}
 	// TAAU/동적 해상도 (Phase 48): 사용자 설정 → 콘솔 변수. 명령줄(--screen-percentage, --dynamic-resolution, --cvar)로 정한 값은 그대로
 	SceneRenderer.bAllowScreenPercentage = true;
+	SceneRenderer.bAllowRayTracing       = true; // 레이 트레이싱 (Phase 50): r.RayTracing* / 프로젝트 설정 Rendering, DXR 미지원이면 꺼짐
 	{
 		FConsoleManager& Cvars = FConsoleManager::Get();
 		if (FConsoleVariable* Var = Cvars.FindVariable("r.ScreenPercentage"); Var != nullptr && Var->IsDefault())

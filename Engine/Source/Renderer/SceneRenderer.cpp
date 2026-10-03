@@ -2,6 +2,7 @@
 
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
+#include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Renderer/AssetCache.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -59,6 +60,7 @@ namespace
 		RootParam_Fog                 = 22, // b6 (안개 상수 — 반투명 패스, Fog.hlsli)
 		RootParam_FogVolume           = 23, // t23 (볼류메트릭 안개 결과 표 — 반투명 패스)
 		RootParam_MaterialGraphTextures = 24, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위 — MaterialCommon.hlsli)
+		RootParam_RayTracedShadowMask   = 25, // t24 (RT 방향광 그림자 마스크 — PerFrame RayTracedShadows = 1일 때 불투명 메인 패스가 읽음, Phase 50)
 	};
 } // namespace
 
@@ -132,6 +134,9 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
 		D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(GraphTexturesIndex == RootParam_MaterialGraphTextures);
+	const uint32 RtShadowIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 24, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(RtShadowIndex == RootParam_RayTracedShadowMask);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -168,7 +173,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
-	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary) || !Clouds.Init(*Rhi, ShaderLibrary))
+	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary) || !Clouds.Init(*Rhi, ShaderLibrary) ||
+	    !RayTracingScene.Init(*Rhi, ShaderLibrary) || !RayTracingEffects.Init(*Rhi, ShaderLibrary))
 	{
 		return false;
 	}
@@ -250,6 +256,9 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Fog:          return "안개 적용";
 	case ERenderTimer::Reflections:  return "SSR";
 	case ERenderTimer::Translucent:  return "반투명";
+	case ERenderTimer::RayTracingBuild:      return "RT 가속 구조";
+	case ERenderTimer::RayTracedShadows:     return "RT 그림자";
+	case ERenderTimer::RayTracedReflections: return "RT 반사";
 	case ERenderTimer::Atmosphere:   return "대기";
 	case ERenderTimer::Clouds:       return "구름";
 	case ERenderTimer::Water:        return "물";
@@ -353,6 +362,10 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
 	      Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
+	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
+	{
+		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)
+	}
 	E_LOG(LogRenderer, Display, "[성능] CPU ms: {}", Cpu);
 	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
 }
@@ -541,6 +554,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!RayTracingScene.ReloadShaders(bForceRecompile) || !RayTracingEffects.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
@@ -582,6 +599,8 @@ void FSceneRenderer::Shutdown()
 	FogRenderer.Shutdown();
 	ScreenSpaceReflections.Shutdown();
 	ReflectionCaptures.Shutdown();
+	RayTracingScene.Shutdown();
+	RayTracingEffects.Shutdown();
 	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
 	{
@@ -773,6 +792,11 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	}
 	FinalizeFrameStats();
 	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;
+	if (const uint32 Serial = RendererCVars::GetRayTracingStatsSerial(); Serial != SeenRtStatsSerial)
+	{
+		SeenRtStatsSerial = Serial;
+		LogRayTracingStats();
+	}
 
 	// 그래프가 마지막에 출력 RTV를 바인딩한 채 끝나지 않을 수 있다 (출력 대상 바인딩 보장 — 에디터 오버레이가 이어서 그린다)
 	CommandList->OMSetRenderTargets(1, &Output.Rtv, FALSE, nullptr);
@@ -783,6 +807,32 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	if (bGpuTiming)
 	{
 		AccumulatePerfCapture();
+	}
+}
+
+void FSceneRenderer::LogRayTracingStats() const
+{
+	if (!bAllowRayTracing)
+	{
+		return;
+	}
+	const FRayTracingSceneStats& Rt = Stats.RayTracing;
+	E_LOG(LogRenderer, Display,
+	      "[레이 트레이싱] 지원 {}, 그림자 {}, 반사 {} | TLAS 인스턴스 {}, BLAS 정적 {} + 스킨 {} + 지형 타일 {} = {:.2f} MB (압축 절약 누적 {:.2f} MB), "
+	      "스킨 정점 {:.2f} MB, 지형 정점 {:.2f} MB, "
+	      "TLAS {:.2f} MB, 스크래치 {:.2f} MB | 이번 프레임 빌드 {} / 갱신 {} / 압축 {} / 미룸 {}, 준비 CPU {:.3f} ms | GPU ms: 가속 구조 {:.3f}, 그림자 {:.3f}, 반사 추적 {:.3f}, 반사 흐림·누적 {:.3f}",
+	      RayTracingScene.IsSupported(), Stats.bRayTracedShadows, Stats.bRayTracedReflections, Rt.TlasInstances, Rt.StaticBlas, Rt.SkinnedBlas, Rt.TerrainTiles,
+	      static_cast<double>(Rt.BlasBytes) / (1024.0 * 1024.0), static_cast<double>(Rt.CompactionSavedBytes) / (1024.0 * 1024.0),
+	      static_cast<double>(Rt.SkinnedVertexBytes) / (1024.0 * 1024.0), static_cast<double>(Rt.TerrainVertexBytes) / (1024.0 * 1024.0),
+	      static_cast<double>(Rt.TlasBytes) / (1024.0 * 1024.0),
+	      static_cast<double>(Rt.ScratchBytes) / (1024.0 * 1024.0), Rt.BuiltThisFrame, Rt.RefitThisFrame, Rt.CompactedThisFrame, Rt.PendingBuilds, Rt.PrepareCpuMs,
+	      Stats.GetGpuMs(ERenderTimer::RayTracingBuild), Stats.GetGpuMs(ERenderTimer::RayTracedShadows), Stats.GetGpuMs(ERenderTimer::RayTracedReflections),
+	      Stats.GetGpuMs(ERenderTimer::Reflections));
+	FD3D12Device::FVideoMemoryInfo Memory;
+	if (Rhi->GetDevice().QueryVideoMemory(Memory))
+	{
+		E_LOG(LogRenderer, Display, "[레이 트레이싱] VRAM 사용 {:.1f} MB (예산 {:.1f} MB)", static_cast<double>(Memory.LocalUsage) / (1024.0 * 1024.0),
+		      static_cast<double>(Memory.LocalBudget) / (1024.0 * 1024.0));
 	}
 }
 
@@ -1138,6 +1188,51 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	const FRGResourceRef ShadowMapRef = ShadowRenderer.ImportShadowMap(Graph);
 	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow));
 
+	// 0.5) 레이 트레이싱 (Phase 50): 허용된 렌더러 + DXR 1.1 + 한 뷰 + 사전 패스 + 지터 허용(픽셀 아트 아님) + 캡처 굽기 아님.
+	//   켬/끔 = r.RayTracing*(-1이면 프로젝트 설정 Rendering). 효과가 하나라도 켜져야 BLAS/TLAS를 만든다
+	const FRenderingSettings& RenderingSettings = FProjectSettings::Get().Rendering;
+	const auto ResolveToggle = [](int32 Value, bool bDefault) { return Value < 0 ? bDefault : Value != 0; };
+	const bool bRtAllowed = bAllowRayTracing && RayTracingScene.IsSupported() && RayTracingEffects.IsSupported() && bSingleView && bAllowJitter &&
+	                        !bRenderingCaptures && !bWireframe && bDepthPrepass && ResolveToggle(RendererCVars::RayTracing.Get(), RenderingSettings.bRayTracing);
+	const bool bRtShadows = bRtAllowed && ResolveToggle(RendererCVars::RayTracingShadows.Get(), RenderingSettings.bRayTracedShadows) &&
+	                        PerFrame.DirectionalLight.Intensity > 0.0f && ShadowRenderer.GetConstants().ShadowEnabled > 0.5f;
+	const bool bRtReflections = bRtAllowed && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
+	                            PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
+	const bool bRtDebug = bRtAllowed && DebugView == DebugViewRtInstances;
+	FRGResourceRef TlasRef;
+	FrameRtDebugRef            = {};
+	if (bRtShadows || bRtReflections || bRtDebug)
+	{
+		FRayTracingSceneOptions Options;
+		Options.CameraPosition     = Camera.GetPosition();
+		Options.bSkinned           = RendererCVars::RayTracingSkinned.Get();
+		Options.SkinnedMaxDistance = RendererCVars::RayTracingSkinnedDistance.Get();
+		Options.bFoliage           = RendererCVars::RayTracingFoliage.Get();
+		Options.bCompaction        = RendererCVars::RayTracingCompaction.Get();
+		Options.bGraphMaterials    = RendererCVars::RayTracingGraphMaterials.Get();
+		Options.bTerrain           = RendererCVars::RayTracingTerrain.Get();
+		std::vector<FTerrainRayTracingInput> Terrains;
+		TerrainRenderer.GetRayTracingInputs(Terrains);
+		Options.MaxBuildsPerFrame  = static_cast<uint32>(std::max(1, RendererCVars::RayTracingMaxBuilds.Get()));
+		BeginCpuTimer(ERenderTimer::RayTracingBuild);
+		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options, &Terrains);
+		EndCpuTimer(ERenderTimer::RayTracingBuild);
+		TlasRef = RayTracingScene.AddBuildPasses(Graph, TimerId(ERenderTimer::RayTracingBuild));
+		Stats.RayTracing = RayTracingScene.GetStats();
+	}
+	const bool bRtShadowsActive     = bRtShadows && TlasRef.IsValid();
+	const bool bRtReflectionsActive = bRtReflections && TlasRef.IsValid();
+	if (bAllowRayTracing && (Stats.bRayTracedShadows != bRtShadowsActive || Stats.bRayTracedReflections != bRtReflectionsActive))
+	{
+		E_LOG(LogRenderer, Log, "레이 트레이싱 효과 변경: 그림자 {}, 반사 {} (지원 {}, 인스턴스 {})", bRtShadowsActive, bRtReflectionsActive,
+		      RayTracingScene.IsSupported(), RayTracingScene.GetInstanceCount());
+	}
+	Stats.bRayTracedShadows         = bRtShadowsActive;
+	Stats.bRayTracedReflections     = bRtReflectionsActive;
+	PerFrame.RayTracedShadows       = bRtShadowsActive ? 1u : 0u;
+	// 그림자 마스크(t24): 메시 패스가 항상 묶으므로 모든 메시 패스가 읽기로 선언 (RT 그림자 누적이 사전 패스와 메인 패스 사이에 쓴다)
+	const FRGResourceRef RtShadowMaskRef = RayTracingEffects.BeginShadowFrame(Graph, Width, Height, bRtShadowsActive);
+
 	// 씬 타깃 (평소 상태: 색 PIXEL_SHADER_RESOURCE, 깊이 DEPTH_WRITE)
 	EnsureSceneColor(Width, Height);
 	OutRefs.Color    = Graph.ImportColor("SceneColor", *SceneColor);
@@ -1160,7 +1255,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	// 메시 패스 공용 선언 — 셰이더가 실제로 읽지 않아도 루트에 묶인 리소스는 모두 선언한다 (디버그 레이어가 그리기 때 묶인 표·루트 SRV의
 	// 상태를 검사한다). 그림자 맵·로컬 그림자·클러스터는 이 프레임 앞 패스가 쓰므로 사전 패스도 선언해야 한다
 	const auto DeclareShadowReads = [&](FRenderGraph::FPassBuilder& Pass) {
-		for (const FRGResourceRef& Ref : { ShadowMapRef, LocalShadowRef, ClustersRef })
+		for (const FRGResourceRef& Ref : { ShadowMapRef, LocalShadowRef, ClustersRef, RtShadowMaskRef })
 		{
 			if (Ref.IsValid())
 			{
@@ -1235,6 +1330,44 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			});
 	}
 
+	// 2.4) 레이 트레이싱 화면 입력 (사전 패스 깊이·법선) + RT 방향광 그림자 (마스크 = t24, 메인 패스 전)
+	FRayTracingViewInputs RtView;
+	RtView.SceneColor         = SceneColor.get();
+	RtView.SceneNormal        = SceneNormal.get();
+	RtView.Velocity           = SceneVelocity.get();
+	RtView.DecalNormal        = &DecalRenderer.GetTarget(1);
+	RtView.DecalMaterial      = &DecalRenderer.GetTarget(2);
+	RtView.InvViewProjection  = RenderCamera.GetViewProjectionMatrix().GetInverse();
+	RtView.ViewProjection     = UnjitteredViewProjection;
+	RtView.PrevViewProjection = PerFrame.PrevViewProjection;
+	RtView.CameraPosition     = Camera.GetPosition();
+	RtView.CameraForward      = Camera.GetForwardVector();
+	RtView.bOrthographic      = Camera.IsOrthographic();
+	RtView.ProjectionScale    = RenderCamera.GetProjectionMatrix().M[1][1] * static_cast<float>(Height) * 0.5f;
+	RtView.FrameIndex         = SceneFrameCount;
+	RtView.bHistoryValid      = bTemporalHistoryValid;
+	FRayTracingViewRefs RtRefs;
+	RtRefs.Tlas     = TlasRef;
+	RtRefs.Depth    = OutRefs.Depth;
+	RtRefs.Normal   = OutRefs.Normal;
+	RtRefs.Velocity = OutRefs.Velocity;
+	FRayTracingLightingInputs RtLighting;
+	RtLighting.LightDirection   = PerFrame.DirectionalLight.Direction;
+	RtLighting.LightRadiance    = PerFrame.DirectionalLight.Color * PerFrame.DirectionalLight.Intensity;
+	RtLighting.AmbientIntensity = PerFrame.AmbientIntensity;
+	RtLighting.LocalLights      = LocalLightRenderer.GetLightList();
+	RtLighting.LocalLightCount  = LocalLightRenderer.GetLightCount();
+	RtLighting.IblTable         = IblRenderer.GetLightingTable();
+	RtLighting.CaptureAtlas     = ReflectionCaptures.GetAtlasSrv();
+	if (bRtShadowsActive)
+	{
+		FRayTracedShadowSettings ShadowRt;
+		ShadowRt.SunAngleDegrees = RendererCVars::RayTracingShadowSunAngle.Get();
+		ShadowRt.NormalBias      = RendererCVars::RayTracingShadowBias.Get();
+		ShadowRt.HistoryWeight   = RendererCVars::RayTracingShadowHistory.Get();
+		RayTracingEffects.AddShadowPasses(Graph, RayTracingScene, RtView, RtRefs, RtLighting, ShadowRt, TimerId(ERenderTimer::RayTracedShadows));
+	}
+
 	// 2.5) SSAO: 사전 패스 깊이 + 법선 → 반해상도 가시도 (메인 패스가 간접광에만 곱한다)
 	const bool     bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && bConsoleAmbientOcclusion;
 	FRGResourceRef AmbientOcclusionRef;
@@ -1289,8 +1422,46 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		{
 			LastTaa = nullptr;
 		}
-		const bool bSsr = bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid && !bRenderingCaptures &&
-		                  (LastTaa != nullptr || bInternalSizeStable);
+		const bool bSsr = !bRtReflectionsActive && bPrepass && PostProcessSettings.bScreenSpaceReflections && bConsoleReflections && bTemporalHistoryValid &&
+		                  !bRenderingCaptures && (LastTaa != nullptr || bInternalSizeStable);
+		float ReflectionMaxRoughness = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
+		if (bRtReflectionsActive)
+		{
+			// RT 반사 (Phase 50): SSR 추적 대신 TLAS 추적 → SSR과 같은 흐림·누적 (이전 프레임 색이 필요 없어 첫 프레임/컷에도 동작)
+			if (RendererCVars::RayTracingReflectionRoughness.Get() >= 0.0f)
+			{
+				ReflectionMaxRoughness = FMath::Clamp(RendererCVars::RayTracingReflectionRoughness.Get(), 0.05f, 1.0f);
+			}
+			FRayTracedReflectionSettings ReflectionRt;
+			ReflectionRt.MaxRoughness      = ReflectionMaxRoughness;
+			ReflectionRt.NormalBias        = RendererCVars::RayTracingShadowBias.Get();
+			ReflectionRt.MaxHitLocalLights = static_cast<uint32>(std::max(0, RendererCVars::RayTracingReflectionLights.Get()));
+			ReflectionRt.bHitShadows       = RendererCVars::RayTracingReflectionShadows.Get();
+			RtView.bDecals                 = bDecals;
+			RtRefs.DecalNormal             = DBufferRefs[1];
+			RtRefs.DecalMaterial           = DBufferRefs[2];
+			RtLighting.Captures            = ReflectionCaptures.GetCaptureList();
+			RtLighting.CaptureCount        = PerFrame.ReflectionCaptureCount;
+			FRGResourceRef TraceResult;
+			FRGResourceRef TraceMotion;
+			RayTracingEffects.AddReflectionTracePass(Graph, RayTracingScene, RtView, RtRefs, RtLighting, ReflectionRt,
+			                                         TimerId(ERenderTimer::RayTracedReflections), TraceResult, TraceMotion);
+			FScreenSpaceReflectionInputs Inputs;
+			Inputs.SceneColor    = SceneColor.get();
+			Inputs.SceneNormal   = SceneNormal.get();
+			Inputs.DecalNormal   = &DecalRenderer.GetTarget(1);
+			Inputs.DecalMaterial = &DecalRenderer.GetTarget(2);
+			Inputs.bDecals       = bDecals;
+			Inputs.Velocity      = SceneVelocity.get();
+			Inputs.bHistoryValid = bTemporalHistoryValid;
+			FSsrGraphRefs SsrRefs;
+			SsrRefs.SceneDepth    = OutRefs.Depth;
+			SsrRefs.SceneNormal   = OutRefs.Normal;
+			SsrRefs.DecalNormal   = DBufferRefs[1];
+			SsrRefs.DecalMaterial = DBufferRefs[2];
+			SsrRefs.Velocity      = OutRefs.Velocity;
+			ReflectionRef = ScreenSpaceReflections.AddResolvePasses(Graph, Inputs, SsrRefs, TraceResult, TraceMotion, TimerId(ERenderTimer::Reflections));
+		}
 		if (bSsr)
 		{
 			FScreenSpaceReflectionInputs Inputs;
@@ -1323,9 +1494,19 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			}
 			ReflectionRef = ScreenSpaceReflections.AddPasses(Graph, Inputs, SsrRefs, TimerId(ERenderTimer::Reflections));
 		}
-		PerFrame.SsrEnabled      = bSsr ? 1u : 0u;
-		PerFrame.SsrMaxRoughness = FMath::Clamp(PostProcessSettings.SsrMaxRoughness, 0.05f, 1.0f);
+		PerFrame.SsrEnabled      = (bSsr || bRtReflectionsActive) ? 1u : 0u;
+		PerFrame.SsrMaxRoughness = ReflectionMaxRoughness;
 		PerFrame.SsrIntensity    = FMath::Max(PostProcessSettings.SsrIntensity, 0.0f);
+	}
+
+	// 2.68) 레이 트레이싱 디버그 (--debug-view rt-instances): 카메라 광선으로 TLAS 직접 보기 (AddDebugViewPass가 출력에 그림)
+	if (bRtDebug && TlasRef.IsValid())
+	{
+		RtLighting.Captures     = ReflectionCaptures.GetCaptureList();
+		RtLighting.CaptureCount = PerFrame.ReflectionCaptureCount;
+		FrameRtDebugRef = RayTracingEffects.AddDebugPass(Graph, RayTracingScene, RtView, RtRefs, RtLighting,
+		                                                 static_cast<uint32>(std::max(0, RendererCVars::RayTracingDebugMode.Get())),
+		                                                 TimerId(ERenderTimer::RayTracedReflections), FrameRtDebugSrv);
 	}
 
 	// 2.7) 안개 상수 + 볼류메트릭 안개 (3D 격자 주입 → 적분, 계산 셰이더만 → 비동기 계산 가능). 적용은 메인 패스 뒤, 파티클은 정점에서
@@ -1662,6 +1843,14 @@ void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGra
 	case 2:  Source = { Refs.Velocity, SceneVelocity->GetSrv() }; break;
 	case 3:  Source = { Refs.Depth, SceneColor->GetDepthSrv() }; break; // 깊이는 읽는 동안만 셰이더 리소스 (그래프가 전이)
 	case 4:  Source = { Graph.ImportColor("AmbientOcclusion", *AmbientOcclusion.GetResult()), AmbientOcclusion.GetResultSrv() }; break;
+	case DebugViewRtShadows: Source = { Graph.ImportColor("RtShadowHistory", RayTracingEffects.GetShadowMask()), RayTracingEffects.GetShadowMask().GetSrv() }; break;
+	case DebugViewRtInstances:
+		if (!FrameRtDebugRef.IsValid())
+		{
+			return; // 레이 트레이싱이 꺼져 있음
+		}
+		Source = { FrameRtDebugRef, FrameRtDebugSrv };
+		break;
 	default: Source = { Graph.ImportColor("SsrHistory", ScreenSpaceReflections.GetResult()), ScreenSpaceReflections.GetResultSrv() }; break;
 	}
 	PostProcessor.AddDebugViewPass(Graph, Source, Output, DebugView, -1);
@@ -1737,6 +1926,7 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 		Screen.ReflectionCaptures = ReflectionCaptures.GetCaptureList();
 		Screen.CaptureAtlas       = ReflectionCaptures.GetAtlasSrv();
 		Screen.ScreenReflection   = ScreenSpaceReflections.GetResultSrv();
+		Screen.RayTracedShadowMask = RayTracingEffects.GetShadowMask().GetSrv();
 		const ETerrainPass TerrainPass =
 			bPrepassPass ? ETerrainPass::Prepass : (Pass == EMeshPass::MainDepthEqual ? ETerrainPass::MainDepthEqual : ETerrainPass::Main);
 		TerrainRenderer.RenderMain(TerrainPass, PerFrameAddress, ShadowAddress, ShadowRenderer, IblRenderer, LocalLightRenderer, Screen);
@@ -1861,6 +2051,7 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_ReflectionCaptures, ReflectionCaptures.GetCaptureList());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_RayTracedShadowMask, RayTracingEffects.GetShadowMask().GetSrv().Gpu);
 	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩
 }
 

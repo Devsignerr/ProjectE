@@ -126,6 +126,7 @@ bool FEditorApplication::OnInit()
 		return false;
 	}
 	SceneRenderer.bAllowScreenPercentage = true; // 뷰포트: r.ScreenPercentage / r.DynamicResolution (TAAU, 통계 창)
+	SceneRenderer.bAllowRayTracing       = true; // 레이 트레이싱 (Phase 50): r.RayTracing* / 프로젝트 설정 Rendering, DXR 미지원이면 꺼짐
 	if (!ImGuiLayer.Init(GetWindow(), *Rhi, FPaths::GetSavedDirectory() / L"EditorLayout.ini"))
 	{
 		return false;

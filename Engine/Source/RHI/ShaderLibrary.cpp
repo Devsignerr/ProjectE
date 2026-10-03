@@ -82,6 +82,10 @@ void FShaderLibrary::Shutdown()
 std::wstring FShaderLibrary::MakeCacheKey(const FShaderCompileDesc& Desc)
 {
 	std::wstring Key = Desc.FileName + L"|" + Desc.EntryPoint + L"|" + FStringConv::ToWide(ShaderStageToString(Desc.Stage));
+	if (!Desc.ShaderModel.empty())
+	{
+		Key += L"|sm" + Desc.ShaderModel;
+	}
 	for (const std::wstring& Define : Desc.Defines)
 	{
 		Key += L"|" + Define;

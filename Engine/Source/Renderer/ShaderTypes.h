@@ -40,7 +40,9 @@ struct alignas(16) FPerFrameConstants
 	float                      MaterialMipBias        = 0.0f;
 	// 텍스처 밉 스트리밍 디버그 뷰 (r.DebugView mip): 1이면 메시 패스가 베이스 컬러 상주 밉을 색칠 (Mesh.hlsl MipDebugColor)
 	uint32                     DebugMipView           = 0;
-	float                      PerFramePadding[2]     = {};
+	// 레이 트레이싱 (Phase 50): 1 = 불투명 메인 패스의 방향광 그림자를 RT 마스크(t24)로 (반투명은 계속 섀도맵)
+	uint32                     RayTracedShadows       = 0;
+	float                      PerFramePadding        = 0.0f;
 };
 static_assert(sizeof(FPerFrameConstants) == 320);
 

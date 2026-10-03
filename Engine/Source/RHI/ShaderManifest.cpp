@@ -17,6 +17,7 @@ FShaderCompileDesc FShaderManifestEntry::ToCompileDesc() const
 	Desc.EntryPoint = EntryPoint;
 	Desc.Stage      = Stage;
 	Desc.Defines    = Defines;
+	Desc.ShaderModel = ShaderModel;
 	return Desc;
 }
 
@@ -78,6 +79,10 @@ bool FShaderManifest::ParseJson(std::string_view Json, std::string& OutError)
 			OutError = "알 수 없는 Stage: " + Item["Stage"].get<std::string>();
 			return false;
 		}
+		if (Item.contains("ShaderModel") && Item["ShaderModel"].is_string())
+		{
+			Entry.ShaderModel = FStringConv::ToWide(Item["ShaderModel"].get<std::string>()); // "6_5" (인라인 RayQuery)
+		}
 		if (Item.contains("Defines") && Item["Defines"].is_array())
 		{
 			for (const nlohmann::json& Define : Item["Defines"])
@@ -110,6 +115,11 @@ bool ParseShaderStage(std::string_view Text, EShaderStage& OutStage)
 		OutStage = EShaderStage::Compute;
 		return true;
 	}
+	if (Lower == "library")
+	{
+		OutStage = EShaderStage::Library;
+		return true;
+	}
 	return false;
 }
 
@@ -120,6 +130,7 @@ const char* ShaderStageToString(EShaderStage Stage)
 	case EShaderStage::Vertex:  return "Vertex";
 	case EShaderStage::Pixel:   return "Pixel";
 	case EShaderStage::Compute: return "Compute";
+	case EShaderStage::Library: return "Library";
 	}
 	return "Unknown";
 }
@@ -185,6 +196,10 @@ std::wstring GetCookedShaderFileName(const FShaderCompileDesc& Desc, bool bDebug
 	std::wstring Name = std::filesystem::path(Desc.FileName).stem().wstring();
 	Name += L"_" + Desc.EntryPoint;
 	Name += L"_" + FStringConv::ToWide(ShaderStageToString(Desc.Stage));
+	if (!Desc.ShaderModel.empty())
+	{
+		Name += L"_sm" + Desc.ShaderModel;
+	}
 
 	const uint64 DefineHash = HashShaderVariant(Desc);
 	if (DefineHash != 0)

@@ -11,17 +11,6 @@
 
 namespace
 {
-	const wchar_t* GetTargetProfile(EShaderStage Stage)
-	{
-		switch (Stage)
-		{
-		case EShaderStage::Vertex:  return L"vs_6_0";
-		case EShaderStage::Pixel:   return L"ps_6_0";
-		case EShaderStage::Compute: return L"cs_6_0";
-		}
-		return L"";
-	}
-
 	// DXC 없이 쓰는 최소 IDxcBlob (쿠킹 DXIL 보관). 참조 카운트는 WRL이 관리
 	class FMemoryBlob final : public Microsoft::WRL::RuntimeClass<Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>, IDxcBlob>
 	{
@@ -76,6 +65,23 @@ namespace
 		const std::vector<FShaderVirtualFile>* Files;
 	};
 } // namespace
+
+std::wstring GetShaderTargetProfile(EShaderStage Stage, const std::wstring& ShaderModel)
+{
+	const wchar_t* Prefix       = L"";
+	const wchar_t* DefaultModel = L"6_0";
+	switch (Stage)
+	{
+	case EShaderStage::Vertex:  Prefix = L"vs_"; break;
+	case EShaderStage::Pixel:   Prefix = L"ps_"; break;
+	case EShaderStage::Compute: Prefix = L"cs_"; break;
+	case EShaderStage::Library:
+		Prefix       = L"lib_";
+		DefaultModel = L"6_3"; // DXR 1.0 라이브러리 최소
+		break;
+	}
+	return std::wstring(Prefix) + (ShaderModel.empty() ? std::wstring(DefaultModel) : ShaderModel);
+}
 
 FD3D12ShaderCompiler::~FD3D12ShaderCompiler()
 {
@@ -152,10 +158,13 @@ ComPtr<IDxcBlob> FD3D12ShaderCompiler::Compile(const FShaderCompileDesc& Desc) c
 	std::vector<std::wstring> ArgStorage;
 	ArgStorage.reserve(24 + Desc.Defines.size() * 2);
 	ArgStorage.push_back(FullPath.wstring()); // 첫 인자: 오류 메시지용 소스 이름
-	ArgStorage.push_back(L"-E");
-	ArgStorage.push_back(Desc.EntryPoint);
+	if (Desc.Stage != EShaderStage::Library) // 라이브러리는 진입점 없이 [shader("...")] 함수를 모두 내보낸다
+	{
+		ArgStorage.push_back(L"-E");
+		ArgStorage.push_back(Desc.EntryPoint);
+	}
 	ArgStorage.push_back(L"-T");
-	ArgStorage.push_back(GetTargetProfile(Desc.Stage));
+	ArgStorage.push_back(GetShaderTargetProfile(Desc.Stage, Desc.ShaderModel));
 	ArgStorage.push_back(L"-I");
 	ArgStorage.push_back(ShaderDir.wstring());
 	ArgStorage.push_back(L"-HV");

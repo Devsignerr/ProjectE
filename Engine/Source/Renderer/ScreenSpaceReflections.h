@@ -70,6 +70,11 @@ public:
 	// 렌더 그래프 패스 등록: Hi-Z 밉마다 계산 패스(그래프 풀 밉 체인, 서브리소스 단위 전이) → 추적 → 흐림 → 누적.
 	// 추적/흐림 중간 버퍼는 그래프 풀, 누적 이력 2장은 가져온 리소스. 반환 = 결과(이번 누적 이력) 참조 — 메인 패스가 읽는다
 	FRGResourceRef AddPasses(FRenderGraph& Graph, const FScreenSpaceReflectionInputs& Inputs, const FSsrGraphRefs& Refs, int32 Timer);
+	// 흐림 + 누적만 (추적 결과를 다른 경로가 만든 경우 — RT 반사 Phase 50, RayTracedReflections.hlsl이 SsrTrace와 같은 형식으로 쓴다).
+	//   ResultRef/MotionRef = 그래프 풀 텍스처 (ResultFormat/MotionFormat, 씬 크기). Inputs에서 SceneColor(크기)/SceneNormal/Decal*/Velocity/bDecals/
+	//   bHistoryValid만 쓴다. 반환 = 이번 누적 이력
+	FRGResourceRef AddResolvePasses(FRenderGraph& Graph, const FScreenSpaceReflectionInputs& Inputs, const FSsrGraphRefs& Refs, FRGResourceRef ResultRef,
+	                                FRGResourceRef MotionRef, int32 Timer);
 
 	// 이번 프레임 결과 (누적 이력). SSR이 꺼져 있으면 마지막 이력 (메인 패스는 바인딩만 하고 읽지 않음)
 	const FD3D12DescriptorHandle& GetResultSrv() const { return History[HistoryIndex]->GetSrv(); }

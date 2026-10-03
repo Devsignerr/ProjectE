@@ -20,7 +20,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> ForceLod;         // r.ForceLOD       (--force-lod N)
 	extern TAutoConsoleVariable<float> LodHysteresis;    // r.LODHysteresis  (--lod-hysteresis X)
 	extern TAutoConsoleVariable<bool>  Jitter;           // r.Jitter         (--jitter)
-	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr)
+	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr|rt-reflections|rt-shadows|rt-instances)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
 	extern TAutoConsoleVariable<int32> AsyncLoading;     // r.AsyncLoading   (--sync-loading = 0, --async-loading = 1) — FResourceManager가 프레임마다 읽음
 	// 텍스처 밉 스트리밍 (Phase 53, Renderer/TextureStreaming.h) — FResourceManager가 프레임마다 읽음
@@ -44,6 +44,28 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> DynamicResolutionTargetMs; // r.DynamicResolution.TargetMs (--dynamic-resolution-target ms)
 	extern TAutoConsoleVariable<float> DynamicResolutionMin;    // r.DynamicResolution.MinPercentage
 	extern TAutoConsoleVariable<float> DynamicResolutionMax;    // r.DynamicResolution.MaxPercentage
+	// 레이 트레이싱 (Phase 50) — 레이 트레이싱을 허용한 렌더러(FSceneRenderer::bAllowRayTracing: 에디터 뷰포트·런타임)만, DXR 1.1 미지원이면 항상 끔.
+	//   켬/끔 변수(-1)는 프로젝트 설정 "Rendering"(FRenderingSettings)을 따른다
+	extern TAutoConsoleVariable<int32> RayTracing;                  // r.RayTracing                  (--raytracing / --no-raytracing)
+	extern TAutoConsoleVariable<int32> RayTracingShadows;           // r.RayTracing.Shadows          (--rt-shadows / --no-rt-shadows)
+	extern TAutoConsoleVariable<int32> RayTracingReflections;       // r.RayTracing.Reflections      (--rt-reflections / --no-rt-reflections)
+	extern TAutoConsoleVariable<bool>  RayTracingSkinned;           // r.RayTracing.Skinned
+	extern TAutoConsoleVariable<float> RayTracingSkinnedDistance;   // r.RayTracing.Skinned.MaxDistance
+	extern TAutoConsoleVariable<bool>  RayTracingFoliage;           // r.RayTracing.Foliage
+	extern TAutoConsoleVariable<bool>  RayTracingTerrain;           // r.RayTracing.Terrain
+	extern TAutoConsoleVariable<bool>  RayTracingCompaction;        // r.RayTracing.Compaction
+	extern TAutoConsoleVariable<bool>  RayTracingGraphMaterials;    // r.RayTracing.GraphMaterials
+	extern TAutoConsoleVariable<int32> RayTracingMaxBuilds;         // r.RayTracing.MaxBuildsPerFrame
+	extern TAutoConsoleVariable<float> RayTracingShadowSunAngle;    // r.RayTracing.Shadows.SunAngle
+	extern TAutoConsoleVariable<float> RayTracingShadowBias;        // r.RayTracing.Shadows.NormalBias
+	extern TAutoConsoleVariable<float> RayTracingShadowHistory;     // r.RayTracing.Shadows.HistoryWeight
+	extern TAutoConsoleVariable<float> RayTracingReflectionRoughness; // r.RayTracing.Reflections.MaxRoughness
+	extern TAutoConsoleVariable<int32> RayTracingReflectionLights;  // r.RayTracing.Reflections.MaxLocalLights
+	extern TAutoConsoleVariable<bool>  RayTracingReflectionShadows; // r.RayTracing.Reflections.Shadows
+	extern TAutoConsoleVariable<int32> RayTracingDebugMode;         // r.RayTracing.DebugMode
+	// r.RayTracing.Stats 명령이 불린 횟수 (렌더러마다 바뀌면 다음 프레임 레이 트레이싱 통계를 로그로)
+	uint32 GetRayTracingStatsSerial();
+
 	// 하늘·대기·구름·물 (Phase 49)
 	extern TAutoConsoleVariable<bool>  SkyAtmosphere;           // r.SkyAtmosphere              (대기 컴포넌트 무시 = 0, 비교용)
 	extern TAutoConsoleVariable<int32> SkyAtmosphereIblSamples; // r.SkyAtmosphere.IblSamples   (실시간 IBL 적분 표본 수)

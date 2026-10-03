@@ -6,7 +6,7 @@
 
 cbuffer DebugConstants : register(b0)
 {
-	uint  DebugMode;     // 1 = 법선, 2 = 움직임 벡터, 3 = 깊이, 4 = 단일 채널(AO 등)
+	uint  DebugMode;     // 1 = 법선, 2 = 움직임 벡터, 3 = 깊이, 4/8 = 단일 채널(AO, RT 그림자), 5/7 = 반사(SSR/RT), 9 = 색 그대로(RT 인스턴스) — FSceneRenderer::DebugView* 번호
 	float VelocityScale; // 움직임 벡터 배율 (UV → 표시)
 	float2 DebugPadding;
 };
@@ -37,9 +37,13 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	{
 		Color = pow(saturate(1.0f - Value.r), 0.25f); // 가까울수록 밝게 (리버스 아님: 1 = 먼 평면)
 	}
-	else if (DebugMode == 5)
+	else if (DebugMode == 5 || DebugMode == 7)
 	{
-		Color = sqrt(saturate(Value.rgb * Value.a)); // SSR 색 × 신뢰도 (아래 제곱과 상쇄해 그대로 보이게)
+		Color = sqrt(saturate(Value.rgb * Value.a)); // SSR/RT 반사 색 × 신뢰도 (아래 제곱과 상쇄해 그대로 보이게)
+	}
+	else if (DebugMode == 9)
+	{
+		Color = sqrt(saturate(Value.rgb)); // RT 인스턴스 보기 (선형 색 그대로)
 	}
 	else
 	{

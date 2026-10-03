@@ -60,6 +60,10 @@ public:
 	const FBox& GetLocalBounds() const { return LocalBounds; }
 	// GPU 버퍼 바이트 (정점 + 인덱스 + 스킨) — 리소스 통계용
 	uint64      GetGpuBytes() const { return VertexBuffer.GetSize() + IndexBuffer.GetSize() + SkinBuffer.GetSize(); }
+	// 레이 트레이싱 (Phase 50): BLAS 입력·바인드리스 SRV용 원본 버퍼 (IsReady 이후에만 GPU에서 읽는다). 정점 = FVertex(64B), 인덱스 = uint32
+	const FD3D12Buffer& GetVertexBuffer() const { return VertexBuffer; }
+	const FD3D12Buffer& GetIndexBuffer() const { return IndexBuffer; }
+	const FD3D12Buffer& GetSkinBuffer() const { return SkinBuffer; } // FSkinVertex 스트림 (IsSkinned일 때만)
 	// CPU 사본 (로컬 위치 + 삼각형 인덱스, CW 앞면): 내비메시 굽기 등 CPU 지오메트리 처리용
 	const std::vector<FVector3>& GetCpuPositions() const { return CpuPositions; }
 	const std::vector<uint32>&   GetCpuIndices() const { return CpuIndices; }

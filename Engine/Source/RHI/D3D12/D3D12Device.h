@@ -34,6 +34,11 @@ public:
 	};
 	bool QueryVideoMemory(FVideoMemoryInfo& OutInfo) const;
 
+	// 레이 트레이싱 (Phase 50): DXR 1.1(인라인 RayQuery) 이상이면 true. 가속 구조 빌드는 ID3D12Device5/ID3D12GraphicsCommandList4
+	bool                  SupportsRayTracing() const { return Device5 != nullptr; }
+	D3D12_RAYTRACING_TIER GetRaytracingTier() const { return RaytracingTier; }
+	ID3D12Device5*        GetDevice5() const { return Device5.Get(); } // 미지원이면 nullptr
+
 	bool   IsTearingSupported() const { return bTearingSupported; }
 	bool   IsDebugLayerEnabled() const { return bDebugLayerEnabled; }
 	uint32 GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE Type) const { return DescriptorSizes[Type]; }
@@ -45,6 +50,8 @@ private:
 	ComPtr<IDXGIFactory6> Factory;
 	ComPtr<IDXGIAdapter4> Adapter;
 	ComPtr<ID3D12Device>  Device;
+	ComPtr<ID3D12Device5> Device5; // DXR 1.1 지원 시에만
+	D3D12_RAYTRACING_TIER RaytracingTier = D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
 
 	std::unique_ptr<FD3D12MipGenerator> MipGenerator;
 	bool                                bMipGeneratorFailed = false;

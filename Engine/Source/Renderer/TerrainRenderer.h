@@ -44,6 +44,22 @@ struct FTerrainScreenInputs
 	D3D12_GPU_VIRTUAL_ADDRESS ReflectionCaptures = 0; // t20
 	FD3D12DescriptorHandle    CaptureAtlas;       // t21
 	FD3D12DescriptorHandle    ScreenReflection;   // t22
+	FD3D12DescriptorHandle    RayTracedShadowMask; // t24 (Phase 50 — PerFrame RayTracedShadows일 때 Terrain.hlsl이 읽음)
+};
+
+// 레이 트레이싱용 지형 입력 (Phase 50, FRayTracingScene — 높이장 타일 BLAS). 지난 Prepare의 지형마다
+struct FTerrainRayTracingInput
+{
+	const FTerrainData* Data = nullptr;
+	FEntity             Entity;
+	FVector3            Origin;           // 정점 (0, 0)의 월드 XY + 높이 0의 Z (FTerrainFrame)
+	FVector2            CellSize;
+	float               HeightScale  = 0.0f;
+	bool                bCastShadows = true;
+	const FMaterial*    Material     = nullptr; // 레이어 0 (히트 표면 근사 — 레이어 블렌딩 없음)
+	float               Tiling       = 1.0f / 400.0f; // 레이어 0: 1 / 텍스처 한 장 크기 (cm) → 정점 UV = 월드 XY × Tiling (Terrain.hlsl LayerTiling)
+	FVector4            Color        = FVector4::OneVector; // 정점 색 (레이어 0 머티리얼이 없으면 기본 레이어 색 — 래스터 LayerBaseColor와 같게)
+	uint32              ChunkCells   = 64;      // 셀 수를 나누는 청크 크기 (타일 크기 후보)
 };
 
 // 지형 렌더러 (Phase 34, Terrain.hlsl). FSceneRenderer가 소유하고 패스 사이에 호출한다:
@@ -73,6 +89,8 @@ public:
 	// 에디터 선택 아웃라인 마스크 (R8_UNORM 타깃이 바인딩된 상태): 지난 Prepare의 메인 패스 청크로 Entities에 든 지형만
 	void RenderMask(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const std::vector<FEntity>& Entities);
 	bool HasTerrain(const std::vector<FEntity>& Entities) const; // 지난 Prepare에 Entities 중 지형이 있었나
+	// 레이 트레이싱 (Phase 50): 지난 Prepare의 지형 (데이터 + 위치 + 레이어 0 머티리얼)
+	void GetRayTracingInputs(std::vector<FTerrainRayTracingInput>& OutInputs) const;
 
 	bool  bEnabled         = true;
 	bool  bDebugLod        = false; // LOD별 색 (--terrain-lod-colors)
@@ -116,6 +134,10 @@ private:
 	struct FFrameTerrain
 	{
 		FTerrainGpu*              Gpu = nullptr;
+		const FTerrainData*       Data = nullptr; // 레이 트레이싱 입력 (GetRayTracingInputs)
+		const FMaterial*          Layer0Material = nullptr;
+		float                     Layer0Tiling   = 1.0f / 400.0f;
+		FVector4                  Layer0Color    = FVector4::OneVector;
 		FEntity                   Entity;
 		D3D12_GPU_VIRTUAL_ADDRESS Constants = 0;
 		D3D12_GPU_DESCRIPTOR_HANDLE LayerTables[4] = {};

@@ -13,6 +13,7 @@ enum class EShaderStage : uint8
 	Vertex,
 	Pixel,
 	Compute,
+	Library, // DXR 라이브러리 (lib_6_3 이상 — 히트/미스/레이 생성 셰이더 묶음, 진입점 없이 컴파일. 상태 객체 DXIL 라이브러리로 쓴다)
 };
 
 // 디스크에 없는 포함 파일 (생성 소스 — 예: 머티리얼 그래프 MaterialGraph.generated.hlsli). #include "Name"을 이 내용으로 푼다
@@ -29,9 +30,15 @@ struct FShaderCompileDesc
 	EShaderStage              Stage = EShaderStage::Vertex;
 	std::vector<std::wstring> Defines;    // "NAME" 또는 "NAME=VALUE"
 	std::vector<FShaderVirtualFile> VirtualFiles; // 생성 소스 포함 파일 (내용 해시가 캐시 키·쿠킹 파일명에 들어간다)
+	// 셰이더 모델 "6_5" 같은 형식 (비면 기본: 정점/픽셀/계산 6_0, 라이브러리 6_3). 인라인 RayQuery는 6_5 이상.
+	// 기본이 아니면 쿠킹 파일명에 _sm<모델>이 붙는다 (GetCookedShaderFileName)
+	std::wstring ShaderModel;
 };
 
-// DXC 기반 HLSL → DXIL 런타임 컴파일러 (Shader Model 6.0).
+// 대상 프로필 ("cs_6_5", "lib_6_3" ...). Desc.ShaderModel이 비면 단계별 기본 모델
+std::wstring GetShaderTargetProfile(EShaderStage Stage, const std::wstring& ShaderModel);
+
+// DXC 기반 HLSL → DXIL 런타임 컴파일러 (기본 Shader Model 6.0, FShaderCompileDesc::ShaderModel로 올림).
 // dxcompiler.dll은 지연 로드된다: DLL이 없으면(쿠킹 셰이더만 배포한 패키지) Init은 성공하지만 IsAvailable() == false이고
 // Compile은 실패한다. 쿠킹 DXIL 로드(CreateBlob)는 DXC 없이 동작한다.
 class FD3D12ShaderCompiler

@@ -9,7 +9,7 @@
 class FD3D12GpuTimer
 {
 public:
-	static constexpr uint32 MaxScopes = 24;
+	static constexpr uint32 MaxScopes = 32; // ERenderTimer 칸 수 이상 (Phase 50에서 24 → 32: 대기·구름·물 + 레이 트레이싱 3칸)
 	static constexpr uint32 MaxSlots  = 4;
 
 	~FD3D12GpuTimer();

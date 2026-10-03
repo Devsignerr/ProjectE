@@ -205,7 +205,7 @@ float4 TerrainPS(FTerrainPixelInput Input) : SV_Target
 
 	const float3 L        = -DirectionalLight.Direction;
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
-	const float  Shadow   = ComputeShadow(Input.WorldPosition, N, L);
+	const float  Shadow   = ComputeDirectionalShadow(Input.WorldPosition, N, L, Input.Position.xy, true); // RT 그림자 마스크(t24) 또는 섀도맵
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, N);

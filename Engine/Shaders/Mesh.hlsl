@@ -50,7 +50,8 @@ cbuffer PerFrame : register(b1)
 	float             SsrIntensity;
 	float             MaterialMipBias; // 머티리얼/지형 텍스처 밉 바이어스 (TAAU: log2(내부/출력), 네이티브 0)
 	uint              DebugMipView;    // 1 = 텍스처 밉 스트리밍 디버그 뷰 (r.DebugView mip, MipDebugColor)
-	float2            PerFramePadding;
+	uint              RayTracedShadows; // 1 = 불투명 방향광 그림자를 RT 마스크(t24)로 (Phase 50)
+	float             PerFramePadding;
 };
 
 SamplerState LinearSampler : register(s0); // 이방성 반복 (머티리얼 E_MATERIAL_SAMPLER_WRAP)
@@ -320,6 +321,19 @@ float ComputeShadow(float3 WorldPosition, float3 GeometricNormal, float3 L)
 	return lerp(Lit, 1.0f, Fade);
 }
 
+// 레이 트레이싱 방향광 그림자 마스크 (Phase 50, RayTracedShadows.hlsl — 사전 패스 깊이 기준 화면 픽셀 값). 불투명 표면만:
+// 반투명(bScreenEffects = false)·볼류메트릭 안개는 섀도맵. 꺼져 있으면 ComputeShadow 그대로 (화면 비트 동일)
+Texture2D<float> RayTracedShadowMask : register(t24);
+
+float ComputeDirectionalShadow(float3 WorldPosition, float3 GeometricNormal, float3 L, float2 PixelPosition, bool bScreenEffects)
+{
+	if (bScreenEffects && RayTracedShadows != 0)
+	{
+		return RayTracedShadowMask.Load(int3(PixelPosition, 0));
+	}
+	return ComputeShadow(WorldPosition, GeometricNormal, L);
+}
+
 float3 CascadeDebugColor(float3 WorldPosition)
 {
 	const uint Cascade = SelectCascade(WorldPosition);
@@ -533,7 +547,7 @@ float3 EvaluateMeshLighting(FSurface Surface, float3 WorldPosition, float3 Geome
 {
 	const float3 L        = -DirectionalLight.Direction; // 표면 → 광원
 	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
-	const float  Shadow   = ComputeShadow(WorldPosition, GeometricNormal, L);
+	const float  Shadow   = ComputeDirectionalShadow(WorldPosition, GeometricNormal, L, PixelPosition, bScreenReflections);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, PixelPosition, WorldPosition, GeometricNormal);

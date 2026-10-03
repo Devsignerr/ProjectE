@@ -104,6 +104,23 @@ bool FD3D12Device::Init(bool bEnableDebugLayer)
 	bTearingSupported = (bAllowTearing == TRUE);
 
 	E_LOG(LogD3D12, Display, "D3D12 디바이스 생성 완료 (테어링 지원: {})", bTearingSupported);
+
+	// 레이 트레이싱 (Phase 50): 인라인 RayQuery(DXR 1.1)가 있어야 켠다. 없으면 기존 래스터 경로만 (기능 꺼짐)
+	D3D12_FEATURE_DATA_D3D12_OPTIONS5 Options5{};
+	if (SUCCEEDED(Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &Options5, sizeof(Options5))))
+	{
+		RaytracingTier = Options5.RaytracingTier;
+	}
+	if (RaytracingTier >= D3D12_RAYTRACING_TIER_1_1 && SUCCEEDED(Device.As(&Device5)))
+	{
+		E_LOG(LogD3D12, Display, "레이 트레이싱 지원: DXR {} (인라인 RayQuery)", RaytracingTier == D3D12_RAYTRACING_TIER_1_1 ? "1.1" : "1.1+");
+	}
+	else
+	{
+		Device5.Reset();
+		E_LOG(LogD3D12, Display, "레이 트레이싱 꺼짐: DXR 1.1 미지원 (RaytracingTier {}) — 섀도맵/SSR 경로만 사용",
+		      static_cast<int32>(RaytracingTier));
+	}
 	// PSO 캐시 (Phase 48): 프로젝트가 있는 앱만 (테스트·도구는 캐시 없이 바로 생성). 쓰기는 항상 <Saved>/ShaderCache
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	if (FPaths::IsInitialized() && FPaths::HasProject() && !CommandLine.HasFlag(L"--no-pso-cache"))
@@ -125,6 +142,7 @@ void FD3D12Device::Shutdown()
 	bMipGeneratorFailed = false;
 	FD3D12PipelineCache::Get().Shutdown(); // 저장 + 캐시가 쥔 PSO/루트 시그니처 해제 (디바이스보다 먼저)
 
+	Device5.Reset();
 	Device.Reset();
 	Adapter.Reset();
 	Factory.Reset();

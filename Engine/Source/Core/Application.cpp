@@ -172,6 +172,14 @@ int FApplication::Run()
 	{
 		HitchThresholdMs = Hitch.empty() ? 50.0f : std::max(1.0f, std::stof(Hitch));
 	}
+	// 고정 델타: 게임 시간이 실제 경과가 아니라 프레임마다 1/Hz초 진행 (기본 60) — 움직이는 씬의 자동 검증 화면을 실행마다 같게.
+	//   네트워크 세션(실제 시각 기준 서버 틱)과는 맞지 않으므로 자동 검증 기본값으로 켜지 않는다
+	if (const std::wstring Fixed = CommandLine.GetValue(L"--fixed-delta"); !Fixed.empty() || CommandLine.HasFlag(L"--fixed-delta"))
+	{
+		const float Hz = Fixed.empty() ? 60.0f : std::max(1.0f, std::stof(Fixed));
+		Timer.SetFixedDelta(1.0f / Hz);
+		E_LOG(LogCore, Display, "고정 델타: {:.3f}ms ({}Hz)", 1000.0f / Hz, Hz);
+	}
 	if (CommandLine.HasFlag(L"--crash-test"))
 	{
 		CrashTestFrame = 30; // 패키지 크래시 덤프 검증: 30프레임(틱) 뒤 의도적 액세스 위반

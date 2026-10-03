@@ -18,8 +18,16 @@ void FTimer::Tick()
 {
 	const FClock::time_point Now = FClock::now();
 
-	DeltaSeconds = std::chrono::duration<float>(Now - LastTime).count();
-	TotalSeconds = std::chrono::duration<double>(Now - StartTime).count();
+	if (FixedDeltaSeconds > 0.0f)
+	{
+		DeltaSeconds = FixedDeltaSeconds;
+		TotalSeconds += FixedDeltaSeconds;
+	}
+	else
+	{
+		DeltaSeconds = std::chrono::duration<float>(Now - LastTime).count();
+		TotalSeconds = std::chrono::duration<double>(Now - StartTime).count();
+	}
 	LastTime     = Now;
 	++FrameCount;
 }

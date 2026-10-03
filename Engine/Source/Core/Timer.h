@@ -17,6 +17,8 @@ public:
 	void Tick();
 	// 지난 Tick 이후 흐른 시간을 버린다 (다음 Tick의 델타가 지금부터). 누적 시간은 그대로 실제 시각을 따른다
 	void DiscardElapsed() { LastTime = FClock::now(); }
+	// 고정 델타 (> 0이면 Tick이 실제 경과 대신 이 값을 쓴다 — 움직이는 씬의 자동 검증을 재현 가능하게, 앱 인자 --fixed-delta [Hz])
+	void SetFixedDelta(float Seconds) { FixedDeltaSeconds = Seconds; }
 
 	float  GetDeltaSeconds() const { return DeltaSeconds; }
 	double GetTotalSeconds() const { return TotalSeconds; }
@@ -30,4 +32,5 @@ private:
 	float              DeltaSeconds = 0.0f;
 	double             TotalSeconds = 0.0;
 	uint64             FrameCount   = 0;
+	float              FixedDeltaSeconds = 0.0f;
 };

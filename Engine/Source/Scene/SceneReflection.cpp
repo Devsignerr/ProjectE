@@ -14,6 +14,7 @@
 #include "Scene/Building/BuildingScene.h"
 #include "Scene/SkyAtmosphere.h"
 #include "Scene/Ability/AbilityReflection.h"
+#include "Scene/IrradianceVolume.h"
 
 void RegisterSceneTypes()
 {
@@ -296,4 +297,6 @@ void RegisterSceneTypes()
 	RegisterSkyTypes();
 	// 능력 시스템 (Scene/Ability, Phase 53 사이드)
 	RegisterAbilityTypes();
+	// 동적 GI 프로브 볼륨 (Scene/IrradianceVolume.h, Phase 51 DDGI)
+	RegisterIrradianceVolumeTypes();
 }

@@ -20,6 +20,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
+from AssetFixes import SwapAlphaImages  # noqa: E402
 
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT = os.path.join(ROOT, "Projects", "Sample", "Content")
@@ -292,6 +293,9 @@ PART_NAMES = {}  # Id → [변형 접미사, ...]
 # 잎 카드 알파가 별도 맵인 에셋: 나눈 glTF는 FetchDemoAssets.ps1이 합친 RGBA PNG(<Id>_<접두사>_diffalpha_2k.png)를 색 텍스처로 쓴다
 #   (원본 JPG 색에는 알파가 없어 카드가 검은 사각형으로 보인다 — 잠금 파일 AlphaMaps와 맞춘다)
 ALPHA_MAPS = {"fir_sapling_medium": "twigs", "pine_sapling_small": "twig"}
+# 잎 카드뿐인 에셋(줄기 없음 — 나누지 않음): 나눈 glTF 전체의 색 텍스처를 알파 합친 PNG로 (Id → 잠금 파일 AlphaMaps 접두사, Hub ALPHA_FIX와 같음)
+#   grass_medium_02·shrub_04는 잎이 실제 기하(UV가 잎 모양에 딱 맞음)라 대상이 아니다 (2026-10-04 확인)
+WHOLE_ALPHA_MAPS = {"fern_02": ["*"]}
 LEAF_TINT = [0.6, 0.72, 0.62, 1.0]
 # 잎 상한 단계: 솎아내기는 남은 잎 카드를 키워 덮는 면적을 유지하므로 많이 줄이면 잎이 넓적해진다 — 걷는 길 바로 옆 나무만 촘촘하게.
 #   (접미사, 상한) — 접미사 "" = IMPORT_SETTINGS 값(가장 촘촘). 모두 화면 크기 LOD가 더 줄인다
@@ -304,6 +308,8 @@ def WriteParts():
 	for Id in PARTS:
 		Folder = os.path.join(CONTENT, "Asset", "PolyHaven", Id)
 		Source = json.load(open(os.path.join(Folder, f"{Id}.gltf"), encoding="utf-8"))
+		if Id in WHOLE_ALPHA_MAPS:
+			SwapAlphaImages(Source, Id, WHOLE_ALPHA_MAPS[Id])
 		Roots = Source["scenes"][Source.get("scene", 0)]["nodes"]
 		Names = []
 		for Root in Roots:

@@ -24,6 +24,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
+from AssetFixes import AlphaModel  # noqa: E402
 
 ROOT     = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT  = os.path.join(ROOT, "Projects", "Sample", "Content")
@@ -604,8 +605,13 @@ GRASS_TYPE = {
 
 
 # ---- 씬 배치 --------------------------------------------------------------------------------------------------------
+# 잎 카드 알파가 별도 맵인 에셋: Hub(BuildHub.py ALPHA_FIX)가 쓴 알파 고친 사본 <Id>.alpha.gltf(+ .eimport)를 같이 쓴다
+#   (원본 색 JPG에는 알파가 없어 잎 카드가 어두운 판이 된다)
+ALPHA_FIXED = {"wild_rooibos_bush", "fern_02"}
+
+
 def Model(Id):
-	return f"{PH}/{Id}/{Id}.gltf"
+	return AlphaModel(Id) if Id in ALPHA_FIXED else f"{PH}/{Id}/{Id}.gltf"
 
 
 def FaceYaw(DX, DY):

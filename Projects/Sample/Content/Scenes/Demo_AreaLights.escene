@@ -474,13 +474,13 @@
      "IesProfile": "",
      "UseIesIntensity": false,
      "IesIntensityScale": 1.0,
-     "CookieTexture": "AreaLights/Flicker.png",
+     "CookieTexture": "",
      "CookieScale": [
-      0,
-      0
+      1,
+      1
      ],
      "CookiePanSpeed": [
-      0.35,
+      0,
       0
      ]
     },
@@ -503,7 +503,88 @@
      ]
     }
    },
-   "Name": "TubeLight_Flicker",
+   "Name": "TubeLight_B",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/PanelCool.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -300,
+      299,
+      220
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.6,
+      0.02,
+      0.08
+     ]
+    }
+   },
+   "Name": "FlickerPanel",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "AreaLightComponent": {
+     "Shape": 0,
+     "Color": [
+      1,
+      1,
+      1
+     ],
+     "Intensity": 1.5,
+     "Width": 60.0,
+     "Height": 8.0,
+     "Radius": 300.0,
+     "TwoSided": false,
+     "BarnDoorAngle": 90.0,
+     "BarnDoorLength": 20.0,
+     "CastShadows": false,
+     "IesProfile": "",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "AreaLights/Flicker.png",
+     "CookieScale": [
+      0,
+      0
+     ],
+     "CookiePanSpeed": [
+      0.125,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      -300,
+      292,
+      220
+     ],
+     "Rotation": [
+      0.0,
+      -0.0,
+      -0.7071068,
+      0.7071068
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "FlickerLight",
    "Parent": -1
   },
   {

@@ -346,6 +346,7 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.OcclusionPhase2 += Stats.OcclusionPhase2;
 	Capture.TotalMeshes = Stats.TotalMeshes;
 	Capture.SkinnedDrawn += Stats.SkinnedDrawn;
+	Capture.SkinPalettes += Stats.SkinPalettes;
 	Capture.SkinnedCulled += Stats.SkinnedCulled;
 	Capture.UploadBytes += static_cast<double>(Stats.UploadBytes);
 }
@@ -382,8 +383,8 @@ void FSceneRenderer::LogPerfCapture() const
 		E_LOG(LogRenderer, Display, "[성능] 오클루전: 정적 인스턴스 {:.1f} 중 그림 {:.1f} (2단계 {:.2f}), 가려짐 {:.1f}", Capture.OcclusionTested / Count,
 		      Capture.OcclusionDrawn / Count, Capture.OcclusionPhase2 / Count, (Capture.OcclusionTested - Capture.OcclusionDrawn) / Count);
 	}
-	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
-	      Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
+	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 엔티티 {:.1f}, 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
+	      Capture.SkinPalettes / Count, Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
 		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)
@@ -1213,6 +1214,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	Stats.TotalMeshes   = MeshInstances.GetComponentCount();
 	Stats.SkinnedDrawn  = static_cast<uint32>(SkinPalettes.GetCount());
 	Stats.SkinnedCulled = SkinPalettes.GetCulledCount();
+	Stats.SkinPalettes  = SkinPalettes.GetPaletteCount();
 	EndCpuTimer(ERenderTimer::Gather);
 
 	// GPU 파티클 계산 (그리기 전에, 계산 셰이더만 → 비동기 계산 가능)

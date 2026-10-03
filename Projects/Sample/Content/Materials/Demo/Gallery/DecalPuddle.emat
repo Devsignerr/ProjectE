@@ -1,0 +1,23 @@
+{
+  "Name": "DecalPuddle",
+  "BaseColorFactor": [
+    0.16,
+    0.17,
+    0.19,
+    0.85
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.03,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../Decals/Puddle.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

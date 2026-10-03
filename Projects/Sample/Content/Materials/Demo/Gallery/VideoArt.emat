@@ -1,0 +1,284 @@
+{
+  "Name": "VideoArt",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "ColorA",
+      "Type": "Vector",
+      "Value": [
+        0.05,
+        0.25,
+        0.9,
+        1.0
+      ]
+    },
+    {
+      "Name": "ColorB",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        0.35,
+        0.1,
+        1.0
+      ]
+    },
+    {
+      "Name": "Brightness",
+      "Type": "Scalar",
+      "Value": 2.2
+    },
+    {
+      "Name": "Cells",
+      "Type": "Vector",
+      "Value": [
+        32.0,
+        18.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "uv",
+        "Type": "TexCoord"
+      },
+      {
+        "Id": "panA",
+        "Type": "Panner",
+        "Inputs": {
+          "UV": "uv",
+          "Speed": [
+            0.06,
+            0.015
+          ]
+        }
+      },
+      {
+        "Id": "panB",
+        "Type": "Panner",
+        "Inputs": {
+          "UV": "uv",
+          "Speed": [
+            -0.035,
+            0.05
+          ]
+        }
+      },
+      {
+        "Id": "a",
+        "Type": "Dot",
+        "Inputs": {
+          "A": "panA",
+          "B": [
+            9.0,
+            5.0
+          ]
+        }
+      },
+      {
+        "Id": "b",
+        "Type": "Dot",
+        "Inputs": {
+          "A": "panB",
+          "B": [
+            -4.0,
+            11.0
+          ]
+        }
+      },
+      {
+        "Id": "sa",
+        "Type": "Sine",
+        "Inputs": {
+          "A": "a"
+        }
+      },
+      {
+        "Id": "sb",
+        "Type": "Sine",
+        "Inputs": {
+          "A": "b"
+        }
+      },
+      {
+        "Id": "wave",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "sa",
+          "B": "sb"
+        }
+      },
+      {
+        "Id": "wave01",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "wave",
+          "B": 0.5
+        }
+      },
+      {
+        "Id": "waveN",
+        "Type": "Add",
+        "Inputs": {
+          "A": "wave01",
+          "B": 0.5
+        }
+      },
+      {
+        "Id": "time",
+        "Type": "Time"
+      },
+      {
+        "Id": "t2",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "time",
+          "B": 0.35
+        }
+      },
+      {
+        "Id": "shift",
+        "Type": "Sine",
+        "Inputs": {
+          "A": "t2"
+        }
+      },
+      {
+        "Id": "shift01",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "shift",
+          "B": 0.35
+        }
+      },
+      {
+        "Id": "mix",
+        "Type": "Add",
+        "Inputs": {
+          "A": "waveN",
+          "B": "shift01"
+        }
+      },
+      {
+        "Id": "mixS",
+        "Type": "Saturate",
+        "Inputs": {
+          "A": "mix"
+        }
+      },
+      {
+        "Id": "colA",
+        "Type": "VectorParameter",
+        "Parameter": "ColorA"
+      },
+      {
+        "Id": "colB",
+        "Type": "VectorParameter",
+        "Parameter": "ColorB"
+      },
+      {
+        "Id": "col",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": "colA:1",
+          "B": "colB:1",
+          "Alpha": "mixS"
+        }
+      },
+      {
+        "Id": "cells",
+        "Type": "VectorParameter",
+        "Parameter": "Cells"
+      },
+      {
+        "Id": "cellsXY",
+        "Type": "Append",
+        "Inputs": {
+          "A": "cells:2",
+          "B": "cells:3"
+        }
+      },
+      {
+        "Id": "grid",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "uv",
+          "B": "cellsXY"
+        }
+      },
+      {
+        "Id": "gridF",
+        "Type": "Frac",
+        "Inputs": {
+          "A": "grid"
+        }
+      },
+      {
+        "Id": "gridC",
+        "Type": "Subtract",
+        "Inputs": {
+          "A": "gridF",
+          "B": 0.5
+        }
+      },
+      {
+        "Id": "gridD",
+        "Type": "Length",
+        "Inputs": {
+          "A": "gridC"
+        }
+      },
+      {
+        "Id": "dot",
+        "Type": "Compare",
+        "Op": "Less",
+        "Inputs": {
+          "A": "gridD",
+          "B": 0.42,
+          "True": 1.0,
+          "False": 0.25
+        }
+      },
+      {
+        "Id": "bright",
+        "Type": "ScalarParameter",
+        "Parameter": "Brightness"
+      },
+      {
+        "Id": "e1",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "col",
+          "B": "dot"
+        }
+      },
+      {
+        "Id": "e2",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "e1",
+          "B": "waveN"
+        }
+      },
+      {
+        "Id": "emissive",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "e2",
+          "B": "bright"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": [
+        0.01,
+        0.01,
+        0.01
+      ],
+      "Roughness": 0.25,
+      "Emissive": "emissive"
+    }
+  }
+}

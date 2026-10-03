@@ -1,0 +1,21 @@
+{
+  "Name": "SampleLacquer",
+  "Parent": "SampleBase.emat",
+  "Parameters": [
+    {
+      "Name": "BaseColor",
+      "Type": "Vector",
+      "Value": [
+        0.42,
+        0.015,
+        0.02,
+        1.0
+      ]
+    },
+    {
+      "Name": "Roughness",
+      "Type": "Scalar",
+      "Value": 0.03
+    }
+  ]
+}

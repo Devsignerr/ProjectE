@@ -1,0 +1,31 @@
+{
+  "Name": "SkylightGlass",
+  "Parent": "SampleGlass.emat",
+  "Parameters": [
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.9,
+        0.95,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RimIntensity",
+      "Type": "Scalar",
+      "Value": 0.0
+    },
+    {
+      "Name": "MinOpacity",
+      "Type": "Scalar",
+      "Value": 0.06
+    },
+    {
+      "Name": "MaxOpacity",
+      "Type": "Scalar",
+      "Value": 0.3
+    }
+  ]
+}

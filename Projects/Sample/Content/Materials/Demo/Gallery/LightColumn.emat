@@ -1,0 +1,141 @@
+{
+  "Name": "LightColumn",
+  "BlendMode": "Additive",
+  "TwoSided": true,
+  "Parameters": [
+    {
+      "Name": "GlowColor",
+      "Type": "Vector",
+      "Value": [
+        0.35,
+        0.75,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "GlowIntensity",
+      "Type": "Scalar",
+      "Value": 1.1
+    },
+    {
+      "Name": "Speed",
+      "Type": "Scalar",
+      "Value": 2.5
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "pos",
+        "Type": "WorldPosition"
+      },
+      {
+        "Id": "z",
+        "Type": "ComponentMask",
+        "Channels": "z",
+        "Inputs": {
+          "A": "pos"
+        }
+      },
+      {
+        "Id": "zs",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "z",
+          "B": 0.025
+        }
+      },
+      {
+        "Id": "time",
+        "Type": "Time"
+      },
+      {
+        "Id": "speed",
+        "Type": "ScalarParameter",
+        "Parameter": "Speed"
+      },
+      {
+        "Id": "ts",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "time",
+          "B": "speed"
+        }
+      },
+      {
+        "Id": "phase",
+        "Type": "Subtract",
+        "Inputs": {
+          "A": "zs",
+          "B": "ts"
+        }
+      },
+      {
+        "Id": "s",
+        "Type": "Sine",
+        "Inputs": {
+          "A": "phase"
+        }
+      },
+      {
+        "Id": "s01",
+        "Type": "Saturate",
+        "Inputs": {
+          "A": "s"
+        }
+      },
+      {
+        "Id": "band",
+        "Type": "Power",
+        "Inputs": {
+          "A": "s01",
+          "B": 6.0
+        }
+      },
+      {
+        "Id": "level",
+        "Type": "Add",
+        "Inputs": {
+          "A": "band",
+          "B": 0.25
+        }
+      },
+      {
+        "Id": "color",
+        "Type": "VectorParameter",
+        "Parameter": "GlowColor"
+      },
+      {
+        "Id": "intensity",
+        "Type": "ScalarParameter",
+        "Parameter": "GlowIntensity"
+      },
+      {
+        "Id": "g",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "color:1",
+          "B": "level"
+        }
+      },
+      {
+        "Id": "emissive",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "g",
+          "B": "intensity"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Emissive": "emissive",
+      "Opacity": 1.0
+    }
+  }
+}

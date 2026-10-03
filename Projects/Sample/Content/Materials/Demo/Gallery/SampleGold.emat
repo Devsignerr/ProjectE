@@ -1,0 +1,21 @@
+{
+  "Name": "SampleGold",
+  "Parent": "SampleBase.emat",
+  "Parameters": [
+    {
+      "Name": "BaseColor",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        0.77,
+        0.34,
+        1.0
+      ]
+    },
+    {
+      "Name": "Metallic",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

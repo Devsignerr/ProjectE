@@ -1,0 +1,50 @@
+{
+  "Name": "SampleBase",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "BaseColor",
+      "Type": "Vector",
+      "Value": [
+        0.8,
+        0.8,
+        0.8,
+        1.0
+      ]
+    },
+    {
+      "Name": "Metallic",
+      "Type": "Scalar",
+      "Value": 0.0
+    },
+    {
+      "Name": "Roughness",
+      "Type": "Scalar",
+      "Value": 0.5
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "color",
+        "Type": "VectorParameter",
+        "Parameter": "BaseColor"
+      },
+      {
+        "Id": "metal",
+        "Type": "ScalarParameter",
+        "Parameter": "Metallic"
+      },
+      {
+        "Id": "rough",
+        "Type": "ScalarParameter",
+        "Parameter": "Roughness"
+      }
+    ],
+    "Output": {
+      "BaseColor": "color:1",
+      "Metallic": "metal",
+      "Roughness": "rough"
+    }
+  }
+}

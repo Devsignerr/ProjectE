@@ -1,0 +1,11 @@
+{
+  "Name": "SampleGold_R30",
+  "Parent": "SampleGold.emat",
+  "Parameters": [
+    {
+      "Name": "Roughness",
+      "Type": "Scalar",
+      "Value": 0.3
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "Name": "LatticeScreen",
+  "BlendMode": "Masked",
+  "AlphaCutoff": 0.5,
+  "TwoSided": true,
+  "Parameters": [
+    {
+      "Name": "Cells",
+      "Type": "Vector",
+      "Value": [
+        10.0,
+        14.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "HoleRadius",
+      "Type": "Scalar",
+      "Value": 0.36
+    },
+    {
+      "Name": "Metal",
+      "Type": "Vector",
+      "Value": [
+        0.78,
+        0.58,
+        0.3,
+        1.0
+      ]
+    },
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/granite_tile/granite_tile_diff_2k.jpg",
+      "Usage": "Color"
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "uv",
+        "Type": "TexCoord"
+      },
+      {
+        "Id": "cells",
+        "Type": "VectorParameter",
+        "Parameter": "Cells"
+      },
+      {
+        "Id": "cellsXY",
+        "Type": "Append",
+        "Inputs": {
+          "A": "cells:2",
+          "B": "cells:3"
+        }
+      },
+      {
+        "Id": "grid",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "uv",
+          "B": "cellsXY"
+        }
+      },
+      {
+        "Id": "f",
+        "Type": "Frac",
+        "Inputs": {
+          "A": "grid"
+        }
+      },
+      {
+        "Id": "c",
+        "Type": "Subtract",
+        "Inputs": {
+          "A": "f",
+          "B": 0.5
+        }
+      },
+      {
+        "Id": "d",
+        "Type": "Length",
+        "Inputs": {
+          "A": "c"
+        }
+      },
+      {
+        "Id": "radius",
+        "Type": "ScalarParameter",
+        "Parameter": "HoleRadius"
+      },
+      {
+        "Id": "mask",
+        "Type": "Compare",
+        "Op": "Greater",
+        "Inputs": {
+          "A": "d",
+          "B": "radius",
+          "True": 1.0,
+          "False": 0.0
+        }
+      },
+      {
+        "Id": "grain",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "grid"
+        }
+      },
+      {
+        "Id": "metal",
+        "Type": "VectorParameter",
+        "Parameter": "Metal"
+      },
+      {
+        "Id": "grainL",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": 0.75,
+          "B": 1.25,
+          "Alpha": "grain:2"
+        }
+      },
+      {
+        "Id": "color",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "metal:1",
+          "B": "grainL"
+        }
+      },
+      {
+        "Id": "rough",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": 0.25,
+          "B": 0.5,
+          "Alpha": "grain:2"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Metallic": 1.0,
+      "Roughness": "rough",
+      "OpacityMask": "mask"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "Name": "VitrineGlass",
+  "Parent": "SampleGlass.emat",
+  "Parameters": [
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.85,
+        0.95,
+        0.95,
+        1.0
+      ]
+    },
+    {
+      "Name": "RimIntensity",
+      "Type": "Scalar",
+      "Value": 0.0
+    },
+    {
+      "Name": "MinOpacity",
+      "Type": "Scalar",
+      "Value": 0.04
+    },
+    {
+      "Name": "MaxOpacity",
+      "Type": "Scalar",
+      "Value": 0.45
+    }
+  ]
+}

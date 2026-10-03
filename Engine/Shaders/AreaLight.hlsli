@@ -10,7 +10,6 @@
 
 static const float E_LTC_SCALE = 63.0f / 64.0f; // AreaLightMath::LtcTableSize
 static const float E_LTC_BIAS  = 0.5f / 64.0f;
-static const uint  E_AREA_MAX_VERTICES = 8;   // AreaLightMath::MaxPolygonVertices (원판 = 정 8각형)
 static const float E_DISC_POLYGON_SCALE = 1.05390736f; // AreaLightMath::DiscPolygonScale
 
 // 모서리 형태 계수 벡터 (AreaLightMath::IntegrateEdgeVector, Heitz 2017 유리 근사)
@@ -39,56 +38,44 @@ float LtcClipFormFactor(float3 FormFactor, bool bFlipZ)
 	return Length * E_LIGHT_TEXTURE(LtcTexture2).SampleLevel(E_LIGHT_SAMPLER_CLAMP, UV, 0).w;
 }
 
-// 면광원 다각형 (AreaLightMath::MakePolygon): 사각형 4점 / 원판 8점. 반환 = 꼭짓점 수
-uint MakeAreaPolygon(FLocalLight Light, out float3 Points[E_AREA_MAX_VERTICES])
+// 면광원 다각형 (AreaLightMath::MakePolygon): 사각형 4점 / 원판 8점 (Up에서 Right 쪽으로 45°씩 (cos, sin))
+static const float2 E_DISC_RING[8] = { float2(1.0f, 0.0f), float2(0.70710678f, 0.70710678f), float2(0.0f, 1.0f), float2(-0.70710678f, 0.70710678f),
+                                       float2(-1.0f, 0.0f), float2(-0.70710678f, -0.70710678f), float2(0.0f, -1.0f), float2(0.70710678f, -0.70710678f) };
+
+// 꼭짓점 하나를 (T1, T2, N) 기저 → 역행렬(Inverse = M00, M20, M02, M22: x' = M00·x + M02·z, z' = M20·x + M22·z) → 단위 구
+float3 LtcTransformVertex(float3 W, float3 N, float3 T1, float3 T2, float4 Inverse)
 {
-	const float3 R = Light.Right * Light.HalfWidth;
-	const float3 U = Light.Up * Light.HalfHeight;
-	if (Light.Type == E_LOCAL_LIGHT_DISC)
-	{
-		// Up에서 Right 쪽으로 45°씩 (cos, sin)
-		static const float2 Ring[8] = { float2(1.0f, 0.0f), float2(0.70710678f, 0.70710678f), float2(0.0f, 1.0f), float2(-0.70710678f, 0.70710678f),
-		                                float2(-1.0f, 0.0f), float2(-0.70710678f, -0.70710678f), float2(0.0f, -1.0f), float2(0.70710678f, -0.70710678f) };
-		[unroll]
-		for (uint Index = 0; Index < 8; ++Index)
-		{
-			Points[Index] = Light.Position + (U * Ring[Index].x + R * Ring[Index].y) * E_DISC_POLYGON_SCALE;
-		}
-		return 8;
-	}
-	Points[0] = Light.Position - R - U;
-	Points[1] = Light.Position - R + U;
-	Points[2] = Light.Position + R + U;
-	Points[3] = Light.Position + R - U;
-	[unroll]
-	for (uint Rest = 4; Rest < 8; ++Rest)
-	{
-		Points[Rest] = Points[3];
-	}
-	return 4;
+	const float3 Local = float3(dot(W, T1), dot(W, T2), dot(W, N));
+	return normalize(float3(Inverse.x * Local.x + Inverse.z * Local.z, Local.y, Inverse.y * Local.x + Inverse.w * Local.z));
 }
 
-// 다각형 LTC 적분 (AreaLightMath::EvaluatePolygon). Inverse = (M00, M20, M02, M22): x' = M00·x + M02·z, z' = M20·x + M22·z
-float LtcEvaluatePolygon(float3 N, float3 T1, float3 T2, float3 P, float4 Inverse, float3 Points[E_AREA_MAX_VERTICES], uint Count, bool bBehind)
+// 다각형 LTC 적분 (AreaLightMath::EvaluatePolygon). 사각형은 4꼭짓점, 원판은 8꼭짓점 전용 경로 (펼친 루프 — 배열을 동적 인덱싱하지 않는다)
+float LtcEvaluateAreaPolygon(FLocalLight Light, float3 N, float3 T1, float3 T2, float3 P, float4 Inverse, bool bBehind)
 {
-	float3 L[E_AREA_MAX_VERTICES];
-	[unroll]
-	for (uint Index = 0; Index < E_AREA_MAX_VERTICES; ++Index)
+	const float3 C = Light.Position - P;
+	const float3 R = Light.Right * Light.HalfWidth;
+	const float3 U = Light.Up * Light.HalfHeight;
+	float3       Sum = 0.0f;
+	if (Light.Type == E_LOCAL_LIGHT_DISC)
 	{
-		const float3 W     = Points[Index] - P;
-		const float3 Local = float3(dot(W, T1), dot(W, T2), dot(W, N));
-		const float3 T     = float3(Inverse.x * Local.x + Inverse.z * Local.z, Local.y, Inverse.y * Local.x + Inverse.w * Local.z);
-		L[Index]           = normalize(T);
-	}
-	float3 Sum = 0.0f;
-	[unroll]
-	for (uint Edge = 0; Edge < E_AREA_MAX_VERTICES; ++Edge)
-	{
-		if (Edge < Count)
+		float3 First = LtcTransformVertex(C + (U * E_DISC_RING[0].x + R * E_DISC_RING[0].y) * E_DISC_POLYGON_SCALE, N, T1, T2, Inverse);
+		float3 Prev  = First;
+		[unroll]
+		for (uint Index = 1; Index < 8; ++Index)
 		{
-			const uint Next = Edge + 1 < Count ? Edge + 1 : 0;
-			Sum += LtcIntegrateEdgeVector(L[Edge], L[Next]);
+			const float3 Next = LtcTransformVertex(C + (U * E_DISC_RING[Index].x + R * E_DISC_RING[Index].y) * E_DISC_POLYGON_SCALE, N, T1, T2, Inverse);
+			Sum += LtcIntegrateEdgeVector(Prev, Next);
+			Prev = Next;
 		}
+		Sum += LtcIntegrateEdgeVector(Prev, First);
+	}
+	else
+	{
+		const float3 L0 = LtcTransformVertex(C - R - U, N, T1, T2, Inverse);
+		const float3 L1 = LtcTransformVertex(C - R + U, N, T1, T2, Inverse);
+		const float3 L2 = LtcTransformVertex(C + R + U, N, T1, T2, Inverse);
+		const float3 L3 = LtcTransformVertex(C + R - U, N, T1, T2, Inverse);
+		Sum = LtcIntegrateEdgeVector(L0, L1) + LtcIntegrateEdgeVector(L1, L2) + LtcIntegrateEdgeVector(L2, L3) + LtcIntegrateEdgeVector(L3, L0);
 	}
 	return LtcClipFormFactor(Sum, bBehind);
 }
@@ -148,15 +135,12 @@ float3 EvaluateAreaLight(FLocalLight Light, FSurface Surface, float3 WorldPositi
 	T1                 = T1Len > 1.0e-5f ? T1 / T1Len : normalize(abs(N.z) < 0.999f ? cross(N, float3(0.0f, 0.0f, 1.0f)) : float3(1.0f, 0.0f, 0.0f));
 	const float3 T2    = cross(N, T1);
 
-	float3     Points[E_AREA_MAX_VERTICES];
-	const uint Count = MakeAreaPolygon(Light, Points);
-
 	const float  NdotV    = clamp(dot(N, Surface.V), 1.0e-4f, 1.0f);
 	const float2 UV       = float2(saturate(Surface.Roughness), sqrt(saturate(1.0f - NdotV))) * E_LTC_SCALE + E_LTC_BIAS;
 	const float4 Table1   = E_LIGHT_TEXTURE(LtcTexture1).SampleLevel(E_LIGHT_SAMPLER_CLAMP, UV, 0);
 	const float4 Table2   = E_LIGHT_TEXTURE(LtcTexture2).SampleLevel(E_LIGHT_SAMPLER_CLAMP, UV, 0);
-	const float  Diffuse  = LtcEvaluatePolygon(N, T1, T2, WorldPosition, float4(1.0f, 0.0f, 0.0f, 1.0f), Points, Count, bBehind);
-	const float  Specular = LtcEvaluatePolygon(N, T1, T2, WorldPosition, Table1, Points, Count, bBehind);
+	const float  Diffuse  = LtcEvaluateAreaPolygon(Light, N, T1, T2, WorldPosition, float4(1.0f, 0.0f, 0.0f, 1.0f), bBehind);
+	const float  Specular = LtcEvaluateAreaPolygon(Light, N, T1, T2, WorldPosition, Table1, bBehind);
 	const float3 F0       = GetF0(Surface);
 	const float3 SpecularColor = F0 * Table2.x + (1.0f - F0) * Table2.y;
 	return Light.Color * Profile * (Diffuse * Surface.Albedo * (1.0f - Surface.Metallic) + Specular * SpecularColor);

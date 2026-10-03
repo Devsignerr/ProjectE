@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(__file__))
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
+from AssetFixes import GLASS_FIX, FrameModel, WriteGlassFixedModel  # noqa: E402
 
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT = os.path.join(ROOT, "Projects", "Sample", "Content")
@@ -451,29 +452,10 @@ def WriteImportSettings():
 		WriteJson(os.path.join(Folder, f"{Id}.gltf.eimport"), Settings)
 
 
-# 액자 유리 고침: Poly Haven 2k jpg 텍스처에는 알파가 없어 "diff+opacity" 텍스처를 쓰는 유리(BLEND)가 불투명한 판이 되어 그림을 가린다.
-#   원본 glTF를 읽어 유리 머티리얼만 옅은 상수 알파로 바꾼 사본을 Asset/Gallery/<Id>.gltf에 쓴다(버퍼·텍스처는 원본 폴더 참조 — 커밋되는 것은 이 JSON뿐)
-GLASS_FIX = ["hanging_picture_frame_01", "hanging_picture_frame_02", "hanging_picture_frame_03"]
-
-
+# 액자 유리 고침(알파 없는 jpg 유리가 그림을 가림)은 공용 AssetFixes — 고친 사본 Asset/Gallery/<Id>.gltf (Lighting과 공유)
 def WriteGlassFixedModels():
-	for Id in GLASS_FIX:
-		Source = os.path.join(CONTENT, "Asset", "PolyHaven", Id, f"{Id}.gltf")
-		with open(Source, encoding="utf-8") as File:
-			Gltf = json.load(File)
-		for Material in Gltf["materials"]:
-			if Material.get("alphaMode") == "BLEND":
-				Material["pbrMetallicRoughness"] = {"baseColorFactor": [0.02, 0.02, 0.02, 0.1], "metallicFactor": 0.0, "roughnessFactor": 0.05}
-				Material.pop("normalTexture", None)
-				Material.pop("extensions", None)
-		for Entry in Gltf.get("images", []) + Gltf.get("buffers", []):
-			if "uri" in Entry:
-				Entry["uri"] = f"../PolyHaven/{Id}/{Entry['uri']}"
-		WriteJson(os.path.join(CONTENT, "Asset", "Gallery", f"{Id}.gltf"), Gltf)
-
-
-def FrameModel(Id):
-	return f"Asset/Gallery/{Id}.gltf" if Id in GLASS_FIX else Model(Id)
+	for Id in sorted(GLASS_FIX):
+		WriteGlassFixedModel(CONTENT, Id)
 
 
 # ---- 씬 -------------------------------------------------------------------------------------------------------------

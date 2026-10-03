@@ -354,7 +354,8 @@ void FShadowRenderer::PrepareCascades(const FCamera& Camera, const FVector3& Lig
 		                             : ShadowMath::ComputeFrustumSliceCorners(Camera.GetPosition(), Camera.GetForwardVector(), Camera.GetRightVector(),
 		                                                                      Camera.GetUpVector(), FMath::DegreesToRadians(Camera.GetFovYDegrees()),
 		                                                                      Camera.GetAspectRatio(), SliceNear, Splits[Index]);
-		Cascades[Index] = ShadowMath::ComputeCascade(Corners, LightDirection, Resolution, Settings.CasterExtension);
+		const float Quantize = Settings.bCacheStatic && Index >= Settings.CacheQuantizeFirst ? Settings.CacheQuantize : 0.0f;
+		Cascades[Index] = ShadowMath::ComputeCascade(Corners, LightDirection, Resolution, Settings.CasterExtension, Quantize);
 		Constants.CascadeViewProjection[Index] = Cascades[Index].ViewProjection;
 		Constants.CascadeSplits[Index]         = Splits[Index];
 		Constants.CascadeTexelWorld[Index]     = Cascades[Index].WorldTexelSize;
@@ -402,7 +403,8 @@ uint64 FShadowRenderer::ComputeStaticSetHash(const FMeshInstanceList& Instances)
 		Hash        = HashValue(Hash, Instance.Mesh);
 		Hash        = HashValue(Hash, Instance.MeshHandle);
 		Hash        = HashValue(Hash, Instance.World);
-		Hash        = HashValue(Hash, Instance.Lod);
+		// LOD는 넣지 않는다: 카메라 이동으로 바뀌는 메인 LOD가 캐시를 매번 무효로 만들지 않게 (캐시는 다시 그린 시점 LOD — 캐스케이드가
+		// 바뀌거나 정지하면 맞춰진다, LOD 설정 변경은 씬 렌더러가 InvalidateCache)
 		Hash        = HashValue(Hash, GetDepthVariant(Instance));
 		if (Instance.IsMasked())
 		{

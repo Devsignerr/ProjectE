@@ -909,12 +909,13 @@ uint64 FTerrainRenderer::GetShadowStateHash(const FFrustum& Frustum) const
 		Hash = HashValue(Hash, Terrain.Origin);
 		Hash = HashValue(Hash, Terrain.CellSize);
 		Hash = HashValue(Hash, Terrain.HeightScale);
-		// 그리는 청크와 LOD (BuildDraws와 같은 판정)
+		// 그리는 청크 (BuildDraws와 같은 판정). 청크 LOD는 넣지 않는다 — 카메라 이동마다 캐시가 무효가 되지 않게
+		// (캐시는 다시 그린 시점 LOD, 메시 정적 캐스터와 같은 규칙 — ShadowCacheMath.h)
 		for (uint32 Index = 0; Index < static_cast<uint32>(Terrain.ChunkLods.size()); ++Index)
 		{
 			if (Frustum.Intersects(Terrain.ChunkBounds[Index]))
 			{
-				Hash = HashValue(Hash, (static_cast<uint64>(Index) << 8) | Terrain.ChunkLods[Index]);
+				Hash = HashValue(Hash, Index);
 			}
 		}
 	}

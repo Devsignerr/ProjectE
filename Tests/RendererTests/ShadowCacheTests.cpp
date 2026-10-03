@@ -125,3 +125,21 @@ E_TEST(ShadowCache_BatchKeepsLodKey)
 	E_EXPECT_EQ(InstanceBatching::GetLod(Batches[0].Key), 2u);
 	E_EXPECT_EQ(InstanceBatching::GetLod(Batches[1].Key), 3u);
 }
+
+// 오래 재사용하던 캐시의 키가 바뀌면(이동 중 칸 넘김) 그 프레임에 바로 다시 그리고, 매 프레임 바뀌면 Direct로 떨어진다
+E_TEST(ShadowCache_ImmediateRebuildAfterSustainedReuse)
+{
+	FCascadeCacheState State;
+	Decide(State, 1, true);
+	Decide(State, 1, true);
+	Decide(State, 1, true);
+	E_EXPECT_TRUE(Decide(State, 1, true) == ECacheAction::Reuse); // 재사용 2
+	E_EXPECT_TRUE(Decide(State, 2, true) == ECacheAction::Rebuild);
+	E_EXPECT_TRUE(Decide(State, 2, true) == ECacheAction::Reuse);
+	E_EXPECT_TRUE(Decide(State, 2, true) == ECacheAction::Reuse);
+	// 이제 매 프레임 바뀌는 키 (움직이는 태양): 한 번 Rebuild 뒤 Direct만
+	E_EXPECT_TRUE(Decide(State, 3, true) == ECacheAction::Rebuild);
+	E_EXPECT_TRUE(Decide(State, 4, true) == ECacheAction::Direct);
+	E_EXPECT_TRUE(Decide(State, 5, true) == ECacheAction::Direct);
+	E_EXPECT_FALSE(State.bCacheValid);
+}

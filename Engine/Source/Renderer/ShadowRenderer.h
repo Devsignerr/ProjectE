@@ -32,6 +32,8 @@ struct FShadowSettings
 	bool   bCacheStatic       = true;  // r.Shadow.Cache: 정적 캐스터 캐시
 	float  LodBias            = 0.0f;  // r.Shadow.LodBias: 캐스케이드 c의 LOD += floor(c × 값)
 	float  MinCasterTexels    = 0.0f;  // r.Shadow.MinCasterTexels: 경계 구 지름이 텍셀 이만큼보다 작은 캐스터는 그 캐스케이드에서 뺀다 (0 = 끔)
+	float  CacheQuantize      = 0.0f;  // r.Shadow.Cache.Quantize: 캐시 캐스케이드 중심 격자 양자화 (ShadowMath::ComputeCascade, 캐시가 켜졌을 때만)
+	uint32 CacheQuantizeFirst = 1;     // r.Shadow.Cache.QuantizeFirstCascade: 이 번호부터 양자화
 };
 
 // 셰이더 cbuffer ShadowConstants (Mesh.hlsl b3)와 1:1

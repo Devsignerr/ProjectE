@@ -257,6 +257,8 @@ void FSceneRenderer::ApplyConsoleVariables()
 	ShadowSettings.bCacheStatic     = RendererCVars::ShadowCache.Get();
 	ShadowSettings.LodBias          = RendererCVars::ShadowLodBias.Get();
 	ShadowSettings.MinCasterTexels  = RendererCVars::ShadowMinCasterTexels.Get();
+	ShadowSettings.CacheQuantize      = RendererCVars::ShadowCacheQuantize.Get();
+	ShadowSettings.CacheQuantizeFirst = static_cast<uint32>(std::max(0, RendererCVars::ShadowCacheQuantizeFirst.Get()));
 	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
 	bConsoleAmbientOcclusion        = RendererCVars::AmbientOcclusion.Get();
 	bConsoleReflections             = RendererCVars::Reflections.Get();
@@ -1253,6 +1255,15 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	// 0) 방향광 섀도우 패스
 	const FRGResourceRef ShadowMapRef = ShadowRenderer.ImportShadowMap(Graph);
 	BeginCpuTimer(ERenderTimer::Shadow);
+	// 그림자 캐시 키는 메인 LOD를 담지 않으므로 LOD 설정이 바뀌면 캐시를 다시 그린다
+	const uint64 LodSignature = ShadowCacheMath::HashValue(
+		ShadowCacheMath::HashValue(ShadowCacheMath::HashValue(ShadowCacheMath::HashValue(ShadowCacheMath::HashSeed, bEnableLod), ForcedLod), LodScale),
+		LodHysteresis);
+	if (LodSignature != ShadowLodSignature)
+	{
+		ShadowLodSignature = LodSignature;
+		ShadowRenderer.InvalidateCache();
+	}
 	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow)); // 캐시 판정 + 캐스케이드 묶음 (CPU)
 	EndCpuTimer(ERenderTimer::Shadow);
 

@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <format>
+#include <utility>
 
 namespace
 {
@@ -196,6 +197,23 @@ const FMaterialGraphNode* FMaterialGraph::FindNode(std::string_view Id) const
 		if (Node.Id == Id)
 		{
 			return &Node;
+		}
+	}
+	return nullptr;
+}
+
+FMaterialGraphNode* FMaterialGraph::FindNode(std::string_view Id)
+{
+	return const_cast<FMaterialGraphNode*>(std::as_const(*this).FindNode(Id));
+}
+
+const std::vector<uint32>* FMaterialGraphAnalysis::FindOutputWidths(std::string_view NodeId) const
+{
+	for (size_t Index = 0; Index < NodeIds.size() && Index < OutputWidths.size(); ++Index)
+	{
+		if (NodeIds[Index] == NodeId)
+		{
+			return &OutputWidths[Index];
 		}
 	}
 	return nullptr;
@@ -464,6 +482,38 @@ namespace MaterialGraphJson
 				}
 			}
 		}
+		// 노드 편집기 정보 (코드 생성에 쓰지 않음)
+		const auto ReadVector2 = [](const json& Item, FVector2& Out) {
+			if (Item.is_array() && Item.size() == 2 && Item[0].is_number() && Item[1].is_number())
+			{
+				Out = FVector2(Item[0].get<float>(), Item[1].get<float>());
+			}
+		};
+		if (const auto Position = Object.find("EditorOutputPosition"); Position != Object.end())
+		{
+			ReadVector2(*Position, Out.OutputEditorPosition);
+		}
+		if (const auto Comments = Object.find("EditorComments"); Comments != Object.end() && Comments->is_array())
+		{
+			for (const json& Item : *Comments)
+			{
+				if (!Item.is_object())
+				{
+					continue;
+				}
+				FMaterialGraphComment Comment;
+				Comment.Text = Item.value("Text", std::string());
+				if (const auto Position = Item.find("Position"); Position != Item.end())
+				{
+					ReadVector2(*Position, Comment.Position);
+				}
+				if (const auto Size = Item.find("Size"); Size != Item.end())
+				{
+					ReadVector2(*Size, Comment.Size);
+				}
+				Out.Comments.push_back(std::move(Comment));
+			}
+		}
 	}
 
 	json WriteGraph(const FMaterialGraph& Graph)
@@ -520,6 +570,23 @@ namespace MaterialGraphJson
 		json Object;
 		Object["Nodes"]  = std::move(Nodes);
 		Object["Output"] = std::move(Outputs);
+		if (Graph.OutputEditorPosition.X != 0.0f || Graph.OutputEditorPosition.Y != 0.0f)
+		{
+			Object["EditorOutputPosition"] = { Graph.OutputEditorPosition.X, Graph.OutputEditorPosition.Y };
+		}
+		if (!Graph.Comments.empty())
+		{
+			json Comments = json::array();
+			for (const FMaterialGraphComment& Comment : Graph.Comments)
+			{
+				json Item;
+				Item["Text"]     = Comment.Text;
+				Item["Position"] = { Comment.Position.X, Comment.Position.Y };
+				Item["Size"]     = { Comment.Size.X, Comment.Size.Y };
+				Comments.push_back(std::move(Item));
+			}
+			Object["EditorComments"] = std::move(Comments);
+		}
 		return Object;
 	}
 } // namespace MaterialGraphJson

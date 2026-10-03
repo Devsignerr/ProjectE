@@ -390,3 +390,84 @@ E_TEST(MaterialGraph_AllNodeTypesCompile)
 		E_EXPECT_TRUE(Result.bSuccess);
 	}
 }
+
+// Phase 51 사이드: 노드 편집기용 조회 API (노드 표 정보, 오류 위치, 분석)
+E_TEST(MaterialGraph_NodeInfosMatchTable)
+{
+	const std::vector<std::string>             Types = FMaterialGraphCompiler::GetNodeTypes();
+	const std::vector<FMaterialGraphNodeInfo>& Infos = FMaterialGraphCompiler::GetNodeInfos();
+	E_EXPECT_EQ(Types.size(), Infos.size());
+	for (size_t Index = 0; Index < Types.size() && Index < Infos.size(); ++Index)
+	{
+		E_EXPECT_TRUE(Infos[Index].Type == Types[Index]);
+		E_EXPECT_FALSE(Infos[Index].Category.empty()); // 팔레트 범주 (표의 Section)
+		E_EXPECT_FALSE(Infos[Index].Outputs.empty());
+	}
+	const FMaterialGraphNodeInfo* Sample = FMaterialGraphCompiler::FindNodeInfo("TextureSample");
+	E_EXPECT_TRUE(Sample != nullptr);
+	if (Sample != nullptr)
+	{
+		E_EXPECT_EQ(Sample->Outputs.size(), size_t(6));
+		E_EXPECT_TRUE(Sample->Outputs[1] == "RGB");
+		E_EXPECT_TRUE((Sample->Settings & MaterialNodeSetting_Parameter) != 0 && (Sample->Settings & MaterialNodeSetting_Sampler) != 0);
+		E_EXPECT_TRUE(Sample->ParameterType == EMaterialParameterType::Texture);
+		E_EXPECT_TRUE(Sample->Inputs.size() == 1 && Sample->Inputs[0].Default == EMaterialPinDefault::TexCoord);
+	}
+	const FMaterialGraphNodeInfo* Clamp = FMaterialGraphCompiler::FindNodeInfo("Clamp");
+	E_EXPECT_TRUE(Clamp != nullptr && Clamp->Inputs.size() == 3 && Clamp->Inputs[2].Default == EMaterialPinDefault::Constant);
+	E_EXPECT_TRUE(FMaterialGraphCompiler::FindNodeInfo("Split") != nullptr && FMaterialGraphCompiler::FindNodeInfo("Split")->Outputs[3] == "W");
+	E_EXPECT_TRUE(FMaterialGraphCompiler::FindNodeInfo("NoSuchNode") == nullptr);
+}
+
+E_TEST(MaterialGraph_ErrorNodesAndAnalysis)
+{
+	// 출력에 쓰인 노드의 타입 오류 + 쓰이지 않는 노드의 파라미터 누락 + 출력 핀 오류
+	const FMaterialAsset Asset = Parse(R"({ "Parameters": [ { "Name": "S", "Value": 1 } ], "Graph": { "Nodes": [
+		{ "Id": "bad", "Type": "Add", "Inputs": { "A": [1, 2], "B": [1, 2, 3] } },
+		{ "Id": "lonely", "Type": "ScalarParameter", "Parameter": "Missing" },
+		{ "Id": "ok", "Type": "ScalarParameter", "Parameter": "S" },
+		{ "Id": "vec", "Type": "Append", "Inputs": { "A": "ok", "B": 2 } } ],
+		"Output": { "Roughness": "bad", "Metallic": "vec" } } })");
+	const FMaterialGraphCompileResult Result = FMaterialGraphCompiler::Compile(Asset.Graph, Asset.Parameters);
+	E_EXPECT_FALSE(Result.bSuccess);
+	E_EXPECT_EQ(Result.Errors.size(), Result.ErrorNodes.size());
+	E_EXPECT_TRUE(std::find(Result.ErrorNodes.begin(), Result.ErrorNodes.end(), "bad") != Result.ErrorNodes.end());
+	// 출력에서 닿지 않는 노드는 컴파일 오류가 아니다
+	E_EXPECT_TRUE(std::find(Result.ErrorNodes.begin(), Result.ErrorNodes.end(), "lonely") == Result.ErrorNodes.end());
+
+	const FMaterialGraphAnalysis Analysis = FMaterialGraphCompiler::Analyze(Asset.Graph, Asset.Parameters);
+	E_EXPECT_EQ(Analysis.Errors.size(), Analysis.ErrorNodes.size());
+	E_EXPECT_TRUE(std::find(Analysis.ErrorNodes.begin(), Analysis.ErrorNodes.end(), "lonely") != Analysis.ErrorNodes.end());
+	E_EXPECT_TRUE(std::find(Analysis.ErrorNodes.begin(), Analysis.ErrorNodes.end(), "bad") != Analysis.ErrorNodes.end());
+	const std::vector<uint32>* Widths = Analysis.FindOutputWidths("vec");
+	E_EXPECT_TRUE(Widths != nullptr && Widths->size() == 1 && (*Widths)[0] == 2u); // float1 + float1
+	const std::vector<uint32>* Failed = Analysis.FindOutputWidths("bad");
+	E_EXPECT_TRUE(Failed != nullptr && Failed->empty());
+
+	// 출력 핀 오류 위치 = OutputNodeId (Metallic은 float1인데 float2 — 출력은 자르기 허용이므로 연결 없는 노드로 확인)
+	const FMaterialAsset Missing = Parse(R"({ "Parameters": [], "Graph": { "Nodes": [], "Output": { "BaseColor": "nowhere" } } })");
+	const FMaterialGraphCompileResult MissingResult = FMaterialGraphCompiler::Compile(Missing.Graph, Missing.Parameters);
+	E_EXPECT_FALSE(MissingResult.bSuccess);
+	E_EXPECT_TRUE(!MissingResult.ErrorNodes.empty() && MissingResult.ErrorNodes[0] == FMaterialGraphCompiler::OutputNodeId);
+}
+
+E_TEST(MaterialGraph_EditorInfoRoundTripsAndDoesNotChangeHash)
+{
+	// EditorOutputPosition/EditorComments/EditorPosition은 저장되지만 생성 HLSL에 영향이 없다
+	FMaterialAsset Asset = Parse(SimpleGraph);
+	const uint64   Before = FMaterialGraphCompiler::Compile(Asset.Graph, Asset.Parameters).Shader->Hash;
+	Asset.Graph.OutputEditorPosition = FVector2(10.0f, -20.0f);
+	Asset.Graph.Comments.push_back({ "주석", FVector2(-100.0f, -50.0f), FVector2(320.0f, 180.0f) });
+	Asset.Graph.Nodes[0].EditorPosition = FVector2(-300.0f, 40.0f);
+	FMaterialAsset Reloaded = Parse(Asset.ToJsonString());
+	E_EXPECT_NEAR(Reloaded.Graph.OutputEditorPosition.Y, -20.0f, Tol);
+	E_EXPECT_EQ(Reloaded.Graph.Comments.size(), size_t(1));
+	if (!Reloaded.Graph.Comments.empty())
+	{
+		E_EXPECT_TRUE(Reloaded.Graph.Comments[0].Text == "주석");
+		E_EXPECT_NEAR(Reloaded.Graph.Comments[0].Size.X, 320.0f, Tol);
+	}
+	E_EXPECT_NEAR(Reloaded.Graph.Nodes[0].EditorPosition.X, -300.0f, Tol);
+	E_EXPECT_EQ(FMaterialGraphCompiler::Compile(Reloaded.Graph, Reloaded.Parameters).Shader->Hash, Before);
+	E_EXPECT_TRUE(Reloaded.ToJsonString() == Asset.ToJsonString());
+}

@@ -1,6 +1,7 @@
 #include "Editor/AssetEditors/AssetEditorWidgets.h"
 
 #include "Core/StringConv.h"
+#include "Editor/ContentBrowser/ContentDragDrop.h"
 
 #include <imgui.h>
 
@@ -56,6 +57,26 @@ bool FAssetEditorWidgets::TextureCombo(const char* Id, std::string& InOutPath, c
 			}
 		}
 		ImGui::EndCombo();
+	}
+	return bChanged;
+}
+
+bool FAssetEditorWidgets::AcceptTextureDrop(std::string& InOutPath, const std::filesystem::path& RelativeTo)
+{
+	bool bChanged = false;
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const std::vector<std::filesystem::path>* Paths = FContentDragDrop::AcceptPayload(); Paths != nullptr && !Paths->empty() && IsImageFile(Paths->front()))
+		{
+			std::error_code             ErrorCode;
+			const std::filesystem::path Relative = std::filesystem::relative(Paths->front(), RelativeTo, ErrorCode);
+			if (!ErrorCode && !Relative.empty())
+			{
+				InOutPath = FStringConv::ToUtf8(Relative.generic_wstring());
+				bChanged  = true;
+			}
+		}
+		ImGui::EndDragDropTarget();
 	}
 	return bChanged;
 }

@@ -90,6 +90,10 @@ struct FDdgiSettings
 	float    AmbientIntensity = 1.0f;
 	uint32   BoostFrames      = 30;
 	float    BoostHysteresis  = 0.7f;
+	// 정착: 가속이 끝난 뒤(와 이력을 처음 채울 때) SettleFrames 동안 히스테리시스 상한 SettleHysteresis — 볼륨 Hysteresis를 높여
+	// (0.99) 광선 잡음 깜빡임을 줄여도 다중 반사가 예전처럼 빨리 차게 (DdgiMath::ComputeFrameHysteresis)
+	uint32   SettleFrames     = 300;
+	float    SettleHysteresis = 0.97f;
 };
 
 struct FDdgiStats
@@ -118,7 +122,9 @@ struct FDdgiStats
 class FDdgiRenderer
 {
 public:
-	static constexpr DXGI_FORMAT IrradianceFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	// 조도 이력은 32비트: 16비트 float는 히스테리시스 누적 한 걸음 (1-h)·(새 값 - 이전)이 반올림에 먹혀 정상 상태가 어두운 쪽으로
+	// 치우쳤다 (Demo_GI 화면 평균 h 0.97 −2.3%, 0.99 −6.4% — 2026-10-04). 거리 모멘트는 16비트로도 차이 없음 (측정)
+	static constexpr DXGI_FORMAT IrradianceFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	static constexpr DXGI_FORMAT DistanceFormat   = DXGI_FORMAT_R16G16_FLOAT;
 	static constexpr DXGI_FORMAT ProbeDataFormat  = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	static constexpr DXGI_FORMAT RayDataFormat    = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -216,6 +222,7 @@ private:
 	FVector3 ReferenceLightRadiance;
 	float    ReferenceAmbient = 1.0f;
 	uint32   BoostFramesLeft  = 0;
+	uint32   SettleFramesLeft = 0; // 가속 뒤·이력 처음 정착 구간 (DdgiMath::ComputeFrameHysteresis)
 
 	FDdgiStats Stats;
 };

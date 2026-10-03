@@ -211,6 +211,12 @@ namespace RendererCVars
 	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 600.0f) });
 	TAutoConsoleVariable<float> DdgiBoostHysteresis("r.DDGI.LightChangeHysteresis", 0.7f, "DDGI 조명 변화 가속 중 히스테리시스 상한 (작을수록 빠르고 잡음)",
 	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 0.995f) });
+	TAutoConsoleVariable<int32> DdgiSettleFrames("r.DDGI.SettleFrames", 300,
+	                                             "DDGI 정착 구간: 조명 변화 가속이 끝난 뒤와 이력을 처음 채울 때 이 프레임 수 동안 히스테리시스 상한을 "
+	                                             "r.DDGI.SettleHysteresis로 (볼륨 Hysteresis를 높여 광선 잡음을 줄여도 다중 반사가 빨리 차게, 0 = 끔)",
+	                                             EConsoleFlags::None, { .Range = std::pair(0.0f, 6000.0f) });
+	TAutoConsoleVariable<float> DdgiSettleHysteresis("r.DDGI.SettleHysteresis", 0.97f, "DDGI 정착 구간 히스테리시스 상한 (볼륨 값이 이보다 낮으면 영향 없음)",
+	                                                 EConsoleFlags::None, { .Range = std::pair(0.0f, 0.995f) });
 	namespace
 	{
 		uint32 GDdgiStatsSerial = 0;

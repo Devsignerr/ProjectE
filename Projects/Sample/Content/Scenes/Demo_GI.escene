@@ -44,7 +44,7 @@
     { "Name": "RoomProbes", "Parent": -1, "Components": {
         "TransformComponent": { "Position": [0.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
         "IrradianceVolumeComponent": { "HalfExtents": [430.0, 330.0, 180.0], "Spacing": 100.0, "Intensity": 1.0, "FadeDistance": 20.0, "NormalBias": 10.0,
-          "ViewBias": 20.0, "Hysteresis": 0.97, "RaysPerProbe": 160, "ProbeUpdateBudget": 0, "MaxRayDistance": 10000.0, "Relocation": true,
+          "ViewBias": 20.0, "Hysteresis": 0.99, "RaysPerProbe": 512, "ProbeUpdateBudget": 0, "MaxRayDistance": 10000.0, "Relocation": true,
           "Classification": true, "Priority": 0, "DebugProbes": 0, "DebugProbeRadius": 8.0 } } },
     { "Name": "Camera", "Parent": -1, "Components": {
         "TransformComponent": { "Position": [-380.0, 150.0, 170.0], "Rotation": [0.011377, 0.086413, -0.130033, 0.987663], "Scale": [1.0, 1.0, 1.0] },

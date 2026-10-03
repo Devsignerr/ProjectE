@@ -364,3 +364,129 @@ E_TEST(Ddgi_LightChangeBoost)
 	E_EXPECT_NEAR(ComputeLightChange(Down, FVector3(0.0f), 1.0f, FVector3(1.0f, 0.0f, 0.0f), FVector3(0.0f), 1.0f), 0.0f, 1.0e-6f);
 	E_EXPECT_TRUE(ComputeLightChange(Down, FVector3(0.0f), 1.0f, Down, Sun, 1.0f) >= 10.0f - 1.0e-3f);
 }
+
+namespace
+{
+	// Demo_GI 방 안쪽 면 (x ±400, y ±300, z 0~300) + +X 벽 창 구멍 (y ±100, z 80~220): 방 안 점에서 가장 가까운 면 거리 (창 = 빗나감)
+	float TraceDemoRoom(const FVector3& Origin, const FVector3& Direction)
+	{
+		const float Planes[3][2] = { { -400.0f, 400.0f }, { -300.0f, 300.0f }, { 0.0f, 300.0f } };
+		float       Best         = 1.0e27f;
+		for (uint32 Axis = 0; Axis < 3; ++Axis)
+		{
+			const float D = Axis == 0 ? Direction.X : (Axis == 1 ? Direction.Y : Direction.Z);
+			const float O = Axis == 0 ? Origin.X : (Axis == 1 ? Origin.Y : Origin.Z);
+			if (FMath::Abs(D) < 1.0e-6f)
+			{
+				continue;
+			}
+			for (uint32 Side = 0; Side < 2; ++Side)
+			{
+				const float T = (Planes[Axis][Side] - O) / D;
+				if (T <= 0.0f || T >= Best)
+				{
+					continue;
+				}
+				const FVector3 P = Origin + Direction * T;
+				if (Axis == 0 && Side == 1 && P.Y >= -100.0f && P.Y <= 100.0f && P.Z >= 80.0f && P.Z <= 220.0f)
+				{
+					continue;
+				}
+				Best = T;
+			}
+		}
+		return Best;
+	}
+
+	// 고정 광선(회전 없는 피보나치 32개)으로 재배치를 Frames번 반복 → 마지막 두 오프셋
+	void SimulateRelocation(const FVector3& Base, const FVector3& Spacing, uint32 Frames, FVector3& OutPrevious, FVector3& OutLast)
+	{
+		using namespace DdgiMath;
+		const float MinFrontface = 0.3f * FMath::Min(Spacing.X, FMath::Min(Spacing.Y, Spacing.Z));
+		FVector3    Offset(0.0f);
+		OutPrevious = Offset;
+		for (uint32 Frame = 0; Frame < Frames; ++Frame)
+		{
+			FRelocationRays Rays;
+			for (uint32 Ray = 0; Ray < FixedRayCount; ++Ray)
+			{
+				const FVector3 Direction = SphericalFibonacci(Ray, FixedRayCount);
+				const float    Distance  = TraceDemoRoom(Base + Offset, Direction);
+				if (Distance < Rays.ClosestFrontface)
+				{
+					Rays.ClosestFrontface    = Distance;
+					Rays.ClosestFrontfaceDir = Direction;
+				}
+				if (Distance > Rays.FarthestFrontface)
+				{
+					Rays.FarthestFrontface    = Distance;
+					Rays.FarthestFrontfaceDir = Direction;
+				}
+			}
+			OutPrevious = Offset;
+			Offset      = ComputeRelocationOffset(Offset, Rays, Spacing, MinFrontface, 0.25f);
+		}
+		OutLast = Offset;
+	}
+} // namespace
+
+E_TEST(Ddgi_RelocationConvergesWithoutOscillation)
+{
+	using namespace DdgiMath;
+	// Demo_GI 격자 (상자 반 크기 430x330x180, 가운데 Z 150 → 9x7x4): 벽에서 7~15cm인 바깥 프로브가 밀기 ↔ 되돌아가기로
+	// 매 프레임 왕복했다 (예전 되돌아가는 문턱 = MinFrontface). 모든 프로브가 멈추고(마지막 두 프레임 같음) 벽에서 MinFrontface 이상 떨어져야 한다
+	const FVector3 Spacing(860.0f / 9.0f, 660.0f / 7.0f, 360.0f / 4.0f);
+	const FVector3 Origin   = FVector3(-430.0f, -330.0f, -30.0f) + Spacing * 0.5f;
+	const float    MinFront = 0.3f * Spacing.Z;
+	uint32         Moved    = 0;
+	for (uint32 Z = 0; Z < 4; ++Z)
+	{
+		for (uint32 Y = 0; Y < 7; ++Y)
+		{
+			for (uint32 X = 0; X < 9; ++X)
+			{
+				const FVector3 Base = Origin + FVector3(Spacing.X * static_cast<float>(X), Spacing.Y * static_cast<float>(Y), Spacing.Z * static_cast<float>(Z));
+				FVector3       Previous;
+				FVector3       Last;
+				SimulateRelocation(Base, Spacing, 200, Previous, Last);
+				E_EXPECT_NEAR((Last - Previous).Length(), 0.0f, 1.0e-3f);
+				Moved += Last.Length() > 1.0f ? 1u : 0u;
+				// 밀려난 프로브는 여유를 얻었다 (오프셋 상한에 막히지 않은 경우): 축마다 가장 가까운 벽까지
+				const FVector3 P     = Base + Last;
+				const float    Clear = FMath::Min(FMath::Min(FMath::Min(P.X + 400.0f, 400.0f - P.X), FMath::Min(P.Y + 300.0f, 300.0f - P.Y)), FMath::Min(P.Z, 300.0f - P.Z));
+				if (Last.Length() > 1.0f)
+				{
+					E_EXPECT_TRUE(Clear >= MinFront * 0.5f);
+				}
+			}
+		}
+	}
+	E_EXPECT_TRUE(Moved > 0u); // 바깥 층은 실제로 밀린다
+	// 되돌아가기: 여유가 ReturnClearance보다 크면 격자 쪽으로 (여유 - ReturnClearance)만큼, 그 안이면 그대로
+	FRelocationRays Open;
+	Open.ClosestFrontface    = MinFront * RelocationReturnScale + 11.0f;
+	Open.ClosestFrontfaceDir = FVector3(1.0f, 0.0f, 0.0f);
+	Open.FarthestFrontface   = 500.0f;
+	Open.FarthestFrontfaceDir = FVector3(-1.0f, 0.0f, 0.0f);
+	const FVector3 Back = ComputeRelocationOffset(FVector3(0.0f, 0.0f, 20.0f), Open, Spacing, MinFront, 0.25f);
+	E_EXPECT_NEAR(Back.Z, 9.0f, 1.0e-3f);
+	Open.ClosestFrontface = MinFront * RelocationReturnScale - 1.0f;
+	E_EXPECT_NEAR(ComputeRelocationOffset(FVector3(0.0f, 0.0f, 20.0f), Open, Spacing, MinFront, 0.25f).Z, 20.0f, 0.0f);
+}
+
+E_TEST(Ddgi_FrameHysteresisBoostAndSettle)
+{
+	using namespace DdgiMath;
+	// 평소 = 볼륨 값, 정착 = min(볼륨, 0.97), 가속 = min(…, 0.7) — 가속이 정착보다 우선
+	E_EXPECT_NEAR(ComputeFrameHysteresis(0.99f, false, false, 0.7f, 0.97f), 0.99f, 0.0f);
+	E_EXPECT_NEAR(ComputeFrameHysteresis(0.99f, false, true, 0.7f, 0.97f), 0.97f, 0.0f);
+	E_EXPECT_NEAR(ComputeFrameHysteresis(0.99f, true, true, 0.7f, 0.97f), 0.7f, 0.0f);
+	// 볼륨 값이 정착 값보다 낮으면 그대로 (예전 0.97 씬은 정착 구간이 바꾸지 않는다)
+	E_EXPECT_NEAR(ComputeFrameHysteresis(0.97f, false, true, 0.7f, 0.97f), 0.97f, 0.0f);
+	E_EXPECT_NEAR(ComputeFrameHysteresis(0.9f, false, true, 0.7f, 0.97f), 0.9f, 0.0f);
+	// 상한 0.995
+	E_EXPECT_NEAR(ComputeFrameHysteresis(1.0f, false, false, 0.7f, 0.97f), 0.995f, 0.0f);
+	// 잡음 비: 정상 상태 std ∝ √((1-h)/(1+h)) — 0.99는 0.97의 약 0.58배
+	const float Ratio = std::sqrt((1.0f - 0.99f) / 1.99f) / std::sqrt((1.0f - 0.97f) / 1.97f);
+	E_EXPECT_NEAR(Ratio, 0.576f, 0.01f);
+}

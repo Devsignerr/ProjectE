@@ -30,6 +30,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> StreamingDropDelay;          // r.Streaming.DropDelay (초)
 	extern TAutoConsoleVariable<int32> StreamingMipMargin;          // r.Streaming.MipMargin
 	extern TAutoConsoleVariable<bool>  StatStreaming;               // stat.Streaming (stat streaming)
+	extern TAutoConsoleVariable<float> StreamingLogStats;           // r.Streaming.LogStats (초, 측정용 주기 로그)
 
 	// 렌더 그래프 (Phase 47)
 	extern TAutoConsoleVariable<bool> RenderGraphCull;          // r.RenderGraph.Cull          (안 쓰는 패스 제거, 끄면 모두 실행 — 비교용)

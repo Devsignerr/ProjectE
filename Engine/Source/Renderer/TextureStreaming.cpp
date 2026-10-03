@@ -47,16 +47,16 @@ namespace
 		}
 	}
 
-	// 가장 작은 축 스케일 (행벡터 규약: 행 0~2 길이 = 축 스케일)
-	float GetMinAxisScale(const FMatrix4x4& World)
+	// 가장 큰 축 스케일 (행벡터 규약: 행 0~2 길이 = 축 스케일). 늘어난 축에서 UV 밀도가 가장 낮다 → 가장 세밀한 밉이 필요
+	float GetMaxAxisScale(const FMatrix4x4& World)
 	{
-		float MinScale = std::numeric_limits<float>::max();
+		float MaxScale = 0.0f;
 		for (int32 Row = 0; Row < 3; ++Row)
 		{
 			const float Length = std::sqrt(World.M[Row][0] * World.M[Row][0] + World.M[Row][1] * World.M[Row][1] + World.M[Row][2] * World.M[Row][2]);
-			MinScale           = std::min(MinScale, Length);
+			MaxScale           = std::max(MaxScale, Length);
 		}
-		return MinScale;
+		return MaxScale;
 	}
 } // namespace
 
@@ -318,7 +318,7 @@ void FResourceManager::ReportTextureStreamingView(const FTextureStreamingView& V
 			CmPerPixel            = ComputePerspectiveCmPerPixel(NearDepth, View.TanHalfFovY, View.ScreenHeight);
 			ScreenSize            = View.TanHalfFovY > 0.0f ? Extent.Length() / (NearDepth * View.TanHalfFovY) : 1.0f;
 		}
-		const float Scale   = Instance.IsSkinned() ? 1.0f : GetMinAxisScale(Instance.World);
+		const float Scale   = Instance.IsSkinned() ? 1.0f : GetMaxAxisScale(Instance.World);
 		const float Density = Scale > 1.0e-6f ? Instance.Mesh->GetUvDensity() / Scale : 0.0f;
 		const float Log2    = ComputeLog2UvPerPixel(Density, CmPerPixel); // 알 수 없음 = -무한대 → 밉 0
 
@@ -446,6 +446,21 @@ void FResourceManager::UpdateStreamingTargets(float DeltaSeconds, bool bFinal)
 		      ResourceGc::FormatBytes(Result.TotalBytes), ResourceGc::FormatBytes(Streaming.PoolBytes));
 	}
 	Streaming.bWarnedOverBudget = Result.bOverBudget;
+	// 진단: 항목 수가 바뀐 첫 갱신마다 한 줄 (씬 로드 뒤 필요/전체 크기)
+	if (Streaming.Entries.size() != Streaming.LastLoggedEntryCount)
+	{
+		Streaming.LastLoggedEntryCount = Streaming.Entries.size();
+		uint32 Pinned = 0, Unseen = 0;
+		uint64 Full   = 0;
+		for (const auto& [Id, Entry] : Streaming.Entries)
+		{
+			Pinned += Entry.bPinned ? 1u : 0u;
+			Unseen += !Entry.bPinned && Entry.FrameWantedTop == InvalidMip ? 1u : 0u;
+			Full += Entry.bPinned ? 0u : Entry.RangeBytes[0];
+		}
+		E_LOG(LogRenderer, Log, "[텍스처 스트리밍] 항목 {} (고정 {}, 이번 보고에 없음 {}): 필요 {} / 전체 밉이면 {}, 예산 {}", Streaming.Entries.size(), Pinned, Unseen,
+		      ResourceGc::FormatBytes(WantedBytes), ResourceGc::FormatBytes(Full), ResourceGc::FormatBytes(Streaming.PoolBytes));
+	}
 	for (auto& [Id, Entry] : Streaming.Entries)
 	{
 		Entry.FrameWantedTop = InvalidMip;
@@ -589,6 +604,8 @@ void FResourceManager::CompleteStreamUploads(uint64 FinalizedFence)
 		{
 			// 같은 핸들 뒤의 리소스/SRV를 새 밉 범위로 (이전 것은 진행 중인 프레임이 읽을 수 있어 지연 해제)
 			Live->SwapContents(*Entry.PendingTexture);
+			E_LOG(LogRenderer, Verbose, "[텍스처 스트리밍] {}: 밉 {} → {} ({}x{})", FStringConv::ToUtf8(Entry.DebugName), Entry.ResidentTop, Entry.PendingTop,
+			      Live->GetWidth(), Live->GetHeight());
 			Entry.ResidentTop = Entry.PendingTop;
 			Swapped.push_back(Entry.Handle);
 		}
@@ -600,6 +617,11 @@ void FResourceManager::CompleteStreamUploads(uint64 FinalizedFence)
 	if (Swapped.empty())
 	{
 		return;
+	}
+	{
+		const FTextureStreamingStats Stats = GetTextureStreamingStats();
+		E_LOG(LogRenderer, Log, "[텍스처 스트리밍] 교체 {}개 → 상주 {} / 전체 밉이면 {} (줄어듦 {}/{})", Swapped.size(), ResourceGc::FormatBytes(Stats.ResidentBytes),
+		      ResourceGc::FormatBytes(Stats.FullBytes), Stats.ReducedTextures, Stats.StreamingTextures);
 	}
 	// 그 텍스처를 쓰는 머티리얼 테이블을 다시 만든다 (RefreshMaterialTextures 경로 — DXR 바인드리스 등 테이블 사용자 공통)
 	std::vector<FMaterialHandle> ToRefresh;
@@ -654,6 +676,24 @@ void FResourceManager::ProcessTextureStreaming()
 		Streaming.UploadMBPerSecond = static_cast<float>(static_cast<double>(Streaming.WindowBytes) / static_cast<double>(Megabyte)) / WindowSeconds;
 		Streaming.WindowBytes       = 0;
 		Streaming.WindowStart       = Now;
+	}
+
+	// 측정용 주기 로그 (r.Streaming.LogStats 초)
+	if (const float Interval = RendererCVars::StreamingLogStats.Get(); Interval > 0.0f)
+	{
+		if (!Streaming.bStatsLogStarted || std::chrono::duration<float>(Now - Streaming.LastStatsLog).count() >= Interval)
+		{
+			Streaming.bStatsLogStarted = true;
+			Streaming.LastStatsLog     = Now;
+			const FResourceMemoryStats Memory = GetMemoryStats();
+			std::string                Line;
+			for (const std::string& Part : TextureStreaming::FormatStats(GetTextureStreamingStats()))
+			{
+				Line += (Line.empty() ? "" : " | ") + Part;
+			}
+			E_LOG(LogRenderer, Display, "[텍스처 스트리밍 통계] 텍스처 {}개 {} | VRAM {} | {}", Memory.Textures, ResourceGc::FormatBytes(Memory.TextureBytes),
+			      ResourceGc::FormatBytes(Memory.LocalUsage), Line);
+		}
 	}
 
 	const bool bDeterministic = IsStreamingDeterministic();

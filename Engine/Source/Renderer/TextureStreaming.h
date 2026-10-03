@@ -125,6 +125,7 @@ struct FTextureStreamingState
 	bool                               bReportedThisFrame = false;
 	uint32                             NextSerial         = 1;
 	uint64                             PoolBytes          = 0; // 지난 갱신에 쓴 예산
+	size_t                             LastLoggedEntryCount = 0;
 	std::chrono::steady_clock::time_point LastUpdate;
 	bool                               bHasLastUpdate = false;
 	uint64                             LastWantedBytes = 0;
@@ -136,5 +137,7 @@ struct FTextureStreamingState
 	float                                 UploadMBPerSecond  = 0.0f;
 	std::chrono::steady_clock::time_point WindowStart;
 	bool                                  bWindowStarted = false;
+	std::chrono::steady_clock::time_point LastStatsLog; // r.Streaming.LogStats
+	bool                                  bStatsLogStarted = false;
 	bool                                  bOwnsConsole   = false;
 };

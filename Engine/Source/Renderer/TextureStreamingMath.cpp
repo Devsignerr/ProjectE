@@ -232,11 +232,12 @@ float TextureStreamingMath::ComputeUvDensity(const std::vector<FVertex>& Vertice
 		const FVector2 E1        = V1.UV - V0.UV;
 		const FVector2 E2        = V2.UV - V0.UV;
 		const float    UvArea    = 0.5f * std::fabs(E1.X * E2.Y - E1.Y * E2.X);
-		if (!(WorldArea > 1.0e-8f) || !(UvArea > 0.0f))
+		if (!(WorldArea > 1.0e-8f))
 		{
-			continue;
+			continue; // 월드에서 퇴화 (픽셀을 덮지 않는다)
 		}
-		Samples.push_back({ std::sqrt(UvArea / WorldArea), WorldArea });
+		// UV가 모인 삼각형(면적 0)은 밀도 0 — UV 미분이 0이라 하드웨어는 밉 0을 읽는다
+		Samples.push_back({ UvArea > 0.0f ? std::sqrt(UvArea / WorldArea) : 0.0f, WorldArea });
 		TotalWeight += WorldArea;
 	}
 	if (Samples.empty() || !(TotalWeight > 0.0))

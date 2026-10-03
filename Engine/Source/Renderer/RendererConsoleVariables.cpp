@@ -60,6 +60,9 @@ namespace RendererCVars
 	                                               "텍스처 스트리밍 필요 밉 여유(밉 수): 계산한 필요 밉보다 이만큼 더 세밀하게 둔다 (이방성·UV 밀도 분포)",
 	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 4.0f) });
 	TAutoConsoleVariable<bool> StatStreaming("stat.Streaming", false, "화면 통계: 텍스처 밉 스트리밍 (stat streaming으로 켜고 끔)");
+	TAutoConsoleVariable<float> StreamingLogStats("r.Streaming.LogStats", 0.0f,
+	                                              "텍스처 스트리밍 + 리소스 메모리 통계를 이 간격(초)마다 로그로 (측정용, 0 = 끔)", EConsoleFlags::None,
+	                                              { .Range = std::pair(0.0f, 3600.0f) });
 
 	TAutoConsoleVariable<bool> RenderGraphCull("r.RenderGraph.Cull", true, "렌더 그래프: 결과를 아무도 읽지 않는 패스 제거 (끄면 모두 실행 — 비교용)");
 	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),

@@ -165,19 +165,31 @@ E_TEST(TextureStreaming_UvDensity)
 		Vertex.UV = Vertex.UV * 4.0f;
 	}
 	E_EXPECT_NEAR(ComputeUvDensity(Vertices, Indices), 0.04f, 1.0e-6f);
-	// UV 없음(모두 0) → 0 (알 수 없음 → 밉 0 필요)
+	// UV 없음/한 점으로 모임(모두 0) → 0 (UV 미분 0 → 밉 0 필요)
 	for (FVertex& Vertex : Vertices)
 	{
 		Vertex.UV = FVector2(0.0f, 0.0f);
 	}
 	E_EXPECT_EQ(ComputeUvDensity(Vertices, Indices), 0.0f);
 
-	// 면적 가중 백분위: 큰 면(밀도 0.01) + 아주 작은 조각(밀도 1.0)이면 99% 백분위는 큰 면 값, 100%는 조각 값
-	std::vector<FVertex> Mixed = { MakeVertex(0, 0, 0, 0),   MakeVertex(100, 0, 1, 0), MakeVertex(100, 100, 1, 1), MakeVertex(0, 100, 0, 1),
-	                               MakeVertex(200, 0, 0, 0), MakeVertex(201, 0, 1, 0), MakeVertex(201, 1, 1, 1) };
+	// 면적 가중 하위 백분위: 낮은 밀도(텍스처가 늘어나 세밀한 밉 필요)가 기준. 큰 면(0.01) + 아주 작은 조각(0.0001, 면적 0.5)이면
+	// 하위 1%는 작은 조각을 빼고 큰 면 값, 0%(최솟값)는 조각 값
+	std::vector<FVertex> Mixed = { MakeVertex(0, 0, 0, 0),   MakeVertex(100, 0, 1, 0),      MakeVertex(100, 100, 1, 1), MakeVertex(0, 100, 0, 1),
+	                               MakeVertex(200, 0, 0, 0), MakeVertex(201, 0, 0.0001f, 0), MakeVertex(201, 1, 0.0001f, 0.0001f) };
 	std::vector<uint32>  MixedIndices = { 0, 2, 1, 0, 3, 2, 4, 6, 5 };
-	E_EXPECT_NEAR(ComputeUvDensity(Mixed, MixedIndices, 0.99f), 0.01f, 1.0e-6f);
-	E_EXPECT_NEAR(ComputeUvDensity(Mixed, MixedIndices, 1.0f), 1.0f, 1.0e-5f);
+	E_EXPECT_NEAR(ComputeUvDensity(Mixed, MixedIndices, 0.01f), 0.01f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeUvDensity(Mixed, MixedIndices, 0.0f), 0.0001f, 1.0e-6f);
+	// 밀도가 높은(작게 축소된) 조각은 기준을 바꾸지 않는다
+	Mixed[5].UV = FVector2(1.0f, 0.0f);
+	Mixed[6].UV = FVector2(1.0f, 1.0f);
+	E_EXPECT_NEAR(ComputeUvDensity(Mixed, MixedIndices, 0.0f), 0.01f, 1.0e-6f);
+	// UV가 모인 면이 면적의 1%를 넘으면 0 (보수적: 밉 0)
+	std::vector<FVertex> Collapsed = Vertices; // UV 모두 0인 100x100 면
+	Collapsed.push_back(MakeVertex(300, 0, 0, 0));
+	Collapsed.push_back(MakeVertex(310, 0, 1, 0));
+	Collapsed.push_back(MakeVertex(310, 10, 1, 1));
+	std::vector<uint32> CollapsedIndices = { 0, 2, 1, 0, 3, 2, 4, 6, 5 };
+	E_EXPECT_EQ(ComputeUvDensity(Collapsed, CollapsedIndices), 0.0f);
 }
 
 E_TEST(TextureStreaming_GraphUvScale)

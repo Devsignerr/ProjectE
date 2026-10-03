@@ -3,6 +3,7 @@
 #include "Core/CommandLine.h"
 #include "Core/Console/Console.h"
 #include "Core/FileSystem.h"
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
 #include "Core/Platform/CrashHandler.h"
@@ -251,6 +252,7 @@ int FApplication::Run()
 		FSaveGame::SetDirectoryOverride({});
 	}
 	Window.Destroy();
+	FParallel::Shutdown();
 	Profiling::Shutdown();
 	FLog::Shutdown();
 	return 0;

@@ -431,7 +431,7 @@ void FEditorApplication::UpdateVerifyHotReload()
 	{
 		Before = SummarizeScene(Scene, Owner);
 		Check(GameModule.IsLoaded() && Before.ModuleComponents > 0,
-		      std::format("시작 상태: 모듈 {} 로드, 모듈 컴포넌트 {}개 (--scene Scenes/Demo_GameModule.escene 권장)", Owner, Before.ModuleComponents));
+		      std::format("시작 상태: 모듈 {} 로드, 모듈 컴포넌트 {}개 (--scene Scenes/Tests/GameModule.escene 권장)", Owner, Before.ModuleComponents));
 		for (uint32 Round = 1; Round <= 2; ++Round)
 		{
 			Check(ReloadGameModule(std::format("자동 검증 {}", Round)), std::format("다시 로드 {}회차", Round));

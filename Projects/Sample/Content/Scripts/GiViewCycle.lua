@@ -1,4 +1,4 @@
--- Demo_GI 시점 전환: 숫자 키 1~8로 카메라를 그림자 유형별 시점에 둔다 (Tab = 다음 시점)
+-- Tests/GI 시점 전환: 숫자 키 1~8로 카메라를 그림자 유형별 시점에 둔다 (Tab = 다음 시점)
 --   시점 표는 데모 씬 생성 값과 같다 (위치, 바라보는 점 — cm). StartView = 시작 시점 (0이면 씬에 저장된 트랜스폼 그대로)
 local GiViewCycle = {
 	Properties = {
@@ -25,7 +25,7 @@ function GiViewCycle:SetView(Index)
 	self.Current = Index
 	self.entity:SetPosition(View.From)
 	self.entity:SetRotation(Quat.LookRotation(View.At - View.From))
-	Log.Info("Demo_GI 시점 " .. Index .. ": " .. View.Name)
+	Log.Info("Tests/GI 시점 " .. Index .. ": " .. View.Name)
 end
 
 function GiViewCycle:OnStart()

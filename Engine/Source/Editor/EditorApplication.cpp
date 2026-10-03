@@ -284,7 +284,7 @@ bool FEditorApplication::OnInit()
 	const FCommandLine CommandLine = FCommandLine::FromProcess();
 	if (CommandLine.HasFlag(L"--generate-terrain-demo"))
 	{
-		GenerateTerrainDemo(Context.ContentDirectory); // 지형 데모 에셋 다시 만들기 (Terrain/, Scenes/Demo_Terrain.escene)
+		GenerateTerrainDemo(Context.ContentDirectory); // 지형 데모 에셋 다시 만들기 (Terrain/, Scenes/Tests/Terrain.escene)
 	}
 	if (CommandLine.HasFlag(L"--generate-showcase-terrain"))
 	{

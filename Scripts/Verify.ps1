@@ -5,7 +5,7 @@
     .\Scripts\Verify.ps1                                   # 에디터, 150 프레임, Saved/Verify/editor.png
     .\Scripts\Verify.ps1 -Target Runtime -Name runtime
     .\Scripts\Verify.ps1 -ExtraArgs "--select DamagedHelmet" -Name outline
-    .\Scripts\Verify.ps1 -Multiplayer                      # 전용 서버 + 런타임 클라이언트 2개 (Demo_Multiplayer)
+    .\Scripts\Verify.ps1 -Multiplayer                      # 전용 서버 + 런타임 클라이언트 2개 (Tests/Multiplayer)
     .\Scripts\Verify.ps1 -Multiplayer -Clients 3 -ExtraArgs "--net-lag 80 --net-loss 5" -Name mp_lossy
 .NOTES
     -Multiplayer: 서버 로그와 클라이언트마다 스크린샷/로그(<Name>_client<N>.png/.log). 클라이언트가 서버에 입장하지 못해도 오류(1)
@@ -22,7 +22,7 @@ param(
     [int]$TimeoutSeconds = 120,
     [switch]$Multiplayer,                               # 전용 서버 + 런타임 클라이언트 여러 개
     [int]$Clients = 2,
-    [string]$Scene = "Scenes/Demo_Multiplayer.escene",
+    [string]$Scene = "Scenes/Tests/Multiplayer.escene",
     [int]$Port = 27800
 )
 

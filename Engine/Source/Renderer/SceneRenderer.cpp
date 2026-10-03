@@ -1462,7 +1462,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	}
 
 	// 2.5) 앰비언트 오클루전 (메인 패스가 간접광에만 곱한다 — t16): RTAO(TLAS 짧은 광선, DDGI가 못 담는 근거리 간접 가림) 또는 SSAO.
-	//   r.RayTracing.AO -1 = DDGI 볼륨이 활성인 프레임만 RTAO (프로브 간격보다 작은 접촉·틈새 가림을 SSAO가 거의 못 냈다 — Demo_GI 진단)
+	//   r.RayTracing.AO -1 = DDGI 볼륨이 활성인 프레임만 RTAO (프로브 간격보다 작은 접촉·틈새 가림을 SSAO가 거의 못 냈다 — Tests/GI 진단)
 	const int32 RtAoMode = RendererCVars::RayTracingAmbientOcclusion.Get();
 	bFrameRtAo           = bPrepass && PostProcessSettings.bAmbientOcclusion && TlasRef.IsValid() && (RtAoMode > 0 || (RtAoMode < 0 && bDdgiActive));
 	const bool     bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && (bConsoleAmbientOcclusion || bFrameRtAo);

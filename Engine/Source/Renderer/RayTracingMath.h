@@ -186,7 +186,7 @@ namespace RayTracingMath
 	//   픽셀마다 광선 RaysPerPixel개 = 교차 표본 번호(GetInterleavedSampleIndex) + 16 × k 의 Vogel 원판 표본(전체 16 × 광선 수)을 반구로 올린
 	//   코사인 가중 방향(Malley) → 가장 가까운 히트 거리 → 가림 = (1 - 거리/반경)^지수. 5x5 텐트 필터(가장자리 0.5)가 주기 4 패턴의 칸마다
 	//   같은 가중을 주므로 평평한 면의 필터 결과는 프레임 회전과 무관하다 (결정적 — 시간 안정성 규칙)
-	constexpr float  DefaultAoRadius        = 150.0f; // cm — DDGI 프로브 간격(Demo_GI·Apartment 100cm)의 1.5배: 경로 추적 기준 rmse 60cm 11.4 → 150cm 10.2
+	constexpr float  DefaultAoRadius        = 150.0f; // cm — DDGI 프로브 간격(Tests/GI·Apartment 100cm)의 1.5배: 경로 추적 기준 rmse 60cm 11.4 → 150cm 10.2
 	constexpr uint32 DefaultAoRaysPerPixel  = 2;
 	constexpr float  DefaultAoFalloffPower  = 2.0f;  // 큰 반경에서도 접촉부에 몰리게 (같은 반경 지수 1보다 기준에 가깝다)
 	// 법선 N(정규화) 둘레 코사인 가중 반구 방향: 단위 원판 표본 Disk를 반구로 올린다 (원판 균등 → 반구 코사인 가중)

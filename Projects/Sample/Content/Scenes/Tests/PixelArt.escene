@@ -5862,7 +5862,7 @@
           ]
         },
         "NavMeshComponent": {
-          "NavMeshAsset": "Scenes/Demo_PixelArt.enav",
+          "NavMeshAsset": "Scenes/Tests/PixelArt.enav",
           "AgentRadius": 40.0,
           "AgentHeight": 160.0,
           "AgentMaxClimb": 40.0,

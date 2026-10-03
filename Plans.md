@@ -905,3 +905,9 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - 메인 라인 47~53 + 사이드 트랙(Lua 디버거, C++ 핫 리로드, 머티리얼 코드 생성, 실내 절차적 생성, 노드 머티리얼 편집기, 리타기팅·루트 모션, 능력 시스템) 모두 master 머지. 부수: 엔진 DLL 내보내기 필터 도구(64193 → 약 1만), PSO 캐시 비결정성 수정, 자동 검증 루프백 대기(방화벽 확인 창)
 - 남은 로드맵: 54 오디오 믹서 ∥ 천·헤어, 55 동영상 재생 (사용자 지시 대기)
 - 알려진 결정성 한계: Showcase·MaterialGraph 등은 자동 검증에서도 실제 시계(Application dt, 구름·물·머티리얼 Time, 자동 노출)를 써서 실행마다 화면이 다름 — 자동 검증 고정 dt 도입 후보
+
+## 데모 씬 정리 (2026-10-04)
+
+- [x] 데모 씬 정리: 검증 씬 Scenes/Tests 이전, 나머지 삭제 — 검증 기준 13개(GameModule/Materials/Decals/Terrain/Stress/StressStatic/Lights/Multiplayer/Abilities/GI/AreaLights/Apartment/PixelArt)를 `Scenes/Tests/<이름>.escene`으로, 그 밖의 Demo_*/RPG_Test_*/Streaming 씬과 그 씬에서만 쓰던 에셋(Showcase 머티리얼·스크립트·시퀀스·HUD 등) 삭제. 시작 맵은 임시로 `Scenes/Main.escene`
+- [ ] 통합 Demo 허브
+- [ ] Demo_GameTest (픽셀 아트 디펜스)

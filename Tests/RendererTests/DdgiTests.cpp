@@ -367,7 +367,7 @@ E_TEST(Ddgi_LightChangeBoost)
 
 namespace
 {
-	// Demo_GI 방 안쪽 면 (x ±400, y ±300, z 0~300) + +X 벽 창 구멍 (y ±100, z 80~220): 방 안 점에서 가장 가까운 면 거리 (창 = 빗나감)
+	// Tests/GI 방 안쪽 면 (x ±400, y ±300, z 0~300) + +X 벽 창 구멍 (y ±100, z 80~220): 방 안 점에서 가장 가까운 면 거리 (창 = 빗나감)
 	float TraceDemoRoom(const FVector3& Origin, const FVector3& Direction)
 	{
 		const float Planes[3][2] = { { -400.0f, 400.0f }, { -300.0f, 300.0f }, { 0.0f, 300.0f } };
@@ -433,7 +433,7 @@ namespace
 E_TEST(Ddgi_RelocationConvergesWithoutOscillation)
 {
 	using namespace DdgiMath;
-	// Demo_GI 격자 (상자 반 크기 430x330x180, 가운데 Z 150 → 9x7x4): 벽에서 7~15cm인 바깥 프로브가 밀기 ↔ 되돌아가기로
+	// Tests/GI 격자 (상자 반 크기 430x330x180, 가운데 Z 150 → 9x7x4): 벽에서 7~15cm인 바깥 프로브가 밀기 ↔ 되돌아가기로
 	// 매 프레임 왕복했다 (예전 되돌아가는 문턱 = MinFrontface). 모든 프로브가 멈추고(마지막 두 프레임 같음) 벽에서 MinFrontface 이상 떨어져야 한다
 	const FVector3 Spacing(860.0f / 9.0f, 660.0f / 7.0f, 360.0f / 4.0f);
 	const FVector3 Origin   = FVector3(-430.0f, -330.0f, -30.0f) + Spacing * 0.5f;

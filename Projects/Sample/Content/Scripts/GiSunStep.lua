@@ -1,5 +1,5 @@
 -- 동적 GI(Phase 51 DDGI) 시간 응답 확인용: 이 엔티티(방향광)의 방향을 StepFrame번째 프레임에 바로 바꾼다.
---   --screenshot-frames N과 함께 돌려 간접광(프로브)이 몇 프레임 만에 따라오는지 본다 (Demo_GI: 바닥 → 초록 벽으로 해가 옮겨 간다)
+--   --screenshot-frames N과 함께 돌려 간접광(프로브)이 몇 프레임 만에 따라오는지 본다 (Tests/GI: 바닥 → 초록 벽으로 해가 옮겨 간다)
 --   StepFrame = 0이면 아무것도 하지 않는다. G 키로 언제든 두 방향을 바꾼다 (플레이 중 수동 확인)
 local GiSunStep = {
 	Properties = {

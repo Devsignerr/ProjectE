@@ -144306,7 +144306,7 @@
           "AgentRadius": 25.0,
           "CellHeight": 10.0,
           "CellSize": 10.0,
-          "NavMeshAsset": "Scenes/Demo_Apartment.enav"
+          "NavMeshAsset": "Scenes/Tests/Apartment.enav"
         },
         "TransformComponent": {
           "Position": [

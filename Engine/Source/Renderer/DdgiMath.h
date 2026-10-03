@@ -346,7 +346,7 @@ namespace DdgiMath
 	//   (가장 가까운 앞면과 반대 방향일 때만) / 여유가 ReturnClearance(= RelocationReturnScale × MinFrontface)보다 크면 격자 자리 쪽으로
 	//   (여유 - ReturnClearance)만큼. 되돌아가는 문턱을 미는 문턱보다 MinFrontface만큼 높게 두어 미는 걸음(MinFrontface)이 되돌아가기를
 	//   부르지 않는다 — 예전(되돌아가는 문턱 = MinFrontface)은 벽 옆 프로브가 밀기 ↔ 되돌아가기로 매 프레임 왕복해(고정 광선의 가장 가까운
-	//   거리가 수직 거리보다 길어 되돌아가기가 지나침) 셰이딩 가중치가 프레임마다 바뀌어 깜빡였다 (2026-10-04 Demo_GI 창 쪽 벽·천장)
+	//   거리가 수직 거리보다 길어 되돌아가기가 지나침) 셰이딩 가중치가 프레임마다 바뀌어 깜빡였다 (2026-10-04 Tests/GI 창 쪽 벽·천장)
 	//   결과가 간격 비율 MaxRelocation을 넘으면 이전 오프셋 유지
 	constexpr float RelocationReturnScale = 2.0f;
 

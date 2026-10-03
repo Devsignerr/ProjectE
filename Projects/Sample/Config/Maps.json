@@ -1,5 +1,5 @@
 {
-  "EditorStartupMap": "Scenes/Demo_Scripting.escene",
+  "EditorStartupMap": "Scenes/Main.escene",
   "GameDefaultMap": "Scenes/Main.escene",
   "ServerDefaultMap": "",
   "PlayerPrefab": "Prefabs/Player.eprefab"

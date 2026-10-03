@@ -458,7 +458,7 @@ E_TEST(Ray_IntersectsTriangle)
 	E_EXPECT_FALSE(FRay(FVector3::ZeroVector, FVector3::RightVector).IntersectsTriangle(A, B, C, Distance)); // 평행
 }
 
-// 회귀: Demo_PixelArt "어딜 클릭해도 Ground" — 45° 돌린 얇고 긴 판(길)의 AABB는 판보다 훨씬 넓어
+// 회귀: Tests/PixelArt "어딜 클릭해도 Ground" — 45° 돌린 얇고 긴 판(길)의 AABB는 판보다 훨씬 넓어
 // 상자만으로 판정하면 판 옆 빈 곳을 눌러도 판이 잡힌다. 삼각형 판정은 실제 면만 잡는다
 E_TEST(Ray_IntersectsMesh_RotatedThinBox)
 {

@@ -386,11 +386,11 @@ bool GenerateTerrainDemo(const std::filesystem::path& ContentDirectory)
 	CameraComponent.FarZ              = 200000.0f;
 	Scene.UpdateTransforms();
 
-	if (!FSceneSerializer::SaveToFile(Scene, ContentDirectory / L"Scenes" / L"Demo_Terrain.escene"))
+	if (!FSceneSerializer::SaveToFile(Scene, ContentDirectory / L"Scenes" / L"Tests" / L"Terrain.escene"))
 	{
 		return false;
 	}
-	E_LOG(LogEditor, Display, "지형 데모 생성: Terrain/DemoTerrain.eterrain ({}x{}), 머티리얼 3개, Scenes/Demo_Terrain.escene", DemoResolution, DemoResolution);
+	E_LOG(LogEditor, Display, "지형 데모 생성: Terrain/DemoTerrain.eterrain ({}x{}), 머티리얼 3개, Scenes/Tests/Terrain.escene", DemoResolution, DemoResolution);
 	return true;
 }
 

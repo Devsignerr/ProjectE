@@ -1,4 +1,4 @@
--- 절차적 아파트 데모 (Demo_Apartment): 런타임 생성 경로 — 에디터 "생성"과 같은 코어(FBuildingSceneBuilder)를 Lua에서 부른다.
+-- 절차적 아파트 데모 (Tests/Apartment): 런타임 생성 경로 — 에디터 "생성"과 같은 코어(FBuildingSceneBuilder)를 Lua에서 부른다.
 --   G = 무작위 시드로 다시 생성, H = 시드 + 1로 다시 생성 (씬에 굳혀 둔 생성물은 교체되고 BuildingPartComponent(유지) 엔티티만 남는다)
 -- 스크립트는 건물과 다른 엔티티에 둔다 (내비메시 굽기는 스크립트 엔티티 하위를 움직이는 물체로 보고 뺀다)
 local ApartmentDemo = {

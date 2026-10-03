@@ -104,7 +104,7 @@ Texture2D LightTextures[] : register(t0, space3);
 // 면광원 그림자 (스포트처럼 장 1장, 면 가운데에서 법선 쪽 원근): PCSS — 고정 Vogel 64탭 가림 탐색 → 반그림자 폭 = 면 반 크기 × (수신 - 가림) / 가림
 // (AreaLightMath::ComputePenumbraUV, 결정적 — 픽셀마다 흔들지 않는다) → 같은 반경 64탭 비교 PCF. 폭은 1~32텍셀로 자른다
 // 탭 수: 넓은 반그림자(최대 반경 32텍셀)를 16탭으로 덮으면 탭 사이가 텍셀 수십 개라 가림 평균 깊이와 PCF 결과가 텍셀을 넘을 때마다
-// 계단으로 바뀌어 먼 벽·구석에 얼룩덜룩한 덩어리가 보였다 (2026-10-04 Demo_AreaLights — 256탭 기준 대비 구석 최대 오차 10.9 → 4.9 / 255, 720p 메인 패스 +0.4ms)
+// 계단으로 바뀌어 먼 벽·구석에 얼룩덜룩한 덩어리가 보였다 (2026-10-04 Tests/AreaLights — 256탭 기준 대비 구석 최대 오차 10.9 → 4.9 / 255, 720p 메인 패스 +0.4ms)
 #define E_AREA_BLOCKER_TAPS 64
 #define E_AREA_PCF_TAPS 64
 float2 AreaShadowVogel(uint Index, uint Count)

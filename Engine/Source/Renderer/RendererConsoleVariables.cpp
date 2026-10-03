@@ -191,7 +191,7 @@ namespace RendererCVars
 	                                EConsoleFlags::None, { .CommandLine = { { L"--no-ddgi", "0" }, { L"--ddgi", "1" } } });
 	TAutoConsoleVariable<int32> DdgiProbeBudget("r.DDGI.ProbeBudget", 1024,
 	                                            "DDGI 프레임당 갱신 프로브 전체 상한 (볼륨 프로브 수 비율로 나눔, 0 = 무제한). 줄이면 싸지만 조명 변화를 늦게 따라감. "
-	                                            "기본 1024 (1440p 측정: 6720 프로브 Demo_Apartment 추적 0.26 + 누적 0.34ms, 7프레임에 한 바퀴)",
+	                                            "기본 1024 (1440p 측정: 6720 프로브 Tests/Apartment 추적 0.26 + 누적 0.34ms, 7프레임에 한 바퀴)",
 	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 16384.0f), .CommandLine = { { L"--ddgi-budget", "" } } });
 	TAutoConsoleVariable<float> DdgiBounceIntensity("r.DDGI.BounceIntensity", 1.0f,
 	                                                "DDGI 다중 반사: 프로브 광선 히트의 간접 확산(이전 프레임 프로브 조도) 배율 (0 = 한 번 반사만)", EConsoleFlags::None,
@@ -218,7 +218,7 @@ namespace RendererCVars
 	                                             EConsoleFlags::None, { .Range = std::pair(0.0f, 6000.0f) });
 	TAutoConsoleVariable<float> DdgiSettleHysteresis("r.DDGI.SettleHysteresis", 0.97f, "DDGI 정착 구간 히스테리시스 상한 (볼륨 값이 이보다 낮으면 영향 없음)",
 	                                                 EConsoleFlags::None, { .Range = std::pair(0.0f, 0.995f) });
-	// ---- RT 앰비언트 오클루전 (RTAO — 근거리 간접 가림, Demo_GI 그림자 품질)
+	// ---- RT 앰비언트 오클루전 (RTAO — 근거리 간접 가림, Tests/GI 그림자 품질)
 	TAutoConsoleVariable<int32> RayTracingAmbientOcclusion("r.RayTracing.AO", -1,
 	                                                       "RT 앰비언트 오클루전 (SSAO 대신 TLAS 짧은 광선 — 간접광에만 곱함): -1 자동(DDGI 볼륨이 활성인 프레임만), "
 	                                                       "0 끔(SSAO), 1 켬(RT가 켜진 렌더러 항상)",

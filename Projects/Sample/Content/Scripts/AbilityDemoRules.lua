@@ -1,4 +1,4 @@
--- 능력 데모 규칙 (Demo_Abilities, 서버에서만): 플레이어 폰에 능력 시스템 컴포넌트를 붙인다.
+-- 능력 데모 규칙 (Tests/Abilities, 서버에서만): 플레이어 폰에 능력 시스템 컴포넌트를 붙인다.
 --   멀티플레이: 서버가 입장한 플레이어의 폰(프로젝트 설정 PlayerPrefab)에 붙인다 (컴포넌트 값은 복제되어 클라이언트도 같은 표를 읽는다)
 --   Standalone(런타임/에디터 플레이): 직접 플레이어 프리팹을 PlayerStart에 만들고 로컬 플레이어(0) 소유로 정한다
 -- 정의는 데이터 테이블 Data/Abilities/Demo*.etable, 능력 로직은 Abilities/*.lua

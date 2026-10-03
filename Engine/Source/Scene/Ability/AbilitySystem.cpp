@@ -56,7 +56,7 @@ namespace
 	TAutoConsoleVariable<bool>  CVarClientSkipChecks("ability.ClientSkipChecks", false,
 	                                                 "검증용: 소유 클라이언트가 쿨다운·비용 검사 없이 예측 발동 → 서버 거절·되돌림 확인", EConsoleFlags::Cheat);
 
-	TAutoConsoleVariable<int32> CVarAbilityAutoCast("ability.AutoCast", 0, "검증용: 1이면 능력 데모 스크립트(Demo_Abilities HUD)가 로컬 폰의 능력을 순서대로 자동 발동");
+	TAutoConsoleVariable<int32> CVarAbilityAutoCast("ability.AutoCast", 0, "검증용: 1이면 능력 데모 스크립트(Tests/Abilities HUD)가 로컬 폰의 능력을 순서대로 자동 발동");
 
 	FAutoConsoleCommand CmdAbilityDump("ability.Dump", "능력 시스템 상태 출력 (속성·태그·활성 효과·능력). 인자: 엔티티 이름 일부 (없으면 전부)",
 		[](const std::vector<std::string>& Args, const FConsoleOutput& Output) {

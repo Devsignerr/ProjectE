@@ -123,7 +123,7 @@ class FDdgiRenderer
 {
 public:
 	// 조도 이력은 32비트: 16비트 float는 히스테리시스 누적 한 걸음 (1-h)·(새 값 - 이전)이 반올림에 먹혀 정상 상태가 어두운 쪽으로
-	// 치우쳤다 (Demo_GI 화면 평균 h 0.97 −2.3%, 0.99 −6.4% — 2026-10-04). 거리 모멘트는 16비트로도 차이 없음 (측정)
+	// 치우쳤다 (Tests/GI 화면 평균 h 0.97 −2.3%, 0.99 −6.4% — 2026-10-04). 거리 모멘트는 16비트로도 차이 없음 (측정)
 	static constexpr DXGI_FORMAT IrradianceFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	static constexpr DXGI_FORMAT DistanceFormat   = DXGI_FORMAT_R16G16_FLOAT;
 	static constexpr DXGI_FORMAT ProbeDataFormat  = DXGI_FORMAT_R32G32B32A32_FLOAT;

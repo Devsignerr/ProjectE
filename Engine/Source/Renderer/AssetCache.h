@@ -19,7 +19,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
-	static constexpr uint32 ModelVersion = 10; // 10: 임포트 MaxTriangles + 잎 메시 솎아내기 LOD, 9: 메시 UV 밀도(텍스처 밉 스트리밍), 8: 머티리얼 블렌드 모드/알파 컷오프/양면, 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 11; // 11: 스킨 메시 LOD, 10: 임포트 MaxTriangles + 잎 메시 솎아내기 LOD, 9: 메시 UV 밀도(텍스처 밉 스트리밍), 8: 머티리얼 블렌드 모드/알파 컷오프/양면, 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
 	static constexpr uint32 EnvironmentMagic   = 0x564E4545; // "EENV"
 	static constexpr uint32 EnvironmentVersion = 1; // 1: 등장방형 RGBA16F, 폭 최대 2048 (상자 필터 축소)

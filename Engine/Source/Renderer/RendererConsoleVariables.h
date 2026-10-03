@@ -17,6 +17,8 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  SkinCulling;      // r.SkinCulling    (--no-skin-culling)
 	extern TAutoConsoleVariable<bool>  ParticleCulling;  // r.ParticleCulling (--no-particle-culling)
 	extern TAutoConsoleVariable<bool>  Lod;              // r.LOD            (--no-lod)
+	extern TAutoConsoleVariable<bool>  SkinnedLod;       // r.LOD.Skinned    (--no-skinned-lod)
+	extern TAutoConsoleVariable<float> SkinnedLodScale;  // r.LOD.SkinnedScale
 	extern TAutoConsoleVariable<int32> ForceLod;         // r.ForceLOD       (--force-lod N)
 	extern TAutoConsoleVariable<float> LodHysteresis;    // r.LODHysteresis  (--lod-hysteresis X)
 	extern TAutoConsoleVariable<bool>  Jitter;           // r.Jitter         (--jitter)

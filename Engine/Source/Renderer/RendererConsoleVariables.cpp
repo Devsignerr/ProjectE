@@ -22,7 +22,12 @@ namespace RendererCVars
 	                                           { .CommandLine = { { L"--no-particle-culling", "0" } } });
 	TAutoConsoleVariable<bool> Lod("r.LOD", true, "메시 LOD (화면 크기 전환). 끄면 항상 LOD0", EConsoleFlags::None,
 	                               { .CommandLine = { { L"--no-lod", "0" } } });
-	TAutoConsoleVariable<int32> ForceLod("r.ForceLOD", -1, "0 이상이면 모든 정적 메시를 그 LOD로 (-1 = 끔, 확인용)", EConsoleFlags::None,
+	TAutoConsoleVariable<bool> SkinnedLod("r.LOD.Skinned", true, "스킨 메시 LOD (정적 메시와 같은 화면 크기 선택). 끄면 스킨 메시는 항상 LOD0",
+	                                      EConsoleFlags::None, { .CommandLine = { { L"--no-skinned-lod", "0" } } });
+	TAutoConsoleVariable<float> SkinnedLodScale("r.LOD.SkinnedScale", 2.0f,
+	                                            "스킨 메시 LOD 화면 크기 배율 (r.LOD 배율에 곱함, 크면 LOD0을 더 멀리까지 — 캐릭터는 가까이서 모양 변화가 잘 보여 정적보다 보수적)",
+	                                            EConsoleFlags::None, { .Range = std::pair(0.25f, 16.0f) });
+	TAutoConsoleVariable<int32> ForceLod("r.ForceLOD", -1, "0 이상이면 모든 메시(스킨 포함)를 그 LOD로 (-1 = 끔, 확인용)", EConsoleFlags::None,
 	                                     { .Range = std::pair(-1.0f, 7.0f), .CommandLine = { { L"--force-lod", "" } } });
 	TAutoConsoleVariable<float> LodHysteresis("r.LODHysteresis", 0.1f, "LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔)",
 	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f), .CommandLine = { { L"--lod-hysteresis", "" } } });

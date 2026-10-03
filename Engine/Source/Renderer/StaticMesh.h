@@ -13,7 +13,7 @@ class FD3D12RHI;
 class FD3D12UploadQueue;
 
 // GPU에 올라간 정적 메시 (정점/인덱스 버퍼 + 로컬 경계).
-// LOD: 인덱스 버퍼 = LOD0 인덱스 뒤에 FMeshData::Lods 인덱스를 이어 붙인 것 (정점 버퍼는 공유). 스킨 드로우는 항상 LOD0
+// LOD: 인덱스 버퍼 = LOD0 인덱스 뒤에 FMeshData::Lods 인덱스를 이어 붙인 것 (정점 버퍼는 공유). 스킨 메시도 같은 방식 (단순화가 새 정점을 만들지 않으므로 슬롯 1 스킨 스트림도 공유)
 class FStaticMesh
 {
 public:
@@ -46,8 +46,8 @@ public:
 	// 스킨 정점 스트림(슬롯 1) 추가. Init 이후 호출, 정점 수가 같아야 한다
 	bool InitSkin(FD3D12Device& Device, FD3D12CommandQueue& Queue, const std::vector<FSkinVertex>& SkinVertices, const wchar_t* DebugName);
 	bool IsSkinned() const { return bSkinned; }
-	// 슬롯 0 + 슬롯 1(스킨) 바인딩 후 드로우 (IsSkinned일 때만, 항상 LOD0 — 스킨 메시는 LOD 없음). 인스턴스는 SV_InstanceID
-	void DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount = 1) const;
+	// 슬롯 0 + 슬롯 1(스킨) 바인딩 후 드로우 (IsSkinned일 때만). LOD는 인덱스만 다르고 정점·스킨 스트림은 공유. 인스턴스는 SV_InstanceID
+	void DrawSkinned(ID3D12GraphicsCommandList* CommandList, uint32 InstanceCount = 1, uint32 Lod = 0) const;
 
 	uint32      GetIndexCount() const { return IndexCount; } // LOD0
 	uint32      GetLodCount() const { return static_cast<uint32>(Lods.size()); }

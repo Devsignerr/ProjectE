@@ -221,7 +221,7 @@ E_TEST(Lod_ImportSettingsAndSerialization)
 		E_EXPECT_TRUE(Leaves.Materials[2].BlendMode == EMaterialBlendMode::Additive);
 	}
 
-	// Apply: 정적 메시만 LOD 생성
+	// Apply: 정적·스킨 메시 모두 LOD 생성 (스킨은 Lod_SkinnedImport에서 자세히)
 	FModelData Model;
 	FModelMesh& Static = Model.Meshes.emplace_back();
 	Static.Data        = FPrimitiveShapes::MakeSphere(50.0f, 32, 16);
@@ -230,7 +230,7 @@ E_TEST(Lod_ImportSettingsAndSerialization)
 	Skinned.SkinVertices.resize(Skinned.Data.Vertices.size());
 	FModelImportSettings{}.Apply(Model);
 	E_EXPECT_EQ(Model.Meshes[0].Data.Lods.size(), static_cast<size_t>(3));
-	E_EXPECT_TRUE(Model.Meshes[1].Data.Lods.empty());
+	E_EXPECT_EQ(Model.Meshes[1].Data.Lods.size(), static_cast<size_t>(3));
 
 	// 쿠킹 형식 왕복
 	Model.Meshes.pop_back();
@@ -343,3 +343,89 @@ E_TEST(Lod_ImportMaxTrianglesSimplifiesAndCompacts)
 	E_EXPECT_EQ(Tree.Meshes[0].Data.Lods.size(), static_cast<size_t>(3));
 }
 
+
+E_TEST(Lod_SkinnedImportSharesVerticesAndSkinStream)
+{
+	// 스킨 메시 LOD = QEM 인덱스만 (정점·스킨 스트림 그대로 공유) — 정점 수가 바뀌면 슬롯 1 스킨 스트림이 어긋난다
+	FModelData Model;
+	FModelMesh& Body = Model.Meshes.emplace_back();
+	Body.Data        = FPrimitiveShapes::MakeSphere(50.0f, 32, 16);
+	Body.SkinVertices.resize(Body.Data.Vertices.size());
+	for (size_t Index = 0; Index < Body.SkinVertices.size(); ++Index)
+	{
+		Body.SkinVertices[Index].Joints[0] = static_cast<uint16>(Index % 7);
+	}
+	const std::vector<FVertex>     Vertices     = Body.Data.Vertices;
+	const std::vector<uint32>      Lod0         = Body.Data.Indices;
+	const std::vector<FSkinVertex> SkinVertices = Body.SkinVertices;
+
+	// 잎 메시처럼 생긴 마스크 스킨 메시 — 솎아내기(정점 덧붙임)를 쓰면 안 된다
+	Model.Materials.resize(1);
+	Model.Materials[0].BlendMode = EMaterialBlendMode::Masked;
+	FModelMesh& Cape = Model.Meshes.emplace_back();
+	Cape.Data        = MakeLeafCloud(1024);
+	Cape.Material    = 0;
+	Cape.SkinVertices.resize(Cape.Data.Vertices.size());
+	const size_t CapeVertices = Cape.Data.Vertices.size();
+	const size_t CapeIndices  = Cape.Data.Indices.size();
+
+	FModelImportSettings Settings;
+	Settings.MaxTriangles = 100; // 정적 메시 전용 — 스킨 메시의 LOD0·정점은 그대로
+	Settings.Apply(Model);
+
+	const FMeshData& Result = Model.Meshes[0].Data;
+	E_EXPECT_EQ(Result.Lods.size(), static_cast<size_t>(3));
+	E_EXPECT_TRUE(Result.Indices == Lod0);
+	E_EXPECT_EQ(Result.Vertices.size(), Vertices.size());
+	E_EXPECT_EQ(Model.Meshes[0].SkinVertices.size(), Result.Vertices.size());
+	bool bSameVertices = true;
+	for (size_t Index = 0; Index < Vertices.size(); ++Index)
+	{
+		bSameVertices = bSameVertices && Result.Vertices[Index].Position == Vertices[Index].Position &&
+		                Model.Meshes[0].SkinVertices[Index].Joints[0] == SkinVertices[Index].Joints[0];
+	}
+	E_EXPECT_TRUE(bSameVertices);
+	size_t PrevTriangles = Lod0.size() / 3;
+	for (const FMeshLod& Level : Result.Lods)
+	{
+		E_EXPECT_TRUE(Level.Indices.size() % 3 == 0 && Level.Indices.size() / 3 < PrevTriangles);
+		bool bInRange = true;
+		for (const uint32 Index : Level.Indices)
+		{
+			bInRange = bInRange && Index < Result.Vertices.size();
+		}
+		E_EXPECT_TRUE(bInRange);
+		PrevTriangles = Level.Indices.size() / 3;
+	}
+
+	// 마스크 스킨 메시: 정점·LOD0 그대로 (솎아내기·MaxTriangles 없음, 떨어진 조각이라 QEM도 줄이지 못하면 LOD 없음)
+	E_EXPECT_EQ(Model.Meshes[1].Data.Vertices.size(), CapeVertices);
+	E_EXPECT_EQ(Model.Meshes[1].Data.Indices.size(), CapeIndices);
+	for (const FMeshLod& Level : Model.Meshes[1].Data.Lods)
+	{
+		for (const uint32 Index : Level.Indices)
+		{
+			E_EXPECT_TRUE(Index < CapeVertices);
+		}
+	}
+
+	// 쿠킹 형식 왕복: 스킨 메시 LOD도 저장·검증된다
+	FBinaryWriter Writer;
+	FAssetCache::WriteModel(Writer, Model);
+	FBinaryReader Reader(Writer.GetBuffer().data(), Writer.GetBuffer().size());
+	FModelData    Read;
+	E_EXPECT_TRUE(FAssetCache::ReadModel(Reader, Read));
+	E_EXPECT_EQ(Read.Meshes[0].Data.Lods.size(), static_cast<size_t>(3));
+	E_EXPECT_EQ(Read.Meshes[0].SkinVertices.size(), Read.Meshes[0].Data.Vertices.size());
+	E_EXPECT_TRUE(Read.Meshes[0].Data.Lods[1].Indices == Result.Lods[1].Indices);
+
+	// LOD 끄기: 스킨 메시도 비움
+	FModelData Off;
+	FModelMesh& OffMesh = Off.Meshes.emplace_back();
+	OffMesh.Data        = FPrimitiveShapes::MakeSphere(50.0f, 32, 16);
+	OffMesh.SkinVertices.resize(OffMesh.Data.Vertices.size());
+	FModelImportSettings NoLods;
+	NoLods.bGenerateLods = false;
+	NoLods.Apply(Off);
+	E_EXPECT_TRUE(Off.Meshes[0].Data.Lods.empty());
+}

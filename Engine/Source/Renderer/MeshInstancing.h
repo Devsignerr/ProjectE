@@ -95,11 +95,11 @@ private:
 	D3D12_GPU_VIRTUAL_ADDRESS  GpuData        = 0;
 };
 
-// 메인/사전/반투명 패스 묶음 키: PSO 변형(GetPipelineVariant) | 머티리얼 | 메시 | LOD. 스킨 메시는 LOD 없음
+// 메인/사전/반투명 패스 묶음 키: PSO 변형(GetPipelineVariant) | 머티리얼 | 메시 | LOD
 inline uint64 MakeMainBatchKey(const FMeshInstance& Instance)
 {
 	return InstanceBatching::MakeKey(Instance.GetPipelineVariant(), Instance.MaterialHandle.Index, Instance.MeshHandle.Index,
-	                                 Instance.IsSkinned() ? 0 : Instance.Lod);
+	                                 Instance.Lod);
 }
 
 // 깊이 전용 패스(그림자) PSO 변형: bit0 = 스킨, bit1 = Masked (알파 테스트 픽셀 셰이더)
@@ -111,11 +111,11 @@ inline uint32 GetDepthVariant(const FMeshInstance& Instance)
 	return (Instance.IsSkinned() ? DepthVariantSkinned : 0u) | (Instance.IsMasked() ? DepthVariantMasked : 0u);
 }
 
-// 깊이 전용 패스(그림자) 묶음 키: 변형 | 머티리얼(Masked만 — 나머지는 머티리얼 무관) | 메시 | LOD. 스킨 메시는 LOD 없음
+// 깊이 전용 패스(그림자) 묶음 키: 변형 | 머티리얼(Masked만 — 나머지는 머티리얼 무관) | 메시 | LOD
 inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance)
 {
 	return InstanceBatching::MakeKey(GetDepthVariant(Instance), Instance.IsMasked() ? Instance.MaterialHandle.Index : 0u, Instance.MeshHandle.Index,
-	                                 Instance.IsSkinned() ? 0 : Instance.Lod);
+	                                 Instance.Lod);
 }
 
 class FMeshPassBatches;

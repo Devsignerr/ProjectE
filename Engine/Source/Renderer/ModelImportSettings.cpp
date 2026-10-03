@@ -200,8 +200,9 @@ void FModelImportSettings::Apply(FModelData& Model) const
 				MeshSimplifier::SimplifyBase(Mesh.Data, Target);
 			}
 		}
-		// LOD: 정적 메시만 (스킨 메시는 항상 LOD0으로 그린다)
-		if (bGenerateLods && bStatic)
+		// LOD: 정적·스킨 메시 모두. 스킨 메시는 QEM만 — 기존 정점만 쓰고 인덱스만 새로 만들므로 슬롯 1 스킨 스트림(정점 수 동일)을
+		// 그대로 공유한다 (잎 솎아내기는 정점을 덧붙여 스킨 데이터가 어긋나므로 bIslands는 정적 전용, MaxTriangles도 정점을 줄이므로 정적 전용)
+		if (bGenerateLods)
 		{
 			if (bIslands)
 			{

@@ -1,4 +1,5 @@
 #include "Editor/EditorApplication.h"
+#include "Network/NetBindPolicy.h"
 
 #include "AI/AIModule.h"
 #include "AI/AISystem.h"
@@ -91,6 +92,7 @@ FEditorApplication::~FEditorApplication() = default;
 
 bool FEditorApplication::OnInit()
 {
+	NetBindPolicy::Configure(IsAutomationRun()); // 자동 검증 네트워크 플레이는 같은 PC 전용 대기 (방화벽 확인 창 없음)
 	FEditorPreferences::Get().Initialize(); // 개인 환경설정 (%LOCALAPPDATA%/ProjectE/EditorPreferences, <Saved>/Config)
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();

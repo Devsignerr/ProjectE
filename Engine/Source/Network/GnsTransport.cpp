@@ -1,5 +1,7 @@
 #include "Network/NetTransport.h"
 
+#include "Network/NetBindPolicy.h"
+
 #pragma warning(push, 0)
 #include <steam/isteamnetworkingutils.h>
 #include <steam/steamnetworkingsockets.h>
@@ -107,6 +109,10 @@ namespace
 			}
 			SteamNetworkingIPAddr Address;
 			Address.Clear(); // 모든 주소 (IPv6 dual-stack)
+			if (NetBindPolicy::IsLoopbackOnly())
+			{
+				Address.SetIPv4(0x7F000001, 0); // 127.0.0.1 — 같은 PC 전용 (방화벽 확인 창 없음)
+			}
 			Address.m_port = Port;
 			ListenSocket   = Sockets->CreateListenSocketIP(Address, 0, nullptr);
 			if (ListenSocket == k_HSteamListenSocket_Invalid)

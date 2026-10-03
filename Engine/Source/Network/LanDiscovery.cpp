@@ -2,6 +2,7 @@
 
 #include "Core/Platform/WindowsHeaders.h"
 #include "Core/Serialization/BinaryArchive.h"
+#include "Network/NetBindPolicy.h"
 #include "Network/NetDriver.h"
 #include "Network/NetMessages.h"
 
@@ -110,6 +111,12 @@ FLanDiscovery::~FLanDiscovery()
 bool FLanDiscovery::StartHost(const FLanHostInfo& Info, uint16 DiscoveryPort)
 {
 	Stop();
+	if (NetBindPolicy::IsLoopbackOnly())
+	{
+		// 같은 PC 전용 실행: LAN 방 알림은 의미가 없고 0.0.0.0 대기는 방화벽 확인 창을 띄운다
+		E_LOG(LogNet, Log, "같은 PC 전용 실행 — LAN 방 알림을 하지 않습니다");
+		return false;
+	}
 	DiscoveryPort = DiscoveryPort != 0 ? DiscoveryPort : GetConfiguredLanDiscoveryPort();
 	if (!Impl->bWinsock || (Impl->Socket = OpenUdpSocket(DiscoveryPort, false)) == INVALID_SOCKET)
 	{

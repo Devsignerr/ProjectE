@@ -8,6 +8,7 @@
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
+#include "Network/NetBindPolicy.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -66,6 +67,7 @@ void FRuntimeApplication::OnConfigureWindow(FWindowDesc& WindowDesc)
 
 bool FRuntimeApplication::OnInit()
 {
+	NetBindPolicy::Configure(IsAutomationRun()); // 자동 검증은 같은 PC 전용 대기 (방화벽 확인 창 없음)
 	// 개발자 콘솔: 개발 실행은 항상, 패키지 게임은 프로젝트 설정으로. 출력은 로그 기록을 그대로 보여 준다
 	Console.bEnabled = !FPaths::IsPackaged() || FProjectSettings::Get().Console.bEnableInPackagedGame;
 	if (Console.bEnabled)

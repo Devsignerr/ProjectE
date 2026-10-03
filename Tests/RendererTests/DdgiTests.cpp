@@ -247,6 +247,24 @@ E_TEST(Ddgi_HysteresisBlend)
 	E_EXPECT_NEAR(ComputeHysteresis(FVector3(4.0f), FVector3(1.0f), 0.97f, 0.3f, false), 0.22f, 1.0e-5f);
 	// 아주 어두운 값의 작은 절대 변화는 급변 아님 (바닥 1e-3)
 	E_EXPECT_NEAR(ComputeHysteresis(FVector3(0.0f), FVector3(0.0002f), 0.97f, 0.3f, false), 0.97f, 0.0f);
+	// 처음 n번은 누적 평균 (n / (n + 1) 상한) — 1번째 0, 2번째 1/2, 3번째 2/3 … 기본값에서 멈춘다
+	E_EXPECT_NEAR(ComputeHysteresis(Previous, Previous, 0.97f, 0.3f, false, 1), 0.5f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeHysteresis(Previous, Previous, 0.97f, 0.3f, false, 2), 2.0f / 3.0f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeHysteresis(Previous, Previous, 0.97f, 0.3f, false, 500), 0.97f, 0.0f);
+	// 누적 평균이면 n개 표본의 평균과 같다
+	{
+		FVector3     Mean(0.0f);
+		const float  Samples[4] = { 2.0f, 4.0f, 6.0f, 8.0f };
+		for (uint32 Index = 0; Index < 4; ++Index)
+		{
+			Mean = Blend(Mean, FVector3(Samples[Index]), ComputeHysteresis(Mean, FVector3(Samples[Index]), 0.97f, 100.0f, Index == 0, Index));
+		}
+		E_EXPECT_NEAR(Mean.X, 5.0f, 1.0e-4f);
+	}
+	// 상태 텍셀 인코딩 (w = 상태 + 4 × 갱신 횟수)
+	E_EXPECT_EQ(GetProbeState(EncodeProbeState(ProbeState_Inactive, 37)), static_cast<uint32>(ProbeState_Inactive));
+	E_EXPECT_EQ(GetProbeUpdateCount(EncodeProbeState(ProbeState_Active, 37)), 37u);
+	E_EXPECT_EQ(GetProbeUpdateCount(EncodeProbeState(ProbeState_Active, 100000)), MaxUpdateCount);
 	// 수렴: 일정한 입력을 반복하면 이전 값이 입력으로 다가간다
 	FVector3 Value(0.0f);
 	for (uint32 Step = 0; Step < 200; ++Step)
@@ -323,4 +341,23 @@ E_TEST(Ddgi_UpdateSchedule)
 		Cursor = (Cursor + Count) % 100;
 	}
 	E_EXPECT_EQ(static_cast<uint32>(Seen.size()), 100u);
+}
+
+E_TEST(Ddgi_LightChangeBoost)
+{
+	using namespace DdgiMath;
+	const FVector3 Down(0.0f, 0.0f, -1.0f);
+	const FVector3 Sun(3.0f, 3.0f, 3.0f);
+	// 같은 조명 = 0, 방향 2도 = 1, 1도 = 0.5, 복사 10% = 1, 하늘 배율 20% = 2
+	E_EXPECT_NEAR(ComputeLightChange(Down, Sun, 1.0f, Down, Sun, 1.0f), 0.0f, 1.0e-6f);
+	const float Angle = FMath::DegreesToRadians(2.0f);
+	const FVector3 Tilted(std::sin(Angle), 0.0f, -std::cos(Angle));
+	E_EXPECT_NEAR(ComputeLightChange(Down, Sun, 1.0f, Tilted, Sun, 1.0f), 1.0f, 1.0e-2f);
+	const float Half = FMath::DegreesToRadians(1.0f);
+	E_EXPECT_NEAR(ComputeLightChange(Down, Sun, 1.0f, FVector3(std::sin(Half), 0.0f, -std::cos(Half)), Sun, 1.0f), 0.5f, 1.0e-2f);
+	E_EXPECT_NEAR(ComputeLightChange(Down, Sun, 1.0f, Down, Sun * 0.9f, 1.0f), 1.0f, 1.0e-4f);
+	E_EXPECT_NEAR(ComputeLightChange(Down, Sun, 1.0f, Down, Sun, 0.8f), 2.0f, 1.0e-4f);
+	// 방향광 꺼짐(복사 0)이면 방향은 무시, 켜지면 복사 변화 100% → 큰 값
+	E_EXPECT_NEAR(ComputeLightChange(Down, FVector3(0.0f), 1.0f, FVector3(1.0f, 0.0f, 0.0f), FVector3(0.0f), 1.0f), 0.0f, 1.0e-6f);
+	E_EXPECT_TRUE(ComputeLightChange(Down, FVector3(0.0f), 1.0f, Down, Sun, 1.0f) >= 10.0f - 1.0e-3f);
 }

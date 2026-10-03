@@ -1,0 +1,14 @@
+{
+  "Name": "GreenWall",
+  "BaseColorFactor": [0.08, 0.6, 0.1, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 0.0,
+  "Roughness": 0.85,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

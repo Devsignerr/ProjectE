@@ -290,15 +290,23 @@ namespace DdgiMath
 		return FMath::Clamp(Inside / FMath::Max(FadeDistance, 1.0e-3f), 0.0f, 1.0f);
 	}
 
+	// 프로브 상태 텍셀 w = 상태 + 4 × 갱신 횟수 (상한 MaxUpdateCount — float32에 정확)
+	constexpr uint32 MaxUpdateCount = 1023;
+	inline float  EncodeProbeState(uint32 State, uint32 UpdateCount) { return static_cast<float>(State + 4u * std::min(UpdateCount, MaxUpdateCount)); }
+	inline uint32 GetProbeState(float W) { return static_cast<uint32>(W) & 3u; }
+	inline uint32 GetProbeUpdateCount(float W) { return static_cast<uint32>(W) >> 2; }
+
 	// ---- 누적 (히스테리시스)
-	// 이번 누적의 이전 값 비중: 처음(아직 없음)이면 0, 성분 최대 변화가 이전·새 값 크기의 ChangeThreshold배를 넘으면(급변 — 시간대·조명 변화)
-	// Base에서 0.75를 뺀 값(빠르게 따라감), 아니면 Base
-	inline float ComputeHysteresis(const FVector3& Previous, const FVector3& Current, float Base, float ChangeThreshold, bool bFirst)
+	// 이번 누적의 이전 값 비중: 처음(아직 없음)이면 0, 처음 n번(UpdateCount = 지난 갱신 횟수)은 누적 평균 상한 n/(n+1) (수렴 가속),
+	// 성분 최대 변화가 이전·새 값 크기의 ChangeThreshold배를 넘으면(급변 — 시간대·조명 변화) 0.75를 뺀 값(빠르게 따라감)
+	inline float ComputeHysteresis(const FVector3& Previous, const FVector3& Current, float Base, float ChangeThreshold, bool bFirst,
+	                               uint32 UpdateCount = MaxUpdateCount)
 	{
 		if (bFirst)
 		{
 			return 0.0f;
 		}
+		Base = FMath::Min(Base, static_cast<float>(UpdateCount) / static_cast<float>(UpdateCount + 1u));
 		const FVector3 Delta(FMath::Abs(Current.X - Previous.X), FMath::Abs(Current.Y - Previous.Y), FMath::Abs(Current.Z - Previous.Z));
 		const float    MaxDelta = FMath::Max(Delta.X, FMath::Max(Delta.Y, Delta.Z));
 		const float    Scale    = FMath::Max(FMath::Max(FMath::Max(Previous.X, Previous.Y), Previous.Z), FMath::Max(FMath::Max(Current.X, Current.Y), Current.Z));
@@ -312,6 +320,31 @@ namespace DdgiMath
 	inline FVector3 Blend(const FVector3& Previous, const FVector3& Current, float Hysteresis)
 	{
 		return Current + (Previous - Current) * Hysteresis;
+	}
+
+	// 조명 변화 정도 (1 = 가속 기준): 방향광 방향 2도, 방향광 복사 휘도·하늘 배율 상대 10%. 방향광이 꺼져 있으면(복사 0) 방향은 보지 않는다
+	inline float ComputeLightChange(const FVector3& DirectionA, const FVector3& RadianceA, float AmbientA, const FVector3& DirectionB,
+	                                const FVector3& RadianceB, float AmbientB)
+	{
+		const float LumA = RadianceA.X * 0.2126f + RadianceA.Y * 0.7152f + RadianceA.Z * 0.0722f;
+		const float LumB = RadianceB.X * 0.2126f + RadianceB.Y * 0.7152f + RadianceB.Z * 0.0722f;
+		float       Change = 0.0f;
+		if (LumA > 1.0e-4f && LumB > 1.0e-4f)
+		{
+			const float Cosine = std::clamp(FVector3::Dot(DirectionA.GetNormalized(), DirectionB.GetNormalized()), -1.0f, 1.0f);
+			Change             = FMath::Max(Change, std::acos(Cosine) / FMath::DegreesToRadians(2.0f));
+		}
+		const float MaxLum = FMath::Max(LumA, LumB);
+		if (MaxLum > 1.0e-4f)
+		{
+			Change = FMath::Max(Change, FMath::Abs(LumA - LumB) / MaxLum / 0.1f);
+		}
+		const float MaxAmbient = FMath::Max(FMath::Abs(AmbientA), FMath::Abs(AmbientB));
+		if (MaxAmbient > 1.0e-4f)
+		{
+			Change = FMath::Max(Change, FMath::Abs(AmbientA - AmbientB) / MaxAmbient / 0.1f);
+		}
+		return Change;
 	}
 
 	// ---- 아틀라스

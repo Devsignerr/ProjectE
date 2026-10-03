@@ -112,6 +112,14 @@
     { "File": "VolumetricClouds.hlsl", "Entry": "VSComposite", "Stage": "Vertex" },
     { "File": "VolumetricClouds.hlsl", "Entry": "PSComposite", "Stage": "Pixel" },
     { "File": "HdrComposite.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
-    { "File": "HdrComposite.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
+    { "File": "HdrComposite.hlsl", "Entry": "PSMain", "Stage": "Pixel" },
+    { "File": "DdgiTrace.hlsl", "Entry": "VSMain", "Stage": "Vertex", "ShaderModel": "6_5" },
+    { "File": "DdgiTrace.hlsl", "Entry": "PSTrace", "Stage": "Pixel", "ShaderModel": "6_5" },
+    { "File": "DdgiBlend.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "DdgiBlend.hlsl", "Entry": "PSIrradiance", "Stage": "Pixel" },
+    { "File": "DdgiBlend.hlsl", "Entry": "PSDistance", "Stage": "Pixel" },
+    { "File": "DdgiBlend.hlsl", "Entry": "PSProbeData", "Stage": "Pixel" },
+    { "File": "DdgiProbes.hlsl", "Entry": "VSProbe", "Stage": "Vertex" },
+    { "File": "DdgiProbes.hlsl", "Entry": "PSProbe", "Stage": "Pixel" }
   ]
 }

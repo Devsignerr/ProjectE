@@ -79,6 +79,15 @@ TextureCube<float4> IblDiffuse : register(t5);
 TextureCube<float4> IblSpecular : register(t6);
 Texture2D<float2> IblBrdf : register(t7);
 
+// 동적 GI — DDGI 프로브 볼륨 (Phase 51, DdgiCommon.hlsli): b9 상수, t40~t42 이번 프레임 아틀라스 (조도/거리/상태).
+// DdgiVolumeCount = 0이고 디버그 뷰가 아니면 아래 IBL 식은 예전 그대로 (화면 비트 동일)
+#define E_DDGI_CONSTANTS_REGISTER b9
+#define E_DDGI_IRRADIANCE_REGISTER t40
+#define E_DDGI_DISTANCE_REGISTER t41
+#define E_DDGI_PROBE_DATA_REGISTER t42
+#define E_DDGI_SAMPLER IblSampler
+#include "DdgiCommon.hlsli"
+
 // 점광원/스포트라이트 (LocalLightRenderer: 목록 + 클러스터별 인덱스)
 StructuredBuffer<FLocalLight> LocalLights : register(t9);
 StructuredBuffer<uint>        ClusterData : register(t10);
@@ -256,6 +265,19 @@ float3 EvaluateImageBasedLightingEx(FSurface Surface, float3 WorldPosition, floa
 	const float3 Prefiltered = SampleSpecularEnvironment(R, Surface.Roughness, WorldPosition, PixelPosition, (float)MipCount, bScreenReflections);
 	const float2 Brdf = IblBrdf.SampleLevel(IblSampler, float2(NdotV, Surface.Roughness), 0);
 	const float3 Specular = Prefiltered * (F0 * Brdf.x + Brdf.y);
+	if (DdgiVolumeCount != 0 || DdgiDebugView != 0)
+	{
+		// 동적 GI (Phase 51): 볼륨 안은 프로브 조도(삼선형 + 체비셰프 가시성), 경계 페이드·볼륨 밖은 남은 비중만 하늘 IBL 조도. 반사는 그대로
+		float        Remaining    = 1.0f;
+		const float3 Probes       = DdgiVolumeCount != 0 ? EvaluateDdgiIrradiance(WorldPosition, Surface.N, Surface.V, Remaining) : 0.0f;
+		const float3 DiffuseLight = (1.0f - F) * (1.0f - Surface.Metallic) * Surface.Albedo *
+		                            (Probes + IblDiffuse.SampleLevel(IblSampler, Surface.N, 0).rgb * (AmbientIntensity * Remaining));
+		if (DdgiDebugView != 0)
+		{
+			return DiffuseLight * Surface.Occlusion; // --debug-view gi: 간접 확산만
+		}
+		return (DiffuseLight + Specular) * Surface.Occlusion;
+	}
 	return ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * AmbientIntensity + Specular) * Surface.Occlusion;
 }
 
@@ -551,6 +573,7 @@ float3 EvaluateMeshLighting(FSurface Surface, float3 WorldPosition, float3 Geome
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, PixelPosition, WorldPosition, GeometricNormal);
+	Color = DdgiDebugView != 0 ? 0.0f : Color; // --debug-view gi: 직접광 없이 간접 확산만
 	Color += EvaluateImageBasedLightingEx(Surface, WorldPosition, PixelPosition, bScreenReflections);
 	return Color;
 }
@@ -590,7 +613,8 @@ float3 MipDebugColor(float2 UV, float3 Albedo)
 
 float4 ShadeOpaque(FPixelInput Input, FMeshSurface Mesh)
 {
-	float3 Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, true) + Mesh.Emissive;
+	float3 Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, true) +
+	               (DdgiDebugView != 0 ? 0.0f : Mesh.Emissive);
 	if (VisualizeCascades != 0)
 	{
 		Color *= CascadeDebugColor(Input.WorldPosition);

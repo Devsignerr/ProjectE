@@ -45,6 +45,10 @@ struct FTerrainScreenInputs
 	FD3D12DescriptorHandle    CaptureAtlas;       // t21
 	FD3D12DescriptorHandle    ScreenReflection;   // t22
 	FD3D12DescriptorHandle    RayTracedShadowMask; // t24 (Phase 50 — PerFrame RayTracedShadows일 때 Terrain.hlsl이 읽음)
+	D3D12_GPU_VIRTUAL_ADDRESS DdgiConstants = 0;  // b9 (Phase 51 DDGI — FDdgiRenderer::GetShadingConstants)
+	FD3D12DescriptorHandle    DdgiIrradiance;     // t40
+	FD3D12DescriptorHandle    DdgiDistance;       // t41
+	FD3D12DescriptorHandle    DdgiProbeData;      // t42
 };
 
 // 레이 트레이싱용 지형 입력 (Phase 50, FRayTracingScene — 높이장 타일 BLAS). 지난 Prepare의 지형마다

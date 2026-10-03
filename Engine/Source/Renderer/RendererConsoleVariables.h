@@ -80,4 +80,16 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> HdrMaxNits;              // r.HDR.MaxNits (0 = 디스플레이)
 	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
 	uint32 GetRenderGraphDumpSerial();
+
+	// 동적 GI — DDGI 프로브 볼륨 (Phase 51)
+	extern TAutoConsoleVariable<bool>  Ddgi;                  // r.DDGI (--no-ddgi)
+	extern TAutoConsoleVariable<int32> DdgiProbeBudget;       // r.DDGI.ProbeBudget (프레임당 갱신 프로브 전체 상한)
+	extern TAutoConsoleVariable<float> DdgiBounceIntensity;   // r.DDGI.BounceIntensity (다중 반사 배율)
+	extern TAutoConsoleVariable<float> DdgiChangeThreshold;   // r.DDGI.ChangeThreshold (급변 판정)
+	extern TAutoConsoleVariable<int32> DdgiMaxLocalLights;    // r.DDGI.MaxLocalLights (히트 로컬 라이트 상한)
+	extern TAutoConsoleVariable<int32> DdgiShowProbes;        // r.DDGI.ShowProbes (-1 컴포넌트 값, 0~3)
+	extern TAutoConsoleVariable<int32> DdgiBoostFrames;       // r.DDGI.LightChangeBoostFrames (조명 변화 가속 프레임)
+	extern TAutoConsoleVariable<float> DdgiBoostHysteresis;   // r.DDGI.LightChangeHysteresis (가속 중 히스테리시스 상한)
+	// r.DDGI.Stats 명령이 불린 횟수
+	uint32 GetDdgiStatsSerial();
 } // namespace RendererCVars

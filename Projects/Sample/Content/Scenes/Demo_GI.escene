@@ -1,0 +1,53 @@
+{
+  "Version": 1,
+  "Entities": [
+    { "Name": "Sun", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 900.0], "Rotation": [0.2465, 0.0903, -0.906, 0.3319], "Scale": [1.0, 1.0, 1.0] },
+        "DirectionalLightComponent": { "Color": [1.0, 0.95, 0.85], "Intensity": 6.0 },
+        "ScriptComponent": { "ScriptAsset": "Scripts/GiSunStep.lua", "PropertyOverrides": "{\"StepFrame\":0}" } } },
+    { "Name": "OutdoorGround", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, -25.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [60.0, 60.0, 0.1] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Floor", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, -10.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.4, 6.4, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "Ceiling", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 310.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.4, 6.4, 0.2] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "RedWall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, -310.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.0, 0.2, 3.0] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/RedWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "GreenWall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 310.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [8.0, 0.2, 3.0] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/GreenWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "FrontWall", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-410.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 3.0] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WindowWallBottom", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [410.0, 0.0, 40.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 0.8] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WindowWallTop", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [410.0, 0.0, 260.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 6.4, 0.8] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WindowWallLeft", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [410.0, -210.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 2.2, 1.4] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WindowWallRight", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [410.0, 210.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [0.2, 2.2, 1.4] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WhiteBox", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [150.0, 120.0, 60.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.2, 1.2, 1.2] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:cube", "Visible": true } } },
+    { "Name": "WhiteSphere", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-20.0, -170.0, 60.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.2, 1.2, 1.2] },
+        "StaticMeshComponent": { "MaterialAsset": "GI/WhiteWall.emat", "MeshAsset": "primitive:sphere", "Visible": true } } },
+    { "Name": "RoomProbes", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [0.0, 0.0, 150.0], "Rotation": [0.0, 0.0, 0.0, 1.0], "Scale": [1.0, 1.0, 1.0] },
+        "IrradianceVolumeComponent": { "HalfExtents": [430.0, 330.0, 180.0], "Spacing": 100.0, "Intensity": 1.0, "FadeDistance": 20.0, "NormalBias": 10.0,
+          "ViewBias": 20.0, "Hysteresis": 0.97, "RaysPerProbe": 160, "ProbeUpdateBudget": 0, "MaxRayDistance": 10000.0, "Relocation": true,
+          "Classification": true, "Priority": 0, "DebugProbes": 0, "DebugProbeRadius": 8.0 } } },
+    { "Name": "Camera", "Parent": -1, "Components": {
+        "TransformComponent": { "Position": [-380.0, 150.0, 170.0], "Rotation": [0.011377, 0.086413, -0.130033, 0.987663], "Scale": [1.0, 1.0, 1.0] },
+        "CameraComponent": { "FovYDegrees": 75.0, "NearZ": 10.0, "FarZ": 100000.0, "Primary": true } } }
+  ]
+}

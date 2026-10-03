@@ -6609,6 +6609,198 @@
           "Md5": "3990fe8681f5c9f4e868f1b257999959"
         }
       ]
+    },
+    {
+      "Type": "models",
+      "Id": "fishermans_hat",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "fishermans_hat.gltf",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/fishermans_hat/fishermans_hat_2k.gltf",
+          "Md5": "75752c96adc564d521b5c1fbc08134f5"
+        },
+        {
+          "Path": "textures/fishermans_hat_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fishermans_hat/fishermans_hat_nor_gl_2k.jpg",
+          "Md5": "1a373c30253a114e64aafe3388e7617d"
+        },
+        {
+          "Path": "textures/fishermans_hat_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fishermans_hat/fishermans_hat_diff_2k.jpg",
+          "Md5": "4efc817982ff999240a9307972d30301"
+        },
+        {
+          "Path": "textures/fishermans_hat_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fishermans_hat/fishermans_hat_arm_2k.jpg",
+          "Md5": "f5449fa642ecdbc401518abfcff10a18"
+        },
+        {
+          "Path": "fishermans_hat.bin",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/fishermans_hat/fishermans_hat.bin",
+          "Md5": "71b6c9679454ac8be1ed5e6b79be44d1"
+        }
+      ]
+    },
+    {
+      "Type": "models",
+      "Id": "lifebuoy",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "lifebuoy.gltf",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/lifebuoy/lifebuoy_2k.gltf",
+          "Md5": "79399d7ef8d9a77ed9776546e0a0835f"
+        },
+        {
+          "Path": "textures/lifebuoy_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lifebuoy/lifebuoy_nor_gl_2k.jpg",
+          "Md5": "56d08ead652ef7eed4fefe1af7a2f0fa"
+        },
+        {
+          "Path": "textures/lifebuoy_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lifebuoy/lifebuoy_diff_2k.jpg",
+          "Md5": "6a0e6a651bba6f3113f57b75b3665c18"
+        },
+        {
+          "Path": "textures/lifebuoy_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/lifebuoy/lifebuoy_arm_2k.jpg",
+          "Md5": "c00e14600d4adb918608b4e69859ef01"
+        },
+        {
+          "Path": "lifebuoy.bin",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/lifebuoy/lifebuoy.bin",
+          "Md5": "4e38cfbae96b6bdfd4ca4ddad06888dd"
+        }
+      ]
+    },
+    {
+      "Type": "models",
+      "Id": "pot_enamel_01",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "pot_enamel_01.gltf",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/pot_enamel_01/pot_enamel_01_2k.gltf",
+          "Md5": "a1520a61012d78665082d3904bba954a"
+        },
+        {
+          "Path": "textures/pot_enamel_01_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pot_enamel_01/pot_enamel_01_diff_2k.jpg",
+          "Md5": "ad5ec427f31349983fae9320e7fdb08d"
+        },
+        {
+          "Path": "textures/pot_enamel_01_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pot_enamel_01/pot_enamel_01_nor_gl_2k.jpg",
+          "Md5": "da743eed6f678437667ea15ce938c18f"
+        },
+        {
+          "Path": "textures/pot_enamel_01_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pot_enamel_01/pot_enamel_01_arm_2k.jpg",
+          "Md5": "04a7e5fbc8ce32ccf39722cf6322bb0d"
+        },
+        {
+          "Path": "pot_enamel_01.bin",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/pot_enamel_01/pot_enamel_01.bin",
+          "Md5": "d8845287663697c274192b8ba35cb7a1"
+        }
+      ]
+    },
+    {
+      "Type": "models",
+      "Id": "hatchet",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "hatchet.gltf",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/hatchet/hatchet_2k.gltf",
+          "Md5": "8171f7fc5eb79870d68ca50208d6d61d"
+        },
+        {
+          "Path": "textures/hatchet_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/hatchet/hatchet_diff_2k.jpg",
+          "Md5": "90d1170093b67a1affdf6058b2b28f65"
+        },
+        {
+          "Path": "textures/hatchet_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/hatchet/hatchet_arm_2k.jpg",
+          "Md5": "777540739c04f478afd67eb59019bd7f"
+        },
+        {
+          "Path": "hatchet.bin",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/hatchet/hatchet.bin",
+          "Md5": "8bd5390cfa607c765015987b4ca08560"
+        },
+        {
+          "Path": "textures/hatchet_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/hatchet/hatchet_nor_gl_2k.jpg",
+          "Md5": "27fa25b0579445f528b36a6308ceaa36"
+        }
+      ]
+    },
+    {
+      "Type": "models",
+      "Id": "ocean_buoy",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "ocean_buoy.gltf",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/ocean_buoy/ocean_buoy_2k.gltf",
+          "Md5": "8748d958751c37523e485a22918d9038"
+        },
+        {
+          "Path": "textures/ocean_buoy_emission_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/ocean_buoy/ocean_buoy_emission_2k.jpg",
+          "Md5": "9c1c6b6463267cee3f354a3c48cef000"
+        },
+        {
+          "Path": "textures/ocean_buoy_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/ocean_buoy/ocean_buoy_nor_gl_2k.jpg",
+          "Md5": "b3276e0d1f5a6bd47975684721b98d8f"
+        },
+        {
+          "Path": "textures/ocean_buoy_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/ocean_buoy/ocean_buoy_diff_2k.jpg",
+          "Md5": "38541dce79b06a600b5dd496462c9e67"
+        },
+        {
+          "Path": "textures/ocean_buoy_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/ocean_buoy/ocean_buoy_arm_2k.jpg",
+          "Md5": "fb0208fb47ee33895f5dfe0fd894c3ef"
+        },
+        {
+          "Path": "ocean_buoy.bin",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/ocean_buoy/ocean_buoy.bin",
+          "Md5": "fefe553dc26d2657aaea8d5b8455a137"
+        }
+      ]
+    },
+    {
+      "Type": "textures",
+      "Id": "damp_beach_sand",
+      "Res": "2k",
+      "Files": [
+        {
+          "Path": "damp_beach_sand_diff_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_diff_2k.jpg",
+          "Md5": "87e71069e2d6210ef300464550e81efe"
+        },
+        {
+          "Path": "damp_beach_sand_nor_gl_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_nor_gl_2k.jpg",
+          "Md5": "f33f2bb7017bbda819088f000f5d3aad"
+        },
+        {
+          "Path": "damp_beach_sand_rough_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_rough_2k.jpg",
+          "Md5": "2a24e7babac1c1b61adadf76ebd92803"
+        },
+        {
+          "Path": "damp_beach_sand_arm_2k.jpg",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_arm_2k.jpg",
+          "Md5": "9a9217a970248df034ab2849b3ce6e6f"
+        }
+      ]
     }
   ]
 }

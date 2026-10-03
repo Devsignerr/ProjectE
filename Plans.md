@@ -909,7 +909,7 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 ## 데모 씬 정리 (2026-10-04)
 
 - [x] 데모 씬 정리: 검증 씬 Scenes/Tests 이전, 나머지 삭제 — 검증 기준 13개(GameModule/Materials/Decals/Terrain/Stress/StressStatic/Lights/Multiplayer/Abilities/GI/AreaLights/Apartment/PixelArt)를 `Scenes/Tests/<이름>.escene`으로, 그 밖의 Demo_*/RPG_Test_*/Streaming 씬과 그 씬에서만 쓰던 에셋(Showcase 머티리얼·스크립트·시퀀스·HUD 등) 삭제. 시작 맵은 임시로 `Scenes/Main.escene`
-- [~] 통합 Demo 허브 → 포털 + 기능별 서브맵 구조 (실사, Poly Haven CC0)
+- [x] 통합 Demo 허브 → 포털 + 기능별 서브맵 구조 (실사, Poly Haven CC0)
   - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
   - [x] 서브맵 Lighting (항구 창고를 고친 선술집 홀: 남쪽 창 5개 햇빛 + 볼류메트릭 빛줄기, DDGI 볼륨, RTAO, 광택 헤링본 마루 RT 반사, 창 사각 면광원·바 조명 띠(IES Linear_Batwing)·원판 다운라이트(IES Downlight_Narrow)·갤러리 IES 벽 워셔, 샹들리에/탁자 램프, Poly Haven 가구 21종 + 텍스처 5종, 벽/바닥/천장은 타일 PBR 그래프 머티리얼 인스턴스) — `Tools/DemoMap/BuildLighting.py`, 1280x720 Release 5.7ms (2026-10-04)
@@ -918,5 +918,5 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] 서브맵 Forest (개울이 흐르는 전나무 골짜기, 이른 아침: 생성 지형 513² 4레이어(낙엽·흙·이끼풀·이끼 바위), 상류 샘 → 굽이치는 개울 → 하류 웅덩이(지형 전체 물 상자 하나 + 흐름), 통나무 다리, 볼류메트릭 아침 안개 + 나무 사이 빛줄기, Poly Haven 스캔 전나무(잎 카드 알파 합성 + 변형별 분할 + 걷는 길 거리별 잎 상한 3단계 + LOD) + 엔진 폴리지(풀 1만, 먼 비탈 침엽수 7.9천), 바위·통나무·그루터기·뿌리·고사리·어린 소나무, 절차 생성 개울 소리) — `Tools/DemoMap/BuildForest.py`, 1280x720 Release GPU 8.2ms(다른 레인 런타임 2개 동시 실행 중 측정 — 확인용 시점 6.1~7.9ms) (2026-10-04, Hub 포털 Ready는 메인에서)
   - [x] 서브맵 Workshop (항구 창고 작업장 — 물리: 나무 상자 피라미드 밀기(PushForce), 판자 경사로를 구르는 드럼통(캡슐), 크레인 위험 구역 트리거 → 매단 짐 구 관절 BreakForce 끊김(OnJointBreak) → 상자 더미 낙하, 거리 관절 타이어 그네 → 선반 9개 도미노 → 전화하던 마네킹 래그돌, 펜던트 등(구 관절)·형광등(경첩 관절) 흔들림, E/클릭 레이캐스트 충격량. 채광창·큰 문 햇빛 + 볼류메트릭 빛줄기, DDGI, 형광등 면광원, 천장 크레인, 마당 건너 공장 파사드 조립 glTF, Poly Haven 모델 25종 + 텍스처 5종) — `Tools/DemoMap/BuildWorkshop.py`, 1280x720 Release 약 6.1ms (2026-10-04)
   - [x] 서브맵 Training (항구 옆 요새 안뜰 훈련장: 요새 키트 조립 `Asset/DemoKits/Training/TrainingFort.gltf`(성문·성벽·아치 통로·돌계단, 디딤판마다 충돌 상자), UAL2 마네킹만 — 검술 대련(몽타주 + 노티파이 SwordHit/SwordFinisher → 막기/넉백, 소켓 검·방패), 교관 훅(PunchHit) → 훈련병 래그돌 → 제자리 리스폰 + LayToIdle, 경비병 2(비헤이비어 트리 + Recast 내비메시 순찰 — 계단으로 성벽 위까지, Lua 서비스가 플레이어를 보면 따라오며 시선 IK), 계단 파수꾼 발 IK, 2D 블렌드 스페이스 방향 이동 훈련(KayKit 이동 클립 리타기팅), 루트 모션 돌진 레인, Poly Haven 무기·소품 + 흙/자갈/돌 월드 UV 그래프) — `Tools/DemoMap/BuildTraining.py`, 1280x720 Release 2.5ms (2026-10-04)
-  - [ ] 서브맵: Campfire(파티클)
+  - [x] 서브맵 Campfire (해 질 녘 밀수꾼 해변 캠프 — 파티클: 생성 지형 513² 4레이어(마른/젖은 모래·바위·풀) 만(灣)과 양쪽 곶, 바다 물 + 박명 대기·별·구름, 모닥불(불꽃 플립북 + 흐름 노이즈·부력, GPU 불티 버스트·속도 정렬·모래 충돌, 정렬 반투명 연기 플립북, 소용돌이 재) + 깜빡이는 그림자 점광원, 등불 심지 불꽃(로컬 공간), 바위 물보라(GPU 버스트 + 해수면 충돌로 사라짐 + 물안개), 반딧불(GPU 깜빡임 곡선·고정 경계), 신호 조명탄(`CampfireFlare.lua` Timer.Every + 코루틴 → 로켓·별 폭발·낙하산 불꽃/연기 + 붉은 빛), 곶 위 신호 화톳불, 닻 내린 밀수선·옛 부두·밀수품 더미, 절차 생성 모닥불·파도 소리, 파티클 텍스처 절차 생성, Poly Haven 새 에셋 7종) — `Tools/DemoMap/BuildCampfire.py`, 1280x720 Release 4.2ms (2026-10-04, Hub 포털 Ready는 메인에서)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

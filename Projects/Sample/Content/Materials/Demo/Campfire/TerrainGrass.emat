@@ -1,0 +1,23 @@
+{
+  "Name": "CampfireTerrainGrass",
+  "BaseColorFactor": [
+    0.95,
+    0.92,
+    0.75,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../Asset/PolyHaven/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+  "MetallicRoughnessTexture": "../../../Asset/PolyHaven/aerial_grass_rock/aerial_grass_rock_arm_2k.jpg",
+  "NormalTexture": "../../../Asset/PolyHaven/aerial_grass_rock/aerial_grass_rock_nor_gl_2k.jpg",
+  "OcclusionTexture": "../../../Asset/PolyHaven/aerial_grass_rock/aerial_grass_rock_arm_2k.jpg",
+  "EmissiveTexture": ""
+}

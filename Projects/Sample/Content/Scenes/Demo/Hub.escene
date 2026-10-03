@@ -2676,7 +2676,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Campfire.escene\"}, \"Label\": \"해변 캠프 (파티클)\", \"Ready\": false}"
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Campfire.escene\"}, \"Label\": \"해변 캠프 (파티클)\", \"Ready\": true}"
         },
         "TransformComponent": {
           "Position": [

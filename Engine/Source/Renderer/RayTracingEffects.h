@@ -5,12 +5,14 @@
 #include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/RayTracingMath.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 
 #include <memory>
 #include <unordered_map>
 
 class FD3D12RHI;
+class FDdgiRenderer;
 class FRayTracingScene;
 struct FRayTracingGraphVariant;
 class FShaderLibrary;
@@ -19,7 +21,7 @@ class FShaderLibrary;
 //   계산 셰이더가 아니라 픽셀 셰이더인 이유: 머티리얼/IBL/캡처 텍스처의 상태 불변식이 PIXEL_SHADER_RESOURCE라(업로드 큐·RHI가 그 상태로 둔다)
 //   계산 셰이더(NON_PIXEL)에서 읽으려면 모든 텍스처 상태 규칙을 바꿔야 한다. 픽셀 셰이더 RayQuery(SM 6.5)는 같은 하드웨어 경로다.
 //   PSO는 일반 그래픽스 PSO(InitGraphics)라 PSO 캐시·워밍 대상이다 (DXR 상태 객체는 쓰지 않는다 — 상태 객체를 도입하면 캐시 밖, 이유: 라이브러리 키 미지원).
-//   b0 패스 뷰 상수(RayTracingView.hlsli), b1 히트 조명 상수, t0 TLAS, t1 인스턴스 정보, t2 머티리얼 표, t3 로컬 라이트, t4 반사 캡처 목록 (루트 SRV),
+//   b0 패스 뷰 상수(RayTracingView.hlsli), b1 히트 조명 상수, b2 패스별 추가 상수, t0 TLAS, t1 인스턴스 정보, t2 머티리얼 표, t3 로컬 라이트, t4 반사 캡처 목록 (루트 SRV),
 //   t5~t12 화면 입력 표 8개(1칸씩), t13~t15 IBL(확산/반사/BRDF), t16 캡처 큐브 배열, 공간 1/2 무제한 표 = 셰이더 가시 힙 전체(Texture2D[] / ByteAddressBuffer[]),
 //   s0 선형 반복, s1 선형 클램프, s2 점 클램프
 class FRayTracingPassRoot
@@ -40,6 +42,7 @@ public:
 		Root_BindlessTextures = Root_CaptureAtlas + 1,
 		Root_BindlessBuffers  = Root_BindlessTextures + 1,
 		Root_GraphParams      = Root_BindlessBuffers + 1, // t17 그래프 머티리얼 파라미터 (루트 SRV, float4)
+		Root_Extra            = Root_GraphParams + 1,     // b2 패스별 추가 상수 (RTAO 기준 = DDGI 셰이딩 상수 — 안 쓰는 패스는 뷰 상수를 묶어 둔다)
 	};
 	static constexpr uint32 ScreenCount = 8;
 
@@ -105,6 +108,22 @@ struct FRayTracedShadowSettings
 	float HistoryWeight   = 0.2f;    // 이번 프레임 비중
 };
 
+// RT 앰비언트 오클루전 (RTAO, RayTracedAmbientOcclusion.hlsl — 식은 RayTracingMath "RTAO")
+struct FRayTracedAmbientOcclusionSettings
+{
+	float  Radius        = RayTracingMath::DefaultAoRadius; // cm: 광선 길이 = 가림 반경
+	uint32 RaysPerPixel  = RayTracingMath::DefaultAoRaysPerPixel;
+	float  FalloffPower  = RayTracingMath::DefaultAoFalloffPower;
+	float  Intensity     = 1.0f;  // 가시도^세기
+	float  HistoryWeight = 0.1f;  // 이번 프레임 비중 (0.2는 반해상도 모서리 정지 화면 표준편차가 SSAO보다 컸다)
+	float  NormalBias    = 1.0f;  // RayTracingMath::ComputeSurfaceBias 배율
+	uint32 ResolutionDivisor = 2; // 1 = 씬 해상도, 2 = 반해상도 (추적·필터·누적 모두 — 메인 패스가 깊이 가중 4탭으로 업샘플, SSAO와 같은 규칙)
+	// 고비용 기준 (비교·튜닝용): 픽셀당 광선 수 (0 = 끔). 경로 추적(4번 반사, 그림자 광선, 마지막만 DDGI)을 프레임마다 평균 → 가시도 = 모은 값 / DDGI 값 (밝기 비)
+	uint32               ReferenceRays     = 0;
+	float                ReferenceDistance = 100000.0f; // cm
+	const FDdgiRenderer* Ddgi              = nullptr;   // 이번 프레임 DDGI 셰이딩 상수·아틀라스 (메인 패스와 같은 값 — 볼륨이 없으면 1x1 기본, 기준 모드가 읽는다)
+};
+
 struct FRayTracedReflectionSettings
 {
 	float MaxRoughness  = 0.6f;     // 이보다 거친 픽셀은 캡처/하늘 (Mesh.hlsl SsrMaxRoughness 페이드와 같은 값)
@@ -125,6 +144,10 @@ public:
 	static constexpr DXGI_FORMAT ShadowTraceFormat = DXGI_FORMAT_R16G16B16A16_FLOAT; // 가시도, 차폐물 거리(cm), 뷰 깊이(m)
 	static constexpr DXGI_FORMAT ShadowMaskFormat  = DXGI_FORMAT_R16_FLOAT;
 	static constexpr DXGI_FORMAT DebugFormat       = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	static constexpr DXGI_FORMAT AoTraceFormat     = DXGI_FORMAT_R16G16_FLOAT;       // 가시도 (픽셀 광선 평균), 뷰 깊이(cm)
+	static constexpr DXGI_FORMAT AoResultFormat    = DXGI_FORMAT_R16G16_FLOAT;       // 가시도, 뷰 깊이(cm) — SSAO와 같은 형식 (메인 패스 t16)
+	static constexpr DXGI_FORMAT AoReferenceFormat = DXGI_FORMAT_R32G32B32A32_FLOAT; // 기준: 모은 간접 확산 평균, 프레임 수
+	static constexpr DXGI_FORMAT AoReferenceResultFormat = DXGI_FORMAT_R32G32_FLOAT;  // 기준: 밝기 비, 뷰 깊이(cm)
 
 	~FRayTracingEffects();
 
@@ -147,6 +170,13 @@ public:
 	void AddReflectionTracePass(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View, const FRayTracingViewRefs& Refs,
 	                            const FRayTracingLightingInputs& Lighting, const FRayTracedReflectionSettings& Settings, int32 Timer,
 	                            FRGResourceRef& OutResult, FRGResourceRef& OutMotion);
+	// RT 앰비언트 오클루전 (사전 패스 뒤): 추적 → 5x5 텐트 공간 필터 → 시간 누적. 반환 = 이번 결과 참조 (SSAO와 같은 형식 R = 가시도, G = 뷰 깊이 cm —
+	// 메인 패스가 t16으로 읽는다, SRV = GetAmbientOcclusionSrv). 기준 모드(Settings.ReferenceRays > 0)는 경로 추적 간접 확산 누적 (정지 카메라)
+	FRGResourceRef AddAmbientOcclusionPasses(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View, const FRayTracingViewRefs& Refs,
+	                                         const FRayTracingLightingInputs& Lighting, const FRayTracedAmbientOcclusionSettings& Settings, int32 Timer);
+	const FD3D12DescriptorHandle& GetAmbientOcclusionSrv() const { return AoHistory[AoHistoryIndex]->GetSrv(); }
+	const FD3D12RenderTarget*     GetAmbientOcclusionResult() const { return AoHistory[AoHistoryIndex].get(); }
+
 	// 디버그 (rt-instances): 카메라 광선으로 TLAS 직접 보기 → 씬 크기 텍스처 (DebugMode 0 인스턴스 색, 1 히트 알베도, 2 히트 조명)
 	FRGResourceRef AddDebugPass(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View, const FRayTracingViewRefs& Refs,
 	                            const FRayTracingLightingInputs& Lighting, uint32 DebugMode, int32 Timer, FD3D12DescriptorHandle& OutSrv);
@@ -159,6 +189,10 @@ private:
 		FD3D12PipelineState ShadowResolve;
 		FD3D12PipelineState ReflectionTrace;
 		FD3D12PipelineState Debug;
+		FD3D12PipelineState AoTrace;
+		FD3D12PipelineState AoFilter;
+		FD3D12PipelineState AoResolve;
+		FD3D12PipelineState AoReference;
 	};
 	// Variant: 그래프 머티리얼 변형 (디파인 E_RT_GRAPH_MATERIALS + 가상 파일), nullptr = 기본
 	bool CreatePipelines(FPipelines& Out, bool bForceRecompile, const FRayTracingGraphVariant* Variant);
@@ -195,4 +229,16 @@ private:
 	uint64                              LastShadowFrame    = 0; // 마지막 누적 Rhi 프레임 (연속일 때만 이력)
 	uint32                              ShadowWidth        = 0;
 	uint32                              ShadowHeight       = 0;
+
+	// RTAO 누적 (핑퐁 — 결과 = 메인 패스 t16). 기준 모드는 32비트 (1/n 평균 걸음이 16비트 반올림에 먹히지 않게) + 모은 조도 누적 2장
+	void EnsureAoTargets(uint32 Width, uint32 Height, bool bReference);
+	std::unique_ptr<FD3D12RenderTarget> AoHistory[2];
+	std::unique_ptr<FD3D12RenderTarget> AoReferenceAccum[2];
+	uint32                              AoHistoryIndex  = 0;
+	uint64                              LastAoFrame     = 0;
+	uint32                              AoWidth         = 0;
+	uint32                              AoHeight        = 0;
+	bool                                bAoReference    = false;
+	uint32                              AoReferenceRays = 0;
+	FMatrix4x4                          AoReferenceViewProjection; // 기준 누적을 시작한 카메라 (바뀌면 처음부터)
 };

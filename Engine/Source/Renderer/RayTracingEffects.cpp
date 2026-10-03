@@ -3,12 +3,15 @@
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 #include "RHI/ShaderLibrary.h"
+#include "Renderer/DdgiRenderer.h"
 #include "Renderer/RayTracingMath.h"
 #include "Renderer/RayTracingScene.h"
 #include "Renderer/ScreenPass.h"
 #include "Renderer/ScreenSpaceReflections.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstring>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -107,6 +110,7 @@ bool FRayTracingPassRoot::Init(ID3D12Device* Device)
 		        { FRange::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) }) ==
 	        Root_BindlessBuffers);
 	E_CHECK(RootSignature.AddShaderResourceView(17) == Root_GraphParams);
+	E_CHECK(RootSignature.AddConstantBufferView(2) == Root_Extra);
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_SHADER_VISIBILITY_ALL));
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(2, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
@@ -145,12 +149,21 @@ void FRayTracingEffects::Shutdown()
 	}
 	ShadowHistory[0].reset();
 	ShadowHistory[1].reset();
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		AoHistory[Index].reset();
+		AoReferenceAccum[Index].reset();
+	}
 	ReleaseVariants(true);
 	Pipelines.ShadowTrace.Shutdown();
 	Pipelines.ShadowFilter.Shutdown();
 	Pipelines.ShadowResolve.Shutdown();
 	Pipelines.ReflectionTrace.Shutdown();
 	Pipelines.Debug.Shutdown();
+	Pipelines.AoTrace.Shutdown();
+	Pipelines.AoFilter.Shutdown();
+	Pipelines.AoResolve.Shutdown();
+	Pipelines.AoReference.Shutdown();
 	Root.Shutdown();
 	Rhi = nullptr;
 }
@@ -158,12 +171,16 @@ void FRayTracingEffects::Shutdown()
 bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile, const FRayTracingGraphVariant* Variant)
 {
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
-	const auto    Load   = [&](const wchar_t* File, const wchar_t* Entry, EShaderStage Stage) {
+	const auto    Load   = [&](const wchar_t* File, const wchar_t* Entry, EShaderStage Stage, const wchar_t* Define) {
         FShaderCompileDesc Desc;
         Desc.FileName    = File;
         Desc.EntryPoint  = Entry;
         Desc.Stage       = Stage;
         Desc.ShaderModel = L"6_5"; // 인라인 RayQuery (정점 셰이더도 같은 파일의 RT 선언을 포함하므로 같은 모델)
+        if (Define != nullptr)
+        {
+            Desc.Defines.push_back(Define); // 같은 파일의 다른 진입 묶음 (RTAO 기준 = E_RTAO_REFERENCE — 매니페스트와 같은 디파인)
+        }
         if (Variant != nullptr && Stage == EShaderStage::Pixel)
         {
             // 그래프 머티리얼 변형: 생성 함수 묶음 (내용 해시가 캐시 키·쿠킹 파일명에 들어간다 — 같은 집합이면 재사용)
@@ -177,9 +194,9 @@ bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile, 
         return Library->GetShader(Desc);
 	};
 	const auto Create = [&](FD3D12PipelineState& Pipeline, const wchar_t* File, const wchar_t* Entry, std::initializer_list<DXGI_FORMAT> Formats,
-	                        const wchar_t* Name) {
-		const ComPtr<IDxcBlob> VertexShader = Load(File, L"VSMain", EShaderStage::Vertex);
-		const ComPtr<IDxcBlob> PixelShader  = Load(File, Entry, EShaderStage::Pixel);
+	                        const wchar_t* Name, const wchar_t* Define = nullptr) {
+		const ComPtr<IDxcBlob> VertexShader = Load(File, L"VSMain", EShaderStage::Vertex, Define);
+		const ComPtr<IDxcBlob> PixelShader  = Load(File, Entry, EShaderStage::Pixel, Define);
 		if (!VertexShader || !PixelShader)
 		{
 			return false;
@@ -204,14 +221,22 @@ bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile, 
 		return Create(Out.ShadowTrace, L"RayTracedShadows.hlsl", L"PSTrace", { ShadowTraceFormat }, L"RtShadowTraceGraph") &&
 		       Create(Out.ReflectionTrace, L"RayTracedReflections.hlsl", L"PSTrace",
 		              { FScreenSpaceReflections::ResultFormat, FScreenSpaceReflections::MotionFormat }, L"RtReflectionTraceGraph") &&
-		       Create(Out.Debug, L"RayTracingDebug.hlsl", L"PSInstances", { DebugFormat }, L"RtDebugInstancesGraph");
+		       Create(Out.Debug, L"RayTracingDebug.hlsl", L"PSInstances", { DebugFormat }, L"RtDebugInstancesGraph") &&
+		       Create(Out.AoTrace, L"RayTracedAmbientOcclusion.hlsl", L"PSTrace", { AoTraceFormat }, L"RtAoTraceGraph") &&
+		       Create(Out.AoReference, L"RayTracedAmbientOcclusion.hlsl", L"PSReference", { AoReferenceFormat, AoReferenceResultFormat },
+		              L"RtAoReferenceGraph", L"E_RTAO_REFERENCE");
 	}
 	return Create(Out.ShadowTrace, L"RayTracedShadows.hlsl", L"PSTrace", { ShadowTraceFormat }, L"RtShadowTrace") &&
 	       Create(Out.ShadowFilter, L"RayTracedShadows.hlsl", L"PSFilter", { ShadowMaskFormat }, L"RtShadowFilter") &&
 	       Create(Out.ShadowResolve, L"RayTracedShadows.hlsl", L"PSResolve", { ShadowMaskFormat }, L"RtShadowResolve") &&
 	       Create(Out.ReflectionTrace, L"RayTracedReflections.hlsl", L"PSTrace",
 	              { FScreenSpaceReflections::ResultFormat, FScreenSpaceReflections::MotionFormat }, L"RtReflectionTrace") &&
-	       Create(Out.Debug, L"RayTracingDebug.hlsl", L"PSInstances", { DebugFormat }, L"RtDebugInstances");
+	       Create(Out.Debug, L"RayTracingDebug.hlsl", L"PSInstances", { DebugFormat }, L"RtDebugInstances") &&
+	       Create(Out.AoTrace, L"RayTracedAmbientOcclusion.hlsl", L"PSTrace", { AoTraceFormat }, L"RtAoTrace") &&
+	       Create(Out.AoFilter, L"RayTracedAmbientOcclusion.hlsl", L"PSFilter", { AoResultFormat }, L"RtAoFilter") &&
+	       Create(Out.AoResolve, L"RayTracedAmbientOcclusion.hlsl", L"PSResolve", { AoResultFormat }, L"RtAoResolve") &&
+	       Create(Out.AoReference, L"RayTracedAmbientOcclusion.hlsl", L"PSReference", { AoReferenceFormat, AoReferenceResultFormat }, L"RtAoReference",
+	              L"E_RTAO_REFERENCE");
 }
 
 bool FRayTracingEffects::ReloadShaders(bool bForceRecompile)
@@ -229,7 +254,9 @@ bool FRayTracingEffects::ReloadShaders(bool bForceRecompile)
 	}
 	for (auto [Current, Next] : { std::pair{ &Pipelines.ShadowTrace, &NewPipelines.ShadowTrace }, std::pair{ &Pipelines.ShadowFilter, &NewPipelines.ShadowFilter },
 	                              std::pair{ &Pipelines.ShadowResolve, &NewPipelines.ShadowResolve },
-	                              std::pair{ &Pipelines.ReflectionTrace, &NewPipelines.ReflectionTrace }, std::pair{ &Pipelines.Debug, &NewPipelines.Debug } })
+	                              std::pair{ &Pipelines.ReflectionTrace, &NewPipelines.ReflectionTrace }, std::pair{ &Pipelines.Debug, &NewPipelines.Debug },
+	                              std::pair{ &Pipelines.AoTrace, &NewPipelines.AoTrace }, std::pair{ &Pipelines.AoFilter, &NewPipelines.AoFilter },
+	                              std::pair{ &Pipelines.AoResolve, &NewPipelines.AoResolve }, std::pair{ &Pipelines.AoReference, &NewPipelines.AoReference } })
 	{
 		Current->Swap(*Next);
 		Rhi->DeferRelease(Next->Detach());
@@ -244,7 +271,8 @@ void FRayTracingEffects::ReleaseVariants(bool bAll)
 	{
 		if (bAll || It->second->LastUsedFrame + 600 < FrameNumber)
 		{
-			for (FD3D12PipelineState* Pipeline : { &It->second->Pipelines.ShadowTrace, &It->second->Pipelines.ReflectionTrace, &It->second->Pipelines.Debug })
+			for (FD3D12PipelineState* Pipeline : { &It->second->Pipelines.ShadowTrace, &It->second->Pipelines.ReflectionTrace, &It->second->Pipelines.Debug,
+			                                       &It->second->Pipelines.AoTrace, &It->second->Pipelines.AoReference })
 			{
 				if (Pipeline->Get() != nullptr)
 				{
@@ -359,6 +387,7 @@ void FRayTracingEffects::BindRoot(ID3D12GraphicsCommandList* CommandList, D3D12_
 	CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_BindlessTextures, HeapStart);
 	CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_BindlessBuffers, HeapStart);
 	CommandList->SetGraphicsRootShaderResourceView(FRayTracingPassRoot::Root_GraphParams, Scene.GetGraphParamBuffer());
+	CommandList->SetGraphicsRootConstantBufferView(FRayTracingPassRoot::Root_Extra, ViewConstants); // 쓰는 패스만 다시 묶는다
 }
 
 FRGResourceRef FRayTracingEffects::AddShadowPasses(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View,
@@ -536,4 +565,197 @@ FRGResourceRef FRayTracingEffects::AddDebugPass(FRenderGraph& Graph, const FRayT
 			DrawFullscreenTriangle(CommandList, Width, Height);
 		});
 	return OutRef;
+}
+
+void FRayTracingEffects::EnsureAoTargets(uint32 Width, uint32 Height, bool bReference)
+{
+	Width  = std::max(Width, 1u);
+	Height = std::max(Height, 1u);
+	if (AoHistory[0] && AoWidth == Width && AoHeight == Height && bAoReference == bReference)
+	{
+		return;
+	}
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		for (std::unique_ptr<FD3D12RenderTarget>* Target : { &AoHistory[Index], &AoReferenceAccum[Index] })
+		{
+			if (*Target)
+			{
+				(*Target)->ShutdownDeferred(*Rhi);
+				Target->reset();
+			}
+		}
+		AoHistory[Index] = std::make_unique<FD3D12RenderTarget>();
+		if (!AoHistory[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"RtAoHistory0" : L"RtAoHistory1",
+		                            FRenderTargetDesc::MakeColor(bReference ? AoReferenceResultFormat : AoResultFormat)))
+		{
+			E_LOG(LogRenderer, Fatal, "RTAO 누적 버퍼 생성 실패 ({}x{})", Width, Height);
+		}
+		if (bReference)
+		{
+			AoReferenceAccum[Index] = std::make_unique<FD3D12RenderTarget>();
+			if (!AoReferenceAccum[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height,
+			                                   Index == 0 ? L"RtAoReference0" : L"RtAoReference1", FRenderTargetDesc::MakeColor(AoReferenceFormat)))
+			{
+				E_LOG(LogRenderer, Fatal, "RTAO 기준 누적 버퍼 생성 실패 ({}x{})", Width, Height);
+			}
+		}
+	}
+	AoWidth      = Width;
+	AoHeight     = Height;
+	bAoReference = bReference;
+	LastAoFrame  = 0; // 새 버퍼에는 이력이 없다
+}
+
+FRGResourceRef FRayTracingEffects::AddAmbientOcclusionPasses(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View,
+                                                             const FRayTracingViewRefs& Refs, const FRayTracingLightingInputs& Lighting,
+                                                             const FRayTracedAmbientOcclusionSettings& Settings, int32 Timer)
+{
+	E_CHECKF(Settings.Ddgi != nullptr, "RTAO: DDGI 셰이딩 입력(Settings.Ddgi)이 필요합니다 (볼륨이 없어도 기본 상수·1x1 아틀라스)");
+	const bool   bReference = Settings.ReferenceRays > 0;
+	// AO 버퍼 크기 = 씬 ÷ 나눔 (올림 — 추적·필터·누적·결과 모두). 기준은 항상 씬 해상도
+	const uint32 Divisor = bReference ? 1u : std::clamp(Settings.ResolutionDivisor, 1u, 2u);
+	const uint32 Width   = (View.SceneColor->GetWidth() + Divisor - 1) / Divisor;
+	const uint32 Height  = (View.SceneColor->GetHeight() + Divisor - 1) / Divisor;
+	EnsureAoTargets(Width, Height, bReference);
+	AoHistoryIndex ^= 1u; // 이번 프레임 칸 (지난 칸 = 이력)
+
+	FRayTracingViewConstants Constants = MakeViewConstants(View);
+	Constants.NormalBias      = Settings.NormalBias;
+	Constants.MaxDistance     = bReference ? Settings.ReferenceDistance : std::max(Settings.Radius, 1.0f); // RtAoRadius
+	Constants.DebugMode       = std::clamp(Settings.RaysPerPixel, 1u, 4u);                               // RtAoRayCount
+	Constants.SunTanHalfAngle = std::max(Settings.FalloffPower, 0.01f);                                 // RtAoFalloffPower
+	Constants.MinFilterRadius = std::max(Settings.Intensity, 0.0f);                                     // RtAoIntensity
+	Constants.bDecals         = bReference ? Settings.ReferenceRays : 0u;                               // RtAoReferenceRays
+	Constants.HistoryWeight   = std::clamp(Settings.HistoryWeight, 0.01f, 1.0f);
+	Constants.MaxRoughness    = static_cast<float>(Divisor);                                       // RtAoDivisor
+	const uint64 FrameNumber  = Rhi->GetFrameNumber();
+	bool         bHistory     = View.bHistoryValid && LastAoFrame != 0 && LastAoFrame + 1 == FrameNumber;
+	if (bReference)
+	{
+		// 기준은 같은 카메라·같은 광선 수에서만 이어서 평균 (움직이면 처음부터 — 정지 카메라 비교용)
+		bHistory = bHistory && AoReferenceRays == Settings.ReferenceRays &&
+		           std::memcmp(&AoReferenceViewProjection, &View.ViewProjection, sizeof(FMatrix4x4)) == 0;
+		AoReferenceRays           = Settings.ReferenceRays;
+		AoReferenceViewProjection = View.ViewProjection;
+	}
+	Constants.bHistoryValid = bHistory ? 1u : 0u;
+	FD3D12DynamicUploadBuffer&      Dynamic         = Rhi->GetDynamicBuffer();
+	const D3D12_GPU_VIRTUAL_ADDRESS ViewAddress     = Dynamic.AllocateConstants(Constants).GpuAddress;
+	const D3D12_GPU_VIRTUAL_ADDRESS LightingAddress = UploadLighting(Lighting, 16, true);
+
+	const FD3D12RenderTarget&    Previous    = *AoHistory[AoHistoryIndex ^ 1u];
+	const FD3D12RenderTarget&    Current     = *AoHistory[AoHistoryIndex];
+	const FRGResourceRef         CurrentRef  = Graph.ImportColor("RtAoHistory", Current);
+	const FD3D12DescriptorHandle DepthSrv    = View.SceneColor->GetDepthSrv();
+	const FD3D12DescriptorHandle NormalSrv   = View.SceneNormal->GetSrv();
+	const FD3D12DescriptorHandle VelocitySrv = View.Velocity->GetSrv();
+	LastAoFrame                              = FrameNumber;
+	const FDdgiRenderer&            Ddgi          = *Settings.Ddgi;
+	const D3D12_GPU_VIRTUAL_ADDRESS DdgiAddress   = Ddgi.GetShadingConstants();
+	const FD3D12DescriptorHandle    IrradianceSrv = Ddgi.GetIrradianceSrv();
+	const FD3D12DescriptorHandle    DistanceSrv   = Ddgi.GetDistanceSrv();
+	const FD3D12DescriptorHandle    ProbeDataSrv  = Ddgi.GetProbeDataSrv();
+
+	if (bReference)
+	{
+		// 기준: 경로 추적 간접 확산 (누적 2장 핑퐁) + 밝기 비 → 이번 결과 칸
+		const FD3D12RenderTarget&       AccumPrevious = *AoReferenceAccum[AoHistoryIndex ^ 1u];
+		const FD3D12RenderTarget&       AccumCurrent  = *AoReferenceAccum[AoHistoryIndex];
+		const FRGResourceRef            AccumPrevRef  = Graph.ImportColor("RtAoReferencePrevious", AccumPrevious);
+		const FRGResourceRef            AccumCurRef   = Graph.ImportColor("RtAoReference", AccumCurrent);
+		const FD3D12DescriptorHandle    AccumPrevSrv  = AccumPrevious.GetSrv();
+		ID3D12PipelineState* const      Pipeline      = SelectPipelines(Scene).AoReference.Get();
+		FRenderGraph::FPassBuilder      Pass          = Graph.AddPass("RTAO 기준 (경로 추적)");
+		Scene.DeclareTraceReads(Pass, Refs.Tlas);
+		Ddgi.DeclareShadingReads(Pass);
+		Pass.Read(Refs.Depth, ERGAccess::SrvPixel)
+			.Read(Refs.Normal, ERGAccess::SrvPixel)
+			.Read(AccumPrevRef, ERGAccess::SrvPixel)
+			.Write(AccumCurRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Write(CurrentRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Timer(Timer)
+			.Execute([this, &Scene, &AccumCurrent, &Current, Lighting, Pipeline, ViewAddress, LightingAddress, DdgiAddress, DepthSrv, NormalSrv, AccumPrevSrv,
+			          IrradianceSrv, DistanceSrv, ProbeDataSrv, Width, Height](FRGContext& Context) {
+				ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
+				const D3D12_CPU_DESCRIPTOR_HANDLE Targets[]   = { AccumCurrent.GetRtv(), Current.GetRtv() };
+				CommandList->OMSetRenderTargets(2, Targets, FALSE, nullptr);
+				BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
+				CommandList->SetGraphicsRootConstantBufferView(FRayTracingPassRoot::Root_Extra, DdgiAddress); // b2 DDGI 상수
+				CommandList->SetPipelineState(Pipeline);
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 1, NormalSrv.Gpu);
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 2, AccumPrevSrv.Gpu);  // t7
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 5, IrradianceSrv.Gpu); // t10
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 6, DistanceSrv.Gpu);   // t11
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 7, ProbeDataSrv.Gpu);  // t12
+				DrawFullscreenTriangle(CommandList, Width, Height);
+			});
+		return CurrentRef;
+	}
+
+	const FRGResourceRef    TraceRef  = Graph.CreateTexture("RtAoTrace", FRGTextureDesc::MakeRenderTarget(Width, Height, AoTraceFormat));
+	const FRGResourceRef    FilterRef = Graph.CreateTexture("RtAoFiltered", FRGTextureDesc::MakeRenderTarget(Width, Height, AoResultFormat));
+	const FRGPooledTexture* Trace     = Graph.GetTexture(TraceRef);
+	const FRGPooledTexture* Filtered  = Graph.GetTexture(FilterRef);
+	// 1) 추적 (그래프 머티리얼 Masked 알파 테스트 → 변형 파이프라인)
+	{
+		ID3D12PipelineState* const TracePipeline = SelectPipelines(Scene).AoTrace.Get();
+		FRenderGraph::FPassBuilder Pass          = Graph.AddPass("RTAO 추적");
+		Scene.DeclareTraceReads(Pass, Refs.Tlas);
+		Pass.Read(Refs.Depth, ERGAccess::SrvPixel)
+			.Read(Refs.Normal, ERGAccess::SrvPixel)
+			.Write(TraceRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Timer(Timer)
+			.Execute([this, &Scene, Lighting, Trace, TracePipeline, ViewAddress, LightingAddress, DepthSrv, NormalSrv, Width, Height](FRGContext& Context) {
+				ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
+				const D3D12_CPU_DESCRIPTOR_HANDLE Rtv         = Trace->GetRtv();
+				CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+				BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
+				CommandList->SetPipelineState(TracePipeline);
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
+				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 1, NormalSrv.Gpu);
+				DrawFullscreenTriangle(CommandList, Width, Height);
+			});
+	}
+	// 2) 공간 필터 (5x5 텐트 + 깊이·법선)
+	Graph.AddPass("RTAO 공간 필터")
+		.Read(Refs.Depth, ERGAccess::SrvPixel)
+		.Read(Refs.Normal, ERGAccess::SrvPixel)
+		.Read(TraceRef, ERGAccess::SrvPixel)
+		.Write(FilterRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, &Scene, Lighting, Trace, Filtered, ViewAddress, LightingAddress, DepthSrv, NormalSrv, Width, Height](FRGContext& Context) {
+			ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
+			const D3D12_CPU_DESCRIPTOR_HANDLE Rtv         = Filtered->GetRtv();
+			CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+			BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
+			CommandList->SetPipelineState(Pipelines.AoFilter.Get());
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 1, NormalSrv.Gpu);
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 2, Trace->Srv.Gpu); // t7
+			DrawFullscreenTriangle(CommandList, Width, Height);
+		});
+	// 3) 시간 누적 (이력 2장 핑퐁)
+	const FRGResourceRef         PreviousRef = Graph.ImportColor("RtAoHistoryPrevious", Previous);
+	const FD3D12DescriptorHandle PreviousSrv = Previous.GetSrv();
+	Graph.AddPass("RTAO 누적")
+		.Read(Refs.Depth, ERGAccess::SrvPixel)
+		.Read(Refs.Velocity, ERGAccess::SrvPixel)
+		.Read(FilterRef, ERGAccess::SrvPixel)
+		.Read(PreviousRef, ERGAccess::SrvPixel)
+		.Write(CurrentRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+		.Timer(Timer)
+		.Execute([this, &Scene, &Current, Lighting, Filtered, ViewAddress, LightingAddress, DepthSrv, VelocitySrv, PreviousSrv, Width, Height](FRGContext& Context) {
+			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+			Current.Bind(CommandList, nullptr, false, false);
+			BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
+			CommandList->SetPipelineState(Pipelines.AoResolve.Get());
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 2, Filtered->Srv.Gpu); // t7
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 3, PreviousSrv.Gpu);   // t8
+			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 4, VelocitySrv.Gpu); // t9
+			DrawFullscreenTriangle(CommandList, Width, Height);
+		});
+	return CurrentRef;
 }

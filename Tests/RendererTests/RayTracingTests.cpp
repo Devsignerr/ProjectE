@@ -202,3 +202,66 @@ E_TEST(RayTracing_TerrainTiles)
 	GetDirtyTileRange(0, 1024, 64, 16, Min, Max); // 전체
 	E_EXPECT_TRUE(Min == 0 && Max == 15);
 }
+E_TEST(RayTracing_AmbientOcclusionSampling)
+{
+	using namespace RayTracingMath;
+	// 픽셀당 광선 2개: 어느 4x4 창에도 표본 32개(16 × 2)가 모두 있다 (프레임 회전과 무관)
+	constexpr uint32 Rays = 2;
+	for (const uint32 Frame : { 0u, 5u, 31u })
+	{
+		std::set<uint32> Seen;
+		for (uint32 Y = 0; Y < 4; ++Y)
+		{
+			for (uint32 X = 0; X < 4; ++X)
+			{
+				for (uint32 Ray = 0; Ray < Rays; ++Ray)
+				{
+					Seen.insert(GetAoSampleIndex(7 + X, 3 + Y, Frame, Ray));
+				}
+			}
+		}
+		E_EXPECT_EQ(Seen.size(), static_cast<size_t>(InterleavedSampleCount * Rays));
+	}
+
+	// 코사인 가중 반구: 모든 방향이 법선 쪽, 원판 반경 = sinθ라 θ > 60°(r² > 0.75) 비율이 정확히 25% (코사인 가중 CDF sin²θ)
+	const FVector3 N     = FVector3(0.2f, -0.5f, 0.84f).GetNormalized();
+	const uint32   Count = InterleavedSampleCount * Rays;
+	uint32         Grazing = 0;
+	float          MeanCos = 0.0f;
+	for (uint32 Index = 0; Index < Count; ++Index)
+	{
+		const FVector3 Direction = SampleCosineHemisphere(N, GetDiskSample(Index, Count));
+		const float    Cos       = FVector3::Dot(Direction, N);
+		E_EXPECT_TRUE(Cos > 0.0f);
+		E_EXPECT_NEAR(Direction.Length(), 1.0f, 1.0e-4f);
+		Grazing += Cos < 0.5f ? 1u : 0u;
+		MeanCos += Cos;
+	}
+	E_EXPECT_EQ(Grazing, Count / 4);
+	E_EXPECT_NEAR(MeanCos / static_cast<float>(Count), 2.0f / 3.0f, 0.02f); // 코사인 가중 E[cosθ] = 2/3
+	E_EXPECT_TRUE(SampleCosineHemisphere(N, FVector2(0.0f, 0.0f)).Equals(N, 1.0e-5f));
+
+	// 가림 감쇠: 접촉 1, 반경에서 0, 빗나감 0, 지수가 클수록 먼 히트가 덜 가린다
+	E_EXPECT_NEAR(ComputeAoOcclusion(0.0f, 60.0f, 1.0f), 1.0f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeAoOcclusion(30.0f, 60.0f, 1.0f), 0.5f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeAoOcclusion(60.0f, 60.0f, 1.0f), 0.0f, 1.0e-6f);
+	E_EXPECT_NEAR(ComputeAoOcclusion(-1.0f, 60.0f, 1.0f), 0.0f, 1.0e-6f);
+	E_EXPECT_TRUE(ComputeAoOcclusion(30.0f, 60.0f, 2.0f) < ComputeAoOcclusion(30.0f, 60.0f, 1.0f));
+
+	// 5x5 텐트: 주기 4 패턴의 칸(오프셋 mod 4)마다 가중 합 1 → 평평한 면 필터 결과가 프레임 회전과 무관 (결정적)
+	float ClassWeight[4][4] = {};
+	for (int32 Y = -2; Y <= 2; ++Y)
+	{
+		for (int32 X = -2; X <= 2; ++X)
+		{
+			ClassWeight[(Y + 4) % 4][(X + 4) % 4] += GetAoFilterTent(X) * GetAoFilterTent(Y);
+		}
+	}
+	for (const auto& Row : ClassWeight)
+	{
+		for (const float Weight : Row)
+		{
+			E_EXPECT_NEAR(Weight, 1.0f, 1.0e-6f);
+		}
+	}
+}

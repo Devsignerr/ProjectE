@@ -63,6 +63,15 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> RayTracingReflectionLights;  // r.RayTracing.Reflections.MaxLocalLights
 	extern TAutoConsoleVariable<bool>  RayTracingReflectionShadows; // r.RayTracing.Reflections.Shadows
 	extern TAutoConsoleVariable<int32> RayTracingDebugMode;         // r.RayTracing.DebugMode
+	// RT 앰비언트 오클루전 (RTAO — 근거리 간접 가림, SSAO 대신)
+	extern TAutoConsoleVariable<int32> RayTracingAmbientOcclusion;  // r.RayTracing.AO               (-1 자동 = DDGI 활성 프레임, --rtao / --no-rtao)
+	extern TAutoConsoleVariable<float> RayTracingAoRadius;          // r.RayTracing.AO.Radius        (--rtao-radius cm)
+	extern TAutoConsoleVariable<int32> RayTracingAoRays;            // r.RayTracing.AO.Rays          (--rtao-rays N)
+	extern TAutoConsoleVariable<float> RayTracingAoFalloff;         // r.RayTracing.AO.FalloffPower
+	extern TAutoConsoleVariable<int32> RayTracingAoDivisor;         // r.RayTracing.AO.ResolutionDivisor (1 씬, 2 반해상도)
+	extern TAutoConsoleVariable<float> RayTracingAoIntensity;       // r.RayTracing.AO.Intensity
+	extern TAutoConsoleVariable<float> RayTracingAoHistory;         // r.RayTracing.AO.HistoryWeight
+	extern TAutoConsoleVariable<int32> RayTracingAoReference;       // r.RayTracing.AO.Reference     (--rtao-reference N: 경로 추적 간접 확산 기준)
 	// r.RayTracing.Stats 명령이 불린 횟수 (렌더러마다 바뀌면 다음 프레임 레이 트레이싱 통계를 로그로)
 	uint32 GetRayTracingStatsSerial();
 

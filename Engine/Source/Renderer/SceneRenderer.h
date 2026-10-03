@@ -96,6 +96,9 @@ struct FSceneRenderStats
 	uint32 ShadowDrawCalls = 0; // 방향광 + 로컬 그림자 패스
 	uint64 Triangles       = 0; // 메인 패스에서 그린 삼각형
 	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
+	uint32 ShadowCacheReused  = 0; // 방향광 그림자 캐시를 재사용한 캐스케이드 수
+	uint32 ShadowCacheRebuilt = 0; // 캐시를 다시 그린 캐스케이드 수
+	uint32 ScreenSizeCulled   = 0; // 메인 프러스텀 안이지만 r.MinScreenSize/r.MaxDrawDistance로 뺀 인스턴스
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 ParticleEmittersCulled = 0; // 화면 밖이라 그리지 않은 이미터 (GPU 이미터는 계산도 미룸)
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
@@ -191,6 +194,9 @@ public:
 	float                SkinnedLodScale = 2.0f;  // 스킨 메시 LOD 화면 크기 배율 (LodScale에 곱함, r.LOD.SkinnedScale)
 	int32                ForcedLod       = -1;    // 0 이상이면 모든 메시(스킨 포함)를 그 LOD로 (확인용, --force-lod N)
 	float                LodHysteresis   = 0.1f;  // LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔, --lod-hysteresis X)
+	float                MinScreenSize   = 0.0f;  // r.MinScreenSize (메인·사전 패스 화면 크기 컬링)
+	float                MaxDrawDistance = 0.0f;  // r.MaxDrawDistance (cm)
+	uint32               ShadowStaticFrames = 30; // r.Shadow.Cache.StaticFrames
 	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
 	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)
 	bool                 bEnableOcclusion = false;
@@ -430,6 +436,7 @@ private:
 		uint32     Generation = 0;
 		uint64     Frame      = 0; // 기록한 SceneFrameCount
 		FMatrix4x4 World;
+		uint32     StableFrames = 0; // 월드 행렬이 연속으로 같았던 프레임 수 (그림자 캐시 정적 판정)
 	};
 	std::vector<FMotionHistory> MotionHistory; // 엔티티 인덱스 칸
 
@@ -495,6 +502,9 @@ private:
 		double SkinPalettes    = 0.0;
 		double SkinnedCulled   = 0.0;
 		double UploadBytes     = 0.0;
+		double ShadowCacheReused  = 0.0;
+		double ShadowCacheRebuilt = 0.0;
+		double ScreenSizeCulled   = 0.0;
 	};
 	FPerfCapture PerfCapture;
 };

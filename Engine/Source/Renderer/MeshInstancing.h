@@ -37,6 +37,9 @@ struct FMeshInstance
 	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)
 	bool                      bFixedLod   = false; // true면 씬 렌더러 LOD 선택이 건드리지 않는다 (폴리지가 직접 고름)
 	bool                      bFoliage    = false; // 폴리지 인스턴스 (레이 트레이싱 인스턴스 마스크 — r.RayTracing.Foliage로 뺄 수 있다)
+	// 방향광 그림자 캐시의 정적 캐스터 (ShadowCacheMath.h 머리 주석): 씬 렌더러가 위치가 일정 프레임 그대로인 비스킨 인스턴스에 켠다.
+	// 기본 false = 동적 (매 프레임 그림). AddExternal로 넣는 쪽은 배치가 고정이면 직접 켠다 (폴리지)
+	bool                      bShadowStatic = false;
 	EMaterialBlendMode        BlendMode   = EMaterialBlendMode::Opaque; // 머티리얼 렌더 상태 사본 (Gather/AddExternal이 Material에서 채움)
 	bool                      bTwoSided   = false;
 
@@ -111,11 +114,16 @@ inline uint32 GetDepthVariant(const FMeshInstance& Instance)
 	return (Instance.IsSkinned() ? DepthVariantSkinned : 0u) | (Instance.IsMasked() ? DepthVariantMasked : 0u);
 }
 
-// 깊이 전용 패스(그림자) 묶음 키: 변형 | 머티리얼(Masked만 — 나머지는 머티리얼 무관) | 메시 | LOD
-inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance)
+// 깊이 전용 패스(그림자) 묶음 키: 변형 | 머티리얼(Masked만 — 나머지는 머티리얼 무관) | 메시 | LOD (스킨 포함)
+// Lod = 그릴 LOD (방향광 그림자는 캐스케이드 LOD 바이어스를 적용한 값 — DrawDepthBatches가 키의 LOD로 그린다)
+inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance, uint32 Lod)
 {
 	return InstanceBatching::MakeKey(GetDepthVariant(Instance), Instance.IsMasked() ? Instance.MaterialHandle.Index : 0u, Instance.MeshHandle.Index,
-	                                 Instance.Lod);
+	                                 Lod);
+}
+inline uint64 MakeDepthBatchKey(const FMeshInstance& Instance)
+{
+	return MakeDepthBatchKey(Instance, Instance.Lod);
 }
 
 class FMeshPassBatches;

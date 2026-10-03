@@ -85,6 +85,8 @@ void FShadowRenderer::Shutdown()
 	}
 	ShadowMap.Reset();
 	DsvHeap.Shutdown();
+	CacheMap.Reset();
+	CacheDsvHeap.Shutdown();
 	for (FD3D12PipelineState& VariantPipeline : Pipelines)
 	{
 		VariantPipeline.Shutdown();
@@ -150,6 +152,7 @@ bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
 		return true;
 	}
 	MaterialPipelines.Reset(); // 그래프 머티리얼 PSO는 다음 그리기에 다시 만든다
+	InvalidateCache();         // 셰이더가 바뀌었을 수 있다
 	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
 		FD3D12PipelineState NewPipeline;
@@ -239,6 +242,64 @@ void FShadowRenderer::ReleaseShadowMap()
 	ShadowMap.Reset();
 	DsvHeap.Shutdown(); // DSV 힙은 기록 시점에만 읽히므로 즉시 해제
 	MapResolution = 0;
+	for (bool& bClean : bMapSliceClean)
+	{
+		bClean = false; // 새 섀도우 맵은 내용이 없다
+	}
+	ReleaseCache(); // 크기가 바뀌면 캐시도 다시 만든다
+}
+
+bool FShadowRenderer::EnsureCache()
+{
+	if (CacheMap)
+	{
+		return true; // 섀도우 맵 크기가 바뀌면 ReleaseShadowMap이 캐시도 내린다
+	}
+	ID3D12Device*       Device = Rhi->GetDevice().GetDevice();
+	D3D12_RESOURCE_DESC Desc   = MakeTexture2DDesc(MapResolution, MapResolution, ShadowResourceFormat, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+	Desc.DepthOrArraySize      = static_cast<UINT16>(MapCascades);
+	D3D12_CLEAR_VALUE ClearValue{};
+	ClearValue.Format             = ShadowDsvFormat;
+	ClearValue.DepthStencil.Depth = 1.0f;
+	const D3D12_HEAP_PROPERTIES Heap = MakeHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	ComPtr<ID3D12Resource>      NewCache;
+	if (FAILED(Device->CreateCommittedResource(&Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_COPY_SOURCE, &ClearValue, IID_PPV_ARGS(&NewCache))))
+	{
+		E_LOG(LogRenderer, Error, "그림자 캐시 생성 실패 ({}x{} x {}) — 캐시 없이 그린다", MapResolution, MapResolution, MapCascades);
+		return false;
+	}
+	NewCache->SetName(L"CascadedShadowCache");
+	if (!CacheDsvHeap.Init(Device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, MapCascades, false, L"ShadowCacheDsvHeap"))
+	{
+		return false;
+	}
+	for (uint32 Index = 0; Index < MapCascades; ++Index)
+	{
+		D3D12_DEPTH_STENCIL_VIEW_DESC DsvDesc{};
+		DsvDesc.Format                         = ShadowDsvFormat;
+		DsvDesc.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+		DsvDesc.Texture2DArray.FirstArraySlice = Index;
+		DsvDesc.Texture2DArray.ArraySize       = 1;
+		Device->CreateDepthStencilView(NewCache.Get(), &DsvDesc, CacheDsvHeap.GetCpuHandle(Index));
+	}
+	CacheMap = std::move(NewCache);
+	E_LOG(LogRenderer, Log, "그림자 캐시 생성: {}x{} x {}", MapResolution, MapResolution, MapCascades);
+	return true;
+}
+
+void FShadowRenderer::ReleaseCache()
+{
+	if (!CacheMap)
+	{
+		return; // 캐시가 없으면 유효한 캐시 상태도 없다 (Decide의 Rebuild 뒤 EnsureCache가 만든다)
+	}
+	for (ShadowCacheMath::FCascadeCacheState& State : CacheStates)
+	{
+		State = ShadowCacheMath::FCascadeCacheState{};
+	}
+	Rhi->DeferRelease(CacheMap);
+	CacheMap.Reset();
+	CacheDsvHeap.Shutdown();
 }
 
 void FShadowRenderer::PrepareCascades(const FCamera& Camera, const FVector3& LightDirection, const FShadowSettings& Settings)
@@ -247,6 +308,11 @@ void FShadowRenderer::PrepareCascades(const FCamera& Camera, const FVector3& Lig
 
 	Constants               = FShadowConstants{};
 	ActiveCascades          = 0;
+	FrameSettings           = Settings;
+	if (!Settings.bCacheStatic && CacheMap)
+	{
+		ReleaseCache(); // 끄면 메모리도 돌려준다
+	}
 	Constants.CameraForward = Camera.GetForwardVector();
 	if (!Settings.bEnabled || LightDirection.IsNearlyZero())
 	{
@@ -320,83 +386,304 @@ FRGResourceRef FShadowRenderer::ImportShadowMap(FRenderGraph& Graph) const
 	return ShadowMap ? Graph.Import("CascadedShadowMap", ShadowMap.Get(), ERGAccess::SrvPixel, ERGAccess::SrvPixel, 1, MapCascades) : FRGResourceRef{};
 }
 
+uint64 FShadowRenderer::ComputeStaticSetHash(const FMeshInstanceList& Instances) const
+{
+	// 정적 캐스터 집합: 인스턴스 해시의 합 (목록 순서 무관). 그리는 결과를 바꾸는 값을 모두 넣는다
+	using namespace ShadowCacheMath;
+	uint64 Sum   = 0;
+	uint64 Count = 0;
+	for (const FMeshInstance& Instance : Instances.GetInstances())
+	{
+		if (!Instance.bShadowStatic || Instance.IsSkinned() || !Instance.CastsShadow())
+		{
+			continue;
+		}
+		uint64 Hash = HashSeed;
+		Hash        = HashValue(Hash, Instance.Mesh);
+		Hash        = HashValue(Hash, Instance.MeshHandle);
+		Hash        = HashValue(Hash, Instance.World);
+		Hash        = HashValue(Hash, Instance.Lod);
+		Hash        = HashValue(Hash, GetDepthVariant(Instance));
+		if (Instance.IsMasked())
+		{
+			const FMaterial& Material = *Instance.Material;
+			Hash = HashValue(Hash, Instance.MaterialHandle);
+			Hash = HashValue(Hash, Instance.Material);
+			Hash = HashValue(Hash, Material.Shader.get());
+			Hash = HashValue(Hash, Material.Constants.BaseColorFactor.W);
+			Hash = HashValue(Hash, Material.Constants.AlphaCutoff);
+			Hash = HashValue(Hash, Material.TextureTable.Gpu.ptr);
+		}
+		Sum += Finalize(Hash);
+		++Count;
+	}
+	return Finalize(HashValue(HashValue(HashSeed, Sum), Count));
+}
+
+void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12DynamicUploadBuffer& DynamicBuffer)
+{
+	using namespace ShadowCacheMath;
+	const bool   bCache     = FrameSettings.bCacheStatic;
+	const uint64 StaticHash = bCache ? ComputeStaticSetHash(Instances) : 0;
+	const float  MinTexels  = FrameSettings.MinCasterTexels;
+	bExtraStatic            = bCache && ExtraCasters && ExtraCasterState;
+	const std::vector<FMeshInstance>& List = Instances.GetInstances();
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		// ---- 캐시 행동 (키 = 캐스케이드 뷰-투영 + 설정 + 정적 집합 + 추가 캐스터 상태 + 캐시 세대)
+		ECacheAction Action = ECacheAction::Direct;
+		if (bCache)
+		{
+			uint64 Key = HashSeed;
+			Key        = HashValue(Key, CascadeData[Index].ViewProjection);
+			Key        = HashValue(Key, Index);
+			Key        = HashValue(Key, MapResolution);
+			Key        = HashValue(Key, BakedDepthBias);
+			Key        = HashValue(Key, BakedSlopeBias);
+			Key        = HashValue(Key, FrameSettings.LodBias);
+			Key        = HashValue(Key, MinTexels);
+			Key        = HashValue(Key, CacheEpoch);
+			Key        = HashValue(Key, StaticHash);
+			Key        = HashValue(Key, bExtraStatic);
+			if (bExtraStatic)
+			{
+				Key = HashValue(Key, ExtraCasterState(CascadeFrustums[Index]));
+			}
+			Action = Decide(CacheStates[Index], Key, true);
+			if (Action == ECacheAction::Rebuild && !EnsureCache())
+			{
+				Action                         = ECacheAction::Direct;
+				CacheStates[Index].bCacheValid = false;
+			}
+		}
+		else
+		{
+			Decide(CacheStates[Index], 0, false);
+		}
+		CascadeActions[Index] = Action;
+
+		// ---- 묶음: 캐스케이드 프러스텀 + 작은 캐스터 컬링 → (정적/스킨 × 불투명/Masked)·메시·캐스케이드 LOD별 (Masked만 머티리얼별)
+		// 반투명 머티리얼은 그림자를 드리우지 않는다. Direct = 모두 StaticBatches, Rebuild = 정적은 StaticBatches(캐시)·동적은 DynamicBatches,
+		// Reuse = 동적만
+		FMeshPassBatches& Static  = StaticBatches[Index];
+		FMeshPassBatches& Dynamic = DynamicBatches[Index];
+		Static.Reset();
+		Dynamic.Reset();
+		const FFrustum& Frustum   = CascadeFrustums[Index];
+		const uint32    LodBias   = ComputeCascadeLodBias(Index, FrameSettings.LodBias);
+		const float     TexelSize = CascadeData[Index].WorldTexelSize;
+		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
+		{
+			const FMeshInstance& Instance = List[InstanceIndex];
+			if (!Instance.CastsShadow())
+			{
+				continue;
+			}
+			const bool bStatic = Action != ECacheAction::Direct && Instance.bShadowStatic && !Instance.IsSkinned();
+			if (bStatic && Action == ECacheAction::Reuse)
+			{
+				continue; // 캐시에 있다
+			}
+			if (!Frustum.Intersects(Instance.WorldBounds) || IsCasterTooSmall(Instance.WorldBounds.GetExtent().Length(), TexelSize, MinTexels))
+			{
+				continue;
+			}
+			const uint32 Lod = SelectShadowLod(Instance.Lod, Instance.Mesh->GetLodCount(), LodBias, Instance.bFixedLod); // 스킨 포함
+			((bStatic || Action == ECacheAction::Direct) ? Static : Dynamic).Add(MakeDepthBatchKey(Instance, Lod), 0.0f, InstanceIndex);
+		}
+		if (Action != ECacheAction::Reuse)
+		{
+			Static.Finalize(DynamicBuffer);
+		}
+		if (Action != ECacheAction::Direct)
+		{
+			Dynamic.Finalize(DynamicBuffer);
+		}
+
+		// 섀도우 맵 장이 지난 프레임부터 같은 캐시 내용(동적 캐스터 없음)이면 복사도 건너뛴다
+		const bool bCleanNow  = Action != ECacheAction::Direct && Dynamic.IsEmpty() && (bExtraStatic || !ExtraCasters);
+		bSkipCopy[Index]      = bCleanNow && bMapSliceClean[Index] && MapSliceKey[Index] == CacheStates[Index].CachedKey;
+		bMapSliceClean[Index] = bCleanNow;
+		MapSliceKey[Index]    = CacheStates[Index].CachedKey;
+	}
+}
+
 void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
                               int32 Timer)
 {
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
-	DrawCalls = 0;
-	Triangles = 0;
+	DrawCalls    = 0;
+	Triangles    = 0;
+	CacheReused  = 0;
+	CacheRebuilt = 0;
 	if (ActiveCascades == 0 || !ShadowMap || !ShadowMapRef.IsValid())
 	{
 		return;
 	}
-	// 캐스케이드마다 지우고 그리므로 덮어쓰기 (쓰지 않는 캐스케이드 장은 셰이더가 읽지 않는다)
+	PrepareBatches(Instances, Rhi->GetDynamicBuffer());
+
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		CacheRebuilt += CascadeActions[Index] == ShadowCacheMath::ECacheAction::Rebuild ? 1u : 0u;
+		CacheReused += CascadeActions[Index] == ShadowCacheMath::ECacheAction::Reuse ? 1u : 0u;
+	}
+	const bool bAnyCached = CacheRebuilt + CacheReused > 0;
+	if (bAnyCached)
+	{
+		// 캐시(평소 COPY_SOURCE): 다시 그릴 장만 깊이 쓰기 → 캐시를 쓰는 캐스케이드 장을 섀도우 맵으로 복사
+		const FRGResourceRef CacheRef = Graph.Import("CascadedShadowCache", CacheMap.Get(), ERGAccess::CopySource, ERGAccess::CopySource, 1, MapCascades);
+		if (CacheRebuilt > 0)
+		{
+			FRenderGraph::FPassBuilder Pass = Graph.AddPass("방향광 그림자 캐시");
+			for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+			{
+				if (CascadeActions[Index] == ShadowCacheMath::ECacheAction::Rebuild)
+				{
+					Pass.Write(CacheRef, ERGAccess::DepthWrite, FRGSubresourceRange::Slice(Index), true);
+				}
+			}
+			Pass.Timer(Timer).Execute([this, &Instances, SkinPalettes](FRGContext& Context) { RecordCache(Context.CommandList, Instances, SkinPalettes); });
+		}
+		bool bAnyCopy = false;
+		for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+		{
+			bAnyCopy |= CascadeActions[Index] != ShadowCacheMath::ECacheAction::Direct && !bSkipCopy[Index];
+		}
+		if (bAnyCopy)
+		{
+			FRenderGraph::FPassBuilder Copy = Graph.AddPass("방향광 그림자 캐시 복사");
+			for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+			{
+				if (CascadeActions[Index] != ShadowCacheMath::ECacheAction::Direct && !bSkipCopy[Index])
+				{
+					Copy.Read(CacheRef, ERGAccess::CopySource, FRGSubresourceRange::Slice(Index));
+					Copy.Write(ShadowMapRef, ERGAccess::CopyDest, FRGSubresourceRange::Slice(Index), true);
+				}
+			}
+			Copy.Timer(Timer).Execute([this](FRGContext& Context) { RecordCopy(Context.CommandList); });
+		}
+	}
+	// 캐시 없는 캐스케이드는 지우고 모두 그리고, 캐시 캐스케이드는 복사된(또는 이미 같은) 정적 깊이 위에 동적 캐스터만
+	// (캐시 캐스케이드가 있으면 이전 내용을 읽는 쓰기 — 덮어쓰기 아님. 쓰지 않는 장은 셰이더가 읽지 않는다)
 	Graph.AddPass("방향광 그림자")
-		.Write(ShadowMapRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), true)
+		.Write(ShadowMapRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), !bAnyCached)
 		.Timer(Timer)
 		.Execute([this, &Instances, SkinPalettes](FRGContext& Context) { Record(Context.CommandList, Instances, SkinPalettes); });
 }
 
-void FShadowRenderer::Record(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+void FShadowRenderer::BindDepthPass(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
+                                    FDepthPassBindings& OutBindings)
 {
-	const uint32                Resolution   = MapResolution;
-	const uint32                CascadeCount = ActiveCascades;
-	const ShadowMath::FCascade* Cascades     = CascadeData;
-
-	// ---- 깊이 패스 (섀도우 맵은 그래프가 DEPTH_WRITE로 전이)
+	const uint32         Resolution = MapResolution;
 	const D3D12_VIEWPORT Viewport{ 0.0f, 0.0f, static_cast<float>(Resolution), static_cast<float>(Resolution), 0.0f, 1.0f };
 	const D3D12_RECT     Scissor{ 0, 0, static_cast<LONG>(Resolution), static_cast<LONG>(Resolution) };
 	CommandList->RSSetViewports(1, &Viewport);
 	CommandList->RSSetScissorRects(1, &Scissor);
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(Pipelines[0].Get());
-
 	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_Instances, Instances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_SkinPalette, SkinPalettes);
-	FD3D12DynamicUploadBuffer&        DynamicBuffer = Rhi->GetDynamicBuffer();
-	const std::vector<FMeshInstance>& List          = Instances.GetInstances();
-	FDepthPassBindings                Bindings;
+
 	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
-		Bindings.Pipelines[Variant] = Pipelines[Variant].Get();
+		OutBindings.Pipelines[Variant] = Pipelines[Variant].Get();
 	}
-	Bindings.InstanceRootIndex  = ShadowParam_PassConstants;
-	Bindings.InstanceDestOffset = 16;
-	Bindings.MaskRootIndex      = ShadowParam_MaskConstants;
-	Bindings.MaskTextureRoot    = ShadowParam_MaskTexture;
-	Bindings.MaterialPipelines    = &MaterialPipelines;
-	Bindings.DynamicBuffer        = &DynamicBuffer;
-	Bindings.MaterialConstantRoot = ShadowParam_MaterialConstants;
-	Bindings.MaterialTextureRoot  = ShadowParam_MaterialTextures;
-	for (uint32 Index = 0; Index < CascadeCount; ++Index)
+	OutBindings.InstanceRootIndex    = ShadowParam_PassConstants;
+	OutBindings.InstanceDestOffset   = 16;
+	OutBindings.MaskRootIndex        = ShadowParam_MaskConstants;
+	OutBindings.MaskTextureRoot      = ShadowParam_MaskTexture;
+	OutBindings.MaterialPipelines    = &MaterialPipelines;
+	OutBindings.DynamicBuffer        = &Rhi->GetDynamicBuffer();
+	OutBindings.MaterialConstantRoot = ShadowParam_MaterialConstants;
+	OutBindings.MaterialTextureRoot  = ShadowParam_MaterialTextures;
+}
+
+void FShadowRenderer::DrawBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBatches& CascadeBatches, uint32 Cascade,
+                                  const FMeshInstanceList& Instances, const FDepthPassBindings& Bindings)
+{
+	if (CascadeBatches.IsEmpty())
 	{
-		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
+		return;
+	}
+	CommandList->SetGraphicsRoot32BitConstants(ShadowParam_PassConstants, 16, &CascadeData[Cascade].ViewProjection.M[0][0], 0);
+	CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, CascadeBatches.GetIndexBuffer());
+	DrawDepthBatches(CommandList, CascadeBatches, Instances, Bindings, DrawCalls, Triangles);
+}
+
+void FShadowRenderer::RecordCache(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+{
+	// 다시 그릴 캐스케이드: 캐시 장을 지우고 정적 캐스터만 (그래프가 해당 장을 DEPTH_WRITE로 전이)
+	FDepthPassBindings Bindings;
+	BindDepthPass(CommandList, Instances, SkinPalettes, Bindings);
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		if (CascadeActions[Index] != ShadowCacheMath::ECacheAction::Rebuild)
+		{
+			continue;
+		}
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = CacheDsvHeap.GetCpuHandle(Index);
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-		// 캐스케이드 프러스텀 컬링 → (정적/스킨 × 불투명/Masked)·메시·LOD별 묶음 (Masked만 머티리얼별), 스킨은 팔레트가 바로 월드로 보낸다
-		// 반투명 머티리얼은 그림자를 드리우지 않는다
-		const FFrustum& CascadeFrustum = CascadeFrustums[Index];
-		Batches.Reset();
-		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
-		{
-			const FMeshInstance& Instance = List[InstanceIndex];
-			if (Instance.CastsShadow() && CascadeFrustum.Intersects(Instance.WorldBounds))
-			{
-				Batches.Add(MakeDepthBatchKey(Instance), 0.0f, InstanceIndex);
-			}
-		}
-		Batches.Finalize(DynamicBuffer);
-
-		CommandList->SetGraphicsRoot32BitConstants(ShadowParam_PassConstants, 16, &Cascades[Index].ViewProjection.M[0][0], 0);
-		CommandList->SetGraphicsRootShaderResourceView(ShadowParam_InstanceIndices, Batches.GetIndexBuffer());
-		DrawDepthBatches(CommandList, Batches, Instances, Bindings, DrawCalls, Triangles);
+		DrawBatches(CommandList, StaticBatches[Index], Index, Instances, Bindings);
 	}
-	// 추가 캐스터 (지형 등): 캐스케이드마다 DSV를 다시 바인딩해 그린다
-	for (uint32 Index = 0; ExtraCasters && Index < CascadeCount; ++Index)
+	// 정적 추가 캐스터 (지형): 자기 루트 시그니처/PSO를 묶으므로 메시를 모두 그린 뒤
+	for (uint32 Index = 0; bExtraStatic && Index < ActiveCascades; ++Index)
+	{
+		if (CascadeActions[Index] == ShadowCacheMath::ECacheAction::Rebuild)
+		{
+			const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = CacheDsvHeap.GetCpuHandle(Index);
+			CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
+			ExtraCasters(CommandList, CascadeData[Index].ViewProjection, CascadeFrustums[Index], false);
+		}
+	}
+}
+
+void FShadowRenderer::RecordCopy(ID3D12GraphicsCommandList* CommandList)
+{
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		if (CascadeActions[Index] == ShadowCacheMath::ECacheAction::Direct || bSkipCopy[Index])
+		{
+			continue;
+		}
+		D3D12_TEXTURE_COPY_LOCATION Destination{};
+		Destination.pResource        = ShadowMap.Get();
+		Destination.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		Destination.SubresourceIndex = Index; // 밉 1개 → 장 번호
+		D3D12_TEXTURE_COPY_LOCATION Source = Destination;
+		Source.pResource                   = CacheMap.Get();
+		CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &Source, nullptr); // 깊이는 서브리소스 전체 복사만
+	}
+}
+
+void FShadowRenderer::Record(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes)
+{
+	// ---- 깊이 패스 (섀도우 맵은 그래프가 DEPTH_WRITE로 전이)
+	FDepthPassBindings Bindings;
+	BindDepthPass(CommandList, Instances, SkinPalettes, Bindings);
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
 	{
 		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
-		ExtraCasters(CommandList, Cascades[Index].ViewProjection, CascadeFrustums[Index], false);
+		if (CascadeActions[Index] == ShadowCacheMath::ECacheAction::Direct)
+		{
+			CommandList->ClearDepthStencilView(Dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+			DrawBatches(CommandList, StaticBatches[Index], Index, Instances, Bindings);
+		}
+		else
+		{
+			DrawBatches(CommandList, DynamicBatches[Index], Index, Instances, Bindings); // 정적 깊이는 캐시에서 복사됨
+		}
+	}
+	// 추가 캐스터 (지형 등): 캐스케이드마다 DSV를 다시 바인딩해 그린다 (정적으로 캐시에 들어간 캐스케이드는 건너뜀)
+	for (uint32 Index = 0; ExtraCasters && Index < ActiveCascades; ++Index)
+	{
+		if (bExtraStatic && CascadeActions[Index] != ShadowCacheMath::ECacheAction::Direct)
+		{
+			continue;
+		}
+		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
+		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
+		ExtraCasters(CommandList, CascadeData[Index].ViewProjection, CascadeFrustums[Index], false);
 	}
 }

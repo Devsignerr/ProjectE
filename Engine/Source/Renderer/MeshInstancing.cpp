@@ -155,16 +155,17 @@ void DrawDepthBatches(ID3D12GraphicsCommandList* CommandList, const FMeshPassBat
 			}
 		}
 		CommandList->SetGraphicsRoot32BitConstant(Bindings.InstanceRootIndex, Batch.First, Bindings.InstanceDestOffset);
+		// LOD = 묶음 키 (그림자 캐스케이드 LOD 바이어스는 인스턴스 LOD와 다를 수 있다)
+		const uint32 Lod = InstanceBatching::IsUniqueKey(Batch.Key) ? Instance.Lod : InstanceBatching::GetLod(Batch.Key);
 		if (Instance.IsSkinned())
 		{
-			Instance.Mesh->DrawSkinned(CommandList, Batch.Count, Instance.Lod);
-			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+			Instance.Mesh->DrawSkinned(CommandList, Batch.Count, Lod);
 		}
 		else
 		{
-			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Instance.Lod);
-			InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Instance.Lod).IndexCount / 3) * Batch.Count;
+			Instance.Mesh->DrawInstanced(CommandList, Batch.Count, Lod);
 		}
+		InOutTriangles += static_cast<uint64>(Instance.Mesh->GetLod(Lod).IndexCount / 3) * Batch.Count;
 		++InOutDrawCalls;
 	}
 	if (BoundPipeline != Bindings.Pipelines[0])

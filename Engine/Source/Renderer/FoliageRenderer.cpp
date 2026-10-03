@@ -242,6 +242,7 @@ void FFoliageRenderer::Gather(FScene& Scene, const FCamera& Camera, const FFrust
 					Instance.bCastShadow    = bShadow;
 					Instance.bFixedLod      = true;
 					Instance.bFoliage       = true;
+					Instance.bShadowStatic  = true; // 배치 고정 (페이드·LOD·그림자 거리 변화는 그림자 캐시 키의 정적 집합 해시가 잡는다)
 					Instance.PrevWorld      = Instance.World; // 정적 배치: 물체 움직임 없음 (움직임 벡터 = 카메라만, 페이드 축소는 무시)
 					if (Mesh->GetLodCount() > 1)
 					{

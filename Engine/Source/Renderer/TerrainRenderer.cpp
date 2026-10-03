@@ -9,6 +9,7 @@
 #include "Renderer/LocalLightRenderer.h"
 #include "Renderer/Material.h"
 #include "Renderer/ResourceManager.h"
+#include "Renderer/ShadowCacheMath.h"
 #include "Renderer/ShadowRenderer.h"
 #include "Scene/Scene.h"
 #include "Scene/Terrain.h"
@@ -890,6 +891,34 @@ void FTerrainRenderer::RenderShadow(ID3D12GraphicsCommandList* CommandList, cons
 		CommandList->SetGraphicsRootShaderResourceView(TerrainParam_Chunks, Chunks);
 		DrawPatches(CommandList, Draws, ShadowDrawCalls, ShadowTriangles);
 	}
+}
+
+uint64 FTerrainRenderer::GetShadowStateHash(const FFrustum& Frustum) const
+{
+	using namespace ShadowCacheMath;
+	uint64 Hash = HashSeed;
+	for (const FFrameTerrain& Terrain : Frame)
+	{
+		if (!Terrain.bCastShadows)
+		{
+			continue;
+		}
+		Hash = HashValue(Hash, Terrain.Data);
+		Hash = HashValue(Hash, Terrain.Data != nullptr ? Terrain.Data->ChangeCounter : 0ull);
+		Hash = HashValue(Hash, Terrain.Gpu->Heights.get());
+		Hash = HashValue(Hash, Terrain.Origin);
+		Hash = HashValue(Hash, Terrain.CellSize);
+		Hash = HashValue(Hash, Terrain.HeightScale);
+		// 그리는 청크와 LOD (BuildDraws와 같은 판정)
+		for (uint32 Index = 0; Index < static_cast<uint32>(Terrain.ChunkLods.size()); ++Index)
+		{
+			if (Frustum.Intersects(Terrain.ChunkBounds[Index]))
+			{
+				Hash = HashValue(Hash, (static_cast<uint64>(Index) << 8) | Terrain.ChunkLods[Index]);
+			}
+		}
+	}
+	return Hash;
 }
 
 bool FTerrainRenderer::HasTerrain(const std::vector<FEntity>& Entities) const

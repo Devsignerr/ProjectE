@@ -45,6 +45,13 @@ namespace LodMath
 		return Lod;
 	}
 
+	// 메인/사전 패스 인스턴스 컬링 (r.MinScreenSize, r.MaxDrawDistance): 화면 크기가 MinScreenSize보다 작거나
+	// 경계 구 표면까지 거리(SurfaceDistance)가 MaxDrawDistance보다 멀면 true. 각각 0 이하 = 끔
+	inline bool ShouldCullInstance(float ScreenSize, float SurfaceDistance, float MinScreenSize, float MaxDrawDistance)
+	{
+		return (MinScreenSize > 0.0f && ScreenSize < MinScreenSize) || (MaxDrawDistance > 0.0f && SurfaceDistance > MaxDrawDistance);
+	}
+
 	constexpr float DefaultHysteresis = 0.1f; // 전환 여유: 임계값의 ±10% 띠 안에서는 이전 LOD 유지
 
 	// 히스테리시스 선택 (팝핑 완화): 임계값 T마다 [T × (1 - H), T × (1 + H)) 띠 안에서는 이전 LOD를 유지한다.

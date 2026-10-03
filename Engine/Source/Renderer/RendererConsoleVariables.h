@@ -23,6 +23,14 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr|rt-reflections|rt-shadows|rt-instances)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
 	extern TAutoConsoleVariable<int32> AsyncLoading;     // r.AsyncLoading   (--sync-loading = 0, --async-loading = 1) — FResourceManager가 프레임마다 읽음
+	// 텍스처 밉 스트리밍 (Phase 53, Renderer/TextureStreaming.h) — FResourceManager가 프레임마다 읽음
+	extern TAutoConsoleVariable<bool>  Streaming;                   // r.Streaming (--no-texture-streaming / --texture-streaming)
+	extern TAutoConsoleVariable<int32> StreamingPoolSizeMB;         // r.Streaming.PoolSizeMB (--streaming-pool-mb N, 0 = 자동)
+	extern TAutoConsoleVariable<float> StreamingMaxUploadMBPerFrame; // r.Streaming.MaxUploadMBPerFrame
+	extern TAutoConsoleVariable<float> StreamingDropDelay;          // r.Streaming.DropDelay (초)
+	extern TAutoConsoleVariable<int32> StreamingMipMargin;          // r.Streaming.MipMargin
+	extern TAutoConsoleVariable<bool>  StatStreaming;               // stat.Streaming (stat streaming)
+	extern TAutoConsoleVariable<float> StreamingLogStats;           // r.Streaming.LogStats (초, 측정용 주기 로그)
 
 	// 렌더 그래프 (Phase 47)
 	extern TAutoConsoleVariable<bool> RenderGraphCull;          // r.RenderGraph.Cull          (안 쓰는 패스 제거, 끄면 모두 실행 — 비교용)
@@ -58,6 +66,18 @@ namespace RendererCVars
 	// r.RayTracing.Stats 명령이 불린 횟수 (렌더러마다 바뀌면 다음 프레임 레이 트레이싱 통계를 로그로)
 	uint32 GetRayTracingStatsSerial();
 
+	// 하늘·대기·구름·물 (Phase 49)
+	extern TAutoConsoleVariable<bool>  SkyAtmosphere;           // r.SkyAtmosphere              (대기 컴포넌트 무시 = 0, 비교용)
+	extern TAutoConsoleVariable<int32> SkyAtmosphereIblSamples; // r.SkyAtmosphere.IblSamples   (실시간 IBL 적분 표본 수)
+	extern TAutoConsoleVariable<bool>  VolumetricClouds;        // r.VolumetricClouds           (--no-clouds)
+	extern TAutoConsoleVariable<int32> VolumetricCloudsDivisor; // r.VolumetricClouds.Divisor   (추적 해상도 = 씬 ÷ 이 값)
+	extern TAutoConsoleVariable<int32> VolumetricCloudsSteps;   // r.VolumetricClouds.Steps
+	extern TAutoConsoleVariable<bool>  VolumetricCloudsTemporal; // r.VolumetricClouds.Temporal (시간 누적)
+	extern TAutoConsoleVariable<bool>  Water;                   // r.Water                      (--no-water)
+	extern TAutoConsoleVariable<bool>  WaterScreenReflections;  // r.Water.SSR
+	extern TAutoConsoleVariable<int32> HdrOutput;               // r.HDR.Output (0 끔, 1 자동, 2 HDR10, 3 scRGB — --hdr-output)
+	extern TAutoConsoleVariable<float> HdrPaperWhite;           // r.HDR.PaperWhite (nits)
+	extern TAutoConsoleVariable<float> HdrMaxNits;              // r.HDR.MaxNits (0 = 디스플레이)
 	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
 	uint32 GetRenderGraphDumpSerial();
 } // namespace RendererCVars

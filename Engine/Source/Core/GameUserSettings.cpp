@@ -54,6 +54,31 @@ bool TryParseWindowMode(std::string_view Text, EWindowMode& OutMode)
 	return false;
 }
 
+const char* ToString(EHdrOutputMode Mode)
+{
+	switch (Mode)
+	{
+	case EHdrOutputMode::Off:   return "Off";
+	case EHdrOutputMode::Auto:  return "Auto";
+	case EHdrOutputMode::Hdr10: return "Hdr10";
+	case EHdrOutputMode::ScRgb: return "ScRgb";
+	}
+	return "Off";
+}
+
+bool TryParseHdrOutputMode(std::string_view Text, EHdrOutputMode& OutMode)
+{
+	for (const EHdrOutputMode Mode : { EHdrOutputMode::Off, EHdrOutputMode::Auto, EHdrOutputMode::Hdr10, EHdrOutputMode::ScRgb })
+	{
+		if (EqualsIgnoreCase(Text, ToString(Mode)))
+		{
+			OutMode = Mode;
+			return true;
+		}
+	}
+	return false;
+}
+
 const char* ToString(EResolutionQuality Quality)
 {
 	switch (Quality)
@@ -131,6 +156,26 @@ bool FGameUserSettings::ApplyJson(std::string_view Json)
 	{
 		DynamicResolutionTargetMs = std::clamp(It->get<float>(), 1.0f, 100.0f);
 	}
+	if (const auto It = Root.find("HdrOutput"); It != Root.end() && It->is_string())
+	{
+		EHdrOutputMode Mode = HdrOutput;
+		if (TryParseHdrOutputMode(It->get<std::string>(), Mode))
+		{
+			HdrOutput = Mode;
+		}
+		else
+		{
+			E_LOG(LogCore, Warning, "알 수 없는 HdrOutput \"{}\" — 무시합니다", It->get<std::string>());
+		}
+	}
+	if (const auto It = Root.find("HdrPaperWhiteNits"); It != Root.end() && It->is_number())
+	{
+		HdrPaperWhiteNits = std::clamp(It->get<float>(), 80.0f, 1000.0f);
+	}
+	if (const auto It = Root.find("HdrMaxNits"); It != Root.end() && It->is_number())
+	{
+		HdrMaxNits = std::clamp(It->get<float>(), 0.0f, 10000.0f);
+	}
 	return true;
 }
 
@@ -144,6 +189,9 @@ std::string FGameUserSettings::ToJson() const
 	Root["ResolutionQuality"]         = ToString(ResolutionQuality);
 	Root["DynamicResolution"]         = bDynamicResolution;
 	Root["DynamicResolutionTargetMs"] = DynamicResolutionTargetMs;
+	Root["HdrOutput"]                 = ToString(HdrOutput);
+	Root["HdrPaperWhiteNits"]         = HdrPaperWhiteNits;
+	Root["HdrMaxNits"]                = HdrMaxNits;
 	return Root.dump(2) + "\n";
 }
 

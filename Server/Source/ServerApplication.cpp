@@ -6,6 +6,7 @@
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
+#include "Network/NetBindPolicy.h"
 #include "Network/NetTransport.h"
 #include "Network/ReplicationTypes.h"
 #include "Physics/PhysicsReflection.h"
@@ -35,6 +36,7 @@ FServerApplication::FServerApplication()
 
 bool FServerApplication::OnInit()
 {
+	NetBindPolicy::Configure(IsAutomationRun()); // 자동 검증은 같은 PC 전용 대기 (방화벽 확인 창 없음)
 	if (!FPaths::HasProject())
 	{
 		E_LOG(LogServer, Error, "프로젝트가 없습니다 (--project <경로>)");

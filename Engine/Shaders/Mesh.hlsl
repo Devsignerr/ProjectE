@@ -49,8 +49,9 @@ cbuffer PerFrame : register(b1)
 	float             SsrMaxRoughness;
 	float             SsrIntensity;
 	float             MaterialMipBias; // 머티리얼/지형 텍스처 밉 바이어스 (TAAU: log2(내부/출력), 네이티브 0)
+	uint              DebugMipView;    // 1 = 텍스처 밉 스트리밍 디버그 뷰 (r.DebugView mip, MipDebugColor)
 	uint              RayTracedShadows; // 1 = 불투명 방향광 그림자를 RT 마스크(t24)로 (Phase 50)
-	float2            PerFramePadding;
+	float             PerFramePadding;
 };
 
 SamplerState LinearSampler : register(s0); // 이방성 반복 (머티리얼 E_MATERIAL_SAMPLER_WRAP)
@@ -554,12 +555,49 @@ float3 EvaluateMeshLighting(FSurface Surface, float3 WorldPosition, float3 Geome
 	return Color;
 }
 
+// 텍스처 밉 스트리밍 디버그 뷰 (r.DebugView mip, PerFrame DebugMipView): 고정 PBR 베이스 컬러 텍스처가 이 픽셀에서 원하는 LOD를
+// 상주 텍스처 기준(밉 0 = 상주 최상위 밉)으로 본다. LOD < 0 = 상주 범위보다 세밀한 밉이 필요 (주황 → 빨강, 부족한 밉 수만큼),
+// 0~2 = 알맞음 (초록 — 스트리밍 여유 1밉 포함), 2 이상 = 여유 (하늘 → 파랑). 텍스처 없음(1x1 기본)·그래프 머티리얼은 회색. 밝기는 알베도
+float3 MipDebugColor(float2 UV, float3 Albedo)
+{
+	const float Shade = 0.35f + 0.65f * saturate(dot(Albedo, float3(0.3f, 0.59f, 0.11f)));
+#ifdef E_MATERIAL_GRAPH
+	return 0.3f * Shade;
+#else
+	uint Width, Height, Levels;
+	BaseColorTexture.GetDimensions(0, Width, Height, Levels);
+	if (Width <= 1 && Height <= 1)
+	{
+		return 0.3f * Shade;
+	}
+	const float Lod = BaseColorTexture.CalculateLevelOfDetailUnclamped(LinearSampler, UV) + MaterialMipBias;
+	float3      Color;
+	if (Lod < 0.0f)
+	{
+		Color = lerp(float3(1.0f, 0.6f, 0.0f), float3(1.0f, 0.0f, 0.0f), saturate(-Lod));
+	}
+	else if (Lod < 2.0f)
+	{
+		Color = float3(0.1f, 1.0f, 0.1f);
+	}
+	else
+	{
+		Color = lerp(float3(0.1f, 0.6f, 1.0f), float3(0.0f, 0.0f, 1.0f), saturate((Lod - 2.0f) * 0.5f));
+	}
+	return Color * Shade;
+#endif
+}
+
 float4 ShadeOpaque(FPixelInput Input, FMeshSurface Mesh)
 {
 	float3 Color = EvaluateMeshLighting(Mesh.Surface, Input.WorldPosition, Mesh.GeometricNormal, Input.Position.xy, true) + Mesh.Emissive;
 	if (VisualizeCascades != 0)
 	{
 		Color *= CascadeDebugColor(Input.WorldPosition);
+	}
+	if (DebugMipView != 0)
+	{
+		Color = MipDebugColor(Input.UV, Mesh.Surface.Albedo) * 2.0f;
 	}
 	return float4(Color, 0.0f); // 알파 = TAA 반응형 마스크 (불투명 0, 파티클/반투명이 덮은 만큼 쌓인다)
 }

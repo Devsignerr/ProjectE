@@ -55,6 +55,7 @@ public:
 	// LodMath::SelectLod용 화면 크기 임계값 (LOD0부터, GetLodCount개)
 	const float* GetLodScreenSizes() const { return LodScreenSizes; }
 	float        GetBoundingRadius() const { return BoundingRadius; } // 로컬 경계 상자 반 대각선
+	float        GetUvDensity() const { return UvDensity; } // UV 단위/cm (로컬, 텍스처 밉 스트리밍). 0 = UV 없음/퇴화
 	uint32      GetVertexCount() const { return VertexCount; }
 	const FBox& GetLocalBounds() const { return LocalBounds; }
 	// GPU 버퍼 바이트 (정점 + 인덱스 + 스킨) — 리소스 통계용
@@ -82,6 +83,7 @@ private:
 	std::vector<FLodRange> Lods;
 	float                  LodScreenSizes[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 	float                  BoundingRadius = 0.0f;
+	float                  UvDensity      = 0.0f;
 	uint32                VertexCount = 0;
 	uint32                IndexCount  = 0;
 	bool                  bSkinned    = false;

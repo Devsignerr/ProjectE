@@ -105,6 +105,17 @@ bool FD3D12RHI::Init(const FD3D12RHIDesc& Desc)
 
 	bInitialized = true;
 	E_LOG(LogD3D12, Display, "D3D12 RHI 초기화 완료");
+	// HDR 디스플레이 정보 (Phase 49): 사용자가 아침에 직접 확인할 수 있게 항상 남긴다
+	if (const FHdrDisplayInfo Hdr = SwapChain.QueryHdrDisplay(); Hdr.bValid)
+	{
+		E_LOG(LogD3D12, Display, "[HDR] 디스플레이 {}: OS HDR {}, 최대 {:.0f} nits (전체 화면 {:.0f}), 최소 {:.4f} nits, {}비트 — HDR10 {}, scRGB {}", Hdr.DeviceName,
+		      Hdr.bHdrEnabled ? "켜짐" : "꺼짐", Hdr.MaxNits, Hdr.MaxFullFrameNits, Hdr.MinNits, Hdr.BitsPerColor, Hdr.bHdr10Supported ? "가능" : "불가",
+		      Hdr.bScRgbSupported ? "가능" : "불가");
+	}
+	else
+	{
+		E_LOG(LogD3D12, Display, "[HDR] 디스플레이 정보를 얻지 못함 (IDXGIOutput6 없음) — SDR");
+	}
 	return true;
 }
 
@@ -119,6 +130,7 @@ void FD3D12RHI::Shutdown()
 	ComputeQueue.Flush();
 	GraphicsQueue.Flush();
 	UploadQueue.Shutdown(); // 복사 완료 대기 + 전이 대기 참조 해제
+	HdrOutput.Shutdown();   // HDR 겹침 층·씬 타깃 (디스크립터 할당자보다 먼저)
 
 	CommandList.Reset();
 	ComputeCommandList.Reset();
@@ -164,6 +176,11 @@ void FD3D12RHI::Resize(uint32 Width, uint32 Height)
 	if (!DepthBuffer.Resize(Device.GetDevice(), Width, Height))
 	{
 		E_LOG(LogD3D12, Fatal, "깊이 버퍼 리사이즈 실패");
+	}
+	if (!HdrOutput.Resize(*this, Width, Height))
+	{
+		E_LOG(LogD3D12, Error, "HDR 출력 타깃 리사이즈 실패 → SDR");
+		SetHdrOutput(EHdrSwapChainMode::Off, HdrOutput.GetPaperWhiteNits());
 	}
 }
 
@@ -225,14 +242,22 @@ void FD3D12RHI::BeginFrame(const float ClearColor[4])
 		MakeTransitionBarrier(BackBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->ResourceBarrier(1, &ToRenderTarget);
 
-	SetRenderTargetToBackBuffer(false);
-	CommandList->ClearRenderTargetView(SwapChain.GetCurrentRenderTargetView(false), ClearColor, 0, nullptr);
+	if (HdrOutput.IsActive())
+	{
+		HdrOutput.BeginFrame(CommandList.Get(), ClearColor); // 겹침 층 투명, 씬 타깃 ClearColor (백버퍼는 합성이 전부 덮는다)
+		SetRenderTargetToBackBuffer(false);
+	}
+	else
+	{
+		SetRenderTargetToBackBuffer(false);
+		CommandList->ClearRenderTargetView(SwapChain.GetCurrentRenderTargetView(false), ClearColor, 0, nullptr);
+	}
 	CommandList->ClearDepthStencilView(DepthBuffer.GetDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH, FD3D12DepthBuffer::ClearDepth, 0, 0, nullptr);
 }
 
 void FD3D12RHI::SetRenderTargetToBackBuffer(bool bLinearView)
 {
-	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = SwapChain.GetCurrentRenderTargetView(bLinearView);
+	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = HdrOutput.IsActive() ? HdrOutput.GetOverlayRtv(bLinearView) : SwapChain.GetCurrentRenderTargetView(bLinearView);
 	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DepthBuffer.GetDepthStencilView();
 	CommandList->OMSetRenderTargets(1, &Rtv, FALSE, &Dsv);
 
@@ -247,12 +272,66 @@ void FD3D12RHI::SetRenderTargetToBackBuffer(bool bLinearView)
 FRenderOutput FD3D12RHI::GetBackBufferOutput() const
 {
 	FRenderOutput Output;
-	Output.Rtv      = SwapChain.GetCurrentRenderTargetView(false);
+	Output.Rtv      = HdrOutput.IsActive() ? HdrOutput.GetOverlayRtv(false) : SwapChain.GetCurrentRenderTargetView(false);
 	Output.Format   = RenderTargetFormat;
 	Output.Width    = SwapChain.GetWidth();
 	Output.Height   = SwapChain.GetHeight();
-	Output.Resource = SwapChain.GetCurrentBackBuffer();
+	Output.Resource = HdrOutput.IsActive() ? HdrOutput.GetOverlayResource() : SwapChain.GetCurrentBackBuffer();
 	return Output;
+}
+
+FRenderOutput FD3D12RHI::GetSceneOutput() const
+{
+	if (!HdrOutput.IsActive() || HdrOutput.GetSceneTarget() == nullptr)
+	{
+		return GetBackBufferOutput();
+	}
+	const FD3D12RenderTarget* Scene = HdrOutput.GetSceneTarget();
+	FRenderOutput             Output;
+	Output.Rtv      = Scene->GetRtv();
+	Output.Format   = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	Output.Width    = Scene->GetWidth();
+	Output.Height   = Scene->GetHeight();
+	Output.Resource = Scene->GetColorResource();
+	return Output;
+}
+
+bool FD3D12RHI::SetHdrOutput(EHdrSwapChainMode Mode, float PaperWhiteNits, float MaxNits)
+{
+	if (MaxNits <= 0.0f)
+	{
+		const FHdrDisplayInfo Display = SwapChain.QueryHdrDisplay();
+		MaxNits                       = Display.bValid && Display.MaxNits > 0.0f ? Display.MaxNits : 1000.0f;
+	}
+	HdrOutput.SetMaxNits(std::max(MaxNits, PaperWhiteNits));
+	if (Mode == HdrOutput.GetMode())
+	{
+		HdrOutput.SetPaperWhiteNits(PaperWhiteNits);
+		return true;
+	}
+	// 진행 중 프레임이 백버퍼·겹침 층을 다 쓴 뒤 스왑체인 포맷을 바꾼다
+	ComputeQueue.Flush();
+	GraphicsQueue.Flush();
+	bool bOk = true;
+	if (Mode == EHdrSwapChainMode::Off)
+	{
+		HdrOutput.Disable(*this);
+		SwapChain.SetFormat(FD3D12SwapChain::BackBufferFormat, DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+	}
+	else
+	{
+		const DXGI_FORMAT           Format     = Mode == EHdrSwapChainMode::Hdr10 ? DXGI_FORMAT_R10G10B10A2_UNORM : DXGI_FORMAT_R16G16B16A16_FLOAT;
+		const DXGI_COLOR_SPACE_TYPE ColorSpace = Mode == EHdrSwapChainMode::Hdr10 ? DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 : DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+		bOk = SwapChain.SetFormat(Format, ColorSpace) && HdrOutput.Enable(*this, Mode, PaperWhiteNits, SwapChain.GetWidth(), SwapChain.GetHeight());
+		if (!bOk)
+		{
+			HdrOutput.Disable(*this);
+			SwapChain.SetFormat(FD3D12SwapChain::BackBufferFormat, DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709);
+		}
+	}
+	E_LOG(LogD3D12, Display, "[HDR] 출력 {} (종이 흰색 {:.0f} nits, 최대 {:.0f} nits){}", Mode == EHdrSwapChainMode::Off ? "끔" : (Mode == EHdrSwapChainMode::Hdr10 ? "HDR10" : "scRGB"),
+	      PaperWhiteNits, HdrOutput.GetMaxNits(), bOk ? "" : " — 지원 안 함, SDR 유지");
+	return bOk;
 }
 
 void FD3D12RHI::FlushUploads()
@@ -391,13 +470,22 @@ void FD3D12RHI::EndFrame()
 {
 	ID3D12Resource* BackBuffer = SwapChain.GetCurrentBackBuffer();
 
-	// 스크린샷: 백버퍼 → 리드백 버퍼 복사
+	// HDR 출력: 씬 타깃 + 겹침 층 → 백버퍼 (스크린샷이면 SDR 미리보기에도)
+	const bool bHdr = HdrOutput.IsActive();
+	if (bHdr)
+	{
+		HdrOutput.Composite(CommandList.Get(), SwapChain.GetCurrentRenderTargetView(false), SwapChain.GetWidth(), SwapChain.GetHeight(),
+		                    !PendingScreenshot.empty());
+	}
+	ID3D12Resource* ShotSource = bHdr ? HdrOutput.GetPreviewResource() : BackBuffer;
+
+	// 스크린샷: 백버퍼(HDR이면 SDR 미리보기) → 리드백 버퍼 복사
 	ComPtr<ID3D12Resource>             Readback;
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Footprint{};
 	D3D12_RESOURCE_STATES              BackBufferState = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	if (!PendingScreenshot.empty())
 	{
-		const D3D12_RESOURCE_DESC Desc       = BackBuffer->GetDesc();
+		const D3D12_RESOURCE_DESC Desc       = ShotSource->GetDesc();
 		UINT64                    TotalBytes = 0;
 		Device.GetDevice()->GetCopyableFootprints(&Desc, 0, 1, 0, &Footprint, nullptr, nullptr, &TotalBytes);
 
@@ -407,12 +495,15 @@ void FD3D12RHI::EndFrame()
 		                                                          D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&Readback))))
 		{
 			const D3D12_RESOURCE_BARRIER ToCopy =
-				MakeTransitionBarrier(BackBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
+				MakeTransitionBarrier(ShotSource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_SOURCE);
 			CommandList->ResourceBarrier(1, &ToCopy);
-			BackBufferState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+			if (!bHdr)
+			{
+				BackBufferState = D3D12_RESOURCE_STATE_COPY_SOURCE;
+			}
 
 			D3D12_TEXTURE_COPY_LOCATION Source{};
-			Source.pResource        = BackBuffer;
+			Source.pResource        = ShotSource;
 			Source.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 			Source.SubresourceIndex = 0;
 			D3D12_TEXTURE_COPY_LOCATION Destination{};
@@ -420,6 +511,11 @@ void FD3D12RHI::EndFrame()
 			Destination.Type            = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 			Destination.PlacedFootprint = Footprint;
 			CommandList->CopyTextureRegion(&Destination, 0, 0, 0, &Source, nullptr);
+			if (bHdr)
+			{
+				const D3D12_RESOURCE_BARRIER Back = MakeTransitionBarrier(ShotSource, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				CommandList->ResourceBarrier(1, &Back);
+			}
 		}
 	}
 

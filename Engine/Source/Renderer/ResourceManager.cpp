@@ -1,6 +1,8 @@
 #include "Renderer/ResourceManager.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Profiling.h"
+#include "Core/Serialization/BinaryArchive.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/AssetCache.h"
@@ -9,6 +11,7 @@
 #include "Renderer/MeshSimplifier.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/RendererConsoleVariables.h"
+#include "Renderer/TextureStreamingMath.h"
 #include "Scene/Particles.h"
 
 #include <algorithm>
@@ -66,6 +69,7 @@ bool FResourceManager::Init(FD3D12RHI& InRhi)
 	Default.Name    = "DefaultMaterial";
 	DefaultMaterial = CreateMaterial(Default);
 	InitCollector();
+	InitStreamingConsole();
 
 	E_LOG(LogRenderer, Display, "리소스 관리자 초기화 완료");
 	return true;
@@ -92,6 +96,7 @@ void FResourceManager::Shutdown()
 	// 즉시 해제 전에 GPU 작업 완료 보장 (복사 큐가 아직 쓰는 대상도)
 	Rhi->GetUploadQueue().WaitIdle();
 	Rhi->GetGraphicsQueue().Flush();
+	ShutdownStreaming(); // 업로드 중인 스트리밍 텍스처 즉시 해제 (GPU 완료 뒤)
 
 	Materials.ForEach([this](FMaterialHandle, FMaterial& Material) { Rhi->GetSrvAllocator().Free(Material.TextureTable); });
 	Meshes.ForEach([](FMeshHandle, FStaticMesh& Mesh) { Mesh.Shutdown(); });
@@ -114,6 +119,11 @@ void FResourceManager::Shutdown()
 
 FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, ETextureUsage Usage)
 {
+	return LoadTextureInternal(Path, Usage, false);
+}
+
+FTextureHandle FResourceManager::LoadTextureInternal(const std::filesystem::path& Path, ETextureUsage Usage, bool bStreamable)
+{
 	std::error_code ErrorCode;
 	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
 	if (ErrorCode)
@@ -124,6 +134,10 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 
 	if (const auto Found = TextureCache.find(CacheKey); Found != TextureCache.end() && Textures.IsValid(Found->second))
 	{
+		if (!bStreamable)
+		{
+			PinStreamingTexture(Found->second); // 머티리얼 밖에서도 쓴다 → 항상 전체 밉
+		}
 		return Found->second;
 	}
 
@@ -134,17 +148,84 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 		TextureCache[CacheKey]      = Handle;
 		struct FJobResult
 		{
-			FCompressedTexture Texture;
-			bool               bLoaded = false;
+			FCompressedTexture                   Texture;
+			TextureStreamingMath::FPayloadLayout Layout; // 스트리밍: 쿠킹 파일 전체 배치 (Texture는 FirstMip부터)
+			FTextureStreamSource                 Source;
+			uint32                               FirstMip = 0;
+			bool                                 bLoaded  = false;
 		};
 		auto Result = std::make_shared<FJobResult>();
+		// 비동기 + 스트리밍: 쿠킹본이 최신이면 머리와 꼬리 밉만 읽는다 (나머지는 필요할 때 밉 단위로)
+		const bool bTailOnly = bStreamable && IsStreamingEnabled() && !IsStreamingDeterministic();
 		NoteAsyncRequest();
 		LoadJobs.Submit(
-			[Result, Canonical, Usage] {
+			[Result, Canonical, Usage, bStreamable, bTailOnly] {
 				E_PROFILE_SCOPE("텍스처 로드 작업");
+				const std::filesystem::path CookedPath = bStreamable ? FAssetCache::GetCookedPath(Canonical, FAssetCache::GetTextureExtension(Usage))
+				                                                     : std::filesystem::path();
+				if (bTailOnly && !CookedPath.empty() && FAssetCache::IsCookedUpToDate(Canonical, CookedPath))
+				{
+					const FTextureStreamSource Source{ CookedPath, FAssetCache::TexturePayloadOffset };
+					std::vector<uint8>         Head;
+					if (FFileSystem::ReadFileRange(CookedPath, 0, Source.PayloadOffset + TextureStreamingMath::PayloadProbeSize, Head))
+					{
+						FBinaryReader Reader(Head.data(), Head.size());
+						const uint32  Magic   = Reader.Read<uint32>();
+						const uint32  Version = Reader.Read<uint32>();
+						TextureStreamingMath::FPayloadLayout Layout =
+							TextureStreamingMath::ParsePayloadProbe(Head.data() + Source.PayloadOffset, Head.size() - Source.PayloadOffset);
+						std::vector<uint8> Range;
+						if (Magic == FAssetCache::TextureMagic && Version == FAssetCache::TextureVersion && Layout.IsValid())
+						{
+							const uint32 Tail = TextureStreamingMath::ComputeTailTopMip(Layout.Format, Layout.Width, Layout.Height, Layout.MipCount);
+							if (FFileSystem::ReadFileRange(CookedPath, Source.PayloadOffset + Layout.GetRangeReadOffset(Tail), Layout.GetRangeReadSize(Tail), Range) &&
+							    TextureStreamingMath::ParseMipRange(Layout, Tail, Range.data(), Range.size(), Result->Texture.Mips))
+							{
+								Result->Texture.Format = Layout.Format;
+								Result->Texture.bSRGB  = Layout.bSRGB;
+								Result->Layout         = std::move(Layout);
+								Result->Source         = Source;
+								Result->FirstMip       = Tail;
+								Result->bLoaded        = true;
+								return;
+							}
+						}
+					}
+				}
 				Result->bLoaded = FAssetCache::LoadTextureAsset(Canonical, Usage, Result->Texture) != FAssetCache::ESource::Failed;
+				if (Result->bLoaded && bStreamable && !CookedPath.empty() && FFileSystem::Exists(CookedPath))
+				{
+					// 원본에서 변환했거나 전체를 읽음: 쿠킹본(방금 기록 포함)에서 다시 읽을 수 있다
+					const FCompressedTexture& Texture = Result->Texture;
+					Result->Layout = TextureStreamingMath::ComputePayloadLayout(Texture.Format, Texture.bSRGB, Texture.GetWidth(), Texture.GetHeight(),
+					                                                             static_cast<uint32>(Texture.Mips.size()));
+					Result->Source = { CookedPath, FAssetCache::TexturePayloadOffset };
+				}
 			},
-			[this, Result, Handle, Name = Canonical.filename().wstring()] { FinishTextureLoad(Handle, Result->Texture, Result->bLoaded, Name); });
+			[this, Result, Handle, bStreamable, Name = Canonical.filename().wstring()] {
+				if (!bStreamable || !Result->Source.IsValid() || !Result->Layout.IsValid())
+				{
+					FinishTextureLoad(Handle, Result->Texture, Result->bLoaded, Name);
+					if (!bStreamable)
+					{
+						PinStreamingTexture(Handle);
+					}
+					return;
+				}
+				// 스트리밍: 전체를 읽었으면 대화형은 꼬리만 올린다 (결정적 모드는 전체 — 첫 보고에서 내림)
+				FCompressedTexture& Texture = Result->Texture;
+				uint32              Top     = Result->FirstMip;
+				if (Top == 0 && IsStreamingEnabled() && !IsStreamingDeterministic())
+				{
+					Top = TextureStreamingMath::ComputeTailTopMip(Texture.Format, Texture.GetWidth(), Texture.GetHeight(), static_cast<uint32>(Texture.Mips.size()));
+					Texture.Mips.erase(Texture.Mips.begin(), Texture.Mips.begin() + Top);
+				}
+				FinishTextureLoad(Handle, Texture, Result->bLoaded, Name);
+				if (Textures.IsValid(Handle))
+				{
+					RegisterStreamingTexture(Handle, Result->Source, Result->Layout, Top, false, Name);
+				}
+			});
 		return Handle;
 	}
 
@@ -158,6 +239,15 @@ FTextureHandle FResourceManager::LoadTexture(const std::filesystem::path& Path, 
 	if (Handle.IsValid())
 	{
 		TextureCache[CacheKey] = Handle;
+		// 동기 로딩(--sync-loading)이어도 비동기 로딩을 켠 앱이면 스트리밍 등록 (전체로 올렸으므로 첫 보고에서 내린다)
+		const std::filesystem::path CookedPath = FAssetCache::GetCookedPath(Canonical, FAssetCache::GetTextureExtension(Usage));
+		if (bStreamable && bAsyncLoadingEnabled && !CookedPath.empty() && FFileSystem::Exists(CookedPath))
+		{
+			RegisterStreamingTexture(Handle, { CookedPath, FAssetCache::TexturePayloadOffset },
+			                         TextureStreamingMath::ComputePayloadLayout(Texture.Format, Texture.bSRGB, Texture.GetWidth(), Texture.GetHeight(),
+			                                                                    static_cast<uint32>(Texture.Mips.size())),
+			                         0, false, Canonical.filename().wstring());
+		}
 	}
 	return Handle;
 }
@@ -300,7 +390,7 @@ bool FResourceManager::IsReady(FMeshHandle Handle) const
 
 uint32 FResourceManager::GetPendingLoadCount() const
 {
-	return LoadJobs.GetOutstandingCount() + static_cast<uint32>(PendingUploads.size());
+	return LoadJobs.GetOutstandingCount() + static_cast<uint32>(PendingUploads.size()) + GetStreamingPendingCount();
 }
 
 void FResourceManager::WaitForPendingLoads()
@@ -310,10 +400,11 @@ void FResourceManager::WaitForPendingLoads()
 	{
 		LoadJobs.WaitIdle();
 		LoadJobs.PumpCompletions(); // 끝난 작업 → GPU 업로드 기록
-		if (!PendingUploads.empty())
+		if (!PendingUploads.empty() || GetStreamingPendingCount() > 0)
 		{
 			Rhi->FlushUploads();
 			CompletePendingUploads(Rhi->GetUploadQueue().GetFinalizedFence());
+			CompleteStreamUploads(Rhi->GetUploadQueue().GetFinalizedFence());
 		}
 	}
 }
@@ -324,11 +415,13 @@ void FResourceManager::ProcessAsyncLoads()
 	if (GetLoadMode() == EResourceLoadMode::AsyncDrain)
 	{
 		WaitForPendingLoads();
+		ProcessTextureStreaming(); // 결정적: 요청을 바로 끝낸다
 		bLoadBurstActive = false;
 		return;
 	}
 	LoadJobs.PumpCompletions();
 	CompletePendingUploads(Rhi->GetUploadQueue().GetFinalizedFence());
+	ProcessTextureStreaming();
 	if (bLoadBurstActive && GetPendingLoadCount() == 0)
 	{
 		// 한 번에 몰린 로드(씬 로드/맵 전환 등)가 모두 준비될 때까지 걸린 시간 (측정용)
@@ -458,6 +551,7 @@ void FResourceManager::DestroyTexture(FTextureHandle Handle)
 		E_LOG(LogRenderer, Warning, "기본 텍스처는 삭제할 수 없습니다");
 		return;
 	}
+	UnregisterStreamingTexture(Handle); // 진행 중인 밉 읽기/업로드도 버린다
 	if (std::unique_ptr<FD3D12Texture> Texture = Textures.Remove(Handle))
 	{
 		Texture->ShutdownDeferred(*Rhi);
@@ -784,11 +878,13 @@ bool FResourceManager::FillMaterialFromAsset(FMaterial& Material, const FMateria
 	{
 		Material.Textures[Slot] = FTextureHandle{};
 	}
+	std::fill(std::begin(Material.TextureUvTiling), std::end(Material.TextureUvTiling), 0.0f); // 고정 PBR = UV0 그대로
 	for (uint32 Slot = 0; Slot < MaterialSlot_Count; ++Slot)
 	{
-		const FTextureHandle Texture = Asset.TexturePaths[Slot].empty()
-		                                   ? FTextureHandle{}
-		                                   : LoadTexture(BaseDirectory / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot));
+		const FTextureHandle Texture =
+			Asset.TexturePaths[Slot].empty()
+				? FTextureHandle{}
+				: LoadTextureInternal(BaseDirectory / FStringConv::ToWide(Asset.TexturePaths[Slot]), FMaterialAsset::GetSlotUsage(Slot), true);
 		bChanged |= Texture != Material.Textures[Slot];
 		Material.Textures[Slot] = Texture;
 	}
@@ -819,12 +915,14 @@ bool FResourceManager::FillGraphMaterial(FMaterial& Material, const FMaterialAss
 	for (uint32 Slot = 0; Slot < MaterialTextureMax; ++Slot)
 	{
 		FTextureHandle Texture;
+		Material.TextureUvTiling[Slot] = 0.0f;
 		if (Slot < Layout.TextureCount)
 		{
 			const FMaterialParameter* Parameter = Layout.FindTextureParameter(Slot, Asset.Parameters);
 			if (Parameter != nullptr && !Parameter->Texture.empty())
 			{
-				Texture = LoadTexture(BaseDirectory / FStringConv::ToWide(Parameter->Texture), Parameter->Usage);
+				Texture = LoadTextureInternal(BaseDirectory / FStringConv::ToWide(Parameter->Texture), Parameter->Usage, true);
+				Material.TextureUvTiling[Slot] = TextureStreamingMath::ComputeGraphTextureUvScale(Asset.Graph, Parameter->Name);
 			}
 		}
 		bChanged |= Texture != Material.Textures[Slot];

@@ -12,6 +12,7 @@
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/DebugDraw.h"
 #include "Renderer/SceneAssetResolver.h"
+#include "Scene/SkyAtmosphere.h"
 #include "Scene/Ability/AbilitySystem.h"
 #include "Scene/AnimationSystem.h"
 #include "Scene/GameModuleHost.h"
@@ -428,6 +429,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 {
 	E_PROFILE_SCOPE("표시 틱");
+	FTimeOfDaySystem::Update(TargetScene, DeltaSeconds, IsPlaying()); // 시간대 → 태양 회전 (Phase 49, 트랜스폼 갱신 전)
 	FAnimationSystem::Update(TargetScene, DeltaSeconds);
 	TargetScene.UpdateTransforms();
 	if (Systems.Resources != nullptr)

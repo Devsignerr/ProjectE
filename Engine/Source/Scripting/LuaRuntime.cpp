@@ -195,6 +195,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterCameraBindings();
 	RegisterDataBindings();
 	RegisterBuildingBindings();
+	RegisterSkyBindings();
 	RegisterAbilityBindings();
 }
 

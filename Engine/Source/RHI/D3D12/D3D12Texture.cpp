@@ -8,6 +8,7 @@
 #include "RHI/TextureUtils.h"
 
 #include <cstring>
+#include <utility>
 #include <vector>
 
 FD3D12Texture::~FD3D12Texture()
@@ -313,6 +314,19 @@ bool FD3D12Texture::Init2DFromMipsAsync(FD3D12Device& Device, FD3D12UploadQueue&
 	E_LOG(LogD3D12, Verbose, "텍스처 비동기 업로드: {}x{}, 밉 {}개, 포맷 {} ({} bytes, 펜스 {})", Width, Height, MipCount,
 	      static_cast<uint32>(Format), TotalBytes, UploadFence);
 	return true;
+}
+
+void FD3D12Texture::SwapContents(FD3D12Texture& Other) noexcept
+{
+	std::swap(Resource, Other.Resource);
+	std::swap(Srv, Other.Srv);
+	std::swap(SrvAllocator, Other.SrvAllocator);
+	std::swap(Width, Other.Width);
+	std::swap(Height, Other.Height);
+	std::swap(MipCount, Other.MipCount);
+	std::swap(Format, Other.Format);
+	std::swap(UploadFence, Other.UploadFence);
+	std::swap(bUploadPending, Other.bUploadPending);
 }
 
 void FD3D12Texture::Shutdown()

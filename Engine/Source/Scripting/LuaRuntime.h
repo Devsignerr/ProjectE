@@ -212,6 +212,7 @@ private:
 	void RegisterCameraBindings();   // Camera.WorldToScreen/ScreenToWorldRay (ScriptCameraBindings.cpp)
 	void RegisterDataBindings();     // Data.GetRow/GetRows/Load 등 데이터 테이블·에셋 (ScriptDataBindings.cpp)
 	void RegisterBuildingBindings(); // entity:GenerateBuilding/ClearBuilding 절차적 건물 (ScriptBuildingBindings.cpp)
+	void RegisterSkyBindings();      // Sky.SetSunAngles/GetSunAngles/SetTimeOfDay/GetTimeOfDay (ScriptSkyBindings.cpp, Phase 49)
 	void RegisterAbilityBindings();  // 능력 시스템 entity:TryActivateAbility 등 + Abilities 테이블 + 능력 ctx (ScriptAbilityBindings.cpp)
 	struct FAbilityTask
 	{

@@ -38,6 +38,10 @@ public:
 	uint64 GetUploadFence() const { return UploadFence; }
 	void   MarkUploadComplete() { bUploadPending = false; }
 
+	// 내용(리소스·SRV·크기·상태)을 맞바꾼다 — 텍스처 밉 스트리밍이 같은 핸들 뒤의 리소스를 새 밉 범위로 교체할 때.
+	// 교체 뒤 Other(이전 내용)는 ShutdownDeferred로 지연 해제한다
+	void SwapContents(FD3D12Texture& Other) noexcept;
+
 	// 즉시 해제 (GPU가 더 이상 사용하지 않음이 보장될 때)
 	void Shutdown();
 	// 지연 해제 (렌더링 중 교체/삭제 시)

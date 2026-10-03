@@ -247,6 +247,65 @@ bool FFileSystem::ReadFile(const std::filesystem::path& Path, std::vector<uint8>
 	return true;
 }
 
+bool FFileSystem::ReadFileRange(const std::filesystem::path& Path, uint64 Offset, uint64 Size, std::vector<uint8>& OutBytes)
+{
+	OutBytes.clear();
+	const FPakEntry* Entry = nullptr;
+	if (FMountedPak* Pak = FindEntry(Path, Entry))
+	{
+		if (Offset > Entry->Size || Size > Entry->Size - Offset)
+		{
+			return false;
+		}
+		OutBytes.resize(static_cast<size_t>(Size));
+		std::scoped_lock Lock(Pak->StreamMutex);
+		Pak->Stream.clear();
+		Pak->Stream.seekg(static_cast<std::streamoff>(Entry->Offset + Offset));
+		if (Size > 0 && !Pak->Stream.read(reinterpret_cast<char*>(OutBytes.data()), static_cast<std::streamsize>(Size)))
+		{
+			E_LOG(LogCore, Error, "pak 항목 범위를 읽을 수 없습니다: {}", FStringConv::ToUtf8(Path.wstring()));
+			OutBytes.clear();
+			return false;
+		}
+		return true;
+	}
+
+	std::ifstream File(Path, std::ios::binary | std::ios::ate);
+	if (!File)
+	{
+		return false;
+	}
+	const std::streamsize FileSize = File.tellg();
+	if (FileSize < 0 || Offset > static_cast<uint64>(FileSize) || Size > static_cast<uint64>(FileSize) - Offset)
+	{
+		return false;
+	}
+	File.seekg(static_cast<std::streamoff>(Offset), std::ios::beg);
+	OutBytes.resize(static_cast<size_t>(Size));
+	if (Size > 0 && !File.read(reinterpret_cast<char*>(OutBytes.data()), static_cast<std::streamsize>(Size)))
+	{
+		OutBytes.clear();
+		return false;
+	}
+	return true;
+}
+
+std::optional<uint64> FFileSystem::GetFileSize(const std::filesystem::path& Path)
+{
+	const FPakEntry* Entry = nullptr;
+	if (FindEntry(Path, Entry) != nullptr)
+	{
+		return Entry->Size;
+	}
+	std::error_code ErrorCode;
+	const uintmax_t Size = std::filesystem::file_size(Path, ErrorCode);
+	if (ErrorCode)
+	{
+		return std::nullopt;
+	}
+	return static_cast<uint64>(Size);
+}
+
 bool FFileSystem::ReadTextFile(const std::filesystem::path& Path, std::string& OutText)
 {
 	std::vector<uint8> Bytes;

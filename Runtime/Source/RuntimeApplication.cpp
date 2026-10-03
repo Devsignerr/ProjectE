@@ -8,11 +8,13 @@
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
+#include "Network/NetBindPolicy.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "Renderer/DebugDraw.h"
+#include "Renderer/HdrOutputController.h"
 #include "Renderer/PrimitiveShapes.h"
 #include "Renderer/SceneCamera.h"
 #include "Renderer/SceneAssetResolver.h"
@@ -66,6 +68,7 @@ void FRuntimeApplication::OnConfigureWindow(FWindowDesc& WindowDesc)
 
 bool FRuntimeApplication::OnInit()
 {
+	NetBindPolicy::Configure(IsAutomationRun()); // 자동 검증은 같은 PC 전용 대기 (방화벽 확인 창 없음)
 	// 개발자 콘솔: 개발 실행은 항상, 패키지 게임은 프로젝트 설정으로. 출력은 로그 기록을 그대로 보여 준다
 	Console.bEnabled = !FPaths::IsPackaged() || FProjectSettings::Get().Console.bEnableInPackagedGame;
 	if (Console.bEnabled)
@@ -148,6 +151,7 @@ bool FRuntimeApplication::OnInit()
 			Var->SetFloat(UserSettings.DynamicResolutionTargetMs);
 		}
 	}
+	FHdrOutputController::ApplySettings(UserSettings); // HDR 출력 (Phase 49): 사용자 설정 → r.HDR.* (명령줄 값 우선)
 
 	RegisterAudioTypes(); // 씬 로드 전에
 	RegisterPhysicsTypes();
@@ -358,9 +362,10 @@ void FRuntimeApplication::OnRender()
 		Rhi->EndFrame();
 		return;
 	}
+	FHdrOutputController::Update(*Rhi); // r.HDR.Output 변경 반영 (BeginFrame 전)
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
-	SceneRenderer.Render(Scene, Camera, Rhi->GetBackBufferOutput());
+	SceneRenderer.Render(Scene, Camera, Rhi->GetSceneOutput()); // HDR 출력이면 선형 FP16 씬 타깃 (UI·디버그 선은 백버퍼 = 겹침 층)
 	{
 		// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만)
 		const FRenderOutput       Back       = Rhi->GetBackBufferOutput();

@@ -1,4 +1,5 @@
 #include "Editor/PlayInEditorNet.h"
+#include "Network/NetBindPolicy.h"
 
 #include "Core/CommandLine.h"
 #include "Core/Paths.h"
@@ -27,7 +28,12 @@ namespace
 
 	std::wstring SimulationArguments(const FPlayNetSettings& Settings)
 	{
-		return Settings.LatencyMs > 0 || Settings.LossPercent > 0.0f ? std::format(L" --net-lag {} --net-loss {}", Settings.LatencyMs, Settings.LossPercent) : std::wstring();
+		std::wstring Arguments = Settings.LatencyMs > 0 || Settings.LossPercent > 0.0f ? std::format(L" --net-lag {} --net-loss {}", Settings.LatencyMs, Settings.LossPercent) : std::wstring();
+		if (NetBindPolicy::IsLoopbackOnly())
+		{
+			Arguments += L" --net-local"; // 자식 서버/클라이언트도 같은 PC 전용 (방화벽 확인 창 없음)
+		}
+		return Arguments;
 	}
 } // namespace
 

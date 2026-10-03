@@ -1,5 +1,7 @@
 #include "Renderer/RendererConsoleVariables.h"
 
+#include "Renderer/TextureStreamingMath.h"
+
 namespace RendererCVars
 {
 	TAutoConsoleVariable<bool> TemporalAA("r.TAA", true, "TAA (서브픽셀 지터 + 이력 누적). 픽셀 아트/와이어프레임/여러 뷰 렌더러는 자동으로 꺼짐",
@@ -25,9 +27,12 @@ namespace RendererCVars
 	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f), .CommandLine = { { L"--lod-hysteresis", "" } } });
 	TAutoConsoleVariable<bool> Jitter("r.Jitter", false, "TAA 없이도 서브픽셀 투영 지터 (확인용 — 혼자 켜면 화면이 떨린다)", EConsoleFlags::None,
 	                                  { .CommandLine = { { L"--jitter", "1" } } });
-	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0, "화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림)", EConsoleFlags::None,
-	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr", "rt-reflections", "rt-shadows", "rt-instances" },
-	                                        .Range       = std::pair(0.0f, 8.0f),
+	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0,
+	                                      "화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림). mip = 텍스처 밉 스트리밍 상주 밉 색칠 (메시 패스가 고정 PBR 베이스 컬러 기준으로 "
+	                                      "빨강 = 필요한 밉이 없음, 초록 = 알맞음, 파랑 = 2밉 이상 여유, 회색 = 텍스처 없음/그래프 머티리얼). rt-* = 레이 트레이싱 반사/그림자 마스크/TLAS 인스턴스",
+	                                      EConsoleFlags::None,
+	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr", "mip", "rt-reflections", "rt-shadows", "rt-instances" },
+	                                        .Range       = std::pair(0.0f, 9.0f),
 	                                        .CommandLine = { { L"--debug-view", "" } } });
 	TAutoConsoleVariable<bool> ResourceAutoCollect("r.ResourceAutoCollect", true,
 	                                               "맵 전환·서브 씬 내림·에디터 씬 열기 뒤 쓰지 않는 메시/텍스처/머티리얼/모델/파티클 자동 수거 (끄면 비교용으로 쌓임 — r.CollectResources는 계속 동작)");
@@ -36,6 +41,28 @@ namespace RendererCVars
 	                                         "2 비동기 + 프레임마다 비우기 (EnableAsyncLoading을 부르지 않은 앱/테스트는 항상 동기)",
 	                                         EConsoleFlags::None,
 	                                         { .Range = std::pair(-1.0f, 2.0f), .CommandLine = { { L"--sync-loading", "0" }, { L"--async-loading", "1" } } });
+
+	TAutoConsoleVariable<bool> Streaming("r.Streaming", true,
+	                                     "텍스처 밉 스트리밍: 머티리얼 텍스처를 화면에 필요한 밉까지만 VRAM에 둔다 (끄면 새 텍스처는 전체 밉, 줄어든 텍스처는 전체로 되돌림). "
+	                                     "비동기 로딩을 켠 앱만 (테스트·도구는 항상 전체)",
+	                                     EConsoleFlags::None, { .CommandLine = { { L"--no-texture-streaming", "0" }, { L"--texture-streaming", "1" } } });
+	TAutoConsoleVariable<int32> StreamingPoolSizeMB("r.Streaming.PoolSizeMB", 0,
+	                                                "텍스처 스트리밍 예산(MB): 스트리밍 텍스처 상주 합이 넘으면 우선순위가 낮은 텍스처부터 밉을 줄인다. "
+	                                                "0 = 자동 (VRAM 예산의 40%, 256MB~4GB)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 65536.0f), .CommandLine = { { L"--streaming-pool-mb", "" } } });
+	TAutoConsoleVariable<float> StreamingMaxUploadMBPerFrame("r.Streaming.MaxUploadMBPerFrame", 32.0f,
+	                                                         "텍스처 스트리밍 프레임당 새 요청 상한(MB, 비동기만 — 끊김 방지). 요청 하나는 상한보다 커도 보낸다",
+	                                                         EConsoleFlags::None, { .Range = std::pair(1.0f, 1024.0f) });
+	TAutoConsoleVariable<float> StreamingDropDelay("r.Streaming.DropDelay", 2.0f,
+	                                               "텍스처 스트리밍: 덜 세밀한 밉으로 내리기 전 기다리는 시간(초). 예산 초과면 기다리지 않는다",
+	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 60.0f) });
+	TAutoConsoleVariable<int32> StreamingMipMargin("r.Streaming.MipMargin", TextureStreamingMath::DefaultMipMargin,
+	                                               "텍스처 스트리밍 필요 밉 여유(밉 수): 계산한 필요 밉보다 이만큼 더 세밀하게 둔다 (이방성·UV 밀도 분포)",
+	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 4.0f) });
+	TAutoConsoleVariable<bool> StatStreaming("stat.Streaming", false, "화면 통계: 텍스처 밉 스트리밍 (stat streaming으로 켜고 끔)");
+	TAutoConsoleVariable<float> StreamingLogStats("r.Streaming.LogStats", 0.0f,
+	                                              "텍스처 스트리밍 + 리소스 메모리 통계를 이 간격(초)마다 로그로 (측정용, 0 = 끔)", EConsoleFlags::None,
+	                                              { .Range = std::pair(0.0f, 3600.0f) });
 
 	TAutoConsoleVariable<bool> RenderGraphCull("r.RenderGraph.Cull", true, "렌더 그래프: 결과를 아무도 읽지 않는 패스 제거 (끄면 모두 실행 — 비교용)");
 	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),
@@ -114,6 +141,29 @@ namespace RendererCVars
 	TAutoConsoleVariable<int32> RayTracingDebugMode("r.RayTracing.DebugMode", 0, "--debug-view rt-instances 내용: 0 인스턴스 색, 1 히트 알베도, 2 히트 조명",
 	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 2.0f) });
 
+	TAutoConsoleVariable<bool> SkyAtmosphere("r.SkyAtmosphere", true, "물리 기반 대기 (SkyAtmosphereComponent): 0이면 컴포넌트가 있어도 예전 하늘(하늘광 환경맵/절차적)로 그린다 (비교용)");
+	TAutoConsoleVariable<int32> SkyAtmosphereIblSamples("r.SkyAtmosphere.IblSamples", 64,
+	                                                    "대기 실시간 IBL 적분 표본 수 (조도/프리필터, 필터드 중요도 샘플링 — 굽기 IBL은 256)", EConsoleFlags::None,
+	                                                    { .Range = std::pair(8.0f, 1024.0f) });
+	TAutoConsoleVariable<bool> VolumetricClouds("r.VolumetricClouds", true, "볼류메트릭 구름 (VolumetricCloudComponent)", EConsoleFlags::None,
+	                                            { .CommandLine = { { L"--no-clouds", "0" } } });
+	TAutoConsoleVariable<int32> VolumetricCloudsDivisor("r.VolumetricClouds.Divisor", 4,
+	                                                    "구름 추적 해상도 = 씬(내부) 해상도 ÷ 이 값 (가로·세로 각각). 시간 누적 후 업샘플 합성", EConsoleFlags::None,
+	                                                    { .Range = std::pair(1.0f, 8.0f) });
+	TAutoConsoleVariable<int32> VolumetricCloudsSteps("r.VolumetricClouds.Steps", 48, "구름 레이마칭 최대 단계 수", EConsoleFlags::None,
+	                                                  { .Range = std::pair(8.0f, 256.0f) });
+	TAutoConsoleVariable<bool> VolumetricCloudsTemporal("r.VolumetricClouds.Temporal", true, "구름 시간 누적 (끄면 매 프레임 지터 없이 추적 — 비교용)");
+	TAutoConsoleVariable<bool> Water("r.Water", true, "소규모 물 (WaterBodyComponent) 패스", EConsoleFlags::None, { .CommandLine = { { L"--no-water", "0" } } });
+	TAutoConsoleVariable<bool> WaterScreenReflections("r.Water.SSR", true, "물 반사: 화면 공간 추적 (끄면 반사 캡처/하늘만)");
+	TAutoConsoleVariable<int32> HdrOutput("r.HDR.Output", 0,
+	                                      "HDR 디스플레이 출력: 0 끔(SDR), 1 자동(디스플레이가 HDR이면 HDR10), 2 HDR10(PQ/BT.2020), 3 scRGB(FP16). "
+	                                      "지원하지 않으면 SDR 유지. 앱(런타임·에디터)이 프레임마다 반영",
+	                                      EConsoleFlags::None,
+	                                      { .ValueNames = { "off", "auto", "hdr10", "scrgb" }, .Range = std::pair(0.0f, 3.0f), .CommandLine = { { L"--hdr-output", "" } } });
+	TAutoConsoleVariable<float> HdrPaperWhite("r.HDR.PaperWhite", 200.0f, "HDR 출력 종이 흰색(SDR 흰색·UI) 밝기 nits", EConsoleFlags::None,
+	                                          { .Range = std::pair(80.0f, 1000.0f) });
+	TAutoConsoleVariable<float> HdrMaxNits("r.HDR.MaxNits", 0.0f, "HDR 출력 최대 밝기 nits (톤매핑 하이라이트 상한, 0 = 디스플레이 값)", EConsoleFlags::None,
+	                                       { .Range = std::pair(0.0f, 10000.0f) });
 	namespace
 	{
 		uint32 GRenderGraphDumpSerial = 0;

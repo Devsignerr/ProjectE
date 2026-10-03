@@ -19,6 +19,8 @@ struct FModelImage
 	std::string        Name;
 	FImage             Image;   // glTF 디코딩 결과 (실패 시 IsValid() == false). 압축 후 비워진다
 	FCompressedTexture Texture; // 쿠킹 텍스처 (FAssetCache::CompressModelImages가 머티리얼 용도에 맞춰 채움)
+	// 쿠킹 모델 파일(FModelData::CookedPath) 안 이 텍스처 본문 위치 (밉 스트리밍이 밉 단위로 다시 읽는다). 0 = 없음
+	uint64 CookedPayloadOffset = 0;
 };
 
 // glTF 2.0 금속/거칠기 머티리얼. *Image는 FModelData::Images 인덱스(-1이면 없음)
@@ -75,6 +77,8 @@ struct FModelData
 	std::vector<int32>          RootNodes;
 	std::vector<FModelSkin>     Skins;
 	std::vector<FAnimationClip> Animations; // 채널 Node = Nodes 인덱스
+	// 이 데이터를 읽었거나 기록한 쿠킹 파일 (FAssetCache::LoadModelAsset). 비어 있으면 쿠킹본 없음 → 이미지 밉 스트리밍 안 함
+	std::filesystem::path CookedPath;
 };
 
 // cgltf 기반 glTF/GLB 로더.

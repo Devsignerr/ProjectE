@@ -1,4 +1,5 @@
 #include "Editor/EditorApplication.h"
+#include "Network/NetBindPolicy.h"
 
 #include "AI/AIModule.h"
 #include "AI/AISystem.h"
@@ -24,6 +25,7 @@
 #include "Editor/SceneEditOps.h"
 #include "Editor/TerrainDemoGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/HdrOutputController.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/StaticMesh.h"
@@ -91,6 +93,7 @@ FEditorApplication::~FEditorApplication() = default;
 
 bool FEditorApplication::OnInit()
 {
+	NetBindPolicy::Configure(IsAutomationRun()); // 자동 검증 네트워크 플레이는 같은 PC 전용 대기 (방화벽 확인 창 없음)
 	FEditorPreferences::Get().Initialize(); // 개인 환경설정 (%LOCALAPPDATA%/ProjectE/EditorPreferences, <Saved>/Config)
 	RegisterAudioTypes(); // 씬 로드 전에 (인스펙터/직렬화)
 	RegisterPhysicsTypes();
@@ -576,6 +579,7 @@ void FEditorApplication::OnRender()
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
 	Context.Scene->UpdateTransforms();
 
+	FHdrOutputController::Update(*Rhi); // HDR 출력 (Phase 49, r.HDR.Output): 에디터 UI는 종이 흰색 밝기, 뷰포트는 SDR
 	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	ViewportPanel.RenderScene(Context);
@@ -1225,6 +1229,35 @@ void FEditorApplication::DrawResourceMemoryStats()
 	}
 	ImGui::SameLine();
 	ConsoleVariableWidgets::Checkbox("자동 수거", "r.ResourceAutoCollect");
+
+	// 텍스처 밉 스트리밍 (Phase 53): 수거는 텍스처 전체를 해제, 스트리밍은 살아 있는 텍스처의 밉만 조절
+	if (ImGui::CollapsingHeader("텍스처 스트리밍", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		const FTextureStreamingStats Streaming = Resources.GetTextureStreamingStats();
+		if (Streaming.bActive && Streaming.PoolBytes > 0)
+		{
+			const float       Fraction = static_cast<float>(static_cast<double>(Streaming.ResidentBytes) / static_cast<double>(Streaming.PoolBytes));
+			const std::string Label    = std::format("풀 {} / 예산 {}", ResourceGc::FormatBytes(Streaming.ResidentBytes), ResourceGc::FormatBytes(Streaming.PoolBytes));
+			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, Streaming.bOverBudget ? FEditorTheme::Danger : (Fraction > 0.85f ? FEditorTheme::Warning : FEditorTheme::Accent));
+			ImGui::ProgressBar(std::min(Fraction, 1.0f), ImVec2(-1.0f, 0.0f), Label.c_str());
+			ImGui::PopStyleColor();
+		}
+		for (const std::string& Line : TextureStreaming::FormatStats(Streaming))
+		{
+			ImGui::TextUnformatted(Line.c_str());
+		}
+		ConsoleVariableWidgets::Checkbox("스트리밍", "r.Streaming");
+		ImGui::SameLine();
+		if (FConsoleVariable* Pool = FConsoleManager::Get().FindVariable("r.Streaming.PoolSizeMB"))
+		{
+			int32 PoolMb = Pool->GetInt();
+			ImGui::SetNextItemWidth(120.0f);
+			if (ImGui::InputInt("예산 MB (0 = 자동)", &PoolMb, 64, 256))
+			{
+				Pool->SetInt(std::max(0, PoolMb));
+			}
+		}
+	}
 }
 
 // ---------------------------------------------------------------- 셰이더 핫 리로드

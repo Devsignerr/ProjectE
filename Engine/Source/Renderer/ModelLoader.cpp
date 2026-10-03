@@ -255,7 +255,9 @@ FModelResources FModelLoader::CreateResources(FModelData Model, FResourceManager
 		FTextureHandle     Handle;
 		if (Image.Texture.IsValid())
 		{
-			Handle = Resources.CreateTexture(Image.Texture, FStringConv::ToWide(Model.Name + "/" + Image.Name));
+			// 쿠킹 모델 안 본문 위치를 알면 밉 스트리밍 대상 (모르면 CreateTexture와 같다)
+			const FTextureStreamSource Source{ Model.CookedPath, Model.CookedPath.empty() ? 0 : Image.CookedPayloadOffset };
+			Handle = Resources.CreateStreamingTexture(Image.Texture, Source, FStringConv::ToWide(Model.Name + "/" + Image.Name));
 		}
 		else if (Image.Image.IsValid())
 		{

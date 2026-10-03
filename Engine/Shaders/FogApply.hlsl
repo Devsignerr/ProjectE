@@ -2,7 +2,7 @@
 #include "Fullscreen.hlsli"
 #include "Fog.hlsli" // b0 / t1 / s0
 
-// 불투명 메시 + 하늘에 안개 적용 (FFogRenderer, 메인 패스 뒤·파티클 전). 블렌드 EBlendMode::Premultiplied:
+// 불투명 메시 + 하늘에 안개 적용 (FFogRenderer, 메인 패스 뒤·파티클 전). 대기가 있으면 불투명 표면에 공중 원근도 (Fog.hlsli EvaluateFog). 블렌드 EBlendMode::Premultiplied:
 //   색 = 출력 rgb + 원래 × (1 - 출력 a), 알파(TAA 반응형 마스크)는 그대로. 출력 = (더할 산란, 1 - 투과율)
 
 Texture2D<float> SceneDepth : register(t0);
@@ -28,6 +28,7 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 		const float4 World = mul(float4(Ndc, Depth, 1.0f), FogInvViewProjection);
 		WorldPosition      = World.xyz / World.w;
 	}
-	const float4 Fog = EvaluateFog(WorldPosition);
+	// 하늘은 공중 원근을 이미 포함한다 (대기 하늘 뷰 LUT) → 높이/볼류메트릭 안개만
+	const float4 Fog = Depth >= 1.0f ? EvaluateHeightAndVolumetricFog(WorldPosition) : EvaluateFog(WorldPosition);
 	return float4(Fog.rgb, 1.0f - Fog.a);
 }

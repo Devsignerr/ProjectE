@@ -28,6 +28,7 @@
 #include "Renderer/DecalMath.h"
 #include "Renderer/SceneAssetResolver.h"
 #include "Editor/EditorActions.h"
+#include "Scene/IrradianceVolume.h"
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
@@ -210,6 +211,21 @@ namespace
 				const FVector3 Top    = DecalToWorld.TransformPosition(FVector3(0.0f, 0.0f, 0.5f));
 				const FVector3 Bottom = DecalToWorld.TransformPosition(FVector3(0.0f, 0.0f, -0.5f));
 				Line(Top, Bottom, InnerColor);
+			}
+			if (const FIrradianceVolumeComponent* Volume = Registry.TryGet<FIrradianceVolumeComponent>(Entity))
+			{
+				// DDGI 프로브 볼륨 상자 (월드 축 정렬, 엔티티 위치가 가운데 — 프로브 자체는 컴포넌트 DebugProbes / r.DDGI.ShowProbes로 렌더러가 그린다)
+				const FVector3 Half = Volume->HalfExtents;
+				FVector3       Corners[8];
+				for (int32 Corner = 0; Corner < 8; ++Corner)
+				{
+					Corners[Corner] = Position + FVector3((Corner & 1) ? Half.X : -Half.X, (Corner & 2) ? Half.Y : -Half.Y, (Corner & 4) ? Half.Z : -Half.Z);
+				}
+				const int32 Edges[12][2] = { { 0, 1 }, { 2, 3 }, { 4, 5 }, { 6, 7 }, { 0, 2 }, { 1, 3 }, { 4, 6 }, { 5, 7 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
+				for (const auto& Edge : Edges)
+				{
+					Line(Corners[Edge[0]], Corners[Edge[1]], OuterColor);
+				}
 			}
 			if (const FSpotLightComponent* Spot = Registry.TryGet<FSpotLightComponent>(Entity))
 			{

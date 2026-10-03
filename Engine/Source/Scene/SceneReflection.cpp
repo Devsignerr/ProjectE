@@ -14,6 +14,7 @@
 #include "Scene/Building/BuildingScene.h"
 #include "Scene/SkyAtmosphere.h"
 #include "Scene/Ability/AbilityReflection.h"
+#include "Scene/IrradianceVolume.h"
 
 void RegisterSceneTypes()
 {
@@ -332,4 +333,6 @@ void RegisterSceneTypes()
 		.Property(&FAreaLightComponent::CookieScale, "CookieScale", "쿠키 반복").Tooltip("0이면 그 축은 한 점만 읽는다 (패닝과 함께 깜빡임)")
 		.Property(&FAreaLightComponent::CookiePanSpeed, "CookiePanSpeed", "쿠키 이동 (uv/초)")
 		.AsComponent();
+	// 동적 GI 프로브 볼륨 (Scene/IrradianceVolume.h, Phase 51 DDGI)
+	RegisterIrradianceVolumeTypes();
 }

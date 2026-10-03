@@ -62,6 +62,10 @@ namespace
 		RootParam_MaterialGraphTextures = 24, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위 — MaterialCommon.hlsli)
 		RootParam_RayTracedShadowMask   = 25, // t24 (RT 방향광 그림자 마스크 — PerFrame RayTracedShadows = 1일 때 불투명 메인 패스가 읽음, Phase 50)
 		RootParam_LightTextures         = 26, // 공간 3 t0~ (셰이더 가시 힙 전체 — LTC 표·IES·쿠키, Lighting.hlsli LightTextures, Phase 52)
+		RootParam_DdgiConstants         = 27, // b9 (DDGI 상수 — VolumeCount 0이면 셰이더는 예전 하늘 IBL 식, Phase 51)
+		RootParam_DdgiIrradiance        = 28, // t40 (DDGI 조도 아틀라스)
+		RootParam_DdgiDistance          = 29, // t41 (DDGI 거리 아틀라스)
+		RootParam_DdgiProbeData         = 30, // t42 (DDGI 프로브 상태)
 	};
 } // namespace
 
@@ -143,6 +147,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 3, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
 		D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(LightTexturesIndex == RootParam_LightTextures);
+	E_CHECK(RootSignature.AddConstantBufferView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL) == RootParam_DdgiConstants);
+	for (uint32 Index = 0; Index < 3; ++Index)
+	{
+		const uint32 DdgiIndex = RootSignature.AddDescriptorTable(
+			{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 40 + Index, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) },
+			D3D12_SHADER_VISIBILITY_PIXEL);
+		E_CHECK(DdgiIndex == RootParam_DdgiIrradiance + Index);
+	}
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 
@@ -180,7 +192,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary) || !Clouds.Init(*Rhi, ShaderLibrary) ||
-	    !RayTracingScene.Init(*Rhi, ShaderLibrary) || !RayTracingEffects.Init(*Rhi, ShaderLibrary))
+	    !RayTracingScene.Init(*Rhi, ShaderLibrary) || !RayTracingEffects.Init(*Rhi, ShaderLibrary) ||
+	    !Ddgi.Init(*Rhi, ShaderLibrary, ScreenPassRoot, RayTracingEffects))
 	{
 		return false;
 	}
@@ -268,6 +281,8 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Atmosphere:   return "대기";
 	case ERenderTimer::Clouds:       return "구름";
 	case ERenderTimer::Water:        return "물";
+	case ERenderTimer::DdgiTrace:    return "DDGI 추적";
+	case ERenderTimer::DdgiBlend:    return "DDGI 누적";
 	default:                        return "?";
 	}
 }
@@ -371,6 +386,10 @@ void FSceneRenderer::LogPerfCapture() const
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
 		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)
+	}
+	if (Stats.Ddgi.bActive)
+	{
+		LogDdgiStats();
 	}
 	E_LOG(LogRenderer, Display, "[성능] CPU ms: {}", Cpu);
 	E_LOG(LogRenderer, Display, "[성능] GPU ms: {}", Gpu);
@@ -560,7 +579,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
-	if (!RayTracingScene.ReloadShaders(bForceRecompile) || !RayTracingEffects.ReloadShaders(bForceRecompile))
+	if (!RayTracingScene.ReloadShaders(bForceRecompile) || !RayTracingEffects.ReloadShaders(bForceRecompile) || !Ddgi.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -606,6 +625,7 @@ void FSceneRenderer::Shutdown()
 	ScreenSpaceReflections.Shutdown();
 	ReflectionCaptures.Shutdown();
 	RayTracingScene.Shutdown();
+	Ddgi.Shutdown();
 	RayTracingEffects.Shutdown();
 	ScreenPassRoot.Shutdown();
 	for (auto& PassPipelines : MeshPipelines)
@@ -803,6 +823,11 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		SeenRtStatsSerial = Serial;
 		LogRayTracingStats();
 	}
+	if (const uint32 Serial = RendererCVars::GetDdgiStatsSerial(); Serial != SeenDdgiStatsSerial)
+	{
+		SeenDdgiStatsSerial = Serial;
+		LogDdgiStats();
+	}
 
 	// 그래프가 마지막에 출력 RTV를 바인딩한 채 끝나지 않을 수 있다 (출력 대상 바인딩 보장 — 에디터 오버레이가 이어서 그린다)
 	CommandList->OMSetRenderTargets(1, &Output.Rtv, FALSE, nullptr);
@@ -840,6 +865,21 @@ void FSceneRenderer::LogRayTracingStats() const
 		E_LOG(LogRenderer, Display, "[레이 트레이싱] VRAM 사용 {:.1f} MB (예산 {:.1f} MB)", static_cast<double>(Memory.LocalUsage) / (1024.0 * 1024.0),
 		      static_cast<double>(Memory.LocalBudget) / (1024.0 * 1024.0));
 	}
+}
+
+void FSceneRenderer::LogDdgiStats() const
+{
+	if (!bAllowRayTracing)
+	{
+		return;
+	}
+	const FDdgiStats& Info = Stats.Ddgi;
+	E_LOG(LogRenderer, Display,
+	      "[DDGI] 지원 {}, 활성 {} | 볼륨 {}, 프로브 {}, 이번 프레임 갱신 {} (광선 {}), 아틀라스 조도 {}x{} + 거리 {}x{} (이력 2장 + 상태) = {:.2f} MB | "
+	      "GPU ms: 추적 {:.3f}, 누적 {:.3f}",
+	      Ddgi.IsSupported(), Info.bActive, Info.Volumes, Info.Probes, Info.UpdatedProbes, Info.Rays, Info.IrradianceWidth, Info.IrradianceHeight,
+	      Info.DistanceWidth, Info.DistanceHeight, static_cast<double>(Info.AtlasBytes) / (1024.0 * 1024.0), Stats.GetGpuMs(ERenderTimer::DdgiTrace),
+	      Stats.GetGpuMs(ERenderTimer::DdgiBlend));
 }
 
 void FSceneRenderer::SetupGraph(FRenderGraph& Graph)
@@ -1205,9 +1245,11 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	const bool bRtReflections = bRtAllowed && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
 	                            PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
 	const bool bRtDebug = bRtAllowed && DebugView == DebugViewRtInstances;
+	// 동적 GI (Phase 51): 씬에 프로브 볼륨이 있으면 TLAS로 프로브 광선을 추적한다
+	const bool bDdgiWanted = bRtAllowed && RendererCVars::Ddgi.Get() && FDdgiRenderer::SceneHasVolumes(Scene);
 	FRGResourceRef TlasRef;
 	FrameRtDebugRef            = {};
-	if (bRtShadows || bRtReflections || bRtDebug)
+	if (bRtShadows || bRtReflections || bRtDebug || bDdgiWanted)
 	{
 		FRayTracingSceneOptions Options;
 		Options.CameraPosition     = Camera.GetPosition();
@@ -1239,6 +1281,39 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	// 그림자 마스크(t24): 메시 패스가 항상 묶으므로 모든 메시 패스가 읽기로 선언 (RT 그림자 누적이 사전 패스와 메인 패스 사이에 쓴다)
 	const FRGResourceRef RtShadowMaskRef = RayTracingEffects.BeginShadowFrame(Graph, Width, Height, bRtShadowsActive);
 
+	// 0.6) 동적 GI — DDGI (Phase 51): 프로브 광선 추적 + 누적 (TLAS 뒤·사전 패스 전 — 메시 패스는 이번 프레임 아틀라스를 읽는다).
+	//   볼륨이 없거나 RT를 못 쓰는 렌더도 상수(VolumeCount 0 + 디버그 뷰)는 올리고 1x1 기본 아틀라스를 묶는다 → 메시는 예전 식
+	{
+		FDdgiSettings DdgiSettings;
+		DdgiSettings.ProbeBudget       = static_cast<uint32>(std::max(0, RendererCVars::DdgiProbeBudget.Get()));
+		DdgiSettings.BounceIntensity   = std::max(0.0f, RendererCVars::DdgiBounceIntensity.Get());
+		DdgiSettings.ChangeThreshold   = std::max(0.0f, RendererCVars::DdgiChangeThreshold.Get());
+		DdgiSettings.MaxHitLocalLights = static_cast<uint32>(std::max(0, RendererCVars::DdgiMaxLocalLights.Get()));
+		DdgiSettings.ShowProbes        = RendererCVars::DdgiShowProbes.Get();
+		DdgiSettings.bDebugView        = DebugView == DebugViewGi;
+		DdgiSettings.LightDirection    = PerFrame.DirectionalLight.Direction;
+		DdgiSettings.LightRadiance     = PerFrame.DirectionalLight.Color * PerFrame.DirectionalLight.Intensity;
+		DdgiSettings.AmbientIntensity  = PerFrame.AmbientIntensity;
+		DdgiSettings.BoostFrames       = static_cast<uint32>(std::max(0, RendererCVars::DdgiBoostFrames.Get()));
+		DdgiSettings.BoostHysteresis   = RendererCVars::DdgiBoostHysteresis.Get();
+		const bool bDdgiActive = Ddgi.Prepare(Scene, DdgiSettings, bDdgiWanted && TlasRef.IsValid(), RenderCamera.GetViewProjectionMatrix(), Camera.GetPosition());
+		Ddgi.ImportFrame(Graph);
+		if (bDdgiActive)
+		{
+			FRayTracingLightingInputs DdgiLighting; // 반사 캡처는 아직 모으기 전 — 히트 반사는 하늘 (확산 프로브라 영향 작음)
+			DdgiLighting.LightDirection   = PerFrame.DirectionalLight.Direction;
+			DdgiLighting.LightRadiance    = PerFrame.DirectionalLight.Color * PerFrame.DirectionalLight.Intensity;
+			DdgiLighting.AmbientIntensity = PerFrame.AmbientIntensity;
+			DdgiLighting.LocalLights      = LocalLightRenderer.GetLightList();
+			DdgiLighting.LocalLightCount  = LocalLightRenderer.GetLightCount();
+			DdgiLighting.IblTable         = IblRenderer.GetLightingTable();
+			DdgiLighting.CaptureAtlas     = ReflectionCaptures.GetAtlasSrv();
+			Ddgi.AddUpdatePasses(Graph, RayTracingScene, TlasRef, DdgiLighting, TimerId(ERenderTimer::DdgiTrace), TimerId(ERenderTimer::DdgiBlend),
+			                     RendererCVars::RenderGraphAsyncCompute.Get() ? ERGQueue::AsyncCompute : ERGQueue::Graphics);
+		}
+		Stats.Ddgi = Ddgi.GetStats();
+	}
+
 	// 씬 타깃 (평소 상태: 색 PIXEL_SHADER_RESOURCE, 깊이 DEPTH_WRITE)
 	EnsureSceneColor(Width, Height);
 	OutRefs.Color    = Graph.ImportColor("SceneColor", *SceneColor);
@@ -1268,6 +1343,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 				Pass.Read(Ref, ERGAccess::SrvPixel);
 			}
 		}
+		Ddgi.DeclareShadingReads(Pass); // t40~t42 (DDGI 아틀라스 — 볼륨이 없으면 1x1 기본)
 	};
 	// 오클루전 단계 목록·간접 인자 (정점 셰이더 / ExecuteIndirect)
 	const auto DeclareOcclusion = [&](FRenderGraph::FPassBuilder& Pass, EMeshPhase Phase) {
@@ -1635,6 +1711,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		{
 			OcclusionCuller.AddFinishPass(Graph, OcclusionRefs);
 		}
+		// DDGI 프로브 구 표시 (볼륨 DebugProbes / r.DDGI.ShowProbes — 씬 깊이 테스트, 안개·TAA 전)
+		Ddgi.AddProbeDebugPass(Graph, *SceneColor, OutRefs.Color, OutRefs.Depth, TimerId(ERenderTimer::DdgiBlend));
 
 		// 구름 합성 (하늘 + 구름보다 먼 기하, 안개 적용 전 — 높이 안개는 하늘처럼 구름 위에도)
 		if (bClouds)
@@ -1837,7 +1915,7 @@ void FSceneRenderer::ApplyMotionHistory(bool bValid)
 
 void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphOutput& Output, const FSceneGraphRefs& Refs)
 {
-	if (DebugView == 0 || DebugView == DebugViewMip || !SceneColor || SceneColor->GetWidth() != Output.Output.Width ||
+	if (DebugView == 0 || DebugView == DebugViewMip || DebugView == DebugViewGi || !SceneColor || SceneColor->GetWidth() != Output.Output.Width ||
 	    SceneColor->GetHeight() != Output.Output.Height)
 	{
 		return;
@@ -1933,6 +2011,10 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 		Screen.CaptureAtlas       = ReflectionCaptures.GetAtlasSrv();
 		Screen.ScreenReflection   = ScreenSpaceReflections.GetResultSrv();
 		Screen.RayTracedShadowMask = RayTracingEffects.GetShadowMask().GetSrv();
+		Screen.DdgiConstants       = Ddgi.GetShadingConstants();
+		Screen.DdgiIrradiance      = Ddgi.GetIrradianceSrv();
+		Screen.DdgiDistance        = Ddgi.GetDistanceSrv();
+		Screen.DdgiProbeData       = Ddgi.GetProbeDataSrv();
 		const ETerrainPass TerrainPass =
 			bPrepassPass ? ETerrainPass::Prepass : (Pass == EMeshPass::MainDepthEqual ? ETerrainPass::MainDepthEqual : ETerrainPass::Main);
 		TerrainRenderer.RenderMain(TerrainPass, PerFrameAddress, ShadowAddress, ShadowRenderer, IblRenderer, LocalLightRenderer, Screen);
@@ -2059,6 +2141,10 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_RayTracedShadowMask, RayTracingEffects.GetShadowMask().GetSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_LightTextures, Rhi->GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_DdgiConstants, Ddgi.GetShadingConstants());
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_DdgiIrradiance, Ddgi.GetIrradianceSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_DdgiDistance, Ddgi.GetDistanceSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_DdgiProbeData, Ddgi.GetProbeDataSrv().Gpu);
 	// 안개(b6/t23)는 반투명 패스만 읽는다 → DrawTranslucentBatches가 바인딩
 }
 

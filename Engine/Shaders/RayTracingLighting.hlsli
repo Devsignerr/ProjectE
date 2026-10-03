@@ -190,11 +190,21 @@ float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 	const float  NdotV       = max(saturate(dot(Surface.N, Surface.V)), 1.0e-4f);
 	const float3 F0          = GetF0(Surface);
 	const float3 F           = F0 + (max(1.0f - Surface.Roughness, F0) - F0) * pow(1.0f - NdotV, 5.0f);
+#ifdef E_RT_HIT_DIFFUSE_IRRADIANCE
+	// 간접 확산 조도/π를 바꾸는 쪽 (Phase 51 DDGI 프로브 광선 = 이전 프레임 프로브 조도 → 다중 반사). 하늘 배율은 그 값에 포함
+	const float3 Diffuse     = E_RT_HIT_DIFFUSE_IRRADIANCE(Hit, Surface) * Surface.Albedo;
+	const float  DiffuseScale = 1.0f;
+#else
 	const float3 Diffuse     = RtIblDiffuse.SampleLevel(RtClampSampler, Surface.N, 0).rgb * Surface.Albedo;
+#define DiffuseScale RtAmbientIntensity
+#endif
 	const float3 R           = reflect(-Surface.V, Surface.N);
 	const float3 Prefiltered = SampleHitSpecularEnvironment(R, Surface.Roughness, Hit.Position);
 	const float2 Brdf        = RtIblBrdf.SampleLevel(RtClampSampler, float2(NdotV, Surface.Roughness), 0);
-	Color += ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * RtAmbientIntensity + Prefiltered * (F0 * Brdf.x + Brdf.y)) * Surface.Occlusion;
+	Color += ((1.0f - F) * (1.0f - Surface.Metallic) * Diffuse * DiffuseScale + Prefiltered * (F0 * Brdf.x + Brdf.y)) * Surface.Occlusion;
+#ifndef E_RT_HIT_DIFFUSE_IRRADIANCE
+#undef DiffuseScale
+#endif
 	return Color;
 }
 

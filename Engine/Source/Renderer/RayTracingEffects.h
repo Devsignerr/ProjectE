@@ -172,10 +172,16 @@ private:
 	};
 	std::unordered_map<uint64, std::unique_ptr<FVariantPipelines>> VariantPipelines;
 	void ReleaseVariants(bool bAll);
-	// 패스 공용 루트 인자 (뷰/조명 상수, TLAS·정보·머티리얼, 로컬 라이트/캡처, IBL/아틀라스, 바인드리스 표)
+
+public:
+	// ---- 다른 RT 패스(Phase 51 DDGI 프로브 광선)도 같은 루트를 쓴다: 루트 시그니처, 공용 루트 인자, 히트 조명 상수(b1) 업로드
+	const FRayTracingPassRoot& GetRoot() const { return Root; }
+	// 패스 공용 루트 인자 (뷰/조명 상수, TLAS·정보·머티리얼, 로컬 라이트/캡처, IBL/아틀라스, 바인드리스 표). ViewConstants = b0 (패스마다 형식이 다를 수 있다)
 	void BindRoot(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS ViewConstants, D3D12_GPU_VIRTUAL_ADDRESS LightingConstants,
 	              const FRayTracingScene& Scene, const FRayTracingLightingInputs& Lighting) const;
 	D3D12_GPU_VIRTUAL_ADDRESS UploadLighting(const FRayTracingLightingInputs& Lighting, uint32 MaxHitLocalLights, bool bHitShadows) const;
+
+private:
 
 	FD3D12RHI*          Rhi        = nullptr;
 	FShaderLibrary*     Library    = nullptr;

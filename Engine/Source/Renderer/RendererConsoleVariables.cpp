@@ -29,10 +29,11 @@ namespace RendererCVars
 	                                  { .CommandLine = { { L"--jitter", "1" } } });
 	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0,
 	                                      "화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림). mip = 텍스처 밉 스트리밍 상주 밉 색칠 (메시 패스가 고정 PBR 베이스 컬러 기준으로 "
-	                                      "빨강 = 필요한 밉이 없음, 초록 = 알맞음, 파랑 = 2밉 이상 여유, 회색 = 텍스처 없음/그래프 머티리얼). rt-* = 레이 트레이싱 반사/그림자 마스크/TLAS 인스턴스",
+	                                      "빨강 = 필요한 밉이 없음, 초록 = 알맞음, 파랑 = 2밉 이상 여유, 회색 = 텍스처 없음/그래프 머티리얼). rt-* = 레이 트레이싱 반사/그림자 마스크/TLAS 인스턴스, "
+	                                      "gi = 간접 확산광만 (메시 패스 — DDGI 볼륨 안은 프로브, 밖은 하늘 IBL)",
 	                                      EConsoleFlags::None,
-	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr", "mip", "rt-reflections", "rt-shadows", "rt-instances" },
-	                                        .Range       = std::pair(0.0f, 9.0f),
+	                                      { .ValueNames  = { "none", "normal", "velocity", "depth", "ao", "ssr", "mip", "rt-reflections", "rt-shadows", "rt-instances", "gi" },
+	                                        .Range       = std::pair(0.0f, 10.0f),
 	                                        .CommandLine = { { L"--debug-view", "" } } });
 	TAutoConsoleVariable<bool> ResourceAutoCollect("r.ResourceAutoCollect", true,
 	                                               "맵 전환·서브 씬 내림·에디터 씬 열기 뒤 쓰지 않는 메시/텍스처/머티리얼/모델/파티클 자동 수거 (끄면 비교용으로 쌓임 — r.CollectResources는 계속 동작)");
@@ -182,6 +183,46 @@ namespace RendererCVars
 	{
 		return GRenderGraphDumpSerial;
 	}
+	// ---- 동적 GI — DDGI (Phase 51)
+	TAutoConsoleVariable<bool> Ddgi("r.DDGI", true,
+	                                "동적 GI (IrradianceVolumeComponent 프로브 볼륨을 레이 트레이싱으로 갱신 → 간접 확산광). 볼륨이 있는 씬만, "
+	                                "RT가 켜진 렌더러만 (r.RayTracing). 끄면 하늘 IBL 조도 (비교용)",
+	                                EConsoleFlags::None, { .CommandLine = { { L"--no-ddgi", "0" }, { L"--ddgi", "1" } } });
+	TAutoConsoleVariable<int32> DdgiProbeBudget("r.DDGI.ProbeBudget", 1024,
+	                                            "DDGI 프레임당 갱신 프로브 전체 상한 (볼륨 프로브 수 비율로 나눔, 0 = 무제한). 줄이면 싸지만 조명 변화를 늦게 따라감. "
+	                                            "기본 1024 (1440p 측정: 6720 프로브 Demo_Apartment 추적 0.26 + 누적 0.34ms, 7프레임에 한 바퀴)",
+	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 16384.0f), .CommandLine = { { L"--ddgi-budget", "" } } });
+	TAutoConsoleVariable<float> DdgiBounceIntensity("r.DDGI.BounceIntensity", 1.0f,
+	                                                "DDGI 다중 반사: 프로브 광선 히트의 간접 확산(이전 프레임 프로브 조도) 배율 (0 = 한 번 반사만)", EConsoleFlags::None,
+	                                                { .Range = std::pair(0.0f, 2.0f) });
+	TAutoConsoleVariable<float> DdgiChangeThreshold("r.DDGI.ChangeThreshold", 0.3f,
+	                                                "DDGI 급변 판정: 프로브 텍셀 변화가 크기의 이 배를 넘으면 히스테리시스를 줄여 빨리 따라감 (시간대·조명 변화)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 10.0f) });
+	TAutoConsoleVariable<int32> DdgiMaxLocalLights("r.DDGI.MaxLocalLights", 16, "DDGI 프로브 광선 히트가 계산하는 로컬 라이트 상한 (카메라 가까운 순, 그림자 없음)",
+	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 256.0f) });
+	TAutoConsoleVariable<int32> DdgiShowProbes("r.DDGI.ShowProbes", -1,
+	                                           "DDGI 프로브 구 표시: -1 컴포넌트 DebugProbes 값, 0 끔, 1 조도, 2 거리, 3 상태 (초록 활성 / 빨강 벽 속 / 파랑 아직 없음)",
+	                                           EConsoleFlags::None, { .Range = std::pair(-1.0f, 3.0f), .CommandLine = { { L"--ddgi-probes", "" } } });
+	TAutoConsoleVariable<int32> DdgiBoostFrames("r.DDGI.LightChangeBoostFrames", 30,
+	                                            "DDGI 조명 변화 가속: 방향광(2도·10%)·하늘 배율(10%)이 크게 바뀌면 이 프레임 수 동안 히스테리시스를 낮춘다 "
+	                                            "(다중 반사 수렴이 느린 실내용, 0 = 끔)",
+	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 600.0f) });
+	TAutoConsoleVariable<float> DdgiBoostHysteresis("r.DDGI.LightChangeHysteresis", 0.7f, "DDGI 조명 변화 가속 중 히스테리시스 상한 (작을수록 빠르고 잡음)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 0.995f) });
+	namespace
+	{
+		uint32 GDdgiStatsSerial = 0;
+	}
+	uint32 GetDdgiStatsSerial()
+	{
+		return GDdgiStatsSerial;
+	}
+	FAutoConsoleCommand DdgiStats("r.DDGI.Stats", "다음 프레임 DDGI 통계(볼륨·프로브·갱신 수, 광선, 아틀라스 메모리, GPU 시간)를 로그로",
+	                              [](const std::vector<std::string>&, const FConsoleOutput& Output) {
+		                              ++GDdgiStatsSerial;
+		                              Output.Print("다음 프레임 DDGI 통계를 로그로 남깁니다");
+	                              });
+
 	FAutoConsoleCommand RenderGraphDump("r.RenderGraph.Dump", "다음 프레임 각 씬 렌더러의 렌더 그래프(패스 순서·큐·제거된 패스·전이 수·포크/조인·리소스 수명)를 로그로",
 	                                    [](const std::vector<std::string>&, const FConsoleOutput& Output) {
 		                                    ++GRenderGraphDumpSerial;

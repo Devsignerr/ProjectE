@@ -1,0 +1,14 @@
+{
+  "Name": "WhiteWall",
+  "BaseColorFactor": [0.8, 0.8, 0.78, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 0.0,
+  "Roughness": 0.85,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

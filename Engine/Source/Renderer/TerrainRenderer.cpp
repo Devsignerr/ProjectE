@@ -53,6 +53,10 @@ namespace
 		TerrainParam_ScreenReflection,    // t22 테이블
 		TerrainParam_RayTracedShadowMask, // t24 테이블 (Phase 50 RT 방향광 그림자 — PerFrame RayTracedShadows)
 		TerrainParam_LightTextures,       // 공간 3 t0~ (셰이더 가시 힙 전체 — 면광원 LTC·IES·쿠키, Phase 52)
+		TerrainParam_DdgiConstants,       // b9 (Phase 51 DDGI 상수 — 메시 루트 27~30와 같은 레지스터)
+		TerrainParam_DdgiIrradiance,      // t40 테이블
+		TerrainParam_DdgiDistance,        // t41 테이블
+		TerrainParam_DdgiProbeData,       // t42 테이블
 	};
 
 	constexpr uint32 MaxChunkCells = 64;
@@ -175,6 +179,12 @@ bool FTerrainRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, F
 	Index = RootSignature.AddDescriptorTable(
 		{ FRange::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 3, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) }, Pixel);
 	E_CHECK(Index == TerrainParam_LightTextures);
+	Index = RootSignature.AddConstantBufferView(9, 0, Pixel);
+	E_CHECK(Index == TerrainParam_DdgiConstants);
+	VolatileTable(40);
+	VolatileTable(41);
+	Index = VolatileTable(42);
+	E_CHECK(Index == TerrainParam_DdgiProbeData);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_ANISOTROPIC));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	D3D12_STATIC_SAMPLER_DESC ShadowSampler =
@@ -820,6 +830,10 @@ void FTerrainRenderer::RenderMain(ETerrainPass Pass, D3D12_GPU_VIRTUAL_ADDRESS P
 	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_ScreenReflection, Screen.ScreenReflection.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_RayTracedShadowMask, Screen.RayTracedShadowMask.Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_LightTextures, Rhi->GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
+	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_DdgiConstants, Screen.DdgiConstants);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_DdgiIrradiance, Screen.DdgiIrradiance.Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_DdgiDistance, Screen.DdgiDistance.Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(TerrainParam_DdgiProbeData, Screen.DdgiProbeData.Gpu);
 	CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_PerFrame, PerFrame);
 	CommandList->SetGraphicsRootConstantBufferView(TerrainParam_Shadow, ShadowConstants);

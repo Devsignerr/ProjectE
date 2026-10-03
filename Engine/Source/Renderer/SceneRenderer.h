@@ -22,6 +22,7 @@
 #include "Renderer/TemporalAA.h"
 #include "Renderer/AmbientOcclusion.h"
 #include "Renderer/DecalRenderer.h"
+#include "Renderer/DdgiRenderer.h"
 #include "Renderer/DynamicResolution.h"
 #include "Renderer/FogRenderer.h"
 #include "Renderer/ReflectionCaptures.h"
@@ -77,6 +78,8 @@ enum class ERenderTimer : uint32
 	Atmosphere,       // 대기 LUT + 실시간 IBL 갱신 (Phase 49)
 	Clouds,           // 볼류메트릭 구름 추적 + 누적 + 합성
 	Water,            // 물 (굴절 복사 + 수면 + 물속)
+	DdgiTrace,        // DDGI 프로브 광선 추적 (Phase 51)
+	DdgiBlend,        // DDGI 조도/거리/상태 누적 (+ 프로브 구 표시)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -107,6 +110,8 @@ struct FSceneRenderStats
 	bool                  bRayTracedShadows     = false;
 	bool                  bRayTracedReflections = false;
 	FRayTracingSceneStats RayTracing;
+	// 동적 GI — DDGI (Phase 51): 볼륨·프로브·갱신 수, 아틀라스 메모리 (r.DDGI.Stats로 로그)
+	FDdgiStats Ddgi;
 
 	float CpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // 이번 프레임 CPU 기록 시간
 	float GpuMs[static_cast<uint32>(ERenderTimer::Count)] = {}; // GPU 시간 (타임스탬프, 몇 프레임 늦은 값)
@@ -196,6 +201,8 @@ public:
 	static constexpr uint32 DebugViewRtReflections = 7;
 	static constexpr uint32 DebugViewRtShadows     = 8;
 	static constexpr uint32 DebugViewRtInstances   = 9;
+	// 동적 GI (Phase 51): 10 = 간접 확산광만 (메시 패스가 색칠 — 화면 패스 없음, --debug-view gi)
+	static constexpr uint32 DebugViewGi = 10;
 	uint32               DebugView = 0;
 	// 서브픽셀 투영 지터 (Halton 2,3 8개). TAA가 켜질 때만 켠다 — 혼자 켜면 화면이 떨린다 (--jitter: 확인용 강제)
 	bool                 bTemporalJitter = false;
@@ -295,6 +302,9 @@ private:
 	FD3D12DescriptorHandle FrameRtDebugSrv;
 	uint32                 SeenRtStatsSerial = 0;
 	void                   LogRayTracingStats() const;
+	FDdgiRenderer          Ddgi;              // 동적 GI 프로브 볼륨 (Phase 51)
+	uint32                 SeenDdgiStatsSerial = 0;
+	void                   LogDdgiStats() const;
 	FSkyAtmosphereRenderer SkyAtmosphere; // 물리 기반 대기 (Phase 49)
 	FWaterRenderer       Water;            // 소규모 물 (Phase 49)
 	FVolumetricCloudRenderer Clouds;       // 볼류메트릭 구름 (Phase 49)

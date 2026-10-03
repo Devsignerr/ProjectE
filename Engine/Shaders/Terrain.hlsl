@@ -209,7 +209,8 @@ float4 TerrainPS(FTerrainPixelInput Input) : SV_Target
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;
 	Color += EvaluateLocalLights(Surface, Input.Position.xy, Input.WorldPosition, N);
-	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy); // 캡처/SSR/하늘
+	Color = DdgiDebugView != 0 ? 0.0f : Color; // --debug-view gi: 간접 확산만 (Phase 51)
+	Color += EvaluateImageBasedLighting(Surface, Input.WorldPosition, Input.Position.xy); // 캡처/SSR/하늘 (+ DDGI 프로브 볼륨 확산)
 
 	if (VisualizeCascades != 0)
 	{

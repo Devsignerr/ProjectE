@@ -106,6 +106,7 @@ bool FRayTracingPassRoot::Init(ID3D12Device* Device)
 	E_CHECK(RootSignature.AddDescriptorTable(
 		        { FRange::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 2, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) }) ==
 	        Root_BindlessBuffers);
+	E_CHECK(RootSignature.AddShaderResourceView(17) == Root_GraphParams);
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_SHADER_VISIBILITY_ALL));
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
 	RootSignature.AddStaticSampler(FRange::MakeStaticSampler(2, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_SHADER_VISIBILITY_ALL));
@@ -127,7 +128,7 @@ bool FRayTracingEffects::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary)
 	{
 		return true;
 	}
-	if (!Root.Init(Rhi->GetDevice().GetDevice()) || !CreatePipelines(Pipelines, false))
+	if (!Root.Init(Rhi->GetDevice().GetDevice()) || !CreatePipelines(Pipelines, false, nullptr))
 	{
 		E_LOG(LogRenderer, Error, "레이 트레이싱 화면 패스 파이프라인 생성 실패 — 레이 트레이싱 효과를 끕니다");
 		return true;
@@ -144,6 +145,7 @@ void FRayTracingEffects::Shutdown()
 	}
 	ShadowHistory[0].reset();
 	ShadowHistory[1].reset();
+	ReleaseVariants(true);
 	Pipelines.ShadowTrace.Shutdown();
 	Pipelines.ShadowFilter.Shutdown();
 	Pipelines.ShadowResolve.Shutdown();
@@ -153,7 +155,7 @@ void FRayTracingEffects::Shutdown()
 	Rhi = nullptr;
 }
 
-bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile)
+bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile, const FRayTracingGraphVariant* Variant)
 {
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	const auto    Load   = [&](const wchar_t* File, const wchar_t* Entry, EShaderStage Stage) {
@@ -162,6 +164,12 @@ bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile)
         Desc.EntryPoint  = Entry;
         Desc.Stage       = Stage;
         Desc.ShaderModel = L"6_5"; // 인라인 RayQuery (정점 셰이더도 같은 파일의 RT 선언을 포함하므로 같은 모델)
+        if (Variant != nullptr && Stage == EShaderStage::Pixel)
+        {
+            // 그래프 머티리얼 변형: 생성 함수 묶음 (내용 해시가 캐시 키·쿠킹 파일명에 들어간다 — 같은 집합이면 재사용)
+            Desc.Defines.push_back(L"E_RT_GRAPH_MATERIALS");
+            Desc.VirtualFiles.push_back({ L"RayTracingGraphMaterials.generated.hlsli", Variant->Source });
+        }
         if (bForceRecompile && !Library->CookShader(Desc))
         {
             return ComPtr<IDxcBlob>();
@@ -190,6 +198,14 @@ bool FRayTracingEffects::CreatePipelines(FPipelines& Out, bool bForceRecompile)
 		}
 		return Pipeline.InitGraphics(Device, Desc, Name);
 	};
+	if (Variant != nullptr)
+	{
+		// 변형은 머티리얼을 평가하는 추적 패스만 (필터·누적은 기본 파이프라인)
+		return Create(Out.ShadowTrace, L"RayTracedShadows.hlsl", L"PSTrace", { ShadowTraceFormat }, L"RtShadowTraceGraph") &&
+		       Create(Out.ReflectionTrace, L"RayTracedReflections.hlsl", L"PSTrace",
+		              { FScreenSpaceReflections::ResultFormat, FScreenSpaceReflections::MotionFormat }, L"RtReflectionTraceGraph") &&
+		       Create(Out.Debug, L"RayTracingDebug.hlsl", L"PSInstances", { DebugFormat }, L"RtDebugInstancesGraph");
+	}
 	return Create(Out.ShadowTrace, L"RayTracedShadows.hlsl", L"PSTrace", { ShadowTraceFormat }, L"RtShadowTrace") &&
 	       Create(Out.ShadowFilter, L"RayTracedShadows.hlsl", L"PSFilter", { ShadowMaskFormat }, L"RtShadowFilter") &&
 	       Create(Out.ShadowResolve, L"RayTracedShadows.hlsl", L"PSResolve", { ShadowMaskFormat }, L"RtShadowResolve") &&
@@ -204,8 +220,9 @@ bool FRayTracingEffects::ReloadShaders(bool bForceRecompile)
 	{
 		return true;
 	}
+	ReleaseVariants(true); // 그래프 변형은 다음 사용 때 다시 컴파일
 	FPipelines NewPipelines;
-	if (!CreatePipelines(NewPipelines, bForceRecompile))
+	if (!CreatePipelines(NewPipelines, bForceRecompile, nullptr))
 	{
 		E_LOG(LogRenderer, Error, "레이 트레이싱 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
@@ -218,6 +235,54 @@ bool FRayTracingEffects::ReloadShaders(bool bForceRecompile)
 		Rhi->DeferRelease(Next->Detach());
 	}
 	return true;
+}
+
+void FRayTracingEffects::ReleaseVariants(bool bAll)
+{
+	const uint64 FrameNumber = Rhi->GetFrameNumber();
+	for (auto It = VariantPipelines.begin(); It != VariantPipelines.end();)
+	{
+		if (bAll || It->second->LastUsedFrame + 600 < FrameNumber)
+		{
+			for (FD3D12PipelineState* Pipeline : { &It->second->Pipelines.ShadowTrace, &It->second->Pipelines.ReflectionTrace, &It->second->Pipelines.Debug })
+			{
+				if (Pipeline->Get() != nullptr)
+				{
+					Rhi->DeferRelease(Pipeline->Detach());
+				}
+			}
+			It = VariantPipelines.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+}
+
+const FRayTracingEffects::FPipelines& FRayTracingEffects::SelectPipelines(const FRayTracingScene& Scene)
+{
+	const FRayTracingGraphVariant& Variant = Scene.GetGraphVariant();
+	if (Variant.Key == 0)
+	{
+		return Pipelines;
+	}
+	if (VariantPipelines.find(Variant.Key) == VariantPipelines.end())
+	{
+		ReleaseVariants(false); // 오래 안 쓴 변형 정리 (새 변형을 만들 때만 — 맵에 넣기 전에)
+	}
+	std::unique_ptr<FVariantPipelines>& Entry = VariantPipelines[Variant.Key];
+	if (!Entry)
+	{
+		Entry = std::make_unique<FVariantPipelines>();
+		Entry->bFailed = !CreatePipelines(Entry->Pipelines, false, &Variant);
+		if (Entry->bFailed)
+		{
+			E_LOG(LogRenderer, Warning, "레이 트레이싱 그래프 머티리얼 변형 컴파일 실패 (키 {:016x}) — 그래프 머티리얼 히트는 회색 근사", Variant.Key);
+		}
+	}
+	Entry->LastUsedFrame = Rhi->GetFrameNumber();
+	return Entry->bFailed ? Pipelines : Entry->Pipelines;
 }
 
 void FRayTracingEffects::EnsureShadowTargets(uint32 Width, uint32 Height)
@@ -293,6 +358,7 @@ void FRayTracingEffects::BindRoot(ID3D12GraphicsCommandList* CommandList, D3D12_
 	}
 	CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_BindlessTextures, HeapStart);
 	CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_BindlessBuffers, HeapStart);
+	CommandList->SetGraphicsRootShaderResourceView(FRayTracingPassRoot::Root_GraphParams, Scene.GetGraphParamBuffer());
 }
 
 FRGResourceRef FRayTracingEffects::AddShadowPasses(FRenderGraph& Graph, const FRayTracingScene& Scene, const FRayTracingViewInputs& View,
@@ -325,20 +391,21 @@ FRGResourceRef FRayTracingEffects::AddShadowPasses(FRenderGraph& Graph, const FR
 	const FD3D12DescriptorHandle NormalSrv   = View.SceneNormal->GetSrv();
 	const FD3D12DescriptorHandle VelocitySrv = View.Velocity->GetSrv();
 
-	// 1) 추적
+	// 1) 추적 (그래프 머티리얼 Masked 알파 테스트 → 변형 파이프라인)
 	{
+		ID3D12PipelineState* const TracePipeline = SelectPipelines(Scene).ShadowTrace.Get();
 		FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 그림자 추적");
 		Scene.DeclareTraceReads(Pass, Refs.Tlas);
 		Pass.Read(Refs.Depth, ERGAccess::SrvPixel)
 			.Read(Refs.Normal, ERGAccess::SrvPixel)
 			.Write(TraceRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
 			.Timer(Timer)
-			.Execute([this, &Scene, Lighting, Trace, ViewAddress, LightingAddress, DepthSrv, NormalSrv, Width, Height](FRGContext& Context) {
+			.Execute([this, &Scene, Lighting, Trace, TracePipeline, ViewAddress, LightingAddress, DepthSrv, NormalSrv, Width, Height](FRGContext& Context) {
 				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
 				const D3D12_CPU_DESCRIPTOR_HANDLE Rtv  = Trace->GetRtv();
 				CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
 				BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
-				CommandList->SetPipelineState(Pipelines.ShadowTrace.Get());
+				CommandList->SetPipelineState(TracePipeline);
 				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
 				CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 1, NormalSrv.Gpu);
 				DrawFullscreenTriangle(CommandList, Width, Height);
@@ -417,7 +484,8 @@ void FRayTracingEffects::AddReflectionTracePass(FRenderGraph& Graph, const FRayT
 	const FD3D12DescriptorHandle DecalNormal = View.DecalNormal->GetSrv();
 	const FD3D12DescriptorHandle DecalMat    = View.DecalMaterial->GetSrv();
 
-	FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 반사 추적");
+	ID3D12PipelineState* const TracePipeline = SelectPipelines(Scene).ReflectionTrace.Get();
+	FRenderGraph::FPassBuilder Pass        = Graph.AddPass("RT 반사 추적");
 	Scene.DeclareTraceReads(Pass, Refs.Tlas);
 	Pass.Read(Refs.Depth, ERGAccess::SrvPixel)
 		.Read(Refs.Normal, ERGAccess::SrvPixel)
@@ -426,13 +494,13 @@ void FRayTracingEffects::AddReflectionTracePass(FRenderGraph& Graph, const FRayT
 		.Write(OutResult, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
 		.Write(OutMotion, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
 		.Timer(Timer)
-		.Execute([this, &Scene, Lighting, Result, Motion, ViewAddress, LightingAddress, DepthSrv, NormalSrv, DecalNormal, DecalMat, Width,
+		.Execute([this, &Scene, Lighting, Result, Motion, TracePipeline, ViewAddress, LightingAddress, DepthSrv, NormalSrv, DecalNormal, DecalMat, Width,
 	              Height](FRGContext& Context) {
 			ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
 			const D3D12_CPU_DESCRIPTOR_HANDLE Targets[]   = { Result->GetRtv(), Motion->GetRtv() };
 			CommandList->OMSetRenderTargets(2, Targets, FALSE, nullptr);
 			BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
-			CommandList->SetPipelineState(Pipelines.ReflectionTrace.Get());
+			CommandList->SetPipelineState(TracePipeline);
 			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 0, DepthSrv.Gpu);
 			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 1, NormalSrv.Gpu);
 			CommandList->SetGraphicsRootDescriptorTable(FRayTracingPassRoot::Root_Screen0 + 2, DecalNormal.Gpu);
@@ -454,16 +522,17 @@ FRGResourceRef FRayTracingEffects::AddDebugPass(FRenderGraph& Graph, const FRayT
 	const FRGResourceRef    OutRef = Graph.CreateTexture("RtDebug", FRGTextureDesc::MakeRenderTarget(Width, Height, DebugFormat));
 	const FRGPooledTexture* Out    = Graph.GetTexture(OutRef);
 	OutSrv                         = Out->Srv;
-	FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 디버그 (인스턴스)");
+	ID3D12PipelineState* const DebugPipeline = SelectPipelines(Scene).Debug.Get();
+	FRenderGraph::FPassBuilder Pass          = Graph.AddPass("RT 디버그 (인스턴스)");
 	Scene.DeclareTraceReads(Pass, Refs.Tlas);
 	Pass.Write(OutRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
 		.Timer(Timer)
-		.Execute([this, &Scene, Lighting, Out, ViewAddress, LightingAddress, Width, Height](FRGContext& Context) {
+		.Execute([this, &Scene, Lighting, Out, DebugPipeline, ViewAddress, LightingAddress, Width, Height](FRGContext& Context) {
 			ID3D12GraphicsCommandList*        CommandList = Context.CommandList;
 			const D3D12_CPU_DESCRIPTOR_HANDLE Rtv         = Out->GetRtv();
 			CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
 			BindRoot(CommandList, ViewAddress, LightingAddress, Scene, Lighting);
-			CommandList->SetPipelineState(Pipelines.Debug.Get());
+			CommandList->SetPipelineState(DebugPipeline);
 			DrawFullscreenTriangle(CommandList, Width, Height);
 		});
 	return OutRef;

@@ -1178,6 +1178,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		Options.SkinnedMaxDistance = RendererCVars::RayTracingSkinnedDistance.Get();
 		Options.bFoliage           = RendererCVars::RayTracingFoliage.Get();
 		Options.bCompaction        = RendererCVars::RayTracingCompaction.Get();
+		Options.bGraphMaterials    = RendererCVars::RayTracingGraphMaterials.Get();
 		Options.MaxBuildsPerFrame  = static_cast<uint32>(std::max(1, RendererCVars::RayTracingMaxBuilds.Get()));
 		BeginCpuTimer(ERenderTimer::RayTracingBuild);
 		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options);

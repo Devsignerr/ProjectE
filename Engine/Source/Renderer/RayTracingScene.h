@@ -11,6 +11,7 @@
 #include "Scene/ResourceHandles.h"
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -20,6 +21,7 @@ class FResourceManager;
 class FShaderLibrary;
 class FStaticMesh;
 struct FMaterial;
+struct FMaterialShader;
 
 // ---- GPU 구조 (RayTracingCommon.hlsli와 1:1)
 
@@ -35,7 +37,10 @@ struct FRayTracingInstanceGpu
 };
 static_assert(sizeof(FRayTracingInstanceGpu) == 32);
 
-// 히트 머티리얼 (고정 PBR 상수 + 텍스처 테이블 힙 칸 — MaterialDefault.hlsli를 E_MATERIAL_CUSTOM_RESOURCES로 바인드리스 평가)
+// 히트 머티리얼 (고정 PBR 상수 + 텍스처 테이블 힙 칸 — MaterialDefault.hlsli를 E_MATERIAL_CUSTOM_RESOURCES로 바인드리스 평가).
+// 그래프 머티리얼: GraphSlot ≥ 1이면 RT 셰이더 그래프 변형(E_RT_GRAPH_MATERIALS)이 생성 함수(슬롯별)를 부른다 — 상수 = 그래프 파라미터 버퍼
+// [GraphParams] = 머리(시간, 알파 컷오프) + [GraphParams + 1 ..] = 파라미터, 텍스처 = GraphTextureTable. 변형이 없으면(컴파일 실패/끔)
+// 위 고정 PBR 필드(회색 근사 + 기본 텍스처)로 평가한다
 struct FRayTracingMaterialGpu
 {
 	FVector4 BaseColorFactor   = FVector4::OneVector;
@@ -47,12 +52,24 @@ struct FRayTracingMaterialGpu
 	float    AlphaCutoff       = 0.5f;
 	uint32   TextureTable      = 0; // 힙 칸 (연속 5칸: 베이스/금속거칠기/노멀/AO/발광)
 	uint32   Flags             = 0; // MaterialFlag*
-	uint32   Padding[2]        = {};
+	uint32   GraphSlot         = 0; // 0 = 고정 PBR, 1~ = 이번 프레임 그래프 셰이더 슬롯 (해시 순)
+	uint32   GraphParams       = 0; // 그래프 파라미터 버퍼(float4) 시작
+	uint32   GraphTextureTable = 0; // 그래프 텍스처 테이블 힙 칸 (FMaterial::TextureTable)
+	uint32   Padding[3]        = {};
 
-	static constexpr uint32 MaterialFlagGraph  = 1u << 0; // 그래프 머티리얼 → 고정 PBR 근사(회색) — 그래프 히트 셰이더는 후속(상태 객체)
+	static constexpr uint32 MaterialFlagGraph  = 1u << 0; // 그래프 머티리얼 (변형이 없으면 회색 근사)
 	static constexpr uint32 MaterialFlagMasked = 1u << 1;
 };
-static_assert(sizeof(FRayTracingMaterialGpu) == 64);
+static_assert(sizeof(FRayTracingMaterialGpu) == 80);
+
+// 이번 프레임 그래프 머티리얼 RT 변형: 장면 TLAS에 들어간 그래프 셰이더(해시 순 = 슬롯 1~)의 생성 함수를 이어 붙인 가상 포함 파일.
+//   Key = 해시 목록의 해시 (같은 집합이면 같은 변형 — 셰이더 라이브러리 캐시/쿠킹 파일·PSO 공유). Key 0 = 그래프 머티리얼 없음
+struct FRayTracingGraphVariant
+{
+	uint64      Key = 0;
+	std::string Source; // RayTracingGraphMaterials.generated.hlsli
+	uint32      SlotCount = 0;
+};
 
 struct FRayTracingSceneOptions
 {
@@ -63,6 +80,8 @@ struct FRayTracingSceneOptions
 	uint32   MaxBuildsPerFrame    = 32;       // 새 BLAS 빌드 수 상한 (끊김 방지 — 나머지는 다음 프레임, 그동안 TLAS에 없음)
 	uint64   MaxBuildTriangles    = 2000000;  // 프레임당 새 BLAS 삼각형 상한
 	bool     bCompaction          = true;     // 정적 BLAS 압축 (빌드 → 몇 프레임 뒤 크기 읽기 → 복사)
+	bool     bGraphMaterials      = true;     // 그래프 머티리얼 히트를 생성 함수로 (끄면 회색 근사)
+	uint32   MaxGraphSlots        = 32;       // 한 변형에 넣을 그래프 셰이더 상한 (넘치면 나머지는 회색 근사)
 };
 
 struct FRayTracingSceneStats
@@ -126,6 +145,8 @@ public:
 	D3D12_GPU_VIRTUAL_ADDRESS    GetTlasAddress() const { return TlasAddress; }
 	D3D12_GPU_VIRTUAL_ADDRESS    GetInstanceBuffer() const { return InstanceBufferAddress; }
 	D3D12_GPU_VIRTUAL_ADDRESS    GetMaterialBuffer() const { return MaterialBufferAddress; }
+	D3D12_GPU_VIRTUAL_ADDRESS    GetGraphParamBuffer() const { return GraphParamAddress; }
+	const FRayTracingGraphVariant& GetGraphVariant() const { return GraphVariant; }
 	uint32                       GetInstanceCount() const { return static_cast<uint32>(TlasDescs.size()); }
 	const FRayTracingSceneStats& GetStats() const { return Stats; }
 
@@ -218,7 +239,7 @@ private:
 	void           EvictUnused();
 	FStaticBlas*   FindOrCreateStatic(const FStaticMesh& Mesh, FMeshHandle Handle, uint32 Lod);
 	FSkinnedBlas*  FindOrCreateSkinned(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle);
-	uint32         RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources);
+	uint32         RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources, bool bGraphMaterials);
 	bool           EnsureBuffer(ComPtr<ID3D12Resource>& Buffer, uint64& Capacity, uint64 Size, D3D12_RESOURCE_STATES State, const wchar_t* Name);
 	ComPtr<ID3D12Resource> CreateBuffer(uint64 Size, D3D12_HEAP_TYPE Heap, D3D12_RESOURCE_FLAGS Flags, D3D12_RESOURCE_STATES State, const wchar_t* Name) const;
 	FD3D12DescriptorHandle CreateRawSrv(ID3D12Resource* Resource, uint64 SizeInBytes);
@@ -241,6 +262,11 @@ private:
 	std::vector<FRayTracingInstanceGpu>         InstanceInfos;
 	std::vector<FRayTracingMaterialGpu>         MaterialInfos;
 	std::unordered_map<const FMaterial*, uint32> MaterialIndices;
+	std::vector<FVector4>                       GraphParams;       // 그래프 머티리얼 머리 + 파라미터 (이번 프레임)
+	std::vector<std::pair<uint32, std::shared_ptr<const FMaterialShader>>> GraphMaterialShaders; // (머티리얼 표 번호, 셰이더) — 슬롯은 Prepare 끝에 해시 순으로
+	FRayTracingGraphVariant                     GraphVariant;
+	D3D12_GPU_VIRTUAL_ADDRESS                   GraphParamAddress = 0;
+	void                                        BuildGraphVariant(const FRayTracingSceneOptions& Options);
 	std::vector<FBuildOp>                       BuildOps;
 	std::vector<FSkinOp>                        SkinOps;
 	std::vector<FCompactOp>                     CompactOps;

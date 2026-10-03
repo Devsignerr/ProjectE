@@ -45,6 +45,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> RayTracingSkinnedDistance;   // r.RayTracing.Skinned.MaxDistance
 	extern TAutoConsoleVariable<bool>  RayTracingFoliage;           // r.RayTracing.Foliage
 	extern TAutoConsoleVariable<bool>  RayTracingCompaction;        // r.RayTracing.Compaction
+	extern TAutoConsoleVariable<bool>  RayTracingGraphMaterials;    // r.RayTracing.GraphMaterials
 	extern TAutoConsoleVariable<int32> RayTracingMaxBuilds;         // r.RayTracing.MaxBuildsPerFrame
 	extern TAutoConsoleVariable<float> RayTracingShadowSunAngle;    // r.RayTracing.Shadows.SunAngle
 	extern TAutoConsoleVariable<float> RayTracingShadowBias;        // r.RayTracing.Shadows.NormalBias

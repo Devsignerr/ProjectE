@@ -8,9 +8,11 @@
 #include "Renderer/RenderGraph/RenderGraph.h"
 
 #include <memory>
+#include <unordered_map>
 
 class FD3D12RHI;
 class FRayTracingScene;
+struct FRayTracingGraphVariant;
 class FShaderLibrary;
 
 // 레이 트레이싱 화면 패스 공용 루트 시그니처 (그래픽스 — 전체 화면 픽셀 셰이더에서 인라인 RayQuery).
@@ -37,6 +39,7 @@ public:
 		Root_CaptureAtlas     = Root_Ibl + 1,
 		Root_BindlessTextures = Root_CaptureAtlas + 1,
 		Root_BindlessBuffers  = Root_BindlessTextures + 1,
+		Root_GraphParams      = Root_BindlessBuffers + 1, // t17 그래프 머티리얼 파라미터 (루트 SRV, float4)
 	};
 	static constexpr uint32 ScreenCount = 8;
 
@@ -157,7 +160,18 @@ private:
 		FD3D12PipelineState ReflectionTrace;
 		FD3D12PipelineState Debug;
 	};
-	bool CreatePipelines(FPipelines& Out, bool bForceRecompile);
+	// Variant: 그래프 머티리얼 변형 (디파인 E_RT_GRAPH_MATERIALS + 가상 파일), nullptr = 기본
+	bool CreatePipelines(FPipelines& Out, bool bForceRecompile, const FRayTracingGraphVariant* Variant);
+	// 이번 프레임 씬의 그래프 변형 파이프라인 (처음 쓸 때 컴파일 — 실패하면 기본 = 그래프 머티리얼 회색 근사)
+	const FPipelines& SelectPipelines(const FRayTracingScene& Scene);
+	struct FVariantPipelines
+	{
+		FPipelines Pipelines;
+		bool       bFailed       = false;
+		uint64     LastUsedFrame = 0;
+	};
+	std::unordered_map<uint64, std::unique_ptr<FVariantPipelines>> VariantPipelines;
+	void ReleaseVariants(bool bAll);
 	// 패스 공용 루트 인자 (뷰/조명 상수, TLAS·정보·머티리얼, 로컬 라이트/캡처, IBL/아틀라스, 바인드리스 표)
 	void BindRoot(ID3D12GraphicsCommandList* CommandList, D3D12_GPU_VIRTUAL_ADDRESS ViewConstants, D3D12_GPU_VIRTUAL_ADDRESS LightingConstants,
 	              const FRayTracingScene& Scene, const FRayTracingLightingInputs& Lighting) const;
@@ -167,7 +181,7 @@ private:
 	FShaderLibrary*     Library    = nullptr;
 	bool                bSupported = false;
 	FRayTracingPassRoot Root;
-	FPipelines          Pipelines;
+	FPipelines          Pipelines; // 기본 (그래프 머티리얼 없음/근사)
 
 	std::unique_ptr<FD3D12RenderTarget> ShadowHistory[2];
 	uint32                              ShadowHistoryIndex = 0;

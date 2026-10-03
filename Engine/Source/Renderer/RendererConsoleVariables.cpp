@@ -89,6 +89,8 @@ namespace RendererCVars
 	                                                      { .Range = std::pair(0.0f, 100000.0f) });
 	TAutoConsoleVariable<bool> RayTracingFoliage("r.RayTracing.Foliage", true, "폴리지 인스턴스를 TLAS에 (끄면 RT 그림자/반사에 풀·나무 없음)");
 	TAutoConsoleVariable<bool> RayTracingCompaction("r.RayTracing.Compaction", true, "정적 BLAS 압축 (빌드 몇 프레임 뒤 압축 크기로 복사 — 메모리 절약)");
+	TAutoConsoleVariable<bool> RayTracingGraphMaterials("r.RayTracing.GraphMaterials", true,
+	                                                  "그래프 머티리얼 히트를 생성 함수로 평가 (씬의 그래프 셰이더 집합마다 RT 셰이더 변형 컴파일 — 끄면 회색 근사)");
 	TAutoConsoleVariable<int32> RayTracingMaxBuilds("r.RayTracing.MaxBuildsPerFrame", 32,
 	                                                "프레임당 새 BLAS 빌드 상한 (씬 로드 끊김 방지 — 넘친 메시는 다음 프레임부터 RT에 보임)", EConsoleFlags::None,
 	                                                { .Range = std::pair(1.0f, 4096.0f) });

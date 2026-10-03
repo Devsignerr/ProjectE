@@ -5,6 +5,7 @@
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/Material.h"
+#include "Renderer/MaterialRender.h"
 #include "Renderer/MeshInstancing.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SkinnedMeshData.h"
@@ -13,6 +14,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <format>
 
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
@@ -448,7 +450,7 @@ FRayTracingScene::FSkinnedBlas* FRayTracingScene::FindOrCreateSkinned(FEntity En
 	return Raw;
 }
 
-uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources)
+uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FResourceManager& Resources, bool bGraphMaterials)
 {
 	if (const auto Found = MaterialIndices.find(Material); Found != MaterialIndices.end())
 	{
@@ -467,20 +469,29 @@ uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FReso
 	Gpu.AlphaCutoff       = Material->Constants.AlphaCutoff;
 	const FD3D12DescriptorHandle& Table = Source.TextureTable.IsValid() || Default == nullptr ? Source.TextureTable : Default->TextureTable;
 	Gpu.TextureTable      = Table.IsValid() ? Table.Index : 0;
+	const uint32 Index = static_cast<uint32>(MaterialInfos.size());
 	if (bGraph)
 	{
-		// 그래프 머티리얼: 히트에서 생성 셰이더를 평가할 수 없다(인라인 RayQuery 하나의 셰이더) → 중간 회색 고정 PBR 근사
+		// 그래프 머티리얼: 변형이 없을 때의 근사 = 중간 회색 고정 PBR + 기본 텍스처. 변형(E_RT_GRAPH_MATERIALS)은 GraphSlot으로 생성 함수를 부른다
 		Gpu.BaseColorFactor = FVector4(0.5f, 0.5f, 0.5f, 1.0f);
 		Gpu.EmissiveFactor  = FVector3::ZeroVector;
 		Gpu.Metallic        = 0.0f;
 		Gpu.Roughness       = 0.5f;
 		Gpu.Flags |= FRayTracingMaterialGpu::MaterialFlagGraph;
+		if (bGraphMaterials && Material->TextureTable.IsValid())
+		{
+			// 머리 (FMaterialGraphHeader: 시간, 알파 컷오프) + 파라미터 — MaterialRender::UploadMaterialConstants와 같은 내용
+			Gpu.GraphParams       = static_cast<uint32>(GraphParams.size());
+			Gpu.GraphTextureTable = Material->TextureTable.Index;
+			GraphParams.push_back(FVector4(MaterialRender::GetMaterialTime(), Material->Constants.AlphaCutoff, 0.0f, 0.0f));
+			GraphParams.insert(GraphParams.end(), Material->GraphConstants.begin(), Material->GraphConstants.end());
+			GraphMaterialShaders.emplace_back(Index, Material->Shader);
+		}
 	}
-	if (Material->BlendMode == EMaterialBlendMode::Masked && !bGraph)
+	if (Material->BlendMode == EMaterialBlendMode::Masked)
 	{
 		Gpu.Flags |= FRayTracingMaterialGpu::MaterialFlagMasked;
 	}
-	const uint32 Index = static_cast<uint32>(MaterialInfos.size());
 	MaterialInfos.push_back(Gpu);
 	MaterialIndices.emplace(Material, Index);
 	return Index;
@@ -504,6 +515,8 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	InstanceInfos.clear();
 	MaterialInfos.clear();
 	MaterialIndices.clear();
+	GraphParams.clear();
+	GraphMaterialShaders.clear();
 	BuildOps.clear();
 	SkinOps.clear();
 	CompactOps.clear();
@@ -656,8 +669,8 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 			Desc.AccelerationStructure = Entry->Blas->GetGPUVirtualAddress();
 		}
 
-		const bool bMasked = Instance.IsMasked() && !Instance.Material->IsGraphMaterial();
-		Info.Material = RegisterMaterial(Instance.Material, Resources);
+		const bool bMasked = Instance.IsMasked(); // 그래프 Masked도 후보 알파 테스트 (변형이 없으면 기본 텍스처 알파 1 → 불투명과 같음)
+		Info.Material = RegisterMaterial(Instance.Material, Resources, Options.bGraphMaterials);
 		Info.Flags |= (Instance.bTwoSided ? RayTracingMath::InstanceInfoTwoSided : 0u) | (bMasked ? RayTracingMath::InstanceInfoMasked : 0u);
 
 		Desc.InstanceID   = static_cast<UINT>(InstanceInfos.size());
@@ -667,6 +680,8 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 		TlasDescs.push_back(Desc);
 		InstanceInfos.push_back(Info);
 	}
+
+	BuildGraphVariant(Options);
 
 	// TLAS (빈 TLAS도 만든다 — 추적 셰이더는 항상 유효한 TLAS를 읽는다)
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS TopInputs{};
@@ -698,6 +713,7 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	TlasDescAddress       = Upload(TlasDescs.data(), TlasDescs.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC), D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT);
 	InstanceBufferAddress = Upload(InstanceInfos.data(), InstanceInfos.size() * sizeof(FRayTracingInstanceGpu), 256);
 	MaterialBufferAddress = Upload(MaterialInfos.data(), MaterialInfos.size() * sizeof(FRayTracingMaterialGpu), 256);
+	GraphParamAddress     = Upload(GraphParams.data(), GraphParams.size() * sizeof(FVector4), 256);
 	TlasAddress           = Slot.Tlas->GetGPUVirtualAddress();
 
 	// 통계
@@ -720,6 +736,72 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	}
 	Stats.PrepareCpuMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - CpuStart).count();
 	bPrepared          = true;
+}
+
+void FRayTracingScene::BuildGraphVariant(const FRayTracingSceneOptions& Options)
+{
+	// 슬롯 = 이번 프레임 그래프 셰이더를 해시 순으로 (인스턴스 순서와 무관 — 같은 집합이면 같은 생성 소스·같은 변형 키)
+	std::vector<std::shared_ptr<const FMaterialShader>> Shaders;
+	for (const auto& [MaterialIndex, Shader] : GraphMaterialShaders)
+	{
+		if (std::none_of(Shaders.begin(), Shaders.end(), [&Shader](const auto& Existing) { return Existing->Hash == Shader->Hash; }))
+		{
+			Shaders.push_back(Shader);
+		}
+	}
+	std::sort(Shaders.begin(), Shaders.end(), [](const auto& A, const auto& B) { return A->Hash < B->Hash; });
+	if (Shaders.size() > Options.MaxGraphSlots)
+	{
+		Shaders.resize(Options.MaxGraphSlots); // 나머지는 GraphSlot 0 = 회색 근사
+	}
+	for (const auto& [MaterialIndex, Shader] : GraphMaterialShaders)
+	{
+		const auto Found = std::find_if(Shaders.begin(), Shaders.end(), [&Shader](const auto& Existing) { return Existing->Hash == Shader->Hash; });
+		MaterialInfos[MaterialIndex].GraphSlot = Found != Shaders.end() ? static_cast<uint32>(Found - Shaders.begin()) + 1u : 0u;
+	}
+
+	uint64 Key = 0;
+	if (!Shaders.empty())
+	{
+		Key = 14695981039346656037ull; // FNV-1a 64 (해시 목록)
+		for (const auto& Shader : Shaders)
+		{
+			for (uint32 Byte = 0; Byte < 8; ++Byte)
+			{
+				Key ^= (Shader->Hash >> (Byte * 8)) & 0xFFu;
+				Key *= 1099511628211ull;
+			}
+		}
+		Key = Key == 0 ? 1 : Key;
+	}
+	if (Key == GraphVariant.Key)
+	{
+		return; // 같은 집합 — 생성 소스 재사용
+	}
+	GraphVariant           = FRayTracingGraphVariant{};
+	GraphVariant.Key       = Key;
+	GraphVariant.SlotCount = static_cast<uint32>(Shaders.size());
+	if (Key == 0)
+	{
+		return;
+	}
+	// 생성 함수마다 EvaluateMaterial을 슬롯 이름으로 바꿔 이어 붙이고 슬롯 분기 함수를 만든다 (RayTracingCommon.hlsli EvaluateHitMaterial)
+	std::string& Source = GraphVariant.Source;
+	Source = "// RT 그래프 머티리얼 변형 (FRayTracingScene::BuildGraphVariant 생성 — 손으로 고치지 않는다). 슬롯 = 셰이더 해시 순\n";
+	for (uint32 Slot = 1; Slot <= Shaders.size(); ++Slot)
+	{
+		Source += std::format("#undef E_MATERIAL_GRAPH_CONSTANT_REGISTERS\n#undef E_MATERIAL_GRAPH_TEXTURE_COUNT\n#define EvaluateMaterial RtGraphMaterial{}\n", Slot);
+		Source += Shaders[Slot - 1]->Hlsl;
+		Source += "\n#undef EvaluateMaterial\n";
+	}
+	Source += "#undef E_MATERIAL_GRAPH_CONSTANT_REGISTERS\n#undef E_MATERIAL_GRAPH_TEXTURE_COUNT\n\n";
+	Source += "void EvaluateGraphMaterial(uint Slot, in FMaterialPixelInputs In, out FMaterialSurface Out)\n{\n\tswitch (Slot)\n\t{\n";
+	for (uint32 Slot = 1; Slot <= Shaders.size(); ++Slot)
+	{
+		Source += std::format("\tcase {0}:\n\t\tRtGraphMaterial{0}(In, Out);\n\t\treturn;\n", Slot);
+	}
+	Source += "\tdefault:\n\t\tEvaluateMaterial(In, Out);\n\t\treturn;\n\t}\n}\n";
+	E_LOG(LogRenderer, Log, "레이 트레이싱 그래프 머티리얼 변형: 셰이더 {}개 (키 {:016x})", Shaders.size(), Key);
 }
 
 FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer)

@@ -79,6 +79,15 @@ namespace RendererCVars
 	TAutoConsoleVariable<bool> VolumetricCloudsTemporal("r.VolumetricClouds.Temporal", true, "구름 시간 누적 (끄면 매 프레임 지터 없이 추적 — 비교용)");
 	TAutoConsoleVariable<bool> Water("r.Water", true, "소규모 물 (WaterBodyComponent) 패스", EConsoleFlags::None, { .CommandLine = { { L"--no-water", "0" } } });
 	TAutoConsoleVariable<bool> WaterScreenReflections("r.Water.SSR", true, "물 반사: 화면 공간 추적 (끄면 반사 캡처/하늘만)");
+	TAutoConsoleVariable<int32> HdrOutput("r.HDR.Output", 0,
+	                                      "HDR 디스플레이 출력: 0 끔(SDR), 1 자동(디스플레이가 HDR이면 HDR10), 2 HDR10(PQ/BT.2020), 3 scRGB(FP16). "
+	                                      "지원하지 않으면 SDR 유지. 앱(런타임·에디터)이 프레임마다 반영",
+	                                      EConsoleFlags::None,
+	                                      { .ValueNames = { "off", "auto", "hdr10", "scrgb" }, .Range = std::pair(0.0f, 3.0f), .CommandLine = { { L"--hdr-output", "" } } });
+	TAutoConsoleVariable<float> HdrPaperWhite("r.HDR.PaperWhite", 200.0f, "HDR 출력 종이 흰색(SDR 흰색·UI) 밝기 nits", EConsoleFlags::None,
+	                                          { .Range = std::pair(80.0f, 1000.0f) });
+	TAutoConsoleVariable<float> HdrMaxNits("r.HDR.MaxNits", 0.0f, "HDR 출력 최대 밝기 nits (톤매핑 하이라이트 상한, 0 = 디스플레이 값)", EConsoleFlags::None,
+	                                       { .Range = std::pair(0.0f, 10000.0f) });
 	namespace
 	{
 		uint32 GRenderGraphDumpSerial = 0;

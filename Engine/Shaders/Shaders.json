@@ -99,6 +99,8 @@
     { "File": "VolumetricClouds.hlsl", "Entry": "ResolveCS", "Stage": "Compute" },
     { "File": "VolumetricClouds.hlsl", "Entry": "CubeCS", "Stage": "Compute" },
     { "File": "VolumetricClouds.hlsl", "Entry": "VSComposite", "Stage": "Vertex" },
-    { "File": "VolumetricClouds.hlsl", "Entry": "PSComposite", "Stage": "Pixel" }
+    { "File": "VolumetricClouds.hlsl", "Entry": "PSComposite", "Stage": "Pixel" },
+    { "File": "HdrComposite.hlsl", "Entry": "VSMain", "Stage": "Vertex" },
+    { "File": "HdrComposite.hlsl", "Entry": "PSMain", "Stage": "Pixel" }
   ]
 }

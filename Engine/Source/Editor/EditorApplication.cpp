@@ -24,6 +24,7 @@
 #include "Editor/SceneEditOps.h"
 #include "Editor/TerrainDemoGenerator.h"
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/HdrOutputController.h"
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/ModelLoader.h"
 #include "Renderer/StaticMesh.h"
@@ -575,6 +576,7 @@ void FEditorApplication::OnRender()
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
 	Context.Scene->UpdateTransforms();
 
+	FHdrOutputController::Update(*Rhi); // HDR 출력 (Phase 49, r.HDR.Output): 에디터 UI는 종이 흰색 밝기, 뷰포트는 SDR
 	const float ClearColor[4] = { 0.05f, 0.05f, 0.06f, 1.0f };
 	Rhi->BeginFrame(ClearColor);
 	ViewportPanel.RenderScene(Context);

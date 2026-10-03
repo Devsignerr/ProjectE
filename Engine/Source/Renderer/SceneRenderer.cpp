@@ -727,6 +727,10 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	}
 	++ViewsThisFrame;
 
+	// HDR 디스플레이 출력 (Phase 49): 출력이 RHI의 HDR 씬 타깃이면 톤매핑을 HDR 곡선으로 (선형, 1 = 종이 흰색)
+	const bool bHdrOutput = Rhi->IsHdrOutputActive() && Output.Resource != nullptr && Output.Resource == Rhi->GetHdrSceneResource();
+	PostProcessor.SetHdrPeakRatio(bHdrOutput ? Rhi->GetHdrMaxNits() / FMath::Max(Rhi->GetHdrPaperWhiteNits(), 1.0f) : 0.0f);
+
 	// 하늘 환경맵 (하늘광 EnvironmentMap/회전이 바뀌면 IBL 다시 생성)
 	UpdateEnvironment(Scene);
 

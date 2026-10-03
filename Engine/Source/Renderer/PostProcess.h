@@ -123,6 +123,9 @@ public:
 
 	uint32 GetBloomMipCount() const { return static_cast<uint32>(BloomTargets.size()); }
 
+	// HDR 출력 (Phase 49): 이번 프레임 톤매핑을 HDR로 (최대 밝기 / 종이 흰색, 0 = SDR). 씬 렌더러가 출력이 RHI HDR 씬 타깃일 때 프레임마다 설정
+	void SetHdrPeakRatio(float Ratio) { HdrPeakRatio = Ratio; }
+
 private:
 	enum class EPipeline : uint8
 	{
@@ -156,6 +159,7 @@ private:
 
 	FD3D12RHI*      Rhi           = nullptr;
 	FShaderLibrary* ShaderLibrary = nullptr;
+	float           HdrPeakRatio  = 0.0f;
 
 	FD3D12RootSignature                                   RootSignature; // 모든 포스트 패스 공용 (그래픽스/컴퓨트)
 	FD3D12PipelineState                                   Pipelines[static_cast<size_t>(EPipeline::Count)];

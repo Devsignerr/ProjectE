@@ -45,6 +45,9 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  VolumetricCloudsTemporal; // r.VolumetricClouds.Temporal (시간 누적)
 	extern TAutoConsoleVariable<bool>  Water;                   // r.Water                      (--no-water)
 	extern TAutoConsoleVariable<bool>  WaterScreenReflections;  // r.Water.SSR
+	extern TAutoConsoleVariable<int32> HdrOutput;               // r.HDR.Output (0 끔, 1 자동, 2 HDR10, 3 scRGB — --hdr-output)
+	extern TAutoConsoleVariable<float> HdrPaperWhite;           // r.HDR.PaperWhite (nits)
+	extern TAutoConsoleVariable<float> HdrMaxNits;              // r.HDR.MaxNits (0 = 디스플레이)
 	// r.RenderGraph.Dump 명령이 불린 횟수 (렌더러마다 바뀌면 다음 그래프를 로그로 덤프)
 	uint32 GetRenderGraphDumpSerial();
 } // namespace RendererCVars

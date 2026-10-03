@@ -87,7 +87,14 @@ FProjectSettings::FProjectSettings()
 		.Property(&FGameUserSettings::bDynamicResolution, "DynamicResolution", "동적 해상도")
 		.Tooltip("GPU 씬 렌더 시간이 목표에 맞도록 화면 비율을 50~100% 사이에서 자동 조절 (해상도 품질 대신)")
 		.Property(&FGameUserSettings::DynamicResolutionTargetMs, "DynamicResolutionTargetMs", "동적 해상도 목표 GPU ms")
-		.Range(1.0f, 100.0f);
+		.Range(1.0f, 100.0f)
+		.Property(&FGameUserSettings::HdrOutput, "HdrOutput", "HDR 출력")
+		.Enum({ { "Off", "끔 (SDR)" }, { "Auto", "자동 (HDR 디스플레이면 HDR10)" }, { "Hdr10", "HDR10 (PQ, BT.2020)" }, { "ScRgb", "scRGB (FP16 선형)" } })
+		.Tooltip("디스플레이가 HDR을 지원하지 않으면 SDR 그대로. 런타임 r.HDR.Output으로 바꿀 수 있다")
+		.Property(&FGameUserSettings::HdrPaperWhiteNits, "HdrPaperWhiteNits", "HDR 종이 흰색 (nits)").Range(80.0f, 1000.0f)
+		.Tooltip("SDR 흰색·UI의 밝기")
+		.Property(&FGameUserSettings::HdrMaxNits, "HdrMaxNits", "HDR 최대 밝기 (nits)").Range(0.0f, 10000.0f)
+		.Tooltip("0이면 디스플레이가 알려 주는 최대 밝기");
 
 	// 액션 목록은 리플렉션 값 타입이 아니므로 사용자 정의 JSON 섹션 (설정 창은 전용 편집 UI — Editor/Panels/InputSettingsEditor)
 	Registry.RegisterCustom(

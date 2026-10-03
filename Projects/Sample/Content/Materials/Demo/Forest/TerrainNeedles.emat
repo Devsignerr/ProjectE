@@ -1,0 +1,23 @@
+{
+  "Name": "ForestTerrainNeedles",
+  "BaseColorFactor": [
+    0.56,
+    0.5,
+    0.45,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../Asset/PolyHaven/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+  "MetallicRoughnessTexture": "../../../Asset/PolyHaven/forest_leaves_04/forest_leaves_04_arm_2k.jpg",
+  "NormalTexture": "../../../Asset/PolyHaven/forest_leaves_04/forest_leaves_04_nor_gl_2k.jpg",
+  "OcclusionTexture": "../../../Asset/PolyHaven/forest_leaves_04/forest_leaves_04_arm_2k.jpg",
+  "EmissiveTexture": ""
+}

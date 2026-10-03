@@ -913,5 +913,6 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
   - [x] 서브맵 Lighting (항구 창고를 고친 선술집 홀: 남쪽 창 5개 햇빛 + 볼류메트릭 빛줄기, DDGI 볼륨, RTAO, 광택 헤링본 마루 RT 반사, 창 사각 면광원·바 조명 띠(IES Linear_Batwing)·원판 다운라이트(IES Downlight_Narrow)·갤러리 IES 벽 워셔, 샹들리에/탁자 램프, Poly Haven 가구 21종 + 텍스처 5종, 벽/바닥/천장은 타일 PBR 그래프 머티리얼 인스턴스) — `Tools/DemoMap/BuildLighting.py`, 1280x720 Release 5.7ms (2026-10-04)
-  - [ ] 서브맵: Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
+  - [x] 서브맵 Forest (개울이 흐르는 전나무 골짜기, 이른 아침: 생성 지형 513² 4레이어(낙엽·흙·이끼풀·이끼 바위), 상류 샘 → 굽이치는 개울 → 하류 웅덩이(지형 전체 물 상자 하나 + 흐름), 통나무 다리, 볼류메트릭 아침 안개 + 나무 사이 빛줄기, Poly Haven 스캔 전나무(잎 카드 알파 합성 + 변형별 분할 + 걷는 길 거리별 잎 상한 3단계 + LOD) + 엔진 폴리지(풀 1만, 먼 비탈 침엽수 7.9천), 바위·통나무·그루터기·뿌리·고사리·어린 소나무, 절차 생성 개울 소리) — `Tools/DemoMap/BuildForest.py`, 1280x720 Release GPU 8.2ms(다른 레인 런타임 2개 동시 실행 중 측정 — 확인용 시점 6.1~7.9ms) (2026-10-04, Hub 포털 Ready는 메인에서)
+  - [ ] 서브맵: Alley(밤 골목) / Gallery(머티리얼) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

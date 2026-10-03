@@ -176,3 +176,29 @@ E_TEST(RayTracing_DenoiseRadius)
 	E_EXPECT_EQ(ComputeRayConeLod(1.0e-6f, 1.0f, 1.0f, 1.0f, 1.0e6f), 0.0f); // 음수 LOD는 0
 	E_EXPECT_NEAR(ComputeReflectionConeWidth(100.0f, 200.0f, 0.001f, 0.01f), 100.0f * 0.001f + 200.0f * 0.011f, 1.0e-5f);
 }
+
+E_TEST(RayTracing_TerrainTiles)
+{
+	using namespace RayTracingMath;
+	// 정점 간격: 상한 안이면 1, 넘으면 2배씩 (타일 크기 상한)
+	E_EXPECT_EQ(SelectTerrainStep(256, 64, 131072), 1u);   // 257² = 66049
+	E_EXPECT_EQ(SelectTerrainStep(1024, 64, 131072), 4u);  // 1025² → 513² = 263169 → 257² = 66049
+	E_EXPECT_EQ(SelectTerrainStep(4096, 32, 1000), 32u);   // 타일 크기에서 멈춤
+	E_EXPECT_EQ(SelectTerrainStep(1024, 64, 2000000), 1u);
+
+	// 바뀐 정점 → 타일 (법선 1칸 + 경계 정점은 양쪽 타일)
+	uint32 Min = 0;
+	uint32 Max = 0;
+	GetDirtyTileRange(10, 20, 64, 16, Min, Max);
+	E_EXPECT_TRUE(Min == 0 && Max == 0);
+	GetDirtyTileRange(64, 64, 64, 16, Min, Max); // 경계 정점 → 타일 0과 1
+	E_EXPECT_TRUE(Min == 0 && Max == 1);
+	GetDirtyTileRange(66, 70, 64, 16, Min, Max); // 법선 이웃 65 → 타일 1만
+	E_EXPECT_TRUE(Min == 1 && Max == 1);
+	GetDirtyTileRange(65, 70, 64, 16, Min, Max); // 이웃 64(경계) → 타일 0도
+	E_EXPECT_TRUE(Min == 0 && Max == 1);
+	GetDirtyTileRange(1000, 1024, 64, 16, Min, Max); // 끝은 마지막 타일로 자름
+	E_EXPECT_TRUE(Min == 15 && Max == 15);
+	GetDirtyTileRange(0, 1024, 64, 16, Min, Max); // 전체
+	E_EXPECT_TRUE(Min == 0 && Max == 15);
+}

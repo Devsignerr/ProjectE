@@ -88,6 +88,8 @@ namespace RendererCVars
 	                                                      "이 거리(cm)보다 먼 스킨 메시는 TLAS에서 뺀다 (갱신 비용 상한)", EConsoleFlags::None,
 	                                                      { .Range = std::pair(0.0f, 100000.0f) });
 	TAutoConsoleVariable<bool> RayTracingFoliage("r.RayTracing.Foliage", true, "폴리지 인스턴스를 TLAS에 (끄면 RT 그림자/반사에 풀·나무 없음)");
+	TAutoConsoleVariable<bool> RayTracingTerrain("r.RayTracing.Terrain", true,
+	                                             "지형을 TLAS에 (높이장 타일 BLAS — 간격은 정점 13만 개 상한, 편집된 타일만 다시 빌드, 히트 표면은 레이어 0 근사)");
 	TAutoConsoleVariable<bool> RayTracingCompaction("r.RayTracing.Compaction", true, "정적 BLAS 압축 (빌드 몇 프레임 뒤 압축 크기로 복사 — 메모리 절약)");
 	TAutoConsoleVariable<bool> RayTracingGraphMaterials("r.RayTracing.GraphMaterials", true,
 	                                                  "그래프 머티리얼 히트를 생성 함수로 평가 (씬의 그래프 셰이더 집합마다 RT 셰이더 변형 컴파일 — 끄면 회색 근사)");

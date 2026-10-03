@@ -623,6 +623,7 @@ void FTerrainRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FFrus
 
 		FFrameTerrain& Terrain = Frame.emplace_back();
 		Terrain.Gpu            = Gpu;
+		Terrain.Data           = Instance.Data;
 		Terrain.Entity         = Instance.Entity;
 		Terrain.Origin         = Instance.Frame.Origin;
 		Terrain.CellSize       = Instance.Frame.CellSize;
@@ -642,6 +643,12 @@ void FTerrainRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FFrus
 			FrameLayerMaterials.push_back(Handle);
 			const FMaterial&      Material = Resources->ResolveMaterial(Handle);
 			Terrain.LayerTables[Layer]     = Material.TextureTable.Gpu;
+			if (Layer == 0)
+			{
+				Terrain.Layer0Material = &Material;
+				Terrain.Layer0Tiling   = GetLayerTiling(*Instance.Component, Layer);
+				Terrain.Layer0Color    = Handle.IsValid() ? FVector4::OneVector : DefaultLayerColors[0];
+			}
 			Constants.LayerTiling[Layer]   = GetLayerTiling(*Instance.Component, Layer);
 			if (Handle.IsValid())
 			{
@@ -702,6 +709,28 @@ void FTerrainRenderer::Prepare(FScene& Scene, const FCamera& Camera, const FFrus
 		{
 			++It;
 		}
+	}
+}
+
+void FTerrainRenderer::GetRayTracingInputs(std::vector<FTerrainRayTracingInput>& OutInputs) const
+{
+	for (const FFrameTerrain& Terrain : Frame)
+	{
+		if (Terrain.Data == nullptr || Terrain.Gpu == nullptr)
+		{
+			continue;
+		}
+		FTerrainRayTracingInput& Input = OutInputs.emplace_back();
+		Input.Data         = Terrain.Data;
+		Input.Entity       = Terrain.Entity;
+		Input.Origin       = Terrain.Origin;
+		Input.CellSize     = Terrain.CellSize;
+		Input.HeightScale  = Terrain.HeightScale;
+		Input.bCastShadows = Terrain.bCastShadows;
+		Input.Material     = Terrain.Layer0Material;
+		Input.Tiling       = Terrain.Layer0Tiling;
+		Input.Color        = Terrain.Layer0Color;
+		Input.ChunkCells   = Terrain.Gpu->ChunkCells;
 	}
 }
 

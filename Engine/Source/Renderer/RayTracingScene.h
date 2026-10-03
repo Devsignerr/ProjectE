@@ -22,6 +22,8 @@ class FShaderLibrary;
 class FStaticMesh;
 struct FMaterial;
 struct FMaterialShader;
+struct FTerrainData;
+struct FTerrainRayTracingInput;
 
 // ---- GPU 구조 (RayTracingCommon.hlsli와 1:1)
 
@@ -81,6 +83,8 @@ struct FRayTracingSceneOptions
 	uint64   MaxBuildTriangles    = 2000000;  // 프레임당 새 BLAS 삼각형 상한
 	bool     bCompaction          = true;     // 정적 BLAS 압축 (빌드 → 몇 프레임 뒤 크기 읽기 → 복사)
 	bool     bGraphMaterials      = true;     // 그래프 머티리얼 히트를 생성 함수로 (끄면 회색 근사)
+	bool     bTerrain             = true;     // 지형 높이장 타일 BLAS
+	uint32   MaxTerrainVertices   = 131072;   // 지형 하나의 RT 정점 상한 → 간격(2의 거듭제곱 셀)을 고른다 (RayTracingMath::SelectTerrainStep)
 	uint32   MaxGraphSlots        = 32;       // 한 변형에 넣을 그래프 셰이더 상한 (넘치면 나머지는 회색 근사)
 };
 
@@ -88,6 +92,8 @@ struct FRayTracingSceneStats
 {
 	uint32 StaticBlas        = 0; // 캐시의 정적 BLAS 수
 	uint32 SkinnedBlas       = 0;
+	uint32 TerrainTiles      = 0; // 지형 타일 BLAS (빌드된 것)
+	uint64 TerrainVertexBytes = 0;
 	uint64 BlasBytes         = 0; // 정적 + 스킨 BLAS 버퍼
 	uint64 SkinnedVertexBytes = 0; // 스키닝 결과 정점 버퍼
 	uint64 TlasBytes         = 0;
@@ -136,7 +142,7 @@ public:
 
 	// 이번 프레임 TLAS 준비 (CPU, 등록 시점): 압축 크기 읽기 → 수명 정리 → 인스턴스 → BLAS 요청/스킨 갱신 + TLAS 인스턴스 + 정보 버퍼 업로드
 	void Prepare(const FMeshInstanceList& Instances, const FResourceManager& Resources, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
-	             const FRayTracingSceneOptions& Options);
+	             const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains = nullptr);
 	// 그래프 패스 등록. 반환 = TLAS 참조 (추적 패스가 Read(…, AccelStructRead))
 	FRGResourceRef AddBuildPasses(FRenderGraph& Graph, int32 Timer);
 	// 추적 패스가 읽는 리소스 선언: TLAS + 이번 프레임 스킨 정점 버퍼 (바인드리스로 읽음)
@@ -176,6 +182,30 @@ private:
 		uint64                    LastUsedFrame   = 0;
 		FD3D12DescriptorHandle    VertexSrv;
 		FD3D12DescriptorHandle    IndexSrv;
+		// 지형 타일: 정점 버퍼를 항목이 소유 (업로드 힙 — 다시 만들 때 새 버퍼, 이전 것은 지연 해제). 인덱스는 지형 공용
+		ComPtr<ID3D12Resource>    OwnedVertices;
+		uint32                    VertexCount = 0;
+		bool                      bDirty      = true;
+	};
+	// 지형 하나의 높이장 타일 BLAS (Phase 50): 타일 = 청크 크기 정사각형, 정점 간격 Step 셀(정점 수 상한), 위치는 지형 원점 기준(TLAS 변환 = 이동)
+	struct FTerrainBlas
+	{
+		const FTerrainData*                       Data       = nullptr;
+		uint32                                    Resolution = 0;
+		uint32                                    Step       = 1;
+		uint32                                    TileCells  = 64;
+		uint32                                    TilesPerSide = 0;
+		uint64                                    SeenCounter  = 0;
+		FVector2                                  CellSize;
+		float                                     HeightScale = 0.0f;
+		float                                     Tiling      = 0.0f;
+		FVector4                                  Color;
+		FVector3                                  Origin; // UV(월드 XY × Tiling) 기준 — 바뀌면 전부 다시
+		ComPtr<ID3D12Resource>                    Indices; // 타일 공용 (업로드 힙)
+		FD3D12DescriptorHandle                    IndexSrv;
+		uint32                                    IndexCount = 0;
+		std::vector<std::unique_ptr<FStaticBlas>> Tiles;
+		uint64                                    LastUsedFrame = 0;
 	};
 	struct FSkinnedBlas
 	{
@@ -236,6 +266,10 @@ private:
 	};
 
 	void           ProcessCompactionReadback(FSlot& Slot);
+	void           ProcessCompaction(FStaticBlas& Entry, const uint64* Sizes, uint32 SizeCount);
+	FTerrainBlas*  EnsureTerrain(const FTerrainRayTracingInput& Input, const FRayTracingSceneOptions& Options);
+	bool           WriteTerrainTile(FTerrainBlas& Terrain, uint32 TileX, uint32 TileY, FStaticBlas& Tile);
+	void           ReleaseTerrain(FTerrainBlas& Terrain);
 	void           EvictUnused();
 	FStaticBlas*   FindOrCreateStatic(const FStaticMesh& Mesh, FMeshHandle Handle, uint32 Lod);
 	FSkinnedBlas*  FindOrCreateSkinned(FEntity Entity, const FStaticMesh& Mesh, FMeshHandle Handle);
@@ -255,6 +289,7 @@ private:
 
 	std::unordered_map<uint64, std::unique_ptr<FStaticBlas>>  StaticCache;  // HashBlasKey → 항목 (충돌은 Key 비교로 확인)
 	std::unordered_map<uint64, std::unique_ptr<FSkinnedBlas>> SkinnedCache; // 엔티티 Id → 항목
+	std::unordered_map<const FTerrainData*, std::unique_ptr<FTerrainBlas>> TerrainCache; // 지형 데이터 → 타일
 	std::vector<std::unique_ptr<FSlot>>                        Slots;
 
 	// 이번 프레임

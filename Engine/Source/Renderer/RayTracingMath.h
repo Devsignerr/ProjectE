@@ -3,6 +3,7 @@
 #include "Core/CoreTypes.h"
 #include "Core/Math/Math.h"
 
+#include <algorithm>
 #include <bit>
 #include <cmath>
 
@@ -87,6 +88,33 @@ namespace RayTracingMath
 	inline bool ShouldEvictBlas(uint64 LastUsedFrame, uint64 CurrentFrame, uint64 EvictFrames = BlasEvictFrames)
 	{
 		return CurrentFrame > LastUsedFrame + EvictFrames;
+	}
+
+	// ---- 지형 높이장 타일 BLAS
+	// RT 정점 간격(셀): 1부터 2배씩, (셀/간격 + 1)² ≤ 상한이 될 때까지 (타일 크기를 넘지 않음 — 타일 크기는 2의 거듭제곱이라 나누어떨어진다)
+	inline uint32 SelectTerrainStep(uint32 Cells, uint32 TileCells, uint32 MaxVertices)
+	{
+		uint32 Step = 1;
+		while (Step < TileCells)
+		{
+			const uint64 Side = Cells / Step + 1;
+			if (Side * Side <= MaxVertices)
+			{
+				break;
+			}
+			Step *= 2;
+		}
+		return Step;
+	}
+	// 바뀐 정점 사각형 한 축 [MinVertex, MaxVertex](양 끝 포함) → 다시 만들 타일 범위 [OutMin, OutMax].
+	// 법선이 이웃 정점 중심 차분이라 1칸 넓히고, 경계 정점(타일 크기의 배수)은 양쪽 타일에 들어간다
+	inline void GetDirtyTileRange(int32 MinVertex, int32 MaxVertex, uint32 TileCells, uint32 TilesPerSide, uint32& OutMin, uint32& OutMax)
+	{
+		const int32 Low  = std::max(MinVertex - 1, 0);
+		const int32 High = std::max(MaxVertex + 1, 0);
+		OutMin           = Low == 0 ? 0u : static_cast<uint32>(Low - 1) / TileCells;
+		OutMax           = std::min(static_cast<uint32>(High) / TileCells, TilesPerSide - 1);
+		OutMin           = std::min(OutMin, OutMax);
 	}
 
 	// ---- 광선 원점 오프셋 (Wächter & Binder, "A Fast and Robust Method for Avoiding Self-Intersection", Ray Tracing Gems 6장).

@@ -10,6 +10,8 @@
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SkinnedMeshData.h"
 #include "Renderer/StaticMesh.h"
+#include "Renderer/TerrainRenderer.h"
+#include "Scene/Terrain.h"
 
 #include <algorithm>
 #include <chrono>
@@ -179,6 +181,11 @@ void FRayTracingScene::Shutdown()
 	{
 		ReleaseSkinned(*Entry);
 	}
+	for (auto& [Data, Terrain] : TerrainCache)
+	{
+		ReleaseTerrain(*Terrain);
+	}
+	TerrainCache.clear();
 	StaticCache.clear();
 	SkinnedCache.clear();
 	for (std::unique_ptr<FSlot>& Slot : Slots)
@@ -305,41 +312,225 @@ void FRayTracingScene::ProcessCompactionReadback(FSlot& Slot)
 	const uint64* Sizes = static_cast<const uint64*>(Mapped);
 	for (auto& [Hash, EntryPtr] : StaticCache)
 	{
-		FStaticBlas& Entry = *EntryPtr;
-		if (Entry.State != EBlasState::Built || Entry.CompactionSlot != FrameSlot || Entry.BuildFrame >= FrameNumber ||
-		    Entry.CompactionIndex >= Slot.PostbuildCount)
+		ProcessCompaction(*EntryPtr, Sizes, Slot.PostbuildCount);
+	}
+	for (auto& [Data, Terrain] : TerrainCache)
+	{
+		for (std::unique_ptr<FStaticBlas>& Tile : Terrain->Tiles)
 		{
-			continue;
+			ProcessCompaction(*Tile, Sizes, Slot.PostbuildCount);
 		}
-		Entry.State              = EBlasState::Compacted;
-		const uint64 CompactSize = AlignUp<uint64>(Sizes[Entry.CompactionIndex], AsAlignment);
-		if (CompactSize == 0 || static_cast<float>(CompactSize) > static_cast<float>(Entry.BlasSize) * CompactionMinGain)
-		{
-			continue;
-		}
-		Entry.CompactBlas = CreateBuffer(CompactSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		                                 D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, L"RtBlasCompact");
-		if (!Entry.CompactBlas)
-		{
-			continue;
-		}
-		CompactOps.push_back({ Entry.Blas.Get(), Entry.CompactBlas.Get() });
-		FrameWrittenBlas.push_back(Entry.CompactBlas.Get());
-		Stats.CompactionSavedBytes += Entry.BlasSize - CompactSize;
-		// 이번 프레임 TLAS부터 압축본 (복사 패스가 TLAS 빌드 앞). 원본은 이번 프레임 복사가 끝난 뒤 해제
-		Rhi->DeferRelease(Entry.Blas);
-		Entry.Blas        = std::move(Entry.CompactBlas);
-		Entry.CompactBlas = nullptr;
-		Entry.BlasSize    = CompactSize;
-		++Stats.CompactedThisFrame;
 	}
 	const D3D12_RANGE WriteRange{ 0, 0 };
 	Slot.Readback->Unmap(0, &WriteRange);
 	Slot.PostbuildCount = 0;
 }
 
+void FRayTracingScene::ProcessCompaction(FStaticBlas& Entry, const uint64* Sizes, uint32 SizeCount)
+{
+	if (Entry.State != EBlasState::Built || Entry.CompactionSlot != FrameSlot || Entry.BuildFrame >= FrameNumber || Entry.CompactionIndex >= SizeCount ||
+	    !Entry.Blas)
+	{
+		return;
+	}
+	Entry.State              = EBlasState::Compacted;
+	const uint64 CompactSize = AlignUp<uint64>(Sizes[Entry.CompactionIndex], AsAlignment);
+	if (CompactSize == 0 || static_cast<float>(CompactSize) > static_cast<float>(Entry.BlasSize) * CompactionMinGain)
+	{
+		return;
+	}
+	Entry.CompactBlas = CreateBuffer(CompactSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+	                                 D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, L"RtBlasCompact");
+	if (!Entry.CompactBlas)
+	{
+		return;
+	}
+	CompactOps.push_back({ Entry.Blas.Get(), Entry.CompactBlas.Get() });
+	FrameWrittenBlas.push_back(Entry.CompactBlas.Get());
+	Stats.CompactionSavedBytes += Entry.BlasSize - CompactSize;
+	// 이번 프레임 TLAS부터 압축본 (복사 패스가 TLAS 빌드 앞). 원본은 이번 프레임 복사가 끝난 뒤 해제
+	Rhi->DeferRelease(Entry.Blas);
+	Entry.Blas        = std::move(Entry.CompactBlas);
+	Entry.CompactBlas = nullptr;
+	Entry.BlasSize    = CompactSize;
+	++Stats.CompactedThisFrame;
+}
+
+void FRayTracingScene::ReleaseTerrain(FTerrainBlas& Terrain)
+{
+	for (std::unique_ptr<FStaticBlas>& Tile : Terrain.Tiles)
+	{
+		ReleaseStatic(*Tile);
+		Rhi->DeferRelease(Tile->OwnedVertices);
+		Tile->OwnedVertices.Reset();
+	}
+	Terrain.Tiles.clear();
+	Rhi->DeferRelease(Terrain.Indices);
+	Terrain.Indices.Reset();
+	if (Terrain.IndexSrv.IsValid())
+	{
+		Rhi->DeferFreeDescriptor(Terrain.IndexSrv);
+		Terrain.IndexSrv = {};
+	}
+}
+
+FRayTracingScene::FTerrainBlas* FRayTracingScene::EnsureTerrain(const FTerrainRayTracingInput& Input, const FRayTracingSceneOptions& Options)
+{
+	const FTerrainData& Data      = *Input.Data;
+	const uint32        Cells     = Data.Resolution - 1;
+	const uint32        TileCells = std::max(1u, std::min(Input.ChunkCells, Cells));
+	if (Cells % TileCells != 0)
+	{
+		return nullptr;
+	}
+	std::unique_ptr<FTerrainBlas>& Entry = TerrainCache[Input.Data];
+	const bool bParamsChanged = Entry && (Entry->Resolution != Data.Resolution || Entry->TileCells != TileCells || !(Entry->CellSize == Input.CellSize) ||
+	                                      Entry->HeightScale != Input.HeightScale || Entry->Tiling != Input.Tiling || !(Entry->Color == Input.Color) ||
+	                                      !(Entry->Origin == Input.Origin));
+	if (Entry && bParamsChanged)
+	{
+		ReleaseTerrain(*Entry); // 크기·배율·UV 기준이 바뀌면 타일 전부 다시
+		Entry.reset();
+	}
+	if (!Entry)
+	{
+		auto Terrain          = std::make_unique<FTerrainBlas>();
+		Terrain->Data         = Input.Data;
+		Terrain->Resolution   = Data.Resolution;
+		Terrain->TileCells    = TileCells;
+		Terrain->Step         = RayTracingMath::SelectTerrainStep(Cells, TileCells, Options.MaxTerrainVertices);
+		Terrain->TilesPerSide = Cells / TileCells;
+		Terrain->SeenCounter  = Data.ChangeCounter;
+		Terrain->CellSize     = Input.CellSize;
+		Terrain->HeightScale  = Input.HeightScale;
+		Terrain->Tiling       = Input.Tiling;
+		Terrain->Color        = Input.Color;
+		Terrain->Origin       = Input.Origin;
+		// 타일 공용 인덱스 (셀 대각선 (0,0)-(1,1) — 렌더·충돌과 같은 면)
+		const uint32        Quads = TileCells / Terrain->Step;
+		const uint32        Row   = Quads + 1;
+		std::vector<uint32> Indices;
+		Indices.reserve(static_cast<size_t>(Quads) * Quads * 6);
+		for (uint32 Y = 0; Y < Quads; ++Y)
+		{
+			for (uint32 X = 0; X < Quads; ++X)
+			{
+				const uint32 V00 = Y * Row + X;
+				const uint32 V10 = V00 + 1;
+				const uint32 V01 = V00 + Row;
+				const uint32 V11 = V01 + 1;
+				Indices.insert(Indices.end(), { V00, V11, V10, V00, V01, V11 });
+			}
+		}
+		Terrain->IndexCount = static_cast<uint32>(Indices.size());
+		Terrain->Indices    = CreateBuffer(Indices.size() * sizeof(uint32), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE,
+		                                   D3D12_RESOURCE_STATE_GENERIC_READ, L"RtTerrainIndices");
+		void* Mapped = nullptr;
+		if (!Terrain->Indices || FAILED(Terrain->Indices->Map(0, nullptr, &Mapped)))
+		{
+			TerrainCache.erase(Input.Data);
+			return nullptr;
+		}
+		std::memcpy(Mapped, Indices.data(), Indices.size() * sizeof(uint32));
+		Terrain->Indices->Unmap(0, nullptr);
+		Terrain->IndexSrv = CreateRawSrv(Terrain->Indices.Get(), Indices.size() * sizeof(uint32));
+		Terrain->Tiles.resize(static_cast<size_t>(Terrain->TilesPerSide) * Terrain->TilesPerSide);
+		for (std::unique_ptr<FStaticBlas>& Tile : Terrain->Tiles)
+		{
+			Tile             = std::make_unique<FStaticBlas>();
+			Tile->IndexCount = Terrain->IndexCount;
+		}
+		Entry = std::move(Terrain);
+	}
+	FTerrainBlas& Terrain = *Entry;
+	// 편집: 바뀐 영역의 타일만 다시 (카운터가 줄었으면 같은 주소의 다른 데이터 → 전부)
+	if (Data.ChangeCounter != Terrain.SeenCounter)
+	{
+		FTerrainRect Rect;
+		const bool   bAll = Data.ChangeCounter < Terrain.SeenCounter || !Data.GetChangesSince(Terrain.SeenCounter, Rect);
+		uint32       MinX = 0;
+		uint32       MaxX = Terrain.TilesPerSide - 1;
+		uint32       MinY = 0;
+		uint32       MaxY = Terrain.TilesPerSide - 1;
+		if (!bAll && !Rect.IsEmpty())
+		{
+			RayTracingMath::GetDirtyTileRange(Rect.MinX, Rect.MaxX, Terrain.TileCells, Terrain.TilesPerSide, MinX, MaxX);
+			RayTracingMath::GetDirtyTileRange(Rect.MinY, Rect.MaxY, Terrain.TileCells, Terrain.TilesPerSide, MinY, MaxY);
+		}
+		for (uint32 Y = MinY; Y <= MaxY; ++Y)
+		{
+			for (uint32 X = MinX; X <= MaxX; ++X)
+			{
+				Terrain.Tiles[static_cast<size_t>(Y) * Terrain.TilesPerSide + X]->bDirty = true;
+			}
+		}
+		Terrain.SeenCounter = Data.ChangeCounter;
+	}
+	Terrain.LastUsedFrame = FrameNumber;
+	return &Terrain;
+}
+
+bool FRayTracingScene::WriteTerrainTile(FTerrainBlas& Terrain, uint32 TileX, uint32 TileY, FStaticBlas& Tile)
+{
+	// 타일 정점 (FVertex, 지형 원점 기준 위치): 높이 = 16비트 × 배율, 법선 = 원본 해상도 중심 차분 (Terrain.hlsl ComputeTerrainNormal),
+	// UV = 월드 XY × 레이어 0 타일링, 탄젠트 = +X (바이탄젠트 부호 -1: 노멀 맵 +Y = -Y 월드, Terrain.hlsl과 같은 틀), 색 = 레이어 0 색
+	const FTerrainData& Data  = *Terrain.Data;
+	const uint32        Quads = Terrain.TileCells / Terrain.Step;
+	const uint32        Row   = Quads + 1;
+	const int32         Last  = static_cast<int32>(Data.Resolution) - 1;
+	std::vector<FVertex> Vertices(static_cast<size_t>(Row) * Row);
+	for (uint32 J = 0; J < Row; ++J)
+	{
+		for (uint32 I = 0; I < Row; ++I)
+		{
+			const int32 GX = static_cast<int32>(TileX * Terrain.TileCells + I * Terrain.Step);
+			const int32 GY = static_cast<int32>(TileY * Terrain.TileCells + J * Terrain.Step);
+			const auto  Height = [&](int32 X, int32 Y) {
+                return static_cast<float>(Data.GetHeight(std::clamp(X, 0, Last), std::clamp(Y, 0, Last))) * Terrain.HeightScale;
+			};
+			FVertex& Vertex = Vertices[static_cast<size_t>(J) * Row + I];
+			Vertex.Position = FVector3(static_cast<float>(GX) * Terrain.CellSize.X, static_cast<float>(GY) * Terrain.CellSize.Y, Height(GX, GY));
+			const float DzDx = (Height(GX + 1, GY) - Height(GX - 1, GY)) / (2.0f * Terrain.CellSize.X);
+			const float DzDy = (Height(GX, GY + 1) - Height(GX, GY - 1)) / (2.0f * Terrain.CellSize.Y);
+			Vertex.Normal    = FVector3(-DzDx, -DzDy, 1.0f).GetNormalized();
+			Vertex.UV        = FVector2((Terrain.Origin.X + Vertex.Position.X) * Terrain.Tiling, (Terrain.Origin.Y + Vertex.Position.Y) * Terrain.Tiling);
+			Vertex.Color     = Terrain.Color;
+			Vertex.Tangent   = FVector4(1.0f, 0.0f, 0.0f, -1.0f);
+		}
+	}
+	// 새 버퍼 (이전 프레임이 아직 이전 정점을 바인드리스로 읽을 수 있다 — 이전 것은 지연 해제)
+	ReleaseStatic(Tile);
+	Rhi->DeferRelease(Tile.OwnedVertices);
+	const uint64 Bytes = Vertices.size() * sizeof(FVertex);
+	Tile.OwnedVertices = CreateBuffer(Bytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ, L"RtTerrainVertices");
+	void* Mapped       = nullptr;
+	if (!Tile.OwnedVertices || FAILED(Tile.OwnedVertices->Map(0, nullptr, &Mapped)))
+	{
+		return false;
+	}
+	std::memcpy(Mapped, Vertices.data(), Bytes);
+	Tile.OwnedVertices->Unmap(0, nullptr);
+	Tile.VertexCount = static_cast<uint32>(Vertices.size());
+	Tile.VertexSrv   = CreateRawSrv(Tile.OwnedVertices.Get(), Bytes);
+	Tile.State       = EBlasState::Pending;
+	Tile.BuildFrame  = 0;
+	return Tile.VertexSrv.IsValid();
+}
+
 void FRayTracingScene::EvictUnused()
 {
+	for (auto It = TerrainCache.begin(); It != TerrainCache.end();)
+	{
+		if (RayTracingMath::ShouldEvictBlas(It->second->LastUsedFrame, FrameNumber))
+		{
+			ReleaseTerrain(*It->second);
+			It = TerrainCache.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
 	for (auto It = StaticCache.begin(); It != StaticCache.end();)
 	{
 		if (RayTracingMath::ShouldEvictBlas(It->second->LastUsedFrame, FrameNumber))
@@ -498,7 +689,7 @@ uint32 FRayTracingScene::RegisterMaterial(const FMaterial* Material, const FReso
 }
 
 void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResourceManager& Resources, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
-                               const FRayTracingSceneOptions& Options)
+                               const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains)
 {
 	bPrepared = false;
 	if (Device5 == nullptr)
@@ -681,6 +872,96 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 		InstanceInfos.push_back(Info);
 	}
 
+	// 지형: 높이장 타일 BLAS (위치 = 지형 원점 기준, TLAS 변환 = 이동). 편집된 타일만 다시 빌드 (빌드 상한 공유)
+	if (Options.bTerrain && Terrains != nullptr)
+	{
+		for (const FTerrainRayTracingInput& Input : *Terrains)
+		{
+			if (Input.Data == nullptr || !Input.Data->IsValid() || Input.Material == nullptr)
+			{
+				continue;
+			}
+			FTerrainBlas* Terrain = EnsureTerrain(Input, Options);
+			if (Terrain == nullptr)
+			{
+				continue;
+			}
+			const uint32 MaterialIndex = RegisterMaterial(Input.Material, Resources, Options.bGraphMaterials);
+			const uint64 TileTriangles = Terrain->IndexCount / 3;
+			for (uint32 TileY = 0; TileY < Terrain->TilesPerSide; ++TileY)
+			{
+				for (uint32 TileX = 0; TileX < Terrain->TilesPerSide; ++TileX)
+				{
+					FStaticBlas& Tile = *Terrain->Tiles[static_cast<size_t>(TileY) * Terrain->TilesPerSide + TileX];
+					Tile.LastUsedFrame = FrameNumber;
+					if (Tile.bDirty)
+					{
+						const bool bCompact = Options.bCompaction && Slot.PostbuildCount < MaxPostbuild;
+						if (Builds >= Options.MaxBuildsPerFrame || (Builds > 0 && BuildTriangles + TileTriangles > Options.MaxBuildTriangles))
+						{
+							++Stats.PendingBuilds; // 편집 중 지난 BLAS는 그대로 쓴다 (다시 만든 정점이 없을 때만 빠짐)
+						}
+						else if (WriteTerrainTile(*Terrain, TileX, TileY, Tile))
+						{
+							FBuildOp Op;
+							Op.Geometry = MakeTriangles(Tile.OwnedVertices->GetGPUVirtualAddress(), Tile.VertexCount, Terrain->Indices->GetGPUVirtualAddress(),
+							                            Terrain->IndexCount);
+							Op.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE |
+							           (bCompact ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION
+							                     : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE);
+							const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS Inputs = MakeBottomInputs(&Op.Geometry, Op.Flags);
+							D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO      Prebuild{};
+							Device5->GetRaytracingAccelerationStructurePrebuildInfo(&Inputs, &Prebuild);
+							Tile.BlasSize    = AlignUp<uint64>(Prebuild.ResultDataMaxSizeInBytes, AsAlignment);
+							Tile.ScratchSize = AlignUp<uint64>(Prebuild.ScratchDataSizeInBytes, AsAlignment);
+							Tile.Blas        = CreateBuffer(Tile.BlasSize, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+							                                D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, L"RtTerrainBlas");
+							if (Tile.Blas)
+							{
+								Op.Dest          = Tile.Blas.Get();
+								Op.ScratchOffset = AllocScratch(Tile.ScratchSize);
+								if (bCompact)
+								{
+									Op.PostbuildIndex     = static_cast<int32>(Slot.PostbuildCount);
+									Tile.CompactionSlot  = FrameSlot;
+									Tile.CompactionIndex = Slot.PostbuildCount++;
+								}
+								BuildOps.push_back(Op);
+								Tile.BuildFrame = FrameNumber;
+								Tile.State      = bCompact ? EBlasState::Built : EBlasState::Compacted;
+								Tile.bDirty     = false;
+								FrameWrittenBlas.push_back(Tile.Blas.Get());
+								++Builds;
+								BuildTriangles += TileTriangles;
+								++Stats.BuiltThisFrame;
+							}
+						}
+					}
+					if (!Tile.Blas)
+					{
+						continue;
+					}
+					FRayTracingInstanceGpu Info;
+					Info.VertexBuffer = Tile.VertexSrv.Index;
+					Info.IndexBuffer  = Terrain->IndexSrv.Index;
+					Info.Material     = MaterialIndex;
+					D3D12_RAYTRACING_INSTANCE_DESC Desc{};
+					ToInstanceTransform(FMatrix4x4::Identity, Desc.Transform);
+					Desc.Transform[0][3] = Input.Origin.X; // 이동만 (지형은 회전·스케일 무시)
+					Desc.Transform[1][3] = Input.Origin.Y;
+					Desc.Transform[2][3] = Input.Origin.Z;
+					Desc.InstanceID      = static_cast<UINT>(InstanceInfos.size());
+					Desc.InstanceMask    = RayTracingMath::GetInstanceMask(false, false, true, Input.bCastShadows);
+					Desc.InstanceContributionToHitGroupIndex = RayTracingMath::ComputeHitGroupOffset(0);
+					Desc.Flags = RayTracingMath::ComputeInstanceFlags(false, true, false); // 높이장: 컬링 없음 (아래에서 볼 일 없음)
+					Desc.AccelerationStructure = Tile.Blas->GetGPUVirtualAddress();
+					TlasDescs.push_back(Desc);
+					InstanceInfos.push_back(Info);
+				}
+			}
+		}
+	}
+
 	BuildGraphVariant(Options);
 
 	// TLAS (빈 TLAS도 만든다 — 추적 셰이더는 항상 유효한 TLAS를 읽는다)
@@ -723,6 +1004,15 @@ void FRayTracingScene::Prepare(const FMeshInstanceList& Instances, const FResour
 	for (const auto& [Hash, Entry] : StaticCache)
 	{
 		Stats.BlasBytes += Entry->Blas ? Entry->BlasSize : 0;
+	}
+	for (const auto& [Data, Terrain] : TerrainCache)
+	{
+		for (const std::unique_ptr<FStaticBlas>& Tile : Terrain->Tiles)
+		{
+			Stats.TerrainTiles += Tile->Blas ? 1u : 0u;
+			Stats.BlasBytes += Tile->Blas ? Tile->BlasSize : 0;
+			Stats.TerrainVertexBytes += Tile->OwnedVertices ? static_cast<uint64>(Tile->VertexCount) * sizeof(FVertex) : 0;
+		}
 	}
 	for (const auto& [Id, Entry] : SkinnedCache)
 	{

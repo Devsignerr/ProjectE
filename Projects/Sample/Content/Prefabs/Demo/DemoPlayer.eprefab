@@ -1,0 +1,122 @@
+{
+  "Entities": [
+    {
+      "Name": "Player",
+      "Parent": -1,
+      "Components": {
+        "CharacterMovementComponent": {
+          "AirControl": 0.35,
+          "CapsuleHalfHeight": 55.0,
+          "CapsuleRadius": 35.0,
+          "FaceControlYaw": true,
+          "GravityScale": 1.0,
+          "JumpZVelocity": 520.0,
+          "Mass": 80.0,
+          "MaxSlopeAngle": 50.0,
+          "MaxStepHeight": 40.0,
+          "MaxWalkSpeed": 450.0,
+          "PushForce": 4000.0
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "",
+          "ScriptAsset": "Scripts/Demo/DemoPlayer.lua"
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Body",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Mesh",
+      "Parent": 1,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/Demo/DemoMannequin.eanimgraph",
+          "UseCharacterMovement": true
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -90.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

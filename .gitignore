@@ -30,3 +30,12 @@ Engine/Shaders/Cooked/
 
 # 쿠킹 에셋 캐시 (파생물)
 Projects/*/Cooked/
+
+# 데모 맵 외부 에셋 원본 (Scripts/FetchDemoAssets.ps1로 받음 — 임포트 설정 .eimport는 커밋)
+Projects/Sample/Content/Asset/PolyHaven/**/*.gltf
+Projects/Sample/Content/Asset/PolyHaven/**/*.bin
+Projects/Sample/Content/Asset/PolyHaven/**/*.jpg
+Projects/Sample/Content/Asset/PolyHaven/**/*.png
+
+# 파이썬 캐시
+__pycache__/

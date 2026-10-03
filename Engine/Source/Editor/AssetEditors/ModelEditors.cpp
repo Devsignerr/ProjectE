@@ -658,6 +658,7 @@ void FModelEditorBase::DrawImportSettings(FAssetEditorEnvironment& Env)
 	ImGui::Checkbox("법선 다시 계산", &S.bRecomputeNormals);
 	ImGui::SameLine();
 	ImGui::Checkbox("탄젠트 다시 계산", &S.bRecomputeTangents);
+	ImGui::Checkbox("반투명을 마스크로", &S.bBlendAsMasked);
 	ImGui::Checkbox("LOD 자동 생성", &S.bGenerateLods);
 	if (S.bGenerateLods)
 	{

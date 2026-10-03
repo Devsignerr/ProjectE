@@ -22,6 +22,7 @@ struct FModelImportSettings
 	bool bImportAnimations = true;
 	bool bRecomputeNormals  = false; // 부드러운 법선을 새로 계산 (원본 법선 무시)
 	bool bRecomputeTangents = false; // UV로 탄젠트 새로 계산
+	bool bBlendAsMasked     = false; // 반투명(glTF BLEND) 머티리얼을 마스크(알파 테스트)로 — 잎/풀 컷아웃이 BLEND로 저장된 스캔 에셋용 (그림자·깊이 정렬)
 	bool   bGenerateLods = true; // 정적 메시 LOD 자동 생성 (정점 군집 단순화, 스킨 메시는 제외)
 	uint32 LodCount      = 4;    // LOD0 포함 단계 수 (1~4, LodMath 기본 비율/화면 크기)
 

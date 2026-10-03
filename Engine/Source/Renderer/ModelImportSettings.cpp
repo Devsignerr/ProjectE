@@ -52,6 +52,7 @@ std::string FModelImportSettings::ToJsonString() const
 	Document["ImportAnimations"]  = bImportAnimations;
 	Document["RecomputeNormals"]  = bRecomputeNormals;
 	Document["RecomputeTangents"] = bRecomputeTangents;
+	Document["BlendAsMasked"]     = bBlendAsMasked;
 	Document["GenerateLods"]      = bGenerateLods;
 	Document["LodCount"]          = LodCount;
 	Document["AnimationSources"]  = AnimationSources;
@@ -73,6 +74,7 @@ bool FModelImportSettings::FromJsonString(const std::string& Json)
 	bImportAnimations  = Document.value("ImportAnimations", bImportAnimations);
 	bRecomputeNormals  = Document.value("RecomputeNormals", bRecomputeNormals);
 	bRecomputeTangents = Document.value("RecomputeTangents", bRecomputeTangents);
+	bBlendAsMasked     = Document.value("BlendAsMasked", bBlendAsMasked);
 	bGenerateLods      = Document.value("GenerateLods", bGenerateLods);
 	LodCount           = std::clamp<uint32>(Document.value("LodCount", LodCount), 1u, LodMath::MaxLods);
 	if (const auto It = Document.find("AnimationSources"); It != Document.end() && It->is_array())
@@ -152,6 +154,16 @@ void FModelImportSettings::Apply(FModelData& Model) const
 	if (!bImportAnimations)
 	{
 		Model.Animations.clear();
+	}
+	if (bBlendAsMasked)
+	{
+		for (FModelMaterial& Material : Model.Materials)
+		{
+			if (Material.BlendMode == EMaterialBlendMode::Translucent)
+			{
+				Material.BlendMode = EMaterialBlendMode::Masked; // 컷오프는 glTF alphaCutoff(기본 0.5)
+			}
+		}
 	}
 	for (FModelMesh& Mesh : Model.Meshes)
 	{

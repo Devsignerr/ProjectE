@@ -205,6 +205,21 @@ E_TEST(Lod_ImportSettingsAndSerialization)
 	E_EXPECT_EQ(Loaded.LodCount, 2u);
 	E_EXPECT_TRUE(Loaded.FromJsonString(R"({"LodCount": 99})"));
 	E_EXPECT_EQ(Loaded.LodCount, LodMath::MaxLods); // 범위 고정
+	E_EXPECT_TRUE(Loaded.FromJsonString(R"({"BlendAsMasked": true})"));
+	E_EXPECT_TRUE(Loaded.bBlendAsMasked);
+
+	// BlendAsMasked: 반투명만 마스크로 (불투명·가산은 그대로)
+	{
+		FModelData Leaves;
+		Leaves.Materials.resize(3);
+		Leaves.Materials[0].BlendMode = EMaterialBlendMode::Translucent;
+		Leaves.Materials[1].BlendMode = EMaterialBlendMode::Opaque;
+		Leaves.Materials[2].BlendMode = EMaterialBlendMode::Additive;
+		Loaded.Apply(Leaves);
+		E_EXPECT_TRUE(Leaves.Materials[0].BlendMode == EMaterialBlendMode::Masked);
+		E_EXPECT_TRUE(Leaves.Materials[1].BlendMode == EMaterialBlendMode::Opaque);
+		E_EXPECT_TRUE(Leaves.Materials[2].BlendMode == EMaterialBlendMode::Additive);
+	}
 
 	// Apply: 정적 메시만 LOD 생성
 	FModelData Model;

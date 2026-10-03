@@ -909,5 +909,8 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 ## 데모 씬 정리 (2026-10-04)
 
 - [x] 데모 씬 정리: 검증 씬 Scenes/Tests 이전, 나머지 삭제 — 검증 기준 13개(GameModule/Materials/Decals/Terrain/Stress/StressStatic/Lights/Multiplayer/Abilities/GI/AreaLights/Apartment/PixelArt)를 `Scenes/Tests/<이름>.escene`으로, 그 밖의 Demo_*/RPG_Test_*/Streaming 씬과 그 씬에서만 쓰던 에셋(Showcase 머티리얼·스크립트·시퀀스·HUD 등) 삭제. 시작 맵은 임시로 `Scenes/Main.escene`
-- [ ] 통합 Demo 허브
+- [~] 통합 Demo 허브 → 포털 + 기능별 서브맵 구조 (실사, Poly Haven CC0)
+  - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
+  - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
+  - [ ] 서브맵: Lighting(아트리움 GI) / Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

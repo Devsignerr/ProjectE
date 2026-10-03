@@ -1,0 +1,37 @@
+{
+  "Editor": {
+    "PreviewModel": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+  },
+  "EntryState": "Locomotion",
+  "Parameters": [
+    { "Name": "Speed", "Type": "Float", "Default": 0.0 },
+    { "Name": "VerticalSpeed", "Type": "Float", "Default": 0.0 },
+    { "Name": "Grounded", "Type": "Bool", "Default": true }
+  ],
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "Samples": [
+        { "Clip": "Idle_FoldArms_Loop", "Position": 0.0 },
+        { "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_A", "Position": 150.0, "Rate": 1.3 },
+        { "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_A", "Position": 450.0, "Rate": 1.15 }
+      ]
+    },
+    { "Name": "Jump", "Clip": "Asset/KayKit/Characters/KnightBare.glb:Jump_Start", "Loop": false },
+    { "Name": "Fall", "Clip": "Asset/KayKit/Characters/KnightBare.glb:Jump_Idle" }
+  ],
+  "Transitions": [
+    { "From": "Locomotion", "To": "Jump", "Duration": 0.1, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": false }, { "Parameter": "VerticalSpeed", "Op": ">", "Value": 50.0 } ] },
+    { "From": "Locomotion", "To": "Fall", "Duration": 0.2, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": false }, { "Parameter": "VerticalSpeed", "Op": "<", "Value": -150.0 } ] },
+    { "From": "Jump", "To": "Fall", "Duration": 0.25, "Conditions": [
+      { "Parameter": "VerticalSpeed", "Op": "<", "Value": 0.0 } ] },
+    { "From": "Jump", "To": "Locomotion", "Duration": 0.15, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": true }, { "Parameter": "VerticalSpeed", "Op": "<=", "Value": 50.0 } ] },
+    { "From": "Fall", "To": "Locomotion", "Duration": 0.15, "Conditions": [
+      { "Parameter": "Grounded", "Op": "==", "Value": true } ] }
+  ],
+  "Version": 3
+}

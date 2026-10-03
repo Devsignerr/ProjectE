@@ -1,0 +1,6168 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 3.2
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            2000.0
+          ],
+          "Rotation": [
+            0.08288575145419454,
+            0.26288001850209247,
+            -0.2890569668099657,
+            0.9167715735213627
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {},
+        "VolumetricCloudComponent": {
+          "Coverage": 0.38,
+          "WindSpeed": 10.0
+        },
+        "TimeOfDayComponent": {
+          "TimeOfDay": 16.3,
+          "DayLengthMinutes": 0.0,
+          "MaxSunElevation": 58.0,
+          "NorthAzimuth": 200.0,
+          "AnimateInEditor": false
+        },
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.55,
+            0.65,
+            0.78
+          ],
+          "Density": 0.0025,
+          "HeightFalloff": 0.06,
+          "StartDistance": 3000.0,
+          "MaxOpacity": 0.8
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TerrainComponent": {
+          "Asset": "Terrain/Demo/Hub.eterrain",
+          "Size": [
+            40000.0,
+            40000.0
+          ],
+          "HeightRange": 10000.0,
+          "Layer0Material": "Materials/Demo/TerrainGrass.emat",
+          "Layer1Material": "Materials/Demo/TerrainSand.emat",
+          "Layer2Material": "Materials/Demo/TerrainCobble.emat",
+          "Layer3Material": "Materials/Demo/TerrainRock.emat",
+          "Layer0Tiling": 450.0,
+          "Layer1Tiling": 450.0,
+          "Layer2Tiling": 300.0,
+          "Layer3Tiling": 800.0,
+          "CastShadows": true,
+          "Collision": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "WaterBodyComponent": {
+          "Size": [
+            60000.0,
+            90000.0,
+            1200.0
+          ],
+          "ScatterColor": [
+            0.02,
+            0.1,
+            0.12
+          ],
+          "Absorption": [
+            0.4,
+            0.08,
+            0.06
+          ],
+          "NormalStrength": 0.45,
+          "WaveScale": 420.0,
+          "WaveSpeed": 18.0,
+          "FlowDirection": 0.0,
+          "FlowSpeed": 0.0,
+          "FoamIntensity": 0.8,
+          "FoamDistance": 35.0,
+          "RefractionStrength": 0.04,
+          "ReflectionIntensity": 1.0,
+          "Roughness": 0.07
+        },
+        "TransformComponent": {
+          "Position": [
+            36000.0,
+            0.0,
+            -600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sea",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Demo/DemoPlayer.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 4
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            300.0,
+            360.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/stone_fire_pit/stone_fire_pit.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            265.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_FirePit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.25
+          ],
+          "Intensity": 25.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            340.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_FireLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            233.3452377915607,
+            233.3452377915607,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_Bench_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -233.34523779156066,
+            233.3452377915607,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9238795325112867,
+            0.38268343236508984
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_Bench_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -233.34523779156075,
+            -233.34523779156066,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9238795325112867,
+            -0.3826834323650897
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_Bench_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            233.34523779156063,
+            -233.34523779156075,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3826834323650899,
+            -0.9238795325112867
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_Bench_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            544.8976145334938,
+            -778.1944420745422,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3007057995042731,
+            0.9537169507482269
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.570034110010258,
+            -85.58641321720796,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8896698913405104,
+            -0.4566042974416297
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Goods",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -25.653822799947434,
+            -29.425887931092973,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9122917803615959,
+            0.40954084959216197
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Goods",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_02/wicker_basket_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -26.520064513517593,
+            20.118971731030726,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.11752385258227478,
+            0.9930700600029284
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Goods",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3.9812589802568468,
+            63.1176867771939,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.2811414597482118,
+            0.959666337645874
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Goods",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            26.148169973763046,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.37920347842912333,
+            0.9253133101535141
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Barrel",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_01/wooden_stool_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -163.30283106178956,
+            15.291986688670718,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.1635393071548893,
+            -0.9865368188847787
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_0_Stool",
+      "Parent": 11
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            951.6231763884824,
+            -443.7491748277344,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5372996083468238,
+            0.8433914458128857
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.626176917049918,
+            -81.65311240558752,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.07452762053045997,
+            -0.9972189497688397
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Goods",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -27.205039162934625,
+            -24.264504655221128,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7894020964675924,
+            0.6138764778785468
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Goods",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_02/wicker_basket_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -21.34469499855375,
+            13.884675809253894,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.824390326037201,
+            0.5660217224950624
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Goods",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.96758154720188,
+            64.891622078783,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9673207481322134,
+            -0.2535558522947853
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Goods",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -32.20555392042133,
+            -190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7860733812188064,
+            -0.6181331889967023
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Barrel",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_01/wooden_stool_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -153.0689512059984,
+            14.28115118082647,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.999936559617159,
+            0.011263957608225635
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_1_Stool",
+      "Parent": 18
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            939.6926207859084,
+            342.0201433256687,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8191520442889918,
+            0.573576436351046
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1.9032147948111415,
+            -75.5643396003071,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9941666660662636,
+            0.10785471747999852
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Goods",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            25.40648301833169,
+            -32.214682304886935,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7036029072311851,
+            0.7105933780551464
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Goods",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_02/wicker_basket_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -19.213995025011407,
+            24.4772740893479,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.2543302329741045,
+            0.9671174347489232
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Goods",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -11.985052887262484,
+            69.92186175288408,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8815147011601063,
+            0.47215657534191807
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Goods",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            8.716721522912287,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.22794569177381446,
+            0.9736738476521577
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Barrel",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_01/wooden_stool_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -154.64201508057351,
+            -40.20454756277121,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8793997908637898,
+            0.4760840344190537
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_2_Stool",
+      "Parent": 25
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            516.2187927159414,
+            737.2368398600926,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9537169507482269,
+            0.30070579950427306
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            25.996212730838252,
+            -81.2528263283721,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.11903763427785963,
+            -0.9928897429350001
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Goods",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -25.342771069152267,
+            -29.070787957546003,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6151531479160891,
+            -0.7884076386038673
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Goods",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_02/wicker_basket_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            19.10120054203906,
+            17.44195779505913,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8912608103134689,
+            0.45349108921717374
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Goods",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -0.1995122820607449,
+            74.75027161314551,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.21434888944428596,
+            0.9767571620387543
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Goods",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2.0721330064284444,
+            -190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8699480489463564,
+            -0.493143378881262
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Barrel",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_01/wooden_stool_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -168.1799171720834,
+            24.179042556530874,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.895065203299342,
+            -0.4459352888510927
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Market_3_Stool",
+      "Parent": 32
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_ladder/wooden_ladder.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            700.0,
+            900.0,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Plaza_Ladder",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Lighting.escene\"}, \"Label\": \"빛과 GI (아트리움)\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -570.534653349944,
+            1223.5155124994776,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5372996083468238,
+            -0.8433914458128857
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Lighting",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Door",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Planter",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.02168804525254487,
+            -0.9997647866839098
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Post",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5307114671740027,
+            -0.8475525580222252
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Lantern",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7796352982935191,
+            0.6262338234675412
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Post",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9363200146433331,
+            0.35114787508727485
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Lantern",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Glow",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Lighting_Light",
+      "Parent": 40
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Alley.escene\"}, \"Label\": \"밤의 골목\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1105.8552597901391,
+            774.328189073912,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.30070579950427334,
+            -0.9537169507482268
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Alley",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Door",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Planter",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8628888882604673,
+            -0.5053936747888865
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Post",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.07082418518390787,
+            0.9974888143698833
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Lantern",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9927681395675303,
+            0.1200475783163688
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Post",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5037545007890561,
+            0.8638468631272378
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Lantern",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Glow",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Alley_Light",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Gallery.escene\"}, \"Label\": \"머티리얼 갤러리\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1329.4904665664808,
+            234.42503985035586,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0871557427476582,
+            -0.9961946980917455
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Gallery",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Door",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Planter",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3596262250874371,
+            0.9330964463705561
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Post",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.184153703570707,
+            0.9828974582636747
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Lantern",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6654656938155975,
+            -0.7464284361909891
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Post",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.39524475960389455,
+            0.918575843360612
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Lantern",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Glow",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Gallery_Light",
+      "Parent": 58
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Forest.escene\"}, \"Label\": \"숲 (지형·식생)\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1303.9998654902422,
+            -349.40571088840306,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.13052619222005132,
+            -0.9914448613738105
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Forest",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Door",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Planter",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7017884720836689,
+            0.7123853875890981
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Post",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9418872315292937,
+            0.33592922332253683
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Lantern",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.39304408973554655,
+            -0.9195196265028581
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Post",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.2504583092702584,
+            0.9681273858937591
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Lantern",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Glow",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Forest_Light",
+      "Parent": 67
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Workshop.escene\"}, \"Label\": \"창고 (물리)\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1034.1599982106204,
+            -867.763273076828,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.34202014332566866,
+            -0.9396926207859084
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Workshop",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Door",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Planter",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9872857680749983,
+            0.15895537787870057
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Post",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9879620699929705,
+            -0.15469630976595672
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Lantern",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.35821985231514747,
+            -0.9336372622208874
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Post",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5377356768995056,
+            -0.8431134809676752
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Lantern",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Glow",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Workshop_Light",
+      "Parent": 76
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Training.escene\"}, \"Label\": \"훈련장 (애니메이션·AI)\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -570.5346533499438,
+            -1223.5155124994776,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.5372996083468239,
+            -0.8433914458128856
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Training",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Training_Door",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Training_Planter",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.41441998446212097,
+            -0.9100857522664638
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Training_Post",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7673419162204291,
+            0.6412381644998681
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Training_Lantern",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9648028072432037,
+            0.2629744153632319
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Training_Post",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9031765939480106,
+            0.42926919309970313
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Training_Lantern",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Training_Glow",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Training_Light",
+      "Parent": 85
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Campfire.escene\"}, \"Label\": \"해변 캠프 (파티클)\", \"Ready\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2.47990976827339e-13,
+            -1350.0,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            -0.7071067811865475,
+            -0.7071067811865477
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Campfire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Door",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Planter",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3558458113508097,
+            -0.9345446798008558
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Post",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.13240141948556614,
+            -0.9911961784219142
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Lantern",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4565663768326323,
+            0.8896893522718605
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Post",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.525756599389394,
+            0.8506350558250584
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Lantern",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Glow",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Campfire_Light",
+      "Parent": 94
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/modular_wooden_pier/modular_wooden_pier.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5193.1665135423955,
+            -1500.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Pier",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/modular_wooden_pier/modular_wooden_pier.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            7093.1665135423955,
+            -1500.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Pier2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ship_pinnace/ship_pinnace.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            7088.1665135423955,
+            -3100.0,
+            -40.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.026176948307873153,
+            0.9996573249755573
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ship_Pinnace",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dutch_ship_medium/dutch_ship_medium.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            9288.166513542395,
+            1400.0,
+            -60.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.20791169081775934,
+            0.9781476007338057
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ship_Dutch",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_barrels_01/wooden_barrels_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3556.0013375607396,
+            -2342.666226611062,
+            255.94268715955604
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.0026244956476152493,
+            0.9999965560053673
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3858.8613339902663,
+            -2337.960540912234,
+            253.93377936051752
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0878674702468879,
+            0.9961321737964356
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4098.440093677435,
+            -2320.919428336844,
+            251.41789460540315
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.11903802898693494,
+            0.9928896956132165
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4422.538264605407,
+            -2269.5210148582437,
+            249.2348671832856
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6109042423650297,
+            0.7917044945308881
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3602.2776434714906,
+            -771.8079868080798,
+            259.1427452136221
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.07776433368100585,
+            0.9969717691124204
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/treasure_chest/treasure_chest.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3896.1104747493496,
+            -755.2048814870284,
+            261.50879418317487
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9940470847169788,
+            0.10895133485036178
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4143.911288085983,
+            -817.2193748973971,
+            263.8981371954029
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.32539963198660365,
+            0.9455765857417276
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cargo_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/cannon_01/cannon_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4188.1665135423955,
+            -600.0,
+            262.94337226226696
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cannon_Beach",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/modular_fort_01/modular_fort_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4500.0,
+            6000.0,
+            1030.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Fort",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_01/coastal_cliff_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            9940.4475350172,
+            9200.0,
+            -250.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.35,
+            1.35,
+            1.35
+          ]
+        }
+      },
+      "Name": "Cliff_Cape_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_02/coastal_cliff_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            7740.4475350172,
+            15500.0,
+            -150.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.4617486132350339,
+            0.8870108331782217
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Cliff_Cape_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_02/coastal_cliff_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5119.763835571848,
+            -9000.0,
+            -300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Cliff_West_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coastal_cliff_01/coastal_cliff_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5669.891596093917,
+            -15500.0,
+            -350.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        }
+      },
+      "Name": "Cliff_West_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            6112.600200828858,
+            -11188.100860069326,
+            592.8437097440379
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5636661384216615,
+            0.826002714521455
+          ],
+          "Scale": [
+            1.5877340806052875,
+            1.5877340806052875,
+            1.5877340806052875
+          ]
+        }
+      },
+      "Name": "Rock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3766.5556450257723,
+            -5289.029804316866,
+            186.94453079589258
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.16442113528462388,
+            0.9863902322467084
+          ],
+          "Scale": [
+            0.8001866255210853,
+            0.8001866255210853,
+            0.8001866255210853
+          ]
+        }
+      },
+      "Name": "Rock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5027.73159151752,
+            -10352.863685110011,
+            483.80790946248
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9368389031586133,
+            -0.34976116069193053
+          ],
+          "Scale": [
+            0.8562524609227918,
+            0.8562524609227918,
+            0.8562524609227918
+          ]
+        }
+      },
+      "Name": "Rock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5340.06570211896,
+            -9360.828051371818,
+            249.8798437747477
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7121044259926361,
+            0.7020735620159032
+          ],
+          "Scale": [
+            1.0779116368429613,
+            1.0779116368429613,
+            1.0779116368429613
+          ]
+        }
+      },
+      "Name": "Rock_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3974.951721445301,
+            -6627.139808255057,
+            182.16648951055328
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.021666743229993755,
+            -0.9997652485647845
+          ],
+          "Scale": [
+            1.172791567327947,
+            1.172791567327947,
+            1.172791567327947
+          ]
+        }
+      },
+      "Name": "Rock_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3780.14014600371,
+            -4532.893512715285,
+            197.42161222047721
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7078307766873795,
+            -0.7063820436379602
+          ],
+          "Scale": [
+            1.3922809795424753,
+            1.3922809795424753,
+            1.3922809795424753
+          ]
+        }
+      },
+      "Name": "Rock_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4918.090546196005,
+            -4624.115988575153,
+            80.42069998826283
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.07249370046449638,
+            0.9973688702746661
+          ],
+          "Scale": [
+            1.5607884582997618,
+            1.5607884582997618,
+            1.5607884582997618
+          ]
+        }
+      },
+      "Name": "Rock_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4082.346477416315,
+            -3755.495586762816,
+            202.14796802927364
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2664605853952244,
+            -0.9638458156940011
+          ],
+          "Scale": [
+            1.40651436762875,
+            1.40651436762875,
+            1.40651436762875
+          ]
+        }
+      },
+      "Name": "Rock_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5325.426649951563,
+            -7783.430418940101,
+            90.67377989831951
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8159820270705512,
+            -0.5780772712171222
+          ],
+          "Scale": [
+            1.0088921577834897,
+            1.0088921577834897,
+            1.0088921577834897
+          ]
+        }
+      },
+      "Name": "Rock_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4047.8283646246045,
+            -6582.75364417937,
+            180.689890157142
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9947625137012402,
+            -0.10221321506923586
+          ],
+          "Scale": [
+            1.4232439130705419,
+            1.4232439130705419,
+            1.4232439130705419
+          ]
+        }
+      },
+      "Name": "Rock_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4340.480154983441,
+            -7230.862586664159,
+            167.86822715995177
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5722296772389983,
+            -0.820093407171983
+          ],
+          "Scale": [
+            1.4546663546602987,
+            1.4546663546602987,
+            1.4546663546602987
+          ]
+        }
+      },
+      "Name": "Rock_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5797.058665160161,
+            -52.22214342500229,
+            228.4456916617042
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9997428989811505,
+            0.022674565856151064
+          ],
+          "Scale": [
+            1.384803193980337,
+            1.384803193980337,
+            1.384803193980337
+          ]
+        }
+      },
+      "Name": "Rock_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/sand_rocks_small_01/sand_rocks_small_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            6850.3954409287,
+            4318.062767303727,
+            160.13472525772286
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7271905891424709,
+            0.686435610281566
+          ],
+          "Scale": [
+            1.3540175533600989,
+            1.3540175533600989,
+            1.3540175533600989
+          ]
+        }
+      },
+      "Name": "Rock_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            6274.113913540379,
+            3739.013835973412,
+            230.33268784561886
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.03757070398335303,
+            -0.9992939718632327
+          ],
+          "Scale": [
+            1.5640005050570667,
+            1.5640005050570667,
+            1.5640005050570667
+          ]
+        }
+      },
+      "Name": "Rock_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_rocks_05/coast_rocks_05.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4158.340547157514,
+            -6618.872006167344,
+            171.42854413393604
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9955855799271127,
+            0.09385815383436165
+          ],
+          "Scale": [
+            1.0701899838708244,
+            1.0701899838708244,
+            1.0701899838708244
+          ]
+        }
+      },
+      "Name": "Rock_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/coast_land_rocks_03/coast_land_rocks_03.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5485.65317728134,
+            -4553.567212662387,
+            20.324692787097497
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.48055421752640903,
+            -0.8769650186966301
+          ],
+          "Scale": [
+            1.1835787410092307,
+            1.1835787410092307,
+            1.1835787410092307
+          ]
+        }
+      },
+      "Name": "Rock_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -511.2854430668831,
+            3393.5874072938823,
+            235.42026071671725
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.26320174546638164,
+            0.9647408155476008
+          ],
+          "Scale": [
+            0.9151464125512235,
+            0.9151464125512235,
+            0.9151464125512235
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2827.1027881723985,
+            3081.4519137656207,
+            215.2672294730515
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7067946890616742,
+            -0.7074187356256627
+          ],
+          "Scale": [
+            0.8695081861485001,
+            0.8695081861485001,
+            0.8695081861485001
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6679.217661611543,
+            3204.437758364975,
+            332.8823708401136
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8647405791599185,
+            0.5022188076467953
+          ],
+          "Scale": [
+            0.9502058922241727,
+            0.9502058922241727,
+            0.9502058922241727
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3781.9713677198806,
+            6042.346116368073,
+            243.04321794223847
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7608165962166248,
+            -0.648966953643519
+          ],
+          "Scale": [
+            0.7925009149929738,
+            0.7925009149929738,
+            0.7925009149929738
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7348.501225127764,
+            -8279.287393133183,
+            390.5083098498416
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.29448440743709114,
+            -0.9556562843284322
+          ],
+          "Scale": [
+            0.951625495508049,
+            0.951625495508049,
+            0.951625495508049
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7099.733986329636,
+            3877.188613456967,
+            405.6303981297588
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.06183123759754129,
+            -0.9980866185142231
+          ],
+          "Scale": [
+            0.914317073184005,
+            0.914317073184005,
+            0.914317073184005
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4444.702341952463,
+            -1124.1192082379748,
+            225.13531940245247
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3999826421802953,
+            0.916522714369082
+          ],
+          "Scale": [
+            0.7535607345390264,
+            0.7535607345390264,
+            0.7535607345390264
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3621.572304090938,
+            694.1440541289503,
+            237.03142169038597
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.996515331017806,
+            -0.08340980186088849
+          ],
+          "Scale": [
+            0.9834062012643567,
+            0.9834062012643567,
+            0.9834062012643567
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3360.4773221526866,
+            4691.372703809275,
+            242.46478563571497
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5194006172743413,
+            -0.8545308647293164
+          ],
+          "Scale": [
+            0.8027605843320372,
+            0.8027605843320372,
+            0.8027605843320372
+          ]
+        }
+      },
+      "Name": "Tree_Jacaranda_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3355.7344806627348,
+            -4605.5002099467165,
+            241.26399734385805
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6857813975232352,
+            0.7278075808969555
+          ],
+          "Scale": [
+            1.2345748672663845,
+            1.2345748672663845,
+            1.2345748672663845
+          ]
+        }
+      },
+      "Name": "Tree_Island_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3276.6696496627933,
+            -2714.8117086818456,
+            230.13794606206955
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.40024126160192885,
+            0.9164098059881814
+          ],
+          "Scale": [
+            1.3640068225262225,
+            1.3640068225262225,
+            1.3640068225262225
+          ]
+        }
+      },
+      "Name": "Tree_Island_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2285.2677484907813,
+            -2127.585202923995,
+            230.58597350363618
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9659132718771087,
+            -0.258865894261215
+          ],
+          "Scale": [
+            1.3617187098168158,
+            1.3617187098168158,
+            1.3617187098168158
+          ]
+        }
+      },
+      "Name": "Tree_Island_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1583.403157554816,
+            4765.816265139965,
+            229.81164368007381
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9999865822691774,
+            -0.0051802781402043255
+          ],
+          "Scale": [
+            1.2127299849743736,
+            1.2127299849743736,
+            1.2127299849743736
+          ]
+        }
+      },
+      "Name": "Tree_Island_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -503.18085133475324,
+            -8719.4269814187,
+            254.97623441964856
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9823607079857264,
+            0.18699582724163255
+          ],
+          "Scale": [
+            1.0732431549088794,
+            1.0732431549088794,
+            1.0732431549088794
+          ]
+        }
+      },
+      "Name": "Tree_Island_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5958.708940830759,
+            2987.556757383325,
+            263.50423344552155
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5153732709365063,
+            0.8569658053879434
+          ],
+          "Scale": [
+            1.1893971729847825,
+            1.1893971729847825,
+            1.1893971729847825
+          ]
+        }
+      },
+      "Name": "Tree_Island_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2577.1874139869274,
+            -1224.7693094544475,
+            227.29787229959143
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9848697066337404,
+            -0.17329645396017201
+          ],
+          "Scale": [
+            1.31370899014619,
+            1.31370899014619,
+            1.31370899014619
+          ]
+        }
+      },
+      "Name": "Tree_Island_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4885.851120398253,
+            -595.5579962407155,
+            242.0980287632413
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7037541052167953,
+            0.7104436356182718
+          ],
+          "Scale": [
+            1.1107668281859127,
+            1.1107668281859127,
+            1.1107668281859127
+          ]
+        }
+      },
+      "Name": "Tree_Island_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -101.84144010699947,
+            2399.8971388502487,
+            244.6908616875424
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2714766235325899,
+            -0.9624450336904152
+          ],
+          "Scale": [
+            1.1772993574309756,
+            1.1772993574309756,
+            1.1772993574309756
+          ]
+        }
+      },
+      "Name": "Tree_Island_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/island_tree_02/island_tree_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -980.61866066311,
+            5122.51691307751,
+            337.8727099422731
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.810458795331393,
+            -0.5857956478755943
+          ],
+          "Scale": [
+            1.3506141927122373,
+            1.3506141927122373,
+            1.3506141927122373
+          ]
+        }
+      },
+      "Name": "Tree_Island_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -726.3205155297064,
+            6922.073646256191,
+            896.4793567615841
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4176165014647813,
+            0.9086233860650497
+          ],
+          "Scale": [
+            0.8608109771920904,
+            0.8608109771920904,
+            0.8608109771920904
+          ]
+        }
+      },
+      "Name": "Plant_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2252.464852424433,
+            -9621.624106526722,
+            384.76610565040636
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9747649420582608,
+            0.22323375133289217
+          ],
+          "Scale": [
+            0.9063448997939831,
+            0.9063448997939831,
+            0.9063448997939831
+          ]
+        }
+      },
+      "Name": "Plant_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4063.8590217294686,
+            -8675.352140936986,
+            271.634525533412
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.18890968425085566,
+            -0.9819944659702732
+          ],
+          "Scale": [
+            1.1217289993921538,
+            1.1217289993921538,
+            1.1217289993921538
+          ]
+        }
+      },
+      "Name": "Plant_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3239.6172370111426,
+            -6190.951088265898,
+            245.31895314215748
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.10178449857890273,
+            -0.9948064715556696
+          ],
+          "Scale": [
+            0.9097939154009599,
+            0.9097939154009599,
+            0.9097939154009599
+          ]
+        }
+      },
+      "Name": "Plant_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1665.6099251185578,
+            7807.557640141444,
+            795.5657331353858
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4857846109493684,
+            0.8740785501113563
+          ],
+          "Scale": [
+            1.0157609089988195,
+            1.0157609089988195,
+            1.0157609089988195
+          ]
+        }
+      },
+      "Name": "Plant_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1297.1342485433324,
+            -4556.793257562423,
+            232.33026443813867
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9002478319209402,
+            0.43537781422765065
+          ],
+          "Scale": [
+            0.8460970130642907,
+            0.8460970130642907,
+            0.8460970130642907
+          ]
+        }
+      },
+      "Name": "Plant_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3242.617314656987,
+            -4578.385967560452,
+            244.81468390882043
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9825559068025603,
+            0.1859674434071685
+          ],
+          "Scale": [
+            0.8090409904135188,
+            0.8090409904135188,
+            0.8090409904135188
+          ]
+        }
+      },
+      "Name": "Plant_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3690.5274411541222,
+            854.6144039454157,
+            238.49726729008486
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.12291822436774238,
+            -0.9924168026178726
+          ],
+          "Scale": [
+            0.8564249790649237,
+            0.8564249790649237,
+            0.8564249790649237
+          ]
+        }
+      },
+      "Name": "Plant_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3393.0991989533195,
+            -9402.835927563005,
+            310.4238538029691
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.12404959101543324,
+            0.992276019547436
+          ],
+          "Scale": [
+            1.1894987150339462,
+            1.1894987150339462,
+            1.1894987150339462
+          ]
+        }
+      },
+      "Name": "Plant_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4484.200732222982,
+            -8538.444373192131,
+            263.78637931051236
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4551438643143529,
+            -0.8904179146765848
+          ],
+          "Scale": [
+            1.137986818771731,
+            1.137986818771731,
+            1.137986818771731
+          ]
+        }
+      },
+      "Name": "Plant_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1570.0434363974127,
+            -4786.0784329490225,
+            232.3929124228803
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17974268399613066,
+            0.9837136613618147
+          ],
+          "Scale": [
+            1.144102785674274,
+            1.144102785674274,
+            1.144102785674274
+          ]
+        }
+      },
+      "Name": "Plant_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2470.878469655606,
+            -9624.13220025938,
+            381.0938693616726
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9121264754646236,
+            -0.40990888348080906
+          ],
+          "Scale": [
+            1.2008142957856949,
+            1.2008142957856949,
+            1.2008142957856949
+          ]
+        }
+      },
+      "Name": "Plant_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6911.347158951266,
+            5268.344091070829,
+            409.70127907747667
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.738469219370588,
+            0.6742871881047381
+          ],
+          "Scale": [
+            0.8608387792623546,
+            0.8608387792623546,
+            0.8608387792623546
+          ]
+        }
+      },
+      "Name": "Plant_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7849.897694520853,
+            7891.811918528514,
+            558.5598589053271
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.22834286453989508,
+            -0.9735807805281055
+          ],
+          "Scale": [
+            0.9339298733387271,
+            0.9339298733387271,
+            0.9339298733387271
+          ]
+        }
+      },
+      "Name": "Plant_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6320.077601360725,
+            -988.6144959837384,
+            290.9791493782383
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.19316135431388376,
+            -0.9811670047446694
+          ],
+          "Scale": [
+            1.2846064081842046,
+            1.2846064081842046,
+            1.2846064081842046
+          ]
+        }
+      },
+      "Name": "Plant_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4595.361205526171,
+            -7558.226616430309,
+            250.31092547911413
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9194046643622725,
+            -0.39331293285232444
+          ],
+          "Scale": [
+            1.0655429197829152,
+            1.0655429197829152,
+            1.0655429197829152
+          ]
+        }
+      },
+      "Name": "Plant_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5323.669889796594,
+            -2531.949412065125,
+            243.91462806951716
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.530244543845354,
+            0.8478447521346302
+          ],
+          "Scale": [
+            0.9735005110639294,
+            0.9735005110639294,
+            0.9735005110639294
+          ]
+        }
+      },
+      "Name": "Plant_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7763.879605170438,
+            -6241.473632290678,
+            490.3168533586802
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.05787942934283813,
+            0.998323580638536
+          ],
+          "Scale": [
+            1.05282699074987,
+            1.05282699074987,
+            1.05282699074987
+          ]
+        }
+      },
+      "Name": "Plant_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4806.166245413147,
+            -2505.9445647944103,
+            239.46370901807265
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5386880709945632,
+            -0.8425052891039655
+          ],
+          "Scale": [
+            1.0160887928922082,
+            1.0160887928922082,
+            1.0160887928922082
+          ]
+        }
+      },
+      "Name": "Plant_18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1564.9795450509991,
+            4857.664733274232,
+            239.03622916338168
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.09313119657234355,
+            -0.9956538455833953
+          ],
+          "Scale": [
+            0.9538915249993717,
+            0.9538915249993717,
+            0.9538915249993717
+          ]
+        }
+      },
+      "Name": "Plant_19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5202.645445080646,
+            -6638.241272334845,
+            264.88345952487435
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5028452919084074,
+            -0.8643764298067992
+          ],
+          "Scale": [
+            1.153362700823114,
+            1.153362700823114,
+            1.153362700823114
+          ]
+        }
+      },
+      "Name": "Plant_20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            267.7003355051911,
+            -3310.743534570015,
+            231.05513051290148
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.05688885978262956,
+            -0.9983805174544585
+          ],
+          "Scale": [
+            1.2184941691525972,
+            1.2184941691525972,
+            1.2184941691525972
+          ]
+        }
+      },
+      "Name": "Plant_21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7814.683318738666,
+            883.5179736978898,
+            517.6032764176255
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9764217390421644,
+            0.2158716922754703
+          ],
+          "Scale": [
+            0.8277005437183562,
+            0.8277005437183562,
+            0.8277005437183562
+          ]
+        }
+      },
+      "Name": "Plant_22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            647.9598428047939,
+            -3763.246077744525,
+            228.97708032387658
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8598719312183238,
+            -0.5105098058831682
+          ],
+          "Scale": [
+            0.9409666411533149,
+            0.9409666411533149,
+            0.9409666411533149
+          ]
+        }
+      },
+      "Name": "Plant_23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4851.231858097675,
+            -5431.888640973626,
+            267.4626665762687
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.549946826855982,
+            0.8351996693192811
+          ],
+          "Scale": [
+            0.9345183530666852,
+            0.9345183530666852,
+            0.9345183530666852
+          ]
+        }
+      },
+      "Name": "Plant_24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7952.904735340478,
+            -4081.314308390439,
+            540.6685015734774
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.08590139108270364,
+            -0.996303643981119
+          ],
+          "Scale": [
+            1.0735366870594543,
+            1.0735366870594543,
+            1.0735366870594543
+          ]
+        }
+      },
+      "Name": "Plant_25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4822.195578755383,
+            7347.668631116918,
+            269.73518453887016
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6322437129948443,
+            0.7747695705037034
+          ],
+          "Scale": [
+            0.89147894382875,
+            0.89147894382875,
+            0.89147894382875
+          ]
+        }
+      },
+      "Name": "Plant_26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3640.6738090429762,
+            -9406.079344315613,
+            338.4058638385367
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.99996229967431,
+            -0.008683273004186634
+          ],
+          "Scale": [
+            0.9004900271005161,
+            0.9004900271005161,
+            0.9004900271005161
+          ]
+        }
+      },
+      "Name": "Plant_27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1438.4366863139358,
+            -10905.939901425078,
+            650.4394965575091
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5436437280102112,
+            -0.8393160888456503
+          ],
+          "Scale": [
+            0.8719325706344514,
+            0.8719325706344514,
+            0.8719325706344514
+          ]
+        }
+      },
+      "Name": "Plant_28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -371.59048362321846,
+            -3514.40582851031,
+            230.114853241858
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8167827638093359,
+            0.5769453325437192
+          ],
+          "Scale": [
+            0.9164047832954031,
+            0.9164047832954031,
+            0.9164047832954031
+          ]
+        }
+      },
+      "Name": "Plant_29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1757.0281924179017,
+            1493.3297929407818,
+            234.76695679172747
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6275908272419441,
+            -0.7785433536815867
+          ],
+          "Scale": [
+            1.0982796556857097,
+            1.0982796556857097,
+            1.0982796556857097
+          ]
+        }
+      },
+      "Name": "Plant_30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1936.047496197758,
+            2692.8681560594778,
+            275.90960613165026
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.45248711253955365,
+            0.8917709419944212
+          ],
+          "Scale": [
+            1.162077886680913,
+            1.162077886680913,
+            1.162077886680913
+          ]
+        }
+      },
+      "Name": "Plant_31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            361.8528461588812,
+            -10168.02673285987,
+            497.1389167846641
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.3329903093214439,
+            -0.9429302486918155
+          ],
+          "Scale": [
+            1.1136660621659633,
+            1.1136660621659633,
+            1.1136660621659633
+          ]
+        }
+      },
+      "Name": "Plant_32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1540.077605200504,
+            4432.159398535487,
+            514.7491996832166
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2793300228163034,
+            -0.960195156389285
+          ],
+          "Scale": [
+            1.1764335792674536,
+            1.1764335792674536,
+            1.1764335792674536
+          ]
+        }
+      },
+      "Name": "Plant_33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -609.7665067450062,
+            4445.202449626286,
+            258.0821389097855
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5187189166668178,
+            -0.8549448435378758
+          ],
+          "Scale": [
+            1.0920307584031195,
+            1.0920307584031195,
+            1.0920307584031195
+          ]
+        }
+      },
+      "Name": "Plant_34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3606.786573271602,
+            1975.0120205095136,
+            243.20648930183137
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9009243494846567,
+            -0.4339761704352534
+          ],
+          "Scale": [
+            0.8425458514361104,
+            0.8425458514361104,
+            0.8425458514361104
+          ]
+        }
+      },
+      "Name": "Plant_35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7455.792682392809,
+            1105.2776638674877,
+            457.19770811787146
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9258131201313029,
+            0.37798156911778336
+          ],
+          "Scale": [
+            1.0256930901055308,
+            1.0256930901055308,
+            1.0256930901055308
+          ]
+        }
+      },
+      "Name": "Plant_36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7339.855893247036,
+            -10642.027170223722,
+            625.034124299974
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.84320804781746,
+            -0.5375873771731141
+          ],
+          "Scale": [
+            1.0446471574298772,
+            1.0446471574298772,
+            1.0446471574298772
+          ]
+        }
+      },
+      "Name": "Plant_37",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7956.913747337977,
+            4156.2534893462,
+            583.4023420680489
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.21045747792347438,
+            -0.977603012467786
+          ],
+          "Scale": [
+            1.2489287902981037,
+            1.2489287902981037,
+            1.2489287902981037
+          ]
+        }
+      },
+      "Name": "Plant_38",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6804.754938402078,
+            -1006.1871241408844,
+            354.34661455909696
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7358383232042223,
+            -0.6771572654147621
+          ],
+          "Scale": [
+            0.926096765731345,
+            0.926096765731345,
+            0.926096765731345
+          ]
+        }
+      },
+      "Name": "Plant_39",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7032.150000335745,
+            -5954.39377828742,
+            377.67195674029205
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6926537851758591,
+            -0.7212702225113378
+          ],
+          "Scale": [
+            0.9153680635237269,
+            0.9153680635237269,
+            0.9153680635237269
+          ]
+        }
+      },
+      "Name": "Plant_40",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            449.1196400266599,
+            -2253.538784496288,
+            222.82442830441136
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.23875679885124745,
+            0.9710793947985432
+          ],
+          "Scale": [
+            1.2552333305913828,
+            1.2552333305913828,
+            1.2552333305913828
+          ]
+        }
+      },
+      "Name": "Plant_41",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4264.850832740878,
+            -10111.797729711934,
+            432.17450228279665
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9010971868386323,
+            -0.4336171812457425
+          ],
+          "Scale": [
+            0.8387359097589004,
+            0.8387359097589004,
+            0.8387359097589004
+          ]
+        }
+      },
+      "Name": "Plant_42",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6083.474052600203,
+            -6175.134648537989,
+            283.8438738849291
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8219489693423482,
+            -0.5695611396479324
+          ],
+          "Scale": [
+            1.1105753755858605,
+            1.1105753755858605,
+            1.1105753755858605
+          ]
+        }
+      },
+      "Name": "Plant_43",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -6265.266886635873,
+            -1834.0067330557176,
+            284.3492199304513
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7475558328405615,
+            0.6641989737917806
+          ],
+          "Scale": [
+            1.136000789327618,
+            1.136000789327618,
+            1.136000789327618
+          ]
+        }
+      },
+      "Name": "Plant_44",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            998.4072434158243,
+            1838.4454794427147,
+            250.6563161972477
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7923240826572142,
+            -0.6101004409450987
+          ],
+          "Scale": [
+            0.9427717710460084,
+            0.9427717710460084,
+            0.9427717710460084
+          ]
+        }
+      },
+      "Name": "Plant_45",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1943.3310921310722,
+            3576.2254316475555,
+            236.7094387376626
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5858774971033156,
+            0.8103996288177546
+          ],
+          "Scale": [
+            1.2890628683785135,
+            1.2890628683785135,
+            1.2890628683785135
+          ]
+        }
+      },
+      "Name": "Plant_46",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4171.306432398313,
+            -10667.415339483407,
+            569.1307313364541
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.23791582995586605,
+            0.9712857755863675
+          ],
+          "Scale": [
+            1.0533092572097043,
+            1.0533092572097043,
+            1.0533092572097043
+          ]
+        }
+      },
+      "Name": "Plant_47",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4929.919055423605,
+            7885.372266951854,
+            1047.3944316709988
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6125028973475832,
+            0.7904683426556789
+          ],
+          "Scale": [
+            1.2727936384474339,
+            1.2727936384474339,
+            1.2727936384474339
+          ]
+        }
+      },
+      "Name": "Plant_48",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -5260.785632059224,
+            47.97498670040659,
+            251.86762928772782
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7126689808934734,
+            -0.7015004801653795
+          ],
+          "Scale": [
+            0.9309044843641681,
+            0.9309044843641681,
+            0.9309044843641681
+          ]
+        }
+      },
+      "Name": "Plant_49",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3325.8035054514867,
+            463.94906628223544,
+            241.08188827645102
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.999622690392133,
+            -0.027467742047606138
+          ],
+          "Scale": [
+            1.2434310798074215,
+            1.2434310798074215,
+            1.2434310798074215
+          ]
+        }
+      },
+      "Name": "Plant_50",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1143.3815043229679,
+            -6603.711542041072,
+            213.18016616470567
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9451457347356682,
+            0.32664895547203876
+          ],
+          "Scale": [
+            0.8795326344802621,
+            0.8795326344802621,
+            0.8795326344802621
+          ]
+        }
+      },
+      "Name": "Plant_51",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4349.474440455804,
+            1950.1742166611966,
+            247.84198663652677
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8126045321473822,
+            0.5828154719407628
+          ],
+          "Scale": [
+            0.8703536101288394,
+            0.8703536101288394,
+            0.8703536101288394
+          ]
+        }
+      },
+      "Name": "Plant_52",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -3528.51809643671,
+            -4994.517137875575,
+            251.37800766111002
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.005470685350613295,
+            0.999985035688932
+          ],
+          "Scale": [
+            1.1753670205856586,
+            1.1753670205856586,
+            1.1753670205856586
+          ]
+        }
+      },
+      "Name": "Plant_53",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2908.4403304560055,
+            -8719.214395748531,
+            232.1378222302465
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7842975644293092,
+            -0.6203848244680503
+          ],
+          "Scale": [
+            1.250783281549468,
+            1.250783281549468,
+            1.250783281549468
+          ]
+        }
+      },
+      "Name": "Plant_54",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4232.171533318171,
+            -3927.782012264657,
+            254.047249483903
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9410520524735583,
+            0.3382617840302144
+          ],
+          "Scale": [
+            1.234985963959905,
+            1.234985963959905,
+            1.234985963959905
+          ]
+        }
+      },
+      "Name": "Plant_55",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7006.790997913323,
+            6582.894296444967,
+            401.81751268216044
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4420390324389389,
+            -0.8969958159325196
+          ],
+          "Scale": [
+            0.9403188522968808,
+            0.9403188522968808,
+            0.9403188522968808
+          ]
+        }
+      },
+      "Name": "Plant_56",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -7328.972281137199,
+            1577.5854172322179,
+            437.58686516843034
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.2009722634473989,
+            -0.9795969320719768
+          ],
+          "Scale": [
+            0.9246623582059093,
+            0.9246623582059093,
+            0.9246623582059093
+          ]
+        }
+      },
+      "Name": "Plant_57",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4545.535805291463,
+            -1291.7032316593377,
+            238.66691266797653
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6537765299554252,
+            -0.7566876825212915
+          ],
+          "Scale": [
+            1.192571337357779,
+            1.192571337357779,
+            1.192571337357779
+          ]
+        }
+      },
+      "Name": "Plant_58",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2439.280729774645,
+            -10448.785011267044,
+            540.4728636468166
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9510969533743535,
+            0.30889251412428703
+          ],
+          "Scale": [
+            1.2378631857808653,
+            1.2378631857808653,
+            1.2378631857808653
+          ]
+        }
+      },
+      "Name": "Plant_59",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1012.6232062052686,
+            -5355.334420841608,
+            216.49807342446542
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25044491414925124,
+            0.968130851164642
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stump_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2401.1881693539926,
+            -2658.481800100317,
+            244.00535291886604
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9355394167778506,
+            -0.35322230911277286
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stump_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4752.847196158646,
+            3303.2250011020005,
+            250.58928210248297
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9989733504199507,
+            0.045301712448187405
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stump_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4463.134771215493,
+            -2606.7335347263743,
+            233.5002759940628
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7739981237362658,
+            0.6331878903238282
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Stump_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_02/street_lamp_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2200.0,
+            -1080.0,
+            244.9108988945334
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLamp_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_02/street_lamp_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3100.0,
+            -1080.0,
+            255.27299910724167
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLamp_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_02/street_lamp_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4000.0,
+            -1080.0,
+            262.8558593466845
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLamp_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_02/street_lamp_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4900.0,
+            -1080.0,
+            267.8845953210371
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLamp_3",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

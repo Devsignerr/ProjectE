@@ -72,6 +72,10 @@ struct FMaterial
 	std::shared_ptr<const FMaterialShader> Shader;
 	std::vector<FVector4>                  GraphConstants;
 
+	// 텍스처 칸별 UV 배율 (텍스처 밉 스트리밍 필요 밉 계산 — TextureStreamingMath::ComputeGraphTextureUvScale).
+	// 0 = 기본 1 (고정 PBR은 UV0 그대로), 음수 = 알 수 없음(계산된 UV) → 그 텍스처는 항상 전체 밉
+	float TextureUvTiling[MaterialTextureMax] = {};
+
 	// 인스턴스(.emat Parent)면 부모 체인의 정규화 경로 (가까운 부모부터). 부모가 바뀌면 FResourceManager가 다시 해석한다
 	std::vector<std::wstring> ParentChain;
 

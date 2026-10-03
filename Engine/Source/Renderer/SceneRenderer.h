@@ -170,7 +170,9 @@ public:
 	bool                 bSkinVisibilityCulling = true;
 	// 깊이 사전 패스 (깊이 + 화면 공간 법선 + 움직임 벡터, 메인 패스는 깊이 같음 테스트). 끄면 법선/움직임 버퍼가 비어 있다 (--no-depth-prepass)
 	bool                 bDepthPrepass = true;
-	// 화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림): 0 없음, 1 법선, 2 움직임 벡터, 3 깊이, 4 SSAO (--debug-view normal|velocity|depth|ao)
+	// 화면 공간 버퍼 확인 (톤매핑 결과 대신 출력에 그림): 0 없음, 1 법선, 2 움직임 벡터, 3 깊이, 4 SSAO, 5 SSR,
+	// 6 텍스처 상주 밉 (메시 패스가 색칠 — 화면 패스 없음) (--debug-view normal|velocity|depth|ao|ssr|mip)
+	static constexpr uint32 DebugViewMip = 6;
 	uint32               DebugView = 0;
 	// 서브픽셀 투영 지터 (Halton 2,3 8개). TAA가 켜질 때만 켠다 — 혼자 켜면 화면이 떨린다 (--jitter: 확인용 강제)
 	bool                 bTemporalJitter = false;
@@ -332,6 +334,8 @@ private:
 	bool                         bFrameUpscaled           = false; // 이번 프레임 TAAU (오버레이 깊이 = TemporalAA.GetOverlayDepth)
 	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
 	void SelectLods(const FCamera& Camera);
+	// 텍스처 밉 스트리밍 (Phase 53): 이 뷰의 메시 인스턴스 + 지형·데칼 머티리얼을 리소스 관리자에 보고 (수집·LOD 선택 뒤, 그래프 실행 전)
+	void ReportTextureStreaming(FScene& Scene, const FCamera& Camera, uint32 Height, float MipBias);
 	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 준비). 사전 패스와 메인 패스가 같은 묶음을 그린다
 	void PrepareMainBatches(const FCamera& Camera, bool bOcclusion);
 	// 메인 묶음 기록 (지형 포함 — 2단계 패스 제외). 드로우/삼각형 수를 더한다

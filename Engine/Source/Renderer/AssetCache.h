@@ -19,7 +19,7 @@ struct FAssetCache
 {
 	static constexpr uint32 ModelMagic   = 0x4C444D45; // "EMDL"
 	static constexpr uint32 TextureMagic = 0x32585445; // "ETX2"
-	static constexpr uint32 ModelVersion = 8; // 8: 머티리얼 블렌드 모드/알파 컷오프/양면, 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
+	static constexpr uint32 ModelVersion = 9; // 9: 메시 UV 밀도(텍스처 밉 스트리밍), 8: 머티리얼 블렌드 모드/알파 컷오프/양면, 7: 메시 LOD(단순화 인덱스 + 화면 크기), 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션, 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR
 	static constexpr uint32 TextureVersion = 1; // 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)
 	static constexpr uint32 EnvironmentMagic   = 0x564E4545; // "EENV"
 	static constexpr uint32 EnvironmentVersion = 1; // 1: 등장방형 RGBA16F, 폭 최대 2048 (상자 필터 축소)
@@ -67,12 +67,17 @@ struct FAssetCache
 
 	// 모델 이미지를 머티리얼 용도(색상 > 노멀 > 선형 > 마스크 우선)로 밉 + BC 압축하고 원본 픽셀은 비운다
 	static void CompressModelImages(FModelData& Model);
+	// 메시마다 UV 밀도(TextureStreamingMath::ComputeUvDensity) 계산 — 쿠킹 전에
+	static void ComputeModelUvDensities(FModelData& Model);
 
 	// ---- 직렬화 (순수 함수, 테스트용 공개)
-	static void WriteModel(FBinaryWriter& Writer, const FModelData& Model);
+	// OutImagePayloadOffsets: 이미지마다 텍스처 본문이 시작하는 버퍼 위치 (밉 스트리밍 — 저장한 파일의 같은 위치)
+	static void WriteModel(FBinaryWriter& Writer, const FModelData& Model, std::vector<uint64>* OutImagePayloadOffsets = nullptr);
 	static bool ReadModel(FBinaryReader& Reader, FModelData& OutModel);
 	static void WriteTexture(FBinaryWriter& Writer, const FCompressedTexture& Texture);
 	static bool ReadTexture(FBinaryReader& Reader, FCompressedTexture& OutTexture);
+	// .etex 파일 안 텍스처 본문 시작 위치 (머리 Magic + Version 다음)
+	static constexpr uint64 TexturePayloadOffset = 8;
 	static void WriteEnvironment(FBinaryWriter& Writer, const FEnvironmentImage& Image);
 	static bool ReadEnvironment(FBinaryReader& Reader, FEnvironmentImage& OutImage);
 };

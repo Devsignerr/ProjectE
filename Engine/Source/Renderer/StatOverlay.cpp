@@ -50,11 +50,25 @@ void FStatOverlay::Tick(float DeltaSeconds)
 	{
 		MemoryLines.clear();
 	}
+	// 텍스처 밉 스트리밍 (stat streaming — 0.25초마다)
+	if (Resources != nullptr && IsStatEnabled("stat.Streaming"))
+	{
+		StreamingSeconds -= DeltaSeconds;
+		if (StreamingSeconds <= 0.0f || StreamingLines.empty())
+		{
+			StreamingLines   = TextureStreaming::FormatStats(Resources->GetTextureStreamingStats());
+			StreamingSeconds = 0.25f;
+		}
+	}
+	else
+	{
+		StreamingLines.clear();
+	}
 }
 
 bool FStatOverlay::IsVisible() const
 {
-	return IsStatEnabled("stat.FPS") || IsStatEnabled("stat.GPU") || IsStatEnabled("stat.Memory");
+	return IsStatEnabled("stat.FPS") || IsStatEnabled("stat.GPU") || IsStatEnabled("stat.Memory") || IsStatEnabled("stat.Streaming");
 }
 
 std::vector<std::string> FStatOverlay::BuildLines(const FSceneRenderStats* Stats) const
@@ -86,6 +100,10 @@ std::vector<std::string> FStatOverlay::BuildLines(const FSceneRenderStats* Stats
 	if (IsStatEnabled("stat.Memory"))
 	{
 		Lines.insert(Lines.end(), MemoryLines.begin(), MemoryLines.end());
+	}
+	if (IsStatEnabled("stat.Streaming"))
+	{
+		Lines.insert(Lines.end(), StreamingLines.begin(), StreamingLines.end());
 	}
 	return Lines;
 }

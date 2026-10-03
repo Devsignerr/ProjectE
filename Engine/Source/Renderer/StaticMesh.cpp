@@ -1,6 +1,7 @@
 #include "Renderer/StaticMesh.h"
 
 #include "Renderer/LodMath.h"
+#include "Renderer/TextureStreamingMath.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -24,6 +25,8 @@ void FStaticMesh::PrepareCpuData(const FMeshData& MeshData, std::vector<uint32>&
 	}
 	CpuIndices = MeshData.Indices;
 	BoundingRadius = LocalBounds.GetExtent().Length();
+	// 텍스처 스트리밍용 UV 밀도: 쿠킹 모델은 저장된 값, 그 밖(내장 도형·폴리지·절차 메시)은 여기서 한 번 계산
+	UvDensity = MeshData.UvDensity > 0.0f ? MeshData.UvDensity : TextureStreamingMath::ComputeUvDensity(MeshData.Vertices, MeshData.Indices);
 
 	// LOD: LOD0 뒤에 단순화 인덱스를 이어 붙인다 (정점 공유)
 	Lods.clear();

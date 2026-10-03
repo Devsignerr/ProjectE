@@ -38,7 +38,9 @@ struct alignas(16) FPerFrameConstants
 	float                      SsrIntensity           = 1.0f;
 	// TAAU (Phase 48): 머티리얼/지형/폴리지 텍스처 샘플 밉 바이어스 (FUpscaleMath::ComputeMipBias, 네이티브 해상도면 0)
 	float                      MaterialMipBias        = 0.0f;
-	float                      PerFramePadding[3]     = {};
+	// 텍스처 밉 스트리밍 디버그 뷰 (r.DebugView mip): 1이면 메시 패스가 베이스 컬러 상주 밉을 색칠 (Mesh.hlsl MipDebugColor)
+	uint32                     DebugMipView           = 0;
+	float                      PerFramePadding[2]     = {};
 };
 static_assert(sizeof(FPerFrameConstants) == 320);
 

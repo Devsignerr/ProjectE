@@ -26,6 +26,11 @@ public:
 	static bool IsInPak(const std::filesystem::path& Path);
 	static bool ReadFile(const std::filesystem::path& Path, std::vector<uint8>& OutBytes);
 	static bool ReadTextFile(const std::filesystem::path& Path, std::string& OutText);
+	// 파일 일부 [Offset, Offset + Size) 읽기 (텍스처 밉 스트리밍). 범위가 파일 밖이면 false.
+	// pak 항목은 항목 전체 해시(FNV)를 검증할 수 없으므로 범위 읽기는 해시를 보지 않는다 — 읽는 쪽이 내용(머리/크기)을 검증한다
+	static bool ReadFileRange(const std::filesystem::path& Path, uint64 Offset, uint64 Size, std::vector<uint8>& OutBytes);
+	// 파일 크기 (pak 항목은 항목 크기). 없으면 nullopt
+	static std::optional<uint64> GetFileSize(const std::filesystem::path& Path);
 	// pak 항목은 pak 파일의 수정 시각 (항목이 바뀔 일이 없으므로 캐시 무효화 비교에 안전). 없으면 nullopt
 	static std::optional<std::filesystem::file_time_type> GetLastWriteTime(const std::filesystem::path& Path);
 

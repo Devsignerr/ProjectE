@@ -1226,6 +1226,35 @@ void FEditorApplication::DrawResourceMemoryStats()
 	}
 	ImGui::SameLine();
 	ConsoleVariableWidgets::Checkbox("자동 수거", "r.ResourceAutoCollect");
+
+	// 텍스처 밉 스트리밍 (Phase 53): 수거는 텍스처 전체를 해제, 스트리밍은 살아 있는 텍스처의 밉만 조절
+	if (ImGui::CollapsingHeader("텍스처 스트리밍", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		const FTextureStreamingStats Streaming = Resources.GetTextureStreamingStats();
+		if (Streaming.bActive && Streaming.PoolBytes > 0)
+		{
+			const float       Fraction = static_cast<float>(static_cast<double>(Streaming.ResidentBytes) / static_cast<double>(Streaming.PoolBytes));
+			const std::string Label    = std::format("풀 {} / 예산 {}", ResourceGc::FormatBytes(Streaming.ResidentBytes), ResourceGc::FormatBytes(Streaming.PoolBytes));
+			ImGui::PushStyleColor(ImGuiCol_PlotHistogram, Streaming.bOverBudget ? FEditorTheme::Danger : (Fraction > 0.85f ? FEditorTheme::Warning : FEditorTheme::Accent));
+			ImGui::ProgressBar(std::min(Fraction, 1.0f), ImVec2(-1.0f, 0.0f), Label.c_str());
+			ImGui::PopStyleColor();
+		}
+		for (const std::string& Line : TextureStreaming::FormatStats(Streaming))
+		{
+			ImGui::TextUnformatted(Line.c_str());
+		}
+		ConsoleVariableWidgets::Checkbox("스트리밍", "r.Streaming");
+		ImGui::SameLine();
+		if (FConsoleVariable* Pool = FConsoleManager::Get().FindVariable("r.Streaming.PoolSizeMB"))
+		{
+			int32 PoolMb = Pool->GetInt();
+			ImGui::SetNextItemWidth(120.0f);
+			if (ImGui::InputInt("예산 MB (0 = 자동)", &PoolMb, 64, 256))
+			{
+				Pool->SetInt(std::max(0, PoolMb));
+			}
+		}
+	}
 }
 
 // ---------------------------------------------------------------- 셰이더 핫 리로드

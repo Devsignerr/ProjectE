@@ -9,6 +9,7 @@
 #include "Core/StringConv.h"
 #include "Renderer/FbxLoader.h"
 #include "Renderer/ModelImportSettings.h"
+#include "Renderer/TextureStreamingMath.h"
 
 #include <algorithm>
 #include <chrono>
@@ -347,15 +348,31 @@ bool FAssetCache::CookTextureAsset(const std::filesystem::path& SourcePath, ETex
 
 // ---------------------------------------------------------------- 모델
 
-void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
+void FAssetCache::ComputeModelUvDensities(FModelData& Model)
+{
+	for (FModelMesh& Mesh : Model.Meshes)
+	{
+		Mesh.Data.UvDensity = TextureStreamingMath::ComputeUvDensity(Mesh.Data.Vertices, Mesh.Data.Indices);
+	}
+}
+
+void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model, std::vector<uint64>* OutImagePayloadOffsets)
 {
 	WriteHeader(Writer, ModelMagic, ModelVersion);
 	Writer.WriteString(Model.Name);
 
 	Writer.Write(static_cast<uint32>(Model.Images.size()));
+	if (OutImagePayloadOffsets != nullptr)
+	{
+		OutImagePayloadOffsets->clear();
+	}
 	for (const FModelImage& Image : Model.Images)
 	{
 		Writer.WriteString(Image.Name);
+		if (OutImagePayloadOffsets != nullptr)
+		{
+			OutImagePayloadOffsets->push_back(Writer.GetBuffer().size());
+		}
 		WriteTexturePayload(Writer, Image.Texture); // 디코딩 실패/미사용 이미지는 밉 0개
 	}
 
@@ -387,6 +404,7 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model)
 		Writer.WriteArray(Mesh.Data.Vertices);
 		Writer.WriteArray(Mesh.Data.Indices);
 		Writer.WriteArray(Mesh.SkinVertices);
+		Writer.Write(Mesh.Data.UvDensity);
 		Writer.Write(static_cast<uint32>(Mesh.Data.Lods.size()));
 		for (const FMeshLod& Lod : Mesh.Data.Lods)
 		{
@@ -454,7 +472,8 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 	OutModel.Images.resize(ImageCount);
 	for (FModelImage& Image : OutModel.Images)
 	{
-		Image.Name = Reader.ReadString();
+		Image.Name                = Reader.ReadString();
+		Image.CookedPayloadOffset = Reader.GetOffset(); // 파일 전체를 읽으므로 파일 안 위치와 같다
 		if (!ReadTexturePayload(Reader, Image.Texture, true))
 		{
 			return false;
@@ -501,6 +520,7 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		Mesh.Data.Vertices = Reader.ReadArray<FVertex>();
 		Mesh.Data.Indices  = Reader.ReadArray<uint32>();
 		Mesh.SkinVertices  = Reader.ReadArray<FSkinVertex>();
+		Mesh.Data.UvDensity = Reader.Read<float>();
 		const uint32 LodCount = Reader.Read<uint32>();
 		if (LodCount > 16)
 		{
@@ -665,6 +685,7 @@ FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& So
 		{
 			const double Ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count();
 			E_LOG(LogRenderer, Display, "쿠킹 모델 사용: {} ({:.1f} ms)", ToDisplay(SourcePath), Ms);
+			OutModel.CookedPath = CookedPath;
 			return ESource::Cooked;
 		}
 		E_LOG(LogRenderer, Warning, "쿠킹 모델이 손상되었거나 형식이 달라 원본을 다시 읽습니다: {}", ToDisplay(CookedPath));
@@ -678,14 +699,25 @@ FAssetCache::ESource FAssetCache::LoadModelAsset(const std::filesystem::path& So
 	const double Ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - StartTime).count();
 	E_LOG(LogRenderer, Display, "원본 모델 변환: {} ({:.1f} ms)", ToDisplay(SourcePath), Ms);
 	CompressModelImages(OutModel);
+	ComputeModelUvDensities(OutModel);
 
 	if (bWriteCooked && !CookedPath.empty())
 	{
-		FBinaryWriter Writer;
-		WriteModel(Writer, OutModel);
+		FBinaryWriter       Writer;
+		std::vector<uint64> ImageOffsets;
+		WriteModel(Writer, OutModel, &ImageOffsets);
 		if (!Writer.SaveToFile(CookedPath))
 		{
 			E_LOG(LogRenderer, Warning, "쿠킹 모델을 기록하지 못했습니다: {}", FStringConv::ToUtf8(CookedPath.wstring()));
+		}
+		else
+		{
+			// 방금 기록한 파일에서 밉 스트리밍이 다시 읽을 수 있다
+			OutModel.CookedPath = CookedPath;
+			for (size_t Index = 0; Index < OutModel.Images.size() && Index < ImageOffsets.size(); ++Index)
+			{
+				OutModel.Images[Index].CookedPayloadOffset = ImageOffsets[Index];
+			}
 		}
 		WriteImportSettingsRecord(SourcePath, CookedPath);
 	}
@@ -706,6 +738,7 @@ bool FAssetCache::CookModelAsset(const std::filesystem::path& SourcePath)
 		return false;
 	}
 	CompressModelImages(Model);
+	ComputeModelUvDensities(Model);
 	FBinaryWriter Writer;
 	WriteModel(Writer, Model);
 	if (!Writer.SaveToFile(CookedPath))

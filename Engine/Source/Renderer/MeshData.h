@@ -29,6 +29,9 @@ struct FMeshData
 	std::vector<FVertex> Vertices;
 	std::vector<uint32>  Indices; // LOD0
 	std::vector<FMeshLod> Lods;   // LOD1.. (비어 있으면 LOD0만)
+	// UV 밀도 (UV 단위/cm, 로컬 — 텍스처 밉 스트리밍 TextureStreamingMath::ComputeUvDensity). 0 = 아직 계산 안 함 (FStaticMesh가 만들 때 계산).
+	// 쿠킹 모델은 쿠킹 때 계산해 저장한다 (FAssetCache::ModelVersion 9)
+	float UvDensity = 0.0f;
 
 	// 위치/UV/법선으로 탄젠트를 계산해 모든 정점에 채운다 (삼각형 단위 계산 → 정점 누적 → 그람-슈미트).
 	// UV가 퇴화한 정점은 법선에 수직인 임의 탄젠트를 쓴다.

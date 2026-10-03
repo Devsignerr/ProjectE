@@ -23,6 +23,14 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)
 	extern TAutoConsoleVariable<int32> AsyncLoading;     // r.AsyncLoading   (--sync-loading = 0, --async-loading = 1) — FResourceManager가 프레임마다 읽음
+	// 텍스처 밉 스트리밍 (Phase 53, Renderer/TextureStreaming.h) — FResourceManager가 프레임마다 읽음
+	extern TAutoConsoleVariable<bool>  Streaming;                   // r.Streaming (--no-texture-streaming / --texture-streaming)
+	extern TAutoConsoleVariable<int32> StreamingPoolSizeMB;         // r.Streaming.PoolSizeMB (--streaming-pool-mb N, 0 = 자동)
+	extern TAutoConsoleVariable<float> StreamingMaxUploadMBPerFrame; // r.Streaming.MaxUploadMBPerFrame
+	extern TAutoConsoleVariable<float> StreamingDropDelay;          // r.Streaming.DropDelay (초)
+	extern TAutoConsoleVariable<int32> StreamingMipMargin;          // r.Streaming.MipMargin
+	extern TAutoConsoleVariable<bool>  StatStreaming;               // stat.Streaming (stat streaming)
+	extern TAutoConsoleVariable<float> StreamingLogStats;           // r.Streaming.LogStats (초, 측정용 주기 로그)
 
 	// 렌더 그래프 (Phase 47)
 	extern TAutoConsoleVariable<bool> RenderGraphCull;          // r.RenderGraph.Cull          (안 쓰는 패스 제거, 끄면 모두 실행 — 비교용)

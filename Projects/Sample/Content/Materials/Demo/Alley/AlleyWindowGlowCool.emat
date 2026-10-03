@@ -1,0 +1,23 @@
+{
+  "Name": "AlleyWindowGlowCool",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.7,
+    1.1,
+    1.6
+  ],
+  "Metallic": 0.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

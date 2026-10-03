@@ -1,0 +1,23 @@
+{
+  "Name": "DecalOil",
+  "BaseColorFactor": [
+    0.012,
+    0.012,
+    0.014,
+    0.85
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.08,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "PuddleB.png",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

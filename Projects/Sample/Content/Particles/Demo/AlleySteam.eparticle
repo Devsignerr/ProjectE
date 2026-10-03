@@ -1,0 +1,51 @@
+{
+  "Name": "AlleySteam",
+  "Duration": 1.0,
+  "Loop": true,
+  "BurstCount": 0,
+  "Shape": 0,
+  "ShapeExtent": [
+    10.0,
+    10.0,
+    10.0
+  ],
+  "Direction": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "RandomRotation": true,
+  "Texture": "",
+  "SpawnRate": 9.0,
+  "MaxParticles": 64,
+  "ShapeRadius": 12.0,
+  "LifetimeMin": 3.0,
+  "LifetimeMax": 4.2,
+  "ConeAngle": 18.0,
+  "SpeedMin": 35.0,
+  "SpeedMax": 70.0,
+  "RotationSpeedMin": -20.0,
+  "RotationSpeedMax": 20.0,
+  "SizeStart": 18.0,
+  "SizeEnd": 150.0,
+  "ColorStart": [
+    0.7,
+    0.72,
+    0.76,
+    0.12
+  ],
+  "ColorEnd": [
+    0.7,
+    0.72,
+    0.76,
+    0.0
+  ],
+  "Acceleration": [
+    0.0,
+    0.0,
+    12.0
+  ],
+  "Drag": 0.4,
+  "BlendMode": 0,
+  "Seed": 31
+}

@@ -1,0 +1,51 @@
+{
+  "Name": "AlleyStoveSmoke",
+  "Duration": 1.0,
+  "Loop": true,
+  "BurstCount": 0,
+  "Shape": 0,
+  "ShapeExtent": [
+    10.0,
+    10.0,
+    10.0
+  ],
+  "Direction": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "RandomRotation": true,
+  "Texture": "",
+  "SpawnRate": 7.0,
+  "MaxParticles": 64,
+  "ShapeRadius": 18.0,
+  "LifetimeMin": 4.0,
+  "LifetimeMax": 5.5,
+  "ConeAngle": 12.0,
+  "SpeedMin": 55.0,
+  "SpeedMax": 90.0,
+  "RotationSpeedMin": -25.0,
+  "RotationSpeedMax": 25.0,
+  "SizeStart": 30.0,
+  "SizeEnd": 210.0,
+  "ColorStart": [
+    0.22,
+    0.21,
+    0.2,
+    0.38
+  ],
+  "ColorEnd": [
+    0.3,
+    0.3,
+    0.3,
+    0.0
+  ],
+  "Acceleration": [
+    8.0,
+    0.0,
+    14.0
+  ],
+  "Drag": 0.5,
+  "BlendMode": 0,
+  "Seed": 37
+}

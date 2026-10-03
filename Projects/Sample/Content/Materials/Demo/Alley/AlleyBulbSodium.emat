@@ -1,0 +1,23 @@
+{
+  "Name": "AlleyBulbSodium",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    40.0,
+    18.0,
+    5.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

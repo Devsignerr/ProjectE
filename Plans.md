@@ -913,4 +913,5 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
   - [ ] 서브맵: Lighting(아트리움 GI) / Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
+    - [x] Alley (비 그친 밤 뒷골목: 키트 조립 파사드 `Asset/DemoKits/Alley/AlleyArchitecture.gltf`, 로컬 라이트 12(그림자 4)·네온·깜빡임 `FlickerLight.lua`, 볼류메트릭 안개, 젖은 아스팔트(월드 UV 그래프)·웅덩이/습기 데칼·배수로 물, 화로 불·연기·증기 파티클, 달밤 22:30) — `Tools/DemoMap/BuildAlley.py`, 1280x720 Release 3.4ms
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

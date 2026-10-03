@@ -1,0 +1,46 @@
+{
+  "Name": "Beam_680x10",
+  "Parent": "TiledPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rough_wood/rough_wood_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rough_wood/rough_wood_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rough_wood/rough_wood_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        4.25,
+        0.06,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.8,
+        0.75,
+        0.7,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

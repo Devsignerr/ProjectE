@@ -1,0 +1,46 @@
+{
+  "Name": "Floor_1200x2000",
+  "Parent": "TiledPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/herringbone_parquet/herringbone_parquet_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/herringbone_parquet/herringbone_parquet_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/herringbone_parquet/herringbone_parquet_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        9.23,
+        15.38,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 0.45
+    }
+  ]
+}

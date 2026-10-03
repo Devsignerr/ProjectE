@@ -1,0 +1,23 @@
+{
+  "Name": "BarStripGlow",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    1.2,
+    0.75,
+    0.35
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.9,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

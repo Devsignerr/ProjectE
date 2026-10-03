@@ -912,5 +912,6 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
 - [~] 통합 Demo 허브 → 포털 + 기능별 서브맵 구조 (실사, Poly Haven CC0)
   - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
-  - [ ] 서브맵: Lighting(아트리움 GI) / Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
+  - [x] 서브맵 Lighting (항구 창고를 고친 선술집 홀: 남쪽 창 5개 햇빛 + 볼류메트릭 빛줄기, DDGI 볼륨, RTAO, 광택 헤링본 마루 RT 반사, 창 사각 면광원·바 조명 띠(IES Linear_Batwing)·원판 다운라이트(IES Downlight_Narrow)·갤러리 IES 벽 워셔, 샹들리에/탁자 램프, Poly Haven 가구 21종 + 텍스처 5종, 벽/바닥/천장은 타일 PBR 그래프 머티리얼 인스턴스) — `Tools/DemoMap/BuildLighting.py`, 1280x720 Release 5.7ms (2026-10-04)
+  - [ ] 서브맵: Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

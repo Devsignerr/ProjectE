@@ -131,6 +131,12 @@ float ComputeAreaLightShadow(FLocalLight Light, float3 WorldPosition, float3 Geo
 	const float MaxUV    = LocalShadowTexelSize * 32.0f;
 	const float Search   = clamp(Light.SourceRadius / max(TwoTan * Receiver, 1.0e-3f), MinUV, MaxUV); // 가림이 중간 깊이일 때의 반그림자
 	const float Resolution = 1.0f / max(LocalShadowTexelSize, 1.0e-6f);
+	// 수신 평면 기울기 바이어스: 넓은 커널이 기울어진 같은 면을 가림으로 읽지 않게 (커널 반경 월드 크기 × tan(빛 각) → 원근 깊이 차)
+	const float CosL       = max(NdotL, 0.1f);
+	const float TanL       = min(sqrt(1.0f - CosL * CosL) / CosL, 8.0f);
+	const float Range      = Light.ShadowFar / max(Light.ShadowFar - LocalShadowNearZ, 1.0e-3f);
+	const float DepthPerCm = LocalShadowNearZ * Range / max(Receiver * Receiver, 1.0e-3f);
+	const float SlopePerUV = TwoTan * Receiver * TanL * DepthPerCm;
 
 	float BlockerSum   = 0.0f;
 	float BlockerCount = 0.0f;
@@ -140,7 +146,7 @@ float ComputeAreaLightShadow(FLocalLight Light, float3 WorldPosition, float3 Geo
 		const float2 TapUV = saturate(UV + AreaShadowVogel(Index) * Search);
 		const int2   Pixel = min(int2(TapUV * Resolution), int2(Resolution - 1.0f, Resolution - 1.0f));
 		const float  Stored = LocalShadowMap.Load(int4(Pixel, Slice, 0));
-		if (Stored < Ndc.z)
+		if (Stored < Ndc.z - Search * SlopePerUV)
 		{
 			BlockerSum += Stored;
 			BlockerCount += 1.0f;
@@ -156,7 +162,7 @@ float ComputeAreaLightShadow(FLocalLight Light, float3 WorldPosition, float3 Geo
 	[unroll]
 	for (uint Tap = 0; Tap < 16; ++Tap)
 	{
-		Lit += LocalShadowMap.SampleCmpLevelZero(ShadowSampler, float3(UV + AreaShadowVogel(Tap) * Penumbra, Slice), Ndc.z);
+		Lit += LocalShadowMap.SampleCmpLevelZero(ShadowSampler, float3(UV + AreaShadowVogel(Tap) * Penumbra, Slice), Ndc.z - Penumbra * SlopePerUV);
 	}
 	return Lit / 16.0f;
 }

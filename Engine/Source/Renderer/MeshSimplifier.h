@@ -21,4 +21,23 @@ namespace MeshSimplifier
 	// 원본이 MinTriangles 미만이거나 직전 LOD보다 충분히 줄지 않으면(85% 초과) 거기서 멈춘다. LodCount ≤ 1이면 Lods를 비운다
 	constexpr uint32 MinTriangles = 64;
 	void GenerateLods(FMeshData& Mesh, uint32 LodCount);
+
+	// LOD0을 TargetTriangles 이하로 단순화하고 쓰지 않게 된 정점을 버린다 (임포트 설정 MaxTriangles — 스캔 에셋용). 이미 작으면 그대로
+	void SimplifyBase(FMeshData& Mesh, uint32 TargetTriangles);
+	// 쓰는 정점만 남기고 인덱스를 다시 매긴다 (순서 = 처음 쓰인 순서). LOD 인덱스도 함께
+	void CompactVertices(FMeshData& Mesh);
+
+	// ---- 잎 솎아내기 (마스크 컷아웃 잎처럼 서로 떨어진 작은 조각이 많은 메시 — QEM은 조각 사이를 붕괴하지 못한다)
+	//   조각(섬) = 위치가 같은 정점으로 이어진 삼각형 묶음. 섬마다 고정 해시 순으로 KeepRatio만큼 남기고, 남은 섬은 무게중심 기준으로
+	//   1/sqrt(KeepRatio)배(최대 MaxThinningScale) 키워 덮는 면적을 유지한다. 결정적(입력 순서만 사용).
+	constexpr uint32 MinIslands         = 256; // 섬이 이보다 적으면 잎 메시로 보지 않는다
+	constexpr uint32 MaxIslandTriangles = 96;  // 섬 하나의 평균 삼각형이 이보다 많으면 잎 메시로 보지 않는다
+	constexpr float  MaxThinningScale   = 3.0f;
+	bool IsIslandMesh(const FMeshData& Mesh);
+	// 삼각형마다 섬 번호(처음 나온 순서)를 채우고 섬 수를 돌려준다
+	uint32 FindIslands(const FMeshData& Mesh, std::vector<uint32>& OutTriangleIsland);
+	// LOD0 자체를 TargetTriangles 근처로 솎아 낸다 (정점·인덱스 교체, Lods 비움)
+	void ThinBase(FMeshData& Mesh, uint32 TargetTriangles);
+	// LOD1..을 솎아내기로 만든다 — 키운 정점은 정점 버퍼 뒤에 덧붙인다 (LOD0 인덱스·정점은 그대로)
+	void GenerateIslandLods(FMeshData& Mesh, uint32 LodCount);
 } // namespace MeshSimplifier

@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstring>
 #include <queue>
 #include <unordered_map>
 
@@ -545,6 +547,237 @@ namespace MeshSimplifier
 			Level.Indices    = Simplifier.GetIndices();
 			Level.ScreenSize = LodMath::DefaultScreenSizes[Lod];
 			PrevTriangles    = Triangles;
+		}
+	}
+
+	void CompactVertices(FMeshData& Mesh)
+	{
+		std::vector<uint32>  Remap(Mesh.Vertices.size(), UINT32_MAX);
+		std::vector<FVertex> Vertices;
+		const auto Visit = [&](std::vector<uint32>& Indices) {
+			for (uint32& Index : Indices)
+			{
+				if (Remap[Index] == UINT32_MAX)
+				{
+					Remap[Index] = static_cast<uint32>(Vertices.size());
+					Vertices.push_back(Mesh.Vertices[Index]);
+				}
+				Index = Remap[Index];
+			}
+		};
+		Visit(Mesh.Indices);
+		for (FMeshLod& Level : Mesh.Lods)
+		{
+			Visit(Level.Indices);
+		}
+		Mesh.Vertices = std::move(Vertices);
+	}
+
+	void SimplifyBase(FMeshData& Mesh, uint32 TargetTriangles)
+	{
+		if (TargetTriangles == 0 || Mesh.Indices.size() / 3 <= TargetTriangles)
+		{
+			return;
+		}
+		Mesh.Lods.clear();
+		Mesh.Indices = SimplifyToTriangleCount(Mesh.Vertices, Mesh.Indices, TargetTriangles);
+		CompactVertices(Mesh);
+	}
+
+	uint32 FindIslands(const FMeshData& Mesh, std::vector<uint32>& OutTriangleIsland)
+	{
+		// 위치가 같은 정점을 한 점으로 묶은 뒤(UV 이음매로 갈라진 정점도 같은 섬), 삼각형 꼭짓점끼리 합집합
+		const size_t        VertexCount = Mesh.Vertices.size();
+		std::vector<uint32> Parent(VertexCount);
+		for (size_t Index = 0; Index < VertexCount; ++Index)
+		{
+			Parent[Index] = static_cast<uint32>(Index);
+		}
+		const auto Find = [&Parent](uint32 X) {
+			while (Parent[X] != X)
+			{
+				Parent[X] = Parent[Parent[X]];
+				X         = Parent[X];
+			}
+			return X;
+		};
+		const auto Union = [&](uint32 A, uint32 B) {
+			A = Find(A);
+			B = Find(B);
+			if (A != B)
+			{
+				Parent[std::max(A, B)] = std::min(A, B);
+			}
+		};
+		struct FPositionKey
+		{
+			float X, Y, Z;
+			bool  operator==(const FPositionKey& Other) const { return X == Other.X && Y == Other.Y && Z == Other.Z; }
+		};
+		struct FPositionHash
+		{
+			size_t operator()(const FPositionKey& Key) const
+			{
+				uint32 Bits[3];
+				std::memcpy(Bits, &Key, sizeof(Bits));
+				return (static_cast<size_t>(Bits[0]) * 73856093u) ^ (static_cast<size_t>(Bits[1]) * 19349663u) ^ (static_cast<size_t>(Bits[2]) * 83492791u);
+			}
+		};
+		std::unordered_map<FPositionKey, uint32, FPositionHash> FirstAtPosition;
+		FirstAtPosition.reserve(VertexCount);
+		for (size_t Index = 0; Index < VertexCount; ++Index)
+		{
+			const FVector3& P = Mesh.Vertices[Index].Position;
+			const auto [It, bInserted] = FirstAtPosition.emplace(FPositionKey{ P.X, P.Y, P.Z }, static_cast<uint32>(Index));
+			if (!bInserted)
+			{
+				Union(It->second, static_cast<uint32>(Index));
+			}
+		}
+		const size_t TriangleCount = Mesh.Indices.size() / 3;
+		for (size_t Tri = 0; Tri < TriangleCount; ++Tri)
+		{
+			Union(Mesh.Indices[Tri * 3], Mesh.Indices[Tri * 3 + 1]);
+			Union(Mesh.Indices[Tri * 3], Mesh.Indices[Tri * 3 + 2]);
+		}
+		std::unordered_map<uint32, uint32> RootToIsland;
+		OutTriangleIsland.resize(TriangleCount);
+		for (size_t Tri = 0; Tri < TriangleCount; ++Tri)
+		{
+			const uint32 Root = Find(Mesh.Indices[Tri * 3]);
+			const auto [It, bInserted] = RootToIsland.emplace(Root, static_cast<uint32>(RootToIsland.size()));
+			OutTriangleIsland[Tri] = It->second;
+		}
+		return static_cast<uint32>(RootToIsland.size());
+	}
+
+	bool IsIslandMesh(const FMeshData& Mesh)
+	{
+		std::vector<uint32> TriangleIsland;
+		const uint32        Islands = FindIslands(Mesh, TriangleIsland);
+		return Islands >= MinIslands && TriangleIsland.size() <= static_cast<size_t>(Islands) * MaxIslandTriangles;
+	}
+} // namespace MeshSimplifier
+
+namespace
+{
+	uint64 SplitMix64(uint64 X)
+	{
+		X += 0x9E3779B97F4A7C15ull;
+		X = (X ^ (X >> 30)) * 0xBF58476D1CE4E5B9ull;
+		X = (X ^ (X >> 27)) * 0x94D049BB133111EBull;
+		return X ^ (X >> 31);
+	}
+
+	// 남길 섬 (고정 해시 순 앞에서 Keep개 — 공간적으로 고르게 흩어진다) + 섬별 무게중심 + 키울 배율
+	struct FIslandSelection
+	{
+		std::vector<uint8>    bKeep;
+		std::vector<FVector3> Centroids;
+		float                 Scale = 1.0f;
+	};
+
+	FIslandSelection SelectIslands(const FMeshData& Mesh, const std::vector<uint32>& TriangleIsland, uint32 Islands, float KeepRatio)
+	{
+		FIslandSelection Result;
+		Result.bKeep.assign(Islands, 0);
+		Result.Centroids.assign(Islands, FVector3::ZeroVector);
+		std::vector<uint32> Counts(Islands, 0);
+		for (size_t Tri = 0; Tri < TriangleIsland.size(); ++Tri)
+		{
+			const uint32 Island = TriangleIsland[Tri];
+			for (uint32 Corner = 0; Corner < 3; ++Corner)
+			{
+				Result.Centroids[Island] += Mesh.Vertices[Mesh.Indices[Tri * 3 + Corner]].Position;
+			}
+			Counts[Island] += 3;
+		}
+		for (uint32 Island = 0; Island < Islands; ++Island)
+		{
+			Result.Centroids[Island] = Result.Centroids[Island] / static_cast<float>(std::max(Counts[Island], 1u));
+		}
+		std::vector<std::pair<uint64, uint32>> Order(Islands);
+		for (uint32 Island = 0; Island < Islands; ++Island)
+		{
+			Order[Island] = { SplitMix64(Island), Island };
+		}
+		std::sort(Order.begin(), Order.end());
+		const uint32 Keep = std::clamp<uint32>(static_cast<uint32>(std::lround(static_cast<double>(Islands) * KeepRatio)), 1u, Islands);
+		for (uint32 Index = 0; Index < Keep; ++Index)
+		{
+			Result.bKeep[Order[Index].second] = 1;
+		}
+		const float ActualRatio = static_cast<float>(Keep) / static_cast<float>(Islands);
+		Result.Scale            = std::min(1.0f / std::sqrt(ActualRatio), MeshSimplifier::MaxThinningScale);
+		return Result;
+	}
+
+	// 남긴 섬의 삼각형을 키운 정점으로 Vertices 뒤에 덧붙이고 그 인덱스를 돌려준다
+	std::vector<uint32> AppendThinned(std::vector<FVertex>& Vertices, const FMeshData& Source, const std::vector<uint32>& TriangleIsland,
+		const FIslandSelection& Selection)
+	{
+		std::vector<uint32>                Indices;
+		std::unordered_map<uint32, uint32> Remap;
+		for (size_t Tri = 0; Tri < TriangleIsland.size(); ++Tri)
+		{
+			const uint32 Island = TriangleIsland[Tri];
+			if (!Selection.bKeep[Island])
+			{
+				continue;
+			}
+			for (uint32 Corner = 0; Corner < 3; ++Corner)
+			{
+				const uint32 SourceIndex = Source.Indices[Tri * 3 + Corner];
+				const auto [It, bInserted] = Remap.emplace(SourceIndex, static_cast<uint32>(Vertices.size()));
+				if (bInserted)
+				{
+					FVertex Vertex  = Source.Vertices[SourceIndex];
+					Vertex.Position = Selection.Centroids[Island] + (Vertex.Position - Selection.Centroids[Island]) * Selection.Scale;
+					Vertices.push_back(Vertex);
+				}
+				Indices.push_back(It->second);
+			}
+		}
+		return Indices;
+	}
+} // namespace
+
+namespace MeshSimplifier
+{
+	void ThinBase(FMeshData& Mesh, uint32 TargetTriangles)
+	{
+		const size_t TriangleCount = Mesh.Indices.size() / 3;
+		if (TargetTriangles == 0 || TriangleCount <= TargetTriangles)
+		{
+			return;
+		}
+		std::vector<uint32>    TriangleIsland;
+		const uint32           Islands   = FindIslands(Mesh, TriangleIsland);
+		const FIslandSelection Selection = SelectIslands(Mesh, TriangleIsland, Islands, static_cast<float>(TargetTriangles) / static_cast<float>(TriangleCount));
+		std::vector<FVertex>   Vertices;
+		std::vector<uint32>    Indices = AppendThinned(Vertices, Mesh, TriangleIsland, Selection);
+		Mesh.Vertices                  = std::move(Vertices);
+		Mesh.Indices                   = std::move(Indices);
+		Mesh.Lods.clear();
+	}
+
+	void GenerateIslandLods(FMeshData& Mesh, uint32 LodCount)
+	{
+		Mesh.Lods.clear();
+		LodCount = std::min(LodCount, LodMath::MaxLods);
+		if (LodCount <= 1)
+		{
+			return;
+		}
+		std::vector<uint32> TriangleIsland;
+		const uint32        Islands = FindIslands(Mesh, TriangleIsland);
+		const FMeshData     Base    = Mesh; // 덧붙이는 동안 LOD0 정점·인덱스를 읽는다
+		for (uint32 Lod = 1; Lod < LodCount; ++Lod)
+		{
+			const FIslandSelection Selection = SelectIslands(Base, TriangleIsland, Islands, LodMath::DefaultTriangleRatios[Lod]);
+			FMeshLod&              Level     = Mesh.Lods.emplace_back();
+			Level.Indices                    = AppendThinned(Mesh.Vertices, Base, TriangleIsland, Selection);
+			Level.ScreenSize                 = LodMath::DefaultScreenSizes[Lod];
 		}
 	}
 } // namespace MeshSimplifier

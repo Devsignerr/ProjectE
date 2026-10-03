@@ -251,3 +251,95 @@ E_TEST(Lod_ImportSettingsAndSerialization)
 	FBinaryReader BrokenReader(BrokenWriter.GetBuffer().data(), BrokenWriter.GetBuffer().size());
 	E_EXPECT_FALSE(FAssetCache::ReadModel(BrokenReader, Read));
 }
+
+namespace
+{
+	// 서로 떨어진 작은 사각형(잎) Count개 — 격자에 흩어 놓는다
+	FMeshData MakeLeafCloud(uint32 Count)
+	{
+		FMeshData Mesh;
+		for (uint32 Leaf = 0; Leaf < Count; ++Leaf)
+		{
+			const FVector3 Center(static_cast<float>(Leaf % 32) * 20.0f, static_cast<float>(Leaf / 32) * 20.0f, 0.0f);
+			const uint32   Base = static_cast<uint32>(Mesh.Vertices.size());
+			const FVector3 Corners[4] = { { -2, -2, 0 }, { 2, -2, 0 }, { 2, 2, 0 }, { -2, 2, 0 } };
+			for (const FVector3& Corner : Corners)
+			{
+				FVertex Vertex;
+				Vertex.Position = Center + Corner;
+				Vertex.Normal   = FVector3(0.0f, 0.0f, 1.0f);
+				Mesh.Vertices.push_back(Vertex);
+			}
+			const uint32 Quad[6] = { 0, 2, 1, 0, 3, 2 };
+			for (const uint32 Index : Quad)
+			{
+				Mesh.Indices.push_back(Base + Index);
+			}
+		}
+		return Mesh;
+	}
+} // namespace
+
+E_TEST(Lod_IslandThinningKeepsRatioAndScalesLeaves)
+{
+	FMeshData Leaves = MakeLeafCloud(1024);
+	std::vector<uint32> TriangleIsland;
+	E_EXPECT_EQ(MeshSimplifier::FindIslands(Leaves, TriangleIsland), 1024u);
+	E_EXPECT_TRUE(MeshSimplifier::IsIslandMesh(Leaves));
+	E_EXPECT_FALSE(MeshSimplifier::IsIslandMesh(FPrimitiveShapes::MakeSphere(50.0f, 32, 16))); // 이어진 메시는 아님
+
+	// LOD: 정점은 뒤에 덧붙고 LOD0은 그대로, 비율대로 줄고 남은 잎은 1/sqrt(비율)배
+	const std::vector<uint32> Lod0 = Leaves.Indices;
+	const size_t              Lod0Vertices = Leaves.Vertices.size();
+	MeshSimplifier::GenerateIslandLods(Leaves, 4);
+	E_EXPECT_TRUE(Leaves.Indices == Lod0);
+	E_EXPECT_EQ(Leaves.Lods.size(), static_cast<size_t>(3));
+	E_EXPECT_EQ(Leaves.Lods[0].Indices.size(), static_cast<size_t>(512 * 6)); // 50%
+	E_EXPECT_EQ(Leaves.Lods[2].Indices.size(), static_cast<size_t>(102 * 6)); // 10% (반올림)
+	E_EXPECT_TRUE(Leaves.Vertices.size() > Lod0Vertices);
+	const FVertex& A = Leaves.Vertices[Leaves.Lods[0].Indices[0]];
+	const FVertex& B = Leaves.Vertices[Leaves.Lods[0].Indices[1]];
+	E_EXPECT_NEAR((A.Position - B.Position).Length(), 4.0f * std::sqrt(2.0f) * std::sqrt(2.0f), 1e-3f); // 대각선 × √2
+
+	// 결정적: 같은 입력 → 같은 결과
+	FMeshData Again = MakeLeafCloud(1024);
+	MeshSimplifier::GenerateIslandLods(Again, 4);
+	E_EXPECT_TRUE(Again.Lods[1].Indices == Leaves.Lods[1].Indices);
+
+	// LOD0 솎아내기 (상한)
+	FMeshData Base = MakeLeafCloud(1024);
+	MeshSimplifier::ThinBase(Base, 512);
+	E_EXPECT_EQ(Base.Indices.size() / 3, static_cast<size_t>(512));
+	E_EXPECT_EQ(Base.Vertices.size(), static_cast<size_t>(256 * 4));
+}
+
+E_TEST(Lod_ImportMaxTrianglesSimplifiesAndCompacts)
+{
+	FModelData Model;
+	FModelMesh& Rock = Model.Meshes.emplace_back();
+	Rock.Data        = FPrimitiveShapes::MakeSphere(50.0f, 64, 32);
+	const size_t SourceTriangles = Rock.Data.Indices.size() / 3;
+	FModelImportSettings Settings;
+	Settings.MaxTriangles = 1000;
+	Settings.Apply(Model);
+	const FMeshData& Result = Model.Meshes[0].Data;
+	E_EXPECT_TRUE(Result.Indices.size() / 3 <= 1000 && Result.Indices.size() / 3 < SourceTriangles);
+	for (const uint32 Index : Result.Indices)
+	{
+		E_EXPECT_TRUE(Index < Result.Vertices.size());
+	}
+	E_EXPECT_TRUE(Result.Vertices.size() < 64u * 33u); // 쓰지 않는 정점은 버렸다
+
+	// 마스크 잎 메시는 솎아내기
+	FModelData Tree;
+	Tree.Materials.resize(1);
+	Tree.Materials[0].BlendMode = EMaterialBlendMode::Masked;
+	FModelMesh& Leaves = Tree.Meshes.emplace_back();
+	Leaves.Data        = MakeLeafCloud(1024);
+	Leaves.Material    = 0;
+	Settings.MaxTriangles = 1024;
+	Settings.Apply(Tree);
+	E_EXPECT_EQ(Tree.Meshes[0].Data.Indices.size() / 3, static_cast<size_t>(1024));
+	E_EXPECT_EQ(Tree.Meshes[0].Data.Lods.size(), static_cast<size_t>(3));
+}
+

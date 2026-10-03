@@ -1,3 +1,4 @@
 {
-  "BlendAsMasked": true
+  "BlendAsMasked": true,
+  "MaxTriangles": 600000
 }

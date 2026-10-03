@@ -190,8 +190,17 @@ def WriteTerrainMaterials():
 			File.write("\n")
 
 
-# 잎·풀 컷아웃이 BLEND로 저장된 에셋 → 마스크로 (그림자·깊이 정렬)
-BLEND_AS_MASKED = ["island_tree_02", "jacaranda_tree", "wild_rooibos_bush"]
+# 임포트 설정 (.eimport): 스캔 에셋은 쿠킹 때 LOD0 삼각형 상한(MaxTriangles)으로 줄인다 — 원본은 수십만~수백만 삼각형.
+#   잎·풀 컷아웃이 BLEND로 저장된 에셋은 마스크로 (그림자·깊이 정렬, 잎 솎아내기 LOD 대상)
+IMPORT_SETTINGS = {
+	"jacaranda_tree":      {"BlendAsMasked": True, "MaxTriangles": 600000},
+	"wild_rooibos_bush":   {"BlendAsMasked": True},
+	"coast_land_rocks_03": {"MaxTriangles": 60000},
+	"coast_rocks_05":      {"MaxTriangles": 50000},
+	"sand_rocks_small_01": {"MaxTriangles": 40000},
+	"coastal_cliff_01":    {"MaxTriangles": 150000},
+	"coastal_cliff_02":    {"MaxTriangles": 150000},
+}
 
 
 def WritePortalMaterial():
@@ -207,9 +216,8 @@ def WritePortalMaterial():
 
 
 def WriteImportSettings():
-	for Id in BLEND_AS_MASKED:
+	for Id, Settings in IMPORT_SETTINGS.items():
 		Path = os.path.join(CONTENT, "Asset", "PolyHaven", Id, f"{Id}.gltf.eimport")
-		Settings = {"BlendAsMasked": True}
 		with open(Path, "w", encoding="utf-8", newline="\n") as File:
 			json.dump(Settings, File, indent=2)
 			File.write("\n")
@@ -394,17 +402,11 @@ def BuildScene(Height):
 		return SEA_LEVEL + 120.0 < Z < 2200.0 and X < ShorelineX(Y) - 800.0
 
 	Trees = 0
-	while Trees < 9:
+	while Trees < 5:
 		X, Y = Rng.uniform(-9000.0, 4000.0), Rng.uniform(-11000.0, 7000.0)
 		if Free(X, Y, 3200.0):
 			Place(f"Tree_Jacaranda_{Trees}", "jacaranda_tree", X, Y, Rng.uniform(0, 360), Rng.uniform(0.75, 1.0), Sink=20.0)
 			Trees += 1
-	Small = 0
-	while Small < 10:
-		X, Y = Rng.uniform(-6000.0, 4500.0), Rng.uniform(-9000.0, 6000.0)
-		if Free(X, Y):
-			Place(f"Tree_Island_{Small}", "island_tree_02", X, Y, Rng.uniform(0, 360), Rng.uniform(1.0, 1.4), Sink=10.0)
-			Small += 1
 	Bushes = 0
 	while Bushes < 60:
 		X, Y = Rng.uniform(-8000.0, 5000.0), Rng.uniform(-11000.0, 8000.0)

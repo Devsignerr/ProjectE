@@ -25,6 +25,8 @@ struct FModelImportSettings
 	bool bBlendAsMasked     = false; // 반투명(glTF BLEND) 머티리얼을 마스크(알파 테스트)로 — 잎/풀 컷아웃이 BLEND로 저장된 스캔 에셋용 (그림자·깊이 정렬)
 	bool   bGenerateLods = true; // 정적 메시 LOD 자동 생성 (정점 군집 단순화, 스킨 메시는 제외)
 	uint32 LodCount      = 4;    // LOD0 포함 단계 수 (1~4, LodMath 기본 비율/화면 크기)
+	uint32 MaxTriangles  = 0;    // 0 = 제한 없음. 정적 메시 LOD0 삼각형 상한(모델 전체, 메시별 비율로 나눔) — 스캔 에셋을 쿠킹 때 줄인다
+	                             //   마스크 머티리얼의 잎 메시(MeshSimplifier::IsIslandMesh)는 솎아내기, 나머지는 QEM. 잎 메시의 LOD도 솎아내기
 
 	// 이 모델에 덧붙일 애니메이션 파일들 (원본 폴더 기준 상대 경로). 채널은 노드 이름으로 맞춘다
 	std::vector<std::string> AnimationSources;

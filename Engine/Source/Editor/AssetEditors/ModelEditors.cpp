@@ -670,6 +670,14 @@ void FModelEditorBase::DrawImportSettings(FAssetEditorEnvironment& Env)
 			S.LodCount = static_cast<uint32>(LodCount);
 		}
 	}
+	{
+		int32 MaxTriangles = static_cast<int32>(S.MaxTriangles);
+		ImGui::SetNextItemWidth(160.0f);
+		if (ImGui::InputInt("최대 삼각형 (0 = 제한 없음)", &MaxTriangles, 10000, 100000))
+		{
+			S.MaxTriangles = static_cast<uint32>(std::max(MaxTriangles, 0));
+		}
+	}
 
 	// 추가 애니메이션 파일 (같은 뼈대 이름을 가진 다른 모델 파일의 클립)
 	ImGui::TextUnformatted("추가 애니메이션 파일");

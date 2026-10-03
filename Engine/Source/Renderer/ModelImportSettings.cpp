@@ -55,6 +55,7 @@ std::string FModelImportSettings::ToJsonString() const
 	Document["BlendAsMasked"]     = bBlendAsMasked;
 	Document["GenerateLods"]      = bGenerateLods;
 	Document["LodCount"]          = LodCount;
+	Document["MaxTriangles"]      = MaxTriangles;
 	Document["AnimationSources"]  = AnimationSources;
 	return Document.dump(2);
 }
@@ -77,6 +78,7 @@ bool FModelImportSettings::FromJsonString(const std::string& Json)
 	bBlendAsMasked     = Document.value("BlendAsMasked", bBlendAsMasked);
 	bGenerateLods      = Document.value("GenerateLods", bGenerateLods);
 	LodCount           = std::clamp<uint32>(Document.value("LodCount", LodCount), 1u, LodMath::MaxLods);
+	MaxTriangles       = Document.value("MaxTriangles", MaxTriangles);
 	if (const auto It = Document.find("AnimationSources"); It != Document.end() && It->is_array())
 	{
 		for (const nlohmann::json& Item : *It)
@@ -165,6 +167,11 @@ void FModelImportSettings::Apply(FModelData& Model) const
 			}
 		}
 	}
+	size_t StaticTriangles = 0;
+	for (const FModelMesh& Mesh : Model.Meshes)
+	{
+		StaticTriangles += Mesh.SkinVertices.empty() ? Mesh.Data.Indices.size() / 3 : 0;
+	}
 	for (FModelMesh& Mesh : Model.Meshes)
 	{
 		if (bRecomputeNormals)
@@ -175,10 +182,35 @@ void FModelImportSettings::Apply(FModelData& Model) const
 		{
 			Mesh.Data.ComputeTangents();
 		}
-		// LOD: 정적 메시만 (스킨 메시는 항상 LOD0으로 그린다)
-		if (bGenerateLods && Mesh.SkinVertices.empty())
+		// 잎 메시 = 마스크 머티리얼 + 떨어진 작은 조각이 많은 메시 → 상한·LOD 모두 솎아내기 (QEM은 조각 사이를 줄이지 못한다)
+		const bool bStatic  = Mesh.SkinVertices.empty();
+		const bool bMasked  = Mesh.Material >= 0 && static_cast<size_t>(Mesh.Material) < Model.Materials.size() &&
+		                      Model.Materials[static_cast<size_t>(Mesh.Material)].BlendMode == EMaterialBlendMode::Masked;
+		const bool bIslands = bStatic && bMasked && (MaxTriangles > 0 || bGenerateLods) && MeshSimplifier::IsIslandMesh(Mesh.Data);
+		if (bStatic && MaxTriangles > 0 && StaticTriangles > MaxTriangles)
 		{
-			MeshSimplifier::GenerateLods(Mesh.Data, LodCount);
+			const double Share  = static_cast<double>(Mesh.Data.Indices.size() / 3) / static_cast<double>(StaticTriangles);
+			const uint32 Target = std::max<uint32>(static_cast<uint32>(Share * MaxTriangles), MeshSimplifier::MinTriangles);
+			if (bIslands)
+			{
+				MeshSimplifier::ThinBase(Mesh.Data, Target);
+			}
+			else
+			{
+				MeshSimplifier::SimplifyBase(Mesh.Data, Target);
+			}
+		}
+		// LOD: 정적 메시만 (스킨 메시는 항상 LOD0으로 그린다)
+		if (bGenerateLods && bStatic)
+		{
+			if (bIslands)
+			{
+				MeshSimplifier::GenerateIslandLods(Mesh.Data, LodCount);
+			}
+			else
+			{
+				MeshSimplifier::GenerateLods(Mesh.Data, LodCount);
+			}
 		}
 		else
 		{

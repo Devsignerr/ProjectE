@@ -100,7 +100,8 @@ struct FSceneRenderStats
 	uint32 ParticleEmittersCulled = 0; // 화면 밖이라 그리지 않은 이미터 (GPU 이미터는 계산도 미룸)
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
-	uint32 SkinnedDrawn  = 0; // 팔레트를 계산한 스킨 메시 (메인 프러스텀 ∪ 그림자 캐스터 볼륨)
+	uint32 SkinnedDrawn  = 0; // 팔레트로 그리는 스킨 메시 엔티티 (메인 프러스텀 ∪ 그림자 캐스터 볼륨)
+	uint32 SkinPalettes  = 0; // 이번 프레임 계산한 팔레트 수 (같은 스킨의 프리미티브는 하나를 공유)
 	uint32 SkinnedCulled = 0; // 가시성 판정에서 빠진 스킨 메시
 	uint64 UploadBytes   = 0; // 씬 렌더러가 이번 프레임 동적 업로드 버퍼에 쓴 양
 	// 오클루전 컬링 (GPU 리드백 — 몇 프레임 늦은 값): 검사한 정적 인스턴스, 1단계/2단계에서 그린 수
@@ -489,6 +490,7 @@ private:
 		double OcclusionPhase2 = 0.0; // 2단계에서 그린 수 (이전 프레임 HZB만 썼다면 한 프레임 늦게 나왔을 물체)
 		uint32 TotalMeshes     = 0;
 		double SkinnedDrawn    = 0.0;
+		double SkinPalettes    = 0.0;
 		double SkinnedCulled   = 0.0;
 		double UploadBytes     = 0.0;
 	};

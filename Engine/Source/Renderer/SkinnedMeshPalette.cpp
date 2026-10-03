@@ -1,11 +1,13 @@
 #include "Renderer/SkinnedMeshPalette.h"
 
+#include "Core/Jobs/ParallelFor.h"
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SkinnedMeshData.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Scene.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace
@@ -79,16 +81,52 @@ FBox FSkinnedMeshPalette::ComputeConservativeBounds(const std::vector<FMatrix4x4
 	return Result;
 }
 
+bool FSkinnedMeshPalette::IsSameSkin(const FCandidate& Candidate, const FGroup& Group)
+{
+	const FSkinComponent& Skin   = *Candidate.Skin;
+	const FSkinComponent& Leader = *Candidates[Group.Leader].Skin;
+	if (&Skin == &Leader)
+	{
+		return true;
+	}
+	if (Skin.Joints.size() != Leader.Joints.size() || Skin.InverseBindMatrices.size() != Leader.InverseBindMatrices.size() ||
+	    !std::equal(Skin.Joints.begin(), Skin.Joints.end(), Leader.Joints.begin()))
+	{
+		return false;
+	}
+	// 역바인드 행렬 내용 비교는 (대표, 자기) 배열 주소가 지난번 확인 때와 같으면 생략 (조인트 반경 캐시와 같은 가정 — 배열을 바꾸면 주소가 바뀐다)
+	FEntitySlot&      Slot        = Slots[Candidate.Entity.Index];
+	const FMatrix4x4* LeaderData  = Leader.InverseBindMatrices.data();
+	const FMatrix4x4* OwnData     = Skin.InverseBindMatrices.data();
+	const size_t      MatrixCount = Skin.InverseBindMatrices.size();
+	if (Slot.SharedLeaderInverseBind == LeaderData && Slot.SharedOwnInverseBind == OwnData && Slot.SharedCount == MatrixCount)
+	{
+		return true;
+	}
+	if (MatrixCount > 0 && std::memcmp(LeaderData, OwnData, sizeof(FMatrix4x4) * MatrixCount) != 0)
+	{
+		return false;
+	}
+	Slot.SharedLeaderInverseBind = LeaderData;
+	Slot.SharedOwnInverseBind    = OwnData;
+	Slot.SharedCount             = MatrixCount;
+	return true;
+}
+
 void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources, FD3D12DynamicUploadBuffer& DynamicBuffer,
                                 const FVisibilityTest& IsVisible)
 {
 	Draws.clear();
-	Bones.clear();
-	PrevBones.clear();
-	CulledCount = 0;
+	Candidates.clear();
+	Groups.clear();
+	GroupBones.clear();
+	CulledCount  = 0;
+	PaletteCount = 0;
+	BoneCount    = 0;
 	++BuildCount;
 	FRegistry& Registry = Scene.GetRegistry();
 
+	// 1) 호출 스레드: 후보 수집 + 팔레트 공유 그룹 (그룹별 조인트 행렬 자리만 잡는다)
 	Registry.View<FSkinComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FSkinComponent& Skin, FStaticMeshComponent& MeshComponent) {
 		const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
 		if (Mesh == nullptr || !Mesh->IsReady() || !Mesh->IsSkinned() || Skin.Joints.empty())
@@ -105,84 +143,244 @@ void FSkinnedMeshPalette::Build(FScene& Scene, const FResourceManager& Resources
 		Slot.Frame        = BuildCount;
 		Slot.Draw         = -1;
 
-		const size_t JointCount = FMath::Min<size_t>(Skin.Joints.size(), MaxSkinJoints);
-		JointWorldScratch.resize(JointCount);
-		for (size_t Index = 0; Index < JointCount; ++Index)
-		{
-			const FTransformComponent* Joint = Registry.IsValid(Skin.Joints[Index]) ? Registry.TryGet<FTransformComponent>(Skin.Joints[Index]) : nullptr;
-			JointWorldScratch[Index]         = Joint ? Joint->WorldMatrix : FMatrix4x4::Identity;
-		}
+		const uint32 CandidateIndex = static_cast<uint32>(Candidates.size());
+		FCandidate&  Candidate      = Candidates.emplace_back();
+		Candidate.Entity            = Entity;
+		Candidate.Skin              = &Skin;
+		Candidate.Mesh              = Mesh;
+		Candidate.bTestVisibility   = IsVisible && MeshComponent.bVisible;
 
-		// 가시성: 팔레트 전에 조인트 위치 기반 보수적 경계로 판정 (조인트 반경은 엔티티별 캐시)
-		if (IsVisible && MeshComponent.bVisible)
+		// 첫 조인트가 같은 그룹들 중 같은 스킨을 찾는다
+		const FEntity Root      = Skin.Joints[0];
+		int32*        ChainHead = nullptr;
+		if (Root.IsValid())
 		{
-			if (Slot.RadiiGeneration != Entity.Generation || Slot.Mesh != Mesh || Slot.InverseBind != Skin.InverseBindMatrices.data() ||
-			    Slot.Count != Skin.InverseBindMatrices.size())
+			if (GroupByRootJoint.size() <= Root.Index)
 			{
-				ComputeJointRadii(Mesh->GetLocalBounds(), Skin.InverseBindMatrices, Slot.Radii);
-				Slot.Mesh            = Mesh;
-				Slot.InverseBind     = Skin.InverseBindMatrices.data();
-				Slot.Count           = Skin.InverseBindMatrices.size();
-				Slot.RadiiGeneration = Entity.Generation;
+				GroupByRootJoint.resize(Root.Index + 1, { 0, -1 });
 			}
-			if (!IsVisible(ComputeConservativeBounds(JointWorldScratch, Slot.Radii)))
+			std::pair<uint64, int32>& Bucket = GroupByRootJoint[Root.Index];
+			if (Bucket.first != BuildCount)
 			{
-				++CulledCount;
-				return;
+				Bucket = { BuildCount, -1 };
 			}
-		}
-
-		ComputePalette(Skin.InverseBindMatrices, JointWorldScratch, PaletteScratch);
-
-		// 정점은 바인드 공간 → 조인트별 팔레트로 월드. 가중 평균은 각 변환 결과의 볼록 결합이므로 합집합 경계에 포함된다
-		FSkinnedDrawInfo Info;
-		Info.BoneOffset              = static_cast<uint32>(Bones.size());
-		Info.BoneCount               = static_cast<uint32>(PaletteScratch.size());
-		const FBox&    LocalBounds   = Mesh->GetLocalBounds();
-		const FVector3 LocalCenter   = LocalBounds.GetCenter();
-		const FVector3 LocalExtent   = LocalBounds.GetExtent();
-		for (const FMatrix4x4& Bone : PaletteScratch)
-		{
-			Info.WorldBounds.AddBox(TransformBoxFast(LocalCenter, LocalExtent, Bone));
-		}
-		Bones.insert(Bones.end(), PaletteScratch.begin(), PaletteScratch.end());
-
-		// 이전 프레임 팔레트: 바로 앞 Build에서 같은 엔티티의 팔레트를 계산했을 때만 (PrevBones 안 위치, 업로드 때 Bones 뒤로 옮긴다)
-		Info.PrevBoneOffset = ~0u;
-		if (bTrackPrevious)
-		{
-			if (Slot.PaletteBuild + 1 == BuildCount && Slot.PaletteGeneration == Entity.Generation && Slot.PrevPalette.size() == PaletteScratch.size())
+			ChainHead = &Bucket.second;
+			for (int32 GroupIndex = Bucket.second; GroupIndex >= 0; GroupIndex = Groups[GroupIndex].NextSameRoot)
 			{
-				Info.PrevBoneOffset = static_cast<uint32>(PrevBones.size());
-				PrevBones.insert(PrevBones.end(), Slot.PrevPalette.begin(), Slot.PrevPalette.end());
+				FGroup& Existing = Groups[GroupIndex];
+				if (IsSameSkin(Candidate, Existing))
+				{
+					Candidate.Group                            = static_cast<uint32>(GroupIndex);
+					Candidates[Existing.LastMember].NextMember = static_cast<int32>(CandidateIndex);
+					Existing.LastMember                        = static_cast<int32>(CandidateIndex);
+					return;
+				}
 			}
-			Slot.PrevPalette       = PaletteScratch;
-			Slot.PaletteBuild      = BuildCount;
-			Slot.PaletteGeneration = Entity.Generation;
 		}
-		Slot.Draw = static_cast<int32>(Draws.size());
-		Draws.push_back(Info);
+
+		// 새 그룹
+		const uint32 JointCount = static_cast<uint32>(FMath::Min<size_t>(Skin.Joints.size(), MaxSkinJoints));
+		FGroup&      Group      = Groups.emplace_back();
+		Group.Leader            = CandidateIndex;
+		Group.LastMember        = static_cast<int32>(CandidateIndex);
+		Group.JointOffset       = static_cast<uint32>(GroupBones.size());
+		Group.JointCount        = JointCount;
+		Group.PaletteCount      = static_cast<uint32>(FMath::Min<size_t>(Skin.InverseBindMatrices.size(), JointCount));
+		Candidate.Group         = static_cast<uint32>(Groups.size() - 1);
+		if (ChainHead != nullptr)
+		{
+			Group.NextSameRoot = *ChainHead;
+			*ChainHead         = static_cast<int32>(Candidate.Group);
+		}
+		GroupBones.resize(GroupBones.size() + JointCount);
 	});
 
-	const uint32 CurrentCount = static_cast<uint32>(Bones.size());
-	for (FSkinnedDrawInfo& Draw : Draws)
+	// 2) 병렬 (그룹마다, 쓰는 데이터는 그룹·구성원·그 엔티티 칸뿐): 조인트 월드 행렬 읽기(트랜스폼 풀 읽기 전용) →
+	//    구성원 가시성(팔레트 전에 조인트 위치 기반 보수적 경계, 조인트 반경은 엔티티별 캐시) → 하나라도 보이면 제자리 팔레트 →
+	//    보이는 구성원의 월드 경계 → 이전 프레임 팔레트 복사 + 대표 칸에 이번 팔레트 기록
+	GroupPrevBones.resize(GroupBones.size());
+	GroupJointScale.resize(GroupBones.size());
+	// 해제된 조인트 엔티티는 컴포넌트가 없고 풀이 세대까지 비교하므로 풀 조회만으로 Registry.IsValid와 같은 결과
+	const TSparseSet<FTransformComponent>* TransformPool = Registry.TryGetPool<FTransformComponent>();
+	FParallel::ParallelFor(static_cast<uint32>(Groups.size()), 4, [&](uint32 Begin, uint32 End) {
+		for (uint32 GroupIndex = Begin; GroupIndex < End; ++GroupIndex)
+		{
+			FGroup&     Group  = Groups[GroupIndex];
+			FMatrix4x4* Bones  = GroupBones.data() + Group.JointOffset;
+			Group.bVisible     = false;
+			const std::vector<FEntity>& JointEntities = Candidates[Group.Leader].Skin->Joints;
+			for (uint32 Index = 0; Index < Group.JointCount; ++Index)
+			{
+				const FTransformComponent* Joint = TransformPool != nullptr ? TransformPool->TryGet(JointEntities[Index]) : nullptr;
+				Bones[Index]                     = Joint ? Joint->WorldMatrix : FMatrix4x4::Identity;
+			}
+
+			// 보수적 경계의 그룹 공통 부분 (ComputeConservativeBounds와 같은 식 — 구성원마다 조인트 반경만 다르다):
+			// 조인트 위치 AABB와 조인트 3x3 프로베니우스 노름 제곱. 조인트 수 = min(조인트, 역바인드 수) = PaletteCount
+			float* JointScale = GroupJointScale.data() + Group.JointOffset;
+			FBox   JointBox;
+			for (uint32 Joint = 0; Joint < Group.PaletteCount; ++Joint)
+			{
+				const FMatrix4x4& M         = Bones[Joint];
+				float             Frobenius = 0.0f;
+				for (int32 Row = 0; Row < 3; ++Row)
+				{
+					Frobenius += M.M[Row][0] * M.M[Row][0] + M.M[Row][1] * M.M[Row][1] + M.M[Row][2] * M.M[Row][2];
+				}
+				JointScale[Joint] = Frobenius;
+				JointBox.AddPoint(FVector3(M.M[3][0], M.M[3][1], M.M[3][2]));
+			}
+			for (int32 Member = static_cast<int32>(Group.Leader); Member >= 0; Member = Candidates[Member].NextMember)
+			{
+				FCandidate& Candidate = Candidates[Member];
+				if (!Candidate.bTestVisibility)
+				{
+					Candidate.bVisible = true;
+					Group.bVisible     = true;
+					continue;
+				}
+				const FSkinComponent& Skin = *Candidate.Skin;
+				FEntitySlot&          Slot = Slots[Candidate.Entity.Index];
+				if (Slot.RadiiGeneration != Candidate.Entity.Generation || Slot.Mesh != Candidate.Mesh ||
+				    Slot.InverseBind != Skin.InverseBindMatrices.data() || Slot.Count != Skin.InverseBindMatrices.size())
+				{
+					ComputeJointRadii(Candidate.Mesh->GetLocalBounds(), Skin.InverseBindMatrices, Slot.Radii);
+					Slot.Mesh            = Candidate.Mesh;
+					Slot.InverseBind     = Skin.InverseBindMatrices.data();
+					Slot.Count           = Skin.InverseBindMatrices.size();
+					Slot.RadiiGeneration = Candidate.Entity.Generation;
+				}
+				FBox Conservative = JointBox;
+				if (Conservative.IsValid())
+				{
+					float MaxReachSquared = 0.0f;
+					for (uint32 Joint = 0; Joint < Group.PaletteCount; ++Joint)
+					{
+						MaxReachSquared = FMath::Max(MaxReachSquared, Slot.Radii[Joint] * Slot.Radii[Joint] * JointScale[Joint]);
+					}
+					const FVector3 Reach(FMath::Sqrt(MaxReachSquared));
+					Conservative = FBox(Conservative.Min - Reach, Conservative.Max + Reach);
+				}
+				Candidate.bVisible = IsVisible(Conservative);
+				Group.bVisible     = Group.bVisible || Candidate.bVisible;
+			}
+			if (!Group.bVisible)
+			{
+				continue;
+			}
+
+			// 팔레트[i] = InverseBind[i] * JointWorld[i] (제자리 — 이후 조인트 월드는 쓰지 않는다)
+			const FCandidate& Leader      = Candidates[Group.Leader];
+			const FMatrix4x4* InverseBind = Leader.Skin->InverseBindMatrices.data();
+			for (uint32 Bone = 0; Bone < Group.PaletteCount; ++Bone)
+			{
+				Bones[Bone] = InverseBind[Bone] * Bones[Bone];
+			}
+
+			// 정점은 바인드 공간 → 조인트별 팔레트로 월드. 가중 평균은 각 변환 결과의 볼록 결합이므로 합집합 경계에 포함된다
+			for (int32 Member = static_cast<int32>(Group.Leader); Member >= 0; Member = Candidates[Member].NextMember)
+			{
+				FCandidate& Candidate = Candidates[Member];
+				Candidate.WorldBounds = FBox();
+				if (!Candidate.bVisible)
+				{
+					continue;
+				}
+				const FBox&    LocalBounds = Candidate.Mesh->GetLocalBounds();
+				const FVector3 LocalCenter = LocalBounds.GetCenter();
+				const FVector3 LocalExtent = LocalBounds.GetExtent();
+				for (uint32 Bone = 0; Bone < Group.PaletteCount; ++Bone)
+				{
+					Candidate.WorldBounds.AddBox(TransformBoxFast(LocalCenter, LocalExtent, Bones[Bone]));
+				}
+			}
+
+			// 이전 프레임 팔레트: 대표가 바로 앞 Build에서도 대표로 팔레트를 남겼을 때만
+			Group.bHasPrev = false;
+			if (bTrackPrevious)
+			{
+				FEntitySlot& Slot = Slots[Leader.Entity.Index];
+				if (Slot.PrevPaletteBuild + 1 == BuildCount && Slot.PaletteGeneration == Leader.Entity.Generation &&
+				    Slot.PrevPalette.size() == Group.PaletteCount)
+				{
+					std::copy(Slot.PrevPalette.begin(), Slot.PrevPalette.end(), GroupPrevBones.begin() + Group.JointOffset);
+					Group.bHasPrev = true;
+				}
+				Slot.PrevPalette.assign(Bones, Bones + Group.PaletteCount);
+				Slot.PrevPaletteBuild = BuildCount;
+			}
+		}
+	});
+
+	// 3) 호출 스레드: 보이는 그룹의 업로드 자리 (그룹 순서), 드로우 정보 (후보 순서), 구성원 이력
+	uint32 PrevBoneCount = 0;
+	for (FGroup& Group : Groups)
 	{
-		Draw.PrevBoneOffset = Draw.PrevBoneOffset == ~0u ? Draw.BoneOffset : Draw.PrevBoneOffset + CurrentCount;
+		if (!Group.bVisible)
+		{
+			continue;
+		}
+		++PaletteCount;
+		Group.BoneOffset = BoneCount;
+		BoneCount += Group.PaletteCount;
+		Group.PrevOffset = ~0u;
+		if (Group.bHasPrev)
+		{
+			Group.PrevOffset = PrevBoneCount;
+			PrevBoneCount += Group.PaletteCount;
+		}
+	}
+	for (const FCandidate& Candidate : Candidates)
+	{
+		if (!Candidate.bVisible)
+		{
+			++CulledCount;
+			continue;
+		}
+		const FGroup&     Group = Groups[Candidate.Group];
+		FEntitySlot&      Slot  = Slots[Candidate.Entity.Index];
+		FSkinnedDrawInfo& Info  = Draws.emplace_back();
+		Info.BoneOffset         = Group.BoneOffset;
+		Info.BoneCount          = Group.PaletteCount;
+		Info.PrevBoneOffset     = Group.BoneOffset;
+		Info.WorldBounds        = Candidate.WorldBounds;
+		if (bTrackPrevious)
+		{
+			// 구성원 이력: 바로 앞 Build에서도 같은 대표의 그룹에서 그려졌어야 한다
+			const FEntity Leader = Candidates[Group.Leader].Entity;
+			if (Group.PrevOffset != ~0u && Slot.PaletteBuild + 1 == BuildCount && Slot.PaletteGeneration == Candidate.Entity.Generation &&
+			    Slot.PaletteLeader == Leader)
+			{
+				Info.PrevBoneOffset = BoneCount + Group.PrevOffset;
+			}
+			Slot.PaletteBuild      = BuildCount;
+			Slot.PaletteGeneration = Candidate.Entity.Generation;
+			Slot.PaletteLeader     = Leader;
+		}
+		Slot.Draw = static_cast<int32>(Draws.size() - 1);
 	}
 
-	// 팔레트 한 번에 업로드: [이번 프레임][이전 프레임] (빈 프레임도 루트 SRV가 유효한 주소를 가리키게 한 칸)
-	const size_t                  Count      = FMath::Max<size_t>(Bones.size() + PrevBones.size(), 1);
+	// 팔레트 한 번에 업로드: [이번 프레임 (보이는 그룹 순)][이전 프레임 (이력 있는 그룹 순)] (빈 프레임도 루트 SRV가 유효한 주소를 가리키게 한 칸).
+	// 업로드 힙(쓰기 결합)에는 순차로만 쓴다
+	const size_t                  Count      = FMath::Max<size_t>(BoneCount + PrevBoneCount, 1);
 	const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(FMatrix4x4) * Count, 16);
-	if (Bones.empty())
+	FMatrix4x4*                   Destination = static_cast<FMatrix4x4*>(Allocation.CpuAddress);
+	if (BoneCount == 0)
 	{
-		std::memcpy(Allocation.CpuAddress, &FMatrix4x4::Identity, sizeof(FMatrix4x4));
+		std::memcpy(Destination, &FMatrix4x4::Identity, sizeof(FMatrix4x4));
 	}
-	else
+	for (const FGroup& Group : Groups)
 	{
-		std::memcpy(Allocation.CpuAddress, Bones.data(), sizeof(FMatrix4x4) * Bones.size());
-		if (!PrevBones.empty())
+		if (Group.bVisible)
 		{
-			std::memcpy(static_cast<FMatrix4x4*>(Allocation.CpuAddress) + Bones.size(), PrevBones.data(), sizeof(FMatrix4x4) * PrevBones.size());
+			std::memcpy(Destination + Group.BoneOffset, GroupBones.data() + Group.JointOffset, sizeof(FMatrix4x4) * Group.PaletteCount);
+		}
+	}
+	for (const FGroup& Group : Groups)
+	{
+		if (Group.bVisible && Group.PrevOffset != ~0u)
+		{
+			std::memcpy(Destination + BoneCount + Group.PrevOffset, GroupPrevBones.data() + Group.JointOffset, sizeof(FMatrix4x4) * Group.PaletteCount);
 		}
 	}
 	GpuData = Allocation.GpuAddress;

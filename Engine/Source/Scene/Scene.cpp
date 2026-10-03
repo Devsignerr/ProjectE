@@ -1,6 +1,8 @@
 #include "Scene/Scene.h"
 
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/Log.h"
+#include "Core/Profiling.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/SceneReflection.h"
 
@@ -142,16 +144,34 @@ bool FScene::IsAncestorOf(FEntity Ancestor, FEntity Entity) const
 
 void FScene::UpdateTransforms()
 {
+	E_PROFILE_SCOPE("트랜스폼 갱신");
 	// 루트(부모 없음)부터 재귀적으로 갱신. 소켓 부착 엔티티는 대상 모델의 뼈가 계산된 뒤로 미룬다
 	DeferredAttachments.clear();
-	Registry.View<FTransformComponent, FHierarchyComponent>().Each(
-		[this](FEntity Entity, FTransformComponent& Transform, FHierarchyComponent& Hierarchy) {
-			(void)Transform;
-			if (!Hierarchy.Parent.IsValid())
-			{
-				UpdateTransformRecursive(Entity, FMatrix4x4::Identity, true);
-			}
-		});
+	TransformRoots.clear();
+	Registry.View<FTransformComponent, FHierarchyComponent>().Each([this](FEntity Entity, FTransformComponent&, FHierarchyComponent& Hierarchy) {
+		if (!Hierarchy.Parent.IsValid())
+		{
+			TransformRoots.push_back(Entity);
+		}
+	});
+	// 루트 하위 트리는 서로 겹치지 않으므로 병렬로 갱신한다 (하위 트리의 월드 행렬은 그 루트를 맡은 스레드만 쓰고, 읽는 것은 계층·로컬 값뿐).
+	// 미룬 부착 목록은 루트별로 모아 루트 순서대로 이어 붙인다 → 순차 갱신과 같은 순서·같은 결과
+	const uint32 RootCount = static_cast<uint32>(TransformRoots.size());
+	if (RootDeferred.size() < RootCount)
+	{
+		RootDeferred.resize(RootCount);
+	}
+	FParallel::ParallelFor(RootCount, 16, [this](uint32 Begin, uint32 End) {
+		for (uint32 Index = Begin; Index < End; ++Index)
+		{
+			RootDeferred[Index].clear();
+			UpdateTransformRecursive(TransformRoots[Index], FMatrix4x4::Identity, true, RootDeferred[Index]);
+		}
+	});
+	for (uint32 Index = 0; Index < RootCount; ++Index)
+	{
+		DeferredAttachments.insert(DeferredAttachments.end(), RootDeferred[Index].begin(), RootDeferred[Index].end());
+	}
 
 	// 부착 처리: 대상(또는 대상의 조상)이 아직 처리되지 않은 부착 엔티티면 다음 차례로 (부착의 부착)
 	for (int32 Round = 0; Round < 16 && !DeferredAttachments.empty(); ++Round)
@@ -170,14 +190,14 @@ void FScene::UpdateTransforms()
 				Waiting.push_back(Entity);
 				continue;
 			}
-			UpdateTransformRecursive(Entity, GetParentWorldMatrix(Entity), false);
+			UpdateTransformRecursive(Entity, GetParentWorldMatrix(Entity), false, DeferredAttachments);
 		}
 		DeferredAttachments.insert(DeferredAttachments.end(), Waiting.begin(), Waiting.end());
 	}
 	DeferredAttachments.clear();
 }
 
-void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer)
+void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer, std::vector<FEntity>& OutDeferred)
 {
 	FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity);
 	if (Transform == nullptr)
@@ -186,7 +206,7 @@ void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWo
 	}
 	if (bAllowDefer && IsSocketAttached(Entity))
 	{
-		DeferredAttachments.push_back(Entity);
+		OutDeferred.push_back(Entity);
 		return;
 	}
 
@@ -197,7 +217,7 @@ void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWo
 	{
 		for (FEntity Child : Hierarchy->Children)
 		{
-			UpdateTransformRecursive(Child, Transform->WorldMatrix, true);
+			UpdateTransformRecursive(Child, Transform->WorldMatrix, true, OutDeferred);
 		}
 	}
 }

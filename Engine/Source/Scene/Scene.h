@@ -47,8 +47,11 @@ public:
 	const FTransformComponent& GetTransform(FEntity Entity) const { return Registry.Get<FTransformComponent>(Entity); }
 
 private:
-	void UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer);
+	// bAllowDefer면 소켓 부착 엔티티를 OutDeferred에 미룬다 (루트 하위 트리별 목록 — 병렬 갱신)
+	void UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer, std::vector<FEntity>& OutDeferred);
 
-	FRegistry            Registry;
-	std::vector<FEntity> DeferredAttachments; // UpdateTransforms 작업 목록
+	FRegistry                         Registry;
+	std::vector<FEntity>              DeferredAttachments; // UpdateTransforms 작업 목록
+	std::vector<FEntity>              TransformRoots;      // UpdateTransforms 루트 (뷰 순서)
+	std::vector<std::vector<FEntity>> RootDeferred;        // 루트별 미룬 부착 엔티티 (루트 순서대로 이어 붙임)
 };

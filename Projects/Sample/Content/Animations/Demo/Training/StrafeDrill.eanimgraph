@@ -1,0 +1,74 @@
+{
+  "Editor": {
+    "PreviewModel": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+  },
+  "EntryState": "Move",
+  "Parameters": [
+    {
+      "Name": "MoveX",
+      "Type": "Float",
+      "Default": 0.0
+    },
+    {
+      "Name": "MoveY",
+      "Type": "Float",
+      "Default": 0.0
+    }
+  ],
+  "States": [
+    {
+      "Name": "Move",
+      "BlendParameter": "MoveX",
+      "BlendParameterY": "MoveY",
+      "Samples": [
+        {
+          "Clip": "Idle_Shield_Loop",
+          "Position": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_A",
+          "Position": [
+            0.0,
+            150.0
+          ],
+          "Rate": 1.25
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_A",
+          "Position": [
+            0.0,
+            420.0
+          ],
+          "Rate": 1.1
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_Backwards",
+          "Position": [
+            0.0,
+            -150.0
+          ],
+          "Rate": 1.25
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_Strafe_Left",
+          "Position": [
+            -320.0,
+            0.0
+          ]
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_Strafe_Right",
+          "Position": [
+            320.0,
+            0.0
+          ]
+        }
+      ]
+    }
+  ],
+  "Transitions": [],
+  "Version": 3
+}

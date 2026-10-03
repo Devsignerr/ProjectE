@@ -1,0 +1,37 @@
+{
+  "Editor": {
+    "PreviewModel": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+  },
+  "EntryState": "Locomotion",
+  "Parameters": [
+    {
+      "Name": "Speed",
+      "Type": "Float",
+      "Default": 0.0
+    }
+  ],
+  "States": [
+    {
+      "Name": "Locomotion",
+      "BlendParameter": "Speed",
+      "Samples": [
+        {
+          "Clip": "Idle_Shield_Loop",
+          "Position": 0.0
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_A",
+          "Position": 150.0,
+          "Rate": 1.25
+        },
+        {
+          "Clip": "Asset/KayKit/Characters/KnightBare.glb:Running_A",
+          "Position": 420.0,
+          "Rate": 1.1
+        }
+      ]
+    }
+  ],
+  "Transitions": [],
+  "Version": 3
+}

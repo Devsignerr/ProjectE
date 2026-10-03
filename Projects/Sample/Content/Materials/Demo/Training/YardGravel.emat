@@ -1,0 +1,128 @@
+{
+  "Name": "YardGravel",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/sandy_gravel/sandy_gravel_diff_2k.jpg",
+      "Usage": "Color"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/sandy_gravel/sandy_gravel_arm_2k.jpg",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/sandy_gravel/sandy_gravel_nor_gl_2k.jpg",
+      "Usage": "Normal"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.0033333333333333335
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "pos",
+        "Type": "WorldPosition"
+      },
+      {
+        "Id": "scale",
+        "Type": "ScalarParameter",
+        "Parameter": "WorldScale"
+      },
+      {
+        "Id": "p",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "pos",
+          "B": "scale"
+        }
+      },
+      {
+        "Id": "uv",
+        "Type": "ComponentMask",
+        "Channels": "xy",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "col",
+        "Type": "TextureSample",
+        "Texture": "Albedo",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "arm",
+        "Type": "TextureSample",
+        "Texture": "Arm",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "nrm",
+        "Type": "TextureSample",
+        "Texture": "Normal",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "base",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "col:1",
+          "B": "tint:1"
+        }
+      },
+      {
+        "Id": "baseS",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "base",
+          "B": 0.85
+        }
+      },
+      {
+        "Id": "rough",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "arm:3",
+          "B": 1.0
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "baseS",
+      "Roughness": "rough",
+      "Normal": "nrm:1",
+      "AmbientOcclusion": "arm:2",
+      "Metallic": 0.0
+    }
+  }
+}

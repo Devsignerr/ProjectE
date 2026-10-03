@@ -816,6 +816,12 @@ void FSceneRenderer::LogRayTracingStats() const
 	      static_cast<double>(Rt.ScratchBytes) / (1024.0 * 1024.0), Rt.BuiltThisFrame, Rt.RefitThisFrame, Rt.CompactedThisFrame, Rt.PendingBuilds, Rt.PrepareCpuMs,
 	      Stats.GetGpuMs(ERenderTimer::RayTracingBuild), Stats.GetGpuMs(ERenderTimer::RayTracedShadows), Stats.GetGpuMs(ERenderTimer::RayTracedReflections),
 	      Stats.GetGpuMs(ERenderTimer::Reflections));
+	FD3D12Device::FVideoMemoryInfo Memory;
+	if (Rhi->GetDevice().QueryVideoMemory(Memory))
+	{
+		E_LOG(LogRenderer, Display, "[레이 트레이싱] VRAM 사용 {:.1f} MB (예산 {:.1f} MB)", static_cast<double>(Memory.LocalUsage) / (1024.0 * 1024.0),
+		      static_cast<double>(Memory.LocalBudget) / (1024.0 * 1024.0));
+	}
 }
 
 void FSceneRenderer::SetupGraph(FRenderGraph& Graph)

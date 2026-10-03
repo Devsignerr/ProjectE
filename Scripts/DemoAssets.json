@@ -824,6 +824,9 @@
       "Type": "models",
       "Id": "fern_02",
       "Res": "2k",
+      "AlphaMaps": [
+        "*"
+      ],
       "Files": [
         {
           "Path": "fern_02.gltf",
@@ -849,6 +852,11 @@
           "Path": "textures/fern_02_nor_gl_2k.jpg",
           "Url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fern_02/fern_02_nor_gl_2k.jpg",
           "Md5": "00936dff4661dc9fe1f2fbe6c000615a"
+        },
+        {
+          "Path": "textures/fern_02_alpha_2k.png",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/fern_02/fern_02_alpha_2k.png",
+          "Md5": "ff18f7e8e869c58eac8f9c7d7c519f4a"
         }
       ]
     },
@@ -964,6 +972,9 @@
       "Type": "models",
       "Id": "jacaranda_tree",
       "Res": "2k",
+      "AlphaMaps": [
+        "leaves"
+      ],
       "Files": [
         {
           "Path": "jacaranda_tree.gltf",
@@ -1019,6 +1030,11 @@
           "Path": "jacaranda_tree.bin",
           "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/jacaranda_tree/jacaranda_tree.bin",
           "Md5": "ae25eacd5e67ea2e9bbbaa2854b6ed99"
+        },
+        {
+          "Path": "textures/jacaranda_tree_leaves_alpha_2k.png",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/jacaranda_tree/jacaranda_tree_leaves_alpha_2k.png",
+          "Md5": "9f8afd60299fd936ef95a4c3235102cf"
         }
       ]
     },
@@ -1058,6 +1074,9 @@
       "Type": "models",
       "Id": "wild_rooibos_bush",
       "Res": "2k",
+      "AlphaMaps": [
+        "*"
+      ],
       "Files": [
         {
           "Path": "wild_rooibos_bush.gltf",
@@ -1083,6 +1102,11 @@
           "Path": "wild_rooibos_bush.bin",
           "Url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wild_rooibos_bush/wild_rooibos_bush.bin",
           "Md5": "0d6c39ac444bac0381ecdff32a191a9c"
+        },
+        {
+          "Path": "textures/wild_rooibos_bush_alpha_2k.png",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Models/png/2k/wild_rooibos_bush/wild_rooibos_bush_alpha_2k.png",
+          "Md5": "54f2820a6fce80d83ce013f57ce6421a"
         }
       ]
     },

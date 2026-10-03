@@ -48,3 +48,31 @@ def FrameModel(Id):
 	# 액자 모델 경로: 유리를 고친 것은 사본, 나머지는 원본
 	return f"{GLASS_FIX_DIR}/{Id}.gltf" if Id in GLASS_FIX else f"{PH}/{Id}/{Id}.gltf"
 
+
+
+# ---- 잎 알파 --------------------------------------------------------------------------------------------------------
+# 잎·꽃잎 컷아웃 알파가 별도 맵인 에셋: 색 JPG에는 알파가 없어 마스크/블렌드 잎이 어두운 사각형 카드가 된다.
+#   잠금 파일 Scripts/DemoAssets.json "AlphaMaps"로 FetchDemoAssets.ps1이 합친 RGBA PNG(<줄기>_diffalpha_<해상도>.png)를 색 텍스처로 쓰는
+#   사본 <Id>.alpha.gltf를 원본 옆(Asset/PolyHaven/<Id>/)에 쓴다 (.gitignore 예외 — 커밋).
+#   접두사 "*" = 재질별이 아닌 단일 맵(줄기 <Id>), 그 밖 = 재질별 맵(줄기 <Id>_<접두사>). 알파 모드는 원본 그대로
+#   (BLEND 잎은 .eimport BlendAsMasked로 마스크). 잎이 실제 기하인 에셋(알파 맵이 있어도)은 대상이 아니다
+def AlphaStem(Id, Prefix):
+	return Id if Prefix == "*" else f"{Id}_{Prefix}"
+
+
+def AlphaModel(Id):
+	return f"{PH}/{Id}/{Id}.alpha.gltf"
+
+
+def WriteAlphaFixedModel(Content, Id, Prefixes, Res="2k"):
+	Gltf = LoadSource(Content, Id)
+	Swapped = 0
+	for Image in Gltf.get("images", []):
+		for Prefix in Prefixes:
+			Stem = AlphaStem(Id, Prefix)
+			if Image.get("uri") == f"textures/{Stem}_diff_{Res}.jpg":
+				Image["uri"] = f"textures/{Stem}_diffalpha_{Res}.png"
+				Image["mimeType"] = "image/png"
+				Swapped += 1
+	assert Swapped, f"{Id}: 바꿀 색 텍스처 없음 ({Prefixes})"
+	WriteJson(os.path.join(Content, *PH.split("/"), Id, f"{Id}.alpha.gltf"), Gltf)

@@ -3817,7 +3817,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -3844,7 +3844,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -3871,7 +3871,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -3898,7 +3898,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -3925,7 +3925,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.gltf"
+          "AssetPath": "Asset/PolyHaven/jacaranda_tree/jacaranda_tree.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -3952,7 +3952,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4006,7 +4006,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4033,7 +4033,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4114,7 +4114,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4141,7 +4141,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4276,7 +4276,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4303,7 +4303,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4384,7 +4384,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4438,7 +4438,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4465,7 +4465,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4519,7 +4519,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4546,7 +4546,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4573,7 +4573,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4600,7 +4600,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4681,7 +4681,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4843,7 +4843,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4870,7 +4870,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4897,7 +4897,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4924,7 +4924,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -4978,7 +4978,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5005,7 +5005,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5032,7 +5032,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5059,7 +5059,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5086,7 +5086,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5113,7 +5113,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5167,7 +5167,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5221,7 +5221,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5437,7 +5437,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5518,7 +5518,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
@@ -5545,7 +5545,7 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.gltf"
+          "AssetPath": "Asset/PolyHaven/fern_02/fern_02.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [

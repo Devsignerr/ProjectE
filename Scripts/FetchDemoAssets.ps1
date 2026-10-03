@@ -8,6 +8,7 @@
     저장 위치: <Root>/<Id>/ (glTF는 API가 주는 상대 경로 그대로 — textures/...). 임포트 설정(.eimport)은 커밋 대상이다.
     AlphaMaps(모델, 선택): 잎 카드처럼 알파가 별도 맵(<접두사>_alpha)인 에셋은 그 PNG도 받아 색(JPG)과 합친
     textures/<Id>_<접두사>_diffalpha_<해상도>.png를 만든다 (JPG 색에는 알파가 없음 — 생성 스크립트의 나눈 glTF가 이 파일을 쓴다).
+    접두사 "*" = 재질별이 아닌 단일 맵(API 키 Alpha, <Id>_alpha → <Id>_diffalpha) — Tools/DemoMap/AssetFixes.py 사본이 쓴다.
 .EXAMPLE
     .\Scripts\FetchDemoAssets.ps1
     .\Scripts\FetchDemoAssets.ps1 -Update
@@ -42,8 +43,9 @@ function Resolve-Asset($Asset)
         foreach ($Prefix in @($Asset.AlphaMaps))
         {
             if (-not $Prefix) { continue }
-            $Alpha = $Files."$($Prefix)_alpha".($Asset.Res).png
-            if (-not $Alpha) { throw "$($Asset.Id): 알파 맵 $($Prefix)_alpha $($Asset.Res) PNG 없음" }
+            $Key   = if ($Prefix -eq "*") { "Alpha" } else { "$($Prefix)_alpha" }
+            $Alpha = $Files.$Key.($Asset.Res).png
+            if (-not $Alpha) { throw "$($Asset.Id): 알파 맵 $Key $($Asset.Res) PNG 없음" }
             $Result += [pscustomobject]@{ Path = "textures/" + [System.IO.Path]::GetFileName($Alpha.url); Url = $Alpha.url; Md5 = $Alpha.md5 }
         }
     }
@@ -153,9 +155,10 @@ public static class EDemoAlphaMerge
         foreach ($Prefix in @($Asset.AlphaMaps))
         {
             $Dir      = Join-Path $AssetRoot "$($Asset.Id)/textures"
-            $Color    = Join-Path $Dir "$($Asset.Id)_$($Prefix)_diff_$($Asset.Res).jpg"
-            $AlphaMap = Join-Path $Dir "$($Asset.Id)_$($Prefix)_alpha_$($Asset.Res).png"
-            $Out      = Join-Path $Dir "$($Asset.Id)_$($Prefix)_diffalpha_$($Asset.Res).png"
+            $Stem     = if ($Prefix -eq "*") { $Asset.Id } else { "$($Asset.Id)_$($Prefix)" }
+            $Color    = Join-Path $Dir "$($Stem)_diff_$($Asset.Res).jpg"
+            $AlphaMap = Join-Path $Dir "$($Stem)_alpha_$($Asset.Res).png"
+            $Out      = Join-Path $Dir "$($Stem)_diffalpha_$($Asset.Res).png"
             if ((Test-Path $Out) -and (Get-Item $Out).LastWriteTime -ge (Get-Item $Color).LastWriteTime -and (Get-Item $Out).LastWriteTime -ge (Get-Item $AlphaMap).LastWriteTime)
             {
                 continue

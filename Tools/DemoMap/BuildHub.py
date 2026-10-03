@@ -1,5 +1,6 @@
 # 데모 Hub 맵(해안 항구) 생성: 지형(.eterrain) + 지형 머티리얼 + 임포트 설정 + 플레이어 프리팹 + 씬(Scenes/Demo/Hub.escene)
 #   실행: python Tools/DemoMap/BuildHub.py  (먼저 Scripts/FetchDemoAssets.ps1로 Poly Haven 에셋을 받는다)
+#   --camera X,Y,Z,Pitch,Yaw[,Fov]: 고정 카메라를 더한 확인용 변형(Scenes/Demo/_HubCamera.escene)도 쓴다 — 커밋하지 않는다
 #   배치를 바꿀 때는 씬 파일이 아니라 이 스크립트를 고치고 다시 실행한다 (결정적 — 고정 시드)
 #   좌표: 엔진 규약 왼손 Z-up, 1 = 1cm. 바다는 +X(북쪽), 요새 곶은 +Y(동쪽), 언덕은 -X(남쪽)
 import base64
@@ -13,6 +14,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(__file__))
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
+from AssetFixes import AlphaModel, WriteAlphaFixedModel  # noqa: E402
 
 ROOT     = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT  = os.path.join(ROOT, "Projects", "Sample", "Content")
@@ -215,12 +217,29 @@ def WritePortalMaterial():
 		File.write("\n")
 
 
+# 잎·꽃잎 알파가 별도 맵인 에셋: 색 JPG에 알파가 없어 잎 카드가 어두운 사각형이 된다 → 알파를 합친 PNG를 쓰는 사본(<Id>.alpha.gltf)으로 놓는다
+#   (Id → 잠금 파일 AlphaMaps 접두사). 사본에도 원본과 같은 임포트 설정을 둔다.
+#   shrub_02·flower_gazania는 잎·꽃이 실제 기하라 알파 맵이 필요 없다(gazania를 MASK로 바꾸면 잎이 잘려 나감 — 2026-10-04 확인)
+ALPHA_FIX = {
+	"jacaranda_tree":    ["leaves"],
+	"wild_rooibos_bush": ["*"],
+	"fern_02":           ["*"],
+}
+
+
 def WriteImportSettings():
 	for Id, Settings in IMPORT_SETTINGS.items():
-		Path = os.path.join(CONTENT, "Asset", "PolyHaven", Id, f"{Id}.gltf.eimport")
-		with open(Path, "w", encoding="utf-8", newline="\n") as File:
-			json.dump(Settings, File, indent=2)
-			File.write("\n")
+		Names = [f"{Id}.gltf"] + ([f"{Id}.alpha.gltf"] if Id in ALPHA_FIX else [])
+		for Name in Names:
+			Path = os.path.join(CONTENT, "Asset", "PolyHaven", Id, f"{Name}.eimport")
+			with open(Path, "w", encoding="utf-8", newline="\n") as File:
+				json.dump(Settings, File, indent=2)
+				File.write("\n")
+
+
+def WriteAlphaFixedModels():
+	for Id, Prefixes in ALPHA_FIX.items():
+		WriteAlphaFixedModel(CONTENT, Id, Prefixes)
 
 
 def Link(Id):
@@ -274,7 +293,7 @@ READY_PORTALS = {"Portal_Lighting", "Portal_Alley", "Portal_Gallery", "Portal_Fo
 
 
 def Model(Id):
-	return f"{PH}/{Id}/{Id}.gltf"
+	return AlphaModel(Id) if Id in ALPHA_FIX else f"{PH}/{Id}/{Id}.gltf"
 
 
 def BuildScene(Height):
@@ -436,10 +455,16 @@ def Main():
 	WriteTerrainMaterials()
 	WritePortalMaterial()
 	WriteImportSettings()
+	WriteAlphaFixedModels()
 	WritePlayerPrefab()
 	Scene = BuildScene(FHeightSampler(H))
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Demo"), exist_ok=True)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Demo", "Hub.escene"))
+	if len(sys.argv) > 2 and sys.argv[1] == "--camera":
+		X, Y, Z, Pitch, Yaw, *Rest = [float(V) for V in sys.argv[2].split(",")]
+		Scene.Add("_VerifyCamera", {"CameraComponent": {"FovYDegrees": Rest[0] if Rest else 70.0, "NearZ": 5.0, "FarZ": 200000.0, "Primary": True,
+															   "Priority": 100}}, (X, Y, Z), QuatFromEuler(Pitch=Pitch, Yaw=Yaw))
+		Scene.Save(os.path.join(CONTENT, "Scenes", "Demo", "_HubCamera.escene"))
 	print(f"Hub 생성: 엔티티 {len(Scene.Entities)}개, 지형 {TERRAIN_RES}² 높이 {H.min():.0f}~{H.max():.0f}cm")
 
 

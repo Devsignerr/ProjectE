@@ -130,8 +130,8 @@ float3 ToLightLocal(FLocalLight Light, float3 V)
 	return float3(dot(V, Light.Direction), dot(V, Light.Right), dot(V, Light.Up));
 }
 
-// 면에서 가장 가까운 점까지 거리 (AreaLightMath::DistanceToArea). Local = 가운데 기준 (Forward, Right, Up)
-float DistanceToAreaLight(FLocalLight Light, float3 Local)
+// 면에서 가장 가까운 점 → 표면 벡터 (AreaLightMath::ComputeAreaOffset). Local = 가운데 기준 (Forward, Right, Up)
+float3 AreaLightOffset(FLocalLight Light, float3 Local)
 {
 	float2 YZ = Local.yz;
 	if (Light.Type == E_LOCAL_LIGHT_DISC)
@@ -147,8 +147,21 @@ float DistanceToAreaLight(FLocalLight Light, float3 Local)
 	{
 		YZ = clamp(YZ, -float2(Light.HalfWidth, Light.HalfHeight), float2(Light.HalfWidth, Light.HalfHeight));
 	}
-	const float2 D = Local.yz - YZ;
-	return sqrt(Local.x * Local.x + dot(D, D));
+	return float3(Local.x, Local.yz - YZ);
+}
+
+// 면에서 가장 가까운 점까지 거리 (AreaLightMath::DistanceToArea)
+float DistanceToAreaLight(FLocalLight Light, float3 Local)
+{
+	const float3 Offset = AreaLightOffset(Light, Local);
+	return sqrt(Offset.x * Offset.x + dot(Offset.yz, Offset.yz));
+}
+
+// 문 덮개 원뿔 코사인 (AreaLightMath::ComputeBarnDoorCos): |면 법선 · (가장 가까운 점 → 표면 방향)|
+float AreaLightBarnDoorCos(FLocalLight Light, float3 Local)
+{
+	const float3 Offset = AreaLightOffset(Light, Local);
+	return abs(Offset.x) / max(sqrt(Offset.x * Offset.x + dot(Offset.yz, Offset.yz)), 1.0e-4f);
 }
 
 float AreaLightArea(FLocalLight Light)
@@ -164,21 +177,22 @@ float AreaLightApproxFactor(FLocalLight Light, float CosEmit)
 	return Cos * max(AreaLightArea(Light), 1.0f) / (E_LIGHT_REFERENCE_DISTANCE * E_LIGHT_REFERENCE_DISTANCE);
 }
 
-// 대표점 감쇠 (면광원 전용 — 텍스처 없이): 감쇠 창은 면 거리, 역제곱은 가운데 거리(면 반 크기 이상), 문 덮개 원뿔, 면 코사인.
+// 대표점 감쇠 (면광원 전용 — 텍스처 없이): 감쇠 창은 면 거리, 역제곱은 가운데 거리(면 반 크기 이상), 문 덮개 원뿔(가장 가까운 점 기준), 면 코사인.
 // L = 표면 → 가운데 (정규화). 반환 0이면 기여 없음
 float AreaLightApproxAttenuation(FLocalLight Light, float3 WorldPosition, out float3 L)
 {
 	const float3 FromLight = WorldPosition - Light.Position;
 	const float  Distance  = length(FromLight);
 	L                      = -FromLight / max(Distance, 1.0e-4f);
-	const float  Window    = LightDistanceWindow(DistanceToAreaLight(Light, ToLightLocal(Light, FromLight)), Light.Radius);
+	const float3 Local     = ToLightLocal(Light, FromLight);
+	const float  Window    = LightDistanceWindow(DistanceToAreaLight(Light, Local), Light.Radius);
 	if (Window <= 0.0f)
 	{
 		return 0.0f;
 	}
 	const float CosEmit = dot(Light.Direction, -L);
-	return Window * LightInverseSquare(max(Distance, Light.SourceRadius)) * LightConeAttenuation(CosEmit, Light.ConeScale, Light.ConeOffset) *
-	       AreaLightApproxFactor(Light, CosEmit);
+	return Window * LightInverseSquare(max(Distance, Light.SourceRadius)) *
+	       LightConeAttenuation(AreaLightBarnDoorCos(Light, Local), Light.ConeScale, Light.ConeOffset) * AreaLightApproxFactor(Light, CosEmit);
 }
 
 // IES 좌표 (AreaLightMath::ComputeIesUV): Local = 라이트 → 표면 (Forward, Right, Up), 정규화. 텍스처 64(θ) × 32(φ)

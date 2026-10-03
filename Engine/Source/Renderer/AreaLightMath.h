@@ -23,7 +23,8 @@
 //   - 스펙큘러 = L × 적분(GGX 역행렬) × (F0 × 크기 + (1 - F0) × 프레넬), 확산 = L × 적분(단위 행렬) × 알베도 × (1 - 금속)
 //   - 원판은 같은 넓이의 정 8각형으로 근사 (꼭짓점 반지름 × DiscPolygonScale) — 같은 다각형 적분 경로, 타원(가로·세로 반지름) 허용
 //   - 감쇠 창 = LightMath::DistanceWindow(면에서 가장 가까운 점까지 거리, Radius) → 경계 구 반지름 = Radius + 면 반 대각선
-//   - 문 덮개(barn door): 면 가운데 → 표면 방향의 원뿔 감쇠(스포트와 같은 식, 외부 = BarnDoorAngle, 부드러운 폭 = atan(반 크기 / 길이))
+//   - 문 덮개(barn door): 면에서 가장 가까운 점 → 표면 방향의 원뿔 감쇠(ComputeBarnDoorCos — 가운데 기준이면 긴 면 끝이 잘림.
+//     스포트와 같은 식, 외부 = BarnDoorAngle, 부드러운 폭 = atan(반 크기 / 길이)). 대표점 근사(RT 히트·안개)도 같은 코사인
 // IES: θ = 라이트 Forward와 이루는 각(0 = 천저 = 빛 축), φ = Right에서 Up 쪽으로 [0, 360). 텍스처(가로 θ 0..180 IesTextureWidth칸,
 //   세로 φ 0..360 IesTextureHeight칸 — 끝 칸 = 0°)는 최대 칸델라로 나눈 값. 면광원은 가운데에서 본 방향 하나로 곱한다(근사)
 // 쿠키: 스포트/면광원 = 가운데에서의 원근 투영 (반각 = 외부 원뿔 / 문 덮개, 최대 80°) → uv, 점광원 = 위도-경도(IES와 같은 θ, φ).
@@ -71,8 +72,8 @@ namespace AreaLightMath
 		return Radius + Extent;
 	}
 
-	// 면에서 가장 가까운 점까지의 거리. Local = (Forward, Right, Up) 성분 (가운데 기준). 원판(타원)은 정규화 반지름으로 자른다(원은 정확)
-	inline float DistanceToArea(LightMath::ELocalLightType Type, const FVector3& Local, float HalfWidth, float HalfHeight)
+	// 면에서 가장 가까운 점 → 표면 벡터 (Forward, Right, Up 성분). Local = 가운데 기준. 원판(타원)은 정규화 반지름으로 자른다(원은 정확)
+	inline FVector3 ComputeAreaOffset(LightMath::ELocalLightType Type, const FVector3& Local, float HalfWidth, float HalfHeight)
 	{
 		float Y = Local.Y;
 		float Z = Local.Z;
@@ -92,9 +93,23 @@ namespace AreaLightMath
 			Y = FMath::Clamp(Y, -HalfWidth, HalfWidth);
 			Z = FMath::Clamp(Z, -HalfHeight, HalfHeight);
 		}
-		const float DY = Local.Y - Y;
-		const float DZ = Local.Z - Z;
-		return std::sqrt(Local.X * Local.X + DY * DY + DZ * DZ);
+		return FVector3(Local.X, Local.Y - Y, Local.Z - Z);
+	}
+
+	// 면에서 가장 가까운 점까지의 거리
+	inline float DistanceToArea(LightMath::ELocalLightType Type, const FVector3& Local, float HalfWidth, float HalfHeight)
+	{
+		const FVector3 Offset = ComputeAreaOffset(Type, Local, HalfWidth, HalfHeight);
+		return std::sqrt(Offset.X * Offset.X + Offset.Y * Offset.Y + Offset.Z * Offset.Z);
+	}
+
+	// 문 덮개 원뿔에 넣는 코사인 = |면 법선 · (면에서 가장 가까운 점 → 표면 방향)| (양면 뒤쪽은 뒤집은 법선 기준).
+	//   가운데 → 표면 방향으로 재면 긴 면(27m × 20cm 코브 조명 등)의 끝 쪽 표면이 가운데에서 본 큰 각 때문에 원뿔 밖으로 잘려
+	//   빛이 가운데 한 점에서만 나왔다 (2026-10-04). 면 바로 앞(가장 가까운 점이 면 안)은 항상 1
+	inline float ComputeBarnDoorCos(LightMath::ELocalLightType Type, const FVector3& Local, float HalfWidth, float HalfHeight)
+	{
+		const FVector3 Offset = ComputeAreaOffset(Type, Local, HalfWidth, HalfHeight);
+		return FMath::Abs(Offset.X) / FMath::Max(std::sqrt(Offset.X * Offset.X + Offset.Y * Offset.Y + Offset.Z * Offset.Z), 1.0e-4f);
 	}
 
 	// 문 덮개 원뿔 (스포트와 같은 식). BarnDoorAngle >= 90 = 없음 (항상 1)

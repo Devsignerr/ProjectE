@@ -93,8 +93,8 @@ struct FGameplayTagSettings
 struct FRenderingSettings
 {
 	bool bRayTracing            = true;  // 레이 트레이싱 전체 (BLAS/TLAS 빌드 — 아래 효과 중 하나라도 켜져야 실제로 만든다)
-	bool bRayTracedShadows      = true;  // 방향광 그림자를 RT로 (불투명 표면, 반투명·안개는 섀도맵)
-	bool bRayTracedReflections  = true;  // SSR 대신 RT 반사
+	bool bRayTracedShadows      = false; // 방향광 그림자를 RT로 (불투명 표면, 반투명·안개는 섀도맵). 기본 끔: 1440p 네이티브 +1.2~1.9ms (섀도맵도 안개·반투명용으로 계속 그림)
+	bool bRayTracedReflections  = true;  // SSR 대신 RT 반사 (기본 켬: GPU 비용이 SSR과 비슷하거나 적고 화면 밖·가려진 물체도 반사)
 };
 
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.

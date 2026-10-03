@@ -195,8 +195,10 @@ namespace RendererCVars
 	TAutoConsoleVariable<float> DdgiBounceIntensity("r.DDGI.BounceIntensity", 1.0f,
 	                                                "DDGI 다중 반사: 프로브 광선 히트의 간접 확산(이전 프레임 프로브 조도) 배율 (0 = 한 번 반사만)", EConsoleFlags::None,
 	                                                { .Range = std::pair(0.0f, 2.0f) });
-	TAutoConsoleVariable<float> DdgiChangeThreshold("r.DDGI.ChangeThreshold", 0.3f,
-	                                                "DDGI 급변 판정: 프로브 텍셀 변화가 크기의 이 배를 넘으면 히스테리시스를 줄여 빨리 따라감 (시간대·조명 변화)",
+	TAutoConsoleVariable<float> DdgiChangeThreshold("r.DDGI.ChangeThreshold", 1.0f,
+	                                                "DDGI 텍셀 급변 감지: 새 값이 이전·새 값 크기의 이 배 넘게 바뀌면 그 텍셀만 히스테리시스를 낮춘다. 1 이상 = 끔(기본). "
+	                                                "프로브 광선 잡음(작은 밝은 면을 드물게 맞힘)에 걸려 프로브 단위로 깜빡였다 — 조명 변화는 결정적인 "
+	                                                "r.DDGI.LightChangeBoostFrames(방향광·하늘 변화 감지)가 맡는다",
 	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 10.0f) });
 	TAutoConsoleVariable<int32> DdgiMaxLocalLights("r.DDGI.MaxLocalLights", 16, "DDGI 프로브 광선 히트가 계산하는 로컬 라이트 상한 (카메라 가까운 순, 그림자 없음)",
 	                                               EConsoleFlags::None, { .Range = std::pair(0.0f, 256.0f) });

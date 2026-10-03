@@ -247,6 +247,9 @@ E_TEST(Ddgi_HysteresisBlend)
 	E_EXPECT_NEAR(ComputeHysteresis(FVector3(4.0f), FVector3(1.0f), 0.97f, 0.3f, false), 0.22f, 1.0e-5f);
 	// 아주 어두운 값의 작은 절대 변화는 급변 아님 (바닥 1e-3)
 	E_EXPECT_NEAR(ComputeHysteresis(FVector3(0.0f), FVector3(0.0002f), 0.97f, 0.3f, false), 0.97f, 0.0f);
+	// 기본(문턱 1 이상)은 급변 감지 없음: 아무리 바뀌어도 기본 히스테리시스 (광선 잡음에 걸려 깜빡이지 않게)
+	E_EXPECT_NEAR(ComputeHysteresis(Previous, FVector3(1000.0f), 0.97f, 1.0f, false), 0.97f, 0.0f);
+	E_EXPECT_NEAR(ComputeHysteresis(FVector3(1000.0f), FVector3(0.0f), 0.97f, 1.0f, false), 0.97f, 0.0f);
 	// 처음 n번은 누적 평균 (n / (n + 1) 상한) — 1번째 0, 2번째 1/2, 3번째 2/3 … 기본값에서 멈춘다
 	E_EXPECT_NEAR(ComputeHysteresis(Previous, Previous, 0.97f, 0.3f, false, 1), 0.5f, 1.0e-6f);
 	E_EXPECT_NEAR(ComputeHysteresis(Previous, Previous, 0.97f, 0.3f, false, 2), 2.0f / 3.0f, 1.0e-6f);

@@ -300,6 +300,7 @@ namespace DdgiMath
 	// ---- 누적 (히스테리시스)
 	// 이번 누적의 이전 값 비중: 처음(아직 없음)이면 0, 처음 n번(UpdateCount = 지난 갱신 횟수)은 누적 평균 상한 n/(n+1) (수렴 가속),
 	// 성분 최대 변화가 이전·새 값 크기의 ChangeThreshold배를 넘으면(급변 — 시간대·조명 변화) 0.75를 뺀 값(빠르게 따라감)
+	// (ChangeThreshold ≥ 1이면 발동하지 않는다 — 기본. 광선 잡음에 걸려 프로브가 깜빡였다, 조명 변화는 ComputeLightChange 가속이 맡음)
 	inline float ComputeHysteresis(const FVector3& Previous, const FVector3& Current, float Base, float ChangeThreshold, bool bFirst,
 	                               uint32 UpdateCount = MaxUpdateCount)
 	{

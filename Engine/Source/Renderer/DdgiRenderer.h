@@ -78,7 +78,7 @@ struct FDdgiSettings
 {
 	uint32 ProbeBudget       = 0;     // 프레임 전체 갱신 프로브 상한 (0 = 무제한)
 	float  BounceIntensity   = 1.0f;  // 다중 반사 배율 (0 = 한 번 반사만)
-	float  ChangeThreshold   = 0.3f;  // 급변 판정 (상대 변화)
+	float  ChangeThreshold   = 1.0f;  // 텍셀 급변 판정 (상대 변화, 1 이상 = 끔 — 잡음에 걸려 깜빡여 기본 끔)
 	uint32 MaxHitLocalLights = 16;    // 히트 로컬 라이트 상한 (그림자 없음)
 	bool   bHitShadows       = true;  // 히트 방향광 그림자 광선
 	int32  ShowProbes        = -1;    // 0 이상이면 모든 볼륨 프로브 표시 모드 (-1 = 컴포넌트 값)

@@ -1,5 +1,6 @@
 #include "Scene/Scene.h"
 
+#include "Core/Console/Console.h"
 #include "Core/Jobs/ParallelFor.h"
 #include "Core/Log.h"
 #include "Core/Profiling.h"
@@ -7,6 +8,7 @@
 #include "Scene/SceneReflection.h"
 
 #include <algorithm>
+#include <cstring>
 
 E_DECLARE_LOG_CATEGORY(LogScene)
 E_DEFINE_LOG_CATEGORY(LogScene, Log)
@@ -14,6 +16,34 @@ E_DEFINE_LOG_CATEGORY(LogScene, Log)
 namespace
 {
 	const std::vector<FEntity> GEmptyChildren;
+
+	TAutoConsoleVariable<bool> CVarTransformCache("scene.TransformCache", true,
+	                                              "트랜스폼 갱신에서 로컬 TRS와 부모 월드가 지난 계산과 비트 단위로 같은 엔티티의 월드 행렬 계산을 건너뛴다 (0 = 매번 전체 계산, 결과는 같다)");
+
+	template <typename T>
+	bool BitEqual(const T& A, const T& B)
+	{
+		return std::memcmp(&A, &B, sizeof(T)) == 0;
+	}
+
+	// 월드 행렬 = 로컬 × 부모 월드. 입력(로컬 TRS, 부모 월드)이 마지막 계산과 비트 단위로 같으면 그대로 둔다 — 같은 입력이면 같은 결과이므로
+	// 전체 재계산과 비트 동일하다. 로컬을 쓰는 쪽(스크립트·물리·애니메이션·복제·편집기)이 표시할 필요가 없다
+	void UpdateWorldMatrix(FTransformComponent& Transform, const FMatrix4x4& ParentWorld, bool bUseCache)
+	{
+		FTransformComponent::FWorldCache& Cache = Transform.WorldCache;
+		if (bUseCache && Cache.bValid && BitEqual(Cache.Position, Transform.Position) && BitEqual(Cache.Rotation, Transform.Rotation) &&
+		    BitEqual(Cache.Scale, Transform.Scale) && BitEqual(Cache.ParentWorld, ParentWorld))
+		{
+			return;
+		}
+		// 행벡터 규약: Local * Parent
+		Transform.WorldMatrix = Transform.GetLocalMatrix() * ParentWorld;
+		Cache.Position        = Transform.Position;
+		Cache.Rotation        = Transform.Rotation;
+		Cache.Scale           = Transform.Scale;
+		Cache.ParentWorld     = ParentWorld;
+		Cache.bValid          = true;
+	}
 }
 
 FScene::FScene()
@@ -147,15 +177,50 @@ void FScene::UpdateTransforms()
 	E_PROFILE_SCOPE("트랜스폼 갱신");
 	// 루트(부모 없음)부터 재귀적으로 갱신. 소켓 부착 엔티티는 대상 모델의 뼈가 계산된 뒤로 미룬다
 	DeferredAttachments.clear();
-	TransformRoots.clear();
-	Registry.View<FTransformComponent, FHierarchyComponent>().Each([this](FEntity Entity, FTransformComponent&, FHierarchyComponent& Hierarchy) {
-		if (!Hierarchy.Parent.IsValid())
+	const TSparseSet<FSocketAttachmentComponent>* SocketPool = Registry.TryGetPool<FSocketAttachmentComponent>();
+	TransformPool  = Registry.TryGetPool<FTransformComponent>();
+	HierarchyPool  = Registry.TryGetPool<FHierarchyComponent>();
+	bAnySockets    = SocketPool != nullptr && !SocketPool->IsEmpty();
+	bUseWorldCache = CVarTransformCache.Get();
+	if (TransformPool == nullptr || HierarchyPool == nullptr)
+	{
+		return;
+	}
+	// 1) 루트(부모 없음) 찾기를 병렬로: 엔티티 목록(View<트랜스폼, 계층>과 같은 목록·같은 순서 — 더 작은 풀, 같으면 트랜스폼)을 고정 크기 묶음으로
+	//    나눠 묶음별 루트 목록을 만들고 묶음 순서대로 이어 붙인다 → 순차 순회와 같은 루트 순서 (View::Each보다 조회가 적어 순차로도 약 3배 빠름)
+	const std::vector<FEntity>& Entities =
+		HierarchyPool->Size() < TransformPool->Size() ? HierarchyPool->GetEntities() : TransformPool->GetEntities();
+	constexpr uint32 ChunkSize  = 1024;
+	const uint32     ChunkCount = static_cast<uint32>((Entities.size() + ChunkSize - 1) / ChunkSize);
+	if (ChunkRoots.size() < ChunkCount)
+	{
+		ChunkRoots.resize(ChunkCount);
+	}
+	FParallel::ParallelFor(ChunkCount, 1, [this, &Entities](uint32 BeginChunk, uint32 EndChunk) {
+		for (uint32 Chunk = BeginChunk; Chunk < EndChunk; ++Chunk)
 		{
-			TransformRoots.push_back(Entity);
+			std::vector<FEntity>& Roots = ChunkRoots[Chunk];
+			Roots.clear();
+			const size_t End = std::min<size_t>(Entities.size(), static_cast<size_t>(Chunk + 1) * ChunkSize);
+			for (size_t Index = static_cast<size_t>(Chunk) * ChunkSize; Index < End; ++Index)
+			{
+				const FEntity              Entity    = Entities[Index];
+				const FHierarchyComponent* Hierarchy = HierarchyPool->TryGet(Entity);
+				if (Hierarchy != nullptr && !Hierarchy->Parent.IsValid() && TransformPool->Contains(Entity))
+				{
+					Roots.push_back(Entity);
+				}
+			}
 		}
 	});
-	// 루트 하위 트리는 서로 겹치지 않으므로 병렬로 갱신한다 (하위 트리의 월드 행렬은 그 루트를 맡은 스레드만 쓰고, 읽는 것은 계층·로컬 값뿐).
-	// 미룬 부착 목록은 루트별로 모아 루트 순서대로 이어 붙인다 → 순차 갱신과 같은 순서·같은 결과
+	TransformRoots.clear();
+	for (uint32 Chunk = 0; Chunk < ChunkCount; ++Chunk)
+	{
+		TransformRoots.insert(TransformRoots.end(), ChunkRoots[Chunk].begin(), ChunkRoots[Chunk].end());
+	}
+
+	// 2) 루트 하위 트리는 서로 겹치지 않으므로 병렬로 갱신한다 (하위 트리의 월드 행렬은 그 루트를 맡은 스레드만 쓰고, 읽는 것은 계층·로컬 값뿐).
+	//    미룬 부착 목록은 루트별로 모아 루트 순서대로 이어 붙인다 → 순차 갱신과 같은 순서·같은 결과
 	const uint32 RootCount = static_cast<uint32>(TransformRoots.size());
 	if (RootDeferred.size() < RootCount)
 	{
@@ -199,21 +264,20 @@ void FScene::UpdateTransforms()
 
 void FScene::UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer, std::vector<FEntity>& OutDeferred)
 {
-	FTransformComponent* Transform = Registry.TryGet<FTransformComponent>(Entity);
+	FTransformComponent* Transform = TransformPool->TryGet(Entity);
 	if (Transform == nullptr)
 	{
 		return;
 	}
-	if (bAllowDefer && IsSocketAttached(Entity))
+	if (bAllowDefer && bAnySockets && IsSocketAttached(Entity))
 	{
 		OutDeferred.push_back(Entity);
 		return;
 	}
 
-	// 행벡터 규약: Local * Parent
-	Transform->WorldMatrix = Transform->GetLocalMatrix() * ParentWorld;
+	UpdateWorldMatrix(*Transform, ParentWorld, bUseWorldCache);
 
-	if (const FHierarchyComponent* Hierarchy = Registry.TryGet<FHierarchyComponent>(Entity))
+	if (const FHierarchyComponent* Hierarchy = HierarchyPool != nullptr ? HierarchyPool->TryGet(Entity) : nullptr)
 	{
 		for (FEntity Child : Hierarchy->Children)
 		{

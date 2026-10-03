@@ -19,6 +19,9 @@ struct FNameComponent
 };
 
 // 로컬 트랜스폼 + 캐시된 월드 행렬 (FScene::UpdateTransforms가 계층 순서로 갱신)
+//   WorldCache: UpdateTransforms 전용 — WorldMatrix를 마지막으로 계산한 입력(로컬 TRS + 부모 월드). 둘 다 비트 단위로 같으면 계산을 건너뛴다
+//   (결과는 전체 재계산과 비트 동일). 로컬 값을 쓰는 쪽은 아무것도 하지 않아도 된다. WorldMatrix를 직접 쓰는 코드만
+//   (되돌리지 않는다면) InvalidateWorldCache()를 부른다. 리플렉션에 등록하지 않는다(복사는 구조체 통째 — WorldMatrix와 함께 옮겨져 일관됨)
 struct FTransformComponent
 {
 	FVector3 Position;
@@ -27,7 +30,19 @@ struct FTransformComponent
 
 	FMatrix4x4 WorldMatrix;
 
+	struct FWorldCache
+	{
+		FVector3   Position;
+		FQuat      Rotation;
+		FVector3   Scale;
+		FMatrix4x4 ParentWorld;
+		bool       bValid = false;
+	};
+	FWorldCache WorldCache;
+
 	FMatrix4x4 GetLocalMatrix() const { return FMatrix4x4::MakeTransform(Position, Rotation, Scale); }
+	// WorldMatrix를 직접 바꾼 뒤 다음 UpdateTransforms가 반드시 다시 계산하게 한다
+	void InvalidateWorldCache() { WorldCache.bValid = false; }
 	FVector3   GetWorldPosition() const { return WorldMatrix.GetOrigin(); }
 	FVector3   GetWorldForward() const { return WorldMatrix.GetAxisX().GetNormalized(); }
 };

@@ -1262,6 +1262,13 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		std::vector<FTerrainRayTracingInput> Terrains;
 		TerrainRenderer.GetRayTracingInputs(Terrains);
 		Options.MaxBuildsPerFrame  = static_cast<uint32>(std::max(1, RendererCVars::RayTracingMaxBuilds.Get()));
+		if (Resources->GetLoadMode() != EResourceLoadMode::Async)
+		{
+			// 결정적 로딩(자동 검증 = 프레임마다 비우기, 동기): 준비된 메시의 BLAS를 같은 프레임에 모두 빌드한다.
+			// 빌드 상한은 끊김 방지용이라 프레임 시간/로딩 순서에 따라 TLAS 구성이 달라질 여지를 자동 검증에서 없앤다
+			Options.MaxBuildsPerFrame = std::numeric_limits<uint32>::max();
+			Options.MaxBuildTriangles = std::numeric_limits<uint64>::max();
+		}
 		BeginCpuTimer(ERenderTimer::RayTracingBuild);
 		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options, &Terrains);
 		EndCpuTimer(ERenderTimer::RayTracingBuild);

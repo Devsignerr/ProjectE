@@ -1416,7 +1416,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Alley.escene\"}, \"Label\": \"밤의 골목\", \"Ready\": false}"
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Alley.escene\"}, \"Label\": \"밤의 골목\", \"Ready\": true}"
         },
         "TransformComponent": {
           "Position": [

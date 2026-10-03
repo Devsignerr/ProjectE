@@ -1,0 +1,4125 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 3.2
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3000.0
+          ],
+          "Rotation": [
+            -0.08852132690137686,
+            0.24321034680169396,
+            0.33036608954935215,
+            0.9076733711903687
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {
+          "MoonIntensity": 0.45,
+          "MoonColor": [
+            0.55,
+            0.68,
+            1.0
+          ],
+          "NightSkyColor": [
+            0.01,
+            0.015,
+            0.032
+          ],
+          "StarIntensity": 0.6
+        },
+        "TimeOfDayComponent": {
+          "TimeOfDay": 22.5,
+          "DayLengthMinutes": 0.0,
+          "MaxSunElevation": 58.0,
+          "NorthAzimuth": 200.0,
+          "AnimateInEditor": false
+        },
+        "SkyLightComponent": {
+          "Intensity": 1.5
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.018,
+            0.022,
+            0.032
+          ],
+          "Density": 0.012,
+          "HeightFalloff": 0.1,
+          "StartDistance": 0.0,
+          "MaxOpacity": 0.85,
+          "DirectionalInscatteringColor": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Volumetric": true,
+          "VolumetricDistance": 5200.0,
+          "VolumetricAlbedo": [
+            0.9,
+            0.92,
+            0.95
+          ],
+          "VolumetricExtinctionScale": 1.0,
+          "VolumetricAnisotropy": 0.35,
+          "VolumetricDirectionalScale": 0.3,
+          "VolumetricLocalLightScale": 0.6
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyAsphalt.emat"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1750.0,
+            -233.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            37.0,
+            4.34,
+            0.5
+          ]
+        }
+      },
+      "Name": "Ground_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyAsphalt.emat"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1750.0,
+            233.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            37.0,
+            4.34,
+            0.5
+          ]
+        }
+      },
+      "Name": "Ground_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyConcrete.emat"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1750.0,
+            0.0,
+            -31.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            37.0,
+            0.32,
+            0.5
+          ]
+        }
+      },
+      "Name": "Ground_Channel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "WaterBodyComponent": {
+          "Size": [
+            3700.0,
+            32.0,
+            6.0
+          ],
+          "ScatterColor": [
+            0.01,
+            0.012,
+            0.014
+          ],
+          "Absorption": [
+            0.6,
+            0.45,
+            0.4
+          ],
+          "NormalStrength": 0.25,
+          "WaveScale": 120.0,
+          "WaveSpeed": 6.0,
+          "FlowDirection": 0.0,
+          "FlowSpeed": 18.0,
+          "FoamIntensity": 0.0,
+          "FoamDistance": 1.0,
+          "RefractionStrength": 0.02,
+          "ReflectionIntensity": 0.3,
+          "Roughness": 0.04
+        },
+        "TransformComponent": {
+          "Position": [
+            1750.0,
+            0.0,
+            -5.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Channel_Water",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyAsphalt.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4200.0,
+            0.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            13.0,
+            30.0,
+            0.5
+          ]
+        }
+      },
+      "Name": "Ground_Cross",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/DemoKits/Alley/AlleyArchitecture.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Architecture",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -460.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            0.2,
+            12.0
+          ]
+        }
+      },
+      "Name": "L1_Interior",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -375.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L1_Slab_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -375.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L1_Slab_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -375.0,
+            885.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L1_Slab_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -375.0,
+            1185.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L1_Slab_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -375.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            12.0
+          ]
+        }
+      },
+      "Name": "L1_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            -375.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            12.0
+          ]
+        }
+      },
+      "Name": "L1_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            900.0,
+            20.0,
+            600.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -320.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "L1_WallCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2700.0,
+            -460.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            0.2,
+            9.0
+          ]
+        }
+      },
+      "Name": "L2_Interior",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2700.0,
+            -375.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L2_Slab_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2700.0,
+            -375.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L2_Slab_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2700.0,
+            -375.0,
+            885.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            18.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "L2_Slab_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            -375.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            9.0
+          ]
+        }
+      },
+      "Name": "L2_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            3600.0,
+            -375.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            9.0
+          ]
+        }
+      },
+      "Name": "L2_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            900.0,
+            20.0,
+            450.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            2700.0,
+            -320.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "L2_WallCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            460.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.0,
+            0.2,
+            12.0
+          ]
+        }
+      },
+      "Name": "R1_Interior",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            375.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "R1_Slab_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            375.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "R1_Slab_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            375.0,
+            885.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "R1_Slab_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            375.0,
+            1185.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.0,
+            1.7,
+            0.3
+          ]
+        }
+      },
+      "Name": "R1_Slab_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            375.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            12.0
+          ]
+        }
+      },
+      "Name": "R1_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            3600.0,
+            375.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            1.5,
+            12.0
+          ]
+        }
+      },
+      "Name": "R1_Partition",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1800.0,
+            20.0,
+            600.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            320.0,
+            600.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "R1_WallCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBrick.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1810.0,
+            -450.0,
+            1087.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            3.0,
+            3.75
+          ]
+        }
+      },
+      "Name": "L1_SideWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4960.0,
+            0.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.2,
+            18.0,
+            9.0
+          ]
+        }
+      },
+      "Name": "Back_Interior",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4875.0,
+            0.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.7,
+            18.0,
+            0.3
+          ]
+        }
+      },
+      "Name": "Back_Slab_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4875.0,
+            0.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.7,
+            18.0,
+            0.3
+          ]
+        }
+      },
+      "Name": "Back_Slab_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyInterior.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4875.0,
+            0.0,
+            885.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.7,
+            18.0,
+            0.3
+          ]
+        }
+      },
+      "Name": "Back_Slab_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            -360.0,
+            740.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "L_LitWindow_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1050.0,
+            -360.0,
+            440.00000000000006
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "L_LitWindow_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            -360.0,
+            1040.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "L_LitWindow_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlowCool.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2250.0,
+            -360.0,
+            440.00000000000006
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "L_LitWindow_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            3150.0,
+            -360.0,
+            740.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "L_LitWindow_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2850.0,
+            360.0,
+            440.00000000000006
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "R_LitWindow_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1950.0,
+            360.0,
+            740.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "R_LitWindow_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            360.0,
+            1040.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "R_LitWindow_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlowCool.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            360.0,
+            440.00000000000006
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            0.04,
+            2.3
+          ]
+        }
+      },
+      "Name": "R_LitWindow_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4860.0,
+            -750.0,
+            440.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            2.4,
+            2.3
+          ]
+        }
+      },
+      "Name": "B_LitWindow_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4860.0,
+            150.0,
+            740.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            2.4,
+            2.3
+          ]
+        }
+      },
+      "Name": "B_LitWindow_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyWindowGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4860.0,
+            750.0,
+            440.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            2.4,
+            2.3
+          ]
+        }
+      },
+      "Name": "B_LitWindow_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBrick.emat"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            50.0,
+            50.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -60.0,
+            0.0,
+            450.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            9.0,
+            9.0
+          ]
+        }
+      },
+      "Name": "StartWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Hub.escene\"}, \"Label\": \"Hub로\", \"Ready\": true, \"RememberReturn\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            25.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Door",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Planter",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.988830171222025,
+            0.14904661177303125
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Post",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9824209903804138,
+            -0.18667886238127468
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Lantern",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.23585614366637617,
+            -0.9717879807318187
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Post",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9941829879851533,
+            0.10770416148372627
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Lantern",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Glow",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 3.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Light",
+      "Parent": 49
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Demo/DemoPlayer.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 58
+        },
+        "TransformComponent": {
+          "Position": [
+            700.0,
+            60.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            15.0,
+            300.0,
+            130.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            3600.0,
+            0.0,
+            130.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Fence_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_01/street_lamp_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4150.0,
+            -120.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CrossLamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            1.0,
+            0.45,
+            0.12
+          ],
+          "Intensity": 90.0,
+          "Radius": 1600.0,
+          "InnerConeAngle": 28.0,
+          "OuterConeAngle": 58.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            4150.0,
+            -120.0,
+            372.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.7071067811865476,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CrossLamp_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbSodium.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4150.0,
+            -120.0,
+            376.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.09,
+            0.09,
+            0.09
+          ]
+        }
+      },
+      "Name": "CrossLamp_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_lamp/industrial_wall_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4798.0,
+            -420.0,
+            320.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Back_WallLamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            0.7,
+            0.85,
+            1.0
+          ],
+          "Intensity": 25.0,
+          "Radius": 900.0,
+          "InnerConeAngle": 25.0,
+          "OuterConeAngle": 60.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            4770.0,
+            -420.0,
+            315.0
+          ],
+          "Rotation": [
+            -0.5372996083468238,
+            3.290011227725321e-17,
+            0.8433914458128857,
+            5.1642831727150445e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Back_WallLamp_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/concrete_road_barrier_02/concrete_road_barrier_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3950.0,
+            -150.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0697564737441253,
+            0.9975640502598242
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cross_Barrier",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/covered_car/covered_car.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4350.0,
+            -520.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6560590289905073,
+            0.754709580222772
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Cross_Car",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/modular_fire_escape/modular_fire_escape.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            807.0,
+            -220.0,
+            617.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FireEscape",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/pull_chain_light_socket/pull_chain_light_socket.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -205.0,
+            318.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "PullChainSocket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.68,
+            0.36
+          ],
+          "Intensity": 7.0,
+          "Radius": 550.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Broken\", \"BaseIntensity\": 7.0, \"Seed\": 3}"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -205.0,
+            296.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "PullChain_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbWarm.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -205.0,
+            297.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.06,
+            0.06,
+            0.06
+          ]
+        }
+      },
+      "Name": "PullChain_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_lamp/industrial_wall_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            -298.0,
+            330.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "WallLamp_L1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            0.72,
+            0.85,
+            1.0
+          ],
+          "Intensity": 9.0,
+          "Radius": 1000.0,
+          "InnerConeAngle": 22.0,
+          "OuterConeAngle": 55.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            -275.0,
+            325.0
+          ],
+          "Rotation": [
+            -0.3641869153381644,
+            0.3641869153381644,
+            0.6061088109378322,
+            0.6061088109378322
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "WallLamp_L1_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbCool.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            -286.0,
+            326.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.07,
+            0.07
+          ]
+        }
+      },
+      "Name": "WallLamp_L1_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_lamp/industrial_wall_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2550.0,
+            -298.0,
+            330.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "WallLamp_L2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.42
+          ],
+          "Intensity": 16.0,
+          "Radius": 1000.0,
+          "InnerConeAngle": 22.0,
+          "OuterConeAngle": 55.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Broken\", \"BaseIntensity\": 16.0, \"Seed\": 7}"
+        },
+        "TransformComponent": {
+          "Position": [
+            2550.0,
+            -275.0,
+            325.0
+          ],
+          "Rotation": [
+            -0.3641869153381644,
+            0.3641869153381644,
+            0.6061088109378322,
+            0.6061088109378322
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "WallLamp_L2_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbWarm.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2550.0,
+            -286.0,
+            326.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.07,
+            0.07
+          ]
+        }
+      },
+      "Name": "WallLamp_L2_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyNeonPink.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            -288.0,
+            292.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.5,
+            0.03,
+            0.03
+          ]
+        }
+      },
+      "Name": "Neon_Pink_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyNeonPink.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            -288.0,
+            280.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.1,
+            0.03,
+            0.03
+          ]
+        }
+      },
+      "Name": "Neon_Pink_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.12,
+            0.55
+          ],
+          "Intensity": 9.0,
+          "Radius": 650.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Neon\", \"BaseIntensity\": 9.0, \"Seed\": 5}"
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            -255.0,
+            270.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Neon_Pink_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/metal_trash_can/metal_trash_can.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1650.0,
+            -245.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Trash_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/trashbag/trashbag.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1530.0,
+            -250.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        }
+      },
+      "Name": "Trashbag_L1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/trashbag/trashbag.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1490.0,
+            -215.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9961946980917455,
+            0.08715574274765814
+          ],
+          "Scale": [
+            0.95,
+            0.95,
+            0.95
+          ]
+        }
+      },
+      "Name": "Trashbag_L2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/cardboard_box_01/cardboard_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1760.0,
+            -230.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.10452846326765347,
+            0.9945218953682733
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Cardboard_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/utility_box_02/utility_box_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2150.0,
+            -275.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "UtilityBox_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/exterior_aircon_unit/exterior_aircon_unit.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2900.0,
+            -260.0,
+            32.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Aircon_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/plastic_crate_01/plastic_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3300.0,
+            -240.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6087614290087207,
+            0.7933533402912352
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Crate_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/plastic_crate_01/plastic_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3305.0,
+            -242.0,
+            26.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Crate_L2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/old_tyre/old_tyre.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            -270.0,
+            30.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.6293203910498374,
+            0.7771459614569709
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Tyre_L",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            35.0,
+            95.0,
+            45.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1650.0,
+            -245.0,
+            45.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Trash_L_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/security_light/security_light.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            298.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "SecurityLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            0.85,
+            0.92,
+            1.0
+          ],
+          "Intensity": 40.0,
+          "Radius": 1100.0,
+          "InnerConeAngle": 25.0,
+          "OuterConeAngle": 55.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            260.0,
+            290.0
+          ],
+          "Rotation": [
+            0.3265055756219769,
+            0.3265055756219769,
+            -0.62721137512625,
+            0.62721137512625
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "SecurityLight_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbCool.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            270.0,
+            296.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        }
+      },
+      "Name": "SecurityLight_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/street_lamp_02/street_lamp_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2250.0,
+            298.0,
+            360.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLampArm_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpotLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 34.0,
+          "Radius": 1000.0,
+          "InnerConeAngle": 30.0,
+          "OuterConeAngle": 62.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            2250.0,
+            228.0,
+            342.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.7071067811865476,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StreetLampArm_R_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyBulbSodium.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2250.0,
+            228.0,
+            346.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.07,
+            0.07
+          ]
+        }
+      },
+      "Name": "StreetLampArm_R_Bulb",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyNeonCyan.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1500.0,
+            290.0,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.025,
+            0.025,
+            1.3
+          ]
+        }
+      },
+      "Name": "Neon_Cyan",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Alley/AlleyNeonCyan.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1530.0,
+            290.0,
+            314.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.025,
+            0.025
+          ]
+        }
+      },
+      "Name": "Neon_Cyan_Top",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.1,
+            0.75,
+            1.0
+          ],
+          "Intensity": 9.0,
+          "Radius": 650.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1500.0,
+            255.0,
+            260.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Neon_Cyan_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/covered_car/covered_car.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1540.0,
+            185.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Car_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            220.0,
+            92.5,
+            70.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1540.0,
+            185.0,
+            70.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Car_R_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_stove/barrel_stove.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3020.0,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BarrelStove",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            30.0,
+            30.0,
+            43.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            3020.0,
+            190.0,
+            43.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BarrelStove_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleyStoveFire.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3020.0,
+            190.0,
+            80.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BarrelStove_Fire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleyStoveSmoke.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3020.0,
+            190.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BarrelStove_Smoke",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.45,
+            0.14
+          ],
+          "Intensity": 16.0,
+          "Radius": 700.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 16.0, \"Seed\": 9}"
+        },
+        "TransformComponent": {
+          "Position": [
+            3020.0,
+            190.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BarrelStove_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/old_tyre/old_tyre.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3220.0,
+            260.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6560590289905073,
+            0.754709580222772
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Tyre_R1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/old_tyre/old_tyre.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3290.0,
+            255.0,
+            30.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7933533402912352,
+            0.6087614290087207
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Tyre_R2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/concrete_road_barrier_02/concrete_road_barrier_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            150.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.10452846326765347,
+            0.9945218953682733
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Barrier_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            25.0,
+            80.0,
+            55.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            3450.0,
+            150.0,
+            55.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Barrier_R_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/utility_box_01/utility_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            650.0,
+            275.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "UtilityBox_R",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/security_camera_01/security_camera_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1150.0,
+            295.0,
+            420.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "SecurityCamera",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/water_manhole_cover/water_manhole_cover.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2600.0,
+            -120.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Manhole",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleySteam.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3150.0,
+            255.0,
+            180.0
+          ],
+          "Rotation": [
+            0.29883623873011983,
+            0.29883623873011983,
+            -0.6408563820557885,
+            0.6408563820557885
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Vent_Steam",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/AlleySteam.eparticle",
+          "Playing": true,
+          "Speed": 0.8
+        },
+        "TransformComponent": {
+          "Position": [
+            2600.0,
+            -120.0,
+            6.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Manhole_Steam",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleA.emat",
+          "Size": [
+            260.0,
+            180.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            700.0,
+            140.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9996965962507831,
+            -0.02463159443882499
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleB.emat",
+          "Size": [
+            300.0,
+            200.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            -170.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9625533862632464,
+            -0.27109219574373145
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleA.emat",
+          "Size": [
+            240.0,
+            170.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1950.0,
+            120.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5481306479553043,
+            0.8363927263983697
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleB.emat",
+          "Size": [
+            360.0,
+            230.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2400.0,
+            -60.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9993002492751182,
+            -0.03740336614111969
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleA.emat",
+          "Size": [
+            220.0,
+            150.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2800.0,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9179008906630023,
+            -0.39680972130237313
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleB.emat",
+          "Size": [
+            280.0,
+            190.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3250.0,
+            -150.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6054907333203862,
+            -0.7958523555680043
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleB.emat",
+          "Size": [
+            200.0,
+            140.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            -200.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.29140720491644884,
+            0.9565991014645492
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalPuddleA.emat",
+          "Size": [
+            180.0,
+            120.0,
+            40.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 1,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1600.0,
+            60.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8152513993380721,
+            0.5791072058585658
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Puddle_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalOil.emat",
+          "Size": [
+            140.0,
+            90.0,
+            40.0
+          ],
+          "Opacity": 0.8,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2050.0,
+            210.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.28101339761830985,
+            0.9597038451308891
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Oil_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalOil.emat",
+          "Size": [
+            140.0,
+            90.0,
+            40.0
+          ],
+          "Opacity": 0.8,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": true,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3050.0,
+            60.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5630066513962535,
+            -0.8264523643160431
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Oil_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            226.70085381917536,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            273.2126179049487,
+            -300.0,
+            115.0
+          ],
+          "Rotation": [
+            -0.5,
+            -0.5,
+            -0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            374.36124498009065,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            727.8632104958534,
+            300.0,
+            115.0
+          ],
+          "Rotation": [
+            0.5,
+            -0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            318.4900327325713,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1108.4707040240608,
+            -300.0,
+            115.0
+          ],
+          "Rotation": [
+            -0.5,
+            -0.5,
+            -0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            222.40011791193677,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1468.8992914168196,
+            300.0,
+            115.0
+          ],
+          "Rotation": [
+            0.5,
+            -0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            229.5281768270168,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            1933.4057519404575,
+            -300.0,
+            115.0
+          ],
+          "Rotation": [
+            -0.5,
+            -0.5,
+            -0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            258.71088218643433,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2312.8249915357515,
+            300.0,
+            115.0
+          ],
+          "Rotation": [
+            0.5,
+            -0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            294.22951379572555,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2713.6099107069745,
+            -300.0,
+            115.0
+          ],
+          "Rotation": [
+            -0.5,
+            -0.5,
+            -0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "DecalComponent": {
+          "MaterialAsset": "Materials/Demo/Alley/DecalDamp.emat",
+          "Size": [
+            230.0,
+            354.7883405629651,
+            60.0
+          ],
+          "Opacity": 1.0,
+          "SortOrder": 0,
+          "AffectBaseColor": true,
+          "AffectNormal": false,
+          "AffectRoughness": true,
+          "FadeStartDistance": 0.0,
+          "FadeEndDistance": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            3182.863733998799,
+            300.0,
+            115.0
+          ],
+          "Rotation": [
+            0.5,
+            -0.5,
+            0.5,
+            0.5
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Decal_Damp_7",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

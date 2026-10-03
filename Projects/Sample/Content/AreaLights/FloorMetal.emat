@@ -1,0 +1,23 @@
+{
+  "Name": "FloorMetal",
+  "BaseColorFactor": [
+    0.9,
+    0.9,
+    0.92,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0,
+    0,
+    0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 0.22,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

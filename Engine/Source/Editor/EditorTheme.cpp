@@ -181,6 +181,10 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_FIRE, IM_COL32(255, 128, 64, 255), "파티클" };
 	}
+	if (Extension == ".ies")
+	{
+		return { ICON_FA_LIGHTBULB, IM_COL32(250, 210, 90, 255), "IES 배광" };
+	}
 	if (Extension == ".eterrain")
 	{
 		return { ICON_FA_MOUNTAIN_SUN, IM_COL32(150, 190, 110, 255), "지형" };
@@ -273,6 +277,7 @@ const char* FEditorTheme::GetComponentIcon(std::string_view TypeName)
 		{ "AudioSourceComponent", ICON_FA_VOLUME_HIGH },
 		{ "PointLightComponent", ICON_FA_LIGHTBULB },
 		{ "SpotLightComponent", ICON_FA_FILTER },
+		{ "AreaLightComponent", ICON_FA_TABLE_CELLS_LARGE },
 		{ "SkyLightComponent", ICON_FA_CLOUD_MOON },
 		{ "SequencePlayerComponent", ICON_FA_CLAPPERBOARD },
 		{ "ProceduralBuildingComponent", ICON_FA_BUILDING },

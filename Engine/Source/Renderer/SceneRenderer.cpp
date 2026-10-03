@@ -61,10 +61,11 @@ namespace
 		RootParam_FogVolume           = 23, // t23 (볼류메트릭 안개 결과 표 — 반투명 패스)
 		RootParam_MaterialGraphTextures = 24, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위 — MaterialCommon.hlsli)
 		RootParam_RayTracedShadowMask   = 25, // t24 (RT 방향광 그림자 마스크 — PerFrame RayTracedShadows = 1일 때 불투명 메인 패스가 읽음, Phase 50)
-		RootParam_DdgiConstants         = 26, // b9 (DDGI 상수 — VolumeCount 0이면 셰이더는 예전 하늘 IBL 식, Phase 51)
-		RootParam_DdgiIrradiance        = 27, // t40 (DDGI 조도 아틀라스)
-		RootParam_DdgiDistance          = 28, // t41 (DDGI 거리 아틀라스)
-		RootParam_DdgiProbeData         = 29, // t42 (DDGI 프로브 상태)
+		RootParam_LightTextures         = 26, // 공간 3 t0~ (셰이더 가시 힙 전체 — LTC 표·IES·쿠키, Lighting.hlsli LightTextures, Phase 52)
+		RootParam_DdgiConstants         = 27, // b9 (DDGI 상수 — VolumeCount 0이면 셰이더는 예전 하늘 IBL 식, Phase 51)
+		RootParam_DdgiIrradiance        = 28, // t40 (DDGI 조도 아틀라스)
+		RootParam_DdgiDistance          = 29, // t41 (DDGI 거리 아틀라스)
+		RootParam_DdgiProbeData         = 30, // t42 (DDGI 프로브 상태)
 	};
 } // namespace
 
@@ -77,6 +78,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	ResourceRootProviderId = Resources->AddRootProvider([this](FResourceRoots& Roots) {
 		TerrainRenderer.CollectResourceRoots(Roots);
 		FoliageRenderer.CollectResourceRoots(Roots);
+		LocalLightRenderer.CollectResourceRoots(Roots); // 라이트 쿠키 (Phase 52)
 	});
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
@@ -141,6 +143,10 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	const uint32 RtShadowIndex = RootSignature.AddDescriptorTable(
 		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 24, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(RtShadowIndex == RootParam_RayTracedShadowMask);
+	const uint32 LightTexturesIndex = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 3, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
+		D3D12_SHADER_VISIBILITY_PIXEL);
+	E_CHECK(LightTexturesIndex == RootParam_LightTextures);
 	E_CHECK(RootSignature.AddConstantBufferView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL) == RootParam_DdgiConstants);
 	for (uint32 Index = 0; Index < 3; ++Index)
 	{
@@ -181,7 +187,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
-	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary) ||
+	if (!ShadowRenderer.Init(*Rhi, ShaderLibrary) || !IblRenderer.Init(*Rhi, ShaderLibrary) || !LocalLightRenderer.Init(*Rhi, ShaderLibrary, *Resources) ||
 	    !OcclusionCuller.Init(*Rhi, ShaderLibrary) || !ScreenPassRoot.Init(Device) || !TemporalAA.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
@@ -2134,6 +2140,7 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_CaptureAtlas, ReflectionCaptures.GetAtlasSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_ScreenReflection, ScreenSpaceReflections.GetResultSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_RayTracedShadowMask, RayTracingEffects.GetShadowMask().GetSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_LightTextures, Rhi->GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
 	CommandList->SetGraphicsRootConstantBufferView(RootParam_DdgiConstants, Ddgi.GetShadingConstants());
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_DdgiIrradiance, Ddgi.GetIrradianceSrv().Gpu);
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_DdgiDistance, Ddgi.GetDistanceSrv().Gpu);

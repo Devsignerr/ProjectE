@@ -1,0 +1,23 @@
+{
+  "Name": "Wall",
+  "BaseColorFactor": [
+    0.75,
+    0.74,
+    0.72,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0,
+    0,
+    0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.85,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

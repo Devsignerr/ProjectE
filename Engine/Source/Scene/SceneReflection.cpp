@@ -73,6 +73,9 @@ void RegisterSceneTypes()
 	Registry.RegisterType<FDirectionalLightComponent>("DirectionalLightComponent", "방향광")
 		.Property(&FDirectionalLightComponent::Color, "Color", "색", PF_Color)
 		.Property(&FDirectionalLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 50.0f, 0.05f)
+		.Property(&FDirectionalLightComponent::CookieTexture, "CookieTexture", "쿠키 텍스처").AssetFilter(".png;.jpg;.jpeg;.tga;.bmp").Tooltip("빛에 수직인 평면에 반복 투영 (구름 그림자 등)")
+		.Property(&FDirectionalLightComponent::CookieTileSize, "CookieTileSize", "쿠키 타일 크기 (cm)").Range(1.0f, 1000000.0f, 10.0f)
+		.Property(&FDirectionalLightComponent::CookiePanSpeed, "CookiePanSpeed", "쿠키 이동 (타일/초)")
 		.AsComponent();
 
 	// 런타임 상태(Runtime)는 등록하지 않는다. FSkinComponent는 런타임 전용이라 등록하지 않음
@@ -150,6 +153,12 @@ void RegisterSceneTypes()
 		.Property(&FPointLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 1000.0f, 0.05f).Tooltip("1m 거리 밝기 (거리 제곱 반비례)")
 		.Property(&FPointLightComponent::Radius, "Radius", "반경 (cm)").Range(1.0f, 100000.0f, 1.0f)
 		.Property(&FPointLightComponent::bCastShadows, "CastShadows", "그림자")
+		.Property(&FPointLightComponent::IesProfile, "IesProfile", "IES 프로필").AssetFilter(".ies").Tooltip("배광 분포 (IESNA LM-63). 0° = 라이트 Forward(+X)")
+		.Property(&FPointLightComponent::bUseIesIntensity, "UseIesIntensity", "IES 밝기 사용").Tooltip("켜면 Intensity 대신 프로필 최대 칸델라 × 0.01 × 배율")
+		.Property(&FPointLightComponent::IesIntensityScale, "IesIntensityScale", "IES 밝기 배율").Range(0.0f, 100.0f, 0.01f)
+		.Property(&FPointLightComponent::CookieTexture, "CookieTexture", "쿠키 텍스처").AssetFilter(".png;.jpg;.jpeg;.tga;.bmp").Tooltip("빛 색에 곱하는 투영 텍스처 (창살·패턴·깜빡임)")
+		.Property(&FPointLightComponent::CookieScale, "CookieScale", "쿠키 반복").Tooltip("0이면 그 축은 한 점만 읽는다 (패닝과 함께 깜빡임)")
+		.Property(&FPointLightComponent::CookiePanSpeed, "CookiePanSpeed", "쿠키 이동 (uv/초)")
 		.AsComponent();
 
 	Registry.RegisterType<FSpotLightComponent>("SpotLightComponent", "스포트라이트")
@@ -159,6 +168,12 @@ void RegisterSceneTypes()
 		.Property(&FSpotLightComponent::InnerConeAngle, "InnerConeAngle", "내부 원뿔 (도)").Range(0.0f, 80.0f, 0.1f)
 		.Property(&FSpotLightComponent::OuterConeAngle, "OuterConeAngle", "외부 원뿔 (도)").Range(1.0f, 80.0f, 0.1f)
 		.Property(&FSpotLightComponent::bCastShadows, "CastShadows", "그림자")
+		.Property(&FSpotLightComponent::IesProfile, "IesProfile", "IES 프로필").AssetFilter(".ies").Tooltip("배광 분포 (IESNA LM-63). 0° = 라이트 Forward(+X)")
+		.Property(&FSpotLightComponent::bUseIesIntensity, "UseIesIntensity", "IES 밝기 사용").Tooltip("켜면 Intensity 대신 프로필 최대 칸델라 × 0.01 × 배율")
+		.Property(&FSpotLightComponent::IesIntensityScale, "IesIntensityScale", "IES 밝기 배율").Range(0.0f, 100.0f, 0.01f)
+		.Property(&FSpotLightComponent::CookieTexture, "CookieTexture", "쿠키 텍스처").AssetFilter(".png;.jpg;.jpeg;.tga;.bmp").Tooltip("빛 색에 곱하는 투영 텍스처 (창살·패턴·깜빡임)")
+		.Property(&FSpotLightComponent::CookieScale, "CookieScale", "쿠키 반복").Tooltip("0이면 그 축은 한 점만 읽는다 (패닝과 함께 깜빡임)")
+		.Property(&FSpotLightComponent::CookiePanSpeed, "CookiePanSpeed", "쿠키 이동 (uv/초)")
 		.AsComponent();
 
 	Registry.RegisterType<FSkyLightComponent>("SkyLightComponent", "하늘광")
@@ -297,6 +312,27 @@ void RegisterSceneTypes()
 	RegisterSkyTypes();
 	// 능력 시스템 (Scene/Ability, Phase 53 사이드)
 	RegisterAbilityTypes();
+
+	// 면광원 (Phase 52, 식은 Renderer/AreaLightMath.h): 색은 sRGB, Intensity = 면 법선 방향 1m 조도 (점광원과 같은 단위)
+	Registry.RegisterType<FAreaLightComponent>("AreaLightComponent", "면광원")
+		.Property(&FAreaLightComponent::Shape, "Shape", "모양")
+		.Enum({ { "Rect", "사각형" }, { "Disc", "원판" } })
+		.Property(&FAreaLightComponent::Color, "Color", "색", PF_Color)
+		.Property(&FAreaLightComponent::Intensity, "Intensity", "강도").Range(0.0f, 1000.0f, 0.05f).Tooltip("면 법선 방향 1m 거리 밝기 (점광원과 같은 단위, 면적이 커지면 휘도는 반비례)")
+		.Property(&FAreaLightComponent::Width, "Width", "폭 (cm)").Range(1.0f, 10000.0f, 0.5f).Tooltip("로컬 Y 방향 (원판: 지름)")
+		.Property(&FAreaLightComponent::Height, "Height", "높이 (cm)").Range(1.0f, 10000.0f, 0.5f).Tooltip("로컬 Z 방향 (원판: 세로 지름)")
+		.Property(&FAreaLightComponent::Radius, "Radius", "반경 (cm)").Range(1.0f, 100000.0f, 1.0f).Tooltip("면에서 이 거리에서 빛이 0")
+		.Property(&FAreaLightComponent::bTwoSided, "TwoSided", "양면")
+		.Property(&FAreaLightComponent::BarnDoorAngle, "BarnDoorAngle", "문 덮개 각 (도)").Range(0.0f, 90.0f, 0.5f).Tooltip("법선 기준 반각, 90 = 없음")
+		.Property(&FAreaLightComponent::BarnDoorLength, "BarnDoorLength", "문 덮개 길이 (cm)").Range(0.0f, 1000.0f, 0.5f).Tooltip("짧을수록 경계가 부드럽다")
+		.Property(&FAreaLightComponent::bCastShadows, "CastShadows", "그림자")
+		.Property(&FAreaLightComponent::IesProfile, "IesProfile", "IES 프로필").AssetFilter(".ies").Tooltip("배광 분포 (IESNA LM-63). 0° = 라이트 Forward(+X)")
+		.Property(&FAreaLightComponent::bUseIesIntensity, "UseIesIntensity", "IES 밝기 사용").Tooltip("켜면 Intensity 대신 프로필 최대 칸델라 × 0.01 × 배율")
+		.Property(&FAreaLightComponent::IesIntensityScale, "IesIntensityScale", "IES 밝기 배율").Range(0.0f, 100.0f, 0.01f)
+		.Property(&FAreaLightComponent::CookieTexture, "CookieTexture", "쿠키 텍스처").AssetFilter(".png;.jpg;.jpeg;.tga;.bmp").Tooltip("빛 색에 곱하는 투영 텍스처 (창살·패턴·깜빡임)")
+		.Property(&FAreaLightComponent::CookieScale, "CookieScale", "쿠키 반복").Tooltip("0이면 그 축은 한 점만 읽는다 (패닝과 함께 깜빡임)")
+		.Property(&FAreaLightComponent::CookiePanSpeed, "CookiePanSpeed", "쿠키 이동 (uv/초)")
+		.AsComponent();
 	// 동적 GI 프로브 볼륨 (Scene/IrradianceVolume.h, Phase 51 DDGI)
 	RegisterIrradianceVolumeTypes();
 }

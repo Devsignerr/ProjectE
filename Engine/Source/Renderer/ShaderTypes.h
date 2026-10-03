@@ -371,21 +371,32 @@ struct alignas(16) FUIBatchConstants
 };
 static_assert(sizeof(FUIBatchConstants) == 16);
 
-// 점광원/스포트라이트 하나 (구조화 버퍼, Lighting.hlsli FLocalLight와 1:1). 식은 Renderer/LightMath.h
+// 로컬 라이트 하나 — 점광원/스포트라이트/면광원(사각형·원판) (구조화 버퍼, Lighting.hlsli FLocalLight와 1:1).
+// 식은 Renderer/LightMath.h(점/스포트), Renderer/AreaLightMath.h(면광원 LTC·IES·쿠키). 앞 64바이트는 Phase 23 배치 그대로
 struct FLocalLightGpuData
 {
-	FVector3 Position;
-	float    Radius = 0.0f;     // cm
-	FVector3 Color;             // 선형 색 × 강도
-	float    ConeScale  = 0.0f; // 점광원 0
-	FVector3 Direction  = FVector3::ForwardVector;
+	FVector3 Position;          // 면광원: 면 가운데
+	float    Radius = 0.0f;     // cm: 영향 반경 (면광원은 면에서 가장 가까운 점까지의 거리 기준)
+	FVector3 Color;             // 선형 색 × 강도 (면광원은 × 휘도 환산 — AreaLightMath::IntensityToRadianceScale)
+	float    ConeScale  = 0.0f; // 점광원 0 (면광원: 문 덮개 원뿔)
+	FVector3 Direction  = FVector3::ForwardVector; // 스포트 축 / 면광원 법선(빛 나가는 쪽) / IES 0°(천저)
 	float    ConeOffset = 1.0f; // 점광원 1
 	int32    ShadowIndex       = -1; // 그림자 타일 배열의 첫 장 (-1 = 그림자 없음, 점광원은 6장 연속)
 	uint32   Type              = 0;  // LightMath::ELocalLightType
 	float    ShadowTexelFactor = 0.0f; // 그림자 텍셀 월드 크기 = 깊이 × 이 값
-	float    Padding0          = 0.0f;
+	float    SourceRadius      = 0.0f; // cm: 면광원 반그림자 크기 (면 반 대각선, 점/스포트 0)
+	// ---- Phase 52: 면광원 / IES / 쿠키
+	FVector3 Right;                    // 면 가로축 (로컬 +Y, 정규화) — IES φ = 0, 쿠키 u 방향
+	float    HalfWidth  = 0.0f;        // cm (원판: 반지름)
+	FVector3 Up;                       // 면 세로축 (로컬 +Z) — IES φ = 90°
+	float    HalfHeight = 0.0f;        // cm (원판: 반지름)
+	int32    IesTexture    = -1;       // 셰이더 가시 힙 칸 (-1 = 없음, Texture2D R32F θ × φ, 최대 1로 정규화)
+	int32    CookieTexture = -1;       // 셰이더 가시 힙 칸 (-1 = 없음, sRGB 색 텍스처)
+	uint32   Flags         = 0;        // LightMath::LocalLightFlag_*
+	float    ShadowFar     = 0.0f;     // cm: 그림자 투영 원평면 (면광원 PCSS 깊이 선형화)
+	FVector4 CookieTransform;          // 쿠키 uv = 투영 좌표 × xy + zw (AreaLightMath::ComputeCookieTransform)
 };
-static_assert(sizeof(FLocalLightGpuData) == 64);
+static_assert(sizeof(FLocalLightGpuData) == 128);
 
 // 클러스터드 라이팅 상수 (Mesh.hlsl b5, ClusterCulling.hlsl b0)
 struct alignas(16) FClusterConstants
@@ -406,8 +417,15 @@ struct alignas(16) FClusterConstants
 	float      ShadowNormalOffset = 0.0f; // 그림자 텍셀 배수
 	float      ShadowTexelSize    = 0.0f; // 1 / 그림자 타일 해상도
 	uint32     Padding0           = 0;
+	// ---- Phase 52 (뒤에 덧붙임 — 앞 128바이트는 그대로)
+	uint32     LtcTexture1        = 0;    // LTC 표 1 (역행렬) 셰이더 가시 힙 칸
+	uint32     LtcTexture2        = 0;    // LTC 표 2 (크기·프레넬·구 근사)
+	float      ShadowNearZ        = 5.0f; // cm: 로컬 그림자 원근 근평면 (면광원 PCSS 깊이 선형화)
+	int32      DirectionalCookieTexture = -1; // 방향광 쿠키 힙 칸 (-1 = 없음)
+	FVector4   DirectionalCookieU;        // 방향광 쿠키 u = dot(월드 위치, xyz) + w
+	FVector4   DirectionalCookieV;
 };
-static_assert(sizeof(FClusterConstants) == 128);
+static_assert(sizeof(FClusterConstants) == 176);
 
 // 오클루전 컬링 항목 하나 = 메인 패스 정적 묶음의 인스턴스 하나 (OcclusionCulling.hlsl FOcclusionItem과 1:1)
 struct FOcclusionItem

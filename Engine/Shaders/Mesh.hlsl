@@ -92,7 +92,89 @@ Texture2D<float2> IblBrdf : register(t7);
 StructuredBuffer<FLocalLight> LocalLights : register(t9);
 StructuredBuffer<uint>        ClusterData : register(t10);
 StructuredBuffer<float4x4>    LocalShadowMatrices : register(t11); // 그림자 장별 뷰-투영
-Texture2DArray<float>         LocalShadowMap      : register(t12); // 그림자 타일 배열 (스포트 1장, 점광원 6장: +X,-X,+Y,-Y,+Z,-Z)
+Texture2DArray<float>         LocalShadowMap      : register(t12); // 그림자 타일 배열 (스포트·면광원 1장, 점광원 6장: +X,-X,+Y,-Y,+Z,-Z)
+
+// 면광원 LTC 표·IES·쿠키 (Phase 52): 셰이더 가시 힙 전체 (루트 #26, 지형도 같은 공간 3) — 칸 번호는 라이트 목록/클러스터 상수
+Texture2D LightTextures[] : register(t0, space3);
+#define E_LIGHT_TEXTURE(Index) LightTextures[NonUniformResourceIndex(Index)]
+#define E_LIGHT_SAMPLER_CLAMP IblSampler
+#define E_LIGHT_SAMPLER_WRAP LinearSampler
+#include "AreaLight.hlsli"
+
+// 면광원 그림자 (스포트처럼 장 1장, 면 가운데에서 법선 쪽 원근): PCSS — 고정 Vogel 16탭 가림 탐색 → 반그림자 폭 = 면 반 크기 × (수신 - 가림) / 가림
+// (AreaLightMath::ComputePenumbraUV, 결정적 — 픽셀마다 흔들지 않는다) → 같은 반경 16탭 비교 PCF. 폭은 1~32텍셀로 자른다
+float2 AreaShadowVogel(uint Index)
+{
+	const float Radius = sqrt(((float)Index + 0.5f) / 16.0f);
+	const float Angle  = (float)Index * 2.39996323f;
+	return float2(cos(Angle), sin(Angle)) * Radius;
+}
+
+float ComputeAreaLightShadow(FLocalLight Light, float3 WorldPosition, float3 GeometricNormal, float3 L)
+{
+	const float3 FromLight = WorldPosition - Light.Position;
+	const float  Depth     = dot(FromLight, Light.Direction);
+	if (Depth <= 0.0f)
+	{
+		return 1.0f; // 양면 광원의 뒤쪽 (그림자 장은 앞쪽만)
+	}
+	const uint   Slice   = (uint)Light.ShadowIndex;
+	const float  NdotL   = saturate(dot(GeometricNormal, L));
+	const float  Texel   = max(Depth, 1.0f) * Light.ShadowTexelFactor;
+	const float3 Offset  = GeometricNormal * Texel * LocalShadowNormalOffset * (1.0f - 0.5f * NdotL);
+	const float4 ClipPos = mul(float4(WorldPosition + Offset, 1.0f), LocalShadowMatrices[Slice]);
+	if (ClipPos.w <= 0.0f)
+	{
+		return 1.0f;
+	}
+	const float3 Ndc = ClipPos.xyz / ClipPos.w;
+	const float2 UV  = Ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+	if (any(UV < 0.0f) || any(UV > 1.0f) || Ndc.z > 1.0f)
+	{
+		return 1.0f;
+	}
+
+	const float TwoTan   = Light.ShadowTexelFactor / max(LocalShadowTexelSize, 1.0e-6f); // 2 tan(반 시야각)
+	const float Receiver = LinearizeLocalShadowDepth(Ndc.z, Light.ShadowFar);
+	const float MinUV    = LocalShadowTexelSize;
+	const float MaxUV    = LocalShadowTexelSize * 32.0f;
+	const float Search   = clamp(Light.SourceRadius / max(TwoTan * Receiver, 1.0e-3f), MinUV, MaxUV); // 가림이 중간 깊이일 때의 반그림자
+	const float Resolution = 1.0f / max(LocalShadowTexelSize, 1.0e-6f);
+	// 수신 평면 기울기 바이어스: 넓은 커널이 기울어진 같은 면을 가림으로 읽지 않게 (커널 반경 월드 크기 × tan(빛 각) → 원근 깊이 차)
+	const float CosL       = max(NdotL, 0.1f);
+	const float TanL       = min(sqrt(1.0f - CosL * CosL) / CosL, 8.0f);
+	const float Range      = Light.ShadowFar / max(Light.ShadowFar - LocalShadowNearZ, 1.0e-3f);
+	const float DepthPerCm = LocalShadowNearZ * Range / max(Receiver * Receiver, 1.0e-3f);
+	const float SlopePerUV = TwoTan * Receiver * TanL * DepthPerCm;
+
+	float BlockerSum   = 0.0f;
+	float BlockerCount = 0.0f;
+	[unroll]
+	for (uint Index = 0; Index < 16; ++Index)
+	{
+		const float2 TapUV = saturate(UV + AreaShadowVogel(Index) * Search);
+		const int2   Pixel = min(int2(TapUV * Resolution), int2(Resolution - 1.0f, Resolution - 1.0f));
+		const float  Stored = LocalShadowMap.Load(int4(Pixel, Slice, 0));
+		if (Stored < Ndc.z - Search * SlopePerUV)
+		{
+			BlockerSum += Stored;
+			BlockerCount += 1.0f;
+		}
+	}
+	if (BlockerCount <= 0.0f)
+	{
+		return 1.0f;
+	}
+	const float Blocker  = LinearizeLocalShadowDepth(BlockerSum / BlockerCount, Light.ShadowFar);
+	const float Penumbra = clamp(Light.SourceRadius * max(Receiver - Blocker, 0.0f) / max(Blocker, 1.0f) / max(TwoTan * Receiver, 1.0e-3f), MinUV, MaxUV);
+	float       Lit      = 0.0f;
+	[unroll]
+	for (uint Tap = 0; Tap < 16; ++Tap)
+	{
+		Lit += LocalShadowMap.SampleCmpLevelZero(ShadowSampler, float3(UV + AreaShadowVogel(Tap) * Penumbra, Slice), Ndc.z - Penumbra * SlopePerUV);
+	}
+	return Lit / 16.0f;
+}
 
 // 1 = 빛 받음, 0 = 그림자. 3x3 PCF + 법선 오프셋 (텍셀 월드 크기 = 광원 기준 깊이 × ShadowTexelFactor)
 float ComputeLocalShadow(FLocalLight Light, float3 WorldPosition, float3 GeometricNormal, float3 L)
@@ -165,6 +247,16 @@ float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldP
 	for (uint Index = 0; Index < Count; ++Index)
 	{
 		const FLocalLight Light    = LocalLights[ClusterData[Base + 1 + Index]];
+		if (IsAreaLight(Light))
+		{
+			// 면광원 (Phase 52): LTC 다각형 적분 + IES/쿠키 + PCSS 그림자 (그림자 L = 가운데 방향)
+			const float3 Area = EvaluateAreaLight(Light, Surface, WorldPosition);
+			if (any(Area > 0.0f))
+			{
+				Color += Area * (Light.ShadowIndex < 0 ? 1.0f : ComputeAreaLightShadow(Light, WorldPosition, GeometricNormal, normalize(Light.Position - WorldPosition)));
+			}
+			continue;
+		}
 		const float3      ToLight  = Light.Position - WorldPosition;
 		const float       Distance = length(ToLight);
 		if (Distance >= Light.Radius)
@@ -178,7 +270,12 @@ float3 EvaluateLocalLights(FSurface Surface, float2 PixelPosition, float3 WorldP
 		{
 			continue;
 		}
-		const float3 Direct = EvaluateDirectLight(Surface, L, Light.Color * Attenuation);
+		float3 Radiance = Light.Color * Attenuation;
+		if (Light.IesTexture >= 0 || Light.CookieTexture >= 0)
+		{
+			Radiance *= EvaluateLightProfile(Light, ToLightLocal(Light, -L)); // IES/쿠키 (Phase 52)
+		}
+		const float3 Direct = EvaluateDirectLight(Surface, L, Radiance);
 		if (any(Direct > 0.0f))
 		{
 			Color += Direct * ComputeLocalShadow(Light, WorldPosition, GeometricNormal, L);
@@ -568,7 +665,11 @@ FMeshSurface MakeMeshSurface(FPixelInput Input, bool bFrontFace, bool bScreenEff
 float3 EvaluateMeshLighting(FSurface Surface, float3 WorldPosition, float3 GeometricNormal, float2 PixelPosition, bool bScreenReflections)
 {
 	const float3 L        = -DirectionalLight.Direction; // 표면 → 광원
-	const float3 Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
+	float3       Radiance = DirectionalLight.Color * DirectionalLight.Intensity;
+	if (DirectionalCookieTexture >= 0)
+	{
+		Radiance *= EvaluateDirectionalCookie(WorldPosition, MaterialMipBias); // 방향광 쿠키 (Phase 52)
+	}
 	const float  Shadow   = ComputeDirectionalShadow(WorldPosition, GeometricNormal, L, PixelPosition, bScreenReflections);
 
 	float3 Color = EvaluateDirectLight(Surface, L, Radiance) * Shadow;

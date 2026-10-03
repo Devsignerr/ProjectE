@@ -9,13 +9,18 @@
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/ShadowCasterHook.h"
+#include "Scene/ResourceHandles.h"
 
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 class FCamera;
 class FD3D12RHI;
+class FResourceManager;
 class FScene;
 class FShaderLibrary;
+struct FResourceRoots;
 
 // 점광원/스포트라이트 그림자 설정 (씬 렌더러가 소유)
 struct FLocalShadowSettings
@@ -29,7 +34,10 @@ struct FLocalShadowSettings
 	float  NearZ        = 5.0f; // cm: 그림자 원근 근평면
 };
 
-// 점광원/스포트라이트 + 클러스터드 컬링 + 그림자.
+// 점광원/스포트라이트/면광원(Phase 52: 사각형·원판 LTC, IES, 쿠키) + 클러스터드 컬링 + 그림자.
+//   면광원·IES·쿠키 식은 Renderer/AreaLightMath.h 머리 주석. 셰이더가 읽는 텍스처(LTC 표 2장, IES 프로필, 쿠키)는 셰이더 가시 힙 칸 번호로
+//   목록/상수에 넣고 메시 패스가 힙 전체를 공간 3 무제한 표로 묶어 읽는다(바인드리스 — 프레임마다 다시 채우므로 밉 스트리밍·재생성 안전).
+//   IES는 경로별로 한 번 파싱해 θ × φ R32F 텍스처로 굽는다(FFileSystem — pak 안전, 쿠킹 없음), 쿠키는 공개 LoadTexture(고정 = 전체 밉).
 //   PrepareLights: 씬 라이트 수집(카메라 프러스텀 밖 제외, 가까운 순 MaxLocalLights개) → 그림자 타일 배정 (CPU만 — 이후
 //            IntersectsShadowCaster로 스킨 팔레트 가시성 판정에 쓴다)
 //   PrepareFrame: 목록을 동적 업로드 버퍼에 올림 (CPU). AddPasses: 그림자 깊이 패스 → 클러스터 컬링 계산 셰이더(ClusterCulling.hlsl)
@@ -42,7 +50,7 @@ class FLocalLightRenderer
 public:
 	~FLocalLightRenderer();
 
-	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary);
+	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources);
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 
@@ -67,6 +75,9 @@ public:
 	D3D12_GPU_VIRTUAL_ADDRESS     GetShadowMatrices() const { return ShadowMatricesAddress; }
 	const FD3D12DescriptorHandle& GetShadowMapSrv() const { return ShadowSrv; }
 	uint32                        GetLightCount() const { return static_cast<uint32>(Lights.size()); }
+	uint32                        GetAreaLightCount() const { return AreaLightCount; }
+	// 경로 캐시 쿠키 텍스처를 수거 루트로 (씬 렌더러의 루트 제공자가 부른다)
+	void                          CollectResourceRoots(FResourceRoots& Roots) const;
 	uint32                        GetShadowSliceCount() const { return static_cast<uint32>(ShadowMatrices.size()); }
 	// 지난 Prepare의 그림자 드로우 수 / 삼각형 수 (통계)
 	uint32                        GetShadowDrawCalls() const { return ShadowDrawCalls; }
@@ -89,13 +100,33 @@ private:
 	bool CreateCullPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 	bool CreateShadowPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile, uint32 Variant); // Variant = DepthVariant*
 	void CollectLights(FScene& Scene, const FCamera& Camera);
+	bool CreateLtcTextures();
+	struct FIesEntry
+	{
+		FTextureHandle Texture;
+		float          MaxCandela = 0.0f;
+		bool           bValid     = false;
+	};
+	// Content 기준 경로 → 캐시 (실패도 기억해 매 프레임 다시 읽지 않는다)
+	const FIesEntry& FindIesProfile(const std::string& Path);
+	int32            ResolveIesTexture(const FIesEntry& Entry) const;
+	int32            ResolveCookieTexture(const std::string& Path);
 	void AssignShadows(const FLocalShadowSettings& Settings);
 	bool EnsureShadowMap(uint32 Resolution, uint32 Slices);
 	void ReleaseShadowMap();
 	void RecordShadows(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 
-	FD3D12RHI*      Rhi           = nullptr;
-	FShaderLibrary* ShaderLibrary = nullptr;
+	FD3D12RHI*        Rhi           = nullptr;
+	FShaderLibrary*   ShaderLibrary = nullptr;
+	FResourceManager* Resources     = nullptr; // 비소유 (씬 렌더러와 수명 같음)
+
+	FTextureHandle                                  LtcTextures[2];   // 표 1/2 (RGBA32F 64x64, 직접 만듦 — Shutdown에서 해제)
+	std::unordered_map<std::string, FIesEntry>      IesProfiles;      // 키: Content 기준 경로 (소문자, '/')
+	std::unordered_map<std::string, FTextureHandle> CookieTextures;   // 키: 같은 규칙 (LoadTexture 경로 캐시 — 루트로 등록)
+	uint32                                          AreaLightCount = 0;
+	int32                                           DirectionalCookie = -1; // 이번 프레임 방향광 쿠키 힙 칸
+	FVector4                                        DirectionalCookieU;
+	FVector4                                        DirectionalCookieV;
 
 	FD3D12RootSignature ComputeRootSignature;
 	FD3D12PipelineState CullPipeline;
@@ -117,11 +148,11 @@ private:
 
 	std::vector<FLocalLightGpuData> Lights;       // 이번 프레임 목록
 	std::vector<float>              LightScores;  // 정렬 키 (카메라 거리 - 반경)
-	std::vector<float>              LightOuterAngles; // 스포트 외부 원뿔 (도, 그림자 투영용)
+	std::vector<float>              LightOuterAngles; // 스포트 외부 원뿔 / 면광원 그림자 반각 (도, 그림자 투영용)
+	std::vector<float>              LightShadowRadius; // 그림자 원평면·캐스터 판정 반경 (면광원 = 경계 구)
 	std::vector<uint8>              LightWantsShadow;
 	std::vector<FShadowSlice>       ShadowSlices;
 	std::vector<FMatrix4x4>         ShadowMatrices; // 장마다 뷰-투영 (t11)
-	FClusterConstants               Constants;
 	D3D12_GPU_VIRTUAL_ADDRESS       ConstantsAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       LightListAddress      = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS       ShadowMatricesAddress = 0;

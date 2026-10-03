@@ -251,6 +251,57 @@ namespace
 					}
 				}
 			}
+			if (const FAreaLightComponent* Area = Registry.TryGet<FAreaLightComponent>(Entity))
+			{
+				// 면광원 (Phase 52): 면 윤곽 + 법선 화살표(빛 나가는 쪽) + 문 덮개 원뿔 가장자리 4개 (면 크기 = 트랜스폼 스케일 무시)
+				const FVector3 Forward = Transform->GetWorldForward();
+				FVector3       Right   = Transform->WorldMatrix.GetAxisY();
+				Right                  = (Right - Forward * FVector3::Dot(Right, Forward)).GetNormalized();
+				const FVector3 Up      = FVector3::Cross(Forward, Right);
+				const float    HalfW   = FMath::Max(Area->Width, 0.1f) * 0.5f;
+				const float    HalfH   = FMath::Max(Area->Height, 0.1f) * 0.5f;
+				if (Area->Shape == static_cast<int32>(EAreaLightShape::Disc))
+				{
+					constexpr int32 Segments = 48;
+					FVector3        Previous = Position + Up * HalfH;
+					for (int32 Index = 1; Index <= Segments; ++Index)
+					{
+						const float    Angle = FMath::TwoPi * static_cast<float>(Index) / static_cast<float>(Segments);
+						const FVector3 Point = Position + Up * (FMath::Cos(Angle) * HalfH) + Right * (FMath::Sin(Angle) * HalfW);
+						Line(Previous, Point, OuterColor);
+						Previous = Point;
+					}
+				}
+				else
+				{
+					const FVector3 Corners[4] = { Position - Right * HalfW - Up * HalfH, Position - Right * HalfW + Up * HalfH,
+					                              Position + Right * HalfW + Up * HalfH, Position + Right * HalfW - Up * HalfH };
+					for (int32 Corner = 0; Corner < 4; ++Corner)
+					{
+						Line(Corners[Corner], Corners[(Corner + 1) % 4], OuterColor);
+					}
+					Line(Corners[0], Corners[2], InnerColor);
+					Line(Corners[1], Corners[3], InnerColor);
+				}
+				const float ArrowLength = FMath::Clamp(FMath::Max(HalfW, HalfH), 20.0f, 200.0f);
+				Line(Position, Position + Forward * ArrowLength, OuterColor);
+				if (Area->bTwoSided)
+				{
+					Line(Position, Position - Forward * ArrowLength, InnerColor);
+				}
+				if (Area->BarnDoorAngle < 90.0f)
+				{
+					const float Angle = FMath::DegreesToRadians(FMath::Clamp(Area->BarnDoorAngle, 0.0f, 89.0f));
+					const float Reach = FMath::Max(Area->BarnDoorLength, ArrowLength);
+					const FVector3 Sides[4] = { Right, -Right, Up, -Up };
+					const FVector3 Edges[4] = { Right * HalfW, -Right * HalfW, Up * HalfH, -Up * HalfH };
+					for (int32 Side = 0; Side < 4; ++Side)
+					{
+						const FVector3 Start = Position + Edges[Side];
+						Line(Start, Start + (Forward * FMath::Cos(Angle) + Sides[Side] * FMath::Sin(Angle)) * Reach, InnerColor);
+					}
+				}
+			}
 			DrawJointShape(Context.Scene, Entity, *Transform, Line, Circle);
 		}
 		DrawList->PopClipRect();

@@ -1,0 +1,831 @@
+{
+ "Entities": [
+  {
+   "Components": {
+    "SkyLightComponent": {
+     "Intensity": 0.03
+    },
+    "TransformComponent": {
+     "Position": [
+      0,
+      0,
+      0
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "SkyLight",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "CameraComponent": {
+     "FovYDegrees": 70.0,
+     "NearZ": 5.0,
+     "FarZ": 20000.0,
+     "Primary": true,
+     "Priority": 0,
+     "Orthographic": false,
+     "OrthoHeight": 1000.0
+    },
+    "TransformComponent": {
+     "Position": [
+      -370,
+      -255,
+      175
+     ],
+     "Rotation": [
+      -0.0214929,
+      0.0826081,
+      0.2508769,
+      0.9642483
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "Camera",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/FloorMetal.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -200,
+      0,
+      -10
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      4,
+      6,
+      0.2
+     ]
+    }
+   },
+   "Name": "FloorMetal",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/FloorRough.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      200,
+      0,
+      -10
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      4,
+      6,
+      0.2
+     ]
+    }
+   },
+   "Name": "FloorRough",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Wall.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      0,
+      0,
+      310
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      8.4,
+      6.4,
+      0.2
+     ]
+    }
+   },
+   "Name": "Ceiling",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Wall.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      410,
+      0,
+      150
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.2,
+      6.4,
+      3.2
+     ]
+    }
+   },
+   "Name": "WallFront",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Wall.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -410,
+      0,
+      150
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.2,
+      6.4,
+      3.2
+     ]
+    }
+   },
+   "Name": "WallBack",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Wall.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      0,
+      310,
+      150
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      8.4,
+      0.2,
+      3.2
+     ]
+    }
+   },
+   "Name": "WallLeft",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Wall.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      0,
+      -310,
+      150
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      8.4,
+      0.2,
+      3.2
+     ]
+    }
+   },
+   "Name": "WallRight",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/PanelSky.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      399,
+      40,
+      165
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.02,
+      2.0,
+      1.4
+     ]
+    }
+   },
+   "Name": "WindowPanel",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "AreaLightComponent": {
+     "Shape": 0,
+     "Color": [
+      0.75,
+      0.85,
+      1.0
+     ],
+     "Intensity": 70.0,
+     "Width": 200.0,
+     "Height": 140.0,
+     "Radius": 1200.0,
+     "TwoSided": false,
+     "BarnDoorAngle": 70.0,
+     "BarnDoorLength": 40.0,
+     "CastShadows": true,
+     "IesProfile": "",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "",
+     "CookieScale": [
+      1,
+      1
+     ],
+     "CookiePanSpeed": [
+      0,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      392,
+      40,
+      165
+     ],
+     "Rotation": [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "WindowLight",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/PanelCool.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -150,
+      -120,
+      299
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      1.2,
+      0.2,
+      0.02
+     ]
+    }
+   },
+   "Name": "TubePanel_A",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "AreaLightComponent": {
+     "Shape": 0,
+     "Color": [
+      1,
+      1,
+      1
+     ],
+     "Intensity": 9.0,
+     "Width": 120.0,
+     "Height": 20.0,
+     "Radius": 900.0,
+     "TwoSided": false,
+     "BarnDoorAngle": 90.0,
+     "BarnDoorLength": 20.0,
+     "CastShadows": true,
+     "IesProfile": "AreaLights/Linear_Batwing.ies",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "",
+     "CookieScale": [
+      1,
+      1
+     ],
+     "CookiePanSpeed": [
+      0,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      -150,
+      -120,
+      292
+     ],
+     "Rotation": [
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "TubeLight_A",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/PanelCool.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -150,
+      140,
+      299
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      1.2,
+      0.2,
+      0.02
+     ]
+    }
+   },
+   "Name": "TubePanel_B",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "AreaLightComponent": {
+     "Shape": 0,
+     "Color": [
+      1,
+      1,
+      1
+     ],
+     "Intensity": 9.0,
+     "Width": 120.0,
+     "Height": 20.0,
+     "Radius": 900.0,
+     "TwoSided": false,
+     "BarnDoorAngle": 90.0,
+     "BarnDoorLength": 20.0,
+     "CastShadows": false,
+     "IesProfile": "",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "AreaLights/Flicker.png",
+     "CookieScale": [
+      0,
+      0
+     ],
+     "CookiePanSpeed": [
+      0.35,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      -150,
+      140,
+      292
+     ],
+     "Rotation": [
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "TubeLight_Flicker",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/Fixture.emat",
+     "MeshAsset": "primitive:sphere",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      180,
+      -130,
+      300
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.3,
+      0.3,
+      0.06
+     ]
+    }
+   },
+   "Name": "DownlightRing",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "AreaLights/PanelDown.emat",
+     "MeshAsset": "primitive:sphere",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      180,
+      -130,
+      299
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.2,
+      0.2,
+      0.02
+     ]
+    }
+   },
+   "Name": "DownlightPanel",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "AreaLightComponent": {
+     "Shape": 1,
+     "Color": [
+      1.0,
+      0.9,
+      0.75
+     ],
+     "Intensity": 10.0,
+     "Width": 20.0,
+     "Height": 20.0,
+     "Radius": 700.0,
+     "TwoSided": false,
+     "BarnDoorAngle": 90.0,
+     "BarnDoorLength": 20.0,
+     "CastShadows": true,
+     "IesProfile": "AreaLights/Downlight_Narrow.ies",
+     "UseIesIntensity": true,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "",
+     "CookieScale": [
+      1,
+      1
+     ],
+     "CookiePanSpeed": [
+      0,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      180,
+      -130,
+      292
+     ],
+     "Rotation": [
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "Downlight",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "SpotLightComponent": {
+     "Color": [
+      1.0,
+      0.93,
+      0.78
+     ],
+     "Intensity": 60.0,
+     "Radius": 900.0,
+     "InnerConeAngle": 20.0,
+     "OuterConeAngle": 26.0,
+     "CastShadows": true,
+     "IesProfile": "",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "AreaLights/WindowBars.png",
+     "CookieScale": [
+      1,
+      1
+     ],
+     "CookiePanSpeed": [
+      0,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      370,
+      40,
+      285
+     ],
+     "Rotation": [
+      -0.4303986,
+      -0.0344867,
+      0.8990982,
+      -0.0720424
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "WindowBarsSpot",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "PointLightComponent": {
+     "Color": [
+      1.0,
+      0.7,
+      0.45
+     ],
+     "Intensity": 6.0,
+     "Radius": 500.0,
+     "CastShadows": false,
+     "IesProfile": "AreaLights/Wallwash_Asym.ies",
+     "UseIesIntensity": false,
+     "IesIntensityScale": 1.0,
+     "CookieTexture": "",
+     "CookieScale": [
+      1,
+      1
+     ],
+     "CookiePanSpeed": [
+      0,
+      0
+     ]
+    },
+    "TransformComponent": {
+     "Position": [
+      300,
+      250,
+      280
+     ],
+     "Rotation": [
+      0.5573454,
+      0.5573454,
+      -0.4351621,
+      0.4351621
+     ],
+     "Scale": [
+      1,
+      1,
+      1
+     ]
+    }
+   },
+   "Name": "WallWasher",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "Reflections/Chrome.emat",
+     "MeshAsset": "primitive:sphere",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -170,
+      -20,
+      45
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.9,
+      0.9,
+      0.9
+     ]
+    }
+   },
+   "Name": "ChromeSphere",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "Materials/Orange.emat",
+     "MeshAsset": "primitive:sphere",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      190,
+      -130,
+      40
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.8,
+      0.8,
+      0.8
+     ]
+    }
+   },
+   "Name": "RoughSphere",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "Materials/Interior/Concrete.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      250,
+      90,
+      50
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.6,
+      0.6,
+      1.0
+     ]
+    }
+   },
+   "Name": "Box",
+   "Parent": -1
+  },
+  {
+   "Components": {
+    "StaticMeshComponent": {
+     "MaterialAsset": "Materials/Purple.emat",
+     "MeshAsset": "primitive:cube",
+     "Visible": true
+    },
+    "TransformComponent": {
+     "Position": [
+      -60,
+      150,
+      75
+     ],
+     "Rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "Scale": [
+      0.3,
+      0.3,
+      1.5
+     ]
+    }
+   },
+   "Name": "Pillar",
+   "Parent": -1
+  }
+ ],
+ "Version": 1
+}

@@ -8,7 +8,6 @@
 #include "Renderer/ShaderTypes.h"
 
 #include <array>
-#include <chrono>
 
 class FCamera;
 class FD3D12RHI;
@@ -94,5 +93,5 @@ private:
 	bool  bAffectEnvironment = true;
 	D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = 0;
 	uint32 FrameCounter = 0;
-	std::chrono::steady_clock::time_point StartTime;
+	double StartTime = 0.0; // FFrameTime 누적 시간 (Init 시점)
 };

@@ -126,7 +126,7 @@ struct FTextureStreamingState
 	uint32                             NextSerial         = 1;
 	uint64                             PoolBytes          = 0; // 지난 갱신에 쓴 예산
 	size_t                             LastLoggedEntryCount = 0;
-	std::chrono::steady_clock::time_point LastUpdate;
+	double                             LastUpdate = 0.0; // FFrameTime 누적 시간 (내림 지연은 앱 프레임 시간으로)
 	bool                               bHasLastUpdate = false;
 	uint64                             LastWantedBytes = 0;
 	bool                               bLastOverBudget = false;

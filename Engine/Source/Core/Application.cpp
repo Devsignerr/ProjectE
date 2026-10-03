@@ -3,6 +3,7 @@
 #include "Core/CommandLine.h"
 #include "Core/Console/Console.h"
 #include "Core/FileSystem.h"
+#include "Core/FrameTime.h"
 #include "Core/Jobs/ParallelFor.h"
 #include "Core/Log.h"
 #include "Core/Paths.h"
@@ -238,6 +239,7 @@ int FApplication::Run()
 
 	E_LOG(LogCore, Display, "메인 루프 시작{}", Desc.bHeadless ? " (헤드리스)" : "");
 	Timer.Reset();
+	FFrameTime::Reset();
 	if (Desc.bHeadless)
 	{
 		RunHeadlessLoop();
@@ -295,6 +297,7 @@ void FApplication::RunWindowedLoop()
 			break;
 		}
 		Timer.Tick();
+		FFrameTime::Advance(Timer.GetDeltaSeconds()); // 화면·시뮬레이션 시간 (실제 시각 대신)
 		LogHitch(Timer.GetDeltaSeconds());
 		UpdateHeldInputAndActions(Timer.GetDeltaSeconds());
 		{
@@ -395,6 +398,7 @@ void FApplication::RunHeadlessLoop()
 	while (!bExitRequested)
 	{
 		Timer.Tick();
+		FFrameTime::Advance(Timer.GetDeltaSeconds());
 		{
 			E_PROFILE_SCOPE("서버 틱");
 			OnUpdate(Timer.GetDeltaSeconds());

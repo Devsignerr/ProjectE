@@ -1,5 +1,6 @@
 #include "Renderer/WaterRenderer.h"
 
+#include "Core/FrameTime.h"
 #include "Core/Math/Frustum.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
@@ -55,7 +56,7 @@ bool FWaterRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary)
 {
 	Rhi       = &InRhi;
 	Library   = &InLibrary;
-	StartTime = std::chrono::steady_clock::now();
+	StartTime = FFrameTime::GetTotalSeconds();
 	const auto Table = [](uint32 Count, uint32 Register) {
 		return std::vector<D3D12_DESCRIPTOR_RANGE1>{
 			FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, Count, Register, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) };
@@ -330,7 +331,7 @@ D3D12_GPU_VIRTUAL_ADDRESS FWaterRenderer::UploadFrameConstants(const FWaterPassI
 	Frame.PrevViewProjection       = Inputs.PrevViewProjection;
 	Frame.InvViewProjection        = Inputs.ViewProjection.GetInverse();
 	Frame.CameraPosition           = Inputs.CameraPosition;
-	Frame.Time                     = std::chrono::duration<float>(std::chrono::steady_clock::now() - StartTime).count();
+	Frame.Time                     = static_cast<float>(FFrameTime::GetTotalSeconds() - StartTime); // 앱 프레임 시간
 	Frame.SunDirection             = Inputs.SunDirection;
 	Frame.AmbientIntensity         = Inputs.AmbientIntensity;
 	Frame.SunColor                 = Inputs.SunColor;

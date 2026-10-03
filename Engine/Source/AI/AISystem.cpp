@@ -32,6 +32,7 @@ namespace
 		Local.Decompose(Transform.Position, Transform.Rotation, Transform.Scale);
 		// 같은 프레임의 다음 계산(경로 진행, 다른 태스크)이 새 위치를 보도록 월드 행렬도 맞춘다
 		Transform.WorldMatrix = World;
+		Transform.InvalidateWorldCache(); // 다음 UpdateTransforms는 로컬 × 부모로 다시 계산 (분해 왕복 값이 이전 로컬과 같아도)
 	}
 } // namespace
 

@@ -1,5 +1,6 @@
 #include "Renderer/PostProcess.h"
 
+#include "Core/FrameTime.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/PostProcessMath.h"
@@ -563,9 +564,9 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 		return;
 	}
 
-	// 자동 노출 적응용 경과 시간 (첫 호출/긴 정지 후에는 과도한 점프를 막기 위해 제한)
-	const auto  Now          = std::chrono::steady_clock::now();
-	const float DeltaSeconds = bHasLastRenderTime ? FMath::Clamp(std::chrono::duration<float>(Now - LastRenderTime).count(), 0.0f, 0.25f) : 0.0f;
+	// 자동 노출 적응용 경과 시간 = 앱 프레임 시간 (실제 시각이 아님 — --fixed-delta 재현성). 첫 호출/긴 정지 후에는 과도한 점프를 막기 위해 제한
+	const double Now          = FFrameTime::GetTotalSeconds();
+	const float  DeltaSeconds = bHasLastRenderTime ? FMath::Clamp(static_cast<float>(Now - LastRenderTime), 0.0f, 0.25f) : 0.0f;
 	LastRenderTime           = Now;
 	bHasLastRenderTime       = true;
 

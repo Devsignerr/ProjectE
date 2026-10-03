@@ -51,7 +51,13 @@ private:
 	void UpdateTransformRecursive(FEntity Entity, const FMatrix4x4& ParentWorld, bool bAllowDefer, std::vector<FEntity>& OutDeferred);
 
 	FRegistry                         Registry;
+	// UpdateTransforms 동안만 유효 (재귀에서 풀 조회를 매번 하지 않도록)
+	TSparseSet<FTransformComponent>*       TransformPool  = nullptr;
+	const TSparseSet<FHierarchyComponent>* HierarchyPool  = nullptr;
+	bool                                   bAnySockets    = false; // 소켓 부착 컴포넌트가 하나라도 있으면 (없으면 부착 판정 생략)
+	bool                                   bUseWorldCache = true;  // scene.TransformCache
 	std::vector<FEntity>              DeferredAttachments; // UpdateTransforms 작업 목록
+	std::vector<std::vector<FEntity>> ChunkRoots;          // 엔티티 묶음별 루트 (묶음 순서대로 이어 붙임)
 	std::vector<FEntity>              TransformRoots;      // UpdateTransforms 루트 (뷰 순서)
 	std::vector<std::vector<FEntity>> RootDeferred;        // 루트별 미룬 부착 엔티티 (루트 순서대로 이어 붙임)
 };

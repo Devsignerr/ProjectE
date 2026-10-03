@@ -261,7 +261,7 @@ MANNEQUIN_YAW = 180.0  # glTF +Z 앞 → 엔진 -X 앞이므로 180도 돌려 +X
 # ---- 씬 배치 --------------------------------------------------------------------------------------------------------
 PORTALS = [
 	# (이름, 표시 이름, 서브맵, 각도: 광장 중심에서 방위 — 0 = +X 바다 쪽)
-	("Portal_Lighting", "빛과 GI (아트리움)", "Scenes/Demo/Lighting.escene", 115.0),
+	("Portal_Lighting", "빛과 GI (선술집 홀)", "Scenes/Demo/Lighting.escene", 115.0),
 	("Portal_Alley", "밤의 골목", "Scenes/Demo/Alley.escene", 145.0),
 	("Portal_Gallery", "머티리얼 갤러리", "Scenes/Demo/Gallery.escene", 170.0),
 	("Portal_Forest", "숲 (지형·식생)", "Scenes/Demo/Forest.escene", 195.0),
@@ -269,6 +269,8 @@ PORTALS = [
 	("Portal_Training", "훈련장 (애니메이션·AI)", "Scenes/Demo/Training.escene", 245.0),
 	("Portal_Campfire", "해변 캠프 (파티클)", "Scenes/Demo/Campfire.escene", 270.0),
 ]
+
+READY_PORTALS = {"Portal_Lighting"}  # 서브맵이 만들어진 포털 (BuildLighting.py)
 
 
 def Model(Id):
@@ -346,7 +348,7 @@ def BuildScene(Height):
 		Ground = Height(PX, PY)
 		Root = S.Add(Name, {
 			"ScriptComponent": {"ScriptAsset": "Scripts/Demo/DemoPortal.lua", "ExecutionLocation": 0,
-				"PropertyOverrides": json.dumps({"TargetScene": {"Asset": Target}, "Label": Label, "Ready": False}, ensure_ascii=False)}},
+				"PropertyOverrides": json.dumps({"TargetScene": {"Asset": Target}, "Label": Label, "Ready": Name in READY_PORTALS}, ensure_ascii=False)}},
 			(PX, PY, Ground), QuatFromEuler(Yaw=FaceYaw))
 		S.Model(f"{Name}_Door", Model("large_castle_door"), (0, 0, -3), 0.0, 1.0, Parent=Root)
 		S.Model(f"{Name}_Planter", Model("planter_box_01"), (60, 0, 0), 90.0, 1.0, Parent=Root)

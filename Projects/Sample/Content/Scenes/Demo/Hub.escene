@@ -1164,7 +1164,7 @@
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
           "ExecutionLocation": 0,
-          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Lighting.escene\"}, \"Label\": \"빛과 GI (아트리움)\", \"Ready\": false}"
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Lighting.escene\"}, \"Label\": \"빛과 GI (선술집 홀)\", \"Ready\": true}"
         },
         "TransformComponent": {
           "Position": [

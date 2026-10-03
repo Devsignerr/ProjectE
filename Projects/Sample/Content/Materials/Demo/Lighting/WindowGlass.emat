@@ -1,0 +1,24 @@
+{
+  "Name": "WindowGlass",
+  "BaseColorFactor": [
+    0.8,
+    0.88,
+    0.9,
+    0.08
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.04,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": "",
+  "BlendMode": "Translucent"
+}

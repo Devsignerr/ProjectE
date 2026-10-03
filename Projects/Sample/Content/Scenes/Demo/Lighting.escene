@@ -1,0 +1,5947 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.86,
+            0.68
+          ],
+          "Intensity": 5.5
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            2000.0
+          ],
+          "Rotation": [
+            -0.15058255995856915,
+            0.2506114649388633,
+            0.4925333605385309,
+            0.8197131663174273
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {},
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.5,
+            0.45,
+            0.4
+          ],
+          "Density": 0.004,
+          "HeightFalloff": 0.0,
+          "StartDistance": 0.0,
+          "MaxOpacity": 0.3,
+          "DirectionalInscatteringColor": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Volumetric": true,
+          "VolumetricDistance": 3000.0,
+          "VolumetricAlbedo": [
+            0.9,
+            0.85,
+            0.8
+          ],
+          "VolumetricExtinctionScale": 1.0,
+          "VolumetricAnisotropy": 0.55,
+          "VolumetricDirectionalScale": 2.5,
+          "VolumetricLocalLightScale": 0.4
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "IrradianceVolumeComponent": {
+          "HalfExtents": [
+            1080.0,
+            680.0,
+            385.0
+          ],
+          "Spacing": 120.0,
+          "Intensity": 1.0,
+          "FadeDistance": 30.0,
+          "NormalBias": 10.0,
+          "ViewBias": 20.0,
+          "Hysteresis": 0.98,
+          "RaysPerProbe": 256,
+          "ProbeUpdateBudget": 0,
+          "MaxRayDistance": 10000.0,
+          "Relocation": true,
+          "Classification": true,
+          "Priority": 0,
+          "DebugProbes": 0,
+          "DebugProbeRadius": 8.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "HallProbes",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Cobble_8000x8000.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -15.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            80.0,
+            80.0,
+            0.2
+          ]
+        }
+      },
+      "Name": "Yard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Floor_1200x2000.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            12.0,
+            0.2
+          ]
+        }
+      },
+      "Name": "Floor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Ceiling_1280x2080.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            665.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.8,
+            12.8,
+            0.3
+          ]
+        }
+      },
+      "Name": "Ceiling",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_2080x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            620.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.8,
+            0.4,
+            6.5
+          ]
+        }
+      },
+      "Name": "Wall_North",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_1200x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -1020.0,
+            0.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            12.0,
+            6.5
+          ]
+        }
+      },
+      "Name": "Wall_West",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_1200x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            1020.0,
+            0.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.4,
+            12.0,
+            6.5
+          ]
+        }
+      },
+      "Name": "Wall_East",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_2080x100.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -620.0,
+            50.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.8,
+            0.4,
+            1.0
+          ]
+        }
+      },
+      "Name": "Wall_South_Low",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_2080x170.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -620.0,
+            565.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.8,
+            0.4,
+            1.7
+          ]
+        }
+      },
+      "Name": "Wall_South_High",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_200x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -940.0,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.0,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_195x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -562.5,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.95,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_195x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -187.5,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.95,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_195x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            187.5,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.95,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_195x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            562.5,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.95,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Brick_200x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            940.0,
+            -620.0,
+            290.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.0,
+            0.4,
+            3.8
+          ]
+        }
+      },
+      "Name": "Wall_South_Pier_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -750.0,
+            -620.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_62x204.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -6.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.04,
+            0.62,
+            0.08
+          ]
+        }
+      },
+      "Name": "Window_0_Sill",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x196.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            382.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.96,
+            0.48,
+            0.1
+          ]
+        }
+      },
+      "Name": "Window_0_Head",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_0_Jamb",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_0_Jamb",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x380.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.09,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_0_Mullion",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x168.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            258.40000000000003
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.09,
+            0.07
+          ]
+        }
+      },
+      "Name": "Window_0_Transom",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/WindowGlass.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.01,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_0_Glass",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            0.7,
+            0.82,
+            1.0
+          ],
+          "Intensity": 12.0,
+          "Width": 168.0,
+          "Height": 380.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 85.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": false,
+          "IesProfile": "",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            22.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_0_SkyLight",
+      "Parent": 17
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -375.0,
+            -620.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_62x204.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -6.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.04,
+            0.62,
+            0.08
+          ]
+        }
+      },
+      "Name": "Window_1_Sill",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x196.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            382.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.96,
+            0.48,
+            0.1
+          ]
+        }
+      },
+      "Name": "Window_1_Head",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_1_Jamb",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_1_Jamb",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x380.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.09,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_1_Mullion",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x168.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            258.40000000000003
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.09,
+            0.07
+          ]
+        }
+      },
+      "Name": "Window_1_Transom",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/WindowGlass.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.01,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_1_Glass",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            0.7,
+            0.82,
+            1.0
+          ],
+          "Intensity": 12.0,
+          "Width": 168.0,
+          "Height": 380.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 85.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": false,
+          "IesProfile": "",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            22.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_1_SkyLight",
+      "Parent": 26
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -620.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_62x204.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -6.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.04,
+            0.62,
+            0.08
+          ]
+        }
+      },
+      "Name": "Window_2_Sill",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x196.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            382.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.96,
+            0.48,
+            0.1
+          ]
+        }
+      },
+      "Name": "Window_2_Head",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_2_Jamb",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_2_Jamb",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x380.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.09,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_2_Mullion",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x168.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            258.40000000000003
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.09,
+            0.07
+          ]
+        }
+      },
+      "Name": "Window_2_Transom",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/WindowGlass.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.01,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_2_Glass",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            0.7,
+            0.82,
+            1.0
+          ],
+          "Intensity": 12.0,
+          "Width": 168.0,
+          "Height": 380.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 85.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": false,
+          "IesProfile": "",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            22.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_2_SkyLight",
+      "Parent": 35
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            -620.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_62x204.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -6.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.04,
+            0.62,
+            0.08
+          ]
+        }
+      },
+      "Name": "Window_3_Sill",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x196.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            382.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.96,
+            0.48,
+            0.1
+          ]
+        }
+      },
+      "Name": "Window_3_Head",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_3_Jamb",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_3_Jamb",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x380.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.09,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_3_Mullion",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x168.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            258.40000000000003
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.09,
+            0.07
+          ]
+        }
+      },
+      "Name": "Window_3_Transom",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/WindowGlass.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.01,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_3_Glass",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            0.7,
+            0.82,
+            1.0
+          ],
+          "Intensity": 12.0,
+          "Width": 168.0,
+          "Height": 380.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 85.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": false,
+          "IesProfile": "",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            22.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_3_SkyLight",
+      "Parent": 44
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            -620.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_62x204.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -6.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.04,
+            0.62,
+            0.08
+          ]
+        }
+      },
+      "Name": "Window_4_Sill",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x196.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            382.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.96,
+            0.48,
+            0.1
+          ]
+        }
+      },
+      "Name": "Window_4_Head",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_4_Jamb",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_48x380.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            86.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.48,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_4_Jamb",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x380.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.07,
+            0.09,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_4_Mullion",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_9x168.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            258.40000000000003
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.09,
+            0.07
+          ]
+        }
+      },
+      "Name": "Window_4_Transom",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/WindowGlass.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.68,
+            0.01,
+            3.8
+          ]
+        }
+      },
+      "Name": "Window_4_Glass",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            0.7,
+            0.82,
+            1.0
+          ],
+          "Intensity": 12.0,
+          "Width": 168.0,
+          "Height": 380.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 85.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": false,
+          "IesProfile": "",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            22.0,
+            190.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_4_SkyLight",
+      "Parent": 53
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -875.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -625.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -375.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -125.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            125.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            625.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_1200x45.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            875.0,
+            0.0,
+            627.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            12.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "Beam_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_30x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -875.0,
+            586.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            0.28,
+            6.5
+          ]
+        }
+      },
+      "Name": "Post_North_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_30x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -375.0,
+            586.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            0.28,
+            6.5
+          ]
+        }
+      },
+      "Name": "Post_North_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_30x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            125.0,
+            586.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            0.28,
+            6.5
+          ]
+        }
+      },
+      "Name": "Post_North_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_30x650.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            625.0,
+            586.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.3,
+            0.28,
+            6.5
+          ]
+        }
+      },
+      "Name": "Post_North_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_2000x40.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            586.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            0.28,
+            0.4
+          ]
+        }
+      },
+      "Name": "Beam_Wall_North",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_2000x40.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -586.0,
+            585.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            20.0,
+            0.28,
+            0.4
+          ]
+        }
+      },
+      "Name": "Beam_Wall_South",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_700x100.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            760.0,
+            0.0,
+            50.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            7.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Counter",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_720x78.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            756.0,
+            0.0,
+            104.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.78,
+            7.2,
+            0.08
+          ]
+        }
+      },
+      "Name": "Bar_Top",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Beam_680x10.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            0.0,
+            18.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            6.8,
+            0.1
+          ]
+        }
+      },
+      "Name": "Bar_FootRail",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/Trim_760x110.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            0.0,
+            452.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.1,
+            7.6,
+            0.24
+          ]
+        }
+      },
+      "Name": "Bar_Soffit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Lighting/BarStripGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            0.0,
+            439.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.14,
+            6.8,
+            0.01
+          ]
+        }
+      },
+      "Name": "Bar_Strip",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 0,
+          "Color": [
+            1.0,
+            0.75,
+            0.5
+          ],
+          "Intensity": 16.0,
+          "Width": 680.0,
+          "Height": 14.0,
+          "Radius": 900.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 88.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": true,
+          "IesProfile": "AreaLights/Linear_Batwing.ies",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            0.0,
+            438.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.7071067811865476,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_StripLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_02/wooden_stool_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            670.0,
+            -270.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            3.3,
+            3.3,
+            3.3
+          ]
+        }
+      },
+      "Name": "Bar_Stool_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_02/wooden_stool_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            670.0,
+            -135.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8338858220671682,
+            0.5519369853120581
+          ],
+          "Scale": [
+            3.3,
+            3.3,
+            3.3
+          ]
+        }
+      },
+      "Name": "Bar_Stool_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_02/wooden_stool_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            670.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9271838545667874,
+            0.37460659341591196
+          ],
+          "Scale": [
+            3.3,
+            3.3,
+            3.3
+          ]
+        }
+      },
+      "Name": "Bar_Stool_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_02/wooden_stool_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            670.0,
+            135.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9832549075639546,
+            0.18223552549214744
+          ],
+          "Scale": [
+            3.3,
+            3.3,
+            3.3
+          ]
+        }
+      },
+      "Name": "Bar_Stool_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_stool_02/wooden_stool_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            670.0,
+            270.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9998476951563913,
+            -0.017452406437283477
+          ],
+          "Scale": [
+            3.3,
+            3.3,
+            3.3
+          ]
+        }
+      },
+      "Name": "Bar_Stool_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/vintage_oil_lamp/vintage_oil_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            755.0,
+            -250.0,
+            108.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            0.55,
+            0.55,
+            0.55
+          ]
+        }
+      },
+      "Name": "Bar_Lamp_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_bottles_01/wine_bottles_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            768.0,
+            40.0,
+            108.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Bottles",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/brass_goblets/brass_goblets.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            755.0,
+            -60.0,
+            108.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3007057995042731,
+            0.9537169507482269
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Goblets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            765.0,
+            220.0,
+            108.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9396926207859083,
+            0.3420201433256688
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bookshelf_worn/wooden_bookshelf_worn.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            29,
+            69,
+            103
+          ],
+          "Offset": [
+            0,
+            0,
+            103
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            968.0,
+            -250.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_Shelf_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bookshelf_worn/wooden_bookshelf_worn.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            29,
+            69,
+            103
+          ],
+          "Offset": [
+            0,
+            0,
+            103
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            968.0,
+            250.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_Shelf_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/GothicCabinet_01/GothicCabinet_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            57,
+            86,
+            118
+          ],
+          "Offset": [
+            -10,
+            0,
+            118
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            950.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.85,
+            0.85,
+            0.85
+          ]
+        }
+      },
+      "Name": "BackBar_Cabinet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_bottles_01/wine_bottles_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            968.0,
+            -282.0,
+            206.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_Bottles_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_bottles_01/wine_bottles_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            968.0,
+            218.0,
+            206.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_Bottles_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            970.0,
+            0.0,
+            201.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "BackBar_Basket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            36,
+            36,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            905.0,
+            -505.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            905.0,
+            -505.0,
+            87.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4383711467890774,
+            0.898794046299167
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            36,
+            36,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            820.0,
+            -520.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7009092642998509,
+            0.7132504491541817
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            36,
+            36,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            515.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8910065241883678,
+            0.4539904997395468
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            770.0,
+            530.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9890158633619168,
+            0.14780941112961055
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            770.0,
+            528.0,
+            45.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.984807753012208,
+            -0.1736481776669303
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Store_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/standing_chalkboard_01/standing_chalkboard_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            38,
+            45,
+            75
+          ],
+          "Offset": [
+            0,
+            0,
+            75
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            -470.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.3826834323650898,
+            0.9238795325112867
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Menu",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/dartboard/dartboard.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            999.0,
+            470.0,
+            175.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bar_Dartboard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -480.0,
+            -230.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -390.7292010253387,
+            -197.50808638406147,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1736481776669303,
+            0.984807753012208
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_0_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -552.7742220963029,
+            -168.93517707977875,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9396926207859083,
+            0.3420201433256688
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_0_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -496.4965768783584,
+            -323.55673653615975,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.766044443118978,
+            0.6427876096865394
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_0_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/vintage_oil_lamp/vintage_oil_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -468.0,
+            -238.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Table_0_Lamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.62,
+            0.3
+          ],
+          "Intensity": 1.6,
+          "Radius": 320.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -468.0,
+            -238.0,
+            104.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_0_LampLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/brass_goblets/brass_goblets.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -505.0,
+            -210.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Table_0_Goblets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -230.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.26723837607825685,
+            0.963630453208623
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            37.119457206481,
+            -142.55203892201817,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5519369853120581,
+            0.8338858220671682
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_1_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -94.2918844059256,
+            -241.577587623489,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.998134798421867,
+            0.061048539534856686
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_1_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            57.172427199444556,
+            -305.87037345449284,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.446197813109809,
+            0.894934361602025
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_1_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_candlestick/wooden_candlestick.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.0,
+            -215.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_1_Candle",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            25.0,
+            -250.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.42261826174069944,
+            0.9063077870366499
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_1_Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/potted_plant_04/potted_plant_04.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            5.0,
+            -265.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Table_1_Plant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            460.0,
+            -230.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5150380749100542,
+            0.8571673007021123
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            421.360018907799,
+            -143.21318152395293,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8386705679454242,
+            0.544639035015027
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_2_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            404.160401032215,
+            -306.85661446562,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.8910065241883679,
+            0.45399049973954664
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_2_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            554.479580059986,
+            -239.93020401042708,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.05233595624294379,
+            0.9986295347545738
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_2_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/vintage_oil_lamp/vintage_oil_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            472.0,
+            -238.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6427876096865393,
+            0.766044443118978
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Table_2_Lamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.62,
+            0.3
+          ],
+          "Intensity": 1.6,
+          "Radius": 320.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            472.0,
+            -238.0,
+            104.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_2_LampLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/brass_goblets/brass_goblets.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            435.0,
+            -210.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9396926207859083,
+            0.3420201433256688
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Table_2_Goblets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -480.0,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7253743710122876,
+            0.6883545756937539
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -569.8242646819351,
+            220.92897467342988,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9862856015372314,
+            0.1650476058606776
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_3_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -461.8731454392282,
+            96.74541757247194,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.6360782202777638,
+            0.7716245833877201
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_3_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -408.30258987883667,
+            252.32560775409817,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3502073812594674,
+            0.9366721892483977
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_3_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_candlestick/wooden_candlestick.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -490.0,
+            205.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_3_Candle",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -455.0,
+            170.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9659258262890683,
+            0.25881904510252074
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_3_Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/potted_plant_04/potted_plant_04.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -475.0,
+            155.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Table_3_Plant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8829475928589269,
+            0.46947156278589086
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -83.88002132159805,
+            145.40020153534036,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.9702957262759965,
+            0.2419218955996679
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_4_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            80.56456913486045,
+            139.65766989784552,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.2756373558169993,
+            0.9612616959383188
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_4_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3.3154521867375837,
+            284.94212856681406,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6946583704589974,
+            0.7193398003386511
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_4_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/vintage_oil_lamp/vintage_oil_lamp.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            12.0,
+            182.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.984807753012208,
+            0.17364817766693041
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Table_4_Lamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.62,
+            0.3
+          ],
+          "Intensity": 1.6,
+          "Radius": 320.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            12.0,
+            182.0,
+            104.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_4_LampLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/brass_goblets/brass_goblets.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -25.0,
+            210.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.6427876096865395,
+            -0.7660444431189779
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Table_4_Goblets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/round_wooden_table_01/round_wooden_table_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            60,
+            60,
+            50
+          ],
+          "Offset": [
+            0,
+            0,
+            50
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            460.0,
+            190.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9762960071199334,
+            0.2164396139381029
+          ],
+          "Scale": [
+            0.78,
+            0.78,
+            0.78
+          ]
+        }
+      },
+      "Name": "Table_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            435.4121907152605,
+            98.2370465025385,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7933533402912353,
+            0.6087614290087205
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_5_Chair_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            551.7629534974615,
+            214.58780928473942,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005135,
+            0.9914448613738105
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_5_Chair_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/gallinera_chair/gallinera_chair.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            392.82485578727795,
+            257.175144212722,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9238795325112868,
+            0.3826834323650896
+          ],
+          "Scale": [
+            0.92,
+            0.92,
+            0.92
+          ]
+        }
+      },
+      "Name": "Table_5_Chair_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_candlestick/wooden_candlestick.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            450.0,
+            205.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_5_Candle",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            485.0,
+            170.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8191520442889917,
+            -0.5735764363510462
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Table_5_Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/potted_plant_04/potted_plant_04.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            465.0,
+            155.0,
+            78.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Table_5_Plant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lantern_chandelier_01/lantern_chandelier_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -500.0,
+            -20.0,
+            648.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        }
+      },
+      "Name": "Chandelier_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.68,
+            0.38
+          ],
+          "Intensity": 7.0,
+          "Radius": 1000.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -500.0,
+            -20.0,
+            555.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Chandelier_0_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lantern_chandelier_01/lantern_chandelier_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -20.0,
+            648.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        }
+      },
+      "Name": "Chandelier_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.68,
+            0.38
+          ],
+          "Intensity": 7.0,
+          "Radius": 1000.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -20.0,
+            555.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Chandelier_1_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/lantern_chandelier_01/lantern_chandelier_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            500.0,
+            -20.0,
+            648.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        }
+      },
+      "Name": "Chandelier_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.68,
+            0.38
+          ],
+          "Intensity": 7.0,
+          "Radius": 1000.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            500.0,
+            -20.0,
+            555.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Chandelier_2_Light",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fancy_picture_frame_01/fancy_picture_frame_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            599.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            2.2,
+            2.2,
+            2.2
+          ]
+        }
+      },
+      "Name": "Gallery_Painting_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_sconce/industrial_wall_sconce.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            599.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "Gallery_Sconce_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.8,
+            0.6
+          ],
+          "Intensity": 5.0,
+          "Radius": 450.0,
+          "CastShadows": false,
+          "IesProfile": "AreaLights/Wallwash_Asym.ies",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -250.0,
+            569.0,
+            300.0
+          ],
+          "Rotation": [
+            0.5000000000000001,
+            0.5000000000000001,
+            -0.5000000000000001,
+            0.5000000000000001
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gallery_Washer_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/hanging_picture_frame_02/hanging_picture_frame_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.0,
+            599.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.9,
+            1.9,
+            1.9
+          ]
+        }
+      },
+      "Name": "Gallery_Painting_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_sconce/industrial_wall_sconce.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.0,
+            599.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "Gallery_Sconce_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.8,
+            0.6
+          ],
+          "Intensity": 5.0,
+          "Radius": 450.0,
+          "CastShadows": false,
+          "IesProfile": "AreaLights/Wallwash_Asym.ies",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -10.0,
+            569.0,
+            300.0
+          ],
+          "Rotation": [
+            0.5000000000000001,
+            0.5000000000000001,
+            -0.5000000000000001,
+            0.5000000000000001
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gallery_Washer_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fancy_picture_frame_01/fancy_picture_frame_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            599.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            2.2,
+            2.2,
+            2.2
+          ]
+        }
+      },
+      "Name": "Gallery_Painting_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_sconce/industrial_wall_sconce.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            599.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "Gallery_Sconce_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.8,
+            0.6
+          ],
+          "Intensity": 5.0,
+          "Radius": 450.0,
+          "CastShadows": false,
+          "IesProfile": "AreaLights/Wallwash_Asym.ies",
+          "UseIesIntensity": false,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            569.0,
+            300.0
+          ],
+          "Rotation": [
+            0.5000000000000001,
+            0.5000000000000001,
+            -0.5000000000000001,
+            0.5000000000000001
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gallery_Washer_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/vintage_grandfather_clock_01/vintage_grandfather_clock_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            22,
+            32,
+            110
+          ],
+          "Offset": [
+            3,
+            6,
+            110
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            530.0,
+            570.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gallery_Clock",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/Sofa_01/Sofa_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            33,
+            79,
+            40
+          ],
+          "Offset": [
+            3,
+            0,
+            40
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -880.0,
+            400.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9894003954974829,
+            0.1452131446854047
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lounge_Sofa",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ArmChair_01/ArmChair_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            39,
+            42,
+            53
+          ],
+          "Offset": [
+            3,
+            0,
+            53
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -640.0,
+            470.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.2669335818958115,
+            0.9637149282107609
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lounge_ArmChair_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ArmChair_01/ArmChair_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            39,
+            42,
+            53
+          ],
+          "Offset": [
+            3,
+            0,
+            53
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -700.0,
+            260.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.43318873048913437,
+            0.9013032363068558
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lounge_ArmChair_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/GothicCabinet_01/GothicCabinet_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            57,
+            86,
+            118
+          ],
+          "Offset": [
+            -10,
+            0,
+            118
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -560.0,
+            540.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.85,
+            0.85,
+            0.85
+          ]
+        }
+      },
+      "Name": "Lounge_Cabinet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/bronze_whale_statue/bronze_whale_statue.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -560.0,
+            540.0,
+            200.6
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.55,
+            0.55,
+            0.55
+          ]
+        }
+      },
+      "Name": "Lounge_Whale",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/fancy_picture_frame_01/fancy_picture_frame_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -999.0,
+            400.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            2.0,
+            2.0,
+            2.0
+          ]
+        }
+      },
+      "Name": "Lounge_Painting",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ornate_mirror_01/ornate_mirror_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            999.0,
+            0.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.4,
+            2.4,
+            2.4
+          ]
+        }
+      },
+      "Name": "BackBar_Mirror",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -760.0,
+            380.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "Lounge_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.3
+          ],
+          "Intensity": 1.4,
+          "Radius": 300.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -760.0,
+            380.0,
+            45.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lounge_LanternLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "AreaLightComponent": {
+          "Shape": 1,
+          "Color": [
+            1.0,
+            0.85,
+            0.7
+          ],
+          "Intensity": 12.0,
+          "Width": 24.0,
+          "Height": 24.0,
+          "Radius": 800.0,
+          "TwoSided": false,
+          "BarnDoorAngle": 90.0,
+          "BarnDoorLength": 10.0,
+          "CastShadows": true,
+          "IesProfile": "AreaLights/Downlight_Narrow.ies",
+          "UseIesIntensity": true,
+          "IesIntensityScale": 1.0,
+          "CookieTexture": "",
+          "CookieScale": [
+            1,
+            1
+          ],
+          "CookiePanSpeed": [
+            0,
+            0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -780.0,
+            380.0,
+            648.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.7071067811865476,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lounge_Downlight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -880.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0697564737441253,
+            0.9975640502598242
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Corner_Crate_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -870.0,
+            -495.0,
+            45.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.10452846326765347,
+            0.9945218953682733
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Corner_Crate_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            -380.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Corner_Barrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wicker_basket_01/wicker_basket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -780.0,
+            -520.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Corner_Basket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            24,
+            58,
+            22
+          ],
+          "Offset": [
+            0,
+            0,
+            22
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -375.0,
+            -568.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_Bench_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            24,
+            58,
+            22
+          ],
+          "Offset": [
+            0,
+            0,
+            22
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            375.0,
+            -568.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Window_Bench_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_sconce/industrial_wall_sconce.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            999.0,
+            -250.0,
+            270.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "BackBar_Sconce_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.45
+          ],
+          "Intensity": 3.0,
+          "Radius": 500.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            965.0,
+            -250.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_SconceLight_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/industrial_wall_sconce/industrial_wall_sconce.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            999.0,
+            250.0,
+            270.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.4,
+            1.4,
+            1.4
+          ]
+        }
+      },
+      "Name": "BackBar_Sconce_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.45
+          ],
+          "Intensity": 3.0,
+          "Radius": 500.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            965.0,
+            250.0,
+            285.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackBar_SconceLight_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            36,
+            36,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -955.0,
+            -180.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Barrel_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -955.0,
+            -180.0,
+            87.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        }
+      },
+      "Name": "Portal_Lantern_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            36,
+            36,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -955.0,
+            140.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Barrel_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -955.0,
+            140.0,
+            87.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.1,
+            1.1,
+            1.1
+          ]
+        }
+      },
+      "Name": "Portal_Lantern_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Hub.escene\"}, \"Label\": \"Hub로\", \"Ready\": true, \"RememberReturn\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -988.0,
+            -20.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Door",
+      "Parent": 187
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Glow",
+      "Parent": 187
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.5,
+            0.75,
+            1.0
+          ],
+          "Intensity": 1.5,
+          "Radius": 350.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Light",
+      "Parent": 187
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Demo/DemoPlayer.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 191
+        },
+        "TransformComponent": {
+          "Position": [
+            -380.0,
+            -20.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

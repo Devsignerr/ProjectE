@@ -405,9 +405,11 @@ void FResourceManager::UpdateStreamingTargets(float DeltaSeconds, bool bFinal)
 		{
 			if (Entry.bInitialFull)
 			{
-				// 결정적 모드에서 전체로 올린 텍스처: 첫 보고에서 기다리지 않고 필요 밉으로
-				Entry.Hysteresis   = FHysteresisState{ Want, 0.0f };
+				// 결정적 모드에서 전체로 올린 텍스처: 처음 보고된 프레임에 기다리지 않고 필요 밉으로.
+				// 보고가 있었지만 이 텍스처는 안 보였으면(다른 렌더러만 그림 — 에디터 첫 프레임의 썸네일 등) 전체에서 시작해 보통 규칙(늦게 내림)
+				Entry.Hysteresis   = FHysteresisState{ bSeen ? Want : Entry.ResidentTop, 0.0f };
 				Entry.bInitialFull = false;
+				Held               = Entry.Hysteresis.HeldTop;
 			}
 			else
 			{

@@ -1,0 +1,284 @@
+{
+  "Name": "TriplanarStone",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/granite_tile/granite_tile_diff_2k.jpg",
+      "Usage": "Color"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/granite_tile/granite_tile_arm_2k.jpg",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.006
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "pos",
+        "Type": "WorldPosition"
+      },
+      {
+        "Id": "scale",
+        "Type": "ScalarParameter",
+        "Parameter": "WorldScale"
+      },
+      {
+        "Id": "p",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "pos",
+          "B": "scale"
+        }
+      },
+      {
+        "Id": "uvX",
+        "Type": "ComponentMask",
+        "Channels": "yz",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "uvY",
+        "Type": "ComponentMask",
+        "Channels": "xz",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "uvZ",
+        "Type": "ComponentMask",
+        "Channels": "xy",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "bX",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "uvX"
+        }
+      },
+      {
+        "Id": "bY",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "uvY"
+        }
+      },
+      {
+        "Id": "bZ",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "uvZ"
+        }
+      },
+      {
+        "Id": "aX",
+        "Type": "TextureSample",
+        "Texture": "ArmTexture",
+        "Inputs": {
+          "UV": "uvX"
+        }
+      },
+      {
+        "Id": "aY",
+        "Type": "TextureSample",
+        "Texture": "ArmTexture",
+        "Inputs": {
+          "UV": "uvY"
+        }
+      },
+      {
+        "Id": "aZ",
+        "Type": "TextureSample",
+        "Texture": "ArmTexture",
+        "Inputs": {
+          "UV": "uvZ"
+        }
+      },
+      {
+        "Id": "n",
+        "Type": "WorldNormal"
+      },
+      {
+        "Id": "absN",
+        "Type": "Abs",
+        "Inputs": {
+          "A": "n"
+        }
+      },
+      {
+        "Id": "wRaw",
+        "Type": "Power",
+        "Inputs": {
+          "A": "absN",
+          "B": 6.0
+        }
+      },
+      {
+        "Id": "wSum",
+        "Type": "Dot",
+        "Inputs": {
+          "A": "wRaw",
+          "B": 1.0
+        }
+      },
+      {
+        "Id": "w",
+        "Type": "Divide",
+        "Inputs": {
+          "A": "wRaw",
+          "B": "wSum"
+        }
+      },
+      {
+        "Id": "ws",
+        "Type": "Split",
+        "Inputs": {
+          "A": "w"
+        }
+      },
+      {
+        "Id": "cX",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "bX:1",
+          "B": "ws:0"
+        }
+      },
+      {
+        "Id": "cY",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "bY:1",
+          "B": "ws:1"
+        }
+      },
+      {
+        "Id": "cZ",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "bZ:1",
+          "B": "ws:2"
+        }
+      },
+      {
+        "Id": "cXY",
+        "Type": "Add",
+        "Inputs": {
+          "A": "cX",
+          "B": "cY"
+        }
+      },
+      {
+        "Id": "c",
+        "Type": "Add",
+        "Inputs": {
+          "A": "cXY",
+          "B": "cZ"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "color",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "c",
+          "B": "tint:1"
+        }
+      },
+      {
+        "Id": "rX",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "aX:3",
+          "B": "ws:0"
+        }
+      },
+      {
+        "Id": "rY",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "aY:3",
+          "B": "ws:1"
+        }
+      },
+      {
+        "Id": "rZ",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "aZ:3",
+          "B": "ws:2"
+        }
+      },
+      {
+        "Id": "rXY",
+        "Type": "Add",
+        "Inputs": {
+          "A": "rX",
+          "B": "rY"
+        }
+      },
+      {
+        "Id": "r",
+        "Type": "Add",
+        "Inputs": {
+          "A": "rXY",
+          "B": "rZ"
+        }
+      },
+      {
+        "Id": "roughScale",
+        "Type": "ScalarParameter",
+        "Parameter": "RoughnessScale"
+      },
+      {
+        "Id": "rough",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "r",
+          "B": "roughScale"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Roughness": "rough",
+      "Metallic": 0.0
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "Name": "Plinth_Granite",
+  "Parent": "TriplanarStone.emat",
+  "Parameters": [
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.6,
+        0.6,
+        0.62,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 0.55
+    }
+  ]
+}

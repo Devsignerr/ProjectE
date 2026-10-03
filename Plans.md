@@ -913,5 +913,6 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] Hub (해안 항구: 지형·바다·대기/시간대·구름·요새·배·부두·시장 광장, 포털 7개 자리, 플레이어 V 시점 전환) — `Tools/DemoMap/BuildHub.py`, 기본 맵
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
   - [x] 서브맵 Lighting (항구 창고를 고친 선술집 홀: 남쪽 창 5개 햇빛 + 볼류메트릭 빛줄기, DDGI 볼륨, RTAO, 광택 헤링본 마루 RT 반사, 창 사각 면광원·바 조명 띠(IES Linear_Batwing)·원판 다운라이트(IES Downlight_Narrow)·갤러리 IES 벽 워셔, 샹들리에/탁자 램프, Poly Haven 가구 21종 + 텍스처 5종, 벽/바닥/천장은 타일 PBR 그래프 머티리얼 인스턴스) — `Tools/DemoMap/BuildLighting.py`, 1280x720 Release 5.7ms (2026-10-04)
-  - [ ] 서브맵: Alley(밤 골목) / Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
+  - [x] 서브맵 Gallery (조각 전시 홀 — 머티리얼 갤러리: 유리 천창 3개 햇빛 + 볼류메트릭 빛줄기, 코브 간접 조명(면광원 14), DDGI·RTAO, 광택 석회암 바닥 RT 반사, 견본 공 8개(금 거칠기 사다리 = 인스턴스 2단 Parent 체인, 구리/옻칠 색 바꿈, Translucent 프레넬 유리, Additive 맥동 구슬), 그래프 머티리얼(삼평면 받침대, Time 영상 작품, 높이 따라 흐르는 Additive 빛 기둥, Masked 양면 투조 황동 칸막이), 유리 진열장(DamagedHelmet 등), IES 그림 워셔, 데칼(물웅덩이·때·금, 생성 텍스처), Poly Haven 조각·도자기·액자 26종 + 텍스처 4종, 액자 유리 알파 고친 glTF 사본 `Asset/Gallery/`) — `Tools/DemoMap/BuildGallery.py`, 1280x720 Release 6.1ms (2026-10-04)
+  - [ ] 서브맵: Alley(밤 골목) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

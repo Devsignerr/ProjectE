@@ -1,0 +1,110 @@
+{
+  "Name": "SampleGlass",
+  "BlendMode": "Translucent",
+  "Parameters": [
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.7,
+        0.9,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RimColor",
+      "Type": "Vector",
+      "Value": [
+        0.45,
+        0.75,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RimIntensity",
+      "Type": "Scalar",
+      "Value": 0.6
+    },
+    {
+      "Name": "MinOpacity",
+      "Type": "Scalar",
+      "Value": 0.12
+    },
+    {
+      "Name": "MaxOpacity",
+      "Type": "Scalar",
+      "Value": 0.85
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "fresnel",
+        "Type": "Fresnel",
+        "Inputs": {
+          "Exponent": 4.0,
+          "BaseReflectFraction": 0.0
+        }
+      },
+      {
+        "Id": "minO",
+        "Type": "ScalarParameter",
+        "Parameter": "MinOpacity"
+      },
+      {
+        "Id": "maxO",
+        "Type": "ScalarParameter",
+        "Parameter": "MaxOpacity"
+      },
+      {
+        "Id": "opacity",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": "minO",
+          "B": "maxO",
+          "Alpha": "fresnel"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "rimColor",
+        "Type": "VectorParameter",
+        "Parameter": "RimColor"
+      },
+      {
+        "Id": "rimI",
+        "Type": "ScalarParameter",
+        "Parameter": "RimIntensity"
+      },
+      {
+        "Id": "rim",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "rimColor:1",
+          "B": "fresnel"
+        }
+      },
+      {
+        "Id": "emissive",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "rim",
+          "B": "rimI"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "tint:1",
+      "Metallic": 0.0,
+      "Roughness": 0.03,
+      "Emissive": "emissive",
+      "Opacity": "opacity"
+    }
+  }
+}

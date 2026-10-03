@@ -1,0 +1,23 @@
+{
+  "Name": "PlaqueBrass",
+  "BaseColorFactor": [
+    0.82,
+    0.62,
+    0.32,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 0.35,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

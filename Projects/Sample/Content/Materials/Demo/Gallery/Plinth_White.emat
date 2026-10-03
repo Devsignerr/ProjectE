@@ -1,0 +1,31 @@
+{
+  "Name": "Plinth_White",
+  "Parent": "TriplanarStone.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/plastered_wall_04/plastered_wall_04_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/plastered_wall_04/plastered_wall_04_arm_2k.jpg"
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.55,
+        1.52,
+        1.45,
+        1.0
+      ]
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.004
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "Name": "SampleGlowOrb",
+  "BlendMode": "Additive",
+  "Parameters": [
+    {
+      "Name": "GlowColor",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        0.2,
+        0.03,
+        1.0
+      ]
+    },
+    {
+      "Name": "GlowIntensity",
+      "Type": "Scalar",
+      "Value": 2.6
+    },
+    {
+      "Name": "PulseSpeed",
+      "Type": "Scalar",
+      "Value": 2.2
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "fresnel",
+        "Type": "Fresnel",
+        "Inputs": {
+          "Exponent": 1.5,
+          "BaseReflectFraction": 0.0
+        }
+      },
+      {
+        "Id": "core",
+        "Type": "OneMinus",
+        "Inputs": {
+          "A": "fresnel"
+        }
+      },
+      {
+        "Id": "coreSharp",
+        "Type": "Power",
+        "Inputs": {
+          "A": "core",
+          "B": 2.0
+        }
+      },
+      {
+        "Id": "time",
+        "Type": "Time"
+      },
+      {
+        "Id": "speed",
+        "Type": "ScalarParameter",
+        "Parameter": "PulseSpeed"
+      },
+      {
+        "Id": "phase",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "time",
+          "B": "speed"
+        }
+      },
+      {
+        "Id": "sin",
+        "Type": "Sine",
+        "Inputs": {
+          "A": "phase"
+        }
+      },
+      {
+        "Id": "pulse",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": 0.55,
+          "B": 1.0,
+          "Alpha": "sin"
+        }
+      },
+      {
+        "Id": "color",
+        "Type": "VectorParameter",
+        "Parameter": "GlowColor"
+      },
+      {
+        "Id": "intensity",
+        "Type": "ScalarParameter",
+        "Parameter": "GlowIntensity"
+      },
+      {
+        "Id": "g1",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "color:1",
+          "B": "coreSharp"
+        }
+      },
+      {
+        "Id": "g2",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "g1",
+          "B": "pulse"
+        }
+      },
+      {
+        "Id": "emissive",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "g2",
+          "B": "intensity"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Emissive": "emissive",
+      "Opacity": 1.0
+    }
+  }
+}

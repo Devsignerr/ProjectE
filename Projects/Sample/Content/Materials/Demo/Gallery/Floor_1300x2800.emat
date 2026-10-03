@@ -1,0 +1,46 @@
+{
+  "Name": "Floor_1300x2800",
+  "Parent": "../Lighting/TiledPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/marble_01/marble_01_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/marble_01/marble_01_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/marble_01/marble_01_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        5.0,
+        10.77,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        0.97,
+        0.93,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 0.32
+    }
+  ]
+}

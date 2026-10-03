@@ -1,0 +1,21 @@
+{
+  "Name": "SampleCopper",
+  "Parent": "SampleGold.emat",
+  "Parameters": [
+    {
+      "Name": "BaseColor",
+      "Type": "Vector",
+      "Value": [
+        0.95,
+        0.6,
+        0.48,
+        1.0
+      ]
+    },
+    {
+      "Name": "Roughness",
+      "Type": "Scalar",
+      "Value": 0.25
+    }
+  ]
+}

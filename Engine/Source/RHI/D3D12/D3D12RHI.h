@@ -6,6 +6,7 @@
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12Device.h"
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
+#include "RHI/D3D12/D3D12HdrOutput.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12SwapChain.h"
 #include "RHI/D3D12/D3D12UploadQueue.h"
@@ -62,6 +63,20 @@ public:
 	// 이번 프레임의 슬롯(백버퍼 칸, 프레임 리소스 인덱스)과 BeginFrame마다 1씩 느는 프레임 번호 (GPU 타이머 등)
 	uint32 GetFrameSlot() const { return CurrentBackBufferIndex; }
 	uint64 GetFrameNumber() const { return FrameNumber; }
+
+	// ---- HDR 디스플레이 출력 (Phase 49, D3D12HdrOutput.h): 켜면 GetBackBufferOutput/SetRenderTargetToBackBuffer는 겹침 층(SDR UI·ImGui용),
+	// 씬은 GetSceneOutput(선형 FP16)에 HDR 톤매핑으로 그린다. EndFrame이 합성해 HDR10/scRGB 스왑체인에 쓴다. 끄면 둘 다 기존 백버퍼
+	// BeginFrame 전에만 부른다 (GPU를 비우고 스왑체인 포맷을 바꾼다). 디스플레이/스왑체인이 지원하지 않으면 false (SDR 유지)
+	// MaxNits 0 = 디스플레이가 알려 주는 최대 밝기 (모르면 1000)
+	bool                SetHdrOutput(EHdrSwapChainMode Mode, float PaperWhiteNits, float MaxNits = 0.0f);
+	bool                IsHdrOutputActive() const { return HdrOutput.IsActive(); }
+	EHdrSwapChainMode   GetHdrOutputMode() const { return HdrOutput.GetMode(); }
+	float               GetHdrPaperWhiteNits() const { return HdrOutput.GetPaperWhiteNits(); }
+	float               GetHdrMaxNits() const { return HdrOutput.GetMaxNits(); }
+	FHdrDisplayInfo     QueryHdrDisplay() const { return SwapChain.QueryHdrDisplay(); }
+	// 씬 렌더러 출력 (HDR이면 선형 FP16 씬 타깃, 아니면 GetBackBufferOutput과 같음)
+	FRenderOutput       GetSceneOutput() const;
+	ID3D12Resource*     GetHdrSceneResource() const { return HdrOutput.IsActive() && HdrOutput.GetSceneTarget() != nullptr ? HdrOutput.GetSceneTarget()->GetColorResource() : nullptr; }
 
 	void SetVSync(bool bEnabled) { bVSync = bEnabled; }
 	bool IsVSync() const { return bVSync; }
@@ -127,6 +142,7 @@ private:
 	FD3D12DepthBuffer         DepthBuffer;
 	FD3D12DescriptorAllocator SrvAllocator;
 	FD3D12UploadQueue         UploadQueue;
+	FD3D12HdrOutput           HdrOutput; // HDR 출력 (켜졌을 때만 리소스)
 	std::vector<std::pair<uint32, std::function<void()>>> BeginFrameCallbacks;
 	uint32                                                NextBeginFrameCallbackId = 1;
 

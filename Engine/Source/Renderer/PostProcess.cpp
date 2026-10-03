@@ -33,7 +33,7 @@ namespace
 		float  AutoExposureMinEV = -4.0f;
 		float  AutoExposureMaxEV = 6.0f;
 		float  Sharpness         = 0.0f; // TAA 샤프닝 (0 = 끔)
-		float  Padding           = 0.0f;
+		float  HdrPeakRatio      = 0.0f; // HDR 출력 하이라이트 상한 (0 = SDR)
 	};
 	static_assert(sizeof(FTonemapConstants) <= PostRootConstantCount * 4 && sizeof(FTonemapConstants) % 4 == 0);
 
@@ -595,6 +595,7 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 	Constants.AutoExposureMinEV = FMath::Min(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
 	Constants.AutoExposureMaxEV = FMath::Max(Settings.AutoExposureMinEV, Settings.AutoExposureMaxEV);
 	Constants.Sharpness         = FMath::Clamp(Sharpness, 0.0f, 1.0f);
+	Constants.HdrPeakRatio      = HdrPeakRatio;
 
 	// 블룸이 없으면 t1에 씬을 바인딩해 둔다 (강도 0이라 샘플링되지 않음)
 	const FD3D12DescriptorHandle BloomSource = Constants.BloomIntensity > 0.0f ? BloomTargets[0]->GetSrv() : SceneColor.Srv;

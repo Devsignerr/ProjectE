@@ -2,6 +2,7 @@
 
 #include "RHI/D3D12/D3D12CommandQueue.h"
 #include "RHI/D3D12/D3D12Device.h"
+#include "Core/StringConv.h"
 
 bool FD3D12SwapChain::Init(FD3D12Device& InDevice, FD3D12CommandQueue& PresentQueue, HWND WindowHandle,
                            uint32 InWidth, uint32 InHeight)
@@ -65,7 +66,7 @@ bool FD3D12SwapChain::Resize(uint32 InWidth, uint32 InHeight)
 
 	ReleaseBackBuffers();
 
-	E_D3D_VERIFY(SwapChain->ResizeBuffers(BackBufferCount, InWidth, InHeight, BackBufferFormat, SwapChainFlags));
+	E_D3D_VERIFY(SwapChain->ResizeBuffers(BackBufferCount, InWidth, InHeight, CurrentFormat, SwapChainFlags));
 
 	Width  = InWidth;
 	Height = InHeight;
@@ -106,12 +107,13 @@ bool FD3D12SwapChain::CreateBackBufferViews()
 		BackBuffers[Index]->SetName(std::format(L"BackBuffer_{}", Index).c_str());
 
 		D3D12_RENDER_TARGET_VIEW_DESC RtvDesc{};
-		RtvDesc.Format             = RenderTargetViewFormat;
+		const bool bSdr            = CurrentFormat == BackBufferFormat; // HDR 포맷은 sRGB 뷰가 없다 — 두 칸 모두 같은 포맷
+		RtvDesc.Format             = bSdr ? RenderTargetViewFormat : CurrentFormat;
 		RtvDesc.ViewDimension      = D3D12_RTV_DIMENSION_TEXTURE2D;
 		RtvDesc.Texture2D.MipSlice = 0;
 		D3DDevice->CreateRenderTargetView(BackBuffers[Index].Get(), &RtvDesc, RtvHeap.GetCpuHandle(Index));
 
-		RtvDesc.Format = BackBufferFormat;
+		RtvDesc.Format = bSdr ? BackBufferFormat : CurrentFormat;
 		D3DDevice->CreateRenderTargetView(BackBuffers[Index].Get(), &RtvDesc, RtvHeap.GetCpuHandle(BackBufferCount + Index));
 	}
 
@@ -124,4 +126,77 @@ void FD3D12SwapChain::ReleaseBackBuffers()
 	{
 		BackBuffer.Reset();
 	}
+}
+
+bool FD3D12SwapChain::SupportsColorSpace(DXGI_COLOR_SPACE_TYPE ColorSpace) const
+{
+	UINT Support = 0;
+	return SwapChain && SUCCEEDED(SwapChain->CheckColorSpaceSupport(ColorSpace, &Support)) &&
+	       (Support & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) != 0;
+}
+
+bool FD3D12SwapChain::SetFormat(DXGI_FORMAT Format, DXGI_COLOR_SPACE_TYPE ColorSpace)
+{
+	if (Format == CurrentFormat && ColorSpace == CurrentColorSpace)
+	{
+		return true;
+	}
+	const DXGI_FORMAT PreviousFormat = CurrentFormat;
+	ReleaseBackBuffers();
+	if (FAILED(SwapChain->ResizeBuffers(BackBufferCount, Width, Height, Format, SwapChainFlags)))
+	{
+		E_LOG(LogD3D12, Error, "스왑체인 포맷 변경 실패 → 이전 포맷으로");
+		SwapChain->ResizeBuffers(BackBufferCount, Width, Height, PreviousFormat, SwapChainFlags);
+		CreateBackBufferViews();
+		return false;
+	}
+	CurrentFormat = Format;
+	if (!SupportsColorSpace(ColorSpace) || FAILED(SwapChain->SetColorSpace1(ColorSpace)))
+	{
+		E_LOG(LogD3D12, Warning, "스왑체인이 색공간 {}을(를) 지원하지 않습니다 → SDR로", static_cast<int32>(ColorSpace));
+		ReleaseBackBuffers();
+		SwapChain->ResizeBuffers(BackBufferCount, Width, Height, BackBufferFormat, SwapChainFlags);
+		CurrentFormat     = BackBufferFormat;
+		CurrentColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+		SwapChain->SetColorSpace1(CurrentColorSpace);
+		CreateBackBufferViews();
+		return false;
+	}
+	CurrentColorSpace = ColorSpace;
+	return CreateBackBufferViews();
+}
+
+FHdrDisplayInfo FD3D12SwapChain::QueryHdrDisplay() const
+{
+	FHdrDisplayInfo Info;
+	if (!SwapChain)
+	{
+		return Info;
+	}
+	ComPtr<IDXGIOutput> Output;
+	if (FAILED(SwapChain->GetContainingOutput(&Output)) || !Output)
+	{
+		// 창이 아직 화면에 없을 때: 어댑터의 첫 출력
+		ComPtr<IDXGIAdapter1> Adapter;
+		if (Device == nullptr || FAILED(Device->GetFactory()->EnumAdapters1(0, &Adapter)) || FAILED(Adapter->EnumOutputs(0, &Output)))
+		{
+			return Info;
+		}
+	}
+	ComPtr<IDXGIOutput6> Output6;
+	DXGI_OUTPUT_DESC1    Desc{};
+	if (FAILED(Output.As(&Output6)) || FAILED(Output6->GetDesc1(&Desc)))
+	{
+		return Info;
+	}
+	Info.bValid           = true;
+	Info.bHdrEnabled      = Desc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+	Info.MaxNits          = Desc.MaxLuminance;
+	Info.MinNits          = Desc.MinLuminance;
+	Info.MaxFullFrameNits = Desc.MaxFullFrameLuminance;
+	Info.BitsPerColor     = Desc.BitsPerColor;
+	Info.DeviceName       = FStringConv::ToUtf8(std::wstring(Desc.DeviceName));
+	Info.bHdr10Supported  = SupportsColorSpace(DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
+	Info.bScRgbSupported  = SupportsColorSpace(DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709);
+	return Info;
 }

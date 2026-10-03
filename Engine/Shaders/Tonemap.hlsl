@@ -1,5 +1,6 @@
 ﻿#include "Common.hlsli"
 #include "Fullscreen.hlsli"
+#include "HdrDisplay.hlsli"
 
 // HDR 씬 (+ 블룸) → 노출 → 톤매핑 → 표시용. 출력 RTV가 sRGB이므로 선형 값을 쓴다 (감마 인코딩은 하드웨어가 처리)
 
@@ -12,7 +13,7 @@ cbuffer TonemapConstants : register(b0)
 	float  AutoExposureMinEV;
 	float  AutoExposureMaxEV;
 	float  Sharpness;         // TAA 흐림 보정 (0 = 끔): 4이웃 언샤프 마스크, 톤매핑 공간 대비로 제한
-	float  Padding0;
+	float  HdrPeakRatio;      // HDR 출력 (Phase 49): 최대 밝기 / 종이 흰색 (0 = SDR — 기존 출력 그대로)
 };
 
 Texture2D<float4>         SceneColor       : register(t0);
@@ -83,6 +84,15 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	else
 	{
 		Ldr = saturate(Hdr);
+	}
+	if (HdrPeakRatio > 1.0f)
+	{
+		// HDR 출력: SDR 곡선 값의 하이라이트만 펼친다 (무릎 아래 = SDR과 같은 값, 최대 채널 기준 비율 — 색상 유지). 출력 = 선형, 1 = 종이 흰색
+		const float Peak = max(Ldr.r, max(Ldr.g, Ldr.b));
+		if (Peak > 1.0e-5f)
+		{
+			Ldr *= HdrExpandHighlights(Peak, HdrPeakRatio, E_HDR_DEFAULT_KNEE) / Peak;
+		}
 	}
 	return float4(Ldr, 1.0f);
 }

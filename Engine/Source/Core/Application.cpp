@@ -193,6 +193,8 @@ int FApplication::Run()
 
 		Window.SetEventHandler([this](const FWindowEvent& Event) { HandleWindowEvent(Event); });
 		OnConfigureWindow(Desc.Window);
+		// 자동 검증은 창을 띄우지 않고 그리기·스크린샷만 (작업 중 포커스를 빼앗지 않게). 보면서 확인하려면 --show-window
+		Desc.Window.bHidden = ExitAfterFrames > 0 && !CommandLine.HasFlag(L"--show-window");
 		if (!Window.Create(Desc.Window))
 		{
 			E_LOG(LogCore, Error, "창 생성에 실패하여 종료합니다");

@@ -147,7 +147,11 @@ bool FWindow::Create(const FWindowDesc& Desc)
 		return false;
 	}
 
-	ShowWindow(Hwnd, SW_SHOW);
+	bHidden = Desc.bHidden;
+	if (!bHidden)
+	{
+		ShowWindow(Hwnd, SW_SHOW);
+	}
 
 	// 원시 마우스 입력 (시점 회전용 이동량 — 포그라운드일 때만 받는다)
 	RAWINPUTDEVICE Mouse{};
@@ -221,10 +225,11 @@ void FWindow::SetBorderlessFullscreen(bool bEnable)
 		MONITORINFO Monitor{};
 		Monitor.cbSize = sizeof(Monitor);
 		GetMonitorInfoW(MonitorFromWindow(Hwnd, MONITOR_DEFAULTTONEAREST), &Monitor);
-		SetWindowLongPtrW(Hwnd, GWL_STYLE, static_cast<LONG_PTR>((SavedStyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP | WS_VISIBLE));
+		const LONG_PTR Visible = bHidden ? 0 : WS_VISIBLE;
+		SetWindowLongPtrW(Hwnd, GWL_STYLE, static_cast<LONG_PTR>((SavedStyle & ~WS_OVERLAPPEDWINDOW) | WS_POPUP) | Visible);
 		SetWindowPos(Hwnd, HWND_TOP, Monitor.rcMonitor.left, Monitor.rcMonitor.top,
 		             Monitor.rcMonitor.right - Monitor.rcMonitor.left, Monitor.rcMonitor.bottom - Monitor.rcMonitor.top,
-		             SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_SHOWWINDOW);
+		             SWP_FRAMECHANGED | SWP_NOOWNERZORDER | (bHidden ? SWP_NOACTIVATE : SWP_SHOWWINDOW));
 		E_LOG(LogCore, Display, "테두리 없는 전체 화면: {}x{}", Monitor.rcMonitor.right - Monitor.rcMonitor.left, Monitor.rcMonitor.bottom - Monitor.rcMonitor.top);
 	}
 	else
@@ -232,7 +237,7 @@ void FWindow::SetBorderlessFullscreen(bool bEnable)
 		SetWindowLongPtrW(Hwnd, GWL_STYLE, static_cast<LONG_PTR>(SavedStyle));
 		WINDOWPLACEMENT Placement{};
 		Placement.length                  = sizeof(Placement);
-		Placement.showCmd                 = bSavedMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+		Placement.showCmd                 = bHidden ? SW_HIDE : (bSavedMaximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
 		Placement.rcNormalPosition.left   = SavedNormalRect[0];
 		Placement.rcNormalPosition.top    = SavedNormalRect[1];
 		Placement.rcNormalPosition.right  = SavedNormalRect[2];

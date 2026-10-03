@@ -16,6 +16,7 @@ struct FWindowDesc
 	uint32       Width      = 1280;
 	uint32       Height     = 720;
 	bool         bResizable = true;
+	bool         bHidden    = false; // 화면에 띄우지 않고 그리기만 (자동 검증 — 작업표시줄·포커스를 빼앗지 않는다)
 };
 
 // Win32 최상위 창. 메시지를 FWindowEvent로 변환해 핸들러에 전달한다.
@@ -77,6 +78,7 @@ private:
 	bool          bInSizeMove = false; // 드래그 리사이즈 중에는 Resize 이벤트를 보류
 	uint32        PendingHighSurrogate = 0; // WM_CHAR UTF-16 서로게이트 앞쪽
 	bool          bBorderlessFullscreen = false;
+	bool          bHidden               = false; // FWindowDesc::bHidden — 창 모드 전환도 보이게 하지 않는다
 	bool          bCursorLocked         = false;
 	int32         CursorLockPoint[2]    = { -1, -1 }; // SetCursorLockPoint
 	void          ApplyCursorClip() const; // 잠금 중이면 클라이언트 영역에 가둔다 (크기/위치가 바뀔 때마다)

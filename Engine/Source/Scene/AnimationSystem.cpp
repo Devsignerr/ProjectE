@@ -1,10 +1,14 @@
 #include "Scene/AnimationSystem.h"
 
 #include "Core/Profiling.h"
+#include "Core/Console/Console.h"
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/Log.h"
 #include "Scene/AnimGraph.h"
 #include "Scene/AnimIK.h"
 #include "Scene/AnimRetarget.h"
+#include "Scene/AnimUpdateRate.h"
+#include "Scene/CameraProjection.h"
 #include "Scene/Components.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Scene.h"
@@ -17,6 +21,19 @@ E_DEFINE_LOG_CATEGORY(LogAnimation, Log)
 namespace
 {
 	FRootMotionReceiver GRootMotionReceiver = nullptr;
+
+	// ---- 콘솔 변수 (병렬 평가·갱신 빈도 LOD, 규칙은 Scene/AnimUpdateRate.h와 FAnimationSystem::Update 주석)
+	TAutoConsoleVariable<bool> CVarParallel("a.ParallelEvaluate", true, "애니메이션 포즈 평가를 엔티티별 병렬로 (0 = 메인 스레드 순차, 결과는 같다)");
+	TAutoConsoleVariable<bool> CVarUro("a.URO", true,
+	                                   "애니메이션 갱신 빈도 LOD: 화면에 작게 보이는 모델은 몇 프레임마다 포즈를 평가 (건너뛴 시간은 다음 평가가 진행, 노티파이 유지)");
+	TAutoConsoleVariable<float> CVarUroFull("a.URO.FullRateScreenSize", 0.2f, "이 화면 크기(경계 반경 / 화면 세로 절반) 이상이면 매 프레임 평가",
+	                                        EConsoleFlags::None, { .Range = std::pair(0.0f, 10.0f) });
+	TAutoConsoleVariable<float> CVarUroHalf("a.URO.HalfRateScreenSize", 0.08f, "이 화면 크기 이상이면 2프레임마다, 미만이면 a.URO.MaxInterval프레임마다",
+	                                        EConsoleFlags::None, { .Range = std::pair(0.0f, 10.0f) });
+	TAutoConsoleVariable<int32> CVarUroMaxInterval("a.URO.MaxInterval", 4, "가장 작게 보이는 모델의 평가 간격 (프레임)", EConsoleFlags::None,
+	                                               { .Range = std::pair(1.0f, 16.0f) });
+	TAutoConsoleVariable<float> CVarUroRadius("a.URO.Radius", 100.0f, "화면 크기 계산에 쓰는 모델 경계 반경 (cm, 모델 루트 월드 스케일을 곱함)",
+	                                          EConsoleFlags::None, { .Range = std::pair(1.0f, 100000.0f) });
 
 	// ---- 루트 모션 (규칙은 Scene/AnimRootMotion.h)
 
@@ -738,7 +755,7 @@ namespace
 		const FRootMotionContext* Strip = RootMotion.ExtractBase() ? &RootMotion : nullptr;
 		FAnimationRuntime&   Runtime = Animation.Runtime;
 		const FAnimationSet& Set     = *Runtime.Set;
-		ResolveClipChange(Animation);
+		// ResolveClipChange(로그 가능)는 준비 단계(메인 스레드)에서 했다
 		EndStatesIfClipChanged(Runtime, Entity, Runtime.Notify.bResync);
 
 		const FAnimationClip& Clip  = Set.Clips[Runtime.CurrentClip];
@@ -1044,13 +1061,73 @@ namespace
 		}
 	}
 
-	// 포즈 단계: 원천(그래프 | 클립) → (몽타주) → (IK) → 노드 엔티티에 기록
-	void UpdateAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds)
+	// ---- 갱신 단계 (FAnimationSystem::Update): 준비(메인, 엔티티 순서) → 포즈 평가(병렬) → 마무리(메인, 엔티티 순서)
+
+	struct FAnimViewPoint
+	{
+		bool     bValid = false;
+		FVector3 Position;
+		float    FovYRadians   = 1.0f;
+		bool     bOrthographic = false;
+		float    OrthoHeight   = 1000.0f;
+	};
+
+	struct FAnimUpdateItem
+	{
+		FEntity              Entity;
+		FAnimationComponent* Animation    = nullptr;
+		FAnimGraphComponent* Graph        = nullptr;
+		float                DeltaSeconds = 0.0f; // 이번 평가가 진행할 시간 (건너뛰며 모은 시간 포함)
+		bool                 bHavePose    = false;
+	};
+
+	FAnimViewPoint FindViewPoint(FScene& Scene)
+	{
+		FAnimViewPoint          View;
+		const FEntity           Camera    = FCameraProjection::FindActiveCamera(Scene);
+		const FCameraComponent* Component = Camera.IsValid() ? Scene.GetRegistry().TryGet<FCameraComponent>(Camera) : nullptr;
+		if (Component == nullptr)
+		{
+			return View;
+		}
+		View.bValid        = true;
+		View.Position      = Scene.GetTransform(Camera).WorldMatrix.GetOrigin();
+		View.FovYRadians   = FMath::DegreesToRadians(Component->FovYDegrees);
+		View.bOrthographic = Component->bOrthographic;
+		View.OrthoHeight   = Component->OrthoHeight;
+		return View;
+	}
+
+	// 이번 프레임 평가 간격 (1 = 매 프레임). 제외 규칙은 Scene/AnimUpdateRate.h
+	uint32 SelectUpdateInterval(FScene& Scene, FEntity Entity, const FAnimationComponent& Animation, const FAnimViewPoint& View)
+	{
+		const bool bRootMotion = Animation.RootMotionMode != ERootMotionMode::None || Animation.bRootMotion;
+		if (!View.bValid || !CVarUro.Get() || !Animation.bPlaying || bRootMotion)
+		{
+			return 1;
+		}
+		const FMatrix4x4& World = Scene.GetTransform(Entity).WorldMatrix;
+		const float       Scale = FMath::Max(World.TransformVector(FVector3(1.0f, 0.0f, 0.0f)).Length(),
+		                                     FMath::Max(World.TransformVector(FVector3(0.0f, 1.0f, 0.0f)).Length(),
+		                                                World.TransformVector(FVector3(0.0f, 0.0f, 1.0f)).Length()));
+		const float Distance   = (World.GetOrigin() - View.Position).Length();
+		const float ScreenSize = AnimUpdateRateMath::ComputeScreenSize(CVarUroRadius.Get() * Scale, Distance, View.FovYRadians, View.bOrthographic,
+		                                                               View.OrthoHeight);
+		AnimUpdateRateMath::FSettings Settings;
+		Settings.FullRateScreenSize = CVarUroFull.Get();
+		Settings.HalfRateScreenSize = CVarUroHalf.Get();
+		Settings.MaxInterval        = static_cast<uint32>(FMath::Max(CVarUroMaxInterval.Get(), 1));
+		return AnimUpdateRateMath::SelectInterval(ScreenSize, Settings);
+	}
+
+	// 준비 (메인 스레드): 세트/그래프 해석, 래그돌, 갱신 빈도, 클립 변경·IK 뼈 해석 (로그·라이브러리 접근은 여기서만). 평가할 항목이면 true
+	bool PrepareAnimation(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, float DeltaSeconds, const FAnimViewPoint& View,
+	                      FAnimUpdateItem& OutItem)
 	{
 		FAnimationRuntime& Runtime = Animation.Runtime;
 		if (!Runtime.Set)
 		{
-			return;
+			return false;
 		}
 		Runtime.RootMotion = {};
 		// 리타기팅 소스(컴포넌트 목록 / "<모델>:<클립>" 이름)가 바뀌면 세트를 다시 만든다 — 그래프를 묶기 전에 (없는 클립 경고 방지)
@@ -1062,7 +1139,7 @@ namespace
 		}
 		if (Runtime.Set->Clips.empty())
 		{
-			return;
+			return false;
 		}
 		Runtime.PendingNotifies.clear();
 		Runtime.PendingMontageEvents.clear();
@@ -1077,30 +1154,79 @@ namespace
 			{
 				LookAt->Runtime.CurrentWeight = 0.0f;
 			}
-			return;
+			Runtime.UpdateRatePending = 0.0f;
+			return false;
 		}
+
+		// 갱신 빈도 LOD: 건너뛰는 프레임은 시간만 모은다
+		const uint32 Interval      = SelectUpdateInterval(Scene, Entity, Animation, View);
+		const uint32 Tick          = Runtime.UpdateRateTick++;
+		Runtime.UpdateRateInterval = static_cast<uint8>(FMath::Min<uint32>(Interval, 255u));
+		if (!AnimUpdateRateMath::ShouldEvaluate(Tick, Entity.Index, Interval, !Runtime.bUpdateRateEvaluated))
+		{
+			Runtime.UpdateRatePending += DeltaSeconds;
+			return false;
+		}
+		Runtime.bUpdateRateEvaluated = true;
+		OutItem.DeltaSeconds         = DeltaSeconds + Runtime.UpdateRatePending;
+		Runtime.UpdateRatePending    = 0.0f;
+
+		if (Graph == nullptr)
+		{
+			ResolveClipChange(Animation);
+		}
+		if (FFootIkComponent* FootIk = Scene.GetRegistry().TryGet<FFootIkComponent>(Entity))
+		{
+			ResolveFootIk(Scene, Runtime, *FootIk);
+		}
+		if (FLookAtComponent* LookAt = Scene.GetRegistry().TryGet<FLookAtComponent>(Entity))
+		{
+			ResolveLookAt(Scene, Runtime, *LookAt);
+		}
+		OutItem.Entity    = Entity;
+		OutItem.Animation = &Animation;
+		OutItem.Graph     = Graph;
+		return true;
+	}
+
+	// 포즈 평가 (작업 스레드 가능): 원천(그래프 | 클립) → (몽타주) → (IK) → 이 모델의 노드 엔티티 로컬 트랜스폼에 기록.
+	//   이 런타임·이 모델 노드만 쓰고 다른 엔티티는 읽기만 한다 (월드 행렬 — 이 단계에서 아무도 쓰지 않음). ECS 구조 변경·로그·콜백 없음
+	void EvaluateAnimation(FScene& Scene, FAnimUpdateItem& Item)
+	{
+		FAnimationComponent& Animation    = *Item.Animation;
+		FAnimationRuntime&   Runtime      = Animation.Runtime;
+		const FEntity        Entity       = Item.Entity;
+		const float          DeltaSeconds = Item.DeltaSeconds;
 		// 몽타주 진행을 먼저 (몸 전체 몽타주가 덮는 중이면 아래 원천의 노티파이를 멈춘다)
 		const float              Delta      = Animation.bPlaying ? DeltaSeconds * Animation.Speed : 0.0f;
-		const bool               bSuppress  = !Runtime.Montages.empty() && UpdateMontages(Runtime, Entity, Graph, Delta, DeltaSeconds);
+		const bool               bSuppress  = !Runtime.Montages.empty() && UpdateMontages(Runtime, Entity, Item.Graph, Delta, DeltaSeconds);
 		const FRootMotionContext RootMotion = MakeRootMotionContext(Animation, *Runtime.Set);
 
-		bool bHavePose = Graph != nullptr ? EvaluateGraph(Entity, Animation, *Graph, DeltaSeconds, bSuppress, RootMotion, Runtime.PoseScratch)
-		                                  : EvaluateClip(Entity, Animation, DeltaSeconds, bSuppress, RootMotion);
-		bHavePose = ApplyMontages(Runtime, Graph, bHavePose, RootMotion);
+		bool bHavePose = Item.Graph != nullptr ? EvaluateGraph(Entity, Animation, *Item.Graph, DeltaSeconds, bSuppress, RootMotion, Runtime.PoseScratch)
+		                                       : EvaluateClip(Entity, Animation, DeltaSeconds, bSuppress, RootMotion);
+		bHavePose = ApplyMontages(Runtime, Item.Graph, bHavePose, RootMotion);
 		if (bHavePose)
 		{
 			ApplyIk(Scene, Entity, Runtime, DeltaSeconds);
 			WritePose(Scene, Runtime, Runtime.PoseScratch, Runtime.IkTouched);
-			if (!Runtime.RootMotion.IsZero())
-			{
-				ApplyRootMotion(Scene, Entity, Runtime.RootMotion, DeltaSeconds);
-			}
 		}
 		else
 		{
 			Runtime.RootMotion = {};
 		}
+		Item.bHavePose = bHavePose;
 	}
+
+	// 마무리 (메인 스레드, 엔티티 순서): 루트 모션 적용 (수신자 콜백 → 캐릭터 이동, 없으면 엔티티 로컬 트랜스폼)
+	void FinishAnimation(FScene& Scene, const FAnimUpdateItem& Item)
+	{
+		const FAnimationRuntime& Runtime = Item.Animation->Runtime;
+		if (Item.bHavePose && !Runtime.RootMotion.IsZero())
+		{
+			ApplyRootMotion(Scene, Item.Entity, Runtime.RootMotion, Item.DeltaSeconds);
+		}
+	}
+
 	// 클립 이름 찾기. "<모델>:<클립>"인데 아직 없으면 그 모델을 리타기팅 소스로 요청하고 세트를 다시 만든 뒤 찾는다
 	int32 FindOrRequestClip(FScene& Scene, FEntity Entity, FAnimationComponent& Animation, std::string_view ClipName)
 	{
@@ -1153,12 +1279,45 @@ bool FAnimationSystem::RefreshRetargeting(FScene& Scene, FEntity Entity)
 	return bChanged;
 }
 
+// 준비(메인, 엔티티 순서) → 포즈 평가(FParallel, 엔티티별 독립) → 마무리(메인, 엔티티 순서).
+// 노티파이·몽타주 끝 이벤트는 런타임별 Pending 목록에 쌓이므로 평가 순서와 무관하고, 루트 모션 콜백은 마무리에서 엔티티 순서대로 부른다
+// (평가 중에는 노드 로컬 트랜스폼만 바뀌고 월드 행렬은 다음 UpdateTransforms까지 그대로 — 순차 실행과 결과가 같다)
 void FAnimationSystem::Update(FScene& Scene, float DeltaSeconds)
 {
 	E_PROFILE_SCOPE("애니메이션");
-	Scene.GetRegistry().View<FAnimationComponent>().Each([&](FEntity Entity, FAnimationComponent& Animation) {
-		UpdateAnimation(Scene, Entity, Animation, DeltaSeconds);
-	});
+	const FAnimViewPoint         View = FindViewPoint(Scene);
+	std::vector<FAnimUpdateItem> Items;
+	{
+		E_PROFILE_SCOPE("애니메이션 준비");
+		Scene.GetRegistry().View<FAnimationComponent>().Each([&](FEntity Entity, FAnimationComponent& Animation) {
+			FAnimUpdateItem Item;
+			if (PrepareAnimation(Scene, Entity, Animation, DeltaSeconds, View, Item))
+			{
+				Items.push_back(Item);
+			}
+		});
+	}
+	{
+		E_PROFILE_SCOPE("애니메이션 평가");
+		const auto Evaluate = [&](uint32 Begin, uint32 End) {
+			for (uint32 Index = Begin; Index < End; ++Index)
+			{
+				EvaluateAnimation(Scene, Items[Index]);
+			}
+		};
+		if (CVarParallel.Get())
+		{
+			FParallel::ParallelFor(static_cast<uint32>(Items.size()), 4, Evaluate);
+		}
+		else
+		{
+			Evaluate(0, static_cast<uint32>(Items.size()));
+		}
+	}
+	for (const FAnimUpdateItem& Item : Items)
+	{
+		FinishAnimation(Scene, Item);
+	}
 }
 
 bool FAnimationSystem::Play(FScene& Scene, FEntity Entity, std::string_view ClipName, float BlendTime)

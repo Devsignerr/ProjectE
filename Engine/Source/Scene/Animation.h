@@ -168,4 +168,10 @@ struct FAnimationRuntime
 	std::vector<FMatrix4x4> IkMatrices;
 	std::vector<FQuat>      IkRotations;
 	std::vector<FAnimNotifyHit> HitScratch;
+
+	// 갱신 빈도 LOD (Scene/AnimUpdateRate.h): 갱신 호출 횟수, 건너뛰며 모은 시간 (다음 평가가 한 번에 진행), 한 번이라도 평가했는지
+	uint32 UpdateRateTick       = 0;
+	float  UpdateRatePending    = 0.0f;
+	bool   bUpdateRateEvaluated = false;
+	uint8  UpdateRateInterval   = 1; // 직전 갱신이 고른 간격 (확인용)
 };

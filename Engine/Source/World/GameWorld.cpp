@@ -5,6 +5,7 @@
 #include "AI/BehaviorTree/BehaviorTreeInstance.h"
 #include "Core/Assert.h"
 #include "Core/CommandLine.h"
+#include "Core/Log.h"
 #include "Core/InputMode.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
@@ -23,12 +24,109 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cmath>
+#include <format>
+#include <iterator>
 #include <type_traits>
 #include <variant>
 
+E_DEFINE_LOG_CATEGORY(LogGameWorldPerf, Log)
+
 namespace
 {
+	// ---- --perf-capture [--perf-warmup N]: 게임 쪽 틱 구간별 CPU 평균 (렌더러 [성능] 로그와 같은 워밍업, 종료 때 [성능] 게임 틱 로그)
+	enum class EGameTickTimer : uint32
+	{
+		Scripts,
+		GameModule,
+		Characters,
+		Physics,
+		GameplayTransforms,
+		LateUpdate,
+		Animation,
+		PresentTransforms,
+		Particles,
+		Count
+	};
+
+	constexpr const char* GameTickTimerNames[] = { "스크립트", "게임 모듈", "캐릭터", "물리", "게임플레이 트랜스폼", "LateUpdate", "애니메이션", "표시 트랜스폼", "파티클" };
+	static_assert(std::size(GameTickTimerNames) == static_cast<size_t>(EGameTickTimer::Count));
+
+	struct FGameTickPerf
+	{
+		bool   bInitialized = false;
+		bool   bEnabled     = false;
+		bool   bCounting    = false;
+		uint32 WarmupFrames = 0;
+		uint32 SeenFrames   = 0;
+		uint32 Frames       = 0;
+		double Ms[static_cast<size_t>(EGameTickTimer::Count)] = {};
+	};
+	FGameTickPerf GGameTickPerf;
+
+	FGameTickPerf& GetGameTickPerf()
+	{
+		FGameTickPerf& Perf = GGameTickPerf;
+		if (!Perf.bInitialized)
+		{
+			Perf.bInitialized         = true;
+			const FCommandLine Line   = FCommandLine::FromProcess();
+			Perf.bEnabled             = Line.HasFlag(L"--perf-capture");
+			if (const std::wstring Warmup = Line.GetValue(L"--perf-warmup"); !Warmup.empty())
+			{
+				Perf.WarmupFrames = static_cast<uint32>(std::max(0, std::stoi(Warmup)));
+			}
+		}
+		return Perf;
+	}
+
+	class FScopedGameTickTimer
+	{
+	public:
+		explicit FScopedGameTickTimer(EGameTickTimer InTimer) : Timer(InTimer), bActive(GetGameTickPerf().bCounting)
+		{
+			if (bActive)
+			{
+				Start = std::chrono::steady_clock::now();
+			}
+		}
+		~FScopedGameTickTimer()
+		{
+			if (bActive)
+			{
+				GGameTickPerf.Ms[static_cast<size_t>(Timer)] += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - Start).count();
+			}
+		}
+		FScopedGameTickTimer(const FScopedGameTickTimer&)            = delete;
+		FScopedGameTickTimer& operator=(const FScopedGameTickTimer&) = delete;
+
+	private:
+		EGameTickTimer                        Timer;
+		bool                                  bActive;
+		std::chrono::steady_clock::time_point Start;
+	};
+
+	void LogGameTickPerf()
+	{
+		FGameTickPerf& Perf = GetGameTickPerf();
+		if (!Perf.bEnabled || Perf.Frames == 0)
+		{
+			return;
+		}
+		std::string Text;
+		double      Total = 0.0;
+		for (size_t Index = 0; Index < static_cast<size_t>(EGameTickTimer::Count); ++Index)
+		{
+			const double Average = Perf.Ms[Index] / Perf.Frames;
+			Total += Average;
+			Text += std::format("{}{} {:.3f}", Text.empty() ? "" : ", ", GameTickTimerNames[Index], Average);
+		}
+		E_LOG(LogGameWorldPerf, Display, "[성능] 게임 틱 {} 프레임 평균 CPU ms: 합 {:.3f} ({})", Perf.Frames, Total, Text);
+		Perf.Frames = 0;
+		std::fill(std::begin(Perf.Ms), std::end(Perf.Ms), 0.0);
+	}
+
 	FPhysicsQueryShape ToPhysicsQueryShape(const FScriptQueryShape& Shape)
 	{
 		switch (Shape.Shape)
@@ -345,6 +443,7 @@ void FGameWorld::EndPlay()
 	{
 		LogPhysicsPredictionStats("최종");
 	}
+	LogGameTickPerf();
 	PredictedBodies.clear();
 	Replication = nullptr;
 	AI->End(); // Lua 노드 OnAbort가 스크립트를 부르므로 Lua 상태보다 먼저
@@ -389,11 +488,17 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		SessionSearch.Update(); // Net.FindSessions 응답 수집
 	}
 	TickSubScenes(); // 파싱이 끝난 서브 씬 붙이기 + 스트리밍 볼륨 판정 (스크립트 전 — 새 스크립트가 이번 틱에 OnStart)
-	Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::Scripts);
+		Systems.Scripts->Update(DeltaSeconds, Input); // 실행 위치 필터는 BeginPlay에서 정했다
+	}
 	TickAbilities(DeltaSeconds); // 능력: 입력 발동·효과 시간/주기·능력 스크립트 대기 재개 (캐릭터 이동 전 — 대시 이동 입력·MoveSpeed가 이번 무브에)
 	FSequenceSystem::Update(*Scene, DeltaSeconds); // 컷신: 스크립트 PlaySequence가 이번 틱에 반영, 쓴 트랜스폼은 이번 물리/트랜스폼 갱신에
 	TickPhysicsPrediction(DeltaSeconds);         // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
-	TickCharacters(DeltaSeconds);                 // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::Characters);
+		TickCharacters(DeltaSeconds); // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
+	}
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
 		// 스크립트가 만든 엔티티의 에셋 참조(primitive:cube, .emat 등)를 핸들로 복원
@@ -402,6 +507,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
 		E_PROFILE_SCOPE("게임 모듈");
+		const FScopedGameTickTimer Timer(EGameTickTimer::GameModule);
 		Systems.GameModule->Update(*Scene, DeltaSeconds);
 	}
 	AI->Update(*Scene, DeltaSeconds); // Client 역할은 Begin하지 않았으므로 아무것도 하지 않는다
@@ -409,16 +515,26 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	TickRagdolls();                   // 사망/리스폰 → 래그돌 켜기/끄기 (모든 역할, 복제된 체력 기준 — 물리 전: 이번 스텝부터 쓰러진다)
 	if (Systems.Physics != nullptr)
 	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::Physics);
 		Systems.Physics->Update(*Scene, DeltaSeconds);
 	}
-	Scene->UpdateTransforms();
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::GameplayTransforms);
+		Scene->UpdateTransforms();
+	}
 	RecordPhysicsPrediction();               // 이번 스텝 결과 기록 (서버 스냅샷과 비교할 로컬 과거)
 	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
 	UpdateFootIkProbes();                    // 발 IK 바닥 (이번 프레임 최종 위치 기준 — 다음 표시 틱 애니메이션이 쓴다)
 	DispatchCollisionEvents();               // 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
-	Systems.Scripts->LateUpdate(DeltaSeconds, Input);
-	Scene->UpdateTransforms();
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::LateUpdate);
+		Systems.Scripts->LateUpdate(DeltaSeconds, Input);
+	}
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::GameplayTransforms);
+		Scene->UpdateTransforms();
+	}
 	for (auto& [PlayerId, Remote] : RemoteInputs)
 	{
 		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만
@@ -429,9 +545,21 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 {
 	E_PROFILE_SCOPE("표시 틱");
+	if (FGameTickPerf& Perf = GetGameTickPerf(); Perf.bEnabled)
+	{
+		Perf.bCounting = Perf.SeenFrames++ >= Perf.WarmupFrames;
+		Perf.Frames += Perf.bCounting ? 1u : 0u;
+	}
 	FTimeOfDaySystem::Update(TargetScene, DeltaSeconds, IsPlaying()); // 시간대 → 태양 회전 (Phase 49, 트랜스폼 갱신 전)
-	FAnimationSystem::Update(TargetScene, DeltaSeconds);
-	TargetScene.UpdateTransforms();
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::Animation);
+		FAnimationSystem::Update(TargetScene, DeltaSeconds);
+	}
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::PresentTransforms);
+		TargetScene.UpdateTransforms();
+	}
+	const FScopedGameTickTimer Timer(EGameTickTimer::Particles);
 	if (Systems.Resources != nullptr)
 	{
 		FSceneAssetResolver::ResolveParticles(TargetScene, *Systems.Resources, Systems.ContentDirectory);

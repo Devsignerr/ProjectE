@@ -80,6 +80,7 @@ enum class ERenderTimer : uint32
 	Water,            // 물 (굴절 복사 + 수면 + 물속)
 	DdgiTrace,        // DDGI 프로브 광선 추적 (Phase 51)
 	DdgiBlend,        // DDGI 조도/거리/상태 누적 (+ 프로브 구 표시)
+	RayTracedAmbientOcclusion, // RTAO 추적 + 공간 필터 + 누적 (SSAO 대신, 근거리 간접 가림)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -299,6 +300,7 @@ private:
 	FRayTracingScene     RayTracingScene;   // BLAS 캐시 + 프레임 TLAS (Phase 50)
 	FRayTracingEffects   RayTracingEffects; // RT 그림자/반사/디버그 패스
 	FRGResourceRef         FrameRtDebugRef; // --debug-view rt-instances 결과 (이번 그래프)
+	bool                   bFrameRtAo = false; // 이번 프레임 메인 패스 t16 = RTAO 결과 (아니면 SSAO)
 	FD3D12DescriptorHandle FrameRtDebugSrv;
 	uint32                 SeenRtStatsSerial = 0;
 	void                   LogRayTracingStats() const;

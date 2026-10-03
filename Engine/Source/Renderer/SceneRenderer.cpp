@@ -283,6 +283,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::Water:        return "물";
 	case ERenderTimer::DdgiTrace:    return "DDGI 추적";
 	case ERenderTimer::DdgiBlend:    return "DDGI 누적";
+	case ERenderTimer::RayTracedAmbientOcclusion: return "RTAO";
 	default:                        return "?";
 	}
 }
@@ -1288,6 +1289,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	// 그림자 마스크(t24): 메시 패스가 항상 묶으므로 모든 메시 패스가 읽기로 선언 (RT 그림자 누적이 사전 패스와 메인 패스 사이에 쓴다)
 	const FRGResourceRef RtShadowMaskRef = RayTracingEffects.BeginShadowFrame(Graph, Width, Height, bRtShadowsActive);
 
+	bool bDdgiActive = false;
 	// 0.6) 동적 GI — DDGI (Phase 51): 프로브 광선 추적 + 누적 (TLAS 뒤·사전 패스 전 — 메시 패스는 이번 프레임 아틀라스를 읽는다).
 	//   볼륨이 없거나 RT를 못 쓰는 렌더도 상수(VolumeCount 0 + 디버그 뷰)는 올리고 1x1 기본 아틀라스를 묶는다 → 메시는 예전 식
 	{
@@ -1305,7 +1307,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		DdgiSettings.BoostHysteresis   = RendererCVars::DdgiBoostHysteresis.Get();
 		DdgiSettings.SettleFrames      = static_cast<uint32>(std::max(0, RendererCVars::DdgiSettleFrames.Get()));
 		DdgiSettings.SettleHysteresis  = RendererCVars::DdgiSettleHysteresis.Get();
-		const bool bDdgiActive = Ddgi.Prepare(Scene, DdgiSettings, bDdgiWanted && TlasRef.IsValid(), RenderCamera.GetViewProjectionMatrix(), Camera.GetPosition());
+		bDdgiActive = Ddgi.Prepare(Scene, DdgiSettings, bDdgiWanted && TlasRef.IsValid(), RenderCamera.GetViewProjectionMatrix(), Camera.GetPosition());
 		Ddgi.ImportFrame(Graph);
 		if (bDdgiActive)
 		{
@@ -1459,10 +1461,28 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		RayTracingEffects.AddShadowPasses(Graph, RayTracingScene, RtView, RtRefs, RtLighting, ShadowRt, TimerId(ERenderTimer::RayTracedShadows));
 	}
 
-	// 2.5) SSAO: 사전 패스 깊이 + 법선 → 반해상도 가시도 (메인 패스가 간접광에만 곱한다)
-	const bool     bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && bConsoleAmbientOcclusion;
+	// 2.5) 앰비언트 오클루전 (메인 패스가 간접광에만 곱한다 — t16): RTAO(TLAS 짧은 광선, DDGI가 못 담는 근거리 간접 가림) 또는 SSAO.
+	//   r.RayTracing.AO -1 = DDGI 볼륨이 활성인 프레임만 RTAO (프로브 간격보다 작은 접촉·틈새 가림을 SSAO가 거의 못 냈다 — Demo_GI 진단)
+	const int32 RtAoMode = RendererCVars::RayTracingAmbientOcclusion.Get();
+	bFrameRtAo           = bPrepass && PostProcessSettings.bAmbientOcclusion && TlasRef.IsValid() && (RtAoMode > 0 || (RtAoMode < 0 && bDdgiActive));
+	const bool     bAmbientOcclusion = bPrepass && PostProcessSettings.bAmbientOcclusion && (bConsoleAmbientOcclusion || bFrameRtAo);
 	FRGResourceRef AmbientOcclusionRef;
-	if (bAmbientOcclusion)
+	if (bFrameRtAo)
+	{
+		FRayTracedAmbientOcclusionSettings AoRt;
+		AoRt.Radius            = RendererCVars::RayTracingAoRadius.Get();
+		AoRt.RaysPerPixel      = static_cast<uint32>(std::max(1, RendererCVars::RayTracingAoRays.Get()));
+		AoRt.FalloffPower      = RendererCVars::RayTracingAoFalloff.Get();
+		AoRt.Intensity         = RendererCVars::RayTracingAoIntensity.Get();
+		AoRt.HistoryWeight     = RendererCVars::RayTracingAoHistory.Get();
+		AoRt.NormalBias        = RendererCVars::RayTracingShadowBias.Get();
+		AoRt.ResolutionDivisor = static_cast<uint32>(std::clamp(RendererCVars::RayTracingAoDivisor.Get(), 1, 2));
+		AoRt.ReferenceRays     = bDdgiActive ? static_cast<uint32>(std::max(0, RendererCVars::RayTracingAoReference.Get())) : 0u;
+		AoRt.Ddgi              = &Ddgi;
+		AmbientOcclusionRef = RayTracingEffects.AddAmbientOcclusionPasses(Graph, RayTracingScene, RtView, RtRefs, RtLighting, AoRt,
+		                                                                  TimerId(ERenderTimer::RayTracedAmbientOcclusion));
+	}
+	else if (bAmbientOcclusion)
 	{
 		FAmbientOcclusionInputs Inputs;
 		Inputs.SceneDepth    = SceneColor.get();
@@ -1935,7 +1955,11 @@ void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGra
 	case 1:  Source = { Refs.Normal, SceneNormal->GetSrv() }; break;
 	case 2:  Source = { Refs.Velocity, SceneVelocity->GetSrv() }; break;
 	case 3:  Source = { Refs.Depth, SceneColor->GetDepthSrv() }; break; // 깊이는 읽는 동안만 셰이더 리소스 (그래프가 전이)
-	case 4:  Source = { Graph.ImportColor("AmbientOcclusion", *AmbientOcclusion.GetResult()), AmbientOcclusion.GetResultSrv() }; break;
+	case 4:
+		Source = bFrameRtAo ? FPostProcessGraphInput{ Graph.ImportColor("RtAoHistory", *RayTracingEffects.GetAmbientOcclusionResult()),
+		                                              RayTracingEffects.GetAmbientOcclusionSrv() }
+		                    : FPostProcessGraphInput{ Graph.ImportColor("AmbientOcclusion", *AmbientOcclusion.GetResult()), AmbientOcclusion.GetResultSrv() };
+		break;
 	case DebugViewRtShadows: Source = { Graph.ImportColor("RtShadowHistory", RayTracingEffects.GetShadowMask()), RayTracingEffects.GetShadowMask().GetSrv() }; break;
 	case DebugViewRtInstances:
 		if (!FrameRtDebugRef.IsValid())
@@ -2011,7 +2035,7 @@ void FSceneRenderer::RecordMeshBatches(ID3D12GraphicsCommandList* CommandList, E
 	if (Phase != EMeshPhase::Phase2)
 	{
 		FTerrainScreenInputs Screen;
-		Screen.AmbientOcclusion = AmbientOcclusion.GetResultSrv();
+		Screen.AmbientOcclusion = bFrameRtAo ? RayTracingEffects.GetAmbientOcclusionSrv() : AmbientOcclusion.GetResultSrv();
 		for (uint32 Index = 0; Index < 3; ++Index)
 		{
 			Screen.DBuffer[Index] = DecalRenderer.GetTarget(Index).GetSrv();
@@ -2140,7 +2164,8 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, InstanceIndices);
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion, AmbientOcclusion.GetResultSrv().Gpu);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion,
+	                                            (bFrameRtAo ? RayTracingEffects.GetAmbientOcclusionSrv() : AmbientOcclusion.GetResultSrv()).Gpu);
 	for (uint32 Index = 0; Index < 3; ++Index)
 	{
 		CommandList->SetGraphicsRootDescriptorTable(RootParam_DBufferA + Index, DecalRenderer.GetTarget(Index).GetSrv().Gpu);

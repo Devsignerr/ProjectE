@@ -182,6 +182,42 @@ namespace RayTracingMath
 		return FMath::Clamp(Radius, MinRadius, MaxRadius);
 	}
 
+	// ---- RT 앰비언트 오클루전 (RTAO, RayTracedAmbientOcclusion.hlsl과 같은 식): DDGI 프로브(간격 수십 cm)가 못 담는 근거리 간접 가림.
+	//   픽셀마다 광선 RaysPerPixel개 = 교차 표본 번호(GetInterleavedSampleIndex) + 16 × k 의 Vogel 원판 표본(전체 16 × 광선 수)을 반구로 올린
+	//   코사인 가중 방향(Malley) → 가장 가까운 히트 거리 → 가림 = (1 - 거리/반경)^지수. 5x5 텐트 필터(가장자리 0.5)가 주기 4 패턴의 칸마다
+	//   같은 가중을 주므로 평평한 면의 필터 결과는 프레임 회전과 무관하다 (결정적 — 시간 안정성 규칙)
+	constexpr float  DefaultAoRadius        = 150.0f; // cm — DDGI 프로브 간격(Demo_GI·Apartment 100cm)의 1.5배: 경로 추적 기준 rmse 60cm 11.4 → 150cm 10.2
+	constexpr uint32 DefaultAoRaysPerPixel  = 2;
+	constexpr float  DefaultAoFalloffPower  = 2.0f;  // 큰 반경에서도 접촉부에 몰리게 (같은 반경 지수 1보다 기준에 가깝다)
+	// 법선 N(정규화) 둘레 코사인 가중 반구 방향: 단위 원판 표본 Disk를 반구로 올린다 (원판 균등 → 반구 코사인 가중)
+	inline FVector3 SampleCosineHemisphere(const FVector3& N, const FVector2& Disk)
+	{
+		const FVector3 Helper    = FMath::Abs(N.Z) < 0.999f ? FVector3(0.0f, 0.0f, 1.0f) : FVector3(1.0f, 0.0f, 0.0f);
+		const FVector3 Tangent   = FVector3::Cross(Helper, N).GetNormalized();
+		const FVector3 Bitangent = FVector3::Cross(N, Tangent);
+		const float    Z         = std::sqrt(FMath::Clamp(1.0f - (Disk.X * Disk.X + Disk.Y * Disk.Y), 0.0f, 1.0f));
+		return (Tangent * Disk.X + Bitangent * Disk.Y + N * Z).GetNormalized();
+	}
+	// 히트 거리 → 가림 [0, 1]: 빗나감(음수)·반경 밖 0, 접촉 1
+	inline float ComputeAoOcclusion(float HitDistance, float Radius, float FalloffPower)
+	{
+		if (HitDistance < 0.0f || HitDistance >= Radius)
+		{
+			return 0.0f;
+		}
+		return std::pow(FMath::Clamp(1.0f - HitDistance / FMath::Max(Radius, 1.0e-3f), 0.0f, 1.0f), FalloffPower);
+	}
+	// 픽셀 Pixel의 k번째 광선 표본 번호 (전체 InterleavedSampleCount × RaysPerPixel 중)
+	inline uint32 GetAoSampleIndex(uint32 X, uint32 Y, uint32 Frame, uint32 Ray)
+	{
+		return GetInterleavedSampleIndex(X, Y, Frame) + Ray * InterleavedSampleCount;
+	}
+	// 공간 필터 텐트 가중 (오프셋 -2~2): 가장자리 ±2는 0.5 — ±2는 주기 4로 같은 칸이라 합이 1
+	inline float GetAoFilterTent(int32 Offset)
+	{
+		return (Offset == 2 || Offset == -2) ? 0.5f : 1.0f;
+	}
+
 	// ---- 히트 텍스처 LOD (광선 원뿔, Akenine-Möller et al. "Texture Level of Detail Strategies for Real-Time Ray Tracing", RTG 20장)
 	//   LOD = 0.5 log2(텍셀 면적 / 월드 면적) + log2(원뿔 폭 / |N·D|). 텍셀 면적 = 삼각형 UV 면적 × 텍스처 W × H
 	inline float ComputeRayConeLod(float ConeWidth, float AbsCosNormalRay, float UvArea, float TextureTexels, float WorldArea)

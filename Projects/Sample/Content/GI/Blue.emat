@@ -1,0 +1,14 @@
+{
+  "Name": "Blue",
+  "BaseColorFactor": [0.18, 0.28, 0.6, 1.0],
+  "EmissiveFactor": [0.0, 0.0, 0.0],
+  "Metallic": 0.0,
+  "Roughness": 0.5,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

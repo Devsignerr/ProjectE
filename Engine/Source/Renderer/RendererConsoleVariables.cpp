@@ -1,5 +1,6 @@
 #include "Renderer/RendererConsoleVariables.h"
 
+#include "Renderer/RayTracingMath.h"
 #include "Renderer/TextureStreamingMath.h"
 
 namespace RendererCVars
@@ -217,6 +218,32 @@ namespace RendererCVars
 	                                             EConsoleFlags::None, { .Range = std::pair(0.0f, 6000.0f) });
 	TAutoConsoleVariable<float> DdgiSettleHysteresis("r.DDGI.SettleHysteresis", 0.97f, "DDGI 정착 구간 히스테리시스 상한 (볼륨 값이 이보다 낮으면 영향 없음)",
 	                                                 EConsoleFlags::None, { .Range = std::pair(0.0f, 0.995f) });
+	// ---- RT 앰비언트 오클루전 (RTAO — 근거리 간접 가림, Demo_GI 그림자 품질)
+	TAutoConsoleVariable<int32> RayTracingAmbientOcclusion("r.RayTracing.AO", -1,
+	                                                       "RT 앰비언트 오클루전 (SSAO 대신 TLAS 짧은 광선 — 간접광에만 곱함): -1 자동(DDGI 볼륨이 활성인 프레임만), "
+	                                                       "0 끔(SSAO), 1 켬(RT가 켜진 렌더러 항상)",
+	                                                       EConsoleFlags::None,
+	                                                       { .Range = std::pair(-1.0f, 1.0f), .CommandLine = { { L"--rtao", "1" }, { L"--no-rtao", "0" } } });
+	TAutoConsoleVariable<float> RayTracingAoRadius("r.RayTracing.AO.Radius", RayTracingMath::DefaultAoRadius,
+	                                               "RTAO 광선 길이 = 가림 반경(cm). DDGI 프로브 간격(보통 100cm)보다 작은 가림을 담당 — 간격의 1~2배 (경로 추적 기준과 비교해 정함)", EConsoleFlags::None,
+	                                               { .Range = std::pair(1.0f, 1000.0f), .CommandLine = { { L"--rtao-radius", "" } } });
+	TAutoConsoleVariable<int32> RayTracingAoRays("r.RayTracing.AO.Rays", static_cast<int32>(RayTracingMath::DefaultAoRaysPerPixel),
+	                                             "RTAO 픽셀당 광선 수 (4x4 교차 표본 × 이 수 = 방향 수)", EConsoleFlags::None,
+	                                             { .Range = std::pair(1.0f, 4.0f), .CommandLine = { { L"--rtao-rays", "" } } });
+	TAutoConsoleVariable<float> RayTracingAoFalloff("r.RayTracing.AO.FalloffPower", RayTracingMath::DefaultAoFalloffPower,
+	                                                "RTAO 거리 감쇠 지수: 가림 = (1 - 거리/반경)^지수 (클수록 접촉부만)", EConsoleFlags::None,
+	                                                { .Range = std::pair(0.1f, 8.0f) });
+	TAutoConsoleVariable<int32> RayTracingAoDivisor("r.RayTracing.AO.ResolutionDivisor", 2,
+	                                                "RTAO 해상도 나눔: 1 = 씬 해상도, 2 = 반해상도(기본 — 1440p 비용 약 1/4, 메인 패스가 깊이 가중 업샘플. 1이 정지 화면에서 더 안정)",
+	                                                EConsoleFlags::None, { .Range = std::pair(1.0f, 2.0f) });
+	TAutoConsoleVariable<float> RayTracingAoIntensity("r.RayTracing.AO.Intensity", 1.0f, "RTAO 세기: 가시도^세기", EConsoleFlags::None,
+	                                                  { .Range = std::pair(0.0f, 4.0f) });
+	TAutoConsoleVariable<float> RayTracingAoHistory("r.RayTracing.AO.HistoryWeight", 0.1f, "RTAO 시간 누적: 이번 프레임 비중 (1 = 누적 없음, 기본 0.1 — 반해상도 가림 경계의 정지 화면 출렁임 억제)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.01f, 1.0f) });
+	TAutoConsoleVariable<int32> RayTracingAoReference("r.RayTracing.AO.Reference", 0,
+	                                                  "RTAO 고비용 기준 (비교·튜닝용, 정지 카메라): 픽셀당 이 수의 경로(4번 반사, 그림자 광선, 마지막 정점만 DDGI)를 추적해 프레임마다 평균 → "
+	                                                  "메인 패스 간접 확산 = 모은 값 (DDGI × 밝기 비). 0 = 끔",
+	                                                  EConsoleFlags::None, { .Range = std::pair(0.0f, 256.0f), .CommandLine = { { L"--rtao-reference", "" } } });
 	namespace
 	{
 		uint32 GDdgiStatsSerial = 0;

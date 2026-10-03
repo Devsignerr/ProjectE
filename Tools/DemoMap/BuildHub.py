@@ -270,7 +270,7 @@ PORTALS = [
 	("Portal_Campfire", "해변 캠프 (파티클)", "Scenes/Demo/Campfire.escene", 270.0),
 ]
 
-READY_PORTALS = {"Portal_Lighting", "Portal_Alley", "Portal_Gallery", "Portal_Forest"}  # 서브맵이 만들어진 포털 (Build<이름>.py)
+READY_PORTALS = {"Portal_Lighting", "Portal_Alley", "Portal_Gallery", "Portal_Forest", "Portal_Workshop"}  # 서브맵이 만들어진 포털 (Build<이름>.py)
 
 
 def Model(Id):

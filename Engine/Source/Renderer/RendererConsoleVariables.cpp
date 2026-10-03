@@ -44,6 +44,13 @@ namespace RendererCVars
 	TAutoConsoleVariable<int32> ShadowCacheStaticFrames("r.Shadow.Cache.StaticFrames", 30,
 	                                                    "그림자 캐시: 위치가 이 프레임 수만큼 그대로인 비스킨 메시를 정적 캐스터로 본다", EConsoleFlags::None,
 	                                                    { .Range = std::pair(1.0f, 10000.0f) });
+	TAutoConsoleVariable<float> ShadowCacheQuantize("r.Shadow.Cache.Quantize", 0.125f,
+	                                                "그림자 캐시 캐스케이드 중심 양자화: 반경을 (1 + 값)배로 넓히고 중심을 그만큼의 격자에 맞춰 카메라가 칸 안에서 움직이는 동안 "
+	                                                "캐시를 재사용한다 (텍셀이 그만큼 커짐, 0 = 끔 — 이동 중에는 매 프레임 다시 그림)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f) });
+	TAutoConsoleVariable<int32> ShadowCacheQuantizeFirst("r.Shadow.Cache.QuantizeFirstCascade", 1,
+	                                                     "그림자 캐시 양자화를 이 캐스케이드 번호부터 (0 = 가장 가까운 캐스케이드도 — 해상도 손실이 가장 잘 보인다)",
+	                                                     EConsoleFlags::None, { .Range = std::pair(0.0f, 4.0f) });
 	TAutoConsoleVariable<float> ShadowLodBias("r.Shadow.LodBias", 0.0f,
 	                                          "방향광 그림자 LOD 바이어스: 캐스케이드 c는 메인 LOD + floor(c × 값) (먼 캐스케이드일수록 거친 LOD, 0 = 메인과 같은 LOD). "
 	                                          "기본 끔 — 0.5에서 Hub 나무(Masked 잎) 그림자 모양이 눈에 띄게 바뀌었다",

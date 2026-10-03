@@ -90,7 +90,7 @@ public:
 	void RenderMain(ETerrainPass Pass, D3D12_GPU_VIRTUAL_ADDRESS PerFrame, D3D12_GPU_VIRTUAL_ADDRESS ShadowConstants, const FShadowRenderer& Shadow,
 	                const FIblRenderer& Ibl, const FLocalLightRenderer& LocalLights, const FTerrainScreenInputs& Screen);
 	void RenderShadow(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight);
-	// RenderShadow가 이 프러스텀에 그릴 결과의 상태 해시 (방향광 그림자 캐시 키 — 데이터 변경 번호, 배치, 청크 LOD). Prepare 뒤
+	// RenderShadow가 이 프러스텀에 그릴 결과의 상태 해시 (방향광 그림자 캐시 키 — 데이터 변경 번호, 배치, 그리는 청크). Prepare 뒤
 	uint64 GetShadowStateHash(const FFrustum& Frustum) const;
 	// 에디터 선택 아웃라인 마스크 (R8_UNORM 타깃이 바인딩된 상태): 지난 Prepare의 메인 패스 청크로 Entities에 든 지형만
 	void RenderMask(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const std::vector<FEntity>& Entities);

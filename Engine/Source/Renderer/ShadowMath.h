@@ -3,6 +3,7 @@
 #include "Core/Math/Math.h"
 
 #include <array>
+#include <cmath>
 
 // 캐스케이드 섀도우 맵 계산 (GPU 없이 테스트 가능한 순수 함수)
 namespace ShadowMath
@@ -80,8 +81,12 @@ namespace ShadowMath
 
 	// 절두체 조각을 감싸는 구 → 광원 방향 직교 투영. 텍셀 격자에 스냅해 카메라 이동 시 그림자 가장자리 떨림을 막는다.
 	//   CasterExtension: 조각 앞쪽(광원 쪽)으로 더 확장해 화면 밖 캐스터도 그림자를 드리우게 한다
+	//   Quantize(> 0, 그림자 캐시용 — r.Shadow.Cache.Quantize): 반경을 (1 + Quantize)배로 넓히고 중심을 광원 공간 XYZ 모두
+	//     칸 크기 G(텍셀 배수, G/2 <= Quantize × 원래 반경)의 격자에 반올림한다 → 카메라가 칸 안에서 움직이는 동안 뷰-투영이 비트 단위로 같다
+	//     (조각 구는 항상 넓힌 상자 안: 중심 오차 <= G/2 <= 늘린 반경). 넓힌 반경은 크기 단계(2^floor(log2 R)/32)로 올림해 부동소수 잡음에 흔들리지 않게 한다.
+	//     대가: 텍셀이 (1 + Quantize)배 커진다
 	inline FCascade ComputeCascade(const std::array<FVector3, 8>& Corners, const FVector3& LightDirection, uint32 Resolution,
-	                               float CasterExtension)
+	                               float CasterExtension, float Quantize = 0.0f)
 	{
 		FCascade Cascade;
 
@@ -101,6 +106,15 @@ namespace ShadowMath
 		// 중심 스냅으로 이동하는 최대 한 텍셀을 포함하도록 투영 영역을 확장한다.
 		Radius *= static_cast<float>(Resolution) / static_cast<float>(Resolution - 2);
 		Radius = FMath::Ceil(Radius * 16.0f) / 16.0f;
+		float CellSize = 0.0f;
+		if (Quantize > 0.0f)
+		{
+			const float BaseRadius = Radius;
+			const float Step       = std::exp2(FMath::Floor(std::log2(FMath::Max(BaseRadius, 1.0f)))) / 32.0f;
+			Radius                 = FMath::Ceil(BaseRadius * (1.0f + Quantize) / Step) * Step;
+			const float Texel      = (Radius * 2.0f) / static_cast<float>(Resolution);
+			CellSize               = FMath::Max(FMath::Floor(2.0f * Quantize * BaseRadius / Texel), 1.0f) * Texel;
+		}
 
 		const FVector3 Direction = LightDirection.GetNormalized();
 		const FVector3 WorldUp   = FMath::Abs(FVector3::Dot(Direction, FVector3::UpVector)) > 0.99f ? FVector3::ForwardVector : FVector3::UpVector;
@@ -109,8 +123,17 @@ namespace ShadowMath
 		const float      TexelSize  = (Radius * 2.0f) / static_cast<float>(Resolution);
 		const FMatrix4x4 LightView0 = FMatrix4x4::MakeLookAt(FVector3::ZeroVector, Direction, WorldUp);
 		FVector3         CenterLS   = LightView0.TransformPosition(Center);
-		CenterLS.X                  = FMath::Floor(CenterLS.X / TexelSize) * TexelSize;
-		CenterLS.Y                  = FMath::Floor(CenterLS.Y / TexelSize) * TexelSize;
+		if (CellSize > 0.0f)
+		{
+			CenterLS.X = std::round(CenterLS.X / CellSize) * CellSize;
+			CenterLS.Y = std::round(CenterLS.Y / CellSize) * CellSize;
+			CenterLS.Z = std::round(CenterLS.Z / CellSize) * CellSize;
+		}
+		else
+		{
+			CenterLS.X = FMath::Floor(CenterLS.X / TexelSize) * TexelSize;
+			CenterLS.Y = FMath::Floor(CenterLS.Y / TexelSize) * TexelSize;
+		}
 		Center                      = LightView0.GetInverse().TransformPosition(CenterLS);
 
 		const FVector3   Eye  = Center - Direction * (Radius + CasterExtension);

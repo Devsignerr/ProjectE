@@ -197,6 +197,7 @@ public:
 	float                MinScreenSize   = 0.0f;  // r.MinScreenSize (메인·사전 패스 화면 크기 컬링)
 	float                MaxDrawDistance = 0.0f;  // r.MaxDrawDistance (cm)
 	uint32               ShadowStaticFrames = 30; // r.Shadow.Cache.StaticFrames
+	uint64               ShadowLodSignature = 0;  // LOD 설정 해시 (바뀌면 그림자 캐시 무효)
 	// HZB 오클루전 컬링 (메인 패스 정적 메시, --occlusion). 기본 끔: LOD를 켠 예제 씬들에서는 HZB·간접 드로우 비용(GPU ~0.1ms)이
 	// 아낀 정점 비용보다 커서 손해였다 (LOD 없이 정점이 많은 씬에서는 이득 — Phase 26 측정)
 	bool                 bEnableOcclusion = false;

@@ -850,10 +850,10 @@ void FSceneRenderer::LogRayTracingStats() const
 	}
 	const FRayTracingSceneStats& Rt = Stats.RayTracing;
 	E_LOG(LogRenderer, Display,
-	      "[레이 트레이싱] 지원 {}, 그림자 {}, 반사 {} | TLAS 인스턴스 {}, BLAS 정적 {} + 스킨 {} + 지형 타일 {} = {:.2f} MB (압축 절약 누적 {:.2f} MB), "
+	      "[레이 트레이싱] 지원 {}, 그림자 {}, 반사 {} | TLAS 인스턴스 {}, BLAS 정적 {} + 스킨 {}(지오메트리 {}, 갱신 건너뜀 {}) + 지형 타일 {} = {:.2f} MB (압축 절약 누적 {:.2f} MB), "
 	      "스킨 정점 {:.2f} MB, 지형 정점 {:.2f} MB, "
 	      "TLAS {:.2f} MB, 스크래치 {:.2f} MB | 이번 프레임 빌드 {} / 갱신 {} / 압축 {} / 미룸 {}, 준비 CPU {:.3f} ms | GPU ms: 가속 구조 {:.3f}, 그림자 {:.3f}, 반사 추적 {:.3f}, 반사 흐림·누적 {:.3f}",
-	      RayTracingScene.IsSupported(), Stats.bRayTracedShadows, Stats.bRayTracedReflections, Rt.TlasInstances, Rt.StaticBlas, Rt.SkinnedBlas, Rt.TerrainTiles,
+	      RayTracingScene.IsSupported(), Stats.bRayTracedShadows, Stats.bRayTracedReflections, Rt.TlasInstances, Rt.StaticBlas, Rt.SkinnedBlas, Rt.SkinnedPrimitives, Rt.SkinnedRefitSkipped, Rt.TerrainTiles,
 	      static_cast<double>(Rt.BlasBytes) / (1024.0 * 1024.0), static_cast<double>(Rt.CompactionSavedBytes) / (1024.0 * 1024.0),
 	      static_cast<double>(Rt.SkinnedVertexBytes) / (1024.0 * 1024.0), static_cast<double>(Rt.TerrainVertexBytes) / (1024.0 * 1024.0),
 	      static_cast<double>(Rt.TlasBytes) / (1024.0 * 1024.0),
@@ -1256,6 +1256,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		Options.CameraPosition     = Camera.GetPosition();
 		Options.bSkinned           = RendererCVars::RayTracingSkinned.Get();
 		Options.SkinnedMaxDistance = RendererCVars::RayTracingSkinnedDistance.Get();
+		Options.SkinnedRefitDistance = RendererCVars::RayTracingSkinnedRefitDistance.Get();
+		Options.SkinnedRefitInterval = static_cast<uint32>(std::max(1, RendererCVars::RayTracingSkinnedRefitInterval.Get()));
 		Options.bFoliage           = RendererCVars::RayTracingFoliage.Get();
 		Options.bCompaction        = RendererCVars::RayTracingCompaction.Get();
 		Options.bGraphMaterials    = RendererCVars::RayTracingGraphMaterials.Get();
@@ -1271,7 +1273,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			Options.MaxBuildTriangles = std::numeric_limits<uint64>::max();
 		}
 		BeginCpuTimer(ERenderTimer::RayTracingBuild);
-		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options, &Terrains);
+		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options, &Terrains, &Scene);
 		EndCpuTimer(ERenderTimer::RayTracingBuild);
 		TlasRef = RayTracingScene.AddBuildPasses(Graph, TimerId(ERenderTimer::RayTracingBuild));
 		Stats.RayTracing = RayTracingScene.GetStats();

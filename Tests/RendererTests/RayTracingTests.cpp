@@ -265,3 +265,89 @@ E_TEST(RayTracing_AmbientOcclusionSampling)
 		}
 	}
 }
+
+E_TEST(RayTracing_SkinnedGroupFlagsAndRefit)
+{
+	using namespace RayTracingMath;
+	// 모델 BLAS: 모두 불투명이면 FORCE_OPAQUE, Masked가 섞이면 지오메트리 OPAQUE 플래그에 맡긴다 (FORCE_* 없음)
+	E_EXPECT_EQ(ComputeSkinnedGroupInstanceFlags(false, false), InstanceFlagForceOpaque);
+	E_EXPECT_EQ(ComputeSkinnedGroupInstanceFlags(true, false), 0u);
+	E_EXPECT_EQ(ComputeSkinnedGroupInstanceFlags(true, true), InstanceFlagCullDisable);
+
+	// 갱신 주기: 가까우면 1, 멀수록 늘고 상한에서 멈춘다
+	E_EXPECT_EQ(GetSkinnedRefitInterval(500.0f, 1500.0f, 4), 1u);
+	E_EXPECT_EQ(GetSkinnedRefitInterval(1500.0f, 1500.0f, 4), 1u);
+	E_EXPECT_EQ(GetSkinnedRefitInterval(2000.0f, 1500.0f, 4), 2u);
+	E_EXPECT_EQ(GetSkinnedRefitInterval(3500.0f, 1500.0f, 4), 3u);
+	E_EXPECT_EQ(GetSkinnedRefitInterval(100000.0f, 1500.0f, 4), 4u);
+	E_EXPECT_EQ(GetSkinnedRefitInterval(100000.0f, 1500.0f, 1), 1u); // 1 = 모두 매 프레임
+	E_EXPECT_EQ(GetSkinnedRefitInterval(100000.0f, 0.0f, 4), 1u);
+
+	// 고정 주기에서는 정확히 Interval 프레임마다 한 번, 위상이 다른 모델은 다른 프레임에
+	for (const uint32 Interval : { 1u, 2u, 3u, 4u })
+	{
+		for (const uint32 Phase : { 0u, 1u, 7u, 12345u })
+		{
+			uint64 Last   = 0;
+			uint32 Refits = 0;
+			for (uint64 Frame = 1; Frame <= 120; ++Frame)
+			{
+				if (ShouldRefitSkinned(Frame, Last, Phase, Interval))
+				{
+					E_EXPECT_TRUE(Last == 0 || Frame - Last <= Interval); // 간격이 주기를 넘지 않는다
+					Last = Frame;
+					++Refits;
+				}
+			}
+			E_EXPECT_EQ(Refits, 120u / Interval);
+		}
+	}
+	// 주기가 바뀌어 위상이 어긋나도 Interval 프레임 안에 갱신
+	E_EXPECT_TRUE(ShouldRefitSkinned(110, 106, 1, 4));
+	// 위상: 같은 키 → 같은 값 (결정적)
+	E_EXPECT_EQ(ComputeRefitPhase(42), ComputeRefitPhase(42));
+	std::set<uint32> PhasesMod4;
+	for (uint64 Key = 1; Key <= 64; ++Key)
+	{
+		PhasesMod4.insert(ComputeRefitPhase(Key << 2) % 4u);
+	}
+	E_EXPECT_EQ(PhasesMod4.size(), size_t(4)); // 연속 키도 고르게 엇갈린다
+}
+
+E_TEST(RayTracing_RangeAllocator)
+{
+	using namespace RayTracingMath;
+	FRangeAllocator Allocator;
+	Allocator.Reset(1024);
+	const uint64 A = Allocator.Allocate(256, 256);
+	const uint64 B = Allocator.Allocate(256, 256);
+	const uint64 C = Allocator.Allocate(256, 256);
+	E_EXPECT_EQ(A, 0ull);
+	E_EXPECT_EQ(B, 256ull);
+	E_EXPECT_EQ(C, 512ull);
+	E_EXPECT_EQ(Allocator.Allocate(512, 256), FRangeAllocator::InvalidOffset); // 남은 256으로는 부족
+	// 가운데를 풀면 첫 맞춤으로 그 자리를 다시 쓴다
+	Allocator.Release(B, 256);
+	E_EXPECT_EQ(Allocator.Allocate(128, 1), 256ull);
+	E_EXPECT_EQ(Allocator.Allocate(128, 256), 768ull); // 정렬 맞는 다음 빈 칸
+	E_EXPECT_EQ(Allocator.GetFreeBytes(), 256ull); // 정렬 여백 [384, 512) + 끝 [896, 1024)
+	// 해제 병합: 모두 풀면 빈 칸 하나
+	Allocator.Release(256, 128);
+	Allocator.Release(A, 256);
+	Allocator.Release(C, 256);
+	Allocator.Release(768, 128);
+	E_EXPECT_EQ(Allocator.GetFreeRangeCount(), size_t(1));
+	E_EXPECT_EQ(Allocator.GetFreeBytes(), 1024ull);
+	// 확장: 기존 할당 위치 유지, 끝 빈 칸과 합쳐진다
+	const uint64 D = Allocator.Allocate(1024, 256);
+	E_EXPECT_EQ(D, 0ull);
+	E_EXPECT_EQ(Allocator.Allocate(256, 256), FRangeAllocator::InvalidOffset);
+	Allocator.Grow(2048);
+	E_EXPECT_EQ(Allocator.GetCapacity(), 2048ull);
+	E_EXPECT_EQ(Allocator.Allocate(1024, 256), 1024ull);
+	Allocator.Release(512, 256); // 가운데 구멍 + 끝은 꽉 참
+	Allocator.Grow(4096);
+	E_EXPECT_EQ(Allocator.GetFreeRangeCount(), size_t(2));
+	E_EXPECT_EQ(Allocator.Allocate(512, 256), 2048ull); // 구멍(256)에는 안 들어간다
+	E_EXPECT_EQ(Allocator.Allocate(0, 256), FRangeAllocator::InvalidOffset);
+}

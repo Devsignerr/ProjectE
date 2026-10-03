@@ -1,0 +1,5534 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.95,
+            0.88
+          ],
+          "Intensity": 3.4
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            2000.0
+          ],
+          "Rotation": [
+            -0.40055739953520725,
+            -0.07062907686047737,
+            0.899666649415519,
+            -0.15863550393553952
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {},
+        "VolumetricCloudComponent": {
+          "Coverage": 0.35,
+          "WindSpeed": 10.0
+        },
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.55,
+            0.65,
+            0.78
+          ],
+          "Density": 0.0025,
+          "HeightFalloff": 0.06,
+          "StartDistance": 3000.0,
+          "MaxOpacity": 0.7
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "WaterBodyComponent": {
+          "Size": [
+            40000.0,
+            60000.0,
+            1000.0
+          ],
+          "ScatterColor": [
+            0.02,
+            0.1,
+            0.12
+          ],
+          "Absorption": [
+            0.4,
+            0.08,
+            0.06
+          ],
+          "NormalStrength": 0.45,
+          "WaveScale": 420.0,
+          "WaveSpeed": 18.0,
+          "FlowDirection": 0.0,
+          "FlowSpeed": 0.0,
+          "FoamIntensity": 0.8,
+          "FoamDistance": 35.0,
+          "RefractionStrength": 0.04,
+          "ReflectionIntensity": 1.0,
+          "Roughness": 0.07
+        },
+        "TransformComponent": {
+          "Position": [
+            22150.0,
+            0.0,
+            -670.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sea",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "NavMeshComponent": {
+          "NavMeshAsset": "Scenes/Demo/Training.enav",
+          "AgentRadius": 35.0,
+          "AgentHeight": 180.0,
+          "AgentMaxClimb": 40.0,
+          "AgentMaxSlopeDegrees": 45.0,
+          "CellSize": 15.0,
+          "CellHeight": 10.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "NavMesh",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardDirt.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            452.5,
+            0.0,
+            -150.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            33.95,
+            31.95,
+            3.0
+          ]
+        }
+      },
+      "Name": "Ground_Yard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardGravel.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            -4500.0,
+            0.0,
+            -152.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            60.0,
+            120.0,
+            3.0
+          ]
+        }
+      },
+      "Name": "Ground_Outside_S",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardGravel.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            325.0,
+            -4597.5,
+            -152.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.5,
+            60.0,
+            3.0
+          ]
+        }
+      },
+      "Name": "Ground_Outside_W",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardGravel.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            325.0,
+            4597.5,
+            -152.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            36.5,
+            60.0,
+            3.0
+          ]
+        }
+      },
+      "Name": "Ground_Outside_E",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardCobble.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            452.5,
+            0.0,
+            0.6
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            33.95,
+            3.8,
+            0.012
+          ]
+        }
+      },
+      "Name": "Ground_Path",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardCobble.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1372.5,
+            0.0,
+            0.6
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.65,
+            3.43,
+            0.012
+          ]
+        }
+      },
+      "Name": "Ground_Gate",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/YardCobble.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1994.5,
+            0.0,
+            0.8
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.11,
+            77.05,
+            0.016
+          ]
+        }
+      },
+      "Name": "Ground_QuayApron",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/Training/QuayStone.emat"
+        },
+        "BoxColliderComponent": {},
+        "TransformComponent": {
+          "Position": [
+            2120.0,
+            0.0,
+            -283.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            157.05,
+            5.74
+          ]
+        }
+      },
+      "Name": "Quay_Wall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/DemoKits/Training/TrainingFort.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Fort",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            127.5,
+            840.5,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1372.5,
+            -1012.0,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_S_W",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            127.5,
+            840.5,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1372.5,
+            1012.0,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_S_E",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            127.5,
+            171.5,
+            124.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1372.5,
+            0.0,
+            544.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Gate_Top",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            48.5,
+            1852.5,
+            33.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1451.5,
+            0.0,
+            701.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_S_Parapet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1482.0,
+            127.5,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            237.0,
+            -1725.0,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_W",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1482.0,
+            48.5,
+            33.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            237.0,
+            -1804.0,
+            701.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_W_Parapet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1482.0,
+            127.5,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            237.0,
+            1725.0,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_E",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1482.0,
+            48.5,
+            33.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            237.0,
+            1804.0,
+            701.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Wall_E_Parapet",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            741.0,
+            128.0,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -504.0,
+            -1469.5,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Walkway",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            741.0,
+            21.5,
+            361.5
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -504.0,
+            -1312.0,
+            351.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Walkway_Rail",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            16.5
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1703.5,
+            -1469.5,
+            6.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_00",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            25.2235
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1674.776,
+            -1469.5,
+            15.223500000000001
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_01",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            33.946999999999996
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1646.052,
+            -1469.5,
+            23.946999999999996
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_02",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            42.670500000000004
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1617.328,
+            -1469.5,
+            32.670500000000004
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_03",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            51.39399999999999
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1588.604,
+            -1469.5,
+            41.39399999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_04",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            60.11749999999999
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1559.88,
+            -1469.5,
+            50.11749999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_05",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            68.841
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1531.156,
+            -1469.5,
+            58.840999999999994
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_06",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            77.56450000000001
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1502.432,
+            -1469.5,
+            67.56450000000001
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_07",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            86.288
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1473.708,
+            -1469.5,
+            76.288
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_08",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            95.0115
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1444.984,
+            -1469.5,
+            85.0115
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_09",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            103.73499999999999
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1416.26,
+            -1469.5,
+            93.73499999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_10",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            112.45849999999999
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1387.536,
+            -1469.5,
+            102.45849999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_11",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            121.18199999999999
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1358.812,
+            -1469.5,
+            111.18199999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_12",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            129.9055
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1330.088,
+            -1469.5,
+            119.90549999999999
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_13",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            138.629
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1301.364,
+            -1469.5,
+            128.629
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_14",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            147.3525
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1272.64,
+            -1469.5,
+            137.3525
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_15",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.500000000000114,
+            128.0,
+            156.076
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1243.9160000000002,
+            -1469.5,
+            146.076
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            164.79949999999997
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1215.192,
+            -1469.5,
+            154.79949999999997
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            173.52299999999997
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1186.468,
+            -1469.5,
+            163.52299999999997
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_18",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.500000000000114,
+            128.0,
+            182.2465
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1157.7440000000001,
+            -1469.5,
+            172.2465
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_19",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            190.97
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1129.02,
+            -1469.5,
+            180.97
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_20",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            199.6935
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1100.296,
+            -1469.5,
+            189.6935
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_21",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            208.41699999999997
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1071.5720000000001,
+            -1469.5,
+            198.41699999999997
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_22",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            217.1405
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1042.848,
+            -1469.5,
+            207.1405
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_23",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            225.86399999999998
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1014.124,
+            -1469.5,
+            215.86399999999998
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_24",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.500000000000057,
+            128.0,
+            234.58749999999998
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            985.4000000000001,
+            -1469.5,
+            224.58749999999998
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_25",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            243.31099999999998
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            956.676,
+            -1469.5,
+            233.31099999999998
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_26",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.500000000000057,
+            128.0,
+            252.03449999999998
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            927.952,
+            -1469.5,
+            242.03449999999998
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_27",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            260.758
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            899.2280000000001,
+            -1469.5,
+            250.75799999999998
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_28",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            269.4815
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            870.504,
+            -1469.5,
+            259.4815
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_29",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            278.205
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            841.78,
+            -1469.5,
+            268.205
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_30",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            286.92849999999993
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            813.0560000000002,
+            -1469.5,
+            276.92849999999993
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_31",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            295.652
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            784.3320000000001,
+            -1469.5,
+            285.652
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_32",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            304.3755
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            755.608,
+            -1469.5,
+            294.3755
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_33",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            313.099
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            726.8840000000001,
+            -1469.5,
+            303.099
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_34",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            321.8225
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            698.1600000000001,
+            -1469.5,
+            311.8225
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_35",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            13.5,
+            128.0,
+            330.54599999999994
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            669.4359999999999,
+            -1469.5,
+            320.54599999999994
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Step_36",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            210.0,
+            128.0,
+            339.0
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            447.0,
+            -1469.5,
+            329.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Stair_Landing",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            196.5,
+            27.0,
+            361.5
+          ],
+          "Offset": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            433.5,
+            -1321.5,
+            351.5
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Col_Stair_Rail",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            150,
+            112,
+            38
+          ],
+          "Offset": [
+            0,
+            0,
+            38
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -70.0,
+            -420.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_WeaponTable",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ornate_medieval_mace/ornate_medieval_mace.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -130.0,
+            -428.0,
+            80.0
+          ],
+          "Rotation": [
+            0.06162841671621935,
+            -0.7044160264027587,
+            0.06162841671621935,
+            0.7044160264027587
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Table_Mace",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ornate_war_hammer/ornate_war_hammer.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -60.0,
+            -406.0,
+            78.0
+          ],
+          "Rotation": [
+            -0.09229595564125725,
+            -0.7010573846499779,
+            -0.09229595564125725,
+            0.7010573846499779
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Table_Hammer",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -20.0,
+            -438.0,
+            82.0
+          ],
+          "Rotation": [
+            0.02467767077833599,
+            -0.7066760308408345,
+            0.02467767077833599,
+            0.7066760308408345
+          ],
+          "Scale": [
+            0.85,
+            0.85,
+            0.85
+          ]
+        }
+      },
+      "Name": "Ring_Table_Estoc",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/katana_stand_01/katana_stand_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -90.0,
+            -390.0,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        }
+      },
+      "Name": "Ring_KatanaStand",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            680.0,
+            -1240.0,
+            52.0
+          ],
+          "Rotation": [
+            0.08617463914053185,
+            0.08617463914053185,
+            0.7018361144661901,
+            0.7018361144661901
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Ring_Shield_Lean_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            770.0,
+            -1220.0,
+            52.0
+          ],
+          "Rotation": [
+            0.0599550634583119,
+            0.08562470437208512,
+            0.8146646436810838,
+            0.570434324618422
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Ring_Shield_Lean_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            730.0,
+            -1290.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.08715574274765817,
+            0.9961946980917455
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Barrel_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            24,
+            58,
+            22
+          ],
+          "Offset": [
+            0,
+            0,
+            22
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            410.0,
+            -420.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Bench",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            570.0,
+            -430.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.573576436351046,
+            0.8191520442889918
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Bucket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/folding_wooden_stool/folding_wooden_stool.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            150.0,
+            -400.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Ring_Stool",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            38,
+            37,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1060.0,
+            -1297.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_Barrel_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -940.0,
+            -1297.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_Crate_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -940.0,
+            -1297.5,
+            45.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6427876096865393,
+            0.766044443118978
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_CrateTop_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            38,
+            37,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -480.0,
+            -1297.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.42261826174069944,
+            0.9063077870366499
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_Barrel_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -360.0,
+            -1297.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7489557207890021,
+            0.6626200482157375
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_Crate_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -360.0,
+            -1297.5,
+            45.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.766044443118978,
+            0.6427876096865394
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Arch_CrateTop_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/standing_chalkboard_01/standing_chalkboard_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            38,
+            45,
+            75
+          ],
+          "Offset": [
+            0,
+            0,
+            75
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -820.0,
+            -420.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Drill_Board",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            150,
+            112,
+            38
+          ],
+          "Offset": [
+            0,
+            0,
+            38
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            980.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mess_Table",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/jug_01/jug_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1370.0,
+            950.0,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mess_Jug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/brass_goblets/brass_goblets.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1320.0,
+            1020.0,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mess_Goblets",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1350.0,
+            1090.0,
+            75.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mess_Lantern",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/stone_fire_pit/stone_fire_pit.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1680.0,
+            650.0,
+            -12.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.9,
+            0.9,
+            0.9
+          ]
+        }
+      },
+      "Name": "Mess_FirePit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.55,
+            0.25
+          ],
+          "Intensity": 6.0,
+          "Radius": 600.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1680.0,
+            650.0,
+            70.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mess_FireLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_barrels_01/wooden_barrels_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            160,
+            200,
+            46
+          ],
+          "Offset": [
+            25,
+            -10,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1500.0,
+            1380.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.984807753012208,
+            -0.1736481776669303
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Supply_Barrels",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1100.0,
+            1520.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Supply_Crate_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            21,
+            41,
+            17
+          ],
+          "Offset": [
+            0,
+            0,
+            17
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            980.0,
+            1530.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.13052619222005157,
+            0.9914448613738104
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Supply_Crate_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_01/wooden_crate_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            990.0,
+            1535.0,
+            35.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Supply_Crate_C",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wine_barrel_01/wine_barrel_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            38,
+            37,
+            44
+          ],
+          "Offset": [
+            0,
+            0,
+            44
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1850.0,
+            1500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Supply_WineBarrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_ladder/wooden_ladder.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            300.0,
+            1567.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "Supply_Ladder",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_picnic_table/wooden_picnic_table.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            150,
+            112,
+            38
+          ],
+          "Offset": [
+            0,
+            0,
+            38
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -400.0,
+            1457.5,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Armory_Table",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_axe/wooden_axe.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -460.0,
+            1447.5,
+            78.0
+          ],
+          "Rotation": [
+            -0.061628416716219436,
+            -0.7044160264027588,
+            -0.061628416716219436,
+            0.7044160264027588
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Armory_Axe",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/ornate_medieval_mace/ornate_medieval_mace.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -360.0,
+            1437.5,
+            80.0
+          ],
+          "Rotation": [
+            -0.7044160264027587,
+            -0.06162841671621933,
+            -0.7044160264027587,
+            0.06162841671621933
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Armory_Mace",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -300.0,
+            1477.5,
+            82.0
+          ],
+          "Rotation": [
+            0.7064337722128922,
+            -0.030843564597231907,
+            0.7064337722128922,
+            0.030843564597231907
+          ],
+          "Scale": [
+            0.85,
+            0.85,
+            0.85
+          ]
+        }
+      },
+      "Name": "Armory_Estoc",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -620.0,
+            1579.5,
+            55.0
+          ],
+          "Rotation": [
+            -0.08617463914053185,
+            0.08617463914053185,
+            -0.7018361144661901,
+            0.7018361144661901
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Armory_Shield_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -560.0,
+            1579.5,
+            55.0
+          ],
+          "Rotation": [
+            -0.08617463914053185,
+            0.08617463914053185,
+            -0.7018361144661901,
+            0.7018361144661901
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Armory_Shield_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -240.0,
+            1579.5,
+            55.0
+          ],
+          "Rotation": [
+            -0.08617463914053185,
+            0.08617463914053185,
+            -0.7018361144661901,
+            0.7018361144661901
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Armory_Shield_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -180.0,
+            1579.5,
+            55.0
+          ],
+          "Rotation": [
+            -0.08617463914053185,
+            0.08617463914053185,
+            -0.7018361144661901,
+            0.7018361144661901
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Armory_Shield_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/cannon_01/cannon_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            80,
+            50,
+            43
+          ],
+          "Offset": [
+            -40,
+            -15,
+            43
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1950.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Quay_Cannon",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1900.0,
+            -620.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Quay_Barrel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1960.0,
+            -560.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Quay_Bucket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1950.0,
+            500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.08715574274765817,
+            0.9961946980917455
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Quay_Crates",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            24,
+            58,
+            22
+          ],
+          "Offset": [
+            0,
+            0,
+            22
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1185.0,
+            -700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gate_Bench_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1155.0,
+            -300.0,
+            -6.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "Gate_Stump_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1155.0,
+            -300.0,
+            17.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Gate_Lantern_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1185.0,
+            -1150.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Gate_Planter_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/painted_wooden_bench/painted_wooden_bench.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            24,
+            58,
+            22
+          ],
+          "Offset": [
+            0,
+            0,
+            22
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1185.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Gate_Bench_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1155.0,
+            300.0,
+            -6.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "Gate_Stump_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1155.0,
+            300.0,
+            17.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Gate_Lantern_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1185.0,
+            1150.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.2,
+            1.2,
+            1.2
+          ]
+        }
+      },
+      "Name": "Gate_Planter_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1100.0,
+            1450.0,
+            -20.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.25881904510252074,
+            0.9659258262890683
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Shrub_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            650.0,
+            1470.0,
+            -20.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8660254037844386,
+            0.5000000000000001
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Shrub_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1150.0,
+            -1150.0,
+            -20.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.984807753012208,
+            -0.1736481776669303
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Shrub_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1650.0,
+            -1150.0,
+            -20.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.49999999999999994,
+            0.8660254037844387
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "Shrub_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1650.0,
+            1550.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            2.0,
+            2.0,
+            2.0
+          ]
+        }
+      },
+      "Name": "Rock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1180.0,
+            1540.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6427876096865393,
+            0.766044443118978
+          ],
+          "Scale": [
+            1.6,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "Rock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            -1290.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.8,
+            1.8,
+            1.8
+          ]
+        }
+      },
+      "Name": "Rock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/SparringFighter.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Partner\": \"Sparring_B\", \"Leader\": true}"
+        },
+        "TransformComponent": {
+          "Position": [
+            185.0,
+            -820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_A",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 119
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 120,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_A_Sword",
+      "Parent": 119
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 120,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_A_Shield",
+      "Parent": 119
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/SparringFighter.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Partner\": \"Sparring_A\", \"Leader\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            515.0,
+            -820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_B",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 123
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 124,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_B_Sword",
+      "Parent": 123
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 124,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sparring_B_Shield",
+      "Parent": 123
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/Instructor.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Recruit\": \"Recruit\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -550.0,
+            -795.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Instructor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_FoldArms_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 127
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/Recruit.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": ""
+        },
+        "HealthComponent": {
+          "MaxHealth": 100.0,
+          "Health": 100.0,
+          "Invulnerable": false,
+          "DeathAction": 2,
+          "ScoreValue": 0
+        },
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "RagdollComponent": {
+          "EnableOnDeath": true,
+          "Mass": 70.0,
+          "RadiusScale": 0.18,
+          "MinRadius": 5.0,
+          "MinBoneLength": 6.0,
+          "SwingLimit": 50.0,
+          "TwistLimit": 30.0,
+          "Friction": 0.8,
+          "ExcludeBones": "index,middle,pinky,ring,thumb,ball_leaf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -550.0,
+            -680.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Recruit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_crate_02/wooden_crate_02.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            58,
+            26,
+            23
+          ],
+          "Offset": [
+            0,
+            0,
+            23
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -810.0,
+            -740.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6427876096865393,
+            0.766044443118978
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Drill_Mat_Crate",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_bucket_01/wooden_bucket_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            -800.0,
+            -580.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Drill_Bucket",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/TrainingGuard.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Waypoints\": \"-1000,0,0; 1300,100,0; 1880,800,0; 1880,-500,0; 1200,-250,0\"}"
+        },
+        "BehaviorTreeComponent": {
+          "Asset": "AI/Demo/TrainingGuard.ebt",
+          "AutoStart": true
+        },
+        "NavAgentComponent": {
+          "MaxSpeed": 150.0,
+          "AcceptanceRadius": 25.0,
+          "TurnSpeedDegrees": 300.0,
+          "OrientToMovement": true
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0.0,
+          "Density": 300.0,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            120.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Yard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/Demo/Training/Guard.eanimgraph",
+          "UseCharacterMovement": false
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "foot_l,foot_r",
+          "PelvisBone": "pelvis",
+          "TraceUp": 60.0,
+          "TraceDown": 70.0,
+          "MaxAdjust": 40.0,
+          "InterpSpeed": 14.0,
+          "Weight": 1.0,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30.0,
+          "KneeDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "LookAtComponent": {
+          "Enabled": true,
+          "Bones": "spine_03,neck_01,Head",
+          "ForwardAxis": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "MaxAngle": 75.0,
+          "Weight": 1.0,
+          "BlendSpeed": 4.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 132
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 133,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Yard_Sword",
+      "Parent": 132
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 133,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Yard_Shield",
+      "Parent": 132
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/TrainingGuard.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"Waypoints\": \"1850,-1540,0; 300,-1540,668; -1100,-1480,668; 300,-1540,668; 1850,-1540,0; 1800,-1000,0\"}"
+        },
+        "BehaviorTreeComponent": {
+          "Asset": "AI/Demo/TrainingGuard.ebt",
+          "AutoStart": true
+        },
+        "NavAgentComponent": {
+          "MaxSpeed": 150.0,
+          "AcceptanceRadius": 25.0,
+          "TurnSpeedDegrees": 300.0,
+          "OrientToMovement": true
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0.0,
+          "Density": 300.0,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1800.0,
+            -1200.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Wall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/Demo/Training/Guard.eanimgraph",
+          "UseCharacterMovement": false
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "foot_l,foot_r",
+          "PelvisBone": "pelvis",
+          "TraceUp": 60.0,
+          "TraceDown": 70.0,
+          "MaxAdjust": 40.0,
+          "InterpSpeed": 14.0,
+          "Weight": 1.0,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30.0,
+          "KneeDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "LookAtComponent": {
+          "Enabled": true,
+          "Bones": "spine_03,neck_01,Head",
+          "ForwardAxis": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "MaxAngle": 75.0,
+          "Weight": 1.0,
+          "BlendSpeed": 4.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 136
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 137,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Wall_Sword",
+      "Parent": 136
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 137,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Guard_Wall_Shield",
+      "Parent": 136
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/Lookout.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{}"
+        },
+        "TransformComponent": {
+          "Position": [
+            1402.8980000000001,
+            -1419.5,
+            214.91699999999997
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lookout",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_FoldArms_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "FootIkComponent": {
+          "Enabled": true,
+          "FootBones": "foot_l,foot_r",
+          "PelvisBone": "pelvis",
+          "TraceUp": 60.0,
+          "TraceDown": 70.0,
+          "MaxAdjust": 40.0,
+          "InterpSpeed": 14.0,
+          "Weight": 1.0,
+          "AlignToGround": true,
+          "MaxAlignAngle": 30.0,
+          "KneeDirection": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "LookAtComponent": {
+          "Enabled": true,
+          "Bones": "spine_03,neck_01,Head",
+          "ForwardAxis": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "MaxAngle": 75.0,
+          "Weight": 1.0,
+          "BlendSpeed": 4.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 140
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50,
+            50,
+            30
+          ],
+          "Offset": [
+            0,
+            0,
+            15
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            850.0,
+            -8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.75,
+            0.75,
+            0.75
+          ]
+        }
+      },
+      "Name": "Drill_Post",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_axe/wooden_axe.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            758.0,
+            850.0,
+            30.0
+          ],
+          "Rotation": [
+            -0.044943455527547777,
+            0.16773125949652062,
+            0.25488700224417876,
+            0.9512512425641977
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Drill_Post_Axe",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CapsuleColliderComponent": {
+          "Radius": 30.0,
+          "HalfHeight": 55.0,
+          "Offset": [
+            0.0,
+            0.0,
+            88.0
+          ],
+          "IsTrigger": false,
+          "Layer": ""
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/StrafeDrill.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"CenterX\": 750.0, \"CenterY\": 850.0, \"Radius\": 280.0}"
+        },
+        "RigidBodyComponent": {
+          "MotionType": 1,
+          "Mass": 0.0,
+          "Density": 300.0,
+          "Friction": 0.5,
+          "Restitution": 0.0,
+          "LinearDamping": 0.05,
+          "AngularDamping": 0.05,
+          "UseGravity": false
+        },
+        "TransformComponent": {
+          "Position": [
+            750.0,
+            570.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Strafer",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "AnimGraphComponent": {
+          "Graph": "Animations/Demo/Training/StrafeDrill.eanimgraph",
+          "UseCharacterMovement": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Mesh",
+      "Parent": 144
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 145,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Strafer_Sword",
+      "Parent": 144
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 145,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Strafer_Shield",
+      "Parent": 144
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/Quaternius/UAL2/UAL2_Standard.glb"
+        },
+        "AnimationComponent": {
+          "BlendTime": 0.2,
+          "Clip": "Idle_Shield_Loop",
+          "Loop": true,
+          "Playing": true,
+          "Speed": 1.0,
+          "RootMotionMode": 1,
+          "RootMotionBone": "",
+          "RootMotionRotation": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/Training/Dasher.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"MinX\": -800.0, \"MaxX\": 300.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -700.0,
+            1200.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            1.0,
+            6.123233995736766e-17
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Dasher",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/antique_estoc/antique_estoc.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 148,
+          "Socket": "Sword"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Dasher_Sword",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/kite_shield/kite_shield.gltf"
+        },
+        "SocketAttachmentComponent": {
+          "Target": 148,
+          "Socket": "Shield"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Dasher_Shield",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -950.0,
+            1320.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lane_Barrel_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -950.0,
+            1080.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.17364817766693033,
+            0.984807753012208
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lane_BarrelB_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1320.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.3420201433256687,
+            0.9396926207859084
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lane_Barrel_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/barrel_03/barrel_03.gltf"
+        },
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            32,
+            32,
+            46
+          ],
+          "Offset": [
+            0,
+            0,
+            46
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1080.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lane_BarrelB_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/Hub.escene\"}, \"Label\": \"Hub로\", \"Ready\": true, \"RememberReturn\": false}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1460.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Door",
+      "Parent": 155
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Glow",
+      "Parent": 155
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.5,
+            0.75,
+            1.0
+          ],
+          "Intensity": 1.5,
+          "Radius": 350.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            90.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_Hub_Light",
+      "Parent": 155
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/Demo/DemoPlayer.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 159
+        },
+        "TransformComponent": {
+          "Position": [
+            -865.0,
+            -260.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

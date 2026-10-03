@@ -1,0 +1,133 @@
+{
+  "Version": 1,
+  "Clips": [
+    {
+      "Clip": "Sword_Regular_A",
+      "Notifies": [
+        {
+          "Name": "SwordHit",
+          "Time": 0.27
+        }
+      ]
+    },
+    {
+      "Clip": "Sword_Regular_B",
+      "Notifies": [
+        {
+          "Name": "SwordHit",
+          "Time": 0.33
+        }
+      ]
+    },
+    {
+      "Clip": "Sword_Regular_C",
+      "Notifies": [
+        {
+          "Name": "SwordHit",
+          "Time": 0.62
+        },
+        {
+          "Name": "SwordFinisher",
+          "Time": 1.12
+        }
+      ]
+    },
+    {
+      "Clip": "Sword_Regular_Combo",
+      "Notifies": [
+        {
+          "Name": "SwordHit",
+          "Time": 0.42
+        },
+        {
+          "Name": "SwordHit",
+          "Time": 1.05
+        },
+        {
+          "Name": "SwordFinisher",
+          "Time": 1.95
+        }
+      ]
+    },
+    {
+      "Clip": "Melee_Hook",
+      "Notifies": [
+        {
+          "Name": "PunchHit",
+          "Time": 0.27
+        }
+      ]
+    },
+    {
+      "Clip": "Shield_OneShot",
+      "Notifies": [
+        {
+          "Name": "SwordHit",
+          "Time": 0.32
+        }
+      ]
+    }
+  ],
+  "Sockets": [
+    {
+      "Name": "Sword",
+      "Bone": "hand_r",
+      "Position": [
+        -7.997,
+        -3.505,
+        12.457
+      ],
+      "Rotation": [
+        0.45659,
+        -0.45569,
+        -0.53782,
+        0.54279
+      ],
+      "Scale": [
+        0.85,
+        0.85,
+        0.85
+      ]
+    },
+    {
+      "Name": "SwordL",
+      "Bone": "hand_l",
+      "Position": [
+        -7.997,
+        3.505,
+        12.457
+      ],
+      "Rotation": [
+        0.45569,
+        -0.45659,
+        -0.54279,
+        0.53782
+      ],
+      "Scale": [
+        0.85,
+        0.85,
+        0.85
+      ]
+    },
+    {
+      "Name": "Shield",
+      "Bone": "lowerarm_l",
+      "Position": [
+        -0.062,
+        -10.0,
+        16.869
+      ],
+      "Rotation": [
+        -0.45273,
+        -0.4502,
+        0.5427,
+        0.54574
+      ],
+      "Scale": [
+        0.75,
+        0.75,
+        0.75
+      ]
+    }
+  ]
+}

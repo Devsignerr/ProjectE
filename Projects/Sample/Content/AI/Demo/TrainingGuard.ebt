@@ -1,0 +1,151 @@
+{
+  "Version": 1,
+  "Blackboard": [
+    {
+      "Name": "Target",
+      "Type": "Entity"
+    },
+    {
+      "Name": "PatrolPoint",
+      "Type": "Vector"
+    }
+  ],
+  "Root": {
+    "Type": "Selector",
+    "Id": 1,
+    "Services": [
+      {
+        "Type": "LuaService",
+        "Id": 2,
+        "Params": [
+          {
+            "Name": "Script",
+            "Value": "Scripts/Demo/Training/GuardSenses.lua"
+          },
+          {
+            "Name": "Properties",
+            "Value": ""
+          }
+        ]
+      }
+    ],
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Id": 3,
+        "Decorators": [
+          {
+            "Type": "Blackboard",
+            "Id": 4,
+            "Params": [
+              {
+                "Name": "Key",
+                "Value": "Target"
+              },
+              {
+                "Name": "Operation",
+                "Value": "IsSet"
+              },
+              {
+                "Name": "AbortMode",
+                "Value": "Both"
+              }
+            ]
+          }
+        ],
+        "Children": [
+          {
+            "Type": "RotateTo",
+            "Id": 5,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "Target"
+              },
+              {
+                "Name": "ToleranceDegrees",
+                "Value": 10.0
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 6,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "Target"
+              },
+              {
+                "Name": "AcceptanceRadius",
+                "Value": 230.0
+              },
+              {
+                "Name": "RepathDistance",
+                "Value": 60.0
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 7,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 0.4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Id": 8,
+        "Children": [
+          {
+            "Type": "LuaTask",
+            "Id": 9,
+            "Params": [
+              {
+                "Name": "Script",
+                "Value": "Scripts/Demo/Training/GuardNextWaypoint.lua"
+              },
+              {
+                "Name": "Properties",
+                "Value": ""
+              }
+            ]
+          },
+          {
+            "Type": "MoveTo",
+            "Id": 10,
+            "Params": [
+              {
+                "Name": "TargetKey",
+                "Value": "PatrolPoint"
+              },
+              {
+                "Name": "AcceptanceRadius",
+                "Value": 30.0
+              }
+            ]
+          },
+          {
+            "Type": "Wait",
+            "Id": 11,
+            "Params": [
+              {
+                "Name": "WaitTime",
+                "Value": 2.0
+              },
+              {
+                "Name": "RandomDeviation",
+                "Value": 0.8
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

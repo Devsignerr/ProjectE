@@ -6,7 +6,7 @@
 //   E_DDGI_PROBE_DATA_REGISTER(아틀라스 3장), E_DDGI_SAMPLER(선형 클램프 샘플러 이름 — 먼저 선언되어 있어야 함)
 //   메시 패스(Mesh.hlsl/Terrain.hlsl): b9, t40~t42, IblSampler / 프로브 광선(DdgiTrace.hlsl): b0, t9~t11, RtClampSampler / 누적(DdgiBlend.hlsl): b0, t1~t3
 //
-// 아틀라스: 조도 타일 10x10 (안쪽 8x8 = 조도/π, RGBA16F), 거리 타일 18x18 (안쪽 16x16 = (평균, 제곱 평균) / DistanceClamp, RG16F),
+// 아틀라스: 조도 타일 10x10 (안쪽 8x8 = 조도/π, RGBA32F), 거리 타일 18x18 (안쪽 16x16 = (평균, 제곱 평균) / DistanceClamp, RG16F),
 //   프로브 상태 1텍셀 (xyz 재배치 오프셋 cm, w = 상태(0 없음 / 1 활성 / 2 비활성) + 4 × 갱신 횟수(상한 1023)). 프로브 g의 타일 = (g % 64, g / 64)
 
 #define E_DDGI_IRRADIANCE_TEXELS 8
@@ -19,6 +19,7 @@
 #define E_DDGI_FLAG_RELOCATION 1u
 #define E_DDGI_FLAG_CLASSIFICATION 2u
 #define E_DDGI_MAX_UPDATE_COUNT 1023u
+#define E_DDGI_RELOCATION_RETURN_SCALE 2.0f // DdgiMath::RelocationReturnScale
 
 // FDdgiVolumeGpu (128바이트)
 struct FDdgiVolume

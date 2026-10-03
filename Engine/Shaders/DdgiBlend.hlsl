@@ -261,10 +261,10 @@ void CSProbeData(uint3 DispatchId : SV_DispatchThreadID)
 				FullOffset = Offset + FarthestFrontfaceDir * min(FarthestFrontface, Volume.MinFrontfaceDistance);
 			}
 		}
-		else if (ClosestFrontface > Volume.MinFrontfaceDistance + 1.0f && dot(Offset, Offset) > 1.0e-4f)
+		else if (ClosestFrontface > Volume.MinFrontfaceDistance * E_DDGI_RELOCATION_RETURN_SCALE + 1.0f && dot(Offset, Offset) > 1.0e-4f)
 		{
-			// 여유가 있으면 격자 자리로 되돌아간다
-			const float MoveBack = min(ClosestFrontface - Volume.MinFrontfaceDistance, length(Offset));
+			// 여유가 충분하면 격자 자리로 되돌아간다 — 문턱 = 미는 문턱 × 2 (DdgiMath::ComputeRelocationOffset: 같으면 밀기 ↔ 되돌아가기 왕복 깜빡임)
+			const float MoveBack = min(ClosestFrontface - Volume.MinFrontfaceDistance * E_DDGI_RELOCATION_RETURN_SCALE, length(Offset));
 			FullOffset           = Offset - normalize(Offset) * MoveBack;
 		}
 		const float3 Normalized = abs(FullOffset / Volume.Spacing);

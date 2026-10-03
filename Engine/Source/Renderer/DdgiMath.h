@@ -9,7 +9,7 @@
 // 같은 식을 쓴다 — 함께 고치고 Ddgi_* 테스트도 고친다.
 //
 // 프로브 표현 (Majercik 2019, RTXGI 방식): 프로브마다 팔면체 아틀라스 타일 두 장
-//   조도 = 8x8 칸 + 테두리 1칸(10x10), RGBA16F, 값 = 조도 E / π (하늘 IBL 확산 맵 IblDiffuse와 같은 규약: × 알베도 = 확산 반사광)
+//   조도 = 8x8 칸 + 테두리 1칸(10x10), RGBA32F(16비트는 누적 반올림 치우침), 값 = 조도 E / π (하늘 IBL 확산 맵 IblDiffuse와 같은 규약: × 알베도 = 확산 반사광)
 //   거리 = 16x16 칸 + 테두리(18x18), RG16F, 값 = (평균 거리, 제곱 평균) / DistanceClamp (정규화 — 반정밀도 제곱 넘침 방지)
 //   프로브 상태 = 1텍셀(RGBA32F): xyz 재배치 오프셋(cm), w 상태 (0 아직 없음, 1 활성, 2 비활성 = 벽 속)
 //   테두리 칸은 팔면체를 접어 이웃이 되는 안쪽 칸 값을 복사한다 (MapBorderTexel) → 쌍선형 표본이 접힌 이음매에서도 맞다
@@ -322,6 +322,69 @@ namespace DdgiMath
 	inline FVector3 Blend(const FVector3& Previous, const FVector3& Current, float Hysteresis)
 	{
 		return Current + (Previous - Current) * Hysteresis;
+	}
+
+	// 프레임 히스테리시스 (볼륨 값 Base의 상한, CPU가 상수로 올린다): 조명 변화 가속 중 BoostHysteresis → 그 뒤와 이력 처음의 정착 구간
+	// SettleHysteresis → 평소 Base. 높은 Base(0.99 — 광선 잡음 std ∝ √((1-h)/(1+h)), 0.97의 0.58배)는 다중 반사가 h + (1-h)·반사율로
+	// 수렴해 처음·조명 변화 뒤 수백 프레임 어둡게 남으므로 정착 구간만 예전 값(0.97)으로 빨리 채운다. 셰이더의 처음 n번 누적 평균 상한은 그대로 곱해진다
+	inline float ComputeFrameHysteresis(float Base, bool bBoost, bool bSettle, float BoostHysteresis, float SettleHysteresis)
+	{
+		float Result = std::clamp(Base, 0.0f, 0.995f);
+		if (bSettle)
+		{
+			Result = FMath::Min(Result, std::clamp(SettleHysteresis, 0.0f, 0.995f));
+		}
+		if (bBoost)
+		{
+			Result = FMath::Min(Result, std::clamp(BoostHysteresis, 0.0f, 0.995f));
+		}
+		return Result;
+	}
+
+	// ---- 프로브 재배치 (DdgiBlend.hlsl CSProbeData와 같은 식 — 고정 광선 요약 → 새 오프셋, 프레임마다 반복)
+	//   벽 속(뒷면 비율 > 문턱): 가장 가까운 뒷면 너머로 / 너무 가까움(앞면 < MinFrontface): 가장 먼 앞면 쪽으로 MinFrontface만큼
+	//   (가장 가까운 앞면과 반대 방향일 때만) / 여유가 ReturnClearance(= RelocationReturnScale × MinFrontface)보다 크면 격자 자리 쪽으로
+	//   (여유 - ReturnClearance)만큼. 되돌아가는 문턱을 미는 문턱보다 MinFrontface만큼 높게 두어 미는 걸음(MinFrontface)이 되돌아가기를
+	//   부르지 않는다 — 예전(되돌아가는 문턱 = MinFrontface)은 벽 옆 프로브가 밀기 ↔ 되돌아가기로 매 프레임 왕복해(고정 광선의 가장 가까운
+	//   거리가 수직 거리보다 길어 되돌아가기가 지나침) 셰이딩 가중치가 프레임마다 바뀌어 깜빡였다 (2026-10-04 Demo_GI 창 쪽 벽·천장)
+	//   결과가 간격 비율 MaxRelocation을 넘으면 이전 오프셋 유지
+	constexpr float RelocationReturnScale = 2.0f;
+
+	struct FRelocationRays
+	{
+		float    BackfaceRatio        = 0.0f;
+		float    ClosestBackface      = 1.0e27f;
+		FVector3 ClosestBackfaceDir;
+		float    ClosestFrontface     = 1.0e27f;
+		FVector3 ClosestFrontfaceDir;
+		float    FarthestFrontface    = 0.0f;
+		FVector3 FarthestFrontfaceDir;
+	};
+
+	inline FVector3 ComputeRelocationOffset(const FVector3& Offset, const FRelocationRays& Rays, const FVector3& Spacing, float MinFrontfaceDistance,
+	                                        float BackfaceThreshold)
+	{
+		FVector3    Full            = Offset;
+		const float ReturnClearance = MinFrontfaceDistance * RelocationReturnScale;
+		const float OffsetLength    = Offset.Length();
+		if (Rays.BackfaceRatio > BackfaceThreshold)
+		{
+			Full = Offset + Rays.ClosestBackfaceDir * (Rays.ClosestBackface + MinFrontfaceDistance * 0.5f);
+		}
+		else if (Rays.ClosestFrontface < MinFrontfaceDistance)
+		{
+			if (FVector3::Dot(Rays.ClosestFrontfaceDir, Rays.FarthestFrontfaceDir) <= 0.0f)
+			{
+				Full = Offset + Rays.FarthestFrontfaceDir * FMath::Min(Rays.FarthestFrontface, MinFrontfaceDistance);
+			}
+		}
+		else if (Rays.ClosestFrontface > ReturnClearance + 1.0f && OffsetLength > 1.0e-2f)
+		{
+			const float MoveBack = FMath::Min(Rays.ClosestFrontface - ReturnClearance, OffsetLength);
+			Full                 = Offset - Offset * (MoveBack / OffsetLength);
+		}
+		const float Normalized = FMath::Max(FMath::Max(FMath::Abs(Full.X / Spacing.X), FMath::Abs(Full.Y / Spacing.Y)), FMath::Abs(Full.Z / Spacing.Z));
+		return Normalized <= MaxRelocation ? Full : Offset;
 	}
 
 	// 조명 변화 정도 (1 = 가속 기준): 방향광 방향 2도, 방향광 복사 휘도·하늘 배율 상대 10%. 방향광이 꺼져 있으면(복사 0) 방향은 보지 않는다

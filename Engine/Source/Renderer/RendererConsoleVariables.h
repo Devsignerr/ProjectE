@@ -90,6 +90,8 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<int32> DdgiShowProbes;        // r.DDGI.ShowProbes (-1 컴포넌트 값, 0~3)
 	extern TAutoConsoleVariable<int32> DdgiBoostFrames;       // r.DDGI.LightChangeBoostFrames (조명 변화 가속 프레임)
 	extern TAutoConsoleVariable<float> DdgiBoostHysteresis;   // r.DDGI.LightChangeHysteresis (가속 중 히스테리시스 상한)
+	extern TAutoConsoleVariable<int32> DdgiSettleFrames;      // r.DDGI.SettleFrames (가속 뒤·이력 처음 정착 프레임)
+	extern TAutoConsoleVariable<float> DdgiSettleHysteresis;  // r.DDGI.SettleHysteresis (정착 중 히스테리시스 상한)
 	// r.DDGI.Stats 명령이 불린 횟수
 	uint32 GetDdgiStatsSerial();
 } // namespace RendererCVars

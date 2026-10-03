@@ -381,16 +381,23 @@ bool FDdgiRenderer::Prepare(FScene& Scene, const FDdgiSettings& Settings, bool b
 	{
 		if (bHasLightReference)
 		{
-			BoostFramesLeft = Settings.BoostFrames;
+			BoostFramesLeft  = Settings.BoostFrames;
+			SettleFramesLeft = Settings.BoostFrames + Settings.SettleFrames;
 		}
 		bHasLightReference      = true;
 		ReferenceLightDirection = Settings.LightDirection;
 		ReferenceLightRadiance  = Settings.LightRadiance;
 		ReferenceAmbient        = Settings.AmbientIntensity;
 	}
-	const bool bBoost = BoostFramesLeft > 0;
-	BoostFramesLeft   = BoostFramesLeft > 0 ? BoostFramesLeft - 1 : 0;
-	Stats.bLightBoost = bBoost;
+	if (!bHistoryValid)
+	{
+		SettleFramesLeft = std::max(SettleFramesLeft, Settings.SettleFrames); // 처음부터 채우는 이력도 정착 구간
+	}
+	const bool bBoost  = BoostFramesLeft > 0;
+	const bool bSettle = SettleFramesLeft > 0;
+	BoostFramesLeft    = BoostFramesLeft > 0 ? BoostFramesLeft - 1 : 0;
+	SettleFramesLeft   = SettleFramesLeft > 0 ? SettleFramesLeft - 1 : 0;
+	Stats.bLightBoost  = bBoost;
 
 	// 이력 핑퐁: 지난 프레임 쓴 장이 이번 이전 장
 	ReadIndex  = WriteIndex;
@@ -431,11 +438,7 @@ bool FDdgiRenderer::Prepare(FScene& Scene, const FDdgiSettings& Settings, bool b
 		Gpu.RaysPerProbe   = static_cast<uint32>(std::clamp(Component.RaysPerProbe, static_cast<int32>(MinRaysPerProbe), static_cast<int32>(MaxRaysPerProbe)));
 		Gpu.Flags          = (Component.bRelocation ? 1u : 0u) | (Component.bClassification ? 2u : 0u);
 		Gpu.FixedRays      = Gpu.Flags != 0 ? FixedRayCount : 0u;
-		Gpu.Hysteresis     = std::clamp(Component.Hysteresis, 0.0f, 0.995f);
-		if (bBoost)
-		{
-			Gpu.Hysteresis = std::min(Gpu.Hysteresis, std::clamp(Settings.BoostHysteresis, 0.0f, 0.995f));
-		}
+		Gpu.Hysteresis     = ComputeFrameHysteresis(Component.Hysteresis, bBoost, bSettle, Settings.BoostHysteresis, Settings.SettleHysteresis);
 		Gpu.ChangeThreshold      = std::max(Settings.ChangeThreshold, 0.0f);
 		Gpu.MinFrontfaceDistance = 0.3f * Volume.Grid.GetMinSpacing();
 		Gpu.BackfaceThreshold    = 0.25f;

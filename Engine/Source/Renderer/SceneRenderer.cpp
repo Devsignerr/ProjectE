@@ -1303,6 +1303,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		DdgiSettings.AmbientIntensity  = PerFrame.AmbientIntensity;
 		DdgiSettings.BoostFrames       = static_cast<uint32>(std::max(0, RendererCVars::DdgiBoostFrames.Get()));
 		DdgiSettings.BoostHysteresis   = RendererCVars::DdgiBoostHysteresis.Get();
+		DdgiSettings.SettleFrames      = static_cast<uint32>(std::max(0, RendererCVars::DdgiSettleFrames.Get()));
+		DdgiSettings.SettleHysteresis  = RendererCVars::DdgiSettleHysteresis.Get();
 		const bool bDdgiActive = Ddgi.Prepare(Scene, DdgiSettings, bDdgiWanted && TlasRef.IsValid(), RenderCamera.GetViewProjectionMatrix(), Camera.GetPosition());
 		Ddgi.ImportFrame(Graph);
 		if (bDdgiActive)

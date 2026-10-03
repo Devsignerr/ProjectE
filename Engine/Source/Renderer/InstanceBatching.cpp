@@ -20,7 +20,7 @@ namespace InstanceBatching
 				}
 				else
 				{
-					OutBatches.push_back({ static_cast<uint32>(OutIndices.size()), 1u, Item.Instance });
+					OutBatches.push_back({ static_cast<uint32>(OutIndices.size()), 1u, Item.Instance, Item.Key });
 				}
 				OutIndices.push_back(Item.Instance);
 			}

@@ -31,6 +31,26 @@ namespace RendererCVars
 	                                     { .Range = std::pair(-1.0f, 7.0f), .CommandLine = { { L"--force-lod", "" } } });
 	TAutoConsoleVariable<float> LodHysteresis("r.LODHysteresis", 0.1f, "LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔)",
 	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f), .CommandLine = { { L"--lod-hysteresis", "" } } });
+	TAutoConsoleVariable<float> MinScreenSize("r.MinScreenSize", 0.002f,
+	                                          "메인·깊이 사전 패스 화면 크기 컬링: 경계 구 지름이 화면 높이의 이 비율보다 작은 메시 인스턴스는 그리지 않는다 "
+	                                          "(0 = 끔, 그림자는 r.Shadow.MinCasterTexels)",
+	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 0.1f) });
+	TAutoConsoleVariable<float> MaxDrawDistance("r.MaxDrawDistance", 0.0f, "메인·깊이 사전 패스 최대 그리기 거리 (cm, 경계 구 표면까지 — 0 = 끔)",
+	                                            EConsoleFlags::None, { .Range = std::pair(0.0f, 10000000.0f) });
+	TAutoConsoleVariable<bool> ShadowCache("r.Shadow.Cache", true,
+	                                       "방향광 그림자 정적 캐스터 캐시: 캐스케이드·정적 캐스터가 그대로면 캐시 깊이를 복사하고 움직이는 캐스터만 다시 그린다 "
+	                                       "(태양이 매 프레임 움직이면 자동으로 캐시 없이)",
+	                                       EConsoleFlags::None, { .CommandLine = { { L"--no-shadow-cache", "0" } } });
+	TAutoConsoleVariable<int32> ShadowCacheStaticFrames("r.Shadow.Cache.StaticFrames", 30,
+	                                                    "그림자 캐시: 위치가 이 프레임 수만큼 그대로인 비스킨 메시를 정적 캐스터로 본다", EConsoleFlags::None,
+	                                                    { .Range = std::pair(1.0f, 10000.0f) });
+	TAutoConsoleVariable<float> ShadowLodBias("r.Shadow.LodBias", 0.0f,
+	                                          "방향광 그림자 LOD 바이어스: 캐스케이드 c는 메인 LOD + floor(c × 값) (먼 캐스케이드일수록 거친 LOD, 0 = 메인과 같은 LOD). "
+	                                          "기본 끔 — 0.5에서 Hub 나무(Masked 잎) 그림자 모양이 눈에 띄게 바뀌었다",
+	                                          EConsoleFlags::None, { .Range = std::pair(0.0f, 3.0f) });
+	TAutoConsoleVariable<float> ShadowMinCasterTexels("r.Shadow.MinCasterTexels", 1.0f,
+	                                                  "방향광 그림자 작은 캐스터 컬링: 경계 구 지름이 그 캐스케이드 텍셀 이 개수보다 작으면 그 캐스케이드에서 그리지 않는다 (0 = 끔)",
+	                                                  EConsoleFlags::None, { .Range = std::pair(0.0f, 64.0f) });
 	TAutoConsoleVariable<bool> Jitter("r.Jitter", false, "TAA 없이도 서브픽셀 투영 지터 (확인용 — 혼자 켜면 화면이 떨린다)", EConsoleFlags::None,
 	                                  { .CommandLine = { { L"--jitter", "1" } } });
 	TAutoConsoleVariable<int32> DebugView("r.DebugView", 0,

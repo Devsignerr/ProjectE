@@ -211,6 +211,8 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	                                                                       const FFrustum& Frustum, bool bLocalLight) {
 		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
 	};
+	// 지형은 정적 그림자 캐스터 (방향광 그림자 캐시 — 높이 편집·LOD 변화는 상태 해시가 잡는다)
+	ShadowRenderer.ExtraCasterState = [this](const FFrustum& Frustum) { return TerrainRenderer.GetShadowStateHash(Frustum); };
 
 	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
 	ComputeGpuTimer.Init(Device, Rhi->GetComputeQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererComputeTimestamps"); // 비동기 계산 패스 구간
@@ -249,6 +251,12 @@ void FSceneRenderer::ApplyConsoleVariables()
 	SkinnedLodScale                 = RendererCVars::SkinnedLodScale.Get();
 	ForcedLod                       = RendererCVars::ForceLod.Get();
 	LodHysteresis                   = RendererCVars::LodHysteresis.Get();
+	MinScreenSize                   = RendererCVars::MinScreenSize.Get();
+	MaxDrawDistance                 = RendererCVars::MaxDrawDistance.Get();
+	ShadowStaticFrames              = static_cast<uint32>(std::max(1, RendererCVars::ShadowCacheStaticFrames.Get()));
+	ShadowSettings.bCacheStatic     = RendererCVars::ShadowCache.Get();
+	ShadowSettings.LodBias          = RendererCVars::ShadowLodBias.Get();
+	ShadowSettings.MinCasterTexels  = RendererCVars::ShadowMinCasterTexels.Get();
 	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
 	bConsoleAmbientOcclusion        = RendererCVars::AmbientOcclusion.Get();
 	bConsoleReflections             = RendererCVars::Reflections.Get();
@@ -351,6 +359,9 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.SkinPalettes += Stats.SkinPalettes;
 	Capture.SkinnedCulled += Stats.SkinnedCulled;
 	Capture.UploadBytes += static_cast<double>(Stats.UploadBytes);
+	Capture.ShadowCacheReused += Stats.ShadowCacheReused;
+	Capture.ShadowCacheRebuilt += Stats.ShadowCacheRebuilt;
+	Capture.ScreenSizeCulled += Stats.ScreenSizeCulled;
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -387,6 +398,8 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 엔티티 {:.1f}, 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
 	      Capture.SkinPalettes / Count, Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
+	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
+	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
 		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)
@@ -946,6 +959,8 @@ void FSceneRenderer::FinalizeFrameStats()
 	Stats.LocalShadowSlices = LocalLightRenderer.GetShadowSliceCount();
 	Stats.ShadowDrawCalls   = ShadowRenderer.GetDrawCalls() + LocalLightRenderer.GetShadowDrawCalls() + TerrainRenderer.GetShadowDrawCalls();
 	Stats.ShadowTriangles   = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles() + TerrainRenderer.GetShadowTriangles();
+	Stats.ShadowCacheReused  = ShadowRenderer.GetCacheReusedCascades();
+	Stats.ShadowCacheRebuilt = ShadowRenderer.GetCacheRebuiltCascades();
 	if (bFrameOcclusion)
 	{
 		Stats.Triangles       = OcclusionCuller.GetDrawnTriangles() + FrameMainTriangles; // 간접 드로우(정적) + 바로 그린 스킨
@@ -1237,7 +1252,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 
 	// 0) 방향광 섀도우 패스
 	const FRGResourceRef ShadowMapRef = ShadowRenderer.ImportShadowMap(Graph);
-	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow));
+	BeginCpuTimer(ERenderTimer::Shadow);
+	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow)); // 캐시 판정 + 캐스케이드 묶음 (CPU)
+	EndCpuTimer(ERenderTimer::Shadow);
 
 	// 0.5) 레이 트레이싱 (Phase 50): 허용된 렌더러 + DXR 1.1 + 한 뷰 + 사전 패스 + 지터 허용(픽셀 아트 아님) + 캡처 굽기 아님.
 	//   켬/끔 = r.RayTracing*(-1이면 프로젝트 설정 Rendering). 효과가 하나라도 켜져야 BLAS/TLAS를 만든다
@@ -1937,11 +1954,16 @@ void FSceneRenderer::ApplyMotionHistory(bool bValid)
 		{
 			MotionHistory.resize(Index + 1);
 		}
-		FMotionHistory& History = MotionHistory[Index];
-		if (bValid && History.Generation == Instance.Entity.Generation && History.Frame + 1 == SceneFrameCount)
+		FMotionHistory& History     = MotionHistory[Index];
+		const bool      bContinuous = History.Generation == Instance.Entity.Generation && History.Frame + 1 == SceneFrameCount;
+		if (bValid && bContinuous)
 		{
 			Instance.PrevWorld = History.World;
 		}
+		// 그림자 캐시 정적 판정: 월드 행렬이 연속 프레임 비트 단위로 같았던 횟수 (ShadowCacheMath.h)
+		const bool bSame       = bContinuous && std::memcmp(&History.World, &Instance.World, sizeof(FMatrix4x4)) == 0;
+		History.StableFrames   = bSame ? std::min(History.StableFrames + 1, 0x7FFFFFFFu) : 0u;
+		Instance.bShadowStatic = ShadowCacheMath::IsStatic(History.StableFrames, ShadowStaticFrames);
 		History.Generation = Instance.Entity.Generation;
 		History.Frame      = SceneFrameCount;
 		History.World      = Instance.World;
@@ -1997,7 +2019,12 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 	const FVector3 CameraPosition = Camera.GetPosition();
 	MainBatches.Reset();
 	TranslucentBatches.Reset();
-	Stats.VisibleMeshes = 0;
+	Stats.VisibleMeshes    = 0;
+	Stats.ScreenSizeCulled = 0;
+	// 거리·화면 크기 컬링 (사전 패스와 메인이 이 묶음을 함께 쓰므로 둘이 같은 집합을 그린다). 화면 크기 = LOD와 같은 식
+	const bool  bSizeCulling   = MinScreenSize > 0.0f || MaxDrawDistance > 0.0f;
+	const bool  bOrthographic  = Camera.IsOrthographic();
+	const float TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
 	const std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
 	for (uint32 Index = 0; Index < static_cast<uint32>(Instances.size()); ++Index)
 	{
@@ -2005,6 +2032,18 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 		if (!FrozenFrustum.Intersects(Instance.WorldBounds))
 		{
 			continue;
+		}
+		if (bSizeCulling)
+		{
+			const float Radius     = Instance.WorldBounds.GetExtent().Length();
+			const float Distance   = FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition);
+			const float ScreenSize = bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
+			                                       : LodMath::ComputePerspectiveScreenSize(Radius, Distance, TanHalfFov);
+			if (LodMath::ShouldCullInstance(ScreenSize, Distance - Radius, MinScreenSize, MaxDrawDistance))
+			{
+				++Stats.ScreenSizeCulled;
+				continue;
+			}
 		}
 		++Stats.VisibleMeshes;
 		const float Depth = FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition);

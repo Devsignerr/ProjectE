@@ -21,6 +21,14 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> SkinnedLodScale;  // r.LOD.SkinnedScale
 	extern TAutoConsoleVariable<int32> ForceLod;         // r.ForceLOD       (--force-lod N)
 	extern TAutoConsoleVariable<float> LodHysteresis;    // r.LODHysteresis  (--lod-hysteresis X)
+	// 메인/깊이 사전 패스 인스턴스 거리·화면 크기 컬링 (같은 묶음 목록 — 사전 패스와 메인이 같은 집합)
+	extern TAutoConsoleVariable<float> MinScreenSize;    // r.MinScreenSize  (경계 구 지름 / 화면 높이가 이보다 작으면 안 그림, 0 = 끔)
+	extern TAutoConsoleVariable<float> MaxDrawDistance;  // r.MaxDrawDistance (cm, 0 = 끔)
+	// 방향광 그림자 캐시·LOD (Renderer/ShadowCacheMath.h)
+	extern TAutoConsoleVariable<bool>  ShadowCache;             // r.Shadow.Cache (--no-shadow-cache)
+	extern TAutoConsoleVariable<int32> ShadowCacheStaticFrames; // r.Shadow.Cache.StaticFrames
+	extern TAutoConsoleVariable<float> ShadowLodBias;           // r.Shadow.LodBias
+	extern TAutoConsoleVariable<float> ShadowMinCasterTexels;   // r.Shadow.MinCasterTexels
 	extern TAutoConsoleVariable<bool>  Jitter;           // r.Jitter         (--jitter)
 	extern TAutoConsoleVariable<int32> DebugView;        // r.DebugView      (--debug-view normal|velocity|depth|ao|ssr|rt-reflections|rt-shadows|rt-instances)
 	extern TAutoConsoleVariable<bool>  ResourceAutoCollect; // r.ResourceAutoCollect (리소스 자동 수거, Phase 37)

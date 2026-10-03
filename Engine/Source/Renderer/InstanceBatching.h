@@ -20,6 +20,7 @@ struct FInstanceBatch
 	uint32 First    = 0; // OutIndices 안 시작 위치 (= 셰이더 InstanceOffset)
 	uint32 Count    = 0; // 인스턴스 수
 	uint32 Instance = 0; // 대표 인스턴스 (메시/머티리얼/스킨 정보를 읽는다)
+	uint64 Key      = 0; // 묶음 키 (일반 키면 LOD = GetLod — 그림자 캐스케이드별 LOD처럼 인스턴스 LOD와 다를 수 있다)
 };
 
 namespace InstanceBatching
@@ -35,6 +36,7 @@ namespace InstanceBatching
 	}
 	constexpr uint64 MakeUniqueKey(uint32 Instance) { return UniqueKeyBit | Instance; }
 	constexpr bool   IsUniqueKey(uint64 Key) { return (Key & UniqueKeyBit) != 0; }
+	constexpr uint32 GetLod(uint64 Key) { return static_cast<uint32>(Key & 0xFu); }
 
 	// Items를 정렬하고 묶음을 만든다 (Items 순서는 바뀐다)
 	void Build(std::vector<FInstanceSortItem>& Items, std::vector<uint32>& OutIndices, std::vector<FInstanceBatch>& OutBatches);

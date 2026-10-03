@@ -865,7 +865,9 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] 49 사이드. 머티리얼 코드 생성 구조 — `.emat` Graph/Parameters, 노드 34종 컴파일러(결정적 HLSL·해시), `EvaluateMaterial` 단일 인터페이스(기본 머티리얼도 `MaterialDefault.hlsli`로), `MATERIAL_SAMPLE` 매크로(래스터 SampleBias / RT SampleLevel 교체), 가변 텍스처 테이블(최대 16), 가상 파일 셰이더 쿠킹, `.emat` 핫 리로드, 예제 8개 + `Demo_MaterialGraph`, 테스트 12개 (2026-10-04 머지: Debug 13개 묶음, Release, Demo_Materials·Decals 기준 비트 동일(PSO 캐시 끔 조건), 런타임·에디터 디버그 레이어 0건)
   - 후속: 스킨 메시 그래프 머티리얼 화면 미확인, UV 채널 0만, 머티리얼 시간 1시간 되감김, 노드 편집기 UI(Phase 51 사이드)
   - [x] 버그: PSO 캐시를 켜면 화면이 실행마다 달라짐 → 원인 = 워밍 작업 스레드의 파이프라인 라이브러리 Load(드라이버 내부 원인 미상), 수정 = 워밍은 항상 Create·라이브러리 Load는 요청 스레드만 (2026-10-04 머지: 캐시 켬 3~4회 연속 MD5 동일 = 캐시 끔 = Phase 47 기준)
-- [ ] 50. DXR 기반 + RT 반사·그림자 (Phase 40-2 흡수) / 사이드: 실내 절차적 생성
+- [x] 50. DXR 레이 트레이싱 — 인라인 RayQuery(SM 6.5, 상태 객체 없이 렌더 그래프·PSO 캐시 그대로), `FRayTracingScene`(BLAS 캐시·압축·스킨 계산 스키닝 refit·지형 타일·폴리지 인스턴스·프레임 TLAS), 머티리얼 히트(고정 PBR + 그래프 변형 슬롯), RT 반사(SSR 해석 경로 재사용) + RT 그림자(교차 표본 + 공간·시간 필터), 디버그 뷰, 테스트. **Demo_Reflections 파란 벽 문제 해결**(카메라 뒤 물체 반사, 정지 깜빡임 최대값 11.8→6.5). 기본 RT 반사 켬·그림자 끔, Reflections RT 반사 5.15ms < SSR 5.78ms(1440p) (2026-10-04 머지: Debug 13개 묶음, Release, RT 끔 Materials·Decals 기준 MD5 동일, RT 켬 Reflections·Showcase·Sky·에디터 디버그 레이어 0건, `FD3D12GpuTimer` 칸 상한 24→32)
+  - 후속: RT 그림자 비용(반해상도 추적·필터 축소), 로컬 라이트 RT 그림자, 반사 히트 안개/공중 원근, 반투명·물 TLAS 제외, 지형 히트 레이어 0 근사, 그래프 RT 변형 런타임 컴파일 끊김·패키지 쿠킹 미지원(회색 근사), 스킨 refit 재빌드 없음, RT 디버그 뷰 100%만
+- 원래 항목: 50. DXR 기반 + RT 반사·그림자 (Phase 40-2 흡수) / 사이드: 실내 절차적 생성
   - [x] 50 사이드. 실내 절차적 생성 — `Scene/Building/`(`.ebuilding`, 시드 결정적 생성기: 뼈대→호실 분할→BSP 방 분할·종류 배정→문(연결성 보장)→창→격자 모듈→소품(데이터 테이블 규칙)), `FProceduralBuildingComponent` + 인스펙터 생성/새 시드/지우기/내비메시, 재생성 보존(`BuildingPartComponent` 유지), Lua `entity:GenerateBuilding`, Kenney Furniture Kit(CC0), `Demo_Apartment`(5층, 인스턴스 2239 → 메인 드로우 112), 테스트 16+1 (2026-10-04 머지: Debug 12개 묶음, Release, 런타임 화면·디버그 레이어 0건)
   - 후속: 계단 단순형(층참 없음), 외벽 얇음·창 늘어남, 소품 짝 맞춤·최소 개수 보장 없음, `.ebuilding` 전용 편집 창 없음(메모장), 멀티플레이 시드 자동 동기화, 씬 파일 큼(약 2.95MB — 프리팹 인스턴스 펼침 저장)
 - [ ] 51. 동적 GI DDGI (Phase 39 흡수) / 사이드: 노드 머티리얼 에디터 UI

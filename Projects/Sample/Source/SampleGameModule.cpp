@@ -26,6 +26,11 @@ public:
 			.Property(&FHoverComponent::Amplitude, "Amplitude", "진폭 (cm)").Range(0.0f, 1000.0f, 1.0f)
 			.Property(&FHoverComponent::Frequency, "Frequency", "주파수 (Hz)").Range(0.0f, 10.0f, 0.01f)
 			.AsComponent();
+		Registry.RegisterType<FStressWalkerComponent>("StressWalkerComponent", "궤도 이동 (스트레스)")
+			.Property(&FStressWalkerComponent::Center, "Center", "궤도 중심")
+			.Property(&FStressWalkerComponent::Speed, "Speed", "속도 (cm/s)").Range(-2000.0f, 2000.0f, 1.0f)
+			.Property(&FStressWalkerComponent::YawOffset, "YawOffset", "모델 앞 보정 (도)").Range(-180.0f, 180.0f, 1.0f)
+			.AsComponent();
 	}
 
 	void OnBeginPlay(FScene& Scene) override
@@ -33,6 +38,8 @@ public:
 		// 부유 기준 높이는 플레이 시작 위치
 		Scene.GetRegistry().View<FTransformComponent, FHoverComponent>().Each(
 			[](FEntity, FTransformComponent&, FHoverComponent& Hover) { Hover.bInitialized = false; });
+		Scene.GetRegistry().View<FTransformComponent, FStressWalkerComponent>().Each(
+			[](FEntity, FTransformComponent&, FStressWalkerComponent& Walker) { Walker.bInitialized = false; });
 	}
 
 	// 애니메이션 노티파이 (C++ 수신 예시). 매 프레임 오는 스테이트 Tick은 로그에서 뺀다
@@ -69,6 +76,29 @@ public:
 				}
 				Hover.Elapsed += DeltaSeconds;
 				Transform.Position.Z = Hover.BaseHeight + Hover.Amplitude * std::sin(FMath::TwoPi * Hover.Frequency * Hover.Elapsed);
+			});
+
+		// 궤도 이동: 시작 위치에서 반지름·각도를 정하고 속도/반지름만큼 돈다 (루트 엔티티 전제 — 로컬 = 월드)
+		Registry.View<FTransformComponent, FStressWalkerComponent>().Each(
+			[DeltaSeconds](FEntity, FTransformComponent& Transform, FStressWalkerComponent& Walker) {
+				const float DX = Transform.Position.X - Walker.Center.X;
+				const float DY = Transform.Position.Y - Walker.Center.Y;
+				if (!Walker.bInitialized)
+				{
+					Walker.Radius       = std::sqrt(DX * DX + DY * DY);
+					Walker.Angle        = std::atan2(DY, DX);
+					Walker.bInitialized = true;
+				}
+				if (Walker.Radius < 1.0f)
+				{
+					return;
+				}
+				Walker.Angle += Walker.Speed / Walker.Radius * DeltaSeconds;
+				Transform.Position.X = Walker.Center.X + Walker.Radius * std::cos(Walker.Angle);
+				Transform.Position.Y = Walker.Center.Y + Walker.Radius * std::sin(Walker.Angle);
+				// 진행 방향 = 접선 (반시계면 +90도, 시계면 -90도)
+				const float HeadingDegrees = FMath::RadiansToDegrees(Walker.Angle) + (Walker.Speed >= 0.0f ? 90.0f : -90.0f);
+				Transform.Rotation = FQuat::FromAxisAngle(FVector3::UpVector, FMath::DegreesToRadians(HeadingDegrees + Walker.YawOffset));
 			});
 	}
 };

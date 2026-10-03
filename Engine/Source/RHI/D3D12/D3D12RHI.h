@@ -23,7 +23,7 @@ struct FD3D12RHIDesc
 	bool   bEnableDebugLayer = false;
 	bool   bVSync            = true;
 	uint64 DynamicBufferSize = 4 * 1024 * 1024; // 프레임당 동적 업로드 버퍼 크기
-	uint32 SrvDescriptorCount = 4096;           // 셰이더 가시 CBV/SRV/UAV 힙 크기
+	uint32 SrvDescriptorCount = 65536;          // 셰이더 가시 CBV/SRV/UAV 힙 크기 (바인드리스 — RT 스킨 인스턴스는 프리미티브마다 정점 SRV를 잡는다: 유닛 500 × 9 > 4096, 2026-10-04 Tests/Stress)
 	uint64 UploadRingSize     = FD3D12UploadQueue::DefaultRingSize; // 비동기 업로드 링 크기
 };
 

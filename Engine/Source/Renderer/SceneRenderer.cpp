@@ -1332,7 +1332,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	const FRGResourceRef FogVolumeRef = FogRenderer.ImportVolume(Graph);
 
 	// 2.8) 대기 LUT (투과율/다중 산란은 매질이 바뀔 때만, 하늘 뷰는 매 렌더) + 실시간 IBL 한 단계 (뒤쪽 버퍼 — 이번 프레임 메시는 앞쪽을 읽는다)
-	SkyAtmosphere.AddLutPasses(Graph, ERGQueue::Graphics, TimerId(ERenderTimer::Atmosphere));
+	const ERGQueue SkyQueue = bAsyncAllowed ? ERGQueue::AsyncCompute : ERGQueue::Graphics; // 계산 셰이더만 — 비동기 계산 후보
+	SkyAtmosphere.AddLutPasses(Graph, SkyQueue, TimerId(ERenderTimer::Atmosphere));
 	// 2.9) 볼류메트릭 구름: 추적(저해상도) + 시간 누적 (+ IBL용 저해상도 큐브) — 합성은 메인 패스 뒤
 	FVolumetricCloudRenderer::FPrepareInputs CloudInputs;
 	CloudInputs.Camera                   = &Camera;
@@ -1345,7 +1346,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	const bool bClouds                   = Clouds.Prepare(Scene, SkyAtmosphere, CloudInputs);
 	if (bClouds)
 	{
-		Clouds.AddPasses(Graph, SkyAtmosphere, FogRenderer.GetConstantsAddress(), TimerId(ERenderTimer::Clouds));
+		Clouds.AddPasses(Graph, SkyAtmosphere, FogRenderer.GetConstantsAddress(), SkyQueue, TimerId(ERenderTimer::Clouds));
 	}
 	const bool bCloudCube = bClouds && Clouds.AffectsEnvironment();
 	SkyAtmosphere.AddEnvironmentPasses(Graph, bCloudCube ? Clouds.GetCubeRef() : FRGResourceRef{}, Clouds.GetCubeSrv(), bClouds && Clouds.IsChanging(),

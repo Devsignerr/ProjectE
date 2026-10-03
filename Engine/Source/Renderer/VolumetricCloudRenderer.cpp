@@ -386,7 +386,8 @@ void FVolumetricCloudRenderer::BindCompute(ID3D12GraphicsCommandList* List, D3D1
 	List->SetComputeRootConstantBufferView(CloudRoot_Fog, FogConstants);
 }
 
-void FVolumetricCloudRenderer::AddPasses(FRenderGraph& Graph, const FSkyAtmosphereRenderer& Atmosphere, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, int32 Timer)
+void FVolumetricCloudRenderer::AddPasses(FRenderGraph& Graph, const FSkyAtmosphereRenderer& Atmosphere, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, ERGQueue Queue,
+                                         int32 Timer)
 {
 	if (!bActive)
 	{
@@ -425,7 +426,7 @@ void FVolumetricCloudRenderer::AddPasses(FRenderGraph& Graph, const FSkyAtmosphe
 		List->SetComputeRootDescriptorTable(CloudRoot_Weather, WeatherMap.Srv.Gpu);
 	};
 
-	FRenderGraph::FPassBuilder Trace = Graph.AddPass("구름 추적");
+	FRenderGraph::FPassBuilder Trace = Graph.AddPass("구름 추적", Queue);
 	DeclareLookups(Trace);
 	Trace.Write(TraceColorRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
 		.Write(TraceDepthRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
@@ -440,7 +441,7 @@ void FVolumetricCloudRenderer::AddPasses(FRenderGraph& Graph, const FSkyAtmosphe
 			List->Dispatch((TraceW + 7) / 8, (TraceH + 7) / 8, 1);
 		});
 
-	Graph.AddPass("구름 누적")
+	Graph.AddPass("구름 누적", Queue)
 		.Read(TraceColorRef, ERGAccess::SrvNonPixel)
 		.Read(TraceDepthRef, ERGAccess::SrvNonPixel)
 		.Read(PrevColorRef, ERGAccess::SrvNonPixel)
@@ -467,7 +468,7 @@ void FVolumetricCloudRenderer::AddPasses(FRenderGraph& Graph, const FSkyAtmosphe
 	if (bAffectEnvironment)
 	{
 		CubeRef                    = CloudCube.Import(Graph, "CloudCube");
-		FRenderGraph::FPassBuilder Cube = Graph.AddPass("구름 IBL 큐브");
+		FRenderGraph::FPassBuilder Cube = Graph.AddPass("구름 IBL 큐브", Queue);
 		DeclareLookups(Cube);
 		Cube.Write(CubeRef, ERGAccess::Uav, FRGSubresourceRange::All(), true)
 			.Timer(Timer)

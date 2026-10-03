@@ -50,7 +50,8 @@ public:
 	bool AffectsEnvironment() const { return bActive && bAffectEnvironment; }
 
 	// 추적 + 누적 (+ IBL 큐브). FogConstants = 공중 원근 (FFogRenderer 상수, Prepare/PrepareVolumetric 뒤)
-	void AddPasses(FRenderGraph& Graph, const FSkyAtmosphereRenderer& Atmosphere, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, int32 Timer);
+	// Queue = 계산 패스(추적/누적/큐브)의 큐 — 비동기 계산 후보 (r.RenderGraph.AsyncCompute)
+	void AddPasses(FRenderGraph& Graph, const FSkyAtmosphereRenderer& Atmosphere, D3D12_GPU_VIRTUAL_ADDRESS FogConstants, ERGQueue Queue, int32 Timer);
 	// 씬 컬러에 합성 (메인 패스 뒤·안개 적용 전)
 	void AddCompositePass(FRenderGraph& Graph, const FD3D12RenderTarget& SceneColor, FRGResourceRef ColorRef, FRGResourceRef DepthRef, int32 Timer);
 	FRGResourceRef                GetCubeRef() const { return CubeRef; }

@@ -914,5 +914,6 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - [x] 외부 에셋 받기 `Scripts/FetchDemoAssets.ps1` + 잠금 파일, 임포트 설정 `BlendAsMasked`
   - [x] 서브맵 Lighting (항구 창고를 고친 선술집 홀: 남쪽 창 5개 햇빛 + 볼류메트릭 빛줄기, DDGI 볼륨, RTAO, 광택 헤링본 마루 RT 반사, 창 사각 면광원·바 조명 띠(IES Linear_Batwing)·원판 다운라이트(IES Downlight_Narrow)·갤러리 IES 벽 워셔, 샹들리에/탁자 램프, Poly Haven 가구 21종 + 텍스처 5종, 벽/바닥/천장은 타일 PBR 그래프 머티리얼 인스턴스) — `Tools/DemoMap/BuildLighting.py`, 1280x720 Release 5.7ms (2026-10-04)
   - [x] 서브맵 Alley (비 그친 밤 뒷골목: 키트 조립 파사드 `Asset/DemoKits/Alley/AlleyArchitecture.gltf`, 로컬 라이트 12(그림자 4)·네온·깜빡임 `FlickerLight.lua`, 볼류메트릭 안개, 젖은 아스팔트(월드 UV 그래프)·웅덩이/습기 데칼·배수로 물, 화로 불·연기·증기 파티클, 달밤 22:30) — `Tools/DemoMap/BuildAlley.py`, 1280x720 Release 3.4ms
-  - [ ] 서브맵: Gallery(머티리얼) / Forest(지형·식생) / Workshop(물리) / Training(애니메이션·AI) / Campfire(파티클)
+  - [x] 서브맵 Workshop (항구 창고 작업장 — 물리: 나무 상자 피라미드 밀기(PushForce), 판자 경사로를 구르는 드럼통(캡슐), 크레인 위험 구역 트리거 → 매단 짐 구 관절 BreakForce 끊김(OnJointBreak) → 상자 더미 낙하, 거리 관절 타이어 그네 → 선반 9개 도미노 → 전화하던 마네킹 래그돌, 펜던트 등(구 관절)·형광등(경첩 관절) 흔들림, E/클릭 레이캐스트 충격량. 채광창·큰 문 햇빛 + 볼류메트릭 빛줄기, DDGI, 형광등 면광원, 천장 크레인, 마당 건너 공장 파사드 조립 glTF, Poly Haven 모델 25종 + 텍스처 5종) — `Tools/DemoMap/BuildWorkshop.py`, 1280x720 Release 약 6.1ms (2026-10-04)
+  - [ ] 서브맵: Gallery(머티리얼) / Forest(지형·식생) / Training(애니메이션·AI) / Campfire(파티클)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)

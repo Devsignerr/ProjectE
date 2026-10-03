@@ -1,0 +1,46 @@
+{
+  "Name": "Steel_14x84",
+  "Parent": "TiledPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        0.1,
+        0.6,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.55,
+        0.55,
+        0.6,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 0.9
+    }
+  ]
+}

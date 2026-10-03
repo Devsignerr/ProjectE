@@ -1,0 +1,46 @@
+{
+  "Name": "Brick_3280x150",
+  "Parent": "TiledPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        14.91,
+        0.68,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        0.9,
+        0.9,
+        0.9,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

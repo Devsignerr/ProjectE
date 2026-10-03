@@ -1,0 +1,135 @@
+{
+  "Name": "TiledPBR",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Color"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Normal"
+    },
+    {
+      "Name": "Tiling",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "uv0",
+        "Type": "TexCoord"
+      },
+      {
+        "Id": "tiling",
+        "Type": "VectorParameter",
+        "Parameter": "Tiling"
+      },
+      {
+        "Id": "tilingXY",
+        "Type": "Append",
+        "Inputs": {
+          "A": "tiling:2",
+          "B": "tiling:3"
+        }
+      },
+      {
+        "Id": "uv",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "uv0",
+          "B": "tilingXY"
+        }
+      },
+      {
+        "Id": "base",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "arm",
+        "Type": "TextureSample",
+        "Texture": "ArmTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "nrm",
+        "Type": "TextureSample",
+        "Texture": "NormalTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "color",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "base:1",
+          "B": "tint:1"
+        }
+      },
+      {
+        "Id": "roughScale",
+        "Type": "ScalarParameter",
+        "Parameter": "RoughnessScale"
+      },
+      {
+        "Id": "rough",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "arm:3",
+          "B": "roughScale"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Roughness": "rough",
+      "Metallic": "arm:4",
+      "AmbientOcclusion": "arm:2",
+      "Normal": "nrm:1"
+    }
+  }
+}

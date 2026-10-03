@@ -7,7 +7,8 @@
 #include "Lighting.hlsli"
 
 // 레이 트레이싱 히트 조명 (Phase 50 — 반사 히트, Phase 51 DDGI 프로브 광선이 재사용).
-//   방향광 + RT 그림자 광선(태양 중심 방향 하나, 결정적), 로컬 라이트(클러스터 없이 목록 앞 MaxHitLocalLights개 — 카메라 가까운 순, 그림자 없음),
+//   방향광 + RT 그림자 광선(태양 중심 방향 하나, 결정적), 로컬 라이트(클러스터 없이 목록 앞 MaxHitLocalLights개 — 카메라 가까운 순, 그림자 없음,
+//   면광원은 가운데 대표점 + 면 코사인 근사, IES/쿠키 포함 — Phase 52),
 //   IBL 확산(하늘 조도) + 반사(캡처 → 하늘 프리필터, Mesh.hlsl SampleSpecularEnvironment와 같은 식 — SSR 없음), 발광.
 // 바인딩: b1 조명 상수, t3 로컬 라이트 목록, t4 반사 캡처 목록, t13~t15 IBL(확산/반사/BRDF), t16 캡처 큐브 배열
 
@@ -98,6 +99,23 @@ float3 SampleHitSpecularEnvironment(float3 R, float Roughness, float3 WorldPosit
 	return Color + RtIblSpecular.SampleLevel(RtClampSampler, R, Lod).rgb * (RtAmbientIntensity * Remaining);
 }
 
+// IES × 쿠키 (AreaLight.hlsli EvaluateLightProfile과 같은 식 — 바인드리스 BindlessTextures)
+float3 RtLightProfile(FLocalLight Light, float3 Local)
+{
+	float3 Result = 1.0f;
+	if (Light.IesTexture >= 0)
+	{
+		Result *= BindlessTextures[NonUniformResourceIndex(Light.IesTexture)].SampleLevel(RtClampSampler, ComputeIesUV(Local), 0).r;
+	}
+	if (Light.CookieTexture >= 0)
+	{
+		bool         bValid;
+		const float2 UV = ComputeCookieUV(Light, Local, bValid);
+		Result *= bValid ? BindlessTextures[NonUniformResourceIndex(Light.CookieTexture)].SampleLevel(RtWrapSampler, UV, 0).rgb : 0.0f;
+	}
+	return Result;
+}
+
 // 히트 표면 조명. View = 표면 → 광선 원점. 방향광 그림자 광선은 히트 위치에서 (기하 법선 오프셋)
 float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 {
@@ -139,6 +157,17 @@ float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 	for (uint Index = 0; Index < LightCount; ++Index)
 	{
 		const FLocalLight Light    = RtLocalLights[Index];
+		if (IsAreaLight(Light))
+		{
+			// 면광원 (Phase 52): 가운데 대표점 + 면 코사인 근사 (LTC 없음 — 비용 상한), IES/쿠키는 바인드리스로 같은 식
+			float3      AreaL;
+			const float AreaAtten = AreaLightApproxAttenuation(Light, Hit.Position, AreaL);
+			if (AreaAtten > 0.0f)
+			{
+				Color += EvaluateDirectLight(Surface, AreaL, Light.Color * AreaAtten * RtLightProfile(Light, ToLightLocal(Light, -AreaL)));
+			}
+			continue;
+		}
 		const float3      ToLight  = Light.Position - Hit.Position;
 		const float       Distance = length(ToLight);
 		if (Distance >= Light.Radius)
@@ -149,7 +178,12 @@ float3 EvaluateHitLighting(FHitSurface Hit, float3 View)
 		const float  Attenuation = LightDistanceAttenuation(Distance, Light.Radius) * LightConeAttenuation(dot(Light.Direction, -L), Light.ConeScale, Light.ConeOffset);
 		if (Attenuation > 0.0f)
 		{
-			Color += EvaluateDirectLight(Surface, L, Light.Color * Attenuation);
+			float3 Radiance = Light.Color * Attenuation;
+			if (Light.IesTexture >= 0 || Light.CookieTexture >= 0)
+			{
+				Radiance *= RtLightProfile(Light, ToLightLocal(Light, -L));
+			}
+			Color += EvaluateDirectLight(Surface, L, Radiance);
 		}
 	}
 	// IBL (Mesh.hlsl EvaluateImageBasedLightingEx와 같은 식, SSR 없음)

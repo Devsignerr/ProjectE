@@ -89,6 +89,10 @@ struct FDirectionalLightComponent
 {
 	FVector3 Color     = FVector3::OneVector;
 	float    Intensity = 1.0f;
+	// ---- Phase 52: 쿠키 (구름 그림자·창살 — 빛에 수직인 평면에 TileSize cm 간격으로 반복 — 메시/지형 조명, 볼류메트릭 안개·RT 히트 제외)
+	std::string CookieTexture;
+	float       CookieTileSize = 1000.0f; // cm
+	FVector2    CookiePanSpeed = FVector2(0.0f, 0.0f); // 타일/초
 };
 
 // 스킨 메시 바인딩 (모델 인스턴스화 시 생성되는 런타임 전용, 직렬화/리플렉션 제외).
@@ -169,15 +173,24 @@ struct FScriptComponent
 // 점광원. 위치는 트랜스폼 월드 위치. 색은 sRGB로 저장하고 렌더러가 선형으로 바꿔 계산한다.
 //   Intensity: 1m(100cm) 거리에서의 밝기 (방향광 Intensity와 같은 단위), 거리 제곱에 반비례 + Radius에서 0으로 감쇠
 //   감쇠/원뿔 식은 Renderer/LightMath.h (셰이더 Lighting.hlsli와 같은 식)
+//   IES/쿠키(Phase 52, 식은 Renderer/AreaLightMath.h): IES 0°(천저) = 트랜스폼 Forward(+X), φ 0° = Right(+Y). 쿠키는 위도-경도 텍스처
 struct FPointLightComponent
 {
 	FVector3 Color        = FVector3::OneVector;
 	float    Intensity    = 10.0f;
 	float    Radius       = 1000.0f; // cm: 영향 반경 (이 거리에서 0)
 	bool     bCastShadows = false;   // 큐브 그림자 (6면)
+	// ---- Phase 52: IES 배광 / 쿠키
+	std::string IesProfile;               // Content 기준 .ies (비우면 없음)
+	bool        bUseIesIntensity  = false; // true = Intensity 대신 프로필 최대 칸델라 × 0.01 × IesIntensityScale
+	float       IesIntensityScale = 1.0f;
+	std::string CookieTexture;            // Content 기준 이미지 (빛 색에 곱함)
+	FVector2    CookieScale    = FVector2(1.0f, 1.0f);
+	FVector2    CookiePanSpeed = FVector2(0.0f, 0.0f); // uv/초
 };
 
 // 스포트라이트. 방향은 트랜스폼의 Forward(+X) 축. 내부 원뿔 안은 최대 밝기, 외부 원뿔 밖은 0
+//   쿠키는 외부 원뿔에 한 장 맞는 원근 투영 (Scale로 반복)
 struct FSpotLightComponent
 {
 	FVector3 Color          = FVector3::OneVector;
@@ -186,6 +199,45 @@ struct FSpotLightComponent
 	float    InnerConeAngle = 20.0f;   // 도 (중심축과의 반각)
 	float    OuterConeAngle = 35.0f;   // 도 (반각, 최대 80)
 	bool     bCastShadows   = false;   // 그림자 맵 1장
+	// ---- Phase 52: IES 배광 / 쿠키 (점광원과 같은 뜻)
+	std::string IesProfile;
+	bool        bUseIesIntensity  = false;
+	float       IesIntensityScale = 1.0f;
+	std::string CookieTexture;
+	FVector2    CookieScale    = FVector2(1.0f, 1.0f);
+	FVector2    CookiePanSpeed = FVector2(0.0f, 0.0f);
+};
+
+// 면광원 모양 (씬 JSON에 번호로 저장 — 끝에만 추가)
+enum class EAreaLightShape : int32
+{
+	Rect = 0, // 사각형 (Width × Height)
+	Disc = 1, // 원판/타원 (지름 Width × Height)
+};
+
+// 면광원 (Phase 52 — 형광등, 창문빛, 조명 기구). 빛은 트랜스폼 Forward(+X)로 나가고 가로 = 로컬 Y(Width), 세로 = 로컬 Z(Height).
+//   Intensity: 면 법선 방향 1m 거리의 조도 (점광원과 같은 단위 — 원거리에서 같은 밝기, 면이 커지면 휘도는 면적에 반비례).
+//   셰이딩은 LTC(사각형/원판 다각형 적분), 영향 반경은 면에서 가장 가까운 점 기준. 그림자 = 면 가운데에서 반구 쪽 원근 1장 + 면 크기 반그림자.
+//   문 덮개: BarnDoorAngle(법선 기준 반각, 90 = 없음) 밖으로 나가는 빛을 막고 BarnDoorLength가 짧을수록 경계가 부드럽다.
+//   쿠키 = 가운데에서 원근 투영(반각 = 문 덮개 각, 최대 80°) — 창살·패턴. 식과 규칙은 Renderer/AreaLightMath.h 머리 주석
+struct FAreaLightComponent
+{
+	int32    Shape          = static_cast<int32>(EAreaLightShape::Rect); // EAreaLightShape
+	FVector3 Color          = FVector3::OneVector;
+	float    Intensity      = 10.0f;
+	float    Width          = 120.0f;  // cm (원판: 가로 지름)
+	float    Height         = 30.0f;   // cm (원판: 세로 지름)
+	float    Radius         = 1000.0f; // cm: 영향 반경 (면에서 이 거리에서 0)
+	bool     bTwoSided      = false;   // 양면 발광
+	float    BarnDoorAngle  = 90.0f;   // 도 (90 = 문 덮개 없음)
+	float    BarnDoorLength = 20.0f;   // cm
+	bool     bCastShadows   = false;
+	std::string IesProfile;
+	bool        bUseIesIntensity  = false;
+	float       IesIntensityScale = 1.0f;
+	std::string CookieTexture;
+	FVector2    CookieScale    = FVector2(1.0f, 1.0f);
+	FVector2    CookiePanSpeed = FVector2(0.0f, 0.0f);
 };
 
 // 하늘광 (씬 전역 — 처음 찾은 것 하나만): 환경광(IBL)과 하늘 배경 밝기 배율. 없으면 1. 밤/실내 씬은 낮춘다

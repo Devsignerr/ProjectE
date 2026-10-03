@@ -111,6 +111,14 @@ void CSInject(uint3 Id : SV_DispatchThreadID)
 	for (uint Index = 0; Index < LightCount; ++Index)
 	{
 		const FLocalLight Local    = LocalLights[Index];
+		if (IsAreaLight(Local))
+		{
+			// 면광원 (Phase 52): 가운데 대표점 + 면 코사인 근사 (IES/쿠키는 안개에 반영하지 않음 — 계산 셰이더라 픽셀 상태 텍스처를 못 읽는다)
+			float3      AreaL;
+			const float AreaAtten = AreaLightApproxAttenuation(Local, P, AreaL);
+			Light += Local.Color * (AreaAtten * HenyeyGreenstein(Anisotropy, dot(-AreaL, -Dir)) * 4.0f * FogPi * LocalLightScale);
+			continue;
+		}
 		const float3      ToLight  = Local.Position - P;
 		const float       Distance = length(ToLight);
 		if (Distance >= Local.Radius)

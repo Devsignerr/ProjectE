@@ -2,7 +2,7 @@
 #include "Common.hlsli"
 #include "Lighting.hlsli"
 
-// 클러스터 라이트 컬링: 클러스터(화면 타일 x 로그 깊이 조각) 하나당 스레드 하나가 모든 라이트의 경계 구를 뷰 공간 AABB와 비교한다.
+// 클러스터 라이트 컬링: 클러스터(화면 타일 x 로그 깊이 조각) 하나당 스레드 하나가 모든 라이트의 경계 구(LocalLightBoundingRadius)를 뷰 공간 AABB와 비교한다.
 // 결과 ClusterData[클러스터 * 64] = 개수, 뒤 63칸 = 라이트 인덱스 (넘치면 버림). 식은 LightMath::ComputeClusterViewBounds와 같다
 
 StructuredBuffer<FLocalLight> LocalLights : register(t0);
@@ -49,7 +49,8 @@ void CSMain(uint3 DispatchId : SV_DispatchThreadID)
 		const float3      Center  = mul(float4(Light.Position, 1.0f), ClusterView).xyz;
 		const float3      Closest = clamp(Center, BoxMin, BoxMax);
 		const float3      Delta   = Closest - Center;
-		if (dot(Delta, Delta) <= Light.Radius * Light.Radius)
+		const float       Bounds  = LocalLightBoundingRadius(Light); // 면광원 = 영향 반경 + 면 반 대각선 (점/스포트 = Radius)
+		if (dot(Delta, Delta) <= Bounds * Bounds)
 		{
 			ClusterData[Base + 1 + Count] = Index;
 			++Count;

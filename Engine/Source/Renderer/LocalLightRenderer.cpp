@@ -1,13 +1,22 @@
 #include "Renderer/LocalLightRenderer.h"
 
+#include "Core/FileSystem.h"
+#include "Core/Paths.h"
+#include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/ShaderLibrary.h"
+#include "Renderer/AreaLightMath.h"
 #include "Renderer/Camera.h"
+#include "Renderer/IesProfile.h"
 #include "Renderer/LightMath.h"
+#include "Renderer/MaterialRender.h"
+#include "Renderer/ResourceManager.h"
 #include "Renderer/StaticMesh.h"
 #include "Scene/Scene.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <cstring>
 #include <numeric>
 
@@ -46,11 +55,12 @@ FLocalLightRenderer::~FLocalLightRenderer()
 	Shutdown();
 }
 
-bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
+bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources)
 {
 	E_CHECKF(Rhi == nullptr, "로컬 라이트 렌더러가 이미 초기화되어 있습니다");
 	Rhi           = &InRhi;
 	ShaderLibrary = &InShaderLibrary;
+	Resources     = &InResources;
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 
@@ -104,7 +114,7 @@ bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary
 	ClusterState = D3D12_RESOURCE_STATE_COMMON;
 
 	// 셰이더가 항상 유효한 SRV를 참조하도록 작은 한 장짜리를 미리 만든다 (그림자 라이트가 나오면 다시 만든다)
-	if (!EnsureShadowMap(1, 1))
+	if (!EnsureShadowMap(1, 1) || !CreateLtcTextures())
 	{
 		return false;
 	}
@@ -139,8 +149,143 @@ void FLocalLightRenderer::Shutdown()
 	ComputeRootSignature.Shutdown();
 	ShadowRootSignature.Shutdown();
 	Lights.clear();
+	if (Resources != nullptr)
+	{
+		for (FTextureHandle& Handle : LtcTextures)
+		{
+			if (Handle.IsValid())
+			{
+				Resources->DestroyTexture(Handle);
+			}
+			Handle = FTextureHandle{};
+		}
+		for (auto& [Key, Entry] : IesProfiles)
+		{
+			if (Entry.Texture.IsValid())
+			{
+				Resources->DestroyTexture(Entry.Texture);
+			}
+		}
+	}
+	IesProfiles.clear();
+	CookieTextures.clear(); // 경로 캐시 텍스처는 리소스 관리자 소유 (루트에서 빠지면 수거)
 	Rhi           = nullptr;
 	ShaderLibrary = nullptr;
+	Resources     = nullptr;
+}
+
+bool FLocalLightRenderer::CreateLtcTextures()
+{
+	// LTC 표 (RGBA32F 64x64 두 장) — 셰이더는 선형 클램프로 읽는다 (AreaLight.hlsli)
+	const float* Tables[2] = { AreaLightMath::GetLtcTable1(), AreaLightMath::GetLtcTable2() };
+	const wchar_t* Names[2] = { L"LtcTable1", L"LtcTable2" };
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		LtcTextures[Index] = Resources->CreateTexture(AreaLightMath::LtcTableSize, AreaLightMath::LtcTableSize, DXGI_FORMAT_R32G32B32A32_FLOAT, Tables[Index],
+		                                              sizeof(float) * 4, Names[Index]);
+		if (!LtcTextures[Index].IsValid())
+		{
+			E_LOG(LogRenderer, Error, "LTC 표 텍스처를 만들지 못했습니다");
+			return false;
+		}
+	}
+	return true;
+}
+
+void FLocalLightRenderer::CollectResourceRoots(FResourceRoots& Roots) const
+{
+	for (const auto& [Key, Handle] : CookieTextures)
+	{
+		Roots.Add(Handle);
+	}
+}
+
+namespace
+{
+	// Content 기준 경로 키 (소문자, '/')
+	std::string MakeContentKey(const std::string& Path)
+	{
+		std::string Key = Path;
+		for (char& Char : Key)
+		{
+			Char = Char == '\\' ? '/': static_cast<char>(std::tolower(static_cast<unsigned char>(Char)));
+		}
+		return Key;
+	}
+
+	std::filesystem::path ResolveContentPath(const std::string& Path)
+	{
+		const std::filesystem::path Relative = FStringConv::ToWide(Path);
+		if (Relative.is_absolute() || !FPaths::HasProject())
+		{
+			return Relative.lexically_normal();
+		}
+		return (FPaths::GetProjectContentDirectory() / Relative).lexically_normal();
+	}
+} // namespace
+
+const FLocalLightRenderer::FIesEntry& FLocalLightRenderer::FindIesProfile(const std::string& Path)
+{
+	const std::string Key = MakeContentKey(Path);
+	auto              It  = IesProfiles.find(Key);
+	if (It != IesProfiles.end())
+	{
+		return It->second;
+	}
+	FIesEntry&                  Entry    = IesProfiles[Key];
+	const std::filesystem::path Absolute = ResolveContentPath(Path);
+	std::string                 Text;
+	if (!FFileSystem::ReadTextFile(Absolute, Text))
+	{
+		E_LOG(LogRenderer, Warning, "IES 프로필을 읽지 못했습니다: {}", Path);
+		return Entry;
+	}
+	FIesProfile Profile;
+	std::string Error;
+	if (!FIesProfile::Parse(Text, Profile, &Error))
+	{
+		E_LOG(LogRenderer, Warning, "IES 프로필 파싱 실패 ({}): {}", Path, Error);
+		return Entry;
+	}
+	if (!Error.empty())
+	{
+		E_LOG(LogRenderer, Warning, "IES 프로필 {}: {}", Path, Error);
+	}
+	const std::vector<float> Pixels = Profile.BakeTexture(AreaLightMath::IesTextureWidth, AreaLightMath::IesTextureHeight);
+	Entry.Texture    = Resources->CreateTexture(AreaLightMath::IesTextureWidth, AreaLightMath::IesTextureHeight, DXGI_FORMAT_R32_FLOAT, Pixels.data(),
+	                                            sizeof(float), L"IesProfile");
+	Entry.MaxCandela = Profile.MaxCandela;
+	Entry.bValid     = Entry.Texture.IsValid();
+	E_LOG(LogRenderer, Log, "IES 프로필 로드: {} ({}, 최대 {:.1f}cd, 수직 {} × 수평 {})", Path, Profile.FormatName, Profile.MaxCandela,
+	      Profile.VerticalAngles.size(), Profile.HorizontalAngles.size());
+	return Entry;
+}
+
+int32 FLocalLightRenderer::ResolveIesTexture(const FIesEntry& Entry) const
+{
+	if (!Entry.bValid)
+	{
+		return -1;
+	}
+	const FD3D12Texture* Texture = Resources->GetTexture(Entry.Texture);
+	return Texture != nullptr && Texture->GetSrv().IsValid() ? static_cast<int32>(Texture->GetSrv().Index) : -1;
+}
+
+int32 FLocalLightRenderer::ResolveCookieTexture(const std::string& Path)
+{
+	if (Path.empty())
+	{
+		return -1;
+	}
+	const std::string Key = MakeContentKey(Path);
+	auto              It  = CookieTextures.find(Key);
+	if (It == CookieTextures.end())
+	{
+		It = CookieTextures.emplace(Key, Resources->LoadTexture(ResolveContentPath(Path), ETextureUsage::Color)).first;
+	}
+	// 준비 전(비동기)·실패는 흰색 텍스처 = 쿠키 없음과 같은 밝기. 힙 칸은 매 프레임 다시 읽는다 (재생성·수거 안전)
+	const FD3D12DescriptorHandle& Srv = Resources->ResolveTexture(It->second).GetSrv();
+	return Srv.IsValid() ? static_cast<int32>(Srv.Index) : -1;
 }
 
 bool FLocalLightRenderer::CreateCullPipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile)
@@ -338,18 +483,24 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 	Lights.clear();
 	LightScores.clear();
 	LightOuterAngles.clear();
+	LightShadowRadius.clear();
 	LightWantsShadow.clear();
+	AreaLightCount    = 0;
+	DirectionalCookie = -1;
 
 	const FFrustum Frustum        = FFrustum::FromViewProjection(Camera.GetViewProjectionMatrix());
 	const FVector3 CameraPosition = Camera.GetPosition();
 	FRegistry&     Registry       = Scene.GetRegistry();
+	const float    Time           = MaterialRender::GetMaterialTime(); // 쿠키 패닝 (머티리얼 Time 노드와 같은 시계)
 
-	auto AddLight = [&](const FVector3& Position, const FVector3& SrgbColor, float Intensity, float Radius, bool bShadow) -> FLocalLightGpuData* {
+	// CullRadius = 컬링·정렬·그림자 판정 반경 (점/스포트 = Radius, 면광원 = 경계 구)
+	auto AddLight = [&](const FVector3& Position, const FVector3& SrgbColor, float Intensity, float Radius, float CullRadius,
+	                    bool bShadow) -> FLocalLightGpuData* {
 		if (Intensity <= 0.0f || Radius <= 0.0f)
 		{
 			return nullptr;
 		}
-		if (!Frustum.Intersects(FBox(Position - FVector3(Radius), Position + FVector3(Radius))))
+		if (!Frustum.Intersects(FBox(Position - FVector3(CullRadius), Position + FVector3(CullRadius))))
 		{
 			return nullptr;
 		}
@@ -357,20 +508,66 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 		Light.Position            = Position;
 		Light.Radius              = Radius;
 		Light.Color               = LightMath::SrgbToLinear(SrgbColor) * Intensity;
-		LightScores.push_back(FMath::Max(FVector3::Distance(Position, CameraPosition) - Radius, 0.0f));
+		LightScores.push_back(FMath::Max(FVector3::Distance(Position, CameraPosition) - CullRadius, 0.0f));
 		LightOuterAngles.push_back(0.0f);
+		LightShadowRadius.push_back(CullRadius);
 		LightWantsShadow.push_back(bShadow ? 1 : 0);
 		return &Light;
 	};
+	// 트랜스폼 축 (스케일 무시, 직교화): Cross(Forward, Right) = Up
+	auto SetAxes = [](FLocalLightGpuData& Light, const FTransformComponent& Transform) {
+		const FVector3 Forward = Transform.GetWorldForward();
+		FVector3       Right   = Transform.WorldMatrix.GetAxisY();
+		Right                  = (Right - Forward * FVector3::Dot(Right, Forward)).GetNormalized();
+		if (Right.LengthSquared() < 0.5f)
+		{
+			const FVector3 Helper = FMath::Abs(Forward.Z) > 0.99f ? FVector3::ForwardVector : FVector3::UpVector;
+			Right                 = FVector3::Cross(Helper, Forward).GetNormalized();
+		}
+		Light.Direction = Forward;
+		Light.Right     = Right;
+		Light.Up        = FVector3::Cross(Forward, Right);
+	};
+	// IES 밝기: 프로필 최대 칸델라 기준이면 Intensity 대체
+	auto ResolveIntensity = [&](const std::string& IesPath, bool bUseIes, float Scale, float Intensity, int32& OutIes) {
+		OutIes = -1;
+		if (IesPath.empty())
+		{
+			return Intensity;
+		}
+		const FIesEntry& Entry = FindIesProfile(IesPath);
+		OutIes                 = ResolveIesTexture(Entry);
+		return Entry.bValid && bUseIes ? Entry.MaxCandela * AreaLightMath::CandelaToIntensity * Scale : Intensity;
+	};
+	auto SetCookie = [&](FLocalLightGpuData& Light, const std::string& CookiePath, LightMath::ELocalLightType Type, float ProjectionDegrees,
+	                     const FVector2& Scale, const FVector2& PanSpeed) {
+		Light.CookieTexture = ResolveCookieTexture(CookiePath);
+		if (Light.CookieTexture >= 0)
+		{
+			const FVector2 Offset(PanSpeed.X * Time - std::floor(PanSpeed.X * Time), PanSpeed.Y * Time - std::floor(PanSpeed.Y * Time));
+			Light.CookieTransform = AreaLightMath::ComputeCookieTransform(Type, ProjectionDegrees, Scale, Offset);
+		}
+	};
 
 	Registry.View<FTransformComponent, FPointLightComponent>().Each([&](FEntity, FTransformComponent& Transform, FPointLightComponent& Point) {
-		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Point.Color, Point.Intensity, Point.Radius, Point.bCastShadows))
+		int32       Ies       = -1;
+		const float Intensity = ResolveIntensity(Point.IesProfile, Point.bUseIesIntensity, Point.IesIntensityScale, Point.Intensity, Ies);
+		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Point.Color, Intensity, Point.Radius, Point.Radius, Point.bCastShadows))
 		{
 			Light->Type = static_cast<uint32>(LightMath::ELocalLightType::Point);
+			if (Ies >= 0 || !Point.CookieTexture.empty())
+			{
+				// 방향이 필요한 경우에만 축을 채운다 (없으면 Phase 23 값 그대로 — 화면 비트 동일)
+				SetAxes(*Light, Transform);
+				Light->IesTexture = Ies;
+				SetCookie(*Light, Point.CookieTexture, LightMath::ELocalLightType::Point, 0.0f, Point.CookieScale, Point.CookiePanSpeed);
+			}
 		}
 	});
 	Registry.View<FTransformComponent, FSpotLightComponent>().Each([&](FEntity, FTransformComponent& Transform, FSpotLightComponent& Spot) {
-		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Spot.Color, Spot.Intensity, Spot.Radius, Spot.bCastShadows))
+		int32       Ies       = -1;
+		const float Intensity = ResolveIntensity(Spot.IesProfile, Spot.bUseIesIntensity, Spot.IesIntensityScale, Spot.Intensity, Ies);
+		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Spot.Color, Intensity, Spot.Radius, Spot.Radius, Spot.bCastShadows))
 		{
 			const LightMath::FConeParams Cone = LightMath::ComputeConeParams(Spot.InnerConeAngle, Spot.OuterConeAngle);
 			Light->Type            = static_cast<uint32>(LightMath::ELocalLightType::Spot);
@@ -378,6 +575,58 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 			Light->ConeScale       = Cone.Scale;
 			Light->ConeOffset      = Cone.Offset;
 			LightOuterAngles.back() = Spot.OuterConeAngle;
+			if (Ies >= 0 || !Spot.CookieTexture.empty())
+			{
+				SetAxes(*Light, Transform);
+				Light->IesTexture = Ies;
+				SetCookie(*Light, Spot.CookieTexture, LightMath::ELocalLightType::Spot, Spot.OuterConeAngle, Spot.CookieScale, Spot.CookiePanSpeed);
+			}
+		}
+	});
+	Registry.View<FTransformComponent, FAreaLightComponent>().Each([&](FEntity, FTransformComponent& Transform, FAreaLightComponent& Area) {
+		const LightMath::ELocalLightType Type =
+			Area.Shape == static_cast<int32>(EAreaLightShape::Disc) ? LightMath::ELocalLightType::Disc : LightMath::ELocalLightType::Rect;
+		const float HalfWidth  = FMath::Max(Area.Width, 0.1f) * 0.5f;
+		const float HalfHeight = FMath::Max(Area.Height, 0.1f) * 0.5f;
+		int32       Ies        = -1;
+		const float Intensity  = ResolveIntensity(Area.IesProfile, Area.bUseIesIntensity, Area.IesIntensityScale, Area.Intensity, Ies);
+		const float Bounds     = AreaLightMath::ComputeBoundingRadius(Type, Area.Radius, HalfWidth, HalfHeight);
+		if (FLocalLightGpuData* Light = AddLight(Transform.GetWorldPosition(), Area.Color, Intensity, Area.Radius, Bounds, Area.bCastShadows))
+		{
+			SetAxes(*Light, Transform);
+			const float                  Extent = FMath::Max(HalfWidth, HalfHeight);
+			const LightMath::FConeParams Cone   = AreaLightMath::ComputeBarnDoorCone(Area.BarnDoorAngle, Area.BarnDoorLength, Extent);
+			Light->Type         = static_cast<uint32>(Type);
+			Light->Color        = Light->Color * AreaLightMath::IntensityToRadianceScale(AreaLightMath::ComputeArea(Type, HalfWidth, HalfHeight));
+			Light->HalfWidth    = HalfWidth;
+			Light->HalfHeight   = HalfHeight;
+			Light->ConeScale    = Cone.Scale;
+			Light->ConeOffset   = Cone.Offset;
+			Light->Flags        = Area.bTwoSided ? LightMath::LocalLightFlag_TwoSided : 0u;
+			Light->SourceRadius = Type == LightMath::ELocalLightType::Disc ? Extent : std::sqrt(HalfWidth * HalfWidth + HalfHeight * HalfHeight);
+			Light->IesTexture   = Ies;
+			// 그림자·쿠키 투영 반각 = 문 덮개 각 (없으면 상한 80°)
+			const float Projection   = FMath::Min(Area.BarnDoorAngle, AreaLightMath::MaxCookieAngle);
+			LightOuterAngles.back() = Projection;
+			SetCookie(*Light, Area.CookieTexture, Type, Projection, Area.CookieScale, Area.CookiePanSpeed);
+			++AreaLightCount;
+		}
+	});
+
+	// 방향광 쿠키 (씬의 첫 방향광 — PerFrame 방향광과 같은 것)
+	bool bDirectionalFound = false;
+	Registry.View<FTransformComponent, FDirectionalLightComponent>().Each([&](FEntity, FTransformComponent& Transform, FDirectionalLightComponent& Light) {
+		if (bDirectionalFound)
+		{
+			return;
+		}
+		bDirectionalFound = true;
+		DirectionalCookie = ResolveCookieTexture(Light.CookieTexture);
+		if (DirectionalCookie >= 0)
+		{
+			const FVector2 Offset(Light.CookiePanSpeed.X * Time - std::floor(Light.CookiePanSpeed.X * Time),
+			                      Light.CookiePanSpeed.Y * Time - std::floor(Light.CookiePanSpeed.Y * Time));
+			AreaLightMath::ComputeDirectionalCookieAxes(Transform.GetWorldForward(), Light.CookieTileSize, Offset, DirectionalCookieU, DirectionalCookieV);
 		}
 	});
 
@@ -401,6 +650,7 @@ void FLocalLightRenderer::CollectLights(FScene& Scene, const FCamera& Camera)
 		Keep(Lights);
 		Keep(LightScores);
 		Keep(LightOuterAngles);
+		Keep(LightShadowRadius);
 		Keep(LightWantsShadow);
 	}
 }
@@ -449,11 +699,14 @@ void FLocalLightRenderer::AssignShadows(const FLocalShadowSettings& Settings)
 		}
 		else
 		{
+			// 스포트와 면광원 (면 가운데에서 법선 쪽 원근 1장 — 반각 = 문 덮개 각, 상한 80°. 원평면 = 경계 구)
 			const float Outer = FMath::Clamp(LightOuterAngles[Index], 1.0f, LightMath::MaxSpotConeAngle);
 			const float Tan   = FMath::Tan(FMath::DegreesToRadians(Outer)) * LightMath::CubeFaceTanHalfFov(Resolution);
+			const float Far   = LightShadowRadius[Index];
 			Light.ShadowTexelFactor = LightMath::ShadowTexelWorldFactor(Tan, Resolution);
-			ShadowSlices.push_back({ LightMath::ComputeSpotViewProjection(Light.Position, Light.Direction, Outer, Light.Radius, NearZ, Resolution),
-			                         Light.Position, Light.Radius });
+			Light.ShadowFar         = FMath::Max(Far, NearZ * 2.0f);
+			ShadowSlices.push_back({ LightMath::ComputeSpotViewProjection(Light.Position, Light.Direction, Outer, Far, NearZ, Resolution),
+			                         Light.Position, Far });
 		}
 	}
 	for (FShadowSlice& Slice : ShadowSlices)
@@ -578,7 +831,7 @@ void FLocalLightRenderer::PrepareFrame(const FCamera& Camera, uint32 Width, uint
 	const float FarZ  = FMath::Max(Camera.GetFarZ(), NearZ * 2.0f);
 	const LightMath::FSliceParams Slices = LightMath::ComputeSliceParams(NearZ, FarZ, LightMath::ClusterGridZ);
 
-	Constants                    = FClusterConstants{};
+	FClusterConstants Constants; // 프레임마다 새로 (지역 — 정렬 지정 멤버를 두지 않는다)
 	Constants.View               = Camera.GetViewMatrix();
 	Constants.GridX              = LightMath::ClusterGridX;
 	Constants.GridY              = LightMath::ClusterGridY;
@@ -592,6 +845,15 @@ void FLocalLightRenderer::PrepareFrame(const FCamera& Camera, uint32 Width, uint
 	Constants.bOrthographic      = Camera.IsOrthographic() ? 1u : 0u;
 	Constants.ShadowNormalOffset = ShadowSettings.NormalOffset;
 	Constants.ShadowTexelSize    = 1.0f / static_cast<float>(FMath::Max<uint32>(ShadowMapResolution, 1));
+	Constants.ShadowNearZ        = FMath::Max(ShadowSettings.NearZ, 0.1f);
+	for (uint32 Index = 0; Index < 2; ++Index)
+	{
+		const FD3D12Texture* Ltc = Resources->GetTexture(LtcTextures[Index]);
+		(Index == 0 ? Constants.LtcTexture1 : Constants.LtcTexture2) = Ltc != nullptr ? Ltc->GetSrv().Index : 0u;
+	}
+	Constants.DirectionalCookieTexture = DirectionalCookie;
+	Constants.DirectionalCookieU       = DirectionalCookieU;
+	Constants.DirectionalCookieV       = DirectionalCookieV;
 	if (Camera.IsOrthographic())
 	{
 		Constants.ProjScaleY = Camera.GetOrthoHeight() * 0.5f;

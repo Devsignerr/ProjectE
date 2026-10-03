@@ -24,11 +24,22 @@ namespace LightMath
 	constexpr uint32 MaxLightsPerCluster = ClusterStride - 1; // 넘치면 버린다 (가까운 순서가 아니라 목록 순서)
 	constexpr uint32 MaxLocalLights      = 1024;              // 프레임당 라이트 목록 상한 (카메라에 가까운 순)
 
+	// 번호는 셰이더와 공유 (Lighting.hlsli E_LOCAL_LIGHT_*) — 끝에만 추가
 	enum class ELocalLightType : uint32
 	{
 		Point = 0,
 		Spot  = 1,
+		Rect  = 2, // 면광원 사각형 (Phase 52, AreaLightMath.h)
+		Disc  = 3, // 면광원 원판
 	};
+
+	// FLocalLightGpuData::Flags (Lighting.hlsli E_LOCAL_LIGHT_FLAG_*)
+	constexpr uint32 LocalLightFlag_TwoSided = 1u << 0; // 면광원 양면 발광
+
+	inline bool IsAreaLightType(uint32 Type)
+	{
+		return Type >= static_cast<uint32>(ELocalLightType::Rect);
+	}
 
 	inline float SrgbToLinear(float Value)
 	{

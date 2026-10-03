@@ -8,7 +8,6 @@
 #include "RHI/D3D12/D3D12RootSignature.h"
 #include "Renderer/RenderGraph/RenderGraph.h"
 
-#include <chrono>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -176,6 +175,6 @@ private:
 	FD3D12DescriptorHandle HistogramUav;
 	FD3D12DescriptorHandle LuminanceUav;
 
-	std::chrono::steady_clock::time_point LastRenderTime;
-	bool                                  bHasLastRenderTime = false;
+	double LastRenderTime     = 0.0; // FFrameTime 누적 시간
+	bool   bHasLastRenderTime = false;
 };

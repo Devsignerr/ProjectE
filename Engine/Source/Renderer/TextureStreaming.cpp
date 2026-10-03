@@ -2,6 +2,7 @@
 
 #include "Core/Console/Console.h"
 #include "Core/FileSystem.h"
+#include "Core/FrameTime.h"
 #include "Core/Log.h"
 #include "Core/Profiling.h"
 #include "Core/StringConv.h"
@@ -702,9 +703,9 @@ void FResourceManager::ProcessTextureStreaming()
 	float      DeltaSeconds   = DeterministicDeltaSeconds;
 	if (!bDeterministic)
 	{
-		DeltaSeconds = Streaming.bHasLastUpdate ? std::clamp(std::chrono::duration<float>(Now - Streaming.LastUpdate).count(), 0.0f, 0.5f) : 0.0f;
+		DeltaSeconds = Streaming.bHasLastUpdate ? std::clamp(static_cast<float>(FFrameTime::GetTotalSeconds() - Streaming.LastUpdate), 0.0f, 0.5f) : 0.0f;
 	}
-	Streaming.LastUpdate     = Now;
+	Streaming.LastUpdate     = FFrameTime::GetTotalSeconds();
 	Streaming.bHasLastUpdate = true;
 	if (Streaming.Entries.empty())
 	{

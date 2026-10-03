@@ -8,7 +8,6 @@
 #include "Renderer/RenderGraph/RenderGraph.h"
 #include "Renderer/ShaderTypes.h"
 
-#include <chrono>
 #include <vector>
 
 class FD3D12RHI;
@@ -84,5 +83,5 @@ private:
 
 	std::vector<FWaterBodyConstants> Bodies;          // 이번 렌더 보이는 물
 	int32                            UnderwaterIndex = -1; // 카메라가 들어간 물 (Bodies 안 번호)
-	std::chrono::steady_clock::time_point StartTime;
+	double StartTime = 0.0; // FFrameTime 누적 시간 (Init 시점)
 };

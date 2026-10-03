@@ -1,12 +1,12 @@
 #include "Renderer/MaterialRender.h"
 
+#include "Core/FrameTime.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/ShaderLibrary.h"
 #include "Renderer/StaticMesh.h"
 
-#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <format>
@@ -17,8 +17,7 @@ namespace MaterialRender
 {
 	float GetMaterialTime()
 	{
-		static const std::chrono::steady_clock::time_point Start = std::chrono::steady_clock::now();
-		const double Seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - Start).count();
+		const double Seconds = FFrameTime::GetTotalSeconds(); // 앱 프레임 시간 (실제 시각이 아님 — --fixed-delta 재현성)
 		return static_cast<float>(std::fmod(Seconds, 3600.0)); // float 정밀도 유지
 	}
 

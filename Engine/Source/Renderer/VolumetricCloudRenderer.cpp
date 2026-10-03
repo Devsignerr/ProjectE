@@ -1,5 +1,6 @@
 #include "Renderer/VolumetricCloudRenderer.h"
 
+#include "Core/FrameTime.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
@@ -60,7 +61,7 @@ bool FVolumetricCloudRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary)
 {
 	Rhi       = &InRhi;
 	Library   = &InLibrary;
-	StartTime = std::chrono::steady_clock::now();
+	StartTime = FFrameTime::GetTotalSeconds();
 	const auto Table = [](D3D12_DESCRIPTOR_RANGE_TYPE Type, uint32 Register) {
 		return std::vector<D3D12_DESCRIPTOR_RANGE1>{ FD3D12RootSignature::MakeRange(Type, 1, Register, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) };
 	};
@@ -330,7 +331,7 @@ bool FVolumetricCloudRenderer::Prepare(FScene& Scene, const FSkyAtmosphereRender
 	EnsureTargets(TraceW, TraceH);
 
 	const FAtmosphereConstants& Atmo = Atmosphere.GetConstants();
-	const float Seconds              = std::chrono::duration<float>(std::chrono::steady_clock::now() - StartTime).count();
+	const float Seconds              = static_cast<float>(FFrameTime::GetTotalSeconds() - StartTime); // 앱 프레임 시간
 	const float WindRadians          = FMath::DegreesToRadians(Component->WindDirection);
 	const float WindKm               = FMath::Max(Component->WindSpeed, 0.0f) * Seconds * 0.001f;
 	bWindMoving                      = Component->WindSpeed > 0.0f;

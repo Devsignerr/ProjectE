@@ -47,6 +47,7 @@ struct FPackagingSettings
 	bool                  bUsePak              = true;
 	bool                  bIncludeSourceAssets = false; // 원본 모델/이미지·셰이더 소스·DXC까지 (디버깅용)
 	std::string           AdditionalDirectories;        // 프로젝트 폴더 기준 추가 복사 폴더 (";" 구분, 파일로 둔다)
+	std::string           AdditionalAssets;             // Content 기준 파일/폴더 (";" 구분) — 의존성 스캐너(ProjectECook --package-manifest)가 못 보는 동적 경로를 패키지에 넣는다
 };
 
 // "Physics" — 다음 플레이(물리 시작)부터 적용

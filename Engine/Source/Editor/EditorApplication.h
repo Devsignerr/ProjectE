@@ -86,6 +86,7 @@ private:
 	void VerifyTilePaint();                                   // 자동 검증 --verify-tile-paint (타일 칠하기 스트로크 + Undo/Redo, 저장 안 함)
 	void VerifyCreate2D();                                    // 자동 검증 --verify-2d-create (2D 끌어다 놓기·만들기 메뉴·박스 선택 + Undo, 저장 안 함)
 	void UpdateVerifyGizmo2D();                               // 자동 검증 --verify-gizmo-2d (ImGui 마우스 입력으로 2D 회전 기즈모를 반시계로 끌기 — BeginFrame 전 매 프레임)
+	void UpdateVerifyBoxSelect2D();                           // 자동 검증 --verify-box-select-2d (ImGui 마우스 끌기로 박스 선택 교체 → Ctrl 토글 — BeginFrame 전 매 프레임)
 	void VerifySliceRename();                                 // 자동 검증 --verify-slice-rename (임시 복사본으로 슬라이스 이름 변경 전파 + 열린 씬 Undo)
 	void VerifyFoliageBrush();                                // 자동 검증 --foliage-brush-test (폴리지 칠하기/지우기 + Undo/Redo)
 	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신
@@ -226,6 +227,18 @@ private:
 		FMatrix4x4 StartWorld;
 	};
 	FVerifyGizmo2D VerifyGizmo;
+	// --verify-box-select-2d 상태 (EditorViewport2DVerify.cpp)
+	struct FVerifyBoxSelect2D
+	{
+		int32                Step      = 0;
+		uint64               NextFrame = 0;
+		int32                MoveIndex = 0;
+		FVector2             Start;    // 이미지 픽셀
+		FVector2             End;
+		std::vector<FEntity> Targets;  // 사각형에 완전히 드는 것으로 고른 스프라이트 둘
+		std::vector<FEntity> Expected; // CollectBoxSelection(같은 사각형)
+	};
+	FVerifyBoxSelect2D VerifyBoxSelect;
 	std::wstring VerifyThenOpenScene;           // --then-open <Content 경로>: 시작 씬 뒤 이 씬을 연다 (씬 전환 후 상태 확인)
 	uint64       VerifyThenOpenFrame = 120;     // --then-open-frame <프레임>: 이 프레임에 연다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지

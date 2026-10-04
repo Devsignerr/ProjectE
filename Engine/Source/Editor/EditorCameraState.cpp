@@ -39,6 +39,17 @@ std::string FEditorCameraState::ToJsonString() const
 	Document["MoveSpeed"] = MoveSpeed;
 	Document["Orthographic"] = bOrthographic;
 	Document["OrthoHeight"]  = OrthoHeight;
+	if (bViewport2D)
+	{
+		Document["Viewport2D"] = true;
+	}
+	if (bHasSaved3D)
+	{
+		Document["Saved3D"] = { { "Position", json::array({ Saved3DPosition.X, Saved3DPosition.Y, Saved3DPosition.Z }) },
+		                        { "Rotation", json::array({ Saved3DRotation.X, Saved3DRotation.Y, Saved3DRotation.Z, Saved3DRotation.W }) },
+		                        { "Orthographic", bSaved3DOrthographic },
+		                        { "OrthoHeight", Saved3DOrthoHeight } };
+	}
 	return Document.dump(2);
 }
 
@@ -75,6 +86,30 @@ bool FEditorCameraState::FromJsonString(const std::string& Json)
 	if (const auto Found = Document.find("OrthoHeight"); Found != Document.end() && Found->is_number())
 	{
 		OrthoHeight = FMath::Clamp(Found->get<float>(), MinOrthoHeight, MaxOrthoHeight);
+	}
+	const auto ReadBool = [](const json& Object, const char* Key, bool Default) {
+		const auto Found = Object.find(Key);
+		return Found != Object.end() && Found->is_boolean() ? Found->get<bool>() : Default;
+	};
+	bViewport2D = ReadBool(Document, "Viewport2D", false);
+	bHasSaved3D = false;
+	if (const auto Found = Document.find("Saved3D"); Found != Document.end() && Found->is_object())
+	{
+		float SavedPosition[3];
+		float SavedRotation[4];
+		if (ReadFloats(Found->value("Position", json()), SavedPosition, 3) && ReadFloats(Found->value("Rotation", json()), SavedRotation, 4))
+		{
+			const FQuat Rotation3D(SavedRotation[0], SavedRotation[1], SavedRotation[2], SavedRotation[3]);
+			if (Rotation3D.LengthSquared() >= 0.5f)
+			{
+				bHasSaved3D          = true;
+				Saved3DPosition      = FVector3(SavedPosition[0], SavedPosition[1], SavedPosition[2]);
+				Saved3DRotation      = Rotation3D.GetNormalized();
+				bSaved3DOrthographic = ReadBool(*Found, "Orthographic", false);
+				const auto Height    = Found->find("OrthoHeight");
+				Saved3DOrthoHeight   = Height != Found->end() && Height->is_number() ? FMath::Clamp(Height->get<float>(), MinOrthoHeight, MaxOrthoHeight) : 1000.0f;
+			}
+		}
 	}
 	return true;
 }

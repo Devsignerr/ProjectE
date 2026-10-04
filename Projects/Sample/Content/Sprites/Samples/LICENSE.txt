@@ -2,4 +2,5 @@ Sample 2D assets (Phase 56 data tests)
 
 SampleAtlas.png: 8 icons from 7Soul_RPG_Icons (Henrique Lazarini, CC0 1.0 — see ../../Asset/Icons/7Soul_RPG_Icons/LICENSE.txt),
   downscaled back to the original 34x34 (nearest) and packed 4x2 with margin 1 / spacing 2.
+  Below them (y 73): "Panel" 26x26 9-slice frame (border 8), procedurally generated (CC0).
 SampleTiles.png: procedurally generated 16x16 tiles (CC0).

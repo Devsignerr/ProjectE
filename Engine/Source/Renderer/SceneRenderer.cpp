@@ -217,18 +217,36 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 	SpriteCollector.Init(*Rhi, *Resources);
+	if (!SpriteShadows.Init(*Rhi, ShaderLibrary, *Resources))
+	{
+		return false;
+	}
 	// 지형 (Phase 34): 그림자는 두 그림자 렌더러의 추가 캐스터 훅으로
 	if (!TerrainRenderer.Init(*Rhi, ShaderLibrary, *Resources, SceneColorFormat, FD3D12RHI::DepthBufferFormat))
 	{
 		return false;
 	}
 	FoliageRenderer.Init(*Resources);
-	ShadowRenderer.ExtraCasters = LocalLightRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection,
-	                                                                       const FFrustum& Frustum, bool bLocalLight) {
+	// 2D 스프라이트·타일맵 그림자 (FSpriteShadowRenderer): 방향광은 정적 캐스터를 지형과 함께 캐시에, 동적 캐스터는 매 프레임 따로. 로컬 그림자(캐시 없음)는 전부
+	ShadowRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight) {
 		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
+		SpriteShadows.RenderShadow(List, ViewProjection, Frustum, bLocalLight, FSpriteShadowRenderer::ESet::Static);
 	};
-	// 지형은 정적 그림자 캐스터 (방향광 그림자 캐시 — 높이 편집·LOD 변화는 상태 해시가 잡는다)
-	ShadowRenderer.ExtraCasterState = [this](const FFrustum& Frustum) { return TerrainRenderer.GetShadowStateHash(Frustum); };
+	ShadowRenderer.ExtraDynamicCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight) {
+		SpriteShadows.RenderShadow(List, ViewProjection, Frustum, bLocalLight, FSpriteShadowRenderer::ESet::Dynamic);
+	};
+	ShadowRenderer.HasExtraDynamicCasters = [this]() { return SpriteShadows.HasDynamicCasters(); };
+	LocalLightRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight) {
+		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
+		SpriteShadows.RenderShadow(List, ViewProjection, Frustum, bLocalLight, FSpriteShadowRenderer::ESet::All);
+	};
+	// 지형은 정적 그림자 캐스터 (방향광 그림자 캐시 — 높이 편집·LOD 변화는 상태 해시가 잡는다). 정적 2D 캐스터가 장 안에 있으면 그 해시도 섞는다
+	// (없으면 0 → 지형 해시 그대로 — 2D 그림자가 없는 씬의 캐시 키는 이전과 같다)
+	ShadowRenderer.ExtraCasterState = [this](const FFrustum& Frustum) {
+		const uint64 Terrain = TerrainRenderer.GetShadowStateHash(Frustum);
+		const uint64 Sprites = SpriteShadows.GetStaticStateHash(Frustum);
+		return Sprites != 0 ? ShadowCacheMath::HashValue(Terrain, Sprites) : Terrain;
+	};
 
 	GpuTimer.Init(Device, Rhi->GetGraphicsQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererTimestamps"); // 실패해도 GPU 시간만 0
 	ComputeGpuTimer.Init(Device, Rhi->GetComputeQueue().GetQueue(), FD3D12RHI::FrameCount, L"SceneRendererComputeTimestamps"); // 비동기 계산 패스 구간
@@ -407,6 +425,8 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.SpriteDrawCalls += Stats.SpriteDrawCalls;
 	Capture.SpriteTileChunks += Stats.SpriteTileChunks;
 	Capture.SpriteTiles += Stats.SpriteTiles;
+	Capture.SpriteShadowCasters += Stats.SpriteShadowCasters;
+	Capture.SpriteShadowStatic += Stats.SpriteShadowStaticCasters;
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -464,8 +484,9 @@ void FSceneRenderer::LogPerfCapture() const
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
 	if (Capture.Sprites > 0.0 || Capture.SpriteTiles > 0.0)
 	{
-		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}, 타일 청크 {:.1f} (타일 {:.0f}, 캐시 청크 {})", Capture.Sprites / Count,
-		      Capture.SpriteDrawCalls / Count, Capture.SpriteTileChunks / Count, Capture.SpriteTiles / Count, SpriteCollector.GetCachedChunkCount());
+		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}, 타일 청크 {:.1f} (타일 {:.0f}, 캐시 청크 {}), 그림자 캐스터 {:.0f} (정적 {:.0f})",
+		      Capture.Sprites / Count, Capture.SpriteDrawCalls / Count, Capture.SpriteTileChunks / Count, Capture.SpriteTiles / Count,
+		      SpriteCollector.GetCachedChunkCount(), Capture.SpriteShadowCasters / Count, Capture.SpriteShadowStatic / Count);
 	}
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
@@ -646,7 +667,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
 	}
-	if (!ParticleRenderer.ReloadShaders(bForceRecompile) || !SpriteRenderer.ReloadShaders(bForceRecompile))
+	if (!ParticleRenderer.ReloadShaders(bForceRecompile) || !SpriteRenderer.ReloadShaders(bForceRecompile) || !SpriteShadows.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -708,6 +729,7 @@ void FSceneRenderer::Shutdown()
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
 	SpriteCollector.Shutdown();
+	SpriteShadows.Shutdown();
 	SpriteRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
 	FoliageRenderer.Shutdown();
@@ -1352,6 +1374,29 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	Stats.SkinPalettes  = SkinPalettes.GetPaletteCount();
 	EndCpuTimer(ERenderTimer::Gather);
 
+	// 2D 스프라이트·타일맵 수집 (Renderer/SpriteSceneCollector.h): 그림자 패스 등록 전에 — 그림자 캐스터(bCastShadows, 캐스케이드·로컬 그림자 장 볼륨 —
+	// 메인 프러스텀 밖 포함)를 같은 수집에서 뽑아 FSpriteShadowRenderer가 올린다 (방향광 캐시 상태 해시는 ShadowRenderer.AddPass 안에서 읽음).
+	// 스프라이트 그리기(메인 목록)는 아래 스프라이트 패스. 캡처 굽기·와이어프레임(에셋 미리보기)에는 수집하지 않는다
+	const bool bSpritesThisView = !bRenderingCaptures && !bWireframe;
+	BeginCpuTimer(ERenderTimer::Sprites);
+	if (bSpritesThisView)
+	{
+		FSpriteSceneCollector::FCasterTest CasterTest;
+		if (RendererCVars::SpriteShadows.Get())
+		{
+			CasterTest = [this](const FBox& Bounds) { return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds); };
+		}
+		SpriteCollector.Collect(Scene, FrozenFrustum, CasterTest, ShadowStaticFrames);
+		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks());
+	}
+	else
+	{
+		SpriteShadows.Prepare({}, {});
+	}
+	EndCpuTimer(ERenderTimer::Sprites);
+	Stats.SpriteShadowCasters       = SpriteShadows.GetCasterCount();
+	Stats.SpriteShadowStaticCasters = SpriteShadows.GetStaticCasterCount();
+
 	// GPU 파티클 계산 (그리기 전에, 계산 셰이더만 → 비동기 계산 가능)
 	const bool bAsyncAllowed = RendererCVars::RenderGraphAsyncCompute.Get();
 	ParticleRenderer.PrepareSimulation(Scene, FrozenFrustum);
@@ -1937,11 +1982,10 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		Stats.SpriteDrawCalls  = 0;
 		Stats.SpriteTileChunks = 0;
 		Stats.SpriteTiles      = 0;
-		if (!bRenderingCaptures && !bWireframe)
+		if (bSpritesThisView)
 		{
 			BeginCpuTimer(ERenderTimer::Sprites);
-			SpriteCollector.Collect(Scene, FrozenFrustum);
-			FSpriteRenderer::FPreparedFrame Sprites;
+			FSpriteRenderer::FPreparedFrame Sprites; // 수집은 위 (그림자 패스 등록 전)
 			SpriteRenderer.Prepare(RenderCamera, SpriteCollector.GetItems(), SpriteCollector.GetChunks(), Sprites);
 			EndCpuTimer(ERenderTimer::Sprites);
 			Stats.Sprites          = Sprites.SpriteCount;

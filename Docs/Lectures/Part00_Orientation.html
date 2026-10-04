@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0부 오리엔테이션 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">0부 오리엔테이션</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">0부 · 강의 0~1</div>
+	<h1>오리엔테이션</h1>
+	<p>엔진이 무엇으로 이루어져 있는지 큰 그림을 잡고, 아무것도 없는 폴더에서 "창이 뜨고 화면이 지워지는" 상태까지 가는 첫 걸음을 함께 밟습니다.</p>
+</header>
+
+<!-- ======================================================= 0강 ======================================================= -->
+<article class="lecture" id="lec-0">
+<header>
+	<div class="no">0강</div>
+	<h2 id="lec-0-title">게임 엔진이란 무엇인가</h2>
+	<div class="meta">관련 기록: Plans.md "핵심 결정 (2026-09-29)" · 살펴볼 곳: <code>Projects/Sample/</code>, <code>Engine/Source/</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>게임 엔진, 에디터, 런타임, 게임 프로젝트가 각각 무엇이고 서로 어떻게 연결되는지 설명할 수 있습니다.</li>
+		<li>엔진을 이루는 주요 시스템(렌더링, 씬, 물리, 스크립트, 네트워크 등)과 그 의존 방향을 그릴 수 있습니다.</li>
+		<li>ProjectE가 "무엇을 직접 만들고 무엇을 가져다 쓸지" 정한 기준과 그 이유를 이해합니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-0-why"><span class="step">왜 필요한가</span>게임마다 같은 일을 반복하지 않기 위해</h3>
+<p>게임을 하나 만든다고 생각해 봅시다. 화면에 3D 모델을 그려야 하고, 키보드와 마우스 입력을 받아야 하고, 물체가 떨어지고 부딪혀야 하고, 소리가 나야 하고, 저장과 불러오기가 되어야 합니다. 그런데 이 목록은 레이싱 게임이든 RPG든 거의 똑같습니다. 다른 것은 "그 위에서 무슨 일이 일어나느냐" — 즉 <b>규칙과 콘텐츠</b>뿐입니다.</p>
+<p><b>게임 엔진</b>은 이 공통 부분을 한 번 잘 만들어 두고, 게임마다 규칙과 콘텐츠만 바꿔 끼우게 해 주는 소프트웨어입니다. 언리얼과 유니티가 대표적이고, 이 강의에서 다루는 ProjectE도 같은 목표를 가진 엔진입니다.</p>
+
+<div class="callout note">
+	<b class="t">비유</b>
+	엔진은 자동차의 차체·엔진·변속기이고, 게임은 그 위에 얹는 실내 디자인과 운전 경험입니다. 같은 차체로 세단도 SUV도 만들 수 있듯, 같은 엔진으로 장르가 다른 게임을 만듭니다.
+</div>
+
+<h3 id="lec-0-concept"><span class="step">핵심 개념</span>엔진을 구성하는 네 가지 층</h3>
+<p>"엔진"이라는 말은 사실 여러 덩어리를 한꺼번에 부르는 말입니다. ProjectE를 기준으로 나누면 네 층이 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="엔진의 네 층">
+		<title>엔진의 네 층</title>
+		<rect x="20" y="16" width="820" height="60" rx="10" class="k4"/>
+		<text x="40" y="42" class="t-bold">④ 게임 (콘텐츠 + 규칙)</text>
+		<text x="40" y="62" class="t-small">씬, 모델, 머티리얼, Lua 스크립트, 게임 모듈 C++ — 게임마다 다름</text>
+		<rect x="20" y="92" width="400" height="66" rx="10" class="k3"/>
+		<text x="40" y="118" class="t-bold">③ 도구 — 에디터</text>
+		<text x="40" y="140" class="t-small">사람이 콘텐츠를 만들고 고치는 프로그램</text>
+		<rect x="440" y="92" width="400" height="66" rx="10" class="k3"/>
+		<text x="460" y="118" class="t-bold">③ 실행 파일 — 런타임 / 서버</text>
+		<text x="460" y="140" class="t-small">플레이어가 실제로 실행하는 프로그램</text>
+		<rect x="20" y="174" width="820" height="82" rx="10" class="acc"/>
+		<text x="40" y="200" class="t-bold">② 엔진 런타임 (ProjectEEngine.dll)</text>
+		<text x="40" y="222" class="t-small">렌더러 · 씬(ECS) · 물리 · 오디오 · 애니메이션 · AI · 스크립트 · 네트워크 · UI · 게임 월드 갱신 순서</text>
+		<text x="40" y="242" class="t-muted">에디터와 게임이 똑같은 코드를 공유한다 → 에디터에서 본 화면 = 게임 화면</text>
+		<rect x="20" y="272" width="820" height="46" rx="10" class="box"/>
+		<text x="40" y="300" class="t-bold">① 플랫폼 / 하드웨어 추상화</text>
+		<text x="270" y="300" class="t-small">Win32 창·입력, DirectX 12(RHI), 파일 시스템, 스레드</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 0-1.</b> 아래층은 위층을 모릅니다. 렌더러는 "어떤 게임인지" 모르고, 게임은 "DirectX 12가 어떻게 동작하는지" 몰라도 됩니다.</figcaption>
+</figure>
+
+<h4>① 플랫폼 추상화</h4>
+<p>운영체제와 GPU는 저마다 API가 다릅니다. 창을 만드는 방법은 Windows(Win32)와 macOS가 다르고, GPU에 그리라고 시키는 방법은 DirectX, Vulkan, Metal이 다릅니다. 엔진은 이 차이를 얇은 층으로 감싸서 위층이 신경 쓰지 않게 합니다. ProjectE에서는 이것이 <code>Core</code>(창·입력·타이머)와 <code>RHI</code>(Render Hardware Interface — GPU 명령 추상화)입니다. 지금은 Windows + DirectX 12만 지원하지만, 층이 분리되어 있으므로 나중에 다른 플랫폼을 붙일 자리가 있습니다.</p>
+
+<h4>② 엔진 런타임</h4>
+<p>게임이 실행되는 동안 매 프레임 돌아가는 시스템들입니다. 화면을 그리는 렌더러, 게임 세계의 물체를 담는 씬, 물리 시뮬레이션, 소리, 애니메이션, AI, 스크립트, 네트워크, UI가 여기 있습니다. 중요한 점은 이 코드가 <b>에디터와 게임에서 똑같이</b> 쓰인다는 것입니다. 에디터의 뷰포트에 보이는 장면은 게임에서 보일 장면과 같은 렌더러가 그립니다.</p>
+
+<h4>③ 실행 파일: 에디터, 런타임, 서버, 도구</h4>
+<p>같은 엔진 런타임 위에 서로 다른 "얼굴"을 붙인 프로그램들입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>실행 파일</th><th>누가 쓰나</th><th>특징</th></tr>
+	<tr><td><code>ProjectEEditor.exe</code></td><td>개발자</td><td>씬 편집, 에셋 편집기, 플레이 테스트. ImGui로 만든 도구 UI</td></tr>
+	<tr><td><code>ProjectERuntime.exe</code></td><td>플레이어</td><td>출시되는 게임. 패키징할 때 게임 이름·아이콘으로 바뀐다</td></tr>
+	<tr><td><code>ProjectEServer.exe</code></td><td>서버 운영</td><td>창도 GPU도 없이 게임 규칙만 돌리는 전용 서버</td></tr>
+	<tr><td><code>ProjectECook.exe</code></td><td>빌드 파이프라인</td><td>셰이더·모델·텍스처를 게임이 바로 읽을 형식으로 변환(쿠킹)</td></tr>
+</table></div>
+
+<h4>④ 게임 프로젝트</h4>
+<p>실제 게임의 내용물입니다. ProjectE에서는 <b>엔진 폴더와 완전히 분리된 프로젝트 폴더</b>에 있고, 그 표식이 <code>.eproject</code> 파일입니다.</p>
+<pre class="code" data-file="Projects/Sample/ 의 구조">Projects/Sample/
+  Sample.eproject      <span class="com">// 프로젝트 정체성: 이름, 엔진 버전, 게임 모듈 DLL 이름</span>
+  Content/             <span class="com">// 씬(.escene), 모델, 머티리얼(.emat), Lua 스크립트, UI(.eui) ...</span>
+  Config/              <span class="com">// 프로젝트 설정 JSON (입력 매핑, 충돌 레이어, 렌더링 옵션 ...)</span>
+  Source/              <span class="com">// 게임 전용 C++ → SampleGame.dll (게임 모듈)</span>
+  Saved/               <span class="com">// 로그, 세이브, 캐시 (gitignore)</span>
+  Cooked/              <span class="com">// 쿠킹된 에셋 (gitignore)</span></pre>
+
+<div class="callout tip">
+	<b class="t">왜 엔진과 프로젝트를 나누나</b>
+	엔진 코드 안에 게임 에셋이 섞이면, 게임을 두 개 만들 때 엔진을 복사해야 합니다. 분리해 두면 엔진 하나로 여러 프로젝트를 열 수 있고, 엔진을 고쳐도 게임 폴더는 그대로입니다. 경로를 얻을 때 항상 <code>FPaths</code>를 거치게 한 것도 이 때문입니다 — 엔진 파일은 "실행 파일 기준", 게임 파일은 "프로젝트 폴더 기준"으로 찾습니다.
+</div>
+
+<h3 id="lec-0-frame"><span class="step">핵심 개념</span>게임은 "아주 빠르게 반복되는 루프"다</h3>
+<p>영화는 미리 찍은 사진을 1초에 24장 넘깁니다. 게임은 사진을 <b>매번 새로 계산해서</b> 1초에 60장 이상 만들어 냅니다. 이 한 장을 만드는 과정이 <b>프레임</b>이고, 엔진의 심장은 프레임을 끝없이 반복하는 루프입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="게임 루프">
+		<title>게임 루프</title>
+		<g class="t-small">
+			<rect x="40" y="90" width="150" height="60" rx="10" class="k1"/>
+			<text x="115" y="116" text-anchor="middle" class="t-bold">입력 받기</text>
+			<text x="115" y="136" text-anchor="middle" class="t-muted">키·마우스·패드</text>
+			<rect x="250" y="90" width="150" height="60" rx="10" class="k2"/>
+			<text x="325" y="116" text-anchor="middle" class="t-bold">세계 갱신</text>
+			<text x="325" y="136" text-anchor="middle" class="t-muted">스크립트·물리·AI (dt)</text>
+			<rect x="460" y="90" width="150" height="60" rx="10" class="acc"/>
+			<text x="535" y="116" text-anchor="middle" class="t-bold">그리기</text>
+			<text x="535" y="136" text-anchor="middle" class="t-muted">렌더러 → GPU</text>
+			<rect x="670" y="90" width="150" height="60" rx="10" class="k3"/>
+			<text x="745" y="116" text-anchor="middle" class="t-bold">화면에 내보내기</text>
+			<text x="745" y="136" text-anchor="middle" class="t-muted">Present</text>
+		</g>
+		<path d="M190,120 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,120 H456" class="ln" marker-end="url(#arr)"/>
+		<path d="M610,120 H666" class="ln" marker-end="url(#arr)"/>
+		<path d="M745,150 C 745,215 115,215 115,154" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="230" text-anchor="middle" class="t-small">다음 프레임 (60fps면 한 바퀴에 16.7ms 안에 끝나야 한다)</text>
+		<text x="430" y="40" text-anchor="middle" class="t-bold">dt = 지난 프레임에서 흐른 시간</text>
+		<text x="430" y="62" text-anchor="middle" class="t-muted">위치 += 속도 × dt  → 프레임률이 달라도 같은 속도로 움직인다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 0-2.</b> 모든 게임 엔진의 기본 루프. ProjectE에서는 <code>FApplication::RunWindowedLoop</code>가 이 루프이고, 1강에서 직접 읽어 봅니다.</figcaption>
+</figure>
+<p>이 그림에서 두 가지를 기억해 두세요. 첫째, 한 바퀴는 <b>예산</b>이 정해져 있습니다. 60fps라면 16.7ms 안에 입력·갱신·그리기를 모두 끝내야 합니다. 4부(성능)는 통째로 이 예산 싸움입니다. 둘째, 세계 갱신은 <b>dt(델타 타임)</b>에 비례해야 합니다. 빠른 PC에서 캐릭터가 더 빨리 달리면 안 되니까요.</p>
+
+<h3 id="lec-0-projecte"><span class="step">ProjectE에서는</span>무엇을 직접 만들고, 무엇을 가져다 쓰나</h3>
+<p>엔진을 처음부터 만든다고 해서 모든 것을 직접 짤 필요는 없습니다. 오히려 그러면 끝나지 않습니다. ProjectE는 첫날(2026-09-29) 다음 기준을 정했습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>직접 구현</th><th>라이브러리 사용 (CMake FetchContent, 커밋 해시 고정)</th></tr>
+	<tr><td>창·입력, 수학, RHI(DirectX 12 래퍼), 렌더러, ECS, 리플렉션<br>— <b>엔진의 성격과 성능을 결정하는 것</b></td>
+	<td>이미지 디코딩(stb_image), glTF 파싱(cgltf), JSON(nlohmann), 에디터 UI(Dear ImGui), 오디오(miniaudio), 스크립트 VM(Lua + sol2), 물리(Jolt), 네트워크(GameNetworkingSockets), 내비메시(Recast), 프로파일러(Tracy)<br>— <b>잘 만들어진 표준 해법이 있고, 직접 짜도 배울 것보다 시간이 더 드는 것</b></td></tr>
+</table></div>
+<p>판단 기준은 단순합니다. "이걸 직접 만들면 엔진의 핵심을 이해하는 데 도움이 되는가, 그리고 엔진의 구조를 내 마음대로 정해야 하는가?" 렌더러와 ECS는 둘 다 '예'입니다. 반면 PNG 파일 형식을 해독하는 코드는 엔진 설계와 무관하므로 검증된 라이브러리를 씁니다. 물리 엔진은 그 자체로 하나의 거대한 분야라 Jolt를 쓰되, 엔진과 맞닿는 경계(단위 변환, 컴포넌트, 이벤트 전달)는 직접 설계합니다 — 45강에서 다룹니다.</p>
+
+<div class="callout story">
+	<b class="t">첫날 함께 정한 다른 결정들</b>
+	<ul>
+		<li><b>DirectX 12, Windows x64, C++20, MSVC</b> — 가장 널리 쓰이는 PC 게임 환경 하나에 집중</li>
+		<li><b>좌표계는 언리얼과 같은 왼손 Z-up, 1단위 = 1cm</b> — 4강에서 이유를 다룹니다</li>
+		<li><b>소스 에셋은 JSON, 실행할 때는 쿠킹된 바이너리</b> — 사람이 읽고 git diff 할 수 있게(10강)</li>
+		<li><b>스크립트는 하이브리드</b> — 무거운 시스템은 C++, 콘텐츠 로직은 Lua(47강)</li>
+	</ul>
+	이런 결정은 나중에 바꾸기 매우 비쌉니다. 좌표계를 중간에 바꾸면 수학, 셰이더, 임포터, 물리, 저장된 씬 전부를 고쳐야 합니다. 그래서 첫날 정했습니다.
+</div>
+
+<h3 id="lec-0-deps"><span class="step">ProjectE에서는</span>모듈과 의존 방향</h3>
+<p>엔진 소스는 <code>Engine/Source/</code> 아래 모듈 단위로 나뉩니다. 모듈 사이에는 <b>한 방향으로만</b> 의존이 흐르도록 규칙을 둡니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="모듈 의존 방향">
+		<title>모듈 의존 방향</title>
+		<g class="t-small">
+			<rect x="370" y="250" width="120" height="38" rx="8" class="acc"/><text x="430" y="274" text-anchor="middle" class="t-bold">Core</text>
+			<rect x="130" y="176" width="110" height="38" rx="8" class="box"/><text x="185" y="200" text-anchor="middle">RHI</text>
+			<rect x="300" y="176" width="110" height="38" rx="8" class="box"/><text x="355" y="200" text-anchor="middle">Scene</text>
+			<rect x="450" y="176" width="110" height="38" rx="8" class="box"/><text x="505" y="200" text-anchor="middle">UI</text>
+			<rect x="600" y="176" width="110" height="38" rx="8" class="box"/><text x="655" y="200" text-anchor="middle">Network</text>
+			<rect x="130" y="100" width="110" height="38" rx="8" class="k1"/><text x="185" y="124" text-anchor="middle">Renderer</text>
+			<rect x="260" y="100" width="100" height="38" rx="8" class="k5"/><text x="310" y="124" text-anchor="middle">Physics</text>
+			<rect x="370" y="100" width="100" height="38" rx="8" class="k2"/><text x="420" y="124" text-anchor="middle">Scripting</text>
+			<rect x="480" y="100" width="80" height="38" rx="8" class="k3"/><text x="520" y="124" text-anchor="middle">AI</text>
+			<rect x="570" y="100" width="80" height="38" rx="8" class="k4"/><text x="610" y="124" text-anchor="middle">Audio</text>
+			<rect x="300" y="20" width="260" height="40" rx="8" class="acc"/><text x="430" y="45" text-anchor="middle" class="t-bold">World (FGameWorld)</text>
+		</g>
+		<path d="M185,176 L410,252" class="ln" marker-end="url(#arr)"/>
+		<path d="M355,214 L415,248" class="ln" marker-end="url(#arr)"/>
+		<path d="M505,214 L450,248" class="ln" marker-end="url(#arr)"/>
+		<path d="M655,214 L475,256" class="ln" marker-end="url(#arr)"/>
+		<path d="M185,138 V172" class="ln" marker-end="url(#arr)"/>
+		<path d="M200,138 L320,174" class="ln" marker-end="url(#arr)"/>
+		<path d="M230,128 C 420,150 470,150 490,174" class="ln" marker-end="url(#arr)"/>
+		<path d="M310,138 L345,174" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,138 L370,174" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,138 L380,176" class="ln" marker-end="url(#arr)"/>
+		<path d="M380,60 L200,98" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,60 L315,98" class="ln" marker-end="url(#arr)"/>
+		<path d="M430,60 V96" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,60 L515,98" class="ln" marker-end="url(#arr)"/>
+		<text x="700" y="40" class="t-muted">화살표 = "~에 의존한다"</text>
+		<text x="700" y="60" class="t-muted">위로 거슬러 가는 화살표는 없다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 0-3.</b> 단순화한 의존 그래프. 예를 들어 Scripting은 Physics를 직접 알지 못하고, 둘을 잇는 일은 World가 "훅(hook)"으로 합니다.</figcaption>
+</figure>
+<p>왜 이렇게 까다롭게 할까요? 의존이 순환하면(A가 B를 쓰고 B가 A를 쓰면) 둘을 따로 테스트할 수도, 따로 바꿀 수도 없게 됩니다. 예를 들어 Lua 스크립트에서 <code>Physics.Raycast</code>를 부를 수 있어야 하지만, Scripting 모듈이 Physics를 직접 include하면 "물리 없는 서버 테스트" 같은 것이 어려워집니다. 그래서 Scripting은 <code>FScriptPhysicsHooks</code>라는 함수 묶음만 알고, 그 함수를 실제 물리에 연결하는 일은 더 위층인 World가 합니다. 이 "훅으로 잇기" 패턴은 강의 곳곳에서 다시 나옵니다.</p>
+
+<h3 id="lec-0-pitfalls"><span class="step">함정과 교훈</span>범용 엔진은 끝이 없다</h3>
+<p>ProjectE의 목표는 "에디터를 포함한 범용 3D 게임 엔진"입니다. 범용이라는 말은 끝이 없다는 뜻이기도 합니다. 그래서 이 프로젝트는 처음부터 <code>Plans.md</code>에 Phase 단위로 작업을 나누고, 각 Phase마다 <b>완료 기준(DoD, Definition of Done)</b>을 적었습니다. 예를 들어 Phase 0의 DoD는 이렇습니다.</p>
+<pre class="code" data-file="Plans.md">## Phase 0 — 프로젝트 골격
+**DoD**: Sandbox.exe 실행 시 창이 열리고 DX12로 배경색이 클리어된다.
+리사이즈 / ESC 종료 / F1 VSync 토글이 동작하고, 디버그 레이어 에러 및
+종료 시 라이브 오브젝트 누수가 없다.</pre>
+<p>"좋은 엔진 만들기"는 끝낼 수 없지만, "창이 뜨고 배경이 지워지며 누수가 없다"는 끝낼 수 있습니다. 확인 가능한 작은 목표를 쌓아 가는 것이 큰 소프트웨어를 만드는 유일한 방법입니다. 이 강의도 그 순서를 따라갑니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>엔진 = 게임마다 반복되는 공통 부분(그리기, 입력, 물리, 소리, 저장 …)을 한 번 잘 만든 것.</li>
+		<li>네 층: 플랫폼 추상화 → 엔진 런타임 → 실행 파일(에디터/런타임/서버/도구) → 게임 프로젝트.</li>
+		<li>에디터와 게임은 같은 엔진 런타임을 공유하고, 게임 프로젝트는 엔진 폴더와 분리된다.</li>
+		<li>엔진의 성격을 정하는 것(렌더러, ECS, 리플렉션)은 직접, 표준 해법이 있는 것은 라이브러리.</li>
+		<li>모듈 의존은 한 방향. 거꾸로 이어야 하면 위층이 훅으로 잇는다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 에디터 전용 코드(예: 기즈모)가 엔진 런타임 DLL 안에 있으면 어떤 문제가 생길까요?</summary>
+	출시되는 게임에 쓰지도 않는 코드가 함께 실리고, 런타임이 ImGui 같은 에디터 라이브러리에 의존하게 됩니다. 그래서 ProjectE에서 <code>Editor</code> 모듈은 엔진 DLL 밖에 있고, 엔진 DLL을 쓰기만 합니다. 의존 방향은 "에디터 → 엔진"이지 그 반대가 아닙니다.
+</details>
+<details class="quiz"><summary>Q2. 위치를 <code>위치 += 속도</code>로 갱신하면 어떤 일이 생길까요?</summary>
+	1프레임마다 "속도"만큼 움직이므로 144fps 모니터에서는 60fps보다 2.4배 빨리 움직입니다. <code>위치 += 속도 × dt</code>로 쓰면 초당 이동량이 프레임률과 무관해집니다. (물리처럼 정확해야 하는 시뮬레이션은 한 걸음 더 나아가 "고정 스텝"을 씁니다 — 45강.)
+</details>
+<details class="quiz"><summary>Q3. Lua 스크립트가 AI의 블랙보드를 읽어야 하는데 Scripting과 AI 모듈은 서로 모릅니다. 어떻게 이을까요?</summary>
+	Scripting 쪽에 "블랙보드 읽기" 함수 포인터 묶음(<code>FScriptAIHooks</code>)을 두고, 둘을 모두 아는 World(<code>FGameWorld::ConnectScriptsAndAI</code>)가 실제 구현을 꽂아 넣습니다. 의존 방향은 그대로 두고 연결만 위에서 합니다.
+</details>
+</article>
+
+<!-- ======================================================= 1강 ======================================================= -->
+<article class="lecture" id="lec-1">
+<header>
+	<div class="no">1강</div>
+	<h2 id="lec-1-title">프로젝트 골격</h2>
+	<div class="meta">관련 Phase: 0 · 살펴볼 곳: <code>CMakeLists.txt</code>, <code>CMake/EngineTargets.cmake</code>, <code>Engine/Source/Core/</code> (<code>Log.h</code>, <code>Assert.h</code>, <code>Window.cpp</code>, <code>Input.h</code>, <code>Timer.h</code>, <code>Application.cpp</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>CMake로 여러 모듈과 실행 파일을 가진 C++ 프로젝트를 구성하는 방법을 이해합니다.</li>
+		<li>엔진이 로그와 어설트를 왜 자체 매크로로 두는지 설명할 수 있습니다.</li>
+		<li>Win32 창과 메시지 루프가 무엇이고, 그것이 게임 루프와 어떻게 맞물리는지 압니다.</li>
+		<li>입력을 "눌려 있음/이번에 눌림/이번에 뗌"으로 나누는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-1-why"><span class="step">왜 필요한가</span>그리기 전에 필요한 것들</h3>
+<p>삼각형 하나를 그리기 전에도 준비할 것이 꽤 많습니다. 소스 파일을 어떻게 묶어 빌드할지, 무슨 일이 일어나는지 어떻게 기록할지, 화면을 띄울 창은 어떻게 만들지, 키보드 입력은 어떻게 받을지, 시간은 어떻게 잴지. 이 강의는 Phase 0에서 만든 이 "뼈대"를 하나씩 봅니다. 화려하지 않지만, 이후 모든 강의의 코드가 이 위에서 돌아갑니다.</p>
+
+<h3 id="lec-1-cmake"><span class="step">핵심 개념</span>CMake: 빌드를 설명하는 언어</h3>
+<p>C++ 컴파일러는 ".cpp 파일 하나 → 오브젝트 파일 하나"만 압니다. 수백 개 파일을 모아 라이브러리를 만들고, 라이브러리끼리 링크해 실행 파일을 만들고, 컴파일 옵션을 정하는 일은 <b>빌드 시스템</b>의 몫입니다. CMake는 "이런 타깃이 있고 이렇게 의존한다"를 기술하면 Visual Studio 솔루션이나 Ninja 빌드 파일을 대신 만들어 주는 도구입니다.</p>
+<p>핵심 단어는 <b>타깃(target)</b>입니다. 라이브러리 하나, 실행 파일 하나가 각각 타깃이고, 타깃끼리 <code>target_link_libraries</code>로 의존을 맺습니다. ProjectE의 각 모듈은 하나의 타깃입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/CMakeLists.txt (발췌)"><span class="com"># Core 모듈: 플랫폼 추상화(창/입력), 로그, 타이머, 애플리케이션 루프</span>
+file(GLOB_RECURSE CORE_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+
+add_library(ECore ${E_ENGINE_MODULE_TYPE} ${CORE_SOURCES})
+add_library(ProjectE::Core ALIAS ECore)
+
+<span class="com"># include 경로는 모듈 루트(Engine/Source) 기준: #include "Core/Log.h"</span>
+target_include_directories(ECore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_link_libraries(ECore PRIVATE ThirdParty::nlohmann_json)
+
+e_set_engine_module_defaults(ECore)</pre>
+<p>여기서 눈여겨볼 점이 셋 있습니다.</p>
+<ol>
+	<li><b>include 경로를 모듈 루트 기준으로</b> 둡니다. 그래서 어디서든 <code>#include "Core/Log.h"</code>, <code>#include "RHI/D3D12/D3D12RHI.h"</code>처럼 "어느 모듈의 무엇"인지 드러나게 씁니다.</li>
+	<li><code>PUBLIC</code>과 <code>PRIVATE</code>을 구분합니다. JSON 라이브러리는 Core 내부에서만 쓰므로 <code>PRIVATE</code> — Core를 쓰는 쪽에는 전파되지 않습니다. 의존을 최소한으로 퍼뜨리는 습관입니다.</li>
+	<li>모든 자체 타깃에 공통 설정 함수 <code>e_set_*_defaults</code>를 부릅니다. 바로 아래에서 봅니다.</li>
+</ol>
+
+<h4>경고 = 에러</h4>
+<pre class="code" data-file="CMake/EngineTargets.cmake"><span class="kw">function</span>(e_set_target_defaults TargetName FolderName)
+    set_target_properties(${TargetName} PROPERTIES FOLDER <span class="str">"${FolderName}"</span>)
+    target_compile_options(${TargetName} PRIVATE /W4 /WX) <span class="com"># 경고 레벨 4 + 경고 = 에러 (자체 타깃만, 서드파티는 /W0)</span>
+    ...
+<span class="kw">endfunction</span>()</pre>
+<p><code>/W4</code>는 MSVC의 높은 경고 수준이고, <code>/WX</code>는 "경고가 하나라도 있으면 빌드 실패"입니다. 처음엔 귀찮아 보이지만, 사용하지 않는 변수, 부호 있는/없는 정수 비교, 암시적 축소 변환 같은 경고는 실제 버그의 씨앗인 경우가 많습니다. 경고가 쌓이기 시작하면 진짜 중요한 경고가 묻힙니다. 그래서 이 프로젝트는 "경고를 끄지 말고 원인을 고친다"를 규칙으로 둡니다.</p>
+<div class="callout story">
+	<b class="t">실제로 겪은 일</b>
+	처음엔 <code>/W4</code>를 전역 옵션(<code>add_compile_options</code>)에 넣었습니다. 그러자 서드파티 라이브러리에 걸린 <code>/W0</code>(경고 끔)과 충돌해, 파일마다 "D9025: '/W4'을(를) '/W0'(으)로 재정의" 경고가 쏟아졌습니다. 그래서 경고 수준은 <b>자체 타깃에만</b> 함수로 걸도록 바꿨습니다. 전역 옵션에는 모두에게 공통인 것(<code>/utf-8</code>, <code>/permissive-</code> 등)만 둡니다.
+</div>
+
+<h4>전역 컴파일 옵션과 정의</h4>
+<pre class="code" data-file="CMakeLists.txt (발췌)">add_compile_options(
+    /permissive-     <span class="com"># 표준 준수 모드</span>
+    /utf-8           <span class="com"># 소스/실행 문자 집합 UTF-8 (한글 주석·로그)</span>
+    /Zc:preprocessor <span class="com"># 표준 준수 전처리기 (__VA_OPT__ 지원)</span>
+    /EHsc
+    /MP              <span class="com"># 병렬 컴파일</span>
+)
+add_compile_definitions(
+    UNICODE _UNICODE
+    NOMINMAX            <span class="com"># Windows.h의 min/max 매크로가 std::min을 망가뜨리지 않게</span>
+    WIN32_LEAN_AND_MEAN
+    $&lt;IF:$&lt;CONFIG:Debug&gt;,E_DEBUG=1,E_DEBUG=0&gt;
+)</pre>
+<p><code>/utf-8</code>은 한글 주석과 로그 때문에 필수입니다. 이것이 없으면 MSVC는 소스를 시스템 코드 페이지(한국어 Windows는 CP949)로 읽어 한글이 깨집니다. <code>E_DEBUG</code>는 디버그 전용 코드를 <code>#if E_DEBUG</code>로 감싸기 위한 매크로입니다.</p>
+
+<h3 id="lec-1-log"><span class="step">핵심 개념</span>로그와 어설트 — 엔진의 눈과 경보기</h3>
+<p>게임은 1초에 60번 수많은 일을 합니다. 무엇이 잘못됐는지 알려면 <b>기록</b>이 필요하고, "절대 일어나면 안 되는 일"이 일어났을 때 즉시 멈추는 <b>경보기</b>가 필요합니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Log.h (발췌)"><span class="kw">enum class</span> ELogVerbosity : uint8
+{
+	Fatal = <span class="num">0</span>, <span class="com">// 출력 후 프로세스 중단</span>
+	Error,
+	Warning,
+	Display,   <span class="com">// 사용자에게 보여줄 주요 진행 상황</span>
+	Log,       <span class="com">// 일반 로그</span>
+	Verbose,   <span class="com">// 상세 디버깅용</span>
+};
+
+<span class="com">// 사용 예: E_LOG(LogCore, Display, "창 생성 완료: {}x{}", Width, Height);</span>
+<span class="pp">#define</span> E_LOG(CategoryName, Verbosity, Format, ...)                                              \
+	<span class="kw">do</span>                                                                                           \
+	{                                                                                            \
+		<span class="kw">if</span> (FLog::ShouldLog(CategoryName, ELogVerbosity::Verbosity))                              \
+		{                                                                                        \
+			FLog::Write(CategoryName, ELogVerbosity::Verbosity,                                  \
+			            std::format(Format __VA_OPT__(,) __VA_ARGS__));                          \
+		}                                                                                        \
+	} <span class="kw">while</span> (<span class="num">0</span>)</pre>
+<p>왜 그냥 <code>printf</code>를 쓰지 않고 매크로를 만들었을까요?</p>
+<ul>
+	<li><b>카테고리와 상세 수준</b>: <code>LogRenderer</code>, <code>LogPhysics</code>처럼 출처를 붙이고, 카테고리마다 "Verbose는 끄기" 같은 걸러내기를 할 수 있습니다.</li>
+	<li><b>걸러질 로그는 문자열을 만들지도 않는다</b>: <code>ShouldLog</code>를 먼저 확인하고, 통과할 때만 <code>std::format</code>을 실행합니다. 매크로이기 때문에 가능한 일입니다 — 함수였다면 인자(포맷된 문자열)가 호출 전에 이미 만들어집니다.</li>
+	<li><b><code>std::format</code> 문법</b>: <code>{}</code> 자리표시자는 타입 안전합니다. <code>printf</code>의 <code>%d</code>에 문자열을 넘겨 크래시 나는 종류의 실수가 컴파일 타임에 잡힙니다.</li>
+	<li><b>출력 위치를 한곳에서</b>: 콘솔, Visual Studio 출력 창, 로그 파일(<code>&lt;Saved&gt;/Logs/</code>), 에디터의 출력 로그 패널이 모두 이 한 함수에서 나옵니다.</li>
+</ul>
+<div class="callout note">
+	<b class="t"><code>do { ... } while (0)</code>는 왜?</b>
+	여러 문장짜리 매크로를 <code>if (x) E_LOG(...); else ...</code>처럼 써도 하나의 문장으로 동작하게 하는 C/C++의 오래된 관용구입니다. 중괄호만 쓰면 뒤의 세미콜론 때문에 <code>else</code>가 짝을 잃습니다.
+</div>
+
+<p>어설트는 "이 조건은 반드시 참이어야 한다"를 코드에 적는 방법입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Assert.h (발췌)"><span class="com">// 조건 검증. 실패 시 Fatal 로그 후 중단. 모든 빌드 구성에서 활성화</span>
+<span class="pp">#define</span> E_CHECK(Expression)                                                                 \
+	<span class="kw">do</span>                                                                                      \
+	{                                                                                       \
+		<span class="kw">if</span> (!(Expression))                                                                  \
+		{                                                                                   \
+			E_LOG(LogCore, Fatal, <span class="str">"검증 실패: {} ({}:{})"</span>, #Expression, __FILE__, __LINE__); \
+		}                                                                                   \
+	} <span class="kw">while</span> (<span class="num">0</span>)</pre>
+<p><code>#Expression</code>은 조건식을 문자열로 바꾸는 전처리기 기능이라, 실패하면 "검증 실패: Index &lt; Count (Scene.cpp:120)"처럼 정확히 무엇이 어디서 깨졌는지 남습니다. 잘못된 상태로 계속 달리면 엉뚱한 곳에서 원인 모를 크래시가 납니다. <b>문제가 생긴 그 자리에서 멈추는 것</b>이 디버깅 시간을 가장 크게 줄입니다.</p>
+<div class="callout tip">
+	<b class="t">어설트와 오류 처리의 구분</b>
+	파일이 없거나 GPU가 기능을 지원하지 않는 것은 "일어날 수 있는 일"이므로 오류를 반환하고 처리합니다(예: 초기화 경로의 <code>E_D3D_VERIFY</code>는 Error 로그 후 <code>return false</code>). 반대로 "배열 인덱스가 범위 밖" 같은 것은 프로그래머의 실수이므로 <code>E_CHECK</code>로 즉시 멈춥니다.
+</div>
+
+<h3 id="lec-1-window"><span class="step">핵심 개념</span>Win32 창과 메시지 루프</h3>
+<p>Windows에서 창은 운영체제가 관리하는 객체입니다. 사용자가 키를 누르거나, 창 크기를 바꾸거나, 닫기 버튼을 누르면 운영체제는 그 창에 <b>메시지</b>(<code>WM_KEYDOWN</code>, <code>WM_SIZE</code>, <code>WM_CLOSE</code> …)를 보냅니다. 프로그램은 메시지 대기열을 꺼내 처리하고, 처리 함수를 <b>윈도우 프로시저(WndProc)</b>라고 부릅니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 220" role="img" aria-label="Win32 메시지 흐름">
+		<title>Win32 메시지 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="70" width="140" height="60" rx="10" class="box"/>
+			<text x="90" y="96" text-anchor="middle" class="t-bold">사용자 / OS</text>
+			<text x="90" y="116" text-anchor="middle" class="t-muted">키, 마우스, 크기 변경</text>
+			<rect x="210" y="70" width="150" height="60" rx="10" class="k1"/>
+			<text x="285" y="96" text-anchor="middle" class="t-bold">메시지 대기열</text>
+			<text x="285" y="116" text-anchor="middle" class="t-muted">스레드마다 하나</text>
+			<rect x="410" y="70" width="170" height="60" rx="10" class="k2"/>
+			<text x="495" y="96" text-anchor="middle" class="t-bold">PumpMessages</text>
+			<text x="495" y="116" text-anchor="middle" class="t-muted">PeekMessage 루프</text>
+			<rect x="630" y="40" width="210" height="120" rx="10" class="acc"/>
+			<text x="735" y="64" text-anchor="middle" class="t-bold">FWindow::WndProc</text>
+			<text x="650" y="90" class="t-small">WM_SIZE → 리사이즈 이벤트</text>
+			<text x="650" y="110" class="t-small">WM_KEYDOWN → FInput 키 상태</text>
+			<text x="650" y="130" class="t-small">WM_INPUT → 원시 마우스 이동</text>
+			<text x="650" y="150" class="t-small">WM_CLOSE → 종료 요청</text>
+		</g>
+		<path d="M160,100 H206" class="ln" marker-end="url(#arr)"/>
+		<path d="M360,100 H406" class="ln" marker-end="url(#arr)"/>
+		<path d="M580,100 H626" class="ln" marker-end="url(#arr)"/>
+		<text x="410" y="170" class="t-muted">GetMessage는 메시지가 올 때까지 잠든다 → 게임에는 부적합</text>
+		<text x="410" y="190" class="t-muted">PeekMessage는 없으면 바로 돌아온다 → 남은 시간에 게임 프레임 진행</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 1-1.</b> 일반 Windows 앱은 메시지가 올 때만 깨어나지만, 게임은 메시지가 없어도 계속 프레임을 돌려야 합니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Core/Window.cpp">
+<span class="kw">void</span> FWindow::PumpMessages()
+{
+	MSG Message{};
+	<span class="kw">while</span> (PeekMessageW(&amp;Message, <span class="kw">nullptr</span>, <span class="num">0</span>, <span class="num">0</span>, PM_REMOVE))
+	{
+		TranslateMessage(&amp;Message);
+		DispatchMessageW(&amp;Message); <span class="com">// → FWindow::WndProc 호출</span>
+	}
+}</pre>
+<p>메모장 같은 일반 앱은 <code>GetMessage</code>로 메시지가 올 때까지 잠듭니다. CPU를 쓰지 않으니 좋습니다. 하지만 게임은 아무도 키를 누르지 않아도 구름이 흐르고 적이 움직여야 하므로, <code>PeekMessage</code>로 쌓인 메시지만 처리하고 바로 돌아와 프레임을 진행합니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 공개 헤더에 <code>Windows.h</code>를 넣지 않는다</b>
+	<code>Windows.h</code>는 거대하고, <code>min</code>/<code>max</code>, <code>CreateWindow</code> 같은 매크로를 잔뜩 정의해 다른 코드를 망가뜨립니다. 그래서 <code>Window.h</code>는 창 핸들을 <code>void*</code> 같은 중립 타입으로 들고, Windows 헤더는 플랫폼 .cpp에서만 <code>Core/Platform/WindowsHeaders.h</code>로 포함합니다. 위 코드에서 <code>WndProc</code>의 인자 타입이 <code>HWND</code>, <code>WPARAM</code> 대신 <code>uint32</code>, <code>uint64</code> 같은 엔진 타입인 이유도 이것입니다.
+</div>
+
+<h3 id="lec-1-input"><span class="step">핵심 개념</span>입력: 상태와 엣지</h3>
+<p>"점프는 스페이스를 <b>누른 순간</b> 한 번", "달리기는 시프트를 <b>누르고 있는 동안</b>". 게임 입력에는 두 종류의 질문이 있습니다. 그래서 <code>FInput</code>은 키마다 이번 프레임과 지난 프레임의 상태를 들고, 그 차이로 엣지를 계산합니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 200" role="img" aria-label="키 상태와 엣지">
+		<title>키 상태와 엣지</title>
+		<text x="20" y="44" class="t-bold">물리 키</text>
+		<path d="M120,60 H260 V24 H560 V60 H820" class="ln s1" stroke-width="2.4"/>
+		<g class="t-small">
+			<line x1="120" y1="80" x2="120" y2="180" class="ln-d"/><line x1="220" y1="80" x2="220" y2="180" class="ln-d"/>
+			<line x1="320" y1="80" x2="320" y2="180" class="ln-d"/><line x1="420" y1="80" x2="420" y2="180" class="ln-d"/>
+			<line x1="520" y1="80" x2="520" y2="180" class="ln-d"/><line x1="620" y1="80" x2="620" y2="180" class="ln-d"/>
+			<line x1="720" y1="80" x2="720" y2="180" class="ln-d"/>
+			<text x="20" y="104" class="t-bold">IsKeyDown</text>
+			<text x="170" y="104" text-anchor="middle">✗</text><text x="270" y="104" text-anchor="middle" class="f2">✓</text>
+			<text x="370" y="104" text-anchor="middle" class="f2">✓</text><text x="470" y="104" text-anchor="middle" class="f2">✓</text>
+			<text x="570" y="104" text-anchor="middle" class="f2">✓</text><text x="670" y="104" text-anchor="middle">✗</text>
+			<text x="20" y="136" class="t-bold">IsKeyPressed</text>
+			<text x="270" y="136" text-anchor="middle" class="f5 t-bold">● 이번에 눌림</text>
+			<text x="20" y="168" class="t-bold">IsKeyReleased</text>
+			<text x="670" y="168" text-anchor="middle" class="f5 t-bold">● 이번에 뗌</text>
+		</g>
+		<text x="740" y="104" class="t-muted">← 프레임 칸</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 1-2.</b> Down = 지금 상태, Pressed = (지금 눌림) && (지난 프레임엔 안 눌림), Released는 그 반대. 프레임 끝의 <code>FInput::EndFrame()</code>이 "지금"을 "지난 프레임"으로 넘깁니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Core/Input.h (발췌)"><span class="kw">bool</span> IsKeyDown(EKey Key) <span class="kw">const</span>;      <span class="com">// 눌려 있음</span>
+<span class="kw">bool</span> IsKeyPressed(EKey Key) <span class="kw">const</span>;   <span class="com">// 이번 프레임에 눌림</span>
+<span class="kw">bool</span> IsKeyReleased(EKey Key) <span class="kw">const</span>;  <span class="com">// 이번 프레임에 떼어짐</span>
+int32 GetMouseDeltaX() <span class="kw">const</span> { <span class="kw">return</span> MouseX - PrevMouseX; }
+<span class="kw">float</span> GetLookDeltaX() <span class="kw">const</span>;          <span class="com">// 원시 마우스(WM_INPUT) 시점 회전량 — 21강</span></pre>
+<p>이 단순한 구조는 나중에 크게 자랍니다. 24강에서는 키 대신 "점프", "이동" 같은 <b>액션</b>을 읽도록 한 층을 더 얹고, 44강에서는 UI가 입력을 가져갔을 때 게임에 "빈 입력"을 주는 입력 모드를 만듭니다. 하지만 바닥에는 항상 이 Down/Pressed/Released가 있습니다.</p>
+
+<h3 id="lec-1-timer"><span class="step">핵심 개념</span>시간 재기</h3>
+<pre class="code" data-file="Engine/Source/Core/Timer.h (발췌)"><span class="com">// 프레임 단위 고해상도 타이머</span>
+<span class="kw">class</span> FTimer
+{
+<span class="kw">public</span>:
+	<span class="kw">void</span> Tick(); <span class="com">// 프레임마다 한 번 호출. 델타/누적 시간 갱신</span>
+	<span class="com">// 고정 델타 (&gt; 0이면 Tick이 실제 경과 대신 이 값을 쓴다 — 자동 검증을 재현 가능하게)</span>
+	<span class="kw">void</span> SetFixedDelta(<span class="kw">float</span> Seconds);
+	<span class="kw">float</span>  GetDeltaSeconds() <span class="kw">const</span>;
+	<span class="kw">double</span> GetTotalSeconds() <span class="kw">const</span>;
+<span class="kw">private</span>:
+	<span class="kw">using</span> FClock = std::chrono::steady_clock;
+	...
+};</pre>
+<p>두 가지 설계 포인트가 있습니다. 하나는 <code>steady_clock</code>을 쓴다는 것입니다. 시스템 시계(<code>system_clock</code>)는 사용자가 시간을 바꾸거나 동기화되면 거꾸로 갈 수도 있지만, <code>steady_clock</code>은 항상 앞으로만 갑니다. 다른 하나는 <b>고정 델타</b>입니다. 자동 테스트에서 스크린샷을 비교하려면 실행할 때마다 같은 화면이 나와야 하는데, 실제 시간은 매번 조금씩 다릅니다. <code>--fixed-delta</code>를 주면 "한 프레임 = 정확히 1/60초"로 고정되어 결과가 재현됩니다. 이 "결정성" 이야기는 65강에서 다시 다룹니다.</p>
+
+<h3 id="lec-1-app"><span class="step">ProjectE에서는</span>FApplication — 모든 실행 파일의 공통 루프</h3>
+<p>창, 입력, 타이머를 모아 0강의 게임 루프를 실제로 돌리는 것이 <code>FApplication</code>입니다. 에디터, 런타임, Sandbox, 서버가 모두 이 클래스를 상속하고, 바뀌는 부분만 가상 함수로 재정의합니다(<b>템플릿 메서드 패턴</b>).</p>
+<pre class="code" data-file="Engine/Source/Core/Application.h (발췌)"><span class="kw">class</span> FApplication
+{
+<span class="kw">public</span>:
+	<span class="kw">int</span> Run(); <span class="com">// 초기화 → 메인 루프 → 종료. 프로세스 종료 코드를 반환</span>
+<span class="kw">protected</span>:
+	<span class="kw">virtual bool</span> OnInit() { <span class="kw">return true</span>; }
+	<span class="kw">virtual void</span> OnUpdate(<span class="kw">float</span> DeltaSeconds) {}
+	<span class="kw">virtual void</span> OnRender() {}
+	<span class="kw">virtual void</span> OnResize(uint32 Width, uint32 Height) {}
+	<span class="kw">virtual void</span> OnShutdown() {}
+};</pre>
+<pre class="code" data-file="Engine/Source/Core/Application.cpp — RunWindowedLoop (발췌)"><span class="kw">while</span> (!bExitRequested)
+{
+	Window.PumpMessages();                         <span class="com">// ① 운영체제 메시지 → 입력 상태</span>
+	<span class="kw">if</span> (bExitRequested) <span class="kw">break</span>;
+	Timer.Tick();                                  <span class="com">// ② dt 계산</span>
+	FFrameTime::Advance(Timer.GetDeltaSeconds());
+	OnUpdate(Timer.GetDeltaSeconds());             <span class="com">// ③ 세계 갱신 (파생 클래스)</span>
+
+	<span class="kw">if</span> (Window.IsMinimized())
+	{
+		Sleep(<span class="num">10</span>); <span class="com">// 최소화 상태에서는 렌더링을 건너뛰고 CPU 점유를 낮춘다</span>
+	}
+	<span class="kw">else</span>
+	{
+		OnRender();                                <span class="com">// ④ 그리기 (파생 클래스)</span>
+		++FrameIndex;
+	}
+	Input.EndFrame();                              <span class="com">// ⑤ "이번 프레임" 입력을 "지난 프레임"으로</span>
+}</pre>
+<p>0강의 그림과 그대로 대응됩니다. 최소화 처리도 눈여겨보세요. 창이 최소화되면 스왑체인(화면 버퍼) 크기가 0이 되어 그리기가 실패할 수 있고, 보이지도 않는데 GPU를 돌릴 이유도 없습니다. Phase 0의 DoD에 "리사이즈·최소화에서 크래시 없음"이 들어간 이유입니다.</p>
+<pre class="code" data-file="Sandbox/Source/ (발췌) — 실제 사용 예"><span class="kw">class</span> FSandboxApp <span class="kw">final</span> : <span class="kw">public</span> FApplication
+{
+<span class="kw">protected</span>:
+	<span class="kw">bool</span> OnInit() <span class="kw">override</span>
+	{
+		Rhi = std::make_unique&lt;FD3D12RHI&gt;();   <span class="com">// 2강: DirectX 12 초기화</span>
+		<span class="kw">if</span> (!Rhi-&gt;Init(RhiDesc)) { <span class="kw">return false</span>; }
+		...
+	}
+};</pre>
+<p><code>Run()</code>은 루프 외에도 공통 일을 많이 합니다. 로그 파일 열기, 프로젝트 경로 찾기(<code>FPaths::Initialize</code>), 명령줄 인자 처리, 크래시 덤프 위치 설정 등입니다. 특히 <code>--exit-after N</code>, <code>--screenshot 경로</code> 같은 <b>자동 검증 인자</b>를 여기서 한 번에 처리하므로, 에디터든 런타임이든 "N프레임 돌리고 스크린샷 찍고 종료"를 똑같이 할 수 있습니다. 이 자동 검증이 이후 모든 렌더링 작업의 안전망이 됩니다.</p>
+
+<h3 id="lec-1-pitfalls"><span class="step">함정과 교훈</span></h3>
+<ul>
+	<li><b>한글과 인코딩</b>: C++ 소스는 UTF-8(BOM 없음) + <code>/utf-8</code>로 해결됐지만, 셰이더(<code>.hlsl</code>)와 PowerShell 스크립트(<code>.ps1</code>)는 반대로 <b>BOM이 반드시 있어야</b> 했습니다. Windows SDK에 들어 있는 DXC 1.6과 PowerShell 5.1이 BOM 없는 UTF-8 한글을 잘못 읽기 때문입니다. 그래서 <code>.editorconfig</code>에 파일 종류별 인코딩을 적어 두었습니다. 도구마다 기본값이 다르다는 것을 일찍 알아 두면 시간을 많이 아낍니다.</li>
+	<li><b>Windows 매크로 오염</b>: <code>NOMINMAX</code>를 정의하지 않으면 <code>std::max(a, b)</code>가 <code>max</code> 매크로로 치환되어 이해하기 힘든 컴파일 에러가 납니다.</li>
+	<li><b>"동작한다"의 기준</b>: Phase 0 DoD에는 "디버그 레이어 에러 없음", "종료 시 라이브 오브젝트 누수 없음"이 있습니다. 화면이 잘 나와도 GPU 객체를 해제하지 않고 종료하면 실패입니다. 기준을 처음부터 엄격하게 잡아 두면 나중에 원인 모를 누수를 쫓을 일이 줄어듭니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>CMake 타깃 = 모듈. include는 모듈 루트 기준, 의존은 PRIVATE으로 좁게, 경고는 에러로.</li>
+		<li><code>E_LOG</code>는 카테고리·상세 수준·지연 포맷을, <code>E_CHECK</code>는 "그 자리에서 멈추기"를 제공한다.</li>
+		<li>게임은 <code>PeekMessage</code>로 메시지를 비우고 바로 프레임을 진행한다.</li>
+		<li>입력은 Down(상태)과 Pressed/Released(엣지)로 나누고, 프레임 끝에 상태를 넘긴다.</li>
+		<li><code>FApplication</code>이 루프를 소유하고, 각 실행 파일은 <code>OnInit/OnUpdate/OnRender</code>만 채운다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. <code>E_LOG</code>를 매크로가 아니라 일반 함수 <code>Log(Category, Verbosity, std::string)</code>로 만들면 성능상 무엇이 달라질까요?</summary>
+	함수 인자는 호출 전에 평가되므로, Verbose 로그가 꺼져 있어도 매번 <code>std::format</code>으로 문자열을 만들고 버리게 됩니다. 매 프레임 불리는 곳이라면 무시할 수 없는 비용입니다. 매크로는 <code>ShouldLog</code> 확인을 문자열 생성보다 앞에 둘 수 있습니다.
+</details>
+<details class="quiz"><summary>Q2. 키를 아주 빨리 눌렀다 떼서, 한 프레임 안에 WM_KEYDOWN과 WM_KEYUP이 모두 왔습니다. 위 구조에서 IsKeyPressed는 어떻게 될까요?</summary>
+	메시지 처리가 끝난 시점의 상태만 보면 "안 눌림"이므로 그 입력을 놓칠 수 있습니다. 이런 경우를 잡으려면 "이번 프레임에 눌린 적이 있음" 플래그를 별도로 기록해야 합니다. 60fps에서 한 프레임(16ms) 안에 눌렀다 떼는 일은 드물지만, 프레임이 크게 끊길 때는 실제로 생길 수 있는 문제입니다.
+</details>
+<details class="quiz"><summary>Q3. 전용 서버는 창이 없습니다. 같은 <code>FApplication</code>을 어떻게 쓸까요?</summary>
+	<code>FApplicationDesc::bHeadless</code>를 켜면 <code>Run()</code>이 창 대신 고정 간격 틱 루프(<code>RunHeadlessLoop</code>)를 돕니다. <code>OnRender</code>/<code>OnResize</code>는 불리지 않고, <code>--exit-after</code>는 프레임 대신 틱 수로 셉니다. 루프의 "모양"만 바꾸고 나머지(로그, 명령줄, 크래시 처리)는 공유합니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Curriculum.html"><small>처음으로</small>커리큘럼</a>
+	<a href="Part01_GraphicsBasics.html"><small>다음 부</small>1부 · 화면에 무언가를 그리기 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

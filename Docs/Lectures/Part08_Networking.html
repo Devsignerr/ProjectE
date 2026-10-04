@@ -1,0 +1,1710 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8부 함께 플레이하기 — 네트워크 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">8부 함께 플레이하기 — 네트워크</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">8부 · 강의 55~59</div>
+	<h1>함께 플레이하기 — 네트워크</h1>
+	<p>한 대의 PC에서 돌던 게임 세계를 여러 대가 나눠 보게 만듭니다. 누가 진실을 정하는지, 무엇을 얼마나 자주 보내는지, 그리고 빛의 속도보다 느린 인터넷 위에서 "누르는 즉시 움직이는" 느낌을 어떻게 만드는지를 순서대로 봅니다.</p>
+</header>
+
+<!-- ======================================================= 55강 ======================================================= -->
+<article class="lecture" id="lec-55">
+<header>
+	<div class="no">55강</div>
+	<h2 id="lec-55-title">멀티플레이 기초</h2>
+	<div class="meta">관련 Phase: 17, "방화벽 확인 창"(2026-10-03) · 살펴볼 곳: <code>Engine/Source/Network/</code> (<code>NetTransport.h</code>, <code>NetTypes.h</code>, <code>NetMessages.h</code>, <code>NetDriver.cpp</code>, <code>LoopbackTransport.h</code>, <code>GnsTransport.cpp</code>, <code>LanDiscovery.cpp</code>, <code>NetBindPolicy.h</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>P2P와 클라이언트-서버 구조의 차이, 그리고 "권한 서버(authoritative server)"가 왜 기본이 되는지 설명할 수 있습니다.</li>
+		<li>지연(latency)·손실(loss)·지터(jitter)가 무엇이고 게임에 어떤 문제를 일으키는지 압니다.</li>
+		<li>TCP와 UDP의 차이, 그리고 게임이 "신뢰 채널"과 "비신뢰 채널"을 함께 쓰는 이유를 이해합니다.</li>
+		<li>ProjectE가 전송 계층을 <code>INetTransport</code>로 감싸고, 핸드셰이크에서 <code>NetProtocolVersion</code>을 확인하는 이유를 압니다.</li>
+		<li>방화벽 확인 창 사건과 <code>NetBindPolicy</code>가 해결한 문제를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-55-why"><span class="step">왜 필요한가</span>두 대의 컴퓨터가 "같은 세계"를 보려면</h3>
+<p>지금까지의 엔진은 프로세스 하나 안에서 세계 전체를 계산했습니다. 입력을 받고, 스크립트와 물리를 돌리고, 그 결과를 그렸습니다. 이제 친구와 같은 맵에서 놀고 싶다면 어떻게 될까요? 두 사람의 PC는 각자 자기 메모리에 세계를 들고 있고, 둘을 잇는 것은 <b>느리고, 가끔 패킷을 잃어버리고, 순서도 뒤섞는</b> 네트워크뿐입니다.</p>
+<p>그렇다고 매 프레임 세계 전체를 통째로 보낼 수는 없습니다. 씬에 엔티티가 수천 개 있고 각자 컴포넌트를 여러 개 갖고 있으니, 60fps로 통째로 보내면 회선이 버티지 못합니다. 또 두 PC가 각자 계산하면 부동소수점 오차나 입력 타이밍 차이로 조금씩 어긋나다가 결국 전혀 다른 세계가 됩니다. 멀티플레이 엔진은 이 두 질문에 답해야 합니다.</p>
+<ol>
+	<li><b>누가 진실을 정하는가?</b> (둘의 결과가 다를 때 어느 쪽을 믿나)</li>
+	<li><b>무엇을, 얼마나 자주, 어떤 방식으로 보내는가?</b> (회선과 지연의 제약 안에서)</li>
+</ol>
+<p>이 강의는 첫 번째 질문과, 두 번째 질문을 위한 "배관"(연결, 메시지, 버전 확인)을 다룹니다. 무엇을 보낼지는 56강, 지연을 숨기는 기술은 57~59강의 주제입니다.</p>
+
+<h3 id="lec-55-topology"><span class="step">핵심 개념</span>P2P와 클라이언트-서버, 그리고 권한 서버</h3>
+<p>여러 기계가 통신하는 방식은 크게 둘입니다.</p>
+<ul>
+	<li><b>P2P(peer-to-peer)</b>: 모든 참가자가 서로 직접 연결됩니다. 서버가 필요 없지만, 누가 진실인지 정하기 어렵습니다. 대표적인 변형인 <b>락스텝(lockstep)</b>은 모두가 "입력만" 주고받고 같은 입력으로 같은 시뮬레이션을 돌립니다. 대신 시뮬레이션이 비트 단위로 결정적(deterministic)이어야 하고, 가장 느린 참가자의 입력이 올 때까지 모두가 기다려야 합니다. RTS 게임에서 많이 씁니다.</li>
+	<li><b>클라이언트-서버(client-server)</b>: 한 기계(서버)가 세계를 시뮬레이션하고, 나머지(클라이언트)는 입력을 서버로 보내고 결과를 받아 그립니다. 통신은 별 모양(star)입니다.</li>
+</ul>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="P2P와 클라이언트-서버 구조 비교">
+		<title>P2P와 클라이언트-서버 구조 비교</title>
+		<text x="200" y="28" text-anchor="middle" class="t-bold">P2P (모두가 서로 연결)</text>
+		<g class="t-small">
+			<circle cx="120" cy="90" r="30" class="k1"/><text x="120" y="95" text-anchor="middle">A</text>
+			<circle cx="280" cy="90" r="30" class="k1"/><text x="280" y="95" text-anchor="middle">B</text>
+			<circle cx="120" cy="220" r="30" class="k1"/><text x="120" y="225" text-anchor="middle">C</text>
+			<circle cx="280" cy="220" r="30" class="k1"/><text x="280" y="225" text-anchor="middle">D</text>
+		</g>
+		<path d="M150,90 H250" class="ln"/><path d="M120,120 V190" class="ln"/><path d="M280,120 V190" class="ln"/><path d="M150,220 H250" class="ln"/>
+		<path d="M142,111 L258,199" class="ln"/><path d="M258,111 L142,199" class="ln"/>
+		<text x="200" y="278" text-anchor="middle" class="t-muted">연결 수 n(n−1)/2 · 진실의 주인이 없음</text>
+
+		<line x1="420" y1="20" x2="420" y2="285" class="ln-d"/>
+
+		<text x="640" y="28" text-anchor="middle" class="t-bold">클라이언트-서버 (별 모양)</text>
+		<rect x="570" y="125" width="140" height="56" rx="10" class="acc"/>
+		<text x="640" y="149" text-anchor="middle" class="t-bold">서버 (권한)</text>
+		<text x="640" y="169" text-anchor="middle" class="t-muted">세계를 시뮬레이션</text>
+		<g class="t-small">
+			<rect x="460" y="50" width="110" height="40" rx="8" class="k1"/><text x="515" y="75" text-anchor="middle">클라이언트 1</text>
+			<rect x="710" y="50" width="110" height="40" rx="8" class="k1"/><text x="765" y="75" text-anchor="middle">클라이언트 2</text>
+			<rect x="460" y="220" width="110" height="40" rx="8" class="k1"/><text x="515" y="245" text-anchor="middle">클라이언트 3</text>
+			<rect x="710" y="220" width="110" height="40" rx="8" class="k1"/><text x="765" y="245" text-anchor="middle">클라이언트 4</text>
+		</g>
+		<path d="M535,90 L590,122" class="ln" marker-end="url(#arr)"/>
+		<path d="M745,90 L690,122" class="ln" marker-end="url(#arr)"/>
+		<path d="M590,184 L540,218" class="ln" marker-end="url(#arr)"/>
+		<path d="M690,184 L740,218" class="ln" marker-end="url(#arr)"/>
+		<text x="640" y="110" text-anchor="middle" class="t-muted">입력 ↑</text>
+		<text x="640" y="210" text-anchor="middle" class="t-muted">결과 ↓</text>
+		<text x="640" y="285" text-anchor="middle" class="t-muted">연결 수 n · 서버가 내린 결론이 진실</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 55-1.</b> ProjectE는 오른쪽 구조를 택했습니다. 클라이언트는 "이렇게 하고 싶다"(입력, RPC)를 보내고, 서버가 "실제로 이렇게 됐다"(복제)를 돌려줍니다.</figcaption>
+</figure>
+<p>클라이언트-서버 구조에서 서버가 모든 판정을 내리면 이를 <b>권한 서버(authoritative server)</b>라고 합니다. "내 총알이 맞았다"를 클라이언트가 정하면 치트를 막을 수 없습니다. 클라이언트는 메모리를 조작할 수 있는 사용자의 PC에서 돌기 때문입니다. 서버가 판정하면 클라이언트는 기껏해야 "총을 쐈다"는 입력만 보낼 수 있고, 맞았는지는 서버가 정합니다. 언리얼 엔진도 같은 구조입니다.</p>
+<p>서버의 형태는 다시 둘로 나뉩니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>넷 모드 (<code>ENetMode</code>)</th><th>무엇인가</th><th>ProjectE에서</th></tr>
+	<tr><td><code>Standalone</code></td><td>1인용. 네트워크를 만들지 않는다</td><td>기본값. 로컬 프로세스가 서버이자 클라이언트로 취급된다 — <code>Net.IsServer()</code>가 참이고 RPC는 즉시 로컬 호출</td></tr>
+	<tr><td><code>ListenServer</code></td><td>플레이어 한 명의 게임이 서버를 겸함 (호스트)</td><td><code>--host [--port N]</code>, 호스트는 플레이어 0</td></tr>
+	<tr><td><code>DedicatedServer</code></td><td>화면 없이 서버만 도는 프로세스</td><td><code>ProjectEServer.exe</code> — 창·GPU 없는 고정 틱 루프 (1강 Q3)</td></tr>
+	<tr><td><code>Client</code></td><td>서버에 접속한 플레이어</td><td><code>--connect ip:port</code> 또는 <code>--join-lan</code></td></tr>
+</table></div>
+<div class="callout tip">
+	<b class="t">Standalone을 "서버 + 클라이언트"로 보는 이유</b>
+	1인용 게임을 따로 짜지 않기 위해서입니다. 멀티플레이를 붙이기 전에 만든 스크립트와 게임 모듈이 모두 "서버에서 도는 코드"처럼 동작하므로, Phase 17 DoD의 "1인용(Standalone)은 기존과 똑같이 동작한다"를 코드 수정 없이 지켰습니다. 언리얼의 <code>NM_Standalone</code>과 같은 생각입니다.
+</div>
+
+<h3 id="lec-55-latency"><span class="step">핵심 개념</span>지연, 손실, 지터 — 네트워크가 게임에 주는 세 가지 고통</h3>
+<p>네트워크 품질은 세 숫자로 요약됩니다.</p>
+<ul>
+	<li><b>지연(latency)</b>: 패킷이 한쪽에서 다른 쪽까지 가는 시간. 보통 <b>왕복 시간(RTT, round-trip time)</b> 또는 핑(ping)으로 잽니다. 같은 도시 안이라도 수십 ms, 대륙을 건너면 100~200ms가 흔합니다. 빛의 속도라는 물리 한계가 있어 줄일 수 없는 부분이 있습니다.</li>
+	<li><b>손실(loss)</b>: 보낸 패킷이 도착하지 않는 비율. 와이파이나 혼잡한 회선에서 몇 %씩 생깁니다.</li>
+	<li><b>지터(jitter)</b>: 지연의 흔들림. 33ms 간격으로 보낸 패킷이 20ms, 50ms, 31ms 간격으로 도착하는 것. 순서가 바뀌어 도착하기도 합니다(재정렬).</li>
+</ul>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="지연, 손실, 지터 타임라인">
+		<title>지연, 손실, 지터 타임라인</title>
+		<text x="20" y="50" class="t-bold">보낸 쪽</text>
+		<text x="20" y="190" class="t-bold">받는 쪽</text>
+		<line x1="100" y1="45" x2="840" y2="45" class="ln"/>
+		<line x1="100" y1="185" x2="840" y2="185" class="ln"/>
+		<g class="t-small">
+			<circle cx="140" cy="45" r="5" class="f1"/><circle cx="240" cy="45" r="5" class="f1"/><circle cx="340" cy="45" r="5" class="f1"/>
+			<circle cx="440" cy="45" r="5" class="f1"/><circle cx="540" cy="45" r="5" class="f1"/><circle cx="640" cy="45" r="5" class="f1"/>
+			<text x="140" y="30" text-anchor="middle">1</text><text x="240" y="30" text-anchor="middle">2</text><text x="340" y="30" text-anchor="middle">3</text>
+			<text x="440" y="30" text-anchor="middle">4</text><text x="540" y="30" text-anchor="middle">5</text><text x="640" y="30" text-anchor="middle">6</text>
+		</g>
+		<path d="M140,50 L220,180" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M240,50 L320,180" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M340,50 L385,120" class="ln-d s5"/>
+		<text x="392" y="124" class="t-small f5">✗ 손실</text>
+		<path d="M440,50 L590,180" class="ln s4" marker-end="url(#arr)"/>
+		<path d="M540,50 L570,180" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M640,50 L720,180" class="ln s1" marker-end="url(#arr)"/>
+		<g class="t-small">
+			<text x="222" y="205" text-anchor="middle">1</text><text x="322" y="205" text-anchor="middle">2</text>
+			<text x="570" y="205" text-anchor="middle">5</text><text x="594" y="205" text-anchor="middle" class="f4">4</text><text x="722" y="205" text-anchor="middle">6</text>
+		</g>
+		<path d="M140,215 H220" class="ln"/><text x="180" y="232" text-anchor="middle" class="t-muted">지연</text>
+		<text x="600" y="232" text-anchor="middle" class="t-muted">4가 늦게 와서 5보다 뒤 (지터·재정렬)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 55-2.</b> 일정한 간격으로 보낸 패킷이 도착할 때는 늦고(지연), 빠지고(손실), 간격이 흔들리고 순서가 바뀝니다(지터). 이후 강의의 모든 기법은 이 그림에 대한 대응입니다.</figcaption>
+</figure>
+<p>개발 중에는 대개 같은 PC나 같은 공유기 안에서 테스트하므로 지연이 거의 0입니다. 그래서 "내 PC에서는 잘 되는데"가 멀티플레이에서 가장 위험한 말입니다. ProjectE는 일부러 나쁜 망을 흉내 내는 디버그 기능을 둡니다. <code>INetTransport::SetSimulation</code>이 보내는 패킷에 지연과 손실을 넣고(GNS의 FakePacketLag/FakePacketLoss 설정), 앱 인자 <code>--net-lag &lt;ms&gt; --net-loss &lt;%&gt;</code>로 켭니다. 이후 강의에 나오는 측정은 대부분 "지연 100ms, 손실 5%" 같은 조건에서 한 것입니다.</p>
+
+<h3 id="lec-55-udp"><span class="step">핵심 개념</span>TCP와 UDP, 신뢰 채널과 비신뢰 채널</h3>
+<p>인터넷의 전송 프로토콜은 대표적으로 둘입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th></th><th>TCP</th><th>UDP</th></tr>
+	<tr><td>전달 보장</td><td>잃어버리면 다시 보냄</td><td>없음 (보내고 끝)</td></tr>
+	<tr><td>순서</td><td>보낸 순서대로 전달</td><td>도착한 순서 그대로</td></tr>
+	<tr><td>단위</td><td>바이트 스트림 (메시지 경계 없음)</td><td>데이터그램 (메시지 하나 = 패킷 하나)</td></tr>
+	<tr><td>게임에서의 문제</td><td>패킷 하나가 빠지면 뒤의 모든 데이터가 재전송을 기다린다 (<b>머리 막힘, head-of-line blocking</b>)</td><td>신뢰가 필요한 메시지는 직접 재전송·순서를 구현해야 한다</td></tr>
+</table></div>
+<p>게임 데이터에는 성격이 다른 두 종류가 섞여 있습니다.</p>
+<ul>
+	<li><b>반드시 도착해야 하는 것</b>: "플레이어 3 입장", "상자가 생성됨", "체력이 40이 됨", RPC 호출. 하나라도 빠지면 세계가 영원히 어긋납니다.</li>
+	<li><b>최신 값만 의미 있는 것</b>: 매 틱의 위치, 입력 상태. 100ms 전 위치가 지금 도착해 봐야 쓸모가 없고, 다음 패킷이 곧 새 값을 가져옵니다. 이것을 재전송하느라 새 값까지 기다리게 만드는 것이 TCP의 머리 막힘입니다.</li>
+</ul>
+<p>그래서 게임은 UDP 위에 "필요한 메시지만 신뢰성을 붙인" 자체 프로토콜을 씁니다. ProjectE에서는 이 선택이 <code>ENetReliability</code> 하나로 드러납니다.</p>
+<pre class="code" data-file="Engine/Source/Network/NetTypes.h (발췌)"><span class="kw">enum class</span> ENetReliability : uint8
+{
+	Reliable,   <span class="com">// 순서 보장 + 재전송</span>
+	Unreliable, <span class="com">// 손실 가능 (최신 상태만 의미 있는 데이터)</span>
+};</pre>
+<p>이 신뢰 계층을 직접 짜는 대신 ProjectE는 Valve의 <b>GameNetworkingSockets(GNS)</b>를 씁니다. Steam의 네트워크 라이브러리를 오픈소스로 공개한 것으로, UDP 위에 메시지 단위의 신뢰/비신뢰 전송, 암호화, 연결 품질 통계를 제공합니다. 0강의 기준("표준 해법이 있고, 직접 짜도 배울 것보다 시간이 더 드는 것")에 해당합니다. Plans.md Phase 17의 결정에는 "protobuf 때문에 빌드가 무거워도 GNS 유지"라고 적혀 있습니다. GNS가 의존하는 protobuf는 abseil에 의존하지 않는 마지막 버전(v21.12)으로 고정했습니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: GNS 헤더는 Network 모듈 .cpp에서만</b>
+	GNS와 protobuf 헤더는 거대하고 매크로가 많습니다. 그래서 <code>GnsTransport.cpp</code> 안에만 넣고, 나머지 엔진은 아래의 <code>INetTransport</code> 인터페이스만 봅니다. 1강의 "공개 헤더에 <code>Windows.h</code>를 넣지 않는다"와 같은 원칙입니다.
+</div>
+
+<h3 id="lec-55-transport"><span class="step">ProjectE에서는</span><code>INetTransport</code> — 전송 계층 추상화와 루프백 테스트</h3>
+<p>네트워크 코드는 테스트하기 어렵기로 유명합니다. 실제 소켓을 열면 포트가 겹칠 수 있고, 타이밍이 매번 달라지고, 방화벽이 끼어듭니다(뒤에서 실제로 겪은 일을 봅니다). 그래서 ProjectE는 "메시지를 주고받는다"는 개념만 인터페이스로 뽑았습니다.</p>
+<pre class="code" data-file="Engine/Source/Network/NetTransport.h (발췌)"><span class="com">// 메시지 단위 전송 계층 추상화. 구현: GameNetworkingSockets(CreateGnsTransport), 테스트용 루프백(FLoopbackTransport).</span>
+<span class="com">// 모든 함수는 메인 스레드에서 호출한다. 이벤트는 Poll에서만 나온다 (콜백 없음)</span>
+<span class="kw">class</span> INetTransport
+{
+<span class="kw">public</span>:
+	<span class="com">// 서버: 모든 주소의 Port에서 접속 대기. GNS는 포트 0(자동 할당)을 받지 않는다</span>
+	<span class="kw">virtual bool</span> Listen(uint16 Port) = <span class="num">0</span>;
+	<span class="kw">virtual</span> FNetConnectionId Connect(<span class="kw">const</span> std::string&amp; Address) = <span class="num">0</span>;
+	<span class="kw">virtual bool</span> Send(FNetConnectionId Connection, <span class="kw">const void</span>* Data, uint32 Size, ENetReliability Reliability) = <span class="num">0</span>;
+	<span class="kw">virtual void</span> Disconnect(FNetConnectionId Connection, <span class="kw">const</span> std::string&amp; Reason) = <span class="num">0</span>;
+	<span class="com">// 쌓인 이벤트를 OutEvents 뒤에 붙인다 (매 틱)</span>
+	<span class="kw">virtual void</span> Poll(std::vector&lt;FNetEvent&gt;&amp; OutEvents) = <span class="num">0</span>;
+	...
+	<span class="com">// 디버그: 보내는 패킷에 지연/손실을 흉내 낸다 (GNS: 프로세스 전역 설정). 0이면 끔</span>
+	<span class="kw">virtual void</span> SetSimulation(int32 LatencyMs, <span class="kw">float</span> LossPercent) {}
+};</pre>
+<p>두 가지 설계 결정이 보입니다. 첫째, <b>이벤트는 <code>Poll</code>에서만</b> 나옵니다. 네트워크 라이브러리는 흔히 "메시지가 오면 이 콜백을 불러 줄게"라는 방식을 쓰는데, 콜백은 언제 어느 스레드에서 불릴지 모릅니다. 게임 루프는 매 틱 <code>Poll</code>로 쌓인 연결/끊김/메시지 이벤트를 꺼내 순서대로 처리하므로, ECS 순회 도중에 메시지가 끼어드는 일이 없습니다. 둘째, 인터페이스가 아는 것은 "연결 ID"와 "바이트 덩어리"뿐입니다. 메시지의 의미는 위층이 정합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="네트워크 계층 구조">
+		<title>네트워크 계층 구조</title>
+		<rect x="20" y="16" width="820" height="56" rx="10" class="k2"/>
+		<text x="40" y="40" class="t-bold">FGameWorld / FReplicationServer · FReplicationClient</text>
+		<text x="40" y="60" class="t-small">게임 메시지: 복제(56강), 입력·캐릭터 무브(57강), RPC·능력(59강)</text>
+		<rect x="20" y="92" width="820" height="56" rx="10" class="acc"/>
+		<text x="40" y="116" class="t-bold">FNetDriver</text>
+		<text x="40" y="136" class="t-small">연결 수립, 핸드셰이크(Hello / Welcome / Reject), 플레이어 ID, 입장·퇴장 콜백, 맵 이동</text>
+		<rect x="20" y="168" width="820" height="50" rx="10" class="box"/>
+		<text x="40" y="198" class="t-bold">INetTransport</text>
+		<text x="200" y="198" class="t-small">Listen · Connect · Send(신뢰/비신뢰) · Poll · Disconnect</text>
+		<rect x="20" y="238" width="400" height="50" rx="10" class="k1"/>
+		<text x="40" y="262" class="t-bold">GNS 전송</text>
+		<text x="40" y="280" class="t-small">실제 UDP 소켓, 암호화, 지연·손실 흉내</text>
+		<rect x="440" y="238" width="400" height="50" rx="10" class="k3"/>
+		<text x="460" y="262" class="t-bold">FLoopbackTransport</text>
+		<text x="460" y="280" class="t-small">메모리 대기열, 소켓 없음 — 단위 테스트용</text>
+		<path d="M430,72 V88" class="ln" marker-end="url(#arr)"/>
+		<path d="M430,148 V164" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,218 V234" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,218 V234" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 55-3.</b> 위층은 아래가 GNS인지 루프백인지 모릅니다. 그래서 복제·예측·RPC 테스트를 소켓 없이, 한 프로세스 안에서 결정적으로 돌릴 수 있습니다.</figcaption>
+</figure>
+
+<p>루프백 구현은 아주 단순합니다. 같은 "허브" 객체를 공유하는 전송 계층끼리, 보낸 메시지를 상대의 대기열에 넣어 두었다가 다음 <code>Poll</code>에서 꺼내 줍니다.</p>
+<pre class="code" data-file="Engine/Source/Network/LoopbackTransport.h (발췌)"><span class="com">// 루프백 전송 계층들이 공유하는 가상 네트워크 (포트 → 대기 중인 전송 계층). 소켓 없이 같은 프로세스 안에서만 동작</span>
+<span class="kw">class</span> FLoopbackHub
+{
+<span class="kw">public</span>:
+	std::unordered_map&lt;uint16, FLoopbackTransport*&gt; Listeners;
+	FNetConnectionId                                NextConnection = <span class="num">1</span>;
+};
+
+<span class="com">// 메모리 전송 계층 (테스트/프로세스 내부용). 메시지는 손실·재정렬 없이 상대의 다음 Poll에 도착한다.</span>
+<span class="kw">class</span> FLoopbackTransport <span class="kw">final</span> : <span class="kw">public</span> INetTransport { ... };</pre>
+<p>이 덕분에 <code>NetworkTests</code>, 그리고 57강의 <code>CharacterPrediction_ImmediateMatchAndCorrection</code> 같은 테스트는 서버 <code>FGameWorld</code>와 클라이언트 <code>FGameWorld</code>를 한 프로세스에 만들고 루프백으로 이어, "틱 한 번에 클라이언트가 7.5cm 즉시 움직이고 서버는 그대로" 같은 사실을 정확히 확인합니다. 실제 망의 지연은 루프백이 흉내 내지 않으므로, 종단 검증은 실제 GNS로 따로 합니다(이 강의 끝).</p>
+
+<h3 id="lec-55-handshake"><span class="step">ProjectE에서는</span>핸드셰이크와 <code>NetProtocolVersion</code></h3>
+<p>연결이 수립되었다고 바로 게임 메시지를 주고받으면 안 됩니다. 상대가 같은 게임, 같은 버전, 같은 맵인지 먼저 확인해야 합니다. 이 첫 대화를 <b>핸드셰이크(handshake)</b>라고 합니다. 모든 메시지는 <code>[uint8 종류][본문]</code> 형식이고, 처음 세 종류가 핸드셰이크용입니다.</p>
+<pre class="code" data-file="Engine/Source/Network/NetMessages.h (발췌)"><span class="com">// 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다</span>
+<span class="kw">inline constexpr</span> uint32 NetProtocolVersion = <span class="num">12</span>; <span class="com">// 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, ...</span>
+                                                 <span class="com">// 7: 캐릭터 무브/ack (예측), ... 12: 능력 발동 요청/결과</span>
+<span class="kw">enum class</span> ENetMessageType : uint8
+{
+	Hello   = <span class="num">1</span>, <span class="com">// 클라이언트 → 서버: 접속 요청 (버전/프로젝트/씬/이름)</span>
+	Welcome = <span class="num">2</span>, <span class="com">// 서버 → 클라이언트: 입장 허락 (플레이어 ID)</span>
+	Reject  = <span class="num">3</span>, <span class="com">// 서버 → 클라이언트: 거부 사유 (직후 연결을 닫는다)</span>
+	...
+	GameBase = <span class="num">32</span>, <span class="com">// 입장 후 게임 메시지는 여기부터 (FNetDriver::OnGameMessage로 전달)</span>
+	...
+};</pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="핸드셰이크 순서도">
+		<title>핸드셰이크 순서도</title>
+		<rect x="60" y="14" width="160" height="36" rx="8" class="k1"/><text x="140" y="37" text-anchor="middle" class="t-bold">클라이언트</text>
+		<rect x="640" y="14" width="160" height="36" rx="8" class="acc"/><text x="720" y="37" text-anchor="middle" class="t-bold">서버 (FNetDriver)</text>
+		<line x1="140" y1="50" x2="140" y2="300" class="ln-d"/>
+		<line x1="720" y1="50" x2="720" y2="300" class="ln-d"/>
+		<path d="M140,76 L716,92" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="72" text-anchor="middle" class="t-small">① 연결 수립 (전송 계층 Connected) — 5초 타이머 시작</text>
+		<path d="M140,124 L716,140" class="ln s1" marker-end="url(#arr)"/>
+		<text x="430" y="120" text-anchor="middle" class="t-small">② Hello: 프로토콜 버전, 엔진 버전, 프로젝트 이름, 씬, 플레이어 이름</text>
+		<rect x="560" y="152" width="290" height="58" rx="8" class="box"/>
+		<text x="572" y="174" class="t-small">ValidateHello: 넷 다 같은가?</text>
+		<text x="572" y="196" class="t-small">+ 인원이 가득 찼나 (MaxPlayers)</text>
+		<path d="M716,244 L144,256" class="ln s2" marker-end="url(#arr)"/>
+		<text x="430" y="236" text-anchor="middle" class="t-small f2">③ 같으면 Welcome (플레이어 ID: 호스트 0, 원격 1부터)</text>
+		<path d="M716,282 L144,294" class="ln s5" marker-end="url(#arr)"/>
+		<text x="430" y="274" text-anchor="middle" class="t-small f5">③′ 다르면 Reject("씬 불일치 (서버 …, 클라이언트 …)") 후 끊기</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 55-4.</b> 핸드셰이크. Hello가 <code>HandshakeTimeoutSeconds</code>(5초) 안에 오지 않으면 "접속 요청 시간 초과"로 끊습니다. 거부 사유는 사람이 읽을 수 있는 문장으로 클라이언트에 전달됩니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Network/NetDriver.cpp — ValidateHello (발췌)"><span class="kw">if</span> (Hello.ProtocolVersion != NetProtocolVersion)
+{
+	<span class="kw">return</span> std::format(<span class="str">"네트워크 프로토콜 버전 불일치 (서버 {}, 클라이언트 {})"</span>, NetProtocolVersion, Hello.ProtocolVersion);
+}
+<span class="kw">if</span> (Hello.EngineVersion != Session.EngineVersion) { ... <span class="str">"엔진 버전 불일치 ..."</span> }
+<span class="kw">if</span> (Hello.ProjectName != Session.ProjectName)     { ... <span class="str">"프로젝트 불일치 ..."</span> }
+<span class="kw">if</span> (Hello.SceneAsset != Session.SceneAsset)       { ... <span class="str">"씬 불일치 ..."</span> }</pre>
+<p>왜 이렇게 엄격할까요? 이후 강의에서 볼 메시지들은 모두 "상대도 나와 똑같이 해석한다"는 가정 위에 있습니다. 예를 들어 복제 메시지는 컴포넌트 값을 리플렉션 프로퍼티 <b>선언 순서대로</b> 바이트로 이어 붙입니다(56강). 한쪽 빌드에 프로퍼티가 하나 더 있으면 뒤의 모든 바이트가 엉뚱한 필드로 읽힙니다. 이런 문제는 크래시가 아니라 "가끔 이상한 값"으로 나타나서 찾기가 매우 어렵습니다. 그래서 입구에서 막는 것입니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 메시지 형식을 바꾸면 <code>NetProtocolVersion</code>을 올린다</b>
+	주석에 적힌 이력이 곧 8부의 목차입니다. 2(복제) → 3(트랜스폼 스냅샷) → 4(RPC) → 5(입력) → 7(캐릭터 무브/ack, 예측) → 11(루트 모션 무브) → 12(능력 발동 요청/결과). 병렬 트랙으로 작업할 때는 각 트랙이 필요하면 올리고 머지할 때 메인이 최종값을 정하는 규칙을 두었습니다(Plans.md Phase 23~26).
+</div>
+<p>씬 이름까지 같아야 하는 이유는 56강의 "정적 NetId" 때문입니다. 서버와 클라이언트가 같은 씬 파일을 로드해야 씬에 원래 있던 엔티티들이 같은 번호를 받습니다.</p>
+
+<h4>LAN 탐색</h4>
+<p>IP 주소를 입력하지 않고 같은 공유기 안의 방을 찾으려면 <b>브로드캐스트</b>를 씁니다. 네트워크 안의 모든 기계에 "여기 방 있나요?"를 외치고, 호스트가 "있어요(방 이름, 인원, 맵, 게임 포트)"라고 답하는 방식입니다. ProjectE의 <code>FLanDiscovery</code>는 Winsock UDP로 이를 구현합니다(탐색 포트 7778, 게임 포트 기본 7777). 질의는 브로드캐스트 주소와 127.0.0.1 두 곳에 보냅니다 — 브로드캐스트가 막힌 환경에서도 같은 PC의 서버는 찾게 하려는 것입니다. 런타임 <code>--join-lan</code>은 최대 2초 검색한 뒤 첫 세션에 접속하고, Lua에는 <code>Net.FindSessions/GetSessions/Host/Connect</code>가 있습니다.</p>
+
+<h3 id="lec-55-pitfalls"><span class="step">함정과 교훈</span>방화벽 확인 창과 <code>NetBindPolicy</code></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 (2026-10-03, 사용자 보고: "개인/공용 네트워크에서 실행 허용 창이 자꾸 뜸")</b>
+	작업 중 Windows 방화벽의 "이 앱이 네트워크에 접근하도록 허용하시겠습니까?" 창이 계속 떴습니다. 원인은 두 가지가 겹친 것이었습니다.
+	<ol>
+		<li>Windows 방화벽은 프로그램이 <b>모든 주소(0.0.0.0)</b>에서 접속을 기다릴 때 허용 여부를 묻고, 그 허용은 <b>exe 경로마다</b> 따로 기억합니다.</li>
+		<li>ProjectE는 병렬 작업용 git 워크트리를 여러 개 두므로, 같은 테스트 exe가 경로만 다르게 여러 벌 있었습니다. 그리고 실제 소켓을 여는 단위 테스트(GNS 서버·클라이언트, LAN UDP)가 0.0.0.0에 바인드했습니다.</li>
+	</ol>
+	즉 워크트리를 하나 만들 때마다, 자동 검증을 돌릴 때마다 새 경로의 exe가 0.0.0.0을 열어 확인 창이 떴습니다.
+</div>
+<p>해결은 두 단계였습니다. 먼저 실제 소켓을 여는 단위 테스트 4곳은 환경 변수 <code>E_TEST_SOCKETS=1</code>(<code>Build.ps1 -Test -SocketTests</code>)일 때만 돌고, 기본은 건너뛰며 로그를 남기게 했습니다. 다음으로 "어느 주소에서 기다릴지"를 정하는 정책을 한 곳으로 모았습니다.</p>
+<pre class="code" data-file="Engine/Source/Network/NetBindPolicy.h"><span class="com">// 서버 대기·LAN 응답 소켓을 어느 주소에 열지 정한다.</span>
+<span class="com">// Windows 방화벽 확인 창("개인/공용 네트워크에서 허용")은 모든 주소(0.0.0.0 / ::)에서 대기할 때 exe 경로마다 뜨고,</span>
+<span class="com">// 루프백(127.0.0.1)에서만 대기하면 뜨지 않는다.</span>
+<span class="com">//   루프백 전용 = 같은 PC 안의 접속만: 자동 검증(--exit-after) 실행, 에디터 네트워크 플레이와 그 자식 프로세스</span>
+<span class="com">//   공개 = 실제 LAN/인터넷: --host, 사람이 실행한 전용 서버 (처음 한 번 확인 창은 정상)</span>
+<span class="com">// 명령줄 --net-local(루프백 강제) / --net-public(공개 강제)이 앱의 기본값보다 우선한다</span>
+<span class="kw">namespace</span> NetBindPolicy
+{
+	<span class="kw">void</span> Configure(<span class="kw">bool</span> bDefaultLoopbackOnly);
+	<span class="kw">bool</span> IsLoopbackOnly();
+}</pre>
+<pre class="code" data-file="Engine/Source/Network/GnsTransport.cpp — Listen (발췌)">SteamNetworkingIPAddr Address;
+Address.Clear(); <span class="com">// 모든 주소 (IPv6 dual-stack)</span>
+<span class="kw">if</span> (NetBindPolicy::IsLoopbackOnly())
+{
+	Address.SetIPv4(<span class="num">0x7F000001</span>, <span class="num">0</span>); <span class="com">// 127.0.0.1 — 같은 PC 전용 (방화벽 확인 창 없음)</span>
+}
+Address.m_port = Port;</pre>
+<p>LAN 방 알림(<code>FLanDiscovery::StartHost</code>)도 루프백 전용 실행이면 아예 열지 않습니다. 같은 PC 안에서는 방을 알릴 이유가 없고, 알림 소켓이 0.0.0.0을 열면 확인 창이 뜨기 때문입니다. 새 앱은 세션을 열기 전에 <code>NetBindPolicy::Configure(IsAutomationRun())</code>를 부르고, 0.0.0.0에 소켓을 여는 새 코드는 <code>IsLoopbackOnly()</code>를 따르는 것이 규칙이 되었습니다.</p>
+<div class="callout tip">
+	<b class="t">교훈: "보안 정책도 실행 환경의 일부다"</b>
+	코드는 정상이었습니다. 문제는 운영체제가 "모든 주소에서 대기"를 사용자에게 묻는 동작이었고, 개발 방식(워크트리 여러 개)이 그것을 증폭했습니다. 네트워크 코드는 기능뿐 아니라 "어느 주소에서, 어떤 실행에서 소켓을 여는가"까지 설계 대상입니다. 사람이 실행한 <code>--host</code>나 에디터 네트워크 플레이에서 처음 한 번 뜨는 확인 창은 실제 LAN을 위해 필요한 정상 동작으로 남겼습니다.
+</div>
+<p>마지막으로 검증 방법입니다. 멀티플레이 변경 뒤에는 <code>.\Scripts\Verify.ps1 -Multiplayer</code>가 전용 서버 하나와 런타임 클라이언트 둘을 띄워 입장 여부, 로그 오류, 클라이언트마다의 스크린샷을 확인합니다. <code>-ExtraArgs "--net-lag 100 --net-loss 5"</code>를 붙이면 불량 망에서 같은 확인을 합니다. 단위 테스트(루프백)는 로직을, 이 스크립트는 실제 소켓과 프로세스 경계를 검증합니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>ProjectE는 권한 서버형 클라이언트-서버 구조다. 리슨 서버와 전용 서버를 모두 지원하고, Standalone은 "네트워크 없는 서버"로 취급한다.</li>
+		<li>네트워크는 지연·손실·지터를 가진다. <code>--net-lag/--net-loss</code>로 일부러 나쁜 망에서 시험한다.</li>
+		<li>게임은 UDP 위에서 신뢰(생성·상태·RPC)와 비신뢰(위치·입력) 채널을 나눠 쓴다. ProjectE는 GNS를 쓰고 <code>ENetReliability</code>로 고른다.</li>
+		<li><code>INetTransport</code>가 GNS와 루프백을 감싸, 네트워크 로직을 소켓 없이 결정적으로 테스트한다. 이벤트는 <code>Poll</code>로만 나온다.</li>
+		<li>핸드셰이크는 프로토콜·엔진 버전, 프로젝트, 씬이 모두 같을 때만 통과한다. 형식을 바꾸면 <code>NetProtocolVersion</code>을 올린다.</li>
+		<li>자동 검증·에디터 플레이처럼 같은 PC 전용인 실행은 127.0.0.1에서만 대기한다(<code>NetBindPolicy</code>) — 방화벽 확인 창 문제의 해결.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 모든 메시지를 신뢰 채널로 보내면 구현은 단순해집니다. 위치 업데이트까지 신뢰 채널로 보내면 손실 5% 망에서 어떤 일이 생길까요?</summary>
+	손실된 위치 패킷 하나를 재전송하는 동안, 그 뒤에 보낸 더 새로운 위치들도 순서 보장 때문에 전달이 막힙니다(머리 막힘). 화면의 물체는 잠깐 멈췄다가 밀린 값들이 한꺼번에 도착하며 튑니다. 위치는 다음 패킷이 곧 최신 값을 가져오므로 잃어버려도 괜찮은 데이터이고, 그래서 ProjectE는 트랜스폼 변화를 비신뢰 스냅샷으로 보냅니다(56강).
+</details>
+<details class="quiz"><summary>Q2. 핸드셰이크에서 엔진 버전과 프로토콜 버전을 둘 다 확인합니다. 프로토콜 버전만 확인하면 부족한 경우는 언제일까요?</summary>
+	복제 메시지는 컴포넌트의 리플렉션 프로퍼티를 선언 순서대로 씁니다. 메시지 "형식"(프로토콜)은 그대로인데 어떤 컴포넌트에 프로퍼티가 하나 추가되면, 바이트 배치가 달라집니다. 이런 변화는 <code>NetProtocolVersion</code>을 올리지 않으므로 엔진 버전과 프로젝트(게임 모듈이 등록한 타입) 확인이 함께 필요합니다. 그래도 빠지는 경우를 대비해 <code>ReadComponent</code>는 프로퍼티 개수가 다르면 그 컴포넌트를 거부합니다.
+</details>
+<details class="quiz"><summary>Q3. 자동 검증 실행이 127.0.0.1에서만 대기하면, 다른 PC의 클라이언트는 접속할 수 없습니다. 이것이 문제가 되지 않는 이유는?</summary>
+	자동 검증(<code>--exit-after</code>)과 에디터 네트워크 플레이는 정의상 "같은 PC 안에서 서버와 클라이언트를 함께 띄우는" 실행입니다. 외부 접속이 필요 없으므로 루프백 전용이 맞고, 덕분에 방화벽 확인 창도 뜨지 않습니다. 실제 LAN이 필요하면 <code>--net-public</code>으로 강제할 수 있고, 사람이 실행한 <code>--host</code>/전용 서버는 기본이 공개 대기입니다.
+</details>
+</article>
+
+<!-- ======================================================= 56강 ======================================================= -->
+<article class="lecture" id="lec-56">
+<header>
+	<div class="no">56강</div>
+	<h2 id="lec-56-title">상태 복제</h2>
+	<div class="meta">관련 Phase: 17 (5a·5b·6·9b) · 살펴볼 곳: <code>Network/ReplicationServer.cpp</code> 머리 주석, <code>Network/ReplicationServer.h</code>, <code>Network/ReplicationClient.h/.cpp</code>, <code>Network/ReplicationTypes.h/.cpp</code>, <code>World/GameWorld.cpp</code>(키네마틱 오버라이드)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>"무엇을 보낼지"를 리플렉션으로 정하는 방식과, 보내지 않을 것을 표시하는 방법(<code>TF_NoReplicate</code>, <code>PF_NoReplicate</code>, 리소스 핸들)을 압니다.</li>
+		<li>두 기계가 같은 엔티티를 같은 이름으로 부르게 하는 NetId, 특히 정적 NetId 규칙과 그 규칙이 바뀐 이유를 설명할 수 있습니다.</li>
+		<li>생성·값 변경은 신뢰 채널, 트랜스폼은 비신뢰 스냅샷으로 나눈 이유를 압니다.</li>
+		<li>스냅샷 보간과 0.1초 지연이 왜 필요한지, 외삽을 하지 않는 이유를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-56-why"><span class="step">왜 필요한가</span>서버의 세계를 클라이언트 화면에 옮기기</h3>
+<p>55강에서 서버가 진실을 정한다고 했습니다. 그러면 클라이언트는 서버가 계산한 결과를 받아 자기 씬에 반영해야 합니다. 이것을 <b>복제(replication)</b>라고 합니다. 그런데 단순하게 생각하면 바로 막힙니다.</p>
+<ul>
+	<li><b>모든 것을 보낼 수는 없다</b>: 바닥 타일, 배경 나무, 조명 대부분은 게임 중에 바뀌지 않습니다. 클라이언트도 같은 씬 파일을 갖고 있으니 보낼 필요가 없습니다.</li>
+	<li><b>매번 전부 보낼 수도 없다</b>: 체력은 몇 초에 한 번 바뀌는데 매 틱 보낼 이유가 없습니다.</li>
+	<li><b>"그 상자"를 어떻게 가리키나</b>: 서버의 엔티티 핸들(인덱스 + 세대)은 서버 메모리 안에서만 의미가 있습니다. 클라이언트의 같은 상자는 다른 핸들을 가집니다.</li>
+	<li><b>도착 간격이 흔들린다</b>: 위치를 받은 순간 그대로 적용하면, 지터 때문에 물체가 빨라졌다 느려졌다 하며 덜컥거립니다.</li>
+</ul>
+<p>이 강의는 이 네 문제를 ProjectE가 어떻게 풀었는지 봅니다.</p>
+
+<h3 id="lec-56-what"><span class="step">핵심 개념</span>무엇을 보낼까 — 리플렉션 기반 컴포넌트 값 복제</h3>
+<p>복제 대상은 엔티티 단위로 고릅니다. 에디터에서 <code>ReplicatedComponent</code>를 붙인 엔티티만 복제됩니다. 그리고 그 엔티티에서 <b>무엇을</b> 보낼지는 따로 적지 않습니다. 인스펙터와 직렬화가 이미 쓰는 리플렉션 정보(9강의 <code>FTypeInfo</code>/<code>FPropertyInfo</code>)를 그대로 씁니다. "인스펙터에 보이는 값 = 저장되는 값 = 복제되는 값"이 기본입니다.</p>
+<pre class="code" data-file="Engine/Source/Network/ReplicationTypes.h (발췌)"><span class="com">// 복제 대상 표시 (에디터에서 붙인다). 이 엔티티의 리플렉션 등록 컴포넌트 값을 서버 → 클라이언트로 보낸다.</span>
+<span class="com">// 제외: TF_NoReplicate 타입(계층/프리팹 연결 등), PF_NoReplicate 프로퍼티, 리소스 핸들(클라이언트가 경로로 다시 해석)</span>
+<span class="kw">struct</span> FReplicatedComponent
+{
+	int32 OwnerPlayerId = -<span class="num">1</span>; <span class="com">// 소유 플레이어 (서버가 정한다, -1 = 서버 소유). 저장하지 않지만 복제는 된다</span>
+};
+
+<span class="com">// 런타임 네트워크 ID (리플렉션 미등록 — 저장/복제/플레이 복제 대상 아님).</span>
+<span class="kw">struct</span> FNetIdComponent
+{
+	uint32 NetId = <span class="num">0</span>;
+};</pre>
+<p>이 방식의 장점은 <b>새 컴포넌트가 공짜로 복제된다</b>는 것입니다. 게임 모듈이 <code>FTurretComponent</code>를 리플렉션에 등록하면, 별도 코드 없이 그 값이 클라이언트에 도착합니다. 대신 "보내면 안 되는 것"을 표시하는 장치가 필요합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>표시</th><th>뜻</th><th>예</th></tr>
+	<tr><td>타입 플래그 <code>TF_NoReplicate</code> (<code>.NoReplicate()</code>)</td><td>그 컴포넌트 타입 전체를 보내지 않는다</td><td>계층, 프리팹 연결 — 클라이언트가 생성 메시지로 스스로 만든다</td></tr>
+	<tr><td>프로퍼티 플래그 <code>PF_NoReplicate</code></td><td>그 필드만 뺀다</td><td>서버 내부 계산용 값</td></tr>
+	<tr><td>리소스 핸들 (자동 제외)</td><td>GPU 리소스 핸들은 그 프로세스에서만 의미가 있다</td><td>메시·머티리얼 핸들 → 클라이언트가 <b>경로 문자열</b>로 다시 해석</td></tr>
+	<tr><td><code>PF_Transient</code></td><td>저장만 빼고 <b>복제는 된다</b></td><td>게임 모드의 진행 상태, 능력 시스템의 <code>Rep*</code> 문자열(59강)</td></tr>
+</table></div>
+<pre class="code" data-file="Engine/Source/Network/ReplicationTypes.cpp (발췌)"><span class="kw">bool</span> IsReplicated(<span class="kw">const</span> FTypeInfo&amp; Type)
+{
+	<span class="kw">return</span> Type.bIsComponent &amp;&amp; (Type.Flags &amp; TF_NoReplicate) == <span class="num">0</span>;
+}
+
+<span class="kw">bool</span> IsReplicated(<span class="kw">const</span> FPropertyInfo&amp; Property)
+{
+	<span class="kw">return</span> !Property.HasFlag(PF_NoReplicate) &amp;&amp; Property.Type != EPropertyType::ResourceHandle;
+}</pre>
+<p><code>PF_Transient</code>가 "저장 안 함, 복제는 함"인 것이 처음엔 이상해 보입니다. 하지만 게임 모드의 "현재 점수"나 "남은 시간"을 생각해 보세요. 씬 파일에 저장할 값은 아니지만(새로 시작하면 0이어야 하니까), 모든 클라이언트의 HUD에는 보여야 합니다. 저장과 복제는 서로 다른 질문입니다.</p>
+
+<h4>바뀐 것만, 컴포넌트 단위로</h4>
+<p>서버는 각 복제 엔티티의 컴포넌트마다 <b>마지막으로 보낸 바이트</b>를 기억합니다. 전송 틱이 되면 컴포넌트를 다시 바이트로 쓰고, 지난번과 다르면 그 컴포넌트 전체를 보냅니다.</p>
+<pre class="code" data-file="Engine/Source/Network/ReplicationServer.cpp — BuildStateMessage (발췌)">FBinaryWriter Value;
+NetReplication::WriteComponent(Value, Type, Type.GetComponent(Registry, Entity), ToNetId);
+<span class="kw">const auto</span> Found    = Entry.LastSent.find(Type.Name);
+<span class="kw">const bool</span> bChanged = Found == Entry.LastSent.end() || Found-&gt;second != Value.GetBuffer();
+<span class="kw">if</span> (bFull || bChanged)
+{
+	Components.WriteString(Type.Name);  <span class="com">// 타입 이름 (받는 쪽이 모르면 바이트 수로 건너뛴다)</span>
+	Components.Write(<span class="kw">static_cast</span>&lt;uint8&gt;(<span class="num">0</span>)); <span class="com">// 0 설정, 1 제거</span>
+	Components.WriteArray(Value.GetBuffer());
+	++ComponentCount;
+}
+<span class="kw">if</span> (bCommit)
+{
+	Entry.LastSent[Type.Name] = Value.GetBuffer();
+}</pre>
+<p>필드 단위로 더 잘게 비교할 수도 있지만, ProjectE는 컴포넌트 단위를 택했습니다. 비교가 바이트 배열 비교 한 번으로 끝나고, 이 상태 메시지는 <b>신뢰 채널</b>로 가므로 "지난번 값을 받았다"는 가정이 항상 성립합니다. 그래서 연결마다 따로 기록할 필요 없이 <b>모든 연결이 같은 기준</b>을 공유합니다. 새로 들어온 플레이어만 예외로, 입장할 때 모든 복제 엔티티의 현재 값을 한꺼번에(<code>bFull</code>) 받습니다.</p>
+<p>엔티티를 가리키는 프로퍼티(예: "타깃 엔티티")는 핸들을 그대로 쓰면 안 되므로, 쓸 때 NetId로 바꾸고 읽을 때 다시 엔티티로 바꿉니다(<code>FEntityToNetId</code>/<code>FNetIdToEntity</code>). 이것이 다음 절의 주제입니다.</p>
+
+<h3 id="lec-56-netid"><span class="step">핵심 개념</span>NetId — 두 기계가 같은 엔티티를 같은 이름으로 부르기</h3>
+<p>NetId는 "네트워크 너머에서도 통하는 엔티티 번호"입니다. 두 종류가 있습니다.</p>
+<ul>
+	<li><b>정적 NetId</b>: 씬 파일에 원래 있던 복제 엔티티. 서버와 클라이언트가 <b>같은 씬 파일을 로드</b>했다면, 둘 다 같은 규칙으로 번호를 매겨 같은 결과를 얻습니다. 아무것도 주고받지 않고 합의하는 것입니다. 55강의 핸드셰이크가 씬 이름까지 확인하는 이유가 이것입니다.</li>
+	<li><b>동적 NetId</b>: 게임 중에 생성된 엔티티(총알, 접속한 플레이어의 폰). 서버만 번호를 매기고(<code>DynamicNetIdBase = 1 &lt;&lt; 20</code>부터) 생성 메시지에 실어 보냅니다. 서브 씬(50강)은 서브 씬마다 <code>1 &lt;&lt; 26</code>부터 16384개씩 구간을 나눠 씁니다.</li>
+</ul>
+<p>정적 NetId의 "같은 규칙"이 무엇이냐가 중요합니다. 처음에는 엔티티 인덱스 순서였는데, 버그가 나서 바뀌었습니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="정적 NetId 규칙: 엔티티 인덱스 순서와 컴포넌트 풀 추가 순서 비교">
+		<title>정적 NetId 규칙 비교</title>
+		<text x="20" y="28" class="t-bold">처음 로드</text>
+		<g class="t-small">
+			<rect x="130" y="12" width="90" height="28" rx="6" class="k1"/><text x="175" y="31" text-anchor="middle">인덱스 3: 공</text>
+			<rect x="230" y="12" width="90" height="28" rx="6" class="k1"/><text x="275" y="31" text-anchor="middle">인덱스 4: 상자</text>
+			<rect x="330" y="12" width="90" height="28" rx="6" class="k1"/><text x="375" y="31" text-anchor="middle">인덱스 5: 문</text>
+		</g>
+		<text x="450" y="31" class="t-small">→ 공 1, 상자 2, 문 3 (어느 규칙이든 같음)</text>
+
+		<text x="20" y="84" class="t-bold">씬을 비우고</text>
+		<text x="20" y="102" class="t-bold">다시 로드</text>
+		<text x="130" y="76" class="t-muted">해제된 인덱스는 역순으로 재사용된다 (5, 4, 3 …)</text>
+		<g class="t-small">
+			<rect x="130" y="86" width="90" height="28" rx="6" class="k5"/><text x="175" y="105" text-anchor="middle">인덱스 5: 공</text>
+			<rect x="230" y="86" width="90" height="28" rx="6" class="k5"/><text x="275" y="105" text-anchor="middle">인덱스 4: 상자</text>
+			<rect x="330" y="86" width="90" height="28" rx="6" class="k5"/><text x="375" y="105" text-anchor="middle">인덱스 3: 문</text>
+		</g>
+
+		<rect x="20" y="138" width="400" height="128" rx="10" class="k5"/>
+		<text x="36" y="162" class="t-bold">옛 규칙: 엔티티 인덱스 순서</text>
+		<text x="36" y="186" class="t-small">다시 로드한 쪽: 문 1, 상자 2, 공 3</text>
+		<text x="36" y="206" class="t-small">처음 로드한 쪽: 공 1, 상자 2, 문 3</text>
+		<text x="36" y="232" class="t-small f5 t-bold">→ NetId 1이 한쪽에선 공, 한쪽에선 문</text>
+		<text x="36" y="252" class="t-muted">세션 전환(Net.Connect 등)에서 발생</text>
+
+		<rect x="440" y="138" width="400" height="128" rx="10" class="k2"/>
+		<text x="456" y="162" class="t-bold">새 규칙: ReplicatedComponent 풀 추가 순서</text>
+		<text x="456" y="186" class="t-small">파일에 적힌 순서대로 컴포넌트가 추가된다</text>
+		<text x="456" y="206" class="t-small">→ 어느 쪽이든 공 1, 상자 2, 문 3</text>
+		<text x="456" y="232" class="t-small f2 t-bold">→ 인덱스 재사용과 무관하게 일치</text>
+		<text x="456" y="252" class="t-muted">테스트 Replication_StaticNetIdsSurviveSceneReload</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 56-1.</b> 같은 씬 파일이라도 엔티티 인덱스는 "그 프로세스에서 이전에 무슨 일이 있었나"에 따라 달라집니다. 파일 내용만으로 정해지는 순서(컴포넌트 풀에 추가된 순서)를 써야 두 기계가 합의할 수 있습니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Network/ReplicationTypes.cpp — AssignStaticNetIds"><span class="kw">void</span> AssignStaticNetIds(FScene&amp; Scene)
+{
+	<span class="com">// 순서 = ReplicatedComponent 풀에 추가된 순서(밀집 배열). 같은 씬 파일을 로드하면 양쪽이 같다.</span>
+	<span class="com">// 엔티티 인덱스 순서는 쓰지 않는다 — 씬을 비우고 다시 열면(세션 전환) 해제된 인덱스가 역순으로 재사용되기 때문</span>
+	FRegistry&amp; Registry = Scene.GetRegistry();
+	<span class="kw">const</span> TSparseSet&lt;FReplicatedComponent&gt;* Pool = Registry.TryGetPool&lt;FReplicatedComponent&gt;();
+	<span class="kw">if</span> (Pool == <span class="kw">nullptr</span>) { <span class="kw">return</span>; }
+	<span class="kw">const</span> std::vector&lt;FEntity&gt; Entities = Pool-&gt;GetEntities(); <span class="com">// 아래에서 다른 풀에 추가하므로 복사</span>
+	uint32 NextNetId = <span class="num">1</span>;
+	<span class="kw">for</span> (<span class="kw">const</span> FEntity Entity : Entities)
+	{
+		Registry.GetOrEmplace&lt;FNetIdComponent&gt;(Entity).NetId = NextNetId++;
+	}
+}</pre>
+<p>7강 ECS의 희소 집합(sparse set)을 떠올려 보세요. 컴포넌트 풀의 밀집 배열은 "추가된 순서"를 그대로 담고 있습니다. 엔티티 인덱스는 재사용되지만, 같은 파일을 위에서부터 읽어 컴포넌트를 추가하는 순서는 파일이 같으면 항상 같습니다. 이 순서에 기대므로 <b>정적 NetId는 씬 로드 직후, 게임이 아무것도 생성하기 전에</b> 매겨야 합니다(<code>FReplicationServer::Begin</code>/<code>FReplicationClient::Begin</code>). 에디터 네트워크 플레이가 플레이 씬을 "복제(clone)"하지 않고 저장된 같은 JSON(<code>PIE.escene</code>)에서 만드는 것도 같은 이유입니다.</p>
+
+<h3 id="lec-56-channels"><span class="step">핵심 개념</span>생성은 신뢰, 트랜스폼은 비신뢰 스냅샷</h3>
+<p>서버는 게임플레이 틱마다 <code>FReplicationServer::Tick</code>을 부르고, <code>SendRate</code>(기본 30Hz)마다 한 번 실제로 보냅니다. 시뮬레이션은 60Hz지만 전송은 그 절반입니다 — 회선을 아끼고, 사이는 클라이언트가 보간으로 메웁니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="서버 전송 틱에서 나가는 복제 메시지">
+		<title>서버 전송 틱에서 나가는 복제 메시지</title>
+		<rect x="20" y="20" width="170" height="250" rx="10" class="acc"/>
+		<text x="105" y="46" text-anchor="middle" class="t-bold">전송 틱 (30Hz)</text>
+		<text x="105" y="70" text-anchor="middle" class="t-small">새 복제 엔티티 찾기</text>
+		<text x="105" y="90" text-anchor="middle" class="t-small">사라진 엔티티 찾기</text>
+		<text x="105" y="110" text-anchor="middle" class="t-small">컴포넌트 바이트 비교</text>
+		<text x="105" y="130" text-anchor="middle" class="t-small">움직인 트랜스폼 모으기</text>
+		<g class="t-small">
+			<rect x="260" y="24" width="300" height="46" rx="8" class="k2"/>
+			<text x="276" y="44" class="t-bold">ReplicationSpawn</text>
+			<text x="276" y="62" class="t-small">NetId, 이름+부모 또는 프리팹 경로+링크</text>
+			<rect x="260" y="82" width="300" height="46" rx="8" class="k2"/>
+			<text x="276" y="102" class="t-bold">ReplicationDestroy</text>
+			<text x="276" y="120" class="t-small">NetId 목록</text>
+			<rect x="260" y="140" width="300" height="46" rx="8" class="k2"/>
+			<text x="276" y="160" class="t-bold">ReplicationState</text>
+			<text x="276" y="178" class="t-small">바뀐 컴포넌트 (+ 생성 직후 트랜스폼)</text>
+			<rect x="260" y="212" width="300" height="56" rx="8" class="k4"/>
+			<text x="276" y="232" class="t-bold">TransformSnapshot</text>
+			<text x="276" y="250" class="t-small">서버 시각 + [NetId, 위치, 회전, 스케일]…</text>
+		</g>
+		<path d="M190,47 H256" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,105 H256" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,163 H256" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,240 H256" class="ln" marker-end="url(#arr)"/>
+		<rect x="600" y="24" width="240" height="162" rx="10" class="k2"/>
+		<text x="720" y="56" text-anchor="middle" class="t-bold">신뢰 채널</text>
+		<text x="720" y="82" text-anchor="middle" class="t-small">순서·도착 보장</text>
+		<text x="720" y="106" text-anchor="middle" class="t-small">"한 번 보내면 끝"인 사건과</text>
+		<text x="720" y="126" text-anchor="middle" class="t-small">드물게 바뀌는 값</text>
+		<text x="720" y="160" text-anchor="middle" class="t-muted">모든 연결이 같은 LastSent 기준</text>
+		<rect x="600" y="212" width="240" height="56" rx="10" class="k4"/>
+		<text x="720" y="236" text-anchor="middle" class="t-bold">비신뢰 채널</text>
+		<text x="720" y="256" text-anchor="middle" class="t-small">잃어도 다음 스냅샷이 대신함</text>
+		<path d="M560,105 H596" class="ln" marker-end="url(#arr)"/>
+		<path d="M560,240 H596" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="292" text-anchor="middle" class="t-muted">트랜스폼은 생성/입장 때만 신뢰로 한 번, 이후로는 스냅샷이 맡는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 56-2.</b> 한 전송 틱에 나가는 메시지. 성격에 따라 채널을 나눴습니다. 트랜스폼은 생성 때 한 번 신뢰로 보내 "처음 자리"를 확실히 하고, 이후 변화는 손실돼도 괜찮은 스냅샷으로 보냅니다.</figcaption>
+</figure>
+<pre class="code" data-file="Network/ReplicationServer.cpp 머리 주석 (발췌)"><span class="com">// 복제 메시지 형식 (신뢰 채널, 리틀 엔디언):</span>
+<span class="com">//   ReplicationSpawn:   uint32 개수, [uint32 NetId, uint8 종류(1 엔티티, 2 프리팹), uint32 부모 NetId, string 이름,</span>
+<span class="com">//                                    string 프리팹 경로, uint32 링크 수, [string 링크 ID, uint32 NetId]...]...</span>
+<span class="com">//   ReplicationDestroy: uint32 개수, [uint32 NetId]...</span>
+<span class="com">//   ReplicationState:   uint32 엔티티 수, [uint32 NetId, uint32 컴포넌트 수,</span>
+<span class="com">//                                          [string 타입 이름, uint8 동작(0 설정, 1 제거), (설정만) uint32 바이트 수, 컴포넌트 바이트]...]...</span>
+<span class="com">//   TransformSnapshot (비신뢰): float 서버 시각, uint32 개수, [uint32 NetId, FVector3 위치, FQuat 회전, FVector3 스케일]...</span></pre>
+<p>생성 메시지에 프리팹 경로가 있다는 점을 보세요. 플레이어 폰처럼 프리팹에서 생성된 엔티티는 "이 프리팹을 만들어라 + 그 안의 각 엔티티(링크 ID)는 이 NetId"만 보내면 됩니다. 클라이언트가 같은 프리팹 파일로 하위 트리를 통째로 만들고, 값이 다른 컴포넌트만 이어지는 상태 메시지로 받습니다.</p>
+<p>비신뢰 스냅샷에는 함정이 하나 있습니다. 물체가 멈추면 서버는 "바뀐 것이 없으니" 보내지 않습니다. 그런데 멈추기 직전의 마지막 스냅샷이 손실되었다면? 클라이언트의 물체는 멈추기 조금 전 위치에서 영원히 멈춥니다. 그래서 서버는 트랜스폼이 멈춘 뒤에도 <code>RestResendSeconds</code>(1초) 동안 계속 보냅니다. 손실 5%에서 30번 연속 손실될 확률은 사실상 0입니다.</p>
+
+<h3 id="lec-56-interp"><span class="step">핵심 개념</span>스냅샷 보간과 0.1초 지연</h3>
+<p>클라이언트가 스냅샷을 받자마자 위치를 그 값으로 바꾸면 어떻게 될까요? 스냅샷은 30Hz(33ms 간격)로 오는데 화면은 60Hz 이상이므로, 물체는 두 프레임마다 한 번씩 순간이동합니다. 게다가 지터 때문에 간격이 흔들리고, 가끔 하나씩 빠집니다. 결과는 덜컥거리는 움직임입니다.</p>
+<p>해결책은 <b>일부러 조금 과거를 보여 주는 것</b>입니다. 클라이언트는 받은 스냅샷을 버퍼에 쌓아 두고, "추정한 현재 서버 시각 − 0.1초" 시점의 위치를 그 시각을 감싸는 두 스냅샷 사이에서 보간합니다. 0.1초 전이라면 보통 그 시점 양옆의 스냅샷이 이미 도착해 있으므로, 항상 매끄러운 선 위를 따라갈 수 있습니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="스냅샷 보간 타임라인">
+		<title>스냅샷 보간 타임라인</title>
+		<line x1="40" y1="150" x2="830" y2="150" class="ln" marker-end="url(#arr)"/>
+		<text x="820" y="175" text-anchor="end" class="t-muted">서버 시각</text>
+		<g class="t-small">
+			<circle cx="100" cy="150" r="7" class="f1"/><text x="100" y="135" text-anchor="middle">S1</text>
+			<circle cx="200" cy="150" r="7" class="f1"/><text x="200" y="135" text-anchor="middle">S2</text>
+			<circle cx="300" cy="150" r="7" class="f1"/><text x="300" y="135" text-anchor="middle">S3</text>
+			<circle cx="400" cy="150" r="7" class="k5"/><text x="400" y="135" text-anchor="middle" class="f5">S4 ✗</text>
+			<circle cx="500" cy="150" r="7" class="f1"/><text x="500" y="135" text-anchor="middle">S5</text>
+			<circle cx="600" cy="150" r="7" class="f1"/><text x="600" y="135" text-anchor="middle">S6</text>
+			<circle cx="700" cy="150" r="7" class="k1"/><text x="700" y="135" text-anchor="middle" class="t-muted">S7?</text>
+		</g>
+		<path d="M100,175 H200" class="ln-d"/><text x="150" y="192" text-anchor="middle" class="t-muted">1/30초</text>
+		<line x1="650" y1="60" x2="650" y2="230" class="ln s4" stroke-width="2"/>
+		<text x="650" y="50" text-anchor="middle" class="t-bold">추정한 현재 서버 시각</text>
+		<line x1="350" y1="60" x2="350" y2="230" class="ln s2" stroke-width="2"/>
+		<text x="350" y="50" text-anchor="middle" class="t-bold f2">그리는 시각 = 현재 − 0.1초</text>
+		<path d="M352,214 H648" class="ln" marker-end="url(#arr)"/>
+		<path d="M648,214 H352" class="ln" marker-end="url(#arr)"/>
+		<text x="500" y="208" text-anchor="middle" class="t-small">InterpolationDelay 0.1초 = 스냅샷 간격의 3배</text>
+		<path d="M300,250 Q400,236 500,250" class="ln s2" stroke-width="2.2"/>
+		<text x="400" y="272" text-anchor="middle" class="t-small f2">S4가 빠져도 S3와 S5 사이를 보간</text>
+		<text x="662" y="198" class="t-muted">이후 것은 아직 도착 전일 수 있음</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 56-3.</b> 그리는 시각을 0.1초 뒤로 미루면, 그 시각 양쪽의 스냅샷이 거의 항상 도착해 있습니다. 하나가 손실되어도(S4) 그 다음 것(S5)과 보간하면 됩니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Network/ReplicationClient.h (발췌)"><span class="kw">float</span> InterpolationDelay = <span class="num">0.1f</span>; <span class="com">// 초. 스냅샷 간격(1/30초)의 3배 — 한두 개 손실돼도 보간할 두 점이 있다</span></pre>
+<pre class="code" data-file="Engine/Source/Network/ReplicationClient.cpp (발췌)"><span class="com">// 서버 시각 추정: 크게 어긋나면 맞추고, 아니면 조금씩 따라간다 (지연 변동에 흔들리지 않게)</span>
+<span class="kw">if</span> (!bClockValid || std::abs(Time - ServerClock) &gt; <span class="num">0.25f</span>)
+{
+	ServerClock = Time;
+	bClockValid = <span class="kw">true</span>;
+}
+<span class="kw">else</span>
+{
+	ServerClock += (Time - ServerClock) * <span class="num">0.1f</span>;
+}
+...
+<span class="com">// Update: 매 프레임 시계를 진행하고 (현재 − 지연) 시점을 그린다</span>
+ServerClock += DeltaSeconds;
+<span class="kw">const float</span> RenderTime = ServerClock - InterpolationDelay;
+...
+<span class="com">// Interpolate: RenderTime을 감싸는 두 스냅샷 사이 보간. 범위 밖이면 가장 가까운 끝 값 (외삽하지 않는다)</span>
+Result.Position = FVector3::Lerp(From-&gt;Position, To-&gt;Position, Alpha);
+Result.Rotation = FQuat::Slerp(From-&gt;Rotation, To-&gt;Rotation, Alpha).GetNormalized();</pre>
+<p>세 가지를 짚어 봅시다.</p>
+<ol>
+	<li><b>서버 시계 추정</b>: 클라이언트는 서버 시각을 직접 알 수 없고, 스냅샷에 적힌 시각만 봅니다. 도착 시각이 지터로 흔들리므로 받을 때마다 그 값으로 맞추면 시계가 앞뒤로 튑니다. 그래서 평소에는 차이의 10%씩만 따라가고(저역 통과 필터), 0.25초 넘게 어긋날 때만 한 번에 맞춥니다. 그 사이에는 자기 프레임 시간으로 시계를 진행합니다.</li>
+	<li><b>늦게 온 스냅샷은 버린다</b>: 버퍼의 마지막보다 시각이 이르면(재정렬) 무시합니다. 1초보다 오래된 것은 지웁니다.</li>
+	<li><b>외삽(extrapolation)하지 않는다</b>: 그리는 시각이 마지막 스냅샷보다 뒤라면 "속도로 앞을 추측"하지 않고 마지막 값에 머뭅니다. 추측은 물체가 갑자기 멈추거나 방향을 바꿀 때 틀린 곳으로 갔다가 되돌아오는 출렁임을 만듭니다. 0.1초 여유를 두었으니 그런 일은 드뭅니다.</li>
+</ol>
+<div class="callout note">
+	<b class="t">대가: 다른 사람은 항상 조금 과거에 있다</b>
+	이 방식에서 클라이언트가 보는 다른 플레이어와 물체는 "편도 지연 + 0.1초" 전의 모습입니다. 남이 움직이는 것을 볼 때는 문제가 없습니다. 하지만 <b>내 캐릭터</b>까지 이렇게 보이면 키를 누르고 한참 뒤에 움직이고(57강), 내가 민 상자는 더 늦게 반응합니다(58강). 다음 두 강의는 이 대가를 줄이는 이야기입니다.
+</div>
+
+<h3 id="lec-56-projecte"><span class="step">ProjectE에서는</span>클라이언트 쪽 물리 — 복제 바디는 키네마틱</h3>
+<p>클라이언트(<code>EWorldRole::Client</code>)는 게임 로직(서버 전용 스크립트, 게임 모듈, AI)을 돌리지 않지만 <b>물리는 돌립니다</b>. 클라이언트에만 있는 로컬 물체(연출용 파편 등)는 클라이언트가 시뮬레이션해야 하고, 그 물체가 복제된 상자에 부딪히려면 상자도 물리 세계 안에 있어야 하기 때문입니다. 대신 서버가 시뮬레이션하는 복제 바디는 스스로 움직이면 안 됩니다. 그래서 <b>키네마틱(kinematic)</b> — 힘이나 충돌로 움직이지 않고, 정해 준 위치로만 움직이는 바디 — 으로 바꿉니다.</p>
+<pre class="code" data-file="Engine/Source/World/GameWorld.cpp — BeginPlay (발췌)"><span class="kw">if</span> (bClient)
+{
+	<span class="com">// 서버가 시뮬레이션하는 복제 엔티티(NetId 보유)는 키네마틱: 복제 트랜스폼을 따라가며 로컬 물체와 충돌.</span>
+	<span class="com">// 물리 예측 중인 바디만 동적으로 로컬 시뮬레이션한다 (바뀌면 FPhysicsSystem이 바디를 다시 만든다)</span>
+	Systems.Physics-&gt;SetKinematicOverride([<span class="kw">this</span>](<span class="kw">const</span> FScene&amp; Target, FEntity Entity) {
+		<span class="kw">return</span> Target.GetRegistry().Has&lt;FNetIdComponent&gt;(Entity) &amp;&amp; !IsPhysicsSimulatedLocally(Entity);
+	});
+}</pre>
+<p>키네마틱 바디는 보간된 복제 트랜스폼을 따라 움직이며, 그 이동에서 속도가 계산되므로 로컬 물체를 밀 수 있고 레이캐스트에도 잡힙니다. 속도를 따로 보내지 않아도 되는 것이 장점입니다. 코드 주석의 "물리 예측 중인 바디만 동적으로"는 58강에서 이 규칙에 예외를 만드는 이야기입니다.</p>
+
+<h3 id="lec-56-pitfalls"><span class="step">함정과 교훈</span></h3>
+<ul>
+	<li><b>정적 NetId는 "파일 내용만으로 정해지는 순서"여야 한다</b>: 위 그림 56-1의 버그는 Phase 17-9b에서 Lua 세션 전환(<code>Net.Connect</code> — 씬을 비우고 다시 로드)을 만들면서 드러났습니다. 처음 로드한 서버와 다시 로드한 클라이언트가 같은 씬인데도 서로 다른 엔티티를 같은 번호로 불렀습니다. 같은 입력에서 같은 결과를 내야 하는 값은 "프로세스의 과거"(메모리 재사용 순서 등)에 의존하면 안 됩니다.</li>
+	<li><b>프리팹 자식도 각자 <code>ReplicatedComponent</code>가 필요하다</b>: 복제 단위는 엔티티입니다. 플레이어 프리팹의 루트에만 붙이면 자식(예: 몸 방향을 돌리는 메시 엔티티)의 값은 오지 않고, 클라이언트는 프리팹 기본값을 보여 줍니다(CLAUDE.md Phase 21 규칙).</li>
+	<li><b>소유자는 늦게 올 수 있다</b>: 클라이언트에서 <code>ReplicatedComponent.OwnerPlayerId</code>는 상태 메시지로 오므로, 스크립트 <code>OnStart</code>보다 늦게 도착할 수 있습니다. "이 폰이 내 것인가"는 <code>OnStart</code>에서 한 번 판정하지 말고, 확정될 때까지 매 프레임 확인합니다.</li>
+	<li><b>클라이언트에서 트랜스폼을 직접 쓰지 않는다</b>: 복제 엔티티의 트랜스폼은 매 프레임 보간 값으로 덮어씁니다. 클라이언트 스크립트가 위치를 바꿔도 다음 프레임에 사라집니다. 예외는 57·58강에서 볼 "예측" 대상뿐이며, 그것도 <code>SetTransformFilter</code>로 명시적으로 보간에서 뺍니다.</li>
+	<li><b>알려진 제한</b>: 생성 뒤 부모를 바꾸는 것은 복제되지 않습니다(Phase 17-5b 기록). 리슨 호스트는 렌더 보간된 물리 값을 보내 최대 한 스텝 늦습니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>복제 단위는 <code>ReplicatedComponent</code>가 붙은 엔티티, 내용은 리플렉션 등록 컴포넌트 값이다. 새 컴포넌트는 등록만 하면 복제된다.</li>
+		<li>제외는 <code>TF_NoReplicate</code>/<code>PF_NoReplicate</code>/리소스 핸들. <code>PF_Transient</code>는 저장만 빼고 복제는 된다.</li>
+		<li>정적 NetId = <code>ReplicatedComponent</code> 풀 추가 순서(양쪽이 같은 씬 파일을 로드했을 때 같음), 동적 NetId = 서버가 <code>1&lt;&lt;20</code>부터.</li>
+		<li>30Hz 전송. 생성·파괴·바뀐 컴포넌트는 신뢰 채널(모든 연결 공통 기준), 트랜스폼 변화는 비신뢰 스냅샷(멈춘 뒤 1초 재전송).</li>
+		<li>클라이언트는 (추정 서버 시각 − 0.1초)를 두 스냅샷 사이에서 보간하고 외삽하지 않는다.</li>
+		<li>클라이언트의 복제 동적 바디는 키네마틱으로 보간 위치를 따른다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. <code>InterpolationDelay</code>를 0.03초(스냅샷 간격 정도)로 줄이면 무엇이 좋아지고 무엇이 나빠질까요?</summary>
+	다른 물체가 덜 과거에 보이므로 반응이 빨라 보입니다. 하지만 그리는 시각 뒤쪽 스냅샷이 아직 안 왔을 확률이 크게 늘어, 지터나 손실이 조금만 있어도 "마지막 값에 멈춤 → 새 값이 오면 점프"가 반복됩니다. 3배(0.1초)는 한두 개가 빠져도 보간할 두 점이 남도록 고른 값입니다.
+</details>
+<details class="quiz"><summary>Q2. 컴포넌트 값을 연결마다 따로 "마지막으로 보낸 값"으로 기억하지 않고 모든 연결이 같은 기준을 써도 되는 이유는 무엇일까요?</summary>
+	상태 메시지는 신뢰 채널로 가므로, 보낸 것은 반드시 순서대로 도착합니다. 따라서 이미 접속해 있는 모든 연결은 "지금까지 보낸 메시지를 다 받은 상태"로 같습니다. 예외는 새로 들어온 연결뿐이고, 그 연결에는 입장할 때 전체 값을 한 번 보내(<code>bFull</code>) 같은 기준에 맞춰 줍니다.
+</details>
+<details class="quiz"><summary>Q3. 클라이언트에서 메시 핸들은 왜 복제하지 않고 경로 문자열로 다시 해석할까요?</summary>
+	리소스 핸들은 그 프로세스의 <code>FResourceManager</code> 안에서만 의미 있는 번호(슬롯 + 세대)입니다. 서버의 7번 메시가 클라이언트의 7번 메시라는 보장이 없고, 전용 서버는 GPU 리소스가 아예 없습니다. 그래서 핸들은 자동으로 빼고, 함께 저장된 에셋 경로를 받은 클라이언트가 자기 리소스 관리자로 다시 해석합니다(<code>ConsumeAssetsChanged</code>).
+</details>
+</article>
+
+<!-- ======================================================= 57강 ======================================================= -->
+<article class="lecture" id="lec-57">
+<header>
+	<div class="no">57강</div>
+	<h2 id="lec-57-title">클라이언트 예측과 재조정</h2>
+	<div class="meta">관련 Phase: 22 · 살펴볼 곳: <code>World/GameWorldCharacter.cpp</code> 머리 주석, <code>Physics/CharacterMovement.h</code>, <code>Network/ReplicationClient.h</code>(<code>SetTransformFilter</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>원격 클라이언트에서 "조작이 한발 느린" 이유를 시간 축 그림으로 설명할 수 있습니다.</li>
+		<li>클라이언트 예측(client-side prediction)이 무엇이고, 왜 "같은 입력 → 같은 결과"가 전제인지 압니다.</li>
+		<li>무브 순번, 겹쳐 보내기, 서버 ack, 재조정(되감고 다시 적용)의 흐름을 따라갈 수 있습니다.</li>
+		<li>보정을 화면 오프셋으로 흡수하는 방법과, 예측 대상을 스냅샷 보간에서 빼는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-57-why"><span class="step">왜 필요한가</span>"원격 클라이언트 조작이 한발 느림"</h3>
+<p>Phase 17이 끝났을 때 멀티플레이는 동작했습니다. 클라이언트가 매 틱 입력 상태를 서버로 보내고(<code>PlayerInput</code>), 서버의 스크립트가 그 입력으로 캐릭터를 움직이고, 결과가 스냅샷으로 돌아와 0.1초 지연 보간으로 그려졌습니다. 권한 서버 원칙에 충실한 구조입니다. 그런데 사용자 보고가 왔습니다. "원격 클라이언트 조작이 한발 느림" — Phase 22는 이 문장으로 시작합니다.</p>
+<p>왜 느린지 시간을 따라가 봅시다. W를 누르는 순간부터 화면의 캐릭터가 움직이기까지:</p>
+<ol>
+	<li>입력이 서버까지 가는 편도 지연</li>
+	<li>서버가 다음 게임플레이 틱에 입력을 반영</li>
+	<li>다음 전송 틱(30Hz)까지 대기</li>
+	<li>스냅샷이 돌아오는 편도 지연</li>
+	<li>그리고 보간 지연 0.1초</li>
+</ol>
+<p>Plans.md의 측정으로는 같은 PC 안의 리슨 서버 + 클라이언트에서도 키를 누른 뒤 이동이 시작되기까지 약 130ms였습니다. 지연이 거의 0인데도 이 정도이니, 실제 인터넷에서는 훨씬 나빠집니다. 사람은 손과 화면 사이의 지연에 매우 민감해서, 100ms만 넘어도 "끈적한" 조작감을 느낍니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="예측 없음과 예측 있음의 입력 반응 시간 비교">
+		<title>예측 없음과 예측 있음의 입력 반응 시간 비교</title>
+		<text x="20" y="28" class="t-bold">예측 없음</text>
+		<text x="20" y="66" class="t-small">클라이언트</text>
+		<text x="20" y="136" class="t-small">서버</text>
+		<line x1="110" y1="62" x2="840" y2="62" class="ln"/>
+		<line x1="110" y1="132" x2="840" y2="132" class="ln"/>
+		<circle cx="130" cy="62" r="6" class="f5"/><text x="130" y="48" text-anchor="middle" class="t-small f5">W 누름</text>
+		<path d="M134,66 L276,128" class="ln s1" marker-end="url(#arr)"/>
+		<text x="236" y="96" class="t-muted">입력</text>
+		<rect x="280" y="120" width="110" height="24" rx="5" class="k2"/><text x="335" y="137" text-anchor="middle" class="t-small">이동 + 전송 대기</text>
+		<path d="M392,128 L520,66" class="ln s2" marker-end="url(#arr)"/>
+		<text x="462" y="112" class="t-muted">스냅샷</text>
+		<rect x="524" y="50" width="150" height="24" rx="5" class="k4"/><text x="599" y="67" text-anchor="middle" class="t-small">보간 지연 0.1초</text>
+		<circle cx="684" cy="62" r="6" class="f2"/><text x="690" y="48" class="t-small f2 t-bold">화면에서 움직이기 시작</text>
+		<path d="M130,158 H684" class="ln-d"/><path d="M130,152 V164 M684,152 V164" class="ln"/><text x="407" y="176" text-anchor="middle" class="t-small">≈130ms (같은 PC에서 잰 값 — 실제 망은 왕복 지연만큼 더)</text>
+
+		<text x="20" y="196" class="t-bold">예측 있음</text>
+		<text x="20" y="234" class="t-small">클라이언트</text>
+		<text x="20" y="304" class="t-small">서버</text>
+		<line x1="110" y1="230" x2="840" y2="230" class="ln"/>
+		<line x1="110" y1="300" x2="840" y2="300" class="ln"/>
+		<circle cx="130" cy="230" r="6" class="f5"/><text x="130" y="216" text-anchor="middle" class="t-small f5">W 누름</text>
+		<circle cx="160" cy="230" r="6" class="f2"/><text x="166" y="216" class="t-small f2 t-bold">다음 프레임(≈20ms)에 바로 움직임</text>
+		<path d="M164,234 L306,296" class="ln s1" marker-end="url(#arr)"/>
+		<text x="262" y="262" class="t-muted">무브 #7</text>
+		<rect x="310" y="288" width="120" height="24" rx="5" class="k2"/><text x="370" y="305" text-anchor="middle" class="t-small">같은 무브 시뮬레이션</text>
+		<path d="M432,296 L574,234" class="ln s2" marker-end="url(#arr)"/>
+		<text x="510" y="282" class="t-muted">ack #7 + 상태</text>
+		<rect x="578" y="218" width="200" height="24" rx="5" class="box"/><text x="678" y="235" text-anchor="middle" class="t-small">맞으면 아무 일 없음</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 57-1.</b> 위: 서버의 결과를 기다려 그리면 입력 → 화면이 왕복 지연 + 전송 대기 + 보간 지연만큼 늦습니다. 아래: 클라이언트가 같은 계산을 미리 해서 바로 보여 주고, 서버 결과는 나중에 "맞았는지 확인"하는 데만 씁니다.</figcaption>
+</figure>
+
+<h3 id="lec-57-concept"><span class="step">핵심 개념</span>예측 — 서버가 할 계산을 미리 해 둔다</h3>
+<p>해법의 아이디어는 단순합니다. 내 캐릭터가 어떻게 움직일지는 사실 <b>내 입력이 거의 전부</b>를 결정합니다. 서버의 답을 기다릴 필요 없이, 클라이언트가 서버와 <b>똑같은 이동 계산</b>을 자기 입력으로 미리 돌려 즉시 보여 주면 됩니다. 이것이 <b>클라이언트 예측(client-side prediction)</b>입니다. 권한은 여전히 서버에 있습니다. 클라이언트는 "서버도 아마 이렇게 계산할 것"이라고 예측할 뿐이고, 서버 답이 다르면 서버를 따릅니다.</p>
+<p>이 방식이 성립하려면 두 조건이 필요합니다.</p>
+<ol>
+	<li><b>같은 입력 → 같은 결과</b>: 클라이언트와 서버가 같은 이동 함수를 같은 입력으로 돌리면 같은 위치에 도착해야 합니다. 그래야 대부분의 경우 "예측이 맞아서 아무 일도 없음"이 됩니다.</li>
+	<li><b>입력을 단위로 쪼개 이름표를 붙인다</b>: 서버가 "몇 번째 입력까지 처리한 결과가 이것"이라고 알려 줘야, 클라이언트가 자기 기록의 어디와 비교할지 압니다.</li>
+</ol>
+<p>그래서 Phase 22는 먼저 이동 자체를 바꿨습니다. 그전까지는 Lua 스크립트가 서버에서 캐릭터 위치를 계산했습니다. 스크립트 로직은 클라이언트에서 같은 결과를 낸다고 보장할 수 없습니다. 이동을 엔진 C++ 컴포넌트 <code>FCharacterMovementComponent</code>(46강)로 옮기고, 스크립트는 "이 방향으로 가고 싶다"(<code>AddMovementInput</code>)와 "점프"만 넘기게 했습니다.</p>
+<div class="callout note">
+	<b class="t">무브(move) — 예측의 기본 단위</b>
+	한 틱의 이동 요청 한 묶음입니다: <b>순번, dt, 월드 XY 입력, yaw, 점프</b>(루트 모션을 쓰면 그 속도도). <code>FPhysicsSystem::SimulateCharacter(무브)</code>가 이 무브 하나를 시뮬레이션하는 순수 경로이고, 서버·예측 클라이언트·Standalone이 모두 이 함수를 씁니다. 속도 규칙은 <code>CharacterMovementMath::ComputeVelocity</code>라는 순수 함수에 있으며, 테스트(<code>CharacterMovementTests</code>)로 고정합니다.
+</div>
+<p>Jolt의 <code>CharacterVirtual</code>을 고른 이유도 여기 있습니다. 일반 강체는 물리 엔진의 전체 스텝 안에서 다른 바디와 함께 풀리므로 "한 캐릭터만 되감아 다시 돌리기"가 어렵습니다. <code>CharacterVirtual</code>은 쿼리(충돌 질의) 기반이라 캐릭터 하나의 상태를 저장했다가 되돌리고 무브를 다시 적용할 수 있습니다. Plans.md의 결정 문구가 바로 "쿼리 기반, 되감아 다시 돌릴 수 있음"입니다.</p>
+
+<h3 id="lec-57-flow"><span class="step">핵심 개념</span>순번, 겹쳐 보내기, 서버 적용, ack</h3>
+<p>규칙의 기준은 <code>World/GameWorldCharacter.cpp</code> 머리 주석입니다. 클라이언트와 서버가 하는 일을 나눠 봅시다.</p>
+<pre class="code" data-file="World/GameWorldCharacter.cpp 머리 주석 (발췌)"><span class="com">//   매 틱 (TickCharacters, 스크립트 직후 — 스크립트가 AddMovementInput/Jump로 입력을 넣는다):</span>
+<span class="com">//     - 조종 주체 + 서버/Standalone: 무브를 만들어 바로 시뮬레이션 (지연 없음)</span>
+<span class="com">//     - 조종 주체 + 클라이언트(예측): 무브에 순번을 붙여 바로 시뮬레이션하고 기록, 서버로 최근 무브 MaxMovesPerPacket개를 보낸다</span>
+<span class="com">//     - 서버의 원격 플레이어 캐릭터: 받은 무브를 순번 순서대로 시뮬레이션하고 소유자에게 ack(마지막 순번 + 상태)</span>
+<span class="com">//     - 클라이언트의 다른 캐릭터: 복제 스냅샷 보간 위치에 캡슐만 맞춘다 (FollowTransform)</span>
+<span class="com">//   ...</span>
+<span class="com">//   메시지 (비신뢰):</span>
+<span class="com">//     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 플래그(1 점프, 2 루트 모션) ...]...</span>
+<span class="com">//     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥</span></pre>
+<h4>클라이언트: 바로 움직이고, 기록하고, 겹쳐 보낸다</h4>
+<pre class="code" data-file="World/GameWorldCharacter.cpp — TickCharacters, 예측 클라이언트 (발췌)">FPredictedCharacter&amp; Predicted = PredictedCharacters[Entity];
+Move.Sequence                  = ++Predicted.NextSequence;
+...
+Physics-&gt;SimulateCharacter(*Scene, Entity, Move); <span class="com">// 예측: 바로 움직인다</span>
+Predicted.Moves.push_back(Move);                  <span class="com">// 서버가 확인할 때까지 기록</span>
+<span class="kw">while</span> (Predicted.Moves.size() &gt; MaxPredictedMoves) <span class="com">// 240개 = 4초 (서버 응답이 끊기면 오래된 것부터 버린다)</span>
+{
+	Predicted.Moves.pop_front();
+}
+SendCharacterMoves(Entity);                        <span class="com">// 최근 무브 최대 8개를 한 패킷에</span></pre>
+<p>무브 메시지는 <b>비신뢰</b>로 보냅니다. 입력은 시간이 생명이라 재전송을 기다릴 수 없기 때문입니다. 대신 손실에 대비해 매번 <b>최근 무브 8개를 겹쳐</b> 보냅니다(<code>MaxMovesPerPacket = 8</code>). 패킷 하나가 사라져도 다음 패킷에 그 무브가 또 들어 있으므로, 8번 연속으로 잃지 않는 한 서버는 모든 무브를 받습니다. 무브 하나는 20바이트 남짓이라 8개를 겹쳐도 부담이 작습니다.</p>
+
+<h4>서버: 소유자 확인, 걸러내기, 순서대로 적용, ack</h4>
+<pre class="code" data-file="World/GameWorldCharacter.cpp — ReceiveCharacterMoves (발췌)"><span class="kw">if</span> (... || GetOwner(Entity) != <span class="kw">static_cast</span>&lt;int32&gt;(Sender-&gt;PlayerId))
+{
+	<span class="kw">return</span>; <span class="com">// 없는 캐릭터 / 남의 캐릭터</span>
+}
+...
+<span class="kw">if</span> (Move.Sequence &lt;= Server.LastQueued)
+{
+	<span class="kw">continue</span>; <span class="com">// 이미 받은 무브 (겹쳐 보낸 것)</span>
+}
+Move.DeltaSeconds = std::clamp(Move.DeltaSeconds, <span class="num">0.0f</span>, FCharacterMove::MaxMoveDeltaSeconds);
+Move.Input        = CharacterMovementMath::ClampInput(Move.Input);
+Server.LastQueued = Move.Sequence;
+Server.Queue.push_back(Move);</pre>
+<p>서버 코드의 핵심은 <b>클라이언트를 믿지 않는 것</b>입니다. 남의 캐릭터에 대한 무브는 버리고, dt는 상한(0.1초)으로 자르고, 입력 길이도 제한합니다. 그렇지 않으면 "dt = 10초"짜리 무브 하나로 순간이동하는 치트가 가능합니다. NaN 같은 비정상 값(<code>IsFiniteMove</code>)도 거릅니다. 게임플레이 틱에서 서버는 대기열의 무브를 순번 순서대로 시뮬레이션하고, 마지막으로 처리한 순번과 그 결과 상태(위치·속도·바닥 여부)를 소유자에게 <code>CharacterAck</code>로 보냅니다. 무브가 하나도 오지 않은 틱에는 캐릭터를 움직이지 않습니다 — "얼마나 움직일지"의 시간을 클라이언트의 무브가 정하는 구조입니다.</p>
+
+<h3 id="lec-57-reconcile"><span class="step">핵심 개념</span>재조정 — 되감고 다시 적용하기</h3>
+<p>ack가 도착했을 때 클라이언트는 어디에 있을까요? ack는 무브 #5에 대한 답인데, 그 답이 왕복하는 동안 클라이언트는 이미 #6~#9를 예측해 앞서가 있습니다. 서버 상태(#5 직후)와 지금 위치(#9 직후)를 직접 비교하면 항상 다릅니다. 비교는 <b>같은 시점끼리</b> 해야 합니다.</p>
+<p>방법은 이렇습니다. ① 기록에서 #5 이하를 지웁니다(서버가 확인했으므로). ② 캐릭터 상태를 서버가 보낸 #5 직후 상태로 되돌립니다. ③ 남은 기록 #6~#9를 다시 시뮬레이션합니다. ④ 그 결과를 방금 전 예측 위치와 비교합니다. 이것을 <b>재조정(reconciliation)</b>이라고 합니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="재조정 과정">
+		<title>재조정 과정</title>
+		<text x="20" y="34" class="t-bold">기록된 무브</text>
+		<g class="t-small">
+			<rect x="150" y="16" width="70" height="30" rx="6" class="box"/><text x="185" y="36" text-anchor="middle">#3</text>
+			<rect x="226" y="16" width="70" height="30" rx="6" class="box"/><text x="261" y="36" text-anchor="middle">#4</text>
+			<rect x="302" y="16" width="70" height="30" rx="6" class="box"/><text x="337" y="36" text-anchor="middle">#5</text>
+			<rect x="378" y="16" width="70" height="30" rx="6" class="k1"/><text x="413" y="36" text-anchor="middle">#6</text>
+			<rect x="454" y="16" width="70" height="30" rx="6" class="k1"/><text x="489" y="36" text-anchor="middle">#7</text>
+			<rect x="530" y="16" width="70" height="30" rx="6" class="k1"/><text x="565" y="36" text-anchor="middle">#8</text>
+			<rect x="606" y="16" width="70" height="30" rx="6" class="k1"/><text x="641" y="36" text-anchor="middle">#9</text>
+		</g>
+		<path d="M150,58 H372" class="ln s5"/><text x="261" y="76" text-anchor="middle" class="t-small f5">① ack #5 도착 → #5 이하 삭제</text>
+		<text x="527" y="76" text-anchor="middle" class="t-small f1">아직 확인 안 됨 (다시 적용할 대상)</text>
+
+		<line x1="60" y1="250" x2="820" y2="250" class="ln-d"/>
+		<text x="820" y="270" text-anchor="end" class="t-muted">이동 방향 →</text>
+		<circle cx="300" cy="250" r="8" class="f4"/><text x="300" y="290" text-anchor="middle" class="t-small">② 서버 상태 (#5 직후)</text>
+		<path d="M308,246 Q420,196 532,216 Q600,226 650,220" class="ln s2" stroke-width="2.2" marker-end="url(#arr)"/>
+		<text x="452" y="186" text-anchor="middle" class="t-small f2">③ #6~#9를 다시 시뮬레이션</text>
+		<circle cx="658" cy="220" r="8" class="f2"/><text x="676" y="214" class="t-small f2 t-bold">새 결과 After</text>
+		<circle cx="700" cy="148" r="8" class="f1"/><text x="716" y="142" class="t-small f1 t-bold">지금 예측 Before</text>
+		<path d="M696,156 L662,210" class="ln-d s5"/>
+		<text x="560" y="128" text-anchor="middle" class="t-small f5">④ 차이 = Before − After</text>
+		<rect x="60" y="300" width="760" height="26" rx="6" class="box"/>
+		<text x="440" y="318" text-anchor="middle" class="t-small">차이 ≤ 1cm: 예측이 맞음 (대부분) · 차이 &gt; 1cm: 보정 1회로 센다 · 차이 &gt; 150cm: 순간이동으로 보고 즉시</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 57-2.</b> 서버의 "과거 정답"에서 출발해 아직 확인 안 된 무브를 다시 적용하면, 서버 정답을 반영한 "지금"을 얻습니다. 같은 무브 → 같은 결과이므로 보통 Before와 After는 같습니다.</figcaption>
+</figure>
+<pre class="code" data-file="World/GameWorldCharacter.cpp — ReceiveCharacterAck (발췌)"><span class="kw">if</span> (... || Sequence &lt;= Found-&gt;second.LastAckSequence)
+{
+	<span class="kw">return</span>; <span class="com">// 늦게 온(순서가 바뀐) ack</span>
+}
+Predicted.LastAckSequence = Sequence;
+<span class="kw">while</span> (!Predicted.Moves.empty() &amp;&amp; Predicted.Moves.front().Sequence &lt;= Sequence)
+{
+	Predicted.Moves.pop_front();                       <span class="com">// ① 서버가 확인한 무브</span>
+}
+...
+<span class="kw">const</span> FVector3 Before = Systems.Physics-&gt;GetCharacterState(Entity).Position;
+Systems.Physics-&gt;SetCharactersPushBodies(<span class="kw">false</span>);      <span class="com">// 다시 적용 중에는 동적 바디를 밀지 않는다 (이미 밀었다)</span>
+Systems.Physics-&gt;SetCharacterState(*Scene, Entity, State); <span class="com">// ② 서버 상태로 되돌림</span>
+<span class="kw">for</span> (<span class="kw">const</span> FCharacterMove&amp; Move : Predicted.Moves)
+{
+	Systems.Physics-&gt;SimulateCharacter(*Scene, Entity, Move); <span class="com">// ③ 남은 무브 다시 적용</span>
+}
+...
+<span class="kw">const</span> FVector3 After = Replayed.Position;               <span class="com">// ④ 비교</span>
+<span class="kw">if</span> (FVector3::DistanceSquared(Before, After) &gt; <span class="num">1.0f</span>)
+{
+	++CharacterCorrections;
+	Predicted.VisualOffset = Predicted.VisualOffset + (Before - After);
+	<span class="kw">if</span> (Predicted.VisualOffset.Length() &gt; SnapCorrectionDistance) <span class="com">// 150cm</span>
+	{
+		Predicted.VisualOffset = FVector3();
+	}
+	Systems.Physics-&gt;SetCharacterVisualOffset(*Scene, Entity, Predicted.VisualOffset);
+}</pre>
+<p>"같은 무브 → 같은 결과"라면 왜 차이가 생길까요? 서버만 아는 일이 있었을 때입니다. 서버가 시뮬레이션하는 공이 날아와 캐릭터를 막았거나, 다른 플레이어와 부딪혔거나, 서버 스크립트가 캐릭터를 순간이동시켰을 때입니다. 클라이언트는 그 일을 예측할 수 없었으므로 틀렸고, 재조정이 그 차이를 정확히 반영합니다. 다시 적용하는 동안 <code>SetCharactersPushBodies(false)</code>로 상자를 밀지 않는 것도 중요합니다. 상자는 그 무브를 처음 시뮬레이션할 때 이미 밀었습니다. 재조정마다 또 밀면 클라이언트에서만 상자가 몇 배로 밀려 나갑니다.</p>
+
+<h3 id="lec-57-offset"><span class="step">핵심 개념</span>보정을 화면 오프셋으로 흡수하기</h3>
+<p>재조정 결과 위치가 8cm 바뀌었다고 합시다. 시뮬레이션 위치는 즉시 서버를 따라야 합니다(그래야 다음 예측이 맞습니다). 하지만 화면의 캐릭터까지 한 프레임에 8cm 순간이동하면 눈에 거슬리는 "튐"이 됩니다. 그래서 둘을 분리합니다. 시뮬레이션은 바로 새 위치로 가고, <b>그린 위치</b>는 차이만큼의 오프셋(<code>VisualOffset</code>)을 더해 이전 자리에서 시작한 뒤, 오프셋을 매 프레임 지수적으로 줄입니다.</p>
+<pre class="code" data-file="World/GameWorldCharacter.cpp (발췌)"><span class="kw">constexpr float</span> CorrectionSmoothingSeconds = <span class="num">0.1f</span>;   <span class="com">// 보정 오프셋이 1/e로 줄어드는 시간</span>
+<span class="kw">constexpr float</span> SnapCorrectionDistance     = <span class="num">150.0f</span>; <span class="com">// cm, 이보다 큰 보정은 부드럽게 하지 않는다</span>
+...
+<span class="com">// 매 틱: 보정 오프셋을 시간에 따라 줄인다 (이번 프레임 트랜스폼에 반영)</span>
+Predicted.VisualOffset = Predicted.VisualOffset * std::exp(-DeltaSeconds / CorrectionSmoothingSeconds);</pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="화면 오프셋 감쇠 곡선">
+		<title>화면 오프셋 감쇠 곡선</title>
+		<line x1="80" y1="220" x2="800" y2="220" class="ln" marker-end="url(#arr)"/>
+		<line x1="80" y1="220" x2="80" y2="30" class="ln" marker-end="url(#arr)"/>
+		<text x="790" y="244" text-anchor="end" class="t-muted">시간 (초)</text>
+		<text x="70" y="44" text-anchor="end" class="t-muted">오프셋</text>
+		<g class="t-small">
+			<text x="80" y="240" text-anchor="middle">0</text>
+			<text x="230" y="240" text-anchor="middle">0.1</text>
+			<text x="380" y="240" text-anchor="middle">0.2</text>
+			<text x="530" y="240" text-anchor="middle">0.3</text>
+			<text x="680" y="240" text-anchor="middle">0.4</text>
+			<text x="70" y="64" text-anchor="end">100%</text>
+			<text x="70" y="161" text-anchor="end">37%</text>
+		</g>
+		<line x1="80" y1="160" x2="230" y2="160" class="ln-d"/>
+		<line x1="230" y1="160" x2="230" y2="220" class="ln-d"/>
+		<path d="M80,60 L80,60 C150,130 190,150 230,161 C300,182 380,200 530,212 C620,216 700,218 790,219" class="ln s2" stroke-width="2.4"/>
+		<path d="M80,220 L80,60" class="ln s5" stroke-width="2.4"/>
+		<text x="96" y="52" class="t-small f5">재조정 순간: 시뮬레이션은 즉시 이동, 화면은 오프셋 100%에서 시작</text>
+		<text x="260" y="150" class="t-small f2">offset × exp(−dt / 0.1)</text>
+		<text x="420" y="186" class="t-small">0.1초에 약 37%, 0.3초에 약 5%만 남는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 57-3.</b> 보정 오프셋의 감쇠. 차이가 한 프레임에 나타나지 않고 짧은 시간에 걸쳐 녹아 사라집니다. 지수 감쇠는 프레임률과 무관하게 같은 곡선을 그립니다(dt를 지수에 넣었기 때문).</figcaption>
+</figure>
+<p>Plans.md 22-3의 측정: 서버가 시뮬레이션하는 공·상자와 부딪힐 때 생기는 보정을 0.1초에 걸쳐 흡수하자, 프레임당 최대 튐이 29cm에서 13cm로 줄었습니다. 150cm가 넘는 차이는 부드럽게 옮기면 오히려 "미끄러지는 캐릭터"가 되므로, 서버의 순간이동으로 보고 오프셋을 버려 바로 옮깁니다.</p>
+
+<h3 id="lec-57-projecte"><span class="step">ProjectE에서는</span>예측 대상을 보간에서 빼기, 그리고 옵션</h3>
+<p>56강의 <code>FReplicationClient::Update</code>는 매 프레임 모든 복제 엔티티의 트랜스폼을 스냅샷 보간 값으로 덮어씁니다. 예측 캐릭터에도 이것이 적용되면, 클라이언트가 방금 예측한 위치를 0.1초 과거의 서버 위치가 덮어써서 예측이 무의미해집니다. 그래서 필터를 둡니다.</p>
+<pre class="code" data-file="Engine/Source/Network/ReplicationClient.h (발췌)"><span class="com">// 거짓을 돌려주는 엔티티에는 스냅샷 보간 트랜스폼을 쓰지 않는다 (소유 클라이언트가 예측하는 캐릭터·물리 바디 — FGameWorld::IsPredicted)</span>
+<span class="kw">void</span> SetTransformFilter(std::function&lt;<span class="kw">bool</span>(FEntity)&gt; ShouldApply) { TransformFilter = std::move(ShouldApply); }</pre>
+<p>런타임과 에디터의 클라이언트 앱은 <code>SetTransformFilter(!World.IsPredicted(e))</code>를 걸고, 새 클라이언트 앱도 반드시 같은 필터를 걸어야 합니다(CLAUDE.md 규칙). <code>IsPredicted</code>는 "클라이언트 모드 + 캐릭터 이동 컴포넌트 + 내가 조종 + 예측 옵션 켬"일 때 참입니다.</p>
+<pre class="code" data-file="World/GameWorldCharacter.cpp — IsPredicted (발췌)"><span class="kw">return</span> Mode == ENetMode::Client &amp;&amp; ... &amp;&amp;
+       Scene-&gt;GetRegistry().Has&lt;FCharacterMovementComponent&gt;(Entity) &amp;&amp; GetOwner(Entity) &gt;= <span class="num">0</span> &amp;&amp; IsLocallyControlled(Entity) &amp;&amp;
+       UsesClientPrediction(Entity);</pre>
+<p>예측은 끌 수 있습니다(사용자 요청). 컴포넌트의 <code>bClientPrediction</code>과 프로젝트 설정 네트워크의 "클라이언트 예측"이 <b>둘 다</b> 켜져 있어야 예측합니다. 끄면 소유 클라이언트는 무브를 보내기만 하고, 자기 캐릭터도 스냅샷 보간으로 보여 줍니다. 서버 쪽 코드는 똑같습니다. 이 스위치 덕분에 "예측 있음/없음"을 같은 빌드에서 바로 비교할 수 있습니다.</p>
+<p>검증은 루프백 테스트 <code>CharacterPrediction_ImmediateMatchAndCorrection</code>가 맡습니다. Plans.md 22-2에 적힌 확인 항목은 세 가지입니다: 틱 한 번에 클라이언트가 7.5cm 즉시 이동하고 서버는 아직 그대로인가, 1초 이동한 뒤 서버와 1cm 이내이고 보정이 0회인가, 서버가 캐릭터를 순간이동시키면 클라이언트가 300cm를 보정하는가. 실제 앱 측정(<code>--hold-keys W</code>)에서는 키를 누른 다음 프레임(약 20ms)에 이동이 시작되었습니다. 예측 전 약 130ms였습니다.</p>
+
+<h3 id="lec-57-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: "같은 무브 → 같은 결과"의 경계</b>
+	예측의 전제는 결정적 이동입니다. 그래서 스크립트가 이동을 직접 계산하던 구조를 버리고(<code>PlayerCharacter.lua</code>는 입력 → <code>AddMovementInput</code>/<code>Jump</code>와 시점·카메라만 남김), 이동은 C++ 순수 경로로 모았습니다. 그래도 남는 차이가 있었습니다. Plans.md 28-3에 기록된 것처럼 서버는 받은 무브를 한 프레임에 몰아서(0개~여러 개) 적용한 뒤 물리 스텝을 한 번 하고, 클라이언트는 무브 하나마다 스텝을 합니다. 그래서 무브가 몰려 도착하면(손실 재전송, 지연 변동) 상자를 미는 결과가 조금 달라지고, 1~5cm의 보정이 남습니다. 예측은 "차이를 없애는" 기술이 아니라 "차이가 드물고 작게 만들고, 생기면 부드럽게 흡수하는" 기술입니다.
+</div>
+<ul>
+	<li><b>다시 적용 중에는 부수 효과를 끈다</b>: 재조정은 "계산을 다시 해 보는 것"이지 "사건을 다시 일으키는 것"이 아닙니다. 상자 밀기처럼 세계에 흔적을 남기는 일은 다시 적용 중에 꺼야 합니다(<code>SetCharactersPushBodies(false)</code>).</li>
+	<li><b>서버는 시간을 믿지 않는다</b>: 무브 dt를 상한으로 자르는 것은 치트 방지의 시작일 뿐입니다. Plans.md는 "무브 dt 합 vs 실제 시간"으로 속도 조작을 막는 일을 후속 과제로 남겨 두었습니다.</li>
+	<li><b>캐릭터를 따라가는 카메라는 <code>OnLateUpdate</code>에서</b>: 예측·물리·트랜스폼 갱신이 끝난 뒤 카메라를 놓아야 한 프레임 늦게 따라가며 떨리지 않습니다(CLAUDE.md Phase 21 규칙).</li>
+	<li><b>남이 보는 내 캐릭터는 여전히 과거다</b>: 예측은 소유 클라이언트의 화면만 바꿉니다. 다른 클라이언트는 그 캐릭터를 스냅샷 보간으로 봅니다. 그래서 내가 미는 상자를 "나는 현재, 상자는 과거"에서 보게 되는 문제가 생기는데, 이것이 58강의 출발점입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>예측 = 서버와 같은 이동 계산을 클라이언트가 자기 입력으로 미리 해 즉시 보여 주는 것. 권한은 여전히 서버.</li>
+		<li>전제: 같은 무브 → 같은 결과. 이동을 스크립트에서 C++ 순수 경로(<code>SimulateCharacter</code>)로 옮겼다.</li>
+		<li>클라이언트: 무브에 순번 → 즉시 시뮬레이션 → 기록 → 최근 8개를 겹쳐 비신뢰 전송.</li>
+		<li>서버: 소유자 확인, 중복·비정상 거르기, dt·입력 제한, 순번 순서로 적용, ack(순번 + 상태).</li>
+		<li>재조정: 확인된 무브 삭제 → 서버 상태로 되돌림 → 남은 무브 다시 적용(밀기 끔) → 1cm 넘게 다르면 보정.</li>
+		<li>보정은 화면 오프셋으로 0.1초 시간 상수에 걸쳐 흡수, 150cm 넘으면 즉시. 예측 대상은 <code>SetTransformFilter</code>로 스냅샷 보간에서 뺀다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 클라이언트가 무브 기록을 240개(4초)까지만 보관합니다. 서버 응답이 5초 동안 끊겼다가 돌아오면 어떻게 될까요?</summary>
+	오래된 무브는 이미 버려졌으므로, ack가 와도 "서버 상태 + 남은 기록"으로 지금 위치를 정확히 재구성할 수 없습니다. 재조정 결과가 크게 달라지고, 차이가 150cm를 넘으면 오프셋 없이 바로 서버 쪽으로 옮겨집니다. 상한은 메모리와 재조정 비용(다시 적용할 무브 수)을 제한하기 위한 것이고, 4초 넘게 응답이 없는 상황은 어차피 정상 플레이가 아닙니다.
+</details>
+<details class="quiz"><summary>Q2. ack를 신뢰 채널로 보내면 더 안전하지 않을까요?</summary>
+	ack는 "가장 최근 상태"만 의미가 있습니다. #5의 ack가 손실되어도 곧 #6, #7의 ack가 오고, 그것이 더 새로운 정답입니다. 신뢰 채널로 보내면 손실된 #5를 재전송하는 동안 #6 이후가 막혀 재조정이 늦어집니다. 그래서 ProjectE는 비신뢰로 보내고, 순서가 바뀌어 늦게 온 ack(<code>Sequence &lt;= LastAckSequence</code>)는 버립니다.
+</details>
+<details class="quiz"><summary>Q3. 재조정에서 차이가 생겼을 때 화면 오프셋 없이 시뮬레이션 위치만 천천히 서버 쪽으로 옮기면 어떤 문제가 생길까요?</summary>
+	시뮬레이션이 서버와 다른 위치에서 계속 진행되므로, 그 위에서 만든 새 무브의 예측도 계속 틀리고 다음 ack에서 또 보정이 생깁니다. 보정이 보정을 낳는 셈입니다. 시뮬레이션은 즉시 서버를 따르고, "보이는 것"만 천천히 따라가게 분리하는 것이 핵심입니다.
+</details>
+</article>
+
+<!-- ======================================================= 58강 ======================================================= -->
+<article class="lecture" id="lec-58">
+<header>
+	<div class="no">58강</div>
+	<h2 id="lec-58-title">물리 예측</h2>
+	<div class="meta">관련 Phase: 28 · 살펴볼 곳: <code>World/GameWorldPhysicsPrediction.cpp</code> 머리 주석, <code>World/GameWorldCharacter.cpp</code>(재조정), <code>Network/ReplicationClient.h</code>(<code>FindTransformSamples</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>예측 캐릭터가 복제된 상자를 밀 때 "드득거리고 반응이 늦은" 원인을 시간의 어긋남으로 설명할 수 있습니다.</li>
+		<li>Predictive Interpolation의 생각 — 가까운 물체만 로컬에서 시뮬레이션하고 서버 값으로 수렴시키기 — 을 이해합니다.</li>
+		<li>예측 대상 선정(반경, 빠른 물체, 접촉), ack와 스냅샷의 시각 맞추기, 기록 비교 보정(τ)과 스냅 문턱의 역할을 압니다.</li>
+		<li>캐릭터 재조정 중 바디를 기록 위치에 잠시 두는 <code>PoseBodiesForReplay</code>가 왜 필요한지 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-58-why"><span class="step">왜 필요한가</span>나는 현재에, 상자는 과거에</h3>
+<p>57강의 예측으로 원격 클라이언트의 캐릭터는 즉시 움직이게 되었습니다. 그런데 새 사용자 보고가 왔습니다. "원격 클라이언트에서 물리 물체와 상호작용하면 드득거리고 반응이 늦음." Phase 28은 이 원인을 이렇게 정리합니다.</p>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp 머리 주석 (발췌)"><span class="com">//   문제: 예측 캐릭터는 "현재"(서버보다 왕복 지연만큼 앞)에 있는데 복제 동적 바디는 키네마틱으로 스냅샷 보간(편도 지연 + 0.1초 과거)을 따른다.</span>
+<span class="com">//     클라이언트에선 과거 위치의 밀리지 않는 상자에 막히고 서버에선 밀리므로 ack마다 캐릭터 보정이 생기고, 상자는 왕복 + 0.1초 뒤에야 움직인다.</span></pre>
+<p>한 화면 안에 <b>서로 다른 시간</b>이 섞여 있는 것이 문제의 핵심입니다. 내 캐릭터는 예측 덕분에 "지금"에 있지만, 상자는 56강의 규칙대로 "과거"의 서버 위치를 키네마틱으로 따라갑니다. 키네마틱 바디는 밀어도 움직이지 않습니다. 그래서 클라이언트에서 캐릭터는 상자에 막혀 멈추는데, 서버에서는 같은 무브로 상자를 밀며 앞으로 갑니다. ack가 올 때마다 재조정이 "너는 앞으로 갔어"라고 캐릭터를 끌어당기고, 다시 과거의 상자에 막히고 — 이것이 "드득거림"입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="클라이언트 화면 안에서 캐릭터는 현재, 상자는 과거에 있는 상황">
+		<title>캐릭터는 현재, 상자는 과거</title>
+		<text x="20" y="30" class="t-bold">서버 (진실)</text>
+		<line x1="40" y1="100" x2="820" y2="100" class="ln"/>
+		<rect x="380" y="50" width="34" height="50" rx="12" class="k1"/><text x="397" y="44" text-anchor="middle" class="t-small">캐릭터</text>
+		<rect x="414" y="60" width="60" height="40" rx="4" class="k4"/><text x="444" y="84" text-anchor="middle" class="t-small">상자</text>
+		<path d="M480,80 H530" class="ln" marker-end="url(#arr)"/><text x="540" y="84" class="t-small">밀려서 움직이는 중</text>
+
+		<text x="20" y="160" class="t-bold">원격 클라이언트 화면</text>
+		<line x1="40" y1="240" x2="820" y2="240" class="ln"/>
+		<rect x="300" y="200" width="60" height="40" rx="4" class="k4"/><text x="330" y="224" text-anchor="middle" class="t-small">상자</text>
+		<text x="230" y="262" text-anchor="middle" class="t-small f4">상자: 과거 (편도 + 0.1초)</text>
+		<text x="230" y="280" text-anchor="middle" class="t-muted">키네마틱 — 밀리지 않음</text>
+		<rect x="266" y="190" width="34" height="50" rx="12" class="k5"/>
+		<text x="200" y="184" text-anchor="middle" class="t-small f5">상자에 막힌 예측 위치</text>
+		<rect x="430" y="190" width="34" height="50" rx="12" class="k1"/>
+		<text x="474" y="206" class="t-small f1">ack 재조정이 끌어당긴 위치</text>
+		<path d="M302,200 C340,150 400,150 432,196" class="ln s5" marker-end="url(#arr)"/>
+		<path d="M432,236 C400,254 360,254 304,238" class="ln-d s5" marker-end="url(#arr)"/>
+		<text x="640" y="236" class="t-small f5">← 매 ack마다 왕복 = "드득"</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 58-1.</b> 같은 순간, 서버에서는 캐릭터가 상자를 밀고 있지만 클라이언트에서는 과거의 밀리지 않는 상자에 막혀 있습니다. 재조정이 캐릭터를 서버 위치로 당기면 다시 상자와 겹치고, 이것이 반복됩니다.</figcaption>
+</figure>
+<p>Plans.md 28-1의 진단 측정은 이 설명을 숫자로 확인합니다. 물리 예측이 꺼진 상태에서 화면의 캐릭터 튐은 최대 1.3m, 불량 망에서 상자가 반응하기까지 0.25초가 걸렸습니다.</p>
+
+<h3 id="lec-58-concept"><span class="step">핵심 개념</span>Predictive Interpolation — 가까운 것만 현재로 데려오기</h3>
+<p>해법은 상자도 캐릭터와 같은 "현재"로 데려오는 것입니다. 즉 상자도 클라이언트가 로컬에서 동적으로 시뮬레이션합니다. 그러면 캐릭터가 밀면 즉시 밀립니다. 하지만 서버의 상자와 결과가 같으리라는 보장이 없으므로, 서버 스냅샷이 올 때마다 <b>로컬 상자를 서버 값 쪽으로 조금씩 끌어당겨 수렴</b>시킵니다. 언리얼 엔진의 Networked Physics에 있는 Predictive Interpolation과 같은 방식이고, Phase 28의 결정 사항입니다.</p>
+<p>전체 롤백(서버 상태로 물리 세계 전체를 되감고 다시 시뮬레이션)과 비교하면 차이가 분명합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th></th><th>전체 롤백</th><th>Predictive Interpolation (ProjectE)</th></tr>
+	<tr><td>정확도</td><td>결정적 물리라면 서버와 같아짐</td><td>근사 — 오차가 0이 되지 않고 계속 수렴</td></tr>
+	<tr><td>비용</td><td>ack마다 물리 세계를 여러 스텝 다시 시뮬레이션</td><td>스냅샷마다 비교 + 매 프레임 작은 보정</td></tr>
+	<tr><td>요구 조건</td><td>물리 엔진의 결정성, 전체 상태 저장·복원</td><td>위치 기록만 있으면 됨. Jolt를 그대로 씀</td></tr>
+	<tr><td>서버 변경</td><td>보통 필요</td><td><b>없음</b> — 서버 코드·메시지 그대로</td></tr>
+</table></div>
+<p>서버 권위는 그대로입니다. 클라이언트는 서버 쪽으로 "수렴할 뿐"이고, 최종 상태는 서버가 정합니다. 그리고 다른 클라이언트(관찰자)의 화면은 바뀌지 않습니다. 각 클라이언트는 <b>자기</b> 캐릭터 근처만 예측하므로, 남이 미는 상자는 계속 56강의 보간으로 봅니다.</p>
+
+<h3 id="lec-58-select"><span class="step">핵심 개념</span>대상 선정 — 반경, 빠른 물체, 접촉</h3>
+<p>모든 복제 바디를 로컬 시뮬레이션하면 안 됩니다. 멀리서 다른 플레이어가 굴리는 공은 내가 영향을 줄 수 없고, 그것을 현재로 외삽하면 틀리기만 합니다. 그래서 "내가 영향을 줄 수 있는 것"만 고릅니다.</p>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp 머리 주석 (발췌)"><span class="com">//   대상 선정 (TickPhysicsPrediction, 스크립트 뒤·캐릭터 이동 전): 루트 엔티티이고 NetId + 동적 RigidBody + 콜라이더(바디)가 있는 복제 엔티티 중</span>
+<span class="com">//     로컬 예측 캐릭터(IsPredicted) 중심에서 PhysicsPredictionRadius 안에 중심이 있거나 캐릭터가 닿은 것.</span>
+<span class="com">//     반경 안이라도 서버 속도가 MaxEnterSpeed 이상이면(서버가 쏜 공처럼 내가 영향을 주지 않는 빠른 물체) 닿을 때만 — 현재로 외삽하면 크게 틀린다.</span>
+<span class="com">//     대상이 되면 키네마틱 오버라이드를 풀어(바디를 동적으로 다시 만든다) 로컬에서 현재 시간 기준으로 시뮬레이션한다.</span>
+<span class="com">//     진입 상태 = 화면 위치(보간 값) + 서버 속도(스냅샷 두 개의 차분)이고, 현재 시간과의 차이는 아래 수렴이 곧바로 줄인다 (진입 순간 튀지 않게).</span></pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 336" role="img" aria-label="물리 예측 대상 선정">
+		<title>물리 예측 대상 선정</title>
+		<g transform="translate(0,18)">
+		<circle cx="300" cy="150" r="125" class="k2" fill-opacity="0.35"/>
+		<circle cx="300" cy="150" r="156" class="ln-d"/>
+		<rect x="286" y="128" width="28" height="44" rx="10" class="k1"/>
+		<text x="300" y="192" text-anchor="middle" class="t-small t-bold">예측 캐릭터</text>
+		<text x="300" y="60" text-anchor="middle" class="t-small">반경 300cm (기본)</text>
+		<rect x="360" y="110" width="40" height="34" rx="4" class="k2"/><text x="380" y="132" text-anchor="middle" class="t-small">A</text>
+		<rect x="200" y="200" width="40" height="34" rx="4" class="k2"/><text x="220" y="222" text-anchor="middle" class="t-small">B</text>
+		<circle cx="240" cy="100" r="16" class="k5"/><text x="240" y="105" text-anchor="middle" class="t-small">C</text>
+		<path d="M226,92 L170,62" class="ln s5" marker-end="url(#arr)"/>
+		<rect x="500" y="200" width="40" height="34" rx="4" class="box"/><text x="520" y="222" text-anchor="middle" class="t-small">D</text>
+		<g class="t-small">
+			<rect x="590" y="24" width="250" height="250" rx="10" class="box"/>
+			<text x="606" y="50" class="t-bold">판정</text>
+			<text x="606" y="78" class="f2 t-bold">A, B: 반경 안 → 로컬 동적</text>
+			<text x="606" y="100" class="t-muted">진입 = 보간 위치 + 서버 속도</text>
+			<text x="606" y="132" class="f5 t-bold">C: 반경 안이지만 300cm/s 이상</text>
+			<text x="606" y="154" class="t-muted">서버가 쏜 공 등 → 닿을 때만</text>
+			<text x="606" y="186" class="t-bold">D: 반경 밖 → 키네마틱 보간 유지</text>
+			<text x="606" y="218" class="t-muted">점선 = 해제 판정 반경 (×1.25)</text>
+			<text x="606" y="240" class="t-muted">경계에서 들락날락하지 않게</text>
+		</g>
+	</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 58-2.</b> 예측 대상 선정. 반경(<code>PhysicsPredictionRadius</code>, 기본 300cm) 안이거나 닿은 바디만 로컬 동적 시뮬레이션으로 바꿉니다. 빠른 물체(<code>MaxEnterSpeed</code> 300cm/s 이상)는 닿을 때만입니다.</figcaption>
+</figure>
+<p>대상에서 빠지는 것도 규칙이 있습니다. 근처·접촉이 <code>ReleaseDelaySeconds</code>(1초) 동안 없고, 로컬과 서버 속도가 모두 <code>RestSpeed</code>(5cm/s) 미만이고, 위치 오차가 2cm 이내여야 키네마틱으로 돌아갑니다. 이때 화면 위치를 <code>BlendOutSeconds</code>(0.25초)에 걸쳐 스냅샷 보간 위치로 옮긴 뒤 보간에 넘깁니다. 멈춘 물체라 "과거 = 현재"이므로 이 이음새는 눈에 띄지 않습니다. 해제 판정 반경을 진입 반경의 1.25배로 넓게 잡은 것은 경계에 걸친 물체가 매 프레임 들어왔다 나갔다 하지 않게 하려는 <b>히스테리시스(hysteresis)</b>입니다.</p>
+
+<h3 id="lec-58-timing"><span class="step">핵심 개념</span>시각 맞추기 — 서버 스냅샷을 내 기록의 어디와 비교할까</h3>
+<p>로컬 상자를 서버 쪽으로 수렴시키려면 "서버 상자와 내 상자가 얼마나 다른가"를 알아야 합니다. 57강의 재조정과 같은 문제가 여기도 있습니다. 서버 스냅샷은 과거의 상태이고 내 상자는 현재에 있으므로, <b>같은 시점끼리</b> 비교해야 합니다. 그래서 클라이언트는 예측 바디의 위치를 매 프레임 기록(<code>HistorySeconds</code> 1.5초)해 두고, 스냅샷이 오면 그 스냅샷 시점에 해당하는 기록과 비교합니다.</p>
+<p>문제는 "서버 시각 Ts의 스냅샷이 내 로컬 시계로 언제인가"입니다. 여기서 ack가 다리 역할을 합니다.</p>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp 머리 주석 (발췌)"><span class="com">//   시각 맞추기: 서버는 무브 S를 적용한 프레임에 ack(S)를 보내고 같은 프레임 끝에 스냅샷을 보낸다. 그래서 스냅샷(서버 시각 Ts)의 바디 상태는</span>
+<span class="com">//     로컬이 무브 S를 시뮬레이션한 프레임의 물리 스텝 결과와 같은 시점이다. 오프셋 = (ack 무브의 로컬 시계) - Ts 를 감소하는 최댓값으로 유지한다</span>
+<span class="com">//     (ack 손실/재정렬은 오프셋을 작게만 만든다). 로컬 시각 = Ts + 오프셋.</span></pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="ack와 스냅샷으로 서버 시각과 로컬 시각 맞추기">
+		<title>ack와 스냅샷으로 시각 맞추기</title>
+		<text x="20" y="54" class="t-bold">클라이언트</text>
+		<text x="20" y="214" class="t-bold">서버</text>
+		<line x1="110" y1="50" x2="840" y2="50" class="ln"/>
+		<line x1="110" y1="210" x2="840" y2="210" class="ln"/>
+		<g class="t-small">
+			<rect x="180" y="36" width="80" height="28" rx="6" class="k1"/><text x="220" y="55" text-anchor="middle">무브 S</text>
+			<text x="220" y="84" text-anchor="middle" class="f1">로컬 시계 tS</text>
+			<text x="220" y="100" text-anchor="middle" class="t-muted">(MoveTimes에 기록)</text>
+		</g>
+		<path d="M262,54 L380,198" class="ln s1" marker-end="url(#arr)"/>
+		<rect x="380" y="196" width="230" height="28" rx="6" class="k2"/>
+		<text x="495" y="215" text-anchor="middle" class="t-small">한 서버 프레임: 무브 S 적용 → 물리</text>
+		<text x="400" y="244" class="t-small">ack(S) 보냄</text>
+		<text x="530" y="244" class="t-small">스냅샷 (시각 Ts)</text>
+		<path d="M420,196 L590,66" class="ln s2" marker-end="url(#arr)"/>
+		<path d="M560,196 L700,66" class="ln s4" marker-end="url(#arr)"/>
+		<text x="596" y="40" class="t-small f2">ack(S) 도착 → tS를 꺼냄</text>
+		<text x="706" y="84" class="t-small f4">스냅샷 Ts 도착</text>
+		<rect x="110" y="262" width="730" height="30" rx="6" class="acc"/>
+		<text x="475" y="282" text-anchor="middle" class="t-small t-bold">오프셋 = tS − Ts  →  서버 상태(Ts)는 내 기록의 시각 (Ts + 오프셋)과 비교한다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 58-3.</b> 서버는 무브 S를 적용한 같은 프레임에 ack(S)와 스냅샷을 내보냅니다. 그러므로 스냅샷 속 상자는 "클라이언트가 무브 S를 시뮬레이션하던 그 프레임"의 상자와 같은 시점입니다. ack가 그 프레임의 로컬 시각을 알려 줍니다.</figcaption>
+</figure>
+<p>오프셋을 "감소하는 최댓값"으로 유지하는 이유도 재미있습니다. ack가 늦게 오거나 재정렬되면 잘못된(더 작은) 오프셋 표본이 생길 수 있습니다. 가장 큰 값을 기준으로 삼고 천천히(<code>TimingDecayPerSecond</code> 0.05) 내려가게 하면, 이상한 표본 하나에 흔들리지 않습니다. 지연이 실제로 크게 줄었을 때(새 표본이 0.5초 넘게 작을 때)만 다시 잡습니다.</p>
+
+<h3 id="lec-58-converge"><span class="step">ProjectE에서는</span>기록 비교 보정 — τ와 스냅 문턱</h3>
+<p>스냅샷이 올 때마다(<code>ProcessBodySnapshot</code>) 오차를 계산하고, 매 프레임(<code>ApplyBodyCorrection</code>) 그 오차의 일부를 바디에 더합니다.</p>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp — ProcessBodySnapshot (발췌)"><span class="kw">const float</span> LocalTime = Newest.ServerTime + PredictionTimeOffset; <span class="com">// 이 스냅샷 상태에 해당하는 로컬 시각</span>
+...
+<span class="kw">if</span> (SampleHistory(Body.History, LocalTime, HistoryPosition, HistoryRotation))
+{
+	<span class="com">// 같은 시점끼리 비교 (같은 시뮬레이션이면 미는 중에도 0)</span>
+	Body.PositionError = Newest.Position - HistoryPosition;
+	...
+	<span class="com">// 속도도 같은 구간의 차분끼리</span>
+	Body.VelocityError = Body.ServerVelocity - (HistoryPosition - EarlierPosition) * (<span class="num">1.0f</span> / Span);
+}
+<span class="kw">else</span>
+{
+	<span class="com">// 기록이 그 시각까지 없다 (막 진입): 서버 상태를 현재로 외삽해 지금 상태와 비교</span>
+	Body.PositionError = Newest.Position + Body.ServerVelocity * Ahead - Local.Position;
+	...
+}
+<span class="com">// 위치만 스냅한다 (회전 차이는 충돌에 덜 중요하고, 구르는 공은 회전이 쉽게 어긋난다 — 부드럽게만 맞춘다)</span>
+<span class="kw">if</span> (Body.PositionError.Length() &gt; SnapDistance) <span class="com">// 100cm</span>
+{
+	...  <span class="com">// 서버 상태를 현재로 외삽한 값으로 바로 옮기고 기록을 비운다</span>
+}</pre>
+<p>"같은 시점끼리 비교"의 힘을 보세요. 캐릭터가 상자를 미는 중이라 상자가 가속하고 있어도, 서버와 클라이언트가 같은 시뮬레이션을 했다면 같은 시점의 위치는 같으므로 오차는 0입니다. 현재 위치와 비교했다면 "현재 − 과거"만큼의 가짜 오차가 생겨, 보정이 상자를 계속 뒤로 끌었을 것입니다. 스냅샷에는 속도가 없으므로 서버 속도는 스냅샷 두 개의 차분으로 구하고, 비교 상대인 로컬 속도도 같은 구간의 기록 차분으로 구합니다. 같은 방식으로 잰 것끼리 비교해야 측정 방식의 차이가 오차로 둔갑하지 않습니다.</p>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp — ApplyBodyCorrection (발췌)"><span class="kw">const float</span>    PositionAlpha = <span class="num">1.0f</span> - std::exp(-DeltaSeconds / PositionCorrectionSeconds); <span class="com">// τ = 0.15초</span>
+<span class="kw">const</span> FVector3 DeltaPosition = Body.PositionError * PositionAlpha;
+Body.PositionError           = Body.PositionError - DeltaPosition;
+...
+Systems.Physics-&gt;CorrectBody(Entity, DeltaPosition, DeltaRotation, DeltaVelocity, DeltaAngular);
+<span class="com">// 기록에도 같은 보정 (다음 스냅샷이 남은 오차만 보게). 속도 보정은 "처음부터 그 속도로 지금 상태에 왔다"로 과거를 옮긴다</span>
+<span class="kw">for</span> (FBodyHistorySample&amp; Sample : Body.History)
+{
+	<span class="kw">const float</span> Before = Sample.Time - LastRecordTime; <span class="com">// 0 이하</span>
+	Sample.Position    = Sample.Position + DeltaPosition + DeltaVelocity * Before;
+	...
+}</pre>
+<div class="callout note">
+	<b class="t">τ(타우) — 시간 상수</b>
+	매 프레임 남은 오차의 <code>1 − exp(−dt / τ)</code>만큼을 고치면, 오차는 <code>e<sup>−t/τ</sup></code>로 줄어듭니다. τ = 0.15초면 0.15초 뒤 37%, 0.45초 뒤 5%가 남습니다. 57강의 화면 오프셋(τ = 0.1초)과 같은 모양입니다. τ가 작으면 빨리 맞지만 보정이 눈에 띄고(밀리는 상자가 덜컥), 크면 부드럽지만 서버와 오래 어긋납니다. 위치·속도·회전 모두 0.15초입니다.
+</div>
+<p>보정을 바디에만 하고 기록에는 안 하면 어떻게 될까요? 다음 스냅샷이 오면 기록은 아직 보정 전이므로 같은 오차를 다시 보고, 이미 고친 만큼을 또 고칩니다. 오차를 두 번 세는 셈이라 과보정 → 반대쪽 오차 → 진동이 됩니다. 그래서 바디에 더한 보정을 기록 전체에도 똑같이 더해 "처음부터 그 위치·속도였던 것처럼" 만듭니다. 이 처리 덕분에 다음 스냅샷은 <b>남은</b> 오차만 봅니다. 그리고 <code>CorrectBody</code>는 렌더 보간 직전 상태(45강의 물리 보간)도 함께 옮겨, 보정 프레임에 화면이 끊기지 않게 합니다.</p>
+<p>위치 차이가 100cm(<code>SnapDistance</code>)를 넘으면 수렴을 포기하고 서버 상태를 현재로 외삽한 위치로 바로 옮깁니다. 그렇게 큰 차이는 "작은 계산 차이"가 아니라 서버에서 다른 일이 일어났다는 뜻이고, 천천히 끌면 상자가 벽을 뚫고 미끄러지는 이상한 장면이 됩니다. 회전은 스냅하지 않습니다 — 구르는 공은 회전이 쉽게 어긋나고, 충돌에는 위치가 더 중요하기 때문입니다.</p>
+
+<h3 id="lec-58-replay"><span class="step">ProjectE에서는</span>재조정 중의 바디 — <code>PoseBodiesForReplay</code></h3>
+<p>이제 상자도 로컬에서 움직이므로 57강의 캐릭터 재조정과 엮입니다. 재조정은 캐릭터를 서버 상태(과거)로 되돌려 남은 무브를 다시 적용하는데, 그동안 상자는 어디에 있어야 할까요? ProjectE는 전체 롤백을 하지 않으므로 상자는 재시뮬레이션하지 않습니다. 남는 선택지는 둘입니다.</p>
+<ol>
+	<li><b>상자를 지금 자리에 둔 채</b> 다시 적용: 캐릭터는 과거에서 출발하는데 상자는 이미 밀려간 "현재" 자리에 있어, 밀기 중인 캐릭터가 상자의 현재 면에 걸립니다. 결과적으로 ack마다 1~8cm의 작은 보정이 생깁니다.</li>
+	<li><b>무브마다 상자를 그 무브를 처음 시뮬레이션할 때의 기록 위치로 잠시 옮겨</b> 다시 적용(<code>PoseBodiesForReplay</code>), 끝나면 되돌림(<code>RestoreBodiesAfterReplay</code>): 충돌 상대만 "그때 자리"에 있으므로 상자 밀기는 원래 결과와 거의 같습니다.</li>
+</ol>
+<pre class="code" data-file="World/GameWorldPhysicsPrediction.cpp — PoseBodiesForReplay (발췌)"><span class="kw">for</span> (<span class="kw">const auto</span>&amp; [Entity, Body] : PredictedBodies)
+{
+	...
+	<span class="com">// 그 무브가 시뮬레이션될 때 바디가 있던 곳 = 그 프레임 전 기록 (기록은 프레임 끝 물리 스텝 결과).</span>
+	<span class="kw">const auto</span> After = std::lower_bound(Body.History.begin(), Body.History.end(), MoveTime, ...);
+	<span class="kw">const</span> FBodyHistorySample&amp; Sample = After == Body.History.begin() ? Body.History.front() : *(After - <span class="num">1</span>);
+	Systems.Physics-&gt;PoseBody(Entity, Sample.Position, Sample.Rotation);
+}</pre>
+<p>그런데 2번에도 함정이 있었습니다. 서버와 결과가 갈린 경우(예: 가벼운 공에 올라탐), 2번의 결과 위치가 "지금" 바디와 겹쳐서, 바디를 되돌리는 순간 공을 튕겨 낼 수 있습니다. 그래서 ProjectE는 <b>두 방식을 모두</b> 계산해 지금 예측에 더 가까운 쪽을 쓰되, 2번 결과가 동적 바디에 1cm(<code>MaxReplayPenetration</code>) 넘게 묻혀 있으면 1번을 씁니다.</p>
+<pre class="code" data-file="World/GameWorldCharacter.cpp — ReceiveCharacterAck (발췌)">FCharacterState Replayed = Replay(<span class="kw">false</span>);          <span class="com">// ① 바디를 지금 자리에 둔 채</span>
+<span class="kw">if</span> (!PredictedBodies.empty())
+{
+	<span class="kw">const</span> FCharacterState Posed = Replay(<span class="kw">true</span>);    <span class="com">// ② 무브마다 바디를 기록 위치에</span>
+	Systems.Physics-&gt;SetCharacterState(*Scene, Entity, Posed); <span class="com">// 바디가 지금 자리에 돌아온 상태로 접촉 다시 계산</span>
+	<span class="kw">const bool</span> bPosedClear = Systems.Physics-&gt;GetCharacterDynamicPenetration(Entity) &lt;= MaxReplayPenetration;
+	<span class="kw">if</span> (!bPosedClear || FVector3::DistanceSquared(Posed.Position, Before) &gt;= FVector3::DistanceSquared(Replayed.Position, Before))
+	{
+		Systems.Physics-&gt;SetCharacterState(*Scene, Entity, Replayed);
+	}
+	<span class="kw">else</span>
+	{
+		Replayed = Posed;
+	}
+}</pre>
+
+<h3 id="lec-58-pitfalls"><span class="step">함정과 교훈</span>측정으로 확인하고, 남는 한계를 기록하기</h3>
+<p>이런 기법은 "느낌이 좋아졌다"로 판단하면 안 됩니다. Phase 28은 측정 인자부터 만들었습니다. <code>--net-physics-stats</code>를 주면 캐릭터 보정 횟수(5cm 초과)와 최대 크기, 화면 위치의 프레임당 튐, "닿은 순간 → 화면에서 바디가 움직이기 시작한 순간"의 시간을 2초마다·종료 때 로그로 남깁니다. <code>Demo_Multiplayer</code> 끝에 밀기 시험용 상자와 공(PushCrate/PushBall)도 추가했습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>측정 (Plans.md 28-3, 중앙값)</th><th>끔</th><th>켬</th></tr>
+	<tr><td>정상 망 — 캐릭터 보정 횟수</td><td>121회</td><td>16회</td></tr>
+	<tr><td>정상 망 — 캐릭터 최대 튐</td><td>118cm</td><td>8.8cm</td></tr>
+	<tr><td>불량 망 — 캐릭터 보정 횟수</td><td>84회</td><td>25회</td></tr>
+	<tr><td>불량 망 — 상자 반응</td><td>0.25초</td><td>1프레임 이내</td></tr>
+</table></div>
+<div class="callout story">
+	<b class="t">실제로 남은 것들 (롤백 없음의 한계)</b>
+	머리 주석과 Plans.md는 고치지 못한 것을 숨기지 않고 적어 둡니다.
+	<ul>
+		<li>서버는 받은 무브를 프레임마다 몰아서 적용한 뒤 물리 스텝을 한 번 하고, 클라이언트는 무브 하나 → 스텝이라, 무브가 몰려 도착하면 밀기 결과가 조금 달라집니다. 측정에서 남는 1~5cm 보정의 대부분입니다.</li>
+		<li>가벼운 공(2kg)은 캐릭터가 걸쳐 올라타는 계단 오르기 판정이 서버와 갈려 20cm 안팎 보정이 생깁니다.</li>
+		<li>과거 보간 위치의 키네마틱(원격 캐릭터, 서버가 쏜 공)과 예측 바디가 부딪히면 과거·현재가 섞여 크게 갈릴 수 있고, 위치 스냅으로 끝납니다(드물게).</li>
+	</ul>
+	"로컬 결정론은 보장하지 않으므로 오차가 0이 되지는 않는다"가 주석의 결론입니다. 완벽함 대신 비용과 단순함(서버 변경 없음)을 택하고, 그 대가를 숫자로 기록했습니다.
+</div>
+<ul>
+	<li><b>옵션과 연결</b>: 프로젝트 설정 네트워크의 <code>bPhysicsPrediction</code>(+ 캐릭터 예측)으로 끕니다. 새 클라이언트 앱은 <code>World.SetReplicationClient(&amp;ReplicationClient)</code>를 BeginPlay 전에 연결해야 스냅샷 버퍼를 읽을 수 있고, <code>SetTransformFilter(!World.IsPredicted)</code>도 함께 겁니다 — <code>IsPredicted</code>는 예측 바디에도 참입니다.</li>
+	<li><b>테스트</b>: 규칙을 바꾸면 <code>PhysicsPrediction_*</code> 테스트를 함께 고칩니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>문제: 예측 캐릭터는 현재, 복제 바디는 과거(키네마틱 보간)라 밀기가 막히고 ack마다 보정이 반복된다.</li>
+		<li>Predictive Interpolation: 내 캐릭터 근처(반경 300cm)나 닿은 바디만 로컬 동적으로 시뮬레이션하고 서버 스냅샷 쪽으로 수렴. 빠른 물체(300cm/s+)는 닿을 때만.</li>
+		<li>시각 맞추기: ack(S)와 같은 서버 프레임의 스냅샷 → 오프셋 = 무브 S의 로컬 시각 − Ts. 서버 상태는 같은 시점의 로컬 기록과 비교한다.</li>
+		<li>보정: τ 0.15초 지수 수렴, 기록에도 같은 보정(이중 계산 방지), 100cm 넘으면 위치 스냅(회전은 스냅 안 함).</li>
+		<li>재조정은 두 번(바디 그대로 / 바디를 기록 위치에) 해서 가까운 쪽을 쓰고, 겹치면 앞의 것.</li>
+		<li>해제는 1초 조용 + 정지 + 오차 2cm 이내, 0.25초 블렌드. 서버 코드·메시지는 바뀌지 않았다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 반경 안의 모든 바디를 예측하지 않고 "빠른 물체는 닿을 때만"으로 예외를 둔 이유는?</summary>
+	예측 바디의 진입 상태는 "보간 위치 + 서버 속도"이고, 현재 시간과의 차이는 서버 상태를 현재로 외삽해 메웁니다. 서버가 쏜 빠른 공처럼 내가 영향을 주지 않는 물체는 외삽 거리가 크고, 그동안 서버에서 무엇에 부딪혔을지 모르므로 크게 틀립니다. 내가 영향을 줄 수 없는 물체를 굳이 현재로 끌어와 틀리느니, 과거 보간으로 정확히 보여 주는 편이 낫습니다. 닿는 순간에는 상호작용이 필요하므로 그때만 예측합니다.
+</details>
+<details class="quiz"><summary>Q2. 로컬 기록 대신 "지금 로컬 위치"와 서버 스냅샷 위치를 비교하면, 일정한 속도로 밀리는 상자에서 어떤 일이 생길까요?</summary>
+	스냅샷은 과거 시점이므로, 상자가 v로 움직이면 "지금 위치 − 과거 위치 ≈ v × 시간 차"만큼의 가짜 오차가 항상 생깁니다. 보정이 이 오차를 없애려고 상자를 계속 과거 쪽으로 끌어, 밀리는 상자가 늦게 따라오는(사실상 예측 이전과 비슷한) 결과가 됩니다. 같은 시점의 기록과 비교하면 같은 시뮬레이션일 때 오차가 0입니다.
+</details>
+<details class="quiz"><summary>Q3. 보정을 바디에 적용한 뒤 기록은 그대로 두면 어떤 현상이 생길까요?</summary>
+	다음 스냅샷이 와서 기록과 비교할 때, 이미 바디에 반영한 보정이 기록에는 없으므로 같은 오차를 다시 보게 됩니다. 결과적으로 오차를 두 번 이상 고쳐 과보정이 되고, 반대 방향 오차가 생겨 상자가 앞뒤로 흔들립니다. 그래서 <code>ApplyBodyCorrection</code>은 바디와 기록 전체에 같은 보정을 더합니다.
+</details>
+</article>
+
+<!-- ======================================================= 59강 ======================================================= -->
+<article class="lecture" id="lec-59">
+<header>
+	<div class="no">59강</div>
+	<h2 id="lec-59-title">RPC와 능력 예측</h2>
+	<div class="meta">관련 Phase: 17 (7b·8), 53 사이드(능력 시스템) · 살펴볼 곳: <code>Scene/GameRpc.h</code>, <code>World/GameWorldNet.cpp</code>(<code>RouteRpc</code>, <code>ReceiveRpc</code>), <code>Scene/Ability/AbilitySystem.cpp</code> 머리 주석, <code>World/GameWorldAbilities.cpp</code>, <code>Scripting/ScriptAbilityBindings.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>상태 복제만으로 부족한 "한 번 일어나는 일"을 RPC로 보내는 이유와, Server/Client/Multicast 세 종류의 라우팅을 압니다.</li>
+		<li>서버가 RPC를 받을 때 소유권을 검사하는 이유와, Lua·C++ 게임 모듈이 같은 경로(<code>GameRpc</code>)를 쓰는 설계를 이해합니다.</li>
+		<li>능력(스킬) 발동을 예측 키로 미리 보여 주고, 서버 확인 시 합치고 거절 시 되돌리는 흐름을 설명할 수 있습니다.</li>
+		<li>무엇을 예측하고 무엇을 서버만 하는지, 그리고 불량 망 검증을 어떻게 하는지 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-59-why"><span class="step">왜 필요한가</span>"값"이 아니라 "사건"을 보내야 할 때</h3>
+<p>56강의 복제는 <b>상태</b>를 맞춥니다. "체력이 40이다", "문이 열려 있다". 그런데 게임에는 상태로 표현하기 어색한 <b>사건</b>이 많습니다.</p>
+<ul>
+	<li>클라이언트가 "문을 열고 싶다"고 서버에 요청하기 (입력 상태로 보내기엔 일회성이고 대상이 있음)</li>
+	<li>서버가 특정 플레이어에게만 "퀘스트 완료 창을 띄워라"</li>
+	<li>서버가 모두에게 "여기서 폭발 연출을 재생하라" (폭발은 상태가 아니라 한순간)</li>
+</ul>
+<p>이런 것을 위해 <b>RPC(Remote Procedure Call, 원격 프로시저 호출)</b> — "저쪽 기계에서 이 함수를 이 인자로 불러 줘" — 를 둡니다. 그리고 RPC로 발동 요청을 보내는 대표적인 기능이 스킬(능력)입니다. 하지만 스킬은 57강의 이동처럼 <b>누르는 즉시 반응</b>해야 하는데, 요청을 보내고 서버 답을 기다리면 다시 왕복 지연이 생깁니다. 이 강의 후반부는 능력 발동을 예측하고, 서버가 거절하면 되돌리는 방법을 다룹니다.</p>
+
+<h3 id="lec-59-rpc"><span class="step">핵심 개념</span>RPC 세 종류와 라우팅</h3>
+<pre class="code" data-file="Engine/Source/Scene/GameRpc.h (발췌)"><span class="com">// 네트워크 RPC — Lua(entity:CallServer 등)와 게임 모듈 C++(IGameNet::CallRpc)이 같은 경로를 쓴다.</span>
+<span class="com">// 받는 쪽: 대상 엔티티 스크립트의 Server_/Client_/Multicast_&lt;이름&gt; 메서드 + 게임 모듈 IGameModule::OnRpc(서버에서만)</span>
+<span class="kw">enum class</span> EGameRpcKind : uint8
+{
+	Server,    <span class="com">// 클라이언트 → 서버 (대상 엔티티 소유자만). 서버에서 부르면 바로 로컬 실행</span>
+	Client,    <span class="com">// 서버 → 대상 엔티티 소유 클라이언트 (호스트 소유면 로컬)</span>
+	Multicast, <span class="com">// 서버 → 서버 자신 + 모든 클라이언트</span>
+};</pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 340" role="img" aria-label="RPC 세 종류의 라우팅">
+		<title>RPC 세 종류의 라우팅</title>
+		<rect x="350" y="130" width="160" height="60" rx="10" class="acc"/>
+		<text x="430" y="156" text-anchor="middle" class="t-bold">서버</text>
+		<text x="430" y="176" text-anchor="middle" class="t-muted">RouteRpc / ReceiveRpc</text>
+		<g class="t-small">
+			<rect x="30" y="40" width="170" height="50" rx="8" class="k1"/><text x="115" y="62" text-anchor="middle" class="t-bold">클라이언트 1</text><text x="115" y="80" text-anchor="middle">상자 A 소유자</text>
+			<rect x="30" y="230" width="170" height="50" rx="8" class="k1"/><text x="115" y="252" text-anchor="middle" class="t-bold">클라이언트 2</text><text x="115" y="270" text-anchor="middle">소유 아님</text>
+			<rect x="660" y="40" width="170" height="50" rx="8" class="k1"/><text x="745" y="62" text-anchor="middle" class="t-bold">클라이언트 1</text><text x="745" y="80" text-anchor="middle">(Client RPC 대상)</text>
+			<rect x="660" y="230" width="170" height="50" rx="8" class="k1"/><text x="745" y="252" text-anchor="middle" class="t-bold">모든 클라이언트</text><text x="745" y="270" text-anchor="middle">(Multicast)</text>
+		</g>
+		<path d="M200,70 L346,146" class="ln s2" marker-end="url(#arr)"/>
+		<text x="150" y="118" class="t-small f2">CallServer ✓</text>
+		<path d="M200,250 L346,178" class="ln-d s5" marker-end="url(#arr)"/>
+		<text x="215" y="292" class="t-small f5">CallServer → 거부 (소유자 아님)</text>
+		<path d="M510,146 L656,72" class="ln s1" marker-end="url(#arr)"/>
+		<text x="540" y="108" text-anchor="end" class="t-small f1">CallClient</text>
+		<path d="M510,178 L656,250" class="ln s4" marker-end="url(#arr)"/>
+		<text x="590" y="200" class="t-small f4">CallMulticast</text>
+		<path d="M430,190 C430,250 470,250 470,196" class="ln s4" marker-end="url(#arr)"/>
+		<text x="430" y="268" text-anchor="middle" class="t-small f4">서버 자신도 실행</text>
+		<text x="430" y="328" text-anchor="middle" class="t-muted">Standalone: 모든 종류가 즉시 로컬 실행 · 받는 쪽: 스크립트 Server_/Client_/Multicast_이름 (+ 서버면 게임 모듈 OnRpc)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 59-1.</b> RPC 라우팅. 클라이언트는 Server RPC만 보낼 수 있고, 그것도 대상 엔티티의 소유자일 때만 서버가 받아들입니다. Client/Multicast는 서버만 부를 수 있습니다.</figcaption>
+</figure>
+<p>Lua에서는 엔티티 메서드로 부릅니다. <code>entity:CallServer("Fire", 목표)</code>를 부르면 서버에서 그 엔티티 스크립트의 <code>Server_Fire(목표)</code>가 실행됩니다. 접두사로 받는 쪽 메서드를 정하는 방식이라, 등록 절차가 따로 없습니다. 인자는 nil/bool/숫자/문자열/Vector3/에셋/엔티티를 지원하고, 엔티티는 NetId로 바꿔 보냅니다(복제되지 않은 엔티티는 받는 쪽에서 무효).</p>
+<p>라우팅은 <code>FGameWorld::RouteRpc</code> 한 곳에 있습니다.</p>
+<pre class="code" data-file="World/GameWorldNet.cpp — RouteRpc (발췌)"><span class="kw">case</span> EGameRpcKind::Server:
+	<span class="kw">if</span> (bServer)
+	{
+		InvokeRpcLocally(Target, Kind, Name, Args); <span class="com">// 서버에서 부르면 바로 실행</span>
+	}
+	<span class="kw">else if</span> (NetId == InvalidNetId)
+	{
+		<span class="kw">throw</span> std::runtime_error(<span class="str">"CallServer: 복제되지 않은 엔티티입니다 (ReplicatedComponent 필요)"</span>);
+	}
+	<span class="kw">else if</span> (Systems.Net != <span class="kw">nullptr</span>)
+	{
+		Systems.Net-&gt;SendToServer(EncodeRpc(*Scene, NetId, Kind, Name, Args), ENetReliability::Reliable);
+	}
+	<span class="kw">break</span>;
+
+<span class="kw">case</span> EGameRpcKind::Client:
+{
+	<span class="kw">if</span> (!bServer) { <span class="kw">throw</span> std::runtime_error(<span class="str">"CallClient는 서버에서만 부를 수 있습니다"</span>); }
+	<span class="kw">const</span> int32 Owner = GetOwner(Target);
+	<span class="kw">if</span> (Owner == GetLocalPlayerId())
+	{
+		InvokeRpcLocally(Target, Kind, Name, Args); <span class="com">// 호스트(로컬 플레이어) 소유</span>
+		<span class="kw">break</span>;
+	}
+	... <span class="com">// 소유 플레이어의 연결로만 전송</span>
+}
+
+<span class="kw">case</span> EGameRpcKind::Multicast:
+	...
+	InvokeRpcLocally(Target, Kind, Name, Args);  <span class="com">// 서버 자신</span>
+	Systems.Net-&gt;Broadcast(EncodeRpc(...), ENetReliability::Reliable); <span class="com">// + 모든 클라이언트</span></pre>
+<p>RPC는 <b>신뢰 채널</b>(<code>ScriptRpc</code> 메시지)로 갑니다. "문을 연다" 요청이 사라지면 플레이어는 다시 누르지 않는 한 영영 문이 안 열리기 때문입니다. 위치처럼 다음 패킷이 대신해 주지 않습니다. 오류는 C++ 예외로 던지는데, 47강에서 본 것처럼 Lua 바인딩에서는 이것이 Lua 오류가 되어 그 스크립트 인스턴스만 멈춥니다. 게임 모듈 경로(<code>FGameWorld::CallRpc</code>)는 예외를 잡아 경고 로그로 바꿉니다.</p>
+
+<h4>소유권 검사 — 서버는 클라이언트를 믿지 않는다</h4>
+<pre class="code" data-file="World/GameWorldNet.cpp — ReceiveRpc (발췌)"><span class="kw">if</span> (Mode != ENetMode::Client)
+{
+	<span class="com">// 서버: 클라이언트는 Server RPC만, 그리고 대상 엔티티의 소유자만 부를 수 있다</span>
+	...
+	<span class="kw">if</span> (Kind != EGameRpcKind::Server || Sender == Players.end() || <span class="kw">static_cast</span>&lt;int32&gt;(Sender-&gt;PlayerId) != GetOwner(Target))
+	{
+		E_LOG(LogNet, Warning, <span class="str">"RPC 거부: {}{} (보낸 플레이어가 대상 엔티티 소유자가 아님)"</span>, GetRpcMethodPrefix(Kind), Name);
+		<span class="kw">return</span>;
+	}
+}
+<span class="kw">else if</span> (Kind == EGameRpcKind::Server)
+{
+	<span class="kw">return</span>; <span class="com">// 클라이언트는 Server RPC를 받지 않는다</span>
+}
+InvokeRpcLocally(Target, Kind, Name, Args);</pre>
+<p>왜 소유자만일까요? 소유권이 없으면 클라이언트 2가 클라이언트 1의 캐릭터에 <code>Server_UseItem</code>을 보내 남의 아이템을 쓸 수 있습니다. 클라이언트는 수정된 실행 파일일 수 있으므로, "클라이언트 코드에서 막았다"는 보안이 아닙니다. 서버가 받는 순간 검사하는 것만이 의미가 있습니다. 소유자는 <code>ReplicatedComponent::OwnerPlayerId</code>이고, <code>GetOwner</code>는 가장 가까운 복제 조상의 소유자를 돌려줍니다(무기처럼 플레이어 폰 아래 붙은 엔티티도 그 플레이어 소유). 같은 원칙이 57강의 무브(<code>ReceiveCharacterMoves</code>)와 아래 능력 발동 요청에도 똑같이 적용됩니다.</p>
+
+<h3 id="lec-59-gamerpc"><span class="step">ProjectE에서는</span>Lua와 C++ 게임 모듈이 같은 경로를 쓴다</h3>
+<p>처음 RPC(Phase 17-7b)는 Lua 전용이었습니다. 이어서 C++ 게임 모듈(12강)도 RPC가 필요해졌을 때, 별도 구현을 만들지 않고 <b>Lua 쪽 타입을 공용 헤더 <code>Scene/GameRpc.h</code>로 옮겨 둘이 같은 경로를 쓰게</b> 했습니다(17-8). 게임 모듈은 <code>IGameModule::GetNet()</code>으로 <code>IGameNet</code>을 얻고 <code>CallRpc</code>를 부릅니다.</p>
+<pre class="code" data-file="World/GameWorldNet.cpp — InvokeRpcLocally"><span class="kw">void</span> FGameWorld::InvokeRpcLocally(FEntity Target, EGameRpcKind Kind, <span class="kw">const</span> std::string&amp; Name, <span class="kw">const</span> FGameRpcArgs&amp; Args)
+{
+	Systems.Scripts-&gt;InvokeMethod(Target, GetRpcMethodPrefix(Kind) + Name, Args);
+	<span class="kw">if</span> (Systems.GameModule != <span class="kw">nullptr</span> &amp;&amp; Mode != ENetMode::Client)
+	{
+		Systems.GameModule-&gt;Rpc(*Scene, Target, Kind, Name, Args); <span class="com">// 게임 모듈은 서버에서만 돈다</span>
+	}
+}</pre>
+<p>받는 쪽도 하나입니다. 대상 엔티티의 스크립트 메서드를 부르고, 서버라면 게임 모듈의 <code>OnRpc</code>도 부릅니다. Lua 스크립트가 보낸 RPC를 C++이 받을 수도, 그 반대도 됩니다. 계획에는 "RPC 등록" 단계가 있었지만, <code>OnRpc</code> 한 곳에서 이름으로 분기하는 쪽이 더 단순해서 등록 없이 갔습니다(Plans.md 17-8). 같은 기능에 경로가 둘이면 소유권 검사·인자 직렬화·오류 처리를 두 번 맞춰야 하고, 결국 한쪽만 고쳐지는 버그가 생깁니다.</p>
+<div class="callout tip">
+	<b class="t">스크립트가 어디서 도는가 — <code>ExecutionLocation</code></b>
+	RPC를 받으려면 받는 쪽에 스크립트 인스턴스가 있어야 합니다. 스크립트 컴포넌트의 실행 위치는 <code>ServerOnly</code>(기본) / <code>ClientOnly</code> / <code>Both</code>입니다. 게임 규칙은 서버 전용, 연출만 하는 것은 클라이언트 전용, <code>Multicast_</code>로 연출을 받는 스크립트나 예측이 필요한 플레이어 스크립트는 <code>Both</code>로 둡니다. 게임 모듈은 서버에서만 돕니다.
+</div>
+
+<h3 id="lec-59-ability"><span class="step">핵심 개념</span>능력 예측 — 예측 키, 예측 창, 확인과 거절</h3>
+<p>51강의 능력 시스템(언리얼 GAS식)에서 플레이어가 "화염구"를 누르면 무슨 일이 일어나야 할까요? 마나가 줄고, 쿨다운이 시작되고, 시전 애니메이션이 재생되고, 투사체가 날아갑니다. 이 모든 것을 서버 답을 기다려 보여 주면 57강 이전의 이동처럼 끈적합니다. 하지만 이동과 달리 능력은 서버가 <b>거절</b>할 수 있습니다. 클라이언트는 마나가 충분하다고 봤지만, 서버에서는 방금 받은 데미지 효과로 상태가 달라졌을 수 있습니다.</p>
+<p>그래서 능력 예측에는 세 가지 장치가 필요합니다.</p>
+<ol>
+	<li><b>예측 키(prediction key)</b>: 발동마다 붙이는 이름표. 엔티티마다 1부터 늘어나는 번호입니다. 클라이언트가 미리 적용한 모든 변화에 이 키를 붙여 두면, 나중에 "키 7의 결과를 되돌려라" 또는 "키 7까지는 서버 값에 들어 있다"를 정확히 처리할 수 있습니다.</li>
+	<li><b>예측 범위</b>: 무엇을 미리 해도 되는가. 되돌릴 수 있는 것만 예측합니다.</li>
+	<li><b>확인/거절 처리</b>: 서버 답이 왔을 때 예측과 서버 값을 합치거나 되돌리는 규칙.</li>
+</ol>
+<pre class="code" data-file="Scene/Ability/AbilitySystem.cpp 머리 주석 — 예측 (발췌)"><span class="com">// 예측 (소유 클라이언트, 능력 bPredicted)</span>
+<span class="com">//   키: 엔티티마다 1부터 늘어나는 예측 키. 발동 요청(AbilityActivate 메시지)에 실어 보낸다.</span>
+<span class="com">//   예측 범위: 발동 검사, 비용(기본값 변화량), 쿨다운·ActivationEffects·스크립트가 예측 창에서 자기에게 건 효과(예측 효과), 발동 태그,</span>
+<span class="com">//     능력 스크립트 로컬 실행(몽타주 등 연출). 예측 창 = OnActivate가 처음 대기(ctx:Wait 등)에 들어가기 전. 그 뒤 자기 효과·커밋은 서버만.</span>
+<span class="com">//   예측하지 않음: 다른 대상 효과·데미지·투사체·스폰(서버만, ctx:HasAuthority), 주기 실행, 효과 제거, Health/메타 속성.</span>
+<span class="com">//   서버: 같은 키로 발동하고 예측 창 안에서 적용한 효과에 그 키를 붙인다. 처리한 최대 키를 RepPredictionKey로 복제한다</span>
+<span class="com">//     (복제 문자열과 같은 컴포넌트라 "이 키까지의 결과가 이 값에 들어 있다"가 항상 맞다). 거절이면 AbilityResult(거절, 이유)를 소유자에게.</span>
+<span class="com">//   합치기: RepPredictionKey &gt;= 키가 오면 그 키까지의 예측 효과·변화량을 버린다 → 서버 값만 남아 중복 적용이 없다.</span>
+<span class="com">//   거절: 그 키의 예측 효과·변화량을 즉시 되돌리고 로컬 인스턴스를 취소(OnEnd cancelled) + AbilityFailed("Rejected:&lt;이유&gt;").</span>
+<span class="com">//   서버가 예측 발동을 취소로 끝내면 AbilityResult(취소) → 로컬 인스턴스 취소. 3초 넘게 처리되지 않은 예측은 버린다(경고).</span></pre>
+
+<h4>예측 창 — 능력 스크립트의 "첫 대기 전"</h4>
+<p>능력 스크립트(Lua)는 <code>OnActivate(ctx)</code>를 코루틴으로 실행합니다. 소유 클라이언트는 예측 능력이면 같은 스크립트를 로컬로 돌립니다. 그런데 스크립트 전체를 예측하면 안 됩니다. 시간이 지날수록 서버와 클라이언트의 상황이 갈라지기 때문입니다. 그래서 <b>예측 창</b>을 "<code>OnActivate</code>가 처음 대기(<code>ctx:Wait</code> 등)에 들어가기 전"으로 짧게 잡았습니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="능력 스크립트의 예측 창">
+		<title>능력 스크립트의 예측 창</title>
+		<line x1="40" y1="120" x2="830" y2="120" class="ln" marker-end="url(#arr)"/>
+		<text x="830" y="172" text-anchor="end" class="t-muted">능력 시간</text>
+		<rect x="60" y="88" width="300" height="64" rx="8" class="k2"/>
+		<text x="210" y="112" text-anchor="middle" class="t-bold">예측 창</text>
+		<text x="210" y="134" text-anchor="middle" class="t-small">OnActivate 시작 ~ 첫 ctx:Wait</text>
+		<rect x="360" y="88" width="440" height="64" rx="8" class="box"/>
+		<text x="580" y="112" text-anchor="middle" class="t-bold">창 밖 (서버만 결과를 만든다)</text>
+		<text x="580" y="134" text-anchor="middle" class="t-small">대기 뒤의 자기 효과·커밋, 주기 실행</text>
+		<line x1="360" y1="70" x2="360" y2="170" class="ln s4" stroke-width="2"/>
+		<text x="360" y="62" text-anchor="middle" class="t-small f4 t-bold">ctx:Wait(0.4)</text>
+		<g class="t-small">
+			<text x="60" y="188" class="f2">✓ 비용(마나 −20), 쿨다운, 발동 태그</text>
+			<text x="60" y="208" class="f2">✓ 자기에게 건 효과 (예측 키 부착)</text>
+			<text x="60" y="228" class="f2">✓ 몽타주 재생 등 로컬 연출</text>
+			<text x="460" y="188" class="f5">✗ 다른 대상 효과·데미지·투사체·스폰</text>
+			<text x="460" y="208" class="t-muted">  → if ctx:HasAuthority() then ... end</text>
+			<text x="460" y="228" class="f5">✗ 효과 제거, Health/메타 속성</text>
+		</g>
+		<text x="60" y="36" class="t-small">예: 화염구 = 비용·쿨다운 커밋 → 시전 몽타주 → Wait(0.4) → (서버만) 투사체 생성</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 59-2.</b> 예측 창은 짧고 명확합니다. 창 안에서는 "나에게만 영향을 주고 되돌릴 수 있는 것"만 예측하고, 남에게 영향을 주는 일은 언제나 서버(<code>ctx:HasAuthority()</code>)에서만 합니다.</figcaption>
+</figure>
+<p>남에게 데미지를 주거나 투사체를 만드는 일을 예측하지 않는 이유는 간단합니다. 되돌리기가 어렵거나 불가능합니다. 클라이언트가 미리 적에게 데미지를 줬다가 서버가 거절하면, 적의 체력바가 줄었다 늘어나는 이상한 장면이 됩니다. 투사체를 미리 만들었다가 서버가 다른 위치에 만들면 둘이 됩니다. 그래서 스크립트 규칙은 이렇습니다. "다른 대상 효과·스폰·데미지는 <code>if ctx:HasAuthority() then ... end</code> 안에 둔다. 클라이언트에서 <code>ApplyEffectToTarget</code>은 아무것도 하지 않고 false."</p>
+
+<h4>확인(합치기)과 거절(되돌리기)</h4>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 380" role="img" aria-label="능력 예측의 확인과 거절 흐름">
+		<title>능력 예측의 확인과 거절 흐름</title>
+		<rect x="60" y="10" width="160" height="34" rx="8" class="k1"/><text x="140" y="32" text-anchor="middle" class="t-bold">소유 클라이언트</text>
+		<rect x="640" y="10" width="160" height="34" rx="8" class="acc"/><text x="720" y="32" text-anchor="middle" class="t-bold">서버</text>
+		<line x1="140" y1="44" x2="140" y2="370" class="ln-d"/>
+		<line x1="720" y1="44" x2="720" y2="370" class="ln-d"/>
+
+		<rect x="150" y="56" width="270" height="44" rx="6" class="k2"/>
+		<text x="162" y="74" class="t-small">키 7 발급 → 로컬 발동(예측)</text>
+		<text x="162" y="92" class="t-small">마나 −20, 쿨다운 효과 [키 7]</text>
+		<path d="M140,112 L716,136" class="ln s1" marker-end="url(#arr)"/>
+		<text x="430" y="118" text-anchor="middle" class="t-small">AbilityActivate(NetId, "Fireball", 7) — 신뢰</text>
+
+		<text x="40" y="168" class="t-bold f2">확인</text>
+		<rect x="470" y="146" width="240" height="44" rx="6" class="k2"/>
+		<text x="482" y="164" class="t-small">소유자·검사 통과 → 같은 키로 발동</text>
+		<text x="482" y="182" class="t-small">ServerProcessedKey = 7</text>
+		<path d="M716,212 L144,226" class="ln s2" marker-end="url(#arr)"/>
+		<text x="430" y="204" text-anchor="middle" class="t-small f2">복제: RepPredictionKey = 7 + Rep 문자열(마나 80, 쿨다운)</text>
+		<rect x="150" y="232" width="290" height="44" rx="6" class="k2"/>
+		<text x="162" y="250" class="t-small">RepPredictionKey ≥ 7 → 키 7까지 예측분 버림</text>
+		<text x="162" y="268" class="t-small">→ 서버 값만 남음 (중복 차감 없음)</text>
+
+		<text x="40" y="318" class="t-bold f5">거절</text>
+		<rect x="470" y="290" width="240" height="30" rx="6" class="k5"/>
+		<text x="482" y="310" class="t-small">검사 실패 (예: 마나 부족)</text>
+		<path d="M716,340 L144,348" class="ln s5" marker-end="url(#arr)"/>
+		<text x="430" y="330" text-anchor="middle" class="t-small f5">AbilityResult(7, 거절, "이유")</text>
+		<text x="150" y="366" class="t-small f5">키 7 예측 효과·변화량 되돌림 + 로컬 인스턴스 취소 + AbilityFailed("Rejected:이유")</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 59-3.</b> 확인 경로에는 "확인 메시지"가 따로 없습니다. 서버가 처리한 키 번호가 복제 상태와 <b>같은 컴포넌트</b>로 오므로, "이 키까지의 결과가 이 값에 들어 있다"가 항상 성립합니다. 거절만 별도 메시지로 즉시 알립니다.</figcaption>
+</figure>
+<p>확인 경로의 설계가 이 시스템의 핵심입니다. 클라이언트가 마나를 미리 20 깎았고(예측 변화량, 키 7), 서버도 같은 발동으로 20을 깎아 마나 80을 복제합니다. 클라이언트가 이 복제 값 위에 자기 예측(−20)을 계속 얹으면 60이 되어 이중 차감입니다. 그래서 "서버 값에 키 7의 결과가 반영되었다"는 사실을 알아야 그 순간 예측분을 버릴 수 있습니다. 서버가 처리한 최대 키(<code>RepPredictionKey</code>)를 속성·효과 복제 문자열과 <b>같은 컴포넌트</b>에 넣으면, 둘은 항상 한 메시지로 함께 도착합니다. "키는 7인데 값은 아직 옛 값" 같은 어긋난 순간이 생길 수 없습니다.</p>
+<pre class="code" data-file="Scene/Ability/AbilitySystem.cpp — 서버: ServerHandleActivate (발췌)"><span class="kw">if</span> (Component == <span class="kw">nullptr</span> || PredictionKey == <span class="num">0</span> || PredictionKey &lt;= Component-&gt;Runtime.ServerProcessedKey)
+{
+	<span class="kw">return</span>; <span class="com">// 중복/오래된 요청</span>
+}
+...
+<span class="kw">bool</span> bOk = Def != <span class="kw">nullptr</span> &amp;&amp; CanActivateInternal(Entity, *Component, *Def, Reason);
+<span class="kw">if</span> (bOk)
+{
+	ActivateInternal(Entity, *Def, PredictionKey, <span class="kw">false</span>);
+}
+<span class="kw">if</span> (FAbilitySystemComponent* Current = Find(Entity))
+{
+	Current-&gt;Runtime.ServerProcessedKey = PredictionKey;
+	WriteReplicatedState(*Current); <span class="com">// 처리한 키 (이번 발동 결과와 함께)</span>
+}
+<span class="kw">if</span> (!bOk)
+{
+	NetHooks.SendResult(Entity, PredictionKey, <span class="kw">false</span>, Reason); <span class="com">// AbilityResult(거절)</span>
+}</pre>
+<pre class="code" data-file="Scene/Ability/AbilitySystem.cpp — 클라이언트: 합치기와 되돌리기 (발췌)"><span class="com">// 복제 상태를 읽을 때: 서버가 처리한 키가 늘었으면 그 키까지의 예측을 버린다 (합치기)</span>
+<span class="kw">const</span> uint32 Processed = <span class="kw">static_cast</span>&lt;uint32&gt;(std::max(<span class="num">0</span>, Component.RepPredictionKey));
+<span class="kw">if</span> (Processed &gt; Runtime.RepProcessedKey)
+{
+	Runtime.RepProcessedKey = Processed;
+	DropPrediction(Component, Processed, <span class="kw">true</span>);  <span class="com">// bUpToKey: 키 ≤ Processed 전부</span>
+}
+
+<span class="com">// 거절 메시지를 받았을 때 (ClientHandleResult)</span>
+++RejectedCount;
+DropPrediction(*Component, PredictionKey, <span class="kw">false</span>);    <span class="com">// 그 키만 정확히</span>
+...
+EndAbility(LocalInstance, <span class="kw">true</span>);                      <span class="com">// 로컬 인스턴스 취소 (OnEnd cancelled)</span>
+...
+PushFailed(Entity, Ability, <span class="str">"Rejected:"</span> + Reason);
+
+<span class="kw">void</span> FAbilitySystem::DropPrediction(FAbilitySystemComponent&amp; Component, uint32 PredictionKey, <span class="kw">bool</span> bUpToKey)
+{
+	...
+	Removed += std::erase_if(Runtime.Effects, [&amp;](<span class="kw">const</span> FActiveGameplayEffect&amp; Effect) { <span class="kw">return</span> Effect.bPredicted &amp;&amp; Matches(Effect.PredictionKey); });
+	Removed += std::erase_if(Runtime.PredictedDeltas, [&amp;](<span class="kw">const</span> FPredictedBaseDelta&amp; Delta) { <span class="kw">return</span> Matches(Delta.PredictionKey); });
+	...
+}</pre>
+<p>되돌리기가 이렇게 간단한 이유를 보세요. 클라이언트는 예측한 변화를 서버 값에 "덮어쓰지" 않고, 키가 붙은 <b>별도 목록</b>(예측 효과, 예측 변화량)으로 들고 있다가 화면에 보여 줄 때만 서버 값 위에 얹습니다. 되돌리기는 목록에서 그 키를 지우고 보기를 다시 만드는 것(<code>RebuildClientView</code>)뿐입니다. 57강에서 무브 기록을 들고 있다가 다시 적용한 것과 같은 생각입니다. "서버 정답 + 아직 확인 안 된 내 예측"을 분리해 저장하면 확인도 되돌리기도 쉬워집니다.</p>
+<div class="callout note">
+	<b class="t">57강과의 대응</b>
+	<div class="tablewrap"><table class="t">
+		<tr><th></th><th>캐릭터 이동 (57강)</th><th>능력 (이 강의)</th></tr>
+		<tr><td>이름표</td><td>무브 순번</td><td>예측 키</td></tr>
+		<tr><td>클라이언트 기록</td><td>확인 안 된 무브 목록</td><td>키가 붙은 예측 효과·변화량</td></tr>
+		<tr><td>서버의 확인</td><td><code>CharacterAck</code>(순번 + 상태)</td><td><code>RepPredictionKey</code>(상태와 같은 컴포넌트)</td></tr>
+		<tr><td>틀렸을 때</td><td>되감고 다시 적용 + 화면 오프셋</td><td>그 키만 되돌림 + 인스턴스 취소</td></tr>
+		<tr><td>채널</td><td>비신뢰 (최신만 의미)</td><td>신뢰 (발동 요청은 사건)</td></tr>
+	</table></div>
+</div>
+
+<h3 id="lec-59-pitfalls"><span class="step">함정과 교훈</span>서버만 하는 일, 그리고 거절을 일부러 일으켜 검증하기</h3>
+<ul>
+	<li><b>서버만 효과·속성을 바꾼다</b>: 예측은 "보여 주기"일 뿐입니다. 체력의 진실은 <code>FHealthComponent</code>이고 데미지는 <code>IncomingDamage</code> 효과나 <code>Gameplay::ApplyDamage</code>를 거칩니다. Health를 직접 바꾸거나 예측하지 않습니다.</li>
+	<li><b>오래된 예측은 버린다</b>: 서버 답이 3초(<code>PredictionTimeout</code>) 넘게 오지 않은 예측은 경고와 함께 버립니다. 요청이 사라졌는데 예측 쿨다운이 영원히 남는 일을 막습니다.</li>
+	<li><b>형식을 바꾸면 버전을 올린다</b>: 능력 메시지(<code>AbilityActivate</code>/<code>AbilityResult</code>)를 추가하며 <code>NetProtocolVersion</code>이 12가 되었고, 게임 모듈 인터페이스(<code>OnAbilityEvent</code>/<code>GetAbilities</code>)가 늘어 <code>GameModuleApiVersion</code>이 10이 되었습니다. 복제 문자열(<code>Rep*</code>) 형식을 바꾸면 읽는 쪽(<code>ReadReplicatedState</code>)도 함께 고칩니다.</li>
+</ul>
+<div class="callout story">
+	<b class="t">거절 경로는 저절로 시험되지 않는다</b>
+	정상적인 클라이언트는 쿨다운·비용 검사를 서버와 똑같이 하므로, 거절이 거의 일어나지 않습니다. 그러면 가장 까다로운 코드(되돌리기)가 실제로는 한 번도 실행되지 않은 채 출시됩니다. 그래서 검증용 치트 CVar <code>ability.ClientSkipChecks</code>를 두었습니다. 켜면 소유 클라이언트가 쿨다운·비용 검사 없이 예측 발동하므로, 서버가 거절하고 클라이언트가 되돌리는 경로가 확실히 돕니다. <code>ability.AutoCast=1</code>은 데모 HUD 스크립트가 로컬 폰의 능력을 순서대로 자동 발동하게 합니다. 예측 규칙을 바꾸면 다음 두 가지를 돌리는 것이 규칙입니다.
+	<ul>
+		<li>단위 테스트 <code>Ability_PredictionConfirmAndReject</code></li>
+		<li><code>.\Scripts\Verify.ps1 -Multiplayer -Scene Scenes/Tests/Abilities.escene -ExtraArgs "--net-lag 100 --net-loss 5 --cvar ability.AutoCast=1 --cvar ability.ClientSkipChecks=1"</code> — 전용 서버 + 클라이언트 2, 지연 100ms·손실 5% 불량 망에서 자동 발동과 강제 거절</li>
+	</ul>
+	디버그용으로 <code>ability.Dump [이름]</code>(속성·태그·활성 효과·능력 출력)와 <code>ability.Debug 1</code>(발동/종료/실패/거절/효과를 Display 로그로)이 있습니다. Plans.md 53 사이드의 머지 기록은 "런타임·멀티플레이 불량 망 디버그 레이어 0건"입니다.
+</div>
+<p>8부를 돌아보면 하나의 원칙이 반복됩니다. <b>서버가 진실이고, 클라이언트는 미리 보여 줄 뿐이며, 미리 보여 준 것은 이름표를 붙여 따로 들고 있다가 서버 답으로 합치거나 되돌린다.</b> 무브 순번, 물리 기록의 시각, 예측 키는 모두 같은 생각의 다른 모습입니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>RPC는 상태가 아닌 사건을 보낸다. Server(클라→서버, 소유자만) / Client(서버→소유자) / Multicast(서버→서버 자신+모두). 신뢰 채널, Standalone은 즉시 로컬.</li>
+		<li>서버는 받는 순간 소유권을 검사한다. 클라이언트 쪽 검사는 보안이 아니다.</li>
+		<li>Lua와 C++ 게임 모듈은 <code>Scene/GameRpc.h</code> 한 경로를 공유한다. 받는 쪽 = 스크립트 <code>Server_/Client_/Multicast_이름</code> + 서버의 <code>OnRpc</code>.</li>
+		<li>능력 예측: 예측 키 → 예측 창(첫 대기 전) 안에서 자기 비용·쿨다운·효과·연출만 예측 → 서버가 같은 키로 발동.</li>
+		<li>확인 = <code>RepPredictionKey</code>(상태와 같은 컴포넌트) ≥ 키 → 예측분 버림. 거절 = <code>AbilityResult</code> → 그 키만 되돌리고 인스턴스 취소.</li>
+		<li>거절 경로는 <code>ability.ClientSkipChecks</code>로 일부러 일으켜 불량 망 Verify로 검증한다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 클라이언트 2가 클라이언트 1 소유 캐릭터에 <code>CallClient</code>를 부르면 어떻게 될까요?</summary>
+	<code>RouteRpc</code>에서 Client/Multicast는 서버에서만 부를 수 있으므로, 클라이언트에서 부르면 예외(Lua 오류)가 납니다. 만약 수정된 클라이언트가 그런 메시지를 강제로 보내도, 서버의 <code>ReceiveRpc</code>는 클라이언트로부터 Server 종류만 받고 소유자도 검사하므로 경고 로그만 남기고 버립니다.
+</details>
+<details class="quiz"><summary>Q2. 서버가 처리한 예측 키를 능력 컴포넌트가 아니라 별도의 "확인" 메시지로 보냈다면 어떤 문제가 생길 수 있을까요?</summary>
+	확인 메시지와 상태 복제가 서로 다른 메시지로 오면 도착 순서가 어긋날 수 있습니다. "키 7 확인"이 먼저 와서 예측분(마나 −20)을 버렸는데 복제 값은 아직 옛 값(100)이면, 마나가 잠깐 100으로 튀었다가 80으로 내려갑니다. 반대 순서면 잠깐 60(이중 차감)이 보입니다. 같은 컴포넌트에 넣으면 둘이 항상 한 번에 도착합니다.
+</details>
+<details class="quiz"><summary>Q3. 화염구 스크립트가 <code>ctx:Wait(0.4)</code> 뒤에 자기에게 "시전 후 이동 속도 감소" 효과를 겁니다. 이 효과는 예측될까요?</summary>
+	예측되지 않습니다. 예측 창은 첫 대기 전까지이므로, 대기 뒤의 자기 효과는 서버만 적용하고 클라이언트는 복제로 받습니다. 즉시 반응이 필요한 효과라면 첫 대기 전에 걸도록 스크립트를 짜야 합니다. 예측 창을 짧게 둔 것은, 시간이 지날수록 서버와 클라이언트의 상황이 갈라져 예측이 틀릴 가능성이 커지기 때문입니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part07B_GameFramework.html"><small>이전 부</small>← 7부 B · 게임플레이 시스템 (50~54강)</a>
+	<a href="Part09_UI.html"><small>다음 부</small>9부 · 사용자 인터페이스, 다국어, 오디오 →</a>
+</div>
+</main>
+</div>
+
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

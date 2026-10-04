@@ -1,0 +1,2073 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6부 움직임 — 애니메이션 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">6부 움직임 — 애니메이션</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">6부 · 강의 40~44</div>
+	<h1>움직임 — 애니메이션</h1>
+	<p>뼈 몇십 개의 회전만으로 수만 개 정점의 메시를 살아 움직이게 하는 스키닝에서 출발해, 상태 머신과 블렌드 스페이스로 동작을 섞고, 노티파이·소켓·IK로 세계와 맞물리게 하고, 다른 체형의 동작을 옮기는 리타기팅과 루트 모션, 마지막으로 컷신을 만드는 시퀀서까지 다룹니다.</p>
+</header>
+
+<!-- ======================================================= 40강 ======================================================= -->
+<article class="lecture" id="lec-40">
+<header>
+	<div class="no">40강</div>
+	<h2 id="lec-40-title">스켈레탈 애니메이션</h2>
+	<div class="meta">관련 Phase: 야간 자율 작업 1a(2026-10-01), 29 · 살펴볼 곳: <code>Scene/Animation.h</code>, <code>Scene/AnimationSystem.h</code>, <code>Renderer/SkinnedMeshData.h</code>, <code>Renderer/SkinnedMeshPalette.h</code>, <code>Engine/Shaders/SkinnedMesh.hlsli</code>, <code>Mesh.hlsl</code>(<code>VSSkinned</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>뼈 계층에서 각 뼈의 월드 행렬이 "로컬 × 부모 월드"로 이어진다는 것을 설명할 수 있습니다.</li>
+		<li>바인드 포즈와 역바인드 행렬이 왜 필요한지, 본 팔레트 <code>InverseBind × JointWorld</code>가 정점에 무슨 일을 하는지 압니다.</li>
+		<li>키프레임 보간에서 이동·스케일은 lerp, 회전은 slerp/nlerp를 쓰는 이유를 압니다.</li>
+		<li>선형 블렌드 스키닝 식과 그것이 GPU 정점 셰이더에서 어떻게 계산되는지 따라갈 수 있습니다.</li>
+		<li>ProjectE가 팔레트를 한 프레임에 한 번, 스킨 단위로, 병렬로 만드는 이유와 "뼈 = 엔티티" 설계의 장단점을 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-40-why"><span class="step">왜 필요한가</span>정점을 하나하나 움직일 수는 없다</h3>
+<p>캐릭터 메시는 정점이 수천~수만 개입니다. 걷는 동작을 "매 프레임 모든 정점의 위치"로 저장한다면 1초 30프레임짜리 걷기 한 번에도 수십만 개의 위치가 필요하고, 걷기와 뛰기를 섞는 일은 아예 불가능에 가깝습니다. 사람의 몸을 생각해 보면 답이 보입니다. 팔의 피부는 스스로 움직이지 않고 뼈를 따라 움직입니다. 그러니 <b>뼈 몇십 개의 움직임만 저장하고, 정점은 "어느 뼈를 얼마나 따라갈지"만 기억</b>하게 하면 됩니다.</p>
+<p>이것이 <b>스켈레탈 애니메이션(skeletal animation)</b>입니다. 데이터는 세 가지로 나뉩니다.</p>
+<ul>
+	<li><b>스켈레톤(skeleton)</b>: 뼈의 부모-자식 계층과 기본 자세.</li>
+	<li><b>클립(clip)</b>: 시간에 따른 각 뼈의 이동·회전·스케일 키프레임.</li>
+	<li><b>스킨(skin)</b>: 정점마다 영향을 주는 뼈 번호(최대 4개)와 가중치, 그리고 뼈마다 역바인드 행렬.</li>
+</ul>
+<p>매 프레임 하는 일은 "클립을 시각 t에 샘플링 → 뼈 월드 행렬 계산 → 정점을 뼈 행렬의 가중 합으로 변환"입니다. 이 마지막 단계를 <b>스키닝(skinning)</b>이라 부르고, 정점이 많으므로 GPU 정점 셰이더에서 합니다.</p>
+
+<h3 id="lec-40-hierarchy"><span class="step">핵심 개념</span>뼈 계층 — 월드 행렬은 사슬로 곱해진다</h3>
+<p>뼈 하나의 움직임은 <b>부모 기준(로컬)</b>으로 저장합니다. 어깨를 돌리면 위팔·아래팔·손이 모두 따라가야 하는데, 손의 키프레임에 어깨 회전까지 미리 섞어 두면 동작을 섞거나 고칠 수 없기 때문입니다. 로컬로 저장해 두면 손의 <b>모델 공간 행렬</b>은 손에서 루트까지 로컬 행렬을 곱해 얻습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 340" role="img" aria-label="뼈 계층과 월드 행렬 사슬">
+		<title>뼈 계층과 월드 행렬 사슬</title>
+		<g class="ln s1" stroke-width="3">
+			<path d="M190,66 V168"/>
+			<path d="M190,100 L160,96 L130,100 L100,145 L88,185"/>
+			<path d="M190,168 L172,175 L165,240 L160,300 L140,310"/>
+			<path d="M190,168 L208,175 L215,240 L220,300 L240,310"/>
+		</g>
+		<path d="M190,100 L220,96 L250,100 L280,145 L292,185" class="ln sa" stroke-width="4"/>
+		<circle cx="190" cy="40" r="15" class="k1"/>
+		<g class="k1">
+			<circle cx="190" cy="66" r="4.5"/><circle cx="190" cy="100" r="4.5"/><circle cx="190" cy="135" r="4.5"/>
+			<circle cx="160" cy="96" r="4.5"/><circle cx="130" cy="100" r="4.5"/><circle cx="100" cy="145" r="4.5"/><circle cx="88" cy="185" r="4.5"/>
+			<circle cx="172" cy="175" r="4.5"/><circle cx="165" cy="240" r="4.5"/><circle cx="160" cy="300" r="4.5"/>
+			<circle cx="208" cy="175" r="4.5"/><circle cx="215" cy="240" r="4.5"/><circle cx="220" cy="300" r="4.5"/>
+		</g>
+		<g class="acc">
+			<circle cx="220" cy="96" r="5"/><circle cx="250" cy="100" r="5"/><circle cx="280" cy="145" r="5"/><circle cx="292" cy="185" r="5"/>
+		</g>
+		<circle cx="190" cy="168" r="7" class="acc"/>
+		<text x="212" y="45" class="t-small">Head</text>
+		<text x="176" y="160" text-anchor="end" class="t-small t-bold">Hips</text>
+		<text x="298" y="140" class="t-small">팔 사슬</text>
+		<line x1="40" y1="318" x2="340" y2="318" class="ln-d"/>
+		<path d="M184,318 L190,312 L196,318 L190,324 Z" class="acc"/>
+		<text x="204" y="334" class="t-muted">모델 루트 (엔티티)</text>
+
+		<text x="420" y="24" class="t-bold">월드 = 로컬 × 부모 월드 (행벡터 규약)</text>
+		<g class="t-small">
+			<rect x="430" y="40" width="280" height="34" rx="8" class="box"/><text x="570" y="62" text-anchor="middle">모델 루트 엔티티 (씬 배치)</text>
+			<rect x="430" y="88" width="280" height="34" rx="8" class="box"/><text x="570" y="110" text-anchor="middle">Hips — 로컬 T · R · S</text>
+			<rect x="430" y="136" width="280" height="34" rx="8" class="box"/><text x="570" y="158" text-anchor="middle">Spine → Chest</text>
+			<rect x="430" y="184" width="280" height="34" rx="8" class="acc"/><text x="570" y="206" text-anchor="middle">LeftShoulder → LeftUpperArm</text>
+			<rect x="430" y="232" width="280" height="34" rx="8" class="acc"/><text x="570" y="254" text-anchor="middle">LeftLowerArm</text>
+			<rect x="430" y="280" width="280" height="34" rx="8" class="acc"/><text x="570" y="302" text-anchor="middle">LeftHand (사슬의 끝)</text>
+		</g>
+		<path d="M570,74 V85" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,122 V133" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,170 V181" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,218 V229" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,266 V277" class="ln" marker-end="url(#arr)"/>
+		<text x="725" y="150" class="t-muted">부모가 움직이면</text>
+		<text x="725" y="168" class="t-muted">자식이 모두</text>
+		<text x="725" y="186" class="t-muted">따라간다</text>
+		<text x="725" y="290" class="t-muted">Hand 월드 =</text>
+		<text x="725" y="308" class="t-muted">위 전부의 곱</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 40-1.</b> 강조한 팔 사슬의 끝(손) 월드 행렬은 손 로컬부터 모델 루트까지 순서대로 곱한 것입니다. ProjectE는 행벡터 규약(<code>v * M</code>)이라 "자식 로컬 × 부모 월드" 순서로 씁니다.</figcaption>
+</figure>
+
+<p>ProjectE에서 뼈 하나의 로컬 포즈는 <code>FNodePose</code>(이동 + 쿼터니언 회전 + 스케일)이고, 행렬로 바꿀 때는 S·R·T 순서로 합성합니다. 계층을 따라 모델 공간 행렬을 만드는 함수는 부모가 배열에서 자식보다 뒤에 와도 동작하도록, 조상 사슬을 거슬러 올라갔다가 내려오며 계산합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Animation.h, Animation.cpp (발췌)"><span class="com">// 노드 로컬 트랜스폼 (부모 기준)</span>
+<span class="kw">struct</span> FNodePose
+{
+	FVector3 Translation;
+	FQuat    Rotation;
+	FVector3 Scale = FVector3::OneVector;
+	FMatrix4x4 ToMatrix() <span class="kw">const</span> { <span class="kw">return</span> FMatrix4x4::MakeTransform(Translation, Rotation, Scale); }
+};
+...
+<span class="com">// ComputeModelMatrices: 부모가 뒤에 올 수 있으므로 조상 체인을 따라 올라갔다가 내려오며 계산</span>
+OutMatrices[Current] = (Parent &gt;= <span class="num">0</span> &amp;&amp; ...) ? Pose[Current].ToMatrix() * OutMatrices[Parent]
+                                         : Pose[Current].ToMatrix();</pre>
+<div class="callout note">
+	<b class="t">"노드"와 "뼈"</b>
+	glTF에서는 뼈도 일반 노드입니다. 그래서 ProjectE 코드도 "노드"라고 부르고, 스킨이 참조하는 노드를 <b>조인트(joint)</b>라고 부릅니다. 이 강의에서 뼈·노드·조인트는 같은 것을 가리킵니다.
+</div>
+
+<h3 id="lec-40-bind"><span class="step">핵심 개념</span>바인드 포즈와 역바인드 행렬</h3>
+<p>아티스트는 메시를 특정 자세(보통 팔을 벌린 T 포즈나 A 포즈)에서 뼈에 붙입니다. 이 자세를 <b>바인드 포즈(bind pose)</b>라고 합니다. 메시의 정점 좌표는 바인드 포즈의 <b>모델 공간</b>에 저장되어 있습니다.</p>
+<p>문제는 "지금 팔꿈치가 90도 굽었다"는 정보를 정점에 어떻게 적용하느냐입니다. 정점을 팔꿈치 뼈를 따라 돌리려면, 먼저 정점을 <b>팔꿈치 뼈 기준 좌표</b>로 바꿔야 합니다(바인드 포즈 때 팔꿈치 뼈에서 얼마나 떨어져 있었나). 그 다음 지금 팔꿈치 뼈의 월드 행렬을 곱하면 정점이 뼈를 따라 옮겨집니다. "바인드 포즈의 모델 공간 → 뼈 공간" 변환은 바인드 포즈에서의 뼈 행렬의 역행렬이고, 이것을 <b>역바인드 행렬(inverse bind matrix)</b>이라 부릅니다. glTF 파일이 뼈마다 미리 계산해 담아 둡니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="역바인드 행렬과 현재 뼈 행렬로 정점을 옮기는 과정">
+		<title>역바인드 행렬과 본 팔레트</title>
+		<rect x="20" y="28" width="230" height="190" rx="10" class="box"/>
+		<rect x="315" y="28" width="230" height="190" rx="10" class="box"/>
+		<rect x="610" y="28" width="230" height="190" rx="10" class="box"/>
+		<text x="135" y="50" text-anchor="middle" class="t-bold">① 바인드 포즈 (모델 공간)</text>
+		<text x="430" y="50" text-anchor="middle" class="t-bold">② 뼈 i의 공간</text>
+		<text x="725" y="50" text-anchor="middle" class="t-bold">③ 지금 포즈 (월드)</text>
+
+		<rect x="40" y="126" width="190" height="28" rx="12" class="ln-d"/>
+		<path d="M45,140 H135 H225" class="ln s1" stroke-width="3"/>
+		<circle cx="45" cy="140" r="4.5" class="k1"/><circle cx="135" cy="140" r="6" class="acc"/><circle cx="225" cy="140" r="4.5" class="k1"/>
+		<circle cx="185" cy="132" r="4" class="f5"/>
+		<text x="185" y="116" text-anchor="middle" class="t-small">정점 v</text>
+		<text x="135" y="176" text-anchor="middle" class="t-small">뼈 i (팔꿈치)</text>
+
+		<path d="M360,160 H520" class="ln" marker-end="url(#arr)"/>
+		<path d="M360,160 V80" class="ln" marker-end="url(#arr)"/>
+		<path d="M360,160 H450" class="ln s1" stroke-width="3"/>
+		<circle cx="360" cy="160" r="6" class="acc"/>
+		<circle cx="410" cy="152" r="4" class="f5"/>
+		<text x="410" y="138" text-anchor="middle" class="t-mono">v × IB[i]</text>
+		<text x="360" y="184" class="t-small">원점 = 뼈 i</text>
+
+		<path d="M630,175 L715,175 L775,100" class="ln s1" stroke-width="3"/>
+		<circle cx="630" cy="175" r="4.5" class="k1"/><circle cx="715" cy="175" r="6" class="acc"/><circle cx="775" cy="100" r="4.5" class="k1"/>
+		<circle cx="740" cy="131" r="4" class="f5"/>
+		<text x="755" y="142" class="t-small">v′</text>
+		<text x="700" y="200" text-anchor="middle" class="t-small">같은 뼈, 지금 포즈</text>
+
+		<path d="M252,124 H311" class="ln" marker-end="url(#arr)"/>
+		<text x="282" y="114" text-anchor="middle" class="t-mono">× IB[i]</text>
+		<path d="M547,124 H606" class="ln" marker-end="url(#arr)"/>
+		<text x="577" y="114" text-anchor="middle" class="t-mono">× JW[i]</text>
+
+		<rect x="20" y="232" width="820" height="56" rx="10" class="acc"/>
+		<text x="40" y="256" class="t-bold">팔레트[i] = InverseBind[i] × JointWorld[i]</text>
+		<text x="40" y="277" class="t-small">바인드 포즈 그대로면 JointWorld = 바인드 행렬이므로 팔레트 = 단위 행렬 → 메시가 원래 모양 그대로 나온다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 40-2.</b> 역바인드(IB)는 정점을 "그 뼈 기준 좌표"로 옮기고, 지금의 조인트 월드 행렬(JW)이 다시 세계로 내보냅니다. 두 행렬을 미리 곱해 둔 것이 <b>본 팔레트</b>입니다.</figcaption>
+</figure>
+
+<p>ProjectE는 이 곱을 "팔레트"라 부르고, CPU에서 뼈마다 한 번 계산해 GPU로 올립니다. 스킨 메시를 그리는 엔티티는 런타임 전용 컴포넌트 <code>FSkinComponent</code>를 가집니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Components.h (발췌)"><span class="com">// 스킨 메시 바인딩 (모델 인스턴스화 시 생성되는 런타임 전용, 직렬화/리플렉션 제외).</span>
+<span class="com">// 본 행렬 = InverseBindMatrices[i] * Joints[i]의 월드 행렬 (스킨 메시 노드 자신의 트랜스폼은 무시 — glTF 규약)</span>
+<span class="kw">struct</span> FSkinComponent
+{
+	std::vector&lt;FEntity&gt;    Joints;
+	std::vector&lt;FMatrix4x4&gt; InverseBindMatrices;
+};</pre>
+<p>주석의 마지막 줄이 중요합니다. 팔레트가 정점을 <b>바로 월드 공간</b>으로 보내므로, 스킨 메시를 그릴 때는 메시 노드 자신의 월드 행렬을 곱하지 않습니다(셰이더 쪽 World는 항등). 조인트 월드 행렬에 이미 모델 루트의 배치가 들어 있기 때문입니다.</p>
+
+<h3 id="lec-40-keys"><span class="step">핵심 개념</span>키프레임 보간 — lerp, slerp, nlerp</h3>
+<p>클립은 뼈마다, 속성(이동/회전/스케일)마다 하나의 <b>채널</b>입니다. 채널은 오름차순 시각 배열과 같은 개수의 값 배열을 가집니다. 키와 키 사이 시각이 주어지면 양쪽 키를 찾아 그 사이 비율 α로 보간합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Animation.h (발췌)"><span class="com">// 노드 하나의 속성 하나에 대한 키프레임 트랙</span>
+<span class="kw">struct</span> FAnimationChannel
+{
+	int32                   Node          = -<span class="num">1</span>; <span class="com">// 모델 노드 인덱스</span>
+	EAnimationPath          Path          = EAnimationPath::Translation;
+	EAnimationInterpolation Interpolation = EAnimationInterpolation::Linear;
+	std::vector&lt;<span class="kw">float</span>&gt;      Times;  <span class="com">// 오름차순 (초)</span>
+	std::vector&lt;FVector4&gt;   Values; <span class="com">// Times와 같은 개수. 이동/스케일은 xyz</span>
+};</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="키프레임 직선 보간과 쿼터니언 slerp, nlerp 비교">
+		<title>키프레임 보간</title>
+		<text x="50" y="20" class="t-bold">이동·스케일: 키 사이 직선 보간</text>
+		<text x="50" y="40" class="t-mono">α = (t − Times[Prev]) / (Times[Next] − Times[Prev])</text>
+		<path d="M50,230 H405" class="ln" marker-end="url(#arr)"/>
+		<path d="M50,230 V55" class="ln" marker-end="url(#arr)"/>
+		<path d="M80,200 L180,110 L290,150 L380,70" class="ln s1" stroke-width="2"/>
+		<g class="k1"><circle cx="80" cy="200" r="5"/><circle cx="180" cy="110" r="5"/><circle cx="290" cy="150" r="5"/><circle cx="380" cy="70" r="5"/></g>
+		<line x1="180" y1="110" x2="180" y2="230" class="ln-d"/>
+		<line x1="290" y1="150" x2="290" y2="230" class="ln-d"/>
+		<line x1="230" y1="128" x2="230" y2="230" class="ln-d"/>
+		<circle cx="230" cy="128" r="5" class="f5"/>
+		<text x="180" y="248" text-anchor="middle" class="t-small">Times[Prev]</text>
+		<text x="290" y="248" text-anchor="middle" class="t-small">Times[Next]</text>
+		<text x="230" y="266" text-anchor="middle" class="t-small">샘플 시각 t</text>
+		<text x="244" y="122" class="t-small">A + (B − A)·α</text>
+
+		<text x="470" y="20" class="t-bold">회전: 쿼터니언은 (4차원) 구 위의 점</text>
+		<text x="470" y="40" class="t-muted">slerp = 호를 일정 각속도로 / nlerp = 직선 보간 후 길이 1로</text>
+		<path d="M517.8,145.5 A130,130 0 0 1 762.2,145.5" class="ln s2" stroke-width="2"/>
+		<line x1="517.8" y1="145.5" x2="762.2" y2="145.5" class="ln-d"/>
+		<line x1="640" y1="190" x2="517.8" y2="145.5" class="ln"/>
+		<line x1="640" y1="190" x2="762.2" y2="145.5" class="ln"/>
+		<line x1="640" y1="190" x2="534.9" y2="113.5" class="ln-d"/>
+		<circle cx="640" cy="190" r="3" class="f1"/>
+		<circle cx="517.8" cy="145.5" r="5" class="k1"/><circle cx="762.2" cy="145.5" r="5" class="k1"/>
+		<circle cx="565.4" cy="83.5" r="5" class="f2"/>
+		<circle cx="578.9" cy="145.5" r="4" class="f4"/>
+		<circle cx="534.9" cy="113.5" r="5" class="f5"/>
+		<text x="505" y="150" text-anchor="end" class="t-bold">A</text>
+		<text x="773" y="150" class="t-bold">B</text>
+		<text x="556" y="74" text-anchor="end" class="t-small">slerp α=¼</text>
+		<text x="524" y="112" text-anchor="end" class="t-small">nlerp α=¼</text>
+		<text x="588" y="137" class="t-small">lerp</text>
+		<text x="640" y="210" text-anchor="middle" class="t-muted">원점</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 40-3.</b> 왼쪽: 이동·스케일 채널은 이웃 키를 직선으로 잇습니다. 오른쪽: 회전을 성분별로 직선 보간하면 길이가 1보다 작아져(현 위의 점) 회전이 아니게 되므로, 호 위를 따라가거나(slerp) 다시 길이를 1로 맞춥니다(nlerp). 둘은 같은 α에서 조금 다른 점에 닿습니다.</figcaption>
+</figure>
+
+<p>쿼터니언은 길이 1인 4차원 벡터라 "단위 구 위의 점"으로 볼 수 있습니다. 성분마다 직선 보간하면 두 점을 잇는 현 위의 점이 되어 길이가 줄어듭니다. 두 가지 해법이 있습니다.</p>
+<ul>
+	<li><b>slerp(구면 선형 보간)</b>: 두 회전 사이 각도 θ를 구해 <code>sin((1−α)θ)/sin θ · A + sin(αθ)/sin θ · B</code>. 호를 따라 일정한 각속도로 움직입니다. 키 두 개 사이를 정확히 따라가야 하는 클립 샘플링에 씁니다.</li>
+	<li><b>nlerp(정규화 선형 보간)</b>: 그냥 성분별 가중 합 후 길이로 나눕니다. 각속도가 약간 일정하지 않지만 싸고, 무엇보다 <b>여러 개를 한꺼번에 가중 합</b>할 수 있습니다. 41강의 블렌드 스페이스처럼 클립 서너 개를 섞을 때 씁니다.</li>
+</ul>
+<p>어느 쪽이든 <code>q</code>와 <code>−q</code>는 같은 회전이므로, 내적이 음수면 한쪽 부호를 뒤집어 "가까운 쪽 반구"로 맞춥니다. 그러지 않으면 350도를 거꾸로 돌아가는 회전이 나옵니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Animation.cpp — AnimationMath::SampleChannel (발췌)"><span class="com">// Times[Next - 1] &lt;= Time &lt; Times[Next]</span>
+<span class="kw">const auto</span>   Upper = std::upper_bound(Channel.Times.begin(), Channel.Times.begin() + Count, Time);
+<span class="kw">const</span> size_t Next  = <span class="kw">static_cast</span>&lt;size_t&gt;(Upper - Channel.Times.begin());
+<span class="kw">const</span> size_t Prev  = Next - <span class="num">1</span>;
+<span class="kw">if</span> (Channel.Interpolation == EAnimationInterpolation::Step)
+{
+	<span class="kw">return</span> Channel.Values[Prev];
+}
+<span class="kw">const float</span> Span  = Channel.Times[Next] - Channel.Times[Prev];
+<span class="kw">const float</span> Alpha = Span &gt; FMath::SmallNumber ? (Time - Channel.Times[Prev]) / Span : <span class="num">0.0f</span>;
+...
+<span class="kw">if</span> (Channel.Path == EAnimationPath::Rotation)
+{
+	<span class="kw">const</span> FQuat Q = FQuat::Slerp(FQuat(A.X, A.Y, A.Z, A.W), FQuat(B.X, B.Y, B.Z, B.W), Alpha);
+	<span class="kw">return</span> FVector4(Q.X, Q.Y, Q.Z, Q.W);
+}
+<span class="kw">return</span> A + (B - A) * Alpha;</pre>
+<p>키 찾기는 이진 탐색(<code>upper_bound</code>)이고, 범위 밖 시각은 끝 키로 고정됩니다. <code>FQuat::Slerp</code>는 두 회전이 거의 같으면(cos θ ≥ 0.9999) <code>sin θ</code>로 나누는 것이 불안정하므로 선형 보간으로 대신합니다. 재생 시각 진행(<code>AdvanceTime</code>)은 루프면 <code>[0, 길이)</code>로 감고 "감았다"는 표시를 돌려주는데, 이 표시는 42강의 노티파이와 43강의 루트 모션이 루프 경계를 정확히 다루는 데 쓰입니다.</p>
+
+<h3 id="lec-40-lbs"><span class="step">핵심 개념</span>선형 블렌드 스키닝</h3>
+<p>팔꿈치 근처 정점은 위팔과 아래팔 둘 다를 조금씩 따라가야 자연스럽게 접힙니다. 그래서 정점마다 최대 4개의 뼈와 가중치(합 1)를 두고, 각 뼈의 팔레트로 옮긴 결과를 가중 평균합니다. 이것이 <b>선형 블렌드 스키닝(Linear Blend Skinning, LBS)</b>입니다.</p>
+<div class="callout note">
+	<b class="t">식</b>
+	v′ = Σ<sub>k=1..4</sub> w<sub>k</sub> · ( v × 팔레트[j<sub>k</sub>] ) &nbsp;=&nbsp; v × ( Σ w<sub>k</sub> · 팔레트[j<sub>k</sub>] ) &nbsp;&nbsp;(Σ w<sub>k</sub> = 1)<br>
+	행렬 곱이 선형이므로 "점을 4번 옮겨 섞기"와 "행렬 4개를 먼저 섞고 한 번 옮기기"가 같습니다. 셰이더는 뒤쪽을 씁니다 — 법선·탄젠트도 같은 섞인 행렬로 변환할 수 있기 때문입니다.
+</div>
+<p>행렬을 성분별로 섞으면 회전 부분이 더 이상 순수한 회전이 아니게 되어, 비틀림이 큰 관절(손목을 180도 돌리기 등)에서 부피가 줄어드는 현상이 알려져 있습니다(흔히 "사탕 포장지" 현상이라 부릅니다). 그래도 LBS는 빠르고 단순해서 대부분의 게임이 기본으로 씁니다.</p>
+<p>ProjectE의 스킨 정점 데이터는 일반 정점과 <b>다른 정점 버퍼 슬롯</b>에 둡니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/SkinnedMeshData.h (발췌)"><span class="com">// 스킨 정점 스트림 (정점 버퍼 슬롯 1). FVertex(슬롯 0)와 같은 개수·순서.</span>
+<span class="com">// 정적 메시는 이 스트림이 없으므로 정적 경로의 정점 크기/대역폭은 그대로다.</span>
+<span class="kw">struct</span> FSkinVertex
+{
+	uint16   Joints[<span class="num">4</span>]  = { <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span> };                 <span class="com">// FSkinComponent::Joints 인덱스</span>
+	FVector4 Weights    = FVector4(<span class="num">1.0f</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>); <span class="com">// 합 = 1</span>
+};
+<span class="kw">static_assert</span>(<span class="kw">sizeof</span>(FSkinVertex) == <span class="num">24</span>);
+
+<span class="kw">inline constexpr</span> uint32 MaxSkinJoints = <span class="num">256</span>;</pre>
+<div class="callout tip">
+	<b class="t">왜 스트림을 나누나</b>
+	<code>FVertex</code>(위치·법선·탄젠트·UV·색, 64바이트)에 뼈 번호와 가중치를 그냥 붙이면, 뼈가 없는 정적 메시까지 정점이 커져서 대역폭을 낭비합니다. 슬롯 1에 따로 두면 정적 메시 정점 형식은 그대로이고, 스킨 메시만 24바이트 스트림을 하나 더 묶습니다. 뒤에서 볼 스킨 메시 LOD가 "기존 정점만 쓰는 QEM 단순화라 슬롯 1 스트림을 그대로 공유한다"는 것도 이 분리 덕분입니다.
+</div>
+<p>GPU 쪽 계산은 몇 줄뿐입니다. 프레임의 모든 팔레트가 한 구조화 버퍼 <code>SkinBones</code>(t15)에 이어 붙어 있고, 인스턴스마다 자기 팔레트가 시작하는 자리 <code>BoneOffset</code>을 압니다.</p>
+<pre class="code" data-file="Engine/Shaders/SkinnedMesh.hlsli"><span class="com">// 팔레트[BoneOffset + i] = InverseBind[i] * JointWorld[i] (행벡터 규약) — 스킨 정점은 바로 월드 공간으로 변환된다</span>
+StructuredBuffer&lt;float4x4&gt; SkinBones : <span class="kw">register</span>(t15);
+
+float4x4 ComputeSkinMatrix(uint BoneOffset, uint4 Joints, float4 Weights)
+{
+	<span class="kw">return</span> SkinBones[BoneOffset + Joints.x] * Weights.x + SkinBones[BoneOffset + Joints.y] * Weights.y +
+	       SkinBones[BoneOffset + Joints.z] * Weights.z + SkinBones[BoneOffset + Joints.w] * Weights.w;
+}</pre>
+<pre class="code" data-file="Engine/Shaders/Mesh.hlsl — VSSkinned (발췌)"><span class="kw">const</span> FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+<span class="kw">const</span> float4x4      Skin     = ComputeSkinMatrix(Instance.BoneOffset, Input.Joints, Input.Weights);
+<span class="kw">const</span> float4   WorldPosition = mul(float4(Input.Position, <span class="num">1.0f</span>), Skin);
+<span class="kw">const</span> float3x3 Skin3         = (float3x3)Skin;
+Output.Position      = mul(WorldPosition, ViewProjection);
+<span class="kw">const</span> float4x4 PrevSkin = ComputeSkinMatrix(Instance.PrevBoneOffset, Input.Joints, Input.Weights);
+Output.PreviousClip  = mul(mul(float4(Input.Position, <span class="num">1.0f</span>), PrevSkin), PrevViewProjection);
+Output.WorldNormal   = normalize(mul(Input.Normal, Skin3));</pre>
+<p><code>PrevBoneOffset</code>는 <b>지난 프레임의 팔레트</b>를 가리킵니다. TAA·모션 블러 같은 시간 효과는 픽셀마다 "지난 프레임에 이 점이 화면 어디에 있었나"(움직임 벡터)를 알아야 하는데, 스킨 메시는 물체가 제자리에 있어도 팔다리가 움직이므로 정점을 지난 팔레트로도 한 번 더 변환해야 합니다.</p>
+
+<h3 id="lec-40-projecte"><span class="step">ProjectE에서는</span>한 프레임의 흐름과 본 팔레트 버퍼</h3>
+<p>애니메이션에서 화면까지 한 프레임은 이렇게 흐릅니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="스키닝 프레임 흐름과 팔레트 버퍼 배치">
+		<title>스키닝 한 프레임</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="150" height="60" rx="10" class="k2"/>
+			<text x="95" y="54" text-anchor="middle" class="t-bold">FAnimationSystem</text>
+			<text x="95" y="74" text-anchor="middle" class="t-muted">뼈 엔티티 로컬 TRS</text>
+			<rect x="190" y="30" width="150" height="60" rx="10" class="box"/>
+			<text x="265" y="54" text-anchor="middle" class="t-bold">UpdateTransforms</text>
+			<text x="265" y="74" text-anchor="middle" class="t-muted">조인트 월드 행렬</text>
+			<rect x="360" y="30" width="150" height="60" rx="10" class="acc"/>
+			<text x="435" y="54" text-anchor="middle" class="t-bold">Palette::Build</text>
+			<text x="435" y="74" text-anchor="middle" class="t-muted">가시성 → IB × JW</text>
+			<rect x="530" y="30" width="150" height="60" rx="10" class="k1"/>
+			<text x="605" y="54" text-anchor="middle" class="t-bold">동적 업로드 버퍼</text>
+			<text x="605" y="74" text-anchor="middle" class="t-muted">프레임에 한 번 (t15)</text>
+			<rect x="700" y="30" width="140" height="60" rx="10" class="k3"/>
+			<text x="770" y="54" text-anchor="middle" class="t-bold">VSSkinned</text>
+			<text x="770" y="74" text-anchor="middle" class="t-muted">모든 스킨 패스</text>
+		</g>
+		<path d="M170,60 H186" class="ln" marker-end="url(#arr)"/>
+		<path d="M340,60 H356" class="ln" marker-end="url(#arr)"/>
+		<path d="M510,60 H526" class="ln" marker-end="url(#arr)"/>
+		<path d="M680,60 H696" class="ln" marker-end="url(#arr)"/>
+		<path d="M605,92 V154" class="ln-d"/>
+
+		<text x="20" y="150" class="t-small t-bold">이번 프레임 팔레트들</text>
+		<text x="440" y="150" class="t-small t-bold">이전 프레임 팔레트들</text>
+		<g class="t-small">
+			<rect x="20" y="160" width="180" height="40" class="acc"/><text x="110" y="185" text-anchor="middle">모델 A (뼈 n개)</text>
+			<rect x="200" y="160" width="130" height="40" class="k2"/><text x="265" y="185" text-anchor="middle">모델 B</text>
+			<rect x="330" y="160" width="100" height="40" class="k4"/><text x="380" y="185" text-anchor="middle">모델 C</text>
+			<rect x="440" y="160" width="180" height="40" class="box"/><text x="530" y="185" text-anchor="middle">A (지난 프레임)</text>
+			<rect x="620" y="160" width="130" height="40" class="box"/><text x="685" y="185" text-anchor="middle">B</text>
+			<rect x="750" y="160" width="90" height="40" class="box"/><text x="795" y="185" text-anchor="middle">C</text>
+			<rect x="20" y="236" width="130" height="48" rx="8" class="k1"/>
+			<text x="85" y="256" text-anchor="middle">A 머리 프리미티브</text>
+			<text x="85" y="275" text-anchor="middle" class="t-mono">BoneOffset 0</text>
+			<rect x="160" y="236" width="130" height="48" rx="8" class="k1"/>
+			<text x="225" y="256" text-anchor="middle">A 몸 프리미티브</text>
+			<text x="225" y="275" text-anchor="middle" class="t-mono">BoneOffset 0</text>
+			<rect x="300" y="236" width="130" height="48" rx="8" class="k1"/>
+			<text x="365" y="256" text-anchor="middle">B 몸 프리미티브</text>
+			<text x="365" y="275" text-anchor="middle" class="t-mono">BoneOffset n</text>
+		</g>
+		<path d="M85,236 L26,204" class="ln" marker-end="url(#arr)"/>
+		<path d="M225,236 L32,204" class="ln" marker-end="url(#arr)"/>
+		<path d="M365,236 L205,204" class="ln" marker-end="url(#arr)"/>
+		<text x="460" y="250" class="t-small">인스턴스는 BoneOffset · PrevBoneOffset만 든다</text>
+		<text x="460" y="270" class="t-small">같은 스킨의 프리미티브는 같은 범위를 공유</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 40-4.</b> 위: 애니메이션 → 트랜스폼 → 팔레트 → 업로드 → 정점 셰이더. 아래: 업로드 버퍼 안의 배치. 한 모델의 여러 프리미티브(머리, 몸 …)는 같은 조인트·역바인드를 쓰므로 팔레트 하나를 같이 가리킵니다.</figcaption>
+</figure>
+
+<h4>팔레트는 프레임에 한 번, 스킨 단위로</h4>
+<p>팔레트를 만드는 곳은 렌더러의 <code>FSkinnedMeshPalette::Build</code> 하나입니다. 메인 패스, 방향광 그림자, 로컬 라이트 그림자, 선택 아웃라인이 모두 같은 버퍼를 <code>BoneOffset</code>으로 인덱싱합니다. 패스마다 팔레트를 다시 계산하거나 올리지 않는다는 뜻입니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/SkinnedMeshPalette.h (머리 주석 발췌)"><span class="com">// 팔레트 공유: 한 모델의 여러 프리미티브 엔티티는 각자 FSkinComponent를 갖지만 조인트 엔티티 목록과 역바인드 행렬이 같으면</span>
+<span class="com">//   팔레트 하나(같은 BoneOffset/PrevBoneOffset)를 쓴다 (그룹 = 이번 프레임 처음 나온 엔티티가 대표). 가시성·경계는 프리미티브마다.</span>
+<span class="com">// 계산 (모두 결정적 — 결과는 실행 순서와 무관, IsVisible은 여러 스레드에서 불린다 — 읽기 전용이어야 한다):</span>
+<span class="com">//   1) 후보 조회(병렬) → 2) 그룹 묶기(호출 스레드) → 그룹 평가(병렬) →</span>
+<span class="com">//   3) 업로드 자리·드로우 번호(호출 스레드) → 4) 그룹마다 병렬: 팔레트/경계/업로드 버퍼에 직접 쓰기/이력/드로우 정보</span>
+<span class="com">// 호출: FScene::UpdateTransforms 이후, 그림자 캐스터 볼륨(캐스케이드/로컬 그림자 장)을 정한 뒤, 메시 인스턴스 Gather 전에 Build</span></pre>
+<p>여기에 세 가지 설계가 겹쳐 있습니다.</p>
+<ol>
+	<li><b>가시성 먼저</b>: 팔레트를 계산하기 전에 "조인트 위치 + 조인트별 반경"으로 보수적인 경계 상자를 만들어 판정합니다. 보이지 않는 캐릭터는 팔레트도, 업로드도, 그리기도 하지 않습니다. 판정 기준은 "메인 카메라 프러스텀 ∪ 그림자 캐스터 볼륨"입니다 — 화면 밖에 서 있지만 그림자가 화면 안으로 드리우는 캐릭터도 있기 때문입니다.</li>
+	<li><b>스킨 단위 공유</b>: glTF 모델은 머티리얼마다 프리미티브(엔티티)가 나뉘는데, 모두 같은 뼈를 씁니다. 조인트 목록과 역바인드가 같으면 그룹으로 묶어 팔레트를 한 번만 계산합니다.</li>
+	<li><b>결정적 병렬</b>: 그룹마다 <code>FParallel::ParallelFor</code>로 나눠 계산하되, 업로드 버퍼 안 자리는 미리 호출 스레드에서 정해 두므로 실행 순서와 결과가 무관합니다(같은 입력이면 같은 화면).</li>
+</ol>
+
+<h4>뼈 = 엔티티</h4>
+<p>ProjectE는 모델을 인스턴스화할 때 glTF 노드마다 <b>엔티티를 하나씩</b> 만듭니다(<code>FAnimationRuntime::NodeEntities</code>). 애니메이션 시스템은 뼈 엔티티의 로컬 트랜스폼에 포즈를 쓰고, 월드 행렬은 씬의 일반 트랜스폼 갱신(<code>FScene::UpdateTransforms</code>)이 계산합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>장점</th><th>단점</th></tr>
+	<tr><td>계층 패널에서 뼈가 보이고 선택된다. 소켓(42강)·래그돌·스크립트가 뼈를 그냥 "엔티티"로 다룬다. 월드 행렬 계산을 따로 만들 필요가 없다(트랜스폼 캐시·병렬 갱신을 그대로 씀).</td>
+	<td>뼈마다 엔티티·트랜스폼 컴포넌트가 생긴다. CLAUDE.md는 이것을 알려진 한계로 적어 둡니다: "뼈 = 엔티티(유닛당 엔티티 약 50개 — 수천 마리 군중 부적합)".</td></tr>
+</table></div>
+<p>애니메이션 갱신 자체도 규모에 맞게 나뉘어 있습니다. <code>FAnimationSystem::Update</code>는 <b>준비(메인 스레드, 엔티티 순서) → 포즈 평가(엔티티별 병렬) → 마무리(메인)</b>의 세 단계이고, 평가 단계 코드는 로그·ECS 구조 변경·콜백·다른 엔티티 쓰기를 하지 않는다는 규칙을 따릅니다. 화면에 작게 보이는 모델은 몇 프레임마다 한 번만 평가하는 <b>갱신 빈도 LOD(URO)</b>도 있습니다 — 건너뛴 시간은 다음 평가가 한 번에 진행하므로 노티파이(42강)를 잃지 않습니다.</p>
+
+<h3 id="lec-40-pitfalls"><span class="step">함정과 교훈</span>"보이는 것만, 한 번만"</h3>
+<div class="callout story">
+	<b class="t">스킨 메시 인스턴싱 (Phase 29)</b>
+	처음에는 스킨 메시마다 팔레트를 상수 버퍼(b4)로 묶어 하나씩 그렸습니다. Phase 29에서 팔레트를 프레임 구조화 버퍼(t15)로 모으고 인스턴스 데이터의 <code>BoneOffset</code>으로 인덱싱하게 바꾸자, 스킨 228개 스트레스 씬의 드로우가 145/822 → 2/8로, Release 프레임이 3.53 → 2.23ms로 줄었습니다(Plans.md 29-2). 같은 Phase에서 팔레트 가시성 컬링을 넣어 먼 군중을 볼 때 업로드가 372 → 4KB로 줄었습니다.
+</div>
+<div class="callout story">
+	<b class="t">팔레트를 프리미티브마다 계산하고 있었다</b>
+	스킨 유닛 500개 스트레스 씬에서 팔레트 계산이 3609번이었습니다 — 모델 하나가 프리미티브 여러 개로 나뉘어 있었기 때문입니다. 조인트 목록 + 역바인드가 같은 프리미티브끼리 공유하게 바꾸자 팔레트 500개, 업로드 19.5MB → 3.5MB/프레임, 수집 9.2 → 2.3ms가 되었고, 정지 포즈 화면 MD5는 이전과 같았습니다(커밋 4b78587).
+</div>
+<div class="callout warn">
+	<b class="t">규칙: 새 그림자 패스는 팔레트 가시성 판정에도 넣는다</b>
+	팔레트 가시성은 "메인 프러스텀 ∪ 그림자 캐스터 볼륨"으로 정해지고, 판정에서 빠진 엔티티(<code>IsCulled</code>)는 그 프레임 어떤 패스에도 나오지 않습니다. 새 그림자 패스를 추가하면서 이 판정에 넣지 않으면, 화면 밖 캐릭터의 그림자가 사라집니다(CLAUDE.md "스킨 인스턴싱/컬링 보강"). 같은 이유로 그림자 캐스터 볼륨은 팔레트보다 먼저 정해야 합니다.
+</div>
+<p>포즈 평가를 병렬로 바꾸고 URO를 넣은 작업에서는 스트레스 씬(1280x720)의 게임 틱 CPU가 14.2 → 2.7ms, 프레임이 26.9 → 16.5ms가 되었습니다(커밋 e0f4398). 이때 결과가 순차 실행과 같은지 확인하는 테스트(모델 300개, 간격 혼합, 크로스페이드, 비트 해시 비교)를 함께 넣었습니다 — 병렬화는 빨라지는 것보다 <b>같은 결과</b>가 먼저입니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>뼈는 부모 기준 로컬 포즈로 저장하고, 월드 = 로컬 × 부모 월드로 사슬을 곱한다.</li>
+		<li>역바인드 행렬은 바인드 포즈 정점을 뼈 공간으로 옮기고, 팔레트 = InverseBind × JointWorld는 정점을 바로 월드로 보낸다.</li>
+		<li>이동·스케일은 lerp, 회전은 slerp(키 사이)·nlerp(여러 개 가중 합). q와 −q는 같은 회전이므로 반구를 맞춘다.</li>
+		<li>LBS: 정점마다 뼈 4개·가중치 합 1, 행렬을 먼저 섞어 한 번 변환. 스킨 데이터는 슬롯 1 스트림(24바이트).</li>
+		<li>팔레트는 프레임에 한 번, 보이는 것만(그림자 포함), 스킨 단위로 공유해 병렬 계산하고 t15 하나로 모든 패스가 쓴다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 스킨 메시 노드 자신에게 이동이 걸려 있는데 셰이더에서 그 World 행렬을 곱하지 않습니다. 왜 맞을까요?</summary>
+	팔레트의 JointWorld에 모델 루트부터 그 뼈까지의 월드 배치가 이미 들어 있으므로, 팔레트를 곱한 정점은 이미 월드 공간입니다. 여기에 메시 노드의 World를 또 곱하면 배치가 두 번 적용됩니다. glTF 규약도 "스킨 메시 노드의 트랜스폼은 무시"이고, <code>FSkinComponent</code> 주석에 그대로 적혀 있습니다.
+</details>
+<details class="quiz"><summary>Q2. 블렌드 스페이스로 클립 세 개를 섞을 때 slerp가 아니라 nlerp를 쓰는 이유는?</summary>
+	slerp는 두 회전 사이에서만 정의됩니다. 세 개 이상을 섞으려면 slerp를 두 번 중첩해야 하는데 순서에 따라 결과가 달라집니다. nlerp는 가중 합(반구 맞춤) 후 정규화라 몇 개든 순서와 무관하게 한 번에 섞을 수 있고 쌉니다. 프레임 사이 포즈 차이가 작아 각속도 오차는 눈에 띄지 않습니다.
+</details>
+<details class="quiz"><summary>Q3. 화면 밖에 있는 캐릭터의 팔레트를 계산하지 않는 최적화가 버그가 되는 경우는?</summary>
+	그 캐릭터가 화면 안으로 그림자를 드리울 때입니다. 팔레트가 없으면 그림자 패스에서도 그릴 수 없어 그림자가 사라집니다. 그래서 ProjectE는 가시성을 "메인 프러스텀 ∪ CSM 캐스케이드 ∪ 로컬 그림자 장"으로 판정하고, 그림자 캐스터 볼륨을 팔레트보다 먼저 정합니다. 한편 애니메이션 갱신 자체를 화면 밖이라고 건너뛰는 일은 Phase 29에서 측정해 보니 이득이 없어 하지 않았고, 후속 목록에 "소켓 대상 제외"가 함께 적혀 있습니다 — 소켓에 붙은 무기처럼 그리기 외의 이유로 뼈 위치가 필요한 경우가 있기 때문입니다.
+</details>
+</article>
+
+<!-- ======================================================= 41강 ======================================================= -->
+<article class="lecture" id="lec-41">
+<header>
+	<div class="no">41강</div>
+	<h2 id="lec-41-title">애니메이션 그래프</h2>
+	<div class="meta">관련 Phase: 27, 35-1, 42 · 살펴볼 곳: <code>Scene/AnimGraph.h</code>(머리 주석), <code>Scene/AnimGraph.cpp</code>, <code>Scene/AnimMontage.h</code>, <code>Projects/Sample/Content/Animations/FoxCharacter.eanimgraph</code>, <code>…/Demo/Training/StrafeDrill.eanimgraph</code>, <code>…/RPG/KnightRPG.eanimgraph</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>상태 머신의 전이 규칙(목록 순서대로 첫 일치, 조건 AND, ExitTime)과 smoothstep 크로스페이드를 설명할 수 있습니다.</li>
+		<li>1D/2D 블렌드 스페이스가 가중치를 어떻게 계산하는지, 왜 정규화 시간(Phase)으로 클립을 동기화하는지 압니다.</li>
+		<li>레이어·본 마스크·몽타주 슬롯이 최종 포즈에 겹쳐지는 순서를 그릴 수 있습니다.</li>
+		<li>그래프 파라미터가 왜 복제되지 않는지, <code>bUseCharacterMovement</code>가 무엇을 자동으로 넣는지 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-41-why"><span class="step">왜 필요한가</span>"지금 무슨 클립을 틀까"는 생각보다 복잡하다</h3>
+<p>40강까지로 클립 하나는 재생할 수 있습니다. 그런데 플레이어 캐릭터는 서 있다가, 걷다가, 뛰다가, 점프하고, 떨어지고, 착지합니다. 걷기와 뛰기 사이의 속도에서는 둘을 섞어야 하고, 뛰다가 공격하면 상체만 공격 동작을 해야 합니다. 이것을 스크립트에 <code>if (속도 &gt; 300) Play("Run")</code>처럼 쓰기 시작하면 조건이 서로 얽히고, 동작 하나를 추가할 때마다 코드 여러 곳을 고쳐야 합니다.</p>
+<p>상용 엔진은 이 판단을 <b>데이터로 된 그래프</b>로 뺍니다(언리얼의 애니메이션 블루프린트 상태 머신, 유니티의 Animator). 게임 코드는 "지금 속도는 얼마, 바닥에 있음" 같은 <b>파라미터</b>만 넣고, 어떤 클립을 어떻게 섞을지는 그래프가 정합니다. ProjectE의 그래프 에셋은 <code>.eanimgraph</code>(JSON)이고, 모델 루트에 <code>FAnimGraphComponent</code>를 붙이면 <code>FAnimationSystem</code>이 단일 클립 대신 그래프로 포즈를 만듭니다.</p>
+
+<h3 id="lec-41-sm"><span class="step">핵심 개념</span>상태 머신과 전이</h3>
+<p><b>상태(state)</b>는 "지금 재생할 것" 하나입니다 — 클립 하나이거나, 뒤에서 볼 블렌드 스페이스입니다. <b>전이(transition)</b>는 "어느 상태에서 어느 상태로, 어떤 조건이면, 몇 초에 걸쳐 섞으며 넘어간다"입니다. Phase 27에서 만든 여우 플레이어 그래프가 좋은 예입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="여우 캐릭터 상태 머신">
+		<title>FoxCharacter 상태 머신</title>
+		<path d="M14,150 H46" class="ln" marker-end="url(#arr)"/>
+		<text x="14" y="140" class="t-muted">시작</text>
+		<rect x="50" y="100" width="200" height="100" rx="12" class="k2"/>
+		<text x="150" y="130" text-anchor="middle" class="t-bold">Locomotion</text>
+		<text x="150" y="152" text-anchor="middle" class="t-small">1D 블렌드: Speed</text>
+		<text x="150" y="172" text-anchor="middle" class="t-muted">Survey 0 · Walk 120 · Run 450</text>
+		<rect x="380" y="20" width="160" height="56" rx="12" class="k1"/>
+		<text x="460" y="44" text-anchor="middle" class="t-bold">Jump</text>
+		<text x="460" y="64" text-anchor="middle" class="t-muted">Run × 0.35배속</text>
+		<rect x="380" y="214" width="160" height="56" rx="12" class="k4"/>
+		<text x="460" y="238" text-anchor="middle" class="t-bold">Fall</text>
+		<text x="460" y="258" text-anchor="middle" class="t-muted">Walk × 0.3배속</text>
+		<path d="M250,120 L376,58" class="ln" marker-end="url(#arr)"/>
+		<path d="M376,72 L254,136" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,180 L376,242" class="ln" marker-end="url(#arr)"/>
+		<path d="M376,228 L254,164" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,76 V210" class="ln" marker-end="url(#arr)"/>
+		<g class="t-bold">
+			<text x="296" y="84" class="fa">①</text>
+			<text x="314" y="126" class="fa">④</text>
+			<text x="296" y="228" class="fa">②</text>
+			<text x="314" y="182" class="fa">⑤</text>
+			<text x="468" y="148" class="fa">③</text>
+		</g>
+		<text x="580" y="30" class="t-bold">전이 (목록 순서 = 우선순위)</text>
+		<g class="t-small">
+			<text x="580" y="58">① Locomotion → Jump (0.1초)</text>
+			<text x="596" y="76" class="t-muted">Grounded == false, VerticalSpeed &gt; 50</text>
+			<text x="580" y="100">② Locomotion → Fall (0.2초)</text>
+			<text x="596" y="118" class="t-muted">Grounded == false, VerticalSpeed &lt; −150</text>
+			<text x="580" y="142">③ Jump → Fall (0.25초)</text>
+			<text x="596" y="160" class="t-muted">VerticalSpeed &lt; 0</text>
+			<text x="580" y="184">④ Jump → Locomotion (0.15초)</text>
+			<text x="596" y="202" class="t-muted">Grounded == true, VerticalSpeed ≤ 50</text>
+			<text x="580" y="226">⑤ Fall → Locomotion (0.15초)</text>
+			<text x="596" y="244" class="t-muted">Grounded == true</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 41-1.</b> <code>FoxCharacter.eanimgraph</code>의 상태 셋과 전이 다섯. 번호는 파일의 <code>Transitions</code> 순서이고, 조건은 모두 참이어야(AND) 통과합니다. Jump/Fall은 전용 클립이 없어 기존 클립을 느리게 틀어 대신합니다.</figcaption>
+</figure>
+
+<p>전이를 고르는 규칙은 단순하지만 정확히 알아야 합니다.</p>
+<ul>
+	<li><b>목록 순서대로 처음 맞는 것 하나만</b>, 프레임당 최대 한 번. 그래서 목록 순서가 곧 우선순위입니다.</li>
+	<li><code>From</code>이 <code>"*"</code>면 "어느 상태에서든"(단, 목적지 자신은 제외). 사망처럼 어디서든 끼어들어야 하는 전이에 씁니다.</li>
+	<li><code>ExitTime ≥ 0</code>이면 현재 상태의 정규화 시간(Phase, 0~1)이 그 이상일 때만 넘어갑니다. "공격 동작이 80% 끝나야 다음으로"를 표현합니다.</li>
+</ul>
+<pre class="code" data-file="Engine/Source/Scene/AnimGraph.cpp — AnimGraphMath::FindTransition (발췌)"><span class="kw">for</span> (size_t Index = <span class="num">0</span>; Index &lt; Machine.Transitions.size(); ++Index)
+{
+	<span class="kw">const</span> FAnimGraphTransition&amp; Transition = Machine.Transitions[Index];
+	<span class="kw">if</span> (Transition.To == CurrentState || (Transition.From &gt;= <span class="num">0</span> &amp;&amp; Transition.From != CurrentState))
+	{
+		<span class="kw">continue</span>;                     <span class="com">// From -1 = 어느 상태든</span>
+	}
+	<span class="kw">if</span> (Transition.ExitTime &gt;= <span class="num">0.0f</span> &amp;&amp; CurrentPhase &lt; Transition.ExitTime)
+	{
+		<span class="kw">continue</span>;
+	}
+	<span class="kw">const bool</span> bPass = std::all_of(Transition.Conditions.begin(), Transition.Conditions.end(), [&amp;](...) {
+		<span class="kw">return</span> EvaluateCondition(Condition.Op, Parameters.Get(Condition.Parameter, Asset), Condition.Value);
+	});
+	<span class="kw">if</span> (bPass) { <span class="kw">return static_cast</span>&lt;int32&gt;(Index); }
+}
+<span class="kw">return</span> -<span class="num">1</span>;</pre>
+<p><code>Equal</code>/<code>NotEqual</code> 비교는 1e-4 허용 오차로 판정합니다. bool 파라미터도 float 0/1로 저장하기 때문입니다.</p>
+
+<h4>크로스페이드 — 끼어들어도 튀지 않게</h4>
+<p>전이가 일어나면 이전 상태를 바로 끊지 않고 <code>Duration</code> 동안 가중치를 넘겨줍니다. 가중치 곡선은 직선 대신 <b>smoothstep</b> s(t) = 3t² − 2t³을 씁니다. 시작과 끝에서 기울기가 0이라, 섞임이 갑자기 시작하거나 갑자기 멈추는 느낌이 없습니다.</p>
+<p>까다로운 것은 <b>페이드 도중에 또 전이가 오는 경우</b>입니다. 점프하자마자 낙하로 넘어가는 식입니다. ProjectE는 그 순간의 가중치를 모든 상태의 "출발점"으로 기억하고 다시 섞습니다. 이미 섞이고 있던 상태로 돌아가면 그 상태의 재생 위치와 가중치를 이어 갑니다. 페이드아웃 중인 상태도 재생은 계속 진행합니다(멈춘 포즈로 사라지면 어색하므로).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="크로스페이드 가중치와 페이드 중 전이">
+		<title>크로스페이드 가중치</title>
+		<path d="M60,230 H530" class="ln" marker-end="url(#arr)"/>
+		<path d="M60,230 V48" class="ln" marker-end="url(#arr)"/>
+		<text x="52" y="64" text-anchor="end" class="t-small">1</text>
+		<text x="52" y="234" text-anchor="end" class="t-small">0</text>
+		<line x1="180" y1="56" x2="180" y2="230" class="ln-d"/>
+		<line x1="480" y1="56" x2="480" y2="230" class="ln-d"/>
+		<path d="M60,60.0 L70,60.6 L80,62.2 L90,64.8 L100,68.3 L110,72.6 L120,77.7 L130,83.4 L140,89.8 L150,96.7 L160,104.1 L170,111.8 L180,119.8 L190,120.2 L200,121.2 L210,122.9 L220,125.2 L230,128.0 L240,131.3 L250,135.0 L260,139.2 L270,143.6 L280,148.4 L290,153.4 L300,158.6 L310,164.0 L320,169.4 L330,174.9 L340,180.4 L350,185.9 L360,191.2 L370,196.4 L380,201.4 L390,206.2 L400,210.7 L410,214.8 L420,218.5 L430,221.8 L440,224.6 L450,226.9 L460,228.6 L470,229.6 L480,230.0" class="ln s1" stroke-width="2.4"/>
+		<path d="M60,230.0 L70,229.4 L80,227.8 L90,225.2 L100,221.7 L110,217.4 L120,212.3 L130,206.6 L140,200.2 L150,193.3 L160,185.9 L170,178.2 L180,170.2 L190,170.4 L200,170.9 L210,171.8 L220,173.1 L230,174.6 L240,176.4 L250,178.4 L260,180.7 L270,183.1 L280,185.7 L290,188.4 L300,191.2 L310,194.1 L320,197.1 L330,200.1 L340,203.1 L350,206.0 L360,208.9 L370,211.8 L380,214.5 L390,217.1 L400,219.5 L410,221.7 L420,223.8 L430,225.6 L440,227.1 L450,228.3 L460,229.2 L470,229.8 L480,230.0" class="ln s4" stroke-width="2.4"/>
+		<path d="M180,230.0 L190,229.4 L200,227.8 L210,225.2 L220,221.7 L230,217.4 L240,212.3 L250,206.6 L260,200.2 L270,193.3 L280,185.9 L290,178.2 L300,170.2 L310,161.9 L320,153.5 L330,145.0 L340,136.5 L350,128.1 L360,119.8 L370,111.8 L380,104.1 L390,96.7 L400,89.8 L410,83.4 L420,77.7 L430,72.6 L440,68.3 L450,64.8 L460,62.2 L470,60.6 L480,60.0 L520,60.0" class="ln s2" stroke-width="2.4"/>
+		<text x="96" y="58" class="t-small t-bold f1">A</text>
+		<text x="126" y="200" class="t-small t-bold f4">B</text>
+		<text x="404" y="78" class="t-small t-bold f2">C</text>
+		<text x="60" y="252" class="t-small">전이 A→B 시작</text>
+		<text x="180" y="266" text-anchor="middle" class="t-small">C로 전이 (페이드 중)</text>
+		<text x="480" y="252" text-anchor="middle" class="t-small">C = 1</text>
+		<text x="188" y="114" class="t-muted">A 0.65</text>
+		<text x="188" y="164" class="t-muted">B 0.35</text>
+
+		<text x="560" y="70" class="t-bold">smoothstep 가중치</text>
+		<text x="560" y="94" class="t-mono">s = 3t² − 2t³, t = 경과 / Duration</text>
+		<g class="t-small">
+			<text x="560" y="124">• 전이 순간 모든 가중치를 출발점으로</text>
+			<text x="560" y="146">• 새 상태 = Start + (1 − Start) · s</text>
+			<text x="560" y="168">• 나머지 = Start · (1 − s)</text>
+			<text x="560" y="190">• 빠지는 상태도 계속 재생한다</text>
+			<text x="560" y="212">• 쌓인 상태는 최대 8개 (오래된 것부터 버림)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 41-2.</b> A→B 페이드가 40% 진행했을 때 C로 가는 전이가 왔습니다. 그 순간 A 0.65, B 0.35를 출발점으로 두 상태가 함께 0으로 내려가고 C가 올라옵니다. 어느 곡선도 끊기지 않으므로 포즈가 튀지 않습니다.</figcaption>
+</figure>
+
+<h3 id="lec-41-blend"><span class="step">핵심 개념</span>블렌드 스페이스와 정규화 시간 동기화</h3>
+<p>속도 0, 120, 450cm/s에 대기·걷기·뛰기 클립이 있다고 합시다. 지금 속도가 300이면? 상태 하나 안에서 이웃한 두 샘플을 섞으면 됩니다. 이것이 <b>1D 블렌드 스페이스</b>입니다. 샘플을 위치 오름차순으로 두고, 값이 들어간 구간의 두 샘플만 0이 아닌 가중치를 받습니다(합 1, 범위 밖은 끝 샘플 1).</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimGraph.cpp — ComputeBlendSpace1DWeights (발췌)"><span class="com">// Positions[Next - 1] &lt;= Value &lt; Positions[Next]</span>
+<span class="kw">const</span> size_t Next  = std::upper_bound(Positions.begin(), Positions.end(), Value) - Positions.begin();
+<span class="kw">const</span> size_t Prev  = Next - <span class="num">1</span>;
+<span class="kw">const float</span>  Span  = Positions[Next] - Positions[Prev];
+<span class="kw">const float</span>  Alpha = Span &gt; FMath::SmallNumber ? (Value - Positions[Prev]) / Span : <span class="num">1.0f</span>;
+OutWeights[Prev]   = <span class="num">1.0f</span> - Alpha;
+OutWeights[Next]   = Alpha;</pre>
+<p>그런데 걷기 클립과 뛰기 클립은 <b>길이가 다릅니다</b>. 둘을 같은 "초"로 재생하면, 걷기가 왼발을 딛는 순간 뛰기는 오른발을 딛고 있어서 섞인 다리가 엉킵니다. 해결책은 시간을 초가 아니라 <b>"한 바퀴 중 몇 %"(정규화 시간, Phase)</b>로 두는 것입니다. 모든 샘플을 같은 Phase로 샘플링하면, 걷기의 30% 지점과 뛰기의 30% 지점은 둘 다 "같은 발을 딛는 순간"입니다(애니메이터가 클립을 같은 발로 시작하게 만들었다는 전제).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="1D 블렌드 스페이스와 정규화 시간 동기화">
+		<title>1D 블렌드 스페이스와 Phase 동기화</title>
+		<text x="40" y="24" class="t-bold">1D 블렌드 스페이스: Speed = 300일 때</text>
+		<path d="M80,90 H810" class="ln" marker-end="url(#arr)"/>
+		<text x="820" y="94" class="t-small">Speed</text>
+		<circle cx="80" cy="90" r="7" class="k1"/>
+		<circle cx="253" cy="90" r="7" class="k2"/>
+		<circle cx="728" cy="90" r="7" class="k2"/>
+		<path d="M512,82 L520,96 L504,96 Z" class="f5"/>
+		<text x="80" y="70" text-anchor="middle" class="t-small">Survey (0)</text>
+		<text x="253" y="70" text-anchor="middle" class="t-small">Walk (120)</text>
+		<text x="728" y="70" text-anchor="middle" class="t-small">Run (450)</text>
+		<text x="512" y="116" text-anchor="middle" class="t-small t-bold">현재 300</text>
+		<text x="80" y="134" class="t-muted">가중치: Walk 0.45 · Run 0.55 (이웃한 두 샘플만, 합 1)</text>
+
+		<text x="40" y="164" class="t-bold">정규화 시간(Phase)으로 동기화</text>
+		<rect x="140" y="175" width="480" height="22" rx="4" class="k2"/>
+		<rect x="140" y="207" width="288" height="22" rx="4" class="k2"/>
+		<rect x="140" y="239" width="375" height="22" rx="4" class="acc"/>
+		<text x="130" y="191" text-anchor="end" class="t-small">Walk</text>
+		<text x="130" y="223" text-anchor="end" class="t-small">Run</text>
+		<text x="130" y="255" text-anchor="end" class="t-small">섞인 한 바퀴</text>
+		<line x1="284" y1="171" x2="284" y2="201" class="ln s5" stroke-width="2"/>
+		<line x1="226" y1="203" x2="226" y2="233" class="ln s5" stroke-width="2"/>
+		<line x1="252" y1="235" x2="252" y2="265" class="ln s5" stroke-width="2"/>
+		<text x="140" y="281" class="t-muted">Phase 0</text>
+		<text x="252" y="281" text-anchor="middle" class="t-small f5">Phase 0.3</text>
+		<text x="640" y="190" class="t-small">같은 Phase = 같은 발 자세</text>
+		<text x="640" y="222" class="t-small">한 바퀴 = Σ w × (길이 ÷ Rate)</text>
+		<text x="640" y="254" class="t-small">Phase += dt × Speed ÷ 한 바퀴</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 41-3.</b> 위: Speed 300은 Walk(120)와 Run(450) 사이 55% 지점입니다. 아래: 걷기와 뛰기는 한 바퀴 길이가 다르지만, 섞인 상태는 가중 평균 길이로 한 바퀴를 돌고 두 클립을 같은 Phase(빨간 선)에서 샘플링합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/AnimGraph.cpp — FAnimGraphInstance::Update (발췌)"><span class="com">// 1) 모든 레이어 진행 (페이드아웃 중인 상태도 계속 재생)</span>
+<span class="kw">for</span> (FLayer&amp; Layer : Layers)
+{
+	...
+	<span class="kw">float</span> Cycle = <span class="num">0.0f</span>;
+	<span class="kw">for</span> (size_t Index = <span class="num">0</span>; Index &lt; State.Samples.size(); ++Index)
+	{
+		<span class="kw">if</span> (Clips[Index] &gt;= <span class="num">0</span> &amp;&amp; Layer.SampleWeights[Index] &gt; <span class="num">0.0f</span>)
+		{
+			<span class="kw">const float</span> Rate = ...; <span class="com">// 샘플별 배속</span>
+			Cycle += Layer.SampleWeights[Index] * Binding.ClipDurations[Clips[Index]] / Rate;
+		}
+	}
+	Layer.PhaseDelta = Cycle &gt; FMath::SmallNumber ? DeltaSeconds * State.Speed / Cycle : <span class="num">0.0f</span>;
+	Layer.Phase      = AdvancePhase(Layer.Phase, Layer.PhaseDelta, State.bLoop, Layer.bWrapped);
+}</pre>
+<p>이렇게 하면 속도가 120에서 450으로 오를 때 다리 움직임도 자연스럽게 빨라집니다. 한 바퀴 길이 자체가 가중치에 따라 짧아지기 때문입니다.</p>
+
+<h4>2D 블렌드 스페이스 — 그래디언트 밴드</h4>
+<p>앞뒤 속도와 좌우 속도처럼 축이 둘이면 샘플이 평면에 흩어집니다. 흔한 방법은 샘플을 삼각형으로 나누고 무게중심 좌표를 쓰는 것인데, 삼각분할이 바뀌는 경계에서 가중치가 튈 수 있습니다. ProjectE는 Phase 42에서 <b>그래디언트 밴드(gradient band, Freeform Cartesian)</b> 방식을 택했습니다 — 유니티 Animator의 Freeform 2D가 쓰는 방식으로, 삼각분할이 없습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="2D 블렌드 스페이스 샘플 배치와 가중치">
+		<title>2D 블렌드 스페이스 (StrafeDrill)</title>
+		<line x1="70" y1="222" x2="458" y2="222" class="ln-d"/>
+		<line x1="260" y1="50" x2="260" y2="292" class="ln-d"/>
+		<text x="462" y="210" class="t-muted">MoveX →</text>
+		<text x="250" y="50" text-anchor="end" class="t-muted">MoveY ↑</text>
+		<circle cx="260" cy="222" r="5" class="k1"/>
+		<circle cx="260" cy="164" r="16" class="acc"/>
+		<circle cx="260" cy="60" r="9" class="acc"/>
+		<circle cx="260" cy="280" r="5" class="k1"/>
+		<circle cx="80" cy="222" r="5" class="k1"/>
+		<circle cx="440" cy="222" r="11" class="acc"/>
+		<path d="M350,132 L358,146 L342,146 Z" class="f5"/>
+		<text x="268" y="214" class="t-small">Idle</text>
+		<text x="282" y="168" class="t-small">Walking_A 0.57</text>
+		<text x="276" y="64" class="t-small">Running_A 0.18</text>
+		<text x="272" y="296" class="t-small">Walking_Backwards</text>
+		<text x="80" y="246" class="t-small">Strafe_Left</text>
+		<text x="440" y="250" text-anchor="middle" class="t-small">Strafe_Right 0.25</text>
+		<text x="362" y="128" class="t-small t-bold">입력 (160, 210)</text>
+
+		<text x="520" y="60" class="t-bold">그래디언트 밴드 (Freeform)</text>
+		<text x="520" y="84" class="t-small">w_i = 모든 j ≠ i 에 대한 최솟값</text>
+		<text x="520" y="104" class="t-mono">clamp(1 − (p−p_i)·e_ij / |e_ij|², 0, 1)</text>
+		<text x="520" y="124" class="t-muted">e_ij = p_j − p_i (샘플 i에서 j로)</text>
+		<g class="t-small">
+			<text x="520" y="152">• 축마다 샘플 범위로 정규화 (cm/s와 도 섞기)</text>
+			<text x="520" y="174">• 샘플 위치에서는 정확히 그 샘플 = 1</text>
+			<text x="520" y="196">• 삼각분할 없이 연속, 샘플 순서 무관</text>
+			<text x="520" y="218">• 마지막에 합이 1이 되게 나눈다</text>
+			<text x="520" y="240">• 모두 0이면 가장 가까운 샘플 = 1</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 41-4.</b> 훈련장 데모 <code>StrafeDrill.eanimgraph</code>의 2D 상태 "Move"(X = MoveX, Y = MoveY) 샘플 여섯 개. 입력 (160, 210)에 위 식을 적용하면 세 샘플만 가중치를 받습니다(원 크기). 다른 체형의 클립을 <code>"모델 경로:클립"</code> 이름으로 가져와 쓰고 있는데, 이것은 43강에서 다룹니다.</figcaption>
+</figure>
+<p>직관은 이렇습니다. 샘플 i에서 다른 샘플 j로 가는 선분 위에 입력을 투영해, j 쪽으로 얼마나 갔는지(0~1)를 봅니다. j에 가까울수록 i의 몫은 줄어듭니다. 모든 j에 대해 이 값을 구해 <b>가장 작은 것</b>을 i의 가중치로 삼으면, 입력이 어느 방향으로든 다른 샘플 쪽으로 가는 만큼 i의 영향이 줄어듭니다. 축 단위가 달라도(속도 cm/s와 방향 각도) 한쪽 축이 지배하지 않도록, 계산 전에 축마다 샘플 범위로 정규화합니다.</p>
+
+<h4>포즈 섞기는 nlerp</h4>
+<p>상태 머신이 계산하는 결과는 포즈가 아니라 <b>기여 목록</b>(클립, 시각, 가중치)입니다. 크로스페이드 중인 상태 둘 × 각 상태의 샘플 셋이면 기여가 여섯 개일 수 있습니다. 이것을 한 번에 섞으므로 40강에서 본 nlerp를 씁니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimGraph.cpp — AddWeightedPose (발췌)"><span class="com">// q와 -q는 같은 회전: 누적값과 같은 반구로 맞춰 더한다 (nlerp)</span>
+<span class="kw">const float</span> Signed = FQuat::Dot(Sum.Rotation, Source.Rotation) &lt; <span class="num">0.0f</span> ? -Weight : Weight;
+Sum.Rotation = FQuat(Sum.Rotation.X + Source.Rotation.X * Signed, ...);
+...
+<span class="com">// FinishWeightedPose: 마지막에 회전만 정규화</span>
+Pose.Rotation = Pose.Rotation.GetNormalized();</pre>
+
+<h3 id="lec-41-layers"><span class="step">핵심 개념</span>레이어, 본 마스크, 몽타주</h3>
+<p>"뛰면서 방패를 든다"는 하체는 이동 상태 머신, 상체는 방패 동작이 맡아야 합니다. Phase 42에서 들어온 세 장치가 이것을 합니다.</p>
+<ul>
+	<li><b>레이어</b>: 기본 상태 머신(몸 전체) 위에 자기 상태 머신을 따로 돌리는 층. 같은 파라미터를 공유하고, 레이어 가중치 = clamp(Weight × WeightParameter 값, 0, 1)입니다. 가중치가 0이어도 머신은 계속 진행합니다.</li>
+	<li><b>본 마스크</b>: 레이어가 덮을 뼈와 그 정도. "뼈 이름 + Weight + BlendDepth" 목록이고, 각 노드는 <b>자신 또는 가장 가까운 조상</b> 중 목록에 있는 뼈의 항목을 따릅니다(없으면 0). BlendDepth가 있으면 그 뼈에서 아래로 BlendDepth 세대에 걸쳐 1/BlendDepth씩 커집니다 — 허리에서 칼로 자른 듯한 경계를 부드럽게 합니다.</li>
+	<li><b>몽타주</b>: 그래프와 별개로 클립 하나를 "한 번" 덮어 재생하는 것(공격, 피격, 고개 끄덕임). 그래프의 <code>Slots</code>에 이름과 마스크를 두면 그 부분만 덮습니다.</li>
+</ul>
+<pre class="code" data-file="Projects/Sample/Content/Animations/RPG/KnightRPG.eanimgraph (발췌)">"Layers": [
+  {
+    "Editor": { ... },
+    "EntryState": "Blocking",
+    "Mask": [
+      { "Bone": "spine", "Weight": 1.0, "BlendDepth": 2 }
+    ],
+    "Name": "Block",
+    "States": [
+      { "Name": "Blocking", "Clip": "Blocking", "EditorPosition": [0.0, 0.0] }
+    ],
+    "Transitions": [],
+    "Weight": 1.0,
+    "WeightParameter": "BlockWeight"
+  }
+],
+...
+"Slots": [
+  {
+    "Name": "UpperBody",
+    "Mask": [
+      { "Bone": "spine", "Weight": 1.0, "BlendDepth": 2 }
+    ]
+  }
+],</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="본 마스크 가중치와 몽타주 가중치 시간축">
+		<title>본 마스크와 몽타주</title>
+		<text x="20" y="28" class="t-bold">본 마스크: spine, BlendDepth 2</text>
+		<g class="t-small">
+			<rect x="40" y="46" width="130" height="28" rx="6" class="box"/><text x="105" y="65" text-anchor="middle">조상(hips 등) → 0</text>
+			<rect x="210" y="46" width="130" height="28" rx="6" class="box"/><text x="275" y="65" text-anchor="middle">다리 → 0</text>
+			<rect x="40" y="96" width="130" height="28" rx="6" class="acc"/><text x="105" y="115" text-anchor="middle">spine → 0.5</text>
+			<rect x="40" y="146" width="130" height="28" rx="6" class="acc"/><text x="105" y="165" text-anchor="middle">spine의 자식 → 1</text>
+			<rect x="40" y="196" width="130" height="28" rx="6" class="acc"/><text x="105" y="215" text-anchor="middle">목 · 머리 → 1</text>
+			<rect x="210" y="196" width="130" height="28" rx="6" class="acc"/><text x="275" y="215" text-anchor="middle">팔 · 손 → 1</text>
+		</g>
+		<path d="M105,74 V92" class="ln" marker-end="url(#arr)"/>
+		<path d="M170,60 H206" class="ln" marker-end="url(#arr)"/>
+		<path d="M105,124 V142" class="ln" marker-end="url(#arr)"/>
+		<path d="M105,174 V192" class="ln" marker-end="url(#arr)"/>
+		<path d="M150,174 L240,193" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="256" class="t-muted">깊이 d 세대 아래 = min(1, (d+1) ÷ BlendDepth) × Weight</text>
+		<text x="20" y="276" class="t-muted">spine 아래가 아닌 뼈(hips, 다리)는 0</text>
+
+		<text x="400" y="28" class="t-bold">몽타주 가중치 (같은 슬롯)</text>
+		<path d="M400,220 H835" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,220 V70" class="ln" marker-end="url(#arr)"/>
+		<text x="392" y="94" text-anchor="end" class="t-small">1</text>
+		<path d="M400,220.0 L406,216.4 L412,206.5 L418,191.9 L424,174.2 L430,155.0 L436,135.8 L442,118.1 L448,103.5 L454,93.6 L460,90.0 L640,90.0 L646,93.6 L652,103.5 L658,118.1 L664,135.8 L670,155.0 L676,174.2 L682,191.9 L688,206.5 L694,216.4 L700,220.0" class="ln s1" stroke-width="2.4"/>
+		<path d="M640,220.0 L646,216.4 L652,206.5 L658,191.9 L664,174.2 L670,155.0 L676,135.8 L682,118.1 L688,103.5 L694,93.6 L700,90.0 L742,90.0 L748,91.7 L754,103.5 L760,123.7 L766,148.5 L772,174.2 L778,197.2 L784,213.7 L790,220.0" class="ln s2" stroke-width="2.4"/>
+		<line x1="640" y1="60" x2="640" y2="220" class="ln-d"/>
+		<line x1="790" y1="60" x2="790" y2="220" class="ln-d"/>
+		<text x="520" y="82" text-anchor="middle" class="t-small f1">몽타주 A</text>
+		<text x="720" y="82" text-anchor="middle" class="t-small f2">B</text>
+		<text x="430" y="240" text-anchor="middle" class="t-small">BlendIn</text>
+		<text x="640" y="240" text-anchor="middle" class="t-small">B 재생 → A 중단</text>
+		<text x="790" y="240" text-anchor="middle" class="t-small">B 구간 끝</text>
+		<text x="560" y="266" class="t-muted">A: OnMontageEnded(interrupted = true)</text>
+		<text x="560" y="286" class="t-muted">B: 남은 시간 ≤ BlendOut이면 저절로 빠짐 → 완료</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 41-5.</b> 왼쪽: <code>KnightRPG</code>의 상체 마스크가 노드마다 주는 가중치. 오른쪽: 같은 슬롯에서 A 재생 중 B를 틀면 A는 B의 BlendIn 시간 동안 빠지며(중단) 둘이 잠시 겹치고, B는 구간 끝에 맞춰 스스로 빠집니다.</figcaption>
+</figure>
+
+<p>최종 포즈는 언제나 같은 순서로 쌓입니다.</p>
+<div class="callout note">
+	<b class="t">최종 포즈 순서 (FAnimationSystem)</b>
+	기본 레이어(상태 머신) → 추가 레이어(목록 순서, 노드마다 마스크 × 레이어 가중치, 로컬 공간) → 몽타주(시작 순서대로, 슬롯 마스크 × 몽타주 가중치) → IK(발 → 시선, 42강) → 노드 엔티티에 기록.
+	뒤에 오는 것이 앞의 결과 위에 일부 뼈만 덮어씁니다.
+</div>
+<p>몽타주 사용은 스크립트에서 한 줄입니다. 훈련장 데모의 대련 스크립트는 공격 몽타주가 <b>끝까지 재생되었을 때만</b>(중단이 아닐 때) 회복 동작을 이어 붙입니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/Demo/Training/SparringFighter.lua (발췌)"><span class="kw">function</span> SparringFighter:Attack(A)
+	self.Current = A
+	self.entity:PlayMontage(A.Clip, { BlendIn = <span class="num">0.12</span>, BlendOut = A.Rec <span class="kw">and</span> <span class="num">0.05</span> <span class="kw">or</span> <span class="num">0.25</span> })
+<span class="kw">end</span>
+
+<span class="kw">function</span> SparringFighter:OnMontageEnded(Clip, Interrupted)
+	<span class="kw">local</span> A = self.Current
+	<span class="kw">if</span> A <span class="kw">and</span> A.Rec <span class="kw">and</span> Clip == A.Clip <span class="kw">and not</span> Interrupted <span class="kw">then</span>
+		self.entity:PlayMontage(A.Rec, { BlendIn = <span class="num">0.05</span>, BlendOut = <span class="num">0.3</span> })
+	<span class="kw">end</span>
+<span class="kw">end</span></pre>
+
+<h3 id="lec-41-projecte"><span class="step">ProjectE에서는</span>파라미터, 형식 버전, 핫 리로드</h3>
+<h4>파라미터는 복제하지 않는다</h4>
+<p>파라미터는 float와 bool(0/1로 저장) 두 종류이고, Lua <code>entity:SetAnimParam/GetAnimParam/GetAnimState</code>나 C++ <code>FAnimationSystem::SetAnimParam</code>으로 씁니다. 캐릭터 루트처럼 조상 엔티티에서 불러도 자손의 그래프를 찾아갑니다.</p>
+<p>멀티플레이에서 파라미터는 <b>네트워크로 보내지 않습니다</b>. 애니메이션은 화면 연출이므로, 각 프로세스가 자기가 가진 정보로 계산하면 됩니다. 이 정보를 자동으로 넣어 주는 것이 <code>bUseCharacterMovement</code>(기본 켬)입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimGraph.h (발췌)"><span class="com">//   bUseCharacterMovement: 자신 또는 가장 가까운 조상의 FCharacterMovementComponent 상태를 매 게임플레이 틱 파라미터로 넣는다 (FGameWorld)</span>
+<span class="com">//     Speed = 수평 속도 (cm/s), VerticalSpeed = 수직 속도 (cm/s), Grounded = 바닥 (bool). 같은 이름을 스크립트가 써도 덮인다.</span>
+<span class="com">//     속도: 이 프로세스가 시뮬레이션하는 캐릭터(서버/Standalone, 예측하는 소유 클라이언트)는 캐릭터 이동 상태, 그 밖(복제 보간을 따르는</span>
+<span class="com">//     다른 플레이어)은 보간된 월드 위치의 변화(짧게 평활). 바닥은 어디서나 캡슐 접촉(복제 위치에 맞춘 캡슐 포함)</span></pre>
+<p>다른 플레이어의 캐릭터는 내 컴퓨터에서 이동을 시뮬레이션하지 않고 복제된 위치를 보간해 따라갈 뿐이므로(8부), 속도를 "보간된 위치의 변화"로 계산합니다. 이 값은 <code>FGameWorld</code>가 물리·트랜스폼 갱신 뒤, 스크립트 <code>OnLateUpdate</code> 전에 넣습니다. 그 결과 모든 클라이언트가 파라미터를 주고받지 않고도 같은 애니메이션을 냅니다(Phase 27 DoD).</p>
+
+<h4>.eanimgraph 형식 버전</h4>
+<div class="tablewrap"><table class="t">
+	<tr><th>버전</th><th>추가된 것</th><th>Phase</th></tr>
+	<tr><td>1</td><td>실행 데이터만: 파라미터, 상태, 전이</td><td>27</td></tr>
+	<tr><td>2</td><td>편집기 정보: 상태 <code>EditorPosition</code>, 최상위 <code>Editor</code>(미리보기 모델, "어느 상태든" 노드 위치) — 실행에 쓰지 않음</td><td>35-1</td></tr>
+	<tr><td>3</td><td>2D 블렌드(<code>BlendParameterY</code>, 샘플 <code>Position: [x, y]</code>), <code>Layers</code>, <code>Slots</code></td><td>42</td></tr>
+</table></div>
+<p>읽기는 1/2/3을 모두 받고 쓰기는 항상 3입니다. 편집기 정보가 없는 파일을 열면 편집기가 노드를 자동 배치합니다. 이 "옛 형식도 읽고, 새 형식으로만 쓴다"는 규칙은 엔진의 모든 에셋 형식에서 반복됩니다.</p>
+<h4>핫 리로드</h4>
+<p>그래프 편집기에서 저장하거나 파일이 바뀌면 <code>FAnimGraphLibrary::Invalidate(경로)</code>가 세대 번호를 올립니다. 그 그래프를 쓰는 컴포넌트는 다음 갱신에서 새 에셋으로 다시 묶이는데, <b>파라미터 값은 유지</b>되고 같은 이름의 상태가 새 그래프에 있으면 그 상태에서 다시 시작합니다. 플레이 중 그래프를 고쳐 저장해도 캐릭터가 대기 상태로 튀지 않습니다.</p>
+
+<h3 id="lec-41-pitfalls"><span class="step">함정과 교훈</span>섞는 법보다 무엇을 섞는가</h3>
+<div class="callout story">
+	<b class="t">블렌드 위치는 발 속도와 맞아야 한다</b>
+	Phase 27의 사용자 확인 항목에는 "걷기/뛰기 발 미끄러짐(블렌드 위치 Walk 120 / Run 450)"이 남았습니다. 블렌드 스페이스의 샘플 위치는 "이 클립이 실제로 땅을 미는 속도"여야 합니다. 이 값이 틀리면 캐릭터는 120cm/s로 움직이는데 발은 다른 속도로 땅을 차서 미끄러져 보입니다. 이후 RPG 데모에서는 클립의 발 속도를 재서 위치를 정했습니다(CLAUDE.md: "블렌드 위치는 클립 발 속도(기사 Running_A 345, 스켈레톤 75/240/450)").
+</div>
+<div class="callout story">
+	<b class="t">에셋이 없는 상태</b>
+	여우 모델에는 점프·낙하 클립이 없어서 Jump = Run 0.35배속, Fall = Walk 0.3배속으로 대신했습니다. 2D 블렌드도 Phase 42 후속 목록에 "Fox에 방향 전환 클립이 없어 2D Direction 축은 보폭 속도만 바뀜"이 적혀 있습니다. 그래프는 섞는 방법을 줄 뿐, 좋은 결과는 결국 클립에서 나옵니다. 그래서 43강의 리타기팅(다른 모델의 클립 빌려 쓰기)이 필요해졌습니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙</b>
+	상태 머신을 다루는 새 코드는 <code>Asset.GetMachine(레이어)</code>(−1 = 기본 레이어)로 머신을 얻습니다. 그래프 파일을 바꾸는 코드는 <code>FAnimGraphLibrary::Invalidate(경로)</code>를 부릅니다. 식을 바꾸면 테스트도 함께: 2D → <code>AnimGraph_BlendSpace2D*</code>, 레이어·마스크 → <code>AnimGraph_BoneMask*</code>/<code>Layer*</code>, 몽타주 → <code>AnimMontage_*</code>.
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>상태 머신: 전이는 목록 순서대로 첫 일치 하나(프레임당 한 번), 조건은 AND, <code>"*"</code>는 어느 상태든, ExitTime은 Phase 기준.</li>
+		<li>크로스페이드는 smoothstep. 페이드 중 전이는 그 순간 가중치를 출발점으로 다시 섞어 튀지 않는다.</li>
+		<li>1D 블렌드는 이웃 두 샘플, 2D는 그래디언트 밴드. 모든 샘플은 같은 정규화 시간(Phase)으로 재생해 발을 맞춘다.</li>
+		<li>최종 포즈 = 기본 레이어 → 추가 레이어(마스크) → 몽타주(슬롯) → IK → 기록.</li>
+		<li>파라미터는 복제하지 않고, <code>bUseCharacterMovement</code>가 각 프로세스에서 Speed/VerticalSpeed/Grounded를 채운다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. <code>"*" → Dead</code> 전이를 목록 맨 뒤에 두었더니, 죽는 순간 가끔 점프 동작이 나옵니다. 왜일까요?</summary>
+	전이는 목록 순서대로 처음 맞는 하나만 고릅니다. 죽는 프레임에 "Locomotion → Jump" 조건도 맞았다면(공중에 떠 있었다면) 그것이 먼저 선택되고 Dead 전이는 다음 프레임으로 밀립니다. 어디서든 우선해야 하는 전이는 목록 앞에 둬야 합니다.
+</details>
+<details class="quiz"><summary>Q2. 걷기와 뛰기를 Phase가 아니라 각자 "초"로 재생하면서 섞으면 어떤 일이 생길까요?</summary>
+	두 클립의 길이가 다르므로 시간이 갈수록 발 위상이 어긋납니다. 걷기는 왼발, 뛰기는 오른발을 딛는 순간이 섞여 다리가 꼬이고 발이 미끄러집니다. 같은 Phase로 샘플링하면 "한 바퀴 중 같은 지점"이라 발 자세가 맞습니다.
+</details>
+<details class="quiz"><summary>Q3. 왜 애니메이션 파라미터를 서버에서 클라이언트로 복제하지 않을까요? 단점은 없을까요?</summary>
+	포즈는 연출일 뿐 게임 결과에 영향을 주지 않고, 파라미터의 재료(속도, 바닥 여부)는 이미 복제되는 위치·캐릭터 상태에서 각자 계산할 수 있으므로 대역폭을 쓸 이유가 없습니다. 단점은 스크립트가 임의로 넣는 파라미터(예: 방패 들기 가중치)는 자동으로 맞지 않는다는 것입니다. 그런 값은 스크립트가 RPC 등으로 직접 맞춰야 하며, 몽타주도 같은 이유로 "로컬 전용"입니다.
+</details>
+</article>
+
+<!-- ======================================================= 42강 ======================================================= -->
+<article class="lecture" id="lec-42">
+<header>
+	<div class="no">42강</div>
+	<h2 id="lec-42-title">노티파이, 소켓, IK</h2>
+	<div class="meta">관련 Phase: 13, 14, 42-4 · 살펴볼 곳: <code>Scene/AnimNotify.h</code>·<code>.cpp</code>(<code>AnimNotifyMath::Collect</code>), <code>Scene/ModelMetadata.h</code>, <code>Scene/Scene.h</code>(<code>GetSocketWorldMatrix</code>, <code>GetParentWorldMatrix</code>), <code>Scene/AnimIK.h</code>·<code>.cpp</code>, <code>World/GameWorldAnimation.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>노티파이(한 시점)와 노티파이 스테이트(구간)가 루프·역재생·스크럽·크로스페이드에서 누락·중복 없이 발생하는 규칙을 설명할 수 있습니다.</li>
+		<li>여러 클립이 섞일 때 "가중치가 가장 큰 기여 하나에서만" 판정하는 이유를 압니다.</li>
+		<li>소켓으로 물체를 뼈에 붙일 때 월드 행렬이 어떻게 계산되는지, 로컬↔월드 변환에 <code>GetParentWorldMatrix</code>를 써야 하는 이유를 압니다.</li>
+		<li>2본 IK를 코사인 법칙으로 풀고, 발 IK 바닥 탐색이 Scene이 아니라 World에 있는 이유를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-42-why"><span class="step">왜 필요한가</span>애니메이션과 세계를 맞물리기</h3>
+<p>41강까지의 애니메이션은 "보기 좋은 포즈"를 만들 뿐, 세계와 아무 대화를 하지 않습니다. 그런데 게임에는 이런 요구가 있습니다.</p>
+<ul>
+	<li><b>시점</b>: 발이 땅에 닿는 순간 발소리를, 칼이 휘둘러지는 그 순간 타격 판정을. 타이머로 "0.3초 뒤"라고 하면 배속이 바뀌거나 블렌드되면 어긋납니다. → <b>노티파이</b></li>
+	<li><b>위치</b>: 손에 칼을, 머리에 모자를. 뼈가 움직이면 따라가야 합니다. → <b>소켓</b></li>
+	<li><b>지형</b>: 계단에 선 캐릭터의 발이 허공에 뜨거나 바닥을 뚫으면 안 됩니다. 애니메이션은 평지 기준으로 만들어졌으니 마지막에 실제 바닥에 맞춰 고쳐야 합니다. → <b>IK</b></li>
+</ul>
+
+<h3 id="lec-42-notify"><span class="step">핵심 개념</span>노티파이와 노티파이 스테이트</h3>
+<p>언리얼의 AnimNotify / AnimNotifyState를 따른 개념입니다(Phase 13).</p>
+<ul>
+	<li><b>노티파이(notify)</b>: 클립의 한 시점. 재생이 그 시점을 지나가면 한 번 → Lua <code>OnAnimNotify_&lt;이름&gt;()</code>, 게임 모듈 <code>OnAnimNotify</code>.</li>
+	<li><b>스테이트(state)</b>: 클립의 구간 [시작, 시작+길이). 들어갈 때 <code>Begin</code>, 머무는 동안 매 프레임 <code>Tick(dt)</code>, 나올 때 <code>End</code> → Lua <code>OnAnimNotifyBegin_/Tick_/End_&lt;이름&gt;</code>. "칼날 판정이 켜져 있는 구간" 같은 것에 씁니다.</li>
+</ul>
+<p>전달은 이름 기반입니다. 언리얼이 <code>AnimNotify_&lt;이름&gt;</code> 함수를 찾아 부르는 방식을 따라, 이름은 식별자 규칙(<code>[A-Za-z_][A-Za-z0-9_]*</code>)을 지켜야 하고 편집기가 고쳐 저장합니다. Lua에서는 이름 그대로 함수가 됩니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Fox.glb.emeta (발췌)">{
+  "Version": 1,
+  "Clips": [
+    { "Clip": "Walk", "Notifies": [
+      { "Name": "Footstep_L", "Time": 0.1 },
+      { "Name": "Stride", "Time": 0.2, "Duration": 0.3 },
+      { "Name": "Footstep_R", "Time": 0.45 }
+    ] }
+  ],
+  "Sockets": [
+    { "Name": "Hat", "Bone": "b_Head_05", "Position": [0.0, 0.0, 1500.0], ... }
+  ]
+}</pre>
+
+<h4>"지나갔다"를 정확히 판정하기</h4>
+<p>프레임은 연속된 시간을 띄엄띄엄 봅니다. 노티파이 시각 0.1초가 정확히 어느 프레임에 걸릴 일은 없으므로, 판정은 "이번 프레임의 진행 구간 [이전 시각, 새 시각)에 노티파이 시각이 들어 있는가"입니다. 이 단순한 원칙을 경계 상황마다 지키는 것이 순수 함수 <code>AnimNotifyMath::Collect</code>입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="노티파이 판정 구간">
+		<title>노티파이 판정</title>
+		<text x="20" y="24" class="t-bold">Fox Walk 클립의 노티파이와 프레임 진행 구간</text>
+		<rect x="260" y="80" width="300" height="16" rx="4" class="k3"/>
+		<text x="410" y="72" text-anchor="middle" class="t-small">Stride (스테이트, 0.2 ~ 0.5)</text>
+		<path d="M60,110 H770" class="ln"/>
+		<path d="M160,102 L168,110 L160,118 L152,110 Z" class="acc"/>
+		<path d="M510,102 L518,110 L510,118 L502,110 Z" class="acc"/>
+		<text x="160" y="136" text-anchor="middle" class="t-small">Footstep_L</text>
+		<text x="510" y="136" text-anchor="middle" class="t-small">Footstep_R</text>
+		<g class="t-muted">
+			<text x="60" y="152" text-anchor="middle">0</text>
+			<text x="160" y="152" text-anchor="middle">0.1</text>
+			<text x="260" y="152" text-anchor="middle">0.2</text>
+			<text x="510" y="152" text-anchor="middle">0.45</text>
+			<text x="560" y="152" text-anchor="middle">0.5</text>
+			<text x="760" y="152" text-anchor="middle">끝 D</text>
+		</g>
+		<line x1="760" y1="96" x2="760" y2="124" class="ln"/>
+		<g class="ln s1" stroke-width="3">
+			<path d="M110,180 H180"/>
+			<path d="M180,200 H280"/>
+			<path d="M280,220 H460"/>
+			<path d="M460,240 H580"/>
+			<path d="M720,262 H760"/>
+			<path d="M60,262 H100"/>
+		</g>
+		<g class="t-small">
+			<text x="190" y="184">Notify Footstep_L</text>
+			<text x="290" y="204">StateBegin Stride (+ Tick)</text>
+			<text x="470" y="224">StateTick Stride</text>
+			<text x="590" y="244">Notify Footstep_R → StateEnd Stride</text>
+			<text x="116" y="266">루프 경계: [0.66, D] + [0, 0.04) 두 구간으로 나눠 판정</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 42-1.</b> 굵은 선이 한 프레임의 진행 구간입니다. 구간 안에 든 노티파이만 발생하고, 한 구간 안에 여러 이벤트가 있으면 시각 순서로(같은 시각이면 End → Notify → Begin) 나옵니다. 클립 길이 D는 그림을 위한 임의 위치입니다.</figcaption>
+</figure>
+
+<p><code>AnimNotify.h</code> 머리 주석이 규칙의 기준입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>상황</th><th>규칙</th><th>이유</th></tr>
+	<tr><td>멈춤 (진행 0)</td><td>아무것도 발생하지 않음</td><td>정지 중에 발소리가 반복되면 안 된다</td></tr>
+	<tr><td>루프 경계</td><td>"끝까지" + "처음부터" 두 구간으로 나눠 판정</td><td>끝 근처·처음 근처 노티파이의 누락/중복 방지</td></tr>
+	<tr><td>반복 없는 클립</td><td>끝 시각의 노티파이를 한 번만 (끝을 포함하는 구간)</td><td>끝에 멈춘 뒤 매 프레임 다시 나오지 않게</td></tr>
+	<tr><td>역재생</td><td>시간축을 뒤집어(D − t) 정방향과 같은 규칙</td><td>코드 한 벌로 양방향</td></tr>
+	<tr><td>클립 전환</td><td>이전 클립의 진행 중 스테이트는 즉시 End, 사라지는 클립의 점 노티파이는 없음</td><td>Begin만 있고 End가 없는 스테이트를 남기지 않는다</td></tr>
+	<tr><td>스크럽(SetTime)</td><td>점 노티파이 없음, 스테이트 End 후 다음 진행에서 그 시각을 포함한 스테이트 Begin</td><td>타임라인을 끌 때 이벤트 폭주 방지</td></tr>
+</table></div>
+<pre class="code" data-file="Engine/Source/Scene/AnimNotify.cpp — AnimNotifyMath::Collect (발췌)"><span class="com">// 역재생은 시간축을 뒤집어(D - t) 정방향과 같은 규칙으로 판정한다</span>
+<span class="kw">const bool</span> bBackward = Delta &lt; <span class="num">0.0f</span>;
+<span class="kw">const auto</span> Map       = [&amp;](<span class="kw">float</span> Time) { <span class="kw">return</span> FMath::Clamp(bBackward ? Duration - Time : Time, <span class="num">0.0f</span>, Duration); };
+...
+<span class="kw">if</span> (bWrapped)
+{
+	Segments[SegmentCount++] = { Start, Duration, <span class="kw">true</span> };  <span class="com">// 끝 시각 포함</span>
+	Segments[SegmentCount++] = { <span class="num">0.0f</span>, End, <span class="kw">false</span> };
+}
+<span class="kw">else</span>
+{
+	Segments[SegmentCount++] = { Start, End, !bLoop &amp;&amp; End &gt;= Duration };
+}
+...
+<span class="com">// 구간 안에서 시간 순서 (같은 시각이면 End → 노티파이 → Begin)</span>
+std::stable_sort(Timed.begin() + First, Timed.end(), [](<span class="kw">const</span> FTimedHit&amp; L, <span class="kw">const</span> FTimedHit&amp; R) {
+	<span class="kw">return</span> L.Time != R.Time ? L.Time &lt; R.Time : L.Priority &lt; R.Priority;
+});</pre>
+<p>한 프레임 안에 스테이트에 들어갔다 나오는 경우(아주 짧은 스테이트, 큰 dt)도 Begin과 End를 둘 다 냅니다. 그리고 진행 중인 스테이트마다 마지막에 Tick을 하나씩 덧붙입니다.</p>
+
+<h4>섞일 때는 누구의 노티파이인가</h4>
+<p>걷기와 뛰기가 섞이는 블렌드 스페이스를 생각해 봅시다. 두 클립 모두 발소리 노티파이가 있습니다. 둘 다 판정하면 한 걸음에 발소리가 두 번 납니다. 그래서 ProjectE는 출처(기본 레이어, 추가 레이어마다, 몽타주마다) 안에서 <b>이번 프레임 가중치가 가장 큰 기여 하나의 클립에서만</b> 판정합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="가중치가 가장 큰 기여에서만 노티파이 판정">
+		<title>노티파이 판정 출처 선택</title>
+		<text x="20" y="46" class="t-small">Walk</text>
+		<text x="20" y="72" class="t-small">Run</text>
+		<line x1="60" y1="42" x2="520" y2="42" class="ln-d"/>
+		<line x1="60" y1="68" x2="520" y2="68" class="ln-d"/>
+		<g class="f2"><circle cx="120" cy="42" r="5"/><circle cx="210" cy="42" r="5"/></g>
+		<g class="k1"><circle cx="300" cy="42" r="5"/><circle cx="390" cy="42" r="5"/><circle cx="480" cy="42" r="5"/></g>
+		<g class="k1"><circle cx="140" cy="68" r="5"/><circle cx="200" cy="68" r="5"/><circle cx="260" cy="68" r="5"/></g>
+		<g class="f2"><circle cx="320" cy="68" r="5"/><circle cx="380" cy="68" r="5"/><circle cx="440" cy="68" r="5"/><circle cx="500" cy="68" r="5"/></g>
+		<path d="M60,220 H530" class="ln" marker-end="url(#arr)"/>
+		<path d="M60,220 V88" class="ln" marker-end="url(#arr)"/>
+		<path d="M100,100 C190,100 190,100 280,160 C370,220 370,220 460,220 L520,220" class="ln s1" stroke-width="2.4"/>
+		<path d="M100,220 C190,220 190,220 280,160 C370,100 370,100 460,100 L520,100" class="ln s4" stroke-width="2.4"/>
+		<line x1="280" y1="30" x2="280" y2="220" class="ln-d"/>
+		<text x="110" y="118" class="t-small f1">Walk 가중치</text>
+		<text x="410" y="118" class="t-small f4">Run 가중치</text>
+		<text x="280" y="240" text-anchor="middle" class="t-small">가중치 역전 → 판정 출처 교체</text>
+		<text x="52" y="104" text-anchor="end" class="t-small">1</text>
+
+		<text x="560" y="40" class="t-bold">출처마다 "가장 큰 기여" 하나만</text>
+		<g class="t-small">
+			<text x="560" y="66">● 발생   ○ 판정하지 않음</text>
+			<text x="560" y="94">• 기여가 바뀌면 이전 기여의 스테이트는 End,</text>
+			<text x="572" y="112">새 기여는 이번 진행 구간부터 판정</text>
+			<text x="560" y="138">• 추가 레이어: 레이어 가중치 ≥ 0.5일 때만</text>
+			<text x="560" y="164">• 몸 전체 몽타주 가중치 ≥ 0.5인 동안</text>
+			<text x="572" y="182">기본 레이어는 판정하지 않음</text>
+			<text x="560" y="208">• 몽타주는 몽타주마다 따로</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 42-2.</b> 걷기에서 뛰기로 섞이는 동안 위쪽 점은 각 클립의 발소리 노티파이 시각입니다. 가중치가 큰 쪽의 노티파이만 발생(●)하므로 한 걸음에 발소리는 한 번입니다.</figcaption>
+</figure>
+<p>이벤트는 애니메이션 갱신 중에 <code>FAnimationRuntime::PendingNotifies</code>에 모였다가 <b>다음 프레임</b>에 전달됩니다(게임 모듈: OnUpdate 직전, Lua: OnUpdate 뒤). 40강에서 본 것처럼 포즈 평가는 여러 스레드에서 돌기 때문에, 평가 중에 스크립트를 부를 수는 없습니다 — 모아 두었다가 메인 스레드에서 나눠 주는 것이 유일하게 안전한 방법입니다. Lua 수신자는 노티파이가 난 모델 루트의 스크립트이고, 없으면 가장 가까운 조상의 스크립트입니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/Demo/Training/SparringFighter.lua (발췌)"><span class="kw">function</span> SparringFighter:OnAnimNotify_SwordHit()
+	self:SparkAt()
+<span class="kw">end</span>
+
+<span class="kw">function</span> SparringFighter:OnAnimNotify_SwordFinisher()
+	self:SparkAt()
+	<span class="kw">local</span> Other = self:PartnerScript()
+	<span class="kw">if</span> Other <span class="kw">then</span> Other:TakeHit() <span class="kw">end</span>
+<span class="kw">end</span></pre>
+
+<div class="callout tip">
+	<b class="t">왜 .emeta 사이드카인가</b>
+	노티파이와 소켓은 모델 원본 옆 <code>&lt;모델&gt;.emeta</code>(JSON)에 저장합니다. 임포트 설정 <code>.eimport</code>에 넣지 않은 이유는, <code>.eimport</code>는 쿠킹 입력이라 바뀌면 모델을 다시 가져와 쿠킹하기 때문입니다. 노티파이 시각 하나 고칠 때마다 수십 MB 모델을 다시 쿠킹할 수는 없습니다. <code>.emeta</code>는 런타임에 <code>FModelResources::Metadata</code>로 공유되어, 편집기에서 고치면 열린 씬에 즉시 반영됩니다. 콘텐츠 브라우저는 <code>.eimport</code>/<code>.emeta</code>를 숨기고 모델과 함께 옮기고 복제하고 삭제합니다.
+</div>
+
+<h3 id="lec-42-socket"><span class="step">핵심 개념</span>소켓 — 뼈에 붙은 부착 지점</h3>
+<p><b>소켓(socket)</b>은 "뼈 기준 상대 트랜스폼"에 이름을 붙인 것입니다(<code>FModelSocket</code>: 이름, 뼈, 위치·회전·스케일). 칼을 손에 붙일 때 손뼈 원점에 바로 붙이면 칼자루가 손바닥 안으로 파묻히거나 방향이 틀어지므로, 손뼈에서 조금 옮기고 돌린 지점을 소켓으로 정해 둡니다. 다른 엔티티를 붙이는 것은 <code>FSocketAttachmentComponent</code>(대상 모델 루트 + 소켓 이름)입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="소켓 부착과 월드 행렬">
+		<title>소켓 부착</title>
+		<g class="t-small">
+			<rect x="40" y="30" width="220" height="40" rx="8" class="k2"/>
+			<text x="150" y="55" text-anchor="middle" class="t-bold">Fox — 모델 루트</text>
+			<rect x="70" y="90" width="190" height="34" rx="8" class="box"/>
+			<text x="165" y="112" text-anchor="middle">… 뼈 노드 엔티티 …</text>
+			<rect x="70" y="144" width="190" height="34" rx="8" class="acc"/>
+			<text x="165" y="166" text-anchor="middle">b_Head_05 (뼈)</text>
+			<rect x="40" y="214" width="220" height="40" rx="8" class="k1"/>
+			<text x="150" y="239" text-anchor="middle" class="t-bold">Ball (부착된 엔티티)</text>
+		</g>
+		<path d="M55,70 V107 H66" class="ln"/>
+		<path d="M85,124 V140" class="ln" marker-end="url(#arr)"/>
+		<path d="M280,155 L288,163 L280,171 L272,163 Z" class="fa"/>
+		<line x1="260" y1="163" x2="272" y2="163" class="ln"/>
+		<text x="296" y="160" class="t-small t-bold">Hat 소켓</text>
+		<text x="296" y="178" class="t-muted">뼈 기준 위치·회전</text>
+		<path d="M260,234 C280,234 280,214 280,175" class="ln-d" marker-end="url(#arr)"/>
+		<text x="300" y="226" class="t-small">SocketAttachment</text>
+		<text x="300" y="244" class="t-muted">{ Target = Fox, Socket = "Hat" }</text>
+		<text x="40" y="274" class="t-muted">Ball은 Fox의 자식이 아니다 (계층 부모는 무시된다)</text>
+
+		<text x="520" y="40" class="t-bold">부착 엔티티의 월드 행렬</text>
+		<g class="t-small">
+			<rect x="520" y="56" width="320" height="34" rx="8" class="k1"/>
+			<text x="680" y="78" text-anchor="middle">Ball 로컬 T·R·S (소켓 기준)</text>
+			<rect x="520" y="110" width="320" height="34" rx="8" class="box"/>
+			<text x="680" y="132" text-anchor="middle">소켓 로컬 (.emeta에 저장)</text>
+			<rect x="520" y="164" width="320" height="34" rx="8" class="acc"/>
+			<text x="680" y="186" text-anchor="middle">b_Head_05 월드 (이번 포즈)</text>
+		</g>
+		<text x="680" y="105" text-anchor="middle" class="t-bold">×</text>
+		<text x="680" y="159" text-anchor="middle" class="t-bold">×</text>
+		<text x="680" y="222" text-anchor="middle" class="t-bold">= Ball 월드</text>
+		<text x="520" y="252" class="t-small">아래 두 행렬의 곱 = GetParentWorldMatrix(Ball)</text>
+		<text x="520" y="272" class="t-muted">기즈모·물리·스크립트의 로컬 ↔ 월드 변환 기준</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 42-3.</b> Phase 14 샘플(여우 머리 공)의 구조. 부착된 엔티티의 트랜스폼은 "소켓 기준 로컬"이 되고, 월드 행렬 = 자기 로컬 × 소켓 로컬 × 뼈 월드입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Scene.cpp (발췌)"><span class="kw">bool</span> FScene::GetSocketWorldMatrix(FEntity ModelRoot, std::string_view Socket, FMatrix4x4&amp; OutWorld) <span class="kw">const</span>
+{
+	...
+	OutWorld = Found-&gt;GetLocalMatrix() * GetTransform(Bone).WorldMatrix; <span class="com">// 소켓 로컬 × 뼈 월드</span>
+	...
+}
+
+FMatrix4x4 FScene::GetParentWorldMatrix(FEntity Entity) <span class="kw">const</span>
+{
+	<span class="kw">if</span> (IsSocketAttached(Entity))
+	{
+		<span class="kw">const</span> FSocketAttachmentComponent&amp; Attachment = Registry.Get&lt;FSocketAttachmentComponent&gt;(Entity);
+		FMatrix4x4                        SocketWorld;
+		<span class="kw">if</span> (GetSocketWorldMatrix(Attachment.Target, Attachment.Socket, SocketWorld))
+		{
+			<span class="kw">return</span> SocketWorld;
+		}
+	}
+	<span class="kw">const</span> FEntity Parent = GetParent(Entity);
+	<span class="kw">return</span> Parent.IsValid() ? GetTransform(Parent).WorldMatrix : FMatrix4x4::Identity;
+}</pre>
+<p>트랜스폼 갱신(<code>FScene::UpdateTransforms</code>)은 부착된 엔티티를 대상 모델의 뼈 계산 <b>뒤로 미뤄</b> 처리합니다(부착의 부착도 차례로). 뼈 월드 행렬이 이번 프레임 값으로 정해진 뒤에야 소켓 위치가 맞기 때문입니다. 자기 하위를 대상으로 하는 순환 부착은 거부되고, 소켓을 찾지 못하면 평소 계층을 따릅니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 로컬 ↔ 월드 변환은 GetParentWorldMatrix로</b>
+	기즈모로 칼을 끌거나, 물리가 계산한 월드 위치를 로컬로 되돌리거나, 스크립트가 월드 좌표를 쓸 때 <code>Scene.GetTransform(Parent).WorldMatrix</code>를 쓰면 소켓 부착 엔티티에서 틀립니다 — 그 엔티티의 "부모"는 계층 부모가 아니라 소켓이기 때문입니다. 그래서 이런 코드는 반드시 <code>FScene::GetParentWorldMatrix</code>를 씁니다(CLAUDE.md "노티파이/소켓").
+</div>
+
+<h3 id="lec-42-ik"><span class="step">핵심 개념</span>2본 IK — 코사인 법칙</h3>
+<p>지금까지는 뼈 회전에서 끝 위치를 계산했습니다(FK, Forward Kinematics). <b>IK(Inverse Kinematics)</b>는 반대로 "발이 여기 있어야 한다"는 끝 위치에서 뼈 회전을 구합니다. 일반적인 IK는 반복 계산이 필요하지만, 허벅지-정강이-발이나 위팔-아래팔-손처럼 <b>뼈 두 개짜리 사슬</b>은 삼각형 하나의 문제라 닫힌 식으로 바로 풀립니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="2본 IK 기하">
+		<title>2본 IK</title>
+		<path d="M150,50 L165,159 L175,259" class="ln-d" stroke-width="2"/>
+		<line x1="150" y1="50" x2="260" y2="200" class="ln-d"/>
+		<path d="M150,50 L247.6,100.7 L260,200" class="ln sa" stroke-width="3"/>
+		<path d="M247.6,100.7 L286,72.5" class="ln s2" stroke-width="1.6" marker-end="url(#arr)"/>
+		<path d="M167.7,74.2 A30,30 0 0 0 176.6,63.8" class="ln"/>
+		<circle cx="150" cy="50" r="6" class="k1"/>
+		<circle cx="247.6" cy="100.7" r="6" class="acc"/>
+		<circle cx="260" cy="200" r="6" class="f5"/>
+		<circle cx="165" cy="159" r="4" class="k1"/><circle cx="175" cy="259" r="4" class="k1"/>
+		<text x="162" y="44" class="t-small">허벅지 (Root)</text>
+		<text x="258" y="122" class="t-small">무릎 (Mid)</text>
+		<text x="292" y="72" class="t-small f2">Pole (무릎 방향)</text>
+		<text x="272" y="206" class="t-small">목표 = 바닥에 맞춘 발</text>
+		<text x="186" y="268" class="t-muted">IK 전 (애니메이션 포즈)</text>
+		<text x="196" y="66" class="t-small t-bold">a</text>
+		<text x="262" y="160" class="t-small t-bold">b</text>
+		<text x="196" y="146" class="t-small t-bold">d</text>
+		<text x="184" y="86" class="t-small">θ</text>
+
+		<text x="480" y="40" class="t-bold">코사인 법칙으로 무릎 위치 구하기</text>
+		<g class="t-small">
+			<text x="480" y="66">a = 허벅지 길이, b = 정강이 길이, d = 목표까지 거리</text>
+			<text x="480" y="90" class="t-mono">cos θ = (a² + d² − b²) / (2ad)</text>
+			<text x="480" y="114">d는 [|a − b|, a + b] 안으로 자른다 (닿지 않으면 뻗는다)</text>
+			<text x="480" y="138" class="t-mono">무릎 = Root + D·a·cos θ + Bend·a·sin θ</text>
+			<text x="480" y="162">D = 목표 방향, Bend = Pole을 D에 수직으로 만든 것</text>
+			<text x="480" y="194" class="t-bold">결과는 회전 두 개</text>
+			<text x="480" y="216">RootDelta: (Mid − Root) → (무릎 − Root)</text>
+			<text x="480" y="238">MidDelta: 돌린 정강이 → (목표 − 무릎)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 42-4.</b> 뼈 길이 a, b와 목표까지 거리 d로 삼각형이 정해지므로, 남은 자유도는 "무릎이 어느 쪽으로 굽느냐"뿐입니다. 그것을 Pole(무릎 방향)이 정합니다. 점선은 IK 전 애니메이션 포즈입니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Scene/AnimIK.cpp — AnimIKMath::SolveTwoBone (발췌)"><span class="kw">const float</span> MaxReach  = (UpperLength + LowerLength) * <span class="num">0.9999f</span>;
+<span class="kw">const float</span> MinReach  = FMath::Abs(UpperLength - LowerLength) * <span class="num">1.0001f</span> + FMath::SmallNumber;
+<span class="kw">const float</span> Reach     = FMath::Clamp(Distance, MinReach, MaxReach);
+...
+<span class="com">// 코사인 법칙: 허벅지와 목표 방향 사이 각</span>
+<span class="kw">const float</span> CosAngle = FMath::Clamp((UpperLength * UpperLength + Reach * Reach - LowerLength * LowerLength) / (<span class="num">2.0f</span> * UpperLength * Reach), -<span class="num">1.0f</span>, <span class="num">1.0f</span>);
+<span class="kw">const float</span> SinAngle = std::sqrt(FMath::Max(<span class="num">0.0f</span>, <span class="num">1.0f</span> - CosAngle * CosAngle));
+<span class="kw">const</span> FVector3 DesiredMid = Root + Direction * (UpperLength * CosAngle) + Bend * (UpperLength * SinAngle);
+<span class="kw">const</span> FVector3 DesiredEnd = Root + Direction * Reach;
+
+Result.RootDelta          = FromToRotation(Mid - Root, DesiredMid - Root);
+<span class="kw">const</span> FVector3 RotatedEnd = DesiredMid + Result.RootDelta.RotateVector(End - Mid);
+Result.MidDelta           = FromToRotation(RotatedEnd - DesiredMid, DesiredEnd - DesiredMid);</pre>
+<p>0.9999를 곱해 다리를 "완전히 펴지 않는" 데는 이유가 있습니다. 완전히 편 다리는 무릎 각이 0이라 어느 쪽으로 굽어야 할지(Bend) 방향 정보가 사라지고, 목표가 조금만 움직여도 무릎이 갑자기 뒤집힐 수 있습니다. Pole이 없거나 목표 방향과 평행하면 지금 무릎 방향을, 그것도 없으면 위·앞 축 중 하나를 씁니다.</p>
+
+<h4>발 IK — 바닥 탐색은 World가 한다</h4>
+<p>발 IK(<code>FFootIkComponent</code>, 모델 루트에)는 발마다 위 2본 IK를 한 번씩 풉니다. 문제는 <b>목표, 즉 바닥 높이를 어디서 아느냐</b>입니다. 바닥을 알려면 물리 레이캐스트가 필요한데, 애니메이션 시스템은 Scene 모듈에 있고 Scene은 Physics에 의존하면 안 됩니다(0강의 의존 방향). 그래서 둘을 모두 아는 <b>World(<code>FGameWorld</code>)가 탐색을 대신</b>하고 결과를 컴포넌트 런타임에 넣습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="발 IK 데이터 흐름">
+		<title>발 IK 데이터 흐름</title>
+		<text x="20" y="34" class="t-small t-bold">TickGameplay</text>
+		<line x1="20" y1="42" x2="555" y2="42" class="ln"/>
+		<text x="570" y="34" class="t-small t-bold">TickPresentation</text>
+		<line x1="570" y1="42" x2="840" y2="42" class="ln"/>
+		<g class="t-small">
+			<rect x="20" y="60" width="110" height="54" rx="8" class="k5"/>
+			<text x="75" y="84" text-anchor="middle" class="t-bold">물리</text>
+			<text x="75" y="102" text-anchor="middle" class="t-muted">캐릭터 이동</text>
+			<rect x="145" y="60" width="110" height="54" rx="8" class="box"/>
+			<text x="200" y="84" text-anchor="middle" class="t-bold">트랜스폼</text>
+			<text x="200" y="102" text-anchor="middle" class="t-muted">월드 행렬</text>
+			<rect x="270" y="60" width="130" height="54" rx="8" class="acc"/>
+			<text x="335" y="84" text-anchor="middle" class="t-bold">애니 파라미터</text>
+			<text x="335" y="102" text-anchor="middle" class="t-muted">Speed 등</text>
+			<rect x="415" y="60" width="140" height="54" rx="8" class="acc"/>
+			<text x="485" y="84" text-anchor="middle" class="t-bold">발 IK 탐색</text>
+			<text x="485" y="102" text-anchor="middle" class="t-muted">World: Raycast</text>
+			<rect x="570" y="60" width="130" height="54" rx="8" class="k2"/>
+			<text x="635" y="84" text-anchor="middle" class="t-bold">애니메이션</text>
+			<text x="635" y="102" text-anchor="middle" class="t-muted">포즈 → … → IK</text>
+			<rect x="715" y="60" width="125" height="54" rx="8" class="box"/>
+			<text x="777" y="84" text-anchor="middle" class="t-bold">트랜스폼</text>
+			<text x="777" y="102" text-anchor="middle" class="t-muted">→ 렌더</text>
+		</g>
+		<path d="M130,87 H141" class="ln" marker-end="url(#arr)"/>
+		<path d="M255,87 H266" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,87 H411" class="ln" marker-end="url(#arr)"/>
+		<path d="M555,87 H566" class="ln" marker-end="url(#arr)"/>
+		<path d="M700,87 H711" class="ln" marker-end="url(#arr)"/>
+		<path d="M495,114 C495,150 625,150 625,118" class="ln" marker-end="url(#arr)"/>
+		<text x="560" y="166" text-anchor="middle" class="t-small">HitPoint · HitNormal</text>
+		<path d="M650,114 C650,215 470,215 470,118" class="ln-d" marker-end="url(#arr)"/>
+		<text x="560" y="214" text-anchor="middle" class="t-small">ProbeModelPosition (IK 전 발 위치) → 다음 프레임 탐색 시작점</text>
+		<text x="20" y="170" class="t-small">Scene(애니메이션)은 Physics를 모른다</text>
+		<text x="20" y="190" class="t-small">→ 둘을 다 아는 World가 탐색해 넘긴다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 42-5.</b> 탐색은 게임플레이 틱의 물리·트랜스폼 뒤에 하고, 그 결과를 같은 프레임 표시 틱의 애니메이션이 씁니다. 탐색 시작점은 직전 애니메이션이 남긴 "IK 전 발 위치"라서 한 프레임 늦습니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/World/GameWorldAnimation.cpp — FGameWorld::UpdateFootIkProbes (발췌)"><span class="kw">const</span> FMatrix4x4&amp; RootWorld = Scene-&gt;GetTransform(Entity).WorldMatrix;
+<span class="kw">const float</span>       Distance  = FMath::Max(FootIk.TraceUp + FootIk.TraceDown, <span class="num">1.0f</span>);
+<span class="kw">for</span> (FFootIkFoot&amp; Foot : FootIk.Runtime.Feet)
+{
+	FVector3 Origin = RootWorld.TransformPosition(Foot.ProbeModelPosition) + FVector3::UpVector * FootIk.TraceUp;
+	<span class="kw">float</span>    Left   = Distance;
+	<span class="kw">for</span> (int32 Try = <span class="num">0</span>; Try &lt; <span class="num">3</span> &amp;&amp; Left &gt; <span class="num">0.0f</span>; ++Try)
+	{
+		FPhysicsHit Hit;
+		<span class="kw">if</span> (!Physics-&gt;Raycast(Origin, -FVector3::UpVector, Left, Hit)) { <span class="kw">break</span>; }
+		<span class="kw">if</span> (!IsSelf(Entity, Hit.Entity))  <span class="com">// 자기 몸(조상/자손)에 맞으면 1cm 아래에서 다시</span>
+		{
+			Foot.bHit = <span class="kw">true</span>; Foot.HitPoint = Hit.Position; ...
+			<span class="kw">break</span>;
+		}
+		Left -= Hit.Distance + <span class="num">1.0f</span>;
+		Origin = Hit.Position - FVector3::UpVector * <span class="num">1.0f</span>;
+	}
+}
+FootIk.Runtime.ProbeAge = <span class="num">0.0f</span>;</pre>
+<p>애니메이션 쪽 규칙은 이렇습니다.</p>
+<ul>
+	<li>발 보정 = clamp(바닥 높이 − 모델 루트 월드 Z, ±MaxAdjust)를 <code>InterpSpeed</code>로 부드럽게.</li>
+	<li>골반 보정 = min(0, 발 보정들) — <b>내리기만</b> 합니다. 계단에서 한 발이 낮은 칸에 있으면 골반을 내려야 그 발이 닿습니다. 올리기까지 하면 캐릭터가 떠 보입니다.</li>
+	<li>골반을 내린 뒤 각 발을 (애니메이션 발 위치 + 위 × 보정)으로 2본 IK. <code>bAlignToGround</code>면 발을 바닥 법선에 맞춰 <code>MaxAlignAngle</code>까지 기울입니다.</li>
+	<li>탐색 결과가 <code>ProbeMaxAge</code>(0.25초)보다 오래되면 맞지 않은 것으로 보고 보정을 0으로 돌립니다(에디터 편집 중, 물리 없음).</li>
+	<li>계산은 모델 공간(모델 루트 기준)이고, 월드 값은 모델 루트 월드 행렬의 역행렬로 바꿔 씁니다. 회전 사슬은 <b>균등 스케일</b>을 가정합니다.</li>
+</ul>
+
+<h4>시선(LookAt)</h4>
+<p><code>FLookAtComponent</code>는 목·머리처럼 뼈 목록(위 → 아래)의 마지막 뼈가 목표를 보게 합니다. 회전 = "애니메이션의 앞 방향 → 목표 방향"을 <code>MaxAngle</code>에서 자르고 가중치를 곱한 뒤, 뼈 개수로 나눠 위 뼈부터 차례로 나눠 줍니다. 한 뼈가 다 돌리면 목이 꺾여 보이지만, 목과 머리가 나눠 돌리면 자연스럽습니다. 목표는 Lua <code>SetLookAtTarget</code>(점/엔티티)이 있으면 그것, 없으면 컴포넌트의 <code>Target</code>이고, 목표가 사라지면 가중치가 <code>BlendSpeed</code>로 0이 됩니다.</p>
+
+<h3 id="lec-42-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">여우는 -X를 본다</b>
+	시선 IK의 "앞 방향"은 기본 포즈에서 모델 공간의 어느 축이 캐릭터의 앞인지(<code>ForwardAxis</code>)로 정합니다. 엔진 규약은 +X가 앞이지만, 여우 모델(Fox.glb)은 모델 공간 −X를 바라봅니다. 그래서 여우의 LookAt은 <code>ForwardAxis = [-1, 0, 0]</code>입니다(CLAUDE.md "애니메이션 고급"). 외부 에셋의 "정면"은 엔진 규약과 다를 수 있으니, 방향을 가정하는 기능은 축을 설정으로 받아야 합니다. 43강 리타기팅의 "정면 보정"도 같은 문제를 다룹니다.
+</div>
+<div class="callout story">
+	<b class="t">소켓 무기를 모델 엔티티의 자식으로 두면</b>
+	훈련장 데모를 만들 때, 소켓에 붙일 무기 엔티티를 모델 엔티티의 자식으로 두면 모델 노드 계층이 만들어지지 않는 문제가 기록되었습니다. 그래서 규칙은 "소켓 부착 무기는 형제나 루트 아래에"입니다. 소켓 부착은 계층 부모를 무시하므로 굳이 자식일 필요도 없습니다(그림 42-3).
+</div>
+<div class="callout warn">
+	<b class="t">래그돌 중에는 IK도 꺼진다</b>
+	래그돌(<code>FAnimationRuntime::bPhysicsPose</code>) 동안은 애니메이션 갱신 자체를 건너뛰므로 IK도 꺼지고 보정값과 가중치는 0으로 돌아갑니다. 물리가 뼈를 움직이는 중에 IK가 다리를 끌어당기면 둘이 싸우게 됩니다. IK 식을 바꾸면 <code>AnimIK_*</code> 테스트를, 노티파이 판정을 바꾸면 <code>AnimNotifyTests</code>를 함께 고칩니다.
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>노티파이 판정 = 이번 진행 구간에 시각이 들었는가. 루프는 두 구간, 역재생은 시간축 뒤집기, 멈춤·스크럽은 점 노티파이 없음.</li>
+		<li>섞일 때는 출처마다 가중치가 가장 큰 기여 하나에서만 판정해 중복을 막고, 이벤트는 모았다가 다음 프레임 메인 스레드에서 전달한다.</li>
+		<li>노티파이·소켓은 쿠킹 입력이 아닌 <code>.emeta</code> 사이드카에 둔다.</li>
+		<li>소켓 부착 엔티티 월드 = 로컬 × 소켓 로컬 × 뼈 월드. 로컬↔월드 변환은 <code>GetParentWorldMatrix</code>로.</li>
+		<li>2본 IK는 코사인 법칙의 닫힌 식, 무릎 방향은 Pole. 발 IK 바닥 탐색은 의존 방향 때문에 World가 하고 한 프레임 늦다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 루프 경계를 나누지 않고 [이전 시각, 새 시각) 하나로 판정하면 어떤 일이 생길까요?</summary>
+	루프로 감긴 프레임은 새 시각이 이전 시각보다 작아(예: 0.66 → 0.04) 구간이 비거나 뒤집힙니다. 그러면 끝 근처(0.66~D)와 처음 근처(0~0.04)의 노티파이가 모두 누락됩니다. "끝까지"와 "처음부터" 두 구간으로 나눠야 한 바퀴의 모든 노티파이가 정확히 한 번씩 나옵니다.
+</details>
+<details class="quiz"><summary>Q2. 노티파이를 애니메이션 갱신 도중 바로 Lua로 부르지 않고 다음 프레임에 전달하는 이유는?</summary>
+	포즈 평가는 엔티티별로 여러 스레드에서 병렬로 돌고, 평가 단계에서는 콜백·로그·ECS 구조 변경을 금지합니다. Lua 상태는 스레드 안전하지 않고, 스크립트가 엔티티를 만들거나 지울 수도 있습니다. 그래서 런타임별 목록에 모았다가 메인 스레드에서 정해진 시점에 나눠 줍니다. 대가는 한 프레임 지연입니다.
+</details>
+<details class="quiz"><summary>Q3. 발 IK에서 골반을 올리는 보정도 허용하면 어떤 문제가 생길까요?</summary>
+	양발이 모두 높은 곳(예: 경사 위)에 있을 때 골반이 올라가면 캡슐(실제 충돌 위치)보다 몸이 떠 보이고, 애니메이션의 다리 길이로는 닿지 않는 위치까지 몸을 들어 올리게 됩니다. 반대로 내리기만 하면 "낮은 쪽 발이 닿도록 몸을 숙이는" 경우만 처리해 안정적입니다. 위로 높아진 발은 무릎을 더 굽혀(2본 IK) 맞춥니다.
+</details>
+</article>
+
+<!-- ======================================================= 43강 ======================================================= -->
+<article class="lecture" id="lec-43">
+<header>
+	<div class="no">43강</div>
+	<h2 id="lec-43-title">리타기팅과 루트 모션</h2>
+	<div class="meta">관련 Phase: 52 사이드(리타기팅 + 루트 모션) · 살펴볼 곳: <code>Scene/AnimRetarget.h</code>(머리 주석)·<code>.cpp</code>, <code>Scene/AnimRootMotion.h</code>(머리 주석), <code>Physics/CharacterMovement.h</code>, <code>Scene/ModelMetadata.h</code>(<code>"Retarget"</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>스켈레톤마다 다른 것(이름, 뼈 수, 비율, 바인드 포즈, 정면)이 무엇이고, 왜 로컬 회전을 그대로 복사하면 안 되는지 설명할 수 있습니다.</li>
+		<li>휴머노이드 23뼈 리그로 자동/수동 매핑하는 방법과, 모델 공간 바인드 보정 식의 각 항이 하는 일을 압니다.</li>
+		<li>루트 모션을 추출하고 포즈를 제자리화하는 원리, 그리고 그것을 캐릭터 이동·멀티플레이와 연결하는 방식을 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-43-why"><span class="step">왜 필요한가</span>동작은 많은데 스켈레톤이 다르다</h3>
+<p>41강 끝에서 본 것처럼 그래프의 품질은 결국 클립에서 나옵니다. 그런데 애니메이션 에셋은 스켈레톤에 묶여 있습니다. ProjectE 샘플에는 마네킹(Quaternius UAL2, CC0)과 치비 비율의 KayKit 캐릭터들이 있는데, KayKit 기사에게 마네킹의 동작을 그대로 틀 수는 없습니다. 뼈 이름도, 개수도, 팔다리 길이도, 기본 자세도 다르기 때문입니다.</p>
+<p><b>리타기팅(retargeting)</b>은 한 스켈레톤의 클립을 다른 스켈레톤에서 재생할 수 있게 바꾸는 것입니다. ProjectE의 방식은 언리얼 IK Retargeter의 FK 체인 부분을 단순화한 것입니다(Phase 52 사이드).</p>
+<p>같은 작업에서 <b>루트 모션(root motion)</b>도 들어왔습니다. 애니메이터가 만든 "앞으로 세 걸음 걸으며 베기" 같은 동작은 이동량이 클립 안에 들어 있는데, 이것을 캐릭터의 실제 이동으로 꺼내 쓰는 기능입니다. 둘 다 "다른 곳에서 만든 동작을 우리 캐릭터에 정확히 옮기기"라는 같은 문제의 두 얼굴입니다.</p>
+
+<h3 id="lec-43-skeleton"><span class="step">핵심 개념</span>스켈레톤 차이와 휴머노이드 리그</h3>
+<p>두 스켈레톤이 다를 수 있는 점을 늘어놓아 봅시다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>차이</th><th>예</th><th>대응</th></tr>
+	<tr><td>뼈 이름</td><td><code>mixamorig:LeftUpLeg</code> / <code>thigh_l</code> / <code>upperleg.L</code></td><td>공통 리그 이름으로 매핑</td></tr>
+	<tr><td>뼈 개수</td><td>척추가 2개인 모델, 4개인 모델, 손가락이 있는 모델</td><td>리그 23뼈만 옮기고 나머지는 대상 기본 포즈</td></tr>
+	<tr><td>뼈의 로컬 축</td><td>어떤 리그는 뼈 방향이 +Y, 어떤 리그는 +X</td><td>로컬이 아니라 <b>모델 공간</b>에서 비교</td></tr>
+	<tr><td>바인드 포즈</td><td>팔을 수평으로 편 T 포즈 vs 45도 내린 A 포즈</td><td>Align 보정</td></tr>
+	<tr><td>정면 방향</td><td>모델 공간에서 서로 다른 쪽을 바라봄</td><td>F(정면 보정, Z축 회전)</td></tr>
+	<tr><td>비율</td><td>엉덩이 높이 50cm인 치비 vs 100cm인 사실형</td><td>이동 × 키 비율</td></tr>
+</table></div>
+<p>공통 이름은 <b>휴머노이드 표준 뼈 23개</b>(<code>EHumanoidBone</code>)입니다: Root, Hips, Spine, Chest, UpperChest, Neck, Head, 좌우 Shoulder·UpperArm·LowerArm·Hand, 좌우 UpperLeg·LowerLeg·Foot·Toes. 매핑은 모델마다 <b>자동 추정</b>하고, 틀린 곳은 모델 사이드카 <code>.emeta</code>의 <code>"Retarget"</code>(리그 뼈 → 노드 이름, 빈 이름 = 매핑 안 함)으로 덮어씁니다(<code>FModelMetadata</code> 형식 2).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="뼈 이름 자동 매핑">
+		<title>휴머노이드 리그 자동 매핑</title>
+		<text x="20" y="24" class="t-bold">이름 규칙</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="190" height="34" rx="8" class="box"/><text x="115" y="62" text-anchor="middle" class="t-mono">mixamorig:LeftUpLeg</text>
+			<rect x="20" y="84" width="190" height="34" rx="8" class="box"/><text x="115" y="106" text-anchor="middle" class="t-mono">thigh_l</text>
+			<rect x="20" y="128" width="190" height="34" rx="8" class="box"/><text x="115" y="150" text-anchor="middle" class="t-mono">upperleg.L</text>
+			<rect x="250" y="40" width="200" height="34" rx="8" class="k1"/><text x="350" y="62" text-anchor="middle">upleg + 왼쪽</text>
+			<rect x="250" y="84" width="200" height="34" rx="8" class="k1"/><text x="350" y="106" text-anchor="middle">thigh + 왼쪽</text>
+			<rect x="250" y="128" width="200" height="34" rx="8" class="k1"/><text x="350" y="150" text-anchor="middle">upperleg + 왼쪽</text>
+			<rect x="490" y="40" width="160" height="122" rx="10" class="acc"/>
+			<text x="570" y="96" text-anchor="middle" class="t-bold">LeftUpperLeg</text>
+			<text x="570" y="116" text-anchor="middle" class="t-muted">리그 뼈</text>
+		</g>
+		<path d="M210,57 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M210,101 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M210,145 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M450,57 L486,80" class="ln" marker-end="url(#arr)"/>
+		<path d="M450,101 H486" class="ln" marker-end="url(#arr)"/>
+		<path d="M450,145 L486,122" class="ln" marker-end="url(#arr)"/>
+		<g class="t-muted">
+			<text x="675" y="52">① 소문자로</text>
+			<text x="675" y="72">② ':' '|' 앞, mixamorig 제거</text>
+			<text x="675" y="92">③ left/right 또는</text>
+			<text x="689" y="110">끝 _l .l -l, 앞 l_ l. …</text>
+			<text x="675" y="130">④ 영문자만 남김</text>
+			<text x="675" y="150">⑤ 기본 이름 표 조회</text>
+		</g>
+
+		<text x="20" y="196" class="t-bold">계층 규칙 (척추)</text>
+		<g class="t-small">
+			<rect x="20" y="212" width="100" height="34" rx="8" class="acc"/><text x="70" y="234" text-anchor="middle">Hips</text>
+			<rect x="150" y="212" width="100" height="34" rx="8" class="k2"/><text x="200" y="234" text-anchor="middle">뼈 1</text>
+			<rect x="280" y="212" width="100" height="34" rx="8" class="k2"/><text x="330" y="234" text-anchor="middle">뼈 2</text>
+			<rect x="410" y="212" width="100" height="34" rx="8" class="k2"/><text x="460" y="234" text-anchor="middle">뼈 3</text>
+			<rect x="540" y="212" width="100" height="34" rx="8" class="acc"/><text x="590" y="234" text-anchor="middle">Neck</text>
+			<text x="200" y="266" text-anchor="middle">Spine</text>
+			<text x="330" y="266" text-anchor="middle">Chest</text>
+			<text x="460" y="266" text-anchor="middle">UpperChest</text>
+		</g>
+		<path d="M120,229 H146" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,229 H276" class="ln" marker-end="url(#arr)"/>
+		<path d="M380,229 H406" class="ln" marker-end="url(#arr)"/>
+		<path d="M510,229 H536" class="ln" marker-end="url(#arr)"/>
+		<text x="660" y="226" class="t-muted">이름이 제각각인 척추는</text>
+		<text x="660" y="244" class="t-muted">Hips ~ Neck 사이 사슬로</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 43-1.</b> 위: 서로 다른 관례의 이름이 같은 리그 뼈로 모입니다(Mixamo/UE/Unity/KayKit/Quaternius/Blender 관례). 아래: 척추는 이름이 아니라 Hips와 Neck 사이 조상 사슬로 정합니다(Hips 쪽부터 Spine, 가운데 Chest, 마지막 UpperChest).</figcaption>
+</figure>
+<p>자동 추정에는 몇 가지 안전장치가 있습니다. 좌우 표시가 없으면 기본 포즈 모델 공간 Y로 가르고(+Y = 왼쪽), 같은 리그 뼈 후보가 여럿이면 이름 우선순위 → 얕은 노드 순으로 고릅니다. 그리고 <b>사슬 검증</b>: LowerArm은 UpperArm의 자손, Hand는 LowerArm의 자손, 팔·다리·목·머리는 Hips의 자손이어야 하며 아니면 버립니다. "arm"이라는 이름의 엉뚱한 액세서리 뼈를 잡는 실수를 막습니다.</p>
+
+<h3 id="lec-43-retarget"><span class="step">핵심 개념</span>모델 공간 바인드 보정</h3>
+<p>가장 단순한 리타기팅은 "같은 리그 뼈의 로컬 회전을 그대로 복사"입니다. 이것이 틀리는 이유는 두 가지입니다. 첫째, 로컬 축이 리그마다 다릅니다 — 소스의 "X축으로 30도"가 대상에서는 엉뚱한 방향으로 도는 회전일 수 있습니다. 둘째, 바인드 포즈가 다릅니다. 같은 "팔 들기" 동작이라도 T 포즈에서 시작한 30도와 A 포즈에서 시작한 30도는 결과가 다릅니다.</p>
+<p>ProjectE는 회전을 <b>모델 공간</b>에서 다루고, "소스가 자기 바인드 포즈에서 <b>얼마나 돌았는가</b>(델타)"를 대상의 기준 포즈에 얹습니다.</p>
+<div class="callout note">
+	<b class="t">식 (AnimRetarget.h 머리 주석)</b>
+	G<sub>d</sub>(t) = F · G<sub>s</sub>(t) · G<sub>s</sub>(bind)<sup>−1</sup> · F<sup>−1</sup> · Align · G<sub>d</sub>(bind)<br>
+	G<sub>s</sub>, G<sub>d</sub> = 소스/대상 뼈의 모델 공간 회전, bind = 기본(임포트) 포즈.<br>
+	· G<sub>s</sub>(t) · G<sub>s</sub>(bind)<sup>−1</sup> — 소스가 바인드에서 돈 양(델타, 모델 공간)<br>
+	· F … F<sup>−1</sup> — 그 델타를 대상 모델의 정면 기준으로 옮김 (Z축 회전 — 왼다리→오른다리 수평 방향을 맞춘다)<br>
+	· Align · G<sub>d</sub>(bind) — 대상 바인드 포즈를 소스 바인드 포즈 모양으로 돌려 놓은 "기준 포즈"<br>
+	로컬 회전 = (대상 부모의 그 시각 모델 회전)<sup>−1</sup> · G<sub>d</sub>(t), 부모부터 차례로.
+</div>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="T 포즈와 A 포즈 사이 팔 회전 옮기기">
+		<title>바인드 보정</title>
+		<rect x="20" y="28" width="250" height="180" rx="10" class="box"/>
+		<rect x="300" y="28" width="250" height="180" rx="10" class="box"/>
+		<rect x="580" y="28" width="260" height="180" rx="10" class="box"/>
+		<text x="145" y="50" text-anchor="middle" class="t-bold">소스: T 포즈 바인드 → 지금</text>
+		<text x="425" y="50" text-anchor="middle" class="t-bold">대상: A 포즈 바인드</text>
+		<text x="710" y="50" text-anchor="middle" class="t-bold">대상 결과</text>
+
+		<line x1="75" y1="105" x2="75" y2="195" class="ln" stroke-width="3"/>
+		<path d="M90,135 H200" class="ln-d" stroke-width="2"/>
+		<path d="M90,135 L185,80" class="ln s1" stroke-width="3"/>
+		<circle cx="90" cy="135" r="5" class="k1"/>
+		<path d="M130,135 A40,40 0 0 0 124.6,115" class="ln"/>
+		<text x="140" y="123" class="t-small">Δ = 30°</text>
+		<text x="150" y="153" class="t-muted">바인드 (수평)</text>
+
+		<line x1="355" y1="70" x2="355" y2="195" class="ln" stroke-width="3"/>
+		<path d="M370,100 L448,178" class="ln s4" stroke-width="3"/>
+		<circle cx="370" cy="100" r="5" class="k1"/>
+		<path d="M370,100 H470" class="ln-d"/>
+		<text x="420" y="92" class="t-muted">수평 기준</text>
+		<text x="430" y="150" class="t-small">45° 아래</text>
+
+		<line x1="635" y1="105" x2="635" y2="195" class="ln" stroke-width="3"/>
+		<path d="M650,135 L745,80" class="ln s2" stroke-width="3"/>
+		<path d="M650,135 L756,163" class="ln-d s5" stroke-width="2"/>
+		<circle cx="650" cy="135" r="5" class="k1"/>
+		<text x="712" y="72" class="t-small f2">보정 후 30° 위</text>
+		<text x="680" y="186" class="t-small f5">로컬 복사: 15° 아래</text>
+		<text x="680" y="202" class="t-muted">(A 포즈 + 30°)</text>
+
+		<path d="M272,118 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M552,118 H576" class="ln" marker-end="url(#arr)"/>
+
+		<rect x="20" y="222" width="820" height="66" rx="10" class="acc"/>
+		<text x="40" y="246" class="t-bold">Align = 대상 바인드의 뼈 방향(그 뼈 → 리그 자식 뼈)을 소스 바인드 방향으로 돌리는 최소 회전</text>
+		<text x="40" y="270" class="t-small">A 포즈 팔을 먼저 수평으로 돌려 놓고(Align), 거기에 소스의 델타 30°를 얹는다 → 소스와 같은 방향</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 43-2.</b> 소스(T 포즈)의 팔이 바인드에서 30° 올라갔습니다. 대상은 A 포즈라 바인드가 45° 아래입니다. 델타만 그대로 얹으면 15° 아래(빨간 점선)가 되지만, Align으로 대상 바인드를 소스 바인드 모양으로 맞춘 뒤 얹으면 소스와 같은 30° 위가 됩니다.</figcaption>
+</figure>
+<p>Align은 뼈마다 "대상 기본 포즈의 뼈 방향(그 뼈 → 리그 자식 뼈)을 소스 기본 포즈 방향(F 적용)으로 돌리는 최소 회전"입니다. 손·머리·발끝처럼 방향을 정할 자식 뼈가 양쪽에 없으면 리그 부모의 Align을 이어받고, Root/Hips는 항등입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimRetarget.cpp (발췌)"><span class="kw">FQuat</span> RetargetRotation(<span class="kw">const</span> FQuat&amp; SourceBind, <span class="kw">const</span> FQuat&amp; Source, <span class="kw">const</span> FQuat&amp; TargetReference)
+{
+	<span class="kw">return</span> (Source * SourceBind.Inverse() * TargetReference).GetNormalized();
+}
+...
+<span class="kw">float</span> ComputeHeightRatio(<span class="kw">float</span> SourceHipsHeight, <span class="kw">float</span> TargetHipsHeight)
+{
+	<span class="kw">if</span> (SourceHipsHeight &lt;= <span class="num">1.0f</span> || TargetHipsHeight &lt;= <span class="num">1.0f</span>)
+	{
+		<span class="kw">return</span> <span class="num">1.0f</span>;
+	}
+	<span class="kw">return</span> TargetHipsHeight / SourceHipsHeight;
+}</pre>
+
+<h4>이동은 Root/Hips만, 키 비율로</h4>
+<p>회전과 달리 이동은 대부분의 뼈에서 옮기지 않습니다(대상 기본 포즈 유지). 팔뼈의 이동을 옮기면 대상의 팔 길이가 소스 길이로 바뀌어 버리기 때문입니다. 몸 전체가 움직이는 Root/Hips만 옮기되 <b>키 비율</b>(대상 Hips 높이 ÷ 소스 Hips 높이, 기본 포즈 모델 공간 Z)을 곱합니다.</p>
+<div class="callout note">
+	<b class="t">이동 식</b>
+	대상 모델 위치 = P<sub>d</sub>(bind) + F · (P<sub>s</sub>(t) − P<sub>s</sub>(bind)) × 키 비율<br>
+	다리가 절반 길이인 캐릭터가 같은 걸음을 걸으면 한 걸음에 절반만 나아가야 발이 미끄러지지 않습니다. 루트 모션도 이 이동 채널에 실려 오므로 같이 스케일됩니다.
+</div>
+<p>변환된 클립은 30Hz로 다시 샘플링됩니다(<code>RetargetClip</code>). 소스 클립의 키 시각이 뼈마다 제각각이라도, 대상 부모의 그 시각 모델 회전을 알아야 로컬 회전을 구할 수 있으므로 모든 뼈를 같은 시각 격자에서 계산합니다.</p>
+
+<h3 id="lec-43-use"><span class="step">ProjectE에서는</span>리타기팅을 쓰는 법과 캐시</h3>
+<p>사용자는 두 가지 방법으로 다른 모델의 클립을 씁니다.</p>
+<ol>
+	<li><code>FAnimationComponent::RetargetSources</code>에 소스 모델 경로(Content 기준, <code>;</code>/<code>,</code> 구분)를 적는다.</li>
+	<li>클립 이름을 <code>"&lt;모델 경로&gt;:&lt;클립&gt;"</code>으로 쓴다 — 컴포넌트 Clip, 그래프 상태 샘플, Lua <code>Play</code>/<code>PlayMontage</code> 어디서든.</li>
+</ol>
+<p>그러면 애니메이션 시스템이 소스 모델의 클립 <b>전부</b>를 리타기팅해 자기 클립 뒤에 덧붙인 세트를 만듭니다(<code>FAnimationRuntime::BaseSet → Set</code>). 덧붙인 클립은 원래 이름과 <code>"&lt;모델 경로&gt;:&lt;클립&gt;"</code> 별칭 둘 다로 찾을 수 있어서, 그래프·블렌드 스페이스·몽타주가 그대로 동작합니다. 41강 그림 41-4의 2D 블렌드가 실제로 이렇게 KayKit 기사의 걷기·뛰기 클립을 빌려 씁니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Animations/Demo/Training/StrafeDrill.eanimgraph (발췌)">{
+  "Clip": "Asset/KayKit/Characters/KnightBare.glb:Walking_A",
+  "Position": [
+    0.0,
+    150.0
+  ],
+  "Rate": 1.25
+},</pre>
+<p>노티파이는 소스 모델의 <code>.emeta</code>를 따라옵니다(<code>FAnimationSet::ClipNotifySources</code>) — 소스 클립에 달린 발소리가 대상에서도 납니다. 결과는 <code>FAnimRetargetLibrary</code>가 "소스 경로 × 대상 키"로 캐시합니다. 매핑(<code>.emeta</code>)을 고치면 <code>Invalidate(모델 경로)</code>가 세대를 올려 사용 중인 컴포넌트가 다음 갱신에서 다시 만듭니다. 클립 번호를 기억하는 코드는 세트가 바뀌면 번호가 달라질 수 있으므로 <b>이름으로 다시 찾아야</b> 합니다.</p>
+
+<h3 id="lec-43-root"><span class="step">핵심 개념</span>루트 모션 — 추출과 제자리화</h3>
+<p>보통의 이동은 "코드가 캐릭터를 속도 v로 옮기고, 애니메이션은 제자리에서 다리만 움직이는" 방식입니다. 이러면 발이 땅에 붙어 있지 않고 미끄러지기 쉽습니다. 특히 "세 걸음 밀고 들어가며 베기"처럼 이동 속도가 동작 중에 변하는 클립은 코드로 흉내 내기 어렵습니다. 루트 모션은 반대로 <b>애니메이션이 이동을 결정</b>하게 합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="루트 모션 유무 비교">
+		<title>루트 모션 추출과 제자리화</title>
+		<g class="k2">
+			<rect x="93" y="70" width="14" height="40" rx="7"/><rect x="163" y="70" width="14" height="40" rx="7"/>
+			<rect x="233" y="70" width="14" height="40" rx="7"/><rect x="303" y="70" width="14" height="40" rx="7"/>
+			<rect x="93" y="180" width="14" height="40" rx="7"/><rect x="163" y="180" width="14" height="40" rx="7"/>
+			<rect x="233" y="180" width="14" height="40" rx="7"/><rect x="303" y="180" width="14" height="40" rx="7"/>
+		</g>
+		<line x1="40" y1="112" x2="360" y2="112" class="ln-d"/>
+		<line x1="40" y1="222" x2="360" y2="222" class="ln-d"/>
+		<path d="M100,112 L106,118 L100,124 L94,118 Z" class="acc"/>
+		<path d="M310,64 C260,30 150,30 104,62" class="ln s5" marker-end="url(#arr)"/>
+		<text x="205" y="30" text-anchor="middle" class="t-small f5">루프 끝 → 처음 자리로 튐</text>
+		<text x="100" y="140" text-anchor="middle" class="t-muted">엔티티</text>
+		<g class="acc">
+			<path d="M100,222 L106,228 L100,234 L94,228 Z"/><path d="M170,222 L176,228 L170,234 L164,228 Z"/>
+			<path d="M240,222 L246,228 L240,234 L234,228 Z"/><path d="M310,222 L316,228 L310,234 L304,228 Z"/>
+		</g>
+		<path d="M108,242 H160" class="ln" marker-end="url(#arr)"/>
+		<path d="M178,242 H230" class="ln" marker-end="url(#arr)"/>
+		<path d="M248,242 H300" class="ln" marker-end="url(#arr)"/>
+		<text x="205" y="270" text-anchor="middle" class="t-small">프레임마다 Δ만큼 엔티티(캡슐)가 이동</text>
+
+		<text x="420" y="64" class="t-bold">루트 모션 없이 (이동이 포즈에 들어 있음)</text>
+		<g class="t-small">
+			<text x="420" y="88">• 엔티티는 제자리, 메시만 걸어 나간다</text>
+			<text x="420" y="108">• 루프마다 처음 위치로 되돌아간다</text>
+			<text x="420" y="128">• 충돌 캡슐과 보이는 몸이 어긋난다</text>
+		</g>
+		<text x="420" y="172" class="t-bold">루트 모션 (추출 + 제자리화)</text>
+		<g class="t-small">
+			<text x="420" y="196">• 포즈의 루트 XY는 P(0)에 고정</text>
+			<text x="420" y="216">• Δ = RotZ(−Y(a)) · (P(b) − P(a))의 XY</text>
+			<text x="420" y="236">• Δ는 캐릭터 이동에 싣고, 수직(Z)은 포즈에 남긴다</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 43-3.</b> 위: 이동이 포즈에 들어 있는 클립을 그냥 틀면 몸이 엔티티에서 멀어졌다가 루프 때 튑니다. 아래: 루트 노드의 수평 이동을 꺼내(추출) 포즈에서는 지우고(제자리화) 엔티티를 그만큼 옮깁니다.</figcaption>
+</figure>
+
+<p>규칙은 <code>AnimRootMotion.h</code> 머리 주석이 기준입니다.</p>
+<ul>
+	<li><b>루트 노드</b>: 컴포넌트 <code>RootMotionBone</code>이 있으면 그 노드, 없으면 클립마다 "조상에 이동 채널이 없는 최상위 이동 채널 노드"(<code>ClipRootMotionNodes</code>) — 전용 root 뼈가 있으면 root, 없으면 보통 Hips입니다. 클립마다 따로 정하는 이유는 같은 모델이라도 클립마다 이동이 실린 뼈가 다를 수 있기 때문입니다.</li>
+	<li><b>추출</b>: 루트 노드의 모델 공간 위치 P(t)와, 회전 추출이 켜져 있으면 시작 대비 Z축(위) 회전 Y(t)(twist 분해). 구간 a → b의 이동 = RotZ(−Y(a)) × (P(b) − P(a))의 XY, 회전 = Y(b) − Y(a)를 [−π, π]로. RotZ(−Y(a))는 이동량을 "그 시점 캐릭터가 바라보는 방향 기준"으로 바꿉니다 — 그래야 캐릭터가 돌아선 뒤에도 "앞으로 한 걸음"이 앞으로 갑니다.</li>
+	<li><b>루프 경계</b>: (a → 끝)과 (시작 → b)를 합성합니다(<code>Compose</code>). 노티파이와 같은 발상입니다. 역재생은 (a → 시작) 다음 (끝 → b).</li>
+	<li><b>제자리화</b>: 샘플한 포즈의 루트 노드 모델 공간 XY를 P(0)의 XY로 고정하고, 회전 추출이면 Z축 회전 −Y(t)를 곱해 시작 방향으로 되돌립니다. 루프 끝과 시작에서 포즈 XY가 같은 자리라 튀지 않습니다.</li>
+	<li><b>섞기</b>: 크로스페이드는 Lerp, 그래프 기여는 Σ 가중치 × 이동량, 레이어·몽타주는 시작 순서대로 Lerp(아래, 위, 가중치 × 루트 노드의 마스크 가중치).</li>
+</ul>
+<p>모드는 세 가지이고(<code>ERootMotionMode</code>), 씬 JSON에 번호로 저장되므로 끝에만 추가합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimRootMotion.h (발췌)"><span class="com">// 모드 ERootMotionMode (FAnimationComponent::RootMotionMode — 씬 JSON에 번호로 저장되므로 끝에만 추가):</span>
+<span class="com">//   None         = 추출하지 않는다 (포즈 그대로). 단, 이전 설정 bRootMotion(RootMotion)이 켜져 있으면 All과 같다.</span>
+<span class="com">//   MontagesOnly = 몽타주 클립만 추출 (클립 재생/그래프 포즈에는 이동이 그대로 남는다).</span>
+<span class="com">//   All          = 클립 재생(크로스페이드 포함)·그래프(기본/추가 레이어)·몽타주 전부.</span>
+<span class="kw">enum class</span> ERootMotionMode : int32
+{
+	None,
+	MontagesOnly,
+	All,
+};</pre>
+<p><code>MontagesOnly</code>가 실전에서 가장 쓸모 있습니다. 평소 이동은 입력으로 정밀하게 조종하고(41강의 블렌드 스페이스), 공격·회피 몽타주를 틀 때만 애니메이션의 이동을 따르게 하는 식입니다.</p>
+
+<h4>캐릭터 이동과의 연결</h4>
+<p>추출한 이동은 <code>FAnimationSystem::Update</code> 끝에서 <b>수신자</b>에게 넘깁니다. Scene은 Physics를 모르므로(42강과 같은 이유) Physics가 시작할 때 <code>SetRootMotionReceiver</code>로 콜백을 등록합니다. 수신자는 자신 또는 조상의 <code>FCharacterMovementComponent</code>에 이동을 쌓아 두고, 다음 게임플레이 틱의 "무브"가 입력 대신 <b>루트 모션 속도</b>(쌓인 이동 ÷ 쌓인 시간)로 움직입니다. 그래서 루트 모션으로 움직여도 벽에 막히고 바닥을 따라갑니다. 캐릭터가 아닌 엔티티면 로컬 트랜스폼을 직접 옮깁니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/CharacterMovement.h (발췌)"><span class="com">// 루트 모션 (Scene/AnimRootMotion.h — 런타임 전용, 리플렉션/직렬화 제외): 자신 또는 자손의 애니메이션이 추출한 월드 이동을 쌓아 두면</span>
+<span class="com">// 다음 무브가 가져가 "루트 모션 속도"(쌓인 이동 ÷ 쌓인 시간)로 움직인다. 0.25초 넘게 아무도 가져가지 않으면 오래된 것은 버린다</span>
+FVector3 PendingRootMotion;
+<span class="kw">float</span>    PendingRootMotionSeconds = <span class="num">0.0f</span>;
+...
+<span class="kw">bool</span>     bRootMotion = <span class="kw">false</span>;  <span class="com">// 루트 모션 무브: Input 대신 RootMotionVelocity로 이동</span>
+FVector2 RootMotionVelocity;   <span class="com">// 월드 XY cm/s</span>
+...
+<span class="kw">static constexpr float</span> MaxRootMotionSpeed  = <span class="num">3000.0f</span>; <span class="com">// cm/s, 루트 모션 속도 상한 (서버 검증)</span></pre>
+
+<h4>멀티플레이</h4>
+<p>루트 모션은 <b>애니메이션을 평가하고 그 캐릭터를 시뮬레이션하는 프로세스에서만</b> 무브에 실립니다. 상황별로 정리하면 이렇습니다(<code>CharacterMovement.h</code> 주석).</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>누구의 캐릭터</th><th>루트 모션 처리</th></tr>
+	<tr><td>원격 플레이어 (예측하는 소유 클라이언트)</td><td>소유 클라이언트가 몽타주를 재생해 루트 모션 무브를 예측 적용하고, 무브와 함께 속도를 보낸다. 서버는 받은 속도를 <code>MaxRootMotionSpeed</code>(3000cm/s)로 잘라 같은 무브를 적용 → 보정이 거의 없다.</td></tr>
+	<tr><td>다른 클라이언트에서 보이는 캐릭터</td><td>복제 보간 위치를 따른다. 루트 모션은 포즈에서만 빠지므로, 발이 맞으려면 같은 몽타주를 재생해야 한다(Both 스크립트).</td></tr>
+	<tr><td>서버/AI 캐릭터</td><td>서버 권한.</td></tr>
+	<tr><td>전용 서버</td><td>모델·애니메이션을 인스턴스화하지 않으므로 서버 소유 캐릭터의 루트 모션은 없다(후속).</td></tr>
+</table></div>
+<p>클라이언트가 보낸 속도를 그대로 믿으면 "루트 모션"을 핑계로 순간 이동하는 치트가 가능하므로 서버가 상한으로 자릅니다. 무브 메시지 형식이 바뀌었으므로 <code>NetProtocolVersion</code>이 11이 되었습니다(CLAUDE.md "루트 모션").</p>
+
+<h3 id="lec-43-pitfalls"><span class="step">함정과 교훈</span>변환은 맞는데 이상해 보일 때</h3>
+<div class="callout story">
+	<b class="t">"팔이 T 포즈로 뜬다"는 보고</b>
+	리타기팅 뒤 KayKit 걷기를 마네킹에 틀었더니 팔이 수평으로 들려 보인다는 보고가 있었습니다. 실제 에셋으로 양방향(KayKit → UAL2, UAL2 → KayKit) 클립의 길이 0/25/50/80% 프레임에서 위팔·아래팔·허벅지·정강이 월드 방향이 소스와 같은지(내적 &gt; 0.98) 비교하는 테스트를 만들어 조사했습니다. 결론은 "변환은 맞다" — KayKit의 걷기·대기 동작은 원래 위팔을 거의 수평으로 앞뒤로 흔들고 아래팔을 바깥으로 벌리는데, 치비 비율이라 짧은 팔이 몸에 가려 내려간 것처럼 보였던 것입니다(커밋 1a01ed8). 각도를 그대로 옮기는 방식이라 비율이 다른 체형에서 과장된 동작은 그대로 보이며, 이것은 버그가 아니라 한계입니다. 체인별 보정은 후속 과제로 남았습니다.
+</div>
+<div class="callout warn">
+	<b class="t">알려진 한계</b>
+	모델 공간 정면이 같다고 보고 F는 Z축 회전만 보정하므로 누운 모델은 안 됩니다. 비균등 스케일 뼈, 발이 다리 사슬 밖에 있는 IK 리그도 맞지 않습니다. 변환 식을 바꾸면 <code>AnimRetarget_*</code>(실제 에셋 양방향 방향 비교 포함), 루트 모션 식을 바꾸면 <code>RootMotion_*</code> 테스트를 함께 고칩니다.
+</div>
+<p>40강의 URO(갱신 빈도 LOD)도 루트 모션과 얽힙니다. 몇 프레임씩 평가를 건너뛰면 이동이 끊겨 캐릭터가 뚝뚝 움직이므로, 루트 모션을 추출하는 모델은 URO 대상에서 빠져 항상 매 프레임 평가합니다(<code>AnimUpdateRate.h</code>).</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>리타기팅은 휴머노이드 23뼈로 매핑(이름 규칙 + 계층, <code>.emeta</code> 수동 지정)한 뒤, 로컬이 아니라 모델 공간에서 "바인드 대비 델타"를 옮긴다.</li>
+		<li>F는 정면 차이, Align은 A/T 포즈 차이를 보정한다. 이동은 Root/Hips만, 키 비율을 곱한다.</li>
+		<li>다른 모델의 클립은 <code>RetargetSources</code> 또는 <code>"모델:클립"</code> 이름으로 쓰고, 결과는 세트 뒤에 덧붙어 그래프·몽타주가 그대로 쓴다.</li>
+		<li>루트 모션 = 루트 노드 수평 이동 추출 + 포즈 제자리화. 루프 경계는 두 구간 합성.</li>
+		<li>이동은 수신자를 거쳐 캐릭터 무브의 "루트 모션 속도"로 적용되고, 멀티플레이는 시뮬레이션하는 쪽만 싣고 서버가 속도를 자른다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 리타기팅에서 팔뼈의 "이동" 채널까지 옮기면 어떻게 될까요?</summary>
+	뼈의 로컬 이동은 사실상 "부모 뼈로부터의 거리 = 뼈 길이"입니다. 소스의 이동을 옮기면 대상의 팔 길이가 소스 팔 길이로 바뀌어 메시가 늘어나거나 줄어듭니다. 그래서 몸 전체 위치를 나타내는 Root/Hips만 옮기고(키 비율 적용), 나머지는 대상 기본 포즈의 이동을 유지합니다.
+</details>
+<details class="quiz"><summary>Q2. 루트 모션의 이동량을 모델 공간 차이 P(b) − P(a)로 바로 쓰지 않고 RotZ(−Y(a))를 곱하는 이유는?</summary>
+	회전 추출을 켜면 캐릭터가 클립 중에 돌아섭니다. 돌아선 뒤의 이동을 모델 공간 그대로 쓰면, 엔티티는 이미 회전했는데 이동은 "원래 방향 기준"이라 엉뚱한 쪽으로 갑니다. 그 시점까지 돈 만큼(Y(a)) 되돌려 "지금 바라보는 방향 기준"으로 바꾸면, 적용할 때 엔티티의 현재 회전을 곱해 올바른 방향이 됩니다.
+</details>
+<details class="quiz"><summary>Q3. 원격 클라이언트가 루트 모션 몽타주를 재생할 때, 서버가 자기 애니메이션으로 루트 모션을 계산하지 않고 클라이언트가 보낸 속도를 쓰는 이유는?</summary>
+	클라이언트는 입력 즉시 몽타주를 재생해 예측 이동을 하고 있습니다. 서버가 따로 애니메이션을 돌려 계산하면 시각·블렌드가 미묘하게 달라 매번 보정(되감기)이 일어납니다. 같은 무브(속도 포함)를 서버가 그대로 적용하면 결과가 같아 보정이 거의 없습니다. 대신 치트를 막기 위해 서버가 <code>MaxRootMotionSpeed</code>로 자릅니다. 서버의 애니메이션이 쌓은 루트 모션은 원격 캐릭터에는 쓰이지 않고 버려집니다.
+</details>
+</article>
+
+<!-- ======================================================= 44강 ======================================================= -->
+<article class="lecture" id="lec-44">
+<header>
+	<div class="no">44강</div>
+	<h2 id="lec-44-title">시퀀서</h2>
+	<div class="meta">관련 Phase: 35-2, 쇼케이스 S-3 · 살펴볼 곳: <code>Scene/Sequence.h</code>·<code>.cpp</code>(<code>SequenceMath</code>, <code>FSequenceLibrary</code>), <code>Scene/SequencePlayer.h</code>·<code>.cpp</code>(<code>FSequenceSystem</code>, <code>FSequenceEvalState</code>), <code>Editor/AssetEditors/SequenceEditor.h</code>, <code>Editor/EditorApplication.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>타임라인·트랙·키로 컷신을 기술하는 구조와 다섯 가지 트랙 종류를 설명할 수 있습니다.</li>
+		<li>계단/직선/곡선(3차 에르미트) 보간의 차이와, 회전을 오일러 각으로 보간할 때의 주의점을 압니다.</li>
+		<li>트랙 대상을 엔티티 이름 경로로 찾는 이유, 카메라 컷이 <code>bPrimary + Priority</code>를 쓰고 그 두 값만 되돌리는 이유를 압니다.</li>
+		<li>편집 씬에 미리보기 값을 쓰면서도 저장·실행 취소에는 원래 값이 들어가게 하는 맞바꾸기(swap) 기법을 이해합니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-44-why"><span class="step">왜 필요한가</span>컷신은 코드가 아니라 타임라인이다</h3>
+<p>"카메라가 마을 전경을 천천히 훑다가, 4초에 문 앞으로 컷, 4.5초부터 문이 열리며 조명이 켜지고, 7.5초에 여우를 비춘다." 이런 연출을 스크립트로 쓰면 <code>Wait(4.0)</code>, <code>Wait(0.5)</code>가 줄줄이 이어집니다. 그러면 두 가지가 불가능해집니다. <b>중간부터 보기</b>(6초 시점이 어떤 화면인지 보려면 처음부터 기다려야 함)와 <b>보면서 고치기</b>(문이 열리는 시점을 0.3초 당기려면 코드를 고치고 다시 실행).</p>
+<p>시퀀서(sequencer)는 연출을 <b>"시각 → 값" 함수들의 묶음</b>으로 기술합니다. 어떤 시각 t가 주어지면 모든 대상의 값을 바로 계산할 수 있으므로, 아무 시점으로나 점프(스크럽)할 수 있고 편집기에서 키를 끌며 즉시 볼 수 있습니다. 언리얼의 시퀀서와 같은 발상이고, ProjectE는 Phase 35-2에서 만들었습니다.</p>
+
+<h3 id="lec-44-tracks"><span class="step">핵심 개념</span>타임라인, 트랙, 키</h3>
+<p>에셋 <code>.esequence</code>(JSON v1)는 길이 + 트랙 목록입니다. <b>트랙</b>은 대상 하나의 속성 하나를 시간에 따라 바꾸는 줄이고, <b>키</b>는 "이 시각에는 이 값"이라는 점입니다. 키 사이는 보간합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>트랙</th><th>키/구간</th><th>적용</th></tr>
+	<tr><td>Transform</td><td>시각, 위치, 회전(Pitch/Yaw/Roll 도), 스케일</td><td>대상 트랜스폼(로컬)</td></tr>
+	<tr><td>Property</td><td>시각, 값(Float/Int32/Bool/Vector2/3/4)</td><td>리플렉션 프로퍼티(<code>Component.Property</code>). Int32/Bool은 항상 계단</td></tr>
+	<tr><td>CameraCut</td><td>시각, 카메라 엔티티</td><td>다음 컷까지 그 카메라를 주 카메라로</td></tr>
+	<tr><td>Animation</td><td>구간(시작~끝, 클립, 클립 시작 위치, 배속, 반복)</td><td>모델 루트의 애니메이션을 시각 지정으로 재생</td></tr>
+	<tr><td>Event</td><td>시각, 이름</td><td>Lua <code>OnSequenceEvent_&lt;이름&gt;()</code></td></tr>
+</table></div>
+<p>Property 트랙이 리플렉션을 쓰는 덕분에, 등록된 컴포넌트의 숫자·색·bool 프로퍼티라면 무엇이든(조명 세기, 카메라 시야각, 안개 밀도 …) 시퀀스로 움직일 수 있습니다. 새 컴포넌트를 만든 사람이 시퀀서 코드를 건드릴 필요가 없습니다(9강의 리플렉션이 여기서도 일합니다).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="시퀀스 타임라인 예">
+		<title>Intro.esequence 타임라인</title>
+		<line x1="250" y1="40" x2="820" y2="40" class="ln"/>
+		<g class="t-muted">
+			<line x1="250" y1="36" x2="250" y2="44" class="ln"/><text x="250" y="32" text-anchor="middle">0</text>
+			<line x1="353.6" y1="36" x2="353.6" y2="44" class="ln"/><text x="353.6" y="32" text-anchor="middle">2</text>
+			<line x1="457.2" y1="36" x2="457.2" y2="44" class="ln"/><text x="457.2" y="32" text-anchor="middle">4</text>
+			<line x1="560.8" y1="36" x2="560.8" y2="44" class="ln"/><text x="560.8" y="32" text-anchor="middle">6</text>
+			<line x1="664.4" y1="36" x2="664.4" y2="44" class="ln"/><text x="664.4" y="32" text-anchor="middle">8</text>
+			<line x1="768" y1="36" x2="768" y2="44" class="ln"/><text x="768" y="32" text-anchor="middle">10</text>
+			<text x="826" y="32">11초</text>
+		</g>
+		<g class="t-small">
+			<text x="20" y="79">카메라 컷</text>
+			<text x="20" y="107">CamWide · Transform</text>
+			<text x="20" y="135">CamDoor · Transform</text>
+			<text x="20" y="163">CamDoor · FovYDegrees</text>
+			<text x="20" y="191">CamFox · Transform</text>
+			<text x="20" y="219">Gate/DoorPivot · Transform</text>
+			<text x="20" y="247">Gate/Lamp · Intensity</text>
+		</g>
+		<g class="t-small">
+			<rect x="250" y="62" width="207" height="24" rx="4" class="k1"/><text x="353" y="79" text-anchor="middle">CamWide</text>
+			<rect x="457" y="62" width="182" height="24" rx="4" class="k2"/><text x="548" y="79" text-anchor="middle">CamDoor</text>
+			<rect x="639" y="62" width="181" height="24" rx="4" class="k4"/><text x="729" y="79" text-anchor="middle">CamFox</text>
+		</g>
+		<g class="ln-d">
+			<line x1="250" y1="102" x2="457" y2="102"/>
+			<line x1="457" y1="130" x2="639" y2="130"/>
+			<line x1="457" y1="158" x2="639" y2="158"/>
+			<line x1="639" y1="186" x2="820" y2="186"/>
+			<line x1="483" y1="214" x2="587" y2="214"/>
+			<line x1="483" y1="242" x2="525" y2="242"/>
+		</g>
+		<g class="acc">
+			<path d="M250,95 L257,102 L250,109 L243,102 Z"/><path d="M457,95 L464,102 L457,109 L450,102 Z"/>
+			<path d="M457,123 L464,130 L457,137 L450,130 Z"/><path d="M639,123 L646,130 L639,137 L632,130 Z"/>
+			<path d="M457,151 L464,158 L457,165 L450,158 Z"/><path d="M639,151 L646,158 L639,165 L632,158 Z"/>
+			<path d="M639,179 L646,186 L639,193 L632,186 Z"/><path d="M820,179 L827,186 L820,193 L813,186 Z"/>
+			<path d="M483,207 L490,214 L483,221 L476,214 Z"/><path d="M587,207 L594,214 L587,221 L580,214 Z"/>
+			<path d="M483,235 L490,242 L483,249 L476,242 Z"/><path d="M525,235 L532,242 L525,249 L518,242 Z"/>
+		</g>
+		<line x1="509" y1="40" x2="509" y2="262" class="ln sa" stroke-width="2"/>
+		<text x="509" y="276" text-anchor="middle" class="t-small t-bold fa">재생 헤드 5.0초</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 44-1.</b> Phase 35 데모 <code>Intro.esequence</code>(11초)의 앞부분 트랙들. 마름모가 키, 위 줄이 카메라 컷입니다. 재생 헤드가 5초에 있으면 문 카메라가 주 카메라이고, 문은 열리는 중이며, 조명은 켜지는 중입니다 — 각 줄을 5초에서 독립적으로 계산하면 됩니다. (이 데모는 이후 데모 씬 정리 때 삭제되었고, 파일은 git 기록에 남아 있습니다.)</figcaption>
+</figure>
+<pre class="code" data-file="Intro.esequence (Phase 35 데모, 커밋 dfed370 이전, 발췌)">{
+  "Version": 1,
+  "Duration": 11.0,
+  "FrameRate": 30.0,
+  "Tracks": [
+    {
+      "Type": "CameraCut",
+      "Keys": [
+        { "Time": 0.0, "Camera": "CamWide" },
+        { "Time": 4.0, "Camera": "CamDoor" },
+        { "Time": 7.5, "Camera": "CamFox" }
+      ]
+    },
+    ...
+    {
+      "Type": "Property",
+      "Name": "문 조명",
+      "Target": "Gate/Lamp",
+      "Component": "PointLightComponent",
+      "Property": "Intensity",
+      "Keys": [
+        { "Time": 4.5, "Value": [0.0, 0.0, 0.0, 0.0], "Interp": "Linear" },
+        { "Time": 5.3, "Value": [40.0, 0.0, 0.0, 0.0], "Interp": "Linear" }
+      ]
+    },</pre>
+<p><code>FrameRate</code>는 편집기 눈금과 키 스냅에만 쓰이고, 재생은 연속 시간입니다. 30fps로 키를 찍어도 144Hz 모니터에서 부드럽게 보간됩니다.</p>
+
+<h3 id="lec-44-interp"><span class="step">핵심 개념</span>보간 — 계단, 직선, 곡선</h3>
+<p>키의 <code>Interp</code>는 "그 키에서 다음 키까지"를 어떻게 이을지 정합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 240" role="img" aria-label="세 가지 키 보간 비교">
+		<title>Constant, Linear, Smooth 보간</title>
+		<rect x="20" y="30" width="260" height="190" rx="10" class="box"/>
+		<rect x="300" y="30" width="260" height="190" rx="10" class="box"/>
+		<rect x="580" y="30" width="260" height="190" rx="10" class="box"/>
+		<text x="150" y="52" text-anchor="middle" class="t-bold">Constant (계단)</text>
+		<text x="430" y="52" text-anchor="middle" class="t-bold">Linear (직선)</text>
+		<text x="710" y="52" text-anchor="middle" class="t-bold">Smooth (3차 에르미트)</text>
+		<path d="M40,170 H110 V80 H194 V125 H250 V65" class="ln s1" stroke-width="2.2"/>
+		<path d="M320,170 L390,80 L474,125 L530,65" class="ln s2" stroke-width="2.2"/>
+		<g transform="translate(-20,0)">
+			<path d="M620.0,170.0 L623.5,169.4 L627.0,167.7 L630.5,164.9 L634.0,161.3 L637.5,156.9 L641.0,151.8 L644.5,146.3 L648.0,140.3 L651.5,134.0 L655.0,127.6 L658.5,121.1 L662.0,114.6 L665.5,108.4 L669.0,102.4 L672.5,96.9 L676.0,92.0 L679.5,87.7 L683.0,84.2 L686.5,81.6 L690.0,80.0 L694.2,79.2 L698.4,79.4 L702.6,80.2 L706.8,81.8 L711.0,84.0 L715.2,86.7 L719.4,89.8 L723.6,93.2 L727.8,96.8 L732.0,100.6 L736.2,104.4 L740.4,108.1 L744.6,111.7 L748.8,115.1 L753.0,118.1 L757.2,120.7 L761.4,122.8 L765.6,124.2 L769.8,125.0 L774.0,125.0 L776.8,124.3 L779.6,122.8 L782.4,120.7 L785.2,118.0 L788.0,114.8 L790.8,111.2 L793.6,107.2 L796.4,103.0 L799.2,98.7 L802.0,94.2 L804.8,89.8 L807.6,85.5 L810.4,81.4 L813.2,77.6 L816.0,74.1 L818.8,71.0 L821.6,68.5 L824.4,66.6 L827.2,65.4 L830.0,65.0" class="ln s4" stroke-width="2.2"/>
+		</g>
+		<g class="acc">
+			<circle cx="40" cy="170" r="5"/><circle cx="110" cy="80" r="5"/><circle cx="194" cy="125" r="5"/><circle cx="250" cy="65" r="5"/>
+			<circle cx="320" cy="170" r="5"/><circle cx="390" cy="80" r="5"/><circle cx="474" cy="125" r="5"/><circle cx="530" cy="65" r="5"/>
+			<circle cx="600" cy="170" r="5"/><circle cx="670" cy="80" r="5"/><circle cx="754" cy="125" r="5"/><circle cx="810" cy="65" r="5"/>
+		</g>
+		<text x="150" y="204" text-anchor="middle" class="t-muted">Int32/Bool은 항상 이것</text>
+		<text x="430" y="204" text-anchor="middle" class="t-muted">키에서 꺾인다</text>
+		<text x="710" y="204" text-anchor="middle" class="t-muted">양 끝은 기울기 0</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 44-2.</b> 같은 키 네 개(점)를 세 방식으로 이은 결과. Smooth는 각 키의 기울기를 이웃 키를 잇는 기울기(Catmull-Rom)로 정하므로 키를 지날 때 꺾이지 않고, 첫 키와 마지막 키는 기울기 0이라 천천히 출발하고 천천히 멈춥니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Scene/Sequence.cpp — SequenceMath::Interpolate (발췌)"><span class="kw">case</span> ESequenceInterp::Constant: <span class="kw">return</span> Alpha &gt;= <span class="num">1.0f</span> ? V1 : V0;
+<span class="kw">case</span> ESequenceInterp::Linear:   <span class="kw">return</span> V0 + (V1 - V0) * Alpha;
+...
+<span class="com">// 3차 에르미트: 기울기 = 이웃 키를 잇는 기울기 (Catmull-Rom, 시각 간격이 달라도 맞게 초당 값으로), 양 끝 키는 0</span>
+<span class="kw">const float</span> Span   = T1 - T0;
+<span class="kw">const float</span> Slope0 = bHasPrev &amp;&amp; T1 - TPrev &gt; FMath::SmallNumber ? (V1 - VPrev) / (T1 - TPrev) : <span class="num">0.0f</span>;
+<span class="kw">const float</span> Slope1 = bHasNext &amp;&amp; TNext - T0 &gt; FMath::SmallNumber ? (VNext - V0) / (TNext - T0) : <span class="num">0.0f</span>;
+<span class="kw">const float</span> H00    = <span class="num">2.0f</span> * A3 - <span class="num">3.0f</span> * A2 + <span class="num">1.0f</span>;
+<span class="kw">const float</span> H10    = A3 - <span class="num">2.0f</span> * A2 + Alpha;
+<span class="kw">const float</span> H01    = -<span class="num">2.0f</span> * A3 + <span class="num">3.0f</span> * A2;
+<span class="kw">const float</span> H11    = A3 - A2;
+<span class="kw">return</span> H00 * V0 + H10 * Span * Slope0 + H01 * V1 + H11 * Span * Slope1;</pre>
+<p>에르미트 곡선은 "두 끝점의 값과 기울기"로 정해지는 3차 곡선입니다. H00·H01은 값을, H10·H11은 기울기를 섞는 기저 함수입니다. 기울기를 "초당 값"으로 계산한 뒤 구간 길이(Span)를 곱하는 이유는, 키 간격이 고르지 않아도 이웃 구간과 속도가 이어지게 하기 위해서입니다.</p>
+<div class="callout warn">
+	<b class="t">회전은 오일러 각으로 보간한다</b>
+	Transform 키의 회전은 Pitch/Yaw/Roll 도로 저장하고 성분마다 보간합니다(언리얼과 같음). 사람이 숫자로 읽고 고치기 쉽고 "두 바퀴 돌기(720°)" 같은 표현도 가능하기 때문입니다. 대신 −170°에서 170°로 가는 키는 짧은 20°가 아니라 340°를 돌아가므로, 편집기가 키를 넣을 때 이전 키와 가까운 동치 각(±360°)으로 펼쳐 저장합니다(<code>SequenceMath::QuatToEulerNear</code>). 피치 ±90° 근처는 오일러 보간이 어색한 알려진 후속 과제입니다.
+</div>
+
+<h3 id="lec-44-binding"><span class="step">ProjectE에서는</span>대상 이름 경로와 적용</h3>
+<p>트랙의 대상(<code>Target</code>)은 엔티티 번호가 아니라 <b>이름 경로</b>입니다: <code>""</code> = 재생 엔티티 자신, <code>"Door"</code> = 이름, <code>"Gate/Door"</code> = 부모 이름/자식 이름(끝부분 일치). 찾는 순서는 <b>재생 엔티티의 하위 트리 → 씬 전체</b>입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/SequencePlayer.cpp — ResolveBinding (발췌)"><span class="com">// 재생 엔티티 하위 먼저 (프리팹 인스턴스로 만든 연출이 자기 부품을 찾게), 그다음 씬 전체</span>
+<span class="kw">if</span> (Scene.GetRegistry().IsValid(Context))
+{
+	<span class="kw">for</span> (<span class="kw">const</span> FEntity Child : Scene.GetChildren(Context))
+	{
+		<span class="kw">if</span> (<span class="kw">const</span> FEntity Found = FindInSubtree(Scene, Child, Segments); Found.IsValid()) { <span class="kw">return</span> Found; }
+	}
+}
+<span class="kw">for</span> (<span class="kw">const</span> FEntity Root : Scene.GetRootEntities())
+{
+	<span class="kw">if</span> (<span class="kw">const</span> FEntity Found = FindInSubtree(Scene, Root, Segments); Found.IsValid()) { <span class="kw">return</span> Found; }
+}</pre>
+<div class="callout tip">
+	<b class="t">왜 엔티티 번호가 아니라 이름인가</b>
+	엔티티 핸들은 씬을 불러올 때마다, 플레이 모드로 복제할 때마다, 프리팹을 인스턴스화할 때마다 달라집니다. 시퀀스 파일에 번호를 적으면 다음 실행에서 엉뚱한 엔티티를 움직입니다. 이름은 사람이 붙인 것이라 저장·복제·프리팹을 거쳐도 유지됩니다. "하위 트리 먼저"는 문 연출이 든 프리팹을 두 개 놓았을 때 각자 <b>자기</b> 문을 찾게 하는 장치입니다.
+</div>
+
+<h4>재생과 적용</h4>
+<p>씬에서 시퀀스를 재생하는 것은 <code>FSequencePlayerComponent</code>(시퀀스 경로, 자동 재생, 반복, 배속, <code>bRestoreState</code>)입니다. 재생은 <code>FGameWorld</code> 게임플레이 틱의 <b>스크립트 뒤 · 물리 앞</b>에서 일어납니다. 스크립트가 <code>PlaySequence</code>를 부르면 같은 틱에 반영되고, 시퀀스가 쓴 트랜스폼은 이번 프레임 물리·트랜스폼 갱신에 들어가기 때문입니다.</p>
+<ul>
+	<li><b>Animation 트랙</b>: 구간 동안 모델의 애니메이션을 <b>일시정지 + SetTime</b>으로 구동합니다. 42강의 "스크럽" 경로와 같으므로 결정적이고, 시퀀스를 아무 시점으로 점프해도 포즈가 정확히 그 시각입니다. 마지막 구간이 끝나면 끝 포즈를 유지합니다.</li>
+	<li><b>Event 트랙</b>: 지나간 구간의 이벤트를 모아 다음 틱에 Lua <code>OnSequenceEvent_&lt;이름&gt;()</code>로, 끝나면 <code>OnSequenceFinished</code>로 보냅니다(노티파이와 같은 "모았다가 전달").</li>
+	<li><b>원래 값 기억</b>: 처음 쓰는 프로퍼티마다 원래 값을 <code>FSequenceEvalState::Saved</code>에 기억합니다. <code>bRestoreState</code>면 끝나거나 멈출 때 되돌리고, 끄면 마지막 값을 유지합니다(열린 채로 남는 문).</li>
+</ul>
+
+<h4>카메라 컷 — 두 값만 빌렸다 돌려준다</h4>
+<p>카메라 컷은 새 카메라 시스템을 만들지 않고, 기존 규칙("주 카메라 중 <code>Priority</code>가 큰 것이 이긴다")을 그대로 이용합니다. 컷 대상 카메라를 <code>bPrimary = true</code>, <code>Priority = 1 &lt;&lt; 20</code>으로 만들면 플레이어 카메라(로컬 카메라에 높은 Priority를 주는 방식, 48강)보다 확실히 위에 섭니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/SequencePlayer.cpp (발췌)"><span class="com">// 카메라 컷 해제: 컷이 바꾼 주 카메라/우선순위만 되돌린다 (시야각 등 프로퍼티 트랙 값은 그대로)</span>
+<span class="kw">void</span> ReleaseCameraCut(FSequenceEvalState&amp; State, FScene&amp; Scene)
+{
+	...
+	RestoreProperty(State, Scene, State.ActiveCamera, CameraType-&gt;FindProperty(<span class="str">"Primary"</span>));
+	RestoreProperty(State, Scene, State.ActiveCamera, CameraType-&gt;FindProperty(<span class="str">"Priority"</span>));
+	State.ActiveCamera = NullEntity;
+}
+...
+<span class="kw">if</span> (Camera != State.ActiveCamera)
+{
+	ReleaseCameraCut(State, Scene);
+	<span class="kw">if</span> (Camera.IsValid())
+	{
+		Capture(State, Scene, Camera, *CameraType, *CameraType-&gt;FindProperty(<span class="str">"Primary"</span>));
+		Capture(State, Scene, Camera, *CameraType, *CameraType-&gt;FindProperty(<span class="str">"Priority"</span>));
+		FCameraComponent&amp; Component = Registry.Get&lt;FCameraComponent&gt;(Camera);
+		Component.bPrimary          = <span class="kw">true</span>;
+		Component.Priority          = CameraCutPriority; <span class="com">// 1 &lt;&lt; 20</span>
+		State.ActiveCamera          = Camera;
+	}
+}</pre>
+<p>"컷이 바뀌거나 끝나면 <b>그 두 값만</b> 되돌린다"가 핵심입니다. 컷 카메라의 시야각은 Property 트랙이 따로 움직이는 값이라 그 트랙의 규칙(<code>bRestoreState</code>)을 따르고, 컷 해제가 건드리지 않습니다. 이렇게 책임을 나눠 두면 "컷은 끝났는데 시야각이 갑자기 튀는" 일이 없습니다. 카메라 컷 트랙은 첫 번째 것 하나만 씁니다.</p>
+
+<h3 id="lec-44-preview"><span class="step">ProjectE에서는</span>편집 씬 미리보기와 맞바꾸기</h3>
+<p>시퀀서 편집기(<code>FSequenceEditor</code>)에서 재생 헤드를 끌면, 그 시점을 <b>편집 중인 씬에 직접 적용</b>해 뷰포트에서 보여 줍니다(<code>FSequenceSystem::Evaluate</code>). 별도 미리보기 씬이 아니라 진짜 편집 씬이어야 주변 배치와 함께 구도를 볼 수 있기 때문입니다. 그런데 이것은 위험합니다. 미리보기로 문이 −100° 열린 상태에서 사용자가 Ctrl+S를 누르면, 씬 파일에 "열린 문"이 저장되어 버립니다. 실행 취소 스냅샷도 마찬가지입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="미리보기 값과 원래 값 맞바꾸기">
+		<title>SwapScenePreviews</title>
+		<g class="t-small">
+			<rect x="20" y="40" width="200" height="110" rx="10" class="box"/>
+			<text x="120" y="62" text-anchor="middle" class="t-bold">평소 (미리보기 중)</text>
+			<rect x="36" y="74" width="168" height="30" rx="6" class="acc"/><text x="120" y="94" text-anchor="middle">씬: 문 Yaw −100°</text>
+			<rect x="36" y="110" width="168" height="30" rx="6" class="k1"/><text x="120" y="130" text-anchor="middle">Saved: 0° (원래)</text>
+			<rect x="330" y="40" width="200" height="110" rx="10" class="box"/>
+			<text x="430" y="62" text-anchor="middle" class="t-bold">맞바꾼 직후</text>
+			<rect x="346" y="74" width="168" height="30" rx="6" class="k1"/><text x="430" y="94" text-anchor="middle">씬: 문 Yaw 0°</text>
+			<rect x="346" y="110" width="168" height="30" rx="6" class="acc"/><text x="430" y="130" text-anchor="middle">Saved: −100°</text>
+			<rect x="640" y="40" width="200" height="110" rx="10" class="box"/>
+			<text x="740" y="62" text-anchor="middle" class="t-bold">다시 맞바꿈 = 원상태</text>
+			<rect x="656" y="74" width="168" height="30" rx="6" class="acc"/><text x="740" y="94" text-anchor="middle">씬: 문 Yaw −100°</text>
+			<rect x="656" y="110" width="168" height="30" rx="6" class="k1"/><text x="740" y="130" text-anchor="middle">Saved: 0° (원래)</text>
+			<rect x="330" y="190" width="200" height="44" rx="10" class="k2"/>
+			<text x="430" y="210" text-anchor="middle" class="t-bold">SaveToFile / 스냅샷</text>
+			<text x="430" y="226" text-anchor="middle" class="t-muted">원래 값(0°)이 기록된다</text>
+		</g>
+		<path d="M220,95 H326" class="ln" marker-end="url(#arr)"/>
+		<text x="273" y="86" text-anchor="middle" class="t-small">Swap</text>
+		<path d="M530,95 H636" class="ln" marker-end="url(#arr)"/>
+		<text x="583" y="86" text-anchor="middle" class="t-small">Swap</text>
+		<path d="M430,150 V186" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="190" class="t-muted">플레이 시작·씬 교체 전에는</text>
+		<text x="20" y="208" class="t-muted">EndScenePreviews로 아예 되돌린다</text>
+		<text x="640" y="190" class="t-muted">두 번 부르면 원상태</text>
+		<text x="640" y="208" class="t-muted">(복사본을 만들지 않는다)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 44-3.</b> 씬 값과 기억해 둔 원래 값을 맞바꾸는 함수 하나로, 저장·실행 취소 기록 직전에 원래 값을 씬에 돌려놓았다가 직후에 다시 미리보기 값으로 돌아옵니다.</figcaption>
+</figure>
+<p>해법은 <code>FSequenceEvalState::SwapWithScene</code> 하나입니다. 기억해 둔 원래 값과 씬의 현재 값을 <b>맞바꾸므로 두 번 부르면 원상태</b>입니다. 편집기는 씬을 직렬화하는 모든 지점을 이 함수 쌍으로 감쌉니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/SequencePlayer.cpp — SwapWithScene"><span class="kw">void</span> FSequenceEvalState::SwapWithScene(FScene&amp; Scene)
+{
+	FRegistry&amp; Registry = Scene.GetRegistry();
+	<span class="kw">for</span> (FSaved&amp; Item : Saved)
+	{
+		<span class="kw">void</span>* Component = Registry.IsValid(Item.Entity) ? Item.Type-&gt;GetComponent(Registry, Item.Entity) : <span class="kw">nullptr</span>;
+		<span class="kw">if</span> (Component != <span class="kw">nullptr</span>)
+		{
+			FValue Current = ReadProperty(*Item.Property, Component);
+			WriteProperty(*Item.Property, Component, Item.Value);
+			Item.Value = std::move(Current);
+		}
+	}
+}</pre>
+<pre class="code" data-file="Engine/Source/Editor/EditorApplication.cpp — SaveScene (발췌)">AssetEditors.SwapScenePreviews(Context);         <span class="com">// 시퀀서 미리보기 값이 아니라 원래 값을 저장</span>
+<span class="kw">const bool</span> bSaved = FSceneSerializer::SaveToFile(Scene, CurrentScenePath);
+AssetEditors.SwapScenePreviews(Context);</pre>
+<p>같은 감싸기가 "다른 이름으로 저장", 실행 취소 커밋(씬 JSON 스냅샷), 자동 저장에도 있습니다. 반대로 <b>플레이 시작·씬 교체·핫 리로드</b> 전에는 <code>EndScenePreviews</code>로 미리보기를 끝내 원래 값으로 되돌립니다. 플레이 씬은 편집 씬의 복제이므로, 미리보기 값이 남아 있으면 게임이 열린 문 상태로 시작하기 때문입니다.</p>
+<div class="callout warn">
+	<b class="t">규칙 (CLAUDE.md)</b>
+	편집 씬에 미리보기 값을 쓰는 편집기는 <code>FAssetEditor::SwapScenePreview/EndScenePreview</code>를 구현하고, 씬을 직렬화하는 <b>새 코드</b>(저장/스냅샷/Undo 커밋)는 <code>FAssetEditorManager::SwapScenePreviews</code>로 감싸 원래 값이 저장되게 합니다. 시퀀스 파일을 바꾸는 코드는 <code>FSequenceLibrary::Invalidate(경로)</code>를 불러, 재생 중인 컴포넌트가 다음 갱신에서 다시 읽게 합니다(그래프·리타기팅 라이브러리와 같은 "세대 번호" 방식).
+</div>
+
+<h3 id="lec-44-pitfalls"><span class="step">함정과 교훈</span>연출은 로컬이다</h3>
+<ul>
+	<li><b>멀티플레이</b>: 시퀀스는 복제하지 않는 로컬 연출입니다. 각 프로세스가 자기 시계로 재생하므로, 모두 같은 순간에 보게 하려면 서버 스크립트가 Multicast RPC로 <code>PlaySequence</code>를 부릅니다. 복제 엔티티를 시퀀스로 움직이면 클라이언트 보간과 충돌한다는 것이 후속 목록에 있습니다.</li>
+	<li><b>미리보기 중 직접 고친 값</b>: 미리보기가 켜진 동안 시퀀스가 움직이는 값을 손으로 고치면 다음 평가에 덮입니다. 편집기 주석의 안내대로 "키로 넣어야" 합니다.</li>
+	<li><b>애니메이션 그래프가 붙은 모델</b>: Animation 트랙은 클립 재생 경로를 쓰므로, 그래프로 재생하는 모델에는 적용되지 않고 경고를 냅니다(Phase 35 후속).</li>
+</ul>
+<div class="callout story">
+	<b class="t">쇼케이스 투어</b>
+	쇼케이스 씬은 시작하면 63초짜리 시퀀스(<code>ShowcaseTour.esequence</code>)가 구역마다 카메라를 컷하며 투어하고, 구역에 들어갈 때 <code>Zone_&lt;이름&gt;</code> 이벤트를 디렉터 스크립트(<code>ShowcaseDirector.lua</code>)로 보냈습니다(Plans.md S-3). 후속 목록에 "투어는 실제 시간 기준(자동 검증 프레임과 어긋남)"이 남았습니다 — 자동 검증은 프레임 수로 끝나는데 연출은 초로 흐르니, 스크린샷 시점이 의도한 구도와 어긋날 수 있다는 것입니다. 이후 엔진은 화면·시뮬레이션 시간을 앱 프레임 시간(<code>FFrameTime</code>, <code>--fixed-delta</code>)으로 통일하는 규칙을 세웠습니다(65강).
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>시퀀스 = 길이 + 트랙(Transform/Property/CameraCut/Animation/Event). 아무 시각 t에서 모든 값을 바로 계산할 수 있어 스크럽·편집이 된다.</li>
+		<li>보간은 Constant/Linear/Smooth(Catmull-Rom 기울기 3차 에르미트, 양 끝 기울기 0). 회전은 오일러 각, 키를 넣을 때 가까운 각으로 펼친다.</li>
+		<li>대상은 이름 경로(재생 엔티티 하위 → 씬 전체). 핸들은 저장·복제마다 바뀌지만 이름은 남는다.</li>
+		<li>카메라 컷 = 기존 주 카메라 규칙 이용(bPrimary + Priority 1&lt;&lt;20), 끝나면 그 두 값만 되돌린다.</li>
+		<li>편집 씬 미리보기는 SwapWithScene(두 번 = 원상태)으로 저장·스냅샷을 감싸고, 플레이·씬 교체 전에는 EndScenePreviews.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 시퀀스의 Animation 트랙이 클립을 "재생"하지 않고 매 프레임 일시정지 + SetTime으로 구동하는 이유는?</summary>
+	재생 속도에 맡기면 시퀀스 시각과 클립 시각이 프레임 시간 오차로 조금씩 어긋나고, 스크럽으로 아무 시점에 점프했을 때 그 시점의 포즈를 바로 낼 수 없습니다. 시퀀스 시각에서 클립 시각을 계산해 SetTime으로 지정하면, 언제 어디로 점프해도 같은 시각엔 같은 포즈가 나옵니다(결정적). 노티파이 규칙에서 스크럽이 점 노티파이를 내지 않는 것도 이 경로와 맞물립니다.
+</details>
+<details class="quiz"><summary>Q2. 카메라 컷이 끝날 때 카메라 컴포넌트 전체를 원래대로 되돌리면 어떤 문제가 생길까요?</summary>
+	같은 카메라의 시야각이나 위치를 Property/Transform 트랙이 움직이고 있었다면, 컷 해제가 그 값까지 되돌려 화면이 튀거나 <code>bRestoreState</code>를 끈 의도(마지막 값 유지)를 깨뜨립니다. 컷이 직접 바꾼 것은 <code>bPrimary</code>와 <code>Priority</code>뿐이므로 그 둘만 되돌리는 것이 맞습니다.
+</details>
+<details class="quiz"><summary>Q3. 미리보기 값을 저장에서 빼기 위해, 맞바꾸기 대신 "씬 전체를 복사해 두었다가 저장 때 복사본을 직렬화"하면 어떨까요?</summary>
+	동작은 하지만, 미리보기 중에 사용자가 다른 엔티티를 편집하면 복사본에는 그 편집이 없으므로 저장에서 사라집니다. 매번 씬 전체를 복사하는 비용도 큽니다. 맞바꾸기는 시퀀스가 실제로 건드린 프로퍼티만 대상으로 하고, 나머지 편집은 그대로 둔 채 그 값들만 잠시 원래대로 돌려놓습니다. 다만 기억한 엔티티가 실행 취소 등으로 새로 만들어졌으면 기록이 무효이므로 <code>HasStaleEntities</code>로 확인합니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part05_Editor.html"><small>이전 부</small>← 5부 · 에디터 만들기</a>
+	<a href="Part07A_Gameplay.html"><small>다음 부</small>7부 · 세계의 규칙 — 게임플레이 시스템 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1917 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4부 성능과 확장성 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">4부 성능과 확장성</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">4부 · 강의 29~33</div>
+	<h1>성능과 확장성</h1>
+	<p>기능이 다 들어간 엔진은 이제 "빠르게, 많이" 돌아가야 합니다. 그리는 횟수를 줄이고, 메모리를 아끼고, 끊김을 없애고, 정확히 재고, 여러 코어에 일을 나누는 방법을 ProjectE가 실제로 측정하며 내린 결정과 함께 배웁니다.</p>
+</header>
+
+<!-- ======================================================= 29강 ======================================================= -->
+<article class="lecture" id="lec-29">
+<header>
+	<div class="no">29강</div>
+	<h2 id="lec-29-title">드로우콜과 삼각형 줄이기</h2>
+	<div class="meta">관련 Phase: 26 · 29 (+ 2026-10-04 스킨 LOD) · 살펴볼 곳: <code>Renderer/InstanceBatching.h</code>, <code>Renderer/MeshInstancing.h</code>, <code>Engine/Shaders/MeshInstance.hlsli</code>, <code>Renderer/MeshSimplifier.h/.cpp</code>, <code>Renderer/LodMath.h</code>, <code>Renderer/OcclusionCuller.h</code>, <code>Renderer/HzbMath.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>드로우콜이 왜 CPU를 잡아먹는지, 인스턴싱이 그 비용을 어떻게 없애는지 설명할 수 있습니다.</li>
+		<li>"묶음 키"를 비트로 구성해 정렬 한 번으로 묶음을 만드는 방법과, 셰이더가 <code>SV_InstanceID</code>로 자기 데이터를 찾는 방법을 압니다.</li>
+		<li>QEM(이차 오차 척도) 메시 단순화의 원리와 LOD를 화면 크기로 고르는 식, 팝핑을 막는 히스테리시스를 이해합니다.</li>
+		<li>HZB 오클루전 컬링의 원리를 알고, ProjectE가 측정 결과 이것을 기본으로 끈 이유를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-29-why"><span class="step">왜 필요한가</span>그리는 데 드는 비용은 두 군데서 나온다</h3>
+<p>한 프레임에 물체 2,400개를 그린다고 해 봅시다. 비용은 크게 두 곳에서 생깁니다.</p>
+<ul>
+	<li><b>CPU 쪽 — 드로우콜(draw call)</b>: GPU에 "이 메시를 이 머티리얼로 그려라"라고 명령을 기록하는 일입니다. 명령 하나하나는 작지만, 그 앞에 파이프라인 상태(PSO)·루트 시그니처를 바꾸고, 상수 버퍼와 텍스처 표를 묶고, 정점·인덱스 버퍼를 지정하는 일이 따라붙습니다. 이것을 물체 수만큼 반복하면 CPU가 GPU보다 먼저 지칩니다.</li>
+	<li><b>GPU 쪽 — 삼각형과 픽셀</b>: 멀리 있어 화면에 몇 픽셀로밖에 보이지 않는 나무도 가까이 있을 때와 똑같이 수만 개의 삼각형을 처리하면 정점 셰이더와 래스터라이저가 낭비됩니다. 벽 뒤에 완전히 가려진 물체를 그리는 것도 낭비입니다.</li>
+</ul>
+<p>ProjectE는 Phase 26에서 이 둘을 정면으로 다뤘습니다. 측정용 씬(정적 메시 2,400개를 깐 <code>StressStatic</code>)에서 출발해 <b>인스턴싱</b>으로 드로우콜을, <b>LOD</b>로 삼각형을, <b>HZB 오클루전</b>으로 가려진 물체를 줄였고, 각각을 켜기 전후로 쟀습니다. 결과는 아래 표와 같습니다 — 그리고 마지막 줄이 이 강의의 교훈 하나입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>단계 (Plans.md Phase 26)</th><th>측정 (StressStatic)</th></tr>
+	<tr><td>26-2 GPU 인스턴싱</td><td>드로우 2313 → 10, Debug 프레임 57.3 → 12.1ms, Release CPU 1.73 → 0.89ms</td></tr>
+	<tr><td>26-3 LOD (직접 구현 QEM)</td><td>삼각형 189만 → 31만, Release GPU 1.71 → 0.81ms</td></tr>
+	<tr><td>26-4 HZB 2단계 오클루전</td><td>인스턴스 68%가 가려졌지만 LOD와 함께 켜면 GPU 0.76 → 0.85ms로 <b>오히려 느려짐 → 기본 끔</b></td></tr>
+</table></div>
+
+<h3 id="lec-29-drawcall"><span class="step">핵심 개념</span>드로우콜과 인스턴싱</h3>
+<p>드로우콜 비용의 핵심은 "그리기 명령 자체"보다 <b>명령 앞에 붙는 준비 작업의 반복</b>입니다. 같은 나무 메시를 같은 머티리얼로 300번 그린다면 바뀌는 것은 월드 행렬(위치·회전·크기)뿐인데도, 개별 드로우에서는 매번 상태를 확인하고 상수를 올리고 명령을 기록합니다.</p>
+<p><b>GPU 인스턴싱(instancing)</b>은 "같은 메시를 N번 그려라"를 명령 하나로 보내는 기능입니다. D3D12의 <code>DrawIndexedInstanced(인덱스 수, 인스턴스 수, ...)</code>가 그것이고, GPU는 정점 셰이더를 인스턴스마다 다시 돌리면서 <code>SV_InstanceID</code>(0, 1, 2, …)라는 번호를 넘겨줍니다. 셰이더는 이 번호로 버퍼에서 "몇 번째 인스턴스의 월드 행렬"을 읽어 오면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="개별 드로우와 인스턴싱의 CPU 비용 비교">
+		<title>개별 드로우와 인스턴싱의 CPU 비용 비교</title>
+		<text x="20" y="34" class="t-bold">개별 드로우: 물체마다 상태 설정 → 바인딩 → Draw</text>
+		<text x="20" y="74" class="t-small">CPU (물체마다)</text>
+		<g>
+			<rect x="170" y="56" width="20" height="28" class="k4"/><rect x="190" y="56" width="20" height="28" class="k1"/><rect x="210" y="56" width="20" height="28" class="acc"/>
+			<rect x="234" y="56" width="20" height="28" class="k4"/><rect x="254" y="56" width="20" height="28" class="k1"/><rect x="274" y="56" width="20" height="28" class="acc"/>
+			<rect x="298" y="56" width="20" height="28" class="k4"/><rect x="318" y="56" width="20" height="28" class="k1"/><rect x="338" y="56" width="20" height="28" class="acc"/>
+			<rect x="362" y="56" width="20" height="28" class="k4"/><rect x="382" y="56" width="20" height="28" class="k1"/><rect x="402" y="56" width="20" height="28" class="acc"/>
+			<rect x="426" y="56" width="20" height="28" class="k4"/><rect x="446" y="56" width="20" height="28" class="k1"/><rect x="466" y="56" width="20" height="28" class="acc"/>
+			<rect x="490" y="56" width="20" height="28" class="k4"/><rect x="510" y="56" width="20" height="28" class="k1"/><rect x="530" y="56" width="20" height="28" class="acc"/>
+			<rect x="554" y="56" width="20" height="28" class="k4"/><rect x="574" y="56" width="20" height="28" class="k1"/><rect x="594" y="56" width="20" height="28" class="acc"/>
+			<rect x="618" y="56" width="20" height="28" class="k4"/><rect x="638" y="56" width="20" height="28" class="k1"/><rect x="658" y="56" width="20" height="28" class="acc"/>
+			<rect x="682" y="56" width="20" height="28" class="k4"/><rect x="702" y="56" width="20" height="28" class="k1"/><rect x="722" y="56" width="20" height="28" class="acc"/>
+			<rect x="746" y="56" width="20" height="28" class="k4"/><rect x="766" y="56" width="20" height="28" class="k1"/><rect x="786" y="56" width="20" height="28" class="acc"/>
+		</g>
+		<text x="816" y="75" class="t-muted">…</text>
+		<text x="170" y="104" class="t-muted">2,313번 반복 (StressStatic, Phase 26 측정 전)</text>
+
+		<text x="20" y="140" class="t-bold">인스턴싱: 같은 PSO·머티리얼·메시·LOD는 한 번에</text>
+		<text x="20" y="180" class="t-small">CPU (묶음마다)</text>
+		<rect x="170" y="162" width="20" height="28" class="k4"/><rect x="190" y="162" width="20" height="28" class="k1"/>
+		<rect x="210" y="162" width="70" height="28" class="k2"/><rect x="280" y="162" width="20" height="28" class="acc"/>
+		<rect x="310" y="162" width="496" height="28" rx="4" class="ln-d"/>
+		<text x="558" y="181" text-anchor="middle" class="t-muted">남는 CPU 시간 — 묶음은 10개뿐</text>
+
+		<rect x="170" y="216" width="14" height="14" class="k4"/><text x="190" y="228" class="t-small">PSO·루트 시그니처</text>
+		<rect x="330" y="216" width="14" height="14" class="k1"/><text x="350" y="228" class="t-small">버퍼·텍스처 바인딩</text>
+		<rect x="490" y="216" width="14" height="14" class="acc"/><text x="510" y="228" class="t-small">Draw 호출</text>
+		<rect x="600" y="216" width="14" height="14" class="k2"/><text x="620" y="228" class="t-small">인스턴스 번호 목록 업로드</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-1.</b> 개별 드로우는 준비 작업을 물체 수만큼 반복합니다. 인스턴싱은 "어떤 인스턴스들을 그릴지"를 번호 목록 하나로 올리고 명령은 묶음마다 한 번만 기록합니다.</figcaption>
+</figure>
+
+<p>인스턴싱에는 조건이 있습니다. <b>한 명령으로 묶이는 인스턴스는 메시와 파이프라인 상태, 머티리얼이 모두 같아야</b> 합니다. 그러면 문제는 "프레임마다 수천 개 인스턴스를 어떻게 빠르게 같은 것끼리 모으느냐"가 됩니다. ProjectE의 답은 <b>묶음 키(batch key)</b>와 정렬입니다.</p>
+
+<h4>묶음 키: 같은지 비교할 것들을 64비트 정수 하나에</h4>
+<p>"PSO가 같고, 머티리얼이 같고, 메시가 같고, LOD가 같다"를 매번 네 번 비교하는 대신, 네 값을 비트로 이어 붙여 정수 하나로 만듭니다. 그러면 정수 정렬 한 번으로 같은 것끼리 이웃하게 되고, 이웃한 같은 키를 한 묶음으로 자르기만 하면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 180" role="img" aria-label="묶음 키 64비트 배치">
+		<title>묶음 키 64비트 배치</title>
+		<rect x="40" y="60" width="12.2" height="40" class="k5"/>
+		<rect x="52.2" y="60" width="97.5" height="40" class="box"/>
+		<rect x="149.7" y="60" width="36.6" height="40" class="acc"/>
+		<rect x="186.3" y="60" width="292.5" height="40" class="k1"/>
+		<rect x="478.8" y="60" width="292.5" height="40" class="k2"/>
+		<rect x="771.3" y="60" width="48.7" height="40" class="k3"/>
+		<text x="101" y="85" text-anchor="middle" class="t-muted">미사용</text>
+		<text x="168" y="85" text-anchor="middle" class="t-small t-bold">PSO</text>
+		<text x="332" y="85" text-anchor="middle" class="t-bold">머티리얼 슬롯 (24비트)</text>
+		<text x="625" y="85" text-anchor="middle" class="t-bold">메시 슬롯 (24비트)</text>
+		<text x="795" y="85" text-anchor="middle" class="t-small t-bold">LOD</text>
+		<path d="M46,58 V36 H70" class="ln"/>
+		<text x="76" y="40" class="t-small">비트 63: 고유 키 (묶지 않는 항목 — 일반 항목보다 뒤로 정렬)</text>
+		<text x="40" y="118" class="t-muted">63</text><text x="150" y="118" class="t-muted">54</text>
+		<text x="187" y="118" class="t-muted">51</text><text x="479" y="118" class="t-muted">27</text>
+		<text x="772" y="118" class="t-muted">3</text><text x="812" y="118" class="t-muted">0</text>
+		<text x="430" y="150" text-anchor="middle" class="t-small">정렬하면 PSO → 머티리얼 → 메시 → LOD 순으로 같은 값끼리 붙는다 → PSO 교체는 가장 적게, 같은 키는 한 번의 DrawIndexedInstanced</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-2.</b> <code>InstanceBatching::MakeKey</code>의 비트 배치. 높은 비트일수록 바꾸기 비싼 상태(PSO)를 두어, 정렬 결과가 "상태 변경이 적은 순서"가 되게 합니다. 슬롯 번호는 리소스 핸들의 Index이므로 한 프레임 안에서 유일합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Renderer/InstanceBatching.h (발췌)"><span class="com">// 일반 키: PSO 종류(3비트) | 머티리얼 슬롯(24비트) | 메시 슬롯(24비트) | LOD(4비트). 슬롯 번호는 핸들 Index (같은 프레임 안에서 유일)</span>
+<span class="kw">constexpr</span> uint64 MakeKey(uint32 Pipeline, uint32 Material, uint32 Mesh, uint32 Lod)
+{
+	<span class="kw">return</span> (<span class="kw">static_cast</span>&lt;uint64&gt;(Pipeline &amp; <span class="num">0x7u</span>) &lt;&lt; <span class="num">52</span>) | (<span class="kw">static_cast</span>&lt;uint64&gt;(Material &amp; <span class="num">0xFFFFFFu</span>) &lt;&lt; <span class="num">28</span>) |
+	       (<span class="kw">static_cast</span>&lt;uint64&gt;(Mesh &amp; <span class="num">0xFFFFFFu</span>) &lt;&lt; <span class="num">4</span>) | <span class="kw">static_cast</span>&lt;uint64&gt;(Lod &amp; <span class="num">0xFu</span>);
+}
+
+<span class="com">// 키 → 깊이 → 인스턴스 번호 순으로 정렬 (스레드 안전 — 임시 버퍼는 스레드별)</span>
+<span class="kw">void</span> SortFrontToBack(std::vector&lt;FInstanceSortItem&gt;&amp; Items);</pre>
+<p>정렬 기준이 "키 → <b>깊이</b> → 인스턴스 번호"라는 점도 눈여겨보세요. 같은 묶음 안에서도 카메라에 가까운 인스턴스를 먼저 그리면, 뒤에 그리는 먼 인스턴스의 픽셀이 깊이 테스트에서 일찍 버려집니다(초기 깊이 기각, early-Z). 마지막 기준인 인스턴스 번호는 깊이가 같을 때도 순서를 하나로 정해 주는 장치입니다 — 실행할 때마다 같은 순서로 그려야 화면이 비트 단위로 같아지고, 자동 검증 스크린샷 비교가 가능해집니다.</p>
+
+<h4>셰이더는 자기 인스턴스를 어떻게 찾나</h4>
+<p>묶음을 만들었으면 GPU에 두 가지를 알려야 합니다. "이번 프레임의 모든 인스턴스 데이터"와 "이 묶음이 그릴 인스턴스가 누구누구인지"입니다. ProjectE는 이를 구조화 버퍼 두 개로 나눕니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="인스턴스 목록에서 묶음 드로우까지">
+		<title>인스턴스 목록에서 묶음 드로우까지</title>
+		<text x="20" y="28" class="t-bold">① 프레임 인스턴스 목록 (t13)</text>
+		<g class="t-small">
+			<rect x="20" y="44" width="210" height="26" rx="5" class="k2"/><text x="32" y="62">#0  나무 A · LOD0</text>
+			<rect x="20" y="74" width="210" height="26" rx="5" class="k1"/><text x="32" y="92">#1  바위 · LOD0</text>
+			<rect x="20" y="104" width="210" height="26" rx="5" class="k2"/><text x="32" y="122">#2  나무 A · LOD0</text>
+			<rect x="20" y="134" width="210" height="26" rx="5" class="k2"/><text x="32" y="152">#3  나무 A · LOD0</text>
+			<rect x="20" y="164" width="210" height="26" rx="5" class="k1"/><text x="32" y="182">#4  바위 · LOD0</text>
+			<rect x="20" y="194" width="210" height="26" rx="5" class="k3"/><text x="32" y="212">#5  나무 A · LOD1</text>
+		</g>
+		<text x="20" y="244" class="t-muted">월드 행렬·법선 행렬·이전 프레임 월드</text>
+		<text x="20" y="262" class="t-muted">(FInstanceGpuData, 프레임에 한 번 업로드)</text>
+		<path d="M234,132 H284" class="ln" marker-end="url(#arr)"/>
+
+		<text x="294" y="28" class="t-bold">② 패스마다: 컬링 → 키 정렬 → 묶음</text>
+		<g class="t-small">
+			<rect x="300" y="44" width="150" height="26" rx="5" class="k2"/><text x="312" y="62">#0 나무 A</text>
+			<rect x="300" y="74" width="150" height="26" rx="5" class="k2"/><text x="312" y="92">#2 나무 A</text>
+			<rect x="300" y="104" width="150" height="26" rx="5" class="k2"/><text x="312" y="122">#3 나무 A</text>
+			<rect x="300" y="140" width="150" height="26" rx="5" class="k1"/><text x="312" y="158">#1 바위</text>
+			<rect x="300" y="170" width="150" height="26" rx="5" class="k1"/><text x="312" y="188">#4 바위</text>
+			<rect x="300" y="206" width="150" height="26" rx="5" class="k3"/><text x="312" y="224">#5 나무 A LOD1</text>
+			<path d="M456,46 h6 v84 h-6" class="ln"/><text x="468" y="92">묶음 0</text>
+			<path d="M456,142 h6 v52 h-6" class="ln"/><text x="468" y="172">묶음 1</text>
+			<path d="M456,208 h6 v22 h-6" class="ln"/><text x="468" y="224">묶음 2</text>
+		</g>
+		<path d="M524,120 H584" class="ln" marker-end="url(#arr)"/>
+
+		<text x="594" y="28" class="t-bold">③ 인스턴스 번호 목록 (t14)</text>
+		<g class="t-small">
+			<rect x="594" y="44" width="36" height="26" class="k2"/><text x="612" y="62" text-anchor="middle">0</text>
+			<rect x="630" y="44" width="36" height="26" class="k2"/><text x="648" y="62" text-anchor="middle">2</text>
+			<rect x="666" y="44" width="36" height="26" class="k2"/><text x="684" y="62" text-anchor="middle">3</text>
+			<rect x="702" y="44" width="36" height="26" class="k1"/><text x="720" y="62" text-anchor="middle">1</text>
+			<rect x="738" y="44" width="36" height="26" class="k1"/><text x="756" y="62" text-anchor="middle">4</text>
+			<rect x="774" y="44" width="36" height="26" class="k3"/><text x="792" y="62" text-anchor="middle">5</text>
+			<text x="594" y="88" class="t-muted">↑0</text><text x="702" y="88" class="t-muted">↑3</text><text x="774" y="88" class="t-muted">↑5</text>
+			<text x="594" y="122">Draw(나무 A LOD0, 3개, Offset 0)</text>
+			<text x="594" y="146">Draw(바위 LOD0, 2개, Offset 3)</text>
+			<text x="594" y="170">Draw(나무 A LOD1, 1개, Offset 5)</text>
+		</g>
+		<rect x="300" y="246" width="540" height="46" rx="8" class="acc"/>
+		<text x="314" y="265" class="t-mono">정점 셰이더: Instance = Instances[ InstanceIndices[</text>
+		<text x="380" y="284" class="t-mono">InstanceOffset(루트 상수 b0) + SV_InstanceID ] ]</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-3.</b> 인스턴스 데이터는 프레임에 한 번만 올리고(①), 각 패스(메인·그림자·아웃라인)는 그 목록을 각자 컬링·정렬해 번호 목록만 따로 올립니다(②③). 같은 나무 A라도 LOD가 다르면 다른 묶음입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Shaders/MeshInstance.hlsli (발췌)">StructuredBuffer&lt;FInstanceData&gt; Instances       : <span class="kw">register</span>(t13);
+StructuredBuffer&lt;<span class="kw">uint</span>&gt;          InstanceIndices : <span class="kw">register</span>(t14);
+
+FInstanceData LoadInstance(<span class="kw">uint</span> Offset, <span class="kw">uint</span> InstanceId)
+{
+	<span class="kw">return</span> Instances[InstanceIndices[Offset + InstanceId]];
+}</pre>
+<pre class="code" data-file="Engine/Shaders/Mesh.hlsl (발췌)">FPixelInput VSMain(FVertexInput Input, <span class="kw">uint</span> InstanceId : SV_InstanceID)
+{
+	...
+	<span class="kw">const</span> FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);</pre>
+<p>왜 번호를 한 번 더 거칠까요(간접 참조)? 인스턴스 데이터를 패스마다 다시 올리지 않기 위해서입니다. 메인 패스, 그림자 캐스케이드 셋, 로컬 그림자, 에디터 아웃라인이 모두 같은 <code>FMeshInstanceList</code>를 공유하고, 각 패스는 "내가 그릴 번호들"(4바이트 정수 목록)만 따로 올립니다. 월드 행렬 하나가 64바이트, <code>FInstanceGpuData</code> 전체는 192바이트이므로 이 차이는 큽니다.</p>
+<div class="callout tip">
+	<b class="t">설계 이유: 스킨 메시도 같은 틀로 (Phase 29)</b>
+	처음(Phase 26)에는 스킨 메시가 인스턴스마다 본 팔레트가 달라 묶지 않았습니다. Phase 29에서 프레임의 모든 본 행렬을 구조화 버퍼 하나(t15 <code>SkinBones</code>)에 이어 붙이고, 인스턴스 데이터에 "내 첫 본의 위치"(<code>BoneOffset</code>)를 넣었습니다. 그러자 스킨 메시도 같은 키로 묶을 수 있게 되어 <code>Stress</code> 씬(스킨 228개)의 드로우가 메인 145 / 그림자 822 → 2 / 8로, Release 프레임이 3.53 → 2.23ms로 줄었습니다. "인스턴스마다 다른 데이터"는 묶음을 깨는 이유가 아니라 <b>오프셋 하나로 바꿀 수 있는 것</b>이었습니다.
+</div>
+
+<h3 id="lec-29-qem"><span class="step">핵심 개념</span>QEM 메시 단순화 — LOD를 자동으로 만들기</h3>
+<p><b>LOD(Level of Detail)</b>는 같은 물체를 삼각형 수가 다른 여러 버전으로 준비해 두고, 멀리 있을 때는 거친 버전을 그리는 기법입니다. 문제는 거친 버전을 누가 만드느냐입니다. 아티스트가 손으로 만들 수도 있지만 ProjectE는 임포트할 때 자동으로 만듭니다(임포트 설정 <code>GenerateLods/LodCount</code>). 그 알고리즘이 <b>QEM(Quadric Error Metric, 이차 오차 척도)</b> 기반 모서리 붕괴입니다 — Garland와 Heckbert가 1997년에 발표한, 지금도 가장 널리 쓰이는 방법입니다.</p>
+
+<h4>모서리 붕괴(edge collapse)</h4>
+<p>단순화의 기본 동작은 하나입니다. 모서리 PQ를 골라 <b>점 P를 Q로 옮겨 합칩니다</b>. 그러면 PQ를 공유하던 삼각형 두 개가 넓이 0이 되어 사라지고, P에 붙어 있던 나머지 삼각형은 Q에 붙습니다. ProjectE는 P를 새 위치가 아니라 <b>이미 있는 정점 Q로</b> 옮기는 "반-모서리 붕괴(half-edge collapse)"를 씁니다. 새 정점이 생기지 않으므로 LOD는 원본(LOD0)의 정점 버퍼를 그대로 공유하고 <b>인덱스 버퍼만</b> 새로 만들면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="반-모서리 붕괴와 이차 오차">
+		<title>반-모서리 붕괴와 이차 오차</title>
+		<g class="ln">
+			<path d="M180,140 L260,120 L220,60 Z" class="k5"/>
+			<path d="M180,140 L220,60 L130,70 Z" class="k2"/>
+			<path d="M180,140 L130,70 L90,150 Z" class="k2"/>
+			<path d="M180,140 L90,150 L140,220 Z" class="k2"/>
+			<path d="M180,140 L140,220 L240,210 Z" class="k2"/>
+			<path d="M180,140 L240,210 L260,120 Z" class="k5"/>
+		</g>
+		<line x1="180" y1="140" x2="260" y2="120" class="sa" stroke-width="3"/>
+		<circle cx="180" cy="140" r="5" class="fa"/><text x="160" y="136" class="t-bold">P</text>
+		<circle cx="260" cy="120" r="5" class="f1"/><text x="268" y="116" class="t-bold">Q</text>
+		<text x="60" y="250" class="t-muted">빨간 두 삼각형은 붕괴하면 사라진다</text>
+
+		<path d="M300,140 H370" class="ln" marker-end="url(#arr)"/>
+		<text x="335" y="128" text-anchor="middle" class="t-small">P → Q</text>
+
+		<g class="ln">
+			<path d="M540,120 L500,60 L410,70 Z" class="k2"/>
+			<path d="M540,120 L410,70 L370,150 Z" class="k2"/>
+			<path d="M540,120 L370,150 L420,220 Z" class="k2"/>
+			<path d="M540,120 L420,220 L520,210 Z" class="k2"/>
+		</g>
+		<circle cx="540" cy="120" r="5" class="f1"/><text x="548" y="116" class="t-bold">Q</text>
+		<text x="380" y="250" class="t-muted">정점은 그대로, 인덱스만 바뀐다</text>
+
+		<rect x="600" y="34" width="244" height="196" rx="10" class="box"/>
+		<text x="614" y="58" class="t-bold">비용을 어떻게 재나</text>
+		<g class="t-small">
+			<text x="614" y="84">정점마다 주변 면 평면들의 이차식 K</text>
+			<text x="614" y="106">K(x) = Σ 면적 · (n·x + d)²</text>
+			<text x="614" y="128">= 그 면들까지 거리 제곱의 합</text>
+			<text x="614" y="154">붕괴 비용 = (K<tspan baseline-shift="sub" font-size="9">P</tspan> + K<tspan baseline-shift="sub" font-size="9">Q</tspan>)(Q의 위치)</text>
+			<text x="614" y="176">→ 원래 면에서 얼마나 벗어나나</text>
+			<text x="614" y="202">우선순위 큐에서 가장 싼 것부터</text>
+			<text x="614" y="222">합친 뒤 K<tspan baseline-shift="sub" font-size="9">Q</tspan> += K<tspan baseline-shift="sub" font-size="9">P</tspan> (오차 누적)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-4.</b> 반-모서리 붕괴. 어떤 모서리를 먼저 붕괴할지는 "그렇게 옮기면 원래 표면에서 얼마나 멀어지는가"를 이차식으로 재서 정합니다. 평평한 곳은 비용이 0에 가까워 먼저 줄고, 각진 곳은 비용이 커서 끝까지 남습니다.</figcaption>
+</figure>
+
+<h4>이차 오차의 직관</h4>
+<p>원래 메시의 각 삼각형은 하나의 평면 <i>n·x + d = 0</i>에 놓여 있습니다(n은 단위 법선). 점 x에서 이 평면까지 거리는 <i>|n·x + d|</i>이고, 그 제곱은 x에 대한 <b>이차식</b>입니다. 정점마다 주변 삼각형 평면들의 거리 제곱을 모두 더한 식 K를 만들어 두면, "이 정점을 x로 옮기면 원래 주변 면들에서 얼마나 벗어나는가"를 K(x) 한 번 계산으로 알 수 있습니다. 이차식은 대칭 4×4 행렬로 표현되어 <b>계수 10개</b>만 저장하면 되고, 두 이차식을 합치는 것도 계수끼리 더하기일 뿐입니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/MeshSimplifier.cpp (발췌)"><span class="com">// 대칭 4x4 이차식 (평면 a x + b y + c z + d = 0의 제곱 거리 합)</span>
+<span class="kw">struct</span> FQuadric
+{
+	<span class="kw">double</span> A[<span class="num">10</span>] = {}; <span class="com">// aa ab ac ad bb bc bd cc cd dd</span>
+
+	<span class="kw">void</span> AddPlane(<span class="kw">double</span> Na, <span class="kw">double</span> Nb, <span class="kw">double</span> Nc, <span class="kw">double</span> D, <span class="kw">double</span> Weight) { ... }
+	<span class="kw">double</span> Evaluate(<span class="kw">const</span> FVector3&amp; P) <span class="kw">const</span>; <span class="com">// x^T K x</span>
+};
+...
+<span class="com">// 삼각형마다: 법선 N, 가중치 = 삼각형 넓이 (0.5 * |외적|)</span>
+Plane.AddPlane(N.X, N.Y, N.Z, D, <span class="num">0.5</span> * Length);
+...
+<span class="com">// 붕괴 후보: 두 정점의 이차식을 합쳐 목적지 To에서 평가. 오차가 같으면(평면 등) 짧은 모서리부터</span>
+FQuadric Combined = Quadrics[From];
+Combined += Quadrics[To];
+Queue.push({ FMath::Max(Combined.Evaluate(Positions[To]), <span class="num">0.0</span>) + LengthSq * <span class="num">1.0e-6</span>, From, To, ... });</pre>
+<p>가중치를 삼각형 넓이로 주는 이유는, 큰 면에서 벗어나는 것이 작은 조각에서 벗어나는 것보다 눈에 더 띄기 때문입니다. 오차가 똑같이 0인 평평한 면에서는 짧은 모서리부터 붕괴하도록 아주 작은 항을 더해, 가늘고 긴 삼각형이 덜 생기게 합니다.</p>
+
+<h4>단순화가 망가뜨리면 안 되는 것들</h4>
+<p>이론은 간단하지만 실제 메시에서는 지켜야 할 조건이 많습니다. <code>MeshSimplifier.h</code> 머리 주석에 적힌 규칙을 정리하면 이렇습니다.</p>
+<ul>
+	<li><b>위치가 같은 정점은 하나의 "위치"로</b>: UV나 법선이 갈라지는 이음매(seam)에서는 같은 자리에 정점이 여러 개 있습니다. 붕괴는 위치 단위로 하고, 각 속성 정점은 Q 쪽의 짝 정점으로 바뀝니다. 짝이 없으면 붕괴하지 않으므로 <b>이음매를 가로질러 UV가 섞이지 않습니다</b>.</li>
+	<li><b>열린 경계는 경계를 따라서만</b>, 삼각형 3개 이상이 공유하는 비다양체 모서리의 위치는 고정합니다.</li>
+	<li><b>뒤집힘 금지</b>: 붕괴 뒤 어떤 삼각형의 법선이 원래와 78도 이상 꺾이면(내적 ≤ 0.2) 그 붕괴는 하지 않습니다.</li>
+	<li><b>와인딩(CW) 유지</b>, 원본이 64삼각형 미만이거나 직전 LOD보다 85% 넘게 남으면(덜 줄면) 거기서 LOD 생성을 멈춥니다.</li>
+</ul>
+<p>기본 LOD는 원본 대비 삼각형 비율 100% / 50% / 25% / 10%로 4단계이고, 앞 LOD에서 이어서 단순화합니다.</p>
+
+<h3 id="lec-29-lod"><span class="step">핵심 개념</span>LOD 선택: 화면 크기와 히스테리시스</h3>
+<p>LOD를 거리로 고르면 문제가 있습니다. 같은 10m 거리라도 망원 렌즈(좁은 시야각)로 보면 크게 보이고, 화면 해상도가 다르면 픽셀 수가 다릅니다. 그래서 ProjectE는 언리얼처럼 <b>화면 크기(screen size)</b> — 경계 구의 지름이 화면 높이에서 차지하는 비율 — 로 고릅니다.</p>
+<div class="callout note">
+	<b class="t">화면 크기 식</b>
+	원근 투영에서 거리 D에 있는 반지름 R의 구가 화면 세로에서 차지하는 비율은 <b>R / (D · tan(세로 시야각 / 2))</b>입니다. 화면 높이의 절반이 거리 D에서 <i>D·tan(θ/2)</i>만큼의 월드 크기를 덮기 때문입니다. 1이면 화면 높이만큼, 0.1이면 화면 높이의 10%. 직교 카메라는 <b>2R / 직교 높이</b>입니다. 카메라가 구 안에 있으면 아주 큰 값(→ LOD0)을 돌려줍니다.
+</div>
+<p>임계값은 LOD마다 <code>{ 1.0, 0.5, 0.25, 0.12 }</code>입니다. 화면 크기가 0.5보다 작아지면 LOD1, 0.25보다 작으면 LOD2 … 하는 식입니다.</p>
+
+<h4>팝핑과 히스테리시스</h4>
+<p>LOD가 바뀌는 순간 모양이 툭 바뀌는 것을 <b>팝핑(popping)</b>이라고 합니다. 한 번은 참을 만하지만, 카메라가 임계값 근처에서 조금씩 흔들리면(캐릭터가 걸으면 카메라가 들썩입니다) LOD가 프레임마다 왔다 갔다 하며 깜빡입니다. 해결책은 <b>히스테리시스(hysteresis)</b> — 내려갈 때와 올라갈 때 문턱을 다르게 두는 것입니다. 온도 조절기가 22도에서 켜고 24도에서 끄는 것과 같은 원리입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="LOD 히스테리시스">
+		<title>LOD 히스테리시스</title>
+		<rect x="90" y="70" width="730" height="40" class="k4" stroke="none" opacity="0.6"/>
+		<line x1="90" y1="90" x2="820" y2="90" class="ln"/>
+		<line x1="90" y1="70" x2="820" y2="70" class="ln-d"/>
+		<line x1="90" y1="110" x2="820" y2="110" class="ln-d"/>
+		<text x="84" y="74" text-anchor="end" class="t-small">T×1.1</text>
+		<text x="84" y="94" text-anchor="end" class="t-small t-bold">T = 0.5</text>
+		<text x="84" y="114" text-anchor="end" class="t-small">T×0.9</text>
+		<text x="20" y="26" class="t-bold">화면 크기 (카메라가 멀어지며 흔들림)</text>
+		<polyline points="90,50.0 95,47.4 100,44.9 105,42.8 110,41.1 115,40.0 120,39.6 125,39.8 130,40.8 135,42.5 140,44.8 145,47.6 150,50.9 155,54.5 160,58.2 165,61.9 170,65.4 175,68.6 180,71.2 185,73.3 190,74.8 195,75.5 200,75.5 205,74.8 210,73.5 215,71.6 220,69.4 225,66.8 230,64.2 235,61.6 240,59.3 245,57.3 250,55.8 255,55.0 260,54.7 265,55.2 270,56.5 275,58.4 280,60.9 285,63.9 290,67.3 295,71.0 300,74.7 305,78.3 310,81.7 315,84.7 320,87.2 325,89.1 330,90.2 335,90.7 340,90.5 345,89.5 350,88.0 355,86.0 360,83.6 365,81.1 370,78.4 375,75.9 380,73.7 385,71.9 390,70.6 395,69.9 400,70.0 405,70.7 410,72.2 415,74.4 420,77.1 425,80.2 430,83.8 435,87.4 440,91.2 445,94.7 450,98.0 455,100.8 460,103.1 465,104.7 470,105.6 475,105.9 480,105.4 485,104.2 490,102.5 495,100.4 500,97.9 505,95.3 510,92.7 515,90.3 520,88.1 525,86.5 530,85.4 535,85.0 540,85.3 545,86.3 550,88.0 555,90.4 560,93.3 565,96.6 570,100.2 575,103.9 580,107.6 585,111.1 590,114.2 595,116.8 600,118.9 605,120.3 610,120.9 615,120.9 620,120.2 625,118.8 630,116.9 635,114.7 640,112.1 645,109.5 650,106.9 655,104.6 660,102.7 665,101.2 670,100.4 675,100.2 680,100.7 685,102.0 690,104.0 695,106.5 700,109.6 705,113.0 710,116.7 715,120.4 720,124.0 725,127.4 730,130.3 735,132.8 740,134.6 745,135.7 750,136.2 755,135.9 760,134.9 765,133.4 770,131.3 775,128.9 780,126.3 785,123.7 790,121.2 795,119.0 800,117.2 805,116.0 810,115.4 815,115.5 820,116.3" class="ln s1" stroke-width="2.2"/>
+
+		<text x="84" y="183" text-anchor="end" class="t-small">±0% (문턱 하나)</text>
+		<rect x="90" y="168" width="239" height="22" class="k2"/>
+		<rect x="329" y="168" width="14" height="22" class="k3"/>
+		<rect x="343" y="168" width="96" height="22" class="k2"/>
+		<rect x="439" y="168" width="77" height="22" class="k3"/>
+		<rect x="516" y="168" width="39" height="22" class="k2"/>
+		<rect x="555" y="168" width="265" height="22" class="k3"/>
+		<text x="210" y="184" text-anchor="middle" class="t-small">LOD0</text>
+		<text x="687" y="184" text-anchor="middle" class="t-small">LOD1</text>
+		<text x="477" y="208" text-anchor="middle" class="t-small f5 t-bold">↑ 5번 바뀜 — 깜빡임</text>
+
+		<text x="84" y="241" text-anchor="end" class="t-small">±10% 띠</text>
+		<rect x="90" y="226" width="494" height="22" class="k2"/>
+		<rect x="584" y="226" width="236" height="22" class="k3"/>
+		<text x="337" y="242" text-anchor="middle" class="t-small">LOD0 (띠 안에서는 이전 LOD 유지)</text>
+		<text x="702" y="242" text-anchor="middle" class="t-small">LOD1 — 한 번만</text>
+		<line x1="584" y1="110" x2="584" y2="224" class="ln-d"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-5.</b> 같은 화면 크기 변화(파란 선)에 문턱 하나로 고르면 LOD가 다섯 번 바뀌지만, ±10% 띠를 두면 화면 크기가 T×0.9 아래로 확실히 내려갔을 때 한 번만 바뀝니다. 다시 LOD0으로 돌아오려면 T×1.1 위로 올라가야 합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Renderer/LodMath.h (발췌)"><span class="kw">constexpr float</span> DefaultHysteresis = <span class="num">0.1f</span>; <span class="com">// 전환 여유: 임계값의 ±10% 띠 안에서는 이전 LOD 유지</span>
+
+<span class="com">// 낮은 품질로 내려가려면 화면 크기 &lt; T × (1 - H), 높은 품질로 올라가려면 &gt;= T × (1 + H).</span>
+<span class="com">//   = clamp(이전, SelectLod(크기 / (1 - H)), SelectLod(크기 / (1 + H)))</span>
+<span class="kw">inline</span> uint32 SelectLodWithHysteresis(<span class="kw">float</span> ScreenSize, <span class="kw">const float</span>* Thresholds, uint32 LodCount, <span class="kw">float</span> Scale, uint32 PreviousLod,
+                                      <span class="kw">float</span> Hysteresis = DefaultHysteresis)
+{
+	<span class="kw">const float</span> H = FMath::Clamp(Hysteresis, <span class="num">0.0f</span>, <span class="num">0.9f</span>);
+	<span class="kw">if</span> (PreviousLod &gt;= LodCount || H &lt;= <span class="num">0.0f</span>)
+	{
+		<span class="kw">return</span> SelectLod(ScreenSize, Thresholds, LodCount, Scale);
+	}
+	<span class="kw">const</span> uint32 Finest   = SelectLod(ScreenSize / (<span class="num">1.0f</span> - H), Thresholds, LodCount, Scale); <span class="com">// 이보다 높은 품질은 유지 불가</span>
+	<span class="kw">const</span> uint32 Coarsest = SelectLod(ScreenSize / (<span class="num">1.0f</span> + H), Thresholds, LodCount, Scale); <span class="com">// 이보다 낮은 품질은 유지 불가</span>
+	<span class="kw">return</span> FMath::Clamp(PreviousLod, Finest, Coarsest);
+}</pre>
+<p>이 구현은 짧지만 영리합니다. 화면 크기를 (1−H)로 나눠 "조금 더 크게 본다면 고를 LOD"와 (1+H)로 나눠 "조금 더 작게 본다면 고를 LOD"를 구하고, 이전 LOD를 그 사이로 자릅니다. 띠 안이면 이전 값이 그대로 살아남고, 띠를 벗어나면 경계로 끌려갑니다. 이 함수는 "이전 LOD"를 기억해야 하므로 렌더러가 엔티티별로 지난 프레임 LOD를 보관합니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 그림자도 같은 LOD를 쓴다</b>
+	LOD는 <code>FSceneRenderer::SelectLods</code>가 <b>메인 카메라 화면 크기</b>로 한 번 고르고, 사전 패스·메인·그림자 패스가 같은 값을 씁니다. 한 프레임 안에서 패스마다 LOD를 따로 고르면 같은 물체가 패스마다 다른 모양이 되어 물체와 그림자가 어긋날 수 있습니다. 그래서 그림자 LOD를 따로 고르는 코드도 이 선택 경로를 공유해야 합니다(CLAUDE.md "성능(Phase 26)").
+</div>
+
+<h4>스킨 메시 LOD: 정점을 바꾸지 않는다는 것의 가치</h4>
+<p>QEM 반-모서리 붕괴가 "기존 정점만 쓴다"는 성질은 스킨 메시(뼈로 움직이는 캐릭터)에서 빛을 발했습니다. 스킨 메시는 정점마다 뼈 번호·가중치를 담은 두 번째 정점 스트림(<code>FSkinVertex</code>, 슬롯 1)을 가집니다. 정점이 그대로이므로 LOD는 이 스킨 스트림까지 <b>그대로 공유</b>하고 인덱스만 바꾸면 됩니다. 2026-10-04 이 작업으로 <code>Tests/Stress</code>의 삼각형은 2.38M → 0.86M(그림자 4.87M → 1.82M), GPU는 7.6 → 5.2ms가 되었습니다.</p>
+<p>캐릭터는 가까이서 모양 변화가 잘 보이므로 정적 메시보다 보수적으로 고릅니다. 화면 크기에 <code>r.LOD.SkinnedScale</code>(기본 2)을 곱해 LOD0을 더 멀리까지 유지하고, <code>r.LOD.Skinned 0</code>(<code>--no-skinned-lod</code>)이면 이전과 비트 동일한 화면으로 돌아갑니다. 반대로 정점을 새로 만들거나 버리는 경로(잎 솎아내기, 삼각형 상한 <code>MaxTriangles</code>)는 스킨 스트림과 어긋나므로 <b>정적 메시 전용</b>으로 남겨 두었습니다.</p>
+
+<h3 id="lec-29-hzb"><span class="step">핵심 개념</span>HZB 오클루전 컬링</h3>
+<p>프러스텀 컬링(시야 밖 제거)은 이미 하고 있습니다. 남은 낭비는 <b>시야 안에 있지만 앞의 벽에 가려진</b> 물체입니다. 이를 걸러내는 것이 오클루전 컬링이고, GPU에서 하는 대표적인 방법이 <b>HZB(Hierarchical Z-Buffer, 계층 깊이 버퍼)</b>입니다.</p>
+<p>아이디어는 이렇습니다. 깊이 버퍼를 2×2씩 묶어 <b>가장 먼 값(최댓값)</b>으로 줄인 밉 체인을 만듭니다. 그러면 높은 밉의 텍셀 하나는 "이 넓은 영역에 그려진 것들 중 가장 먼 깊이"를 뜻합니다. 물체의 경계 상자를 화면에 투영했을 때, 그 사각형을 덮는 텍셀들의 최댓값보다 물체의 <b>가장 가까운</b> 점이 더 멀다면 — 그 영역의 모든 픽셀이 물체보다 앞에 있는 무언가로 이미 덮여 있다는 뜻이므로 물체는 완전히 가려졌습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="HZB 밉 체인과 가림 판정">
+		<title>HZB 밉 체인과 가림 판정</title>
+		<text x="20" y="28" class="t-bold">깊이 버퍼 (8×8)</text>
+		<g>
+			<rect x="20" y="40" width="120" height="160" class="k1"/>
+			<rect x="140" y="40" width="40" height="160" class="box"/>
+			<path d="M40,40 V200 M60,40 V200 M80,40 V200 M100,40 V200 M120,40 V200 M140,40 V200 M160,40 V200 M20,60 H180 M20,80 H180 M20,100 H180 M20,120 H180 M20,140 H180 M20,160 H180 M20,180 H180" class="ln" stroke-width="0.6"/>
+			<rect x="40" y="80" width="60" height="60" class="ln-d sa" style="stroke-width:2.6"/>
+		</g>
+		<text x="20" y="222" class="t-muted">파랑 = 가까운 벽 (깊이 0.3)</text>
+		<text x="20" y="240" class="t-muted">회색 = 하늘 (1.0)</text>
+		<text x="20" y="258" class="t-muted">점선 = 벽 뒤 물체의 투영 사각형</text>
+
+		<path d="M190,120 H226" class="ln" marker-end="url(#arr)"/>
+		<text x="208" y="108" text-anchor="middle" class="t-muted">최댓값</text>
+		<text x="236" y="28" class="t-bold">밉 0 (4×4)</text>
+		<rect x="236" y="80" width="60" height="80" class="k1"/>
+		<rect x="296" y="80" width="20" height="80" class="box"/>
+		<path d="M256,80 V160 M276,80 V160 M296,80 V160 M236,100 H316 M236,120 H316 M236,140 H316" class="ln" stroke-width="0.6"/>
+		<path d="M326,120 H356" class="ln" marker-end="url(#arr)"/>
+		<text x="366" y="28" class="t-bold">밉 1 (2×2)</text>
+		<rect x="366" y="100" width="20" height="40" class="k1"/>
+		<rect x="386" y="100" width="20" height="40" class="box"/>
+		<path d="M366,120 H406" class="ln" stroke-width="0.6"/>
+		<text x="376" y="156" text-anchor="middle" class="t-muted">0.3</text>
+		<text x="396" y="156" text-anchor="middle" class="t-muted">1.0</text>
+		<path d="M416,120 H446" class="ln" marker-end="url(#arr)"/>
+		<text x="456" y="28" class="t-bold">밉 2</text>
+		<rect x="456" y="110" width="20" height="20" class="box"/>
+		<text x="466" y="148" text-anchor="middle" class="t-muted">1.0</text>
+
+		<rect x="510" y="44" width="334" height="196" rx="10" class="box"/>
+		<text x="526" y="70" class="t-bold">판정 (HzbMath::IsOccluded)</text>
+		<g class="t-small">
+			<text x="526" y="96">① 경계 상자 8꼭짓점 투영 → 화면 사각형</text>
+			<text x="526" y="116">    + 가장 가까운 깊이 MinZ (예: 0.6)</text>
+			<text x="526" y="140">② 사각형이 텍셀 2×2 이하로 들어가는 밉 선택</text>
+			<text x="526" y="164">③ 그 텍셀들의 최댓값 = 0.3</text>
+			<text x="526" y="188">④ MinZ 0.6 &gt; 0.3 → 가려짐 (그리지 않음)</text>
+			<text x="526" y="214" class="t-muted">근평면을 지나거나 화면 밖이면 판정하지 않고</text>
+			<text x="526" y="230" class="t-muted">"보인다"로 둔다 — 틀려도 그리는 쪽으로</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 29-6.</b> HZB는 "이 영역에서 가장 먼 깊이"의 피라미드입니다. 큰 물체도 높은 밉의 텍셀 몇 개만 읽으면 판정이 끝납니다. 깊이 규약은 0 = 가까움, 1 = 멂입니다.</figcaption>
+</figure>
+
+<h4>2단계 컬링: 닭과 달걀 문제</h4>
+<p>HZB를 만들려면 깊이 버퍼가 필요하고, 깊이 버퍼를 만들려면 먼저 그려야 합니다. 그래서 <code>FOcclusionCuller</code>는 두 단계로 나눕니다.</p>
+<ol>
+	<li><b>1단계</b>: <b>지난 프레임</b>의 HZB(와 그 프레임의 뷰-투영)로 판정해 보이는 것만 그립니다.</li>
+	<li>지금까지 그린 깊이로 <b>이번 프레임 HZB</b>를 만듭니다.</li>
+	<li><b>2단계</b>: 1단계에서 가려졌다고 판정된 것만 이번 HZB로 다시 검사해, 실제로는 보이는 것(카메라가 움직여 새로 드러난 물체)을 같은 프레임에 그립니다.</li>
+</ol>
+<p>지난 프레임 정보만 쓰면 새로 드러난 물체가 한 프레임 늦게 "뿅" 나타나는데, 2단계가 이것을 막습니다. 판정과 드로우 인자는 모두 GPU 계산 셰이더가 쓰고, 드로우는 <code>ExecuteIndirect</code>로 CPU가 결과를 기다리지 않습니다. 판정 식은 CPU 참조 구현(<code>HzbMath.h</code>)과 셰이더(<code>OcclusionCulling.hlsl</code>)가 같은 식이며 <code>OcclusionTests</code>가 검증합니다.</p>
+
+<h3 id="lec-29-pitfalls"><span class="step">함정과 교훈</span>잰 결과가 직관을 이긴다</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 68%를 가렸는데 느려졌다 (Phase 26-4)</b>
+	HZB 2단계 오클루전을 완성하고 재 보니 StressStatic에서 정적 인스턴스의 <b>68%가 가려짐</b>으로 판정되었습니다. 그런데 이미 켜 둔 LOD와 함께 쓰면 GPU 시간이 <b>0.76 → 0.85ms로 늘었습니다</b>. LOD가 먼 물체의 삼각형을 이미 크게 줄여 놓았으니, 가려진 물체를 빼서 아끼는 몫은 작아졌습니다. 반면 HZB 밉 만들기, 두 번의 컬링 디스패치, 간접 드로우는 물체 수와 거의 무관하게 매 프레임 드는 고정 비용입니다. 그래서 오클루전은 <b>기본 끔</b>(<code>r.Occlusion 0</code>, 켜기 <code>--occlusion</code>)으로 두었습니다. 기능은 남겨 두었으니 실내처럼 벽이 많고 메시가 무거운 씬에서는 다시 재 보고 켤 수 있습니다.
+</div>
+<pre class="code" data-file="Engine/Source/Renderer/RendererConsoleVariables.cpp (발췌)">TAutoConsoleVariable&lt;<span class="kw">bool</span>&gt; Occlusion(<span class="str">"r.Occlusion"</span>, <span class="kw">false</span>, <span class="str">"HZB 오클루전 컬링 (메인 패스 정적 메시). 기본 끔 — LOD와 함께면 손해였음 (Phase 26 측정)"</span>,
+                                     EConsoleFlags::None, { .CommandLine = { { L<span class="str">"--occlusion"</span>, <span class="str">"1"</span> } } });</pre>
+<ul>
+	<li><b>최적화는 서로 겹친다</b>: 각각은 이득이어도 이미 다른 최적화가 같은 비용을 줄였다면 효과가 사라지거나 뒤집힙니다. 반드시 <b>조합 상태</b>로 재야 합니다.</li>
+	<li><b>"안 한 것"도 기록한다</b>: Phase 29-4에서 화면 밖 캐릭터의 애니메이션 갱신을 생략하는 아이디어도 재 보았지만 Stress 씬에서 이득이 0이라 넣지 않았습니다. 이 기록이 있어야 나중에 같은 실험을 반복하지 않습니다.</li>
+	<li><b>HZB 밉 크기는 2의 거듭제곱으로</b>: D3D12 밉 체인은 크기를 내림으로 반감합니다. 깊이 크기가 홀수면 단계마다 텍셀이 정확히 반이 되지 않아 판정 영역이 어긋납니다. 그래서 HZB 밉 0 크기는 "깊이/2를 올림한 뒤 2의 거듭제곱으로 올린 값"이고, 깊이 밖 텍셀은 0(가리지 않음)으로 둡니다.</li>
+	<li><b>잎 메시에는 QEM이 듣지 않는다</b>: 서로 떨어진 작은 잎 카드 수천 장은 조각 사이에 모서리가 없어 붕괴할 수 없습니다. 이런 메시는 섬(island) 단위로 일부만 남기고 남은 것을 키워 면적을 유지하는 "잎 솎아내기"(<code>GenerateIslandLods</code>)를 따로 씁니다. Hub 데모 맵은 스캔 에셋 삼각형 상한과 이 솎아내기로 30.2 → 6.6ms가 되었습니다(git log <code>fed88f0</code>).</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>드로우콜 비용은 명령 앞 준비 작업의 반복이다. 인스턴싱은 같은 PSO·머티리얼·메시·LOD를 한 번의 <code>DrawIndexedInstanced</code>로 그린다.</li>
+		<li>묶음 키 = 비트로 이어 붙인 64비트 정수. 정렬(키 → 깊이 → 번호) 한 번으로 묶음과 결정적 순서를 얻는다.</li>
+		<li>인스턴스 데이터(t13)는 프레임에 한 번, 패스마다 번호 목록(t14)만. 셰이더는 <code>Instances[InstanceIndices[Offset + SV_InstanceID]]</code>.</li>
+		<li>QEM = 주변 면 평면까지 거리 제곱의 합으로 붕괴 비용을 재는 단순화. 반-모서리 붕괴라 정점 버퍼(스킨 스트림 포함)를 공유한다.</li>
+		<li>LOD는 화면 크기 R/(D·tan(θ/2))로, ±10% 히스테리시스로 팝핑을 막는다. 그림자도 같은 LOD.</li>
+		<li>HZB 오클루전은 원리상 강력하지만 LOD와 겹치면 손해였다 → 기본 끔. 최적화는 조합으로 잰다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 묶음 키에서 LOD를 맨 위 비트에, PSO를 맨 아래 비트에 두면 무엇이 나빠질까요?</summary>
+	묶음 수 자체는 같습니다(키가 같은지는 비트 순서와 무관). 하지만 정렬 순서가 "LOD별 → … → PSO별"이 되어 같은 PSO를 쓰는 묶음들이 흩어집니다. 그러면 묶음 사이를 넘어갈 때마다 PSO를 바꿔야 해 비싼 상태 변경이 늘어납니다. 비싼 상태일수록 높은 비트에 두는 이유입니다.
+</details>
+<details class="quiz"><summary>Q2. 히스테리시스 H를 0.5처럼 크게 하면 어떤 일이 생길까요?</summary>
+	전환이 매우 둔해집니다. 내려가려면 임계값의 절반 아래로, 올라가려면 1.5배 위로 가야 하므로 가까이 다가와도 한참 동안 거친 LOD가 남아 눈에 띄는 저품질 구간이 생깁니다. 이웃 임계값(0.5, 0.25 …)의 띠가 서로 겹치기 시작하면 사실상 LOD 단계를 건너뛰기도 합니다. 코드가 H를 0.9 이하로 자르는 것도 같은 이유입니다. 깜빡임은 막되 품질 손해가 작은 값(±10%)을 골랐습니다.
+</details>
+<details class="quiz"><summary>Q3. HZB 판정에서 투영 사각형이 근평면을 지나면 왜 "보인다"로 처리할까요?</summary>
+	꼭짓점의 w가 0 이하가 되면 원근 나눗셈 결과가 뒤집히거나 무한대가 되어 화면 사각형과 MinZ를 믿을 수 없습니다. 컬링은 <b>틀려도 안전한 쪽</b>(그리는 쪽)으로 틀려야 합니다. 보이는 물체를 지우면 화면이 깨지지만, 가려진 물체를 그리는 것은 약간의 낭비일 뿐입니다.
+</details>
+</article>
+
+<!-- ======================================================= 30강 ======================================================= -->
+<article class="lecture" id="lec-30">
+<header>
+	<div class="no">30강</div>
+	<h2 id="lec-30-title">메모리와 스트리밍</h2>
+	<div class="meta">관련 Phase: 37 · 53 · 살펴볼 곳: <code>Renderer/ResourceCollector.h/.cpp</code>, <code>RHI/D3D12/D3D12UploadQueue.h</code>, <code>RHI/UploadRingAllocator.h</code>, <code>Core/Jobs/JobQueue.h</code>, <code>Renderer/TextureStreaming.h</code>, <code>Renderer/TextureStreamingMath.h/.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>참조 카운트 대신 "도달성 표시(mark) → 수거(sweep)"로 GPU 리소스를 해제하는 방법과 루트의 개념을 설명할 수 있습니다.</li>
+		<li>복사 큐와 업로드 링으로 메인 스레드를 멈추지 않고 텍스처를 올리는 흐름, 그리고 D3D12 리소스 상태 규칙을 이해합니다.</li>
+		<li>작업 스레드에 맡길 일과 메인 스레드에 남길 일을 구분하는 기준을 압니다.</li>
+		<li>텍스처 밉 스트리밍의 필요 밉 식, UV 밀도, 내리기 지연, 예산 배분, 그리고 "스트리밍을 켜도 화면이 비트 동일"하게 만든 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-30-why"><span class="step">왜 필요한가</span>VRAM은 한정되어 있고, 로딩은 프레임을 멈춘다</h3>
+<p>게임이 맵을 옮겨 다닐 때마다 메시와 텍스처를 새로 불러온다고 해 봅시다. 이전 맵의 리소스를 아무도 해제하지 않으면 맵을 다섯 번 오가는 사이 VRAM이 바닥납니다. 반대로 아직 쓰는 텍스처를 실수로 해제하면 화면이 깨지거나 GPU가 해제된 메모리를 읽다가 장치가 제거(device removed)됩니다.</p>
+<p>또 하나의 문제는 <b>시간</b>입니다. 2048×2048 텍스처 하나를 디스크에서 읽고, 압축을 풀고, GPU로 복사하는 데는 수 밀리초에서 수십 밀리초가 걸립니다. 이것을 메인 스레드에서 하면 그동안 프레임이 멈춥니다(끊김, hitch). 마지막으로, 멀리 있어 화면에 50픽셀로 보이는 물체에 2048 해상도 텍스처 전체를 VRAM에 올려 두는 것도 낭비입니다.</p>
+<p>ProjectE는 이 세 가지를 순서대로 풀었습니다. Phase 37에서 <b>리소스 수거</b>와 <b>비동기 업로드</b>, Phase 53에서 <b>텍스처 밉 스트리밍</b>입니다.</p>
+
+<h3 id="lec-30-gc"><span class="step">핵심 개념</span>도달성 표시로 수거하기</h3>
+<p>"아무도 안 쓰는 리소스"를 찾는 고전적 방법은 두 가지입니다.</p>
+<ul>
+	<li><b>참조 카운트(reference counting)</b>: 리소스를 쥘 때마다 +1, 놓을 때마다 −1, 0이 되면 해제. 정확하지만 핸들을 복사하고 지우는 모든 곳에서 카운트를 맞춰야 합니다. ProjectE의 리소스 핸들(<code>FMeshHandle</code> 등)은 컴포넌트에 값으로 저장되고 JSON에서 읽히고 복사되는 평범한 구조체라, 카운트를 강제하기 어렵습니다.</li>
+	<li><b>도달성 표시(mark &amp; sweep)</b>: 가비지 컬렉터의 방식입니다. "지금 확실히 쓰는 것들"(<b>루트</b>)에서 출발해 참조를 따라가며 닿는 것에 표시를 하고, 표시되지 않은 것을 해제합니다. 핸들 자체는 아무것도 몰라도 됩니다.</li>
+</ul>
+<p>ProjectE는 두 번째를 골랐습니다. 대신 <b>매 프레임이 아니라 필요할 때만</b>(맵 전환, 서브 씬 내림, 에디터 씬 열기/플레이 정지, 썸네일 대기열 비움, 콘솔 <code>r.CollectResources</code>) 돌립니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="리소스 도달성 표시">
+		<title>리소스 도달성 표시</title>
+		<text x="20" y="24" class="t-bold">루트 제공자</text>
+		<text x="250" y="24" class="t-bold">모델·머티리얼</text>
+		<text x="480" y="24" class="t-bold">텍스처</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="170" height="34" rx="8" class="acc"/><text x="105" y="62" text-anchor="middle">씬 (메인·플레이·서브 씬)</text>
+			<rect x="20" y="90" width="170" height="34" rx="8" class="acc"/><text x="105" y="112" text-anchor="middle">에셋 편집기 · 미리보기</text>
+			<rect x="20" y="140" width="170" height="34" rx="8" class="acc"/><text x="105" y="162" text-anchor="middle">렌더러 캐시 (지형·UI)</text>
+			<rect x="20" y="200" width="170" height="44" rx="8" class="k4"/><text x="105" y="218" text-anchor="middle">직접 만든 머티리얼</text><text x="105" y="236" text-anchor="middle" class="t-muted">(Create* — 항상 산다)</text>
+
+			<rect x="250" y="40" width="170" height="34" rx="8" class="k2"/><text x="335" y="62" text-anchor="middle">모델 A (메시가 루트)</text>
+			<rect x="250" y="100" width="170" height="34" rx="8" class="k2"/><text x="335" y="122" text-anchor="middle">경로 머티리얼 M1</text>
+			<rect x="250" y="160" width="170" height="34" rx="8" class="k5"/><text x="335" y="182" text-anchor="middle">경로 머티리얼 M2</text>
+			<rect x="250" y="220" width="170" height="34" rx="8" class="k5"/><text x="335" y="242" text-anchor="middle">모델 B (아무도 안 씀)</text>
+
+			<rect x="480" y="40" width="120" height="30" rx="6" class="k2"/><text x="540" y="60" text-anchor="middle">T1</text>
+			<rect x="480" y="90" width="120" height="30" rx="6" class="k2"/><text x="540" y="110" text-anchor="middle">T2</text>
+			<rect x="480" y="140" width="120" height="30" rx="6" class="k2"/><text x="540" y="160" text-anchor="middle">T3</text>
+			<rect x="480" y="190" width="120" height="30" rx="6" class="k5"/><text x="540" y="210" text-anchor="middle">T4</text>
+			<rect x="480" y="240" width="120" height="30" rx="6" class="k5"/><text x="540" y="260" text-anchor="middle">T5</text>
+		</g>
+		<path d="M190,57 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,64 L248,110" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,107 L248,117" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,157 C 215,148 230,147 250,147 H 440 C 458,147 464,118 476,112" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,222 C 215,210 230,207 250,207 H 435 C 455,207 462,170 476,162" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,57 H476" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,114 L476,106" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,177 L476,203" class="ln-d" marker-end="url(#arr)"/>
+		<path d="M420,237 L476,254" class="ln-d" marker-end="url(#arr)"/>
+
+		<rect x="630" y="40" width="214" height="230" rx="10" class="box"/>
+		<g class="t-small">
+			<rect x="646" y="58" width="14" height="14" class="k2"/><text x="668" y="70">표시됨 → 유지</text>
+			<rect x="646" y="86" width="14" height="14" class="k5"/><text x="668" y="98">표시 안 됨 → 수거</text>
+			<text x="646" y="130">수거 = Destroy*(지연 해제)</text>
+			<text x="646" y="150">+ 경로 캐시에서 제거</text>
+			<text x="646" y="176" class="t-muted">진행 중 프레임이 읽을 수 있어</text>
+			<text x="646" y="194" class="t-muted">GPU가 끝낸 뒤 실제 해제</text>
+			<text x="646" y="224">다음 Load*는 새로 만든다</text>
+			<text x="646" y="244" class="t-muted">(M2가 T4를 가리켜도 M2가</text>
+			<text x="646" y="262" class="t-muted"> 죽었으므로 T4도 죽는다)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 30-1.</b> 표시는 루트에서 출발합니다. 모델은 메시나 머티리얼 하나라도 루트면 통째로 살고, 살아 있는 머티리얼이 가리키는 텍스처만 삽니다. 직접 만든(<code>Create*</code>) 리소스는 만든 쪽이 소유하므로 수거 대상이 아니며, 그 자체가 루트입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Renderer/ResourceCollector.cpp — ResourceGc::Compute (발췌)"><span class="com">// 1. 머티리얼 표시: 루트 + 직접 만든 머티리얼(만든 쪽이 소유 — 항상 살아 있음)</span>
+std::unordered_set&lt;FMaterialHandle&gt; MarkedMaterials = Roots.Materials;
+...
+<span class="com">// 2. 모델: 메시나 머티리얼 하나라도 루트면 모델 전체가 산다 (인스턴스 노드가 메시/머티리얼을 나눠 든다)</span>
+<span class="kw">for</span> (<span class="kw">const</span> FModelNode&amp; Model : Graph.Models)
+{
+	<span class="kw">const bool</span> bReachable = std::any_of(Model.Meshes ... Roots.Meshes.contains(Handle)) ||
+	                       std::any_of(Model.Materials ... Roots.Materials.contains(Handle));
+	<span class="kw">if</span> (bReachable)
+	{
+		MarkedMaterials.insert(Model.Materials.begin(), Model.Materials.end());
+		<span class="kw">continue</span>;
+	}
+	Garbage.Models.push_back(Model.Key); ...
+}
+<span class="com">// 3. 텍스처 표시: 루트 + 표시된 머티리얼 + 참조 중인 파티클 에셋</span></pre>
+<p>이 함수는 <b>순수 함수</b>입니다. 입력은 "리소스 그래프"(어떤 머티리얼이 어떤 텍스처를 쓰는가 등)와 루트 집합, 출력은 버릴 목록뿐이고 GPU를 전혀 건드리지 않습니다. 그래서 <code>ResourceCollector_*</code> 단위 테스트가 GPU 없이 "모델의 메시 하나만 루트여도 모델 전체가 사는가" 같은 규칙을 검증할 수 있습니다. 실제 해제는 바깥의 <code>FResourceManager</code>가 결과를 받아 머티리얼 → 메시 → 텍스처 순으로 지연 해제합니다.</p>
+
+<h4>루트는 누가 채우나 — 제공자 등록</h4>
+<p>루트를 빠뜨리면 아직 쓰는 리소스가 해제됩니다. 그런데 "씬 밖에서 리소스 핸들을 오래 쥐는 코드"는 엔진 곳곳에 있습니다(에셋 편집기의 미리보기, 지형 렌더러의 레이어 텍스처 캐시, UI 등). 리소스 관리자가 이들을 모두 알 수는 없으므로 <b>쥐는 쪽이 스스로 등록</b>합니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/ResourceCollector.h (발췌)"><span class="com">// 수거 루트 (제공자가 채운다). 무효 핸들은 무시된다</span>
+<span class="kw">struct</span> FResourceRoots
+{
+	std::unordered_set&lt;FMeshHandle&gt;     Meshes;
+	std::unordered_set&lt;FMaterialHandle&gt; Materials;
+	std::unordered_set&lt;FTextureHandle&gt;  Textures;
+	...
+	<span class="kw">void</span> AddScene(FScene&amp; Scene); <span class="com">// 씬 컴포넌트의 핸들: 정적 메시(메시/머티리얼 — 모델 노드 포함), 데칼 머티리얼</span>
+};
+<span class="kw">using</span> FResourceRootProvider = std::function&lt;<span class="kw">void</span>(FResourceRoots&amp;)&gt;;</pre>
+<div class="callout warn">
+	<b class="t">규칙: 경로 핸들을 오래 드는 새 코드는 루트를 등록한다</b>
+	렌더러 캐시, 편집기, 앱처럼 씬 밖에서 경로 핸들을 프레임을 넘겨 쥐는 코드는 <code>FResourceManager::AddRootProvider</code>로 제공자를 등록하고 Shutdown에서 <code>RemoveRootProvider</code>합니다. 미리보기처럼 새 씬 컨테이너를 만들면 제공자 안에서 <code>FResourceRoots::AddScene</code>을 부릅니다. 등록을 잊으면 수거 뒤 그 핸들은 해제된 리소스를 가리키고, 화면에는 기본 리소스가 대신 보이게 됩니다.
+</div>
+<p>수거 요청은 바로 처리하지 않고 <b>2틱 뒤</b>(<code>FResourceManager::Tick</code>)에 처리합니다. 맵을 막 바꾼 순간에는 새 씬의 에셋 해석·렌더러 캐시가 아직 루트를 채우지 않았기 때문입니다. 새 씬이 한 번 그려져 루트가 모두 채워진 뒤에 수거합니다. Phase 37 측정에서 런타임 맵 A↔B 왕복 6회 동안 메모리가 평탄했고(이전 맵의 머티리얼·텍스처만 오감), 에디터는 썸네일 해제로 VRAM 354.6 → 203.7MB가 되었습니다.</p>
+
+<h3 id="lec-30-upload"><span class="step">핵심 개념</span>복사 큐와 업로드 링</h3>
+<p>GPU 메모리에 데이터를 넣으려면 먼저 CPU가 쓸 수 있는 <b>업로드 힙</b>(스테이징 메모리)에 쓰고, GPU에게 "여기서 저기로 복사하라"는 명령을 내려야 합니다. 가장 쉬운 구현은 이렇습니다: 업로드 버퍼를 만들고, 복사 명령을 기록하고, 실행하고, <b>끝날 때까지 CPU가 기다린다</b>. 마지막 줄이 끊김의 원인입니다.</p>
+<p>D3D12 GPU에는 그리기용 <b>직접 큐(direct queue)</b> 말고 복사 전용 <b>복사 큐(copy queue)</b>가 따로 있어, 그리기와 동시에 복사를 진행할 수 있습니다. ProjectE의 <code>FD3D12UploadQueue</code>는 이 복사 큐와 <b>64MB 영구 매핑 링 버퍼</b>로 업로드를 기다림 없이 흘려보냅니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="비동기 텍스처 업로드 타임라인">
+		<title>비동기 텍스처 업로드 타임라인</title>
+		<line x1="300" y1="34" x2="300" y2="250" class="ln-d"/>
+		<line x1="500" y1="34" x2="500" y2="250" class="ln-d"/>
+		<line x1="700" y1="34" x2="700" y2="250" class="ln-d"/>
+		<text x="215" y="30" text-anchor="middle" class="t-muted">프레임 N</text>
+		<text x="400" y="30" text-anchor="middle" class="t-muted">프레임 N+1</text>
+		<text x="600" y="30" text-anchor="middle" class="t-muted">프레임 N+2</text>
+		<text x="770" y="30" text-anchor="middle" class="t-muted">N+3</text>
+		<g class="t-small">
+			<text x="20" y="64" class="t-bold">작업 스레드</text>
+			<text x="20" y="119" class="t-bold">메인 스레드</text>
+			<text x="20" y="174" class="t-bold">복사 큐 (GPU)</text>
+			<text x="20" y="229" class="t-bold">직접 큐 (GPU)</text>
+			<rect x="140" y="46" width="200" height="28" rx="5" class="k3"/><text x="240" y="65" text-anchor="middle">파일 읽기 · 디코드 · BC 압축</text>
+			<rect x="330" y="101" width="190" height="28" rx="5" class="k2"/><text x="425" y="120" text-anchor="middle">완료 콜백: 링 할당·복사 기록</text>
+			<rect x="530" y="156" width="110" height="28" rx="5" class="acc"/><text x="585" y="175" text-anchor="middle">복사 실행</text>
+			<circle cx="650" cy="170" r="5" class="f4"/><text x="644" y="202" text-anchor="end" class="t-muted">펜스 F 신호</text>
+			<rect x="140" y="211" width="550" height="28" rx="5" class="box"/><text x="415" y="230" text-anchor="middle">이 동안 이 텍스처를 쓰는 머티리얼은 기본 텍스처로 그린다 (IsReady 전)</text>
+			<rect x="704" y="211" width="56" height="28" rx="5" class="k4"/><text x="732" y="230" text-anchor="middle">전이</text>
+			<rect x="764" y="211" width="78" height="28" rx="5" class="k2"/><text x="803" y="230" text-anchor="middle">진짜 사용</text>
+		</g>
+		<path d="M336,74 L346,98" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,129 L534,153" class="ln" marker-end="url(#arr)"/>
+		<path d="M655,174 C 690,180 700,195 712,208" class="ln-d" marker-end="url(#arr)"/>
+		<text x="430" y="276" text-anchor="middle" class="t-muted">메인 스레드는 한 번도 기다리지 않는다 — 다음 프레임 BeginFrame이 완료된 펜스만 확인해 COMMON → PIXEL_SHADER_RESOURCE 전이를 기록</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 30-2.</b> 무거운 CPU 작업은 작업 스레드가, GPU 명령 기록은 메인 스레드의 완료 콜백이, 실제 복사는 복사 큐가 합니다. 직접 큐는 복사 펜스를 GPU 쪽에서 기다리고(CPU 대기 아님) 전이를 기록한 다음부터 텍스처를 씁니다.</figcaption>
+</figure>
+
+<h4>리소스 상태와 큐의 규칙</h4>
+<p>D3D12에서 리소스는 항상 어떤 "상태"(복사 대상, 셰이더 읽기, 렌더 타깃 …)에 있고, 상태를 바꾸려면 배리어(전이)를 기록해야 합니다. 그런데 <b>복사 큐는 셰이더 읽기 상태로 전이할 수 없습니다</b>(그 상태는 그리기 큐의 개념이므로). 이 제약에서 ProjectE의 규칙이 나옵니다.</p>
+<pre class="code" data-file="Engine/Source/RHI/D3D12/D3D12UploadQueue.h (머리 주석 발췌)"><span class="com">//   리소스 상태 규칙 (D3D12 복사 큐):</span>
+<span class="com">//     - 대상은 COMMON으로 만든다. 복사 큐에서 COPY_DEST로 암시적 승격, ExecuteCommandLists가 끝나면 COMMON으로 감쇠</span>
+<span class="com">//     - 텍스처는 완료 후 직접 큐에서 COMMON → PIXEL_SHADER_RESOURCE로 명시 전이한다 (기존 텍스처와 같은 상태 불변식)</span>
+<span class="com">//     - 버퍼는 전이하지 않는다 (직접 큐에서 VB/IB 등으로 암시적 승격 — 기존 정적 버퍼와 같음)</span>
+<span class="com">//   준비 판정: 대상의 펜스 &lt;= GetFinalizedFence()면 사용 가능 (전이가 그 프레임 명령 리스트 맨 앞에 기록됨)</span></pre>
+<p>"암시적 승격(promotion)과 감쇠(decay)"는 D3D12가 COMMON 상태 리소스에 허용하는 지름길입니다. 복사 큐가 COMMON 리소스에 복사하면 자동으로 COPY_DEST처럼 취급되고, 명령 리스트 실행이 끝나면 다시 COMMON으로 돌아갑니다. 덕분에 복사 큐 명령 리스트에는 배리어를 하나도 넣지 않아도 됩니다. 그래서 "복사 큐 명령 리스트에 다른 상태 전이를 넣지 않는다"가 규칙이 됩니다.</p>
+
+<h4>링 버퍼: 스테이징 메모리를 재활용하기</h4>
+<p>스테이징 메모리는 복사가 GPU에서 끝날 때까지 살아 있어야 합니다. 업로드마다 버퍼를 만들고 지우면 할당 비용이 크므로, 큰 버퍼 하나를 원형으로 돌려 씁니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 190" role="img" aria-label="업로드 링 할당">
+		<title>업로드 링 할당</title>
+		<rect x="40" y="60" width="160" height="44" class="box"/>
+		<rect x="200" y="60" width="150" height="44" class="k1"/>
+		<rect x="350" y="60" width="170" height="44" class="k1"/>
+		<rect x="520" y="60" width="110" height="44" class="k2"/>
+		<rect x="630" y="60" width="150" height="44" class="box"/>
+		<rect x="780" y="60" width="40" height="44" class="k5"/>
+		<g class="t-small">
+			<text x="120" y="86" text-anchor="middle" class="t-muted">반납됨 (빈 곳)</text>
+			<text x="275" y="80" text-anchor="middle">묶음 펜스 8</text><text x="275" y="96" text-anchor="middle" class="t-muted">GPU 복사 중</text>
+			<text x="435" y="80" text-anchor="middle">묶음 펜스 9</text><text x="435" y="96" text-anchor="middle" class="t-muted">GPU 복사 중</text>
+			<text x="575" y="80" text-anchor="middle">열린 묶음</text><text x="575" y="96" text-anchor="middle" class="t-muted">기록 중</text>
+			<text x="705" y="86" text-anchor="middle" class="t-muted">빈 곳</text>
+		</g>
+		<path d="M200,52 V34" class="ln"/><text x="200" y="28" text-anchor="middle" class="t-small t-bold">꼬리 Tail</text>
+		<path d="M630,52 V34" class="ln"/><text x="630" y="28" text-anchor="middle" class="t-small t-bold">머리 Head</text>
+		<path d="M800,106 V134" class="ln"/><text x="794" y="132" text-anchor="end" class="t-small">끝에 안 맞으면 남은 꼬리를 버리고 0으로</text>
+		<text x="40" y="122" class="t-muted">0</text><text x="824" y="86" class="t-muted">64MB</text>
+		<text x="40" y="172" class="t-small">Retire(완료 펜스): 펜스 8이 끝나면 꼬리가 펜스 9 시작으로 → 그 공간을 다시 나눠 준다. 꽉 차면 가장 오래된 묶음만 CPU로 기다린다(드묾).</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 30-3.</b> <code>FUploadRingAllocator</code>의 규칙. 순수 로직이라 GPU 없이 <code>UploadRing_*</code> 테스트로 검증합니다. 링 절반보다 큰 업로드는 전용 업로드 버퍼를 따로 만들어 묶음 완료까지 보관합니다.</figcaption>
+</figure>
+
+<h4>작업 스레드에 무엇을 맡기나</h4>
+<p>파일 읽기, PNG/JPG 디코드, BC 압축, 모델 파싱은 CPU를 오래 쓰지만 엔진 상태를 건드리지 않습니다. 이런 일은 <code>FJobQueue</code>의 작업자 스레드로 보냅니다. 반면 GPU 리소스 만들기, ECS(씬) 수정, 리소스 관리자 갱신은 <b>메인 스레드의 완료 콜백</b>에서만 합니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Jobs/JobQueue.h (발췌)"><span class="com">// 작은 작업자 스레드 풀 + 메인 스레드 완료 대기열.</span>
+<span class="com">//   - Submit(작업, 완료): 작업은 작업자 스레드에서, 완료 콜백은 메인 스레드가 PumpCompletions를 부를 때 실행된다</span>
+<span class="com">//   - 작업에서는 파일 읽기/디코딩/압축/파싱만 한다. ECS·GPU·리소스 관리자 접근은 완료 콜백(메인 스레드)에서</span>
+<span class="kw">void</span> Submit(FWork Work, FCompletion Completion = {});
+uint32 PumpCompletions();</pre>
+<p>이 선 긋기 덕분에 엔진의 거의 모든 코드는 "메인 스레드에서만 불린다"는 가정을 그대로 유지하고, 잠금(lock)을 새로 넣지 않아도 됩니다. 병렬화를 위해 엔진 전체를 스레드 안전하게 바꾸는 대신, <b>스레드에 넘기는 일의 종류를 좁힌</b> 것입니다. Phase 37 측정에서 PixelArt 맵 로드의 메인 스레드 시간이 821 → 약 300ms, 쿠킹 캐시가 없는 Materials 씬은 131 → 12ms가 되었습니다.</p>
+<div class="callout note">
+	<b class="t">로딩 방식 CVar <code>r.AsyncLoading</code></b>
+	-1(자동) = 사람이 쓰는 실행은 비동기, 자동 검증은 비동기이지만 <b>프레임마다 비우기</b>(모두 끝날 때까지 기다림) / 0 = 동기 / 1 = 비동기 / 2 = 비우기. 자동 검증이 "비우기"인 이유는 결정성입니다. 비동기로 두면 어떤 텍스처가 몇 번째 프레임에 준비되는지가 실행마다 달라져 스크린샷이 흔들립니다. 단위 테스트·도구는 비동기를 켜지 않습니다(동기). 끊김은 <code>--log-hitches [ms]</code>로 잽니다.
+</div>
+
+<h3 id="lec-30-streaming"><span class="step">핵심 개념</span>텍스처 밉 스트리밍</h3>
+<p>텍스처는 원본과 함께 가로세로를 반씩 줄인 <b>밉맵(mipmap)</b> 체인을 가집니다(2048, 1024, 512 …). GPU는 화면 픽셀 하나에 텍셀이 몇 개 들어가는지를 보고 알맞은 밉을 골라 읽습니다. 먼 물체는 작은 밉만 읽는데도, 보통은 전체 밉 체인을 VRAM에 올려 둡니다 — 밉 0(원본)이 전체 용량의 약 3/4을 차지하는데 말입니다.</p>
+<p><b>밉 스트리밍</b>은 "이번 화면에 실제로 필요한 가장 세밀한 밉"까지만 VRAM에 두는 기법입니다. 질문은 셋입니다. 필요한 밉을 어떻게 계산하나, VRAM에서 어떻게 일부 밉만 두나, 예산이 모자라면 무엇을 줄이나.</p>
+
+<h4>필요 밉 계산</h4>
+<p>하드웨어가 고르는 밉(LOD)은 대략 <b>log<sub>2</sub>(픽셀 하나가 덮는 텍셀 수)</b>입니다. 이것을 CPU에서 미리 추정합니다.</p>
+<div class="callout note">
+	<b class="t">식 (TextureStreamingMath.h 머리 주석)</b>
+	① 픽셀 하나가 덮는 월드 크기 <b>CmPerPixel = 2 · 시야 깊이 · tan(세로 시야각/2) / 화면 높이</b> (직교: 직교 높이 / 화면 높이)<br>
+	② 텍셀/픽셀 = 텍스처 큰 변 × <b>UV 밀도</b>(UV/cm) × CmPerPixel<br>
+	③ LOD ≈ log<sub>2</sub>(텍셀/픽셀) + 밉 바이어스(TAAU, 네이티브는 0)<br>
+	④ 필요한 최상위 밉 = floor(LOD) − 여유(기본 1밉), 0 아래면 0
+</div>
+<pre class="code" data-file="Engine/Source/Renderer/TextureStreamingMath.cpp (발췌)">uint32 TextureStreamingMath::ComputeRequiredTopMip(uint32 TextureMaxSize, <span class="kw">float</span> Log2UvPerPixel, <span class="kw">float</span> MipBias, int32 Margin, uint32 MipCount)
+{
+	...
+	<span class="kw">const float</span> Lod = std::log2(<span class="kw">static_cast</span>&lt;<span class="kw">float</span>&gt;(TextureMaxSize)) + Log2UvPerPixel + MipBias;
+	<span class="kw">const float</span> Top = std::floor(Lod) - <span class="kw">static_cast</span>&lt;<span class="kw">float</span>&gt;(Margin);
+	<span class="kw">if</span> (!(Top &gt; <span class="num">0.0f</span>))
+	{
+		<span class="kw">return</span> <span class="num">0</span>;
+	}
+	<span class="kw">return</span> std::min(<span class="kw">static_cast</span>&lt;uint32&gt;(std::min(Top, <span class="num">64.0f</span>)), MipCount - <span class="num">1</span>);
+}</pre>
+<p>이 식에는 의도적으로 <b>보수적인</b>(필요보다 더 세밀한 쪽으로 틀리는) 선택이 여럿 들어 있습니다.</p>
+<ul>
+	<li><b>시야 깊이</b>는 경계 상자의 가장 가까운 깊이입니다. 원근 투영에서 픽셀 크기는 거리보다 깊이에 비례하고, 깊이 ≤ 거리이므로 더 세밀한 쪽으로 틀립니다.</li>
+	<li><b>UV 밀도</b>는 메시마다 쿠킹할 때 한 번 계산합니다. 삼각형마다 √(UV 면적 / 월드 면적)을 구하고 월드 면적으로 가중한 <b>하위 1%</b>를 씁니다. 밀도가 낮을수록(UV가 늘어난 곳) 더 세밀한 밉이 필요하므로 낮은 쪽이 기준입니다. 인스턴스 밀도는 메시 밀도 ÷ 가장 큰 축 스케일입니다.</li>
+	<li><b>여유 1밉</b>이 이방성 필터, 축마다 다른 UV 늘어남, 삼각형별 밀도 차이를 흡수합니다(<code>r.Streaming.MipMargin</code>).</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="거리에 따른 필요 밉과 상주 범위">
+		<title>거리에 따른 필요 밉과 상주 범위</title>
+		<path d="M30,130 L70,110 L70,150 Z" class="acc"/>
+		<text x="50" y="172" text-anchor="middle" class="t-small">카메라</text>
+		<rect x="110" y="110" width="40" height="40" class="k2"/>
+		<text x="130" y="172" text-anchor="middle" class="t-small">가까움</text>
+		<rect x="300" y="122" width="16" height="16" class="k3"/>
+		<text x="308" y="172" text-anchor="middle" class="t-small">멂</text>
+		<path d="M70,130 H104" class="ln-d"/><path d="M70,130 H294" class="ln-d"/>
+		<text x="130" y="96" text-anchor="middle" class="t-small">필요 밉 0</text>
+		<text x="308" y="108" text-anchor="middle" class="t-small">필요 밉 3</text>
+
+		<text x="380" y="34" class="t-bold">멀리 있는 물체 텍스처의 밉 체인 (2048 BC7)</text>
+		<g class="t-small">
+			<rect x="380" y="60" width="110" height="110" class="ln-d"/><text x="435" y="120" text-anchor="middle" class="t-muted">밉 0 2048</text>
+			<rect x="500" y="80" width="80" height="80" class="ln-d"/><text x="540" y="124" text-anchor="middle" class="t-muted">1 1024</text>
+			<rect x="590" y="96" width="60" height="60" class="ln-d"/><text x="620" y="130" text-anchor="middle" class="t-muted">2 512</text>
+			<rect x="660" y="106" width="46" height="46" class="k3"/><text x="683" y="134" text-anchor="middle">3</text>
+			<rect x="714" y="114" width="36" height="36" class="k3"/><text x="732" y="136" text-anchor="middle">4</text>
+			<rect x="758" y="120" width="28" height="28" class="k4"/><text x="772" y="138" text-anchor="middle">5</text>
+			<rect x="794" y="124" width="22" height="22" class="k4"/>
+			<rect x="822" y="128" width="16" height="16" class="k4"/>
+		</g>
+		<path d="M380,190 H650" class="ln-d"/><text x="515" y="208" text-anchor="middle" class="t-small">VRAM에 없음 (필요해지면 디스크에서 다시 읽음)</text>
+		<path d="M660,190 H838" class="ln sa" stroke-width="2"/><text x="749" y="208" text-anchor="middle" class="t-small t-bold">상주 범위 [3..끝)</text>
+		<text x="798" y="102" text-anchor="middle" class="t-muted">꼬리 (≤64)</text>
+		<text x="380" y="236" class="t-small">범위를 바꿀 때: 밉 3을 밉 0으로 하는 <tspan class="t-bold">새 D3D12 텍스처</tspan>를 만들어</text>
+		<text x="380" y="254" class="t-small">올린 뒤 SwapContents로 내용 교체 (핸들은 그대로)</text>
+		<text x="380" y="276" class="t-muted">밉 k가 새 밉 0이 되려면 크기가 2^k로 나누어떨어지고 BC는 4의 배수</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 30-4.</b> 멀리 있는 물체는 밉 3부터만 VRAM에 둡니다. 큰 변이 64 이하인 꼬리 밉은 항상 상주하고, 큰 변 256 이하인 작은 텍스처는 관리 비용이 더 커서 아예 스트리밍하지 않습니다.</figcaption>
+</figure>
+
+<h4>VRAM에 일부 밉만 두는 방법 — 새 텍스처와 SwapContents</h4>
+<p>D3D12에는 "밉 일부만 메모리에 두는" 타일드 리소스(reserved resource) 기능도 있지만, ProjectE는 더 단순한 방식 (a)를 택했습니다. <b>상주 범위가 바뀌면 그 범위만 가진 새 텍스처를 통째로 만듭니다.</b> 쿠킹 파일에서 필요한 밉만 범위 읽기(<code>FFileSystem::ReadFileRange</code>, pak 포함)로 읽어 복사 큐로 올리고, 업로드가 끝나면 리소스 풀 슬롯의 내용을 바꿉니다(<code>FD3D12Texture::SwapContents</code>). 핸들은 그대로이므로 텍스처를 가리키는 쪽은 아무것도 몰라도 됩니다. 단, 머티리얼의 텍스처 표(디스크립터)는 새 리소스를 가리키도록 <code>RefreshMaterialTextures</code>로 다시 만듭니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 텍스처 SRV/디스크립터를 프레임을 넘겨 캐시하지 않는다</b>
+	SwapContents 뒤에는 옛 리소스와 SRV가 지연 해제됩니다. 디스크립터를 따로 저장해 두고 다음 프레임에 쓰는 코드는 해제된 리소스를 가리키게 됩니다. 머티리얼 밖에서 텍스처를 쓰는 새 코드(UI·파티클 등)는 공개 <code>LoadTexture</code>로 불러 "고정"(항상 전체 밉)으로 둡니다.
+</div>
+<p>왜 "크기가 2<sup>k</sup>로 나누어떨어져야" 할까요? 하드웨어가 고르는 LOD는 "화면 미분 × 텍스처 크기"의 log<sub>2</sub>입니다. 1000×1000 텍스처의 밉 3은 125(= 1000/8, 정확히 나누어떨어짐)이므로, 밉 3을 새 밉 0으로 하는 텍스처는 원래보다 LOD가 <b>정확히 3</b> 작게 계산되어 원래와 같은 밉을 같은 비율로 섞어 읽습니다. 그러나 밉 4는 62.5를 내림한 62입니다. 밉 4를 새 밉 0으로 하면 62 ≠ 1000/16이라 LOD가 미세하게 어긋나고, 두 밉 사이 보간 비율이 달라져 픽셀 값이 바뀝니다. BC 압축은 4×4 블록 단위이므로 새 밉 0이 4의 배수여야 한다는 조건이 더해집니다. 이 조건들을 지키면 <b>필요한 밉이 모두 상주하는 한 전체 밉 텍스처와 비트 단위로 같은 값</b>을 읽습니다.</p>
+
+<h4>내릴 때는 늦게 — 히스테리시스</h4>
+<p>29강의 LOD와 같은 문제가 여기에도 있습니다. 카메라가 조금 멀어졌다고 바로 밉을 내리고, 다시 다가왔다고 바로 올리면 디스크 읽기와 업로드가 끝없이 반복됩니다. 그래서 <b>올리기(더 세밀하게)는 즉시, 내리기는 <code>r.Streaming.DropDelay</code>(기본 2초) 동안 계속 덜 필요할 때만</b> 합니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/TextureStreamingMath.cpp (발췌)">uint32 TextureStreamingMath::UpdateHysteresis(FHysteresisState&amp; State, uint32 WantedTop, <span class="kw">float</span> DeltaSeconds, <span class="kw">float</span> DropDelaySeconds)
+{
+	<span class="kw">if</span> (State.HeldTop == InvalidMip || WantedTop &lt;= State.HeldTop) <span class="com">// 처음이거나 더 세밀한 밉이 필요 → 바로</span>
+	{
+		State.HeldTop      = WantedTop;
+		State.LowerSeconds = <span class="num">0.0f</span>;
+		<span class="kw">return</span> State.HeldTop;
+	}
+	State.LowerSeconds += std::max(DeltaSeconds, <span class="num">0.0f</span>);
+	<span class="kw">if</span> (State.LowerSeconds &gt;= DropDelaySeconds)                    <span class="com">// 덜 세밀해도 되는 상태가 충분히 계속됨</span>
+	{
+		State.HeldTop      = WantedTop;
+		State.LowerSeconds = <span class="num">0.0f</span>;
+	}
+	<span class="kw">return</span> State.HeldTop;
+}</pre>
+
+<h4>예산이 모자라면 — 우선순위와 고른 축소</h4>
+<p>스트리밍 텍스처의 상주 합에는 예산(<code>r.Streaming.PoolSizeMB</code>, 0 = 자동: VRAM 예산의 40%, 256MB~4GB)이 있습니다. 모두 원하는 밉으로 두면 넘칠 때, <code>FitToBudget</code>은 "<b>우선순위 × (이미 줄인 단계 + 1)</b>"이 가장 작은 텍스처부터 한 밉씩 줄입니다. 우선순위는 화면 크기와 메인 뷰 여부로 정합니다(메인 프러스텀 밖 그림자 캐스터는 낮게). 곱하는 항 덕분에 한 텍스처만 계속 깎이지 않고 여러 텍스처가 고르게 줄어듭니다. 값이 같으면 번호가 작은 쪽을 골라 결과가 결정적입니다. 한 밉을 줄이면 그 텍스처 용량이 약 1/4로 줄어드므로 몇 단계면 대개 예산 안에 들어옵니다.</p>
+<p>Phase 53 측정에서 (당시) Showcase 씬의 텍스처 VRAM이 29.1 → 10.2MB가 되었습니다.</p>
+
+<h3 id="lec-30-pitfalls"><span class="step">함정과 교훈</span>"켜도 화면이 같다"를 증명하기</h3>
+<p>스트리밍은 화질을 바꿀 수 있는 최적화입니다. 그래서 ProjectE는 처음부터 목표를 "스트리밍을 켠 화면이 끈 화면(<code>--no-texture-streaming</code>)과 <b>비트 동일</b>"로 잡았습니다. 이것을 가능하게 한 장치들을 보면 결정성 설계가 무엇인지 알 수 있습니다.</p>
+<ul>
+	<li><b>필요 밉 식은 보수적</b>(깊이·하위 1% 밀도·여유 1밉)이어서 실제 하드웨어가 읽는 밉은 항상 상주 범위 안입니다.</li>
+	<li><b>새 텍스처의 크기 조건</b>(2<sup>k</sup> 나누어떨어짐)으로 같은 밉을 같은 값으로 읽습니다.</li>
+	<li><b>자동 검증은 시간에 기대지 않는다</b>: 자동 검증·동기 로딩에서는 처음에 전체 밉으로 올린 뒤 첫 보고에서 바로(지연 없이) 필요 밉으로 내리고, 더 세밀한 밉이 필요해지면 <b>그 뷰의 보고 안에서 바로 읽어 바꾼 뒤(CPU 대기)</b> 같은 프레임에 그립니다. 비동기로 "몇 프레임 뒤 도착"하게 두면 실행마다 화면이 달라지기 때문입니다.</li>
+	<li><b>시간은 앱 프레임 시간으로</b>: 내리기 지연처럼 시간에 따라 바뀌는 상태는 실제 시계가 아니라 <code>FFrameTime</code>(고정 델타 가능)을 씁니다(2026-10-04 규칙).</li>
+</ul>
+<p>필요 밉 식을 바꾸면 Tests/Materials 씬으로 켬/끔 MD5를 비교합니다. 남은 한계도 Plans.md에 적혀 있습니다: 아틀라스 모델(늘어난 UV 면이 1~5%)은 근거리에서 거의 줄어들지 않고, 대화형 비동기 실행의 첫 프레임은 흐린 밉으로 시작해 TAA 이력이 잠깐 흐립니다.</p>
+<div class="callout story">
+	<b class="t">수거와 스트리밍의 경계</b>
+	두 시스템은 같은 텍스처를 다루므로 경계를 명확히 정했습니다. <b>수거는 텍스처 전체를 해제</b>하고(그 텍스처의 스트리밍 항목과 진행 중 요청도 지움), <b>스트리밍은 살아 있는 텍스처의 밉만</b> 조절합니다. 수거 중인 텍스처에 스트리밍 업로드가 도착하는 식의 경쟁을 처음부터 막는 규칙입니다.
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>리소스 수거 = 루트에서 표시 → 표시 안 된 경로 리소스를 지연 해제. 계산(<code>ResourceGc::Compute</code>)은 순수 함수라 GPU 없이 테스트한다.</li>
+		<li>씬 밖에서 경로 핸들을 오래 쥐는 코드는 <code>AddRootProvider</code>로 루트를 등록한다. 수거는 요청 때만, 2틱 뒤.</li>
+		<li>업로드: 작업 스레드(읽기·디코드·압축) → 메인 완료 콜백(링 할당·복사 기록) → 복사 큐 → 직접 큐가 펜스 확인 후 전이. 메인 스레드는 기다리지 않는다.</li>
+		<li>복사 큐 대상은 COMMON으로 만들고 승격/감쇠를 이용, 텍스처만 직접 큐에서 PIXEL_SHADER_RESOURCE로 전이.</li>
+		<li>밉 스트리밍: 필요 밉 = floor(log<sub>2</sub>(큰 변 × UV 밀도 × CmPerPixel) + 바이어스) − 여유. 올리기 즉시, 내리기 지연, 예산 초과 시 우선순위 × 단계로 고르게 축소.</li>
+		<li>상주 범위 변경 = 새 텍스처 + SwapContents. 크기 조건과 보수적 식으로 켬/끔 화면을 비트 동일하게 유지.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 수거를 맵 전환 직후 바로(같은 프레임에) 돌리면 어떤 일이 생길 수 있을까요?</summary>
+	새 맵의 에셋 해석과 렌더러 캐시(지형 레이어 등)가 아직 핸들을 채우지 않아 루트에서 빠진 리소스가 있을 수 있습니다. 특히 두 맵이 공유하는 텍스처는 "이전 맵은 놓았고 새 맵은 아직 안 쥔" 순간에 해제되었다가 바로 다시 로드되는 낭비가 생깁니다. 그래서 새 씬이 한 번 그려진 뒤(2틱 지연)에 수거합니다.
+</details>
+<details class="quiz"><summary>Q2. 업로드 링이 가득 찼을 때 ProjectE는 무엇을 하나요? 왜 그게 드문가요?</summary>
+	열린 묶음을 제출하고 가장 오래된 묶음의 펜스를 CPU로 기다립니다(<code>GetStallCount</code>로 셉니다). 64MB 링은 보통 몇 프레임 안에 GPU 복사가 끝나 꼬리가 따라오므로 가득 차는 일이 드뭅니다. 또 링 절반(32MB)보다 큰 업로드는 링을 쓰지 않고 전용 버퍼를 만들어, 큰 텍스처 하나가 링을 막는 일을 피합니다.
+</details>
+<details class="quiz"><summary>Q3. UV 밀도를 평균이 아니라 "하위 1%"로 잡는 이유는?</summary>
+	한 메시 안에서도 UV가 넓게 늘어난 곳(밀도가 낮은 곳)은 같은 화면 크기에서 픽셀당 텍셀이 적어 더 세밀한 밉이 필요합니다. 평균을 쓰면 그런 부분이 흐려집니다. 그렇다고 최솟값을 쓰면 아주 작은 조각 하나 때문에 항상 밉 0이 필요해지므로, 면적 기준 하위 1%만 제외해 작은 예외를 무시합니다.
+</details>
+</article>
+
+<!-- ======================================================= 31강 ======================================================= -->
+<article class="lecture" id="lec-31">
+<header>
+	<div class="no">31강</div>
+	<h2 id="lec-31-title">PSO 캐시와 셰이더 끊김</h2>
+	<div class="meta">관련 Phase: 48 (+ 2026-10-04 PSO 캐시 비결정성 버그) · 살펴볼 곳: <code>RHI/D3D12/D3D12PipelineRecipe.h/.cpp</code>, <code>RHI/D3D12/D3D12PipelineCache.h/.cpp</code>, <code>RHI/D3D12/D3D12PipelineState.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>PSO(파이프라인 상태 객체)가 무엇이고, 만드는 순간 왜 수~수십 밀리초가 걸리는지 설명할 수 있습니다.</li>
+		<li>PSO 설명을 포인터 없는 "레시피"로 바꿔 키를 만드는 방법과, 그 키에 무엇이 들어가야 하는지 압니다.</li>
+		<li>드라이버 캐시(파이프라인 라이브러리)와 레시피 워밍이 각각 무엇을 아끼는지 구분합니다.</li>
+		<li>"캐시를 켜면 화면이 실행마다 달라진" 실제 사건을 통해, 원인을 끝까지 모를 때 안전하게 해결하는 방법을 배웁니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-31-why"><span class="step">왜 필요한가</span>처음 보는 머티리얼에서 게임이 멈칫한다</h3>
+<p>게임을 하다 처음 보는 이펙트가 터지는 순간 화면이 0.1초쯤 멈칫하는 경험이 있을 겁니다. PC 게임에서 흔히 "셰이더 컴파일 끊김(shader compilation stutter)"이라고 부르는 현상입니다. 원인은 대부분 <b>PSO 생성</b>입니다.</p>
+<p>D3D12에서 GPU에게 그리기를 시키려면 먼저 <b>PSO(Pipeline State Object)</b>를 바인딩해야 합니다. PSO는 한 번의 그리기에 필요한 거의 모든 고정 설정을 하나로 묶은 객체입니다.</p>
+<ul>
+	<li>정점·픽셀 셰이더 바이트코드(DXIL)와 루트 시그니처</li>
+	<li>블렌드 상태, 래스터라이저 상태(컬링·채우기), 깊이·스텐실 상태</li>
+	<li>정점 입력 배치, 렌더 타깃·깊이 버퍼 형식, 샘플 수, 토폴로지</li>
+</ul>
+<p>DXIL은 GPU가 직접 실행하는 기계어가 아니라 중간 언어입니다. <b>PSO를 만드는 순간 드라이버가 DXIL을 그 GPU의 기계어로 컴파일</b>하고, 렌더 타깃 형식·블렌드 같은 고정 상태까지 반영해 최적화합니다. 이 작업이 PSO 하나에 수~수십 밀리초 걸립니다. 60fps 프레임 예산이 16.7ms이니 PSO 하나만 새로 만들어도 프레임을 넘길 수 있습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 240" role="img" aria-label="처음 보는 PSO가 만드는 프레임 시간 튐">
+		<title>처음 보는 PSO가 만드는 프레임 시간 튐</title>
+		<line x1="60" y1="200" x2="830" y2="200" class="ln"/>
+		<line x1="60" y1="30" x2="60" y2="200" class="ln"/>
+		<line x1="60" y1="140" x2="830" y2="140" class="ln-d s5"/>
+		<text x="56" y="144" text-anchor="end" class="t-small">16.7</text>
+		<text x="56" y="34" text-anchor="end" class="t-small">ms</text>
+		<g>
+			<rect x="80" y="158" width="18" height="42" class="k2"/><rect x="104" y="160" width="18" height="40" class="k2"/>
+			<rect x="128" y="157" width="18" height="43" class="k2"/><rect x="152" y="159" width="18" height="41" class="k2"/>
+			<rect x="176" y="158" width="18" height="42" class="k2"/><rect x="200" y="160" width="18" height="40" class="k2"/>
+			<rect x="224" y="40" width="18" height="160" class="k5"/>
+			<rect x="248" y="158" width="18" height="42" class="k2"/><rect x="272" y="159" width="18" height="41" class="k2"/>
+			<rect x="296" y="157" width="18" height="43" class="k2"/><rect x="320" y="160" width="18" height="40" class="k2"/>
+			<rect x="344" y="96" width="18" height="104" class="k5"/>
+			<rect x="368" y="158" width="18" height="42" class="k2"/><rect x="392" y="159" width="18" height="41" class="k2"/>
+			<rect x="416" y="160" width="18" height="40" class="k2"/><rect x="440" y="158" width="18" height="42" class="k2"/>
+		</g>
+		<path d="M233,36 C 233,20 260,18 282,22" class="ln"/>
+		<text x="288" y="26" class="t-small">새 이펙트 등장 → PSO 여러 개 생성</text>
+		<path d="M353,92 C 353,78 380,74 400,76" class="ln"/>
+		<text x="406" y="80" class="t-small">새 머티리얼 변형</text>
+
+		<rect x="500" y="40" width="330" height="140" rx="10" class="box"/>
+		<text x="516" y="64" class="t-bold">왜 미리 다 못 만드나</text>
+		<g class="t-small">
+			<text x="516" y="90">PSO = 셰이더 × 블렌드 × 렌더 타깃 형식 × …</text>
+			<text x="516" y="112">머티리얼 그래프마다 셰이더가 따로 생기고</text>
+			<text x="516" y="134">패스마다(메인·사전·그림자) 조합이 늘어난다</text>
+			<text x="516" y="160" class="t-muted">→ 무엇이 실제로 쓰였는지 기록해 두고(레시피)</text>
+			<text x="516" y="176" class="t-muted">   다음 실행에서 미리 만들거나 디스크에서 꺼낸다</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 31-1.</b> 평소 프레임은 예산 안이지만, 새 PSO가 필요한 프레임만 튑니다. 평균 fps는 거의 그대로라 놓치기 쉽고, 플레이어는 이 "튐"을 끊김으로 느낍니다. 개념도이며 막대 높이는 실측값이 아닙니다.</figcaption>
+</figure>
+
+<p>ProjectE는 Phase 48에서 이 문제를 PSO 캐시로 풀었습니다. 목표는 세 가지였습니다: 같은 PSO는 한 번만 만들기, 이전 실행에서 컴파일한 결과를 디스크에서 꺼내 쓰기(드라이버 캐시), 이전 실행에서 쓴 PSO를 시작할 때 다른 스레드에서 미리 만들기(워밍). 결과는 시작 때 메인 스레드가 PSO에 쓰는 시간이 약 80 → 0.4ms(두 번째 실행)였습니다.</p>
+
+<h3 id="lec-31-key"><span class="step">핵심 개념</span>레시피와 키 — 무엇이 같으면 같은 PSO인가</h3>
+<p>캐시의 출발점은 "이 PSO 요청이 저번 것과 같은가"를 판단하는 <b>키</b>입니다. D3D12의 PSO 설명 구조체(<code>D3D12_GRAPHICS_PIPELINE_STATE_DESC</code>)를 그대로 해시하면 안 됩니다. 이유는 셋입니다.</p>
+<ol>
+	<li><b>포인터</b>가 들어 있습니다(셰이더 바이트코드 포인터, 루트 시그니처 포인터, 입력 배치 배열 포인터). 주소는 실행마다 다릅니다.</li>
+	<li>구조체 <b>패딩</b> 바이트는 초기화되지 않은 쓰레기 값일 수 있습니다.</li>
+	<li>디스크에 저장해 다음 실행에서 PSO를 <b>다시 만들려면</b> 포인터가 아닌 실제 내용이 필요합니다.</li>
+</ol>
+<p>그래서 설명을 포인터 없는 <b>레시피(recipe)</b>로 바꿉니다. 셰이더와 루트 시그니처는 내용 해시로, 고정 기능 상태는 필드를 하나씩 기록합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="PSO 레시피, 키, 요청 순서">
+		<title>PSO 레시피, 키, 요청 순서</title>
+		<text x="20" y="26" class="t-bold">레시피 (FRecipe)</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="200" height="28" rx="5" class="k1"/><text x="32" y="59">루트 시그니처 블롭 해시</text>
+			<rect x="20" y="72" width="200" height="28" rx="5" class="k1"/><text x="32" y="91">VS 바이트코드 해시 + 크기</text>
+			<rect x="20" y="104" width="200" height="28" rx="5" class="k1"/><text x="32" y="123">PS 바이트코드 해시 + 크기</text>
+			<rect x="20" y="136" width="200" height="28" rx="5" class="k4"/><text x="32" y="155">블렌드·래스터·깊이 (필드별)</text>
+			<rect x="20" y="168" width="200" height="28" rx="5" class="k4"/><text x="32" y="187">입력 배치 (이름 문자열)</text>
+			<rect x="20" y="200" width="200" height="28" rx="5" class="k4"/><text x="32" y="219">RT·깊이 형식, 토폴로지 …</text>
+		</g>
+		<path d="M224,134 H272" class="ln" marker-end="url(#arr)"/>
+		<rect x="276" y="110" width="120" height="48" rx="8" class="acc"/>
+		<text x="336" y="131" text-anchor="middle" class="t-small t-bold">FNV-1a 64</text>
+		<text x="336" y="149" text-anchor="middle" class="t-small">= 키</text>
+		<path d="M400,134 H446" class="ln" marker-end="url(#arr)"/>
+
+		<text x="452" y="26" class="t-bold">요청 순서 (FD3D12PipelineCache::Request)</text>
+		<g class="t-small">
+			<rect x="452" y="40" width="390" height="44" rx="8" class="k2"/>
+			<text x="466" y="58" class="t-bold">① 메모리에 이미 있다</text>
+			<text x="466" y="76">워밍 스레드가 만들어 둠 / 앞서 같은 키를 요청함 → 즉시</text>
+			<rect x="452" y="96" width="390" height="44" rx="8" class="k3"/>
+			<text x="466" y="114" class="t-bold">② 드라이버 캐시 (ID3D12PipelineLibrary)</text>
+			<text x="466" y="132">디스크의 컴파일 결과를 Load — 저장된 키일 때만</text>
+			<rect x="452" y="152" width="390" height="44" rx="8" class="k5"/>
+			<text x="466" y="170" class="t-bold">③ 새로 만들기 (Create*PipelineState)</text>
+			<text x="466" y="188">드라이버 컴파일 → 라이브러리에 저장, 종료 때 디스크로</text>
+		</g>
+		<path d="M440,212 V230 H842" class="ln-d"/>
+		<g class="t-small">
+			<text x="452" y="250" class="t-bold">&lt;Saved&gt;/ShaderCache/</text>
+			<text x="452" y="268">PipelineLibrary.bin — 드라이버 캐시 (GPU·드라이버 버전마다)</text>
+			<text x="452" y="286">PipelineRecipes.epso — 사용자 레시피 (8번 실행 안 쓰면 제거)</text>
+			<text x="20" y="262" class="t-bold">&lt;프로젝트&gt;/Config/PipelineRecipes.epso</text>
+			<text x="20" y="280">--record-pso로 기록, 패키지에 포함 (드라이버 무관)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 31-2.</b> 레시피는 "무엇을 만들지"의 완전한 기술이라 드라이버와 무관하게 파일로 옮길 수 있습니다. 반면 드라이버 캐시는 "만든 결과"라 GPU와 드라이버가 바뀌면 버립니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/RHI/D3D12/D3D12PipelineRecipe.h (발췌)"><span class="com">// PSO 캐시 (Phase 48) 순수 부분: PSO 설명을 포인터 없는 "레시피"로 직렬화해 키(64비트 해시)를 만들고, 다시 D3D12 설명으로 되살린다.</span>
+<span class="com">//   - 레시피 = 루트 시그니처 블롭 해시 + 셰이더 바이트코드 해시/크기 + 고정 기능 상태(필드별 기록 — 구조체 패딩을 해시하지 않는다)</span>
+<span class="com">//   - 키 = FNV-1a 64(레시피 바이트). 같은 설명 + 같은 바이트코드 → 같은 키, 바이트코드가 바뀌면(셰이더 핫 리로드·머티리얼 변형) 새 키</span>
+<span class="kw">struct</span> FRecipe
+{
+	EPipelineType Type              = EPipelineType::Graphics;
+	uint64        RootSignatureHash = <span class="num">0</span>;
+	FShaderRef    Shaders[<span class="num">2</span>];        <span class="com">// 그래픽스: VS, PS / 계산: CS, -</span>
+	D3D12_BLEND_DESC           Blend{};
+	D3D12_RASTERIZER_DESC      Rasterizer{};
+	D3D12_DEPTH_STENCIL_DESC   DepthStencil{};
+	std::vector&lt;FInputElement&gt; InputLayout;
+	...
+};
+std::vector&lt;uint8&gt; Serialize(<span class="kw">const</span> FRecipe&amp; Recipe);  <span class="com">// 필드별, 리틀 엔디언 그대로</span>
+uint64             ComputeKey(<span class="kw">const</span> FRecipe&amp; Recipe); <span class="com">// HashBytes(Serialize)</span></pre>
+<p>키에 <b>바이트코드 해시</b>가 들어 있다는 점이 중요합니다. 셰이더 파일을 고쳐 핫 리로드하거나, 머티리얼 그래프가 새 HLSL을 만들면 바이트코드가 바뀌므로 자동으로 새 키가 됩니다. "캐시가 낡은 PSO를 돌려준다"는 종류의 버그가 구조적으로 생길 수 없습니다. 루트 시그니처도 포인터가 아니라 <b>직렬화 블롭의 해시</b>로 넣습니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: PSO와 루트 시그니처는 래퍼로만 만든다</b>
+	PSO는 <code>FD3D12PipelineState::InitGraphics/InitCompute</code>, 루트 시그니처는 <code>FD3D12RootSignature</code>로만 만듭니다. <code>Device-&gt;CreateGraphicsPipelineState</code>를 직접 부르면 캐시와 워밍에서 빠집니다. 루트 시그니처 래퍼는 만들 때 블롭을 캐시에 등록하는데(<code>RegisterRootSignature</code>), 등록되지 않은 루트 시그니처의 PSO는 키를 만들 수 없어 캐시를 건너뜁니다(<code>Bypassed</code> 통계). 레시피나 라이브러리 파일 형식을 바꾸면 <code>FRecipeFile::Version</code>/<code>FLibraryHeader::Version</code>을 올립니다.
+</div>
+
+<h3 id="lec-31-library"><span class="step">핵심 개념</span>드라이버 캐시와 워밍</h3>
+<h4>드라이버 캐시: 컴파일 결과를 디스크에</h4>
+<p>D3D12는 <code>ID3D12PipelineLibrary</code>라는 기능을 제공합니다. 만든 PSO를 이름을 붙여 라이브러리에 저장하고, 라이브러리 전체를 바이트 덩어리로 직렬화해 디스크에 쓸 수 있습니다. 다음 실행에서 그 바이트로 라이브러리를 다시 만들고 <code>LoadGraphicsPipeline(이름, 설명)</code>을 부르면 드라이버 컴파일 없이 PSO를 얻습니다.</p>
+<p>이 바이트는 <b>그 GPU와 그 드라이버 버전</b>에서만 유효합니다. 그래서 파일 머리(<code>FLibraryHeader</code>)에 어댑터의 Vendor/Device/SubSys/Revision, 드라이버(UMD) 버전, 엔진 형식 버전을 적고, 하나라도 다르거나 <code>CreatePipelineLibrary</code>가 거부하면 버립니다. 드라이버를 업데이트한 첫 실행은 캐시 없이 시작하는 셈입니다.</p>
+<pre class="code" data-file="Engine/Source/RHI/D3D12/D3D12PipelineCache.cpp — Request (발췌)"><span class="com">// 드라이버 캐시 → 새로 만들기</span>
+<span class="kw">const</span> std::wstring Name = PipelineCache::MakeLibraryName(Key);
+<span class="kw">if</span> (Library &amp;&amp; LibraryKeys.contains(Key))   <span class="com">// 저장된 키 목록에 있을 때만 Load</span>
+{
+	std::lock_guard Lock(LibraryMutex);
+	Result = Recipe.Type == PipelineCache::EPipelineType::Graphics
+		         ? Library-&gt;LoadGraphicsPipeline(Name.c_str(), ..., IID_PPV_ARGS(&amp;Out))
+		         : Library-&gt;LoadComputePipeline(Name.c_str(), ..., IID_PPV_ARGS(&amp;Out));
+	bFromLibrary = SUCCEEDED(Result);
+}
+<span class="kw">if</span> (!bFromLibrary)
+{
+	Result = CreateDirect(InDevice, Recipe, Desc, Out); <span class="com">// 드라이버 컴파일 (느림)</span>
+	...
+}</pre>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 없는 이름을 Load하면 경고가 난다</b>
+	처음에는 키가 라이브러리에 있는지 모른 채 <code>Load*Pipeline</code>을 불러 보고 실패하면 새로 만들었습니다. 기능은 맞았지만 D3D12 디버그 레이어가 "없는 이름을 Load했다"는 경고(971)를 냈습니다. ProjectE는 디버그 레이어 경고 0건을 커밋 조건으로 두므로, 라이브러리 파일 뒤에 <b>저장된 키 목록</b>을 덧붙이고(형식 v2) 목록에 있는 키만 Load하도록 고쳤습니다. 또 종료할 때는 "이번 실행에서 요청된 PSO만"으로 라이브러리를 새로 써서 낡은 항목이 끝없이 쌓이지 않게 합니다.
+</div>
+
+<h4>워밍: 다음 실행에서 쓸 것을 미리 만들기</h4>
+<p>드라이버 캐시가 있어도 <code>Load</code>에는 시간이 들고, 첫 실행이나 드라이버 업데이트 직후에는 캐시가 없습니다. 그래서 두 번째 장치가 <b>레시피 워밍</b>입니다. 레시피 파일(.epso)에는 레시피와 함께 루트 시그니처·셰이더 블롭이 들어 있어, 그것만으로 PSO를 완전히 다시 만들 수 있습니다. 시작할 때 작업 스레드 2개가 이 레시피들로 루트 시그니처와 PSO를 미리 만들어 둡니다. <code>ID3D12Device</code>는 자유 스레드(free-threaded) 객체라 여러 스레드에서 동시에 PSO를 만들어도 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="시작 시 PSO 워밍 타임라인">
+		<title>시작 시 PSO 워밍 타임라인</title>
+		<text x="20" y="56" class="t-bold">워밍 스레드 1</text>
+		<text x="20" y="100" class="t-bold">워밍 스레드 2</text>
+		<text x="20" y="164" class="t-bold">메인 스레드</text>
+		<g class="t-small">
+			<rect x="140" y="38" width="90" height="28" rx="4" class="k2"/><text x="185" y="57" text-anchor="middle">PSO A</text>
+			<rect x="234" y="38" width="120" height="28" rx="4" class="k2"/><text x="294" y="57" text-anchor="middle">PSO C</text>
+			<rect x="358" y="38" width="80" height="28" rx="4" class="k2"/><text x="398" y="57" text-anchor="middle">PSO E</text>
+			<rect x="140" y="82" width="140" height="28" rx="4" class="k2"/><text x="210" y="101" text-anchor="middle">PSO B</text>
+			<rect x="284" y="82" width="110" height="28" rx="4" class="k2"/><text x="339" y="101" text-anchor="middle">PSO D</text>
+
+			<rect x="140" y="146" width="150" height="28" rx="4" class="box"/><text x="215" y="165" text-anchor="middle">씬 로드·초기화</text>
+			<rect x="294" y="146" width="16" height="28" class="k2"/>
+			<rect x="314" y="146" width="80" height="28" rx="4" class="k4"/><text x="354" y="165" text-anchor="middle">D 대기</text>
+			<rect x="398" y="146" width="16" height="28" class="k2"/>
+			<rect x="418" y="146" width="150" height="28" rx="4" class="k5"/><text x="493" y="165" text-anchor="middle">F 새로 만들기</text>
+			<rect x="572" y="146" width="260" height="28" rx="4" class="box"/><text x="702" y="165" text-anchor="middle">첫 프레임들 …</text>
+		</g>
+		<text x="302" y="196" text-anchor="middle" class="t-muted">A 요청</text>
+		<text x="406" y="196" text-anchor="middle" class="t-muted">B 요청</text>
+		<path d="M394,110 L360,144" class="ln-d" marker-end="url(#arr)"/>
+		<text x="20" y="220" class="t-small">A·B = 워밍이 끝나 있어 즉시(WarmHits), D = 만드는 중이라 기다림(WarmWaits), F = 레시피에 없던 새 PSO → 라이브러리 또는 새로 만들기</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 31-3.</b> 메인 스레드가 씬을 읽는 동안 워밍 스레드가 PSO를 만들어 둡니다. 같은 키를 메인이 요청하면 끝난 것은 바로 쓰고, 만드는 중이면 끝날 때까지 기다립니다(처음부터 다시 만드는 것보다 짧음).</figcaption>
+</figure>
+
+<p>워밍한 PSO는 "같은 루트 시그니처 <b>객체</b>"로 만들었을 때만 메인 요청에 돌려줍니다. 워밍 스레드는 블롭에서 루트 시그니처를 새로 만들었는데, D3D12 런타임이 같은 블롭이면 같은 객체를 돌려주는 경우가 많지만 <b>보장하지는 않기</b> 때문입니다. 다른 객체로 만든 PSO를 섞어 바인딩하면 규칙 위반이므로 이때는 새로 요청합니다.</p>
+<p>레시피는 두 곳에서 옵니다. 사용자 캐시(<code>&lt;Saved&gt;/ShaderCache/PipelineRecipes.epso</code>)는 실행마다 번호를 매겨 8번 실행 동안 쓰이지 않은 레시피를 지웁니다. 프로젝트 레시피(<code>Config/PipelineRecipes.epso</code>)는 <code>--record-pso</code>로 기록해 패키지에 포함하므로, 플레이어의 첫 실행도 워밍을 받습니다(패키징 직전 자동 기록은 후속 과제로 남아 있습니다).</p>
+
+<h3 id="lec-31-pitfalls"><span class="step">함정과 교훈</span>캐시를 켜면 화면이 실행마다 달라졌다</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 (2026-10-04)</b>
+	PSO 캐시를 켠 상태에서 자동 검증을 연속으로 돌리자 Tests/Materials·Decals·Terrain의 스크린샷 MD5가 <b>실행마다 바뀌었습니다</b>. 차이는 픽셀의 0.1~0.8%, 파티클·반투명·조명의 미세한 값이었습니다. PSO는 같은 레시피로 만들었으니 같은 결과여야 하는데 말입니다.
+</div>
+<p>원인을 좁히는 과정이 교훈입니다. 요소를 하나씩 켜고 끄며 조합을 시험했습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>조합</th><th>결과</th></tr>
+	<tr><td>캐시 끔 (<code>--no-pso-cache</code>)</td><td>비트 동일 (기준)</td></tr>
+	<tr><td>드라이버 라이브러리만 (<code>--no-pso-warm</code>)</td><td>비트 동일</td></tr>
+	<tr><td>워밍만 (라이브러리 없음)</td><td>비트 동일</td></tr>
+	<tr><td>워밍 스레드가 라이브러리에서 Load (또는 그 이름을 나중에 메인이 다시 Load)</td><td><b>실행마다 다름</b></td></tr>
+</table></div>
+<p>각각은 결정적인데 <b>"작업 스레드가 블롭으로 만든 루트 시그니처로 라이브러리를 Load"</b>하는 조합에서만 깨졌습니다. 드라이버 내부에서 무슨 일이 일어나는지는 끝내 확인하지 못했습니다(드라이버 소스는 볼 수 없습니다). 그래서 원인을 고치는 대신 <b>문제가 되는 조합을 구조적으로 없앴습니다</b>: 워밍은 라이브러리를 읽지 않고 항상 <code>Create</code>하고, 라이브러리 Load는 요청한 스레드만 합니다.</p>
+<pre class="code" data-file="Engine/Source/RHI/D3D12/D3D12PipelineCache.cpp — WarmOne (주석 발췌)"><span class="com">// 워밍은 드라이버 캐시(파이프라인 라이브러리)를 읽지 않고 항상 Create*PipelineState로 만든다 (드라이버 자체 셰이더 캐시는 쓴다).</span>
+<span class="com">// 2026-10-04 측정: 작업 스레드가 블롭으로 만든 루트 시그니처로 라이브러리 Load한 PSO를 쓰면(또는 같은 이름을 나중에 메인 스레드가</span>
+<span class="com">// 다시 Load해도) Tests/Materials/Decals/Terrain 화면이 실행마다 0.1~0.8% 픽셀 달라졌다 (파티클·반투명·조명 미세 차이, MD5가 실행마다 바뀜).</span>
+<span class="com">// 라이브러리만(--no-pso-warm) 또는 워밍만(라이브러리 없음)은 각각 비트 동일 — 드라이버 내부 원인은 미확인, 조합을 피한다</span></pre>
+<ul>
+	<li><b>결정성이 버그를 드러냈다</b>: 화면이 0.1% 다른 것은 사람 눈으로는 절대 모릅니다. 자동 검증이 "같은 입력 → 같은 MD5"를 기대했기 때문에 발견할 수 있었습니다.</li>
+	<li><b>검증 절차를 규칙으로 남긴다</b>: 이후 PSO 캐시를 바꾸면 Tests/Materials·Decals·Terrain을 <b>캐시를 켠 채 4회 연속</b> 실행해 MD5가 모두 같고, <code>--no-pso-cache</code> 결과와도 같은지 확인합니다(CLAUDE.md "PSO 캐시"). 한 번 돌려 같은 것으로는 실행마다 달라지는 버그를 잡을 수 없습니다.</li>
+	<li><b>원인을 모를 때의 정직한 기록</b>: 주석과 Plans.md에 "원인 미상, 조합을 피함"이라고 적었습니다. 나중에 누군가 "워밍도 라이브러리를 쓰면 더 빠르지 않나?"라고 생각했을 때, 왜 그러면 안 되는지가 코드 옆에 있습니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>PSO 생성 = 드라이버가 DXIL을 GPU 기계어로 컴파일하는 순간. 수~수십 ms라 처음 보는 PSO가 프레임을 튀게 한다.</li>
+		<li>키 = 포인터·패딩 없는 레시피(루트 시그니처 블롭 해시 + 바이트코드 해시 + 필드별 상태)의 FNV-1a 64. 셰이더가 바뀌면 자동으로 새 키.</li>
+		<li>요청 순서: ① 메모리(워밍·앞선 요청) → ② 드라이버 라이브러리(저장 키 목록에 있을 때만) → ③ 새로 만들기.</li>
+		<li>드라이버 캐시는 GPU·드라이버마다 다르므로 머리로 무효화, 레시피 파일은 드라이버 무관이라 패키지에 넣을 수 있다.</li>
+		<li>워밍 스레드는 항상 Create, 라이브러리 Load는 요청 스레드만 — 실행마다 화면이 달라진 조합을 구조적으로 배제했다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 키에서 셰이더 바이트코드 해시를 빼고 "셰이더 파일 이름 + 엔트리 이름"을 넣으면 어떤 버그가 생길까요?</summary>
+	셰이더 파일을 고쳐도 키가 같으므로 드라이버 캐시나 워밍이 <b>고치기 전의 PSO</b>를 돌려줍니다. 핫 리로드가 반영되지 않거나, 엔진 업데이트 후 옛 셰이더로 그려지는 버그가 됩니다. 디파인이 다른 변형(머티리얼 그래프 등)도 같은 이름이면 구분하지 못합니다. 내용 해시를 쓰면 이런 무효화를 따로 신경 쓸 필요가 없습니다.
+</details>
+<details class="quiz"><summary>Q2. 드라이버 캐시가 있는데 왜 레시피 워밍도 필요할까요?</summary>
+	드라이버 캐시는 그 PC·그 드라이버에서 한 번 실행한 뒤에야 생기고, 드라이버를 업데이트하면 버려집니다. 레시피는 드라이버와 무관해 패키지에 넣어 배포할 수 있으므로 첫 실행에도 효과가 있습니다. 또 워밍은 메인 스레드가 아닌 작업 스레드에서 미리 만들므로, Load조차 메인 스레드 시간에서 빠집니다.
+</details>
+<details class="quiz"><summary>Q3. "결정성 테스트를 한 번만 돌려 기준과 같으면 통과"로 하면 왜 이 버그를 놓칠 수 있나요?</summary>
+	이 버그는 실행마다 결과가 <b>달라지는</b> 종류라, 어떤 실행은 우연히 기준과 같을 수 있습니다. 또 기준 자체가 캐시 상태(첫 실행은 라이브러리가 비어 있음)에 따라 달라집니다. 그래서 캐시를 켠 채 여러 번 연속 실행해 서로 같은지, 그리고 캐시를 끈 결과와도 같은지를 함께 확인합니다.
+</details>
+</article>
+
+<!-- ======================================================= 32강 ======================================================= -->
+<article class="lecture" id="lec-32">
+<header>
+	<div class="no">32강</div>
+	<h2 id="lec-32-title">측정하는 법</h2>
+	<div class="meta">관련 Phase: 26 · 38 (+ 2026-10-04 규모 추세 검사) · 살펴볼 곳: <code>Core/Console/Console.h</code>, <code>Renderer/RendererConsoleVariables.cpp</code>, <code>Core/Profiling.h</code>, <code>RHI/D3D12/D3D12GpuTimer.h</code>, <code>Renderer/SceneRenderer.h</code>(<code>ERenderTimer</code>), <code>Scripts/ScaleBench.ps1</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>콘솔 변수(CVar)로 기능을 켜고 끄며 같은 조건에서 A/B 비교하는 방법과, 명령줄 별칭이 왜 필요한지 압니다.</li>
+		<li>Tracy 같은 계측 프로파일러의 "존"과, 뷰어가 붙을 때만 기록하는 ON_DEMAND 방식이 무엇인지 설명할 수 있습니다.</li>
+		<li>GPU 시간은 CPU 시간처럼 잴 수 없는 이유와 타임스탬프 쿼리, 결과가 늦게 나오는 이유를 이해합니다.</li>
+		<li>한 규모에서의 숫자가 아니라 규모를 늘려 가며 "비선형 구간"을 찾는 추세 검사와, 측정 중 지켜야 할 규칙을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-32-why"><span class="step">왜 필요한가</span>추측은 거의 항상 틀린다</h3>
+<p>29강에서 HZB 오클루전이 "68%를 가렸는데 느려진" 이야기를 했습니다. 재지 않았다면 이 기능은 기본으로 켜져 있었을 것입니다. 성능 작업에서 가장 흔한 실수는 <b>느릴 것 같은 곳을 고치는 것</b>입니다. 실제로 느린 곳은 대개 예상과 다르고, 고쳤다고 생각한 것이 다른 곳을 느리게 만들기도 합니다.</p>
+<p>그래서 성능 작업은 측정 도구부터 만듭니다. ProjectE도 Phase 26의 첫 항목(26-1)이 최적화가 아니라 측정 수단(<code>FD3D12GpuTimer</code>, <code>--perf-capture</code>, 구간별 CPU/GPU 시간, 통계 창)과 측정용 씬이었습니다. 이 강의는 그 도구들을 네 가지로 나눠 봅니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>도구</th><th>답하는 질문</th></tr>
+	<tr><td>콘솔 변수 (CVar)</td><td>이 기능을 끄면 얼마나 달라지나? (A/B)</td></tr>
+	<tr><td>Tracy 프로파일러</td><td>한 프레임 안에서 어느 함수·어느 스레드가 시간을 쓰나?</td></tr>
+	<tr><td>GPU 타임스탬프 + <code>--perf-capture</code></td><td>각 렌더 구간이 CPU·GPU에서 평균 몇 ms인가?</td></tr>
+	<tr><td>ScaleBench (규모 추세)</td><td>물체 수를 두 배로 하면 시간도 두 배인가, 그보다 더인가?</td></tr>
+</table></div>
+
+<h3 id="lec-32-cvar"><span class="step">핵심 개념</span>콘솔 변수 — 다시 빌드하지 않고 켜고 끄기</h3>
+<p>A/B 비교를 하려면 "같은 빌드, 같은 씬, 같은 카메라에서 한 가지만 바꾼 두 실행"이 필요합니다. 기능마다 <code>#if</code>로 끄고 다시 빌드하면 비교가 느리고, 빌드가 달라지는 순간 다른 요소도 함께 바뀝니다. 그래서 엔진은 <b>콘솔 변수(console variable, CVar)</b>를 둡니다 — 이름이 붙은 전역 설정값으로, 실행 중 콘솔이나 명령줄에서 바꿀 수 있습니다. 언리얼의 <code>r.ScreenPercentage</code> 같은 것이 대표적입니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/RendererConsoleVariables.cpp (발췌)">TAutoConsoleVariable&lt;<span class="kw">bool</span>&gt; Lod(<span class="str">"r.LOD"</span>, <span class="kw">true</span>, <span class="str">"메시 LOD (화면 크기 전환). 끄면 항상 LOD0"</span>, EConsoleFlags::None,
+                               { .CommandLine = { { L<span class="str">"--no-lod"</span>, <span class="str">"0"</span> } } });
+TAutoConsoleVariable&lt;<span class="kw">float</span>&gt; LodHysteresis(<span class="str">"r.LODHysteresis"</span>, <span class="num">0.1f</span>, <span class="str">"LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔)"</span>,
+                                          EConsoleFlags::None, { .Range = std::pair(<span class="num">0.0f</span>, <span class="num">1.0f</span>), .CommandLine = { { L<span class="str">"--lod-hysteresis"</span>, <span class="str">""</span> } } });</pre>
+<p>한 줄에 많은 정보가 들어 있습니다. 이름(<code>r.LOD</code>), 타입(bool), 기본값, <b>도움말</b>(필수 — 콘솔 <code>help</code>와 자동 완성에 나옵니다), 범위, 그리고 <b>명령줄 별칭</b>입니다. <code>TAutoConsoleVariable</code>은 .cpp 전역 객체로, 프로그램이 시작될 때 생성자가 전역 레지스트리(<code>FConsoleManager::Get()</code>)에 자신을 등록합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="콘솔 변수 값의 흐름">
+		<title>콘솔 변수 값의 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="210" height="44" rx="8" class="k3"/>
+			<text x="125" y="49" text-anchor="middle" class="t-bold">TAutoConsoleVariable</text>
+			<text x="125" y="66" text-anchor="middle">.cpp 전역 — 정적 초기화 때 등록</text>
+			<rect x="20" y="96" width="210" height="44" rx="8" class="k1"/>
+			<text x="125" y="115" text-anchor="middle" class="t-bold">명령줄</text>
+			<text x="125" y="132" text-anchor="middle">--cvar r.LOD=0 · 별칭 --no-lod</text>
+			<rect x="20" y="162" width="210" height="44" rx="8" class="k1"/>
+			<text x="125" y="181" text-anchor="middle" class="t-bold">콘솔 입력 / --exec</text>
+			<text x="125" y="198" text-anchor="middle">에디터 출력 로그 · 런타임 ` 콘솔</text>
+
+			<rect x="300" y="80" width="250" height="80" rx="10" class="acc"/>
+			<text x="425" y="106" text-anchor="middle" class="t-bold">FConsoleManager</text>
+			<text x="425" y="126" text-anchor="middle">이름 → 값 (엔진 DLL 하나)</text>
+			<text x="425" y="144" text-anchor="middle" class="t-muted">Range로 자르기, ReadOnly·Cheat 검사</text>
+
+			<rect x="610" y="40" width="238" height="44" rx="8" class="k2"/>
+			<text x="729" y="59" text-anchor="middle" class="t-bold">렌더러</text>
+			<text x="729" y="76" text-anchor="middle">ApplyConsoleVariables (프레임마다)</text>
+			<rect x="610" y="100" width="238" height="44" rx="8" class="k2"/>
+			<text x="729" y="119" text-anchor="middle" class="t-bold">에디터·게임 모듈</text>
+			<text x="729" y="136" text-anchor="middle">FindVariable로 이름 조회</text>
+			<rect x="610" y="160" width="238" height="44" rx="8" class="k4"/>
+			<text x="729" y="179" text-anchor="middle" class="t-bold">AddOnChanged 콜백</text>
+			<text x="729" y="196" text-anchor="middle">리소스 재생성이 필요한 변수만</text>
+		</g>
+		<path d="M230,52 L296,98" class="ln" marker-end="url(#arr)"/>
+		<path d="M230,118 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M230,184 L296,144" class="ln" marker-end="url(#arr)"/>
+		<path d="M550,104 L606,64" class="ln" marker-end="url(#arr)"/>
+		<path d="M550,120 H606" class="ln" marker-end="url(#arr)"/>
+		<path d="M550,138 L606,180" class="ln" marker-end="url(#arr)"/>
+		<text x="420" y="232" text-anchor="middle" class="t-muted">메인 스레드 전용 (읽기 포함) — 사용하는 쪽이 프레임마다 값을 읽어 반영한다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 32-1.</b> 값은 세 곳에서 들어와 레지스트리 하나에 모이고, 사용하는 쪽은 프레임마다 읽습니다. 게임 모듈처럼 늦게 로드되는 DLL의 변수에도 명령줄 값이 적용됩니다(레지스트리가 명령줄을 기억해 두었다가 등록 때 적용).</figcaption>
+</figure>
+
+<h4>명령줄 별칭: 예전 플래그를 깨지 않기</h4>
+<p>CVar가 생기기 전(Phase 38 이전)에는 <code>--no-ssr</code>, <code>--no-lod</code>, <code>--occlusion</code> 같은 명령줄 플래그가 이미 수십 개 있었고, 검증 스크립트와 문서가 그것을 쓰고 있었습니다. 이것들을 모두 <code>--cvar r.SSR=0</code>으로 바꾸면 기존 기록과 스크립트가 깨집니다. 그래서 각 CVar에 <b>별칭</b>을 붙였습니다. <code>{ L"--no-lod", "0" }</code>은 "이 플래그가 있으면 값을 0으로", <code>{ L"--force-lod", "" }</code>처럼 값이 비면 "플래그 다음 인자를 값으로"입니다. Phase 38 DoD는 "예전 플래그 결과와 픽셀 차이 0"이었습니다.</p>
+<div class="callout warn">
+	<b class="t">규칙 (CLAUDE.md "콘솔/CVar")</b>
+	<ul>
+		<li>디버그·비교 토글은 CVar로 두고, 이름은 <code>r.X</code>식, 도움말은 필수. 이름 중복 금지.</li>
+		<li>렌더러 토글은 <code>RendererConsoleVariables.cpp</code>에 두고 <code>FSceneRenderer::ApplyConsoleVariables</code>가 프레임마다 읽는다. <b>Init에서 명령줄을 직접 파싱하지 않는다</b> — 그러면 실행 중 콘솔로 바꿀 수 없다.</li>
+		<li>CVar 전역 객체는 DLL 밖으로 내보내지 않으므로 에디터·게임 모듈은 <code>FConsoleManager::Get().FindVariable</code>로 찾는다.</li>
+		<li>메인 스레드 전용. 리소스를 다시 만들어야 하는 변수는 <code>AddOnChanged</code>로 콜백을 건다.</li>
+	</ul>
+</div>
+<p>이 규칙의 핵심은 <b>"값은 한곳, 읽는 쪽은 매 프레임"</b>입니다. 측정할 때 같은 실행 안에서 콘솔로 <code>r.Shadow.Cache 0</code>을 입력해 바로 비교할 수 있고, 자동 검증은 명령줄로 같은 일을 재현합니다.</p>
+
+<h3 id="lec-32-tracy"><span class="step">핵심 개념</span>Tracy — 프레임 안을 들여다보기</h3>
+<p>평균 숫자는 "얼마나"를 알려 주지만 "어디서"는 알려 주지 않습니다. <b>계측 프로파일러(instrumentation profiler)</b>는 코드의 구간 시작과 끝에 표시를 넣어, 프레임마다 어느 스레드에서 어느 구간이 언제부터 언제까지 실행되었는지를 타임라인으로 보여 줍니다. ProjectE는 오픈소스 프로파일러 Tracy(v0.11.1)를 씁니다. 표시한 구간을 <b>존(zone)</b>이라 부릅니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 220" role="img" aria-label="Tracy 존 타임라인 예">
+		<title>Tracy 존 타임라인 예</title>
+		<text x="20" y="40" class="t-small t-bold">메인 스레드</text>
+		<text x="20" y="150" class="t-small t-bold">병렬 루프 ×N</text>
+		<g class="t-small">
+			<rect x="130" y="24" width="700" height="24" class="box"/><text x="140" y="41">프레임 (E_PROFILE_FRAME 사이)</text>
+			<rect x="150" y="52" width="300" height="24" class="k2"/><text x="160" y="69">애니메이션</text>
+			<rect x="150" y="80" width="90" height="24" class="k2"/><text x="160" y="97">준비</text>
+			<rect x="242" y="80" width="150" height="24" class="k2"/><text x="252" y="97">평가</text>
+			<rect x="394" y="80" width="56" height="24" class="k2"/><text x="400" y="97">마무리</text>
+			<rect x="460" y="52" width="350" height="24" class="k1"/><text x="470" y="69">렌더 (ERenderTimer 구간마다 존 자동)</text>
+			<rect x="470" y="80" width="120" height="24" class="k1"/><text x="480" y="97">Gather</text>
+			<rect x="594" y="80" width="90" height="24" class="k1"/><text x="604" y="97">Shadow</text>
+			<rect x="688" y="80" width="110" height="24" class="k1"/><text x="698" y="97">MainDraw …</text>
+			<rect x="248" y="134" width="138" height="24" class="k3"/><text x="258" y="151">평가 묶음</text>
+			<rect x="252" y="162" width="130" height="24" class="k3"/><text x="262" y="179">평가 묶음</text>
+			<rect x="476" y="134" width="108" height="24" class="k3"/><text x="486" y="151">수집 묶음</text>
+		</g>
+		<path d="M317,104 V130" class="ln-d"/>
+		<path d="M530,104 V130" class="ln-d"/>
+		<text x="130" y="210" class="t-muted">존은 중첩되고(부모 안 자식), 스레드마다 줄이 따로 그려진다 — "평가"가 길면 작업자 줄을 보고 일이 고르게 나뉘었는지 확인</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 32-2.</b> Tracy 뷰어가 보여 주는 모양을 단순화한 그림. 이름은 실제 존 이름(<code>"애니메이션 준비"</code>, <code>"애니메이션 평가"</code>, 작업자 스레드 이름 <code>"병렬 루프"</code>)에서 따왔습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/Profiling.h (발췌)"><span class="com">// Tracy 프로파일러 래퍼 (CMake 옵션 E_TRACY). 꺼져 있으면 모든 매크로가 빈 문장 → 비용 0.</span>
+<span class="com">//   Tracy 헤더는 노출하지 않는다: 존은 Tracy C API와 같은 배치의 정적 위치 구조체 + 엔진 DLL 함수 호출.</span>
+<span class="com">//   켜져 있어도 뷰어가 연결되기 전에는 기록하지 않는다 (TRACY_ON_DEMAND), 로컬호스트만 받는다 (TRACY_ONLY_LOCALHOST).</span>
+<span class="pp">#define</span> E_PROFILE_SCOPE(Name)                                                                     \
+	<span class="kw">static constexpr</span> FProfileSourceLocation E_PROFILE_CONCAT(ProfileLocation_, __LINE__){ Name, __FUNCTION__, __FILE__, \
+	                                                                                      <span class="kw">static_cast</span>&lt;uint32&gt;(__LINE__), <span class="num">0</span> }; \
+	<span class="kw">const</span> FProfileScope E_PROFILE_CONCAT(ProfileScope_, __LINE__)(&amp;E_PROFILE_CONCAT(ProfileLocation_, __LINE__))</pre>
+<p>설계 포인트를 짚어 봅시다.</p>
+<ul>
+	<li><b>정적 위치 구조체</b>: 존마다 이름·함수·파일·줄을 담은 <code>static constexpr</code> 구조체를 만들고 그 <b>주소</b>만 넘깁니다. 실행 중에는 문자열을 복사하지 않고 포인터 하나만 기록하므로 존 하나의 비용이 매우 작습니다. 그래서 이름은 반드시 문자열 리터럴(정적 수명)이어야 합니다.</li>
+	<li><b>RAII</b>: <code>FProfileScope</code>의 생성자가 존을 열고 소멸자가 닫으므로 <code>return</code>이 여러 개여도 짝이 맞습니다.</li>
+	<li><b>헤더 숨기기</b>: Tracy 헤더를 직접 포함하지 않고 <code>Core/Profiling.h</code>의 매크로만 씁니다(예외는 GPU 존을 다는 <code>Renderer/RenderProfiling.cpp</code>). Tracy를 바꾸거나 빼도 엔진 코드는 그대로입니다. <code>E_TRACY</code>를 끄면 매크로가 <code>do { } while (0)</code>로 사라져 비용이 0입니다.</li>
+	<li><b>ON_DEMAND</b>: 켜져 있어도 뷰어가 연결되기 전에는 아무것도 기록하지 않습니다. 개발 실행은 항상 Tracy를 시작해 두고(필요할 때 뷰어를 붙이면 됨), 패키지 게임은 <code>--tracy</code>일 때만, <code>--no-tracy</code>면 끕니다. 테스트는 시작하지 않습니다. 로컬호스트에서만 받아 외부에서 붙을 수 없습니다.</li>
+	<li><b>렌더 구간은 자동</b>: 새 렌더 구간은 <code>ERenderTimer</code>에 칸을 추가하기만 하면 CPU 존, GPU 존, <code>--perf-capture</code> 통계가 함께 생깁니다.</li>
+</ul>
+
+<h3 id="lec-32-gpu"><span class="step">핵심 개념</span>GPU 시간은 왜 늦게 나오나</h3>
+<p>CPU 시간은 구간 앞뒤에서 시계를 읽으면 됩니다. GPU는 다릅니다. CPU가 명령 리스트에 "그려라"를 <b>기록</b>하는 시점과 GPU가 그것을 <b>실행</b>하는 시점은 다르고, 보통 GPU는 CPU보다 한두 프레임 뒤에서 따라옵니다. 그래서 GPU 시간은 GPU 자신이 재야 합니다. 방법은 <b>타임스탬프 쿼리</b>입니다 — 명령 리스트에 "이 지점을 실행할 때 GPU 시계 값을 여기에 적어라"(<code>EndQuery(TIMESTAMP)</code>)를 구간 앞뒤로 넣고, 프레임 끝에 결과를 CPU가 읽을 수 있는 리드백 버퍼로 옮깁니다(<code>ResolveQueryData</code>).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="GPU 타임스탬프 결과의 지연">
+		<title>GPU 타임스탬프 결과의 지연</title>
+		<text x="20" y="62" class="t-bold">CPU 기록</text>
+		<text x="20" y="122" class="t-bold">GPU 실행</text>
+		<g class="t-small">
+			<rect x="120" y="44" width="150" height="28" rx="4" class="k1"/><text x="195" y="63" text-anchor="middle">프레임 N · 슬롯 0</text>
+			<rect x="280" y="44" width="150" height="28" rx="4" class="k2"/><text x="355" y="63" text-anchor="middle">N+1 · 슬롯 1</text>
+			<rect x="440" y="44" width="150" height="28" rx="4" class="k3"/><text x="515" y="63" text-anchor="middle">N+2 · 슬롯 2</text>
+			<rect x="600" y="44" width="150" height="28" rx="4" class="k1"/><text x="675" y="63" text-anchor="middle">N+3 · 슬롯 0 재사용</text>
+			<rect x="230" y="104" width="150" height="28" rx="4" class="k1"/><text x="305" y="123" text-anchor="middle">N 실행 + 시각 기록</text>
+			<rect x="390" y="104" width="150" height="28" rx="4" class="k2"/><text x="465" y="123" text-anchor="middle">N+1 실행</text>
+			<rect x="550" y="104" width="150" height="28" rx="4" class="k3"/><text x="625" y="123" text-anchor="middle">N+2 실행</text>
+		</g>
+		<path d="M305,134 V156 H790 V58 H756" class="ln-d" marker-end="url(#arr)"/>
+		<text x="420" y="186" class="t-small">BeginFrame(슬롯 0)은 이미 그 슬롯의 펜스를 기다렸다</text>
+		<text x="420" y="204" class="t-small">→ 이때 프레임 N의 결과를 읽는다</text>
+		<text x="20" y="186" class="t-small">결과는 슬롯 수만큼 늦게 나온다</text>
+		<text x="20" y="204" class="t-muted">(GPU를 기다리게 만들지 않으려고)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 32-3.</b> <code>FD3D12GpuTimer</code>는 프레임 슬롯마다 쿼리 범위와 리드백 영역을 따로 둡니다. 슬롯을 재사용하는 순간에는 그 슬롯의 GPU 작업이 끝난 것이 보장되므로, 그때 지난 결과를 읽으면 CPU가 GPU를 기다릴 일이 없습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/RHI/D3D12/D3D12GpuTimer.cpp (발췌)"><span class="kw">void</span> FD3D12GpuTimer::BeginScope(ID3D12GraphicsCommandList* CommandList, uint32 Scope)
+{
+	...
+	CommandList-&gt;EndQuery(QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, (CurrentSlot * MaxScopes + Scope) * <span class="num">2</span>);
+}
+<span class="kw">void</span> FD3D12GpuTimer::EndFrame(ID3D12GraphicsCommandList* CommandList)
+{
+	<span class="com">// 끝낸 구간만 옮긴다 (쓰지 않은 쿼리를 옮기면 디버그 레이어 경고)</span>
+	...
+	CommandList-&gt;ResolveQueryData(QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, Index, <span class="num">2</span>, Readback.Get(), <span class="kw">sizeof</span>(uint64) * Index);
+}</pre>
+<p>"결과를 바로 읽고 싶으니 GPU가 끝날 때까지 기다리자"고 하면, 측정 자체가 CPU와 GPU의 병렬 실행을 깨서 측정값이 왜곡됩니다. 측정 도구가 측정 대상을 바꾸지 않게 하는 것이 측정의 기본입니다. 칸 수(<code>MaxScopes</code>)는 32이고, 렌더 구간이 늘어 Phase 50에서 24 → 32로 늘렸습니다.</p>
+
+<h4><code>--perf-capture</code>: 평균을 남기는 법</h4>
+<p>매 프레임 숫자는 흔들리므로 평균을 냅니다. <code>--perf-capture [--perf-warmup N]</code>을 주면 처음 N프레임(셰이더·PSO·스트리밍이 자리 잡는 동안)을 버리고 나머지 프레임의 평균을 종료 때 <code>[성능]</code> 로그로 남깁니다 — 프레임 시간, 드로우 수, 삼각형 수, <code>ERenderTimer</code> 구간별 CPU/GPU ms, 그리고 게임 쪽 틱 구간(스크립트·물리·트랜스폼·애니메이션 …)의 CPU ms. 런타임은 <code>--no-vsync</code>를 함께 줍니다(VSync가 켜져 있으면 프레임 시간이 모니터 주사율에 묶여 비교가 안 됩니다). 자동 검증 실행은 창을 띄우지 않으므로 측정 중에도 작업 화면을 방해하지 않습니다.</p>
+
+<h3 id="lec-32-scale"><span class="step">핵심 개념</span>규모 추세 검사 — 한 점이 아니라 기울기를 본다</h3>
+<p>스킨 유닛 500개 씬에서 프레임이 6ms라면 좋은 것일까요? 알 수 없습니다. 1000개에서 12ms면 선형이라 괜찮지만, 1000개에서 20ms라면 어딘가에 <b>개수보다 빠르게 늘어나는</b> 비용이 숨어 있다는 뜻입니다. 이런 비용은 개수가 커질수록 폭발하므로, 한 규모에서 빨라진 것만 보면 놓칩니다.</p>
+<p>2026-10-04에 추가한 <code>Scripts/ScaleBench.ps1</code>은 이 검사를 자동화합니다. 유닛 수마다 같은 생성 스크립트(<code>Tools/DemoMap/BuildStress.py --count N</code>)로 씬을 만들고, Release 런타임을 <code>--perf-capture --perf-warmup 200 --no-vsync</code>로 돌려 <code>[성능]</code> 로그를 모은 뒤, 구간별 시간 표를 만들고 비선형을 판정합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="유닛 수에 따른 시간 추세">
+		<title>유닛 수에 따른 시간 추세</title>
+		<line x1="100" y1="230" x2="760" y2="230" class="ln"/>
+		<line x1="100" y1="30" x2="100" y2="230" class="ln"/>
+		<g class="t-small">
+			<text x="94" y="234" text-anchor="end">0</text>
+			<text x="94" y="154" text-anchor="end">10</text><line x1="100" y1="150" x2="760" y2="150" class="ln-d" opacity="0.4"/>
+			<text x="94" y="74" text-anchor="end">20</text><line x1="100" y1="70" x2="760" y2="70" class="ln-d" opacity="0.4"/>
+			<text x="94" y="34" text-anchor="end">ms</text>
+			<text x="250" y="250" text-anchor="middle">500</text>
+			<text x="400" y="250" text-anchor="middle">1000</text>
+			<text x="700" y="250" text-anchor="middle">2000</text>
+			<text x="760" y="266" text-anchor="end" class="t-muted">스킨 유닛 수</text>
+		</g>
+		<polyline points="250,179.6 400,129.2 700,28.4" class="ln-d" stroke-width="1.6"/>
+		<text x="706" y="34" class="t-small t-muted">선형이면 (500의 ×2, ×4)</text>
+		<polyline points="250,179.6 400,130.8 700,45.2" class="ln s5" stroke-width="2.4"/>
+		<circle cx="250" cy="179.6" r="4" class="f5"/><circle cx="400" cy="130.8" r="4" class="f5"/><circle cx="700" cy="45.2" r="4" class="f5"/>
+		<text x="244" y="170" text-anchor="end" class="t-small">6.3</text><text x="394" y="122" text-anchor="end" class="t-small">12.4</text><text x="694" y="58" text-anchor="end" class="t-small">23.1</text>
+		<polyline points="250,209.2 400,184.4 700,145.2" class="ln s1" stroke-width="2.4"/>
+		<circle cx="250" cy="209.2" r="4" class="f1"/><circle cx="400" cy="184.4" r="4" class="f1"/><circle cx="700" cy="145.2" r="4" class="f1"/>
+		<text x="256" y="224" class="t-small">2.6</text><text x="406" y="200" class="t-small">5.7</text><text x="706" y="160" class="t-small">10.6</text>
+		<rect x="116" y="40" width="14" height="4" class="k5"/><text x="136" y="46" class="t-small">프레임</text>
+		<rect x="196" y="40" width="14" height="4" class="k1"/><text x="216" y="46" class="t-small">렌더러 수집 (CPU)</text>
+		<text x="116" y="106" class="t-small">둘 다 거의 선형 — 하지만 "표시 트랜스폼" 구간은</text>
+		<text x="116" y="124" class="t-small t-bold">개수 ×2에 시간 ×3.0 → 비선형으로 걸림</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 32-4.</b> 2026-10-04 ScaleBench 첫 측정(RT 끔, git log <code>fff65ae</code>). 프레임과 수집은 개수에 비례했지만, 구간별 표에서 표시 단계 트랜스폼 갱신이 개수보다 빨리 늘어나는 것이 드러났습니다. 평균 프레임만 봤다면 묻혔을 구간입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Scripts/ScaleBench.ps1 (머리 주석 발췌)">이웃한 두 규모 사이에서 구간 시간 배율이 개수 배율 × Tolerance를 넘고(그리고 큰 쪽이 MinMs 이상이면) "비선형"으로 표시한다.
+종료 코드: 0 = 비선형 없음, 1 = 비선형 구간 있음, 2 = 실행 실패
+측정 중에는 다른 무거운 작업(빌드·다른 Verify)을 돌리지 않는다 (수치가 흔들린다).
+...
+param(
+    [int[]]$Counts = @(500, 1000, 2000),
+    [switch]$RayTracing,
+    [double]$Tolerance = 1.25,
+    [double]$MinMs = 0.3,
+    [int]$Frames = 600
+)</pre>
+<p>판정 식은 단순합니다. 500 → 1000처럼 개수가 2배면, 어떤 구간의 시간 배율이 2 × 1.25 = 2.5를 넘을 때 비선형입니다. 1.25배의 여유는 측정 잡음과 캐시 효과(규모가 커지면 데이터가 캐시에 덜 들어가 약간 느려지는 정상적인 현상)를 흡수합니다. 0.3ms 미만 구간은 잡음이 상대적으로 커서 판정하지 않습니다. 종료 코드 1을 돌려주므로 "성능을 바꾼 작업은 전후로 ScaleBench를 돌린다"를 스크립트로 확인할 수 있습니다.</p>
+<div class="callout tip">
+	<b class="t">설계 이유: 목표도 규모로 적는다</b>
+	CLAUDE.md의 규모 목표는 "스킨 유닛 1000개 60fps 이상(1280×720 Release, RT 끔 16ms 이하), 실사 데모 맵 8ms 이하, 정적 인스턴스 1만"입니다. 목표가 규모로 적혀 있으면 "지금 씬에서 빨라졌다"가 아니라 "목표 규모에서, 그리고 그 두 배에서 어떤가"를 묻게 됩니다. 알려진 한계도 함께 적어 둡니다 — 뼈 하나가 엔티티 하나라 유닛당 엔티티가 약 50개(수천 마리 군중에는 부적합), 게임과 렌더가 같은 스레드에서 순서대로 돌아 프레임 시간 = 두 시간의 합.
+</div>
+
+<h3 id="lec-32-pitfalls"><span class="step">함정과 교훈</span>측정을 망치는 것들</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 측정 중 다른 작업을 돌리면 비선형으로 오판한다</b>
+	ScaleBench는 규모마다 실행을 따로 하므로, 2000개를 재는 동안 다른 빌드나 Verify가 CPU를 나눠 쓰면 그 규모만 느려지고 "비선형"으로 잘못 판정됩니다. 그래서 규칙이 되었습니다: <b>측정 중에는 다른 빌드/Verify를 돌리지 않는다</b>. 병렬 작업 트랙이 여럿 도는 이 프로젝트에서는 특히 중요합니다. 데모 맵 최종 측정도 "다른 작업 없이 순차"로 했다고 Plans.md에 조건을 함께 적었습니다. 또 Stress 씬의 드문 비결정(동시 부하 13회 중 1회, 캐릭터 위 미세 차이)도 동시 부하에서만 나타나 후속 과제로 기록되어 있습니다.
+</div>
+<ul>
+	<li><b>조건을 숫자와 함께 적는다</b>: "11.6ms"는 해상도·빌드 구성·RT 켬/끔·워밍업·VSync를 함께 적어야 의미가 있습니다. ProjectE의 기록은 거의 항상 "1280x720 Release <code>--perf-capture --perf-warmup 200 --no-vsync</code>"처럼 조건을 붙입니다.</li>
+	<li><b>창을 띄우지 않는다</b>: 높은 fps 측정도 숨긴 창 + <code>--no-vsync</code>로 하고 로그의 프레임 시간을 기록합니다. 숨긴 창의 스크린샷은 보이는 창과 비트 동일하므로 측정·검증에 창을 띄울 이유가 없습니다(작업 중인 사람의 포커스를 빼앗지도 않습니다).</li>
+	<li><b>3회 측정은 마지막에</b>: 반복 측정은 비싸므로 개발 중에는 한 번씩 보고, 최종 확인 때 3회 재서 흔들림을 봅니다(CLAUDE.md 작업 방식).</li>
+	<li><b>CPU 한계인지 GPU 한계인지 먼저 본다</b>: Stress 스킨 500 측정에서 프레임 7.09ms에 GPU는 4.65ms였습니다 — GPU가 놀고 있으니 CPU 쪽을 줄여야 합니다. 33강의 병렬화가 바로 그 작업입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>성능 작업은 측정 도구부터. 추측으로 고치지 않는다.</li>
+		<li>CVar = 이름 붙은 전역 설정. 정적 등록, 도움말 필수, 프레임마다 읽기, 예전 플래그는 명령줄 별칭으로 유지.</li>
+		<li>Tracy 존 = 정적 위치 구조체 포인터 + RAII. ON_DEMAND·로컬호스트, 끄면 비용 0. <code>ERenderTimer</code>에 칸을 추가하면 CPU/GPU 존이 함께 생긴다.</li>
+		<li>GPU 시간은 타임스탬프 쿼리로 재고, 슬롯 재사용 시점에 읽어 GPU를 기다리지 않는다(결과는 슬롯 수만큼 늦음).</li>
+		<li>ScaleBench는 규모를 늘려 구간 시간 배율이 개수 배율 × 1.25를 넘는 비선형 구간을 찾는다. 측정 중에는 다른 작업을 돌리지 않는다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 렌더러가 <code>Init</code>에서 <code>--no-ssr</code>을 직접 읽어 멤버 변수에 저장하면 무엇을 잃나요?</summary>
+	실행 중에 콘솔로 값을 바꿔도 렌더러는 다시 읽지 않으므로 반영되지 않습니다. 같은 실행 안에서 켜고 끄며 비교할 수 없고, <code>--cvar r.SSR=0</code> 같은 일반 지정이나 늦게 들어온 <code>--exec</code>도 무시됩니다. 값의 출처가 두 곳(명령줄 파싱 코드와 CVar)으로 갈라져 어긋날 위험도 생깁니다.
+</details>
+<details class="quiz"><summary>Q2. GPU 타이머 결과가 3프레임 늦게 나온다면, 카메라를 홱 돌린 순간의 GPU 시간 그래프는 어떻게 보일까요?</summary>
+	그래프의 튐이 실제 순간보다 3프레임 뒤에 나타납니다. 평균을 내는 <code>--perf-capture</code>에는 거의 영향이 없지만, 특정 순간의 원인을 찾을 때는 이 지연을 감안해야 합니다. 프레임 번호와 함께 기록하면 대응시킬 수 있습니다.
+</details>
+<details class="quiz"><summary>Q3. 어떤 구간이 500 → 1000에서 1.0ms → 2.4ms가 되었습니다. ScaleBench 기본값으로 비선형인가요? 1000 → 2000에서 2.4 → 6.5ms라면?</summary>
+	첫 쌍은 배율 2.4로 기준 2 × 1.25 = 2.5 이하라 통과입니다. 두 번째 쌍은 6.5 / 2.4 ≈ 2.7 &gt; 2.5이고 큰 쪽이 0.3ms 이상이므로 비선형으로 표시됩니다. 첫 쌍도 경계에 가까우므로 규모를 더 늘려(예: 4000) 추세를 확인하는 것이 좋습니다.
+</details>
+</article>
+
+<!-- ======================================================= 33강 ======================================================= -->
+<article class="lecture" id="lec-33">
+<header>
+	<div class="no">33강</div>
+	<h2 id="lec-33-title">병렬화</h2>
+	<div class="meta">관련 기록: Stress 최적화 (2026-10-04, git log <code>958faea</code>·<code>e0f4398</code>·<code>4b78587</code>·<code>931fa98</code>·<code>1a694c6</code>) · 살펴볼 곳: <code>Core/Jobs/ParallelFor.h/.cpp</code>, <code>Core/Jobs/JobQueue.h</code>, <code>Scene/AnimationSystem.cpp</code>, <code>Scene/AnimUpdateRate.h</code>, <code>Scene/Scene.cpp</code>(<code>UpdateTransforms</code>)</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>"작업 큐"와 "데이터 병렬 루프"가 어떻게 다르고, 각각 어디에 쓰는지 구분할 수 있습니다.</li>
+		<li><code>FParallel::ParallelFor</code>가 일을 묶음으로 나눠 작업자와 호출 스레드가 함께 처리하는 방식을 이해합니다.</li>
+		<li>데이터 경합을 잠금 없이 피하는 규칙("자기 칸만 쓴다")과, 병렬 결과를 순차 결과와 비트 동일하게 만드는 방법을 압니다.</li>
+		<li>애니메이션의 준비/평가/마무리 3단계, 트랜스폼의 루트별 병렬, 화면 크기로 갱신 빈도를 낮추는 URO를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-33-why"><span class="step">왜 필요한가</span>코어는 많은데 한 코어만 일한다</h3>
+<p>요즘 CPU는 논리 코어가 8~16개 이상이지만, 게임 루프를 순서대로 짜면 그중 하나만 바쁩니다. 32강 끝에서 본 것처럼 스킨 유닛이 많은 Stress 씬은 GPU가 놀고 CPU가 한계였습니다. 2026-10-04 Stress 최적화를 시작할 때 스킨 유닛 500개 씬의 게임 틱 CPU는 14.2ms, 프레임은 26.9ms였습니다.</p>
+<p>캐릭터 500명의 애니메이션 포즈 계산은 서로 독립적입니다. A의 팔 각도를 계산하는 데 B의 정보는 필요 없습니다. 이런 "같은 일을 독립적인 데이터 여러 개에 하는" 작업은 코어 수만큼 나눠 동시에 할 수 있습니다. 이 강의는 ProjectE가 이 기회를 어떻게 잡았는지, 그리고 그러면서도 <b>결과가 순차 실행과 똑같도록</b> 어떻게 지켰는지 봅니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>작업 (2026-10-04, git log)</th><th>측정</th></tr>
+	<tr><td>애니메이션 병렬 평가 + URO + 트랜스폼 병렬 (<code>e0f4398</code>)</td><td>Stress 게임 틱 CPU 14.2 → 2.7ms, 프레임 26.9 → 16.5ms</td></tr>
+	<tr><td>스킨 팔레트 스킨 단위 공유 + 그룹별 병렬 (<code>4b78587</code>)</td><td>팔레트 3609 → 500, 수집 9.2 → 2.3ms</td></tr>
+	<tr><td>트랜스폼 갱신 캐시 + 루트 찾기 병렬 (<code>931fa98</code>)</td><td>게임 틱 트랜스폼 약 1.5 → 0.8ms</td></tr>
+	<tr><td>렌더러 수집 병렬 (<code>1a694c6</code>)</td><td>1000유닛 수집 4.87 → 2.53ms</td></tr>
+</table></div>
+
+<h3 id="lec-33-jobs"><span class="step">핵심 개념</span>두 종류의 병렬 — 작업 큐와 데이터 병렬 루프</h3>
+<p>ProjectE에는 스레드 풀이 두 개 있습니다. 쓰임새가 완전히 다르기 때문입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th></th><th><code>FJobQueue</code> (30강)</th><th><code>FParallel::ParallelFor</code></th></tr>
+	<tr><td>일의 모양</td><td>서로 다른 작업 하나하나 (텍스처 하나 디코드)</td><td>같은 일을 N개 데이터에 (캐릭터 500명 포즈)</td></tr>
+	<tr><td>기다림</td><td>기다리지 않음 — 끝나면 메인 스레드 완료 콜백</td><td>모두 끝나야 돌아온다 (프레임 안에서 끝남)</td></tr>
+	<tr><td>호출 스레드</td><td>제출만 하고 다른 일</td><td><b>자신도 일을 나눠 처리</b></td></tr>
+	<tr><td>작업자 수</td><td>논리 코어 − 2, 1~4</td><td>논리 코어 − 1, 최대 15</td></tr>
+	<tr><td>예</td><td>파일 읽기, 디코드, BC 압축, PSO 워밍</td><td>애니메이션 평가, 스킨 팔레트, 트랜스폼, 인스턴스 수집</td></tr>
+</table></div>
+<p>작업 큐는 "언젠가 끝나면 알려 줘"이고, ParallelFor는 "지금 이 루프를 다 같이 빨리 끝내자"입니다. 파일 IO 작업이 프레임 안 루프의 작업자를 붙잡고 있으면 프레임이 늦어지므로 풀을 분리했습니다.</p>
+
+<h4>ParallelFor의 동작</h4>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="ParallelFor 묶음 분배">
+		<title>ParallelFor 묶음 분배</title>
+		<text x="20" y="28" class="t-bold">[0, Count)를 묶음으로 나눈다 — 스레드당 묶음 약 4개 (부하 불균형 흡수), 최소 MinBatch</text>
+		<g class="t-small">
+			<rect x="20" y="44" width="64" height="30" class="k1"/><text x="52" y="64" text-anchor="middle">0</text>
+			<rect x="86" y="44" width="64" height="30" class="k2"/><text x="118" y="64" text-anchor="middle">1</text>
+			<rect x="152" y="44" width="64" height="30" class="k3"/><text x="184" y="64" text-anchor="middle">2</text>
+			<rect x="218" y="44" width="64" height="30" class="k1"/><text x="250" y="64" text-anchor="middle">3</text>
+			<rect x="284" y="44" width="64" height="30" class="k4"/><text x="316" y="64" text-anchor="middle">4</text>
+			<rect x="350" y="44" width="64" height="30" class="k2"/><text x="382" y="64" text-anchor="middle">5</text>
+			<rect x="416" y="44" width="64" height="30" class="k3"/><text x="448" y="64" text-anchor="middle">6</text>
+			<rect x="482" y="44" width="64" height="30" class="k1"/><text x="514" y="64" text-anchor="middle">7</text>
+			<rect x="548" y="44" width="64" height="30" class="k4"/><text x="580" y="64" text-anchor="middle">8</text>
+			<rect x="614" y="44" width="64" height="30" class="k2"/><text x="646" y="64" text-anchor="middle">9</text>
+			<rect x="680" y="44" width="64" height="30" class="k3"/><text x="712" y="64" text-anchor="middle">10</text>
+			<rect x="746" y="44" width="64" height="30" class="k4"/><text x="778" y="64" text-anchor="middle">11</text>
+		</g>
+		<rect x="20" y="96" width="220" height="56" rx="10" class="acc"/>
+		<text x="130" y="118" text-anchor="middle" class="t-bold">NextBatch (atomic)</text>
+		<text x="130" y="138" text-anchor="middle" class="t-small">fetch_add(1) → 내 묶음 번호</text>
+		<g class="t-small">
+			<text x="300" y="120" class="t-bold">호출 스레드</text>
+			<rect x="400" y="104" width="64" height="24" class="k1"/><text x="432" y="121" text-anchor="middle">0</text>
+			<rect x="466" y="104" width="64" height="24" class="k1"/><text x="498" y="121" text-anchor="middle">3</text>
+			<rect x="532" y="104" width="64" height="24" class="k1"/><text x="564" y="121" text-anchor="middle">7</text>
+			<text x="300" y="152" class="t-bold">작업자 1</text>
+			<rect x="400" y="136" width="96" height="24" class="k2"/><text x="448" y="153" text-anchor="middle">1 (오래 걸림)</text>
+			<rect x="498" y="136" width="64" height="24" class="k2"/><text x="530" y="153" text-anchor="middle">5</text>
+			<rect x="564" y="136" width="64" height="24" class="k2"/><text x="596" y="153" text-anchor="middle">9</text>
+			<text x="300" y="184" class="t-bold">작업자 2</text>
+			<rect x="400" y="168" width="64" height="24" class="k3"/><text x="432" y="185" text-anchor="middle">2</text>
+			<rect x="466" y="168" width="64" height="24" class="k3"/><text x="498" y="185" text-anchor="middle">6</text>
+			<rect x="532" y="168" width="64" height="24" class="k3"/><text x="564" y="185" text-anchor="middle">10</text>
+			<text x="300" y="216" class="t-bold">작업자 3</text>
+			<rect x="400" y="200" width="64" height="24" class="k4"/><text x="432" y="217" text-anchor="middle">4</text>
+			<rect x="466" y="200" width="64" height="24" class="k4"/><text x="498" y="217" text-anchor="middle">8</text>
+			<rect x="532" y="200" width="64" height="24" class="k4"/><text x="564" y="217" text-anchor="middle">11</text>
+		</g>
+		<line x1="640" y1="98" x2="640" y2="232" class="ln-d"/>
+		<text x="650" y="150" class="t-small">DoneBatches == 전체</text>
+		<text x="650" y="168" class="t-small">→ 호출자에게 돌아감</text>
+		<path d="M240,124 H296" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="256" class="t-muted">묶음을 미리 배정하지 않고 끝난 스레드가 다음 번호를 가져가므로, 오래 걸리는 묶음(1)이 있어도 다른 스레드가 나머지를 채운다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 33-1.</b> 묶음 번호를 원자적 카운터에서 하나씩 가져가는 "동적 분배". 호출 스레드도 그냥 기다리지 않고 같은 방식으로 묶음을 처리합니다. 어느 스레드가 어느 묶음을 처리할지는 실행마다 달라도, 묶음끼리 겹치지 않으므로 결과는 같습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/Jobs/ParallelFor.cpp (발췌)"><span class="kw">void</span> Drain()   <span class="com">// 작업자와 호출 스레드가 똑같이 부른다</span>
+{
+	<span class="kw">for</span> (;;)
+	{
+		<span class="kw">const</span> uint32 BatchIndex = NextBatch.fetch_add(<span class="num">1</span>, std::memory_order_relaxed);
+		<span class="kw">if</span> (BatchIndex &gt;= TotalBatches)
+		{
+			<span class="kw">return</span>;
+		}
+		<span class="kw">const</span> uint32 Begin = BatchIndex * Batch;
+		<span class="kw">const</span> uint32 End   = std::min(Begin + Batch, Count);
+		(*Body)(Begin, End);
+		DoneBatches.fetch_add(<span class="num">1</span>, std::memory_order_acq_rel);
+	}
+}
+...
+<span class="kw">void</span> ParallelFor(uint32 Count, uint32 MinBatch, <span class="kw">const</span> FBody&amp; Body)
+{
+	...
+	<span class="kw">const bool</span> bSequential = bInsideParallelFor || !CVarParallelFor.Get() || Count &lt; <span class="num">2</span> * MinBatch;
+	...
+	<span class="com">// 스레드당 묶음 4개 정도 (부하 불균형 흡수), 최소 MinBatch</span>
+	Task.Batch = std::max(MinBatch, (Count + (Workers + <span class="num">1</span>) * <span class="num">4</span> - <span class="num">1</span>) / ((Workers + <span class="num">1</span>) * <span class="num">4</span>));</pre>
+<p>세 가지 결정이 보입니다.</p>
+<ul>
+	<li><b>묶음 크기</b>: 항목 하나씩 나눠 주면 원자적 연산과 함수 호출 비용이 일보다 커집니다. 반대로 스레드 수만큼만 크게 나누면 한 묶음이 늦을 때 나머지가 놉니다. 그래서 "스레드당 약 4개"로 나누고, 호출하는 쪽이 <code>MinBatch</code>로 하한을 줍니다(애니메이션 4, 트랜스폼 루트 16).</li>
+	<li><b>작으면 순차</b>: 항목이 <code>2 × MinBatch</code>보다 적으면 스레드를 깨우는 비용이 더 크므로 그냥 순차로 돕니다.</li>
+	<li><b>중첩은 순차</b>: 본문 안에서 또 ParallelFor를 부르면(<code>thread_local bInsideParallelFor</code>) 그 자리에서 순차로 돕니다. 같은 풀에 일을 다시 넣다가 서로를 기다리는 교착을 피하는 가장 단순한 방법입니다.</li>
+</ul>
+<p>콘솔 변수 <code>core.ParallelFor 0</code>이면 항상 순차입니다. 병렬이 의심될 때 같은 실행에서 끄고 비교할 수 있게 한 것입니다(32강).</p>
+
+<h3 id="lec-33-race"><span class="step">핵심 개념</span>데이터 경합을 잠금 없이 피하기</h3>
+<p><b>데이터 경합(data race)</b>은 두 스레드가 같은 메모리에 동시에 접근하고 그중 적어도 하나가 쓰기일 때 생깁니다. C++에서는 정의되지 않은 동작이라 결과가 틀리거나, 가끔만 틀리거나, 크래시가 납니다. 흔한 해결책은 뮤텍스(잠금)지만, 매 프레임 수천 번 잠그면 병렬로 얻은 시간을 잠금 대기로 다 잃습니다.</p>
+<p>ProjectE의 해결책은 잠금이 아니라 <b>규칙</b>입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Jobs/ParallelFor.h (발췌)"><span class="com">//   - Body(Begin, End)는 서로 겹치지 않는 구간을 받는다. 구간끼리 같은 데이터를 쓰지 않아야 하며(결과는 실행 순서와 무관 = 결정적),</span>
+<span class="com">//     ECS 구조 변경(엔티티/컴포넌트 추가·제거)·GPU·리소스 관리자·로그 외 전역 상태 변경은 하지 않는다</span></pre>
+<ol>
+	<li><b>자기 칸만 쓴다</b>: 결과 배열을 병렬 전에 항목 수만큼 미리 만들어 두고(<code>resize</code>), 항목 i를 처리하는 본문은 칸 i에만 씁니다. 병렬 중에 <code>push_back</code>하지 않습니다(배열이 재할당되면 다른 스레드가 쓰던 메모리가 사라집니다).</li>
+	<li><b>남의 것은 읽기만</b>: 다른 엔티티의 데이터는 읽을 수 있지만, 그 값이 이번 병렬 구간 안에서 바뀌지 않는 것이어야 합니다.</li>
+	<li><b>구조 변경·로그·콜백은 밖에서</b>: 엔티티 추가/삭제는 ECS 저장소를 재배치할 수 있고, 로그는 전역 상태이고, 콜백은 무엇을 할지 모릅니다. 이런 일은 병렬 앞(준비)이나 뒤(마무리)의 순차 단계로 옮깁니다.</li>
+	<li><b>순서가 필요한 합치기는 순서대로</b>: 병렬로 모은 조각 목록을 합칠 때는 조각 번호 순서로 이어 붙입니다. 그러면 결과가 순차 실행과 같은 순서가 됩니다.</li>
+</ol>
+<p>4번이 중요합니다. 실행마다 결과 순서가 달라지면 그리는 순서가 달라지고, 반투명이나 같은 깊이의 물체는 화면이 미세하게 달라집니다. 이 프로젝트는 "병렬로 바꿔도 화면 MD5가 같다"를 검증 기준으로 씁니다. 렌더러 수집 병렬화 규칙(CLAUDE.md)도 "순서는 뷰 순서 그대로, 병렬 본문은 자기 칸만 쓰고 엔티티 칸 크기는 병렬 전에 맞춘다"입니다.</p>
+
+<h3 id="lec-33-anim"><span class="step">ProjectE에서는</span>애니메이션: 준비 → 평가 → 마무리</h3>
+<p>애니메이션 갱신은 병렬화하기 좋아 보이지만 그대로는 안 됩니다. 한 캐릭터의 갱신 안에 이런 일들이 섞여 있기 때문입니다: 그래프·리타기팅 세트 해석(라이브러리 캐시 접근, 경고 로그), 래그돌 확인, 클립 변경 해석, IK 뼈 찾기, 포즈 계산, 노티파이 수집, 루트 모션 적용(캐릭터 이동 컴포넌트를 호출하는 콜백). 이 중 병렬로 해도 안전한 것은 <b>포즈 계산</b>뿐입니다. 그래서 갱신을 세 단계로 쪼갰습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="애니메이션 갱신 3단계">
+		<title>애니메이션 갱신 3단계</title>
+		<g class="t-small">
+			<rect x="20" y="40" width="220" height="150" rx="10" class="k4"/>
+			<text x="130" y="64" text-anchor="middle" class="t-bold">① 준비 (메인, 엔티티 순서)</text>
+			<text x="34" y="90">세트·그래프 해석 (로그 가능)</text>
+			<text x="34" y="110">래그돌 확인</text>
+			<text x="34" y="130">URO: 이번에 평가할지 판정</text>
+			<text x="34" y="150">클립 변경·IK 뼈 해석</text>
+			<text x="34" y="176" class="t-muted">→ 평가할 항목 목록</text>
+
+			<rect x="300" y="40" width="270" height="150" rx="10" class="k2"/>
+			<text x="435" y="64" text-anchor="middle" class="t-bold">② 평가 (FParallel, 엔티티별 독립)</text>
+			<rect x="316" y="78" width="238" height="20" rx="4" class="box"/><text x="326" y="93">스레드 A: 캐릭터 0~3 포즈</text>
+			<rect x="316" y="102" width="238" height="20" rx="4" class="box"/><text x="326" y="117">스레드 B: 캐릭터 4~7 포즈</text>
+			<rect x="316" y="126" width="238" height="20" rx="4" class="box"/><text x="326" y="141">스레드 C: 캐릭터 8~11 포즈</text>
+			<text x="314" y="166">쓰기 = 자기 로컬 트랜스폼·런타임만</text>
+			<text x="314" y="182">노티파이 → 자기 Pending 목록</text>
+
+			<rect x="630" y="40" width="210" height="150" rx="10" class="k4"/>
+			<text x="735" y="64" text-anchor="middle" class="t-bold">③ 마무리 (메인, 엔티티 순서)</text>
+			<text x="644" y="90">루트 모션 수신자 콜백</text>
+			<text x="644" y="110">→ 캐릭터 이동에 싣기</text>
+			<text x="644" y="130">(없으면 엔티티 로컬 이동)</text>
+			<text x="644" y="176" class="t-muted">콜백 순서 = 순차와 같음</text>
+		</g>
+		<path d="M240,115 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,115 H626" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="222" text-anchor="middle" class="t-small">평가 중 금지: 로그 · ECS 구조 변경 · 콜백 · 다른 엔티티 쓰기 (필요하면 ①이나 ③으로)</text>
+		<text x="430" y="242" text-anchor="middle" class="t-muted">평가는 노드 로컬 트랜스폼만 바꾸고, 월드 행렬은 다음 UpdateTransforms까지 그대로 → 다른 엔티티의 월드 행렬을 읽어도 안전</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 33-2.</b> 순차여야 하는 일(①③)과 병렬이 가능한 일(②)을 분리했습니다. ②의 비용이 압도적으로 크므로 ①③이 순차여도 전체가 크게 빨라집니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/AnimationSystem.cpp — FAnimationSystem::Update (발췌)"><span class="com">// 준비(메인, 엔티티 순서) → 포즈 평가(FParallel, 엔티티별 독립) → 마무리(메인, 엔티티 순서).</span>
+<span class="com">// 노티파이·몽타주 끝 이벤트는 런타임별 Pending 목록에 쌓이므로 평가 순서와 무관하고, 루트 모션 콜백은 마무리에서 엔티티 순서대로 부른다</span>
+<span class="com">// (평가 중에는 노드 로컬 트랜스폼만 바뀌고 월드 행렬은 다음 UpdateTransforms까지 그대로 — 순차 실행과 결과가 같다)</span>
+<span class="kw">void</span> FAnimationSystem::Update(FScene&amp; Scene, <span class="kw">float</span> DeltaSeconds)
+{
+	...
+	{
+		E_PROFILE_SCOPE(<span class="str">"애니메이션 준비"</span>);
+		Scene.GetRegistry().View&lt;FAnimationComponent&gt;().Each([&amp;](FEntity Entity, FAnimationComponent&amp; Animation) {
+			FAnimUpdateItem Item;
+			<span class="kw">if</span> (PrepareAnimation(Scene, Entity, Animation, DeltaSeconds, View, Item))
+			{
+				Items.push_back(Item);
+			}
+		});
+	}
+	{
+		E_PROFILE_SCOPE(<span class="str">"애니메이션 평가"</span>);
+		<span class="kw">const auto</span> Evaluate = [&amp;](uint32 Begin, uint32 End) {
+			<span class="kw">for</span> (uint32 Index = Begin; Index &lt; End; ++Index)
+			{
+				EvaluateAnimation(Scene, Items[Index]);
+			}
+		};
+		FParallel::ParallelFor(<span class="kw">static_cast</span>&lt;uint32&gt;(Items.size()), <span class="num">4</span>, Evaluate);  <span class="com">// a.ParallelEvaluate 0이면 순차</span>
+	}
+	<span class="kw">for</span> (<span class="kw">const</span> FAnimUpdateItem&amp; Item : Items)
+	{
+		FinishAnimation(Scene, Item);
+	}
+}</pre>
+<p>"노티파이를 런타임별 Pending 목록에 쌓는다"는 부분이 앞의 규칙 1(자기 칸만 쓴다)의 실제 모습입니다. 공용 이벤트 큐 하나에 여러 스레드가 넣으면 잠금이 필요하고 순서도 실행마다 달라집니다. 캐릭터마다 자기 목록에 넣고, 나중에 엔티티 순서대로 읽으면 잠금도 필요 없고 순서도 결정적입니다.</p>
+
+<h3 id="lec-33-uro"><span class="step">ProjectE에서는</span>URO — 멀리 있으면 덜 자주</h3>
+<p>병렬화는 같은 일을 빨리 하는 것이고, <b>URO(Update Rate Optimization, 갱신 빈도 LOD)</b>는 일 자체를 줄이는 것입니다. 화면에서 손톱만 하게 보이는 캐릭터의 포즈를 매 프레임 계산할 필요는 없습니다. 29강의 메시 LOD가 삼각형 수를 줄였다면, URO는 <b>시간 해상도</b>를 줄입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimUpdateRate.h (발췌)"><span class="com">//   - 화면 크기 = 반경 / (거리 × tan(세로 FOV / 2)) — 화면 세로 절반 대비 경계 구 반경</span>
+<span class="com">//   - 간격: 화면 크기 &gt;= FullRateScreenSize → 매 프레임, &gt;= HalfRateScreenSize → 2프레임마다, 그 밖 → MaxInterval프레임마다</span>
+<span class="com">//   - 평가 프레임 = (런타임 틱 + 엔티티 번호) % 간격 == 0 (결정적 엇갈림). 처음 갱신은 항상 평가</span>
+<span class="kw">inline bool</span> ShouldEvaluate(uint32 Tick, uint32 Phase, uint32 Interval, <span class="kw">bool</span> bFirst)
+{
+	<span class="kw">return</span> bFirst || Interval &lt;= <span class="num">1</span> || (Tick + Phase) % Interval == <span class="num">0</span>;
+}</pre>
+<p>기본값은 화면 크기 0.2 이상이면 매 프레임, 0.08 이상이면 2프레임마다, 그보다 작으면 4프레임마다입니다(<code>a.URO.FullRateScreenSize/HalfRateScreenSize/MaxInterval</code>, 반경은 <code>a.URO.Radius</code> 100cm × 루트 스케일).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="URO 엇갈림과 시간 누적">
+		<title>URO 엇갈림과 시간 누적</title>
+		<g class="t-small">
+			<text x="250" y="30" text-anchor="middle" class="t-muted">틱 0</text><text x="320" y="30" text-anchor="middle" class="t-muted">1</text>
+			<text x="390" y="30" text-anchor="middle" class="t-muted">2</text><text x="460" y="30" text-anchor="middle" class="t-muted">3</text>
+			<text x="530" y="30" text-anchor="middle" class="t-muted">4</text><text x="600" y="30" text-anchor="middle" class="t-muted">5</text>
+			<text x="670" y="30" text-anchor="middle" class="t-muted">6</text><text x="740" y="30" text-anchor="middle" class="t-muted">7</text>
+
+			<text x="20" y="62">가까운 A (간격 1)</text>
+			<text x="20" y="102">중간 B (간격 2, 번호 5)</text>
+			<text x="20" y="142">먼 C (간격 4, 번호 8)</text>
+			<text x="20" y="182">먼 D (간격 4, 번호 9)</text>
+			<text x="20" y="222">먼 E (간격 4, 번호 10)</text>
+		</g>
+		<g>
+			<rect x="222" y="46" width="56" height="24" rx="4" class="k2"/><rect x="292" y="46" width="56" height="24" rx="4" class="k2"/>
+			<rect x="362" y="46" width="56" height="24" rx="4" class="k2"/><rect x="432" y="46" width="56" height="24" rx="4" class="k2"/>
+			<rect x="502" y="46" width="56" height="24" rx="4" class="k2"/><rect x="572" y="46" width="56" height="24" rx="4" class="k2"/>
+			<rect x="642" y="46" width="56" height="24" rx="4" class="k2"/><rect x="712" y="46" width="56" height="24" rx="4" class="k2"/>
+
+			<rect x="222" y="86" width="56" height="24" rx="4" class="k2"/><rect x="292" y="86" width="56" height="24" rx="4" class="k1"/>
+			<rect x="362" y="86" width="56" height="24" rx="4" class="box"/><rect x="432" y="86" width="56" height="24" rx="4" class="k1"/>
+			<rect x="502" y="86" width="56" height="24" rx="4" class="box"/><rect x="572" y="86" width="56" height="24" rx="4" class="k1"/>
+			<rect x="642" y="86" width="56" height="24" rx="4" class="box"/><rect x="712" y="86" width="56" height="24" rx="4" class="k1"/>
+
+			<rect x="222" y="126" width="56" height="24" rx="4" class="k2"/><rect x="292" y="126" width="56" height="24" rx="4" class="box"/>
+			<rect x="362" y="126" width="56" height="24" rx="4" class="box"/><rect x="432" y="126" width="56" height="24" rx="4" class="box"/>
+			<rect x="502" y="126" width="56" height="24" rx="4" class="k1"/><rect x="572" y="126" width="56" height="24" rx="4" class="box"/>
+			<rect x="642" y="126" width="56" height="24" rx="4" class="box"/><rect x="712" y="126" width="56" height="24" rx="4" class="box"/>
+
+			<rect x="222" y="166" width="56" height="24" rx="4" class="k2"/><rect x="292" y="166" width="56" height="24" rx="4" class="box"/>
+			<rect x="362" y="166" width="56" height="24" rx="4" class="box"/><rect x="432" y="166" width="56" height="24" rx="4" class="k1"/>
+			<rect x="502" y="166" width="56" height="24" rx="4" class="box"/><rect x="572" y="166" width="56" height="24" rx="4" class="box"/>
+			<rect x="642" y="166" width="56" height="24" rx="4" class="box"/><rect x="712" y="166" width="56" height="24" rx="4" class="k1"/>
+
+			<rect x="222" y="206" width="56" height="24" rx="4" class="k2"/><rect x="292" y="206" width="56" height="24" rx="4" class="box"/>
+			<rect x="362" y="206" width="56" height="24" rx="4" class="k1"/><rect x="432" y="206" width="56" height="24" rx="4" class="box"/>
+			<rect x="502" y="206" width="56" height="24" rx="4" class="box"/><rect x="572" y="206" width="56" height="24" rx="4" class="box"/>
+			<rect x="642" y="206" width="56" height="24" rx="4" class="k1"/><rect x="712" y="206" width="56" height="24" rx="4" class="box"/>
+		</g>
+		<g class="t-small">
+			<text x="530" y="143" text-anchor="middle">dt×4</text>
+			<text x="460" y="183" text-anchor="middle">dt×3</text>
+			<text x="740" y="183" text-anchor="middle">dt×4</text>
+			<text x="390" y="223" text-anchor="middle">dt×2</text>
+			<text x="670" y="223" text-anchor="middle">dt×4</text>
+		</g>
+		<rect x="222" y="248" width="14" height="14" class="k2"/><text x="242" y="260" class="t-small">처음 갱신 = 항상 평가</text>
+		<rect x="402" y="248" width="14" height="14" class="k1"/><text x="422" y="260" class="t-small">평가 (모은 시간 + 이번 dt)</text>
+		<rect x="612" y="248" width="14" height="14" class="box"/><text x="632" y="260" class="t-small">건너뜀 — 시간만 모음</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 33-3.</b> 엔티티 번호를 더해 평가 프레임을 엇갈리게 하므로, 간격 4인 캐릭터 수백 명이 한 프레임에 몰리지 않고 4프레임에 고르게 나뉩니다. 건너뛴 프레임의 시간은 다음 평가가 한꺼번에 진행합니다.</figcaption>
+</figure>
+
+<h4>건너뛴 시간은 버리지 않는다</h4>
+<p>URO에서 가장 쉽게 틀리는 부분은 이것입니다. 4프레임마다 평가하면서 매번 "이번 프레임 dt"만큼만 진행하면 먼 캐릭터의 애니메이션이 4배 느려집니다. ProjectE는 건너뛴 프레임에 <code>UpdateRatePending</code>에 시간을 모으고, 다음 평가가 <b>모은 시간 + 이번 dt</b>를 한 번에 진행합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/AnimationSystem.cpp — PrepareAnimation (발췌)"><span class="com">// 갱신 빈도 LOD: 건너뛰는 프레임은 시간만 모은다</span>
+<span class="kw">const</span> uint32 Interval = SelectUpdateInterval(Scene, Entity, Animation, View);
+<span class="kw">const</span> uint32 Tick     = Runtime.UpdateRateTick++;
+<span class="kw">if</span> (!AnimUpdateRateMath::ShouldEvaluate(Tick, Entity.Index, Interval, !Runtime.bUpdateRateEvaluated))
+{
+	Runtime.UpdateRatePending += DeltaSeconds;
+	<span class="kw">return false</span>;
+}
+Runtime.bUpdateRateEvaluated = <span class="kw">true</span>;
+OutItem.DeltaSeconds         = DeltaSeconds + Runtime.UpdateRatePending;
+Runtime.UpdateRatePending    = <span class="num">0.0f</span>;</pre>
+<p>노티파이(발소리, 타격 시점) 판정은 "이전 시각에서 현재 시각까지 구간에 노티파이가 있는가"를 보는 <b>구간 판정</b>이므로, 4프레임 분량을 한 번에 진행해도 그 사이의 노티파이를 잃지 않고 평가 프레임에 나옵니다. 몽타주 끝 이벤트도 마찬가지입니다.</p>
+<div class="callout warn">
+	<b class="t">URO에서 빼는 대상 (항상 매 프레임)</b>
+	카메라가 없을 때, 일시정지 중(에디터 스크럽은 즉시 반영해야 함), <b>루트 모션</b>을 추출하는 캐릭터(이동이 끊겨 보이므로), 래그돌. 특히 루트 모션은 애니메이션이 캐릭터의 실제 이동량을 정하므로, 4프레임마다 몰아서 움직이면 물리·네트워크 예측까지 영향을 받습니다.
+</div>
+
+<h3 id="lec-33-transform"><span class="step">ProjectE에서는</span>트랜스폼 갱신: 루트별 병렬</h3>
+<p>애니메이션이 뼈의 로컬 트랜스폼을 바꾸면 <code>FScene::UpdateTransforms</code>가 계층을 따라 월드 행렬을 계산합니다(자식 월드 = 로컬 × 부모 월드). 계층은 트리이므로 <b>서로 다른 루트의 하위 트리는 독립</b>입니다. 캐릭터 하나가 하나의 루트 하위 트리이니, 루트마다 다른 스레드에 맡기면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="트랜스폼 루트별 병렬 갱신">
+		<title>트랜스폼 루트별 병렬 갱신</title>
+		<g class="t-small">
+			<rect x="40" y="40" width="200" height="140" rx="10" class="k1"/>
+			<rect x="280" y="40" width="200" height="140" rx="10" class="k2"/>
+			<rect x="520" y="40" width="200" height="140" rx="10" class="k3"/>
+			<text x="140" y="60" text-anchor="middle" class="t-bold">스레드 A: 루트 0</text>
+			<text x="380" y="60" text-anchor="middle" class="t-bold">스레드 B: 루트 1</text>
+			<text x="620" y="60" text-anchor="middle" class="t-bold">스레드 C: 루트 2</text>
+		</g>
+		<g>
+			<circle cx="140" cy="84" r="9" class="acc"/><circle cx="100" cy="124" r="8" class="box"/><circle cx="180" cy="124" r="8" class="box"/>
+			<circle cx="80" cy="160" r="7" class="box"/><circle cx="120" cy="160" r="7" class="box"/><circle cx="180" cy="160" r="7" class="box"/>
+			<path d="M140,93 L102,116 M140,93 L178,116 M100,132 L82,153 M100,132 L118,153 M180,132 V153" class="ln"/>
+			<circle cx="380" cy="84" r="9" class="acc"/><circle cx="350" cy="124" r="8" class="box"/><circle cx="410" cy="124" r="8" class="box"/>
+			<circle cx="410" cy="160" r="7" class="k5"/>
+			<path d="M380,93 L352,116 M380,93 L408,116 M410,132 V153" class="ln"/>
+			<circle cx="620" cy="84" r="9" class="acc"/><circle cx="590" cy="124" r="8" class="box"/><circle cx="650" cy="124" r="8" class="box"/>
+			<circle cx="650" cy="160" r="7" class="box"/>
+			<path d="M620,93 L592,116 M620,93 L648,116 M650,132 V153" class="ln"/>
+		</g>
+		<text x="424" y="164" class="t-small">소켓 부착</text>
+		<rect x="40" y="196" width="680" height="34" rx="8" class="box"/>
+		<text x="380" y="218" text-anchor="middle" class="t-small">부착 지연 목록: 루트마다 따로 모은 뒤 <tspan class="t-bold">루트 순서대로</tspan> 합쳐 순차 처리 → 순차 실행과 같은 결과</text>
+		<text x="740" y="100" class="t-small">자식 월드</text>
+		<text x="740" y="118" class="t-small">= 로컬 × 부모 월드</text>
+		<text x="740" y="146" class="t-muted">하위 트리끼리</text>
+		<text x="740" y="162" class="t-muted">공유하는 쓰기 없음</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 33-4.</b> 루트 하위 트리를 단위로 나눕니다(묶음 최소 16루트). 소켓 부착처럼 다른 트리의 결과가 필요한 엔티티는 각 스레드가 따로 목록에 모아 두고, 병렬이 끝난 뒤 루트 순서대로 합쳐 처리합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Scene.cpp — UpdateTransforms (발췌)">FParallel::ParallelFor(RootCount, <span class="num">16</span>, [<span class="kw">this</span>](uint32 Begin, uint32 End) {
+	<span class="kw">for</span> (uint32 Index = Begin; Index &lt; End; ++Index)
+	{
+		RootDeferred[Index].clear();                     <span class="com">// 루트마다 자기 칸</span>
+		UpdateTransformRecursive(TransformRoots[Index], FMatrix4x4::Identity, <span class="kw">true</span>, RootDeferred[Index]);
+	}
+});
+<span class="kw">for</span> (uint32 Index = <span class="num">0</span>; Index &lt; RootCount; ++Index)   <span class="com">// 루트 순서대로 합치기</span>
+{
+	DeferredAttachments.insert(DeferredAttachments.end(), RootDeferred[Index].begin(), RootDeferred[Index].end());
+}</pre>
+<p>소켓 부착(무기를 손 뼈에 붙이기)은 계층 부모가 아니라 <b>다른 모델의 뼈</b>를 따라가므로, 그 뼈의 월드 행렬이 계산된 뒤에야 처리할 수 있습니다. 병렬 구간에서는 목록에만 모으고(<code>RootDeferred</code>는 루트마다 자기 칸), 병렬이 끝난 뒤 순서대로 처리합니다. 앞의 규칙 1과 4가 그대로 쓰였습니다.</p>
+
+<h3 id="lec-33-pitfalls"><span class="step">함정과 교훈</span>병렬화의 증명은 "순차와 같다"</h3>
+<div class="callout story">
+	<b class="t">결정성 테스트를 강하게 만든 이유</b>
+	병렬 코드의 버그는 "가끔" 나타납니다. 그래서 애니메이션 병렬화 직후 결정성 테스트를 따로 강화했습니다(<code>31ac60b</code>): 모델 300개, 간격 1/2/4 혼합, <b>프레임마다 다른 dt</b>, 크로스페이드를 넣고, 병렬 결과와 순차 결과의 포즈를 <b>비트 해시</b>로 반복 비교합니다. 고정 dt 하나로만 시험하면 "모은 시간 + 이번 dt" 계산의 실수가 드러나지 않습니다. 트랜스폼 캐시(<code>931fa98</code>)도 무작위 편집 60프레임 뒤 모든 월드 행렬을 전체 재계산과 비트 비교하는 테스트를 넣었고, 부모 월드 비교를 일부러 빼 보니 181건이 실패하는 것으로 테스트가 실제로 버그를 잡는다는 것까지 확인했습니다.
+</div>
+<ul>
+	<li><b>병렬화보다 먼저 일을 줄인다</b>: 스킨 팔레트는 프리미티브마다 계산하던 것을 "같은 스켈레톤을 쓰는 프리미티브들은 하나를 공유"하도록 바꾸자 3609개가 500개가 되었습니다. 병렬로 나누기 전에 중복을 없애는 쪽이 이득이 더 큽니다. URO도 같은 생각입니다.</li>
+	<li><b>남은 비용은 메모리 대역폭</b>: 렌더러 수집 병렬화 뒤에 남은 비용은 유닛당 팔레트 2.6KB×2 업로드, 인스턴스 7개×약 200B 같은 데이터 이동이었습니다(CLAUDE.md). 코어를 더 써도 메모리 버스는 하나이므로, 다음 단계는 병렬이 아니라 데이터 축소입니다.</li>
+	<li><b>"화면 밖이면 갱신 생략"은 이득 0이었다</b>: Phase 29에서 재 본 결과 Stress 씬에서 이득이 없어 넣지 않았습니다. URO는 화면 밖이 아니라 <b>화면 크기</b>로 판정해, 화면 안에 많이 보이는 작은 캐릭터들에서 이득을 냅니다.</li>
+	<li><b>스레드 하나로도 결과가 같아야 한다</b>: <code>core.ParallelFor 0</code>, <code>a.ParallelEvaluate 0</code>으로 언제든 순차와 비교할 수 있게 한 것은 디버깅을 위한 것이기도 하지만, "병렬이 결과를 바꾸지 않는다"를 상시 확인할 수 있게 하는 장치입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>작업 큐(<code>FJobQueue</code>)는 비동기 작업 + 메인 완료 콜백, <code>ParallelFor</code>는 프레임 안 데이터 병렬 루프(호출자도 참여, 끝나야 반환). 풀을 분리한다.</li>
+		<li>ParallelFor는 원자적 카운터로 묶음을 동적 분배, 스레드당 약 4묶음, 작으면 순차, 중첩은 순차.</li>
+		<li>경합은 잠금이 아니라 규칙으로: 자기 칸만 쓰기(크기는 병렬 전에), 남의 것은 읽기만, 구조 변경·로그·콜백은 밖에서, 합치기는 순서대로.</li>
+		<li>애니메이션 = 준비(메인) → 평가(병렬) → 마무리(메인). 노티파이는 런타임별 목록.</li>
+		<li>URO = 화면 크기로 간격 1/2/4, (틱 + 엔티티 번호) % 간격으로 엇갈림, 건너뛴 시간은 다음 평가가 진행. 루트 모션·래그돌·일시정지는 제외.</li>
+		<li>트랜스폼은 루트 하위 트리별 병렬, 소켓 부착은 지연 목록을 루트 순서로 합쳐 처리. 병렬의 증명은 순차와의 비트 비교.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. URO의 평가 프레임을 <code>Tick % Interval == 0</code>으로만 정하면(엔티티 번호를 더하지 않으면) 어떤 일이 생길까요?</summary>
+	간격이 4인 캐릭터 모두가 같은 프레임(틱 0, 4, 8 …)에 평가되고 나머지 세 프레임에는 아무도 평가되지 않습니다. 평균 비용은 같지만 4프레임마다 한 번씩 튀는 프레임이 생겨 끊김으로 느껴집니다. 엔티티 번호를 더하면 부하가 프레임마다 고르게 퍼집니다. 엔티티 번호를 쓰므로 같은 씬·같은 프레임 수면 결과가 항상 같습니다(결정적).
+</details>
+<details class="quiz"><summary>Q2. 평가 단계에서 "클립을 못 찾았다"는 경고 로그를 찍고 싶다면 어디로 옮겨야 하나요? 왜죠?</summary>
+	준비 단계(<code>PrepareAnimation</code>, 메인 스레드)로 옮깁니다. 실제로 클립 변경 해석(<code>ResolveClipChange</code>)은 로그를 낼 수 있어 준비 단계에서 합니다. 로그는 전역 상태(파일·콘솔·에디터 패널)를 건드리므로 여러 스레드가 동시에 부르면 경합이 생기고, 줄 순서도 실행마다 달라집니다.
+</details>
+<details class="quiz"><summary>Q3. 병렬 수집 결과를 <code>std::vector</code> 하나에 각 스레드가 <code>push_back</code>하게 하고 뮤텍스로 보호하면 정확성 외에 무엇이 문제일까요?</summary>
+	잠금 대기로 병렬 이득이 줄어드는 것도 문제지만, 더 큰 문제는 <b>순서</b>입니다. 어느 스레드가 먼저 넣느냐에 따라 결과 순서가 실행마다 달라지고, 그 순서로 그리기·정렬·ID 부여를 하면 화면과 동작이 비결정적이 됩니다. 칸을 미리 만들어 자기 칸에 쓰거나, 스레드별 조각을 만든 뒤 조각 번호 순서로 합쳐야 순차와 같은 결과가 됩니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part03B_AdvancedRendering.html"><small>이전 부</small>← 3부 · 렌더링 심화 (강의 21~28)</a>
+	<a href="Part05_Editor.html"><small>다음 부</small>5부 · 에디터 만들기 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

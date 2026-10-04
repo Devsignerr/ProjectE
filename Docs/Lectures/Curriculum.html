@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProjectE 엔진 강의 커리큘럼</title>
+<style>
+:root {
+	--bg: #f7f6f2;
+	--surface: #ffffff;
+	--surface2: #f0eee8;
+	--line: #d9d5cb;
+	--text: #22211e;
+	--muted: #6b675e;
+	--accent: #b4532a;
+	--accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6;
+	--c2: #2e8a5f; --c2s: #dcf0e5;
+	--c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7;
+	--c5: #c0434f; --c5s: #f7dfe1;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128;
+		--c3: #bd92e3; --c3s: #2d2338; --c4: #e3b866; --c4s: #352d1d;
+		--c5: #ec8590; --c5s: #3a2125;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128;
+	--c3: #bd92e3; --c3s: #2d2338; --c4: #e3b866; --c4s: #352d1d;
+	--c5: #ec8590; --c5s: #3a2125;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+code, .mono { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; }
+a { color: var(--accent); }
+
+.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
+nav.toc {
+	position: sticky; top: 0; height: 100vh; overflow-y: auto;
+	padding: 28px 18px 28px 24px; border-right: 1px solid var(--line); font-size: 14px;
+}
+nav.toc .brand { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+nav.toc .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li a {
+	display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; border-radius: 6px;
+	color: var(--text); text-decoration: none;
+}
+nav.toc li a:hover { background: var(--surface2); }
+nav.toc li a .pn { color: var(--muted); font-size: 12px; min-width: 26px; }
+nav.toc .progress { margin-top: 18px; font-size: 12.5px; color: var(--muted); }
+nav.toc .bar { height: 6px; background: var(--surface2); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+nav.toc .bar > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip {
+	font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px;
+	border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer;
+}
+button.chip:hover { border-color: var(--accent); }
+
+main { padding: 40px 48px 120px; min-width: 0; }
+header.hero h1 { font-size: 34px; line-height: 1.3; margin: 0 0 10px; letter-spacing: -.01em; }
+header.hero p.lead { font-size: 17px; color: var(--muted); margin: 0 0 22px; max-width: 760px; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; box-shadow: var(--shadow); }
+.stat b { display: block; font-size: 22px; line-height: 1.2; }
+.stat span { font-size: 12.5px; color: var(--muted); }
+
+.howto { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; box-shadow: var(--shadow); margin-bottom: 36px; }
+.howto h2 { margin: 0 0 8px; font-size: 18px; }
+.flow4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.flow4 div { background: var(--surface2); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.flow4 div b { display: block; font-size: 13px; color: var(--accent); }
+
+figure { margin: 18px 0 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 620px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+section.part { margin-top: 56px; scroll-margin-top: 16px; }
+.part-head { display: flex; gap: 14px; align-items: center; margin-bottom: 6px; }
+.part-num {
+	flex: none; width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center;
+	font-weight: 800; font-size: 18px; color: var(--pc); background: var(--pcs);
+}
+.part-head h2 { margin: 0; font-size: 24px; line-height: 1.3; }
+.part-head .q { color: var(--muted); font-size: 14.5px; }
+.part-intro { max-width: 820px; margin: 10px 0 0; }
+
+.lectures { display: grid; gap: 12px; margin-top: 18px; }
+.lec {
+	background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--pc);
+	border-radius: 10px; padding: 14px 18px; box-shadow: var(--shadow);
+}
+.lec.done { opacity: .62; }
+.lec-top { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.lec-no { font-weight: 800; color: var(--pc); font-size: 14px; min-width: 40px; }
+.lec-title { font-weight: 700; font-size: 17px; flex: 1 1 260px; color: var(--text); text-decoration: none; }
+a.lec-title:hover { color: var(--accent); text-decoration: underline; }
+.badge { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); white-space: nowrap; }
+.lec p { margin: 6px 0 8px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--pcs); color: var(--text); }
+.code-refs { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.code-refs code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; color: var(--text); }
+.lec label { font-size: 12.5px; color: var(--muted); display: inline-flex; gap: 5px; align-items: center; cursor: pointer; margin-left: auto; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: inherit; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .box { fill: var(--surface2); stroke: var(--line); stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+svg .ln-d { stroke: var(--muted); stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); stroke-width: 1.3; }
+svg .k2 { fill: var(--c2s); stroke: var(--c2); stroke-width: 1.3; }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); stroke-width: 1.3; }
+svg .k4 { fill: var(--c4s); stroke: var(--c4); stroke-width: 1.3; }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); stroke-width: 1.3; }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); }
+svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); }
+svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+footer { margin-top: 64px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 18px 16px; }
+	nav.toc ol { columns: 2; }
+	main { padding: 24px 16px 80px; }
+	header.hero h1 { font-size: 26px; }
+	.flow4 { grid-template-columns: 1fr 1fr; }
+}
+@media print {
+	nav.toc { display: none; }
+	.layout { display: block; }
+	.lec, figure { break-inside: avoid; box-shadow: none; }
+	.lec label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- 화살표 머리 (모든 그림이 공유) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+	<defs>
+		<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+			<path d="M0,0 L10,5 L0,10 z" class="arrowhead"/>
+		</marker>
+	</defs>
+</svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<div class="brand">ProjectE 엔진 강의</div>
+	<div class="sub">자체 3D 게임 엔진을 처음부터</div>
+	<ol id="toc-list"></ol>
+	<div class="progress">
+		<span id="progress-text">진도 0 / 0</span>
+		<div class="bar"><div id="progress-bar"></div></div>
+	</div>
+	<div class="tools">
+		<button class="chip" id="theme-btn" type="button">테마 전환</button>
+		<button class="chip" id="reset-btn" type="button">진도 초기화</button>
+	</div>
+</nav>
+
+<main>
+<header class="hero">
+	<h1>ProjectE로 배우는<br>게임 엔진 만들기</h1>
+	<p class="lead">창 하나 띄우는 데서 시작해 레이 트레이싱, 멀티플레이 예측, 에디터, Steam 출시까지. 이 엔진을 실제로 만든 순서와 결정을 따라가며, 각 기능의 개념을 처음부터 설명하는 강의 시리즈의 커리큘럼입니다.</p>
+	<div class="stats">
+		<div class="stat"><b>11부</b><span>주제 묶음</span></div>
+		<div class="stat"><b id="stat-lectures">66강</b><span>강의</span></div>
+		<div class="stat"><b>Phase 0~53</b><span>+ 사이드 트랙</span></div>
+		<div class="stat"><b>479 커밋</b><span>2026-09-29 ~ 10-04</span></div>
+	</div>
+</header>
+
+<section class="howto">
+	<h2>강의 하나는 이렇게 진행합니다</h2>
+	<div>모든 강의는 같은 네 단계로 흘러갑니다. 코드보다 "왜"를 먼저 잡고, 그다음 이 엔진이 실제로 내린 결정과 그 과정에서 부딪힌 문제를 봅니다.</div>
+	<div class="flow4">
+		<div><b>1. 왜 필요한가</b>이 기능이 없으면 무엇이 안 되는지</div>
+		<div><b>2. 핵심 개념</b>그림과 수식으로 원리 이해</div>
+		<div><b>3. ProjectE에서는</b>실제 구조, 파일, 설계 결정</div>
+		<div><b>4. 함정과 교훈</b>버그, 측정, 되돌린 결정</div>
+	</div>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 250" role="img" aria-label="11부 학습 로드맵">
+			<title>학습 로드맵</title>
+			<!-- 로드맵 경로 -->
+			<path d="M60,70 H840 Q870,70 870,100 V150 Q870,180 840,180 H60" class="ln-d"/>
+			<g font-size="12">
+				<circle cx="70" cy="70" r="22" class="acc"/><text x="70" y="75" text-anchor="middle" class="t-bold">0</text>
+				<text x="70" y="114" text-anchor="middle" class="t-small">오리엔테이션</text>
+				<circle cx="225" cy="70" r="22" class="k1"/><text x="225" y="75" text-anchor="middle" class="t-bold">1</text>
+				<text x="225" y="114" text-anchor="middle" class="t-small">그래픽스 기초</text>
+				<circle cx="380" cy="70" r="22" class="k2"/><text x="380" y="75" text-anchor="middle" class="t-bold">2</text>
+				<text x="380" y="114" text-anchor="middle" class="t-small">데이터와 구조</text>
+				<circle cx="535" cy="70" r="22" class="k1"/><text x="535" y="75" text-anchor="middle" class="t-bold">3</text>
+				<text x="535" y="114" text-anchor="middle" class="t-small">렌더링 심화</text>
+				<circle cx="690" cy="70" r="22" class="k4"/><text x="690" y="75" text-anchor="middle" class="t-bold">4</text>
+				<text x="690" y="114" text-anchor="middle" class="t-small">성능과 확장성</text>
+				<circle cx="840" cy="70" r="22" class="k3"/><text x="840" y="75" text-anchor="middle" class="t-bold">5</text>
+				<text x="840" y="114" text-anchor="middle" class="t-small">에디터</text>
+
+				<circle cx="840" cy="180" r="22" class="k2"/><text x="840" y="185" text-anchor="middle" class="t-bold">6</text>
+				<text x="840" y="224" text-anchor="middle" class="t-small">애니메이션</text>
+				<circle cx="680" cy="180" r="22" class="k2"/><text x="680" y="185" text-anchor="middle" class="t-bold">7</text>
+				<text x="680" y="224" text-anchor="middle" class="t-small">게임플레이</text>
+				<circle cx="520" cy="180" r="22" class="k5"/><text x="520" y="185" text-anchor="middle" class="t-bold">8</text>
+				<text x="520" y="224" text-anchor="middle" class="t-small">네트워크</text>
+				<circle cx="360" cy="180" r="22" class="k3"/><text x="360" y="185" text-anchor="middle" class="t-bold">9</text>
+				<text x="360" y="224" text-anchor="middle" class="t-small">UI · 다국어 · 오디오</text>
+				<circle cx="200" cy="180" r="22" class="acc"/><text x="200" y="185" text-anchor="middle" class="t-bold">10</text>
+				<text x="200" y="224" text-anchor="middle" class="t-small">출시</text>
+				<text x="70" y="185" text-anchor="middle" class="t-muted">완주</text>
+				<path d="M100,180 H120" class="ln" marker-end="url(#arr)" transform="rotate(180 110 180)"/>
+			</g>
+			<text x="450" y="22" text-anchor="middle" class="t-muted">앞쪽 부일수록 뒤쪽 부의 토대가 됩니다. 3부(렌더링)와 7부(게임플레이)는 관심사에 따라 순서를 바꿔도 됩니다.</text>
+		</svg>
+		</div>
+	</figure>
+</section>
+
+<!-- ============================== 0부 ============================== -->
+<section class="part" id="part-0" style="--pc: var(--accent); --pcs: var(--accent-soft);">
+	<div class="part-head"><div class="part-num">0</div><div><h2>오리엔테이션</h2><div class="q">엔진은 무엇으로 이루어지고, 어디서부터 만드는가</div></div></div>
+	<p class="part-intro">엔진, 에디터, 런타임, 게임이 어떻게 나뉘는지 큰 그림부터 봅니다. ProjectE는 "핵심은 직접, 주변은 라이브러리"라는 방침으로 시작했고, 이 결정이 이후 모든 강의의 배경이 됩니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 380" role="img" aria-label="ProjectE 전체 구조">
+			<title>ProjectE 전체 구조</title>
+			<!-- 프로젝트 -->
+			<rect x="20" y="16" width="860" height="62" rx="10" class="k4"/>
+			<text x="40" y="42" class="t-bold">게임 프로젝트 (.eproject)</text>
+			<text x="40" y="63" class="t-small">Content/ 씬·에셋·Lua   ·   Config/ 설정 JSON   ·   Source/ → 게임 모듈 DLL   ·   Saved/ 로그·세이브</text>
+			<!-- 실행 파일 -->
+			<g>
+				<rect x="20" y="104" width="200" height="56" rx="10" class="k3"/>
+				<text x="120" y="128" text-anchor="middle" class="t-bold">ProjectEEditor.exe</text>
+				<text x="120" y="147" text-anchor="middle" class="t-muted">에디터 (ImGui)</text>
+				<rect x="240" y="104" width="200" height="56" rx="10" class="k3"/>
+				<text x="340" y="128" text-anchor="middle" class="t-bold">ProjectERuntime.exe</text>
+				<text x="340" y="147" text-anchor="middle" class="t-muted">출시되는 게임</text>
+				<rect x="460" y="104" width="200" height="56" rx="10" class="k3"/>
+				<text x="560" y="128" text-anchor="middle" class="t-bold">ProjectEServer.exe</text>
+				<text x="560" y="147" text-anchor="middle" class="t-muted">전용 서버 (창/GPU 없음)</text>
+				<rect x="680" y="104" width="200" height="56" rx="10" class="k3"/>
+				<text x="780" y="128" text-anchor="middle" class="t-bold">ProjectECook.exe</text>
+				<text x="780" y="147" text-anchor="middle" class="t-muted">쿠킹·패키징 도구</text>
+			</g>
+			<path d="M450,78 V100" class="ln" marker-end="url(#arr)"/>
+			<path d="M120,160 V184" class="ln" marker-end="url(#arr)"/>
+			<path d="M340,160 V184" class="ln" marker-end="url(#arr)"/>
+			<path d="M560,160 V184" class="ln" marker-end="url(#arr)"/>
+			<path d="M780,160 V184" class="ln" marker-end="url(#arr)"/>
+			<!-- 엔진 DLL -->
+			<rect x="20" y="188" width="860" height="128" rx="12" class="acc"/>
+			<text x="40" y="212" class="t-bold">ProjectEEngine.dll — 런타임 모듈을 하나의 DLL로</text>
+			<g class="t-small">
+				<rect x="40" y="224" width="96" height="34" rx="6" class="box"/><text x="88" y="246" text-anchor="middle">Core</text>
+				<rect x="146" y="224" width="96" height="34" rx="6" class="box"/><text x="194" y="246" text-anchor="middle">RHI (D3D12)</text>
+				<rect x="252" y="224" width="96" height="34" rx="6" class="box"/><text x="300" y="246" text-anchor="middle">Scene (ECS)</text>
+				<rect x="358" y="224" width="96" height="34" rx="6" class="box"/><text x="406" y="246" text-anchor="middle">Renderer</text>
+				<rect x="464" y="224" width="96" height="34" rx="6" class="box"/><text x="512" y="246" text-anchor="middle">Physics</text>
+				<rect x="570" y="224" width="96" height="34" rx="6" class="box"/><text x="618" y="246" text-anchor="middle">Audio</text>
+				<rect x="676" y="224" width="96" height="34" rx="6" class="box"/><text x="724" y="246" text-anchor="middle">AI</text>
+				<rect x="782" y="224" width="78" height="34" rx="6" class="box"/><text x="821" y="246" text-anchor="middle">UI</text>
+				<rect x="40" y="268" width="150" height="34" rx="6" class="box"/><text x="115" y="290" text-anchor="middle">Scripting (Lua)</text>
+				<rect x="200" y="268" width="150" height="34" rx="6" class="box"/><text x="275" y="290" text-anchor="middle">Network</text>
+				<rect x="360" y="268" width="150" height="34" rx="6" class="box"/><text x="435" y="290" text-anchor="middle">World (갱신 순서)</text>
+				<rect x="520" y="268" width="150" height="34" rx="6" class="box"/><text x="595" y="290" text-anchor="middle">Online (Steam)</text>
+			</g>
+			<!-- 서드파티 -->
+			<rect x="20" y="332" width="860" height="38" rx="10" class="box"/>
+			<text x="40" y="356" class="t-small">서드파티 (FetchContent, 해시 고정): stb_image · cgltf · Dear ImGui · nlohmann/json · miniaudio · Lua/sol2 · Jolt · GameNetworkingSockets · Recast · Tracy</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 0-1.</b> 실행 파일 넷이 엔진 DLL 하나를 공유하고, 게임 프로젝트는 엔진과 분리된 폴더에 있습니다. 직접 만든 것(주황 상자 안)과 가져다 쓴 것(아래 줄)의 경계가 이 엔진의 기본 방침입니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="0"></div>
+</section>
+
+<!-- ============================== 1부 ============================== -->
+<section class="part" id="part-1" style="--pc: var(--c1); --pcs: var(--c1s);">
+	<div class="part-head"><div class="part-num">1</div><div><h2>화면에 무언가를 그리기 — 그래픽스 기초</h2><div class="q">CPU는 어떻게 GPU에게 일을 시키는가</div></div></div>
+	<p class="part-intro">DirectX 12는 "명령을 기록해서 큐에 넣고, 끝났는지는 펜스로 확인한다"는 사고방식을 요구합니다. 이 부에서는 첫 삼각형부터 텍스처 입힌 큐브까지 가면서 GPU 프로그래밍의 기본기와 3D 수학 규약을 다집니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 270" role="img" aria-label="CPU와 GPU의 프레임 겹침">
+			<title>CPU와 GPU의 프레임 겹침</title>
+			<text x="20" y="64" class="t-bold">CPU</text>
+			<text x="20" y="144" class="t-bold">GPU</text>
+			<line x1="70" y1="88" x2="880" y2="88" class="ln-d"/>
+			<line x1="70" y1="168" x2="880" y2="168" class="ln-d"/>
+			<!-- CPU 프레임 -->
+			<rect x="80" y="44" width="170" height="34" rx="6" class="k1"/><text x="165" y="66" text-anchor="middle" class="t-small">프레임 N 명령 기록</text>
+			<rect x="260" y="44" width="170" height="34" rx="6" class="k2"/><text x="345" y="66" text-anchor="middle" class="t-small">프레임 N+1 기록</text>
+			<rect x="440" y="44" width="170" height="34" rx="6" class="k3"/><text x="525" y="66" text-anchor="middle" class="t-small">프레임 N+2 기록</text>
+			<rect x="640" y="44" width="170" height="34" rx="6" class="k1"/><text x="725" y="66" text-anchor="middle" class="t-small">프레임 N+3 기록</text>
+			<!-- GPU 실행 -->
+			<rect x="255" y="124" width="190" height="34" rx="6" class="k1"/><text x="350" y="146" text-anchor="middle" class="t-small">프레임 N 실행</text>
+			<rect x="450" y="124" width="185" height="34" rx="6" class="k2"/><text x="542" y="146" text-anchor="middle" class="t-small">프레임 N+1 실행</text>
+			<rect x="640" y="124" width="190" height="34" rx="6" class="k3"/><text x="735" y="146" text-anchor="middle" class="t-small">프레임 N+2 실행</text>
+			<!-- 제출 -->
+			<path d="M250,78 L262,120" class="ln" marker-end="url(#arr)"/>
+			<path d="M430,78 L455,120" class="ln" marker-end="url(#arr)"/>
+			<path d="M610,78 L645,120" class="ln" marker-end="url(#arr)"/>
+			<!-- 펜스 대기 -->
+			<path d="M445,160 C 540,215 620,200 645,84" class="ln s5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+			<text x="470" y="226" class="t-small f5">펜스: "N이 끝났다" 신호 → CPU가 N의 업로드 메모리를 N+3에 재사용</text>
+			<text x="80" y="256" class="t-muted">CPU는 GPU보다 최대 몇 프레임 앞서 달린다 (frames in flight). 리소스를 바로 지우면 GPU가 아직 쓰는 중일 수 있다 → 지연 해제.</text>
+			<text x="80" y="24" class="t-muted">시간 →</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 1-1.</b> CPU와 GPU는 서로 다른 프레임을 동시에 처리합니다. 2강의 커맨드 큐·펜스와 6강의 지연 해제가 모두 이 그림에서 나옵니다.</figcaption>
+	</figure>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 260" role="img" aria-label="래스터화 파이프라인과 좌표계">
+			<title>래스터화 파이프라인과 좌표계</title>
+			<g class="t-small">
+				<rect x="20" y="30" width="96" height="44" rx="8" class="box"/><text x="68" y="57" text-anchor="middle">정점 버퍼</text>
+				<rect x="136" y="30" width="96" height="44" rx="8" class="k1"/><text x="184" y="51" text-anchor="middle">정점 셰이더</text><text x="184" y="66" text-anchor="middle" class="t-muted">v * MVP</text>
+				<rect x="252" y="30" width="96" height="44" rx="8" class="box"/><text x="300" y="57" text-anchor="middle">래스터화</text>
+				<rect x="368" y="30" width="96" height="44" rx="8" class="k1"/><text x="416" y="51" text-anchor="middle">픽셀 셰이더</text><text x="416" y="66" text-anchor="middle" class="t-muted">조명·텍스처</text>
+				<rect x="484" y="30" width="96" height="44" rx="8" class="box"/><text x="532" y="51" text-anchor="middle">출력 병합</text><text x="532" y="66" text-anchor="middle" class="t-muted">깊이·블렌드</text>
+				<rect x="600" y="30" width="96" height="44" rx="8" class="acc"/><text x="648" y="57" text-anchor="middle">렌더 타깃</text>
+			</g>
+			<path d="M116,52 H132" class="ln" marker-end="url(#arr)"/>
+			<path d="M232,52 H248" class="ln" marker-end="url(#arr)"/>
+			<path d="M348,52 H364" class="ln" marker-end="url(#arr)"/>
+			<path d="M464,52 H480" class="ln" marker-end="url(#arr)"/>
+			<path d="M580,52 H596" class="ln" marker-end="url(#arr)"/>
+			<text x="20" y="104" class="t-muted">파란 단계는 프로그래밍 가능(HLSL), 회색은 고정 기능 — 설정만 PSO에 넣는다.</text>
+			<!-- 좌표계 -->
+			<g transform="translate(780,140)">
+				<line x1="0" y1="0" x2="0" y2="-80" class="ln s2" stroke-width="2.4" marker-end="url(#arr)"/>
+				<line x1="0" y1="0" x2="-62" y2="38" class="ln s5" stroke-width="2.4" marker-end="url(#arr)"/>
+				<line x1="0" y1="0" x2="78" y2="30" class="ln s1" stroke-width="2.4" marker-end="url(#arr)"/>
+				<text x="8" y="-74" class="t-bold f2">+Z 위</text>
+				<text x="-110" y="58" class="t-bold f5">+X 앞</text>
+				<text x="48" y="54" class="t-bold f1">+Y 오른쪽</text>
+				<text x="0" y="96" text-anchor="middle" class="t-small t-bold">왼손 Z-up (언리얼 방식)</text>
+			</g>
+			<g transform="translate(20,130)">
+				<text x="0" y="0" class="t-bold">ProjectE 수학 규약 (4강)</text>
+				<text x="0" y="24" class="t-small">· 1 단위 = 1cm, 질량 kg, 시간 초</text>
+				<text x="0" y="44" class="t-small">· 행렬 행우선 + 행벡터: v * M,  World = S * R * T,  MVP = World * View * Proj</text>
+				<text x="0" y="64" class="t-small">· 쿼터니언 A * B는 B 먼저 적용,  Cross(Forward, Right) = Up</text>
+				<text x="0" y="84" class="t-small">· 깊이 [0, 1], 앞면 = 시계 방향(CW), HLSL은 -Zpr로 전치 없이 업로드</text>
+			</g>
+		</svg>
+		</div>
+		<figcaption><b>그림 1-2.</b> 3강의 래스터화 파이프라인(위)과 4강의 좌표계 규약(아래). 좌표계 규약은 glTF 임포트, 물리, 네트워크까지 모든 곳에 영향을 줍니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="1"></div>
+</section>
+
+<!-- ============================== 2부 ============================== -->
+<section class="part" id="part-2" style="--pc: var(--c2); --pcs: var(--c2s);">
+	<div class="part-head"><div class="part-num">2</div><div><h2>엔진의 뼈대 — 데이터와 구조</h2><div class="q">게임 세계를 메모리에 어떻게 담고, 파일로 어떻게 남기는가</div></div></div>
+	<p class="part-intro">ECS, 씬 계층, 리플렉션, 직렬화는 눈에 보이지 않지만 에디터·스크립트·네트워크가 모두 여기에 기대어 있습니다. 특히 리플렉션 하나로 인스펙터, 저장, Lua 바인딩, 복제까지 자동으로 따라오게 만든 구조가 이 엔진의 핵심 설계입니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 300" role="img" aria-label="희소 집합 ECS 구조">
+			<title>희소 집합 (Sparse Set)</title>
+			<text x="20" y="28" class="t-bold">Sparse — 엔티티 번호로 바로 찾기</text>
+			<g class="t-small">
+				<!-- sparse 배열 0..9 -->
+				<g transform="translate(20,40)">
+					<rect x="0" y="0" width="56" height="34" class="box"/><text x="28" y="22" text-anchor="middle">–</text>
+					<rect x="56" y="0" width="56" height="34" class="k2"/><text x="84" y="22" text-anchor="middle">2</text>
+					<rect x="112" y="0" width="56" height="34" class="box"/><text x="140" y="22" text-anchor="middle">–</text>
+					<rect x="168" y="0" width="56" height="34" class="k2"/><text x="196" y="22" text-anchor="middle">0</text>
+					<rect x="224" y="0" width="56" height="34" class="box"/><text x="252" y="22" text-anchor="middle">–</text>
+					<rect x="280" y="0" width="56" height="34" class="box"/><text x="308" y="22" text-anchor="middle">–</text>
+					<rect x="336" y="0" width="56" height="34" class="k2"/><text x="364" y="22" text-anchor="middle">1</text>
+					<rect x="392" y="0" width="56" height="34" class="box"/><text x="420" y="22" text-anchor="middle">–</text>
+					<text x="28" y="52" text-anchor="middle" class="t-muted">0</text><text x="84" y="52" text-anchor="middle" class="t-muted">1</text>
+					<text x="140" y="52" text-anchor="middle" class="t-muted">2</text><text x="196" y="52" text-anchor="middle" class="t-muted">3</text>
+					<text x="252" y="52" text-anchor="middle" class="t-muted">4</text><text x="308" y="52" text-anchor="middle" class="t-muted">5</text>
+					<text x="364" y="52" text-anchor="middle" class="t-muted">6</text><text x="420" y="52" text-anchor="middle" class="t-muted">7</text>
+					<text x="470" y="22" class="t-muted">← 인덱스 = 엔티티 번호</text>
+				</g>
+				<!-- dense -->
+				<text x="280" y="196" class="t-bold" font-size="13">← Dense</text><text x="280" y="216" class="t-muted">빈틈없이 모여 있음 (순회가 빠름)</text>
+				<g transform="translate(20,172)">
+					<rect x="0" y="0" width="80" height="34" class="k2"/><text x="40" y="22" text-anchor="middle">엔티티 3</text>
+					<rect x="80" y="0" width="80" height="34" class="k2"/><text x="120" y="22" text-anchor="middle">엔티티 6</text>
+					<rect x="160" y="0" width="80" height="34" class="k2"/><text x="200" y="22" text-anchor="middle">엔티티 1</text>
+					<rect x="0" y="44" width="80" height="34" class="k1"/><text x="40" y="66" text-anchor="middle">Transform</text>
+					<rect x="80" y="44" width="80" height="34" class="k1"/><text x="120" y="66" text-anchor="middle">Transform</text>
+					<rect x="160" y="44" width="80" height="34" class="k1"/><text x="200" y="66" text-anchor="middle">Transform</text>
+					<text x="40" y="96" text-anchor="middle" class="t-muted">0</text><text x="120" y="96" text-anchor="middle" class="t-muted">1</text><text x="200" y="96" text-anchor="middle" class="t-muted">2</text>
+				</g>
+			</g>
+			<path d="M216,76 C 216,130 60,130 60,168" class="ln" marker-end="url(#arr)"/>
+			<path d="M384,76 C 384,130 140,130 140,168" class="ln" marker-end="url(#arr)"/>
+			<path d="M104,76 C 104,120 220,120 220,168" class="ln" marker-end="url(#arr)"/>
+			<!-- 오른쪽 설명 -->
+			<rect x="560" y="140" width="320" height="140" rx="10" class="box"/>
+			<text x="578" y="166" class="t-bold">왜 이 구조인가</text>
+			<text x="578" y="190" class="t-small">· 있는지 확인·찾기: O(1) (sparse 한 번)</text>
+			<text x="578" y="212" class="t-small">· 삭제: 마지막 원소와 맞바꿔 O(1)</text>
+			<text x="578" y="234" class="t-small">· 순회: dense 배열을 처음부터 → 캐시 친화</text>
+			<text x="578" y="256" class="t-small">· 세대 번호로 지워진 엔티티 핸들 감지</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 2-1.</b> 7강에서 직접 구현하는 희소 집합. 컴포넌트 타입마다 이런 풀이 하나씩 있고, <code>View&lt;A, B&gt;</code>는 가장 작은 풀을 돌며 나머지에 있는지 확인합니다.</figcaption>
+	</figure>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 200" role="img" aria-label="리플렉션 하나가 여러 시스템을 먹여 살린다">
+			<title>리플렉션의 쓰임</title>
+			<rect x="300" y="70" width="300" height="60" rx="12" class="acc"/>
+			<text x="450" y="96" text-anchor="middle" class="t-bold">RegisterType&lt;T&gt;().Property(...)</text>
+			<text x="450" y="116" text-anchor="middle" class="t-muted">타입·오프셋·이름·범위·플래그</text>
+			<g class="t-small">
+				<rect x="20" y="14" width="190" height="40" rx="8" class="k3"/><text x="115" y="39" text-anchor="middle">에디터 인스펙터 UI</text>
+				<rect x="20" y="80" width="190" height="40" rx="8" class="k2"/><text x="115" y="105" text-anchor="middle">씬 JSON 저장/로드</text>
+				<rect x="20" y="146" width="190" height="40" rx="8" class="k4"/><text x="115" y="171" text-anchor="middle">프리팹 오버라이드 비교</text>
+				<rect x="690" y="14" width="190" height="40" rx="8" class="k1"/><text x="785" y="39" text-anchor="middle">Lua 자동 바인딩</text>
+				<rect x="690" y="80" width="190" height="40" rx="8" class="k5"/><text x="785" y="105" text-anchor="middle">네트워크 복제</text>
+				<rect x="690" y="146" width="190" height="40" rx="8" class="box"/><text x="785" y="171" text-anchor="middle">플레이 모드 씬 복제</text>
+			</g>
+			<path d="M300,90 L214,38" class="ln" marker-end="url(#arr)"/>
+			<path d="M300,100 H214" class="ln" marker-end="url(#arr)"/>
+			<path d="M300,112 L214,164" class="ln" marker-end="url(#arr)"/>
+			<path d="M600,90 L686,38" class="ln" marker-end="url(#arr)"/>
+			<path d="M600,100 H686" class="ln" marker-end="url(#arr)"/>
+			<path d="M600,112 L686,164" class="ln" marker-end="url(#arr)"/>
+		</svg>
+		</div>
+		<figcaption><b>그림 2-2.</b> 9강의 요점. 새 컴포넌트를 리플렉션에 한 번 등록하면 여섯 시스템에서 바로 쓸 수 있습니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="2"></div>
+</section>
+
+<!-- ============================== 3부 ============================== -->
+<section class="part" id="part-3" style="--pc: var(--c1); --pcs: var(--c1s);">
+	<div class="part-head"><div class="part-num">3</div><div><h2>사실적인 화면 — 렌더링 심화</h2><div class="q">빛은 어떻게 계산되고, 한 프레임은 어떤 패스로 이루어지는가</div></div></div>
+	<p class="part-intro">가장 긴 부입니다. PBR과 그림자에서 출발해 화면 공간 효과, 렌더 그래프, 업스케일링, 대기, 레이 트레이싱, 동적 GI까지 갑니다. 강의마다 "식을 CPU와 셰이더에 똑같이 두고 단위 테스트로 묶는다"는 이 엔진의 습관이 반복해서 등장합니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 300" role="img" aria-label="한 프레임의 렌더 패스 순서">
+			<title>한 프레임의 렌더 패스</title>
+			<rect x="14" y="30" width="660" height="196" rx="12" fill="none" class="s1" stroke-dasharray="6 4" stroke-width="1.4"/>
+			<text x="26" y="22" class="t-small f1">내부 해상도 (TAAU 이전)</text>
+			<rect x="690" y="30" width="196" height="196" rx="12" fill="none" class="s4" stroke-dasharray="6 4" stroke-width="1.4"/>
+			<text x="700" y="22" class="t-small f4">출력 해상도</text>
+			<g class="t-small">
+				<rect x="30" y="48" width="112" height="44" rx="8" class="k3"/><text x="86" y="68" text-anchor="middle">그림자 맵</text><text x="86" y="84" text-anchor="middle" class="t-muted">CSM + 캐시</text>
+				<rect x="158" y="48" width="112" height="44" rx="8" class="box"/><text x="214" y="68" text-anchor="middle">컬링·LOD</text><text x="214" y="84" text-anchor="middle" class="t-muted">묶음 만들기</text>
+				<rect x="286" y="48" width="112" height="44" rx="8" class="box"/><text x="342" y="68" text-anchor="middle">깊이 사전 패스</text><text x="342" y="84" text-anchor="middle" class="t-muted">법선·움직임</text>
+				<rect x="414" y="48" width="112" height="44" rx="8" class="k2"/><text x="470" y="68" text-anchor="middle">SSAO / RTAO</text>
+				<rect x="542" y="48" width="116" height="44" rx="8" class="k2"/><text x="600" y="68" text-anchor="middle">데칼 · 안개</text><text x="600" y="84" text-anchor="middle" class="t-muted">볼류메트릭</text>
+
+				<rect x="542" y="118" width="116" height="44" rx="8" class="k2"/><text x="600" y="138" text-anchor="middle">SSR / RT 반사</text>
+				<rect x="414" y="118" width="112" height="44" rx="8" class="acc"/><text x="470" y="138" text-anchor="middle">메인 패스</text><text x="470" y="154" text-anchor="middle" class="t-muted">PBR + IBL + GI</text>
+				<rect x="286" y="118" width="112" height="44" rx="8" class="box"/><text x="342" y="138" text-anchor="middle">구름 · 안개 적용</text>
+				<rect x="158" y="118" width="112" height="44" rx="8" class="box"/><text x="214" y="138" text-anchor="middle">물 · 반투명</text>
+				<rect x="30" y="118" width="112" height="44" rx="8" class="box"/><text x="86" y="138" text-anchor="middle">파티클</text>
+
+				<rect x="30" y="172" width="628" height="40" rx="8" class="k1"/>
+				<text x="344" y="197" text-anchor="middle">TAA / TAAU — 지터된 여러 프레임을 누적해 출력 해상도로 업샘플</text>
+
+				<rect x="706" y="48" width="164" height="40" rx="8" class="box"/><text x="788" y="73" text-anchor="middle">블룸</text>
+				<rect x="706" y="98" width="164" height="40" rx="8" class="box"/><text x="788" y="123" text-anchor="middle">톤매핑 · 샤프닝</text>
+				<rect x="706" y="148" width="164" height="40" rx="8" class="box"/><text x="788" y="173" text-anchor="middle">오버레이 · 게임 UI</text>
+			</g>
+			<path d="M142,70 H154" class="ln" marker-end="url(#arr)"/>
+			<path d="M270,70 H282" class="ln" marker-end="url(#arr)"/>
+			<path d="M398,70 H410" class="ln" marker-end="url(#arr)"/>
+			<path d="M526,70 H538" class="ln" marker-end="url(#arr)"/>
+			<path d="M600,92 V114" class="ln" marker-end="url(#arr)"/>
+			<path d="M542,140 H530" class="ln" marker-end="url(#arr)"/>
+			<path d="M414,140 H402" class="ln" marker-end="url(#arr)"/>
+			<path d="M286,140 H274" class="ln" marker-end="url(#arr)"/>
+			<path d="M158,140 H146" class="ln" marker-end="url(#arr)"/>
+			<path d="M86,162 V168" class="ln" marker-end="url(#arr)"/>
+			<path d="M658,192 C 690,192 680,68 702,68" class="ln" marker-end="url(#arr)"/>
+			<path d="M788,88 V94" class="ln" marker-end="url(#arr)"/>
+			<path d="M788,138 V144" class="ln" marker-end="url(#arr)"/>
+			<text x="20" y="252" class="t-muted">모든 패스는 렌더 그래프(22강)에 "무엇을 읽고 쓰는지" 선언하고, 그래프가 리소스 상태 전이·컬링·순서를 정한다.</text>
+			<text x="20" y="274" class="t-muted">레이 트레이싱(25강)은 TLAS를 만들어 그림자·반사·DDGI·RTAO가 공유한다.</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 3-1.</b> 현재 ProjectE의 한 프레임. 3부의 강의는 대부분 이 그림의 상자 하나씩을 다룹니다.</figcaption>
+	</figure>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 230" role="img" aria-label="PBR 미세면 반사">
+			<title>미세면 이론과 BRDF 구성</title>
+			<!-- 표면 -->
+			<path d="M40,170 l20,-14 l18,10 l16,-18 l22,16 l14,-10 l20,12 l18,-16 l22,14 l16,-8 l20,12 l18,-12 l22,14 l14,-6" class="ln" stroke-width="2"/>
+			<line x1="30" y1="182" x2="300" y2="182" class="ln-d"/>
+			<line x1="60" y1="40" x2="150" y2="150" class="ln s4" stroke-width="2" marker-end="url(#arr)"/>
+			<text x="40" y="34" class="t-small f4">입사광 L</text>
+			<line x1="150" y1="152" x2="250" y2="44" class="ln s1" stroke-width="2" marker-end="url(#arr)"/>
+			<text x="230" y="36" class="t-small f1">시선 V</text>
+			<line x1="150" y1="152" x2="150" y2="70" class="ln s2" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+			<text x="156" y="76" class="t-small f2">하프 벡터 H</text>
+			<text x="40" y="210" class="t-muted">거친 표면 = 방향이 제각각인 아주 작은 거울들</text>
+			<!-- 식 -->
+			<rect x="340" y="30" width="540" height="170" rx="12" class="box"/>
+			<text x="360" y="62" class="t-bold" font-size="15">f(L, V) = 확산 + D · F · G / (4 (N·L)(N·V))</text>
+			<text x="360" y="94" class="t-small"><tspan class="t-bold f2">D</tspan>  법선 분포 (GGX) — H 방향을 향한 미세면이 얼마나 많은가 ← 거칠기</text>
+			<text x="360" y="122" class="t-small"><tspan class="t-bold f4">F</tspan>  프레넬 (Schlick) — 비스듬히 볼수록 반사가 강해짐 ← 금속성</text>
+			<text x="360" y="150" class="t-small"><tspan class="t-bold f1">G</tspan>  기하 차폐 (Smith) — 미세면끼리 가리고 그림자 지는 비율</text>
+			<text x="360" y="178" class="t-muted">에너지 보존: 반사된 만큼 확산을 줄인다. 계산은 항상 선형 공간, 색 텍스처는 sRGB로 저장.</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 3-2.</b> 14강 미리보기. 머티리얼의 "거칠기·금속성" 두 숫자가 실제 식의 어디에 들어가는지 보여 줍니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="3"></div>
+</section>
+
+<!-- ============================== 4부 ============================== -->
+<section class="part" id="part-4" style="--pc: var(--c4); --pcs: var(--c4s);">
+	<div class="part-head"><div class="part-num">4</div><div><h2>성능과 확장성</h2><div class="q">스킨 캐릭터 1000마리를 60fps로 돌리려면</div></div></div>
+	<p class="part-intro">성능은 "느낌"이 아니라 측정입니다. 드로우콜을 줄이는 인스턴싱과 LOD, 메모리를 관리하는 수거와 스트리밍, 끊김을 없애는 PSO 캐시, 그리고 한 규모에서만 빨라진 것에 속지 않도록 규모별 추세를 보는 방법까지 다룹니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 250" role="img" aria-label="LOD와 인스턴싱">
+			<title>LOD와 인스턴싱</title>
+			<!-- 카메라 -->
+			<path d="M30,100 l30,-18 v36 z" class="acc"/>
+			<text x="20" y="140" class="t-small">카메라</text>
+			<path d="M64,100 L420,30 M64,100 L420,170" class="ln-d"/>
+			<!-- 가까운 구(촘촘) -->
+			<g transform="translate(140,100)">
+				<circle r="34" class="k4"/>
+				<path d="M-34,0 H34 M0,-34 V34 M-24,-24 L24,24 M-24,24 L24,-24 M-30,-16 H30 M-30,16 H30 M-16,-30 V30 M16,-30 V30" class="ln s4" stroke-width=".8"/>
+				<text y="58" text-anchor="middle" class="t-small">LOD0</text>
+				<text y="74" text-anchor="middle" class="t-muted">삼각형 100%</text>
+			</g>
+			<g transform="translate(260,100)">
+				<circle r="22" class="k4"/>
+				<path d="M-22,0 H22 M0,-22 V22 M-16,-16 L16,16 M-16,16 L16,-16" class="ln s4" stroke-width=".8"/>
+				<text y="46" text-anchor="middle" class="t-small">LOD1</text>
+				<text y="62" text-anchor="middle" class="t-muted">~50%</text>
+			</g>
+			<g transform="translate(365,100)">
+				<polygon points="0,-13 12,-4 8,11 -8,11 -12,-4" class="k4"/>
+				<text y="34" text-anchor="middle" class="t-small">LOD2</text>
+				<text y="50" text-anchor="middle" class="t-muted">~20%</text>
+			</g>
+			<text x="30" y="204" class="t-muted">화면에서 차지하는 크기(반경 ÷ 화면 세로 절반)로 고르고</text><text x="30" y="222" class="t-muted">±10% 히스테리시스로 경계에서 깜빡임 방지</text>
+			<!-- 인스턴싱 -->
+			<line x1="460" y1="20" x2="460" y2="230" class="ln-d"/>
+			<text x="490" y="36" class="t-bold">인스턴싱: 같은 키끼리 묶어 한 번에</text>
+			<g class="t-small">
+				<g transform="translate(490,52)">
+					<rect width="16" height="16" rx="3" class="k1"/><rect x="20" width="16" height="16" rx="3" class="k2"/><rect x="40" width="16" height="16" rx="3" class="k1"/><rect x="60" width="16" height="16" rx="3" class="k1"/><rect x="80" width="16" height="16" rx="3" class="k2"/><rect x="100" width="16" height="16" rx="3" class="k3"/><rect x="120" width="16" height="16" rx="3" class="k1"/><rect x="140" width="16" height="16" rx="3" class="k3"/><rect x="160" width="16" height="16" rx="3" class="k2"/>
+					<text x="190" y="13">드로우 9번</text>
+				</g>
+				<path d="M570,78 V100" class="ln" marker-end="url(#arr)"/>
+				<text x="580" y="94" class="t-muted">키 = PSO · 머티리얼 · 메시 · LOD</text>
+				<g transform="translate(490,108)">
+					<rect width="76" height="22" rx="4" class="k1"/><text x="38" y="15" text-anchor="middle">×4</text>
+					<rect x="86" width="56" height="22" rx="4" class="k2"/><text x="114" y="15" text-anchor="middle">×3</text>
+					<rect x="152" width="40" height="22" rx="4" class="k3"/><text x="172" y="15" text-anchor="middle">×2</text>
+					<text x="206" y="15">드로우 3번</text>
+				</g>
+			</g>
+			<rect x="490" y="150" width="390" height="70" rx="10" class="box"/>
+			<text x="506" y="174" class="t-small">Tests/Stress (스킨 유닛, 실측): 스킨 LOD 도입으로</text>
+			<text x="506" y="196" class="t-small">삼각형 2.38M → 0.86M,  GPU 7.6 → 5.2ms</text>
+			<text x="506" y="214" class="t-muted">29강·32강에서 이 수치를 어떻게 쟀는지 다룬다</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 4-1.</b> 29강의 두 축. LOD는 "삼각형 수"를, 인스턴싱은 "드로우 호출 수"를 줄입니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="4"></div>
+</section>
+
+<!-- ============================== 5부 ============================== -->
+<section class="part" id="part-5" style="--pc: var(--c3); --pcs: var(--c3s);">
+	<div class="part-head"><div class="part-num">5</div><div><h2>에디터 만들기</h2><div class="q">엔진을 "쓸 수 있는 도구"로 만드는 것</div></div></div>
+	<p class="part-intro">에디터는 엔진 위에 얹힌 또 하나의 애플리케이션입니다. 즉시 모드 GUI, 실행 취소, 편집 씬과 플레이 씬의 분리, 프리팹 오버라이드처럼 "사용자가 실수해도 되돌릴 수 있게" 만드는 구조를 배웁니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 220" role="img" aria-label="플레이 인 에디터와 실행 취소">
+			<title>플레이 인 에디터와 실행 취소</title>
+			<rect x="20" y="40" width="160" height="56" rx="10" class="k3"/>
+			<text x="100" y="64" text-anchor="middle" class="t-bold">편집 씬</text>
+			<text x="100" y="84" text-anchor="middle" class="t-muted">저장 대상</text>
+			<rect x="300" y="40" width="160" height="56" rx="10" class="acc"/>
+			<text x="380" y="64" text-anchor="middle" class="t-bold">플레이 씬</text>
+			<text x="380" y="84" text-anchor="middle" class="t-muted">스크립트·물리 실행</text>
+			<path d="M180,58 H296" class="ln" marker-end="url(#arr)"/>
+			<text x="238" y="50" text-anchor="middle" class="t-small">▶ 복제</text>
+			<path d="M300,82 H184" class="ln-d" marker-end="url(#arr)"/>
+			<text x="238" y="108" text-anchor="middle" class="t-small">■ 버리고 복원</text>
+			<text x="20" y="150" class="t-muted">리플렉션 CopyComponent로 복제 → 등록 안 된 컴포넌트는 플레이에 안 따라감</text>
+			<text x="20" y="172" class="t-muted">F8 = 빙의 해제: 게임은 계속, 편집 카메라로 둘러보기</text>
+			<!-- 실행 취소 -->
+			<line x1="500" y1="20" x2="500" y2="200" class="ln-d"/>
+			<text x="530" y="36" class="t-bold">실행 취소 = 씬 JSON 스냅샷 스택</text>
+			<g class="t-small">
+				<rect x="530" y="52" width="70" height="40" rx="6" class="box"/><text x="565" y="77" text-anchor="middle">처음</text>
+				<rect x="610" y="52" width="70" height="40" rx="6" class="box"/><text x="645" y="77" text-anchor="middle">이동</text>
+				<rect x="690" y="52" width="70" height="40" rx="6" class="box"/><text x="725" y="77" text-anchor="middle">복제</text>
+				<rect x="770" y="52" width="70" height="40" rx="6" class="k3"/><text x="805" y="77" text-anchor="middle">삭제</text>
+			</g>
+			<path d="M805,100 V118" class="ln" marker-end="url(#arr)"/>
+			<text x="805" y="134" text-anchor="middle" class="t-small">현재</text>
+			<path d="M770,150 C 740,170 700,170 690,100" class="ln s3" marker-end="url(#arr)"/>
+			<text x="680" y="186" class="t-small f3">Ctrl+Z → 이전 스냅샷 로드</text>
+			<text x="530" y="208" class="t-muted">드래그 중에는 MarkEdited만, 조작이 끝날 때 한 단계로 커밋</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 5-1.</b> 35강(실행 취소)과 36강(플레이 인 에디터)의 핵심 구조. 둘 다 "씬을 통째로 직렬화할 수 있다"는 2부의 결과 위에 서 있습니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="5"></div>
+</section>
+
+<!-- ============================== 6부 ============================== -->
+<section class="part" id="part-6" style="--pc: var(--c2); --pcs: var(--c2s);">
+	<div class="part-head"><div class="part-num">6</div><div><h2>움직임 — 애니메이션</h2><div class="q">뼈의 회전 몇 개로 캐릭터를 살아 움직이게 하기</div></div></div>
+	<p class="part-intro">스키닝으로 메시를 뼈에 붙이는 데서 시작해, 상태 머신과 블렌드 스페이스로 여러 동작을 섞고, 레이어·몽타주·IK로 최종 포즈를 다듬는 과정을 봅니다. 다른 체형의 동작을 옮기는 리타기팅과 루트 모션까지 다룹니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 200" role="img" aria-label="최종 포즈 계산 순서">
+			<title>최종 포즈 계산 순서</title>
+			<g class="t-small">
+				<rect x="20" y="40" width="136" height="64" rx="10" class="k2"/>
+				<text x="88" y="64" text-anchor="middle" class="t-bold">기본 레이어</text>
+				<text x="88" y="84" text-anchor="middle" class="t-muted">상태 머신</text>
+				<text x="88" y="98" text-anchor="middle" class="t-muted">+ 블렌드 스페이스</text>
+				<rect x="176" y="40" width="136" height="64" rx="10" class="k2"/>
+				<text x="244" y="64" text-anchor="middle" class="t-bold">추가 레이어</text>
+				<text x="244" y="84" text-anchor="middle" class="t-muted">본 마스크</text>
+				<text x="244" y="98" text-anchor="middle" class="t-muted">(상체만 등)</text>
+				<rect x="332" y="40" width="136" height="64" rx="10" class="k2"/>
+				<text x="400" y="64" text-anchor="middle" class="t-bold">몽타주</text>
+				<text x="400" y="84" text-anchor="middle" class="t-muted">공격·스킬 슬롯</text>
+				<rect x="488" y="40" width="136" height="64" rx="10" class="k2"/>
+				<text x="556" y="64" text-anchor="middle" class="t-bold">IK</text>
+				<text x="556" y="84" text-anchor="middle" class="t-muted">발 → 시선</text>
+				<rect x="644" y="40" width="236" height="64" rx="10" class="acc"/>
+				<text x="762" y="64" text-anchor="middle" class="t-bold">본 팔레트</text>
+				<text x="762" y="84" text-anchor="middle" class="t-muted">InverseBind × JointWorld</text>
+				<text x="762" y="98" text-anchor="middle" class="t-muted">→ GPU 스키닝</text>
+			</g>
+			<path d="M156,72 H172" class="ln" marker-end="url(#arr)"/>
+			<path d="M312,72 H328" class="ln" marker-end="url(#arr)"/>
+			<path d="M468,72 H484" class="ln" marker-end="url(#arr)"/>
+			<path d="M624,72 H640" class="ln" marker-end="url(#arr)"/>
+			<g class="t-small">
+				<rect x="20" y="128" width="448" height="54" rx="10" class="box"/>
+				<text x="36" y="150">병렬 평가: 엔티티마다 독립 → 여러 스레드</text>
+				<text x="36" y="170" class="t-muted">로그·ECS 변경·콜백은 평가 앞뒤의 메인 스레드 단계로</text>
+				<rect x="488" y="128" width="392" height="54" rx="10" class="box"/>
+				<text x="504" y="150">노티파이: "칼이 닿는 순간"을 이벤트로</text>
+				<text x="504" y="170" class="t-muted">→ Lua OnAnimNotify_이름 / 게임 모듈</text>
+			</g>
+		</svg>
+		</div>
+		<figcaption><b>그림 6-1.</b> 41~42강에서 쌓아 올릴 포즈 파이프라인. 각 단계는 앞 단계의 포즈를 받아 일부 뼈만 덮어씁니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="6"></div>
+</section>
+
+<!-- ============================== 7부 ============================== -->
+<section class="part" id="part-7" style="--pc: var(--c2); --pcs: var(--c2s);">
+	<div class="part-head"><div class="part-num">7</div><div><h2>세계의 규칙 — 게임플레이 시스템</h2><div class="q">물리, 스크립트, AI, 능력 — 누가 먼저 움직이는가</div></div></div>
+	<p class="part-intro">게임플레이 시스템은 하나하나보다 "갱신 순서"가 더 중요합니다. 스크립트가 힘을 주면 물리가 적용하고, 물리가 움직이면 트랜스폼이 갱신되고, 그 뒤에야 카메라가 따라가야 떨리지 않습니다. 이 순서를 한곳(<code>FGameWorld</code>)에 모은 이유를 봅니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 230" role="img" aria-label="게임 월드 갱신 순서">
+			<title>FGameWorld 한 프레임</title>
+			<text x="20" y="28" class="t-bold">TickGameplay (플레이 중)</text>
+			<g class="t-small">
+				<rect x="20" y="42" width="96" height="46" rx="8" class="k1"/><text x="68" y="62" text-anchor="middle">Lua 스크립트</text><text x="68" y="78" text-anchor="middle" class="t-muted">OnUpdate</text>
+				<rect x="128" y="42" width="96" height="46" rx="8" class="box"/><text x="176" y="62" text-anchor="middle">에셋 해석</text>
+				<rect x="236" y="42" width="96" height="46" rx="8" class="k4"/><text x="284" y="62" text-anchor="middle">게임 모듈</text><text x="284" y="78" text-anchor="middle" class="t-muted">C++ DLL</text>
+				<rect x="344" y="42" width="96" height="46" rx="8" class="k3"/><text x="392" y="62" text-anchor="middle">AI</text><text x="392" y="78" text-anchor="middle" class="t-muted">BT · 내비</text>
+				<rect x="452" y="42" width="96" height="46" rx="8" class="box"/><text x="500" y="62" text-anchor="middle">게임플레이</text><text x="500" y="78" text-anchor="middle" class="t-muted">데미지·능력</text>
+				<rect x="560" y="42" width="96" height="46" rx="8" class="k5"/><text x="608" y="62" text-anchor="middle">물리</text><text x="608" y="78" text-anchor="middle" class="t-muted">60Hz 고정</text>
+				<rect x="668" y="42" width="96" height="46" rx="8" class="box"/><text x="716" y="62" text-anchor="middle">트랜스폼</text><text x="716" y="78" text-anchor="middle" class="t-muted">갱신</text>
+				<rect x="776" y="42" width="104" height="46" rx="8" class="k1"/><text x="828" y="62" text-anchor="middle">충돌 이벤트</text><text x="828" y="78" text-anchor="middle" class="t-muted">→ OnLateUpdate</text>
+			</g>
+			<path d="M116,65 H124" class="ln" marker-end="url(#arr)"/>
+			<path d="M224,65 H232" class="ln" marker-end="url(#arr)"/>
+			<path d="M332,65 H340" class="ln" marker-end="url(#arr)"/>
+			<path d="M440,65 H448" class="ln" marker-end="url(#arr)"/>
+			<path d="M548,65 H556" class="ln" marker-end="url(#arr)"/>
+			<path d="M656,65 H664" class="ln" marker-end="url(#arr)"/>
+			<path d="M764,65 H772" class="ln" marker-end="url(#arr)"/>
+			<text x="20" y="128" class="t-bold">TickPresentation (항상)</text>
+			<g class="t-small">
+				<rect x="20" y="142" width="130" height="40" rx="8" class="k2"/><text x="85" y="167" text-anchor="middle">애니메이션</text>
+				<rect x="166" y="142" width="130" height="40" rx="8" class="box"/><text x="231" y="167" text-anchor="middle">트랜스폼 갱신</text>
+				<rect x="312" y="142" width="130" height="40" rx="8" class="box"/><text x="377" y="167" text-anchor="middle">파티클</text>
+				<rect x="458" y="142" width="130" height="40" rx="8" class="acc"/><text x="523" y="167" text-anchor="middle">렌더</text>
+			</g>
+			<path d="M150,162 H162" class="ln" marker-end="url(#arr)"/>
+			<path d="M296,162 H308" class="ln" marker-end="url(#arr)"/>
+			<path d="M442,162 H454" class="ln" marker-end="url(#arr)"/>
+			<rect x="610" y="128" width="270" height="86" rx="10" class="box"/>
+			<text x="626" y="152" class="t-small">왜 카메라는 OnLateUpdate에서?</text>
+			<text x="626" y="174" class="t-muted">OnUpdate 시점의 캐릭터 위치는 물리 전 값</text>
+			<text x="626" y="194" class="t-muted">→ 한 프레임 늦게 따라가 화면이 떨린다</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 7-1.</b> 50강의 핵심. 에디터 플레이, 런타임, 전용 서버가 모두 이 같은 순서를 공유합니다(클라이언트 역할은 게임 모듈·AI 없이).</figcaption>
+	</figure>
+	<div class="lectures" data-part="7"></div>
+</section>
+
+<!-- ============================== 8부 ============================== -->
+<section class="part" id="part-8" style="--pc: var(--c5); --pcs: var(--c5s);">
+	<div class="part-head"><div class="part-num">8</div><div><h2>함께 플레이하기 — 네트워크</h2><div class="q">100ms 지연이 있어도 내 캐릭터는 즉시 움직이게</div></div></div>
+	<p class="part-intro">서버가 진실을 쥐고, 클라이언트는 결과를 받아 보여 줍니다. 그러면 입력이 왕복 시간만큼 늦게 반응하므로, 내 캐릭터는 먼저 예측해서 움직이고 서버 답이 오면 맞춰 고칩니다. 이 "예측과 재조정"이 8부의 중심입니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 280" role="img" aria-label="클라이언트 예측과 재조정">
+			<title>클라이언트 예측과 재조정</title>
+			<text x="20" y="54" class="t-bold">클라이언트</text>
+			<text x="20" y="194" class="t-bold">서버</text>
+			<line x1="110" y1="50" x2="880" y2="50" class="ln"/>
+			<line x1="110" y1="190" x2="880" y2="190" class="ln"/>
+			<!-- 무브 보내기 -->
+			<g class="t-small">
+				<circle cx="140" cy="50" r="12" class="k1"/><text x="140" y="54" text-anchor="middle">1</text>
+				<circle cx="220" cy="50" r="12" class="k1"/><text x="220" y="54" text-anchor="middle">2</text>
+				<circle cx="300" cy="50" r="12" class="k1"/><text x="300" y="54" text-anchor="middle">3</text>
+				<circle cx="380" cy="50" r="12" class="k1"/><text x="380" y="54" text-anchor="middle">4</text>
+				<circle cx="460" cy="50" r="12" class="k1"/><text x="460" y="54" text-anchor="middle">5</text>
+				<circle cx="540" cy="50" r="12" class="k1"/><text x="540" y="54" text-anchor="middle">6</text>
+			</g>
+			<path d="M140,62 L260,178" class="ln s1" marker-end="url(#arr)"/>
+			<path d="M220,62 L340,178" class="ln s1" marker-end="url(#arr)"/>
+			<path d="M300,62 L420,178" class="ln s1" marker-end="url(#arr)"/>
+			<text x="20" y="124" class="t-small f1">무브(입력 + 순번)</text>
+			<g class="t-small">
+				<rect x="250" y="180" width="20" height="20" rx="3" class="k5"/>
+				<rect x="330" y="180" width="20" height="20" rx="3" class="k5"/>
+				<rect x="410" y="180" width="20" height="20" rx="3" class="k5"/>
+			</g>
+			<text x="250" y="222" class="t-small f5">서버가 같은 무브를 같은 식으로 시뮬레이션</text>
+			<!-- ack -->
+			<path d="M420,180 L560,62" class="ln s5" marker-end="url(#arr)"/>
+			<text x="478" y="172" class="t-small f5">ack: "3번까지 반영, 위치 P"</text>
+			<!-- 재조정 -->
+			<rect x="580" y="26" width="300" height="104" rx="10" class="acc"/>
+			<text x="596" y="50" class="t-bold">재조정</text>
+			<text x="596" y="72" class="t-small">① 위치를 서버 값 P(3번 이후)로 되돌림</text>
+			<text x="596" y="92" class="t-small">② 아직 확인 안 된 무브 4, 5, 6을 다시 적용</text>
+			<text x="596" y="112" class="t-small">③ 남은 화면 오차는 몇 프레임에 걸쳐 흡수</text>
+			<text x="20" y="262" class="t-muted">같은 무브 → 같은 결과(결정적 이동 식)이어야 예측이 대부분 맞고, 틀릴 때만 티 안 나게 고친다. 다른 플레이어는 스냅샷 보간(0.1초 지연)으로 본다.</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 8-1.</b> 57강의 무브-ack-재조정 흐름. 58강의 물리 예측도 같은 아이디어를 물리 바디에 적용합니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="8"></div>
+</section>
+
+<!-- ============================== 9부 ============================== -->
+<section class="part" id="part-9" style="--pc: var(--c3); --pcs: var(--c3s);">
+	<div class="part-head"><div class="part-num">9</div><div><h2>사용자 인터페이스, 다국어, 오디오</h2><div class="q">플레이어가 보고 듣는 것</div></div></div>
+	<p class="part-intro">에디터의 ImGui와 달리 게임 UI는 디자이너가 꾸미고 애니메이션하는 "보존 모드" 위젯 트리입니다. 레이아웃 2단계 계산, 입력이 UI와 게임 중 어디로 가는지 정하는 라우팅, 확대해도 깨지지 않는 SDF 글꼴을 다룹니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 270" role="img" aria-label="UI 레이아웃 2단계">
+			<title>UI 레이아웃 2단계</title>
+			<g class="t-small">
+				<rect x="150" y="20" width="130" height="36" rx="8" class="k3"/><text x="215" y="43" text-anchor="middle">캔버스</text>
+				<rect x="60" y="96" width="130" height="36" rx="8" class="k3"/><text x="125" y="119" text-anchor="middle">세로 상자</text>
+				<rect x="240" y="96" width="130" height="36" rx="8" class="k3"/><text x="305" y="119" text-anchor="middle">체력바</text>
+				<rect x="10" y="172" width="100" height="36" rx="8" class="box"/><text x="60" y="195" text-anchor="middle">텍스트</text>
+				<rect x="130" y="172" width="100" height="36" rx="8" class="box"/><text x="180" y="195" text-anchor="middle">버튼</text>
+			</g>
+			<path d="M190,56 L140,94" class="ln"/>
+			<path d="M240,56 L290,94" class="ln"/>
+			<path d="M100,132 L70,170" class="ln"/>
+			<path d="M150,132 L175,170" class="ln"/>
+			<!-- 단계 화살표 -->
+			<path d="M410,190 V40" class="ln s2" stroke-width="2.4" marker-end="url(#arr)"/>
+			<text x="424" y="70" class="t-bold f2">1단계: 원하는 크기</text>
+			<text x="424" y="92" class="t-small">아래 → 위</text>
+			<text x="424" y="112" class="t-muted">글자 폭, 자식 합, 여백</text>
+			<path d="M640,40 V190" class="ln s1" stroke-width="2.4" marker-end="url(#arr)"/>
+			<text x="654" y="70" class="t-bold f1">2단계: 배치</text>
+			<text x="654" y="92" class="t-small">위 → 아래</text>
+			<text x="654" y="112" class="t-muted">부모가 준 칸 안에 앵커·정렬</text>
+			<text x="10" y="240" class="t-muted">결과 State.Geometry → 그리기 목록 + 맞히기 판정</text>
+			<text x="10" y="260" class="t-muted">UI가 포인터를 잡으면 게임에는 마우스 입력 없음</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 9-1.</b> 60강의 레이아웃 계산. 언리얼 UMG의 Slate와 같은 아이디어입니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="9"></div>
+</section>
+
+<!-- ============================== 10부 ============================== -->
+<section class="part" id="part-10" style="--pc: var(--accent); --pcs: var(--accent-soft);">
+	<div class="part-head"><div class="part-num">10</div><div><h2>출시</h2><div class="q">개발 폴더의 게임을 남의 PC에서 돌아가게</div></div></div>
+	<p class="part-intro">패키지 게임은 소스 에셋도, DXC 컴파일러도, 개발 폴더 구조도 없는 곳에서 돌아야 합니다. 쿠킹, pak 가상 파일 시스템, 저장 위치, 크래시 리포트, Steam 업로드까지 가며, 마지막 강의에서는 이 엔진을 만들면서 정착한 검증·작업 방법론을 정리합니다.</p>
+	<figure>
+		<div class="scroll">
+		<svg viewBox="0 0 900 200" role="img" aria-label="패키징 흐름">
+			<title>패키징 흐름</title>
+			<g class="t-small">
+				<rect x="20" y="40" width="120" height="56" rx="10" class="box"/><text x="80" y="64" text-anchor="middle" class="t-bold">Release 빌드</text><text x="80" y="84" text-anchor="middle" class="t-muted">+ PDB</text>
+				<rect x="164" y="20" width="150" height="96" rx="10" class="k1"/>
+				<text x="239" y="44" text-anchor="middle" class="t-bold">쿠킹</text>
+				<text x="239" y="64" text-anchor="middle">셰이더 → DXIL</text>
+				<text x="239" y="82" text-anchor="middle">glTF → .emodel</text>
+				<text x="239" y="100" text-anchor="middle">이미지 → .etex (BC7)</text>
+				<rect x="338" y="40" width="130" height="56" rx="10" class="k4"/><text x="403" y="64" text-anchor="middle" class="t-bold">Content.epak</text><text x="403" y="84" text-anchor="middle" class="t-muted">항목별 해시</text>
+				<rect x="492" y="40" width="130" height="56" rx="10" class="k3"/><text x="557" y="64" text-anchor="middle" class="t-bold">exe 스탬프</text><text x="557" y="84" text-anchor="middle" class="t-muted">이름·아이콘·버전</text>
+				<rect x="646" y="40" width="110" height="56" rx="10" class="acc"/><text x="701" y="64" text-anchor="middle" class="t-bold">패키지 폴더</text><text x="701" y="84" text-anchor="middle" class="t-muted">+ VC++ 런타임</text>
+				<rect x="780" y="40" width="100" height="56" rx="10" class="k2"/><text x="830" y="64" text-anchor="middle" class="t-bold">steamcmd</text><text x="830" y="84" text-anchor="middle" class="t-muted">업로드</text>
+			</g>
+			<path d="M140,68 H160" class="ln" marker-end="url(#arr)"/>
+			<path d="M314,68 H334" class="ln" marker-end="url(#arr)"/>
+			<path d="M468,68 H488" class="ln" marker-end="url(#arr)"/>
+			<path d="M622,68 H642" class="ln" marker-end="url(#arr)"/>
+			<path d="M756,68 H776" class="ln" marker-end="url(#arr)"/>
+			<text x="20" y="150" class="t-small">런타임 규칙: 콘텐츠 읽기는 항상 FFileSystem(pak → 디스크), 쓰기는 항상 Saved(%LOCALAPPDATA%) 아래</text>
+			<text x="20" y="174" class="t-muted">std::ifstream으로 콘텐츠를 직접 읽으면 개발 중엔 되지만 패키지(pak)에서 깨진다 — 63강의 대표 함정</text>
+		</svg>
+		</div>
+		<figcaption><b>그림 10-1.</b> <code>Scripts/Package.ps1</code>이 수행하는 단계. 63~64강에서 각 상자를 하나씩 엽니다.</figcaption>
+	</figure>
+	<div class="lectures" data-part="10"></div>
+</section>
+
+<footer>
+	ProjectE 엔진 강의 커리큘럼 · 2026-10-04 작성 · 근거: <code>Plans.md</code>(Phase 0~53), <code>CLAUDE.md</code>, 커밋 기록.<br>
+	강의 제목을 누르면 본문(<code>Docs/Lectures/PartNN_*.html</code>)으로 이동합니다. 진도 체크는 이 브라우저에만 저장됩니다.
+</footer>
+</main>
+</div>
+
+<script>
+// 강의 데이터: n = 강 번호, p = 부, ph = 관련 Phase, d = 한 줄 요약, t = 핵심 개념, c = 살펴볼 코드
+const Lectures = [
+	// 0부
+	{ n: 0, p: 0, ph: "개요", title: "게임 엔진이란 무엇인가",
+	  d: "엔진·에디터·런타임·게임의 역할을 나누고, ProjectE의 출발점이 된 핵심 결정(DX12, C++20, 직접 구현 범위)을 짚습니다.",
+	  t: ["엔진 vs 게임", "직접 구현 vs 라이브러리", "엔진/프로젝트 분리", ".eproject"],
+	  c: ["Plans.md 핵심 결정", "Projects/Sample/"] },
+	{ n: 1, p: 0, ph: "Phase 0", title: "프로젝트 골격",
+	  d: "CMake 모듈 구조와 빌드 프리셋, 경고 = 에러 정책, 로그·어설트 매크로, Win32 창과 메시지 루프, 애플리케이션 루프를 세웁니다.",
+	  t: ["CMake 타깃/모듈", "/W4 /WX", "E_LOG · E_CHECK", "Win32 메시지 루프", "FApplication"],
+	  c: ["CMakePresets.json", "Engine/Source/Core/", "Scripts/Build.ps1"] },
+	// 1부
+	{ n: 2, p: 1, ph: "Phase 0", title: "GPU와 DirectX 12의 사고방식",
+	  d: "왜 DX12는 이렇게 장황한가. 커맨드 리스트·큐·펜스로 CPU와 GPU를 동기화하고, 디스크립터 힙과 스왑체인으로 화면에 내보내는 구조를 이해합니다.",
+	  t: ["커맨드 리스트/큐", "펜스", "디스크립터 힙", "스왑체인", "디버그 레이어"],
+	  c: ["Engine/Source/RHI/D3D12/"] },
+	{ n: 3, p: 1, ph: "Phase 1", title: "첫 삼각형",
+	  d: "정점 버퍼, HLSL 셰이더와 DXC 컴파일, 루트 시그니처, 파이프라인 상태 객체(PSO)를 거쳐 색이 보간된 삼각형을 그립니다.",
+	  t: ["래스터화 파이프라인", "HLSL · DXC", "루트 시그니처", "PSO", "보간"],
+	  c: ["Engine/Shaders/", "RHI/ShaderLibrary.h"] },
+	{ n: 4, p: 1, ph: "Phase 1", title: "3D 수학",
+	  d: "벡터·행렬·쿼터니언의 의미와, 왼손 Z-up·행벡터·cm 단위라는 이 엔진의 규약이 왜 중요하고 어디서 지켜지는지 봅니다.",
+	  t: ["내적/외적", "변환 행렬", "쿼터니언", "투영과 깊이 [0,1]", "좌표계 규약"],
+	  c: ["Core/Math/", "Tests/CoreTests"] },
+	{ n: 5, p: 1, ph: "Phase 2", title: "3D 기초: 카메라, 깊이, 텍스처, 조명",
+	  d: "플라이 카메라, 깊이 버퍼, 텍스처 업로드와 밉맵, 프레임 링 상수 버퍼, Blinn-Phong 조명으로 텍스처 입힌 큐브를 띄웁니다.",
+	  t: ["뷰/투영 행렬", "깊이 테스트", "밉맵", "동적 업로드 버퍼", "Blinn-Phong", "법선 역전치"],
+	  c: ["Renderer/Camera", "RHI/D3D12/D3D12DynamicUploadBuffer"] },
+	{ n: 6, p: 1, ph: "Phase 3", title: "GPU 리소스 수명",
+	  d: "GPU가 아직 쓰는 리소스를 지우면 생기는 일, 지연 해제, 세대 핸들로 리소스를 안전하게 참조하는 방법을 다룹니다.",
+	  t: ["frames in flight", "지연 해제", "세대 핸들", "FResourceManager"],
+	  c: ["Core/Containers/ (THandle, TResourcePool)", "Renderer/ResourceManager"] },
+	// 2부
+	{ n: 7, p: 2, ph: "Phase 3", title: "ECS — 엔티티, 컴포넌트, 시스템",
+	  d: "객체 지향 상속 트리 대신 데이터 중심 ECS를 고른 이유와, 희소 집합으로 직접 구현한 ECS의 구조와 규칙을 배웁니다.",
+	  t: ["데이터 지향 설계", "희소 집합", "View 순회", "세대 엔티티", "타입 ID와 DLL"],
+	  c: ["Core/ECS/", "Tests/CoreTests"] },
+	{ n: 8, p: 2, ph: "Phase 3", title: "씬 그래프와 트랜스폼",
+	  d: "부모-자식 계층, 로컬→월드 행렬 갱신, 순환 방지, 그리고 비트 단위 캐시와 루트별 병렬로 갱신을 빠르게 만든 과정을 봅니다.",
+	  t: ["계층 구조", "로컬/월드 행렬", "SetParent", "트랜스폼 캐시", "병렬 갱신"],
+	  c: ["Scene/Scene.h (UpdateTransforms)"] },
+	{ n: 9, p: 2, ph: "Phase 5", title: "리플렉션",
+	  d: "C++에 없는 런타임 타입 정보를 직접 만드는 방법. 한 번의 등록으로 인스펙터·저장·스크립트·복제가 따라오는 구조를 설계합니다.",
+	  t: ["타입 레지스트리", "프로퍼티 오프셋", "플래그(Transient 등)", "빌더 패턴"],
+	  c: ["Core/Reflection/", "Scene/SceneReflection.cpp"] },
+	{ n: 10, p: 2, ph: "Phase 5", title: "직렬화와 에셋 파이프라인",
+	  d: "사람이 읽는 JSON 소스와 기계가 읽는 쿠킹 바이너리를 나눈 이유, 버전으로 캐시를 무효화하는 법, 셰이더 사전 컴파일과 핫 리로드를 다룹니다.",
+	  t: ["JSON 씬", "쿠킹", "FAssetCache 버전", "내용 해시 캐시", "핫 리로드", "FPaths"],
+	  c: ["Scene/SceneSerializer", "Renderer/AssetCache", "RHI/ShaderManifest.h"] },
+	{ n: 11, p: 2, ph: "Phase 3 · 11", title: "모델 임포트: glTF와 FBX",
+	  d: "외부 모델을 엔진 좌표계로 옮길 때의 축 반사와 와인딩 뒤집기, 탄젠트 공간, 노드 계층과 머티리얼 가져오기를 봅니다.",
+	  t: ["glTF 구조", "좌표계 변환", "와인딩 규약", "탄젠트/노멀 맵", "임포트 설정"],
+	  c: ["Renderer/GltfLoader", "Tests/GltfLoaderTests"] },
+	{ n: 12, p: 2, ph: "Phase 48 사이드 외", title: "엔진 DLL과 게임 모듈",
+	  d: "엔진을 DLL 하나로 묶은 이유, 6만 5천 개 심볼 내보내기 한도와의 싸움, 게임 코드를 DLL로 분리하고 에디터에서 다시 로드하는 방법을 다룹니다.",
+	  t: ["정적 vs 동적 링크", "심볼 내보내기", ".def 필터", "게임 모듈 API 버전", "C++ 핫 리로드"],
+	  c: ["Engine/EngineDll.cpp", "Tools/ExportFilter", "Scene/GameModule.h", "Editor/EditorHotReload.cpp"] },
+	// 3부
+	{ n: 13, p: 3, ph: "Phase 3", title: "렌더러 구조",
+	  d: "씬에서 그릴 것을 수집하고, 프러스텀으로 거르고, 상태 변경이 적도록 정렬한 뒤 그리는 기본 흐름을 세웁니다.",
+	  t: ["수집 → 컬링 → 정렬 → 드로우", "프러스텀 컬링", "AABB", "정렬 키"],
+	  c: ["Renderer/SceneRenderer", "Core/Math/Frustum"] },
+	{ n: 14, p: 3, ph: "Phase 6", title: "물리 기반 렌더링 (PBR)",
+	  d: "미세면 이론에서 Cook-Torrance BRDF(GGX, Smith, Schlick)를 유도하고, 금속/거칠기 워크플로와 선형·sRGB 색공간을 이해합니다.",
+	  t: ["미세면 이론", "GGX", "프레넬", "에너지 보존", "금속/거칠기", "sRGB vs 선형"],
+	  c: ["Engine/Shaders/Mesh.hlsl", "Lighting.hlsli"] },
+	{ n: 15, p: 3, ph: "Phase 6", title: "HDR과 포스트 프로세싱",
+	  d: "모니터가 표현 못 하는 밝기를 담는 HDR 렌더 타깃, 노출과 톤매핑(ACES), 블룸의 다운/업샘플 체인, 그리고 HDR 디스플레이 출력까지.",
+	  t: ["HDR 렌더 타깃", "노출", "톤매핑", "블룸", "자동 노출"],
+	  c: ["Renderer/PostProcessor", "PostProcessMath.h"] },
+	{ n: 16, p: 3, ph: "Phase 6 외", title: "그림자",
+	  d: "섀도우 맵 원리, 캐스케이드(CSM), PCF, 바이어스와 피터 패닝, 텍셀 스냅, 그리고 정적 캐스터를 캐시해 그림자 비용을 1/5로 줄인 방법을 봅니다.",
+	  t: ["섀도우 맵", "CSM", "PCF/PCSS", "깊이 바이어스", "텍셀 스냅", "그림자 캐시"],
+	  c: ["Renderer/ShadowRenderer", "ShadowCacheMath.h"] },
+	{ n: 17, p: 3, ph: "Phase 6", title: "이미지 기반 조명 (IBL)",
+	  d: "주변 환경 전체를 광원으로 쓰는 IBL. 조도 맵, GGX 프리필터, BRDF LUT(분할 합 근사), 점박이를 없앤 필터드 중요도 샘플링을 다룹니다.",
+	  t: ["환경 큐브맵", "조도(irradiance)", "분할 합 근사", "중요도 샘플링", "반사 캡처"],
+	  c: ["Renderer/IblRenderer", "Engine/Shaders/Ibl.hlsl"] },
+	{ n: 18, p: 3, ph: "Phase 23", title: "다수의 광원",
+	  d: "광원 1000개를 그리려면. 점광원·스포트 감쇠, 화면을 3D 칸으로 나누는 클러스터드 라이팅, 큐브 그림자 타일을 다룹니다.",
+	  t: ["감쇠 함수", "포워드+ / 클러스터드", "라이트 컬링", "점광원 큐브 그림자"],
+	  c: ["Renderer/LocalLightRenderer", "LightMath.h"] },
+	{ n: 19, p: 3, ph: "Phase 33", title: "화면 공간 기법",
+	  d: "깊이 사전 패스로 얻은 정보를 재활용하는 SSAO, SSR, 데칼, 볼류메트릭 안개, 그리고 TAA와 움직임 벡터를 배웁니다.",
+	  t: ["깊이 사전 패스", "SSAO", "SSR · Hi-Z", "DBuffer 데칼", "TAA", "움직임 벡터"],
+	  c: ["Renderer/ScreenSpaceReflections", "TemporalAA"] },
+	{ n: 20, p: 3, ph: "사용자 보고", title: "시간 안정성 — 화면이 지글거리는 이유",
+	  d: "확률적 효과 + TAA가 왜 노이즈를 못 거르는지, 결정적 필터로 바꾼 과정, 그리고 화면 안정성을 숫자로 재는 방법을 다룹니다.",
+	  t: ["시간적 노이즈", "분산 클램프", "결정적 필터", "반사 움직임 재투영", "안정성 측정"],
+	  c: ["Engine/Shaders/SsrResolve.hlsl", "ReflectionMath.h"] },
+	{ n: 21, p: 3, ph: "Phase 36 · 49 · 51", title: "머티리얼 시스템",
+	  d: "블렌드 모드와 양면, 머티리얼 인스턴스 상속, 노드 그래프를 HLSL로 컴파일하는 컴파일러와 노드 편집기를 만듭니다.",
+	  t: ["Opaque/Masked/Translucent", "인스턴스 체인", "그래프 → HLSL", "셰이더 변형", "결정적 해시"],
+	  c: ["Renderer/MaterialGraph.h", "MaterialGraphCompiler.cpp", "Editor/AssetEditors/MaterialEditor"] },
+	{ n: 22, p: 3, ph: "Phase 47", title: "렌더 그래프",
+	  d: "패스가 늘수록 손으로 관리하기 힘든 리소스 배리어. 패스가 읽고 쓰는 것을 선언하면 그래프가 순서·전이·컬링·풀링을 정하는 구조를 배웁니다.",
+	  t: ["리소스 배리어", "선언형 패스", "패스 컬링", "리소스 풀링", "비동기 컴퓨트"],
+	  c: ["Renderer/RenderGraph/", "RenderGraphCompiler.h"] },
+	{ n: 23, p: 3, ph: "Phase 48", title: "업스케일링과 동적 해상도",
+	  d: "낮은 해상도로 그리고 시간 누적으로 해상도를 되살리는 TAAU, 부하에 따라 해상도를 바꾸는 동적 해상도, 텍스처 밉 바이어스를 다룹니다.",
+	  t: ["내부/출력 해상도", "TAAU", "지터 수열", "동적 해상도", "밉 바이어스"],
+	  c: ["Renderer/UpscaleMath", "DynamicResolutionController"] },
+	{ n: 24, p: 3, ph: "Phase 49", title: "하늘, 대기, 구름, 물",
+	  d: "레일리·미 산란으로 하늘색을 계산하는 대기 모델, 공중 원근, 시간대, 볼류메트릭 구름 레이마칭, 물 렌더링과 HDR 출력을 봅니다.",
+	  t: ["대기 산란", "투과율 LUT", "공중 원근", "볼류메트릭 구름", "물 굴절·반사"],
+	  c: ["Renderer/AtmosphereMath.h", "CloudMath.h", "WaterMath.h"] },
+	{ n: 25, p: 3, ph: "Phase 50", title: "레이 트레이싱",
+	  d: "BVH와 가속 구조(BLAS/TLAS), DXR 인라인 RayQuery, RT 그림자·반사, 움직이는 스킨 메시의 refit과 거리 기반 갱신 간격을 다룹니다.",
+	  t: ["BVH", "BLAS/TLAS", "RayQuery", "바인드리스", "RT 그림자·반사", "refit"],
+	  c: ["Renderer/RayTracingScene.h", "RayTracingCommon.hlsli"] },
+	{ n: 26, p: 3, ph: "Phase 39 · 51", title: "전역 조명: 프로브와 DDGI, RTAO",
+	  d: "빛이 튕겨 다시 비추는 간접광. 프로브 격자, 옥타헤드럴 인코딩, 체비셰프 가시성, 히스테리시스와 깜빡임, 경로 추적 기준으로 RTAO를 맞춘 과정을 봅니다.",
+	  t: ["간접광", "조사 프로브", "옥타헤드럴 맵", "체비셰프 가시성", "히스테리시스", "RTAO"],
+	  c: ["Renderer/DdgiRenderer.h", "DdgiMath.h", "RayTracedAmbientOcclusion.hlsl"] },
+	{ n: 27, p: 3, ph: "Phase 52", title: "면광원, IES, 라이트 쿠키",
+	  d: "점이 아닌 면에서 나오는 빛을 LTC(선형 변환 코사인)로 계산하는 방법, 넓은 반그림자 PCSS, 실제 조명 배광 데이터 IES를 다룹니다.",
+	  t: ["면광원", "LTC", "PCSS", "IES 프로파일", "쿠키 투영"],
+	  c: ["Renderer/AreaLightMath.h", "AreaLight.hlsli"] },
+	{ n: 28, p: 3, ph: "사이드", title: "스타일 렌더링 — 진짜 도트 게임처럼",
+	  d: "저해상도 렌더 후 확대, 카메라 서브픽셀 보정과 도트 스냅, 깊이 기반 외곽선, 픽셀 아트에서 화면 고정 노이즈를 쓰면 안 되는 이유를 봅니다.",
+	  t: ["저해상도 렌더", "서브픽셀 보정", "도트 스냅", "외곽선", "디더링"],
+	  c: ["Renderer/PixelArtMath.h", "PixelArtObjectSnap.cpp"] },
+	// 4부
+	{ n: 29, p: 4, ph: "Phase 26 · 29", title: "드로우콜과 삼각형 줄이기",
+	  d: "인스턴싱과 묶음 키, QEM 메시 단순화로 만든 LOD와 히스테리시스, HZB 오클루전 컬링, 그리고 측정 결과 오클루전을 기본으로 끈 이유를 봅니다.",
+	  t: ["인스턴싱", "배칭 키", "QEM 단순화", "LOD 선택", "HZB 오클루전"],
+	  c: ["Renderer/InstanceBatching", "MeshSimplifier", "LodMath"] },
+	{ n: 30, p: 4, ph: "Phase 37 · 53", title: "메모리와 스트리밍",
+	  d: "쓰지 않는 리소스를 찾는 도달성 수거, 복사 큐 비동기 업로드, 필요한 밉만 올리는 텍스처 스트리밍과 예산 관리를 다룹니다.",
+	  t: ["도달성 GC", "복사 큐", "비동기 로딩", "밉 스트리밍", "VRAM 예산"],
+	  c: ["Renderer/ResourceCollector.h", "RHI/D3D12/D3D12UploadQueue.h", "Renderer/TextureStreaming.h"] },
+	{ n: 31, p: 4, ph: "Phase 48", title: "PSO 캐시와 셰이더 끊김",
+	  d: "처음 보는 머티리얼에서 게임이 멈칫하는 이유와, PSO 레시피 기록·디스크 캐시·워밍 스레드로 해결한 과정, 드라이버 비결정성 사례를 봅니다.",
+	  t: ["PSO 컴파일 비용", "파이프라인 라이브러리", "레시피", "워밍"],
+	  c: ["RHI/D3D12/D3D12PipelineRecipe.h"] },
+	{ n: 32, p: 4, ph: "Phase 38 외", title: "측정하는 법",
+	  d: "콘솔 변수로 기능을 켜고 끄며 비교하기, Tracy 프로파일러, GPU 타이머, 그리고 규모를 늘려 비선형 구간을 찾는 추세 검사를 배웁니다.",
+	  t: ["CVar", "Tracy", "GPU 타임스탬프", "A/B 비교", "규모 추세"],
+	  c: ["Core/Console", "Core/Profiling.h", "Scripts/ScaleBench.ps1"] },
+	{ n: 33, p: 4, ph: "Stress 최적화", title: "병렬화",
+	  d: "잡 큐와 ParallelFor, 애니메이션 평가와 트랜스폼 갱신의 병렬화 규칙, 멀리 있는 캐릭터를 덜 자주 갱신하는 URO를 다룹니다.",
+	  t: ["작업 스레드", "데이터 경합 피하기", "준비/평가/마무리 3단계", "업데이트 빈도 LOD"],
+	  c: ["Core/Jobs/", "Scene/AnimUpdateRate.h"] },
+	// 5부
+	{ n: 34, p: 5, ph: "Phase 4", title: "즉시 모드 GUI와 에디터 구조",
+	  d: "Dear ImGui의 즉시 모드 철학, 도킹, 오프스크린 뷰포트, 기즈모, 클릭 선택(광선-삼각형), 패널 구조와 테마를 봅니다.",
+	  t: ["즉시 모드 GUI", "도킹", "오프스크린 렌더 타깃", "기즈모", "피킹"],
+	  c: ["Editor/ImGuiLayer", "Editor/Panels/", "Editor/EditorTheme.h"] },
+	{ n: 35, p: 5, ph: "에디터", title: "실행 취소 시스템",
+	  d: "명령 패턴 대신 씬 스냅샷으로 Undo를 구현한 이유, 드래그 중 한 단계로 묶기, 선택 상태 관리를 다룹니다.",
+	  t: ["명령 패턴 vs 스냅샷", "트랜잭션", "MarkEdited", "선택 모델"],
+	  c: ["Editor/EditorContext", "FSceneEditOps"] },
+	{ n: 36, p: 5, ph: "Phase 44", title: "플레이 인 에디터",
+	  d: "편집 씬을 복제해 플레이하고 정지 시 복원하기, 빙의/해제, 입력 모드(GameOnly/GameAndUI/UIOnly)를 봅니다.",
+	  t: ["씬 복제·복원", "빙의/해제", "입력 모드", "편집 상호작용 막기"],
+	  c: ["Editor/PlayMode", "Core/InputMode.h"] },
+	{ n: 37, p: 5, ph: "Phase 9 · 10", title: "콘텐츠 브라우저와 에셋 편집기",
+	  d: "파일을 옮길 때 참조를 자동으로 고치는 법, 썸네일, 에셋 편집기 공통 틀과 전용 미리보기 씬을 다룹니다.",
+	  t: ["참조 갱신", "썸네일", "편집기 공통 인터페이스", "미리보기 씬"],
+	  c: ["Editor/ContentBrowser/", "Editor/AssetEditors/"] },
+	{ n: 38, p: 5, ph: "Phase 15", title: "프리팹",
+	  d: "원본과 인스턴스, \"현재 원본과의 차이\"로 기록하는 오버라이드, 중첩 프리팹과 고정 ID, 원본 변경 동기화 순서를 배웁니다.",
+	  t: ["프리팹 인스턴스", "오버라이드 기록", "중첩", "동기화"],
+	  c: ["Scene/Prefab.h"] },
+	{ n: 39, p: 5, ph: "Phase 20", title: "설정 시스템",
+	  d: "프로젝트 설정과 에디터 환경설정을 리플렉션 구조체 + 범위(Project/EditorUser/ProjectUser)로 통일한 설계를 봅니다.",
+	  t: ["설정 범위", "설정 레지스트리", "자동 UI", "저장 위치"],
+	  c: ["Core/Settings/", "ProjectSettings.cpp"] },
+	// 6부
+	{ n: 40, p: 6, ph: "Phase 6 이후", title: "스켈레탈 애니메이션",
+	  d: "뼈 계층, 바인드 포즈와 역바인드 행렬, 키프레임 보간, GPU 스키닝과 본 팔레트를 다룹니다.",
+	  t: ["스켈레톤", "역바인드 행렬", "키프레임 보간", "스키닝", "본 팔레트"],
+	  c: ["Renderer/SkinnedMeshPalette.h", "SkinnedMesh.hlsli", "Scene/AnimationSystem"] },
+	{ n: 41, p: 6, ph: "Phase 27 · 42", title: "애니메이션 그래프",
+	  d: "상태 머신과 전이, 1D/2D 블렌드 스페이스, 레이어와 본 마스크, 몽타주로 동작을 조립합니다.",
+	  t: ["상태 머신", "블렌드 스페이스", "본 마스크", "몽타주", "정규화 시간 동기화"],
+	  c: ["Scene/AnimGraph.h", "Scene/AnimMontage.h"] },
+	{ n: 42, p: 6, ph: "Phase 13 · 14 · 42", title: "노티파이, 소켓, IK",
+	  d: "애니메이션 특정 시점에 이벤트 보내기, 뼈에 무기 붙이기, 발을 지면에 맞추는 IK와 시선 IK를 다룹니다.",
+	  t: ["애니메이션 이벤트", "소켓", "Two-bone IK", "발 IK", "시선"],
+	  c: ["Scene/AnimNotify.h", "Scene/AnimIK.h"] },
+	{ n: 43, p: 6, ph: "Phase 52 사이드", title: "리타기팅과 루트 모션",
+	  d: "체형이 다른 스켈레톤 사이에서 동작을 옮기는 본 매핑과 바인드 보정, 애니메이션이 캐릭터를 직접 움직이는 루트 모션을 봅니다.",
+	  t: ["휴머노이드 리그", "바인드 포즈 보정", "루트 모션 추출", "제자리화"],
+	  c: ["Scene/AnimRetarget.h", "Scene/AnimRootMotion.h"] },
+	{ n: 44, p: 6, ph: "Phase 35", title: "시퀀서",
+	  d: "타임라인 트랙으로 컷신을 만들고 카메라를 전환하는 시퀀서와 편집 씬 미리보기를 다룹니다.",
+	  t: ["타임라인", "트랙과 키", "카메라 컷", "미리보기 값 되돌리기"],
+	  c: [".esequence", "FSequenceLibrary"] },
+	// 7부
+	{ n: 45, p: 7, ph: "Phase 7 · 8 · 30 · 43", title: "물리 엔진 통합",
+	  d: "Jolt를 엔진에 붙이는 경계 설계(cm↔m), 고정 스텝과 보간, 충돌 이벤트, 충돌 레이어 행렬, 관절과 래그돌을 다룹니다.",
+	  t: ["강체", "고정 스텝 + 보간", "충돌 콜백 분리", "충돌 레이어", "관절", "래그돌"],
+	  c: ["Physics/PhysicsWorld", "Physics/PhysicsSystem", "Core/Settings/CollisionSettings.h"] },
+	{ n: 46, p: 7, ph: "Phase 22", title: "캐릭터 이동",
+	  d: "강체가 아닌 캐릭터 컨트롤러가 필요한 이유, 경사·계단 처리, 같은 입력 → 같은 결과를 보장하는 \"무브\" 단위 시뮬레이션을 봅니다.",
+	  t: ["캐릭터 컨트롤러", "가속/마찰", "결정적 시뮬레이션", "무브"],
+	  c: ["Physics/CharacterMovement", "CharacterMovementMath"] },
+	{ n: 47, p: 7, ph: "Phase 7 · 41 · 47", title: "스크립팅",
+	  d: "Lua를 엔진에 넣는 법, 리플렉션 자동 바인딩, 오류 격리, 타이머·코루틴, 모듈, 그리고 중단점 디버거를 다룹니다.",
+	  t: ["임베디드 Lua", "sol2", "자동 바인딩", "코루틴", "핫 리로드", "디버그 훅"],
+	  c: ["Scripting/", "Scripting/ScriptDebugger.h"] },
+	{ n: 48, p: 7, ph: "Phase 21 · 24", title: "입력 시스템",
+	  d: "원시 마우스 입력과 커서 잠금, 키 대신 \"액션\"을 읽는 입력 매핑과 수정자, 게임패드와 플레이어 키 재지정을 배웁니다.",
+	  t: ["원시 입력", "입력 액션", "수정자/문턱", "게임패드(XInput)", "재지정"],
+	  c: ["Core/InputActions.h", "Core/Input"] },
+	{ n: 49, p: 7, ph: "Phase 18", title: "AI: 비헤이비어 트리와 내비게이션",
+	  d: "이벤트 기반 비헤이비어 트리 실행기, 블랙보드와 데코레이터, Recast로 내비메시를 굽고 Detour로 길 찾는 과정을 봅니다.",
+	  t: ["비헤이비어 트리", "블랙보드", "관찰자 중단", "내비메시", "A* 경로"],
+	  c: ["AI/BehaviorTree/", "AI/Navigation/"] },
+	{ n: 50, p: 7, ph: "Phase 25 · 31", title: "게임 프레임워크",
+	  d: "게임 월드 갱신 순서, 체력과 게임 모드, 리스폰, 세이브 게임, 맵 전환과 서브 씬 스트리밍을 다룹니다.",
+	  t: ["갱신 순서", "게임 모드", "세이브 게임", "맵 전환", "서브 씬"],
+	  c: ["World/GameWorld.h", "World/GameWorldTravel.h", "Core/SaveGame.h"] },
+	{ n: 51, p: 7, ph: "Phase 53 사이드", title: "능력 시스템 (GAS식)",
+	  d: "속성·효과·수정자·태그로 스킬과 버프를 데이터로 정의하는 구조, 수정자 계산 순서, 쿨다운과 비용을 봅니다.",
+	  t: ["속성", "게임플레이 효과", "수정자 스택", "게임플레이 태그", "쿨다운"],
+	  c: ["Scene/Ability/", "AbilityTypes.h"] },
+	{ n: 52, p: 7, ph: "Phase 46", title: "데이터 주도 설계",
+	  d: "스크립트 상수 대신 표로 밸런스를 관리하는 데이터 테이블과 데이터 에셋, 구조체 변경 마이그레이션, CSV 왕복을 다룹니다.",
+	  t: ["데이터 테이블", "구조체 스키마", "마이그레이션", "CSV", "행 참조"],
+	  c: ["Scene/DataTable.h", "Scene/DataLibrary.h"] },
+	{ n: 53, p: 7, ph: "Phase 50 사이드", title: "절차적 생성",
+	  d: "시드 하나로 항상 같은 건물이 나오는 결정적 생성기, 공간 분할과 방 배치, 모듈 키트 규약을 봅니다.",
+	  t: ["시드 결정성", "자체 난수(SplitMix64)", "공간 분할", "모듈 키트"],
+	  c: ["Scene/Building/BuildingGenerator.h"] },
+	{ n: 54, p: 7, ph: "Phase 12 · 34", title: "지형, 식생, 파티클",
+	  d: "하이트맵 지형과 청크 LOD, 폴리지 인스턴싱, 이미터·모듈·렌더러로 나눈 나이아가라식 파티클과 CPU/GPU 시뮬레이션을 다룹니다.",
+	  t: ["하이트맵", "지형 LOD", "폴리지", "모듈형 파티클", "GPU 시뮬레이션"],
+	  c: ["Renderer/TerrainRenderer", "Scene/Particles", "ParticleSimulate.hlsl"] },
+	// 8부
+	{ n: 55, p: 8, ph: "Phase 17", title: "멀티플레이 기초",
+	  d: "클라이언트-서버 모델, 신뢰/비신뢰 채널, 핸드셰이크와 프로토콜 버전, 전송 계층 추상화와 루프백 테스트를 봅니다.",
+	  t: ["권한 서버", "UDP와 신뢰성", "핸드셰이크", "프로토콜 버전", "전송 추상화"],
+	  c: ["Network/", "Network/NetBindPolicy.h"] },
+	{ n: 56, p: 8, ph: "Phase 17", title: "상태 복제",
+	  d: "리플렉션으로 바뀐 값만 보내는 복제, 정적 NetId, 스냅샷 보간으로 다른 플레이어를 부드럽게 보여 주는 방법을 다룹니다.",
+	  t: ["델타 복제", "NetId", "스냅샷", "보간 지연"],
+	  c: ["Network/ReplicationServer.cpp", "ReplicationClient"] },
+	{ n: 57, p: 8, ph: "Phase 22", title: "클라이언트 예측과 재조정",
+	  d: "입력 지연을 숨기는 예측, 서버 ack, 되감고 다시 적용하는 재조정, 화면 오차를 몇 프레임에 걸쳐 흡수하는 방법을 배웁니다.",
+	  t: ["예측", "무브 순번", "ack", "재조정", "오차 흡수"],
+	  c: ["World/GameWorldCharacter.cpp"] },
+	{ n: 58, p: 8, ph: "Phase 28", title: "물리 예측",
+	  d: "내가 밀친 상자가 늦게 반응하는 문제. 가까운 물체만 로컬 시뮬레이션하고 서버 값으로 수렴시키는 Predictive Interpolation을 봅니다.",
+	  t: ["예측 대상 선정", "기록 비교", "수렴 보정", "스냅"],
+	  c: ["World/GameWorldPhysicsPrediction.cpp"] },
+	{ n: 59, p: 8, ph: "Phase 17 · 53", title: "RPC와 능력 예측",
+	  d: "서버/클라이언트/멀티캐스트 RPC 라우팅, 서버 권한 원칙, 예측 키로 스킬 발동을 미리 보여 주고 거절되면 되돌리는 방법을 다룹니다.",
+	  t: ["RPC", "소유권", "예측 키", "확인/거절"],
+	  c: ["Scene/GameRpc.h", "Scene/Ability/AbilitySystem.cpp"] },
+	// 9부
+	{ n: 60, p: 9, ph: "Phase 16", title: "게임 UI 프레임워크",
+	  d: "위젯 트리와 슬롯, 2단계 레이아웃, 입력 라우팅, SDF 글꼴 아틀라스, UI 애니메이션과 디자이너를 다룹니다.",
+	  t: ["보존 모드 UI", "레이아웃 2단계", "히트 테스트", "SDF 글꼴", "UI 애니메이션"],
+	  c: ["Engine/Source/UI/", "Renderer/UIRenderer"] },
+	{ n: 61, p: 9, ph: "Phase 32", title: "다국어와 텍스트 입력",
+	  d: "문자열 표와 키 조회, 형식 인자, 한글 IME 조합 입력과 캐럿 위치 알리기를 봅니다.",
+	  t: ["문자열 표", "현지화 키", "IME", "텍스트 편집 모델"],
+	  c: ["UI/Localization.h", "UI/UITextEdit.h"] },
+	{ n: 62, p: 9, ph: "Phase 7", title: "오디오",
+	  d: "miniaudio 통합, 3D 사운드의 청자 기준 좌표 변환, 감쇠, 테스트 가능한 무장치 믹싱을 다룹니다.",
+	  t: ["오디오 엔진", "3D 공간화", "좌표계 변환", "감쇠"],
+	  c: ["Engine/Source/Audio/", "AudioMath"] },
+	// 10부
+	{ n: 63, p: 10, ph: "Phase 19", title: "패키징",
+	  d: "쿠킹 → pak → exe 스탬프 → 패키지 폴더. 가상 파일 시스템, 저장 위치 규칙, 크래시 미니덤프와 보고서를 다룹니다.",
+	  t: ["쿠킹", "pak 가상 파일 시스템", "Saved 위치", "크래시 리포트", "PDB"],
+	  c: ["Scripts/Package.ps1", "Core/FileSystem.h", "Tools/Cook/"] },
+	{ n: 64, p: 10, ph: "Phase 19", title: "Steam 연동",
+	  d: "Steamworks SDK를 선택적 의존으로 붙이는 법, 초기화 순서와 오버레이, 업적, SteamPipe 업로드를 봅니다.",
+	  t: ["Steamworks", "오버레이", "업적", "SteamPipe"],
+	  c: ["Online/SteamSubsystem", "Scripts/SteamUpload.ps1"] },
+	{ n: 65, p: 10, ph: "전 과정", title: "엔진 개발 방법론",
+	  d: "자동 화면 검증과 디버그 레이어, CPU·셰이더 같은 식 + 단위 테스트, 결정성, 병렬 작업 트랙 운영 등 이 엔진을 만들며 정착한 방법을 정리합니다.",
+	  t: ["자동 화면 검증", "식 공유 + 테스트", "결정성", "회귀 비교(MD5)", "병렬 트랙"],
+	  c: ["Scripts/Verify.ps1", "Core/Testing/TestFramework.h", "Plans.md"] },
+];
+
+const PartNames = [
+	"오리엔테이션", "그래픽스 기초", "데이터와 구조", "렌더링 심화", "성능과 확장성",
+	"에디터", "애니메이션", "게임플레이", "네트워크", "UI · 다국어 · 오디오", "출시"
+];
+
+// 강의 번호 → 본문 파일
+const LectureFiles = [
+	[0, 1, "Part00_Orientation.html"], [2, 6, "Part01_GraphicsBasics.html"], [7, 12, "Part02_EngineCore.html"],
+	[13, 20, "Part03A_Rendering.html"], [21, 28, "Part03B_AdvancedRendering.html"], [29, 33, "Part04_Performance.html"],
+	[34, 39, "Part05_Editor.html"], [40, 44, "Part06_Animation.html"], [45, 49, "Part07A_Gameplay.html"],
+	[50, 54, "Part07B_GameFramework.html"], [55, 59, "Part08_Networking.html"], [60, 62, "Part09_UI.html"],
+	[63, 65, "Part10_Shipping.html"],
+];
+
+function LectureHref(N)
+{
+	const Entry = LectureFiles.find(([From, To]) => N >= From && N <= To);
+	return Entry ? `${Entry[2]}#lec-${N}` : "#";
+}
+
+const StorageKey = "projecte-lectures-done";
+
+function LoadDone()
+{
+	try { return new Set(JSON.parse(localStorage.getItem(StorageKey) || "[]")); }
+	catch (e) { return new Set(); }
+}
+
+function SaveDone(Done)
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify([...Done])); }
+	catch (e) { /* 저장 불가 환경은 무시 */ }
+}
+
+function El(Tag, Class, Text)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	if (Text !== undefined) Node.textContent = Text;
+	return Node;
+}
+
+const Done = LoadDone();
+
+function UpdateProgress()
+{
+	const Count = Lectures.filter(L => Done.has(L.n)).length;
+	document.getElementById("progress-text").textContent = `진도 ${Count} / ${Lectures.length}`;
+	document.getElementById("progress-bar").style.width = `${(Count / Lectures.length) * 100}%`;
+}
+
+function Render()
+{
+	document.getElementById("stat-lectures").textContent = `${Lectures.length}강`;
+	for (const Container of document.querySelectorAll(".lectures"))
+	{
+		const Part = Number(Container.dataset.part);
+		Container.replaceChildren();
+		for (const L of Lectures.filter(X => X.p === Part))
+		{
+			const Card = El("article", "lec" + (Done.has(L.n) ? " done" : ""));
+			Card.id = `lec-${L.n}`;
+			const Top = El("div", "lec-top");
+			const TitleLink = El("a", "lec-title", L.title);
+			TitleLink.href = LectureHref(L.n);
+			Top.append(El("span", "lec-no", `${L.n}강`), TitleLink, El("span", "badge", L.ph));
+			const Check = El("label");
+			const Box = document.createElement("input");
+			Box.type = "checkbox";
+			Box.checked = Done.has(L.n);
+			Box.addEventListener("change", () =>
+			{
+				if (Box.checked) Done.add(L.n); else Done.delete(L.n);
+				Card.classList.toggle("done", Box.checked);
+				SaveDone(Done);
+				UpdateProgress();
+			});
+			Check.append(Box, document.createTextNode("완료"));
+			Top.append(Check);
+			Card.append(Top, El("p", "", L.d));
+			const Tags = El("div", "tags");
+			for (const T of L.t) Tags.append(El("span", "tag", T));
+			Card.append(Tags);
+			const Refs = El("div", "code-refs", "살펴볼 코드: ");
+			L.c.forEach((C, I) =>
+			{
+				if (I > 0) Refs.append(document.createTextNode(" "));
+				Refs.append(El("code", "", C));
+			});
+			Card.append(Refs);
+			Container.append(Card);
+		}
+	}
+
+	const Toc = document.getElementById("toc-list");
+	Toc.replaceChildren();
+	PartNames.forEach((Name, I) =>
+	{
+		const Li = El("li");
+		const A = El("a");
+		A.href = `#part-${I}`;
+		const Count = Lectures.filter(L => L.p === I).length;
+		A.append(El("span", "pn", `${I}부`), document.createTextNode(`${Name} `), El("span", "pn", `(${Count})`));
+		Li.append(A);
+		Toc.append(Li);
+	});
+	UpdateProgress();
+}
+
+document.getElementById("reset-btn").addEventListener("click", () =>
+{
+	Done.clear();
+	SaveDone(Done);
+	Render();
+});
+
+document.getElementById("theme-btn").addEventListener("click", () =>
+{
+	const Root = document.documentElement;
+	const IsDark = Root.dataset.theme
+		? Root.dataset.theme === "dark"
+		: window.matchMedia("(prefers-color-scheme: dark)").matches;
+	Root.dataset.theme = IsDark ? "light" : "dark";
+	try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+});
+
+try
+{
+	const Saved = localStorage.getItem("projecte-lectures-theme");
+	if (Saved) document.documentElement.dataset.theme = Saved;
+}
+catch (e) {}
+
+Render();
+</script>
+</body>
+</html>

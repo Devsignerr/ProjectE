@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10부 출시 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">10부 출시</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">10부 · 강의 63~65</div>
+	<h1>출시</h1>
+	<p>개발 폴더에서 돌던 게임을 남의 PC에서 돌아가게 만듭니다. 쿠킹과 pak 가상 파일 시스템, 저장 위치와 크래시 리포트, Steam 연동과 업로드까지 간 뒤, 마지막 강의에서 이 엔진을 만들며 정착한 검증·작업 방법론을 정리합니다.</p>
+</header>
+
+<!-- ======================================================= 63강 ======================================================= -->
+<article class="lecture" id="lec-63">
+<header>
+	<div class="no">63강</div>
+	<h2 id="lec-63-title">패키징</h2>
+	<div class="meta">관련 Phase: 19 (배포: 게임 패키지 → Steam, 1~2단계) · 살펴볼 곳: <code>Scripts/Package.ps1</code>(머리 주석), <code>Engine/Source/Core/FileSystem.h/.cpp</code>, <code>Tools/Cook/Source/</code>(<code>CookMain.cpp</code>, <code>PakCommand.cpp</code>, <code>ExeStamp.cpp</code>), <code>Core/Platform/CrashHandler.h/.cpp</code>, <code>Core/Paths.cpp</code>, 루트 <code>CMakeLists.txt</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>개발 폴더에서 잘 돌던 게임이 다른 PC에서 깨지는 전형적인 이유들을 나열할 수 있습니다.</li>
+		<li>쿠킹 → 스테이징 → 검사 → pak으로 이어지는 패키징 단계와 각 단계가 막는 문제를 설명할 수 있습니다.</li>
+		<li>pak 파일의 구조(머리·데이터·색인), 경로 키 규칙, 해시 검사, 마운트를 이해하고, 왜 모든 콘텐츠 읽기가 <code>FFileSystem</code>을 거쳐야 하는지 압니다.</li>
+		<li>저장 위치를 사용자 폴더로 옮기는 이유, 크래시 미니덤프와 PDB의 관계, VC++ 런타임을 앱 옆에 두고 정적 CRT를 쓰지 않는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-63-why"><span class="step">왜 필요한가</span>"내 PC에서는 되는데요"</h3>
+<p>개발 중의 게임은 아주 친절한 환경에서 돕니다. 엔진 소스 폴더가 바로 옆에 있고, 셰이더 컴파일러(DXC)가 있어 셰이더를 즉석에서 컴파일하고, glTF 원본이 있어 없는 쿠킹본을 그 자리에서 만들고, Visual Studio가 설치한 VC++ 런타임이 System32에 있습니다. 쓰기도 자유롭습니다. 로그와 세이브를 프로젝트 폴더에 써도 아무도 막지 않습니다.</p>
+<p>플레이어의 PC에는 이 중 아무것도 없습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>개발 환경</th><th>플레이어 PC</th><th>대응 (이 강의)</th></tr>
+	<tr><td>셰이더 소스 + DXC로 즉석 컴파일</td><td>DXC 없음</td><td>쿠킹된 DXIL만 동봉</td></tr>
+	<tr><td>glTF/PNG 원본 → 필요할 때 쿠킹</td><td>원본 없음(용량·유출)</td><td>쿠킹본만 동봉, 원본 제외</td></tr>
+	<tr><td>파일 수천 개가 폴더에 흩어짐</td><td>설치·패치·무결성 확인이 어려움</td><td>pak 하나로 묶기 + 항목별 해시</td></tr>
+	<tr><td>프로젝트 폴더에 로그·세이브 쓰기</td><td><code>Program Files</code>는 쓰기 금지일 수 있음</td><td><code>%LOCALAPPDATA%</code>로 Saved 이동</td></tr>
+	<tr><td>VC++ 런타임이 System32에 있음</td><td>없을 수 있음</td><td>app-local 런타임 동봉 + 검사</td></tr>
+	<tr><td>크래시 나면 디버거로 봄</td><td>"꺼졌어요"라는 말뿐</td><td>미니덤프 + 보고서 + 로그 + 따로 보관한 PDB</td></tr>
+	<tr><td><code>ProjectERuntime.exe --project ...</code></td><td>"게임이름.exe" 더블클릭</td><td>exe 복사 + 아이콘/버전 스탬프, 프로젝트 자동 탐색</td></tr>
+</table></div>
+<p>Phase 19는 사용자 요청 "게임을 바이너리화해서 스팀 같은 데 올릴 수 있게"로 시작했고, DoD는 "<code>Package.ps1</code> 한 번으로 <code>&lt;게임 이름&gt;.exe</code>를 더블클릭하면 바로 실행되는 폴더가 나오고, VC++ 런타임이 설치되지 않은 PC에서도 실행된다"였습니다.</p>
+
+<h3 id="lec-63-layout"><span class="step">핵심 개념</span>쿠킹과 패키지 배치</h3>
+<p><b>쿠킹(cooking)</b>은 사람이 편집하기 좋은 원본 에셋을 엔진이 바로 읽기 좋은 형식으로 미리 바꾸는 일입니다(10강). 셰이더 HLSL → DXIL 바이트코드, glTF → <code>.emodel</code>, PNG/JPG → 용도별 BC 압축 <code>.etex</code>, 그래프 머티리얼 → 생성된 셰이더 변형의 DXIL. 쿠킹 도구 <code>ProjectECook</code>은 GPU 없이 돕니다. 패키지 게임은 쿠킹본만 읽으므로 DXC가 필요 없습니다(<code>dxcompiler.dll</code>은 지연 로드라 없어도 실행됨).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="개발 폴더와 패키지 폴더">
+		<title>개발 폴더와 패키지 폴더</title>
+		<text x="200" y="24" text-anchor="middle" class="t-bold">개발 (저장소)</text>
+		<rect x="20" y="36" width="360" height="270" rx="8" class="box"/>
+		<g class="t-mono">
+			<text x="36" y="62">Build/ninja-release/Bin/</text>
+			<text x="52" y="82">ProjectERuntime.exe, ProjectEEngine.dll</text>
+			<text x="52" y="102">dxcompiler.dll, *.pdb</text>
+			<text x="36" y="128">Engine/Shaders/  (*.hlsl + Cooked/)</text>
+			<text x="36" y="148">Engine/Content/  (글꼴 등)</text>
+			<text x="36" y="174">Projects/Sample/</text>
+			<text x="52" y="194">Sample.eproject, Config/</text>
+			<text x="52" y="214">Content/  (glTF, PNG, .escene …)</text>
+			<text x="52" y="234">Cooked/   (.emodel, .etex)</text>
+			<text x="52" y="254">Saved/    (로그, 세이브)</text>
+			<text x="52" y="274">Source/   (게임 모듈 C++)</text>
+		</g>
+
+		<text x="640" y="24" text-anchor="middle" class="t-bold">Build/Package/Sample/ (배포)</text>
+		<rect x="460" y="36" width="380" height="222" rx="8" class="acc"/>
+		<g class="t-mono">
+			<text x="476" y="62">Sample.exe          ← 스탬프된 복사본</text>
+			<text x="476" y="82">ProjectEEngine.dll, SampleGame.dll</text>
+			<text x="476" y="102">vcruntime140.dll …  ← app-local CRT</text>
+			<text x="476" y="128">Engine/Packaged.json ← 패키지 표식</text>
+			<text x="476" y="148">Engine/Shaders/Shaders.json</text>
+			<text x="476" y="174">Sample/</text>
+			<text x="492" y="194">Sample.eproject, Config/</text>
+			<text x="492" y="214">Content.epak  ← Content·Cooked·</text>
+			<text x="492" y="234">   Engine Content·쿠킹 DXIL</text>
+		</g>
+		<rect x="460" y="268" width="380" height="38" rx="8" class="box"/>
+		<text x="476" y="292" class="t-mono">Build/Package/Sample-Symbols/  (PDB, 배포 안 함)</text>
+		<path d="M384,170 H456" class="ln" marker-end="url(#arr)"/>
+		<text x="420" y="160" text-anchor="middle" class="t-small">Package.ps1</text>
+		<text x="200" y="324" text-anchor="middle" class="t-muted">Saved는 패키지에서 %LOCALAPPDATA%/[회사/]Sample/Saved 로</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 63-1.</b> 개발 폴더와 패키지 폴더. exe를 더블클릭하면 런타임이 <code>&lt;exe 폴더&gt;/&lt;exe 이름&gt;/</code>에서 <code>.eproject</code>를 찾고 그 안의 <code>*.epak</code>을 마운트합니다. <code>Run.bat</code>도 명령줄 인자도 필요 없습니다.</figcaption>
+</figure>
+
+<p>배치는 언리얼 패키지와 같은 모양입니다: 실행 파일 + <code>Engine/</code> + 실행 파일 이름의 프로젝트 폴더. 몇 가지 파일은 일부러 pak 밖에 둡니다. <code>Shaders.json</code>은 엔진 디렉터리를 찾는 <b>마커</b>이고(<code>FPaths</code>가 실행 파일 위쪽에서 이 파일을 찾아 엔진 폴더를 정함), <code>.eproject</code>와 <code>Config/</code>는 pak을 마운트하기 <b>전에</b> 읽어야 하기 때문입니다. 닭이 먼저 있어야 달걀을 찾을 수 있습니다.</p>
+
+<h3 id="lec-63-pipeline"><span class="step">ProjectE에서는</span>Package.ps1의 다섯 단계</h3>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="패키징 다섯 단계">
+		<title>패키징 다섯 단계</title>
+		<g class="t-small">
+			<rect x="10" y="40" width="150" height="110" rx="10" class="k1"/>
+			<text x="85" y="64" text-anchor="middle" class="t-bold">1. 빌드</text>
+			<text x="85" y="88" text-anchor="middle">Build.ps1 Release</text>
+			<text x="85" y="108" text-anchor="middle" class="t-muted">Runtime·Engine·</text>
+			<text x="85" y="126" text-anchor="middle" class="t-muted">게임 모듈·Cook</text>
+
+			<rect x="180" y="40" width="150" height="110" rx="10" class="k2"/>
+			<text x="255" y="64" text-anchor="middle" class="t-bold">2. 쿠킹</text>
+			<text x="255" y="88" text-anchor="middle">ProjectECook</text>
+			<text x="255" y="108" text-anchor="middle" class="t-muted">셰이더 DXIL,</text>
+			<text x="255" y="126" text-anchor="middle" class="t-muted">모델·텍스처·그래프</text>
+
+			<rect x="350" y="40" width="150" height="110" rx="10" class="k3"/>
+			<text x="425" y="64" text-anchor="middle" class="t-bold">3. 스테이징</text>
+			<text x="425" y="88" text-anchor="middle">exe 복사 + 스탬프</text>
+			<text x="425" y="108" text-anchor="middle" class="t-muted">CRT·Packaged.json</text>
+			<text x="425" y="126" text-anchor="middle" class="t-muted">원본 제외·PDB 분리</text>
+
+			<rect x="520" y="40" width="150" height="110" rx="10" class="k5"/>
+			<text x="595" y="64" text-anchor="middle" class="t-bold">4. 검사</text>
+			<text x="595" y="88" text-anchor="middle">마커·쿠킹 셰이더 수</text>
+			<text x="595" y="108" text-anchor="middle" class="t-muted">dumpbin 종속 DLL</text>
+			<text x="595" y="126" text-anchor="middle" class="t-muted">CRT는 패키지 안에</text>
+
+			<rect x="690" y="40" width="160" height="110" rx="10" class="acc"/>
+			<text x="770" y="64" text-anchor="middle" class="t-bold">5. pak</text>
+			<text x="770" y="88" text-anchor="middle">--make-pak</text>
+			<text x="770" y="108" text-anchor="middle" class="t-muted">Content.epak 생성</text>
+			<text x="770" y="126" text-anchor="middle" class="t-muted">원본 폴더 삭제</text>
+		</g>
+		<path d="M160,95 H176" class="ln" marker-end="url(#arr)"/>
+		<path d="M330,95 H346" class="ln" marker-end="url(#arr)"/>
+		<path d="M500,95 H516" class="ln" marker-end="url(#arr)"/>
+		<path d="M670,95 H686" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="186" text-anchor="middle" class="t-small">어느 단계든 실패하면 throw → 반쯤 만든 패키지를 "완료"라고 하지 않는다</text>
+		<text x="430" y="208" text-anchor="middle" class="t-muted">기본값은 프로젝트 설정(Config/Packaging.json, Project.json), 명령줄 인자가 우선 (-Config, -NoPak, -IncludeSources)</text>
+		<text x="430" y="230" text-anchor="middle" class="t-muted">검사를 pak 전에 두는 이유: 묶기 전 폴더 구조에서 마커·쿠킹본·DLL을 확인하기 쉽다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 63-2.</b> <code>Package.ps1</code>의 단계. 쿠킹본이 있는 원본 모델·이미지는 스테이징에서 빠지고(<code>-IncludeSources</code>면 포함), PDB는 패키지 밖 <code>-Symbols</code> 폴더로 갑니다.</figcaption>
+</figure>
+<p>4단계 검사가 이 스크립트에서 가장 값진 부분입니다. "실행되는지"는 개발 PC에서 확인할 수 없는 것이 있기 때문입니다. 대표가 VC++ 런타임입니다. 개발 PC에는 System32에 런타임이 있으므로 패키지에 빠뜨려도 잘 실행됩니다. 그래서 검사는 일부러 엄격합니다.</p>
+<pre class="code" data-file="Scripts/Package.ps1 — 4. 검사 (발췌)"><span class="com"># 종속 DLL: 패키지 바이너리가 가져오는 DLL이 패키지 안 또는 Windows 기본 DLL이어야 한다.</span>
+<span class="com"># 개발 PC에는 VC++ 런타임이 System32에 있으므로 vcruntime/msvcp 계열은 패키지 안에 있어야만 통과</span>
+$Lines = &amp; $DumpBin /nologo /dependents $Binary.FullName
+...
+$IsCrt     = $Dependency -match <span class="str">'^(vcruntime|msvcp|concrt|vccorlib)'</span>
+$InPackage = Test-Path (Join-Path $PackageDir $Dependency)
+$InSystem  = (Test-Path (Join-Path $System32 $Dependency)) -or ($Dependency -like <span class="str">"api-ms-win-*"</span>) ...
+<span class="kw">if</span> (-not $InPackage -and ($IsCrt -or -not $InSystem)) { $Missing += <span class="str">"$($Binary.Name) → $Dependency"</span> }</pre>
+<p>"개발 PC에서 통과하는 것"이 아니라 "깨끗한 PC에서 통과할 것"을 검사하도록 규칙을 비틀어 놓은 것입니다. 실행 파일 이름이 게임 모듈 이름과 같으면 PDB 파일 이름이 겹치므로 시작부터 거부하는 것도 같은 성격의 검사입니다.</p>
+
+<h3 id="lec-63-pak"><span class="step">핵심 개념</span>pak: 파일 수천 개를 하나로</h3>
+<p>콘텐츠를 폴더째 배포하면 파일 수천 개가 생기고, 일부만 손상되거나 바뀌어도 알아채기 어렵습니다. 그래서 대부분의 엔진은 콘텐츠를 <b>아카이브 파일 하나</b>로 묶고, 엔진 안에 그 아카이브를 폴더처럼 보여 주는 <b>가상 파일 시스템</b>을 둡니다. ProjectE의 아카이브는 <code>.epak</code>입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="epak 구조와 읽기 경로">
+		<title>epak 구조와 읽기 경로</title>
+		<text x="20" y="26" class="t-bold">Content.epak (v1, 압축 없음)</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="190" height="56" rx="6" class="acc"/>
+			<text x="115" y="62" text-anchor="middle" class="t-bold">머리</text>
+			<text x="115" y="82" text-anchor="middle" class="t-small">EPAK·버전·개수·색인 위치</text>
+			<rect x="210" y="40" width="380" height="56" rx="0" class="box"/>
+			<text x="400" y="62" text-anchor="middle" class="t-bold">데이터 (항목 바이트를 이어 붙임)</text>
+			<text x="400" y="82" text-anchor="middle" class="t-muted">sample/content/… | sample/cooked/… | engine/…</text>
+			<rect x="590" y="40" width="250" height="56" rx="6" class="k1"/>
+			<text x="715" y="62" text-anchor="middle" class="t-bold">색인 (파일 끝)</text>
+			<text x="715" y="82" text-anchor="middle" class="t-small">항목마다 키·오프셋·크기·FNV-1a</text>
+		</g>
+		<path d="M190,104 C 260,130 520,130 640,100" class="ln-d" marker-end="url(#arr)"/>
+		<text x="410" y="140" text-anchor="middle" class="t-muted">머리의 색인 위치로 바로 점프 → 색인만 메모리에 올린다</text>
+
+		<text x="20" y="180" class="t-bold">FFileSystem::ReadFile("…/Sample/Content/Scenes/Hub.escene")</text>
+		<g class="t-small">
+			<rect x="20" y="196" width="200" height="48" rx="8" class="k1"/>
+			<text x="120" y="216" text-anchor="middle">키 만들기</text>
+			<text x="120" y="234" text-anchor="middle" class="t-mono">루트 기준·소문자·'/'</text>
+			<rect x="260" y="196" width="170" height="48" rx="8" class="k2"/>
+			<text x="345" y="216" text-anchor="middle">마운트된 pak 색인에</text>
+			<text x="345" y="234" text-anchor="middle">있나?</text>
+			<rect x="470" y="186" width="190" height="40" rx="8" class="k2"/>
+			<text x="565" y="211" text-anchor="middle">읽기 → FNV-1a 비교</text>
+			<rect x="470" y="246" width="190" height="40" rx="8" class="box"/>
+			<text x="565" y="271" text-anchor="middle">디스크 파일 읽기</text>
+			<rect x="700" y="186" width="140" height="40" rx="8" class="k5"/>
+			<text x="770" y="211" text-anchor="middle">다르면 오류(손상)</text>
+		</g>
+		<path d="M220,220 H256" class="ln" marker-end="url(#arr)"/>
+		<path d="M430,214 L466,206" class="ln" marker-end="url(#arr)"/>
+		<path d="M430,228 L466,262" class="ln" marker-end="url(#arr)"/>
+		<path d="M660,206 H696" class="ln" marker-end="url(#arr)"/>
+		<text x="448" y="196" class="t-muted">예</text>
+		<text x="396" y="264" class="t-muted">아니오</text>
+		<text x="20" y="300" class="t-muted">pak 항목의 수정 시각 = pak 파일의 수정 시각 (캐시 무효화 비교에 안전). 마운트는 시작 때만, 읽기는 여러 스레드에서 가능(pak마다 스트림 뮤텍스).</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 63-3.</b> 위: <code>.epak</code> 파일 배치. 아래: 읽기 경로. 같은 함수가 pak에 있으면 pak에서, 없으면 디스크에서 읽으므로 개발 실행(pak 없음)과 패키지 실행이 같은 코드를 탑니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/FileSystem.h (발췌)"><span class="com">// 런타임 파일 읽기 창구: 마운트한 pak(.epak) → 디스크 순서로 찾는다.</span>
+<span class="com">// 에셋/씬/스크립트/글꼴/오디오처럼 "콘텐츠를 읽는" 코드는 std::ifstream 대신 이것을 쓴다 (패키지는 콘텐츠를 pak에 묶는다).</span>
+<span class="com">// 쓰기(저장, 쿠킹, 로그)와 편집기 전용 디렉터리 탐색은 디스크를 직접 쓴다.</span>
+<span class="com">//</span>
+<span class="com">// pak 항목 키 = 마운트 루트 기준 상대 경로 (소문자, '/' 구분). 절대 경로로 묻든 상대 경로로 묻든 같은 파일을 찾는다.</span>
+<span class="kw">class</span> FFileSystem
+{
+<span class="kw">public</span>:
+	<span class="kw">static bool</span> Mount(<span class="kw">const</span> std::filesystem::path&amp; PakFile, <span class="kw">const</span> std::filesystem::path&amp; MountRoot);
+	<span class="kw">static bool</span> Exists(<span class="kw">const</span> std::filesystem::path&amp; Path);
+	<span class="kw">static bool</span> ReadFile(<span class="kw">const</span> std::filesystem::path&amp; Path, std::vector&lt;uint8&gt;&amp; OutBytes);
+	<span class="kw">static bool</span> ReadTextFile(<span class="kw">const</span> std::filesystem::path&amp; Path, std::string&amp; OutText);
+	<span class="kw">static bool</span> ReadFileRange(...);   <span class="com">// 텍스처 밉 스트리밍 (30강)</span>
+	<span class="kw">static</span> std::optional&lt;std::filesystem::file_time_type&gt; GetLastWriteTime(<span class="kw">const</span> std::filesystem::path&amp; Path);
+	<span class="kw">static</span> std::string MakeKey(<span class="kw">const</span> std::filesystem::path&amp; Path, <span class="kw">const</span> std::filesystem::path&amp; MountRoot);
+};</pre>
+<p>설계의 핵심 결정을 하나씩 봅시다.</p>
+<ul>
+	<li><b>키 = 마운트 루트 기준 소문자 경로.</b> Windows 파일 시스템은 대소문자를 구분하지 않으므로 개발 중에는 <code>Hub.escene</code>과 <code>hub.escene</code>이 같은 파일입니다. pak도 같게 동작해야 "개발에선 되는데 패키지에선 안 되는" 버그가 없습니다. 키 생성 함수 <code>MakeKey</code>는 쓰는 도구(<code>PakCommand.cpp</code>)와 읽는 쪽이 <b>공유</b>합니다.</li>
+	<li><b>항목별 FNV-1a 64비트 해시.</b> 읽을 때마다 비교해 손상된 항목을 오류로 알립니다. 보안용 서명이 아니라 디스크·다운로드 손상을 잡는 체크섬입니다.</li>
+	<li><b>결정적 출력.</b> <code>--make-pak</code>은 키를 정렬해 씁니다. 같은 입력이면 같은 pak — Steam 같은 패치 시스템이 차이만 받게 하는 데 유리하고, 빌드를 재현할 수 있습니다.</li>
+	<li><b>압축·암호화 없음.</b> 콘텐츠의 대부분이 이미 BC 압축된 텍스처라 일반 압축 이득이 작고, 의존성을 늘리지 않으려는 결정입니다. 암호화는 "내용을 숨기는 목적이 아님"으로 명시했습니다(Plans.md 한계).</li>
+</ul>
+<pre class="code" data-file="Engine/Source/Core/FileSystem.cpp — ReadFile (발췌)">FMountedPak* Pak = FindEntry(Path, Entry);
+<span class="kw">if</span> (Pak == <span class="kw">nullptr</span>) { <span class="kw">return</span> ReadDiskFile(Path, OutBytes); }   <span class="com">// pak에 없으면 디스크</span>
+OutBytes.resize(<span class="kw">static_cast</span>&lt;size_t&gt;(Entry-&gt;Size));
+{
+	std::scoped_lock Lock(Pak-&gt;StreamMutex);                         <span class="com">// pak 하나 = 스트림 하나</span>
+	Pak-&gt;Stream.seekg(<span class="kw">static_cast</span>&lt;std::streamoff&gt;(Entry-&gt;Offset));
+	...
+}
+<span class="kw">if</span> (HashBytes(OutBytes.data(), OutBytes.size()) != Entry-&gt;Hash)
+{
+	E_LOG(LogCore, Error, <span class="str">"pak 항목이 손상되었습니다 (해시 불일치): {}"</span>, ...);
+	<span class="kw">return false</span>;
+}</pre>
+
+<h4>함정: std::ifstream은 pak을 모른다</h4>
+<p>pak을 도입하는 순간 엔진 전체에 규칙이 하나 생깁니다. <b>콘텐츠를 읽는 모든 코드는 <code>FFileSystem</code>을 거친다.</b> <code>std::ifstream("…/Scenes/Hub.escene")</code>이나 <code>std::filesystem::exists</code>는 디스크만 보므로, 개발 중에는 멀쩡히 동작하다가 패키지에서만 "파일 없음"이 됩니다. 테스트도 개발 폴더에서 돌므로 이 버그는 패키지를 실제로 실행해 보기 전까지 숨어 있습니다.</p>
+<p>그래서 Phase 19 2단계는 pak 형식을 만드는 것보다 <b>읽기 경로를 통합</b>하는 데 더 많은 일을 했습니다: 쿠킹 모델/텍스처/.enav, 씬·머티리얼·파티클·프리팹·UI·BT JSON, Lua, 글꼴, 이미지, 쿠킹 셰이더, 에셋 캐시 신선도 판정, 오디오(62강의 miniaudio VFS). 반대로 쓰기, 에디터 전용 폴더 탐색, glTF/FBX 원본 임포트는 디스크를 직접 씁니다(패키지에는 원본이 없으므로). pak은 <b>폴더 나열이 안 된다</b>는 점도 영향을 줬습니다 — 61강의 문자열 표가 패키지에서 설정에 경로를 적어야 하는 이유입니다.</p>
+<div class="callout story">
+	<b class="t">확인 방법: 디스크 Content 없이 돌려 보기</b>
+	2단계 검증은 "패키지에서 원본 콘텐츠 폴더를 지운 상태로" 했습니다. pak 93개 파일 32.1MB, 패키지 52.3MB — 기본 씬, <code>Demo_UI</code>(글꼴·9-slice·Lua), <code>Demo_AI</code>(.enav·.ebt), <code>Demo_Audio</code>(사운드)가 모두 디스크 Content 없이 정상이고 경고·오류 0. 어떤 로더가 아직 <code>ifstream</code>을 쓰면 이 실행에서 바로 드러납니다. CLAUDE.md에는 "새 로더에서 <code>std::ifstream</code>/<code>std::filesystem::exists</code>로 콘텐츠를 읽으면 패키지(pak)에서 깨진다"로 남겨 두었습니다.
+</div>
+
+<h3 id="lec-63-exe"><span class="step">ProjectE에서는</span>exe 스탬프와 사용자 폴더</h3>
+<h4>프로젝트마다 exe를 다시 빌드하지 않는다</h4>
+<p>게임마다 이름·아이콘·버전 정보가 다른 exe가 필요하지만, 그것 때문에 런타임을 프로젝트마다 다시 컴파일하고 싶지는 않습니다. Windows 실행 파일의 아이콘과 버전 정보는 <b>리소스</b>라는 별도 영역에 있고, <code>UpdateResource</code> API로 빌드 후에 바꿔 쓸 수 있습니다. 패키징은 <code>ProjectERuntime.exe</code>를 <code>&lt;ExecutableName&gt;.exe</code>로 복사한 뒤 <code>ProjectECook --stamp-exe</code>로 프로젝트 설정(<code>DisplayName/Version/Company/Icon</code>)을 써 넣습니다. <code>FExecutableResources</code>가 .ico 파싱(또는 PNG → 256/64/48/32/16 크기 아이콘), <code>VS_VERSIONINFO</code> 생성, 기록을 맡고, 아이콘 그룹 ID 1을 창 클래스 아이콘으로 쓰므로 작업 표시줄 아이콘도 함께 바뀝니다. 테스트(<code>ExecutableResourcesTests</code> 4개)는 복사한 exe에 스탬프한 뒤 <code>GetFileVersionInfo</code>/<code>LoadImage</code>로 되읽어 확인합니다.</p>
+
+<h4>Saved는 사용자 폴더로</h4>
+<p>패키지 게임은 <code>C:\Program Files</code>에 설치될 수 있고, 그곳은 일반 권한으로 쓸 수 없습니다. 그래서 패키지일 때는 로그·세이브·설정·크래시 덤프를 <code>%LOCALAPPDATA%/[회사/]&lt;프로젝트&gt;/Saved</code>로 옮깁니다. "지금 패키지인가?"는 Package.ps1이 기록하는 <code>Engine/Packaged.json</code>의 존재로 판정합니다(<code>FPaths::IsPackaged()</code>).</p>
+<pre class="code" data-file="Engine/Source/Core/Paths.cpp — GetProjectSavedDirectory"><span class="kw">if</span> (IsPackaged())
+{
+	<span class="com">// 설치 폴더(Program Files, Steam 라이브러리)는 쓰기 권한이 없을 수 있다</span>
+	<span class="kw">const</span> std::filesystem::path LocalAppData = QueryLocalAppData();
+	<span class="kw">if</span> (!LocalAppData.empty())
+	{
+		<span class="kw">return</span> EnsureDirectory(MakeUserSavedDirectory(LocalAppData, FProjectSettings::Get().Info.Company, GetProjectDescriptor().Name));
+	}
+}
+<span class="kw">return</span> EnsureDirectory(GetProjectDirectory() / L<span class="str">"Saved"</span>);   <span class="com">// 개발: 프로젝트 폴더</span></pre>
+<div class="callout warn">
+	<b class="t">규칙: 런타임이 쓰는 파일은 항상 FPaths::GetSavedDirectory() 아래</b>
+	로그(<code>&lt;Saved&gt;/Logs/&lt;exe 이름&gt;.log</code>, 이전 로그는 <code>-backup</code> 하나), 세이브(<code>&lt;Saved&gt;/SaveGames/</code>), 사용자 설정(<code>&lt;Saved&gt;/Config/</code>), 크래시(<code>&lt;Saved&gt;/Crashes/</code>) 모두 이 함수에서 시작합니다. 프로젝트·설치 폴더에 직접 경로를 만들어 쓰는 코드는 개발 중에만 동작하는 버그입니다. 세이브 게임도 경로를 직접 만들지 않고 <code>FSaveGame</code>(슬롯 이름 검증)을 거칩니다(50강).
+</div>
+
+<h3 id="lec-63-crash"><span class="step">핵심 개념</span>크래시를 "증거"로 남기기: 미니덤프, 보고서, PDB</h3>
+<p>플레이어 PC에서 게임이 꺼지면 개발자가 받는 정보는 "꺼졌어요"뿐입니다. 재현이 안 되면 고칠 수 없습니다. 그래서 크래시 순간의 상태를 파일로 남깁니다.</p>
+<ul>
+	<li><b>미니덤프(minidump)</b>: 크래시 순간의 스레드 스택, 레지스터, 로드된 모듈 목록, (옵션에 따라) 스택이 가리키는 메모리 등을 담은 작은 파일. Visual Studio로 열면 디버거가 그 순간에 멈춘 것처럼 콜스택과 지역 변수를 볼 수 있습니다.</li>
+	<li><b>PDB(프로그램 데이터베이스)</b>: 기계어 주소 ↔ 함수 이름·소스 줄 대응표. 덤프만 있으면 "0x7FF6…에서 크래시"이지만, <b>빌드 당시의 PDB와 같은 바이너리</b>가 있으면 "Scene.cpp 120줄"이 됩니다.</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="크래시 처리 흐름">
+		<title>크래시 처리 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="40" width="200" height="54" rx="8" class="k5"/>
+			<text x="120" y="62" text-anchor="middle" class="t-bold">처리 안 된 SEH 예외</text>
+			<text x="120" y="82" text-anchor="middle" class="t-muted">액세스 위반 등</text>
+			<rect x="20" y="130" width="200" height="54" rx="8" class="k5"/>
+			<text x="120" y="152" text-anchor="middle" class="t-bold">Fatal 로그</text>
+			<text x="120" y="172" text-anchor="middle" class="t-muted">E_CHECK 실패 → RaiseException</text>
+
+			<rect x="250" y="80" width="210" height="64" rx="10" class="acc"/>
+			<text x="355" y="104" text-anchor="middle" class="t-bold">HandleUnhandledException</text>
+			<text x="355" y="124" text-anchor="middle" class="t-muted">디버거 붙음 → 그냥 넘김</text>
+			<text x="355" y="139" text-anchor="middle" class="t-muted">재진입 → 즉시 종료</text>
+
+			<rect x="490" y="30" width="350" height="34" rx="6" class="k1"/>
+			<text x="665" y="52" text-anchor="middle">Minidump.dmp (스택·스레드·모듈)</text>
+			<rect x="490" y="74" width="350" height="34" rx="6" class="k1"/>
+			<text x="665" y="96" text-anchor="middle">CrashReport.txt (예외 코드 + 심볼화된 콜스택)</text>
+			<rect x="490" y="118" width="350" height="34" rx="6" class="k1"/>
+			<text x="665" y="140" text-anchor="middle">로그 사본</text>
+			<rect x="490" y="162" width="350" height="34" rx="6" class="k4"/>
+			<text x="665" y="184" text-anchor="middle">알림 대화 상자 (패키지 창 앱만)</text>
+		</g>
+		<path d="M220,67 L246,100" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,157 L246,126" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,100 L486,47" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,108 L486,91" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,116 L486,135" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,124 L486,179" class="ln" marker-end="url(#arr)"/>
+		<text x="665" y="222" text-anchor="middle" class="t-small">위치: &lt;Saved&gt;/Crashes/&lt;시각&gt;/</text>
+		<text x="430" y="252" text-anchor="middle" class="t-muted">개발자 쪽: Build/Package/&lt;이름&gt;-Symbols/ 의 PDB + 같은 바이너리로 덤프를 연다</text>
+		<text x="430" y="270" text-anchor="middle" class="t-muted">검증: --crash-test (30프레임 뒤 일부러 액세스 위반)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 63-4.</b> 두 갈래(진짜 크래시, Fatal 로그)가 같은 출력으로 모입니다. 자동 검증과 서버에서는 대화 상자를 끕니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/Platform/CrashHandler.cpp (발췌)">LONG WINAPI HandleUnhandledException(EXCEPTION_POINTERS* Info)
+{
+	<span class="kw">if</span> (IsDebuggerPresent()) { <span class="kw">return</span> EXCEPTION_CONTINUE_SEARCH; }            <span class="com">// 디버거가 먼저 처리</span>
+	<span class="kw">if</span> (InterlockedExchange(&amp;GbHandlingCrash, <span class="num">1</span>) != <span class="num">0</span>) { <span class="kw">return</span> EXCEPTION_EXECUTE_HANDLER; } <span class="com">// 처리 중 또 크래시</span>
+	<span class="kw">const</span> std::string Report = BuildReport(Info);
+	FLog::WriteEmergency(Report);
+	<span class="kw">const</span> std::filesystem::path CrashDirectory = WriteCrashFiles(Info, Report);  <span class="com">// MiniDumpWriteDump + 보고서 + 로그 사본</span>
+	ShowCrashDialog(CrashDirectory);
+	<span class="kw">return</span> EXCEPTION_EXECUTE_HANDLER;
+}
+
+<span class="com">// Fatal: 사용자 예외를 던져 현재 컨텍스트로 덤프를 쓴다 (__try가 있는 함수에는 소멸자가 있는 객체를 둘 수 없어 분리)</span>
+<span class="kw">void</span> RaiseFatal(<span class="kw">const char</span>* Message)
+{
+	__try { RaiseException(GFatalExceptionCode, <span class="num">0</span>, <span class="num">0</span>, <span class="kw">nullptr</span>); }
+	__except (WriteFatalDump(GetExceptionInformation(), Message)) {}
+}</pre>
+<p>Fatal 경로가 일부러 예외를 던지는 이유는 미니덤프가 <b>예외 정보(<code>EXCEPTION_POINTERS</code>)</b>와 함께 쓸 때 가장 정확한 콜스택을 담기 때문입니다. 스택 오버플로일 때는 남은 스택이 적어 보고서의 심볼화를 생략하는 것처럼, 크래시 처리기 자체가 또 크래시 나지 않도록 하는 작은 방어가 여러 군데 있습니다.</p>
+
+<h4>Release에도 PDB를: /Z7</h4>
+<p>최적화된 Release 빌드에서 일어나는 크래시가 진짜 크래시입니다. 그래서 Release도 디버그 정보를 만듭니다(<code>/Z7</code> + 링커 <code>/DEBUG /OPT:REF /OPT:ICF</code>). <code>/Z7</code>은 디버그 정보를 오브젝트 파일에 넣는 방식이라 병렬 컴파일 때 공유 PDB 파일 잠금 경합이 없습니다. <code>/DEBUG</code>를 켜면 링커가 기본으로 최적화(사용 안 하는 함수 제거, 같은 함수 합치기)를 끄므로 <code>/OPT:REF /OPT:ICF</code>를 명시해 되살립니다(루트 <code>CMakeLists.txt</code> 주석). PDB는 패키지에 넣지 않고 <code>-Symbols</code> 폴더에 <b>같은 바이너리</b>와 함께 보관합니다. 디버거는 덤프의 모듈과 PDB의 서명이 일치해야 심볼을 붙이므로, 다시 빌드한 PDB로는 열리지 않습니다.</p>
+
+<h3 id="lec-63-crt"><span class="step">핵심 개념</span>VC++ 런타임: app-local과 "정적 CRT 금지"</h3>
+<p>MSVC로 빌드한 프로그램은 C/C++ 표준 라이브러리 구현(CRT: <code>vcruntime140.dll</code>, <code>msvcp140.dll</code> …)을 필요로 합니다. 배포 방법은 셋입니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>방법</th><th>장점</th><th>단점</th><th>ProjectE</th></tr>
+	<tr><td>재배포 패키지 설치 요구</td><td>패키지가 작음</td><td>설치 단계 필요, 없으면 실행 실패</td><td>—</td></tr>
+	<tr><td><b>app-local</b>: CRT DLL을 exe 옆에 복사</td><td>설치 불필요</td><td>DLL 몇 개가 늘어남</td><td><b>채택</b> (<code>Microsoft.VC143.CRT</code>)</td></tr>
+	<tr><td>정적 CRT (<code>/MT</code>)</td><td>DLL 없음</td><td>모듈마다 CRT 사본(힙)이 따로 생김</td><td><b>금지</b></td></tr>
+</table></div>
+<p>정적 CRT가 왜 안 될까요? ProjectE는 <code>ProjectEEngine.dll</code>, 게임 모듈 DLL, exe가 <code>std::string</code>, <code>std::vector</code>, <code>std::unique_ptr</code> 같은 STL 객체를 함수 경계 너머로 주고받습니다(12강). 정적 CRT로 빌드하면 각 모듈이 <b>자기만의 힙</b>을 가집니다. 엔진 DLL이 만든 <code>std::string</code>을 게임 모듈이 소멸시키면, 게임 모듈의 힙에 "내가 할당하지 않은 메모리"를 해제하라고 하는 셈이 되어 힙이 깨집니다. 모든 모듈이 같은 CRT DLL을 공유해야 힙도 하나입니다.</p>
+<div class="callout tip">
+	<b class="t">설계 이유가 다른 결정과 이어진다</b>
+	"엔진을 DLL 하나로 만들고 게임 모듈과 STL로 대화한다"(12강)는 결정이 "정적 CRT를 쓸 수 없다"를 낳고, 그것이 "app-local 런타임 + dumpbin 검사"를 낳았습니다. 배포 방식은 아키텍처의 결과입니다. Debug 구성은 디버그 CRT가 재배포 불가라 검증용으로만 패키징합니다.
+</div>
+
+<h3 id="lec-63-pitfalls"><span class="step">함정과 교훈</span></h3>
+<ul>
+	<li><b>개발 PC에서 통과하는 검사는 의미가 없다</b>: System32의 CRT처럼 개발 환경이 가려 주는 것을 일부러 실패로 취급해야 합니다. Phase 19 1단계는 Release 패키지(52.2MB)를 "인자 없이 <code>Sample.exe</code> 실행 → 프로젝트 자동 탐색, DXC 없이 쿠킹 셰이더"로 확인하고, 로그·덤프가 사용자 폴더에 남는지, <code>--crash-test</code> 덤프가 써지는지까지 봤습니다.</li>
+	<li><b>사람만 확인할 수 있는 것은 따로 적는다</b>: 크래시 대화 상자(자동 검증에서는 꺼짐), Alt+Enter 실제 전환, "VC++ 런타임이 없는 PC에서 실행"은 Plans.md에 사용자 확인 항목으로 남았습니다. 자동 검증이 덮지 못하는 범위를 숨기지 않는 것도 방법론입니다(65강).</li>
+	<li><b>pak의 한계를 문서화</b>: 압축·암호화 없음, 패치용 추가 pak 우선순위 없음(먼저 마운트한 pak이 이김). 형식을 바꾸면 <code>FPakWriter::Version</code>을 올립니다.</li>
+	<li><b>패키지 게임은 ESC로 종료하지 않는다</b>: 개발 런타임은 ESC가 종료였지만, 게임에서 ESC는 메뉴 키입니다. 게임이 ESC를 받고 필요하면 <code>Game.Quit()</code>을 부릅니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>패키징은 "개발 환경이 몰래 제공하던 것"(DXC, 원본 에셋, 쓰기 권한, CRT, 디버거)을 하나씩 대체하는 일이다.</li>
+		<li>Package.ps1 = 빌드 → 쿠킹 → 스테이징(exe 스탬프, CRT, 원본 제외, PDB 분리) → 검사 → pak. 실패하면 멈춘다.</li>
+		<li>pak = 머리 + 데이터 + 색인(소문자 키, FNV-1a). 콘텐츠 읽기는 반드시 <code>FFileSystem</code>(pak → 디스크), <code>ifstream</code>은 패키지에서 깨진다.</li>
+		<li>패키지의 Saved는 <code>%LOCALAPPDATA%</code>, 크래시는 미니덤프 + 보고서 + 로그, PDB는 같은 바이너리와 함께 따로 보관.</li>
+		<li>모듈 간 STL 교환 때문에 정적 CRT는 금지, VC++ 런타임은 app-local로 동봉하고 dumpbin으로 검사한다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 새로 만든 대화 시스템이 <code>std::ifstream</code>으로 <code>Content/Dialogs/Intro.json</code>을 읽습니다. 에디터와 단위 테스트에서는 잘 됩니다. 언제, 어떻게 문제가 드러날까요?</summary>
+	pak을 쓰는 패키지에서 원본 Content 폴더가 지워진 뒤에야 드러납니다. 파일이 pak 안에만 있으므로 <code>ifstream</code>은 열지 못하고 "파일 없음"이 됩니다. <code>FFileSystem::ReadTextFile</code>로 바꾸면 pak → 디스크 순서로 찾으므로 개발과 패키지 모두 동작합니다. 이런 버그를 일찍 잡으려면 "디스크 Content 없이 패키지 실행"을 검증 절차에 넣습니다.
+</details>
+<details class="quiz"><summary>Q2. pak 키를 대소문자 구분으로 만들었다면 어떤 일이 생길 수 있을까요?</summary>
+	씬 파일이 <code>Materials/Rock.emat</code>을 참조하는데 실제 파일 이름이 <code>rock.emat</code>이면, Windows 디스크에서는 대소문자를 구분하지 않으므로 개발 중에는 잘 열립니다. 그러나 pak에서는 키가 달라 찾지 못합니다. 그래서 키를 소문자로 정규화해 디스크와 같은 의미를 갖게 했습니다.
+</details>
+<details class="quiz"><summary>Q3. 크래시 덤프를 받았는데 Visual Studio가 심볼을 못 찾습니다. 그 사이 같은 커밋으로 다시 빌드한 PDB를 넣어도 마찬가지입니다. 왜일까요?</summary>
+	디버거는 덤프 안 모듈의 서명(빌드 때 생긴 GUID·나이)과 PDB의 서명이 일치해야 연결합니다. 같은 소스라도 다시 빌드하면 서명이 바뀝니다. 그래서 패키징 때 그 바이너리와 그 PDB를 <code>-Symbols</code> 폴더에 함께 보관합니다.
+</details>
+</article>
+
+<!-- ======================================================= 64강 ======================================================= -->
+<article class="lecture" id="lec-64">
+<header>
+	<div class="no">64강</div>
+	<h2 id="lec-64-title">Steam 연동</h2>
+	<div class="meta">관련 Phase: 19 (3단계 Steamworks, 4단계 SteamPipe), 21-1(종료 순서) · 살펴볼 곳: <code>Engine/Source/Online/SteamSubsystem.h/.cpp</code>, <code>Engine/Source/Online/CMakeLists.txt</code>, <code>CMake/ThirdParty.cmake</code>(steamworks), <code>Runtime/Source/RuntimeApplication.cpp</code>, <code>Scripting/ScriptGameBindings.cpp</code>, <code>Scripts/SteamUpload.ps1</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>Steamworks가 게임에 주는 것(초기화·소유 확인, 오버레이, 업적, 배포)과 그 동작 방식(실행 중인 Steam 클라이언트와 통신, 콜백 펌프)을 압니다.</li>
+		<li>파트너 계정으로만 받을 수 있는 SDK를 "있으면 쓰고 없으면 같은 API의 빈 구현"으로 붙이는 방법을 설명할 수 있습니다.</li>
+		<li>Steam 초기화를 렌더러보다 먼저, 종료를 렌더러보다 먼저 하는 이유를 압니다.</li>
+		<li>업적 요청이 통계 수신 전에 오면 왜 대기열에 넣어야 하는지 압니다.</li>
+		<li>SteamPipe 빌드 스크립트(app/depot vdf)와 업로드 절차를 이해합니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-64-why"><span class="step">왜 필요한가</span>게임을 "가게"에 올리기</h3>
+<p>63강에서 더블클릭하면 돌아가는 패키지 폴더를 만들었습니다. 이것을 판매·배포하려면 유통 플랫폼이 필요하고, PC 게임에서는 Steam이 사실상 표준입니다. Steam은 단순한 다운로드 서버가 아닙니다.</p>
+<ul>
+	<li><b>소유 확인</b>: 게임을 산 사람만 실행하게 합니다.</li>
+	<li><b>오버레이</b>: Shift+Tab으로 게임 위에 친구 목록·업적·브라우저를 띄웁니다. Steam이 게임의 화면 출력에 끼어들어 그립니다.</li>
+	<li><b>업적·통계·클라우드 저장</b> 같은 서비스.</li>
+	<li><b>배포(SteamPipe)</b>: 빌드를 올리고, 브랜치(베타 등)별로 공개하고, 플레이어에게는 바뀐 부분만 패치합니다.</li>
+</ul>
+<p>게임 쪽에서 이 기능을 쓰는 C++ 라이브러리가 <b>Steamworks SDK</b>입니다. 문제는 이 SDK를 <b>Steamworks 파트너 계정으로 로그인해야만</b> 받을 수 있다는 것입니다. 저장소에 넣을 수도, 다른 서드파티처럼 CMake FetchContent로 받을 수도 없습니다(Plans.md Phase 19 결정). 그런데 엔진은 SDK가 없는 PC에서도 빌드되어야 합니다.</p>
+
+<h3 id="lec-64-concept"><span class="step">핵심 개념</span>Steamworks의 동작 방식</h3>
+<p>Steamworks API는 게임 프로세스 안에서 혼자 동작하지 않습니다. 게임이 <code>SteamAPI_Init()</code>을 부르면 <code>steam_api64.dll</code>이 <b>같은 PC에서 실행 중인 Steam 클라이언트</b>에 연결합니다. 그래서 Steam이 꺼져 있거나 로그인되지 않았거나 그 계정이 게임을 소유하지 않으면 초기화가 실패합니다. 이때 SDK는 "이 게임이 어떤 App ID인지"를 알아야 하는데, 정상 경로(Steam 라이브러리에서 실행)에서는 Steam이 환경 변수로 넘겨 주고, 개발 중에는 보통 exe 옆에 <code>steam_appid.txt</code>를 둡니다.</p>
+<p>Steam에서 오는 응답은 대부분 <b>비동기</b>입니다. "통계를 받아 와"라고 요청하면 결과는 나중에 <b>콜백</b>으로 옵니다. 콜백은 게임이 <code>SteamAPI_RunCallbacks()</code>를 불러 줄 때 그 스레드에서 실행되므로, 게임 루프가 <b>매 프레임 한 번</b> 불러 펌프해야 합니다(1강의 Win32 메시지 펌프와 같은 구조).</p>
+<p>또 하나의 기본 개념은 <code>SteamAPI_RestartAppIfNecessary(AppId)</code>입니다. 플레이어가 Steam을 거치지 않고 설치 폴더의 exe를 직접 실행했다면, 이 함수가 true를 돌려주고 Steam을 통해 게임을 <b>다시 실행</b>시킵니다. 그러면 게임은 즉시 종료해야 하고, Steam이 정식 경로로 새 프로세스를 띄웁니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="Steam 초기화 판단 흐름">
+		<title>Steam 초기화 판단 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="180" height="50" rx="8" class="k1"/>
+			<text x="110" y="52" text-anchor="middle" class="t-bold">런타임 시작</text>
+			<text x="110" y="70" text-anchor="middle" class="t-muted">App ID = 프로젝트 설정</text>
+			<rect x="250" y="30" width="190" height="50" rx="8" class="box"/>
+			<text x="345" y="52" text-anchor="middle">App ID 0 또는</text>
+			<text x="345" y="70" text-anchor="middle">SDK 없이 빌드?</text>
+			<rect x="490" y="30" width="170" height="50" rx="8" class="k4"/>
+			<text x="575" y="60" text-anchor="middle">Disabled (Steam 없이)</text>
+
+			<rect x="250" y="110" width="190" height="56" rx="8" class="box"/>
+			<text x="345" y="132" text-anchor="middle">패키지 + Steam 밖 실행?</text>
+			<text x="345" y="152" text-anchor="middle" class="t-mono">RestartAppIfNecessary</text>
+			<rect x="490" y="113" width="170" height="50" rx="8" class="k5"/>
+			<text x="575" y="134" text-anchor="middle">RestartThroughSteam</text>
+			<text x="575" y="152" text-anchor="middle" class="t-muted">앱은 바로 종료</text>
+
+			<rect x="250" y="196" width="190" height="56" rx="8" class="box"/>
+			<text x="345" y="218" text-anchor="middle">SteamAPI_Init()</text>
+			<text x="345" y="238" text-anchor="middle" class="t-muted">클라이언트·로그인·소유</text>
+			<rect x="490" y="190" width="170" height="34" rx="8" class="k2"/>
+			<text x="575" y="212" text-anchor="middle">Ok → 통계 요청</text>
+			<rect x="490" y="230" width="170" height="34" rx="8" class="k4"/>
+			<text x="575" y="252" text-anchor="middle">Failed → 경고 후 계속</text>
+		</g>
+		<path d="M200,55 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M440,55 H486" class="ln" marker-end="url(#arr)"/>
+		<text x="452" y="48" class="t-muted">예</text>
+		<path d="M345,80 V106" class="ln" marker-end="url(#arr)"/>
+		<text x="352" y="98" class="t-muted">아니오</text>
+		<path d="M440,138 H486" class="ln" marker-end="url(#arr)"/>
+		<text x="452" y="131" class="t-muted">예</text>
+		<path d="M345,166 V192" class="ln" marker-end="url(#arr)"/>
+		<text x="352" y="184" class="t-muted">아니오</text>
+		<path d="M440,216 L486,207" class="ln" marker-end="url(#arr)"/>
+		<path d="M440,232 L486,245" class="ln" marker-end="url(#arr)"/>
+		<text x="672" y="56" class="t-muted">자동 검증 실행·--no-steam:</text>
+		<text x="672" y="74" class="t-muted">Init 자체를 부르지 않음</text>
+		<text x="672" y="122" class="t-muted">개발 실행·자동 검증·</text>
+		<text x="672" y="138" class="t-muted">--no-steam-restart는</text>
+		<text x="672" y="154" class="t-muted">재실행하지 않음</text>
+		<text x="672" y="214" class="t-muted">어느 경우든</text>
+		<text x="672" y="232" class="t-muted">게임은 멈추지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 64-1.</b> <code>FSteamSubsystem::Init</code>의 결과는 넷(<code>EInitResult</code>)입니다. 재실행만 앱이 종료해야 하는 경우이고, 나머지는 Steam이 있든 없든 게임이 계속 돕니다.</figcaption>
+</figure>
+
+<h3 id="lec-64-optional"><span class="step">ProjectE에서는</span>선택적 SDK와 빈 구현</h3>
+<p>SDK가 있을 때만 Steam 기능을 켜려면 두 곳을 맞춰야 합니다. 빌드 시스템이 SDK를 찾았는지 알아야 하고, 코드가 그 결과에 따라 실제 호출과 빈 구현 중 하나를 컴파일해야 합니다.</p>
+<pre class="code" data-file="CMake/ThirdParty.cmake · Engine/Source/Online/CMakeLists.txt (발췌)"><span class="com"># SDK 경로: CMake 변수 E_STEAMWORKS_SDK_DIR (루트 CMakeLocal.cmake — gitignore) 또는 환경 변수 STEAMWORKS_SDK_DIR</span>
+<span class="kw">if</span>(EXISTS <span class="str">"${_SteamSdk}/public/steam/steam_api.h"</span> AND EXISTS <span class="str">"${_SteamSdk}/redistributable_bin/win64/steam_api64.lib"</span>)
+    add_library(steamworks SHARED IMPORTED GLOBAL)   <span class="com"># 미리 빌드된 DLL을 타깃으로 감싼다</span>
+    ...
+<span class="kw">endif</span>()
+
+<span class="kw">if</span>(TARGET ThirdParty::steamworks)
+    target_link_libraries(EOnline PRIVATE ThirdParty::steamworks)
+    target_compile_definitions(EOnline PRIVATE E_WITH_STEAM=1)
+<span class="kw">else</span>()
+    target_compile_definitions(EOnline PRIVATE E_WITH_STEAM=0)
+<span class="kw">endif</span>()</pre>
+<p><code>E_WITH_STEAM</code>은 <code>PRIVATE</code> 정의라 <code>SteamSubsystem.cpp</code>에만 보입니다. 공개 헤더 <code>SteamSubsystem.h</code>는 SDK가 있든 없든 <b>똑같습니다</b>. Steam 헤더도 이 .cpp에서만 포함합니다(공개 헤더에 <code>Windows.h</code>를 넣지 않는 1강의 규칙과 같은 생각). 그래서 Lua 바인딩, 게임 모듈, 런타임은 SDK 유무를 전혀 모르고 같은 코드로 빌드됩니다.</p>
+<pre class="code" data-file="Engine/Source/Online/SteamSubsystem.cpp — Init (발췌)"><span class="kw">if</span> (AppId == <span class="num">0</span>) { <span class="kw">return</span> EInitResult::Disabled; }
+<span class="pp">#if</span> E_WITH_STEAM
+<span class="kw">if</span> (bAllowRestart &amp;&amp; SteamAPI_RestartAppIfNecessary(AppId))
+{
+	E_LOG(LogOnline, Display, <span class="str">"Steam 밖에서 실행되어 Steam을 통해 다시 실행합니다 (App ID {})"</span>, AppId);
+	<span class="kw">return</span> EInitResult::RestartThroughSteam;
+}
+<span class="com">// steam_appid.txt 대신 환경 변수로 App ID를 넘긴다 (Steam이 실행한 경우에는 이미 설정되어 있다)</span>
+SetEnvironmentVariableW(L<span class="str">"SteamAppId"</span>, AppIdText.c_str());
+SetEnvironmentVariableW(L<span class="str">"SteamGameId"</span>, AppIdText.c_str());
+<span class="kw">if</span> (!SteamAPI_Init())
+{
+	E_LOG(LogOnline, Warning, <span class="str">"Steam 초기화 실패 (App ID {}): ... Steam 없이 계속합니다"</span>, AppId);
+	<span class="kw">return</span> EInitResult::Failed;
+}
+...
+SteamUserStats()-&gt;RequestCurrentStats(); <span class="com">// 1.53: 업적을 쓰기 전에 통계를 받아야 한다 (UserStatsReceived_t)</span>
+<span class="kw">return</span> EInitResult::Ok;
+<span class="pp">#else</span>
+E_LOG(LogOnline, Log, <span class="str">"Steamworks SDK 없이 빌드되어 Steam 기능을 쓰지 않습니다 (E_STEAMWORKS_SDK_DIR)"</span>);
+<span class="kw">return</span> EInitResult::Disabled;
+<span class="pp">#endif</span></pre>
+<p><code>steam_appid.txt</code> 대신 환경 변수를 쓰는 데는 이유가 있습니다. 이 파일은 "Steam 밖에서 실행해도 된다"는 개발용 표식이라, 실수로 패키지에 넣어 배포하면 재실행 검사가 꺼집니다. 그래서 ProjectE는 파일을 아예 쓰지 않고, 업로드 스크립트는 패키지에 이 파일이 있으면 <b>업로드를 거부</b>합니다.</p>
+
+<h3 id="lec-64-order"><span class="step">핵심 개념</span>초기화와 종료 순서: 오버레이는 D3D 장치를 잡는다</h3>
+<p>Steam 오버레이는 게임이 화면을 내보내는 순간(D3D의 Present)에 끼어들어 자기 UI를 그립니다. 그러려면 오버레이 모듈이 게임의 D3D 장치·스왑체인이 <b>만들어지기 전에</b> 준비되어 있어야 합니다. 그래서 런타임은 Steam을 렌더러(RHI)보다 <b>먼저</b> 초기화합니다. 반대로 종료할 때는 오버레이가 스왑체인과 명령 큐에 대한 참조를 들고 있으므로 Steam을 렌더러보다 <b>먼저</b> 끕니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="Steam과 렌더러의 수명 순서">
+		<title>Steam과 렌더러의 수명 순서</title>
+		<line x1="40" y1="190" x2="830" y2="190" class="ln" marker-end="url(#arr)"/>
+		<text x="820" y="212" text-anchor="end" class="t-muted">시간</text>
+		<g class="t-small">
+			<rect x="60" y="40" width="670" height="40" rx="8" class="k4"/>
+			<text x="395" y="65" text-anchor="middle" class="t-bold">Steam (FSteamSubsystem) — 매 프레임 RunCallbacks</text>
+			<rect x="150" y="100" width="500" height="40" rx="8" class="k1"/>
+			<text x="400" y="125" text-anchor="middle" class="t-bold">렌더러 (FD3D12RHI: 장치·스왑체인·큐)</text>
+		</g>
+		<line x1="60" y1="84" x2="60" y2="186" class="ln-d"/>
+		<line x1="150" y1="144" x2="150" y2="186" class="ln-d"/>
+		<line x1="650" y1="144" x2="650" y2="186" class="ln-d"/>
+		<line x1="730" y1="84" x2="730" y2="186" class="ln-d"/>
+		<text x="66" y="176" class="t-small">① Steam Init</text>
+		<text x="156" y="176" class="t-small">② RHI Init</text>
+		<text x="590" y="176" text-anchor="middle" class="t-small">③ Steam Shutdown</text>
+		<text x="736" y="176" class="t-small">④ 렌더러 종료</text>
+		<path d="M590,166 V86" class="ln s5" marker-end="url(#arr)"/>
+		<text x="598" y="96" class="t-small f5">렌더러보다 먼저 끈다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 64-2.</b> Steam의 수명이 렌더러를 감싸지만 종료는 Steam이 먼저입니다. 런타임 코드 주석: "Steam 오버레이가 스왑체인/큐를 잡고 있으므로 렌더러보다 먼저 끈다 (반대면 종료 시 라이브 D3D 객체 보고)".</figcaption>
+</figure>
+
+<pre class="code" data-file="Runtime/Source/RuntimeApplication.cpp — OnInit (발췌)"><span class="com">// Steam (프로젝트 설정 Steam App ID): 오버레이가 D3D 장치를 잡도록 렌더러보다 먼저. 패키지 게임은 Steam 밖에서 실행되면 Steam으로 다시 실행</span>
+<span class="com">// 자동 검증은 기본으로 Steam을 켜지 않는다 (오버레이가 D3D 객체를 프로세스 끝까지 잡아 종료 시 라이브 객체로 보고됨 — 확인하려면 --steam).</span>
+<span class="kw">const bool</span> bSteamWanted = !SteamArgs.HasFlag(L<span class="str">"--no-steam"</span>) &amp;&amp; (!IsAutomationRun() || SteamArgs.HasFlag(L<span class="str">"--steam"</span>));
+<span class="kw">if</span> (FPaths::HasProject() &amp;&amp; bSteamWanted)
+{
+	<span class="kw">const bool</span> bAllowRestart = FPaths::IsPackaged() &amp;&amp; !IsAutomationRun() &amp;&amp; !FCommandLine::FromProcess().HasFlag(L<span class="str">"--no-steam-restart"</span>);
+	<span class="kw">if</span> (FSteamSubsystem::Get().Init(FProjectSettings::Get().Info.SteamAppId, bAllowRestart) == FSteamSubsystem::EInitResult::RestartThroughSteam)
+	{
+		<span class="kw">return false</span>; <span class="com">// Steam이 게임을 다시 실행한다</span>
+	}
+}
+Rhi = std::make_unique&lt;FD3D12RHI&gt;();   <span class="com">// 그다음 렌더러</span></pre>
+<p>Steam은 <b>런타임만</b> 초기화합니다. 에디터와 전용 서버는 하지 않습니다. 에디터에서 Shift+Tab을 누를 때마다 오버레이가 뜨면 곤란하고, 서버는 화면이 없습니다. <code>FSteamSubsystem::Get()</code>은 엔진 DLL 안 전역 하나이므로(12강 — DLL 경계를 넘는 전역은 한곳에), 게임 모듈과 Lua가 같은 인스턴스를 봅니다.</p>
+
+<h3 id="lec-64-achievements"><span class="step">핵심 개념</span>업적과 통계 수신 대기열</h3>
+<p>업적은 Steamworks 파트너 사이트에 <b>API 이름</b>(예: <code>ACH_WIN</code>)으로 등록하고, 게임은 그 이름으로 <code>SetAchievement</code> → <code>StoreStats</code>를 부릅니다. 그런데 이 프로젝트가 쓰는 SDK 1.53에서는 업적을 쓰기 전에 <b>현재 통계를 서버에서 받아 와야</b> 합니다. 요청(<code>RequestCurrentStats</code>)은 초기화 직후에 보내지만, 결과 콜백(<code>UserStatsReceived_t</code>)은 몇 프레임 뒤에 옵니다. 게임이 시작 직후(예: 첫 맵 진입 업적) 업적을 달성하면 아직 통계가 없습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="업적 대기열 시퀀스">
+		<title>업적 대기열 시퀀스</title>
+		<g class="t-small">
+			<rect x="40" y="20" width="160" height="34" rx="6" class="k1"/><text x="120" y="42" text-anchor="middle" class="t-bold">게임 (Lua/C++)</text>
+			<rect x="350" y="20" width="160" height="34" rx="6" class="acc"/><text x="430" y="42" text-anchor="middle" class="t-bold">FSteamSubsystem</text>
+			<rect x="660" y="20" width="160" height="34" rx="6" class="k4"/><text x="740" y="42" text-anchor="middle" class="t-bold">Steam 클라이언트</text>
+		</g>
+		<line x1="120" y1="54" x2="120" y2="250" class="ln-d"/>
+		<line x1="430" y1="54" x2="430" y2="250" class="ln-d"/>
+		<line x1="740" y1="54" x2="740" y2="250" class="ln-d"/>
+		<path d="M430,78 H736" class="ln" marker-end="url(#arr)"/>
+		<text x="585" y="72" text-anchor="middle" class="t-small">Init 직후 RequestCurrentStats</text>
+		<path d="M120,112 H426" class="ln" marker-end="url(#arr)"/>
+		<text x="275" y="106" text-anchor="middle" class="t-small">UnlockAchievement("ACH_FIRST_MAP")</text>
+		<rect x="440" y="98" width="170" height="28" rx="5" class="k4"/>
+		<text x="525" y="117" text-anchor="middle" class="t-small">통계 없음 → 대기열에</text>
+		<path d="M736,156 H434" class="ln s2" marker-end="url(#arr)"/>
+		<text x="585" y="150" text-anchor="middle" class="t-small">UserStatsReceived_t (RunCallbacks 중)</text>
+		<path d="M430,196 H736" class="ln" marker-end="url(#arr)"/>
+		<text x="585" y="190" text-anchor="middle" class="t-small">대기열 SetAchievement… → StoreStats</text>
+		<path d="M120,230 H426" class="ln" marker-end="url(#arr)"/>
+		<text x="275" y="224" text-anchor="middle" class="t-small">이후 요청은 바로 SetAchievement</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 64-3.</b> 통계를 받기 전의 업적 요청은 버리지 않고 대기열에 넣었다가, 수신 콜백에서 한꺼번에 적용하고 저장합니다. 호출하는 쪽은 타이밍을 신경 쓰지 않아도 됩니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Online/SteamSubsystem.cpp (발췌)"><span class="kw">bool</span> FSteamSubsystem::UnlockAchievement(<span class="kw">const</span> std::string&amp; Name)
+{
+	...
+	<span class="kw">if</span> (!Impl-&gt;bStatsReady)
+	{
+		Impl-&gt;PendingAchievements.push_back(Name); <span class="com">// 통계를 받으면 적용</span>
+		<span class="kw">return true</span>;
+	}
+	<span class="kw">if</span> (!SteamUserStats()-&gt;SetAchievement(Name.c_str()))
+	{
+		E_LOG(LogOnline, Warning, <span class="str">"업적을 찾을 수 없습니다 (Steamworks에 등록된 API 이름인지 확인): {}"</span>, Name);
+		<span class="kw">return false</span>;
+	}
+	SteamUserStats()-&gt;StoreStats();
+	...
+}
+
+<span class="com">// 콜백 — RunCallbacks 안에서 불린다</span>
+<span class="kw">void</span> FSteamCallbacks::OnUserStatsReceived(UserStatsReceived_t* Result)
+{
+	<span class="kw">if</span> (Result-&gt;m_nGameID != SteamUtils()-&gt;GetAppID()) { <span class="kw">return</span>; }
+	<span class="kw">if</span> (Result-&gt;m_eResult != k_EResultOK) { <span class="com">/* 경고 한 번 (같은 요청에 콜백이 여러 번 올 수 있음) */</span> <span class="kw">return</span>; }
+	bStatsReady = <span class="kw">true</span>;
+	<span class="kw">for</span> (<span class="kw">const</span> std::string&amp; Name : PendingAchievements) { SteamUserStats()-&gt;SetAchievement(Name.c_str()); }
+	<span class="kw">if</span> (!PendingAchievements.empty()) { SteamUserStats()-&gt;StoreStats(); PendingAchievements.clear(); }
+}</pre>
+<p>콜백 객체(<code>FSteamCallbacks</code>)를 <code>SteamAPI_Init</code> 성공 <b>뒤에</b> 만드는 것도 주의할 점입니다. Steam의 <code>STEAM_CALLBACK</code> 매크로는 객체 생성 시점에 콜백을 등록하므로, 초기화 전에 만들면 등록이 무효입니다(코드 주석 "Steam 콜백은 SteamAPI_Init 이후에 등록해야 하므로 초기화 성공 후에 만든다").</p>
+<p>게임 코드에서는 이렇게 씁니다. Lua <code>Steam</code> 테이블은 <code>FScriptSteamHooks</code>로 연결되어(Scripting은 Online 모듈을 직접 모름), Steam이 없으면 기본값(사용 불가, 빈 이름, false)을 돌려줍니다.</p>
+<pre class="code" data-file="Engine/Source/Scripting/ScriptGameBindings.cpp — 머리 주석 (발췌)"><span class="com">//   Steam.IsAvailable() / Steam.GetPlayerName() / Steam.GetLanguage()</span>
+<span class="com">//   Steam.UnlockAchievement("ACH_WIN") / Steam.IsAchievementUnlocked("ACH_WIN") / Steam.ClearAchievement("ACH_WIN")</span>
+<span class="com">//   Steam.ActivateOverlay("Achievements") / Steam.IsOverlayActive()   -- 오버레이가 떠 있으면 일시정지 권장</span></pre>
+<p>오버레이가 열렸는지는 <code>GameOverlayActivated_t</code> 콜백으로 알 수 있고, 게임은 그동안 일시정지하는 것이 좋습니다. <code>GetLanguage()</code>는 Steam 클라이언트 언어("koreana", "english" …)이므로 61강의 언어 결정에 참고할 수 있는 값입니다.</p>
+
+<h3 id="lec-64-pipe"><span class="step">ProjectE에서는</span>SteamPipe 업로드 스크립트</h3>
+<p>Steam에 빌드를 올리는 도구는 <code>steamcmd</code>이고, 무엇을 어떻게 올릴지는 <b>vdf</b>(Valve의 키-값 텍스트 형식) 빌드 스크립트 두 개로 적습니다. <b>앱(App)</b>은 게임 하나, <b>디포(Depot)</b>는 앱 안의 파일 묶음(예: Windows용 본편)입니다. <code>Scripts/SteamUpload.ps1</code>은 패키징부터 업로드까지 한 번에 합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="SteamPipe 업로드 흐름">
+		<title>SteamPipe 업로드 흐름</title>
+		<g class="t-small">
+			<rect x="10" y="40" width="150" height="70" rx="10" class="k1"/>
+			<text x="85" y="66" text-anchor="middle" class="t-bold">Package.ps1</text>
+			<text x="85" y="88" text-anchor="middle" class="t-muted">63강 패키지</text>
+			<rect x="190" y="40" width="160" height="70" rx="10" class="k5"/>
+			<text x="270" y="66" text-anchor="middle" class="t-bold">검사</text>
+			<text x="270" y="86" text-anchor="middle" class="t-muted">steam_appid.txt 있으면</text>
+			<text x="270" y="102" text-anchor="middle" class="t-muted">거부</text>
+			<rect x="380" y="30" width="190" height="90" rx="10" class="acc"/>
+			<text x="475" y="54" text-anchor="middle" class="t-bold">vdf 생성</text>
+			<text x="475" y="76" text-anchor="middle" class="t-mono">app_build_&lt;AppId&gt;.vdf</text>
+			<text x="475" y="96" text-anchor="middle" class="t-mono">depot_build_&lt;DepotId&gt;.vdf</text>
+			<text x="475" y="112" text-anchor="middle" class="t-muted">*.pdb 제외</text>
+			<rect x="600" y="40" width="120" height="70" rx="10" class="k2"/>
+			<text x="660" y="66" text-anchor="middle" class="t-bold">steamcmd</text>
+			<text x="660" y="88" text-anchor="middle" class="t-muted">+run_app_build</text>
+			<rect x="750" y="40" width="100" height="70" rx="10" class="k4"/>
+			<text x="800" y="66" text-anchor="middle" class="t-bold">Steam</text>
+			<text x="800" y="88" text-anchor="middle" class="t-muted">빌드 등록</text>
+		</g>
+		<path d="M160,75 H186" class="ln" marker-end="url(#arr)"/>
+		<path d="M350,75 H376" class="ln" marker-end="url(#arr)"/>
+		<path d="M570,75 H596" class="ln" marker-end="url(#arr)"/>
+		<path d="M720,75 H746" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="150" class="t-small">-GenerateOnly: vdf만 만들고 로그인하지 않음 · -Preview: 매니페스트만, 실제 업로드 없음 · -SkipPackage: 기존 패키지 사용</text>
+		<text x="20" y="172" class="t-small">-SetLive &lt;베타 브랜치&gt;: 그 브랜치에 바로 공개 (default 브랜치는 거부 — 웹에서 공개)</text>
+		<text x="20" y="194" class="t-small">App ID = 프로젝트 설정 SteamAppId, Depot ID 기본 = App ID + 1 · 비밀번호는 명령줄에 넣지 않고 steamcmd가 직접 묻는다</text>
+		<text x="20" y="216" class="t-muted">계정: -Account 또는 STEAM_BUILD_ACCOUNT (빌드 전용 계정 권장) · steamcmd: -SteamCmd → STEAMCMD → CMakeLocal의 SDK ContentBuilder</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 64-4.</b> 업로드 스크립트의 흐름과 옵션. 기본 브랜치 공개처럼 되돌리기 어려운 일은 스크립트가 하지 않고 사람이 웹에서 합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Scripts/SteamUpload.ps1 — 생성하는 vdf (발췌)">"DepotBuild"
+{
+	"DepotID" "$DepotId"
+	"FileMapping"
+	{
+		"LocalPath" "*"         <span class="com">// ContentRoot(패키지 폴더) 전체를</span>
+		"DepotPath" "."         <span class="com">// 설치 폴더 루트에</span>
+		"Recursive" "1"
+	}
+	"FileExclusion" "*.pdb"     <span class="com">// 심볼은 배포하지 않는다 (63강)</span>
+}
+"AppBuild"
+{
+	"AppID" "$AppId"
+	"Desc" "$SafeDescription"
+	"Preview" "0 또는 1"
+	"SetLive" "$SetLive"
+	"ContentRoot" "$PackageDir"
+	"BuildOutput" "$OutputDir"
+	"Depots" { "$DepotId" "$DepotVdf" }
+}</pre>
+<p>vdf 문자열에는 따옴표를 넣지 않고 경로 끝에 <code>\</code>를 두지 않는다는 주석이 있습니다. <code>\"</code>가 이스케이프로 읽혀 파일 형식이 깨질 수 있기 때문입니다. 설명 문구의 따옴표는 작은따옴표로 바꿔 넣습니다. 이런 작은 형식 함정은 스크립트에 주석으로 남겨 둬야 다음 사람이 같은 실수를 하지 않습니다.</p>
+
+<h3 id="lec-64-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">자동 검증이 "라이브 D3D 객체"를 보고하다</b>
+	Phase 21 작업 중 런타임 자동 검증이 종료 시 해제되지 않은 D3D 객체를 보고했습니다. 원인은 Steam 오버레이였습니다. 오버레이가 스왑체인과 큐를 잡고 있는데 Steam 종료가 렌더러 종료보다 늦었던 것입니다. 수정은 둘: 런타임 Steam 종료를 렌더러 앞으로 옮기고, 자동 검증 실행은 기본으로 Steam을 켜지 않게 했습니다(오버레이가 프로세스 끝까지 D3D 객체를 잡으므로 — 확인할 때만 <code>--steam</code>). "디버그 레이어 오류 0, 라이브 객체 0"이라는 기준(1강·65강)이 있었기에 바로 드러난 문제입니다.
+</div>
+<div class="callout story">
+	<b class="t">Steam 없이도 검증할 수 있는 부분과 없는 부분</b>
+	SDK 없이 빌드한 엔진은 <code>Steam_DisabledWithoutInit</code> 테스트와 Lua Steam 기본값 테스트로, Steam 클라이언트가 꺼진 PC는 "경고 후 정상 실행"으로 자동 확인합니다. 업로드는 <code>-GenerateOnly</code>로 vdf 생성(Release 패키지 52.6MB, 18개 파일, steam_api64.dll 포함)까지 확인했습니다. 실제 Steam 연결은 Phase 20 검증 때 "사용자 이름 로그"까지 확인됐고, 그때 Steamworks에 통계가 등록되어 있지 않아 통계 수신 실패 경고가 한 번 나왔습니다. 실제 업로드와 오버레이·업적 동작은 Plans.md에 사용자 확인 항목으로 남아 있습니다.
+</div>
+<ul>
+	<li><b>비밀은 저장소 밖에</b>: SDK 경로는 gitignore된 <code>CMakeLocal.cmake</code>나 환경 변수로, 업로드 계정 비밀번호는 steamcmd가 직접 묻게 합니다. 스크립트 인자나 로그에 비밀번호가 남지 않게 하는 것이 기본입니다.</li>
+	<li><b>steam_api64.dll 동봉</b>: 엔진 DLL 빌드 후 Bin으로 복사되고 Package.ps1이 가져갑니다. DLL은 있는데 프로젝트 설정에 App ID가 없으면 패키징이 주의를 출력합니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>Steamworks는 실행 중인 Steam 클라이언트와 통신하며, 응답은 콜백으로 오므로 매 프레임 <code>RunCallbacks</code>로 펌프한다.</li>
+		<li>SDK는 파트너 전용이라 선택적 의존: CMake가 찾으면 <code>E_WITH_STEAM=1</code>, 아니면 같은 API의 빈 구현. Steam 헤더는 .cpp 하나에만.</li>
+		<li>오버레이 때문에 Init은 렌더러보다 먼저, Shutdown도 렌더러보다 먼저. 런타임만 초기화하고 자동 검증은 끈다.</li>
+		<li>Steam 밖 실행은 <code>RestartAppIfNecessary</code>로 재실행, <code>steam_appid.txt</code>는 쓰지 않고 패키지에 있으면 업로드 거부.</li>
+		<li>업적은 통계 수신 전이면 대기열 → 수신 콜백에서 적용. 업로드는 vdf 두 개 + steamcmd, 기본 브랜치 공개는 사람이 웹에서.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. Steam 초기화를 렌더러 생성 뒤로 옮기면 어떤 증상이 예상될까요?</summary>
+	오버레이가 이미 만들어진 D3D 장치·스왑체인에 끼어들 기회를 놓쳐 Shift+Tab 오버레이가 뜨지 않을 수 있습니다. 런타임 코드가 "오버레이가 D3D 장치를 잡도록 렌더러보다 먼저"라고 순서를 고정한 이유입니다.
+</details>
+<details class="quiz"><summary>Q2. 업적 대기열 없이, 통계를 받기 전의 UnlockAchievement 호출을 그냥 실패로 돌려주면 게임 코드는 어떻게 바뀌어야 할까요?</summary>
+	게임 코드가 "통계 준비됨"을 확인하고, 아니면 기억했다가 나중에 다시 부르는 로직을 업적마다 가져야 합니다. 그 책임을 서브시스템 한곳(<code>PendingAchievements</code>)으로 모으면 Lua·C++ 어디서든 시점을 신경 쓰지 않고 한 줄로 부를 수 있습니다.
+</details>
+<details class="quiz"><summary>Q3. 개발자가 편의를 위해 패키지 폴더에 steam_appid.txt를 넣었습니다. 무엇이 문제이고, ProjectE는 어떻게 막나요?</summary>
+	이 파일이 있으면 SDK가 Steam 밖 실행을 허용하는 개발 모드처럼 동작해 <code>RestartAppIfNecessary</code>에 의한 재실행 검사가 꺼집니다. ProjectE는 애초에 파일 대신 환경 변수로 App ID를 넘기고, <code>SteamUpload.ps1</code>은 패키지에 이 파일이 있으면 업로드를 거부합니다.
+</details>
+</article>
+
+<!-- ======================================================= 65강 ======================================================= -->
+<article class="lecture" id="lec-65">
+<header>
+	<div class="no">65강</div>
+	<h2 id="lec-65-title">엔진 개발 방법론</h2>
+	<div class="meta">관련: 전 과정 · 살펴볼 곳: <code>Scripts/Verify.ps1</code>, <code>Scripts/ScaleBench.ps1</code>, <code>Engine/Source/Core/Testing/TestFramework.h</code>, <code>Core/FrameTime.h</code>, <code>Renderer/LightMath.h</code> ↔ <code>Shaders/Lighting.hlsli</code>, <code>CLAUDE.md</code>, <code>Plans.md</code>, <code>git log</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>렌더링처럼 "눈으로 봐야 아는" 결과를 자동으로 검증하는 방법(숨긴 창 실행, 스크린샷, 디버그 레이어 0건)을 설명할 수 있습니다.</li>
+		<li>CPU 식과 셰이더 식을 같은 모양으로 두고 CPU 쪽을 단위 테스트하는 습관이 왜 GPU 버그를 줄이는지 압니다.</li>
+		<li>결정성(같은 입력 → 비트 동일한 화면)을 만드는 조건과, 그것으로 회귀를 MD5 한 줄로 비교하는 방법을 압니다.</li>
+		<li>국소 깜빡임 같은 "평균에 안 잡히는" 화면 문제와, 규모가 커질 때만 드러나는 성능 문제를 재는 방법을 압니다.</li>
+		<li>Plans.md의 완료 기준(DoD)과 병렬 작업 트랙(워크트리) 운영에서 얻은 교훈을 정리할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-65-why"><span class="step">왜 필요한가</span>큰 소프트웨어는 "확인하는 방법"이 만든다</h3>
+<p>ProjectE의 첫 커밋은 2026-09-29이고, 이 강의를 쓰는 시점(2026-10-04)까지 <code>git log</code>에 커밋 483개, 그중 병합 커밋 101개가 쌓였습니다. 렌더 그래프, 레이 트레이싱, DDGI, 멀티플레이 예측, 패키징까지 64강에 걸쳐 본 기능이 이 짧은 기간에 들어갔습니다. 사람 한 명이 AI 에이전트 여러 개와 병렬로 일하는 방식이었습니다.</p>
+<p>이 속도에서 가장 위험한 것은 <b>조용한 회귀</b>입니다. 그림자 최적화가 반사 화면을 1픽셀 바꿨는데 아무도 모르고, 사흘 뒤 다른 작업자가 "원래 이랬나?" 하고 넘어가는 것. 엔진 코드는 대부분 "실행해서 화면을 봐야" 맞는지 아는 코드라 단위 테스트만으로는 부족하고, 사람이 매번 눈으로 보기에는 양이 너무 많습니다. 이 마지막 강의는 그 사이를 메운 방법들 — 이 엔진을 만들며 실제로 정착한 것들 — 을 정리합니다.</p>
+
+<h3 id="lec-65-verify"><span class="step">핵심 개념</span>자동 화면 검증: 실행하고, 찍고, 로그를 센다</h3>
+<p>모든 실행 파일은 1강의 <code>FApplication</code>을 공유하므로 같은 자동 검증 인자를 가집니다: <code>--exit-after N</code>(N프레임 뒤 종료), <code>--screenshot 경로</code>, <code>--log 경로</code>. <code>Scripts/Verify.ps1</code>은 이것을 감싸 에디터·런타임·Sandbox를 실행하고, 스크린샷과 로그를 <code>Saved/Verify/</code>에 남긴 뒤, 로그의 Error/Warning/Fatal(D3D12 디버그 레이어 메시지 포함)을 종류별로 묶어 보여 줍니다.</p>
+<pre class="code" data-file="Scripts/Verify.ps1 (발췌)"><span class="com"># 종료 코드: 0 = 오류 없음, 1 = 디버그 레이어/엔진 Error 또는 Fatal 발견, 2 = 실행 실패/시간 초과</span>
+$Arguments = <span class="str">"--exit-after $Frames --screenshot `"$Shot`" --log `"$Log`" $ExtraArgs"</span>
+$Process = Start-Process -FilePath $Exe -ArgumentList $Arguments -PassThru -WorkingDirectory $RootDir
+<span class="kw">if</span> (-not $Process.WaitForExit($TimeoutSeconds * <span class="num">1000</span>)) { $Process.Kill(); exit <span class="num">2</span> }
+...
+<span class="com"># 로그들의 Error/Warning/Fatal을 종류별로 묶어 출력 (주소, 서브리소스 번호, 밉 번호 제거)</span>
+$ErrorCount = Show-LogIssues @($Log)
+<span class="kw">if</span> ($Process.ExitCode -ne <span class="num">0</span>) { exit <span class="num">2</span> }
+<span class="kw">if</span> ($ErrorCount -gt <span class="num">0</span>) { exit <span class="num">1</span> }
+exit <span class="num">0</span></pre>
+<p>"묶어 보여 주기"에서 주소·서브리소스 번호를 지우는 이유는, 같은 원인의 디버그 레이어 경고가 리소스마다 다른 주소로 수천 줄 찍히기 때문입니다. 정규화해서 묶으면 "이 종류가 2,048번"이라는 한 줄이 됩니다. 기준은 단순하고 엄격합니다: <b>디버그 레이어 오류·경고 0건, 종료 시 라이브 객체 0</b>. 0강의 Phase 0 DoD에 이미 있던 기준이 끝까지 유지되었습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="변경 하나의 검증 루프">
+		<title>변경 하나의 검증 루프</title>
+		<g class="t-small">
+			<rect x="30" y="40" width="150" height="56" rx="10" class="k1"/>
+			<text x="105" y="64" text-anchor="middle" class="t-bold">변경</text>
+			<text x="105" y="84" text-anchor="middle" class="t-muted">진단 먼저 짧게 보고</text>
+			<rect x="230" y="40" width="160" height="56" rx="10" class="k2"/>
+			<text x="310" y="64" text-anchor="middle" class="t-bold">빌드 /W4 /WX</text>
+			<text x="310" y="84" text-anchor="middle" class="t-muted">경고 = 에러</text>
+			<rect x="440" y="40" width="160" height="56" rx="10" class="k2"/>
+			<text x="520" y="64" text-anchor="middle" class="t-bold">단위 테스트</text>
+			<text x="520" y="84" text-anchor="middle" class="t-muted">Build.ps1 -Test</text>
+			<rect x="650" y="40" width="180" height="56" rx="10" class="acc"/>
+			<text x="740" y="64" text-anchor="middle" class="t-bold">Verify.ps1</text>
+			<text x="740" y="84" text-anchor="middle" class="t-muted">숨긴 창 · 스크린샷 · 로그</text>
+
+			<rect x="650" y="150" width="180" height="56" rx="10" class="k4"/>
+			<text x="740" y="174" text-anchor="middle" class="t-bold">스크린샷 직접 보기</text>
+			<text x="740" y="194" text-anchor="middle" class="t-muted">디버그 레이어 0건</text>
+			<rect x="410" y="150" width="190" height="56" rx="10" class="k3"/>
+			<text x="505" y="174" text-anchor="middle" class="t-bold">회귀 비교</text>
+			<text x="505" y="194" text-anchor="middle" class="t-muted">끈 화면 MD5 = 이전</text>
+			<rect x="200" y="150" width="160" height="56" rx="10" class="k1"/>
+			<text x="280" y="174" text-anchor="middle" class="t-bold">Plans.md 갱신</text>
+			<text x="280" y="194" text-anchor="middle" class="t-muted">[x] + 측정·한계 기록</text>
+			<rect x="30" y="150" width="120" height="56" rx="10" class="k2"/>
+			<text x="90" y="174" text-anchor="middle" class="t-bold">커밋·푸시</text>
+			<text x="90" y="194" text-anchor="middle" class="t-muted">큰 문제 없으면</text>
+		</g>
+		<path d="M180,68 H226" class="ln" marker-end="url(#arr)"/>
+		<path d="M390,68 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M600,68 H646" class="ln" marker-end="url(#arr)"/>
+		<path d="M740,96 V146" class="ln" marker-end="url(#arr)"/>
+		<path d="M650,178 H604" class="ln" marker-end="url(#arr)"/>
+		<path d="M410,178 H364" class="ln" marker-end="url(#arr)"/>
+		<path d="M200,178 H154" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,98 C 520,114 110,114 110,100" class="ln-d s5" marker-end="url(#arr)"/>
+		<text x="330" y="136" text-anchor="middle" class="t-small f5">실패하면 원인을 고친다 (경고 억제·테스트 비활성 금지)</text>
+		<text x="430" y="246" text-anchor="middle" class="t-muted">사람만 확인할 수 있는 것(손맛, 실제 IME, 실제 Steam)은 "실행 검증 (사용자)" 항목으로 남긴다</text>
+		<text x="430" y="268" text-anchor="middle" class="t-muted">성능 3회 측정은 마지막 확인 때만 — 중간 반복을 빠르게</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 65-1.</b> 변경 하나가 거치는 루프. 자동으로 돌 수 있는 것은 모두 자동으로 돌리고, 자동으로 확인할 수 없는 것은 숨기지 않고 사람 확인 목록에 남깁니다.</figcaption>
+</figure>
+
+<h4>창을 띄우지 않는 자동 검증</h4>
+<p>자동 검증 실행은 <b>창을 숨깁니다</b>(<code>FWindowDesc::bHidden</code>). 그리기와 스크린샷은 그대로이고 결과는 보이는 창과 비트 동일합니다. 처음부터 그랬던 것은 아닙니다.</p>
+<div class="callout story">
+	<b class="t">"게임 화면이 계속 뜬다"</b>
+	검증을 자주 돌리자 작업 중인 사용자의 화면에 게임 창이 계속 떠서 포커스를 빼앗았습니다(2026-10-04 사용자 보고). 그래서 <code>--exit-after</code>/<code>--screenshot</code> 실행은 숨긴 창이 기본이 됐고, <code>--show-window</code>는 사용자가 직접 요청할 때만 씁니다. 높은 fps 측정도 숨긴 창 + <code>--no-vsync</code>로 하고 로그의 프레임 시간을 함께 기록합니다. 창을 보이게 만드는 새 코드(<code>ShowWindow</code>, <code>WS_VISIBLE</code> …)는 이 플래그를 존중해야 한다는 규칙이 CLAUDE.md에 남았습니다. <b>검증 도구도 사용자 경험이 있는 제품</b>이라는 교훈입니다. 비슷한 이유로, 자동 검증은 소리를 끄고(62강) Steam을 켜지 않으며(64강), 개인 설정 파일을 읽거나 쓰지 않습니다.
+</div>
+
+<h3 id="lec-65-formula"><span class="step">핵심 개념</span>CPU 식 ↔ 셰이더 식, 그리고 단위 테스트</h3>
+<p>GPU 코드는 디버깅이 어렵습니다. 브레이크포인트도 <code>printf</code>도 마음대로 쓸 수 없고, 틀린 결과는 "조금 어두운 화면"으로만 나타납니다. ProjectE는 이 문제를 일관된 습관 하나로 다룹니다. <b>셰이더의 핵심 식을 C++ 헤더(<code>XxxMath.h</code>)에 같은 모양으로 한 벌 더 두고, C++ 쪽을 단위 테스트한다.</b></p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="CPU 식과 셰이더 식">
+		<title>CPU 식과 셰이더 식</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="340" height="130" rx="10" class="k1"/>
+			<text x="190" y="54" text-anchor="middle" class="t-bold">Renderer/LightMath.h (C++)</text>
+			<text x="40" y="80" class="t-mono">DistanceWindow(d, R)</text>
+			<text x="40" y="100" class="t-mono">InverseSquare(d)</text>
+			<text x="40" y="120" class="t-mono">DistanceAttenuation(d, R)</text>
+			<text x="40" y="146" class="t-muted">CPU에서도 쓴다: 클러스터 컬링 경계 등</text>
+
+			<rect x="500" y="30" width="340" height="130" rx="10" class="k3"/>
+			<text x="670" y="54" text-anchor="middle" class="t-bold">Shaders/Lighting.hlsli (HLSL)</text>
+			<text x="520" y="80" class="t-mono">LightDistanceWindow(d, R)</text>
+			<text x="520" y="100" class="t-mono">LightInverseSquare(d)</text>
+			<text x="520" y="120" class="t-mono">LightDistanceAttenuation(d, R)</text>
+			<text x="520" y="146" class="t-muted">상수도 "LightMath::…" 주석으로 연결</text>
+
+			<rect x="20" y="200" width="340" height="56" rx="10" class="k2"/>
+			<text x="190" y="224" text-anchor="middle" class="t-bold">Tests: Light_DistanceAttenuation</text>
+			<text x="190" y="244" text-anchor="middle" class="t-muted">1m에서 1, 반경에서 0, 단조 감소</text>
+			<rect x="500" y="200" width="340" height="56" rx="10" class="acc"/>
+			<text x="670" y="224" text-anchor="middle" class="t-bold">화면 (Verify)</text>
+			<text x="670" y="244" text-anchor="middle" class="t-muted">식이 맞으면 남는 것은 바인딩·데이터 문제</text>
+		</g>
+		<path d="M364,95 H496" class="ln" marker-end="url(#arr)"/>
+		<path d="M496,105 H364" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="86" text-anchor="middle" class="t-small">같은 식</text>
+		<text x="430" y="124" text-anchor="middle" class="t-muted">함께 고친다</text>
+		<path d="M190,160 V196" class="ln" marker-end="url(#arr)"/>
+		<path d="M670,160 V196" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 65-2.</b> 식을 두 언어로 같은 모양으로 둡니다. 테스트는 CPU 쪽 성질(경계값, 단조성, 극한)을 고정하고, 셰이더는 "같은 식"이라는 규칙과 화면 검증으로 지킵니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Renderer/LightMath.h ↔ Shaders/Lighting.hlsli (발췌)"><span class="com">// C++</span>
+<span class="kw">inline float</span> DistanceWindow(<span class="kw">float</span> Distance, <span class="kw">float</span> Radius)
+{
+	<span class="kw">if</span> (Radius &lt;= <span class="num">0.0f</span>) { <span class="kw">return</span> <span class="num">0.0f</span>; }
+	<span class="kw">const float</span> Ratio  = Distance / Radius;
+	<span class="kw">const float</span> Ratio2 = Ratio * Ratio;
+	<span class="kw">const float</span> Window = FMath::Clamp(<span class="num">1.0f</span> - Ratio2 * Ratio2, <span class="num">0.0f</span>, <span class="num">1.0f</span>);
+	<span class="kw">return</span> Window * Window;
+}
+<span class="com">// HLSL</span>
+<span class="kw">float</span> LightDistanceWindow(<span class="kw">float</span> Distance, <span class="kw">float</span> Radius)
+{
+	<span class="kw">if</span> (Radius &lt;= <span class="num">0.0f</span>) { <span class="kw">return</span> <span class="num">0.0f</span>; }
+	<span class="kw">const float</span> Ratio  = Distance / Radius;
+	<span class="kw">const float</span> Ratio2 = Ratio * Ratio;
+	<span class="kw">const float</span> Window = saturate(<span class="num">1.0f</span> - Ratio2 * Ratio2);
+	<span class="kw">return</span> Window * Window;
+}</pre>
+<pre class="code" data-file="Tests/RendererTests/LightTests.cpp (발췌)">E_TEST(Light_DistanceAttenuation)
+{
+	<span class="com">// 1m에서 1, 반경에서 0, 거리에 따라 단조 감소</span>
+	E_EXPECT_NEAR(LightMath::InverseSquare(<span class="num">100.0f</span>), <span class="num">1.0f</span>, <span class="num">1.0e-5f</span>);
+	E_EXPECT_NEAR(LightMath::InverseSquare(<span class="num">200.0f</span>), <span class="num">0.25f</span>, <span class="num">1.0e-5f</span>);
+	E_EXPECT_NEAR(LightMath::DistanceAttenuation(<span class="num">1000.0f</span>, <span class="num">1000.0f</span>), <span class="num">0.0f</span>, <span class="num">1.0e-6f</span>);
+	...
+	<span class="com">// 반경이 아주 크면 창 함수는 거의 1 → 역제곱과 같다</span>
+	E_EXPECT_NEAR(LightMath::DistanceAttenuation(<span class="num">300.0f</span>, <span class="num">1.0e6f</span>), <span class="num">1.0f</span> / <span class="num">9.0f</span>, <span class="num">1.0e-4f</span>);
+}</pre>
+<p>이 패턴은 엔진 전체에 퍼져 있습니다. 조명(<code>LightMath</code>), 면광원(<code>AreaLightMath</code>), DDGI(<code>DdgiMath</code>), 레이 트레이싱(<code>RayTracingMath</code>), 대기(<code>AtmosphereMath</code>), 반사(<code>ReflectionMath</code>), 파티클 경계(<code>ParticleBounds</code>), 오클루전(<code>HzbMath</code>), 픽셀 아트(<code>PixelArtMath</code>) … CLAUDE.md의 규칙은 거의 항상 같은 문장 꼴입니다: "식은 <code>X.h</code> ↔ <code>X.hlsl</code>, 바꾸면 <code>X_*</code> 테스트도". 이 테스트들은 엔진 테스트 프레임워크의 <code>E_TEST</code>로 등록되며, 이 글을 쓰는 시점 <code>Tests/</code> 아래 <code>E_TEST</code>가 800개를 넘습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Testing/TestFramework.h (발췌)"><span class="com">// 경량 단위 테스트 프레임워크.</span>
+<span class="com">//   E_TEST(VectorDot) { E_EXPECT_NEAR(FVector3::Dot(A, B), 1.0f, 1e-5f); }</span>
+<span class="pp">#define</span> E_TEST(TestName)                                                                  \
+	<span class="kw">static void</span> TestFunction_##TestName();                                                \
+	<span class="kw">static const</span> FTestAutoRegister TestRegister_##TestName(#TestName, &amp;TestFunction_##TestName); \
+	<span class="kw">static void</span> TestFunction_##TestName()</pre>
+<p>프레임워크는 일부러 작습니다. 정적 객체 생성자로 자기 등록, 실패하면 파일·줄과 "기대: A ≈ B (실제 x, 기대 y, 허용 z)"를 한글로 남기는 매크로 몇 개가 전부입니다. 외부 테스트 라이브러리가 하는 일 대부분이 필요 없었고, 엔진 DLL·로그와 바로 붙는 것이 더 중요했습니다. 순수 로직을 분리해 두는 습관(61강 <code>FUITextEdit</code>, 62강 <code>ToListenerSpace</code>, 60강 가짜 텍스트 측정기)이 테스트를 가능하게 합니다.</p>
+<div class="callout tip">
+	<b class="t">테스트를 위한 설계 장치들</b>
+	<code>FTestRegistry::GetTempDirectory()</code>(프로세스별 임시 폴더 — 동시에 도는 다른 테스트 실행과 충돌 방지), <code>AllowRealSockets()</code>(실제 소켓 테스트는 환경 변수가 있을 때만 — 아래 방화벽 이야기), 오디오 <code>bNoDevice</code>(62강), 네트워크 <code>FLoopbackTransport</code>(55강), 세이브 <code>SetDirectoryOverride</code>. 실제 장치·OS 자원을 바꿔 끼울 수 있는 자리를 처음부터 두는 것입니다.
+</div>
+
+<h3 id="lec-65-determinism"><span class="step">핵심 개념</span>결정성: 같은 입력이면 비트까지 같은 화면</h3>
+<p>스크린샷을 자동으로 비교하려면 같은 코드를 두 번 돌렸을 때 같은 이미지가 나와야 합니다. 그런데 실제 게임은 매 실행이 조금씩 다릅니다. 프레임 시간이 부하에 따라 흔들리고, 비동기 로딩이 다른 순서로 끝나고, 스레드가 다른 순서로 일을 마칩니다. ProjectE는 자동 검증 실행에서 이 흔들림의 원천을 하나씩 제거했습니다.</p>
+<ul>
+	<li><b>시간</b>: <code>--fixed-delta</code>면 <code>FTimer</code>가 실제 경과 대신 고정 값을 줍니다(1강). 그리고 화면·시뮬레이션 상태가 시간을 읽는 곳은 모두 <code>FFrameTime</code>(앱 프레임 시간)을 씁니다. 자동 노출 적응, 물·구름·머티리얼 <code>Time</code>, 쿠키 패닝, 스트리밍 내림 지연이 <code>steady_clock</code>을 직접 읽으면 부하에 따라 화면이 달라집니다. 실제 시각은 <b>측정</b>(프레임 간격, CPU/GPU 구간, 로딩 시간)에만 씁니다.</li>
+	<li><b>로딩</b>: 자동 검증은 비동기 로딩을 쓰되 프레임마다 비우고(<code>r.AsyncLoading</code> 기본값 −1 = 자동 검증이면 "비동기 + 프레임마다 비우기"), RT 가속 구조는 같은 프레임에 모두 빌드하며(상한 없음), 텍스처 스트리밍은 "스트리밍 켬 화면 = 끔 화면, 비트 동일"을 요구합니다.</li>
+	<li><b>순서</b>: 병렬 코드는 결과를 엔티티 순서로 합칩니다(33강). 난수는 시드 결정적(53강 절차적 생성은 자체 SplitMix64, 표준 분포 함수·unordered 순회 금지).</li>
+</ul>
+<pre class="code" data-file="Engine/Source/Core/FrameTime.h (발췌)"><span class="com">// 앱 프레임 시간 (엔진 DLL 전역 하나).</span>
+<span class="com">//   화면·시뮬레이션 상태(자동 노출 적응, 물·구름·머티리얼 Time, 쿠키 패닝, 스트리밍 내림 지연 등)는</span>
+<span class="com">//   실제 시각(steady_clock)이 아니라 이 시간으로 진행한다 — `--fixed-delta`면 실행마다(부하와 무관하게) 같은 화면이 된다.</span>
+<span class="com">//   측정(프레임 간격, CPU/GPU 구간, 로딩 시간, 업로드 속도)은 계속 실제 시각을 쓴다</span>
+<span class="kw">class</span> FFrameTime
+{
+<span class="kw">public</span>:
+	<span class="kw">static void</span>   Advance(<span class="kw">float</span> DeltaSeconds);   <span class="com">// FApplication 전용</span>
+	<span class="kw">static float</span>  GetDeltaSeconds();
+	<span class="kw">static double</span> GetTotalSeconds();
+};</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="결정적 실행과 MD5 비교">
+		<title>결정적 실행과 MD5 비교</title>
+		<text x="210" y="26" text-anchor="middle" class="t-bold">실제 시각을 읽는 경우</text>
+		<text x="640" y="26" text-anchor="middle" class="t-bold">FFrameTime + --fixed-delta</text>
+		<g class="t-small">
+			<rect x="30" y="44" width="360" height="40" rx="8" class="box"/>
+			<text x="40" y="69">실행 1: dt = 실제 경과 (부하마다 다름) → 위상 φ₁</text>
+			<rect x="30" y="94" width="360" height="40" rx="8" class="box"/>
+			<text x="40" y="119">실행 2: dt = 실제 경과 (또 다름) → 위상 φ₂ ≠ φ₁</text>
+			<rect x="30" y="150" width="360" height="40" rx="8" class="k5"/>
+			<text x="210" y="175" text-anchor="middle">MD5 다름 → 비교 불가 (눈으로만)</text>
+
+			<rect x="470" y="44" width="360" height="40" rx="8" class="box"/>
+			<text x="480" y="69">실행 1: dt = 1/60, 1/60, 1/60 … → 위상 φ</text>
+			<rect x="470" y="94" width="360" height="40" rx="8" class="box"/>
+			<text x="480" y="119">실행 2: dt = 1/60, 1/60, 1/60 … → 위상 φ</text>
+			<rect x="470" y="150" width="360" height="40" rx="8" class="k2"/>
+			<text x="650" y="175" text-anchor="middle">MD5 같음 → 회귀 비교가 한 줄</text>
+		</g>
+		<path d="M210,134 V146" class="ln" marker-end="url(#arr)"/>
+		<path d="M650,134 V146" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="222" text-anchor="middle" class="t-small">"효과를 끈 화면 = 효과 도입 전 화면"을 MD5로 확인 → 새 기능이 다른 경로를 건드리지 않았다는 증거</text>
+		<text x="430" y="246" text-anchor="middle" class="t-muted">예: --no-raytracing = 래스터, 대기 없는 씬 = 예전 식, 네이티브 100% = Phase 47 화면, 그림자 캐시 켬 = 끔</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 65-3.</b> 결정성이 있으면 "같은가?"를 사람이 아니라 해시가 판단합니다. 결정성이 깨진 순간이 곧 버그 신호가 됩니다.</figcaption>
+</figure>
+
+<h4>회귀 비교: "끈 화면은 예전과 비트 동일"</h4>
+<p>결정성의 가장 큰 쓸모는 <b>새 기능의 안전 확인</b>입니다. 새 렌더링 기능을 넣을 때 ProjectE는 거의 항상 끄는 스위치(CVar, 명령줄 별칭)를 같이 만들고, "끈 화면 = 도입 전 화면"을 MD5로 확인합니다. CLAUDE.md에 그런 문장이 여럿 있습니다: 레이 트레이싱 효과가 꺼진 화면은 래스터와 비트 동일(<code>--no-raytracing</code>), 면광원·IES·쿠키가 없는 씬은 비트 동일, TAAU의 네이티브 100%는 Phase 47 화면과 비트 동일, 스킨 메시 LOD를 끄면 이전과 비트 동일. 그림자 캐시 최적화는 "화면 비트 차이 없음(Terrain/Materials/GI MD5 동일)"으로 들어갔습니다.</p>
+<p>최적화의 기본값도 이 측정에 기댑니다. 눈에 띄는 화질 차이가 없으면 최적화는 기본으로 켜고, 끄는 CVar는 남겨 둡니다. 차이가 생기는 설정(예: 그림자 LOD 바이어스 0.5에서 Hub 나무 그림자 모양 변화)은 기본으로 끕니다.</p>
+<div class="callout story">
+	<b class="t">결정성이 잡아낸 드라이버 문제: PSO 캐시</b>
+	PSO 캐시(31강)를 켜자 화면이 <b>실행마다</b> 달라졌습니다. 결정적이어야 할 자동 검증의 MD5가 흔들린 것이 신호였습니다. 원인은 워밍 작업 스레드가 드라이버 파이프라인 라이브러리에서 Load한 것이었습니다(드라이버 내부 원인은 미상). 수정은 "워밍 스레드는 항상 Create, 라이브러리 Load는 요청 스레드만"이었고, 확인 기준은 "Tests/Materials·Decals·Terrain을 캐시를 켠 채 4회 연속 실행해 MD5가 모두 같고 <code>--no-pso-cache</code>와 같음"으로 CLAUDE.md에 남았습니다. 결정성이 없었다면 "가끔 화면이 조금 다르다"는 영원히 재현되지 않는 버그였을 것입니다.
+</div>
+
+<h3 id="lec-65-stability"><span class="step">핵심 개념</span>평균에 안 잡히는 것을 재기: 화면 안정성과 규모 추세</h3>
+<h4>화면 안정성</h4>
+<p>"화면이 지글거린다"(20강), "구석이 깜빡인다"(26강) 같은 보고는 한 장의 스크린샷으로는 보이지 않습니다. 시간에 따른 변화이기 때문입니다. 처음에는 화면 전체 평균 밝기의 프레임 간 변화를 쟀는데, 이것으로는 <b>국소 깜빡임과 얼룩을 놓쳤습니다</b>(2026-10-04 기록). 지금의 측정 방법은 이렇습니다.</p>
+<ol>
+	<li>충분히 수렴한 뒤(<code>--exit-after</code> 600 이상) 연속 32프레임을 저장합니다(<code>--screenshot-frames 32</code>).</li>
+	<li>화소마다 밝기의 시간 표준편차 지도를 만들고(×64 증폭해 눈으로도 봄), 99%·99.9% 분위와 1.0 초과 비율을 봅니다.</li>
+	<li><b>16×16 블록 평균의 시간 표준편차</b>로 넓은 저주파 깜빡임을 따로 봅니다(8비트 양자화 경계 제거).</li>
+	<li>영역 평균의 시계열로 2프레임 주기 왕복을 확인하고, TAA를 끈 실행과 비교합니다(TAA·효과를 모두 끄면 정지 장면의 표준편차는 0).</li>
+	<li>공간 얼룩은 4배 최근접 확대 크롭을 직접 보고, 고표본(예: 256탭) 기준 이미지와의 RMSE·최대 오차로 잽니다.</li>
+</ol>
+<p>이 방법으로 찾은 것이 26강의 DDGI 깜빡임입니다. 텍셀 급변 감지 문턱이 광선 잡음에 걸려 프로브 단위로 깜빡였고, 기본값을 끄는 것(<code>r.DDGI.ChangeThreshold</code> 1.0)으로 고쳤습니다. 자동 검증이 결정적이라 vsync와 <code>--no-vsync</code> 결과가 같다는 점도 측정을 쉽게 만듭니다.</p>
+
+<h4>규모 추세</h4>
+<p>성능 최적화도 평균의 함정이 있습니다. 유닛 1000개에서 빨라진 최적화가 2000개에서는 오히려 느려질 수 있습니다. 시간이 개수에 비례하지 않고 더 빨리 늘어나는 구간(비선형)이 숨어 있으면 지금 규모에서는 안 보입니다. <code>Scripts/ScaleBench.ps1</code>은 같은 스트레스 씬을 유닛 수별(기본 500, 1000, 2000)로 생성해 구간별 시간을 재고, 이웃한 두 규모 사이에서 시간 배율이 <b>개수 배율 × 1.25</b>를 넘는 구간을 "비선형"으로 표시합니다(종료 코드 1).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="규모 추세 판정">
+		<title>규모 추세 판정</title>
+		<line x1="80" y1="210" x2="520" y2="210" class="ln"/>
+		<line x1="80" y1="210" x2="80" y2="30" class="ln"/>
+		<text x="70" y="40" text-anchor="end" class="t-small">구간 시간</text>
+		<text x="150" y="230" text-anchor="middle" class="t-small">500</text>
+		<text x="300" y="230" text-anchor="middle" class="t-small">1000</text>
+		<text x="480" y="230" text-anchor="middle" class="t-small">2000</text>
+		<text x="300" y="248" text-anchor="middle" class="t-muted">유닛 수 (Tools/DemoMap/BuildStress.py --count N)</text>
+		<path d="M150,186 L300,162 L480,114" class="ln s2" stroke-width="2.2"/>
+		<circle cx="150" cy="186" r="5" class="f2"/><circle cx="300" cy="162" r="5" class="f2"/><circle cx="480" cy="114" r="5" class="f2"/>
+		<text x="490" y="118" class="t-small f2">구간 A: ×2 → ×2 (선형)</text>
+		<path d="M150,194 L300,178 L480,46" class="ln s5" stroke-width="2.2"/>
+		<circle cx="150" cy="194" r="5" class="f5"/><circle cx="300" cy="178" r="5" class="f5"/><circle cx="480" cy="46" r="5" class="f5"/>
+		<text x="490" y="50" class="t-small f5">구간 B: ×2 → 크게 증가 (비선형)</text>
+		<text x="560" y="150" class="t-small">판정: 시간 배율 &gt; 개수 배율 × 1.25</text>
+		<text x="560" y="170" class="t-small">(그리고 큰 쪽이 0.3ms 이상)</text>
+		<text x="560" y="194" class="t-muted">측정 중 다른 빌드·Verify 금지</text>
+		<text x="560" y="212" class="t-muted">(수치가 흔들려 비선형 오판)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 65-4.</b> 한 규모의 평균만 보면 B 구간이 문제라는 것을 2000개가 되기 전까지 모릅니다. 그림의 곡선은 판정 규칙을 보여 주는 개념도입니다(실측값 아님).</figcaption>
+</figure>
+<p>목표도 숫자로 적어 둡니다: 스킨 유닛 1000개에서 60fps 이상(1280×720 Release, RT 끔 기준 16ms 이하 — 2026-10-04 현재 12.4ms), 정적 인스턴스 1만. 그리고 알려진 한계(뼈 = 엔티티라 유닛당 엔티티 약 50개, 게임·렌더가 같은 스레드에서 순서대로)도 같은 자리에 적어, 다음 최적화의 방향이 기록에서 바로 보이게 합니다.</p>
+
+<h3 id="lec-65-plans"><span class="step">ProjectE에서는</span>Plans.md와 CLAUDE.md: 기록이 곧 설계</h3>
+<p>0강에서 본 것처럼 모든 작업은 <code>Plans.md</code>의 Phase와 <b>DoD(완료 기준)</b>로 시작합니다. 상태 표시는 <code>[ ]</code> 대기 · <code>[~]</code> 진행 · <code>[x]</code> 완료 · <code>[!]</code> 블로커입니다. 좋은 DoD는 확인 가능한 문장입니다 — 63강의 "VC++ 런타임이 설치되지 않은 PC에서도 실행된다"처럼. 완료 항목에는 결과뿐 아니라 <b>측정값과 한계</b>를 함께 적습니다("패키지 52.2MB", "한계: 압축 없음"). 그리고 사람만 확인할 수 있는 것은 <code>- [ ] 실행 검증 (사용자)</code>로 따로 남겨, 자동 검증이 덮지 못한 범위를 숨기지 않습니다.</p>
+<p><code>CLAUDE.md</code>는 다른 역할을 합니다. 설계 규칙과 <b>버그에서 나온 규칙</b>을 모읍니다. 이 문서의 많은 문장은 "~하지 않는다 — 했더니 이런 일이 있었다" 꼴입니다: "stb_truetype SDF 함수는 CFF 3차 곡선을 버리므로 쓰지 않는다"(60강), "새 로더에서 <code>std::ifstream</code>으로 콘텐츠를 읽으면 pak에서 깨진다"(63강), "조도 아틀라스는 RGBA32F — 16비트는 히스테리시스 걸음이 반올림에 먹혀 어둡게 치우친다"(26강). 버그 하나를 고칠 때 <b>같은 종류의 버그가 다시 생기지 않게 하는 문장</b>을 남기는 것, 그것이 이 프로젝트의 가장 강력한 품질 도구였습니다. 다음 작업자(사람이든 에이전트든)는 이 문서를 먼저 읽습니다.</p>
+
+<h3 id="lec-65-tracks"><span class="step">ProjectE에서는</span>병렬 트랙과 워크트리 운영</h3>
+<p>독립적인 작업은 병렬로 진행했습니다. 예를 들어 Phase 23~26은 조명/입력/게임플레이 세 트랙, 데모 서브맵들(Lighting, Alley, Gallery, Forest, Workshop, Training, Campfire)도 각자의 브랜치에서 만들어 병합했습니다(<code>git log</code>의 "Merge demo-…"). 각 트랙은 <b>git worktree</b>(같은 저장소의 다른 작업 폴더)에서 자기 브랜치에 커밋하고, 메인이 병합하며, 트랙마다 "수정해도 되는 범위"를 명시합니다. <code>Plans.md</code>/<code>CLAUDE.md</code>처럼 모두가 건드리는 파일은 "끝에 추가"하는 변경만 하게 해 충돌을 줄였습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="재사용 워크트리 레인">
+		<title>재사용 워크트리 레인</title>
+		<line x1="40" y1="40" x2="830" y2="40" class="ln s4" stroke-width="3"/>
+		<text x="40" y="28" class="t-bold">master (메인 체크아웃 — 병합·push)</text>
+		<g class="t-small">
+			<rect x="40" y="80" width="230" height="44" rx="8" class="k1"/>
+			<text x="155" y="100" text-anchor="middle" class="t-bold">lane-a</text>
+			<text x="155" y="117" text-anchor="middle" class="t-muted">.claude/worktrees/lane-a</text>
+			<rect x="40" y="136" width="230" height="44" rx="8" class="k2"/>
+			<text x="155" y="156" text-anchor="middle" class="t-bold">lane-b</text>
+			<text x="155" y="173" text-anchor="middle" class="t-muted">Build/·Cooked/·CMakeLocal 유지</text>
+			<rect x="40" y="192" width="230" height="44" rx="8" class="k3"/>
+			<text x="155" y="212" text-anchor="middle" class="t-bold">lane-c</text>
+			<text x="155" y="229" text-anchor="middle" class="t-muted">→ 증분 빌드만</text>
+		</g>
+		<path d="M330,42 V96" class="ln-d s1" marker-end="url(#arr)"/>
+		<text x="340" y="70" class="t-small">checkout -B 작업브랜치 master</text>
+		<path d="M280,102 H600" class="ln s1" stroke-width="2.4"/>
+		<text x="470" y="94" text-anchor="middle" class="t-small">작업 브랜치에 커밋 (수정 범위 명시)</text>
+		<path d="M600,102 C 640,102 650,60 680,44" class="ln s1" marker-end="url(#arr)"/>
+		<text x="690" y="74" class="t-small">메인이 병합</text>
+		<text x="370" y="150" class="t-small">병합·push 후: checkout -B lane-x master</text>
+		<text x="370" y="170" class="t-small">+ git clean -fd -e Build -e CMakeLocal.cmake -e Cooked -e Saved</text>
+		<text x="370" y="196" class="t-muted">서드파티 소스는 CMakeLocal.cmake의 E_THIRDPARTY_SOURCE_CACHE로만 공유</text>
+		<text x="370" y="214" class="t-muted">Build/_deps 정션 금지 (워크트리 삭제 때 메인 소스까지 지워짐)</text>
+		<text x="370" y="232" class="t-muted">트랙이 4개 이상일 때만 임시 워크트리 → 병합 뒤 바로 제거</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 65-5.</b> 2026-10-04 이후의 운영: 고정 작업 공간 세 개를 재사용합니다. 새 워크트리를 만들 때마다 들던 엔진 전체 빌드(약 8분)와 셰이더·모델 재쿠킹을 피하기 위해서입니다.</figcaption>
+</figure>
+
+<div class="callout story">
+	<b class="t">"왜 이렇게 오래 걸리냐"</b>
+	처음에는 작업마다 새 워크트리를 만들었습니다. 그런데 새 워크트리는 빌드 폴더가 비어 있어 엔진 전체 빌드(약 8분)와 셰이더·모델 재쿠킹이 매번 들었습니다. 사용자 피드백(2026-10-04) 뒤 규칙이 둘 생겼습니다. ① <b>동시에 도는 작업이 없으면 워크트리 없이 메인 체크아웃에서</b> 한다. ② 병렬이 필요하면 고정 레인 <code>lane-a/b/c</code>를 재사용해 빌드 폴더·쿠킹 캐시를 남긴다. 덧붙여 큰 작업은 진단 결과를 먼저 짧게 보고한 뒤 고치고, 성능 3회 측정은 마지막 확인 때만 합니다. 도구의 속도도 방법론의 일부입니다.
+</div>
+<div class="callout story">
+	<b class="t">워크트리마다 뜨는 방화벽 확인 창</b>
+	Windows 방화벽은 0.0.0.0에 바인드하는 프로그램을 <b>실행 파일 경로마다</b> 처음 한 번 묻습니다. 워크트리마다 exe 경로가 다르니, 네트워크 테스트나 멀티플레이 검증을 돌릴 때마다 확인 창이 떴습니다(2026-10-04 사용자 보고). 해결: 자동 검증 실행과 그 자식 프로세스는 루프백(127.0.0.1) 전용으로 대기하고 LAN 알림을 하지 않으며(<code>NetBindPolicy</code>), 실제 소켓을 여는 단위 테스트는 <code>E_TEST_SOCKETS=1</code>일 때만 돕니다. 사람이 직접 띄운 서버만 모든 주소에서 대기합니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙: 링크로 공유하지 말고 설정으로 공유한다</b>
+	워크트리마다 서드파티 소스(수백 MB)를 다시 받지 않으려고 <code>Build/_deps</code>를 정션(디렉터리 링크)으로 잇고 싶어집니다. 하지만 워크트리를 지울 때 링크 너머의 <b>메인 소스까지</b> 지워질 수 있습니다. 그래서 공유는 gitignore된 <code>CMakeLocal.cmake</code>의 <code>set(E_THIRDPARTY_SOURCE_CACHE ...)</code>로만 하고, 워크트리를 지우기 전에 정션이 없는지 확인합니다.
+</div>
+
+<h3 id="lec-65-pitfalls"><span class="step">함정과 교훈</span>전 과정에서 반복된 것들</h3>
+<ul>
+	<li><b>재지 않은 직관은 자주 틀린다</b>: 글꼴이 느린 이유는 SDF가 아니라 파일 읽기였고(60강), 실내 그림자가 형편없다는 보고의 원인은 직접광 그림자가 아니라 간접광 가림 부재였습니다(26강 RTAO). 고치기 전에 원인을 숫자로 확인합니다.</li>
+	<li><b>"끈 상태 = 예전"을 지키면 실험이 싸진다</b>: 모든 새 효과에 끄는 스위치와 비트 동일 보장이 있으면, 문제가 생겨도 기본값만 바꿔 되돌릴 수 있습니다.</li>
+	<li><b>경고를 끄지 말고 원인을 고친다</b>: <code>/W4 /WX</code>, 디버그 레이어 0건, 라이브 객체 0. 기준을 낮추면 진짜 문제가 소음에 묻힙니다(1강).</li>
+	<li><b>순수 로직을 떼어 테스트한다</b>: 창·GPU·장치·소켓에 붙은 코드에서 규칙만 분리하면 테스트가 가능해지고, 규칙은 머리 주석 + 테스트로 고정됩니다.</li>
+	<li><b>사람이 확인할 것은 남겨 둔다</b>: 자동화가 덮지 못하는 범위를 정직하게 적는 것이 "다 됐다"는 착각을 막습니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>자동 화면 검증 = 숨긴 창으로 N프레임 실행 → 스크린샷 + 로그 → 디버그 레이어 오류 0건 확인. 스크린샷은 직접 본다.</li>
+		<li>셰이더 핵심 식은 C++ <code>XxxMath.h</code>에 같은 모양으로 두고 단위 테스트한다. 바꾸면 둘을 함께, 테스트도 함께.</li>
+		<li>결정성(<code>--fixed-delta</code>, <code>FFrameTime</code>, 결정적 로딩·순서·난수)이 있으면 회귀를 MD5로 비교할 수 있고, 결정성이 깨지는 것 자체가 버그 신호다.</li>
+		<li>국소 깜빡임은 시간 표준편차 지도와 블록 지표로, 성능은 규모별 추세(×1.25 규칙)로 잰다.</li>
+		<li>Plans.md는 DoD·측정·한계·사용자 확인 항목을, CLAUDE.md는 버그에서 나온 규칙을 기록한다. 병렬 작업은 범위를 정한 브랜치와 재사용 워크트리로 한다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 새 화면 효과를 추가했더니 효과를 끈 상태의 스크린샷 MD5가 도입 전과 달라졌습니다. 무엇을 의심해야 할까요?</summary>
+	효과가 "꺼져 있어도" 다른 경로에 영향을 준다는 뜻입니다. 흔한 원인: 공용 셰이더 헤더나 상수 버퍼 배치를 바꿔 기존 패스의 계산 순서가 달라짐, 렌더 그래프에 패스가 끼어 리소스 상태·순서가 바뀜, 프레임 시간을 실제 시각으로 읽는 새 코드가 결정성을 깨뜨림. 먼저 같은 빌드를 두 번 돌려 MD5가 같은지(결정성)부터 확인하고, 같다면 끈 상태의 경로 차이를 찾습니다.
+</details>
+<details class="quiz"><summary>Q2. 셰이더에 새 감쇠 식을 넣고 화면도 그럴듯해 보입니다. C++ 쪽에 같은 식과 테스트를 두지 않으면 어떤 위험이 남을까요?</summary>
+	경계값(거리 0, 반경 바깥), 단조성, 극한(반경 무한대) 같은 성질이 틀려도 특정 장면에서는 눈에 띄지 않을 수 있습니다. 또 CPU가 같은 식을 써야 하는 곳(컬링 경계, 클러스터 배정 등)이 셰이더와 어긋나면 "가끔 빛이 잘리는" 버그가 됩니다. 같은 모양의 C++ 식 + 테스트는 이 두 가지를 모두 막습니다.
+</details>
+<details class="quiz"><summary>Q3. 성능 최적화를 측정하는 동안 다른 터미널에서 빌드를 돌렸더니 ScaleBench가 "비선형"을 보고했습니다. 결과를 믿어도 될까요?</summary>
+	믿으면 안 됩니다. 빌드가 CPU를 나눠 쓰면 특정 규모 측정만 느려져 배율이 튀고, 비선형 판정(개수 배율 × 1.25 초과)이 거짓으로 나올 수 있습니다. 스크립트와 CLAUDE.md 모두 "측정 중 다른 빌드/Verify를 돌리지 않는다"를 규칙으로 둔 이유입니다. 조용한 상태에서 다시 잽니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part09_UI.html"><small>이전 부</small>← 9부 · 사용자 인터페이스, 다국어, 오디오</a>
+	<a href="Curriculum.html"><small>처음으로</small>커리큘럼 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

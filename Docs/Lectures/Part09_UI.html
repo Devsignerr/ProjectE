@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9부 사용자 인터페이스, 다국어, 오디오 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">9부 사용자 인터페이스, 다국어, 오디오</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">9부 · 강의 60~62</div>
+	<h1>사용자 인터페이스, 다국어, 오디오</h1>
+	<p>플레이어가 보고 듣는 것을 다룹니다. 디자이너가 꾸미는 게임 UI 위젯 트리와 확대해도 깨지지 않는 SDF 글꼴, 언어를 바꿔도 다시 짤 필요 없는 문자열 표와 한글 IME 입력, 그리고 소리를 디지털로 다루는 기초부터 3D 공간화까지 차례로 봅니다.</p>
+</header>
+
+<!-- ======================================================= 60강 ======================================================= -->
+<article class="lecture" id="lec-60">
+<header>
+	<div class="no">60강</div>
+	<h2 id="lec-60-title">게임 UI 프레임워크</h2>
+	<div class="meta">관련 Phase: 16 (인게임 UI) · 살펴볼 곳: <code>Engine/Source/UI/</code> (<code>Widget.h</code>, <code>UILayout.cpp</code>, <code>UIInput.cpp</code>, <code>UIPainter.cpp</code>, <code>UIFont.cpp</code>, <code>UISdf.cpp</code>, <code>UIAnimation.h</code>, <code>UISystem.h</code>), <code>Engine/Source/Renderer/UIRenderer</code>, <code>Engine/Shaders/UI.hlsl</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>즉시 모드 UI(ImGui)와 보존 모드 UI(UMG식 위젯 트리)의 차이와, 게임 UI가 보존 모드를 택하는 이유를 설명할 수 있습니다.</li>
+		<li>"원하는 크기 → 배치" 2단계 레이아웃과 캔버스 앵커가 해상도 변화에 어떻게 대응하는지 손으로 계산할 수 있습니다.</li>
+		<li>포인터가 UI와 게임 중 어디로 가는지 정하는 맞히기(hit test) 규칙을 압니다.</li>
+		<li>부호 거리장(SDF) 글꼴의 원리와, ProjectE가 stb_truetype의 SDF 함수 대신 거리 변환을 직접 쓴 이유를 압니다.</li>
+		<li>레이아웃에 영향을 주지 않는 렌더 변환으로 UI 애니메이션을 만드는 방법을 이해합니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-60-why"><span class="step">왜 필요한가</span>에디터 UI와 게임 UI는 요구가 다르다</h3>
+<p>ProjectE의 에디터는 Dear ImGui로 만들었습니다(34강). ImGui는 <b>즉시 모드(immediate mode)</b> UI입니다. 매 프레임 코드가 "여기 버튼, 그 아래 슬라이더"를 다시 호출하고, 호출 자체가 곧 UI입니다. 위젯 객체가 따로 남아 있지 않으니 상태를 동기화할 필요가 없어 도구를 빠르게 만들기에 아주 좋습니다.</p>
+<p>그런데 게임 UI는 사정이 다릅니다.</p>
+<ul>
+	<li><b>코드가 아니라 디자이너가 만든다</b>: 체력바 위치, 버튼 모양, 글꼴 크기를 프로그래머에게 부탁하지 않고 편집기에서 끌어다 놓고 싶습니다. 그러려면 UI가 <b>데이터(파일)</b>여야 합니다.</li>
+	<li><b>해상도가 제각각</b>: 1280×720 창과 2560×1440 전체 화면에서 같은 배치가 비율에 맞게 보여야 합니다.</li>
+	<li><b>움직인다</b>: 메뉴가 미끄러져 들어오고 점수가 통통 튀는 애니메이션이 필요합니다. 애니메이션은 "어떤 위젯의 어떤 값"을 시간에 따라 바꾸는 것이므로, 위젯이 이름을 가진 객체로 계속 존재해야 합니다.</li>
+	<li><b>게임과 입력을 나눠 써야 한다</b>: 버튼을 클릭했는데 캐릭터가 총을 쏘면 안 됩니다.</li>
+</ul>
+<p>그래서 Phase 16은 "UMG처럼"이라는 요청으로 시작했고, 첫 결정은 이렇습니다: <b>외부 라이브러리 없이 엔진이 직접 구현하고, ImGui는 에디터 전용으로 남긴다.</b> 게임 UI는 <b>보존 모드(retained mode)</b> — 위젯 객체의 트리가 메모리에 남아 있고, 엔진이 그것을 배치하고 그리는 방식 — 로 만듭니다.</p>
+
+<div class="callout note">
+	<b class="t">비유</b>
+	즉시 모드는 칠판에 매번 새로 그리는 것이고, 보존 모드는 자석 카드를 칠판에 붙여 두는 것입니다. 카드는 계속 그 자리에 있으므로 "3번 카드를 오른쪽으로 10cm"처럼 나중에 옮기거나 애니메이션할 수 있습니다.
+</div>
+
+<h3 id="lec-60-tree"><span class="step">핵심 개념</span>위젯 트리, 데이터, 슬롯</h3>
+<p>보존 모드 UI의 뼈대는 <b>위젯 트리</b>입니다. 캔버스·박스 같은 <b>패널</b>이 자식을 담고, 텍스트·이미지·진행 막대 같은 <b>잎</b>이 실제 그림을 냅니다. 여기서 중요한 설계 질문이 하나 있습니다. "자식의 위치 정보는 누구의 것인가?"</p>
+<p>캔버스 안에서는 "왼쪽 위에서 (20, 30) 떨어진 곳"이 의미 있지만, 세로 박스 안에서는 위치가 자동으로 정해지고 대신 "남는 공간을 채울지"가 의미 있습니다. 즉 위치 정보의 <b>종류는 부모가 정합니다</b>. UMG는 이것을 <b>슬롯(slot)</b>이라 부르고, ProjectE의 <code>FUISlot</code>도 같은 생각입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="위젯 트리와 화면 배치">
+		<title>위젯 트리와 화면 배치</title>
+		<g class="t-small">
+			<rect x="140" y="20" width="170" height="40" rx="8" class="acc"/>
+			<text x="225" y="45" text-anchor="middle" class="t-bold">Canvas (루트)</text>
+			<rect x="30" y="112" width="180" height="40" rx="8" class="k1"/>
+			<text x="120" y="137" text-anchor="middle">VerticalBox "Menu"</text>
+			<rect x="240" y="112" width="180" height="40" rx="8" class="k2"/>
+			<text x="330" y="137" text-anchor="middle">ProgressBar "HP"</text>
+			<rect x="20" y="214" width="120" height="40" rx="8" class="k3"/>
+			<text x="80" y="239" text-anchor="middle">Button "Play"</text>
+			<rect x="150" y="214" width="120" height="40" rx="8" class="k3"/>
+			<text x="210" y="239" text-anchor="middle">Button "Quit"</text>
+		</g>
+		<path d="M200,60 L130,110" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,60 L320,110" class="ln" marker-end="url(#arr)"/>
+		<path d="M100,152 L82,212" class="ln" marker-end="url(#arr)"/>
+		<path d="M140,152 L200,212" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="282" class="t-muted">캔버스의 자식 → 캔버스 슬롯 (앵커·오프셋·피벗)</text>
+		<text x="20" y="300" class="t-muted">박스의 자식 → 박스 슬롯 (여백·정렬·Auto/Fill)</text>
+
+		<rect x="470" y="20" width="370" height="250" rx="6" class="box"/>
+		<text x="655" y="290" text-anchor="middle" class="t-muted">화면 (레이아웃 결과)</text>
+		<rect x="486" y="36" width="150" height="16" rx="4" class="k2"/>
+		<rect x="486" y="36" width="96" height="16" rx="4" class="f2"/>
+		<text x="645" y="49" class="t-small">HP (왼쪽 위 고정)</text>
+		<rect x="590" y="110" width="130" height="120" rx="6" class="k1"/>
+		<rect x="602" y="122" width="106" height="42" rx="6" class="k3"/>
+		<text x="655" y="148" text-anchor="middle" class="t-small">Play</text>
+		<rect x="602" y="176" width="106" height="42" rx="6" class="k3"/>
+		<text x="655" y="202" text-anchor="middle" class="t-small">Quit</text>
+		<text x="730" y="172" class="t-small">Menu</text>
+		<text x="730" y="190" class="t-muted">(가운데 앵커)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-1.</b> 왼쪽은 메모리에 남아 있는 위젯 트리, 오른쪽은 레이아웃이 계산한 화면 배치입니다. 같은 <code>FUISlot</code> 구조체라도 부모가 캔버스면 앵커·오프셋이, 박스면 여백·정렬·크기 규칙이 쓰입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/UI/Widget.h (발췌)"><span class="com">// 부모 안에서의 배치 정보. 어떤 항목을 쓰는지는 부모 종류가 정한다 (UMG 슬롯).</span>
+<span class="com">//   캔버스: Anchor/Offsets/Alignment/bAutoSize/ZOrder</span>
+<span class="com">//   가로/세로 박스, 스크롤: Padding/HAlign/VAlign/SizeRule/FillWeight</span>
+<span class="kw">struct</span> FUISlot
+{
+	FVector2  AnchorMin = FVector2(<span class="num">0.0f</span>, <span class="num">0.0f</span>);
+	FVector2  AnchorMax = FVector2(<span class="num">0.0f</span>, <span class="num">0.0f</span>);
+	FUIMargin Offsets   = FUIMargin(<span class="num">0.0f</span>, <span class="num">0.0f</span>, <span class="num">100.0f</span>, <span class="num">40.0f</span>);
+	FVector2  Alignment = FVector2(<span class="num">0.0f</span>, <span class="num">0.0f</span>);   <span class="com">// 피벗</span>
+	...
+	EUISizeRule SizeRule   = EUISizeRule::Auto;
+	<span class="kw">float</span>       FillWeight = <span class="num">1.0f</span>;
+};
+
+<span class="com">// 위젯의 저장되는 값 (복사 가능). 종류와 관계없이 모든 항목을 갖고, 종류별로 쓰는 항목만 의미가 있다.</span>
+<span class="kw">struct</span> FUIWidgetData { EUIWidgetType Type; std::string Name; EUIVisibility Visibility; FUISlot Slot; FUIBrush Brush; std::string Text; ... };
+
+<span class="com">// 실행 중에만 쓰는 값 (저장/복제 안 함). 레이아웃/입력이 채운다.</span>
+<span class="kw">struct</span> FUIWidgetState { FVector2 DesiredSize; FUIRect Geometry; FUIRect Clip; FUIRect VisualGeometry; <span class="kw">bool</span> bHovered; ... };
+
+<span class="kw">struct</span> FUIWidget : FUIWidgetData
+{
+	std::vector&lt;std::unique_ptr&lt;FUIWidget&gt;&gt; Children; <span class="com">// 자식 소유</span>
+	FUIWidget*                              Parent = <span class="kw">nullptr</span>; <span class="com">// 비소유</span>
+	FUIWidgetState                          State;
+};</pre>
+<p>세 겹으로 나눈 것이 눈여겨볼 점입니다.</p>
+<ul>
+	<li><b><code>FUIWidgetData</code> = 저장되는 값.</b> 종류(Type)와 상관없이 <b>모든 종류의 항목을 한 구조체에</b> 담습니다. 텍스트 위젯에도 <code>Percent</code> 필드가 있습니다. 메모리를 조금 낭비하는 대신 상속 계층이 없어 복사·JSON 저장·Undo·애니메이션이 모두 "구조체 하나"로 끝납니다. 언리얼처럼 위젯 종류마다 클래스를 두면 새 종류를 추가할 때마다 직렬화·복제·편집 코드를 각각 써야 합니다.</li>
+	<li><b><code>FUIWidgetState</code> = 실행 중 값.</b> 레이아웃 결과(<code>Geometry</code>)와 입력 상태(<code>bHovered</code>)는 파일에 저장하지 않고 복제할 때도 초기화합니다. 저장 값과 계산 값을 섞으면 "저장했더니 호버 상태까지 파일에 들어갔다" 같은 사고가 납니다.</li>
+	<li><b>트리 소유권</b>: 자식은 <code>unique_ptr</code>로 소유하고 부모는 비소유 raw 포인터로 가리킵니다. ProjectE 메모리 규칙(소유는 <code>unique_ptr</code>, 비소유는 raw + 수명 주석) 그대로입니다.</li>
+</ul>
+<p>위젯 종류는 캔버스, 가로/세로 박스, 오버레이, 균일 그리드, 스크롤 박스(패널), 보더·버튼(자식 1개), 이미지·텍스트·진행 막대·텍스트 상자(잎)입니다. 자식 수 제한은 <code>FUIWidget::GetMaxChildren</code>이 종류별로 돌려줍니다.</p>
+
+<h3 id="lec-60-layout"><span class="step">핵심 개념</span>레이아웃 2단계: 원하는 크기 → 배치</h3>
+<p>세로 박스 안에 텍스트와 버튼이 있다고 합시다. 박스는 자식들의 크기를 알아야 자기 크기를 정할 수 있고, 자식은 박스가 준 공간을 알아야 실제 위치를 정할 수 있습니다. 닭과 달걀처럼 보이지만 <b>두 번 순회</b>하면 풀립니다. 언리얼 Slate와 같은 방식입니다.</p>
+<ol>
+	<li><b>원하는 크기(desired size), 아래 → 위</b>: 잎부터 "나는 이만큼이면 좋겠다"를 계산합니다. 텍스트는 글꼴로 글자 폭을 재고, 이미지는 지정 크기를 냅니다. 세로 박스는 자식 높이의 합과 너비의 최댓값을 냅니다.</li>
+	<li><b>배치(arrange), 위 → 아래</b>: 루트가 화면 전체를 받아, 자식에게 영역을 나눠 줍니다. 세로 박스는 Auto 자식에게 원하는 높이만큼 주고, Fill 자식끼리 남은 높이를 <code>FillWeight</code> 비율로 나눕니다.</li>
+</ol>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="레이아웃 2단계">
+		<title>레이아웃 2단계</title>
+		<text x="200" y="26" text-anchor="middle" class="t-bold">① 원하는 크기 (잎 → 루트)</text>
+		<text x="640" y="26" text-anchor="middle" class="t-bold">② 배치 (루트 → 잎)</text>
+		<g class="t-small">
+			<rect x="80" y="48" width="240" height="46" rx="8" class="k1"/>
+			<text x="200" y="68" text-anchor="middle" class="t-bold">VerticalBox</text>
+			<text x="200" y="86" text-anchor="middle" class="t-mono">max(80,120) × (30+40) = 120×70</text>
+			<rect x="30" y="196" width="160" height="46" rx="8" class="k3"/>
+			<text x="110" y="216" text-anchor="middle" class="t-bold">Text "시작"</text>
+			<text x="110" y="234" text-anchor="middle" class="t-mono">글자 측정 → 80×30</text>
+			<rect x="210" y="196" width="160" height="46" rx="8" class="k3"/>
+			<text x="290" y="216" text-anchor="middle" class="t-bold">Image</text>
+			<text x="290" y="234" text-anchor="middle" class="t-mono">ImageSize → 120×40</text>
+
+			<rect x="470" y="48" width="340" height="46" rx="8" class="k1"/>
+			<text x="640" y="68" text-anchor="middle" class="t-bold">VerticalBox ← 부모가 300×200 영역을 줌</text>
+			<text x="640" y="86" text-anchor="middle" class="t-mono">Auto 70 사용, 남는 130은 Fill 자식 몫</text>
+			<rect x="450" y="196" width="180" height="46" rx="8" class="k3"/>
+			<text x="540" y="216" text-anchor="middle" class="t-bold">Text: 300×30</text>
+			<text x="540" y="234" text-anchor="middle" class="t-mono">Auto, HAlign Fill</text>
+			<rect x="650" y="196" width="180" height="46" rx="8" class="k3"/>
+			<text x="740" y="216" text-anchor="middle" class="t-bold">Image: 300×40</text>
+			<text x="740" y="234" text-anchor="middle" class="t-mono">y = 30부터</text>
+		</g>
+		<path d="M110,194 L170,98" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M290,194 L230,98" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M600,96 L545,192" class="ln s5" marker-end="url(#arr)"/>
+		<path d="M680,96 L735,192" class="ln s5" marker-end="url(#arr)"/>
+		<text x="200" y="266" text-anchor="middle" class="t-muted">자식이 먼저 계산 (후위 순회)</text>
+		<text x="640" y="266" text-anchor="middle" class="t-muted">부모가 먼저 영역 결정 (전위 순회)</text>
+		<line x1="430" y1="40" x2="430" y2="250" class="ln-d"/>
+		<text x="430" y="290" text-anchor="middle" class="t-muted">두 번째 순회는 첫 번째 결과(DesiredSize)를 읽기만 한다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-2.</b> 같은 세로 박스를 두 번 순회합니다. 첫 순회는 "필요한 만큼", 두 번째 순회는 "실제로 받은 만큼"을 계산합니다. 접힌(Collapsed) 위젯은 두 순회 모두에서 크기 0입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/UI/UILayout.cpp (발췌)"><span class="kw">void</span> FUILayout::Compute(FUIWidget&amp; Root, <span class="kw">const</span> FVector2&amp; RootSize, IUITextMeasurer&amp; Measurer)
+{
+	ComputeDesired(Root, Measurer);                                                   <span class="com">// ① 아래 → 위</span>
+	Arrange(Root, FUIRect(FVector2::ZeroVector, RootSize), FUIRect::Infinite(), Measurer); <span class="com">// ② 위 → 아래</span>
+	ApplyRenderTransforms(Root, FVector2(<span class="num">1.0f</span>, <span class="num">1.0f</span>), FVector2::ZeroVector, FUIRect::Infinite()); <span class="com">// ③ 렌더 변환</span>
+}
+
+<span class="com">// ComputeDesired 안 — 세로/가로 박스</span>
+<span class="kw">const</span> FVector2 Size = SlotDesired(*Child);   <span class="com">// 자식 원하는 크기 + 슬롯 여백</span>
+<span class="kw">if</span> (bHorizontal) { Desired.X += Size.X; Desired.Y = FMath::Max(Desired.Y, Size.Y); }
+<span class="kw">else</span>             { Desired.X = FMath::Max(Desired.X, Size.X); Desired.Y += Size.Y; }</pre>
+<p>텍스트 크기를 재는 일은 <code>IUITextMeasurer</code> 인터페이스로 뺐습니다. 실제 게임에서는 글꼴 라이브러리(<code>FUIFontLibrary</code>)가 구현하고, 단위 테스트는 "글자당 10 단위" 같은 가짜 측정기를 넣습니다. 덕분에 UI 레이아웃 테스트(앵커, 박스 자동/채우기, 접힘/숨김, 줄바꿈, 스크롤 제한 등)는 글꼴 파일도 GPU도 없이 돌아갑니다.</p>
+
+<h4>해상도 배율</h4>
+<p>UI는 "설계 해상도"(예: 1920×1080) 기준 단위로 만들고, 실제 화면에 맞는 배율 하나를 곱합니다. 규칙은 넷입니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UILayout.cpp — ComputeScale">
+<span class="kw">const float</span> ScaleX = ViewportSize.X / DesignSize.X;
+<span class="kw">const float</span> ScaleY = ViewportSize.Y / DesignSize.Y;
+<span class="kw">switch</span> (Mode)
+{
+<span class="kw">case</span> EUIScaleMode::MatchHeight: <span class="kw">return</span> ScaleY;                    <span class="com">// 높이 맞춤 (가로가 넓으면 양옆 여유)</span>
+<span class="kw">case</span> EUIScaleMode::MatchWidth:  <span class="kw">return</span> ScaleX;
+<span class="kw">case</span> EUIScaleMode::Fit:         <span class="kw">return</span> FMath::Min(ScaleX, ScaleY); <span class="com">// 전체가 보이게</span>
+<span class="kw">case</span> EUIScaleMode::Fill:        <span class="kw">return</span> FMath::Max(ScaleX, ScaleY); <span class="com">// 화면을 채우게 (잘릴 수 있음)</span>
+}</pre>
+<p>배율로 크기를 맞춘 다음, <b>어디에 붙어 있을지</b>는 앵커가 정합니다.</p>
+
+<h3 id="lec-60-anchor"><span class="step">핵심 개념</span>캔버스 앵커: 점 앵커와 늘이기 앵커</h3>
+<p><b>앵커(anchor)</b>는 "부모 영역의 어느 비율 지점에 붙을지"를 0~1로 적은 값입니다. (0,0)은 부모 왼쪽 위, (1,1)은 오른쪽 아래, (0.5,0.5)는 가운데입니다. <code>AnchorMin</code>과 <code>AnchorMax</code>가 축마다 같으면 <b>점 앵커</b>, 다르면 <b>늘이기(stretch) 앵커</b>입니다.</p>
+<ul>
+	<li><b>점 앵커</b>: <code>Offsets</code> = (앵커점에서의 위치 X, Y, 너비, 높이). <code>Alignment</code>(피벗)는 "내 몸의 어느 점을 그 위치에 놓을지"입니다. 피벗 (1,0)이면 오른쪽 위 모서리가 그 점에 붙습니다.</li>
+	<li><b>늘이기 앵커</b>: <code>Offsets</code> = (왼쪽 여백, 위 여백, 오른쪽 여백, 아래 여백). 부모가 넓어지면 위젯도 같이 넓어집니다.</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="점 앵커와 늘이기 앵커">
+		<title>점 앵커와 늘이기 앵커</title>
+		<rect x="30" y="40" width="280" height="190" rx="4" class="box"/>
+		<text x="170" y="28" text-anchor="middle" class="t-bold">부모 너비 280</text>
+		<rect x="350" y="40" width="480" height="190" rx="4" class="box"/>
+		<text x="590" y="28" text-anchor="middle" class="t-bold">부모 너비 480 (창을 넓힘)</text>
+
+		<circle cx="310" cy="40" r="5" class="f5"/>
+		<rect x="210" y="56" width="84" height="34" rx="5" class="k5"/>
+		<text x="252" y="78" text-anchor="middle" class="t-small">미니맵</text>
+		<circle cx="830" cy="40" r="5" class="f5"/>
+		<rect x="730" y="56" width="84" height="34" rx="5" class="k5"/>
+		<text x="772" y="78" text-anchor="middle" class="t-small">미니맵</text>
+		<text x="44" y="112" class="t-muted">점 앵커 (1,0), 피벗 (1,0)</text>
+		<text x="44" y="128" class="t-muted">오프셋 (−16, 16) → 오른쪽 위에 붙음</text>
+
+		<rect x="50" y="176" width="240" height="36" rx="5" class="k1"/>
+		<text x="170" y="199" text-anchor="middle" class="t-small">채팅 막대 (늘이기 X: 0→1)</text>
+		<rect x="370" y="176" width="440" height="36" rx="5" class="k1"/>
+		<text x="590" y="199" text-anchor="middle" class="t-small">채팅 막대 — 여백 20씩 유지한 채 넓어짐</text>
+		<path d="M30,222 H50" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M310,222 H290" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M350,222 H370" class="ln s1" marker-end="url(#arr)"/>
+		<path d="M830,222 H810" class="ln s1" marker-end="url(#arr)"/>
+		<text x="40" y="262" class="t-muted">왼쪽 여백 20</text>
+		<text x="230" y="262" class="t-muted">오른쪽 여백 20</text>
+		<text x="590" y="262" text-anchor="middle" class="t-muted">Min.X = 부모.Min.X + 0×W + 20,  Max.X = 부모.Min.X + 1×W − 20</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-3.</b> 창을 넓혔을 때. 점 앵커(빨강 점)에 붙은 미니맵은 오른쪽 위로부터의 거리를 유지하고, 가로로 늘이기 앵커를 쓴 채팅 막대는 양쪽 여백을 유지한 채 길어집니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/UI/UILayout.cpp — ArrangeCanvasSlot (X축 발췌)"><span class="kw">if</span> (Slot.IsAnchorPointX())   <span class="com">// AnchorMin.X == AnchorMax.X</span>
+{
+	<span class="kw">const float</span> Anchor = Parent.Min.X + Slot.AnchorMin.X * ParentSize.X;
+	<span class="kw">const float</span> Width  = Slot.bAutoSize ? DesiredSize.X : Slot.Offsets.Right; <span class="com">// 점 앵커에서 Right = 너비</span>
+	Result.Min.X       = Anchor + Slot.Offsets.Left - Slot.Alignment.X * Width; <span class="com">// 피벗만큼 당김</span>
+	Result.Max.X       = Result.Min.X + Width;
+}
+<span class="kw">else</span>                         <span class="com">// 늘이기: Left/Right = 양쪽 여백</span>
+{
+	Result.Min.X = Parent.Min.X + Slot.AnchorMin.X * ParentSize.X + Slot.Offsets.Left;
+	Result.Max.X = Parent.Min.X + Slot.AnchorMax.X * ParentSize.X - Slot.Offsets.Right;
+}</pre>
+<p><code>Offsets</code> 네 칸의 의미가 앵커 종류에 따라 바뀌는 것이 처음에는 헷갈리지만 UMG와 같은 규약입니다. 디자이너에서 앵커 프리셋(4×4)을 바꿀 때는 <code>FUILayout::SetAnchorsKeepRect</code>가 <b>화면상 영역은 그대로 두고</b> 오프셋을 다시 계산합니다. 위젯이 갑자기 튀지 않게 하려는 UMG와 같은 동작입니다.</p>
+
+<h3 id="lec-60-input"><span class="step">핵심 개념</span>맞히기와 "포인터 가져가기"</h3>
+<p>마우스를 클릭했을 때 그것이 버튼 클릭인지 게임 속 사격인지 정해야 합니다. 원리는 간단합니다. <b>포인터 아래에 입력을 받는 UI 위젯이 있으면 UI가 가져가고, 게임에는 마우스 버튼이 눌리지 않은 것처럼 보여 준다.</b> 문제는 "입력을 받는 위젯"의 정의입니다. 화면 전체를 덮는 투명한 캔버스가 클릭을 다 먹어 버리면 게임을 할 수 없으니까요. ProjectE는 UMG의 Visibility 규칙을 그대로 씁니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>Visibility</th><th>그리기</th><th>공간 차지</th><th>자신이 맞음</th><th>자식이 맞음</th></tr>
+	<tr><td><code>Visible</code></td><td>예</td><td>예</td><td>예</td><td>예</td></tr>
+	<tr><td><code>SelfHitTestInvisible</code></td><td>예</td><td>예</td><td>아니오</td><td>예</td></tr>
+	<tr><td><code>HitTestInvisible</code></td><td>예</td><td>예</td><td>아니오</td><td>아니오</td></tr>
+	<tr><td><code>Hidden</code></td><td>아니오</td><td>예</td><td>아니오</td><td>아니오</td></tr>
+	<tr><td><code>Collapsed</code></td><td>아니오</td><td>아니오</td><td>아니오</td><td>아니오</td></tr>
+</table></div>
+<p>기본값이 핵심입니다. <code>FUIWidget::GetDefaultVisibility</code>는 배치 패널(캔버스·박스)을 <code>SelfHitTestInvisible</code>, 텍스트·진행 막대를 <code>HitTestInvisible</code>로 만듭니다. 그래서 화면 전체 캔버스는 클릭을 먹지 않고, 버튼 위의 글자는 클릭을 버튼에게 양보합니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UIInput.cpp — HitTestRecursive"><span class="kw">switch</span> (Widget.Visibility)
+{
+<span class="kw">case</span> EUIVisibility::Collapsed:
+<span class="kw">case</span> EUIVisibility::Hidden:
+<span class="kw">case</span> EUIVisibility::HitTestInvisible: <span class="kw">return nullptr</span>;  <span class="com">// 자식까지 제외</span>
+<span class="kw">default</span>:                              <span class="kw">break</span>;
+}
+<span class="kw">if</span> (!Widget.State.VisualClip.Contains(Point)) { <span class="kw">return nullptr</span>; } <span class="com">// 스크롤 박스 밖으로 잘린 부분</span>
+std::vector&lt;FUIWidget*&gt; Children;
+GetChildrenTopFirst(Widget, Children);           <span class="com">// 위에 그려진 자식부터 (캔버스는 ZOrder 큰 쪽)</span>
+<span class="kw">for</span> (FUIWidget* Child : Children)
+{
+	<span class="kw">if</span> (FUIWidget* Hit = HitTestRecursive(*Child, Point)) { <span class="kw">return</span> Hit; }
+}
+<span class="kw">if</span> (Widget.Visibility == EUIVisibility::Visible &amp;&amp; Widget.State.VisualGeometry.Contains(Point))
+{
+	<span class="kw">return</span> &amp;Widget;                                <span class="com">// 자식이 아무도 안 맞으면 나</span>
+}
+<span class="kw">return nullptr</span>;</pre>
+<p>"위에 그려진 것부터 검사"가 그리기 순서의 정확한 역순이라는 점이 중요합니다. 그리기는 부모 → 자식, ZOrder 오름차순이고, 맞히기는 그 반대입니다. 그래야 눈에 보이는 가장 위의 위젯이 클릭됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="UI와 게임의 프레임 순서">
+		<title>UI와 게임의 프레임 순서</title>
+		<g class="t-small">
+			<rect x="20" y="70" width="170" height="70" rx="10" class="k1"/>
+			<text x="105" y="96" text-anchor="middle" class="t-bold">FUISystem::Update</text>
+			<text x="105" y="116" text-anchor="middle" class="t-muted">Z 큰 UI부터 레이아웃·입력</text>
+			<text x="105" y="132" text-anchor="middle" class="t-muted">→ 이벤트 쌓기</text>
+			<rect x="220" y="70" width="230" height="70" rx="10" class="acc"/>
+			<text x="335" y="96" text-anchor="middle" class="t-bold">FUIInputResult</text>
+			<text x="335" y="116" text-anchor="middle" class="t-muted">bPointer → WithoutMouseButtons</text>
+			<text x="335" y="132" text-anchor="middle" class="t-muted">bKeyboard → WithoutKeyboard</text>
+			<rect x="480" y="70" width="200" height="70" rx="10" class="k2"/>
+			<text x="580" y="96" text-anchor="middle" class="t-bold">FGameWorld::TickGameplay</text>
+			<text x="580" y="116" text-anchor="middle" class="t-muted">스크립트가 OnUIClicked_이름</text>
+			<text x="580" y="132" text-anchor="middle" class="t-muted">게임은 걸러진 입력을 봄</text>
+			<rect x="710" y="70" width="140" height="70" rx="10" class="k3"/>
+			<text x="780" y="96" text-anchor="middle" class="t-bold">렌더</text>
+			<text x="780" y="116" text-anchor="middle" class="t-muted">Paint(Z 오름차순)</text>
+			<text x="780" y="132" text-anchor="middle" class="t-muted">→ FUIRenderer</text>
+		</g>
+		<path d="M190,105 H216" class="ln" marker-end="url(#arr)"/>
+		<path d="M450,105 H476" class="ln" marker-end="url(#arr)"/>
+		<path d="M680,105 H706" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="40" class="t-bold">원시 입력 (FInput)</text>
+		<path d="M105,46 V66" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="180" class="t-muted">위 UI가 포인터를 가져가면 아래 UI에는 포인터 없음. 버튼을 누른 채 밖으로 끌어도 뗄 때까지 UI가 가져간다.</text>
+		<text x="20" y="200" class="t-muted">키보드는 포커스된 텍스트 상자가 있을 때만 가져간다 (게임 키 입력은 그대로).</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-4.</b> UI 입력은 게임 갱신보다 <b>먼저</b> 처리됩니다. 그래야 같은 프레임의 게임 코드가 "UI가 가져간 클릭"을 보지 못합니다.</figcaption>
+</figure>
+<p>원시 입력을 직접 고치지 않고 <code>FInput::WithoutMouseButtons()</code> 같은 <b>사본</b>을 만들어 게임에 넘기는 것이 깔끔한 부분입니다. UI는 원본을 보고, 게임은 걸러진 사본을 보므로 두 시스템이 서로의 코드를 알 필요가 없습니다. 이 사본 패턴은 36강·48강의 입력 모드(UIOnly에서 <code>FInput::WithoutAnyInput</code>)로 이어집니다.</p>
+
+<h3 id="lec-60-paint"><span class="step">ProjectE에서는</span>그리기 목록, 사각형 하나 셰이더, sRGB</h3>
+<p>레이아웃이 끝난 트리를 <code>FUIPainter</code>가 훑어 <b>그리기 목록</b>(<code>FUIDrawList</code>)으로 바꿉니다. 목록은 "화면 픽셀 사각형" 배열과, 같은 텍스처·같은 잘림 영역으로 이어지는 사각형 묶음(batch) 배열입니다. UI 모듈은 Core에만 의존하는 순수 로직이라 GPU를 모르고, 실제 그리기는 Renderer 모듈의 <code>FUIRenderer</code>가 목록을 받아 합니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UIDrawList.h (발췌)"><span class="com">// 사각형 하나 (화면 픽셀). 색은 선형 + 직선 알파. UI.hlsl FUIQuad와 1:1</span>
+<span class="kw">struct</span> FUIDrawQuad
+{
+	FVector4 Rect;           <span class="com">// (MinX, MinY, MaxX, MaxY)</span>
+	FVector4 UV;             <span class="com">// SdfText는 아틀라스 텍셀 좌표</span>
+	FVector4 Color;          <span class="com">// 채우기 / 글자 색</span>
+	FVector4 SecondaryColor; <span class="com">// 테두리 / 외곽선 색</span>
+	FVector4 Params;         <span class="com">// Box: (모서리 반지름, 테두리 폭, 모드, 0)  SdfText: (거리 범위, 외곽선 폭, 모드, 0)</span>
+};
+<span class="kw">static_assert</span>(<span class="kw">sizeof</span>(FUIDrawQuad) == <span class="num">80</span>);
+
+<span class="com">// 앞 묶음과 텍스처·잘림이 같으면 이어 붙인다</span>
+<span class="kw">void</span> AddQuad(<span class="kw">const</span> FUIDrawQuad&amp; Quad, <span class="kw">const</span> FUITextureRef&amp; Texture, <span class="kw">const</span> FUIRect&amp; Clip);</pre>
+<p>GPU 쪽은 놀라울 만큼 단순합니다. 정점 버퍼가 없습니다. 사각형 데이터는 구조화 버퍼에 있고, 정점 셰이더가 <code>SV_VertexID</code>(0~5)로 모서리를 고르고 <code>SV_InstanceID</code>로 몇 번째 사각형인지 고릅니다. 묶음 하나가 인스턴스 그리기 호출 하나입니다. 둥근 모서리와 테두리는 텍스처 없이 <b>둥근 사각형 부호 거리</b>로 계산합니다.</p>
+<pre class="code" data-file="Engine/Shaders/UI.hlsl (발췌)"><span class="com">// 둥근 사각형 부호 거리 (안쪽 음수)</span>
+<span class="kw">float</span> RoundedRectDistance(<span class="kw">float2</span> P, <span class="kw">float2</span> HalfSize, <span class="kw">float</span> Radius)
+{
+	<span class="kw">const float2</span> Q = abs(P) - HalfSize + Radius;
+	<span class="kw">return</span> length(max(Q, <span class="num">0.0f</span>)) + min(max(Q.x, Q.y), <span class="num">0.0f</span>) - Radius;
+}
+...
+<span class="kw">const float</span> Distance = RoundedRectDistance(Input.Local, Input.HalfSize, Input.Params.x);
+<span class="kw">const float</span> Coverage = saturate(<span class="num">0.5f</span> - Distance);   <span class="com">// 경계에서 1픽셀 폭 안티에일리어싱</span></pre>
+<p>색은 <b>sRGB로 저장하고 그릴 때 선형으로</b> 바꿉니다(<code>UIPainter.cpp</code>의 <code>ToLinear</code> → <code>UISrgbToLinear</code>). 디자이너가 색상 선택기에서 고르는 "#FF8800"은 sRGB 값이고, 알파 블렌딩은 선형 공간에서 해야 맞으며, 출력 렌더 타깃은 sRGB 포맷이라 하드웨어가 다시 sRGB로 인코딩합니다. 3D 렌더러의 색공간 규칙(14~15강)과 같은 원칙을 UI에도 지킨 것입니다.</p>
+
+<h3 id="lec-60-sdf"><span class="step">핵심 개념</span>SDF 글꼴: 거리를 저장하면 확대해도 날카롭다</h3>
+<p>글자를 그리는 가장 단순한 방법은 글자 모양을 비트맵(검정/흰색 또는 회색 커버리지)으로 구워 텍스처에 넣는 것입니다. 하지만 48픽셀로 구운 글자를 96픽셀로 키우면 경계가 뿌옇게 번지고, 크기마다 따로 구우면 메모리가 늘어납니다. UI는 해상도 배율 때문에 같은 글자가 여러 크기로 그려지므로 문제가 큽니다.</p>
+<p><b>부호 거리장(Signed Distance Field, SDF)</b>은 텍셀마다 "커버리지" 대신 <b>가장 가까운 경계까지의 거리</b>를 저장합니다. 안쪽이면 양수, 바깥이면 음수입니다. 핵심 관찰은 이것입니다: 텍스처 샘플러의 쌍선형 보간은 값을 선형으로 섞습니다. 커버리지를 섞으면 경계가 흐려지지만, <b>거리는 경계 근처에서 거의 선형 함수</b>라서 섞어도 여전히 정확한 거리입니다. 그래서 확대해도 "거리 = 0"인 선, 즉 경계가 정확한 위치에 남고, 셰이더가 그 선 주변 1픽셀만 부드럽게 칠하면 어느 크기에서도 날카로운 글자가 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="커버리지와 거리장 비교">
+		<title>커버리지와 거리장 비교</title>
+		<text x="210" y="24" text-anchor="middle" class="t-bold">경계를 가로지르는 한 줄의 텍셀 값</text>
+		<line x1="40" y1="230" x2="400" y2="230" class="ln"/>
+		<line x1="40" y1="230" x2="40" y2="40" class="ln"/>
+		<text x="46" y="52" class="t-muted">값</text>
+		<line x1="220" y1="40" x2="220" y2="240" class="ln-d"/>
+		<text x="220" y="256" text-anchor="middle" class="t-small">실제 경계</text>
+		<text x="80" y="256" class="t-muted">바깥</text>
+		<text x="340" y="256" class="t-muted">안쪽</text>
+		<path d="M40,210 L180,210 L190,210 L250,70 L400,70" class="ln s5" stroke-width="2.2"/>
+		<text x="262" y="200" class="t-small f5">커버리지 (0/255 계단)</text>
+		<path d="M40,226 L400,54" class="ln s1" stroke-width="2.2"/>
+		<text x="290" y="174" class="t-small f1">거리장 (직선에 가까움)</text>
+		<line x1="40" y1="140" x2="400" y2="140" class="ln-d"/>
+		<text x="44" y="134" class="t-muted">128 = 경계</text>
+		<circle cx="220" cy="140" r="5" class="f1"/>
+
+		<text x="640" y="24" text-anchor="middle" class="t-bold">ProjectE 글리프 굽기 (UISdf::MakeSdf)</text>
+		<g class="t-small">
+			<rect x="470" y="40" width="340" height="32" rx="6" class="box"/>
+			<text x="640" y="61" text-anchor="middle">① stb_truetype로 4배 해상도 커버리지 래스터</text>
+			<rect x="470" y="82" width="340" height="32" rx="6" class="box"/>
+			<text x="640" y="103" text-anchor="middle">② 128 이상을 안쪽으로 이진화</text>
+			<rect x="470" y="124" width="340" height="32" rx="6" class="k1"/>
+			<text x="640" y="145" text-anchor="middle">③ 안/밖 각각 정확한 유클리드 거리 변환</text>
+			<rect x="470" y="166" width="340" height="32" rx="6" class="box"/>
+			<text x="640" y="187" text-anchor="middle">④ 부호 거리 = ±(반대편까지 거리 − 0.5)</text>
+			<rect x="470" y="208" width="340" height="32" rx="6" class="box"/>
+			<text x="640" y="229" text-anchor="middle">⑤ 4×4 블록 평균으로 축소</text>
+			<rect x="470" y="250" width="340" height="32" rx="6" class="acc"/>
+			<text x="640" y="271" text-anchor="middle">⑥ 값 = 128 + 거리 × 128 / 패딩(6), 0~255</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-5.</b> 왼쪽: 커버리지는 경계에서 계단처럼 꺾이므로 보간하면 번지지만, 거리장은 경계 근처에서 직선이라 보간해도 128을 지나는 지점(경계)이 정확합니다. 오른쪽: ProjectE가 글자 하나를 아틀라스에 굽는 순서.</figcaption>
+</figure>
+
+<p>셰이더는 아틀라스 값 <i>v</i>(0~1)를 픽셀 거리로 되돌리고 경계 ±0.5픽셀을 부드럽게 칠합니다. 외곽선도 같은 거리를 조금 더 바깥까지 칠하는 것뿐이라 공짜에 가깝습니다.</p>
+<pre class="code" data-file="Engine/Shaders/UI.hlsl — SdfText 모드"><span class="kw">const float</span> Value    = QuadTexture.Sample(LinearClamp, Input.UV / AtlasSize).r;
+<span class="kw">const float</span> Distance = (Value - <span class="num">0.5f</span>) * Input.Params.x;   <span class="com">// 픽셀 거리 (안쪽 +), Params.x = 거리 범위</span>
+<span class="kw">const float</span> TextA    = Input.Color.a * saturate(Distance + <span class="num">0.5f</span>);
+<span class="kw">const float</span> OutlineA = Input.Params.y &gt; <span class="num">0.0f</span> ? Input.SecondaryColor.a * saturate(Distance + Input.Params.y + <span class="num">0.5f</span>) : <span class="num">0.0f</span>;
+<span class="kw">const float</span> Alpha    = TextA + OutlineA * (<span class="num">1.0f</span> - TextA);    <span class="com">// 글자를 외곽선 위에 합성</span></pre>
+<p>"거리 범위"는 CPU 쪽 <code>FUIFont::GetDistanceRange(FontSize) = 2 × 패딩 × 크기 / 48</code>입니다. 기준 크기 48픽셀(<code>BasePixelHeight</code>)로 구운 글자를 24로 그리면 범위가 절반이 되어, 같은 SDF 값이 화면에서 더 짧은 거리를 뜻하게 됩니다. 크기마다 다시 굽지 않는 이유가 이것입니다.</p>
+
+<h4>거리 변환: 선형 시간에 정확한 거리</h4>
+<p>③단계의 거리 변환은 "각 픽셀에서 가장 가까운 특징 픽셀(안쪽 또는 바깥)까지의 유클리드 거리"를 구하는 알고리즘입니다. 모든 쌍을 비교하면 픽셀 수의 제곱이지만, Felzenszwalb–Huttenlocher 방법은 제곱 거리 <i>d</i>²=Δx²+Δy²가 <b>축별로 분리된다</b>는 점을 이용합니다. 먼저 열마다 1차원 변환, 그 결과에 행마다 1차원 변환을 하면 2차원 정확한 결과가 됩니다. 1차원 변환은 "각 특징점에서 시작하는 포물선들의 아래쪽 껍질(하한 포락선)"을 한 번 훑어 만듭니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UISdf.cpp (발췌)"><span class="kw">void</span> UISdf::DistanceTransform2D(std::vector&lt;<span class="kw">float</span>&gt;&amp; Grid, int32 Width, int32 Height)
+{
+	<span class="com">// 열</span>
+	<span class="kw">for</span> (int32 X = <span class="num">0</span>; X &lt; Width; ++X)  { <span class="com">/* 열을 F로 복사 → DistanceTransform1D → 되돌려 쓰기 */</span> }
+	<span class="com">// 행</span>
+	<span class="kw">for</span> (int32 Y = <span class="num">0</span>; Y &lt; Height; ++Y) { <span class="com">/* 행을 F로 복사 → DistanceTransform1D → 되돌려 쓰기 */</span> }
+}
+...
+<span class="com">// MakeSdf: 고해상도 픽셀마다 부호 거리 → 블록 평균</span>
+Sum += Coverage[Index] &gt;= <span class="num">128</span> ? std::sqrt(ToOutside[Index]) - <span class="num">0.5f</span> : <span class="num">0.5f</span> - std::sqrt(ToInside[Index]);</pre>
+<p>±0.5 보정은 "픽셀 중심에서 픽셀 경계까지"의 반 칸을 빼 주는 것입니다. 이진화한 픽셀의 경계는 픽셀 사이에 있으므로, 바로 옆 픽셀까지 거리 1은 실제 경계까지 0.5입니다.</p>
+
+<h4>동적 아틀라스</h4>
+<p>한글은 완성형만 11,172자입니다. 전부 미리 구우면 아틀라스가 거대해집니다. 그래서 <code>FUIFont</code>는 <b>필요한 글자만 처음 쓸 때</b> 구워 아틀라스에 추가합니다. 배치는 "선반(shelf) 채우기"입니다. 한 줄에 왼쪽부터 붙이다가 넘치면 지금 줄의 가장 높은 글자만큼 내려가 새 줄을 시작합니다. 아틀라스가 차면 크기를 두 배로 키우는데(1024에서 시작해 최대 4096), <b>기존 텍셀 좌표를 그대로 두고</b> 오른쪽·아래로만 넓히므로 이미 구운 글자의 좌표를 고칠 필요가 없습니다. 바뀔 때마다 <code>GetAtlasVersion()</code>이 오르고 렌더러가 R8 텍스처를 다시 올립니다.</p>
+<p>또 하나의 장치는 <b>미리 굽기</b>(<code>Prebake</code>)입니다. UI 인스턴스를 만들 때 에셋 안 텍스트의 글자를 미리 구워 둡니다. 그렇지 않으면 메뉴를 처음 연 프레임에 글자 수십 개를 한꺼번에 굽느라 끊깁니다.</p>
+
+<h3 id="lec-60-anim"><span class="step">ProjectE에서는</span>렌더 변환과 UI 애니메이션, 디자이너</h3>
+<p>버튼을 1.2배로 키우는 애니메이션을 생각해 봅시다. 버튼 크기 자체를 키우면 레이아웃이 다시 계산되어 옆 버튼들이 밀려납니다. 원하는 것은 "보이는 모습만 커지고 자리는 그대로"입니다. 이것이 UMG의 <b>렌더 변환(Render Transform)</b>이고, ProjectE에서는 <code>RenderTranslation/RenderScale/RenderPivot</code>입니다.</p>
+<p>렌더 변환은 레이아웃이 끝난 <b>뒤</b> 적용되어 <code>State.VisualGeometry</code>를 만듭니다. 변환은 자식에게 누적되고(부모가 1.2배면 자식도 1.2배), <b>그리기와 맞히기는 Visual 값</b>을, 디자이너의 슬롯 편집(드래그로 위치 바꾸기)은 레이아웃 값 <code>Geometry</code>를 씁니다. 각 위젯은 "레이아웃 좌표 <i>p</i> → 화면 UI 좌표 <i>p</i> × VisualScale + VisualOffset"이라는 한 줄짜리 변환을 들고 있습니다. 텍스트 상자의 클릭 위치를 글자 위치로 바꿀 때도 이 변환의 역을 씁니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UILayout.cpp — ApplyRenderTransforms (발췌)"><span class="com">// 로컬: p → (p - 피벗) × 배율 + 피벗 + 이동 (레이아웃 좌표), 부모 변환을 그 뒤에 적용</span>
+<span class="kw">const</span> FVector2 Pivot  = Rect.Min + Rect.GetSize() * Widget.RenderPivot;
+<span class="kw">const</span> FVector2 LocalO = Pivot - Pivot * Widget.RenderScale + Widget.RenderTranslation;
+Widget.State.VisualScale  = Widget.RenderScale * ParentScale;
+Widget.State.VisualOffset = LocalO * ParentScale + ParentOffset;</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 220" role="img" aria-label="렌더 변환과 애니메이션 트랙">
+		<title>렌더 변환과 애니메이션 트랙</title>
+		<rect x="30" y="40" width="240" height="140" rx="4" class="box"/>
+		<text x="150" y="28" text-anchor="middle" class="t-bold">레이아웃 영역 (Geometry)</text>
+		<rect x="70" y="76" width="70" height="40" rx="6" class="k3"/>
+		<rect x="160" y="76" width="70" height="40" rx="6" class="k3"/>
+		<rect x="152" y="68" width="86" height="56" rx="8" class="ln-d" fill="none"/>
+		<text x="150" y="150" text-anchor="middle" class="t-small">오른쪽 버튼만 1.2배 (피벗 0.5, 0.5)</text>
+		<text x="150" y="168" text-anchor="middle" class="t-muted">왼쪽 버튼은 밀리지 않는다</text>
+
+		<text x="580" y="28" text-anchor="middle" class="t-bold">애니메이션 "ScorePulse" 트랙 (위젯 이름 + 속성)</text>
+		<line x1="340" y1="170" x2="820" y2="170" class="ln"/>
+		<text x="340" y="190" class="t-muted">0초</text>
+		<text x="800" y="190" class="t-muted">길이</text>
+		<line x1="340" y1="60" x2="340" y2="170" class="ln"/>
+		<text x="346" y="72" class="t-muted">ScaleX</text>
+		<path d="M340,150 C 420,150 440,80 520,80 C 600,80 620,150 700,150 L820,150" class="ln s4" stroke-width="2.2"/>
+		<circle cx="340" cy="150" r="5" class="f4"/><circle cx="520" cy="80" r="5" class="f4"/><circle cx="700" cy="150" r="5" class="f4"/>
+		<text x="520" y="70" text-anchor="middle" class="t-small">키 1.2 (EaseInOut)</text>
+		<text x="700" y="140" text-anchor="middle" class="t-small">키 1.0</text>
+		<text x="760" y="140" text-anchor="middle" class="t-muted">마지막 값 유지</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 60-6.</b> 렌더 변환은 그림만 바꾸고 레이아웃은 건드리지 않습니다. 애니메이션은 "위젯 이름 + 속성" 트랙마다 키를 보간한 스칼라 값을 그 속성에 씁니다.</figcaption>
+</figure>
+
+<p>애니메이션(<code>UIAnimation.h</code>)은 .eui v2 파일에 이름으로 저장됩니다. 트랙 하나는 (위젯 이름, 속성) 쌍의 스칼라 곡선이고, 속성은 불투명도·이동 X/Y·배율 X/Y·색 RGBA·진행률입니다. 키 사이 보간은 선형/계단/이징 인·아웃·인아웃이며 식은 짧습니다.</p>
+<pre class="code" data-file="Engine/Source/UI/UIAnimation.cpp — FUIAnimMath::Ease"><span class="kw">case</span> EUIAnimInterp::Constant:  <span class="kw">return</span> T &gt;= <span class="num">1.0f</span> ? <span class="num">1.0f</span> : <span class="num">0.0f</span>;
+<span class="kw">case</span> EUIAnimInterp::EaseIn:    <span class="kw">return</span> T * T * T;
+<span class="kw">case</span> EUIAnimInterp::EaseOut:   <span class="kw">return</span> <span class="num">1.0f</span> - (<span class="num">1.0f</span> - T) * (<span class="num">1.0f</span> - T) * (<span class="num">1.0f</span> - T);
+<span class="kw">case</span> EUIAnimInterp::EaseInOut: <span class="kw">return</span> T &lt; <span class="num">0.5f</span> ? <span class="num">4.0f</span> * T * T * T : <span class="num">1.0f</span> - <span class="num">4.0f</span> * (<span class="num">1.0f</span> - T) * (<span class="num">1.0f</span> - T) * (<span class="num">1.0f</span> - T);</pre>
+<p>속성 enum은 파일에 <b>이름</b>으로 저장되고 "끝에만 추가" 규칙을 따릅니다. 번호를 저장했다면 중간에 속성을 끼워 넣는 순간 기존 파일의 의미가 바뀝니다. 재생은 <code>FUIInstance::PlayAnimation</code>(반복·속도·거꾸로), 끝나면 <code>AnimationFinished</code> 이벤트가 나가 Lua의 <code>OnUIAnimationFinished_&lt;이름&gt;</code>으로 전달됩니다. 회전은 아직 없습니다(Plans.md에 한계로 기록).</p>
+
+<h4>에셋과 디자이너</h4>
+<p>UI 에셋 <code>.eui</code>는 위젯 트리를 JSON으로 저장한 것이고(<code>FUIAsset</code>, 경로는 Content 기준), 씬에서는 <code>FUIComponent</code>가 에셋 경로·Z 순서·보임·입력 받기를 가집니다. 런타임 상태 <code>FUIComponentRuntime</code>은 <b>복사하면 비워지므로</b> 플레이 모드 복제나 엔티티 복제가 같은 UI 인스턴스를 공유하지 않습니다. 디자이너 창(<code>FWidgetEditor</code>)은 계층·팔레트·캔버스·속성·애니메이션 타임라인으로 이루어지며, <b>캔버스 미리보기는 실제 <code>FUIRenderer</code></b>로 그립니다 — 디자이너에서 본 것과 게임 화면이 같은 코드에서 나오게 하는, 0강의 원칙 그대로입니다.</p>
+<p>새 위젯 종류를 추가할 때 손댈 곳은 CLAUDE.md에 목록으로 정해 두었습니다: <code>EUIWidgetType</code> 끝, <code>UITypes.cpp</code> 이름 표, <code>Widget.cpp</code>(기본값/자식 수), <code>UILayout.cpp</code>, <code>UIPainter.cpp</code>, <code>UIAsset.cpp</code>(JSON), 디자이너 팔레트/속성. 구조체 하나 설계 덕분에 "목록이 이것뿐"입니다.</p>
+
+<h3 id="lec-60-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">글꼴이 느린 진짜 이유는 SDF가 아니었다</b>
+	UI를 처음 띄웠을 때 글꼴 준비가 눈에 띄게 느렸습니다. 처음 의심한 것은 SDF 계산이었지만, 재 보니 원인은 13MB짜리 글꼴 파일을 <b>바이트 단위로</b> 읽는 코드였습니다. 일괄 읽기로 바꾸자 Debug 빌드에서 853ms → 15ms가 됐습니다(Plans.md Phase 16 후속). 추측하지 말고 재야 한다는 교훈입니다.
+</div>
+<div class="callout story">
+	<b class="t">stb_truetype의 SDF 함수가 OTF 글자를 깨뜨리다</b>
+	처음에는 stb_truetype이 제공하는 SDF 생성 함수를 그대로 썼습니다. 그런데 기본 글꼴을 Noto Sans KR(OTF)로 바꾸자 글자가 깨졌습니다. 원인은 그 함수가 <b>3차 베지어 곡선(CFF 아웃라인)을 버린다</b>는 것이었습니다. TTF는 2차 곡선이라 문제가 없었지만 OTF/CFF는 3차 곡선을 씁니다. 해결은 "곡선을 직접 다루지 않는 것" — stb의 일반 래스터라이저로 4배 해상도 커버리지를 그린 뒤 거리 변환으로 SDF를 만드는 지금 방식입니다. 래스터 결과만 쓰므로 곡선 종류와 무관하게 같은 품질이 나옵니다(글자당 약 3ms, Debug). CLAUDE.md에 "stb_truetype SDF 함수는 CFF 3차 곡선을 버리므로 쓰지 않는다"로 남겨 두었습니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙: 그리기·맞히기는 Visual, 편집은 Geometry</b>
+	렌더 변환을 넣은 뒤에도 맞히기가 레이아웃 좌표를 보면, 커진 버튼의 바깥쪽을 클릭해도 반응하지 않습니다. 반대로 디자이너가 Visual 좌표로 슬롯을 역산하면 애니메이션 중인 위젯을 끌 때 위치가 엉뚱하게 저장됩니다. 두 좌표계를 쓰임새별로 엄격히 나누는 것이 규칙입니다.
+</div>
+<ul>
+	<li><b>UI를 Core에만 의존하게</b> 둔 덕분에 전용 서버(GPU 없음)도 UI 타입을 등록할 수 있습니다(<code>RegisterUITypes()</code> — 씬 로드가 실패하지 않도록 타입만). UI는 복제 대상이 아니며 클라이언트 로컬입니다.</li>
+	<li>Phase 16 1단계에서 IME 조합 중인 글자는 완성될 때까지 보이지 않았습니다(<code>WM_CHAR</code>만 받았기 때문). 이 한계를 61강에서 고칩니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>게임 UI는 디자이너가 만들고 애니메이션하므로 위젯 객체가 남아 있는 보존 모드 트리로 만든다. ImGui는 에디터 전용.</li>
+		<li>위젯 = 저장 값(<code>FUIWidgetData</code>, 모든 종류의 항목을 한 구조체에) + 실행 값(<code>FUIWidgetState</code>). 위치 정보의 종류는 부모가 정한다(슬롯).</li>
+		<li>레이아웃은 원하는 크기(아래→위) → 배치(위→아래) → 렌더 변환. 해상도는 배율 규칙 + 앵커로 대응한다.</li>
+		<li>맞히기는 그리기의 역순, Visibility 기본값 덕분에 배경 패널과 글자는 클릭을 먹지 않는다. UI가 가져간 입력은 게임에 걸러진 사본으로 준다.</li>
+		<li>SDF 글꼴은 거리를 저장해 확대해도 경계가 정확하다. ProjectE는 4배 래스터 + 거리 변환으로 TTF/OTF를 같은 품질로 굽고, 필요한 글자만 동적 아틀라스에 넣는다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 부모 너비 1000인 캔버스에 점 앵커 (0.5, 0), 피벗 (0.5, 0), 오프셋 (0, 20, 200, 50)인 자식이 있습니다. X 영역은 어디일까요? 부모가 1600으로 넓어지면요?</summary>
+	앵커점 X = 0 + 0.5 × 1000 = 500, 너비 200, Min.X = 500 + 0 − 0.5 × 200 = 400, Max.X = 600입니다. 부모가 1600이면 앵커점 800 → 700~900입니다. 크기는 그대로 두고 가운데에 머뭅니다.
+</details>
+<details class="quiz"><summary>Q2. 화면 전체를 덮는 반투명 검은 배경(이미지 위젯)으로 일시정지 메뉴를 만들었더니 메뉴 뒤 게임을 클릭할 수 없습니다. 그런데 기획 의도는 "일시정지 중엔 게임 클릭을 막는 것"입니다. 이 동작은 버그일까요?</summary>
+	의도에 맞는 동작입니다. 이미지 위젯의 기본 Visibility는 <code>Visible</code>이라 맞히기 대상이고, 맞힌 위젯이 있으면 UI가 포인터를 가져갑니다. 반대로 장식용 배경이 클릭을 막지 않게 하려면 그 위젯을 <code>HitTestInvisible</code>로 바꿉니다. 모달 창을 만드는 가장 쉬운 방법이 "화면 전체 Visible 배경"입니다.
+</details>
+<details class="quiz"><summary>Q3. SDF 아틀라스를 크기 48로 구웠는데 글자를 크기 200으로 그리면 어떤 문제가 생길 수 있을까요?</summary>
+	경계 위치는 정확하지만, 48픽셀 해상도보다 작은 모양 정보(가는 획의 날카로운 모서리 등)는 원래 표본에 없으므로 모서리가 둥글게 뭉개집니다. 단일 채널 SDF는 날카로운 꼭짓점을 표현하지 못하는 것이 알려진 한계입니다(다중 채널 MSDF가 이를 보완하는 기법입니다). 또 외곽선 폭은 거리 범위(패딩 6 기준 픽셀)를 넘을 수 없습니다.
+</details>
+</article>
+
+<!-- ======================================================= 61강 ======================================================= -->
+<article class="lecture" id="lec-61">
+<header>
+	<div class="no">61강</div>
+	<h2 id="lec-61-title">다국어와 텍스트 입력</h2>
+	<div class="meta">관련 Phase: 32 (다국어 / 입력창 마무리), 16 후속(텍스트 상자) · 살펴볼 곳: <code>Engine/Source/UI/Localization.h</code>, <code>UI/UITextEdit.h</code>, <code>UI/Widget.cpp</code>(<code>GetDisplayText</code>), <code>Core/Window.cpp</code>(<code>SetTextInput</code>, IME), <code>Scripting/ScriptUIBindings.cpp</code>(<code>Loc</code>), <code>Projects/Sample/Content/Localization/Strings.estrings</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>화면 글자를 코드에 박지 않고 "키 → 언어별 문자열" 표로 빼는 이유와, 형식 인자가 위치·이름 두 가지인 이유를 설명할 수 있습니다.</li>
+		<li>ProjectE의 언어 결정 순서와 문자열 조회 순서(현재 언어 → 기본 언어 → 키)를 압니다.</li>
+		<li>한글 IME가 "조합 중 글자"와 "확정 글자"를 어떻게 나눠 보내는지, 게임이 그것을 직접 그리려면 무엇이 필요한지 이해합니다.</li>
+		<li>한 줄 텍스트 편집을 글꼴·창과 무관한 순수 로직으로 만들고 테스트하는 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-61-why"><span class="step">왜 필요한가</span>"게임 시작"을 "Play"로 바꾸려면 코드를 고쳐야 할까</h3>
+<p>버튼 글자를 위젯에 <code>Text = "게임 시작"</code>으로 적어 두면 영어판을 낼 때 모든 UI 에셋과 스크립트를 뒤져 바꿔야 합니다. 번역가는 보통 프로그래머가 아니고, 언어는 둘에서 열로 늘어납니다. 그래서 거의 모든 게임 엔진은 <b>현지화(localization)</b>를 위해 같은 구조를 씁니다.</p>
+<ul>
+	<li>화면 글자 대신 <b>키</b>(<code>"Menu.Play"</code>)를 적고,</li>
+	<li>키 → 언어별 문자열을 담은 <b>문자열 표</b>를 따로 두며,</li>
+	<li>실행 중에는 "현재 언어"로 표를 찾아 보여 줍니다.</li>
+</ul>
+<p>여기에 숫자가 섞이면 조금 더 까다롭습니다. "체력 75 / 100"을 코드에서 <code>"체력 " + HP + " / 100"</code>으로 이어 붙이면 어순이 다른 언어에서 무너집니다. 일본어나 독일어는 숫자가 문장 중간이나 끝에 와야 할 수 있습니다. 그래서 문장 전체를 번역 단위로 두고 숫자 자리만 <b>형식 인자</b>로 비워 둡니다: <code>"체력 {0} / 100"</code>.</p>
+<p>그리고 텍스트 입력이 있습니다. Phase 16에서 만든 텍스트 상자는 영문은 잘 받았지만 한글은 <b>조합이 끝난 글자만</b> 나타났습니다. "한"을 치는 동안 ㅎ → 하 → 한이 보이지 않다가 다음 글자를 칠 때야 툭 나타나는 식입니다. 한국어 사용자에게는 고장 난 입력창처럼 보입니다. Phase 32는 이 두 문제를 함께 마무리했습니다.</p>
+
+<h3 id="lec-61-table"><span class="step">핵심 개념</span>문자열 표와 조회 순서</h3>
+<p>ProjectE의 문자열 표 <code>.estrings</code>는 JSON 한 파일에 <b>모든 언어</b>를 담습니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Localization/Strings.estrings (발췌)">{
+  <span class="str">"Version"</span>: <span class="num">1</span>,
+  <span class="str">"Languages"</span>: [<span class="str">"ko"</span>, <span class="str">"en"</span>],
+  <span class="str">"Strings"</span>: {
+    <span class="str">"HUD.Health"</span>:   { <span class="str">"en"</span>: <span class="str">"Health {0} / 100"</span>,             <span class="str">"ko"</span>: <span class="str">"체력 {0} / 100"</span> },
+    <span class="str">"HUD.Language"</span>: { <span class="str">"en"</span>: <span class="str">"Language: {Name} (L to switch)"</span>, <span class="str">"ko"</span>: <span class="str">"언어: {Name} (L 키로 전환)"</span> },
+    ...
+  }
+}</pre>
+<p>언어별로 파일을 나누는 엔진도 많은데, 한 파일로 둔 이유는 Plans.md에 두 가지로 적혀 있습니다. 첫째, 문자열 표 편집 창(<code>FStringTableEditor</code>)이 <b>파일 단위</b>로 열리므로 번역을 나란히 놓고 보려면 한 파일이 편합니다. 둘째, pak 안에서는 <b>폴더를 나열할 수 없어</b>(63강) "Localization 폴더의 언어 파일을 모두 읽기"가 패키지에서 동작하지 않습니다. 같은 이유로 패키지에서는 프로젝트 설정 <code>Localization.StringTables</code>에 표 경로를 반드시 적습니다(비어 있으면 디스크의 <code>Content/Localization/*.estrings</code>를 나열 — 개발 중에만 통합니다). 키는 <code>std::map</code>으로 정렬해 저장하므로, 키를 추가해도 git diff가 한 덩어리로 작게 나옵니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="언어 결정과 문자열 조회 순서">
+		<title>언어 결정과 문자열 조회 순서</title>
+		<text x="200" y="26" text-anchor="middle" class="t-bold">현재 언어 정하기 (처음 쓸 때 한 번)</text>
+		<g class="t-small">
+			<rect x="60" y="42" width="280" height="32" rx="6" class="k1"/>
+			<text x="200" y="63" text-anchor="middle">① 명령줄 --language</text>
+			<rect x="60" y="84" width="280" height="32" rx="6" class="k1"/>
+			<text x="200" y="105" text-anchor="middle">② &lt;Saved&gt;/Config/Language.json (사용자)</text>
+			<rect x="60" y="126" width="280" height="32" rx="6" class="k1"/>
+			<text x="200" y="147" text-anchor="middle">③ 시스템 언어 (설정이 켜져 있을 때)</text>
+			<rect x="60" y="168" width="280" height="32" rx="6" class="k1"/>
+			<text x="200" y="189" text-anchor="middle">④ 프로젝트 기본 언어</text>
+			<rect x="60" y="210" width="280" height="32" rx="6" class="box"/>
+			<text x="200" y="231" text-anchor="middle">⑤ 표의 첫 언어</text>
+		</g>
+		<text x="200" y="266" text-anchor="middle" class="t-muted">위에서부터 처음으로 "표에 있는 언어"가 이긴다</text>
+		<text x="200" y="284" text-anchor="middle" class="t-muted">("ko-KR"은 "ko"로 앞부분 일치 — MatchLanguage)</text>
+
+		<text x="640" y="26" text-anchor="middle" class="t-bold">Lookup("HUD.Health") — 매 그리기마다</text>
+		<g class="t-small">
+			<rect x="500" y="42" width="280" height="40" rx="8" class="k2"/>
+			<text x="640" y="67" text-anchor="middle">현재 언어 값이 있나? → 반환</text>
+			<rect x="500" y="112" width="280" height="40" rx="8" class="k2"/>
+			<text x="640" y="137" text-anchor="middle">기본 언어 값이 있나? → 반환</text>
+			<rect x="500" y="182" width="280" height="40" rx="8" class="k4"/>
+			<text x="640" y="207" text-anchor="middle">아무 번역이라도 있나? → 반환</text>
+			<rect x="500" y="242" width="280" height="40" rx="8" class="k5"/>
+			<text x="640" y="267" text-anchor="middle">키 그대로 표시 + 경고 (키마다 한 번)</text>
+		</g>
+		<path d="M640,82 V108" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,152 V178" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,222 V238" class="ln" marker-end="url(#arr)"/>
+		<text x="650" y="100" class="t-muted">없음</text>
+		<text x="650" y="170" class="t-muted">없음</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 61-1.</b> 왼쪽은 실행 시작 때 언어를 고르는 순서, 오른쪽은 키 하나를 찾는 순서입니다. 번역이 빠진 키도 화면이 비지 않고, 누락은 로그로 드러납니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/UI/Localization.cpp — FLocalization::Lookup (발췌)"><span class="kw">if</span> (<span class="kw">const auto</span> It = Strings.find(Key); It != Strings.end())
+{
+	<span class="kw">if</span> (<span class="kw">const auto</span> Value = It-&gt;second.find(Language); Value != It-&gt;second.end())        { <span class="kw">return</span> Value-&gt;second; }
+	<span class="kw">if</span> (<span class="kw">const auto</span> Value = It-&gt;second.find(DefaultLanguage); Value != It-&gt;second.end()) { <span class="kw">return</span> Value-&gt;second; }
+	<span class="kw">if</span> (!It-&gt;second.empty()) { <span class="kw">return</span> It-&gt;second.begin()-&gt;second; } <span class="com">// 기본 언어도 없으면 아무 번역이라도</span>
+}
+<span class="kw">auto</span> Missing = MissingKeys.find(Key);
+<span class="kw">if</span> (Missing == MissingKeys.end())
+{
+	E_LOG(LogUI, Warning, <span class="str">"문자열 표에 없는 키: \"{}\" (키를 그대로 표시합니다)"</span>, Key);
+	Missing = MissingKeys.emplace(Key).first;
+}
+<span class="kw">return</span> *Missing;   <span class="com">// 반환 참조가 유효하도록 키 문자열 자체를 집합에 보관</span></pre>
+<p>마지막 줄이 작은 묘수입니다. <code>Lookup</code>은 문자열을 복사하지 않고 <b>참조</b>를 돌려줍니다(매 프레임 모든 텍스트 위젯이 부르므로). 그런데 "키 그대로"를 돌려줄 때 인자 <code>Key</code>는 <code>string_view</code>라 참조로 돌려줄 수 없습니다. 그래서 경고를 한 번 낸 키를 <code>MissingKeys</code> 집합에 넣고 그 원소의 참조를 돌려줍니다. 경고 중복 방지와 수명 문제를 한 번에 해결합니다.</p>
+
+<h4>형식 인자: 위치와 이름</h4>
+<p><code>FLocalization::Format</code>은 <code>{0}</code>, <code>{1}</code> 같은 위치 인자와 <code>{Name}</code> 같은 이름 인자를 모두 받고, 중괄호 자체는 <code>{{</code>/<code>}}</code>로 씁니다. 없는 인자 자리는 지우지 않고 그대로 둡니다 — 번역 실수가 화면에 드러나도록. 이름 인자는 인자가 여럿일 때 번역가에게 의미를 알려 주고, 언어마다 순서를 바꿔도 안전합니다. Lua에서는 <code>Loc.Get("HUD.Health", Hp)</code>처럼 쓰고, 표를 넘기면 문자열 키는 이름 인자, 1부터의 정수 키는 <code>{0}</code>부터의 위치 인자가 됩니다(Lua 배열이 1부터 시작하는 것을 맞춘 변환).</p>
+
+<h3 id="lec-61-display"><span class="step">ProjectE에서는</span>그릴 때마다 찾는다: GetDisplayText</h3>
+<p>언어를 바꿨을 때 이미 화면에 있는 글자는 어떻게 바뀔까요? 흔한 방법은 "언어 변경 이벤트"를 받아 모든 위젯의 글자를 다시 써 넣는 것입니다. 하지만 그러면 이벤트를 놓친 위젯, 나중에 만든 위젯, 복제한 위젯을 모두 챙겨야 합니다. ProjectE는 더 단순한 길을 택했습니다. 텍스트 위젯은 <code>TextKey</code>를 들고 있고, <b>측정·그리기·미리 굽기 모두 그 순간에 키로 찾습니다</b>.</p>
+<pre class="code" data-file="Engine/Source/UI/Widget.cpp">
+<span class="kw">const</span> std::string&amp; GetDisplayText(<span class="kw">const</span> FUIWidgetData&amp; Widget)
+{
+	<span class="kw">return</span> Widget.Type == EUIWidgetType::Text &amp;&amp; !Widget.TextKey.empty() ? FLocalization::Get().Lookup(Widget.TextKey) : Widget.Text;
+}</pre>
+<p>해시 조회 몇 번이 매 프레임 드는 대신, 언어를 바꾸면 <b>다음 프레임에 모든 글자가 저절로</b> 바뀝니다. 그래서 규칙이 하나 생깁니다: 화면 글자를 읽는 코드는 <code>Text</code>를 직접 읽지 말고 <code>GetDisplayText/GetDisplayHintText</code>를 거친다. 레이아웃 측정만 <code>Text</code>를 읽고 그리기가 번역을 읽으면 글자 폭이 어긋나기 때문입니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 스크립트가 Text를 쓰면 키가 풀린다</b>
+	Lua가 <code>widget.Text = "..."</code>로 직접 글자를 쓰면 그 위젯의 키는 해제됩니다. 스크립트가 "점수 120"처럼 동적인 글자를 넣었는데 다음 프레임에 키 조회가 그것을 덮어쓰면 안 되니까요. 동적인 글자도 번역하려면 <code>widget.Text = Loc.Get("HUD.Score", Score)</code>처럼 형식 결과를 넣습니다. 사용자가 입력한 텍스트 상자의 내용은 번역하지 않고, 안내 문구(<code>HintTextKey</code>)만 번역합니다.
+</div>
+<p>언어 전환은 <code>FLocalization::SetLanguage</code>(Lua <code>Loc.SetLanguage</code>)이고, 사용자 설정 저장을 켜면 <code>&lt;Saved&gt;/Config/Language.json</code>에 남아 다음 실행에도 유지됩니다. 언어·표가 바뀔 때 오르는 <code>GetRevision()</code>은 표를 캐시하는 쪽(디자이너 미리보기 등)이 다시 읽을 시점을 알리는 데 씁니다. 샘플 HUD는 L 키로 한/영을 전환합니다.</p>
+
+<h3 id="lec-61-ime"><span class="step">핵심 개념</span>IME: 조합 중 글자와 확정 글자</h3>
+<p>영어는 키 하나가 글자 하나입니다. 한글은 자모를 <b>조합</b>해 음절을 만들고, 중국어·일본어는 읽기를 친 뒤 <b>후보 창</b>에서 한자를 고릅니다. 이 일을 하는 운영체제 구성 요소가 <b>IME(Input Method Editor)</b>입니다. IME가 앱에 보내는 정보는 두 종류입니다.</p>
+<ul>
+	<li><b>조합 문자열(composition string)</b>: 아직 확정되지 않은 글자. "한글"을 치는 중이면 ㅎ, 하, 한, (한 확정 후) ㄱ, 그, 글처럼 계속 바뀝니다. 커서 위치도 함께 옵니다.</li>
+	<li><b>결과 문자열(result string)</b>: 확정된 글자. 이것만 실제 텍스트에 들어갑니다.</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="한글 조합 입력 타임라인">
+		<title>한글 조합 입력 타임라인</title>
+		<text x="20" y="34" class="t-bold">누른 키</text>
+		<text x="20" y="86" class="t-bold">조합 (COMPSTR)</text>
+		<text x="20" y="138" class="t-bold">확정 (RESULTSTR)</text>
+		<text x="20" y="190" class="t-bold">텍스트 상자 Text</text>
+		<text x="20" y="242" class="t-bold">화면 표시</text>
+		<g class="t-small">
+			<text x="200" y="34" text-anchor="middle" class="t-mono">G (ㅎ)</text>
+			<text x="300" y="34" text-anchor="middle" class="t-mono">K (ㅏ)</text>
+			<text x="400" y="34" text-anchor="middle" class="t-mono">S (ㄴ)</text>
+			<text x="500" y="34" text-anchor="middle" class="t-mono">R (ㄱ)</text>
+			<text x="600" y="34" text-anchor="middle" class="t-mono">M (ㅡ)</text>
+			<text x="700" y="34" text-anchor="middle" class="t-mono">F (ㄹ)</text>
+			<text x="800" y="34" text-anchor="middle" class="t-mono">Enter</text>
+
+			<rect x="180" y="68" width="40" height="28" rx="5" class="k4"/><text x="200" y="87" text-anchor="middle">ㅎ</text>
+			<rect x="280" y="68" width="40" height="28" rx="5" class="k4"/><text x="300" y="87" text-anchor="middle">하</text>
+			<rect x="380" y="68" width="40" height="28" rx="5" class="k4"/><text x="400" y="87" text-anchor="middle">한</text>
+			<rect x="480" y="68" width="40" height="28" rx="5" class="k4"/><text x="500" y="87" text-anchor="middle">ㄱ</text>
+			<rect x="580" y="68" width="40" height="28" rx="5" class="k4"/><text x="600" y="87" text-anchor="middle">그</text>
+			<rect x="680" y="68" width="40" height="28" rx="5" class="k4"/><text x="700" y="87" text-anchor="middle">글</text>
+			<text x="800" y="87" text-anchor="middle" class="t-muted">(비움)</text>
+
+			<rect x="480" y="120" width="40" height="28" rx="5" class="k2"/><text x="500" y="139" text-anchor="middle">한</text>
+			<rect x="780" y="120" width="40" height="28" rx="5" class="k2"/><text x="800" y="139" text-anchor="middle">글</text>
+
+			<text x="200" y="191" text-anchor="middle" class="t-muted">""</text>
+			<text x="300" y="191" text-anchor="middle" class="t-muted">""</text>
+			<text x="400" y="191" text-anchor="middle" class="t-muted">""</text>
+			<text x="500" y="191" text-anchor="middle">"한"</text>
+			<text x="600" y="191" text-anchor="middle">"한"</text>
+			<text x="700" y="191" text-anchor="middle">"한"</text>
+			<text x="800" y="191" text-anchor="middle">"한글"</text>
+
+			<text x="200" y="243" text-anchor="middle" class="t-bold" text-decoration="underline">ㅎ</text>
+			<text x="300" y="243" text-anchor="middle" class="t-bold" text-decoration="underline">하</text>
+			<text x="400" y="243" text-anchor="middle" class="t-bold" text-decoration="underline">한</text>
+			<text x="500" y="243" text-anchor="middle" class="t-bold">한<tspan text-decoration="underline">ㄱ</tspan></text>
+			<text x="600" y="243" text-anchor="middle" class="t-bold">한<tspan text-decoration="underline">그</tspan></text>
+			<text x="700" y="243" text-anchor="middle" class="t-bold">한<tspan text-decoration="underline">글</tspan></text>
+			<text x="800" y="243" text-anchor="middle" class="t-bold">한글</text>
+		</g>
+		<line x1="140" y1="104" x2="840" y2="104" class="ln-d"/>
+		<line x1="140" y1="156" x2="840" y2="156" class="ln-d"/>
+		<line x1="140" y1="208" x2="840" y2="208" class="ln-d"/>
+		<text x="140" y="280" class="t-muted">밑줄 = 조합 중 (Text에는 없음, 캐럿 자리에 끼워 그리기만)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 61-2.</b> "한글"을 치는 동안 IME가 보내는 두 종류의 문자열. ㄱ을 치는 순간 "한"이 확정되어 결과로 오고, 동시에 새 조합 "ㄱ"이 시작됩니다. Phase 16의 텍스트 상자는 확정 글자만 받았으므로 화면에 "Text" 줄만 보였습니다 — 조합 중인 ㅎ·하·한·ㄱ·그·글은 나타나지 않았습니다.</figcaption>
+</figure>
+
+<p>Windows는 이 정보를 <code>WM_IME_STARTCOMPOSITION</code> → <code>WM_IME_COMPOSITION</code>(여러 번) → <code>WM_IME_ENDCOMPOSITION</code> 메시지로 보냅니다. 앱이 이 메시지를 <code>DefWindowProc</code>에 넘기면 시스템이 자기 <b>조합 창</b>(작은 회색 상자)을 띄우고 확정 글자를 <code>WM_CHAR</code>로 다시 보내 줍니다. 대부분의 앱은 그걸로 충분하지만, 게임 UI는 자기 글꼴로 텍스트 상자 안 캐럿 자리에 조합 글자를 그려야 하므로 메시지를 직접 처리합니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Window.cpp — HandleMessage / HandleImeComposition (발췌)"><span class="kw">if</span> (bTextInput)  <span class="com">// 게임 UI 텍스트 상자가 포커스를 가진 동안만</span>
+{
+	<span class="kw">switch</span> (Message)
+	{
+	<span class="kw">case</span> WM_IME_STARTCOMPOSITION: <span class="kw">return</span> <span class="num">0</span>; <span class="com">// DefWindowProc에 넘기지 않으면 시스템 조합 창이 뜨지 않는다</span>
+	<span class="kw">case</span> WM_IME_COMPOSITION:      HandleImeComposition(LParam); <span class="kw">return</span> <span class="num">0</span>;
+	<span class="kw">case</span> WM_IME_ENDCOMPOSITION:   <span class="com">/* 조합 비우기 이벤트 */</span> <span class="kw">return</span> <span class="num">0</span>;
+	}
+}
+...
+<span class="com">// 확정 글자 먼저 (WM_CHAR와 같은 Char 이벤트 — DefWindowProc에 넘기지 않으므로 WM_CHAR는 오지 않는다)</span>
+<span class="kw">if</span> ((LParam &amp; GCS_RESULTSTR) != <span class="num">0</span>) { <span class="com">/* 글자마다 EWindowEventType::Char */</span> }
+<span class="kw">if</span> ((LParam &amp; GCS_COMPSTR) != <span class="num">0</span>)
+{
+	ReadString(GCS_COMPSTR, ImeComposition, &amp;UnitsToPoints);   <span class="com">// UTF-16 → 코드 포인트</span>
+	<span class="com">// GCS_CURSORPOS는 UTF-16 단위 → 코드 포인트 번호로 바꿔 조합 안 커서</span>
+	DispatchComposition(Cursor);                                <span class="com">// EWindowEventType::ImeComposition</span>
+}</pre>
+<p>두 가지 세부가 있습니다. 하나는 순서입니다. 한 메시지에 결과와 새 조합이 함께 올 수 있으므로(그림의 ㄱ 칸) 확정을 먼저 보내고 조합을 나중에 보냅니다. 다른 하나는 인코딩입니다. Windows는 UTF-16이라 이모지나 일부 한자는 두 단위(서로게이트 쌍)이고, 엔진은 텍스트를 코드 포인트로 다루므로 커서 위치까지 변환표(<code>UnitsToPoints</code>)로 옮깁니다.</p>
+
+<h4>후보 창 위치와 취소: SetTextInput</h4>
+<p>한자 후보 창이나 IME 상태 창은 여전히 운영체제가 그립니다. 그 창이 텍스트 상자 캐럿 바로 아래에 떠야 자연스럽습니다. 그런데 캐럿 위치는 UI 레이아웃만 알고, 창 메시지는 Core만 압니다. 그래서 앱이 매 프레임 UI 결과(<code>FUIInputResult</code>의 <code>bKeyboard</code>, <code>bHasTextCaret</code>, <code>TextCaret</code>)를 받아 <code>FWindow::SetTextInput(켜기, 캐럿 X, Y, 높이)</code>로 알립니다. 에디터는 플레이 뷰포트 이미지 위치를 더해 넘깁니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Window.cpp — SetTextInput (발췌)"><span class="kw">if</span> (!bActive)
+{
+	...
+	ImmNotifyIME(Himc, NI_COMPOSITIONSTR, CPS_CANCEL, <span class="num">0</span>); <span class="com">// 포커스를 잃은 입력칸의 조합 중 글자는 버린다</span>
+	...
+}
+<span class="kw">if</span> (<span class="com">/* 캐럿 위치가 지난번과 같으면 */</span>) { <span class="kw">return</span>; }      <span class="com">// 매 프레임 불러도 IME 호출은 바뀔 때만</span>
+CANDIDATEFORM Candidate = {};
+Candidate.dwStyle       = CFS_EXCLUDE;                     <span class="com">// 캐럿 줄을 가리지 않게 아래에</span>
+Candidate.ptCurrentPos  = { CaretX, CaretY + CaretHeight };
+Candidate.rcArea        = { CaretX, CaretY, CaretX + <span class="num">1</span>, CaretY + CaretHeight };
+ImmSetCandidateWindow(Himc, &amp;Candidate);</pre>
+<p>"매 프레임 불러도 된다, 대신 바뀔 때만 실제로 일한다"는 인터페이스는 엔진 곳곳에서 쓰는 패턴입니다. 호출하는 쪽은 상태를 기억할 필요가 없고, 운영체제 호출은 최소로 유지됩니다.</p>
+
+<h3 id="lec-61-edit"><span class="step">ProjectE에서는</span>텍스트 편집 모델: 순수 로직으로 떼어 내기</h3>
+<p>텍스트 상자 동작(선택, 단어 단위 이동, 복사·붙여넣기, 최대 길이)은 생각보다 규칙이 많고, 사람이 손으로 확인하기 어렵습니다. 그래서 <code>FUITextEdit</code>는 <b>글꼴도 창도 모르는 순수 구조체</b>입니다. 텍스트는 코드 포인트 배열이고, 위치는 코드 포인트 번호(0 = 맨 앞)입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="텍스트 편집 모델">
+		<title>텍스트 편집 모델</title>
+		<text x="30" y="30" class="t-bold">Text (코드 포인트)</text>
+		<g class="t-small">
+			<rect x="60" y="48" width="50" height="40" rx="4" class="box"/><text x="85" y="73" text-anchor="middle">안</text>
+			<rect x="110" y="48" width="50" height="40" rx="4" class="k1"/><text x="135" y="73" text-anchor="middle">녕</text>
+			<rect x="160" y="48" width="50" height="40" rx="4" class="k1"/><text x="185" y="73" text-anchor="middle">하</text>
+			<rect x="210" y="48" width="50" height="40" rx="4" class="box"/><text x="235" y="73" text-anchor="middle">세</text>
+			<rect x="260" y="48" width="50" height="40" rx="4" class="box"/><text x="285" y="73" text-anchor="middle">요</text>
+			<text x="60" y="108" text-anchor="middle" class="t-mono">0</text>
+			<text x="110" y="108" text-anchor="middle" class="t-mono">1</text>
+			<text x="160" y="108" text-anchor="middle" class="t-mono">2</text>
+			<text x="210" y="108" text-anchor="middle" class="t-mono">3</text>
+			<text x="260" y="108" text-anchor="middle" class="t-mono">4</text>
+			<text x="310" y="108" text-anchor="middle" class="t-mono">5</text>
+		</g>
+		<line x1="110" y1="40" x2="110" y2="96" class="ln s2" stroke-width="2.4"/>
+		<line x1="210" y1="40" x2="210" y2="96" class="ln s5" stroke-width="2.4"/>
+		<text x="110" y="132" text-anchor="middle" class="t-small f2">Anchor = 1</text>
+		<text x="210" y="132" text-anchor="middle" class="t-small f5">Caret = 3</text>
+		<text x="60" y="160" class="t-muted">선택 = [min(Anchor, Caret), max(...)) = [1, 3) = "녕하"</text>
+		<text x="60" y="178" class="t-muted">Anchor &lt; 0 이면 선택 없음. Shift+← 는 Caret만 움직인다</text>
+
+		<text x="470" y="30" class="t-bold">표시 문자열 (BuildTextBoxDisplay)</text>
+		<g class="t-small">
+			<rect x="480" y="48" width="44" height="40" rx="4" class="box"/><text x="502" y="73" text-anchor="middle">안</text>
+			<rect x="524" y="48" width="44" height="40" rx="4" class="box"/><text x="546" y="73" text-anchor="middle">녕</text>
+			<rect x="568" y="48" width="44" height="40" rx="4" class="k4"/><text x="590" y="73" text-anchor="middle">ㅎ</text>
+			<rect x="612" y="48" width="44" height="40" rx="4" class="box"/><text x="634" y="73" text-anchor="middle">하</text>
+			<rect x="656" y="48" width="44" height="40" rx="4" class="box"/><text x="678" y="73" text-anchor="middle">세</text>
+			<rect x="700" y="48" width="44" height="40" rx="4" class="box"/><text x="722" y="73" text-anchor="middle">요</text>
+		</g>
+		<line x1="568" y1="94" x2="612" y2="94" class="ln s4" stroke-width="2.4"/>
+		<text x="590" y="116" text-anchor="middle" class="t-small">조합 구간</text>
+		<text x="480" y="160" class="t-muted">Text = "안녕하세요", Caret = 2, 조합 = "ㅎ"</text>
+		<text x="480" y="178" class="t-muted">→ 캐럿 자리에 조합을 끼워 그리기만 한다</text>
+		<text x="30" y="226" class="t-small">한 프레임 적용 순서: 전체 선택 → 복사/잘라내기 → 지우기 → 입력 문자 → 붙여넣기 → 이동(Shift = 선택 넓히기)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 61-3.</b> 왼쪽: 캐럿과 앵커는 글자 <b>사이</b>의 위치(0~N)이고, 선택은 둘 사이 반열린 구간입니다. 오른쪽: IME 조합은 Text에 넣지 않고 표시할 때만 캐럿 자리에 끼웁니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/UI/UITextEdit.h (발췌)"><span class="com">// 한 줄 텍스트 편집 (텍스트 상자의 순수 로직 — 글꼴/창과 무관). 위치는 코드 포인트 번호 (0 = 맨 앞).</span>
+<span class="com">//   선택 = [min(Anchor, Caret), max(Anchor, Caret)), Anchor &lt; 0이면 선택 없음</span>
+<span class="com">//   한 프레임 순서: 전체 선택 → 복사/잘라내기 → 지우기(Backspace/Delete, 선택이 있으면 선택 영역) → 입력 문자 → 붙여넣기 → 이동</span>
+<span class="com">//   단어 이동(Ctrl+←/→): 공백/구두점 경계. 붙여넣기는 줄바꿈/탭을 공백으로 바꾸고 MaxLength에 맞춰 자른다</span>
+<span class="kw">struct</span> FUITextEdit
+{
+	std::vector&lt;uint32&gt; Text;
+	int32               Caret  = <span class="num">0</span>;
+	int32               Anchor = -<span class="num">1</span>;
+
+	<span class="kw">bool</span> Insert(std::u32string_view Chars, int32 MaxLength);          <span class="com">// 선택을 바꿔 넣는다</span>
+	<span class="kw">bool</span> Apply(<span class="kw">const</span> FUIKeyInput&amp; Keys, int32 MaxLength, std::string* OutClipboard, <span class="kw">bool</span>* OutMoved = <span class="kw">nullptr</span>);
+	<span class="kw">static</span> int32 FindWordLeft(<span class="kw">const</span> std::vector&lt;uint32&gt;&amp; Text, int32 From);
+	<span class="kw">static</span> std::u32string SanitizePaste(std::string_view Utf8);  <span class="com">// \r 제거, \n/\t → 공백</span>
+};</pre>
+<p>왜 <b>코드 포인트</b> 단위일까요? UTF-8 바이트 단위로 캐럿을 두면 "한" 한 글자(3바이트) 중간에 캐럿이 들어가 문자열이 깨질 수 있습니다. 코드 포인트 배열이면 Backspace 한 번에 한 글자가 정확히 지워집니다(결합 문자·이모지 조합 같은 더 복잡한 경계는 다루지 않습니다).</p>
+<p>"한 프레임 적용 순서"를 정해 둔 것도 중요합니다. 같은 프레임에 Ctrl+A와 글자 입력이 함께 오면? 순서가 정해져 있으므로 "전체 선택 후 입력 = 전체를 입력 글자로 바꾸기"라는 결과가 항상 같습니다. 이런 규칙은 머리 주석에 적고 <code>TextEditTests</code>(UITests, 6개)로 고정했습니다. CLAUDE.md 규칙: <code>FUITextEdit</code>를 고치면 이 테스트를 함께 고친다.</p>
+<p>창에 의존하는 부분은 따로 떼어 냈습니다. 클립보드 같은 Win32 호출은 <code>UI/UIPlatformWindows.cpp</code>에만 두고, 편집 로직은 "클립보드에 쓸 글자"를 출력 인자로 돌려줄 뿐입니다. 복사한 글자를 실제 OS 클립보드에 쓰는 일은 호출자(<code>FUIInputRouter::TakeClipboardText</code> → 앱)가 합니다. 덕분에 테스트는 클립보드 없이 "Ctrl+X 하면 OutClipboard에 선택 글자가 나오고 Text에서 사라진다"를 확인합니다.</p>
+
+<h3 id="lec-61-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">조합 글자가 보이지 않던 첫 텍스트 상자</b>
+	Phase 16의 텍스트 상자는 문자 입력을 <code>WM_CHAR</code>로만 받았습니다. 시스템이 조합 창을 따로 띄우고 확정된 글자만 보내 주므로, 게임 화면의 입력칸에는 음절이 완성될 때까지 아무것도 나타나지 않았습니다. Plans.md에 "한계: IME 조합 중인 글자는 완성될 때까지 보이지 않음"으로 남겼고, Phase 32에서 IME 메시지를 직접 처리해 캐럿 자리에 밑줄 친 조합 글자를 그리도록 고쳤습니다. 한국어 사용자에게 "입력이 된다"와 "입력이 자연스럽다"는 전혀 다른 기준입니다.
+</div>
+<div class="callout story">
+	<b class="t">남아 있는 한계들 (Plans.md Phase 32 후속)</b>
+	<ul>
+		<li>한글 입력 모드에서는 텍스트 상자에 포커스가 없어도 IME가 WASD를 가로챌 수 있습니다(포커스가 없을 때 IME를 끄는 <code>ImmAssociateContextEx</code> 처리가 후속).</li>
+		<li>창 재활성화 시 시스템 조합 창 깜빡임(<code>WM_IME_SETCONTEXT</code> 미처리), ImGui 창을 메인 창 밖으로 떼면 캐럿 위치 어긋남, 여러 줄 텍스트 상자 없음.</li>
+		<li>실제 한글 IME 입력·한자 후보 창 위치는 자동 검증으로 확인할 수 없어 "사용자 실행 검증" 항목으로 남아 있습니다. 자동 검증은 <code>--ui-text-demo select|compose</code>로 조합 표시 화면만 확인합니다.</li>
+	</ul>
+</div>
+<div class="callout tip">
+	<b class="t">설계 이유: 조합 글자를 Text에 넣지 않는다</b>
+	조합 중 글자를 Text에 넣었다 빼는 방식도 가능하지만, 그러면 <code>TextChanged</code> 이벤트가 자모마다 나가고, 최대 길이 계산과 Undo가 뒤엉킵니다. 조합은 상태(<code>State.Composition</code>)에만 두고 표시할 때 끼우면, 텍스트 내용과 이벤트는 "확정된 것"만 다룹니다. 포커스를 잃으면 조합은 취소(<code>CPS_CANCEL</code>)되고 Text는 그대로입니다.
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>화면 글자는 키로 적고, <code>.estrings</code>(한 파일에 모든 언어)에서 현재 언어 → 기본 언어 → 키 순으로 찾는다. 없는 키는 경고 한 번 + 키 그대로.</li>
+		<li>숫자가 섞인 문장은 문장 전체를 번역하고 <code>{0}</code>/<code>{이름}</code> 자리를 비운다. 어순이 다른 언어도 안전하다.</li>
+		<li>텍스트 위젯은 그릴 때마다 키로 찾으므로 언어를 바꾸면 다음 프레임에 모두 바뀐다. 읽는 쪽은 반드시 <code>GetDisplayText</code>.</li>
+		<li>IME는 조합 문자열과 결과 문자열을 따로 보낸다. 게임 UI는 IME 메시지를 직접 받아 조합을 캐럿 자리에 그리고, 후보 창 위치는 <code>SetTextInput</code>으로 알린다.</li>
+		<li>텍스트 편집은 코드 포인트 단위 순수 로직(<code>FUITextEdit</code>)으로 떼어 규칙을 테스트로 고정한다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 번역가가 영어 문장 "Health {0} / 100"을 실수로 "Health / 100"으로 적었습니다. 화면에는 무엇이 보일까요? 반대로 "{1}"을 적었다면요?</summary>
+	첫 경우 인자 자리가 없으므로 숫자가 빠진 "Health / 100"이 보입니다(형식 함수는 남는 인자를 무시). 두 번째 경우 <code>{1}</code>에 해당하는 인자가 없으므로 지우지 않고 "{1}"이 그대로 화면에 남습니다. 번역 실수가 조용히 사라지지 않고 눈에 띄게 하려는 규칙입니다.
+</details>
+<details class="quiz"><summary>Q2. 언어를 바꾸는 순간 "언어 변경 이벤트"를 받아 각 위젯의 Text를 다시 쓰는 방식과 비교해, 그릴 때마다 키로 찾는 방식의 단점은 무엇이고 왜 받아들였을까요?</summary>
+	매 프레임 텍스트 위젯마다 해시 조회가 몇 번 듭니다. 대신 언어 전환, 표 다시 읽기(편집기 저장), 나중에 만든 위젯, 복제한 위젯이 모두 별도 처리 없이 맞게 보입니다. UI 텍스트 위젯 수는 많아야 수백 개라 조회 비용은 작고, "놓친 위젯" 버그가 원천적으로 없어지는 이득이 큽니다.
+</details>
+<details class="quiz"><summary>Q3. 텍스트 상자에 "한"까지 조합 중인 상태에서 플레이어가 다른 버튼을 클릭해 포커스가 옮겨 갔습니다. Text는 어떻게 되어야 할까요?</summary>
+	ProjectE는 조합 중 글자를 버립니다. 텍스트 입력이 꺼지면 <code>SetTextInput(false, ...)</code>가 <code>ImmNotifyIME(..., CPS_CANCEL)</code>로 조합을 취소하고 조합 상태를 비웁니다. Text에는 확정된 글자만 있으므로 그대로입니다. (일부 앱은 포커스를 잃을 때 조합을 확정하기도 합니다 — 선택의 문제이며, ProjectE는 취소를 택했습니다.)
+</details>
+</article>
+
+<!-- ======================================================= 62강 ======================================================= -->
+<article class="lecture" id="lec-62">
+<header>
+	<div class="no">62강</div>
+	<h2 id="lec-62-title">오디오</h2>
+	<div class="meta">관련 Phase: 7 (게임 시스템 — 오디오, miniaudio 0.11.25), 19 2단계(pak VFS) · 살펴볼 곳: <code>Engine/Source/Audio/</code> (<code>AudioEngine.h/.cpp</code>, <code>AudioMath.h</code>, <code>AudioSystem.cpp</code>, <code>AudioComponents.h</code>), <code>Tests/AudioTests/AudioTests.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>소리가 숫자 배열(샘플)로 표현되는 방식과 샘플레이트·채널·프레임의 뜻을 압니다.</li>
+		<li>여러 소리를 동시에 내는 "믹싱"이 실제로는 덧셈이라는 것과, 오디오 장치가 데이터를 가져가는 방식을 이해합니다.</li>
+		<li>3D 사운드의 두 요소(방향에 따른 좌우 배분, 거리에 따른 감쇠)와 감쇠 곡선을 설명할 수 있습니다.</li>
+		<li>엔진(왼손 Z-up)과 오디오 라이브러리(오른손)의 좌표계가 다를 때 왜 "청자 기준 좌표"로 넘기는지 압니다.</li>
+		<li>장치 없이 믹스 결과를 읽어 오디오를 단위 테스트하는 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-62-why"><span class="step">왜 필요한가</span>소리는 화면 밖 정보를 전한다</h3>
+<p>등 뒤에서 다가오는 발소리, 벽 너머의 폭발, 멀어지는 자동차. 소리는 화면에 보이지 않는 것의 <b>방향과 거리</b>를 알려 줍니다. 엔진이 할 일은 세 가지입니다. 파일(WAV, MP3 …)을 읽어 숫자로 풀고(디코딩), 동시에 나는 여러 소리를 하나로 섞고(믹싱), 소리 위치와 듣는 사람(청자)의 위치·방향에 따라 좌우 크기와 음량을 바꾸는 것(공간화)입니다.</p>
+<p>ProjectE는 이 일을 <b>miniaudio</b>에 맡깁니다. 헤더 하나로 된 C 라이브러리로, 장치 출력·디코딩·리소스 캐시·3D 공간화를 모두 갖고 있습니다. 0강의 기준대로 "표준 해법이 있고 엔진 설계와 무관한 것"이므로 가져다 쓰고, 엔진과 맞닿는 경계(좌표 변환, 컴포넌트 동기화, 파일 읽기, 테스트)만 직접 설계합니다. 이 강의의 대부분은 그 경계 이야기입니다.</p>
+
+<h3 id="lec-62-digital"><span class="step">핵심 개념</span>디지털 오디오: 샘플, 샘플레이트, 프레임</h3>
+<p>소리는 공기 압력의 떨림입니다. 마이크는 그 압력을 전압으로 바꾸고, 컴퓨터는 그 전압을 <b>일정한 간격으로 재서</b> 숫자로 저장합니다. 한 번 잰 값이 <b>샘플(sample)</b>, 1초에 재는 횟수가 <b>샘플레이트(sample rate)</b>입니다. ProjectE의 테스트는 48,000Hz(1초에 48,000번)를 씁니다.</p>
+<ul>
+	<li><b>나이퀴스트 한계</b>: 샘플레이트의 절반보다 높은 주파수는 표현할 수 없습니다. 사람 귀의 상한이 약 20kHz이므로 44.1kHz·48kHz가 표준이 됐습니다.</li>
+	<li><b>채널</b>: 스테레오는 왼쪽·오른쪽 두 채널입니다. 같은 순간의 채널 값 묶음을 <b>프레임(frame)</b>이라 하고, 메모리에는 보통 L, R, L, R … 처럼 <b>인터리브</b>로 놓습니다.</li>
+	<li><b>값의 범위</b>: 믹싱 내부에서는 −1.0 ~ +1.0 부동소수를 쓰고, 파일은 16비트 정수(−32768 ~ 32767) 등으로 저장합니다.</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="표본화와 인터리브 프레임">
+		<title>표본화와 인터리브 프레임</title>
+		<line x1="40" y1="110" x2="520" y2="110" class="ln"/>
+		<line x1="40" y1="30" x2="40" y2="190" class="ln"/>
+		<text x="46" y="40" class="t-muted">+1</text>
+		<text x="46" y="186" class="t-muted">−1</text>
+		<path d="M40,110 L45,100.1 L50,90.5 L55,81.4 L60,73.0 L65,65.5 L70,59.0 L75,53.9 L80,50.1 L85,47.8 L90,47.0 L95,47.8 L100,50.1 L105,53.9 L110,59.0 L115,65.5 L120,73.0 L125,81.4 L130,90.5 L135,100.1 L140,110.0 L145,119.9 L150,129.5 L155,138.6 L160,147.0 L165,154.5 L170,161.0 L175,166.1 L180,169.9 L185,172.2 L190,173.0 L195,172.2 L200,169.9 L205,166.1 L210,161.0 L215,154.5 L220,147.0 L225,138.6 L230,129.5 L235,119.9 L240,110.0 L245,100.1 L250,90.5 L255,81.4 L260,73.0 L265,65.5 L270,59.0 L275,53.9 L280,50.1 L285,47.8 L290,47.0 L295,47.8 L300,50.1 L305,53.9 L310,59.0 L315,65.5 L320,73.0 L325,81.4 L330,90.5 L335,100.1 L340,110.0 L345,119.9 L350,129.5 L355,138.6 L360,147.0 L365,154.5 L370,161.0 L375,166.1 L380,169.9 L385,172.2 L390,173.0 L395,172.2 L400,169.9 L405,166.1 L410,161.0 L415,154.5 L420,147.0 L425,138.6 L430,129.5 L435,119.9 L440,110.0 L445,100.1 L450,90.5 L455,81.4 L460,73.0 L465,65.5 L470,59.0 L475,53.9 L480,50.1 L485,47.8 L490,47.0 L495,47.8 L500,50.1 L505,53.9 L510,59.0 L515,65.5 L520,73.0" class="ln s1" stroke-width="2"/>
+		<g class="f5">
+			<circle cx="40" cy="110" r="4"/><circle cx="65" cy="65.4" r="4"/><circle cx="90" cy="47" r="4"/><circle cx="115" cy="65.4" r="4"/>
+			<circle cx="140" cy="110" r="4"/><circle cx="165" cy="154.6" r="4"/><circle cx="190" cy="173" r="4"/><circle cx="215" cy="154.6" r="4"/>
+			<circle cx="240" cy="110" r="4"/><circle cx="265" cy="65.4" r="4"/><circle cx="290" cy="47" r="4"/><circle cx="315" cy="65.4" r="4"/>
+			<circle cx="340" cy="110" r="4"/><circle cx="365" cy="154.6" r="4"/><circle cx="390" cy="173" r="4"/><circle cx="415" cy="154.6" r="4"/>
+			<circle cx="440" cy="110" r="4"/><circle cx="465" cy="65.4" r="4"/><circle cx="490" cy="47" r="4"/>
+		</g>
+		<line x1="65" y1="200" x2="90" y2="200" class="ln"/>
+		<line x1="65" y1="195" x2="65" y2="205" class="ln"/><line x1="90" y1="195" x2="90" y2="205" class="ln"/>
+		<text x="100" y="205" class="t-small">1 / 샘플레이트 (48kHz면 약 0.0208ms)</text>
+		<text x="280" y="232" text-anchor="middle" class="t-muted">점 = 샘플. 선(원래 소리)은 저장되지 않고 점만 남는다</text>
+
+		<text x="560" y="40" class="t-bold">스테레오 버퍼 (float, 인터리브)</text>
+		<g class="t-small">
+			<rect x="560" y="60" width="44" height="34" class="k1"/><text x="582" y="82" text-anchor="middle">L0</text>
+			<rect x="604" y="60" width="44" height="34" class="k2"/><text x="626" y="82" text-anchor="middle">R0</text>
+			<rect x="648" y="60" width="44" height="34" class="k1"/><text x="670" y="82" text-anchor="middle">L1</text>
+			<rect x="692" y="60" width="44" height="34" class="k2"/><text x="714" y="82" text-anchor="middle">R1</text>
+			<rect x="736" y="60" width="44" height="34" class="k1"/><text x="758" y="82" text-anchor="middle">L2</text>
+			<rect x="780" y="60" width="44" height="34" class="k2"/><text x="802" y="82" text-anchor="middle">R2</text>
+		</g>
+		<path d="M560,104 H648" class="ln s4" stroke-width="2.2"/>
+		<text x="604" y="124" text-anchor="middle" class="t-small">프레임 0</text>
+		<text x="560" y="160" class="t-small">ReadFrames(Out, 1024) → float 2048개</text>
+		<text x="560" y="180" class="t-small">채널 에너지 = Σ 샘플²</text>
+		<text x="560" y="210" class="t-muted">테스트는 L/R 에너지를 비교해</text>
+		<text x="560" y="228" class="t-muted">"오른쪽에서 들린다"를 숫자로 확인</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 62-1.</b> 왼쪽: 소리 파형을 일정 간격으로 잰 점들이 디지털 오디오입니다. 오른쪽: 스테레오는 같은 순간의 L/R 샘플을 한 프레임으로 묶어 번갈아 저장합니다.</figcaption>
+</figure>
+
+<h3 id="lec-62-mix"><span class="step">핵심 개념</span>믹싱은 덧셈, 장치는 "가져가는" 쪽</h3>
+<p>두 소리가 동시에 나면 공기 압력은 더해집니다. 디지털에서도 같습니다. 각 소리의 샘플에 음량(게인)을 곱한 뒤 <b>더하면</b> 믹스가 됩니다. 더한 값이 ±1을 넘으면 잘리며(클리핑) 찢어지는 소리가 나므로 마스터 음량으로 조절합니다.</p>
+<p>오디오에서 중요한 점은 <b>시간이 기다려 주지 않는다</b>는 것입니다. 화면은 한 프레임이 늦으면 같은 그림이 한 번 더 보일 뿐이지만, 소리 버퍼가 비면 "틱" 하는 끊김이 바로 들립니다. 그래서 오디오 장치는 보통 별도의 오디오 스레드에서 "다음 버퍼 몇 ms 분량을 채워 달라"고 콜백을 부르고, 라이브러리가 그 안에서 디코딩된 데이터를 믹싱해 넘깁니다. 게임 스레드는 "이 소리를 재생/정지, 위치는 여기"라는 <b>상태만</b> 바꾸고, 실제 샘플 계산은 오디오 스레드가 합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="오디오 믹싱 흐름">
+		<title>오디오 믹싱 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="150" height="40" rx="8" class="box"/><text x="95" y="55" text-anchor="middle">Hum.wav (반복)</text>
+			<rect x="20" y="90" width="150" height="40" rx="8" class="box"/><text x="95" y="115" text-anchor="middle">Chime.wav</text>
+			<rect x="20" y="150" width="150" height="40" rx="8" class="box"/><text x="95" y="175" text-anchor="middle">원샷 효과음</text>
+
+			<rect x="220" y="30" width="200" height="40" rx="8" class="k1"/><text x="320" y="55" text-anchor="middle">× 게인 × 감쇠 → 좌/우 배분</text>
+			<rect x="220" y="90" width="200" height="40" rx="8" class="k1"/><text x="320" y="115" text-anchor="middle">× 게인 × 감쇠 → 좌/우 배분</text>
+			<rect x="220" y="150" width="200" height="40" rx="8" class="k1"/><text x="320" y="175" text-anchor="middle">× 게인 (비공간)</text>
+
+			<rect x="470" y="80" width="110" height="60" rx="10" class="acc"/>
+			<text x="525" y="106" text-anchor="middle" class="t-bold">Σ 합</text>
+			<text x="525" y="126" text-anchor="middle" class="t-muted">× 마스터</text>
+
+			<rect x="630" y="40" width="210" height="50" rx="10" class="k2"/>
+			<text x="735" y="62" text-anchor="middle" class="t-bold">출력 장치 (오디오 스레드)</text>
+			<text x="735" y="80" text-anchor="middle" class="t-muted">콜백이 버퍼를 가져간다</text>
+			<rect x="630" y="130" width="210" height="50" rx="10" class="k4"/>
+			<text x="735" y="152" text-anchor="middle" class="t-bold">bNoDevice (테스트)</text>
+			<text x="735" y="170" text-anchor="middle" class="t-muted">ReadFrames로 직접 읽는다</text>
+		</g>
+		<path d="M170,50 H216" class="ln" marker-end="url(#arr)"/>
+		<path d="M170,110 H216" class="ln" marker-end="url(#arr)"/>
+		<path d="M170,170 H216" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,50 L466,96" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,110 H466" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,170 L466,126" class="ln" marker-end="url(#arr)"/>
+		<path d="M580,100 L626,70" class="ln" marker-end="url(#arr)"/>
+		<path d="M580,120 L626,150" class="ln-d" marker-end="url(#arr)"/>
+		<text x="20" y="226" class="t-small">게임 스레드: Play / Stop / SetWorldPosition / ApplyDesc — 상태만 바꾼다</text>
+		<text x="20" y="246" class="t-muted">디코딩 결과는 경로별로 캐시(MA_SOUND_FLAG_DECODE) — 같은 파일을 여러 소스가 써도 한 번만 푼다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 62-2.</b> 소리마다 게인·감쇠·좌우 배분을 적용해 더한 것이 믹스입니다. 실제 게임에서는 장치가 가져가고, 테스트에서는 같은 믹스를 코드가 직접 읽습니다.</figcaption>
+</figure>
+
+<h3 id="lec-62-spatial"><span class="step">핵심 개념</span>3D 공간화: 방향과 거리</h3>
+<p>스테레오 스피커로 "오른쪽 앞에서 난다"를 표현하는 가장 기본적인 방법은 둘입니다.</p>
+<ol>
+	<li><b>패닝(panning)</b>: 청자 기준으로 소리가 오른쪽에 있으면 오른쪽 채널을 크게, 왼쪽을 작게 합니다. 이를 위해 소리 위치를 <b>청자 기준 좌표</b>(청자의 오른쪽·위·앞 축)로 바꿔야 합니다.</li>
+	<li><b>거리 감쇠(attenuation)</b>: 멀어지면 작아집니다. 자연에서는 음압이 거리에 반비례하므로, 게임도 "가까운 최소 거리까지는 그대로, 그 뒤로는 거리에 반비례"하는 곡선을 많이 씁니다.</li>
+</ol>
+<p>miniaudio가 제공하는 감쇠 모델 중 <b>역수(inverse) 모델</b>이 바로 그 곡선이고, ProjectE는 사운드를 만들 때 이 모델을 고릅니다(<code>ma_attenuation_model_inverse</code>). 식은 다음과 같습니다(miniaudio 소스 그대로, <i>r</i> = 롤오프, 기본 1).</p>
+<div class="callout note">
+	<b class="t">역수 감쇠</b>
+	게인 = Min / (Min + <i>r</i> × (clamp(<i>d</i>, Min, Max) − Min))<br>
+	<i>r</i> = 1이면 <i>d</i> ∈ [Min, Max]에서 게인 = Min / <i>d</i> 입니다. Max를 넘으면 더 줄지 않습니다.
+</div>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="역수 감쇠 곡선">
+		<title>역수 감쇠 곡선</title>
+		<line x1="60" y1="230" x2="830" y2="230" class="ln"/>
+		<line x1="60" y1="230" x2="60" y2="40" class="ln"/>
+		<text x="50" y="54" text-anchor="end" class="t-small">1.0</text>
+		<text x="50" y="144" text-anchor="end" class="t-small">0.5</text>
+		<text x="50" y="234" text-anchor="end" class="t-small">0</text>
+		<line x1="56" y1="140" x2="830" y2="140" class="ln-d"/>
+		<text x="90" y="252" text-anchor="middle" class="t-small">100</text>
+		<text x="212" y="252" text-anchor="middle" class="t-small">500</text>
+		<text x="364" y="252" text-anchor="middle" class="t-small">1000</text>
+		<text x="668" y="252" text-anchor="middle" class="t-small">2000</text>
+		<text x="820" y="252" text-anchor="middle" class="t-small">2500</text>
+		<text x="445" y="272" text-anchor="middle" class="t-muted">청자와의 거리 (cm) — Min 100, Max 5000은 그래프 오른쪽 밖</text>
+		<path d="M60,50 L90.4,50 L95,80 L105.6,110 L120.8,140 L151.2,170 L181.6,185 L212,194 L272.8,204.3 L364,212 L516,218 L668,221 L820,222.8" class="ln s1" stroke-width="2.4"/>
+		<line x1="90.4" y1="44" x2="90.4" y2="230" class="ln-d"/>
+		<text x="96" y="40" class="t-small">Min: 여기까지 게인 1</text>
+		<circle cx="90.4" cy="50" r="5" class="f1"/>
+		<circle cx="668" cy="221" r="5" class="f5"/>
+		<text x="668" y="200" text-anchor="middle" class="t-small">20배 거리: 게인 0.05 → 에너지 0.0025배</text>
+		<text x="300" y="100" class="t-small">게인 = 100 / d</text>
+		<text x="300" y="118" class="t-muted">(거리 2배마다 약 −6dB)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 62-3.</b> 기본 설정(Min 100cm)의 역수 감쇠. 처음 몇 미터에서 급하게 줄고 멀리서는 천천히 줄어듭니다. 단위 테스트 <code>AudioEngine_DistanceAttenuation</code>은 100cm와 2000cm의 믹스 에너지를 비교해 "먼 쪽 &lt; 가까운 쪽의 0.1배, 그러나 0보다 큼"을 확인합니다.</figcaption>
+</figure>
+<p>단위에 주의할 점이 하나 있습니다. 감쇠 식은 거리의 <b>비율</b>만 보므로 단위가 무엇이든 Min/Max와 위치가 같은 단위이기만 하면 됩니다. 그래서 물리(45강)와 달리 오디오는 미터로 바꾸지 않고 엔진 단위 cm 그대로 넘깁니다. 컴포넌트 기본값 <code>MinDistance = 100</code>(1m), <code>MaxDistance = 5000</code>(50m)도 cm입니다.</p>
+
+<h3 id="lec-62-coord"><span class="step">ProjectE에서는</span>오른손 좌표계 문제와 청자 공간 변환</h3>
+<p>ProjectE는 언리얼과 같은 <b>왼손 Z-up</b>(+X 앞, +Y 오른쪽, +Z 위)이고, miniaudio는 OpenGL 관례인 <b>오른손</b>(+X 오른쪽, +Y 위, −Z 앞)입니다. 손 방향이 다른 좌표계 사이에는 회전만으로 맞출 수 없는 <b>반사</b>가 끼어 있습니다. 월드 좌표를 그대로 넘기고 청자 방향만 맞춰 주면 회전 부분은 맞아도 반사 때문에 <b>좌우가 뒤집힙니다</b> — 오른쪽 폭발이 왼쪽에서 들립니다.</p>
+<p>해결책은 문제를 우회하는 것입니다. miniaudio의 청자를 <b>원점에서 −Z를 보는 자세로 영원히 고정</b>하고, 소리 위치를 엔진 쪽에서 <b>청자 기준 좌표</b>(오른쪽, 위, 앞)로 바꿔서 miniaudio 축에 직접 꽂습니다. 그러면 miniaudio는 월드 좌표계가 무엇인지 알 필요가 없습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="엔진 월드와 miniaudio 청자 공간">
+		<title>엔진 월드와 miniaudio 청자 공간</title>
+		<text x="200" y="26" text-anchor="middle" class="t-bold">엔진 월드 (위에서 본 그림, 왼손 Z-up)</text>
+		<rect x="40" y="40" width="320" height="220" rx="6" class="box"/>
+		<circle cx="200" cy="200" r="10" class="acc"/>
+		<text x="200" y="232" text-anchor="middle" class="t-small">청자 (Forward = +X)</text>
+		<path d="M200,190 V80" class="ln s1" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="208" y="90" class="t-small f1">+X 앞</text>
+		<path d="M210,200 H330" class="ln s2" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="300" y="192" class="t-small f2">+Y 오른쪽</text>
+		<circle cx="300" cy="120" r="9" class="k5"/>
+		<text x="300" y="108" text-anchor="middle" class="t-small">소리 (100, 100, 0)</text>
+		<text x="60" y="60" class="t-muted">+Z = 화면 밖(위)</text>
+
+		<text x="640" y="26" text-anchor="middle" class="t-bold">miniaudio 공간 (오른손, 청자 고정)</text>
+		<rect x="480" y="40" width="320" height="220" rx="6" class="box"/>
+		<circle cx="640" cy="200" r="10" class="acc"/>
+		<text x="640" y="232" text-anchor="middle" class="t-small">청자: 원점, 방향 (0,0,−1)</text>
+		<path d="M640,190 V80" class="ln s1" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="648" y="90" class="t-small f1">−Z 앞</text>
+		<path d="M650,200 H770" class="ln s2" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="740" y="192" class="t-small f2">+X 오른쪽</text>
+		<circle cx="740" cy="120" r="9" class="k5"/>
+		<text x="740" y="108" text-anchor="middle" class="t-small">(100, 0, −100)</text>
+		<text x="500" y="60" class="t-muted">+Y = 위(화면 밖)</text>
+
+		<path d="M366,150 H474" class="ln" marker-end="url(#arr)"/>
+		<text x="420" y="140" text-anchor="middle" class="t-small">ToListenerSpace</text>
+		<text x="420" y="168" text-anchor="middle" class="t-mono">(·R, ·U, −·F)</text>
+		<text x="430" y="282" text-anchor="middle" class="t-muted">상대 위치를 청자의 오른쪽(R)·위(U)·앞(F) 축에 투영 → miniaudio의 +X, +Y, −Z 칸에 넣는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 62-4.</b> 엔진 쪽에서 청자 기준 좌표로 바꿔 넘기면 두 좌표계의 손 방향 차이가 사라집니다. 오른쪽 앞의 소리는 miniaudio에서도 오른쪽(+X) 앞(−Z)입니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Audio/AudioMath.h"><span class="com">// 엔진 월드 위치 → miniaudio 청자 공간 (오른손: +X 오른쪽, +Y 위, -Z 앞, 청자는 원점).</span>
+<span class="com">// 엔진과 miniaudio의 손 방향이 달라 월드 좌표를 그대로 넘기면 좌우가 뒤집히므로,</span>
+<span class="com">// 청자 기준 상대 좌표로 바꿔 넘기고 miniaudio 리스너는 원점에서 -Z를 보게 고정한다.</span>
+<span class="kw">inline</span> FVector3 ToListenerSpace(<span class="kw">const</span> FAudioListener&amp; Listener, <span class="kw">const</span> FVector3&amp; WorldPosition)
+{
+	<span class="kw">const</span> FVector3 Forward = Listener.Forward.GetNormalized();
+	<span class="com">// 왼손 좌표계: Cross(Forward, Right) == Up → Right = Cross(Up, Forward)</span>
+	<span class="kw">const</span> FVector3 Right = FVector3::Cross(Listener.Up, Forward).GetNormalized();
+	<span class="kw">const</span> FVector3 Up    = FVector3::Cross(Forward, Right);
+
+	<span class="kw">const</span> FVector3 Offset = WorldPosition - Listener.Position;
+	<span class="kw">return</span> FVector3(FVector3::Dot(Offset, Right), FVector3::Dot(Offset, Up), -FVector3::Dot(Offset, Forward));
+}</pre>
+<pre class="code" data-file="Engine/Source/Audio/AudioEngine.cpp — Init (발췌)"><span class="com">// 청자는 원점에서 -Z를 본다. 사운드 위치는 AudioMath::ToListenerSpace로 청자 기준 좌표로 넘긴다</span>
+ma_engine_listener_set_position(&amp;Impl-&gt;Engine, <span class="num">0</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>);
+ma_engine_listener_set_direction(&amp;Impl-&gt;Engine, <span class="num">0</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>, -<span class="num">1.0f</span>);
+ma_engine_listener_set_world_up(&amp;Impl-&gt;Engine, <span class="num">0</span>, <span class="num">0.0f</span>, <span class="num">1.0f</span>, <span class="num">0.0f</span>);</pre>
+<p>Right를 <code>Cross(Up, Forward)</code>로 구하는 것도 좌표계 규약(4강: <code>Cross(Forward, Right) == Up</code>)에서 나옵니다. 오른손 습관대로 <code>Cross(Forward, Up)</code>을 쓰면 여기서 또 좌우가 뒤집힙니다. 이 규칙을 테스트가 고정합니다.</p>
+<pre class="code" data-file="Tests/AudioTests/AudioTests.cpp (발췌)">E_TEST(AudioMath_ListenerSpaceAxes)
+{
+	FAudioListener Listener; <span class="com">// 원점, +X를 보고 +Z가 위</span>
+	<span class="com">// miniaudio 공간: +X 오른쪽, +Y 위, -Z 앞</span>
+	E_EXPECT_EQUALS(AudioMath::ToListenerSpace(Listener, FVector3(<span class="num">100</span>, <span class="num">0</span>, <span class="num">0</span>)), FVector3(<span class="num">0</span>, <span class="num">0</span>, -<span class="num">100</span>), Tol);
+	E_EXPECT_EQUALS(AudioMath::ToListenerSpace(Listener, FVector3(<span class="num">0</span>, <span class="num">100</span>, <span class="num">0</span>)), FVector3(<span class="num">100</span>, <span class="num">0</span>, <span class="num">0</span>), Tol);
+	E_EXPECT_EQUALS(AudioMath::ToListenerSpace(Listener, FVector3(<span class="num">0</span>, <span class="num">0</span>, <span class="num">100</span>)), FVector3(<span class="num">0</span>, <span class="num">100</span>, <span class="num">0</span>), Tol);
+}</pre>
+<p>규칙은 CLAUDE.md에 한 줄로 남겼습니다: "사운드 위치는 <code>FAudioEngine::SetWorldPosition</code>(청자 기준 좌표로 변환 — miniaudio는 오른손 좌표계라 월드 좌표를 직접 넘기지 않는다)". 청자가 매 프레임 움직이므로, 소리가 가만히 있어도 위치는 매 프레임 다시 변환해 넘겨야 합니다. <code>FAudioSystem::Update</code>가 트랜스폼 갱신 뒤에 그 일을 합니다.</p>
+
+<h3 id="lec-62-engine"><span class="step">ProjectE에서는</span>컴포넌트 동기화, 장치 없음, 패키지 파일</h3>
+<h4>컴포넌트 ↔ 사운드</h4>
+<p>씬에서 소리는 <code>FAudioSourceComponent</code>(클립 경로, 볼륨, 피치, 반복, 시작 시 재생, 공간화, Min/Max 거리)입니다. 컴포넌트에는 런타임 상태가 없고, <code>FAudioSystem</code>이 엔티티별 사운드 핸들을 따로 들고 매 프레임 동기화합니다. 물리(45강)와 같은 "컴포넌트는 데이터, 실행 상태는 시스템" 패턴입니다.</p>
+<pre class="code" data-file="Engine/Source/Audio/AudioSystem.cpp — Update (발췌)">Scene.GetRegistry().View&lt;FTransformComponent, FAudioSourceComponent&gt;().Each(
+	[&amp;](FEntity Entity, FTransformComponent&amp; Transform, FAudioSourceComponent&amp; Source) {
+		FSourceState&amp; State = Sources[Entity];
+		<span class="kw">const bool</span>    bNew  = State.LastSeenFrame == <span class="num">0</span>;
+		State.LastSeenFrame = FrameCounter;
+		<span class="kw">if</span> (bNew || State.ClipAsset != Source.ClipAsset)       <span class="com">// 새 소스 또는 클립 경로 변경 → 다시 만든다</span>
+		{
+			...
+			State.Sound = Engine.CreateSound(ContentDirectory / ..., MakeSoundDesc(Source));
+			<span class="kw">if</span> (Source.bPlayOnStart) { Engine.Play(State.Sound); }
+			<span class="kw">return</span>;
+		}
+		Engine.ApplyDesc(State.Sound, MakeSoundDesc(Source));  <span class="com">// 볼륨/피치/거리 변경은 매 프레임 반영</span>
+		Engine.SetWorldPosition(State.Sound, Transform.GetWorldPosition());
+	});
+<span class="com">// (이후) 이번 프레임에 보지 못한 엔티티 = 파괴되었거나 컴포넌트가 빠짐 → 사운드 해제</span></pre>
+<p>"마지막으로 본 프레임 번호"로 사라진 엔티티를 찾는 것이 깔끔합니다. 엔티티 파괴 이벤트를 구독하지 않아도, 이번 순회에서 만나지 못한 항목을 지우면 됩니다. 청자는 런타임에서는 게임 카메라(<code>Audio.SetListener({카메라 위치, 앞, 위})</code>), 에디터 플레이에서는 보고 있는 카메라입니다. Lua는 <code>entity:PlaySound/StopSound</code>, <code>Audio.PlayOneShot</code>을 쓰며, Scripting 모듈은 <code>FScriptAudioHooks</code>로만 Audio에 닿습니다(0강의 훅 패턴).</p>
+
+<h4>장치가 없어도 게임은 계속된다</h4>
+<p>오디오 장치가 없는 PC(원격 데스크톱, 서버, 헤드폰 분리 상태)도 있습니다. 소리가 안 난다고 게임이 시작되지 않으면 안 됩니다. <code>FAudioEngine::Init</code>이 실패하면 경고 한 줄을 남기고 <code>IsInitialized() == false</code>가 되며, 이후 모든 호출은 조용히 무시됩니다. 호출하는 쪽은 "오디오가 있나?"를 매번 확인할 필요가 없습니다.</p>
+<pre class="code" data-file="Engine/Source/Audio/AudioEngine.cpp (발췌)"><span class="kw">const</span> ma_result Result = ma_engine_init(&amp;Config, &amp;Impl-&gt;Engine);
+<span class="kw">if</span> (Result != MA_SUCCESS)
+{
+	E_LOG(LogAudio, Warning, <span class="str">"오디오 엔진 초기화 실패 ({}): 무음으로 계속합니다"</span>, ma_result_description(Result));
+	<span class="kw">return false</span>;
+}
+...
+FSoundHandle FAudioEngine::CreateSound(...) { <span class="kw">if</span> (!Impl-&gt;bInitialized) { <span class="kw">return</span> {}; } ... }  <span class="com">// 무효 핸들</span></pre>
+<p>자동 검증 실행(<code>--exit-after</code>)에서는 반대로 장치는 있어도 <b>음소거</b>합니다(<code>SetMasterVolume(0.0f)</code>). 검증을 수십 번 돌리는 동안 스피커에서 소리가 계속 나면 곤란하니까요.</p>
+
+<h4>장치 없이 테스트하기: bNoDevice와 ReadFrames</h4>
+<p>"오른쪽 소리가 오른쪽에서 들린다"를 사람 귀 없이 어떻게 확인할까요? miniaudio는 장치 없이 엔진을 만들고 믹스 결과를 직접 읽는 모드를 지원합니다. ProjectE는 이를 <code>FAudioEngineDesc::bNoDevice</code> + <code>ReadFrames</code>로 감쌌습니다. 테스트는 사인파 WAV를 직접 써서 만들고, 소리를 엔진 +Y(청자의 오른쪽)에 놓은 뒤 몇 천 프레임을 읽어 L/R 에너지를 비교합니다.</p>
+<pre class="code" data-file="Tests/AudioTests/AudioTests.cpp — AudioEngine_SpatialPanning (발췌)">Engine.SetWorldPosition(Sound, FVector3(<span class="num">0.0f</span>, <span class="num">300.0f</span>, <span class="num">0.0f</span>)); <span class="com">// 엔진 +Y = 청자의 오른쪽</span>
+Engine.Play(Sound);
+MixEnergy(Engine, <span class="num">2048</span>);                     <span class="com">// 공간화 스무딩 안정화</span>
+<span class="kw">const</span> FChannelEnergy Right = MixEnergy(Engine, <span class="num">4096</span>);
+E_EXPECT_TRUE(Right.Right &gt; Right.Left * <span class="num">2.0f</span>);
+
+Engine.SetWorldPosition(Sound, FVector3(<span class="num">0.0f</span>, -<span class="num">300.0f</span>, <span class="num">0.0f</span>)); <span class="com">// 왼쪽</span>
+...
+E_EXPECT_TRUE(Left.Left &gt; Left.Right * <span class="num">2.0f</span>);</pre>
+<p>"공간화 스무딩 안정화"로 처음 2048프레임을 버리는 부분이 실전 감각입니다. 공간화 라이브러리는 위치가 갑자기 바뀌어 딸깍 소리가 나지 않도록 게인을 몇 ms에 걸쳐 부드럽게 옮기므로, 바로 읽으면 이전 위치의 값이 섞입니다. 이 방식으로 Phase 7에서 AudioTests 10개(청자 공간 축, 무장치 믹스, 없는 파일, 미초기화 무시, 패닝, 감쇠, 컴포넌트 동기화 등)를 만들었습니다.</p>
+
+<h4>패키지에서 사운드 읽기: VFS</h4>
+<p>63강에서 볼 것처럼 패키지 게임의 콘텐츠는 pak 파일 하나에 묶입니다. 그런데 miniaudio는 파일 경로를 받아 스스로 디스크를 엽니다. pak 안 파일은 디스크에 없으니 열 수 없습니다. 다행히 miniaudio는 파일 열기·읽기·탐색 함수 표를 바꿔 끼울 수 있는 <b>VFS(가상 파일 시스템)</b> 인터페이스를 제공합니다. ProjectE는 열 때 <code>FFileSystem::ReadFile</code>(pak → 디스크)로 파일 전체를 메모리에 읽고, 읽기·탐색은 그 메모리 위에서 하는 VFS를 꽂았습니다.</p>
+<pre class="code" data-file="Engine/Source/Audio/AudioEngine.cpp (발췌)"><span class="com">// miniaudio 파일 읽기를 FFileSystem(pak → 디스크)으로: 열 때 파일 전체를 메모리로 읽는다 (DECODE 로드라 어차피 전부 읽음)</span>
+ma_result VfsOpenW(ma_vfs*, <span class="kw">const wchar_t</span>* FilePath, ma_uint32 OpenMode, ma_vfs_file* OutFile)
+{
+	<span class="kw">if</span> ((OpenMode &amp; MA_OPEN_MODE_WRITE) != <span class="num">0</span>) { <span class="kw">return</span> MA_ACCESS_DENIED; }
+	<span class="kw">auto</span> File = std::make_unique&lt;FMemoryFile&gt;();
+	<span class="kw">if</span> (!FFileSystem::ReadFile(FilePath, File-&gt;Bytes)) { <span class="kw">return</span> MA_DOES_NOT_EXIST; }
+	*OutFile = File.release();
+	<span class="kw">return</span> MA_SUCCESS;
+}
+...
+Config.pResourceManagerVFS = &amp;GContentVfs; <span class="com">// 사운드 파일은 FFileSystem으로 (pak 지원)</span></pre>
+<p>"파일 전체를 메모리로"가 단순한 이유는 주석에 있습니다. 사운드를 <code>MA_SOUND_FLAG_DECODE</code>로 만들어 어차피 전부 디코딩해 메모리에 두기 때문입니다. 긴 배경 음악을 스트리밍으로 읽는 것은 후속 과제로 남아 있습니다.</p>
+
+<h3 id="lec-62-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">좌우가 뒤집히는 버그를 설계로 막다</b>
+	손 방향이 다른 라이브러리를 엔진에 붙일 때 가장 흔한 버그가 "한 축만 뒤집힘"입니다. 그래픽스(glTF 임포트, 11강)와 내비메시(Recast, 49강)에서도 같은 문제가 있었고, 매번 해결책은 같았습니다. <b>변환을 경계 한 곳(여기서는 <code>ToListenerSpace</code>)에만 두고, 그 변환을 테스트로 고정한다</b>. 오디오는 한 걸음 더 나아가 miniaudio 청자를 원점에 고정해, 회전 행렬을 라이브러리 쪽 좌표계로 옮기는 계산 자체를 없앴습니다.
+</div>
+<div class="callout warn">
+	<b class="t">주의: Ogg Vorbis는 안 된다</b>
+	ProjectE의 miniaudio 빌드에는 Vorbis 디코더가 들어 있지 않아 <code>.ogg</code>를 읽지 못합니다. 효과음은 WAV/FLAC/MP3로 준비합니다(CLAUDE.md RPG 데모 항목). 버스·리버브·차폐·Ogg를 포함한 오디오 믹서는 로드맵 54번으로 남아 있습니다.
+</div>
+<ul>
+	<li>miniaudio 헤더는 <code>#pragma warning(push, 0)</code>으로 감싸 포함합니다. 서드파티 헤더가 <code>/W4 /WX</code>에 걸려 빌드가 깨지지 않게 하는, 모든 서드파티 포함부의 규칙입니다.</li>
+	<li><code>ma_sound</code>는 초기화 후 주소가 바뀌면 안 되므로 <code>unique_ptr</code>로 감싸 맵에 둡니다(<code>FImpl::Sounds</code>). C 라이브러리 구조체를 <code>std::vector</code>에 값으로 넣으면 재할당 때 옮겨져 내부 포인터가 깨집니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>디지털 오디오 = 일정 간격(샘플레이트)으로 잰 숫자. 스테레오는 L/R 샘플을 한 프레임으로 인터리브한다.</li>
+		<li>믹싱은 게인을 곱해 더하는 것. 장치는 오디오 스레드에서 버퍼를 가져가고, 게임 스레드는 상태만 바꾼다.</li>
+		<li>3D 사운드 = 청자 기준 방향으로 좌우 배분 + 거리 감쇠(역수 모델: Min까지 1, 이후 Min/d).</li>
+		<li>엔진(왼손)과 miniaudio(오른손)의 차이는 청자를 원점에 고정하고 위치를 청자 기준 좌표로 넘겨 없앤다.</li>
+		<li>장치가 없으면 무음으로 계속, 테스트는 <code>bNoDevice</code> + <code>ReadFrames</code>로 믹스를 숫자로 검증, 패키지는 VFS로 pak에서 읽는다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. Min 100, Max 5000인 소리가 청자에게서 10m(1000cm) 떨어져 있습니다. 게인은 얼마이고, 데시벨로는 몇 dB 줄어든 것일까요?</summary>
+	게인 = 100 / 1000 = 0.1입니다. 진폭 비율의 데시벨은 20·log<sub>10</sub>(0.1) = −20dB입니다. 거리 2배마다 20·log<sub>10</sub>(0.5) ≈ −6dB씩 줄어드는 것이 역수 모델의 성질입니다.
+</details>
+<details class="quiz"><summary>Q2. ToListenerSpace에서 Right를 Cross(Forward, Up)으로 잘못 계산하면 어떤 테스트가 깨질까요?</summary>
+	Cross(Forward, Up) = −Cross(Up, Forward)이므로 Right가 반대 방향이 됩니다. 엔진 +Y(오른쪽)의 소리가 miniaudio −X(왼쪽)로 가서 <code>AudioMath_ListenerSpaceAxes</code>의 두 번째 기대값 (100, 0, 0)이 (−100, 0, 0)이 되어 실패하고, <code>AudioEngine_SpatialPanning</code>도 왼쪽 에너지가 커져 실패합니다. Up도 Cross(Forward, Right)로 다시 구하므로 함께 뒤집혀 위·아래까지 틀어집니다.
+</details>
+<details class="quiz"><summary>Q3. 소리가 매 프레임 움직이지 않는데도 SetWorldPosition을 매 프레임 부르는 이유는 무엇일까요?</summary>
+	miniaudio에 넘기는 값은 월드 위치가 아니라 <b>청자 기준</b> 위치이기 때문입니다. 플레이어(카메라)가 돌거나 움직이면 가만히 있는 소리의 청자 기준 좌표가 바뀝니다. 청자를 원점에 고정한 설계의 대가가 "모든 공간 사운드의 위치를 매 프레임 다시 계산"이며, 내적 세 번이라 비용은 작습니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part08_Networking.html"><small>이전 부</small>← 8부 · 함께 플레이하기 — 네트워크</a>
+	<a href="Part10_Shipping.html"><small>다음 부</small>10부 · 출시 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

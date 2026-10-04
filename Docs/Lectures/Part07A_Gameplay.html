@@ -1,0 +1,1884 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7부 세계의 규칙 — 게임플레이 시스템 (전반) — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">7부 세계의 규칙 (전반)</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">7부 전반 · 강의 45~49</div>
+	<h1>세계의 규칙 — 게임플레이 시스템 (전반)</h1>
+	<p>화면을 그리는 엔진이 "게임"이 되려면 세계에 규칙이 있어야 합니다. 물체가 떨어지고 부딪히는 물리, 사람처럼 걷는 캐릭터, 디자이너가 쓰는 스크립트, 키를 의도로 바꾸는 입력, 스스로 판단하고 길을 찾는 AI — 다섯 시스템을 외부 라이브러리와의 경계 설계부터 차례로 봅니다.</p>
+</header>
+<!-- ======================================================= 45강 ======================================================= -->
+<article class="lecture" id="lec-45">
+<header>
+	<div class="no">45강</div>
+	<h2 id="lec-45-title">물리 엔진 통합</h2>
+	<div class="meta">관련 Phase: 7 · 8 · 30 · 43 · 살펴볼 곳: <code>Engine/Source/Physics/PhysicsWorld.h/.cpp</code>, <code>PhysicsSystem.h/.cpp</code>, <code>PhysicsMath.h</code>, <code>Ragdoll.h</code>, <code>Core/Settings/CollisionSettings.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>강체 시뮬레이션이 매 스텝 무엇을 계산하는지, 그리고 왜 "고정 스텝 + 렌더 보간"으로 돌리는지 설명할 수 있습니다.</li>
+		<li>외부 물리 엔진(Jolt)을 붙일 때 단위·축·회전 변환을 "경계 한 곳"에 가두는 설계를 이해합니다.</li>
+		<li>충돌 이벤트를 물리 콜백 안에서 게임 코드로 바로 부르면 안 되는 이유를 압니다.</li>
+		<li>충돌 레이어 행렬이 Jolt의 오브젝트 레이어 비트로 어떻게 표현되는지, 관절과 래그돌이 어떻게 만들어지는지 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-45-why"><span class="step">왜 필요한가</span>"떨어지고, 부딪히고, 구르는" 세계</h3>
+<p>지금까지의 씬은 물체가 스스로 움직이지 않았습니다. 트랜스폼은 누군가(에디터, 애니메이션, 스크립트)가 값을 써 줄 때만 바뀌었습니다. 하지만 게임 세계에서는 상자를 밀면 넘어지고, 공을 던지면 포물선을 그리며 떨어져 바닥을 구르다 멈춰야 합니다. 이것을 스크립트로 일일이 계산하면 두 물체까지는 어떻게든 되지만, 상자 50개가 서로 기대어 쌓인 더미가 무너지는 장면은 불가능합니다.</p>
+<p><b>물리 엔진</b>은 이 계산을 대신해 주는 라이브러리입니다. 물체마다 질량·모양·속도를 주면, 매 스텝마다 힘을 적용해 속도를 바꾸고, 겹친 물체들을 찾아 밀어내고, 그 결과로 위치를 갱신합니다. ProjectE는 0강에서 본 기준("표준 해법이 있고 그 자체로 거대한 분야")에 따라 <b>Jolt Physics</b>를 쓰기로 했습니다. 대신 엔진과 맞닿는 경계 — 단위, 컴포넌트, 시간 진행, 이벤트 전달 — 는 직접 설계합니다. 이 강의는 그 경계 이야기입니다.</p>
+
+<h3 id="lec-45-rigid"><span class="step">핵심 개념</span>강체 시뮬레이션 한 스텝</h3>
+<p><b>강체(rigid body)</b>는 "모양이 절대 변하지 않는 물체"라는 가정입니다. 이 가정 덕분에 물체의 상태를 위치·회전(자세)·선속도·각속도 네 가지로만 표현할 수 있습니다. 물리 엔진의 한 스텝은 대략 다음 순서로 진행됩니다.</p>
+<ol>
+	<li><b>힘 적분</b>: 중력과 외부 힘으로 속도를 바꿉니다. <code>v += (F / m) · Δt</code></li>
+	<li><b>충돌 검출</b>: 먼저 경계 상자로 "겹칠 가능성이 있는 쌍"을 빠르게 추리고(<b>브로드페이즈</b>), 그 쌍만 정확한 모양으로 접촉점·법선·침투 깊이를 구합니다(<b>내로페이즈</b>).</li>
+	<li><b>구속 풀기(solver)</b>: 접촉(서로 파고들지 않기), 마찰, 관절 같은 조건을 만족하도록 속도를 반복적으로 보정합니다.</li>
+	<li><b>위치 적분</b>: 보정된 속도로 위치와 회전을 옮깁니다. <code>x += v · Δt</code></li>
+</ol>
+<p>여기서 Δt(스텝 시간)가 중요합니다. 적분은 "짧은 시간 동안 속도가 일정하다"는 근사이므로, Δt가 크면 오차가 커지고 빠른 물체가 얇은 벽을 건너뛰기도 합니다. 그리고 Δt가 매번 다르면 같은 장면이 실행할 때마다 다르게 굴러갑니다. 그래서 물리는 <b>항상 같은 간격</b>으로 진행하는 것이 원칙입니다.</p>
+
+<h3 id="lec-45-boundary"><span class="step">핵심 개념</span>경계에서만 변환한다: cm ↔ m, 쿼터니언은 그대로</h3>
+<p>ProjectE는 1단위 = 1cm(4강)이지만 Jolt는 미터 단위로 튜닝되어 있습니다. 허용 오차, 잠들기 문턱, 기본 중력이 모두 미터 기준이라, cm 값을 그대로 넘기면 Jolt 입장에서는 "100배 큰 세계"가 되어 물체가 둔하게 움직이거나 잘 잠들지 못합니다. 그래서 변환이 필요한데, 핵심 규칙은 하나입니다. <b>변환은 <code>FPhysicsWorld</code> 경계에서만 한다.</b></p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="엔진과 Jolt의 경계 변환">
+		<title>엔진과 Jolt의 경계 변환</title>
+		<rect x="20" y="30" width="250" height="150" rx="10" class="k1"/>
+		<text x="145" y="56" text-anchor="middle" class="t-bold">엔진 (게임 코드)</text>
+		<text x="40" y="86" class="t-small">위치·크기: cm</text>
+		<text x="40" y="108" class="t-small">질량 kg, 힘 kg·cm/s²</text>
+		<text x="40" y="130" class="t-small">회전: FQuat (X, Y, Z, W)</text>
+		<text x="40" y="152" class="t-small">중력: -Z 방향 980.665 cm/s²</text>
+
+		<rect x="310" y="30" width="240" height="150" rx="10" class="acc"/>
+		<text x="430" y="56" text-anchor="middle" class="t-bold">FPhysicsWorld 경계</text>
+		<text x="330" y="86" class="t-mono">ToJoltPosition  × 0.01</text>
+		<text x="330" y="108" class="t-mono">FromJoltPosition × 100</text>
+		<text x="330" y="130" class="t-mono">ToJoltQuat  성분 그대로</text>
+		<text x="330" y="152" class="t-mono">각속도 rad/s 그대로</text>
+
+		<rect x="590" y="30" width="250" height="150" rx="10" class="k2"/>
+		<text x="715" y="56" text-anchor="middle" class="t-bold">Jolt</text>
+		<text x="610" y="86" class="t-small">위치·크기: m</text>
+		<text x="610" y="108" class="t-small">허용 오차·잠들기 문턱: m 기준</text>
+		<text x="610" y="130" class="t-small">Quat (x, y, z, w)</text>
+		<text x="610" y="152" class="t-small">축은 엔진 축 그대로 (+Z 위)</text>
+
+		<path d="M270,95 H306" class="ln" marker-end="url(#arr)"/>
+		<path d="M550,95 H586" class="ln" marker-end="url(#arr)"/>
+		<path d="M586,140 H554" class="ln" marker-end="url(#arr)"/>
+		<path d="M306,140 H274" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="212" text-anchor="middle" class="t-muted">PhysicsSystem·스크립트·게임 모듈은 모두 cm로만 말한다. m를 아는 코드는 PhysicsWorld.cpp 하나뿐</text>
+		<text x="430" y="234" text-anchor="middle" class="t-muted">(예외: 지형/폴리지 충돌처럼 Jolt 모양을 직접 만드는 Physics 모듈 내부 파일)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 45-1.</b> 변환을 경계 한 곳에 가두면, 나머지 코드는 "엔진 단위"라는 한 가지 언어만 씁니다. 변환이 여기저기 흩어지면 ×100을 두 번 하거나 빠뜨리는 버그가 반드시 생깁니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Physics/PhysicsMath.h (발췌)"><span class="kw">namespace</span> PhysicsMath
+{
+	<span class="com">// 엔진은 cm, Jolt는 m. 축은 그대로 쓴다 (둘 다 좌표 축에 손 방향을 강제하지 않으며, 엔진 FQuat도</span>
+	<span class="com">// 해밀턴 곱 + v' = q v q* 규약이라 Jolt Quat와 성분이 1:1로 같다 — PhysicsTests에서 회전 결과로 검증).</span>
+	<span class="com">// 중력만 엔진 위(+Z) 기준으로 -Z로 준다.</span>
+	<span class="kw">inline</span> FVector3 ToMeters(<span class="kw">const</span> FVector3&amp; Centimeters) { <span class="kw">return</span> Centimeters * FUnits::UnitsToMeters; }
+	<span class="kw">inline</span> FVector3 ToCentimeters(<span class="kw">const</span> FVector3&amp; Meters) { <span class="kw">return</span> Meters * FUnits::MetersToUnits; }
+}</pre>
+<p>흥미로운 점은 <b>축과 회전은 변환하지 않는다</b>는 것입니다. 왼손 좌표계 엔진과 오른손 좌표계 라이브러리를 이을 때는 보통 축 하나를 뒤집어야 합니다(49강의 Recast가 그런 예입니다). 그런데 물리 엔진의 계산 — 벡터 덧셈, 외적, 쿼터니언 곱 — 은 "어느 손으로 축을 그렸는가"를 따지지 않습니다. 손 방향이 의미를 갖는 것은 화면에 투영하거나 삼각형 앞면을 정할 때뿐입니다. 그래서 Jolt에게 "+Z가 위인 세계"라고만 알려 주면(중력을 -Z로) 성분을 그대로 넘겨도 됩니다. 단, 이것은 가정이므로 <code>PhysicsTests</code>가 엔진 <code>FQuat</code>와 Jolt의 회전 결과를 직접 비교해 고정해 둡니다.</p>
+<div class="callout tip">
+	<b class="t">"가정"은 테스트로 고정한다</b>
+	"성분이 1:1로 같다"는 주장은 엔진 쿼터니언의 곱셈 순서 규약(4강의 <code>A * B</code>는 B 먼저)이 바뀌는 순간 조용히 깨집니다. 주석으로만 적어 두면 아무도 모르게 틀어지므로, 실제 회전 결과를 비교하는 테스트로 묶어 둡니다. 경계 설계에서 가장 값싼 보험입니다.
+</div>
+
+<h3 id="lec-45-fixed"><span class="step">핵심 개념</span>고정 스텝과 렌더 보간</h3>
+<p>게임 프레임은 들쭉날쭉합니다. 12ms, 18ms, 15ms… 반면 물리는 항상 1/60초씩 가고 싶습니다. 둘을 잇는 방법이 <b>누적기(accumulator)</b>입니다. 프레임 시간을 통에 붓고, 통에 1/60초 이상 차 있는 동안 스텝을 하나씩 꺼내 진행합니다. 남은 찌꺼기는 다음 프레임으로 넘어갑니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="고정 스텝 누적기와 보간">
+		<title>고정 스텝 누적기와 보간</title>
+		<text x="20" y="40" class="t-bold">렌더 프레임</text>
+		<rect x="140" y="24" width="150" height="26" rx="5" class="k1"/><text x="215" y="42" text-anchor="middle" class="t-small">프레임 1 (20ms)</text>
+		<rect x="290" y="24" width="90" height="26" rx="5" class="k1"/><text x="335" y="42" text-anchor="middle" class="t-small">12ms</text>
+		<rect x="380" y="24" width="210" height="26" rx="5" class="k1"/><text x="485" y="42" text-anchor="middle" class="t-small">프레임 3 (28ms)</text>
+		<rect x="590" y="24" width="112" height="26" rx="5" class="k1"/><text x="646" y="42" text-anchor="middle" class="t-small">15ms</text>
+
+		<text x="20" y="100" class="t-bold">물리 스텝</text>
+		<text x="20" y="118" class="t-muted">1/60초 = 16.7ms</text>
+		<rect x="140" y="84" width="125" height="26" rx="5" class="k2"/><text x="202" y="102" text-anchor="middle" class="t-small">스텝 1</text>
+		<rect x="265" y="84" width="125" height="26" rx="5" class="k2"/><text x="327" y="102" text-anchor="middle" class="t-small">스텝 2</text>
+		<rect x="390" y="84" width="125" height="26" rx="5" class="k2"/><text x="452" y="102" text-anchor="middle" class="t-small">스텝 3</text>
+		<rect x="515" y="84" width="125" height="26" rx="5" class="k2"/><text x="577" y="102" text-anchor="middle" class="t-small">스텝 4</text>
+		<rect x="640" y="84" width="125" height="26" rx="5" class="k2"/><text x="702" y="102" text-anchor="middle" class="t-small">스텝 5</text>
+
+		<line x1="290" y1="56" x2="290" y2="150" class="ln-d"/>
+		<line x1="380" y1="56" x2="380" y2="150" class="ln-d"/>
+		<line x1="590" y1="56" x2="590" y2="150" class="ln-d"/>
+		<line x1="702" y1="56" x2="702" y2="150" class="ln-d"/>
+		<text x="290" y="166" text-anchor="middle" class="t-small">1스텝</text>
+		<text x="380" y="166" text-anchor="middle" class="t-small">0스텝</text>
+		<text x="590" y="166" text-anchor="middle" class="t-small">2스텝</text>
+		<text x="702" y="166" text-anchor="middle" class="t-small">1스텝</text>
+
+		<rect x="140" y="190" width="700" height="56" rx="8" class="box"/>
+		<text x="160" y="212" class="t-bold">보간: 화면 위치 = Lerp(직전 스텝, 현재 스텝, α)</text>
+		<text x="160" y="234" class="t-small">α = 누적기에 남은 시간 ÷ 스텝 시간. 예) 프레임 4 끝: 스텝 4 뒤 8.3ms 남음 → α ≈ 0.5 (스텝 3과 4의 중간)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 45-2.</b> 프레임마다 진행하는 스텝 수는 1, 0, 2, 1…로 달라지지만 각 스텝은 항상 같은 Δt입니다. 화면에는 직전·현재 스텝 사이를 α로 섞은 위치를 그려 끊김을 없앱니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Physics/PhysicsMath.h — FFixedStepper (발췌)"><span class="kw">struct</span> FFixedStepper
+{
+	<span class="kw">float</span>  StepSeconds = <span class="num">1.0f</span> / <span class="num">60.0f</span>;
+	uint32 MaxSteps    = <span class="num">4</span>;
+	<span class="kw">float</span>  Accumulator = <span class="num">0.0f</span>;
+
+	uint32 Advance(<span class="kw">float</span> DeltaSeconds)
+	{
+		Accumulator += std::max(DeltaSeconds, <span class="num">0.0f</span>);
+		uint32 Steps = <span class="num">0</span>;
+		<span class="kw">while</span> (Accumulator &gt;= StepSeconds &amp;&amp; Steps &lt; MaxSteps)
+		{
+			Accumulator -= StepSeconds;
+			++Steps;
+		}
+		<span class="kw">if</span> (Steps == MaxSteps &amp;&amp; Accumulator &gt;= StepSeconds)
+		{
+			Accumulator = <span class="num">0.0f</span>; <span class="com">// 따라잡지 못한 시간은 버린다 (시뮬레이션이 느려질 뿐 폭주하지 않음)</span>
+		}
+		<span class="kw">return</span> Steps;
+	}
+	<span class="kw">float</span> GetAlpha() <span class="kw">const</span> { <span class="kw">return</span> std::clamp(Accumulator / StepSeconds, <span class="num">0.0f</span>, <span class="num">1.0f</span>); }
+};</pre>
+<p><code>MaxSteps</code>가 왜 필요할까요? 한 프레임이 매우 느렸다고 해 봅시다(로딩 끊김 200ms). 그러면 12스텝을 몰아서 돌려야 하는데, 그 12스텝 자체가 또 프레임을 느리게 만들고, 다음 프레임엔 더 많은 스텝이 쌓입니다. 이 악순환을 <b>죽음의 나선(spiral of death)</b>이라 부릅니다. 상한을 넘은 시간은 과감히 버립니다. 그 순간 게임이 살짝 슬로모션이 될 뿐 멈추지는 않습니다. 스텝 주파수와 상한은 프로젝트 설정 Physics의 <code>FixedStepHz</code>(기본 60)와 <code>MaxSubSteps</code>(기본 4)이고, <code>FPhysicsSystem::Begin</code>이 플레이 시작 때 읽습니다.</p>
+<p>보간은 <code>WriteDynamicTransforms</code>가 합니다. 동적 바디마다 직전 스텝과 현재 스텝의 위치·회전을 보관해 두었다가 <code>Lerp</code>/<code>Slerp</code>로 섞어 트랜스폼에 씁니다. 전용 서버는 <code>SetInterpolation(false)</code>로 보간을 끕니다 — 복제해서 보낼 값에 "화면용으로 섞인 값"이 들어가면 안 되기 때문입니다.</p>
+
+<h3 id="lec-45-projecte"><span class="step">ProjectE에서는</span>FPhysicsWorld와 FPhysicsSystem의 역할 분담</h3>
+<div class="tablewrap"><table class="t">
+	<tr><th>클래스</th><th>아는 것</th><th>모르는 것</th><th>하는 일</th></tr>
+	<tr><td><code>FPhysicsWorld</code></td><td>Jolt, 미터, 바디 ID</td><td>씬, 엔티티, 컴포넌트</td><td>바디/관절/캐릭터 생성·삭제, 스텝, 레이캐스트, 모양 질의. 입출력은 cm</td></tr>
+	<tr><td><code>FPhysicsSystem</code></td><td>씬(ECS), 컴포넌트, 엔티티↔바디 표</td><td>Jolt 헤더</td><td>컴포넌트 → 바디 동기화, 고정 스텝, 보간, 이벤트 정리, 게임플레이 API</td></tr>
+</table></div>
+<p>컴포넌트는 <code>FRigidBodyComponent</code>와 <code>FBox/Sphere/CapsuleCollider</code>입니다. 콜라이더만 있으면 정적 바디, 강체가 있으면 동적/키네마틱입니다. 중요한 설계 결정은 <b>컴포넌트에 런타임 상태(바디 핸들)를 두지 않는다</b>는 것입니다. 엔티티 → 바디 표는 <code>FPhysicsSystem</code>이 따로 들고 있습니다. 덕분에 컴포넌트는 순수한 "설정 값"으로 남아 씬 저장·복제·플레이 모드 복사(36강)에 아무 문제 없이 들어갑니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/PhysicsSystem.cpp — Update (발췌)">uint32 FPhysicsSystem::Update(FScene&amp; Scene, <span class="kw">float</span> DeltaSeconds)
+{
+	CollisionEvents.clear();
+	SyncCharacters(Scene);   <span class="com">// 46강</span>
+	SyncBodies(Scene);       <span class="com">// 새 엔티티 → 바디 생성, 사라진 것 제거, 모양이 바뀌면 다시 생성</span>
+	...
+	SyncJoints(Scene);
+	SyncRagdolls(Scene);
+
+	<span class="kw">const</span> uint32 Steps = Stepper.Advance(DeltaSeconds);
+	<span class="kw">for</span> (uint32 Step = <span class="num">0</span>; Step &lt; Steps; ++Step)
+	{
+		<span class="com">// 동적 바디: 직전 상태 보관 / 키네마틱: 이번 프레임 목표까지 스텝마다 나눠 MoveKinematic</span>
+		...
+		World-&gt;Step(Stepper.StepSeconds);
+		CollectContactEvents();
+		CheckJointBreaks();
+		<span class="com">// 동적 바디의 현재 상태 읽기</span>
+	}
+	WriteDynamicTransforms(Scene); <span class="com">// 보간된 결과를 트랜스폼에 (부모가 있으면 로컬로 역변환)</span>
+	WriteRagdollPoses(Scene);
+	<span class="kw">return</span> Steps;
+}</pre>
+
+<h4>질량은 밀도로, 구르기 저항은 직접</h4>
+<p>질량을 지정하지 않으면(<code>Mass</code> = 0, 기본) 콜라이더 부피 × <code>Density</code>(기본 500kg/m³ — 대략 나무)로 계산합니다. 그래서 같은 재질이면 큰 상자가 자동으로 더 무겁습니다. 값을 넣으면 그 질량을 직접 씁니다.</p>
+<p><b>구르기 저항(rolling resistance)</b>은 Jolt에 없는 기능이라 엔진이 만들었습니다. 현실의 공은 바닥과 공이 조금씩 찌그러지면서 에너지를 잃어 결국 멈추는데, 강체는 찌그러지지 않으므로 마찰만으로는 영원히 굴러갑니다. <code>FPhysicsWorld::Step</code>은 스텝이 끝난 뒤, <b>이번 스텝에 무언가와 접촉한</b> 동적 바디의 각속도만 일정량 줄입니다(공중에서 도는 물체는 건드리지 않음).</p>
+<pre class="code" data-file="Engine/Source/Physics/PhysicsWorld.cpp (발췌)"><span class="com">// 구르기 저항 계수 → 각감속 배율. 회전만 줄이면 마찰이 선속도를 끌어내리는데, 속이 찬 구(I = 2/5 m r²)의</span>
+<span class="com">// 선감속이 계수 × g가 되려면 각감속을 (I + m r²) / I = 3.5배로 줘야 한다</span>
+<span class="kw">constexpr float</span> RollingCouplingFactor = <span class="num">3.5f</span>;
+...
+<span class="kw">const float</span> Deceleration = Rolling.Coefficient * Gravity * RollingCouplingFactor / Rolling.Radius; <span class="com">// rad/s²</span>
+<span class="kw">const float</span> NewSpeed     = std::max(Speed - Deceleration * DeltaSeconds, <span class="num">0.0f</span>);
+Bodies.SetAngularVelocity(Id, Angular * (NewSpeed / Speed));</pre>
+<p>"이번 스텝에 접촉했는가"는 Jolt 접촉 리스너가 기록합니다. 그런데 이 콜백은 Jolt의 <b>작업 스레드 여러 개에서 동시에</b> 불립니다. 그래서 바디 인덱스마다 원자 변수(<code>std::atomic&lt;uint32&gt;</code>)에 "마지막으로 접촉한 스텝 번호"를 쓰는 방식으로 잠금 없이 기록합니다. 이 "콜백은 다른 스레드에서 온다"는 사실이 다음 절의 핵심입니다.</p>
+
+<h3 id="lec-45-events"><span class="step">핵심 개념</span>충돌 이벤트: 콜백에서 게임 코드를 부르지 않는다</h3>
+<p>게임은 "총알이 벽에 닿았다", "플레이어가 문 앞 영역에 들어왔다"를 알고 싶어 합니다. Jolt는 접촉이 생기거나(<code>OnContactAdded</code>) 사라질 때(<code>OnContactRemoved</code>) 콜백을 불러 줍니다. 가장 쉬운 구현은 그 콜백 안에서 바로 Lua의 <code>OnCollisionBegin</code>을 부르는 것이지만, ProjectE는 이것을 규칙으로 금지합니다.</p>
+<ul>
+	<li><b>스레드</b>: 콜백은 Jolt 작업 스레드에서 동시에 옵니다. Lua 상태와 ECS는 메인 스레드 전용입니다.</li>
+	<li><b>재진입</b>: 콜백 시점은 Jolt가 스텝을 계산하는 <b>도중</b>입니다. 게임 코드가 거기서 엔티티를 지우거나 바디를 새로 만들면 Jolt 내부 자료구조를 계산 중에 건드리게 됩니다.</li>
+	<li><b>순서</b>: 콜백 순서는 스레드 스케줄에 따라 매번 다릅니다. 게임 로직이 실행마다 다른 순서로 불리면 재현할 수 없는 버그가 생깁니다.</li>
+</ul>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="충돌 이벤트의 흐름">
+		<title>충돌 이벤트의 흐름</title>
+		<rect x="20" y="20" width="250" height="150" rx="10" class="k5"/>
+		<text x="145" y="44" text-anchor="middle" class="t-bold">Jolt 작업 스레드 (스텝 중)</text>
+		<rect x="40" y="60" width="210" height="28" rx="6" class="box"/><text x="145" y="79" text-anchor="middle" class="t-small">OnContactAdded (스레드 A)</text>
+		<rect x="40" y="94" width="210" height="28" rx="6" class="box"/><text x="145" y="113" text-anchor="middle" class="t-small">OnContactAdded (스레드 B)</text>
+		<rect x="40" y="128" width="210" height="28" rx="6" class="box"/><text x="145" y="147" text-anchor="middle" class="t-small">OnContactRemoved (스레드 C)</text>
+
+		<rect x="320" y="60" width="200" height="70" rx="10" class="k4"/>
+		<text x="420" y="86" text-anchor="middle" class="t-bold">잠금 아래 원시 목록</text>
+		<text x="420" y="108" text-anchor="middle" class="t-small">보고 대상 쌍만 기록</text>
+
+		<rect x="570" y="20" width="270" height="70" rx="10" class="k1"/>
+		<text x="705" y="46" text-anchor="middle" class="t-bold">스텝 뒤 메인 스레드</text>
+		<text x="705" y="68" text-anchor="middle" class="t-small">바디 쌍별 시작 1회 / 끝 1회로 정리</text>
+
+		<rect x="570" y="110" width="270" height="70" rx="10" class="acc"/>
+		<text x="705" y="136" text-anchor="middle" class="t-bold">FGameWorld 전달 단계</text>
+		<text x="705" y="158" text-anchor="middle" class="t-small">물리·UpdateTransforms 뒤, OnLateUpdate 앞</text>
+
+		<path d="M250,74 L316,88" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,108 H316" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,142 L316,124" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,86 L566,62" class="ln" marker-end="url(#arr)"/>
+		<path d="M705,90 V106" class="ln" marker-end="url(#arr)"/>
+
+		<rect x="20" y="200" width="820" height="66" rx="10" class="box"/>
+		<text x="40" y="224" class="t-bold">Lua</text>
+		<text x="80" y="224" class="t-mono">OnCollisionBegin(other, info{Point,Normal,Impulse,Speed}) / OnCollisionEnd(other)</text>
+		<text x="80" y="248" class="t-mono">OnTriggerEnter(other) / OnTriggerExit(other) / OnJointBreak(other, force)</text>
+		<path d="M705,180 V196" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 45-3.</b> 콜백은 "기록"만 하고, 의미 있는 이벤트로 정리하고 전달하는 일은 스텝이 끝난 뒤 메인 스레드가 정해진 순서로 합니다.</figcaption>
+</figure>
+<p>모든 바디의 접촉을 기록하면 비용이 큽니다. 그래서 <b>보고 대상</b>을 정합니다: 트리거, 강체의 <code>bReportContacts</code>, 스크립트가 붙은 엔티티, 게임 모듈이 <code>WantsCollisionEvents</code>로 원한 엔티티. 쌍의 한쪽이라도 보고 대상이 아니면 콜백 첫 줄에서 바로 버립니다.</p>
+<p><b>트리거</b>(콜라이더 <code>bIsTrigger</code>)는 부딪히지 않고 "들어왔다/나갔다"만 알리는 영역입니다. Jolt의 센서로 만드는데, 한 가지 함정이 있습니다. 정적 센서는 상대 물체가 잠들면(sleep) 접촉을 잃습니다. 그래서 운동 형식과 상관없이 <b>잠들지 않는 키네마틱 센서</b>로 만들고, 전용 <code>Trigger</code> 레이어에 두어 레이캐스트에서 빼고(문 앞 영역이 총알을 막으면 안 되니까) 정적 바닥과는 겹침 계산조차 하지 않게 합니다.</p>
+
+<h3 id="lec-45-layers"><span class="step">핵심 개념</span>충돌 레이어 행렬과 ObjectLayers::Make</h3>
+<p>"플레이어끼리는 통과하지만 벽에는 막힌다", "탄피는 바닥과만 부딪힌다" 같은 규칙이 필요합니다. ProjectE는 유니티 방식을 골랐습니다(Phase 43, 사용자 결정): 콜라이더마다 <b>레이어 이름 하나</b>, 프로젝트 설정에 <b>레이어 × 레이어 충돌 표 하나</b>. 최대 16칸이고 0번은 <code>Default</code>로 고정입니다.</p>
+<p>Jolt에는 이미 "오브젝트 레이어"라는 정수가 있고, 두 레이어가 부딪힐지를 묻는 필터를 엔진이 구현해 넘깁니다. 문제는 Jolt 레이어가 이미 다른 용도 — "정적인가, 움직이는가, 트리거인가" — 로 쓰이고 있었다는 것입니다. 둘을 한 정수에 담기 위해 비트를 나눕니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="오브젝트 레이어 비트 배치와 충돌 판정">
+		<title>오브젝트 레이어 비트 배치와 충돌 판정</title>
+		<text x="20" y="30" class="t-bold">JPH::ObjectLayer (16비트 정수)</text>
+		<rect x="20" y="44" width="420" height="40" rx="6" class="k3"/>
+		<text x="230" y="69" text-anchor="middle" class="t-small">… 충돌 레이어 칸 (0~15)</text>
+		<rect x="440" y="44" width="120" height="40" rx="6" class="k2"/>
+		<text x="500" y="69" text-anchor="middle" class="t-small">종류 (2비트)</text>
+		<text x="440" y="100" text-anchor="middle" class="t-muted">비트 2</text>
+		<text x="560" y="100" text-anchor="middle" class="t-muted">비트 0</text>
+		<text x="590" y="58" class="t-mono">0 = NonMoving</text>
+		<text x="590" y="76" class="t-mono">1 = Moving</text>
+		<text x="590" y="94" class="t-mono">2 = Trigger</text>
+		<text x="20" y="130" class="t-mono">Make(Kind, Layer) = Kind | (Layer % 16) &lt;&lt; 2</text>
+
+		<rect x="20" y="150" width="250" height="60" rx="8" class="box"/>
+		<text x="145" y="174" text-anchor="middle" class="t-bold">① 종류 규칙</text>
+		<text x="145" y="196" text-anchor="middle" class="t-small">한쪽 이상이 Moving인가?</text>
+		<rect x="310" y="150" width="250" height="60" rx="8" class="box"/>
+		<text x="435" y="174" text-anchor="middle" class="t-bold">② 레이어 행렬</text>
+		<text x="435" y="196" text-anchor="middle" class="t-small">Matrix[칸A] 비트 칸B</text>
+		<rect x="600" y="150" width="240" height="60" rx="8" class="acc"/>
+		<text x="720" y="174" text-anchor="middle" class="t-bold">충돌 / 알림</text>
+		<text x="720" y="196" text-anchor="middle" class="t-small">둘 다 통과해야</text>
+		<path d="M270,180 H306" class="ln" marker-end="url(#arr)"/>
+		<path d="M560,180 H596" class="ln" marker-end="url(#arr)"/>
+		<text x="145" y="232" text-anchor="middle" class="t-muted">아니면 거절 (정적끼리,</text>
+		<text x="145" y="250" text-anchor="middle" class="t-muted">트리거↔정적)</text>
+		<text x="435" y="232" text-anchor="middle" class="t-muted">꺼진 쌍이면 거절</text>
+		<text x="435" y="250" text-anchor="middle" class="t-muted">예) Character × Character</text>
+		<text x="20" y="285" class="t-muted">칸 0(Default)이면 Make 결과 = 예전 레이어 번호 그대로 → 레이어를 쓰지 않던 씬·지형·폴리지는 동작이 바뀌지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 45-4.</b> 하위 2비트는 "무슨 종류의 바디인가", 그 위는 "어느 충돌 레이어인가". 판정은 기존 종류 규칙을 먼저 통과한 쌍만 행렬을 봅니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Physics/PhysicsWorld.cpp (발췌)"><span class="kw">namespace</span> ObjectLayers
+{
+	<span class="kw">constexpr</span> JPH::ObjectLayer NonMoving = <span class="num">0</span>;
+	<span class="kw">constexpr</span> JPH::ObjectLayer Moving    = <span class="num">1</span>;
+	<span class="kw">constexpr</span> JPH::ObjectLayer Trigger   = <span class="num">2</span>;
+	<span class="kw">constexpr</span> uint32           KindBits  = <span class="num">2</span>;
+
+	<span class="kw">constexpr</span> JPH::ObjectLayer Make(JPH::ObjectLayer Kind, uint32 CollisionLayer)
+	{
+		<span class="kw">return static_cast</span>&lt;JPH::ObjectLayer&gt;(Kind | ((CollisionLayer % FCollisionLayerSettings::MaxLayers) &lt;&lt; KindBits));
+	}
+}
+...
+<span class="kw">bool</span> ShouldCollide(JPH::ObjectLayer A, JPH::ObjectLayer B) <span class="kw">const override</span>
+{
+	<span class="com">// 트리거 ↔ 움직이는 것만, 그 밖은 한쪽 이상이 움직이는 것</span>
+	<span class="kw">if</span> (KindOf(A) != ObjectLayers::Moving &amp;&amp; KindOf(B) != ObjectLayers::Moving) { <span class="kw">return false</span>; }
+	<span class="kw">return</span> ((Matrix[CollisionLayerOf(A)] &gt;&gt; CollisionLayerOf(B)) &amp; <span class="num">1u</span>) != <span class="num">0</span>;
+}</pre>
+<p>행렬은 줄마다 16비트(<code>uint16</code>) 하나입니다. 줄 i의 비트 j가 "i와 j가 부딪힌다"이고, 대칭이므로 설정 창은 유니티처럼 삼각형으로 보여 줍니다. 이 필터 하나가 바디끼리, 캐릭터 이동 질의(46강), 캐릭터 내부 바디, 트리거 알림 모두에 쓰이므로 "레이어를 끄면 모든 곳에서 꺼진다"가 보장됩니다.</p>
+<p>컴포넌트에는 레이어 <b>번호가 아니라 이름</b>을 저장합니다. 설정에서 칸 순서를 바꿔도 씬이 깨지지 않게 하기 위해서입니다. 비었거나 없는 이름은 Default로 처리하고(없는 이름은 경고 한 번), 레이캐스트는 이름 목록 → 마스크(<code>MakeMask</code>)로 거릅니다: Lua <code>Physics.Raycast(o, d, dist, {"Ground"})</code>.</p>
+
+<h3 id="lec-45-joints"><span class="step">ProjectE에서는</span>관절과 래그돌</h3>
+<p><b>관절(joint, constraint)</b>은 두 바디 사이의 상대 운동을 제한하는 조건입니다. 솔버는 접촉과 똑같이 이 조건을 만족하도록 속도를 보정합니다. ProjectE는 네 종류를 컴포넌트로 제공합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>컴포넌트</th><th>남기는 자유도</th><th>예</th></tr>
+	<tr><td><code>FixedJointComponent</code></td><td>없음 (용접)</td><td>부서질 수 있는 판(BreakForce)</td></tr>
+	<tr><td><code>HingeJointComponent</code></td><td>축 하나 회전 (+제한·모터·마찰)</td><td>문, 풍차</td></tr>
+	<tr><td><code>DistanceJointComponent</code></td><td>거리 범위 안 (+스프링)</td><td>사슬, 스프링</td></tr>
+	<tr><td><code>BallJointComponent</code></td><td>원뿔 안 흔들림 + 비틀림</td><td>매달린 추</td></tr>
+</table></div>
+<p>모두 Target(비면 월드)과 Anchor를 가지며, <code>FPhysicsSystem::SyncJoints</code>가 바디 동기화 <b>뒤에</b> 만듭니다. 관절은 두 바디를 가리키므로, 바디를 지우기 전에 관절을 먼저 지워야 합니다(<code>FPhysicsWorld</code>만 관절을 소유). <code>BreakForce</code>가 있으면 스텝마다 구속 힘(N)을 재서 넘으면 관절을 지우고 <code>OnJointBreak(other, force)</code>를 보냅니다. 관절로 이은 두 바디는 보통 서로 충돌하면 안 되므로(겹쳐 있으니 계속 튕겨 나감) 충돌 그룹으로 쌍을 끕니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="래그돌 구성">
+		<title>래그돌 구성</title>
+		<text x="20" y="28" class="t-bold">스켈레톤 (본마다 엔티티)</text>
+		<circle cx="150" cy="70" r="6" class="k1"/><circle cx="150" cy="140" r="6" class="k1"/>
+		<circle cx="100" cy="200" r="6" class="k1"/><circle cx="200" cy="200" r="6" class="k1"/>
+		<circle cx="90" cy="250" r="6" class="k1"/><circle cx="210" cy="250" r="6" class="k1"/>
+		<path d="M150,70 V140 M150,140 L100,200 M150,140 L200,200 M100,200 L90,250 M200,200 L210,250" class="ln"/>
+		<text x="166" y="74" class="t-small">머리</text><text x="166" y="144" class="t-small">골반</text>
+
+		<path d="M270,150 H340" class="ln" marker-end="url(#arr)"/>
+		<text x="305" y="138" text-anchor="middle" class="t-small">BuildLayout</text>
+
+		<text x="380" y="28" class="t-bold">캡슐 + SwingTwist 관절</text>
+		<rect x="458" y="66" width="24" height="78" rx="12" class="k2"/>
+		<rect x="458" y="146" width="24" height="64" rx="12" class="k2" transform="rotate(32 470 146)"/>
+		<rect x="458" y="146" width="24" height="64" rx="12" class="k2" transform="rotate(-32 470 146)"/>
+		<rect x="424" y="200" width="24" height="56" rx="12" class="k2" transform="rotate(8 436 200)"/>
+		<rect x="492" y="200" width="24" height="56" rx="12" class="k2" transform="rotate(-8 504 200)"/>
+		<circle cx="470" cy="146" r="7" class="acc"/>
+		<circle cx="436" cy="200" r="6" class="acc"/><circle cx="504" cy="200" r="6" class="acc"/>
+		<text x="380" y="282" class="t-small">주황 원 = 관절: 원뿔(흔들림 45°) + 비틀림 ±30°</text>
+
+		<rect x="580" y="50" width="260" height="190" rx="10" class="box"/>
+		<text x="600" y="76" class="t-bold">켜져 있는 동안</text>
+		<text x="600" y="102" class="t-small">애니메이션: bPhysicsPose = true</text>
+		<text x="600" y="122" class="t-small">→ 이 모델 포즈 계산을 건너뜀</text>
+		<text x="600" y="150" class="t-small">물리: 캡슐 자세 → 뼈 엔티티</text>
+		<text x="600" y="170" class="t-small">로컬 트랜스폼 (부모 먼저, 보간)</text>
+		<text x="600" y="198" class="t-small">끄면: 켤 때 저장한 로컬로 복원</text>
+		<text x="600" y="218" class="t-small">→ 애니메이션이 다시 포즈를 씀</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 45-5.</b> 뼈 하나 = 캡슐 하나, 뼈 사이 = SwingTwist 관절. 이웃 캡슐·처음부터 겹친 캡슐·주인의 캐릭터 캡슐과는 충돌을 끕니다.</figcaption>
+</figure>
+<p><b>래그돌(ragdoll)</b>은 캐릭터가 죽었을 때 애니메이션 대신 물리로 쓰러지게 하는 연출입니다. 스켈레탈 모델 루트에 <code>FRagdollComponent</code>를 달면, 켤 때 순수 함수 <code>RagdollMath::BuildLayout</code>이 뼈마다 "뼈 시작 → 자식 뼈들 평균 위치" 캡슐을 만들고(짧은 뼈는 부모 캡슐에 합침), 부모 캡슐과 <b>SwingTwist</b> 관절로 잇습니다. SwingTwist는 "원뿔 안에서 흔들리고(swing), 뼈 축으로는 제한된 각도만 비틀리는(twist)" 관절로, 사람 어깨·목처럼 동작합니다. 기본값은 흔들림 45°, 비틀림 ±30°입니다.</p>
+<p>래그돌은 애니메이션 시스템(Scene 모듈)과 물리(Physics 모듈)가 같은 뼈를 두고 싸우지 않게 하는 것이 핵심입니다. 플래그 하나 <code>FAnimationRuntime::bPhysicsPose</code>로 소유권을 넘깁니다. 켜져 있으면 애니메이션은 그 모델을 건너뛰고, 물리 갱신이 캡슐 자세를 뼈 엔티티 로컬 트랜스폼으로 씁니다. 사망 연동(<code>World/GameWorldRagdoll.cpp</code>)은 복제된 체력을 보고 서버·클라이언트가 <b>각자</b> 켭니다 — 래그돌 자세 자체는 복제하지 않는 로컬 연출입니다.</p>
+
+<h3 id="lec-45-pitfalls"><span class="step">함정과 교훈</span>"물리가 이상하다"의 진짜 원인</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 1 — 굴러가던 공이 0.5초 만에 멈춘다 (Phase 8)</b>
+	사용자 보고는 "물체끼리 부딪혀도 자연스럽게 상호작용하지 않고 어색하게 밀려난다"였습니다. 실험해 보니 500cm/s로 굴린 공이 0.5초 만에 멈췄고, 3초 동안 바디가 79번 <b>다시 생성</b>되고 있었습니다. 원인은 "모양이 바뀌었으면 바디를 다시 만든다"는 검사였습니다. 회전하는 물체의 월드 행렬을 분해하면 스케일이 수 ULP(부동소수점 최소 단위)씩 흔들리는데, 이 값을 비트 해시로 비교했으니 매 프레임 "모양이 바뀌었다"고 판단해 바디를 새로 만들었고, 그때마다 속도가 0으로 초기화됐습니다. 수정: 생성 설정(<code>CreatedDesc</code>)을 보관하고, 컴포넌트 값은 정확히, 스케일에서 나온 치수만 상대 오차 1e-4로 비교(<code>NeedsRecreate</code>). 테스트 <code>Physics_RollingSphereKeepsMomentum</code>으로 고정했습니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 2 — 솔버는 정상, 숫자가 비정상</b>
+	같은 조사에서 쌓기 안정성(3초 이동 0cm), 비탄성 충돌, 마찰 감속(이론 208cm / 실측 209cm)은 모두 정상이었습니다. 문제는 <b>설정 값</b>이었습니다. 질량이 크기와 무관하게 기본 1kg이라 60cm 상자 5kg은 밀도 23kg/m³ — 스티로폼 수준인데, 거기에 8kg 공을 22m/s로 던졌으니 상자 더미가 4.8m 날아갔습니다. 또 구르기 저항이 없어 공이 10초 뒤에도 130cm/s로 굴렀습니다. 그래서 밀도 기반 질량과 구르기 저항을 넣었고, 공 300cm/s가 4.2m 구르고 멈추게 됐습니다. 교훈: "물리가 이상하다"는 보고를 받으면 솔버를 의심하기 전에 단위와 질량부터 봅니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙 모음</b>
+	<ul>
+		<li>cm ↔ m 변환은 <code>FPhysicsWorld</code> 경계에서만. 축·쿼터니언 성분은 그대로, 중력만 -Z.</li>
+		<li>Jolt 콜백에서 게임 코드를 부르지 않는다. 기록만 하고 스텝 뒤 메인 스레드에서 전달.</li>
+		<li>스크립트가 만든 엔티티의 바디는 다음 물리 갱신에 생긴다 → 힘/충격량은 그 다음 프레임부터.</li>
+		<li>충돌 행렬은 플레이 시작(<code>FPhysicsSystem::Begin</code>)에 복사되어 고정된다.</li>
+	</ul>
+</div>
+<p>Phase 30 기록에는 아직 남은 한계도 적혀 있습니다. 바디를 다시 만들면 그 쌍의 접촉이 "끝 → 다시 시작"으로 보이고, 캐릭터가 정적 벽에 닿는 것은 이벤트가 없으며, 예측 접촉 때문에 <code>CollisionBegin</code>이 한 스텝 먼저 올 수 있습니다(충격 세기는 솔버 전 추정치). 완벽한 시스템이 아니라 "알려진 한계를 기록한 시스템"이 실무에서 다루기 쉽습니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>강체 한 스텝 = 힘 적분 → 충돌 검출(브로드/내로페이즈) → 구속 풀기 → 위치 적분. Δt는 일정해야 한다.</li>
+		<li>누적기로 고정 스텝(기본 60Hz, 최대 4스텝)을 돌리고, 화면에는 직전·현재 스텝을 α로 보간해 그린다.</li>
+		<li>단위 변환은 <code>FPhysicsWorld</code> 한 곳. 바디 핸들은 컴포넌트가 아니라 <code>FPhysicsSystem</code>이 든다.</li>
+		<li>충돌 콜백은 작업 스레드에서 기록만, 정리·전달은 메인 스레드가 정해진 단계에서.</li>
+		<li>Jolt 오브젝트 레이어 = 종류(하위 2비트) | 충돌 레이어 칸 &lt;&lt; 2. 종류 규칙 → 행렬 순으로 판정.</li>
+		<li>래그돌 = 뼈마다 캡슐 + SwingTwist 관절, <code>bPhysicsPose</code>로 애니메이션과 소유권을 나눈다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 물리를 프레임 시간 그대로(가변 Δt) 한 번씩 돌리면 어떤 문제가 생길까요? 두 가지 이상 들어 보세요.</summary>
+	① 프레임이 느릴 때 Δt가 커져 빠른 물체가 얇은 벽을 건너뛰거나(터널링) 쌓인 상자가 튀는 등 적분 오차가 커집니다. ② 같은 입력이라도 PC 성능·부하에 따라 Δt 열이 달라 결과가 매번 다릅니다(재현 불가, 네트워크 예측 불가). ③ 스프링·관절처럼 Δt에 민감한 구속은 큰 Δt에서 발산할 수 있습니다. 고정 스텝은 이 셋을 한 번에 해결하고, 남는 "화면이 계단처럼 움직이는" 문제는 보간으로 해결합니다.
+</details>
+<details class="quiz"><summary>Q2. 충돌 레이어를 Jolt 레이어 번호 하나에 담지 않고, "종류"는 따로 두고 레이어 행렬만 엔진에서 보면 안 될까요? 왜 비트를 합쳤을까요?</summary>
+	Jolt의 필터 인터페이스(<code>ObjectLayerPairFilter::ShouldCollide</code>)가 받는 정보는 두 바디의 오브젝트 레이어 정수뿐입니다. 바디 ID나 엔티티를 보고 판정하면 쌍마다 조회가 필요해 느리고, 브로드페이즈 단계에서 걸러 내지도 못합니다. 종류와 칸을 한 정수에 담으면 필터가 비트 연산 두세 번으로 끝나고, 칸 0일 때 예전 번호와 같아 기존 씬·지형이 바뀌지 않는 덤도 얻습니다.
+</details>
+<details class="quiz"><summary>Q3. 트리거 안에 들어온 물체가 잠들었더니 OnTriggerExit도 안 오고, 다시 움직여도 Enter가 오지 않았습니다. 무엇을 의심해야 할까요?</summary>
+	정적 센서는 상대가 잠들면 접촉을 잃는다는 Jolt의 동작입니다. ProjectE는 그래서 트리거를 운동 형식과 무관하게 "잠들지 않는 키네마틱 센서"로 만듭니다. 또 잠들면서 생기는 "접촉 제거"를 곧바로 끝으로 보지 않고, 깨어난 뒤 온전한 스텝 하나 동안 접촉이 없을 때만 끝으로 정리합니다(Phase 30-1). 직접 센서를 만드는 코드가 있다면 이 두 규칙을 지키는지 확인합니다.
+</details>
+</article>
+
+<!-- ======================================================= 46강 ======================================================= -->
+<article class="lecture" id="lec-46">
+<header>
+	<div class="no">46강</div>
+	<h2 id="lec-46-title">캐릭터 이동</h2>
+	<div class="meta">관련 Phase: 21 · 22 · 살펴볼 곳: <code>Engine/Source/Physics/CharacterMovement.h/.cpp</code>(<code>CharacterMovementMath</code>), <code>PhysicsSystem.cpp</code>(<code>SimulateCharacter</code>), <code>PhysicsWorld.cpp</code>(<code>CreateCharacter</code>/<code>UpdateCharacter</code>), <code>Projects/Sample/Content/Scripts/PlayerCharacter.lua</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>플레이어 캐릭터를 일반 강체로 움직이면 왜 "손맛"이 나쁜지, 캐릭터 컨트롤러가 무엇을 대신하는지 설명할 수 있습니다.</li>
+		<li>쿼리 기반 캐릭터(Jolt CharacterVirtual)가 경사·계단·벽을 처리하는 방식을 이해합니다.</li>
+		<li>속도 규칙(바닥/공중 제어/중력)을 순수 함수로 분리한 이유를 압니다.</li>
+		<li>"무브" 단위 시뮬레이션이 결정성과 네트워크 예측의 토대가 되는 이유, 스크립트가 이동을 직접 계산하지 않는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-46-why"><span class="step">왜 필요한가</span>사람은 상자처럼 움직이지 않는다</h3>
+<p>45강의 강체로 플레이어를 만들어 봅시다. 캡슐 모양 동적 바디에 회전을 잠그고(넘어지지 않게), W를 누르면 앞으로 속도를 주고, 스페이스를 누르면 위로 속도를 줍니다. ProjectE도 처음(Phase 21)에는 정확히 이렇게 만들었습니다 — "동적 강체 캡슐(회전 고정) + 수평 속도 지정 + 바닥 레이캐스트 후 점프". 동작은 합니다. 하지만 곧 문제가 드러납니다.</p>
+<ul>
+	<li><b>계단</b>: 캡슐 아래쪽 둥근 면이 계단 모서리에 걸려 멈추거나 튕깁니다. 물리적으로는 맞는 결과지만 게임에서 원하는 것은 "그냥 올라가기"입니다.</li>
+	<li><b>경사</b>: 마찰 때문에 내리막에서 미끄러지거나, 급경사를 속도로 밀고 올라가 버립니다. "몇 도까지는 걸을 수 있다"는 규칙을 표현할 방법이 없습니다.</li>
+	<li><b>밀림</b>: 굴러오는 상자에 맞으면 캐릭터가 밀려납니다. 질량을 키우면 이번엔 캐릭터가 상자를 대포처럼 날립니다.</li>
+	<li><b>내리막 점프</b>: 내리막을 달리면 속도가 수평이라 발이 땅에서 떨어져 "통통" 튑니다.</li>
+	<li><b>되감기 불가</b>: 네트워크 예측(57강)은 "과거 상태로 되돌려 입력을 다시 적용"해야 하는데, 물리 월드 전체를 되감을 수는 없습니다.</li>
+</ul>
+<p>그래서 게임 엔진은 플레이어를 강체가 아니라 <b>캐릭터 컨트롤러(character controller)</b>로 움직입니다. 언리얼의 <code>CharacterMovementComponent</code>, 유니티의 <code>CharacterController</code>가 그것이고, ProjectE에서는 <code>FCharacterMovementComponent</code>입니다(Phase 22).</p>
+
+<h3 id="lec-46-controller"><span class="step">핵심 개념</span>시뮬레이션되지 않는 캡슐 — "쿼리로 움직이기"</h3>
+<p>캐릭터 컨트롤러의 핵심 아이디어는 <b>캐릭터는 물리 시뮬레이션에 참여하지 않는다</b>는 것입니다. 캐릭터는 힘을 받지도, 솔버가 밀어내지도 않습니다. 대신 매번 "이 속도로 이만큼 가고 싶다"를 정한 다음, 캡슐 모양을 그 방향으로 <b>쓸어 보면서(shape cast)</b> 어디서 막히는지 물어보고(query), 막힌 면을 따라 남은 이동을 미끄러뜨립니다. 이것을 흔히 <b>collide-and-slide</b>라고 부릅니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="캐릭터 컨트롤러의 이동 처리">
+		<title>캐릭터 컨트롤러의 이동 처리</title>
+		<text x="140" y="26" text-anchor="middle" class="t-bold">① 벽 미끄러짐</text>
+		<rect x="200" y="40" width="16" height="200" class="k4"/>
+		<rect x="70" y="160" width="40" height="70" rx="20" class="k1"/>
+		<path d="M110,195 L198,120" class="ln-d"/>
+		<text x="96" y="110" class="t-small">원하는 이동</text>
+		<path d="M150,160 L192,124" class="ln" marker-end="url(#arr)"/>
+		<path d="M192,124 V70" class="ln sa" marker-end="url(#arr)"/>
+		<text x="120" y="262" class="t-muted">막힌 성분은 버리고</text>
+		<text x="120" y="280" class="t-muted">면을 따라 남은 이동</text>
+
+		<text x="430" y="26" text-anchor="middle" class="t-bold">② 계단 오르기 (MaxStepHeight)</text>
+		<path d="M300,240 H380 V210 H440 V180 H500 V150 H560" class="ln"/>
+		<path d="M300,240 H380 V210 H440 V180 H500 V150 H560 V250 H300 Z" class="k4"/>
+		<rect x="330" y="170" width="32" height="68" rx="16" class="k1"/>
+		<path d="M346,166 V140 H396" class="ln sa" marker-end="url(#arr)"/>
+		<path d="M396,140 V160" class="ln sa" marker-end="url(#arr)"/>
+		<text x="300" y="132" class="t-small">위로 → 앞으로 → 아래로</text>
+		<text x="430" y="280" text-anchor="middle" class="t-muted">높이 ≤ 35cm면 올라선다</text>
+
+		<text x="720" y="26" text-anchor="middle" class="t-bold">③ 경사·바닥 붙이기</text>
+		<path d="M600,250 L840,130 V250 Z" class="k4"/>
+		<rect x="0" y="0" width="32" height="68" rx="16" class="k1" transform="translate(700,135)"/>
+		<path d="M716,206 L788,170" class="ln sa" marker-end="url(#arr)"/>
+		<text x="612" y="56" class="t-small">MaxSlopeAngle(50°) 이하면 걷기</text>
+		<text x="612" y="76" class="t-small">초과하면 미끄러짐</text>
+		<text x="720" y="280" text-anchor="middle" class="t-muted">내리막은 계단 높이만큼 아래로 당김</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 46-1.</b> 강체라면 솔버가 결과를 정하지만, 캐릭터 컨트롤러는 "게임이 원하는 규칙"으로 이동을 정합니다. 벽 미끄러짐, 계단 오르기, 경사 제한, 바닥 붙이기가 모두 질의(쓸어 보기)로 구현됩니다.</figcaption>
+</figure>
+<p>Jolt에는 이 방식의 구현인 <b>CharacterVirtual</b>이 있습니다. 이름의 "Virtual"은 물리 월드에 실제 바디로 존재하지 않는다는 뜻입니다. 이 성질이 결정적으로 중요합니다. 캐릭터의 상태가 "위치 + 속도 + 바닥 여부"뿐이고, 나머지 세계는 질의로 읽기만 하므로 <b>상태를 저장했다가 되돌리고 다시 돌리는 것</b>이 쉽습니다. 강체로는 불가능했던 네트워크 예측의 재조정(57강)이 여기서 가능해집니다.</p>
+<p>그런데 시뮬레이션에 없는 캡슐은 다른 물체 입장에서 보이지 않습니다. 굴러오는 공이 캐릭터를 통과해 버리겠죠. 그래서 캐릭터를 따라다니는 <b>내부 키네마틱 바디(inner body)</b>를 함께 둡니다. 다른 물체는 이 바디와 부딪히고, 트리거도 이 바디로 캐릭터를 감지합니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/PhysicsWorld.cpp — CreateCharacter (발췌)"><span class="com">// Jolt 캡슐은 +Y 축 → 엔진 +Z 축 (CreateShape와 같은 회전)</span>
+JPH::RefConst&lt;JPH::Shape&gt; Capsule = <span class="kw">new</span> JPH::CapsuleShape(Half, Radius);
+...
+Settings-&gt;mShape          = Shape;
+Settings-&gt;mInnerBodyShape = Shape; <span class="com">// 다른 캐릭터/동적 물체가 이 캐릭터와 부딪히게</span>
+Settings-&gt;mInnerBodyLayer = Layer; <span class="com">// 다른 물체가 이 캐릭터와 부딪히는지도 행렬을 따른다</span>
+Settings-&gt;mUp             = JPH::Vec3::sAxisZ();
+<span class="com">// 아래 반구의 중심보다 낮은 접촉만 "발밑"으로 본다 (위치 = 캡슐 중심)</span>
+Settings-&gt;mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), Half);
+Settings-&gt;mMaxSlopeAngle    = FMath::DegreesToRadians(std::clamp(Desc.MaxSlopeDegrees, <span class="num">0.0f</span>, <span class="num">89.0f</span>));
+Settings-&gt;mMaxStrength      = std::max(Desc.MaxStrength, <span class="num">0.0f</span>); <span class="com">// 동적 물체를 미는 최대 힘 (N)</span></pre>
+<p>Jolt의 <code>new</code>가 보이는데, 이는 Jolt의 참조 계수 객체(<code>Ref</code>)가 요구하는 생성 방식이고 소유는 <code>Ref</code>가 합니다. 엔진 코드 규칙의 "raw new 금지"는 엔진이 직접 소유하는 객체에 대한 것입니다.</p>
+<p><code>mSupportingVolume</code>은 "어떤 접촉을 발밑으로 칠까"입니다. 캡슐 중심에서 원기둥 절반 높이 아래, 즉 아래쪽 반구의 중심보다 낮은 접촉만 바닥으로 봅니다. 그래야 벽에 옆구리가 닿은 것을 "바닥에 서 있다"로 착각하지 않습니다. 실제 이동은 <code>ExtendedUpdate</code>가 하는데, 계단 오르기 높이(<code>mWalkStairsStepUp</code>)와 바닥 붙이기 깊이(<code>mStickToFloorStepDown</code>)를 함께 넘깁니다. ProjectE는 두 값 모두 컴포넌트의 <code>MaxStepHeight</code>(기본 35cm)를 쓰되, 바닥 붙이기는 <b>바닥에서 걷는 중이고 점프하지 않았을 때만</b> 켭니다. 점프하는 순간 바닥으로 당기면 점프가 씹히니까요.</p>
+
+<h3 id="lec-46-velocity"><span class="step">핵심 개념</span>속도 규칙은 순수 함수로</h3>
+<p>"이번 무브에 어떤 속도로 가고 싶은가"는 Jolt와 무관한 순수한 규칙입니다. ProjectE는 이것을 <code>CharacterMovementMath::ComputeVelocity</code>라는 순수 함수로 떼어 냈습니다. 순수 함수는 입력이 같으면 출력이 같고 전역 상태를 건드리지 않으므로, 물리 월드 없이 단위 테스트할 수 있고 서버와 클라이언트가 똑같이 계산한다는 것이 보장됩니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/CharacterMovement.cpp — ComputeVelocity (발췌)"><span class="kw">const</span> FVector2 Input = ClampInput(Move.Input); <span class="com">// 길이 1로 자름 (대각선이 빠르지 않게)</span>
+<span class="kw">const</span> FVector2 Desired(Input.X * Movement.MaxWalkSpeed, Input.Y * Movement.MaxWalkSpeed);
+<span class="kw">if</span> (bGrounded)
+{
+	Velocity.X = Desired.X;
+	Velocity.Y = Desired.Y;
+	Velocity.Z = <span class="num">0.0f</span>;
+	<span class="kw">if</span> (Move.bJump)
+	{
+		Velocity.Z = Movement.JumpZVelocity;
+		bOutJumped = <span class="kw">true</span>;
+	}
+}
+<span class="kw">else</span>
+{
+	<span class="com">// 공중: 초당 (AirControl × 최대 속도 × 4)까지 입력 쪽으로 가속 — AirControl 1이면 0.25초에 최고 속도 방향 전환</span>
+	<span class="kw">const float</span> MaxDelta = std::clamp(Movement.AirControl, <span class="num">0.0f</span>, <span class="num">1.0f</span>) * Movement.MaxWalkSpeed * <span class="num">4.0f</span> * DeltaSeconds;
+	FVector2    Delta(Desired.X - Velocity.X, Desired.Y - Velocity.Y);
+	... <span class="com">// Delta 길이를 MaxDelta로 자른다</span>
+	Velocity.X += Delta.X;
+	Velocity.Y += Delta.Y;
+}
+Velocity.Z += GravityZ * Movement.GravityScale * DeltaSeconds;</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="바닥과 공중에서의 수평 속도 변화">
+		<title>바닥과 공중에서의 수평 속도 변화</title>
+		<path d="M80,230 H820" class="ln"/>
+		<path d="M80,230 V30" class="ln"/>
+		<text x="70" y="64" text-anchor="end" class="t-small">450</text>
+		<text x="70" y="234" text-anchor="end" class="t-small">0</text>
+		<line x1="80" y1="60" x2="820" y2="60" class="ln-d"/>
+		<text x="40" y="24" class="t-muted">수평 속도 cm/s</text>
+		<text x="820" y="254" text-anchor="end" class="t-muted">시간 (W를 누른 순간 = 0)</text>
+		<path d="M80,230 L82,60 H420" class="ln s2" stroke-width="2.6"/>
+		<text x="100" y="52" class="t-small f2">바닥: 바로 MaxWalkSpeed (450)</text>
+		<path d="M80,230 L376,60 H820" class="ln s3" stroke-width="2.6"/>
+		<text x="400" y="140" class="t-small f3">공중: AirControl 0.35 → 초당 630cm/s씩</text>
+		<text x="400" y="160" class="t-small f3">0.71초 뒤 최고 속도</text>
+		<line x1="376" y1="230" x2="376" y2="60" class="ln-d"/>
+		<text x="376" y="250" text-anchor="middle" class="t-small">0.71s</text>
+		<line x1="160" y1="230" x2="160" y2="236" class="ln"/><text x="160" y="250" text-anchor="middle" class="t-small">0.2s</text>
+		<line x1="601" y1="230" x2="601" y2="236" class="ln"/><text x="601" y="250" text-anchor="middle" class="t-small">1.25s</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 46-2.</b> 기본값(MaxWalkSpeed 450, AirControl 0.35)에서 수평 속도. 바닥에서는 가속 단계 없이 즉시 원하는 속도가 되고, 공중에서는 정해진 가속도 한계 안에서만 방향을 틉니다.</figcaption>
+</figure>
+<p>몇 가지 짚어 볼 점이 있습니다.</p>
+<ul>
+	<li><b>바닥에서는 가속·마찰 단계가 없습니다.</b> 언리얼의 캐릭터 이동은 가속도와 제동 마찰로 속도가 서서히 붙고 줄어들지만, 현재 ProjectE의 규칙은 "바닥이면 입력 × 최대 속도"로 즉시 정합니다. 반응이 아주 빠른 대신 관성이 없습니다. 관성 있는 출발·정지가 필요하면 이 순수 함수에 가속/제동 항을 넣고 <code>CharacterMovementTests</code>를 함께 고치면 됩니다(CLAUDE.md 규칙).</li>
+	<li><b>공중 제어(air control)</b>는 실제 물리에는 없는 게임적 허용입니다. 0이면 점프한 순간 궤적이 고정되고, 1이면 0.25초 만에 방향을 완전히 바꿉니다. 기본 0.35는 그 사이의 타협입니다.</li>
+	<li><b>점프 높이</b>는 공식으로 예측됩니다. 위쪽 속도 v로 뛰면 최고점은 v² / 2g입니다. 기본 520cm/s, g = 980.665cm/s²이면 520² / (2 × 980.665) ≈ 138cm — Phase 22 테스트에 기록된 "점프 높이 ≈138cm"와 일치합니다.</li>
+	<li><b>dt 상한</b>: 무브 dt는 0~0.1초로 자릅니다(<code>MaxMoveDeltaSeconds</code>). 느린 프레임 하나로 캐릭터가 벽을 뚫거나, 네트워크로 조작된 큰 dt를 서버가 받아들이지 않게 하기 위해서입니다.</li>
+</ul>
+
+<h3 id="lec-46-move"><span class="step">ProjectE에서는</span>"무브" — 같은 무브는 같은 결과</h3>
+<p>Phase 22의 가장 중요한 결정은 이동을 <b>무브(move)</b>라는 작은 값 묶음 단위로 진행한다는 것입니다. 한 프레임의 입력이 무브 하나가 됩니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/CharacterMovement.h (발췌)"><span class="com">// 무브 하나 = 한 프레임 입력 (네트워크로 보내고 다시 적용하는 단위). 같은 무브 → 같은 결과</span>
+<span class="kw">struct</span> FCharacterMove
+{
+	uint32   Sequence     = <span class="num">0</span>;     <span class="com">// 소유 클라이언트가 붙이는 순번 (재조정 기준)</span>
+	<span class="kw">float</span>    DeltaSeconds = <span class="num">0.0f</span>;  <span class="com">// 0~MaxMoveDeltaSeconds로 잘라 적용</span>
+	FVector2 Input;                <span class="com">// 월드 XY 이동 방향 (길이 ≤ 1)</span>
+	<span class="kw">float</span>    Yaw   = <span class="num">0.0f</span>;         <span class="com">// 도 (bFaceControlYaw일 때 몸 방향)</span>
+	<span class="kw">bool</span>     bJump = <span class="kw">false</span>;        <span class="com">// 바닥에 있으면 점프</span>
+	<span class="kw">bool</span>     bRootMotion = <span class="kw">false</span>;  <span class="com">// 루트 모션 무브: Input 대신 RootMotionVelocity로 이동</span>
+	FVector2 RootMotionVelocity;   <span class="com">// 월드 XY cm/s</span>
+};</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="무브 파이프라인">
+		<title>무브 파이프라인</title>
+		<rect x="20" y="30" width="190" height="80" rx="10" class="k3"/>
+		<text x="115" y="56" text-anchor="middle" class="t-bold">스크립트 (OnUpdate)</text>
+		<text x="115" y="78" text-anchor="middle" class="t-mono">AddMovementInput(dir)</text>
+		<text x="115" y="96" text-anchor="middle" class="t-mono">Jump()</text>
+
+		<rect x="250" y="30" width="190" height="80" rx="10" class="box"/>
+		<text x="345" y="56" text-anchor="middle" class="t-bold">대기 입력 누적</text>
+		<text x="345" y="78" text-anchor="middle" class="t-small">PendingInput (XY 합)</text>
+		<text x="345" y="96" text-anchor="middle" class="t-small">bPendingJump</text>
+
+		<rect x="480" y="30" width="170" height="80" rx="10" class="acc"/>
+		<text x="565" y="56" text-anchor="middle" class="t-bold">ConsumePendingMove</text>
+		<text x="565" y="78" text-anchor="middle" class="t-small">→ FCharacterMove</text>
+		<text x="565" y="96" text-anchor="middle" class="t-small">(+ 루트 모션 싣기)</text>
+
+		<rect x="690" y="30" width="150" height="80" rx="10" class="k2"/>
+		<text x="765" y="56" text-anchor="middle" class="t-bold">SimulateCharacter</text>
+		<text x="765" y="78" text-anchor="middle" class="t-small">ComputeVelocity</text>
+		<text x="765" y="96" text-anchor="middle" class="t-small">→ Jolt 이동</text>
+
+		<path d="M210,70 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M440,70 H476" class="ln" marker-end="url(#arr)"/>
+		<path d="M650,70 H686" class="ln" marker-end="url(#arr)"/>
+
+		<text x="20" y="150" class="t-bold">같은 SimulateCharacter를 쓰는 곳</text>
+		<rect x="20" y="166" width="260" height="56" rx="8" class="k1"/>
+		<text x="150" y="190" text-anchor="middle" class="t-bold">Standalone / 서버 소유</text>
+		<text x="150" y="210" text-anchor="middle" class="t-small">만든 무브를 바로 적용</text>
+		<rect x="300" y="166" width="260" height="56" rx="8" class="k1"/>
+		<text x="430" y="190" text-anchor="middle" class="t-bold">소유 클라이언트 (예측)</text>
+		<text x="430" y="210" text-anchor="middle" class="t-small">바로 적용 + 기록 + 서버로 전송</text>
+		<rect x="580" y="166" width="260" height="56" rx="8" class="k1"/>
+		<text x="710" y="190" text-anchor="middle" class="t-bold">서버 (원격 플레이어)</text>
+		<text x="710" y="210" text-anchor="middle" class="t-small">받은 무브를 순번 순서로 적용</text>
+		<text x="430" y="262" text-anchor="middle" class="t-muted">결과가 다르면: 서버 상태로 되돌린 뒤 아직 확인 안 된 무브를 다시 적용 (재조정 — 57강)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 46-3.</b> 스크립트는 "어느 쪽으로 가고 싶다"만 말하고, 실제 이동은 무브라는 공통 단위로 한 함수가 합니다. 그 함수를 서버·클라이언트·Standalone이 공유하므로 결과가 같습니다.</figcaption>
+</figure>
+<p>"같은 무브 → 같은 결과"가 왜 그렇게 중요할까요? 원격 클라이언트는 키를 누른 순간 자기 캐릭터를 움직이고 싶습니다(서버 왕복을 기다리면 130ms쯤 늦음). 그러려면 클라이언트가 서버와 <b>똑같은 계산</b>을 미리 해 봐야 합니다. 계산 단위가 무브이고 계산 함수가 하나라면, 같은 시작 상태에 같은 무브를 넣었을 때 양쪽 결과가 일치하고, 어긋날 때만(서버만 아는 상자에 부딪힘 등) 보정하면 됩니다. Phase 22 측정에서 이 덕분에 키를 누른 다음 프레임(약 20ms)에 이동이 시작됐습니다. 예측 이전에는 약 130ms였습니다.</p>
+<p>그래서 규칙이 생깁니다: <b>스크립트는 이동을 직접 계산하지 않는다.</b> 스크립트가 <code>SetPosition</code>으로 캐릭터를 옮기면 그 계산은 무브에 들어가지 않으므로 서버와 클라이언트가 어긋납니다. 조종하는 쪽이 매 프레임 이동 방향과 점프만 넘깁니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/PlayerCharacter.lua (발췌)"><span class="com">-- ---- 조종하는 쪽: 이동 입력 (실제 이동은 엔진이 이번 프레임에 — 클라이언트는 예측)</span>
+<span class="kw">function</span> PlayerCharacter:UpdateMovementInput()
+	<span class="kw">local</span> Radians = math.rad(self.Yaw)
+	<span class="kw">local</span> Forward = Vector3(math.cos(Radians), math.sin(Radians), <span class="num">0</span>)
+	<span class="kw">local</span> Right   = Vector3(-math.sin(Radians), math.cos(Radians), <span class="num">0</span>)
+	<span class="kw">local</span> MoveX, MoveY = Input.GetAction(<span class="str">"Move"</span>) <span class="com">-- X = 오른쪽, Y = 앞 (48강)</span>
+	<span class="kw">local</span> Move = Forward * MoveY + Right * MoveX
+	<span class="kw">if</span> Move:LengthSquared() &gt; <span class="num">0</span> <span class="kw">then</span>
+		self.entity:AddMovementInput(Move)
+	<span class="kw">end</span>
+	<span class="kw">if</span> Input.WasActionPressed(<span class="str">"Jump"</span>) <span class="kw">then</span>
+		self.entity:Jump() <span class="com">-- 바닥에 있을 때만 뛴다</span>
+	<span class="kw">end</span>
+<span class="kw">end</span></pre>
+<p>갱신 순서도 이 설계에 맞춰져 있습니다: <b>스크립트(입력) → 캐릭터 이동 → 게임 모듈 → AI → 물리 → 트랜스폼 → LateUpdate</b>. 캐릭터는 스크립트 직후 <code>FGameWorld::TickCharacters</code>에서 이번 프레임 dt로 무브 하나를 진행합니다(45강의 강체처럼 고정 스텝을 쓰지 않습니다 — 무브에 자기 dt가 들어 있으므로 다시 적용해도 같은 결과입니다).</p>
+
+<h4>루트 모션과의 연결</h4>
+<p>공격 모션에서 "한 걸음 내딛으며 베기"처럼 애니메이션 자체가 몸을 앞으로 옮기는 경우가 있습니다. 이것이 <b>루트 모션</b>입니다(43강). 애니메이션이 추출한 이동을 캐릭터 이동에 넘길 때도 무브를 거칩니다. 애니메이션 시스템은 루트 모션을 자기 또는 가장 가까운 조상의 <code>FCharacterMovementComponent</code>에 쌓아 두기만 하고(Scene 모듈은 Physics를 모르므로 <code>SetRootMotionReceiver</code> 훅으로 연결), 다음 무브가 <code>ConsumeRootMotion</code>으로 "쌓인 이동 ÷ 쌓인 시간"을 루트 모션 속도로 싣습니다. 그 무브는 입력 대신 그 속도로 움직이되, 충돌·계단·바닥 붙이기는 그대로 Jolt 이동이 맡습니다. 0.25초 넘게 아무도 가져가지 않은 루트 모션(편집 모드, 원격 캐릭터)은 버립니다. 루트 모션 무브도 결국 "무브"이므로 네트워크 예측 경로를 그대로 탑니다.</p>
+
+<h3 id="lec-46-pitfalls"><span class="step">함정과 교훈</span>한 프레임 늦은 카메라</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 — 내 캐릭터만 떨린다 (Phase 21)</b>
+	3인칭 카메라가 캐릭터를 따라가는데, 자기 캐릭터가 미세하게 떨려 보였습니다. 카메라를 <code>OnUpdate</code>에서 캐릭터의 월드 위치로 놓고 있었는데, <code>OnUpdate</code>는 물리보다 <b>앞</b>에 돌므로 그 위치는 이번 프레임에 움직이기 전 값이었습니다. 카메라가 항상 한 프레임 늦게 따라가니, 프레임 시간이 12ms/18ms로 번갈아 바뀌면 화면상 이동 속도가 1.5배/0.67배로 번갈아 보였습니다. 해결: 물리·트랜스폼 갱신 <b>뒤</b>에 도는 <code>OnLateUpdate</code> 단계를 새로 만들고 카메라를 거기서 놓았습니다. 측정: 프레임당 이동량 ÷ 프레임 시간 비율이 평균 1.00, 표준편차 0.03. 테스트 <code>GameWorld_LateUpdateSeesPhysicsResult</code>로 고정했습니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙 모음</b>
+	<ul>
+		<li>속도 규칙을 바꾸면 <code>CharacterMovementMath::ComputeVelocity</code>와 <code>CharacterMovementTests</code>를 함께 고친다(계단 30cm 오름/60cm 막힘, 경사 30° 오름/70° 못 오름, 점프 ≈138cm 등이 여기 고정돼 있다).</li>
+		<li>트랜스폼 위치 = 캡슐 <b>중심</b>. 발 위치가 아니다. 캐릭터에는 콜라이더·강체가 필요 없고, 있어도 캐릭터가 우선한다.</li>
+		<li>캐릭터를 따라가는 카메라는 <code>OnLateUpdate</code>에서.</li>
+		<li>스크립트가 캐릭터를 직접 옮기면 <code>FPhysicsSystem</code>이 "순간이동"으로 감지해 캐릭터 상태를 거기로 맞춘다. 순간이동은 의도할 때만.</li>
+	</ul>
+</div>
+<p>Phase 22 기록의 "후속" 목록도 교재로 좋습니다: 서버 측 속도 조작 방지(무브 dt 합과 실제 경과 시간 비교), 움직이는 발판 위 캐릭터(발판 속도 상속), 웅크리기/수영 같은 이동 모드. dt를 0.1초로 자르는 것만으로는 "작은 dt를 아주 많이 보내는" 조작을 막지 못한다는 뜻입니다. 결정성은 공정함의 출발점일 뿐, 신뢰는 서버가 따로 검증해야 합니다.</p>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>플레이어를 강체로 움직이면 계단·경사·밀림·되감기 문제가 생긴다 → 캐릭터 컨트롤러.</li>
+		<li>CharacterVirtual은 시뮬레이션에 참여하지 않고 쓸어 보기 질의로 움직인다(collide-and-slide). 다른 물체는 내부 키네마틱 바디와 부딪힌다.</li>
+		<li>속도 규칙은 순수 함수 <code>ComputeVelocity</code>: 바닥은 즉시 목표 속도, 공중은 제한된 가속, 중력은 항상, dt는 0.1초 상한.</li>
+		<li>이동 단위 = 무브. 같은 무브 → 같은 결과이므로 서버·예측 클라이언트·Standalone이 한 함수를 공유한다.</li>
+		<li>스크립트는 <code>AddMovementInput</code>/<code>Jump</code>만. 루트 모션도 무브에 실려 같은 경로를 탄다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 공중 제어를 "공중에서도 바닥처럼 입력 × 최대 속도로 즉시 설정"으로 바꾸면 무엇이 달라질까요?</summary>
+	점프 중에도 방향을 즉시 꺾을 수 있어 조작은 쉬워지지만, 점프가 "궤적"이 아니라 "공중 걷기"가 됩니다. 뛰어서 건너야 하는 구멍 같은 플랫폼 퍼즐이 의미를 잃고, 멀리뛰기에 도움닫기가 필요 없어집니다. AirControl은 이 손맛을 조절하는 손잡이이고, 가속 한계로 구현했기 때문에 0~1 사이 값이 자연스럽게 섞입니다.
+</details>
+<details class="quiz"><summary>Q2. 캐릭터 이동을 45강의 60Hz 고정 스텝 안에서 돌리지 않고 프레임 dt로 무브를 만드는데도 결정적이라고 할 수 있는 이유는?</summary>
+	결정성의 조건은 "같은 입력 열 → 같은 결과"입니다. 무브에는 그 프레임의 dt가 값으로 들어 있으므로, 서버나 재조정 중인 클라이언트가 같은 무브를 다시 적용하면 같은 dt로 같은 계산을 합니다. 실행 시점의 실제 시계를 읽지 않는다는 것이 핵심입니다. (다만 다른 물체가 움직이는 세계를 질의하므로, 세계 상태가 다르면 결과도 달라집니다 — 그래서 보정이 존재합니다.)
+</details>
+<details class="quiz"><summary>Q3. 무브의 <code>Input</code>을 "로컬 키 상태(W 눌림 여부)"로 보내지 않고 "월드 XY 방향"으로 보내는 이유는 무엇일까요?</summary>
+	키 → 방향 변환에는 카메라 yaw, 키 재지정, 게임패드 스틱 같은 클라이언트 쪽 정보가 들어갑니다. 서버가 이것을 다시 계산하려면 그 정보를 모두 알아야 하고, 바인딩이 다르면 결과도 달라집니다. 이미 해석된 "월드 방향(길이 ≤ 1)"을 보내면 서버는 입력 장치를 몰라도 되고, 길이를 1로 잘라 "대각선 속도 부풀리기" 같은 조작도 막을 수 있습니다.
+</details>
+</article>
+
+<!-- ======================================================= 47강 ======================================================= -->
+<article class="lecture" id="lec-47">
+<header>
+	<div class="no">47강</div>
+	<h2 id="lec-47-title">스크립팅</h2>
+	<div class="meta">관련 Phase: 7 · 41 · 47(사이드) · 살펴볼 곳: <code>Engine/Source/Scripting/</code> — <code>ScriptSystem.h</code>, <code>LuaRuntime.h/.cpp</code>, <code>ScriptTimerBindings.cpp</code>·<code>ScriptModuleBindings.cpp</code> 머리 주석, <code>ScriptDebugger.h</code> 머리 주석</div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>C++ 엔진에 스크립트 언어를 넣는 이유와 "하이브리드" 원칙(무엇을 C++에, 무엇을 스크립트에)을 설명할 수 있습니다.</li>
+		<li>Lua가 C/C++과 값을 주고받는 스택 모델과, sol2가 그것을 어떻게 감싸는지 압니다.</li>
+		<li>리플렉션 정보로 모든 컴포넌트를 스크립트에 자동 노출하는 방법과 스크립트 오류를 인스턴스 하나에 가두는 방법을 이해합니다.</li>
+		<li>타이머·코루틴의 소유권, 모듈 시스템, 그리고 중단점 디버거가 "중단점이 없을 때 비용 0"을 지키는 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-47-why"><span class="step">왜 필요한가</span>"문이 3초 뒤에 열린다"를 위해 엔진을 다시 빌드할 것인가</h3>
+<p>게임에는 작고 많고 자주 바뀌는 로직이 있습니다. "레버를 당기면 3초 뒤 문이 열린다", "보스 체력이 절반이 되면 음악을 바꾼다". 이것을 C++로 쓰면 고칠 때마다 컴파일·링크를 기다리고 에디터를 다시 띄워야 합니다. 실수로 널 포인터를 건드리면 에디터 전체가 죽습니다. 그리고 이런 코드를 쓰는 사람은 엔진 프로그래머가 아니라 게임 디자이너인 경우가 많습니다.</p>
+<p><b>스크립트 언어</b>를 엔진에 넣으면(embedding) 세 가지를 얻습니다.</p>
+<ul>
+	<li><b>반복 속도</b>: 파일을 저장하면 플레이 중에도 바로 반영됩니다(핫 리로드).</li>
+	<li><b>격리</b>: 스크립트 오류는 그 스크립트만 멈추고, 엔진은 계속 돕니다.</li>
+	<li><b>제한된 권한</b>: 콘텐츠 코드에 파일 시스템이나 프로세스 접근을 주지 않을 수 있습니다.</li>
+</ul>
+<p>대가는 속도입니다. 인터프리터는 네이티브 코드보다 수십 배 느릴 수 있고, C++ ↔ 스크립트 경계를 넘을 때마다 비용이 듭니다. 그래서 ProjectE는 첫날 <b>하이브리드</b>로 정했습니다(0강).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="하이브리드 스크립팅의 역할 분담">
+		<title>하이브리드 스크립팅의 역할 분담</title>
+		<rect x="20" y="20" width="390" height="180" rx="12" class="k1"/>
+		<text x="215" y="46" text-anchor="middle" class="t-bold">C++ (엔진 시스템 · 게임 모듈)</text>
+		<text x="40" y="76" class="t-small">· 매 프레임 수천 개를 도는 일: 렌더 수집, 물리, 애니메이션</text>
+		<text x="40" y="100" class="t-small">· 캐릭터 이동(무브), 비헤이비어 트리 실행기, 내비메시</text>
+		<text x="40" y="124" class="t-small">· 무거운 게임플레이 규칙 → 게임 모듈 DLL (12강)</text>
+		<text x="40" y="148" class="t-small">· 성능·정확성이 중요한 것, 바뀌는 일이 드문 것</text>
+		<text x="40" y="180" class="t-muted">컴파일 필요 · 실수하면 프로세스가 죽을 수 있음</text>
+
+		<rect x="450" y="20" width="390" height="180" rx="12" class="k2"/>
+		<text x="645" y="46" text-anchor="middle" class="t-bold">Lua (스크립트 컴포넌트)</text>
+		<text x="470" y="76" class="t-small">· 엔티티 하나의 행동: 문, 레버, 포털, 카메라</text>
+		<text x="470" y="100" class="t-small">· 이벤트 반응: OnCollisionBegin 등</text>
+		<text x="470" y="124" class="t-small">· 연출 순서: 타이머·코루틴 (Wait)</text>
+		<text x="470" y="148" class="t-small">· 자주 바뀌는 것, 디자이너가 고치는 것</text>
+		<text x="470" y="180" class="t-muted">저장하면 즉시 반영 · 오류는 그 인스턴스만 멈춤</text>
+
+		<path d="M410,90 H446" class="ln" marker-end="url(#arr)"/>
+		<path d="M446,140 H414" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="226" text-anchor="middle" class="t-bold">경계: 인스턴스당 프레임에 OnUpdate 한 번 + 이벤트</text>
+		<text x="430" y="250" text-anchor="middle" class="t-muted">규칙: 매 프레임 대량 순회(모든 적 훑기 등)는 스크립트에 두지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 47-1.</b> 무엇을 스크립트에 둘지의 기준은 "얼마나 자주 바뀌는가"와 "얼마나 많이 도는가"입니다. 많이 돌면 C++, 자주 바뀌면 Lua.</figcaption>
+</figure>
+
+<h3 id="lec-47-lua"><span class="step">핵심 개념</span>Lua와 스택, 그리고 sol2</h3>
+<p>Lua는 게임 업계에서 오래 쓰인 임베디드 언어입니다. 인터프리터 전체가 수백 KB 크기의 C 코드라 어디든 넣기 쉽고, 자료구조는 사실상 <b>테이블(table)</b> 하나뿐입니다 — 배열도, 사전도, 객체도 모두 테이블입니다. 테이블에 <b>메타테이블</b>을 붙이면 "없는 키를 읽을 때"(<code>__index</code>), "더하기를 할 때"(<code>__add</code>) 같은 동작을 바꿀 수 있어서, 이것으로 클래스와 C++ 객체 감싸기를 만듭니다.</p>
+<p>C++과 Lua는 <b>가상 스택</b>으로 대화합니다. C++이 Lua 함수를 부르려면 함수와 인자를 스택에 쌓고 <code>lua_pcall</code>을 부르며, 결과는 다시 스택에 올라옵니다. 반대로 Lua가 C++ 함수를 부르면 인자가 스택에 쌓여서 넘어옵니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="Lua 가상 스택으로 함수 부르기">
+		<title>Lua 가상 스택으로 함수 부르기</title>
+		<text x="20" y="28" class="t-bold">C++이 self:OnUpdate(dt)를 부를 때</text>
+		<rect x="40" y="170" width="170" height="34" rx="4" class="k3"/><text x="125" y="192" text-anchor="middle" class="t-mono">OnUpdate (함수)</text>
+		<rect x="40" y="136" width="170" height="34" rx="4" class="k1"/><text x="125" y="158" text-anchor="middle" class="t-mono">self (테이블)</text>
+		<rect x="40" y="102" width="170" height="34" rx="4" class="k1"/><text x="125" y="124" text-anchor="middle" class="t-mono">0.016 (dt)</text>
+		<text x="125" y="226" text-anchor="middle" class="t-muted">① 차례로 push</text>
+
+		<path d="M230,150 H300" class="ln" marker-end="url(#arr)"/>
+		<text x="265" y="140" text-anchor="middle" class="t-small">lua_pcall</text>
+		<text x="265" y="172" text-anchor="middle" class="t-muted">(인자 2)</text>
+
+		<rect x="310" y="80" width="200" height="130" rx="10" class="acc"/>
+		<text x="410" y="106" text-anchor="middle" class="t-bold">Lua VM 실행</text>
+		<text x="410" y="132" text-anchor="middle" class="t-small">오류가 나면 longjmp/예외로</text>
+		<text x="410" y="152" text-anchor="middle" class="t-small">pcall 지점까지 풀림</text>
+		<text x="410" y="180" text-anchor="middle" class="t-small">메시지 처리기(traceback)가</text>
+		<text x="410" y="198" text-anchor="middle" class="t-small">스택 정보를 붙임</text>
+
+		<path d="M520,150 H590" class="ln" marker-end="url(#arr)"/>
+		<rect x="600" y="136" width="170" height="34" rx="4" class="k2"/><text x="685" y="158" text-anchor="middle" class="t-mono">반환값 / 오류 메시지</text>
+		<text x="685" y="196" text-anchor="middle" class="t-muted">② 결과가 스택에 남음</text>
+
+		<rect x="20" y="236" width="820" height="28" rx="6" class="box"/>
+		<text x="430" y="255" text-anchor="middle" class="t-small">sol2: sol::protected_function(Method, Traceback)(Self, dt) 한 줄이 위 push → pcall → 결과 확인을 대신한다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 47-2.</b> Lua C API는 스택에 값을 넣고 꺼내는 저수준 인터페이스입니다. 인덱스를 손으로 맞추다 틀리기 쉬워서, ProjectE는 C++ 템플릿으로 이를 감싼 sol2를 씁니다.</figcaption>
+</figure>
+<p>sol2는 C++ 타입을 Lua에 노출하는 코드를 거의 선언처럼 쓰게 해 줍니다. 엔진 벡터를 Lua에 내보내는 부분을 보면 생성자, 필드, 연산자 메타함수가 한눈에 보입니다.</p>
+<pre class="code" data-file="Engine/Source/Scripting/LuaRuntime.cpp (발췌)">sol::usertype&lt;FVector3&gt; Vector3 = Lua.new_usertype&lt;FVector3&gt;(
+	<span class="str">"Vector3"</span>,
+	sol::call_constructor,
+	sol::factories([] { <span class="kw">return</span> FVector3(<span class="num">0.0f</span>, <span class="num">0.0f</span>, <span class="num">0.0f</span>); }, [](<span class="kw">float</span> X, <span class="kw">float</span> Y, <span class="kw">float</span> Z) { <span class="kw">return</span> FVector3(X, Y, Z); }),
+	<span class="str">"X"</span>, &amp;FVector3::X,
+	<span class="str">"Y"</span>, &amp;FVector3::Y,
+	<span class="str">"Z"</span>, &amp;FVector3::Z,
+	sol::meta_function::addition, [](<span class="kw">const</span> FVector3&amp; A, <span class="kw">const</span> FVector3&amp; B) { <span class="kw">return</span> A + B; },
+	...
+	<span class="str">"Length"</span>, [](<span class="kw">const</span> FVector3&amp; A) { <span class="kw">return</span> A.Length(); },
+	<span class="str">"Normalized"</span>, [](<span class="kw">const</span> FVector3&amp; A) { <span class="kw">return</span> A.GetNormalized(); },</pre>
+<p>sol 헤더는 무겁고 컴파일이 느리기 때문에 Scripting 모듈 내부(<code>LuaRuntime.h</code>, <code>SolInclude.h</code>)에서만 포함합니다. 바깥에는 <code>FScriptSystem</code>이라는 sol을 모르는 인터페이스만 보입니다. 또 Lua 상태를 만들 때 <code>io</code>/<code>os</code>/<code>package</code> 라이브러리는 열지 않고 <code>dofile</code>/<code>loadfile</code>도 지웁니다. 콘텐츠 스크립트가 디스크를 지우거나 프로세스를 실행할 수 없게 하는 최소한의 샌드박스입니다.</p>
+
+<h3 id="lec-47-class"><span class="step">ProjectE에서는</span>스크립트 = 클래스 테이블, Properties = 인스펙터 값</h3>
+<p>ProjectE의 스크립트는 유니티의 MonoBehaviour와 비슷한 모양입니다. 파일 하나가 <b>클래스 테이블</b>을 돌려주고, 엔티티에 <code>FScriptComponent</code>(스크립트 경로 + 프로퍼티 덮어쓰기 JSON)를 달면 엔티티마다 인스턴스(<code>self</code>)가 생깁니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/CircleWalker.lua (발췌)"><span class="kw">local</span> CircleWalker = {
+	Properties = {
+		Radius     = <span class="num">120.0</span>, <span class="com">-- cm</span>
+		Speed      = <span class="num">30.0</span>,  <span class="com">-- 도/초 (음수면 시계 방향)</span>
+		StartAngle = <span class="num">0.0</span>,   <span class="com">-- 도</span>
+	},
+}
+
+<span class="kw">function</span> CircleWalker:OnStart()
+	self.Center = self.entity:GetPosition()
+	self.Angle  = self.Properties.StartAngle
+<span class="kw">end</span>
+
+<span class="kw">function</span> CircleWalker:OnUpdate(dt)
+	<span class="kw">local</span> P    = self.Properties
+	self.Angle = self.Angle + P.Speed * dt
+	<span class="kw">local</span> A    = math.rad(self.Angle)
+	self.entity:SetPosition(self.Center + Vector3(math.cos(A) * P.Radius, math.sin(A) * P.Radius, <span class="num">0</span>))
+<span class="kw">end</span>
+
+<span class="kw">return</span> CircleWalker</pre>
+<p><code>Properties</code>는 기본값 선언입니다. 에디터 인스펙터가 이것을 읽어 입력 칸을 그리고, 씬에서 바꾼 값만 컴포넌트의 덮어쓰기 JSON에 저장합니다. 인스턴스를 만들 때 <code>MakeProperties</code>가 기본값을 복사한 뒤 덮어쓰기를 얹는데, 타입이 다르면(숫자 자리에 문자열) 무시합니다. 수명 함수는 <code>OnStart</code>(첫 OnUpdate 직전 한 번), <code>OnUpdate(dt)</code>, <code>OnLateUpdate(dt)</code>(물리·트랜스폼 뒤 — 46강의 카메라), <code>OnDestroy</code>입니다. 그리고 <b>플레이 세션마다 새 Lua 상태</b>를 만듭니다. 지난 플레이에서 전역 변수에 남긴 값이 다음 플레이로 새어 나오지 않게 하기 위해서입니다.</p>
+
+<h4>리플렉션 자동 바인딩</h4>
+<p>엔진에는 컴포넌트가 수십 종류 있습니다. 하나하나 Lua 바인딩을 손으로 쓰면 컴포넌트를 추가할 때마다 바인딩 코드도 써야 하고, 잊으면 스크립트에서 못 씁니다. ProjectE는 9강의 리플렉션 정보 — 인스펙터와 직렬화가 쓰는 바로 그 정보 — 로 <b>모든 컴포넌트를 한 번에</b> 노출합니다.</p>
+<pre class="code" data-file="Engine/Source/Scripting/LuaRuntime.cpp — 컴포넌트 참조의 __index (발췌)">Lua.new_usertype&lt;FScriptComponentRef&gt;(
+	<span class="str">"Component"</span>,
+	sol::no_constructor,
+	sol::meta_function::index,
+	[<span class="kw">this</span>, RequireRegistry](<span class="kw">const</span> FScriptComponentRef&amp; Ref, <span class="kw">const</span> std::string&amp; Key) -&gt; sol::object {
+		<span class="kw">void</span>* Component = Ref.Type-&gt;GetComponent(RequireRegistry(), Ref.Entity);
+		<span class="kw">if</span> (Component == <span class="kw">nullptr</span>)
+		{
+			<span class="kw">throw</span> std::runtime_error(std::format(<span class="str">"컴포넌트 '{}'가 더 이상 없습니다"</span>, Ref.Type-&gt;Name));
+		}
+		<span class="kw">const</span> FPropertyInfo* Property = Ref.Type-&gt;FindProperty(Key);
+		...
+		<span class="kw">return</span> ReadProperty(Lua, *Property, Component); <span class="com">// EPropertyType별 switch: Bool/Float/Vector3/Quat/Entity ...</span>
+	},
+	sol::meta_function::new_index,
+	[<span class="kw">this</span>, RequireRegistry](<span class="kw">const</span> FScriptComponentRef&amp; Ref, <span class="kw">const</span> std::string&amp; Key, <span class="kw">const</span> sol::object&amp; Value) {
+		... <span class="com">// 컴포넌트·프로퍼티 찾기는 위와 같음</span>
+		WriteProperty(*Property, Component, Value);
+		<span class="kw">if</span> (Property-&gt;Type == EPropertyType::String &amp;&amp; !Property-&gt;AssetFilter.empty())
+		{
+			bStructureChanged = <span class="kw">true</span>; <span class="com">// 에셋 경로가 바뀌었다 → 앱이 핸들을 다시 해석 (FSceneAssetResolver)</span>
+		}
+	},</pre>
+<p>Lua에서 <code>entity:GetComponent("PointLightComponent").Intensity = 2</code>라고 쓰면, <code>GetComponent</code>는 컴포넌트를 복사하지 않고 (엔티티, 타입 정보) 쌍만 담은 가벼운 참조를 돌려줍니다. <code>.Intensity</code>를 읽거나 쓸 때마다 <code>__index</code>/<code>__newindex</code>가 불려 리플렉션으로 프로퍼티를 찾아 실제 메모리를 읽고 씁니다. 참조가 컴포넌트를 들고 있지 않으므로, 컴포넌트가 지워진 뒤 접근하면 댕글링 포인터가 아니라 "더 이상 없습니다" 오류가 됩니다. 결과적으로 <b>새 컴포넌트는 리플렉션에 등록만 하면 스크립트에서 바로 쓸 수 있습니다.</b> 게임 모듈 DLL이 등록한 컴포넌트도 마찬가지입니다.</p>
+<p>단, 리플렉션 경로는 매번 이름으로 프로퍼티를 찾으므로 느립니다. 가장 자주 쓰는 트랜스폼은 <code>GetPosition</code>/<code>SetPosition</code> 같은 <b>빠른 경로</b>를 따로 둡니다.</p>
+
+<h4>오류 격리</h4>
+<p>스크립트 오류가 엔진을 죽이면 스크립트를 쓰는 의미가 반감됩니다. ProjectE는 세 겹으로 막습니다.</p>
+<ol>
+	<li>모든 스크립트 메서드는 <code>sol::protected_function</code>으로 부르고, 메시지 처리기로 <code>debug.traceback</code>(디버거가 있으면 디버거의 처리기)을 붙여 오류 위치와 호출 스택을 받습니다.</li>
+	<li>C++ 바인딩 안에서 잘못된 사용을 발견하면 <code>std::runtime_error</code>를 던집니다. ProjectE는 Lua를 C++로 컴파일하므로 이 예외가 Lua 오류로 바뀌어 같은 pcall에서 잡힙니다.</li>
+	<li>오류가 난 인스턴스는 <code>FaultInstance</code>가 "멈춤" 표시를 하고 타이머·코루틴을 모두 지웁니다. 다른 인스턴스는 계속 돕니다. 스크립트 파일을 고쳐 저장하면(핫 리로드 성공) 멈춘 인스턴스가 다시 돕니다.</li>
+</ol>
+<pre class="code" data-file="Engine/Source/Scripting/LuaRuntime.cpp — CallMethod (발췌)"><span class="kw">const</span> sol::table        Self = Instance.Self;
+sol::protected_function Function(Method.as&lt;sol::function&gt;(), Traceback);
+<span class="kw">const</span> FInstanceScope    Scope(*<span class="kw">this</span>, Instance.Entity);   <span class="com">// "지금 실행 중인 인스턴스" 표시 (아래 타이머 절)</span>
+sol::protected_function_result Result = bPassDelta ? Function(Self, DeltaSeconds) : Function(Self);
+<span class="kw">if</span> (!Result.valid())
+{
+	<span class="kw">const</span> sol::error Error = Result;
+	FaultInstance(Instance, MethodName, Error.what()); <span class="com">// 로그 + 이 인스턴스만 멈춤</span>
+	<span class="kw">return false</span>;
+}</pre>
+
+<h4>어디서 도는가 — ExecutionLocation</h4>
+<p>멀티플레이(8부)에서는 같은 씬이 서버와 여러 클라이언트에 동시에 있습니다. 문을 여는 판정은 서버에서만, 카메라 조작은 클라이언트에서만 돌아야 합니다. 그래서 스크립트 컴포넌트마다 <code>ExecutionLocation</code>을 둡니다: <b>ServerOnly</b>(기본), <b>ClientOnly</b>, <b>Both</b>. 인스턴스는 이 머신에서 돌아야 할 때만 만들어지므로, 그 인스턴스가 만드는 타이머·코루틴도 자동으로 같은 규칙을 따릅니다. 46강의 <code>PlayerCharacter.lua</code>는 Both이고, 안에서 "내가 조종하는 쪽인가"를 확인해 입력을 처리합니다.</p>
+
+<h3 id="lec-47-timer"><span class="step">핵심 개념</span>타이머와 코루틴 — 시간에 걸친 로직</h3>
+<p>"불꽃을 쏘고, 2초 뒤 공중에서 터뜨리고, 빛이 3초 동안 서서히 꺼진다"를 <code>OnUpdate</code>만으로 쓰면 상태 변수와 경과 시간 변수가 잔뜩 생깁니다. <b>코루틴(coroutine)</b>은 실행을 중간에 멈췄다가(yield) 나중에 그 자리에서 이어 갈(resume) 수 있는 함수입니다. 덕분에 시간에 걸친 순서를 위에서 아래로 읽히게 쓸 수 있습니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/Demo/CampfireFlare.lua (발췌)">self.Running = Coroutine.Start(<span class="kw">function</span>()
+	<span class="kw">local</span> P = self.Properties
+	self.Particles.Asset = <span class="str">""</span>
+	Wait()                                  <span class="com">-- 다음 프레임까지</span>
+	self.Particles.Asset = P.LaunchAsset.Path
+	Wait(P.RiseTime)                        <span class="com">-- 올라가는 시간만큼</span>
+	...
+	<span class="kw">while</span> T &lt; P.BurnTime <span class="kw">do</span>
+		T = T + Time.DeltaTime
+		...                                 <span class="com">-- 위치·빛 세기 갱신</span>
+		Wait()
+	<span class="kw">end</span>
+	self.HeadLight.Intensity = <span class="num">0.0</span>
+<span class="kw">end</span>)</pre>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="한 프레임의 스크립트 갱신 순서와 코루틴">
+		<title>한 프레임의 스크립트 갱신 순서와 코루틴</title>
+		<text x="20" y="28" class="t-bold">FScriptSystem::Update 한 번</text>
+		<rect x="20" y="40" width="150" height="46" rx="8" class="box"/><text x="95" y="60" text-anchor="middle" class="t-small">① 사라진 인스턴스</text><text x="95" y="77" text-anchor="middle" class="t-small">정리</text>
+		<rect x="180" y="40" width="150" height="46" rx="8" class="box"/><text x="255" y="60" text-anchor="middle" class="t-small">② 새 컴포넌트</text><text x="255" y="77" text-anchor="middle" class="t-small">인스턴스화</text>
+		<rect x="340" y="40" width="170" height="46" rx="8" class="k2"/><text x="425" y="60" text-anchor="middle" class="t-small">③ OnStart(처음) →</text><text x="425" y="77" text-anchor="middle" class="t-small">모든 OnUpdate</text>
+		<rect x="520" y="40" width="170" height="46" rx="8" class="acc"/><text x="605" y="60" text-anchor="middle" class="t-small">④ 타이머 발사</text><text x="605" y="77" text-anchor="middle" class="t-small">코루틴 재개</text>
+		<rect x="700" y="40" width="140" height="46" rx="8" class="box"/><text x="770" y="60" text-anchor="middle" class="t-small">노티파이·UI</text><text x="770" y="77" text-anchor="middle" class="t-small">이벤트 …</text>
+		<path d="M170,63 H176" class="ln"/><path d="M330,63 H336" class="ln"/><path d="M510,63 H516" class="ln"/><path d="M690,63 H696" class="ln"/>
+
+		<text x="20" y="130" class="t-bold">코루틴 하나의 일생</text>
+		<line x1="120" y1="150" x2="120" y2="250" class="ln-d"/><text x="120" y="264" text-anchor="middle" class="t-muted">프레임 N</text>
+		<line x1="300" y1="150" x2="300" y2="250" class="ln-d"/><text x="300" y="264" text-anchor="middle" class="t-muted">N+1</text>
+		<line x1="480" y1="150" x2="480" y2="250" class="ln-d"/><text x="480" y="264" text-anchor="middle" class="t-muted">… RiseTime 경과</text>
+		<line x1="660" y1="150" x2="660" y2="250" class="ln-d"/><text x="660" y="264" text-anchor="middle" class="t-muted">다음 프레임</text>
+		<rect x="60" y="160" width="110" height="30" rx="6" class="k2"/><text x="115" y="180" text-anchor="middle" class="t-small">Start: 바로 실행</text>
+		<text x="180" y="180" class="t-mono">Wait()</text>
+		<rect x="250" y="200" width="110" height="30" rx="6" class="acc"/><text x="305" y="220" text-anchor="middle" class="t-small">④에서 재개</text>
+		<text x="368" y="220" class="t-mono">Wait(RiseTime)</text>
+		<rect x="430" y="160" width="110" height="30" rx="6" class="acc"/><text x="485" y="180" text-anchor="middle" class="t-small">④에서 재개</text>
+		<text x="548" y="180" class="t-mono">Wait() 반복</text>
+		<rect x="610" y="200" width="110" height="30" rx="6" class="acc"/><text x="665" y="220" text-anchor="middle" class="t-small">… 끝나면 제거</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 47-3.</b> <code>Coroutine.Start</code>는 첫 대기까지 즉시 실행하고, 이후 재개는 모든 OnUpdate가 끝난 뒤 한곳(④)에서 합니다. 시간은 실제 시계가 아니라 스크립트 시간(Time.DeltaTime)입니다.</figcaption>
+</figure>
+<p>구현에서 중요한 결정은 두 가지입니다.</p>
+<p><b>① 소유자.</b> 타이머와 코루틴은 그것을 만든 <b>스크립트 인스턴스의 소유</b>입니다. 문 엔티티가 파괴됐는데 그 문이 걸어 둔 "3초 뒤 문 열기" 타이머가 남아 있으면, 3초 뒤 사라진 엔티티를 건드립니다. 그래서 인스턴스가 사라질 때(OnDestroy 뒤, 엔티티 파괴, 스크립트 변경, EndPlay) 그 인스턴스의 타이머·코루틴을 함께 지웁니다. 그런데 <code>Timer.After</code>라는 전역 함수는 "누가" 불렀는지 어떻게 알까요? 엔진이 인스턴스 코드를 부를 때마다 <code>FInstanceScope</code>라는 RAII 객체로 "지금 실행 중인 인스턴스"를 기록하고, 스코프가 끝나면 이전 값으로 되돌립니다. 인스턴스 코드 밖(예: 비헤이비어 트리 스크립트 객체)에서 <code>Timer.After</code>를 부르면 소유자가 없으므로 오류입니다. 그래서 CLAUDE.md 규칙이 "인스턴스 코드를 부르는 새 경로에는 <code>FInstanceScope</code>를 건다"입니다.</p>
+<p><b>② Wait는 Lua로 구현한다.</b> Lua 5.4에서 C 함수 안에서 yield하는 것은 제약이 많습니다. 그래서 <code>Wait</code>/<code>WaitFrames</code>/<code>WaitUntil</code>은 Lua 코드 조각으로 정의하고, 엔진만 아는 <b>토큰</b>을 함께 yield합니다. 사용자가 직접 쓴 <code>coroutine.yield</code>와 엔진 대기를 이 토큰으로 구분합니다.</p>
+<pre class="code" data-file="Engine/Source/Scripting/ScriptTimerBindings.cpp — WaitChunk (발췌)"><span class="kw">local</span> Token, IsYieldable, Yield = ...
+<span class="kw">function</span> Wait(Seconds)
+	Check(<span class="str">"Wait"</span>)   <span class="com">-- Coroutine.Start로 시작한 코루틴 안이 아니면 오류</span>
+	<span class="kw">return</span> Yield(Token, <span class="str">"Seconds"</span>, Seconds <span class="kw">or</span> <span class="num">0</span>)
+<span class="kw">end</span></pre>
+
+<h4>모듈: Script.Require</h4>
+<p>아이템 표처럼 여러 스크립트가 공유할 데이터·함수는 <code>Script.Require("Scripts/RPG/ItemDatabase.lua")</code>로 읽습니다. 표준 <code>require</code>는 파일 시스템을 마음대로 뒤지므로 막아 두고, Content 기준 경로만 받아 <code>FFileSystem</code>(pak → 디스크, 63강)으로 읽습니다. Lua 상태마다 한 번만 실행해 결과를 캐시하고, 순환(A가 실행 중 다시 A를 Require)은 오류입니다. 모듈 파일이 바뀌면 새 코드가 <b>성공했을 때만</b> 값을 교체하고, 그 모듈을 Require한 파일들을 따라가며 다시 실행합니다. 주의할 점: 모듈 값은 모든 인스턴스가 공유하는 같은 테이블이므로, 한 인스턴스가 고치면 모두에게 보입니다. 모듈에는 정의와 함수만 두고 상태는 인스턴스에 둡니다.</p>
+
+<h3 id="lec-47-debugger"><span class="step">ProjectE에서는</span>중단점 디버거 — 쓰지 않을 때는 비용 0</h3>
+<p>스크립트가 커지면 로그 출력만으로는 부족해집니다. Phase 47 사이드 트랙에서 에디터에 Lua 디버거(중단점, 조건, 단계 실행 Into/Over/Out, 지역 변수·upvalue·self 보기, 조사식, 오류 정지)를 넣었습니다. 바탕은 Lua의 <b>디버그 훅(<code>lua_sethook</code>)</b>입니다. 훅을 걸면 Lua가 줄이 바뀔 때마다(line), 함수에 들어가고 나올 때마다(call/return) 콜백을 부릅니다.</p>
+<p>문제는 비용입니다. 줄 훅은 <b>모든 줄</b>마다 C 함수를 부르므로, 훅을 상시로 걸면 스크립트 전체가 크게 느려집니다. ProjectE의 디버거는 훅을 세 단계로 나눕니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="디버거 훅의 세 가지 상태">
+		<title>디버거 훅의 세 가지 상태</title>
+		<rect x="20" y="20" width="260" height="170" rx="10" class="k2"/>
+		<text x="150" y="46" text-anchor="middle" class="t-bold">훅 없음</text>
+		<text x="40" y="76" class="t-small">조건: 켜진 중단점·단계 실행·</text>
+		<text x="40" y="96" class="t-small">일시 정지 요청이 모두 없음</text>
+		<text x="40" y="126" class="t-small">비용: 0 (오류 처리기만 교체,</text>
+		<text x="40" y="146" class="t-small">오류가 날 때만 불림)</text>
+		<text x="40" y="176" class="t-muted">런타임·서버·테스트는 항상 이 상태</text>
+
+		<rect x="300" y="20" width="260" height="170" rx="10" class="k4"/>
+		<text x="430" y="46" text-anchor="middle" class="t-bold">동적 모드</text>
+		<text x="320" y="76" class="t-small">조건: 중단점만 있음</text>
+		<text x="320" y="106" class="t-small">call/return 이벤트만 받다가</text>
+		<text x="320" y="126" class="t-small">지금 함수가 "중단점 있는 파일"이면</text>
+		<text x="320" y="146" class="t-small">그 스레드에만 줄 이벤트를 켬</text>
+		<text x="320" y="176" class="t-muted">다른 스크립트의 반복문은 줄 훅 비용 없음</text>
+
+		<rect x="580" y="20" width="260" height="170" rx="10" class="k5"/>
+		<text x="710" y="46" text-anchor="middle" class="t-bold">전체 줄 훅</text>
+		<text x="600" y="76" class="t-small">조건: 단계 실행 중이거나</text>
+		<text x="600" y="96" class="t-small">일시 정지 요청</text>
+		<text x="600" y="126" class="t-small">모든 스레드(주 + 코루틴)의</text>
+		<text x="600" y="146" class="t-small">모든 줄 이벤트</text>
+		<text x="600" y="176" class="t-muted">다음 줄이 어디든 멈춰야 하므로</text>
+
+		<path d="M280,105 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M560,105 H576" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="226" text-anchor="middle" class="t-small">정지 중에는 훅을 뗀다 → 조사식 평가가 다시 중단점에 걸리지 않는다</text>
+		<text x="430" y="248" text-anchor="middle" class="t-muted">조건이 사라지면 즉시 뗀다 — "새 Lua 실행 경로에 줄 훅을 상시로 걸지 말 것"(CLAUDE.md)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 47-4.</b> 필요한 만큼만 훅을 겁니다. 중단점이 없으면 디버거가 연결돼 있어도 실행 비용이 없습니다.</figcaption>
+</figure>
+<p>몇 가지 까다로운 부분이 더 있습니다.</p>
+<ul>
+	<li><b>코루틴</b>: Lua 훅은 스레드(코루틴)마다 따로 걸립니다. 그래서 디버거는 <code>coroutine.create</code>/<code>wrap</code>을 자기 것으로 <b>교체</b>해 새로 만든 코루틴을 약한 표에 기록하고 훅을 겁니다. 이 교체가 엔진 바인딩보다 먼저여야 <code>Coroutine.Start</code>가 잡아 두는 <code>coroutine.create</code>도 디버거 것이 됩니다. 그래서 Lua 상태를 만든 직후, <code>RegisterBindings</code> 전에 <code>Attach</code>합니다.</li>
+	<li><b>멈춰 있는 동안의 에디터</b>: 중단점에서 멈추면 Lua는 C++ 호출 스택 깊숙한 곳(스크립트 갱신 도중)에 정지해 있습니다. 그 상태에서도 에디터 UI는 그려져야 변수를 볼 수 있습니다. 그래서 정지 처리기가 <code>FApplication::RunNestedFrame</code>으로 <b>중첩 프레임 루프</b>를 돌며 UI만 그립니다. 게임·물리·스크립트 갱신, 씬을 바꾸는 메뉴는 이 동안 그리지 않습니다(계층/인스펙터는 비활성) — 갱신 도중에 씬을 바꾸면 바깥 프레임이 깨진 상태로 돌아오기 때문입니다.</li>
+	<li><b>단계 실행의 깊이</b>: Over는 "같은 스레드에서 깊이 ≤ 시작 깊이인 줄", Out은 "깊이 &lt; 시작 깊이인 줄"에서 멈춥니다. 코루틴 안에서 Over를 하다가 그 코루틴이 <code>Wait</code>로 yield하면, 다른 코드의 줄은 건너뛰고 그 코루틴이 다시 재개될 때 이어 갑니다.</li>
+</ul>
+<pre class="code" data-file="Engine/Source/Scripting/LuaRuntime.cpp — FLuaRuntime 생성자 (발췌)"><span class="com">// io/os/package는 열지 않는다 (콘텐츠 스크립트에 파일 시스템/프로세스 접근을 주지 않음)</span>
+Lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table, sol::lib::coroutine, sol::lib::utf8,
+                   sol::lib::debug);
+Lua.set_exception_handler(&amp;HandleBindingException);
+<span class="kw">if</span> (Debugger != <span class="kw">nullptr</span>)
+{
+	<span class="com">// 바인딩 등록 전 (Coroutine.Start가 잡아 두는 coroutine.create도 디버거 것이어야 코루틴에 훅을 걸 수 있다)</span>
+	Debugger-&gt;Attach(Lua.lua_state());
+	...
+}
+Lua[<span class="str">"dofile"</span>]   = sol::lua_nil;
+Lua[<span class="str">"loadfile"</span>] = sol::lua_nil;
+RegisterBindings();</pre>
+
+<h3 id="lec-47-pitfalls"><span class="step">함정과 교훈</span>자동 바인딩이 해 주지 않는 것</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 — 경로는 바뀌었는데 화면은 그대로 (Phase 21)</b>
+	멀티플레이 캐릭터를 만들 때 서버 스크립트가 플레이어 번호별로 머티리얼 경로(<code>MaterialAsset</code>)를 바꿔 색을 정하게 했습니다. 리플렉션 바인딩 덕분에 문자열 프로퍼티는 바로 바뀌었지만, 렌더러가 쓰는 것은 로드 때 그 경로로 <b>해석해 둔 리소스 핸들</b>이었습니다. 문자열만 바뀌고 핸들은 옛 머티리얼 그대로 남는 문제가 검증 중 발견됐습니다. 수정: 정적 메시 컴포넌트가 "해석한 경로"를 기억해 두었다가 경로가 달라지면 다시 해석하고(<code>ResolvedMeshAsset/ResolvedMaterialAsset</code>), Lua가 에셋 필터가 붙은 문자열 프로퍼티를 쓰면 <code>bStructureChanged</code>를 세워 앱이 재해석하게 했습니다(위 <code>__newindex</code> 발췌의 마지막 부분). 자동 바인딩은 "값"을 바꿔 줄 뿐, 그 값에서 파생된 상태까지 알아서 갱신해 주지는 않습니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙 — 소멸 순서</b>
+	<code>FLuaRuntime</code>에는 <code>sol::state Lua</code>와 함께 sol 테이블·함수 멤버(타이머 목록, 모듈 캐시, 코루틴 함수 참조 …)가 있습니다. sol 참조는 소멸될 때 Lua 상태에서 자기 참조를 해제하는데, C++ 멤버의 소멸 순서는 선언 순서에 묶여 있어서 상태가 먼저 사라지면 이미 없는 상태에 접근해 크래시가 납니다. 그래서 소멸자가 sol 멤버를 <b>직접</b> 먼저 비우고, CLAUDE.md에 "<code>FLuaRuntime</code>에 sol 객체 멤버를 새로 두면 <code>~FLuaRuntime</code>에서 직접 비운다"를 규칙으로 남겼습니다(능력 시스템이 sol 멤버를 추가할 때 함께 기록된 규칙). 선언 순서 같은 "보이지 않는 계약"은 이렇게 글로 남겨야 지켜집니다.
+</div>
+<div class="callout note">
+	<b class="t">플랫폼의 숨은 기본 동작 — F10</b>
+	디버거의 단계 실행 키는 관례대로 F10(Over)입니다. 그런데 Windows는 F10 단독 입력을 "창 메뉴 활성화" 키(<code>WM_SYSKEYDOWN</code>)로 다룹니다. 그대로 두면 F10을 누를 때 단계 실행 대신 포커스가 창 메뉴로 넘어갑니다. 그래서 ProjectE의 창 프로시저는 F10 단독을 창 메뉴로 넘기지 않습니다(CLAUDE.md 디버거 항목). 키 하나를 고를 때도 운영체제가 이미 그 키에 붙여 둔 의미를 확인해야 합니다.
+</div>
+<div class="callout warn">
+	<b class="t">알려진 한계 (Phase 41 기록)</b>
+	<ul>
+		<li>타이머·코루틴은 Update에서만 진행한다(LateUpdate 없음).</li>
+		<li><code>Timer.Every</code>는 밀린 횟수를 몰아 부르지 않는다(한 프레임 최대 한 번).</li>
+		<li>핫 리로드는 그 스크립트 인스턴스의 타이머·코루틴을 모두 취소하고 <code>OnStart</code>는 다시 부르지 않는다 → OnStart에서 만든 반복 타이머는 사라진다. 옛 코드의 클로저가 남아 새 코드와 섞이는 것보다 낫다는 선택.</li>
+		<li>스크립트 dt는 <code>MaxDeltaSeconds</code> 0.25초로 자른다 — 로딩·중단점 뒤 한 프레임이 크게 튀지 않게.</li>
+	</ul>
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>하이브리드: 많이 도는 것은 C++, 자주 바뀌는 것은 Lua. 인스턴스당 프레임에 OnUpdate 한 번.</li>
+		<li>C++ ↔ Lua는 가상 스택으로 대화하고, sol2가 그것을 타입 안전하게 감싼다. sol은 Scripting 모듈 안에만.</li>
+		<li>스크립트 = 클래스 테이블 + Properties. 컴포넌트는 리플렉션으로 자동 노출되고, 오류는 인스턴스 하나에 갇힌다.</li>
+		<li>타이머·코루틴은 인스턴스 소유(<code>FInstanceScope</code>), 재개는 모든 OnUpdate 뒤 한곳에서.</li>
+		<li>디버거는 필요할 때만 훅을 건다(없음 → 동적 → 전체), 정지 중에는 중첩 프레임으로 UI만 그린다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 스크립트가 <code>OnUpdate</code>마다 <code>Scene.Find("Player")</code>를 부르고 있습니다. 무엇이 문제이고 어떻게 고칠까요?</summary>
+	<code>Scene.Find</code>는 이름 컴포넌트를 가진 모든 엔티티를 선형으로 훑습니다(바인딩 주석: "OnStart에서 찾아 self에 보관할 것"). 인스턴스 수 × 엔티티 수만큼 매 프레임 비용이 들어 하이브리드 원칙("대량 순회를 스크립트에 두지 않는다")을 어깁니다. <code>OnStart</code>에서 한 번 찾아 <code>self.Player</code>에 두고, 매 프레임은 <code>IsValid()</code>로 살아 있는지만 확인합니다.
+</details>
+<details class="quiz"><summary>Q2. 컴포넌트 참조(<code>GetComponent</code>의 결과)가 컴포넌트 포인터를 직접 들지 않고 (엔티티, 타입) 쌍만 드는 이유는?</summary>
+	ECS에서 컴포넌트는 희소 집합 배열에 들어 있어(7강), 다른 엔티티에 같은 타입 컴포넌트가 추가·제거되면 메모리 위치가 바뀔 수 있습니다. 포인터를 들고 있으면 스크립트가 <code>self.Light</code>로 보관해 둔 참조가 어느 순간 엉뚱한 메모리를 가리킵니다. 접근할 때마다 레지스트리에서 다시 찾으면 조금 느리지만 항상 안전하고, 없어졌으면 명확한 오류를 냅니다.
+</details>
+<details class="quiz"><summary>Q3. 디버거를 "항상 모든 줄 훅"으로 단순하게 만들었다면 어떤 일이 생길까요?</summary>
+	중단점이 하나도 없어도 모든 스크립트의 모든 줄에서 C 콜백이 불려 스크립트 실행이 크게 느려집니다. 개발 중 측정한 프레임 시간이 실제 게임과 달라지고, "디버거를 켜면 버그가 사라지는" 타이밍 문제도 생깁니다. ProjectE는 훅 조건을 좁혀 "중단점 없음 = 비용 0", "중단점만 = 그 파일 함수 안에서만 줄 이벤트"로 만들었습니다.
+</details>
+</article>
+
+<!-- ======================================================= 48강 ======================================================= -->
+<article class="lecture" id="lec-48">
+<header>
+	<div class="no">48강</div>
+	<h2 id="lec-48-title">입력 시스템</h2>
+	<div class="meta">관련 Phase: 21 · 24 · 살펴볼 곳: <code>Engine/Source/Core/InputActions.h/.cpp</code>, <code>Core/Input.h/.cpp</code>, <code>Core/GamepadInput.h/.cpp</code>, <code>Core/Window.cpp</code>(<code>WM_INPUT</code>, <code>SetCursorLocked</code>), <code>Core/Settings/InputSettings.h</code>, <code>Projects/Sample/Config/Input.json</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>시점 회전에 커서 위치 대신 원시 마우스 입력을 쓰는 이유와 커서 잠금 구현을 이해합니다.</li>
+		<li>게임 코드가 키 대신 "액션"을 읽게 하는 입력 매핑의 구조(바인딩·수정자·문턱·합산)를 설명할 수 있습니다.</li>
+		<li>프로젝트 매핑과 플레이어 재지정을 겹치는 방법, XInput을 링크 없이 쓰는 방법을 압니다.</li>
+		<li>네트워크로 입력을 보낼 때 "액션 값"을 보내고 배치 해시로 검증하는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-48-why"><span class="step">왜 필요한가</span><code>IsKeyDown(EKey::W)</code>의 한계</h3>
+<p>1강에서 만든 입력은 "키가 눌렸는가"를 묻는 구조였습니다. 첫 데모에는 충분했지만, 게임이 커지면 곧 벽에 부딪힙니다.</p>
+<ul>
+	<li><b>장치가 여럿이다</b>: 같은 "앞으로 이동"을 W 키로도, 게임패드 왼쪽 스틱으로도 해야 합니다. 스크립트마다 <code>IsKeyDown(W) or 스틱Y &gt; 0.2</code>를 쓰면 코드가 장치에 묶입니다.</li>
+	<li><b>값의 종류가 다르다</b>: 키는 0 아니면 1, 스틱은 -1~1 연속값, 마우스는 "이번 프레임 이동량"입니다.</li>
+	<li><b>플레이어가 키를 바꾼다</b>: 왼손잡이, 다른 자판 배열, 접근성. 키 재지정은 출시 게임의 기본 기능입니다.</li>
+	<li><b>시점 회전</b>: 마우스로 화면을 돌리는 FPS식 조작은 커서 "위치"로는 만들 수 없습니다.</li>
+</ul>
+<p>Phase 21(원시 마우스·커서 잠금)과 Phase 24(언리얼 Enhanced Input 방식의 입력 매핑·게임패드)가 이 문제를 풀었습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="입력 시스템의 층">
+		<title>입력 시스템의 층</title>
+		<rect x="20" y="20" width="180" height="50" rx="8" class="box"/><text x="110" y="42" text-anchor="middle" class="t-bold">WM_KEYDOWN/UP</text><text x="110" y="60" text-anchor="middle" class="t-muted">키·마우스 버튼</text>
+		<rect x="20" y="80" width="180" height="50" rx="8" class="box"/><text x="110" y="102" text-anchor="middle" class="t-bold">WM_INPUT</text><text x="110" y="120" text-anchor="middle" class="t-muted">원시 마우스 이동</text>
+		<rect x="20" y="140" width="180" height="50" rx="8" class="box"/><text x="110" y="162" text-anchor="middle" class="t-bold">XInputGetState</text><text x="110" y="180" text-anchor="middle" class="t-muted">매 프레임 폴링</text>
+
+		<rect x="240" y="60" width="160" height="90" rx="10" class="k1"/>
+		<text x="320" y="88" text-anchor="middle" class="t-bold">FInput</text>
+		<text x="320" y="110" text-anchor="middle" class="t-small">원시 상태</text>
+		<text x="320" y="130" text-anchor="middle" class="t-small">(이번/지난 프레임)</text>
+
+		<rect x="440" y="40" width="200" height="130" rx="10" class="acc"/>
+		<text x="540" y="66" text-anchor="middle" class="t-bold">UpdateActions</text>
+		<text x="540" y="90" text-anchor="middle" class="t-small">액션마다 바인딩 읽기</text>
+		<text x="540" y="110" text-anchor="middle" class="t-small">→ 수정자 적용</text>
+		<text x="540" y="130" text-anchor="middle" class="t-small">→ 합산 → 문턱</text>
+		<text x="540" y="154" class="t-muted" text-anchor="middle">유효 매핑 = 프로젝트 + 재지정</text>
+
+		<rect x="680" y="20" width="160" height="50" rx="8" class="k2"/><text x="760" y="50" text-anchor="middle" class="t-small">Lua Input.GetAction</text>
+		<rect x="680" y="80" width="160" height="50" rx="8" class="k2"/><text x="760" y="110" text-anchor="middle" class="t-small">C++ GetActionValue</text>
+		<rect x="680" y="140" width="160" height="50" rx="8" class="k2"/><text x="760" y="170" text-anchor="middle" class="t-small">네트워크 입력 커맨드</text>
+
+		<path d="M200,45 L236,90" class="ln" marker-end="url(#arr)"/>
+		<path d="M200,105 H236" class="ln" marker-end="url(#arr)"/>
+		<path d="M200,165 L236,125" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,105 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,80 L676,45" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,105 H676" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,130 L676,165" class="ln" marker-end="url(#arr)"/>
+
+		<rect x="20" y="220" width="820" height="66" rx="10" class="box"/>
+		<text x="40" y="244" class="t-bold">입력 모드 (36강)</text>
+		<text x="40" y="268" class="t-small">UI가 포커스를 가져가면 게임에는 WithoutMouseButtons / WithoutKeyboard / WithoutAnyInput 사본을 준다 — 액션도 그 사본에서 계산</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 48-1.</b> 운영체제 메시지와 패드 폴링은 <code>FInput</code>의 원시 상태가 되고, 매 프레임 매핑을 거쳐 액션 값이 됩니다. 게임 코드는 오른쪽 열만 봅니다.</figcaption>
+</figure>
+
+<h3 id="lec-48-raw"><span class="step">핵심 개념</span>원시 마우스 입력과 커서 잠금</h3>
+<p>마우스로 시점을 돌릴 때 필요한 것은 "커서가 어디 있는가"가 아니라 "마우스를 얼마나 움직였는가"입니다. 커서 위치(<code>WM_MOUSEMOVE</code>)로 이동량을 구하면 두 가지 문제가 있습니다. 커서가 화면 끝에 닿으면 더 움직여도 값이 변하지 않고, 운영체제의 <b>포인터 가속</b>("포인터 정밀도 향상")이 섞여 같은 손 동작이 빠르기에 따라 다른 각도로 바뀝니다. FPS 게이머가 가장 싫어하는 일입니다.</p>
+<p>Windows의 <b>Raw Input</b>은 장치가 보고한 이동 카운트를 가속 없이 그대로 줍니다. 창을 만들 때 마우스를 원시 입력 장치로 등록하면 <code>WM_INPUT</code> 메시지로 받습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Window.cpp (발췌)"><span class="com">// 원시 마우스 입력 (시점 회전용 이동량 — 포그라운드일 때만 받는다)</span>
+RAWINPUTDEVICE Mouse{};
+Mouse.usUsagePage = <span class="num">0x01</span>; <span class="com">// HID_USAGE_PAGE_GENERIC</span>
+Mouse.usUsage     = <span class="num">0x02</span>; <span class="com">// HID_USAGE_GENERIC_MOUSE</span>
+Mouse.hwndTarget  = Hwnd;
+RegisterRawInputDevices(&amp;Mouse, <span class="num">1</span>, <span class="kw">sizeof</span>(Mouse));
+...
+<span class="kw">case</span> WM_INPUT:
+	<span class="kw">if</span> (... Raw.header.dwType == RIM_TYPEMOUSE &amp;&amp; (Raw.data.mouse.usFlags &amp; MOUSE_MOVE_ABSOLUTE) == <span class="num">0</span> ...)
+	{
+		Event.Type   = EWindowEventType::RawMouseMove;
+		Event.MouseX = Raw.data.mouse.lLastX;
+		Event.MouseY = Raw.data.mouse.lLastY;
+		Dispatch(Event);
+	}</pre>
+<p><code>MOUSE_MOVE_ABSOLUTE</code> 플래그가 붙은 보고(원격 데스크톱·펜 태블릿처럼 절대 좌표를 주는 장치)는 이동량이 아니므로 거릅니다. 이 값은 <code>FInput::GetLookDelta</code>(Lua <code>Input.GetLookDelta</code>)로, 그리고 액션 소스 <code>"MouseXY"</code>로 읽힙니다. 단위는 "장치 카운트/프레임"이라 감도(도/카운트)는 게임이 곱합니다.</p>
+<p>그런데 커서가 화면에 그대로 보이면 마우스를 휘두르는 동안 커서가 창 밖으로 나가 다른 창을 클릭해 버립니다. 그래서 FPS식 조작에는 <b>커서 잠금</b>이 필요합니다. <code>FWindow::SetCursorLocked</code>는 커서를 숨기고, <code>ClipCursor</code>로 커서를 창 가운데 <b>1×1 픽셀 사각형</b>에 가둡니다. 원시 입력은 커서 위치와 무관하므로 갇혀 있어도 이동량은 계속 들어옵니다.</p>
+<ul>
+	<li>다른 창이 앞에 있으면 잠그지 않고, 포커스를 잃으면(<code>WM_KILLFOCUS</code>) 즉시 풉니다 — Alt+Tab 했는데 커서가 사라져 있으면 사용자는 당황합니다.</li>
+	<li>창이 움직이면(<code>WM_MOVE</code>) 가둘 위치를 다시 계산합니다.</li>
+	<li>런타임에서 ESC는 먼저 잠금을 풀고, 에디터 플레이는 뷰포트 가운데를 잠금 점으로 씁니다(<code>SetCursorLockPoint</code>). Lua는 <code>Game.SetMouseLocked/IsMouseLocked</code>.</li>
+</ul>
+
+<h3 id="lec-48-actions"><span class="step">핵심 개념</span>키 대신 액션: 바인딩 · 수정자 · 합산 · 문턱</h3>
+<p><b>입력 액션</b>은 "게임이 알고 싶은 의도"에 이름을 붙인 것입니다: <code>Move</code>, <code>Look</code>, <code>Jump</code>. 액션에는 값 종류가 있고(버튼 / 1D 축 / 2D 축), 여러 개의 <b>바인딩</b>을 가집니다. 바인딩 하나 = 입력 소스 하나 + <b>수정자(modifier)</b> 목록입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/InputActions.h (발췌)"><span class="kw">struct</span> FInputBinding
+{
+	FInputSource                Source;    <span class="com">// 키 / 마우스 버튼 / 마우스 축 / 게임패드 버튼 / 게임패드 축</span>
+	std::vector&lt;FInputModifier&gt; Modifiers; <span class="com">// 순서대로 적용</span>
+};
+
+<span class="kw">struct</span> FInputAction
+{
+	std::string                Name;
+	EInputActionType           Type = EInputActionType::Button; <span class="com">// Button / Axis1D / Axis2D</span>
+	<span class="kw">float</span>                      ActuationThreshold = <span class="num">0.5f</span>;
+	std::vector&lt;FInputBinding&gt; Bindings;
+};</pre>
+<p>모든 소스는 일단 2D 값 하나로 읽힙니다: 키·버튼은 (1, 0) 또는 (0, 0), 1D 축은 (값, 0), 2D 축은 (X, Y). 여기에 수정자를 차례로 적용하고, 액션 값은 <b>모든 바인딩 결과의 합</b>입니다. 그러면 놀랍도록 단순한 규칙만으로 WASD를 2D 이동으로 바꿀 수 있습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="WASD를 2D 축으로 합성하기와 데드존">
+		<title>WASD를 2D 축으로 합성하기와 데드존</title>
+		<text x="20" y="26" class="t-bold">① 키 4개 → 2D 이동 (X = 오른쪽, Y = 앞)</text>
+		<path d="M200,160 H340" class="ln"/><path d="M200,160 H60" class="ln"/>
+		<path d="M200,160 V60" class="ln"/><path d="M200,160 V260" class="ln"/>
+		<path d="M200,160 V84" class="ln s2" stroke-width="2.6" marker-end="url(#arr)"/>
+		<path d="M200,160 H276" class="ln s1" stroke-width="2.6" marker-end="url(#arr)"/>
+		<path d="M200,160 L272,88" class="ln-d sa" marker-end="url(#arr)"/>
+		<text x="210" y="74" class="t-small">W: (1,0) → Swizzle → (0,1)</text>
+		<text x="280" y="176" class="t-small">D: (1,0)</text>
+		<text x="60" y="152" class="t-small">A: Negate → (−1,0)</text>
+		<text x="210" y="252" class="t-small">S: Swizzle + Negate → (0,−1)</text>
+		<text x="276" y="100" class="t-small fa">W+D = (1,1)</text>
+		<text x="40" y="290" class="t-muted">W+S = (0,0) → 서로 상쇄. 길이 1 초과는 캐릭터 쪽에서 자른다(46강)</text>
+
+		<text x="470" y="26" class="t-bold">② 원형 데드존 (Lower 0.25, Upper 1.0)</text>
+		<path d="M500,250 H830" class="ln"/><path d="M500,250 V50" class="ln"/>
+		<text x="830" y="292" text-anchor="end" class="t-muted">스틱 기울기 |v|</text>
+		<text x="510" y="44" class="t-muted">출력 크기</text>
+		<path d="M500,250 H575 L800,70 H830" class="ln s3" stroke-width="2.6"/>
+		<line x1="575" y1="250" x2="575" y2="256" class="ln"/><text x="575" y="270" text-anchor="middle" class="t-small">0.25</text>
+		<line x1="800" y1="250" x2="800" y2="256" class="ln"/><text x="800" y="270" text-anchor="middle" class="t-small">1.0</text>
+		<text x="492" y="74" text-anchor="end" class="t-small">1</text>
+		<line x1="500" y1="70" x2="800" y2="70" class="ln-d"/>
+		<text x="520" y="110" class="t-small">0.25 이하 = 0</text>
+		<text x="520" y="128" class="t-small">(손을 떼도 남는 떨림 무시)</text>
+		<text x="660" y="210" class="t-small">사이를 0~1로 다시 펼침</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 48-2.</b> 왼쪽: 바인딩마다 수정자로 방향을 정하고 합하면 키보드가 2D 축이 됩니다. 오른쪽: 데드존은 단순히 자르지 않고 남은 구간을 0~1로 다시 펼쳐, 데드존 바로 바깥에서 값이 0.25로 튀지 않게 합니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Core/InputActions.h — InputActionMath::Evaluate (발췌)"><span class="kw">for</span> (<span class="kw">const</span> FInputBinding&amp; Binding : Action.Bindings)
+{
+	<span class="kw">const</span> FVector2 Value = ApplyModifiers(Binding.Modifiers, Read(Binding.Source), DeltaSeconds);
+	<span class="kw">if</span> (Action.Type == EInputActionType::Button)
+	{
+		<span class="kw">const float</span> Magnitude = GetMagnitude(EInputActionType::Axis2D, Value);
+		Result.bActive        = Result.bActive || (Magnitude &gt; <span class="num">0.0f</span> &amp;&amp; Magnitude &gt;= Action.ActuationThreshold);
+	}
+	<span class="kw">else</span>
+	{
+		Result.Value += Value; <span class="com">// 축: 바인딩 결과의 합</span>
+	}
+}
+...
+<span class="kw">const float</span> Magnitude = GetMagnitude(Action.Type, Result.Value); <span class="com">// 2D = 길이, 그 외 |X|</span>
+Result.bActive        = Magnitude &gt; <span class="num">0.0f</span> &amp;&amp; Magnitude &gt;= Action.ActuationThreshold;</pre>
+<p>버튼 액션은 합하지 않고 "바인딩 중 하나라도 문턱을 넘었는가"입니다. 그래야 스페이스와 패드 A를 동시에 눌러도 2가 아니라 그냥 "눌림"입니다. <b>작동 문턱(actuation threshold)</b>은 축을 버튼처럼 쓸 때 의미가 있습니다. 트리거(0~1)를 "발사" 버튼에 묶으면 0.5 이상 당겼을 때만 켜집니다. "이번에 눌림/뗌"(<code>WasActionPressed/Released</code>)은 1강의 키와 똑같이 지난 프레임의 켜짐과 비교합니다.</p>
+<p>이 계산 전체가 <code>Core/InputActions.h</code>의 <b>순수 로직</b>입니다. 창도 전역 상태도 모르고, 소스를 읽는 방법은 템플릿 인자(<code>Read</code>)로 받습니다. 그래서 <code>InputActionTests</code>가 가짜 입력으로 수정자·합산·문턱을 모두 검증합니다.</p>
+<h4>수정자 다섯 가지</h4>
+<div class="tablewrap"><table class="t">
+	<tr><th>수정자</th><th>하는 일</th><th>쓰임</th></tr>
+	<tr><td><code>Negate</code></td><td>축별 부호 반전</td><td>A = (−1, 0), 스틱 Y 뒤집기</td></tr>
+	<tr><td><code>Swizzle</code></td><td>X ↔ Y 교환 (언리얼 YXZ)</td><td>W 키의 (1,0)을 앞쪽 (0,1)로</td></tr>
+	<tr><td><code>DeadZone</code></td><td>Lower 이하 0, Upper 이상 1, 사이를 다시 펼침. 원형(길이 기준) / 축별</td><td>스틱 떨림 제거</td></tr>
+	<tr><td><code>Scale</code></td><td>축별 배율</td><td>감도</td></tr>
+	<tr><td><code>ScaleByDeltaTime</code></td><td>× 프레임 시간</td><td>"초당" 값(스틱)을 "프레임당" 값(마우스)에 맞춤</td></tr>
+</table></div>
+<p>마지막 수정자가 왜 필요한지 샘플 프로젝트의 <code>Look</code> 액션이 잘 보여 줍니다. 마우스 원시 이동은 이미 "이번 프레임에 움직인 양"입니다. 반면 스틱은 "얼마나 기울였는가" — 즉 회전 <b>속도</b>입니다. 두 소스를 한 액션에 합하려면 단위를 맞춰야 하므로, 오른쪽 스틱은 데드존 → Y 반전 → Scale(1500, 1000) → ScaleByDeltaTime을 거쳐 "끝까지 밀면 초당 1500카운트만큼 마우스를 움직인 것"으로 바뀝니다. 그러면 게임 코드는 <code>Look</code> 하나만 읽고 같은 감도를 곱하면 됩니다.</p>
+<pre class="code" data-file="Projects/Sample/Config/Input.json — Move 액션 (발췌)">{
+	<span class="str">"Name"</span>: <span class="str">"Move"</span>,
+	<span class="str">"Type"</span>: <span class="str">"Axis2D"</span>,
+	<span class="str">"ActuationThreshold"</span>: <span class="num">0.1</span>,
+	<span class="str">"Bindings"</span>: [
+		{ <span class="str">"Source"</span>: <span class="str">"W"</span>, <span class="str">"Modifiers"</span>: [ { <span class="str">"Type"</span>: <span class="str">"Swizzle"</span> } ] },
+		{ <span class="str">"Source"</span>: <span class="str">"S"</span>, <span class="str">"Modifiers"</span>: [ { <span class="str">"Type"</span>: <span class="str">"Swizzle"</span> }, { <span class="str">"Type"</span>: <span class="str">"Negate"</span>, <span class="str">"X"</span>: <span class="kw">true</span>, <span class="str">"Y"</span>: <span class="kw">true</span> } ] },
+		{ <span class="str">"Source"</span>: <span class="str">"D"</span> },
+		{ <span class="str">"Source"</span>: <span class="str">"A"</span>, <span class="str">"Modifiers"</span>: [ { <span class="str">"Type"</span>: <span class="str">"Negate"</span>, <span class="str">"X"</span>: <span class="kw">true</span>, <span class="str">"Y"</span>: <span class="kw">true</span> } ] },
+		{ <span class="str">"Source"</span>: <span class="str">"Gamepad_LeftStick"</span>,
+		  <span class="str">"Modifiers"</span>: [ { <span class="str">"Type"</span>: <span class="str">"DeadZone"</span>, <span class="str">"Lower"</span>: <span class="num">0.25</span>, <span class="str">"Upper"</span>: <span class="num">1.0</span>, <span class="str">"Radial"</span>: <span class="kw">true</span> } ] }
+	]
+}</pre>
+
+<h3 id="lec-48-projecte"><span class="step">ProjectE에서는</span>프로젝트 매핑, 플레이어 재지정, 게임패드</h3>
+<h4>두 겹의 매핑</h4>
+<p>액션 목록과 기본 바인딩은 게임 디자이너가 정하는 <b>프로젝트 설정</b>입니다(39강의 설정 시스템, 섹션 "Input" → <code>&lt;프로젝트&gt;/Config/Input.json</code>, 커밋됨). 플레이어가 바꾼 키는 <b>사용자 파일</b> <code>&lt;Saved&gt;/Config/InputBindings.json</code>에 "재지정된 액션의 바인딩 목록"만 저장합니다. 실제로 쓰는 <b>유효 매핑</b>은 프로젝트 매핑 위에 재지정을 덮은 것입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Settings/InputSettings.h (발췌)"><span class="com">//   유효 매핑 = 프로젝트 매핑에 재지정을 덮은 것. FInput::UpdateActions가 이것을 쓴다 (주소 고정 — 바뀌면 같은 객체를 고쳐 쓴다)</span>
+<span class="com">// Action의 OldSource 바인딩을 NewSource로 바꾼다 (수정자 유지). OldSource가 비면(None) NewSource를 새 바인딩으로 더한다.</span>
+<span class="kw">bool</span> Rebind(std::string_view Action, <span class="kw">const</span> FInputSource&amp; OldSource, <span class="kw">const</span> FInputSource&amp; NewSource);
+<span class="com">// 한 액션(비우면 전부)의 재지정을 지워 프로젝트 바인딩으로</span>
+<span class="kw">void</span> ResetUserBindings(std::string_view Action = {});</pre>
+<p>왜 사용자 파일에 매핑 전체가 아니라 "바뀐 액션"만 저장할까요? 게임 업데이트로 새 액션이 추가되거나 기본 바인딩이 바뀌어도, 플레이어가 손대지 않은 액션은 새 기본값을 그대로 따르게 하기 위해서입니다. 또 재지정은 소스만 바꾸고 <b>수정자는 유지</b>합니다. W에 걸린 Swizzle은 플레이어가 W를 I로 바꿔도 여전히 필요하니까요. 자동 검증 실행은 사용자 파일을 읽지도 쓰지도 않습니다 — 개발자 PC의 개인 키 설정이 스크린샷 결과를 바꾸면 안 되기 때문입니다.</p>
+
+<h4>게임패드: XInput을 링크 없이</h4>
+<p>Xbox 호환 패드는 <b>XInput</b> API로 읽습니다. 그런데 XInput DLL은 Windows 버전에 따라 이름이 다르고(<code>xinput1_4.dll</code>, <code>xinput9_1_0.dll</code>, <code>xinput1_3.dll</code>), 정적으로 링크하면 해당 DLL이 없는 PC에서 실행 자체가 실패합니다. 그래서 <code>FGamepadInput</code>은 실행 중에 <code>LoadLibraryW</code>로 차례로 시도하고 <code>GetProcAddress</code>로 <code>XInputGetState</code>만 꺼내 씁니다. 하나도 없으면 "패드 연결 안 됨"으로 계속 동작합니다.</p>
+<ul>
+	<li><b>빈 슬롯은 드물게 확인</b>: <code>XInputGetState</code>는 연결 안 된 슬롯에서 느립니다. 연결된 슬롯은 매 프레임, 빈 슬롯은 1초마다(<code>ReconnectIntervalSeconds</code>) 확인합니다.</li>
+	<li><b>원시 값만</b>: 스틱 -32768~32767을 -1~1로, 트리거 0~255를 0~1로 바꿀 뿐 데드존은 넣지 않습니다. 데드존은 액션 수정자의 일입니다 — 한 곳에서만 처리해야 이중 데드존이 생기지 않습니다.</li>
+	<li><b>첫 번째 연결된 패드</b>가 <code>FInput</code>에 들어갑니다(<code>GetPrimary</code>). 로컬 분할 화면 같은 다중 패드는 아직 범위 밖입니다.</li>
+</ul>
+
+<h4>네트워크: 액션 "값"을 보낸다</h4>
+<p>멀티플레이에서 서버 스크립트가 <code>Input.GetAction("Move")</code>를 부르면 그 엔티티를 소유한 플레이어의 입력이 돌아와야 합니다. 클라이언트는 매 틱 입력 커맨드를 보내는데, 여기에 원시 키 상태뿐 아니라 <b>클라이언트가 자기 유효 매핑으로 계산한 액션 값</b>을 함께 싣습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="입력 커맨드와 액션 배치 해시">
+		<title>입력 커맨드와 액션 배치 해시</title>
+		<rect x="20" y="30" width="250" height="150" rx="10" class="k1"/>
+		<text x="145" y="56" text-anchor="middle" class="t-bold">클라이언트</text>
+		<text x="40" y="84" class="t-small">유효 매핑 = 프로젝트 + 재지정</text>
+		<text x="40" y="106" class="t-small">→ 액션 값 계산 (Move, Look, …)</text>
+		<text x="40" y="128" class="t-small">배치 해시 = FNV-1a(이름 + 종류,</text>
+		<text x="40" y="148" class="t-small">액션 순서대로)</text>
+
+		<rect x="310" y="40" width="250" height="130" rx="10" class="acc"/>
+		<text x="435" y="64" text-anchor="middle" class="t-bold">PlayerInput 메시지 (비신뢰)</text>
+		<text x="330" y="90" class="t-mono">순번, 키 비트, 마우스, yaw/pitch</text>
+		<text x="330" y="112" class="t-mono">배치 해시 (uint32)</text>
+		<text x="330" y="134" class="t-mono">액션 수, [작동, X, Y]…</text>
+		<text x="330" y="158" class="t-muted">상태 전체 → 손실돼도 다음 것이 복구</text>
+
+		<rect x="600" y="30" width="240" height="150" rx="10" class="k2"/>
+		<text x="720" y="56" text-anchor="middle" class="t-bold">서버</text>
+		<text x="620" y="84" class="t-small">해시 == 서버 매핑 해시?</text>
+		<text x="620" y="108" class="t-small">예 → 원격 FInput에 값 넣기</text>
+		<text x="620" y="128" class="t-small">(서버는 다시 계산하지 않음)</text>
+		<text x="620" y="156" class="t-small">아니오 → 액션 값만 버림 + 경고 1회</text>
+
+		<path d="M270,105 H306" class="ln" marker-end="url(#arr)"/>
+		<path d="M560,105 H596" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="214" text-anchor="middle" class="t-small">재지정은 클라이언트에만 있다 → 서버가 키로 다시 계산하면 플레이어의 키 설정이 무시된다</text>
+		<text x="430" y="236" text-anchor="middle" class="t-muted">액션 값은 "순서"로만 보내므로, 양쪽 액션 목록이 같은지 해시로 확인한다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 48-3.</b> 서버는 플레이어의 키 설정을 모릅니다. 그래서 해석된 결과(액션 값)를 받고, 그 값들이 서버의 어느 액션에 해당하는지는 배치 해시로 보증합니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Core/InputActions.cpp — GetLayoutHash"><span class="com">// 액션 이름 + 종류 순서의 해시 (네트워크 입력 커맨드가 액션 값을 순서로 보낼 때 양쪽 목록이 같은지 확인)</span>
+uint32 FInputMapping::GetLayoutHash() <span class="kw">const</span>
+{
+	uint32     Hash   = <span class="num">2166136261u</span>; <span class="com">// FNV-1a</span>
+	<span class="kw">const auto</span> Mix    = [&amp;Hash](uint8 Byte) { Hash = (Hash ^ Byte) * <span class="num">16777619u</span>; };
+	<span class="kw">for</span> (<span class="kw">const</span> FInputAction&amp; Action : Actions)
+	{
+		<span class="kw">for</span> (<span class="kw">const char</span> Char : Action.Name) { Mix(<span class="kw">static_cast</span>&lt;uint8&gt;(Char)); }
+		Mix(<span class="num">0</span>);
+		Mix(<span class="kw">static_cast</span>&lt;uint8&gt;(Action.Type));
+	}
+	<span class="kw">return</span> Hash;
+}</pre>
+<p>액션 이름 문자열을 매번 보내면 커맨드가 커집니다. 순서와 값만 보내고, "순서가 같다"는 사실은 4바이트 해시 하나로 확인합니다. 바인딩은 해시에 들어가지 않는다는 점에 주목하세요. 바인딩은 플레이어마다 달라도 되지만, 액션의 이름·종류·순서는 프로젝트 전체가 같아야 합니다.</p>
+
+<h3 id="lec-48-pitfalls"><span class="step">함정과 교훈</span>입력이 지나가는 길과 주인</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 — 클라이언트 입력이 서버에서 사라진다 (Phase 21 사용자 피드백)</b>
+	에디터를 리슨 서버로 띄우고 클라이언트 창 두 개를 붙였더니, 클라이언트에서는 아무리 키를 눌러도 캐릭터가 움직이지 않았습니다. 입력 코드는 멀쩡했습니다. 원인은 에디터의 게임 월드에 네트워크 드라이버가 <b>연결되어 있지 않아</b>, 클라이언트가 보낸 입력 커맨드 메시지를 받을 곳이 없어 버려지고 있었던 것입니다(에디터 클라이언트 모드의 입력 전송·RPC도 같은 원인). 수정: <code>FGameWorld::SetNetDriver</code>를 두고 에디터 네트워크 플레이(<code>FPlayInEditorNet</code>)가 준비·정지 때 연결·해제합니다. 입력 버그처럼 보여도 실제로는 "입력이 지나가는 길"의 문제인 경우가 많습니다. 자동 검증용 <code>--hold-keys</code>, <code>--play-client-hold-keys</code>가 이때 함께 생겼습니다.
+</div>
+<div class="callout tip">
+	<b class="t">입력의 주인을 정한다</b>
+	에디터 플레이 중에는 같은 창 안에 게임 뷰포트와 에디터 패널이 함께 있습니다. 그래서 게임에 가는 마우스 버튼은 <b>뷰포트 안에서 누른 것만</b> 인정하고, 빙의(possess)·해제와 입력 모드(GameOnly / GameAndUI / UIOnly)로 "지금 이 입력은 누구 것인가"를 정합니다(Phase 44, 36강). 입력 시스템은 값을 계산하는 일만큼 입력을 올바른 주인에게 보내는 라우팅이 중요합니다.
+</div>
+<div class="callout warn">
+	<b class="t">알려진 한계와 규칙</b>
+	<ul>
+		<li>한글 입력 모드에서 IME가 WASD를 가로채는 문제가 Phase 32 후속 과제로 남아 있습니다(포커스가 없을 때 IME를 끄는 방안 기록됨). 키보드 입력도 운영체제의 텍스트 입력 계층을 거친다는 것을 잊기 쉽습니다.</li>
+		<li>앱 루프 밖(테스트)에서는 <code>FInput::UpdateActions</code>를 직접 불러야 액션 값이 갱신됩니다.</li>
+		<li>순수 로직(수정자, 합산, 문턱, JSON, 소스 이름)을 바꾸면 <code>InputActionTests</code>도 함께 고칩니다.</li>
+		<li>자동 검증용 입력 흉내: <code>--hold-keys W,Space</code>, <code>--hold-gamepad A,LeftY=1</code>.</li>
+	</ul>
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>시점 회전은 커서 위치가 아니라 Raw Input(<code>WM_INPUT</code>)의 가속 없는 이동량으로. 커서 잠금 = 숨김 + 가운데 1px <code>ClipCursor</code>, 포커스를 잃으면 해제.</li>
+		<li>액션 = 이름 + 종류 + 바인딩(소스 + 수정자). 축은 바인딩 결과의 합, 버튼은 하나라도 문턱을 넘으면 켜짐.</li>
+		<li>수정자로 WASD를 2D 축으로, 스틱 속도를 마우스 단위로 바꾼다. 데드존은 수정자 한 곳에서만.</li>
+		<li>유효 매핑 = 프로젝트 매핑 + 플레이어 재지정(바뀐 액션만, 수정자 유지).</li>
+		<li>XInput은 동적 로드, 네트워크는 액션 값 + 배치 해시.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 2D 이동 액션의 데드존을 "축별"로 하면 원형일 때와 무엇이 다를까요?</summary>
+	축별 데드존은 X와 Y를 따로 자르므로 스틱을 대각선 근처로 살짝 기울이면 한 축만 살아남아 이동이 축 방향으로 "달라붙습니다"(십자 모양 데드존). 원형(길이 기준)은 방향은 그대로 두고 크기만 다시 펼치므로 모든 방향이 고르게 반응합니다. 그래서 스틱에는 <code>Radial</code>이 기본이고, 축별은 1D 트리거처럼 독립 축에 씁니다.
+</details>
+<details class="quiz"><summary>Q2. 플레이어가 Jump를 Space에서 F로 재지정했습니다. 서버가 원시 키 비트로 액션을 다시 계산한다면 무슨 일이 생길까요?</summary>
+	서버는 프로젝트 매핑만 알기 때문에 Space가 눌리지 않았으니 점프하지 않습니다. 플레이어가 F를 눌러도 서버에서 캐릭터가 뛰지 않고, 예측 클라이언트에서는 뛰었다가 보정으로 끌려 내려옵니다. 클라이언트가 자기 유효 매핑으로 계산한 액션 값을 보내는 이유입니다.
+</details>
+<details class="quiz"><summary>Q3. 버튼 액션도 축처럼 "바인딩 결과의 합 ≥ 문턱"으로 판정하면 어떤 문제가 있을까요?</summary>
+	값이 (1,0)인 바인딩 두 개를 동시에 누르면 합이 2가 되는 것은 버튼에선 무해하지만, 반대 방향 수정자가 붙은 바인딩(예: Negate)이 섞이면 합이 0이 되어 둘 다 눌렀는데 꺼질 수 있습니다. 버튼은 "어느 하나라도 켜졌는가"라는 의미이므로 OR로 판정하는 것이 맞습니다.
+</details>
+</article>
+
+<!-- ======================================================= 49강 ======================================================= -->
+<article class="lecture" id="lec-49">
+<header>
+	<div class="no">49강</div>
+	<h2 id="lec-49-title">AI: 비헤이비어 트리와 내비게이션</h2>
+	<div class="meta">관련 Phase: 18 · 살펴볼 곳: <code>Engine/Source/AI/BehaviorTree/BehaviorTreeInstance.h</code>(머리 주석), <code>BehaviorTreeTypes.h</code>, <code>BehaviorTreeNode.h</code>, <code>Blackboard.h</code>, <code>BehaviorTreeNodeRegistry.h</code>, <code>AI/LuaNodes.h</code>, <code>AI/Navigation/NavMesh.h/.cpp</code>, <code>NavCoordinates.h</code>, <code>Projects/Sample/Content/AI/Demo/TrainingGuard.ebt</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>유한 상태 기계(FSM)와 비헤이비어 트리(BT)를 비교하고, BT의 노드 종류(컴포지트·태스크·데코레이터·서비스)를 설명할 수 있습니다.</li>
+		<li>"매 틱 루트부터 다시 평가하지 않는" 이벤트 기반 실행기와 블랙보드 관찰자 중단(Self/LowerPriority) 규칙을 이해합니다.</li>
+		<li>Recast가 삼각형에서 내비메시를 굽는 단계와, Detour가 A* + 직선화로 경로를 만드는 과정을 압니다.</li>
+		<li>엔진(Z-up 왼손)과 Recast(Y-up) 사이 좌표 변환에서 와인딩을 뒤집어야 하는 이유를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-49-why"><span class="step">왜 필요한가</span>"생각하고" "걸어가는" 적</h3>
+<p>경비병 하나를 만든다고 합시다. 평소엔 순찰 지점을 돌고, 플레이어가 보이면 돌아서서 쫓아가고, 놓치면 다시 순찰합니다. 이 요구에는 성격이 다른 두 문제가 섞여 있습니다.</p>
+<ul>
+	<li><b>의사결정</b>: 지금 무엇을 할까? (순찰 / 추적 / 공격) — 상황이 바뀌면 하던 일을 그만두고 다른 일을 해야 합니다.</li>
+	<li><b>길 찾기</b>: 저기까지 어떻게 갈까? — 벽을 돌아가고, 계단을 오르고, 좁은 틈은 피해야 합니다.</li>
+</ul>
+<p>ProjectE는 사용자 요청("언리얼 비헤이비어 트리처럼")에 따라 Phase 18에서 의사결정은 <b>비헤이비어 트리</b>, 길 찾기는 <b>Recast/Detour</b>(오픈소스 표준 내비메시 라이브러리)로 만들었습니다. AI는 서버(와 Standalone)에서만 돌고, 클라이언트는 결과 트랜스폼을 복제로만 받습니다.</p>
+
+<h3 id="lec-49-bt"><span class="step">핵심 개념</span>FSM에서 비헤이비어 트리로</h3>
+<p>가장 단순한 AI 구조는 <b>유한 상태 기계(FSM)</b>입니다. 상태(순찰, 추적, 공격…)와 상태 사이 전이 조건을 그립니다. 상태가 셋일 때는 명쾌하지만, 상태가 늘수록 전이 화살표가 거의 제곱으로 늘어납니다. "어느 상태에서든 체력이 낮으면 도망"을 넣으려면 모든 상태에서 도망으로 가는 화살표를 그려야 합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="상태 기계와 비헤이비어 트리 비교">
+		<title>상태 기계와 비헤이비어 트리 비교</title>
+		<text x="200" y="26" text-anchor="middle" class="t-bold">FSM: 전이가 상태 수의 제곱으로</text>
+		<rect x="40" y="60" width="100" height="36" rx="18" class="k1"/><text x="90" y="83" text-anchor="middle" class="t-small">순찰</text>
+		<rect x="260" y="60" width="100" height="36" rx="18" class="k1"/><text x="310" y="83" text-anchor="middle" class="t-small">추적</text>
+		<rect x="260" y="200" width="100" height="36" rx="18" class="k1"/><text x="310" y="223" text-anchor="middle" class="t-small">공격</text>
+		<rect x="40" y="200" width="100" height="36" rx="18" class="k1"/><text x="90" y="223" text-anchor="middle" class="t-small">수색</text>
+		<rect x="150" y="130" width="100" height="36" rx="18" class="k5"/><text x="200" y="153" text-anchor="middle" class="t-small">도망</text>
+		<path d="M140,72 H256" class="ln" marker-end="url(#arr)"/>
+		<path d="M256,88 H144" class="ln" marker-end="url(#arr)"/>
+		<path d="M318,96 V196" class="ln" marker-end="url(#arr)"/>
+		<path d="M302,196 V100" class="ln" marker-end="url(#arr)"/>
+		<path d="M256,218 H144" class="ln" marker-end="url(#arr)"/>
+		<path d="M90,200 V100" class="ln" marker-end="url(#arr)"/>
+		<path d="M120,96 L172,128" class="ln s5" marker-end="url(#arr)"/>
+		<path d="M280,96 L232,128" class="ln s5" marker-end="url(#arr)"/>
+		<path d="M280,200 L232,168" class="ln s5" marker-end="url(#arr)"/>
+		<path d="M120,200 L172,168" class="ln s5" marker-end="url(#arr)"/>
+		<text x="200" y="270" text-anchor="middle" class="t-muted">"체력 낮으면 도망" = 모든 상태에서 화살표</text>
+
+		<text x="640" y="26" text-anchor="middle" class="t-bold">BT: 우선순위가 위치로 표현된다</text>
+		<rect x="580" y="44" width="120" height="34" rx="6" class="acc"/><text x="640" y="66" text-anchor="middle" class="t-small t-bold">Selector</text>
+		<rect x="450" y="120" width="110" height="34" rx="6" class="k5"/><text x="505" y="142" text-anchor="middle" class="t-small">도망 가지</text>
+		<rect x="585" y="120" width="110" height="34" rx="6" class="k3"/><text x="640" y="142" text-anchor="middle" class="t-small">전투 가지</text>
+		<rect x="720" y="120" width="110" height="34" rx="6" class="k2"/><text x="775" y="142" text-anchor="middle" class="t-small">순찰 가지</text>
+		<path d="M610,78 L510,116" class="ln" marker-end="url(#arr)"/>
+		<path d="M640,78 V116" class="ln" marker-end="url(#arr)"/>
+		<path d="M670,78 L770,116" class="ln" marker-end="url(#arr)"/>
+		<text x="505" y="176" text-anchor="middle" class="t-muted">◆ 체력 &lt; 30%</text>
+		<text x="640" y="176" text-anchor="middle" class="t-muted">◆ Target 있음</text>
+		<text x="775" y="176" text-anchor="middle" class="t-muted">(조건 없음)</text>
+		<path d="M460,220 H820" class="ln" marker-end="url(#arr)"/>
+		<text x="640" y="244" text-anchor="middle" class="t-small">왼쪽이 높은 우선순위 — 처음 성공하는 가지를 실행</text>
+		<text x="640" y="270" text-anchor="middle" class="t-muted">새 행동 = 가지 하나 추가 (기존 가지는 그대로)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 49-1.</b> FSM은 "어디서 어디로"를 모두 그려야 하지만, BT는 "무엇을 어떤 우선순위로 시도할지"를 트리 모양으로 씁니다.</figcaption>
+</figure>
+<p><b>비헤이비어 트리(behavior tree)</b>는 행동을 트리로 조립합니다. 노드는 실행되면 <b>Running</b>(아직 하는 중), <b>Success</b>, <b>Failure</b> 중 하나를 돌려줍니다. ProjectE의 노드 분류는 네 가지입니다(<code>EBTNodeCategory</code>).</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>분류</th><th>역할</th><th>ProjectE 기본 노드</th></tr>
+	<tr><td>컴포지트 (Composite)</td><td>자식을 가지고 어떤 순서로 실행할지 정한다</td><td><code>Selector</code>(처음 성공하는 자식까지), <code>Sequence</code>(하나라도 실패하면 중단), <code>SimpleParallel</code></td></tr>
+	<tr><td>태스크 (Task)</td><td>실제 행동. 잎 노드</td><td><code>Wait</code>, <code>SetBlackboard</code>, <code>Log</code>, 씬 연동 <code>MoveTo</code>/<code>RotateTo</code>/<code>PlayAnimation</code></td></tr>
+	<tr><td>데코레이터 (Decorator)</td><td>노드에 붙는 조건·수식어. 실행을 막거나 결과를 바꾼다</td><td><code>Blackboard</code>(키 조건), <code>Cooldown</code>, <code>Loop</code>, <code>TimeLimit</code>, <code>Inverter</code>, <code>ForceSuccess</code></td></tr>
+	<tr><td>서비스 (Service)</td><td>가지가 활성인 동안 주기적으로 도는 일 (감지 등)</td><td>Lua 서비스로 작성 (아래)</td></tr>
+</table></div>
+<p>여기에 <b>블랙보드(blackboard)</b>가 더해집니다. 트리 인스턴스마다 하나씩 있는 타입 있는 키-값 저장소(Bool/Int/Float/Vector/Entity/String)입니다. 서비스가 "보이는 적"을 <code>Target</code> 키에 쓰고, 데코레이터가 <code>Target</code>이 있는지 보고, 태스크가 <code>Target</code>으로 이동합니다. 노드끼리 서로를 모르고 블랙보드로만 대화하므로 노드를 재사용하기 쉽습니다.</p>
+
+<h3 id="lec-49-executor"><span class="step">핵심 개념</span>이벤트 기반 실행기와 관찰자 중단</h3>
+<p>가장 단순한 BT 실행기는 매 틱 루트부터 트리를 다시 평가합니다. 이해하기 쉽지만 두 가지 문제가 있습니다. 매 프레임 모든 조건을 다시 계산하므로 비싸고, "하던 일"이라는 개념이 약해 3초짜리 Wait 같은 태스크가 매 틱 새로 시작될 수 있습니다. 언리얼과 ProjectE는 <b>이벤트 기반</b> 실행기를 씁니다.</p>
+<pre class="code" data-file="Engine/Source/AI/BehaviorTree/BehaviorTreeInstance.h (머리 주석)"><span class="com">// 비헤이비어 트리 실행기 (UE식 이벤트 기반).</span>
+<span class="com">//  - 매 틱 루트부터 재평가하지 않는다. 실행 중(Running) 태스크만 틱하고, 서비스는 활성 가지에서만 간격마다 틱한다</span>
+<span class="com">//  - 블랙보드 관찰 키가 바뀌면 대기열에 넣고 다음 Tick 시작에서 중단 규칙을 평가한다 (BehaviorTreeTypes.h의 EBTAbortMode)</span>
+<span class="com">//  - 루트가 끝나면 다음 틱에 루트부터 다시 시작한다</span>
+<span class="com">//  - 이번 틱에 시작된 태스크/서비스/데코레이터는 그 틱에 틱하지 않는다</span>
+<span class="com">//  - 틱(또는 Start)당 노드 방문 예산을 넘으면 남은 진입은 다음 틱으로 미룬다 (즉시 끝나는 노드를 도는 무한 Loop 대비)</span>
+<span class="com">// 한 틱의 순서: 지연 진입(루트 재시작/병렬 배경 재시작) → 블랙보드 중단 평가 → 진입 처리 → 서비스/데코레이터/태스크 틱 → 진입 처리</span></pre>
+<p>그렇다면 순찰 중에 적이 보이면 어떻게 즉시 추적으로 바꿀까요? 매 틱 다시 평가하지 않으니, <b>바뀌었을 때만</b> 알림을 받아야 합니다. 블랙보드는 값이 <b>실제로 바뀔 때만</b> 관찰자를 부르고, 데코레이터는 자기가 보는 키(<code>GetObservedKeys</code>)와 <b>중단 모드(abort mode)</b>를 선언합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>중단 모드</th><th>언제 무엇을</th><th>예</th></tr>
+	<tr><td><code>None</code></td><td>진입할 때만 검사</td><td>한 번 정하면 끝까지</td></tr>
+	<tr><td><code>Self</code></td><td>붙은 노드가 <b>실행 중</b>인데 조건이 거짓이 되면 그 가지를 중단</td><td>추적 중 Target을 잃으면 추적 중단</td></tr>
+	<tr><td><code>LowerPriority</code></td><td>부모에서 이 노드보다 <b>뒤(낮은 우선순위)</b> 자식이 실행 중인데 조건이 참이 되면, 그 자식을 중단하고 이 노드를 실행</td><td>순찰 중 Target이 생기면 순찰 중단 → 추적</td></tr>
+	<tr><td><code>Both</code></td><td>둘 다</td><td>경비병의 추적 가지</td></tr>
+</table></div>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="경비병 비헤이비어 트리와 관찰자 중단">
+		<title>경비병 비헤이비어 트리와 관찰자 중단</title>
+		<rect x="330" y="20" width="200" height="50" rx="8" class="acc"/>
+		<text x="430" y="42" text-anchor="middle" class="t-bold">Selector (루트)</text>
+		<text x="430" y="60" text-anchor="middle" class="t-small">⚙ LuaService: GuardSenses</text>
+
+		<rect x="90" y="110" width="280" height="56" rx="8" class="k3"/>
+		<text x="230" y="132" text-anchor="middle" class="t-small">◆ Blackboard: Target IsSet (Both)</text>
+		<text x="230" y="154" text-anchor="middle" class="t-bold">① Sequence — 추적</text>
+		<rect x="490" y="110" width="280" height="56" rx="8" class="k2"/>
+		<text x="630" y="140" text-anchor="middle" class="t-bold">② Sequence — 순찰</text>
+
+		<path d="M400,70 L250,106" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,70 L610,106" class="ln" marker-end="url(#arr)"/>
+
+		<rect x="20" y="210" width="100" height="40" rx="6" class="box"/><text x="70" y="226" text-anchor="middle" class="t-small">RotateTo</text><text x="70" y="242" text-anchor="middle" class="t-muted">Target</text>
+		<rect x="130" y="210" width="110" height="40" rx="6" class="box"/><text x="185" y="226" text-anchor="middle" class="t-small">MoveTo</text><text x="185" y="242" text-anchor="middle" class="t-muted">Target, 230cm</text>
+		<rect x="250" y="210" width="100" height="40" rx="6" class="box"/><text x="300" y="226" text-anchor="middle" class="t-small">Wait</text><text x="300" y="242" text-anchor="middle" class="t-muted">0.4초</text>
+		<path d="M180,166 L80,206" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,166 L190,206" class="ln" marker-end="url(#arr)"/>
+		<path d="M270,166 L300,206" class="ln" marker-end="url(#arr)"/>
+
+		<rect x="450" y="210" width="140" height="40" rx="6" class="box"/><text x="520" y="226" text-anchor="middle" class="t-small">LuaTask</text><text x="520" y="242" text-anchor="middle" class="t-muted">GuardNextWaypoint</text>
+		<rect x="600" y="210" width="120" height="40" rx="6" class="box"/><text x="660" y="226" text-anchor="middle" class="t-small">MoveTo</text><text x="660" y="242" text-anchor="middle" class="t-muted">PatrolPoint</text>
+		<rect x="730" y="210" width="110" height="40" rx="6" class="box"/><text x="785" y="226" text-anchor="middle" class="t-small">Wait</text><text x="785" y="242" text-anchor="middle" class="t-muted">2초 ± 0.8</text>
+		<path d="M580,166 L525,206" class="ln" marker-end="url(#arr)"/>
+		<path d="M630,166 L655,206" class="ln" marker-end="url(#arr)"/>
+		<path d="M690,166 L780,206" class="ln" marker-end="url(#arr)"/>
+
+		<path d="M370,120 C 420,100 450,100 486,120" class="ln sa" marker-end="url(#arr)"/>
+		<text x="428" y="96" text-anchor="middle" class="t-small fa">LowerPriority</text>
+		<text x="20" y="286" class="t-small">Target이 생김 → ②(순찰) 실행 중이면 중단하고 ① 시작 (LowerPriority)</text>
+		<text x="20" y="310" class="t-small">Target이 사라짐 → ①(추적) 실행 중이면 중단 → Selector가 ② 순찰로 (Self)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 49-2.</b> 샘플 <code>AI/Demo/TrainingGuard.ebt</code>의 실제 구조. 감지는 루트의 Lua 서비스가, 전환은 데코레이터의 중단 모드 <code>Both</code>가 맡습니다. 트리 어디에도 "순찰 → 추적" 전이 화살표가 없습니다.</figcaption>
+</figure>
+<p>중단 평가에는 두 가지 세부 규칙이 있습니다. 첫째, 관찰 키가 바뀌면 바로 평가하지 않고 대기열에 넣었다가 <b>다음 Tick 시작</b>에 평가합니다. 노드 콜백 도중(트리를 순회하는 중)에 다른 가지를 중단하면 순회 중인 자료구조가 바뀌기 때문입니다 — 45강에서 물리 콜백 안에서 게임 코드를 부르지 않은 것과 같은 이유입니다. 둘째, 조건 <b>결과가 바뀐 경우에만</b> 중단 규칙을 적용합니다. Target이 적 A에서 적 B로 바뀌어도 "IsSet"은 계속 참이므로 추적을 다시 시작하지 않습니다.</p>
+<pre class="code" data-file="Engine/Source/AI/BehaviorTree/BehaviorTreeInstance.cpp — EvaluatePendingAborts (발췌)"><span class="com">// 조건 결과가 바뀐 경우에만 중단 규칙을 적용한다 (UE의 ResultChange 알림)</span>
+<span class="kw">const bool</span> bCondition = Decorator.Node-&gt;CalculateCondition(*<span class="kw">this</span>);
+<span class="kw">if</span> (Decorator.LastCondition == (bCondition ? <span class="num">1</span> : <span class="num">0</span>)) { <span class="kw">continue</span>; }
+Decorator.LastCondition = bCondition ? <span class="num">1</span> : <span class="num">0</span>;
+...
+<span class="kw">if</span> (bSelf &amp;&amp; !bCondition &amp;&amp; Node.bActive)
+{
+	AbortAndFail(Node); <span class="com">// Self: 실행 중인 가지 중단 → 부모에 Failure</span>
+	<span class="kw">continue</span>;
+}
+<span class="kw">if</span> (bLower &amp;&amp; bCondition &amp;&amp; !Node.bActive)
+{
+	<span class="com">// LowerPriority: 부모가 이 노드보다 뒤 자식을 실행 중이면 그 자식을 중단하고 이 노드부터 다시 실행</span>
+	FRuntimeNode* Parent = Node.Parent;
+	<span class="kw">if</span> (Parent &amp;&amp; Parent-&gt;bActive &amp;&amp; !Parent-&gt;bParallel &amp;&amp; Parent-&gt;CurrentChild &gt; Node.ChildIndex)
+	{
+		AbortSubtree(*Parent-&gt;Children[Parent-&gt;CurrentChild]);
+		SelectChild(*Parent, Node.ChildIndex);
+	}
+}</pre>
+<p>"이번 틱에 시작된 노드는 그 틱에 틱하지 않는다"와 "틱당 방문 예산 1000"도 의미가 있습니다. 즉시 Success를 돌려주는 태스크를 <code>Loop</code>로 무한히 돌리면 한 틱 안에서 영원히 끝나지 않습니다. 예산을 넘으면 남은 진입은 다음 틱으로 미뤄서 게임이 멈추지 않게 합니다.</p>
+
+<h3 id="lec-49-projecte"><span class="step">ProjectE에서는</span>노드 레지스트리, 소유자, Lua 노드</h3>
+<p>노드는 이름으로 <code>FBehaviorTreeNodeRegistry::Get()</code>에 등록되고, <code>.ebt</code>(JSON)는 노드 이름과 파라미터만 저장합니다. 등록 정보에는 <b>소유자 태그</b>가 있습니다. 엔진 기본 노드는 "Engine", 게임 모듈 DLL이 <code>OnLoad</code>에서 등록한 C++ 노드는 Owner를 비우면 그 모듈 이름이 됩니다. 모듈을 내릴 때(핫 리로드, 12강) <code>UnregisterOwner(모듈 이름)</code>로 그 모듈의 노드를 한 번에 지웁니다. 단, 노드 객체의 코드가 그 DLL 안에 있으므로, 해제 전에 그 노드를 쓰는 트리 인스턴스를 먼저 파기해야 합니다.</p>
+<p>Lua로도 노드를 만들 수 있습니다. <code>LuaTask</code>/<code>LuaDecorator</code>/<code>LuaService</code>라는 C++ 노드가 파라미터로 스크립트 경로를 받아 스크립트 객체를 만들고 부릅니다. 형식은 스크립트 컴포넌트와 같은 클래스 테이블입니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/Demo/Training/GuardNextWaypoint.lua (BT Lua 태스크)"><span class="kw">local</span> GuardNextWaypoint = {
+	Properties = {},
+}
+
+<span class="kw">function</span> GuardNextWaypoint:OnExecute()
+	<span class="kw">local</span> Guard = self.entity:GetScript()
+	<span class="kw">if</span> Guard == <span class="kw">nil</span> <span class="kw">or</span> Guard.NextWaypoint == <span class="kw">nil</span> <span class="kw">then return</span> <span class="str">"Failure"</span> <span class="kw">end</span>
+	<span class="kw">local</span> Point = Guard:NextWaypoint()
+	<span class="kw">if</span> Point == <span class="kw">nil</span> <span class="kw">then return</span> <span class="str">"Failure"</span> <span class="kw">end</span>
+	self.entity:GetBlackboard():Set(<span class="str">"PatrolPoint"</span>, Point)
+	<span class="kw">return</span> <span class="str">"Success"</span>
+<span class="kw">end</span>
+
+<span class="kw">return</span> GuardNextWaypoint</pre>
+<p>태스크는 <code>OnExecute</code>/<code>OnTick(dt)</code>/<code>OnAbort</code>, 데코레이터는 <code>CanExecute</code>(+ ObservedKeys/AbortMode), 서비스는 <code>OnBecomeRelevant</code>/<code>OnTick</code>/<code>OnCeaseRelevant</code>를 정의합니다(<code>AI/LuaNodes.h</code>). 그런데 AI 모듈과 Scripting 모듈은 서로를 모릅니다(0강의 의존 규칙). Lua → AI는 <code>FScriptAIHooks</code>(블랙보드·이동), AI → Lua는 <code>FAIScriptHooks</code>(스크립트 객체 생성·호출)라는 함수 묶음으로만 통하고, 둘을 아는 <code>FGameWorld::ConnectScriptsAndAI</code>가 연결합니다. 갱신 순서는 스크립트 → 게임 모듈 → <b>AI</b> → 물리입니다.</p>
+
+<h3 id="lec-49-navmesh"><span class="step">핵심 개념</span>내비메시 굽기 — Recast의 단계</h3>
+<p>길 찾기의 고전은 격자(grid) 위 A*입니다. 하지만 3D 지형·계단·경사가 있는 세계를 격자로 덮으면 칸이 수백만 개가 되고, 경로가 계단 모양으로 꺾입니다. <b>내비게이션 메시(navigation mesh)</b>는 "걸을 수 있는 바닥"을 볼록 다각형 몇백 개로 요약한 것입니다. 다각형 하나 안에서는 어느 두 점이든 직선으로 갈 수 있으므로(볼록성), 길 찾기는 다각형 그래프 위에서 하면 됩니다.</p>
+<p>문제는 씬의 삼각형(렌더용 메시)에서 이것을 만드는 일입니다. 렌더 메시는 겹치고, 구멍이 있고, 걸을 수 없는 천장·벽이 섞여 있습니다. <b>Recast</b>는 이를 <b>복셀화</b>로 해결합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="Recast 내비메시 굽기 단계">
+		<title>Recast 내비메시 굽기 단계</title>
+		<rect x="20" y="20" width="190" height="80" rx="10" class="box"/>
+		<text x="115" y="44" text-anchor="middle" class="t-bold">① 래스터화</text>
+		<text x="115" y="66" text-anchor="middle" class="t-small">삼각형 → 높이장 (복셀 기둥)</text>
+		<text x="115" y="86" text-anchor="middle" class="t-muted">경사 ≤ 45° 면만 걸을 수 있음 표시</text>
+
+		<rect x="230" y="20" width="190" height="80" rx="10" class="box"/>
+		<text x="325" y="44" text-anchor="middle" class="t-bold">② 걸러내기</text>
+		<text x="325" y="66" text-anchor="middle" class="t-small">턱(40cm) 넘기, 낭떠러지 끝,</text>
+		<text x="325" y="86" text-anchor="middle" class="t-small">천장 낮은 곳(180cm 미만) 제거</text>
+
+		<rect x="440" y="20" width="190" height="80" rx="10" class="box"/>
+		<text x="535" y="44" text-anchor="middle" class="t-bold">③ 압축 + 침식</text>
+		<text x="535" y="66" text-anchor="middle" class="t-small">빈 공간만 남긴 높이장,</text>
+		<text x="535" y="86" text-anchor="middle" class="t-small">벽에서 에이전트 반경만큼 깎기</text>
+
+		<rect x="650" y="20" width="190" height="80" rx="10" class="box"/>
+		<text x="745" y="44" text-anchor="middle" class="t-bold">④ 영역 나누기</text>
+		<text x="745" y="66" text-anchor="middle" class="t-small">거리장 → 유역(watershed)</text>
+		<text x="745" y="86" text-anchor="middle" class="t-muted">작은 영역 제거·병합</text>
+
+		<rect x="650" y="130" width="190" height="80" rx="10" class="box"/>
+		<text x="745" y="154" text-anchor="middle" class="t-bold">⑤ 윤곽선</text>
+		<text x="745" y="176" text-anchor="middle" class="t-small">영역 경계를 다각형 선으로,</text>
+		<text x="745" y="196" text-anchor="middle" class="t-small">오차 26cm 안으로 단순화</text>
+
+		<rect x="440" y="130" width="190" height="80" rx="10" class="box"/>
+		<text x="535" y="154" text-anchor="middle" class="t-bold">⑥ 폴리곤 메시</text>
+		<text x="535" y="176" text-anchor="middle" class="t-small">윤곽 → 볼록 다각형</text>
+		<text x="535" y="196" text-anchor="middle" class="t-small">(정점 ≤ 6개)</text>
+
+		<rect x="230" y="130" width="190" height="80" rx="10" class="box"/>
+		<text x="325" y="154" text-anchor="middle" class="t-bold">⑦ 디테일 메시</text>
+		<text x="325" y="176" text-anchor="middle" class="t-small">다각형 안 높이를 표본으로</text>
+		<text x="325" y="196" text-anchor="middle" class="t-small">보정 (경사·계단 높이)</text>
+
+		<rect x="20" y="130" width="190" height="80" rx="10" class="acc"/>
+		<text x="115" y="154" text-anchor="middle" class="t-bold">⑧ Detour 데이터</text>
+		<text x="115" y="176" text-anchor="middle" class="t-small">dtCreateNavMeshData</text>
+		<text x="115" y="196" text-anchor="middle" class="t-small">→ .enav 파일로 저장</text>
+
+		<path d="M210,60 H226" class="ln" marker-end="url(#arr)"/>
+		<path d="M420,60 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M630,60 H646" class="ln" marker-end="url(#arr)"/>
+		<path d="M745,100 V126" class="ln" marker-end="url(#arr)"/>
+		<path d="M650,170 H634" class="ln" marker-end="url(#arr)"/>
+		<path d="M440,170 H424" class="ln" marker-end="url(#arr)"/>
+		<path d="M230,170 H214" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="248" text-anchor="middle" class="t-small">복셀 크기: 수평 CellSize 20cm, 수직 CellHeight 10cm (FNavMeshBuildSettings 기본값)</text>
+		<text x="430" y="272" text-anchor="middle" class="t-muted">"걸을 수 있는가"를 삼각형이 아니라 복셀 기둥 위의 빈 공간으로 판단 → 겹치고 구멍 난 렌더 메시도 처리된다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 49-3.</b> <code>FNavMesh::Build</code>가 부르는 Recast 함수 순서(<code>rcRasterizeTriangles</code> → <code>rcFilter*</code> → <code>rcBuildCompactHeightfield</code>·<code>rcErodeWalkableArea</code> → <code>rcBuildDistanceField</code>·<code>rcBuildRegions</code> → <code>rcBuildContours</code> → <code>rcBuildPolyMesh</code> → <code>rcBuildPolyMeshDetail</code> → <code>dtCreateNavMeshData</code>).</figcaption>
+</figure>
+<p>핵심은 ③의 <b>침식(erode)</b>입니다. 에이전트는 점이 아니라 반경 35cm인 원기둥이므로, 벽에서 35cm 안쪽은 "중심이 갈 수 없는 곳"입니다. 내비메시를 반경만큼 미리 깎아 두면 이후 길 찾기는 에이전트를 <b>점</b>으로 취급해도 벽에 부딪히지 않습니다. 설정 값(에이전트 반경/키/턱/경사, 복셀 크기 …)은 cm·도로 받아 <code>FNavMesh::Build</code>가 복셀 단위로 바꿉니다(예: <code>walkableRadius = ceil(AgentRadius / CellSize)</code>).</p>
+<p>에디터에서는 도구 메뉴의 내비메시 굽기(<code>FNavMeshBaker</code>)가 씬의 보이는 정적 메시를 모아 굽습니다. 동적 강체, AI 에이전트, 스크립트 엔티티와 그 자손은 제외합니다 — 움직이는 것을 장애물로 구우면 영원히 그 자리에 구멍이 남기 때문입니다. 결과는 씬 옆 <code>.enav</code>(매직 + 버전 + 설정 원본 + Detour 타일 + FNV-1a 해시)이고, <code>FNavMeshComponent</code>가 그 경로를 가집니다.</p>
+
+<h3 id="lec-49-path"><span class="step">핵심 개념</span>Detour: 다각형 위 A*와 경로 직선화</h3>
+<p>길 찾기는 두 단계입니다.</p>
+<ol>
+	<li><b>다각형 경로(A*)</b>: 다각형을 노드, 이웃 다각형을 간선으로 보고 A*로 시작 다각형에서 끝 다각형까지 다각형 열을 찾습니다. A*는 각 노드에 f = g + h(지금까지 비용 g + 목표까지 추정 h, 보통 직선 거리)를 매기고 f가 가장 작은 노드부터 넓혀 가는 탐색입니다. h가 실제 거리를 과대평가하지 않으면 최단 경로를 보장하면서, 목표 반대 방향은 거의 탐색하지 않습니다.</li>
+	<li><b>직선화(string pulling)</b>: 다각형 열의 가운데를 이으면 지그재그가 됩니다. 다각형 사이 경계선(포털)을 통과하는 끈을 팽팽히 당긴 모양 — 모서리에서만 꺾이는 최단 꺾은선 — 을 구합니다. Detour의 <code>findStraightPath</code>가 이 일을 합니다(퍼널 알고리즘).</li>
+</ol>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="다각형 경로와 직선화">
+		<title>다각형 경로와 직선화</title>
+		<path d="M40,220 L180,220 L180,60 L40,60 Z" class="k2"/>
+		<path d="M180,220 L320,220 L320,140 L180,140 Z" class="k2"/>
+		<path d="M320,220 L460,220 L460,140 L320,140 Z" class="k2"/>
+		<path d="M460,220 L600,220 L600,60 L460,60 Z" class="k2"/>
+		<path d="M180,140 L460,140 L460,60 L180,60 Z" class="k5"/>
+		<text x="320" y="104" text-anchor="middle" class="t-small">벽 (내비메시 없음)</text>
+		<circle cx="90" cy="90" r="6" class="acc"/><text x="70" y="80" class="t-small">시작</text>
+		<circle cx="560" cy="90" r="6" class="acc"/><text x="540" y="80" class="t-small">끝</text>
+		<path d="M90,90 L110,140 L250,180 L390,180 L530,140 L560,90" class="ln-d"/>
+		<path d="M90,90 L180,140 L460,140 L560,90" class="ln sa" stroke-width="2.4"/>
+		<circle cx="180" cy="140" r="4" class="fa"/><circle cx="460" cy="140" r="4" class="fa"/>
+
+		<text x="630" y="80" class="t-bold">① A* 결과</text>
+		<text x="630" y="102" class="t-small">다각형 4개의 열</text>
+		<text x="630" y="122" class="t-muted">가운데를 이으면 점선 (지그재그)</text>
+		<text x="630" y="160" class="t-bold">② findStraightPath</text>
+		<text x="630" y="182" class="t-small">모서리 두 곳에서만 꺾는</text>
+		<text x="630" y="202" class="t-small">최단 꺾은선 (실선)</text>
+		<text x="630" y="236" class="t-muted">침식 덕분에 모서리를 스쳐도</text>
+		<text x="630" y="256" class="t-muted">에이전트 몸이 벽에 닿지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 49-4.</b> 내비메시 경로는 "어느 다각형들을 지나는가"(A*)와 "그 안에서 어떤 선으로 가는가"(직선화)로 나뉩니다.</figcaption>
+</figure>
+<p><code>FNavMesh::FindPath</code>는 시작·끝을 먼저 가장 가까운 다각형에 투영하고(<code>findNearestPoly</code>), A*로 다각형 열을 찾은 뒤(최대 512개), 목표 다각형에 닿지 못했으면 마지막 다각형 위에서 목표에 가장 가까운 점까지 가는 <b>Partial</b> 경로를 돌려줍니다. 결과는 Complete / Partial / Failed 셋 중 하나입니다. <code>MoveTo</code> 태스크는 이 경로점을 따라 이동하는데, 동적 강체면 물리에 수평 속도를 주고(Z 속도 유지), 아니면 트랜스폼을 경로 높이를 따라 직접 옮깁니다. 목표 엔티티가 <code>RepathDistance</code>보다 많이 움직이면 경로를 다시 찾습니다.</p>
+
+<h3 id="lec-49-coords"><span class="step">ProjectE에서는</span>좌표 변환과 뒤집힌 와인딩</h3>
+<p>Recast는 Y가 위, 1단위 = 1m입니다. 엔진은 Z가 위, 1단위 = 1cm입니다. 변환은 <code>NavCoordinates.h</code> 한 파일이 맡고, <code>FNavMesh</code> 경계에서만 씁니다(45강과 같은 원칙). 축 매핑은 간단히 "Y와 Z를 바꾸고 0.01배"입니다. 그런데 함정이 하나 있습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="엔진과 Recast 좌표 변환과 와인딩">
+		<title>엔진과 Recast 좌표 변환과 와인딩</title>
+		<text x="200" y="26" text-anchor="middle" class="t-bold">엔진 (Z-up, cm)</text>
+		<path d="M200,200 V90" class="ln s3" marker-end="url(#arr)"/><text x="208" y="96" class="t-small">+Z 위</text>
+		<path d="M200,200 L300,240" class="ln s1" marker-end="url(#arr)"/><text x="290" y="262" class="t-small">+X 앞</text>
+		<path d="M200,200 L300,160" class="ln s2" marker-end="url(#arr)"/><text x="306" y="160" class="t-small">+Y 오른쪽</text>
+		<text x="20" y="130" class="t-small">바닥 삼각형 (I0, I1, I2)</text>
+		<text x="20" y="150" class="t-small">Cross(P1−P0, P2−P0) = +Z</text>
+
+		<path d="M380,160 H470" class="ln" marker-end="url(#arr)"/>
+		<text x="425" y="146" text-anchor="middle" class="t-mono">(x,y,z)=</text>
+		<text x="425" y="182" text-anchor="middle" class="t-mono">(X,Z,Y)×0.01</text>
+		<text x="425" y="214" text-anchor="middle" class="t-muted">공간 속 방향은 같고</text>
+		<text x="425" y="232" text-anchor="middle" class="t-muted">성분 순서만 바뀜</text>
+
+		<text x="650" y="26" text-anchor="middle" class="t-bold">Recast (Y-up, m)</text>
+		<path d="M650,200 V90" class="ln s3" marker-end="url(#arr)"/><text x="658" y="96" class="t-small">+y 위</text>
+		<path d="M650,200 L750,240" class="ln s1" marker-end="url(#arr)"/><text x="740" y="262" class="t-small">+x</text>
+		<path d="M650,200 L750,160" class="ln s2" marker-end="url(#arr)"/><text x="756" y="160" class="t-small">+z</text>
+		<text x="500" y="226" class="t-small">같은 순서면 법선 = −y (아래)</text>
+		<text x="500" y="246" class="t-small">→ "걸을 수 없는 면"으로 판정</text>
+		<text x="500" y="276" class="t-small fa">그래서 (I0, I2, I1)로 뒤집어 넘긴다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 49-5.</b> 두 축을 맞바꾸는 변환은 거울에 비추는 것(반사, 행렬식 −1)과 같아서, 같은 인덱스 순서의 외적 방향이 뒤집힙니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/AI/Navigation/NavCoordinates.h (발췌)"><span class="com">// 와인딩: Y와 Z를 맞바꾸는 매핑은 반사(행렬식 -1)라서 같은 인덱스 순서의 외적 방향이 뒤집힌다.</span>
+<span class="com">//   - 엔진 규약: Cross(P1 - P0, P2 - P0)가 앞면 노멀 (CLAUDE.md의 glTF 와인딩 검증식과 같다)</span>
+<span class="com">//   - Recast:    Cross(v1 - v0, v2 - v0).y &gt; cos(최대 경사)인 면만 걸을 수 있는 면으로 표시한다</span>
+<span class="com">//   → 엔진 삼각형 (I0, I1, I2)는 Recast에 (I0, I2, I1)로 넘긴다. 그래야 +Z를 향한 엔진 바닥이 +y를 향한다.</span>
+<span class="kw">static void</span> ToRecast(<span class="kw">const</span> FVector3&amp; Engine, <span class="kw">float</span>* Out)
+{
+	Out[<span class="num">0</span>] = Engine.X * FUnits::UnitsToMeters;
+	Out[<span class="num">1</span>] = Engine.Z * FUnits::UnitsToMeters;
+	Out[<span class="num">2</span>] = Engine.Y * FUnits::UnitsToMeters;
+}</pre>
+<p>45강의 Jolt는 축을 그대로 썼기 때문에 이 문제가 없었습니다. Recast는 Y-up을 강제하므로 축을 바꿔야 하고, 축을 바꾸는 순간 "어느 쪽이 앞면인가"가 뒤집힙니다. Recast는 바닥을 "법선이 위를 향하는 면"으로 판단하므로, 와인딩을 보정하지 않으면 모든 바닥이 천장으로 보여 내비메시가 텅 빕니다. 이 규칙은 <code>NavMeshTests</code>의 <code>NavCoordinates_*</code>, <code>NavMesh_UpFacingFloorIsWalkable</code>, <code>NavMesh_DownFacingFloorIsNotWalkable</code>가 고정합니다. 에디터 굽기 쪽에서도 같은 원리로, 음수 스케일(거울상) 변환이 걸린 메시는 와인딩을 한 번 더 뒤집어 넘깁니다.</p>
+
+<h3 id="lec-49-pitfalls"><span class="step">함정과 교훈</span>초기화 순서와 굽기 대상</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 1 — 트리가 시작하자마자 블랙보드를 못 찾는다 (Phase 18-5)</b>
+	Lua 노드를 붙이자 트리가 시작하는 순간 노드가 블랙보드를 찾지 못했습니다. <code>Start</code>가 첫 진입을 그 자리에서 처리하는데(첫 노드의 <code>OnExecute</code>가 바로 불림), 그 시점에 트리 인스턴스가 아직 <code>FAISystem</code>에 등록되기 전이라 엔티티로 트리를 찾는 경로(<code>entity:GetBlackboard()</code>)가 비어 있었던 것입니다. 수정: 트리를 <b>등록한 뒤</b> Start. 같은 맥락에서 게임 월드의 순서도 BeginPlay는 스크립트(Lua 상태 생성) → AI, EndPlay는 AI(Lua 노드의 <code>OnAbort</code>) → 스크립트로 정리했습니다. "누가 먼저 존재해야 하는가"는 초기화 순서 버그의 단골 원인입니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일 2 — 플레이어가 장애물로 구워졌다 (Phase 18-9)</b>
+	데모 씬 <code>Demo_AI</code>를 굽고 보니 플레이어가 서 있던 자리에 구멍이 나 있었습니다. 플레이어는 스크립트로 움직이는 엔티티였는데 굽기 제외 규칙(동적 강체, AI 에이전트)에 걸리지 않아 정적 장애물로 구워진 것입니다. 스크립트 엔티티와 그 자손을 제외 규칙에 추가했습니다. 굽기 대상 규칙은 <code>FNavMeshBaker</code> 헤더 주석에 기준으로 남겨 두었습니다.
+</div>
+<div class="callout warn">
+	<b class="t">알려진 한계 (Phase 18 기록)</b>
+	<ul>
+		<li>LowerPriority는 부모가 SimpleParallel이거나 실행이 부모 컴포지트 밖이면 적용되지 않는다. 태스크 중단은 즉시(언리얼의 "중단 중" 지연 상태 없음).</li>
+		<li>내비메시는 단일 타일(Solo) — 4096×4096셀 또는 정점 65535개를 넘으면 실패. 무리 회피(DetourCrowd), 동적 장애물, 오프메시 링크, 영역 비용은 없다.</li>
+		<li><code>FNavMesh</code>는 쿼리 객체를 공유하므로 스레드 안전하지 않다.</li>
+		<li><code>FNavMeshBuildSettings</code> 필드를 바꾸면 <code>NavFileVersion</code>을 올린다(<code>.enav</code>에 설정 원본이 그대로 들어간다). 실행기 규칙을 바꾸면 <code>BehaviorTreeTests</code>를 함께 고친다.</li>
+	</ul>
+</div>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>BT는 우선순위를 트리 위치로 표현한다. 노드 = 컴포지트 / 태스크 / 데코레이터 / 서비스, 노드끼리는 블랙보드로 대화.</li>
+		<li>실행기는 이벤트 기반: Running 태스크만 틱하고, 관찰 키 변경은 다음 틱 시작에, 조건 결과가 바뀔 때만 Self/LowerPriority 중단.</li>
+		<li>노드는 레지스트리에 소유자 태그와 함께 등록(엔진/게임 모듈), Lua 노드는 훅으로 이어진 스크립트 객체.</li>
+		<li>Recast = 복셀화 → 걸러내기 → 침식 → 영역 → 윤곽 → 다각형 → 디테일. Detour = 다각형 A* → 직선화.</li>
+		<li>Z-up ↔ Y-up 변환은 반사이므로 삼각형 와인딩을 (I0, I2, I1)로 뒤집는다. 변환은 <code>NavCoordinates.h</code> 한 곳에서.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 경비병의 추적 가지 데코레이터를 <code>Both</code> 대신 <code>Self</code>로만 두면 어떤 행동이 될까요?</summary>
+	Target을 잃었을 때 추적을 멈추는 것은 그대로지만, 순찰 가지가 실행 중일 때 Target이 생겨도 순찰을 중단하지 않습니다. 순찰 Sequence(다음 지점 → 이동 → 2초 대기)가 끝나 루트가 다시 시작될 때에야 추적 가지가 평가되므로, 플레이어를 보고도 몇 초 동안 하던 순찰을 계속하는 "둔한" 경비병이 됩니다.
+</details>
+<details class="quiz"><summary>Q2. 내비메시를 침식하지 않고, 길 찾기 때 에이전트 반경을 고려하면 안 될까요?</summary>
+	가능은 하지만 경로 탐색과 직선화가 "두께 있는 원이 지나갈 수 있는가"를 매번 계산해야 해 복잡하고 느려집니다. 미리 반경만큼 깎아 두면 런타임은 점 하나의 길 찾기로 단순해집니다. 대가는 반경이 다른 에이전트마다 내비메시가 따로 필요하다는 점입니다(ProjectE는 설정 하나 — 큰 몬스터용 메시는 별도 굽기가 필요).
+</details>
+<details class="quiz"><summary>Q3. Recast에 넘길 때 Y와 Z를 바꾸는 대신 Y만 부호를 뒤집는(반사가 아닌 회전) 매핑을 쓰면 와인딩을 뒤집지 않아도 될까요?</summary>
+	회전(행렬식 +1)이면 외적 방향이 보존되므로 와인딩은 그대로 둘 수 있습니다. 예를 들어 (x, y, z) = (X, Z, −Y)는 X축 둘레 90° 회전이라 와인딩 보정이 필요 없습니다. ProjectE는 (X, Z, Y)를 택하고 와인딩을 뒤집었는데, 어느 쪽이든 "반사인가 회전인가"를 확인하고 테스트로 고정하는 것이 핵심입니다. (단, 엔진 자체가 왼손 좌표계라는 점까지 섞이면 직관이 쉽게 틀리므로, 판단은 머릿속이 아니라 <code>NavMesh_UpFacingFloorIsWalkable</code> 같은 테스트로 합니다.)
+</details>
+</article>
+
+
+<div class="nextpart">
+	<a href="Part06_Animation.html"><small>이전 부</small>← 6부 · 애니메이션</a>
+	<a href="Part07B_GameFramework.html"><small>다음 부</small>7부 후반 · 게임 프레임워크 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

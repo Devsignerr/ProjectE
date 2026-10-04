@@ -1,0 +1,2134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2부 엔진의 뼈대 — 데이터와 구조 — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">2부 엔진의 뼈대</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">2부 · 강의 7~12</div>
+	<h1>엔진의 뼈대 — 데이터와 구조</h1>
+	<p>게임 세계를 메모리에 어떻게 담고(ECS·씬 계층), 그 데이터를 어떻게 스스로 설명하게 만들며(리플렉션), 파일로 어떻게 남기고 다시 읽는지(직렬화·쿠킹·임포트), 그리고 그 모든 코드를 어떤 바이너리로 묶는지(엔진 DLL·게임 모듈)를 다룹니다. 화면에는 보이지 않지만 에디터·스크립트·네트워크가 모두 이 층 위에 서 있습니다.</p>
+</header>
+
+<!-- ======================================================= 7강 ======================================================= -->
+<article class="lecture" id="lec-7">
+<header>
+	<div class="no">7강</div>
+	<h2 id="lec-7-title">ECS — 엔티티, 컴포넌트, 시스템</h2>
+	<div class="meta">관련 Phase: 3 · 살펴볼 곳: <code>Engine/Source/Core/ECS/</code> (<code>Entity.h</code>, <code>SparseSet.h</code>, <code>Registry.h</code>, <code>Registry.cpp</code>), <code>Tests/CoreTests/ECSTests.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>게임 물체를 클래스 상속 트리로 표현할 때 생기는 문제와, ECS가 그것을 어떻게 피하는지 설명할 수 있습니다.</li>
+		<li>희소 집합(sparse set)이 "찾기 O(1), 삭제 O(1), 연속 순회"를 동시에 얻는 원리를 그림으로 그릴 수 있습니다.</li>
+		<li>세대(generation)가 붙은 엔티티 핸들이 "지워진 물체를 가리키는 핸들" 문제를 어떻게 막는지 압니다.</li>
+		<li><code>View</code>가 가장 작은 풀을 기준으로 도는 이유와, 순회 중 같은 타입 컴포넌트를 추가·제거하면 안 되는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-7-why"><span class="step">왜 필요한가</span>상속 트리는 게임 물체를 담기에 너무 뻣뻣하다</h3>
+<p>게임 세계에는 플레이어, 상자, 횃불, 카메라, 적, 문, 파티클 이미터 같은 물체가 수백에서 수만 개 있습니다. C++을 배운 사람이 가장 먼저 떠올리는 설계는 클래스 상속입니다. <code>GameObject</code>를 맨 위에 두고, 움직이는 것은 <code>Pawn</code>, 그중 사람 모양은 <code>Character</code>, 고정된 물체는 <code>StaticProp</code> … 이렇게 내려가는 트리입니다.</p>
+<p>처음엔 잘 됩니다. 문제는 "조합"이 필요해질 때 생깁니다. "물리로 굴러가는데 체력도 있어서 부서지는 상자"는 <code>StaticProp</code> 밑일까요, <code>Pawn</code> 밑일까요? "빛을 내는 캐릭터"는? 기능 하나를 추가할 때마다 트리 어딘가를 잘라 붙여야 하고, 결국 다중 상속(다이아몬드)이나 모든 기능을 다 가진 거대한 기반 클래스로 무너집니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="상속 트리와 ECS 표 비교">
+		<title>상속 트리와 ECS 표 비교</title>
+		<text x="20" y="24" class="t-bold">상속 트리 — "무엇이다(is-a)"</text>
+		<g class="t-small">
+			<rect x="140" y="40" width="140" height="34" rx="8" class="box"/><text x="210" y="62" text-anchor="middle">GameObject</text>
+			<rect x="40" y="110" width="140" height="34" rx="8" class="box"/><text x="110" y="132" text-anchor="middle">Pawn (움직임)</text>
+			<rect x="240" y="110" width="150" height="34" rx="8" class="box"/><text x="315" y="132" text-anchor="middle">StaticProp (고정)</text>
+			<rect x="20" y="180" width="110" height="34" rx="8" class="box"/><text x="75" y="202" text-anchor="middle">Character</text>
+			<rect x="140" y="180" width="100" height="34" rx="8" class="box"/><text x="190" y="202" text-anchor="middle">Vehicle</text>
+			<rect x="20" y="244" width="380" height="44" rx="8" class="k5"/>
+			<text x="36" y="263" class="t-small">"부서지는 물리 상자"는 어디에?  "빛나는 캐릭터"는?</text>
+			<text x="36" y="280" class="t-muted">→ 다중 상속, 또는 모든 기능을 가진 거대한 기반 클래스</text>
+		</g>
+		<path d="M190,74 L120,108" class="ln" marker-end="url(#arr)"/>
+		<path d="M230,74 L300,108" class="ln" marker-end="url(#arr)"/>
+		<path d="M90,144 L78,178" class="ln" marker-end="url(#arr)"/>
+		<path d="M130,144 L180,178" class="ln" marker-end="url(#arr)"/>
+		<line x1="425" y1="20" x2="425" y2="290" class="ln-d"/>
+		<text x="450" y="24" class="t-bold">ECS — "무엇을 가졌다(has-a)"</text>
+		<g class="t-small">
+			<text x="580" y="58" text-anchor="middle">트랜스폼</text>
+			<text x="640" y="58" text-anchor="middle">메시</text>
+			<text x="700" y="58" text-anchor="middle">강체</text>
+			<text x="760" y="58" text-anchor="middle">체력</text>
+			<text x="815" y="58" text-anchor="middle">빛</text>
+			<text x="450" y="91">플레이어</text>
+			<text x="450" y="131">부서지는 상자</text>
+			<text x="450" y="171">횃불</text>
+			<text x="450" y="211">카메라</text>
+			<!-- 행 1 -->
+			<rect x="555" y="72" width="50" height="28" rx="5" class="k1"/><rect x="615" y="72" width="50" height="28" rx="5" class="k2"/>
+			<rect x="675" y="72" width="50" height="28" rx="5" class="box"/><rect x="735" y="72" width="50" height="28" rx="5" class="k5"/>
+			<rect x="795" y="72" width="40" height="28" rx="5" class="box"/>
+			<!-- 행 2 -->
+			<rect x="555" y="112" width="50" height="28" rx="5" class="k1"/><rect x="615" y="112" width="50" height="28" rx="5" class="k2"/>
+			<rect x="675" y="112" width="50" height="28" rx="5" class="k3"/><rect x="735" y="112" width="50" height="28" rx="5" class="k5"/>
+			<rect x="795" y="112" width="40" height="28" rx="5" class="box"/>
+			<!-- 행 3 -->
+			<rect x="555" y="152" width="50" height="28" rx="5" class="k1"/><rect x="615" y="152" width="50" height="28" rx="5" class="k2"/>
+			<rect x="675" y="152" width="50" height="28" rx="5" class="box"/><rect x="735" y="152" width="50" height="28" rx="5" class="box"/>
+			<rect x="795" y="152" width="40" height="28" rx="5" class="k4"/>
+			<!-- 행 4 -->
+			<rect x="555" y="192" width="50" height="28" rx="5" class="k1"/><rect x="615" y="192" width="50" height="28" rx="5" class="box"/>
+			<rect x="675" y="192" width="50" height="28" rx="5" class="box"/><rect x="735" y="192" width="50" height="28" rx="5" class="box"/>
+			<rect x="795" y="192" width="40" height="28" rx="5" class="box"/>
+			<text x="450" y="252" class="t-muted">색칠된 칸 = 그 컴포넌트를 가짐. 새 조합 = 칸을 하나 더 칠하기.</text>
+			<text x="450" y="272" class="t-muted">시스템은 "강체 + 트랜스폼을 가진 모든 것"처럼 열(column)로 돈다.</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 7-1.</b> 상속은 물체를 "무엇이냐"로 분류하므로 새 조합마다 트리를 다시 짜야 합니다. ECS는 물체를 "무엇을 가졌느냐"로 보며, 조합은 표의 칸을 칠하는 일이 됩니다.</figcaption>
+</figure>
+
+<p>성능 문제도 있습니다. 상속 트리의 물체들은 보통 <code>new</code>로 하나씩 힙에 흩어져 만들어지고, 엔진은 <code>std::vector&lt;GameObject*&gt;</code>를 돌며 가상 함수 <code>Update()</code>를 부릅니다. CPU 입장에서는 포인터를 따라 메모리 이곳저곳으로 뛰어다니는 셈입니다. 매 프레임 1000개 캐릭터의 위치만 갱신하고 싶어도 위치와 상관없는 멤버(이름, 메시 포인터, 체력 …)까지 캐시로 끌려 들어옵니다.</p>
+
+<h3 id="lec-7-concept"><span class="step">핵심 개념</span>엔티티 · 컴포넌트 · 시스템</h3>
+<p><b>ECS(Entity-Component-System)</b>는 이 두 문제를 "데이터와 로직을 떼어 놓는" 방식으로 풉니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>요소</th><th>정체</th><th>ProjectE에서</th></tr>
+	<tr><td><b>엔티티</b> (Entity)</td><td>그냥 번호. 아무 데이터도 로직도 없다</td><td><code>FEntity</code> = 슬롯 인덱스 + 세대, 8바이트</td></tr>
+	<tr><td><b>컴포넌트</b> (Component)</td><td>엔티티에 붙는 순수 데이터 묶음</td><td>POD에 가까운 <code>struct</code> (<code>FTransformComponent</code>, <code>FHealthComponent</code> …)</td></tr>
+	<tr><td><b>시스템</b> (System)</td><td>"이 컴포넌트들을 가진 모든 엔티티"를 돌며 일하는 로직</td><td><code>View&lt;A, B&gt;().Each(...)</code>를 쓰는 함수나 클래스 (<code>FPhysicsSystem</code>, <code>FAnimationSystem</code> …)</td></tr>
+</table></div>
+<p>CLAUDE.md는 이 원칙을 규칙으로 적어 둡니다. "컴포넌트는 POD에 가까운 struct, 로직은 시스템(뷰 순회)에 둔다." 컴포넌트에 가상 함수나 복잡한 메서드를 넣기 시작하면 다시 객체 지향으로 돌아가는 셈입니다.</p>
+
+<div class="callout note">
+	<b class="t">비유: 회사 인사 기록</b>
+	사원 번호(엔티티)는 그냥 번호입니다. 인사팀은 "번호 → 연락처" 표를, 급여팀은 "번호 → 급여" 표를, 보안팀은 "번호 → 출입 권한" 표를 따로 가집니다. 급여팀이 월급을 계산할 때는 급여 표만 처음부터 끝까지 훑으면 되고, 연락처 표는 건드리지 않습니다. 컴포넌트 타입마다 표(풀)가 따로 있고, 시스템은 필요한 표만 읽는 것 — 이것이 ECS입니다.
+</div>
+
+<h4>데이터 지향: 왜 "같은 종류끼리 모아 두기"가 빠른가</h4>
+<p>CPU는 메모리를 한 바이트씩 읽지 않고 <b>캐시 라인</b>(보통 64바이트) 단위로 가져옵니다. 다음에 읽을 데이터가 방금 가져온 줄 안에 있으면 거의 공짜이고, 멀리 떨어져 있으면 수백 사이클을 기다립니다. 같은 타입 컴포넌트를 빈틈없는 배열에 모아 두면, 시스템이 배열을 앞에서부터 읽을 때 다음 원소가 이미 캐시에 있거나 하드웨어 프리페처가 미리 가져다 놓습니다. 이것이 <b>데이터 지향 설계</b>(Data-Oriented Design)의 핵심입니다. "객체 하나를 잘 표현하는 것"보다 "같은 일을 수천 번 하는 순회를 빠르게 하는 것"을 먼저 생각합니다.</p>
+
+<h3 id="lec-7-sparse"><span class="step">핵심 개념</span>희소 집합 — 세 가지를 동시에 얻는 자료 구조</h3>
+<p>컴포넌트 풀이 해야 할 일은 셋입니다. ① 엔티티 번호로 컴포넌트를 바로 찾기, ② 컴포넌트를 빨리 지우기, ③ 모든 컴포넌트를 빈틈없이 순회하기. 배열 하나로는 ①과 ③이 충돌합니다(엔티티 번호를 인덱스로 쓰면 빈칸이 생기고, 빈칸 없이 모으면 번호로 찾을 수 없음). <b>희소 집합</b>(sparse set)은 배열 두 개로 둘 다 얻습니다.</p>
+<ul>
+	<li><b>Sparse</b>: 엔티티 인덱스 → 밀집 배열의 몇 번째인지. 빈칸이 많아도 된다(이름이 "희소").</li>
+	<li><b>Dense</b>(+<b>Components</b>): 컴포넌트를 가진 엔티티와 그 컴포넌트가 빈틈없이 나란히. 순회는 이것만 본다.</li>
+</ul>
+<p>2부 소개의 그림 2-1이 이 구조입니다. 찾기는 <code>Sparse[엔티티]</code> 한 번이면 O(1)이고, 순회는 <code>Components</code> 배열을 처음부터 끝까지 읽으면 됩니다. 남은 문제는 삭제입니다. 중간 원소를 지우고 뒤를 한 칸씩 당기면 O(n)이고, 당겨진 모든 원소의 Sparse 값을 고쳐야 합니다. 그래서 <b>마지막 원소와 맞바꾸고 꼬리를 자르는</b> swap-remove를 씁니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 286" role="img" aria-label="swap-remove 과정">
+		<title>swap-remove로 엔티티 6의 컴포넌트 지우기</title>
+		<g class="t-small">
+			<text x="20" y="26" class="t-bold">① 지우기 전 (엔티티 6 제거 요청)</text>
+			<text x="20" y="62" class="t-muted">Dense</text>
+			<rect x="80" y="42" width="80" height="30" class="k2"/><text x="120" y="62" text-anchor="middle">엔티티 3</text>
+			<rect x="160" y="42" width="80" height="30" class="k5"/><text x="200" y="62" text-anchor="middle">엔티티 6</text>
+			<rect x="240" y="42" width="80" height="30" class="k2"/><text x="280" y="62" text-anchor="middle">엔티티 1</text>
+			<rect x="320" y="42" width="80" height="30" class="k4"/><text x="360" y="62" text-anchor="middle">엔티티 8</text>
+			<text x="20" y="100" class="t-muted">Comp</text>
+			<rect x="80" y="80" width="80" height="30" class="k1"/><text x="120" y="100" text-anchor="middle">A</text>
+			<rect x="160" y="80" width="80" height="30" class="k5"/><text x="200" y="100" text-anchor="middle">B</text>
+			<rect x="240" y="80" width="80" height="30" class="k1"/><text x="280" y="100" text-anchor="middle">C</text>
+			<rect x="320" y="80" width="80" height="30" class="k4"/><text x="360" y="100" text-anchor="middle">D</text>
+			<text x="120" y="128" text-anchor="middle" class="t-muted">0</text><text x="200" y="128" text-anchor="middle" class="t-muted">1</text>
+			<text x="280" y="128" text-anchor="middle" class="t-muted">2</text><text x="360" y="128" text-anchor="middle" class="t-muted">3 (마지막)</text>
+
+			<text x="470" y="26" class="t-bold">② 마지막을 빈자리로 옮기고 꼬리를 자른다</text>
+			<text x="470" y="62" class="t-muted">Dense</text>
+			<rect x="530" y="42" width="80" height="30" class="k2"/><text x="570" y="62" text-anchor="middle">엔티티 3</text>
+			<rect x="610" y="42" width="80" height="30" class="k4"/><text x="650" y="62" text-anchor="middle">엔티티 8</text>
+			<rect x="690" y="42" width="80" height="30" class="k2"/><text x="730" y="62" text-anchor="middle">엔티티 1</text>
+			<rect x="770" y="42" width="70" height="30" class="box" stroke-dasharray="4 3"/><text x="805" y="62" text-anchor="middle" class="t-muted">pop</text>
+			<text x="470" y="100" class="t-muted">Comp</text>
+			<rect x="530" y="80" width="80" height="30" class="k1"/><text x="570" y="100" text-anchor="middle">A</text>
+			<rect x="610" y="80" width="80" height="30" class="k4"/><text x="650" y="100" text-anchor="middle">D</text>
+			<rect x="690" y="80" width="80" height="30" class="k1"/><text x="730" y="100" text-anchor="middle">C</text>
+			<rect x="770" y="80" width="70" height="30" class="box" stroke-dasharray="4 3"/><text x="805" y="100" text-anchor="middle" class="t-muted">pop</text>
+		</g>
+		<path d="M360,136 C 360,176 200,176 200,138" class="ln s4" marker-end="url(#arr)"/>
+		<text x="280" y="192" text-anchor="middle" class="t-small">D를 B 자리로 이동</text>
+		<rect x="20" y="206" width="820" height="66" rx="10" class="box"/>
+		<text x="36" y="230" class="t-small">Sparse 갱신은 두 칸뿐:  Sparse[8] = 1  (옮겨진 원소의 새 자리),  Sparse[6] = 없음</text>
+		<text x="36" y="254" class="t-muted">대가: 원소 순서가 바뀐다 → 순회 중에 지우면 "아직 안 본 D"가 이미 본 자리로 와서 건너뛰어진다 (순회 중 제거 금지의 이유)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 7-2.</b> swap-remove. 몇 개가 있든 원소 하나 이동 + Sparse 두 칸 수정으로 끝나므로 O(1)입니다. 대신 Dense 순서는 "생성 순서"가 아니게 됩니다.</figcaption>
+</figure>
+
+<p>실제 코드가 그림과 똑같습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/ECS/SparseSet.h (발췌)"><span class="com">// 희소 집합 기반 컴포넌트 풀.</span>
+<span class="com">// Sparse[엔티티 인덱스] → 밀집 인덱스, Dense/Components는 빈틈없이 연속 저장되어 순회가 빠르다.</span>
+<span class="com">// 제거는 마지막 원소와 교환(swap-remove)하므로 순회 중 제거는 허용하지 않는다.</span>
+<span class="kw">template</span> &lt;<span class="kw">typename</span> T&gt;
+<span class="kw">class</span> TSparseSet <span class="kw">final</span> : <span class="kw">public</span> FSparseSetBase
+{
+	...
+	<span class="kw">void</span> Remove(FEntity Entity) <span class="kw">override</span>
+	{
+		<span class="kw">if</span> (!Contains(Entity)) { <span class="kw">return</span>; }
+		<span class="kw">const</span> uint32 DenseIndex = Sparse[Entity.Index];
+		<span class="kw">const</span> uint32 LastIndex  = <span class="kw">static_cast</span>&lt;uint32&gt;(Dense.size() - <span class="num">1</span>);
+		<span class="kw">if</span> (DenseIndex != LastIndex)
+		{
+			<span class="com">// 마지막 원소를 빈자리로 이동</span>
+			<span class="kw">const</span> FEntity LastEntity = Dense[LastIndex];
+			Dense[DenseIndex]        = LastEntity;
+			Components[DenseIndex]   = std::move(Components[LastIndex]);
+			Sparse[LastEntity.Index] = DenseIndex;
+		}
+		Dense.pop_back();
+		Components.pop_back();
+		Sparse[Entity.Index] = InvalidDense;
+	}
+<span class="kw">private</span>:
+	std::vector&lt;uint32&gt;  Sparse;
+	std::vector&lt;FEntity&gt; Dense;
+	std::vector&lt;T&gt;       Components;
+};</pre>
+<p><code>Contains</code>도 눈여겨보세요. <code>Sparse</code>가 가리키는 칸의 엔티티가 <b>세대까지</b> 같은지 비교합니다(<code>Dense[DenseIndex] == Entity</code>). 이것이 바로 다음 절의 "세대 핸들"과 맞물리는 부분입니다.</p>
+
+<h3 id="lec-7-generation"><span class="step">핵심 개념</span>세대 핸들 — 지워진 물체를 가리키는 번호</h3>
+<p>엔티티 번호를 다 쓰면 재사용해야 합니다. 그렇지 않으면 탄환을 쏠 때마다 번호가 하나씩 늘어 배열이 끝없이 커집니다. 그런데 재사용에는 함정이 있습니다. 적 AI가 "내 목표는 엔티티 5번"이라고 기억하고 있었는데, 5번이 죽어 지워지고 그 자리에 새로 생긴 <b>나무</b>가 5번을 받으면? AI는 나무를 쫓아갑니다. C++의 댕글링 포인터와 같은 문제가 번호 수준에서 일어나는 것입니다.</p>
+<p>해결책은 번호에 <b>세대</b>(generation)를 붙이는 것입니다. 슬롯마다 "몇 번째로 재사용되었는가"를 세고, 핸들은 (슬롯, 세대) 쌍으로 들고 다닙니다. 슬롯이 파괴되면 세대를 1 올리므로, 예전 핸들은 세대가 맞지 않아 자동으로 무효가 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 240" role="img" aria-label="세대 핸들 타임라인">
+		<title>슬롯 5의 일생과 세대</title>
+		<path d="M40,70 H830" class="ln" marker-end="url(#arr)"/>
+		<g class="t-small">
+			<circle cx="110" cy="70" r="6" class="k2"/><text x="110" y="46" text-anchor="middle" class="t-bold">Create</text>
+			<circle cx="320" cy="70" r="6" class="k5"/><text x="320" y="46" text-anchor="middle" class="t-bold">Destroy</text>
+			<circle cx="530" cy="70" r="6" class="k2"/><text x="530" y="46" text-anchor="middle" class="t-bold">Create (재사용)</text>
+			<circle cx="740" cy="70" r="6" class="k4"/><text x="740" y="46" text-anchor="middle" class="t-bold">옛 핸들로 접근</text>
+			<text x="215" y="94" text-anchor="middle" class="t-muted">Generations[5] = 0</text>
+			<text x="425" y="94" text-anchor="middle" class="t-muted">Generations[5] = 1, 빈 슬롯 목록에 5</text>
+			<text x="640" y="94" text-anchor="middle" class="t-muted">Generations[5] = 1</text>
+			<rect x="40" y="116" width="190" height="52" rx="8" class="k1"/>
+			<text x="56" y="138">적의 핸들 (5, 0)</text>
+			<text x="56" y="158" class="t-muted">"목표 = 고블린"</text>
+			<rect x="440" y="116" width="190" height="52" rx="8" class="k2"/>
+			<text x="456" y="138">새 핸들 (5, 1)</text>
+			<text x="456" y="158" class="t-muted">"나무"</text>
+			<rect x="650" y="116" width="190" height="52" rx="8" class="k5"/>
+			<text x="666" y="138">(5, 0) ≠ 현재 세대 1</text>
+			<text x="666" y="158" class="t-muted">IsValid = false → 무효</text>
+		</g>
+		<path d="M110,76 V114" class="ln-d"/>
+		<path d="M530,76 V114" class="ln-d"/>
+		<path d="M230,142 C 420,200 600,200 700,170" class="ln s1" marker-end="url(#arr)"/>
+		<text x="430" y="222" text-anchor="middle" class="t-muted">고블린이 죽은 뒤에도 적이 들고 있던 핸들 — 세대가 달라 나무와 혼동되지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 7-3.</b> 같은 슬롯 5라도 세대가 다르면 다른 엔티티입니다. 포인터였다면 해제된 메모리를 읽었을 상황이, 핸들에서는 단순한 "무효" 판정이 됩니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/ECS/Entity.h (발췌)"><span class="com">// 엔티티 식별자: 슬롯 인덱스 + 세대(재사용된 슬롯의 오래된 핸들을 구별)</span>
+<span class="kw">struct</span> FEntity
+{
+	<span class="kw">static constexpr</span> uint32 InvalidIndex = ~<span class="num">0u</span>;
+	uint32 Index      = InvalidIndex;
+	uint32 Generation = <span class="num">0</span>;
+	<span class="com">// 64비트 하나로 (저장·해시·네트워크용)</span>
+	<span class="kw">constexpr</span> uint64 ToId() <span class="kw">const</span> { <span class="kw">return</span> (<span class="kw">static_cast</span>&lt;uint64&gt;(Generation) &lt;&lt; <span class="num">32</span>) | Index; }
+};</pre>
+<pre class="code" data-file="Engine/Source/Core/ECS/Registry.h — FRegistry (발췌)">FEntity Create()
+{
+	FEntity Entity;
+	<span class="kw">if</span> (!FreeIndices.empty()) { Entity.Index = FreeIndices.back(); FreeIndices.pop_back(); } <span class="com">// 재사용</span>
+	<span class="kw">else</span> { Entity.Index = <span class="kw">static_cast</span>&lt;uint32&gt;(Generations.size()); Generations.push_back(<span class="num">0</span>); }
+	Entity.Generation = Generations[Entity.Index];
+	++AliveCount;
+	<span class="kw">return</span> Entity;
+}
+
+<span class="com">// 모든 컴포넌트를 제거하고 슬롯을 재사용 목록에 넣는다 (세대 증가로 기존 핸들 무효화)</span>
+<span class="kw">void</span> Destroy(FEntity Entity)
+{
+	<span class="kw">if</span> (!IsValid(Entity)) { <span class="kw">return</span>; }
+	<span class="kw">for</span> (std::unique_ptr&lt;FSparseSetBase&gt;&amp; Pool : Pools)
+	{
+		<span class="kw">if</span> (Pool) { Pool-&gt;Remove(Entity); }   <span class="com">// 타입을 몰라도 지울 수 있게 가상 함수</span>
+	}
+	++Generations[Entity.Index];
+	FreeIndices.push_back(Entity.Index);
+	--AliveCount;
+}</pre>
+<p>이 동작은 테스트 <code>ECS_StaleHandleDoesNotAliasReusedSlot</code>이 그대로 확인합니다. 엔티티를 지우고 새로 만들면 <b>같은 인덱스</b>를 받지만, 옛 핸들로 <code>Has</code>/<code>TryGet</code>을 부르면 새 엔티티의 컴포넌트가 보이지 않아야 합니다.</p>
+<p>같은 아이디어는 엔진 곳곳에 다시 나옵니다. GPU 리소스(메시·텍스처·머티리얼)도 포인터 대신 <code>THandle</code>(인덱스 + 세대)로 참조하는데, 이것은 6강의 <code>TResourcePool</code>에서 이미 본 구조입니다.</p>
+
+<h3 id="lec-7-view"><span class="step">핵심 개념</span>View — 여러 컴포넌트의 교집합 순회</h3>
+<p>시스템은 대개 컴포넌트 <b>여러 개</b>를 함께 원합니다. "트랜스폼과 체력을 모두 가진 엔티티". 풀은 타입마다 따로이니, 두 집합의 교집합을 구해야 합니다. 방법은 단순합니다. <b>가장 작은 풀</b>을 골라 그것을 순회하고, 나머지 풀에는 <code>Contains</code>로 물어봅니다. 교집합은 가장 작은 집합보다 클 수 없으므로 이것이 최소한의 일입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 244" role="img" aria-label="가장 작은 풀을 기준으로 순회">
+		<title>View&lt;Transform, Health&gt; 순회</title>
+		<g class="t-small">
+			<text x="20" y="30" class="t-bold">트랜스폼 풀 (1000개)</text>
+			<rect x="20" y="40" width="560" height="30" rx="4" class="k1"/>
+			<text x="300" y="60" text-anchor="middle" class="t-muted">엔티티 0 · 1 · 2 · 3 · 4 · … · 999 (거의 모든 엔티티가 가짐)</text>
+			<text x="20" y="178" class="t-bold">체력 풀 (3개) ← 기준</text>
+			<rect x="20" y="124" width="90" height="30" rx="4" class="k5"/><text x="65" y="144" text-anchor="middle">엔티티 12</text>
+			<rect x="110" y="124" width="90" height="30" rx="4" class="k5"/><text x="155" y="144" text-anchor="middle">엔티티 407</text>
+			<rect x="200" y="124" width="90" height="30" rx="4" class="k5"/><text x="245" y="144" text-anchor="middle">엔티티 851</text>
+		</g>
+		<path d="M65,122 L120,74" class="ln" marker-end="url(#arr)"/>
+		<path d="M155,122 L300,74" class="ln" marker-end="url(#arr)"/>
+		<path d="M245,122 L470,74" class="ln" marker-end="url(#arr)"/>
+		<text x="330" y="134" class="t-muted">← 나머지 풀에 Contains? (Sparse 한 번)</text>
+		<rect x="610" y="40" width="230" height="114" rx="10" class="acc"/>
+		<text x="626" y="64" class="t-bold">일의 양</text>
+		<text x="626" y="88" class="t-small">트랜스폼 기준: 1000번 확인</text>
+		<text x="626" y="110" class="t-small">체력 기준: 3번 확인</text>
+		<text x="626" y="136" class="t-muted">결과는 같고 비용만 다르다</text>
+		<text x="20" y="210" class="t-small">같은 크기면 앞의 타입. 하나라도 풀이 없으면(그 타입을 가진 엔티티가 한 번도 없었으면) 결과가 없다.</text>
+		<text x="20" y="232" class="t-muted">반환되는 순서 = 기준 풀의 Dense 순서 → 병렬 순회도 같은 목록(GetIterationEntities)을 나눠 쓴다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 7-4.</b> <code>View&lt;FTransformComponent, FHealthComponent&gt;</code>는 체력 풀 3개만 돌고, 트랜스폼 풀에는 있는지만 묻습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/ECS/Registry.h — TView::Each (발췌)"><span class="kw">template</span> &lt;<span class="kw">typename</span>... TComponents&gt;
+<span class="kw">template</span> &lt;<span class="kw">typename</span> TFunc&gt;
+<span class="kw">void</span> TView&lt;TComponents...&gt;::Each(TFunc&amp;&amp; Func)
+{
+	std::tuple&lt;TSparseSet&lt;TComponents&gt;*...&gt; PoolTuple{ Registry.TryGetPool&lt;TComponents&gt;()... };
+	<span class="kw">const</span> std::vector&lt;FEntity&gt;* SmallestEntities = GetIterationEntities();
+	<span class="kw">if</span> (SmallestEntities == <span class="kw">nullptr</span>) { <span class="kw">return</span>; }
+
+	<span class="com">// 순회 중 풀 변경을 허용하지 않으므로 목록 복사 없이 순회</span>
+	<span class="kw">for</span> (size_t Index = <span class="num">0</span>; Index &lt; SmallestEntities-&gt;size(); ++Index)
+	{
+		<span class="kw">const</span> FEntity Entity = (*SmallestEntities)[Index];
+		<span class="kw">bool</span> bHasAll = <span class="kw">true</span>;
+		std::apply([&amp;](<span class="kw">auto</span>*... Pools) { ((bHasAll = bHasAll &amp;&amp; Pools-&gt;Contains(Entity)), ...); }, PoolTuple);
+		<span class="kw">if</span> (!bHasAll) { <span class="kw">continue</span>; }
+		std::apply([&amp;](<span class="kw">auto</span>*... Pools) { Func(Entity, Pools-&gt;Get(Entity)...); }, PoolTuple);
+	}
+}</pre>
+<p>C++17의 접기 식(fold expression) <code>(... , ...)</code>과 <code>std::apply</code>로 "타입 개수만큼 반복"을 컴파일 타임에 풉니다. 사용하는 쪽은 이렇게 간단합니다. Sample 게임 모듈의 회전 시스템입니다.</p>
+<pre class="code" data-file="Projects/Sample/Source/SampleGameModule.cpp (발췌)">Registry.View&lt;FTransformComponent, FSpinnerComponent&gt;().Each(
+	[DeltaSeconds](FEntity, FTransformComponent&amp; Transform, FSpinnerComponent&amp; Spinner) {
+		<span class="kw">const</span> FVector3 Axis = Spinner.Axis.GetNormalized();
+		...   <span class="com">// 회전 갱신 — 컴포넌트는 데이터, 로직은 여기(시스템)</span>
+	});</pre>
+
+<div class="callout warn">
+	<b class="t">규칙: <code>View&lt;...&gt;().Each</code> 순회 중 같은 타입 컴포넌트를 추가·제거하지 않는다</b>
+	이유는 둘입니다. ① <b>제거</b>는 swap-remove라 아직 안 본 마지막 원소가 이미 지나간 자리로 옮겨져 건너뛰어집니다(그림 7-2). ② <b>추가</b>는 <code>std::vector</code>가 자라며 메모리를 다시 잡을 수 있어, 람다가 받은 <code>T&amp;</code> 참조와 순회 중인 목록 포인터가 허공을 가리키게 됩니다. <code>Each</code>가 "목록 복사 없이" 도는 것은 이 규칙을 전제로 한 최적화입니다. 바꿔야 한다면 대상을 모아 두었다가 순회가 끝난 뒤 적용합니다. <code>FScene::DestroyEntity</code>가 자식 목록을 <b>복사해서</b> 도는 것도 같은 이유입니다.
+</div>
+
+<h3 id="lec-7-projecte"><span class="step">ProjectE에서는</span>레지스트리와 타입 ID</h3>
+<p><code>FRegistry</code>는 엔티티 수명(세대 배열, 빈 슬롯 목록)과 <b>컴포넌트 타입마다 하나씩인 풀</b>을 가집니다. 풀은 <code>std::vector&lt;std::unique_ptr&lt;FSparseSetBase&gt;&gt;</code>이고, 인덱스는 컴포넌트 타입의 <b>타입 ID</b>입니다. <code>FSparseSetBase</code>는 <code>Remove</code>/<code>Contains</code> 같은 가상 함수만 가진 타입 소거(type erasure) 기반 클래스입니다. <code>Destroy</code>는 엔티티가 어떤 타입들을 가졌는지 모르므로 모든 풀에 "이 엔티티 지워"라고 가상 호출로 말합니다.</p>
+<p>그러면 타입 ID는 어떻게 정할까요? 처음 구현은 교과서적인 방법이었습니다. 템플릿 함수 안의 <code>static</code> 변수로 "처음 불린 순서대로 0, 1, 2 …"를 매기는 것입니다. 지금 코드는 한 단계가 더 있습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/ECS/Registry.h / Registry.cpp (발췌)"><span class="com">// 엔진 DLL과 게임 모듈 DLL이 같은 타입에 같은 ID를 쓰도록 ID 표는 Core(엔진 DLL) 한 곳에 둔다.</span>
+<span class="com">// 바이너리별 지역 static은 조회 결과 캐시일 뿐이다. 키는 std::type_index</span>
+<span class="kw">template</span> &lt;<span class="kw">typename</span> T&gt;
+<span class="kw">static</span> uint32 GetTypeId()
+{
+	<span class="kw">static const</span> uint32 TypeId = AssignComponentTypeId(std::type_index(<span class="kw">typeid</span>(T)));
+	<span class="kw">return</span> TypeId;
+}
+
+<span class="com">// Registry.cpp — 프로세스 전역 (엔진 DLL 안에 하나). 첫 사용 순서대로 0, 1, 2 ... (버린 ID는 다시 쓰지 않는다)</span>
+uint32 FRegistry::AssignComponentTypeId(std::type_index Type)
+{
+	FComponentTypeIdTable&amp; Table = GetComponentTypeIdTable();
+	std::scoped_lock       Lock(Table.Mutex);
+	<span class="kw">const auto</span> [It, bInserted] = Table.Ids.try_emplace(Type, Table.NextId);
+	<span class="kw">if</span> (bInserted) { ++Table.NextId; }
+	<span class="kw">return</span> It-&gt;second;
+}</pre>
+<p>왜 이렇게까지 할까요? 템플릿 함수의 지역 <code>static</code>은 <b>그 함수를 인스턴스화한 바이너리마다</b> 따로 생깁니다. 엔진 DLL 안에서 <code>GetTypeId&lt;FTransformComponent&gt;()</code>가 3을 받았어도, 게임 모듈 DLL 안의 같은 함수는 자기만의 카운터로 0을 받을 수 있습니다. 그러면 게임 모듈이 3번 풀(트랜스폼)을 0번 풀(이름?)로 착각해 캐스팅합니다. 그래서 진짜 표는 엔진 DLL 안 한 곳(<code>Registry.cpp</code>)에 두고, 키는 <code>std::type_index</code>로 합니다(MSVC는 타입 장식 이름으로 비교하므로 DLL이 달라도 같은 타입은 같은 키). 지역 <code>static</code>은 "한 번 물어본 답을 기억하는 캐시"로만 남았습니다. 이 함정은 12강에서 엔진 DLL 전체 이야기와 함께 다시 봅니다.</p>
+<p>이 표에는 <code>RetireComponentTypeId</code>도 있습니다. 게임 모듈을 에디터에서 다시 로드할 때(12강), 구조체 멤버가 바뀐 새 컴포넌트 타입이 <b>옛 풀을 자기 타입으로 잘못 캐스팅하지 않도록</b> 옛 ID를 버리고 새 ID를 받게 합니다. 버린 번호는 다시 쓰지 않으므로 <code>NextId</code>를 표와 따로 셉니다.</p>
+
+<div class="callout tip">
+	<b class="t">왜 직접 만들었나 (EnTT 같은 라이브러리 대신)</b>
+	0강의 기준대로 ECS는 "엔진의 성격과 성능을 결정하는 것"이라 직접 구현했습니다. 덕분에 리플렉션(9강)·DLL 경계 타입 ID·핫 리로드용 ID 폐기처럼 엔진 사정에 맞춘 기능을 자유롭게 넣을 수 있었습니다. 구현 자체는 <code>Core/ECS/</code> 네 파일, 합쳐서 약 490줄입니다. Phase 3에서 테스트 5개(<code>ECS_EntityLifetime</code>, <code>ComponentAddGetRemove</code>, <code>StaleHandleDoesNotAliasReusedSlot</code>, <code>SwapRemoveKeepsPoolConsistent</code>, <code>ViewIteratesIntersection</code>)와 함께 들어왔습니다.
+</div>
+
+<h3 id="lec-7-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: DLL마다 다른 타입 ID</b>
+	엔진을 <code>ProjectEEngine.dll</code>로 묶고 게임 모듈 DLL이 컴포넌트를 등록하게 만든 날(2026-09-30), 위의 "지역 static 카운터" 방식으로는 엔진과 게임 모듈이 같은 컴포넌트에 서로 다른 번호를 매길 수 있다는 점이 문제가 됐습니다. 그 커밋에서 타입 ID를 엔진 DLL의 전역 표(<code>std::type_index</code> 키)로 옮겼고, CLAUDE.md에 "헤더 인라인 템플릿의 함수 지역 static처럼 바이너리마다 따로 생기는 상태에 전역 의미를 두지 않는다"는 규칙이 생겼습니다.
+</div>
+<ul>
+	<li><b>View도 공짜는 아니다</b>: 엔티티마다 <code>Contains</code>와 <code>Get</code>을 풀 수만큼 부릅니다. 8강에서 볼 트랜스폼 갱신의 루트 찾기는 <code>View&lt;트랜스폼, 계층&gt;::Each</code>(엔티티당 조회 4번)를 쓰다가, 풀 배열을 직접 묶음으로 나눠 도는 방식으로 바꿔 순차 0.22ms → 0.05ms가 됐습니다. 아주 뜨거운 경로에서는 풀을 직접 보는 것이 낫습니다.</li>
+	<li><b>테스트 매크로와 템플릿 쉼표</b>: <code>E_EXPECT_EQ(Registry.View&lt;A, B&gt;().Count(), 2)</code>처럼 쓰면 전처리기가 꺾쇠를 모르기 때문에 <code>View&lt;A</code>와 <code>B&gt;()...</code>를 서로 다른 매크로 인자로 자릅니다. CLAUDE.md 규칙대로 지역 변수로 먼저 받습니다.</li>
+	<li><b>순서에 기대지 말 것</b>: swap-remove 때문에 Dense 순서는 생성 순서가 아닙니다. 씬 저장처럼 순서가 의미 있는 곳은 계층(부모 → 자식)이나 별도 기준으로 정렬합니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>ECS = 엔티티(번호) + 컴포넌트(순수 데이터) + 시스템(순회 로직). 상속 대신 조합으로 물체를 표현한다.</li>
+		<li>같은 타입 컴포넌트를 연속 배열에 모으면 캐시 친화적으로 순회할 수 있다(데이터 지향).</li>
+		<li>희소 집합: Sparse(번호 → 위치) + Dense(빈틈없는 배열). 찾기·삭제 O(1), 삭제는 swap-remove.</li>
+		<li>엔티티 핸들 = (슬롯, 세대). 파괴 시 세대를 올려 옛 핸들을 자동 무효화한다.</li>
+		<li>View는 가장 작은 풀을 돌고 나머지는 Contains로 확인. 순회 중 같은 타입 추가/제거 금지.</li>
+		<li>타입 ID 표는 엔진 DLL 한 곳에 — 지역 static은 바이너리마다 따로 생긴다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 컴포넌트 A를 가진 엔티티가 10만 개, B를 가진 엔티티가 20개입니다. <code>View&lt;A, B&gt;</code>와 <code>View&lt;B, A&gt;</code>의 비용은 다를까요?</summary>
+	다르지 않습니다. 두 경우 모두 <code>GetIterationEntities</code>가 크기를 비교해 B 풀(20개)을 기준으로 고르고, A 풀에는 <code>Contains</code>만 20번 묻습니다. 타입 순서는 크기가 같을 때의 기준(앞 타입)과 람다 인자 순서만 정합니다.
+</details>
+<details class="quiz"><summary>Q2. 스크립트가 다른 엔티티의 <code>FEntity</code>를 컴포넌트 프로퍼티에 저장해 두었는데 그 엔티티가 파괴됐습니다. 다음 프레임에 그 값으로 <code>TryGet</code>을 부르면?</summary>
+	파괴 시 그 슬롯의 세대가 올라갔으므로 <code>IsValid</code>가 거짓이 되고, 희소 집합의 <code>Contains</code>도 Dense에 들어 있는 (인덱스, 세대)와 비교하므로 <code>nullptr</code>를 돌려줍니다. 슬롯이 이미 다른 엔티티에게 재사용되었더라도 세대가 다르므로 엉뚱한 물체를 건드리지 않습니다. 단, 세대는 32비트이므로 같은 슬롯이 약 43억 번 재사용되면 한 바퀴 돌 수 있다는 이론적 한계는 있습니다.
+</details>
+<details class="quiz"><summary>Q3. "체력이 0인 엔티티를 모두 지우는" 시스템을 <code>View&lt;FHealthComponent&gt;().Each</code> 안에서 바로 <code>Registry.Destroy</code>로 구현하면 어떤 버그가 날까요? 어떻게 고칠까요?</summary>
+	<code>Destroy</code>는 체력 풀에서도 swap-remove를 하므로, 순회 중인 바로 그 배열의 마지막 원소가 현재 위치로 옮겨집니다. 루프는 다음 인덱스로 넘어가므로 옮겨진 엔티티를 검사하지 않고 지나치고, 경우에 따라 람다가 받은 참조도 다른 원소를 가리키게 됩니다. 순회 중에는 지울 대상을 목록에 모으고, 순회가 끝난 뒤 한꺼번에 지웁니다. (ProjectE의 스크립트 <code>Destroy()</code>가 "프레임 끝에 지연 적용"인 것도 같은 이유입니다.)
+</details>
+</article>
+
+<!-- ======================================================= 8강 ======================================================= -->
+<article class="lecture" id="lec-8">
+<header>
+	<div class="no">8강</div>
+	<h2 id="lec-8-title">씬 그래프와 트랜스폼</h2>
+	<div class="meta">관련 Phase: 3 (계층), 2026-10-04 트랜스폼 캐시 · 살펴볼 곳: <code>Engine/Source/Scene/Scene.h</code>, <code>Scene.cpp</code>, <code>Scene/Components.h</code> (<code>FTransformComponent</code>, <code>FHierarchyComponent</code>), <code>Tests/RendererTests/SceneTests.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>로컬 트랜스폼과 월드 행렬의 관계, 그리고 계층을 따라 행렬을 곱하는 순서를 설명할 수 있습니다.</li>
+		<li>부모 변경(<code>SetParent</code>)에서 순환을 막는 방법과 재귀 파괴의 순서를 압니다.</li>
+		<li>"입력이 비트 단위로 같으면 계산을 건너뛴다"는 캐시가 왜 전체 재계산과 비트 동일한 결과를 보장하는지 이해합니다.</li>
+		<li>루트별 하위 트리를 병렬로 갱신해도 결과와 순서가 순차 갱신과 같게 만드는 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-8-why"><span class="step">왜 필요한가</span>물체는 다른 물체에 붙어 움직인다</h3>
+<p>자동차가 달리면 바퀴도 함께 갑니다. 캐릭터가 손을 들면 손에 쥔 칼도 따라 올라갑니다. 이때 바퀴의 위치를 매 프레임 "월드 어디"로 직접 계산해 넣는 것은 비현실적입니다. 대신 바퀴는 "차체 기준으로 앞쪽 오른편 아래"라는 <b>상대 위치</b>만 갖고, 차체가 움직이면 엔진이 그 관계를 따라 바퀴의 실제 위치를 계산하게 합니다.</p>
+<p>이 "누가 누구에게 붙어 있는가"의 트리를 <b>씬 그래프</b>(scene graph) 또는 계층(hierarchy)이라고 합니다. Phase 3의 완료 기준(DoD)에도 "회전하는 부모 아래 큐브 링이 따라 돈다(계층)"가 들어 있었습니다. 계층은 렌더링뿐 아니라 에디터 계층 패널, 프리팹, 모델 노드(뼈), 소켓 부착, 서브 씬이 모두 기대는 구조입니다.</p>
+
+<h3 id="lec-8-local"><span class="step">핵심 개념</span>로컬 트랜스폼과 월드 행렬</h3>
+<p>각 엔티티의 <code>FTransformComponent</code>는 사람이 편집하는 <b>로컬</b> 값(위치·회전·스케일, 줄여서 TRS)을 저장합니다. "부모 기준으로 어디에, 어느 방향으로, 얼마나 크게"입니다. 렌더러·물리·오디오가 필요로 하는 것은 월드 공간의 최종 변환이므로, 엔진이 이를 <b>월드 행렬</b>로 계산해 같은 컴포넌트에 캐시해 둡니다.</p>
+<p>ProjectE의 행렬은 행벡터 규약(<code>v * M</code>, 4강)을 쓰므로 "먼저 적용할 것을 왼쪽에" 둡니다. 로컬 행렬은 <code>S * R * T</code>(스케일 → 회전 → 이동), 그리고 월드 행렬은 다음 한 줄입니다.</p>
+<div class="callout note">
+	<b class="t">식</b>
+	World<sub>자식</sub> = Local<sub>자식</sub> × World<sub>부모</sub> &nbsp;&nbsp;(루트는 World = Local)<br>
+	풀어 쓰면 World<sub>손자</sub> = Local<sub>손자</sub> × Local<sub>자식</sub> × Local<sub>루트</sub>. 점 하나를 손자의 공간에서 월드로 보내려면 손자 → 자식 → 루트 공간을 차례로 거친다는 뜻입니다.
+</div>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="계층과 월드 행렬 합성">
+		<title>계층과 월드 행렬 합성</title>
+		<g class="t-small">
+			<rect x="40" y="30" width="200" height="56" rx="10" class="acc"/>
+			<text x="140" y="54" text-anchor="middle" class="t-bold">Ring (루트)</text>
+			<text x="140" y="74" text-anchor="middle" class="t-muted">회전 = 시간 × 45°/s</text>
+			<rect x="20" y="130" width="110" height="56" rx="10" class="k1"/>
+			<text x="75" y="154" text-anchor="middle" class="t-bold">Cube 0</text>
+			<text x="75" y="174" text-anchor="middle" class="t-muted">위치 (300, 0, 0)</text>
+			<rect x="150" y="130" width="110" height="56" rx="10" class="k1"/>
+			<text x="205" y="154" text-anchor="middle" class="t-bold">Cube 1</text>
+			<text x="205" y="174" text-anchor="middle" class="t-muted">위치 (0, 300, 0)</text>
+			<rect x="150" y="226" width="110" height="56" rx="10" class="k2"/>
+			<text x="205" y="250" text-anchor="middle" class="t-bold">Light</text>
+			<text x="205" y="270" text-anchor="middle" class="t-muted">위치 (0, 0, 80)</text>
+		</g>
+		<path d="M110,86 L80,128" class="ln" marker-end="url(#arr)"/>
+		<path d="M170,86 L200,128" class="ln" marker-end="url(#arr)"/>
+		<path d="M205,186 V224" class="ln" marker-end="url(#arr)"/>
+		<text x="300" y="40" class="t-bold">갱신 순서: 부모가 먼저 (깊이 우선)</text>
+		<g class="t-mono">
+			<text x="300" y="72">World(Ring)  = Local(Ring)</text>
+			<text x="300" y="100">World(Cube0) = Local(Cube0) × World(Ring)</text>
+			<text x="300" y="128">World(Cube1) = Local(Cube1) × World(Ring)</text>
+			<text x="300" y="156">World(Light) = Local(Light) × World(Cube1)</text>
+		</g>
+		<rect x="300" y="186" width="540" height="96" rx="10" class="box"/>
+		<text x="316" y="210" class="t-small">Ring만 회전시켜도(Local(Ring) 한 개 변경) 큐브와 빛이 모두 원을 그리며 돈다.</text>
+		<text x="316" y="234" class="t-small">자식은 자기 로컬 값을 전혀 바꾸지 않았다 — 바뀐 것은 "부모 월드" 입력뿐.</text>
+		<text x="316" y="260" class="t-muted">→ 캐시는 로컬 값뿐 아니라 부모 월드도 입력으로 비교해야 한다 (뒤에서)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 8-1.</b> Phase 3 데모의 "공전 큐브 링"을 단순화한 계층. 월드 행렬은 루트에서 잎 방향으로 한 번 훑으며 계산합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Components.h (발췌)"><span class="com">// 로컬 트랜스폼 + 캐시된 월드 행렬 (FScene::UpdateTransforms가 계층 순서로 갱신)</span>
+<span class="kw">struct</span> FTransformComponent
+{
+	FVector3 Position;
+	FQuat    Rotation;
+	FVector3 Scale = FVector3::OneVector;
+
+	FMatrix4x4 WorldMatrix;   <span class="com">// 파생 값 — 리플렉션에 등록하지 않는다(저장 안 함)</span>
+	...
+	FMatrix4x4 GetLocalMatrix() <span class="kw">const</span> { <span class="kw">return</span> FMatrix4x4::MakeTransform(Position, Rotation, Scale); }
+};
+
+<span class="com">// 부모/자식 관계. FScene::SetParent로만 변경한다.</span>
+<span class="kw">struct</span> FHierarchyComponent
+{
+	FEntity              Parent;
+	std::vector&lt;FEntity&gt; Children;
+};</pre>
+<p>계층은 <b>양방향</b>으로 저장합니다. 자식은 부모를 알고(위로 올라가며 조상 확인), 부모는 자식 목록을 압니다(아래로 내려가며 갱신·파괴). 대가는 두 정보가 항상 일치해야 한다는 것입니다. 그래서 CLAUDE.md는 "계층 변경은 반드시 <code>FScene::SetParent</code>"를 규칙으로 둡니다. 누군가 <code>Parent</code> 필드만 직접 바꾸면 옛 부모의 <code>Children</code>에 유령이 남습니다.</p>
+
+<h3 id="lec-8-setparent"><span class="step">핵심 개념</span>SetParent — 순환을 거부하기</h3>
+<p>트리는 순환이 없어야 트리입니다. 에디터 계층 패널에서 사용자가 "할아버지"를 "손자" 밑으로 끌어다 놓으면? 그대로 받아들이면 갱신 재귀가 끝나지 않고 스택이 터집니다. <code>SetParent(Child, Parent)</code>는 새 부모가 <b>자기 자신이거나 자기 자손이면</b> 거부합니다. "Parent가 Child의 자손인가?"는 Parent에서 위로 올라가며 Child를 만나는지 보면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 230" role="img" aria-label="순환 계층 거부">
+		<title>순환 계층 거부</title>
+		<g class="t-small">
+			<rect x="60" y="20" width="110" height="36" rx="8" class="k1"/><text x="115" y="43" text-anchor="middle">A (할아버지)</text>
+			<rect x="60" y="90" width="110" height="36" rx="8" class="k1"/><text x="115" y="113" text-anchor="middle">B</text>
+			<rect x="60" y="160" width="110" height="36" rx="8" class="k1"/><text x="115" y="183" text-anchor="middle">C (손자)</text>
+		</g>
+		<path d="M115,56 V88" class="ln" marker-end="url(#arr)"/>
+		<path d="M115,126 V158" class="ln" marker-end="url(#arr)"/>
+		<path d="M170,178 C 260,170 260,50 174,40" class="ln-d s5" marker-end="url(#arr)"/>
+		<text x="250" y="114" class="t-small">SetParent(A, C) ?</text>
+		<rect x="360" y="20" width="480" height="180" rx="10" class="box"/>
+		<text x="378" y="46" class="t-bold">IsAncestorOf(A, C): C에서 위로 올라간다</text>
+		<g class="t-small">
+			<text x="378" y="76">Current = Parent(C) = B   → A인가? 아니오</text>
+			<text x="378" y="102">Current = Parent(B) = A   → A인가? 예 → 순환</text>
+			<text x="378" y="136" class="f5 t-bold">경고 로그 "순환 계층은 허용되지 않습니다" 후 무시</text>
+			<text x="378" y="166" class="t-muted">비용 = 깊이만큼 (보통 수 단계). 허용되면: 옛 부모의 Children에서</text>
+			<text x="378" y="186" class="t-muted">지우고 → 새 부모 Children에 추가 → Parent 필드 갱신</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 8-2.</b> 조상 사슬을 거슬러 올라가며 확인합니다. 루트에 닿을 때까지 A를 만나지 않으면 안전합니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Scene.cpp — SetParent / DestroyEntity (발췌)"><span class="kw">void</span> FScene::SetParent(FEntity Child, FEntity Parent)
+{
+	...
+	<span class="kw">if</span> (Parent.IsValid() &amp;&amp; (Parent == Child || IsAncestorOf(Child, Parent)))
+	{
+		E_LOG(LogScene, Warning, <span class="str">"순환 계층은 허용되지 않습니다 (엔티티 {} → {})"</span>, Child.Index, Parent.Index);
+		<span class="kw">return</span>;
+	}
+	<span class="com">// 기존 부모에서 제거</span>
+	<span class="kw">if</span> (FHierarchyComponent* OldParent = Registry.TryGet&lt;FHierarchyComponent&gt;(ChildHierarchy-&gt;Parent))
+	{
+		std::erase(OldParent-&gt;Children, Child);
+	}
+	<span class="com">// 새 부모에 추가</span>
+	...
+	ChildHierarchy-&gt;Parent = Parent;
+}
+
+<span class="kw">void</span> FScene::DestroyEntity(FEntity Entity)
+{
+	<span class="kw">if</span> (!Registry.IsValid(Entity)) { <span class="kw">return</span>; }
+	<span class="com">// 자식 먼저 (목록을 복사해 순회 중 변경 회피)</span>
+	<span class="kw">if</span> (FHierarchyComponent* Hierarchy = Registry.TryGet&lt;FHierarchyComponent&gt;(Entity))
+	{
+		<span class="kw">const</span> std::vector&lt;FEntity&gt; Children = Hierarchy-&gt;Children;
+		<span class="kw">for</span> (FEntity Child : Children) { DestroyEntity(Child); }
+	}
+	SetParent(Entity, NullEntity);   <span class="com">// 부모의 자식 목록에서 빠진다</span>
+	Registry.Destroy(Entity);
+}</pre>
+<p>파괴는 <b>자식부터 재귀</b>로 합니다. 자식 목록을 복사해 두는 이유는, 자식이 파괴되며 <code>SetParent(자식, Null)</code>로 바로 이 목록에서 자기를 지우기 때문입니다(7강의 "순회 중 변경 금지"와 같은 문제). 이 동작은 테스트 <code>Scene_ReparentAndCycleRejection</code>, <code>Scene_DestroyEntityRecursive</code>가 지킵니다. 참고로 부모 변경은 로컬 값을 그대로 두므로, 월드 위치를 유지한 채 부모를 바꾸고 싶은 에디터 코드는 로컬 값을 새 부모 기준으로 다시 계산해 넣어야 합니다.</p>
+
+<h3 id="lec-8-update"><span class="step">핵심 개념</span>UpdateTransforms — 한 프레임에 한 번, 위에서 아래로</h3>
+<p>월드 행렬은 <code>FScene::UpdateTransforms()</code>가 한꺼번에 계산합니다. 매번 위치를 바꿀 때마다 자손 전체를 다시 계산하면(즉시 갱신) 한 프레임에 같은 엔티티를 여러 번 계산하게 되므로, ProjectE는 "로컬 값은 언제든 바꾸고, 월드는 정해진 시점에 한 번"을 택했습니다. 게임 월드 갱신 순서(7부)에서 이 함수는 물리 뒤, 애니메이션 뒤 등 정해진 자리에서 불립니다.</p>
+<p>현재 구현은 세 단계입니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="UpdateTransforms의 세 단계">
+		<title>UpdateTransforms의 세 단계</title>
+		<text x="20" y="26" class="t-bold">① 루트 찾기 — 풀을 1024개 묶음으로 나눠 병렬</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="190" height="34" rx="6" class="k1"/><text x="115" y="62" text-anchor="middle">묶음 0 (엔티티 0~1023)</text>
+			<rect x="220" y="40" width="190" height="34" rx="6" class="k1"/><text x="315" y="62" text-anchor="middle">묶음 1</text>
+			<rect x="420" y="40" width="190" height="34" rx="6" class="k1"/><text x="515" y="62" text-anchor="middle">묶음 2</text>
+			<text x="640" y="62" class="t-muted">→ 묶음 순서대로 이어 붙임</text>
+		</g>
+		<text x="20" y="114" class="t-bold">② 루트 하위 트리를 병렬로 (서로 겹치지 않는다)</text>
+		<g class="t-small">
+			<rect x="20" y="128" width="120" height="30" rx="6" class="acc"/><text x="80" y="148" text-anchor="middle">루트 R0</text>
+			<rect x="160" y="128" width="120" height="30" rx="6" class="acc"/><text x="220" y="148" text-anchor="middle">루트 R1</text>
+			<rect x="300" y="128" width="120" height="30" rx="6" class="acc"/><text x="360" y="148" text-anchor="middle">루트 R2</text>
+			<rect x="35" y="176" width="40" height="24" rx="4" class="k2"/><rect x="85" y="176" width="40" height="24" rx="4" class="k2"/>
+			<rect x="200" y="176" width="40" height="24" rx="4" class="k2"/>
+			<rect x="315" y="176" width="40" height="24" rx="4" class="k2"/><rect x="365" y="176" width="40" height="24" rx="4" class="k4"/>
+			<text x="385" y="217" text-anchor="middle" class="t-muted">소켓 부착</text>
+			<text x="450" y="148" class="t-small">스레드 A: R0 하위 트리 전부 / 스레드 B: R1, R2 ...</text>
+			<text x="450" y="172" class="t-small">각 스레드는 자기 하위 트리의 WorldMatrix만 쓴다</text>
+			<text x="450" y="196" class="t-muted">읽는 것은 계층·로컬 값뿐 → 잠금 필요 없음</text>
+		</g>
+		<path d="M80,158 L58,174" class="ln"/><path d="M80,158 L102,174" class="ln"/>
+		<path d="M220,158 V174" class="ln"/>
+		<path d="M360,158 L337,174" class="ln"/><path d="M360,158 L383,174" class="ln-d"/>
+		<text x="20" y="254" class="t-bold">③ 미룬 소켓 부착 엔티티 — 루트 순서대로 합친 목록을 순차 처리</text>
+		<text x="20" y="280" class="t-muted">부착 대상(뼈)의 월드가 먼저 계산돼야 하므로 마지막에. 루트별 목록을 루트 순서로 이어 붙여 순차 실행과 같은 순서를 만든다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 8-3.</b> 루트 찾기와 하위 트리 갱신을 모두 병렬로 하지만, 결과를 합치는 순서를 고정해 순차 실행과 같은 결과·같은 순서를 냅니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Scene.cpp — UpdateTransforms ② (발췌)"><span class="com">// 2) 루트 하위 트리는 서로 겹치지 않으므로 병렬로 갱신한다 (하위 트리의 월드 행렬은 그 루트를 맡은 스레드만 쓰고, 읽는 것은 계층·로컬 값뿐).</span>
+<span class="com">//    미룬 부착 목록은 루트별로 모아 루트 순서대로 이어 붙인다 → 순차 갱신과 같은 순서·같은 결과</span>
+FParallel::ParallelFor(RootCount, <span class="num">16</span>, [<span class="kw">this</span>](uint32 Begin, uint32 End) {
+	<span class="kw">for</span> (uint32 Index = Begin; Index &lt; End; ++Index)
+	{
+		RootDeferred[Index].clear();
+		UpdateTransformRecursive(TransformRoots[Index], FMatrix4x4::Identity, <span class="kw">true</span>, RootDeferred[Index]);
+	}
+});
+<span class="kw">for</span> (uint32 Index = <span class="num">0</span>; Index &lt; RootCount; ++Index)
+{
+	DeferredAttachments.insert(DeferredAttachments.end(), RootDeferred[Index].begin(), RootDeferred[Index].end());
+}</pre>
+<p>병렬화가 안전한 근거는 <b>루트 하위 트리끼리는 겹치지 않는다</b>는 트리의 성질입니다. 엔티티 하나는 부모가 하나뿐이므로 정확히 한 루트에 속하고, 그 루트를 맡은 스레드만 그 엔티티의 <code>WorldMatrix</code>를 씁니다. 예외는 <b>소켓 부착</b>(42강)입니다. 칼이 손 뼈에 붙어 있으면 칼의 부모 행렬은 계층 부모가 아니라 <b>다른 루트(캐릭터 모델) 아래 뼈</b>의 월드 행렬입니다. 그래서 부착 엔티티는 ②에서 건너뛰어 목록에 모아 두었다가, 모든 뼈가 계산된 뒤 ③에서 처리합니다. 로컬 ↔ 월드를 변환하는 코드(기즈모, 물리, 스크립트)가 <code>GetTransform(Parent).WorldMatrix</code> 대신 <code>FScene::GetParentWorldMatrix</code>를 써야 하는 이유도 이것입니다.</p>
+
+<h3 id="lec-8-cache"><span class="step">핵심 개념</span>비트 동일 캐시 — "같은 입력이면 같은 결과"</h3>
+<p>큰 씬에서 실제로 움직이는 물체는 일부입니다. 건물, 바닥, 나무는 매 프레임 같은 월드 행렬을 다시 계산할 뿐입니다. 흔한 해법은 <b>더티 플래그</b>(dirty flag)입니다. 로컬 값을 바꾸는 쪽이 "나 바뀜" 표시를 하고, 갱신은 표시된 것만 계산합니다. 하지만 ProjectE에서 로컬 값을 쓰는 쪽은 스크립트, 물리, 애니메이션, 네트워크 복제, 에디터 기즈모, 게임 모듈 … 너무 많고, 한 곳이라도 표시를 잊으면 물체가 화면에서 멈춰 버리는 버그가 생깁니다.</p>
+<p>ProjectE의 답은 <b>표시를 아무에게도 요구하지 않는 캐시</b>입니다. 엔티티마다 "월드 행렬을 마지막으로 계산할 때 쓴 입력" — 로컬 TRS와 <b>부모 월드 행렬</b> — 을 저장해 두고, 이번 입력이 그것과 <code>memcmp</code>로 <b>비트 단위로 같으면</b> 계산을 건너뜁니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="트랜스폼 캐시 판정">
+		<title>트랜스폼 캐시 판정</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="230" height="110" rx="10" class="k1"/>
+			<text x="36" y="54" class="t-bold">이번 입력</text>
+			<text x="36" y="78" class="t-mono">Position, Rotation, Scale</text>
+			<text x="36" y="100" class="t-mono">ParentWorld</text>
+			<text x="36" y="126" class="t-muted">(부모가 방금 계산한 값)</text>
+			<rect x="20" y="160" width="230" height="76" rx="10" class="k3"/>
+			<text x="36" y="184" class="t-bold">WorldCache (지난 입력)</text>
+			<text x="36" y="208" class="t-mono">같은 네 값 + bValid</text>
+			<rect x="320" y="80" width="200" height="90" rx="10" class="acc"/>
+			<text x="420" y="110" text-anchor="middle" class="t-bold">bValid 이고</text>
+			<text x="420" y="132" text-anchor="middle" class="t-bold">네 값 모두 memcmp == 0 ?</text>
+			<text x="420" y="154" text-anchor="middle" class="t-muted">(오차 비교가 아님)</text>
+			<rect x="600" y="30" width="240" height="70" rx="10" class="k2"/>
+			<text x="616" y="58" class="t-bold">예 → 건너뜀</text>
+			<text x="616" y="82" class="t-small">WorldMatrix는 이미 그 입력의 결과</text>
+			<rect x="600" y="150" width="240" height="86" rx="10" class="k4"/>
+			<text x="616" y="176" class="t-bold">아니오 → 계산</text>
+			<text x="616" y="200" class="t-mono">World = Local × ParentWorld</text>
+			<text x="616" y="222" class="t-small">입력을 WorldCache에 기록</text>
+		</g>
+		<path d="M250,85 L316,115" class="ln" marker-end="url(#arr)"/>
+		<path d="M250,198 L316,145" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,110 L596,70" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,140 L596,185" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 8-4.</b> 결정적인 함수 f(입력)는 같은 입력에 같은 출력을 냅니다. 그래서 "입력이 비트까지 같으면 지난 출력을 재사용"한 결과는 전체 재계산과 비트 단위로 같습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Scene/Scene.cpp (발췌)"><span class="com">// 월드 행렬 = 로컬 × 부모 월드. 입력(로컬 TRS, 부모 월드)이 마지막 계산과 비트 단위로 같으면 그대로 둔다 — 같은 입력이면 같은 결과이므로</span>
+<span class="com">// 전체 재계산과 비트 동일하다. 로컬을 쓰는 쪽(스크립트·물리·애니메이션·복제·편집기)이 표시할 필요가 없다</span>
+<span class="kw">void</span> UpdateWorldMatrix(FTransformComponent&amp; Transform, <span class="kw">const</span> FMatrix4x4&amp; ParentWorld, <span class="kw">bool</span> bUseCache)
+{
+	FTransformComponent::FWorldCache&amp; Cache = Transform.WorldCache;
+	<span class="kw">if</span> (bUseCache &amp;&amp; Cache.bValid &amp;&amp; BitEqual(Cache.Position, Transform.Position) &amp;&amp; BitEqual(Cache.Rotation, Transform.Rotation) &amp;&amp;
+	    BitEqual(Cache.Scale, Transform.Scale) &amp;&amp; BitEqual(Cache.ParentWorld, ParentWorld))
+	{
+		<span class="kw">return</span>;
+	}
+	<span class="com">// 행벡터 규약: Local * Parent</span>
+	Transform.WorldMatrix = Transform.GetLocalMatrix() * ParentWorld;
+	Cache.Position = Transform.Position;  Cache.Rotation = Transform.Rotation;
+	Cache.Scale    = Transform.Scale;     Cache.ParentWorld = ParentWorld;
+	Cache.bValid   = <span class="kw">true</span>;
+}</pre>
+<p>몇 가지 설계 포인트를 짚어 봅시다.</p>
+<ul>
+	<li><b>왜 오차 비교(ε)가 아니라 비트 비교인가?</b> "거의 같으면 건너뛴다"면 아주 천천히 움직이는 물체가 영영 갱신되지 않거나, 결과가 전체 계산과 미세하게 달라집니다. 비트 비교는 "같은 입력"을 수학적으로 보장하므로 결과도 정확히 같습니다. 자동 스크린샷 검증(MD5 비교)이 캐시를 켜도 끄도 같은 화면을 요구하는 이 엔진에서는 중요한 성질입니다.</li>
+	<li><b>왜 부모 월드도 입력인가?</b> 그림 8-1처럼 부모만 움직이면 자식의 로컬 값은 그대로입니다. 부모 월드를 비교하지 않으면 자식이 제자리에 남습니다.</li>
+	<li><b>예외: <code>WorldMatrix</code>를 직접 쓰는 코드.</b> 캐시는 "WorldMatrix = 저장된 입력의 결과"라는 불변식에 기댑니다. 누군가 WorldMatrix를 직접 덮어쓰면 입력은 그대로이므로 다음 갱신이 건너뛰어 덮어쓴 값이 남습니다. 그래서 그런 코드(예: AI 시스템의 <code>SetWorldPose</code>)는 <code>InvalidateWorldCache()</code>를 부릅니다. 반대로 렌더 동안만 값을 바꾸고 <b>정확히 되돌리는</b> 코드(픽셀 아트 도트 스냅)는 불변식이 다시 성립하므로 부를 필요가 없습니다.</li>
+	<li><b>캐시는 리플렉션에 등록하지 않는다.</b> 저장되지 않고, 컴포넌트를 통째로 복사(<code>CopyComponent</code>)하면 WorldMatrix와 함께 옮겨져 일관됩니다.</li>
+	<li><b>끄는 스위치를 남긴다.</b> 콘솔 변수 <code>scene.TransformCache</code>(기본 1)로 끄면 매번 전체 계산합니다 — 결과가 같아야 하므로 비교 수단이 됩니다.</li>
+</ul>
+
+<h3 id="lec-8-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 테스트가 잡아낸 "부모 월드" 비교</b>
+	캐시를 넣을 때 테스트 <code>Scene_TransformCacheMatchesFullRecompute</code>를 함께 만들었습니다. 엔티티 200개에 무작위로 부모를 정하고, 60프레임 동안 로컬 값 변경·부모 변경·생성/파괴·컴포넌트 통째 복사·WorldMatrix 직접 쓰기·소켓 뼈 이동을 섞은 뒤, 모든 월드 행렬이 "로컬 × 부모 월드"와 비트까지 같은지 확인합니다. 부모 월드 비교를 일부러 빼 보면 <b>181건</b>이 실패했습니다. "캐시가 결과를 바꾸지 않는다"를 말로 주장하지 않고 테스트로 못 박은 것입니다.
+</div>
+<div class="callout story">
+	<b class="t">측정: 무엇이 얼마나 빨라졌나</b>
+	스킨 캐릭터가 가득한 Tests/Stress 씬(Release)에서 게임 틱의 트랜스폼 구간이 약 1.5ms → 0.8ms가 됐습니다(커밋 기록: 게임플레이 2회 + 표시 1회 합계 0.97~1.13 + 0.43~0.51ms → 0.60~0.75 + 0.15~0.16ms). 같은 커밋에서 루트 찾기를 <code>View&lt;트랜스폼, 계층&gt;::Each</code>(엔티티당 풀 조회 4번, 0.22ms)에서 풀 배열을 1024개 묶음으로 나눈 병렬 순회(0.05ms)로 바꿨고, 화면 MD5(Stress, 소켓을 쓰는 PixelArt, Materials)는 변하지 않았습니다. 그보다 앞서 하위 트리 병렬화는 애니메이션 포즈 병렬 평가와 함께 들어왔습니다.
+</div>
+<ul>
+	<li><b>병렬화의 조건은 "같은 결과"</b>: 하위 트리를 병렬로 돌린 뒤 결과 목록을 스레드가 끝난 순서대로 합치면 실행마다 순서가 달라집니다. 루트 인덱스별 칸에 모았다가 루트 순서로 합치는 것이 핵심입니다.</li>
+	<li><b>"되돌리는 코드"와 "바꾸고 끝내는 코드"를 구분할 것</b>: 픽셀 아트 도트 스냅(<code>FPixelArtObjectSnap</code>)은 씬 렌더 동안만 월드 행렬의 이동값을 바꾸고 정확히 되돌리므로 캐시를 무효화하지 않아도 됩니다. 반면 AI의 <code>SetWorldPose</code>처럼 바꾸고 끝내는 코드는 반드시 무효화해야 합니다. CLAUDE.md는 두 예를 모두 적어 두었습니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>엔티티는 로컬 TRS만 저장하고, 월드 = 로컬 × 부모 월드를 루트에서 잎으로 계산한다.</li>
+		<li>계층은 양방향(Parent + Children)이며 <code>SetParent</code>로만 바꾼다. 새 부모가 자기 자손이면 거부.</li>
+		<li>파괴는 자식부터 재귀, 자식 목록은 복사해서 돈다.</li>
+		<li>캐시: 로컬 TRS + 부모 월드가 비트 단위로 같으면 건너뜀 → 결과는 전체 재계산과 비트 동일, 로컬을 쓰는 쪽은 아무것도 안 해도 된다. WorldMatrix를 직접 쓰고 되돌리지 않으면 <code>InvalidateWorldCache()</code>.</li>
+		<li>루트 하위 트리는 겹치지 않으므로 병렬 갱신, 합치는 순서는 루트 순서로 고정. 소켓 부착은 마지막에.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 부모가 1프레임에 한 번씩 미세하게 흔들리고, 그 아래 자손이 1만 개 있습니다. 이 캐시는 도움이 될까요?</summary>
+	거의 되지 않습니다. 부모 월드가 바뀌면 모든 자손의 "부모 월드" 입력이 바뀌므로 1만 개 모두 다시 계산합니다. 캐시가 이득을 보는 것은 "움직이지 않는 하위 트리"입니다. 다만 비교 비용(부모 행렬 64바이트 + TRS의 memcmp)은 쿼터니언 → 행렬 변환과 4×4 곱보다 대체로 가벼우므로, 전부 다시 계산하는 최악의 경우에도 추가 비용은 크지 않습니다.
+</details>
+<details class="quiz"><summary>Q2. 물리 시스템이 강체 위치를 로컬 <code>Position</code>에 쓰는 대신 <code>WorldMatrix</code>에 바로 썼다고 해 봅시다. 화면에서 어떤 일이 생길까요?</summary>
+	그 엔티티의 로컬 TRS와 부모 월드가 지난 프레임과 같다면 다음 <code>UpdateTransforms</code>는 계산을 건너뛰므로, 이번 프레임엔 물리 값이 남아 보입니다. 그런데 다른 이유(예: 로컬 값 편집)로 입력이 바뀌는 순간 로컬 기준으로 다시 계산되어 물체가 원래 자리로 "순간 이동"합니다. 또 캐시를 끄면(<code>scene.TransformCache 0</code>) 매 프레임 덮어써져 화면이 달라집니다. 직접 쓰는 코드는 <code>InvalidateWorldCache()</code>를 부르거나, 원칙대로 로컬 값을 써야 합니다(ProjectE 물리는 실제로 로컬 트랜스폼에 씁니다).
+</details>
+<details class="quiz"><summary>Q3. 루트가 1개(예: 모든 것을 담은 "World" 엔티티)뿐인 씬에서는 루트별 병렬화가 어떻게 될까요?</summary>
+	병렬화 단위가 루트 하위 트리이므로 작업이 하나뿐이라 사실상 순차로 돕니다. 하위 트리를 더 잘게 나누려면 "자식별 하위 트리"까지 내려가 작업을 쪼개야 하지만, 그만큼 합치는 순서 관리가 복잡해집니다. 큰 씬을 하나의 루트 밑에 묶는 습관은 이 구조에서 성능상 불리하다는 점을 기억해 둘 만합니다.
+</details>
+</article>
+
+<!-- ======================================================= 9강 ======================================================= -->
+<article class="lecture" id="lec-9">
+<header>
+	<div class="no">9강</div>
+	<h2 id="lec-9-title">리플렉션</h2>
+	<div class="meta">관련 Phase: 5 (트랙 B) · 살펴볼 곳: <code>Engine/Source/Core/Reflection/</code> (<code>TypeInfo.h</code>, <code>PropertyType.h</code>, <code>ReflectionJson.cpp</code>), <code>Scene/SceneReflection.cpp</code>, <code>Scene/EntityJson.cpp</code>, <code>Scripting/LuaRuntime.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>C++의 기본 RTTI로는 왜 "구조체의 필드 목록"을 얻을 수 없는지, 그래서 엔진이 무엇을 직접 만들어야 하는지 설명할 수 있습니다.</li>
+		<li>"타입 열거형 + 바이트 오프셋"만으로 임의 구조체의 필드를 읽고 쓰는 원리를 압니다.</li>
+		<li>멤버 포인터와 템플릿으로 등록을 타입 안전하게 만드는 빌더(<code>TTypeBuilder</code>)를 읽을 수 있습니다.</li>
+		<li>등록 한 번이 인스펙터·저장·Lua·복제·프리팹·플레이 모드 복제로 이어지는 구조와, 플래그(<code>PF_Transient</code> 등)가 각 시스템에서 어떻게 해석되는지 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-9-why"><span class="step">왜 필요한가</span>컴포넌트 N개 × 시스템 M개의 손 코드</h3>
+<p>방향광 컴포넌트를 하나 새로 만들었다고 합시다. 에디터 인스펙터에 색과 강도를 편집하는 UI가 있어야 하고, 씬을 저장할 때 JSON에 써야 하고, 불러올 때 읽어야 하고, Lua에서 <code>light.Intensity = 3</code>이 되어야 하고, 멀티플레이에서는 서버 값을 클라이언트로 보내야 하고, 플레이 버튼을 누르면 편집 씬을 복제해야 합니다. 이걸 컴포넌트마다 손으로 짜면 컴포넌트 수 × 시스템 수만큼의 코드가 생기고, 필드 하나를 추가할 때마다 여섯 곳을 고쳐야 합니다. 한 곳을 빼먹는 순간 "저장은 되는데 Lua에서 안 보이는" 버그가 납니다.</p>
+<p>해결책은 각 컴포넌트가 <b>자기 모양을 스스로 설명하게</b> 하는 것입니다. "나는 <code>Color</code>(Vector3, 색)와 <code>Intensity</code>(float, 0~50)를 가진다." 이 설명을 읽는 <b>범용 코드</b>를 시스템마다 한 번만 짜면, 이후 컴포넌트는 설명만 추가하면 됩니다. 프로그램이 실행 중에 자기 타입 구조를 들여다보는 능력을 <b>리플렉션</b>(reflection)이라고 합니다. 2부 소개의 그림 2-2가 이 강의의 요점입니다.</p>
+
+<h3 id="lec-9-rtti"><span class="step">핵심 개념</span>C++의 RTTI로는 부족하다</h3>
+<p>C++에도 실행 시간 타입 정보(RTTI)가 있습니다. <code>typeid(T)</code>는 <code>std::type_info</code>를 돌려주고, 거기서 타입 이름 문자열과 "같은 타입인가" 비교 정도를 얻습니다. 하지만 "이 구조체에 어떤 멤버가 몇 번째 바이트에 있는가"는 알려 주지 않습니다. C#이나 Java는 런타임이 이 정보를 갖고 있지만, C++(이 프로젝트의 C++20)에는 멤버를 열거하는 표준 기능이 없습니다. 그래서 언리얼은 <code>UPROPERTY()</code> 매크로를 읽는 별도 코드 생성기(UHT)를 두고, ProjectE는 <b>등록 코드를 손으로 한 줄씩 쓰는</b> 더 단순한 방식을 택했습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>방식</th><th>장점</th><th>단점</th></tr>
+	<tr><td>코드 생성기 (언리얼 UHT)</td><td>헤더의 매크로만 붙이면 됨</td><td>빌드 단계·도구가 하나 더 필요, 디버깅이 어려움</td></tr>
+	<tr><td>매크로로 구조체 정의 자체를 감싸기</td><td>별도 도구 없음</td><td>구조체 선언이 읽기 어려워짐</td></tr>
+	<tr><td><b>등록 함수에서 멤버 포인터로 기술</b> (ProjectE)</td><td>평범한 C++, 구조체는 그대로 POD, 컴파일러가 타입 검사</td><td>필드를 추가하면 등록 줄도 직접 추가해야 함</td></tr>
+</table></div>
+
+<h3 id="lec-9-offset"><span class="step">핵심 개념</span>프로퍼티 = 이름 + 타입 + 오프셋</h3>
+<p>리플렉션의 원리는 놀랄 만큼 단순합니다. 구조체의 멤버는 객체 시작 주소에서 <b>고정된 바이트 거리(오프셋)</b>에 있습니다. "Intensity는 오프셋 12에 있는 float"라는 정보만 있으면, 어떤 방향광 객체의 주소 <code>p</code>가 주어지든 <code>*(float*)(p + 12)</code>로 값을 읽고 쓸 수 있습니다. 범용 코드는 구체 타입(<code>FDirectionalLightComponent</code>)을 몰라도 <code>void*</code>와 오프셋, 그리고 "그 자리에 무슨 타입이 있는지"만 알면 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="방향광 컴포넌트의 메모리 배치와 프로퍼티 정보">
+		<title>메모리 배치와 프로퍼티 정보</title>
+		<text x="20" y="26" class="t-bold">FDirectionalLightComponent 객체 (주소 p)</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="168" height="40" class="k1"/><text x="104" y="65" text-anchor="middle">Color (FVector3)</text>
+			<rect x="188" y="40" width="56" height="40" class="k2"/><text x="216" y="65" text-anchor="middle">Intensity</text>
+			<rect x="244" y="40" width="300" height="40" class="k3"/><text x="394" y="65" text-anchor="middle">CookieTexture (std::string, S바이트)</text>
+			<rect x="544" y="40" width="70" height="40" class="k4"/><text x="579" y="65" text-anchor="middle">TileSize</text>
+			<rect x="614" y="40" width="110" height="40" class="k5"/><text x="669" y="65" text-anchor="middle">PanSpeed (Vec2)</text>
+			<text x="20" y="98" class="t-mono">0</text><text x="188" y="98" class="t-mono">12</text><text x="244" y="98" class="t-mono">16</text>
+			<text x="544" y="98" class="t-mono">16+S</text><text x="614" y="98" class="t-mono">20+S</text>
+			<text x="740" y="65" class="t-muted">← 바이트 오프셋</text>
+		</g>
+		<rect x="20" y="124" width="520" height="140" rx="10" class="box"/>
+		<text x="36" y="148" class="t-bold">FPropertyInfo 목록 (등록 시 한 번 계산)</text>
+		<g class="t-mono">
+			<text x="36" y="174">{ "Color",     Vector3, Offset 0,    PF_Color }</text>
+			<text x="36" y="196">{ "Intensity", Float,   Offset 12,   Range 0~50 }</text>
+			<text x="36" y="218">{ "CookieTexture", String, Offset 16, AssetFilter }</text>
+			<text x="36" y="240">{ "CookieTileSize", Float, Offset 16+S }  ...</text>
+		</g>
+		<rect x="570" y="124" width="270" height="140" rx="10" class="acc"/>
+		<text x="586" y="148" class="t-bold">범용 코드</text>
+		<text x="586" y="174" class="t-mono">void* Ptr = (uint8*)p + Offset;</text>
+		<text x="586" y="198" class="t-mono">switch (Type) {</text>
+		<text x="586" y="218" class="t-mono">  case Float: *(float*)Ptr ...</text>
+		<text x="586" y="242" class="t-muted">구체 타입을 몰라도 된다</text>
+		<path d="M216,102 C 216,112 160,118 150,122" class="ln-d"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 9-1.</b> S = <code>sizeof(std::string)</code>은 표준 라이브러리 구현과 빌드 구성에 따라 다를 수 있습니다. 그래서 오프셋은 사람이 적지 않고 <b>컴파일러가 계산</b>하게 합니다. 각 빌드에서 언제나 맞는 값이 들어갑니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/Reflection/PropertyType.h / TypeInfo.h (발췌)"><span class="com">// 리플렉션이 이해하는 프로퍼티 값 타입.</span>
+<span class="com">// 인스펙터 위젯 선택, JSON 직렬화, 스크립트 바인딩이 모두 이 열거형으로 분기한다.</span>
+<span class="kw">enum class</span> EPropertyType : uint8
+{
+	Bool, Int32, UInt32, Float, String, Vector2, Vector3, Vector4, Quat,
+	Entity,         <span class="com">// FEntity</span>
+	ResourceHandle, <span class="com">// THandle&lt;Tag&gt; (메시/텍스처/머티리얼 등)</span>
+	Count
+};
+
+<span class="com">// 프로퍼티 메타데이터: 오브젝트 시작 주소 + Offset 위치에 Type 값이 있다</span>
+<span class="kw">struct</span> FPropertyInfo
+{
+	std::string   Name;        <span class="com">// 식별자 (직렬화 키, 스크립트 이름)</span>
+	std::string   DisplayName; <span class="com">// 인스펙터 표시 이름</span>
+	EPropertyType Type   = EPropertyType::Bool;
+	uint32        Flags  = PF_None;
+	size_t        Offset = <span class="num">0</span>;
+	size_t        Size   = <span class="num">0</span>;
+	<span class="kw">float</span> MinValue = <span class="num">0.0f</span>, MaxValue = <span class="num">0.0f</span>, Step = <span class="num">0.0f</span>;   <span class="com">// 편집 범위</span>
+	...
+	<span class="kw">template</span> &lt;<span class="kw">typename</span> T&gt;
+	T&amp; GetRef(<span class="kw">void</span>* Object) <span class="kw">const</span>
+	{
+		E_CHECKF(TPropertyTypeOf&lt;T&gt;::Value == Type, <span class="str">"프로퍼티 '{}' 타입 불일치"</span>, Name);
+		<span class="kw">return</span> *<span class="kw">static_cast</span>&lt;T*&gt;(GetPtr(Object));   <span class="com">// GetPtr = (uint8*)Object + Offset</span>
+	}
+};</pre>
+<p><code>GetRef&lt;T&gt;</code>가 <code>E_CHECKF</code>로 타입을 다시 확인하는 점에 주목하세요. <code>void*</code>와 오프셋은 강력한 만큼 위험합니다. float 자리를 문자열로 읽으면 메모리를 망가뜨리므로, 열거형과 요청 타입이 다르면 그 자리에서 멈춥니다(1강의 "문제가 생긴 그 자리에서 멈추기").</p>
+<p>지원하는 값 타입이 <code>EPropertyType</code>의 11가지로 <b>닫혀 있다</b>는 점도 설계입니다. 인스펙터·JSON·Lua·복제는 모두 이 열거형에 대한 <code>switch</code>로 동작하므로, 타입을 하나 늘리면 그 모든 <code>switch</code>를 함께 고쳐야 합니다. CLAUDE.md의 "프로퍼티 타입은 <code>EPropertyType</code>에 있는 것만 지원"이 그 뜻입니다. <code>std::vector</code>나 중첩 구조체는 프로퍼티가 될 수 없고, 그런 데이터는 문자열(에셋 경로, JSON)이나 별도 컴포넌트로 표현합니다. 예외적으로 4바이트 <code>enum</code>은 Int32로 취급하고 <code>.Enum({...})</code>으로 선택지 이름을 붙일 수 있습니다.</p>
+
+<h3 id="lec-9-builder"><span class="step">핵심 개념</span>TTypeBuilder — 멤버 포인터로 타입 안전하게 등록하기</h3>
+<p>등록 코드는 이렇게 생겼습니다. 메서드를 사슬처럼 잇는 <b>유창한 빌더</b>(fluent builder) 패턴입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/SceneReflection.cpp (발췌)"><span class="com">// WorldMatrix는 파생 값이므로 등록하지 않는다 (직렬화 제외)</span>
+Registry.RegisterType&lt;FTransformComponent&gt;(<span class="str">"TransformComponent"</span>, <span class="str">"트랜스폼"</span>)
+	.Property(&amp;FTransformComponent::Position, <span class="str">"Position"</span>, <span class="str">"위치"</span>).Range(-<span class="num">1.0e7f</span>, <span class="num">1.0e7f</span>, <span class="num">1.0f</span>) <span class="com">// cm</span>
+	.Property(&amp;FTransformComponent::Rotation, <span class="str">"Rotation"</span>, <span class="str">"회전"</span>)
+	.Property(&amp;FTransformComponent::Scale, <span class="str">"Scale"</span>, <span class="str">"스케일"</span>).Range(<span class="num">0.001f</span>, <span class="num">1000.0f</span>, <span class="num">0.02f</span>)
+	.AsComponent(<span class="kw">false</span>);   <span class="com">// 인스펙터에서 제거 불가</span>
+
+<span class="com">// 런타임 핸들은 Transient, 에셋 참조 문자열이 직렬화 대상</span>
+Registry.RegisterType&lt;FStaticMeshComponent&gt;(<span class="str">"StaticMeshComponent"</span>, <span class="str">"스태틱 메시"</span>)
+	.Property(&amp;FStaticMeshComponent::Mesh, <span class="str">"Mesh"</span>, <span class="str">"메시"</span>, PF_Transient | PF_ReadOnly)
+	.Property(&amp;FStaticMeshComponent::Material, <span class="str">"Material"</span>, <span class="str">"머티리얼"</span>, PF_Transient | PF_ReadOnly)
+	.Property(&amp;FStaticMeshComponent::bVisible, <span class="str">"Visible"</span>, <span class="str">"표시"</span>)
+	.Property(&amp;FStaticMeshComponent::MeshAsset, <span class="str">"MeshAsset"</span>, <span class="str">"메시 에셋"</span>, PF_ReadOnly)
+	.Property(&amp;FStaticMeshComponent::MaterialAsset, <span class="str">"MaterialAsset"</span>, <span class="str">"머티리얼 에셋"</span>, PF_ReadOnly).AssetFilter(<span class="str">".emat"</span>)
+	.AsComponent();</pre>
+<p><code>&amp;FTransformComponent::Position</code>는 <b>멤버 포인터</b>(pointer to member)입니다. "어떤 <code>FTransformComponent</code> 객체든 그 안의 <code>Position</code>"을 가리키는 값으로, 타입이 <code>FVector3 FTransformComponent::*</code>입니다. 빌더는 이 타입에서 두 가지를 컴파일 타임에 뽑아냅니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Reflection/TypeInfo.h — TTypeBuilder::Property (발췌)"><span class="kw">template</span> &lt;<span class="kw">typename</span> TMember&gt;
+TTypeBuilder&amp; Property(TMember T::*Member, std::string Name, std::string DisplayName, uint32 Flags = PF_None)
+{
+	FPropertyInfo&amp; PropertyInfo = Info.Properties.emplace_back();
+	PropertyInfo.Name        = std::move(Name);
+	PropertyInfo.DisplayName = std::move(DisplayName);
+	PropertyInfo.Type        = TPropertyTypeOf&lt;TMember&gt;::Value;   <span class="com">// ① C++ 타입 → 열거형 (지원 안 하면 컴파일 오류)</span>
+	PropertyInfo.Flags       = Flags;
+	PropertyInfo.Offset      = GetMemberOffset(Member);           <span class="com">// ② 바이트 오프셋</span>
+	PropertyInfo.Size        = <span class="kw">sizeof</span>(TMember);
+	<span class="kw">return</span> *<span class="kw">this</span>;
+}
+
+<span class="com">// 멤버 포인터 → 바이트 오프셋 (생성자 호출 없이 계산)</span>
+<span class="kw">template</span> &lt;<span class="kw">typename</span> T, <span class="kw">typename</span> TMember&gt;
+size_t GetMemberOffset(TMember T::*Member)
+{
+	<span class="kw">alignas</span>(T) <span class="kw">static unsigned char</span> Storage[<span class="kw">sizeof</span>(T)];
+	<span class="kw">const</span> T* Object = <span class="kw">reinterpret_cast</span>&lt;<span class="kw">const</span> T*&gt;(Storage);
+	<span class="kw">return static_cast</span>&lt;size_t&gt;(<span class="kw">reinterpret_cast</span>&lt;<span class="kw">const unsigned char</span>*&gt;(&amp;(Object-&gt;*Member)) - Storage);
+}</pre>
+<ol>
+	<li><b>타입</b>: <code>TPropertyTypeOf&lt;TMember&gt;</code>는 특수화로만 정의된 템플릿입니다(<code>bool</code> → Bool, <code>FVector3</code> → Vector3 …). <code>std::vector&lt;int&gt;</code> 같은 지원하지 않는 멤버를 등록하면 특수화가 없어 <b>컴파일 오류</b>가 납니다. 실수가 실행 전에 잡힙니다.</li>
+	<li><b>오프셋</b>: 표준 <code>offsetof</code>는 "표준 레이아웃" 타입에서만 보장되는데, 컴포넌트에는 <code>std::string</code> 같은 멤버가 섞입니다. 그래서 정적 저장소 위에서 멤버 포인터로 멤버 주소를 구하고 시작 주소를 빼는 방식으로 계산합니다. 객체를 실제로 생성하지 않으므로 생성자 부작용도 없습니다.</li>
+</ol>
+<p>마지막 <code>.AsComponent()</code>는 이 타입이 ECS 컴포넌트임을 표시하고, <b>레지스트리 조작 훅</b>을 람다로 만들어 둡니다. 템플릿 안에서 만들어지므로 람다는 구체 타입 <code>T</code>를 알고, 바깥에서는 <code>void*</code>만 주고받습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Reflection/TypeInfo.h — AsComponent (발췌)">Info.HasComponent    = [](<span class="kw">const</span> FRegistry&amp; Registry, FEntity Entity) { <span class="kw">return</span> Registry.Has&lt;T&gt;(Entity); };
+Info.GetComponent    = [](FRegistry&amp; Registry, FEntity Entity) -&gt; <span class="kw">void</span>* { <span class="kw">return</span> Registry.TryGet&lt;T&gt;(Entity); };
+Info.AddComponent    = [](FRegistry&amp; Registry, FEntity Entity) -&gt; <span class="kw">void</span>* { <span class="kw">return</span> &amp;Registry.GetOrEmplace&lt;T&gt;(Entity); };
+Info.RemoveComponent = [](FRegistry&amp; Registry, FEntity Entity) { Registry.Remove&lt;T&gt;(Entity); };
+Info.CopyComponent   = [](FRegistry&amp; Dest, FEntity DestEntity, <span class="kw">const</span> FRegistry&amp; Source, FEntity SourceEntity) {
+	Dest.GetOrEmplace&lt;T&gt;(DestEntity) = Source.Get&lt;T&gt;(SourceEntity);
+};</pre>
+<p>이 다섯 함수 덕분에 에디터는 "컴포넌트 추가" 메뉴를 등록된 타입 목록으로 자동 생성하고, 플레이 모드는 편집 씬을 컴포넌트 타입을 모른 채 통째로 복제할 수 있습니다.</p>
+
+<h3 id="lec-9-projecte"><span class="step">ProjectE에서는</span>한 번의 등록, 여섯 시스템</h3>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="타입 레지스트리 구조와 소비자">
+		<title>타입 레지스트리 구조와 소비자</title>
+		<rect x="20" y="20" width="250" height="110" rx="10" class="acc"/>
+		<text x="36" y="44" class="t-bold">FTypeRegistry::Get()</text>
+		<g class="t-small">
+			<text x="36" y="68">Types (등록 순서)</text>
+			<text x="36" y="88">ByName: "TransformComponent" →</text>
+			<text x="36" y="108">ByType: type_index →</text>
+		</g>
+		<rect x="300" y="20" width="250" height="160" rx="10" class="k1"/>
+		<text x="316" y="44" class="t-bold">FTypeInfo</text>
+		<g class="t-small">
+			<text x="316" y="68">Name, DisplayName, Size</text>
+			<text x="316" y="88">Flags (Hidden, NoReplicate)</text>
+			<text x="316" y="108">Owner ("Engine" / 게임 모듈)</text>
+			<text x="316" y="128">Properties[]</text>
+			<text x="316" y="148">Has/Get/Add/Remove/Copy 훅</text>
+			<text x="316" y="168" class="t-muted">bIsComponent, bRemovable</text>
+		</g>
+		<rect x="580" y="20" width="260" height="160" rx="10" class="k2"/>
+		<text x="596" y="44" class="t-bold">FPropertyInfo</text>
+		<g class="t-small">
+			<text x="596" y="68">Name / DisplayName</text>
+			<text x="596" y="88">Type (EPropertyType)</text>
+			<text x="596" y="108">Offset, Size</text>
+			<text x="596" y="128">Flags (PF_*), Min/Max/Step</text>
+			<text x="596" y="148">AssetFilter, Tooltip, Enum</text>
+			<text x="596" y="168" class="t-muted">StringOptions (콤보 공급자)</text>
+		</g>
+		<path d="M270,80 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M550,128 H576" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="214" text-anchor="middle" class="t-bold">각 시스템은 같은 정보를 자기 방식으로 읽는다 (EPropertyType에 대한 switch)</text>
+		<g class="t-small">
+			<rect x="20" y="232" width="128" height="80" rx="8" class="k3"/><text x="84" y="256" text-anchor="middle" class="t-bold">인스펙터</text><text x="84" y="278" text-anchor="middle" class="t-muted">타입별 위젯</text><text x="84" y="296" text-anchor="middle" class="t-muted">Range, Color</text>
+			<rect x="158" y="232" width="128" height="80" rx="8" class="k2"/><text x="222" y="256" text-anchor="middle" class="t-bold">씬 JSON</text><text x="222" y="278" text-anchor="middle" class="t-muted">Name = 키</text><text x="222" y="296" text-anchor="middle" class="t-muted">Transient 제외</text>
+			<rect x="296" y="232" width="128" height="80" rx="8" class="k1"/><text x="360" y="256" text-anchor="middle" class="t-bold">Lua</text><text x="360" y="278" text-anchor="middle" class="t-muted">entity:GetComponent</text><text x="360" y="296" text-anchor="middle" class="t-muted">("...").필드</text>
+			<rect x="434" y="232" width="128" height="80" rx="8" class="k5"/><text x="498" y="256" text-anchor="middle" class="t-bold">네트워크 복제</text><text x="498" y="278" text-anchor="middle" class="t-muted">NoReplicate 제외</text><text x="498" y="296" text-anchor="middle" class="t-muted">핸들 제외</text>
+			<rect x="572" y="232" width="128" height="80" rx="8" class="k4"/><text x="636" y="256" text-anchor="middle" class="t-bold">프리팹</text><text x="636" y="278" text-anchor="middle" class="t-muted">원본과 값 비교</text><text x="636" y="296" text-anchor="middle" class="t-muted">→ 오버라이드</text>
+			<rect x="710" y="232" width="130" height="80" rx="8" class="box"/><text x="775" y="256" text-anchor="middle" class="t-bold">플레이 모드</text><text x="775" y="278" text-anchor="middle" class="t-muted">CopyComponent로</text><text x="775" y="296" text-anchor="middle" class="t-muted">씬 복제</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 9-2.</b> 레지스트리 → 타입 → 프로퍼티의 3단 구조. 레지스트리는 이름(파일·Lua·네트워크에서 온 문자열)과 <code>type_index</code>(C++ 코드) 두 가지 키로 찾을 수 있습니다.</figcaption>
+</figure>
+
+<p>소비자 두 곳만 실제로 봅시다. JSON 쓰기와 Lua 읽기는 거의 같은 모양의 <code>switch</code>입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Reflection/ReflectionJson.cpp — ToJson (발췌)"><span class="kw">switch</span> (Property.Type)
+{
+<span class="kw">case</span> EPropertyType::Bool:   <span class="kw">return</span> Property.GetRef&lt;<span class="kw">bool</span>&gt;(Object);
+<span class="kw">case</span> EPropertyType::Float:  <span class="kw">return</span> Property.GetRef&lt;<span class="kw">float</span>&gt;(Object);
+<span class="kw">case</span> EPropertyType::String: <span class="kw">return</span> Property.GetRef&lt;std::string&gt;(Object);
+<span class="kw">case</span> EPropertyType::Quat:
+{
+	<span class="kw">const</span> FQuat&amp; Q = Property.GetRef&lt;FQuat&gt;(Object);
+	<span class="kw">return</span> FloatArray({ Q.X, Q.Y, Q.Z, Q.W });
+}
+...
+}</pre>
+<pre class="code" data-file="Engine/Source/Scripting/LuaRuntime.cpp (발췌)"><span class="kw">case</span> EPropertyType::Float:   <span class="kw">return</span> sol::make_object(Lua, Property.GetRef&lt;<span class="kw">float</span>&gt;(Component));
+<span class="kw">case</span> EPropertyType::Vector3: <span class="kw">return</span> sol::make_object(Lua, Property.GetRef&lt;FVector3&gt;(Component));
+<span class="kw">case</span> EPropertyType::Entity:
+{
+	<span class="kw">const</span> FEntity&amp; Entity = Property.GetRef&lt;FEntity&gt;(Component);
+	<span class="kw">return</span> Entity.IsValid() ? sol::make_object(Lua, FScriptEntity{ Entity }) : sol::object(sol::lua_nil);
+}
+<span class="kw">case</span> EPropertyType::ResourceHandle:
+	<span class="com">// 핸들은 공통 레이아웃(Index, Generation) — 스크립트에는 인덱스만 (읽기 전용)</span>
+	<span class="kw">return</span> sol::make_object(Lua, *<span class="kw">static_cast</span>&lt;<span class="kw">const</span> uint32*&gt;(Property.GetPtr(Component)));</pre>
+<p>그래서 CLAUDE.md는 "새 컴포넌트는 리플렉션 등록만 하면 스크립트에서 바로 쓸 수 있다"고 적고 있습니다. Lua에서 <code>entity:GetComponent("TransformComponent").Position</code>이라고 쓰면, 이름으로 <code>FTypeInfo</code>를 찾고 → <code>GetComponent</code> 훅으로 <code>void*</code>를 얻고 → <code>FindProperty("Position")</code>의 오프셋과 타입으로 값을 꺼냅니다. 같은 일을 게임 모듈 DLL(12강)의 컴포넌트에도 그대로 해 줍니다. 게임 모듈이 <code>OnLoad</code>에서 타입을 등록하면 인스펙터·저장·Lua에 바로 나타납니다.</p>
+
+<h4>플래그 — 같은 정보를 시스템마다 다르게 해석하기</h4>
+<p>모든 필드가 모든 시스템에 보여야 하는 것은 아닙니다. 런타임 GPU 핸들은 저장하면 안 되고(다음 실행에선 의미 없는 번호), 서버 전용 값은 클라이언트로 보내면 안 됩니다. 이 차이를 플래그로 표현합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>표시</th><th>인스펙터</th><th>씬 저장</th><th>네트워크 복제</th><th>예</th></tr>
+	<tr><td><code>PF_Hidden</code></td><td>숨김</td><td>저장</td><td>복제</td><td>소켓 부착 대상(전용 UI로 편집)</td></tr>
+	<tr><td><code>PF_ReadOnly</code></td><td>보기만</td><td>저장</td><td>복제</td><td><code>MeshAsset</code> 경로</td></tr>
+	<tr><td><code>PF_Color</code></td><td>색 선택기</td><td>저장</td><td>복제</td><td>방향광 <code>Color</code></td></tr>
+	<tr><td><code>PF_Transient</code></td><td>표시</td><td><b>제외</b></td><td><b>복제됨</b></td><td>게임 모드·체력의 실행 상태</td></tr>
+	<tr><td><code>PF_NoReplicate</code></td><td>표시</td><td>저장</td><td><b>제외</b></td><td>서버 전용 값</td></tr>
+	<tr><td>ResourceHandle 타입</td><td>보기만</td><td>제외</td><td>제외(경로로 다시 해석)</td><td><code>Mesh</code>, <code>Material</code> 핸들</td></tr>
+	<tr><td>타입 <code>TF_NoReplicate</code></td><td>—</td><td>—</td><td>타입 전체 제외</td><td>계층(부모 NetId로 따로 보냄)</td></tr>
+</table></div>
+<p><code>PF_Transient</code>가 "저장은 안 하지만 복제는 된다"는 점이 흥미롭습니다. 체력이나 매치 상태 같은 <b>실행 중에만 의미 있는 값</b>은 씬 파일에 들어가면 안 되지만, 멀티플레이에서는 클라이언트가 봐야 합니다. 저장과 복제를 별개의 축으로 둔 덕분에 이런 값을 표현할 수 있습니다.</p>
+
+<h4>소유자(Owner)와 등록 시점</h4>
+<p>엔진 컴포넌트는 <code>RegisterSceneTypes()</code>가 등록하고, <code>FScene</code> 생성자가 이것을 부르므로 씬이 있으면 등록은 보장됩니다(<code>static bool</code>로 한 번만). 물리·오디오·AI·UI 컴포넌트는 각 모듈의 <code>Register*Types()</code>를 앱이 씬 로드 전에 부릅니다. 게임 모듈이 등록하는 동안에는 레지스트리의 "현재 소유자"가 모듈 이름으로 바뀌어 각 <code>FTypeInfo::Owner</code>에 기록됩니다. 모듈을 내릴 때 <code>RemoveTypesByOwner</code>로 그 타입만 지우는데, 훅 람다가 <b>모듈 DLL의 코드</b>를 가리키므로 DLL보다 오래 살게 두면 안 되기 때문입니다.</p>
+
+<h3 id="lec-9-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout warn">
+	<b class="t">등록하지 않으면 존재하지 않는 것과 같다</b>
+	플레이 모드는 <code>FSceneCloner</code>가 리플렉션 <code>CopyComponent</code> 훅으로 편집 씬을 복제합니다. 그래서 <b>리플렉션에 등록되지 않은 컴포넌트는 플레이 씬에 복사되지 않습니다</b>. 예외로 스킨·애니메이션 런타임처럼 일부러 등록하지 않은 런타임 전용 데이터는 <code>FSceneCloner::CopyRuntimeData</code>가 따로 복사·재매핑합니다. "새 런타임 전용 엔티티 참조를 추가하면 여기에도 추가"가 CLAUDE.md 규칙으로 남아 있습니다.
+</div>
+<ul>
+	<li><b>파생 값은 등록하지 않는다</b>: <code>WorldMatrix</code>처럼 다른 값에서 계산되는 것을 저장하면, 불러올 때 로컬 값과 어긋난 두 진실이 생깁니다. 등록은 "원천 데이터"만.</li>
+	<li><b>씬 enum은 번호로 저장된다</b>: 씬 컴포넌트의 enum 프로퍼티는 JSON에 번호로 들어갑니다. 그래서 <code>EDeathAction</code>, <code>EMatchState</code> 같은 열거형은 <b>끝에만</b> 값을 추가합니다(중간에 끼우면 기존 씬의 값이 한 칸씩 밀림). 반면 설정 파일은 <code>.Enum({이름, 표시})</code>로 이름 문자열을 저장해 이 문제를 피합니다.</li>
+	<li><b>관용적 읽기</b>: JSON 적용(<code>FReflectionJson::Apply</code>)은 파일에 없는 키는 현재 값 유지, 모르는 키는 무시, 형식이 틀린 값은 경고 후 건너뛰고, <code>Range</code>가 있으면 잘라 넣습니다. 필드를 추가·삭제해도 옛 파일이 계속 열리는 이유입니다(10강).</li>
+	<li><b>핫 리로드 후의 타입</b>: 게임 모듈을 다시 로드하면 모듈 타입의 <code>FTypeInfo*</code>와 ECS 타입 ID가 바뀝니다. 그래서 "모듈 타입은 리플렉션으로만 다루고 타입 ID를 캐시하지 않는다"가 규칙입니다(12강).</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>C++ RTTI는 멤버 목록을 주지 않는다 → 엔진이 타입마다 "이름 + 타입 열거형 + 오프셋 + 플래그"를 직접 기록한다.</li>
+		<li>범용 코드는 <code>void*</code> + 오프셋 + <code>EPropertyType</code> switch로 어떤 컴포넌트든 읽고 쓴다.</li>
+		<li><code>TTypeBuilder</code>는 멤버 포인터에서 타입과 오프셋을 컴파일 타임에 뽑아 실수를 컴파일 오류로 만든다. <code>AsComponent</code>는 ECS 훅을 단다.</li>
+		<li>한 번의 등록으로 인스펙터·씬 JSON·Lua·복제·프리팹·플레이 모드 복제가 따라온다.</li>
+		<li>플래그는 시스템별 해석: Transient = 저장 제외/복제 O, NoReplicate = 복제 제외, 핸들은 둘 다 제외.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. <code>FHealthComponent</code>에 <code>std::vector&lt;float&gt; DamageHistory</code>를 추가하고 <code>.Property(&amp;FHealthComponent::DamageHistory, ...)</code>로 등록하려 하면 어떻게 될까요?</summary>
+	<code>TPropertyTypeOf&lt;std::vector&lt;float&gt;&gt;</code> 특수화가 없으므로 컴파일 오류가 납니다. 지원 타입이 닫혀 있기 때문입니다. 이 데이터가 꼭 필요하면 등록하지 않는 런타임 필드로 두거나(저장·복제 안 됨), 문자열로 직렬화하거나, 지원 타입을 늘리되 인스펙터·JSON·Lua·복제의 <code>switch</code>를 모두 함께 고쳐야 합니다.
+</details>
+<details class="quiz"><summary>Q2. 오프셋을 등록 시 한 번 계산해 저장해 두는데, Debug와 Release에서 <code>std::string</code> 크기가 다르다면 문제가 될까요?</summary>
+	되지 않습니다. 오프셋은 실행 중인 바이너리가 <code>GetMemberOffset</code>으로 자기 구조체 배치를 보고 계산하므로 항상 그 빌드에 맞습니다. 문제가 되는 것은 오프셋을 <b>파일에 저장하거나</b> 다른 빌드와 <b>교환</b>할 때입니다. 그래서 JSON과 네트워크 복제는 오프셋이 아니라 <b>프로퍼티 이름</b>을 키로 씁니다.
+</details>
+<details class="quiz"><summary>Q3. 컴포넌트 필드 이름 <code>Speed</code>를 <code>MoveSpeed</code>로 바꾸고 등록 이름도 바꿨습니다. 기존 씬 파일을 열면 어떻게 될까요?</summary>
+	씬 JSON의 키는 프로퍼티 <code>Name</code>이므로 파일의 <code>"Speed"</code>는 "알 수 없는 프로퍼티"로 경고 후 무시되고, <code>MoveSpeed</code>는 기본값이 됩니다. 크래시는 나지 않지만 값이 사라집니다. C++ 멤버 이름만 바꾸고 등록 이름(<code>"Speed"</code>)은 유지하면 파일 호환이 지켜집니다 — 등록 이름은 파일 형식의 일부라는 뜻입니다. (데이터 테이블은 이를 위해 이름 변경 목록으로 파일을 함께 옮기는 <code>SaveStructAndMigrate</code>를 둡니다.)
+</details>
+</article>
+
+<!-- ======================================================= 10강 ======================================================= -->
+<article class="lecture" id="lec-10">
+<header>
+	<div class="no">10강</div>
+	<h2 id="lec-10-title">직렬화와 에셋 파이프라인</h2>
+	<div class="meta">관련 Phase: 5 (트랙 A·C·D·E·F), 11 · 살펴볼 곳: <code>Scene/SceneSerializer</code>, <code>Scene/EntityJson</code>, <code>Renderer/AssetCache</code>, <code>RHI/ShaderManifest.h</code>, <code>RHI/ShaderLibrary</code>, <code>Core/FileWatcher.h</code>, <code>Core/Paths.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>"사람이 편집하는 소스 형식"과 "엔진이 빨리 읽는 쿠킹 형식"을 나누는 이유를 설명할 수 있습니다.</li>
+		<li>씬 JSON을 버전이 달라도 깨지지 않게 읽는 "관용적 로드"의 규칙을 압니다.</li>
+		<li>쿠킹 캐시가 언제 유효한지(형식 버전, 시각, 설정 기록, 내용 해시) 판단하는 방법과 각 방법의 함정을 압니다.</li>
+		<li>파일 감시 → 디바운스 → 무효화 → 다시 만들기로 이어지는 핫 리로드 흐름을 그릴 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-10-why"><span class="step">왜 필요한가</span>사람과 기계는 다른 파일을 원한다</h3>
+<p>씬 하나에는 엔티티 수백 개와 그 컴포넌트 값이 들어 있습니다. 이걸 파일로 남겨야 에디터를 닫았다 다시 열 수 있고, 게임이 맵을 불러올 수 있습니다. 메모리의 객체를 바이트나 텍스트로 바꾸는 일을 <b>직렬화</b>(serialization), 반대를 역직렬화라고 합니다.</p>
+<p>그런데 누가 그 파일을 읽느냐에 따라 좋은 형식이 다릅니다.</p>
+<ul>
+	<li><b>사람(그리고 git)</b>: 열어서 읽을 수 있어야 하고, 두 사람이 고친 것을 병합할 수 있어야 하며, 무엇이 바뀌었는지 diff로 보여야 합니다. → 텍스트, JSON.</li>
+	<li><b>엔진(실행 중)</b>: 최대한 빨리 읽어 GPU에 올려야 합니다. PNG를 매번 압축 해제하고, glTF를 매번 파싱하고, 셰이더를 매번 컴파일하는 것은 낭비입니다. → 미리 변환해 둔 엔진 전용 바이너리.</li>
+</ul>
+<p>ProjectE는 첫 결정 중 하나로 이것을 정했습니다(Plans.md 핵심 결정, 2026-09-30). "에디터가 다루는 씬/머티리얼/설정은 JSON, 런타임용은 쿠킹 단계에서 엔진 바이너리로 변환." 미리 변환하는 단계를 <b>쿠킹</b>(cooking)이라고 부릅니다. 효과는 바로 보였습니다. Phase 5에서 쿠킹을 넣자 DamagedHelmet 모델 로드가 Debug 기준 562ms → 120ms가 됐습니다(Plans.md 트랙 E).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="소스 에셋에서 쿠킹 에셋까지">
+		<title>소스 에셋 → 쿠킹 → 실행</title>
+		<rect x="20" y="20" width="240" height="250" rx="12" class="k2"/>
+		<text x="36" y="46" class="t-bold">소스 (사람이 편집, git 커밋)</text>
+		<g class="t-small">
+			<text x="36" y="76">Content/Scenes/*.escene</text><text x="36" y="94" class="t-muted">씬 JSON — 그대로 읽음</text>
+			<text x="36" y="124">Content/*.glb, *.gltf, *.fbx</text><text x="36" y="142" class="t-muted">+ 옆에 *.eimport (임포트 설정)</text>
+			<text x="36" y="172">Content/*.png, *.jpg</text>
+			<text x="36" y="202">Engine/Shaders/*.hlsl</text><text x="36" y="220" class="t-muted">+ Shaders.json (매니페스트)</text>
+			<text x="36" y="250">*.emat, Config/*.json</text>
+		</g>
+		<rect x="310" y="70" width="220" height="150" rx="12" class="acc"/>
+		<text x="420" y="96" text-anchor="middle" class="t-bold">쿠킹</text>
+		<g class="t-small">
+			<text x="326" y="124">FAssetCache::Load*Asset</text><text x="326" y="142" class="t-muted">처음 읽을 때 변환 + 기록</text>
+			<text x="326" y="170">ProjectECook.exe</text><text x="326" y="188" class="t-muted">패키징 전 전부 미리 (GPU 불필요)</text>
+		</g>
+		<rect x="580" y="20" width="260" height="250" rx="12" class="k1"/>
+		<text x="596" y="46" class="t-bold">쿠킹 결과 (생성물, gitignore)</text>
+		<g class="t-small">
+			<text x="596" y="76">Cooked/DamagedHelmet.glb.emodel</text><text x="596" y="94" class="t-muted">메시·머티리얼·밉·BC 압축 이미지</text>
+			<text x="596" y="124">Cooked/UVChecker.png.color.etex</text><text x="596" y="142" class="t-muted">용도별 (.color/.linear/.normal/.mask)</text>
+			<text x="596" y="172">Engine/Shaders/Cooked/*.dxil</text><text x="596" y="190" class="t-muted">+ *.srchash (소스 내용 해시)</text>
+			<text x="596" y="220">패키지: Content.epak</text><text x="596" y="238" class="t-muted">(10부 — 배포)</text>
+		</g>
+		<path d="M260,145 H306" class="ln" marker-end="url(#arr)"/>
+		<path d="M530,145 H576" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="292" text-anchor="middle" class="t-muted">쿠킹 파일 이름 = Content 기준 상대 경로 + 원본 확장자 + 쿠킹 확장자 → 원본과 1:1로 대응</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 10-1.</b> 소스는 사람이 고치고 git에 올리는 것, 쿠킹 결과는 언제든 소스에서 다시 만들 수 있는 캐시입니다. 캐시이므로 저장소에 넣지 않습니다(<code>&lt;프로젝트&gt;/Cooked/</code>는 gitignore).</figcaption>
+</figure>
+
+<h3 id="lec-10-scene"><span class="step">핵심 개념</span>씬 JSON과 관용적 로드</h3>
+<p>씬 파일 <code>.escene</code>은 9강의 리플렉션 정보만으로 쓰고 읽습니다. 엔티티마다 이름, 부모(파일 안 인덱스, 루트는 -1), 그리고 등록된 컴포넌트의 프로퍼티를 이름 키로 적습니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scenes/Tests/Materials.escene (발췌, 배열 줄바꿈은 줄임)">{
+  <span class="str">"Version"</span>: <span class="num">1</span>,
+  <span class="str">"Entities"</span>: [
+    {
+      <span class="str">"Name"</span>: <span class="str">"Ground"</span>,
+      <span class="str">"Parent"</span>: <span class="num">-1</span>,
+      <span class="str">"Components"</span>: {
+        <span class="str">"TransformComponent"</span>: {
+          <span class="str">"Position"</span>: [<span class="num">0.0</span>, <span class="num">0.0</span>, <span class="num">-10.0</span>],
+          <span class="str">"Rotation"</span>: [<span class="num">0.0</span>, <span class="num">0.0</span>, <span class="num">0.0</span>, <span class="num">1.0</span>],
+          <span class="str">"Scale"</span>: [<span class="num">20.0</span>, <span class="num">20.0</span>, <span class="num">0.2</span>]
+        },
+        <span class="str">"StaticMeshComponent"</span>: {
+          <span class="str">"MaterialAsset"</span>: <span class="str">"Materials/Checker.emat"</span>,
+          <span class="str">"MeshAsset"</span>: <span class="str">"primitive:cube"</span>,
+          <span class="str">"Visible"</span>: <span class="kw">true</span>
+        }
+      }
+    }, ...</pre>
+<p>눈여겨볼 점이 몇 가지 있습니다.</p>
+<ul>
+	<li><b>메시·머티리얼은 핸들이 아니라 경로 문자열로</b> 저장됩니다. 핸들(<code>THandle</code>)은 이번 실행의 리소스 풀 번호일 뿐이므로 <code>PF_Transient</code>로 빼고, 불러온 뒤 <code>FSceneAssetResolver</code>가 경로에서 핸들을 다시 만듭니다.</li>
+	<li><b>엔티티 참조</b>(<code>FEntity</code> 프로퍼티, 부모)는 파일 안 <b>배열 인덱스</b>로 바뀝니다. 엔티티 슬롯 번호와 세대는 실행마다 달라지기 때문입니다.</li>
+	<li><b>파생 값</b>(<code>WorldMatrix</code>)과 런타임 생성물(<code>FTransientComponent</code>가 붙은 엔티티 — 예: 모델을 불러올 때 만든 노드 엔티티)은 저장하지 않습니다.</li>
+</ul>
+<p>읽을 때 가장 중요한 성질은 <b>관용(寬容)</b>입니다. 엔진은 계속 바뀝니다. 컴포넌트가 생기고 사라지고 필드가 바뀝니다. 그때마다 기존 씬 파일이 열리지 않으면 작업물이 모두 날아갑니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/SceneSerializer.h (발췌)"><span class="com">// 씬 ↔ JSON (.escene). 리플렉션에 등록된 컴포넌트/프로퍼티를 기준으로 동작한다.</span>
+<span class="com">//   - 이름/계층은 구조적으로 기록 (Parent = 파일 내 인덱스, 루트는 -1)</span>
+<span class="com">//   - PF_Transient 프로퍼티와 리소스 핸들은 제외, FTransientComponent가 있는 엔티티(와 그 하위)는 제외</span>
+<span class="com">//   - 로드 시 알 수 없는 컴포넌트/프로퍼티는 경고 후 무시 (버전 간 호환)</span>
+<span class="com">//   - 엔티티 목록 직렬화는 프리팹(.eprefab)과 공유한다 (Scene/EntityJson.h)</span>
+<span class="kw">struct</span> FSceneSerializer
+{
+	<span class="kw">static constexpr</span> int32_t      Version   = <span class="num">1</span>;
+	<span class="kw">static constexpr const</span> wchar_t* Extension = L<span class="str">".escene"</span>;
+	...
+};</pre>
+<div class="tablewrap"><table class="t">
+	<tr><th>상황</th><th>처리</th></tr>
+	<tr><td>파일에 모르는 컴포넌트 (삭제된 타입, 안 불러온 게임 모듈)</td><td>경고 "알 수 없는 컴포넌트 무시" 후 계속</td></tr>
+	<tr><td>파일에 모르는 프로퍼티</td><td>경고 후 무시</td></tr>
+	<tr><td>파일에 없는 프로퍼티 (새로 추가된 필드)</td><td>구조체 기본값 유지</td></tr>
+	<tr><td>값 형식이 틀림 (숫자 자리에 문자열 등)</td><td>경고 후 그 값만 건너뜀</td></tr>
+	<tr><td>범위 밖의 숫자</td><td><code>Range</code>로 잘라 넣음</td></tr>
+	<tr><td>파일 버전 &gt; 엔진 버전</td><td>"일부 데이터가 무시될 수 있습니다" 경고 후 최선을 다해 읽음</td></tr>
+	<tr><td>JSON 자체가 깨짐 / <code>Entities</code> 배열 없음</td><td>오류, 로드 실패 (씬은 건드리지 않음)</td></tr>
+</table></div>
+<p>원칙은 "<b>읽을 수 있는 것은 최대한 읽고, 못 읽는 것은 크게 알린다</b>"입니다. 경고로 남기므로 무엇이 사라졌는지는 로그에서 확인할 수 있습니다. JSON 파서도 주석을 허용하도록(<code>ignore_comments</code>) 엽니다. 로드 끝에는 프리팹 인스턴스를 원본의 현재 내용으로 맞추고(<code>SyncAllInstances</code>, 프리팹 강의) 트랜스폼을 한 번 갱신합니다.</p>
+<div class="callout tip">
+	<b class="t">서브 씬: 읽기를 두 단계로 나눈 이유</b>
+	게임 중 큰 맵의 일부를 이어 붙일 때(서브 씬)는 <code>ParseFile</code>(파일 읽기 + JSON 파싱만, ECS 접근 없음 → 백그라운드 스레드 가능)과 <code>AppendDocument</code>(메인 스레드에서 엔티티 생성)로 나눕니다. 느린 부분(디스크·파싱)은 스레드로, ECS를 만지는 부분은 메인으로 — 이 분리는 7부의 맵 전환에서 다시 나옵니다.
+</div>
+
+<h3 id="lec-10-cook"><span class="step">핵심 개념</span>쿠킹 캐시는 언제 믿을 수 있나</h3>
+<p>캐시의 어려움은 언제나 같습니다. "이 캐시가 아직 유효한가?" 틀리게 "유효하다"고 하면 고친 내용이 반영되지 않는 기묘한 버그가, 틀리게 "무효"라고 하면 매번 다시 변환하는 느린 실행이 됩니다. <code>FAssetCache</code>는 여러 조건을 겹쳐 확인합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 344" role="img" aria-label="쿠킹 모델 캐시 판정">
+		<title>LoadModelAsset의 캐시 판정</title>
+		<g class="t-small">
+			<rect x="20" y="20" width="200" height="44" rx="8" class="box"/><text x="120" y="47" text-anchor="middle">쿠킹 파일이 원본보다 새로움?</text>
+			<rect x="20" y="88" width="200" height="54" rx="8" class="box"/><text x="120" y="111" text-anchor="middle">.eimport·추가 애니메이션</text><text x="120" y="129" text-anchor="middle">파일보다도 새로움?</text>
+			<rect x="20" y="166" width="200" height="54" rx="8" class="box"/><text x="120" y="189" text-anchor="middle">쿠킹 때 쓴 임포트 설정 기록</text><text x="120" y="207" text-anchor="middle">= 지금 설정?</text>
+			<rect x="20" y="244" width="200" height="44" rx="8" class="box"/><text x="120" y="263" text-anchor="middle">Magic·Version 일치 +</text><text x="120" y="279" text-anchor="middle">끝까지 정확히 읽힘?</text>
+			<rect x="300" y="244" width="190" height="44" rx="8" class="k2"/><text x="395" y="271" text-anchor="middle" class="t-bold">쿠킹본 사용</text>
+			<rect x="580" y="110" width="260" height="110" rx="10" class="k4"/>
+			<text x="596" y="136" class="t-bold">원본에서 변환</text>
+			<text x="596" y="160">glTF/FBX 파싱 → 임포트 설정 적용</text>
+			<text x="596" y="182">→ 이미지 밉 + BC 압축 → UV 밀도</text>
+			<text x="596" y="204">→ .emodel 기록 (+ 설정 기록)</text>
+		</g>
+		<path d="M120,64 V84" class="ln" marker-end="url(#arr)"/>
+		<path d="M120,142 V162" class="ln" marker-end="url(#arr)"/>
+		<path d="M120,220 V240" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,266 H296" class="ln" marker-end="url(#arr)"/>
+		<text x="256" y="258" text-anchor="middle" class="t-muted">예</text>
+		<path d="M220,42 C 420,42 470,120 576,140" class="ln-d s5" marker-end="url(#arr)"/>
+		<path d="M220,115 C 400,115 480,150 576,155" class="ln-d s5" marker-end="url(#arr)"/>
+		<path d="M220,193 C 400,193 480,180 576,175" class="ln-d s5" marker-end="url(#arr)"/>
+		<path d="M200,288 C 260,318 620,318 680,224" class="ln-d s5" marker-end="url(#arr)"/>
+		<text x="380" y="58" class="t-small f5">아니오</text>
+		<text x="440" y="334" text-anchor="middle" class="t-small f5">아니오 (손상되었거나 형식이 다름)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 10-2.</b> 위의 세 조건은 "원본이 바뀌었나", 마지막 조건은 "쿠킹 파일 자체가 이 엔진 버전이 읽을 수 있는 것인가"를 봅니다. 하나라도 걸리면 원본에서 다시 만듭니다.</figcaption>
+</figure>
+
+<h4>① 형식 버전 — 엔진 쪽이 바뀌었을 때</h4>
+<p>원본이 그대로여도 <b>엔진의 쿠킹 형식</b>이 바뀌면 옛 쿠킹 파일은 무효입니다. 정점에 탄젠트를 추가했거나, 단위를 cm로 바꿨다면 옛 파일을 그대로 읽으면 안 됩니다. 그래서 쿠킹 파일 맨 앞에 매직 번호와 형식 버전을 쓰고, 형식을 바꾸는 사람이 버전을 올립니다. 이 버전 주석은 그 자체로 엔진 역사의 요약입니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/AssetCache.h (발췌)"><span class="kw">static constexpr</span> uint32 ModelMagic   = <span class="num">0x4C444D45</span>; <span class="com">// "EMDL"</span>
+<span class="kw">static constexpr</span> uint32 ModelVersion = <span class="num">11</span>; <span class="com">// 11: 스킨 메시 LOD, 10: 임포트 MaxTriangles + 잎 메시 솎아내기 LOD,</span>
+	<span class="com">// 9: 메시 UV 밀도(텍스처 밉 스트리밍), 8: 머티리얼 블렌드 모드/알파 컷오프/양면, 7: 메시 LOD,</span>
+	<span class="com">// 6: FBX + 임포트 설정(.eimport), 5: 이미지 BC 압축 + 밉, 4: 스킨/애니메이션,</span>
+	<span class="com">// 3: 센티미터 단위(glTF ×100), 2: 정점 탄젠트 + PBR</span>
+<span class="kw">static constexpr</span> uint32 TextureVersion = <span class="num">1</span>; <span class="com">// 1: 전체 밉 체인 + BC7/BC5/BC4 (용도별)</span></pre>
+<p>읽기는 엄격합니다. <code>LoadCookedFile</code>은 읽기 함수가 성공하고, 읽는 도중 오류가 없고(<code>IsOk</code>), <b>정확히 파일 끝에서 끝나야</b>(<code>IsAtEnd</code>) 성공으로 칩니다. 중간에 잘린 파일이나 형식이 미묘하게 다른 파일은 "손상되었거나 형식이 달라 원본을 다시 읽습니다" 경고 후 원본으로 돌아갑니다. CLAUDE.md의 규칙 "쿠킹 형식을 바꾸면 <code>FAssetCache::*Version</code>을 올린다"가 이 장치를 지키는 약속입니다.</p>
+
+<h4>② 시각 비교 — 원본이 바뀌었을 때</h4>
+<p>"쿠킹 파일이 원본보다 새로우면 유효"는 가장 흔한 규칙입니다. 빌드 도구 make가 쓰는 방식이기도 합니다. 단, 원본이 없으면(패키지 배포본) 쿠킹본을 그대로 믿습니다. Content 밖의 파일은 캐시하지 않습니다.</p>
+
+<h4>③ 설정 기록 — 시각만으로 못 잡는 변경</h4>
+<p>Phase 11에서 모델마다 임포트 설정 파일(<code>.eimport</code>, 11강)이 생기자 시각 비교의 빈틈이 드러났습니다. 설정 파일을 <b>지우거나 예전 내용으로 되돌리면</b>, 쿠킹 파일은 여전히 "모든 입력보다 새롭기" 때문에 바뀐 설정이 반영되지 않습니다. 그래서 쿠킹할 때 사용한 설정을 <code>&lt;쿠킹 파일&gt;.import</code>로 함께 기록하고, 다음에는 현재 설정과 내용을 비교합니다. Plans.md에는 이것이 "자동 검증에서 발견해 추가"했다고 남아 있습니다.</p>
+
+<h3 id="lec-10-shader"><span class="step">핵심 개념</span>셰이더 쿠킹과 내용 해시</h3>
+<p>셰이더(HLSL)도 원본을 그대로 쓰면 실행할 때마다 DXC로 컴파일해야 합니다. 그래서 Phase 5 트랙 D에서 <b>셰이더 매니페스트</b>(<code>Engine/Shaders/Shaders.json</code>)를 만들어 "어떤 파일의 어떤 엔트리를 어떤 단계·디파인으로" 컴파일할지 목록으로 적고, <code>FShaderLibrary</code>가 다음 순서로 바이트코드를 공급하게 했습니다.</p>
+<ol>
+	<li>메모리 캐시 (이번 실행에서 이미 얻은 것)</li>
+	<li>쿠킹된 DXIL (<code>Engine/Shaders/Cooked/</code>) — 아직 유효하면</li>
+	<li>DXC 컴파일 → 결과를 쿠킹 디렉터리에 기록</li>
+</ol>
+<p>쿠킹 파일 이름은 <code>&lt;스템&gt;_&lt;Entry&gt;_&lt;Stage&gt;[_sm&lt;모델&gt;][_&lt;디파인 해시&gt;][.debug].dxil</code>입니다. 디파인 목록을 FNV-1a 64비트로 해시해 이름에 넣으므로 같은 소스의 변형이 서로 덮어쓰지 않고, Debug 구성의 DXIL(최적화 없음 + 디버그 정보)은 <code>.debug</code>로 구분합니다.</p>
+<p>처음에는 이 캐시도 <b>시각</b>으로 유효성을 판단했습니다(Plans.md Phase 5: "소스·포함 파일 mtime 검사"). 그런데 셰이더는 git으로 관리되는 소스입니다. 브랜치를 바꾸거나, 머지하거나, 워크트리로 복사하면 파일 시각이 실제 내용 변경과 무관하게 바뀌거나 어긋납니다. "내용은 같은데 시각이 새로워져 재컴파일"은 느릴 뿐이지만, "내용은 바뀌었는데 시각이 오래돼 옛 DXIL 사용"은 틀린 화면을 냅니다. 그래서 지금은 <b>내용 해시</b>를 씁니다.</p>
+<pre class="code" data-file="Engine/Source/RHI/ShaderManifest.h / ShaderLibrary.cpp (발췌)"><span class="com">// 소스 + 포함 파일 내용 해시 (FNV-1a 64, 파일 순서 포함). 파일을 하나라도 읽지 못하면 0.</span>
+<span class="com">// 쿠킹 DXIL 옆 사이드카(&lt;쿠킹 파일&gt;.srchash)에 기록해 두고, 로드 시 다시 계산해 비교한다</span>
+<span class="com">// (파일 시각은 git 체크아웃/머지/복사로 쉽게 어긋나므로 캐시 유효성에 쓰지 않는다)</span>
+uint64 HashShaderSources(std::span&lt;<span class="kw">const</span> std::filesystem::path&gt; Dependencies);
+
+<span class="com">// TryLoadCooked — 소스(+포함 파일) 내용이 쿠킹 당시와 같은지 (사이드카 해시). 소스가 없으면(패키지 배포) 쿠킹 파일을 그대로 신뢰한다</span>
+<span class="kw">if</span> (std::filesystem::exists(SourcePath, ErrorCode))
+{
+	<span class="kw">const</span> uint64 SourceHash = HashShaderSources(CollectShaderDependencies(SourcePath, ShaderDir));
+	<span class="kw">if</span> (SourceHash == <span class="num">0</span> || ReadSourceHash(CookedPath) != SourceHash)
+	{
+		E_LOG(LogD3D12, Log, <span class="str">"쿠킹된 셰이더가 현재 소스와 다름(내용 해시), 재컴파일: {}"</span>, DisplayName);
+		<span class="kw">return nullptr</span>;
+	}
+}</pre>
+<p>해시에는 셰이더 파일뿐 아니라 그것이 <code>#include</code>로 끌어오는 모든 파일(재귀)이 들어갑니다. <code>Common.hlsli</code> 한 줄을 고치면 그것을 포함하는 모든 셰이더의 해시가 바뀝니다. 내용을 읽어 해시하는 비용이 들지만, 셰이더 소스는 작고 정확성이 훨씬 중요합니다.</p>
+<div class="callout note">
+	<b class="t">시각 vs 내용 해시 — 언제 무엇을</b>
+	모델·텍스처 쿠킹은 여전히 시각을 씁니다(원본이 수십 MB라 매번 해시하면 느리고, 대개 사람이 직접 바꾸는 파일). 셰이더는 작고 git 브랜치 전환이 잦으므로 내용 해시를 씁니다. 정답이 하나가 아니라 "입력의 크기와 바뀌는 방식"에 따라 고릅니다.
+</div>
+
+<h3 id="lec-10-hotreload"><span class="step">핵심 개념</span>핫 리로드 — 파일 감시와 디바운스</h3>
+<p>에디터가 켜진 채로 셰이더를 고치고 저장하면 화면이 바로 바뀌는 것이 <b>핫 리로드</b>(hot reload)입니다. 매번 에디터를 껐다 켜면 반복 속도가 크게 떨어집니다. Phase 5 트랙 F에서 만든 흐름은 이렇습니다.</p>
+<ol>
+	<li><b>감시</b>: <code>FFileWatcher</code>가 Win32 <code>ReadDirectoryChangesW</code>를 overlapped I/O로 걸어 둡니다. 별도 스레드 없이 메인 스레드가 매 프레임 <code>Poll()</code>로 결과만 확인합니다(블로킹 없음).</li>
+	<li><b>디바운스</b>: 이벤트를 바로 처리하지 않고 경로별로 모아 두었다가, <b>마지막 이벤트 후 150ms</b> 동안 조용하면 한 번만 보고합니다.</li>
+	<li><b>무효화</b>: <code>FShaderLibrary::Invalidate(바뀐 파일)</code>가 그 파일을 직접 또는 <code>#include</code>로 쓰는 캐시 항목을 지우고, 영향받은 셰이더 목록을 돌려줍니다.</li>
+	<li><b>다시 만들기</b>: 렌더러가 새 PSO를 만들어 <b>성공하면</b> 교체하고 이전 PSO는 지연 해제합니다. 컴파일에 실패하면 이전 셰이더를 그대로 씁니다 — 오타 하나로 에디터 화면이 깨지지 않습니다.</li>
+</ol>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 270" role="img" aria-label="디바운스 타임라인">
+		<title>저장 한 번에 이벤트 여러 개 → 디바운스</title>
+		<text x="100" y="40" class="t-small">저장 1번 = 이벤트 3개 (쓰기 · 크기 변경 · 이름 변경)</text>
+		<path d="M40,100 H830" class="ln" marker-end="url(#arr)"/>
+		<text x="40" y="120" class="t-muted">시간 (ms)</text>
+		<g class="t-small">
+			<line x1="120" y1="56" x2="120" y2="100" class="ln s5"/>
+			<line x1="150" y1="56" x2="150" y2="100" class="ln s5"/>
+			<line x1="190" y1="56" x2="190" y2="100" class="ln s5"/>
+			<text x="120" y="120" text-anchor="middle" class="t-mono">0</text><text x="190" y="120" text-anchor="middle" class="t-mono">70</text>
+			<rect x="190" y="78" width="300" height="14" rx="3" class="k4"/>
+			<text x="345" y="142" text-anchor="middle" class="t-muted">마지막 이벤트 후 150ms 대기 (새 이벤트가 오면 다시 시작)</text>
+			<circle cx="490" cy="100" r="7" class="k2"/>
+			<text x="490" y="120" text-anchor="middle" class="t-mono">220</text>
+			<text x="506" y="86" class="t-bold">한 번만 보고</text>
+		</g>
+		<rect x="560" y="164" width="280" height="96" rx="10" class="box"/>
+		<text x="576" y="188" class="t-small">편집기는 저장 한 번에 이벤트를 여러 개 낸다</text>
+		<text x="576" y="210" class="t-muted">(임시 파일에 쓰고 이름 바꾸기 등)</text>
+		<text x="576" y="234" class="t-small">바로 처리하면: 반쯤 쓴 파일을 컴파일하거나</text>
+		<text x="576" y="252" class="t-small">같은 셰이더를 세 번 다시 만든다</text>
+		<rect x="40" y="164" width="480" height="56" rx="10" class="k2"/>
+		<text x="56" y="188" class="t-small">FChangeDebouncer: 순수 로직 (시각을 인자로 받음) → 테스트 가능</text>
+		<text x="56" y="208" class="t-muted">키 = 정규화된 소문자 경로, 보고 순서 = 처음 추가된 순서</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 10-3.</b> 디바운스(debounce)는 원래 기계식 스위치의 떨림을 걸러 내는 전자 회로 용어입니다. 짧은 시간에 몰려오는 이벤트를 "마지막 하나"로 묶습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Core/FileWatcher.h (발췌)"><span class="com">// 파일 변경 이벤트 디바운서 (순수 로직, 테스트 가능).</span>
+<span class="com">// 같은 경로의 이벤트가 연속으로 오면 마지막 이벤트 후 Delay가 지났을 때 한 번만 보고한다.</span>
+<span class="kw">class</span> FChangeDebouncer
+{
+<span class="kw">public</span>:
+	<span class="kw">explicit</span> FChangeDebouncer(std::chrono::milliseconds InDelay = std::chrono::milliseconds(<span class="num">150</span>));
+	<span class="kw">void</span> AddEvent(<span class="kw">const</span> std::filesystem::path&amp; Path, FTimePoint Time);
+	<span class="com">// Delay가 지난 경로를 반환하고 대기 목록에서 제거 (추가된 순서 유지)</span>
+	std::vector&lt;std::filesystem::path&gt; CollectReady(FTimePoint Now);
+};</pre>
+<p>디바운서를 "현재 시각을 인자로 받는 순수 로직"으로 분리한 점이 좋은 습관입니다. 실제 파일 시스템과 시계 없이도 "0ms, 70ms에 이벤트 → 200ms엔 아직, 221ms엔 보고" 같은 테스트를 쓸 수 있습니다. 에디터는 셰이더 폴더용과 프로젝트 콘텐츠 폴더용 <code>FFileWatcher</code>를 따로 두고, 콘텐츠 쪽에서는 Lua 스크립트·머티리얼(<code>.emat</code>)·애니메이션 그래프·비헤이비어 트리·프리팹 변경을 확장자별로 받아 각자 다시 읽게 합니다. "조용해질 때까지 기다린다"는 아이디어는 12강의 C++ 게임 모듈 핫 리로드에서 "시각·크기가 1초 동안 그대로"라는 더 긴 안정화로 다시 나옵니다.</p>
+
+<h3 id="lec-10-paths"><span class="step">ProjectE에서는</span>FPaths — 절대 경로를 코드에 쓰지 않는다</h3>
+<p>마지막 조각은 "파일이 어디 있는가"입니다. 개발 중 실행 파일은 <code>Build/ninja-debug/Bin/</code>에 있고, 패키지 게임은 설치 폴더에, 게임 데이터는 <code>Projects/Sample/</code>에 있습니다. 소스에 <code>"E:/Projects/ProjectE/..."</code>를 넣으면 다른 PC에서 바로 깨집니다. Phase 5 트랙 A는 이런 컴파일 타임 절대 경로를 모두 지우고 <code>FPaths</code>로 바꿨습니다.</p>
+<pre class="code" data-file="Engine/Source/Core/Paths.h (머리 주석 발췌)"><span class="com">// 엔진 디렉터리: 실행 파일 디렉터리에서 상위로 올라가며 "Engine/Shaders/Shaders.json" 마커가 있는 첫 디렉터리.</span>
+<span class="com">//                개발 빌드(Build/ninja-debug/Bin)와 패키징(exe 옆에 Engine/) 모두 만족한다.</span>
+<span class="com">// 프로젝트:      .eproject 파일이 있는 폴더. Content/ (에셋), Saved/ (런타임 생성물), Config/ (설정).</span>
+<span class="com">//                명령줄 "--project &lt;파일|폴더&gt;" 우선, 없으면 &lt;실행 파일 폴더&gt;/&lt;실행 파일 이름&gt;/ (패키지 배치),</span>
+<span class="com">//                그것도 없으면 개발 편의로 엔진의 Projects/Sample/Sample.eproject.</span>
+<span class="com">// 패키지:        엔진 디렉터리에 Engine/Packaged.json(Package.ps1이 기록)이 있으면 패키징된 게임이다.</span>
+<span class="com">//                패키지의 Saved는 설치 폴더가 아니라 %LOCALAPPDATA%/[&lt;Company&gt;/]&lt;프로젝트&gt;/Saved (쓰기 권한).</span></pre>
+<p>"마커 파일을 찾아 위로 올라가기"는 단순하지만 강력합니다. 빌드 폴더 깊이가 달라도, 패키지 배치가 달라도 같은 코드로 엔진 루트를 찾습니다. 그리고 경로의 "기준"이 둘로 나뉩니다. 셰이더 같은 <b>엔진 콘텐츠는 실행 파일 기준</b>, 씬·모델 같은 <b>게임 콘텐츠는 프로젝트 기준</b>(0강의 엔진/프로젝트 분리). 씬 파일 안의 에셋 경로가 <code>"Materials/Checker.emat"</code>처럼 Content 기준 상대 경로인 것도 같은 이유입니다. 프로젝트 폴더를 통째로 옮겨도 깨지지 않습니다.</p>
+
+<h3 id="lec-10-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: BOM이 첫 줄 <code>#include</code>를 숨겼다</b>
+	셰이더 핫 리로드는 "어떤 파일이 어떤 파일을 include하는지"를 직접 스캔해 의존 관계를 만듭니다. 그런데 1강에서 본 대로 <code>.hlsl</code>은 DXC 1.6 때문에 <b>UTF-8 BOM이 반드시 있어야</b> 합니다. 파일 맨 앞 세 바이트(<code>EF BB BF</code>)가 첫 줄 앞에 붙어 있으니, "줄이 <code>#include</code>로 시작하는가?" 검사가 첫 줄에서만 실패했습니다. 첫 줄에 include가 있는 셰이더는 그 헤더를 고쳐도 다시 컴파일되지 않았습니다. 지금 <code>ShaderManifest.cpp</code>에는 "HLSL 파일은 UTF-8 BOM으로 시작하므로(DXC 요구) 첫 줄의 BOM을 제거해야 "#include"가 줄 시작에 온다"는 주석이 남아 있습니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 파일 시각을 믿지 않게 되기까지</b>
+	셰이더 쿠킹 캐시는 처음에 소스·포함 파일의 수정 시각으로 유효성을 판단했습니다. 병렬 작업용 git 워크트리와 브랜치 머지가 일상이 되자 시각이 내용과 어긋나는 일이 생겼고, 커밋 "쿠킹 셰이더 캐시를 내용 해시로 검증"에서 시각 비교를 없애고 <code>.srchash</code> 사이드카로 바꿨습니다. 함께 추가한 테스트는 "시각만 오래된 경우에는 캐시를 쓰고, 해시가 다르거나 사이드카가 없으면 재컴파일"을 확인합니다.
+</div>
+<ul>
+	<li><b>콘텐츠 읽기는 한 함수로</b>: 패키지 게임은 콘텐츠를 <code>Content.epak</code> 하나에 묶습니다. 새 로더가 <code>std::ifstream</code>으로 직접 읽으면 개발 중엔 되다가 패키지에서만 깨집니다. 그래서 규칙은 "콘텐츠 읽기는 <code>FFileSystem</code>(pak → 디스크)만"입니다(10부).</li>
+	<li><b>버전 올리기를 잊지 말 것</b>: 쿠킹 형식을 바꾸고 <code>ModelVersion</code>을 올리지 않으면, 이미 쿠킹된 PC에서만 옛 형식을 새 코드로 읽는 버그가 납니다. 내 PC에서는 지웠다 다시 쿠킹했으니 재현이 안 되는, 가장 찾기 어려운 종류입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>소스(JSON, glTF, PNG, HLSL)는 사람과 git을 위해, 쿠킹 결과(.emodel, .etex, .dxil)는 엔진을 위해. 쿠킹 결과는 캐시라 커밋하지 않는다.</li>
+		<li>씬 JSON은 리플렉션 이름이 키. 핸들 대신 경로, 엔티티 대신 파일 안 인덱스. 읽기는 관용적(모르는 것은 경고 후 무시).</li>
+		<li>캐시 유효성: 형식 버전(엔진 변경) + 시각(원본 변경) + 설정 기록(시각이 못 잡는 변경). 셰이더는 내용 해시(.srchash).</li>
+		<li>핫 리로드 = 파일 감시(메인 스레드 폴링) → 150ms 디바운스 → 의존 추적 무효화 → 성공할 때만 교체.</li>
+		<li>경로는 항상 <code>FPaths</code>. 엔진 콘텐츠는 실행 파일 기준, 게임 콘텐츠는 프로젝트 기준.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 씬을 바이너리로 저장하면 로드가 더 빠를 텐데, ProjectE는 왜 런타임에도 씬을 JSON으로 읽을까요?</summary>
+	씬 JSON은 엔티티 수백~수천 개 수준이라 파싱 비용이 모델·텍스처에 비해 작고, 큰 데이터(메시, 이미지)는 이미 경로 참조로 빠져 쿠킹 파일에서 읽습니다. 반면 JSON이면 에디터 저장 파일을 변환 없이 그대로 쓰고, diff·병합이 되며, 관용적 로드로 버전 차이를 흡수합니다. 측정해서 씬 로드가 병목이 될 때 바꿔도 늦지 않다는 판단입니다(서브 씬은 파싱을 백그라운드로 보내 이미 비용을 숨깁니다).
+</details>
+<details class="quiz"><summary>Q2. 머지 뒤에 셰이더 파일의 시각만 새로워지고 내용은 같습니다. 시각 방식과 내용 해시 방식은 각각 어떻게 동작할까요?</summary>
+	시각 방식은 "소스가 쿠킹본보다 새롭다"고 보고 불필요하게 재컴파일합니다(느리지만 결과는 맞음). 반대로 내용이 바뀌었는데 시각이 쿠킹본보다 오래된 경우(오래된 파일을 복사해 온 경우 등)에는 옛 DXIL을 써서 <b>틀린</b> 결과를 냅니다. 내용 해시는 두 경우 모두 정확합니다 — 앞의 경우 캐시를 쓰고, 뒤의 경우 재컴파일합니다.
+</details>
+<details class="quiz"><summary>Q3. 디바운스 지연을 150ms 대신 2초로 늘리면 무엇이 좋아지고 무엇이 나빠질까요?</summary>
+	아주 느리게 저장되는 큰 파일이나 여러 파일을 연달아 저장하는 경우를 더 확실히 하나로 묶을 수 있지만, 저장한 뒤 화면이 바뀌기까지 2초를 기다려야 해서 "고치고 바로 본다"는 핫 리로드의 장점이 줄어듭니다. 셰이더처럼 작은 텍스트 파일은 짧게, 링커가 몇 번에 나눠 쓰는 DLL은 길게(12강의 1초 안정화) — 입력 특성에 맞춰 고릅니다.
+</details>
+</article>
+
+<!-- ======================================================= 11강 ======================================================= -->
+<article class="lecture" id="lec-11">
+<header>
+	<div class="no">11강</div>
+	<h2 id="lec-11-title">모델 임포트: glTF와 FBX</h2>
+	<div class="meta">관련 Phase: 3 (glTF 로더), 11 (FBX · 임포트 설정) · 살펴볼 곳: <code>Renderer/GltfLoader.h/.cpp</code>, <code>Renderer/FbxLoader.h</code>, <code>Renderer/MeshData.cpp</code> (<code>ComputeTangents</code>), <code>Renderer/ModelImportSettings.h</code>, <code>Tests/RendererTests/GltfLoaderTests.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>glTF 파일의 구조(노드·메시·프리미티브·접근자·버퍼·머티리얼)를 그릴 수 있습니다.</li>
+		<li>오른손 Y-up(미터)에서 왼손 Z-up(센티미터)으로 옮길 때 위치·방향·회전·스케일·행렬이 각각 어떻게 바뀌는지, 왜 쿼터니언 벡터부 부호가 뒤집히는지 설명할 수 있습니다.</li>
+		<li>좌표 변환이 "반사"일 때 삼각형 와인딩과 탄젠트 부호(w)를 왜 손봐야 하는지 압니다.</li>
+		<li>UV에서 탄젠트를 계산하는 식과, 임포트 설정(<code>.eimport</code>)을 원본을 건드리지 않고 적용하는 방법을 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-11-why"><span class="step">왜 필요한가</span>남이 만든 모델은 남의 좌표계로 온다</h3>
+<p>캐릭터·소품·건물 모델은 Blender, Maya 같은 도구에서 만들어 파일로 내보냅니다. 엔진은 그 파일을 읽어 정점·인덱스·머티리얼·뼈·애니메이션을 자기 형식으로 옮겨야 합니다. 이것이 <b>임포트</b>(import)입니다. 어려운 점은 파일 형식 해독이 아닙니다(그건 라이브러리가 합니다). 어려운 것은 <b>좌표계 규약</b>입니다.</p>
+<p>ProjectE는 언리얼과 같은 <b>왼손 Z-up, 1단위 = 1cm</b>입니다(4강). 그런데 glTF 2.0 표준은 <b>오른손, +Y 위, 1단위 = 1m</b>이고, FBX는 파일마다 축과 단위가 다를 수 있습니다. 그대로 읽으면 모델이 옆으로 눕고, 100배 작아지고, 거울에 비친 것처럼 뒤집히고, 뒷면만 보이고, 노멀 맵 음영이 반대로 나옵니다. 이 강의는 그 각각이 왜 생기고 어떻게 고치는지를 다룹니다. Phase 3의 DoD가 정확히 이것이었습니다. "DamagedHelmet(glTF)이 텍스처와 함께 올바른 방향(Z-up)으로 표시된다."</p>
+
+<h3 id="lec-11-gltf"><span class="step">핵심 개념</span>glTF의 구조</h3>
+<p>glTF(GL Transmission Format)는 Khronos 그룹의 "3D 모델의 JPEG"을 목표로 한 개방 형식입니다. JSON(<code>.gltf</code>) 하나와 바이너리(<code>.bin</code>)·이미지 파일들로 되어 있거나, 전부를 한 파일에 담은 <code>.glb</code>로 옵니다. ProjectE는 파싱을 cgltf(헤더 하나짜리 C 라이브러리, 커밋 고정)에 맡기고, 결과를 엔진의 중간 형식 <code>FModelData</code>로 옮깁니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="glTF 구조">
+		<title>glTF 2.0의 객체 관계</title>
+		<g class="t-small">
+			<rect x="20" y="20" width="110" height="36" rx="8" class="box"/><text x="75" y="43" text-anchor="middle">scene</text>
+			<rect x="20" y="90" width="110" height="52" rx="8" class="acc"/><text x="75" y="112" text-anchor="middle" class="t-bold">node</text><text x="75" y="130" text-anchor="middle" class="t-muted">TRS 또는 matrix</text>
+			<rect x="180" y="90" width="110" height="36" rx="8" class="k1"/><text x="235" y="113" text-anchor="middle">mesh</text>
+			<rect x="180" y="160" width="110" height="52" rx="8" class="k1"/><text x="235" y="182" text-anchor="middle" class="t-bold">primitive</text><text x="235" y="200" text-anchor="middle" class="t-muted">attributes, indices</text>
+			<rect x="340" y="160" width="120" height="52" rx="8" class="k2"/><text x="400" y="182" text-anchor="middle">accessor</text><text x="400" y="200" text-anchor="middle" class="t-muted">형식·개수·성분</text>
+			<rect x="510" y="160" width="110" height="36" rx="8" class="k2"/><text x="565" y="183" text-anchor="middle">bufferView</text>
+			<rect x="670" y="160" width="110" height="36" rx="8" class="k2"/><text x="725" y="183" text-anchor="middle">buffer (.bin)</text>
+			<rect x="340" y="90" width="120" height="36" rx="8" class="k3"/><text x="400" y="113" text-anchor="middle">material</text>
+			<rect x="510" y="90" width="110" height="36" rx="8" class="k3"/><text x="565" y="113" text-anchor="middle">texture</text>
+			<rect x="670" y="90" width="110" height="36" rx="8" class="k3"/><text x="725" y="113" text-anchor="middle">image</text>
+			<rect x="20" y="230" width="110" height="36" rx="8" class="k4"/><text x="75" y="253" text-anchor="middle">skin</text>
+			<rect x="180" y="230" width="110" height="36" rx="8" class="k4"/><text x="235" y="253" text-anchor="middle">animation</text>
+		</g>
+		<path d="M75,56 V86" class="ln" marker-end="url(#arr)"/>
+		<path d="M130,108 H176" class="ln" marker-end="url(#arr)"/>
+		<path d="M235,126 V156" class="ln" marker-end="url(#arr)"/>
+		<path d="M290,186 H336" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,180 H506" class="ln" marker-end="url(#arr)"/>
+		<path d="M620,178 H666" class="ln" marker-end="url(#arr)"/>
+		<path d="M290,170 L338,122" class="ln" marker-end="url(#arr)"/>
+		<path d="M460,108 H506" class="ln" marker-end="url(#arr)"/>
+		<path d="M620,108 H666" class="ln" marker-end="url(#arr)"/>
+		<path d="M75,142 V226" class="ln-d" marker-end="url(#arr)"/>
+		<path d="M235,266 C 300,290 380,270 400,216" class="ln-d" marker-end="url(#arr)"/>
+		<text x="40" y="190" class="t-muted">children</text>
+		<text x="320" y="286" class="t-muted">키 값도 accessor로</text>
+		<rect x="560" y="226" width="280" height="60" rx="8" class="box"/>
+		<text x="576" y="250" class="t-small">엔진: primitive 하나 = FModelMesh 하나</text>
+		<text x="576" y="272" class="t-small">node 계층 = FModelNode (씬에서 엔티티로)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 11-1.</b> 노드는 계층(부모·자식)과 로컬 변환을 갖고, 메시는 프리미티브(머티리얼 하나에 해당하는 삼각형 묶음)들로 되어 있습니다. 실제 숫자는 모두 accessor → bufferView → buffer를 따라가 읽습니다.</figcaption>
+</figure>
+<p>엔진 쪽 중간 형식은 GPU와 무관한 순수 데이터입니다. <code>FModelData</code> = 이미지 목록 + 머티리얼 목록 + 메시 목록 + 노드 트리 + 스킨 + 애니메이션. 씬에 놓을 때(<code>FModelLoader</code>)는 노드 하나가 엔티티 하나가 되어 8강의 계층에 그대로 들어갑니다. 이 엔티티들은 모델 파일에서 언제든 다시 만들 수 있으므로 <code>FTransientComponent</code>를 달아 씬 파일에는 저장하지 않습니다(10강).</p>
+
+<h3 id="lec-11-axes"><span class="step">핵심 개념</span>좌표계 변환 — 축 바꾸기는 사실 "거울"이다</h3>
+<p>먼저 축 대응을 정합니다. glTF는 +X 오른쪽, +Y 위이고, 카메라는 −Z 방향(화면 안쪽)을 바라봅니다. ProjectE 로더는 이 "보는 방향" −Z를 엔진의 앞(+X)에, 오른쪽과 위는 각각 엔진의 오른쪽(+Y)과 위(+Z)에 대응시킵니다(<code>FGltfLoader</code> 머리 주석).</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="glTF와 엔진 좌표축 대응">
+		<title>glTF 축 → 엔진 축</title>
+		<text x="140" y="26" text-anchor="middle" class="t-bold">glTF (오른손, Y-up, m)</text>
+		<path d="M140,170 V70" class="ln s3" stroke-width="2.2" marker-end="url(#arr)"/>
+		<path d="M140,170 H250" class="ln s2" stroke-width="2.2" marker-end="url(#arr)"/>
+		<path d="M140,170 L80,230" class="ln s1" stroke-width="2.2" marker-end="url(#arr)"/>
+		<g class="t-small">
+			<text x="150" y="70">+Y 위</text>
+			<text x="256" y="174">+X 오른쪽</text>
+			<text x="40" y="250">+Z 뒤(보는 사람 쪽)</text>
+			<text x="150" y="118" class="t-muted">카메라 시선 = −Z</text><text x="150" y="134" class="t-muted">(화면 안쪽)</text>
+		</g>
+		<text x="620" y="26" text-anchor="middle" class="t-bold">ProjectE (왼손, Z-up, cm)</text>
+		<path d="M620,170 V70" class="ln s3" stroke-width="2.2" marker-end="url(#arr)"/>
+		<path d="M620,170 H730" class="ln s2" stroke-width="2.2" marker-end="url(#arr)"/>
+		<path d="M620,170 L680,110" class="ln s1" stroke-width="2.2" marker-end="url(#arr)"/>
+		<g class="t-small">
+			<text x="630" y="70">+Z 위</text>
+			<text x="736" y="174">+Y 오른쪽</text>
+			<text x="688" y="108">+X 앞</text>
+		</g>
+		<rect x="330" y="70" width="210" height="112" rx="10" class="acc"/>
+		<g class="t-mono">
+			<text x="344" y="96">엔진 = (−g.z, g.x, g.y)</text>
+			<text x="344" y="122">glTF +X → 엔진 +Y</text>
+			<text x="344" y="144">glTF +Y → 엔진 +Z</text>
+			<text x="344" y="166">glTF −Z → 엔진 +X</text>
+		</g>
+		<rect x="20" y="256" width="820" height="1" class="box"/>
+		<text x="430" y="275" text-anchor="middle" class="t-small">이 대응 행렬 C의 행렬식은 −1 → 회전이 아니라 반사(거울)가 섞인 변환. 오른손 ↔ 왼손은 회전만으로는 갈 수 없다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 11-2.</b> 같은 색 화살표가 서로 대응합니다(초록 = 오른쪽, 보라 = 위, 파랑 = 앞/뒤). 테스트 <code>Gltf_AxisConversion</code>이 이 세 쌍을 그대로 확인합니다.</figcaption>
+</figure>
+
+<p>왼손 좌표계와 오른손 좌표계는 거울상 관계입니다. 오른손 장갑을 아무리 돌려도 왼손 장갑이 되지 않듯, 둘 사이의 변환에는 반드시 <b>반사</b>(행렬식 −1)가 들어갑니다. 위치와 방향 벡터는 이 행렬을 곱하기만 하면 되지만, "손잡이 방향(handedness)"에 의존하는 양 — <b>회전 방향, 외적, 삼각형의 감김 방향</b> — 은 반사에서 부호가 뒤집힙니다. 이 강의의 나머지는 사실 이 한 문장의 결과들입니다.</p>
+
+<div class="tablewrap"><table class="t">
+	<tr><th>양</th><th>변환</th><th>이유</th></tr>
+	<tr><td>위치, 노드 이동</td><td><code>ConvertPosition(g) × 100</code></td><td>축 대응 + 미터 → 센티미터(<code>ImportScale</code>)</td></tr>
+	<tr><td>법선·탄젠트 같은 방향</td><td><code>ConvertPosition(g)</code> (×100 없음)</td><td>방향은 길이가 없다 — 단위와 무관</td></tr>
+	<tr><td>스케일</td><td><code>(g.z, g.x, g.y)</code> — 부호 없이 순서만</td><td>축별 배율이라 반사의 부호가 의미 없음</td></tr>
+	<tr><td>회전(쿼터니언)</td><td>벡터부 = <b>−</b>C·(x, y, z), w 그대로</td><td>반사는 회전 방향을 뒤집는다</td></tr>
+	<tr><td>노드 행렬</td><td>M<sub>e</sub> = C<sup>T</sup> · M · C</td><td>켤레 변환(좌표계 바꾸기)</td></tr>
+	<tr><td>탄젠트 w (바이탄젠트 부호)</td><td>부호 반전</td><td>외적은 반사에서 부호가 바뀐다</td></tr>
+	<tr><td>삼각형 인덱스</td><td>뒤 두 개 교환</td><td>앞면 규약 맞추기 (아래)</td></tr>
+</table></div>
+
+<h4>쿼터니언 벡터부의 부호가 왜 뒤집히나</h4>
+<p>축 <b>a</b>를 중심으로 θ만큼 도는 회전의 쿼터니언은 (sin(θ/2)·<b>a</b>, cos(θ/2))입니다. 같은 물리적 회전을 다른 좌표계로 표현하면 회전 행렬은 R<sub>e</sub> = C·R·C<sup>−1</sup>가 됩니다. C가 순수 회전이라면 "축이 C·<b>a</b>로 옮겨진 같은 각도의 회전"이 되지만, C가 <b>반사</b>이면 거울에 비친 회전은 방향이 반대로 돕니다. 즉 축 C·<b>a</b>, 각도 −θ. sin(−θ/2) = −sin(θ/2), cos(−θ/2) = cos(θ/2)이므로 결과 쿼터니언은 (−sin(θ/2)·C<b>a</b>, cos(θ/2)) — 벡터부만 변환 후 부호를 뒤집으면 됩니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/GltfLoader.h / .cpp (발췌)"><span class="com">// 축 변환만 한다 (방향 벡터에도 사용). 위치/이동은 ImportScale을 곱해 엔진 단위(cm)로 바꾼다</span>
+<span class="kw">static</span> FVector3 ConvertPosition(<span class="kw">const</span> FVector3&amp; Gltf) { <span class="kw">return</span> { -Gltf.Z, Gltf.X, Gltf.Y }; }
+<span class="com">// glTF는 미터 → 엔진 센티미터</span>
+<span class="kw">static constexpr float</span> ImportScale = FUnits::MetersToUnits;
+<span class="kw">static</span> FVector3 ConvertScale(<span class="kw">const</span> FVector3&amp; Gltf) { <span class="kw">return</span> { Gltf.Z, Gltf.X, Gltf.Y }; }
+
+FQuat FGltfLoader::ConvertRotation(<span class="kw">const</span> FQuat&amp; Gltf)
+{
+	<span class="com">// 반사 변환으로 켤레하면 축은 변환되고 회전 방향은 반대가 된다 → 벡터부 부호 반전</span>
+	<span class="kw">const</span> FVector3 Axis = ConvertPosition({ Gltf.X, Gltf.Y, Gltf.Z });
+	<span class="kw">return</span> FQuat(-Axis.X, -Axis.Y, -Axis.Z, Gltf.W).GetNormalized();
+}
+
+FMatrix4x4 FGltfLoader::ConvertMatrix(<span class="kw">const</span> FMatrix4x4&amp; GltfRowMajor)
+{
+	<span class="com">// M_e = C^T * M * C</span>
+	<span class="kw">return</span> GAxisConversion.GetTransposed() * GltfRowMajor * GAxisConversion;
+}</pre>
+<p>이런 부호 계산은 머리로만 하면 틀리기 쉽습니다. 그래서 테스트 <code>Gltf_RotationConversionMatchesMatrixConjugation</code>이 여러 무작위 회전에 대해 "쿼터니언 변환 결과의 행렬 = 행렬 켤레 변환 결과"와 "변환된 회전으로 변환된 점을 돌린 것 = 원래 회전으로 돌린 점을 변환한 것"을 확인합니다. 두 길로 계산해 같은지 보는 것은 좌표 변환 코드를 검증하는 가장 확실한 방법입니다.</p>
+<p>행렬로 저장된 노드(<code>matrix</code>)는 켤레 변환 후 이동·스케일·회전으로 다시 분해합니다. 이동은 ×100, 스케일은 각 축 벡터의 길이, 회전은 스케일을 나눈 3×3에서 쿼터니언으로. 엔진의 노드는 항상 TRS로 저장되기 때문입니다(에디터 기즈모와 애니메이션이 TRS를 다룸).</p>
+
+<h3 id="lec-11-winding"><span class="step">핵심 개념</span>와인딩 — 앞면과 뒷면</h3>
+<p>삼각형에는 앞면과 뒷면이 있습니다. GPU는 화면에 투영된 세 꼭짓점이 <b>시계 방향(CW)</b>인지 <b>반시계 방향(CCW)</b>인지로 앞뒤를 정하고, 보통 뒷면은 그리지 않습니다(뒷면 컬링 — 닫힌 물체의 안쪽 면을 그리지 않아 절반을 아낌). glTF는 CCW가 앞면이고, ProjectE는 "앞면은 시계 방향(CW)"입니다(CLAUDE.md 좌표계 규약).</p>
+<p>여기서 함정이 하나 있습니다. 축 변환은 반사이므로 월드 공간에서 삼각형의 감김을 뒤집습니다. 그런데 엔진의 카메라 규약(뷰 공간 +X 오른쪽, +Y 위, +Z 앞 — 월드 +Y가 오른쪽)도 그 자체로 반사를 하나 포함합니다. 두 반사가 상쇄되어 <b>화면에 찍힌 감김은 glTF에서와 같은 CCW</b>로 남습니다. 엔진은 CW를 앞으로 보므로, 그대로 두면 모든 앞면이 뒷면으로 취급되어 컬링됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="와인딩 뒤집기">
+		<title>반사 두 번 → 감김 그대로 → 인덱스 교환</title>
+		<g class="t-small">
+			<text x="130" y="24" text-anchor="middle" class="t-bold">① glTF 화면</text>
+			<path d="M80,170 L180,170 L130,70 Z" class="k2"/>
+			<text x="72" y="190" class="t-mono">0</text><text x="184" y="190" class="t-mono">1</text><text x="126" y="62" class="t-mono">2</text>
+			<path d="M110,150 A 26 26 0 1 0 150,150" class="ln s2" marker-end="url(#arr)"/>
+			<text x="130" y="214" text-anchor="middle">0→1→2 반시계(CCW) = 앞면</text>
+
+			<text x="430" y="24" text-anchor="middle" class="t-bold">② 축 반사 + 카메라 반사 후 화면</text>
+			<path d="M380,170 L480,170 L430,70 Z" class="k5"/>
+			<text x="372" y="190" class="t-mono">0</text><text x="484" y="190" class="t-mono">1</text><text x="426" y="62" class="t-mono">2</text>
+			<path d="M410,150 A 26 26 0 1 0 450,150" class="ln s5" marker-end="url(#arr)"/>
+			<text x="430" y="214" text-anchor="middle">여전히 CCW → 엔진은 뒷면으로 봄</text>
+			<text x="430" y="234" text-anchor="middle" class="t-muted">(그대로 두면 모델이 안쪽만 보이거나 사라짐)</text>
+
+			<text x="730" y="24" text-anchor="middle" class="t-bold">③ 인덱스 1, 2 교환</text>
+			<path d="M680,170 L780,170 L730,70 Z" class="k2"/>
+			<text x="672" y="190" class="t-mono">0</text><text x="784" y="190" class="t-mono">2</text><text x="726" y="62" class="t-mono">1</text>
+			<path d="M750,150 A 26 26 0 1 1 710,150" class="ln s2" marker-end="url(#arr)"/>
+			<text x="730" y="214" text-anchor="middle">0→1→2 시계(CW) = 엔진 앞면</text>
+		</g>
+		<path d="M200,120 H350" class="ln" marker-end="url(#arr)"/>
+		<path d="M500,120 H650" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 11-3.</b> 반사 두 번은 원래대로입니다. 그래서 화면상 감김은 glTF와 같고, 엔진 규약(CW)에 맞추려면 삼각형마다 뒤 두 인덱스를 바꿔야 합니다. 정점 위치는 건드리지 않습니다.</figcaption>
+</figure>
+
+<pre class="code" data-file="Engine/Source/Renderer/GltfLoader.cpp (발췌)"><span class="com">// 와인딩 반전: glTF는 CCW 앞면. 축 변환(반사)과 엔진 카메라 규약(오른쪽=+Y, 역시 반사)이 상쇄되어</span>
+<span class="com">// 화면상 방향이 그대로 유지되므로, 엔진의 CW 앞면 규약에 맞추려면 삼각형마다 뒤 두 인덱스를 교환한다.</span>
+<span class="kw">for</span> (size_t Index = <span class="num">0</span>; Index + <span class="num">2</span> &lt; OutMesh.Data.Indices.size(); Index += <span class="num">3</span>)
+{
+	std::swap(OutMesh.Data.Indices[Index + <span class="num">1</span>], OutMesh.Data.Indices[Index + <span class="num">2</span>]);
+}</pre>
+<p>와인딩 규약을 검증하는 식은 CLAUDE.md에 한 줄로 고정되어 있습니다. <b><code>Cross(P1 − P0, P2 − P0) · Normal &gt; 0</code></b>. 엔진의 내장 큐브(<code>FPrimitiveShapes</code>)가 이 식을 만족하고, 임포트한 메시도 같아야 합니다. 테스트 <code>Gltf_LoadTriangleFile</code>과 실제 DamagedHelmet을 읽는 테스트가 기하 법선(외적)과 파일의 정점 법선 방향이 일치하는지 확인합니다.</p>
+
+<h3 id="lec-11-tangent"><span class="step">핵심 개념</span>탄젠트 공간과 w 부호</h3>
+<p>노멀 맵(5강)은 표면의 미세한 요철을 텍스처에 담습니다. 텍스처의 RGB는 월드 방향이 아니라 <b>표면에 붙은 좌표계</b>(탄젠트 공간)의 방향입니다. R = 표면을 따라 "텍스처 오른쪽(+U)", G = "텍스처 위쪽", B = 법선. 셰이더가 이것을 월드 방향으로 바꾸려면 정점마다 세 축 — 탄젠트 <b>T</b>, 바이탄젠트 <b>B</b>, 법선 <b>N</b> — 이 필요합니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 260" role="img" aria-label="UV와 탄젠트 공간">
+		<title>UV에서 탄젠트 구하기</title>
+		<text x="140" y="24" text-anchor="middle" class="t-bold">텍스처(UV) 공간</text>
+		<rect x="40" y="40" width="200" height="180" class="box"/>
+		<text x="36" y="36" class="t-mono t-muted">(0,0)</text>
+		<text x="214" y="238" class="t-mono t-muted">(1,1)</text>
+		<path d="M50,210 H230" class="ln s1" marker-end="url(#arr)"/><text x="190" y="204" class="t-small">+U</text>
+		<path d="M50,210 V50" class="ln s2" marker-end="url(#arr)"/><text x="56" y="62" class="t-small">위쪽 = −V</text>
+		<path d="M80,190 L200,180 L120,80 Z" class="k3"/>
+		<g class="t-mono"><text x="66" y="196">uv0</text><text x="204" y="180">uv1</text><text x="124" y="76">uv2</text></g>
+		<text x="430" y="24" text-anchor="middle" class="t-bold">모델 공간의 같은 삼각형</text>
+		<path d="M340,200 L520,170 L400,70 Z" class="k3"/>
+		<g class="t-mono"><text x="326" y="214">P0</text><text x="524" y="172">P1</text><text x="404" y="64">P2</text></g>
+		<path d="M420,150 L500,137" class="ln s1" stroke-width="2.2" marker-end="url(#arr)"/><text x="504" y="134" class="t-small">T = dP/du</text>
+		<path d="M420,150 L400,90" class="ln s2" stroke-width="2.2" marker-end="url(#arr)"/><text x="384" y="86" class="t-small">B</text>
+		<rect x="580" y="40" width="260" height="180" rx="10" class="acc"/>
+		<g class="t-small">
+			<text x="596" y="64" class="t-bold">풀어야 할 식 (삼각형마다)</text>
+			<text x="596" y="90" class="t-mono">E1 = P1−P0, E2 = P2−P0</text>
+			<text x="596" y="110" class="t-mono">ΔUV1 = uv1−uv0, ΔUV2 = uv2−uv0</text>
+			<text x="596" y="134" class="t-mono">E = dP/du·Δu + dP/dv·Δv</text>
+			<text x="596" y="158">→ 2×2 연립방정식으로 dP/du, dP/dv</text>
+			<text x="596" y="182">T = dP/du,  B = −dP/dv (텍스처 위쪽)</text>
+			<text x="596" y="206" class="t-muted">정점마다 누적 → 그람-슈미트로 N과 직교화</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 11-4.</b> 탄젠트는 "텍스처에서 오른쪽으로 갈 때 표면이 3D에서 움직이는 방향"입니다. glTF UV 원점은 왼쪽 위라 V가 아래로 커지므로, 노멀 맵의 +Y(텍스처 위쪽)는 −V 방향입니다.</figcaption>
+</figure>
+
+<p>정점에 B까지 저장하면 낭비이므로, 보통 T(xyz)와 부호 하나(w = ±1)만 저장하고 셰이더에서 <b>B = Cross(N, T) × w</b>로 복원합니다. 부호가 필요한 이유는 UV가 거울처럼 뒤집혀 펼쳐진 부분(좌우 대칭 모델의 반쪽 등)에서는 Cross(N, T)가 텍스처 위쪽과 반대가 되기 때문입니다. ProjectE의 규약은 CLAUDE.md에 이렇게 적혀 있습니다. "<code>FVertex::Tangent.xyz</code> = UV +U 방향, <code>B = Cross(N, T) * Tangent.w</code> = 노멀 맵 +Y = UV 위쪽(−V)."</p>
+<pre class="code" data-file="Engine/Source/Renderer/MeshData.cpp (발췌)">FTangentBasis ComputeTriangleTangentBasis(<span class="kw">const</span> FVector3&amp; P0, ..., <span class="kw">const</span> FVector2&amp; UV2)
+{
+	<span class="kw">const</span> FVector3 E1 = P1 - P0;  <span class="kw">const</span> FVector3 E2 = P2 - P0;
+	<span class="kw">const</span> FVector2 DUV1 = UV1 - UV0;  <span class="kw">const</span> FVector2 DUV2 = UV2 - UV0;
+	<span class="kw">const float</span> Determinant = DUV1.X * DUV2.Y - DUV2.X * DUV1.Y;
+	<span class="kw">if</span> (FMath::Abs(Determinant) &lt; <span class="num">1.0e-12f</span>) { <span class="kw">return</span> Basis; }   <span class="com">// UV가 퇴화한 삼각형</span>
+	<span class="kw">const float</span> InvDeterminant = <span class="num">1.0f</span> / Determinant;
+	<span class="com">// E = dP/du * dU + dP/dv * dV 를 풀면</span>
+	<span class="kw">const</span> FVector3 dPdu = (E1 * DUV2.Y - E2 * DUV1.Y) * InvDeterminant;
+	<span class="kw">const</span> FVector3 dPdv = (E2 * DUV1.X - E1 * DUV2.X) * InvDeterminant;
+	Basis.Tangent   = dPdu;
+	Basis.Bitangent = -dPdv; <span class="com">// 노멀 맵 +Y = UV 위쪽 = -V</span>
+	...
+}
+
+FVector4 OrthonormalizeTangent(<span class="kw">const</span> FVector3&amp; Normal, <span class="kw">const</span> FVector3&amp; Tangent, <span class="kw">const</span> FVector3&amp; Bitangent)
+{
+	<span class="com">// 그람-슈미트: 탄젠트에서 법선 성분 제거</span>
+	FVector3 T = (Tangent - Normal * FVector3::Dot(Normal, Tangent)).GetNormalized();
+	...
+	<span class="com">// Cross(N, T)가 원하는 바이탄젠트와 같은 방향이면 +1</span>
+	<span class="kw">const float</span> Sign = FVector3::Dot(FVector3::Cross(Normal, T), Bitangent) &lt; <span class="num">0.0f</span> ? <span class="num">-1.0f</span> : <span class="num">1.0f</span>;
+	<span class="kw">return</span> FVector4(T, Sign);
+}</pre>
+<p>파일에 TANGENT 속성이 없으면 로더가 <code>ComputeTangents()</code>로 위 계산을 합니다(위치와 UV만 쓰므로 인덱스 교환과 무관). 파일에 TANGENT가 <b>있으면</b> 변환해야 하는데, 여기서 다시 반사가 등장합니다. 반사 C에 대해 외적은 <b>Cross(C·N, C·T) = −C·Cross(N, T)</b>입니다. 방향 벡터 N, T를 그대로 변환하면 Cross(N, T)가 원래 가리키던 쪽의 반대가 되므로, 같은 바이탄젠트를 얻으려면 w의 부호를 뒤집어야 합니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/GltfLoader.cpp (발췌)">FVector4 FGltfLoader::ConvertTangent(<span class="kw">const</span> FVector4&amp; Gltf)
+{
+	<span class="com">// 반사 C에 대해 Cross(C·N, C·T) = -C·Cross(N, T). 같은 바이탄젠트를 얻으려면 w 부호를 뒤집어야 한다</span>
+	<span class="kw">const</span> FVector3 Tangent = ConvertPosition(FVector3(Gltf.X, Gltf.Y, Gltf.Z)).GetNormalized();
+	<span class="kw">return</span> FVector4(Tangent, Gltf.W &lt; <span class="num">0.0f</span> ? <span class="num">1.0f</span> : <span class="num">-1.0f</span>);
+}</pre>
+
+<h3 id="lec-11-projecte"><span class="step">ProjectE에서는</span>FBX는 glTF 경로를 재사용하고, 설정은 사이드카로</h3>
+<p>Phase 11에서 FBX를 지원할 때 새 변환 코드를 짜지 않았습니다. FBX 파서 ufbx(v0.23.1, MIT)에 "glTF와 같은 축(오른손 Y-up)과 미터로 먼저 바꿔 달라"고 요청하고, 그 결과를 <b>이미 검증된</b> <code>FGltfLoader::Convert*</code>로 엔진 좌표계에 옮깁니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/FbxLoader.h / .cpp (발췌)"><span class="com">// 좌표: ufbx가 먼저 glTF와 같은 축(오른손, +Y 위, 미터)으로 바꾸고(지오메트리까지), 그 뒤 FGltfLoader::Convert*로</span>
+<span class="com">// 엔진 좌표계(왼손 Z-up, cm)로 옮긴다 — glTF 경로에서 검증된 변환을 그대로 공유하기 위해서다.</span>
+Options.target_axes        = ufbx_axes_right_handed_y_up; <span class="com">// glTF와 같은 축</span>
+Options.target_unit_meters = <span class="num">1.0f</span>;</pre>
+<p>"검증된 경로 하나로 모으기"는 좌표 변환처럼 실수하기 쉬운 코드에서 특히 값집니다. 변환 규칙이 두 곳에 있으면 한쪽만 고쳐지는 날이 반드시 옵니다.</p>
+<p>모델마다 다른 사정(앞 방향이 다른 에셋, 너무 크거나 작은 에셋, 머티리얼은 빼고 싶은 경우)은 <b>임포트 설정</b>으로 다룹니다. 원본 파일은 건드리지 않고 옆에 <code>&lt;원본 파일 이름&gt;.eimport</code>(JSON)를 둡니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/ModelImportSettings.h (발췌)"><span class="kw">struct</span> FModelImportSettings
+{
+	<span class="kw">float</span> Scale      = <span class="num">1.0f</span>; <span class="com">// 원본 단위 변환(glTF/FBX → cm) 뒤에 곱하는 배율</span>
+	<span class="kw">float</span> YawDegrees = <span class="num">0.0f</span>; <span class="com">// 위(+Z)축 기준 회전 (앞 방향 맞추기)</span>
+	<span class="kw">bool</span> bImportMaterials  = <span class="kw">true</span>;
+	<span class="kw">bool</span> bImportSkin       = <span class="kw">true</span>;
+	<span class="kw">bool</span> bImportAnimations = <span class="kw">true</span>;
+	<span class="kw">bool</span> bRecomputeNormals  = <span class="kw">false</span>; <span class="com">// 부드러운 법선을 새로 계산 (원본 법선 무시)</span>
+	<span class="kw">bool</span> bRecomputeTangents = <span class="kw">false</span>; <span class="com">// UV로 탄젠트 새로 계산</span>
+	<span class="kw">bool</span>   bGenerateLods = <span class="kw">true</span>;       <span class="com">// 메시 LOD 자동 생성 (4부)</span>
+	...
+	<span class="com">// 모델 데이터에 설정 적용 (크기/방향은 새 최상위 노드로 — 정점·역바인드·애니메이션 키는 그대로)</span>
+	<span class="kw">void</span> Apply(FModelData&amp; Model) <span class="kw">const</span>;
+};</pre>
+<p>크기와 방향을 정점에 직접 곱하지 않고 <b>"ImportRoot"라는 새 최상위 노드</b>의 트랜스폼으로 적용하는 점이 중요합니다. 정점을 고치면 스킨 메시의 역바인드 행렬과 애니메이션 키까지 모두 맞춰 고쳐야 하지만, 맨 위에 노드 하나를 두면 계층(8강)이 알아서 아래 전체에 적용합니다. 설정이 바뀌면 10강의 캐시 판정(시각 + 설정 기록)이 쿠킹본을 다시 만들고, 에디터의 "다시 가져오기"가 열린 씬·미리보기·썸네일을 갱신합니다.</p>
+
+<h3 id="lec-11-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 모두 뒷면이었던 헬멧</b>
+	Phase 3의 첫 glTF 로더는 축 변환은 했지만 인덱스는 그대로 두었습니다. "변환이 반사이니 감김도 뒤집혔겠지"가 아니라 "카메라 규약의 반사와 상쇄되어 화면상 CCW가 유지된다"가 실제였고, 결과적으로 엔진(CW 앞면) 기준으로 모든 삼각형이 뒷면이 됐습니다. Phase 4 에디터 작업 중(2026-09-30) "glTF 와인딩 반전(뒷면 컬링 정상화)" 커밋으로 인덱스 교환을 넣고, 기하 법선과 정점 법선이 일치하는지 보는 테스트를 추가했습니다. Plans.md Phase 4의 사용자 확인 기록에도 "glTF 와인딩·기즈모 BeginFrame 수정 후"라고 남아 있습니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 미터에서 센티미터로</b>
+	처음 엔진 단위는 glTF와 같은 미터였습니다. 언리얼식 1단위 = 1cm로 바꾼 커밋(2026-09-30)에서 glTF 임포트에 위치·이동 ×100을 넣고 <code>ModelVersion</code>을 3으로 올렸습니다. 기본 큐브는 100cm, 카메라 클립 범위, 플라이 카메라 속도, 그림자 기본값, 기존 씬 위치도 모두 함께 바꿔야 했습니다. 0강에서 말한 "좌표계·단위는 나중에 바꾸기 매우 비싸다"의 실제 사례입니다. 이때 생긴 규칙이 "미터 기반 외부 데이터는 경계에서 <code>FUnits::MetersToUnits</code>로만 변환, 방향 벡터는 스케일하지 않는다"입니다.
+</div>
+<ul>
+	<li><b>방향 벡터에 ×100을 곱하지 말 것</b>: 법선에 100을 곱해도 정규화하면 같아 보이지만, 탄젠트·노드 회전 축 등에서 정규화가 빠진 곳이 있으면 조명이 100배로 튀는 식의 버그가 납니다. 테스트가 "법선 (0,0,1) → (−1,0,0), 길이 1"을 확인합니다.</li>
+	<li><b>에셋의 "앞"은 제각각</b>: 변환 규칙이 맞아도 모델마다 만든 사람이 정한 정면이 다릅니다(예: CLAUDE.md에 "Fox.glb는 모델 공간 −X를 바라봄"이 기록되어 있음). 로더를 고치지 말고 <code>.eimport</code>의 <code>YawDegrees</code>나 컴포넌트 설정(LookAt <code>ForwardAxis</code>)으로 맞춥니다.</li>
+	<li><b>새 속성을 읽으면 테스트도</b>: CLAUDE.md 규칙 "새 속성 추가 시 <code>GltfLoaderTests</code>에 케이스 추가". 알파 모드와 양면(doubleSided)을 Phase 36에서 추가할 때도 테스트 glTF에 MASK·alphaCutoff·doubleSided를 넣어 확인합니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>glTF = 노드(계층·TRS) → 메시 → 프리미티브 → 접근자 → 버퍼, 머티리얼 → 텍스처 → 이미지. 엔진은 GPU와 무관한 <code>FModelData</code>로 먼저 옮긴다.</li>
+		<li>엔진 = (−g.z, g.x, g.y), 행렬식 −1인 반사. 위치·이동만 ×100, 방향은 축만, 스케일은 순서만.</li>
+		<li>반사는 손잡이 방향에 의존하는 것을 뒤집는다: 쿼터니언 벡터부 부호, 탄젠트 w, 삼각형 감김.</li>
+		<li>축 반사와 카메라 규약 반사가 상쇄되므로 화면 감김은 그대로 → 엔진 CW 앞면에 맞추려면 인덱스 교환. 검증식 <code>Cross(P1−P0, P2−P0)·N &gt; 0</code>.</li>
+		<li>탄젠트 = dP/du, B = Cross(N, T)·w = 텍스처 위쪽(−V). 없으면 UV로 계산.</li>
+		<li>FBX는 ufbx로 glTF 축·미터로 맞춘 뒤 같은 변환을 재사용. 모델별 차이는 <code>.eimport</code> + ImportRoot 노드.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 축 대응을 (−g.z, g.x, g.y) 대신 (g.z, g.x, g.y)로 잡으면 반사가 사라지지 않을까요?</summary>
+	(g.z, g.x, g.y)는 행렬식이 +1인 순수 회전(축 순환)이지만, 그러면 glTF의 "뒤(+Z)"가 엔진의 "앞(+X)"이 됩니다. glTF 모델의 앞(−Z)이 엔진 뒤(−X)를 보게 되죠. 더 근본적으로, 오른손 좌표계에서 왼손 좌표계로 가면서 위·앞·오른쪽의 의미를 모두 지키는 회전은 존재하지 않습니다. 의미를 지키려면 반사가 반드시 하나 들어가고, 그 결과(감김·외적·회전 방향)를 처리하는 것이 임포터의 일입니다.
+</details>
+<details class="quiz"><summary>Q2. 노멀 맵이 적용된 벽돌 벽에서 빛이 위에서 오는데 홈의 그늘이 위쪽에 생깁니다(요철이 뒤집혀 보임). 무엇을 의심해야 할까요?</summary>
+	바이탄젠트 방향, 즉 탄젠트 w 부호나 "노멀 맵 +Y = UV 위쪽(−V)" 규약입니다. G 채널이 반대로 해석되면 세로 방향 요철만 뒤집혀 보입니다. 반사 변환에서 w를 뒤집지 않았거나(<code>ConvertTangent</code>), DirectX식(+Y 아래)으로 만든 노멀 맵을 OpenGL식(+Y 위) 규약 엔진에 넣은 경우에 이런 증상이 납니다. 위 그림의 규약대로 하나씩 확인합니다.
+</details>
+<details class="quiz"><summary>Q3. 임포트 설정의 Scale을 정점에 곱하지 않고 ImportRoot 노드에 두면, 스킨 메시와 애니메이션 측면에서 무엇이 편해질까요?</summary>
+	스킨 메시의 정점은 바인드 포즈 기준이고, 역바인드 행렬과 애니메이션 키(뼈의 이동값)도 같은 단위·방향을 전제로 맞물려 있습니다. 정점만 스케일하면 이 셋이 어긋나 메시가 찌그러지므로 모두를 함께 고쳐야 합니다. 맨 위 노드에 스케일·회전을 두면 셋 다 손대지 않고, 계층의 월드 행렬 합성(8강)이 전체에 같은 변환을 곱해 줍니다. "다시 가져오기"로 값을 되돌리기도 쉽습니다.
+</details>
+</article>
+
+<!-- ======================================================= 12강 ======================================================= -->
+<article class="lecture" id="lec-12">
+<header>
+	<div class="no">12강</div>
+	<h2 id="lec-12-title">엔진 DLL과 게임 모듈</h2>
+	<div class="meta">관련 기록: 엔진 DLL·게임 모듈(2026-09-30), 내보내기 한도(2026-10-02·03), Phase 48 사이드(C++ 핫 리로드) · 살펴볼 곳: <code>Engine/EngineDll.cpp</code>, <code>Engine/CMakeLists.txt</code>, <code>CMake/EngineTargets.cmake</code>, <code>Tools/ExportFilter/ExportFilter.cpp</code>, <code>Core/EngineApi.h</code>, <code>Scene/GameModule.h</code>, <code>Scene/GameModuleHost.cpp</code>, <code>Editor/GameModuleHotReload.h</code>, <code>Editor/EditorHotReload.cpp</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>정적 링크와 동적 링크(DLL)의 차이, 그리고 "엔진 사본이 둘 생기는" 문제가 왜 생기는지 설명할 수 있습니다.</li>
+		<li>CMake의 OBJECT 라이브러리로 여러 모듈을 DLL 하나로 묶는 방법과, DLL 내보내기 한도 65535를 넘었을 때 무엇을 걸러 냈는지 압니다.</li>
+		<li>함수와 전역 데이터의 내보내기가 왜 다르게 다뤄지는지(<code>E_ENGINE_API</code>), 함수 지역 static이 DLL 경계에서 왜 위험한지 압니다.</li>
+		<li>게임 모듈 인터페이스(<code>IGameModule</code>)와 버전 검사, 그리고 에디터에서 C++ 게임 코드를 다시 로드하는 절차를 그릴 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-12-why"><span class="step">왜 필요한가</span>게임 코드는 엔진과 따로 바뀐다</h3>
+<p>0강에서 엔진과 게임 프로젝트를 나눴습니다. 게임에는 Lua 스크립트뿐 아니라 C++ 코드도 있습니다(47강의 하이브리드 결정 — 매 프레임 대량 순회는 C++). 이 C++ 게임 코드를 어디에 넣을까요? 엔진 소스 안에 섞으면 게임마다 엔진을 고쳐야 하고, 에디터 실행 파일에 넣으면 게임 코드를 바꿀 때마다 에디터 전체를 다시 빌드해야 합니다. 그래서 게임 코드는 <b>별도의 DLL</b>(<code>Projects/Sample/Source</code> → <code>SampleGame.dll</code>)로 빌드하고, 에디터·런타임이 실행 중에 불러옵니다. 이것이 <b>게임 모듈</b>입니다.</p>
+<p>그런데 게임 모듈은 엔진을 씁니다. 컴포넌트를 리플렉션에 등록하고(9강), <code>View</code>로 순회하고(7강), 로그를 찍습니다. 엔진이 <b>어떤 형태로</b> 존재해야 에디터와 게임 모듈이 같은 엔진을 쓸 수 있을까요? 이 질문이 엔진 전체를 DLL 하나(<code>ProjectEEngine.dll</code>)로 묶은 이유입니다.</p>
+
+<h3 id="lec-12-link"><span class="step">핵심 개념</span>정적 링크와 동적 링크 — 전역 상태는 몇 개인가</h3>
+<p><b>정적 링크</b>는 라이브러리의 기계어를 실행 파일 안에 복사해 넣습니다. <b>동적 링크</b>는 라이브러리를 DLL로 따로 두고, 실행 파일은 "이 DLL의 이 함수를 쓴다"는 목록(import table)만 가집니다. 실행 시 운영체제가 DLL을 메모리에 올려 주소를 이어 줍니다.</p>
+<p>평소엔 차이가 크지 않지만, <b>전역 상태</b>가 있으면 결정적으로 달라집니다. 엔진에는 프로세스에 하나여야 하는 것들이 있습니다. 타입 레지스트리(<code>FTypeRegistry::Get()</code>), ECS 타입 ID 표, 로그 카테고리, 콘솔 변수, 디버그 선 그리기 … 엔진을 정적 라이브러리로 두고 에디터 exe와 게임 DLL이 각각 링크하면 <b>두 바이너리에 엔진 사본이 하나씩</b> 생기고, 이 전역들도 둘이 됩니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="정적 링크와 동적 링크에서 전역 상태의 개수">
+		<title>엔진 사본이 둘이면 전역도 둘</title>
+		<text x="20" y="26" class="t-bold">엔진을 정적 링크 (각자 복사)</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="190" height="150" rx="10" class="k3"/>
+			<text x="36" y="64" class="t-bold">Editor.exe</text>
+			<rect x="36" y="76" width="158" height="96" rx="8" class="box"/>
+			<text x="48" y="98">엔진 사본 ①</text>
+			<text x="48" y="120">TypeRegistry ①</text>
+			<text x="48" y="142" class="t-muted">Transform, Light ...</text>
+			<rect x="230" y="40" width="190" height="150" rx="10" class="k4"/>
+			<text x="246" y="64" class="t-bold">SampleGame.dll</text>
+			<rect x="246" y="76" width="158" height="96" rx="8" class="box"/>
+			<text x="258" y="98">엔진 사본 ②</text>
+			<text x="258" y="120">TypeRegistry ②</text>
+			<text x="258" y="142" class="t-muted">Spinner, Hover</text>
+			<rect x="20" y="206" width="400" height="66" rx="10" class="k5"/>
+			<text x="36" y="230">게임이 등록한 Spinner는 ②에만 있다</text>
+			<text x="36" y="252" class="t-muted">→ 에디터 인스펙터(①을 봄)에 안 보이고 저장도 안 된다</text>
+		</g>
+		<line x1="440" y1="20" x2="440" y2="280" class="ln-d"/>
+		<text x="460" y="26" class="t-bold">엔진을 DLL 하나로 (ProjectE)</text>
+		<g class="t-small">
+			<rect x="460" y="40" width="160" height="60" rx="10" class="k3"/><text x="540" y="76" text-anchor="middle" class="t-bold">Editor.exe</text>
+			<rect x="680" y="40" width="160" height="60" rx="10" class="k4"/><text x="760" y="76" text-anchor="middle" class="t-bold">SampleGame.dll</text>
+			<rect x="520" y="146" width="260" height="90" rx="10" class="acc"/>
+			<text x="650" y="170" text-anchor="middle" class="t-bold">ProjectEEngine.dll</text>
+			<text x="650" y="194" text-anchor="middle" class="t-mono">TypeRegistry (하나)</text>
+			<text x="650" y="216" text-anchor="middle" class="t-muted">Transform, Light, Spinner, Hover</text>
+			<text x="650" y="266" text-anchor="middle" class="t-muted">둘 다 같은 DLL의 같은 전역을 본다</text>
+		</g>
+		<path d="M540,100 L600,142" class="ln" marker-end="url(#arr)"/>
+		<path d="M760,100 L700,142" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 12-1.</b> 같은 코드라도 바이너리마다 복사되면 "프로세스에 하나"였던 전역이 바이너리 수만큼 생깁니다. 엔진을 DLL 하나로 두면 모든 소비자가 같은 전역을 공유합니다.</figcaption>
+</figure>
+
+<p>그래서 2026-09-30 커밋 "엔진 런타임을 ProjectEEngine.dll로 빌드"에서 런타임 모듈(Core, RHI, Scene, Renderer, Audio, Physics, Scripting … 지금은 AI, World, Network, UI, Online까지)을 DLL 하나로 묶었습니다. 그리고 규칙을 하나 세웠습니다. "실행 파일/테스트/게임 모듈은 <code>ProjectE::Engine</code>만 링크한다(모듈 타깃 직접 링크 금지 — 객체 중복)." <code>ProjectE::Core</code>를 직접 링크하면 Core의 객체 파일이 DLL에도, 실행 파일에도 들어가 그림 12-1 왼쪽 상황이 다시 생기기 때문입니다.</p>
+
+<h3 id="lec-12-object"><span class="step">핵심 개념</span>OBJECT 라이브러리로 DLL 하나 만들기</h3>
+<p>모듈은 여전히 따로 관리하고 싶습니다(1강의 모듈 구조, include 경로, 의존 방향). 하지만 결과물은 DLL 하나여야 합니다. CMake의 <b>OBJECT 라이브러리</b>가 이 둘을 잇습니다. OBJECT 라이브러리는 <code>.lib</code>를 만들지 않고 <b>컴파일된 객체 파일(.obj) 묶음</b>으로만 존재하며, 그것을 링크하는 타깃 안에 객체가 직접 들어갑니다.</p>
+<pre class="code" data-file="CMake/EngineTargets.cmake (발췌)"><span class="com"># E_ENGINE_SHARED=ON(기본): ... OBJECT 라이브러리로 만들어 ProjectEEngine.dll 하나로 링크한다.</span>
+<span class="com">#   소비자(에디터 모듈/실행 파일/게임 모듈/테스트)는 ProjectE::Engine만 링크한다.</span>
+<span class="com">#   공유 빌드에서 모듈 타깃(ProjectE::Core 등)을 직접 링크하면 객체가 DLL과 실행 파일에 중복 링크되므로 금지.</span>
+<span class="com"># OFF: 모듈은 정적 라이브러리, ProjectE::Engine은 모든 모듈을 묶는 INTERFACE.</span>
+option(E_ENGINE_SHARED <span class="str">"엔진 런타임 모듈을 ProjectEEngine.dll로 빌드"</span> ON)
+<span class="kw">if</span>(E_ENGINE_SHARED)
+    set(E_ENGINE_MODULE_TYPE OBJECT)
+<span class="kw">else</span>()
+    set(E_ENGINE_MODULE_TYPE STATIC)
+<span class="kw">endif</span>()
+
+<span class="kw">function</span>(e_set_engine_module_defaults TargetName)
+    e_set_target_defaults(${TargetName} <span class="str">"Engine"</span>)
+    <span class="kw">if</span>(E_ENGINE_SHARED)
+        target_compile_definitions(${TargetName} PUBLIC E_ENGINE_SHARED PRIVATE E_ENGINE_EXPORTS)
+    <span class="kw">endif</span>()
+<span class="kw">endfunction</span>()</pre>
+<p>1강에서 본 <code>add_library(ECore ${E_ENGINE_MODULE_TYPE} ...)</code>의 <code>E_ENGINE_MODULE_TYPE</code>이 바로 이것입니다. 그리고 <code>Engine/CMakeLists.txt</code>가 <code>EngineDll.cpp</code> 하나짜리 SHARED 라이브러리를 만들고 모든 모듈 OBJECT 라이브러리를 링크합니다. DLL의 진입 파일에는 엔진 버전을 알려 주는 함수 하나만 있습니다.</p>
+<pre class="code" data-file="Engine/EngineDll.cpp"><span class="com">// ProjectEEngine.dll 진입 단위. 엔진 모듈(...)의 객체 파일이 이 DLL로 링크되고</span>
+<span class="com">// 함수는 자동 .def(sol2 내부·std 함수 제외, Tools/ExportFilter)로, 전역 데이터는 E_ENGINE_API로 내보낸다 (Core/EngineApi.h).</span>
+
+<span class="com">// 엔진 DLL 빌드 버전 (게임 모듈 호환성 검사용 — 형식이 바뀌면 올린다)</span>
+<span class="kw">extern</span> <span class="str">"C"</span> __declspec(dllexport) <span class="kw">unsigned int</span> ProjectE_GetEngineApiVersion()
+{
+	<span class="kw">return</span> <span class="num">1</span>;
+}</pre>
+<p>옵션 <code>E_ENGINE_SHARED=OFF</code>로 예전처럼 정적 링크할 수도 있게 남겨 둔 것은, 문제가 생겼을 때 "DLL 경계 문제인가 아닌가"를 가려낼 비교 수단입니다.</p>
+
+<h3 id="lec-12-exports"><span class="step">핵심 개념</span>내보내기 — 무엇을 DLL 밖에 보여 줄까</h3>
+<p>DLL 안의 함수는 기본적으로 밖에서 보이지 않습니다. 밖에서 부르려면 <b>내보내기</b>(export) 목록에 올려야 합니다. 방법은 소스에 <code>__declspec(dllexport)</code>를 붙이거나, 링커에 <b>.def 파일</b>(내보낼 이름 목록)을 주는 것입니다. 엔진 함수 수만 개에 일일이 표식을 다는 것은 비현실적이므로, ProjectE는 처음에 CMake의 <code>WINDOWS_EXPORT_ALL_SYMBOLS</code>로 "객체 파일의 모든 함수를 자동으로 내보내기"를 썼습니다.</p>
+<p>문제는 Windows PE 형식의 내보내기 표가 <b>최대 65535개</b>(16비트 서수)라는 것입니다. 엔진이 커지면서 이 한도에 부딪혔습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="엔진 DLL 내보내기 목록 생성 파이프라인">
+		<title>.def 생성 파이프라인</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="170" height="110" rx="10" class="k1"/>
+			<text x="105" y="54" text-anchor="middle" class="t-bold">모듈 객체 파일</text>
+			<text x="105" y="78" text-anchor="middle">ECore · ERHI · EScene</text>
+			<text x="105" y="98" text-anchor="middle">ERenderer · EPhysics</text>
+			<text x="105" y="118" text-anchor="middle">… (OBJECT 라이브러리)</text>
+			<rect x="230" y="30" width="170" height="110" rx="10" class="box"/>
+			<text x="315" y="54" text-anchor="middle" class="t-bold">cmake -E</text>
+			<text x="315" y="74" text-anchor="middle" class="t-bold">__create_def</text>
+			<text x="315" y="100" text-anchor="middle" class="t-muted">모든 심볼 목록</text>
+			<text x="315" y="120" text-anchor="middle" class="t-muted">(.def.all)</text>
+			<rect x="440" y="30" width="190" height="110" rx="10" class="acc"/>
+			<text x="535" y="54" text-anchor="middle" class="t-bold">EExportFilter</text>
+			<text x="535" y="78" text-anchor="middle">− sol2 내부 (@sol@@)</text>
+			<text x="535" y="98" text-anchor="middle">− std:: 범위 함수</text>
+			<text x="535" y="120" text-anchor="middle" class="t-muted">데이터(DATA)는 유지</text>
+			<rect x="670" y="30" width="170" height="110" rx="10" class="k2"/>
+			<text x="755" y="54" text-anchor="middle" class="t-bold">ProjectEEngine.def</text>
+			<text x="755" y="80" text-anchor="middle">→ 링커</text>
+			<text x="755" y="104" text-anchor="middle">ProjectEEngine.dll</text>
+			<text x="755" y="124" text-anchor="middle" class="t-muted">+ .lib (import)</text>
+		</g>
+		<path d="M190,85 H226" class="ln" marker-end="url(#arr)"/>
+		<path d="M400,85 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M630,85 H666" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="178" class="t-bold">내보내기 개수의 변화 (커밋 기록)</text>
+		<line x1="140" y1="194" x2="140" y2="300" class="ln"/>
+		<line x1="140" y1="300" x2="840" y2="300" class="ln"/>
+		<line x1="827" y1="190" x2="827" y2="300" class="ln-d s5"/>
+		<text x="822" y="186" text-anchor="end" class="t-small f5">한도 65,535</text>
+		<g class="t-small">
+			<text x="20" y="213">전부 자동</text>
+			<rect x="140" y="200" width="704" height="16" class="k5"/>
+			<text x="150" y="212" class="t-mono">67,315 → LNK1189 (Release)</text>
+			<text x="20" y="239">sol2 제외</text>
+			<rect x="140" y="226" width="601" height="16" class="k4"/>
+			<text x="150" y="238" class="t-mono">57,472</text>
+			<text x="20" y="265">그 뒤 증가</text>
+			<rect x="140" y="252" width="671" height="16" class="k4"/>
+			<text x="150" y="264" class="t-mono">64,193</text>
+			<text x="20" y="291">std 함수도 제외</text>
+			<rect x="140" y="278" width="107" height="16" class="k2"/>
+			<text x="257" y="290" class="t-mono">10,235</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 12-2.</b> 위: 빌드 중에 내보내기 목록을 만들고 거르는 단계. 아래: 커밋 메시지에 남은 개수 기록(막대 길이는 개수에 비례). 처음엔 sol2만 걸렀다가, 다시 한도에 가까워지자 std 템플릿 인스턴스까지 걸렀습니다.</figcaption>
+</figure>
+
+<p>무엇을 걸러도 안전할까요? 판단 기준은 "<b>DLL 밖에서 실제로 가져다 쓰는가</b>"입니다.</p>
+<ul>
+	<li><b>sol2 내부</b>(Lua 바인딩 라이브러리): sol 헤더는 Scripting 모듈 안에서만 포함하므로 DLL 밖은 sol 심볼을 쓰지 않습니다. <code>dumpbin /imports</code>로 확인해 0개였습니다.</li>
+	<li><b>std:: 범위 함수</b>(<code>std::vector&lt;FFoo&gt;::push_back</code> 같은 템플릿 인스턴스): 헤더에 정의된 템플릿이라, 쓰는 쪽이 각자 인스턴스화할 수 있습니다. 굳이 DLL에서 가져올 필요가 없습니다.</li>
+	<li><b>데이터 심볼은 남긴다</b>: 함수 지역 static의 가드나 정적 멤버 같은 데이터는 바이너리마다 따로 생기면 <b>의미가 달라지므로</b>(바로 아래) 거르지 않습니다.</li>
+</ul>
+<pre class="code" data-file="Tools/ExportFilter/ExportFilter.cpp (발췌)"><span class="com">//  - 이름이 std:: 범위인 함수 (std 템플릿 인스턴스: vector&lt;FFoo&gt;::push_back 등) — 헤더 템플릿이라 쓰는 쪽이 각자 인스턴스화한다.</span>
+<span class="com">//    엔진 함수가 std 타입을 인자로 받는 경우와 구분하려고 맹글링 문자열이 아니라 UnDecorateSymbolName(이름만)의 앞부분을 본다.</span>
+<span class="kw">bool</span> IsStdScopedFunction(<span class="kw">const</span> std::string&amp; Symbol)
+{
+	<span class="kw">char</span> Buffer[<span class="num">8192</span>];
+	<span class="kw">const</span> DWORD Length = UnDecorateSymbolName(Symbol.c_str(), Buffer, <span class="kw">sizeof</span>(Buffer), UNDNAME_NAME_ONLY);
+	<span class="kw">return</span> Length &gt;= <span class="num">5</span> &amp;&amp; std::string(Buffer, <span class="num">5</span>) == <span class="str">"std::"</span>;
+}
+...
+<span class="kw">if</span> (Kept.size() &gt; <span class="num">65535</span>)
+{
+	std::cerr &lt;&lt; <span class="str">"엔진 DLL 내보내기 "</span> &lt;&lt; Kept.size() &lt;&lt; <span class="str">"개 &gt; 65535 (Tools/ExportFilter에서 더 거를 것)\n"</span>;
+	<span class="kw">return</span> <span class="num">1</span>;
+}</pre>
+<p>"<code>std::</code>로 시작하는 맹글링 문자열"이 아니라 <b>장식을 벗긴 이름</b>을 보는 이유가 섬세합니다. <code>FScene::Load(const std::string&amp;)</code>처럼 엔진 함수가 std 타입을 인자로 받으면 맹글링 문자열 안에 std가 들어가지만, 이 함수는 엔진 함수이므로 내보내야 합니다. 이름만 꺼내 보면 <code>FScene::Load</code>이므로 구분됩니다. 이 필터는 CMake 정규식으로 하기 어려워 빌드 중에 실행되는 작은 호스트 도구(<code>EExportFilter</code>)가 됐습니다.</p>
+
+<h4>함수는 자동, 전역 데이터는 표식</h4>
+<p>함수는 .def 목록만으로 내보내고 가져올 수 있습니다(가져오는 쪽 링커가 import 라이브러리의 작은 점프 코드로 잇습니다). 하지만 <b>전역 변수</b>는 다릅니다. DLL 밖의 코드는 변수 주소를 직접 알 수 없고 "주소가 담긴 칸"(<code>__imp_</code> 포인터)을 거쳐 접근해야 하는데, 컴파일러는 그 변수 선언에 <code>__declspec(dllimport)</code>가 붙어 있어야 이 간접 접근 코드를 만듭니다. 그래서 DLL 밖에서 접근하는 전역 데이터에만 표식을 붙입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/EngineApi.h / Core/Log.h (발췌)"><span class="com">//   함수/클래스 메서드는 ... 자동 내보내므로 표식이 필요 없다.</span>
+<span class="com">//   DLL 밖(에디터/런타임/게임 모듈/테스트)에서 접근하는 **전역 데이터**(로그 카테고리 등)만 E_ENGINE_API를 붙인다.</span>
+<span class="pp">#if</span> defined(E_ENGINE_SHARED)
+	<span class="pp">#if</span> defined(E_ENGINE_EXPORTS)
+		<span class="pp">#define</span> E_ENGINE_API __declspec(dllexport)   <span class="com">// 엔진 모듈 소스를 컴파일할 때</span>
+	<span class="pp">#else</span>
+		<span class="pp">#define</span> E_ENGINE_API __declspec(dllimport)   <span class="com">// 소비자가 컴파일할 때</span>
+	<span class="pp">#endif</span>
+<span class="pp">#else</span>
+	<span class="pp">#define</span> E_ENGINE_API
+<span class="pp">#endif</span>
+
+<span class="com">// Log.h — 엔진 공개 헤더용: 엔진 DLL 밖(에디터/게임 모듈)에서도 쓰는 카테고리</span>
+<span class="pp">#define</span> E_DECLARE_ENGINE_LOG_CATEGORY(CategoryName) <span class="kw">extern</span> E_ENGINE_API FLogCategory CategoryName;
+E_DECLARE_ENGINE_LOG_CATEGORY(LogCore)</pre>
+<p>같은 헤더가 엔진 안에서는 export, 밖에서는 import로 읽히도록 <code>E_ENGINE_EXPORTS</code>를 엔진 모듈의 <code>PRIVATE</code> 정의로만 둡니다(위 <code>e_set_engine_module_defaults</code>).</p>
+
+<h4>함수 지역 static의 함정</h4>
+<p>7강에서 본 타입 ID 문제의 정체가 여기 있습니다. 헤더에 정의된 인라인 함수나 템플릿 함수는 그것을 쓰는 <b>바이너리마다 따로</b> 컴파일되어 들어갑니다. 그 안의 <code>static</code> 변수도 바이너리마다 하나씩 생깁니다. 정적 링크에서는 링커가 중복을 하나로 합쳐 주지만, DLL은 서로 다른 바이너리라 합쳐지지 않습니다. 그래서 CLAUDE.md는 "헤더 인라인 템플릿의 함수 지역 static처럼 바이너리마다 따로 생기는 상태에 전역 의미를 두지 않는다(예: ECS 타입 ID는 <code>FRegistry::AssignComponentTypeId</code>가 엔진 DLL에서 부여)"를 규칙으로 둡니다. 진짜 상태는 .cpp(엔진 DLL 안)에 두고, 헤더 쪽 static은 캐시로만 씁니다.</p>
+<div class="callout warn">
+	<b class="t">CRT도 하나여야 한다</b>
+	엔진 함수가 <code>std::string</code>이나 <code>std::vector</code>를 인자·반환값으로 주고받으므로, 한 바이너리에서 할당한 메모리를 다른 바이너리가 해제하는 일이 생깁니다. 바이너리마다 C 런타임(CRT)을 정적으로 링크하면 힙도 바이너리마다 따로라 이 순간 크래시합니다. 그래서 규칙은 "VC++ 런타임은 app-local(정적 CRT 금지 — DLL 경계로 STL을 넘긴다)"이고, <code>GameModule.h</code>도 "게임 모듈은 엔진 DLL을 링크하고 같은 컴파일러/CRT로 빌드되어야 한다"고 적어 둡니다.
+</div>
+
+<h3 id="lec-12-module"><span class="step">핵심 개념</span>게임 모듈 — 이름 두 개로 연결하기</h3>
+<p>엔진(호스트)은 게임 모듈 DLL을 <code>LoadLibraryW</code>로 올리고, <code>GetProcAddress</code>로 <b>정해진 이름의 함수 두 개</b>를 찾습니다. C++ 함수 이름은 맹글링되어 컴파일러마다 다르므로 <code>extern "C"</code>로 장식 없는 이름을 씁니다. 게임 쪽은 매크로 한 줄이면 됩니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/GameModule.h (발췌)"><span class="kw">class</span> IGameModule
+{
+<span class="kw">public</span>:
+	<span class="kw">virtual</span> ~IGameModule() = <span class="kw">default</span>;
+	<span class="kw">virtual void</span> OnLoad() {}                                     <span class="com">// 컴포넌트 리플렉션 등록</span>
+	<span class="kw">virtual void</span> OnBeginPlay(FScene&amp; <span class="com">/*Scene*/</span>) {}
+	<span class="kw">virtual void</span> OnUpdate(FScene&amp; <span class="com">/*Scene*/</span>, <span class="kw">float</span> <span class="com">/*DeltaSeconds*/</span>) {}  <span class="com">// 스크립트 뒤, 물리 앞</span>
+	<span class="kw">virtual void</span> OnEndPlay(FScene&amp; <span class="com">/*Scene*/</span>) {}
+	<span class="kw">virtual void</span> OnUnload() {}
+	... <span class="com">// 노티파이, 멀티플레이(OnPlayerJoined, OnRpc), 게임플레이, 물리 알림, 능력 시스템</span>
+};
+
+<span class="com">// 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)</span>
+<span class="kw">inline constexpr</span> uint32 GameModuleApiVersion = <span class="num">10</span>; <span class="com">// 2: OnAnimNotify, 3: 멀티플레이, ..., 10: 능력 시스템</span>
+
+<span class="pp">#define</span> E_IMPLEMENT_GAME_MODULE(ModuleClass)                                           \
+	<span class="kw">extern</span> <span class="str">"C"</span> __declspec(dllexport) uint32 ProjectE_GetGameModuleApiVersion()       \
+	{ <span class="kw">return</span> GameModuleApiVersion; }                                                   \
+	<span class="kw">extern</span> <span class="str">"C"</span> __declspec(dllexport) IGameModule* ProjectE_CreateGameModule()        \
+	{ <span class="kw">static</span> ModuleClass Instance; <span class="kw">return</span> &amp;Instance; }</pre>
+<p><b>버전 검사</b>가 핵심입니다. <code>IGameModule</code>은 가상 함수 표(vtable)로 호출됩니다. 엔진이 가상 함수를 하나 추가하면 표의 칸 순서가 바뀌는데, 옛 헤더로 빌드된 게임 모듈은 옛 순서를 갖고 있습니다. 그대로 쓰면 엔진이 <code>OnUpdate</code>를 불렀는데 모듈의 <code>OnEndPlay</code>가 실행되는 식의 끔찍한 일이 생깁니다. 그래서 모듈이 빌드될 때의 <code>GameModuleApiVersion</code> 값(매크로가 그 시점 상수를 구워 넣음)과 엔진의 현재 값을 비교해, 다르면 "게임 모듈을 다시 빌드하세요" 오류로 로드를 거부합니다. 주석에 남은 버전 이력 1 → 10은 인터페이스가 자라 온 기록입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/GameModuleHost.cpp — Load (발췌)">HMODULE Handle = LoadLibraryW(DllPath.c_str());
+...
+<span class="kw">const auto</span> GetVersion = <span class="kw">reinterpret_cast</span>&lt;FGetVersionFunc&gt;(...GetProcAddress(Handle, <span class="str">"ProjectE_GetGameModuleApiVersion"</span>));
+<span class="kw">const auto</span> Create     = <span class="kw">reinterpret_cast</span>&lt;FCreateFunc&gt;(...GetProcAddress(Handle, <span class="str">"ProjectE_CreateGameModule"</span>));
+<span class="kw">if</span> (GetVersion() != GameModuleApiVersion)
+{
+	E_LOG(LogScene, Error, <span class="str">"게임 모듈 인터페이스 버전 불일치 (모듈 {}, 엔진 {}): 게임 모듈을 다시 빌드하세요"</span>, GetVersion(), GameModuleApiVersion);
+	FreeLibrary(Handle);
+	<span class="kw">return false</span>;
+}
+Module = Create();
+...
+Registry.SetRegistrationOwner(Name);   <span class="com">// 이 동안 등록되는 타입의 Owner = 모듈 이름 (9강)</span>
+Module-&gt;OnLoad();
+Registry.SetRegistrationOwner(PreviousOwner);</pre>
+<p>어떤 DLL을 불러올지는 프로젝트 파일이 정합니다. <code>Sample.eproject</code>의 <code>"GameModule": "SampleGame"</code>이면 실행 파일 폴더의 <code>SampleGame.dll</code>을 찾습니다. 게임 모듈의 CMake는 <code>ProjectE::Engine</code>만 링크하고 <code>E_GAME_MODULE_TARGETS</code>에 자기를 등록합니다.</p>
+<p>모듈을 내릴 때(<code>Unload</code>)는 <code>OnUnload</code> → 모듈 소유 리플렉션 타입 제거 → 다른 모듈의 소유자별 정리(예: 비헤이비어 트리 노드)를 하지만, <b>DLL 자체는 <code>FreeLibrary</code>하지 않고 프로세스 끝까지 둡니다</b>. 이유는 바로 다음 절에서 봅니다.</p>
+
+<h3 id="lec-12-hotreload"><span class="step">ProjectE에서는</span>C++ 게임 모듈 핫 리로드</h3>
+<p>Lua와 셰이더는 저장하면 바로 반영되는데(10강), C++ 게임 코드는 고칠 때마다 에디터를 껐다 켜야 한다면 반복 속도가 크게 떨어집니다. Phase 48 사이드 트랙에서 에디터가 켜진 채로 게임 모듈 DLL을 바꿔 끼우는 기능을 만들었습니다. 여기에는 세 가지 장애물이 있었습니다.</p>
+<ol>
+	<li><b>파일 잠금</b>: Windows는 로드된 DLL 파일을 잠급니다. 에디터가 <code>SampleGame.dll</code>을 쥐고 있으면 링커가 새 DLL을 쓸 수 없습니다. 디버거가 연 PDB도 마찬가지입니다.</li>
+	<li><b>옛 코드를 가리키는 것들</b>: 씬 레지스트리에는 게임 모듈이 만든 컴포넌트 풀(<code>TSparseSet&lt;FSpinnerComponent&gt;</code>)이 있고, 그 가상 함수 표는 <b>옛 DLL의 코드</b>를 가리킵니다. 리플렉션 훅 람다도 마찬가지입니다.</li>
+	<li><b>구조체가 바뀌었을 수 있다</b>: 프로그래머가 컴포넌트에 필드를 추가했다면, 새 코드가 옛 풀의 메모리를 새 구조체로 해석하는 순간 메모리가 망가집니다.</li>
+</ol>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="게임 모듈 다시 로드 절차">
+		<title>C++ 게임 모듈 다시 로드</title>
+		<g class="t-small">
+			<rect x="20" y="20" width="250" height="84" rx="10" class="k4"/>
+			<text x="36" y="44" class="t-bold">그림자 복사</text>
+			<text x="36" y="66">Bin/SampleGame.dll (원본, 잠그지 않음)</text>
+			<text x="36" y="88" class="t-mono">→ Saved/HotReload/SampleGame_3.dll</text>
+			<rect x="20" y="120" width="250" height="84" rx="10" class="k4"/>
+			<text x="36" y="144" class="t-bold">PDB 경로 바꾸기</text>
+			<text x="36" y="166">복사본 DLL 안 CodeView(RSDS)의</text>
+			<text x="36" y="188">PDB 경로 → "SampleGame_3.pdb"</text>
+			<rect x="20" y="220" width="250" height="96" rx="10" class="box"/>
+			<text x="36" y="244" class="t-bold">자동 감지 (선택)</text>
+			<text x="36" y="266">원본 DLL의 시각·크기가 1초 동안</text>
+			<text x="36" y="288">그대로 + 쓰기 잠금 해제 → 다시 로드</text>
+			<text x="36" y="308" class="t-muted">(링커가 나눠 쓰는 중에 읽지 않게)</text>
+
+			<rect x="320" y="20" width="520" height="296" rx="10" class="acc"/>
+			<text x="336" y="44" class="t-bold">ReloadGameModule (EditorHotReload.cpp 머리 주석)</text>
+			<text x="336" y="72">① 플레이 중이면 정지, 시퀀서 미리보기 종료</text>
+			<text x="336" y="96">② 새 그림자 복사본 만들기 (실패하면 아무것도 안 바꾸고 끝)</text>
+			<text x="336" y="120">③ 편집 씬 → JSON (모듈 컴포넌트도 리플렉션이라 이름으로 포함)</text>
+			<text x="352" y="140" class="t-muted">+ 열린 에셋 편집 창 상태 JSON</text>
+			<text x="336" y="164">④ Host.Reload: OnUnload → 모듈 타입 제거 + ECS 타입 ID 폐기</text>
+			<text x="352" y="184" class="t-muted">→ 새 복사본 LoadLibrary + 버전 검사 + OnLoad (새 타입 등록)</text>
+			<text x="352" y="204" class="t-muted">옛 DLL은 FreeLibrary 하지 않는다</text>
+			<text x="336" y="228">⑤ 프리팹 캐시 비우기 → 씬 JSON 복원 (실행 취소와 같은 경로)</text>
+			<text x="352" y="248" class="t-muted">→ 새 타입으로 다시 읽힘, 선택·카메라·실행 취소 기록 유지</text>
+			<text x="336" y="272">⑥ 에셋 편집 창 상태 복원</text>
+			<text x="336" y="300" class="f5">새 DLL 로드 실패(버전 불일치 등) → 이전 DLL로 되돌림</text>
+		</g>
+		<path d="M145,104 V116" class="ln" marker-end="url(#arr)"/>
+		<path d="M270,62 H316" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 12-3.</b> 원본 대신 복사본을 로드해 파일 잠금을 피하고, 씬을 JSON으로 빼 두었다가 새 타입으로 다시 읽어 구조체 변경을 흡수합니다. 런타임·서버·패키지 게임은 원본을 직접 로드합니다(핫 리로드는 에디터 전용).</figcaption>
+</figure>
+
+<p>장애물별 해법을 정리하면 이렇습니다.</p>
+<ul>
+	<li><b>파일 잠금 → 그림자 복사</b>: 원본을 <code>&lt;Saved&gt;/HotReload/&lt;이름&gt;_&lt;번호&gt;.dll</code>로 복사해서 그것을 로드합니다. 원본은 잠기지 않으므로 빌드가 자유롭게 덮어씁니다. 다만 DLL 안에는 "내 디버그 정보는 이 경로의 PDB에 있다"는 기록(CodeView RSDS)이 있어, 디버거가 원본 PDB를 열어 잠그면 다음 링크가 실패합니다. 그래서 복사본 DLL 바이트 안의 PDB 경로 문자열을 복사본 PDB 이름으로 바꿉니다(원래 칸 안에서만 — 넘치면 실패 처리). 이 바이트 조작은 순수 함수(<code>ReadPdbPath</code>/<code>PatchPdbPath</code>)로 분리해 실제 DLL 이미지로 테스트합니다(<code>HotReload_PatchPdbPathInRealImage</code>).</li>
+	<li><b>옛 코드를 가리키는 것들 → 옛 DLL을 해제하지 않기</b>: <code>FreeLibrary</code>로 옛 DLL을 내리면, 남아 있던 풀의 가상 함수나 함수 포인터를 부르는 순간 해제된 메모리로 점프합니다. 옛 DLL을 메모리에 그냥 두면 메모리를 조금 쓰는 대신 이런 경우가 모두 안전해집니다. 복사본마다 파일 이름이 다르므로 몇 번이고 새로 로드할 수 있고, 지우지 못한 옛 복사본 파일은 다음 에디터 시작 때 정리합니다.</li>
+	<li><b>구조체 변경 → 타입 ID 폐기 + JSON 왕복</b>: 다시 로드할 때 모듈 소유 컴포넌트의 ECS 타입 ID를 <code>RetireComponentTypeId</code>로 버립니다(7강). 새 DLL은 같은 이름의 컴포넌트에 <b>새 ID와 새 풀</b>을 받으므로 옛 풀을 자기 타입으로 잘못 캐스팅할 일이 없습니다. 값은 씬 JSON(이름 키 — 9강·10강)으로 옮겨지므로, 필드를 추가해도 관용적 로드가 나머지 값을 살립니다. 옛 풀은 레지스트리에 남아 엔티티 파괴 때 옛 DLL 코드로 정리됩니다.</li>
+</ul>
+<p>에디터 메뉴에는 "C++ 다시 로드"(Ctrl+Alt+F11)와 "게임 모듈 빌드 후 다시 로드"(에디터 빌드 폴더에서 <code>cmake --build --target &lt;모듈&gt;</code>를 백그라운드로 실행)가 있고, 자동 감지는 환경설정에서 켭니다. 자동 검증 인자 <code>--verify-hot-reload</code>는 씬을 요약(엔티티 수, 모듈 컴포넌트 수, Float 값 합)했다가 다시 로드 후 같은지 비교합니다.</p>
+
+<h3 id="lec-12-pitfalls"><span class="step">함정과 교훈</span></h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: LNK1189 — 내보내기 67,315개</b>
+	2026-10-02, Release 링크가 LNK1189(내보내기 한도 초과)로 실패했습니다. 자동 내보내기 목록이 67,315개였습니다. 같은 <code>__create_def</code> 목록에서 sol2 내부 심볼(<code>@sol@@</code>)을 걸러 Release 57,472 / Debug 55,672로 내렸습니다. 하루 뒤 엔진이 더 자라 64,193개가 되자, 필터를 호스트 도구로 옮기고 std:: 범위 함수까지 걸러 10,235개가 됐습니다. 같은 날 "절차적 건물 내부 컨테이너를 익명 네임스페이스 타입으로" 바꿔 약 470개를 줄인 커밋도 있습니다 — 익명 네임스페이스 안의 타입은 밖에서 보이지 않으므로 내보내기 목록에 오르지 않습니다. 교훈: "모두 자동으로 내보내기"는 편하지만 공짜가 아니며, 한도를 넘으면 도구가 빌드를 실패시키도록 해 두어야 조용한 문제가 되지 않습니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 에디터를 연 채 게임 모듈을 빌드하면 LNK1168</b>
+	핫 리로드의 전제는 "에디터가 켜진 동안 게임 모듈만 다시 빌드"입니다. 그런데 CMake 구성 단계가 생성 파일을 <code>file(WRITE)</code>로 매번 다시 쓰면, 내용이 같아도 파일 시각이 바뀌어 <b>엔진 DLL까지 다시 링크</b>하려 들었습니다. 에디터가 엔진 DLL을 쥐고 있으니 링커가 쓸 수 없어 LNK1168로 실패했습니다. 규칙이 생겼습니다. "CMake 구성 시점 생성 파일은 내용이 바뀔 때만 쓴다(<code>file(CONFIGURE)</code>)." 그리고 "엔진 DLL 자체 변경은 에디터 재시작 필요" — 핫 리로드는 게임 모듈만의 기능입니다.
+</div>
+<ul>
+	<li><b>모듈 타입 ID·<code>FTypeInfo*</code>를 캐시하지 말 것</b>: 다시 로드하면 바뀝니다. 모듈 타입은 리플렉션(이름)으로만 다루고, 씬 밖에 리플렉션 정보를 쥐는 새 캐시를 만들면 <code>ReloadGameModule</code>에서 비우거나 다시 만듭니다.</li>
+	<li><b>인터페이스를 바꾸면 버전을 올린다</b>: <code>IGameModule</code>에 가상 함수를 추가하고 <code>GameModuleApiVersion</code>을 그대로 두면, 옛 모듈이 검사를 통과해 엉뚱한 함수가 불립니다. 멀티플레이 메시지의 <code>NetProtocolVersion</code>, 쿠킹 형식의 <code>ModelVersion</code>과 같은 종류의 약속입니다 — "경계를 넘는 형식에는 버전 번호를 붙이고, 바꾸면 올린다."</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>정적 링크는 바이너리마다 엔진 사본(과 전역)을 만든다 → 엔진을 DLL 하나로 묶고 모두 <code>ProjectE::Engine</code>만 링크.</li>
+		<li>모듈은 OBJECT 라이브러리로 컴파일하고 객체를 DLL 하나에 넣는다(<code>E_ENGINE_SHARED</code>).</li>
+		<li>함수는 자동 .def로 내보내되, 한도 65535 때문에 DLL 밖이 쓰지 않는 sol2 내부·std 범위 함수를 거른다. 전역 데이터는 <code>E_ENGINE_API</code>(dllexport/dllimport).</li>
+		<li>헤더의 함수 지역 static은 바이너리마다 따로 — 전역 의미는 엔진 DLL의 .cpp에. CRT도 하나(동적).</li>
+		<li>게임 모듈 = <code>extern "C"</code> 함수 두 개 + <code>IGameModule</code> + API 버전 검사. 등록 타입에 Owner를 붙여 언로드 때 제거.</li>
+		<li>핫 리로드 = 그림자 복사(+PDB 경로) → 씬 JSON → 타입 ID 폐기 + 새 DLL → JSON 복원. 옛 DLL은 해제하지 않는다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 게임 모듈 CMake가 실수로 <code>ProjectE::Engine</code> 대신 <code>ProjectE::Core</code>와 <code>ProjectE::Scene</code>을 직접 링크했습니다. 빌드는 됩니다. 실행하면 어떤 증상이 나타날까요?</summary>
+	Core·Scene의 객체가 게임 모듈 DLL 안에도 복사되어 <code>FTypeRegistry::Get()</code>, 타입 ID 표, 로그 카테고리 같은 전역이 게임 모듈 쪽에 따로 생깁니다. 게임 모듈이 <code>OnLoad</code>에서 등록한 컴포넌트가 에디터 인스펙터·씬 저장에 나타나지 않거나, 같은 컴포넌트에 다른 타입 ID가 매겨져 엉뚱한 풀을 캐스팅하는 등 "빌드는 되는데 이상한" 증상이 납니다(그림 12-1 왼쪽). 그래서 규칙으로 금지합니다.
+</details>
+<details class="quiz"><summary>Q2. std:: 범위 함수는 내보내지 않는데, 엔진 DLL 밖의 코드가 <code>std::vector&lt;FEntity&gt;::push_back</code>을 부르면 링크 오류가 나지 않을까요?</summary>
+	나지 않습니다. 그 함수는 표준 헤더에 정의된 템플릿이라, 밖의 코드를 컴파일할 때 컴파일러가 그 바이너리 안에 직접 인스턴스화합니다. DLL에서 가져올 필요가 없습니다. 반대로 템플릿 안의 <b>데이터</b>(함수 지역 static 등)는 바이너리마다 따로 생기면 의미가 달라질 수 있어 필터가 일부러 남겨 둡니다.
+</details>
+<details class="quiz"><summary>Q3. 다시 로드할 때마다 옛 DLL을 해제하지 않으면 메모리가 계속 늘어납니다. 그래도 이 선택이 합리적인 이유는?</summary>
+	게임 모듈 DLL은 보통 수 MB 수준이고, 핫 리로드는 개발 중 에디터에서만 일어나며, 에디터를 다시 켜면 모두 정리됩니다. 반면 해제하면 씬에 남은 옛 풀의 가상 함수, 리플렉션 훅, 다른 시스템이 들고 있을지 모르는 함수 포인터 중 <b>하나라도</b> 불리는 순간 크래시합니다. 그 모든 참조를 빠짐없이 찾아 끊는 것은 어렵고 틀리기 쉽습니다. "약간의 메모리로 큰 종류의 크래시를 통째로 없앤다"는 교환입니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part01_GraphicsBasics.html"><small>이전 부</small>← 1부 · 화면에 무언가를 그리기</a>
+	<a href="Part03A_Rendering.html"><small>다음 부</small>3부 · 사실적인 화면 — 렌더링 심화 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1899 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7부 세계의 규칙 — 게임플레이 시스템 (후반) — ProjectE 엔진 강의</title>
+<style>
+/* ===== 공통 스타일 (모든 부 파일이 같은 블록을 쓴다) ===== */
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--c1: #2f6db5; --c1s: #dde8f6; --c2: #2e8a5f; --c2s: #dcf0e5; --c3: #8a4fb8; --c3s: #ece0f6;
+	--c4: #b8862b; --c4s: #f6ecd7; --c5: #c0434f; --c5s: #f7dfe1;
+	--code-bg: #f3f1ec; --code-kw: #8a3fb0; --code-str: #2e7d4f; --code-com: #8a857a; --code-num: #b5541f; --code-pp: #2f6db5;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+		--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+		--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+		--shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--c1: #78a9e6; --c1s: #1f2b3b; --c2: #6cc79a; --c2s: #1d3128; --c3: #bd92e3; --c3s: #2d2338;
+	--c4: #e3b866; --c4s: #352d1d; --c5: #ec8590; --c5s: #3a2125;
+	--code-bg: #1a1c20; --code-kw: #c99be8; --code-str: #8fd19e; --code-com: #7d796f; --code-num: #f0a46f; --code-pp: #8ab6ee;
+	--shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16.5px; line-height: 1.8; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .86em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1220px; margin: 0 auto; }
+nav.toc { position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 26px 16px 26px 22px; border-right: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+nav.toc .home { font-size: 12.5px; color: var(--muted); text-decoration: none; }
+nav.toc .home:hover { color: var(--accent); }
+nav.toc .part { font-weight: 800; font-size: 16px; margin: 10px 0 14px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; }
+nav.toc li { margin: 2px 0; }
+nav.toc a.l { display: block; padding: 5px 8px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+nav.toc a.s { display: block; padding: 3px 8px 3px 20px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 12.5px; }
+nav.toc a:hover { background: var(--surface2); }
+nav.toc .tools { margin-top: 18px; display: flex; gap: 6px; flex-wrap: wrap; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+main { padding: 40px 52px 120px; min-width: 0; max-width: 900px; }
+header.part-hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .02em; }
+header.part-hero h1 { font-size: 34px; line-height: 1.3; margin: 6px 0 12px; }
+header.part-hero p { color: var(--muted); font-size: 17px; margin: 0; }
+
+article.lecture { margin-top: 64px; padding-top: 28px; border-top: 2px solid var(--line); }
+article.lecture > header .no { font-weight: 800; color: var(--accent); font-size: 15px; }
+article.lecture > header h2 { font-size: 30px; line-height: 1.3; margin: 4px 0 6px; scroll-margin-top: 16px; }
+article.lecture > header .meta { font-size: 13px; color: var(--muted); }
+article.lecture h3 { font-size: 21px; margin: 40px 0 10px; scroll-margin-top: 16px; }
+article.lecture h3 .step { display: inline-block; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; margin-right: 8px; vertical-align: 3px; }
+article.lecture h4 { font-size: 17px; margin: 26px 0 6px; }
+article.lecture p { margin: 10px 0; }
+article.lecture ul, article.lecture ol { padding-left: 22px; }
+article.lecture li { margin: 4px 0; }
+
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 20px; margin: 18px 0; box-shadow: var(--shadow); }
+.goals > b { display: block; font-size: 13.5px; color: var(--accent); margin-bottom: 2px; }
+.goals ul { margin: 4px 0; }
+
+.callout { border-radius: 10px; padding: 12px 18px; margin: 18px 0; border-left: 4px solid; }
+.callout b.t { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.callout.note { background: var(--c1s); border-color: var(--c1); }
+.callout.note b.t { color: var(--c1); }
+.callout.warn { background: var(--c5s); border-color: var(--c5); }
+.callout.warn b.t { color: var(--c5); }
+.callout.tip { background: var(--c2s); border-color: var(--c2); }
+.callout.tip b.t { color: var(--c2); }
+.callout.story { background: var(--c4s); border-color: var(--c4); }
+.callout.story b.t { color: var(--c4); }
+
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 14px 0; tab-size: 4; }
+pre.code[data-file]::before { content: attr(data-file); display: block; font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-family: "Pretendard", "Malgun Gothic", sans-serif; }
+pre.code .kw { color: var(--code-kw); } pre.code .str { color: var(--code-str); } pre.code .com { color: var(--code-com); font-style: italic; }
+pre.code .num { color: var(--code-num); } pre.code .pp { color: var(--code-pp); }
+
+table.t { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14.5px; background: var(--surface); }
+table.t th, table.t td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--surface2); font-weight: 700; }
+.tablewrap { overflow-x: auto; }
+
+figure { margin: 20px 0 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px 10px; box-shadow: var(--shadow); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 600px; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); padding: 8px 6px 2px; }
+figcaption b { color: var(--text); }
+
+.summary { background: var(--accent-soft); border-radius: 12px; padding: 14px 20px; margin: 24px 0; }
+.summary b.t { color: var(--accent); }
+details.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 10px 0; }
+details.quiz summary { cursor: pointer; font-weight: 600; }
+details.quiz[open] summary { margin-bottom: 6px; }
+.nextpart { margin-top: 64px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nextpart a { display: block; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); text-decoration: none; color: var(--text); }
+.nextpart a:hover { border-color: var(--accent); }
+.nextpart small { display: block; color: var(--muted); font-size: 12px; }
+
+/* SVG 공통 */
+svg text { fill: var(--text); font-family: "Pretendard", "Malgun Gothic", sans-serif; font-size: 13px; }
+svg .t-muted { fill: var(--muted); font-size: 11.5px; }
+svg .t-small { font-size: 11.5px; }
+svg .t-bold { font-weight: 700; }
+svg .t-mono { font-family: Consolas, monospace; font-size: 12px; }
+svg .box { fill: var(--surface2); stroke: var(--line); }
+svg .box:not([stroke-width]) { stroke-width: 1.2; }
+svg .ln { stroke: var(--muted); fill: none; }
+svg .ln:not([stroke-width]) { stroke-width: 1.4; }
+svg .ln-d { stroke: var(--muted); fill: none; stroke-dasharray: 4 4; }
+svg .ln-d:not([stroke-width]) { stroke-width: 1.2; }
+svg .arrowhead { fill: var(--muted); }
+svg .acc { fill: var(--accent-soft); stroke: var(--accent); }
+svg .acc:not([stroke-width]) { stroke-width: 1.4; }
+svg .k1 { fill: var(--c1s); stroke: var(--c1); } svg .k2 { fill: var(--c2s); stroke: var(--c2); }
+svg .k3 { fill: var(--c3s); stroke: var(--c3); } svg .k4 { fill: var(--c4s); stroke: var(--c4); }
+svg .k5 { fill: var(--c5s); stroke: var(--c5); }
+svg .s1 { stroke: var(--c1); } svg .s2 { stroke: var(--c2); } svg .s3 { stroke: var(--c3); } svg .s4 { stroke: var(--c4); } svg .s5 { stroke: var(--c5); } svg .sa { stroke: var(--accent); }
+svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--c3); } svg .f4 { fill: var(--c4); } svg .f5 { fill: var(--c5); } svg .fa { fill: var(--accent); }
+
+@media (max-width: 900px) {
+	.layout { display: block; }
+	nav.toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 16px; }
+	nav.toc a.s { display: none; }
+	main { padding: 24px 16px 80px; }
+	header.part-hero h1 { font-size: 26px; }
+	article.lecture > header h2 { font-size: 24px; }
+}
+@media print {
+	nav.toc, .nextpart { display: none; }
+	.layout { display: block; }
+	figure, pre.code, .callout { break-inside: avoid; box-shadow: none; }
+	details.quiz { display: block; }
+}
+svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
+/* ===== 공통 스타일 끝 ===== */
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+	<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker>
+</defs></svg>
+
+
+<div class="layout">
+<nav class="toc" aria-label="목차">
+	<a class="home" href="Curriculum.html">← 커리큘럼으로</a>
+	<div class="part">7부 세계의 규칙 (후반)</div>
+	<ol id="toc"></ol>
+	<div class="tools"><button class="chip" id="theme-btn" type="button">테마 전환</button></div>
+</nav>
+
+<main>
+<header class="part-hero">
+	<div class="eyebrow">7부 후반 · 강의 50~54</div>
+	<h1>세계의 규칙 — 게임플레이 시스템 (후반)</h1>
+	<p>물리·캐릭터·스크립트·입력·AI(45~49강)라는 부품을 모았으니, 이제 그것들을 "한 판의 게임"으로 묶는 틀을 봅니다. 갱신 순서와 게임 모드, 스킬과 버프를 데이터로 정의하는 능력 시스템, 숫자를 코드 밖으로 꺼내는 데이터 테이블, 시드 하나로 건물을 짓는 절차적 생성, 그리고 지형·식생·파티클로 세계의 바탕을 채우는 방법입니다.</p>
+</header>
+
+<!-- ======================================================= 50강 ======================================================= -->
+<article class="lecture" id="lec-50">
+<header>
+	<div class="no">50강</div>
+	<h2 id="lec-50-title">게임 프레임워크</h2>
+	<div class="meta">관련 Phase: 25 · 31 (+ 2026-10-04 프레임 시간) · 살펴볼 곳: <code>World/GameWorld.h</code>, <code>World/GameWorld.cpp</code>, <code>World/GameWorldGameplay.cpp</code>, <code>World/GameWorldTravel.h</code>, <code>World/GameWorldStreaming.cpp</code>, <code>Scene/Gameplay.h</code>, <code>Core/SaveGame.h</code>, <code>Core/FrameTime.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>게임 월드 한 프레임의 갱신 순서를 그리고, 각 단계가 왜 그 자리에 있는지 "누가 누구의 결과를 읽는가"로 설명할 수 있습니다.</li>
+		<li>Standalone / 리슨 서버 / 전용 서버 / 클라이언트에서 어떤 시스템이 도는지 구분할 수 있습니다.</li>
+		<li>체력·게임 모드·데미지 이벤트·리스폰이 서버 권위로 어떻게 흘러가는지 압니다.</li>
+		<li>세이브 게임, 맵 전환, 서브 씬 스트리밍을 안전하게 만드는 규칙(원자적 쓰기, 프레임 끝 전환, 백그라운드는 파싱만)을 이해합니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-50-why"><span class="step">왜 필요한가</span>부품은 많은데, 누가 순서를 정하나</h3>
+<p>45~49강에서 물리, 캐릭터 이동, Lua 스크립트, 입력, AI를 만들었습니다. 각각은 "한 프레임 동안 할 일"을 가진 <b>시스템</b>입니다. 그런데 이것들을 어떤 순서로 부르느냐에 따라 게임이 다르게 동작합니다. 스크립트가 "앞으로 가라"는 입력을 넣었는데 물리가 그보다 먼저 돌면, 캐릭터는 한 프레임 늦게 움직입니다. 카메라가 물리보다 먼저 캐릭터 위치를 읽으면 카메라가 늘 한 박자 늦게 따라가며 떨립니다.</p>
+<p>더 나쁜 것은 이 순서가 <b>여러 곳에 복제</b>되는 상황입니다. ProjectE에는 게임을 돌리는 실행 파일이 여럿 있습니다 — 런타임, 에디터의 플레이 모드, 전용 서버, 그리고 단위 테스트. 각자가 "스크립트 → 물리 → …"를 따로 적으면, 어느 날 한쪽에만 새 시스템이 추가되고 "에디터에서는 되는데 패키지에서는 안 된다" 같은 버그가 생깁니다.</p>
+<p>그래서 언리얼의 <code>UWorld</code>와 GameMode가 그렇듯, 엔진에는 <b>게임 한 판을 굴리는 틀</b>(게임 프레임워크)이 필요합니다. 이 강의는 그 틀의 다섯 기둥 — 갱신 순서, 게임 규칙(체력·게임 모드), 세이브, 맵 전환, 시간 — 을 차례로 봅니다.</p>
+
+<h3 id="lec-50-order"><span class="step">핵심 개념</span>갱신 순서는 "읽기-쓰기 의존"으로 정한다</h3>
+<p>순서를 정하는 원칙은 하나입니다. <b>어떤 단계가 다른 단계의 결과를 읽는다면, 쓰는 쪽이 먼저 와야 한다.</b> 예를 들어:</p>
+<ul>
+	<li>스크립트가 캐릭터에 이동 입력을 <i>쓴다</i> → 캐릭터 이동이 그것을 <i>읽는다</i> → 스크립트가 먼저.</li>
+	<li>캐릭터 이동과 물리가 위치를 <i>쓴다</i> → 트랜스폼 갱신(<code>UpdateTransforms</code>, 8강)이 로컬 값을 월드 행렬로 <i>바꾼다</i> → 카메라가 월드 위치를 <i>읽는다</i>.</li>
+	<li>애니메이션이 뼈 로컬 값을 <i>쓴다</i> → 렌더러가 스킨 팔레트를 <i>읽는다</i>.</li>
+</ul>
+<p>이렇게 화살표를 이으면 하나의 방향 그래프가 되고, 그 그래프를 한 줄로 편 것이 갱신 순서입니다. ProjectE는 이것을 <code>FGameWorld</code> 하나에 적어 두고, 모든 실행 파일이 같은 함수를 부르게 했습니다.</p>
+
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 360" role="img" aria-label="FGameWorld 한 프레임 갱신 순서">
+		<title>FGameWorld 한 프레임 갱신 순서</title>
+		<text x="20" y="24" class="t-bold">TickGameplay — 플레이 중에만</text>
+		<g class="t-small">
+			<rect x="20" y="38" width="122" height="50" rx="8" class="k2"/><text x="81" y="59" text-anchor="middle" class="t-bold">스크립트</text><text x="81" y="77" text-anchor="middle" class="t-mono">OnUpdate</text>
+			<rect x="160" y="38" width="122" height="50" rx="8" class="k3"/><text x="221" y="59" text-anchor="middle" class="t-bold">능력 시스템</text><text x="221" y="77" text-anchor="middle" class="t-muted">발동·효과 시간</text>
+			<rect x="300" y="38" width="122" height="50" rx="8" class="box"/><text x="361" y="59" text-anchor="middle" class="t-bold">시퀀스</text><text x="361" y="77" text-anchor="middle" class="t-muted">컷신 (44강)</text>
+			<rect x="440" y="38" width="122" height="50" rx="8" class="k1"/><text x="501" y="59" text-anchor="middle" class="t-bold">캐릭터 이동</text><text x="501" y="77" text-anchor="middle" class="t-muted">무브 시뮬레이션</text>
+			<rect x="580" y="38" width="122" height="50" rx="8" class="k4"/><text x="641" y="59" text-anchor="middle" class="t-bold">게임 모듈</text><text x="641" y="77" text-anchor="middle" class="t-muted">C++ (서버만)</text>
+			<rect x="720" y="38" width="120" height="50" rx="8" class="k3"/><text x="780" y="59" text-anchor="middle" class="t-bold">AI</text><text x="780" y="77" text-anchor="middle" class="t-muted">BT (서버만)</text>
+
+			<rect x="20" y="130" width="122" height="50" rx="8" class="acc"/><text x="81" y="151" text-anchor="middle" class="t-bold">게임플레이 규칙</text><text x="81" y="169" text-anchor="middle" class="t-muted">데미지·사망·리스폰</text>
+			<rect x="160" y="130" width="122" height="50" rx="8" class="box"/><text x="221" y="151" text-anchor="middle" class="t-bold">래그돌</text><text x="221" y="169" text-anchor="middle" class="t-muted">사망 → 켜기</text>
+			<rect x="300" y="130" width="122" height="50" rx="8" class="k5"/><text x="361" y="151" text-anchor="middle" class="t-bold">물리</text><text x="361" y="169" text-anchor="middle" class="t-muted">고정 스텝 (45강)</text>
+			<rect x="440" y="130" width="122" height="50" rx="8" class="box"/><text x="501" y="151" text-anchor="middle" class="t-bold">UpdateTransforms</text><text x="501" y="169" text-anchor="middle" class="t-muted">월드 행렬</text>
+			<rect x="580" y="130" width="122" height="50" rx="8" class="k5"/><text x="641" y="151" text-anchor="middle" class="t-bold">충돌 알림</text><text x="641" y="169" text-anchor="middle" class="t-muted">OnCollision…</text>
+			<rect x="720" y="130" width="120" height="50" rx="8" class="k2"/><text x="780" y="151" text-anchor="middle" class="t-bold">스크립트</text><text x="780" y="169" text-anchor="middle" class="t-mono">OnLateUpdate</text>
+		</g>
+		<path d="M142,63 H156" class="ln" marker-end="url(#arr)"/>
+		<path d="M282,63 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M422,63 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M562,63 H576" class="ln" marker-end="url(#arr)"/>
+		<path d="M702,63 H716" class="ln" marker-end="url(#arr)"/>
+		<path d="M780,88 V108 H81 V126" class="ln" marker-end="url(#arr)"/>
+		<path d="M142,155 H156" class="ln" marker-end="url(#arr)"/>
+		<path d="M282,155 H296" class="ln" marker-end="url(#arr)"/>
+		<path d="M422,155 H436" class="ln" marker-end="url(#arr)"/>
+		<path d="M562,155 H576" class="ln" marker-end="url(#arr)"/>
+		<path d="M702,155 H716" class="ln" marker-end="url(#arr)"/>
+		<text x="430" y="203" text-anchor="middle" class="t-muted">마지막에 UpdateTransforms를 한 번 더 — OnLateUpdate가 옮긴 카메라 등을 이번 프레임에 반영</text>
+
+		<text x="20" y="240" class="t-bold">TickPresentation — 항상 (에디터 편집 중에도)</text>
+		<g class="t-small">
+			<rect x="20" y="254" width="150" height="46" rx="8" class="k4"/><text x="95" y="282" text-anchor="middle" class="t-bold">애니메이션</text>
+			<rect x="200" y="254" width="150" height="46" rx="8" class="box"/><text x="275" y="282" text-anchor="middle" class="t-bold">UpdateTransforms</text>
+			<rect x="380" y="254" width="150" height="46" rx="8" class="k1"/><text x="455" y="282" text-anchor="middle" class="t-bold">파티클</text>
+			<rect x="560" y="254" width="150" height="46" rx="8" class="acc"/><text x="635" y="282" text-anchor="middle" class="t-bold">렌더 (앱)</text>
+		</g>
+		<path d="M170,277 H196" class="ln" marker-end="url(#arr)"/>
+		<path d="M350,277 H376" class="ln" marker-end="url(#arr)"/>
+		<path d="M530,277 H556" class="ln-d" marker-end="url(#arr)"/>
+		<text x="20" y="330" class="t-muted">클라이언트 역할: 게임 모듈·AI·게임플레이 규칙의 서버 부분은 돌지 않는다 — 결과를 복제로 받는다 (56강)</text>
+		<text x="20" y="348" class="t-muted">앱 루프: OnUpdate 안에서 TickGameplay → TickPresentation, 그다음 OnRender (1강의 FApplication)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 50-1.</b> <code>FGameWorld</code>가 정한 한 프레임. 위 두 줄이 게임 규칙을 진행하는 "게임플레이 틱", 아래 줄이 화면을 위한 "표시 틱"입니다. 런타임·에디터 플레이·전용 서버·테스트가 모두 이 함수를 그대로 부릅니다.</figcaption>
+</figure>
+
+<h3 id="lec-50-gameworld"><span class="step">ProjectE에서는</span>FGameWorld — 갱신 순서가 사는 곳</h3>
+<p><code>FGameWorld</code>는 시스템을 <b>소유하지 않습니다</b>. 스크립트·물리·게임 모듈·리소스 관리자는 앱이 만들고, 게임 월드는 비소유 포인터 묶음만 받습니다. 그래서 GPU가 없는 전용 서버는 <code>Resources</code>를 비워 두기만 하면 같은 코드로 돌아갑니다.</p>
+<pre class="code" data-file="Engine/Source/World/GameWorld.h (발췌)"><span class="com">// FGameWorld가 돌리는 시스템. 모두 비소유 — 앱이 소유하고 FGameWorld보다 오래 산다</span>
+<span class="kw">struct</span> FGameWorldSystems
+{
+	FScriptSystem*        Scripts    = <span class="kw">nullptr</span>; <span class="com">// 필수</span>
+	FPhysicsSystem*       Physics    = <span class="kw">nullptr</span>; <span class="com">// 없으면 물리 없음</span>
+	FGameModuleHost*      GameModule = <span class="kw">nullptr</span>; <span class="com">// 없으면 게임 모듈 없음</span>
+	FResourceManager*     Resources  = <span class="kw">nullptr</span>; <span class="com">// 없으면 에셋 핸들 해석을 건너뛴다 (GPU 없는 서버)</span>
+	std::filesystem::path ContentDirectory;
+	FNetDriver*           Net        = <span class="kw">nullptr</span>; <span class="com">// 없으면 로컬 플레이어 ID 0 (Standalone)</span>
+};</pre>
+<p>실제 게임플레이 틱은 다음과 같습니다(측정·프로파일 줄은 뺐습니다). 주석이 곧 "왜 이 자리인가"의 답입니다.</p>
+<pre class="code" data-file="Engine/Source/World/GameWorld.cpp — FGameWorld::TickGameplay (발췌)">TickSubScenes(); <span class="com">// 파싱이 끝난 서브 씬 붙이기 (스크립트 전 — 새 스크립트가 이번 틱에 OnStart)</span>
+Systems.Scripts-&gt;Update(DeltaSeconds, Input);
+TickAbilities(DeltaSeconds); <span class="com">// 캐릭터 이동 전 — 대시 이동 입력·MoveSpeed가 이번 무브에</span>
+FSequenceSystem::Update(*Scene, DeltaSeconds);
+TickPhysicsPrediction(DeltaSeconds); <span class="com">// 클라이언트: 물리 예측 (58강)</span>
+TickCharacters(DeltaSeconds);        <span class="com">// 스크립트가 넣은 이동 입력으로 (물리 스텝 전)</span>
+<span class="kw">if</span> (Systems.Scripts-&gt;ConsumeSceneStructureChanged() &amp;&amp; Systems.Resources != <span class="kw">nullptr</span>)
+	FSceneAssetResolver::Resolve(*Scene, *Systems.Resources, Systems.ContentDirectory);
+<span class="kw">if</span> (Systems.GameModule != <span class="kw">nullptr</span> &amp;&amp; Mode != ENetMode::Client)
+	Systems.GameModule-&gt;Update(*Scene, DeltaSeconds);
+AI-&gt;Update(*Scene, DeltaSeconds);
+TickGameplayRules(DeltaSeconds); <span class="com">// 데미지·사망·리스폰·매치 (물리 전: 리스폰 순간이동이 이번 스텝에 반영)</span>
+TickRagdolls();                  <span class="com">// 사망/리스폰 → 래그돌 켜기/끄기 (물리 전: 이번 스텝부터 쓰러진다)</span>
+Systems.Physics-&gt;Update(*Scene, DeltaSeconds);
+Scene-&gt;UpdateTransforms();
+...
+DispatchCollisionEvents();       <span class="com">// 이번 프레임 물리 스텝의 충돌/트리거 알림 (메인 스레드)</span>
+Systems.Scripts-&gt;LateUpdate(DeltaSeconds, Input); <span class="com">// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)</span>
+Scene-&gt;UpdateTransforms();</pre>
+<p>몇 군데를 짚어 봅시다.</p>
+<ul>
+	<li><b>스크립트가 엔티티를 만들었으면 에셋 해석</b>: Lua가 <code>Scene.Create</code>로 메시를 붙이면 컴포넌트에는 <code>"primitive:sphere"</code> 같은 <i>경로 문자열</i>만 있습니다. 렌더러가 쓰는 핸들로 바꾸는 일은 GPU 리소스를 다루므로, 구조가 바뀐 프레임에만 한 번 합니다.</li>
+	<li><b>게임 규칙과 래그돌이 물리 앞</b>: 리스폰은 캐릭터를 PlayerStart로 순간이동시키고, 래그돌은 물리 바디를 켭니다. 둘 다 이번 물리 스텝에 반영되어야 "죽은 다음 프레임에 쓰러지기 시작"합니다.</li>
+	<li><b>충돌 알림은 물리 뒤, 메인 스레드에서</b>: 물리 엔진(Jolt)의 접촉 콜백은 물리 스레드에서 불립니다. 그 안에서 Lua를 부르면 경쟁 조건이 생기므로 이벤트를 쌓아 두었다가 여기서 배달합니다(45강).</li>
+</ul>
+
+<h4>표시 틱을 따로 둔 이유</h4>
+<p>에디터에서 씬을 편집하는 동안에는 게임 규칙이 돌면 안 됩니다(스크립트가 적을 움직이면 배치가 망가집니다). 하지만 애니메이션이 재생되고 파티클이 흩날리는 모습은 보고 싶습니다. 그래서 갱신을 둘로 나눴습니다. <code>TickGameplay</code>는 플레이 중이 아니면 바로 돌아가고, <code>TickPresentation(TargetScene, dt)</code>는 플레이 여부와 무관하게 "대상 씬"을 갱신합니다. 에디터는 편집 씬을 넘기고, 게임은 플레이 씬을 넘깁니다.</p>
+
+<h4>시작과 끝의 순서</h4>
+<pre class="code" data-file="Engine/Source/World/GameWorld.cpp — BeginPlay (발췌)">Systems.Physics-&gt;Begin();                          <span class="com">// ① 바디가 먼저 있어야 스크립트가 힘을 줄 수 있다</span>
+<span class="kw">if</span> (Systems.GameModule != <span class="kw">nullptr</span> &amp;&amp; !bClient)    <span class="com">// ② 게임 모듈(C++ 게임 로직)은 서버에서만</span>
+	Systems.GameModule-&gt;BeginPlay(InScene);
+<span class="com">// 스크립트 BeginPlay는 Lua 상태만 만든다 (OnStart는 첫 TickGameplay).</span>
+<span class="com">// AI는 그 뒤 — 트리 시작 시 Lua 노드가 스크립트 객체를 만든다</span>
+Systems.Scripts-&gt;BeginPlay(InScene);               <span class="com">// ③</span>
+Abilities-&gt;Begin(InScene, !bClient);               <span class="com">// ④ 능력 스크립트를 그 Lua 상태에서 돌린다</span>
+<span class="kw">if</span> (!bClient) AI-&gt;Begin(InScene);                 <span class="com">// ⑤ AI도 서버에서만</span></pre>
+<p><code>EndPlay</code>는 이것의 역순입니다. 특히 AI와 능력 시스템을 Lua 상태보다 <b>먼저</b> 끝내야 합니다. 비헤이비어 트리를 멈추면 Lua 노드의 <code>OnAbort</code>가 불리고, 발동 중인 능력을 취소하면 능력 스크립트의 <code>OnEnd</code>가 불리는데, 이미 Lua 상태가 사라졌다면 크래시입니다. "만든 순서의 역순으로 부순다"는 C++ 생성자/소멸자 규칙을 시스템 단위로 지키는 것입니다.</p>
+
+<div class="callout tip">
+	<b class="t">설계 이유: 새 시스템은 FGameWorld에</b>
+	CLAUDE.md 규칙은 "새 게임 시스템은 앱마다 따로 부르지 말고 <code>FGameWorld</code>에 넣는다"입니다. 능력 시스템(51강)을 넣은 커밋은 런타임·에디터·서버 실행 파일의 소스를 하나도 고치지 않았습니다. <code>FGameWorld</code> 안에 <code>TickAbilities</code>와 시작/끝 호출을 넣는 것만으로 세 곳에 동시에 들어갔습니다.
+</div>
+
+<h3 id="lec-50-roles"><span class="step">핵심 개념</span>역할: 누가 무엇을 돌리나</h3>
+<p>멀티플레이(8부)에서는 같은 씬을 여러 프로세스가 동시에 돌립니다. 게임 규칙의 "진실"은 하나여야 하므로, 권한(authority)을 가진 쪽만 규칙을 바꾸고 나머지는 결과를 받아 봅니다. <code>FGameWorld</code>는 앱이 정한 넷 모드(<code>ENetMode</code>)를 두 가지 역할로 줄여 씁니다.</p>
+<pre class="code" data-file="Engine/Source/World/GameWorld.h (발췌)"><span class="kw">enum class</span> EWorldRole : uint8
+{
+	Authority, <span class="com">// 서버/Standalone (게임 로직 전부)</span>
+	Client,    <span class="com">// 게임 로직은 서버가 돌리고 복제로 받는다. ClientOnly/Both 스크립트와 물리만</span>
+};
+EWorldRole GetRole() <span class="kw">const</span> { <span class="kw">return</span> Mode == ENetMode::Client ? EWorldRole::Client : EWorldRole::Authority; }</pre>
+<div class="tablewrap"><table class="t">
+	<tr><th>넷 모드</th><th>스크립트(ExecutionLocation)</th><th>게임 모듈·AI·규칙</th><th>물리</th><th>렌더</th></tr>
+	<tr><td>Standalone (1인용)</td><td>전부</td><td>예</td><td>예</td><td>예</td></tr>
+	<tr><td>리슨 서버 (호스트가 플레이)</td><td>전부</td><td>예</td><td>예</td><td>예</td></tr>
+	<tr><td>전용 서버</td><td>ServerOnly / Both</td><td>예</td><td>예</td><td>아니오 (Resources 없음)</td></tr>
+	<tr><td>클라이언트</td><td>ClientOnly / Both</td><td>아니오 — 복제로 받음</td><td>예 (복제 바디는 키네마틱)</td><td>예</td></tr>
+</table></div>
+<p>예를 들어 클라이언트에서 <code>BeginPlay</code>는 물리에 "<code>NetId</code>가 있는 엔티티(서버가 시뮬레이션하는 복제 엔티티)는 키네마틱으로" 라는 규칙을 꽂습니다. 클라이언트의 공은 스스로 굴러가지 않고, 서버가 보내 주는 위치를 따라가며 로컬 물체와 부딪히기만 합니다(56·58강).</p>
+
+<h3 id="lec-50-late"><span class="step">핵심 개념</span>OnLateUpdate — "이번 프레임 최종 위치"가 필요한 일</h3>
+<p>캐릭터를 따라가는 카메라를 스크립트로 만든다고 해 봅시다. 가장 쉬운 방법은 <code>OnUpdate</code>에서 캐릭터 위치를 읽어 카메라를 그 뒤에 놓는 것입니다. 그런데 그림 50-1을 보면 <code>OnUpdate</code>는 <b>물리보다 먼저</b> 돕니다. 그 시점의 캐릭터 위치는 지난 프레임 값입니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="OnUpdate와 OnLateUpdate에서 카메라를 놓을 때의 차이">
+		<title>OnUpdate와 OnLateUpdate에서 카메라를 놓을 때의 차이</title>
+		<text x="20" y="26" class="t-bold">① OnUpdate에서 카메라를 놓으면</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="190" height="44" rx="8" class="k2"/><text x="115" y="58" text-anchor="middle" class="t-bold">OnUpdate</text><text x="115" y="75" text-anchor="middle">캐릭터 위치 읽기 = x₀</text>
+			<rect x="250" y="40" width="190" height="44" rx="8" class="k5"/><text x="345" y="58" text-anchor="middle" class="t-bold">물리</text><text x="345" y="75" text-anchor="middle">캐릭터 → x₁</text>
+			<rect x="480" y="40" width="160" height="44" rx="8" class="acc"/><text x="560" y="58" text-anchor="middle" class="t-bold">렌더</text><text x="560" y="75" text-anchor="middle">캐릭터는 x₁에</text>
+		</g>
+		<path d="M210,62 H246" class="ln" marker-end="url(#arr)"/>
+		<path d="M440,62 H476" class="ln" marker-end="url(#arr)"/>
+		<text x="660" y="58" class="f5 t-bold">카메라는 x₀ 기준</text>
+		<text x="660" y="76" class="t-muted">→ 매 프레임 x₁−x₀만큼 어긋남</text>
+
+		<text x="20" y="130" class="t-bold">② OnLateUpdate에서 카메라를 놓으면</text>
+		<g class="t-small">
+			<rect x="20" y="144" width="130" height="44" rx="8" class="k2"/><text x="85" y="162" text-anchor="middle" class="t-bold">OnUpdate</text><text x="85" y="179" text-anchor="middle">이동 입력만</text>
+			<rect x="180" y="144" width="130" height="44" rx="8" class="k5"/><text x="245" y="162" text-anchor="middle" class="t-bold">물리</text><text x="245" y="179" text-anchor="middle">캐릭터 → x₁</text>
+			<rect x="340" y="144" width="140" height="44" rx="8" class="box"/><text x="410" y="162" text-anchor="middle" class="t-bold">UpdateTransforms</text><text x="410" y="179" text-anchor="middle">월드 행렬 x₁</text>
+			<rect x="510" y="144" width="150" height="44" rx="8" class="k2"/><text x="585" y="162" text-anchor="middle" class="t-bold">OnLateUpdate</text><text x="585" y="179" text-anchor="middle">카메라를 x₁ 기준으로</text>
+			<rect x="690" y="144" width="150" height="44" rx="8" class="acc"/><text x="765" y="162" text-anchor="middle" class="t-bold">렌더</text><text x="765" y="179" text-anchor="middle">둘 다 x₁ — 떨림 없음</text>
+		</g>
+		<path d="M150,166 H176" class="ln" marker-end="url(#arr)"/>
+		<path d="M310,166 H336" class="ln" marker-end="url(#arr)"/>
+		<path d="M480,166 H506" class="ln" marker-end="url(#arr)"/>
+		<path d="M660,166 H686" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="228" class="t-muted">어긋남 x₁−x₀은 속도 × dt이고, dt가 프레임마다 조금씩 달라서 일정한 지연이 아니라 "떨림"으로 보인다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 50-2.</b> 같은 카메라 코드라도 어느 단계에서 도느냐에 따라 화면이 달라집니다. ProjectE의 샘플 <code>Scripts/PlayerCharacter.lua</code>는 카메라를 <code>OnLateUpdate(dt)</code>에서 놓습니다.</figcaption>
+</figure>
+<p>그래서 Phase 21 수정에서 물리·트랜스폼 갱신 뒤에 도는 <code>OnLateUpdate</code> 단계를 추가했습니다. 스크립트 시스템 헤더의 주석이 용도를 분명히 적고 있습니다.</p>
+<pre class="code" data-file="Engine/Source/Scripting/ScriptSystem.h (발췌)"><span class="com">// 물리·트랜스폼 갱신이 끝난 뒤 (FGameWorld::TickGameplay 끝): 스크립트 OnLateUpdate(dt) — 캐릭터를 따라가는 카메라처럼</span>
+<span class="com">// "이번 프레임 최종 위치"가 필요한 일 (OnUpdate에서 읽는 월드 위치는 물리가 움직이기 전 값이다)</span>
+<span class="kw">void</span> LateUpdate(<span class="kw">float</span> DeltaSeconds, <span class="kw">const</span> FInput* Input);</pre>
+
+<h3 id="lec-50-rules"><span class="step">ProjectE에서는</span>체력, 게임 모드, 이벤트 배달</h3>
+<p>Phase 25는 거의 모든 액션 게임에 필요한 최소한의 규칙 틀을 만들었습니다. 언리얼의 GameMode(규칙)와 GameState(모두가 보는 상태)를 ProjectE는 <b>컴포넌트 하나</b>로 합쳤습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Gameplay.h (발췌)"><span class="kw">struct</span> FHealthComponent
+{
+	<span class="kw">float</span>        MaxHealth     = <span class="num">100.0f</span>;
+	<span class="kw">float</span>        Health        = <span class="num">100.0f</span>; <span class="com">// 현재 체력 (서버 권위, 복제)</span>
+	<span class="kw">bool</span>         bInvulnerable = <span class="kw">false</span>;
+	EDeathAction DeathAction   = EDeathAction::Auto;
+	int32        ScoreValue    = <span class="num">0</span>; <span class="com">// 처치하면 가해자 소유 플레이어가 받는 점수</span>
+	FHealthRuntime Runtime;          <span class="com">// 비직렬화: 데미지 이벤트 큐, 리스폰 타이머</span>
+};
+
+<span class="kw">struct</span> FGameModeComponent
+{
+	<span class="com">// ---- 규칙 (서버가 읽는다, 씬에 저장)</span>
+	<span class="kw">float</span> StartDelay = <span class="num">0.0f</span>;  <span class="kw">float</span> TimeLimit = <span class="num">0.0f</span>;  int32 ScoreToWin = <span class="num">0</span>;  <span class="kw">float</span> RespawnDelay = <span class="num">3.0f</span>;
+	<span class="com">// ---- 상태 (PF_Transient: 저장 안 함, 복제됨)</span>
+	EMatchState MatchState       = EMatchState::WaitingToStart;
+	int32       RemainingSeconds = <span class="num">0</span>;
+	int32       WinnerPlayerId   = -<span class="num">1</span>;
+	std::string Scores;          <span class="com">// "플레이어=점수;..."</span>
+	FGameModeRuntime Runtime;
+};</pre>
+<p>몇 가지 설계 결정이 보입니다.</p>
+<ul>
+	<li><b>사망 = <code>Health &lt;= 0</code></b>. 따로 "죽음" 플래그를 두지 않습니다. 복제되는 값이 <code>Health</code> 하나뿐이므로 클라이언트도 같은 식으로 죽음을 판단할 수 있고, 두 값이 어긋날 일이 없습니다.</li>
+	<li><b>규칙 = 저장, 상태 = 복제만</b>. <code>StartDelay</code>는 레벨 디자이너가 씬에 적는 값이고, <code>MatchState</code>는 플레이할 때마다 처음부터 다시 시작하는 값입니다. 리플렉션 프로퍼티 플래그 <code>PF_Transient</code>(9강)로 "저장은 빼고 복제는 한다"를 표현합니다.</li>
+	<li><b>점수를 문자열로</b>: <code>"1=3;2=5"</code>처럼 담으면 새 복제 메시지 형식을 만들지 않고도 기존 리플렉션 복제가 그대로 실어 나릅니다. Plans.md 25-2의 "메시지 변경 없음"이 그 결과입니다.</li>
+</ul>
+
+<h4>데미지는 즉시, 이벤트는 정해진 단계에서</h4>
+<p><code>Gameplay::ApplyDamage</code>는 값을 <b>바로</b> 깎고, "누가 누구에게 얼마"라는 이벤트를 컴포넌트 런타임 큐에 쌓기만 합니다. 이벤트를 받는 Lua <code>OnDamaged</code>/<code>OnDeath</code>는 게임플레이 규칙 단계에서 한꺼번에 불립니다. 왜 바로 부르지 않을까요? 데미지는 스크립트 안에서도, 능력 시스템 안에서도, 게임 모듈 안에서도 생깁니다. 그 자리에서 다른 스크립트를 부르면 "스크립트 A가 도는 도중에 스크립트 B의 <code>OnDeath</code>가 엔티티를 지우는" 재진입이 생깁니다. 한 단계로 모으면 호출 순서가 예측 가능해집니다.</p>
+<pre class="code" data-file="Engine/Source/World/GameWorldGameplay.cpp — 머리 주석 (발췌)"><span class="com">//   1) 데미지 이벤트: FHealthComponent 런타임 큐를 엔티티 인덱스 순으로 꺼내</span>
+<span class="com">//      대상 스크립트 OnDamaged(amount, instigator) → 게임 모듈 OnDamaged → 죽었으면 사망 처리.</span>
+<span class="com">//      이벤트 처리 중 생긴 데미지(반격 등)도 같은 틱에 몇 차례까지 이어서 처리한다</span>
+<span class="com">//   2) 사망 처리: 점수 → 대상 스크립트 OnDeath(instigator) → 게임 모듈 OnDeath</span>
+<span class="com">//      → 모든 스크립트 OnEntityDied(victim, instigator)</span>
+<span class="com">//      → DeathAction: Destroy = 스크립트 지연 파괴, 리스폰 = 게임 모드 RespawnDelay 뒤</span>
+<span class="com">//   3) 리스폰: 체력 = MaxHealth, PlayerStart를 돌아가며, 캐릭터 이동/강체 속도는 0</span>
+<span class="com">//      → 스크립트 OnRespawned() → 게임 모듈 OnRespawned. 폰을 다시 만들지 않으므로 NetId·소유권·프리팹이 그대로다</span>
+<span class="com">//   4) 매치: Gameplay::TickMatch (대기 → 진행 → 끝)</span></pre>
+<p>"몇 차례까지"는 <code>MaxDamagePasses = 4</code>입니다. 가시 갑옷처럼 데미지를 받으면 되돌려 주는 효과가 서로 맞물리면 무한히 이어질 수 있으므로, 같은 틱에서는 네 바퀴까지만 돌고 남은 이벤트는 다음 틱으로 넘깁니다. 엔티티 인덱스 순으로 정렬하는 것도 같은 이유입니다 — 해시 맵 순회 순서에 기대면 실행마다 이벤트 순서가 달라질 수 있습니다(53강의 결정성 이야기와 같은 뿌리입니다).</p>
+<p>사망 처리에서 <b>점수를 먼저</b> 올리는 것도 의도입니다. <code>OnDeath</code>를 받은 HUD 스크립트가 점수판을 갱신할 때, 이미 반영된 점수를 보게 하려는 것입니다.</p>
+
+<div class="callout tip">
+	<b class="t">설계 이유: 리스폰은 "다시 만들기"가 아니라 "되살리기"</b>
+	언리얼은 보통 죽은 폰을 파괴하고 새 폰을 만듭니다. ProjectE는 체력을 채우고 PlayerStart로 옮기기만 합니다. 멀티플레이에서 폰을 새로 만들면 새 <code>NetId</code>를 발급하고, 소유권을 다시 연결하고, 클라이언트에 생성 메시지를 보내고, 프리팹 오버라이드를 다시 적용해야 합니다. 되살리기는 그 모든 것을 "아무것도 바뀌지 않음"으로 만듭니다.
+</div>
+<div class="callout warn">
+	<b class="t">규칙: enum은 끝에만 추가</b>
+	<code>EDeathAction</code>, <code>EMatchState</code>는 리플렉션 enum이고 씬 JSON에 <b>번호</b>로 저장되며 복제에도 번호로 실립니다. 가운데에 새 값을 끼우면 이미 저장된 씬의 의미가 조용히 바뀝니다. 그래서 헤더 주석에 "끝에만 추가"가 박혀 있습니다.
+</div>
+
+<h3 id="lec-50-save"><span class="step">ProjectE에서는</span>세이브 게임 — 슬롯, 검증, 원자적 쓰기</h3>
+<p>세이브 게임은 단순해 보이지만 사고가 나기 쉬운 곳입니다. 파일을 쓰는 도중 게임이 꺼지면 세이브가 반쯤 쓰인 채 남아 다음 실행에서 불러올 수 없게 되고, 슬롯 이름을 사용자 입력으로 받으면 <code>"../../Windows/x"</code> 같은 이름으로 엉뚱한 곳에 파일을 쓸 수 있습니다. <code>FSaveGame</code>은 이 두 가지를 막는 데 집중합니다.</p>
+<pre class="code" data-file="Engine/Source/Core/SaveGame.h (발췌)"><span class="com">// 슬롯 이름 → &lt;Saved&gt;/SaveGames/&lt;슬롯&gt;.json (UTF-8 JSON 텍스트).</span>
+<span class="com">// 슬롯 이름: 1~64바이트, 영문/숫자/'_'/'-'/한글 등 UTF-8 문자만 (경로 구분자·'.'·공백·Windows 예약 이름 금지 — 경로 탈출 방지)</span>
+<span class="com">// 쓰기는 임시 파일에 쓴 뒤 바꿔치기 (도중에 꺼져도 이전 세이브가 남는다).</span>
+<span class="com">// 세이브는 콘텐츠가 아니므로 pak이 아니라 디스크에서 읽는다.</span>
+<span class="kw">class</span> FSaveGame
+{
+<span class="kw">public</span>:
+	<span class="kw">static bool</span>                       Save(std::string_view Slot, std::string_view JsonText, std::string* OutError = <span class="kw">nullptr</span>);
+	<span class="kw">static</span> std::optional&lt;std::string&gt; Load(std::string_view Slot); <span class="com">// 없거나 JSON이 깨졌으면 nullopt</span>
+	<span class="kw">static bool</span>                       Exists(std::string_view Slot);
+	<span class="kw">static bool</span>                       Delete(std::string_view Slot);
+	<span class="kw">static</span> std::vector&lt;std::string&gt;   List();
+	<span class="kw">static void</span> SetDirectoryOverride(<span class="kw">const</span> std::filesystem::path&amp; Directory); <span class="com">// 테스트/자동 검증</span>
+};</pre>
+<pre class="code" data-file="Engine/Source/Core/SaveGame.cpp — Save (발췌)"><span class="kw">const</span> nlohmann::json Root = nlohmann::json::parse(JsonText, <span class="kw">nullptr</span>, <span class="kw">false</span>);
+<span class="kw">if</span> (Root.is_discarded()) { <span class="kw">return</span> Fail(...); }      <span class="com">// JSON이 아니면 쓰지 않는다</span>
+std::filesystem::path TempPath = Path;
+TempPath += L<span class="str">".tmp"</span>;
+{
+	std::ofstream File(TempPath, std::ios::binary | std::ios::trunc);
+	File &lt;&lt; Root.dump(<span class="num">2</span>);                              <span class="com">// ① 임시 파일에 전부 쓴다</span>
+}
+std::filesystem::rename(TempPath, Path, ErrorCode);  <span class="com">// ② 한 번에 바꿔치기</span></pre>
+<p>파일 시스템의 이름 바꾸기는 "다 되거나 아예 안 되거나"에 가깝습니다. 그래서 ①에서 꺼지면 이전 세이브가 그대로이고, ② 뒤에는 새 세이브가 완전한 상태입니다. 중간 상태가 디스크에 남지 않습니다. 이것을 <b>원자적 쓰기(atomic write)</b>라고 부릅니다.</p>
+<p>Lua에서는 <code>SaveGame.Save(slot, table)</code>로 테이블을 그대로 넘깁니다. 그리고 자동 검증 실행(<code>--exit-after</code>)은 <code>FApplication</code>이 세이브 폴더를 프로세스 전용 임시 폴더로 돌려 놓습니다. 테스트가 개발자의 실제 세이브를 덮어쓰는 일을 막는 장치입니다.</p>
+
+<h3 id="lec-50-travel"><span class="step">ProjectE에서는</span>맵 전환 — 프레임 끝에, 한 함수로</h3>
+<p>"포털에 들어가면 다른 맵으로" — 스크립트가 <code>Game.OpenScene("Scenes/Demo/Forest.escene")</code>을 부르는 순간 씬을 지워 버리면 어떻게 될까요? 지금 돌고 있는 그 스크립트, 그 스크립트를 순회하던 반복자, 물리 바디 핸들이 모두 사라진 메모리를 가리키게 됩니다. 그래서 맵 전환은 <b>요청</b>과 <b>실행</b>을 나눕니다.</p>
+<ol>
+	<li>요청: <code>FGameWorld::RequestOpenScene</code>이 파일이 있는지 확인하고 경로만 기억합니다. 서버/Standalone만 요청할 수 있고, 클라이언트는 서버가 보낸 Travel 메시지를 따라갑니다.</li>
+	<li>실행: 앱이 <b>프레임 끝</b>(게임플레이·복제 틱이 모두 끝난 뒤)에 <code>FGameWorldTravel::ConsumePending</code>으로 요청을 꺼내 <code>Travel</code>을 부릅니다.</li>
+</ol>
+<pre class="code" data-file="Engine/Source/World/GameWorldTravel.h — 머리 주석 (발췌)"><span class="com">//   Travel 순서: (서버) 클라이언트에 이동 지시(BeginServerTravel)</span>
+<span class="com">//         → World.EndPlay(스크립트 OnDestroy, 게임 모듈 OnEndPlay, 물리/AI 정리) → OnEndPlay → 복제/플레이어 정리</span>
+<span class="com">//         → Scene.Clear → 씬 파일 로드 → 에셋 해석 → (서버) 정적 NetId → BeginPlay → (리슨) 호스트 폰</span>
+<span class="com">//         / (클라이언트) 정적 NetId → BeginPlay → TravelAck.</span>
+<span class="com">//   GPU 리소스: 같은 에셋은 다음 맵에서 재사용하고, 이전 맵만 쓰던 것은 몇 프레임 뒤 수거된다</span></pre>
+<p>눈여겨볼 점은 <code>Scene.Clear</code>입니다. 씬 <b>객체</b>는 그대로 두고 내용만 비운 뒤 새 파일을 읽습니다. 앱과 에디터는 여기저기서 <code>FScene*</code>를 들고 있는데(렌더러, 패널, 플레이 모드), 객체를 새로 만들면 그 포인터를 전부 찾아 바꿔야 합니다. 내용만 교체하면 아무도 신경 쓸 필요가 없습니다. 맵 사이에 값을 넘기고 싶을 때는 <code>Game.SetPersistent/GetPersistent</code>(프로세스 메모리에만 유지)를 씁니다.</p>
+<p>이 순서를 런타임, 전용 서버, 에디터 플레이(<code>FPlayMode::Travel</code>), 테스트가 <b>모두 같은 함수</b>로 씁니다. Plans.md 31-1에 "앱마다 순서를 복제하지 않는다"가 명시된 이유입니다.</p>
+
+<h3 id="lec-50-streaming"><span class="step">핵심 개념</span>서브 씬 스트리밍 — 백그라운드는 "읽고 파싱만"</h3>
+<p>맵 전환은 화면이 한 번 끊기는 대신 단순합니다. 큰 맵을 끊김 없이 돌아다니게 하려면 <b>필요한 부분만 그때그때 붙였다 떼는</b> 스트리밍이 필요합니다. ProjectE의 서브 씬은 다른 <code>.escene</code> 파일을 현재 씬의 루트 엔티티 아래에 통째로 붙이는 방식입니다.</p>
+<p>문제는 씬 파일 읽기가 느리다는 것입니다(엔티티 1000개짜리 파일이 Release에서 파싱 4.0ms). 이것을 메인 스레드에서 하면 그만큼 프레임이 멈칫합니다. 그렇다고 전부 다른 스레드로 보내면 ECS(7강)와 GPU 리소스를 두 스레드가 동시에 만지게 됩니다. ProjectE의 답은 <b>일을 성격대로 쪼개는 것</b>입니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="서브 씬 불러오기의 스레드 분할">
+		<title>서브 씬 불러오기의 스레드 분할</title>
+		<text x="20" y="40" class="t-bold">메인 스레드</text>
+		<text x="20" y="150" class="t-bold">백그라운드</text>
+		<line x1="120" y1="36" x2="840" y2="36" class="ln-d"/>
+		<line x1="120" y1="146" x2="840" y2="146" class="ln-d"/>
+		<g class="t-small">
+			<rect x="130" y="20" width="110" height="34" rx="6" class="k2"/><text x="185" y="42" text-anchor="middle">틱 N: 요청</text>
+			<rect x="260" y="20" width="110" height="34" rx="6" class="box"/><text x="315" y="42" text-anchor="middle">틱 N+1</text>
+			<rect x="390" y="20" width="110" height="34" rx="6" class="box"/><text x="445" y="42" text-anchor="middle">틱 N+2</text>
+			<rect x="520" y="20" width="200" height="34" rx="6" class="acc"/><text x="620" y="42" text-anchor="middle" class="t-bold">틱 N+3 처음: 붙이기</text>
+			<rect x="740" y="20" width="100" height="34" rx="6" class="k2"/><text x="790" y="42" text-anchor="middle">스크립트…</text>
+			<rect x="180" y="128" width="320" height="36" rx="6" class="k1"/><text x="340" y="151" text-anchor="middle">std::async: 파일 읽기 + JSON 파싱 (ECS 접근 없음)</text>
+		</g>
+		<path d="M185,54 V124" class="ln" marker-end="url(#arr)"/>
+		<text x="192" y="96" class="t-muted">시작</text>
+		<path d="M500,140 C 525,140 530,110 530,58" class="ln" marker-end="url(#arr)"/>
+		<text x="452" y="118" class="t-muted">future 완료</text>
+		<g class="t-small">
+			<text x="560" y="80">엔티티 생성 → 프리팹 동기화</text>
+			<text x="560" y="98">→ 에셋 해석(GPU) → NetId 등록</text>
+			<text x="560" y="116">→ OnSubSceneLoaded(경로)</text>
+		</g>
+		<text x="20" y="200" class="t-muted">측정 (Plans.md 31-2): 엔티티 1000개 Release — 파싱 4.0ms(백그라운드, 프레임에 안 보임) + 붙이기 2.1ms(메인 = 멈칫함)</text>
+		<text x="20" y="222" class="t-muted">붙이기는 스크립트 갱신 전에 하므로, 서브 씬 안의 스크립트는 같은 틱에 OnStart를 받는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 50-3.</b> 백그라운드 스레드는 순수한 일(디스크 읽기, 문자열 → JSON 트리)만 하고, 결과는 <code>std::future</code>로 넘깁니다. ECS와 GPU를 만지는 일은 다음 게임플레이 틱 처음에 메인 스레드가 합니다.</figcaption>
+</figure>
+<p>몇 가지 규칙이 더 붙습니다.</p>
+<ul>
+	<li><b>루트 하나 아래</b>: 서브 씬 엔티티는 모두 <code>"SubScene: &lt;경로&gt;"</code> 루트 엔티티의 자손이고, 루트에 <code>FTransientComponent</code>를 붙여 메인 씬을 저장할 때 섞이지 않게 합니다. 내릴 때는 루트째 지연 파괴합니다.</li>
+	<li><b>스트리밍 볼륨</b>: 기준(주 카메라, 캐릭터, <code>FStreamingSourceComponent</code>) 중 하나라도 상자 안이면 불러오고, 모두 상자 + <code>UnloadMargin</code> 밖이면 내립니다. 경계에서 들락날락할 때 불러오기·내리기가 반복되지 않도록 여유를 둔 것입니다(히스테리시스).</li>
+	<li><b>멀티플레이</b>: 클라이언트는 판단하지 않고 서버의 SubSceneLoad 메시지를 받으면 그 자리에서 동기로 붙입니다. 뒤따르는 복제 메시지가 그 엔티티를 가리키기 때문입니다. 서브 씬 안 엔티티의 <code>NetId</code>는 <code>1&lt;&lt;26 + (번호-1)*16384 + 하위 트리 순서</code>로 양쪽이 같은 값을 계산합니다(Plans.md 31-2).</li>
+</ul>
+
+<h3 id="lec-50-time"><span class="step">ProjectE에서는</span>FFrameTime — 화면을 움직이는 시계는 하나</h3>
+<p>마지막 기둥은 시간입니다. 물결, 구름의 흐름, 자동 노출 적응, 머티리얼 그래프의 <code>Time</code> 노드처럼 시간에 따라 바뀌는 화면 효과는 어떤 시계를 읽어야 할까요? 처음에는 각자 <code>std::chrono::steady_clock</code>으로 "지난번 이후 경과 시간"을 쟀습니다. 실제로 흐른 시간이니 맞아 보입니다.</p>
+<pre class="code" data-file="Engine/Source/Core/FrameTime.h (발췌)"><span class="com">// 앱 프레임 시간 (엔진 DLL 전역 하나).</span>
+<span class="com">//   화면·시뮬레이션 상태는 실제 시각(steady_clock)이 아니라 이 시간으로 진행한다</span>
+<span class="com">//   — `--fixed-delta`면 실행마다(부하와 무관하게) 같은 화면이 된다.</span>
+<span class="com">//   FApplication이 프레임(헤드리스는 틱)마다 FTimer 델타로 Advance한다. 앱 루프 밖(테스트·도구)은 0에서 멈춰 있다.</span>
+<span class="com">//   측정(프레임 간격, CPU/GPU 구간, 로딩 시간, 업로드 속도)은 계속 실제 시각을 쓴다</span>
+<span class="kw">class</span> FFrameTime
+{
+<span class="kw">public</span>:
+	<span class="kw">static void</span>   Advance(<span class="kw">float</span> DeltaSeconds); <span class="com">// FApplication 전용</span>
+	<span class="kw">static float</span>  GetDeltaSeconds();
+	<span class="kw">static double</span> GetTotalSeconds();        <span class="com">// 디버거 정지 등으로 버린 시간은 들어가지 않는다</span>
+	<span class="kw">static</span> uint64 GetFrameCount();
+};</pre>
+<p>원칙은 이렇습니다. <b>화면과 시뮬레이션은 "게임 시간"으로, 측정은 "실제 시간"으로.</b> 게임 시간은 앱이 프레임마다 한 번 진행시키는 하나의 시계이고, <code>--fixed-delta</code>를 주면 한 프레임이 정확히 1/60초가 됩니다. 실제 시간은 PC가 바쁘면 늘어나므로, 같은 프레임 번호에서도 실행마다 다른 값이 됩니다.</p>
+
+<h3 id="lec-50-pitfalls"><span class="step">함정과 교훈</span>시계와 순서에서 생긴 버그</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 화면 비교가 실행마다 달랐다 (2026-10-04)</b>
+	Demo/Hub를 <code>--fixed-delta</code>로 두 개 동시에 실행해 스크린샷 MD5를 비교하면 서로 달랐습니다. 프레임 시간은 고정했는데 자동 노출·물·구름·머티리얼 <code>Time</code>이 각자 <code>steady_clock</code>을 읽고 있었기 때문입니다. 두 프로세스가 CPU를 나눠 쓰면 실제 경과 시간이 달라지고, 그만큼 물결이 다른 위치에 그려집니다. 이 시간들을 모두 <code>FFrameTime</code>으로 바꾼 뒤 6회 실행이 모두 일치했습니다(커밋 <code>dd5a624</code>). 자동 검증의 신뢰도는 "같은 입력 → 같은 화면"에 달려 있습니다.
+</div>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 내 캐릭터만 떨린다 (Phase 21)</b>
+	에디터 리슨 서버에서 자기 캐릭터가 떨렸습니다. 카메라 배치가 물리 전 위치를 쓰고 있었던 것입니다. 이 수정에서 <code>OnLateUpdate</code> 단계를 추가했고, 단위 테스트 <code>GameWorld_LateUpdateSeesPhysicsResult</code>로 "LateUpdate는 이번 물리 결과를 본다"를 고정했습니다. 같은 커밋에서 에디터 게임 월드에 네트워크 드라이버를 연결하지 않아(<code>SetNetDriver</code>) 원격 입력과 RPC가 버려지던 문제도 함께 고쳤습니다 — 순서를 한곳에 모았어도 "그 한곳에 무엇을 꽂았나"는 앱마다 확인해야 합니다.
+</div>
+<ul>
+	<li><b>맵마다 쌓이는 메모리</b>: Phase 31 당시 후속 과제로 "리소스 캐시 해제 없음(맵마다 에셋이 다르면 메모리 누적)"이 남았습니다. 이것이 Phase 37 리소스 수거로 이어졌고(30강), 지금 <code>Travel</code> 끝의 <code>RequestGarbageCollection("맵 전환")</code>이 그 연결점입니다.</li>
+	<li><b>백그라운드 작업의 경계</b>: "파싱 중에 내리면 대기"가 후속 과제로 남아 있습니다. 백그라운드 결과를 버리려 해도 작업 자체는 끝날 때까지 기다려야 하는 것이 <code>std::future</code>의 성질입니다. 스레드로 일을 넘길 때는 "취소"를 어떻게 할지도 함께 설계해야 합니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>갱신 순서는 "쓰는 쪽이 읽는 쪽보다 먼저"로 정하고, <code>FGameWorld</code> 한곳에 적어 모든 실행 파일이 공유한다.</li>
+		<li>게임플레이 틱(플레이 중)과 표시 틱(항상)을 나눠, 편집 중에도 애니메이션·파티클을 보여 준다. 시작은 물리 → 게임 모듈 → 스크립트 → 능력 → AI, 끝은 역순.</li>
+		<li>권한(서버/Standalone)만 규칙을 바꾸고, 클라이언트는 복제를 받는다. 데미지는 즉시 반영, 이벤트는 규칙 단계에서 정해진 순서로 배달.</li>
+		<li>세이브는 슬롯 이름 검증 + 임시 파일 바꿔치기, 맵 전환은 프레임 끝에 한 함수로, 서브 씬은 백그라운드에서 파싱만.</li>
+		<li>시간에 따라 바뀌는 화면은 <code>FFrameTime</code>으로 — 그래야 자동 검증이 재현된다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 게임플레이 규칙 단계를 물리 <b>뒤</b>로 옮기면 리스폰에서 무슨 일이 생길까요?</summary>
+	리스폰이 캐릭터를 PlayerStart로 옮겨도 이번 프레임 물리 스텝은 이미 끝났으므로, 물리 바디는 다음 프레임에야 순간이동을 반영합니다. 그 사이 한 프레임 동안 트랜스폼과 물리 상태가 어긋나 죽은 자리에서 한 번 더 충돌하거나 화면에 옛 위치가 보일 수 있습니다. 래그돌도 한 프레임 늦게 켜집니다. 그래서 규칙과 래그돌은 물리 앞에 둡니다.
+</details>
+<details class="quiz"><summary>Q2. 세이브를 임시 파일 없이 기존 파일에 바로 덮어쓰면 어떤 상황에서 문제가 될까요?</summary>
+	쓰는 도중 프로세스가 종료되거나 전원이 나가면 파일이 잘린 JSON으로 남습니다. 다음 실행에서 <code>Load</code>는 nullopt를 돌려주고, 사용자는 이전 세이브까지 잃습니다. 임시 파일에 다 쓴 뒤 이름을 바꾸면 어느 순간에 끊겨도 디스크에는 "이전 완전한 세이브" 또는 "새 완전한 세이브"만 있습니다.
+</details>
+<details class="quiz"><summary>Q3. 서브 씬 붙이기(엔티티 생성)까지 백그라운드 스레드에서 하면 왜 안 될까요?</summary>
+	메인 스레드는 같은 시간에 스크립트·물리·렌더러로 같은 ECS 레지스트리를 순회하고 있습니다. 다른 스레드가 컴포넌트 풀에 엔티티를 추가하면 풀이 재배치되어 순회 중인 포인터가 무효가 됩니다. GPU 업로드도 메인 스레드의 리소스 관리자를 거쳐야 합니다. 그래서 백그라운드는 ECS에 손대지 않는 "파일 → JSON 문서"까지만 하고, 문서를 엔티티로 바꾸는 일은 다음 틱 메인 스레드가 합니다.
+</details>
+</article>
+
+<!-- ======================================================= 51강 ======================================================= -->
+<article class="lecture" id="lec-51">
+<header>
+	<div class="no">51강</div>
+	<h2 id="lec-51-title">능력 시스템 (GAS식)</h2>
+	<div class="meta">관련 Phase: 53 사이드 · 살펴볼 곳: <code>Scene/Ability/AbilitySystem.cpp</code>(머리 주석), <code>Scene/Ability/AbilityTypes.h</code>/<code>.cpp</code>, <code>Scene/Ability/AbilityComponent.h</code>, <code>Scene/Ability/GameplayTags.h</code>, <code>Scripting/ScriptAbilityBindings.cpp</code>, <code>World/GameWorldAbilities.cpp</code>, 샘플 <code>Content/Data/Abilities/</code>, <code>Content/Abilities/*.lua</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>속성·효과·수정자·태그·능력이라는 다섯 개념으로 스킬과 버프를 분해할 수 있습니다.</li>
+		<li>기본값/현재값의 차이와 수정자 계산 순서(Override → 더하기 → 곱하기 → 자르기, 스택 규칙)를 손으로 계산할 수 있습니다.</li>
+		<li>즉시/지속/무한/주기 효과와 쌓기 규칙이 어떤 게임 현상(비용, 버프, 도트 데미지)에 대응하는지 압니다.</li>
+		<li>"쿨다운은 타이머가 아니라 태그"라는 발상과 발동 검사 순서를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-51-why"><span class="step">왜 필요한가</span>스킬마다 if 문이 늘어나는 문제</h3>
+<p>RPG에 화염구를 넣는다고 해 봅시다. 처음에는 간단합니다. "마나가 15 이상이면 마나를 15 깎고, 투사체를 쏘고, 맞으면 20 데미지." 그런데 기획이 붙기 시작합니다.</p>
+<ul>
+	<li>쿨다운 1초. 기절하면 시전 불가. 시전 중에는 다른 스킬 불가.</li>
+	<li>맞으면 화상: 1초마다 데미지, 최대 3번 겹침, 다시 맞으면 지속 시간 갱신.</li>
+	<li>방어막을 켜면 받는 피해 절반. 방어막 두 개면? 화상에도 적용되나?</li>
+	<li>레벨이 오르면 화상 데미지가 커진다.</li>
+</ul>
+<p>이것을 스킬마다 코드로 짜면 스킬 수 × 상태 수만큼 조건문이 생기고, "방어막이 화상에 적용되는가" 같은 상호작용을 매번 손으로 맞춰야 합니다. 언리얼의 <b>Gameplay Ability System(GAS)</b>은 이 문제를 "모든 스킬과 버프를 몇 개의 일반 개념의 조합으로 표현하고, 상호작용은 그 개념들의 계산 규칙이 자동으로 처리하게" 하는 방식으로 풀었습니다. ProjectE의 능력 시스템(Phase 53 사이드)은 이 구조를 따릅니다.</p>
+
+<h3 id="lec-51-concepts"><span class="step">핵심 개념</span>다섯 개의 부품</h3>
+<div class="tablewrap"><table class="t">
+	<tr><th>개념</th><th>뜻</th><th>예</th></tr>
+	<tr><td><b>속성</b> (Attribute)</td><td>엔티티가 가진 이름 붙은 수치</td><td>Health, Mana, Stamina, MoveSpeed, DamageTaken</td></tr>
+	<tr><td><b>효과</b> (Gameplay Effect)</td><td>속성을 바꾸고 태그를 붙이는 "사건". 얼마나 오래 가는지(즉시/지속/무한)를 가진다</td><td>마나 소모, 쿨다운, 대시 가속, 화상, 방어막</td></tr>
+	<tr><td><b>수정자</b> (Modifier)</td><td>효과 안에서 "어떤 속성을 어떤 연산으로 얼마나"</td><td>Mana Add −15, MoveSpeed Multiply 3</td></tr>
+	<tr><td><b>태그</b> (Gameplay Tag)</td><td>점으로 구분한 계층 이름. 상태를 나타내고 조건 판정에 쓴다</td><td>State.Stunned, Ability.Cooldown.Fireball</td></tr>
+	<tr><td><b>능력</b> (Ability)</td><td>발동할 수 있는 행동. 비용·쿨다운 효과와 실행 스크립트를 가진다</td><td>Dash, Fireball, Shield, HealZone</td></tr>
+</table></div>
+<p>핵심은 <b>능력은 효과를 걸고, 효과는 수정자로 속성을 바꾸고 태그를 붙이며, 태그는 다시 능력과 효과의 조건이 된다</b>는 순환입니다. 샘플 프로젝트의 화염구가 이 부품들로 어떻게 조립되는지 보겠습니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 360" role="img" aria-label="화염구 능력을 이루는 효과, 수정자, 속성, 태그">
+		<title>화염구 능력을 이루는 효과, 수정자, 속성, 태그</title>
+		<rect x="20" y="104" width="170" height="150" rx="10" class="acc"/>
+		<text x="105" y="128" text-anchor="middle" class="t-bold">능력 Fireball</text>
+		<g class="t-small">
+			<text x="34" y="152">비용: Cost_Fireball</text>
+			<text x="34" y="172">쿨다운: Cooldown_Fireball</text>
+			<text x="34" y="192">스크립트: Fireball.lua</text>
+			<text x="34" y="212">발동 중 태그:</text>
+			<text x="34" y="230" class="t-mono">State.Casting</text>
+		</g>
+		<text x="20" y="96" class="t-muted">발동(커밋)할 때 자기에게</text>
+		<text x="20" y="282" class="t-muted">스크립트가 명중한 대상에게</text>
+
+		<g class="t-small">
+			<rect x="250" y="20" width="230" height="60" rx="8" class="k1"/><text x="262" y="42" class="t-bold">Cost_Fireball · 즉시</text><text x="262" y="64" class="t-mono">Mana Add -15</text>
+			<rect x="250" y="100" width="230" height="60" rx="8" class="k1"/><text x="262" y="122" class="t-bold">Cooldown_Fireball · 지속 1초</text><text x="262" y="144">수정자 없음, 태그만 준다</text>
+			<rect x="250" y="190" width="230" height="60" rx="8" class="k5"/><text x="262" y="212" class="t-bold">FireballHit · 즉시</text><text x="262" y="234" class="t-mono">IncomingDamage Add SetByCaller:Damage</text>
+			<rect x="250" y="270" width="230" height="74" rx="8" class="k5"/><text x="262" y="292" class="t-bold">Burn · 지속 4초, 주기 1초</text><text x="262" y="312">ByTarget 쌓기, 최대 3스택</text><text x="262" y="332" class="t-mono">IncomingDamage Add Curve</text>
+		</g>
+		<path d="M190,140 C 220,140 220,50 246,50" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,150 C 220,150 220,130 246,130" class="ln" marker-end="url(#arr)"/>
+		<path d="M190,236 C 220,236 220,220 246,220" class="ln-d" marker-end="url(#arr)"/>
+		<path d="M190,246 C 220,246 220,300 246,300" class="ln-d" marker-end="url(#arr)"/>
+
+		<g class="t-small">
+			<rect x="540" y="20" width="300" height="60" rx="8" class="k2"/><text x="552" y="42" class="t-bold">속성 Mana</text><text x="552" y="64">기본값 −15 (영구) · 0 미만이면 발동 실패</text>
+			<rect x="540" y="100" width="300" height="60" rx="8" class="k3"/><text x="552" y="122" class="t-bold">태그 Ability.Cooldown.Fireball</text><text x="552" y="144">이 태그가 있는 동안 = 쿨다운 중</text>
+			<rect x="540" y="190" width="300" height="60" rx="8" class="k2"/><text x="552" y="212" class="t-bold">메타 속성 IncomingDamage</text><text x="552" y="234">× DamageTaken → FHealthComponent 체력</text>
+			<rect x="540" y="270" width="300" height="74" rx="8" class="k3"/><text x="552" y="292" class="t-bold">태그 State.Burning</text><text x="552" y="312">+ 1초마다 IncomingDamage</text><text x="552" y="332">(레벨 1 → 3, 레벨 5 → 8, 구간 선형)</text>
+		</g>
+		<path d="M480,50 H536" class="ln" marker-end="url(#arr)"/>
+		<path d="M480,130 H536" class="ln" marker-end="url(#arr)"/>
+		<path d="M480,220 H536" class="ln" marker-end="url(#arr)"/>
+		<path d="M480,306 H536" class="ln" marker-end="url(#arr)"/>
+	</svg>
+	</div>
+	<figcaption><b>그림 51-1.</b> 샘플 <code>Data/Abilities/DemoAbilities.etable</code>·<code>DemoEffects.etable</code>·<code>DemoModifiers.etable</code>의 화염구. 능력은 "효과를 거는 것"까지만 알고, 숫자와 지속 시간은 모두 효과·수정자 표에 있습니다.</figcaption>
+</figure>
+
+<h3 id="lec-51-attr"><span class="step">핵심 개념</span>속성: 기본값과 현재값</h3>
+<p>속성에는 값이 <b>두 개</b> 있습니다. 왜 하나로 부족할까요? 이동 속도 450인 캐릭터가 대시(0.25초 동안 ×3)를 쓴다고 합시다. 값을 하나만 두고 450 × 3 = 1350으로 덮어쓰면, 0.25초 뒤 되돌릴 때 "원래 값이 뭐였지?"를 따로 기억해야 합니다. 그 사이 다른 버프가 값을 또 바꿨다면 되돌리기가 꼬입니다.</p>
+<ul>
+	<li><b>기본값(Base)</b>: 영구적인 값. 즉시 효과(마나 소모, 회복)와 주기 효과(1초마다 화상)가 바꿉니다.</li>
+	<li><b>현재값(Current)</b>: 기본값에 지금 활성 중인 지속 효과의 수정자를 얹어 <b>매번 다시 계산</b>한 값. 버프가 끝나면 그 수정자가 목록에서 빠지고, 다시 계산하면 자연히 원래 값이 나옵니다.</li>
+</ul>
+<p>즉 지속 효과는 값을 "바꾸는" 것이 아니라 "계산식에 항을 하나 추가하는" 것입니다. 되돌리기가 항 제거 하나로 끝납니다. 최대값도 다른 속성에 묶을 수 있습니다 — Health의 <code>MaxAttribute = MaxHealth</code>면 Health는 MaxHealth의 현재값을 넘지 못합니다.</p>
+
+<h3 id="lec-51-agg"><span class="step">핵심 개념</span>수정자 계산 순서와 스택</h3>
+<p>여러 효과가 같은 속성을 건드릴 때 결과가 효과를 건 순서에 따라 달라지면 곤란합니다. "×2 다음 +10"과 "+10 다음 ×2"는 다르니까요. 그래서 계산 순서를 고정합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Ability/AbilityTypes.h — 머리 주석 (발췌)"><span class="com">// 수정자 계산 순서 (AbilityMath::Aggregate):</span>
+<span class="com">//   1) Override가 하나라도 있으면 가장 나중에 적용된 효과(큰 핸들)의 값으로 끝 (Add/Multiply 무시)</span>
+<span class="com">//   2) 아니면 (Base + ΣAdd) × ΠMultiply  — 곱하기끼리는 곱한다 (방어막 ×0.5 두 개 = ×0.25)</span>
+<span class="com">//   3) 최소/최대로 자른다 (최대 = min(Max, MaxAttribute의 현재값))</span>
+<span class="com">//   쌓인 효과(스택 n): Add × n, Multiply^n, Override는 그대로</span></pre>
+<pre class="code" data-file="Engine/Source/Scene/Ability/AbilityTypes.cpp — AbilityMath::Aggregate"><span class="kw">float</span> AbilityMath::Aggregate(<span class="kw">float</span> Base, <span class="kw">const</span> std::vector&lt;FAppliedModifier&gt;&amp; Modifiers)
+{
+	<span class="kw">const</span> FAppliedModifier* Override = <span class="kw">nullptr</span>;
+	<span class="kw">float</span>                   Add      = <span class="num">0.0f</span>;
+	<span class="kw">float</span>                   Multiply = <span class="num">1.0f</span>;
+	<span class="kw">for</span> (<span class="kw">const</span> FAppliedModifier&amp; Modifier : Modifiers)
+	{
+		<span class="kw">const</span> int32 Stacks = std::max(<span class="num">1</span>, Modifier.Stacks);
+		<span class="kw">switch</span> (Modifier.Op)
+		{
+		<span class="kw">case</span> EModifierOp::Add:      Add += Modifier.Value * <span class="kw">static_cast</span>&lt;<span class="kw">float</span>&gt;(Stacks); <span class="kw">break</span>;
+		<span class="kw">case</span> EModifierOp::Multiply: Multiply *= std::pow(Modifier.Value, <span class="kw">static_cast</span>&lt;<span class="kw">float</span>&gt;(Stacks)); <span class="kw">break</span>;
+		<span class="kw">case</span> EModifierOp::Override:
+			<span class="kw">if</span> (Override == <span class="kw">nullptr</span> || Modifier.Order &gt;= Override-&gt;Order) { Override = &amp;Modifier; }
+			<span class="kw">break</span>;
+		}
+	}
+	<span class="kw">return</span> Override != <span class="kw">nullptr</span> ? Override-&gt;Value : (Base + Add) * Multiply;
+}</pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="수정자 계산 순서와 계산 예">
+		<title>수정자 계산 순서와 계산 예</title>
+		<g class="t-small">
+			<rect x="20" y="60" width="110" height="44" rx="8" class="box"/><text x="75" y="87" text-anchor="middle" class="t-bold">Base</text>
+			<rect x="170" y="60" width="130" height="44" rx="8" class="k2"/><text x="235" y="87" text-anchor="middle" class="t-bold">+ ΣAdd × 스택</text>
+			<rect x="340" y="60" width="150" height="44" rx="8" class="k1"/><text x="415" y="87" text-anchor="middle" class="t-bold">× ΠMultiply^스택</text>
+			<rect x="530" y="60" width="150" height="44" rx="8" class="k4"/><text x="605" y="87" text-anchor="middle" class="t-bold">자르기 [Min, Max]</text>
+			<rect x="720" y="60" width="120" height="44" rx="8" class="acc"/><text x="780" y="87" text-anchor="middle" class="t-bold">Current</text>
+			<rect x="300" y="6" width="210" height="32" rx="8" class="k5"/><text x="405" y="27" text-anchor="middle">Override 있음 → 마지막 값으로</text>
+		</g>
+		<path d="M130,82 H166" class="ln" marker-end="url(#arr)"/>
+		<path d="M300,82 H336" class="ln" marker-end="url(#arr)"/>
+		<path d="M490,82 H526" class="ln" marker-end="url(#arr)"/>
+		<path d="M680,82 H716" class="ln" marker-end="url(#arr)"/>
+		<path d="M75,60 V22 H296" class="ln-d" marker-end="url(#arr)"/>
+		<path d="M510,22 H605 V56" class="ln-d" marker-end="url(#arr)"/>
+
+		<text x="20" y="150" class="t-bold">예 1: MoveSpeed (대시 중)</text>
+		<g class="t-mono">
+			<text x="20" y="174">Base 450</text>
+			<text x="170" y="174">+ 0</text>
+			<text x="340" y="174">× 3 (Dashing)</text>
+			<text x="530" y="174">[0, 5000]</text>
+			<text x="720" y="174" class="fa t-bold">= 1350</text>
+		</g>
+		<text x="20" y="212" class="t-bold">예 2: DamageTaken (방어막 효과 두 개, 쌓기 None = 별도 인스턴스)</text>
+		<g class="t-mono">
+			<text x="20" y="236">Base 1</text>
+			<text x="170" y="236">+ 0</text>
+			<text x="340" y="236">× 0.5 × 0.5</text>
+			<text x="530" y="236">[0, 10]</text>
+			<text x="720" y="236" class="fa t-bold">= 0.25</text>
+		</g>
+		<text x="20" y="274" class="t-muted">한 효과가 3스택이면: Add 5 → 15, Multiply 0.9 → 0.9³ ≈ 0.729. Override는 스택과 무관하게 그 값 하나.</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 51-2.</b> 속성 값과 Min/Max는 샘플 <code>DemoAttributes.etable</code>의 것입니다. 곱하기를 더하기 뒤에 두면 "기본 +10, 그리고 전체 ×2" 같은 기획 의도가 효과 적용 순서와 무관하게 같은 결과를 냅니다.</figcaption>
+</figure>
+
+<h4>크기(Magnitude): 숫자는 어디서 오나</h4>
+<p>수정자의 값은 상수만 있는 것이 아닙니다. 효과를 <b>적용하는 순간 한 번 계산해 저장(캡처)</b>합니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>종류</th><th>계산</th><th>샘플에서</th></tr>
+	<tr><td>Constant</td><td>고정 값</td><td>DashCost: Stamina Add −30</td></tr>
+	<tr><td>Curve</td><td>레벨 → 값, 점 사이 구간 선형 (범위 밖은 끝 값)</td><td>BurnTick: 곡선 [[1,3],[5,8]] — 레벨 1이면 3, 레벨 5면 8</td></tr>
+	<tr><td>AttributeBased</td><td>계수 × (원천 또는 대상의 속성 현재값) + PostAdd</td><td>HealTick: 0.08 × 대상 MaxHealth + 2</td></tr>
+	<tr><td>SetByCaller</td><td>적용할 때 이름으로 넘긴 값 (없으면 0 + 경고)</td><td>FireballHit: 스크립트가 <code>{ SetByCaller = { Damage = 20 } }</code></td></tr>
+</table></div>
+<p>캡처하는 이유는 "효과가 걸린 순간의 세기"를 유지하기 위해서입니다. 시전자 공격력에 비례하는 화상이라면, 화상이 도는 도중 시전자가 버프를 받아도 이미 걸린 화상은 그대로여야 자연스럽습니다.</p>
+
+<h3 id="lec-51-effects"><span class="step">핵심 개념</span>효과의 수명: 즉시, 지속, 무한, 주기</h3>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 240" role="img" aria-label="효과 지속 정책별 속성 값 변화">
+		<title>효과 지속 정책별 속성 값 변화</title>
+		<g>
+			<text x="30" y="24" class="t-bold">즉시 (Instant)</text>
+			<path d="M40,190 H270" class="ln"/><path d="M40,190 V44" class="ln"/>
+			<path d="M40,80 H130 V130 H260" class="ln s1" stroke-width="2.4"/>
+			<text x="140" y="74" class="t-small">적용 순간 기본값 −15</text>
+			<text x="40" y="212" class="t-muted">Mana 100 → 85, 그대로 남는다</text>
+			<text x="40" y="228" class="t-muted">(비용, 회복, 데미지)</text>
+
+			<text x="320" y="24" class="t-bold">지속 (HasDuration)</text>
+			<path d="M330,190 H560" class="ln"/><path d="M330,190 V44" class="ln"/>
+			<path d="M330,140 H550" class="ln-d"/>
+			<path d="M330,140 H410 V70 H490 V140 H550" class="ln s3" stroke-width="2.4"/>
+			<text x="414" y="62" class="t-small">현재값 ×3</text>
+			<text x="496" y="126" class="t-small">끝나면 복귀</text>
+			<text x="335" y="158" class="t-muted">기본값(점선)은 그대로</text>
+			<text x="330" y="212" class="t-muted">MoveSpeed ×3, 0.25초 (Dashing)</text>
+			<text x="330" y="228" class="t-muted">무한(Infinite) = 지울 때까지</text>
+
+			<text x="610" y="24" class="t-bold">주기 (Period &gt; 0)</text>
+			<path d="M620,190 H850" class="ln"/><path d="M620,190 V44" class="ln"/>
+			<path d="M620,70 H680 V92 H720 V114 H760 V136 H800 V158 H840" class="ln s5" stroke-width="2.4"/>
+			<text x="684" y="64" class="t-small">1초마다 기본값에</text>
+			<text x="620" y="212" class="t-muted">Burn: 4초 동안 1초마다 데미지</text>
+			<text x="620" y="228" class="t-muted">스택 n이면 한 번에 n배</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 51-3.</b> 즉시 효과와 주기 실행은 <b>기본값</b>을 영구히 바꾸고, 지속·무한 효과의 수정자는 <b>현재값</b>에만 얹힙니다. 지속 효과가 활성 효과 목록에서 빠지면 현재값은 다시 계산되어 저절로 돌아옵니다.</figcaption>
+</figure>
+<p>같은 효과가 또 걸리면 어떻게 할지는 <b>쌓기(Stacking)</b> 정책이 정합니다.</p>
+<ul>
+	<li><code>None</code>: 걸 때마다 별도 인스턴스. 방어막 두 개 = 두 인스턴스 = ×0.5 두 번.</li>
+	<li><code>ByTarget</code>: 대상에 하나만, 다시 걸리면 스택 +1(상한 <code>StackLimit</code>). 화상은 대상에 최대 3스택이고 <code>RefreshDurationOnStack</code>으로 다시 맞으면 4초가 새로 시작합니다.</li>
+	<li><code>BySource</code>: 원천(시전자)마다 하나. 두 마법사가 각자 화상을 걸면 따로 셉니다.</li>
+	<li>만료 정책: <code>ClearAll</code>은 시간이 다 되면 통째로 제거, <code>RemoveOneAndRefresh</code>는 스택을 하나 빼고 시간을 다시 채웁니다.</li>
+</ul>
+<p>효과는 태그로 서로를 조건 짓습니다. <code>ApplicationRequiredTags</code>(대상이 모두 가져야 적용), <code>ApplicationBlockedTags</code>(하나라도 가지면 안 됨), <code>RemoveEffectsWithTags</code>(적용할 때 맞는 효과를 지움 — 해독제), <code>GrantedImmunityTags</code>(활성 동안 맞는 효과를 막음 — 화염 면역).</p>
+
+<h3 id="lec-51-tags"><span class="step">핵심 개념</span>태그: 계층 이름과 개수 세기</h3>
+<p>태그는 <code>State.Stunned.Hard</code>처럼 점으로 구분한 계층 이름입니다. 일치 규칙은 "부모 질의는 자식을 포함한다"입니다. <code>State.Stunned.Hard</code>를 가진 캐릭터는 <code>State.Stunned</code> 질의에도, <code>State</code> 질의에도 맞습니다. 반대는 아닙니다. 그래서 "어떤 기절이든 막는다"는 <code>State.Stunned</code> 하나로 쓸 수 있습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Ability/GameplayTags.h (발췌)"><span class="com">// 태그 수 컨테이너: 같은 태그를 여러 원천(효과, 발동 중 능력, 느슨한 태그)이 더하고 뺀다.</span>
+<span class="com">// 명시 수(Explicit) = 그 태그 자체로 더한 수, 암시 수 = 자신 + 모든 자식 태그의 명시 수 합 (부모 질의를 O(1)로).</span>
+<span class="kw">class</span> FGameplayTagCountContainer
+{
+<span class="kw">public</span>:
+	<span class="kw">bool</span>  AddTag(std::string_view Tag, int32 Delta = <span class="num">1</span>);
+	<span class="kw">bool</span>  HasTag(std::string_view Query) <span class="kw">const</span> { <span class="kw">return</span> GetCount(Query) &gt; <span class="num">0</span>; } <span class="com">// 부모 질의 포함</span>
+	<span class="kw">bool</span>  HasAny(<span class="kw">const</span> std::vector&lt;std::string&gt;&amp; Queries) <span class="kw">const</span>; <span class="com">// 빈 목록 = false</span>
+	<span class="kw">bool</span>  HasAll(<span class="kw">const</span> std::vector&lt;std::string&gt;&amp; Queries) <span class="kw">const</span>; <span class="com">// 빈 목록 = true</span>
+	...
+};</pre>
+<p>태그를 bool이 아니라 <b>개수</b>로 세는 이유가 중요합니다. 기절 효과 두 개가 겹쳐 있다가 하나가 끝났을 때, bool이면 "기절 끝"이 되어 버립니다. 개수로 세면 1이 남아 여전히 기절입니다. 언리얼 GAS와 같은 설계입니다.</p>
+<p>태그는 문자열이라 오타에 약합니다. 그래서 프로젝트 설정 "GameplayTags"(<code>Config/GameplayTags.json</code>)에 쓸 태그를 등록해 두면, 정의 데이터를 읽을 때 등록되지 않은 태그마다 경고를 한 번 냅니다. 목록이 비어 있으면 검사를 끕니다.</p>
+
+<h3 id="lec-51-ability"><span class="step">핵심 개념</span>능력: 발동 검사, 커밋, 실행</h3>
+<p>능력을 발동하려 하면 정해진 순서로 검사하고, 처음 실패한 이유를 돌려줍니다. 이 순서가 실제 코드입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Ability/AbilitySystem.cpp — CanActivateInternal (발췌)"><span class="kw">if</span> (<span class="com">/* 부여되지 않음 */</span>)                                  { OutReason = <span class="str">"NotGranted"</span>;  <span class="kw">return false</span>; }
+<span class="kw">if</span> (<span class="com">/* 같은 능력이 이미 발동 중 */</span>)                        { OutReason = <span class="str">"Active"</span>;      <span class="kw">return false</span>; }
+<span class="kw">if</span> (Health != <span class="kw">nullptr</span> &amp;&amp; Gameplay::IsDead(*Health))       { OutReason = <span class="str">"Dead"</span>;        <span class="kw">return false</span>; }
+<span class="kw">if</span> (!Runtime.Tags.HasAll(Def.ActivationRequiredTags))      { OutReason = <span class="str">"MissingTags"</span>; <span class="kw">return false</span>; }
+<span class="kw">if</span> (Runtime.Tags.HasAny(Def.ActivationBlockedTags) ||
+    MatchesAnyExplicit(Def.AbilityTags, Runtime.BlockedAbilityTags)) { OutReason = <span class="str">"Blocked"</span>; <span class="kw">return false</span>; }
+<span class="com">// 쿨다운: 쿨다운 효과의 GrantedTags를 가지고 있으면 실패</span>
+<span class="kw">const bool</span> bOnCooldown = !Cooldown-&gt;GrantedTags.empty() ? Runtime.Tags.HasAny(Cooldown-&gt;GrantedTags) : ...;
+<span class="kw">if</span> (bOnCooldown)                                           { OutReason = <span class="str">"Cooldown"</span>;    <span class="kw">return false</span>; }
+<span class="com">// 비용: 비용 효과를 적용하면 어떤 속성 기본값이 0 미만이 되면 실패</span>
+<span class="kw">if</span> (!CheckCost(Entity, Component, Def))                    { OutReason = <span class="str">"Cost"</span>;        <span class="kw">return false</span>; }</pre>
+<div class="callout tip">
+	<b class="t">설계 이유: 쿨다운은 타이머가 아니라 "태그를 주는 지속 효과"</b>
+	쿨다운을 능력마다 타이머 변수로 두면 "쿨다운 감소 버프", "쿨다운 초기화 아이템", "HUD에 남은 시간 표시"를 각각 따로 구현해야 합니다. 쿨다운을 <code>Ability.Cooldown.Fireball</code> 태그를 주는 1초짜리 지속 효과로 만들면, 남은 시간은 그 효과의 남은 시간이고, 초기화는 <code>RemoveEffectsWithTags</code>이며, 복제·예측도 다른 효과와 똑같이 처리됩니다. 비용도 마찬가지로 "즉시 효과를 미리 계산해 봤을 때 음수가 되는가"로 검사합니다. 새 개념을 만들지 않고 기존 부품으로 표현한 것입니다.
+</div>
+<p>검사를 통과하면 발동합니다: 인스턴스 생성 → <code>ActivationOwnedTags</code> 부여(화염구는 <code>State.Casting</code>) → <code>CancelAbilitiesWithTags</code>로 다른 능력 취소 → <b>커밋</b>(비용 → 쿨다운 → <code>ActivationEffects</code>) → 스크립트 <code>OnActivate</code> 실행. 방어막처럼 스크립트 없이 <code>ActivationEffects</code>만으로 끝나는 능력도 있습니다. 스크립트가 먼저 조건을 더 보고 싶다면 <code>ManualCommit</code>을 켜고 스크립트가 <code>ctx:CommitAbility()</code>를 부릅니다.</p>
+
+<h3 id="lec-51-projecte"><span class="step">ProjectE에서는</span>데이터 테이블로 정의하고, FGameWorld가 돌린다</h3>
+<p>정의는 52강의 데이터 테이블 네 개입니다 — 속성 표, 효과 표, 수정자 표, 능력 표. 엔티티에는 표 경로를 가리키는 컴포넌트만 붙입니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Ability/AbilityComponent.h (발췌)"><span class="kw">struct</span> FAbilitySystemComponent
+{
+	std::string AttributeTable;   <span class="com">// .etable (속성)</span>
+	std::string EffectTable;      <span class="com">// .etable (효과)</span>
+	std::string AbilityTable;     <span class="com">// .etable (능력)</span>
+	std::string GrantedAbilities; <span class="com">// ";" 구분 능력 이름 (비면 능력 표 전부)</span>
+	std::string StartupEffects;   <span class="com">// ";" 구분 — 시작할 때 자기에게 적용 (재생 등)</span>
+	<span class="kw">float</span>       Level        = <span class="num">1.0f</span>;  <span class="com">// 곡선 크기의 레벨</span>
+	<span class="kw">bool</span>        bAcceptInput = <span class="kw">false</span>; <span class="com">// 조종하는 쪽 입력 액션으로 능력 발동</span>
+	<span class="com">// ---- 복제 상태 (서버 → 클라이언트, PF_Transient)</span>
+	std::string RepAttributes, RepTags, RepEffects, RepAbilities;
+	int32       RepPredictionKey = <span class="num">0</span>;
+	FAbilitySystemRuntime Runtime; <span class="com">// 비직렬화: 속성 값, 활성 효과, 태그 수, 발동 중 인스턴스</span>
+};</pre>
+<p>효과의 수정자 목록은 "효과 한 행 안에 수정자 여러 개"라는 중첩 구조인데, 데이터 테이블은 중첩 구조체를 지원하지 않습니다(52강). 그래서 효과 행의 <code>Modifiers</code> 필드를 <b>수정자 표 행을 가리키는 RowRef 배열</b>로 둡니다. <code>AbilityTypes.cpp</code> 머리 주석은 이 선택의 이유를 이렇게 적었습니다: "RowRef 배열로 효과 → 수정자 목록을 표현할 수 있고, 편집기·CSV·핫 리로드·참조 검증을 그대로 쓴다. 전용 .eeffect 형식은 만들지 않았다." 새 파일 형식을 만들면 편집기, 검증, 핫 리로드를 처음부터 다시 만들어야 합니다.</p>
+
+<h4>갱신 위치와 이동 속도</h4>
+<p>실행 상태는 <code>FGameWorld</code>가 소유하는 <code>FAbilitySystem</code>에 있고, 게임플레이 틱에서 <b>스크립트 갱신 뒤·캐릭터 이동 전</b>에 돕니다(그림 50-1).</p>
+<pre class="code" data-file="Engine/Source/World/GameWorldAbilities.cpp — 머리 주석 (발췌)"><span class="com">//   1) 입력 발동: AcceptInput 컴포넌트 중 이 프로세스가 조종하는 엔티티에서 능력 표 InputAction이 눌렸으면 TryActivateAbility</span>
+<span class="com">//   2) FAbilitySystem::Tick (효과 시간·주기 → 능력 스크립트/C++ 능력 재개 → 복제 문자열 → 이벤트 감지)</span>
+<span class="com">//   3) MoveSpeed 속성 → FCharacterMovementComponent::MaxWalkSpeed (있을 때, 모든 역할)</span>
+<span class="com">//   4) 이벤트: OnAttributeChanged / OnTagChanged / OnAbilityActivated / OnAbilityEnded / OnAbilityFailed</span>
+<span class="com">//   데미지(IncomingDamage)는 Gameplay::ApplyDamage로 쌓이므로 같은 틱 게임플레이 규칙 단계에서 OnDamaged/OnDeath가 불린다.</span></pre>
+<p>3번이 캐릭터 이동 전이어야 하는 이유가 보입니다. 대시 효과가 MoveSpeed를 ×3 하면, 그 값이 <b>이번 프레임 무브</b>의 최대 속도로 들어가야 대시가 즉시 시작됩니다.</p>
+
+<h4>예약 속성: 체력은 하나만 진실</h4>
+<p>체력은 이미 50강의 <code>FHealthComponent</code>가 가지고 있습니다. 능력 시스템에도 Health 속성이 있으면 진실이 둘이 됩니다. ProjectE는 <b>체력 컴포넌트를 진실</b>로 정하고, 몇몇 속성 이름을 예약해 다리를 놓았습니다.</p>
+<ul>
+	<li><code>Health</code>/<code>MaxHealth</code>: 매 틱 Health 기본값 ← 컴포넌트, MaxHealth 현재값 → 컴포넌트. Health를 바꾸는 즉시 효과는 <code>Gameplay::ApplyDamage/Heal</code>을 거칩니다.</li>
+	<li><code>IncomingDamage</code>(메타): 즉시 Add 값 × <code>DamageTaken</code> 현재값만큼 데미지를 줍니다. 기본값은 항상 0으로 돌아갑니다 — "값"이 아니라 "전달 통로"이기 때문에 메타 속성이라 부릅니다.</li>
+	<li><code>IncomingHeal</code>(메타): 회복 통로. <code>DamageTaken</code>: 받는 피해 배율(기본 1, 방어막 = Multiply 0.5).</li>
+</ul>
+<p>덕분에 화염구 데미지도 무적·사망·리스폰·점수 규칙(50강)을 그대로 탑니다. CLAUDE.md 규칙은 짧습니다: "데미지는 IncomingDamage 효과나 <code>Gameplay::ApplyDamage</code>, Health 직접 변경 금지."</p>
+
+<h4>Lua 능력 스크립트</h4>
+<p>능력 표의 <code>Script</code> 칸에 Lua 파일을 적으면, 발동할 때마다 새 인스턴스의 <code>OnActivate(ctx)</code>가 <b>코루틴</b>(47강)으로 실행됩니다. 함수가 반환하면 능력이 끝나고, <code>ctx:Wait</code>로 시간을 기다릴 수 있습니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Abilities/Fireball.lua (발췌)"><span class="kw">function</span> Fireball:OnActivate(ctx)
+	<span class="kw">if not</span> ctx:HasAuthority() <span class="kw">then</span>
+		<span class="kw">return</span> <span class="com">-- 예측 실행은 여기까지 (투사체는 서버가 만들고 복제한다)</span>
+	<span class="kw">end</span>
+	...
+	<span class="kw">while</span> Travelled &lt; P.Range <span class="kw">do</span>
+		ctx:Wait(<span class="num">0</span>)                                    <span class="com">-- 다음 프레임까지</span>
+		...
+		<span class="kw">local</span> Hits = Abilities.FindInRadius(Position, P.HitRadius, Owner)
+		<span class="kw">if</span> #Hits &gt; <span class="num">0</span> <span class="kw">then</span>
+			<span class="kw">local</span> Target = Hits[<span class="num">1</span>]
+			ctx:ApplyEffectToTarget(Target, <span class="str">"FireballHit"</span>, { SetByCaller = { Damage = P.Damage } })
+			ctx:ApplyEffectToTarget(Target, <span class="str">"Burn"</span>)
+			<span class="kw">return</span>
+		<span class="kw">end</span>
+	<span class="kw">end</span>
+<span class="kw">end</span></pre>
+<p>스크립트 어디에도 마나, 쿨다운, 화상 데미지 숫자가 없다는 점을 보세요. 스크립트는 "언제 누구에게 어떤 효과를"만 결정하고, 숫자는 표에 있습니다. <code>ctx</code>에는 <code>Wait/WaitFrames/WaitUntil/WaitAnimNotify</code>, <code>ApplyEffectToSelf/ToTarget</code>, <code>CommitAbility</code>, <code>EndAbility</code>, <code>HasAuthority</code>, <code>IsLocallyControlled</code> 등이 있습니다(<code>ScriptAbilityBindings.cpp</code> 머리 주석). 엔티티 쪽에는 <code>entity:TryActivateAbility(이름)</code>, <code>GetAttribute</code>, <code>HasTag</code>, 서버 전용 <code>ApplyEffect</code> 등이 붙습니다.</p>
+<div class="callout note">
+	<b class="t"><code>if not ctx:HasAuthority()</code>는 왜 있나 — 예측은 59강에서</b>
+	멀티플레이에서 버튼을 누른 클라이언트가 서버 응답을 기다리면 스킬이 지연되어 보입니다. 그래서 소유 클라이언트는 같은 스크립트를 로컬로 먼저 돌려 비용·쿨다운·발동 태그를 <b>예측</b>합니다. 하지만 다른 대상에게 주는 데미지나 투사체 생성은 서버만 해야 하므로 <code>HasAuthority()</code> 안에 둡니다. 예측 키, 확정과 거절 시 되돌리기는 59강에서 자세히 다룹니다.
+</div>
+
+<h3 id="lec-51-pitfalls"><span class="step">함정과 교훈</span>수명, 버전, 디버깅</h3>
+<div class="callout warn">
+	<b class="t">규칙: sol 객체 멤버는 소멸자에서 직접 비운다</b>
+	Lua 런타임(<code>FLuaRuntime</code>)은 스크립트 클래스 테이블, 모듈, 교체한 <code>coroutine.create</code> 같은 Lua 값(sol 객체)을 C++ 멤버로 붙잡습니다. C++ 멤버는 선언 역순으로 소멸하므로, 이런 멤버가 <code>sol::state Lua</code>보다 늦게 소멸하면 이미 닫힌 Lua 상태에 참조 해제를 요청하며 크래시합니다. 그래서 <code>~FLuaRuntime</code>은 "sol 참조(테이블/함수)는 상태보다 먼저 해제되어야 한다"는 주석과 함께 멤버를 하나씩 비우고, CLAUDE.md의 능력 시스템 항목에도 "<code>FLuaRuntime</code>에 sol 객체 멤버를 새로 두면 <code>~FLuaRuntime</code>에서 직접 비운다"가 적혀 있습니다. 50강의 "EndPlay는 Lua 상태보다 능력을 먼저 끝낸다"와 같은 종류의 문제 — <b>수명이 다른 두 세계가 서로를 참조할 때는 끝내는 순서를 명시해야 한다</b> — 입니다.
+</div>
+<ul>
+	<li><b>검증 범위</b>: 사전 결정(Plans.md 2026-10-03)은 "능력 시스템 검증은 별도 데모 씬만(RPG 데모 이전 안 함)"이었습니다. 그래서 <code>Scenes/Tests/Abilities.escene</code>에 대시·화염구·방어막·치유 지대 + HUD를 두고, 테스트 11개와 불량 망(<code>--net-lag 100 --net-loss 5</code>) 멀티플레이 검증을 거쳐 머지했습니다. 큰 시스템을 기존 게임에 바로 끼우기 전에 격리된 무대에서 먼저 굳히는 방식입니다.</li>
+	<li><b>버전 번호</b>: 능력 메시지가 네트워크 프로토콜에, 이벤트가 게임 모듈 인터페이스에 들어갔으므로 <code>NetProtocolVersion</code> 12, <code>GameModuleApiVersion</code> 10으로 올렸습니다. 형식이 바뀌면 버전을 올려 옛 클라이언트·옛 DLL이 조용히 오동작하지 않고 명시적으로 거절되게 합니다.</li>
+	<li><b>디버깅 수단</b>: 숫자가 데이터 여러 곳에 흩어지면 "지금 왜 이 값인가"를 보기 어렵습니다. 콘솔 <code>ability.Dump [이름]</code>이 속성·태그·활성 효과·능력을 한 번에 출력하고, <code>ability.Debug 1</code>이 발동/실패/효과 로그를 켭니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>능력 → 효과 → 수정자 → 속성, 그리고 효과 → 태그 → (능력·효과의 조건). 스킬의 상호작용은 이 부품들의 계산 규칙이 처리한다.</li>
+		<li>기본값은 즉시·주기 효과가 영구히, 현재값은 지속 효과 수정자를 얹어 매번 다시 계산. 순서: Override → (Base + ΣAdd) × ΠMultiply → 자르기, 스택은 Add×n·Multiply^n.</li>
+		<li>쿨다운 = 태그를 주는 지속 효과, 비용 = 미리 계산해 본 즉시 효과. 발동 검사 순서는 부여 → 발동 중 → 사망 → 필요/차단 태그 → 쿨다운 → 비용.</li>
+		<li>정의는 데이터 테이블 4종, 체력의 진실은 <code>FHealthComponent</code>(IncomingDamage/IncomingHeal은 통로). 스크립트는 "언제 누구에게"만.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. MoveSpeed 기본값 400에 "+50" 버프와 "×1.5" 버프가 동시에 걸려 있습니다. 현재값은? 버프 거는 순서를 바꾸면 달라지나요?</summary>
+	(400 + 50) × 1.5 = 675입니다. 계산 순서가 "더하기 다 모으고 → 곱하기 다 모으고"로 고정되어 있으므로 버프를 건 순서와 무관하게 항상 675입니다. 순서를 적용 순서대로 두었다면 400×1.5+50 = 650이 될 수도 있어 같은 상태인데 값이 달라졌을 것입니다.
+</details>
+<details class="quiz"><summary>Q2. "기절" 효과 두 개(서로 다른 적이 건 것)가 겹쳐 있다가 하나가 끝났습니다. 태그를 bool로 관리하면 무엇이 잘못되나요?</summary>
+	첫 효과가 <code>State.Stunned</code>를 켜고 두 번째도 켠 뒤(이미 켜짐), 하나가 끝나며 끄면 아직 남은 기절 효과가 있는데도 기절이 풀립니다. 개수로 세면 2 → 1이 되어 여전히 기절이고, 마지막 효과가 끝나 0이 될 때 풀립니다. <code>FGameplayTagCountContainer</code>가 명시 수를 세는 이유입니다.
+</details>
+<details class="quiz"><summary>Q3. 화염구 데미지를 Health에 Add −20 하는 즉시 효과로 만들지 않고 IncomingDamage 메타 속성을 거치게 한 이유는?</summary>
+	IncomingDamage는 <code>DamageTaken</code> 배율(방어막)을 곱한 뒤 <code>Gameplay::ApplyDamage</code>로 들어갑니다. 그래서 방어막, 무적, 사망 이벤트(OnDamaged/OnDeath), 점수, 리스폰 규칙이 모두 한 경로로 적용됩니다. Health를 직접 깎으면 이 규칙들을 우회하게 되고, 체력의 진실(<code>FHealthComponent</code>)과 속성 값이 어긋날 수 있습니다.
+</details>
+</article>
+
+<!-- ======================================================= 52강 ======================================================= -->
+<article class="lecture" id="lec-52">
+<header>
+	<div class="no">52강</div>
+	<h2 id="lec-52-title">데이터 주도 설계</h2>
+	<div class="meta">관련 Phase: 46 (A 핵심 · B 편집기 · C RPG 이전) · 살펴볼 곳: <code>Scene/DataTable.h</code>, <code>Scene/DataLibrary.h</code>, <code>Scene/DataCsv.h</code>(각 머리 주석), <code>Scripting/ScriptDataBindings.cpp</code>, <code>Editor/AssetEditors/Data*</code>, 샘플 <code>Content/Data/RPG/</code>, <code>Content/Scripts/RPG/RPGData.lua</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>"상수를 코드에서 데이터로 꺼낸다"가 무엇을 얻고 무엇을 요구하는지 설명할 수 있습니다.</li>
+		<li>구조체 정의(<code>.estruct</code>)·데이터 테이블(<code>.etable</code>)·데이터 에셋(<code>.edata</code>)의 관계와 필드 타입을 압니다.</li>
+		<li>공유 캐시가 불변 객체 + 세대 번호로 핫 리로드를 지원하는 원리를 이해합니다.</li>
+		<li>구조체 필드 이름을 바꿀 때 데이터를 잃지 않는 마이그레이션, CSV 왕복, 행 참조로 중첩을 표현하는 정규화를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-52-why"><span class="step">왜 필요한가</span>숫자가 코드에 박혀 있으면</h3>
+<p>Phase 45의 RPG 데모는 처음에 수치가 Lua 스크립트 안에 있었습니다. 아이템 목록은 <code>GameManager.lua</code>의 테이블, 적 체력과 공격력은 적 스크립트의 <code>Properties</code>, 치명타·스킬·콤보 배율 같은 수치도 스크립트 안의 상수였습니다. 처음에는 편합니다. 하지만 게임이 커지면 문제가 드러납니다.</p>
+<ul>
+	<li><b>찾기 어렵다</b>: "스켈레톤 마법사 체력"을 고치려면 어느 파일 몇째 줄인지 알아야 합니다. 기획자가 코드를 열어야 합니다.</li>
+	<li><b>비교가 어렵다</b>: 적 네 종류의 체력·공격력·속도를 한눈에 나란히 볼 방법이 없습니다. 밸런스 작업은 "표"로 하는 일입니다.</li>
+	<li><b>검증이 없다</b>: 전리품 표에 오타 난 아이템 id가 있어도 그 적이 죽어 그 아이템이 떨어질 때까지 모릅니다.</li>
+	<li><b>도구와 연결이 어렵다</b>: 스프레드시트에서 수치를 계산해 붙여 넣고 싶어도 Lua 문법으로 옮겨야 합니다.</li>
+</ul>
+<p><b>데이터 주도 설계</b>는 "무엇을 하는가(코드)"와 "얼마나 하는가(데이터)"를 분리하는 것입니다. 코드는 "적은 <code>MaxHealth</code>만큼의 체력을 가진다"만 알고, 그 값은 표에서 읽습니다. 언리얼의 DataTable과 Row Struct, Primary Data Asset이 이 역할을 합니다. Phase 46이 ProjectE에 같은 도구를 만들었습니다.</p>
+
+<h3 id="lec-52-schema"><span class="step">핵심 개념</span>스키마와 데이터를 나눈다</h3>
+<p>표에는 두 가지 정보가 있습니다. "칸이 무엇인가"(열 이름, 타입, 기본값 — <b>스키마</b>)와 "각 줄의 값"(<b>데이터</b>)입니다. 스키마를 데이터 파일마다 반복하면 같은 구조의 표 여러 개가 서로 다르게 변해 갈 수 있습니다. 그래서 ProjectE는 스키마를 별도 파일로 떼어 여러 표가 공유하게 했습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/DataTable.h — 머리 주석 (발췌)"><span class="com">//   .estruct  구조체 정의 (여러 테이블/데이터 에셋이 공유)</span>
+<span class="com">//     { "Version": 1, "Name": "Weapon", "Description": "...",</span>
+<span class="com">//       "Fields": [ { "Name": "Damage", "Type": "Float", "Default": 10, "Description": "..." },</span>
+<span class="com">//                   { "Name": "Rarity", "Type": "Enum", "Values": ["Common", "Rare"], "Default": "Common" },</span>
+<span class="com">//                   { "Name": "Icon", "Type": "Asset", "Filter": ".png;.jpg" },</span>
+<span class="com">//                   { "Name": "Upgrade", "Type": "RowRef", "Table": "Data/Weapons.etable" },</span>
+<span class="com">//                   { "Name": "Tags", "Type": "Array", "Element": "String", "Default": ["a"] } ] }</span>
+<span class="com">//   .etable   데이터 테이블 = 구조체 + 순서 있는 행 목록</span>
+<span class="com">//     { "Version": 1, "Struct": "Data/Weapon.estruct", "Rows": [ { "Name": "Sword", "Values": { "Damage": 12 } } ] }</span>
+<span class="com">//   .edata    데이터 에셋 = 구조체 값 하나</span>
+<span class="com">//     { "Version": 1, "Struct": "Data/Balance.estruct", "Values": { "StartGold": 50 } }</span></pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 310" role="img" aria-label="RPG 데이터 파일의 구조체, 테이블, 행 참조 관계">
+		<title>RPG 데이터 파일의 구조체, 테이블, 행 참조 관계</title>
+		<text x="20" y="20" class="t-muted">스키마 (.estruct)</text>
+		<g class="t-small">
+			<rect x="20" y="30" width="180" height="50" rx="8" class="k3"/><text x="110" y="52" text-anchor="middle" class="t-bold">Item.estruct</text><text x="110" y="70" text-anchor="middle" class="t-muted">DisplayName, Type, Price…</text>
+			<rect x="230" y="30" width="180" height="50" rx="8" class="k3"/><text x="320" y="52" text-anchor="middle" class="t-bold">LootTable.estruct</text><text x="320" y="70" text-anchor="middle" class="t-muted">GoldMin, GoldMax</text>
+			<rect x="440" y="30" width="180" height="50" rx="8" class="k3"/><text x="530" y="52" text-anchor="middle" class="t-bold">LootEntry.estruct</text><text x="530" y="70" text-anchor="middle" class="t-muted">LootTable, Item, Chance…</text>
+			<rect x="650" y="30" width="190" height="50" rx="8" class="k3"/><text x="745" y="52" text-anchor="middle" class="t-bold">PlayerBalance.estruct</text><text x="745" y="70" text-anchor="middle" class="t-muted">필드 = 플레이어 수치</text>
+		</g>
+		<text x="20" y="180" class="t-muted">데이터 (.etable / .edata)</text>
+		<g class="t-small">
+			<rect x="20" y="190" width="180" height="56" rx="8" class="k1"/><text x="110" y="213" text-anchor="middle" class="t-bold">Items.etable</text><text x="110" y="232" text-anchor="middle" class="t-muted">행 = 아이템 id (17행)</text>
+			<rect x="230" y="190" width="180" height="56" rx="8" class="k1"/><text x="320" y="213" text-anchor="middle" class="t-bold">LootTables.etable</text><text x="320" y="232" text-anchor="middle" class="t-muted">행 = 표 id</text>
+			<rect x="440" y="190" width="180" height="56" rx="8" class="k1"/><text x="530" y="213" text-anchor="middle" class="t-bold">LootEntries.etable</text><text x="530" y="232" text-anchor="middle" class="t-muted">행 = 항목 하나</text>
+			<rect x="650" y="190" width="190" height="56" rx="8" class="k2"/><text x="745" y="213" text-anchor="middle" class="t-bold">PlayerBalance.edata</text><text x="745" y="232" text-anchor="middle" class="t-muted">값 하나 (행 없음)</text>
+		</g>
+		<path d="M110,190 V84" class="ln" marker-end="url(#arr)"/>
+		<path d="M320,190 V84" class="ln" marker-end="url(#arr)"/>
+		<path d="M530,190 V84" class="ln" marker-end="url(#arr)"/>
+		<path d="M745,190 V84" class="ln" marker-end="url(#arr)"/>
+		<text x="116" y="140" class="t-muted">"Struct"</text>
+		<path d="M440,218 H414" class="ln sa" stroke-width="1.8" marker-end="url(#arr)"/>
+		<text x="372" y="182" class="fa t-small">RowRef LootTable</text>
+		<path d="M530,246 C 530,300 110,300 110,250" class="ln sa" stroke-width="1.8" marker-end="url(#arr)"/>
+		<text x="200" y="268" class="fa t-small">RowRef Item</text>
+		<text x="560" y="276" class="t-muted">구조체 하나를 여러 파일이</text>
+		<text x="560" y="294" class="t-muted">공유할 수 있다 (언리얼 Row Struct)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 52-1.</b> 샘플 <code>Data/RPG/</code>의 일부. 실선 = "이 구조체로 읽는다", 주황 = 행 참조(RowRef — 다른 표의 행 이름을 값으로 갖는 칸). 경로는 모두 Content 기준입니다.</figcaption>
+</figure>
+
+<h4>필드 타입</h4>
+<div class="tablewrap"><table class="t">
+	<tr><th>타입</th><th>JSON 값</th><th>쓰임</th></tr>
+	<tr><td>Bool / Int / Float</td><td><code>true</code>, 정수, 수</td><td>수치, 스위치</td></tr>
+	<tr><td>String / Text</td><td>문자열 (Text는 여러 줄 편집 힌트)</td><td>표시 이름, 설명</td></tr>
+	<tr><td>Vector2/3/4, Color</td><td><code>[x,y(,z(,w))]</code>, 색은 sRGB 0~1 또는 <code>"#RRGGBB"</code></td><td>오프셋, 색</td></tr>
+	<tr><td>Enum</td><td>이름 문자열 (<code>Values</code> 중 하나)</td><td>아이템 종류 Weapon/Shield/…</td></tr>
+	<tr><td>Asset</td><td>Content 기준 경로 (<code>Filter</code> = 허용 확장자)</td><td>아이콘 <code>.png</code>, 모델 <code>.glb</code></td></tr>
+	<tr><td>RowRef</td><td>행 이름 (<code>Table</code> = 대상 표)</td><td>전리품 항목 → 아이템</td></tr>
+	<tr><td>Array</td><td>위 타입 하나의 배열 (Array·Struct 제외)</td><td>태그 목록, RowRef 목록</td></tr>
+</table></div>
+<p>타입이 있다는 것이 Lua 테이블과의 결정적 차이입니다. 편집기는 타입을 보고 알맞은 위젯(체크박스, 색 선택기, 에셋 드롭, 행 콤보)을 그리고, 로더는 타입이 틀린 값을 발견하면 경고 후 기본값을 씁니다. Asset·RowRef처럼 "다른 것을 가리키는" 타입은 가리키는 대상이 실제로 있는지 검증할 수 있습니다.</p>
+
+<div class="callout warn">
+	<b class="t">규칙 (DataTable.h 머리 주석)</b>
+	<ul>
+		<li>필드 이름은 식별자(<code>[A-Za-z_][A-Za-z0-9_]*</code>)이고 고유하다. <code>Name</code>은 행 이름 자리(Lua 결과의 <code>Name</code>)라 예약어.</li>
+		<li>값이 없는 필드 = 구조체 기본값. 타입이 맞지 않는 값/목록에 없는 Enum = 경고 후 기본값.</li>
+		<li>구조체에 없는 필드 값은 경고 후 <b>원문(JSON)을 보존</b>해 저장 시 다시 쓴다.</li>
+		<li>저장은 모든 필드 값을 구조체 필드 순서로 쓴다(행 하나 = 한 줄) — git diff에서 "어느 행이 바뀌었나"가 한 줄로 보인다.</li>
+		<li>어떤 입력에도 크래시하지 않는다: 파싱 실패는 false + 오류, 의미 오류는 경고 목록.</li>
+	</ul>
+</div>
+<p>"구조체에 없는 필드 값을 보존한다"는 규칙이 특히 중요합니다. 누군가 구조체에서 필드를 지우거나 이름을 바꾼 상태로 테이블을 열었다고 합시다. 모르는 값을 버리고 저장하면 데이터가 영영 사라집니다. 원문을 들고 있다가 그대로 다시 쓰면, 구조체를 되돌리거나 마이그레이션(아래)할 때 값을 되살릴 수 있습니다.</p>
+
+<h3 id="lec-52-library"><span class="step">핵심 개념</span>공유 캐시: 불변 객체와 세대 번호</h3>
+<p>같은 표를 여러 시스템이 읽습니다. 능력 시스템(51강)은 속성·효과·능력 표를, RPG 스크립트는 아이템·적 표를 읽습니다. 매번 파일을 다시 읽고 파싱하면 낭비이고, 각자 사본을 들면 핫 리로드 때 누가 옛 사본을 쥐고 있는지 추적하기 어렵습니다. <code>FDataLibrary</code>는 두 가지 아이디어로 이를 풉니다.</p>
+<ol>
+	<li><b>불변 공유</b>: <code>Load*</code>는 <code>std::shared_ptr&lt;const FDataTable&gt;</code>를 돌려줍니다. 받은 객체는 절대 바뀌지 않으므로 여러 곳이 안심하고 같은 객체를 들 수 있습니다.</li>
+	<li><b>세대 번호</b>: 파일이 바뀌면 캐시 항목을 지우고(<code>Invalidate</code>) 전역 세대 번호를 올립니다. 옛 객체는 그것을 든 쪽이 놓을 때까지 살아 있고, 각자 "내가 받았을 때의 세대"와 지금 세대를 비교해 달라졌으면 다시 <code>Load</code>합니다.</li>
+</ol>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="FDataLibrary 캐시와 세대 번호 흐름">
+		<title>FDataLibrary 캐시와 세대 번호 흐름</title>
+		<g class="t-small">
+			<rect x="20" y="30" width="200" height="40" rx="8" class="k2"/><text x="120" y="55" text-anchor="middle">Lua Data.GetRows</text>
+			<rect x="20" y="84" width="200" height="40" rx="8" class="k2"/><text x="120" y="109" text-anchor="middle">FAbilityLibrary (51강)</text>
+			<rect x="20" y="138" width="200" height="40" rx="8" class="k2"/><text x="120" y="163" text-anchor="middle">데이터 편집기</text>
+
+			<rect x="290" y="30" width="270" height="148" rx="10" class="acc"/>
+			<text x="425" y="54" text-anchor="middle" class="t-bold">FDataLibrary (엔진 DLL 전역 하나)</text>
+			<text x="306" y="80" class="t-mono">경로 → shared_ptr&lt;const&gt;</text>
+			<text x="306" y="102">실패도 nullptr로 캐시 (경고 한 번)</text>
+			<text x="306" y="124">읽을 때 형식·참조 검증 → "[데이터]" 로그</text>
+			<text x="306" y="146" class="t-bold">Generation = N</text>
+			<text x="306" y="166" class="t-muted">메인 스레드 전용</text>
+
+			<rect x="630" y="70" width="210" height="64" rx="8" class="box"/><text x="735" y="96" text-anchor="middle" class="t-bold">FFileSystem</text><text x="735" y="116" text-anchor="middle" class="t-muted">pak → 디스크 (63강)</text>
+		</g>
+		<path d="M220,50 H286" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,104 H286" class="ln" marker-end="url(#arr)"/>
+		<path d="M220,158 H286" class="ln" marker-end="url(#arr)"/>
+		<path d="M560,102 H626" class="ln" marker-end="url(#arr)"/>
+		<text x="572" y="94" class="t-muted">없으면</text>
+
+		<g class="t-small">
+			<rect x="290" y="216" width="200" height="44" rx="8" class="k4"/><text x="390" y="236" text-anchor="middle" class="t-bold">에디터 파일 감시</text><text x="390" y="253" text-anchor="middle" class="t-muted">바뀐 .etable 발견</text>
+			<rect x="530" y="216" width="310" height="44" rx="8" class="k5"/><text x="685" y="236" text-anchor="middle" class="t-bold">Invalidate(경로) → Generation = N+1</text><text x="685" y="253" text-anchor="middle" class="t-muted">.estruct면 테이블·에셋 캐시 전체 비움</text>
+		</g>
+		<path d="M490,238 H526" class="ln" marker-end="url(#arr)"/>
+		<path d="M685,216 V196 H460 V182" class="ln-d" marker-end="url(#arr)"/>
+		<text x="20" y="204" class="t-muted">읽는 쪽: 받은 세대 ≠ 지금 세대면</text>
+		<text x="20" y="222" class="t-muted">다시 Load</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 52-2.</b> 읽는 쪽은 객체를 고치지 않고, 바뀐 것을 "알아채고 다시 받는" 책임만 집니다. 구조체가 바뀌면 그 구조체를 쓰는 표가 모두 달라지므로 표 캐시 전체를 비웁니다.</figcaption>
+</figure>
+<p>Lua 쪽 RPG 데이터 모듈이 이 패턴을 그대로 씁니다. Lua <code>Data.*</code>는 부를 때마다 <b>새 테이블</b>을 만들어 돌려주므로(스크립트가 고쳐도 다른 곳에 영향이 없게), 큰 표를 매 프레임 받으면 비쌉니다. 그래서 세대별로 한 번만 만들어 둡니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/RPG/RPGData.lua (발췌)"><span class="com">-- 세대별 캐시 (데이터 사본만 — 게임 상태 아님)</span>
+<span class="kw">local</span> Cache = { Generation = <span class="kw">nil</span> }
+
+<span class="kw">local function</span> Memo(Key, Build)
+	<span class="kw">local</span> Generation = Data.GetGeneration()
+	<span class="kw">if</span> Cache.Generation ~= Generation <span class="kw">then</span>
+		Cache = { Generation = Generation }   <span class="com">-- 핫 리로드: 통째로 버리고 다시</span>
+	<span class="kw">end</span>
+	<span class="kw">local</span> Value = Cache[Key]
+	<span class="kw">if</span> Value == <span class="kw">nil then</span>
+		Value      = Build()
+		Cache[Key] = Value == <span class="kw">nil and false or</span> Value
+	<span class="kw">end</span>
+	<span class="kw">return</span> Value <span class="kw">or nil</span>
+<span class="kw">end</span></pre>
+<div class="callout note">
+	<b class="t">"돌려준 테이블은 고치지 않는다"</b>
+	이 모듈이 만든 테이블은 모든 스크립트가 공유합니다. 한 스크립트가 <code>item.Price = 0</code>으로 고치면 다른 스크립트의 가격도 0이 됩니다. 그래서 모듈 주석에 "돌려준 테이블은 모든 스크립트가 공유하므로 고치지 않는다(게임 상태는 GameManager/인스턴스에 둔다)"고 적었습니다. <b>정의 데이터</b>(아이템의 기본 가격)와 <b>게임 상태</b>(이 아이템을 몇 개 가졌나)를 섞지 않는 것이 데이터 주도 설계의 기본 규율입니다.
+</div>
+
+<h3 id="lec-52-migrate"><span class="step">핵심 개념</span>스키마가 바뀔 때: 마이그레이션</h3>
+<p>데이터는 오래 삽니다. 개발 중에 필드 이름 <code>Dmg</code>를 <code>Damage</code>로 바꾸고 싶다면? 구조체 파일만 고치면, 이 구조체를 쓰는 모든 표의 <code>Dmg</code> 값이 "구조체에 없는 값"이 되고 <code>Damage</code>는 기본값이 됩니다. 사실상 데이터 손실입니다. 데이터베이스의 스키마 마이그레이션처럼, 구조체 변경과 데이터 변환을 <b>한 번에</b> 해야 합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/DataTable.h / DataLibrary.h (발췌)"><span class="com">// 필드 이름 변경 (마이그레이션). 목록 순서대로 적용하므로 A→B, B→C 연쇄도 된다</span>
+<span class="kw">struct</span> FDataFieldRename { std::string From; std::string To; };
+
+<span class="com">// 구조체 교체 + 값 마이그레이션: 이름이 같은(Renames 적용 후) 필드 값은 옮기고(타입이 바뀌면 변환, 실패하면 기본값),</span>
+<span class="com">// 사라진 필드 값은 버리며, 새 필드는 기본값. Unknown 원문도 새 구조체 필드와 이름이 맞으면 되살린다</span>
+<span class="kw">void</span> FDataTable::Rebind(std::shared_ptr&lt;<span class="kw">const</span> FDataStruct&gt; NewStruct, <span class="kw">const</span> std::vector&lt;FDataFieldRename&gt;&amp; Renames = {});
+
+<span class="com">// 구조체 저장 + 마이그레이션: ContentDirectory 아래 이 구조체를 쓰는 .etable/.edata를 (저장 전) 디스크의 옛 구조체로 읽어</span>
+<span class="com">// 새 구조체로 Rebind(Renames 적용)한 뒤 다시 저장한다. 마지막에 전체 Invalidate.</span>
+<span class="kw">bool</span> FDataLibrary::SaveStructAndMigrate(<span class="kw">const</span> std::string&amp; StructPath, <span class="kw">const</span> FDataStruct&amp; NewStruct,
+                                        <span class="kw">const</span> std::vector&lt;FDataFieldRename&gt;&amp; Renames, ...);</pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="필드 이름 변경 마이그레이션">
+		<title>필드 이름 변경 마이그레이션</title>
+		<text x="20" y="24" class="t-bold">옛 구조체로 읽은 행 "Sword"</text>
+		<text x="560" y="24" class="t-bold">새 구조체로 Rebind한 행 "Sword"</text>
+		<g class="t-small">
+			<rect x="20" y="40" width="260" height="40" rx="6" class="k1"/><text x="34" y="65" class="t-mono">Dmg (Int) = 12</text>
+			<rect x="20" y="96" width="260" height="40" rx="6" class="k1"/><text x="34" y="121" class="t-mono">Speed (Float) = 1.5</text>
+			<rect x="20" y="152" width="260" height="40" rx="6" class="k1"/><text x="34" y="177" class="t-mono">OldNote (String) = "…"</text>
+
+			<rect x="560" y="40" width="280" height="40" rx="6" class="k2"/><text x="574" y="65" class="t-mono">Damage (Float) = 12.0</text>
+			<rect x="560" y="96" width="280" height="40" rx="6" class="k2"/><text x="574" y="121" class="t-mono">Speed (Float) = 1.5</text>
+			<rect x="560" y="152" width="280" height="40" rx="6" class="k4"/><text x="574" y="177" class="t-mono">Range (Float) = 기본값</text>
+
+			<rect x="320" y="40" width="200" height="40" rx="6" class="acc"/><text x="420" y="65" text-anchor="middle">Renames: Dmg → Damage</text>
+		</g>
+		<path d="M280,60 H316" class="ln" marker-end="url(#arr)"/>
+		<path d="M520,60 H556" class="ln" marker-end="url(#arr)"/>
+		<text x="420" y="32" text-anchor="middle" class="t-muted">타입이 바뀌면 변환</text>
+		<path d="M280,116 H556" class="ln" marker-end="url(#arr)"/>
+		<text x="420" y="110" text-anchor="middle" class="t-muted">같은 이름 → 그대로</text>
+		<path d="M280,172 H380" class="ln-d"/>
+		<text x="390" y="177" class="f5 t-small">사라진 필드 → 버림</text>
+		<text x="560" y="214" class="t-muted">새 필드 → 기본값</text>
+		<text x="20" y="236" class="t-muted">SaveStructAndMigrate는 이 일을 구조체를 쓰는 모든 .etable/.edata에 대해 하고 함께 저장한다 (편집기는 확인 창으로 파일 목록을 보여 준다)</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 52-3.</b> 이름 변경 목록이 있으면 값이 새 이름으로 따라갑니다. 핵심은 "디스크의 <b>옛</b> 구조체로 읽은 뒤 새 구조체로 옮긴다"는 순서입니다 — 새 구조체를 먼저 저장해 버리면 옛 필드 이름으로 데이터를 읽을 방법이 사라집니다.</figcaption>
+</figure>
+
+<h3 id="lec-52-csv"><span class="step">핵심 개념</span>CSV 왕복과 행 참조 정규화</h3>
+<p>밸런스 작업은 스프레드시트에서 하고 싶은 경우가 많습니다. <code>DataCsv</code>는 표를 CSV로 내보내고 다시 가져옵니다. 규칙은 실용적인 것들입니다.</p>
+<ul>
+	<li>첫 줄 = 머리글(첫 칸은 행 이름 열 <code>Name</code>), 나머지 = 필드 이름. 정확히 같은 이름이 없으면 대소문자를 무시하고 찾습니다.</li>
+	<li>RFC 4180 따옴표(<code>"a,b"</code>, <code>"say ""hi"""</code>, 칸 안 줄바꿈)를 지원하고, 머리글에 쉼표 없이 탭만 있으면 TSV로 읽습니다.</li>
+	<li>UTF-8 BOM은 읽을 때 무시하고 <b>내보낼 때 기본으로 붙입니다</b>. BOM이 없으면 엑셀이 한글을 시스템 코드 페이지로 읽어 깨뜨리기 때문입니다(1강의 인코딩 이야기와 같은 종류).</li>
+	<li>배열은 요소를 <code>|</code>로 잇고, 벡터는 <code>x;y;z</code>. 모르는 열은 무시, 잘못된 칸은 기본값, 중복 행 이름은 <code>이름_2</code> — 경고 후 계속합니다.</li>
+</ul>
+<h4>중첩 대신 행 참조</h4>
+<p>"전리품 표 하나에 항목 여러 개"는 자연스럽게는 중첩 구조(표 행 안에 항목 배열, 항목마다 아이템·확률·개수)입니다. v1 데이터 테이블은 중첩 구조체를 지원하지 않습니다. 대신 관계형 데이터베이스의 <b>정규화</b>처럼 표를 둘로 나눕니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Data/RPG/LootEntries.etable (발췌)">{ <span class="str">"Name"</span>:<span class="str">"Skeleton_Warrior.bone"</span>,
+  <span class="str">"Values"</span>:{ <span class="str">"LootTable"</span>:<span class="str">"Skeleton_Warrior"</span>, <span class="str">"Item"</span>:<span class="str">"bone"</span>, <span class="str">"Chance"</span>:<span class="num">0.6</span>, <span class="str">"MinCount"</span>:<span class="num">1</span>, <span class="str">"MaxCount"</span>:<span class="num">2</span> } },
+{ <span class="str">"Name"</span>:<span class="str">"Skeleton_Warrior.potion_hp_small"</span>,
+  <span class="str">"Values"</span>:{ <span class="str">"LootTable"</span>:<span class="str">"Skeleton_Warrior"</span>, <span class="str">"Item"</span>:<span class="str">"potion_hp_small"</span>, <span class="str">"Chance"</span>:<span class="num">0.25</span>, ... } },</pre>
+<p>항목 표의 <code>LootTable</code> 칸이 부모 표의 행을, <code>Item</code> 칸이 아이템 표의 행을 가리킵니다(그림 52-1). 이 방식은 CSV로 펼치기 쉽고(중첩은 CSV에 담기 어렵습니다), 참조 검증이 그대로 적용되며, 편집기에 새 위젯이 필요 없습니다. 51강의 능력 시스템이 "효과 → 수정자 목록"을 RowRef 배열로 표현한 것도 같은 선택입니다.</p>
+
+<h3 id="lec-52-rpg"><span class="step">ProjectE에서는</span>RPG 데이터 이전 (Phase 46-C)</h3>
+<p>Phase 46은 형식(46-A), 편집기(46-B), 실제 게임 이전(46-C)을 병렬 트랙으로 진행했습니다. 46-C는 RPG 데모의 하드코딩 수치를 모두 <code>Data/RPG/</code>로 옮겼습니다.</p>
+<div class="tablewrap"><table class="t">
+	<tr><th>파일</th><th>내용</th><th>읽는 쪽</th></tr>
+	<tr><td><code>Items.etable</code></td><td>아이템 17행 (행 이름 = 아이템 id — 저장 파일 호환)</td><td>가방, 상점, 전리품</td></tr>
+	<tr><td><code>LootTables</code> + <code>LootEntries.etable</code></td><td>표별 골드 범위 + 항목(파일 순서로 확률 굴림)</td><td><code>GameManager:SpawnLoot</code></td></tr>
+	<tr><td><code>Enemies.etable</code></td><td>적 4행, 필드 이름 = 적 스크립트 Properties + MaxHealth</td><td>적 프리팹은 <code>StatsRow</code>만 지정</td></tr>
+	<tr><td><code>PlayerBalance.edata</code>, <code>GameBalance.edata</code></td><td>플레이어 수치(치명타·스킬·콤보 배율 포함), 새 게임 시작 값</td><td>플레이어, 게임 매니저</td></tr>
+	<tr><td><code>Shops.etable</code></td><td>상점 재고</td><td>상인 <code>ShopRow</code></td></tr>
+</table></div>
+<p>연결 규칙이 깔끔합니다. "행/에셋 값이 같은 이름의 프로퍼티보다 우선, 없으면 프로퍼티 값." 적 스크립트는 OnStart에서 자기 <code>StatsRow</code> 행을 읽어 같은 이름의 <code>Properties</code>를 덮어씁니다. 그래서 표에 없는 값(배치별 이름 등)은 여전히 인스펙터에서 정하고, 행이 없거나 비면 예전처럼 프로퍼티 값으로 동작합니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Scripts/RPG/EnemyController.lua (발췌)"><span class="kw">local</span> Row = RPGData.GetEnemyStats(P.StatsRow)
+<span class="kw">if not</span> Row <span class="kw">then</span>
+	Log.Warn(<span class="str">"적: 스탯 행을 찾지 못해 프로퍼티 값을 씁니다 —"</span>, P.StatsRow)
+	...
+<span class="kw">end</span>
+RPGData.ApplyFields(P, Row, { AttackClips = <span class="kw">true</span> }) <span class="com">-- 이미 있는 이름만 덮어쓴다</span></pre>
+<p>이전의 완료 기준은 "값 동일"이었습니다. Plans.md 46-C는 "Demo_PixelArt <code>[데이터]</code> 경고 0·시작 상태 동일"을 확인한 뒤 머지했다고 기록합니다. 리팩터링의 정답은 "동작이 그대로"이므로, 옮기기 전과 후의 상태를 비교하는 것이 가장 확실한 검증입니다. CLAUDE.md는 이후 규칙도 남겼습니다 — "새 수치는 스크립트 상수 대신 구조체 필드로 추가한다."</p>
+
+<h4>데이터 편집기 개요 (46-B)</h4>
+<p>JSON을 손으로 고칠 수도 있지만, 표는 표로 편집해야 합니다. 에디터에는 테이블·데이터 에셋·구조체 편집기가 있고 공통 기반 <code>FDataEditorBase</code>가 디스크 변경 감시와 세대 변화에 따른 구조체 다시 묶기를 맡습니다.</p>
+<ul>
+	<li>값 칸 위젯은 <code>DataValueWidgets::Draw</code> 하나를 모든 편집기가 공유합니다(표 칸은 작게, 긴 글·배열은 팝업). 새 필드 타입은 여기와 정렬 비교 함수를 함께 고칩니다.</li>
+	<li>보기 정렬·검색은 <b>행 번호 목록만</b> 바꾸고 파일 순서는 그대로입니다. 파일 순서를 바꾸는 것은 "정렬 적용" 버튼뿐입니다 — 전리품처럼 파일 순서에 의미가 있는 표가 있기 때문입니다.</li>
+	<li>칸마다 참조 경고(<code>FDataLibrary::ValidateRecordReferences</code>)를 표시해, 없는 아이템 id를 가리키는 칸이 바로 보입니다.</li>
+	<li>구조체 저장은 누적된 이름 변경 목록과 함께 <code>SaveStructAndMigrate</code>를 부르고, 바뀔 파일 목록을 확인 창으로 보여 줍니다.</li>
+</ul>
+
+<h3 id="lec-52-pitfalls"><span class="step">함정과 교훈</span>바이너리 한도와 반영 시점</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 엔진 DLL 내보내기 한도</b>
+	엔진은 하나의 DLL로 빌드되고 함수를 자동으로 내보냅니다(12강). Windows DLL의 내보내기 수 한도는 65535개인데, 46-A 머지 시점에 61282개였습니다(Plans.md). <code>std::variant</code>와 템플릿을 많이 쓰는 데이터 코드는 템플릿 인스턴스마다 심볼이 생겨 이 숫자를 빠르게 올립니다. 그래서 CLAUDE.md에 "엔진 DLL 내보내기 여유가 약 4천 개이므로 큰 템플릿 인스턴스를 늘리는 변경은 <code>.def</code> 개수를 확인한다"가 남았고, 이후 std 범위 함수를 거르는 내보내기 필터 도구가 만들어졌습니다(64193 → 약 1만). 범용 코드를 쓸 때는 바이너리 차원의 비용도 있다는 교훈입니다.
+</div>
+<ul>
+	<li><b>적용 시점</b>: 적·플레이어 스탯은 OnStart에 한 번 적용합니다. 그래서 에디터에서 표를 고쳐도 이미 나와 있는 적은 그대로이고 새로 생긴 적부터 반영됩니다(46-C 후속 과제). 핫 리로드가 "어디까지" 반영되는지는 읽는 쪽의 설계에 달려 있습니다.</li>
+	<li><b>남은 한계</b>: 중첩 구조체, Enum 값 이름 변경 마이그레이션, 숫자 Min/Max 제약, 다른 파일이 가리키는 행 이름 자동 변경은 후속 과제로 남아 있습니다. 시작 아이템을 "배열 두 개 짝"으로 표현한 것은 중첩 구조체가 없어서 생긴 우회입니다.</li>
+	<li><b>버전 번호</b>: 값 형식이나 JSON/CSV 표기를 바꾸면 <code>FDataStruct/FDataTable/FDataAsset::Version</code>을 올리고 <code>DataTableTests</code>를 함께 고칩니다. 데이터 형식은 코드보다 오래 사는 계약입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>코드는 "무엇을", 데이터는 "얼마나". 타입 있는 표로 꺼내면 비교·검증·도구 연결·핫 리로드가 가능해진다.</li>
+		<li><code>.estruct</code>(스키마, 공유) + <code>.etable</code>(행 목록) / <code>.edata</code>(값 하나). 모르는 값은 원문 보존, 저장은 행 하나 = 한 줄.</li>
+		<li><code>FDataLibrary</code>: 경로 캐시 + <code>shared_ptr&lt;const&gt;</code> 불변 공유 + 세대 번호. 읽는 쪽은 세대가 바뀌면 다시 받는다.</li>
+		<li>이름 변경은 <code>SaveStructAndMigrate</code>(옛 구조체로 읽고 새 구조체로 Rebind), 중첩은 RowRef로 정규화, CSV는 BOM과 따옴표 규칙.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. <code>FDataLibrary</code>가 <code>shared_ptr&lt;FDataTable&gt;</code>(const 없이)를 돌려주고, 핫 리로드 때 그 객체의 내용을 제자리에서 바꾸게 하면 무엇이 문제일까요?</summary>
+	읽는 쪽이 표를 순회하는 도중(또는 행 포인터를 들고 있는 동안) 내용이 바뀌어 무효 참조가 생길 수 있고, 한 시스템이 "정의"를 실수로 고치면 다른 모든 시스템에 퍼집니다. 불변 객체 + 새 객체로 교체 + 세대 번호면, 옛 객체를 든 쪽은 안전하게 옛 데이터로 이번 일을 마치고 다음 기회에 새 객체로 갈아탑니다.
+</details>
+<details class="quiz"><summary>Q2. 구조체 편집기에서 필드 이름을 바꾼 뒤 그냥 <code>SaveStruct</code>만 하고, 나중에 테이블을 열어 저장하면 데이터는 어떻게 될까요?</summary>
+	테이블을 열 때 옛 필드 이름의 값은 "구조체에 없는 값"이 되어 경고 후 원문으로 보존되고, 새 이름 필드는 기본값으로 읽힙니다. 저장하면 원문은 다시 쓰이므로 당장 사라지지는 않지만, 게임은 새 필드의 기본값을 쓰게 됩니다. 값을 새 이름으로 옮기려면 이름 변경 목록과 함께 <code>SaveStructAndMigrate</code>를 거쳐야 합니다(<code>Rebind</code>는 Unknown 원문도 새 필드 이름과 맞으면 되살립니다).
+</details>
+<details class="quiz"><summary>Q3. 전리품 항목 표의 행 이름을 <code>"Skeleton_Warrior.bone"</code>처럼 짓는 이유는 무엇일까요? 행 이름이 의미가 없는데도요.</summary>
+	행 이름은 표 안에서 고유해야 하고, 편집기·CSV·경고 메시지에서 그 행을 가리키는 이름입니다. 부모 표와 아이템 id를 이어 붙이면 고유성이 자연스럽게 보장되고 사람이 읽기에도 어느 표의 어떤 항목인지 바로 보입니다. 구조체 설명도 "행 이름은 구분용(아무 이름)"이라고 적고 있습니다 — 의미는 RowRef 칸에 있습니다.
+</details>
+</article>
+
+<!-- ======================================================= 53강 ======================================================= -->
+<article class="lecture" id="lec-53">
+<header>
+	<div class="no">53강</div>
+	<h2 id="lec-53-title">절차적 생성</h2>
+	<div class="meta">관련 Phase: 50 사이드 (실내 절차적 생성) · 살펴볼 곳: <code>Scene/Building/BuildingGenerator.h</code>/<code>.cpp</code>, <code>Scene/Building/BuildingConfig.h</code>(머리 주석), <code>Scene/Building/BuildingScene.h</code>, <code>Tests/BuildingTests/</code>, 샘플 <code>Content/Buildings/Apartment.ebuilding</code>, <code>Content/Data/Building/</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>"무작위인데 재현 가능한" 결정적 생성의 조건 세 가지(자체 난수, 표준 분포 금지, 순서 없는 순회 금지)를 설명할 수 있습니다.</li>
+		<li>건물 뼈대 → 호실 → 방 → 문 → 창 → 모듈 → 소품으로 이어지는 생성 단계와 각 단계의 제약을 압니다.</li>
+		<li>모듈 키트 프리팹 규약이 왜 필요한지, 생성기와 아티스트 사이의 "계약"으로서 이해합니다.</li>
+		<li>생성 결과를 씬에 굳히고 손으로 고친 부분을 보존하는 방법, 멀티플레이에서 같은 시드로 각자 생성하는 이유를 압니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-53-why"><span class="step">왜 필요한가</span>5층 아파트를 손으로 꾸민다면</h3>
+<p>2026-10-03 로드맵 조정에서 사용자는 "오픈월드 규모 게임은 만들 것 같지 않음, 절차적 배치는 좋음 — 아파트 각 층을 절차적으로 꾸미기"라고 정했습니다. 5층 건물에 층마다 호실이 여럿, 호실마다 방이 대여섯 개, 방마다 벽·문·창·가구가 있다면 손으로 놓을 조각은 수천 개입니다(샘플 Apartment는 인스턴스 2239개). 게다가 층마다 조금씩 달라야 지루하지 않습니다.</p>
+<p><b>절차적 생성(procedural generation)</b>은 규칙과 난수로 콘텐츠를 만드는 것입니다. 하지만 게임 엔진에서 쓰려면 한 가지가 더 필요합니다. <b>같은 입력이면 언제나 같은 결과</b>여야 합니다. 이유는 셋입니다.</p>
+<ul>
+	<li><b>편집</b>: 마음에 드는 건물이 나오면 시드(seed) 번호만 적어 두면 됩니다. 다음 날 열어도 같은 건물이어야 합니다.</li>
+	<li><b>테스트</b>: "시드 7에서 욕실에 문이 없다"는 버그를 재현할 수 있어야 고칠 수 있습니다.</li>
+	<li><b>멀티플레이</b>: 서버와 클라이언트가 수천 개 조각을 네트워크로 주고받지 않고 시드 하나만 맞추면 각자 같은 건물을 지을 수 있습니다.</li>
+</ul>
+
+<h3 id="lec-53-determinism"><span class="step">핵심 개념</span>결정성의 세 가지 적</h3>
+<p>컴퓨터 프로그램은 원래 결정적인 것 같지만, "같은 결과"가 깨지는 길은 생각보다 많습니다. 생성기 헤더 첫 줄이 이것을 요약합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Building/BuildingGenerator.h (발췌)"><span class="com">// 실내 절차적 생성 코어 — 순수 로직 (씬/GPU/파일 비의존), 시드 결정적: 같은 설정 + 같은 소품 규칙 + 같은 옵션 → 같은 결과.</span>
+<span class="com">// 난수는 자체 SplitMix64(표준 분포 함수 미사용 — 구현마다 결과가 다르다), 순회 순서는 모두 인덱스 순.</span></pre>
+<ol>
+	<li><b>표준 라이브러리 분포</b>: C++의 <code>std::mt19937</code> 같은 엔진은 수열이 표준으로 정해져 있지만, <code>std::uniform_int_distribution</code> 같은 <b>분포</b>는 그 수열을 범위로 바꾸는 방법이 구현(MSVC, libstdc++, libc++)마다 다를 수 있습니다. 같은 시드라도 컴파일러가 바뀌면 다른 건물이 나올 수 있습니다. 그래서 난수 생성부터 범위 변환까지 전부 직접 씁니다.</li>
+	<li><b>순서 없는 컨테이너 순회</b>: <code>std::unordered_map</code>을 순회하는 순서는 해시 함수와 버킷 수에 달려 있고, 원소를 넣은 순서와도 무관합니다. "방마다 난수를 하나씩 뽑는다"를 unordered 순회로 하면, 어떤 방이 몇 번째 난수를 받는지가 달라집니다. 모든 순회는 인덱스 순으로 합니다.</li>
+	<li><b>외부 상태</b>: 시간, 스레드 스케줄, 파일 시스템 나열 순서 같은 것에 기대지 않습니다. 생성기는 "씬/GPU/파일 비의존" 순수 함수이고, 입력은 설정 구조체와 소품 규칙 목록뿐입니다.</li>
+</ol>
+<pre class="code" data-file="Engine/Source/Scene/Building/BuildingGenerator.cpp — 자체 난수 (발췌)"><span class="com">// 난수 (SplitMix64 — 플랫폼/표준 라이브러리와 무관하게 같은 수열)</span>
+uint64 Mix64(uint64 Value)
+{
+	Value = (Value ^ (Value &gt;&gt; <span class="num">30</span>)) * <span class="num">0xBF58476D1CE4E5B9ull</span>;
+	Value = (Value ^ (Value &gt;&gt; <span class="num">27</span>)) * <span class="num">0x94D049BB133111EBull</span>;
+	<span class="kw">return</span> Value ^ (Value &gt;&gt; <span class="num">31</span>);
+}
+<span class="kw">struct</span> FRng
+{
+	uint64 State = <span class="num">0</span>;
+	<span class="kw">explicit</span> FRng(uint64 Seed) : State(Mix64(Seed + <span class="num">0x9E3779B97F4A7C15ull</span>)) {}
+	uint64 Next()  { State += <span class="num">0x9E3779B97F4A7C15ull</span>; <span class="kw">return</span> Mix64(State); }
+	<span class="kw">float</span>  Float() { <span class="kw">return static_cast</span>&lt;<span class="kw">float</span>&gt;(Next() &gt;&gt; <span class="num">40</span>) * (<span class="num">1.0f</span> / <span class="num">16777216.0f</span>); } <span class="com">// [0, 1)</span>
+	int32  Range(int32 Min, int32 Max) { ... <span class="kw">return</span> Min + <span class="kw">static_cast</span>&lt;int32&gt;(Next() % (Max - Min + <span class="num">1</span>)); } <span class="com">// [Min, Max]</span>
+	<span class="kw">template</span> &lt;<span class="kw">typename</span> T&gt; <span class="kw">void</span> Shuffle(std::vector&lt;T&gt;&amp; Values); <span class="com">// 피셔-예이츠, 뒤에서부터</span>
+};</pre>
+<p>SplitMix64는 64비트 상태에 황금비 상수(<code>0x9E37…</code>)를 더해 가며, 그 값을 섞는 함수(<code>Mix64</code>)를 통과시키는 아주 짧은 난수 생성기입니다. 품질이 게임 생성에 충분하고, 정수 곱셈·시프트·XOR만 쓰므로 어느 컴파일러에서도 비트 단위로 같습니다. <code>Float()</code>가 상위 24비트만 쓰는 것도 의도입니다 — <code>float</code> 가수가 24비트라 정확히 표현되는 값만 만듭니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="건물 시드에서 층 시드와 난수 흐름으로">
+		<title>건물 시드에서 층 시드와 난수 흐름으로</title>
+		<g class="t-small">
+			<rect x="20" y="120" width="140" height="56" rx="10" class="acc"/><text x="90" y="143" text-anchor="middle" class="t-bold">건물 시드</text><text x="90" y="163" text-anchor="middle" class="t-muted">컴포넌트 Seed</text>
+			<rect x="230" y="30" width="200" height="50" rx="8" class="k1"/><text x="330" y="52" text-anchor="middle" class="t-bold">층 0 시드</text><text x="330" y="70" text-anchor="middle" class="t-mono">Mix64(시드&lt;&lt;32 ^ 층+상수)</text>
+			<rect x="230" y="123" width="200" height="50" rx="8" class="k1"/><text x="330" y="145" text-anchor="middle" class="t-bold">층 1 시드</text><text x="330" y="163" text-anchor="middle" class="t-muted">FixedFloorSeeds면 그 값</text>
+			<rect x="230" y="216" width="200" height="50" rx="8" class="k1"/><text x="330" y="238" text-anchor="middle" class="t-bold">층 2 시드</text><text x="330" y="256" text-anchor="middle" class="t-muted">VaryFloors 끔 = 건물 시드</text>
+			<rect x="490" y="123" width="350" height="50" rx="8" class="k2"/><text x="665" y="145" text-anchor="middle" class="t-bold">FRng — 정해진 순서로 소비</text><text x="665" y="163" text-anchor="middle">뼈대 → 호실 → 방 → 문 → 창 → 모듈 → 소품</text>
+		</g>
+		<path d="M160,140 C 200,140 190,55 226,55" class="ln" marker-end="url(#arr)"/>
+		<path d="M160,148 H226" class="ln" marker-end="url(#arr)"/>
+		<path d="M160,156 C 200,156 190,241 226,241" class="ln" marker-end="url(#arr)"/>
+		<path d="M430,148 H486" class="ln" marker-end="url(#arr)"/>
+		<g class="t-small">
+			<rect x="490" y="30" width="350" height="34" rx="8" class="k5"/><text x="505" y="52">✗ std::uniform_int_distribution (구현마다 다름)</text>
+			<rect x="490" y="216" width="350" height="34" rx="8" class="k5"/><text x="505" y="238">✗ unordered_map 순회 — 난수를 받는 순서가 흔들림</text>
+		</g>
+		<text x="20" y="292" class="t-muted">층마다 시드를 따로 만들면 한 층만 고정(FixedFloorSeeds)하거나 단면 보기로 일부 층만 만들어도 다른 층 결과가 바뀌지 않는다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 53-1.</b> 시드는 한 줄기로 흐르지 않고 층마다 갈라집니다(<code>MakeBuildingFloorSeed</code>). 한 층의 난수 소비량이 바뀌어도 다른 층의 수열에 번지지 않게 하려는 것입니다.</figcaption>
+</figure>
+
+<h3 id="lec-53-stages"><span class="step">핵심 개념</span>생성 단계: 큰 것에서 작은 것으로</h3>
+<p>좋은 생성기는 한 번에 모든 것을 정하지 않고, 큰 구조부터 정해 가며 앞 단계의 결과를 다음 단계의 제약으로 씁니다. 건물 생성기는 층마다 다음 일곱 단계를 거칩니다.</p>
+<ol>
+	<li><b>뼈대</b>: 외곽 칸 → 계단실(Core, 모든 층 같은 칸) → 복도(Center = 가운데 줄, Single = 한쪽 줄, None = 없음).</li>
+	<li><b>호실</b>: 복도 양쪽 띠를 계단실이 끊는 구간으로 나눈 뒤, 구간을 너비 [<code>UnitMinWidth</code>, <code>UnitMaxWidth</code>]로 무작위 분할. 복도·계단실에 닿지 않는 호실은 이웃에 합칩니다(들어갈 방법이 없는 집은 안 됩니다).</li>
+	<li><b>방</b>: 방 종류 고르기(필수 + 확률) → 사각형 무작위 분할(<b>BSP</b> — 가장 큰 칸을 긴 축으로 자르기를 반복, 변 ≥ <code>MinRoomSide</code>) → 종류 배정. 배정은 모든 순열의 점수(면적 비율, 현관이 복도에 닿음, 창이 필요한 방이 외벽에 닿음, 인접 선호)를 매겨 가장 좋은 것을 고르고, 동점은 시드 순서로 정합니다.</li>
+	<li><b>문</b>: 호실 입구 = 현관 ↔ 복도 문 하나, 호실 안은 입구에서 <b>최소 신장 트리</b>(허브 방과 잇는 간선이 싸다). <code>OpenTo</code> 종류끼리(거실-주방)는 경계 전체를 트고, 1층 복도 끝 외벽에 건물 출입문.</li>
+	<li><b>창</b>: 외벽 경계마다 방 종류의 <code>WindowChance</code>.</li>
+	<li><b>모듈 배치</b>: 방마다 사각형 분해 → 바닥/천장 조각을 늘려 깔고, 경계마다 벽/외벽/문/창, 두 축 벽이 만나는 꼭짓점에 모서리 기둥, 계단·난간·지붕.</li>
+	<li><b>소품</b>: 방 종류별 규칙 순서대로 후보 자리(벽 줄, 안쪽 모서리, 가운데)를 시드로 섞어 놓습니다. 겹침 금지, 문 앞 비움, 그리고 놓은 뒤에도 <b>방의 모든 문 앞이 서로 이어지는지</b>(25cm 격자) 확인합니다 — 소파가 문을 막으면 안 되니까요.</li>
+</ol>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 390" role="img" aria-label="한 층 평면 예시">
+		<title>한 층 평면 예시</title>
+		<text x="30" y="30" class="t-bold">26 × 14 칸 (칸 = 100cm), 가운데 복도 폭 2, 계단실 3 × 6 — 그림은 설명용 예시</text>
+		<!-- 위쪽 호실 띠 -->
+		<rect x="30" y="50" width="198" height="132" class="k1"/>
+		<rect x="228" y="50" width="176" height="132" class="k1"/>
+		<rect x="404" y="50" width="198" height="132" class="k1"/>
+		<!-- 복도 -->
+		<rect x="30" y="182" width="572" height="44" class="k4"/>
+		<text x="316" y="209" text-anchor="middle" class="t-bold">복도 (Corridor)</text>
+		<!-- 아래쪽 -->
+		<rect x="30" y="226" width="242" height="132" class="k1"/>
+		<rect x="272" y="226" width="66" height="132" class="k5"/>
+		<rect x="338" y="226" width="132" height="132" class="k1"/>
+		<rect x="470" y="226" width="132" height="132" class="k1"/>
+		<text x="305" y="290" text-anchor="middle" class="t-small t-bold">계단실</text>
+		<text x="305" y="308" text-anchor="middle" class="t-muted">모든 층</text>
+		<text x="151" y="296" text-anchor="middle" class="t-muted">호실 (너비 11)</text>
+		<text x="404" y="296" text-anchor="middle" class="t-muted">호실</text>
+		<text x="536" y="296" text-anchor="middle" class="t-muted">호실</text>
+		<text x="316" y="120" text-anchor="middle" class="t-muted">호실 (너비 8)</text>
+		<text x="503" y="120" text-anchor="middle" class="t-muted">호실 (너비 9)</text>
+		<!-- 호실 A 안의 방 -->
+		<path d="M96,50 V182 M96,138 H228 M140,138 V182 M184,138 V182" class="ln s1" stroke-width="2"/>
+		<g class="t-small">
+			<text x="63" y="120" text-anchor="middle">침실</text>
+			<text x="162" y="100" text-anchor="middle">거실 (허브)</text>
+			<text x="118" y="165" text-anchor="middle">욕실</text>
+			<text x="162" y="165" text-anchor="middle">주방</text>
+			<text x="206" y="165" text-anchor="middle">현관</text>
+		</g>
+		<!-- 문 (짧은 굵은 막대 = 틈) -->
+		<path d="M196,182 H216" class="ln sa" stroke-width="5"/>
+		<path d="M96,104 V124" class="ln sa" stroke-width="5"/>
+		<path d="M110,138 H126" class="ln sa" stroke-width="5"/>
+		<path d="M190,138 H222" class="ln sa" stroke-width="5"/>
+		<path d="M30,192 V216" class="ln s2" stroke-width="5"/>
+		<!-- 창 -->
+		<path d="M44,50 H82 M130,50 H190" class="ln s3" stroke-width="5"/>
+		<!-- 범례 -->
+		<g class="t-small">
+			<path d="M630,70 H660" class="ln sa" stroke-width="5"/><text x="670" y="75">문 (최소 신장 트리)</text>
+			<path d="M630,100 H660" class="ln s3" stroke-width="5"/><text x="670" y="105">창 (외벽, WindowChance)</text>
+			<path d="M630,130 H660" class="ln s2" stroke-width="5"/><text x="670" y="135">건물 출입문 (1층)</text>
+			<path d="M630,160 H660" class="ln s1" stroke-width="2"/><text x="670" y="165">방 경계 (BSP 분할)</text>
+			<text x="630" y="214">현관 ↔ 복도 문 하나</text>
+			<text x="630" y="234">거실-주방은 OpenTo라면</text>
+			<text x="630" y="254">경계 전체를 튼다</text>
+			<text x="630" y="294">모든 방이 계단실/복도에서</text>
+			<text x="630" y="314">닿는지 마지막에 검사</text>
+			<text x="630" y="334" class="t-mono">AreAllRoomsReachable</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 53-2.</b> 샘플 <code>Apartment.ebuilding</code>의 치수(26×14, 복도 Center 폭 2, Core 3×6)로 그린 설명용 평면. 위층 왼쪽 호실 하나만 방까지 나눠 보였습니다. 큰 구조(복도·계단실)가 먼저 정해지고, 그것이 호실과 문 위치의 제약이 됩니다.</figcaption>
+</figure>
+<p>4단계의 "최소 신장 트리"가 흥미로운 선택입니다. 방들을 정점, 맞닿은 경계를 간선으로 보면, 모든 방을 연결하는 가장 적은 문의 조합이 신장 트리입니다. 허브(거실)와 잇는 간선을 싸게 매기면 "모든 방이 거실을 거쳐 이어지는" 현실적인 구조가 나옵니다. 그리고 단계 끝마다 <code>AreAllRoomsReachable</code>로 "갇힌 방이 없음"을 검사합니다. 무작위 생성기는 이상한 경우를 반드시 만들어 내므로, 불변 조건을 코드로 확인하는 것이 필수입니다.</p>
+
+<h3 id="lec-53-kit"><span class="step">핵심 개념</span>모듈 키트 규약 — 생성기와 아티스트의 계약</h3>
+<p>생성기는 "이 경계에 벽을 놓는다"까지만 압니다. 실제 벽은 아티스트가 만든 프리팹입니다. 생성기가 벽 프리팹을 칸 경계 가운데에 놓았는데, 프리팹의 원점이 벽 모서리에 있거나 벽이 X축으로 누워 있으면 모든 벽이 어긋납니다. 그래서 프리팹이 지켜야 할 <b>규약</b>을 문서로 고정했습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Building/BuildingConfig.h — 머리 주석 (발췌)"><span class="com">// 모듈 키트 프리팹 규약 (프리팹 루트 = 생성기가 놓는 위치, 칸 크기·층고에 맞게 자식 오프셋/스케일로 맞춘다):</span>
+<span class="com">//   Floor/CorridorFloor/Roof: 칸 한 개 가운데, 윗면 Z = 0, 아래로 두께. 생성기가 방 사각형마다 하나를 (칸 수 X, 칸 수 Y, 1)로 늘린다</span>
+<span class="com">//   Ceiling: 칸 한 개 가운데, 층 꼭대기(Z = FloorHeight)에 놓이고 아래로 두께</span>
+<span class="com">//   Wall/ExteriorWall/Door/EntranceDoor/Window/Railing: 칸 경계 가운데 바닥(Z = 0), 로컬 Y로 -칸/2..+칸/2, 앞(+X)이 방 안쪽</span>
+<span class="com">//   Corner: 격자 꼭짓점 바닥 / Stairs: 칸 한 개 크기 계단(로컬 +X로 오름, 높이 = 층고)</span>
+<span class="com">//   소품: 바닥 자리 가운데, 앞 = 로컬 +X (벽 소품은 등이 벽)</span></pre>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 280" role="img" aria-label="벽 조각과 바닥 조각의 배치 규약 (위에서 본 그림)">
+		<title>벽 조각과 바닥 조각의 배치 규약 (위에서 본 그림)</title>
+		<text x="20" y="24" class="t-bold">벽 조각 (위에서 봄)</text>
+		<rect x="40" y="60" width="140" height="140" class="box"/>
+		<rect x="180" y="60" width="140" height="140" class="box"/>
+		<text x="110" y="216" text-anchor="middle" class="t-muted">칸 A</text>
+		<text x="250" y="216" text-anchor="middle" class="t-muted">칸 B (방 안쪽)</text>
+		<rect x="174" y="60" width="12" height="140" class="acc"/>
+		<circle cx="180" cy="130" r="5" class="fa"/>
+		<path d="M180,130 H244" class="ln s5" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="214" y="122" class="t-small f5">+X 앞</text>
+		<path d="M180,130 V72" class="ln s2" stroke-width="2" marker-end="url(#arr)"/>
+		<text x="190" y="84" class="t-small f2">+Y</text>
+		<text x="40" y="244" class="t-small">원점 = 경계 가운데 바닥, 로컬 Y로 −칸/2..+칸/2</text>
+		<text x="40" y="262" class="t-small">Yaw로 돌려 네 방향 경계에 같은 조각을 쓴다</text>
+
+		<text x="420" y="24" class="t-bold">바닥 조각: 방 사각형마다 하나를 늘린다</text>
+		<g>
+			<rect x="440" y="60" width="300" height="140" class="k2"/>
+			<path d="M540,60 V200 M640,60 V200 M440,130 H740" class="ln-d"/>
+			<rect x="440" y="60" width="100" height="70" class="acc" fill-opacity="0.5"/>
+			<text x="490" y="100" text-anchor="middle" class="t-small t-bold">조각 1칸</text>
+			<path d="M550,100 C 600,100 640,150 680,160" class="ln" marker-end="url(#arr)"/>
+			<text x="600" y="178" class="t-small">스케일 (3, 2, 1)</text>
+		</g>
+		<text x="440" y="226" class="t-small">3 × 2칸 방 = 바닥 프리팹 1개 (6개가 아니라)</text>
+		<text x="440" y="246" class="t-small">윗면 Z = 0, 칸 가운데 원점이라 늘려도 이음새가 없다</text>
+		<text x="440" y="264" class="t-muted">→ 인스턴스 수가 줄어 그리기 묶음(29강)이 작아진다</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 53-3.</b> 규약이 있으면 생성기는 프리팹의 생김새를 몰라도 되고, 아티스트는 생성기 코드를 몰라도 됩니다. 칸 크기나 층고가 다른 키트도 프리팹 안 자식의 오프셋·스케일로 규약에 맞추면 그대로 쓸 수 있습니다.</figcaption>
+</figure>
+
+<h3 id="lec-53-projecte"><span class="step">ProjectE에서는</span>설정 파일, 씬 적용, 유지 그룹</h3>
+<h4>입력: .ebuilding과 소품 규칙 표</h4>
+<p>건물 설정은 JSON 에셋 <code>.ebuilding</code>(<code>FBuildingConfig</code>)이고, 소품 규칙은 52강의 데이터 테이블(<code>Data/Building/BuildingProp.estruct</code> 구조)입니다. 샘플의 일부를 보면 생성 단계의 매개변수가 그대로 보입니다.</p>
+<pre class="code" data-file="Projects/Sample/Content/Buildings/Apartment.ebuilding (발췌)">{ <span class="str">"CellSize"</span>: <span class="num">100</span>, <span class="str">"Width"</span>: <span class="num">26</span>, <span class="str">"Depth"</span>: <span class="num">14</span>, <span class="str">"Floors"</span>: <span class="num">5</span>, <span class="str">"FloorHeight"</span>: <span class="num">260</span>, <span class="str">"Seed"</span>: <span class="num">1</span>, <span class="str">"VaryFloors"</span>: <span class="kw">true</span>,
+  <span class="str">"Core"</span>: {<span class="str">"X"</span>: <span class="num">11</span>, <span class="str">"Y"</span>: <span class="num">8</span>, <span class="str">"Width"</span>: <span class="num">3</span>, <span class="str">"Depth"</span>: <span class="num">6</span>},
+  <span class="str">"Corridor"</span>: {<span class="str">"Type"</span>: <span class="str">"Center"</span>, <span class="str">"Width"</span>: <span class="num">2</span>, <span class="str">"Entrance"</span>: <span class="kw">true</span>},
+  <span class="str">"Units"</span>: {<span class="str">"MinWidth"</span>: <span class="num">6</span>, <span class="str">"MaxWidth"</span>: <span class="num">9</span>}, <span class="str">"MinRoomSide"</span>: <span class="num">2</span>,
+  <span class="str">"Rooms"</span>: [
+    {<span class="str">"Type"</span>: <span class="str">"Entry"</span>, <span class="str">"Weight"</span>: <span class="num">0.8</span>, <span class="str">"MinArea"</span>: <span class="num">4</span>, <span class="str">"Required"</span>: <span class="kw">true</span>, <span class="str">"Entry"</span>: <span class="kw">true</span>, <span class="str">"WindowChance"</span>: <span class="num">0</span>},
+    {<span class="str">"Type"</span>: <span class="str">"Living"</span>, <span class="str">"Weight"</span>: <span class="num">4</span>, <span class="str">"MinArea"</span>: <span class="num">9</span>, <span class="str">"Required"</span>: <span class="kw">true</span>, <span class="str">"Hub"</span>: <span class="kw">true</span>, <span class="str">"NeedsWindow"</span>: <span class="kw">true</span>,
+     <span class="str">"WindowChance"</span>: <span class="num">0.6</span>, <span class="str">"Adjacent"</span>: [<span class="str">"Entry"</span>, <span class="str">"Kitchen"</span>], <span class="str">"OpenTo"</span>: [<span class="str">"Kitchen"</span>]},
+    ... ],
+  <span class="str">"Templates"</span>: [ {<span class="str">"Name"</span>: <span class="str">"Studio"</span>, <span class="str">"Width"</span>: <span class="num">6</span>, <span class="str">"Depth"</span>: <span class="num">6</span>, <span class="str">"Rooms"</span>: [ ... ]} ], ... }</pre>
+<p><code>Weight</code>는 방 면적 비율, <code>Hub</code>는 문 트리의 중심, <code>Adjacent</code>는 배정 점수의 인접 선호입니다. <code>Templates</code> + <code>FixedUnits</code>로 특정 층·호실을 손으로 설계한 배치로 고정할 수도 있습니다 — 완전한 무작위와 완전한 수작업 사이를 조절하는 손잡이입니다.</p>
+
+<h4>출력: 순수한 결과 → 씬에 굳히기</h4>
+<p><code>GenerateBuilding</code>은 층 평면(<code>FBuildingFloorPlan</code>: 칸 → 방, 경계 → 벽/문/창/트임)과 배치 목록(<code>FBuildingPlacement</code>: 프리팹 경로, 위치, Yaw, 스케일, 층·호실·방)을 돌려줄 뿐 씬을 건드리지 않습니다. 씬에 적용하는 일은 <code>FBuildingSceneBuilder</code> 하나가 맡고, 에디터 인스펙터의 "생성" 버튼과 Lua <code>entity:GenerateBuilding</code>이 같은 함수를 씁니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Building/BuildingScene.h (발췌)"><span class="com">// 생성물 표식 하나로 두 역할 (컴포넌트 수 = 엔진 DLL 내보내기 수라 합쳤다):</span>
+<span class="com">//   - 생성 그룹: 생성기가 층 그룹(Unit = -1)·호실 그룹(Unit ≥ 0)에 Floor/Unit을 채우고 bKeep = false로 붙인다</span>
+<span class="com">//   - 유지 표식: 손으로 고친/추가한 엔티티에 "컴포넌트 추가"로 붙이면 기본 bKeep = true → 다시 생성해도 하위 트리째 남는다</span>
+<span class="com">//     층/호실 그룹 자체에 유지를 켜면 그 층/호실은 고정된다</span>
+<span class="kw">struct</span> FBuildingPartComponent
+{
+	int32 Floor = -<span class="num">1</span>; <span class="com">// 그룹만 (0부터)</span>
+	int32 Unit  = -<span class="num">1</span>; <span class="com">// 호실 그룹만 (층 그룹 -1)</span>
+	<span class="kw">bool</span>  bKeep = <span class="kw">true</span>;
+};</pre>
+<p>생성 결과는 건물 엔티티 아래 "층 그룹 → 호실 그룹 → 프리팹 인스턴스(일반 엔티티)"로 굳습니다. 일반 엔티티이므로 디자이너가 의자를 옮기거나 포스터를 붙이는 등 마음대로 고칠 수 있습니다. 문제는 그 뒤에 "새 시드"를 누르면 고친 것이 모두 사라진다는 점입니다. 그래서 다시 생성의 보존 정책을 정했습니다.</p>
+<ul>
+	<li>생성 그룹(<code>bKeep = false</code>)과 그 하위는 지우고 새로 만듭니다.</li>
+	<li>그룹 안에서 유지 표식이 붙은 엔티티는 하위 트리째 남겨 <b>같은 (층, 호실) 새 그룹</b>으로 옮깁니다. 그룹은 항상 건물 기준 단위 트랜스폼이라 옮겨도 월드 위치가 그대로입니다.</li>
+	<li>유지를 켠 층/호실 그룹은 그대로 두고, 그 자리의 새 배치는 만들지 않습니다(손으로 꾸민 호실 고정).</li>
+</ul>
+<div class="callout warn">
+	<b class="t">규칙: 생성물에 스크립트를 두지 않는다</b>
+	다시 생성하면 생성물은 즉시 파괴됩니다. 그 엔티티에 스크립트가 붙어 상태를 들고 있었다면 함께 사라집니다. 그리고 씬 구조만 바꾸는 <code>FBuildingSceneBuilder</code>는 메시 핸들 해석과 Undo 기록을 하지 않습니다 — 그것은 호출한 쪽의 책임입니다(에디터 = 해석 + <code>MarkEdited("건물 생성")</code>, Lua = 구조 변경 표시). 순수 생성 / 씬 적용 / 에디터 통합을 세 층으로 나눈 결과입니다.
+</div>
+
+<h4>멀티플레이: 복제하지 않고 각자 만든다</h4>
+<p>생성물 2천여 개를 복제 엔티티로 만들면 접속할 때마다 생성 메시지 수천 개가 오갑니다. 생성기가 결정적이므로 그럴 필요가 없습니다. CLAUDE.md의 규칙은 "생성물은 복제하지 않으므로 멀티플레이는 같은 시드로 각자 생성"입니다. 결정성이 곧 네트워크 대역폭 절약입니다.</p>
+
+<h4>결정성은 테스트로 고정한다</h4>
+<pre class="code" data-file="Tests/BuildingTests/BuildingGeneratorTests.cpp (발췌)">E_TEST(Building_SameSeedSameResult)
+{
+	<span class="kw">const</span> FBuildingResult A = Generate(Config, <span class="num">42</span>, Props);
+	<span class="kw">const</span> FBuildingResult B = Generate(Config, <span class="num">42</span>, Props);
+	E_EXPECT_TRUE(SamePlacements(A, B));
+	...
+	<span class="com">// 다른 시드면 배치가 달라진다 (여러 시드 중 하나라도 같으면 실패)</span>
+	int32 Different = <span class="num">0</span>;
+	<span class="kw">for</span> (uint32 Seed = <span class="num">43</span>; Seed &lt; <span class="num">48</span>; ++Seed)
+		Different += SamePlacements(A, Generate(Config, Seed, Props)) ? <span class="num">0</span> : <span class="num">1</span>;
+	E_EXPECT_EQ(Different, <span class="num">5</span>);
+	<span class="com">// 층마다 시드가 다르면 층 평면도 달라진다 (VaryFloors)</span>
+	E_EXPECT_TRUE(A.Floors[<span class="num">0</span>].Seed != A.Floors[<span class="num">2</span>].Seed);
+}</pre>
+<p>"같으면 같다"만 확인하면, 시드를 무시하는 버그(항상 같은 건물)도 통과합니다. 그래서 "다르면 다르다"도 함께 검사합니다. 그 밖에 모든 방 도달(시드 1~40), 벽으로 막힌 방을 검출하는지, 모듈이 격자와 맞는지, 소품이 겹치지 않는지, 계단실이 전 층 같은지, L자 외곽 등 16+1개 테스트가 있습니다.</p>
+
+<h3 id="lec-53-pitfalls"><span class="step">함정과 교훈</span>내보내기 수와 자리 식별</h3>
+<div class="callout story">
+	<b class="t">실제로 겪은 일: 내부 컨테이너를 익명 네임스페이스로 (커밋 34486db)</b>
+	생성기 내부에서 쓰던 <code>std::map</code> 라벨, Prim 비용 표, 인접 행렬 같은 컨테이너 타입이 엔진 DLL 내보내기 목록에 템플릿 인스턴스로 잡혀, 내보내기 한도(52강 이야기)를 압박했습니다. 이 타입들을 익명 네임스페이스의 내부 타입(<code>FLabelMap</code> 등)으로 바꾸자 내보내기가 약 470개 줄었고, 커밋 메시지는 "결과 동일 — Demo_Apartment 재생성 바이트 일치"를 확인했다고 적습니다. 내부 자료구조를 바꾸는 리팩터링도 결정적 생성기라면 "같은 시드 → 바이트 동일"로 바로 검증할 수 있습니다. <code>FBuildingPartComponent</code>가 두 역할을 겸하는 것도 같은 이유(컴포넌트 수 = 내보내기 수)입니다.
+</div>
+<ul>
+	<li><b>호실 번호는 생성 순서</b>: 유지 그룹은 (층, 호실 번호)로 자리를 찾는데, 시드가 바뀌면 같은 번호가 다른 모양의 호실일 수 있습니다. 헤더 주석은 고정 호실(<code>FixedUnits</code> 템플릿)과 함께 쓰라고 권합니다. 무작위 결과에 사람의 수정을 결합할 때는 "무엇으로 같은 자리를 식별하나"가 늘 어려운 문제입니다.</li>
+	<li><b>후처리</b>: 생성 결과가 바뀌면 내비메시(49강)도 다시 구워야 합니다. 데모는 <code>--generate-building Apartment --building-save --building-bake-navmesh</code> 인자로 생성·저장·굽기를 한 번에 합니다.</li>
+	<li><b>그리기 비용</b>: 샘플 Apartment는 인스턴스 2239개가 GPU 인스턴싱(29강)으로 메인 드로우 112개로 묶입니다(Plans.md). 바닥을 방마다 하나로 늘리는 규약도 인스턴스 수를 줄이는 데 한몫합니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>절차적 생성은 결정적이어야 편집·테스트·멀티플레이에 쓸 수 있다. 자체 SplitMix64, 표준 분포 금지, unordered 순회 금지, 외부 상태 금지.</li>
+		<li>단계는 큰 것에서 작은 것으로: 뼈대 → 호실 → 방(BSP + 배정 점수) → 문(최소 신장 트리 + 도달성 검사) → 창 → 모듈 → 소품(문 앞 연결 유지).</li>
+		<li>모듈 키트 규약(원점·축·늘리기)이 생성기와 아티스트를 분리한다.</li>
+		<li>생성(순수 함수) / 씬 적용(<code>FBuildingSceneBuilder</code>, 유지 표식 보존) / 에디터 통합(해석·Undo)을 나누고, 멀티플레이는 같은 시드로 각자 만든다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 층 시드를 따로 만들지 않고 건물 전체를 하나의 <code>FRng</code>로 위층까지 이어서 생성하면 어떤 불편이 생길까요?</summary>
+	1층에서 소품 규칙 하나를 추가해 난수를 몇 개 더 쓰면, 2층부터 위의 모든 층이 다른 결과가 됩니다. 단면 보기로 2층까지만 만들거나 한 층만 고정(<code>FixedFloorSeeds</code>)하는 것도 다른 층에 영향을 줍니다. 층마다 독립 시드면 한 층의 변경이 그 층 안에 머뭅니다.
+</details>
+<details class="quiz"><summary>Q2. 소품을 놓을 때 "겹치지 않음"만 검사하면 어떤 건물이 나올 수 있을까요?</summary>
+	가구끼리는 겹치지 않지만 소파와 책장이 나란히 놓여 방의 두 문 사이 통로를 완전히 막을 수 있습니다. 그러면 플레이어나 AI가 방을 지나갈 수 없습니다. 그래서 놓은 뒤 25cm 격자로 모든 문 앞이 서로 이어지는지 다시 확인하고, 막히면 그 자리를 포기합니다.
+</details>
+<details class="quiz"><summary>Q3. 생성기 안에서 <code>std::shuffle(v.begin(), v.end(), std::mt19937(seed))</code>를 쓰면 결정성이 깨질까요?</summary>
+	<code>std::mt19937</code>의 출력 수열 자체는 표준으로 정해져 있지만, <code>std::shuffle</code>이 그 수를 어떻게 범위로 바꾸고 어떤 순서로 바꾸는지는 표준 라이브러리 구현마다 다를 수 있습니다. 그래서 MSVC와 다른 구현에서 다른 순서가 나올 수 있습니다. ProjectE가 <code>FRng::Shuffle</code>(피셔-예이츠, 직접 구현)을 둔 이유입니다.
+</details>
+</article>
+
+<!-- ======================================================= 54강 ======================================================= -->
+<article class="lecture" id="lec-54">
+<header>
+	<div class="no">54강</div>
+	<h2 id="lec-54-title">지형, 식생, 파티클</h2>
+	<div class="meta">관련 Phase: 12 (파티클) · 34 (지형/식생) · 살펴볼 곳: <code>Scene/Terrain.h</code>/<code>.cpp</code>, <code>Renderer/TerrainRenderer.h</code>/<code>.cpp</code>, <code>Physics/TerrainCollision.cpp</code>, <code>Scene/Foliage.h</code>, <code>Renderer/FoliageRenderer.cpp</code>, <code>Scene/Particles.h</code>/<code>.cpp</code>, <code>Engine/Shaders/ParticleSimulate.hlsl</code>, <code>ParticleCommon.hlsli</code>, <code>Renderer/ParticleBounds.h</code>, <code>Renderer/ParticleRenderer.h</code></div>
+</header>
+
+<div class="goals">
+	<b>이 강의를 마치면</b>
+	<ul>
+		<li>하이트맵 지형의 데이터 표현(16비트 높이, 레이어 가중치)과 월드 좌표 변환을 설명할 수 있습니다.</li>
+		<li>"셀 대각선을 렌더·충돌·수학이 똑같이 쓴다"는 규칙이 왜 필요한지 압니다.</li>
+		<li>청크 LOD, 스커트, 높이장 충돌 변환, 브러시 편집과 부분 업로드의 구조를 이해합니다.</li>
+		<li>이미터·모듈·렌더러로 나눈 파티클 구조, CPU/GPU가 같은 식·같은 난수를 쓰는 방법, 화면 밖 GPU 이미터의 계산 미루기를 설명할 수 있습니다.</li>
+	</ul>
+</div>
+
+<h3 id="lec-54-why"><span class="step">왜 필요한가</span>세계의 바탕과 공기</h3>
+<p>지금까지의 씬은 메시를 하나하나 놓아 만들었습니다. 하지만 언덕과 골짜기가 이어진 1km 크기 땅을 메시 조각으로 만들 수는 없습니다. 풀 수만 포기를 엔티티로 놓을 수도 없습니다(엔티티 하나에 컴포넌트·트랜스폼·계층이 붙습니다). 불꽃과 연기처럼 수천 개 점이 생겼다 사라지는 효과도 엔티티로 표현하면 ECS가 감당하지 못합니다.</p>
+<p>이 세 가지는 공통점이 있습니다. <b>개별 객체가 아니라 "대량의 균질한 데이터"</b>라는 점입니다. 그래서 셋 다 엔티티 하나(컴포넌트) 안에 큰 배열을 담고, 전용 시스템이 그 배열을 한꺼번에 처리합니다. 지형은 높이 격자, 식생은 인스턴스 배열, 파티클은 입자 배열입니다.</p>
+
+<h3 id="lec-54-height"><span class="step">핵심 개념</span>하이트맵: 높이만 저장하는 격자</h3>
+<p>땅의 모양을 일반 메시로 저장하면 정점마다 x, y, z가 필요합니다. 하지만 땅은 위에서 보면 규칙적인 격자입니다. x, y는 격자 위치로 정해지므로 <b>z(높이)만 저장</b>하면 됩니다. 이것이 하이트맵(heightmap)입니다. 흑백 이미지와 같은 구조라서, 외부 도구에서 만든 PNG/RAW 높이 이미지를 그대로 가져올 수도 있습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Terrain.h — 머리 주석 (발췌)"><span class="com">//   - 지형은 엔티티 월드 위치만 따른다 (회전/스케일 무시). 위치 = 지형 가운데, 높이 0(16비트 32768) = 위치 Z</span>
+<span class="com">//   - 높이맵 정점 격자 Resolution x Resolution (셀 = Resolution - 1), X = 열(+X 앞), Y = 행(+Y 오른쪽)</span>
+<span class="com">//   - 높이 Z = 위치 Z + (h / 65535 - 0.5) * HeightRange, 레이어 가중치는 정점마다 RGBA8 (합 255, 레이어 0~3)</span>
+<span class="com">//   - 데이터는 .eterrain(JSON + base64) 하나에 담고 FTerrainLibrary가 경로별로 공유한다 (렌더러/물리/에디터 공용)</span></pre>
+<ul>
+	<li><b>16비트 정수 높이</b>: 0~65535를 <code>HeightRange</code>(기본 5000cm)에 펼칩니다. 한 단계는 5000/65535 ≈ 0.08cm로 눈에 보이지 않을 만큼 촘촘하고, <code>float</code>의 절반 크기입니다. 가운데 값 32768이 엔티티 위치 Z라서, 엔티티를 위아래로 옮기면 지형 전체가 따라 움직입니다.</li>
+	<li><b>레이어 가중치</b>: 정점마다 RGBA8 네 바이트 = 풀/흙/바위/모래 같은 레이어 4개의 섞는 비율(합 255). 셰이더가 이 비율로 머티리얼 4개를 섞습니다.</li>
+	<li><b>회전·스케일 무시</b>: 지형을 기울이면 "높이 = 위 방향"이라는 가정이 깨지고 충돌·스크립트의 "이 위치의 땅 높이" 질의가 복잡해집니다. 그래서 위치만 따르고, 크기는 컴포넌트의 <code>Size</code>(cm)로 정합니다.</li>
+</ul>
+
+<h4>셀은 삼각형 두 개 — 대각선을 하나로 정한다</h4>
+<p>격자의 한 칸(셀)은 꼭짓점 네 개의 높이가 서로 다르면 평면이 아닙니다. GPU는 삼각형만 그리므로 셀을 대각선으로 잘라 삼각형 두 개로 만들어야 하는데, 대각선은 두 방향이 가능하고, <b>어느 쪽으로 자르느냐에 따라 셀 안의 땅 모양이 달라집니다</b>.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 300" role="img" aria-label="하이트맵 셀의 대각선 분할과 16비트 높이 매핑">
+		<title>하이트맵 셀의 대각선 분할과 16비트 높이 매핑</title>
+		<text x="20" y="24" class="t-bold">셀 하나 (위에서 봄)</text>
+		<rect x="60" y="50" width="200" height="200" class="box"/>
+		<path d="M60,50 L260,50 L260,250 Z" class="k1"/>
+		<path d="M60,50 L60,250 L260,250 Z" class="k2"/>
+		<path d="M60,50 L260,250" class="ln sa" stroke-width="2.4"/>
+		<g class="t-small">
+			<text x="56" y="44" text-anchor="end" class="t-mono">H00</text>
+			<text x="264" y="44" class="t-mono">H10</text>
+			<text x="56" y="266" text-anchor="end" class="t-mono">H01</text>
+			<text x="264" y="266" class="t-mono">H11</text>
+			<text x="200" y="110" text-anchor="middle" class="t-bold">FX ≥ FY</text>
+			<text x="120" y="200" text-anchor="middle" class="t-bold">FX &lt; FY</text>
+		</g>
+		<path d="M60,282 H250" class="ln" marker-end="url(#arr)"/><text x="256" y="286" class="t-small">GridX (FX)</text>
+		<path d="M30,50 V240" class="ln" marker-end="url(#arr)"/><text transform="translate(22,190) rotate(-90)" class="t-small">GridY (FY)</text>
+
+		<g class="t-small">
+			<text x="300" y="80">대각선 (0,0)–(1,1)로 나눈 두 삼각형:</text>
+			<text x="300" y="104" class="t-mono">FX ≥ FY: H00 + FX·(H10−H00) + FY·(H11−H10)</text>
+			<text x="300" y="126" class="t-mono">FX &lt; FY: H00 + FY·(H01−H00) + FX·(H11−H01)</text>
+			<text x="300" y="160">같은 분할을 세 곳이 쓴다:</text>
+			<text x="300" y="182">· TerrainMath::SampleHeight (스크립트·폴리지 심기·발 IK)</text>
+			<text x="300" y="204">· 렌더러 인덱스 버퍼 { A, D, B, A, C, D }</text>
+			<text x="300" y="226">· Jolt 높이장 충돌 (축 변환 후 같은 면)</text>
+		</g>
+
+		<g>
+			<rect x="740" y="50" width="22" height="200" class="k4"/>
+			<path d="M762,50 H780 M762,150 H780 M762,250 H780" class="ln"/>
+			<text x="784" y="55" class="t-small t-mono">65535</text>
+			<text x="784" y="155" class="t-small t-mono">32768</text>
+			<text x="784" y="255" class="t-small t-mono">0</text>
+			<text x="784" y="72" class="t-muted">Z + R/2</text>
+			<text x="784" y="172" class="t-muted">= 위치 Z</text>
+			<text x="784" y="272" class="t-muted">Z − R/2</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 54-1.</b> 왼쪽: 셀 안의 실수 위치 (FX, FY)에서 높이를 구하는 식. 오른쪽: 16비트 값과 월드 높이의 대응(R = <code>HeightRange</code>). 대각선이 한쪽으로 정해져 있어야 "보이는 땅"과 "밟는 땅"과 "계산한 땅"이 같은 면이 됩니다.</figcaption>
+</figure>
+<pre class="code" data-file="Engine/Source/Scene/Terrain.cpp — TerrainMath::SampleHeight (발췌)"><span class="kw">const float</span> H00 = Data.GetHeight(X0, Y0);
+<span class="kw">const float</span> H10 = Data.GetHeight(X0 + <span class="num">1</span>, Y0);
+<span class="kw">const float</span> H01 = Data.GetHeight(X0, Y0 + <span class="num">1</span>);
+<span class="kw">const float</span> H11 = Data.GetHeight(X0 + <span class="num">1</span>, Y0 + <span class="num">1</span>);
+<span class="com">// 대각선 (0,0)-(1,1)로 나눈 두 삼각형</span>
+<span class="kw">if</span> (FX &gt;= FY)
+{
+	<span class="kw">return</span> H00 + FX * (H10 - H00) + FY * (H11 - H10);
+}
+<span class="kw">return</span> H00 + FY * (H01 - H00) + FX * (H11 - H01);</pre>
+<p>흔한 대안은 네 꼭짓점을 쌍선형 보간하는 것입니다. 수학적으로는 부드럽지만, GPU가 그리는 면은 삼각형 두 개라 쌍선형 높이와 다릅니다. 그러면 캐릭터 발(물리)은 삼각형 면 위에 있는데 폴리지를 심을 때 계산한 높이는 쌍선형이라 풀이 땅에 떠 있거나 파묻힙니다. 높이가 크게 다른 셀에서는 그 차이가 수십 cm가 됩니다. CLAUDE.md 규칙 "셀 대각선은 (0,0)-(1,1)이며 수학·렌더·충돌이 같은 면을 쓴다"는 이 어긋남을 원천 차단합니다.</p>
+
+<h3 id="lec-54-lod"><span class="step">핵심 개념</span>청크 LOD와 스커트</h3>
+<p>513×513 정점 지형은 셀이 26만 개, 삼각형이 52만 개입니다. 멀리 있는 땅을 같은 밀도로 그릴 필요는 없습니다. 지형 렌더러는 지형을 <b>청크</b>(기본 64셀 정사각형)로 나누고, 카메라에서 먼 청크일수록 정점을 건너뛰어 그립니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/TerrainRenderer.cpp — SelectChunkLod"><span class="com">// 청크 = ChunkCells 셀 정사각형(기본 64), LOD k = 정점 간격 2^k (카메라 거리 / 청크 크기)</span>
+uint32 FTerrainRenderer::SelectChunkLod(<span class="kw">float</span> Distance, <span class="kw">float</span> ChunkWorldSize, <span class="kw">float</span> DistanceScale, uint32 MaxLod)
+{
+	<span class="kw">const float</span> Ratio = Distance / std::max(ChunkWorldSize * std::max(DistanceScale, <span class="num">0.01f</span>), <span class="num">1.0f</span>);
+	<span class="kw">if</span> (Ratio &lt; <span class="num">1.0f</span>)
+	{
+		<span class="kw">return</span> <span class="num">0</span>;
+	}
+	<span class="kw">const</span> uint32 Lod = <span class="kw">static_cast</span>&lt;uint32&gt;(std::floor(std::log2(Ratio))) + <span class="num">1</span>;
+	<span class="kw">return</span> std::min(Lod, MaxLod);
+}</pre>
+<p>거리가 청크 크기의 1배 미만이면 LOD 0, 1~2배면 1, 2~4배면 2 … 처럼 <b>거리가 두 배가 될 때마다 정점 간격도 두 배</b>가 됩니다. 원근 투영에서 물체의 화면 크기는 거리에 반비례하므로, 이렇게 하면 화면에서 본 삼각형 크기가 대략 일정하게 유지됩니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 290" role="img" aria-label="거리에 따른 청크 LOD와 이웃 LOD 사이 틈을 가리는 스커트">
+		<title>거리에 따른 청크 LOD와 이웃 LOD 사이 틈을 가리는 스커트</title>
+		<text x="20" y="22" class="t-bold">위에서 본 청크 (숫자 = LOD)</text>
+		<g class="t-small">
+			<rect x="20" y="36" width="40" height="40" class="k1"/><text x="40" y="61" text-anchor="middle">1</text>
+			<rect x="60" y="36" width="40" height="40" class="k1"/><text x="80" y="61" text-anchor="middle">1</text>
+			<rect x="100" y="36" width="40" height="40" class="k3"/><text x="120" y="61" text-anchor="middle">2</text>
+			<rect x="140" y="36" width="40" height="40" class="k3"/><text x="160" y="61" text-anchor="middle">2</text>
+			<rect x="180" y="36" width="40" height="40" class="k3"/><text x="200" y="61" text-anchor="middle">2</text>
+			<rect x="220" y="36" width="40" height="40" class="k4"/><text x="240" y="61" text-anchor="middle">3</text>
+			<rect x="260" y="36" width="40" height="40" class="k4"/><text x="280" y="61" text-anchor="middle">3</text>
+			<rect x="300" y="36" width="40" height="40" class="k4"/><text x="320" y="61" text-anchor="middle">3</text>
+
+			<rect x="20" y="76" width="40" height="40" class="k2"/><text x="40" y="101" text-anchor="middle">0</text>
+			<rect x="60" y="76" width="40" height="40" class="k2"/><text x="80" y="101" text-anchor="middle">0</text>
+			<rect x="100" y="76" width="40" height="40" class="k1"/><text x="120" y="101" text-anchor="middle">1</text>
+			<rect x="140" y="76" width="40" height="40" class="k3"/><text x="160" y="101" text-anchor="middle">2</text>
+			<rect x="180" y="76" width="40" height="40" class="k3"/><text x="200" y="101" text-anchor="middle">2</text>
+			<rect x="220" y="76" width="40" height="40" class="k4"/><text x="240" y="101" text-anchor="middle">3</text>
+			<rect x="260" y="76" width="40" height="40" class="k4"/><text x="280" y="101" text-anchor="middle">3</text>
+			<rect x="300" y="76" width="40" height="40" class="k4"/><text x="320" y="101" text-anchor="middle">3</text>
+
+			<rect x="20" y="116" width="40" height="40" class="k2"/>
+			<rect x="60" y="116" width="40" height="40" class="k2"/><text x="80" y="141" text-anchor="middle">0</text>
+			<rect x="100" y="116" width="40" height="40" class="k1"/><text x="120" y="141" text-anchor="middle">1</text>
+			<rect x="140" y="116" width="40" height="40" class="k3"/><text x="160" y="141" text-anchor="middle">2</text>
+			<rect x="180" y="116" width="40" height="40" class="k3"/><text x="200" y="141" text-anchor="middle">2</text>
+			<rect x="220" y="116" width="40" height="40" class="k4"/><text x="240" y="141" text-anchor="middle">3</text>
+			<rect x="260" y="116" width="40" height="40" class="k4"/><text x="280" y="141" text-anchor="middle">3</text>
+			<rect x="300" y="116" width="40" height="40" class="k4"/><text x="320" y="141" text-anchor="middle">3</text>
+
+			<rect x="20" y="156" width="40" height="40" class="k2"/><text x="40" y="181" text-anchor="middle">0</text>
+			<rect x="60" y="156" width="40" height="40" class="k2"/><text x="80" y="181" text-anchor="middle">0</text>
+			<rect x="100" y="156" width="40" height="40" class="k1"/><text x="120" y="181" text-anchor="middle">1</text>
+			<rect x="140" y="156" width="40" height="40" class="k3"/><text x="160" y="181" text-anchor="middle">2</text>
+			<rect x="180" y="156" width="40" height="40" class="k3"/><text x="200" y="181" text-anchor="middle">2</text>
+			<rect x="220" y="156" width="40" height="40" class="k4"/><text x="240" y="181" text-anchor="middle">3</text>
+			<rect x="260" y="156" width="40" height="40" class="k4"/><text x="280" y="181" text-anchor="middle">3</text>
+			<rect x="300" y="156" width="40" height="40" class="k4"/><text x="320" y="181" text-anchor="middle">3</text>
+
+			<rect x="20" y="196" width="40" height="40" class="k1"/><text x="40" y="221" text-anchor="middle">1</text>
+			<rect x="60" y="196" width="40" height="40" class="k1"/><text x="80" y="221" text-anchor="middle">1</text>
+			<rect x="100" y="196" width="40" height="40" class="k3"/><text x="120" y="221" text-anchor="middle">2</text>
+			<rect x="140" y="196" width="40" height="40" class="k3"/><text x="160" y="221" text-anchor="middle">2</text>
+			<rect x="180" y="196" width="40" height="40" class="k3"/><text x="200" y="221" text-anchor="middle">2</text>
+			<rect x="220" y="196" width="40" height="40" class="k4"/><text x="240" y="221" text-anchor="middle">3</text>
+			<rect x="260" y="196" width="40" height="40" class="k4"/><text x="280" y="221" text-anchor="middle">3</text>
+			<rect x="300" y="196" width="40" height="40" class="k4"/><text x="320" y="221" text-anchor="middle">3</text>
+		</g>
+		<circle cx="40" cy="136" r="6" class="fa"/>
+		<text x="20" y="258" class="t-small">● 카메라. 같은 LOD 청크끼리 인스턴싱 한 번,</text>
+		<text x="20" y="276" class="t-small">정점 버퍼 없음 — 정점 번호로 격자 위치를 만든다</text>
+
+		<text x="420" y="22" class="t-bold">옆에서 본 경계: 틈과 스커트</text>
+		<g>
+			<path d="M440,120 L500,96 L560,112 L620,80" class="ln s2" stroke-width="2.4"/>
+			<path d="M620,80 L740,118 L800,100" class="ln s4" stroke-width="2.4"/>
+			<path d="M620,80 L680,104" class="ln s5" stroke-width="1.6" stroke-dasharray="3 3"/>
+			<circle cx="680" cy="92" r="4" class="f2"/>
+			<text x="440" y="70" class="t-small">LOD 0 (촘촘)</text>
+			<text x="720" y="70" class="t-small">LOD 1 (정점 하나 건너뜀)</text>
+
+			<path d="M620,80 V176" class="ln s3" stroke-width="2.4"/>
+			<path d="M440,120 V176" class="ln s3" stroke-width="1.4"/>
+			<path d="M800,100 V176" class="ln s3" stroke-width="1.4"/>
+			<text x="440" y="198" class="t-small f5">LOD 0 쪽 정점(●)과 LOD 1 쪽 직선이 어긋나면 틈이 생긴다</text>
+			<text x="440" y="218" class="t-small">스커트(보라 세로선) = 청크 가장자리에서 아래로 늘어뜨린 벽</text>
+			<text x="440" y="238" class="t-small t-mono">SkirtDepth = 1.5 × 셀 크기</text>
+			<text x="440" y="258" class="t-muted">틈 뒤에 같은 색의 벽이 있어 구멍이 보이지 않는다</text>
+			<text x="440" y="276" class="t-muted">(이웃끼리 정점을 맞추는 복잡한 이음 메시 없이)</text>
+		</g>
+	</svg>
+	</div>
+	<figcaption><b>그림 54-2.</b> 왼쪽은 <code>SelectChunkLod</code> 식(거리 배수의 log₂)으로 칠한 예. 오른쪽: 이웃 청크의 LOD가 다르면 경계의 정점이 맞지 않아 틈(크랙)이 생깁니다. ProjectE는 청크 둘레에 스커트를 내려 가립니다. 스커트는 양면이라 PSO의 컬링을 끕니다.</figcaption>
+</figure>
+<p>지형 렌더러에는 정점 버퍼가 없습니다. 정점 셰이더가 정점 번호(<code>SV_VertexID</code>)로 "청크 안 몇 번째 격자점인지"를 계산하고, R16 높이 텍스처에서 높이를 읽습니다. 그래서 LOD마다 필요한 것은 인덱스 버퍼 하나(패치 크기별)와 "어느 청크를 이 LOD로 그릴지" 목록뿐이고, 같은 LOD 청크는 인스턴싱 한 번에 그립니다. Demo_Terrain(513², 폴리지 3.6만) 측정은 Release CPU 0.41ms / GPU 0.35ms, 드로우 14(그림자 36)였습니다(Plans.md 34-3).</p>
+
+<h3 id="lec-54-terrain-pe"><span class="step">ProjectE에서는</span>충돌, 편집, Undo</h3>
+<h4>높이장 충돌: 축을 돌리고 표본을 전치한다</h4>
+<p>물리 엔진 Jolt에는 높이장(height field) 모양이 있습니다. 문제는 좌표계입니다. Jolt 높이장은 Y가 높이이고 X–Z 평면에 격자가 깔리지만, ProjectE는 Z-up입니다(4강). 그래서 바디에 축 순환 회전을 주고, 표본 배열을 전치해 넣습니다.</p>
+<pre class="code" data-file="Engine/Source/Physics/TerrainCollision.cpp (발췌)"><span class="com">// 엔진 축 순환 회전: Jolt X → 엔진 Y, Jolt Y(높이) → 엔진 Z, Jolt Z → 엔진 X (축 (1,1,1) 120°)</span>
+<span class="kw">const</span> JPH::Quat TerrainRotation(<span class="num">0.5f</span>, <span class="num">0.5f</span>, <span class="num">0.5f</span>, <span class="num">0.5f</span>);
+
+<span class="com">// Jolt 표본 (x, y)는 y * N + x. 엔진 격자 (GridX = y, GridY = x) = Heights[x * N + y] (전치)</span>
+<span class="kw">for</span> (uint32 JoltY = <span class="num">0</span>; JoltY &lt; Resolution; ++JoltY)
+	<span class="kw">for</span> (uint32 JoltX = <span class="num">0</span>; JoltX &lt; Resolution; ++JoltX)
+		OutSamples[JoltY * Resolution + JoltX] = Data.Heights[JoltX * Resolution + JoltY] * HeightScaleMeters;</pre>
+<p>축을 (1,1,1) 둘레로 120° 돌리면 X→Y→Z→X로 축이 순환합니다. 반사(거울상)가 아닌 회전이라 왼손/오른손 문제가 생기지 않고, 대각선 분할도 그대로 유지됩니다. 단위는 경계에서 cm → m(<code>FUnits::UnitsToMeters</code>)로 바꿉니다. 데이터의 <code>ChangeCounter</code>가 바뀌면(편집) 바디를 다시 만듭니다.</p>
+
+<h4>브러시 편집과 부분 업로드</h4>
+<p>에디터에서는 브러시로 올리기/내리기/평탄화/부드럽게/노이즈/레이어 칠하기를 합니다(크기·세기·감쇠). 브러시는 매 프레임 작은 영역만 바꾸므로, 513² 텍스처 전체를 다시 올리면 낭비입니다. 그래서 데이터를 바꾼 코드는 반드시 <code>MarkChanged(영역)</code>로 알리고, 렌더러·물리는 "내가 마지막으로 본 번호 이후 바뀐 영역의 합"(<code>GetChangesSince</code>)만 다시 올립니다. 렌더러는 그 영역만 <code>CopyTextureRegion</code>으로 복사합니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Terrain.h (발췌)"><span class="kw">void</span> MarkChanged(<span class="kw">const</span> FTerrainRect&amp; Rect);
+<span class="com">// Counter 이후 바뀐 영역 합. 기록이 모자라면(오래됨) 전체. 바뀐 것이 없으면 false</span>
+<span class="kw">bool</span> GetChangesSince(uint64 Counter, FTerrainRect&amp; OutRect) <span class="kw">const</span>;</pre>
+<p>Undo(35강)는 지형에서 특별합니다. 씬 JSON 스냅샷 방식으로는 수십만 개 높이를 매번 통째로 저장할 수 없기 때문입니다. 그래서 바뀐 영역의 전/후만 기록하는 사슬(상한 256MB)을 두고, 컴포넌트의 <code>EditRevision</code>(씬에 저장)과 데이터의 <code>Revision</code>을 맞추는 방식으로 씬 Undo와 연결합니다. 규칙은 "<b>스트로크 끝에만</b> 기록 + <code>EditRevision</code> 갱신 + <code>MarkEdited</code>, 끄는 도중 <code>MarkEdited</code> 금지"입니다. 마우스를 끄는 동안 매 프레임 기록하면 Undo 한 번에 한 프레임 분량만 되돌아가 수백 번을 눌러야 합니다.</p>
+
+<h4>식생: 엔티티가 아닌 인스턴스 배열</h4>
+<p>폴리지(<code>FFoliageComponent</code>)는 <code>.efoliage</code> 하나에 타입 목록(메시, 밀도, 크기 범위, 경사·높이 제한, 컬링·그림자 거리, 충돌)과 타입별 인스턴스 배열(32바이트: 위치, Yaw, 크기, 지면 법선)을 담습니다. 인스턴스는 <b>월드 좌표</b>로 저장해 지형 위에 칠한 그대로 둡니다. 렌더러는 20m 셀로 묶어 셀 단위로 거리·프러스텀 컬링을 한 뒤, 살아남은 인스턴스를 엔진의 공용 인스턴싱 목록에 밀어 넣습니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/FoliageRenderer.cpp (발췌)"><span class="kw">const float</span> Fade = FoliageMath::ComputeFade(Distance, CullDistance); <span class="com">// 끝 15%에서 크기를 줄여 사라짐</span>
+...
+FMeshInstance Instance;
+Instance.World         = Fade &lt; <span class="num">1.0f</span> ? FoliageMath::MakeWorldMatrix(Instances[Index], Type, Fade) : Entry.Worlds[Index];
+Instance.Entity        = Set.Entity;   <span class="com">// 폴리지 컴포넌트 엔티티 (NullEntity 금지)</span>
+Instance.bCastShadow   = bShadow;      <span class="com">// 그림자 거리 안만</span>
+Instance.bFixedLod     = <span class="kw">true</span>;         <span class="com">// LOD를 직접 골랐다</span>
+Instance.bShadowStatic = <span class="kw">true</span>;         <span class="com">// 배치 고정 → 그림자 캐시 대상</span>
+Instance.PrevWorld     = Instance.World; <span class="com">// 정적: 움직임 벡터는 카메라만</span>
+...
+OutInstances.AddExternal(Instance);</pre>
+<p><code>AddExternal</code>로 넣은 인스턴스는 일반 정적 메시와 똑같이 묶음(29강)·그림자·사전 패스를 탑니다. 지형 전용 그리기 경로를 따로 만들지 않고 "인스턴스 목록"이라는 공용 입구로 들어가는 것이 핵심입니다. 대신 넣는 쪽이 지켜야 할 약속(<code>Entity</code>를 비우지 않기, 그림자 정적 여부, 직접 고른 LOD 표시)을 CLAUDE.md에 적어 두었습니다.</p>
+
+<h3 id="lec-54-particles"><span class="step">핵심 개념</span>나이아가라식 파티클: 이미터 × 단계 × 모듈</h3>
+<p>파티클 시스템을 처음 만들면 보통 "불꽃 이미터 클래스", "연기 이미터 클래스"처럼 효과마다 코드를 짭니다. 효과가 늘면 끝이 없습니다. 언리얼 나이아가라(Niagara)는 효과를 <b>작은 모듈의 조합</b>으로 봅니다. "초당 50개 생성" + "원뿔 안 속도" + "중력" + "수명에 따라 색 바꾸기"를 쌓으면 불꽃이 되고, 숫자만 바꾸면 분수가 됩니다. Phase 12는 이 구조를 따랐고, 모듈 이름과 입력도 나이아가라 기본 모듈 이름에 맞췄습니다(나중에 변환할 때 1:1로 대응되도록).</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 330" role="img" aria-label="파티클 시스템 에셋 구조">
+		<title>파티클 시스템 에셋 구조</title>
+		<rect x="20" y="20" width="820" height="40" rx="8" class="acc"/>
+		<text x="40" y="45" class="t-bold">시스템 .eparticle v2 (FParticleSystemAsset)</text>
+		<text x="420" y="45" class="t-small">이미터 여러 개 — 불꽃 + 연기 + 불티를 한 에셋에</text>
+		<rect x="20" y="76" width="820" height="200" rx="10" class="box"/>
+		<text x="36" y="100" class="t-bold">이미터 (FParticleEmitter)</text>
+		<text x="230" y="100" class="t-small">계산 방식 CPU | GPU · 로컬 공간 · 주기/반복 · 최대 개수 · 시드</text>
+		<g class="t-small">
+			<rect x="36" y="114" width="180" height="150" rx="8" class="k4"/>
+			<text x="126" y="136" text-anchor="middle" class="t-bold">① 이미터 갱신</text>
+			<text x="50" y="162">SpawnRate</text>
+			<text x="50" y="184">SpawnBurst</text>
+			<text x="50" y="246" class="t-muted">몇 개를 낳을지</text>
+
+			<rect x="232" y="114" width="190" height="150" rx="8" class="k2"/>
+			<text x="327" y="136" text-anchor="middle" class="t-bold">② 입자 생성</text>
+			<text x="246" y="162">InitializeParticle</text>
+			<text x="246" y="184">ShapeLocation</text>
+			<text x="246" y="206">AddVelocityInCone …</text>
+			<text x="246" y="246" class="t-muted">태어날 때 한 번</text>
+
+			<rect x="438" y="114" width="200" height="150" rx="8" class="k1"/>
+			<text x="538" y="136" text-anchor="middle" class="t-bold">③ 입자 갱신</text>
+			<text x="452" y="162">GravityForce, Drag</text>
+			<text x="452" y="184">CurlNoiseForce</text>
+			<text x="452" y="206">ScaleColor, Collision …</text>
+			<text x="452" y="246" class="t-muted">매 프레임 입자마다</text>
+
+			<rect x="654" y="114" width="170" height="150" rx="8" class="k3"/>
+			<text x="739" y="136" text-anchor="middle" class="t-bold">렌더러</text>
+			<text x="668" y="162">Sprite (카메라/속도)</text>
+			<text x="668" y="184">Mesh</text>
+			<text x="668" y="206">Ribbon (CPU 전용)</text>
+			<text x="668" y="246" class="t-muted">어떻게 보일지</text>
+		</g>
+		<path d="M216,189 H228" class="ln" marker-end="url(#arr)"/>
+		<path d="M422,189 H434" class="ln" marker-end="url(#arr)"/>
+		<path d="M638,189 H650" class="ln" marker-end="url(#arr)"/>
+		<text x="20" y="302" class="t-small">모듈 입력 하나하나 = FParticleValue: 상수(A) | 무작위(A~B, 입자마다 한 번, 성분별) | 곡선(수명 비율 또는 주기 안 시간 비율 0~1)</text>
+		<text x="20" y="322" class="t-muted">모듈 18종(EParticleModuleType 0~17) — 번호는 셰이더와 공유하므로 끝에만 추가</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 54-3.</b> 이미터는 "언제 몇 개(①) → 태어날 때 무엇(②) → 사는 동안 어떻게(③) → 어떻게 그릴까(렌더러)"를 모듈 목록으로 채운 것입니다. "이미터 시작" 단계는 두지 않고 주기 시작 시각의 버스트로 대신했습니다(Plans.md Phase 12).</figcaption>
+</figure>
+<p>모듈 입력을 <code>FParticleValue</code> 하나로 통일한 것이 표현력의 핵심입니다. 같은 "크기" 입력이 상수 20이 될 수도, 10~30 사이 무작위가 될 수도, 수명에 따라 커졌다 작아지는 곡선이 될 수도 있습니다. 모듈 코드는 입력이 어떤 모드인지 모르고 <code>Evaluate(난수, 곡선 위치)</code>만 부릅니다.</p>
+
+<h3 id="lec-54-cpugpu"><span class="step">핵심 개념</span>CPU와 GPU가 같은 식으로 시뮬레이션하기</h3>
+<p>이미터마다 계산 방식을 고를 수 있습니다. <b>CPU</b>는 수천 개 이하, 반투명 정렬, 리본(입자를 이은 띠)이 필요할 때. <b>GPU</b>는 수만 개 이상일 때 계산 셰이더(<code>ParticleSimulate.hlsl</code>)로 돌립니다. 같은 에셋을 CPU에서 GPU로 바꿨을 때 다르게 움직이면 아티스트가 혼란스러우므로, 두 경로는 <b>같은 식</b>을 써야 합니다.</p>
+<p>가장 까다로운 것이 난수입니다. "무작위 10~30"이 CPU와 GPU에서 다른 값을 뽑으면 같은 효과가 다르게 보입니다. 그래서 상태를 가진 난수 생성기 대신, (생성 순번, 시드, 흐름 번호)를 넣으면 항상 같은 값이 나오는 <b>해시 함수</b>를 양쪽에 똑같이 구현했습니다.</p>
+<pre class="code" data-file="Engine/Source/Scene/Particles.cpp (발췌) — C++"><span class="com">// PCG 해시 (셰이더와 같은 식)</span>
+uint32 FParticleSimulation::Hash(uint32 Value)
+{
+	<span class="kw">const</span> uint32 State = Value * <span class="num">747796405u</span> + <span class="num">2891336453u</span>;
+	<span class="kw">const</span> uint32 Word  = ((State &gt;&gt; ((State &gt;&gt; <span class="num">28u</span>) + <span class="num">4u</span>)) ^ State) * <span class="num">277803737u</span>;
+	<span class="kw">return</span> (Word &gt;&gt; <span class="num">22u</span>) ^ Word;
+}
+<span class="kw">float</span> FParticleSimulation::Random01(uint32 SpawnIndex, uint32 Seed, uint32 Stream)
+{
+	<span class="kw">return</span> HashToFloat(Hash(SpawnIndex ^ Hash(Seed + Stream * <span class="num">0x9E3779B9u</span>)));
+}
+<span class="com">// 입력 평가: 모듈 순번/입력 순번으로 난수 흐름을 나눠 CPU·GPU가 같은 값을 뽑게 한다</span>
+Random4(SpawnIndex, Seed, <span class="kw">static_cast</span>&lt;uint32&gt;(ModuleIndex * <span class="num">16</span> + InputIndex))</pre>
+<pre class="code" data-file="Engine/Shaders/ParticleCommon.hlsli (발췌) — HLSL"><span class="kw">uint</span> ParticleHash(<span class="kw">uint</span> Value)
+{
+	<span class="kw">const uint</span> State = Value * <span class="num">747796405u</span> + <span class="num">2891336453u</span>;
+	<span class="kw">const uint</span> Word  = ((State &gt;&gt; ((State &gt;&gt; <span class="num">28u</span>) + <span class="num">4u</span>)) ^ State) * <span class="num">277803737u</span>;
+	<span class="kw">return</span> (Word &gt;&gt; <span class="num">22u</span>) ^ Word;
+}
+<span class="kw">float</span> ParticleRandom01(<span class="kw">uint</span> SpawnIndex, <span class="kw">uint</span> Seed, <span class="kw">uint</span> Stream)
+{
+	<span class="kw">return</span> HashToFloat(ParticleHash(SpawnIndex ^ ParticleHash(Seed + Stream * <span class="num">0x9E3779B9u</span>)));
+}</pre>
+<p>입자 갱신 식도 한 줄 한 줄 대응됩니다. 예를 들어 속도 적분은 CPU <code>P.Velocity = (P.Velocity + Acceleration * Dt) * (DragAmount &gt; 0 ? std::exp(-DragAmount * Dt) : 1)</code>, GPU <code>P.Velocity = (P.Velocity + Acceleration * DeltaSeconds) * (DragAmount &gt; 0.0f ? exp(-DragAmount * DeltaSeconds) : 1.0f)</code>로 같습니다. GPU에는 이미터 설정을 float4 배열 "프로그램"으로 구워 올리고(<code>BuildGpuProgram</code>), 셰이더는 모듈 헤더(종류, 입력 수, 모듈 순번)를 읽어 가며 같은 분기를 탑니다.</p>
+<div class="callout warn">
+	<b class="t">규칙: 번호와 순서는 계약이다</b>
+	<ul>
+		<li><code>EParticleModuleType</code> 번호는 셰이더와 공유하므로 <b>끝에만 추가</b>합니다.</li>
+		<li>입력 순서 = 난수 흐름 번호(<code>모듈 순번 × 16 + 입력 순번</code>)이므로 <b>기존 입력 사이에 새 입력을 끼워 넣지 않습니다</b>. 끼워 넣으면 뒤 입력들의 흐름 번호가 밀려, 이미 만든 모든 효과의 무작위 값이 바뀝니다.</li>
+		<li>모듈을 추가·변경하면 <code>Particles.cpp</code>의 정보 표와 CPU 식, <code>ParticleSimulate.hlsl</code>(+ <code>ParticleCommon.hlsli</code>)를 <b>같은 식으로 함께</b> 고칩니다. 입자 구조를 바꾸면 <code>FParticle</code> / <code>FParticleGpuData</code> / HLSL <code>FParticleData</code>를 함께 맞춥니다.</li>
+	</ul>
+</div>
+<p>프레임 안의 순서도 정해져 있습니다: 애니메이션 → <code>UpdateTransforms</code> → 파티클 에셋 경로 해석 → <code>FParticleSystem::Update</code>(CPU 입자 적분, GPU는 계산 요청만 쌓음) → 렌더 그래프에서 GPU 계산 패스 → HDR 패스의 불투명 메시 뒤에 파티클 그리기. 이미터 엔티티의 월드 행렬(애니메이션·부모를 따라 움직임)을 읽으므로 트랜스폼 갱신 뒤에 돌고, GPU 계산은 렌더 그래프의 계산 패스(22강)로 등록되어 비동기 계산 큐 후보가 됩니다.</p>
+
+<h3 id="lec-54-bounds"><span class="step">ProjectE에서는</span>경계와 컬링 — 보이지 않는 GPU 이미터는 계산도 미룬다</h3>
+<p>화면 밖 이미터는 그리지 않아야 합니다. CPU 이미터는 실제 입자 위치의 AABB를 알기 때문에 쉽습니다. GPU 이미터는 입자가 GPU 메모리에 있어 위치를 모릅니다(읽어 오면 CPU가 GPU를 기다려야 합니다). 그래서 모듈 설정에서 <b>보수적으로 추정</b>합니다.</p>
+<pre class="code" data-file="Engine/Source/Renderer/ParticleBounds.h — 머리 주석 (발췌)"><span class="com">//   GPU 이미터: 에셋의 "고정 경계"(bFixedBounds)가 있으면 그것, 없으면 모듈 설정으로 보수적 추정</span>
+<span class="com">//     반경 = 생성 모양 반경 + 최대 속력 × 최대 수명 + ½ × 최대 가속 × 최대 수명² + 렌더 크기 여유</span>
+<span class="com">//     감속/충돌은 줄이기만 하므로 무시(보수적). 입력은 상수/무작위/곡선의 성분별 최대 절댓값.</span>
+<span class="com">//   새 모듈이 입자를 더 멀리 보내면(속도/힘) EstimateLocalRadius에 함께 추가한다.</span></pre>
+<p>물리 공식 s = v·t + ½·a·t²를 "가장 멀리 갈 수 있는 경우"로 계산한 것입니다. 실제보다 크게 잡으면 가끔 쓸데없이 그리는 손해뿐이지만, 작게 잡으면 보여야 할 효과가 사라지는 버그가 됩니다. 그래서 보수적으로 잡고, 정확한 상자가 필요하면 아티스트가 고정 경계를 지정합니다.</p>
+<p>GPU 이미터는 한 걸음 더 나아가 화면 밖에 있는 동안 <b>계산 디스패치도 미룹니다</b>. 그런데 그냥 멈추면, 다시 화면에 들어왔을 때 숨어 있던 시간만큼의 입자가 없어 "뚝 끊긴" 모습이 됩니다. ProjectE는 계산 요청을 버리지 않고 대기열에 쌓되, 영리하게 줄입니다.</p>
+<figure>
+	<div class="scroll">
+	<svg viewBox="0 0 860 250" role="img" aria-label="화면 밖 GPU 이미터의 계산 요청 정리">
+		<title>화면 밖 GPU 이미터의 계산 요청 정리</title>
+		<rect x="120" y="40" width="600" height="110" class="box"/>
+		<text x="420" y="32" text-anchor="middle" class="t-small t-bold">화면 밖 (그리기·계산 디스패치 미룸, 요청은 대기열로)</text>
+		<path d="M20,120 H840" class="ln" marker-end="url(#arr)"/>
+		<text x="800" y="168" class="t-small">시간 →</text>
+		<g>
+			<path d="M140,104 V136 M180,104 V136 M220,104 V136 M260,104 V136 M300,104 V136 M340,104 V136" class="ln s5" stroke-width="2"/>
+			<path d="M380,104 V136 M420,104 V136 M460,104 V136 M500,104 V136 M540,104 V136 M580,104 V136 M620,104 V136 M660,104 V136 M700,104 V136" class="ln s2" stroke-width="2"/>
+			<path d="M134,64 L346,96 M134,96 L346,64" class="ln s5" stroke-width="1.4"/>
+			<text x="240" y="60" text-anchor="middle" class="t-small f5">버림</text>
+		</g>
+		<path d="M370,80 H710" class="ln sa" stroke-width="1.6"/>
+		<path d="M370,72 V88 M710,72 V88" class="ln sa" stroke-width="1.6"/>
+		<text x="540" y="70" text-anchor="middle" class="t-small fa">뒤에서부터 합 ≥ 최대 수명</text>
+		<rect x="720" y="40" width="120" height="110" class="k2"/>
+		<text x="780" y="90" text-anchor="middle" class="t-small t-bold">다시 보임</text>
+		<text x="780" y="108" text-anchor="middle" class="t-small">남은 요청을</text>
+		<text x="780" y="124" text-anchor="middle" class="t-small">모두 디스패치</text>
+		<text x="20" y="184" class="t-small">오래된 요청을 버려도 결과가 같은 이유: 그 사이 태어났을 입자는 지금쯤 모두 수명이 다했고,</text>
+		<text x="20" y="204" class="t-small">숨기 전부터 살던 입자도 남긴 요청을 다시 돌리면 최대 수명 이상 나이를 먹어 죽는다.</text>
+		<text x="20" y="232" class="t-muted">대기열이 64개를 넘으면 이웃끼리 합쳐 절반으로 (근사: 합친 구간의 생성이 한 번에 몰림) — ParticleBounds::TrimDeferredSteps</text>
+	</svg>
+	</div>
+	<figcaption><b>그림 54-4.</b> 숨어 있는 동안 쌓인 계산 요청 중 "최대 수명"만큼만 남깁니다. 다시 보이는 프레임에 남은 요청을 몰아서 돌리면, 계속 계산했을 때와 같은 입자 상태가 됩니다(요청마다 시각을 거꾸로 계산해 <code>Time</code> 입력도 같게).</figcaption>
+</figure>
+<p>이것은 "효과가 같다는 것을 증명할 수 있는 최적화"의 좋은 예입니다. 근사는 대기열을 합칠 때 한 군데뿐이고, 그 경우도 주석에 명시되어 있습니다. 규칙은 순수 함수 <code>TrimDeferredSteps</code>에 있고 <code>ParticleBoundsTests</code>가 검증합니다.</p>
+
+<h3 id="lec-54-pitfalls"><span class="step">함정과 교훈</span>계획과 달라진 것, 지켜야 할 짝</h3>
+<div class="callout story">
+	<b class="t">계획과 달라진 것: GPU 빈칸 목록과 간접 그리기 (Phase 12)</b>
+	원래 계획은 GPU 입자 풀에 "빈칸 목록"을 두어 죽은 입자 자리를 재사용하고, 살아 있는 입자 수만큼만 간접 그리기(ExecuteIndirect)하는 것이었습니다. 실제로는 입자 풀을 최대 개수 크기의 <b>고리 버퍼</b>로 두고(가득 차면 가장 오래된 입자를 덮어씀), 풀 전체를 계산·그리면서 죽은 입자는 정점 셰이더에서 버리는 단순한 방식으로 갔습니다. Plans.md는 이것을 "계획과 다름"으로 명시하고 "수만 개 수준에선 충분, 수십만 개 이상이면 후속 과제"라고 적었습니다. 복잡한 구조는 필요가 증명될 때 넣는다는 판단입니다. 대가로 GPU 반투명 정렬은 없고, 에디터의 입자 수는 추정치입니다.
+</div>
+<ul>
+	<li><b>해상도 제약</b>: 지형 셀 수는 64 이하 2의 거듭제곱 청크로 나뉘어야 해서 해상도는 129/257/513/1025 같은 값이어야 합니다(Phase 34 후속 기록). 청크 LOD가 정점 간격을 2배씩 늘리므로 청크 셀 수가 2의 거듭제곱이어야 끝이 맞습니다.</li>
+	<li><b>지형 사전 패스</b>: 지형도 깊이 사전 패스(19강)에 반드시 그려야 합니다. 빠지면 그 픽셀이 하늘로 취급되어 TAA·안개·SSR·SSAO가 틀어집니다. 그래서 세 PSO가 같은 정점 셰이더 바이트코드를 씁니다(사전 패스 깊이와 메인 패스 깊이가 비트 단위로 같아야 EQUAL 테스트가 통과).</li>
+	<li><b>CPU 파티클 경계도 새 모듈과 함께</b>: 입자를 더 멀리 보내는 모듈(새 힘 등)을 추가하고 <code>EstimateLocalRadius</code>를 고치지 않으면, GPU 이미터가 화면 가장자리에서 일찍 사라집니다. 식과 테스트(<code>ParticleBoundsTests</code>)를 함께 고치는 규칙이 있는 이유입니다.</li>
+</ul>
+
+<div class="summary">
+	<b class="t">정리</b>
+	<ul>
+		<li>지형·식생·파티클은 "엔티티 하나 안의 큰 배열 + 전용 시스템"이다.</li>
+		<li>하이트맵: 16비트 높이(32768 = 위치 Z) + 정점별 레이어 가중치. 셀 대각선 (0,0)–(1,1)을 수학·렌더·충돌이 공유.</li>
+		<li>청크 LOD(거리 2배 → 정점 간격 2배) + 스커트로 틈 가리기, 정점 버퍼 없이 같은 LOD를 인스턴싱. 충돌은 Jolt 높이장(축 순환 회전 + 전치), 편집은 바뀐 영역만, Undo는 스트로크 끝에만.</li>
+		<li>폴리지는 월드 좌표 인스턴스를 셀 컬링 후 <code>AddExternal</code>로 공용 인스턴싱에 합류.</li>
+		<li>파티클: 이미터 × (이미터 갱신 / 입자 생성 / 입자 갱신) 모듈 + 렌더러, 입력은 <code>FParticleValue</code>. CPU/GPU는 같은 식·같은 해시 난수, 번호·입력 순서는 끝에만 추가. 화면 밖 GPU 이미터는 수명만큼의 요청만 남겨 미룬다.</li>
+	</ul>
+</div>
+
+<h4>생각해 볼 문제</h4>
+<details class="quiz"><summary>Q1. 지형 렌더러는 대각선 (0,0)–(1,1)로 그리는데 물리 충돌만 (1,0)–(0,1)로 만들면 플레이어는 무엇을 경험할까요?</summary>
+	경사가 꺾이는 셀에서 보이는 땅과 밟는 땅이 다른 면이 됩니다. 어떤 곳에서는 캐릭터 발이 보이는 땅 위로 떠 있고, 어떤 곳에서는 땅에 파묻힙니다. 높이 차가 큰 셀일수록 어긋남이 커집니다. 레이캐스트로 총알 자국을 찍어도 화면의 땅과 다른 높이에 찍힙니다.
+</details>
+<details class="quiz"><summary>Q2. 파티클 모듈 "InitializeParticle"의 입력 목록에서 두 번째 입력 앞에 새 입력을 추가하면 기존 효과에 어떤 일이 생길까요?</summary>
+	입력 순번이 하나씩 밀리므로 난수 흐름 번호(<code>모듈 순번 × 16 + 입력 순번</code>)도 밀립니다. 무작위 모드인 입력들이 이전과 다른 난수를 받게 되어, 이미 만든 모든 효과의 크기·색·회전 분포가 미묘하게 바뀝니다. 직렬화 키로 값은 제자리를 찾더라도 "같은 시드 → 같은 효과"가 깨집니다. 그래서 새 입력은 끝에만 추가합니다.
+</details>
+<details class="quiz"><summary>Q3. 브러시로 지형을 칠할 때 렌더러가 <code>GetChangesSince</code>로 "합친 영역"을 받는 대신 매 프레임 전체 높이 텍스처를 다시 올리면 무엇이 문제일까요?</summary>
+	513² 16비트 높이 텍스처는 약 0.5MB, 가중치까지 합치면 1.5MB 정도를 매 프레임 복사하게 됩니다. 업로드 대역과 동적 업로드 버퍼 용량을 쓸데없이 소모하고, 큰 지형(1025²)에서는 더 커집니다. 브러시는 보통 수 m 반경만 바꾸므로 바뀐 사각형만 <code>CopyTextureRegion</code>으로 올리는 것이 훨씬 쌉니다. 물리 높이장도 같은 변경 번호를 보고 다시 만듭니다.
+</details>
+</article>
+
+<div class="nextpart">
+	<a href="Part07A_Gameplay.html"><small>이전 부</small>← 7부 전반 · 세계의 규칙 — 게임플레이 시스템</a>
+	<a href="Part08_Networking.html"><small>다음 부</small>8부 · 함께 플레이하기 — 네트워크 →</a>
+</div>
+</main>
+</div>
+
+<script>
+// 목차: 강의(article)와 그 안의 h3를 모아 만든다
+(function ()
+{
+	const Toc = document.getElementById("toc");
+	for (const Lecture of document.querySelectorAll("article.lecture"))
+	{
+		const Title = Lecture.querySelector("header h2");
+		const No = Lecture.querySelector("header .no");
+		const Li = document.createElement("li");
+		const A = document.createElement("a");
+		A.className = "l";
+		A.href = "#" + Lecture.id;
+		A.textContent = (No ? No.textContent + " " : "") + Title.textContent;
+		Li.append(A);
+		for (const H of Lecture.querySelectorAll("h3[id]"))
+		{
+			const S = document.createElement("a");
+			S.className = "s";
+			S.href = "#" + H.id;
+			const Step = H.querySelector(".step")?.textContent ?? "";
+			S.textContent = H.textContent.replace(Step, "").trim() || Step;
+			Li.append(S);
+		}
+		Toc.append(Li);
+	}
+})();
+
+// 테마 전환 (저장은 이 브라우저에만)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+</script>
+</body>
+</html>

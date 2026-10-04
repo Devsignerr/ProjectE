@@ -49,6 +49,11 @@ namespace
 		return Physics2DMath::AngleFromRotation(Scene.GetTransform(Entity).Rotation) * FMath::RadToDeg;
 	}
 
+	float WrapDegrees(float Degrees)
+	{
+		return std::remainder(Degrees, 360.0f);
+	}
+
 	FPhysics2DSystem& BeginPhysics(FPhysics2DSystem& Physics)
 	{
 		Physics.Begin();
@@ -350,5 +355,94 @@ E_TEST(Physics2DJoint_MouseDrag)
 	Scene.GetRegistry().Get<FBoxCollider2DComponent>(Box).Size = FVector2(30.0f, 30.0f);
 	Step(Physics, Scene, 1);
 	E_EXPECT_FALSE(Physics.IsDragging(Box));
+	Physics.End();
+}
+
+// 실시간 제어: 모터 속도·최대 토크·한계·스프링을 바꿔도 관절을 다시 만들지 않는다 (기준 자세 유지 — 각/이동이 0으로 돌아가지 않음).
+// API(SetJoint*)는 컴포넌트 값도 바꾸고, 컴포넌트를 직접 바꿔도(인스펙터·스크립트 프로퍼티) 다음 갱신에 같은 식으로 옮긴다
+E_TEST(Physics2DJoint_LiveControlKeepsJoint)
+{
+	FScene        Scene;
+	const FEntity Wheel = AddBall(Scene, "Wheel", FVector3(0.0f, 0.0f, 500.0f), 50.0f);
+	FRevoluteJoint2DComponent& Motor = Scene.GetRegistry().Emplace<FRevoluteJoint2DComponent>(Wheel);
+	Motor.bMotor         = true;
+	Motor.MotorSpeed     = 180.0f;
+	Motor.MaxMotorTorque = 10000.0f;
+	const FEntity Slider = AddBox(Scene, "Slider", FVector3(300.0f, 0.0f, 200.0f), FVector2(40.0f, 40.0f));
+	FPrismaticJoint2DComponent& Rail = Scene.GetRegistry().Emplace<FPrismaticJoint2DComponent>(Slider);
+	Rail.bMotor        = true;
+	Rail.MotorSpeed    = 100.0f;
+	Rail.MaxMotorForce = 10000.0f;
+	const FEntity Plain = AddBox(Scene, "Plain", FVector3(-300.0f, 0.0f, 0.0f), FVector2(10.0f, 10.0f));
+	Scene.UpdateTransforms();
+
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 60);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), 180.0f, 6.0f);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Wheel), 180.0f, 2.0f);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Slider), 100.0f, 3.0f);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Slider), 100.0f, 2.0f);
+	const uint32 JointCount = Physics.GetJointCount();
+
+	// API: 거꾸로 돌리기 — 각은 이어진다 (다시 만들었으면 0부터)
+	E_EXPECT_TRUE(Physics.SetJointMotorSpeed(Scene, Wheel, -90.0f));
+	E_EXPECT_NEAR(Scene.GetRegistry().Get<FRevoluteJoint2DComponent>(Wheel).MotorSpeed, -90.0f, 1.0e-4f); // 컴포넌트와 같다
+	const float AngleBefore = Physics.GetJointAngle(Wheel);
+	Step(Physics, Scene, 30);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Wheel), -90.0f, 2.0f);
+	E_EXPECT_NEAR(WrapDegrees(Physics.GetJointAngle(Wheel) - AngleBefore), -45.0f, 4.0f); // 각은 -180~180
+	// 미닫이: 한계를 지금 자리보다 앞에 두면 거기서 멈춘다 (이동도 이어진다)
+	E_EXPECT_TRUE(Physics.SetJointLimits(Scene, Slider, -20.0f, 120.0f));
+	Step(Physics, Scene, 60);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Slider), 120.0f, 1.5f);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Slider), 0.0f, 2.0f);
+	// 모터 끄기 → 미끄러져 돌아가지 않고(중력은 축에 수직) 멈춘 채, 바퀴는 관성으로 계속 돈다
+	E_EXPECT_TRUE(Physics.EnableJointMotor(Scene, Wheel, false));
+	E_EXPECT_FALSE(Scene.GetRegistry().Get<FRevoluteJoint2DComponent>(Wheel).bMotor);
+	Step(Physics, Scene, 10);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Wheel), -90.0f, 3.0f);
+	// 컴포넌트를 직접 바꿔도 다시 만들지 않고 옮긴다
+	FRevoluteJoint2DComponent& Live = Scene.GetRegistry().Get<FRevoluteJoint2DComponent>(Wheel);
+	Live.bMotor     = true;
+	Live.MotorSpeed = 360.0f;
+	const float AngleBeforeLive = Physics.GetJointAngle(Wheel);
+	Step(Physics, Scene, 15);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Wheel), 360.0f, 4.0f);
+	E_EXPECT_NEAR(WrapDegrees(Physics.GetJointAngle(Wheel) - AngleBeforeLive), 90.0f, 10.0f);
+	E_EXPECT_EQ(Physics.GetJointCount(), JointCount);
+	// 관절이 없는 엔티티 / 지원하지 않는 조작
+	E_EXPECT_FALSE(Physics.SetJointMotorSpeed(Scene, Plain, 10.0f));
+	E_EXPECT_NEAR(Physics.GetJointAngle(Plain), 0.0f, 1.0e-6f);
+	E_EXPECT_FALSE(Physics.SetJointSpring(Scene, Wheel, 2.0f, 0.5f)); // 회전 관절 컴포넌트에는 스프링 필드가 없다
+	// 구조 필드(연결 지점)를 바꾸면 지금 자세로 다시 만든다 (각 0부터)
+	Live.Anchor = FVector2(0.0f, 1.0f);
+	Live.bMotor = false;
+	Physics.Update(Scene, 0.0f);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), 0.0f, 1.0f);
+	Physics.End();
+}
+
+// 실시간 스프링: 거리 관절 스프링을 딱딱하게 → 부드럽게 바꾸면 늘어난다 (다시 만들지 않으므로 정지 길이는 그대로)
+E_TEST(Physics2DJoint_LiveSpringAndDistanceLimits)
+{
+	FScene        Scene;
+	const FEntity Bob = AddBall(Scene, "Bob", FVector3(0.0f, 0.0f, 400.0f), 10.0f);
+	Scene.GetRegistry().Get<FRigidBody2DComponent>(Bob).LinearDamping = 2.0f;
+	FDistanceJoint2DComponent& Rope = Scene.GetRegistry().Emplace<FDistanceJoint2DComponent>(Bob);
+	Rope.TargetAnchor = FVector2(0.0f, 500.0f); // 월드 지점, 길이 100
+	Scene.UpdateTransforms();
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 60);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 100.0f, 0.5f); // 딱딱한 막대
+	E_EXPECT_TRUE(Physics.SetJointSpring(Scene, Bob, 1.0f, 1.0f));
+	Step(Physics, Scene, 240);
+	// 1Hz 스프링 처짐 = g / ω² ≈ 980 / 39.5 ≈ 25cm
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 125.0f, 3.0f);
+	// 최대 길이 한계 110cm
+	E_EXPECT_TRUE(Physics.SetJointLimits(Scene, Bob, 0.0f, 110.0f));
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 110.0f, 1.0f);
 	Physics.End();
 }

@@ -56,7 +56,11 @@ struct FPhysics2DBodyMotion
 //     Box2D 이벤트·콜백(원웨이 사전 해결)에서는 게임 코드를 부르지 않고, 스텝 뒤 메인 스레드에서 GetCollisionEvents에 쌓는다
 //   관절 (FDistance/Revolute/Prismatic/Weld/WheelJoint2DComponent, 필드는 Physics2DComponents.h — 3D 관절과 같은 관례): 바디 동기화 뒤
 //     엔티티의 2D 바디(Body2)와 Target의 2D 바디(Body1, 없으면 월드)를 잇는다. 연결 지점/축/기준 각은 만드는 순간의 바디 자세 기준.
-//     설정이나 양쪽 바디가 바뀌면(바디를 다시 만들면 FPhysics2DWorld::DestroyBody가 관절을 먼저 지운다) 지금 자세로 다시 만든다.
+//     구조 설정(Target·Anchor·TargetAnchor·Axis·CollideConnected)이나 양쪽 바디가 바뀌면(바디를 다시 만들면 FPhysics2DWorld::DestroyBody가
+//     관절을 먼저 지운다) 지금 자세로 다시 만든다. 실시간 필드(모터 켜기/속도/최대 힘·토크, 한계 켜기/범위, 스프링 진동수/감쇠, 거리 Length·
+//     Min/MaxLength, 용접 진동수/감쇠, BreakForce)만 바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint로 바로 옮긴다 (기준 자세 유지 —
+//     인스펙터·스크립트·복제가 컴포넌트를 바꿔도 같은 규칙, 거리 Length를 -1로 되돌리면 지금 길이 유지). 실시간 제어 API(SetJoint*)는
+//     컴포넌트 값을 바꾸고 그 자리에서 반영한다 (Lua entity:SetJointMotorSpeed 등 — 컴포넌트와 항상 같다).
 //     둘 다 동적이 아니면 만들지 않는다. 끊어짐: BreakForce > 0이면 스텝마다 구속 힘(N)을 재서 넘으면 지우고 JointBreak 이벤트
 //     (GetCollisionEvents — 3D와 같은 OnJointBreak(other, force)), 컴포넌트를 지우거나 플레이를 다시 시작할 때까지 끊긴 채로.
 //     마우스 끌기(BeginDrag/UpdateDrag/EndDrag, Lua Physics2D.BeginDrag…)는 런타임 전용 마우스 관절 — 엔티티당 하나, 바디가 사라지거나
@@ -119,6 +123,18 @@ public:
 	bool   HasJoint(FEntity Entity) const;      // 이 엔티티의 관절 컴포넌트 중 하나라도 만들어져 있는가
 	bool   IsJointBroken(FEntity Entity) const; // 하나라도 끊어졌는가
 	// 마우스 끌기: 동적 2D 바디의 Point(평면 cm, 바디 위 잡은 점)를 Target 쪽으로 끈다 (스프링 5Hz·감쇠 0.7, MaxForce N — 0 이하 = 질량 × 1000)
+	// 실시간 제어 (관절 컴포넌트 엔티티 기준, 위 "관절" 절): 그 조작을 지원하는 컴포넌트 값을 바꾸고 바로 반영한다. 컴포넌트가 없으면 false.
+	//   여러 종류가 한 엔티티에 있으면 모두 바꾼다. 단위는 컴포넌트와 같다 (각 도, 이동 cm, 회전 모터 도/초·N·m, 미닫이 모터 cm/s·N)
+	bool SetJointMotorSpeed(FScene& Scene, FEntity Entity, float Speed);        // Revolute/Wheel 도/초, Prismatic cm/s
+	bool SetJointMaxMotorForce(FScene& Scene, FEntity Entity, float Force);     // Revolute/Wheel 최대 토크 N·m, Prismatic 최대 힘 N
+	bool EnableJointMotor(FScene& Scene, FEntity Entity, bool bEnable);         // Revolute/Prismatic/Wheel
+	bool SetJointLimits(FScene& Scene, FEntity Entity, float Lower, float Upper); // 한계도 켠다: Revolute 도, Prismatic/Wheel cm, Distance Min/MaxLength cm
+	bool EnableJointLimit(FScene& Scene, FEntity Entity, bool bEnable);         // Revolute/Prismatic/Wheel
+	bool SetJointSpring(FScene& Scene, FEntity Entity, float Frequency, float Damping); // Distance/Wheel 스프링, Weld 선·각 진동수 (Hz, 0 = 딱딱함)
+	// 관절 상태 (만들어진 첫 관절 — Revolute → Prismatic → Wheel → Distance → Weld 순, 없으면 0)
+	float GetJointAngle(FEntity Entity) const;       // 도 -180~180 (Revolute: 만든 순간 0, 그 밖: 바디 사이 상대 각)
+	float GetJointTranslation(FEntity Entity) const; // cm (Prismatic: 만든 순간 0, Wheel: 축 방향, Distance: 지금 길이)
+	float GetJointSpeed(FEntity Entity) const;       // Revolute/Wheel/Weld 상대 각속도 도/초, Prismatic 축 방향 cm/s, Distance 0
 	bool BeginDrag(FEntity Entity, const FVector2& Point, float MaxForce = 0.0f);
 	bool UpdateDrag(FEntity Entity, const FVector2& Target);
 	bool EndDrag(FEntity Entity);
@@ -182,6 +198,7 @@ private:
 	void  WriteDynamicTransforms(FScene& Scene);
 	void  CollectContactEvents();
 	void  SyncJoints(FScene& Scene);   // Physics2DJoints.cpp
+	void  ApplyJointLiveSettings(FScene& Scene, FEntity Entity); // 실시간 제어 API: 이 엔티티 관절의 실시간 필드를 바로 옮긴다
 	void  CheckJointBreaks();
 
 	// 관절: (엔티티, 종류)마다 하나 (3D FPhysicsSystem과 같은 구조)
@@ -200,7 +217,8 @@ private:
 		uint32             Joint = FPhysics2DWorld::InvalidJoint; // 실패/끊김이면 무효
 		uint32             Body1 = FPhysics2DWorld::InvalidBody;
 		uint32             Body2 = FPhysics2DWorld::InvalidBody;
-		std::vector<float> Signature; // 만들 때의 설정 (바뀌면 다시 만든다)
+		std::vector<float> Signature;     // 만들 때의 구조 설정 (바뀌면 다시 만든다)
+		std::vector<float> LiveSignature; // 마지막으로 옮긴 실시간 필드 (바뀌면 UpdateJoint)
 		FEntity            Target;
 		float              BreakForce = 0.0f;
 		bool               bBroken    = false;
@@ -208,6 +226,7 @@ private:
 	};
 	std::unordered_map<FJointKey, FJointState, FJointKeyHash> Joints;
 	std::unordered_map<FEntity, uint32>                       Drags; // 엔티티 → 마우스 관절
+	const FJointState* FindLiveJoint(FEntity Entity, uint8* OutKind = nullptr) const; // 상태 질의 순서(Revolute → Prismatic → Wheel → Distance → Weld)의 첫 살아 있는 관절
 
 	std::unique_ptr<FPhysics2DWorld>            World;
 	std::unordered_map<FEntity, FBodyState>     Bodies;

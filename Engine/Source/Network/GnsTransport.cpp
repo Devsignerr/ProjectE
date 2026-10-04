@@ -7,6 +7,8 @@
 #include <steam/steamnetworkingsockets.h>
 #pragma warning(pop)
 
+#include <chrono>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -206,12 +208,31 @@ namespace
 			{
 				return;
 			}
+			const bool bHadConnections = !Connections.empty();
+			const bool bSimulating     = SimulatedLatencyMs > 0 || SimulatedLossPercent > 0.0f;
+			if (bHadConnections && bSimulating)
+			{
+				// 닫기 신호는 시뮬레이션 지연·손실 없이 (지연 큐에 남은 채 해제되거나 잃으면 상대가 시간 초과까지 모른다) — 끝나면 되돌린다
+				SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, 0);
+				SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, 0.0f);
+			}
 			for (const HSteamNetConnection Connection : Connections)
 			{
 				Sockets->CloseConnection(Connection, 0, "종료", true);
 				GGns.ConnectionOwners.erase(Connection);
 			}
 			Connections.clear();
+			if (bHadConnections)
+			{
+				// 닫기 신호는 GNS 서비스 스레드가 보낸다 — 곧바로 GameNetworkingSockets_Kill(마지막 트랜스포트 해제)하면 상대가 연결 시간 초과까지
+				// 끊긴 줄 모른다 (전용 서버에 클라이언트 플레이어가 남음). 종료·세션 전환 때 한 번이라 짧게 기다린다
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				if (bSimulating)
+				{
+					SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, SimulatedLatencyMs);
+					SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, SimulatedLossPercent);
+				}
+			}
 			if (ListenSocket != k_HSteamListenSocket_Invalid)
 			{
 				Sockets->CloseListenSocket(ListenSocket);
@@ -280,6 +301,8 @@ namespace
 				return;
 			}
 			// 보내는 쪽에만 걸어 한 방향 지연 = LatencyMs (양쪽이 켜면 왕복은 두 배)
+			SimulatedLatencyMs   = LatencyMs;
+			SimulatedLossPercent = LossPercent;
 			SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, LatencyMs);
 			SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, LossPercent);
 			E_LOG(LogNet, Display, "네트워크 시뮬레이션: 지연 {}ms, 손실 {}%", LatencyMs, LossPercent);
@@ -302,6 +325,8 @@ namespace
 		}
 
 		bool                                    bInitialized = false;
+		int32                                   SimulatedLatencyMs   = 0; // SetSimulation (Close가 닫기 신호 동안 잠시 끈다)
+		float                                   SimulatedLossPercent = 0.0f;
 		ISteamNetworkingSockets*                Sockets      = nullptr;
 		HSteamListenSocket                      ListenSocket = k_HSteamListenSocket_Invalid;
 		HSteamNetPollGroup                      PollGroup    = k_HSteamNetPollGroup_Invalid;

@@ -1,6 +1,6 @@
 {
-  "Name": "Brick_1300x150",
-  "Parent": "TiledPBR.emat",
+  "Name": "Brick",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
@@ -18,14 +18,9 @@
       "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        5.91,
-        0.68,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 220.0
     },
     {
       "Name": "Tint",

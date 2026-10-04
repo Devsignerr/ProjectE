@@ -1,31 +1,26 @@
 {
-  "Name": "Brick_1290x150",
-  "Parent": "TiledPBR.emat",
+  "Name": "Asphalt",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
       "Type": "Texture",
-      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_diff_2k.jpg"
+      "Value": "../../../Asset/PolyHaven/asphalt_02/asphalt_02_diff_2k.jpg"
     },
     {
       "Name": "ArmTexture",
       "Type": "Texture",
-      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_arm_2k.jpg"
+      "Value": "../../../Asset/PolyHaven/asphalt_02/asphalt_02_arm_2k.jpg"
     },
     {
       "Name": "NormalTexture",
       "Type": "Texture",
-      "Value": "../../../Asset/PolyHaven/factory_brick/factory_brick_nor_gl_2k.jpg"
+      "Value": "../../../Asset/PolyHaven/asphalt_02/asphalt_02_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        5.86,
-        0.68,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 450.0
     },
     {
       "Name": "Tint",

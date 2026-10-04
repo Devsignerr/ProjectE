@@ -1,6 +1,6 @@
 {
-  "Name": "Concrete_1300x3200",
-  "Parent": "TiledPBR.emat",
+  "Name": "Concrete",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
@@ -18,14 +18,9 @@
       "Value": "../../../Asset/PolyHaven/hangar_concrete_floor/hangar_concrete_floor_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        3.61,
-        8.89,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 360.0
     },
     {
       "Name": "Tint",

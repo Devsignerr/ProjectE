@@ -48,7 +48,17 @@ struct FPixelArtMath
 		int64    IndexUp    = 0;
 	};
 
-	static FSnapResult SnapToTexelGrid(const FVector3& Position, const FVector3& Right, const FVector3& Up, float TexelWorldSize)
+	// 소스 격자 위상 (텍셀 단위 0 또는 0.5): 소스 한 변이 홀수면 화면 가운데(= 카메라)가 텍셀 가운데에 오므로, 카메라를 정수 격자에 두면
+	// 텍셀 경계가 월드 격자의 반 칸에 놓인다 → 월드 격자에 맞춘 점 필터 스프라이트·타일의 경계가 픽셀 가운데를 지나 floor가 이웃 텍셀을
+	// 고른다(타일 이음매에 1도트 줄). 홀수 변은 카메라를 반 텍셀 옮긴 격자에 스냅해 텍셀 경계 = 월드 정수 격자로 맞춘다
+	static float GetGridPhase(uint32 SourceDimension)
+	{
+		return (SourceDimension % 2u) != 0u ? 0.5f : 0.0f;
+	}
+
+	// Phase: Right/Up 성분 격자 위상 (텍셀 단위, GetGridPhase) — 스냅 위치 = (정수 + 위상) × 텍셀
+	static FSnapResult SnapToTexelGrid(const FVector3& Position, const FVector3& Right, const FVector3& Up, float TexelWorldSize,
+	                                   const FVector2& Phase = FVector2(0.0f, 0.0f))
 	{
 		FSnapResult Result;
 		Result.SnappedPosition = Position;
@@ -57,8 +67,8 @@ struct FPixelArtMath
 			return Result;
 		}
 		// 큰 좌표에서도 정밀도를 지키도록 격자 번호는 double로 계산
-		const double AlongRight = static_cast<double>(FVector3::Dot(Position, Right)) / TexelWorldSize;
-		const double AlongUp    = static_cast<double>(FVector3::Dot(Position, Up)) / TexelWorldSize;
+		const double AlongRight = static_cast<double>(FVector3::Dot(Position, Right)) / TexelWorldSize - static_cast<double>(Phase.X);
+		const double AlongUp    = static_cast<double>(FVector3::Dot(Position, Up)) / TexelWorldSize - static_cast<double>(Phase.Y);
 		const double SnapRight  = std::round(AlongRight);
 		const double SnapUp     = std::round(AlongUp);
 

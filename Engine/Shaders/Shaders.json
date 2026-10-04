@@ -139,6 +139,8 @@
     { "File": "Sprite.hlsl", "Entry": "SpritePSAdditive", "Stage": "Pixel" },
     { "File": "Sprite.hlsl", "Entry": "SpritePSAdditive", "Stage": "Pixel", "Defines": ["E_SPRITE_LIT"] },
     { "File": "Sprite.hlsl", "Entry": "SpritePSMasked", "Stage": "Pixel" },
-    { "File": "Sprite.hlsl", "Entry": "SpritePSMasked", "Stage": "Pixel", "Defines": ["E_SPRITE_LIT"] }
+    { "File": "Sprite.hlsl", "Entry": "SpritePSMasked", "Stage": "Pixel", "Defines": ["E_SPRITE_LIT"] },
+    { "File": "SpriteShadow.hlsl", "Entry": "SpriteShadowVS", "Stage": "Vertex" },
+    { "File": "SpriteShadow.hlsl", "Entry": "SpriteShadowPS", "Stage": "Pixel" }
   ]
 }

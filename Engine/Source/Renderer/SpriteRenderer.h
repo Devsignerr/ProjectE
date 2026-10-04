@@ -31,12 +31,13 @@ class FShaderLibrary;
 // 바인딩: 메시 루트 시그니처를 그대로 쓴다 (FSceneRenderer::BindMeshPassRoot + 안개 b6/t23 — 반투명 메시와 같은 조명 바인딩) +
 //   b0 루트 상수 = 구간 시작, t13 = 스프라이트 인스턴스 버퍼. 정적 샘플러는 메시 루트 것(선형 클램프 s1), Point는 셰이더 Load(밉 0).
 // 타일맵 청크 구간: 청크마다 구간 하나 (정렬 키 = 타일맵 레이어/순번 + 청크 경계 가운데 깊이 — 항목과 섞여 정렬되지만 합쳐지지 않음).
-//   b0 = SpriteChunkRunBit(최상위 비트), t13 = 청크 정적 버퍼(타일맵 로컬 인스턴스), t14 = 청크 머리 FSpriteChunkGpu(월드 0/2/3행 + 색 + 텍스처 칸,
+//   b0 = SpriteChunkRunBit(최상위 비트), t13 = 청크 정적 버퍼(타일맵 로컬 인스턴스), t14 = 청크 머리 FSpriteChunkGpu(월드 0/2/3행 + 색 + 텍스처 칸 + 컷오프,
 //   동적 업로드 버퍼 — 매 Prepare에 텍스처 칸을 다시 구한다). 셰이더가 로컬 → 월드 변환·색 곱·텍스처 칸 교체 (Sprite.hlsl SpriteVS).
 //   청크 버퍼는 COMMON 상태 정적 버퍼(정점 버퍼처럼 암시적 승격 — 그래프 선언 대상 아님), 수명은 수집기가 지연 해제로 관리.
 // 조명 (bLit): 반투명 메시 EvaluateMeshLighting과 같은 식 — 방향광 + 캐스케이드 섀도맵, 클러스터 로컬 라이트(그림자 포함), 하늘 IBL/DDGI.
 //   표면 = 거칠기 1 유전체, 법선 = 사각형 앞(로컬 +Y)을 카메라 쪽으로 (양면). 화면 버퍼(SSAO/SSR/데칼)는 쓰지 않는다. 안개는 EvaluateFog.
-// 그림자 캐스팅(bCastShadows)은 후속.
+// 그림자 캐스팅(bCastShadows)은 이 패스가 아니라 FSpriteShadowRenderer(Renderer/SpriteShadowRenderer.h — 그림자 패스 추가 캐스터 훅)가 한다.
+// 9-슬라이스는 씬 수집이 조각 항목으로 나눠 넘긴다 (SpriteNineSlice — 코어는 일반 항목으로 그림).
 // 렌더 스레드: Prepare(게임 스레드, BeginRender 안)가 목록 사본으로 정렬·업로드를 끝내고, 패스 람다는 FPreparedFrame 값만 쓴다.
 class FSpriteRenderer
 {

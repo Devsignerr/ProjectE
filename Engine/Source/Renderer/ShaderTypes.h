@@ -512,7 +512,7 @@ struct FSpriteChunkGpu
 	FVector3 AxisX;            // 월드 행렬 0행 (로컬 +X)
 	uint32   TextureIndex = 0; // 셰이더 가시 힙 칸 (프레임마다 다시 구함)
 	FVector3 AxisZ;            // 월드 행렬 2행 (로컬 +Z)
-	uint32   Pad0 = 0;
+	float    AlphaCutoff = 0.5f; // 타일맵 AlphaCutoff (청크 인스턴스 값을 덮음 — Masked 그리기 + 그림자 clip)
 	FVector3 Translation;      // 월드 행렬 3행
 	uint32   Pad1 = 0;
 	FVector4 Color;            // 선형 RGBA (곱하기)

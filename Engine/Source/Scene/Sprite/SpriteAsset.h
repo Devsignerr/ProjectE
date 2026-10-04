@@ -26,6 +26,24 @@ enum class ESpriteFilter : int32
 const char*   ToString(ESpriteFilter Filter);
 ESpriteFilter ParseSpriteFilter(std::string_view Name, bool* bOutValid = nullptr); // 대소문자 무시, 모르면 Point
 
+// 스프라이트·타일맵 블렌드 모드 (컴포넌트 Blend + 렌더러 FSpriteDrawItem — Renderer/SpriteDraw.h가 같은 enum을 쓴다).
+// 번호는 끝에만 추가 (컴포넌트 리플렉션 enum — 씬 JSON은 이름), Count는 항상 마지막
+enum class ESpriteBlendMode : int32
+{
+	Alpha,         // 직선 알파: 색 × a + 뒤 × (1 - a). 깊이 쓰기 없음
+	Premultiplied, // 프리멀티플라이드 알파 텍스처: 색 + 뒤 × (1 - a). 깊이 쓰기 없음
+	Additive,      // 가산: 색 × a + 뒤. 깊이 쓰기 없음
+	Masked,        // 알파 < AlphaCutoff면 버림, 나머지 불투명. 깊이 씀 (뒤에 그리는 반투명 메시·파티클이 가려진다)
+	Count
+};
+
+// 9-슬라이스 가운데·가장자리를 채우는 방식 (번호는 끝에만 추가 — 리플렉션 enum)
+enum class ESpriteSliceMode : int32
+{
+	Stretch, // 늘이기 (가장자리는 한 축, 가운데는 두 축)
+	Tile,    // 원래 크기로 반복 (마지막 칸은 잘라 맞춤)
+};
+
 // 아틀라스 안 사각형 하나 (px, 왼쪽 위 원점)
 struct FSpriteSlice
 {

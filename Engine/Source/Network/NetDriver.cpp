@@ -136,6 +136,7 @@ void FNetDriver::Shutdown()
 	ClientState      = EClientState::Idle;
 	LocalPlayerId    = HostPlayerId;
 	FailureReason.clear();
+	IgnoredPreJoinMessages = 0;
 	TravelCount           = 0;
 	ClientTravelId        = 0;
 	bClientTravelConsumed = false;
@@ -332,9 +333,19 @@ void FNetDriver::HandleClientEvent(const FNetEvent& Event)
 			{
 				FailClient("서버가 거부: " + Reject->Reason);
 			}
+			else if (const std::optional<ENetMessageType> Type = NetMessages::PeekType(Event.Data); Type && *Type >= ENetMessageType::GameBase)
+			{
+				// 서버는 Welcome(신뢰) 직후부터 비신뢰 메시지(스냅샷·ack)를 보낸다. Welcome을 잃어 재전송되는 사이(손실·지연) 비신뢰가 먼저
+				// 도착할 수 있다 — 입장 전 상태라 쓸 수 없으니 버린다 (신뢰 게임 메시지는 신뢰 순서상 항상 Welcome 뒤에 온다)
+				if (IgnoredPreJoinMessages++ == 0)
+				{
+					E_LOG(LogNet, Verbose, "입장 전 게임 메시지 무시 (종류 {} — Welcome보다 먼저 도착한 비신뢰 메시지)", static_cast<uint32>(*Type));
+				}
+			}
 			else
 			{
-				FailClient("프로토콜 오류: 알 수 없는 응답");
+				FailClient(std::format("프로토콜 오류: 알 수 없는 응답 (첫 바이트 {}, {}바이트)", Event.Data.empty() ? -1 : static_cast<int32>(Event.Data[0]),
+				                       Event.Data.size()));
 			}
 		}
 		break;

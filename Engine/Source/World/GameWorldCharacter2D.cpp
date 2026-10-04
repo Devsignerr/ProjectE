@@ -21,15 +21,16 @@
 //   클라이언트의 다른 캐릭터: 복제 스냅샷 보간 위치에 대리 바디만 맞춘다 (FollowTransform)
 //   재조정(ReceiveCharacterAck2D): ack 상태로 되돌린 뒤 순번이 더 큰 기록 무브를 다시 적용 (이벤트는 내지 않음 — SetRecordEvents(false)).
 //     위치가 1cm 넘게 바뀌면 차이를 화면 오프셋으로 옮겨 CorrectionSmoothingSeconds에 걸쳐 줄이고, SnapCorrectionDistance보다 크면 바로 옮긴다.
-//     2D는 물리 예측(Phase 28식 동적 바디 로컬 시뮬레이션)이 없다 — 서버만 아는 일(움직이는 발판의 지금 위치와 다른 과거 위치, 서버 순간이동,
-//     서버가 시뮬레이션한 동적 바디 위에 섬)은 이 재조정으로 맞춘다
+//     서버만 아는 일(움직이는 발판의 지금 위치와 다른 과거 위치, 서버 순간이동)은 이 재조정으로 맞춘다. 근처 복제 2D 동적 바디는
+//     물리 예측(GameWorldPhysicsPrediction2D.cpp)이 로컬에서 시뮬레이션하고, 다시 적용할 때 그 바디를 기록 위치에 잠시 두는 경로도 함께 본다.
+//     ack 무브의 로컬 시각(MoveTimes)은 물리 예측이 스냅샷 시각을 로컬 기록에 맞추는 데 쓴다 (3D와 같은 시계)
 //   예측 옵션(UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정): 끄면 보내기만 하고 스냅샷 보간으로 보여 준다
 //   메시지 (비신뢰):
 //     CharacterMoves2D: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y,
 //                       uint8 플래그(1 점프 누름, 2 점프 누르고 있음, 4 대시, 8 내려가기) (+ 대시면 float 방향 X, float 방향 Y)]...
 //     CharacterAck2D:   uint32 NetId, uint32 순번, FCharacterState2D (WriteState 순서)
 //   서버는 dt를 MaxMoveDeltaSeconds로 자르고 입력을 길이 1로 자르며, 소유자가 아닌 연결의 무브는 버린다.
-// 이벤트(점프/착지/대시 시작)는 시뮬레이션한 쪽에서만 난다: 서버/Standalone(서버 스크립트·게임 모듈), 예측하는 소유 클라이언트(그 클라이언트의
+// 이벤트(점프/착지/대시 시작/밟기 — 밟기는 착지 뒤 OnStomped(other) + 밟힌 쪽 OnStompedBy(other))는 시뮬레이션한 쪽에서만 난다: 서버/Standalone(서버 스크립트·게임 모듈), 예측하는 소유 클라이언트(그 클라이언트의
 //   ClientOnly/Both 스크립트). 다른 클라이언트에서 보이는 캐릭터는 내지 않는다.
 
 namespace
@@ -140,6 +141,11 @@ void FGameWorld::TickCharacters2D(float DeltaSeconds)
 				}
 				Characters2D->SetVisualOffset(*Scene, Entity, Predicted.VisualOffset);
 				Characters2D->SimulateCharacter(*Scene, Entity, Move); // 예측: 바로 움직인다
+				Predicted.MoveTimes.emplace_back(Move.Sequence, PredictionClock); // 물리 예측 시각 맞추기 (결과는 이번 프레임 2D 스텝 뒤에 기록)
+				while (Predicted.MoveTimes.size() > MaxPredictedMoves)
+				{
+					Predicted.MoveTimes.pop_front();
+				}
 			}
 			else
 			{
@@ -319,16 +325,53 @@ void FGameWorld::ReceiveCharacterAck2D(const std::vector<uint8>& Message)
 	{
 		return; // 예측 끔: 위치는 스냅샷 보간이 맡는다
 	}
-	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교 (같은 무브 → 같은 결과라 보통 차이 없음)
+	// 물리 예측: 이 ack 무브를 시뮬레이션한 시각 (3D와 같은 시계 — 스냅샷 상태 ↔ 로컬 기록)
+	while (!Predicted.MoveTimes.empty() && Predicted.MoveTimes.front().first < Sequence)
+	{
+		Predicted.MoveTimes.pop_front();
+	}
+	if (!Predicted.MoveTimes.empty() && Predicted.MoveTimes.front().first == Sequence)
+	{
+		LastAckMoveTime = Predicted.MoveTimes.front().second;
+	}
+	// 서버 상태에서 남은 무브를 다시 적용 → 지금 예측한 위치와 비교 (같은 무브 → 같은 결과라 보통 차이 없음).
+	// 2D 물리 예측 바디가 있으면 3D처럼 두 가지로 다시 적용해 지금 예측에 가까운 쪽을 쓴다 (GameWorldPhysicsPrediction2D.cpp 머리 주석):
+	//   1) 바디를 지금 자리에 둔 채, 2) 무브마다 바디를 그 무브를 처음 시뮬레이션할 때의 기록 위치로 잠시 옮겨 (바디 재시뮬레이션 없음)
 	const FVector2 Before = Characters2D->GetState(Entity).Position;
 	Characters2D->SetRecordEvents(false);
-	Characters2D->SetState(*Scene, Entity, State);
-	for (const FCharacterMove2D& Move : Predicted.Moves)
+	const auto Replay = [&](bool bPoseBodies) {
+		Characters2D->SetState(*Scene, Entity, State);
+		size_t TimeIndex = 0;
+		for (const FCharacterMove2D& Move : Predicted.Moves)
+		{
+			while (bPoseBodies && TimeIndex < Predicted.MoveTimes.size() && Predicted.MoveTimes[TimeIndex].first < Move.Sequence)
+			{
+				++TimeIndex;
+			}
+			if (bPoseBodies && TimeIndex < Predicted.MoveTimes.size() && Predicted.MoveTimes[TimeIndex].first == Move.Sequence)
+			{
+				PoseBodiesForReplay2D(Predicted.MoveTimes[TimeIndex].second);
+			}
+			Characters2D->SimulateCharacter(*Scene, Entity, Move);
+		}
+		if (bPoseBodies)
+		{
+			RestoreBodiesAfterReplay2D();
+		}
+		return Characters2D->GetState(Entity);
+	};
+	FCharacterState2D Replayed = Replay(false);
+	if (!PredictedBodies2D.empty())
 	{
-		Characters2D->SimulateCharacter(*Scene, Entity, Move);
+		const FCharacterState2D Posed = Replay(true);
+		if ((Posed.Position - Before).LengthSquared() < (Replayed.Position - Before).LengthSquared())
+		{
+			Replayed = Posed;
+		}
+		Characters2D->SetState(*Scene, Entity, Replayed);
 	}
 	Characters2D->SetRecordEvents(true);
-	const FVector2 After = Characters2D->GetState(Entity).Position;
+	const FVector2 After = Replayed.Position;
 	if (FVector2::Dot(After - Before, After - Before) > 1.0f)
 	{
 		++CharacterCorrections;
@@ -369,6 +412,17 @@ bool FGameWorld::DispatchCharacter2DEvents()
 		if (Event.Events.bLanded && Registry.IsValid(Event.Entity))
 		{
 			Systems.Scripts->InvokeMethod(Event.Entity, "OnLanded", {});
+		}
+		if (Event.Events.bStomped && Registry.IsValid(Event.Entity))
+		{
+			// 밟기 (CharacterCollision Block/Push): 밟은 쪽 OnStomped(other), 밟힌 쪽 OnStompedBy(other) — 착지 뒤
+			const FEntity Other = FEntity::FromId(Event.Events.StompedEntity);
+			const bool    bOther = Registry.IsValid(Other);
+			Systems.Scripts->InvokeMethod(Event.Entity, "OnStomped", { bOther ? FGameRpcValue::MakeEntity(Other) : FGameRpcValue() });
+			if (bOther && Registry.IsValid(Event.Entity))
+			{
+				Systems.Scripts->InvokeMethod(Other, "OnStompedBy", { FGameRpcValue::MakeEntity(Event.Entity) });
+			}
 		}
 		if (Mode != ENetMode::Client && Systems.GameModule != nullptr && Registry.IsValid(Event.Entity))
 		{

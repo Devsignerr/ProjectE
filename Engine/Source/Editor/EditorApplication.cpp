@@ -17,6 +17,7 @@
 #include "Editor/BuildingEditorTools.h"
 #include "Editor/ConsoleVariableWidgets.h"
 #include "Editor/EditorActions.h"
+#include "Editor/Editor2D/Editor2DScene.h"
 #include "Editor/EditorCameraState.h"
 #include "Editor/EditorPreferences.h"
 #include "Editor/NavMeshBaker.h"
@@ -235,7 +236,12 @@ bool FEditorApplication::OnInit()
 	FTerrainLibrary::Get().SetContentDirectory(Context.ContentDirectory);
 	FFoliageLibrary::Get().SetContentDirectory(Context.ContentDirectory);
 	ViewportPanel.ToolOverlay = [this](FEditorContext& InContext, const FInput& InInput, const FVector2& ImageMin, const FVector2& ImageSize, bool bHovered) {
-		// 지형/폴리지 도구 중 켜진 하나만 (둘 다 켜면 지형 우선)
+		// 타일 칠하기 도구가 켜져 있으면 그것만 (2D), 아니면 지형/폴리지 도구 중 켜진 하나만 (둘 다 켜면 지형 우선)
+		const bool bTile = TilePalettePanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
+		if (TilePalettePanel.IsActive())
+		{
+			return bTile;
+		}
 		const bool bTerrain = TerrainToolPanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
 		return TerrainToolPanel.IsActive() ? bTerrain : FoliageToolPanel.HandleViewport(InContext, InInput, ImageMin, ImageSize, bHovered);
 	};
@@ -415,8 +421,49 @@ bool FEditorApplication::OnInit()
 	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
 	CameraController.MoveSpeed = ViewportPrefs.DefaultCameraSpeed; // 저장된 편집 카메라가 있으면 아래에서 덮인다
 	ViewportPanel.CameraSpeed  = &CameraController.MoveSpeed;      // 뷰포트 툴바 속도 조절 (값은 편집 카메라와 함께 저장)
+	ViewportPanel.EditCamera   = &Camera;                          // 2D 모드 조작 대상
 	ApplyViewportPreferences();
 	LoadEditorCamera();
+	// 자동 검증: --viewport-2d 2D 모드로 시작 (선택이 있으면 맞춤), --show-colliders-2d 모든 충돌 모양 외곽선
+	if (CommandLine.HasFlag(L"--viewport-2d"))
+	{
+		ViewportPanel.Set2DMode(Context, true);
+		// 렌더 타깃 크기(종횡비)는 첫 프레임에 정해지므로 맞춤은 그 뒤에 한다 (선택 맞춤, 선택이 없으면 씬의 2D 전체)
+		VerifyFocus2DFrame = ViewportPanel.Is2DMode() ? 3 : 0;
+	}
+	if (CommandLine.HasFlag(L"--show-colliders-2d"))
+	{
+		ViewportPanel.bShowAllColliders2D = true;
+	}
+	// 자동 검증: --tile-tool brush|eraser|rect|flood|line|picker 타일 팔레트 도구를 켜고 창을 앞으로
+	if (const std::wstring TileTool = CommandLine.GetValue(L"--tile-tool"); !TileTool.empty())
+	{
+		static constexpr std::pair<const wchar_t*, FTilePalettePanel::ETool> Tools[] = {
+			{ L"brush", FTilePalettePanel::ETool::Brush }, { L"eraser", FTilePalettePanel::ETool::Eraser }, { L"rect", FTilePalettePanel::ETool::Rect },
+			{ L"flood", FTilePalettePanel::ETool::Flood }, { L"line", FTilePalettePanel::ETool::Line },     { L"picker", FTilePalettePanel::ETool::Picker },
+		};
+		for (const auto& [Name, Tool] : Tools)
+		{
+			if (TileTool == Name)
+			{
+				TilePalettePanel.SetTool(Tool);
+			}
+		}
+		TilePalettePanel.bRequestFocus = true;
+	}
+	if (const std::wstring PreviewCell = CommandLine.GetValue(L"--tile-preview-cell"); !PreviewCell.empty())
+	{
+		const size_t Comma = PreviewCell.find(L',');
+		if (Comma != std::wstring::npos)
+		{
+			TilePalettePanel.bAutomationCell = true;
+			TilePalettePanel.AutomationCell  = FTileCoord{ std::stoi(PreviewCell.substr(0, Comma)), std::stoi(PreviewCell.substr(Comma + 1)) };
+		}
+	}
+	if (CommandLine.HasFlag(L"--verify-tile-paint"))
+	{
+		VerifyTilePaint();
+	}
 	if (FSettingsSection* Section = FSettingsRegistry::Get().Find("EditorViewport"))
 	{
 		Section->OnChanged = [this]() { ApplyViewportPreferences(); }; // 설정 창에서 바꾸면 바로
@@ -484,9 +531,22 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	}
 
 	// 뷰포트 위에서만 카메라 조작 (기즈모 사용 중 제외). 게임 카메라로 보는 중에는 조작하지 않는다
-	if (ViewportPanel.IsHovered() && !ViewportPanel.IsUsingGizmo() && Context.Camera == &Camera)
+	// 2D 모드는 뷰포트 패널이 직접 조작한다 (휠 줌/드래그 팬, 회전 없음)
+	if (ViewportPanel.IsHovered() && !ViewportPanel.IsUsingGizmo() && Context.Camera == &Camera && !ViewportPanel.Is2DMode())
 	{
 		CameraController.Update(Camera, InputState, DeltaSeconds);
+	}
+	if (VerifyFocus2DFrame != 0 && GetFrameIndex() >= VerifyFocus2DFrame)
+	{
+		VerifyFocus2DFrame = 0;
+		if (Context.Selection.GetEntities().empty())
+		{
+			ViewportPanel.FrameAll2D(Context);
+		}
+		else
+		{
+			ViewportPanel.FocusSelection(Context);
+		}
 	}
 	if (VerifyCameraPanPerFrame != 0.0f && Context.Camera == &Camera && GetFrameIndex() >= VerifyCameraPanStart)
 	{
@@ -546,6 +606,7 @@ void FEditorApplication::OnRender()
 	TerrainToolPanel.Update(Context); // Undo/Redo로 바뀐 지형/폴리지 편집 버전 맞추기
 	FoliageToolPanel.Update(Context);
 	ViewportPanel.Draw(Context, GetInput());
+	TilePalettePanel.FinishFrame(Context); // 이번 프레임 타일 미리보기를 쓰지 않았으면 그리기 목록 비우기
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
 	// 아래 탭 묶음(통계/포스트/그림자/출력 로그/콘텐츠)은 처음에 마지막으로 그린 창이 선택되므로 콘텐츠를 마지막에
@@ -557,6 +618,7 @@ void FEditorApplication::OnRender()
 	ShadowPanel.Draw(Context);
 	TerrainToolPanel.Draw(Context);
 	FoliageToolPanel.Draw(Context);
+	TilePalettePanel.Draw(Context);
 	ProjectSettingsWindow.Draw(Context);
 	EditorPreferencesWindow.Draw(Context);
 	OutputLogPanel.Draw(Context);
@@ -620,7 +682,7 @@ void FEditorApplication::OnShutdown()
 	ScriptWatcher.Stop();
 	Audio.Shutdown();
 	// 검증용으로 민/맞춘 카메라는 저장하지 않는다 (다음 실행 시점이 밀림)
-	if (VerifyCameraPanPerFrame == 0.0f && !FCommandLine::FromProcess().HasFlag(L"--verify-pick"))
+	if (VerifyCameraPanPerFrame == 0.0f && !FCommandLine::FromProcess().HasFlag(L"--verify-pick") && !FCommandLine::FromProcess().HasFlag(L"--viewport-2d"))
 	{
 		SaveEditorCamera();
 	}
@@ -1048,6 +1110,22 @@ void FEditorApplication::DrawMainMenuBar()
 			Context.Select(Cube);
 			Context.MarkEdited("큐브 추가");
 		}
+		if (ImGui::BeginMenu(ICON_FA_SHAPES " 2D"))
+		{
+			if (ImGui::MenuItem("2D 스프라이트"))
+			{
+				Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Sprite, NullEntity);
+			}
+			if (ImGui::MenuItem("2D 타일맵"))
+			{
+				Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Tilemap, NullEntity);
+			}
+			if (ImGui::MenuItem("2D 카메라 (직교, +Y에서 -Y)"))
+			{
+				Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Camera, NullEntity);
+			}
+			ImGui::EndMenu();
+		}
 		ImGui::EndMenu();
 	}
 	if (ImGui::BeginMenu("창"))
@@ -1060,6 +1138,7 @@ void FEditorApplication::DrawMainMenuBar()
 		ImGui::MenuItem("그림자", nullptr, &ShadowPanel.bOpen);
 		ImGui::MenuItem("지형", nullptr, &TerrainToolPanel.bOpen);
 		ImGui::MenuItem("폴리지", nullptr, &FoliageToolPanel.bOpen);
+		ImGui::MenuItem("타일 팔레트", nullptr, &TilePalettePanel.bOpen);
 		ImGui::MenuItem("네트워크", nullptr, &NetworkPanel.bOpen);
 		ImGui::MenuItem("출력 로그", nullptr, &OutputLogPanel.bOpen);
 		ImGui::MenuItem("스크립트 디버거", nullptr, &ScriptDebuggerPanel.bOpen);
@@ -1713,6 +1792,7 @@ void FEditorApplication::LoadEditorCamera()
 	{
 		Camera.SetOrthographic(State.OrthoHeight, Camera.GetAspectRatio(), Camera.GetNearZ(), Camera.GetFarZ());
 	}
+	ViewportPanel.GetCamera2D().ReadState(State, Camera); // 뷰포트 2D 모드 + 되살릴 3D 카메라
 	E_LOG(LogEditor, Log, "에디터 카메라 복원: ({:.0f}, {:.0f}, {:.0f})", State.Position.X, State.Position.Y, State.Position.Z);
 }
 
@@ -1724,6 +1804,7 @@ void FEditorApplication::SaveEditorCamera() const
 	State.MoveSpeed     = CameraController.MoveSpeed;
 	State.bOrthographic = Camera.IsOrthographic();
 	State.OrthoHeight   = Camera.GetOrthoHeight();
+	ViewportPanel.GetCamera2D().WriteState(State);
 	State.Save(GetEditorCameraPath());
 }
 
@@ -2241,6 +2322,7 @@ void FEditorApplication::ApplyDefaultLayoutIfNeeded()
 	ImGui::DockBuilderDockWindow("###Shadows", Bottom);
 	ImGui::DockBuilderDockWindow("###Terrain", Bottom);
 	ImGui::DockBuilderDockWindow("###Foliage", Bottom);
+	ImGui::DockBuilderDockWindow("###TilePalette", Bottom);
 	ImGui::DockBuilderDockWindow("###Network", Bottom);
 	ImGui::DockBuilderDockWindow("###ScriptDebugger", Bottom);
 	ImGui::DockBuilderFinish(DockSpace);

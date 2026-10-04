@@ -42,6 +42,7 @@ struct FPhysics2DShapeDesc
 	bool                  bIsTrigger  = false;
 	bool                  bOneWay     = false;          // 바디 로컬 +Y(위) 쪽에서 오는 것만 막는다
 	bool                  bMoverProxy = false;          // 2D 캐릭터 이동기의 대리 모양 (이동기 질의 MoveMover/CastMover/CollideMover가 무시한다)
+	bool                  bSolidProxy = false;          // 대리 모양이 bCollideCharacters 이동기를 막는다 (캐릭터끼리 Block/Push — 그 밖의 이동기는 여전히 무시)
 	uint8                 CollisionLayer = 0;
 };
 
@@ -129,11 +130,13 @@ struct FPhysics2DJointDesc
 };
 
 // 2D 캐릭터 이동기 질의 (Physics/CharacterMovement2D.h — 이동기는 강체가 아닌 세로 캡슐, Box2D 캐릭터 이동 도구).
-// 걸러 내는 모양: 트리거, IgnoreUserData 바디(자기 엔티티), 이동기 대리 모양(캐릭터끼리 통과), 레이어 행렬에서 꺼진 것.
+// 걸러 내는 모양: 트리거, IgnoreUserData 바디(자기 엔티티), 이동기 대리 모양(캐릭터끼리 통과 — bCollideCharacters면 bSolidProxy 대리는 막는
+//   키네마틱 면으로 본다), 레이어 행렬에서 꺼진 것.
 // 원웨이 모양: bIgnoreOneWay(내려가기)면 무시, 아니면 위(바디 로컬 +Y)에서 닿을 때만 — 겹침 평면은 법선이 위쪽 60도 안 + 묻힌 깊이
 //   OneWayMaxPenetration 이하 + 발판에 대해 0.5m/s 넘게 올라가는 중이 아님(바디 사전 해결 콜백과 같은 기준 + 깊이 한계 — 뛰어올라
 //   발판 중간에서 정점에 닿아도 튀어 오르지 않게), 캐스트는 이동이 발판 위쪽에서 아래로 향할 때만.
 // 동적 바디: 바닥(법선 Y ≥ WalkableNormalY)으로만 막는다 — 옆으로 닿으면 무시하고 대리 키네마틱 바디가 2D 스텝에서 민다.
+// 다른 캐릭터(bCollideCharacters + bSolidProxy)의 둥근 머리 위 접촉은 MoveMover에서 평평한 바닥(법선 +Y)으로 푼다 (서 있으면 미끄러지지 않게).
 // 내부 모서리: 바닥이 아닌 접촉점이 다른 바닥 접촉의 면 위(1cm 안)나 아래면 버린다 (타일 이음매·경사와 상자가 만나는 꼭짓점의 고스트 법선).
 struct FPhysics2DMover
 {
@@ -146,6 +149,7 @@ struct FPhysics2DMover
 	float    WalkableNormalY = 0.64f;
 	float    OneWayMaxPenetration = 8.0f; // cm
 	bool     bSteepAsWall = false; // MoveMover: 바닥이 아닌 위쪽 면(가파른 경사)을 수직 벽으로 풀기 (걷는 중 — 경사에 부딪혀 튀어 오르지 않게)
+	bool     bCollideCharacters = false; // 다른 캐릭터의 막는 대리 모양(bSolidProxy)과 부딪힌다
 };
 
 // 이동기와 닿은 면 하나 (평면 cm). Normal = 면에서 이동기 쪽, Penetration = 묻힌 깊이 (음수 = 떨어짐 — 부풀린 질의)
@@ -158,6 +162,7 @@ struct FPhysics2DMoverContact
 	uint64      UserData    = 0;
 	EBodyType2D BodyType    = EBodyType2D::Static;
 	bool        bOneWay     = false;
+	bool        bCharacter  = false; // 다른 캐릭터의 대리 모양 (UserData = 그 캐릭터 엔티티)
 };
 
 struct FPhysics2DMoveResult

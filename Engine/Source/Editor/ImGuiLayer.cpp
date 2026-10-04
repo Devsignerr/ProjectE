@@ -157,3 +157,51 @@ bool FImGuiLayer::WantCaptureKeyboard() const
 {
 	return bInitialized && ImGui::GetIO().WantCaptureKeyboard;
 }
+
+namespace
+{
+	void SetNearestSamplerCallback(const ImDrawList* DrawList, const ImDrawCmd* Command)
+	{
+		ImGuiPlatformIO& PlatformIO = ImGui::GetPlatformIO();
+		if (PlatformIO.DrawCallback_SetSamplerNearest == nullptr)
+		{
+			return;
+		}
+		PlatformIO.DrawCallback_SetSamplerNearest(DrawList, Command);
+		// 루트 시그니처가 바뀌어 루트 상수(투영 행렬)가 무효 — ImGui_ImplDX12_SetupRenderState와 같은 식으로 다시 올린다
+		const ImDrawData*           DrawData = ImGui::GetDrawData();
+		ImGui_ImplDX12_RenderState* State    = ImGui_ImplDX12_GetRenderState();
+		if (DrawData == nullptr || State == nullptr)
+		{
+			return;
+		}
+		const float L          = DrawData->DisplayPos.x;
+		const float R          = DrawData->DisplayPos.x + DrawData->DisplaySize.x;
+		const float T          = DrawData->DisplayPos.y;
+		const float B          = DrawData->DisplayPos.y + DrawData->DisplaySize.y;
+		const float Mvp[4][4] = {
+			{ 2.0f / (R - L), 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 2.0f / (T - B), 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 0.5f, 0.0f },
+			{ (R + L) / (L - R), (T + B) / (B - T), 0.5f, 1.0f },
+		};
+		State->CommandList->SetGraphicsRoot32BitConstants(0, 16, Mvp, 0);
+	}
+} // namespace
+
+void FImGuiLayer::BeginNearestSampling(ImDrawList* DrawList)
+{
+	if (ImGui::GetPlatformIO().DrawCallback_SetSamplerNearest != nullptr)
+	{
+		DrawList->AddCallback(SetNearestSamplerCallback, nullptr);
+	}
+}
+
+void FImGuiLayer::EndNearestSampling(ImDrawList* DrawList)
+{
+	// 렌더 상태 전체를 되돌린다 (선형 샘플러 + 투영 상수)
+	if (ImGui::GetPlatformIO().DrawCallback_ResetRenderState != nullptr)
+	{
+		DrawList->AddCallback(ImGui::GetPlatformIO().DrawCallback_ResetRenderState, nullptr);
+	}
+}

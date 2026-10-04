@@ -17,6 +17,8 @@ public:
 	static void SetDumpDirectory(const std::filesystem::path& Directory);
 	// 크래시 후 알림 대화 상자 (패키지 창 앱만 — 자동 검증/서버에서는 끈다)
 	static void SetShowDialog(bool bShow);
+	// 사람이 없는 실행(자동 검증 등): 디버그 CRT assert/힙 검사 실패를 대화 상자 대신 로그 + 덤프 후 종료 코드 3으로 끝낸다
+	static void SetUnattended(bool bUnattended);
 
 	// Fatal 로그 경로: 현재 스레드 상태로 덤프를 남긴다 (FLog가 중단 직전에 부른다)
 	static void ReportFatal(std::string_view Message);

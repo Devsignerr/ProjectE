@@ -22,10 +22,17 @@ namespace
 		return std::max(Movement.CapsuleHeight * 0.5f - std::max(Movement.CapsuleRadius, 1.5f), 0.0f);
 	}
 
+	bool IsSolidCharacter(const FCharacterMovement2DComponent& Movement)
+	{
+		return Movement.CharacterCollision != FCharacterMovement2DComponent::ECharacterCollision::Ignore;
+	}
+
 	bool NeedsProxyRecreate(const FCharacterMovement2DComponent& A, const FCharacterMovement2DComponent& B)
 	{
-		return A.CapsuleRadius != B.CapsuleRadius || A.CapsuleHeight != B.CapsuleHeight || A.Layer != B.Layer;
+		return A.CapsuleRadius != B.CapsuleRadius || A.CapsuleHeight != B.CapsuleHeight || A.Layer != B.Layer || IsSolidCharacter(A) != IsSolidCharacter(B);
 	}
+
+	constexpr float PushSideNormalY = 0.5f; // 밀기: 법선 |Y|가 이보다 작은 캐릭터 접촉만 "옆"
 
 	FVector3 GetWorldPosition(const FScene& Scene, FEntity Entity)
 	{
@@ -87,6 +94,7 @@ void FCharacterMovement2DSystem::CreateProxy(FCharacter& Character, FEntity Enti
 	Shape.HalfSegment    = HalfSegmentOf(Movement);
 	Shape.Friction       = 0.0f;
 	Shape.bMoverProxy    = true;
+	Shape.bSolidProxy    = IsSolidCharacter(Movement);
 	Shape.CollisionLayer = Character.Layer;
 	FPhysics2DBodyDesc Desc;
 	Desc.Type            = EBodyType2D::Kinematic;
@@ -147,6 +155,11 @@ void FCharacterMovement2DSystem::Sync(FScene& Scene)
 			Character.Depth          = World.Y;
 			Character.VisualOffset   = FVector2();
 			Character.WrittenPosition = Scene.GetTransform(Entity).Position;
+		}
+		// 막는 캐릭터: 대리 바디는 지난 2D 스텝에서 속도만큼 더 갔다 — 이번 틱 다른 캐릭터 무브가 상태 위치를 보게 되돌린다
+		if (IsSolidCharacter(Movement) && Character.Proxy != ~0u)
+		{
+			Physics2D->GetWorld()->SetTransform(Character.Proxy, Character.State.Position, 0.0f);
 		}
 	}
 	for (auto It = Characters.begin(); It != Characters.end();)
@@ -246,13 +259,8 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 	const float            WalkableY    = CharacterMovement2DMath::GetWalkableNormalY(*Movement);
 	FCharacterMove2DEvents Events;
 
-	FPhysics2DMover Mover;
-	Mover.HalfSegment          = HalfSegmentOf(*Movement);
-	Mover.Radius               = std::max(Movement->CapsuleRadius, 1.5f);
-	Mover.CollisionLayer       = Character.Layer;
-	Mover.IgnoreUserData       = Entity.ToId();
-	Mover.WalkableNormalY      = WalkableY;
-	Mover.OneWayMaxPenetration = std::max(Mover.Radius * 0.3f, 3.0f);
+	FPhysics2DMover Mover  = MakeMover(Character, Entity, *Movement);
+	const bool      bSolid = IsSolidCharacter(*Movement);
 
 	// ---- 시작 접촉: 바닥 법선·발판 속도, 가파른 면
 	std::vector<FPhysics2DMoverContact> Contacts;
@@ -275,7 +283,7 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 		if (Ground != nullptr && State.bGrounded)
 		{
 			bStartGround = true;
-			GroundNormal = Ground->Normal;
+			GroundNormal = Ground->bCharacter ? FVector2(0.0f, 1.0f) : Ground->Normal; // 캐릭터 머리는 평평한 발판으로 (MoveMover와 같다)
 			if (Ground->BodyType != EBodyType2D::Static)
 			{
 				GroundVelocity = World.GetPointVelocity(Ground->Body, Ground->Point);
@@ -310,12 +318,39 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 	Mover.bSteepAsWall  = bWalking;
 	FPhysics2DMoveResult Result;
 	World.MoveMover(Mover, State.Position, MoveVelocity * DeltaSeconds, Result);
+	if (Movement->CharacterCollision == FCharacterMovement2DComponent::ECharacterCollision::Push)
+	{
+		// 밀기: 옆의 캐릭터에 막혀 못 간 만큼 그 캐릭터를 수평(탑다운은 법선 반대)으로 밀고, 남은 만큼 한 번 더 움직인다
+		const FVector2 Remaining = State.Position + MoveVelocity * DeltaSeconds - Result.Position;
+		if (Remaining.LengthSquared() > 0.01f)
+		{
+			World.CollideMover(Mover, Result.Position, GroundSkin, Contacts);
+			for (const FPhysics2DMoverContact& Contact : Contacts)
+			{
+				if (!Contact.bCharacter || std::abs(Contact.Normal.Y) >= PushSideNormalY)
+				{
+					continue;
+				}
+				const FVector2 Direction = bPlatformer ? FVector2(Contact.Normal.X > 0.0f ? -1.0f : 1.0f, 0.0f) : FVector2(-Contact.Normal.X, -Contact.Normal.Y);
+				const float    Amount    = FVector2::Dot(Remaining, Direction);
+				if (Amount > 0.0f && PushCharacter(Scene, FEntity::FromId(Contact.UserData), Direction * Amount) > 0.0f)
+				{
+					FPhysics2DMoveResult Second;
+					World.MoveMover(Mover, Result.Position, Remaining, Second); // Mover.Velocity = 막히기 전 속도
+					Result.Position = Second.Position;
+					Result.Velocity = Second.Velocity;
+				}
+				break;
+			}
+		}
+	}
 	State.Position = Result.Position;
 	State.Velocity = Result.Velocity;
 
 	Mover.bSteepAsWall = false;
 	// ---- 바닥 판정 (+ 걷던 중이면 아래로 붙이기)
-	bool bGroundedNow = false;
+	bool   bGroundedNow    = false;
+	uint64 GroundCharacter = 0; // 밟기: 바닥 접촉 중 다른 캐릭터
 	if (bPlatformer && State.Velocity.Y <= RisingEpsilon) // 수평 대시 중에도 (바닥 대시 뒤 가짜 착지 없음)
 	{
 		Mover.Velocity = State.Velocity;
@@ -323,6 +358,10 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 		for (const FPhysics2DMoverContact& Contact : Contacts)
 		{
 			bGroundedNow = bGroundedNow || Contact.Normal.Y >= WalkableY;
+			if (Contact.bCharacter && Contact.Normal.Y >= WalkableY && GroundCharacter == 0)
+			{
+				GroundCharacter = Contact.UserData;
+			}
 		}
 		if (!bGroundedNow && bWasGrounded && !Events.bJumped && !State.IsDashing() && Movement->GroundSnapDistance > 0.0f)
 		{
@@ -337,7 +376,16 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 		}
 	}
 	CharacterMovement2DMath::EndMove(*Movement, State, bGroundedNow, Events);
+	if (Events.bLanded && GroundCharacter != 0)
+	{
+		Events.bStomped      = true;
+		Events.StompedEntity = GroundCharacter;
+	}
 	WriteTransform(Scene, Entity, Character);
+	if (bSolid && Character.Proxy != ~0u)
+	{
+		World.SetTransform(Character.Proxy, State.Position, 0.0f); // 같은 틱 다른 캐릭터 무브가 지금 위치를 본다 (UpdateProxies가 스텝 전에 다시 맞춘다)
+	}
 	if (bRecordEvents && (Events.bJumped || Events.bLanded || Events.bDashStarted))
 	{
 		PendingEvents.push_back({ Entity, Events });
@@ -370,6 +418,71 @@ void FCharacterMovement2DSystem::FollowTransform(FScene& Scene, FEntity Entity)
 		Character.Depth               = World.Y;
 		Character.WrittenPosition     = Scene.GetTransform(Entity).Position;
 		Character.bWritten            = true;
+		if (IsSolidCharacter(Character.CreatedWith) && Character.Proxy != ~0u && IsActive())
+		{
+			Physics2D->GetWorld()->SetTransform(Character.Proxy, Character.State.Position, 0.0f); // 막는 캐릭터: 이번 틱 예측 캐릭터 무브가 보간 위치를 본다
+		}
+	}
+}
+
+FPhysics2DMover FCharacterMovement2DSystem::MakeMover(const FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement) const
+{
+	FPhysics2DMover Mover;
+	Mover.HalfSegment          = HalfSegmentOf(Movement);
+	Mover.Radius               = std::max(Movement.CapsuleRadius, 1.5f);
+	Mover.CollisionLayer       = Character.Layer;
+	Mover.IgnoreUserData       = Entity.ToId();
+	Mover.WalkableNormalY      = CharacterMovement2DMath::GetWalkableNormalY(Movement);
+	Mover.OneWayMaxPenetration = std::max(Mover.Radius * 0.3f, 3.0f);
+	Mover.bCollideCharacters   = IsSolidCharacter(Movement);
+	return Mover;
+}
+
+float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta)
+{
+	const auto Found = Characters.find(Other);
+	if (Found == Characters.end() || !IsActive() || !IsSolidCharacter(Found->second.Settings))
+	{
+		return 0.0f;
+	}
+	FCharacter&     Character = Found->second;
+	FPhysics2DMover Mover     = MakeMover(Character, Other, Character.Settings);
+	Mover.Velocity            = Character.State.Velocity;
+	Mover.bIgnoreOneWay       = Character.State.DropTimer > 0.0f;
+	FPhysics2DMoveResult Result;
+	Physics2D->GetWorld()->MoveMover(Mover, Character.State.Position, Delta, Result); // 벽 안으로는 밀지 않는다
+	const float Moved = (Result.Position - Character.State.Position).Length();
+	if (Moved <= 0.0f)
+	{
+		return 0.0f;
+	}
+	Character.State.Position = Result.Position;
+	WriteTransform(Scene, Other, Character);
+	if (Character.Proxy != ~0u)
+	{
+		Physics2D->GetWorld()->SetTransform(Character.Proxy, Character.State.Position, 0.0f);
+	}
+	return Moved;
+}
+
+void FCharacterMovement2DSystem::GetCharacterContacts(FEntity Entity, std::vector<FEntity>& OutEntities) const
+{
+	OutEntities.clear();
+	const auto Found = Characters.find(Entity);
+	if (Found == Characters.end() || !IsActive())
+	{
+		return;
+	}
+	const FCharacter&   Character = Found->second;
+	const float         Radius    = std::max(Character.Settings.CapsuleRadius, 1.5f) + GroundSkin;
+	std::vector<uint64> UserData;
+	Physics2D->GetWorld()->OverlapBox(Character.State.Position, FVector2(Radius, HalfSegmentOf(Character.Settings) + Radius), 0.0f, UserData);
+	for (const uint64 Id : UserData)
+	{
+		if (Id != 0 && Id != Entity.ToId())
+		{
+			OutEntities.push_back(FEntity::FromId(Id));
+		}
 	}
 }
 

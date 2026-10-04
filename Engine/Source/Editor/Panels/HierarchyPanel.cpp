@@ -1,4 +1,5 @@
 #include "Editor/Panels/HierarchyPanel.h"
+#include "Editor/Editor2D/Editor2DScene.h"
 
 #include "Editor/EditorActions.h"
 #include "Editor/EditorContext.h"
@@ -327,6 +328,22 @@ void FHierarchyPanel::DrawContextMenu(FEditorContext& Context, FEntity Entity)
 		Mesh.MeshAsset = "primitive:cube";
 		Context.Select(Created);
 		Context.MarkEdited("큐브 추가");
+	}
+	if (ImGui::BeginMenu(ICON_FA_SHAPES " 2D"))
+	{
+		if (ImGui::MenuItem("2D 스프라이트"))
+		{
+			Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Sprite, Entity);
+		}
+		if (ImGui::MenuItem("2D 타일맵"))
+		{
+			Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Tilemap, Entity);
+		}
+		if (ImGui::MenuItem("2D 카메라 (직교, +Y에서 -Y)"))
+		{
+			Editor2DScene::CreateFromMenu(Context, Editor2DScene::ECreate2D::Camera, Entity);
+		}
+		ImGui::EndMenu();
 	}
 	if (!Entity.IsValid())
 	{

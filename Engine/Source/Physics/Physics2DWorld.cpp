@@ -21,6 +21,13 @@ namespace
 	constexpr int    SubStepCount   = 4;
 	constexpr uint64 ShapeFlagOneWay = 1u; // 모양 userData 비트 (원웨이 플랫폼)
 	constexpr uint64 ShapeFlagMoverProxy = 2u; // 모양 userData 비트 (2D 캐릭터 이동기 대리 모양 — 이동기 질의가 무시)
+	constexpr uint64 ShapeFlagSolidProxy = 4u; // 대리 모양 중 다른 캐릭터를 막는 것 (bCollideCharacters 이동기 질의만 본다)
+
+	// 이동기 질의가 이 모양을 거르는가: 대리 모양은 bCollideCharacters 이동기가 막는 대리(SolidProxy)일 때만 본다
+	bool IsFilteredProxy(uint64 Flags, bool bCollideCharacters)
+	{
+		return (Flags & ShapeFlagMoverProxy) != 0 && !(bCollideCharacters && (Flags & ShapeFlagSolidProxy) != 0);
+	}
 
 	b2Vec2   ToB2(const FVector2& Centimeters) { return b2Vec2{ Centimeters.X * CmToM, Centimeters.Y * CmToM }; }
 	FVector2 FromB2(const b2Vec2& Meters) { return FVector2(Meters.x * MToCm, Meters.y * MToCm); }
@@ -373,7 +380,8 @@ uint32 FPhysics2DWorld::CreateBody(const FPhysics2DBodyDesc& Desc)
 	{
 		const b2Filter Filter   = Impl->MakeFilter(Shape.CollisionLayer);
 		void* const    UserData = reinterpret_cast<void*>(
-			static_cast<uintptr_t>((Shape.bOneWay ? ShapeFlagOneWay : 0u) | (Shape.bMoverProxy ? ShapeFlagMoverProxy : 0u)));
+			static_cast<uintptr_t>((Shape.bOneWay ? ShapeFlagOneWay : 0u) | (Shape.bMoverProxy ? ShapeFlagMoverProxy : 0u) |
+			                       (Shape.bMoverProxy && Shape.bSolidProxy ? ShapeFlagSolidProxy : 0u)));
 
 		b2ShapeDef ShapeDef           = b2DefaultShapeDef();
 		ShapeDef.userData             = UserData;
@@ -1146,7 +1154,7 @@ void FPhysics2DWorld::CollideMover(const FPhysics2DMover& Mover, const FVector2&
 	{
 		const uint64 Flags = reinterpret_cast<uint64>(b2Shape_GetUserData(Item.Shape));
 		const uint32 Body  = Impl->BodyOf(Item.Shape);
-		if (b2Shape_IsSensor(Item.Shape) || (Flags & ShapeFlagMoverProxy) != 0 || Body == InvalidBody ||
+		if (b2Shape_IsSensor(Item.Shape) || IsFilteredProxy(Flags, Mover.bCollideCharacters) || Body == InvalidBody ||
 		    (Mover.IgnoreUserData != 0 && Impl->Bodies[Body].UserData == Mover.IgnoreUserData))
 		{
 			continue;
@@ -1161,6 +1169,7 @@ void FPhysics2DWorld::CollideMover(const FPhysics2DMover& Mover, const FVector2&
 		Contact.Body        = Body;
 		Contact.UserData    = Impl->Bodies[Body].UserData;
 		Contact.bOneWay     = (Flags & ShapeFlagOneWay) != 0;
+		Contact.bCharacter  = (Flags & ShapeFlagMoverProxy) != 0;
 		Contact.BodyType    = ToBodyType(b2Body_GetType(BodyId));
 		if (Contact.bOneWay)
 		{
@@ -1245,7 +1254,7 @@ bool FPhysics2DWorld::CastMover(const FPhysics2DMover& Mover, const FVector2& Po
 	{
 		const uint64 Flags = reinterpret_cast<uint64>(b2Shape_GetUserData(Shape));
 		const uint32 Body  = Impl->BodyOf(Shape);
-		if (b2Shape_IsSensor(Shape) || (Flags & ShapeFlagMoverProxy) != 0 || Body == InvalidBody ||
+		if (b2Shape_IsSensor(Shape) || IsFilteredProxy(Flags, Mover.bCollideCharacters) || Body == InvalidBody ||
 		    (Mover.IgnoreUserData != 0 && Impl->Bodies[Body].UserData == Mover.IgnoreUserData))
 		{
 			continue;
@@ -1293,6 +1302,7 @@ bool FPhysics2DWorld::CastMover(const FPhysics2DMover& Mover, const FVector2& Po
 		OutHit.Body        = Body;
 		OutHit.UserData    = Impl->Bodies[Body].UserData;
 		OutHit.bOneWay     = bOneWay;
+		OutHit.bCharacter  = (Flags & ShapeFlagMoverProxy) != 0;
 		OutHit.BodyType    = Type;
 		bHit               = true;
 	}
@@ -1326,6 +1336,12 @@ void FPhysics2DWorld::MoveMover(const FPhysics2DMover& Mover, const FVector2& Po
 			{
 				Depth  = Depth / std::abs(Normal.X); // 수평으로 빠져나올 깊이
 				Normal = FVector2(Normal.X > 0.0f ? 1.0f : -1.0f, 0.0f);
+			}
+			else if (Contact.bCharacter && Normal.Y >= Mover.WalkableNormalY)
+			{
+				// 다른 캐릭터 위(둥근 캡슐 머리): 평평한 발판처럼 위로만 빠져나온다 (기울어진 법선으로 풀면 머리에서 조금씩 미끄러져 내려간다)
+				Depth  = Depth / Normal.Y;
+				Normal = FVector2(0.0f, 1.0f);
 			}
 			Plane.plane        = b2Plane{ b2Vec2{ Normal.X, Normal.Y }, Depth * CmToM };
 			Plane.pushLimit    = FLT_MAX;

@@ -8,6 +8,7 @@
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
 #include "Scene/Scene.h"
+#include "World/PhysicsPredictionTuning.h"
 
 #include <algorithm>
 #include <cmath>
@@ -52,20 +53,7 @@
 
 namespace
 {
-	constexpr float HistorySeconds            = 1.5f;   // 로컬 기록 보관 (왕복 지연 + 여유)
-	constexpr float ReleaseDelaySeconds       = 1.0f;   // 근처/접촉이 이만큼 없으면 해제 후보
-	constexpr float ReleaseRadiusScale        = 1.25f;  // 해제 판정 반경 (진입 반경 × — 경계에서 들락날락하지 않게)
-	constexpr float RestSpeed                 = 5.0f;   // cm/s, 이보다 느리면 멈춘 것으로 본다
-	constexpr float ReleaseErrorDistance      = 2.0f;   // cm, 서버와 이만큼 가까워야 해제
-	constexpr float BlendOutSeconds           = 0.25f;  // 해제할 때 화면을 보간 위치로 옮기는 시간
-	constexpr float PositionCorrectionSeconds = 0.15f;  // 위치 오차가 1/e로 줄어드는 시간
-	constexpr float VelocityCorrectionSeconds = 0.15f;
-	constexpr float RotationCorrectionSeconds = 0.15f;
-	constexpr float SnapDistance              = 100.0f; // cm, 이보다 크면 바로 옮긴다
-	constexpr float MaxEnterSpeed             = 300.0f; // cm/s, 이보다 빠른 물체는 닿을 때만 예측한다 (서버가 쏜 공 등 — 내가 영향을 주지 않는 빠른 물체)
-	constexpr float MaxVelocitySampleGap      = 0.25f;  // 초, 이보다 먼 두 스냅샷으로는 속도를 구하지 않는다 (멈춰서 안 보내던 구간)
-	constexpr float TimingDecayPerSecond      = 0.05f;  // 시각 오프셋(감소하는 최댓값)이 내려가는 속도
-	constexpr float TimingResetSeconds        = 0.5f;   // 새 표본이 이보다 작으면 오프셋을 다시 잡는다 (지연이 크게 줄었을 때)
+	using namespace PhysicsPredictionTuning; // 2D(GameWorldPhysicsPrediction2D.cpp)와 같은 상수
 	constexpr float StatsJumpThreshold        = 2.0f;   // cm, 측정: 눈에 띄는 튐
 	constexpr float StatsMoveThreshold        = 1.0f;   // cm, 측정: 접촉 후 이만큼 움직이면 반응 시작
 
@@ -85,12 +73,6 @@ namespace
 		}
 		const float Angle = 2.0f * std::atan2(SinHalf, Delta.W);
 		return FVector3(Delta.X, Delta.Y, Delta.Z) * (Angle / (SinHalf * Seconds));
-	}
-
-	float SmoothStep(float X)
-	{
-		X = std::clamp(X, 0.0f, 1.0f);
-		return X * X * (3.0f - 2.0f * X);
 	}
 
 	// 시각순 기록에서 Time의 값 (범위 밖이면 false)
@@ -158,7 +140,7 @@ float FGameWorld::FMotionTrack::Push(const FVector3& Position, float DeltaSecond
 bool FGameWorld::IsPhysicsSimulatedLocally(FEntity Entity) const
 {
 	const auto Found = PredictedBodies.find(Entity);
-	return Found != PredictedBodies.end() && !Found->second.bBlendingOut;
+	return (Found != PredictedBodies.end() && !Found->second.bBlendingOut) || IsPhysics2DSimulatedLocally(Entity);
 }
 
 bool FGameWorld::IsPhysicsPredictionEnabled() const
@@ -199,10 +181,23 @@ void FGameWorld::UpdatePhysicsPredictionTiming()
 	}
 }
 
+bool FGameWorld::IsPhysicsPredictionTimingEnabled() const
+{
+	const FNetworkSettings& Settings = FProjectSettings::Get().Network;
+	return Mode == ENetMode::Client && Scene != nullptr && Replication != nullptr && Settings.bPhysicsPrediction && Settings.bClientPrediction;
+}
+
 void FGameWorld::TickPhysicsPrediction(float DeltaSeconds)
 {
 	PredictionClock += DeltaSeconds;
 	PredictionStats.LastDelta = DeltaSeconds;
+	if (IsPhysicsPredictionTimingEnabled())
+	{
+		// 시각 맞추기는 3D·2D 공용 (ack 무브 시계 ↔ 스냅샷 서버 시각)
+		PredictionTimeOffset -= TimingDecayPerSecond * DeltaSeconds;
+		UpdatePhysicsPredictionTiming();
+	}
+	TickPhysicsPrediction2D(DeltaSeconds); // 2D 동적 바디 (GameWorldPhysicsPrediction2D.cpp)
 	if (Mode != ENetMode::Client || Scene == nullptr || Systems.Physics == nullptr || !Systems.Physics->IsActive())
 	{
 		return;
@@ -210,11 +205,6 @@ void FGameWorld::TickPhysicsPrediction(float DeltaSeconds)
 	FPhysicsSystem& Physics  = *Systems.Physics;
 	FRegistry&      Registry = Scene->GetRegistry();
 	const bool      bEnabled = IsPhysicsPredictionEnabled();
-	if (bEnabled)
-	{
-		PredictionTimeOffset -= TimingDecayPerSecond * DeltaSeconds;
-		UpdatePhysicsPredictionTiming();
-	}
 
 	// 사라진 엔티티
 	for (auto It = PredictedBodies.begin(); It != PredictedBodies.end();)
@@ -501,11 +491,16 @@ void FGameWorld::RestoreBodiesAfterReplay()
 
 void FGameWorld::RecordPhysicsPrediction()
 {
-	if (Mode != ENetMode::Client || Systems.Physics == nullptr)
+	if (Mode != ENetMode::Client)
 	{
 		return;
 	}
 	LastRecordTime = PredictionClock;
+	RecordPhysicsPrediction2D();
+	if (Systems.Physics == nullptr)
+	{
+		return;
+	}
 	for (auto& [Entity, Body] : PredictedBodies)
 	{
 		FPhysicsBodyMotion Motion;
@@ -635,7 +630,7 @@ void FGameWorld::LogPhysicsPredictionStats(const char* Label) const
 	      "물리 예측 측정 ({}): {}프레임 {:.1f}초, 캐릭터 보정 {}회 (5cm 초과 {}회, 최대 {:.1f}cm), 캐릭터 최대 튐 {:.2f}cm (2cm 초과 {}프레임), "
 	      "반응한 바디 {}개 지연 평균 {:.3f}초 / 최대 {:.3f}초, 바디 최대 튐 {:.2f}cm (2cm 초과 {}프레임), 바디 스냅 {}회, 예측 중 {}개, 예측 선행 {:.3f}초, 보간 여유 {:.3f}초",
 	      Label, Stats.Frames, Stats.Elapsed, CharacterCorrections, Stats.BigCorrections, Stats.CorrectionMax, Stats.CharacterMaxJump, Stats.CharacterJumpFrames,
-	      Stats.ReactionDelays.size(), Average, Max, Stats.BodyMaxJump, Stats.BodyJumpFrames, Stats.Snaps, PredictedBodies.size(),
+	      Stats.ReactionDelays.size(), Average, Max, Stats.BodyMaxJump, Stats.BodyJumpFrames, Stats.Snaps, PredictedBodies.size() + PredictedBodies2D.size(),
 	      bPredictionTimingValid ? PredictionClock - PredictionTimeOffset - LastSnapshotTime : 0.0f,
 	      Stats.InterpolationMargin);
 }

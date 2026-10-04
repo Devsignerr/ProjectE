@@ -539,3 +539,55 @@ E_TEST(Sprite2DEditing_SliceRenameInFlipbookAndEntityJson)
 	E_EXPECT_EQ(RenameSliceRefsInEntityJson(Scene, "Sprites/Samples/SampleAtlas.esprite", {}, Untouched), 0);
 	E_EXPECT_EQ(Untouched, std::string("unchanged"));
 }
+
+// 격자 대화 기본값 (이미지): 투명 열/행 패턴으로 셀·여백·간격 추정 — 칸 안 투명 여백은 간격으로 본다 (내용에 꼭 맞는 칸)
+E_TEST(Sprite2DEditing_EstimateGridFromImage)
+{
+	// 시트: 여백 M, 셀 CxC, 간격 S, 칸 수 Nx × Ny, 오른쪽·아래 여백도 M. 칸마다 안쪽 Pad만큼 투명, 나머지 불투명
+	const auto MakeSheet = [](int32 M, int32 CellW, int32 CellH, int32 S, int32 Nx, int32 Ny, int32 Pad, std::vector<uint8>& Pixels, int32& W, int32& H) {
+		W = 2 * M + Nx * CellW + (Nx - 1) * S;
+		H = 2 * M + Ny * CellH + (Ny - 1) * S;
+		Pixels.assign(static_cast<size_t>(W) * static_cast<size_t>(H) * 4, 0);
+		for (int32 Row = 0; Row < Ny; ++Row)
+		{
+			for (int32 Column = 0; Column < Nx; ++Column)
+			{
+				const int32 X0 = M + Column * (CellW + S);
+				const int32 Y0 = M + Row * (CellH + S);
+				for (int32 Y = Y0 + Pad; Y < Y0 + CellH - Pad; ++Y)
+				{
+					for (int32 X = X0 + Pad; X < X0 + CellW - Pad; ++X)
+					{
+						Pixels[(static_cast<size_t>(Y) * static_cast<size_t>(W) + static_cast<size_t>(X)) * 4 + 3] = 255;
+					}
+				}
+			}
+		}
+	};
+	std::vector<uint8> Pixels;
+	int32              W = 0;
+	int32              H = 0;
+	FGridSliceOptions  Options;
+	// 꽉 찬 칸: 여백 1, 셀 16, 간격 2
+	MakeSheet(1, 16, 16, 2, 4, 3, 0, Pixels, W, H);
+	E_EXPECT_TRUE(EstimateGridFromImage(FImageView{ W, H, Pixels }, Options));
+	E_EXPECT_TRUE(Options.CellWidth == 16 && Options.CellHeight == 16 && Options.Margin == 1 && Options.Spacing == 2 && !Options.bByCount);
+	// 직사각형 셀 24x12, 간격 3, 여백 0
+	MakeSheet(0, 24, 12, 3, 5, 4, 0, Pixels, W, H);
+	E_EXPECT_TRUE(EstimateGridFromImage(FImageView{ W, H, Pixels }, Options));
+	E_EXPECT_TRUE(Options.CellWidth == 24 && Options.CellHeight == 12 && Options.Margin == 0 && Options.Spacing == 3);
+	// 칸 안 투명 여백 2px: 칸 = 내용(20x8), 여백 0 + 2, 간격 3 + 2 × 2 (같은 주기의 다른 답 중 가장 꼭 맞는 것)
+	MakeSheet(0, 24, 12, 3, 5, 4, 2, Pixels, W, H);
+	E_EXPECT_TRUE(EstimateGridFromImage(FImageView{ W, H, Pixels }, Options));
+	E_EXPECT_TRUE(Options.CellWidth == 20 && Options.CellHeight == 8 && Options.Margin == 2 && Options.Spacing == 7);
+	// 자른 결과가 원래 칸과 같다
+	MakeSheet(2, 16, 16, 1, 3, 3, 0, Pixels, W, H);
+	E_EXPECT_TRUE(EstimateGridFromImage(FImageView{ W, H, Pixels }, Options));
+	E_EXPECT_TRUE(Options.CellWidth == 16 && Options.Margin == 2 && Options.Spacing == 1);
+	const std::vector<FSpriteSlice> Cells = SliceGridWithOptions(W, H, Options, FImageView{ W, H, Pixels });
+	E_EXPECT_TRUE(Cells.size() == 9 && Cells[4].X == 2 + 17 && Cells[4].Y == 2 + 17 && Cells[4].W == 16);
+	// 간격 0(빈틈 없는 시트)·완전 불투명·작은 이미지는 false (호출자가 EstimateGridCellSize)
+	MakeSheet(0, 16, 16, 0, 4, 4, 0, Pixels, W, H);
+	E_EXPECT_FALSE(EstimateGridFromImage(FImageView{ W, H, Pixels }, Options));
+	E_EXPECT_FALSE(EstimateGridFromImage(FImageView{ 2, 2, {} }, Options));
+}

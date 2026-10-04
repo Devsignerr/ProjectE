@@ -858,8 +858,18 @@ void FSpriteAtlasEditor::DrawGridDialog()
 	{
 		ImGui::OpenPopup("격자로 자르기##SpriteGrid");
 		bOpenGridDialog = false;
-		// 기본 셀 크기 추정: 기존 슬라이스의 가장 흔한 크기, 없으면 텍스처 크기를 나누는 16/32/8
-		EstimateGridCellSize(Asset, GridOptions.CellWidth, GridOptions.CellHeight);
+		// 기본값 추정: 기존 슬라이스의 가장 흔한 크기 (여백·간격 그대로). 슬라이스가 없으면 이미지 투명 열/행 패턴(셀·여백·간격 —
+		// 간격이 있는 시트), 그것도 아니면 텍스처 크기를 나누는 16/32/8 + 여백·간격 0
+		const FImageView Image{ Texture.GetWidth(), Texture.GetHeight(), Texture.Image.Pixels };
+		if (!Asset.Slices.empty() || !EstimateGridFromImage(Image, GridOptions))
+		{
+			EstimateGridCellSize(Asset, GridOptions.CellWidth, GridOptions.CellHeight);
+			if (Asset.Slices.empty())
+			{
+				GridOptions.Margin  = 0;
+				GridOptions.Spacing = 0;
+			}
+		}
 	}
 	bGridDialogOpen = false;
 	ImGui::SetNextWindowPos(ImVec2(Canvas.GetMax().x - 12.0f, Canvas.GetMin().y + 12.0f), ImGuiCond_Appearing, ImVec2(1.0f, 0.0f));

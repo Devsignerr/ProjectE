@@ -26,7 +26,8 @@ class FShaderLibrary;
 //   ExtraCasterState에 섞는다 (정적 캐스터가 없으면 0 = 섞지 않음 →
 //   스프라이트 그림자가 없는 씬은 캐시 키·화면이 이전과 같다).
 //   동적 = 그 밖(움직이는 스프라이트, 플립북, 애니메이션 타일) — FShadowRenderer::ExtraDynamicCasters로 매 프레임 그린다 (캐시에 넣지 않음).
-//   동적 구간이 닿는 캐스케이드만(HasDynamicCastersIn) 그리고 캐시를 복사한다 — 닿지 않는 캐스케이드는 장 복사도 생략된다.
+//   동적 구간이 닿는 캐스케이드만(GetDynamicCasterBounds) 그리고, 다음 프레임 그 경계의 텍셀 사각형만 캐시에서 되살린다(장 전체 복사 대신 —
+//   ShadowCacheMath "장 되살리기"). 동적 항목은 구간 하나라 경계는 동적 항목 전체의 합(넓게 흩어진 애니메이션 타일이면 사각형도 넓다).
 //   로컬 그림자는 캐시가 없으므로 둘 다 (ESet::All).
 // 데이터: Prepare(게임 스레드, 그림자 패스 등록 전)가 항목 인스턴스(FSpriteInstanceGpu, 월드 공간 — 정적 구간 | 동적 구간)와 청크 머리를 동적 업로드
 //   버퍼에 쓰고 구간 목록을 만든다. 텍스처 칸은 매 Prepare에 ResolveTexture로 다시 구한다 (프레임을 넘겨 캐시하지 않음 — 준비 전 기본 텍스처면 칸이 바뀌어
@@ -55,8 +56,9 @@ public:
 
 	// 게임 스레드: 그림자 목록 (수집기 GetShadowItems/GetShadowChunks — 비면 이번 프레임 캐스터 없음)
 	void Prepare(std::span<const FSpriteDrawItem> Items, std::span<const FSpriteChunkDraw> Chunks);
-	// 동적 구간 중 장 프러스텀과 겹치는 것이 있나 (RenderShadow(ESet::Dynamic)가 그 장에 무엇이든 그리는가와 같은 판정 — FShadowRenderer 캐스케이드별 복사 생략)
-	bool HasDynamicCastersIn(const FFrustum& Frustum) const;
+	// 동적 구간 중 장 프러스텀과 겹치는 것이 있나 + 그 구간들의 월드 경계 합 (RenderShadow(ESet::Dynamic)가 그 장에 그리는 것과 같은 판정 —
+	// FShadowRenderer 캐스케이드별 캐시 되살리기: 다음 프레임 이 경계의 텍셀 사각형만 캐시에서 다시 쓴다)
+	bool GetDynamicCasterBounds(const FFrustum& Frustum, FBox& OutBounds) const;
 	// 장 프러스텀 안 정적 캐스터의 상태 해시 (없으면 0). 게임 스레드 (FShadowRenderer::PrepareBatches)
 	uint64 GetStaticStateHash(const FFrustum& Frustum) const;
 	// 렌더 스레드 가능: 장 DSV·뷰포트가 묶인 상태에서 (FShadowCasterHook). 자기 루트 시그니처/PSO를 묶는다

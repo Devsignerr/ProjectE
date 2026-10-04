@@ -144,30 +144,62 @@ E_TEST(ShadowCache_ImmediateRebuildAfterSustainedReuse)
 	E_EXPECT_FALSE(State.bCacheValid);
 }
 
-// 장 복사 생략: 캐시 위에 그리지 않은 장은 다음 프레임(같은 캐시 키) 복사를 건너뛴다. 동적 캐스터가 있는 장만 매 프레임 복사
-E_TEST(ShadowCache_SliceCopySkippedOnlyWhenClean)
+// 장 되살리기: 캐시 위에 아무것도 그리지 않은 장은 다음 프레임(같은 캐시 키) 되살리기 없음, 동적 2D 캐스터만 그린 장은 그 사각형만,
+// 동적 메시처럼 위치를 모르는 것이 그린 장은 전체 복사
+E_TEST(ShadowCache_SliceRestorePerCascade)
 {
-	FSliceCopyState Clean;
-	FSliceCopyState Dynamic;
-	E_EXPECT_FALSE(UpdateSliceCopy(Clean, ECacheAction::Rebuild, 7, false)); // 다시 그린 프레임은 복사
-	E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Rebuild, 7, true));
-	for (int32 Frame = 0; Frame < 3; ++Frame)
+	const FTexelRect Small{ 10, 20, 30, 40 };
+	FSliceCopyState  Clean;
+	FSliceCopyState  Sprite;
+	FSliceCopyState  Mesh;
+	const auto Frame = [](FSliceCopyState& State, ECacheAction Action, uint64 Key, bool bMesh, const FTexelRect& Rect) {
+		const ESliceRestore Restore = DecideSliceRestore(State, Action, Key);
+		FinishSlice(State, Action, Key, bMesh, Rect);
+		return Restore;
+	};
+	E_EXPECT_TRUE(Frame(Clean, ECacheAction::Rebuild, 7, false, {}) == ESliceRestore::Copy); // 처음 = 전체 복사
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Rebuild, 7, false, Small) == ESliceRestore::Copy);
+	E_EXPECT_TRUE(Frame(Mesh, ECacheAction::Rebuild, 7, true, {}) == ESliceRestore::Copy);
+	for (int32 Index = 0; Index < 3; ++Index)
 	{
-		E_EXPECT_TRUE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, false));   // 장이 이미 캐시 내용 그대로
-		E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, true)); // 지난 프레임 동적 캐스터가 장을 더럽혔다
+		E_EXPECT_TRUE(Frame(Clean, ECacheAction::Reuse, 7, false, {}) == ESliceRestore::None);   // 이미 캐시 내용
+		E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Reuse, 7, false, Small) == ESliceRestore::Rect); // 지난 사각형만
+		E_EXPECT_TRUE(Frame(Mesh, ECacheAction::Reuse, 7, true, {}) == ESliceRestore::Copy);
 	}
-	// 동적 캐스터가 장을 떠난 프레임: 지난 프레임 더러웠으므로 한 번 더 복사, 그다음부터 생략
-	E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, false));
-	E_EXPECT_TRUE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, false));
-	// 동적 캐스터가 들어온 프레임: 지난 프레임이 깨끗해 이번 복사는 생략 (캐시 내용 위에 그린다), 다음 프레임은 복사
-	E_EXPECT_TRUE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, true));
-	E_EXPECT_FALSE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, true));
-	// 캐시 키가 바뀌면(다시 그림) 깨끗했어도 복사, Direct는 장을 지우고 다 그리므로 다음 프레임 복사
-	FSliceCopyState Key;
-	UpdateSliceCopy(Key, ECacheAction::Rebuild, 1, false);
-	E_EXPECT_TRUE(UpdateSliceCopy(Key, ECacheAction::Reuse, 1, false));
-	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Rebuild, 2, false));
-	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Direct, 2, false));
-	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Reuse, 2, false));
-	E_EXPECT_TRUE(UpdateSliceCopy(Key, ECacheAction::Reuse, 2, false));
+	// 되살릴 사각형 = 지난 프레임 것 (이번 것은 다음 프레임에)
+	const FTexelRect Moved{ 12, 20, 32, 40 };
+	E_EXPECT_TRUE(DecideSliceRestore(Sprite, ECacheAction::Reuse, 7) == ESliceRestore::Rect && Sprite.Dirty == Small);
+	FinishSlice(Sprite, ECacheAction::Reuse, 7, false, Moved);
+	E_EXPECT_TRUE(Sprite.Dirty == Moved);
+	// 동적 캐스터가 떠난 프레임: 한 번 더 사각형, 그다음 없음
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Reuse, 7, false, {}) == ESliceRestore::Rect);
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Reuse, 7, false, {}) == ESliceRestore::None);
+	// 동적 캐스터가 들어온 첫 프레임: 장이 깨끗했으므로 되살리기 없이 위에 그린다
+	E_EXPECT_TRUE(Frame(Clean, ECacheAction::Reuse, 7, false, Small) == ESliceRestore::None);
+	E_EXPECT_TRUE(Frame(Clean, ECacheAction::Reuse, 7, false, {}) == ESliceRestore::Rect);
+	// 캐시 키가 바뀌면 전체 복사, Direct는 지우고 다 그리므로 되살리기 없음 + 다음 프레임 전체 복사
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Rebuild, 8, false, Small) == ESliceRestore::Copy);
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Direct, 8, false, Small) == ESliceRestore::None);
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Reuse, 8, false, {}) == ESliceRestore::Copy);
+	E_EXPECT_TRUE(Frame(Sprite, ECacheAction::Reuse, 8, false, {}) == ESliceRestore::None);
+	// 동적 메시와 2D 캐스터가 같이 그리면 전체
+	E_EXPECT_TRUE(Frame(Mesh, ECacheAction::Reuse, 7, true, Small) == ESliceRestore::Copy);
+	E_EXPECT_TRUE(Frame(Mesh, ECacheAction::Reuse, 7, false, {}) == ESliceRestore::Copy);
+}
+
+// 월드 경계 → 텍셀 사각형: 직교 투영 (x, y는 [-100, 100] → NDC), 바깥으로 내림/올림 + 여유, 장 안으로 자름
+E_TEST(ShadowCache_TexelRectFromBounds)
+{
+	FMatrix4x4 ViewProjection = FMatrix4x4::Identity;
+	ViewProjection.M[0][0]    = 1.0f / 100.0f;
+	ViewProjection.M[1][1]    = 1.0f / 100.0f;
+	ViewProjection.M[2][2]    = 1.0f / 1000.0f;
+	// x [-50, 25] → u [0.25, 0.625] × 1024 = [256, 640], y [0, 50] → v = (1 - y)/2 → [0.25, 0.5] × 1024 = [256, 512]
+	const FTexelRect Rect = ComputeTexelRect(FBox(FVector3(-50.0f, 0.0f, -10.0f), FVector3(25.0f, 50.0f, 10.0f)), ViewProjection, 1024, 1);
+	E_EXPECT_TRUE(Rect == (FTexelRect{ 255, 255, 641, 513 }));
+	// 장 밖으로 넘치면 자르고, 완전히 밖이면 빈 사각형
+	const FTexelRect Clamped = ComputeTexelRect(FBox(FVector3(50.0f, -500.0f, 0.0f), FVector3(500.0f, -50.0f, 0.0f)), ViewProjection, 1024, 1);
+	E_EXPECT_TRUE(Clamped == (FTexelRect{ 767, 767, 1024, 1024 }));
+	E_EXPECT_TRUE(ComputeTexelRect(FBox(FVector3(200.0f, 0.0f, 0.0f), FVector3(300.0f, 10.0f, 0.0f)), ViewProjection, 1024, 1).IsEmpty());
+	E_EXPECT_TRUE(ComputeTexelRect(FBox(), ViewProjection, 1024, 1).IsEmpty());
 }

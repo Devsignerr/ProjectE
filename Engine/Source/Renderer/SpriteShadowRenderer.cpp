@@ -294,16 +294,19 @@ void FSpriteShadowRenderer::Prepare(std::span<const FSpriteDrawItem> Items, std:
 	}
 }
 
-bool FSpriteShadowRenderer::HasDynamicCastersIn(const FFrustum& Frustum) const
+bool FSpriteShadowRenderer::GetDynamicCasterBounds(const FFrustum& Frustum, FBox& OutBounds) const
 {
+	bool bAny = false;
+	OutBounds = FBox();
 	for (const FRun& Run : Runs)
 	{
 		if (!Run.bStatic && Frustum.Intersects(Run.Bounds))
 		{
-			return true;
+			OutBounds.AddBox(Run.Bounds);
+			bAny = true;
 		}
 	}
-	return false;
+	return bAny;
 }
 
 uint64 FSpriteShadowRenderer::GetStaticStateHash(const FFrustum& Frustum) const

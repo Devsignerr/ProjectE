@@ -109,14 +109,23 @@ E_TEST(SpriteDraw_BatchRunsSplitOnPipelineChange)
 	}
 	SpriteBatching::BuildRuns({}, Runs);
 	E_EXPECT_TRUE(Runs.empty());
-	// 키 = 블렌드 × 조명 (모두 다르고 개수 안)
+	// 키 = 블렌드 × 조명 × 정지 (모두 다르고 개수 안). Masked는 정지 변형이 없다 (움직임 벡터를 쓰므로 정지 = 일반 키로 접힘)
 	std::vector<uint32> All;
 	for (uint32 Blend = 0; Blend < static_cast<uint32>(ESpriteBlendMode::Count); ++Blend)
 	{
+		const ESpriteBlendMode Mode = static_cast<ESpriteBlendMode>(Blend);
 		for (const bool bLit : { false, true })
 		{
-			All.push_back(SpriteBatching::MakePipelineKey(static_cast<ESpriteBlendMode>(Blend), bLit));
+			All.push_back(SpriteBatching::MakePipelineKey(Mode, bLit, false));
+			if (Mode == ESpriteBlendMode::Masked)
+			{
+				E_EXPECT_TRUE(SpriteBatching::MakePipelineKey(Mode, bLit, true) == SpriteBatching::MakePipelineKey(Mode, bLit, false));
+				continue;
+			}
+			All.push_back(SpriteBatching::MakePipelineKey(Mode, bLit, true));
 		}
+		// 렌더러가 키에서 블렌드를 되찾는 식 (Masked 구간 = 움직임 벡터 타깃)
+		E_EXPECT_TRUE(SpriteBatching::MakePipelineKey(Mode, true, true) / 4u == Blend);
 	}
 	std::sort(All.begin(), All.end());
 	E_EXPECT_TRUE(std::adjacent_find(All.begin(), All.end()) == All.end());

@@ -124,7 +124,7 @@
 
 ### [`Docs/Rules/2DRendering.md`](Docs/Rules/2DRendering.md) — 2D 스프라이트/타일맵 렌더링과 데이터
 
-- 2D 스프라이트 렌더링: 패스 위치 = 안개 뒤·반투명 메시 앞, 메시 루트 시그니처 재사용, 수집은 그림자 패스 등록 전. 새 2D 그리기 종류는 `FSpriteDrawItem` 또는 청크 메시
+- 2D 스프라이트 렌더링: 패스 위치 = 안개 뒤·반투명 메시 앞, 메시 루트 시그니처 재사용, 수집은 그림자 패스 등록 전. 새 2D 그리기 종류는 `FSpriteDrawItem` 또는 청크 메시. TAA: Masked는 움직임 벡터 + 반응형 0, 반투명은 정지면 알파 보존 PSO — 새 2D 그리기도 같은 규칙(HD-2D)
 - 2D 스프라이트/타일맵 데이터: 읽기는 `FSprite2DLibrary::Get().Load*`, enum은 끝에만 추가, 게임플레이 타일 편집은 `MarkTilemapEdited` 지연 커밋
 
 ### [`Docs/Rules/2DEditor.md`](Docs/Rules/2DEditor.md) — 2D 에디터와 2D 에셋 편집기

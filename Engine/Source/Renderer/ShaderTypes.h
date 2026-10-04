@@ -518,3 +518,16 @@ struct FSpriteChunkGpu
 	FVector4 Color;            // 선형 RGBA (곱하기)
 };
 static_assert(sizeof(FSpriteChunkGpu) == 64);
+
+// 스프라이트 직전 프레임 사각형 (Sprite.hlsl FSpritePrev — 메시 루트 t15 자리, Masked 움직임 벡터용, Renderer/SpriteRenderer.h "TAA").
+// 항목 구간 = 인스턴스와 같은 순서의 배열, 청크 구간 = 칸 하나(직전 청크 월드 0/2/3행 — 셰이더가 로컬 인스턴스에 적용)
+struct FSpritePrevGpu
+{
+	FVector3 Origin;
+	uint32   Pad0 = 0;
+	FVector3 AxisX;
+	uint32   Pad1 = 0;
+	FVector3 AxisZ;
+	uint32   Pad2 = 0;
+};
+static_assert(sizeof(FSpritePrevGpu) == 48);

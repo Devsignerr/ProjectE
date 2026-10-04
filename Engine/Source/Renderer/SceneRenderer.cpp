@@ -215,7 +215,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 	// 2D 스프라이트: 메시 루트 시그니처를 그대로 (반투명 메시와 같은 조명·안개 바인딩)
-	if (!SpriteRenderer.Init(*Rhi, ShaderLibrary, *Resources, RootSignature.Get(), SceneColorFormat, FD3D12RHI::DepthBufferFormat))
+	if (!SpriteRenderer.Init(*Rhi, ShaderLibrary, *Resources, RootSignature.Get(), SceneColorFormat, FD3D12RHI::DepthBufferFormat, SceneVelocityFormat))
 	{
 		return false;
 	}
@@ -2019,8 +2019,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			{
 				const D3D12_GPU_VIRTUAL_ADDRESS FogConstants = FogRenderer.GetConstantsAddress();
 				FRenderGraph::FPassBuilder      Pass         = Graph.AddPass("스프라이트");
-				// 깊이: Masked만 쓴다 (나머지는 테스트만 — 같은 상태로 선언). 메시 루트를 묶으므로 반투명 패스와 같은 조명 리소스를 선언
-				Pass.Write(OutRefs.Color, ERGAccess::RenderTarget).Write(OutRefs.Depth, ERGAccess::DepthWrite).Read(FogVolumeRef, ERGAccess::SrvPixel)
+				// 깊이·움직임 벡터: Masked만 쓴다 (나머지는 깊이 테스트만 — 같은 상태로 선언). 메시 루트를 묶으므로 반투명 패스와 같은 조명 리소스를 선언
+				Pass.Write(OutRefs.Color, ERGAccess::RenderTarget).Write(OutRefs.Velocity, ERGAccess::RenderTarget).Write(OutRefs.Depth, ERGAccess::DepthWrite)
+					.Read(FogVolumeRef, ERGAccess::SrvPixel)
 					.Timer(TimerId(ERenderTimer::Sprites));
 				DeclareLighting(Pass);
 				Pass.Execute([this, PerFrameAddress, ShadowAddress, FogConstants, Sprites = std::move(Sprites)](FRGContext& Context) {
@@ -2029,7 +2030,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 					BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, Sprites.Instances);
 					CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogConstants);
 					CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogRenderer.GetVolumeSrv().Gpu);
-					FSpriteRenderer::RecordDraws(CommandList, Sprites, RootParam_DrawConstants, RootParam_Instances, RootParam_InstanceIndices);
+					const FSpriteRenderer::FTargets Targets{ SceneColor->GetRtv(), SceneVelocity->GetRtv(), SceneColor->GetDsv() };
+					FSpriteRenderer::RecordDraws(CommandList, Sprites, RootParam_DrawConstants, RootParam_Instances, RootParam_InstanceIndices,
+					                             RootParam_SkinPalette, Targets);
 				});
 			}
 		}

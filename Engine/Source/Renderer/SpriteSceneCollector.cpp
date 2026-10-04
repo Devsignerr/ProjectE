@@ -98,7 +98,7 @@ void FSpriteSceneCollector::Shutdown()
 	Chunks.clear();
 	ShadowItems.clear();
 	ShadowChunks.clear();
-	ShadowHistory.clear();
+	History.clear();
 	Rhi       = nullptr;
 	Resources = nullptr;
 }
@@ -291,23 +291,22 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 		Source.TextureHeight = LastHeight;
 	}
 
-	// 그림자 정적 판정 이력: 캐스터 엔티티 번호 칸을 병렬 전에 맞춘다 (병렬 본문은 자기 엔티티 칸만 쓴다)
+	// 이력(그림자 정적 판정 + TAA): 엔티티 번호 칸을 병렬 전에 맞춘다 (병렬 본문은 자기 엔티티 칸만 쓴다)
 	const bool bShadows = static_cast<bool>(CasterTest);
-	if (bShadows)
 	{
 		uint32 MaxIndex = 0;
 		bool   bAny     = false;
 		for (const FSpriteSource& Source : Sources)
 		{
-			if (Source.State == ESourceState::Ready && Source.Sprite->bCastShadows)
+			if (Source.State == ESourceState::Ready)
 			{
 				MaxIndex = std::max(MaxIndex, Source.Entity.Index);
 				bAny     = true;
 			}
 		}
-		if (bAny && MaxIndex >= ShadowHistory.size())
+		if (bAny && MaxIndex >= History.size())
 		{
-			ShadowHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+			History.resize(static_cast<size_t>(MaxIndex) + 1);
 		}
 	}
 
@@ -358,9 +357,8 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			// 조각들은 원래 사각형을 정확히 덮으므로 컬링은 원래 사각형으로
 			const FBox Bounds = ComputeItemBounds(Item);
 			uint8      Flags  = Frustum.Intersects(Bounds) ? 1 : 0;
-			if (bShadows && Sprite.bCastShadows)
 			{
-				// 그림자 정적 판정: 그리는 값 해시가 연속 수집에서 같았던 횟수 (캐스터 판정과 무관하게 갱신 — 이력이 끊기지 않게)
+				// 이력 (보이든 아니든 매 수집 갱신 — 끊기지 않게). 그림자 해시 = 그림자 결과를 바꾸는 값, 그리는 해시 = 거기에 화면 색·정렬·파이프라인
 				using namespace ShadowCacheMath;
 				uint64 Hash = HashSeed;
 				Hash        = HashValue(Hash, Item.World);
@@ -373,14 +371,28 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 				Hash        = HashValue(Hash, Item.AlphaCutoff);
 				Hash        = HashValue(Hash, Item.Filter);
 				Hash        = HashValue(Hash, bSliced ? static_cast<int32>(Sprite.SliceMode) + 1 : 0);
-				FShadowHistory& History     = ShadowHistory[Source.Entity.Index];
-				const bool      bContinuous = History.Generation == Source.Entity.Generation && History.LastCollect + 1 == CollectIndex;
-				History.Stable              = bContinuous && History.Hash == Hash ? std::min(History.Stable + 1, 0x7FFFFFFFu) : 0u;
-				History.Hash                = Hash;
-				History.Generation          = Source.Entity.Generation;
-				History.LastCollect         = CollectIndex;
-				Item.bShadowStatic          = IsStatic(History.Stable, StaticFrames);
-				Flags |= CasterTest(Bounds) ? 2 : 0;
+				uint64 DrawHash = HashValue(Hash, Item.Color);
+				DrawHash        = HashValue(DrawHash, Item.SortLayer);
+				DrawHash        = HashValue(DrawHash, Item.OrderInLayer);
+				DrawHash        = HashValue(DrawHash, Item.Blend);
+				DrawHash        = HashValue(DrawHash, static_cast<uint32>(Item.bLit));
+				FSpriteHistory& Entry       = History[Source.Entity.Index];
+				const bool      bContinuous = Entry.Generation == Source.Entity.Generation && Entry.LastCollect + 1 == CollectIndex;
+				Entry.Stable                = bContinuous && Entry.ShadowHash == Hash ? std::min(Entry.Stable + 1, 0x7FFFFFFFu) : 0u;
+				Item.PrevWorld              = bContinuous ? Entry.LastWorld : Item.World;
+				Item.bHasPrevWorld          = true;
+				Item.bStatic                = bContinuous && Entry.DrawHash == DrawHash;
+				Entry.ShadowHash            = Hash;
+				Entry.DrawHash              = DrawHash;
+				Entry.LastWorld             = Item.World;
+				Entry.Generation            = Source.Entity.Generation;
+				Entry.LastCollect           = CollectIndex;
+				if (bShadows && Sprite.bCastShadows)
+				{
+					// 그림자 정적 판정: 그림자 해시가 연속 수집에서 같았던 횟수
+					Item.bShadowStatic = IsStatic(Entry.Stable, StaticFrames);
+					Flags |= CasterTest(Bounds) ? 2 : 0;
+				}
 			}
 			if (bSliced && (Flags & 3) != 0)
 			{
@@ -606,6 +618,30 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 		const ESpriteBlendMode Blend   = Tilemap.Blend >= ESpriteBlendMode::Alpha && Tilemap.Blend < ESpriteBlendMode::Count ? Tilemap.Blend : ESpriteBlendMode::Alpha;
 		const bool             bShadow = CasterTest && Tilemap.bCastShadows;
 		bool                   bShadowStatic = false;
+		// TAA 이력 (매 수집): 그리는 값이 직전 수집과 같은가 + 직전 월드
+		bool       bDrawStatic = false;
+		FMatrix4x4 PrevWorld   = World;
+		{
+			using namespace ShadowCacheMath;
+			uint64 Hash = HashSeed;
+			Hash        = HashValue(Hash, World);
+			Hash        = HashValue(Hash, Color);
+			Hash        = HashValue(Hash, Tilemap.AlphaCutoff);
+			Hash        = HashValue(Hash, Cache.Revision);
+			Hash        = HashValue(Hash, Tileset.get());
+			Hash        = HashValue(Hash, CellSize);
+			Hash        = HashValue(Hash, Texture);
+			Hash        = HashValue(Hash, Layer);
+			Hash        = HashValue(Hash, Tilemap.OrderInLayer);
+			Hash        = HashValue(Hash, Blend);
+			Hash        = HashValue(Hash, static_cast<uint32>(Tilemap.bLit));
+			const bool bContinuous = Cache.DrawLastCollect + 1 == CollectIndex;
+			bDrawStatic            = bContinuous && Cache.DrawHash == Hash;
+			PrevWorld              = bContinuous ? Cache.LastWorld : World;
+			Cache.DrawHash         = Hash;
+			Cache.LastWorld        = World;
+			Cache.DrawLastCollect  = CollectIndex;
+		}
 		if (bShadow)
 		{
 			// 정적 판정: 그림자 결과를 바꾸는 타일맵 값이 연속 수집에서 같았던 횟수 (청크 내용 변경은 Revision이 잡는다)
@@ -662,6 +698,9 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				Draw.bLit          = Tilemap.bLit;
 				Draw.Bounds        = Bounds;
 				Draw.bShadowStatic = bShadowStatic;
+				Draw.PrevWorld     = PrevWorld;
+				Draw.bHasPrevWorld = true;
+				Draw.bStatic       = bDrawStatic;
 				if (bMain)
 				{
 					Chunks.push_back(Draw);
@@ -677,6 +716,7 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				const int32            BaseTile   = TileCell::GetTileId(Cell.Cell);
 				const FTileDefinition* Definition = Tileset->FindTile(BaseTile);
 				const int32            TileId     = Definition != nullptr ? SpriteTiles::SelectAnimationFrame(*Definition, BaseTile, Time) : BaseTile;
+				const int32            PrevTileId = Definition != nullptr ? SpriteTiles::SelectAnimationFrame(*Definition, BaseTile, LastCollectTime) : BaseTile;
 				const SpriteTiles::FTileQuad Quad = SpriteTiles::ComputeTileQuad(Cell.X, Cell.Y, TileCell::GetFlags(Cell.Cell), CellSize);
 				const FSpriteUvRect          Uv   = Tileset->ComputeTileUv(TileId);
 				FMatrix4x4 Local = FMatrix4x4::Identity;
@@ -685,6 +725,9 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				Local.M[3][0] = Quad.Origin.X; Local.M[3][1] = Quad.Origin.Y; Local.M[3][2] = Quad.Origin.Z;
 				FSpriteDrawItem Item;
 				Item.World        = Local * World;
+				Item.PrevWorld    = Local * PrevWorld;
+				Item.bHasPrevWorld = true;
+				Item.bStatic      = bDrawStatic && PrevTileId == TileId; // 프레임이 바뀐 수집만 반응형
 				Item.Size         = FVector2(1.0f, 1.0f);
 				Item.Pivot        = FVector2(0.0f, 0.0f);
 				Item.UVMin        = FVector2(Uv.U0, Uv.V0);
@@ -709,6 +752,8 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 			}
 		}
 	});
+
+	LastCollectTime = Time;
 
 	// 이번 수집에 안 보인 타일맵(지워짐·타일셋 없음·다른 씬)의 청크 해제
 	for (auto It = Tilemaps.begin(); It != Tilemaps.end();)

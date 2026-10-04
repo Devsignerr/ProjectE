@@ -42,15 +42,27 @@ namespace
 		}
 	}
 
-	EBlendMode GetPipelineBlend(ESpriteBlendMode Blend)
+	// 정지 변형(bStatic): 알파(TAA 반응형 마스크)를 그대로 두는 블렌드 — Alpha는 셰이더가 rgb × a를 미리 곱해 Premultiplied(알파 ZERO/ONE),
+	// Premultiplied도 같은 블렌드, Additive는 셰이더가 알파 0을 더한다 (SpriteRenderer.h 머리 주석 "TAA")
+	EBlendMode GetPipelineBlend(ESpriteBlendMode Blend, bool bStatic)
 	{
 		switch (Blend)
 		{
-		case ESpriteBlendMode::Premultiplied: return EBlendMode::PremultipliedOver;
+		case ESpriteBlendMode::Premultiplied: return bStatic ? EBlendMode::Premultiplied : EBlendMode::PremultipliedOver;
 		case ESpriteBlendMode::Additive:      return EBlendMode::Additive;
 		case ESpriteBlendMode::Masked:        return EBlendMode::Opaque;
-		default:                              return EBlendMode::Alpha;
+		default:                              return bStatic ? EBlendMode::Premultiplied : EBlendMode::Alpha;
 		}
+	}
+
+	// 사각형 → 직전 프레임 GPU 칸 (Origin/AxisX/AxisZ)
+	FSpritePrevGpu MakePrev(const SpriteMath::FQuad& Quad)
+	{
+		FSpritePrevGpu Prev;
+		Prev.Origin = Quad.Origin;
+		Prev.AxisX  = Quad.AxisX;
+		Prev.AxisZ  = Quad.AxisZ;
+		return Prev;
 	}
 } // namespace
 
@@ -60,7 +72,7 @@ FSpriteRenderer::~FSpriteRenderer()
 }
 
 bool FSpriteRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources, ID3D12RootSignature* InMeshRootSignature,
-                           DXGI_FORMAT InColorFormat, DXGI_FORMAT InDepthFormat)
+                           DXGI_FORMAT InColorFormat, DXGI_FORMAT InDepthFormat, DXGI_FORMAT InVelocityFormat)
 {
 	E_CHECKF(Rhi == nullptr, "스프라이트 렌더러가 이미 초기화되어 있습니다");
 	Rhi               = &InRhi;
@@ -69,6 +81,8 @@ bool FSpriteRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FR
 	MeshRootSignature = InMeshRootSignature;
 	ColorFormat       = InColorFormat;
 	DepthFormat       = InDepthFormat;
+	VelocityFormat    = InVelocityFormat;
+	bHasLastCamera    = false;
 	// 시험 텍스처 중 경로 텍스처(아이콘)는 리소스 수거 루트로 (생성 텍스처는 만든 쪽 소유라 수거 대상 아님)
 	TestRootProviderId = Resources->AddRootProvider([this](FResourceRoots& Roots) {
 		for (const FTextureHandle Texture : TestTextures)
@@ -100,7 +114,7 @@ void FSpriteRenderer::Shutdown()
 
 bool FSpriteRenderer::CreatePipelines(FD3D12PipelineState (&Out)[SpriteBatching::PipelineKeyCount], bool bForceRecompile)
 {
-	const auto GetBlob = [&](const wchar_t* Entry, EShaderStage Stage, bool bLit) -> ComPtr<IDxcBlob> {
+	const auto GetBlob = [&](const wchar_t* Entry, EShaderStage Stage, bool bLit, bool bStatic) -> ComPtr<IDxcBlob> {
 		FShaderCompileDesc Desc;
 		Desc.FileName   = L"Sprite.hlsl";
 		Desc.EntryPoint = Entry;
@@ -109,13 +123,17 @@ bool FSpriteRenderer::CreatePipelines(FD3D12PipelineState (&Out)[SpriteBatching:
 		{
 			Desc.Defines.push_back(L"E_SPRITE_LIT");
 		}
+		if (bStatic)
+		{
+			Desc.Defines.push_back(L"E_SPRITE_STATIC");
+		}
 		if (bForceRecompile && !ShaderLibrary->CookShader(Desc))
 		{
 			return nullptr;
 		}
 		return ShaderLibrary->GetShader(Desc);
 	};
-	const ComPtr<IDxcBlob> Vertex = GetBlob(L"SpriteVS", EShaderStage::Vertex, false);
+	const ComPtr<IDxcBlob> Vertex = GetBlob(L"SpriteVS", EShaderStage::Vertex, false, false);
 	if (!Vertex)
 	{
 		return false;
@@ -124,9 +142,16 @@ bool FSpriteRenderer::CreatePipelines(FD3D12PipelineState (&Out)[SpriteBatching:
 	for (uint32 BlendIndex = 0; BlendIndex < static_cast<uint32>(ESpriteBlendMode::Count); ++BlendIndex)
 	{
 		const ESpriteBlendMode Blend = static_cast<ESpriteBlendMode>(BlendIndex);
-		for (uint32 Lit = 0; Lit < 2; ++Lit)
+		const bool bMasked = Blend == ESpriteBlendMode::Masked;
+		for (uint32 Variant = 0; Variant < 4; ++Variant)
 		{
-			const ComPtr<IDxcBlob> Pixel = GetBlob(GetPixelEntry(Blend), EShaderStage::Pixel, Lit != 0);
+			const bool bLit    = (Variant & 1u) != 0;
+			const bool bStatic = (Variant & 2u) != 0;
+			if (bStatic && bMasked)
+			{
+				continue; // Masked는 움직임 벡터를 쓰므로 정지 변형이 없다 (MakePipelineKey가 접는다)
+			}
+			const ComPtr<IDxcBlob> Pixel = GetBlob(GetPixelEntry(Blend), EShaderStage::Pixel, bLit, bStatic);
 			if (!Pixel)
 			{
 				return false;
@@ -136,14 +161,19 @@ bool FSpriteRenderer::CreatePipelines(FD3D12PipelineState (&Out)[SpriteBatching:
 			Desc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(Vertex.Get());
 			Desc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(Pixel.Get());
 			Desc.RenderTargetFormats[0] = ColorFormat;
+			if (bMasked)
+			{
+				Desc.NumRenderTargets       = 2; // + 움직임 벡터 (블렌드 없음)
+				Desc.RenderTargetFormats[1] = VelocityFormat;
+			}
 			Desc.DepthStencilFormat     = DepthFormat;
 			Desc.CullMode               = D3D12_CULL_MODE_NONE; // 양면
 			Desc.bDepthEnable           = true;
-			Desc.bDepthWrite            = Blend == ESpriteBlendMode::Masked; // 반투명 계열은 3D 불투명에 가려지기만
+			Desc.bDepthWrite            = bMasked; // 반투명 계열은 3D 불투명에 가려지기만
 			Desc.DepthFunc              = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-			Desc.BlendMode              = GetPipelineBlend(Blend);
-			const std::wstring Name     = std::wstring(L"Sprite") + GetPixelEntry(Blend) + (Lit != 0 ? L"Lit" : L"");
-			if (!Out[SpriteBatching::MakePipelineKey(Blend, Lit != 0)].InitGraphics(Device, Desc, Name.c_str()))
+			Desc.BlendMode              = GetPipelineBlend(Blend, bStatic);
+			const std::wstring Name     = std::wstring(L"Sprite") + GetPixelEntry(Blend) + (bLit ? L"Lit" : L"") + (bStatic ? L"Static" : L"");
+			if (!Out[SpriteBatching::MakePipelineKey(Blend, bLit, bStatic)].InitGraphics(Device, Desc, Name.c_str()))
 			{
 				return false;
 			}
@@ -166,6 +196,10 @@ bool FSpriteRenderer::ReloadShaders(bool bForceRecompile)
 	}
 	for (uint32 Index = 0; Index < SpriteBatching::PipelineKeyCount; ++Index)
 	{
+		if (!New[Index].IsInitialized())
+		{
+			continue; // 없는 변형 (Masked 정지)
+		}
 		Pipelines[Index].Swap(New[Index]);
 		Rhi->DeferRelease(New[Index].Detach());
 	}
@@ -220,14 +254,25 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 	const FVector3 CameraPosition = Camera.GetPosition();
 	const FVector3 CameraForward  = Camera.GetForwardVector();
 	const size_t   ChunkCount     = Chunks.size();
+	// 카메라 기준 변화 (반투명 계열 정지 변형 판정 — 머리 주석 "TAA"): 직교는 방향만 (이동·줌은 깊이와 무관하게 재투영된다), 원근은 위치도
+	const FVector3 CameraUp    = Camera.GetUpVector();
+	const bool     bOrtho      = Camera.IsOrthographic();
+	const bool     bSameCamera = bHasLastCamera && bLastOrthographic == bOrtho && LastCameraForward == CameraForward && LastCameraUp == CameraUp &&
+	                             (bOrtho || LastCameraPosition == CameraPosition);
+	bHasLastCamera     = true;
+	bLastOrthographic  = bOrtho;
+	LastCameraPosition = CameraPosition;
+	LastCameraForward  = CameraForward;
+	LastCameraUp       = CameraUp;
 	SortKeys.resize(ChunkCount + Count);
 	InstanceScratch.resize(Count);
+	PrevScratch.resize(Count);
 	ItemPipelineKeys.resize(ChunkCount + Count);
 	for (size_t Index = 0; Index < ChunkCount; ++Index)
 	{
 		const FSpriteChunkDraw& Chunk = Chunks[Index];
 		const ESpriteBlendMode  Blend = Chunk.Blend < ESpriteBlendMode::Count ? Chunk.Blend : ESpriteBlendMode::Alpha;
-		ItemPipelineKeys[Index]       = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Chunk.bLit));
+		ItemPipelineKeys[Index]       = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Chunk.bLit, Chunk.bStatic && bSameCamera));
 		SortKeys[Index]               = { Chunk.SortLayer, Chunk.OrderInLayer, FVector3::Dot(Chunk.Center - CameraPosition, CameraForward) };
 	}
 	FParallel::ParallelFor(static_cast<uint32>(Count), 1024, [&](uint32 Begin, uint32 End) {
@@ -251,8 +296,18 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 			Instance.AlphaCutoff         = Item.AlphaCutoff;
 			Instance.UVRect              = FVector4(Item.UVMin.X, Item.UVMin.Y, Item.UVMax.X, Item.UVMax.Y);
 			Instance.Color               = Item.Color;
+			if (Item.bHasPrevWorld)
+			{
+				FSpriteDrawItem PrevItem = Item;
+				PrevItem.World           = Item.PrevWorld;
+				PrevScratch[Index]       = MakePrev(SpriteMath::ComputeQuad(PrevItem));
+			}
+			else
+			{
+				PrevScratch[Index] = MakePrev(Quad);
+			}
 			const ESpriteBlendMode Blend = Item.Blend < ESpriteBlendMode::Count ? Item.Blend : ESpriteBlendMode::Alpha;
-			ItemPipelineKeys[ChunkCount + Index] = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Item.bLit));
+			ItemPipelineKeys[ChunkCount + Index] = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Item.bLit, Item.bStatic && bSameCamera));
 			SortKeys[ChunkCount + Index]         = { Item.SortLayer, Item.OrderInLayer, SpriteMath::ComputeSortDepth(Quad, CameraPosition, CameraForward) };
 		}
 	});
@@ -260,12 +315,16 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 	SpriteSorting::Sort(SortKeys, SortOrder);
 
 	// 3) 정렬 순서로 항목만 모아 업로드 버퍼(쓰기 결합)에 순서대로 쓴다 + 구간 (청크는 자기 자리에서 구간 하나)
-	FSpriteInstanceGpu* Gpu = nullptr;
+	FSpriteInstanceGpu* Gpu     = nullptr;
+	FSpritePrevGpu*     PrevGpu = nullptr;
 	if (Count > 0)
 	{
 		const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(FSpriteInstanceGpu) * Count, 16);
 		Gpu                                      = static_cast<FSpriteInstanceGpu*>(Allocation.CpuAddress);
 		Out.Instances                            = Allocation.GpuAddress;
+		const FD3D12DynamicAllocation PrevAllocation = DynamicBuffer.Allocate(sizeof(FSpritePrevGpu) * Count, 16);
+		PrevGpu                                      = static_cast<FSpritePrevGpu*>(PrevAllocation.CpuAddress);
+		Out.Prev                                     = PrevAllocation.GpuAddress;
 	}
 	const size_t Total = SortOrder.size();
 	PipelineKeys.resize(Total);
@@ -281,16 +340,20 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 			continue;
 		}
 		ChunkIndices[Index] = -1;
-		std::memcpy(&Gpu[Written++], &InstanceScratch[Source - ChunkCount], sizeof(FSpriteInstanceGpu));
+		std::memcpy(&Gpu[Written], &InstanceScratch[Source - ChunkCount], sizeof(FSpriteInstanceGpu));
+		std::memcpy(&PrevGpu[Written], &PrevScratch[Source - ChunkCount], sizeof(FSpritePrevGpu));
+		++Written;
 	}
 	SpriteBatching::BuildRuns(PipelineKeys, ChunkIndices, Runs);
 	Out.SpriteCount = static_cast<uint32>(Count);
 	Out.Runs.reserve(Runs.size());
 	for (const SpriteBatching::FRun& Run : Runs)
 	{
+		// Masked = 키의 블렌드 칸 (MakePipelineKey: (블렌드 × 2 + 조명) × 2 + 정지)
+		const bool bVelocity = Run.PipelineKey / 4u == static_cast<uint32>(ESpriteBlendMode::Masked);
 		if (!Run.bChunk)
 		{
-			Out.Runs.push_back({ Pipelines[Run.PipelineKey].Get(), Run.First, Run.Count, 0, 0 });
+			Out.Runs.push_back({ Pipelines[Run.PipelineKey].Get(), Run.First, Run.Count, 0, 0, 0, bVelocity });
 			continue;
 		}
 		// 청크 머리 (월드 행렬 0/2/3행 + 색 + 텍스처 칸 — 칸은 매 프레임 다시 구한다)
@@ -304,14 +367,23 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 		Header.Translation  = FVector3(Chunk.World.M[3][0], Chunk.World.M[3][1], Chunk.World.M[3][2]);
 		Header.Color        = Chunk.Color;
 		std::memcpy(Allocation.CpuAddress, &Header, sizeof(Header));
-		Out.Runs.push_back({ Pipelines[Run.PipelineKey].Get(), SpriteChunkRunBit, Chunk.Count, Chunk.Instances, Allocation.GpuAddress });
+		// 직전 청크 월드 (0/2/3행 — 셰이더가 로컬 인스턴스에 적용)
+		const FMatrix4x4&             PrevWorld      = Chunk.bHasPrevWorld ? Chunk.PrevWorld : Chunk.World;
+		const FD3D12DynamicAllocation PrevAllocation = DynamicBuffer.Allocate(sizeof(FSpritePrevGpu), 16);
+		FSpritePrevGpu                Prev;
+		Prev.Origin = FVector3(PrevWorld.M[3][0], PrevWorld.M[3][1], PrevWorld.M[3][2]);
+		Prev.AxisX  = FVector3(PrevWorld.M[0][0], PrevWorld.M[0][1], PrevWorld.M[0][2]);
+		Prev.AxisZ  = FVector3(PrevWorld.M[2][0], PrevWorld.M[2][1], PrevWorld.M[2][2]);
+		std::memcpy(PrevAllocation.CpuAddress, &Prev, sizeof(Prev));
+		Out.Runs.push_back({ Pipelines[Run.PipelineKey].Get(), SpriteChunkRunBit, Chunk.Count, Chunk.Instances, Allocation.GpuAddress,
+		                     PrevAllocation.GpuAddress, bVelocity });
 		++Out.ChunkCount;
 		Out.TileCount += Chunk.Count;
 	}
 }
 
 void FSpriteRenderer::RecordDraws(ID3D12GraphicsCommandList* CommandList, const FPreparedFrame& Prepared, uint32 DrawConstantsParam, uint32 InstancesParam,
-                                  uint32 InstanceIndicesParam)
+                                  uint32 InstanceIndicesParam, uint32 PrevParam, const FTargets& Targets)
 {
 	if (Prepared.IsEmpty())
 	{
@@ -321,12 +393,28 @@ void FSpriteRenderer::RecordDraws(ID3D12GraphicsCommandList* CommandList, const 
 	ID3D12PipelineState*      Bound          = nullptr;
 	D3D12_GPU_VIRTUAL_ADDRESS BoundInstances = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS BoundHeader    = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS BoundPrev      = 0;
+	int32                     BoundTargets   = -1; // 0 = 씬 컬러, 1 = + 움직임 벡터
 	for (const FPreparedRun& Run : Prepared.Runs)
 	{
+		const int32 WantTargets = Run.bVelocity ? 1 : 0;
+		if (WantTargets != BoundTargets)
+		{
+			const D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[] = { Targets.Color, Targets.Velocity };
+			CommandList->OMSetRenderTargets(Run.bVelocity ? 2u : 1u, Rtvs, FALSE, &Targets.Depth);
+			BoundTargets = WantTargets;
+		}
 		if (Run.Pipeline != Bound)
 		{
 			CommandList->SetPipelineState(Run.Pipeline);
 			Bound = Run.Pipeline;
+		}
+		// 직전 사각형: 항목 구간 = 프레임 배열, 청크 구간 = 칸 하나
+		const D3D12_GPU_VIRTUAL_ADDRESS Prev = Run.ChunkBuffer != 0 ? Run.ChunkPrev : Prepared.Prev;
+		if (Prev != BoundPrev)
+		{
+			CommandList->SetGraphicsRootShaderResourceView(PrevParam, Prev);
+			BoundPrev = Prev;
 		}
 		// 항목 구간 = 프레임 업로드 버퍼 (t14는 읽지 않음 — 유효 주소), 청크 구간 = 청크 정적 버퍼 + 머리
 		const D3D12_GPU_VIRTUAL_ADDRESS Instances = Run.ChunkBuffer != 0 ? Run.ChunkBuffer : Prepared.Instances;

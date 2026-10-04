@@ -26,6 +26,18 @@ struct FSpriteChunk
 	float4 Color;
 };
 
+// 직전 프레임 사각형 (ShaderTypes.h FSpritePrevGpu와 1:1, 48바이트 — Sprite.hlsl 움직임 벡터). 청크 구간은 칸 하나 = 직전 청크 월드
+// (Origin = 3행 이동, AxisX/AxisZ = 0/2행 — FSpriteChunk와 같은 적용)
+struct FSpritePrev
+{
+	float3 Origin;
+	uint   Pad0;
+	float3 AxisX;
+	uint   Pad1;
+	float3 AxisZ;
+	uint   Pad2;
+};
+
 static const uint E_SPRITE_FLAG_POINT = 1u;           // SpriteRenderer SpriteFlag_Point / SpriteTiles::FlagPoint
 static const uint E_SPRITE_CHUNK_BIT  = 0x80000000u;  // SpriteRenderer SpriteChunkRunBit (b0 최상위 비트 = 청크 구간)
 static const uint E_SPRITE_FLAG_SHADOW_DITHER = 2u;   // SpriteTiles::FlagShadowDither — 그림자 깊이: 컷오프 대신 디더 (SpriteShadow.hlsl)
@@ -44,6 +56,13 @@ void ApplySpriteChunk(inout FSpriteInstance Sprite, FSpriteChunk Chunk)
 	Sprite.Color       *= Chunk.Color;
 	Sprite.TextureIndex = Chunk.TextureIndex;
 	Sprite.AlphaCutoff  = Chunk.AlphaCutoff;
+}
+
+// 청크 로컬 사각형의 직전 월드 모서리 (ApplySpriteChunk의 위치·축 식을 직전 청크 월드로)
+float3 GetSpriteChunkCornerWorld(FSpriteInstance Local, FSpritePrev Chunk, float2 Corner)
+{
+	const float3 LocalCorner = Local.Origin + Local.AxisX * Corner.x + Local.AxisZ * Corner.y;
+	return Chunk.Origin + Chunk.AxisX * LocalCorner.x + Chunk.AxisZ * LocalCorner.z;
 }
 
 float3 GetSpriteCornerWorld(FSpriteInstance Sprite, float2 Corner)

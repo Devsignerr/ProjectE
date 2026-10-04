@@ -35,6 +35,11 @@ struct FSpriteDrawItem
 	bool           bLit         = false; // 방향광(그림자) + 로컬 라이트 + 하늘 환경광 (Sprite.hlsl ShadeSprite)
 	bool           bCastShadows = false; // 그림자 캐스터 목록 항목 (Renderer/SpriteShadowRenderer.h — 그리기 목록에서는 쓰지 않음)
 	bool           bShadowStatic = false; // 그림자 캐스터: 방향광 그림자 캐시의 정적 캐스터 (그리는 값이 r.Shadow.Cache.StaticFrames 수집 연속 같음)
+	// TAA (Renderer/SpriteRenderer.h 머리 주석 "TAA"): 직전 프레임 월드 행렬(Masked 움직임 벡터 — 없으면 World와 같게)과
+	// 그리는 값이 직전 프레임과 같은가(반투명 계열 반응형 마스크를 끈다 — 앱 목록처럼 모르면 false = 반응형)
+	FMatrix4x4     PrevWorld     = FMatrix4x4::Identity;
+	bool           bHasPrevWorld = false;
+	bool           bStatic       = false;
 };
 
 // 타일맵 청크 하나 (Phase 56-4b — Renderer/SpriteSceneCollector.h가 만든다). 인스턴스는 정적 GPU 버퍼에 이미 있고(타일맵 로컬 공간,
@@ -56,6 +61,10 @@ struct FSpriteChunkDraw
 	// 그림자 캐스터 목록에서만 (Renderer/SpriteShadowRenderer.h)
 	FBox             Bounds;                // 월드 경계 (장 프러스텀 컬링)
 	bool             bShadowStatic = false; // 방향광 그림자 캐시의 정적 캐스터 (타일맵 월드·색·내용이 연속 같음)
+	// TAA (FSpriteDrawItem과 같은 뜻)
+	FMatrix4x4       PrevWorld     = FMatrix4x4::Identity;
+	bool             bHasPrevWorld = false;
+	bool             bStatic       = false;
 };
 
 namespace SpriteMath
@@ -137,9 +146,14 @@ namespace SpriteSorting
 
 namespace SpriteBatching
 {
-	// 파이프라인 키 = 블렌드 × 조명 (PSO 하나). 텍스처·필터는 인스턴스 값(바인드리스)이라 묶음을 끊지 않는다
-	inline uint32 MakePipelineKey(ESpriteBlendMode Blend, bool bLit) { return static_cast<uint32>(Blend) * 2u + (bLit ? 1u : 0u); }
-	inline constexpr uint32 PipelineKeyCount = static_cast<uint32>(ESpriteBlendMode::Count) * 2u;
+	// 파이프라인 키 = 블렌드 × 조명 × 정지 (PSO 하나). 텍스처·필터는 인스턴스 값(바인드리스)이라 묶음을 끊지 않는다.
+	// 정지(bStatic) = 반투명 계열이 씬 컬러 알파(TAA 반응형 마스크)를 건드리지 않는 변형 — Masked는 움직임 벡터를 쓰므로 정지 변형이 없다(false로 접음)
+	inline uint32 MakePipelineKey(ESpriteBlendMode Blend, bool bLit, bool bStatic = false)
+	{
+		const bool bStaticVariant = bStatic && Blend != ESpriteBlendMode::Masked;
+		return (static_cast<uint32>(Blend) * 2u + (bLit ? 1u : 0u)) * 2u + (bStaticVariant ? 1u : 0u);
+	}
+	inline constexpr uint32 PipelineKeyCount = static_cast<uint32>(ESpriteBlendMode::Count) * 4u;
 
 	struct FRun
 	{

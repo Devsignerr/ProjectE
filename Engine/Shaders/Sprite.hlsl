@@ -12,10 +12,15 @@
 StructuredBuffer<FSpriteInstance> SpriteInstances : register(t13);
 // 청크 구간(b0 최상위 비트)의 청크 머리 하나 — 메시 인스턴스 번호 목록 자리 (스프라이트 셰이더는 안 쓰는 자리). 그때 t13 = 청크 정적 버퍼(0번부터)
 StructuredBuffer<FSpriteChunk> SpriteChunkHeader : register(t14);
+// 직전 프레임 사각형 (Masked 움직임 벡터 — 메시의 스킨 팔레트 자리, 스프라이트 셰이더는 스킨을 쓰지 않음). 항목 구간 = 인스턴스와 같은 번호,
+// 청크 구간 = 칸 하나(직전 청크 월드)
+StructuredBuffer<FSpritePrev> SpritePrevious : register(t15);
 
 struct FSpriteVSOutput
 {
 	float4 Position                     : SV_Position;
+	float4 CurrentClip                  : TEXCOORD4; // 지터 없음 (움직임 벡터 — Masked만 쓴다)
+	float4 PreviousClip                 : TEXCOORD5;
 	float3 WorldPosition                : POSITION0;
 	float3 WorldNormal                  : NORMAL;
 	float2 UV                           : TEXCOORD0;
@@ -29,15 +34,24 @@ FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_Insta
 {
 	const bool      bChunk = (InstanceOffset & E_SPRITE_CHUNK_BIT) != 0;
 	FSpriteInstance Sprite = SpriteInstances[bChunk ? InstanceId : InstanceOffset + InstanceId];
+	const float2    Corner = SpriteCorners[VertexId];
+	float3          PreviousWorld;
 	if (bChunk)
 	{
+		PreviousWorld = GetSpriteChunkCornerWorld(Sprite, SpritePrevious[0], Corner); // 로컬 인스턴스 그대로 (청크 적용 전)
 		ApplySpriteChunk(Sprite, SpriteChunkHeader[0]);
 	}
-	const float2 Corner = SpriteCorners[VertexId];
-	const float3 World  = GetSpriteCornerWorld(Sprite, Corner);
+	else
+	{
+		const FSpritePrev Previous = SpritePrevious[InstanceOffset + InstanceId];
+		PreviousWorld              = Previous.Origin + Previous.AxisX * Corner.x + Previous.AxisZ * Corner.y;
+	}
+	const float3 World = GetSpriteCornerWorld(Sprite, Corner);
 
 	FSpriteVSOutput Output;
 	Output.Position      = mul(float4(World, 1.0f), ViewProjection); // 지터 포함 (씬 컬러에 그리는 패스)
+	Output.CurrentClip   = mul(float4(World, 1.0f), UnjitteredViewProjection);
+	Output.PreviousClip  = mul(float4(PreviousWorld, 1.0f), PrevViewProjection);
 	Output.WorldPosition = World;
 	// 앞 = 로컬 +Y (2D 카메라는 +Y에서 -Y를 본다 — 화면 오른쪽 +X, 위 +Z). 픽셀 셰이더가 카메라 쪽으로 뒤집는다 (양면)
 	Output.WorldNormal   = cross(Sprite.AxisZ, Sprite.AxisX); // (0,0,1) × (1,0,0) = (0,1,0)
@@ -90,13 +104,21 @@ float3 ShadeSprite(FSpriteVSOutput Input, float3 Albedo)
 }
 
 // 출력 알파 = 덮인 정도 (TAA 반응형 마스크 — 반투명 메시·파티클과 같은 규칙). 안개는 반투명 규칙대로 직접 (Fog.hlsli EvaluateFog)
+// E_SPRITE_STATIC (정지 변형 — SpriteRenderer.h 머리 주석 "TAA"): 그리는 값·카메라 기준이 직전 프레임과 같은 스프라이트는 알파(반응형)를
+//   건드리지 않는다. 블렌드가 Premultiplied(색 ONE/INV_SRC_ALPHA, 알파 ZERO/ONE)라 Alpha는 rgb × a를 여기서 곱한다
 
 // Alpha (Src·SrcA + Dst·(1 - SrcA)): 자기 색에 투과율 + 산란
 float4 SpritePSAlpha(FSpriteVSOutput Input) : SV_Target
 {
-	const float4 Base = SampleSprite(Input);
-	const float4 Fog  = EvaluateFog(Input.WorldPosition);
-	return float4(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, saturate(Base.a));
+	const float4 Base  = SampleSprite(Input);
+	const float4 Fog   = EvaluateFog(Input.WorldPosition);
+	const float3 Color = ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb;
+	const float  Alpha = saturate(Base.a);
+#ifdef E_SPRITE_STATIC
+	return float4(Color * Alpha, Alpha);
+#else
+	return float4(Color, Alpha);
+#endif
 }
 
 // Premultiplied (Src + Dst·(1 - SrcA), 알파도 같은 식 — EBlendMode::PremultipliedOver): 텍스처 rgb가 이미 알파를 곱한 값.
@@ -113,14 +135,29 @@ float4 SpritePSAdditive(FSpriteVSOutput Input) : SV_Target
 {
 	const float4 Base     = SampleSprite(Input);
 	const float  Coverage = saturate(Base.a);
-	return float4(ShadeSprite(Input, Base.rgb) * Coverage * EvaluateFog(Input.WorldPosition).a, Coverage);
+#ifdef E_SPRITE_STATIC
+	const float Reactive = 0.0f; // 알파는 더하기라 0이면 그대로
+#else
+	const float Reactive = Coverage;
+#endif
+	return float4(ShadeSprite(Input, Base.rgb) * Coverage * EvaluateFog(Input.WorldPosition).a, Reactive);
 }
 
-// Masked (블렌드 없음, 깊이 씀): 알파 < 컷오프면 버림. 움직임 벡터를 쓰지 않으므로 알파 1(반응형) — 움직이는 스프라이트가 이력에 끌리지 않게
-float4 SpritePSMasked(FSpriteVSOutput Input) : SV_Target
+// Masked (블렌드 없음, 깊이 씀): 알파 < 컷오프면 버림. 움직임 벡터(SV_Target1 — 메시 사전 패스와 같은 식)를 쓰므로 알파 0(반응형 아님) —
+// 움직이는 카메라·스프라이트도 메시처럼 이력을 재투영한다 (HD-2D)
+struct FSpriteMaskedOutput
+{
+	float4 Color    : SV_Target0;
+	float2 Velocity : SV_Target1; // R16G16_FLOAT, UV 단위 현재 - 이전
+};
+
+FSpriteMaskedOutput SpritePSMasked(FSpriteVSOutput Input)
 {
 	const float4 Base = SampleSprite(Input);
 	clip(Base.a - Input.AlphaCutoff);
 	const float4 Fog = EvaluateFog(Input.WorldPosition);
-	return float4(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, 1.0f);
+	FSpriteMaskedOutput Output;
+	Output.Color    = float4(ShadeSprite(Input, Base.rgb) * Fog.a + Fog.rgb, 0.0f);
+	Output.Velocity = ComputeVelocity(Input.CurrentClip, Input.PreviousClip);
+	return Output;
 }

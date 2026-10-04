@@ -49,6 +49,9 @@ struct FSpriteAsset;
 //   정적 판정(방향광 그림자 캐시): 스프라이트 = 그리는 값(월드 행렬·크기·피벗·UV·텍스처·알파·컷오프·필터·9-슬라이스) 해시가 StaticFrames 수집 연속 같음
 //   (엔티티 번호 칸 이력 — 메시 FMeshInstance::bShadowStatic과 같은 규칙), 타일맵 청크 = 타일맵 월드·색 알파·컷오프·Revision·타일셋·셀 크기가 연속 같음,
 //   애니메이션 타일 = 항상 동적. 수집은 RenderSceneColor에서 그림자 패스 등록 전(캐스케이드·로컬 그림자 장 배정 뒤) 한 번.
+// TAA 이력 (매 수집, Renderer/SpriteRenderer.h "TAA"): 항목·청크마다 PrevWorld(직전 수집의 월드 — 이력이 끊기면 지금 월드)와
+//   bStatic(그리는 값 해시가 직전 수집과 같음 — 스프라이트 = 그림자 해시 + 색 RGB·레이어·순번·블렌드·조명, 타일맵 = 그림자 해시 + 색 RGB·블렌드·조명·레이어,
+//   애니메이션 타일 = 타일맵 정지 + 직전 수집 시간과 같은 프레임 타일)을 채운다. 이력은 엔티티 번호 칸(세대 확인) — 그림자 판정과 같은 칸
 // 텍스처: 에셋(.esprite/.etileset)의 Texture를 FSprite2DLibrary::ResolveReference로 Content 경로로 → 공개 LoadTexture
 //   (고정 전체 밉 — 스트리밍 안 함). 용도 = 필터 Point면 ETextureUsage::PixelArt(무압축 RGBA8, 밉 0만 — 도트 번짐 없음), Linear면 Color(BC7).
 //   경로 캐시(경로|용도 → 핸들)와 에셋 객체 캐시를 둔다. 수거 루트 = 최근 2번의 수집에서 쓴 텍스처 (AddRootProvider) — 안 보이게 된 씬의 텍스처는
@@ -102,14 +105,20 @@ private:
 		uint64                               ShadowHash        = 0;
 		uint32                               ShadowStable      = 0;
 		uint32                               ShadowLastCollect = 0;
+		// TAA 이력 (매 수집): 직전 그리는 값 해시·월드 행렬
+		uint64                               DrawHash          = 0;
+		FMatrix4x4                           LastWorld         = FMatrix4x4::Identity;
+		uint32                               DrawLastCollect   = 0;
 	};
-	// 스프라이트 그림자 정적 판정 이력 (엔티티 번호 칸)
-	struct FShadowHistory
+	// 스프라이트 이력 (엔티티 번호 칸): 그림자 정적 판정(그리는 값 해시가 연속 같은 횟수) + TAA(직전 그리는 값 해시·월드 행렬)
+	struct FSpriteHistory
 	{
-		uint64 Hash        = 0;
-		uint32 Generation  = 0;
-		uint32 LastCollect = 0;
-		uint32 Stable      = 0;
+		uint64     ShadowHash  = 0;
+		uint64     DrawHash    = 0;
+		FMatrix4x4 LastWorld   = FMatrix4x4::Identity;
+		uint32     Generation  = 0;
+		uint32     LastCollect = 0;
+		uint32     Stable      = 0;
 	};
 	struct FTextureEntry
 	{
@@ -161,6 +170,7 @@ private:
 	FResourceManager* Resources = nullptr;
 	uint32            RootProviderId = 0;
 	uint32            CollectIndex   = 0; // 수집마다 1씩 (0 = 아직 안 함)
+	double            LastCollectTime = 0.0; // 직전 수집의 FFrameTime 총 시간 (애니메이션 타일 정지 판정)
 
 	std::vector<FSpriteDrawItem>  Items;
 	std::vector<FSpriteChunkDraw> Chunks;
@@ -170,7 +180,7 @@ private:
 	std::vector<FSpriteSource>                     Sources;
 	std::vector<FSpriteDrawItem>                   SpriteScratch;
 	std::vector<uint8>                             SpriteVisible; // 비트 0 = 메인 프러스텀, 1 = 그림자 캐스터, 2 = 9-슬라이스
-	std::vector<FShadowHistory>                    ShadowHistory;
+	std::vector<FSpriteHistory>                    History;
 	std::vector<SpriteNineSlice::FPiece>           PieceScratch;
 	std::unordered_map<std::string, FTextureEntry> PathTextures;  // "Content 경로(소문자)|용도"
 	std::unordered_map<const void*, FAssetTexture> AssetTextures; // 에셋 객체 → 텍스처

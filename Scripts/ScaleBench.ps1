@@ -13,7 +13,7 @@
     .\Scripts\ScaleBench.ps1 -ExtraArgs "--cvar r.RenderThread=1" -Tag rt1   # 런타임 추가 인자 (비교 실행은 -Tag로 로그 이름을 나눈다)
 #>
 param(
-    [int[]]$Counts = @(500, 1000, 2000),
+    [string[]]$Counts = @("500", "1000", "2000"),   # powershell -File로 넘기면 "1000,2000"이 문자열 하나로 온다 → 아래에서 쉼표로 나눈다
     [switch]$RayTracing,
     [double]$Tolerance = 1.25,
     [double]$MinMs = 0.3,
@@ -23,6 +23,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# -File 호출에서 "1000,2000"이 한 문자열(또는 정수로 합쳐진 10002000)이 되지 않게 쉼표로 나눠 정수로
+$Counts = @($Counts | ForEach-Object { $_ -split "," } | Where-Object { $_ -ne "" } | ForEach-Object { [int]$_ })
+if ($Counts | Where-Object { $_ -gt 20000 }) { Write-Host "유닛 수가 너무 큼: $Counts"; exit 2 }
 $RootDir = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $RootDir
 

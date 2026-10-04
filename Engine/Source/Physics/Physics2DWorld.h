@@ -40,6 +40,7 @@ struct FPhysics2DShapeDesc
 	float                 Density     = 100.0f;         // kg/m²
 	bool                  bIsTrigger  = false;
 	bool                  bOneWay     = false;          // 바디 로컬 +Y(위) 쪽에서 오는 것만 막는다
+	bool                  bMoverProxy = false;          // 2D 캐릭터 이동기의 대리 모양 (이동기 질의 MoveMover/CastMover/CollideMover가 무시한다)
 	uint8                 CollisionLayer = 0;
 };
 
@@ -86,6 +87,46 @@ struct FPhysics2DRayHit
 	FVector2 Normal;
 	float    Distance = 0.0f; // cm
 	float    Fraction = 0.0f; // 0~1 (Distance / MaxDistance)
+};
+
+// 2D 캐릭터 이동기 질의 (Physics/CharacterMovement2D.h — 이동기는 강체가 아닌 세로 캡슐, Box2D 캐릭터 이동 도구).
+// 걸러 내는 모양: 트리거, IgnoreUserData 바디(자기 엔티티), 이동기 대리 모양(캐릭터끼리 통과), 레이어 행렬에서 꺼진 것.
+// 원웨이 모양: bIgnoreOneWay(내려가기)면 무시, 아니면 위(바디 로컬 +Y)에서 닿을 때만 — 겹침 평면은 법선이 위쪽 60도 안 + 묻힌 깊이
+//   OneWayMaxPenetration 이하 + 발판에 대해 0.5m/s 넘게 올라가는 중이 아님(바디 사전 해결 콜백과 같은 기준 + 깊이 한계 — 뛰어올라
+//   발판 중간에서 정점에 닿아도 튀어 오르지 않게), 캐스트는 이동이 발판 위쪽에서 아래로 향할 때만.
+// 동적 바디: 바닥(법선 Y ≥ WalkableNormalY)으로만 막는다 — 옆으로 닿으면 무시하고 대리 키네마틱 바디가 2D 스텝에서 민다.
+// 내부 모서리: 바닥이 아닌 접촉점이 다른 바닥 접촉의 면 위(1cm 안)나 아래면 버린다 (타일 이음매·경사와 상자가 만나는 꼭짓점의 고스트 법선).
+struct FPhysics2DMover
+{
+	float    HalfSegment = 30.0f; // cm, 두 반원 중심 사이 거리의 절반 (세로)
+	float    Radius      = 30.0f; // cm (Box2D 요구: 1cm 초과)
+	uint8    CollisionLayer = 0;
+	uint64   IgnoreUserData = 0;
+	bool     bIgnoreOneWay  = false;
+	FVector2 Velocity;            // cm/s (원웨이 상승 판정)
+	float    WalkableNormalY = 0.64f;
+	float    OneWayMaxPenetration = 8.0f; // cm
+	bool     bSteepAsWall = false; // MoveMover: 바닥이 아닌 위쪽 면(가파른 경사)을 수직 벽으로 풀기 (걷는 중 — 경사에 부딪혀 튀어 오르지 않게)
+};
+
+// 이동기와 닿은 면 하나 (평면 cm). Normal = 면에서 이동기 쪽, Penetration = 묻힌 깊이 (음수 = 떨어짐 — 부풀린 질의)
+struct FPhysics2DMoverContact
+{
+	FVector2    Normal;
+	FVector2    Point;
+	float       Penetration = 0.0f;
+	uint32      Body        = ~0u;
+	uint64      UserData    = 0;
+	EBodyType2D BodyType    = EBodyType2D::Static;
+	bool        bOneWay     = false;
+};
+
+struct FPhysics2DMoveResult
+{
+	FVector2 Position;
+	FVector2 Velocity;    // 막은 면으로 자른 속도 (b2ClipVector — 바닥 면은 자르지 않는다)
+	bool     bHitCeiling = false; // 아래를 보는 면(법선 Y < -0.5)에 막힘
+	uint32   Iterations  = 0;
 };
 
 class FPhysics2DWorld
@@ -138,6 +179,17 @@ public:
 	// 접촉 알림 (클래스 주석). 보고 여부는 바디를 다시 만들지 않고 바꾼다 (이미 닿아 있는 쌍에는 다음 접촉부터)
 	void SetBodyReportsContacts(uint32 Body, bool bReport);
 	void ConsumeContactEvents(std::vector<FPhysics2DContactEvent>& OutEvents); // 끝에 붙이고 비운다
+
+	// ---- 2D 캐릭터 이동기 (FPhysics2DMover 주석). Position = 캡슐 중심 (평면 cm)
+	// 충돌 이동: 겹친 면 모으기 → b2SolvePlanes → b2World_CastMover식 캐스트 반복 (최대 5번, 샘플 sample_character.cpp)
+	void MoveMover(const FPhysics2DMover& Mover, const FVector2& Position, const FVector2& Delta, FPhysics2DMoveResult& OutResult) const;
+	// 캡슐을 Inflate cm 부풀려 닿은/가까운 면 (바닥 판정·경사). OutContacts는 비우고 채운다
+	void CollideMover(const FPhysics2DMover& Mover, const FVector2& Position, float Inflate, std::vector<FPhysics2DMoverContact>& OutContacts) const;
+	// 캐스트 (처음부터 겹친 모양은 무시 — Box2D 규칙). 맞으면 true + 이동 비율·면
+	bool CastMover(const FPhysics2DMover& Mover, const FVector2& Position, const FVector2& Translation, float& OutFraction,
+	               FPhysics2DMoverContact& OutHit) const;
+	// 바디 위 점의 속도 (cm/s, 움직이는 발판). 없는 바디는 0
+	FVector2 GetPointVelocity(uint32 Body, const FVector2& Point) const;
 
 private:
 	struct FImpl;

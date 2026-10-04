@@ -3,6 +3,7 @@
 #include "Network/NetTypes.h"
 #include "Network/ReplicationTypes.h"
 #include "Scene/Components.h"
+#include "Scene/Gameplay.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
 
@@ -15,6 +16,14 @@ void FNetPlayerSpawner::Begin(FScene& InScene, std::string InPrefabAsset)
 	End();
 	Scene       = &InScene;
 	PrefabAsset = std::move(InPrefabAsset);
+	// 씬 전용 플레이어 프리팹 (첫 GameModeComponent의 PlayerPrefab)이 있으면 프로젝트 설정보다 우선
+	InScene.GetRegistry().View<FGameModeComponent>().Each([this](FEntity, FGameModeComponent& GameMode) {
+		if (!GameMode.PlayerPrefab.empty() && PrefabAsset != GameMode.PlayerPrefab)
+		{
+			E_LOG(LogNet, Display, "씬 전용 플레이어 프리팹: {}", GameMode.PlayerPrefab);
+			PrefabAsset = GameMode.PlayerPrefab;
+		}
+	});
 }
 
 void FNetPlayerSpawner::End()

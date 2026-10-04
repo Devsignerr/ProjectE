@@ -48,6 +48,8 @@ public:
 	void SetNet(IGameNet* Net);
 	void SetPhysics(FPhysicsSystem* Physics); // Net과 같은 수명 (BeginPlay 전 ~ EndPlay 뒤 nullptr)
 	void SetPhysics2D(FPhysics2DSystem* Physics2D); // 〃
+	void SetCharacters2D(FCharacterMovement2DSystem* Characters2D); // 〃
+	void Character2DEvent(FScene& Scene, FEntity Entity, const FCharacterMove2DEvents& Events); // 플레이 중에만
 	void PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn);
 	void PlayerLeft(FScene& Scene, uint32 PlayerId);
 	void Rpc(FScene& Scene, FEntity Target, EGameRpcKind Kind, const std::string& RpcName, const FGameRpcArgs& Args);

@@ -65,8 +65,16 @@ namespace
 
 bool FGameWorld::UsesClientPrediction(FEntity Entity) const
 {
-	const FCharacterMovementComponent* Movement = Scene != nullptr ? Scene->GetRegistry().TryGet<FCharacterMovementComponent>(Entity) : nullptr;
-	return Movement != nullptr && Movement->bClientPrediction && FProjectSettings::Get().Network.bClientPrediction;
+	if (Scene == nullptr || !FProjectSettings::Get().Network.bClientPrediction)
+	{
+		return false;
+	}
+	if (const FCharacterMovementComponent* Movement = Scene->GetRegistry().TryGet<FCharacterMovementComponent>(Entity))
+	{
+		return Movement->bClientPrediction;
+	}
+	const FCharacterMovement2DComponent* Movement2D = Scene->GetRegistry().TryGet<FCharacterMovement2DComponent>(Entity); // World/GameWorldCharacter2D.cpp
+	return Movement2D != nullptr && Movement2D->bClientPrediction;
 }
 
 bool FGameWorld::IsPredicted(FEntity Entity) const
@@ -76,7 +84,8 @@ bool FGameWorld::IsPredicted(FEntity Entity) const
 		return true; // 물리 예측 바디 (해제 블렌드 중에도 화면은 물리 예측이 맡는다)
 	}
 	return Mode == ENetMode::Client && Scene != nullptr && Scene->GetRegistry().IsValid(Entity) &&
-	       Scene->GetRegistry().Has<FCharacterMovementComponent>(Entity) && GetOwner(Entity) >= 0 && IsLocallyControlled(Entity) &&
+	       (Scene->GetRegistry().Has<FCharacterMovementComponent>(Entity) || Scene->GetRegistry().Has<FCharacterMovement2DComponent>(Entity)) &&
+	       GetOwner(Entity) >= 0 && IsLocallyControlled(Entity) &&
 	       UsesClientPrediction(Entity);
 }
 

@@ -508,6 +508,40 @@ void FGameWorld::InstallScriptPhysicsHooks()
 	Hooks.BeginDrag2D  = [P2D](FEntity Entity, const FVector2& Point, float MaxForce) { return P2D->BeginDrag(Entity, Point, MaxForce); };
 	Hooks.UpdateDrag2D = [P2D](FEntity Entity, const FVector2& Target) { return P2D->UpdateDrag(Entity, Target); };
 	Hooks.EndDrag2D    = [P2D](FEntity Entity) { return P2D->EndDrag(Entity); };
+	Hooks.ControlJoint2D = [this, P2D](FEntity Entity, EScriptJoint2DControl Op, float A, float B) {
+		if (Scene == nullptr)
+		{
+			return false;
+		}
+		switch (Op)
+		{
+		case EScriptJoint2DControl::MotorSpeed:
+			return P2D->SetJointMotorSpeed(*Scene, Entity, A);
+		case EScriptJoint2DControl::MaxMotorForce:
+			return P2D->SetJointMaxMotorForce(*Scene, Entity, A);
+		case EScriptJoint2DControl::EnableMotor:
+			return P2D->EnableJointMotor(*Scene, Entity, A != 0.0f);
+		case EScriptJoint2DControl::Limits:
+			return P2D->SetJointLimits(*Scene, Entity, A, B);
+		case EScriptJoint2DControl::EnableLimit:
+			return P2D->EnableJointLimit(*Scene, Entity, A != 0.0f);
+		case EScriptJoint2DControl::Spring:
+			return P2D->SetJointSpring(*Scene, Entity, A, B);
+		}
+		return false;
+	};
+	Hooks.QueryJoint2D = [P2D](FEntity Entity, EScriptJoint2DQuery What) {
+		switch (What)
+		{
+		case EScriptJoint2DQuery::Angle:
+			return P2D->GetJointAngle(Entity);
+		case EScriptJoint2DQuery::Translation:
+			return P2D->GetJointTranslation(Entity);
+		case EScriptJoint2DQuery::Speed:
+			return P2D->GetJointSpeed(Entity);
+		}
+		return 0.0f;
+	};
 	Systems.Scripts->SetPhysicsHooks(std::move(Hooks));
 }
 

@@ -16,6 +16,15 @@
 //   마우스 끌기 (런타임 전용 마우스 관절, 엔티티당 하나): Physics2D.BeginDrag(entity, point, maxForce?) → 잡았는가 (동적 2D 바디만,
 //     point = 잡은 점, maxForce N 생략 = 질량 × 1000), Physics2D.UpdateDrag(entity, target) → 끄는 중인가, Physics2D.EndDrag(entity) → 끌고 있었는가.
 //     바디가 사라지거나 다시 만들어지면 끝난다
+// 2D 관절 실시간 제어 (관절 컴포넌트가 있는 엔티티 — 다시 만들지 않고 바로 반영, 컴포넌트 값도 바뀐다. 규칙은 Physics/Physics2DSystem.h "관절"):
+//   entity:SetJointMotorSpeed(v)       -- Revolute/Wheel 도/초 (반시계 +), Prismatic cm/s
+//   entity:SetJointMaxMotorForce(f)    -- Revolute/Wheel 최대 토크 N·m, Prismatic 최대 힘 N
+//   entity:EnableJointMotor(bool) / entity:EnableJointLimit(bool)         -- Revolute/Prismatic/Wheel
+//   entity:SetJointLimits(lo, hi)      -- 한계도 켠다: Revolute 도, Prismatic/Wheel cm, Distance 최소/최대 길이 cm
+//   entity:SetJointSpring(hz, damping?) -- Distance/Wheel 스프링, Weld 선·각 (0 = 딱딱함, damping 생략 = 0.7)
+//   → 해당 컴포넌트가 있었는가. 한 엔티티에 여러 관절 종류가 있으면 지원하는 것 모두
+//   entity:GetJointAngle() 도(-180~180) / GetJointTranslation() cm (Prismatic·Wheel 축 방향, Distance 지금 길이) / GetJointSpeed() 도/초·cm/s
+//   → 만들어진 관절이 없으면 0 (Revolute → Prismatic → Wheel → Distance → Weld 순의 첫 관절)
 #include "Core/Settings/ProjectSettings.h"
 #include "Scene/Scene.h"
 #include "Scripting/LuaRuntime.h"
@@ -47,6 +56,31 @@ void FLuaRuntime::RegisterPhysicsBindings()
 		Require(Entity);
 		return PhysicsHooks != nullptr && PhysicsHooks->IsRagdollActive && PhysicsHooks->IsRagdollActive(Entity.Entity);
 	};
+
+	// ---- 2D 관절 실시간 제어 (머리 주석)
+	const auto Control = [this, Require](const FScriptEntity& Entity, EScriptJoint2DControl Op, float A, float B) {
+		Require(Entity);
+		return PhysicsHooks != nullptr && PhysicsHooks->ControlJoint2D && PhysicsHooks->ControlJoint2D(Entity.Entity, Op, A, B);
+	};
+	const auto Query = [this, Require](const FScriptEntity& Entity, EScriptJoint2DQuery What) {
+		Require(Entity);
+		return PhysicsHooks != nullptr && PhysicsHooks->QueryJoint2D ? PhysicsHooks->QueryJoint2D(Entity.Entity, What) : 0.0f;
+	};
+	EntityType["SetJointMotorSpeed"]    = [Control](const FScriptEntity& Entity, float Speed) { return Control(Entity, EScriptJoint2DControl::MotorSpeed, Speed, 0.0f); };
+	EntityType["SetJointMaxMotorForce"] = [Control](const FScriptEntity& Entity, float Force) { return Control(Entity, EScriptJoint2DControl::MaxMotorForce, Force, 0.0f); };
+	EntityType["EnableJointMotor"]      = [Control](const FScriptEntity& Entity, bool bEnable) {
+        return Control(Entity, EScriptJoint2DControl::EnableMotor, bEnable ? 1.0f : 0.0f, 0.0f);
+	};
+	EntityType["SetJointLimits"]   = [Control](const FScriptEntity& Entity, float Lower, float Upper) { return Control(Entity, EScriptJoint2DControl::Limits, Lower, Upper); };
+	EntityType["EnableJointLimit"] = [Control](const FScriptEntity& Entity, bool bEnable) {
+		return Control(Entity, EScriptJoint2DControl::EnableLimit, bEnable ? 1.0f : 0.0f, 0.0f);
+	};
+	EntityType["SetJointSpring"] = [Control](const FScriptEntity& Entity, float Frequency, sol::optional<float> Damping) {
+		return Control(Entity, EScriptJoint2DControl::Spring, Frequency, Damping.value_or(0.7f));
+	};
+	EntityType["GetJointAngle"]       = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Angle); };
+	EntityType["GetJointTranslation"] = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Translation); };
+	EntityType["GetJointSpeed"]       = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Speed); };
 
 	// ---- 모양 질의 (Phase 41-2, cm — FScriptPhysicsHooks::Overlap/Sweep). 트리거 제외, ignore 엔티티(와 충돌을 끈 쌍) 제외
 	//   Physics.OverlapSphere(center, radius, ignore?) / OverlapBox(center, halfExtents, rotation?, ignore?) /

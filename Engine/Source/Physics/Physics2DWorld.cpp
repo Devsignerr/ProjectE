@@ -1046,6 +1046,129 @@ void FPhysics2DWorld::SetMouseTarget(uint32 Joint, const FVector2& Target)
 	}
 }
 
+bool FPhysics2DWorld::UpdateJoint(uint32 Joint, const FPhysics2DJointDesc& Desc)
+{
+	if (!IsJointAlive(Joint))
+	{
+		return false;
+	}
+	const b2JointId Id    = Impl->Joints[Joint].Joint;
+	const float     Lower = std::min(Desc.Lower, Desc.Upper);
+	switch (b2Joint_GetType(Id))
+	{
+	case b2_distanceJoint:
+	{
+		if (Desc.Type != EPhysics2DJoint::Distance)
+		{
+			return false;
+		}
+		if (Desc.Length > 0.0f)
+		{
+			b2DistanceJoint_SetLength(Id, std::max(Desc.Length * CmToM, 0.005f));
+		}
+		b2DistanceJoint_EnableSpring(Id, Desc.bSpring);
+		b2DistanceJoint_SetSpringHertz(Id, Desc.Hertz);
+		b2DistanceJoint_SetSpringDampingRatio(Id, Desc.DampingRatio);
+		b2DistanceJoint_EnableLimit(Id, Desc.bLimit);
+		const float MinLength = std::max(Lower * CmToM, 0.005f);
+		b2DistanceJoint_SetLengthRange(Id, MinLength, std::max(Desc.Upper * CmToM, MinLength));
+		break;
+	}
+	case b2_revoluteJoint:
+		if (Desc.Type != EPhysics2DJoint::Revolute)
+		{
+			return false;
+		}
+		b2RevoluteJoint_EnableLimit(Id, Desc.bLimit);
+		b2RevoluteJoint_SetLimits(Id, Lower, Desc.Upper);
+		b2RevoluteJoint_EnableMotor(Id, Desc.bMotor);
+		b2RevoluteJoint_SetMotorSpeed(Id, Desc.MotorSpeed);
+		b2RevoluteJoint_SetMaxMotorTorque(Id, Desc.MaxMotorForce);
+		b2RevoluteJoint_EnableSpring(Id, Desc.bSpring);
+		b2RevoluteJoint_SetSpringHertz(Id, Desc.Hertz);
+		b2RevoluteJoint_SetSpringDampingRatio(Id, Desc.DampingRatio);
+		break;
+	case b2_prismaticJoint:
+		if (Desc.Type != EPhysics2DJoint::Prismatic)
+		{
+			return false;
+		}
+		b2PrismaticJoint_EnableLimit(Id, Desc.bLimit);
+		b2PrismaticJoint_SetLimits(Id, Lower * CmToM, Desc.Upper * CmToM);
+		b2PrismaticJoint_EnableMotor(Id, Desc.bMotor);
+		b2PrismaticJoint_SetMotorSpeed(Id, Desc.MotorSpeed * CmToM);
+		b2PrismaticJoint_SetMaxMotorForce(Id, Desc.MaxMotorForce);
+		break;
+	case b2_weldJoint:
+		if (Desc.Type != EPhysics2DJoint::Weld)
+		{
+			return false;
+		}
+		b2WeldJoint_SetLinearHertz(Id, Desc.LinearHertz);
+		b2WeldJoint_SetAngularHertz(Id, Desc.AngularHertz);
+		b2WeldJoint_SetLinearDampingRatio(Id, Desc.LinearDampingRatio);
+		b2WeldJoint_SetAngularDampingRatio(Id, Desc.AngularDampingRatio);
+		break;
+	case b2_wheelJoint:
+		if (Desc.Type != EPhysics2DJoint::Wheel)
+		{
+			return false;
+		}
+		b2WheelJoint_EnableSpring(Id, Desc.bSpring);
+		b2WheelJoint_SetSpringHertz(Id, Desc.Hertz);
+		b2WheelJoint_SetSpringDampingRatio(Id, Desc.DampingRatio);
+		b2WheelJoint_EnableLimit(Id, Desc.bLimit);
+		b2WheelJoint_SetLimits(Id, Lower * CmToM, Desc.Upper * CmToM);
+		b2WheelJoint_EnableMotor(Id, Desc.bMotor);
+		b2WheelJoint_SetMotorSpeed(Id, Desc.MotorSpeed);
+		b2WheelJoint_SetMaxMotorTorque(Id, Desc.MaxMotorForce);
+		break;
+	default:
+		return false;
+	}
+	b2Joint_WakeBodies(Id);
+	return true;
+}
+
+bool FPhysics2DWorld::GetJointState(uint32 Joint, FJointState& OutState) const
+{
+	OutState = FJointState();
+	if (!IsJointAlive(Joint))
+	{
+		return false;
+	}
+	const b2JointId Id      = Impl->Joints[Joint].Joint;
+	const b2BodyId  BodyA   = b2Joint_GetBodyA(Id);
+	const b2BodyId  BodyB   = b2Joint_GetBodyB(Id);
+	const b2Vec2    PointA  = b2Body_GetWorldPoint(BodyA, b2Joint_GetLocalAnchorA(Id));
+	const b2Vec2    PointB  = b2Body_GetWorldPoint(BodyB, b2Joint_GetLocalAnchorB(Id));
+	OutState.Angle          = b2RelativeAngle(b2Body_GetRotation(BodyB), b2Body_GetRotation(BodyA));
+	OutState.AngularSpeed   = b2Body_GetAngularVelocity(BodyB) - b2Body_GetAngularVelocity(BodyA);
+	OutState.Length         = b2Distance(PointA, PointB) * MToCm;
+	switch (b2Joint_GetType(Id))
+	{
+	case b2_revoluteJoint:
+		OutState.Angle = b2RevoluteJoint_GetAngle(Id);
+		break;
+	case b2_prismaticJoint:
+		OutState.Translation = b2PrismaticJoint_GetTranslation(Id) * MToCm;
+		OutState.LinearSpeed = b2PrismaticJoint_GetSpeed(Id) * MToCm;
+		break;
+	case b2_wheelJoint:
+	{
+		const b2Vec2 Axis    = b2RotateVector(b2Body_GetRotation(BodyA), b2Joint_GetLocalAxisA(Id));
+		const b2Vec2 Delta   = b2Sub(PointB, PointA);
+		const b2Vec2 RelVel  = b2Sub(b2Body_GetWorldPointVelocity(BodyB, PointB), b2Body_GetWorldPointVelocity(BodyA, PointB));
+		OutState.Translation = b2Dot(Delta, Axis) * MToCm;
+		OutState.LinearSpeed = b2Dot(RelVel, Axis) * MToCm;
+		break;
+	}
+	default:
+		break;
+	}
+	return true;
+}
+
 // ---------------------------------------------------------------- 2D 캐릭터 이동기 (FPhysics2DMover 주석, Physics/CharacterMovement2D.h)
 // Box2D 캐릭터 이동 도구(b2World_CollideMover/b2SolvePlanes/b2ClipVector)를 쓰고, 캐스트는 b2World_CastMover와 같은 식(b2ShapeCast +
 // 겹침 진입 허용, 처음부터 겹친 모양 무시)을 모양마다 직접 돌린다 — b2World_CastMover에는 모양 거르기 콜백이 없어 원웨이·대리 모양을

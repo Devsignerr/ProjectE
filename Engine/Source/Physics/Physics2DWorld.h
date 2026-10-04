@@ -229,6 +229,23 @@ public:
 	uint32 GetJointCount() const;
 	float  GetJointForce(uint32 Joint) const;  // 마지막 스텝의 구속 힘 크기 (N, 토크는 제외)
 	void   SetMouseTarget(uint32 Joint, const FVector2& Target);
+	// 다시 만들지 않고 바꿀 수 있는 설정만 Desc에서 옮긴다 (Desc.Type = 만든 종류여야 한다 — 아니면 false). 두 바디를 깨운다.
+	//   Distance: 스프링(bSpring/Hertz/DampingRatio)·길이 한계(bLimit/Lower/Upper)·길이(Length > 0일 때만)
+	//   Revolute: 한계·모터(bMotor/MotorSpeed rad/s/MaxMotorForce = 토크)·스프링 / Prismatic: 한계·모터(cm/s, N)
+	//   Weld: Linear/AngularHertz·DampingRatio / Wheel: 스프링·한계·모터(rad/s, 토크)
+	//   연결 지점·축·기준 각·CollideConnected·바디는 바꿀 수 없다 (관절을 다시 만든다 — FPhysics2DSystem::SyncJoints)
+	bool   UpdateJoint(uint32 Joint, const FPhysics2DJointDesc& Desc);
+	// 관절 상태. Angle/AngularSpeed = 바디2 - 바디1 (rad, rad/s — Revolute는 만든 순간 0), Translation/LinearSpeed = Prismatic·Wheel 축 방향
+	// (cm, cm/s — Prismatic은 만든 순간 0, Wheel은 축 위 연결 지점 사이), Length = 연결 지점 사이 거리 (cm). 없는 관절은 false
+	struct FJointState
+	{
+		float Angle        = 0.0f;
+		float AngularSpeed = 0.0f;
+		float Translation  = 0.0f;
+		float LinearSpeed  = 0.0f;
+		float Length       = 0.0f;
+	};
+	bool   GetJointState(uint32 Joint, FJointState& OutState) const;
 
 	// 접촉 알림 (클래스 주석). 보고 여부는 바디를 다시 만들지 않고 바꾼다 (이미 닿아 있는 쌍에는 다음 접촉부터)
 	void SetBodyReportsContacts(uint32 Body, bool bReport);

@@ -39,49 +39,67 @@ namespace
 		return Length > 1.0e-6f ? Axis / Length : Fallback;
 	}
 
-	void AppendCommon(std::vector<float>& Out, const FVector2& Anchor, float BreakForce, bool bCollideConnected)
+	// 구조 시그니처 (바뀌면 관절을 다시 만든다): 연결 지점·대상 지점·축·CollideConnected
+	void AppendCommon(std::vector<float>& Out, const FVector2& Anchor, bool bCollideConnected)
 	{
-		Out.insert(Out.end(), { Anchor.X, Anchor.Y, BreakForce, bCollideConnected ? 1.0f : 0.0f });
+		Out.insert(Out.end(), { Anchor.X, Anchor.Y, bCollideConnected ? 1.0f : 0.0f });
 	}
 
 	std::vector<float> MakeSignature(const FDistanceJoint2DComponent& Joint)
 	{
 		std::vector<float> Out;
-		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
-		Out.insert(Out.end(), { Joint.TargetAnchor.X, Joint.TargetAnchor.Y, Joint.Length, Joint.MinLength, Joint.MaxLength, Joint.SpringFrequency,
-		                        Joint.SpringDamping });
+		AppendCommon(Out, Joint.Anchor, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.TargetAnchor.X, Joint.TargetAnchor.Y });
 		return Out;
 	}
 	std::vector<float> MakeSignature(const FRevoluteJoint2DComponent& Joint)
 	{
 		std::vector<float> Out;
-		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
-		Out.insert(Out.end(), { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerAngle, Joint.UpperAngle, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed,
-		                        Joint.MaxMotorTorque });
+		AppendCommon(Out, Joint.Anchor, Joint.bCollideConnected);
 		return Out;
 	}
 	std::vector<float> MakeSignature(const FPrismaticJoint2DComponent& Joint)
 	{
 		std::vector<float> Out;
-		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
-		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y, Joint.bLimit ? 1.0f : 0.0f, Joint.LowerTranslation, Joint.UpperTranslation,
-		                        Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorForce });
+		AppendCommon(Out, Joint.Anchor, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y });
 		return Out;
 	}
 	std::vector<float> MakeSignature(const FWeldJoint2DComponent& Joint)
 	{
 		std::vector<float> Out;
-		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
-		Out.insert(Out.end(), { Joint.LinearFrequency, Joint.AngularFrequency, Joint.Damping });
+		AppendCommon(Out, Joint.Anchor, Joint.bCollideConnected);
 		return Out;
 	}
 	std::vector<float> MakeSignature(const FWheelJoint2DComponent& Joint)
 	{
 		std::vector<float> Out;
-		AppendCommon(Out, Joint.Anchor, Joint.BreakForce, Joint.bCollideConnected);
-		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y, Joint.SpringFrequency, Joint.SpringDamping, Joint.bLimit ? 1.0f : 0.0f,
-		                        Joint.LowerTranslation, Joint.UpperTranslation, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorTorque });
+		AppendCommon(Out, Joint.Anchor, Joint.bCollideConnected);
+		Out.insert(Out.end(), { Joint.Axis.X, Joint.Axis.Y });
 		return Out;
+	}
+
+	// 실시간 시그니처 (바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint): 모터·한계·스프링·길이·용접 진동수 (BreakForce는 시스템만 쓴다)
+	std::vector<float> MakeLiveSignature(const FDistanceJoint2DComponent& Joint)
+	{
+		return { Joint.Length, Joint.MinLength, Joint.MaxLength, Joint.SpringFrequency, Joint.SpringDamping };
+	}
+	std::vector<float> MakeLiveSignature(const FRevoluteJoint2DComponent& Joint)
+	{
+		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerAngle, Joint.UpperAngle, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorTorque };
+	}
+	std::vector<float> MakeLiveSignature(const FPrismaticJoint2DComponent& Joint)
+	{
+		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerTranslation, Joint.UpperTranslation, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorForce };
+	}
+	std::vector<float> MakeLiveSignature(const FWeldJoint2DComponent& Joint)
+	{
+		return { Joint.LinearFrequency, Joint.AngularFrequency, Joint.Damping };
+	}
+	std::vector<float> MakeLiveSignature(const FWheelJoint2DComponent& Joint)
+	{
+		return { Joint.SpringFrequency, Joint.SpringDamping, Joint.bLimit ? 1.0f : 0.0f, Joint.LowerTranslation, Joint.UpperTranslation,
+		         Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorTorque };
 	}
 
 	// 공통: Body2 로컬 지점 = 스케일 적용 Anchor, Body1 쪽 = 같은 월드 위치 (대상이 없으면 월드 평면 위치), 기준 각 = 각2 - 각1
@@ -162,6 +180,45 @@ namespace
 		Desc.MotorSpeed    = Joint.MotorSpeed * FMath::DegToRad;
 		Desc.MaxMotorForce = Joint.MaxMotorTorque;
 	}
+
+	// 실시간 필드만 채운 설명 (UpdateJoint — 자세가 필요한 필드는 쓰지 않는다. 거리 Length < 0 = 지금 길이 유지)
+	template <typename TJoint>
+	FPhysics2DJointDesc MakeLiveDesc(const TJoint& Joint)
+	{
+		FPhysics2DJointDesc Desc;
+		const FFrame2D      Identity{};
+		FillDesc(Joint, Identity, nullptr, Desc);
+		if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent>)
+		{
+			Desc.Length = Joint.Length > 0.0f ? Joint.Length : -1.0f;
+		}
+		return Desc;
+	}
+
+	template <typename TJoint>
+	constexpr EJoint2DKind KindOf()
+	{
+		if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent>)
+		{
+			return EJoint2DKind::Distance;
+		}
+		else if constexpr (std::is_same_v<TJoint, FRevoluteJoint2DComponent>)
+		{
+			return EJoint2DKind::Revolute;
+		}
+		else if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent>)
+		{
+			return EJoint2DKind::Prismatic;
+		}
+		else if constexpr (std::is_same_v<TJoint, FWeldJoint2DComponent>)
+		{
+			return EJoint2DKind::Weld;
+		}
+		else
+		{
+			return EJoint2DKind::Wheel;
+		}
+	}
 } // namespace
 
 void FPhysics2DSystem::SyncJoints(FScene& Scene)
@@ -216,6 +273,16 @@ void FPhysics2DSystem::SyncJoints(FScene& Scene)
 			// 실패한 설정은 바뀔 때까지 다시 시도하지 않는다 — 살아 있던 관절이 바디 재생성으로 사라졌으면 다시 만든다
 			if (bSame && (bAlive || State.Joint == FPhysics2DWorld::InvalidJoint))
 			{
+				// 실시간 필드만 바뀌었으면 다시 만들지 않고 옮긴다 (기준 자세 유지)
+				State.BreakForce = Joint.BreakForce;
+				if (bAlive)
+				{
+					std::vector<float> Live = MakeLiveSignature(Joint);
+					if (Live != State.LiveSignature && World->UpdateJoint(State.Joint, MakeLiveDesc(Joint)))
+					{
+						State.LiveSignature = std::move(Live);
+					}
+				}
 				continue;
 			}
 			if (bAlive)
@@ -226,8 +293,9 @@ void FPhysics2DSystem::SyncJoints(FScene& Scene)
 			State.Body1      = TargetBody;
 			State.Body2      = SelfBody;
 			State.Target     = Joint.Target;
-			State.Signature  = std::move(Signature);
-			State.BreakForce = Joint.BreakForce;
+			State.Signature     = std::move(Signature);
+			State.LiveSignature = MakeLiveSignature(Joint);
+			State.BreakForce    = Joint.BreakForce;
 			if (SelfBody == FPhysics2DWorld::InvalidBody || (!IsDynamic(Entity) && !(TargetBody != FPhysics2DWorld::InvalidBody && IsDynamic(Joint.Target))))
 			{
 				continue; // 바디가 아직 없거나 둘 다 동적이 아니다 (바디가 바뀌면 다시)
@@ -382,4 +450,275 @@ bool FPhysics2DSystem::IsDragging(FEntity Entity) const
 {
 	const auto Found = Drags.find(Entity);
 	return World && Found != Drags.end() && World->IsJointAlive(Found->second);
+}
+
+// ---------------------------------------------------------------- 실시간 제어 (Physics2DSystem.h "관절" 절 — 컴포넌트 값을 바꾸고 바로 옮긴다)
+
+void FPhysics2DSystem::ApplyJointLiveSettings(FScene& Scene, FEntity Entity)
+{
+	if (!World || !Scene.GetRegistry().IsValid(Entity))
+	{
+		return;
+	}
+	FRegistry& Registry = Scene.GetRegistry();
+	const auto Apply    = [&]<typename TJoint>() {
+		const TJoint* Joint = Registry.TryGet<TJoint>(Entity);
+		const auto    Found = Joints.find(FJointKey{ Entity, static_cast<uint8>(KindOf<TJoint>()) });
+		if (Joint == nullptr || Found == Joints.end())
+		{
+			return; // 아직 만들지 않았다 — 다음 SyncJoints가 컴포넌트 값으로 만든다
+		}
+		FJointState& State = Found->second;
+		State.BreakForce   = Joint->BreakForce;
+		if (State.Joint == FPhysics2DWorld::InvalidJoint || !World->IsJointAlive(State.Joint) || State.Signature != MakeSignature(*Joint))
+		{
+			return; // 구조가 바뀌었으면 SyncJoints가 다시 만든다
+		}
+		std::vector<float> Live = MakeLiveSignature(*Joint);
+		if (Live != State.LiveSignature && World->UpdateJoint(State.Joint, MakeLiveDesc(*Joint)))
+		{
+			State.LiveSignature = std::move(Live);
+		}
+	};
+	Apply.operator()<FDistanceJoint2DComponent>();
+	Apply.operator()<FRevoluteJoint2DComponent>();
+	Apply.operator()<FPrismaticJoint2DComponent>();
+	Apply.operator()<FWeldJoint2DComponent>();
+	Apply.operator()<FWheelJoint2DComponent>();
+}
+
+namespace
+{
+	// 엔티티의 관절 컴포넌트 중 Edit이 true를 돌려준 것이 있으면 true (Edit은 지원하는 종류만 고친다)
+	template <typename TEdit>
+	bool EditJointComponents(FScene& Scene, FEntity Entity, TEdit&& Edit)
+	{
+		FRegistry& Registry = Scene.GetRegistry();
+		if (!Registry.IsValid(Entity))
+		{
+			return false;
+		}
+		bool bAny = false;
+		if (FDistanceJoint2DComponent* Joint = Registry.TryGet<FDistanceJoint2DComponent>(Entity))
+		{
+			bAny = Edit(*Joint) || bAny;
+		}
+		if (FRevoluteJoint2DComponent* Joint = Registry.TryGet<FRevoluteJoint2DComponent>(Entity))
+		{
+			bAny = Edit(*Joint) || bAny;
+		}
+		if (FPrismaticJoint2DComponent* Joint = Registry.TryGet<FPrismaticJoint2DComponent>(Entity))
+		{
+			bAny = Edit(*Joint) || bAny;
+		}
+		if (FWeldJoint2DComponent* Joint = Registry.TryGet<FWeldJoint2DComponent>(Entity))
+		{
+			bAny = Edit(*Joint) || bAny;
+		}
+		if (FWheelJoint2DComponent* Joint = Registry.TryGet<FWheelJoint2DComponent>(Entity))
+		{
+			bAny = Edit(*Joint) || bAny;
+		}
+		return bAny;
+	}
+
+	template <typename TJoint>
+	constexpr bool HasMotor = std::is_same_v<TJoint, FRevoluteJoint2DComponent> || std::is_same_v<TJoint, FPrismaticJoint2DComponent> ||
+	                          std::is_same_v<TJoint, FWheelJoint2DComponent>;
+} // namespace
+
+bool FPhysics2DSystem::SetJointMotorSpeed(FScene& Scene, FEntity Entity, float Speed)
+{
+	const bool bAny = std::isfinite(Speed) && EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+		if constexpr (HasMotor<TJoint>)
+		{
+			Joint.MotorSpeed = Speed;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::SetJointMaxMotorForce(FScene& Scene, FEntity Entity, float Force)
+{
+	const bool bAny = std::isfinite(Force) && EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+		if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent>)
+		{
+			Joint.MaxMotorForce = std::max(Force, 0.0f);
+			return true;
+		}
+		else if constexpr (HasMotor<TJoint>)
+		{
+			Joint.MaxMotorTorque = std::max(Force, 0.0f);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::EnableJointMotor(FScene& Scene, FEntity Entity, bool bEnable)
+{
+	const bool bAny = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+		if constexpr (HasMotor<TJoint>)
+		{
+			Joint.bMotor = bEnable;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::SetJointLimits(FScene& Scene, FEntity Entity, float Lower, float Upper)
+{
+	if (!std::isfinite(Lower) || !std::isfinite(Upper))
+	{
+		return false;
+	}
+	const float Low = std::min(Lower, Upper), High = std::max(Lower, Upper);
+	const bool  bAny = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+        if constexpr (std::is_same_v<TJoint, FRevoluteJoint2DComponent>)
+        {
+            Joint.bLimit     = true;
+            Joint.LowerAngle = Low;
+            Joint.UpperAngle = High;
+            return true;
+        }
+        else if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent> || std::is_same_v<TJoint, FWheelJoint2DComponent>)
+        {
+            Joint.bLimit           = true;
+            Joint.LowerTranslation = Low;
+            Joint.UpperTranslation = High;
+            return true;
+        }
+        else if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent>)
+        {
+            Joint.MinLength = std::max(Low, 0.0f);
+            Joint.MaxLength = std::max(High, 0.0f);
+            return true;
+        }
+        else
+        {
+        	return false;
+        }
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::EnableJointLimit(FScene& Scene, FEntity Entity, bool bEnable)
+{
+	const bool bAny = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+		if constexpr (HasMotor<TJoint>)
+		{
+			Joint.bLimit = bEnable;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::SetJointSpring(FScene& Scene, FEntity Entity, float Frequency, float Damping)
+{
+	if (!std::isfinite(Frequency) || !std::isfinite(Damping))
+	{
+		return false;
+	}
+	const float Hertz = std::max(Frequency, 0.0f), Ratio = std::max(Damping, 0.0f);
+	const bool  bAny  = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+        if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent> || std::is_same_v<TJoint, FWheelJoint2DComponent>)
+        {
+            Joint.SpringFrequency = Hertz;
+            Joint.SpringDamping   = Ratio;
+            return true;
+        }
+        else if constexpr (std::is_same_v<TJoint, FWeldJoint2DComponent>)
+        {
+            Joint.LinearFrequency  = Hertz;
+            Joint.AngularFrequency = Hertz;
+            Joint.Damping          = Ratio;
+            return true;
+        }
+        else
+        {
+        	return false;
+        }
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+const FPhysics2DSystem::FJointState* FPhysics2DSystem::FindLiveJoint(FEntity Entity, uint8* OutKind) const
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+	for (const EJoint2DKind Kind : { EJoint2DKind::Revolute, EJoint2DKind::Prismatic, EJoint2DKind::Wheel, EJoint2DKind::Distance, EJoint2DKind::Weld })
+	{
+		const auto Found = Joints.find(FJointKey{ Entity, static_cast<uint8>(Kind) });
+		if (Found != Joints.end() && Found->second.Joint != FPhysics2DWorld::InvalidJoint && World->IsJointAlive(Found->second.Joint))
+		{
+			if (OutKind != nullptr)
+			{
+				*OutKind = static_cast<uint8>(Kind);
+			}
+			return &Found->second;
+		}
+	}
+	return nullptr;
+}
+
+float FPhysics2DSystem::GetJointAngle(FEntity Entity) const
+{
+	const FJointState*           Joint = FindLiveJoint(Entity);
+	FPhysics2DWorld::FJointState State;
+	return Joint != nullptr && World->GetJointState(Joint->Joint, State) ? State.Angle * FMath::RadToDeg : 0.0f;
+}
+
+float FPhysics2DSystem::GetJointTranslation(FEntity Entity) const
+{
+	uint8                        Kind  = 0;
+	const FJointState*           Joint = FindLiveJoint(Entity, &Kind);
+	FPhysics2DWorld::FJointState State;
+	if (Joint == nullptr || !World->GetJointState(Joint->Joint, State))
+	{
+		return 0.0f;
+	}
+	return Kind == static_cast<uint8>(EJoint2DKind::Distance) ? State.Length : State.Translation;
+}
+
+float FPhysics2DSystem::GetJointSpeed(FEntity Entity) const
+{
+	uint8                        Kind  = 0;
+	const FJointState*           Joint = FindLiveJoint(Entity, &Kind);
+	FPhysics2DWorld::FJointState State;
+	if (Joint == nullptr || !World->GetJointState(Joint->Joint, State))
+	{
+		return 0.0f;
+	}
+	if (Kind == static_cast<uint8>(EJoint2DKind::Prismatic))
+	{
+		return State.LinearSpeed;
+	}
+	return Kind == static_cast<uint8>(EJoint2DKind::Distance) ? 0.0f : State.AngularSpeed * FMath::RadToDeg;
 }

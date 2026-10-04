@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "Slime.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Hop0",
+      "Duration": 0.1
+    },
+    {
+      "Slice": "Hop1",
+      "Duration": 0.22
+    },
+    {
+      "Slice": "Hop2",
+      "Duration": 0.14
+    },
+    {
+      "Slice": "Hop0",
+      "Duration": 0.1
+    }
+  ]
+}

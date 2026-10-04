@@ -287,9 +287,10 @@ PORTALS = [
 	("Portal_Workshop", "창고 (물리)", "Scenes/Demo/Workshop.escene", 220.0),
 	("Portal_Training", "훈련장 (애니메이션·AI)", "Scenes/Demo/Training.escene", 245.0),
 	("Portal_Campfire", "해변 캠프 (파티클)", "Scenes/Demo/Campfire.escene", 270.0),
+	("Portal_HD2D", "HD-2D 마을 (도트 스프라이트)", "Scenes/Demo/HD2D.escene", 90.0),
 ]
 
-READY_PORTALS = {"Portal_Lighting", "Portal_Alley", "Portal_Gallery", "Portal_Forest", "Portal_Workshop", "Portal_Training", "Portal_Campfire"}  # 서브맵이 만들어진 포털 (Build<이름>.py)
+READY_PORTALS = {"Portal_Lighting", "Portal_Alley", "Portal_Gallery", "Portal_Forest", "Portal_Workshop", "Portal_Training", "Portal_Campfire", "Portal_HD2D"}  # 서브맵이 만들어진 포털 (Build<이름>.py)
 
 
 def Model(Id):
@@ -359,7 +360,9 @@ def BuildScene(Height):
 	Place("Plaza_Ladder", "wooden_ladder", 700.0, 900.0, 30.0)
 
 	# 포털: 광장 서쪽 반원에 성문 + 양옆 랜턴
-	for Name, Label, Target, Angle in PORTALS:
+	for PortalIndex, (Name, Label, Target, Angle) in enumerate(PORTALS):
+		# 처음 7개 뒤에 더한 포털은 이름 시드 전용 난수 — 공용 난수 흐름이 바뀌어 기존 배치가 움직이지 않게
+		PortalRng = Rng if PortalIndex < 7 else random.Random(Name)
 		Rad = math.radians(Angle)
 		R = 1350.0
 		PX, PY = math.cos(Rad) * R, math.sin(Rad) * R
@@ -372,8 +375,8 @@ def BuildScene(Height):
 		S.Model(f"{Name}_Door", Model("large_castle_door"), (0, 0, -3), 0.0, 1.0, Parent=Root)
 		S.Model(f"{Name}_Planter", Model("planter_box_01"), (60, 0, 0), 90.0, 1.0, Parent=Root)
 		for Side in (-1, 1):
-			S.Model(f"{Name}_Post", Model("tree_stump_01"), (40, Side * 150, -25), Rng.uniform(0, 360), 0.45, Parent=Root)
-			S.Model(f"{Name}_Lantern", Model("wooden_lantern_01"), (40, Side * 150, 8), Rng.uniform(0, 360), 1.3, Parent=Root)
+			S.Model(f"{Name}_Post", Model("tree_stump_01"), (40, Side * 150, -25), PortalRng.uniform(0, 360), 0.45, Parent=Root)
+			S.Model(f"{Name}_Lantern", Model("wooden_lantern_01"), (40, Side * 150, 8), PortalRng.uniform(0, 360), 1.3, Parent=Root)
 		S.Add(f"{Name}_Glow", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": "Materials/Demo/PortalGlow.emat"}},
 			(18, 0, 148), None, (0.02, 1.85, 2.85), Parent=Root)
 		S.Add(f"{Name}_Light", {"PointLightComponent": {"Color": [1.0, 0.7, 0.4], "Intensity": 6.0, "Radius": 500.0}}, (80, 0, 220), Parent=Root)

@@ -2925,6 +2925,258 @@
     },
     {
       "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/DemoPortal.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": {\"Asset\": \"Scenes/Demo/HD2D.escene\"}, \"Label\": \"HD-2D 마을 (도트 스프라이트)\", \"Ready\": true}"
+        },
+        "TransformComponent": {
+          "Position": [
+            8.266365894244634e-14,
+            1350.0,
+            250.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7071067811865476,
+            -0.7071067811865475
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_HD2D",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/large_castle_door/large_castle_door.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -3.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Door",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/planter_box_01/planter_box_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            60.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Planter",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7068588581536062,
+            -0.7073546173241397
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Post",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            -150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6358612045889793,
+            0.771803426073409
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Lantern",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/tree_stump_01/tree_stump_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            -25.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8883935827209279,
+            -0.45908260932023304
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Post",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wooden_lantern_01/wooden_lantern_01.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            150.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.5649461438452038,
+            -0.8251277807433429
+          ],
+          "Scale": [
+            1.3,
+            1.3,
+            1.3
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Lantern",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/PortalGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            18.0,
+            0.0,
+            148.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            1.85,
+            2.85
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Glow",
+      "Parent": 103
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 6.0,
+          "Radius": 500.0
+        },
+        "TransformComponent": {
+          "Position": [
+            80.0,
+            0.0,
+            220.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Portal_HD2D_Light",
+      "Parent": 103
+    },
+    {
+      "Components": {
         "ModelComponent": {
           "AssetPath": "Asset/PolyHaven/modular_wooden_pier/modular_wooden_pier.gltf"
         },

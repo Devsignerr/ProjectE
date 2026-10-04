@@ -1,0 +1,64 @@
+{
+  "Entities": [
+    {
+      "Name": "FxSprite",
+      "Parent": -1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Fx.esprite",
+          "Slice": "Spark0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 2,
+  "Version": 1
+}

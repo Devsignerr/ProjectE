@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 14.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Poof0"
+    },
+    {
+      "Slice": "Poof1"
+    },
+    {
+      "Slice": "Poof2"
+    },
+    {
+      "Slice": "Poof3"
+    },
+    {
+      "Slice": "Poof4"
+    }
+  ]
+}

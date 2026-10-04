@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DTerrainCobble",
+  "BaseColorFactor": [
+    0.95,
+    0.9,
+    0.85,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 1.0,
+  "Roughness": 1.0,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "../../../Asset/PolyHaven/cobblestone_floor_04/cobblestone_floor_04_diff_2k.jpg",
+  "MetallicRoughnessTexture": "../../../Asset/PolyHaven/cobblestone_floor_04/cobblestone_floor_04_arm_2k.jpg",
+  "NormalTexture": "../../../Asset/PolyHaven/cobblestone_floor_04/cobblestone_floor_04_nor_gl_2k.jpg",
+  "OcclusionTexture": "../../../Asset/PolyHaven/cobblestone_floor_04/cobblestone_floor_04_arm_2k.jpg",
+  "EmissiveTexture": ""
+}

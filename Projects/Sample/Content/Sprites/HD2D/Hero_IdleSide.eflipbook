@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Hero.esprite",
+  "Fps": 2.5,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "IdleSide0"
+    },
+    {
+      "Slice": "IdleSide1"
+    }
+  ]
+}

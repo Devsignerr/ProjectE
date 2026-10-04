@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Sprite": "Hero.esprite",
+  "Fps": 1.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "DashDown0"
+    }
+  ]
+}

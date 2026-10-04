@@ -13,14 +13,18 @@ namespace
 	                                              { .Range = std::pair(-1.0f, 24.0f) });
 
 	// 씬의 첫 방향광 트랜스폼 (없으면 nullptr) — 렌더러(BuildPerFrameConstants)와 같은 "첫 방향광" 규칙
-	FTransformComponent* FindSunTransform(FScene& Scene)
+	FTransformComponent* FindSunTransform(FScene& Scene, FEntity* OutEntity = nullptr)
 	{
 		FTransformComponent* Found = nullptr;
 		Scene.GetRegistry().View<FTransformComponent, FDirectionalLightComponent>().Each(
-			[&](FEntity, FTransformComponent& Transform, FDirectionalLightComponent&) {
+			[&](FEntity Entity, FTransformComponent& Transform, FDirectionalLightComponent&) {
 				if (Found == nullptr)
 				{
 					Found = &Transform;
+					if (OutEntity != nullptr)
+					{
+						*OutEntity = Entity;
+					}
 				}
 			});
 		return Found;
@@ -84,12 +88,12 @@ bool FSkyScene::GetTimeOfDay(FScene& Scene, float& OutHours)
 	return true;
 }
 
-void FTimeOfDaySystem::Update(FScene& Scene, float DeltaSeconds, bool bAdvance)
+FEntity FTimeOfDaySystem::Update(FScene& Scene, float DeltaSeconds, bool bAdvance)
 {
 	FTimeOfDayComponent* TimeOfDay = FindTimeOfDay(Scene);
 	if (TimeOfDay == nullptr)
 	{
-		return;
+		return NullEntity;
 	}
 	if (const float Override = TimeOfDayOverride.Get(); Override >= 0.0f)
 	{
@@ -103,7 +107,14 @@ void FTimeOfDaySystem::Update(FScene& Scene, float DeltaSeconds, bool bAdvance)
 	float Elevation = 0.0f;
 	float Azimuth   = 0.0f;
 	FSunMath::TimeOfDayToSunAngles(TimeOfDay->TimeOfDay, TimeOfDay->MaxSunElevation, TimeOfDay->NorthAzimuth, Elevation, Azimuth);
-	FSkyScene::SetSunAngles(Scene, Elevation, Azimuth);
+	FEntity              Sun       = NullEntity;
+	FTransformComponent* Transform = FindSunTransform(Scene, &Sun);
+	if (Transform == nullptr)
+	{
+		return NullEntity;
+	}
+	Transform->Rotation = FSunMath::SunAnglesToLightRotation(Elevation, Azimuth); // FSkyScene::SetSunAngles와 같은 식
+	return Sun;
 }
 
 void RegisterSkyTypes()

@@ -50,11 +50,11 @@ bool FGameWorld::ShouldReportContacts(const FScene& Target, FEntity Entity) cons
 	return Target.GetRegistry().Has<FScriptComponent>(Entity) || (Systems.GameModule != nullptr && Systems.GameModule->WantsCollisionEvents(Target, Entity));
 }
 
-void FGameWorld::DispatchCollisionEvents()
+bool FGameWorld::DispatchCollisionEvents()
 {
 	if (Systems.Physics == nullptr || Systems.Physics->GetCollisionEvents().empty())
 	{
-		return;
+		return false;
 	}
 	const std::vector<FCollisionEvent> Events = Systems.Physics->GetCollisionEvents(); // 처리 중 다음 물리 갱신이 없으므로 복사 한 번이면 된다
 	const FRegistry&                   Registry = Scene->GetRegistry();
@@ -92,4 +92,5 @@ void FGameWorld::DispatchCollisionEvents()
 			Systems.GameModule->CollisionEvent(*Scene, Event);
 		}
 	}
+	return true;
 }

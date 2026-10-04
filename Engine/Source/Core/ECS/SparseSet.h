@@ -42,6 +42,7 @@ public:
 
 		Sparse[Entity.Index] = static_cast<uint32>(Dense.size());
 		Dense.push_back(Entity);
+		++Revision;
 		return Components.emplace_back(std::forward<TArgs>(Args)...);
 	}
 
@@ -65,6 +66,9 @@ public:
 	{
 		return Contains(Entity) ? &Components[Sparse[Entity.Index]] : nullptr;
 	}
+
+	// 밀집 인덱스 (GetComponents()/GetEntities() 칸). 없으면 ~0u
+	uint32 GetDenseIndex(FEntity Entity) const { return Contains(Entity) ? Sparse[Entity.Index] : InvalidDense; }
 
 	T& Get(FEntity Entity)
 	{
@@ -102,10 +106,13 @@ public:
 		Dense.pop_back();
 		Components.pop_back();
 		Sparse[Entity.Index] = InvalidDense;
+		++Revision;
 	}
 
 	size_t Size() const override { return Dense.size(); }
 	bool   IsEmpty() const { return Dense.empty(); }
+	// 추가/제거마다 늘어나는 번호 — 밀집 인덱스(엔티티 ↔ 칸)가 그대로인지 확인할 때 (예: FScene 트랜스폼 갱신 계획)
+	uint64 GetRevision() const { return Revision; }
 
 	const std::vector<FEntity>& GetEntities() const override { return Dense; }
 	std::vector<T>&             GetComponents() { return Components; }
@@ -127,4 +134,5 @@ private:
 	std::vector<uint32>  Sparse;
 	std::vector<FEntity> Dense;
 	std::vector<T>       Components;
+	uint64               Revision = 0;
 };

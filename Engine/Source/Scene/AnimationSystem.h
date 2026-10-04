@@ -12,6 +12,7 @@
 #include <vector>
 
 class FScene;
+struct FTransformChangedSubtree;
 
 // FAnimationComponent를 가진 모델 루트를 순회하며 클립을 샘플링/크로스페이드하고 노드 엔티티의 로컬 트랜스폼에 쓴다.
 // 호출 순서: Update → FScene::UpdateTransforms → 렌더 (스킨 팔레트가 조인트 월드 행렬을 사용)
@@ -19,7 +20,10 @@ class FScene;
 class FAnimationSystem
 {
 public:
-	static void Update(FScene& Scene, float DeltaSeconds);
+	// OutWritten: 이번 갱신이 로컬 트랜스폼을 썼을 수 있는 엔티티(평가한 모델 루트 — 루트 모션 — 하위 트리 + 그 노드 엔티티)를 덧붙인다
+	// (FGameWorld가 FScene::UpdateTransformsPartial에 넘긴다 — Members는 런타임 NodeEntities를 가리키므로 다음 Update 전까지만 유효).
+	// 평가하지 않은 모델(갱신 빈도 LOD로 건너뜀, 래그돌)은 아무것도 쓰지 않는다
+	static void Update(FScene& Scene, float DeltaSeconds, std::vector<FTransformChangedSubtree>* OutWritten = nullptr);
 
 	// 클립 재생 요청. BlendTime < 0이면 컴포넌트의 BlendTime 사용. 클립이 없거나 컴포넌트가 없으면 false
 	static bool Play(FScene& Scene, FEntity Entity, std::string_view ClipName, float BlendTime = -1.0f);

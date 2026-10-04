@@ -231,7 +231,8 @@ public:
 	void Update(float DeltaSeconds, const FInput* Input);
 	// 물리·트랜스폼 갱신이 끝난 뒤 (FGameWorld::TickGameplay 끝): 스크립트 OnLateUpdate(dt) — 캐릭터를 따라가는 카메라처럼
 	// "이번 프레임 최종 위치"가 필요한 일 (OnUpdate에서 읽는 월드 위치는 물리가 움직이기 전 값이다)
-	void LateUpdate(float DeltaSeconds, const FInput* Input);
+	// 반환: 스크립트가 씬을 바꿨을 수 있는지 (Lua 함수를 하나도 부르지 않고 파괴도 없었으면 false)
+	bool LateUpdate(float DeltaSeconds, const FInput* Input);
 	// 모든 인스턴스 OnDestroy 후 Lua 상태 파괴
 	void EndPlay();
 	bool IsPlaying() const { return PlayRuntime != nullptr; }

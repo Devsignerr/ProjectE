@@ -98,7 +98,8 @@ public:
 	bool   CallObject(uint32 Id, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound);
 	void   DestroyObject(uint32 Id);
 	void Update(float DeltaSeconds, const FInput* Input);
-	void LateUpdate(float DeltaSeconds, const FInput* Input); // 시작된 인스턴스의 OnLateUpdate(dt)
+	// 시작된 인스턴스의 OnLateUpdate(dt). Lua 함수를 하나라도 불렀거나 엔티티를 파괴했으면 true (아니면 씬을 바꿨을 수 없다 — FGameWorld가 트랜스폼 재갱신 생략)
+	bool LateUpdate(float DeltaSeconds, const FInput* Input);
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
 
 	bool         RunString(std::string_view Code);
@@ -275,6 +276,7 @@ private:
 	bool CallMethod(FScriptInstance& Instance, const char* MethodName, float DeltaSeconds = 0.0f, bool bPassDelta = false);
 	void DestroyInstance(uint64 EntityId);
 	void ApplyPendingDestroys();
+	uint64 SideEffectCount = 0; // Lua 메서드 호출 + 지연 파괴 횟수 (LateUpdate가 씬을 바꿨을 수 있는지)
 	void ReportError(const std::string& Message);
 	// 스크립트 파일 읽기 (FFileSystem: pak → 디스크, UTF-8 BOM 제거)
 	static std::string ReadScriptSource(const std::filesystem::path& Path, bool& bOutOk);

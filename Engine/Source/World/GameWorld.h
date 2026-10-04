@@ -7,6 +7,7 @@
 #include "Network/NetTypes.h"
 #include "Physics/CharacterMovement.h"
 #include "Scene/GameRpc.h"
+#include "Scene/Scene.h"
 
 #include <deque>
 #include <filesystem>
@@ -313,7 +314,7 @@ private:
 	uint32 RespawnStartIndex = 0;  // 리스폰 PlayerStart 순번
 
 	// 물리 알림 (World/GameWorldPhysicsEvents.cpp): 물리·UpdateTransforms 뒤 충돌/트리거 이벤트 → 스크립트 + 게임 모듈
-	void DispatchCollisionEvents();
+	bool DispatchCollisionEvents(); // 이벤트가 있었으면 true (스크립트·게임 모듈이 씬을 바꿨을 수 있음)
 	bool ShouldReportContacts(const FScene& Target, FEntity Entity) const; // FPhysicsSystem 보고 필터 (역할 규칙 포함)
 
 	// 능력 시스템 (World/GameWorldAbilities.cpp): 스크립트 갱신 뒤·캐릭터 이동 전. 입력 발동 → FAbilitySystem::Tick → MoveSpeed → 이벤트
@@ -331,6 +332,10 @@ private:
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
+	// 표시 틱 부분 트랜스폼 갱신: 게임플레이 틱이 이 씬의 트랜스폼을 전체 갱신한 직후면 그 씬 (표시 틱이 소비). 사이에 다른 코드가
+	// 트랜스폼을 쓰지 않는 앱 순서(TickGameplay → TickPresentation)에서만 맞으므로 BeginPlay/EndPlay와 다음 표시 틱이 비운다
+	FScene*              GameplayValidatedScene = nullptr;
+	std::vector<FTransformChangedSubtree> PresentationWritten; // 표시 틱이 로컬 트랜스폼을 쓴 엔티티 (태양 + 평가한 애니메이션 모델)
 	ENetMode          Mode  = ENetMode::Standalone;
 
 	std::unordered_map<uint32, FRemoteInput> RemoteInputs;      // 서버: 플레이어 ID → 받은 입력

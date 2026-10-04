@@ -382,6 +382,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	PendingSceneRequest.reset();
 	FInputModeState::Reset(); // 입력 모드는 플레이(맵)마다 기본값에서 시작 — 게임 모듈/스크립트 시작 전에
 	ClearSubScenes();
+	GameplayValidatedScene = nullptr;
 	PredictedBodies.clear();
 	PredictionClock        = 0.0f;
 	PredictionTimeOffset   = 0.0f;
@@ -467,6 +468,7 @@ void FGameWorld::EndPlay()
 	ClearSubScenes();
 	FInputModeState::Reset();
 	FDebugDraw::Get().Clear(); // 플레이 정지 후 편집 화면에 남지 않게
+	GameplayValidatedScene = nullptr;
 	Scene = nullptr;
 }
 
@@ -525,16 +527,21 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	RecordPhysicsPrediction();               // 이번 스텝 결과 기록 (서버 스냅샷과 비교할 로컬 과거)
 	UpdateCharacterAnimParams(DeltaSeconds); // 이번 프레임 이동 결과 → 다음 표시 틱 애니메이션
 	UpdateFootIkProbes();                    // 발 IK 바닥 (이번 프레임 최종 위치 기준 — 다음 표시 틱 애니메이션이 쓴다)
-	DispatchCollisionEvents();               // 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
+	// 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
+	bool bMayHaveChangedScene = DispatchCollisionEvents();
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::LateUpdate);
-		Systems.Scripts->LateUpdate(DeltaSeconds, Input);
+		bMayHaveChangedScene = Systems.Scripts->LateUpdate(DeltaSeconds, Input) || bMayHaveChangedScene;
 	}
+	// 위 트랜스폼 갱신 뒤 씬을 바꿀 수 있는 것은 충돌 알림과 OnLateUpdate(+ 지연 파괴)뿐이다 (기록·애니메이션 파라미터·발 IK 탐색은 읽기만).
+	// 둘 다 아무것도 하지 않았으면 다시 갱신해도 모든 엔티티가 캐시와 같으므로 건너뛴다 (결과 동일)
+	if (bMayHaveChangedScene)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::GameplayTransforms);
 		Scene->UpdateTransforms();
 	}
+	GameplayValidatedScene = Scene; // 바로 다음 표시 틱은 그 틱이 쓴 엔티티만 다시 본다 (UpdateTransformsPartial)
 	for (auto& [PlayerId, Remote] : RemoteInputs)
 	{
 		Remote.Input.EndFrame(); // 원격 입력의 눌림/떼어짐은 서버 틱 한 번만
@@ -550,14 +557,29 @@ void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 		Perf.bCounting = Perf.SeenFrames++ >= Perf.WarmupFrames;
 		Perf.Frames += Perf.bCounting ? 1u : 0u;
 	}
-	FTimeOfDaySystem::Update(TargetScene, DeltaSeconds, IsPlaying()); // 시간대 → 태양 회전 (Phase 49, 트랜스폼 갱신 전)
+	// 게임플레이 틱이 이 씬을 방금 전체 갱신했으면, 이 틱에서 로컬을 쓰는 것(시간대 태양, 평가한 애니메이션 모델)만 다시 본다 —
+	// 갱신 빈도 LOD로 건너뛴 모델·정적 물체는 입력이 그대로라 전체 갱신이어도 모두 캐시 적중 (결과 동일)
+	const bool bPartial    = GameplayValidatedScene == &TargetScene;
+	GameplayValidatedScene = nullptr;
+	PresentationWritten.clear();
+	if (const FEntity Sun = FTimeOfDaySystem::Update(TargetScene, DeltaSeconds, IsPlaying()); Sun.IsValid()) // 시간대 → 태양 회전 (Phase 49, 트랜스폼 갱신 전)
+	{
+		PresentationWritten.push_back({ Sun, {} });
+	}
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::Animation);
-		FAnimationSystem::Update(TargetScene, DeltaSeconds);
+		FAnimationSystem::Update(TargetScene, DeltaSeconds, bPartial ? &PresentationWritten : nullptr);
 	}
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::PresentTransforms);
-		TargetScene.UpdateTransforms();
+		if (bPartial)
+		{
+			TargetScene.UpdateTransformsPartial(PresentationWritten);
+		}
+		else
+		{
+			TargetScene.UpdateTransforms();
+		}
 	}
 	const FScopedGameTickTimer Timer(EGameTickTimer::Particles);
 	if (Systems.Resources != nullptr)

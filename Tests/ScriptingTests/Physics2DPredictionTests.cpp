@@ -72,6 +72,7 @@ namespace
 		int32  ContactFrame           = -1;
 		int32  CrateMoveFrame         = -1;
 		uint32 Corrections            = 0;
+		uint32 OverlapRejects         = 0; // 재조정 ② 결과 겹침 거부 (밀기에서는 없어야 한다 — 바디 옆은 겹침이 생기지 않는 자리)
 		float  MaxCrateJump           = 0.0f;
 		float  FinalDifference        = 0.0f; // 멈춘 뒤 클라이언트 ↔ 서버 상자 위치 차이
 		float  ServerCrateTravel      = 0.0f; // 서버에서 상자가 밀린 거리
@@ -175,6 +176,7 @@ namespace
 		Pump(30, 1.0f);  // 0.5초 밀기
 		Pump(150, 0.0f); // 멈추고 서버 상태로 수렴
 		Result.Corrections       = Client->World.GetCharacterCorrectionCount() - Before;
+		Result.OverlapRejects    = Client->World.GetReplayOverlapRejectCount2D();
 		Result.FinalDifference   = FVector3::Distance(Client->Scene.GetTransform(Client->Crate).Position, Server->Scene.GetTransform(Server->Crate).Position);
 		Result.ServerCrateTravel = Server->Scene.GetTransform(Server->Crate).Position.X - ServerCrateStart;
 
@@ -219,6 +221,7 @@ E_TEST(Physics2DPrediction_PushedCrateReactsImmediatelyAndConverges)
 		// 서버 권위: 멈춘 뒤 클라이언트 상자는 서버 상자 위치로 수렴, 화면 튐 없음
 		E_EXPECT_TRUE(Result->FinalDifference < 2.0f);
 		E_EXPECT_TRUE(Result->MaxCrateJump < 5.0f);
+		E_EXPECT_EQ(Result->OverlapRejects, 0u);
 		// 해제: 키네마틱 보간으로 복귀
 		E_EXPECT_TRUE(Result->bReleased);
 		E_EXPECT_TRUE(Result->bKinematicAfterRelease);

@@ -516,6 +516,30 @@ void FCharacterMovement2DSystem::GetCharacterContacts(FEntity Entity, std::vecto
 	}
 }
 
+float FCharacterMovement2DSystem::GetDynamicPenetration(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	if (Found == Characters.end() || !IsActive())
+	{
+		return 0.0f;
+	}
+	FPhysics2DMover Mover      = MakeMover(Found->second, Entity, Found->second.Settings);
+	Mover.bIgnoreOneWay        = true; // 원웨이는 겹쳐도 막지 않는다
+	Mover.bCollideCharacters   = false;
+	Mover.bIncludeDynamicSides = true;
+	std::vector<FPhysics2DMoverContact> Contacts;
+	Physics2D->GetWorld()->CollideMover(Mover, Found->second.State.Position, 0.0f, Contacts);
+	float Deepest = 0.0f;
+	for (const FPhysics2DMoverContact& Contact : Contacts)
+	{
+		if (Contact.BodyType == EBodyType2D::Dynamic)
+		{
+			Deepest = std::max(Deepest, Contact.Penetration);
+		}
+	}
+	return Deepest;
+}
+
 void FCharacterMovement2DSystem::SetVisualOffset(FScene& Scene, FEntity Entity, const FVector2& Offset)
 {
 	if (const auto Found = Characters.find(Entity); Found != Characters.end())

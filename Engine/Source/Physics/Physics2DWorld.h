@@ -150,6 +150,7 @@ struct FPhysics2DMover
 	float    OneWayMaxPenetration = 8.0f; // cm
 	bool     bSteepAsWall = false; // MoveMover: 바닥이 아닌 위쪽 면(가파른 경사)을 수직 벽으로 풀기 (걷는 중 — 경사에 부딪혀 튀어 오르지 않게)
 	bool     bCollideCharacters = false; // 다른 캐릭터의 막는 대리 모양(bSolidProxy)과 부딪힌다
+	bool     bIncludeDynamicSides = false; // CollideMover: 동적 바디의 바닥이 아닌 접촉도 돌려준다 (겹침 검사 — 이동에는 쓰지 않는다)
 };
 
 // 이동기와 닿은 면 하나 (평면 cm). Normal = 면에서 이동기 쪽, Penetration = 묻힌 깊이 (음수 = 떨어짐 — 부풀린 질의)

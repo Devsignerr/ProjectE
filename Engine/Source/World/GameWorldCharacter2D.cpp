@@ -38,6 +38,7 @@ namespace
 	constexpr uint8  MaxMovesPerPacket          = 8;
 	constexpr size_t MaxPredictedMoves          = 240;
 	constexpr size_t MaxQueuedMoves             = 120;
+	constexpr float  MaxReplayPenetration2D     = 1.0f; // cm, 3D MaxReplayPenetration과 같은 값
 	constexpr float  CorrectionSmoothingSeconds = 0.1f;
 	constexpr float  SnapCorrectionDistance     = 150.0f;
 
@@ -360,13 +361,22 @@ void FGameWorld::ReceiveCharacterAck2D(const std::vector<uint8>& Message)
 		}
 		return Characters2D->GetState(Entity);
 	};
+	//   ②의 결과가 지금 자리로 돌아온 바디에 MaxReplayPenetration2D 넘게 묻히면 쓰지 않는다 (3D와 같은 겹침 거부). 2D 이동기는 동적 바디를 옆으로 막지
+	//   않으므로 이동 중에는 겹침이 생겨도 그대로 지나가지만, 결과 자리에 묻힌 채 다음 2D 스텝을 맞으면 키네마틱 대리 캡슐이 그 바디를 무한 질량으로
+	//   밀어내 튕겨 낸다 — 기록 때 바디가 있던 자리(예: 떨어지던 상자 위)에 섰는데 바디가 그사이 옆·위로 옮겨 와 지금은 그 자리를 차지한 경우
 	FCharacterState2D Replayed = Replay(false);
 	if (!PredictedBodies2D.empty())
 	{
 		const FCharacterState2D Posed = Replay(true);
-		if ((Posed.Position - Before).LengthSquared() < (Replayed.Position - Before).LengthSquared())
+		Characters2D->SetState(*Scene, Entity, Posed); // 바디가 지금 자리에 돌아온 상태로 겹침 검사
+		const bool bPosedClear = Characters2D->GetDynamicPenetration(Entity) <= MaxReplayPenetration2D;
+		if (bPosedClear && (Posed.Position - Before).LengthSquared() < (Replayed.Position - Before).LengthSquared())
 		{
 			Replayed = Posed;
+		}
+		else if (!bPosedClear)
+		{
+			++PredictionStats2D.ReplayOverlapRejects;
 		}
 		Characters2D->SetState(*Scene, Entity, Replayed);
 	}
@@ -376,6 +386,9 @@ void FGameWorld::ReceiveCharacterAck2D(const std::vector<uint8>& Message)
 	{
 		++CharacterCorrections;
 		const float Distance = (After - Before).Length();
+		++PredictionStats2D.Corrections;
+		PredictionStats2D.CorrectionMax = std::max(PredictionStats2D.CorrectionMax, Distance);
+		PredictionStats2D.BigCorrections += Distance > 5.0f ? 1u : 0u;
 		E_LOG(LogNet, Verbose, "2D 캐릭터 재조정: {:.1f}cm (순번 {})", Distance, Sequence);
 		Predicted.VisualOffset = Predicted.VisualOffset + (Before - After);
 		if (Predicted.VisualOffset.Length() > SnapCorrectionDistance)

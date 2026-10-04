@@ -1185,7 +1185,7 @@ void FPhysics2DWorld::CollideMover(const FPhysics2DMover& Mover, const FVector2&
 				continue; // 아래·옆에서 / 깊이 묻힘 / 뚫고 올라가는 중
 			}
 		}
-		if (Contact.BodyType == EBodyType2D::Dynamic && Contact.Normal.Y < Mover.WalkableNormalY)
+		if (Contact.BodyType == EBodyType2D::Dynamic && Contact.Normal.Y < Mover.WalkableNormalY && !Mover.bIncludeDynamicSides)
 		{
 			continue; // 동적 바디는 위에 설 때만 막는다 (옆은 대리 바디가 민다)
 		}
@@ -1197,7 +1197,7 @@ void FPhysics2DWorld::CollideMover(const FPhysics2DMover& Mover, const FVector2&
 	for (size_t Index = 0; Index < OutContacts.size(); ++Index)
 	{
 		const FPhysics2DMoverContact& Contact = OutContacts[Index];
-		if (Contact.Normal.Y >= Mover.WalkableNormalY)
+		if (Contact.Normal.Y >= Mover.WalkableNormalY || (Mover.bIncludeDynamicSides && Contact.BodyType == EBodyType2D::Dynamic))
 		{
 			continue;
 		}

@@ -545,6 +545,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	LastSnapshotTime       = -1.0f;
 	LastRecordTime         = 0.0f;
 	PredictionStats        = {};
+	PredictionStats2D      = {};
 	PredictionStats.bEnabled = InMode == ENetMode::Client && FCommandLine::FromProcess().HasFlag(L"--net-physics-stats");
 	InstallScriptNetHooks();
 	// 3D 디버그 선: 이전 플레이 것은 지우고, GPU(Resources) 없는 앱(전용 서버)은 그리기 호출을 무시한다
@@ -615,6 +616,7 @@ void FGameWorld::EndPlay()
 	if (PredictionStats.bEnabled)
 	{
 		LogPhysicsPredictionStats("최종");
+		LogPhysicsPredictionStats2D("최종");
 	}
 	LogGameTickPerf();
 	PredictedBodies.clear();

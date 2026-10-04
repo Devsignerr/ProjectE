@@ -477,6 +477,29 @@ E_TEST(Character2DWorld_RidesMovingPlatformAndPushesDynamicBox)
 	E_EXPECT_TRUE(Push.Position().X > 100.0f);
 }
 
+// 동적 바디 겹침 깊이 (재조정 겹침 거부 — GameWorldCharacter2D.cpp): 위에 선 것은 0 근처, 옆/속으로 묻히면 그 깊이. 정적 바디는 세지 않는다
+E_TEST(Character2DWorld_DynamicPenetration)
+{
+	FWorld        World;
+	const FEntity Ground = World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	const FEntity Crate  = World.AddBox("Crate", FVector3(300.0f, 0.0f, 40.0f), FVector2(80.0f, 80.0f)); // 윗면 Z 80, 왼쪽 면 X 260
+	World.Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Crate).Mass = 10.0f;
+	World.SpawnPawn(FVector3(0.0f, 0.0f, StandZ));
+	World.Begin();
+	(void)Ground;
+	FCharacterState2D State = World.Characters.GetState(World.Pawn);
+	E_EXPECT_NEAR(World.Characters.GetDynamicPenetration(World.Pawn), 0.0f, 0.5f); // 바닥(정적)에 선 채 — 정적은 세지 않는다
+	State.Position = FVector2(300.0f, 80.0f + StandZ);
+	World.Characters.SetState(World.Scene, World.Pawn, State);
+	E_EXPECT_NEAR(World.Characters.GetDynamicPenetration(World.Pawn), 0.0f, 0.5f); // 상자 위에 선 자리
+	State.Position = FVector2(260.0f - 30.0f + 10.0f, StandZ);
+	World.Characters.SetState(World.Scene, World.Pawn, State);
+	E_EXPECT_NEAR(World.Characters.GetDynamicPenetration(World.Pawn), 10.0f, 1.0f); // 옆으로 10cm 묻힘
+	State.Position = FVector2(300.0f, 80.0f + StandZ - 15.0f);
+	World.Characters.SetState(World.Scene, World.Pawn, State);
+	E_EXPECT_NEAR(World.Characters.GetDynamicPenetration(World.Pawn), 15.0f, 1.0f); // 위에서 15cm 묻힘
+}
+
 // 같은 상태 + 같은 무브 → 같은 결과 (멀티플레이 재조정의 기준)
 E_TEST(Character2DWorld_SameMovesSameResult)
 {

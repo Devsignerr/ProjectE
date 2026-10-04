@@ -7,6 +7,8 @@
 #include <steam/steamnetworkingsockets.h>
 #pragma warning(pop)
 
+#include <chrono>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -206,12 +208,19 @@ namespace
 			{
 				return;
 			}
+			const bool bHadConnections = !Connections.empty();
 			for (const HSteamNetConnection Connection : Connections)
 			{
 				Sockets->CloseConnection(Connection, 0, "종료", true);
 				GGns.ConnectionOwners.erase(Connection);
 			}
 			Connections.clear();
+			if (bHadConnections)
+			{
+				// 닫기 신호는 GNS 서비스 스레드가 보낸다 — 곧바로 GameNetworkingSockets_Kill(마지막 트랜스포트 해제)하면 상대가 연결 시간 초과까지
+				// 끊긴 줄 모른다 (전용 서버에 클라이언트 플레이어가 남음). 종료·세션 전환 때 한 번이라 짧게 기다린다
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
 			if (ListenSocket != k_HSteamListenSocket_Invalid)
 			{
 				Sockets->CloseListenSocket(ListenSocket);

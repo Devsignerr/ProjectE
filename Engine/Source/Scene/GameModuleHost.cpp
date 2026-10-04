@@ -192,6 +192,14 @@ void FGameModuleHost::SetPhysics(FPhysicsSystem* Physics)
 	}
 }
 
+void FGameModuleHost::SetPhysics2D(FPhysics2DSystem* Physics2D)
+{
+	if (Module != nullptr)
+	{
+		Module->SetPhysics2D(Physics2D);
+	}
+}
+
 void FGameModuleHost::PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn)
 {
 	if (Module != nullptr && bPlaying)

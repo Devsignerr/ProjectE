@@ -1,4 +1,5 @@
 // FGameWorld의 물리 알림 전달 (충돌/트리거 — 규칙은 Physics/PhysicsSystem.h "충돌 알림", 이벤트 형식은 Scene/CollisionEvents.h).
+// 2D 물리(Physics/Physics2DSystem.h) 이벤트도 3D 뒤에 같은 규칙·같은 콜백으로 보낸다 (점/법선은 평면 위 월드 3D).
 //
 // 시점: 게임플레이 틱의 물리 → UpdateTransforms 뒤, 스크립트 OnLateUpdate 앞. 물리 스텝 중(Jolt 작업 스레드)에는 아무것도 부르지 않는다.
 // 받는 쪽: 이벤트의 Self 엔티티 스크립트 (Lua OnCollisionBegin(other, info)/OnCollisionEnd(other)/OnTriggerEnter(other)/OnTriggerExit(other),
@@ -11,6 +12,7 @@
 #include "World/GameWorld.h"
 
 #include "Network/ReplicationTypes.h"
+#include "Physics/Physics2DSystem.h"
 #include "Physics/PhysicsSystem.h"
 #include "Scene/Components.h"
 #include "Scene/GameModuleHost.h"
@@ -52,11 +54,18 @@ bool FGameWorld::ShouldReportContacts(const FScene& Target, FEntity Entity) cons
 
 bool FGameWorld::DispatchCollisionEvents()
 {
-	if (Systems.Physics == nullptr || Systems.Physics->GetCollisionEvents().empty())
+	// 3D 다음 2D (같은 단계, 같은 콜백). 처리 중 다음 물리 갱신이 없으므로 복사 한 번이면 된다
+	std::vector<FCollisionEvent> Events;
+	if (Systems.Physics != nullptr)
+	{
+		Events = Systems.Physics->GetCollisionEvents();
+	}
+	const std::vector<FCollisionEvent>& Events2D = Physics2D->GetCollisionEvents();
+	Events.insert(Events.end(), Events2D.begin(), Events2D.end());
+	if (Events.empty())
 	{
 		return false;
 	}
-	const std::vector<FCollisionEvent> Events = Systems.Physics->GetCollisionEvents(); // 처리 중 다음 물리 갱신이 없으므로 복사 한 번이면 된다
 	const FRegistry&                   Registry = Scene->GetRegistry();
 	const bool                         bClient  = Mode == ENetMode::Client;
 	for (const FCollisionEvent& Event : Events)

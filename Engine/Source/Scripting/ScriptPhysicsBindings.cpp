@@ -6,6 +6,14 @@
 // 래그돌 (Physics/Ragdoll.h — 엔티티 자신이나 자손의 스켈레탈 모델, 물리 훅이 없으면 false/무시):
 //   entity:EnableRagdoll() → 켰는가 (이미 켜져 있거나 뼈대가 없으면 false)   entity:DisableRagdoll()   entity:IsRagdollActive()
 //   각 프로세스 로컬 연출이다 (복제되지 않음). 사망 연동은 RagdollComponent.EnableOnDeath가 자동으로 한다
+// 2D 물리 (Box2D, 평면 = 월드 X·Z — Physics/Physics2DMath.h. 물리 훅이 없으면 nil / 빈 표):
+//   벡터 인자는 Vector3(Y 무시) 또는 Vector2(X = 월드 X, Y = 월드 Z). layers = 충돌 레이어 이름 표나 이름 하나 (생략 = 전부, 없는 이름은 Lua 오류)
+//   Physics2D.Raycast(origin, direction, maxDistance, layers?) → { Entity, Point, Normal, Distance, Fraction } 또는 nil
+//     Point/Normal은 Vector3 (Point의 Y = origin이 Vector3면 그 Y, 아니면 0 / Normal의 Y = 0). 트리거 제외
+//   Physics2D.OverlapBox(center, size, angle?, layers?) — size = 전체 크기, angle = 도(반시계 +) / Physics2D.OverlapCircle(center, radius, layers?)
+//     → 엔티티 배열 (트리거 제외)
+//   entity:AddForce/AddImpulse/SetVelocity/GetVelocity/GetMass는 2D 강체만 있는 엔티티면 2D로 동작한다 (Vector3의 X·Z)
+#include "Core/Settings/ProjectSettings.h"
 #include "Scene/Scene.h"
 #include "Scripting/LuaRuntime.h"
 
@@ -109,6 +117,114 @@ void FLuaRuntime::RegisterPhysicsBindings()
 	                                  sol::optional<FQuat> Rotation, sol::optional<FScriptEntity> Ignore) {
 		return RunSweep(MakeShape(EScriptQueryShape::Capsule, FVector3::ZeroVector, Radius, HalfHeight, Rotation), Start, Direction, MaxDistance,
 		                IgnoreOf(Ignore));
+	};
+	RegisterPhysics2DBindings();
+}
+
+void FLuaRuntime::RegisterPhysics2DBindings()
+{
+	// Vector3(Y 무시) 또는 Vector2 → 평면 좌표. OutDepth = Vector3면 그 Y
+	const auto ToPlane = [](const sol::object& Value, const char* Function, const char* Name, float* OutDepth = nullptr) {
+		if (Value.is<FVector3>())
+		{
+			const FVector3 Vector = Value.as<FVector3>();
+			if (OutDepth != nullptr)
+			{
+				*OutDepth = Vector.Y;
+			}
+			return FVector2(Vector.X, Vector.Z);
+		}
+		if (Value.is<FVector2>())
+		{
+			return Value.as<FVector2>();
+		}
+		throw std::runtime_error(std::format("{}: {}은(는) Vector3 또는 Vector2여야 합니다", Function, Name));
+	};
+	const auto ToLayerMask = [](const sol::object& Layers, const char* Function) {
+		uint32 LayerMask = FCollisionLayerSettings::AllLayersMask;
+		if (!Layers.valid() || Layers.get_type() == sol::type::lua_nil || Layers.get_type() == sol::type::none)
+		{
+			return LayerMask;
+		}
+		std::vector<std::string> Names;
+		if (Layers.is<std::string>())
+		{
+			Names.push_back(Layers.as<std::string>());
+		}
+		else if (Layers.get_type() == sol::type::table)
+		{
+			for (const auto& [Key, Value] : Layers.as<sol::table>())
+			{
+				if (!Value.is<std::string>())
+				{
+					throw std::runtime_error(std::format("{}: 레이어 표에는 이름 문자열만 넣습니다", Function));
+				}
+				Names.push_back(Value.as<std::string>());
+			}
+		}
+		else
+		{
+			throw std::runtime_error(std::format("{}: 레이어 인자는 이름 표나 이름이어야 합니다", Function));
+		}
+		std::string Unknown;
+		if (!FProjectSettings::Get().Collision.MakeMask(Names, LayerMask, &Unknown))
+		{
+			throw std::runtime_error(std::format("{}: 없는 충돌 레이어 '{}' (프로젝트 설정 → 충돌 레이어)", Function, Unknown));
+		}
+		return LayerMask;
+	};
+	const auto ToEntityTable = [this](const std::vector<FEntity>& Entities) {
+		sol::table Result = Lua.create_table();
+		int32      Index  = 1;
+		for (const FEntity Entity : Entities)
+		{
+			if (Scene != nullptr && Scene->GetRegistry().IsValid(Entity))
+			{
+				Result[Index++] = FScriptEntity{ Entity };
+			}
+		}
+		return Result;
+	};
+
+	sol::table Physics2DTable = Lua.create_named_table("Physics2D");
+	Physics2DTable["Raycast"] = [=, this](const sol::object& Origin, const sol::object& Direction, float MaxDistance, sol::object Layers) -> sol::object {
+		float          Depth       = 0.0f;
+		const FVector2 PlaneOrigin = ToPlane(Origin, "Physics2D.Raycast", "origin", &Depth);
+		const FVector2 PlaneDir    = ToPlane(Direction, "Physics2D.Raycast", "direction");
+		const uint32   LayerMask   = ToLayerMask(Layers, "Physics2D.Raycast");
+		FScriptRayHit2D Hit;
+		if (PhysicsHooks == nullptr || !PhysicsHooks->Raycast2D || !PhysicsHooks->Raycast2D(PlaneOrigin, PlaneDir, MaxDistance, LayerMask, Hit))
+		{
+			return sol::lua_nil;
+		}
+		sol::table Result  = Lua.create_table();
+		Result["Entity"]   = Scene != nullptr && Scene->GetRegistry().IsValid(Hit.Entity) ? sol::make_object(Lua, FScriptEntity{ Hit.Entity }) : sol::object(sol::lua_nil);
+		Result["Point"]    = FVector3(Hit.Position.X, Depth, Hit.Position.Y);
+		Result["Normal"]   = FVector3(Hit.Normal.X, 0.0f, Hit.Normal.Y);
+		Result["Distance"] = Hit.Distance;
+		Result["Fraction"] = Hit.Fraction;
+		return Result;
+	};
+	Physics2DTable["OverlapBox"] = [=, this](const sol::object& Center, const sol::object& Size, sol::optional<float> AngleDegrees, sol::object Layers) {
+		const FVector2 PlaneCenter = ToPlane(Center, "Physics2D.OverlapBox", "center");
+		const FVector2 PlaneSize   = ToPlane(Size, "Physics2D.OverlapBox", "size");
+		const uint32   LayerMask   = ToLayerMask(Layers, "Physics2D.OverlapBox");
+		std::vector<FEntity> Entities;
+		if (PhysicsHooks != nullptr && PhysicsHooks->OverlapBox2D)
+		{
+			PhysicsHooks->OverlapBox2D(PlaneCenter, PlaneSize * 0.5f, AngleDegrees.value_or(0.0f) * FMath::DegToRad, LayerMask, Entities);
+		}
+		return ToEntityTable(Entities);
+	};
+	Physics2DTable["OverlapCircle"] = [=, this](const sol::object& Center, float Radius, sol::object Layers) {
+		const FVector2 PlaneCenter = ToPlane(Center, "Physics2D.OverlapCircle", "center");
+		const uint32   LayerMask   = ToLayerMask(Layers, "Physics2D.OverlapCircle");
+		std::vector<FEntity> Entities;
+		if (PhysicsHooks != nullptr && PhysicsHooks->OverlapCircle2D)
+		{
+			PhysicsHooks->OverlapCircle2D(PlaneCenter, Radius, LayerMask, Entities);
+		}
+		return ToEntityTable(Entities);
 	};
 }
 

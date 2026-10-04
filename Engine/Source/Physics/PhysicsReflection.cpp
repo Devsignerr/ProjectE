@@ -3,6 +3,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Physics/CharacterMovement.h"
+#include "Physics/Physics2DComponents.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/Ragdoll.h"
 
@@ -121,6 +122,82 @@ void RegisterPhysicsTypes()
 		.Property(&FBallJointComponent::ConeAngle, "ConeAngle", "원뿔 반각 (도, 180 = 자유)").Range(0.0f, 180.0f, 1.0f)
 		.Property(&FBallJointComponent::BreakForce, "BreakForce", "끊어지는 힘 (N)").Range(0.0f, 10000000.0f, 10.0f).Tooltip(BreakTip)
 		.Property(&FBallJointComponent::bCollideConnected, "CollideConnected", "서로 충돌").Tooltip(CollideTip)
+		.AsComponent();
+
+	// ---- 2D 물리 (Box2D — 규칙은 Physics2DSystem.h, 평면 규약은 Physics2DMath.h: X·Z 평면, 각도 반시계 +)
+	Registry.RegisterType<FRigidBody2DComponent>("RigidBody2DComponent", "2D 강체")
+		.Property(&FRigidBody2DComponent::BodyType, "BodyType", "운동")
+		.Enum({ { "Static", "정적" }, { "Kinematic", "키네마틱" }, { "Dynamic", "동적" } })
+		.Property(&FRigidBody2DComponent::Mass, "Mass", "질량 (kg, 0 = 밀도로 자동)").Range(0.0f, 100000.0f, 0.1f)
+		.Property(&FRigidBody2DComponent::GravityScale, "GravityScale", "중력 배율").Range(-10.0f, 10.0f, 0.01f)
+		.Property(&FRigidBody2DComponent::LinearDamping, "LinearDamping", "선형 감쇠").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FRigidBody2DComponent::AngularDamping, "AngularDamping", "각 감쇠").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FRigidBody2DComponent::bFixedRotation, "FixedRotation", "회전 고정").Tooltip("회전하지 않는다 (2D 캐릭터)")
+		.Property(&FRigidBody2DComponent::bBullet, "Bullet", "연속 충돌 (총알)").Tooltip("빠른 물체가 동적 바디도 뚫지 않게 (비싸다)")
+		.Property(&FRigidBody2DComponent::bReportContacts, "ReportContacts", "충돌 알림")
+		.Tooltip("충돌 시작/끝 이벤트를 낸다 (OnCollisionBegin/End, 게임 모듈). 스크립트가 붙은 엔티티는 꺼져 있어도 알린다")
+		.Property(&FRigidBody2DComponent::bEnabled, "Enabled", "켜기").Tooltip("끄면 바디를 만들지 않는다")
+		.AsComponent();
+
+	constexpr const char* OffsetTip  = "엔티티 로컬 평면 오프셋 (X = 로컬 X, Y = 로컬 Z, cm)";
+	constexpr const char* OneWayTip  = "원웨이 플랫폼: 엔티티 위쪽(로컬 +Z)에서 내려오는 것만 막고 아래·옆에서는 통과";
+	constexpr const char* TriggerTip = "부딪히지 않고 들어옴/나감만 알린다 (OnTriggerEnter/Exit)";
+	constexpr const char* PointsTip  = "점 목록 \"x,z; x,z; ...\" (cm, 엔티티 로컬)";
+	Registry.RegisterType<FBoxCollider2DComponent>("BoxCollider2DComponent", "2D 상자 콜라이더")
+		.Property(&FBoxCollider2DComponent::Size, "Size", "크기 (cm)").Range(0.1f, 100000.0f, 1.0f)
+		.Property(&FBoxCollider2DComponent::Angle, "Angle", "각도 (도, 반시계 +)").Range(-360.0f, 360.0f, 0.5f)
+		.Property(&FBoxCollider2DComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(OffsetTip)
+		.Property(&FBoxCollider2DComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FBoxCollider2DComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FBoxCollider2DComponent::Density, "Density", "밀도 (kg/m²)").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FBoxCollider2DComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip(TriggerTip)
+		.Property(&FBoxCollider2DComponent::bOneWay, "OneWay", "원웨이").Tooltip(OneWayTip)
+		.Property(&FBoxCollider2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.AsComponent();
+
+	Registry.RegisterType<FCircleCollider2DComponent>("CircleCollider2DComponent", "2D 원 콜라이더")
+		.Property(&FCircleCollider2DComponent::Radius, "Radius", "반지름 (cm)").Range(0.1f, 100000.0f, 1.0f)
+		.Property(&FCircleCollider2DComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(OffsetTip)
+		.Property(&FCircleCollider2DComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FCircleCollider2DComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FCircleCollider2DComponent::Density, "Density", "밀도 (kg/m²)").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FCircleCollider2DComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip(TriggerTip)
+		.Property(&FCircleCollider2DComponent::bOneWay, "OneWay", "원웨이").Tooltip(OneWayTip)
+		.Property(&FCircleCollider2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.AsComponent();
+
+	Registry.RegisterType<FCapsuleCollider2DComponent>("CapsuleCollider2DComponent", "2D 캡슐 콜라이더")
+		.Property(&FCapsuleCollider2DComponent::Height, "Height", "전체 높이 (cm)").Range(0.1f, 100000.0f, 1.0f).Tooltip("로컬 +Z 방향, 반원 포함")
+		.Property(&FCapsuleCollider2DComponent::Radius, "Radius", "반지름 (cm)").Range(0.1f, 100000.0f, 1.0f)
+		.Property(&FCapsuleCollider2DComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(OffsetTip)
+		.Property(&FCapsuleCollider2DComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FCapsuleCollider2DComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FCapsuleCollider2DComponent::Density, "Density", "밀도 (kg/m²)").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FCapsuleCollider2DComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip(TriggerTip)
+		.Property(&FCapsuleCollider2DComponent::bOneWay, "OneWay", "원웨이").Tooltip(OneWayTip)
+		.Property(&FCapsuleCollider2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.AsComponent();
+
+	Registry.RegisterType<FPolygonCollider2DComponent>("PolygonCollider2DComponent", "2D 다각형 콜라이더")
+		.Property(&FPolygonCollider2DComponent::Points, "Points", "점 목록").Tooltip(std::string(PointsTip) + " — 볼록 3~8점 (넘거나 오목하면 볼록 껍질)")
+		.Property(&FPolygonCollider2DComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(OffsetTip)
+		.Property(&FPolygonCollider2DComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FPolygonCollider2DComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FPolygonCollider2DComponent::Density, "Density", "밀도 (kg/m²)").Range(0.0f, 100000.0f, 1.0f)
+		.Property(&FPolygonCollider2DComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip(TriggerTip)
+		.Property(&FPolygonCollider2DComponent::bOneWay, "OneWay", "원웨이").Tooltip(OneWayTip)
+		.Property(&FPolygonCollider2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.AsComponent();
+
+	Registry.RegisterType<FEdgeCollider2DComponent>("EdgeCollider2DComponent", "2D 선분 콜라이더")
+		.Property(&FEdgeCollider2DComponent::Points, "Points", "점 목록").Tooltip(std::string(PointsTip) + " — 2점 이상")
+		.Property(&FEdgeCollider2DComponent::bLoop, "Loop", "닫기").Tooltip("마지막 점과 처음 점도 잇는다 (4점 이상이면 바깥쪽만 막는 체인)")
+		.Property(&FEdgeCollider2DComponent::Offset, "Offset", "오프셋 (cm)").Range(-100000.0f, 100000.0f, 1.0f).Tooltip(OffsetTip)
+		.Property(&FEdgeCollider2DComponent::Friction, "Friction", "마찰").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FEdgeCollider2DComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
+		.Property(&FEdgeCollider2DComponent::bIsTrigger, "IsTrigger", "트리거").Tooltip(TriggerTip)
+		.Property(&FEdgeCollider2DComponent::bOneWay, "OneWay", "원웨이").Tooltip(OneWayTip)
+		.Property(&FEdgeCollider2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.AsComponent();
 
 	// ---- 래그돌 (규칙은 Ragdoll.h)

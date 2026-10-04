@@ -23,6 +23,7 @@ class FAbilitySystem;
 class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
+class FPhysics2DSystem;
 class FReplicationClient;
 class FReplicationServer;
 class FResourceManager;
@@ -82,6 +83,8 @@ enum class EWorldRole : uint8
 //   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
 // RPC(스크립트/게임 모듈 공용)와 입력·플레이어 이벤트는 GameWorldNet.cpp. 게임 모듈에는 IGameNet으로 자신을 넘긴다
 // AI 시스템(비헤이비어 트리, 내비메시, 이동)은 FGameWorld가 소유한다 (앱마다 따로 둘 설정이 없다)
+// 2D 물리(FPhysics2DSystem, Box2D — Physics/Physics2DSystem.h)도 같은 이유로 FGameWorld가 소유한다: 3D 물리 바로 뒤에 갱신하고
+//   (Systems.Physics가 없어도 돈다), 보간 여부는 3D 시스템을 따르며(서버는 끔), 충돌 알림은 3D와 같은 전달 단계·같은 콜백으로 보낸다
 class FGameWorld final : public IGameNet
 {
 public:
@@ -155,6 +158,8 @@ public:
 	FAISystem& GetAI() { return *AI; }
 	// 능력 시스템 (Scene/Ability, World/GameWorldAbilities.cpp). 항상 유효 — 플레이 중에만 돈다
 	FAbilitySystem& GetAbilities() { return *Abilities; }
+	// 2D 물리 (Box2D). 항상 유효 — 플레이 중에만 돈다 (IsActive)
+	FPhysics2DSystem& GetPhysics2D() { return *Physics2D; }
 
 	// ---- IGameNet (게임 모듈용)
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
@@ -331,6 +336,8 @@ private:
 
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;
+	std::unique_ptr<FPhysics2DSystem> Physics2D;
+	void InstallScriptPhysicsHooks(); // 3D(Systems.Physics, 없으면 무시) + 2D 물리 → 스크립트 (Init)
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
 	// 표시 틱 부분 트랜스폼 갱신: 게임플레이 틱이 이 씬의 트랜스폼을 전체 갱신한 직후면 그 씬 (표시 틱이 소비). 사이에 다른 코드가
 	// 트랜스폼을 쓰지 않는 앱 순서(TickGameplay → TickPresentation)에서만 맞으므로 BeginPlay/EndPlay와 다음 표시 틱이 비운다

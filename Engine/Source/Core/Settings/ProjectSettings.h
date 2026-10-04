@@ -54,6 +54,7 @@ struct FPackagingSettings
 struct FPhysicsSettings
 {
 	FVector3 Gravity     = FVector3(0.0f, 0.0f, -980.665f); // cm/s²
+	FVector2 Gravity2D   = FVector2(0.0f, -980.665f);       // cm/s², 2D 물리 평면 (X = 월드 X, Y = 월드 Z — Physics/Physics2DMath.h)
 	float    FixedStepHz = 60.0f;
 	uint32   MaxSubSteps = 4; // 한 프레임 최대 물리 스텝 (느린 프레임에서 따라잡기 상한)
 };

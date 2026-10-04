@@ -1,0 +1,84 @@
+{
+  "Version": 1,
+  "Texture": "SampleTiles.png",
+  "TextureWidth": 64,
+  "TextureHeight": 32,
+  "TileWidth": 16,
+  "TileHeight": 16,
+  "Margin": 0,
+  "Spacing": 0,
+  "Columns": 4,
+  "Rows": 2,
+  "UnitsPerPixel": 1.0,
+  "Filter": "Point",
+  "Tiles": [
+    {
+      "Id": 0,
+      "Collision": "Full",
+      "Tags": [
+        "Ground",
+        "Grass"
+      ]
+    },
+    {
+      "Id": 1,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 2,
+      "Collision": "Full",
+      "Tags": [
+        "Ground",
+        "Stone"
+      ]
+    },
+    {
+      "Id": 3,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          16.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          16.0,
+          0.0
+        ]
+      ],
+      "Tags": [
+        "Slope"
+      ]
+    },
+    {
+      "Id": 4,
+      "Tags": [
+        "Water"
+      ],
+      "Animation": [
+        {
+          "Tile": 4,
+          "Duration": 0.4
+        },
+        {
+          "Tile": 5,
+          "Duration": 0.4
+        }
+      ]
+    },
+    {
+      "Id": 6,
+      "Collision": "Full",
+      "OneWay": true,
+      "Tags": [
+        "Platform"
+      ]
+    }
+  ]
+}

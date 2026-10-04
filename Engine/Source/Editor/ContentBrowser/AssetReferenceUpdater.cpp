@@ -23,7 +23,7 @@ namespace
 		ContentRoot, // .escene, .eproject, .eprefab, .eui, .eanimgraph (미리보기 모델), .efoliage(타입 머티리얼),
 		             // .estruct(RowRef Table)/.etable·.edata(Struct, Asset/RowRef 값 — 행 이름은 확장자가 없으면 경로 후보가 아님),
 		             // .ebuilding(키트 프리팹·방 종류 바닥·소품 테이블)
-		OwnFolder,   // .emat, .eparticle
+		OwnFolder,   // .emat, .eparticle, .esprite(Texture)/.eflipbook(Sprite)/.etileset(Texture)
 	};
 
 	std::wstring Lower(std::wstring Text)
@@ -41,7 +41,8 @@ namespace
 		{
 			return EReferenceBase::ContentRoot;
 		}
-		if (Extension == L".emat" || Extension == L".eparticle" || Extension == L".eimport")
+		if (Extension == L".emat" || Extension == L".eparticle" || Extension == L".eimport" || Extension == L".esprite" || Extension == L".eflipbook" ||
+		    Extension == L".etileset")
 		{
 			return EReferenceBase::OwnFolder;
 		}

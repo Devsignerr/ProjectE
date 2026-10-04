@@ -1,0 +1,25 @@
+{
+  "Version": 1,
+  "Sprite": "SampleAtlas.esprite",
+  "Fps": 8.0,
+  "Loop": "PingPong",
+  "Frames": [
+    {
+      "Slice": "Coin"
+    },
+    {
+      "Slice": "Ruby",
+      "Duration": 0.25
+    },
+    {
+      "Slice": "Crystal",
+      "Scale": 2.0
+    }
+  ],
+  "Events": [
+    {
+      "Frame": 1,
+      "Name": "Sparkle"
+    }
+  ]
+}

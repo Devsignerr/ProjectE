@@ -147,6 +147,28 @@ E_TEST(AssetReference_DataTablesFollowMovedFiles)
 	E_EXPECT_EQ(FAssetReferenceUpdater::FindReferencingFiles(Temp.Content, Temp.Project, { MovedStruct }).size(), static_cast<size_t>(2));
 }
 
+E_TEST(AssetReference_Sprite2DFollowFileRelativeReferences)
+{
+	// .esprite(Texture) / .eflipbook(Sprite) / .etileset(Texture)는 .emat처럼 "이 파일 폴더 기준" 상대 경로
+	FTempContent Temp("Sprite2D");
+	WriteText(Temp.Content / "Sprites/Hero.esprite", "{\"Version\": 1, \"Texture\": \"../Textures/UV.png\", \"Slices\": []}");
+	WriteText(Temp.Content / "Sprites/Hero.eflipbook", "{\"Version\": 1, \"Sprite\": \"Hero.esprite\", \"Frames\": []}");
+	WriteText(Temp.Content / "Tiles/Ground.etileset", "{\"Version\": 1, \"Texture\": \"../Textures/UV.png\", \"Tiles\": []}");
+
+	fs::create_directories(Temp.Content / "Art");
+	fs::path MovedTextures;
+	E_EXPECT_TRUE(FAssetFileOps::Move(Temp.Content / "Textures", Temp.Content / "Art", MovedTextures) == FAssetFileOps::EResult::Ok);
+	fs::create_directories(Temp.Content / "Sprites/Atlas");
+	fs::path MovedSprite;
+	E_EXPECT_TRUE(FAssetFileOps::Move(Temp.Content / "Sprites/Hero.esprite", Temp.Content / "Sprites/Atlas", MovedSprite) == FAssetFileOps::EResult::Ok);
+	FAssetReferenceUpdater::UpdateAfterMove(Temp.Content, Temp.Project,
+	                                        { { Temp.Content / "Textures", MovedTextures }, { Temp.Content / "Sprites/Hero.esprite", MovedSprite } });
+
+	E_EXPECT_TRUE(Contains(ReadText(MovedSprite), "\"../../Art/Textures/UV.png\""));                              // 옮긴 파일 자신의 참조도 새 폴더 기준
+	E_EXPECT_TRUE(Contains(ReadText(Temp.Content / "Sprites/Hero.eflipbook"), "\"Atlas/Hero.esprite\""));         // 플립북 폴더 기준
+	E_EXPECT_TRUE(Contains(ReadText(Temp.Content / "Tiles/Ground.etileset"), "\"../Art/Textures/UV.png\""));
+}
+
 E_TEST(AssetFileOps_GuardsAndUniqueNames)
 {
 	FTempContent Temp("FileOps");

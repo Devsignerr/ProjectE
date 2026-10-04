@@ -68,6 +68,23 @@ FProjectSettings::FProjectSettings()
 		},
 		[this]() { return Collision.ToJson(); }, [this]() { Collision = {}; });
 
+	// 정렬 레이어 이름 목록도 리플렉션 값 타입이 아니므로 사용자 정의 JSON 섹션 (설정 창 전용 UI — Editor/Panels/SortingLayerSettingsEditor)
+	Registry.RegisterCustom(
+		&SortingLayers, { "SortingLayers", "정렬 레이어", GEngineCategory, "2D 스프라이트/타일맵 정렬 레이어 (유니티식). 목록 순서 = 그리기 순서 (아래 칸이 위에 그려짐)" },
+		[this](std::string_view Json, std::string* Error) {
+			if (!SortingLayers.FromJson(Json, Error))
+			{
+				return false;
+			}
+			if (Error != nullptr && !Error->empty())
+			{
+				E_LOG(LogCore, Warning, "정렬 레이어 설정 일부를 고쳐 읽음: {}", *Error);
+				Error->clear();
+			}
+			return true;
+		},
+		[this]() { return SortingLayers.ToJson(); }, [this]() { SortingLayers = {}; });
+
 	Registry.Register(Network, { "Network", "네트워크", GEngineCategory, "다음 세션부터 적용. 명령줄 --port가 우선" })
 		.Property(&FNetworkSettings::DefaultPort, "DefaultPort", "기본 포트").Range(1024.0f, 65535.0f)
 		.Property(&FNetworkSettings::LanDiscoveryPort, "LanDiscoveryPort", "LAN 검색 포트").Range(1024.0f, 65535.0f).Tooltip("UDP. 같은 LAN의 방 목록 찾기")
@@ -157,6 +174,7 @@ void FProjectSettings::ResetToDefaults()
 	Console      = {};
 	GameplayTags = {};
 	Rendering    = {};
+	SortingLayers = {};
 	Input.ResetProjectMapping(); // 사용자 재지정은 유지 (플레이어 파일)
 }
 

@@ -1,0 +1,70 @@
+{
+  "Version": 1,
+  "Texture": "SampleAtlas.png",
+  "TextureWidth": 144,
+  "TextureHeight": 72,
+  "UnitsPerPixel": 1.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "PotionBlue",
+      "X": 1,
+      "Y": 1,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "PotionRed",
+      "X": 37,
+      "Y": 1,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "PotionRed2",
+      "X": 73,
+      "Y": 1,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "Coin",
+      "X": 109,
+      "Y": 1,
+      "W": 34,
+      "H": 34,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Ruby",
+      "X": 1,
+      "Y": 37,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "Crystal",
+      "X": 37,
+      "Y": 37,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "Fire",
+      "X": 73,
+      "Y": 37,
+      "W": 34,
+      "H": 34
+    },
+    {
+      "Name": "Wind",
+      "X": 109,
+      "Y": 37,
+      "W": 34,
+      "H": 34
+    }
+  ]
+}

@@ -35,6 +35,7 @@
 #include "Scene/Prefab.h"
 #include "Scene/Sequence.h"
 #include "Scene/SceneSerializer.h"
+#include "Scene/Sprite/Sprite2DLibrary.h"
 #include "UI/UIReflection.h"
 #include "UI/UISystem.h"
 #include "World/GameWorldTravel.h"
@@ -2097,6 +2098,12 @@ void FEditorApplication::PollScriptChanges()
 			FDataLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
 			continue;
 		}
+		// 2D 스프라이트/플립북/타일셋: 쓰는 컴포넌트가 다음 해석에서 세대 변경을 보고 다시 읽는다
+		if (FSprite2DLibrary::IsSprite2DExtension(Extension))
+		{
+			FSprite2DLibrary::Get().Invalidate(FModelLoader::MakeAssetPath(Path));
+			continue;
+		}
 		if (Extension != L".lua")
 		{
 			continue;
@@ -2287,6 +2294,7 @@ void FEditorApplication::OnAssetsMoved(const std::vector<FAssetMove>& Moves)
 	// 프리팹 원본 캐시는 경로가 키이므로 비운다 (다음 사용 시 새 경로로 다시 읽음)
 	FPrefabLibrary::Get().Invalidate();
 	FDataLibrary::Get().Invalidate(); // 데이터 테이블 캐시도 경로가 키 (참조 갱신기가 고친 Struct/RowRef 경로를 다시 읽게)
+	FSprite2DLibrary::Get().Invalidate(); // 2D 에셋도 경로가 키 (참조 갱신기가 고친 Texture/Sprite 상대 경로를 다시 읽게)
 
 	// 4) 열려 있는 씬 파일 자체가 옮겨졌으면 저장 경로도
 	if (!CurrentScenePath.empty())

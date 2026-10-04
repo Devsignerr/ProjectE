@@ -15,6 +15,7 @@
 #include "Scene/SkyAtmosphere.h"
 #include "Scene/Ability/AbilityReflection.h"
 #include "Scene/IrradianceVolume.h"
+#include "Scene/Sprite/Sprite2DComponents.h"
 
 void RegisterSceneTypes()
 {
@@ -335,4 +336,6 @@ void RegisterSceneTypes()
 		.AsComponent();
 	// 동적 GI 프로브 볼륨 (Scene/IrradianceVolume.h, Phase 51 DDGI)
 	RegisterIrradianceVolumeTypes();
+	// 2D 스프라이트/플립북/타일맵 (Scene/Sprite/, Phase 56)
+	RegisterSprite2DTypes();
 }

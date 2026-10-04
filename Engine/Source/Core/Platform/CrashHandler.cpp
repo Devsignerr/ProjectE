@@ -5,6 +5,7 @@
 #include "Core/StringConv.h"
 
 #include <DbgHelp.h>
+#include <crtdbg.h>
 
 #include <cstdio>
 #include <format>
@@ -16,6 +17,10 @@ namespace
 {
 	// Fatal 로그용 사용자 예외 코드 (소프트웨어 예외 영역 0xE...)
 	constexpr DWORD GFatalExceptionCode = 0xE0F00001;
+	// ntdll 힙 관리자가 손상을 발견하면 이 코드를 첫 단계 예외로 올린 뒤 프로세스를 바로 끝낸다(빠른 실패) —
+	// 처리되지 않은 예외 필터까지 가지 않으므로 벡터 예외 처리기로 잡는다
+	constexpr DWORD GHeapCorruptionCode     = 0xC0000374; // STATUS_HEAP_CORRUPTION
+	constexpr DWORD GStackBufferOverrunCode = 0xC0000409; // STATUS_STACK_BUFFER_OVERRUN (__fastfail)
 
 	std::filesystem::path GDumpDirectory;
 	bool                  GbShowDialog = false;
@@ -32,6 +37,8 @@ namespace
 		case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: return "배열 범위 초과";
 		case EXCEPTION_BREAKPOINT:            return "중단점";
 		case GFatalExceptionCode:             return "Fatal 로그";
+		case GHeapCorruptionCode:             return "힙 손상";
+		case GStackBufferOverrunCode:         return "스택 버퍼 오버런/빠른 실패";
 		default:                              return "알 수 없는 예외";
 		}
 	}
@@ -209,6 +216,44 @@ namespace
 		{
 		}
 	}
+
+	// 힙 손상·빠른 실패는 처리되지 않은 예외 필터를 거치지 않으므로 첫 단계에서 보고서를 남긴다 (발견 지점 콜스택 — 손상을 낸 곳은 아닐 수 있다)
+	LONG WINAPI HandleVectoredException(EXCEPTION_POINTERS* Info)
+	{
+		const DWORD Code = Info->ExceptionRecord->ExceptionCode;
+		if ((Code == GHeapCorruptionCode || Code == GStackBufferOverrunCode) && !IsDebuggerPresent())
+		{
+			HandleUnhandledException(Info);
+		}
+		return EXCEPTION_CONTINUE_SEARCH;
+	}
+
+	bool GbUnattended = false;
+
+#if defined(_DEBUG)
+	// 디버그 CRT 보고(assert, 힙 검사 실패 등): 내용을 로그에 남기고, 사람이 없는 실행(자동 검증)이면 대화 상자 대신 덤프 후 종료한다
+	// (숨긴 창 자동 검증에서 CRT 대화 상자가 뜨면 보이지 않은 채 시간 초과로 끝나 원인을 잃는다)
+	int __cdecl HandleCrtReport(int ReportType, char* Message, int* ReturnValue)
+	{
+		if (ReportType == _CRT_WARN)
+		{
+			return FALSE;
+		}
+		const std::string Text = std::format("\n==== CRT {}: {} ====\n", ReportType == _CRT_ASSERT ? "assert" : "오류", Message != nullptr ? Message : "");
+		FLog::WriteEmergency(Text);
+		if (!GbUnattended)
+		{
+			return FALSE; // 기본 처리(대화 상자)
+		}
+		RaiseFatal(Text.c_str());
+		if (ReturnValue != nullptr)
+		{
+			*ReturnValue = 0;
+		}
+		TerminateProcess(GetCurrentProcess(), 3);
+		return TRUE;
+	}
+#endif
 }
 
 void FCrashHandler::Install()
@@ -218,7 +263,16 @@ void FCrashHandler::Install()
 	{
 		bInstalled = true;
 		SetUnhandledExceptionFilter(&HandleUnhandledException);
+		AddVectoredExceptionHandler(0, &HandleVectoredException);
+#if defined(_DEBUG)
+		_CrtSetReportHook2(_CRT_RPTHOOK_INSTALL, &HandleCrtReport);
+#endif
 	}
+}
+
+void FCrashHandler::SetUnattended(bool bUnattended)
+{
+	GbUnattended = bUnattended;
 }
 
 void FCrashHandler::SetDumpDirectory(const std::filesystem::path& Directory)

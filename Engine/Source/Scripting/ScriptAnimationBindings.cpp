@@ -126,14 +126,16 @@ void FLuaRuntime::DispatchMontageEvents()
 			const sol::object Method = Instance.Self["OnMontageEnded"];
 			if (Method.get_type() == sol::type::function)
 			{
+				// 다른 배달 경로와 같이: 인스턴스 범위(Timer/Coroutine 소유자) + 오류면 이 인스턴스만 멈춤
+				++SideEffectCount;
 				const sol::table               Self = Instance.Self;
 				sol::protected_function        Function(Method.as<sol::function>(), Traceback);
+				const FInstanceScope           Scope(*this, Instance.Entity);
 				sol::protected_function_result Result = Function(Self, Event.Clip, Event.bInterrupted, Event.Slot);
 				if (!Result.valid())
 				{
 					const sol::error Error = Result;
-					Instance.bFaulted      = true;
-					ReportError(std::format("스크립트 오류 ({}:OnMontageEnded) — 이 인스턴스는 멈춥니다 (스크립트 저장 시 재개)\n{}", Instance.ScriptAsset, Error.what()));
+					FaultInstance(Instance, "OnMontageEnded", Error.what());
 				}
 			}
 			break;

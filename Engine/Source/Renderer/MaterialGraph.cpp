@@ -134,7 +134,7 @@ const char* GetTextureUsageName(ETextureUsage Usage)
 	case ETextureUsage::Linear: return "Linear";
 	case ETextureUsage::Normal: return "Normal";
 	case ETextureUsage::Mask:   return "Mask";
-	default:                    return "Color";
+	default:                    return "Color"; // PixelArt는 머티리얼 용도가 아니다 (2D 스프라이트 전용)
 	}
 }
 

@@ -100,6 +100,10 @@ struct FScriptPhysicsHooks
 	std::function<void(const FVector2& Center, const FVector2& HalfSize, float AngleRadians, uint32 LayerMask, std::vector<FEntity>& OutEntities)>
 		OverlapBox2D;
 	std::function<void(const FVector2& Center, float Radius, uint32 LayerMask, std::vector<FEntity>& OutEntities)> OverlapCircle2D;
+	// 2D 마우스 끌기 (FPhysics2DSystem::BeginDrag/UpdateDrag/EndDrag — 평면 cm, MaxForce N, 0 이하 = 자동)
+	std::function<bool(FEntity, const FVector2& Point, float MaxForce)> BeginDrag2D;
+	std::function<bool(FEntity, const FVector2& Target)>                UpdateDrag2D;
+	std::function<bool(FEntity)>                                        EndDrag2D;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

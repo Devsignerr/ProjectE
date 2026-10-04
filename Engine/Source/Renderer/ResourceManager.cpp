@@ -48,6 +48,7 @@ namespace
 		case ETextureUsage::Linear: return L"|linear";
 		case ETextureUsage::Normal: return L"|normal";
 		case ETextureUsage::Mask:   return L"|mask";
+		case ETextureUsage::PixelArt: return L"|pixel";
 		}
 		return L"|?";
 	}

@@ -23,6 +23,7 @@
 #include "Scene/Scene.h"
 #include "Scene/SequencePlayer.h"
 #include "Scene/Sprite/FlipbookSystem.h"
+#include "Scene/Sprite/Sprite2DComponents.h"
 #include "Scripting/ScriptSystem.h"
 
 #include <algorithm>
@@ -504,6 +505,9 @@ void FGameWorld::InstallScriptPhysicsHooks()
 	Hooks.OverlapCircle2D = [P2D](const FVector2& Center, float Radius, uint32 LayerMask, std::vector<FEntity>& OutEntities) {
 		P2D->OverlapCircle(Center, Radius, OutEntities, LayerMask);
 	};
+	Hooks.BeginDrag2D  = [P2D](FEntity Entity, const FVector2& Point, float MaxForce) { return P2D->BeginDrag(Entity, Point, MaxForce); };
+	Hooks.UpdateDrag2D = [P2D](FEntity Entity, const FVector2& Target) { return P2D->UpdateDrag(Entity, Target); };
+	Hooks.EndDrag2D    = [P2D](FEntity Entity) { return P2D->EndDrag(Entity); };
 	Systems.Scripts->SetPhysicsHooks(std::move(Hooks));
 }
 
@@ -623,6 +627,7 @@ void FGameWorld::EndPlay()
 		Systems.GameModule->SetAbilities(nullptr);
 	}
 	Systems.Scripts->EndPlay();
+	Sprite2DRuntime::FlushTilemapEdits(*Scene); // OnDestroy 등의 마지막 타일 편집
 	SessionSearch.Stop();
 	if (Systems.GameModule != nullptr && Mode != ENetMode::Client)
 	{
@@ -721,6 +726,8 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		const FScopedGameTickTimer Timer(EGameTickTimer::GameplayTransforms);
 		Scene->UpdateTransforms();
 	}
+	// 이번 틱의 게임플레이 타일 편집(Lua SetTile 등)을 TileData로 한 번에 인코딩 (저장·복제 대상 — Sprite2DComponents.h "지연 커밋")
+	Sprite2DRuntime::FlushTilemapEdits(*Scene);
 	GameplayValidatedScene = Scene; // 바로 다음 표시 틱은 그 틱이 쓴 엔티티만 다시 본다 (UpdateTransformsPartial)
 	for (auto& [PlayerId, Remote] : RemoteInputs)
 	{

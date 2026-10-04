@@ -504,3 +504,17 @@ struct FSpriteInstanceGpu
 	FVector4 Color;            // 선형 RGBA
 };
 static_assert(sizeof(FSpriteInstanceGpu) == 80);
+
+// 타일맵 청크 머리 (Sprite.hlsl FSpriteChunk — 청크 구간 동안 메시 루트 t14 자리, Renderer/SpriteRenderer.h). 청크 인스턴스(로컬 공간)를
+// 월드로: 월드 = Translation + x × AxisX + z × AxisZ (로컬 Y는 항상 0이라 Y 행이 필요 없다). 색은 인스턴스 색에 곱하고, 텍스처 칸은 청크 전체 하나
+struct FSpriteChunkGpu
+{
+	FVector3 AxisX;            // 월드 행렬 0행 (로컬 +X)
+	uint32   TextureIndex = 0; // 셰이더 가시 힙 칸 (프레임마다 다시 구함)
+	FVector3 AxisZ;            // 월드 행렬 2행 (로컬 +Z)
+	uint32   Pad0 = 0;
+	FVector3 Translation;      // 월드 행렬 3행
+	uint32   Pad1 = 0;
+	FVector4 Color;            // 선형 RGBA (곱하기)
+};
+static_assert(sizeof(FSpriteChunkGpu) == 64);

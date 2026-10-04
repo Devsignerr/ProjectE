@@ -153,6 +153,7 @@ const wchar_t* FAssetCache::GetTextureExtension(ETextureUsage Usage)
 	case ETextureUsage::Linear: return L".linear.etex";
 	case ETextureUsage::Normal: return L".normal.etex";
 	case ETextureUsage::Mask:   return L".mask.etex";
+	case ETextureUsage::PixelArt: return L".pixel.etex";
 	}
 	return L".etex";
 }

@@ -32,12 +32,13 @@
 //   쿠킹 입력일 뿐 .emodel에 포함되므로 패키지에 넣지 않고 따로 쿠킹하지도 않는다. 다른 문맥에서도 참조되면 일반 파일이 된다.
 //
 // 이미지 용도: .emat(부모 체인 포함, 각 .emat을 FMaterialAsset으로 읽어 슬롯/텍스처 파라미터 용도)는 그 용도,
+//   .esprite/.etileset의 Texture는 Filter Point = pixel(무압축 RGBA8 밉 0), Linear = color (FSpriteSceneCollector와 같은 규칙),
 //   그 밖의 참조(UI/파티클/쿠키/데이터 표 아이콘 등 — 엔진의 공개 LoadTexture는 모두 색상)는 Color. 용도가 하나도 없으면 Color.
 //
 // 매니페스트 파일 (UTF-8, 탭 구분, '#'은 주석, 경로는 Content 기준 "/" 구분·정렬):
 //   F <경로>                  패키지에 넣는 파일 (원본 모델/이미지는 쿠킹본이 있으면 Package.ps1이 원본을 뺀다)
 //   M <경로>                  쿠킹할 모델 (.emodel)
-//   T <경로> <용도,...>        따로 쿠킹할 이미지와 용도 (color/linear/normal/mask → .<용도>.etex)
+//   T <경로> <용도,...>        따로 쿠킹할 이미지와 용도 (color/linear/normal/mask/pixel → .<용도>.etex)
 //   I <경로>                  모델 원본만 참조하는 파일 (glTF 버퍼/이미지 — 패키지·단독 쿠킹 제외, -IncludeSources면 넣음)
 //   D <폴더>                  폴더 참조로 통째로 넣은 폴더 (확인용)
 //   W <메시지>                경고/오류
@@ -69,7 +70,7 @@ namespace PackageManifest
 	// "a/b/../c" → "a/c" (Content 기준 상대 경로 정규화). 루트 밖으로 나가거나 비면 빈 문자열
 	std::string NormalizeRelativePath(std::string_view Path);
 
-	// 용도 이름 (매니페스트 표기): color/linear/normal/mask
+	// 용도 이름 (매니페스트 표기): color/linear/normal/mask/pixel
 	const char* GetUsageName(ETextureUsage Usage);
 	bool        ParseUsageName(std::string_view Name, ETextureUsage& OutUsage);
 } // namespace PackageManifest
@@ -108,6 +109,7 @@ private:
 	void ResolveValue(std::string_view Value, const std::string& ReferrerDirectory, EContext Context, bool bFromMaterial);
 	void ScanFile(const std::string& Path, EContext Context);
 	void ScanMaterialUsages(const std::string& Path);
+	void ScanSprite2DUsage(const std::string& Path, const std::string& Text, bool bTileset);
 
 	std::filesystem::path              Content;
 	std::map<std::string, std::string> FileIndex;      // 소문자 → 실제 경로

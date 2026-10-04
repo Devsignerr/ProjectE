@@ -120,7 +120,16 @@ namespace
 		}
 
 		case EPropertyType::String:
-			if (Property.StringOptions)
+			if (Property.StringOptionsFor)
+			{
+				// 인스턴스별 목록 (비면 일반 문자열 칸 — 예: 스프라이트를 아직 고르지 않음)
+				const std::vector<std::string> Options = Property.StringOptionsFor(Object);
+				if (!Options.empty())
+				{
+					return DrawStringOptions(Label, Property.GetRef<std::string>(Object), Options);
+				}
+			}
+			else if (Property.StringOptions)
 			{
 				return DrawStringOptions(Label, Property.GetRef<std::string>(Object), Property.StringOptions());
 			}

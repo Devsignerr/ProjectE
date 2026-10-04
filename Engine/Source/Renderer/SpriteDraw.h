@@ -45,6 +45,23 @@ struct FSpriteDrawItem
 	bool           bCastShadows = false; // 후속 (아직 그림자 패스에 넣지 않음)
 };
 
+// 타일맵 청크 하나 (Phase 56-4b — Renderer/SpriteSceneCollector.h가 만든다). 인스턴스는 정적 GPU 버퍼에 이미 있고(타일맵 로컬 공간,
+// SpriteTiles.h), 이 항목은 정렬 키와 프레임마다 바뀌는 값(월드 행렬·색·텍스처)만 가진다. 정렬은 스프라이트 항목과 같은 키로 섞이고
+// 그리기 순서상 자기 자리에서 구간 하나가 된다 (청크끼리·항목과 합쳐지지 않는다). 같은 키(레이어·순번·깊이)면 청크가 항목보다 먼저(아래)
+struct FSpriteChunkDraw
+{
+	uint64           Instances = 0;                          // 정적 인스턴스 버퍼 GPU 주소 (FSpriteInstanceGpu × Count, 로컬 공간)
+	uint32           Count     = 0;
+	FMatrix4x4       World     = FMatrix4x4::Identity;       // 로컬 → 월드 (행 벡터)
+	FTextureHandle   Texture;                                // 타일셋 텍스처 (소유하지 않음)
+	FVector4         Color     = FVector4(1.0f, 1.0f, 1.0f, 1.0f); // 선형 RGBA (인스턴스 색에 곱함)
+	FVector3         Center;                                 // 월드 경계 가운데 (정렬 깊이)
+	int32            SortLayer    = 0;
+	int32            OrderInLayer = 0;
+	ESpriteBlendMode Blend        = ESpriteBlendMode::Alpha;
+	bool             bLit         = false;
+};
+
 namespace SpriteMath
 {
 	// 월드 사각형 = Origin + U * AxisX + V * AxisZ (U, V ∈ [0, 1], V = 로컬 위쪽)
@@ -86,10 +103,14 @@ namespace SpriteBatching
 
 	struct FRun
 	{
-		uint32 First       = 0; // 그리기 순서 안 시작
-		uint32 Count       = 0;
+		uint32 First       = 0; // 항목 구간: 항목만 센 그리기 순서 안 시작 / 청크 구간: 청크 번호
+		uint32 Count       = 0; // 항목 구간: 항목 수 / 청크 구간: 0 (호출자가 청크 인스턴스 수로 채운다)
 		uint32 PipelineKey = 0;
+		bool   bChunk      = false;
 	};
 	// 그리기 순서대로 늘어선 파이프라인 키를 같은 키 연속 구간으로 나눈다 (구간 = 인스턴스 그리기 한 번)
 	void BuildRuns(std::span<const uint8> PipelineKeys, std::vector<FRun>& OutRuns);
+	// 청크가 섞인 그리기 순서: ChunkIndices[i] >= 0이면 그 자리는 청크(혼자 한 구간, First = 청크 번호), -1이면 항목.
+	// 항목 구간의 First는 청크를 뺀 항목 순번 (항목 인스턴스는 업로드 버퍼에 청크 없이 이어 쓴다). 청크를 사이에 둔 같은 키 항목은 합치지 않는다
+	void BuildRuns(std::span<const uint8> PipelineKeys, std::span<const int32> ChunkIndices, std::vector<FRun>& OutRuns);
 } // namespace SpriteBatching

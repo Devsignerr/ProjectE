@@ -374,18 +374,27 @@ E_TEST(Sprite2DAssetCreation_CreatesAtlasTilesetAndFlipbook)
 	FSpriteAsset SpriteAsset;
 	E_EXPECT_TRUE(FSpriteAsset::FromJsonString(ReadText(Atlas), SpriteAsset));
 	E_EXPECT_EQ(SpriteAsset.Texture, std::string("Hero.png"));
-	E_EXPECT_EQ(SpriteAsset.TextureWidth, 144);
-	E_EXPECT_EQ(SpriteAsset.TextureHeight, 72);
+	// 샘플 이미지 크기는 PNG 머리(IHDR 너비·높이, 빅 엔디언)에서 읽는다 — 샘플 아틀라스가 바뀌어도 테스트가 따라가게
+	const std::string Png      = ReadText(Image);
+	const auto        ReadBe32 = [&Png](size_t Offset) {
+		return static_cast<int32>((static_cast<uint8>(Png[Offset]) << 24) | (static_cast<uint8>(Png[Offset + 1]) << 16) |
+								  (static_cast<uint8>(Png[Offset + 2]) << 8) | static_cast<uint8>(Png[Offset + 3]));
+	};
+	E_EXPECT_TRUE(Png.size() > 24);
+	const int32 ImageWidth  = ReadBe32(16);
+	const int32 ImageHeight = ReadBe32(20);
+	E_EXPECT_EQ(SpriteAsset.TextureWidth, ImageWidth);
+	E_EXPECT_EQ(SpriteAsset.TextureHeight, ImageHeight);
 	E_EXPECT_EQ(SpriteAsset.Slices.size(), static_cast<size_t>(1));
-	E_EXPECT_EQ(SpriteAsset.Slices[0].W, 144);
+	E_EXPECT_EQ(SpriteAsset.Slices[0].W, ImageWidth);
 	// 두 번째는 겹치지 않는 이름
 	E_EXPECT_TRUE(Sprite2DAssetCreation::CreateSpriteAtlas(Image, false).filename() == L"Hero1.esprite");
 
 	const fs::path Tileset = Sprite2DAssetCreation::CreateTileset(Image, 36, 36, &Error);
 	FTilesetAsset  TilesetAsset;
 	E_EXPECT_TRUE(FTilesetAsset::FromJsonString(ReadText(Tileset), TilesetAsset));
-	E_EXPECT_EQ(TilesetAsset.GetColumns(), 4);
-	E_EXPECT_EQ(TilesetAsset.GetRows(), 2);
+	E_EXPECT_EQ(TilesetAsset.GetColumns(), ImageWidth / 36);
+	E_EXPECT_EQ(TilesetAsset.GetRows(), ImageHeight / 36);
 
 	const fs::path Flipbook = Folder / L"Anim.eflipbook";
 	E_EXPECT_TRUE(Sprite2DAssetCreation::SaveDefaultFlipbook(Flipbook));

@@ -176,3 +176,131 @@ E_TEST(SpriteDraw_CornerUVAndFlip)
 	std::swap(Item.UVMin.Y, Item.UVMax.Y);
 	E_EXPECT_TRUE(NearlyEqual(SpriteMath::GetCornerUV(Item, 0.0f, 0.0f), FVector2(0.75f, 0.5f)));
 }
+
+// ---- 9-슬라이스 (SpriteNineSlice)
+
+namespace
+{
+	bool Near2(const FVector2& A, const FVector2& B) { return std::abs(A.X - B.X) < 1.0e-4f && std::abs(A.Y - B.Y) < 1.0e-4f; }
+
+	SpriteNineSlice::FInput MakeNineSliceInput()
+	{
+		// 원래 100x100cm, 테두리 왼 20 / 오른 30 / 위 10 / 아래 40, 피벗 가운데, UV 전체
+		SpriteNineSlice::FInput Input;
+		Input.Size         = FVector2(300.0f, 200.0f);
+		Input.OriginalSize = FVector2(100.0f, 100.0f);
+		Input.Pivot        = FVector2(0.5f, 0.5f);
+		Input.BorderLeft   = 20.0f;
+		Input.BorderRight  = 30.0f;
+		Input.BorderTop    = 10.0f;
+		Input.BorderBottom = 40.0f;
+		Input.UVMin        = FVector2(0.0f, 0.0f);
+		Input.UVMax        = FVector2(1.0f, 1.0f);
+		return Input;
+	}
+} // namespace
+
+E_TEST(SpriteNineSlice_ShouldSliceOnlyWithBorderAndResize)
+{
+	FSpriteSlice Slice;
+	Slice.W = 32;
+	Slice.H = 32;
+	E_EXPECT_FALSE(SpriteNineSlice::ShouldSlice(Slice, FVector2(64.0f, 32.0f), FVector2(32.0f, 32.0f))); // 테두리 없음
+	Slice.BorderLeft = 4;
+	E_EXPECT_FALSE(SpriteNineSlice::ShouldSlice(Slice, FVector2(32.0f, 32.0f), FVector2(32.0f, 32.0f))); // 원래 크기
+	E_EXPECT_TRUE(SpriteNineSlice::ShouldSlice(Slice, FVector2(64.0f, 32.0f), FVector2(32.0f, 32.0f)));
+}
+
+E_TEST(SpriteNineSlice_CornersKeepOriginalSize)
+{
+	std::vector<SpriteNineSlice::FPiece> Pieces;
+	SpriteNineSlice::Build(MakeNineSliceInput(), Pieces);
+	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(9));
+	// 왼쪽 아래 모서리: 원래 크기 20 x 40, UV = 왼쪽 20% · 아래 40%
+	E_EXPECT_TRUE(Near2(Pieces[0].Min, FVector2(-150.0f, -100.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[0].Max, FVector2(-130.0f, -60.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[0].UVMin, FVector2(0.0f, 0.6f)));
+	E_EXPECT_TRUE(Near2(Pieces[0].UVMax, FVector2(0.2f, 1.0f)));
+	// 오른쪽 위 모서리: 30 x 10
+	E_EXPECT_TRUE(Near2(Pieces[8].Min, FVector2(120.0f, 90.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[8].Max, FVector2(150.0f, 100.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[8].UVMin, FVector2(0.7f, 0.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[8].UVMax, FVector2(1.0f, 0.1f)));
+	// 가운데: 두 축으로 늘인다 (250 x 150), UV = 테두리 안쪽
+	E_EXPECT_TRUE(Near2(Pieces[4].Min, FVector2(-130.0f, -60.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[4].Max, FVector2(120.0f, 90.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[4].UVMin, FVector2(0.2f, 0.1f)));
+	E_EXPECT_TRUE(Near2(Pieces[4].UVMax, FVector2(0.7f, 0.6f)));
+	// 왼쪽 가장자리 (가운데 줄 첫 칸): 폭 그대로 20, 세로만 늘임
+	E_EXPECT_TRUE(Near2(Pieces[3].Max - Pieces[3].Min, FVector2(20.0f, 150.0f)));
+
+	// 조각 → 항목: 로컬 사각형이 조각과 같다 (단위 월드)
+	FSpriteDrawItem Base;
+	const FSpriteDrawItem   Item = SpriteNineSlice::MakePieceItem(Base, Pieces[0]);
+	const SpriteMath::FQuad Quad = SpriteMath::ComputeQuad(Item);
+	E_EXPECT_TRUE(NearlyEqual(Quad.Origin, FVector3(-150.0f, 0.0f, -100.0f)));
+	E_EXPECT_TRUE(NearlyEqual(Quad.AxisX, FVector3(20.0f, 0.0f, 0.0f)));
+	E_EXPECT_TRUE(NearlyEqual(Quad.AxisZ, FVector3(0.0f, 0.0f, 40.0f)));
+}
+
+E_TEST(SpriteNineSlice_SmallerThanBordersShrinksProportionally)
+{
+	// 폭 25 < 왼 20 + 오른 30 → 테두리 × 0.5 (10, 15), 가운데 폭 0이라 빠짐 → 2열 × 3줄. UV는 원래 테두리 그대로
+	SpriteNineSlice::FInput Input = MakeNineSliceInput();
+	Input.Size.X                  = 25.0f;
+	std::vector<SpriteNineSlice::FPiece> Pieces;
+	SpriteNineSlice::Build(Input, Pieces);
+	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(6));
+	E_EXPECT_NEAR(Pieces[0].Max.X - Pieces[0].Min.X, 10.0f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[1].Max.X - Pieces[1].Min.X, 15.0f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[0].Min.X, -12.5f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[1].Max.X, 12.5f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[0].UVMax.X, 0.2f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[1].UVMin.X, 0.7f, 1e-5f);
+}
+
+E_TEST(SpriteNineSlice_FlipMirrorsAboutPivot)
+{
+	SpriteNineSlice::FInput Input = MakeNineSliceInput();
+	Input.bFlipX                  = true;
+	std::vector<SpriteNineSlice::FPiece> Pieces;
+	SpriteNineSlice::Build(Input, Pieces);
+	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(9));
+	// 원래 왼쪽 아래 모서리가 오른쪽 아래로: 위치 부호 반전 + U 교환 (일반 항목 반전과 같은 사각형)
+	E_EXPECT_TRUE(Near2(Pieces[0].Min, FVector2(130.0f, -100.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[0].Max, FVector2(150.0f, -60.0f)));
+	E_EXPECT_NEAR(Pieces[0].UVMin.X, 0.2f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[0].UVMax.X, 0.0f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[0].UVMin.Y, 0.6f, 1e-5f); // 세로는 그대로
+	Input.bFlipX = false;
+	Input.bFlipY = true;
+	SpriteNineSlice::Build(Input, Pieces);
+	E_EXPECT_TRUE(Near2(Pieces[0].Min, FVector2(-150.0f, 60.0f)));
+	E_EXPECT_TRUE(Near2(Pieces[0].Max, FVector2(-130.0f, 100.0f)));
+	E_EXPECT_NEAR(Pieces[0].UVMin.Y, 1.0f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[0].UVMax.Y, 0.6f, 1e-5f);
+}
+
+E_TEST(SpriteNineSlice_TileRepeatsAndCropsLast)
+{
+	// 가로 테두리 20 / 20만, 원래 100 → 가운데 칸 60. 폭 200 → 가운데 160 = 60 + 60 + 40 (마지막은 UV도 2/3)
+	SpriteNineSlice::FInput Input = MakeNineSliceInput();
+	Input.Size                    = FVector2(200.0f, 100.0f);
+	Input.BorderRight             = 20.0f;
+	Input.BorderTop               = 0.0f;
+	Input.BorderBottom            = 0.0f;
+	Input.Mode                    = ESpriteSliceMode::Tile;
+	std::vector<SpriteNineSlice::FPiece> Pieces;
+	SpriteNineSlice::Build(Input, Pieces);
+	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(5));
+	E_EXPECT_NEAR(Pieces[1].Max.X - Pieces[1].Min.X, 60.0f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[1].UVMin.X, 0.2f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[1].UVMax.X, 0.8f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[3].Max.X - Pieces[3].Min.X, 40.0f, 1e-4f);
+	E_EXPECT_NEAR(Pieces[3].UVMax.X, 0.6f, 1e-5f);
+	E_EXPECT_NEAR(Pieces[4].Max.X, 100.0f, 1e-4f);
+	// 늘이기면 가운데 한 칸
+	Input.Mode = ESpriteSliceMode::Stretch;
+	SpriteNineSlice::Build(Input, Pieces);
+	E_EXPECT_EQ(Pieces.size(), static_cast<size_t>(3));
+}

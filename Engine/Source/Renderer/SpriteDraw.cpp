@@ -2,6 +2,7 @@
 
 #include <array>
 #include <bit>
+#include <cmath>
 #include <cstring>
 
 namespace SpriteMath
@@ -33,6 +34,134 @@ namespace SpriteMath
 		return FVector3::Dot(Center - CameraPosition, CameraForward);
 	}
 } // namespace SpriteMath
+
+namespace SpriteNineSlice
+{
+	namespace
+	{
+		constexpr float MinPieceSize = 1e-4f;
+
+		// 한 축 조각: 위치 [Begin, End] (cm, 피벗 원점) + 텍스처 비율 [TexBegin, TexEnd] (0 = 낮은 쪽 끝 — X는 왼쪽, Z는 아래)
+		struct FSegment
+		{
+			float Begin    = 0.0f;
+			float End      = 0.0f;
+			float TexBegin = 0.0f;
+			float TexEnd   = 0.0f;
+		};
+
+		void BuildAxis(float Size, float Original, float BorderLow, float BorderHigh, float Pivot, ESpriteSliceMode Mode, std::vector<FSegment>& Out)
+		{
+			Out.clear();
+			const float Low = -Pivot * Size;
+			if (Original <= MinPieceSize || Size <= MinPieceSize)
+			{
+				if (Size > MinPieceSize)
+				{
+					Out.push_back({ Low, Low + Size, 0.0f, 1.0f });
+				}
+				return;
+			}
+			// 텍스처 비율은 원래 테두리 기준 (줄여 그려도 테두리 텍스처 전체를 압축해 보인다)
+			const float TexLow  = FMath::Clamp(BorderLow / Original, 0.0f, 1.0f);
+			const float TexHigh = FMath::Max(TexLow, FMath::Clamp(1.0f - BorderHigh / Original, 0.0f, 1.0f));
+			float       Lo      = BorderLow;
+			float       Hi      = BorderHigh;
+			if (Lo + Hi > Size)
+			{
+				const float Scale = Size / (Lo + Hi); // 테두리 합보다 작으면 비율로 줄임 (가운데 폭 0)
+				Lo *= Scale;
+				Hi *= Scale;
+			}
+			const auto Push = [&Out](float Begin, float End, float TexBegin, float TexEnd) {
+				if (End - Begin > MinPieceSize)
+				{
+					Out.push_back({ Begin, End, TexBegin, TexEnd });
+				}
+			};
+			Push(Low, Low + Lo, 0.0f, TexLow);
+			const float MiddleBegin = Low + Lo;
+			const float MiddleEnd   = Low + Size - Hi;
+			const float TileLength  = Original - BorderLow - BorderHigh;
+			const float Middle      = MiddleEnd - MiddleBegin;
+			bool        bTiled      = false;
+			if (Mode == ESpriteSliceMode::Tile && TileLength > MinPieceSize && Middle > MinPieceSize)
+			{
+				const int32 Count = static_cast<int32>(std::ceil(Middle / TileLength - 1e-4f));
+				if (Count <= MaxTilesPerAxis)
+				{
+					for (int32 Index = 0; Index < Count; ++Index)
+					{
+						const float Begin = MiddleBegin + static_cast<float>(Index) * TileLength;
+						const float End   = FMath::Min(Begin + TileLength, MiddleEnd);
+						Push(Begin, End, TexLow, TexLow + (TexHigh - TexLow) * ((End - Begin) / TileLength));
+					}
+					bTiled = true;
+				}
+			}
+			if (!bTiled)
+			{
+				Push(MiddleBegin, MiddleEnd, TexLow, TexHigh);
+			}
+			Push(Low + Size - Hi, Low + Size, TexHigh, 1.0f);
+		}
+	} // namespace
+
+	bool ShouldSlice(const FSpriteSlice& Slice, const FVector2& Size, const FVector2& OriginalSize)
+	{
+		constexpr float Tolerance = 1e-3f;
+		return Slice.HasBorder() && (std::abs(Size.X - OriginalSize.X) > Tolerance || std::abs(Size.Y - OriginalSize.Y) > Tolerance);
+	}
+
+	void Build(const FInput& Input, std::vector<FPiece>& Out)
+	{
+		Out.clear();
+		thread_local std::vector<FSegment> Columns;
+		thread_local std::vector<FSegment> Rows;
+		BuildAxis(Input.Size.X, Input.OriginalSize.X, Input.BorderLeft, Input.BorderRight, Input.Pivot.X, Input.Mode, Columns);
+		BuildAxis(Input.Size.Y, Input.OriginalSize.Y, Input.BorderBottom, Input.BorderTop, Input.Pivot.Y, Input.Mode, Rows);
+		Out.reserve(Columns.size() * Rows.size());
+		for (const FSegment& Row : Rows)
+		{
+			for (const FSegment& Column : Columns)
+			{
+				FPiece Piece;
+				Piece.Min = FVector2(Column.Begin, Row.Begin);
+				Piece.Max = FVector2(Column.End, Row.End);
+				// U는 왼쪽 → 오른쪽, V는 아래 = UVMax.Y → 위 = UVMin.Y
+				Piece.UVMin = FVector2(Input.UVMin.X + (Input.UVMax.X - Input.UVMin.X) * Column.TexBegin,
+				                       Input.UVMax.Y + (Input.UVMin.Y - Input.UVMax.Y) * Row.TexEnd);
+				Piece.UVMax = FVector2(Input.UVMin.X + (Input.UVMax.X - Input.UVMin.X) * Column.TexEnd,
+				                       Input.UVMax.Y + (Input.UVMin.Y - Input.UVMax.Y) * Row.TexBegin);
+				// 반전: 피벗(원점)을 지나는 축 거울 — 위치 부호 반전 + UV 교환
+				if (Input.bFlipX)
+				{
+					Piece.Min.X = -Column.End;
+					Piece.Max.X = -Column.Begin;
+					std::swap(Piece.UVMin.X, Piece.UVMax.X);
+				}
+				if (Input.bFlipY)
+				{
+					Piece.Min.Y = -Row.End;
+					Piece.Max.Y = -Row.Begin;
+					std::swap(Piece.UVMin.Y, Piece.UVMax.Y);
+				}
+				Out.push_back(Piece);
+			}
+		}
+	}
+
+	FSpriteDrawItem MakePieceItem(const FSpriteDrawItem& Base, const FPiece& Piece)
+	{
+		// 로컬 사각형 [-Pivot, 1 - Pivot] × Size = [Min, Max] → Size = Max - Min, Pivot = -Min / Size (크기 0 조각은 Build가 만들지 않음)
+		FSpriteDrawItem Item = Base;
+		Item.Size            = Piece.Max - Piece.Min;
+		Item.Pivot           = FVector2(-Piece.Min.X / Item.Size.X, -Piece.Min.Y / Item.Size.Y);
+		Item.UVMin           = Piece.UVMin;
+		Item.UVMax           = Piece.UVMax;
+		return Item;
+	}
+} // namespace SpriteNineSlice
 
 namespace SpriteSorting
 {

@@ -2,6 +2,7 @@
 
 #include "Core/CoreTypes.h"
 #include "Core/Math/Math.h"
+#include "Scene/Sprite/SpriteAsset.h"
 #include "Scene/Sprite/TilemapData.h"
 
 #include <memory>
@@ -48,9 +49,12 @@ struct FSpriteComponent
 	std::string SortingLayer;                 // 프로젝트 설정 정렬 레이어 이름 (비었거나 없으면 Default)
 	int32       OrderInLayer  = 0;            // 같은 레이어 안 순서 (큰 것이 앞)
 	bool        bLit          = false;        // 3D 라이트 영향 (끄면 Color 그대로 — 언릿)
-	bool        bCastShadows  = false;
+	bool        bCastShadows  = false;        // 방향광·로컬 라이트 그림자에 알파 컷오프로 깊이를 그린다 (모든 블렌드)
 	FVector2    Size          = FVector2::ZeroVector; // cm. 0 = 슬라이스 px × UnitsPerPixel (한 축만 주면 비율 유지). 엔티티 스케일은 따로 곱한다
 	bool        bVisible      = true;
+	ESpriteBlendMode Blend       = ESpriteBlendMode::Alpha; // 끝에 덧붙임 (기본 Alpha = 이전 화면)
+	float            AlphaCutoff = 0.5f;                    // Masked 버림 기준 + 그림자 깊이 clip 기준
+	ESpriteSliceMode SliceMode   = ESpriteSliceMode::Stretch; // 9-슬라이스 슬라이스(Border)를 원래와 다른 Size로 그릴 때 가운데·가장자리 채우기
 
 	FSpriteRuntime Runtime;
 };
@@ -128,6 +132,9 @@ struct FTilemapComponent
 	float       Friction     = 0.6f; // 2D 콜라이더 기본값과 같음
 	float       Restitution  = 0.0f;
 	std::string TileData;            // 인코딩된 셀 (FTilemapData::Encode — 인스펙터에 숨김)
+	ESpriteBlendMode Blend        = ESpriteBlendMode::Alpha; // 끝에 덧붙임 (기본 Alpha = 이전 화면)
+	float            AlphaCutoff  = 0.5f;                    // Masked 버림 기준 + 그림자 깊이 clip 기준
+	bool             bCastShadows = false;                   // 방향광·로컬 라이트 그림자 (움직이지 않는 타일맵은 방향광 그림자 캐시의 정적 캐스터)
 
 	FTilemapRuntime Runtime;
 };

@@ -9,7 +9,8 @@
 // 정적 캐스터 캐시 (r.Shadow.Cache):
 //  - 캐스케이드마다 정적 캐스터만 그린 깊이를 따로 보관하고, 프레임마다 캐시 → 섀도우 맵 복사 뒤 동적 캐스터만 그린다.
 //  - 정적 캐스터 = 스킨이 아니고 월드 행렬이 r.Shadow.Cache.StaticFrames 프레임 연속 같은 인스턴스(FMeshInstance::bShadowStatic),
-//    폴리지(배치 고정), 상태 해시를 알려 주는 추가 캐스터(지형 — FShadowRenderer::ExtraCasterState). 그 밖은 모두 동적이다.
+//    폴리지(배치 고정), 상태 해시를 알려 주는 추가 캐스터(지형 + 정적 2D 스프라이트·타일맵 — FShadowRenderer::ExtraCasterState). 그 밖은 모두 동적이다
+//    (움직이는 2D 캐스터는 FShadowRenderer::ExtraDynamicCasters — FSpriteShadowRenderer).
 //    새 그림자 캐스터 종류는 정적/동적을 반드시 알린다(알리지 않으면 동적 = 매 프레임 그림).
 //  - 캐스케이드 키 = 해시(캐스케이드 뷰-투영 비트, 해상도·바이어스·LOD 바이어스·작은 캐스터 문턱, 정적 인스턴스 집합 해시,
 //    추가 캐스터 상태 해시, 캐시 세대(셰이더 다시 로드·명시 무효화·LOD 설정 변경)). 키가 바뀌면(태양 이동, 캐스케이드 이동, 정적 캐스터

@@ -300,6 +300,7 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, std::span<const FSpriteDraw
 		Header.AxisX        = FVector3(Chunk.World.M[0][0], Chunk.World.M[0][1], Chunk.World.M[0][2]);
 		Header.TextureIndex = Resources->ResolveTexture(Chunk.Texture).GetSrv().Index;
 		Header.AxisZ        = FVector3(Chunk.World.M[2][0], Chunk.World.M[2][1], Chunk.World.M[2][2]);
+		Header.AlphaCutoff  = Chunk.AlphaCutoff;
 		Header.Translation  = FVector3(Chunk.World.M[3][0], Chunk.World.M[3][1], Chunk.World.M[3][2]);
 		Header.Color        = Chunk.Color;
 		std::memcpy(Allocation.CpuAddress, &Header, sizeof(Header));

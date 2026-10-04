@@ -56,6 +56,9 @@ namespace RendererCVars
 	                                       "방향광 그림자 정적 캐스터 캐시: 캐스케이드·정적 캐스터가 그대로면 캐시 깊이를 복사하고 움직이는 캐스터만 다시 그린다 "
 	                                       "(태양이 매 프레임 움직이면 자동으로 캐시 없이)",
 	                                       EConsoleFlags::None, { .CommandLine = { { L"--no-shadow-cache", "0" } } });
+	TAutoConsoleVariable<bool> SpriteShadows("r.Sprite.Shadows", true,
+	                                         "2D 스프라이트·타일맵 그림자 캐스팅 (CastShadows — 방향광·로컬 그림자에 알파 컷오프 깊이, 끄면 2D 그림자 없는 화면과 같음)",
+	                                         EConsoleFlags::None, { .CommandLine = { { L"--no-sprite-shadows", "0" } } });
 	TAutoConsoleVariable<int32> ShadowCacheStaticFrames("r.Shadow.Cache.StaticFrames", 30,
 	                                                    "그림자 캐시: 위치가 이 프레임 수만큼 그대로인 비스킨 메시를 정적 캐스터로 본다", EConsoleFlags::None,
 	                                                    { .Range = std::pair(1.0f, 10000.0f) });

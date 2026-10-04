@@ -138,6 +138,12 @@ void RegisterSprite2DTypes()
 	// 정렬 레이어: 이름 문자열 (칸 순서를 바꿔도 씬이 깨지지 않게) + 인스펙터는 프로젝트 정렬 레이어 콤보
 	const auto            LayerOptions = []() { return FProjectSettings::Get().SortingLayers.GetLayerNames(); };
 	constexpr const char* LayerTip     = "정렬 레이어 (프로젝트 설정 → 정렬 레이어). 목록 아래 칸일수록 앞에 그려진다. 비었거나 없는 이름이면 Default";
+	// 블렌드 enum 선택지 (ESpriteBlendMode 순서 — JSON은 이름)
+	const std::initializer_list<FPropertyInfo::FEnumEntry> BlendEntries = {
+		{ "Alpha", "알파" }, { "Premultiplied", "프리멀티플라이드 알파" }, { "Additive", "가산" }, { "Masked", "마스크 (컷오프)" }
+	};
+	constexpr const char* BlendTip  = "알파: 직선 알파 / 프리멀티플라이드: 텍스처 RGB에 알파가 곱해져 있음 / 가산: 빛을 더함 / 마스크: 알파 < 컷오프면 버리고 나머지 불투명 (깊이 씀)";
+	constexpr const char* CutoffTip = "마스크 블렌드의 버림 기준, 그림자를 드리울 때 깊이를 그릴 알파 기준 (모든 블렌드)";
 
 	Registry.RegisterType<FSpriteComponent>("SpriteComponent", "스프라이트")
 		.Property(&FSpriteComponent::Sprite, "Sprite", "스프라이트 아틀라스").AssetFilter(".esprite")
@@ -166,6 +172,10 @@ void RegisterSprite2DTypes()
 		.Property(&FSpriteComponent::Size, "Size", "크기 (cm)").Range(0.0f, 100000.0f, 1.0f)
 		.Tooltip("0이면 슬라이스 픽셀 × UnitsPerPixel. 한 축만 주면 비율 유지. 엔티티 스케일은 따로 곱한다")
 		.Property(&FSpriteComponent::bVisible, "Visible", "표시")
+		.Property(&FSpriteComponent::Blend, "Blend", "블렌드").Enum(BlendEntries).Tooltip(BlendTip)
+		.Property(&FSpriteComponent::AlphaCutoff, "AlphaCutoff", "알파 컷오프").Range(0.0f, 1.0f, 0.01f).Tooltip(CutoffTip)
+		.Property(&FSpriteComponent::SliceMode, "SliceMode", "9-슬라이스 채우기").Enum({ { "Stretch", "늘이기" }, { "Tile", "반복" } })
+		.Tooltip("테두리(Border)가 있는 슬라이스를 원래와 다른 크기로 그릴 때: 모서리는 원래 크기, 가장자리·가운데는 늘이거나 원래 크기로 반복")
 		.AsComponent();
 
 	Registry.RegisterType<FFlipbookComponent>("FlipbookComponent", "플립북")
@@ -190,5 +200,8 @@ void RegisterSprite2DTypes()
 		.Property(&FTilemapComponent::Friction, "Friction", "마찰").Range(0.0f, 10.0f, 0.01f)
 		.Property(&FTilemapComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
 		.Property(&FTilemapComponent::TileData, "TileData", "타일 데이터", PF_Hidden)
+		.Property(&FTilemapComponent::Blend, "Blend", "블렌드").Enum(BlendEntries).Tooltip(BlendTip)
+		.Property(&FTilemapComponent::AlphaCutoff, "AlphaCutoff", "알파 컷오프").Range(0.0f, 1.0f, 0.01f).Tooltip(CutoffTip)
+		.Property(&FTilemapComponent::bCastShadows, "CastShadows", "그림자 드리우기")
 		.AsComponent();
 }

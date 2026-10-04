@@ -2,6 +2,7 @@
 
 #include "Core/Math/Math.h"
 #include "Scene/ResourceHandles.h"
+#include "Scene/Sprite/SpriteAsset.h"
 
 #include <span>
 #include <vector>
@@ -21,12 +22,7 @@ enum class ESpriteBlendMode : uint8
 	Count
 };
 
-// 텍스처 필터 (번호는 끝에만 추가)
-enum class ESpriteFilter : uint8
-{
-	Point,  // 최근접, 항상 밉 0 (픽셀 아트 — Sprite.hlsl SampleSprite 주석)
-	Linear, // 선형 + 밉 (TAAU 밉 바이어스)
-};
+// 텍스처 필터 ESpriteFilter는 2D 데이터 계층(Scene/Sprite/SpriteAsset.h)의 enum을 같이 쓴다 — 렌더러 쪽 중복 정의 금지
 
 // 스프라이트 하나. 로컬 사각형 = 로컬 X ∈ [-Pivot.X, 1 - Pivot.X] × Size.X, 로컬 Z ∈ [-Pivot.Y, 1 - Pivot.Y] × Size.Y (Y = 0 평면),
 // 월드 = 로컬 * World (행 벡터 규약). 텍스처 v는 아래로 증가: 로컬 아래 변 = UVMax.Y, 위 변 = UVMin.Y.

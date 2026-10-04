@@ -5,6 +5,13 @@
 
 namespace RendererCVars
 {
+	TAutoConsoleVariable<bool> TaaReconstruct("r.TAA.Reconstruct", true,
+	                                          "TAA 현재 프레임 재구성: 3x3 표본을 지터를 되돌린 거리 가우시안으로 섞는다 (네이티브도 TAAU와 같은 PSResolveUpsample). "
+	                                          "끄면 원본 픽셀 하나 (지터마다 값이 달라 정지 화면에서 자글거림)",
+	                                          EConsoleFlags::None);
+	TAutoConsoleVariable<float> TaaStaticWeight("r.TAA.StaticWeight", 0.04f,
+	                                            "TAA 정지 화소 현재 비중 (재구성 경로, 움직임 2px까지 기본 비중 0.1로 보간). 작을수록 가는 선·잎 깜빡임이 줄고 변화 반응이 느리다",
+	                                            EConsoleFlags::None, { .Range = std::pair(0.01f, 1.0f) });
 	TAutoConsoleVariable<bool> TemporalAA("r.TAA", true, "TAA (서브픽셀 지터 + 이력 누적). 픽셀 아트/와이어프레임/여러 뷰 렌더러는 자동으로 꺼짐",
 	                                      EConsoleFlags::None, { .CommandLine = { { L"--no-taa", "0" } } });
 	TAutoConsoleVariable<bool> AmbientOcclusion("r.SSAO", true, "SSAO (GTAO). 깊이 사전 패스가 있어야 한다", EConsoleFlags::None,

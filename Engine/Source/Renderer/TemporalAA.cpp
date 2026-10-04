@@ -1,6 +1,7 @@
 #include "Renderer/TemporalAA.h"
 
 #include "RHI/D3D12/D3D12RHI.h"
+#include "Renderer/RendererConsoleVariables.h"
 #include "Renderer/ScreenPass.h"
 #include "Renderer/UpscaleMath.h"
 
@@ -21,7 +22,8 @@ namespace
 		FVector2   InputTexelSize;
 		FVector2   JitterUv;
 		float      UpsampleScale = 1.0f;
-		float      Padding[3]    = {};
+		float      StaticWeight  = 0.1f; // 움직임 0일 때 현재 비중 (재구성 경로만, 2px 움직임까지 CurrentWeight로)
+		float      Padding[2]    = {};
 	};
 	static_assert(sizeof(FTaaConstants) == 128);
 
@@ -116,6 +118,8 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	const uint32 Width       = Inputs.OutputWidth > 0 ? Inputs.OutputWidth : InputWidth;
 	const uint32 Height      = Inputs.OutputHeight > 0 ? Inputs.OutputHeight : InputHeight;
 	const bool   bUpsample   = Width != InputWidth || Height != InputHeight;
+	// 네이티브도 지터 보정 재구성(PSResolveUpsample, 배율 1): 원본 픽셀 하나를 그대로 섞으면 지터마다 값이 달라 정지 화면에서도 수렴하지 않는다
+	const bool   bReconstruct = bUpsample || RendererCVars::TaaReconstruct.Get();
 	EnsureTargets(Width, Height);
 
 	FD3D12RenderTarget& Read  = *HistoryTargets[WriteIndex ^ 1];
@@ -128,7 +132,8 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	Constants.bHistoryValid  = (Inputs.bHistoryValid && bHasHistory) ? 1u : 0u;
 	Constants.ReactiveWeight = FMath::Clamp(Inputs.ReactiveWeight, Constants.CurrentWeight, 1.0f);
 	Constants.VarianceGamma  = FMath::Max(Inputs.VarianceGamma, 0.1f);
-	if (bUpsample)
+	Constants.StaticWeight   = FMath::Clamp(RendererCVars::TaaStaticWeight.Get(), 0.01f, Constants.CurrentWeight);
+	if (bReconstruct)
 	{
 		Constants.InputSize      = FVector2(static_cast<float>(InputWidth), static_cast<float>(InputHeight));
 		Constants.InputTexelSize = FVector2(1.0f / Constants.InputSize.X, 1.0f / Constants.InputSize.Y);
@@ -143,7 +148,7 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	const FD3D12DescriptorHandle VelocitySrv = Inputs.Velocity->GetSrv();
 	const FD3D12DescriptorHandle DepthSrv    = Inputs.SceneColor->GetDepthSrv();
 	const FD3D12DescriptorHandle HistorySrv  = Read.GetSrv();
-	const FD3D12PipelineState*   UsedPipeline = bUpsample ? &UpsamplePipeline : &Pipeline;
+	const FD3D12PipelineState*   UsedPipeline = bReconstruct ? &UpsamplePipeline : &Pipeline;
 	Graph.AddPass(bUpsample ? "TAAU" : "TAA")
 		.Read(Refs.SceneColor, ERGAccess::SrvPixel)
 		.Read(Refs.Velocity, ERGAccess::SrvPixel)

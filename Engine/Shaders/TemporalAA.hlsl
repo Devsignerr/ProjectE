@@ -20,8 +20,8 @@ cbuffer TaaConstants : register(b0)
 	float2   InputSize;       // 내부(씬) 해상도 픽셀 크기
 	float2   InputTexelSize;  // 1 / InputSize
 	float2   JitterUv;        // 이번 프레임 지터 (UV, FUpscaleMath::JitterNdcToUv)
-	float    UpsampleScale;   // 출력 / 내부 (1보다 크다)
-	float    Padding1;
+	float    UpsampleScale;   // 출력 / 내부 (네이티브 재구성은 1)
+	float    StaticWeight;    // 움직임 0일 때 현재 비중 (PSResolveUpsample — 2px 움직임까지 CurrentWeight로 보간)
 	float2   Padding2;
 };
 
@@ -261,7 +261,8 @@ float4 PSResolveUpsample(FFullscreenVSOutput Input) : SV_Target
 	const float Reactive    = saturate(SceneColor.Load(int3(clamp(Base, 0, MaxPixel), 0)).a);
 	const float SpeedPixels = length(Motion / TexelSize);
 	const float Fast        = saturate(SpeedPixels / 32.0f);
-	float       Weight      = lerp(CurrentWeight, ReactiveWeight, Reactive);
+	// 정지 화소는 이력을 더 길게 (재구성된 현재 값이 지터에 거의 무관하므로 고스팅 없이 가는 선·잎의 남은 깜빡임을 더 줄인다)
+	float       Weight      = lerp(lerp(StaticWeight, CurrentWeight, saturate(SpeedPixels * 0.5f)), ReactiveWeight, Reactive);
 	Weight                  = lerp(Weight, max(Weight, 0.25f), Fast);
 	Weight *= lerp(Confidence, 1.0f, max(Reactive, Fast));
 

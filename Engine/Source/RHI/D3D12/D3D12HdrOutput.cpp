@@ -50,7 +50,7 @@ bool FD3D12HdrOutput::CreatePipelines(FD3D12RHI& Rhi)
 		}
 	}
 	const DXGI_FORMAT Format = GetSwapChainFormat(Mode);
-	if (Pipelines[0].Get() != nullptr && PipelineFormat == Format)
+	if (Pipelines[0].IsInitialized() && PipelineFormat == Format)
 	{
 		return true;
 	}
@@ -90,7 +90,7 @@ bool FD3D12HdrOutput::CreatePipelines(FD3D12RHI& Rhi)
 	{
 		Rhi.DeferRelease(Swap.Detach());
 	}
-	if (PreviewPipeline.Get() != nullptr)
+	if (PreviewPipeline.IsInitialized())
 	{
 		Rhi.DeferRelease(PreviewPipeline.Detach());
 	}

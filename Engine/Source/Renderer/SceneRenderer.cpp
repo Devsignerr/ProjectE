@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <format>
@@ -84,6 +85,9 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	});
 
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
+	// 이 렌더러의 PSO는 처음 쓸 때 만든다 (D3D12PipelineState.h — 2D 게임은 3D 메시·지형·물·구름 변형 PSO를 만들지 않는다).
+	// Init 밖(셰이더 다시 로드·그래프 머티리얼 변형)은 예전처럼 즉시 만든다
+	const FD3D12PipelineState::FDeferredCreationScope DeferredPipelines;
 
 	if (!ShaderCompiler.Init() || !ShaderLibrary.Init(ShaderCompiler))
 	{
@@ -202,8 +206,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	    !AmbientOcclusion.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !DecalRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !FogRenderer.Init(*Rhi, ShaderLibrary, ScreenPassRoot) || !ScreenSpaceReflections.Init(*Rhi, ShaderLibrary, ScreenPassRoot) ||
 	    !ReflectionCaptures.Init(*Rhi, ShaderLibrary) || !SkyAtmosphere.Init(*Rhi, ShaderLibrary) || !Water.Init(*Rhi, ShaderLibrary) || !Clouds.Init(*Rhi, ShaderLibrary) ||
-	    !RayTracingScene.Init(*Rhi, ShaderLibrary) || !RayTracingEffects.Init(*Rhi, ShaderLibrary) ||
-	    !Ddgi.Init(*Rhi, ShaderLibrary, ScreenPassRoot, RayTracingEffects))
+	    !RayTracingEffects.Init(*Rhi, ShaderLibrary) || !Ddgi.Init(*Rhi, ShaderLibrary, ScreenPassRoot, RayTracingEffects)) // RT 본체는 EnsureRayTracing
 	{
 		return false;
 	}
@@ -1326,15 +1329,21 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	//   켬/끔 = r.RayTracing*(-1이면 프로젝트 설정 Rendering). 효과가 하나라도 켜져야 BLAS/TLAS를 만든다
 	const FRenderingSettings& RenderingSettings = FProjectSettings::Get().Rendering;
 	const auto ResolveToggle = [](int32 Value, bool bDefault) { return Value < 0 ? bDefault : Value != 0; };
-	const bool bRtAllowed = bAllowRayTracing && RayTracingScene.IsSupported() && RayTracingEffects.IsSupported() && bSingleView && bAllowJitter &&
-	                        !bRenderingCaptures && !bWireframe && bDepthPrepass && ResolveToggle(RendererCVars::RayTracing.Get(), RenderingSettings.bRayTracing);
-	const bool bRtShadows = bRtAllowed && ResolveToggle(RendererCVars::RayTracingShadows.Get(), RenderingSettings.bRayTracedShadows) &&
-	                        PerFrame.DirectionalLight.Intensity > 0.0f && ShadowRenderer.GetConstants().ShadowEnabled > 0.5f;
-	const bool bRtReflections = bRtAllowed && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
-	                            PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
-	const bool bRtDebug = bRtAllowed && DebugView == DebugViewRtInstances;
+	//   RT 본체(가속 구조·RT/DDGI 셰이더)는 효과가 처음 필요한 이 자리에서 만든다 (EnsureRayTracing — 필요 없으면 끝까지 만들지 않는다)
+	const bool bRtCandidate = bAllowRayTracing && IsRayTracingAvailable() && bSingleView && bAllowJitter && !bRenderingCaptures && !bWireframe &&
+	                          bDepthPrepass && ResolveToggle(RendererCVars::RayTracing.Get(), RenderingSettings.bRayTracing);
+	const bool bRtShadowsWanted = bRtCandidate && ResolveToggle(RendererCVars::RayTracingShadows.Get(), RenderingSettings.bRayTracedShadows) &&
+	                              PerFrame.DirectionalLight.Intensity > 0.0f && ShadowRenderer.GetConstants().ShadowEnabled > 0.5f;
+	const bool bRtReflectionsWanted = bRtCandidate && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
+	                                  PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
+	const bool bRtDebugWanted = bRtCandidate && DebugView == DebugViewRtInstances;
 	// 동적 GI (Phase 51): 씬에 프로브 볼륨이 있으면 TLAS로 프로브 광선을 추적한다
-	const bool bDdgiWanted = bRtAllowed && RendererCVars::Ddgi.Get() && FDdgiRenderer::SceneHasVolumes(Scene);
+	const bool bDdgiCandidate = bRtCandidate && RendererCVars::Ddgi.Get() && FDdgiRenderer::SceneHasVolumes(Scene);
+	const bool bRtAllowed     = (bRtShadowsWanted || bRtReflectionsWanted || bRtDebugWanted || bDdgiCandidate) && EnsureRayTracing();
+	const bool bRtShadows     = bRtAllowed && bRtShadowsWanted;
+	const bool bRtReflections = bRtAllowed && bRtReflectionsWanted;
+	const bool bRtDebug       = bRtAllowed && bRtDebugWanted;
+	const bool bDdgiWanted    = bRtAllowed && bDdgiCandidate;
 	// 스킨 메시 본 팔레트(메인 프러스텀 ∪ 그림자 캐스터 볼륨에 드는 것만) + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
 	// 이전 프레임 팔레트/월드는 한 뷰만 그릴 때만 (여러 씬을 번갈아 그리면 엔티티 번호가 겹친다)
 	BeginCpuTimer(ERenderTimer::Gather);
@@ -2789,6 +2798,54 @@ FPerFrameConstants FSceneRenderer::BuildPerFrameConstants(FScene& Scene, const F
 	return PerFrame;
 }
 
+void FSceneRenderer::ApplyProjectPostProcessDefaults()
+{
+	static_assert(static_cast<uint32>(EProjectTonemapper::None) == static_cast<uint32>(ETonemapOperator::None) &&
+	              static_cast<uint32>(EProjectTonemapper::AcesFit) == static_cast<uint32>(ETonemapOperator::AcesFit) &&
+	              static_cast<uint32>(EProjectTonemapper::Reinhard) == static_cast<uint32>(ETonemapOperator::Reinhard),
+	              "프로젝트 설정 톤매핑 번호는 ETonemapOperator와 같아야 한다");
+	const FRenderingSettings& Rendering         = FProjectSettings::Get().Rendering;
+	PostProcessSettings.Tonemapper              = static_cast<ETonemapOperator>(Rendering.Tonemapper);
+	PostProcessSettings.ExposureEV              = Rendering.ExposureEV;
+	PostProcessSettings.bAutoExposure           = Rendering.bAutoExposure;
+	PostProcessSettings.bBloomEnabled           = Rendering.bBloom;
+	PostProcessSettings.BloomIntensity          = Rendering.BloomIntensity;
+	PostProcessSettings.bTemporalAA             = Rendering.bTemporalAA;
+	PostProcessSettings.bAmbientOcclusion       = Rendering.bAmbientOcclusion;
+	PostProcessSettings.bScreenSpaceReflections = Rendering.bScreenSpaceReflections;
+}
+
+bool FSceneRenderer::IsRayTracingAvailable() const
+{
+	if (bRayTracingInitialized)
+	{
+		return RayTracingScene.IsSupported() && RayTracingEffects.IsSupported();
+	}
+	return !bRayTracingInitFailed && Rhi->GetDevice().SupportsRayTracing();
+}
+
+bool FSceneRenderer::EnsureRayTracing()
+{
+	if (!bRayTracingInitialized && !bRayTracingInitFailed)
+	{
+		// 게임 스레드(BeginRender). RT PSO도 처음 쓸 때 만든다 (반사만 켜면 그림자·RTAO·디버그 PSO는 만들지 않는다)
+		const FD3D12PipelineState::FDeferredCreationScope DeferredPipelines;
+		const auto Start = std::chrono::steady_clock::now();
+		if (RayTracingScene.Init(*Rhi, ShaderLibrary) && RayTracingScene.IsSupported() && RayTracingEffects.InitRayTracing())
+		{
+			Ddgi.InitRayTracing(); // 실패하면 DDGI만 꺼짐
+			bRayTracingInitialized = true;
+			E_LOG(LogRenderer, Display, "레이 트레이싱 지연 초기화 ({:.1f}ms)", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - Start).count());
+		}
+		else
+		{
+			bRayTracingInitFailed = true;
+			E_LOG(LogRenderer, Warning, "레이 트레이싱 초기화 실패 — 이번 실행은 래스터 경로만 사용합니다");
+		}
+	}
+	return bRayTracingInitialized && RayTracingScene.IsSupported() && RayTracingEffects.IsSupported();
+}
+
 ID3D12PipelineState* FSceneRenderer::GetMaterialPipeline(EMeshPass Pass, uint32 Variant, const FMaterial& Material)
 {
 	if (Material.Shader == nullptr)
@@ -2812,7 +2869,7 @@ ID3D12PipelineState* FSceneRenderer::GetMaterialPipeline(EMeshPass Pass, uint32 
 				{
 					for (FD3D12PipelineState& Pipeline : PassPipelines)
 					{
-						if (Pipeline.Get() != nullptr)
+						if (Pipeline.IsInitialized())
 						{
 							Rhi->DeferRelease(Pipeline.Detach());
 						}
@@ -2866,7 +2923,7 @@ void FSceneRenderer::ReleaseGraphPipelines()
 		{
 			for (FD3D12PipelineState& Pipeline : PassPipelines)
 			{
-				if (Pipeline.Get() != nullptr)
+				if (Pipeline.IsInitialized())
 				{
 					Rhi->DeferRelease(Pipeline.Detach());
 				}

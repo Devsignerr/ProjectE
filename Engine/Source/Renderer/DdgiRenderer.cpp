@@ -51,14 +51,19 @@ bool FDdgiRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, const FScr
 	{
 		return false;
 	}
-	if (!RayTracing->IsSupported())
+	return true;
+}
+
+bool FDdgiRenderer::InitRayTracing()
+{
+	if (bSupported || !RayTracing->IsSupported())
 	{
-		return true; // RT 없음: 기능 꺼짐 (메시는 예전 하늘 IBL 식)
+		return bSupported; // RT 없음: 기능 꺼짐 (메시는 예전 하늘 IBL 식)
 	}
 	if (!CreatePipelines(false))
 	{
 		E_LOG(LogRenderer, Error, "DDGI 파이프라인 생성 실패 — 동적 GI를 끕니다");
-		return true;
+		return false;
 	}
 	bSupported = true;
 	return true;

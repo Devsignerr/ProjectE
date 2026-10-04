@@ -345,7 +345,7 @@ bool FTerrainRenderer::ReloadShaders(bool bForceRecompile)
 	Rhi->DeferRelease(NewMain.Detach());
 	Rhi->DeferRelease(NewShadow.Detach());
 	Rhi->DeferRelease(NewLocalShadow.Detach());
-	if (MaskPipeline.Get() != nullptr)
+	if (MaskPipeline.IsInitialized())
 	{
 		Rhi->DeferRelease(MaskPipeline.Detach()); // 다음 RenderMask에서 새 셰이더로
 	}
@@ -940,7 +940,7 @@ void FTerrainRenderer::RenderMask(ID3D12GraphicsCommandList* CommandList, const 
 	{
 		return;
 	}
-	if (MaskPipeline.Get() == nullptr)
+	if (!MaskPipeline.IsInitialized())
 	{
 		FShaderCompileDesc VertexDesc;
 		VertexDesc.FileName   = L"Terrain.hlsl";

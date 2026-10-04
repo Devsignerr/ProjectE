@@ -92,12 +92,32 @@ struct FGameplayTagSettings
 	bool        bWarnUnknownTags = true; // 정의 데이터에 목록에 없는 태그가 있으면 경고 (오타 잡기)
 };
 
+// 프로젝트 기본 톤매핑 연산자 (Renderer ETonemapOperator와 번호가 같다 — 끝에만 추가, JSON은 이름)
+enum class EProjectTonemapper : uint32
+{
+	None,     // 톤매핑 없음 = 선형 클램프 (2D·언릿 원본 색 그대로, HDR 출력에서도 하이라이트를 펼치지 않는다)
+	AcesFit,  // ACES 근사 (3D 기본)
+	Reinhard,
+};
+
 // "Rendering" — 렌더링 기능 기본값 (콘솔 변수 r.RayTracing* = -1이면 이 값, Phase 50). DXR 1.1 미지원 GPU에서는 켜도 꺼진다
+// 프로젝트 기본 후처리(2026-10-05): 런타임·에디터 뷰포트 씬 렌더러의 FPostProcessSettings 초기값 (FSceneRenderer::ApplyProjectPostProcessDefaults).
+//   우선순위: 콘솔 변수 r.TAA/r.SSAO/r.SSR(끄기만 — AND) > 에디터 포스트 프로세스 패널(이번 세션 렌더러 값) > 이 설정 > 엔진 기본값.
+//   씬별 후처리 컴포넌트는 아직 없다. 미리보기·썸네일 렌더러는 엔진 기본값 그대로. 기본값은 예전 FPostProcessSettings 기본값과 같다(3D 화면 불변)
 struct FRenderingSettings
 {
 	bool bRayTracing            = true;  // 레이 트레이싱 전체 (BLAS/TLAS 빌드 — 아래 효과 중 하나라도 켜져야 실제로 만든다)
 	bool bRayTracedShadows      = false; // 방향광 그림자를 RT로 (불투명 표면, 반투명·안개는 섀도맵). 기본 끔: 1440p 네이티브 +1.2~1.9ms (섀도맵도 안개·반투명용으로 계속 그림)
 	bool bRayTracedReflections  = true;  // SSR 대신 RT 반사 (기본 켬: GPU 비용이 SSR과 비슷하거나 적고 화면 밖·가려진 물체도 반사)
+
+	EProjectTonemapper Tonemapper     = EProjectTonemapper::AcesFit;
+	float              ExposureEV     = 0.0f;  // 수동 노출 (자동 노출이면 보정값)
+	bool               bAutoExposure  = false;
+	bool               bBloom         = true;
+	float              BloomIntensity = 0.08f;
+	bool               bTemporalAA    = true;  // 픽셀 아트·와이어프레임은 이 값과 무관하게 꺼진다
+	bool               bAmbientOcclusion       = true; // SSAO/RTAO
+	bool               bScreenSpaceReflections = true; // SSR (끄면 RT 반사도 꺼진다)
 };
 
 // 프로젝트 설정 전체 (엔진 DLL 전역 하나). FPaths가 프로젝트를 열 때 LoadForProject를 부른다.

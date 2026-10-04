@@ -151,7 +151,10 @@ public:
 
 	~FRayTracingEffects();
 
+	// Init = 메인 패스가 늘 묶는 1x1 그림자 마스크만 (레이 트레이싱이 꺼진 프로젝트는 RT 셰이더를 읽지 않는다).
+	// InitRayTracing = 루트 시그니처 + 화면 패스 파이프라인 (FSceneRenderer가 RT가 처음 필요할 때 — 실패하면 IsSupported() false)
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& Library);
+	bool InitRayTracing();
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 	bool IsSupported() const { return bSupported; }

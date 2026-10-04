@@ -131,7 +131,9 @@ public:
 
 	~FDdgiRenderer();
 
+	// Init = 메시 패스가 늘 묶는 1x1 기본 아틀라스만. InitRayTracing = 파이프라인 (RT 화면 패스가 준비된 뒤, FSceneRenderer가 RT가 처음 필요할 때)
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary, const FScreenPassRootSignature& InScreenRoot, const FRayTracingEffects& InRayTracing);
+	bool InitRayTracing();
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
 	bool IsSupported() const { return bSupported; }

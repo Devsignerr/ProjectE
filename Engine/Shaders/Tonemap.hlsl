@@ -85,8 +85,9 @@ float4 PSMain(FFullscreenVSOutput Input) : SV_Target
 	{
 		Ldr = saturate(Hdr);
 	}
-	if (HdrPeakRatio > 1.0f)
+	if (HdrPeakRatio > 1.0f && TonemapOperator != 0)
 	{
+		// 톤매핑 없음(0, 2D·원본 색)은 펼치지 않는다 — HDR 출력에서도 1 = 종이 흰색 그대로 (텍스처 색 = 화면 색)
 		// HDR 출력: SDR 곡선 값의 하이라이트만 펼친다 (무릎 아래 = SDR과 같은 값, 최대 채널 기준 비율 — 색상 유지). 출력 = 선형, 1 = 종이 흰색
 		const float Peak = max(Ldr.r, max(Ldr.g, Ldr.b));
 		if (Peak > 1.0e-5f)

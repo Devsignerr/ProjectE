@@ -159,7 +159,7 @@ void FMaterialDepthPipelines::Reset()
 	{
 		for (FD3D12PipelineState& Pipeline : Entry->Pipelines)
 		{
-			if (Pipeline.Get() != nullptr && Rhi != nullptr)
+			if (Pipeline.IsInitialized() && Rhi != nullptr)
 			{
 				Rhi->DeferRelease(Pipeline.Detach()); // 진행 중인 프레임이 참조할 수 있다
 			}

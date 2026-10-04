@@ -173,6 +173,14 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 		return false;
 	}
 
+	// 스킨 캐시: 스킨 변형 파이프라인(메시·그림자)의 정점 셰이더가 달라지므로 파이프라인을 만들기 전에 정한다
+	if (!SkinCache.Init(*Rhi, ShaderLibrary))
+	{
+		return false;
+	}
+	bSkinCache                    = RendererCVars::SkinCache.Get();
+	ShadowRenderer.bSkinCache     = bSkinCache;
+	LocalLightRenderer.bSkinCache = bSkinCache;
 	for (uint32 Pass = 0; Pass < static_cast<uint32>(EMeshPass::Count); ++Pass)
 	{
 		for (uint32 Variant = 0; Variant < MaterialRender::VariantCount; ++Variant)
@@ -263,6 +271,25 @@ void FSceneRenderer::ApplyConsoleVariables()
 	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
 	bConsoleAmbientOcclusion        = RendererCVars::AmbientOcclusion.Get();
 	bConsoleReflections             = RendererCVars::Reflections.Get();
+	if (RendererCVars::SkinCache.Get() != bSkinCache && Rhi != nullptr)
+	{
+		// 스킨 변형 파이프라인(메시·그림자)을 다른 정점 셰이더로 다시 만든다 (실패하면 이전 경로로 되돌림)
+		const auto SetSkinCache = [this](bool bValue) {
+			bSkinCache                    = bValue;
+			ShadowRenderer.bSkinCache     = bValue;
+			LocalLightRenderer.bSkinCache = bValue;
+		};
+		SetSkinCache(!bSkinCache);
+		if (ReloadShaders(false))
+		{
+			E_LOG(LogRenderer, Display, "스킨 캐시 {}", bSkinCache ? "켬 (계산 스키닝 한 번 + 메시 패스는 결과를 읽음)" : "끔 (패스마다 정점 셰이더 스키닝)");
+		}
+		else
+		{
+			SetSkinCache(!bSkinCache);
+			ReloadShaders(false);
+		}
+	}
 }
 
 const char* GetRenderTimerName(ERenderTimer Timer)
@@ -297,6 +324,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::DdgiTrace:    return "DDGI 추적";
 	case ERenderTimer::DdgiBlend:    return "DDGI 누적";
 	case ERenderTimer::RayTracedAmbientOcclusion: return "RTAO";
+	case ERenderTimer::SkinCache:    return "스킨 캐시";
 	default:                        return "?";
 	}
 }
@@ -401,6 +429,11 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 스킨 메시: 엔티티 {:.1f}, 팔레트 {:.1f}, 가시성 제외 {:.1f}, 씬 렌더러 업로드 {:.1f} KB", Capture.SkinnedDrawn / Count,
 	      Capture.SkinPalettes / Count, Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
+	if (Stats.SkinCacheBytes > 0)
+	{
+		E_LOG(LogRenderer, Display, "[성능] 스킨 캐시: 마지막 프레임 정점 {} (디스패치 {}), 버퍼 {:.1f} MB", Stats.SkinCacheVertices, Stats.SkinCacheDispatches,
+		      static_cast<double>(Stats.SkinCacheBytes) / (1024.0 * 1024.0));
+	}
 	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
@@ -420,7 +453,7 @@ bool FSceneRenderer::IsMeshPipelineUsed(EMeshPass Pass, uint32 Variant)
 	return Pass != EMeshPass::Wireframe || (Variant & ~MaterialRender::VariantSkinned) == 0;
 }
 
-void FSceneRenderer::GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel)
+void FSceneRenderer::GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, bool bSkinCache, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel)
 {
 	const bool bVariantBit = (Variant & MaterialRender::VariantMaskedOrAdditive) != 0; // 불투명 패스: Masked, 반투명 패스: 가산
 	OutVertex            = FShaderCompileDesc{};
@@ -428,6 +461,10 @@ void FSceneRenderer::GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderC
 	OutVertex.EntryPoint = (Variant & MaterialRender::VariantSkinned) != 0 ? L"VSSkinned" : L"VSMain";
 	OutVertex.Stage      = EShaderStage::Vertex;
 	OutPixel             = OutVertex;
+	if ((Variant & MaterialRender::VariantSkinned) != 0 && bSkinCache)
+	{
+		OutVertex.Defines.push_back(L"E_SKIN_CACHE"); // 스킨 캐시 정점 (SkinnedMesh.hlsli) — 사전 패스와 메인이 같은 바이트코드
+	}
 	OutPixel.Stage       = EShaderStage::Pixel;
 	switch (Pass)
 	{
@@ -442,7 +479,7 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshP
 {
 	FShaderCompileDesc VertexDesc;
 	FShaderCompileDesc PixelDesc;
-	GetMeshShaderDescs(Pass, Variant, VertexDesc, PixelDesc);
+	GetMeshShaderDescs(Pass, Variant, bSkinCache, VertexDesc, PixelDesc);
 	if (GraphShader != nullptr)
 	{
 		PixelDesc = MaterialRender::MakeGraphShaderDesc(PixelDesc.FileName.c_str(), PixelDesc.EntryPoint.c_str(), EShaderStage::Pixel, *GraphShader);
@@ -461,7 +498,7 @@ bool FSceneRenderer::CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshP
 	PsoDesc.RootSignature          = RootSignature.Get();
 	PsoDesc.VertexShader           = FD3D12ShaderCompiler::ToBytecode(VertexShader.Get());
 	PsoDesc.PixelShader            = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
-	PsoDesc.InputLayout            = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
+	PsoDesc.InputLayout            = bSkinned && !bSkinCache ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // 스킨 캐시는 슬롯 0만
 	PsoDesc.RenderTargetFormats[0] = SceneColorFormat;
 	PsoDesc.DepthStencilFormat     = FD3D12RHI::DepthBufferFormat;
 	PsoDesc.bDepthEnable           = true;
@@ -516,14 +553,15 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 			for (uint32 Variant = 0; Variant < MaterialRender::VariantCount; ++Variant)
 			{
 				FShaderCompileDesc Descs[2];
-				GetMeshShaderDescs(static_cast<EMeshPass>(Pass), Variant, Descs[0], Descs[1]);
+				GetMeshShaderDescs(static_cast<EMeshPass>(Pass), Variant, bSkinCache, Descs[0], Descs[1]);
 				for (const FShaderCompileDesc& Desc : Descs)
 				{
-					if (std::find(Cooked.begin(), Cooked.end(), Desc.EntryPoint) != Cooked.end())
+					const std::wstring Key = Desc.EntryPoint + (Desc.Defines.empty() ? L"" : L"+" + Desc.Defines.front());
+					if (std::find(Cooked.begin(), Cooked.end(), Key) != Cooked.end())
 					{
 						continue;
 					}
-					Cooked.push_back(Desc.EntryPoint);
+					Cooked.push_back(Key);
 					if (!ShaderLibrary.CookShader(Desc))
 					{
 						E_LOG(LogRenderer, Error, "메시 셰이더 다시 컴파일 실패 ({}): 기존 파이프라인을 유지합니다", FStringConv::ToUtf8(Desc.EntryPoint));
@@ -603,6 +641,10 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 	{
 		return false;
 	}
+	if (!SkinCache.ReloadShaders(bForceRecompile))
+	{
+		return false;
+	}
 
 	E_LOG(LogRenderer, Display, "셰이더 다시 로드 완료 (메시 파이프라인 재생성)");
 	return true;
@@ -645,6 +687,7 @@ void FSceneRenderer::Shutdown()
 	ScreenSpaceReflections.Shutdown();
 	ReflectionCaptures.Shutdown();
 	RayTracingScene.Shutdown();
+	SkinCache.Shutdown();
 	Ddgi.Shutdown();
 	RayTracingEffects.Shutdown();
 	ScreenPassRoot.Shutdown();
@@ -1204,6 +1247,20 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	ShadowRenderer.PrepareCascades(Camera, PerFrame.DirectionalLight.Direction, ShadowSettings);
 	EndCpuTimer(ERenderTimer::Shadow);
 
+	// 레이 트레이싱 켬/끔 판정 (Phase 50 — 가속 구조는 아래 0.5에서, 스킨 캐시가 RT용 정점 속성을 쓸지 먼저 알아야 해서 여기서)
+	// 레이 트레이싱 (Phase 50): 허용된 렌더러 + DXR 1.1 + 한 뷰 + 사전 패스 + 지터 허용(픽셀 아트 아님) + 캡처 굽기 아님.
+	//   켬/끔 = r.RayTracing*(-1이면 프로젝트 설정 Rendering). 효과가 하나라도 켜져야 BLAS/TLAS를 만든다
+	const FRenderingSettings& RenderingSettings = FProjectSettings::Get().Rendering;
+	const auto ResolveToggle = [](int32 Value, bool bDefault) { return Value < 0 ? bDefault : Value != 0; };
+	const bool bRtAllowed = bAllowRayTracing && RayTracingScene.IsSupported() && RayTracingEffects.IsSupported() && bSingleView && bAllowJitter &&
+	                        !bRenderingCaptures && !bWireframe && bDepthPrepass && ResolveToggle(RendererCVars::RayTracing.Get(), RenderingSettings.bRayTracing);
+	const bool bRtShadows = bRtAllowed && ResolveToggle(RendererCVars::RayTracingShadows.Get(), RenderingSettings.bRayTracedShadows) &&
+	                        PerFrame.DirectionalLight.Intensity > 0.0f && ShadowRenderer.GetConstants().ShadowEnabled > 0.5f;
+	const bool bRtReflections = bRtAllowed && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
+	                            PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
+	const bool bRtDebug = bRtAllowed && DebugView == DebugViewRtInstances;
+	// 동적 GI (Phase 51): 씬에 프로브 볼륨이 있으면 TLAS로 프로브 광선을 추적한다
+	const bool bDdgiWanted = bRtAllowed && RendererCVars::Ddgi.Get() && FDdgiRenderer::SceneHasVolumes(Scene);
 	// 스킨 메시 본 팔레트(메인 프러스텀 ∪ 그림자 캐스터 볼륨에 드는 것만) + 프레임 메시 인스턴스 목록 (섀도우/로컬 그림자/메인 패스 공유)
 	// 이전 프레임 팔레트/월드는 한 뷰만 그릴 때만 (여러 씬을 번갈아 그리면 엔티티 번호가 겹친다)
 	BeginCpuTimer(ERenderTimer::Gather);
@@ -1225,8 +1282,18 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	FoliageRenderer.Gather(Scene, Camera, FrozenFrustum, [this](const FBox& Bounds) {
 		return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds);
 	}, MeshInstances);
+	SelectLods(Camera); // 스킨 캐시가 인스턴스 LOD로 스키닝할 정점을 고르므로 그 앞에서 (GPU 데이터와 무관)
+	// 스킨 캐시 자리 배정 (인스턴스 데이터 SkinCacheVertex — Upload 전). 스킨 인스턴스가 없으면 팔레트 주소를 그대로 묶는다
+	// RT 스킨 BLAS가 이번 프레임 쓸 수 있는 인스턴스(LOD0, RT 스킨 거리 안)는 UV/색까지 써서 RT가 복사만 하게 한다
+	FSkinCacheRtOptions SkinCacheRt;
+	SkinCacheRt.bEnabled       = (bRtShadows || bRtReflections || bRtDebug || bDdgiWanted) && RendererCVars::RayTracingSkinned.Get();
+	SkinCacheRt.CameraPosition = Camera.GetPosition();
+	SkinCacheRt.MaxDistance    = RendererCVars::RayTracingSkinnedDistance.Get();
+	const bool bSkinCacheFrame = bSkinCache && SkinCache.Prepare(MeshInstances, DynamicBuffer, SkinCacheRt);
+	Stats.SkinCacheVertices    = bSkinCacheFrame ? SkinCache.GetFrameVertices() : 0;
+	Stats.SkinCacheDispatches  = bSkinCacheFrame ? SkinCache.GetFrameDispatches() : 0;
+	Stats.SkinCacheBytes       = SkinCache.GetGpuBytes();
 	MeshInstances.Upload(DynamicBuffer);
-	SelectLods(Camera);
 	// 지형 텍스처 갱신(업로드 복사 — 그래프 밖, 이 프레임 명령 목록 맨 앞) + 청크 LOD/컬링 (그림자 패스 전)
 	TerrainRenderer.Prepare(Scene, Camera, FrozenFrustum);
 	// 텍스처 밉 스트리밍: 필요 밉 보고 (자동 검증·동기 로딩은 부족한 밉을 여기서 바로 채워 이 프레임에 그린다)
@@ -1249,7 +1316,14 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	EndCpuTimer(ERenderTimer::LocalLights);
 	// 같은 프레임에 이 렌더러가 다시 그리면(반사 캡처 면) 지난 메시 패스의 루트 SRV(클러스터 버퍼)가 그래픽스 루트에 남아 있다 →
 	// 클러스터 패스가 다른 루트 시그니처로 바꿔 묶음을 끊는다 (디버그 레이어 1003)
-	LocalLightRenderer.AddPasses(Graph, MeshInstances, SkinPalettes.GetGpuData(), ScreenPassRoot.Get(), TimerId(ERenderTimer::LocalLights));
+	// 스킨 캐시 계산 (첫 메시 패스 전): 이후 모든 메시 패스의 스킨 변형은 캐시를 읽는다 (t15)
+	FrameSkinSource = FSkinDrawSource{ SkinPalettes.GetGpuData(), {} };
+	if (bSkinCacheFrame)
+	{
+		FrameSkinSource.CacheRef = SkinCache.AddPass(Graph, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::SkinCache));
+		FrameSkinSource.Address  = SkinCache.GetGpuAddress();
+	}
+	LocalLightRenderer.AddPasses(Graph, MeshInstances, FrameSkinSource, ScreenPassRoot.Get(), TimerId(ERenderTimer::LocalLights));
 	const FRGResourceRef LocalShadowRef = LocalLightRenderer.ImportShadowMap(Graph);
 	const FRGResourceRef ClustersRef    = LocalLightRenderer.ImportClusters(Graph);
 
@@ -1265,22 +1339,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		ShadowLodSignature = LodSignature;
 		ShadowRenderer.InvalidateCache();
 	}
-	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, SkinPalettes.GetGpuData(), TimerId(ERenderTimer::Shadow)); // 캐시 판정 + 캐스케이드 묶음 (CPU)
+	ShadowRenderer.AddPass(Graph, ShadowMapRef, MeshInstances, FrameSkinSource, TimerId(ERenderTimer::Shadow)); // 캐시 판정 + 캐스케이드 묶음 (CPU)
 	EndCpuTimer(ERenderTimer::Shadow);
 
-	// 0.5) 레이 트레이싱 (Phase 50): 허용된 렌더러 + DXR 1.1 + 한 뷰 + 사전 패스 + 지터 허용(픽셀 아트 아님) + 캡처 굽기 아님.
-	//   켬/끔 = r.RayTracing*(-1이면 프로젝트 설정 Rendering). 효과가 하나라도 켜져야 BLAS/TLAS를 만든다
-	const FRenderingSettings& RenderingSettings = FProjectSettings::Get().Rendering;
-	const auto ResolveToggle = [](int32 Value, bool bDefault) { return Value < 0 ? bDefault : Value != 0; };
-	const bool bRtAllowed = bAllowRayTracing && RayTracingScene.IsSupported() && RayTracingEffects.IsSupported() && bSingleView && bAllowJitter &&
-	                        !bRenderingCaptures && !bWireframe && bDepthPrepass && ResolveToggle(RendererCVars::RayTracing.Get(), RenderingSettings.bRayTracing);
-	const bool bRtShadows = bRtAllowed && ResolveToggle(RendererCVars::RayTracingShadows.Get(), RenderingSettings.bRayTracedShadows) &&
-	                        PerFrame.DirectionalLight.Intensity > 0.0f && ShadowRenderer.GetConstants().ShadowEnabled > 0.5f;
-	const bool bRtReflections = bRtAllowed && ResolveToggle(RendererCVars::RayTracingReflections.Get(), RenderingSettings.bRayTracedReflections) &&
-	                            PostProcessSettings.bScreenSpaceReflections && bConsoleReflections;
-	const bool bRtDebug = bRtAllowed && DebugView == DebugViewRtInstances;
-	// 동적 GI (Phase 51): 씬에 프로브 볼륨이 있으면 TLAS로 프로브 광선을 추적한다
-	const bool bDdgiWanted = bRtAllowed && RendererCVars::Ddgi.Get() && FDdgiRenderer::SceneHasVolumes(Scene);
 	FRGResourceRef TlasRef;
 	FrameRtDebugRef            = {};
 	if (bRtShadows || bRtReflections || bRtDebug || bDdgiWanted)
@@ -1308,7 +1369,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		BeginCpuTimer(ERenderTimer::RayTracingBuild);
 		RayTracingScene.Prepare(MeshInstances, *Resources, SkinPalettes.GetGpuData(), Options, &Terrains, &Scene);
 		EndCpuTimer(ERenderTimer::RayTracingBuild);
-		TlasRef = RayTracingScene.AddBuildPasses(Graph, TimerId(ERenderTimer::RayTracingBuild));
+		TlasRef = RayTracingScene.AddBuildPasses(Graph, TimerId(ERenderTimer::RayTracingBuild), SkinCache.GetBuffer(), FrameSkinSource.CacheRef);
 		Stats.RayTracing = RayTracingScene.GetStats();
 	}
 	const bool bRtShadowsActive     = bRtShadows && TlasRef.IsValid();
@@ -1390,6 +1451,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			}
 		}
 		Ddgi.DeclareShadingReads(Pass); // t40~t42 (DDGI 아틀라스 — 볼륨이 없으면 1x1 기본)
+		FrameSkinSource.DeclareRead(Pass); // t15 스킨 캐시 (스킨 변형 정점 셰이더)
 	};
 	// 오클루전 단계 목록·간접 인자 (정점 셰이더 / ExecuteIndirect)
 	const auto DeclareOcclusion = [&](FRenderGraph::FPassBuilder& Pass, EMeshPhase Phase) {
@@ -2262,7 +2324,7 @@ void FSceneRenderer::BindMeshPassRoot(ID3D12GraphicsCommandList* CommandList, D3
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_LocalShadowMap, LocalLightRenderer.GetShadowMapSrv().Gpu);
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_Instances, MeshInstances.GetGpuData());
 	CommandList->SetGraphicsRootShaderResourceView(RootParam_InstanceIndices, InstanceIndices);
-	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, SkinPalettes.GetGpuData());
+	CommandList->SetGraphicsRootShaderResourceView(RootParam_SkinPalette, FrameSkinSource.Address); // 팔레트 또는 스킨 캐시
 	CommandList->SetGraphicsRootDescriptorTable(RootParam_AmbientOcclusion,
 	                                            (bFrameRtAo ? RayTracingEffects.GetAmbientOcclusionSrv() : AmbientOcclusion.GetResultSrv()).Gpu);
 	for (uint32 Index = 0; Index < 3; ++Index)

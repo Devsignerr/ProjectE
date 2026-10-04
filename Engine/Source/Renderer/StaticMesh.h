@@ -57,6 +57,9 @@ public:
 	float        GetBoundingRadius() const { return BoundingRadius; } // 로컬 경계 상자 반 대각선
 	float        GetUvDensity() const { return UvDensity; } // UV 단위/cm (로컬, 텍스처 밉 스트리밍). 0 = UV 없음/퇴화
 	uint32      GetVertexCount() const { return VertexCount; }
+	// 스킨 캐시: LOD Lod 이상(Lod..마지막) 인덱스가 쓰는 정점 번호 (오름차순, SkinCacheMath::BuildLodVertexLists).
+	// 비어 있으면 모든 정점 (항등 — 목록 없이 정점 번호 그대로). 그림자 LOD 바이어스는 메인 LOD 이상만 쓰므로 합집합이면 모든 패스가 덮인다
+	const std::vector<uint32>& GetLodVertexList(uint32 Lod) const { return LodVertexLists[Lod < Lods.size() ? Lod : Lods.size() - 1]; }
 	const FBox& GetLocalBounds() const { return LocalBounds; }
 	// GPU 버퍼 바이트 (정점 + 인덱스 + 스킨) — 리소스 통계용
 	uint64      GetGpuBytes() const { return VertexBuffer.GetSize() + IndexBuffer.GetSize() + SkinBuffer.GetSize(); }
@@ -81,6 +84,7 @@ private:
 	std::vector<FVector3> CpuPositions;
 	std::vector<uint32>   CpuIndices;
 	std::vector<FLodRange> Lods;
+	std::vector<std::vector<uint32>> LodVertexLists; // Lods와 같은 개수 (GetLodVertexList)
 	float                  LodScreenSizes[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 	float                  BoundingRadius = 0.0f;
 	float                  UvDensity      = 0.0f;

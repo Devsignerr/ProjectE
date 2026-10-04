@@ -42,6 +42,8 @@ public:
 	void SetBaseDesc(const FGraphicsPipelineDesc& Desc);
 	// 실패하면 nullptr (그 해시는 다시 시도하지 않는다 — Reset까지)
 	ID3D12PipelineState* Get(const FMaterialShader& Shader, bool bSkinned);
+	// 스킨 변형 정점 셰이더를 스킨 캐시 경로(E_SKIN_CACHE)로. 바뀌면 캐시를 비운다(지연 해제)
+	void                 SetSkinCache(bool bInSkinCache);
 	void                 Reset();
 	void                 Shutdown();
 
@@ -57,6 +59,7 @@ private:
 		FShaderLibrary*                                     ShaderLibrary = nullptr;
 		const wchar_t*                                      DebugName     = L"MaterialDepthPipeline";
 		FGraphicsPipelineDesc                               BaseDesc;
+		bool                                                bSkinCache = false;
 		std::unordered_map<uint64, std::unique_ptr<FEntry>> Entries;
 	};
 

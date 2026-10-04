@@ -18,6 +18,10 @@ namespace RendererCVars
 	                                     EConsoleFlags::None, { .CommandLine = { { L"--occlusion", "1" } } });
 	TAutoConsoleVariable<bool> SkinCulling("r.SkinCulling", true, "스킨 팔레트 가시성 컬링 (메인 프러스텀 ∪ 그림자 캐스터 볼륨 밖 스킨 메시 생략)",
 	                                       EConsoleFlags::None, { .CommandLine = { { L"--no-skin-culling", "0" } } });
+	TAutoConsoleVariable<bool> SkinCache("r.SkinCache", true,
+	                                     "스킨 캐시: 보이는 스킨 메시를 프레임마다 계산 셰이더로 한 번 스키닝하고 메시 패스(사전/메인/반투명/그림자)는 결과를 읽는다. "
+	                                     "끄면 패스마다 정점 셰이더 스키닝 (바꾸면 메시·그림자 파이프라인을 다시 만든다)",
+	                                     EConsoleFlags::None, { .CommandLine = { { L"--skin-cache", "1" }, { L"--no-skin-cache", "0" } } });
 	TAutoConsoleVariable<bool> ParticleCulling("r.ParticleCulling", true, "화면 밖 파티클 이미터 컬링 (GPU 이미터는 계산도 미룸)", EConsoleFlags::None,
 	                                           { .CommandLine = { { L"--no-particle-culling", "0" } } });
 	TAutoConsoleVariable<bool> Lod("r.LOD", true, "메시 LOD (화면 크기 전환). 끄면 항상 LOD0", EConsoleFlags::None,

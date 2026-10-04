@@ -10,13 +10,16 @@
 .EXAMPLE
     .\Scripts\ScaleBench.ps1                          # 500, 1000, 2000 (RT 끔)
     .\Scripts\ScaleBench.ps1 -Counts 250,500,1000,2000 -RayTracing
+    .\Scripts\ScaleBench.ps1 -Counts 1000 -ExtraArgs "--cvar r.SkinCache=0" -Tag nocache   # 같은 빌드로 A/B (로그 이름에 태그)
 #>
 param(
     [int[]]$Counts = @(500, 1000, 2000),
     [switch]$RayTracing,
     [double]$Tolerance = 1.25,
     [double]$MinMs = 0.3,
-    [int]$Frames = 600
+    [int]$Frames = 600,
+    [string]$ExtraArgs = "", # 런타임에 더 넘길 인자 (예: --cvar r.SkinCache=0)
+    [string]$Tag = ""        # 로그 이름 접미사 (A/B 실행 구분)
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,8 +44,8 @@ foreach ($Count in $Counts)
     $Scene = "Scenes/Tests/Scale/Stress_$Count.escene"
     python Tools/DemoMap/BuildStress.py --count $Count --out $Scene | Out-Null
     if ($LASTEXITCODE -ne 0) { Write-Host "씬 생성 실패: $Count"; exit 2 }
-    $Name = "scale_$Count" + ($(if ($RayTracing) { "_rt" } else { "" }))
-    $Extra = "--scene $Scene --perf-capture --perf-warmup 200 --no-vsync" + ($(if ($RayTracing) { "" } else { " --no-raytracing" }))
+    $Name = "scale_$Count" + ($(if ($RayTracing) { "_rt" } else { "" })) + ($(if ($Tag) { "_$Tag" } else { "" }))
+    $Extra = "--scene $Scene --perf-capture --perf-warmup 200 --no-vsync" + ($(if ($RayTracing) { "" } else { " --no-raytracing" })) + ($(if ($ExtraArgs) { " $ExtraArgs" } else { "" }))
     powershell -ExecutionPolicy Bypass -File Scripts\Verify.ps1 -Target Runtime -Config Release -Frames $Frames -TimeoutSeconds 3600 -Name $Name -ExtraArgs $Extra | Out-Null
     $Log = Join-Path $RootDir "Saved\Verify\$Name.log"
     if (-not (Test-Path $Log)) { Write-Host "로그 없음: $Log"; exit 2 }

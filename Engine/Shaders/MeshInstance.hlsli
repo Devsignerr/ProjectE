@@ -12,7 +12,8 @@ struct FInstanceData
 	float4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3 행
 	uint     BoneOffset;      // 스킨 메시: 프레임 팔레트(t15, SkinnedMesh.hlsli) 안 첫 본 행렬 번호
 	uint     PrevBoneOffset;  // 스킨 메시: 이전 프레임 팔레트 첫 본 (움직임 벡터, 이력 없으면 BoneOffset)
-	uint2    Padding;
+	uint     SkinCacheVertex;    // 스킨 캐시(E_SKIN_CACHE, SkinnedMesh.hlsli): 현재 정점 영역 안 첫 정점
+	uint     SkinCachePrevIndex; // 스킨 캐시: 이전 위치 영역 첫 정점의 버퍼 안 16바이트 칸 번호
 	float4x4 PrevWorld;       // 이전 프레임 월드 (움직임 벡터, 이력 없으면 World)
 };
 

@@ -508,6 +508,26 @@ FPixelInput VSMain(FVertexInput Input, uint InstanceId : SV_InstanceID)
 	return Output;
 }
 
+#ifdef E_SKIN_CACHE
+// 스킨 메시 (스킨 캐시, Renderer/SkinCache.h): 계산 셰이더가 이번 프레임 한 번 스키닝한 월드 공간 정점을 읽는다 (슬롯 1 스트림·팔레트 없음).
+// 값은 아래 팔레트 경로와 같은 식의 결과 — 사전 패스와 메인 패스가 같은 정점 셰이더라 깊이 EQUAL이 맞는다
+FPixelInput VSSkinned(FVertexInput Input, uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
+{
+	FPixelInput Output;
+
+	const FInstanceData    Instance = LoadInstance(InstanceOffset, InstanceId);
+	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCachePrevIndex, VertexId);
+	Output.Position      = mul(Vertex.Position, ViewProjection);
+	Output.CurrentClip   = mul(Vertex.Position, UnjitteredViewProjection);
+	Output.PreviousClip  = mul(Vertex.PrevPosition, PrevViewProjection);
+	Output.WorldPosition = Vertex.Position.xyz;
+	Output.WorldNormal   = Vertex.Normal;
+	Output.WorldTangent  = Vertex.Tangent;
+	Output.UV            = Input.UV;
+	Output.Color         = Input.Color;
+	return Output;
+}
+#else
 struct FSkinnedVertexInput
 {
 	float3 Position : POSITION;
@@ -542,6 +562,7 @@ FPixelInput VSSkinned(FSkinnedVertexInput Input, uint InstanceId : SV_InstanceID
 	Output.Color        = Input.Color;
 	return Output;
 }
+#endif
 
 // SSAO (반해상도 R = 가시도, G = 뷰 깊이, AmbientOcclusion.hlsl): 4탭 깊이 가중 업샘플. 간접광에만 곱한다
 Texture2D<float2> ScreenAmbientOcclusion : register(t16);

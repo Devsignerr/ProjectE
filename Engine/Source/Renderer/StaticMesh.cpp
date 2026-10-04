@@ -1,6 +1,7 @@
 #include "Renderer/StaticMesh.h"
 
 #include "Renderer/LodMath.h"
+#include "Renderer/SkinCache.h"
 #include "Renderer/TextureStreamingMath.h"
 
 #include <algorithm>
@@ -49,6 +50,12 @@ void FStaticMesh::PrepareCpuData(const FMeshData& MeshData, std::vector<uint32>&
 	{
 		LodScreenSizes[Index] = Index < Lods.size() ? Lods[Index].ScreenSize : 0.0f;
 	}
+	std::vector<std::pair<uint32, uint32>> Ranges;
+	for (const FLodRange& Range : Lods)
+	{
+		Ranges.emplace_back(Range.IndexOffset, Range.IndexCount);
+	}
+	SkinCacheMath::BuildLodVertexLists(VertexCount, AllIndices.empty() ? MeshData.Indices : AllIndices, Ranges, LodVertexLists);
 }
 
 bool FStaticMesh::Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FMeshData& MeshData, const wchar_t* DebugName)
@@ -114,6 +121,7 @@ void FStaticMesh::Shutdown()
 	UploadFence    = 0;
 	LocalBounds = FBox();
 	Lods.clear();
+	LodVertexLists.clear();
 	VertexCount = 0;
 	IndexCount  = 0;
 	CpuPositions.clear();
@@ -133,6 +141,7 @@ void FStaticMesh::ShutdownDeferred(FD3D12RHI& Rhi)
 	UploadFence    = 0;
 	LocalBounds = FBox();
 	Lods.clear();
+	LodVertexLists.clear();
 	VertexCount = 0;
 	IndexCount  = 0;
 	CpuPositions.clear();

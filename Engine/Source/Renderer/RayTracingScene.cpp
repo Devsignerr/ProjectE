@@ -1282,7 +1282,8 @@ void FRayTracingScene::PrepareSkinned(const FRayTracingSceneOptions& Options, co
 				const FSkinnedPrimitive& Primitive = *Geometry.Primitive;
 				const FStaticMesh&       Mesh      = *Geometry.Instance->Mesh;
 				SkinOps.push_back({ Primitive.VertexOffset, Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetSkinBuffer().GetGpuAddress(), Primitive.VertexCount,
-				                    Geometry.Instance->BoneOffset });
+				                    Geometry.Instance->BoneOffset,
+				                    Geometry.Instance->bSkinCacheLod0 ? static_cast<uint64>(Geometry.Instance->SkinCacheVertex) * sizeof(FVertex) : ~0ull });
 				D3D12_RAYTRACING_GEOMETRY_DESC Desc =
 					MakeTriangles(VertexBase + Primitive.VertexOffset, Primitive.VertexCount, Mesh.GetIndexBuffer().GetGpuAddress(), Primitive.IndexCount);
 				Desc.Flags = Geometry.Instance->IsMasked() ? D3D12_RAYTRACING_GEOMETRY_FLAG_NONE : D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
@@ -1399,7 +1400,7 @@ void FRayTracingScene::BuildGraphVariant(const FRayTracingSceneOptions& Options)
 	E_LOG(LogRenderer, Log, "레이 트레이싱 그래프 머티리얼 변형: 셰이더 {}개 (키 {:016x})", Shaders.size(), Key);
 }
 
-FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer)
+FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer, ID3D12Resource* SkinCache, FRGResourceRef SkinCacheRef)
 {
 	FrameSkinVertexRef = {};
 	if (!bPrepared)
@@ -1416,12 +1417,31 @@ FRGResourceRef FRayTracingScene::AddBuildPasses(FRenderGraph& Graph, int32 Timer
 	{
 		FrameSkinVertexRef = Graph.ImportTracked("RtSkinnedVertexPool", SkinVertexPool.Buffer.Get(), &SkinVertexState);
 	}
-	if (!SkinOps.empty())
+	// 스킨 캐시가 이번 프레임 같은 식으로 LOD0 정점까지 스키닝한 인스턴스는 FVertex를 그대로 복사 (계산 스키닝 한 번으로 래스터·RT 공용),
+	// 나머지(먼 LOD로 그려 캐시가 일부 정점만 스키닝)는 아래에서 직접 스키닝
+	std::vector<FSkinOp> CopyOps;
+	std::vector<FSkinOp> DispatchOps;
+	for (const FSkinOp& Op : SkinOps)
+	{
+		(SkinCache != nullptr && SkinCacheRef.IsValid() && Op.CacheOffset != ~0ull ? CopyOps : DispatchOps).push_back(Op);
+	}
+	if (!CopyOps.empty())
+	{
+		FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 스킨 정점 복사");
+		Pass.Read(SkinCacheRef, ERGAccess::CopySource).Write(FrameSkinVertexRef, ERGAccess::CopyDest);
+		Pass.Timer(Timer).Execute([Ops = std::move(CopyOps), Source = SkinCache, Dest = SkinVertexPool.Buffer.Get()](FRGContext& Context) {
+			for (const FSkinOp& Op : Ops)
+			{
+				Context.CommandList->CopyBufferRegion(Dest, Op.OutputOffset, Source, Op.CacheOffset, static_cast<uint64>(Op.VertexCount) * sizeof(FVertex));
+			}
+		});
+	}
+	if (!DispatchOps.empty())
 	{
 		// 정점 풀의 일부 범위만 쓴다 (갱신을 건너뛴 모델의 정점은 그대로) — 덮어쓰기 아님
 		FRenderGraph::FPassBuilder Pass = Graph.AddPass("RT 스키닝");
 		Pass.Write(FrameSkinVertexRef, ERGAccess::Uav);
-		Pass.Timer(Timer).Execute([this, Ops = SkinOps, Palette = PaletteAddress, Output = SkinVertexPool.Buffer->GetGPUVirtualAddress()](FRGContext& Context) {
+		Pass.Timer(Timer).Execute([this, Ops = std::move(DispatchOps), Palette = PaletteAddress, Output = SkinVertexPool.Buffer->GetGPUVirtualAddress()](FRGContext& Context) {
 			ID3D12GraphicsCommandList* CommandList = Context.CommandList;
 			CommandList->SetComputeRootSignature(SkinningRoot.Get());
 			CommandList->SetPipelineState(SkinningPipeline.Get());

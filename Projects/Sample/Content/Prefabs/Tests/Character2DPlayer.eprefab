@@ -1,0 +1,47 @@
+{
+  "Entities": [
+    {
+      "Name": "Player2D",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            1.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "CharacterMovement2DComponent": {
+          "CapsuleRadius": 30.0,
+          "CapsuleHeight": 120.0
+        },
+        "ReplicatedComponent": {},
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "ScriptAsset": "Scripts/Tests/Character2DPlayer.lua",
+          "PropertyOverrides": "{\"AutoInput\":true,\"Label\":\"Player\"}"
+        }
+      }
+    }
+  ]
+}

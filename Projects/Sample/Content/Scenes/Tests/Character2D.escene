@@ -1,0 +1,451 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 2.5
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            800.0
+          ],
+          "Rotation": [
+            -0.4030582,
+            -0.1270838,
+            0.8643611,
+            -0.272532
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "SkyLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 20000.0,
+          "Primary": true,
+          "Priority": 0,
+          "Orthographic": true,
+          "OrthoHeight": 1300.0
+        },
+        "TransformComponent": {
+          "Position": [
+            650.0,
+            3000.0,
+            400.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Camera2D",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "GameModeComponent": {
+          "PlayerPrefab": "Prefabs/Tests/Character2DPlayer.eprefab",
+          "RespawnDelay": -1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "GameMode",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -500.0,
+            0.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "PlayerStart",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Samples/SampleTiles.etileset",
+          "CellSize": [
+            50.0,
+            50.0
+          ],
+          "Collision": true,
+          "TileData": "AQYAAAD//////////8wDAAAAABQAAgAAAAwAAAAAABQAAgAAAAAAAAD/////wAMAAAAAQAACAAAAAQAAAP/////AAwAAAAAQAAIAAAAQAAAAAAAQAAIAAAAQAAAAAAD/////AAAAAAwAAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAA8AAAAAAAQABwAAAAwAAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAB8AAAAAAAEAAwAAAHMCAAAAAAAAAAAAAAAAFAAAAAAAAQAEAAAACwACAAAAFQAAAAAAAQAEAAAACgACAAAAFgAAAAAAAQAEAAAACQACAAAAFwAAAAAAAQAEAAAACAACAAAAIAAAAAAAAwAHAAAAXQMAAAAAAQAAAAAAAAAPAAIAAAABAAMAAAAQAAAAAAAPAAIAAAABAAMAAAAQAAAAAAAPAAIAAAABAAMAAAAQAAAAAAAPAAIAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAAAfAAAAAAABAAMAAABwAgAAAAA="
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Tilemap",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Dirt.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            700.0,
+            -40.0,
+            -50.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            34.0,
+            0.2,
+            1.0
+          ]
+        }
+      },
+      "Name": "GuideGround",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Checker.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -975.0,
+            -40.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.2,
+            6.5
+          ]
+        }
+      },
+      "Name": "GuideWallL",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Checker.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            2375.0,
+            -40.0,
+            325.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.2,
+            6.5
+          ]
+        }
+      },
+      "Name": "GuideWallR",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Yellow.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -25.0,
+            -40.0,
+            275.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.5,
+            0.2,
+            0.5
+          ]
+        }
+      },
+      "Name": "GuideOneWay",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Purple.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            1100.0,
+            -40.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.3826834323650898,
+            0.0,
+            0.9238795325112867
+          ],
+          "Scale": [
+            2.82842712,
+            0.2,
+            0.05
+          ]
+        }
+      },
+      "Name": "GuideSlope",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Grass.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            1775.0,
+            -40.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            11.5,
+            0.2,
+            2.0
+          ]
+        }
+      },
+      "Name": "GuidePlateau",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PolygonCollider2DComponent": {
+          "Points": "0,0; 100,0; 100,214.45"
+        },
+        "TransformComponent": {
+          "Position": [
+            1600.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "SteepSlope",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Green.emat",
+          "Visible": true
+        },
+        "TransformComponent": {
+          "Position": [
+            1650.0,
+            -40.0,
+            307.2
+          ],
+          "Rotation": [
+            0.0,
+            -0.5372996083468238,
+            0.0,
+            0.8433914458128857
+          ],
+          "Scale": [
+            2.366,
+            0.2,
+            0.05
+          ]
+        }
+      },
+      "Name": "GuideSteep",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "CharacterMovement2DComponent": {
+          "CapsuleRadius": 30.0,
+          "CapsuleHeight": 120.0
+        },
+        "ReplicatedComponent": {},
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "ScriptAsset": "Scripts/Tests/Character2DPlayer.lua",
+          "PropertyOverrides": "{\"AutoInput\":true,\"Label\":\"Hero\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            -500.0,
+            0.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            1.2
+          ]
+        }
+      },
+      "Name": "Hero",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

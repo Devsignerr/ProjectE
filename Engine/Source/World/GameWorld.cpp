@@ -9,6 +9,7 @@
 #include "Core/InputMode.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
+#include "Physics/CharacterMovement2DSystem.h"
 #include "Physics/Physics2DSystem.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
@@ -185,7 +186,10 @@ namespace
 	}
 } // namespace
 
-FGameWorld::FGameWorld() : Abilities(std::make_unique<FAbilitySystem>()), AI(std::make_unique<FAISystem>()), Physics2D(std::make_unique<FPhysics2DSystem>()) {}
+FGameWorld::FGameWorld() : Abilities(std::make_unique<FAbilitySystem>()), AI(std::make_unique<FAISystem>()), Physics2D(std::make_unique<FPhysics2DSystem>()),
+	  Characters2D(std::make_unique<FCharacterMovement2DSystem>())
+{
+}
 FGameWorld::~FGameWorld() = default;
 
 void FGameWorld::ConnectScriptsAndAI()
@@ -395,11 +399,65 @@ void FGameWorld::InstallScriptPhysicsHooks()
 		}
 		return Physics != nullptr ? Physics->GetMass(Entity) : 0.0f;
 	};
+	// 캐릭터 이동: 엔티티에 2D 이동기(FCharacterMovement2DComponent)가 있으면 2D (X·Z 성분), 아니면 3D 캐릭터
+	FCharacterMovement2DSystem* C2D   = Characters2D.get();
+	const auto                  Is2D  = [this](FEntity Entity) {
+        return Scene != nullptr && Scene->GetRegistry().IsValid(Entity) && Scene->GetRegistry().Has<FCharacterMovement2DComponent>(Entity);
+	};
+	Hooks.AddMovementInput = [Physics, C2D, Is2D](FEntity Entity, const FVector3& Direction) {
+		if (Is2D(Entity))
+		{
+			C2D->AddMovementInput(Entity, Direction);
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->AddMovementInput(Entity, Direction);
+		}
+	};
+	Hooks.Jump = [Physics, C2D, Is2D](FEntity Entity) {
+		if (Is2D(Entity))
+		{
+			C2D->Jump(Entity);
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->RequestJump(Entity);
+		}
+	};
+	Hooks.IsGrounded = [Physics, C2D, Is2D](FEntity Entity) {
+		return Is2D(Entity) ? C2D->IsGrounded(Entity) : Physics != nullptr && Physics->IsGrounded(Entity);
+	};
+	Hooks.StopJumping = [C2D, Is2D](FEntity Entity) {
+		if (Is2D(Entity))
+		{
+			C2D->StopJumping(Entity); // 3D 캐릭터는 가변 점프가 없다
+		}
+	};
+	Hooks.Dash = [C2D, Is2D](FEntity Entity, const FVector3& Direction) {
+		if (Is2D(Entity))
+		{
+			C2D->Dash(Entity, Direction);
+		}
+	};
+	Hooks.DropDown = [C2D, Is2D](FEntity Entity) {
+		if (Is2D(Entity))
+		{
+			C2D->DropDown(Entity);
+		}
+	};
+	Hooks.GetMovementVelocity = [Physics, C2D, Is2D](FEntity Entity) {
+		if (Is2D(Entity))
+		{
+			const FVector2 Velocity = C2D->GetVelocity(Entity);
+			return FVector3(Velocity.X, 0.0f, Velocity.Y);
+		}
+		return Physics != nullptr ? Physics->GetCharacterState(Entity).Velocity : FVector3();
+	};
+	Hooks.GetJumpsRemaining  = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetJumpsRemaining(Entity) : 0; };
+	Hooks.GetDashesRemaining = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetDashesRemaining(Entity) : 0; };
+	Hooks.IsDashing          = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) && C2D->IsDashing(Entity); };
 	if (Physics != nullptr)
 	{
-		Hooks.AddMovementInput = [Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); };
-		Hooks.Jump             = [Physics](FEntity Entity) { Physics->RequestJump(Entity); };
-		Hooks.IsGrounded       = [Physics](FEntity Entity) { return Physics->IsGrounded(Entity); };
 		Hooks.EnableRagdoll    = [this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); };
 		Hooks.DisableRagdoll   = [this, Physics](FEntity Entity) {
             if (Scene != nullptr)
@@ -462,6 +520,8 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	RemoteInputs.clear();
 	PredictedCharacters.clear();
 	ServerCharacters.clear();
+	PredictedCharacters2D.clear();
+	ServerCharacters2D.clear();
 	CharacterCorrections = 0;
 	InputSequence = 0;
 	LastMatchState       = -1;
@@ -516,11 +576,13 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	Physics2D->SetContactReportFilter([this](const FScene& Target, FEntity Entity) { return ShouldReportContacts(Target, Entity); });
 	Physics2D->SetInterpolation(Systems.Physics == nullptr || Systems.Physics->IsInterpolating());
 	Physics2D->Begin();
+	Characters2D->Begin(*Physics2D); // 2D 캐릭터 이동기 (대리 바디를 2D 월드에 만든다)
 	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
 	{
 		Systems.GameModule->SetNet(this);
 		Systems.GameModule->SetPhysics(Systems.Physics);
 		Systems.GameModule->SetPhysics2D(Physics2D.get());
+		Systems.GameModule->SetCharacters2D(Characters2D.get());
 		Systems.GameModule->BeginPlay(InScene);
 	}
 	// 스크립트 BeginPlay는 Lua 상태만 만든다 (OnStart는 첫 TickGameplay). AI는 그 뒤 — 트리 시작 시 Lua 노드가 스크립트 객체를 만든다
@@ -563,11 +625,13 @@ void FGameWorld::EndPlay()
 		Systems.GameModule->SetNet(nullptr);
 		Systems.GameModule->SetPhysics(nullptr);
 		Systems.GameModule->SetPhysics2D(nullptr);
+		Systems.GameModule->SetCharacters2D(nullptr);
 	}
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->End();
 	}
+	Characters2D->End();
 	Physics2D->End();
 	ClearSubScenes();
 	FInputModeState::Reset();
@@ -603,7 +667,8 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	TickPhysicsPrediction(DeltaSeconds);         // 클라이언트: 물리 예측 대상/서버 상태 수렴 (캐릭터가 밀기 전에)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::Characters);
-		TickCharacters(DeltaSeconds); // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
+		TickCharacters(DeltaSeconds);   // 스크립트가 넣은 이동 입력으로 (물리 스텝 전)
+		TickCharacters2D(DeltaSeconds); // 2D 이동기 — 같은 단계, 같은 예측 규칙 (World/GameWorldCharacter2D.cpp)
 	}
 	if (Systems.Scripts->ConsumeSceneStructureChanged() && Systems.Resources != nullptr)
 	{
@@ -626,6 +691,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	}
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::Physics);
+		Characters2D->UpdateProxies();           // 2D 캐릭터 대리 바디를 이번 위치로 (스텝에서 동적 바디를 민다)
 		Physics2D->Update(*Scene, DeltaSeconds); // 2D 물리 (3D 바로 뒤, 같은 단계 — 2D 바디가 없으면 거의 비용 없음)
 	}
 	{
@@ -637,6 +703,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	UpdateFootIkProbes();                    // 발 IK 바닥 (이번 프레임 최종 위치 기준 — 다음 표시 틱 애니메이션이 쓴다)
 	// 이번 프레임 물리 스텝의 충돌/트리거 알림 (스크립트·게임 모듈, 메인 스레드)
 	bool bMayHaveChangedScene = DispatchCollisionEvents();
+	bMayHaveChangedScene      = DispatchCharacter2DEvents() || bMayHaveChangedScene; // 2D 이동기 점프/착지/대시 (같은 단계)
 	// 이번 프레임 최종 위치 기준 (카메라 따라가기 등)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::LateUpdate);

@@ -3,11 +3,7 @@
 // 깊이 테스트 ALWAYS + 쓰기, 바이어스 0 (SV_Depth는 바이어스를 받지 않는다) → 캐시 값 그대로 (D32_FLOAT ↔ R32_FLOAT 비트 동일)
 #include "Fullscreen.hlsli"
 
-cbuffer RestoreConstants : register(b0)
-{
-	uint Slice; // 캐스케이드 (캐시 배열 장)
-};
-Texture2DArray<float> CacheDepth : register(t0);
+Texture2DArray<float> CacheDepth : register(t0); // 캐스케이드 장 하나만 보는 뷰 (FShadowRenderer::CacheSliceSrv)
 
 FFullscreenVSOutput ShadowCacheRestoreVS(uint VertexId : SV_VertexID)
 {
@@ -16,5 +12,5 @@ FFullscreenVSOutput ShadowCacheRestoreVS(uint VertexId : SV_VertexID)
 
 float ShadowCacheRestorePS(FFullscreenVSOutput Input) : SV_Depth
 {
-	return CacheDepth.Load(int4(int2(Input.Position.xy), Slice, 0));
+	return CacheDepth.Load(int4(int2(Input.Position.xy), 0, 0));
 }

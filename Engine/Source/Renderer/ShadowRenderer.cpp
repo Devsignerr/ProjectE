@@ -62,8 +62,7 @@ bool FShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	{
 		return false;
 	}
-	// 캐시 부분 되살리기 (ShadowCacheRestore.hlsl): b0 장 번호, t0 캐시 배열
-	RestoreRootSignature.AddConstants(1, 0, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	// 캐시 부분 되살리기 (ShadowCacheRestore.hlsl): t0 캐시 장
 	RestoreRootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0) }, D3D12_SHADER_VISIBILITY_PIXEL);
 	if (!RestoreRootSignature.Finalize(Rhi->GetDevice().GetDevice(), D3D12_ROOT_SIGNATURE_FLAG_NONE, L"ShadowCacheRestoreRootSignature") ||
 	    !CreateRestorePipeline(RestorePipeline, false))
@@ -99,10 +98,13 @@ void FShadowRenderer::Shutdown()
 	DsvHeap.Shutdown();
 	CacheMap.Reset();
 	CacheDsvHeap.Shutdown();
-	if (CacheSrv.IsValid())
+	for (FD3D12DescriptorHandle& SliceSrv : CacheSliceSrv)
 	{
-		Rhi->GetSrvAllocator().Free(CacheSrv);
-		CacheSrv = FD3D12DescriptorHandle{};
+		if (SliceSrv.IsValid())
+		{
+			Rhi->GetSrvAllocator().Free(SliceSrv);
+			SliceSrv = FD3D12DescriptorHandle{};
+		}
 	}
 	RestorePipeline.Shutdown();
 	RestoreRootSignature.Shutdown();
@@ -348,14 +350,18 @@ bool FShadowRenderer::EnsureCache()
 		DsvDesc.Texture2DArray.ArraySize       = 1;
 		Device->CreateDepthStencilView(NewCache.Get(), &DsvDesc, CacheDsvHeap.GetCpuHandle(Index));
 	}
-	D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
-	SrvDesc.Format                   = ShadowSrvFormat;
-	SrvDesc.ViewDimension            = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-	SrvDesc.Shader4ComponentMapping  = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	SrvDesc.Texture2DArray.MipLevels = 1;
-	SrvDesc.Texture2DArray.ArraySize = MapCascades;
-	CacheSrv                         = Rhi->GetSrvAllocator().Allocate();
-	Device->CreateShaderResourceView(NewCache.Get(), &SrvDesc, CacheSrv.Cpu);
+	for (uint32 Index = 0; Index < MapCascades; ++Index)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc{};
+		SrvDesc.Format                         = ShadowSrvFormat;
+		SrvDesc.ViewDimension                  = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+		SrvDesc.Shader4ComponentMapping        = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SrvDesc.Texture2DArray.MipLevels       = 1;
+		SrvDesc.Texture2DArray.FirstArraySlice = Index;
+		SrvDesc.Texture2DArray.ArraySize       = 1;
+		CacheSliceSrv[Index]                   = Rhi->GetSrvAllocator().Allocate();
+		Device->CreateShaderResourceView(NewCache.Get(), &SrvDesc, CacheSliceSrv[Index].Cpu);
+	}
 	CacheMap = std::move(NewCache);
 	E_LOG(LogRenderer, Log, "그림자 캐시 생성: {}x{} x {}", MapResolution, MapResolution, MapCascades);
 	return true;
@@ -374,10 +380,13 @@ void FShadowRenderer::ReleaseCache()
 	Rhi->DeferRelease(CacheMap);
 	CacheMap.Reset();
 	CacheDsvHeap.Shutdown();
-	if (CacheSrv.IsValid())
+	for (FD3D12DescriptorHandle& SliceSrv : CacheSliceSrv)
 	{
-		Rhi->DeferFreeDescriptor(CacheSrv);
-		CacheSrv = FD3D12DescriptorHandle{};
+		if (SliceSrv.IsValid())
+		{
+			Rhi->DeferFreeDescriptor(SliceSrv);
+			SliceSrv = FD3D12DescriptorHandle{};
+		}
 	}
 }
 
@@ -843,7 +852,6 @@ void FShadowRenderer::RecordRestore(ID3D12GraphicsCommandList* CommandList)
 			CommandList->SetGraphicsRootSignature(RestoreRootSignature.Get());
 			CommandList->SetPipelineState(RestorePipeline.Get());
 			CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			CommandList->SetGraphicsRootDescriptorTable(1, CacheSrv.Gpu);
 			bBound = true;
 		}
 		const ShadowCacheMath::FTexelRect& Rect = RestoreRect[Index];
@@ -851,7 +859,7 @@ void FShadowRenderer::RecordRestore(ID3D12GraphicsCommandList* CommandList)
 		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		CommandList->RSSetScissorRects(1, &Scissor);
-		CommandList->SetGraphicsRoot32BitConstant(0, Index, 0);
+		CommandList->SetGraphicsRootDescriptorTable(0, CacheSliceSrv[Index].Gpu); // 이 장만 (다른 장은 COPY_SOURCE일 수 있다)
 		CommandList->DrawInstanced(3, 1, 0, 0);
 	}
 }

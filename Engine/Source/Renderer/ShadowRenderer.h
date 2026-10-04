@@ -145,8 +145,8 @@ private:
 	// 캐시: 섀도우 맵과 같은 크기·장 수 (평소 COPY_SOURCE)
 	ComPtr<ID3D12Resource> CacheMap;
 	FD3D12DescriptorHeap   CacheDsvHeap;
-	FD3D12DescriptorHandle CacheSrv; // 부분 되살리기가 읽는다 (Texture2DArray R32_FLOAT)
-	FD3D12RootSignature    RestoreRootSignature; // b0 장 번호, t0 캐시 (픽셀)
+	FD3D12DescriptorHandle CacheSliceSrv[ShadowMath::MaxCascades]; // 부분 되살리기가 읽는다 (장마다 하나 — 표가 가리키는 장만 SrvPixel로 전이되므로)
+	FD3D12RootSignature    RestoreRootSignature;                   // t0 캐시 장 (픽셀)
 	FD3D12PipelineState    RestorePipeline;
 	uint64                 CacheEpoch      = 0;
 	FShadowSettings        FrameSettings; // PrepareCascades 값 (AddPass가 키·LOD 바이어스에 쓴다)

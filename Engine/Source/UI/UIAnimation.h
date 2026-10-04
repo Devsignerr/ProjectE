@@ -71,6 +71,9 @@ struct FUIAnimation
 	std::string               Name;
 	float                     Length = 1.0f; // 초 (재생 끝)
 	std::vector<FUIAnimTrack> Tracks;
+	// 게임 시간으로 재생 (기본 끔 = 실제 시간 — 일시정지 메뉴도 움직인다). 켜면 게임 시간 배율·히트스톱을 따른다 (FUIFrameInput::GameTimeScale).
+	// 재생할 때 덮어쓸 수 있다 (FUIInstance::PlayAnimation UseGameTime, Lua PlayUIAnimation(..., { GameTime = true })). 파일 키 "UseGameTime"(켜졌을 때만)
+	bool                      bUseGameTime = false;
 
 	FUIAnimTrack*       FindTrack(std::string_view Widget, EUIAnimProperty Property);
 	const FUIAnimTrack* FindTrack(std::string_view Widget, EUIAnimProperty Property) const;
@@ -102,4 +105,5 @@ struct FUIAnimationPlayback
 	float Time           = 0.0f;
 	float Speed          = 1.0f;
 	int32 LoopsRemaining = 1; // 0 = 무한
+	bool  bUseGameTime   = false; // 게임 시간 배율을 곱해 진행 (FUIAnimation::bUseGameTime 또는 재생 옵션)
 };

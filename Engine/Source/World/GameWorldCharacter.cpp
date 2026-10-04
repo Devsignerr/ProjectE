@@ -30,10 +30,17 @@
 //     ack 무브의 로컬 시각(MoveTimes)은 물리 예측이 스냅샷 시각을 로컬 기록에 맞추는 데 쓴다.
 //   예측 옵션 (UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측): 끄면 소유 클라이언트는
 //     무브를 보내기만 하고 미리 움직이지 않으며, 자기 캐릭터도 스냅샷 보간으로 보여 준다 (IsPredicted = false). 서버 쪽은 같다.
+//   넉백/발사 (entity:LaunchCharacter/AddKnockback — 규칙은 CharacterMovement.h, 2D GameWorldCharacter2D.cpp와 같은 규칙): 엔티티에 쌓였다가 다음 무브에 실린다.
+//     조종하는 쪽(Standalone, 서버 소유를 서버가, 소유 클라이언트): 자기 다음 무브 — 클라이언트면 무브와 함께 서버로 간다 (서버는 성분을 MaxLaunchSpeed로 자름)
+//     서버의 원격 플레이어 캐릭터: 서버가 준 넉백은 다음에 적용하는 받은 무브(큐 첫 무브)에 합친다 — 받은 무브가 없으면 올 때까지 기다린다.
+//       결과(속도·경직 타이머)는 ack 상태로 소유 클라이언트에 가고 재조정이 같은 궤적을 맞춘다 (넉백을 실은 무브까지는 클라이언트가 넉백 없이 예측 — 보정)
+//     클라이언트의 다른 캐릭터: 무시 (서버 결과를 복제로 받는다). 같은 넉백을 서버와 소유 클라이언트가 둘 다 부르면 두 번 실리므로 한쪽(보통 서버)에서만
+//     시간 정지(게임 시간 배율 0 — Standalone 전용)인 틱은 무브가 없다: 쌓인 입력은 버리고 넉백은 다음 무브까지 남긴다
 //   메시지 (비신뢰):
-//     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 플래그(1 점프, 2 루트 모션)
-//                     (+ 루트 모션이면 float 속도 X, float 속도 Y — 서버가 MaxRootMotionSpeed로 자른다)]...
-//     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥
+//     CharacterMoves: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y, float yaw, uint8 플래그(1 점프, 2 루트 모션, 4 발사)
+//                     (+ 루트 모션이면 float 속도 X, float 속도 Y — 서버가 MaxRootMotionSpeed로 자른다)
+//                     (+ 발사면 FVector3 속도, uint8 덮어쓰기(1 XY, 2 Z), float 경직 초 — 서버가 MaxLaunchSpeed/MaxStunSeconds로 자른다)]...
+//     CharacterAck:   uint32 NetId, uint32 순번, FVector3 위치, FVector3 속도, uint8 바닥, float 경직 타이머
 //   서버는 무브 dt를 FCharacterMove::MaxMoveDeltaSeconds로 자르고, 소유자가 아닌 연결이 보낸 무브는 버린다.
 
 namespace
@@ -101,7 +108,7 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 	Scene->GetRegistry().View<FCharacterMovementComponent>().Each([&](FEntity Entity, FCharacterMovementComponent&) { Characters.push_back(Entity); });
 	if (DeltaSeconds <= 0.0f)
 	{
-		// 시간 정지 (게임 시간 배율 0/히트스톱 — Standalone, GameWorld.cpp "시간 배율"): 무브 없음, 쌓인 입력은 버린다
+		// 시간 정지 (게임 시간 배율 0/히트스톱 — Standalone, GameWorld.cpp "시간 배율"): 무브 없음, 쌓인 입력은 버린다 (넉백은 다음 무브까지 남는다)
 		for (const FEntity Entity : Characters)
 		{
 			Physics->ConsumePendingMove(Entity, 0.0f, nullptr);
@@ -121,6 +128,7 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 			{
 				CharacterMovementMath::ConsumeRootMotion(*Movement, Move);
 			}
+			Physics->MergePendingLaunch(Entity, Move); // 넉백/발사는 자기 무브에 (클라이언트면 무브와 함께 서버로)
 			if (Mode == ENetMode::Client)
 			{
 				FPredictedCharacter& Predicted = PredictedCharacters[Entity];
@@ -164,6 +172,11 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 		}
 		else if (Mode == ENetMode::Client)
 		{
+			FCharacterMove Ignored;
+			if (Physics->MergePendingLaunch(Entity, Ignored)) // 남의 캐릭터 넉백은 서버가 준다 (복제로 받는다)
+			{
+				E_LOG(LogNet, Verbose, "캐릭터 넉백 무시: 이 클라이언트가 조종하지 않는 캐릭터 (서버에서 부를 것)");
+			}
 			Physics->FollowTransform(*Scene, Entity); // 다른 플레이어: 복제 보간 위치에 캡슐만 맞춘다
 		}
 		else if (Owner >= 0)
@@ -172,8 +185,9 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 			FServerCharacter& Server = ServerCharacters[Entity];
 			if (Server.Queue.empty())
 			{
-				continue;
+				continue; // 서버가 준 넉백도 다음 무브까지 기다린다
 			}
+			Physics->MergePendingLaunch(Entity, Server.Queue.front()); // 서버가 준 넉백 → 이번에 적용하는 첫 무브 (결과는 ack 상태로)
 			for (const FCharacterMove& Move : Server.Queue)
 			{
 				Physics->SimulateCharacter(*Scene, Entity, Move);
@@ -211,11 +225,17 @@ void FGameWorld::SendCharacterMoves(FEntity Entity)
 		Writer.Write(Move.Input.X);
 		Writer.Write(Move.Input.Y);
 		Writer.Write(Move.Yaw);
-		Writer.Write(static_cast<uint8>((Move.bJump ? 1 : 0) | (Move.bRootMotion ? 2 : 0)));
+		Writer.Write(static_cast<uint8>((Move.bJump ? 1 : 0) | (Move.bRootMotion ? 2 : 0) | (Move.bLaunch ? 4 : 0)));
 		if (Move.bRootMotion)
 		{
 			Writer.Write(Move.RootMotionVelocity.X);
 			Writer.Write(Move.RootMotionVelocity.Y);
+		}
+		if (Move.bLaunch)
+		{
+			Writer.Write(Move.LaunchVelocity);
+			Writer.Write(static_cast<uint8>((Move.bLaunchOverrideXY ? 1 : 0) | (Move.bLaunchOverrideZ ? 2 : 0)));
+			Writer.Write(Move.StunSeconds);
 		}
 	}
 	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
@@ -261,7 +281,16 @@ void FGameWorld::ReceiveCharacterMoves(FNetConnectionId Connection, const std::v
 			Move.RootMotionVelocity.Y = Reader.Read<float>();
 			Move.RootMotionVelocity   = CharacterMovementMath::ClampRootMotionVelocity(Move.RootMotionVelocity);
 		}
-		if (!Reader.IsOk() || !IsFiniteMove(Move))
+		Move.bLaunch = (Flags & 4) != 0;
+		if (Move.bLaunch)
+		{
+			Move.LaunchVelocity      = Reader.Read<FVector3>();
+			const uint8 Overrides    = Reader.Read<uint8>();
+			Move.bLaunchOverrideXY   = (Overrides & 1) != 0;
+			Move.bLaunchOverrideZ    = (Overrides & 2) != 0;
+			Move.StunSeconds         = Reader.Read<float>();
+		}
+		if (!Reader.IsOk() || !IsFiniteMove(Move) || !CharacterMovementMath::SanitizeLaunch(Move))
 		{
 			return;
 		}
@@ -302,6 +331,7 @@ void FGameWorld::SendCharacterAck(FEntity Entity, uint32 Sequence)
 	Writer.Write(State.Position);
 	Writer.Write(State.Velocity);
 	Writer.Write(static_cast<uint8>(State.bGrounded ? 1 : 0));
+	Writer.Write(State.StunTimer);
 	Systems.Net->Send(Target->Connection, Writer.GetBuffer(), ENetReliability::Unreliable);
 }
 
@@ -319,9 +349,11 @@ void FGameWorld::ReceiveCharacterAck(const std::vector<uint8>& Message)
 	State.Position  = Reader.Read<FVector3>();
 	State.Velocity  = Reader.Read<FVector3>();
 	State.bGrounded = Reader.Read<uint8>() != 0;
+	State.StunTimer = Reader.Read<float>();
 	const FEntity Entity = FindByNetId(*Scene, NetId);
 	const auto    Found  = PredictedCharacters.find(Entity);
-	if (!Reader.IsOk() || !Entity.IsValid() || Found == PredictedCharacters.end() || Sequence <= Found->second.LastAckSequence)
+	if (!Reader.IsOk() || !std::isfinite(State.StunTimer) || !Entity.IsValid() || Found == PredictedCharacters.end() ||
+	    Sequence <= Found->second.LastAckSequence)
 	{
 		return; // 늦게 온(순서가 바뀐) ack
 	}

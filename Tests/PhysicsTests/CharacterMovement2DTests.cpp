@@ -441,6 +441,97 @@ E_TEST(Character2DWorld_CeilingStopsJump)
 	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
 }
 
+// 천장 모서리 (자동 조종이 단 밑면 모서리에 머리를 박은 채 멈췄던 보고 조사): 머리 바로 위 천장 아래·모서리 옆을 옆으로 움직일 때 막히지 않아야 한다
+E_TEST(Character2DWorld_CeilingCornerDoesNotBlockSideways)
+{
+	// 1) 서서 걷기: 천장 아랫면이 머리(Z 120) 바로 위 — 0.5cm·3cm 틈. 천장 밑으로 들어가고 다시 나온다
+	for (const float Gap : { 0.5f, 3.0f })
+	{
+		FWorld World;
+		World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(4000.0f, 100.0f));
+		World.AddBox("Ceiling", FVector3(200.0f, 0.0f, 120.0f + Gap + 50.0f), FVector2(400.0f, 100.0f)); // X 0~400, 아랫면 120 + Gap
+		World.SpawnPawn(FVector3(-150.0f, 0.0f, StandZ + 0.5f));
+		World.Begin();
+		World.Run(30);
+		E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+		World.Run(60, 1.0f); // 1초 오른쪽 → 천장 밑 (약 570cm 갈 수 있음)
+		E_EXPECT_TRUE(World.Position().X > 300.0f);
+		E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+		const float UnderX = World.Position().X;
+		World.Run(60, -1.0f); // 되돌아 나온다
+		E_LOG(LogPhysics, Display, "[천장 모서리 조사] 틈 {} 밑 X {:.2f} → 나옴 X {:.2f} Z {:.2f}", Gap, UnderX, World.Position().X, World.Position().Z);
+		E_EXPECT_TRUE(World.Position().X < UnderX - 500.0f);
+		E_EXPECT_TRUE(World.Position().X < -50.0f);
+		E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	}
+
+	// 2) 점프해 천장 아랫면에 머리를 붙인 채 모서리 밖으로 옆 이동: 공중에서도 수평으로 계속 나아간다
+	{
+		FWorld World;
+		World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(4000.0f, 100.0f));
+		World.AddBox("Ceiling", FVector3(200.0f, 0.0f, 250.0f), FVector2(400.0f, 100.0f)); // 아랫면 Z = 200
+		World.SpawnPawn(FVector3(60.0f, 0.0f, StandZ + 0.5f));
+		World.Begin();
+		World.Run(30);
+		World.Tick(MakeMove(-1.0f, true));
+		float StartX = World.Position().X;
+		int32 Air    = 0;
+		for (int32 Index = 0; Index < 120 && !World.Characters.IsGrounded(World.Pawn); ++Index, ++Air)
+		{
+			const float Before = World.Position().X;
+			World.Tick(MakeMove(-1.0f, false, true));
+			E_EXPECT_TRUE(World.Position().X < Before + 0.01f); // 뒤로 밀리거나 멈추지 않는다
+		}
+		E_EXPECT_TRUE(Air > 5);
+		E_EXPECT_TRUE(World.Position().X < StartX - 0.5f * 600.0f * Frame * static_cast<float>(Air)); // 공중 수평 속도의 절반 이상
+		World.Run(30, -1.0f);
+		E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+		StartX = World.Position().X;
+		World.Run(30, -1.0f);
+		E_EXPECT_TRUE(World.Position().X < StartX - 200.0f);
+	}
+
+	// 3) 모서리 바로 옆에서 점프 (둥근 머리가 모서리에 닿음): 입력 없음/바깥/안쪽 모두 매달리지 않고 내려온다
+	for (const float InputX : { 0.0f, -1.0f, 1.0f })
+	{
+		FWorld World;
+		World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(4000.0f, 100.0f));
+		World.AddBox("Ceiling", FVector3(200.0f, 0.0f, 250.0f), FVector2(400.0f, 100.0f)); // X 0~400, 아랫면 200
+		World.SpawnPawn(FVector3(-20.0f, 0.0f, StandZ + 0.5f));                         // 캡슐 반지름 30 → 머리가 모서리 밑 10cm
+		World.Begin();
+		World.Run(30);
+		World.Tick(MakeMove(0.0f, true));
+		float MaxZ          = 0.0f;
+		int32 GroundedFrame = -1;
+		float MaxPenetration = 0.0f; // 캡슐이 천장(X 0~400, 아랫면 200) 안으로 들어간 깊이
+		for (int32 Index = 0; Index < 90; ++Index)
+		{
+			World.Tick(MakeMove(InputX, false, true));
+			const FVector3 P = World.Position();
+			MaxZ             = std::max(MaxZ, P.Z);
+			if (P.X >= 0.0f && P.X <= 400.0f)
+			{
+				MaxPenetration = std::max(MaxPenetration, P.Z + StandZ - 200.0f); // 머리 꼭대기
+			}
+			else if (P.X > -30.0f && P.X < 0.0f)
+			{
+				MaxPenetration = std::max(MaxPenetration, P.Z + 30.0f + std::sqrt(30.0f * 30.0f - P.X * P.X) - 200.0f); // 둥근 머리 ↔ 모서리
+			}
+			if (GroundedFrame < 0 && Index > 3 && World.Characters.IsGrounded(World.Pawn))
+			{
+				GroundedFrame = Index;
+			}
+		}
+		// 입력 없음/바깥: 둥근 머리가 모서리에 밀려 바깥으로 빠져나가 계속 오른다 (모서리 보정 — 막히거나 매달리지 않음), 안쪽: 천장 밑에서 머리가 멈추고 옆으로 계속 간다
+		E_LOG(LogPhysics, Display, "[천장 모서리 조사] 입력 {} 최고 Z {:.2f} 파고듦 {:.2f} 착지 프레임 {} 끝 X {:.2f}", InputX, MaxZ, MaxPenetration, GroundedFrame,
+		      World.Position().X);
+		E_EXPECT_TRUE(MaxPenetration <= 1.0f); // 천장을 뚫지 않는다
+		E_EXPECT_TRUE(InputX > 0.0f ? World.Position().X > 400.0f : World.Position().X < -30.0f); // 안쪽은 천장 밑을 지나 반대편으로
+		E_EXPECT_TRUE(GroundedFrame >= 0 && GroundedFrame < 60); // 1초 안에 착지 (매달리지 않음)
+		E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+	}
+}
+
 E_TEST(Character2DWorld_RidesMovingPlatformAndPushesDynamicBox)
 {
 	FWorld        World;

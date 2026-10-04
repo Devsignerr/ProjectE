@@ -38,7 +38,7 @@
 
 E_DEFINE_LOG_CATEGORY(LogGameWorldPerf, Log)
 
-// ---- 시간 배율 (Lua Game.SetTimeScale/GetTimeScale/HitStop, C++ FGameWorld::SetTimeScale/HitStop)
+// ---- 시간 배율 (Lua Game.SetTimeScale/GetTimeScale/HitStop, C++ FGameWorld::SetTimeScale/HitStop, 게임 모듈 IGameNet 같은 이름 + GetUnscaledDeltaSeconds)
 //   게임 시간 = 앱이 넘긴 프레임 dt(실제 시간 — --fixed-delta면 고정값) × 배율. 배율은 게임플레이 틱 시작에 한 번 정하고(TickTimeScale) 그 틱과
 //   바로 다음 표시 틱이 모두 같은 값을 쓴다 — 틱 도중 바꾼 배율·히트스톱은 다음 틱부터 (한 틱 안에서 시스템마다 다른 시간이 흐르지 않게).
 //   히트스톱이 남아 있으면 그 틱 배율은 0이고 남은 시간은 실제 dt만큼 준다 (0.05초 = 60fps에서 3프레임 정지).
@@ -508,20 +508,30 @@ void FGameWorld::InstallScriptPhysicsHooks()
 	Hooks.GetJumpsRemaining  = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetJumpsRemaining(Entity) : 0; };
 	Hooks.GetDashesRemaining = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetDashesRemaining(Entity) : 0; };
 	Hooks.IsDashing          = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) && C2D->IsDashing(Entity); };
-	// 넉백/발사: 2D 이동기만 (3D 캐릭터는 후속 — 무시). 무브에 싣는 규칙은 World/GameWorldCharacter2D.cpp 머리 주석
-	Hooks.LaunchCharacter = [C2D, Is2D](FEntity Entity, const FVector3& Velocity, bool bOverrideX, bool bOverrideZ) {
+	// 넉백/발사: 2D 이동기면 2D (X·Z), 아니면 3D 캐릭터 (덮어쓰기 X = 수평 XY 묶음). 무브에 싣는 규칙은 World/GameWorldCharacter(2D).cpp 머리 주석
+	Hooks.LaunchCharacter = [Physics, C2D, Is2D](FEntity Entity, const FVector3& Velocity, bool bOverrideX, bool bOverrideZ) {
 		if (Is2D(Entity))
 		{
 			C2D->LaunchCharacter(Entity, Velocity, bOverrideX, bOverrideZ);
 		}
+		else if (Physics != nullptr)
+		{
+			Physics->LaunchCharacter(Entity, Velocity, bOverrideX, bOverrideZ);
+		}
 	};
-	Hooks.AddKnockback = [C2D, Is2D](FEntity Entity, const FVector3& Velocity, float StunSeconds) {
+	Hooks.AddKnockback = [Physics, C2D, Is2D](FEntity Entity, const FVector3& Velocity, float StunSeconds) {
 		if (Is2D(Entity))
 		{
 			C2D->AddKnockback(Entity, Velocity, StunSeconds);
 		}
+		else if (Physics != nullptr)
+		{
+			Physics->AddKnockback(Entity, Velocity, StunSeconds);
+		}
 	};
-	Hooks.IsStunned = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) && C2D->IsStunned(Entity); };
+	Hooks.IsStunned = [Physics, C2D, Is2D](FEntity Entity) {
+		return Is2D(Entity) ? C2D->IsStunned(Entity) : Physics != nullptr && Physics->IsCharacterStunned(Entity);
+	};
 	if (Physics != nullptr)
 	{
 		Hooks.EnableRagdoll    = [this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); };
@@ -765,6 +775,7 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	TickLocalInput = Input;
 	// 시간 배율 (머리 주석 "시간 배율"): 이 틱 배율을 정하고 아래 게임 시스템은 모두 배율을 곱한 dt를 쓴다
 	const float UnscaledDeltaSeconds = DeltaSeconds;
+	TickUnscaledDeltaSeconds         = UnscaledDeltaSeconds;
 	TickTimeScale                    = TimeScale;
 	if (HitStopRemaining > 1.0e-4f)
 	{

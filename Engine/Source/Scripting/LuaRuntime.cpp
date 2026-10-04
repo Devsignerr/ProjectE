@@ -657,9 +657,9 @@ void FLuaRuntime::RegisterEntityBindings()
 		RequireEntity(Entity);
 		return PhysicsHooks && PhysicsHooks->IsDashing && PhysicsHooks->IsDashing(Entity.Entity);
 	};
-	// 넉백/발사 (2D 이동기 — 규칙은 Physics/CharacterMovement2D.h, 네트워크는 World/GameWorldCharacter2D.cpp 머리 주석):
-	//   entity:LaunchCharacter(Vector3 속도[, 덮어쓰기 X, 덮어쓰기 Z])  -- 다음 무브 처음에 더하거나(기본) 덮어쓴다 (UE LaunchCharacter)
-	//   entity:AddKnockback(Vector3 속도, 경직 초)                    -- X 덮어쓰기, Z는 0이 아니면 덮어쓰기, 경직 동안 입력 무시
+	// 넉백/발사 (2D 이동기·3D 캐릭터 — 규칙은 Physics/CharacterMovement2D.h·CharacterMovement.h, 네트워크는 World/GameWorldCharacter2D.cpp·GameWorldCharacter.cpp 머리 주석):
+	//   entity:LaunchCharacter(Vector3 속도[, 덮어쓰기 X, 덮어쓰기 Z])  -- 다음 무브 처음에 더하거나(기본) 덮어쓴다 (UE LaunchCharacter, 3D는 덮어쓰기 X = 수평 XY)
+	//   entity:AddKnockback(Vector3 속도, 경직 초)                    -- 수평(2D X, 3D XY) 덮어쓰기, Z는 0이 아니면 덮어쓰기, 경직 동안 입력 무시
 	//   entity:IsStunned()                                           -- 넉백 경직 중
 	//   서버 권한: 서버/Standalone에서 부르면 원격 플레이어 캐릭터에도 들어간다. 클라이언트는 자기가 조종하는 캐릭터만 (그 밖은 무시)
 	EntityType["LaunchCharacter"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Velocity, sol::optional<bool> bOverrideX,

@@ -148,7 +148,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 			{
 				Keys.PasteText = FUIPlatform::GetClipboardText(); // Ctrl+V + 포커스된 텍스트 상자일 때만 OS 클립보드를 읽는다
 			}
-			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds);
+			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds, Input.GameTimeScale);
 			bTaken                         = bTaken || Component.Runtime.bPointerOver;
 			// 복사/잘라내기 → OS 클립보드
 			if (std::string Copied; Instance->GetInputRouter().TakeClipboardText(Copied))
@@ -163,7 +163,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 		}
 		else
 		{
-			Instance->TickAnimations(Input.DeltaSeconds, Component.Runtime.Events); // 입력을 받지 않는 UI(HUD)도 애니메이션은 진행
+			Instance->TickAnimations(Input.DeltaSeconds, Component.Runtime.Events, Input.GameTimeScale); // 입력을 받지 않는 UI(HUD)도 애니메이션은 진행
 			Instance->Layout(Input.Viewport, Fonts);
 		}
 	}

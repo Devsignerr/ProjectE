@@ -76,4 +76,12 @@ public:
 	virtual bool LoadSubScene(const std::string& Asset, const FVector3& Offset) = 0;
 	virtual bool UnloadSubScene(const std::string& Asset)                       = 0;
 	virtual bool IsSubSceneLoaded(const std::string& Asset) const               = 0;
+	// 게임 시간 배율 (Lua Game.SetTimeScale/GetTimeScale/HitStop/GetHitStopRemaining, Time.UnscaledDeltaTime과 같은 규칙 — World/GameWorld.cpp
+	// 머리 주석 "시간 배율"): Standalone 전용 — 네트워크 세션에서는 Set/HitStop이 false(경고 한 번). 배율은 다음 게임플레이 틱부터.
+	// OnUpdate의 DeltaSeconds는 배율을 곱한 값이고 GetUnscaledDeltaSeconds는 이번(직전) 게임플레이 틱의 실제 dt
+	virtual bool  SetTimeScale(float Scale)          = 0; // 0 = 정지, 0~100으로 자름
+	virtual float GetTimeScale() const               = 0;
+	virtual bool  HitStop(float Seconds)             = 0; // 실제 시간 Seconds 동안 배율 0 (겹치면 긴 쪽)
+	virtual float GetHitStopRemaining() const        = 0;
+	virtual float GetUnscaledDeltaSeconds() const    = 0;
 };

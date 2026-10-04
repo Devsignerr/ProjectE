@@ -341,3 +341,19 @@ E_TEST(InputActions_SettingsSection)
 	std::error_code ErrorCode;
 	std::filesystem::remove(Path, ErrorCode);
 }
+
+// 소스 바인딩 조회 (개발 런타임 ESC 종료 판정 — 게임이 ESC를 액션에 바인딩하면 런타임이 ESC로 종료하지 않는다)
+E_TEST(InputActions_IsSourceBound)
+{
+	FInputMapping Mapping;
+	E_EXPECT_FALSE(Mapping.IsSourceBound(FInputSource::Key(EKey::Escape)));
+	FInputAction Pause;
+	Pause.Name = "Pause";
+	Pause.Bindings.push_back({ FInputSource::Key(EKey::P), {} });
+	Mapping.Actions.push_back(Pause);
+	E_EXPECT_FALSE(Mapping.IsSourceBound(FInputSource::Key(EKey::Escape)));
+	E_EXPECT_TRUE(Mapping.IsSourceBound(FInputSource::Key(EKey::P)));
+	Mapping.Actions[0].Bindings.push_back({ FInputSource::Key(EKey::Escape), {} });
+	E_EXPECT_TRUE(Mapping.IsSourceBound(FInputSource::Key(EKey::Escape)));
+	E_EXPECT_FALSE(Mapping.IsSourceBound(FInputSource::Gamepad(EGamepadButton::Back)));
+}

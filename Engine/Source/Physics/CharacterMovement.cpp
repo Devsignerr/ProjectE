@@ -85,12 +85,119 @@ namespace CharacterMovementMath
 		Movement.PendingRootMotionSeconds = 0.0f;
 	}
 
+	namespace
+	{
+		float ClampLaunchComponent(float Value)
+		{
+			return std::isfinite(Value) ? std::clamp(Value, -FCharacterMove::MaxLaunchSpeed, FCharacterMove::MaxLaunchSpeed) : 0.0f;
+		}
+
+		float ClampStunSeconds(float Value)
+		{
+			return std::isfinite(Value) ? std::clamp(Value, 0.0f, FCharacterMove::MaxStunSeconds) : 0.0f;
+		}
+	} // namespace
+
+	void CombineLaunch(FCharacterMove& Into, const FVector3& Velocity, bool bOverrideXY, bool bOverrideZ, float StunSeconds)
+	{
+		if (!Into.bLaunch)
+		{
+			Into.bLaunch           = true;
+			Into.LaunchVelocity    = FVector3();
+			Into.bLaunchOverrideXY = false;
+			Into.bLaunchOverrideZ  = false;
+			Into.StunSeconds       = 0.0f;
+		}
+		if (bOverrideXY)
+		{
+			Into.LaunchVelocity.X = Velocity.X;
+			Into.LaunchVelocity.Y = Velocity.Y;
+		}
+		else
+		{
+			Into.LaunchVelocity.X += Velocity.X;
+			Into.LaunchVelocity.Y += Velocity.Y;
+		}
+		Into.LaunchVelocity.Z  = bOverrideZ ? Velocity.Z : Into.LaunchVelocity.Z + Velocity.Z;
+		Into.bLaunchOverrideXY = Into.bLaunchOverrideXY || bOverrideXY;
+		Into.bLaunchOverrideZ  = Into.bLaunchOverrideZ || bOverrideZ;
+		Into.StunSeconds       = std::max(Into.StunSeconds, ClampStunSeconds(StunSeconds));
+	}
+
+	bool SanitizeLaunch(FCharacterMove& Move)
+	{
+		if (!Move.bLaunch)
+		{
+			return true;
+		}
+		if (!std::isfinite(Move.LaunchVelocity.X) || !std::isfinite(Move.LaunchVelocity.Y) || !std::isfinite(Move.LaunchVelocity.Z) ||
+		    !std::isfinite(Move.StunSeconds))
+		{
+			return false;
+		}
+		Move.LaunchVelocity = FVector3(ClampLaunchComponent(Move.LaunchVelocity.X), ClampLaunchComponent(Move.LaunchVelocity.Y),
+		                               ClampLaunchComponent(Move.LaunchVelocity.Z));
+		Move.StunSeconds    = ClampStunSeconds(Move.StunSeconds);
+		return true;
+	}
+
 	FVector3 ComputeVelocity(const FCharacterMovementComponent& Movement, const FVector3& CurrentVelocity, bool bGrounded, const FCharacterMove& Move,
 	                         float GravityZ, bool& bOutJumped)
 	{
-		const float DeltaSeconds = std::clamp(Move.DeltaSeconds, 0.0f, FCharacterMove::MaxMoveDeltaSeconds);
+		float StunTimer   = 0.0f;
+		bool  bAirborne   = false;
+		return ComputeVelocity(Movement, CurrentVelocity, bGrounded, Move, GravityZ, StunTimer, bOutJumped, bAirborne);
+	}
+
+	FVector3 ComputeVelocity(const FCharacterMovementComponent& Movement, const FVector3& CurrentVelocity, bool bInGrounded, const FCharacterMove& Move,
+	                         float GravityZ, float& InOutStunTimer, bool& bOutJumped, bool& bOutAirborne)
+	{
+		const float DeltaSeconds = std::clamp(std::isfinite(Move.DeltaSeconds) ? Move.DeltaSeconds : 0.0f, 0.0f, FCharacterMove::MaxMoveDeltaSeconds);
 		FVector3    Velocity     = CurrentVelocity;
+		bool        bGrounded    = bInGrounded;
 		bOutJumped               = false;
+		bOutAirborne             = false;
+
+		// ---- 발사/넉백 (가장 먼저 — 헤더 주석)
+		if (Move.bLaunch)
+		{
+			const FVector3 Launch(ClampLaunchComponent(Move.LaunchVelocity.X), ClampLaunchComponent(Move.LaunchVelocity.Y),
+			                      ClampLaunchComponent(Move.LaunchVelocity.Z));
+			Velocity.X     = Move.bLaunchOverrideXY ? Launch.X : Velocity.X + Launch.X;
+			Velocity.Y     = Move.bLaunchOverrideXY ? Launch.Y : Velocity.Y + Launch.Y;
+			Velocity.Z     = Move.bLaunchOverrideZ ? Launch.Z : (bGrounded ? std::max(Velocity.Z, 0.0f) : Velocity.Z) + Launch.Z;
+			InOutStunTimer = std::max(std::isfinite(InOutStunTimer) ? InOutStunTimer : 0.0f, ClampStunSeconds(Move.StunSeconds));
+			bGrounded      = false; // 이 무브는 공중 규칙 (바닥 붙이기 없음)
+			bOutAirborne   = true;
+		}
+
+		// ---- 경직: 입력·점프·루트 모션 무시, 수평 감속
+		const bool bStunned = std::isfinite(InOutStunTimer) && InOutStunTimer > 0.0f;
+		InOutStunTimer      = bStunned && InOutStunTimer - DeltaSeconds > 1.0e-4f ? InOutStunTimer - DeltaSeconds : 0.0f; // 프레임 dt 누적 오차 여유 (2D와 같음)
+		if (bStunned)
+		{
+			const float Decel  = std::isfinite(Movement.KnockbackDeceleration) ? std::max(Movement.KnockbackDeceleration, 0.0f) : 0.0f;
+			const float Speed  = std::sqrt(Velocity.X * Velocity.X + Velocity.Y * Velocity.Y);
+			const float Reduce = Decel * DeltaSeconds;
+			if (Speed <= Reduce || Speed <= 0.0f)
+			{
+				Velocity.X = 0.0f;
+				Velocity.Y = 0.0f;
+			}
+			else
+			{
+				const float Scale = (Speed - Reduce) / Speed;
+				Velocity.X *= Scale;
+				Velocity.Y *= Scale;
+			}
+			if (bGrounded)
+			{
+				Velocity.Z = 0.0f;
+			}
+			Velocity.Z += GravityZ * Movement.GravityScale * DeltaSeconds;
+			return Velocity;
+		}
+
 		if (Move.bRootMotion)
 		{
 			// 루트 모션: 수평은 애니메이션 속도 그대로 (충돌/계단/바닥 붙이기는 Jolt 이동이 맡는다)

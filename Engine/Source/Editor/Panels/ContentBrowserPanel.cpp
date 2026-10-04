@@ -8,6 +8,7 @@
 #include "Editor/AssetEditors/BehaviorTreeEditor.h"
 #include "Editor/AssetEditors/DataValueWidgets.h"
 #include "Editor/AssetEditors/MaterialGraphEditing.h"
+#include "Editor/AssetEditors/Sprite2DAssetCreation.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
 #include "Editor/ContentBrowser/AssetReferenceUpdater.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
@@ -23,6 +24,7 @@
 #include "Scene/DataLibrary.h"
 #include "Scene/ModelMetadata.h"
 #include "Scene/Sequence.h"
+#include "Scene/Sprite/FlipbookAsset.h"
 #include "Scene/Particles.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "UI/Localization.h"
@@ -727,6 +729,23 @@ void FContentBrowserPanel::DrawItemContextMenu(FEditorContext& Context, const FE
 			AddToScene(Context, Entry);
 		}
 	}
+	// 이미지 → 2D 에셋 만들기 (Phase 56-5b, 만든 뒤 편집기 열기)
+	if (std::string Error; bSingle)
+	{
+		if (const std::filesystem::path Created = Sprite2DAssetCreation::DrawImageContextMenu(Entry.Path, Error); !Created.empty())
+		{
+			Notify(Context, "새 에셋: " + FStringConv::ToUtf8(Created.filename().wstring()), false);
+			bNeedsRefresh = true;
+			if (Context.OpenAssetEditorRequest)
+			{
+				Context.OpenAssetEditorRequest(Created);
+			}
+		}
+		else if (!Error.empty())
+		{
+			Notify(Context, Error, true);
+		}
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem(ICON_FA_I_CURSOR " 이름 바꾸기", "F2", false, bSingle))
 	{
@@ -788,6 +807,10 @@ void FContentBrowserPanel::DrawBackgroundContextMenu(FEditorContext& Context)
 	if (ImGui::MenuItem(ICON_FA_CLAPPERBOARD " 새 시퀀스 (컷신)"))
 	{
 		CreateAsset(Context, "NewSequence", FSequenceAsset::Extension);
+	}
+	if (ImGui::MenuItem(ICON_FA_FILM " 새 플립북"))
+	{
+		CreateAsset(Context, "NewFlipbook", FFlipbookAsset::Extension);
 	}
 	// 데이터: 구조체 → 그 구조체를 고르는 테이블/데이터 에셋
 	if (ImGui::MenuItem(ICON_FA_TABLE_LIST " 새 데이터 구조체"))
@@ -1200,6 +1223,10 @@ void FContentBrowserPanel::CreateAsset(FEditorContext& Context, const std::strin
 	else if (Extension == FSequenceAsset::Extension)
 	{
 		bOk = FSequenceAsset::MakeDefault().SaveToFile(Path);
+	}
+	else if (Extension == FFlipbookAsset::Extension)
+	{
+		bOk = Sprite2DAssetCreation::SaveDefaultFlipbook(Path);
 	}
 	else if (Extension == FDataStruct::Extension)
 	{

@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part01_GraphicsBasics.html#lec-3">← 3강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">1부 · 3강 문제풀이</div>
+		<h1>첫 삼각형, 제대로 이해했나요?</h1>
+		<p>3강의 여덟 주제(파이프라인, 정점 버퍼, HLSL, 루트 시그니처, PSO, 보간, 뷰포트, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part01_GraphicsBasics.html#lec-4">4강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part01_GraphicsBasics.html";
+const Topics = {
+	pipeline: { name: "래스터화 파이프라인",       anchor: "lec-3-pipeline" },
+	vertex:   { name: "정점 버퍼와 입력 레이아웃",  anchor: "lec-3-vertex" },
+	hlsl:     { name: "HLSL과 DXC",              anchor: "lec-3-hlsl" },
+	rootsig:  { name: "루트 시그니처",            anchor: "lec-3-rootsig" },
+	pso:      { name: "파이프라인 상태 객체(PSO)", anchor: "lec-3-pso" },
+	raster:   { name: "래스터화와 보간",          anchor: "lec-3-raster" },
+	viewport: { name: "뷰포트와 시저",            anchor: "lec-3-viewport" },
+	pitfalls: { name: "함정과 교훈",              anchor: "lec-3-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "pipeline", kind: "순서",
+		q: "정점 데이터가 픽셀 색이 되기까지 거치는 래스터화 파이프라인의 순서로 맞는 것은?",
+		o: [
+			"정점 셰이더 → 입력 조립 → 픽셀 셰이더 → 래스터화 → 출력 병합",
+			"입력 조립 → 정점 셰이더 → 래스터화 → 픽셀 셰이더 → 출력 병합",
+			"입력 조립 → 래스터화 → 정점 셰이더 → 픽셀 셰이더 → 출력 병합",
+			"입력 조립 → 정점 셰이더 → 픽셀 셰이더 → 래스터화 → 출력 병합",
+		],
+		a: 1,
+		w: [
+			"정점 셰이더가 읽을 정점을 먼저 만들어야 합니다. 입력 조립이 맨 앞입니다.",
+			"버퍼 바이트를 정점으로 자르고(입력 조립) → 정점마다 위치를 계산하고(정점 셰이더) → 삼각형이 덮는 픽셀을 찾아 값을 섞고(래스터화) → 픽셀마다 색을 계산하고(픽셀 셰이더) → 깊이 테스트·블렌딩 후 렌더 타깃에 씁니다(출력 병합).",
+			"래스터화는 화면 위치를 알아야 하므로, 위치를 계산하는 정점 셰이더 다음입니다.",
+			"픽셀 셰이더는 \"어떤 픽셀이 덮였는지\"를 알아야 실행됩니다. 그것을 찾는 것이 래스터화이므로 래스터화가 먼저입니다.",
+		],
+	},
+	{
+		t: "pipeline", kind: "개념",
+		q: "다음 단계 중 우리가 HLSL로 **직접 프로그램을 짜 넣는** 단계만 고른 것은?",
+		o: [
+			"입력 조립, 래스터화",
+			"정점 셰이더, 픽셀 셰이더",
+			"래스터화, 출력 병합",
+			"모든 단계",
+		],
+		a: 1,
+		w: [
+			"둘 다 고정 기능입니다. 입력 레이아웃이나 컬링 모드 같은 설정값으로만 조절합니다.",
+			"셰이더 단계만 프로그래밍 가능합니다. 나머지 고정 기능 단계의 설정은 PSO에 구워 넣습니다.",
+			"둘 다 고정 기능입니다. 블렌딩 방식, 깊이 비교 함수 같은 설정만 정합니다.",
+			"래스터화나 깊이 테스트 같은 단계는 하드웨어에 고정되어 있습니다.",
+		],
+	},
+	{
+		t: "pipeline", kind: "추론",
+		q: "정점 3개짜리 삼각형 하나가 화면에서 약 10,000픽셀을 덮습니다. 정점 셰이더와 픽셀 셰이더는 대략 몇 번씩 실행될까요? (깊이 테스트로 버려지는 픽셀은 없다고 가정)",
+		o: [
+			"정점 셰이더 3번, 픽셀 셰이더 약 10,000번",
+			"정점 셰이더 10,000번, 픽셀 셰이더 3번",
+			"둘 다 3번",
+			"둘 다 약 10,000번",
+		],
+		a: 0,
+		w: [
+			"정점 셰이더는 정점마다, 픽셀 셰이더는 덮인 픽셀마다 한 번씩 실행됩니다. 그래서 무거운 계산을 정점 셰이더로 옮길 수 있으면 훨씬 싸게 끝납니다. 대신 정점 사이는 보간된 값으로 채워집니다.",
+			"반대입니다. 정점은 3개뿐이고, 픽셀이 10,000개입니다.",
+			"픽셀 색은 픽셀마다 계산되어야 하므로 픽셀 셰이더는 3번으로 끝나지 않습니다.",
+			"정점 셰이더는 정점 수만큼만 실행됩니다.",
+		],
+	},
+	{
+		t: "vertex", kind: "개념",
+		q: "입력 레이아웃(input layout)의 역할로 맞는 것은?",
+		o: [
+			"정점을 화면 위치로 변환하는 행렬을 담는다.",
+			"\"몇 번째 바이트부터 어떤 형식으로 읽어 어떤 시맨틱(POSITION, COLOR …)에 넣을지\"를 정해서, 정점 버퍼의 바이트 묶음을 셰이더 입력 구조체와 짝지어 준다.",
+			"정점 버퍼를 GPU 메모리에 올리는 복사 명령이다.",
+			"삼각형을 몇 개씩 묶을지(삼각형 목록, 띠 등)를 정한다.",
+		],
+		a: 1,
+		w: [
+			"변환은 정점 셰이더가 상수 버퍼의 행렬로 합니다(4강·5강).",
+			"GPU에게 정점 버퍼는 그냥 바이트 나열입니다. 셰이더 입력 구조체의 같은 시맨틱 이름표와 짝지어지는 것이 핵심입니다.",
+			"업로드는 업로드 힙 → 기본 힙 복사(`CopyBufferRegion`)가 합니다.",
+			"그것은 기본 도형 위상(`IASetPrimitiveTopology`, 예: `TRIANGLELIST`)이 정합니다.",
+		],
+	},
+	{
+		t: "vertex", kind: "계산",
+		q: "Phase 3 시점의 정점 구조입니다. `FVector3`는 float 3개, `FVector2`는 2개, `FVector4`는 4개이고 float는 4바이트입니다. 입력 레이아웃에서 `COLOR` 항목의 오프셋(`offsetof(FVertex, Color)`)은?",
+		code: "struct FVertex\n{\n\tFVector3 Position;\n\tFVector3 Normal;\n\tFVector2 UV;\n\tFVector4 Color = FVector4::OneVector;\n};",
+		o: ["24바이트", "32바이트", "36바이트", "48바이트"],
+		a: 1,
+		w: [
+			"24는 `UV`의 오프셋입니다(Position 12 + Normal 12).",
+			"Position 12 + Normal 12 + UV 8 = 32바이트부터 Color가 시작합니다. 구조체 전체 크기는 48바이트입니다. 오프셋을 손으로 적지 않고 `offsetof`로 얻는 이유는, 구조체를 고쳤을 때 레이아웃이 자동으로 따라오게 하기 위해서입니다.",
+			"UV는 float 2개, 8바이트입니다. 12바이트로 세면 36이 나옵니다.",
+			"48은 구조체 전체 크기(정점 간격 stride)입니다.",
+		],
+	},
+	{
+		t: "vertex", kind: "설계 이유",
+		q: "`FD3D12Buffer::InitStatic`은 정점 데이터를 UPLOAD 힙 버퍼에 먼저 쓰고, GPU에게 DEFAULT 힙 버퍼로 복사하게 합니다. 왜 DEFAULT 힙에 바로 쓰지 않을까요?",
+		o: [
+			"DEFAULT 힙은 GPU가 가장 빨리 읽는 메모리지만 CPU가 직접 쓸 수 없기 때문이다.",
+			"UPLOAD 힙이 더 빠르지만 크기 제한이 있기 때문이다.",
+			"DEFAULT 힙은 Debug 빌드에서만 쓸 수 있기 때문이다.",
+			"복사를 거쳐야 정점 데이터가 자동으로 압축되기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"CPU가 쓸 수 있는 UPLOAD 힙에 먼저 담고(`Map` → `memcpy`), GPU 명령(`CopyBufferRegion`)으로 VRAM의 DEFAULT 힙에 옮기는 두 단계입니다.",
+			"GPU가 매 프레임 읽기에는 DEFAULT 힙이 빠릅니다. UPLOAD 힙은 CPU가 쓰기 위한 중간 정거장입니다.",
+			"빌드 구성과는 관계없습니다.",
+			"복사는 바이트를 그대로 옮길 뿐 압축하지 않습니다.",
+		],
+	},
+	{
+		t: "vertex", kind: "결과 예측",
+		q: "`InitStatic`은 `Queue.ExecuteImmediate`로 복사를 제출하고 **끝날 때까지 기다립니다**. 이 방식의 특징으로 맞는 것은?",
+		o: [
+			"기다리기 때문에 함수 끝에서 업로드 버퍼(지역 변수)가 사라져도 안전하다. 대신 게임 도중 큰 에셋을 이렇게 올리면 화면이 멈칫하므로, 나중에 복사 큐로 비동기 업로드하는 `InitStaticAsync`가 추가되었다.",
+			"기다리지 않고 바로 돌아오므로 업로드 버퍼를 함수 끝에서 지우면 위험하다.",
+			"기다리는 동안 GPU가 다른 프레임을 그리지 못하므로 쓰면 안 된다.",
+			"기다리는 시간은 항상 0이다. 복사는 CPU에서 일어나기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"로딩 시점에는 동기 방식도 괜찮지만, 플레이 중에는 끊김이 됩니다. 비동기 업로드는 Phase 37에서 추가되었습니다(30강).",
+			"`ExecuteImmediate`는 제출한 뒤 펜스로 완료를 기다립니다. 그래서 지역 변수가 사라져도 안전합니다.",
+			"로딩 같은 시점에는 문제가 없습니다. 문제는 프레임 도중에 쓸 때 생기는 끊김입니다.",
+			"`CopyBufferRegion`은 GPU 명령입니다. GPU가 실행할 때까지 기다리는 시간이 있습니다.",
+		],
+	},
+	{
+		t: "vertex", kind: "추론",
+		q: "정육면체는 꼭짓점이 8개인데, ProjectE의 큐브 메시는 정점을 24개(면마다 4개) 둡니다. 왜 8개로 공유하지 않을까요?",
+		o: [
+			"인덱스 버퍼를 쓰지 않기 때문이다.",
+			"한 꼭짓점이 세 면에 걸쳐 있는데 면마다 법선(바라보는 방향)이 다르다. 정점 하나는 법선 하나만 가질 수 있으므로 면별로 따로 둬야 한다.",
+			"GPU는 정점을 공유할 수 없기 때문이다.",
+			"정점이 24개여야 삼각형 12개를 만들 수 있기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"인덱스 버퍼는 씁니다. 24개 정점을 인덱스 36개(삼각형 12개)로 묶습니다.",
+			"위치는 같아도 법선이나 UV가 다르면 다른 정점입니다. 면마다 평평하게 보이려면 모서리에서 법선이 갈라져야 합니다.",
+			"인덱스 버퍼는 정점을 공유하라고 있는 것입니다. 공유하면 GPU가 정점 셰이더 결과를 재사용할 수도 있습니다.",
+			"8개 정점으로도 인덱스로 삼각형 12개를 만들 수 있습니다. 문제는 법선입니다.",
+		],
+	},
+	{
+		t: "hlsl", kind: "코드 읽기",
+		q: "`Triangle.hlsl`의 정점 셰이더 출력 구조체입니다. 두 멤버에 대한 설명으로 맞는 것은?",
+		code: "struct FPixelInput\n{\n\tfloat4 Position : SV_Position;\n\tfloat4 Color    : COLOR;\n};",
+		o: [
+			"둘 다 래스터라이저가 그대로 픽셀 셰이더에 복사한다.",
+			"`SV_Position`은 래스터라이저가 \"어디에 그릴지\" 정하는 데 쓰는 시스템 값이고, `COLOR`는 래스터라이저가 삼각형 안에서 보간해 픽셀 셰이더 입력으로 넘긴다.",
+			"`SV_Position`은 텍스처 좌표이고 `COLOR`는 렌더 타깃에 쓸 최종 색이다.",
+			"`COLOR`라는 이름 때문에 GPU가 자동으로 sRGB 변환을 한다.",
+		],
+		a: 1,
+		w: [
+			"`COLOR`는 복사되는 것이 아니라 세 정점 값이 섞여(보간되어) 들어갑니다. 첫 삼각형의 그라데이션이 바로 이것입니다.",
+			"`SV_`로 시작하는 시맨틱은 \"시스템 값\"입니다. 픽셀 셰이더의 반환값에 붙은 `SV_Target`은 렌더 타깃에 쓸 색을 뜻합니다.",
+			"`SV_Position`은 클립 공간 위치입니다. 최종 색은 픽셀 셰이더의 `SV_Target`입니다.",
+			"`COLOR`는 사용자 정의 이름표일 뿐입니다. sRGB 변환은 렌더 타깃 뷰 형식이 합니다(2강).",
+		],
+	},
+	{
+		t: "hlsl", kind: "개념",
+		q: "Phase 1의 정점 셰이더는 위치를 변환하지 않고 `float4(Input.Position, 1.0f)`로 그대로 내보냅니다. 그렇다면 다음 정점 중 **화면 밖**에 있는 것은?",
+		o: [
+			"(0.0, 0.5, 0.5)",
+			"(-0.5, -0.5, 0.5)",
+			"(1.5, 0.0, 0.5)",
+			"(0.5, -0.5, 0.5)",
+		],
+		a: 2,
+		w: [
+			"x 0, y 0.5는 화면 가운데 위쪽입니다. NDC의 x와 y는 −1~+1이 화면 안입니다.",
+			"왼쪽 아래 사분면, 화면 안입니다.",
+			"카메라가 없으므로 좌표가 곧 NDC입니다. NDC는 왼쪽 끝 x = −1, 오른쪽 끝 x = +1이므로 x = 1.5는 오른쪽 화면 밖입니다.",
+			"오른쪽 아래 사분면, 화면 안입니다.",
+		],
+	},
+	{
+		t: "hlsl", kind: "개념",
+		q: "HLSL 셰이더가 GPU에서 실행되기까지의 경로로 맞는 것은?",
+		o: [
+			"GPU가 HLSL 텍스트를 직접 해석해 실행한다.",
+			"DXC가 HLSL을 DXIL 중간 바이트코드로 바꾸고, 드라이버가 PSO를 만들 때 이를 GPU 기계어로 다시 번역한다.",
+			"MSVC가 C++ 코드와 함께 HLSL을 x64 기계어로 컴파일한다.",
+			"DXC가 HLSL을 곧바로 그 GPU 전용 기계어로 바꿔 파일로 저장한다.",
+		],
+		a: 1,
+		w: [
+			"GPU는 텍스트를 실행하지 못합니다. 컴파일이 필요합니다.",
+			"DXIL은 GPU 제조사와 무관한 중간 형식이고, 기계어 번역은 드라이버 몫입니다. 그래서 PSO 생성이 무거운 일이 됩니다(31강).",
+			"HLSL은 GPU용 언어입니다. MSVC가 아니라 DXC가 컴파일합니다.",
+			"DXC의 출력은 GPU마다 다른 기계어가 아니라 공통 중간 형식(DXIL)입니다.",
+		],
+	},
+	{
+		t: "hlsl", kind: "설계 이유",
+		q: "ProjectE는 셰이더를 항상 `FShaderLibrary`로 얻습니다. 조회 순서와 쿠킹 파일 유효성 판정으로 맞는 것은?",
+		o: [
+			"DXC 컴파일 → 쿠킹 파일 → 메모리 캐시 순서. 유효성은 파일 수정 시각으로 판정한다.",
+			"메모리 캐시 → 쿠킹된 DXIL 파일 → DXC 컴파일(+쿠킹 파일 기록) 순서. 쿠킹 파일이 유효한지는 소스와 `#include` 파일 **내용의 해시**로 판정한다.",
+			"항상 DXC로 컴파일한다. 출시한 게임에도 DXC를 넣는다.",
+			"쿠킹 파일만 읽는다. 쿠킹 파일이 없으면 셰이더를 쓸 수 없다.",
+		],
+		a: 1,
+		w: [
+			"가장 싼 것(메모리)부터 확인합니다. 파일 시각은 복사나 체크아웃 때 바뀔 수 있어 믿을 수 없습니다.",
+			"매번 컴파일하면 시작이 느리고, 출시한 게임에는 DXC를 넣고 싶지 않습니다. 미리 쿠킹할 목록은 `Engine/Shaders/Shaders.json`에 적습니다(10강).",
+			"그러면 시작이 느립니다. 패키지는 DXC 없이 쿠킹된 DXIL만 씁니다.",
+			"개발 중에는 쿠킹 파일이 없거나 낡았으면 DXC로 컴파일해서 채웁니다.",
+		],
+	},
+	{
+		t: "rootsig", kind: "개념",
+		q: "루트 시그니처(root signature)를 가장 잘 설명한 것은?",
+		o: [
+			"셰이더 바이트코드에 붙는 디지털 서명. 변조를 막는다.",
+			"셰이더가 레지스터 번호(b0, t0, s0 …)로 선언한 리소스를, CPU가 \"루트 인수 몇 번에 무엇을 꽂는다\"로 연결하는 인수 목록. C++ 함수의 시그니처처럼 \"이 셰이더 묶음은 무엇을 받는다\"를 정한다.",
+			"정점 버퍼의 형식을 정의하는 구조체",
+			"렌더 타깃과 깊이 버퍼의 형식 목록",
+		],
+		a: 1,
+		w: [
+			"이름 때문에 헷갈리기 쉽지만 보안과는 관계없습니다.",
+			"루트 시그니처 전체는 32비트 값(DWORD) 64개를 넘을 수 없습니다.",
+			"그것은 입력 레이아웃입니다.",
+			"렌더 타깃 형식은 PSO에 들어갑니다.",
+		],
+	},
+	{
+		t: "rootsig", kind: "계산",
+		q: "Phase 3 메시 렌더러의 루트 시그니처는 루트 CBV 3개(b0, b1, b2) + SRV 디스크립터 테이블 1개 + 정적 샘플러 1개입니다. 비용(루트 상수 1개 = 1 DWORD, 루트 디스크립터 = 2 DWORD, 테이블 = 1 DWORD, 정적 샘플러 = 0)을 합하면 몇 DWORD일까요?",
+		o: ["5 DWORD", "7 DWORD", "8 DWORD", "64 DWORD"],
+		a: 1,
+		w: [
+			"루트 CBV는 GPU 주소(64비트)라 하나에 2 DWORD입니다.",
+			"루트 CBV 3개 × 2 = 6, 테이블 1, 정적 샘플러 0. 합계 7 DWORD로 한도 64에 한참 못 미칩니다.",
+			"정적 샘플러는 시그니처에 박히므로 비용이 0입니다.",
+			"64는 한도입니다. 실제 사용량이 아닙니다.",
+		],
+	},
+	{
+		t: "rootsig", kind: "판단",
+		q: "매 드로우 바뀌는 4×4 행렬 두 개(128바이트)를 셰이더에 넘기려 합니다. 가장 알맞은 방법은?",
+		o: [
+			"루트 상수로 넘긴다. 32 DWORD를 차지하지만 가장 빠르다.",
+			"업로드 메모리에 쓰고, 루트 CBV로 주소(2 DWORD)만 넘긴다.",
+			"정적 샘플러에 넣는다. 비용이 0이기 때문이다.",
+			"디스크립터 힙에 행렬 값을 직접 넣는다.",
+		],
+		a: 1,
+		w: [
+			"행렬 두 개는 32 DWORD로, 한도 64의 절반을 이것 하나가 차지합니다. 루트 인수가 클수록 드로우마다 넘기는 양도 늘어납니다.",
+			"매 드로우 바뀌는 상수 버퍼는 루트 CBV가 맞습니다. 그림 3-3의 PerObject(b0)가 바로 이 방식입니다. 동적 업로드 버퍼는 5강에서 다룹니다.",
+			"정적 샘플러는 텍스처 필터·주소 모드 설정만 담습니다. 데이터는 넣을 수 없습니다.",
+			"디스크립터 힙에는 리소스 해석 정보(뷰)가 들어갑니다. 행렬 값 자체를 넣는 곳이 아닙니다.",
+		],
+	},
+	{
+		t: "rootsig", kind: "코드 읽기",
+		q: "아래 코드의 `E_CHECK`가 막으려는 실수는?",
+		code: "const uint32 PerObjectIndex = RootSignature.AddConstantBufferView(0);\nconst uint32 PerFrameIndex  = RootSignature.AddConstantBufferView(1);\n...\nE_CHECK(PerObjectIndex == RootParam_PerObject && PerFrameIndex == RootParam_PerFrame &&\n        MaterialIndex == RootParam_Material && TextureIndex == RootParam_MaterialTexture);",
+		o: [
+			"루트 시그니처가 64 DWORD를 넘는 것",
+			"`Add*` 호출 순서를 바꿨는데 그릴 때 쓰는 enum 번호(`RootParam_*`)를 같이 고치지 않아, 셰이더가 엉뚱한 버퍼를 읽는 것",
+			"셰이더 컴파일이 실패하는 것",
+			"디스크립터 힙이 가득 차는 것",
+		],
+		a: 1,
+		w: [
+			"한도 초과는 `Finalize`에서 생성이 실패하는 방식으로 드러납니다. 이 검사의 목적은 아닙니다.",
+			"그릴 때는 `SetGraphicsRootConstantBufferView(RootParam_PerFrame, …)`처럼 enum 번호를 씁니다. 빌더가 돌려준 실제 번호와 enum이 어긋나면 조용히 잘못된 화면이 나옵니다. 이 검사는 그 실수를 시작하자마자 잡습니다.",
+			"셰이더 컴파일과는 무관한 검사입니다.",
+			"힙 용량은 디스크립터 할당자가 따로 검사합니다(2강).",
+		],
+	},
+	{
+		t: "pso", kind: "설계 이유",
+		q: "DX12가 셰이더, 입력 레이아웃, 래스터라이저·깊이·블렌드 설정, 렌더 타깃 형식을 PSO 하나로 **미리** 굽게 한 이유는?",
+		o: [
+			"상태를 하나씩 바꾸게 하면 드라이버가 그리기 직전에 그 조합에 맞는 GPU 기계어를 만들어야 해서 예측할 수 없는 끊김이 생겼기 때문이다. PSO로 비용을 생성 시점으로 옮겼다.",
+			"PSO를 쓰면 GPU 메모리를 덜 쓰기 때문이다.",
+			"상태를 따로 바꾸는 API가 멀티스레드에서 동작하지 않기 때문이다.",
+			"PSO를 쓰면 셰이더 컴파일이 필요 없어지기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"그리기 직전에는 `SetPipelineState(PSO)` 한 번이면 됩니다. 대신 \"PSO를 언제 미리 만들어 둘 것인가\"가 새 문제가 됩니다(31강).",
+			"메모리 절약이 목적이 아닙니다. 끊김 없이 예측 가능하게 만드는 것이 목적입니다.",
+			"멀티스레드 문제가 PSO의 주된 이유는 아닙니다.",
+			"PSO는 컴파일된 셰이더 바이트코드를 받습니다. 셰이더 컴파일은 여전히 필요합니다.",
+		],
+	},
+	{
+		t: "pso", kind: "규칙",
+		q: "메시 PSO를 만들 때 렌더 타깃 형식을 숫자로 직접 적지 않고 `FD3D12RHI::RenderTargetFormat`, `FD3D12RHI::DepthBufferFormat` 상수를 씁니다. 이유는?",
+		o: [
+			"상수를 쓰면 PSO 생성이 빨라지기 때문이다.",
+			"PSO의 렌더 타깃 형식은 실제로 그릴 렌더 타깃 뷰의 형식과 정확히 같아야 한다. 각자 숫자를 적으면 한쪽만 바뀌는 사고가 나므로, RHI가 공개한 상수 하나를 함께 쓴다.",
+			"DX12는 렌더 타깃 형식으로 상수만 받기 때문이다.",
+			"형식을 틀리게 적어도 드라이버가 알아서 맞춰 주지만, 상수를 쓰는 편이 보기 좋기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"성능과는 관계없습니다.",
+			"백버퍼는 sRGB 뷰(`R8G8B8A8_UNORM_SRGB`, 2강), 깊이는 `D32_FLOAT`(5강)입니다. 값의 출처를 하나로 모으는 것이 핵심입니다.",
+			"API는 아무 `DXGI_FORMAT` 값이나 받습니다. 문제는 일관성입니다.",
+			"맞춰 주지 않습니다. 형식이 다르면 디버그 레이어 오류가 나고 잘못 그려집니다.",
+		],
+	},
+	{
+		t: "pso", kind: "결과 예측",
+		q: "ProjectE의 래스터라이저 기본값은 \"시계 방향(CW)이 앞면, 뒷면 제거(`CULL_MODE_BACK`)\"입니다. 누군가 메시의 인덱스 순서를 모두 반시계 방향으로 만들었다면?",
+		o: [
+			"아무 차이 없다. GPU가 자동으로 앞면을 판단한다.",
+			"바깥에서 보면 모든 삼각형이 뒷면으로 판정되어 버려지므로 물체가 보이지 않는다(안쪽 면만 보인다).",
+			"물체가 두 배 밝게 보인다.",
+			"컴파일 에러가 난다.",
+		],
+		a: 1,
+		w: [
+			"앞면 판정은 화면에서 정점이 도는 방향만 봅니다. 순서가 뒤집히면 판정도 뒤집힙니다.",
+			"그래서 ProjectE는 이 규약을 테스트(`Cube_WindingIsClockwiseFromOutside`: 바깥에서 본 `Cross(P1−P0, P2−P0)`가 바깥 법선과 같은 방향)로 고정합니다. glTF 로더가 인덱스 순서를 뒤집는 이유도 이것입니다(11강).",
+			"밝기와는 관계없습니다.",
+			"인덱스 순서는 데이터라 컴파일러가 알 수 없습니다.",
+		],
+	},
+	{
+		t: "raster", kind: "계산",
+		q: "세 꼭짓점의 색이 빨강(1,0,0), 초록(0,1,0), 파랑(0,0,1)인 삼각형에서, 정확히 무게중심(세 꼭짓점의 평균 위치)에 있는 픽셀의 보간된 색은? (원근 보정은 무시)",
+		o: [
+			"(1, 1, 1) 흰색",
+			"(1/3, 1/3, 1/3) 어두운 회색",
+			"(0, 0, 0) 검정",
+			"가장 가까운 꼭짓점의 색 하나",
+		],
+		a: 1,
+		w: [
+			"가중치의 합은 1이므로 색 성분을 그대로 더하지 않습니다.",
+			"무게중심에서는 세 가중치가 모두 1/3입니다. 각 꼭짓점의 가중치는 그 꼭짓점 맞은편 조각의 넓이 비율이고, 무게중심은 삼각형을 넓이가 같은 세 조각으로 나눕니다.",
+			"가중치가 모두 0이 될 수는 없습니다. 삼각형 안의 점이면 합이 항상 1입니다.",
+			"그것은 보간을 끈(`nointerpolation`) 경우의 동작에 가깝습니다. 그때는 첫 번째 정점 값이 쓰입니다.",
+		],
+	},
+	{
+		t: "raster", kind: "개념",
+		q: "GPU가 \"원근 보정 보간\"을 자동으로 하는 이유는?",
+		o: [
+			"화면 넓이 비율로만 섞으면, 가까운 부분이 화면에서 더 크게 보이는 3D에서 텍스처가 휘어 보이기 때문이다. 그래서 값/w와 1/w를 보간한 뒤 나눈다.",
+			"색을 더 밝게 만들기 위해서다.",
+			"정점 셰이더 실행 횟수를 줄이기 위해서다.",
+			"깊이 버퍼를 쓰지 않기 위해서다.",
+		],
+		a: 0,
+		w: [
+			"w는 4강의 동차 좌표 성분이고, 원근 투영에서는 카메라에서의 거리입니다.",
+			"밝기와는 관계없습니다. 정확한 위치에서 값을 읽기 위한 보정입니다.",
+			"정점 셰이더 실행 횟수는 정점 수로 정해집니다.",
+			"깊이 테스트와는 별개입니다.",
+		],
+	},
+	{
+		t: "viewport", kind: "계산",
+		q: "뷰포트가 1920×1080 전체 화면입니다. NDC 좌표 (x, y) = (0.5, 0.5)는 몇 번째 픽셀에 찍힐까요? (x픽셀 = (xNDC + 1) / 2 × 너비, y픽셀 = (1 − yNDC) / 2 × 높이)",
+		o: [
+			"(1440, 810)",
+			"(1440, 270)",
+			"(960, 540)",
+			"(480, 270)",
+		],
+		a: 1,
+		w: [
+			"y를 뒤집지 않으면 810이 나옵니다. NDC의 +y는 위쪽이지만, 화면 픽셀 번호는 위에서 아래로 커집니다.",
+			"x = 1.5 / 2 × 1920 = 1440, y = 0.5 / 2 × 1080 = 270. 화면 오른쪽 위 사분면의 가운데입니다.",
+			"그것은 NDC (0, 0), 화면 정가운데입니다.",
+			"x를 (1 − 0.5)로 계산하면 480이 나옵니다. x는 뒤집지 않습니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "C++ 소스는 \"UTF-8, BOM 없음\"이 규칙인데, `.hlsl`/`.hlsli`는 반대로 \"UTF-8, **BOM 필수**\"입니다. 이유는?",
+		o: [
+			"GPU가 BOM으로 셰이더 파일을 식별하기 때문이다.",
+			"Windows SDK에 들어 있는 DXC 1.6이 BOM 없는 UTF-8 파일의 한글 주석을 제대로 읽지 못했기 때문이다.",
+			"BOM이 있어야 셰이더가 더 빨리 컴파일되기 때문이다.",
+			"Visual Studio가 BOM 없는 셰이더 파일을 열지 못하기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"GPU는 파일을 보지 않습니다. 컴파일된 바이트코드만 받습니다.",
+			"도구마다 기본값이 다릅니다. 그래서 `.editorconfig`가 파일 종류별 인코딩을 강제합니다. 같은 맥락에서 SDK 번들 DXC 1.6은 HLSL 2021의 `select()`도 지원하지 않아서, 엔진이 실제로 쓰는 컴파일러로 검증해야 합니다.",
+			"속도와는 관계없습니다.",
+			"Visual Studio는 둘 다 엽니다. 문제는 컴파일러였습니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-03";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 16;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = Seed % (K + 1);
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 3강을 확실히 이해했습니다. 4강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"3강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

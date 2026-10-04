@@ -138,7 +138,12 @@ void FDebugDrawRenderer::DrawBatch(const std::vector<FLineVertex>& Vertices, con
 
 void FDebugDrawRenderer::Render(const FDebugDraw& Lines, const FCamera& Camera, const FRenderOutput& Output, D3D12_CPU_DESCRIPTOR_HANDLE SceneDepthDsv)
 {
-	const std::vector<FDebugLine>& Source = Lines.GetLines();
+	Render(Lines.GetLines(), Camera, Output, SceneDepthDsv);
+}
+
+void FDebugDrawRenderer::Render(const std::vector<FDebugLine>& Source, const FCamera& Camera, const FRenderOutput& Output,
+                                D3D12_CPU_DESCRIPTOR_HANDLE SceneDepthDsv)
+{
 	if (Rhi == nullptr || Source.empty() || !Output.IsValid() || Output.Format != FD3D12RHI::RenderTargetFormat)
 	{
 		return;

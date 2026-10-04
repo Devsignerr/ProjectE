@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part01_GraphicsBasics.html#lec-4">← 4강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">1부 · 4강 문제풀이</div>
+		<h1>3D 수학, 제대로 이해했나요?</h1>
+		<p>4강의 여섯 주제(벡터, 행렬, 쿼터니언, 투영, 좌표계 규약, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part01_GraphicsBasics.html#lec-5">5강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part01_GraphicsBasics.html";
+const Topics = {
+	vector:     { name: "벡터·내적·외적",       anchor: "lec-4-vector" },
+	matrix:     { name: "행렬과 변환 합성",      anchor: "lec-4-matrix" },
+	quat:       { name: "쿼터니언",             anchor: "lec-4-quat" },
+	projection: { name: "투영과 깊이",           anchor: "lec-4-projection" },
+	convention: { name: "좌표계·단위 규약",      anchor: "lec-4-convention" },
+	pitfalls:   { name: "함정과 교훈",           anchor: "lec-4-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "vector", kind: "판단",
+		q: "카메라가 보는 방향(정규화)을 `F`, 카메라에서 물체로 가는 벡터를 `D`라 합니다. `FVector3::Dot(F, D) < 0`이면?",
+		o: [
+			"물체가 카메라 정면에 있다.",
+			"물체가 시선과 수직인 바로 옆에 있다.",
+			"물체가 카메라 뒤쪽에 있다.",
+			"물체가 카메라보다 아래쪽에 있다.",
+		],
+		a: 2,
+		w: [
+			"정면이면 두 벡터의 사잇각이 90°보다 작아 내적이 양수입니다.",
+			"수직이면 cos 90° = 0이라 내적이 0입니다.",
+			"a·b = |a||b| cos θ이므로 내적이 음수면 사잇각이 90°를 넘습니다. 즉 반대쪽입니다. 같은 원리가 조명(법선·빛 방향)과 프러스텀 컬링(평면까지의 거리)에 쓰입니다.",
+			"위아래와는 관계없습니다. 내적은 시선 방향과 얼마나 같은 쪽인지만 봅니다(위아래는 Up과의 내적으로 봐야 합니다).",
+		],
+	},
+	{
+		t: "vector", kind: "규약",
+		q: "ProjectE는 `Cross(Forward, Right) == Up`이 되도록 정했습니다(왼손 Z-up). 그렇다면 `Cross(Right, Forward)`는?",
+		o: [
+			"위쪽 Up (0, 0, 1)",
+			"아래 −Up (0, 0, −1)",
+			"앞쪽 Forward (1, 0, 0)",
+			"영벡터 (0, 0, 0)",
+		],
+		a: 1,
+		w: [
+			"외적은 교환 법칙이 성립하지 않습니다. 순서를 바꿨는데 같은 Up이 나올 수 없습니다.",
+			"외적은 순서를 바꾸면 부호가 바뀝니다: a×b = −(b×a). 그래서 삼각형 법선을 구할 때 꼭짓점 순서(와인딩)가 중요합니다.",
+			"`Cross(Right, Up)`이 Forward입니다. 순서가 다릅니다.",
+			"두 벡터가 평행할 때만 외적이 0입니다. Right와 Forward는 수직입니다.",
+		],
+	},
+	{
+		t: "vector", kind: "계산",
+		q: "삼각형 꼭짓점이 P0 = (0, 0, 0), P1 = (2, 0, 0), P2 = (0, 3, 0)입니다. `Cross(P1 − P0, P2 − P0)`로 구한 삼각형의 넓이는?",
+		o: ["3", "6", "5", "1.5"],
+		a: 0,
+		w: [
+			"외적은 (0, 0, 6)이고, 그 길이 6은 두 변이 만드는 평행사변형의 넓이입니다. 삼각형은 그 절반인 3입니다.",
+			"6은 평행사변형의 넓이입니다. 삼각형은 절반입니다.",
+			"두 변의 길이를 더한 값입니다. 넓이와는 관계없습니다.",
+			"한 번 더 반으로 나눈 값입니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "개념",
+		q: "동차 좌표에서 위치는 w = 1(`TransformPosition`), 방향 벡터는 w = 0(`TransformVector`)으로 변환합니다. 이렇게 구분하는 이유는?",
+		o: [
+			"방향 벡터는 길이가 1이므로 w를 0으로 둬야 정규화가 유지된다.",
+			"이동 성분은 w와 곱해져 더해지므로 w = 0이면 방향에서 이동이 빠진다.",
+			"w = 0이면 원근 나눗셈에서 방향 벡터가 단위 길이로 정규화된다.",
+			"w = 0이면 회전 부분(3×3)이 빠져 방향은 이동만 받게 된다.",
+		],
+		a: 1,
+		w: [
+			"w는 길이와 관계없습니다. 이동을 적용할지를 정합니다.",
+			"이동 성분은 행렬의 마지막 행(`M[3][0..2]`)에 있고 w를 곱해 더해집니다. 방향은 옮겨도 같은 방향이어야 하므로 w = 0으로 이동을 없앱니다. 표면 법선이나 속도 벡터에 물체의 이동량이 더해지면 엉뚱한 방향이 됩니다.",
+			"`TransformVector`는 원근 나눗셈을 하지 않습니다. 정규화도 하지 않습니다.",
+			"반대입니다. w = 0이 없애는 것은 이동이고, 방향도 회전(과 크기)은 그대로 받습니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "계산",
+		q: "아래 월드 행렬로 점 (1, 0, 0)을 변환하면? (Yaw 90°는 앞(+X)을 오른쪽(+Y)으로 돌립니다)",
+		code: "const FMatrix4x4 W = FMatrix4x4::MakeTransform(\n\tFVector3(5, -2, 1),                                  // Translation\n\tFQuat::FromAxisAngle(FVector3::UpVector, HalfPi),    // Rotation: Yaw 90°\n\tFVector3(2, 2, 2));                                  // Scale\n// MakeTransform = Scale * Rotation * Translation",
+		o: ["(7, −2, 1)", "(4, 12, 2)", "(5, 0, 1)", "(5, −4, 1)"],
+		a: 2,
+		w: [
+			"회전을 빼먹은 결과입니다. (1,0,0) × 2 = (2,0,0)에 이동만 더하면 이렇게 됩니다.",
+			"이동 → 회전 → 크기의 반대 순서로 적용한 결과입니다. 회전과 크기는 원점 기준이라 순서를 바꾸면 물체가 엉뚱한 곳으로 갑니다.",
+			"크기 → 회전 → 이동: (1,0,0) → (2,0,0) → (0,2,0) → (5,0,1). 테스트 `Matrix_MakeTransformOrder`가 정확히 이 값을 확인합니다.",
+			"회전 방향을 반대로(앞 → 왼쪽) 적용한 결과입니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "개념",
+		q: "행벡터 규약(`v * M`)과 열벡터 규약(`M * v`)에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"행벡터 규약은 먼저 적용할 변환을 왼쪽에 쓴다: v · S · R · T.",
+			"열벡터 규약은 같은 변환을 T · R · S · v로 쓰고 오른쪽부터 읽는다.",
+			"두 규약에서 같은 변환을 나타내는 행렬은 서로 전치 관계다.",
+			"두 규약은 같은 장면을 그려도 한쪽이 좌우로 뒤집혀 나온다.",
+		],
+		a: 3,
+		w: [
+			"맞는 설명입니다. 읽는 방향과 적용 순서가 같아 직관적이라는 것이 ProjectE(그리고 DirectX 전통·언리얼)가 이 규약을 고른 이유입니다.",
+			"맞는 설명입니다. OpenGL 교재에 흔한 방식입니다.",
+			"맞는 설명입니다.",
+			"이것이 틀렸습니다. 규약은 표기 방식의 차이일 뿐 일관되게 쓰면 결과가 같습니다. 거울처럼 뒤집히는 것은 좌표계 손잡이(왼손/오른손)를 섞었을 때의 일입니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "계산",
+		q: "부모가 (100, 0, 0)에 있고 Yaw 90°로 돌아 있습니다(크기 1). 자식의 로컬 위치가 (10, 0, 0)이면 월드 위치는? (자식 월드 = 자식 로컬 · 부모 월드)",
+		o: ["(110, 0, 0)", "(100, 10, 0)", "(10, 100, 0)", "(100, −10, 0)"],
+		a: 1,
+		w: [
+			"부모의 회전을 무시한 결과입니다.",
+			"(10, 0, 0)을 Yaw 90°로 돌리면 (0, 10, 0), 여기에 부모 위치를 더하면 (100, 10, 0)입니다. 부모가 바라보는 방향(+Y)으로 10cm 앞입니다. 계층 갱신은 8강에서 다룹니다.",
+			"부모 위치에도 회전을 적용한 결과입니다. 부모 위치는 이미 월드 좌표입니다.",
+			"회전 방향을 반대로 적용한 결과입니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "설계 이유",
+		q: "HLSL은 기본적으로 cbuffer의 행렬을 열우선으로 해석합니다. ProjectE가 행렬을 전치하지 않고 그대로 GPU에 올릴 수 있는 이유는?",
+		o: [
+			"`FMatrix4x4`가 내부적으로 열우선(`M[열][행]`)으로 저장하기 때문이다.",
+			"셰이더를 `-Zpr`로 컴파일해 GPU도 행렬을 행우선으로 읽기 때문이다.",
+			"업로드 버퍼로 복사할 때 D3D12 런타임이 행렬을 전치해 주기 때문이다.",
+			"행렬을 루트 상수로 넘기면 열우선 해석이 적용되지 않기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"`FMatrix4x4`는 `M[행][열]` 행우선 저장이고 이동은 `M[3][0..2]`에 있습니다.",
+			"`-Zpr`(행우선)로 CPU(`FMatrix4x4`, 행우선)와 GPU의 메모리 배치를 같게 만들고, 셰이더에서도 행벡터 규약대로 `mul(v, M)`을 씁니다. `Common.hlsli` 머리 주석에 이 약속이 적혀 있습니다. 많은 엔진은 대신 업로드 전에 전치합니다.",
+			"런타임과 드라이버는 메모리를 바이트 그대로 넘깁니다. 해석은 셰이더 컴파일 옵션이 정합니다.",
+			"행렬은 루트 CBV로 넘기는 상수 버퍼에 들어갑니다. 넘기는 방식과 행렬 배치 해석은 별개입니다.",
+		],
+	},
+	{
+		t: "matrix", kind: "결과 예측",
+		q: "누군가 셰이더 컴파일 옵션에서 `-Zpr`만 지웠습니다(CPU 코드와 `mul(v, M)`은 그대로). 무슨 일이 생길까요?",
+		o: [
+			"DXC가 `mul(v, M)` 형태를 보고 행우선 배치를 추론해 변화가 없다.",
+			"GPU가 행렬을 전치해 읽어 이동이 w 계산에 섞이고 화면이 깨진다.",
+			"cbuffer 패킹이 어긋나 뒤쪽 행렬이 0으로 읽혀 물체가 사라진다.",
+			"`mul`의 인자 차원이 맞지 않게 되어 셰이더 컴파일이 실패한다.",
+		],
+		a: 1,
+		w: [
+			"DXC는 곱 순서로 의도를 추론하지 않습니다. 옵션대로 해석할 뿐입니다.",
+			"이동 성분이 마지막 행이 아니라 마지막 열(w 계산)에 들어가 정점이 엉뚱하게 원근 나눗셈됩니다. 고치려면 업로드 전에 모든 행렬을 전치하거나, 셰이더에서 `mul(M, v)`로 곱 순서를 바꿔야 합니다. 규약은 한 군데만 어긋나도 화면 전체가 틀어집니다.",
+			"float4x4의 크기(64바이트)와 cbuffer 오프셋은 행우선이든 열우선이든 같습니다. 값은 그대로 있고 행과 열이 바뀌어 읽힐 뿐입니다.",
+			"float4와 float4x4의 곱은 어느 배치로 해석해도 문법적으로 맞아 컴파일은 성공합니다. 그래서 더 찾기 어렵습니다.",
+		],
+	},
+	{
+		t: "quat", kind: "개념",
+		q: "엔진이 회전을 내부적으로 오일러 각이나 3×3 행렬 대신 쿼터니언으로 다루는 이유로 **알맞지 않은** 것은?",
+		o: [
+			"오일러 각은 특정 자세에서 두 축이 겹쳐 자유도를 잃는 짐벌 락이 생긴다.",
+			"쿼터니언은 두 회전 사이를 Slerp로 매끄럽게 보간할 수 있다.",
+			"회전 행렬은 오차가 쌓이면 회전이 아닌 찌그러진 행렬이 되기 쉽다.",
+			"쿼터니언 성분은 각도를 바로 읽기 쉬워 인스펙터 입력에 알맞다.",
+		],
+		a: 3,
+		w: [
+			"맞는 이유입니다.",
+			"맞는 이유입니다. 정규화만 하면 언제나 올바른 회전이고, 애니메이션 블렌딩(40강)이 Slerp에 기댑니다.",
+			"맞는 이유입니다. 숫자도 9개라 쿼터니언(4개)보다 무겁습니다.",
+			"이것은 알맞지 않습니다. 사람이 입력하고 읽기에는 오일러 각(Pitch/Yaw/Roll)이 좋습니다. 그래서 에디터 인스펙터는 오일러 각으로 보여 주고, 내부 표현은 쿼터니언으로 둡니다.",
+		],
+	},
+	{
+		t: "quat", kind: "계산",
+		q: "Up(+Z) 축 둘레로 90° 회전하는 쿼터니언 `FQuat::FromAxisAngle(UpVector, 90°)`의 (x, y, z, w)는? (q = (n·sin(θ/2), cos(θ/2)))",
+		o: [
+			"(0, 0, 1.0, 0.0)",
+			"(0, 0, 0.707, 0.707)",
+			"(0.707, 0, 0, 0.707)",
+			"(0, 0, 0.383, 0.924)",
+		],
+		a: 1,
+		w: [
+			"반각을 쓰지 않고 sin 90°, cos 90°를 넣은 값입니다. 이것은 180° 회전입니다.",
+			"θ/2 = 45°이므로 sin 45° = cos 45° ≈ 0.707입니다. 각을 반으로 나눠 쓰는 것이 쿼터니언의 특징입니다.",
+			"성분 순서를 (w, x, y, z)로 착각해 0.707을 맨 앞에 쓴 값입니다. (x, y, z, w)로 읽으면 X축 둘레 90° 회전이 됩니다.",
+			"각을 두 번 반으로 나눈(22.5°) 값입니다. 이것은 45° 회전입니다.",
+		],
+	},
+	{
+		t: "quat", kind: "개념",
+		q: "`FQuat::Equals`는 q와 −q를 같은 것으로 취급합니다. 그 이유는?",
+		o: [
+			"부동소수점 오차 때문에 성분의 부호를 믿고 비교할 수 없어서다.",
+			"반각을 쓰므로 q와 −q가 정확히 같은 회전을 나타내기 때문이다.",
+			"−q는 역회전이지만 회전 각의 크기가 같아 같은 것으로 보기 때문이다.",
+			"정규화하면 w를 항상 양수로 맞추므로 부호 차이는 의미가 없어서다.",
+		],
+		a: 1,
+		w: [
+			"부호는 오차와 무관하게 분명히 비교할 수 있습니다.",
+			"축 n, 각 θ와 축 −n, 각 360° − θ는 같은 회전이고, 두 쿼터니언은 정확히 부호만 다릅니다. 회전에서 v′ = q v q*이므로 부호가 두 번 곱해져 사라집니다.",
+			"역회전은 켤레 q* = (−x, −y, −z, w)(`Conjugate`)입니다. −q와는 다릅니다.",
+			"`GetNormalized`는 길이만 1로 맞출 뿐 부호를 바꾸지 않습니다. w는 음수일 수 있습니다.",
+		],
+	},
+	{
+		t: "quat", kind: "규약",
+		q: "A = Yaw 90°, B = Pitch 90°일 때, `(A * B).RotateVector(V)`와 같은 것은?",
+		o: [
+			"`A.RotateVector(B.RotateVector(V))` (B 먼저)",
+			"`B.RotateVector(A.RotateVector(V))` (A 먼저)",
+			"`A.RotateVector(V) + B.RotateVector(V)` (합)",
+			"순서와 무관 — 두 축 회전은 교환 법칙이 성립해 결과가 같다",
+		],
+		a: 0,
+		w: [
+			"회전이 v′ = q v q*이므로 (A·B) v (A·B)* = A (B v B*) A*, 즉 B 먼저입니다. 테스트 `Quat_Composition`이 이것을 고정합니다. 행렬의 행벡터 규약(왼쪽 먼저)과 반대라는 점이 함정입니다.",
+			"반대입니다. 행렬(S·R·T = 왼쪽 먼저)과 헷갈리기 쉬운 부분입니다.",
+			"회전은 더해서 합성하지 않습니다.",
+			"3D 회전은 순서를 바꾸면 결과가 달라집니다.",
+		],
+	},
+	{
+		t: "quat", kind: "코드 읽기",
+		q: "`FQuat::FromEuler`의 일부입니다. Pitch와 Roll에만 마이너스가 붙은 이유는?",
+		code: "const FQuat Yaw   = FromAxisAngle(FVector3::UpVector,      DegreesToRadians(YawDegrees));\nconst FQuat Pitch = FromAxisAngle(FVector3::RightVector,  -DegreesToRadians(PitchDegrees));\nconst FQuat Roll  = FromAxisAngle(FVector3::ForwardVector, -DegreesToRadians(RollDegrees));\nreturn Yaw * Pitch * Roll;",
+		o: [
+			"Pitch·Roll은 축 회전 대신 역회전(켤레)으로 적용해야 하기 때문이다.",
+			"왼손 좌표계에서 +Y축 양의 회전은 기수를 내리므로 UE 부호에 맞췄다.",
+			"`Yaw * Pitch * Roll` 곱 순서가 Pitch·Roll 각을 뒤집으므로 보정했다.",
+			"`RightVector`·`ForwardVector`가 −Y, −X를 가리키도록 정의돼 있어서다.",
+		],
+		a: 1,
+		w: [
+			"역회전과는 관계없습니다. 부호 규약의 문제입니다.",
+			"왼손 좌표계에서 오른쪽(+Y)축 둘레로 양의 각을 돌리면 기수가 아래로 내려갑니다. 언리얼의 \"+Pitch = 기수 위\" 부호와 맞추려고 축 회전의 부호를 뒤집었습니다. 테스트(`Quat_EulerConvention`: `FromEuler(90, 0, 0)`의 Forward는 Up)로 고정되어 있습니다.",
+			"곱하는 순서는 적용 순서(\"B 먼저\" 규칙에 따라 Roll → Pitch → Yaw)를 정할 뿐, 각도의 부호를 뒤집지 않습니다.",
+			"`ForwardVector`는 (1, 0, 0), `RightVector`는 (0, 1, 0)입니다(`Vector3.h`).",
+		],
+	},
+	{
+		t: "projection", kind: "개념",
+		q: "원근 투영에서 멀리 있는 것을 작게 보이게 하려면 x, y를 거리 z로 나눠야 합니다. 행렬 곱은 나눗셈을 못 하는데, 어떻게 해결할까요?",
+		o: [
+			"정점 셰이더가 x / z, y / z를 직접 계산해 NDC로 출력한다.",
+			"투영 행렬이 w에 z를 넣고, GPU가 래스터화 전에 w로 나눈다.",
+			"CPU가 매 프레임 정점을 미리 z로 나눠 업로드 버퍼에 올린다.",
+			"깊이 테스트 단계에서 깊이 버퍼 값으로 x, y를 나눠 준다.",
+		],
+		a: 1,
+		w: [
+			"그렇게 하면 원근 보정 보간(3강)에 필요한 w 정보가 사라집니다. GPU에 나눗셈을 맡깁니다.",
+			"GPU가 래스터화 직전에 (x/w, y/w, z/w)로 나누는 것이 원근 나눗셈이고 그 결과가 NDC입니다. `MakePerspectiveFov`의 세 번째 행 끝의 1이 바로 \"w′ = z\"입니다.",
+			"정점은 GPU에서 변환합니다. CPU가 미리 나눌 일은 없습니다.",
+			"깊이 버퍼는 나눗셈 뒤의 깊이 값을 저장할 뿐입니다.",
+		],
+	},
+	{
+		t: "projection", kind: "계산",
+		q: "근평면 N = 10cm, 원평면 F = 1km(100,000cm)인 원근 투영입니다. 깊이 d = F/(F−N) · (1 − N/z)일 때, 카메라에서 **20cm** 떨어진 점의 깊이 값은 대략?",
+		o: ["약 0.0002", "약 0.01", "약 0.5", "약 0.99"],
+		a: 2,
+		w: [
+			"20 / 100,000처럼 선형으로 계산하면 이 값이 나오지만, 원근 투영의 깊이는 선형이 아닙니다.",
+			"선형에 가깝다고 생각했을 때의 값입니다.",
+			"1 − 10/20 = 0.5, 앞의 계수 F/(F−N) ≈ 1이므로 약 0.5입니다. 1km 범위 중 맨 앞 20cm가 깊이 범위의 절반을 씁니다. 깊이 값이 근평면 근처에 몰린다는 뜻입니다.",
+			"0.99는 z = 1,000cm(10m) 근처의 값입니다.",
+		],
+	},
+	{
+		t: "projection", kind: "판단",
+		q: "먼 곳의 겹친 면이 깜빡이는 Z-파이팅이 생겼습니다. 가장 효과적인 조치는?",
+		o: [
+			"근평면을 10cm → 1cm로 줄여 깊이 정밀도를 높인다.",
+			"근평면을 장면이 허락하는 한 크게(예: 50cm) 잡는다.",
+			"원평면을 1km → 10km로 늘려 먼 곳에 깊이 여유를 준다.",
+			"시야각(FOV)을 좁혀 먼 물체가 화면에 크게 그려지게 한다.",
+		],
+		a: 1,
+		w: [
+			"반대 효과입니다. z에 대한 깊이 기울기가 대략 N/z²이라, N을 10배 줄이면 먼 곳의 깊이 변화도 약 10배 작아져 정밀도가 더 나빠집니다.",
+			"깊이 정밀도는 근평면 값에 가장 크게 좌우됩니다. 그래서 \"근평면은 가능한 한 크게\"가 원칙입니다.",
+			"원평면은 정밀도에 비교적 영향이 작고, 늘리면 오히려 범위가 넓어져 조금 더 나빠집니다.",
+			"시야각은 깊이 값 분포(z에 대한 함수)를 바꾸지 않아 깊이 정밀도와 직접 관계가 없습니다.",
+		],
+	},
+	{
+		t: "projection", kind: "개념",
+		q: "직교 투영(`MakeOrthographic`)에 대한 설명으로 맞는 것은?",
+		o: [
+			"원근 투영처럼 w에 z를 넣으므로 깊이가 근평면 근처에 몰린다.",
+			"w′ = 1이라 나눗셈이 없고, 깊이가 거리에 선형으로 바뀐다.",
+			"OpenGL처럼 깊이 범위가 [−1, 1]이라 원근 투영과 범위가 다르다.",
+			"멀리 있는 물체가 원근 투영보다 더 빠르게 작아진다.",
+		],
+		a: 1,
+		w: [
+			"직교 투영은 w에 z를 넣지 않고 원근 나눗셈도 하지 않습니다.",
+			"거리와 상관없이 같은 크기로 보이는 투영입니다. 에디터 직교 뷰와 픽셀 아트 카메라(28강)가 씁니다.",
+			"ProjectE는 모든 투영에서 DirectX 관례인 [0, 1]을 씁니다. [−1, 1]은 OpenGL 관례입니다.",
+			"직교 투영에서는 거리와 상관없이 크기가 같습니다. 멀수록 작아지는 것은 원근 투영의 특징입니다.",
+		],
+	},
+	{
+		t: "convention", kind: "설계 원칙",
+		q: "glTF 모델(오른손 Y-up, 미터)과 Jolt 물리(미터)는 엔진과 규약이 다릅니다. ProjectE의 원칙에 맞는 것은?",
+		o: [
+			"엔진 코드에서 값을 쓰는 곳마다 그 자리에서 단위를 변환한다.",
+			"들어오는 경계 한 곳에서만 축·단위를 한 번 변환한다.",
+			"엔진 내부 단위를 미터로 바꿔 외부 데이터 변환을 없앤다.",
+			"glTF는 위치와 함께 법선·탄젠트도 ×100 해 크기를 맞춘다.",
+		],
+		a: 1,
+		w: [
+			"변환이 흩어지면 반드시 어딘가에서 두 번 하거나 빠뜨립니다.",
+			"glTF는 `FGltfLoader::Convert*`만 쓰고 위치·이동만 ×100(방향 벡터는 스케일하지 않음), 물리는 `FPhysicsWorld` 경계에서만 cm↔m. 엔진 내부는 모두 cm·왼손 Z-up이라고 믿고 짭니다. 그러면 안쪽 코드는 하나의 규약만 알면 됩니다(11강, 45강).",
+			"단위는 첫날 정한 규약입니다. 외부 라이브러리에 맞춰 바꾸지 않습니다.",
+			"방향 벡터를 스케일하면 길이가 100이 되어 조명 계산 등이 깨집니다. 위치·이동만 스케일합니다.",
+		],
+	},
+	{
+		t: "convention", kind: "설계 이유",
+		q: "ProjectE가 왼손 Z-up, 1단위 = 1cm 규약을 쓰는 이유로 기록에 남은 것과, 더 중요한 원칙의 조합으로 맞는 것은?",
+		o: [
+			"OpenGL 방식이고, 필요하면 나중에 바꿀 수 있게 열어 두는 것이 원칙이다.",
+			"UE 방식이고, 무엇을 고르든 첫날 하나로 정해 두는 것이 더 중요하다.",
+			"UE 방식이고, 가져오는 에셋마다 그 규약에 맞춰 바꿔 쓰는 것이 원칙이다.",
+			"DirectX 방식이고, GPU가 왼손 Z-up을 전제하므로 그대로 따른 것이다.",
+		],
+		a: 1,
+		w: [
+			"OpenGL 관례는 보통 오른손 Y-up입니다. 그리고 좌표계는 나중에 바꾸기 가장 비싼 결정입니다.",
+			"중간에 바꾸면 수학, 셰이더, 임포터, 물리, 저장된 씬 전부가 바뀝니다. 언리얼과 같은 축·단위·회전 부호를 쓰면 언리얼식 직관과 자료가 그대로 통합니다. 규약은 CLAUDE.md 맨 앞에 적고 테스트로 고정했습니다.",
+			"기록된 이유(UE 방식)는 맞지만 원칙이 반대입니다. 엔진 내부는 하나의 규약이고 외부 데이터는 경계에서 한 번 변환합니다.",
+			"GPU는 축의 의미를 모릅니다. 행렬이 정할 뿐입니다. DirectX 예제의 전통도 Z-up이 아니라 Y-up입니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "에디터를 직교 카메라로 바꾸면 무엇을 클릭해도 항상 바닥(Ground)이 선택되었습니다. 원인으로 맞는 것은?",
+		o: [
+			"직교 카메라는 광선 원점이 픽셀마다 달라 선택 광선을 만들 수 없었다.",
+			"`TryGetInverse`의 절대 문턱이 직교 뷰-투영을 특이 행렬로 오판했다.",
+			"바닥 메시의 AABB가 너무 커서 모든 광선을 먼저 가로챘다.",
+			"직교 투영의 깊이 범위가 [−1, 1]이라 언프로젝트 결과가 어긋났다.",
+		],
+		a: 1,
+		w: [
+			"광선 원점이 픽셀마다 다른 것은 직교 투영에서 정상이며, 역행렬로 근·원평면 점을 언프로젝트하면 그대로 만들 수 있습니다. 기능은 그대로 두고 수학 함수를 고쳤습니다.",
+			"|det| ≤ 1e-8이라는 절대 문턱 때문에, 행렬식이 ≈ 1e-11로 아주 작지만 멀쩡한 직교 뷰-투영을 특이로 보고 항등 행렬을 돌려줘 광선이 늘 원점 위로 나갔습니다. 판정을 행렬 크기에 상대적으로(|det| / 행 길이 곱) 바꿨습니다. 교훈은 부동소수점의 \"0에 가까움\"은 크기에 상대적이라는 것이고, 테스트(`Matrix_InverseOfOrthographicViewProjection`)와 CLAUDE.md 규칙(\"절대 문턱을 다시 넣지 말 것\")으로 남았습니다.",
+			"원인은 역행렬 판정이었습니다. AABB는 정상이었습니다.",
+			"ProjectE는 직교 투영도 [0, 1] 깊이를 씁니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-04";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 147;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = Seed % (K + 1);
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 4강을 확실히 이해했습니다. 5강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"4강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

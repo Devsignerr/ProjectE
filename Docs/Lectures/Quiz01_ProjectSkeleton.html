@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part00_Orientation.html#lec-1">← 1강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">0부 · 1강 문제풀이</div>
+		<h1>프로젝트 골격, 제대로 이해했나요?</h1>
+		<p>1강의 여섯 주제(빌드, 로그, 어설트, 창, 입력, 루프)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part01_GraphicsBasics.html#lec-2">2강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part00_Orientation.html";
+const Topics = {
+	cmake:  { name: "빌드 (CMake)",   anchor: "lec-1-cmake" },
+	log:    { name: "로그 (E_LOG)",    anchor: "lec-1-log" },
+	check:  { name: "어설트 (E_CHECK)", anchor: "lec-1-log" },
+	window: { name: "Win32 창",        anchor: "lec-1-window" },
+	input:  { name: "입력",            anchor: "lec-1-input" },
+	loop:   { name: "시간과 루프",      anchor: "lec-1-app" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "cmake", kind: "개념",
+		q: "Core 모듈은 `target_link_libraries(ECore PRIVATE ThirdParty::nlohmann_json)`로 JSON 라이브러리를 씁니다. Renderer 모듈은 Core를 링크합니다. 맞는 설명은?",
+		o: [
+			"Renderer는 Core를 링크했으므로 JSON 헤더 경로를 물려받아 `#include <nlohmann/json.hpp>`를 그대로 바로 쓸 수 있다.",
+			"JSON 의존은 Core 내부에만 머물고, Renderer가 JSON을 쓰려면 `ThirdParty::nlohmann_json`을 직접 링크해야 한다.",
+			"`PRIVATE`은 Debug 구성에서만 링크하라는 뜻이라 Release 빌드에서는 Core도 JSON 심볼을 찾지 못한다.",
+			"`PRIVATE`으로 링크한 라이브러리는 Core 정적 라이브러리 안에만 들어가고 최종 실행 파일에는 포함되지 않는다.",
+		],
+		a: 1,
+		w: [
+			"그것은 `PUBLIC`(또는 `INTERFACE`)일 때의 동작입니다. `PRIVATE`은 쓰는 쪽(Renderer)에 include 경로 같은 사용 요구 사항을 넘기지 않습니다.",
+			"`PRIVATE`은 \"내부 사정\"이라는 뜻입니다. 의존을 좁게 막아 두면 Core 내부를 바꿔도 Core를 쓰는 모듈이 흔들리지 않습니다. Renderer가 JSON이 필요하면 스스로 링크합니다.",
+			"구성(Debug/Release)과는 관계없습니다. 구성별 조건은 `$<CONFIG:Debug>` 같은 생성기 식으로 따로 씁니다.",
+			"링크 자체는 정상적으로 되어 최종 바이너리에 필요한 코드가 들어갑니다. `PRIVATE`/`PUBLIC`이 바꾸는 것은 \"누구에게 전파되느냐\"뿐입니다.",
+		],
+	},
+	{
+		t: "cmake", kind: "설계 이유",
+		q: "ProjectE는 `/W4 /WX`(경고 수준 4 + 경고를 에러로)를 씁니다. 이 정책의 가장 중요한 이유는?",
+		o: [
+			"경고가 남은 코드는 MSVC가 보수적으로 코드를 생성해 Release 실행 속도가 느려지기 때문이다.",
+			"`/WX`가 없으면 MSVC가 경고 난 함수를 `/O2` 최적화 대상에서 빼고 컴파일하기 때문이다.",
+			"경고가 하나둘 쌓이면 새로 생긴 중요한 경고가 그 사이에 묻혀 아무도 알아채지 못하기 때문이다.",
+			"`/W4`를 켜야 C++20 concepts와 `std::format` 검사가 활성화되어 표준 기능을 쓸 수 있기 때문이다.",
+		],
+		a: 2,
+		w: [
+			"경고는 컴파일 시점의 진단일 뿐이고, 생성되는 코드나 실행 속도와는 무관합니다.",
+			"경고가 있어도 최적화는 똑같이 됩니다. `/WX`는 경고를 에러로 바꿀 뿐 최적화와 관계없습니다.",
+			"사용하지 않는 변수, 부호 섞인 비교, 암시적 축소 변환 같은 경고는 실제 버그의 씨앗인 경우가 많습니다. 0개로 유지해야 새로 생긴 경고가 바로 눈에 띕니다.",
+			"C++ 표준 버전은 `CMAKE_CXX_STANDARD 20`(즉 `/std:c++20`)이 정합니다. 경고 수준과는 별개입니다.",
+		],
+	},
+	{
+		t: "cmake", kind: "실제로 겪은 일",
+		q: "처음에는 `/W4`를 전역 `add_compile_options`에 넣었다가, 자체 타깃에만 거는 함수 `e_set_target_defaults`로 옮겼습니다. 왜 옮겼을까요?",
+		o: [
+			"전역 옵션이 Ninja 생성기에서 Release 구성에는 적용되지 않아 구성마다 경고 수준이 달랐기 때문이다.",
+			"서드파티 타깃의 `/W0`과 겹쳐 파일마다 D9025(옵션 재정의) 경고가 쏟아졌기 때문이다.",
+			"타깃별로 걸어야 `/W4`가 헤더 파일에도 적용되어 우리 코드의 경고를 빠짐없이 잡을 수 있기 때문이다.",
+			"전역 컴파일 옵션이 링커에도 전달되어 LNK 단계에서 알 수 없는 옵션 경고가 났기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"전역 옵션은 모든 구성에 적용됩니다. 문제는 구성이 아니라 다른 옵션과의 충돌이었습니다.",
+			"서드파티는 우리가 고칠 코드가 아니라서 `/W0`(경고 끔)으로 빌드합니다. 전역 `/W4`가 함께 걸리자 \"'/W4'을(를) '/W0'(으)로 재정의\" 경고가 파일마다 나왔습니다. 그래서 전역에는 모두에게 공통인 옵션(`/utf-8` 등)만 두고, 경고 수준은 자체 타깃에만 겁니다.",
+			"경고 수준은 전역이든 타깃별이든 그 타깃이 컴파일하는 번역 단위(include된 헤더 포함)에 똑같이 적용됩니다. 옮긴 이유는 적용 범위를 좁히기 위해서였습니다.",
+			"`add_compile_options`는 컴파일 단계에만 전달됩니다. 링크 시간이나 링커 경고와는 관계가 없습니다.",
+		],
+	},
+	{
+		t: "cmake", kind: "개념",
+		q: "전역 컴파일 옵션 중 `/utf-8`을 빼면 가장 먼저 무슨 일이 생길까요?",
+		o: [
+			"`NOMINMAX`가 함께 사라져 `std::max`가 Windows 매크로 `max`로 치환되면서 컴파일 에러가 난다.",
+			"MSVC가 소스를 시스템 코드 페이지(한국어 Windows는 CP949)로 읽어 한글 문자열이 깨진다.",
+			"DXC가 셰이더(.hlsl)를 UTF-8로 읽지 못해 BOM 없는 파일의 한글 주석에서 컴파일이 멈춘다.",
+			"`E_DEBUG` 정의가 함께 빠져 Debug 빌드에서도 `#if E_DEBUG` 안의 코드가 컴파일되지 않는다.",
+		],
+		a: 1,
+		w: [
+			"그것은 별도 정의인 `NOMINMAX`가 막는 문제입니다. `/utf-8`과는 독립적입니다.",
+			"이 엔진은 주석과 로그가 한국어입니다. `/utf-8`은 \"소스 파일과 실행 문자 집합을 UTF-8로 본다\"는 옵션입니다.",
+			"`/utf-8`은 MSVC(C++ 컴파일러) 옵션이라 DXC에는 전달되지 않습니다. 셰이더는 DXC 1.6 때문에 BOM을 반드시 붙이는 별도 규칙으로 해결합니다.",
+			"`E_DEBUG`는 `add_compile_definitions`의 생성기 식이 정의합니다. 인코딩 옵션과는 관계없습니다.",
+		],
+	},
+	{
+		t: "log", kind: "코드 읽기",
+		q: "`LogPhysics` 카테고리의 Verbose 출력이 꺼져 있습니다. 아래 코드가 매 프레임 실행될 때 맞는 설명은?",
+		code: "E_LOG(LogPhysics, Verbose, \"접촉 {}개: {}\", Count, DescribeContacts());",
+		o: [
+			"`ShouldLog` 확인이 먼저 실행되어 걸러지므로 `std::format`도 `DescribeContacts()`도 실행되지 않는다.",
+			"출력만 생략될 뿐 인자인 `DescribeContacts()`와 `std::format`은 매 프레임 그대로 실행된다.",
+			"Verbose 수준은 `#if E_DEBUG`로 감싸여 있어 Release 빌드에서는 이 줄 자체가 컴파일되지 않는다.",
+			"`DescribeContacts()`는 호출되지만, 결과 문자열이 버려지므로 `std::format` 비용만 아낀다.",
+		],
+		a: 0,
+		w: [
+			"`E_LOG`는 매크로라서 `if (ShouldLog(...)) { Write(..., std::format(...)); }`로 펼쳐집니다. 인자 평가가 `if` 안쪽에 있으므로 걸러진 로그는 비용이 거의 0입니다. 일반 함수였다면 인자(문자열)를 호출 전에 다 만들어야 합니다.",
+			"`E_LOG`가 일반 함수 `Log(Category, Verbosity, std::string)`였다면 그랬을 것입니다. 이것을 피하려고 매크로로 만들었습니다.",
+			"상세 수준은 실행 중에 `ShouldLog`가 판단합니다. 빌드 구성에 따라 코드를 지우는 것은 `#if E_DEBUG`를 직접 쓴 곳뿐입니다.",
+			"매크로가 펼쳐지면 `DescribeContacts()` 호출도 `if` 안쪽에 들어갑니다. 인자 전체가 함께 건너뛰어집니다.",
+		],
+	},
+	{
+		t: "log", kind: "개념",
+		q: "여러 문장짜리 매크로를 `do { ... } while (0)`으로 감싸는 이유는?",
+		code: "if (bFailed)\n\tE_LOG(LogCore, Error, \"실패\");\nelse\n\tRetry();",
+		o: [
+			"`do`가 본문을 반드시 한 번 실행하므로, 짧은 `if` 조건 안에서도 로그가 빠지지 않게 하려고",
+			"`while (0)` 루프가 있으면 컴파일러가 매크로 본문을 인라인하지 않아 코드 크기가 줄기 때문에",
+			"위 코드처럼 `if`/`else` 사이에서도 매크로 전체가 `;`로 끝나는 한 문장이 되게 하려고",
+			"매크로 안에서 `return`을 써서 호출한 함수를 바로 빠져나갈 수 있게 하기 위해서",
+		],
+		a: 2,
+		w: [
+			"`if` 조건이 거짓이면 `do`든 아니든 매크로 전체가 실행되지 않습니다. `while (0)`은 단지 한 번만 실행되게 할 뿐 실행을 보장하는 장치가 아닙니다.",
+			"`while (0)` 루프는 컴파일러가 완전히 없애므로 인라인이나 코드 크기와 관계없습니다.",
+			"중괄호 `{ ... }`만 쓰면 매크로 뒤의 `;` 때문에 `if` 문이 거기서 끝나고, `else`가 짝을 잃어 컴파일 에러가 납니다. `do { } while (0)`은 뒤에 `;`가 붙어야 완성되는 하나의 문장입니다.",
+			"`return`은 감싸지 않아도 쓸 수 있습니다. 이 관용구와는 무관합니다.",
+		],
+	},
+	{
+		t: "check", kind: "판단",
+		q: "다음 중 `E_CHECK`(실패하면 즉시 중단)로 다루는 것이 맞는 상황은?",
+		o: [
+			"사용자가 `--scene`으로 지정한 씬 파일이 디스크에 없어 열 수 없다.",
+			"플레이어의 GPU가 DXR 레이 트레이싱(SM 6.5)을 지원하지 않는다.",
+			"내부 함수에 넘어온 인덱스가 배열 크기를 넘었다(호출 코드의 실수).",
+			"멀티플레이 중 서버와 연결이 끊겨 스냅샷이 더 오지 않는다.",
+		],
+		a: 2,
+		w: [
+			"파일이 없는 것은 \"일어날 수 있는 일\"입니다. 오류를 알리고 처리해야지 프로세스를 죽이면 안 됩니다.",
+			"하드웨어 차이도 정상적인 상황입니다. 기능을 끄고 계속 진행하는 것이 맞습니다(실제로 RT 미지원이면 RT 효과가 꺼집니다).",
+			"프로그래머의 실수는 그 자리에서 멈추는 것이 맞습니다. 계속 달리면 잘못된 값이 퍼져 엉뚱한 곳에서 원인 모를 크래시가 납니다.",
+			"네트워크 끊김은 게임이 반드시 처리해야 하는 정상 상황입니다.",
+		],
+	},
+	{
+		t: "check", kind: "개념",
+		q: "`E_CHECK(Index < Count);`가 실패했을 때 로그에 \"검증 실패: Index < Count (Scene.cpp:120)\"처럼 조건식이 글자 그대로 찍히는 원리는?",
+		o: [
+			"디버거가 붙어 있으면 `__debugbreak` 직후 Visual Studio가 해당 소스 줄을 읽어 출력한다.",
+			"전처리기의 `#Expression`(문자열화)이 인자를 문자열로 만들고 `__FILE__`·`__LINE__`이 위치를 채운다.",
+			"`FCrashHandler`가 PDB의 줄 정보로 소스 파일을 열어 해당 줄 텍스트를 읽어 붙인다.",
+			"C++20 `std::source_location::current()`가 호출 위치와 함께 조건식 문자열을 넘겨준다.",
+		],
+		a: 1,
+		w: [
+			"디버거 없이 Release 빌드에서도 똑같이 찍힙니다. 컴파일 시점에 이미 문자열이 만들어져 있기 때문입니다.",
+			"매크로 인자 앞의 `#`은 그 인자를 따옴표로 감싼 문자열로 바꿉니다. 그래서 \"무엇이\" 깨졌는지와 \"어디서\" 깨졌는지가 함께 남습니다.",
+			"PDB와 소스 파일이 없는 환경에서도 똑같이 찍힙니다. 조건식 문자열은 컴파일할 때 바이너리에 들어갑니다. PDB는 크래시 덤프 분석에 쓰입니다.",
+			"`std::source_location`은 파일·줄·함수 이름만 주고, 조건식 문자열은 주지 않습니다.",
+		],
+	},
+	{
+		t: "window", kind: "설계 이유",
+		q: "메모장 같은 일반 Windows 앱은 `GetMessage`를 쓰고, 게임 엔진은 `PeekMessage`를 씁니다. 이유는?",
+		o: [
+			"`PeekMessage`가 `WM_INPUT` 원시 입력을 더 짧은 지연으로 받아 키 입력이 정확해지기 때문이다.",
+			"`GetMessage`는 메시지가 올 때까지 잠드는데, 게임은 입력이 없어도 매 프레임 갱신해야 하기 때문이다.",
+			"`GetMessage`가 스레드를 막고 있으면 DX12 스왑체인의 `Present`가 실패해 화면이 멈추기 때문이다.",
+			"`PeekMessage`는 메시지를 큐에 남겨 두어 입력 시스템과 ImGui가 같은 메시지를 각각 읽을 수 있기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"받는 메시지는 똑같습니다. 차이는 \"기다리느냐, 바로 돌아오느냐\"입니다.",
+			"아무도 키를 안 눌러도 구름은 흐르고 적은 움직여야 합니다. 그래서 쌓인 메시지만 비우고 바로 프레임을 진행합니다.",
+			"그래픽 API와 메시지 함수는 관계가 없습니다. `GetMessage`로 잠들면 `Present`를 부르지 못할 뿐, 호출이 실패하는 것은 아닙니다.",
+			"엔진은 `PM_REMOVE`로 꺼낸 메시지를 지웁니다. 입력 시스템과 ImGui는 같은 `WndProc` 안에서 메시지를 차례로 넘겨받습니다.",
+		],
+	},
+	{
+		t: "window", kind: "규칙",
+		q: "ProjectE는 \"공개 헤더(.h)에 `Windows.h`를 넣지 않는다\"는 규칙을 둡니다. 가장 큰 이유는?",
+		o: [
+			"`Windows.h`의 `HWND` 같은 핸들 타입이 32/64비트에서 크기가 달라 헤더 ABI가 깨지기 때문이다.",
+			"공개 헤더에 두면 엔진 DLL의 `__declspec(dllexport)` 선언과 충돌해 내보내기가 실패하기 때문이다.",
+			"`min`/`max`, `CreateWindow` 같은 매크로가 이 헤더를 쓰는 모든 코드로 퍼지기 때문이다.",
+			"PCH 없이 `Windows.h`를 여러 .cpp에서 포함하면 링크 단계에서 중복 심볼 에러가 나기 때문이다.",
+		],
+		a: 2,
+		w: [
+			"이 엔진은 x64 전용이고, `Windows.h`는 64비트에서 문제없이 컴파일됩니다. 핸들 크기는 ABI 이유가 아닙니다.",
+			"DLL 빌드와는 관계없습니다. 엔진 DLL의 .cpp 안에서는 `Windows.h`를 쓰고 있습니다.",
+			"`Windows.h`는 거대하고 매크로를 잔뜩 정의합니다. 헤더에 넣으면 그 헤더를 쓰는 모든 .cpp로 매크로가 퍼집니다. 그래서 Windows 헤더는 플랫폼 .cpp에서만 `Core/Platform/WindowsHeaders.h`로 포함하고, `Window.h`의 `WndProc`도 `HWND` 대신 엔진 타입(`uint32`, `uint64`)으로 선언합니다.",
+			"`Windows.h`는 선언과 인라인 정의뿐이라 여러 번 포함해도 중복 심볼이 생기지 않습니다. 문제는 링크가 아니라 매크로 오염입니다.",
+		],
+	},
+	{
+		t: "input", kind: "추적",
+		q: "스페이스 키 상태가 프레임마다 아래와 같습니다. **프레임 4**에서 참인 것은?",
+		code: "프레임:     1    2    3    4\n키 상태:    안눌림 눌림 눌림 안눌림",
+		o: [
+			"`IsKeyDown(Space)`만 참",
+			"`IsKeyPressed(Space)`만 참",
+			"`IsKeyReleased(Space)`만 참",
+			"`IsKeyDown`·`IsKeyReleased` 둘 다 참",
+		],
+		a: 2,
+		w: [
+			"프레임 4의 현재 상태는 \"안 눌림\"이므로 Down은 거짓입니다.",
+			"Pressed는 \"지난번 안 눌림 → 이번 눌림\"인 프레임, 즉 프레임 2에서만 참입니다.",
+			"Released = (지난 프레임 눌림) && (이번 프레임 안 눌림). 프레임 3은 눌림, 프레임 4는 안 눌림이므로 참입니다.",
+			"Released는 참이지만 Down은 \"현재 눌림\"이라 프레임 4에서 거짓입니다. 뗀 프레임에는 이미 안 눌린 상태입니다.",
+		],
+	},
+	{
+		t: "input", kind: "버그 찾기",
+		q: "누군가 실수로 루프에서 `Input.EndFrame()` 호출을 지웠습니다. 플레이어가 스페이스를 꾹 누르고 있으면 어떻게 될까요? (`IsKeyPressed`로 점프를 처리한다고 가정)",
+		o: [
+			"변화 없다. `EndFrame`은 마우스 델타와 휠 값만 0으로 되돌리고 키 상태는 건드리지 않는다.",
+			"지난 프레임 상태가 \"안 눌림\"에 머물러, 누르는 동안 매 프레임 `IsKeyPressed`가 참이 되어 계속 점프한다.",
+			"현재 키 상태도 `EndFrame`에서 갱신되므로 `IsKeyDown`조차 거짓이 되어 점프가 전혀 안 된다.",
+			"첫 프레임에만 점프하고, 키를 뗀 뒤에는 `IsKeyReleased`가 매 프레임 참으로 남는다.",
+		],
+		a: 1,
+		w: [
+			"`EndFrame`은 휠·시점 델타를 비우는 것 외에도 키·마우스 버튼·마우스 위치·게임패드의 \"지난 프레임\" 상태(`PrevKeyStates = KeyStates` 등)를 모두 갱신합니다.",
+			"`EndFrame`이 하는 일이 `PrevKeyStates = KeyStates`입니다. 이것이 없으면 Pressed = (지금 눌림) && (Prev 안 눌림)이 계속 참입니다. 엣지 판정은 \"지난번\"이 제때 넘어가야 성립합니다.",
+			"현재 상태(`KeyStates`)는 `EndFrame`이 아니라 메시지 처리에서 갱신되므로 Down은 잘 동작합니다.",
+			"Prev가 항상 \"안 눌림\"이므로 Released = (Prev 눌림) && ...는 오히려 영원히 거짓입니다.",
+		],
+	},
+	{
+		t: "input", kind: "한계",
+		q: "아주 빠르게 눌렀다 떼서, 한 프레임 안에 `WM_KEYDOWN`과 `WM_KEYUP`이 모두 처리되었습니다. 현재 구조에서 `IsKeyPressed`는?",
+		o: [
+			"참이다. Windows가 `WM_KEYUP`을 다음 프레임의 `PeekMessage`까지 미뤄 두기 때문이다.",
+			"참이다. `TranslateMessage`가 만든 `WM_CHAR`가 눌림 기록으로 남아 엣지 판정에 쓰이기 때문이다.",
+			"거짓이다. 메시지 처리 뒤의 최종 상태(안 눌림)만 지난 프레임과 비교하므로 그 입력을 놓친다.",
+			"거짓이다. 두 메시지가 같은 큐에 함께 있으면 `PeekMessage`가 짝을 상쇄해 둘 다 버리기 때문이다.",
+		],
+		a: 2,
+		w: [
+			"Windows는 메시지를 순서대로 전달할 뿐, 프레임이라는 개념을 모릅니다. 쌓인 메시지는 한 번의 펌프에서 모두 꺼냅니다.",
+			"`TranslateMessage`는 키 입력을 문자(WM_CHAR)로 바꿔 줄 뿐, 엣지 판정에 쓰는 `KeyStates`에는 관여하지 않습니다.",
+			"`KeyStates`는 마지막 메시지 기준으로 \"안 눌림\"입니다. 지난 프레임도 \"안 눌림\"이므로 엣지가 없습니다. 이 경우까지 잡으려면 \"이번 프레임에 눌린 적 있음\" 플래그를 따로 기록해야 합니다. 프레임이 크게 끊길 때 실제로 생길 수 있는 문제입니다.",
+			"결과(거짓)는 맞지만 이유가 틀렸습니다. 두 메시지 모두 `WndProc`에 정상 전달됩니다. 놓치는 것은 최종 상태만 비교하는 엔진 쪽 구조 때문입니다.",
+		],
+	},
+	{
+		t: "loop", kind: "계산",
+		q: "캐릭터 이동을 `Position += Speed;`(dt 없이)로 짰습니다. 60fps에서 테스트할 때는 딱 좋았는데, 144Hz 모니터에서 실행하면?",
+		o: [
+			"60fps 때와 같은 속도로 움직인다. 이동 속도는 `Speed` 값으로만 정해지기 때문이다.",
+			"약 2.4배 빨리 움직인다. 1초에 더하는 횟수가 144/60배로 늘기 때문이다.",
+			"약 2.4배 느리게 움직인다. 한 프레임이 짧아져 프레임당 이동이 줄기 때문이다.",
+			"화면만 더 부드러워지고 이동 거리는 같다. VSync가 갱신 횟수를 60번으로 맞추기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"프레임마다 같은 양을 더하므로 프레임이 많을수록 더 많이 움직입니다.",
+			"1초에 144번 더하므로 144 / 60 = 2.4배입니다. `Position += Speed * dt`로 쓰면 1초당 이동량이 프레임률과 무관해집니다.",
+			"프레임당 이동이 줄어드는 것은 dt를 곱했을 때의 이야기입니다. dt 없이는 프레임당 이동이 그대로이고 횟수만 늘어납니다.",
+			"VSync는 모니터 주사율(여기서는 144Hz)에 맞춥니다. dt를 곱해야만 \"부드럽지만 같은 거리\"가 됩니다.",
+		],
+	},
+	{
+		t: "loop", kind: "설계 이유",
+		q: "`FTimer::SetFixedDelta`(앱 인자 `--fixed-delta`)로 \"한 프레임 = 정확히 1/60초\"를 강제하는 기능은 주로 무엇을 위한 것일까요?",
+		o: [
+			"VSync 없이도 게임을 60fps로 제한해 프레임 사이 대기 시간을 일정하게 만들기 위해서",
+			"자동 검증에서 실행마다 같은 화면이 나오게 하기 위해서(실제 경과 시간은 매번 다르다)",
+			"`steady_clock`의 해상도가 낮아 생기는 프레임 시간 오차를 1/60초로 보정하기 위해서",
+			"멀티플레이에서 클라이언트 틱을 서버의 60Hz 고정 스텝과 맞추기 위해서",
+		],
+		a: 1,
+		w: [
+			"프레임 제한은 VSync가 하는 일입니다. 고정 델타는 \"얼마나 자주 그리느냐\"가 아니라 \"한 프레임이 몇 초로 계산되느냐\"를 바꿉니다.",
+			"움직이는 장면을 스크린샷으로 비교하려면 결과가 실행마다 같아야 합니다. 고정 델타면 PC 부하와 상관없이 N번째 프레임이 항상 같은 상태가 됩니다. 이 결정성은 65강에서 다시 다룹니다.",
+			"`steady_clock`은 정확하고 거꾸로 가지 않습니다. 그래서 측정용으로 씁니다.",
+			"네트워크 동기화는 별도 메커니즘(무브 순번, 스냅샷 시각)으로 합니다(8부).",
+		],
+	},
+	{
+		t: "loop", kind: "구조",
+		q: "`FApplication`과 에디터·런타임·서버의 관계에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"루프 순서는 부모 클래스 `FApplication`이 정하고, 각 앱은 `OnInit`/`OnUpdate`/`OnRender`만 채운다.",
+			"창이 최소화되면 `OnRender`를 건너뛰고 `Sleep(10)`으로 잠깐 쉬어 CPU 점유를 낮춘다.",
+			"전용 서버는 `bHeadless`로 창 없이 고정 간격 틱 루프를 돌며, 이때 `OnRender`는 불리지 않는다.",
+			"각 실행 파일은 `--exit-after`, `--screenshot` 인자를 각자 자기 `main`에서 파싱한다.",
+		],
+		a: 3,
+		w: [
+			"맞는 설명입니다. 루프 순서(메시지 → 시간 → OnUpdate → OnRender → EndFrame)라는 틀은 부모가, 빈칸은 자식이 채우는 템플릿 메서드 패턴입니다.",
+			"맞는 설명입니다. 최소화하면 스왑체인 크기가 0이 될 수 있고, 보이지도 않는데 GPU를 돌릴 이유가 없습니다. Phase 0 DoD에 \"최소화에서 크래시 없음\"이 들어간 이유입니다.",
+			"맞는 설명입니다. 루프의 \"모양\"만 바꾸고 로그·명령줄·크래시 처리는 그대로 공유합니다.",
+			"이것이 틀렸습니다. 자동 검증 인자는 `FApplication::Run()`이 한 곳에서 공통으로 처리합니다. 그래서 에디터든 런타임이든 \"N프레임 돌리고 스크린샷 찍고 종료\"를 똑같이 할 수 있습니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-01";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 50;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = Seed % (K + 1);
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 1강을 확실히 이해했습니다. 2강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"1강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

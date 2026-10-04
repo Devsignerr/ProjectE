@@ -5,6 +5,7 @@
 #include "Physics/PhysicsReflection.h"
 #include "Core/CommandLine.h"
 #include "Core/Console/Console.h"
+#include "Core/FrameTime.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
@@ -150,6 +151,7 @@ bool FRuntimeApplication::OnInit()
 		{
 			Var->SetFloat(UserSettings.DynamicResolutionTargetMs);
 		}
+		RenderThreadVar = Cvars.FindVariable("r.RenderThread");
 	}
 	FHdrOutputController::ApplySettings(UserSettings); // HDR 출력 (Phase 49): 사용자 설정 → r.HDR.* (명령줄 값 우선)
 
@@ -282,6 +284,10 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	}
 	// 콘솔(` 키)이 가장 먼저 키보드를 본다: 열려 있으면 게임 UI/게임에는 키 없음
 	StatOverlay.Tick(DeltaSeconds);
+	if (Console.IsOpen())
+	{
+		RenderThread.WaitIdle(); // 콘솔 명령(셰이더 다시 로드·리소스 수거·통계 등)은 렌더 상태를 만질 수 있다
+	}
 	const bool bConsoleKeyboard = Console.Update(InputState, DeltaSeconds, FConsoleManager::Get());
 
 	// 입력 모드 (Game.SetInputMode): GameOnly = UI는 입력 없음, GameAndUI = UI 먼저, UIOnly = 게임은 빈 입력
@@ -290,9 +296,9 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	UpdateInputModeCursor(InputState);
 
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
-	const FRenderOutput BackBuffer = Rhi->GetBackBufferOutput();
-	FUIFrameInput       UIInput;
-	UIInput.Viewport    = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(BackBuffer.Width), static_cast<float>(BackBuffer.Height)));
+	// 백버퍼 크기만 읽는다 (렌더 스레드가 Present 중일 수 있어 현재 백버퍼 RTV는 보지 않는다)
+	FUIFrameInput UIInput;
+	UIInput.Viewport = FUIRect(FVector2::ZeroVector, FVector2(static_cast<float>(Rhi->GetBackBufferWidth()), static_cast<float>(Rhi->GetBackBufferHeight())));
 	UIInput.bHasPointer = Routing.bUIInput;
 	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
 	UIInput.Keys         = bConsoleKeyboard || !Routing.bUIInput ? FUIKeyInput{} : FUISystem::MakeKeys(InputState);
@@ -354,40 +360,105 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 
 void FRuntimeApplication::OnRender()
 {
+	// 직전 프레임의 기록·제출이 끝난 뒤에만 렌더 상태(RHI 프레임·렌더러·사본)를 만진다. r.RenderThread는 프레임마다 읽는다 (콘솔로 전환 가능)
+	const bool bThreaded = RenderThreadVar != nullptr && RenderThreadVar->GetBool();
+	if (bThreaded)
+	{
+		RenderThread.Start();
+	}
+	using FClock = std::chrono::steady_clock;
+	const FClock::time_point WaitStart = FClock::now();
+	RenderThread.WaitIdle();
+	const FClock::time_point WaitEnd = FClock::now();
+	if (CpuTimes.bHasLastKick)
+	{
+		CpuTimes.GameMs += std::chrono::duration<double, std::milli>(WaitStart - CpuTimes.LastKickEnd).count();
+	}
+	const std::filesystem::path Screenshot = std::exchange(PendingScreenshot, {});
 	if (PendingTravel)
 	{
 		// 로딩 화면: 다음 프레임에 새 씬을 여는 동안 (동기 로드라 창이 멈춘다) 검은 화면을 보인다
 		const float Black[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		Rhi->BeginFrame(Black);
+		if (!Screenshot.empty())
+		{
+			Rhi->RequestScreenshot(Screenshot);
+		}
 		Rhi->EndFrame();
 		return;
 	}
 	FHdrOutputController::Update(*Rhi); // r.HDR.Output 변경 반영 (BeginFrame 전)
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
+	const FClock::time_point BeginFrameStart = FClock::now();
 	Rhi->BeginFrame(ClearColor);
-	SceneRenderer.Render(Scene, Camera, Rhi->GetSceneOutput()); // HDR 출력이면 선형 FP16 씬 타깃 (UI·디버그 선은 백버퍼 = 겹침 층)
-	{
-		// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만)
-		const FRenderOutput       Back       = Rhi->GetBackBufferOutput();
-		DebugDrawRenderer.Render(FDebugDraw::Get(), Camera, Back, SceneRenderer.GetOverlayDepthDsv(Back.Width, Back.Height)); // TAAU면 출력 해상도로 옮긴 깊이
+	CpuTimes.BeginFrameMs += std::chrono::duration<double, std::milli>(FClock::now() - BeginFrameStart).count();
+	// 화면 통계(stat fps/gpu) = 기록이 끝난 지난 프레임까지의 값
+	const std::vector<std::string> StatLines = StatOverlay.BuildLines(&SceneRenderer.GetStats());
 
-	}
+	// 게임 스레드 준비: 씬을 읽는 수집·업로드·패스 등록 (HDR 출력이면 선형 FP16 씬 타깃 — UI·디버그 선은 백버퍼 = 겹침 층).
+	// 카메라·출력은 렌더 작업이 끝날 때까지 사는 사본으로 넘긴다
+	RenderCamera      = Camera;
+	RenderSceneOutput = Rhi->GetSceneOutput();
+	SceneRenderer.BeginRender(Scene, RenderCamera, RenderSceneOutput);
+	RenderDebugLines = FDebugDraw::Get().GetLines(); // 다음 프레임 갱신이 선을 바꾸므로 사본
+
+	// 게임 UI 그리기 목록 + 화면 통계·콘솔 (게임 UI 위). 텍스처(글꼴 아틀라스·파일)는 리소스 관리자를 바꾸므로 여기서 준비
+	const std::filesystem::path ContentDirectory = FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory();
 	UIDrawList.Clear();
 	FUISystem::Paint(Scene, UIDrawList);
-	// 화면 통계(stat fps/gpu)와 콘솔은 게임 UI 위에
-	const FRenderOutput Output = Rhi->GetBackBufferOutput();
-	const FUIRect       Screen(FVector2::ZeroVector, FVector2(static_cast<float>(Output.Width), static_cast<float>(Output.Height)));
-	const std::vector<std::string> StatLines = StatOverlay.BuildLines(&SceneRenderer.GetStats());
+	const FUIRect Screen(FVector2::ZeroVector, FVector2(static_cast<float>(Rhi->GetBackBufferWidth()), static_cast<float>(Rhi->GetBackBufferHeight())));
 	FUIDebugDraw::AddTextPanel(UIDrawList, StatLines, FVector2(Screen.Max.X - 12.0f, 12.0f), true, 15.0f, { 140.0f, 70.0f }, Screen);
 	Console.Paint(Screen, UIDrawList);
-	UIRenderer.Render(UIDrawList, Rhi->GetBackBufferOutput(), FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
+	UIRenderer.PrepareTextures(UIDrawList, ContentDirectory);
+
+	// 렌더 작업: 렌더 스레드(r.RenderThread 1)에서 게임 스레드의 다음 OnUpdate와 겹쳐, 아니면 바로
+	const FClock::time_point KickStart = FClock::now();
+	CpuTimes.GameMs += std::chrono::duration<double, std::milli>(KickStart - WaitEnd).count();
+	++CpuTimes.Frames;
+	RenderThread.Kick([this, Screenshot, ContentDirectory]() { RecordAndPresent(Screenshot, ContentDirectory); }, FFrameTime::Capture(), bThreaded);
+	CpuTimes.LastKickEnd  = FClock::now();
+	CpuTimes.bHasLastKick = true;
+}
+
+void FRuntimeApplication::RecordAndPresent(const std::filesystem::path& Screenshot, const std::filesystem::path& ContentDirectory)
+{
+	using FClock = std::chrono::steady_clock;
+	const FClock::time_point RecordStart = FClock::now();
+	SceneRenderer.FinishRender(); // 그래프 컴파일·실행 (명령 기록)
+	const FRenderOutput Back = Rhi->GetBackBufferOutput();
+	// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만, TAAU면 출력 해상도로 옮긴 깊이)
+	DebugDrawRenderer.Render(RenderDebugLines, RenderCamera, Back, SceneRenderer.GetOverlayDepthDsv(Back.Width, Back.Height));
+	UIRenderer.Render(UIDrawList, Back, ContentDirectory);
+	if (!Screenshot.empty())
+	{
+		Rhi->RequestScreenshot(Screenshot);
+	}
+	const FClock::time_point SubmitStart = FClock::now();
 	Rhi->EndFrame();
+	CpuTimes.RecordMs += std::chrono::duration<double, std::milli>(SubmitStart - RecordStart).count();
+	CpuTimes.SubmitMs += std::chrono::duration<double, std::milli>(FClock::now() - SubmitStart).count();
+}
+
+void FRuntimeApplication::LogRenderThreadStats() const
+{
+	const FRenderThread::FStats Stats = RenderThread.GetStats();
+	if (Stats.Frames == 0 || CpuTimes.Frames == 0)
+	{
+		return;
+	}
+	const double Frames = static_cast<double>(Stats.Frames);
+	const double Cpu    = static_cast<double>(CpuTimes.Frames);
+	E_LOG(LogRuntime, Display,
+	      "[성능] 렌더 스레드: 작업 {}개 (렌더 스레드 {}개), 렌더 작업 평균 {:.3f} ms, 게임 스레드 대기 평균 {:.3f} ms | CPU 구간 평균: 게임 스레드 {:.3f} ms (BeginFrame {:.3f}), "
+	      "기록 {:.3f} ms, 제출·Present {:.3f} ms",
+	      Stats.Frames, Stats.Threaded, Stats.WorkMs / Frames, Stats.WaitMs / Frames, CpuTimes.GameMs / Cpu, CpuTimes.BeginFrameMs / Cpu, CpuTimes.RecordMs / Cpu, CpuTimes.SubmitMs / Cpu);
 }
 
 void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 {
 	if (Rhi)
 	{
+		RenderThread.WaitIdle(); // 스왑체인·백버퍼를 다시 만든다 (진행 중 Present가 끝난 뒤)
 		Rhi->Resize(Width, Height);
 		Camera.SetAspectRatio(static_cast<float>(Width) / static_cast<float>(Height));
 	}
@@ -396,6 +467,7 @@ void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)
 void FRuntimeApplication::ApplyWindowMode(EWindowMode Mode, bool bSave)
 {
 	UserSettings.WindowMode = Mode;
+	RenderThread.WaitIdle(); // 창 스타일·크기 변경 (크기가 바뀌면 OnResize가 스왑체인을 다시 만든다)
 	GetWindow().SetBorderlessFullscreen(Mode == EWindowMode::BorderlessFullscreen);
 	if (bSave)
 	{
@@ -408,6 +480,7 @@ void FRuntimeApplication::SetVSync(bool bEnabled)
 	UserSettings.bVSync = bEnabled;
 	if (Rhi)
 	{
+		RenderThread.WaitIdle(); // Present가 읽는다
 		Rhi->SetVSync(bEnabled);
 	}
 	SaveUserSettings();
@@ -423,6 +496,9 @@ void FRuntimeApplication::SaveUserSettings() const
 
 void FRuntimeApplication::OnShutdown()
 {
+	// 렌더 스레드: 마지막 프레임 기록·제출(스크린샷 기록 포함)을 끝내고 멈춘다 — 이후는 모두 게임 스레드
+	RenderThread.Stop();
+	LogRenderThreadStats();
 	// 창 모드면 마지막 창 크기를 기억한다 (최소화 상태는 제외)
 	if (!GetWindow().IsBorderlessFullscreen() && !GetWindow().IsMinimized() && GetWindow().GetWidth() > 0)
 	{
@@ -476,8 +552,5 @@ void FRuntimeApplication::BuildPlaceholderScene()
 
 void FRuntimeApplication::OnScreenshotRequested(const std::filesystem::path& Path)
 {
-	if (Rhi)
-	{
-		Rhi->RequestScreenshot(Path);
-	}
+	PendingScreenshot = Path; // 이번 프레임 렌더 작업이 EndFrame 직전에 RHI에 넘긴다 (렌더 스레드가 앞 프레임을 Present하는 중일 수 있다)
 }

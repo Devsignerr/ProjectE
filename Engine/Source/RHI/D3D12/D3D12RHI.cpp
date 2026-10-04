@@ -363,6 +363,7 @@ void FD3D12RHI::DeferRelease(ComPtr<ID3D12Object> Object)
 {
 	if (Object)
 	{
+		std::scoped_lock Lock(RecordingReleasesMutex);
 		RecordingReleases.Objects.push_back(std::move(Object));
 	}
 }
@@ -371,6 +372,7 @@ void FD3D12RHI::DeferFreeDescriptor(const FD3D12DescriptorHandle& Handle)
 {
 	if (Handle.IsValid())
 	{
+		std::scoped_lock Lock(RecordingReleasesMutex);
 		RecordingReleases.SrvDescriptors.push_back(Handle);
 	}
 }
@@ -530,11 +532,14 @@ void FD3D12RHI::EndFrame()
 	++GraphicsSubmitsThisFrame;
 
 	// 이번 프레임 도중(BeginFrame 전 UI 단계 포함) 해제 요청된 것은 방금 제출한 프레임이 끝난 뒤 해제
-	FPendingReleases& Pending = PendingReleases[CurrentBackBufferIndex];
-	std::move(RecordingReleases.Objects.begin(), RecordingReleases.Objects.end(), std::back_inserter(Pending.Objects));
-	Pending.SrvDescriptors.insert(Pending.SrvDescriptors.end(), RecordingReleases.SrvDescriptors.begin(), RecordingReleases.SrvDescriptors.end());
-	RecordingReleases.Objects.clear();
-	RecordingReleases.SrvDescriptors.clear();
+	{
+		FPendingReleases& Pending = PendingReleases[CurrentBackBufferIndex];
+		std::scoped_lock  ReleaseLock(RecordingReleasesMutex);
+		std::move(RecordingReleases.Objects.begin(), RecordingReleases.Objects.end(), std::back_inserter(Pending.Objects));
+		Pending.SrvDescriptors.insert(Pending.SrvDescriptors.end(), RecordingReleases.SrvDescriptors.begin(), RecordingReleases.SrvDescriptors.end());
+		RecordingReleases.Objects.clear();
+		RecordingReleases.SrvDescriptors.clear();
+	}
 
 	if (Readback)
 	{

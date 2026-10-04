@@ -10,7 +10,7 @@
 .EXAMPLE
     .\Scripts\ScaleBench.ps1                          # 500, 1000, 2000 (RT 끔)
     .\Scripts\ScaleBench.ps1 -Counts 250,500,1000,2000 -RayTracing
-    .\Scripts\ScaleBench.ps1 -Counts 1000 -ExtraArgs "--cvar r.SkinCache=0" -Tag nocache   # 같은 빌드로 A/B (로그 이름에 태그)
+    .\Scripts\ScaleBench.ps1 -ExtraArgs "--cvar r.RenderThread=1" -Tag rt1   # 런타임 추가 인자 (비교 실행은 -Tag로 로그 이름을 나눈다)
 #>
 param(
     [int[]]$Counts = @(500, 1000, 2000),
@@ -18,8 +18,8 @@ param(
     [double]$Tolerance = 1.25,
     [double]$MinMs = 0.3,
     [int]$Frames = 600,
-    [string]$ExtraArgs = "", # 런타임에 더 넘길 인자 (예: --cvar r.SkinCache=0)
-    [string]$Tag = ""        # 로그 이름 접미사 (A/B 실행 구분)
+    [string]$ExtraArgs = "",   # 런타임에 덧붙일 인자 (예: "--cvar r.RenderThread=1")
+    [string]$Tag = ""          # 로그/스크린샷 이름 꼬리 (scale_<개수>[_rt][_<Tag>])
 )
 
 $ErrorActionPreference = "Stop"

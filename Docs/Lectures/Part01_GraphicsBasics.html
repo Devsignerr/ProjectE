@@ -148,6 +148,7 @@ svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--
 }
 svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
 /* ===== 공통 스타일 끝 ===== */
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
 </style>
 </head>
 <body>
@@ -549,6 +550,11 @@ InfoQueue1-&gt;RegisterMessageCallback(
 <details class="quiz"><summary>Q3. 백버퍼 리소스는 UNORM인데 왜 씬은 sRGB 뷰로 그릴까요?</summary>
 	셰이더의 조명 계산은 선형 공간에서 해야 맞습니다(5강). 모니터는 감마 인코딩된 값을 기대하므로, 선형 결과를 sRGB 뷰에 쓰면 하드웨어가 쓰는 순간 자동으로 인코딩해 줍니다. 플립 모델이 sRGB 리소스를 허용하지 않으므로 "리소스는 UNORM, 뷰는 sRGB"로 같은 메모리를 두 방식으로 봅니다. 이미 sRGB인 UI 색은 UNORM 뷰로 그려 이중 인코딩을 피합니다.
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	2강 내용을 모두 이해했는지 객관식 21문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz02_GpuAndDx12.html">→ 2강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 3강 ======================================================= -->
@@ -957,6 +963,11 @@ CommandList-&gt;RSSetScissorRects(<span class="num">1</span>, &amp;Scissor);</pr
 <details class="quiz"><summary>Q3. 같은 셰이더로 "불투명" 물체와 "반투명" 물체를 그리려면 PSO가 몇 개 필요할까요?</summary>
 	블렌드 설정은 PSO에 구워지므로 최소 두 개입니다(블렌딩 끔/켬, 반투명은 보통 깊이 쓰기도 끔). 실제로 ProjectE의 메시 PSO는 Masked/Additive·양면·스킨 여부의 조합으로 변형 8개를 가집니다(CLAUDE.md "메시 PSO 변형 = 묶음 키 Pipeline 3비트"). 상태 조합마다 PSO가 생기기 때문에 PSO 수 관리가 엔진의 중요한 일이 됩니다.
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	3강 내용을 모두 이해했는지 객관식 23문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz03_FirstTriangle.html">→ 3강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 4강 ======================================================= -->
@@ -1317,6 +1328,11 @@ FVector3 FQuat::RotateVector(<span class="kw">const</span> FVector3&amp; V) <spa
 <details class="quiz"><summary>Q3. 셰이더를 <code>-Zpr</code> 없이 컴파일하고 CPU 행렬을 그대로 올리면 어떻게 될까요? 그래도 맞게 하려면?</summary>
 	GPU는 각 행렬을 전치된 것으로 읽습니다. 이동 성분이 마지막 행이 아니라 마지막 열(w 계산)에 들어가 정점이 엉뚱하게 원근 나눗셈되고 화면이 깨집니다. 맞추려면 업로드 전에 모든 행렬을 전치하거나, 셰이더에서 <code>mul(M, v)</code>로 곱 순서를 바꿔야 합니다. ProjectE는 둘 다 하지 않아도 되도록 <code>-Zpr</code>로 메모리 배치를 일치시켰습니다.
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	4강 내용을 모두 이해했는지 객관식 21문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz04_3DMath.html">→ 4강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 5강 ======================================================= -->

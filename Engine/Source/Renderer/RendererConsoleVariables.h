@@ -47,6 +47,7 @@ namespace RendererCVars
 
 	// 렌더 그래프 (Phase 47)
 	extern TAutoConsoleVariable<bool> RenderGraphCull;          // r.RenderGraph.Cull          (안 쓰는 패스 제거, 끄면 모두 실행 — 비교용)
+	extern TAutoConsoleVariable<bool> RenderThread;             // r.RenderThread (게임 갱신과 명령 기록·제출을 겹침 — RenderThread.h, 런타임만, --render-thread)
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncCompute;  // r.RenderGraph.AsyncCompute  (계산 큐 패스를 비동기 계산 큐에서, --no-async-compute)
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncFog;      // r.RenderGraph.AsyncFog      (볼류메트릭 안개 주입/적분을 계산 큐 후보로)
 	extern TAutoConsoleVariable<bool> RenderGraphAsyncParticles; // r.RenderGraph.AsyncParticles (GPU 파티클 계산을 계산 큐 후보로)

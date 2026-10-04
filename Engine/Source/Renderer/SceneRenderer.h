@@ -158,6 +158,13 @@ public:
 	void Shutdown();
 
 	void Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
+	// Render = BeginRender + FinishRender (렌더 스레드 — Renderer/RenderThread.h 머리 주석).
+	//   BeginRender(게임 스레드): 씬을 읽는 모든 CPU 준비(수집·팔레트·묶음·동적 버퍼 업로드)와 그래프 패스 등록. 끝나면 씬을 다시 읽지 않는다.
+	//   FinishRender(렌더 스레드 가능): 그래프 컴파일·실행(명령 기록) + 마무리. 둘 사이에 이 렌더러·리소스 관리자를 다른 곳에서 바꾸지 않는다.
+	//   Camera·Output은 FinishRender까지 살아 있는 객체여야 한다 (패스가 등록 때 값을 담지만 안전하게)
+	void BeginRender(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output);
+	void FinishRender();
+	bool IsRenderPending() const { return PendingGraph != nullptr; }
 
 	// HDR 씬 컬러 (Render 이후 PIXEL_SHADER_RESOURCE 상태). 씬(내부) 해상도: 화면 비율 100%면 출력과 같은 크기, TAAU면 출력 × 비율,
 	// 픽셀 아트 모드에서는 저해상도. 깊이는 지터가 들어간 투영으로 그려진다 (TAA 켬일 때)
@@ -418,7 +425,12 @@ private:
 	FRGResourcePool GraphPool;          // 그래프 내부 텍스처 풀 (크기·형식 키)
 	FRGStats        LastGraphStats;
 	uint32          SeenDumpSerial      = 0;     // r.RenderGraph.Dump 요청 번호 (마지막으로 덤프한)
-	bool            bPendingSnapRestore = false; // 픽셀 아트 물체 스냅: 그래프 실행 뒤 되돌린다
+	bool            bPendingSnapRestore = false; // 픽셀 아트 물체 스냅: 패스 등록 뒤 되돌린다
+	// BeginRender → FinishRender 사이 (등록이 끝난 그래프, 출력, GPU 타이머 결과 유효 여부)
+	std::unique_ptr<FRenderGraph> PendingGraph;
+	FRenderOutput                 PendingOutput;
+	bool                          bPendingGpuTiming = false;
+	uint64                        PendingUploadStart = 0;
 	bool            bFrameOcclusion     = false; // 이번 씬 렌더가 오클루전을 썼는가 (통계)
 	uint64          FrameMainTriangles        = 0;
 	uint64          FrameTranslucentTriangles = 0;

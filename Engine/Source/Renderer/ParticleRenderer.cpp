@@ -518,7 +518,7 @@ void FParticleRenderer::PrepareSimulation(FScene& Scene, const FFrustum& CullFru
 
 			// 계산 요청을 상수로 올려 둔다 (기록은 그래프 패스 — 이미터마다 디스패치 순서대로)
 			FSimJob& Job = SimJobs.emplace_back();
-			Job.Pool     = Pool;
+			Job.Pool     = std::static_pointer_cast<FParticleGpuBuffer>(Instance.GpuState);
 			Job.Program  = Program.GpuAddress;
 			Job.Groups   = (Pool->Capacity + GSimulateGroupSize - 1) / GSimulateGroupSize;
 			for (size_t StepIndex = 0; StepIndex < Pool->Deferred.size(); ++StepIndex)
@@ -546,6 +546,7 @@ void FParticleRenderer::AddSimulationPass(FRenderGraph& Graph, ERGQueue Queue, i
 	}
 	struct FRecordJob
 	{
+		std::shared_ptr<FParticleGpuBuffer>    Keep;
 		FRGResourceRef                         Ref;
 		D3D12_GPU_VIRTUAL_ADDRESS              Buffer  = 0;
 		D3D12_GPU_VIRTUAL_ADDRESS              Program = 0;
@@ -558,6 +559,7 @@ void FParticleRenderer::AddSimulationPass(FRenderGraph& Graph, ERGQueue Queue, i
 	for (FSimJob& Job : SimJobs)
 	{
 		FRecordJob& Record = Jobs.emplace_back();
+		Record.Keep        = Job.Pool; // 기록이 끝날 때까지 풀 유지 (렌더 스레드 기록 중 게임 스레드가 이미터를 지워도 State·버퍼가 산다)
 		Record.Ref         = Graph.ImportTracked("GpuParticlePool", Job.Pool->Buffer.Get(), &Job.Pool->State);
 		Record.Buffer      = Job.Pool->Buffer->GetGPUVirtualAddress();
 		Record.Program     = Job.Program;
@@ -592,6 +594,7 @@ void FParticleRenderer::AddRenderPass(FRenderGraph& Graph, FScene& Scene, const 
 {
 	// 그릴 수 있는 GPU 풀을 모두 읽기로 선언 (실제로 그릴지는 기록 때 컬링)
 	FRenderGraph::FPassBuilder Pass = Graph.AddPass("파티클");
+	std::vector<std::shared_ptr<IParticleGpuState>> KeepPools; // 기록이 끝날 때까지 풀 유지 (ImportTracked가 State를 가리킨다)
 	Scene.GetRegistry().View<FParticleSystemComponent>().Each([&](FEntity, FParticleSystemComponent& Component) {
 		for (FParticleEmitterInstance& Instance : Component.Runtime.Emitters)
 		{
@@ -599,6 +602,7 @@ void FParticleRenderer::AddRenderPass(FRenderGraph& Graph, FScene& Scene, const 
 			if (Pool != nullptr && Pool->Buffer)
 			{
 				Pass.Read(Graph.ImportTracked("GpuParticlePool", Pool->Buffer.Get(), &Pool->State), ERGAccess::SrvNonPixel);
+				KeepPools.push_back(Instance.GpuState);
 			}
 		}
 	});
@@ -606,22 +610,65 @@ void FParticleRenderer::AddRenderPass(FRenderGraph& Graph, FScene& Scene, const 
 	{
 		Pass.Read(Targets.FogVolume, ERGAccess::SrvNonPixel);
 	}
+	// 씬(입자·이미터)을 읽는 수집·정렬·업로드는 등록 때 (게임 스레드) — 패스 기록은 준비된 그리기만 (렌더 스레드에서 씬을 읽지 않는다)
+	FPreparedFrame Prepared;
+	const uint32   Drawn = PrepareDraws(Scene, Camera, CullFrustum, Prepared);
+	if (OutDrawn != nullptr)
+	{
+		*OutDrawn = Drawn;
+	}
 	Pass.Write(Targets.SceneColorRef, ERGAccess::RenderTarget)
 		.Write(Targets.DepthRef, ERGAccess::DepthWrite)
 		.Timer(Timer)
-		.Execute([this, &Scene, Camera, CullFrustum, SceneColor = Targets.SceneColor, OutDrawn](FRGContext& Context) {
+		.Execute([this, Prepared = std::move(Prepared), KeepPools = std::move(KeepPools), SceneColor = Targets.SceneColor](FRGContext& Context) {
 			SceneColor->Bind(Context.CommandList, nullptr);
-			const uint32 Drawn = Render(Context.CommandList, Scene, Camera, CullFrustum);
-			if (OutDrawn != nullptr)
-			{
-				*OutDrawn = Drawn;
-			}
+			RecordDraws(Context.CommandList, Prepared);
 		});
 }
 
-uint32 FParticleRenderer::Render(ID3D12GraphicsCommandList* CommandList, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum)
+void FParticleRenderer::RecordDraws(ID3D12GraphicsCommandList* CommandList, const FPreparedFrame& Prepared) const
+{
+	if (Prepared.Draws.empty())
+	{
+		return;
+	}
+	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Frame, Prepared.FrameConstants);
+	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, Prepared.FogConstants);
+	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, Prepared.FogVolume);
+	ID3D12PipelineState* BoundPipeline = nullptr;
+	for (const FPreparedDraw& Draw : Prepared.Draws)
+	{
+		if (Draw.Pipeline != BoundPipeline)
+		{
+			CommandList->SetPipelineState(Draw.Pipeline);
+			BoundPipeline = Draw.Pipeline;
+		}
+		CommandList->SetGraphicsRootConstantBufferView(RootParam_Draw, Draw.DrawConstants);
+		CommandList->SetGraphicsRootShaderResourceView(RootParam_Particles, Draw.Particles);
+		CommandList->SetGraphicsRootDescriptorTable(RootParam_Texture, Draw.Texture);
+		if (Draw.Kind == Pipeline_Sprite)
+		{
+			CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			CommandList->DrawInstanced(6, Draw.InstanceCount, 0, 0);
+		}
+		else if (Draw.Kind == Pipeline_Mesh)
+		{
+			Draw.Mesh->DrawInstanced(CommandList, Draw.InstanceCount);
+		}
+		else
+		{
+			CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			CommandList->IASetVertexBuffers(0, 1, &Draw.RibbonView);
+			CommandList->DrawInstanced(Draw.RibbonVertexCount, 1, 0, 0);
+		}
+	}
+}
+
+uint32 FParticleRenderer::PrepareDraws(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum, FPreparedFrame& Out)
 {
 	CulledEmitters = 0;
+	Out.Draws.clear();
 	if (Rhi == nullptr)
 	{
 		return 0;
@@ -702,15 +749,12 @@ uint32 FParticleRenderer::Render(ID3D12GraphicsCommandList* CommandList, FScene&
 	Frame.CameraUp       = Camera.GetUpVector();
 	Frame.CameraPosition = CameraPosition;
 	const D3D12_GPU_VIRTUAL_ADDRESS FrameAddress = DynamicBuffer.AllocateConstants(Frame).GpuAddress;
-
-	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_Frame, FrameAddress);
-	CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogConstants);
-	CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogVolume.Gpu);
+	Out.FrameConstants = FrameAddress;
+	Out.FogConstants   = FogConstants;
+	Out.FogVolume      = FogVolume.Gpu;
 
 	const FVector3        Forward       = Camera.GetForwardVector();
 	const FD3D12Texture&  Fallback      = Resources->ResolveTexture(DefaultTexture);
-	ID3D12PipelineState*  BoundPipeline = nullptr;
 	uint32                DrawnCount    = 0;
 	std::vector<const FParticleEmitterInstance*> CountedInstances;
 
@@ -871,32 +915,17 @@ uint32 FParticleRenderer::Render(ID3D12GraphicsCommandList* CommandList, FScene&
 		DrawConstants.Alignment       = static_cast<int32>(Settings.Alignment);
 		DrawConstants.VelocityStretch = Settings.VelocityStretch;
 
-		ID3D12PipelineState* Pipeline = Pipelines.Graphics[Kind][bAlpha ? 0 : 1].Get();
-		if (Pipeline != BoundPipeline)
-		{
-			CommandList->SetPipelineState(Pipeline);
-			BoundPipeline = Pipeline;
-		}
-		CommandList->SetGraphicsRootConstantBufferView(RootParam_Draw, DynamicBuffer.AllocateConstants(DrawConstants).GpuAddress);
-		CommandList->SetGraphicsRootShaderResourceView(RootParam_Particles, ParticleAddress);
+		FPreparedDraw& Prepared    = Out.Draws.emplace_back();
+		Prepared.Kind              = Kind;
+		Prepared.Pipeline          = Pipelines.Graphics[Kind][bAlpha ? 0 : 1].Get();
+		Prepared.DrawConstants     = DynamicBuffer.AllocateConstants(DrawConstants).GpuAddress;
+		Prepared.Particles         = ParticleAddress;
 		const FD3D12Texture& Texture = Settings.Texture.IsValid() ? Resources->ResolveTexture(Settings.Texture) : Fallback;
-		CommandList->SetGraphicsRootDescriptorTable(RootParam_Texture, Texture.GetSrv().Gpu);
-
-		if (Kind == Pipeline_Sprite)
-		{
-			CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			CommandList->DrawInstanced(6, InstanceCount, 0, 0);
-		}
-		else if (Kind == Pipeline_Mesh)
-		{
-			Mesh->DrawInstanced(CommandList, InstanceCount);
-		}
-		else
-		{
-			CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			CommandList->IASetVertexBuffers(0, 1, &RibbonView);
-			CommandList->DrawInstanced(static_cast<UINT>(RibbonScratch.size()), 1, 0, 0);
-		}
+		Prepared.Texture           = Texture.GetSrv().Gpu;
+		Prepared.InstanceCount     = InstanceCount;
+		Prepared.Mesh              = Mesh;
+		Prepared.RibbonView        = RibbonView;
+		Prepared.RibbonVertexCount = Kind == Pipeline_Ribbon ? static_cast<uint32>(RibbonScratch.size()) : 0u;
 		// 입자 수는 이미터당 한 번만 센다 (렌더러가 여러 개여도)
 		if (std::find(CountedInstances.begin(), CountedInstances.end(), &Instance) == CountedInstances.end())
 		{

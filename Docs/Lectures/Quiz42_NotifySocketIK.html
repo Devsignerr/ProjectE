@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>42강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part06_Animation.html#lec-42">← 42강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">6부 · 42강 문제풀이</div>
+		<h1>노티파이, 소켓, IK, 제대로 이해했나요?</h1>
+		<p>42강의 다섯 주제(왜 필요한가, 노티파이, 소켓, IK, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part06_Animation.html#lec-43">43강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part06_Animation.html";
+const Topics = {
+	why:      { name: "왜 필요한가",                anchor: "lec-42-why" },
+	notify:   { name: "노티파이와 노티파이 스테이트", anchor: "lec-42-notify" },
+	socket:   { name: "소켓 부착",                  anchor: "lec-42-socket" },
+	ik:       { name: "2본 IK·발 IK·시선",          anchor: "lec-42-ik" },
+	pitfalls: { name: "함정과 교훈",                anchor: "lec-42-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "why", kind: "설계 이유",
+		q: "공격 시작 후 \"0.3초 뒤\"에 타이머로 타격 판정을 켜는 대신 클립에 노티파이를 두는 이유로 가장 알맞은 것은?",
+		o: [
+			"타이머는 메인 스레드에서만 돌아 병렬 포즈 평가 중에는 쓸 수 없다.",
+			"배속이 바뀌거나 블렌드되면 타이머 시각이 실제 동작과 어긋난다.",
+			"타이머는 프레임마다 시간을 더해 누적 오차가 커지기 때문이다.",
+			"노티파이는 물리 스텝과 같은 60Hz 고정 주기로 판정되기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"타이머가 메인 스레드에서 도는 것은 맞지만 노티파이 이벤트도 결국 메인 스레드에서 전달됩니다. 문제는 스레드가 아니라 시각이 동작에 묶여 있지 않다는 것입니다.",
+			"노티파이는 클립 시간축의 한 시점이라 배속을 바꾸면 함께 늘고 줄며, 블렌드 중에도 실제 재생 위치를 따라갑니다. \"0.3초 뒤\"는 벽시계 기준이라 재생 속도와 무관하게 발동해 칼이 휘둘러지는 순간과 어긋납니다.",
+			"누적 오차는 노티파이와 같은 크기로 생기는 문제이고, 핵심 이유가 아닙니다. 배속·블렌드처럼 재생 시간이 벽시계와 달라지는 경우가 문제입니다.",
+			"노티파이는 애니메이션 갱신(프레임)마다 진행 구간으로 판정합니다. 물리 고정 스텝과는 관계없습니다.",
+		],
+	},
+	{
+		t: "notify", kind: "추적",
+		q: "길이 D = 0.7초인 반복 클립에 노티파이가 0.02, 0.05, 0.68초에 있습니다. 한 프레임에 재생 시각이 0.66 → 0.04로 루프를 넘어갔다면 이번 프레임에 나오는 노티파이는?",
+		o: [
+			"0.68 → 0.02 순서로 두 개가 나온다.",
+			"0.02 → 0.68 순서로 두 개가 나온다.",
+			"0.68, 0.02, 0.05 세 개가 모두 나온다.",
+			"구간 [0.66, 0.04)가 비어 하나도 안 나온다.",
+		],
+		a: 0,
+		w: [
+			"루프 경계는 \"끝까지\" [0.66, 0.7]과 \"처음부터\" [0, 0.04)의 두 구간으로 나눠 판정합니다. 앞 구간에서 0.68, 뒤 구간에서 0.02가 나오고, 정렬은 구간 안에서만 하므로 재생 순서 그대로 0.68 → 0.02입니다. 0.05는 아직 지나지 않았습니다.",
+			"시각 오름차순 정렬은 구간 안에서만 합니다(`Timed.begin() + First`부터). 구간을 통째로 섞어 정렬하면 실제 재생 순서와 반대가 됩니다.",
+			"0.05는 새 시각 0.04보다 뒤라 이번 프레임에는 지나지 않았습니다. 다음 프레임에 나옵니다.",
+			"루프를 나누지 않고 하나의 구간으로 판정할 때 생기는 버그입니다(생각해 볼 문제 Q1). 그래서 두 구간으로 나눕니다.",
+		],
+	},
+	{
+		t: "notify", kind: "결과 예측",
+		q: "반복하지 않는 길이 1.0초 클립의 정확히 1.0초에 노티파이 `Finish`가 있습니다. 재생이 0.98 → 1.0으로 끝에 닿은 뒤 그대로 멈춰 있다면?",
+		o: [
+			"구간이 [이전, 새)로 끝을 빼므로 `Finish`는 끝내 나오지 않는다.",
+			"끝에 머무는 동안 매 프레임 `Finish`가 반복해서 나온다.",
+			"끝에 닿은 프레임에 한 번 나오고 멈춘 동안은 더 나오지 않는다.",
+			"클립이 처음으로 감겨 0초가 될 때 `Finish`가 한 번 나온다.",
+		],
+		a: 2,
+		w: [
+			"반복 없는 클립이 끝에 닿는 구간은 예외로 끝 시각을 포함합니다(`!bLoop && End >= Duration`). 그래서 끝 시각 노티파이도 나옵니다.",
+			"멈춘 동안은 진행량이 0이라 아무것도 판정하지 않습니다. 매 프레임 반복되지 않게 하려는 규칙입니다.",
+			"반복 없는 클립은 끝을 포함하는 구간으로 끝 시각 노티파이를 한 번 내고, 이후에는 진행량 0이라 아무 이벤트도 없습니다. \"끝에 멈춘 뒤 매 프레임 다시 나오지 않게\"가 규칙의 이유입니다.",
+			"반복하지 않는 클립은 처음으로 감기지 않습니다. 감길 때 나누는 규칙은 반복 클립의 것입니다.",
+		],
+	},
+	{
+		t: "notify", kind: "계산",
+		q: "길이 1.0초 클립을 역재생해 한 프레임에 0.8 → 0.6으로 진행했습니다. 노티파이가 0.6, 0.7, 0.8초에 있다면 이번 프레임에 나오는 것은? (역재생은 시간축을 D − t로 뒤집어 정방향 규칙을 씁니다)",
+		o: [
+			"0.7 하나뿐",
+			"0.6, 0.7",
+			"0.6~0.8 셋",
+			"0.8, 0.7",
+		],
+		a: 3,
+		w: [
+			"뒤집은 구간의 시작 0.2(= 0.8)도 포함됩니다. 반열린 구간은 시작을 포함하고 끝을 뺍니다.",
+			"정방향 [0.6, 0.8)로 착각한 결과입니다. 역재생은 0.8에서 출발해 0.6 쪽으로 가므로 뒤집은 축에서 0.6이 구간의 끝(빠지는 쪽)입니다.",
+			"구간 양 끝을 모두 포함한 결과입니다. 0.6은 다음 프레임의 시작으로 남겨야 중복이 없습니다.",
+			"D − t로 뒤집으면 구간은 [0.2, 0.4)이고 노티파이는 0.4, 0.3, 0.2가 됩니다. 0.3(= 0.7)과 0.2(= 0.8)만 들어가며, 뒤집은 축의 시간 순서로 0.8 → 0.7이 나옵니다. 0.6(= 0.4)은 끝이라 빠지고 다음 프레임에 나옵니다.",
+		],
+	},
+	{
+		t: "notify", kind: "순서",
+		q: "한 프레임 구간 안의 같은 시각 0.5초에 스테이트 `A`의 끝, 노티파이 `N`, 스테이트 `B`의 시작이 겹쳤습니다. 전달 순서는?",
+		o: [
+			"`A` End → `N` → `B` Begin",
+			"`B` Begin → `N` → `A` End",
+			"`N` 먼저 → `A` End → `B` Begin",
+			"`A` End → `B` Begin → `N`",
+		],
+		a: 0,
+		w: [
+			"같은 시각이면 End → 노티파이 → Begin 순서입니다(`Priority`로 정렬하는 `stable_sort`). 나가는 구간을 먼저 닫고 새 구간을 나중에 열어야, 받는 쪽이 \"두 스테이트가 동시에 켜진\" 상태를 보지 않습니다.",
+			"Begin을 먼저 하면 잠깐 두 스테이트가 동시에 켜진 것처럼 보입니다. 규칙과 반대입니다.",
+			"점 노티파이는 End와 Begin 사이에 옵니다. End보다 먼저 오지 않습니다.",
+			"노티파이가 Begin 뒤로 가면 규칙(End → 노티파이 → Begin)과 맞지 않습니다.",
+		],
+	},
+	{
+		t: "notify", kind: "설계 이유",
+		q: "걷기와 뛰기가 섞이는 블렌드 스페이스에서 두 클립 모두 발소리 노티파이가 있습니다. ProjectE가 출처마다 가중치가 가장 큰 기여 하나에서만 판정하는 이유는?",
+		o: [
+			"가중치가 작은 클립은 포즈 평가를 건너뛰어 시각을 모르기 때문이다.",
+			"두 클립을 모두 판정하면 한 걸음에 발소리가 두 번 나기 때문이다.",
+			"가중치 비율로 소리 크기를 나누면 Lua로 넘길 인자가 없기 때문이다.",
+			"정규화 시간 동기화가 꺼지면 두 클립의 길이가 달라지기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"섞이는 클립은 모두 평가해 포즈를 섞습니다. 시각을 몰라서가 아닙니다.",
+			"걷기·뛰기 클립은 같은 걸음을 표현하므로 둘 다 판정하면 같은 발소리가 중복됩니다. 출처(기본 레이어, 추가 레이어마다, 몽타주마다) 안에서 이번 프레임 가중치가 가장 큰 기여 하나만 판정해 한 걸음에 한 번으로 맞춥니다.",
+			"소리 크기 배분은 규칙과 관계없습니다. 노티파이는 이름만 전달하고, 중복을 막는 것이 목적입니다.",
+			"블렌드 스페이스는 정규화 시간으로 동기화합니다. 길이 차이는 판정 대상을 하나로 줄이는 이유가 아닙니다.",
+		],
+	},
+	{
+		t: "notify", kind: "설계 이유",
+		q: "노티파이 이벤트를 애니메이션 갱신 도중 곧바로 Lua로 부르지 않고 `PendingNotifies`에 모아 다음 프레임에 전달하는 이유는?",
+		o: [
+			"Lua가 노티파이 이름에 맞는 함수를 찾는 데 한 프레임이 걸리기 때문이다.",
+			"같은 이름의 노티파이를 한 프레임에 하나로 합쳐 보내기 위해서다.",
+			"스크립트 갱신이 애니메이션보다 먼저 끝나 이번 프레임엔 늦기 때문이다.",
+			"포즈 평가가 여러 스레드에서 돌아 그 중에는 스크립트를 부를 수 없다.",
+		],
+		a: 3,
+		w: [
+			"함수 찾기는 즉시 됩니다. 지연은 스레드 안전 때문에 생기는 대가입니다.",
+			"같은 이름이라도 각각 전달합니다. 모으는 것은 합치려는 것이 아니라 안전한 시점으로 미루려는 것입니다.",
+			"갱신 순서 때문이라면 같은 프레임 뒤쪽에 전달해도 됩니다. 핵심은 평가 중 호출이 불가능하다는 점입니다.",
+			"포즈 평가는 엔티티별로 병렬로 돌고 평가 단계에서는 콜백·로그·ECS 구조 변경을 금지합니다(40강). Lua 상태는 스레드 안전하지 않고 스크립트가 엔티티를 만들거나 지울 수도 있으므로, 런타임별 목록에 모았다가 메인 스레드에서 나눠 줍니다. 대가는 한 프레임 지연입니다.",
+		],
+	},
+	{
+		t: "notify", kind: "결과 예측",
+		q: "편집기에서 타임라인을 0.1초에서 0.9초로 끌었습니다(스크럽, `SetTime`). 그 사이에 발소리 노티파이 4개가 있고 0.9초는 스테이트 `Stride` 구간 안입니다. 어떻게 되나요?",
+		o: [
+			"발소리 4개가 시간 순서로 한꺼번에 전달되고 `Stride`가 Begin된다.",
+			"발소리는 안 나고, 다음 진행에서 0.9초를 포함한 `Stride`가 Begin된다.",
+			"발소리는 안 나고, `Stride`는 구간 시작을 지나지 않았으므로 Begin되지 않는다.",
+			"마지막 발소리 하나만 전달되고 `Stride`는 다음 진행에서 Begin된다.",
+		],
+		a: 1,
+		w: [
+			"스크럽을 진행처럼 취급하면 타임라인을 끌 때마다 이벤트가 폭주합니다. 그래서 스크럽은 점 노티파이를 내지 않습니다.",
+			"스크럽은 점 노티파이를 내지 않고, 진행 중 스테이트를 End한 뒤 다음 진행에서 그 시각을 포함한 스테이트를 Begin합니다(`bResync`). 이벤트 폭주를 막으면서도 \"구간 안에 있다\"는 상태는 맞춥니다.",
+			"시작을 지나지 않아도 그 시각을 포함한 스테이트는 다음 진행에서 Begin합니다. 그러지 않으면 구간 한가운데로 옮겼을 때 스테이트가 꺼진 채로 남습니다.",
+			"마지막 하나만 고르는 규칙은 없습니다. 스크럽은 점 노티파이를 하나도 내지 않습니다.",
+		],
+	},
+	{
+		t: "notify", kind: "설계 이유",
+		q: "노티파이와 소켓을 임포트 설정 `.eimport`가 아니라 모델 옆 `<모델>.emeta`에 저장하는 이유는?",
+		o: [
+			"`.eimport`는 쿠킹 입력이라 고치면 모델을 다시 임포트·쿠킹해야 한다.",
+			"`.eimport`는 바이너리 형식이라 편집기에서 JSON으로 고칠 수 없다.",
+			"`.emeta`는 쿠킹 모델 안에 합쳐져 런타임 읽기가 한 번으로 끝난다.",
+			"`.eimport`는 콘텐츠 브라우저에서 숨겨져 모델과 함께 옮겨지지 않기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"`.eimport`가 바뀌면 모델을 다시 가져와 쿠킹합니다. 노티파이 시각 하나 고칠 때마다 수십 MB 모델을 쿠킹할 수 없으므로 쿠킹 입력이 아닌 `.emeta`에 둡니다. `.emeta`는 `FModelResources::Metadata`로 공유되어 편집기에서 고치면 열린 씬에 즉시 반영됩니다.",
+			"`.eimport`도 JSON입니다. 형식이 아니라 쿠킹 입력이라는 점이 문제입니다.",
+			"반대입니다. `.emeta`는 쿠킹 입력이 아니고 쿠킹 모델에 들어가지 않습니다. 그래서 고쳐도 재쿠킹이 없습니다.",
+			"콘텐츠 브라우저는 `.eimport`와 `.emeta`를 둘 다 숨기고 둘 다 모델과 함께 옮기고 복제하고 삭제합니다.",
+		],
+	},
+	{
+		t: "notify", kind: "코드 읽기",
+		q: "모델 루트 `Knight`에는 스크립트가 없고, 그 부모 `KnightActor`에 아래 스크립트가 있습니다. 클립에 스테이트 `Slash`(길이 0.3초)가 있을 때 맞는 설명은?",
+		code: "function KnightActor:OnAnimNotifyBegin_Slash()  self.bBladeOn = true  end\nfunction KnightActor:OnAnimNotifyTick_Slash(dt) self:SweepBlade(dt)  end\nfunction KnightActor:OnAnimNotifyEnd_Slash()    self.bBladeOn = false end",
+		o: [
+			"루트에 스크립트가 없으므로 이벤트는 그대로 버려지고 세 함수 모두 불리지 않는다.",
+			"`KnightActor`가 Begin 한 번, 구간 동안 매 프레임 Tick, End 한 번을 받는다.",
+			"`KnightActor`가 받지만 스테이트는 Begin과 End만 내고 Tick은 내지 않는다.",
+			"스테이트는 `OnAnimNotify_Slash` 하나로 오고 인자로 단계를 구분해야 한다.",
+		],
+		a: 1,
+		w: [
+			"Lua 수신자는 노티파이가 난 모델 루트의 스크립트이고, 없으면 가장 가까운 조상의 스크립트입니다.",
+			"수신자는 모델 루트에 스크립트가 없으면 가장 가까운 조상의 스크립트입니다. 스테이트는 들어갈 때 `OnAnimNotifyBegin_<이름>`, 머무는 동안 매 프레임 `OnAnimNotifyTick_<이름>(dt)`, 나올 때 `OnAnimNotifyEnd_<이름>`이 불립니다. 칼날 판정 구간이 대표적인 쓰임입니다.",
+			"진행 중인 스테이트마다 프레임 마지막에 Tick을 하나씩 덧붙입니다.",
+			"`OnAnimNotify_<이름>`은 점 노티파이용입니다. 스테이트는 Begin/Tick/End로 이름이 다른 함수를 씁니다.",
+		],
+	},
+	{
+		t: "socket", kind: "개념",
+		q: "모자 엔티티가 머리뼈의 `Hat` 소켓에 부착되어 있습니다. ProjectE의 행벡터 규약(`v * M`)으로 모자의 월드 행렬은?",
+		o: [
+			"뼈 월드 × 소켓 로컬 × 모자 로컬",
+			"모자 로컬 × 뼈 월드 × 소켓 로컬",
+			"모자 로컬 × 소켓 로컬 × 뼈 월드",
+			"모자 로컬 × 계층 부모 월드",
+		],
+		a: 2,
+		w: [
+			"열벡터 규약의 순서입니다. ProjectE는 행벡터라 적용 순서대로 왼쪽부터 곱합니다.",
+			"소켓 로컬은 뼈 기준 트랜스폼이므로 뼈 월드보다 먼저(왼쪽에) 와야 합니다.",
+			"부착 엔티티의 트랜스폼은 소켓 기준 로컬이고, 소켓은 뼈 기준 상대 트랜스폼입니다. 행벡터 규약에서는 적용 순서대로 자기 로컬 × 소켓 로컬(`Found->GetLocalMatrix()`) × 뼈 월드입니다.",
+			"소켓 부착은 계층 부모를 무시합니다. 부착 엔티티의 \"부모\"는 소켓입니다.",
+		],
+	},
+	{
+		t: "socket", kind: "버그 찾기",
+		q: "기즈모가 끈 월드 위치를 로컬 위치로 되돌리는 아래 코드(개념 코드)는 손 소켓에 붙은 칼에서 칼을 엉뚱한 곳으로 튀게 합니다. 원인은?",
+		code: "const FEntity    Parent      = Scene.GetParent(Sword);\nconst FMatrix4x4 ParentWorld = Parent.IsValid() ? Scene.GetTransform(Parent).WorldMatrix\n                                                : FMatrix4x4::Identity;\nTransform.Position = Inverse(ParentWorld).TransformPosition(NewWorldPosition);",
+		o: [
+			"부모가 없을 때 항등 행렬을 쓰면 월드 원점이 기준이 되어 위치가 틀어진다.",
+			"위치에는 `TransformVector`를 써야 부모 이동이 두 번 더해지지 않는다.",
+			"부착된 칼의 기준은 소켓 월드인데 계층 부모의 월드 행렬을 쓰고 있다.",
+			"부모 월드 행렬은 이번 프레임 값이 아니라 지난 프레임 값이라 어긋난다.",
+		],
+		a: 2,
+		w: [
+			"부모가 없으면 로컬이 곧 월드이므로 항등 행렬이 맞습니다. `GetParentWorldMatrix`도 같은 처리를 합니다.",
+			"위치는 이동을 받아야 하므로 `TransformPosition`(w = 1)이 맞습니다. 방향 벡터일 때만 `TransformVector`입니다.",
+			"소켓 부착 엔티티의 \"부모\"는 계층 부모가 아니라 소켓입니다. 로컬 ↔ 월드 변환은 소켓 부착이면 소켓 월드 행렬을, 아니면 계층 부모 월드를 돌려주는 `FScene::GetParentWorldMatrix`를 써야 합니다(CLAUDE.md \"노티파이/소켓\").",
+			"기즈모 조작 시점에는 트랜스폼 갱신이 끝난 값을 씁니다. 문제는 시점이 아니라 기준 행렬의 종류입니다.",
+		],
+	},
+	{
+		t: "socket", kind: "설계 이유",
+		q: "`FScene::UpdateTransforms`는 소켓 부착 엔티티를 대상 모델의 뼈 계산 뒤로 미뤄 처리합니다. 이렇게 하는 이유는?",
+		o: [
+			"부착 엔티티를 병렬 순회에서 빼야 소켓 이름 검색이 스레드 안전해지기 때문이다.",
+			"소켓 행렬을 캐시해 두었다가 다음 프레임에 재사용해 계산을 줄이기 위해서다.",
+			"부착 엔티티는 물리 바디가 있어 물리 갱신이 끝난 뒤에만 옮길 수 있기 때문이다.",
+			"뼈 월드 행렬이 이번 프레임 값으로 정해진 뒤에야 소켓 위치가 맞기 때문이다.",
+		],
+		a: 3,
+		w: [
+			"미루는 이유는 계산 순서(의존성)입니다. 스레드 안전을 위해서가 아닙니다.",
+			"재사용하면 한 프레임 늦게 따라가 칼이 손에서 떨어져 보입니다. 미루는 것은 이번 프레임 값을 쓰기 위해서입니다.",
+			"부착 엔티티에 물리 바디가 꼭 있는 것도 아니고, 트랜스폼 갱신 순서는 물리와 별개입니다.",
+			"소켓 월드 = 소켓 로컬 × 뼈 월드이므로 뼈 월드가 먼저 정해져야 합니다. 그래서 부착 엔티티를 뒤로 미루고, 부착의 부착도 차례로 처리합니다.",
+		],
+	},
+	{
+		t: "socket", kind: "판단",
+		q: "부착 컴포넌트에 적힌 소켓 이름이 대상 모델의 `.emeta`에 없습니다(오타). 이 엔티티의 트랜스폼은?",
+		o: [
+			"대상 모델 루트의 원점에 붙어 모델을 따라다닌다.",
+			"월드 원점(항등 행렬) 기준으로 놓여 제자리에 멈춘다.",
+			"엔티티가 렌더링·갱신에서 빠져 화면에 보이지 않는다.",
+			"소켓 부착이 없는 것처럼 평소 계층 부모를 따른다.",
+		],
+		a: 3,
+		w: [
+			"루트 원점으로 대신 붙이는 규칙은 없습니다. 소켓을 찾지 못하면 부착이 없는 것처럼 처리합니다.",
+			"`GetParentWorldMatrix`는 소켓을 못 찾으면 계층 부모 월드로 넘어가고, 부모가 없을 때만 항등입니다.",
+			"엔티티를 숨기지 않습니다. 계층을 따라 평소처럼 그려집니다.",
+			"`GetSocketWorldMatrix`가 실패하면 `GetParentWorldMatrix`는 계층 부모의 월드 행렬로 돌아갑니다. 자기 하위를 대상으로 하는 순환 부착도 거부되어 같은 처리를 받습니다.",
+		],
+	},
+	{
+		t: "ik", kind: "계산",
+		q: "허벅지 a = 40cm, 정강이 b = 40cm, 엉덩이에서 발 목표까지 거리 d = 40cm입니다. 코사인 법칙으로 구한 \"허벅지와 목표 방향 사이 각\"은?",
+		o: ["60°", "30°", "120°", "90°"],
+		a: 0,
+		w: [
+			"cos = (a² + d² − b²) / (2ad) = (1600 + 1600 − 1600) / (2·40·40) = 0.5 → 60°. 세 변이 같은 정삼각형이라 모든 각이 60°입니다. 무릎은 엉덩이에서 목표 방향으로 a·cos = 20cm, 굽힘 방향으로 a·sin ≈ 34.6cm 간 곳입니다.",
+			"사인 0.5의 각(또는 60°의 절반)으로 착각한 값입니다.",
+			"무릎 안쪽 각을 180° − 60°로 잘못 구한 값입니다. 정삼각형에서는 무릎 각도 60°입니다.",
+			"cos = 0으로 계산한 값입니다. a² + d² − b²가 0이 될 때만 90°입니다.",
+		],
+	},
+	{
+		t: "ik", kind: "계산",
+		q: "위팔 50cm, 아래팔 30cm인 팔에서 목표가 어깨에서 10cm 거리에 있습니다. 2본 IK가 실제로 쓰는 도달 거리 `Reach`는 대략?",
+		code: "const float MaxReach = (UpperLength + LowerLength) * 0.9999f;\nconst float MinReach = FMath::Abs(UpperLength - LowerLength) * 1.0001f + FMath::SmallNumber;\nconst float Reach    = FMath::Clamp(Distance, MinReach, MaxReach);",
+		o: ["약 10cm", "약 20cm", "약 58.3cm", "약 80cm"],
+		a: 1,
+		w: [
+			"10cm는 |50 − 30| = 20cm보다 가까워 삼각형이 성립하지 않습니다. 그래서 `MinReach`로 잘립니다.",
+			"|50 − 30| × 1.0001 ≈ 20cm가 `MinReach`이고 10cm는 그보다 작아 20cm로 잘립니다. 두 뼈를 완전히 접어도 그보다 가까이 닿을 수 없기 때문입니다. 반대쪽 끝은 (50 + 30) × 0.9999 ≈ 80cm입니다.",
+			"√(50² + 30²)는 직각일 때의 거리로, `Clamp` 식과 관계없습니다.",
+			"`MaxReach`입니다. 목표가 너무 멀 때 잘리는 값이고 이번에는 너무 가깝습니다.",
+		],
+	},
+	{
+		t: "ik", kind: "설계 이유",
+		q: "`MaxReach`에 0.9999를 곱해 다리를 완전히 펴지 않게 하는 이유는?",
+		o: [
+			"완전히 펴면 `acos` 인자가 1을 넘어 NaN이 나오므로 그 전에 막으려고",
+			"완전히 편 다리는 스킨 가중치가 늘어나 무릎 메시가 찢어져 보이기 때문에",
+			"완전히 편 다리는 굽힐 방향 정보가 없어 무릎이 갑자기 뒤집힐 수 있어서",
+			"완전히 펴면 발 IK의 바닥 탐색 광선이 발목을 뚫고 지나가 버리기 때문에",
+		],
+		a: 2,
+		w: [
+			"코사인 값은 이미 `Clamp(..., -1, 1)`로 막고 있습니다. 0.9999는 NaN 방지가 아니라 방향 안정성을 위한 것입니다.",
+			"스킨 메시가 찢어지는 것은 가중치·바인드 문제이고 IK 도달 거리와 관계없습니다.",
+			"완전히 편 다리는 무릎 각이 0이라 어느 쪽으로 굽어야 할지(Bend) 정보가 사라지고, 목표가 조금만 움직여도 무릎이 갑자기 뒤집힐 수 있습니다. 조금 덜 펴 두면 Pole이 정한 굽힘 방향이 유지됩니다.",
+			"바닥 탐색은 IK 전 발 위치에서 레이캐스트로 따로 합니다. 다리 펴짐과 관계없습니다.",
+		],
+	},
+	{
+		t: "ik", kind: "설계 이유",
+		q: "발 IK의 바닥 높이 탐색(레이캐스트)을 애니메이션 시스템(Scene) 안이 아니라 `FGameWorld`(World)가 하는 이유는?",
+		o: [
+			"Scene은 Physics에 의존할 수 없어 둘을 다 아는 World가 맡는다.",
+			"레이캐스트는 Jolt 콜백 안에서만 할 수 있어 물리 스텝 중에 해야 한다.",
+			"포즈 평가가 병렬이라 레이캐스트 결과를 엔티티끼리 나눠 쓸 수 없다.",
+			"World가 탐색해야 바닥 결과가 같은 프레임 애니메이션보다 먼저 준비되기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"0강의 의존 방향에서 Scene은 Physics를 몰라야 합니다. 레이캐스트가 필요한 탐색은 Scene과 Physics를 모두 아는 World(`FGameWorld::UpdateFootIkProbes`)가 하고 결과를 컴포넌트 런타임(`Runtime.Feet`)에 넣습니다.",
+			"Jolt 콜백에서는 게임 코드를 부르지 않는 것이 규칙입니다. 탐색은 물리 스텝 뒤 메인 스레드에서 `Raycast`로 합니다.",
+			"엔티티끼리 결과를 나눠 쓸 필요가 없습니다. 위치는 의존 방향 문제입니다.",
+			"탐색 결과는 같은 프레임 애니메이션이 쓰지만, 탐색 시작점이 직전 애니메이션의 발 위치라 결국 한 프레임 늦습니다. 이것이 World에 둔 이유도 아닙니다.",
+		],
+	},
+	{
+		t: "ik", kind: "계산",
+		q: "모델 루트 월드 Z = 100cm, 왼발 아래 바닥 88cm, 오른발 아래 바닥 108cm, `MaxAdjust` = 10cm입니다. 보간이 끝난 뒤 골반 보정은?",
+		o: ["−12cm", "−10cm", "−1.0cm", "+8cm"],
+		a: 1,
+		w: [
+			"왼발 보정 −12는 ±MaxAdjust로 잘려 −10이 됩니다. 자르기를 빠뜨린 값입니다.",
+			"발 보정 = clamp(바닥 − 루트 Z, ±10): 왼발 clamp(−12) = −10, 오른발 +8. 골반 보정 = min(0, −10, +8) = −10입니다. 골반은 내리기만 해서 낮은 칸의 발이 닿게 하고, 높은 쪽 발은 무릎을 더 굽혀(2본 IK) 맞춥니다.",
+			"두 발 보정(−10, +8)의 평균입니다. 골반은 평균이 아니라 min(0, …)입니다.",
+			"골반은 올리지 않습니다. 올리면 캐릭터가 떠 보입니다.",
+		],
+	},
+	{
+		t: "ik", kind: "추적",
+		q: "발 IK 탐색이 자기 다리의 캡슐(자손 엔티티)에 먼저 맞았습니다. 아래 루프는 어떻게 하나요?",
+		code: "for (int32 Try = 0; Try < 3 && Left > 0.0f; ++Try)\n{\n\tif (!Physics->Raycast(Origin, -FVector3::UpVector, Left, Hit)) { break; }\n\tif (!IsSelf(Entity, Hit.Entity)) { Foot.bHit = true; Foot.HitPoint = Hit.Position; break; }\n\tLeft  -= Hit.Distance + 1.0f;\n\tOrigin = Hit.Position - FVector3::UpVector * 1.0f;\n}",
+		o: [
+			"자기 몸에 맞으면 그 자리를 바닥으로 보고 `bHit`을 켠 뒤 끝낸다.",
+			"자기 몸에 맞으면 탐색을 포기하고 이번 프레임 보정을 0으로 만든다.",
+			"맞은 점 1cm 아래에서 남은 거리로 다시 쏘며, 최대 세 번까지 한다.",
+			"광선 길이를 1cm씩 늘려 가며 남은 거리가 0이 될 때까지 계속 쏜다.",
+		],
+		a: 2,
+		w: [
+			"`IsSelf`면 `bHit`을 켜지 않고 넘어갑니다. 자기 몸을 바닥으로 쓰면 다리가 허공을 딛습니다.",
+			"포기하지 않고 다시 쏩니다. 보정이 0으로 돌아가는 것은 탐색 결과가 `ProbeMaxAge`보다 오래됐을 때입니다.",
+			"자기 몸(조상/자손)에 맞으면 남은 거리에서 맞은 거리 + 1cm를 빼고 맞은 점 1cm 아래에서 다시 쏩니다. `Try < 3`이라 최대 세 번이고 남은 거리가 없으면 멈춥니다.",
+			"광선은 늘지 않고 남은 거리(`Left`)는 줄기만 합니다. 횟수도 `Try < 3`으로 제한됩니다.",
+		],
+	},
+	{
+		t: "ik", kind: "결과 예측",
+		q: "에디터에서 플레이하지 않고 씬을 편집하는 중(물리 없음)에는 발 IK 보정이 어떻게 되나요?",
+		o: [
+			"마지막 플레이에서 얻은 바닥 결과가 씬에 저장되어 그대로 계속 쓰인다.",
+			"바닥 결과가 없어 발 보정이 −MaxAdjust로 고정되어 발이 내려간다.",
+			"애니메이션 갱신 자체가 멈춰 IK 전 포즈 그대로 굳어 있다.",
+			"탐색 결과가 `ProbeMaxAge`보다 오래되어 보정이 0으로 돌아간다.",
+		],
+		a: 3,
+		w: [
+			"탐색 결과는 런타임 값이고 나이(`ProbeAge`)를 셉니다. 오래된 결과를 계속 쓰지 않습니다.",
+			"바닥을 못 찾았다고 끝까지 내리지 않습니다. 결과가 낡으면 보정을 0으로 돌립니다.",
+			"표시 틱(애니메이션)은 편집 중에도 돕니다. 탐색만 게임플레이 틱 쪽이라 돌지 않습니다.",
+			"탐색은 플레이 중 게임플레이 틱에서만 하므로 편집 중에는 `ProbeAge`가 계속 늘어납니다. `ProbeMaxAge`(0.25초)를 넘으면 맞지 않은 것으로 보고 보정을 0으로 부드럽게 돌립니다.",
+		],
+	},
+	{
+		t: "ik", kind: "계산",
+		q: "`FLookAtComponent`의 뼈 목록이 목·머리 두 개입니다. 목표가 애니메이션 앞 방향에서 80° 떨어져 있고 `MaxAngle` = 60°, 가중치 0.5일 때 뼈 하나가 돌리는 각은?",
+		o: ["40°", "20°", "30°", "15°"],
+		a: 3,
+		w: [
+			"80° × 0.5로, 자르기와 나누기를 모두 빠뜨렸습니다.",
+			"80° × 0.5 ÷ 2로, `MaxAngle`에서 자르기를 빠뜨렸습니다.",
+			"자르고 가중치를 곱한 전체 회전입니다. 뼈 개수로 나누지 않았습니다.",
+			"회전 = min(80°, 60°) × 0.5 = 30°를 뼈 2개로 나눠 각 15°입니다. 한 뼈가 다 돌리면 목이 꺾여 보이므로 위 뼈부터 차례로 나눠 줍니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "여우 모델(Fox.glb)에 시선 IK를 걸었더니 목표의 반대쪽을 보려 했습니다. 기록된 원인과 처리로 맞는 것은?",
+		o: [
+			"glTF 임포트가 Y축을 뒤집어 왼쪽·오른쪽이 바뀌었으므로 `ConvertQuat`를 고쳤다.",
+			"여우의 목 뼈 순서가 아래 → 위로 적혀 있어 뼈 목록 순서를 뒤집었다.",
+			"여우는 모델 공간 −X를 보므로 `ForwardAxis`를 `[-1, 0, 0]`으로 줬다.",
+			"여우 머리뼈의 바인드 회전이 180°라 `.emeta` 소켓 회전으로 보정했다.",
+		],
+		a: 2,
+		w: [
+			"좌표 변환에는 문제가 없었습니다. 에셋 자체의 정면이 엔진 규약(+X)과 달랐습니다.",
+			"뼈 순서는 시선을 나눠 주는 순서이고, 반대쪽을 보는 원인이 아닙니다.",
+			"엔진 규약은 +X가 앞이지만 Fox.glb는 모델 공간 −X를 봅니다. 그래서 여우의 LookAt은 `ForwardAxis = [-1, 0, 0]`입니다(CLAUDE.md \"애니메이션 고급\"). 방향을 가정하는 기능은 축을 설정으로 받아야 하며, 43강 리타기팅의 정면 보정도 같은 문제입니다.",
+			"소켓은 시선 IK와 관계없습니다. 정면 축 설정으로 해결했습니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "훈련장 데모에서 소켓에 붙일 무기 엔티티를 모델 엔티티의 자식으로 두었더니 문제가 생겼습니다. 정해진 규칙은?",
+		o: [
+			"무기는 모델 루트의 직계 자식으로 두고 소켓 이름을 엔티티 이름과 같게 한다.",
+			"소켓 부착 무기는 형제나 루트 아래에 둔다 — 자식이면 노드 계층이 안 생긴다.",
+			"무기를 모델의 자식으로 두되 `bPhysicsPose`를 켜서 계층 갱신을 건너뛴다.",
+			"무기를 손뼈 엔티티의 자식으로 직접 두고 소켓 부착 컴포넌트는 쓰지 않는다.",
+		],
+		a: 1,
+		w: [
+			"자식으로 두는 것 자체가 문제였습니다. 이름을 맞추는 규칙도 없습니다.",
+			"모델 엔티티의 자식으로 두면 모델 노드 계층이 만들어지지 않는 문제가 기록되었습니다. 소켓 부착은 계층 부모를 무시하므로 굳이 자식일 필요도 없어, 형제나 루트 아래에 둡니다.",
+			"`bPhysicsPose`는 래그돌 중 애니메이션을 멈추는 플래그입니다. 계층 문제를 해결하지 않습니다.",
+			"뼈 원점에 바로 붙이면 칼자루가 손바닥에 묻히거나 방향이 틀어집니다. 그래서 소켓(뼈 기준 오프셋)을 씁니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "판단",
+		q: "캐릭터가 죽어 래그돌(`bPhysicsPose`)로 바뀌었습니다. 이때 발 IK와 시선 IK는?",
+		o: [
+			"애니메이션 갱신을 건너뛰어 꺼지고, 보정값과 가중치는 0으로 돌아간다.",
+			"물리가 뼈를 움직인 뒤 IK가 마지막에 덧붙여 발이 바닥에 닿게 한다.",
+			"발 IK만 꺼지고 시선 IK는 머리뼈가 물리 바디가 아니라 계속 돈다.",
+			"마지막 보정값을 그대로 유지해 래그돌이 시작될 때 포즈가 튀지 않게 한다.",
+		],
+		a: 0,
+		w: [
+			"래그돌 동안은 애니메이션 갱신 자체를 건너뛰므로 IK도 꺼지고 보정값과 가중치가 0으로 돌아갑니다. 물리가 뼈를 움직이는 중에 IK가 다리를 끌어당기면 둘이 싸우기 때문입니다.",
+			"IK가 물리 결과를 덮으면 물리와 IK가 서로 뼈를 끌어당겨 떨립니다. 그래서 끕니다.",
+			"IK는 둘 다 애니메이션 갱신 안에서 돌기 때문에 함께 꺼집니다.",
+			"보정값은 유지하지 않고 0으로 돌립니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-42";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 1156;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = (Seed >>> 16) % (K + 1); // 상위 비트 (LCG 하위 비트는 주기가 짧다)
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 42강을 확실히 이해했습니다. 43강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"42강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

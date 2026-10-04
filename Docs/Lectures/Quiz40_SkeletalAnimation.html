@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>40강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part06_Animation.html#lec-40">← 40강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">6부 · 40강 문제풀이</div>
+		<h1>스켈레탈 애니메이션, 제대로 이해했나요?</h1>
+		<p>40강의 여섯 주제(뼈 계층, 바인드 포즈, 키프레임, 스키닝, ProjectE 구현, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part06_Animation.html#lec-41">41강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part06_Animation.html";
+const Topics = {
+	hierarchy: { name: "뼈 계층과 월드 행렬",      anchor: "lec-40-hierarchy" },
+	bind:      { name: "바인드 포즈·역바인드",      anchor: "lec-40-bind" },
+	keys:      { name: "키프레임 보간",            anchor: "lec-40-keys" },
+	lbs:       { name: "선형 블렌드 스키닝",        anchor: "lec-40-lbs" },
+	projecte:  { name: "ProjectE의 팔레트 흐름",    anchor: "lec-40-projecte" },
+	pitfalls:  { name: "함정과 교훈",              anchor: "lec-40-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "hierarchy", kind: "계산",
+		q: "부모 뼈의 월드 행렬은 Yaw 90°(앞 +X를 오른쪽 +Y로 돌림) 뒤 (0, 0, 100) 이동입니다. 자식 뼈의 로컬 포즈는 회전 없이 (10, 0, 0) 이동뿐입니다. 자식 뼈 원점의 월드 위치는?",
+		o: ["(10, 0, 100)", "(0, 10, 0)", "(0, 10, 100)", "(0, −10, 100)"],
+		a: 2,
+		w: [
+			"부모의 회전을 빼먹은 값입니다. 자식의 로컬 이동은 부모 기준이므로 부모가 돌면 함께 돌아갑니다.",
+			"부모의 이동 (0, 0, 100)을 빼먹은 값입니다.",
+			"월드 = 자식 로컬 × 부모 월드(행벡터 규약). 원점은 로컬로 (10, 0, 0) → 부모 회전으로 (0, 10, 0) → 부모 이동으로 (0, 10, 100)이 됩니다.",
+			"회전 방향을 반대로(앞 → 왼쪽) 적용한 값입니다. Yaw +90°는 +X를 +Y로 돌립니다.",
+		],
+	},
+	{
+		t: "hierarchy", kind: "설계 이유",
+		q: "클립이 각 뼈의 움직임을 모델 공간이 아니라 부모 기준(로컬)으로 저장하는 가장 중요한 이유는?",
+		o: [
+			"GPU 정점 셰이더가 부모 기준 행렬만 받을 수 있기 때문이다.",
+			"로컬 값은 범위가 작아 키를 16비트로 압축해 저장할 수 있다.",
+			"모델 공간 행렬은 역행렬을 구할 수 없어 역바인드를 만들 수 없다.",
+			"어깨를 돌리면 아래쪽 뼈가 따라가고, 동작을 섞거나 고치기 쉽다.",
+		],
+		a: 3,
+		w: [
+			"셰이더가 받는 것은 이미 월드로 계산된 팔레트(InverseBind × JointWorld)입니다. 로컬 행렬은 CPU에서 사슬로 곱해 끝납니다.",
+			"압축은 이 강의의 이유가 아닙니다. ProjectE의 채널 값은 `FVector4`(float)로 저장됩니다.",
+			"모델 공간 행렬도 역행렬을 구할 수 있습니다. 역바인드 행렬 자체가 바인드 포즈 모델 공간 뼈 행렬의 역행렬입니다.",
+			"손의 키에 어깨 회전까지 미리 섞어 두면 어깨만 바꾸거나 두 클립을 섞을 수 없습니다. 로컬로 저장하면 부모가 움직일 때 자식이 자동으로 따라가고, 클립끼리 뼈 단위로 섞거나 고칠 수 있습니다.",
+		],
+	},
+	{
+		t: "hierarchy", kind: "코드 읽기",
+		q: "`ComputeModelMatrices`가 배열 순서대로 한 번 훑지 않고, 노드마다 조상 사슬을 따라 올라갔다가 내려오며 계산하는 이유는?",
+		code: "OutMatrices[Current] = (Parent >= 0 && ...) ? Pose[Current].ToMatrix() * OutMatrices[Parent]\n                                         : Pose[Current].ToMatrix();",
+		o: [
+			"배열에서 부모가 자식보다 뒤에 올 수 있어 부모 행렬부터 구해야 한다.",
+			"행벡터 규약이라 부모 행렬을 곱하는 순서를 거꾸로 뒤집어야 한다.",
+			"뼈가 여러 부모를 가질 수 있어서 모든 부모 경로를 각각 돌아야 한다.",
+			"루트에서 내려가며 계산해야 부동소수점 오차가 덜 쌓이고 안정되기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"`OutMatrices[Parent]`를 쓰려면 부모 값이 먼저 계산돼 있어야 합니다. glTF 노드 배열은 부모가 앞에 온다는 보장이 없으므로, 조상 사슬을 따라 올라가 위에서부터 채웁니다.",
+			"곱하는 순서(로컬 × 부모 월드)는 이 식이 이미 정하고 있습니다. 순회 방식과는 관계없습니다.",
+			"뼈 계층은 트리입니다. 뼈마다 부모는 하나뿐입니다.",
+			"곱셈 횟수는 같습니다. 문제는 오차가 아니라 부모 값이 준비돼 있느냐입니다.",
+		],
+	},
+	{
+		t: "bind", kind: "개념",
+		q: "glTF 스킨이 뼈마다 담아 두는 역바인드 행렬(inverse bind matrix)이 정점에 하는 일은?",
+		o: [
+			"현재 포즈로 움직인 정점을 바인드 포즈 자세로 다시 되돌려 놓는다.",
+			"바인드 포즈 모델 공간의 정점을 그 뼈 기준 좌표로 옮긴다.",
+			"뼈의 로컬 포즈를 부모 기준에서 모델 공간으로 바꿔 준다.",
+			"정점의 가중치 합이 1이 되도록 뼈 행렬을 정규화해 준다.",
+		],
+		a: 1,
+		w: [
+			"정점은 처음부터 바인드 포즈로 저장되어 있습니다. 되돌릴 필요가 없습니다.",
+			"역바인드 = 바인드 포즈 때 뼈 행렬의 역행렬이라, 정점을 \"바인드 포즈 때 그 뼈에서 얼마나 떨어져 있었나\"로 바꿉니다. 그 뒤 지금의 조인트 월드 행렬을 곱하면 정점이 뼈를 따라 옮겨집니다.",
+			"로컬 → 모델 공간은 계층을 따라 로컬 행렬을 곱하는 일(`ComputeModelMatrices`)입니다.",
+			"가중치는 정점 스트림(`FSkinVertex::Weights`)에 이미 합 1로 저장됩니다. 역바인드와 관계없습니다.",
+		],
+	},
+	{
+		t: "bind", kind: "계산",
+		q: "바인드 포즈에서 팔꿈치 뼈는 회전 없이 (0, 0, 100)에 있었고, 정점은 (5, 0, 120)입니다. 지금 팔꿈치는 같은 위치에서 Yaw 90°(+X → +Y)만 돌았습니다. 팔레트 = InverseBind × JointWorld로 옮긴 정점은?",
+		o: ["(0, −5, 120)", "(0, 5, 20)", "(0, 5, 220)", "(0, 5, 120)"],
+		a: 3,
+		w: [
+			"회전 방향을 반대로(+X → −Y) 적용한 값입니다. Yaw +90°는 +X를 +Y로 돌립니다.",
+			"뼈 공간 좌표까지만 구하고 지금 조인트 월드의 이동을 빼먹은 값입니다.",
+			"역바인드를 빼고 조인트 월드만 곱한 값입니다. 뼈 기준으로 바꾸지 않고 돌리면 원점 기준으로 돌아 엉뚱한 곳으로 갑니다.",
+			"역바인드로 (5, 0, 20)(뼈 기준) → 회전으로 (0, 5, 20) → 뼈 위치 (0, 0, 100)을 더해 (0, 5, 120). 팔꿈치를 중심으로 돈 결과입니다.",
+		],
+	},
+	{
+		t: "bind", kind: "버그 찾기",
+		q: "모델 루트를 (300, 0, 0)으로 옮겼더니 스킨 캐릭터만 (600, 0, 0)에 그려졌습니다. 정적 메시 소품은 제자리입니다. 가장 그럴듯한 원인은?",
+		o: [
+			"역바인드 행렬에 모델 루트의 이동이 미리 들어 있어 두 번 더해졌다.",
+			"`UpdateTransforms` 트랜스폼 캐시가 루트 이동을 두 프레임 연속 적용했다.",
+			"스킨 셰이더가 팔레트 결과에 메시 노드의 World 행렬을 또 곱했다.",
+			"`FSkinVertex` 가중치 합이 2가 되어 이동이 두 배로 늘어났다.",
+		],
+		a: 2,
+		w: [
+			"역바인드는 바인드 포즈 모델 공간 기준이라 지금 루트 배치와 관계없습니다.",
+			"정적 메시 소품이 제자리라면 트랜스폼 갱신은 정상입니다. 캐시는 전체 재계산과 비트 동일하도록 만들어져 있습니다.",
+			"조인트 월드에 루트 배치가 이미 들어 있어 팔레트를 곱한 정점은 바로 월드 공간입니다. 그래서 스킨 메시 노드 자신의 트랜스폼은 무시합니다(glTF 규약, 셰이더 World는 항등). 또 곱하면 배치가 두 번 적용됩니다.",
+			"가중치 합이 2면 정점 전체가 원점 기준으로 두 배가 되어 모양까지 커집니다. 가중치는 합 1로 저장되며(`FSkinVertex` 주석), 증상과도 맞지 않습니다.",
+		],
+	},
+	{
+		t: "bind", kind: "판단",
+		q: "모델 루트가 원점에 있고 모든 뼈가 바인드 포즈 그대로라면, 각 뼈의 팔레트(InverseBind × JointWorld)는?",
+		o: [
+			"단위 행렬 — 정점이 저장된 좌표 그대로 나온다.",
+			"역바인드 행렬 — 조인트 월드가 단위 행렬이 된다.",
+			"영행렬 — 움직임이 없어서 더할 변환이 없다.",
+			"바인드 행렬 — 역바인드가 단위 행렬이 된다.",
+		],
+		a: 0,
+		w: [
+			"루트가 원점이면 지금 조인트 월드 = 바인드 포즈 뼈 행렬이고, 역바인드는 그 역행렬이므로 곱이 단위 행렬입니다. 정점은 바인드 포즈로 저장되어 있으니 그대로 그려집니다.",
+			"조인트 월드는 뼈가 실제로 있는 위치(바인드 포즈 뼈 행렬)입니다. 단위 행렬이 아닙니다.",
+			"영행렬을 곱하면 모든 정점이 원점으로 모입니다. \"변환 없음\"은 단위 행렬입니다.",
+			"역바인드는 파일에 담긴 고정값이라 포즈와 관계없이 바뀌지 않습니다.",
+		],
+	},
+	{
+		t: "keys", kind: "계산",
+		q: "이동 채널(Linear)의 X 값이 `Times = {0, 0.5, 1.5}`, `Values.x = {0, 10, 40}`입니다. 시각 1.0초에 샘플링한 X는?",
+		o: ["X = 10", "X ≈ 27", "X = 40", "X = 25"],
+		a: 3,
+		w: [
+			"이전 키 값입니다. Step 보간일 때의 결과입니다.",
+			"첫 키와 마지막 키만 직선으로 이은 값(1.0 / 1.5 × 40 ≈ 26.7)입니다. 이웃 키 사이에서 보간해야 합니다.",
+			"다음 키 값입니다. 보간을 하지 않았습니다.",
+			"upper_bound로 Next = 2, Prev = 1. α = (1.0 − 0.5) / (1.5 − 0.5) = 0.5, X = 10 + (40 − 10) × 0.5 = 25.",
+		],
+	},
+	{
+		t: "keys", kind: "결과 예측",
+		q: "두 회전 키의 쿼터니언 내적이 음수인데 부호를 맞추지 않고 그대로 slerp하면?",
+		o: [
+			"sin θ가 0에 가까워져 보간 결과에 NaN이 나온다.",
+			"같은 회전인데도 먼 길(예: 350도)로 돌아간다.",
+			"보간 결과의 길이가 1보다 작아져 크기가 줄어든다.",
+			"회전축이 반대로 바뀌어 거울에 비친 포즈가 된다.",
+		],
+		a: 1,
+		w: [
+			"sin θ가 불안정한 것은 두 회전이 거의 같을 때(cos θ ≈ 1)입니다. 내적이 음수인 경우와는 다릅니다.",
+			"q와 −q는 같은 회전이지만 4차원 구에서는 반대편 점입니다. 반구를 맞추지 않으면 짧은 10도 대신 350도를 거꾸로 돌아갑니다. `FQuat::Slerp`는 내적이 음수면 부호를 뒤집어 최단 경로를 고릅니다.",
+			"길이가 줄어드는 것은 성분별 lerp의 문제입니다. slerp는 호를 따라가므로 길이 1을 유지합니다.",
+			"보간 경로가 길어질 뿐 끝점의 회전은 같습니다. 거울 포즈는 생기지 않습니다.",
+		],
+	},
+	{
+		t: "keys", kind: "판단",
+		q: "블렌드 스페이스로 걷기·뛰기·옆걸음 세 클립의 회전을 한 번에 섞으려 합니다. 알맞은 방법은?",
+		o: [
+			"slerp를 두 번 중첩한다 — 각속도가 일정해 가장 정확하다.",
+			"성분별 lerp만 한다 — 가중치 합이 1이면 길이가 유지된다.",
+			"반구를 맞춘 가중 합 뒤 정규화하는 nlerp로 한 번에 섞는다.",
+			"오일러 각으로 바꿔 각 축 각도를 가중 평균한 뒤 되돌린다.",
+		],
+		a: 2,
+		w: [
+			"slerp는 두 회전 사이에서만 정의되어 중첩하면 순서에 따라 결과가 달라집니다.",
+			"가중치 합이 1이어도 성분별 합은 현 안쪽 점이라 길이가 1보다 작아집니다. 정규화가 빠졌습니다.",
+			"nlerp는 몇 개든 순서와 무관하게 한 번에 섞을 수 있고 쌉니다. 각속도 오차는 프레임 사이 포즈 차이가 작아 눈에 띄지 않습니다(41강 블렌드 스페이스).",
+			"오일러 각 평균은 짐벌 문제와 각도 감김(359° vs 1°) 때문에 엉뚱한 회전이 나옵니다.",
+		],
+	},
+	{
+		t: "keys", kind: "코드 읽기",
+		q: "`FQuat::Slerp`는 `CosAngle >= 0.9999`이면 sin 식 대신 `1 − α`, `α` 선형 가중치를 씁니다. 그 이유는?",
+		o: [
+			"두 회전이 거의 같으면 sin θ가 0에 가까워 나눗셈이 불안정하다.",
+			"cos θ가 1에 가까우면 acos가 음수를 돌려줘 각도가 뒤집힌다.",
+			"거의 같은 회전은 nlerp가 반드시 필요해 정규화를 함께 한다.",
+			"0.9999 이상이면 쿼터니언이 단위 길이가 아니라는 신호다.",
+		],
+		a: 0,
+		w: [
+			"slerp 식은 sin θ로 나눕니다. θ가 0에 가까우면 0에 가까운 값으로 나눠 오차가 커지므로, 이때는 선형 가중치로 대신합니다(결과 차이는 무시할 만큼 작음).",
+			"acos의 결과는 [0, π]라 음수가 나오지 않습니다.",
+			"선형 가중치는 sin 식의 극한과 거의 같아 대체로 쓰는 것이지 nlerp가 꼭 필요해서가 아닙니다.",
+			"내적이 1에 가깝다는 것은 두 회전이 거의 같다는 뜻입니다. 길이와는 관계없습니다.",
+		],
+	},
+	{
+		t: "keys", kind: "추적",
+		q: "길이 2초인 루프 클립을 시각 1.8초에서 0.5초 진행합니다. `AdvanceTime(1.8, 0.5, 2.0, true, bWrapped)`의 반환값과 `bWrapped`는?",
+		o: ["2.0, false", "2.3, false", "0.3, true", "0.3, false"],
+		a: 2,
+		w: [
+			"루프가 아닐 때(`bLoop = false`)의 결과입니다. 끝에서 고정됩니다.",
+			"루프면 [0, 길이)로 감아야 합니다. 범위 밖 시각을 그대로 돌려주지 않습니다.",
+			"2.3은 [0, 2)를 넘으므로 fmod로 0.3이 되고 \"감았다\" 표시가 켜집니다. 이 표시는 노티파이(42강)와 루트 모션(43강)이 루프 경계를 정확히 다루는 데 씁니다.",
+			"시각은 맞지만 경계를 넘었으므로 `bWrapped`가 true여야 합니다. 이 표시가 없으면 노티파이가 경계에서 빠집니다.",
+		],
+	},
+	{
+		t: "lbs", kind: "계산",
+		q: "원점에 있는 정점의 가중치가 뼈 A 0.75, 뼈 B 0.25입니다. 팔레트 A는 (8, 0, 0) 이동, 팔레트 B는 (0, 0, 4) 이동입니다. LBS 결과 위치는?",
+		o: ["(6, 0, 1)", "(8, 0, 4)", "(2, 0, 3)", "(4, 0, 2)"],
+		a: 0,
+		w: [
+			"v′ = 0.75 × (8, 0, 0) + 0.25 × (0, 0, 4) = (6, 0, 1).",
+			"가중치를 곱하지 않고 두 결과를 그대로 더한 값입니다.",
+			"가중치를 뼈와 반대로 짝지은 값입니다(A 0.25, B 0.75).",
+			"가중치를 무시하고 단순 평균한 값입니다.",
+		],
+	},
+	{
+		t: "lbs", kind: "설계 이유",
+		q: "셰이더는 \"정점을 4번 옮겨 섞기\" 대신 \"행렬 4개를 먼저 섞고 한 번 옮기기\"를 씁니다. 두 방식의 관계와 이유로 맞는 것은?",
+		o: [
+			"결과는 근사로만 같지만, 정점 셰이더 레지스터를 덜 써서 택했다.",
+			"행렬을 먼저 섞어야 가중치 합이 1이 아닌 정점도 처리할 수 있다.",
+			"결과가 같고, 섞인 행렬 하나로 법선·탄젠트도 변환할 수 있다.",
+			"결과는 다르지만, 섞인 행렬 쪽이 사탕 포장지 현상을 막아 준다.",
+		],
+		a: 2,
+		w: [
+			"행렬 곱이 선형이라 두 방식은 정확히 같습니다. 근사가 아닙니다.",
+			"두 방식 모두 가중치 합 1을 전제로 합니다. 행렬을 먼저 섞는다고 달라지지 않습니다.",
+			"선형성 덕분에 Σ wk(v × Mk) = v × (Σ wk Mk)입니다. 섞인 행렬 `Skin` 하나를 만들면 위치는 그대로, 법선은 `(float3x3)Skin`으로 같은 변환을 받습니다.",
+			"두 방식은 같은 결과라 사탕 포장지 현상도 똑같이 생깁니다. 이 현상은 행렬을 성분별로 섞는 LBS 자체의 한계입니다.",
+		],
+	},
+	{
+		t: "lbs", kind: "개념",
+		q: "LBS로 손목을 180도 비틀었더니 손목이 가늘게 쪼그라들었습니다(사탕 포장지 현상). 원인은?",
+		o: [
+			"가중치가 4개로 제한되어 손목 주변 뼈의 영향이 잘려 나갔다.",
+			"키 보간에 slerp 대신 nlerp를 써서 회전 각도가 덜 돌아갔다.",
+			"정점 가중치 합이 1보다 작아 정점이 원점 쪽으로 끌려갔다.",
+			"행렬을 성분별로 섞은 결과가 순수 회전이 아니어서 부피가 준다.",
+		],
+		a: 3,
+		w: [
+			"손목 비틀기는 보통 뼈 두세 개 영향이면 충분합니다. 쪼그라듦은 영향 개수가 아니라 섞는 방식의 문제입니다.",
+			"키 보간 방식은 뼈 회전 자체를 정합니다. 쪼그라듦은 뼈가 정확히 돌았어도 정점에서 행렬을 섞을 때 생깁니다.",
+			"가중치는 합 1로 저장됩니다. 합 문제라면 비틀지 않은 자세에서도 어긋납니다.",
+			"반대 방향으로 돈 두 회전 행렬을 반씩 더하면 회전이 서로 상쇄되어 크기가 줄어든 행렬이 됩니다. 비틀림이 클수록 심합니다. 그래도 LBS는 빠르고 단순해 대부분 게임의 기본입니다.",
+		],
+	},
+	{
+		t: "lbs", kind: "설계 이유",
+		q: "뼈 번호·가중치를 `FVertex`(64바이트)에 붙이지 않고 정점 버퍼 슬롯 1의 `FSkinVertex`(24바이트)로 나눈 이유는?",
+		o: [
+			"정적 메시 정점이 커지지 않아 정적 경로의 대역폭이 그대로다.",
+			"D3D12 입력 레이아웃은 한 슬롯에 정수와 실수를 섞지 못한다.",
+			"스킨 스트림을 정점 셰이더가 아닌 계산 셰이더에서만 읽는다.",
+			"뼈가 256개를 넘으면 FVertex 안에 번호를 담을 칸이 부족하다.",
+		],
+		a: 0,
+		w: [
+			"붙이면 뼈가 없는 정적 메시까지 정점이 커집니다. 나누면 정적 정점 형식은 불변이고 스킨 메시만 스트림 하나를 더 묶습니다. 덕분에 스킨 LOD(QEM, 기존 정점만 사용)도 슬롯 1 스트림을 그대로 공유합니다.",
+			"한 입력 슬롯에 서로 다른 형식의 요소를 섞는 것은 가능합니다.",
+			"`Mesh.hlsl`의 `VSSkinned`가 정점 입력으로 `Input.Joints`/`Input.Weights`를 읽습니다.",
+			"`uint16` 번호는 위치와 무관하게 같은 범위입니다. 상한 `MaxSkinJoints`(256)는 분리 이유가 아닙니다.",
+		],
+	},
+	{
+		t: "lbs", kind: "설계 이유",
+		q: "스킨 정점 셰이더가 `PrevBoneOffset`의 지난 프레임 팔레트로도 정점을 한 번 더 변환합니다. 이것이 없으면 생기는 문제는?",
+		code: "const float4x4 PrevSkin = ComputeSkinMatrix(Instance.PrevBoneOffset, Input.Joints, Input.Weights);\nOutput.PreviousClip  = mul(mul(float4(Input.Position, 1.0f), PrevSkin), PrevViewProjection);",
+		o: [
+			"그림자 패스가 지난 프레임 포즈로 그려져 그림자가 한 프레임 늦는다.",
+			"제자리에서 팔만 흔들 때 움직임 벡터가 0이 되어 TAA가 번진다.",
+			"지난 프레임 팔레트가 업로드 버퍼에 남아 다음 프레임에 덮어쓴다.",
+			"선택 아웃라인이 지난 포즈를 따라 그려져 몸과 어긋나게 보인다.",
+		],
+		a: 1,
+		w: [
+			"그림자 패스는 현재 팔레트(`BoneOffset`)를 씁니다. 지난 팔레트는 움직임 벡터용입니다.",
+			"TAA·모션 블러는 픽셀마다 \"지난 프레임에 이 점이 어디 있었나\"가 필요합니다. 물체 World가 그대로여도 팔다리는 움직이므로, 정점을 지난 팔레트로도 변환해야 올바른 움직임 벡터가 나옵니다.",
+			"업로드 버퍼는 프레임마다 새로 할당하는 동적 버퍼입니다. 덮어쓰기 문제와 관계없습니다.",
+			"아웃라인도 현재 팔레트를 같이 씁니다. `PreviousClip`은 움직임 벡터 출력에만 쓰입니다.",
+		],
+	},
+	{
+		t: "projecte", kind: "순서",
+		q: "한 프레임에서 `FSkinnedMeshPalette::Build`가 놓여야 하는 순서로 맞는 것은?",
+		o: [
+			"그림자 볼륨 결정 → Build → `UpdateTransforms` → 인스턴스 Gather",
+			"`UpdateTransforms` → 인스턴스 Gather → 그림자 볼륨 결정 → Build",
+			"Build → `UpdateTransforms` → 인스턴스 Gather → 그림자 볼륨 결정",
+			"`UpdateTransforms` → 그림자 볼륨 결정 → Build → 인스턴스 Gather",
+		],
+		a: 3,
+		w: [
+			"`UpdateTransforms`보다 먼저 만들면 조인트 월드 행렬이 지난 값이라 팔레트가 한 프레임 늦습니다.",
+			"Gather는 엔티티마다 `IsCulled`/BoneOffset을 읽으므로 Build 뒤여야 합니다.",
+			"팔레트는 조인트 월드 행렬로 만드므로 트랜스폼 갱신 뒤여야 하고, 가시성에 그림자 볼륨을 쓰므로 그 뒤여야 합니다.",
+			"조인트 월드가 갱신된 뒤, 가시성 판정에 쓸 그림자 캐스터 볼륨(캐스케이드·로컬 그림자 장)을 정한 뒤 Build하고, 메시 인스턴스 Gather가 그 결과를 읽습니다(`SkinnedMeshPalette.h` 머리 주석).",
+		],
+	},
+	{
+		t: "projecte", kind: "판단",
+		q: "glTF 캐릭터 하나가 머티리얼별로 머리·몸·장갑·신발 4개 프리미티브 엔티티로 나뉘고, 각자 `FSkinComponent`를 갖습니다(조인트·역바인드 동일). 이번 프레임 팔레트 계산 횟수는?",
+		o: [
+			"4번 — 엔티티마다 FSkinComponent가 따로라 각자 계산한다.",
+			"0번 — 정지 포즈면 팔레트가 단위 행렬이라 계산을 생략한다.",
+			"1번 — 조인트 목록과 역바인드가 같아 한 그룹으로 공유한다.",
+			"4번 — 가시성과 경계를 프리미티브마다 판정해야 하기 때문이다.",
+		],
+		a: 2,
+		w: [
+			"예전 방식입니다. 그래서 500 유닛에 팔레트 3609번이 계산됐습니다.",
+			"정지 포즈여도 바인드 포즈가 아니면 팔레트는 단위 행렬이 아니고, Build는 매 프레임 팔레트를 올립니다.",
+			"조인트 엔티티 목록 + 역바인드가 같은 프리미티브는 그룹으로 묶여 같은 BoneOffset/PrevBoneOffset을 가리킵니다(처음 나온 엔티티가 대표).",
+			"가시성·경계는 실제로 프리미티브마다 따지지만, 팔레트 계산은 그룹당 한 번입니다. 둘은 별개입니다.",
+		],
+	},
+	{
+		t: "projecte", kind: "규칙",
+		q: "`FAnimationSystem::Update`의 포즈 평가 단계(엔티티별 병렬)에 넣어도 되는 코드는?",
+		o: [
+			"`E_LOG`로 이번에 고른 클립 이름을 남기는 경고 로그",
+			"자기 노드 엔티티의 로컬 트랜스폼에 포즈를 쓰는 코드",
+			"노티파이가 걸린 프레임에 Lua 콜백을 바로 부르는 코드",
+			"소켓에 붙은 무기 엔티티의 로컬 트랜스폼을 고치는 코드",
+		],
+		a: 1,
+		w: [
+			"로그·라이브러리 접근은 준비 단계(메인 스레드)에서만 합니다.",
+			"평가 단계는 자기 런타임과 자기 노드 로컬 트랜스폼만 쓰고 다른 엔티티는 월드 행렬 읽기만 합니다. 그래서 엔티티끼리 독립이라 병렬로 돌 수 있습니다.",
+			"콜백은 금지입니다. 노티파이·몽타주 이벤트는 런타임별 Pending 목록에 쌓고 메인 스레드에서 배달합니다.",
+			"다른 엔티티 쓰기는 금지입니다. 같은 엔티티를 두 스레드가 쓰면 결과가 실행 순서에 따라 달라집니다.",
+		],
+	},
+	{
+		t: "projecte", kind: "판단",
+		q: "\"뼈 = 엔티티\" 설계(glTF 노드마다 엔티티)에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"소켓·래그돌·스크립트가 뼈를 일반 엔티티처럼 다룰 수 있다.",
+			"뼈 월드 행렬은 씬의 `UpdateTransforms`가 그대로 계산해 준다.",
+			"유닛마다 엔티티가 약 50개씩 생겨 수천 마리 군중엔 부적합하다.",
+			"뼈 엔티티는 화면 밖이면 생성되지 않아 메모리가 늘지 않는다.",
+		],
+		a: 3,
+		w: [
+			"맞는 설명입니다. 장점입니다.",
+			"맞는 설명입니다. 트랜스폼 캐시·병렬 갱신을 그대로 씁니다.",
+			"맞는 설명입니다. CLAUDE.md가 알려진 한계로 적어 둡니다.",
+			"틀린 설명입니다. 노드 엔티티는 모델을 인스턴스화할 때 모두 만들어지며(`FAnimationRuntime::NodeEntities`) 가시성과 무관합니다. 그래서 엔티티 수가 한계로 꼽힙니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "Phase 29에서 스킨 228개 씬의 드로우가 145/822 → 2/8로 줄었습니다. 바꾼 것은?",
+		o: [
+			"스킨 메시마다 팔레트를 b4 상수 버퍼로 묶어 따로 그리도록 나눴다.",
+			"팔레트를 t15 구조화 버퍼에 모으고 인스턴스 `BoneOffset`으로 찾았다.",
+			"스킨을 계산 셰이더로 미리 돌려 정적 메시처럼 바꿔 묶어서 그렸다.",
+			"뼈 수를 256개에서 64개로 줄여 한 드로우에 여러 캐릭터를 담았다.",
+		],
+		a: 1,
+		w: [
+			"이것이 바뀌기 전의 방식입니다. 팔레트가 드로우마다 다른 상수 버퍼라 인스턴싱할 수 없었습니다.",
+			"프레임의 모든 팔레트를 `SkinBones`(t15) 하나에 이어 붙이고 인스턴스 데이터의 `BoneOffset`으로 인덱싱하자 같은 메시·머티리얼 스킨을 한 드로우로 묶을 수 있게 되어 Release 프레임도 3.53 → 2.23ms가 되었습니다.",
+			"스킨은 여전히 정점 셰이더(`VSSkinned`)에서 합니다. 계산 셰이더 스키닝은 RT용 별도 경로입니다.",
+			"뼈 수 상한(`MaxSkinJoints` 256)은 그대로입니다. 묶을 수 있게 된 것은 팔레트 위치를 인덱스로 찾게 된 덕분입니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "스킨 유닛 500개 씬에서 팔레트 계산이 3609번 일어나고 있었습니다. 원인과 고친 결과로 맞는 것은?",
+		o: [
+			"모델이 프리미티브 여러 개로 나뉘었다 → 공유로 500개, 정지 화면 MD5 동일",
+			"URO가 꺼져 매 프레임 계산했다 → 켜서 팔레트 500개, 정지 화면 MD5 동일",
+			"화면 밖 유닛도 계산했다 → 가시성 컬링으로 업로드가 372 → 4KB로 줄었다",
+			"그림자 패스마다 팔레트를 다시 계산했다 → 패스 간 공유로 화면이 바뀌었다",
+		],
+		a: 0,
+		w: [
+			"프리미티브마다 계산하던 것을 조인트 목록 + 역바인드가 같은 것끼리 공유하자 팔레트 500개, 업로드 19.5 → 3.5MB/프레임, 수집 9.2 → 2.3ms가 되었고 정지 포즈 화면 MD5는 같았습니다.",
+			"URO는 애니메이션 포즈 평가 빈도 LOD입니다. 팔레트 계산 횟수가 유닛 수의 7배가 넘은 이유와 관계없습니다.",
+			"가시성 컬링(업로드 372 → 4KB)은 Phase 29의 다른 개선입니다. 3609번의 원인은 프리미티브였습니다.",
+			"팔레트는 이미 패스 간에 공유(Build 한 번)되고 있었습니다. 이 수정 뒤 화면도 바뀌지 않았습니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "결과 예측",
+		q: "새 그림자 패스(예: 스포트 그림자 변형)를 추가하면서 팔레트 가시성 판정에는 넣지 않았습니다. 생길 증상은?",
+		o: [
+			"화면 안 캐릭터의 그림자가 바인드 포즈(T 포즈)로 굳어 보인다.",
+			"화면 밖에 선 캐릭터가 화면 안으로 드리우는 그림자가 사라진다.",
+			"그림자 패스가 지난 프레임 팔레트를 읽어 한 프레임 늦게 따라온다.",
+			"화면 밖 캐릭터가 팔레트 없이 정적 메시로 그려져 그림자만 남는다.",
+		],
+		a: 1,
+		w: [
+			"화면 안 캐릭터는 메인 프러스텀으로 이미 통과해 팔레트가 있으므로 정상으로 그려집니다.",
+			"가시성은 \"메인 프러스텀 ∪ 그림자 캐스터 볼륨\"이고 판정에서 빠진 엔티티(`IsCulled`)는 그 프레임 어떤 패스에도 나오지 않습니다. 그래서 새 그림자 패스도 판정에 넣고, 그 캐스터 볼륨을 팔레트보다 먼저 정해야 합니다.",
+			"팔레트는 현재 프레임 것을 모든 패스가 공유합니다. 문제는 늦음이 아니라 아예 없음입니다.",
+			"`IsCulled` 엔티티는 정적 메시로도 그려지지 않도록 어떤 패스에도 넣지 않습니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-40";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 3435;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = (Seed >>> 16) % (K + 1); // 상위 비트 (LCG 하위 비트는 주기가 짧다)
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 40강을 확실히 이해했습니다. 41강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"40강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

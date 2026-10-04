@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part02_EngineCore.html#lec-7">← 7강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">2부 · 7강 문제풀이</div>
+		<h1>ECS — 엔티티, 컴포넌트, 시스템, 제대로 이해했나요?</h1>
+		<p>7강의 일곱 주제(데이터 지향, 개념, 희소 집합, 세대 핸들, View, ProjectE 구현, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part02_EngineCore.html#lec-8">8강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part02_EngineCore.html";
+const Topics = {
+	why:        { name: "상속 트리의 한계",          anchor: "lec-7-why" },
+	concept:    { name: "엔티티·컴포넌트·시스템",     anchor: "lec-7-concept" },
+	sparse:     { name: "희소 집합과 swap-remove",   anchor: "lec-7-sparse" },
+	generation: { name: "세대 핸들",                 anchor: "lec-7-generation" },
+	view:       { name: "View 교집합 순회",          anchor: "lec-7-view" },
+	projecte:   { name: "레지스트리와 타입 ID",       anchor: "lec-7-projecte" },
+	pitfalls:   { name: "함정과 교훈",               anchor: "lec-7-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "why", kind: "판단",
+		q: "\"물리로 굴러가는데 체력도 있어서 부서지는 상자\"를 ECS 방식으로 표현하는 방법은?",
+		o: [
+			"Pawn과 StaticProp을 다중 상속한 `FBreakableProp` 클래스를 새로 만든다.",
+			"엔티티 하나에 `RigidBody`와 `FHealthComponent` 컴포넌트를 함께 붙인다.",
+			"`GameObject` 기반 클래스에 물리·체력 멤버를 넣고 플래그로 켜고 끈다.",
+			"상자 전용 시스템을 만들고 물리 시스템과 체력 시스템을 상속받게 한다.",
+		],
+		a: 1,
+		w: [
+			"상속 트리 안에서 조합을 해결하려는 방식입니다. 기능이 늘 때마다 다이아몬드 상속이 생기는 바로 그 문제입니다.",
+			"ECS는 물체를 \"무엇이냐\"가 아니라 \"무엇을 가졌느냐\"로 봅니다. 조합은 표의 칸을 칠하는 일이고, 물리 시스템과 체력 시스템이 각자 자기 컴포넌트를 가진 엔티티를 순회하다 이 상자도 처리합니다.",
+			"모든 기능을 다 가진 거대한 기반 클래스로 무너지는 경우입니다. 쓰지 않는 멤버까지 모든 물체가 들고 다닙니다.",
+			"시스템은 상속으로 묶지 않습니다. 물리 시스템과 체력 시스템이 이미 각자 컴포넌트를 순회하므로 상자 전용 시스템이 필요 없습니다.",
+		],
+	},
+	{
+		t: "why", kind: "설계 이유",
+		q: "캐릭터 1000개의 위치만 갱신하려고 `std::vector<GameObject*>`를 돌며 가상 `Update()`를 부를 때, 강의가 지적한 주된 성능 문제는?",
+		o: [
+			"객체가 힙에 흩어져 포인터를 따라 뛰고, 위치와 무관한 멤버까지 캐시로 들어온다.",
+			"가상 함수를 부를 때마다 vtable을 새로 만들어 호출 비용이 객체 수의 제곱으로 는다.",
+			"포인터 벡터를 순회할 때마다 객체 전체가 복사되어 메모리 대역폭을 다 써 버린다.",
+			"`new`로 만든 객체는 GPU 메모리에 놓여 CPU가 읽을 때마다 PCIe 왕복이 생긴다.",
+		],
+		a: 0,
+		w: [
+			"객체들은 `new`로 하나씩 힙에 흩어져 만들어지므로 CPU는 메모리 이곳저곳으로 뛰어다닙니다. 게다가 캐시 라인 단위로 가져오므로 이름·메시 포인터·체력처럼 위치와 상관없는 멤버까지 끌려옵니다.",
+			"vtable은 클래스마다 컴파일 때 하나 만들어집니다. 호출마다 만들지 않으며 비용이 제곱으로 늘지도 않습니다.",
+			"포인터 벡터를 돌면 포인터만 읽습니다. 객체를 복사하지 않습니다. 문제는 복사가 아니라 흩어진 메모리 접근입니다.",
+			"`new`는 CPU 힙(시스템 메모리)에 할당합니다. GPU 메모리와는 관계없습니다.",
+		],
+	},
+	{
+		t: "concept", kind: "판단",
+		q: "동료가 `FHealthComponent`에 `virtual void Tick(float Dt)`를 넣고, 시스템은 각 컴포넌트의 `Tick`만 부르게 하자고 제안합니다. 강의 기준 평가는?",
+		o: [
+			"가상 호출은 컴파일 타임에 인라인되므로 성능 차이 없이 캡슐화만 좋아진다.",
+			"vtable 포인터가 생겨도 컴포넌트는 POD로 취급되어 풀 순회 방식은 같다.",
+			"로직이 데이터 쪽으로 돌아가 객체 지향 설계로 되돌아가는 셈이라 규칙에 어긋난다.",
+			"가상 함수가 있는 struct는 `TSparseSet`에 담을 수 없어 컴파일 오류가 난다.",
+		],
+		a: 2,
+		w: [
+			"가상 호출은 실제 타입을 모르는 한 인라인되지 않습니다. 그리고 성능보다 먼저 설계 원칙이 문제입니다.",
+			"가상 함수가 있으면 POD가 아닙니다. 더 중요한 것은 로직이 컴포넌트로 들어간다는 점입니다.",
+			"CLAUDE.md 규칙은 \"컴포넌트는 POD에 가까운 struct, 로직은 시스템(뷰 순회)에 둔다\"입니다. 컴포넌트에 가상 함수나 복잡한 메서드를 넣기 시작하면 다시 객체 지향으로 돌아가는 셈입니다.",
+			"`TSparseSet<T>`는 `std::vector<T>`에 담으므로 가상 함수가 있는 타입도 컴파일은 됩니다. 문제는 컴파일이 아니라 설계입니다.",
+		],
+	},
+	{
+		t: "concept", kind: "계산",
+		q: "16바이트짜리 위치 컴포넌트를 빈틈없는 배열에 두고 앞에서부터 읽습니다. 캐시 라인이 64바이트이고 정렬이 맞다면, 메모리에서 한 번 가져올 때 함께 들어오는 컴포넌트는 몇 개?",
+		o: ["1개", "16개", "64개", "4개"],
+		a: 3,
+		w: [
+			"CPU는 한 원소만 가져오지 않고 캐시 라인 단위로 가져옵니다. 그래서 다음 원소가 거의 공짜가 됩니다.",
+			"컴포넌트 크기(16)를 개수로 착각한 값입니다.",
+			"라인 크기(바이트)를 개수로 착각한 값입니다.",
+			"64 ÷ 16 = 4. 한 번 가져오면 다음 세 원소는 이미 캐시에 있고, 연속으로 읽으므로 하드웨어 프리페처가 다음 줄도 미리 가져옵니다. 이것이 데이터 지향 설계가 같은 종류끼리 모으는 이유입니다.",
+		],
+	},
+	{
+		t: "sparse", kind: "설계 이유",
+		q: "컴포넌트 풀을 엔티티 인덱스를 그대로 배열 인덱스로 쓰는 배열 하나(`Components[Entity.Index]`)로 만들면 생기는 문제는?",
+		o: [
+			"인덱스가 32비트라 엔티티가 65536개를 넘으면 칸을 만들 수 없다.",
+			"삭제할 때 뒤 원소를 당겨야 하므로 찾기까지 O(n)으로 떨어진다.",
+			"찾기는 O(1)이지만 컴포넌트 없는 칸이 섞여 순회가 빈칸까지 훑는다.",
+			"같은 인덱스를 다른 타입 풀이 공유해 타입끼리 값을 덮어쓴다.",
+		],
+		a: 2,
+		w: [
+			"32비트로는 약 43억까지 표현합니다. 65536은 16비트의 한계입니다.",
+			"당겨야 하는 것은 빈틈없이 모은 배열 쪽입니다. 엔티티 인덱스를 그대로 쓰면 당길 필요도, 찾기가 느려질 일도 없습니다.",
+			"①찾기와 ③빈틈없는 순회가 충돌하는 지점입니다. 번호를 인덱스로 쓰면 빈칸이 생기고, 빈칸 없이 모으면 번호로 찾을 수 없습니다. 희소 집합은 Sparse(번호 → 위치)와 Dense(빈틈없는 배열) 두 배열로 둘 다 얻습니다.",
+			"풀은 타입마다 따로 있습니다. 같은 인덱스를 써도 서로 다른 배열입니다.",
+		],
+	},
+	{
+		t: "sparse", kind: "추적",
+		q: "풀 상태가 `Dense = [E2, E7, E4, E9]`, `Sparse[2]=0, Sparse[7]=1, Sparse[4]=2, Sparse[9]=3`입니다. `Remove(E7)` 뒤의 상태는?",
+		o: [
+			"`Dense = [E2, E4, E9]`, `Sparse[9] = 2`",
+			"`Dense = [E2, E9, E4]`, `Sparse[9] = 1`",
+			"`Dense = [E2, E9, E4]`, `Sparse[9] = 3`",
+			"`Dense = [E2, —, E4, E9]`, `Sparse[9] = 3`",
+		],
+		a: 1,
+		w: [
+			"뒤를 한 칸씩 당긴 결과입니다. 이렇게 하면 O(n)이고 당겨진 원소마다 Sparse를 고쳐야 합니다. TSparseSet은 이렇게 하지 않습니다.",
+			"swap-remove: 마지막 원소 E9를 E7 자리(1)로 옮기고 `Sparse[9] = 1`로 고친 뒤 꼬리를 자르고 `Sparse[7]`을 무효로 만듭니다. 원소 하나 이동 + Sparse 두 칸 수정이라 O(1)입니다.",
+			"E9를 옮기기만 하고 `Sparse[9]`를 고치지 않은 상태입니다. Sparse[9]가 잘려 나간 칸 3을 가리켜 E9를 찾을 수 없게 됩니다.",
+			"빈칸을 남기면 Dense가 더 이상 빈틈없는 배열이 아니므로 순회가 빈칸을 거르게 됩니다.",
+		],
+	},
+	{
+		t: "sparse", kind: "버그 찾기",
+		q: "누군가 `TSparseSet::Remove`에서 한 줄을 실수로 지웠습니다. 이 버그가 일으키는 증상은?",
+		code: "if (DenseIndex != LastIndex)\n{\n\tconst FEntity LastEntity = Dense[LastIndex];\n\tDense[DenseIndex]        = LastEntity;\n\tComponents[DenseIndex]   = std::move(Components[LastIndex]);\n\t// Sparse[LastEntity.Index] = DenseIndex;   ← 지워진 줄\n}\nDense.pop_back();\nComponents.pop_back();\nSparse[Entity.Index] = InvalidDense;",
+		o: [
+			"지운 엔티티의 컴포넌트가 계속 남아 `Has`가 참을 돌려준다.",
+			"Dense와 Components 순서가 어긋나 다른 엔티티의 값이 보인다.",
+			"마지막 원소가 두 칸에 남아 순회 때 같은 엔티티를 두 번 만난다.",
+			"옮겨진 엔티티를 찾으면 이미 잘려 나간 칸(범위 밖)을 가리킨다.",
+		],
+		a: 3,
+		w: [
+			"지운 엔티티의 `Sparse[Entity.Index]`는 마지막 줄에서 무효로 바뀌므로 `Has`는 거짓입니다.",
+			"Dense와 Components는 둘 다 같은 칸으로 옮겨지고 둘 다 `pop_back`되므로 서로 어긋나지 않습니다.",
+			"`pop_back`이 꼬리를 자르므로 마지막 원소는 한 칸에만 남습니다. 순회는 정상입니다.",
+			"옮겨진 엔티티의 Sparse 값이 여전히 옛 마지막 칸(LastIndex)을 가리키는데, 그 칸은 `pop_back`으로 사라졌습니다. 그 엔티티로 `Contains`/`Get`을 하면 범위 밖을 읽습니다. 그래서 swap-remove는 \"Sparse 두 칸 수정\"이 꼭 필요합니다(테스트 `SwapRemoveKeepsPoolConsistent`).",
+		],
+	},
+	{
+		t: "generation", kind: "계산",
+		q: "어떤 `FEntity`를 `ToId()`로 바꾼 값이 `0x0000000300000005`입니다. 이 엔티티는?",
+		code: "constexpr uint64 ToId() const { return (static_cast<uint64>(Generation) << 32) | Index; }",
+		o: ["인덱스 5, 세대 3", "인덱스 3, 세대 5", "인덱스 8, 세대 0", "인덱스 5, 세대 0"],
+		a: 0,
+		w: [
+			"세대가 위 32비트(3), 인덱스가 아래 32비트(5)입니다. 슬롯 5가 세 번 파괴된 뒤 다시 쓰이고 있는 엔티티입니다. 64비트 하나라 저장·해시·네트워크에 그대로 씁니다.",
+			"위·아래 32비트를 뒤바꿔 읽은 값입니다. 세대가 `<< 32`로 위로 갑니다.",
+			"OR를 덧셈으로 착각해 합친 값입니다. 두 값은 서로 다른 비트 영역에 들어갑니다.",
+			"위 32비트를 무시한 값입니다. 세대가 0이면 ID도 `0x...00000005`였을 것입니다.",
+		],
+	},
+	{
+		t: "generation", kind: "추적",
+		q: "빈 레지스트리에서 아래 순서로 호출합니다. 마지막 `C`의 (인덱스, 세대)는?",
+		code: "FEntity A = Registry.Create();\nFEntity B = Registry.Create();\nRegistry.Destroy(A);\nRegistry.Destroy(B);\nFEntity C = Registry.Create();",
+		o: ["(0, 1)", "(1, 1)", "(2, 0)", "(1, 0)"],
+		a: 1,
+		w: [
+			"먼저 비운 슬롯을 먼저 쓴다고(FIFO) 착각한 값입니다. `Create`는 `FreeIndices.back()`을 꺼내므로 마지막에 비운 슬롯이 먼저입니다.",
+			"A = (0, 0), B = (1, 0). Destroy가 세대를 올리고 빈 목록에 넣어 `FreeIndices = [0, 1]`, `Generations = [1, 1]`. `Create`는 `back()`인 1을 꺼내고 그 슬롯 세대 1을 붙입니다.",
+			"재사용 없이 새 슬롯을 만든 값입니다. 빈 슬롯이 있으면 그것부터 씁니다.",
+			"재사용은 맞지만 Destroy가 세대를 올린다는 점을 빠뜨렸습니다. 세대가 0이면 옛 핸들 B와 구별할 수 없습니다.",
+		],
+	},
+	{
+		t: "generation", kind: "결과 예측",
+		q: "엔티티 A(인덱스 0, 세대 0)를 파괴한 뒤 슬롯 0을 다시 받은 새 엔티티 C에 `FHealthComponent`를 붙였습니다. 옛 핸들 A로 `Registry.TryGet<FHealthComponent>(A)`를 부르면?",
+		o: [
+			"C의 체력 컴포넌트 포인터 — 슬롯 0의 Sparse 칸을 같이 쓰므로",
+			"`E_CHECKF` 실패로 즉시 Fatal — 무효 핸들로 조회했으므로",
+			"A가 파괴되기 전 체력 값 — 풀이 옛 값을 세대별로 보관하므로",
+			"`nullptr` — Dense 칸의 엔티티를 세대까지 비교해 다르므로",
+		],
+		a: 3,
+		w: [
+			"Sparse[0]은 실제로 C의 칸을 가리킵니다. 하지만 `Contains`가 그 칸의 엔티티 `Dense[DenseIndex]`와 핸들을 세대까지 비교하므로 넘어가지 않습니다.",
+			"`TryGet`은 검사 실패 시 Fatal을 내지 않고 `nullptr`를 돌려줍니다. Fatal은 `Get`(있다고 가정)의 동작입니다.",
+			"풀은 엔티티당 컴포넌트 하나만 들고, 옛 값을 보관하지 않습니다. Destroy 때 이미 지워졌습니다.",
+			"`Contains`는 `Dense[DenseIndex] == Entity`로 (인덱스, 세대)를 함께 비교합니다. C는 (0, 1)이므로 A(0, 0)와 다릅니다. 테스트 `ECS_StaleHandleDoesNotAliasReusedSlot`이 바로 이것을 확인합니다.",
+		],
+	},
+	{
+		t: "generation", kind: "설계 이유",
+		q: "엔티티를 파괴할 때마다 번호를 재사용하지 않고 늘 새 번호를 주면 세대가 필요 없습니다. 그래도 슬롯을 재사용하는 이유는?",
+		o: [
+			"새 번호를 주면 `ToId()`가 64비트를 넘어 저장·네트워크 형식이 깨지므로",
+			"번호가 커지면 `std::hash<FEntity>` 충돌이 늘어 조회가 O(n)이 되므로",
+			"탄환처럼 자주 생기는 물체 때문에 Sparse·세대 배열이 끝없이 자라므로",
+			"Dense 배열은 인덱스 순서로 정렬되어야 해서 번호가 연속이어야 하므로",
+		],
+		a: 2,
+		w: [
+			"인덱스는 32비트라 번호가 늘어도 `ToId()`는 64비트 안에 들어갑니다. 문제는 형식이 아니라 배열 크기입니다.",
+			"레지스트리는 해시가 아니라 Sparse 배열로 찾습니다. 해시는 엔티티를 맵 키로 쓸 때만 쓰입니다.",
+			"Sparse는 엔티티 인덱스로 직접 찾으므로 가장 큰 인덱스만큼 커야 하고, 세대 배열도 슬롯마다 한 칸입니다. 탄환을 쏠 때마다 번호가 늘면 배열이 끝없이 커집니다. 재사용하면 생기는 \"옛 번호\" 문제를 세대로 막습니다.",
+			"Dense는 swap-remove 때문에 애초에 생성·인덱스 순서가 아닙니다.",
+		],
+	},
+	{
+		t: "generation", kind: "개념",
+		q: "세대 핸들에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"슬롯이 재사용되면 세대를 0으로 되돌려 새 엔티티가 깨끗이 시작한다.",
+			"파괴하면 그 슬롯 세대가 올라가 옛 핸들의 `IsValid`가 거짓이 된다.",
+			"같은 슬롯이 약 43억 번 재사용되면 세대가 한 바퀴 돌 수 있다.",
+			"GPU 리소스의 `THandle`도 인덱스와 세대로 같은 문제를 막는다.",
+		],
+		a: 0,
+		w: [
+			"틀린 설명입니다. 세대는 슬롯마다 계속 올라가기만 합니다(`++Generations[Entity.Index]`). 0으로 되돌리면 같은 슬롯의 옛 핸들(세대 0)과 새 엔티티를 구별할 수 없게 되어 세대를 둔 의미가 사라집니다.",
+			"맞는 설명입니다. `IsValid`는 `Generations[Index] == Entity.Generation`을 비교합니다.",
+			"맞는 설명입니다. 세대는 32비트이므로 이론적 한계가 있습니다(강의 Q2).",
+			"맞는 설명입니다. 6강의 `TResourcePool`이 같은 구조이고, 메시·텍스처·머티리얼을 포인터 대신 핸들로 참조합니다.",
+		],
+	},
+	{
+		t: "view", kind: "계산",
+		q: "컴포넌트 A를 가진 엔티티가 10만 개, B를 가진 엔티티가 20개입니다. `View<A, B>().Each`와 `View<B, A>().Each`의 순회 비용은?",
+		o: [
+			"둘 다 B 풀 20개를 돌고, A 풀에는 있는지만 묻는다.",
+			"`View<A, B>`는 A 10만 개, `View<B, A>`는 B 20개를 돈다.",
+			"둘 다 큰 쪽 A 10만 개를 돌고 B 풀에 있는지 묻는다.",
+			"둘 다 10만 + 20개를 모두 돌고 결과의 교집합을 낸다.",
+		],
+		a: 0,
+		w: [
+			"`GetIterationEntities`가 풀 크기를 비교해 가장 작은 풀을 고릅니다. 교집합은 가장 작은 집합보다 클 수 없으므로 이것이 최소한의 일입니다. 타입 순서는 크기가 같을 때의 기준과 람다 인자 순서만 정합니다.",
+			"첫 번째 타입을 기준으로 돈다고 착각했습니다. 기준은 타입 순서가 아니라 풀 크기입니다.",
+			"반대입니다. 큰 풀을 돌면 10만 번 중 대부분이 B에 없어 헛일이 됩니다.",
+			"두 풀을 다 돌 필요가 없습니다. 작은 풀을 돌며 나머지에는 `Contains`로만 묻습니다.",
+		],
+	},
+	{
+		t: "view", kind: "코드 읽기",
+		q: "A 풀과 B 풀이 모두 50개일 때 `View<A, B>`는 어느 목록을 돌까요?",
+		code: "const std::vector<FEntity>* SmallestEntities = nullptr;\nsize_t SmallestSize = ~static_cast<size_t>(0);\nstd::apply([&](auto*... Pools) {\n\t((Pools->Size() < SmallestSize\n\t\t? (SmallestSize = Pools->Size(), SmallestEntities = &Pools->GetEntities(), 0) : 0), ...);\n}, PoolTuple);",
+		o: [
+			"B 풀 — 접기 식은 오른쪽부터 평가되므로 뒤 타입이 남는다",
+			"두 목록을 이어 붙인 100개 — 같은 크기면 둘 다 돌아야 하므로",
+			"정해지지 않음 — 타입 ID 해시 순서에 따라 실행마다 다르다",
+			"A 풀 — `<`가 엄격 비교라 같은 크기의 뒤 타입은 바꾸지 못한다",
+		],
+		a: 3,
+		w: [
+			"쉼표 연산자 접기 `(expr, ...)`는 왼쪽부터 차례로 평가됩니다. 그리고 비교가 `<`라 같은 크기에서는 바뀌지 않습니다.",
+			"한 목록만 돌고 나머지는 `Contains`로 확인하면 교집합이 정확히 나옵니다. 이어 붙이면 같은 엔티티를 두 번 처리합니다.",
+			"풀은 `std::tuple`에 타입 순서대로 들어 있고 접기 식은 그 순서로 평가되므로 결정적입니다.",
+			"A가 먼저 평가되어 50으로 정해지고, B의 50은 `50 < 50`이 거짓이라 바꾸지 못합니다. 코드 주석의 \"같은 크기면 앞 타입\"입니다.",
+		],
+	},
+	{
+		t: "view", kind: "추적",
+		q: "체력 풀이 `Dense = [E1(체력 0), E2(체력 50), E3(체력 0)]`입니다. 아래 시스템을 한 번 돌린 뒤 체력 풀에 남는 엔티티는?",
+		code: "Registry.View<FHealthComponent>().Each([&](FEntity Entity, FHealthComponent& Health) {\n\tif (Health.Current <= 0) { Registry.Destroy(Entity); }\n});",
+		o: ["E2만 남는다", "E2와 E3가 남는다", "E3만 남는다", "세 엔티티 모두 남는다"],
+		a: 1,
+		w: [
+			"의도한 결과지만 실제로는 E3를 건너뜁니다. 순회 중 같은 풀을 바꾸면 이렇게 됩니다.",
+			"인덱스 0에서 E1을 지우면 swap-remove로 마지막 E3가 0번 칸으로 옵니다(`[E3, E2]`). 루프는 인덱스 1(E2, 체력 50)로 넘어가고 끝나므로 E3는 검사되지 않습니다. 고치려면 지울 대상을 모았다가 순회가 끝난 뒤 지웁니다(스크립트 `Destroy()`가 프레임 끝 지연 적용인 이유).",
+			"E2는 체력이 50이라 지워지지 않습니다.",
+			"`Registry.Destroy`는 지연이 아니라 즉시 풀에서 지웁니다. 프레임 끝 지연은 스크립트 `Destroy()`의 동작입니다.",
+		],
+	},
+	{
+		t: "view", kind: "설계 이유",
+		q: "`View<FTransformComponent>().Each` 안에서 새로 만든 엔티티에 `FTransformComponent`를 `Emplace`하면 생길 수 있는 문제는?",
+		o: [
+			"새 원소가 목록 앞쪽에 끼어들어 이미 본 원소를 한 번 더 방문한다.",
+			"`Emplace`가 순회 중임을 감지해 `E_CHECKF`로 바로 Fatal을 낸다.",
+			"벡터가 다시 할당되면 받은 `T&`와 순회 중인 목록이 허공을 가리킨다.",
+			"새 엔티티는 다음 프레임에 풀에 들어가므로 이번 순회에서 빠진다.",
+		],
+		a: 2,
+		w: [
+			"`Emplace`는 Dense 끝에 덧붙입니다. 앞쪽에 끼어들지 않습니다.",
+			"레지스트리는 순회 중인지 추적하지 않습니다. 그래서 규칙으로 막고 리뷰로 지킵니다.",
+			"`std::vector`가 자라며 메모리를 다시 잡으면 람다가 받은 참조와 Each가 붙든 목록 포인터가 해제된 메모리를 가리킵니다. Each가 \"목록 복사 없이\" 도는 것은 순회 중 같은 타입을 추가·제거하지 않는다는 규칙을 전제로 한 최적화입니다.",
+			"`Emplace`는 즉시 풀에 넣습니다. 지연 추가가 아니라서 바로 이 문제가 생깁니다.",
+		],
+	},
+	{
+		t: "view", kind: "코드 읽기",
+		q: "`FScene::DestroyEntity`는 자식 목록을 지역 변수로 복사한 뒤 그 사본을 돌며 자식을 지웁니다. 원본 `Hierarchy->Children`을 직접 돌지 않는 이유는?",
+		code: "// 자식 먼저 (목록을 복사해 순회 중 변경 회피)\nconst std::vector<FEntity> Children = Hierarchy->Children;\nfor (FEntity Child : Children)\n{\n\tDestroyEntity(Child);   // 안에서 SetParent(Child, NullEntity)\n}",
+		o: [
+			"다른 스레드가 자식 목록을 읽는 중이라 잠금 대신 사본을 쓴다.",
+			"자식을 지울 때 부모의 원본 목록에서 빠져 순회가 원소를 건너뛴다.",
+			"사본을 만들어야 자식의 세대가 부모보다 먼저 올라가 순서가 맞는다.",
+			"원본은 const 참조로만 얻을 수 있어 지우는 함수에 넘길 수 없다.",
+		],
+		a: 1,
+		w: [
+			"`FScene` 계층 변경은 메인 스레드에서 합니다. 잠금 문제가 아닙니다.",
+			"자식의 `DestroyEntity`가 `SetParent(Child, NullEntity)`로 부모의 `Children`에서 자신을 뺍니다. 원본을 돌면 순회 중 목록이 줄어 원소를 건너뛰거나 반복자가 무효가 됩니다. View 규칙과 같은 원리(바꿀 대상은 따로 모아 두기)입니다.",
+			"세대는 엔티티마다 따로 올라가고, 부모·자식 사이 순서와 관계없습니다.",
+			"`TryGet`은 비 const 포인터를 돌려줍니다. 문제는 접근 권한이 아니라 순회 중 변경입니다.",
+		],
+	},
+	{
+		t: "projecte", kind: "설계 이유",
+		q: "엔진 DLL과 게임 모듈 DLL이 둘 다 아래처럼 \"함수 지역 static 카운터\"로 타입 ID를 매긴다면 어떤 일이 생길 수 있나요?",
+		code: "template <typename T>\nstatic uint32 GetTypeId()\n{\n\tstatic const uint32 TypeId = NextTypeId++;   // 바이너리마다 따로\n\treturn TypeId;\n}",
+		o: [
+			"링커가 두 DLL의 같은 템플릿 static을 하나로 합쳐 두 번째 호출이 막힌다.",
+			"게임 모듈이 등록한 타입은 엔진 쪽 `Pools`에 들어가지 못해 버려진다.",
+			"`typeid`가 DLL마다 다른 이름을 돌려줘 같은 타입이 서로 다른 키가 된다.",
+			"같은 컴포넌트가 DLL마다 다른 ID를 받아 엉뚱한 풀로 캐스팅된다.",
+		],
+		a: 3,
+		w: [
+			"DLL 사이에서는 링커가 템플릿 static을 합치지 않습니다. 합쳐지지 않기 때문에 문제가 생깁니다.",
+			"레지스트리 객체는 하나이고 풀도 ID 인덱스로 함께 들어갑니다. 버려지는 것이 아니라 번호가 어긋납니다.",
+			"이 코드는 `typeid`를 쓰지 않습니다. 그리고 MSVC의 `std::type_index`는 타입 장식 이름으로 비교하므로 DLL이 달라도 같은 타입은 같은 키입니다 — 그래서 지금 코드가 그것을 키로 씁니다.",
+			"엔진 DLL에서 `FTransformComponent`가 3을 받아도 게임 모듈의 같은 함수는 자기 카운터로 0을 받을 수 있습니다. 그러면 게임 모듈이 3번 풀을 0번 풀 타입으로 캐스팅합니다. 그래서 진짜 표는 엔진 DLL의 `AssignComponentTypeId` 한 곳에 두고 지역 static은 캐시로만 씁니다(12강).",
+		],
+	},
+	{
+		t: "projecte", kind: "계산",
+		q: "새 프로세스에서 아래 순서로 호출하면 마지막 `Assign(A)`가 돌려주는 ID는? (`Assign` = `AssignComponentTypeId`, `Retire` = `RetireComponentTypeId`)",
+		code: "Assign(A);   // 첫 사용\nAssign(B);\nRetire(A);   // 게임 모듈 다시 로드로 A의 ID 폐기\nAssign(A);",
+		o: ["0", "1", "2", "3"],
+		a: 2,
+		w: [
+			"폐기 전 ID를 다시 준다고 착각했습니다. `Retire`가 표에서 A를 지우므로 새 ID를 받습니다.",
+			"B의 ID입니다. 버린 번호든 쓰는 번호든 다른 타입에 겹쳐 주지 않습니다.",
+			"A = 0, B = 1, Retire가 표에서 A를 지우고, 다시 Assign하면 `NextId`인 2를 받습니다. 버린 0은 다시 쓰지 않으므로 `NextId`를 표 크기와 따로 셉니다. 멤버가 바뀐 새 타입이 옛 풀을 자기 타입으로 잘못 캐스팅하지 않게 하려는 것입니다.",
+			"`Retire`는 `NextId`를 올리지 않습니다. 새 ID는 다음 Assign 때 하나만 쓰입니다.",
+		],
+	},
+	{
+		t: "projecte", kind: "설계 이유",
+		q: "`FRegistry`가 풀을 `std::vector<std::unique_ptr<FSparseSetBase>>`로 들고, `Destroy`에서 가상 `Remove`를 부르는 이유는?",
+		o: [
+			"엔티티가 가진 타입을 모르는 채로 모든 풀에 지우라고 해야 해서",
+			"가상 호출이 템플릿 호출보다 빨라 뜨거운 순회 경로가 빨라져서",
+			"게임 모듈이 풀 클래스를 상속해 저장 방식을 바꿀 수 있게 하려고",
+			"`unique_ptr`는 가상 소멸자 없는 타입을 담지 못해 기반이 필요해서",
+		],
+		a: 0,
+		w: [
+			"`Destroy(Entity)`는 그 엔티티가 어떤 컴포넌트 타입을 가졌는지 모릅니다. 그래서 타입을 지운(type erasure) 기반 클래스로 모든 풀에 \"이 엔티티 지워\"라고 가상 호출합니다. 순회(View)는 `TSparseSet<T>`를 직접 쓰므로 가상 호출이 끼지 않습니다.",
+			"가상 호출은 템플릿 직접 호출보다 느립니다. 그래서 뜨거운 순회(View)에서는 쓰지 않습니다.",
+			"풀은 `TSparseSet<T>`(final) 하나뿐이고 게임 모듈이 바꾸지 않습니다.",
+			"`unique_ptr`는 어떤 타입이든 담을 수 있습니다. 기반 포인터로 지울 때만 가상 소멸자가 필요합니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "엔진을 `ProjectEEngine.dll`로 묶고 게임 모듈 DLL이 컴포넌트를 등록하게 만든 날(2026-09-30), 타입 ID를 옮기며 CLAUDE.md에 생긴 규칙은?",
+		o: [
+			"컴포넌트 타입 ID는 리플렉션 등록 순서로만 매기고 다시 쓰지 않는다.",
+			"타입 ID는 `typeid` 대신 컴포넌트 이름 문자열의 해시로 정해 저장한다.",
+			"헤더 인라인 템플릿의 함수 지역 static에 전역 의미를 두지 않는다.",
+			"게임 모듈은 엔진 컴포넌트 풀을 직접 읽지 않고 복사본만 받아 쓴다.",
+		],
+		a: 2,
+		w: [
+			"타입 ID는 리플렉션이 아니라 첫 사용 순서로 엔진 DLL 표에서 매겨집니다.",
+			"키는 이름 해시가 아니라 `std::type_index`입니다.",
+			"지역 static은 그 함수를 인스턴스화한 바이너리마다 따로 생깁니다. 그 커밋에서 타입 ID를 엔진 DLL의 전역 표(`std::type_index` 키)로 옮기고, \"바이너리마다 따로 생기는 상태에 전역 의미를 두지 않는다\"는 규칙을 남겼습니다.",
+			"게임 모듈은 같은 레지스트리의 풀을 그대로 씁니다. 문제는 접근 방식이 아니라 번호가 어긋나는 것이었습니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "버그 찾기",
+		q: "테스트에 `E_EXPECT_EQ(Registry.View<A, B>().Count(), 2);`라고 쓰면 컴파일이 깨집니다. 원인과 해결로 맞는 것은?",
+		o: [
+			"`Count()`가 의존 이름이라 `template` 키워드가 필요하므로 붙여 준다.",
+			"전처리기가 꺾쇠 안 쉼표로 인자를 잘라서 지역 변수로 먼저 받는다.",
+			"View 임시 객체 수명이 매크로 안에서 끝나므로 `auto&&`로 붙든다.",
+			"매크로가 인자를 두 번 평가해 형이 달라지므로 `static_cast`를 건다.",
+		],
+		a: 1,
+		w: [
+			"`Registry`는 의존 타입이 아니므로 `template` 키워드가 필요 없습니다. 문제는 C++ 문법 이전, 전처리 단계입니다.",
+			"전처리기는 꺾쇠를 괄호로 모릅니다. `Registry.View<A`와 `B>().Count()`와 `2`, 세 인자로 자릅니다. CLAUDE.md 규칙대로 `const size_t Count = Registry.View<A, B>().Count();`처럼 지역 변수로 받은 뒤 넘깁니다.",
+			"임시 객체는 그 전체 식이 끝날 때까지 살아 있습니다. 그리고 이것은 컴파일 오류가 아닙니다.",
+			"두 번 평가하더라도 형은 같습니다. 오류는 인자 개수가 맞지 않아 생깁니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "결과 예측",
+		q: "E0, E1, E2, E3를 이 순서로 만들고 각각 `FTransformComponent`를 붙인 뒤 E0의 트랜스폼만 `Remove`했습니다. `View<FTransformComponent>().Each`가 방문하는 순서는?",
+		o: ["E1, E2, E3", "E3, E2, E1", "E1, E3, E2", "E3, E1, E2"],
+		a: 3,
+		w: [
+			"생성 순서가 유지된다고 가정한 답입니다. swap-remove는 순서를 지키지 않습니다.",
+			"뒤에서부터 돈다고 착각했습니다. Each는 Dense를 앞에서부터 돕니다.",
+			"E1을 지운 것처럼 바꿔 놓았습니다. 옮겨지는 것은 마지막 E3이고 빈자리는 0번입니다.",
+			"Dense `[E0, E1, E2, E3]`에서 E0을 지우면 마지막 E3이 0번 칸으로 와 `[E3, E1, E2]`가 됩니다. 그래서 Dense 순서에 기대면 안 되고, 씬 저장처럼 순서가 의미 있는 곳은 계층이나 별도 기준으로 정렬합니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "트랜스폼 갱신의 루트 찾기가 `View<트랜스폼, 계층>::Each`(엔티티당 조회 4번)로 순차 0.22ms였습니다. 0.05ms로 줄인 방법은?",
+		o: [
+			"View를 쓰지 않고 풀 배열을 직접 묶음으로 나눠 돌았다.",
+			"View 타입 순서를 바꿔 작은 풀이 앞에 오게 정리했다.",
+			"`Contains` 결과를 엔티티별 해시 맵에 캐시해 재사용했다.",
+			"계층 컴포넌트를 트랜스폼에 합쳐 풀을 하나로 줄였다.",
+		],
+		a: 0,
+		w: [
+			"View는 엔티티마다 `Contains`와 `Get`을 풀 수만큼 부릅니다. 아주 뜨거운 경로에서는 풀을 직접 보는 것이 낫습니다(8강에서 자세히).",
+			"View는 타입 순서와 관계없이 이미 가장 작은 풀을 고릅니다. 순서를 바꿔도 비용은 같습니다.",
+			"해시 맵 조회는 Sparse 배열 조회(O(1), 배열 한 번)보다 오히려 느립니다.",
+			"컴포넌트 구성은 그대로 두었습니다. 계층과 트랜스폼은 다른 시스템도 따로 쓰는 데이터입니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-07";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 385;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = (Seed >>> 16) % (K + 1); // 상위 비트 (LCG 하위 비트는 주기가 짧다)
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 7강을 확실히 이해했습니다. 8강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"7강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

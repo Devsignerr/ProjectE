@@ -543,6 +543,11 @@ uint32 FRegistry::AssignComponentTypeId(std::type_index Type)
 <details class="quiz"><summary>Q3. "체력이 0인 엔티티를 모두 지우는" 시스템을 <code>View&lt;FHealthComponent&gt;().Each</code> 안에서 바로 <code>Registry.Destroy</code>로 구현하면 어떤 버그가 날까요? 어떻게 고칠까요?</summary>
 	<code>Destroy</code>는 체력 풀에서도 swap-remove를 하므로, 순회 중인 바로 그 배열의 마지막 원소가 현재 위치로 옮겨집니다. 루프는 다음 인덱스로 넘어가므로 옮겨진 엔티티를 검사하지 않고 지나치고, 경우에 따라 람다가 받은 참조도 다른 원소를 가리키게 됩니다. 순회 중에는 지울 대상을 목록에 모으고, 순회가 끝난 뒤 한꺼번에 지웁니다. (ProjectE의 스크립트 <code>Destroy()</code>가 "프레임 끝에 지연 적용"인 것도 같은 이유입니다.)
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	7강 내용을 모두 이해했는지 객관식 24문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz07_ECS.html">→ 7강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 8강 ======================================================= -->

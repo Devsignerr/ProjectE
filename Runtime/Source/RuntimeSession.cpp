@@ -17,6 +17,7 @@ E_DECLARE_LOG_CATEGORY(LogRuntime)
 
 void FRuntimeApplication::LoadScene()
 {
+	RenderThread.WaitIdle(); // 씬 교체: 컴포넌트 소멸·리소스 로드 (렌더 스레드 기록이 끝난 뒤)
 	Scene.Clear();
 	World.SetCurrentSceneAsset(SceneAsset);
 	if (FPaths::HasProject() && !SceneAsset.empty())
@@ -138,6 +139,7 @@ void FRuntimeApplication::StartLanHost()
 
 void FRuntimeApplication::TravelTo(const std::string& NextScene)
 {
+	RenderThread.WaitIdle(); // 맵 전환: 씬 내용 교체 + 리소스 수거 요청
 	FSceneTravelTargets Targets;
 	Targets.World             = &World;
 	Targets.Scene             = &Scene;
@@ -173,6 +175,7 @@ void FRuntimeApplication::EndSession()
 
 void FRuntimeApplication::HandleSessionRequest(const FNetSessionRequest& Request)
 {
+	RenderThread.WaitIdle(); // 세션 전환은 씬을 다시 연다
 	FNetLaunchOptions Options;
 	switch (Request.Type)
 	{

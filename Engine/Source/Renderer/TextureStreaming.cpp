@@ -6,6 +6,7 @@
 #include "Core/FrameTime.h"
 #include "Core/Log.h"
 #include "Core/Profiling.h"
+#include "Core/RenderThreadSync.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12Texture.h"
@@ -128,6 +129,7 @@ uint32 FResourceManager::GetTextureResidentTopMip(FTextureHandle Handle) const
 
 FTextureHandle FResourceManager::CreateStreamingTexture(const FCompressedTexture& Texture, const FTextureStreamSource& Source, const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	if (!Source.IsValid() || !bAsyncLoadingEnabled || !Texture.IsValid())
 	{
 		return CreateTexture(Texture, DebugName);

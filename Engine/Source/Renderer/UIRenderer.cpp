@@ -196,8 +196,25 @@ const FD3D12Texture& FUIRenderer::ResolveTexture(const FUITextureRef& Texture, c
 	return Resources->ResolveTexture(It->second);
 }
 
+void FUIRenderer::PrepareTextures(const FUIDrawList& DrawList, const std::filesystem::path& ContentDirectory)
+{
+	PreparedTextures.clear();
+	PreparedList = &DrawList;
+	if (Rhi == nullptr)
+	{
+		return;
+	}
+	PreparedTextures.reserve(DrawList.Batches.size());
+	for (const FUIDrawBatch& Batch : DrawList.Batches)
+	{
+		PreparedTextures.push_back(ResolveTexture(Batch.Texture, ContentDirectory).GetSrv().Gpu);
+	}
+}
+
 void FUIRenderer::Render(const FUIDrawList& DrawList, const FRenderOutput& Output, const std::filesystem::path& ContentDirectory)
 {
+	const bool bPrepared = PreparedList == &DrawList && PreparedTextures.size() == DrawList.Batches.size();
+	PreparedList         = nullptr;
 	if (Rhi == nullptr || DrawList.IsEmpty() || !Output.IsValid())
 	{
 		return;
@@ -219,12 +236,11 @@ void FUIRenderer::Render(const FUIDrawList& DrawList, const FRenderOutput& Outpu
 	{
 		return;
 	}
-	// 텍스처(특히 글꼴 아틀라스)를 먼저 준비한다 — 생성은 동기 업로드라 기록 중간에 끼우지 않는다
-	std::vector<const FD3D12Texture*> BatchTextures;
-	BatchTextures.reserve(DrawList.Batches.size());
-	for (const FUIDrawBatch& Batch : DrawList.Batches)
+	// 텍스처(특히 글꼴 아틀라스)를 먼저 준비한다 — 생성은 동기 업로드라 기록 중간에 끼우지 않는다 (PrepareTextures를 불렀으면 그 결과)
+	if (!bPrepared)
 	{
-		BatchTextures.push_back(&ResolveTexture(Batch.Texture, ContentDirectory));
+		PrepareTextures(DrawList, ContentDirectory);
+		PreparedList = nullptr;
 	}
 
 	const uint64                  Bytes = QuadCount * sizeof(FUIDrawQuad);
@@ -266,7 +282,7 @@ void FUIRenderer::Render(const FUIDrawList& DrawList, const FRenderOutput& Outpu
 		FUIBatchConstants BatchConstants;
 		BatchConstants.QuadOffset = Batch.FirstQuad;
 		CommandList->SetGraphicsRootConstantBufferView(RootParam_Batch, DynamicBuffer.AllocateConstants(BatchConstants).GpuAddress);
-		CommandList->SetGraphicsRootDescriptorTable(RootParam_Texture, BatchTextures[Index]->GetSrv().Gpu);
+		CommandList->SetGraphicsRootDescriptorTable(RootParam_Texture, PreparedTextures[Index]);
 		CommandList->DrawInstanced(6, Count, 0, 0);
 	}
 	// 뒤따르는 패스를 위해 시저를 출력 전체로 되돌린다

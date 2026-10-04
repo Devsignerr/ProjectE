@@ -9,6 +9,7 @@
 class FCamera;
 class FD3D12RHI;
 class FDebugDraw;
+struct FDebugLine;
 class FShaderLibrary;
 struct FRenderOutput;
 
@@ -30,6 +31,8 @@ public:
 	// Output: 렌더 타깃 상태의 출력(sRGB RTV). SceneDepthDsv: 같은 크기의 씬 깊이 (DEPTH_WRITE, 읽기 전용) — ptr 0 = 없음.
 	// 끝나면 Output RTV만 (깊이 없이) 바인딩된 상태로 둔다
 	void Render(const FDebugDraw& Lines, const FCamera& Camera, const FRenderOutput& Output, D3D12_CPU_DESCRIPTOR_HANDLE SceneDepthDsv);
+	// 선 목록 사본으로 (렌더 스레드: 게임 스레드가 다음 프레임 선을 쓰는 동안 기록하므로 FDebugDraw를 직접 읽지 않는다)
+	void Render(const std::vector<FDebugLine>& Lines, const FCamera& Camera, const FRenderOutput& Output, D3D12_CPU_DESCRIPTOR_HANDLE SceneDepthDsv);
 
 private:
 	struct FLineVertex

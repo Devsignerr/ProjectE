@@ -31,6 +31,9 @@ public:
 
 	// Output: 렌더 타깃 상태의 출력 (이 함수가 바인딩한다). ContentDirectory: 텍스처 상대 경로 기준
 	void Render(const FUIDrawList& DrawList, const FRenderOutput& Output, const std::filesystem::path& ContentDirectory);
+	// 묶음 텍스처를 미리 준비한다 (글꼴 아틀라스 다시 만들기·파일 텍스처 로드 = 리소스 관리자 변경 → 게임 스레드).
+	// 이어서 같은 목록으로 부르는 Render(렌더 스레드 가능)는 준비된 것을 쓴다. 부르지 않으면 Render가 직접 준비한다
+	void PrepareTextures(const FUIDrawList& DrawList, const std::filesystem::path& ContentDirectory);
 
 	bool IsInitialized() const { return Rhi != nullptr; }
 
@@ -58,4 +61,6 @@ private:
 	std::unordered_map<const FUIFont*, FFontTexture> FontTextures;
 	std::unordered_map<std::wstring, FTextureHandle> FileTextures; // 키: 절대 경로 (실패도 무효 핸들로 기억해 매 프레임 다시 읽지 않는다)
 	bool                                             bWarnedBufferFull = false;
+	std::vector<D3D12_GPU_DESCRIPTOR_HANDLE>         PreparedTextures; // PrepareTextures 결과 (묶음 순서)
+	const FUIDrawList*                               PreparedList = nullptr;
 };

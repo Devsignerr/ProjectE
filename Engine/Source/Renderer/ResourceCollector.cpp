@@ -2,6 +2,7 @@
 
 #include "Core/Console/Console.h"
 #include "Core/Log.h"
+#include "Core/RenderThreadSync.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "Renderer/RendererConsoleVariables.h"
@@ -260,6 +261,7 @@ void FResourceManager::Tick()
 
 FResourceCollectResult FResourceManager::CollectGarbage(std::string_view Reason)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	FResourceCollectResult Result;
 	if (Rhi == nullptr)
 	{

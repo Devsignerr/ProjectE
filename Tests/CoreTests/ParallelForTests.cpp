@@ -2,6 +2,7 @@
 #include "Core/Testing/TestFramework.h"
 
 #include <atomic>
+#include <thread>
 #include <vector>
 
 E_TEST(ParallelFor_CoversEveryIndexOnceAndIsDeterministic)
@@ -78,4 +79,32 @@ E_TEST(ParallelFor_BackToBackCallsNeverRunStaleBody)
 		}
 	}
 	E_EXPECT_FALSE(bWrongCall.load());
+}
+
+// 두 스레드(게임 ↔ 렌더 스레드)가 동시에 불러도 모든 칸을 정확히 한 번씩 (늦게 온 쪽은 순차로)
+E_TEST(ParallelFor_ConcurrentCallersFromTwoThreads)
+{
+	constexpr uint32       Count = 20000;
+	std::vector<uint32>    HitsA(Count, 0);
+	std::vector<uint32>    HitsB(Count, 0);
+	const auto RunRounds = [](std::vector<uint32>& Hits) {
+		for (int32 Round = 0; Round < 20; ++Round)
+		{
+			FParallel::ParallelFor(Count, 64, [&](uint32 Begin, uint32 End) {
+				for (uint32 Index = Begin; Index < End; ++Index)
+				{
+					++Hits[Index];
+				}
+			});
+		}
+	};
+	std::thread Other([&] { RunRounds(HitsB); });
+	RunRounds(HitsA);
+	Other.join();
+	bool bAllExact = true;
+	for (uint32 Index = 0; Index < Count; ++Index)
+	{
+		bAllExact = bAllExact && HitsA[Index] == 20u && HitsB[Index] == 20u;
+	}
+	E_EXPECT_TRUE(bAllExact);
 }

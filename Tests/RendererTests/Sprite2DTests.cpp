@@ -10,6 +10,7 @@
 #include "Scene/Sprite/TilemapData.h"
 #include "Scene/Terrain.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -531,6 +532,117 @@ E_TEST(TilemapCollision_MergesBoxesAndTransformsPolygons)
 	// 셀 크기 지정: 상자도 그 크기로
 	const FTilemapCollisionShapes Scaled = TilemapCollision::BuildShapes(Data, Tileset, FVector2(100.0f, 50.0f));
 	E_EXPECT_TRUE(Scaled.Boxes[0] == (FTileCollisionBox{ FVector2(0.0f, 0.0f), FVector2(400.0f, 100.0f) }));
+}
+
+// 외곽선 (TilemapCollision::TraceOutlines): 영역이 진행 방향 왼쪽 (바깥 반시계, 구멍 시계), 공선 점 병합, (Y, X) 최소 꼭짓점부터, 결정적 순서
+namespace
+{
+	using FLoop = std::vector<FTileCoord>;
+
+	std::vector<FTileCoord> RectCells(int32 MinX, int32 MinY, int32 MaxX, int32 MaxY)
+	{
+		std::vector<FTileCoord> Cells;
+		for (int32 Y = MinY; Y <= MaxY; ++Y)
+		{
+			for (int32 X = MinX; X <= MaxX; ++X)
+			{
+				Cells.push_back({ X, Y });
+			}
+		}
+		return Cells;
+	}
+
+	void RemoveCells(std::vector<FTileCoord>& Cells, std::initializer_list<FTileCoord> Remove)
+	{
+		std::erase_if(Cells, [&](const FTileCoord& Cell) { return std::find(Remove.begin(), Remove.end(), Cell) != Remove.end(); });
+	}
+} // namespace
+
+E_TEST(TilemapCollision_OutlineRectangleAndL)
+{
+	const std::vector<FLoop> Rect = TilemapCollision::TraceOutlines(RectCells(0, 0, 2, 1));
+	E_EXPECT_EQ(Rect.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(Rect[0] == (FLoop{ { 0, 0 }, { 3, 0 }, { 3, 2 }, { 0, 2 } })); // 반시계, 공선 점 없음
+
+	// L자 (중복 칸 허용)
+	const std::vector<FLoop> L = TilemapCollision::TraceOutlines({ { 0, 2 }, { 0, 0 }, { 1, 0 }, { 2, 0 }, { 0, 1 }, { 1, 0 } });
+	E_EXPECT_EQ(L.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(L[0] == (FLoop{ { 0, 0 }, { 3, 0 }, { 3, 1 }, { 1, 1 }, { 1, 3 }, { 0, 3 } }));
+	E_EXPECT_TRUE(TilemapCollision::TraceOutlines({}).empty());
+}
+
+E_TEST(TilemapCollision_OutlineHoleIslandsAndDiagonals)
+{
+	// 가운데 빈 3x3 고리: 바깥(반시계) + 구멍(시계)
+	std::vector<FTileCoord> Ring = RectCells(0, 0, 2, 2);
+	RemoveCells(Ring, { { 1, 1 } });
+	const std::vector<FLoop> RingLoops = TilemapCollision::TraceOutlines(Ring);
+	E_EXPECT_EQ(RingLoops.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(RingLoops[0] == (FLoop{ { 0, 0 }, { 3, 0 }, { 3, 3 }, { 0, 3 } }));
+	E_EXPECT_TRUE(RingLoops[1] == (FLoop{ { 1, 1 }, { 1, 2 }, { 2, 2 }, { 2, 1 } }));
+
+	// 대각으로만 닿은 칸 = 꼭짓점 하나를 공유하는 두 고리
+	const std::vector<FLoop> Diagonal = TilemapCollision::TraceOutlines({ { 1, 1 }, { 0, 0 } });
+	E_EXPECT_EQ(Diagonal.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(Diagonal[0] == (FLoop{ { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } }));
+	E_EXPECT_TRUE(Diagonal[1] == (FLoop{ { 1, 1 }, { 2, 1 }, { 2, 2 }, { 1, 2 } }));
+
+	// 대각으로 닿은 구멍 두 개도 나뉜다 (자기 접촉 고리 없음)
+	std::vector<FTileCoord> Holes = RectCells(0, 0, 3, 3);
+	RemoveCells(Holes, { { 1, 1 }, { 2, 2 } });
+	const std::vector<FLoop> HoleLoops = TilemapCollision::TraceOutlines(Holes);
+	E_EXPECT_EQ(HoleLoops.size(), static_cast<size_t>(3));
+	E_EXPECT_TRUE(HoleLoops[0] == (FLoop{ { 0, 0 }, { 4, 0 }, { 4, 4 }, { 0, 4 } }));
+	E_EXPECT_TRUE(HoleLoops[1] == (FLoop{ { 1, 1 }, { 1, 2 }, { 2, 2 }, { 2, 1 } }));
+	E_EXPECT_TRUE(HoleLoops[2] == (FLoop{ { 2, 2 }, { 2, 3 }, { 3, 3 }, { 3, 2 } }));
+
+	// 분리된 섬 (음수 좌표 포함): (Y, X) 순, 입력 순서와 무관
+	std::vector<FTileCoord> Islands = RectCells(5, 0, 6, 0);
+	Islands.push_back({ -3, 0 });
+	Islands.push_back({ 0, -2 });
+	const std::vector<FLoop> IslandLoops = TilemapCollision::TraceOutlines(Islands);
+	std::reverse(Islands.begin(), Islands.end());
+	E_EXPECT_TRUE(TilemapCollision::TraceOutlines(Islands) == IslandLoops);
+	E_EXPECT_EQ(IslandLoops.size(), static_cast<size_t>(3));
+	E_EXPECT_TRUE(IslandLoops[0] == (FLoop{ { 0, -2 }, { 1, -2 }, { 1, -1 }, { 0, -1 } }));
+	E_EXPECT_TRUE(IslandLoops[1] == (FLoop{ { -3, 0 }, { -2, 0 }, { -2, 1 }, { -3, 1 } }));
+	E_EXPECT_TRUE(IslandLoops[2] == (FLoop{ { 5, 0 }, { 7, 0 }, { 7, 1 }, { 5, 1 } }));
+}
+
+// BuildShapes의 외곽선(cm, 구멍 표시)·원웨이 윗변 선분 (같은 행 이어 붙임, 위 칸이 원웨이면 그 칸은 윗변 없음)
+E_TEST(TilemapCollision_OutlinesAndOneWaySegmentsInShapes)
+{
+	FTilesetAsset Tileset;
+	Tileset.TextureWidth  = 32;
+	Tileset.TextureHeight = 16;
+	FTileDefinition Solid;
+	Solid.Id        = 0;
+	Solid.Collision = ETileCollision::Full;
+	FTileDefinition Platform;
+	Platform.Id        = 1;
+	Platform.Collision = ETileCollision::Full;
+	Platform.bOneWay   = true;
+	Tileset.Tiles      = { Solid, Platform };
+
+	FTilemapData Data;
+	Data.FillRect(FTileRect::FromCorners(0, 0, 2, 2), TileCell::Make(0));
+	Data.Erase(1, 1);
+	Data.FillRect(FTileRect::FromCorners(5, 0, 7, 0), TileCell::Make(1)); // 원웨이 3칸
+	Data.Set(6, 1, TileCell::Make(1));                                    // 가운데 위에 하나 더
+	const FTilemapCollisionShapes Shapes = TilemapCollision::BuildShapes(Data, Tileset, FVector2(100.0f, 50.0f));
+	E_EXPECT_EQ(Shapes.Outlines.size(), static_cast<size_t>(2));
+	E_EXPECT_FALSE(Shapes.Outlines[0].bHole);
+	E_EXPECT_TRUE(Shapes.Outlines[0].Points ==
+	              (std::vector<FVector2>{ FVector2(0.0f, 0.0f), FVector2(300.0f, 0.0f), FVector2(300.0f, 150.0f), FVector2(0.0f, 150.0f) }));
+	E_EXPECT_TRUE(Shapes.Outlines[1].bHole);
+	E_EXPECT_TRUE(Shapes.Outlines[1].Points ==
+	              (std::vector<FVector2>{ FVector2(100.0f, 50.0f), FVector2(100.0f, 100.0f), FVector2(200.0f, 100.0f), FVector2(200.0f, 50.0f) }));
+	// 원웨이: (5,0)·(7,0) 윗변은 따로 (가운데 (6,0) 위는 원웨이), (6,1) 윗변. Start → End = -X
+	E_EXPECT_EQ(Shapes.OneWaySegments.size(), static_cast<size_t>(3));
+	E_EXPECT_TRUE(Shapes.OneWaySegments[0] == (FTileCollisionSegment{ FVector2(600.0f, 50.0f), FVector2(500.0f, 50.0f) }));
+	E_EXPECT_TRUE(Shapes.OneWaySegments[1] == (FTileCollisionSegment{ FVector2(800.0f, 50.0f), FVector2(700.0f, 50.0f) }));
+	E_EXPECT_TRUE(Shapes.OneWaySegments[2] == (FTileCollisionSegment{ FVector2(700.0f, 100.0f), FVector2(600.0f, 100.0f) }));
+	E_EXPECT_FALSE(Shapes.Boxes.empty()); // 병합 상자도 그대로 (다른 용도)
 }
 
 // ---- 라이브러리 / 샘플 에셋 / 컴포넌트 ---------------------------------------------------------------------------------

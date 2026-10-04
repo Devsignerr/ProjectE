@@ -410,6 +410,34 @@ uint32 FPhysics2DWorld::CreateBody(const FPhysics2DBodyDesc& Desc)
 			++ShapeCount;
 			break;
 		}
+		case EPhysics2DShape::Chain:
+		{
+			if (Shape.Points.size() < 4 || Shape.bIsTrigger)
+			{
+				break;
+			}
+			std::vector<b2Vec2> Points;
+			Points.reserve(Shape.Points.size());
+			for (const FVector2& Point : Shape.Points)
+			{
+				Points.push_back(b2Add(ToB2(Point), Offset));
+			}
+			b2SurfaceMaterial Material = b2DefaultSurfaceMaterial();
+			Material.friction          = ShapeDef.material.friction;
+			Material.restitution       = ShapeDef.material.restitution;
+			b2ChainDef ChainDef        = b2DefaultChainDef();
+			ChainDef.userData          = UserData;
+			ChainDef.points            = Points.data();
+			ChainDef.count             = static_cast<int>(Points.size());
+			ChainDef.materials         = &Material;
+			ChainDef.materialCount     = 1;
+			ChainDef.filter            = Filter;
+			ChainDef.isLoop            = true;
+			ChainDef.enableSensorEvents = true;
+			b2CreateChain(Body, &ChainDef);
+			++ShapeCount;
+			break;
+		}
 		case EPhysics2DShape::Edge:
 		{
 			std::vector<b2Vec2> Points;

@@ -34,8 +34,10 @@ struct FPhysics2DHit
 //           2) 정적: 트랜스폼이 바뀌면 순간이동, 키네마틱: 스텝마다 목표(이번 프레임 트랜스폼)까지 이동
 //           3) 고정 스텝 (프로젝트 설정 물리 FixedStepHz/MaxSubSteps — 3D와 같은 값), 4) 동적: 보간 결과를 트랜스폼에 (X, Z, Y축 회전만 —
 //           깊이 Y는 유지, 부모가 있으면 로컬로 역변환). 스크립트가 트랜스폼을 직접 바꿨으면 순간이동
-//   타일맵 (FTilemapComponent::bCollision, Scene/Sprite): TilemapCollision::BuildShapes 결과(Full 병합 상자·다각형 = 일반 모양,
-//         OneWay* = 원웨이 모양)를 같은 엔티티의 바디(강체가 없으면 정적) 모양에 더한다. 재질·레이어는 컴포넌트 Friction/Restitution/
+//   타일맵 (FTilemapComponent::bCollision, Scene/Sprite): TilemapCollision::BuildShapes 결과(Full = 영역 외곽선 닫힌 체인 — 칸 이음매에서
+//         걸리지 않는다, 다각형 = 일반 모양, 원웨이 Full = 윗변 선분 + 원웨이, 원웨이 다각형 = 원웨이 모양)를 같은 엔티티의 바디(강체가 없으면
+//         정적) 모양에 더한다. 체인은 빈 쪽에서만 막으므로 Full 영역 안에서 시작한 물체는 빠져나오지 않고 떨어진다. 동적 강체 타일맵은
+//         체인 대신 Full 병합 상자·원웨이 병합 상자(질량·서로 충돌이 필요). 재질·레이어는 컴포넌트 Friction/Restitution/
 //         CollisionLayer. 타일 모양은 Runtime.Revision(TileData 디코딩·Commit마다 증가)·타일셋(경로·라이브러리 세대)·CellSize·엔티티
 //         스케일 X/Z·재질·레이어가 바뀔 때만 다시 만들고 그때 바디도 다시 만든다 (위치/각만 바뀌면 순간이동). 빈 맵이면 바디 없음
 //   엔티티 스케일 X/Z가 모양에 곱해지고(Y 무시), 평면 밖 회전(Y축이 기운 회전)은 무시한다 (엔티티마다 경고 한 번)
@@ -129,6 +131,7 @@ private:
 		float                                ScaleX = 0.0f, ScaleZ = 0.0f;
 		std::string                          Layer;
 		float                                Friction = 0.0f, Restitution = 0.0f;
+		bool                                 bSolid  = false; // 동적 바디용 (외곽선 체인 대신 병합 상자)
 		bool                                 bBuilt  = false;
 		uint32                               Version = 0; // 다시 만들 때마다 새 번호 (시스템 안 고유)
 		std::vector<FPhysics2DShapeDesc>     Shapes;
@@ -136,7 +139,8 @@ private:
 
 	bool  BuildDesc(FScene& Scene, FEntity Entity, const FVector3& Scale, FPhysics2DBodyDesc& OutDesc);
 	// 타일맵 충돌 모양 (없거나 충돌을 껐으면 nullptr)
-	const FTilemapShapeCache* BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale);
+	// bSolid = 동적 바디 (체인은 질량·체인끼리 충돌이 없으므로 병합 상자로)
+	const FTilemapShapeCache* BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale, bool bSolid);
 	uint8 ResolveCollisionLayer(const std::string& Name) const;
 	void  WarnOnce(FEntity Entity, uint32 Kind, const std::string& Message) const;
 	const FPointCache& ParseCached(FEntity Entity, uint32 Kind, const std::string& Source);

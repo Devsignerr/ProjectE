@@ -22,6 +22,7 @@ enum class EPhysics2DShape : uint8
 	Capsule,
 	Polygon,
 	Edge,
+	Chain, // 닫힌 체인 (점 순서 그대로 — 진행 방향 오른쪽에서만 막는다, 4점 이상, 트리거 불가). 타일맵 외곽선 (TilemapCollision)
 };
 
 // 바디 로컬 모양 하나 (cm, 스케일이 이미 곱해진 값)
@@ -33,7 +34,7 @@ struct FPhysics2DShapeDesc
 	float                 Angle    = 0.0f;              // 상자 추가 회전 (라디안, 반시계 +)
 	float                 Radius   = 50.0f;             // 원/캡슐
 	float                 HalfSegment = 50.0f;          // 캡슐: 두 반원 중심 사이 거리의 절반 (로컬 +Y = 월드 Z 축)
-	std::vector<FVector2> Points;                       // 다각형(볼록·3~8점, 반시계) / 선분 체인 — 바디 로컬, Offset 미적용
+	std::vector<FVector2> Points;                       // 다각형(볼록·3~8점, 반시계) / 선분 체인 / 닫힌 체인 — 바디 로컬, Offset 미적용
 	bool                  bLoop       = false;          // 선분 체인 닫힘
 	float                 Friction    = 0.6f;
 	float                 Restitution = 0.0f;

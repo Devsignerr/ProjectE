@@ -16,8 +16,13 @@
     Content.epak: <Exe>\Content, <Exe>\Cooked, Engine\Content, Engine\Shaders\Cooked를 패키지 루트 기준 키로 묶은 것 (압축 없음, 항목별 해시 검사).
         Shaders.json(엔진 마커), Packaged.json, .eproject, Config는 파일로 남긴다. -NoPak이면 묶지 않는다 (디버깅)
     심볼: Build\Package\<프로젝트명>-Symbols\ 에 PDB + 같은 바이너리 (크래시 덤프 분석용, 배포하지 않는다)
+    콘텐츠는 의존성 기준: ProjectECook --package-manifest가 루트(게임/서버 기본 맵, 플레이어 프리팹, 문자열 표, 설정 문자열,
+        프로젝트 설정 패키징 → 추가 에셋 = Packaging.AdditionalAssets)에서 참조를 따라간 매니페스트(Build\Package\<프로젝트명>-Manifest.txt,
+        규칙은 Tools\Cook\Source\PackageManifest.h 머리 주석)를 쓰고, 그 모델/단독 이미지(실제 용도만)만 쿠킹한다.
+        스테이징은 매니페스트 F 파일 + 그 쿠킹본(.emodel / .<용도>.etex)만 복사한다. glTF 버퍼/이미지처럼 모델 원본만 쓰는 파일(I)은 넣지 않는다.
+        코드가 경로를 조립해 여는 에셋은 Packaging.AdditionalAssets에 적는다. -AllContent: 예전처럼 Content 전체를 쿠킹·복사.
     Content의 원본 모델/이미지는 쿠킹본이 있으면 제외한다 (쿠킹본은 원본이 없으면 그대로 신뢰됨).
-    -IncludeSources: 셰이더 소스 + DXC + 원본 에셋까지 포함 (패키지에서 셰이더 핫 리로드/디버깅용)
+    -IncludeSources: 셰이더 소스 + DXC + 원본 에셋(매니페스트 I 파일 포함)까지 포함 (패키지에서 셰이더 핫 리로드/디버깅용)
     기본값은 프로젝트 설정(에디터 → 편집 → 프로젝트 설정 → 패키징 = Config\Packaging.json)이고 명령줄 인자가 우선한다.
     실행 파일 이름/아이콘/버전은 프로젝트 설정 → 프로젝트 정보(Config\Project.json).
 #>
@@ -26,7 +31,8 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Config = "",
     [switch]$IncludeSources,
-    [switch]$NoPak
+    [switch]$NoPak,
+    [switch]$AllContent
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,8 +87,32 @@ try {
 
     # ---- 2. 쿠킹 (셰이더 → Engine\Shaders\Cooked, 에셋 → <프로젝트>\Cooked)
     Write-Host "== 쿠킹 ==" -ForegroundColor Cyan
-    & $CookExe --project $ProjectDir
+    $ManifestPath = Join-Path $RootDir "Build\Package\$ProjectName-Manifest.txt"
+    if ($AllContent) {
+        & $CookExe --project $ProjectDir
+    }
+    else {
+        & $CookExe --project $ProjectDir --package-manifest $ManifestPath
+    }
     if ($LASTEXITCODE -ne 0) { throw "쿠킹 실패" }
+
+    # 매니페스트 읽기 (F 패키지 파일, M 모델, T 단독 이미지 + 용도, I 모델 원본만 쓰는 파일, W 경고)
+    $Manifest = $null
+    if (-not $AllContent) {
+        $Manifest = @{ Files = New-Object System.Collections.Generic.List[string]; Models = @{}; Images = @{}; Internal = New-Object System.Collections.Generic.List[string] }
+        foreach ($Line in [System.IO.File]::ReadAllLines($ManifestPath, [System.Text.Encoding]::UTF8)) {
+            if (-not $Line -or $Line.StartsWith("#")) { continue }
+            $Parts = $Line.Split("`t")
+            switch ($Parts[0]) {
+                "F" { $Manifest.Files.Add($Parts[1]) }
+                "M" { $Manifest.Models[$Parts[1].ToLowerInvariant()] = $true }
+                "T" { $Manifest.Images[$Parts[1].ToLowerInvariant()] = @($Parts[2].Split(",")) }
+                "I" { $Manifest.Internal.Add($Parts[1]) }
+                "W" { Write-Host "매니페스트 경고: $($Parts[1])" -ForegroundColor Yellow }
+            }
+        }
+        Write-Host ("매니페스트: 파일 {0}, 모델 {1}, 단독 이미지 {2}, 모델 내부 {3} → {4}" -f $Manifest.Files.Count, $Manifest.Models.Count, $Manifest.Images.Count, $Manifest.Internal.Count, $ManifestPath) -ForegroundColor Green
+    }
 
     # ---- 3. 스테이징
     $PackageDir = Join-Path $RootDir "Build\Package\$ProjectName"
@@ -155,13 +185,48 @@ try {
     $ProjectDst = Join-Path $PackageDir $ExeName
     New-Item -ItemType Directory -Force $ProjectDst | Out-Null
     Copy-Item $ProjectFile.FullName $ProjectDst
-    if (Test-Path (Join-Path $ProjectDir "Content")) {
-        Copy-Item -Recurse -Force (Join-Path $ProjectDir "Content") (Join-Path $ProjectDst "Content")
-    }
-    # 쿠킹본이 있는 원본 모델/이미지 제외 (Cooked/<상대 경로>.emodel 또는 .<용도>.etex)
-    $SourceExtensions = @(".glb", ".gltf", ".png", ".jpg", ".jpeg", ".tga", ".bmp")
+    $SourceExtensions = @(".glb", ".gltf", ".fbx", ".png", ".jpg", ".jpeg", ".tga", ".bmp")
     $ExcludedCount = 0
-    if (-not $IncludeSources -and (Test-Path (Join-Path $ProjectDst "Content"))) {
+    $ContentSrcDir = Join-Path $ProjectDir "Content"
+    $CookedSrcDir  = Join-Path $ProjectDir "Cooked"
+    if ($Manifest) {
+        # 매니페스트 기준: F 파일(+ -IncludeSources면 I 파일)만, 쿠킹본이 있는 원본 모델/이미지는 빼고 그 쿠킹본을 넣는다
+        $ContentDst = Join-Path $ProjectDst "Content"
+        $CookedDst  = Join-Path $ProjectDst "Cooked"
+        $Staged = New-Object System.Collections.Generic.List[string]
+        $Staged.AddRange($Manifest.Files)
+        if ($IncludeSources) { $Staged.AddRange($Manifest.Internal) }
+        $CookedFiles = New-Object System.Collections.Generic.List[string] # Cooked 기준 상대 경로
+        foreach ($Relative in $Staged) {
+            $Key = $Relative.ToLowerInvariant()
+            $Cooked = @()
+            if ($Manifest.Models.ContainsKey($Key)) { $Cooked = @("$Relative.emodel") }
+            elseif ($Manifest.Images.ContainsKey($Key)) { $Cooked = @($Manifest.Images[$Key] | ForEach-Object { "$Relative.$_.etex" }) }
+            foreach ($CookedRelative in $Cooked) {
+                if (-not (Test-Path -LiteralPath (Join-Path $CookedSrcDir $CookedRelative))) { throw "쿠킹본이 없습니다 (쿠킹 실패?): Cooked\$CookedRelative" }
+                $CookedFiles.Add($CookedRelative)
+            }
+            $Extension = [System.IO.Path]::GetExtension($Relative).ToLowerInvariant()
+            if (-not $IncludeSources -and $Cooked.Count -gt 0 -and ($SourceExtensions -contains $Extension)) {
+                $ExcludedCount++
+                continue
+            }
+            $Destination = Join-Path $ContentDst $Relative
+            New-Item -ItemType Directory -Force (Split-Path $Destination -Parent) | Out-Null
+            Copy-Item -LiteralPath (Join-Path $ContentSrcDir $Relative) -Destination $Destination
+        }
+        # 쿠킹 에셋: 매니페스트 모델/단독 이미지의 쿠킹본만. Copy-Item은 수정 시각을 보존하므로 원본보다 새롭다는 판정이 유지된다
+        foreach ($CookedRelative in $CookedFiles) {
+            $Destination = Join-Path $CookedDst $CookedRelative
+            New-Item -ItemType Directory -Force (Split-Path $Destination -Parent) | Out-Null
+            Copy-Item -LiteralPath (Join-Path $CookedSrcDir $CookedRelative) -Destination $Destination
+        }
+    }
+    elseif (Test-Path $ContentSrcDir) {
+        Copy-Item -Recurse -Force $ContentSrcDir (Join-Path $ProjectDst "Content")
+    }
+    # -AllContent: 쿠킹본이 있는 원본 모델/이미지 제외 (Cooked/<상대 경로>.emodel 또는 .<용도>.etex)
+    if (-not $Manifest -and -not $IncludeSources -and (Test-Path (Join-Path $ProjectDst "Content"))) {
         $ContentDst = (Resolve-Path (Join-Path $ProjectDst "Content")).Path
         foreach ($File in (Get-ChildItem -Recurse -File $ContentDst | Where-Object { $SourceExtensions -contains $_.Extension.ToLower() })) {
             $Relative  = $File.FullName.Substring($ContentDst.Length + 1)
@@ -184,8 +249,8 @@ try {
         Copy-Item -Recurse -Force $ExtraSrc (Join-Path $ProjectDst $Extra)
         Write-Host "추가 폴더: $Extra" -ForegroundColor Green
     }
-    # 쿠킹 에셋 (.emodel/.<용도>.etex, 이전 형식 .etex 제외). Copy-Item은 수정 시각을 보존하므로 원본보다 새롭다는 판정이 유지된다
-    if (Test-Path (Join-Path $ProjectDir "Cooked")) {
+    # -AllContent: 쿠킹 에셋 전체 (.emodel/.<용도>.etex, 이전 형식 .etex 제외). Copy-Item은 수정 시각을 보존하므로 원본보다 새롭다는 판정이 유지된다
+    if (-not $Manifest -and (Test-Path (Join-Path $ProjectDir "Cooked"))) {
         Copy-Item -Recurse -Force (Join-Path $ProjectDir "Cooked") (Join-Path $ProjectDst "Cooked")
         Get-ChildItem -Recurse -File (Join-Path $ProjectDst "Cooked") |
             Where-Object { $_.Name -notmatch '\.(emodel|(color|linear|normal|mask)\.etex)$' } | Remove-Item
@@ -209,8 +274,10 @@ try {
     if ($CookedCount -eq 0) { throw "검사 실패: 쿠킹된 셰이더가 없습니다" }
     Write-Host "검사: 쿠킹된 셰이더 $CookedCount 개" -ForegroundColor Green
     Write-Host "검사: 쿠킹본으로 대체되어 제외한 원본 에셋 $ExcludedCount 개" -ForegroundColor Green
-    $CookedAssetCount = (Get-ChildItem (Join-Path $ProjectDst "Cooked") -Recurse -Include "*.emodel", "*.etex" -ErrorAction SilentlyContinue | Measure-Object).Count
-    Write-Host "검사: 쿠킹된 에셋 $CookedAssetCount 개" -ForegroundColor Green
+    $ContentStats = Get-ChildItem (Join-Path $ProjectDst "Content") -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
+    $CookedStats  = Get-ChildItem (Join-Path $ProjectDst "Cooked") -Recurse -File -Include "*.emodel", "*.etex" -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
+    Write-Host ("검사: Content 파일 {0}개 ({1:N1} MB){2}" -f $ContentStats.Count, ($ContentStats.Sum / 1MB), $(if ($Manifest) { " — 매니페스트 기준" } else { " — -AllContent" })) -ForegroundColor Green
+    Write-Host ("검사: 쿠킹된 에셋 {0}개 ({1:N1} MB)" -f $CookedStats.Count, ($CookedStats.Sum / 1MB)) -ForegroundColor Green
 
     # 종속 DLL: 패키지 바이너리가 가져오는 DLL이 패키지 안 또는 Windows 기본 DLL이어야 한다.
     # 개발 PC에는 VC++ 런타임이 System32에 있으므로 vcruntime/msvcp 계열은 패키지 안에 있어야만 통과
@@ -246,7 +313,7 @@ try {
         & $CookExe --make-pak $PakFile --pak-root $PackageDir --pak-dirs ($PakDirs -join ";")
         if ($LASTEXITCODE -ne 0) { throw "pak 생성 실패" }
         foreach ($Dir in $PakDirs) { Remove-Item -Recurse -Force (Join-Path $PackageDir $Dir) }
-        Write-Host "pak: $PakFile ($($PakDirs -join ', '))" -ForegroundColor Green
+        Write-Host ("pak: {0} ({1:N1} MB, {2})" -f $PakFile, ((Get-Item $PakFile).Length / 1MB), ($PakDirs -join ', ')) -ForegroundColor Green
     }
 
     $TotalBytes = (Get-ChildItem -Recurse -File $PackageDir | Measure-Object -Property Length -Sum).Sum

@@ -31,7 +31,7 @@ function Read-ProjectSettings([string]$ProjectDir) {
     if ([uint32]$Info.SteamDepotId -eq 0 -and [uint32]$Info.SteamAppId -ne 0) { $Info.SteamDepotId = [uint32]$Info.SteamAppId + 1 }
 
     # 패키징: 기본값 ← Config\Packaging.json
-    $Packaging = [ordered]@{ Configuration = "Release"; UsePak = $true; IncludeSourceAssets = $false; AdditionalDirectories = "" }
+    $Packaging = [ordered]@{ Configuration = "Release"; UsePak = $true; IncludeSourceAssets = $false; AdditionalDirectories = ""; AdditionalAssets = "" }
     $PackagingJson = Read-JsonFile (Join-Path $ProjectDir "Config\Packaging.json")
     if ($PackagingJson) {
         foreach ($Key in @($Packaging.Keys)) { if ($null -ne $PackagingJson.$Key) { $Packaging[$Key] = $PackagingJson.$Key } }

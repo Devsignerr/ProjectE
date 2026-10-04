@@ -41,7 +41,9 @@ FProjectSettings::FProjectSettings()
 		.Property(&FPackagingSettings::Configuration, "Configuration", "빌드 구성").Enum({ { "Release", "Release (배포)" }, { "Debug", "Debug (검증용, 배포 불가)" } })
 		.Property(&FPackagingSettings::bUsePak, "UsePak", "pak으로 묶기").Tooltip("콘텐츠를 Content.epak 하나로 묶는다")
 		.Property(&FPackagingSettings::bIncludeSourceAssets, "IncludeSourceAssets", "원본 포함").Tooltip("원본 모델/이미지, 셰이더 소스, DXC까지 넣는다 (디버깅용, 용량 증가)")
-		.Property(&FPackagingSettings::AdditionalDirectories, "AdditionalDirectories", "추가 폴더").Tooltip("프로젝트 폴더 기준, \";\"로 구분. pak에 넣지 않고 파일로 복사한다");
+		.Property(&FPackagingSettings::AdditionalDirectories, "AdditionalDirectories", "추가 폴더").Tooltip("프로젝트 폴더 기준, \";\"로 구분. pak에 넣지 않고 파일로 복사한다")
+		.Property(&FPackagingSettings::AdditionalAssets, "AdditionalAssets", "추가 에셋")
+		.Tooltip("Content 기준 파일/폴더, \";\"로 구분 (폴더는 하위 전체). 패키지는 시작 맵·플레이어 프리팹·설정에서 참조를 따라간 에셋만 넣으므로 코드가 문자열을 조립해 여는 에셋은 여기에 적는다");
 
 	Registry.Register(Physics, { "Physics", "물리", GEngineCategory, "다음 플레이(물리 시작)부터 적용" })
 		.Property(&FPhysicsSettings::Gravity, "Gravity", "중력 (cm/s²)")

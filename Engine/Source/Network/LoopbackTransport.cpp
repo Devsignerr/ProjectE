@@ -1,5 +1,6 @@
 #include "Network/LoopbackTransport.h"
 
+#include <algorithm>
 #include <charconv>
 
 FLoopbackTransport::FLoopbackTransport(std::shared_ptr<FLoopbackHub> InHub)
@@ -51,7 +52,17 @@ FNetConnectionId FLoopbackTransport::Connect(const std::string& Address)
 	return LocalId;
 }
 
-bool FLoopbackTransport::Send(FNetConnectionId Connection, const void* Data, uint32 Size, ENetReliability /*Reliability*/)
+double FLoopbackTransport::NextRandom()
+{
+	// SplitMix64 (표준 분포 함수 없이 결정적)
+	uint64 Z = (RandomState += 0x9E3779B97F4A7C15ull);
+	Z        = (Z ^ (Z >> 30)) * 0xBF58476D1CE4E5B9ull;
+	Z        = (Z ^ (Z >> 27)) * 0x94D049BB133111EBull;
+	Z        = Z ^ (Z >> 31);
+	return static_cast<double>(Z >> 11) * (1.0 / 9007199254740992.0);
+}
+
+bool FLoopbackTransport::Send(FNetConnectionId Connection, const void* Data, uint32 Size, ENetReliability Reliability)
 {
 	const auto Found = Peers.find(Connection);
 	if (Found == Peers.end())
@@ -59,7 +70,35 @@ bool FLoopbackTransport::Send(FNetConnectionId Connection, const void* Data, uin
 		return false;
 	}
 	const uint8* Bytes = static_cast<const uint8*>(Data);
-	Found->second.Transport->Deliver({ ENetEventType::Message, Found->second.RemoteId, std::vector<uint8>(Bytes, Bytes + Size), {} });
+	FNetEvent    Event{ ENetEventType::Message, Found->second.RemoteId, std::vector<uint8>(Bytes, Bytes + Size), {} };
+	if (SimLatencyMs <= 0 && SimLossPercent <= 0.0f)
+	{
+		Found->second.Transport->Deliver(std::move(Event));
+		return true;
+	}
+	const bool   bReliable = Reliability == ENetReliability::Reliable;
+	const double Latency   = static_cast<double>(std::max(SimLatencyMs, 0));
+	double       Delay     = Latency + NextRandom() * Latency * JitterScale;
+	if (bReliable)
+	{
+		// 신뢰: 잃을 때마다 재전송 (왕복 + 한 프레임 뒤)
+		while (NextRandom() * 100.0 < SimLossPercent)
+		{
+			Delay += 2.0 * Latency + PollIntervalMs;
+		}
+	}
+	else if (NextRandom() * 100.0 < SimLossPercent)
+	{
+		return true; // 비신뢰 손실 (보낸 쪽은 성공으로 안다)
+	}
+	FLoopbackTransport* Receiver = Found->second.Transport;
+	FInFlight           Message;
+	Message.DeliverAtMs = Receiver->NowMs + Delay;
+	Message.Order       = Receiver->NextOrder++;
+	Message.bReliable   = bReliable;
+	Message.ReliableSeq = bReliable ? Found->second.NextReliableSend++ : 0;
+	Message.Event       = std::move(Event);
+	Receiver->Receive(std::move(Message));
 	return true;
 }
 
@@ -73,7 +112,20 @@ void FLoopbackTransport::Disconnect(FNetConnectionId Connection, const std::stri
 	const FPeer Peer = Found->second;
 	Peers.erase(Found);
 	Peer.Transport->Peers.erase(Peer.RemoteId);
-	Peer.Transport->Deliver({ ENetEventType::Disconnected, Peer.RemoteId, {}, Reason });
+	FNetEvent Event{ ENetEventType::Disconnected, Peer.RemoteId, {}, Reason };
+	if (SimLatencyMs <= 0 && SimLossPercent <= 0.0f)
+	{
+		Peer.Transport->Deliver(std::move(Event));
+		return;
+	}
+	// 시뮬레이션 중: 끊김도 앞서 보낸 신뢰 메시지(거부 사유 등) 뒤에 도착한다
+	FInFlight Message;
+	Message.DeliverAtMs = Peer.Transport->NowMs + static_cast<double>(std::max(SimLatencyMs, 0));
+	Message.Order       = Peer.Transport->NextOrder++;
+	Message.bReliable   = true;
+	Message.ReliableSeq = Peer.NextReliableSend;
+	Message.Event       = std::move(Event);
+	Peer.Transport->Receive(std::move(Message));
 }
 
 void FLoopbackTransport::Poll(std::vector<FNetEvent>& OutEvents)
@@ -83,6 +135,53 @@ void FLoopbackTransport::Poll(std::vector<FNetEvent>& OutEvents)
 		OutEvents.push_back(std::move(Event));
 	}
 	Pending.clear();
+	NowMs += PollIntervalMs;
+	if (InFlight.empty())
+	{
+		return;
+	}
+	std::stable_sort(InFlight.begin(), InFlight.end(), [](const FInFlight& A, const FInFlight& B) {
+		return A.DeliverAtMs != B.DeliverAtMs ? A.DeliverAtMs < B.DeliverAtMs : A.Order < B.Order;
+	});
+	// 도착한 것을 시각 순으로. 신뢰는 연결별 순번 차례가 올 때까지 붙잡는다 (앞 것이 나오면 다시 훑는다)
+	std::vector<bool> Delivered(InFlight.size(), false);
+	for (bool bProgress = true; bProgress;)
+	{
+		bProgress = false;
+		for (size_t Index = 0; Index < InFlight.size(); ++Index)
+		{
+			FInFlight& Message = InFlight[Index];
+			if (Delivered[Index] || Message.DeliverAtMs > NowMs)
+			{
+				continue;
+			}
+			if (Message.bReliable)
+			{
+				uint64& Expected = NextReliableReceive[Message.Event.Connection];
+				if (Message.ReliableSeq != Expected)
+				{
+					continue;
+				}
+				++Expected;
+				bProgress = true;
+			}
+			OutEvents.push_back(std::move(Message.Event));
+			Delivered[Index] = true;
+		}
+	}
+	size_t Kept = 0;
+	for (size_t Index = 0; Index < InFlight.size(); ++Index)
+	{
+		if (!Delivered[Index])
+		{
+			if (Kept != Index)
+			{
+				InFlight[Kept] = std::move(InFlight[Index]);
+			}
+			++Kept;
+		}
+	}
+	InFlight.resize(Kept);
 }
 
 void FLoopbackTransport::Close()
@@ -97,4 +196,12 @@ void FLoopbackTransport::Close()
 		ListenPort = 0;
 	}
 	Pending.clear();
+	InFlight.clear();
+	NextReliableReceive.clear();
+}
+
+void FLoopbackTransport::SetSimulation(int32 LatencyMs, float LossPercent)
+{
+	SimLatencyMs   = std::max(LatencyMs, 0);
+	SimLossPercent = std::clamp(LossPercent, 0.0f, 100.0f);
 }

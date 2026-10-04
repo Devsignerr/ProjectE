@@ -537,6 +537,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	ClearSubScenes();
 	GameplayValidatedScene = nullptr;
 	PredictedBodies.clear();
+	PredictedBodies2D.clear();
 	PredictionClock        = 0.0f;
 	PredictionTimeOffset   = 0.0f;
 	bPredictionTimingValid = false;
@@ -568,10 +569,13 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 		Systems.Physics->SetContactReportFilter([this](const FScene& Target, FEntity Entity) { return ShouldReportContacts(Target, Entity); });
 		Systems.Physics->Begin();
 	}
-	// 2D 물리: 3D와 같은 역할 규칙 (클라이언트는 복제 엔티티 동적 바디를 키네마틱으로 — 2D는 물리 예측 없음), 보간은 3D 설정을 따른다
+	// 2D 물리: 3D와 같은 역할 규칙 (클라이언트는 복제 엔티티 동적 바디를 키네마틱으로, 물리 예측 중인 바디만 동적 —
+	// World/GameWorldPhysicsPrediction2D.cpp), 보간은 3D 설정을 따른다
 	if (bClient)
 	{
-		Physics2D->SetKinematicOverride([](const FScene& Target, FEntity Entity) { return Target.GetRegistry().Has<FNetIdComponent>(Entity); });
+		Physics2D->SetKinematicOverride([this](const FScene& Target, FEntity Entity) {
+			return Target.GetRegistry().Has<FNetIdComponent>(Entity) && !IsPhysics2DSimulatedLocally(Entity);
+		});
 	}
 	else
 	{
@@ -614,6 +618,7 @@ void FGameWorld::EndPlay()
 	}
 	LogGameTickPerf();
 	PredictedBodies.clear();
+	PredictedBodies2D.clear();
 	Replication = nullptr;
 	AI->End(); // Lua 노드 OnAbort가 스크립트를 부르므로 Lua 상태보다 먼저
 	Abilities->End(); // 발동 중 능력 취소 (능력 스크립트 OnEnd) — Lua 상태보다 먼저

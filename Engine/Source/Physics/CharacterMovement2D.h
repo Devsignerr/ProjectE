@@ -17,9 +17,23 @@
 //   반지름의 약 절반 높이 턱은 미끄러지듯 넘는다.
 //   2D 콜라이더·RigidBody2D는 쓰지 않는다 (붙이면 별도 바디가 생기므로 붙이지 않는다). 대신 2D 월드에 같은 캡슐의 키네마틱 "대리" 바디를
 //   두어 다른 바디가 부딪히고(동적 바디는 밀려남), 레이캐스트·트리거·충돌 알림(OnTriggerEnter 등)이 이 엔티티로 온다.
-//   이동기는 자기 대리 바디와 다른 캐릭터의 대리 바디를 무시한다 (캐릭터끼리 통과).
+//   캐릭터끼리 (CharacterCollision): 기본 Ignore = 서로 통과 (다른 캐릭터의 대리 바디를 무시). 두 캐릭터가 모두 Ignore가 아니어야 상호작용하며,
+//   움직이는 쪽 설정이 방식을 정한다 — Block: 상대 캡슐(대리 바디)이 벽·바닥 (위에 서고 상대 대리 속도를 발판처럼 물려받는다),
+//   Push: Block + 옆으로 막히면 막힌 만큼 상대를 수평으로 민다 (상대 이동 질의로 벽 안으로는 밀지 않고, 남은 만큼 다시 움직인다 — 한 번).
+//   밟기: Block/Push 캐릭터가 다른 캐릭터 위에 착지하면 이벤트(Stomped — Lua OnStomped(other), 밟힌 쪽 OnStompedBy(other)).
+//   상호작용하는 캐릭터는 무브 끝에 대리 바디를 그 자리로 옮겨(이후 같은 틱 다른 캐릭터 무브가 지금 위치를 본다) 처리 순서 = 엔티티 순서.
+//   멀티플레이: 예측 클라이언트에서 다른 캐릭터는 스냅샷 보간(과거) 위치에 있으므로 막힘/밟기는 그 위치 기준이고, 서버 결과와 다르면 재조정이
+//   맞춘다(보정 허용). 서버에서 밀린 캐릭터의 소유 클라이언트도 ack 재조정으로 밀린 위치를 받는다 (밀기는 무브 밖 서버 일)
 struct FCharacterMovement2DComponent
 {
+	// 다른 2D 캐릭터와의 충돌 (씬 JSON 번호 — 끝에만 추가)
+	enum class ECharacterCollision : int32
+	{
+		Ignore = 0, // 통과 (기존 동작)
+		Block  = 1, // 상대가 막는다 (벽·바닥 — 위에 설 수 있다)
+		Push   = 2, // 막히면 상대를 민다
+	};
+
 	// 이동 방식 (씬 JSON에는 번호로 저장된다 — 끝에만 추가, 인스펙터는 이름 콤보)
 	enum class EMode : int32
 	{
@@ -56,6 +70,7 @@ struct FCharacterMovement2DComponent
 
 	std::string Layer;              // 충돌 레이어 이름 (이동 질의·대리 바디, 비면 Default — Core/Settings/CollisionSettings.h)
 	bool        bClientPrediction = true; // 멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직인다 (프로젝트 설정 네트워크 → 클라이언트 예측도)
+	ECharacterCollision CharacterCollision = ECharacterCollision::Ignore; // 다른 2D 캐릭터 (위 주석)
 };
 using ECharacterMovement2DMode = FCharacterMovement2DComponent::EMode;
 
@@ -94,13 +109,15 @@ struct FCharacterState2D
 	bool IsDashing() const { return DashTimer > 0.0f; }
 };
 
-// 무브 하나에서 생긴 일 (Lua OnJumped(n)/OnLanded()/OnDashStarted() — 재조정의 다시 적용에서는 내지 않는다)
+// 무브 하나에서 생긴 일 (Lua OnJumped(n)/OnLanded()/OnDashStarted()/OnStomped(other) — 재조정의 다시 적용에서는 내지 않는다)
 struct FCharacterMove2DEvents
 {
 	bool  bJumped      = false;
 	int32 JumpIndex    = 0; // 1 = 첫 점프, 2 = 2단 …
 	bool  bLanded      = false;
 	bool  bDashStarted = false;
+	bool   bStomped      = false; // 다른 캐릭터 위에 착지 (Lua OnStomped(other) / 상대 OnStompedBy(this))
+	uint64 StompedEntity = 0;     // 밟은 캐릭터 엔티티 (FEntity::ToId)
 };
 
 namespace CharacterMovement2DMath

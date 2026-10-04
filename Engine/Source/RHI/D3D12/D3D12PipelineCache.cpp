@@ -77,7 +77,12 @@ namespace
 
 FD3D12PipelineCache::FDriverScope::FDriverScope(FD3D12PipelineCache& InCache, bool bWarm)
 	: Cache(InCache)
+	, bActive(InCache.Library != nullptr) // 드라이버 캐시가 없으면 Load가 없으므로 Create끼리는 자유 (워밍 두 스레드)
 {
+	if (!bActive)
+	{
+		return;
+	}
 	std::unique_lock Lock(Cache.GateMutex);
 	if (bWarm)
 	{
@@ -94,6 +99,10 @@ FD3D12PipelineCache::FDriverScope::FDriverScope(FD3D12PipelineCache& InCache, bo
 
 FD3D12PipelineCache::FDriverScope::~FDriverScope()
 {
+	if (!bActive)
+	{
+		return;
+	}
 	{
 		std::lock_guard Lock(Cache.GateMutex);
 		Cache.bDriverBusy = false;
@@ -136,7 +145,10 @@ bool FD3D12PipelineCache::Initialize(ID3D12Device* InDevice, IDXGIAdapter* Adapt
 	std::filesystem::create_directories(Options.UserDirectory, ErrorCode);
 
 	const auto Start = FClock::now();
-	LoadLibrary();
+	if (Options.bUseLibrary)
+	{
+		LoadLibrary();
+	}
 
 	// 레시피: 사용자 파일(실행 번호) + 프로젝트 파일(패키지 포함, FFileSystem)
 	std::vector<uint8> Bytes;
@@ -162,7 +174,7 @@ bool FD3D12PipelineCache::Initialize(ID3D12Device* InDevice, IDXGIAdapter* Adapt
 		}
 	}
 	E_LOG(LogD3D12, Display, "[PSO 캐시] 시작: 드라이버 캐시 {}, 레시피 사용자 {} + 프로젝트 {}, 실행 #{} ({:.1f}ms)",
-	      bLibraryFromDisk ? "디스크에서 읽음" : (Library ? "새로 만듦" : "지원 안 됨"),
+	      !Options.bUseLibrary ? "끔" : bLibraryFromDisk ? "디스크에서 읽음" : (Library ? "새로 만듦" : "지원 안 됨"),
 	      UserRecipes.Recipes.size(), ProjectRecipes, CurrentRun, ElapsedMs(Start));
 
 	if (Options.bWarm && !WarmSet.Recipes.empty())
@@ -498,7 +510,7 @@ HRESULT FD3D12PipelineCache::Request(ID3D12Device* InDevice, PipelineCache::FRec
 
 void FD3D12PipelineCache::SaveLibrary()
 {
-	if (!Device1 || !(bLibraryDirty || bLibraryInvalidated))
+	if (!Device1 || !Library || !(bLibraryDirty || bLibraryInvalidated)) // 드라이버 캐시를 끄면(기본) 쓰지 않는다
 	{
 		return; // 바뀐 것 없음 (디스크 캐시 그대로)
 	}

@@ -1,6 +1,6 @@
 {
-  "Name": "Corrugated_3280x750",
-  "Parent": "TiledPBR.emat",
+  "Name": "Roof",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
@@ -18,22 +18,17 @@
       "Value": "../../../Asset/PolyHaven/corrugated_iron_02/corrugated_iron_02_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        13.67,
-        3.12,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 300.0
     },
     {
       "Name": "Tint",
       "Type": "Vector",
       "Value": [
-        1.9,
-        1.95,
-        2.0,
+        1.3,
+        1.3,
+        1.3,
         1.0
       ]
     },

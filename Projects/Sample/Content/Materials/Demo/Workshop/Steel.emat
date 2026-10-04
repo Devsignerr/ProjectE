@@ -1,6 +1,6 @@
 {
-  "Name": "Steel_180x10",
-  "Parent": "TiledPBR.emat",
+  "Name": "Steel",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
@@ -18,14 +18,9 @@
       "Value": "../../../Asset/PolyHaven/rusty_metal_02/rusty_metal_02_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        1.29,
-        0.07,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 140.0
     },
     {
       "Name": "Tint",

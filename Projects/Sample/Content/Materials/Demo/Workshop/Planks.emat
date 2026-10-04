@@ -1,6 +1,6 @@
 {
-  "Name": "Planks_170x740",
-  "Parent": "TiledPBR.emat",
+  "Name": "Planks",
+  "Parent": "BoxPBR.emat",
   "Parameters": [
     {
       "Name": "BaseTexture",
@@ -18,14 +18,9 @@
       "Value": "../../../Asset/PolyHaven/weathered_planks/weathered_planks_nor_gl_2k.jpg"
     },
     {
-      "Name": "Tiling",
-      "Type": "Vector",
-      "Value": [
-        0.85,
-        3.7,
-        0.0,
-        0.0
-      ]
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 200.0
     },
     {
       "Name": "Tint",

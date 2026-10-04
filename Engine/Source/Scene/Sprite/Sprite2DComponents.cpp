@@ -2,6 +2,7 @@
 
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Settings/ProjectSettings.h"
+#include "Scene/Scene.h"
 #include "Scene/Sprite/Sprite2DLibrary.h"
 
 // ---- 게으른 해석 -----------------------------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ const FTilemapData& Sprite2DRuntime::GetTilemapData(FTilemapComponent& Tilemap)
 		}
 		Runtime.DecodedFrom = Tilemap.TileData;
 		Runtime.bDecoded    = true;
+		Runtime.bDirty      = false; // 밖에서 바뀐 TileData가 이긴다 (대기 중인 편집은 버림)
 		++Runtime.Revision;
 	}
 	return Runtime.Data;
@@ -71,7 +73,54 @@ void Sprite2DRuntime::CommitTilemapData(FTilemapComponent& Tilemap)
 	Tilemap.TileData         = Runtime.Data.Encode();
 	Runtime.DecodedFrom      = Tilemap.TileData;
 	Runtime.bDecoded         = true;
+	Runtime.bDirty           = false;
+	++Runtime.CommitCount;
 	++Runtime.Revision;
+}
+
+void Sprite2DRuntime::BeginTilemapEdit(FTilemapComponent& Tilemap)
+{
+	GetTilemapData(Tilemap);
+	++Tilemap.Runtime.EditDepth;
+}
+
+bool Sprite2DRuntime::EndTilemapEdit(FTilemapComponent& Tilemap)
+{
+	FTilemapRuntime& Runtime = Tilemap.Runtime;
+	if (Runtime.EditDepth <= 0)
+	{
+		return false;
+	}
+	if (--Runtime.EditDepth == 0 && Runtime.bDirty)
+	{
+		CommitTilemapData(Tilemap);
+	}
+	return true;
+}
+
+void Sprite2DRuntime::MarkTilemapEdited(FTilemapComponent& Tilemap)
+{
+	Tilemap.Runtime.bDirty = true;
+	++Tilemap.Runtime.Revision;
+}
+
+uint32 Sprite2DRuntime::FlushTilemapEdits(FScene& Scene)
+{
+	uint32 Committed = 0;
+	Scene.GetRegistry().View<FTilemapComponent>().Each([&](FEntity Entity, FTilemapComponent& Tilemap) {
+		FTilemapRuntime& Runtime = Tilemap.Runtime;
+		if (Runtime.EditDepth > 0)
+		{
+			E_LOG(LogSprite2D, Warning, "[2D] 타일 편집 묶음이 프레임 끝까지 열려 있어 닫습니다 (엔티티 {} — EndTileEdit 누락)", Entity.Index);
+			Runtime.EditDepth = 0;
+		}
+		if (Runtime.bDirty)
+		{
+			CommitTilemapData(Tilemap);
+			++Committed;
+		}
+	});
+	return Committed;
 }
 
 // ---- 리플렉션 --------------------------------------------------------------------------------------------------------

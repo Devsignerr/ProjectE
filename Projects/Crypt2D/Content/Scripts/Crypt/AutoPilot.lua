@@ -302,7 +302,10 @@ function AutoPilot:TestStep(Player, In, P)
 		In.MoveX = (math.floor(T / 0.8) % 2 == 0) and 0.6 or -0.6
 		if T > 2.5 then
 			self:Expect(GM.Gold > 0, string.format("코인 줍기 (%d)", GM.Gold))
-			self:SetPhase("Report")
+			-- 일시정지 메뉴 (멈춘 뒤에는 플레이어 입력이 불리지 않으므로 같은 프레임에 확인·보고 — 마지막 스크린샷은 메뉴 화면)
+			GM:SetPaused(true)
+			self:Expect(GM.Hud ~= nil and GM.Hud:W("PauseScreen").Visible == true, "일시정지 메뉴 표시")
+			self:Report()
 		end
 	elseif Phase == "Report" then
 		self:Report()

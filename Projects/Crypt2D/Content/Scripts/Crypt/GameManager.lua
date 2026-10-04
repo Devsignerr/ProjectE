@@ -372,7 +372,7 @@ function GM:OnUpdate(Dt)
 	end
 
 	-- 일시정지 (게임 오버 중에는 사망/승리 화면이 대신)
-	if not self.bGameOver and Input.WasActionPressed("Pause") then
+	if not self.bGameOver and self.Hud and self:PlayerScript() and Input.WasActionPressed("Pause") then
 		self:SetPaused(not self.bPaused)
 	end
 	if self.bPaused then return end
@@ -424,7 +424,10 @@ function GM:OnUpdate(Dt)
 end
 
 function GM:OnLateUpdate(Dt)
-	if self.bPaused then return end
+	if self.bPaused then
+		if self.Hud then self.Hud:LateUpdate(0) end
+		return
+	end
 	-- 카메라: 플레이어 + 조준 쪽 기울임 → 방 경계 고정 → 흔들림
 	local PX, PZ = self:PlayerPos()
 	local Player = self:PlayerScript()

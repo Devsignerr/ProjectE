@@ -165,6 +165,7 @@ bool FEditorApplication::OnInit()
 	Context.Notify             = [this](const std::string& Message, bool bError) { ShowNotification(Message, bError); };
 	Context.ReimportModel      = [this](const std::filesystem::path& Path) { return ReimportModelAsset(Path); };
 	Context.ChangePrefab       = [this](const std::function<bool()>& Change) { return ChangePrefabAsset(Change); };
+	Context.GetScenePath       = [this]() { return CurrentScenePath; };
 	Context.BakeNavMeshRequest = [this]() { BakeNavMesh(); };
 	FPrefabLibrary::Get().SetContentDirectory(Context.ContentDirectory); // 씬 로드(인스턴스 동기화) 전에
 	Context.Scripts          = &Scripts;
@@ -592,6 +593,7 @@ void FEditorApplication::OnRender()
 	// 뷰포트 크기 변경은 UI 기술 전에 반영
 	ViewportPanel.PrepareFrame(Context);
 
+	UpdateVerifyGizmo2D(); // 자동 검증 --verify-gizmo-2d: 이번 프레임 ImGui 마우스 입력 (NewFrame 전에 넣는다)
 	ImGuiLayer.BeginFrame();
 	ApplyDefaultLayoutIfNeeded();
 	// 윈도우 탐색기에서 끌어 놓은 파일은 콘텐츠 브라우저의 현재 폴더로 가져온다
@@ -650,6 +652,15 @@ void FEditorApplication::OnRender()
 	DrawGameModuleBuildStatus();
 	DrawNotification();
 	CommitPendingEdit();
+	// 자동 검증: 2D 끌어다 놓기·만들기·박스 선택 / 슬라이스 이름 변경 전파 (뷰포트 렌더 타깃이 생긴 뒤, 편집 커밋 뒤)
+	if (GetFrameIndex() == 40 && FCommandLine::FromProcess().HasFlag(L"--verify-2d-create"))
+	{
+		VerifyCreate2D();
+	}
+	if (GetFrameIndex() == 25 && FCommandLine::FromProcess().HasFlag(L"--verify-slice-rename"))
+	{
+		VerifySliceRename();
+	}
 
 	// 기즈모/인스펙터 편집이 월드 행렬에 즉시 반영되도록 갱신
 	Context.Scene->UpdateTransforms();
@@ -682,7 +693,8 @@ void FEditorApplication::OnShutdown()
 	ScriptWatcher.Stop();
 	Audio.Shutdown();
 	// 검증용으로 민/맞춘 카메라는 저장하지 않는다 (다음 실행 시점이 밀림)
-	if (VerifyCameraPanPerFrame == 0.0f && !FCommandLine::FromProcess().HasFlag(L"--verify-pick") && !FCommandLine::FromProcess().HasFlag(L"--viewport-2d"))
+	if (VerifyCameraPanPerFrame == 0.0f && !FCommandLine::FromProcess().HasFlag(L"--verify-pick") && !FCommandLine::FromProcess().HasFlag(L"--viewport-2d") &&
+	    !FCommandLine::FromProcess().HasFlag(L"--verify-2d-create") && !FCommandLine::FromProcess().HasFlag(L"--verify-gizmo-2d"))
 	{
 		SaveEditorCamera();
 	}
@@ -2246,6 +2258,7 @@ void FEditorApplication::RunScriptDebugLoop()
 
 void FEditorApplication::DrawScriptDebugPausedFrame()
 {
+	UpdateVerifyGizmo2D(); // 자동 검증 --verify-gizmo-2d: 이번 프레임 ImGui 마우스 입력 (NewFrame 전에 넣는다)
 	ImGuiLayer.BeginFrame();
 	ApplyDefaultLayoutIfNeeded();
 	ScriptDebuggerPanel.HandlePausedShortcuts();

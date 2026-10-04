@@ -67,6 +67,8 @@ struct FEditorContext
 	std::function<bool(const std::function<bool()>&)> ChangePrefab;
 	// 시작 씬 내비메시 굽기 (도구 메뉴와 같은 동작 — 절차적 건물 생성 후 선택적으로)
 	std::function<void()> BakeNavMeshRequest;
+	// 현재 열린 씬 파일 (저장된 적 없으면 빈 경로) — 씬 파일을 훑어 고치는 도구가 열린 씬을 메모리에서 다루도록
+	std::function<std::filesystem::path()> GetScenePath;
 	// 화면 알림 (bError면 빨간색)
 	std::function<void(const std::string&, bool)> Notify;
 

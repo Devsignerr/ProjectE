@@ -408,3 +408,134 @@ E_TEST(Sprite2DAssetCreation_CreatesAtlasTilesetAndFlipbook)
 	E_EXPECT_FALSE(Error.empty());
 	fs::remove_all(Folder, ErrorCode);
 }
+
+// ---- 격자 대화 기본값 / 슬라이스 이름 변경 전파 (Phase 56 2D 에디터 후속)
+
+E_TEST(Sprite2DEditing_EstimateGridCellSize)
+{
+	int32 W = 0;
+	int32 H = 0;
+	// 슬라이스가 있으면 가장 흔한 크기 (같은 수면 먼저 나온 것)
+	FSpriteAsset Atlas = MakeAtlas(); // 8x8 셋
+	Atlas.Slices[0].W  = 24;
+	Atlas.Slices[0].H  = 12;
+	EstimateGridCellSize(Atlas, W, H);
+	E_EXPECT_TRUE(W == 8 && H == 8);
+	Atlas.Slices[1].W = 24;
+	Atlas.Slices[1].H = 12; // 24x12 둘, 8x8 하나
+	EstimateGridCellSize(Atlas, W, H);
+	E_EXPECT_TRUE(W == 24 && H == 12);
+
+	// 슬라이스 없음: 텍스처 가로·세로를 모두 나누는 16 → 32 → 8
+	FSpriteAsset Empty;
+	Empty.TextureWidth  = 64;
+	Empty.TextureHeight = 96;
+	EstimateGridCellSize(Empty, W, H);
+	E_EXPECT_TRUE(W == 16 && H == 16);
+	Empty.TextureWidth  = 40;
+	Empty.TextureHeight = 24;
+	EstimateGridCellSize(Empty, W, H);
+	E_EXPECT_TRUE(W == 8 && H == 8);
+	// 공통 약수가 없으면 축마다 (없으면 그 축 전체)
+	Empty.TextureWidth  = 48;
+	Empty.TextureHeight = 20;
+	EstimateGridCellSize(Empty, W, H);
+	E_EXPECT_TRUE(W == 16 && H == 20);
+	Empty.TextureWidth = Empty.TextureHeight = 0;
+	EstimateGridCellSize(Empty, W, H);
+	E_EXPECT_TRUE(W == 16 && H == 16);
+}
+
+E_TEST(Sprite2DEditing_DetectSliceRenames)
+{
+	FSpriteAsset Saved = MakeAtlas();
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		Saved.Slices[static_cast<size_t>(Index)].X = Index * 8;
+	}
+	// 같은 사각형끼리 짝 (여러 개 동시), 이름만 같은 것은 변경 아님
+	FSpriteAsset Current   = Saved;
+	Current.Slices[0].Name = "Alpha";
+	Current.Slices[2].Name = "Gamma";
+	std::vector<FSliceRename> Renames = DetectSliceRenames(Saved, Current);
+	E_EXPECT_EQ(Renames.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(Renames[0] == (FSliceRename{ "A", "Alpha" }));
+	E_EXPECT_TRUE(Renames[1] == (FSliceRename{ "C", "Gamma" }));
+
+	// 사각형도 바뀌었지만 사라진 이름·새 이름이 하나씩뿐이면 짝
+	Current                = Saved;
+	Current.Slices[1].Name = "Bee";
+	Current.Slices[1].W    = 12;
+	Renames                = DetectSliceRenames(Saved, Current);
+	E_EXPECT_EQ(Renames.size(), static_cast<size_t>(1));
+	E_EXPECT_TRUE(Renames[0] == (FSliceRename{ "B", "Bee" }));
+
+	// 지우고 새로 만든 것(사각형 다름, 둘 이상)은 변경으로 보지 않는다
+	Current = Saved;
+	Current.Slices.erase(Current.Slices.begin(), Current.Slices.begin() + 2);
+	FSpriteSlice New1;
+	New1.Name = "N1";
+	New1.X    = 40;
+	New1.W = New1.H = 4;
+	FSpriteSlice New2 = New1;
+	New2.Name         = "N2";
+	New2.X            = 50;
+	Current.Slices.push_back(New1);
+	Current.Slices.push_back(New2);
+	E_EXPECT_TRUE(DetectSliceRenames(Saved, Current).empty());
+	E_EXPECT_TRUE(DetectSliceRenames(Saved, Saved).empty());
+
+	// 동시 적용 (교환)
+	const std::vector<FSliceRename> Swap = { { "A", "B" }, { "B", "A" } };
+	std::string                     Name = "A";
+	E_EXPECT_TRUE(ApplySliceRename(Name, Swap));
+	E_EXPECT_EQ(Name, std::string("B"));
+	Name = "B";
+	E_EXPECT_TRUE(ApplySliceRename(Name, Swap));
+	E_EXPECT_EQ(Name, std::string("A"));
+	Name = "C";
+	E_EXPECT_FALSE(ApplySliceRename(Name, Swap));
+
+	E_EXPECT_TRUE(IsSameAssetPath("Sprites/Samples/A.esprite", "sprites\\samples/a.ESPRITE"));
+	E_EXPECT_TRUE(IsSameAssetPath("./Sprites/A.esprite", "Sprites/A.esprite"));
+	E_EXPECT_FALSE(IsSameAssetPath("Sprites/A.esprite", "Sprites/B.esprite"));
+	E_EXPECT_FALSE(IsSameAssetPath("", ""));
+}
+
+E_TEST(Sprite2DEditing_SliceRenameInFlipbookAndEntityJson)
+{
+	const std::vector<FSliceRename> Renames = { { "Coin", "GoldCoin" } };
+
+	// 플립북: Sprite는 이 파일 폴더 기준 — 같은 아틀라스면 프레임 이름 치환
+	const std::string Flipbook = R"({ "Version": 1, "Sprite": "SampleAtlas.esprite", "Fps": 8, "Frames": [ { "Slice": "Coin" }, { "Slice": "Ruby" }, { "Slice": "Coin", "Duration": 0.25 } ] })";
+	std::string       Out;
+	E_EXPECT_EQ(RenameSliceRefsInFlipbook(Flipbook, "Sprites/Samples/Gems.eflipbook", "Sprites/Samples/SampleAtlas.esprite", Renames, Out), 2);
+	FFlipbookAsset Parsed;
+	E_EXPECT_TRUE(FFlipbookAsset::FromJsonString(Out, Parsed));
+	E_EXPECT_EQ(Parsed.Frames.size(), static_cast<size_t>(3));
+	E_EXPECT_EQ(Parsed.Frames[0].Slice, std::string("GoldCoin"));
+	E_EXPECT_EQ(Parsed.Frames[1].Slice, std::string("Ruby"));
+	E_EXPECT_EQ(Parsed.Frames[2].Slice, std::string("GoldCoin"));
+	E_EXPECT_NEAR(Parsed.Frames[2].Duration, 0.25f, 1.0e-5f);
+	// 다른 폴더의 플립북 = 다른 아틀라스 → 그대로
+	std::string Untouched = "unchanged";
+	E_EXPECT_EQ(RenameSliceRefsInFlipbook(Flipbook, "Sprites/Other/Gems.eflipbook", "Sprites/Samples/SampleAtlas.esprite", Renames, Untouched), 0);
+	E_EXPECT_EQ(Untouched, std::string("unchanged"));
+
+	// 씬/프리팹: 모든 SpriteComponent (중첩 무관), Sprite 경로가 같은 것만, 키 순서 유지
+	const std::string Scene = R"({"Entities":[
+		{"Name":"A","Components":{"SpriteComponent":{"Sprite":"Sprites/Samples/SampleAtlas.esprite","Slice":"Coin","Size":[1,2]},"TransformComponent":{}}},
+		{"Name":"B","Components":{"SpriteComponent":{"Sprite":"Sprites/Other.esprite","Slice":"Coin"}}},
+		{"Name":"C","Components":{"SpriteComponent":{"Sprite":"sprites/samples/sampleatlas.esprite","Slice":"Ruby"}}},
+		{"Name":"D","Nested":[{"SpriteComponent":{"Sprite":"Sprites\\Samples\\SampleAtlas.esprite","Slice":"Coin"}}]}
+	],"Version":1})";
+	E_EXPECT_EQ(RenameSliceRefsInEntityJson(Scene, "Sprites/Samples/SampleAtlas.esprite", Renames, Out), 2);
+	E_EXPECT_TRUE(Out.find("\"GoldCoin\"") != std::string::npos);
+	E_EXPECT_TRUE(Out.find("\"Slice\": \"Coin\"") != std::string::npos); // B (다른 아틀라스)는 그대로
+	E_EXPECT_TRUE(Out.find("\"Entities\"") < Out.find("\"Version\"")); // 키 순서 유지
+	E_EXPECT_TRUE(Out.find("\"Sprite\"") < Out.find("\"Slice\""));
+	Untouched = "unchanged";
+	E_EXPECT_EQ(RenameSliceRefsInEntityJson("{ broken", "Sprites/Samples/SampleAtlas.esprite", Renames, Untouched), 0);
+	E_EXPECT_EQ(RenameSliceRefsInEntityJson(Scene, "Sprites/Samples/SampleAtlas.esprite", {}, Untouched), 0);
+	E_EXPECT_EQ(Untouched, std::string("unchanged"));
+}

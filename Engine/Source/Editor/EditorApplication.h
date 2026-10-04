@@ -84,6 +84,9 @@ private:
 	void VerifyPick(const std::string& Targets);              // 자동 검증 --verify-pick <이름>[,<이름>...] [--verify-pick-ortho] [--verify-pick-no-focus]
 	void VerifyTerrainBrush();                                // 자동 검증 --terrain-brush-test (지형 브러시 + Undo/Redo)
 	void VerifyTilePaint();                                   // 자동 검증 --verify-tile-paint (타일 칠하기 스트로크 + Undo/Redo, 저장 안 함)
+	void VerifyCreate2D();                                    // 자동 검증 --verify-2d-create (2D 끌어다 놓기·만들기 메뉴·박스 선택 + Undo, 저장 안 함)
+	void UpdateVerifyGizmo2D();                               // 자동 검증 --verify-gizmo-2d (ImGui 마우스 입력으로 2D 회전 기즈모를 반시계로 끌기 — BeginFrame 전 매 프레임)
+	void VerifySliceRename();                                 // 자동 검증 --verify-slice-rename (임시 복사본으로 슬라이스 이름 변경 전파 + 열린 씬 Undo)
 	void VerifyFoliageBrush();                                // 자동 검증 --foliage-brush-test (폴리지 칠하기/지우기 + Undo/Redo)
 	bool ReimportModelAsset(const std::filesystem::path& Path); // 임포트 설정 적용: 캐시 교체 + 열린 씬/편집 창/썸네일 갱신
 	void VerifyReimport(const std::filesystem::path& ModelPath); // 자동 검증 --verify-reimport
@@ -210,6 +213,19 @@ private:
 	float  VerifyCameraPanPerFrame = 0.0f; // --verify-camera-pan <cm/프레임>: 편집 카메라를 오른쪽으로 일정하게 민다 (움직일 때 시간 떨림 확인)
 	uint64 VerifyCameraPanStart    = 0;    // --verify-camera-pan-start <프레임>: 이 프레임부터 민다
 	uint64 VerifyFocus2DFrame      = 0;    // --viewport-2d: 이 프레임에 선택 맞춤 (렌더 타깃 종횡비가 정해진 뒤)
+	// --verify-gizmo-2d 상태 (EditorViewport2DVerify.cpp)
+	struct FVerifyGizmo2D
+	{
+		int32      Step        = 0; // 0 = 꺼짐
+		uint64     NextFrame   = 0;
+		FEntity    Target;
+		FVector2   Center;      // 이미지 픽셀
+		float      Radius      = 0.0f;
+		int32      ProbeIndex  = 0;
+		int32      MoveIndex   = 0;
+		FMatrix4x4 StartWorld;
+	};
+	FVerifyGizmo2D VerifyGizmo;
 	std::wstring VerifyThenOpenScene;           // --then-open <Content 경로>: 시작 씬 뒤 이 씬을 연다 (씬 전환 후 상태 확인)
 	uint64       VerifyThenOpenFrame = 120;     // --then-open-frame <프레임>: 이 프레임에 연다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지

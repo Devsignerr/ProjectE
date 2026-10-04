@@ -439,3 +439,86 @@ int32 Editor2DMath::FindFrontmost(const std::vector<FPick2DHit>& Hits)
 	}
 	return Best;
 }
+
+Editor2DMath::FScreenRect Editor2DMath::MakeScreenRect(const FVector2& A, const FVector2& B)
+{
+	FScreenRect Rect;
+	Rect.Min = FVector2(FMath::Min(A.X, B.X), FMath::Min(A.Y, B.Y));
+	Rect.Max = FVector2(FMath::Max(A.X, B.X), FMath::Max(A.Y, B.Y));
+	return Rect;
+}
+
+bool Editor2DMath::ProjectBoundsToScreen(const FBox& Bounds, const FMatrix4x4& ViewProjection, const FVector2& ImageSize, FScreenRect& OutRect)
+{
+	if (!Bounds.IsValid())
+	{
+		return false;
+	}
+	bool bAny = false;
+	for (int32 Corner = 0; Corner < 8; ++Corner)
+	{
+		const FVector3 Point((Corner & 1) != 0 ? Bounds.Max.X : Bounds.Min.X, (Corner & 2) != 0 ? Bounds.Max.Y : Bounds.Min.Y,
+		                     (Corner & 4) != 0 ? Bounds.Max.Z : Bounds.Min.Z);
+		const FVector4 Clip = ViewProjection.TransformVector4(FVector4(Point, 1.0f));
+		if (Clip.W <= 1.0e-4f)
+		{
+			continue; // 카메라 뒤
+		}
+		const FVector2 Pixel((Clip.X / Clip.W * 0.5f + 0.5f) * ImageSize.X, (0.5f - Clip.Y / Clip.W * 0.5f) * ImageSize.Y);
+		UnionScreenRect(OutRect, bAny, FScreenRect{ Pixel, Pixel });
+	}
+	return bAny;
+}
+
+void Editor2DMath::UnionScreenRect(FScreenRect& InOut, bool& bInOutValid, const FScreenRect& Add)
+{
+	if (!bInOutValid)
+	{
+		InOut       = Add;
+		bInOutValid = true;
+		return;
+	}
+	InOut.Min = FVector2(FMath::Min(InOut.Min.X, Add.Min.X), FMath::Min(InOut.Min.Y, Add.Min.Y));
+	InOut.Max = FVector2(FMath::Max(InOut.Max.X, Add.Max.X), FMath::Max(InOut.Max.Y, Add.Max.Y));
+}
+
+bool Editor2DMath::IsScreenRectInside(const FScreenRect& Inner, const FScreenRect& Outer)
+{
+	return Inner.Min.X >= Outer.Min.X && Inner.Min.Y >= Outer.Min.Y && Inner.Max.X <= Outer.Max.X && Inner.Max.Y <= Outer.Max.Y;
+}
+
+std::vector<FEntity> Editor2DMath::CombineBoxSelection(const std::vector<FEntity>& Current, const std::vector<FEntity>& Hits, EBoxSelectMode Mode)
+{
+	const auto Contains = [](const std::vector<FEntity>& List, FEntity Entity) { return std::find(List.begin(), List.end(), Entity) != List.end(); };
+	std::vector<FEntity> UniqueHits;
+	UniqueHits.reserve(Hits.size());
+	for (const FEntity Entity : Hits)
+	{
+		if (Entity.IsValid() && !Contains(UniqueHits, Entity))
+		{
+			UniqueHits.push_back(Entity);
+		}
+	}
+	if (Mode == EBoxSelectMode::Replace)
+	{
+		return UniqueHits;
+	}
+	std::vector<FEntity> Result;
+	Result.reserve(Current.size() + UniqueHits.size());
+	for (const FEntity Entity : Current)
+	{
+		if (Mode == EBoxSelectMode::Toggle && Contains(UniqueHits, Entity))
+		{
+			continue; // Ctrl: 이미 있던 것은 뺀다
+		}
+		Result.push_back(Entity);
+	}
+	for (const FEntity Entity : UniqueHits)
+	{
+		if (!Contains(Current, Entity))
+		{
+			Result.push_back(Entity);
+		}
+	}
+	return Result;
+}

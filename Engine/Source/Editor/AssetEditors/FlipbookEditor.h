@@ -36,6 +36,9 @@ protected:
 
 	const wchar_t* GetVerifyRoundTripFlag() const override { return L"--verify-flipbook-roundtrip"; }
 	bool           ApplyVerifyEdits(FAssetEditorEnvironment& Env) override;
+	bool           SupportsLivePreview() const override { return true; }
+	void           PushLivePreview() override;
+	std::string    CaptureLibraryState() const override;
 
 private:
 	struct FRecentEvent

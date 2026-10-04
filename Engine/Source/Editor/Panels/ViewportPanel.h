@@ -3,6 +3,7 @@
 #include "Core/CoreTypes.h"
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
+#include "Editor/Editor2D/Editor2DMath.h"
 #include "Editor/Editor2D/Viewport2DCamera.h"
 #include "Editor/SnapSettings.h"
 #include "UI/UIDrawList.h"
@@ -60,6 +61,8 @@ public:
 	// 뷰포트 렌더 타깃 종횡비 (타깃이 없으면 Fallback)
 	float GetAspectRatio(float Fallback) const;
 	bool IsUsingGizmo() const { return bUsingGizmo; }
+	bool IsGizmoHovered() const { return bGizmoOver; } // 직전 Draw에서 마우스가 기즈모 손잡이 위 (자동 검증)
+	void SetGizmoOperation(ETransformTool Operation) { GizmoOperation = Operation; }
 	// 자동 검증(--verify-pick): Target 메시 경계 중심이 보이는 화면 위치를 클릭한 것처럼 선택하고 선택된 엔티티를 돌려준다.
 	//   bFocus면 먼저 편집 카메라를 대상에 맞춘다(F). 대상이 화면 밖이면 false (선택하지 않음)
 	bool VerifyPick(FEditorContext& Context, FEntity Target, bool bFocus, FEntity& OutPicked);
@@ -92,6 +95,14 @@ public:
 	void    Set2DMode(FEditorContext& Context, bool bEnable);
 	FViewport2DCamera&       GetCamera2D() { return Camera2D; }
 	const FViewport2DCamera& GetCamera2D() const { return Camera2D; }
+
+	// 박스 선택 (빈 곳 왼쪽 끌기 — 2D·3D 공통, 규칙은 Editor2DMath "박스 선택"): Rect = 이미지 픽셀. 대상 = 보이는 메시(모델 하위 노드는 모델 루트로
+	//   합쳐 판정)·2D 표시(스프라이트·칠한 타일맵·2D 콜라이더 — Editor2DScene::AddBounds). 지형은 제외. 반환 = 사각형 안 엔티티 (씬 순서)
+	std::vector<FEntity> CollectBoxSelection(FEditorContext& Context, const Editor2DMath::FScreenRect& Rect, const FVector2& ImageSize) const;
+	void                 BoxSelect(FEditorContext& Context, const Editor2DMath::FScreenRect& Rect, const FVector2& ImageSize, Editor2DMath::EBoxSelectMode Mode);
+	// 자동 검증(--verify-2d-create): 콘텐츠 브라우저 드롭과 같은 경로 (LocalPixel = 이미지 픽셀, 현재 렌더 타깃 크기)
+	void     DropAssets(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, const FVector2& LocalPixel);
+	FVector2 GetImageSize() const;
 
 	// 표시할 내비메시 (FNavMesh::GetDebugTriangles, 엔진 좌표). 다음 렌더에서 GPU 버퍼로 올린다. 빈 목록 = 지움
 	void SetNavMeshTriangles(std::vector<FVector3> Triangles);
@@ -148,4 +159,8 @@ private:
 	bool            bGizmoOver     = false;
 	bool            bFocused       = false;
 	bool            bWasUsingGizmo = false; // 기즈모 조작 시작 프레임 판정 (Alt+드래그 복제)
+	// 박스 선택 끌기 (빈 곳에서 누름 → 4px 넘게 끌면 사각형 표시 → 떼면 선택)
+	bool     bBoxPending  = false;
+	bool     bBoxDragging = false;
+	FVector2 BoxStart; // 이미지 픽셀
 };

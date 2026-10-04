@@ -84,7 +84,7 @@ namespace Sprite2DEditing
 	std::string MakeUniqueName(const FSpriteAsset& Asset, std::string_view Base, int32 IgnoreIndex = -1);
 	// 이름 바꾸기 검사: 빈 이름/중복이면 오류 문구, 괜찮으면 빈 문자열
 	std::string ValidateRename(const FSpriteAsset& Asset, int32 Index, std::string_view NewName);
-	// 이름 바꾸기 + 이 아틀라스를 쓰는 플립북 프레임은 호출자가 따로 고친다 (파일 밖이라 여기서 다루지 않음)
+	// 이름 바꾸기 (이 아틀라스를 쓰는 플립북·씬·프리팹 참조는 저장 때 SpriteSliceRename::Propagate가 — 파일 밖이라 여기서 다루지 않음)
 	bool        RenameSlice(FSpriteAsset& Asset, int32 Index, std::string_view NewName, std::string* OutError = nullptr);
 
 	enum class ESliceSort : int32
@@ -125,6 +125,32 @@ namespace Sprite2DEditing
 	std::vector<FSpriteSlice> SliceGridWithOptions(int32 TextureWidth, int32 TextureHeight, const FGridSliceOptions& Options, const FImageView& Image);
 	// 자른 결과를 아틀라스에: bReplace면 기존을 지우고, 아니면 덧붙이며 이름이 겹치면 고유하게
 	void ApplyGridSlices(FSpriteAsset& Asset, std::vector<FSpriteSlice> Slices, bool bReplace);
+	// 격자 대화 기본 셀 크기: 슬라이스가 있으면 가장 흔한 (W, H)(같은 수면 먼저 나온 것), 없으면 텍스처 가로·세로를 모두 나누는 16 → 32 → 8,
+	// 그것도 없으면 축마다 따로 (16 → 32 → 8, 없으면 그 축 전체). 텍스처 크기를 모르면(0 이하) 16
+	void EstimateGridCellSize(const FSpriteAsset& Asset, int32& OutWidth, int32& OutHeight);
+
+	// ---- 슬라이스 이름 변경 전파 (아틀라스 저장 시 — 이 아틀라스를 쓰는 플립북 프레임·씬/프리팹 SpriteComponent.Slice)
+	struct FSliceRename
+	{
+		std::string From;
+		std::string To;
+
+		bool operator==(const FSliceRename& Other) const = default;
+	};
+	// 저장된 아틀라스 → 현재 아틀라스의 이름 변경 추정 (슬라이스에 고유 ID가 없으므로): 저장본에만 있는 이름과 현재에만 있는 이름을
+	// (1) 사각형(X, Y, W, H)이 같은 것끼리 목록 순서대로 짝짓고, (2) 그래도 남은 것이 양쪽 하나씩뿐이면 그 둘을 짝짓는다
+	std::vector<FSliceRename> DetectSliceRenames(const FSpriteAsset& Saved, const FSpriteAsset& Current);
+	// 이름 치환 (Renames는 동시 적용 — 교환도 됨). 바뀌었으면 true
+	bool ApplySliceRename(std::string& InOutName, std::span<const FSliceRename> Renames);
+	// 두 에셋 경로가 같은 파일인가 (Content 기준 문자열 — "\\" ↔ "/", 대소문자, "./" 무시)
+	bool IsSameAssetPath(std::string_view A, std::string_view B);
+	// .eflipbook 텍스트: Sprite(이 파일 폴더 기준)를 Content 기준으로 풀어 AtlasPath이면 Frames[].Slice 치환.
+	// 반환 = 바꾼 프레임 수 (0이면 OutText 그대로). 결과 텍스트 = FFlipbookAsset::ToJsonString (편집기 저장과 같은 형식)
+	int32 RenameSliceRefsInFlipbook(const std::string& Text, const std::string& FlipbookPath, const std::string& AtlasPath,
+	                                std::span<const FSliceRename> Renames, std::string& OutText);
+	// 씬(.escene)/프리팹(.eprefab) 텍스트: 모든 "SpriteComponent" 객체 중 Sprite가 AtlasPath(Content 기준)인 것의 Slice 치환 (중첩 위치 무관).
+	// 반환 = 바꾼 컴포넌트 수 (0이면 OutText 그대로). 결과는 키 순서 유지 + 들여쓰기 2 (씬 저장과 같은 들여쓰기)
+	int32 RenameSliceRefsInEntityJson(const std::string& Text, const std::string& AtlasPath, std::span<const FSliceRename> Renames, std::string& OutText);
 
 	// ---- 플립북
 	std::vector<int32> NormalizeSelection(std::vector<int32> Selection, int32 Count);

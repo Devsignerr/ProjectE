@@ -1,9 +1,13 @@
 #include "Editor/AssetEditors/Sprite2DEditing.h"
 
 #include "Physics/Physics2DMath.h"
+#include "Scene/Sprite/Sprite2DLibrary.h"
+
+#include <json.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include <format>
 #include <limits>
 
@@ -714,5 +718,205 @@ namespace Sprite2DEditing
 			Asset.Tiles.push_back(Tile);
 		}
 		Asset.Normalize();
+	}
+	// ---------------------------------------------------------------- 격자 대화 기본값
+
+	void EstimateGridCellSize(const FSpriteAsset& Asset, int32& OutWidth, int32& OutHeight)
+	{
+		if (!Asset.Slices.empty())
+		{
+			// 가장 흔한 크기 (같은 수면 먼저 나온 것)
+			std::vector<std::pair<std::pair<int32, int32>, int32>> Counts;
+			for (const FSpriteSlice& Slice : Asset.Slices)
+			{
+				const std::pair<int32, int32> Size(Slice.W, Slice.H);
+				auto It = std::find_if(Counts.begin(), Counts.end(), [&Size](const auto& Entry) { return Entry.first == Size; });
+				if (It == Counts.end())
+				{
+					Counts.push_back({ Size, 1 });
+				}
+				else
+				{
+					++It->second;
+				}
+			}
+			const auto Best = std::max_element(Counts.begin(), Counts.end(), [](const auto& A, const auto& B) { return A.second < B.second; });
+			OutWidth  = std::max(Best->first.first, 1);
+			OutHeight = std::max(Best->first.second, 1);
+			return;
+		}
+		static constexpr int32 Candidates[] = { 16, 32, 8 };
+		const int32 Width  = Asset.TextureWidth;
+		const int32 Height = Asset.TextureHeight;
+		if (Width <= 0 || Height <= 0)
+		{
+			OutWidth = OutHeight = 16;
+			return;
+		}
+		for (const int32 Candidate : Candidates)
+		{
+			if (Width % Candidate == 0 && Height % Candidate == 0)
+			{
+				OutWidth = OutHeight = Candidate;
+				return;
+			}
+		}
+		const auto PerAxis = [](int32 Size) {
+			for (const int32 Candidate : Candidates)
+			{
+				if (Size % Candidate == 0)
+				{
+					return Candidate;
+				}
+			}
+			return Size;
+		};
+		OutWidth  = PerAxis(Width);
+		OutHeight = PerAxis(Height);
+	}
+
+	// ---------------------------------------------------------------- 슬라이스 이름 변경 전파
+
+	std::vector<FSliceRename> DetectSliceRenames(const FSpriteAsset& Saved, const FSpriteAsset& Current)
+	{
+		std::vector<const FSpriteSlice*> Removed;
+		std::vector<const FSpriteSlice*> Added;
+		for (const FSpriteSlice& Slice : Saved.Slices)
+		{
+			if (Current.FindSlice(Slice.Name) < 0)
+			{
+				Removed.push_back(&Slice);
+			}
+		}
+		for (const FSpriteSlice& Slice : Current.Slices)
+		{
+			if (Saved.FindSlice(Slice.Name) < 0)
+			{
+				Added.push_back(&Slice);
+			}
+		}
+		std::vector<FSliceRename> Renames;
+		for (auto RemovedIt = Removed.begin(); RemovedIt != Removed.end();)
+		{
+			const FPixelRect Rect    = GetRect(**RemovedIt);
+			const auto       AddedIt = std::find_if(Added.begin(), Added.end(), [&Rect](const FSpriteSlice* Slice) { return GetRect(*Slice) == Rect; });
+			if (AddedIt == Added.end())
+			{
+				++RemovedIt;
+				continue;
+			}
+			Renames.push_back({ (*RemovedIt)->Name, (*AddedIt)->Name });
+			Added.erase(AddedIt);
+			RemovedIt = Removed.erase(RemovedIt);
+		}
+		if (Removed.size() == 1 && Added.size() == 1)
+		{
+			Renames.push_back({ Removed.front()->Name, Added.front()->Name });
+		}
+		return Renames;
+	}
+
+	bool ApplySliceRename(std::string& InOutName, std::span<const FSliceRename> Renames)
+	{
+		for (const FSliceRename& Rename : Renames)
+		{
+			if (InOutName == Rename.From)
+			{
+				InOutName = Rename.To;
+				return true; // 동시 적용: 처음 맞는 것 하나만 (바꾼 결과를 다시 바꾸지 않는다)
+			}
+		}
+		return false;
+	}
+
+	bool IsSameAssetPath(std::string_view A, std::string_view B)
+	{
+		const auto Normalize = [](std::string_view Path) {
+			std::string Out;
+			Out.reserve(Path.size());
+			for (const char Char : Path)
+			{
+				Out.push_back(Char == '\\' ? '/' : static_cast<char>(std::tolower(static_cast<unsigned char>(Char))));
+			}
+			while (Out.starts_with("./"))
+			{
+				Out.erase(0, 2);
+			}
+			return Out;
+		};
+		return !A.empty() && Normalize(A) == Normalize(B);
+	}
+
+	int32 RenameSliceRefsInFlipbook(const std::string& Text, const std::string& FlipbookPath, const std::string& AtlasPath,
+	                                std::span<const FSliceRename> Renames, std::string& OutText)
+	{
+		FFlipbookAsset Asset;
+		if (Renames.empty() || !FFlipbookAsset::FromJsonString(Text, Asset) ||
+		    !IsSameAssetPath(FSprite2DLibrary::ResolveReference(FlipbookPath, Asset.Sprite), AtlasPath))
+		{
+			return 0;
+		}
+		int32 Changed = 0;
+		for (FFlipbookFrame& Frame : Asset.Frames)
+		{
+			Changed += ApplySliceRename(Frame.Slice, Renames) ? 1 : 0;
+		}
+		if (Changed > 0)
+		{
+			OutText = Asset.ToJsonString();
+		}
+		return Changed;
+	}
+
+	int32 RenameSliceRefsInEntityJson(const std::string& Text, const std::string& AtlasPath, std::span<const FSliceRename> Renames, std::string& OutText)
+	{
+		if (Renames.empty())
+		{
+			return 0;
+		}
+		nlohmann::ordered_json Document = nlohmann::ordered_json::parse(Text, nullptr, false);
+		if (Document.is_discarded())
+		{
+			return 0;
+		}
+		int32      Changed = 0;
+		const auto Visit   = [&](auto& Self, nlohmann::ordered_json& Node) -> void {
+			if (Node.is_object())
+			{
+				for (auto It = Node.begin(); It != Node.end(); ++It)
+				{
+					nlohmann::ordered_json& Value = It.value();
+					if (It.key() == "SpriteComponent" && Value.is_object())
+					{
+						const auto SpriteIt = Value.find("Sprite");
+						const auto SliceIt  = Value.find("Slice");
+						if (SpriteIt != Value.end() && SpriteIt->is_string() && SliceIt != Value.end() && SliceIt->is_string() &&
+						    IsSameAssetPath(SpriteIt->get<std::string>(), AtlasPath))
+						{
+							std::string Slice = SliceIt->get<std::string>();
+							if (ApplySliceRename(Slice, Renames))
+							{
+								*SliceIt = Slice;
+								++Changed;
+							}
+						}
+					}
+					Self(Self, Value);
+				}
+			}
+			else if (Node.is_array())
+			{
+				for (nlohmann::ordered_json& Child : Node)
+				{
+					Self(Self, Child);
+				}
+			}
+		};
+		Visit(Visit, Document);
+		if (Changed > 0)
+		{
+			OutText = Document.dump(2);
+		}
+		return Changed;
 	}
 } // namespace Sprite2DEditing

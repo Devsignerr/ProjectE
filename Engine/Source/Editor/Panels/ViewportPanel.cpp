@@ -5,6 +5,9 @@
 #include "Editor/Panels/ViewportPanel.h"
 
 #include "Core/Input.h"
+#include "Editor/Editor2D/Collider2DOverlay.h"
+#include "Editor/Editor2D/Editor2DMath.h"
+#include "Editor/Editor2D/Editor2DScene.h"
 #include "Editor/EditorCameraState.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
@@ -32,6 +35,9 @@
 #include "Scene/Particles.h"
 #include "Scene/Prefab.h"
 #include "Scene/Scene.h"
+#include "Scene/Sprite/Sprite2DComponents.h"
+#include "Scene/Sprite/SpriteAsset.h"
+#include "Scene/Sprite/TilesetAsset.h"
 #include "Scene/Terrain.h"
 #include "Renderer/UIRenderer.h"
 #include "UI/UIComponent.h"
@@ -316,6 +322,7 @@ FViewportPanel::~FViewportPanel() = default;
 
 void FViewportPanel::Shutdown()
 {
+	ColliderOverlay.reset();
 	UIRenderer.reset();
 	NavMeshDebug.reset();
 	DebugDrawRenderer.reset();
@@ -395,11 +402,28 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 				ImGui::EndDragDropTarget();
 			}
 
+			// 2D 모드: 편집 카메라 고정 + 휠 줌/드래그 팬 (게임 카메라로 보는 중에는 하지 않는다)
+			if (Is2DMode() && Context.Camera == EditCamera && Context.Camera != nullptr)
+			{
+				Camera2D.Enforce(*Context.Camera);
+				if (bHovered)
+				{
+					Handle2DCamera(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+				}
+			}
+			Update2DGrid(Context);
+
 			// 플레이 중 빙의(F8로 전환): 뷰포트 입력은 게임 것 — 라이트 모양/편집 도구/기즈모/클릭 선택/단축키/툴바 없음
 			const bool bCanEdit = Context.CanEditInViewport();
 			if (bCanEdit)
 			{
 				DrawSelectedLightShapes(Context, ImagePosition, ImageSize);
+				// 충돌 모양 외곽선 (2D 콜라이더·타일맵 충돌·2D 관절·이동기 캡슐·3D 콜라이더) — 선택한 것, 토글이면 전부
+				if (!ColliderOverlay)
+				{
+					ColliderOverlay = std::make_unique<FCollider2DOverlay>();
+				}
+				ColliderOverlay->Draw(Context, FVector2(ImagePosition.x, ImagePosition.y), FVector2(ImageSize.x, ImageSize.y), bShowAllColliders2D);
 			}
 			// 편집 도구(지형/폴리지 브러시)가 마우스를 가져가면 기즈모/클릭 선택을 하지 않는다
 			const bool bToolCaptured = bCanEdit && ToolOverlay &&
@@ -681,7 +705,103 @@ void FViewportPanel::RenderGrid(FEditorContext& Context)
 	{
 		return;
 	}
+	// 2D 모드(편집 카메라로 볼 때): X-Z 평면 격자 — 칸·원점·도트는 Update2DGrid가 정한 값
+	Grid->bPlaneXZ     = Is2DMode() && Context.Camera == EditCamera;
+	Grid->Cell2D       = Grid2DCell;
+	Grid->Origin2D     = Grid2DOrigin;
+	Grid->PixelStep2D  = Grid2DPixel;
+	Grid->PlaneDepth2D = Grid2DDepth;
 	Grid->Render(*Context.Camera, RenderTarget->GetOutput(), Dsv);
+}
+
+void FViewportPanel::Set2DMode(FEditorContext& Context, bool bEnable)
+{
+	if (EditCamera == nullptr || bEnable == Is2DMode())
+	{
+		return;
+	}
+	FCamera& Camera = *EditCamera; // 편집 카메라 (앱 소유, 패널이 조작한다 — 직교 토글과 같음)
+	if (bEnable)
+	{
+		Camera2D.Enter(Camera);
+		if (!Context.Selection.GetEntities().empty())
+		{
+			FocusSelection(Context);
+		}
+	}
+	else
+	{
+		Camera2D.Exit(Camera);
+	}
+}
+
+void FViewportPanel::Handle2DCamera(FEditorContext& Context, const FVector2& ImagePosition, const FVector2& ImageSize)
+{
+	FCamera&       Camera = *Context.Camera;
+	const ImGuiIO& IO     = ImGui::GetIO();
+	if (IO.MouseWheel != 0.0f && !IO.KeyCtrl)
+	{
+		Camera2D.Zoom(Camera, IO.MouseWheel, FVector2(IO.MousePos.x - ImagePosition.X, IO.MousePos.y - ImagePosition.Y), ImageSize);
+	}
+	if (ImGui::IsMouseDown(ImGuiMouseButton_Right) || ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+	{
+		Camera2D.Pan(Camera, FVector2(IO.MouseDelta.x, IO.MouseDelta.y), ImageSize);
+	}
+}
+
+void FViewportPanel::Update2DGrid(FEditorContext& Context)
+{
+	// 기본: 설정 칸, 원점 0, 도트 없음. 선택 타일맵이 있으면 그 셀(원점 = 엔티티 위치), 선택 스프라이트면 도트 간격
+	Grid2DCell   = FVector2(FMath::Max(Grid2DCellSize, 1.0f), FMath::Max(Grid2DCellSize, 1.0f));
+	Grid2DOrigin = FVector2::ZeroVector;
+	Grid2DPixel  = FVector2::ZeroVector;
+	Grid2DDepth  = 0.0f;
+	FRegistry&    Registry = Context.Scene->GetRegistry();
+	const FEntity Primary  = Context.SelectedEntity;
+	if (!Registry.IsValid(Primary) || !Registry.Has<FTransformComponent>(Primary))
+	{
+		return;
+	}
+	const FMatrix4x4& World = Context.Scene->GetTransform(Primary).WorldMatrix;
+	const FVector2    Scale(World.GetAxisX().Length(), World.GetAxisZ().Length());
+	if (FTilemapComponent* Tilemap = Registry.TryGet<FTilemapComponent>(Primary))
+	{
+		FVector2 CellSize;
+		if (Editor2DScene::GetTilemapCellSize(*Tilemap, CellSize))
+		{
+			Grid2DCell   = CellSize * Scale;
+			Grid2DOrigin = FVector2(World.GetOrigin().X, World.GetOrigin().Z);
+			Grid2DDepth  = World.GetOrigin().Y;
+			if (const std::shared_ptr<const FTilesetAsset> Tileset = Sprite2DRuntime::ResolveTileset(*Tilemap);
+			    Tileset != nullptr && Tileset->TileWidth > 0 && Tileset->TileHeight > 0)
+			{
+				Grid2DPixel = FVector2(Grid2DCell.X / static_cast<float>(Tileset->TileWidth), Grid2DCell.Y / static_cast<float>(Tileset->TileHeight));
+			}
+		}
+	}
+	else if (FSpriteComponent* Sprite = Registry.TryGet<FSpriteComponent>(Primary))
+	{
+		const Sprite2DRuntime::FSpriteDisplay Display = Sprite2DRuntime::ResolveSprite(*Sprite);
+		FVector2                              Quad[4];
+		if (Display.Asset != nullptr && Display.SliceIndex >= 0 && Editor2DScene::GetSpriteLocalQuad(*Sprite, Quad))
+		{
+			const FSpriteSlice& Slice = Display.Asset->Slices[static_cast<size_t>(Display.SliceIndex)];
+			const FVector2      Size  = SpriteMath::ComputeSize(Slice, Display.Asset->UnitsPerPixel, Sprite->Size);
+			if (Slice.W > 0 && Slice.H > 0)
+			{
+				Grid2DPixel = FVector2(Size.X / static_cast<float>(Slice.W), Size.Y / static_cast<float>(Slice.H)) * Scale;
+				// 도트 격자 원점 = 스프라이트 사각형 왼쪽 아래 모서리 (텍셀 경계에 맞춤)
+				FVector2 Min = Quad[0];
+				for (const FVector2& Corner : Quad)
+				{
+					Min = FVector2(FMath::Min(Min.X, Corner.X), FMath::Min(Min.Y, Corner.Y));
+				}
+				const FVector3 Corner = World.TransformPosition(FVector3(Min.X, 0.0f, Min.Y));
+				Grid2DOrigin          = FVector2(Corner.X, Corner.Z);
+				Grid2DDepth           = World.GetOrigin().Y;
+			}
+		}
+	}
 }
 
 void FViewportPanel::ToggleOrthographic(FCamera& Camera)
@@ -758,10 +878,32 @@ void FViewportPanel::DrawToolbar(FEditorContext& Context)
 	ToggleButton(ICON_FA_BORDER_ALL, bShowGrid, "그리드/월드 축 표시 (주 100cm, 보조 10cm)");
 	ToggleButton(ICON_FA_ROUTE, bShowNavMesh, "내비메시 표시 (플레이 중에는 이동 경로도) — 굽기: 도구 → 내비메시 굽기");
 	ToggleButton(ICON_FA_MAGNET, Snap.bEnabled, "기즈모 스냅 (Ctrl을 누른 동안 일시 반전)");
+	ToggleButton(ICON_FA_DRAW_POLYGON, bShowAllColliders2D, "모든 충돌 모양 외곽선 (끄면 선택한 엔티티만) — 2D 콜라이더·타일맵 충돌·2D 관절·이동기, 3D 콜라이더");
+
+	// 2D 모드 (편집 카메라를 +Y에서 -Y를 보는 직교로 고정)
+	ImGui::SameLine();
+	{
+		const bool b2D = Is2DMode();
+		ImGui::BeginDisabled(!Context.CanEditInViewport() || Context.Camera != EditCamera);
+		if (b2D)
+		{
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+		}
+		if (ImGui::Button("2D"))
+		{
+			Set2DMode(Context, !b2D);
+		}
+		if (b2D)
+		{
+			ImGui::PopStyleColor();
+		}
+		ImGui::EndDisabled();
+		ImGui::SetItemTooltip("2D 모드: +Y에서 -Y를 보는 직교 카메라 (휠 = 커서 기준 확대, 가운데/오른쪽 드래그 = 이동, F = 선택 맞춤), X-Z 격자, 평면 기즈모");
+	}
 
 	// 편집 카메라 투영 (플레이 중에는 게임 카메라 설정을 따른다)
 	ImGui::SameLine();
-	ImGui::BeginDisabled(!Context.CanEditInViewport()); // 빙의 해제 중에는 편집 카메라
+	ImGui::BeginDisabled(!Context.CanEditInViewport() || Is2DMode()); // 빙의 해제 중에는 편집 카메라, 2D 모드는 항상 직교
 	const bool bOrthographic = Context.Camera->IsOrthographic();
 	if (ImGui::Button(bOrthographic ? ICON_FA_VECTOR_SQUARE " 직교" : ICON_FA_VIDEO " 원근"))
 	{
@@ -814,6 +956,18 @@ void FViewportPanel::DrawToolbar(FEditorContext& Context)
 		ImGui::DragFloat("회전 (도)", &Snap.RotateStepDegree, 0.5f, 0.1f, 180.0f, "%.1f");
 		ImGui::SetNextItemWidth(120.0f);
 		ImGui::DragFloat("스케일", &Snap.ScaleStep, 0.01f, 0.001f, 10.0f, "%.3f");
+		ImGui::SeparatorText("2D");
+		int32             Snap2DIndex   = static_cast<int32>(Snap2D);
+		const char* const Snap2DNames[] = { "끔", "격자 칸", "픽셀 (도트)" };
+		ImGui::SetNextItemWidth(120.0f);
+		if (ImGui::Combo("2D 이동 스냅", &Snap2DIndex, Snap2DNames, 3))
+		{
+			Snap2D = static_cast<ESnap2D>(Snap2DIndex);
+		}
+		ImGui::SetItemTooltip("2D 모드 이동 기즈모를 절대 위치로 맞춘다: 격자 칸(선택 타일맵 셀 또는 아래 값) / 선택 스프라이트·타일맵의 도트(UnitsPerPixel)");
+		ImGui::SetNextItemWidth(120.0f);
+		ImGui::DragFloat("2D 격자 (cm)", &Grid2DCellSize, 1.0f, 1.0f, 10000.0f, "%.1f");
+		ImGui::SetItemTooltip("타일맵을 고르지 않았을 때 2D 격자 칸 크기");
 		ImGui::EndPopup();
 	}
 
@@ -840,15 +994,19 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 	ImGuizmo::SetDrawlist();
 	ImGuizmo::SetRect(ImagePosition.X, ImagePosition.Y, ImageSize.X, ImageSize.Y);
 
-	ImGuizmo::OPERATION Operation = ImGuizmo::TRANSLATE;
+	// 2D 모드: 평면 제약 (이동 X/Z, 회전 Y축 = 2D 각, 스케일 X/Z)
+	const bool          b2D       = Is2DMode() && Context.Camera == EditCamera;
+	ImGuizmo::OPERATION Operation = b2D ? static_cast<ImGuizmo::OPERATION>(ImGuizmo::TRANSLATE_X | ImGuizmo::TRANSLATE_Z) : ImGuizmo::TRANSLATE;
 	switch (GizmoOperation)
 	{
-	case EGizmoOperation::Rotate: Operation = ImGuizmo::ROTATE; break;
-	case EGizmoOperation::Scale:  Operation = ImGuizmo::SCALE; break;
+	case EGizmoOperation::Rotate: Operation = b2D ? ImGuizmo::ROTATE_Y : ImGuizmo::ROTATE; break;
+	case EGizmoOperation::Scale:  Operation = b2D ? static_cast<ImGuizmo::OPERATION>(ImGuizmo::SCALE_X | ImGuizmo::SCALE_Z) : ImGuizmo::SCALE; break;
 	default:                      break;
 	}
 	// 스케일은 항상 로컬 기준
 	const ImGuizmo::MODE Mode = (bGizmoLocal || GizmoOperation == EGizmoOperation::Scale) ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+	// 2D 이동 스냅은 절대 위치(격자 칸/도트)로 아래에서 맞춘다 — ImGuizmo 스냅(시작점 기준 간격)은 쓰지 않는다
+	const bool bAbsoluteSnap2D = b2D && GizmoOperation == EGizmoOperation::Translate && Snap2D != ESnap2D::Off;
 
 	// ImGuizmo는 float[16]을 행벡터 규약(이동이 [12..14])으로 다루므로 FMatrix4x4 메모리를 그대로 전달
 	const FMatrix4x4 View       = Context.Camera->GetViewMatrix();
@@ -857,9 +1015,18 @@ void FViewportPanel::DrawGizmo(FEditorContext& Context, const FVector2& ImagePos
 	FMatrix4x4       World      = OldWorld;
 
 	float        SnapValues[3] = {};
-	const float* SnapPointer   = Snap.GetSnapValues(GizmoOperation, ImGui::GetIO().KeyCtrl, SnapValues);
+	const float* SnapPointer   = bAbsoluteSnap2D ? nullptr : Snap.GetSnapValues(GizmoOperation, ImGui::GetIO().KeyCtrl, SnapValues);
 
-	const bool bManipulated = ImGuizmo::Manipulate(&View.M[0][0], &Projection.M[0][0], Operation, Mode, &World.M[0][0], nullptr, SnapPointer);
+	bool bManipulated = ImGuizmo::Manipulate(&View.M[0][0], &Projection.M[0][0], Operation, Mode, &World.M[0][0], nullptr, SnapPointer);
+	if (bManipulated && bAbsoluteSnap2D && !ImGui::GetIO().KeyCtrl) // Ctrl = 일시 해제
+	{
+		// 격자 칸 = 엔티티 위치를 월드 칸 배수로, 도트 = 스프라이트 사각형 왼쪽 아래(도트 격자 원점)를 월드 도트 배수로 (엔티티와 함께 움직이는 원점은 기준으로 쓰지 않는다)
+		const bool     bPixel = Snap2D == ESnap2D::Pixel && Grid2DPixel.X > 0.0f && Grid2DPixel.Y > 0.0f;
+		const FVector2 Step   = bPixel ? Grid2DPixel : Grid2DCell;
+		const FVector2 Offset = bPixel ? Grid2DOrigin - FVector2(OldWorld.M[3][0], OldWorld.M[3][2]) : FVector2::ZeroVector;
+		World.M[3][0]         = Editor2DMath::SnapToStep(World.M[3][0] + Offset.X, Step.X) - Offset.X;
+		World.M[3][2]         = Editor2DMath::SnapToStep(World.M[3][2] + Offset.Y, Step.Y) - Offset.Y;
+	}
 	bUsingGizmo             = ImGuizmo::IsUsing();
 	bGizmoOver              = ImGuizmo::IsOver();
 
@@ -928,6 +1095,18 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 		}
 	}
 
+	// 2D: 스프라이트 사각형·칠한 타일맵 칸·2D 콜라이더 (정렬 레이어/순번/깊이로 맨 앞). 2D 모드는 메시보다 우선, 아니면 광선 거리로 비교
+	{
+		const float EdgeTolerance = Context.Camera->IsOrthographic() ? Context.Camera->GetOrthoHeight() / FMath::Max(ImageSize.Y, 1.0f) * 6.0f : 5.0f;
+		float       Distance2D    = 0.0f;
+		const FEntity Hit2D       = Editor2DScene::Pick(*Context.Scene, Ray, EdgeTolerance, Distance2D);
+		if (Hit2D.IsValid() && ((Is2DMode() && Context.Camera == EditCamera) || Distance2D <= ClosestDistance))
+		{
+			ClosestDistance = Distance2D;
+			Closest         = Hit2D;
+		}
+	}
+
 	// 모델에서 생성된 하위 노드(저장되지 않음)를 찍으면 모델 루트를 선택한다 (언리얼의 액터 선택과 같은 동작)
 	FRegistry& Registry = Context.Scene->GetRegistry();
 	while (Closest.IsValid() && Registry.Has<FTransientComponent>(Closest))
@@ -973,8 +1152,8 @@ void FViewportPanel::FocusSelection(FEditorContext& Context)
 				Bounds.AddBox(Mesh->GetLocalBounds().TransformBy(Scene.GetTransform(MeshEntity).WorldMatrix));
 			}
 		}
-		// 메시가 없는 엔티티(빈 엔티티, 조명 등)는 위치만
-		if (Meshes.empty())
+		// 2D 표시(스프라이트·타일맵·2D 콜라이더) 경계, 그것도 없으면(빈 엔티티, 조명 등) 위치만
+		if (!Editor2DScene::AddBounds(Scene, Entity, Bounds) && Meshes.empty())
 		{
 			Bounds.AddPoint(Scene.GetTransform(Entity).GetWorldPosition());
 		}
@@ -984,12 +1163,30 @@ void FViewportPanel::FocusSelection(FEditorContext& Context)
 		return;
 	}
 	FCamera& Camera = *Context.Camera;
+	if (Is2DMode() && Context.Camera == EditCamera)
+	{
+		Camera2D.FitBounds(Camera, Bounds); // 2D: 가운데 + 직교 높이 (회전·깊이 고정)
+		return;
+	}
 	Camera.SetPosition(FEditorCameraState::ComputeFramingPosition(Bounds, Camera.GetForwardVector(), Camera.GetFovYDegrees(), Camera.GetAspectRatio()));
 	if (Camera.IsOrthographic())
 	{
 		Camera.SetOrthographic(FEditorCameraState::ComputeFramingOrthoHeight(Bounds, Camera.GetAspectRatio()), Camera.GetAspectRatio(),
 		                       Camera.GetNearZ(), Camera.GetFarZ());
 	}
+}
+
+void FViewportPanel::FrameAll2D(FEditorContext& Context)
+{
+	if (!Is2DMode() || Context.Camera != EditCamera)
+	{
+		return;
+	}
+	FBox Bounds;
+	Context.Scene->GetRegistry().View<FTransformComponent>().Each([&](FEntity Entity, FTransformComponent&) {
+		Editor2DScene::AddBounds(*Context.Scene, Entity, Bounds);
+	});
+	Camera2D.FitBounds(*Context.Camera, Bounds);
 }
 
 bool FViewportPanel::VerifyPick(FEditorContext& Context, FEntity Target, bool bFocus, FEntity& OutPicked)
@@ -1084,6 +1281,12 @@ void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<
 	FRegistry& Registry = Scene.GetRegistry();
 	std::vector<FEntity> Placed;
 	bool                 bEdited = false;
+	// 2D 에셋은 Y = 0 평면 (2D 모드면 커서 아래, 아니면 커서 광선과 평면 교차 — 평행하면 위 위치에 깊이만 0)
+	FVector3 DropPoint2D = DropPoint;
+	if (!Editor2DScene::RayToPlaneY(Ray, 0.0f, DropPoint2D))
+	{
+		DropPoint2D.Y = 0.0f;
+	}
 	for (size_t Index = 0; Index < Paths.size(); ++Index)
 	{
 		const std::filesystem::path& Path      = Paths[Index];
@@ -1106,6 +1309,16 @@ void FViewportPanel::HandleAssetDrop(FEditorContext& Context, const std::vector<
 			Scene.GetTransform(Emitter).Position                           = Position;
 			Registry.Emplace<FParticleSystemComponent>(Emitter).Asset = FModelLoader::MakeAssetPath(Path);
 			Placed.push_back(Emitter);
+		}
+		else if (Extension == L".esprite" || Extension == L".eflipbook" || Extension == L".etileset")
+		{
+			// 2D: 스프라이트(첫 슬라이스) / 스프라이트 + 플립북 / 빈 타일맵 — 여러 개면 오른쪽(+X)으로 나란히
+			const std::string AssetPath = FModelLoader::MakeAssetPath(Path);
+			const FVector3    Position2D = DropPoint2D + FVector3(150.0f * static_cast<float>(Index), 0.0f, 0.0f);
+			const FEntity     Created    = Extension == L".esprite"   ? Editor2DScene::CreateSprite(Scene, AssetPath, Position2D)
+			                               : Extension == L".eflipbook" ? Editor2DScene::CreateFlipbook(Scene, AssetPath, Position2D)
+			                                                            : Editor2DScene::CreateTilemap(Scene, AssetPath, Position2D);
+			Placed.push_back(Created);
 		}
 		else if (Extension == L".eui")
 		{

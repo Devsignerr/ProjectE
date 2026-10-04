@@ -3,6 +3,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Physics/CharacterMovement.h"
+#include "Physics/CharacterMovement2D.h"
 #include "Physics/Physics2DComponents.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/Ragdoll.h"
@@ -137,6 +138,41 @@ void RegisterPhysicsTypes()
 		.Property(&FRigidBody2DComponent::bReportContacts, "ReportContacts", "충돌 알림")
 		.Tooltip("충돌 시작/끝 이벤트를 낸다 (OnCollisionBegin/End, 게임 모듈). 스크립트가 붙은 엔티티는 꺼져 있어도 알린다")
 		.Property(&FRigidBody2DComponent::bEnabled, "Enabled", "켜기").Tooltip("끄면 바디를 만들지 않는다")
+		.AsComponent();
+
+	// 2D 캐릭터 이동기 (규칙은 Physics/CharacterMovement2D.h — 런타임 상태는 FCharacterMovement2DSystem에만, 등록 안 함)
+	Registry.RegisterType<FCharacterMovement2DComponent>("CharacterMovement2DComponent", "2D 캐릭터 이동")
+		.Property(&FCharacterMovement2DComponent::Mode, "Mode", "방식")
+		.Enum({ { "Platformer", "플랫포머" }, { "TopDown", "탑다운" } })
+		.Tooltip("플랫포머: 중력·점프·원웨이·경사 (입력 X만). 탑다운: 중력 0, 8방향 (입력 X·Z)")
+		.Property(&FCharacterMovement2DComponent::CapsuleRadius, "CapsuleRadius", "캡슐 반지름 (cm)").Range(2.0f, 500.0f, 0.5f)
+		.Property(&FCharacterMovement2DComponent::CapsuleHeight, "CapsuleHeight", "캡슐 전체 높이 (cm)").Range(4.0f, 2000.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::MaxSpeed, "MaxSpeed", "최대 속력 (cm/s)").Range(0.0f, 10000.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::GroundAcceleration, "GroundAcceleration", "지상 가속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Property(&FCharacterMovement2DComponent::GroundDeceleration, "GroundDeceleration", "지상 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Property(&FCharacterMovement2DComponent::AirAcceleration, "AirAcceleration", "공중 가속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Property(&FCharacterMovement2DComponent::AirDeceleration, "AirDeceleration", "공중 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Property(&FCharacterMovement2DComponent::JumpVelocity, "JumpVelocity", "점프 속도 (cm/s)").Range(0.0f, 10000.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::MaxJumps, "MaxJumps", "최대 점프 수").Range(0.0f, 10.0f, 1.0f).Tooltip("2 = 2단 점프")
+		.Property(&FCharacterMovement2DComponent::GravityScale, "GravityScale", "중력 배율").Range(0.0f, 20.0f, 0.01f)
+		.Property(&FCharacterMovement2DComponent::MaxFallSpeed, "MaxFallSpeed", "최대 낙하 속도 (cm/s)").Range(0.0f, 20000.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::CoyoteTime, "CoyoteTime", "코요테 시간 (초)").Range(0.0f, 1.0f, 0.005f)
+		.Tooltip("발판을 떠난 뒤에도 바닥 점프를 허용하는 시간")
+		.Property(&FCharacterMovement2DComponent::JumpBufferTime, "JumpBufferTime", "점프 버퍼 (초)").Range(0.0f, 1.0f, 0.005f)
+		.Tooltip("착지 전에 누른 점프를 기억하는 시간")
+		.Property(&FCharacterMovement2DComponent::JumpCutFactor, "JumpCutFactor", "점프 컷 비율").Range(0.0f, 1.0f, 0.01f)
+		.Tooltip("가변 점프: 상승 중 버튼을 떼면(StopJumping) 상승 속도 × 이 값. 1 = 끔")
+		.Property(&FCharacterMovement2DComponent::MaxSlopeAngle, "MaxSlopeAngle", "최대 경사 (도)").Range(0.0f, 89.0f, 0.5f)
+		.Property(&FCharacterMovement2DComponent::GroundSnapDistance, "GroundSnapDistance", "바닥 붙이기 (cm)").Range(0.0f, 200.0f, 0.5f)
+		.Property(&FCharacterMovement2DComponent::DashSpeed, "DashSpeed", "대시 속도 (cm/s)").Range(0.0f, 20000.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::DashTime, "DashTime", "대시 시간 (초)").Range(0.0f, 2.0f, 0.005f)
+		.Property(&FCharacterMovement2DComponent::DashCooldown, "DashCooldown", "대시 쿨다운 (초)").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FCharacterMovement2DComponent::MaxAirDashes, "MaxAirDashes", "공중 대시 수").Range(0.0f, 10.0f, 1.0f)
+		.Property(&FCharacterMovement2DComponent::bDashIgnoresGravity, "DashIgnoresGravity", "대시 중 중력 무시")
+		.Property(&FCharacterMovement2DComponent::DropThroughTime, "DropThroughTime", "원웨이 내려가기 (초)").Range(0.0f, 2.0f, 0.01f)
+		.Property(&FCharacterMovement2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.Property(&FCharacterMovement2DComponent::bClientPrediction, "ClientPrediction", "클라이언트 예측")
+		.Tooltip("멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직이고 서버 결과로 보정한다. 프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야 한다")
 		.AsComponent();
 
 	constexpr const char* OffsetTip  = "엔티티 로컬 평면 오프셋 (X = 로컬 X, Y = 로컬 Z, cm)";

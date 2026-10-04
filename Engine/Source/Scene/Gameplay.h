@@ -87,6 +87,7 @@ struct FGameModeComponent
 	float TimeLimit    = 0.0f; // 진행 제한 시간 (초, 0 = 무제한)
 	int32 ScoreToWin   = 0;    // 이 점수에 먼저 닿으면 승리 (0 = 없음)
 	float RespawnDelay = 3.0f; // 사망 → 리스폰 (초, < 0 = 리스폰 안 함)
+	std::string PlayerPrefab;  // 이 씬 전용 플레이어 프리팹 (Content 기준 .eprefab — 비면 프로젝트 설정 맵 → 플레이어 프리팹, FNetPlayerSpawner::Begin)
 
 	// ---- 상태 (복제)
 	EMatchState MatchState       = EMatchState::WaitingToStart;

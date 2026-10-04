@@ -230,6 +230,22 @@ void FGameModuleHost::SetPhysics2D(FPhysics2DSystem* Physics2D)
 	}
 }
 
+void FGameModuleHost::SetCharacters2D(FCharacterMovement2DSystem* Characters2D)
+{
+	if (Module != nullptr)
+	{
+		Module->SetCharacters2D(Characters2D);
+	}
+}
+
+void FGameModuleHost::Character2DEvent(FScene& Scene, FEntity Entity, const FCharacterMove2DEvents& Events)
+{
+	if (Module != nullptr && bPlaying)
+	{
+		Module->OnCharacter2DEvent(Scene, Entity, Events);
+	}
+}
+
 void FGameModuleHost::PlayerJoined(FScene& Scene, uint32 PlayerId, FEntity Pawn)
 {
 	if (Module != nullptr && bPlaying)

@@ -211,6 +211,11 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	// 2D 스프라이트: 메시 루트 시그니처를 그대로 (반투명 메시와 같은 조명·안개 바인딩)
+	if (!SpriteRenderer.Init(*Rhi, ShaderLibrary, *Resources, RootSignature.Get(), SceneColorFormat, FD3D12RHI::DepthBufferFormat))
+	{
+		return false;
+	}
 	// 지형 (Phase 34): 그림자는 두 그림자 렌더러의 추가 캐스터 훅으로
 	if (!TerrainRenderer.Init(*Rhi, ShaderLibrary, *Resources, SceneColorFormat, FD3D12RHI::DepthBufferFormat))
 	{
@@ -327,6 +332,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::DdgiBlend:    return "DDGI 누적";
 	case ERenderTimer::RayTracedAmbientOcclusion: return "RTAO";
 	case ERenderTimer::SkinCache:    return "스킨 캐시";
+	case ERenderTimer::Sprites:      return "스프라이트";
 	default:                        return "?";
 	}
 }
@@ -396,6 +402,8 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.ShadowCacheReused += Stats.ShadowCacheReused;
 	Capture.ShadowCacheRebuilt += Stats.ShadowCacheRebuilt;
 	Capture.ScreenSizeCulled += Stats.ScreenSizeCulled;
+	Capture.Sprites += Stats.Sprites;
+	Capture.SpriteDrawCalls += Stats.SpriteDrawCalls;
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -451,6 +459,10 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
+	if (Capture.Sprites > 0.0)
+	{
+		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}", Capture.Sprites / Count, Capture.SpriteDrawCalls / Count);
+	}
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
 		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)
@@ -630,7 +642,7 @@ bool FSceneRenderer::ReloadShaders(bool bForceRecompile)
 		E_LOG(LogRenderer, Error, "포스트 프로세스 셰이더 다시 로드 실패: 기존 파이프라인을 유지합니다");
 		return false;
 	}
-	if (!ParticleRenderer.ReloadShaders(bForceRecompile))
+	if (!ParticleRenderer.ReloadShaders(bForceRecompile) || !SpriteRenderer.ReloadShaders(bForceRecompile))
 	{
 		return false;
 	}
@@ -691,6 +703,7 @@ void FSceneRenderer::Shutdown()
 	Clouds.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
+	SpriteRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
 	FoliageRenderer.Shutdown();
 	LocalLightRenderer.Shutdown();
@@ -1910,6 +1923,38 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			WaterInputs.IblTable                 = IblRenderer.GetLightingTable();
 			WaterInputs.CaptureAtlasSrv          = ReflectionCaptures.GetAtlasSrv();
 			Water.AddSurfacePass(Graph, WaterInputs, TimerId(ERenderTimer::Water));
+		}
+
+		// 2D 스프라이트 (Renderer/SpriteRenderer.h): 안개 적용·물 수면 뒤, 반투명 메시 앞 — 반투명 메시와 서로 정렬하지 않고 패스째 먼저
+		// (Masked 스프라이트가 쓴 깊이에 반투명 메시·파티클이 가려지도록). 정렬·업로드는 여기(게임 스레드), 람다는 준비된 값만.
+		// 캡처 굽기·와이어프레임(에셋 미리보기)에는 그리지 않는다
+		Stats.Sprites         = 0;
+		Stats.SpriteDrawCalls = 0;
+		if (!bRenderingCaptures && !bWireframe)
+		{
+			BeginCpuTimer(ERenderTimer::Sprites);
+			FSpriteRenderer::FPreparedFrame Sprites;
+			SpriteRenderer.Prepare(RenderCamera, Sprites);
+			EndCpuTimer(ERenderTimer::Sprites);
+			Stats.Sprites         = Sprites.SpriteCount;
+			Stats.SpriteDrawCalls = static_cast<uint32>(Sprites.Runs.size());
+			if (!Sprites.IsEmpty())
+			{
+				const D3D12_GPU_VIRTUAL_ADDRESS FogConstants = FogRenderer.GetConstantsAddress();
+				FRenderGraph::FPassBuilder      Pass         = Graph.AddPass("스프라이트");
+				// 깊이: Masked만 쓴다 (나머지는 테스트만 — 같은 상태로 선언). 메시 루트를 묶으므로 반투명 패스와 같은 조명 리소스를 선언
+				Pass.Write(OutRefs.Color, ERGAccess::RenderTarget).Write(OutRefs.Depth, ERGAccess::DepthWrite).Read(FogVolumeRef, ERGAccess::SrvPixel)
+					.Timer(TimerId(ERenderTimer::Sprites));
+				DeclareLighting(Pass);
+				Pass.Execute([this, PerFrameAddress, ShadowAddress, FogConstants, Sprites = std::move(Sprites)](FRGContext& Context) {
+					ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+					SceneColor->Bind(CommandList, nullptr);
+					BindMeshPassRoot(CommandList, PerFrameAddress, ShadowAddress, Sprites.Instances);
+					CommandList->SetGraphicsRootConstantBufferView(RootParam_Fog, FogConstants);
+					CommandList->SetGraphicsRootDescriptorTable(RootParam_FogVolume, FogRenderer.GetVolumeSrv().Gpu);
+					FSpriteRenderer::RecordDraws(CommandList, Sprites, RootParam_DrawConstants, RootParam_Instances, RootParam_InstanceIndices);
+				});
+			}
 		}
 
 		// 반투명/가산 메시 (먼 것부터, 깊이 테스트만): 안개는 셰이더가 직접, 파티클보다 먼저

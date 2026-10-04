@@ -71,10 +71,19 @@ struct FScriptPhysicsHooks
 	std::function<void(FEntity, const FVector3&)> SetVelocity; // cm/s
 	std::function<FVector3(FEntity)>              GetVelocity;
 	std::function<float(FEntity)>                 GetMass;     // kg (밀도 자동 계산 포함)
-	// 캐릭터 이동 (FCharacterMovementComponent): 이번 프레임 이동 방향(월드)/점프 요청, 바닥 여부
+	// 캐릭터 이동 (3D FCharacterMovementComponent / 2D FCharacterMovement2DComponent — FGameWorld가 엔티티의 컴포넌트로 고른다):
+	// 이번 프레임 이동 방향(월드, 2D는 X·Z)/점프 요청(누른 순간), 바닥 여부
 	std::function<void(FEntity, const FVector3&)> AddMovementInput;
 	std::function<void(FEntity)>                  Jump;
 	std::function<bool(FEntity)>                  IsGrounded;
+	// 2D 이동기 전용 (3D 캐릭터는 무시/0): 점프 버튼 뗌(가변 점프), 대시(방향 — 0이면 입력/속도 방향), 원웨이 내려가기, 남은 점프/대시 수, 대시 중
+	std::function<void(FEntity)>                  StopJumping;
+	std::function<void(FEntity, const FVector3&)> Dash;
+	std::function<void(FEntity)>                  DropDown;
+	std::function<FVector3(FEntity)>              GetMovementVelocity; // 캐릭터 이동 속도 (2D는 X·Z, 3D 캐릭터도)
+	std::function<int32(FEntity)>                 GetJumpsRemaining;
+	std::function<int32(FEntity)>                 GetDashesRemaining;
+	std::function<bool(FEntity)>                  IsDashing;
 	// 래그돌 (Physics/Ragdoll.h): 엔티티 자신이나 자손의 스켈레탈 모델
 	std::function<bool(FEntity)>                  EnableRagdoll;
 	std::function<void(FEntity)>                  DisableRagdoll;

@@ -413,6 +413,7 @@ bool FEditorApplication::OnInit()
 	Camera.SetPosition(FVector3(-600.0f, -400.0f, 300.0f));
 	Camera.LookAt(FVector3(0.0f, 0.0f, 80.0f));
 	CameraController.MoveSpeed = ViewportPrefs.DefaultCameraSpeed; // 저장된 편집 카메라가 있으면 아래에서 덮인다
+	ViewportPanel.CameraSpeed  = &CameraController.MoveSpeed;      // 뷰포트 툴바 속도 조절 (값은 편집 카메라와 함께 저장)
 	ApplyViewportPreferences();
 	LoadEditorCamera();
 	if (FSettingsSection* Section = FSettingsRegistry::Get().Find("EditorViewport"))

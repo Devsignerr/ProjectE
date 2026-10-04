@@ -39,7 +39,10 @@
 
 #include <algorithm>
 #include <cwctype>
+#include <format>
+#include <iterator>
 #include <limits>
+#include <string>
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
@@ -766,6 +769,37 @@ void FViewportPanel::DrawToolbar(FEditorContext& Context)
 	}
 	ImGui::EndDisabled();
 	ImGui::SetItemTooltip("편집 카메라 투영 전환 (직교: 휠로 확대/축소)");
+
+	// 편집 카메라 이동 속도 (우클릭 + 휠과 같은 값, 범위도 FFlyCameraController와 같다)
+	if (CameraSpeed != nullptr)
+	{
+		ImGui::SameLine();
+		const std::string SpeedLabel = std::format(ICON_FA_GAUGE_HIGH " {:.0f}##CameraSpeed", *CameraSpeed);
+		if (ImGui::Button(SpeedLabel.c_str()))
+		{
+			ImGui::OpenPopup("CameraSpeed");
+		}
+		ImGui::SetItemTooltip("편집 카메라 이동 속도 (cm/초) — 우클릭 + 휠로도 바꾼다, Shift = 가속");
+		if (ImGui::BeginPopup("CameraSpeed"))
+		{
+			ImGui::SetNextItemWidth(220.0f);
+			ImGui::SliderFloat("속도 (cm/초)", CameraSpeed, 10.0f, 50000.0f, "%.0f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+			constexpr float Presets[] = { 100.0f, 500.0f, 1000.0f, 2500.0f, 5000.0f, 10000.0f };
+			for (size_t Index = 0; Index < std::size(Presets); ++Index)
+			{
+				if (Index > 0)
+				{
+					ImGui::SameLine();
+				}
+				const std::string PresetLabel = std::format("{:.0f}", Presets[Index]);
+				if (ImGui::Button(PresetLabel.c_str()))
+				{
+					*CameraSpeed = Presets[Index];
+				}
+			}
+			ImGui::EndPopup();
+		}
+	}
 	ImGui::SameLine();
 	if (ImGui::ArrowButton("##SnapOptions", ImGuiDir_Down))
 	{

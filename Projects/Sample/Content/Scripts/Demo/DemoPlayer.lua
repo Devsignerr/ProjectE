@@ -1,7 +1,8 @@
 -- 데모 맵 플레이어 (싱글, ExecutionLocation = Both): 이동은 CharacterMovementComponent, 이 스크립트는 입력 → 이동 방향과 카메라만.
 --   V: 시점 전환 3인칭 → 1인칭 → 탑뷰 → 3인칭 (CameraMode 프로퍼티 = 시작 시점)
 --   3인칭/1인칭: 마우스로 시점(런타임은 클릭 시 커서 잠금·ESC 해제, 에디터 플레이 뷰포트는 우클릭을 누른 채), WASD = 보는 방향 기준
---   탑뷰: 위에서 내려다보는 고정 각도 카메라, WASD = 화면 기준, 몸은 움직이는 방향을 본다. 마우스 시점은 카메라 방위만 돌린다
+--   탑뷰: 상공에서 내려다보는 직교 카메라(고정 각도, 화면 세로 = TopDownViewHeight), WASD = 화면 기준, 몸은 움직이는 방향을 본다.
+--         마우스 시점은 카메라 방위만 돌린다. 벽 검사 레이캐스트를 하지 않는다(가파른 각도에서는 시작점이 캡슐 안이라 자기 몸에 맞았다)
 --   1인칭에서는 몸(Body)을 숨긴다 (스케일 — 그림자도 함께 사라짐)
 -- 몸 방향은 엔진이 ControlRotation yaw를 따른다(FaceControlYaw). 카메라는 OnLateUpdate에서 놓는다(물리 뒤 — 떨림 방지)
 local DemoPlayer = {
@@ -11,8 +12,9 @@ local DemoPlayer = {
 		ThirdDistance    = 380.0,         -- cm
 		ThirdHeight      = 70.0,          -- cm (캡슐 중심 기준 시점 높이)
 		FirstHeight      = 70.0,          -- cm (눈 높이, 캡슐 중심 기준)
-		TopDownDistance  = 1600.0,        -- cm
-		TopDownPitch     = -58.0,         -- 도
+		TopDownDistance  = 8000.0,        -- cm (직교라 화면 크기와 무관 — 지형·건물 위로 충분히 높게)
+		TopDownPitch     = -60.0,         -- 도
+		TopDownViewHeight = 1500.0,       -- cm (직교 화면 세로가 담는 월드 높이)
 		MinPitch         = -75.0,
 		MaxPitch         = 70.0,
 	},
@@ -41,6 +43,7 @@ function DemoPlayer:BeginLocalPlayer()
 	self.IsLocalPlayer = true
 	self.Camera = Scene.Create("PlayerCamera") -- 레벨 카메라(Priority 0)보다 우선하는 로컬 카메라
 	local Camera = self.Camera:AddComponent("CameraComponent")
+	self.CameraComponent = Camera
 	Camera.Priority    = 10
 	Camera.FovYDegrees = 70.0
 	Camera.NearZ       = 5.0
@@ -79,6 +82,10 @@ function DemoPlayer:ApplyMode()
 	end
 	if self.Mode == "TopDown" then
 		self.BodyYaw = self.Yaw
+	end
+	if self.CameraComponent then
+		self.CameraComponent.Orthographic = (self.Mode == "TopDown")
+		self.CameraComponent.OrthoHeight  = self.Properties.TopDownViewHeight
 	end
 end
 
@@ -135,7 +142,7 @@ function DemoPlayer:PlaceCamera()
 	else
 		Eye, Look, Distance = Center + Vector3(0, 0, P.ThirdHeight), DirectionFrom(self.Yaw, self.Pitch), P.ThirdDistance
 	end
-	if Distance > 0 then
+	if Distance > 0 and self.Mode ~= "TopDown" then
 		-- 벽·지형 뒤로 들어가지 않게: 캡슐 밖에서 카메라 쪽으로 레이캐스트
 		local Start = Eye - Look * CameraClearance
 		local Hit = Physics.Raycast(Start, -Look, Distance)

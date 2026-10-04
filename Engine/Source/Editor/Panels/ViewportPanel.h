@@ -70,6 +70,7 @@ public:
 	bool          bShowGrid    = true;
 	bool          bShowNavMesh = false; // 내비메시(+ 플레이 중 이동 경로) 디버그 표시
 	FSnapSettings Snap;
+	float*        CameraSpeed = nullptr; // 편집 카메라 이동 속도 (cm/초, 비소유 — FEditorApplication의 FFlyCameraController::MoveSpeed). 툴바에서 고친다
 
 	// 표시할 내비메시 (FNavMesh::GetDebugTriangles, 엔진 좌표). 다음 렌더에서 GPU 버퍼로 올린다. 빈 목록 = 지움
 	void SetNavMeshTriangles(std::vector<FVector3> Triangles);

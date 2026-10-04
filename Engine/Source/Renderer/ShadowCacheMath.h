@@ -76,6 +76,25 @@ namespace ShadowCacheMath
 		return Action;
 	}
 
+	// 섀도우 맵 장 복사 생략: 캐시를 쓰는 캐스케이드(Rebuild/Reuse)가 캐시 위에 아무것도 그리지 않으면(bDrawsOnTop = false — 동적 메시·
+	// 동적 추가 캐스터가 그 캐스케이드 프러스텀에 없음) 장은 프레임 끝에 캐시 내용 그대로다("깨끗함"). 지난 프레임 끝에 깨끗했고 캐시 키가 같으면
+	// 장은 이미 캐시 내용이므로 이번 복사는 생략한다 (이번에 위에 그리더라도 — 동적 캐스터가 들어온 첫 프레임). 판정은 캐스케이드마다 따로 —
+	// 동적 캐스터가 닿지 않는 캐스케이드는 다른 캐스케이드에 동적 캐스터가 있어도 복사하지 않는다
+	struct FSliceCopyState
+	{
+		uint64 Key    = 0;
+		bool   bClean = false;
+	};
+	// 반환 = 이번 프레임 복사 생략
+	inline bool UpdateSliceCopy(FSliceCopyState& State, ECacheAction Action, uint64 CachedKey, bool bDrawsOnTop)
+	{
+		const bool bCleanNow = Action != ECacheAction::Direct && !bDrawsOnTop;
+		const bool bSkip     = Action != ECacheAction::Direct && State.bClean && State.Key == CachedKey;
+		State.bClean         = bCleanNow;
+		State.Key            = CachedKey;
+		return bSkip;
+	}
+
 	// 캐스케이드 c의 LOD 바이어스 = floor(c × BiasPerCascade)
 	inline uint32 ComputeCascadeLodBias(uint32 Cascade, float BiasPerCascade)
 	{

@@ -143,3 +143,31 @@ E_TEST(ShadowCache_ImmediateRebuildAfterSustainedReuse)
 	E_EXPECT_TRUE(Decide(State, 5, true) == ECacheAction::Direct);
 	E_EXPECT_FALSE(State.bCacheValid);
 }
+
+// 장 복사 생략: 캐시 위에 그리지 않은 장은 다음 프레임(같은 캐시 키) 복사를 건너뛴다. 동적 캐스터가 있는 장만 매 프레임 복사
+E_TEST(ShadowCache_SliceCopySkippedOnlyWhenClean)
+{
+	FSliceCopyState Clean;
+	FSliceCopyState Dynamic;
+	E_EXPECT_FALSE(UpdateSliceCopy(Clean, ECacheAction::Rebuild, 7, false)); // 다시 그린 프레임은 복사
+	E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Rebuild, 7, true));
+	for (int32 Frame = 0; Frame < 3; ++Frame)
+	{
+		E_EXPECT_TRUE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, false));   // 장이 이미 캐시 내용 그대로
+		E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, true)); // 지난 프레임 동적 캐스터가 장을 더럽혔다
+	}
+	// 동적 캐스터가 장을 떠난 프레임: 지난 프레임 더러웠으므로 한 번 더 복사, 그다음부터 생략
+	E_EXPECT_FALSE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, false));
+	E_EXPECT_TRUE(UpdateSliceCopy(Dynamic, ECacheAction::Reuse, 7, false));
+	// 동적 캐스터가 들어온 프레임: 지난 프레임이 깨끗해 이번 복사는 생략 (캐시 내용 위에 그린다), 다음 프레임은 복사
+	E_EXPECT_TRUE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, true));
+	E_EXPECT_FALSE(UpdateSliceCopy(Clean, ECacheAction::Reuse, 7, true));
+	// 캐시 키가 바뀌면(다시 그림) 깨끗했어도 복사, Direct는 장을 지우고 다 그리므로 다음 프레임 복사
+	FSliceCopyState Key;
+	UpdateSliceCopy(Key, ECacheAction::Rebuild, 1, false);
+	E_EXPECT_TRUE(UpdateSliceCopy(Key, ECacheAction::Reuse, 1, false));
+	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Rebuild, 2, false));
+	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Direct, 2, false));
+	E_EXPECT_FALSE(UpdateSliceCopy(Key, ECacheAction::Reuse, 2, false));
+	E_EXPECT_TRUE(UpdateSliceCopy(Key, ECacheAction::Reuse, 2, false));
+}

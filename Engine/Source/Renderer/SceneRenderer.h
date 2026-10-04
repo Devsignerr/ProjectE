@@ -103,6 +103,7 @@ struct FSceneRenderStats
 	uint64 ShadowTriangles = 0; // 그림자 패스에서 그린 삼각형
 	uint32 ShadowCacheReused  = 0; // 방향광 그림자 캐시를 재사용한 캐스케이드 수
 	uint32 ShadowCacheRebuilt = 0; // 캐시를 다시 그린 캐스케이드 수
+	uint32 ShadowCacheCopied  = 0; // 캐시 → 섀도우 맵 복사한 캐스케이드 수 (생략 제외)
 	uint32 ScreenSizeCulled   = 0; // 메인 프러스텀 안이지만 r.MinScreenSize/r.MaxDrawDistance로 뺀 인스턴스
 	uint32 Particles     = 0; // 그린 파티클 입자 수
 	uint32 Sprites       = 0; // 그린 2D 스프라이트 수
@@ -578,6 +579,7 @@ private:
 		double UploadBytes     = 0.0;
 		double ShadowCacheReused  = 0.0;
 		double ShadowCacheRebuilt = 0.0;
+		double ShadowCacheCopied  = 0.0;
 		double ScreenSizeCulled   = 0.0;
 		double Sprites            = 0.0;
 		double SpriteDrawCalls    = 0.0;

@@ -252,9 +252,9 @@ void FShadowRenderer::ReleaseShadowMap()
 	ShadowMap.Reset();
 	DsvHeap.Shutdown(); // DSV 힙은 기록 시점에만 읽히므로 즉시 해제
 	MapResolution = 0;
-	for (bool& bClean : bMapSliceClean)
+	for (ShadowCacheMath::FSliceCopyState& Slice : MapSlices)
 	{
-		bClean = false; // 새 섀도우 맵은 내용이 없다
+		Slice.bClean = false; // 새 섀도우 맵은 캐시 내용이 아니다
 	}
 	ReleaseCache(); // 크기가 바뀌면 캐시도 다시 만든다
 }
@@ -439,7 +439,10 @@ void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12D
 	const uint64 StaticHash = bCache ? ComputeStaticSetHash(Instances) : 0;
 	const float  MinTexels  = FrameSettings.MinCasterTexels;
 	bExtraStatic            = bCache && ExtraCasters && ExtraCasterState;
-	bExtraDynamic           = ExtraDynamicCasters && HasExtraDynamicCasters && HasExtraDynamicCasters();
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		bExtraDynamic[Index] = ExtraDynamicCasters && HasExtraDynamicCasters && HasExtraDynamicCasters(CascadeFrustums[Index]);
+	}
 
 	// ---- 1) 캐스케이드별 캐시 행동 (메인 스레드 — 추가 캐스터 상태 콜백·캐시 생성)
 	//   키 = 캐스케이드 뷰-투영 + 설정 + 정적 집합 + 추가 캐스터 상태 + 캐시 세대
@@ -577,10 +580,9 @@ void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12D
 		{
 			DynamicBatches[Index].Upload(DynamicBuffer);
 		}
-		const bool bCleanNow  = Action != ECacheAction::Direct && DynamicBatches[Index].IsEmpty() && (bExtraStatic || !ExtraCasters) && !bExtraDynamic;
-		bSkipCopy[Index]      = bCleanNow && bMapSliceClean[Index] && MapSliceKey[Index] == CacheStates[Index].CachedKey;
-		bMapSliceClean[Index] = bCleanNow;
-		MapSliceKey[Index]    = CacheStates[Index].CachedKey;
+		// 캐시 위에 그리는 것: 동적 메시 묶음, 캐시에 넣지 않는 추가 캐스터, 이 캐스케이드에 닿는 동적 추가 캐스터 (캐스케이드별)
+		const bool bDrawsOnTop = !DynamicBatches[Index].IsEmpty() || (!bExtraStatic && ExtraCasters) || bExtraDynamic[Index];
+		bSkipCopy[Index]       = UpdateSliceCopy(MapSlices[Index], Action, CacheStates[Index].CachedKey, bDrawsOnTop);
 	}
 }
 
@@ -593,6 +595,7 @@ void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, 
 	Triangles    = 0;
 	CacheReused  = 0;
 	CacheRebuilt = 0;
+	CacheCopied  = 0;
 	if (ActiveCascades == 0 || !ShadowMap || !ShadowMapRef.IsValid())
 	{
 		return;
@@ -625,7 +628,9 @@ void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, 
 		bool bAnyCopy = false;
 		for (uint32 Index = 0; Index < ActiveCascades; ++Index)
 		{
-			bAnyCopy |= CascadeActions[Index] != ShadowCacheMath::ECacheAction::Direct && !bSkipCopy[Index];
+			const bool bCopy = CascadeActions[Index] != ShadowCacheMath::ECacheAction::Direct && !bSkipCopy[Index];
+			bAnyCopy |= bCopy;
+			CacheCopied += bCopy ? 1u : 0u;
 		}
 		if (bAnyCopy)
 		{
@@ -765,9 +770,13 @@ void FShadowRenderer::Record(ID3D12GraphicsCommandList* CommandList, const FMesh
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		ExtraCasters(CommandList, CascadeData[Index].ViewProjection, CascadeFrustums[Index], false);
 	}
-	// 동적 추가 캐스터 (움직이는 2D 스프라이트 등): 모든 캐스케이드에 매 프레임 (Direct면 정적 추가 캐스터와 함께 전부, 캐시면 복사된 정적 깊이 위에)
-	for (uint32 Index = 0; bExtraDynamic && Index < ActiveCascades; ++Index)
+	// 동적 추가 캐스터 (움직이는 2D 스프라이트 등): 닿는 캐스케이드에 매 프레임 (Direct면 정적 추가 캐스터와 함께 전부, 캐시면 복사된 정적 깊이 위에)
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
 	{
+		if (!bExtraDynamic[Index])
+		{
+			continue;
+		}
 		const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap.GetCpuHandle(Index);
 		CommandList->OMSetRenderTargets(0, nullptr, FALSE, &Dsv);
 		ExtraDynamicCasters(CommandList, CascadeData[Index].ViewProjection, CascadeFrustums[Index], false);

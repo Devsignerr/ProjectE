@@ -56,6 +56,10 @@ bool FSpriteShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibra
 	Rhi           = &InRhi;
 	ShaderLibrary = &InShaderLibrary;
 	Resources     = &InResources;
+	DirectionalDepthBias = FShadowSettings{}.DepthBias;
+	DirectionalSlopeBias = FShadowSettings{}.SlopeBias;
+	LocalDepthBias       = FLocalShadowSettings{}.DepthBias;
+	LocalSlopeBias       = FLocalShadowSettings{}.SlopeBias;
 
 	using FRange = FD3D12RootSignature;
 	E_CHECK(RootSignature.AddConstants(17, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX) == SpriteShadowParam_Constants);
@@ -107,7 +111,7 @@ bool FSpriteShadowRenderer::CreatePipelines(FD3D12PipelineState& OutDirectional,
 	{
 		return false;
 	}
-	// 바이어스: 지형 그림자 PSO와 같은 규칙 (ShadowRenderer/LocalLightRenderer 기본값)
+	// 바이어스: 그림자 설정 값 (SetBias — 메시 그림자 PSO와 같은 값)
 	FGraphicsPipelineDesc Desc;
 	Desc.RootSignature        = RootSignature.Get();
 	Desc.VertexShader         = FD3D12ShaderCompiler::ToBytecode(Vertex.Get());
@@ -117,16 +121,16 @@ bool FSpriteShadowRenderer::CreatePipelines(FD3D12PipelineState& OutDirectional,
 	Desc.bDepthEnable         = true;
 	Desc.CullMode             = D3D12_CULL_MODE_NONE; // 양면
 	Desc.bDepthClip           = false;                // 방향광: 캐스케이드 앞 캐스터를 근평면에 눌러 그린다
-	Desc.DepthBias            = FShadowSettings{}.DepthBias;
-	Desc.SlopeScaledDepthBias = FShadowSettings{}.SlopeBias;
+	Desc.DepthBias            = DirectionalDepthBias;
+	Desc.SlopeScaledDepthBias = DirectionalSlopeBias;
 	ID3D12Device* Device      = Rhi->GetDevice().GetDevice();
 	if (!OutDirectional.InitGraphics(Device, Desc, L"SpriteShadowPipeline"))
 	{
 		return false;
 	}
 	Desc.bDepthClip           = true;
-	Desc.DepthBias            = FLocalShadowSettings{}.DepthBias;
-	Desc.SlopeScaledDepthBias = FLocalShadowSettings{}.SlopeBias;
+	Desc.DepthBias            = LocalDepthBias;
+	Desc.SlopeScaledDepthBias = LocalSlopeBias;
 	return OutLocal.InitGraphics(Device, Desc, L"SpriteLocalShadowPipeline");
 }
 
@@ -150,6 +154,20 @@ bool FSpriteShadowRenderer::ReloadShaders(bool bForceRecompile)
 	return true;
 }
 
+void FSpriteShadowRenderer::SetBias(int32 InDirectionalDepthBias, float InDirectionalSlopeBias, int32 InLocalDepthBias, float InLocalSlopeBias)
+{
+	if (InDirectionalDepthBias == DirectionalDepthBias && InDirectionalSlopeBias == DirectionalSlopeBias && InLocalDepthBias == LocalDepthBias &&
+	    InLocalSlopeBias == LocalSlopeBias)
+	{
+		return;
+	}
+	DirectionalDepthBias = InDirectionalDepthBias;
+	DirectionalSlopeBias = InDirectionalSlopeBias;
+	LocalDepthBias       = InLocalDepthBias;
+	LocalSlopeBias       = InLocalSlopeBias;
+	ReloadShaders(false); // 실패하면 기존 PSO 유지 (오류 로그)
+}
+
 void FSpriteShadowRenderer::Prepare(std::span<const FSpriteDrawItem> Items, std::span<const FSpriteChunkDraw> Chunks)
 {
 	Runs.clear();
@@ -157,7 +175,6 @@ void FSpriteShadowRenderer::Prepare(std::span<const FSpriteDrawItem> Items, std:
 	StaticItemSum    = 0;
 	StaticItemCount  = 0;
 	StaticItemBounds = FBox();
-	bHasDynamic = false;
 	CasterCount = 0;
 	StaticCount = 0;
 	if (Rhi == nullptr || (Items.empty() && Chunks.empty()))
@@ -275,10 +292,18 @@ void FSpriteShadowRenderer::Prepare(std::span<const FSpriteDrawItem> Items, std:
 			StaticCount += Chunk.Count;
 		}
 	}
+}
+
+bool FSpriteShadowRenderer::HasDynamicCastersIn(const FFrustum& Frustum) const
+{
 	for (const FRun& Run : Runs)
 	{
-		bHasDynamic |= !Run.bStatic;
+		if (!Run.bStatic && Frustum.Intersects(Run.Bounds))
+		{
+			return true;
+		}
 	}
+	return false;
 }
 
 uint64 FSpriteShadowRenderer::GetStaticStateHash(const FFrustum& Frustum) const

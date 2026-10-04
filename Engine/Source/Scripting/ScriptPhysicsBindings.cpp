@@ -13,6 +13,9 @@
 //   Physics2D.OverlapBox(center, size, angle?, layers?) — size = 전체 크기, angle = 도(반시계 +) / Physics2D.OverlapCircle(center, radius, layers?)
 //     → 엔티티 배열 (트리거 제외)
 //   entity:AddForce/AddImpulse/SetVelocity/GetVelocity/GetMass는 2D 강체만 있는 엔티티면 2D로 동작한다 (Vector3의 X·Z)
+//   마우스 끌기 (런타임 전용 마우스 관절, 엔티티당 하나): Physics2D.BeginDrag(entity, point, maxForce?) → 잡았는가 (동적 2D 바디만,
+//     point = 잡은 점, maxForce N 생략 = 질량 × 1000), Physics2D.UpdateDrag(entity, target) → 끄는 중인가, Physics2D.EndDrag(entity) → 끌고 있었는가.
+//     바디가 사라지거나 다시 만들어지면 끝난다
 #include "Core/Settings/ProjectSettings.h"
 #include "Scene/Scene.h"
 #include "Scripting/LuaRuntime.h"
@@ -215,6 +218,27 @@ void FLuaRuntime::RegisterPhysics2DBindings()
 			PhysicsHooks->OverlapBox2D(PlaneCenter, PlaneSize * 0.5f, AngleDegrees.value_or(0.0f) * FMath::DegToRad, LayerMask, Entities);
 		}
 		return ToEntityTable(Entities);
+	};
+	const auto RequireEntity = [this](const FScriptEntity& Entity, const char* Function) {
+		if (Scene == nullptr || !Scene->GetRegistry().IsValid(Entity.Entity))
+		{
+			throw std::runtime_error(std::format("{}: 유효하지 않은 엔티티입니다", Function));
+		}
+		return Entity.Entity;
+	};
+	Physics2DTable["BeginDrag"] = [=, this](const FScriptEntity& Entity, const sol::object& Point, sol::optional<float> MaxForce) {
+		const FEntity  Target     = RequireEntity(Entity, "Physics2D.BeginDrag");
+		const FVector2 PlanePoint = ToPlane(Point, "Physics2D.BeginDrag", "point");
+		return PhysicsHooks != nullptr && PhysicsHooks->BeginDrag2D && PhysicsHooks->BeginDrag2D(Target, PlanePoint, MaxForce.value_or(0.0f));
+	};
+	Physics2DTable["UpdateDrag"] = [=, this](const FScriptEntity& Entity, const sol::object& Point) {
+		const FEntity  Target     = RequireEntity(Entity, "Physics2D.UpdateDrag");
+		const FVector2 PlanePoint = ToPlane(Point, "Physics2D.UpdateDrag", "target");
+		return PhysicsHooks != nullptr && PhysicsHooks->UpdateDrag2D && PhysicsHooks->UpdateDrag2D(Target, PlanePoint);
+	};
+	Physics2DTable["EndDrag"] = [=, this](const FScriptEntity& Entity) {
+		const FEntity Target = RequireEntity(Entity, "Physics2D.EndDrag");
+		return PhysicsHooks != nullptr && PhysicsHooks->EndDrag2D && PhysicsHooks->EndDrag2D(Target);
 	};
 	Physics2DTable["OverlapCircle"] = [=, this](const sol::object& Center, float Radius, sol::object Layers) {
 		const FVector2 PlaneCenter = ToPlane(Center, "Physics2D.OverlapCircle", "center");

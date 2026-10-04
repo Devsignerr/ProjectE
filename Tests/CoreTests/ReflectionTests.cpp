@@ -177,3 +177,52 @@ E_TEST(Reflection_ComponentHooks)
 	E_EXPECT_TRUE(bFoundComponent);
 	E_EXPECT_FALSE(bFoundThing);
 }
+
+// 문자열 선택지 공급자: StringOptions(인자 없음)와 StringOptionsFor(그 오브젝트를 받음 — 같은 오브젝트의 다른 값에 따라 목록이 바뀜)
+namespace
+{
+	struct FOptionsThing
+	{
+		std::string Kind = "Fruit";
+		std::string Choice;
+		std::string Fixed;
+		std::string Plain;
+	};
+} // namespace
+
+E_TEST(Reflection_StringOptionsProviders)
+{
+	static bool bRegistered = false;
+	if (!bRegistered)
+	{
+		bRegistered = true;
+		FTypeRegistry::Get().RegisterType<FOptionsThing>("OptionsThing", "선택지 테스트")
+			.Property(&FOptionsThing::Kind, "Kind", "종류")
+			.Property(&FOptionsThing::Choice, "Choice", "선택")
+			.StringOptionsFor([](const FOptionsThing& Thing) {
+				return Thing.Kind == "Fruit" ? std::vector<std::string>{ "Apple", "Pear" } : std::vector<std::string>{ "Carrot" };
+			})
+			.Property(&FOptionsThing::Fixed, "Fixed", "고정")
+			.StringOptions([]() { return std::vector<std::string>{ "A", "B", "C" }; })
+			.Property(&FOptionsThing::Plain, "Plain", "일반");
+	}
+	const FTypeInfo* Type = FTypeRegistry::Get().Find<FOptionsThing>();
+	E_EXPECT_TRUE(Type != nullptr);
+	if (Type == nullptr)
+	{
+		return;
+	}
+	FOptionsThing        Thing;
+	const FPropertyInfo* Choice = Type->FindProperty("Choice");
+	E_EXPECT_TRUE(Choice->HasStringOptions() && Choice->StringOptionsFor != nullptr && Choice->StringOptions == nullptr);
+	E_EXPECT_TRUE(Choice->GetStringOptions(&Thing) == (std::vector<std::string>{ "Apple", "Pear" }));
+	Thing.Kind = "Vegetable";
+	E_EXPECT_TRUE(Choice->GetStringOptions(&Thing) == (std::vector<std::string>{ "Carrot" }));
+	E_EXPECT_TRUE(Choice->GetStringOptions(nullptr).empty());
+
+	const FPropertyInfo* Fixed = Type->FindProperty("Fixed");
+	E_EXPECT_TRUE(Fixed->HasStringOptions() && Fixed->StringOptionsFor == nullptr);
+	E_EXPECT_EQ(Fixed->GetStringOptions(&Thing).size(), static_cast<size_t>(3));
+	E_EXPECT_FALSE(Type->FindProperty("Plain")->HasStringOptions());
+	E_EXPECT_TRUE(Type->FindProperty("Plain")->GetStringOptions(&Thing).empty());
+}

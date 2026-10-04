@@ -60,6 +60,39 @@ struct FPhysics2DWorld::FImpl
 	std::vector<FBodySlot> Bodies;
 	std::vector<uint32>    FreeSlots;
 	uint32                 AliveCount = 0;
+
+	struct FJointSlot
+	{
+		b2JointId Joint  = b2_nullJointId;
+		uint32    Body1  = InvalidBody;
+		uint32    Body2  = InvalidBody;
+		bool      bAlive = false;
+	};
+	std::vector<FJointSlot> Joints; // 칸은 다시 쓰지 않는다 (지운 관절 핸들이 다른 관절을 가리키지 않게 — 플레이당 관절 수는 작다)
+	uint32                  AliveJointCount = 0;
+	b2BodyId                Ground = b2_nullBodyId; // 월드 고정 관절용 정적 바디 (원점, 모양 없음 — 처음 쓸 때 만든다)
+
+	b2BodyId GetGround()
+	{
+		if (!b2Body_IsValid(Ground))
+		{
+			b2BodyDef Def = b2DefaultBodyDef();
+			Def.type      = b2_staticBody;
+			Ground        = b2CreateBody(World, &Def);
+		}
+		return Ground;
+	}
+
+	void KillJoint(uint32 Handle, bool bDestroy)
+	{
+		FJointSlot& Slot = Joints[Handle];
+		if (bDestroy && b2Joint_IsValid(Slot.Joint))
+		{
+			b2DestroyJoint(Slot.Joint);
+		}
+		Slot = FJointSlot{};
+		--AliveJointCount;
+	}
 	FCollisionLayerSettings Layers;
 
 	// 바디 쌍 접촉 수 (모양 쌍마다 +1 — 0 ↔ 1에서만 시작/끝을 낸다). 일반 접촉과 트리거는 따로
@@ -413,6 +446,34 @@ uint32 FPhysics2DWorld::CreateBody(const FPhysics2DBodyDesc& Desc)
 			++ShapeCount;
 			break;
 		}
+		case EPhysics2DShape::Chain:
+		{
+			if (Shape.Points.size() < 4 || Shape.bIsTrigger)
+			{
+				break;
+			}
+			std::vector<b2Vec2> Points;
+			Points.reserve(Shape.Points.size());
+			for (const FVector2& Point : Shape.Points)
+			{
+				Points.push_back(b2Add(ToB2(Point), Offset));
+			}
+			b2SurfaceMaterial Material = b2DefaultSurfaceMaterial();
+			Material.friction          = ShapeDef.material.friction;
+			Material.restitution       = ShapeDef.material.restitution;
+			b2ChainDef ChainDef        = b2DefaultChainDef();
+			ChainDef.userData          = UserData;
+			ChainDef.points            = Points.data();
+			ChainDef.count             = static_cast<int>(Points.size());
+			ChainDef.materials         = &Material;
+			ChainDef.materialCount     = 1;
+			ChainDef.filter            = Filter;
+			ChainDef.isLoop            = true;
+			ChainDef.enableSensorEvents = true;
+			b2CreateChain(Body, &ChainDef);
+			++ShapeCount;
+			break;
+		}
 		case EPhysics2DShape::Edge:
 		{
 			std::vector<b2Vec2> Points;
@@ -506,6 +567,15 @@ void FPhysics2DWorld::DestroyBody(uint32 Body)
 		return;
 	}
 	Impl->EndPairsOf(Body);
+	// 이 바디의 관절을 먼저 지운다 (Box2D도 함께 지우지만 우리 핸들이 남지 않게)
+	for (uint32 Joint = 0; Joint < Impl->Joints.size(); ++Joint)
+	{
+		const FImpl::FJointSlot& JointSlot = Impl->Joints[Joint];
+		if (JointSlot.bAlive && (JointSlot.Body1 == Body || JointSlot.Body2 == Body))
+		{
+			Impl->KillJoint(Joint, true);
+		}
+	}
 	b2DestroyBody(Slot->Body);
 	Slot->Body   = b2_nullBodyId;
 	Slot->bAlive = false;
@@ -787,6 +857,185 @@ void FPhysics2DWorld::ConsumeContactEvents(std::vector<FPhysics2DContactEvent>& 
 {
 	OutEvents.insert(OutEvents.end(), Impl->Pending.begin(), Impl->Pending.end());
 	Impl->Pending.clear();
+}
+
+uint32 FPhysics2DWorld::CreateJoint(const FPhysics2DJointDesc& Desc)
+{
+	FImpl::FBodySlot* Slot2 = Impl->Find(Desc.Body2);
+	if (!Impl->IsValid() || Slot2 == nullptr || Desc.Body1 == Desc.Body2)
+	{
+		return InvalidJoint;
+	}
+	FImpl::FBodySlot* Slot1 = Desc.Type == EPhysics2DJoint::Mouse ? nullptr : Impl->Find(Desc.Body1);
+	if (Slot1 == nullptr && Desc.Type != EPhysics2DJoint::Mouse && Desc.Body1 != InvalidBody)
+	{
+		return InvalidJoint; // 대상 바디가 사라졌다
+	}
+	const b2BodyId BodyA   = Slot1 != nullptr ? Slot1->Body : Impl->GetGround();
+	const b2BodyId BodyB   = Slot2->Body;
+	const b2Vec2   AnchorA = ToB2(Desc.LocalAnchor1);
+	const b2Vec2   AnchorB = ToB2(Desc.LocalAnchor2);
+	const b2Vec2   Axis    = b2Normalize(b2Vec2{ Desc.LocalAxis1.X, Desc.LocalAxis1.Y });
+	const float    Lower   = std::min(Desc.Lower, Desc.Upper);
+
+	b2JointId Joint = b2_nullJointId;
+	switch (Desc.Type)
+	{
+	case EPhysics2DJoint::Distance:
+	{
+		b2DistanceJointDef Def = b2DefaultDistanceJointDef();
+		Def.bodyIdA            = BodyA;
+		Def.bodyIdB            = BodyB;
+		Def.localAnchorA       = AnchorA;
+		Def.localAnchorB       = AnchorB;
+		Def.length             = std::max(Desc.Length * CmToM, 0.005f);
+		Def.enableSpring       = Desc.bSpring;
+		Def.hertz              = Desc.Hertz;
+		Def.dampingRatio       = Desc.DampingRatio;
+		Def.enableLimit        = Desc.bLimit;
+		Def.minLength          = std::max(Lower * CmToM, 0.005f);
+		Def.maxLength          = std::max(Desc.Upper * CmToM, Def.minLength);
+		Def.collideConnected   = Desc.bCollideConnected;
+		Joint                  = b2CreateDistanceJoint(Impl->World, &Def);
+		break;
+	}
+	case EPhysics2DJoint::Revolute:
+	{
+		b2RevoluteJointDef Def = b2DefaultRevoluteJointDef();
+		Def.bodyIdA            = BodyA;
+		Def.bodyIdB            = BodyB;
+		Def.localAnchorA       = AnchorA;
+		Def.localAnchorB       = AnchorB;
+		Def.referenceAngle     = Desc.ReferenceAngle;
+		Def.enableLimit        = Desc.bLimit;
+		Def.lowerAngle         = Lower;
+		Def.upperAngle         = Desc.Upper;
+		Def.enableMotor        = Desc.bMotor;
+		Def.motorSpeed         = Desc.MotorSpeed;
+		Def.maxMotorTorque     = Desc.MaxMotorForce;
+		Def.enableSpring       = Desc.bSpring;
+		Def.hertz              = Desc.Hertz;
+		Def.dampingRatio       = Desc.DampingRatio;
+		Def.collideConnected   = Desc.bCollideConnected;
+		Joint                  = b2CreateRevoluteJoint(Impl->World, &Def);
+		break;
+	}
+	case EPhysics2DJoint::Prismatic:
+	{
+		b2PrismaticJointDef Def = b2DefaultPrismaticJointDef();
+		Def.bodyIdA             = BodyA;
+		Def.bodyIdB             = BodyB;
+		Def.localAnchorA        = AnchorA;
+		Def.localAnchorB        = AnchorB;
+		Def.localAxisA          = Axis;
+		Def.referenceAngle      = Desc.ReferenceAngle;
+		Def.enableLimit         = Desc.bLimit;
+		Def.lowerTranslation    = Lower * CmToM;
+		Def.upperTranslation    = Desc.Upper * CmToM;
+		Def.enableMotor         = Desc.bMotor;
+		Def.motorSpeed          = Desc.MotorSpeed * CmToM;
+		Def.maxMotorForce       = Desc.MaxMotorForce;
+		Def.collideConnected    = Desc.bCollideConnected;
+		Joint                   = b2CreatePrismaticJoint(Impl->World, &Def);
+		break;
+	}
+	case EPhysics2DJoint::Weld:
+	{
+		b2WeldJointDef Def      = b2DefaultWeldJointDef();
+		Def.bodyIdA             = BodyA;
+		Def.bodyIdB             = BodyB;
+		Def.localAnchorA        = AnchorA;
+		Def.localAnchorB        = AnchorB;
+		Def.referenceAngle      = Desc.ReferenceAngle;
+		Def.linearHertz         = Desc.LinearHertz;
+		Def.angularHertz        = Desc.AngularHertz;
+		Def.linearDampingRatio  = Desc.LinearDampingRatio;
+		Def.angularDampingRatio = Desc.AngularDampingRatio;
+		Def.collideConnected    = Desc.bCollideConnected;
+		Joint                   = b2CreateWeldJoint(Impl->World, &Def);
+		break;
+	}
+	case EPhysics2DJoint::Wheel:
+	{
+		b2WheelJointDef Def  = b2DefaultWheelJointDef();
+		Def.bodyIdA          = BodyA;
+		Def.bodyIdB          = BodyB;
+		Def.localAnchorA     = AnchorA;
+		Def.localAnchorB     = AnchorB;
+		Def.localAxisA       = Axis;
+		Def.enableSpring     = Desc.bSpring;
+		Def.hertz            = Desc.Hertz;
+		Def.dampingRatio     = Desc.DampingRatio;
+		Def.enableLimit      = Desc.bLimit;
+		Def.lowerTranslation = Lower * CmToM;
+		Def.upperTranslation = Desc.Upper * CmToM;
+		Def.enableMotor      = Desc.bMotor;
+		Def.motorSpeed       = Desc.MotorSpeed;
+		Def.maxMotorTorque   = Desc.MaxMotorForce;
+		Def.collideConnected = Desc.bCollideConnected;
+		Joint                = b2CreateWheelJoint(Impl->World, &Def);
+		break;
+	}
+	case EPhysics2DJoint::Mouse:
+	{
+		b2MouseJointDef Def  = b2DefaultMouseJointDef();
+		Def.bodyIdA          = BodyA;
+		Def.bodyIdB          = BodyB;
+		Def.target           = ToB2(Desc.Target);
+		Def.hertz            = Desc.Hertz > 0.0f ? Desc.Hertz : 5.0f;
+		Def.dampingRatio     = Desc.DampingRatio > 0.0f ? Desc.DampingRatio : 0.7f;
+		Def.maxForce         = std::max(Desc.MaxForce, 0.0f);
+		Def.collideConnected = true;
+		Joint                = b2CreateMouseJoint(Impl->World, &Def);
+		b2Body_SetAwake(BodyB, true);
+		break;
+	}
+	}
+	if (!b2Joint_IsValid(Joint))
+	{
+		return InvalidJoint;
+	}
+	const uint32 Handle = static_cast<uint32>(Impl->Joints.size());
+	Impl->Joints.emplace_back();
+	Impl->Joints[Handle] = { Joint, Slot1 != nullptr ? Desc.Body1 : InvalidBody, Desc.Body2, true };
+	++Impl->AliveJointCount;
+	return Handle;
+}
+
+void FPhysics2DWorld::DestroyJoint(uint32 Joint)
+{
+	if (Joint < Impl->Joints.size() && Impl->Joints[Joint].bAlive)
+	{
+		Impl->KillJoint(Joint, true);
+	}
+}
+
+bool FPhysics2DWorld::IsJointAlive(uint32 Joint) const
+{
+	return Joint < Impl->Joints.size() && Impl->Joints[Joint].bAlive && b2Joint_IsValid(Impl->Joints[Joint].Joint);
+}
+
+uint32 FPhysics2DWorld::GetJointCount() const
+{
+	return Impl->AliveJointCount;
+}
+
+float FPhysics2DWorld::GetJointForce(uint32 Joint) const
+{
+	if (!IsJointAlive(Joint))
+	{
+		return 0.0f;
+	}
+	return b2Length(b2Joint_GetConstraintForce(Impl->Joints[Joint].Joint)); // kg·m/s² = N
+}
+
+void FPhysics2DWorld::SetMouseTarget(uint32 Joint, const FVector2& Target)
+{
+	if (IsJointAlive(Joint) && b2Joint_GetType(Impl->Joints[Joint].Joint) == b2_mouseJoint)
+	{
+		b2MouseJoint_SetTarget(Impl->Joints[Joint].Joint, ToB2(Target));
+		b2Joint_WakeBodies(Impl->Joints[Joint].Joint);
+	}
 }
 
 // ---------------------------------------------------------------- 2D 캐릭터 이동기 (FPhysics2DMover 주석, Physics/CharacterMovement2D.h)

@@ -34,8 +34,10 @@ struct FPhysics2DHit
 //           2) 정적: 트랜스폼이 바뀌면 순간이동, 키네마틱: 스텝마다 목표(이번 프레임 트랜스폼)까지 이동
 //           3) 고정 스텝 (프로젝트 설정 물리 FixedStepHz/MaxSubSteps — 3D와 같은 값), 4) 동적: 보간 결과를 트랜스폼에 (X, Z, Y축 회전만 —
 //           깊이 Y는 유지, 부모가 있으면 로컬로 역변환). 스크립트가 트랜스폼을 직접 바꿨으면 순간이동
-//   타일맵 (FTilemapComponent::bCollision, Scene/Sprite): TilemapCollision::BuildShapes 결과(Full 병합 상자·다각형 = 일반 모양,
-//         OneWay* = 원웨이 모양)를 같은 엔티티의 바디(강체가 없으면 정적) 모양에 더한다. 재질·레이어는 컴포넌트 Friction/Restitution/
+//   타일맵 (FTilemapComponent::bCollision, Scene/Sprite): TilemapCollision::BuildShapes 결과(Full = 영역 외곽선 닫힌 체인 — 칸 이음매에서
+//         걸리지 않는다, 다각형 = 일반 모양, 원웨이 Full = 윗변 선분 + 원웨이, 원웨이 다각형 = 원웨이 모양)를 같은 엔티티의 바디(강체가 없으면
+//         정적) 모양에 더한다. 체인은 빈 쪽에서만 막으므로 Full 영역 안에서 시작한 물체는 빠져나오지 않고 떨어진다. 동적 강체 타일맵은
+//         체인 대신 Full 병합 상자·원웨이 병합 상자(질량·서로 충돌이 필요). 재질·레이어는 컴포넌트 Friction/Restitution/
 //         CollisionLayer. 타일 모양은 Runtime.Revision(TileData 디코딩·Commit마다 증가)·타일셋(경로·라이브러리 세대)·CellSize·엔티티
 //         스케일 X/Z·재질·레이어가 바뀔 때만 다시 만들고 그때 바디도 다시 만든다 (위치/각만 바뀌면 순간이동). 빈 맵이면 바디 없음
 //   엔티티 스케일 X/Z가 모양에 곱해지고(Y 무시), 평면 밖 회전(Y축이 기운 회전)은 무시한다 (엔티티마다 경고 한 번)
@@ -43,6 +45,13 @@ struct FPhysics2DHit
 //   충돌 알림 (Scene/CollisionEvents.h, 3D와 같은 이벤트·같은 FGameWorld 전달 단계): 트리거 = 센서(정적 바디와는 알리지 않음),
 //     보고 대상 = 트리거 || bReportContacts || SetContactReportFilter. 점/법선은 월드 3D (평면 위, Y = 받는 엔티티 깊이).
 //     Box2D 이벤트·콜백(원웨이 사전 해결)에서는 게임 코드를 부르지 않고, 스텝 뒤 메인 스레드에서 GetCollisionEvents에 쌓는다
+//   관절 (FDistance/Revolute/Prismatic/Weld/WheelJoint2DComponent, 필드는 Physics2DComponents.h — 3D 관절과 같은 관례): 바디 동기화 뒤
+//     엔티티의 2D 바디(Body2)와 Target의 2D 바디(Body1, 없으면 월드)를 잇는다. 연결 지점/축/기준 각은 만드는 순간의 바디 자세 기준.
+//     설정이나 양쪽 바디가 바뀌면(바디를 다시 만들면 FPhysics2DWorld::DestroyBody가 관절을 먼저 지운다) 지금 자세로 다시 만든다.
+//     둘 다 동적이 아니면 만들지 않는다. 끊어짐: BreakForce > 0이면 스텝마다 구속 힘(N)을 재서 넘으면 지우고 JointBreak 이벤트
+//     (GetCollisionEvents — 3D와 같은 OnJointBreak(other, force)), 컴포넌트를 지우거나 플레이를 다시 시작할 때까지 끊긴 채로.
+//     마우스 끌기(BeginDrag/UpdateDrag/EndDrag, Lua Physics2D.BeginDrag…)는 런타임 전용 마우스 관절 — 엔티티당 하나, 바디가 사라지거나
+//     다시 만들어지면 끝난다 (다시 BeginDrag)
 // 편집 모드에서는 쓰지 않는다 (FGameWorld가 플레이 시작 Begin, 정지 End — 앱은 따로 부르지 않는다).
 class FPhysics2DSystem
 {
@@ -87,6 +96,16 @@ public:
 	uint32 OverlapCircle(const FVector2& Center, float Radius, std::vector<FEntity>& OutEntities,
 	                     uint32 LayerMask = FCollisionLayerSettings::AllLayersMask) const;
 
+	// ---- 관절
+	uint32 GetJointCount() const { return World ? World->GetJointCount() : 0; } // 살아 있는 관절 수 (끌기 포함)
+	bool   HasJoint(FEntity Entity) const;      // 이 엔티티의 관절 컴포넌트 중 하나라도 만들어져 있는가
+	bool   IsJointBroken(FEntity Entity) const; // 하나라도 끊어졌는가
+	// 마우스 끌기: 동적 2D 바디의 Point(평면 cm, 바디 위 잡은 점)를 Target 쪽으로 끈다 (스프링 5Hz·감쇠 0.7, MaxForce N — 0 이하 = 질량 × 1000)
+	bool BeginDrag(FEntity Entity, const FVector2& Point, float MaxForce = 0.0f);
+	bool UpdateDrag(FEntity Entity, const FVector2& Target);
+	bool EndDrag(FEntity Entity);
+	bool IsDragging(FEntity Entity) const;
+
 	uint32               GetBodyCount() const { return World ? World->GetBodyCount() : 0; }
 	const FFixedStepper& GetStepper() const { return Stepper; }
 	FPhysics2DWorld*     GetWorld() { return World.get(); }
@@ -129,6 +148,7 @@ private:
 		float                                ScaleX = 0.0f, ScaleZ = 0.0f;
 		std::string                          Layer;
 		float                                Friction = 0.0f, Restitution = 0.0f;
+		bool                                 bSolid  = false; // 동적 바디용 (외곽선 체인 대신 병합 상자)
 		bool                                 bBuilt  = false;
 		uint32                               Version = 0; // 다시 만들 때마다 새 번호 (시스템 안 고유)
 		std::vector<FPhysics2DShapeDesc>     Shapes;
@@ -136,12 +156,40 @@ private:
 
 	bool  BuildDesc(FScene& Scene, FEntity Entity, const FVector3& Scale, FPhysics2DBodyDesc& OutDesc);
 	// 타일맵 충돌 모양 (없거나 충돌을 껐으면 nullptr)
-	const FTilemapShapeCache* BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale);
+	// bSolid = 동적 바디 (체인은 질량·체인끼리 충돌이 없으므로 병합 상자로)
+	const FTilemapShapeCache* BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale, bool bSolid);
 	uint8 ResolveCollisionLayer(const std::string& Name) const;
 	void  WarnOnce(FEntity Entity, uint32 Kind, const std::string& Message) const;
 	const FPointCache& ParseCached(FEntity Entity, uint32 Kind, const std::string& Source);
 	void  WriteDynamicTransforms(FScene& Scene);
 	void  CollectContactEvents();
+	void  SyncJoints(FScene& Scene);   // Physics2DJoints.cpp
+	void  CheckJointBreaks();
+
+	// 관절: (엔티티, 종류)마다 하나 (3D FPhysicsSystem과 같은 구조)
+	struct FJointKey
+	{
+		FEntity Entity;
+		uint8   Kind = 0;
+		bool    operator==(const FJointKey& Other) const { return Entity == Other.Entity && Kind == Other.Kind; }
+	};
+	struct FJointKeyHash
+	{
+		size_t operator()(const FJointKey& Key) const noexcept { return std::hash<uint64>{}(Key.Entity.ToId() * 8u + Key.Kind); }
+	};
+	struct FJointState
+	{
+		uint32             Joint = FPhysics2DWorld::InvalidJoint; // 실패/끊김이면 무효
+		uint32             Body1 = FPhysics2DWorld::InvalidBody;
+		uint32             Body2 = FPhysics2DWorld::InvalidBody;
+		std::vector<float> Signature; // 만들 때의 설정 (바뀌면 다시 만든다)
+		FEntity            Target;
+		float              BreakForce = 0.0f;
+		bool               bBroken    = false;
+		uint64             LastSeenFrame = 0;
+	};
+	std::unordered_map<FJointKey, FJointState, FJointKeyHash> Joints;
+	std::unordered_map<FEntity, uint32>                       Drags; // 엔티티 → 마우스 관절
 
 	std::unique_ptr<FPhysics2DWorld>            World;
 	std::unordered_map<FEntity, FBodyState>     Bodies;

@@ -2,8 +2,8 @@
 --   Flyer(망령: 키네마틱 바디 — 벽을 통과해 위아래로 흔들리며 추적), Melee(해골: 땅에서 솟아남 → 순찰 → 발견하면 추적 → 멈칫 후 돌진 베기),
 --   Charger(구울: 질주 — 방향을 늦게 바꿔 지나친다, 벽이면 점프), Leaper(고양이: 다가와 도약), Caster(사제: 거리 유지, 시전 플립북
 --   "Shoot" 이벤트에 불덩이 — 2층부터 3갈래), Boss(BossAngel.lua). 걷는 적은 2D 이동기(입력만 넣는다), 나는 적은 위치를 직접 옮긴다.
---   피격: 흰 번쩍임 + 넉백(걷는 적 = 짧은 경직 동안 뒤로 이동 입력, 나는 적 = 속도) + 데미지 숫자, 죽으면 GameManager:OnEnemyDied.
---   GameManager가 멈추면(일시정지·히트스톱) AI도 멈춘다.
+--   피격: 흰 번쩍임 + 넉백(걷는 적 = entity:AddKnockback — 이동기가 경직 동안 입력을 무시하고 밀려남, 나는 적 = 속도) + 데미지 숫자,
+--   죽으면 GameManager:OnEnemyDied. 일시정지·히트스톱은 게임 시간 배율 0이라 이동기·플립북도 함께 멈추고 AI는 GM:IsFrozen으로 쉰다.
 local U         = Script.Require("Scripts/Crypt/Util.lua")
 local CryptData = Script.Require("Scripts/Crypt/CryptData.lua")
 local BossAngel = Script.Require("Scripts/Crypt/BossAngel.lua")
@@ -36,8 +36,7 @@ function Enemy:OnStart()
 		self.entity:GetComponent("CharacterMovement2DComponent").MaxSpeed = Def.MoveSpeed
 	end
 	self.Flash = 0.0
-	self.Stun = 0.0
-	self.KnockDir = 0
+	self.Stun = 0.0 -- 나는 적의 넉백 경직 (걷는 적은 이동기 경직 — entity:IsStunned)
 	self.Cooldown = self.GM.Rng:Range(0.4, 1.0) * Def.AttackCooldown
 	self.Dir = self.GM.Rng:Chance(0.5) and 1 or -1
 	self.State = "Idle"
@@ -103,10 +102,12 @@ function Enemy:OnUpdate(Dt)
 		BossAngel.Update(self, Dt, P, PX, PZ, bPlayer)
 		return
 	end
-	-- 넉백 경직: 걷는 적은 뒤로 이동 입력만
+	-- 넉백 경직: 걷는 적은 이동기가 밀어 주는 동안 AI를 쉰다, 나는 적은 받은 속도로 떠밀린다
+	if self.bWalker and self.entity:IsStunned() then
+		return
+	end
 	if self.Stun > 0 then
 		self.Stun = self.Stun - Dt
-		if self.bWalker then self.entity:AddMovementInput(Vector3(self.KnockDir, 0, 0)) end
 		if self.Behavior == "Flyer" then self:MoveFlyer(Dt, P) end
 		return
 	end
@@ -322,6 +323,7 @@ end
 
 -- ---- 피격 / 사망
 function Enemy:TakeDamage(Amount, bCrit, KX, KZ, Knockback)
+	if self.Health == nil then return false end -- 이번 프레임에 생겨 아직 OnStart 전 (다음 프레임부터 맞는다)
 	if self.bDead or self.State == "Rise" or (self.Invulnerable and self.Invulnerable > 0) then return false end
 	local GM = self.GM
 	self.Health = self.Health - Amount
@@ -332,9 +334,13 @@ function Enemy:TakeDamage(Amount, bCrit, KX, KZ, Knockback)
 	GM:Sound(bCrit and "HitHeavy" or "Hit")
 	if self.Behavior ~= "Boss" then
 		local Strength = (Knockback or 300) / 600
-		self.Stun = 0.12 + 0.12 * Strength
-		self.KnockDir = U.Sign(KX or 0)
-		if self.Behavior == "Flyer" then
+		local Stun = 0.12 + 0.12 * Strength
+		if self.bWalker then
+			-- 수평은 조준 방향 부호로 밀고, 바닥에 있으면 살짝 띄운다 (넉백 속도 = 무기 표 Knockback)
+			local Up = self.entity:IsGrounded() and 160 + 160 * Strength or 0
+			self.entity:AddKnockback(Vector3(U.Sign(KX or 0) * (Knockback or 300), 0, Up), Stun)
+		else
+			self.Stun = Stun
 			self.VX, self.VZ = (KX or 0) * (Knockback or 300), (KZ or 0) * (Knockback or 300)
 		end
 		if self.State == "Windup" or self.State == "Lunge" then

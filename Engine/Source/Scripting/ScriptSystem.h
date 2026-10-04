@@ -102,6 +102,11 @@ struct FScriptPhysicsHooks
 	std::function<int32(FEntity)>                 GetJumpsRemaining;
 	std::function<int32(FEntity)>                 GetDashesRemaining;
 	std::function<bool(FEntity)>                  IsDashing;
+	// 넉백/발사 (2D 이동기 — CharacterMovement2D.h, 3D 캐릭터는 아직 없음 = 무시): 다음 무브 처음에 속도를 더하거나(덮어쓰기 꺼짐) 덮어쓴다,
+	// AddKnockback = X 덮어쓰기 + Z는 0이 아니면 덮어쓰기 + 경직(입력 무시) 초
+	std::function<void(FEntity, const FVector3& Velocity, bool bOverrideX, bool bOverrideZ)> LaunchCharacter;
+	std::function<void(FEntity, const FVector3& Velocity, float StunSeconds)>               AddKnockback;
+	std::function<bool(FEntity)>                                                           IsStunned;
 	// 래그돌 (Physics/Ragdoll.h): 엔티티 자신이나 자손의 스켈레탈 모델
 	std::function<bool(FEntity)>                  EnableRagdoll;
 	std::function<void(FEntity)>                  DisableRagdoll;
@@ -176,6 +181,13 @@ struct FScriptNetHooks
 	std::function<bool(const std::string& Asset)>                                UnloadSubScene;
 	std::function<bool(const std::string& Asset)>                                IsSubSceneLoaded;
 	std::function<FEntity(const std::string& Asset)>                             GetSubSceneRoot;
+
+	// 게임 시간 배율 (Lua Game.SetTimeScale/GetTimeScale/HitStop/GetHitStopRemaining — FGameWorld, 규칙은 World/GameWorld.cpp "시간 배율").
+	// Set/HitStop: 받아들였으면 true (네트워크 세션에서는 거부). 비어 있으면 배율 1 고정
+	std::function<bool(float Scale)>   SetTimeScale;
+	std::function<float()>             GetTimeScale;
+	std::function<bool(float Seconds)> HitStop;
+	std::function<float()>             GetHitStopRemaining;
 };
 
 // 스크립트가 쓰는 AI 기능 (블랙보드, 이동, 경로). 앱(FGameWorld)이 AI 모듈(FAISystem)과 연결한다 (Scripting은 AI에 비의존).
@@ -282,6 +294,9 @@ public:
 	// "이번 프레임 최종 위치"가 필요한 일 (OnUpdate에서 읽는 월드 위치는 물리가 움직이기 전 값이다)
 	// 반환: 스크립트가 씬을 바꿨을 수 있는지 (Lua 함수를 하나도 부르지 않고 파괴도 없었으면 false)
 	bool LateUpdate(float DeltaSeconds, const FInput* Input);
+	// 이번 틱 시간 정보 (FGameWorld가 Update 전에): 배율을 곱하기 전 실제 dt와 배율 → Lua Time.UnscaledDeltaTime/TimeScale,
+	// Timer.After(…, { Unscaled = true })·WaitUnscaled가 실제 dt로 진행한다. 부르지 않으면 실제 dt = Update의 dt, 배율 1
+	void SetFrameTime(float UnscaledDeltaSeconds, float TimeScale);
 	// 모든 인스턴스 OnDestroy 후 Lua 상태 파괴
 	void EndPlay();
 	bool IsPlaying() const { return PlayRuntime != nullptr; }
@@ -360,4 +375,6 @@ private:
 	std::unique_ptr<FLuaRuntime> EditorRuntime; // 프로퍼티 선언 조회용 (씬 없음, 게임 로직 실행 안 함)
 	uint32                       ErrorCount = 0;
 	FScriptValueMap              PersistentValues; // Game.SetPersistent (플레이 세션 사이 유지)
+	float                        FrameUnscaledDelta = -1.0f; // SetFrameTime (음수 = 이번 틱 미지정)
+	float                        FrameTimeScale     = 1.0f;
 };

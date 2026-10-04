@@ -657,6 +657,30 @@ void FLuaRuntime::RegisterEntityBindings()
 		RequireEntity(Entity);
 		return PhysicsHooks && PhysicsHooks->IsDashing && PhysicsHooks->IsDashing(Entity.Entity);
 	};
+	// 넉백/발사 (2D 이동기 — 규칙은 Physics/CharacterMovement2D.h, 네트워크는 World/GameWorldCharacter2D.cpp 머리 주석):
+	//   entity:LaunchCharacter(Vector3 속도[, 덮어쓰기 X, 덮어쓰기 Z])  -- 다음 무브 처음에 더하거나(기본) 덮어쓴다 (UE LaunchCharacter)
+	//   entity:AddKnockback(Vector3 속도, 경직 초)                    -- X 덮어쓰기, Z는 0이 아니면 덮어쓰기, 경직 동안 입력 무시
+	//   entity:IsStunned()                                           -- 넉백 경직 중
+	//   서버 권한: 서버/Standalone에서 부르면 원격 플레이어 캐릭터에도 들어간다. 클라이언트는 자기가 조종하는 캐릭터만 (그 밖은 무시)
+	EntityType["LaunchCharacter"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Velocity, sol::optional<bool> bOverrideX,
+	                                                      sol::optional<bool> bOverrideZ) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->LaunchCharacter)
+		{
+			PhysicsHooks->LaunchCharacter(Entity.Entity, Velocity, bOverrideX.value_or(false), bOverrideZ.value_or(false));
+		}
+	};
+	EntityType["AddKnockback"] = [RequireEntity, this](const FScriptEntity& Entity, const FVector3& Velocity, sol::optional<float> StunSeconds) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->AddKnockback)
+		{
+			PhysicsHooks->AddKnockback(Entity.Entity, Velocity, StunSeconds.value_or(0.0f));
+		}
+	};
+	EntityType["IsStunned"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->IsStunned && PhysicsHooks->IsStunned(Entity.Entity);
+	};
 
 	EntityType["GetOwner"] = [RequireEntity, this](const FScriptEntity& Entity) {
 		RequireEntity(Entity);
@@ -783,6 +807,10 @@ void FLuaRuntime::RegisterGlobals()
 	InputTable["IsMouseDown"]   = [this](const std::string& Button) {
 		const EMouseButton Code = ParseMouseButton(Button);
 		return Input && Input->IsMouseButtonDown(Code);
+	};
+	// 마우스 커서 위치 = 창 클라이언트 픽셀 (런타임: 게임 화면, 에디터: 에디터 창 기준 — 게임 좌표는 Input.GetMouseUIPosition, ScriptCameraBindings.cpp)
+	InputTable["GetMousePosition"] = [this]() {
+		return Input ? std::make_tuple(Input->GetMouseX(), Input->GetMouseY()) : std::make_tuple(0, 0);
 	};
 	InputTable["GetMouseDelta"] = [this]() {
 		return Input ? std::make_tuple(Input->GetMouseDeltaX(), Input->GetMouseDeltaY()) : std::make_tuple(0, 0);
@@ -939,10 +967,18 @@ void FLuaRuntime::RegisterGlobals()
 		return Result;
 	};
 
-	sol::table TimeTable     = Lua.create_named_table("Time");
-	TimeTable["DeltaTime"]   = 0.0;
-	TimeTable["TotalTime"]   = 0.0;
-	TimeTable["FrameCount"]  = 0;
+	// Time: DeltaTime/TotalTime = 게임 시간(배율 적용 — Game.SetTimeScale/HitStop, 0이면 멈춤), Unscaled* = 실제 시간(배율 전 — 일시정지 메뉴·
+	// 히트스톱 중 연출), TimeScale = 이번 틱 배율(히트스톱 중 0). 함수형 Time.GetDelta()/GetUnscaledDelta()/GetTimeScale()도 같은 값
+	sol::table TimeTable           = Lua.create_named_table("Time");
+	TimeTable["DeltaTime"]         = 0.0;
+	TimeTable["TotalTime"]         = 0.0;
+	TimeTable["FrameCount"]        = 0;
+	TimeTable["UnscaledDeltaTime"] = 0.0;
+	TimeTable["UnscaledTotalTime"] = 0.0;
+	TimeTable["TimeScale"]         = 1.0;
+	TimeTable["GetDelta"]          = [this]() { return static_cast<double>(GameDelta); };
+	TimeTable["GetUnscaledDelta"]  = [this]() { return static_cast<double>(UnscaledDelta); };
+	TimeTable["GetTimeScale"]      = [this]() { return static_cast<double>(TimeScale); };
 }
 
 // ---------------------------------------------------------------- 값 변환
@@ -1336,11 +1372,16 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	}
 	Input = InInput;
 	TotalTime += DeltaSeconds;
+	GameDelta = DeltaSeconds;
+	UnscaledTotalTime += UnscaledDelta;
 	++FrameCount;
-	sol::table TimeTable     = Lua["Time"];
-	TimeTable["DeltaTime"]   = DeltaSeconds;
-	TimeTable["TotalTime"]   = TotalTime;
-	TimeTable["FrameCount"]  = FrameCount;
+	sol::table TimeTable           = Lua["Time"];
+	TimeTable["DeltaTime"]         = DeltaSeconds;
+	TimeTable["TotalTime"]         = TotalTime;
+	TimeTable["FrameCount"]        = FrameCount;
+	TimeTable["UnscaledDeltaTime"] = UnscaledDelta;
+	TimeTable["UnscaledTotalTime"] = UnscaledTotalTime;
+	TimeTable["TimeScale"]         = TimeScale;
 
 	FRegistry& Registry = Scene->GetRegistry();
 

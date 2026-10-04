@@ -30,7 +30,7 @@ local Decor2x4 = {
 local Templates = {}
 local ByName = {}
 for _, T in ipairs(Rooms.Templates) do
-	local Parsed = { Name = T.Name, Kind = T.Kind, Cells = {}, Markers = {} }
+	local Parsed = { Name = T.Name, Kind = T.Kind, Cells = {}, Markers = {}, UpPath = T.UpPath } -- UpPath: 위 문까지 면 목록 (Rooms.lua 머리 주석)
 	for RowIndex, Row in ipairs(T.Rows) do
 		local Y = Dungeon.H - RowIndex
 		for X = 0, Dungeon.W - 1 do
@@ -88,7 +88,7 @@ function Dungeon.RoomAt(Layout, SX, SY)
 end
 
 -- 시드 난수로 방 RoomCount개를 키운다: 시작 칸에서 이미 있는 방 하나를 골라 빈 이웃으로 뻗는다 (트리 — 순환 없음).
--- 출구 = 시작에서 가장 먼 방, 보물 = 출구가 아닌 막다른 방 중 가장 먼 것, 나머지 = 전투
+-- 출구 = 시작에서 가장 먼 방, 보물 = 출구가 아닌 막다른 방 중 가장 먼 것, 상점 = 남은 막다른 방 중 가장 먼 것(없으면 없음), 나머지 = 전투
 function Dungeon.GenerateLayout(Rng, RoomCount)
 	local Layout = { Rooms = {}, ByKey = {} }
 	local Start = NewRoom(Layout, Rng:Int(1, Dungeon.GridW - 2), Rng:Int(0, Dungeon.GridH - 1), "Start")
@@ -128,6 +128,15 @@ function Dungeon.GenerateLayout(Rng, RoomCount)
 		end
 	end
 	if Treasure then Treasure.Kind = "Treasure" end
+	local Shop = nil
+	for _, Room in ipairs(Layout.Rooms) do
+		local DoorCount = 0
+		for _ in pairs(Room.Doors) do DoorCount = DoorCount + 1 end
+		if Room.Kind == "Combat" and DoorCount == 1 and (Shop == nil or Room.Depth > Shop.Depth) then
+			Shop = Room
+		end
+	end
+	if Shop then Shop.Kind = "Shop" end
 	-- 템플릿: 전투 방은 겹치지 않게 돌아가며
 	local Combat = Rng:Shuffle(Dungeon.TemplatesOfKind("Combat"))
 	local CombatIndex = 0
@@ -158,23 +167,43 @@ function Dungeon.BossLayout()
 	return Layout
 end
 
--- 자동 검증 코스: 시작 → 시험 전투(해골 하나) → 보물 → 출구(보물 위)
+-- 자동 검증 코스: 시작 → 시험 전투(해골 하나) → 보물 → 상점(보물 오른쪽), 출구(보물 위)
 function Dungeon.TestLayout()
 	local Layout = { Rooms = {}, ByKey = {} }
 	local Start = NewRoom(Layout, 0, 1, "Start")
 	local Arena = NewRoom(Layout, 1, 1, "Combat")
 	local Treasure = NewRoom(Layout, 2, 1, "Treasure")
 	local Exit = NewRoom(Layout, 2, 2, "Exit")
-	Arena.Depth, Treasure.Depth, Exit.Depth = 1, 2, 3
+	local Shop = NewRoom(Layout, 3, 1, "Shop")
+	Arena.Depth, Treasure.Depth, Exit.Depth, Shop.Depth = 1, 2, 3, 3
 	Connect(Layout, Start, "R")
 	Connect(Layout, Arena, "R")
 	Connect(Layout, Treasure, "U")
+	Connect(Layout, Treasure, "R")
 	Start.Template = Dungeon.Template("Start")
 	Arena.Template = Dungeon.Template("TestArena")
 	Treasure.Template = Dungeon.Template("Treasure")
 	Exit.Template = Dungeon.Template("Exit")
+	Shop.Template = Dungeon.Template("Shop")
 	Layout.Start = Start
 	Layout.Exit = Exit
+	return Layout
+end
+
+-- 위 문 경로 검증 (자동 조종 Climb): 시작 → 위로 방 세 개 (전투 방 템플릿을 적 없이 — Kind "Climb"은 들어가면 정리된 방)
+function Dungeon.ClimbLayout()
+	local Layout = { Rooms = {}, ByKey = {} }
+	local Names = { "Start", "Towers", "Steps", "Hall" }
+	local Previous = nil
+	for Index, Name in ipairs(Names) do
+		local Room = NewRoom(Layout, 2, Index - 1, Index == 1 and "Start" or "Climb")
+		Room.Depth = Index - 1
+		Room.Template = Dungeon.Template(Name)
+		if Previous then Connect(Layout, Previous, "U") end
+		Previous = Room
+	end
+	Layout.Start = Layout.Rooms[1]
+	Layout.Exit = Previous
 	return Layout
 end
 

@@ -99,6 +99,15 @@ void FGameWorld::TickCharacters(float DeltaSeconds)
 	Physics->SyncCharacters(*Scene);
 	std::vector<FEntity> Characters;
 	Scene->GetRegistry().View<FCharacterMovementComponent>().Each([&](FEntity Entity, FCharacterMovementComponent&) { Characters.push_back(Entity); });
+	if (DeltaSeconds <= 0.0f)
+	{
+		// 시간 정지 (게임 시간 배율 0/히트스톱 — Standalone, GameWorld.cpp "시간 배율"): 무브 없음, 쌓인 입력은 버린다
+		for (const FEntity Entity : Characters)
+		{
+			Physics->ConsumePendingMove(Entity, 0.0f, nullptr);
+		}
+		return;
+	}
 	for (const FEntity Entity : Characters)
 	{
 		const int32 Owner = GetOwner(Entity);

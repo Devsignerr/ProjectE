@@ -26,6 +26,10 @@
 //     사슬 끝 캐릭터의 이동 = 처음 넘긴 거리 ÷ Π(1 + r_i) (무거운 캐릭터·무거운 줄일수록 덜 밀리고 미는 쪽도 그만큼 덜 나아간다).
 //   밟기: Block/Push 캐릭터가 다른 캐릭터 위에 착지하면 이벤트(Stomped — Lua OnStomped(other), 밟힌 쪽 OnStompedBy(other)).
 //   상호작용하는 캐릭터는 무브 끝에 대리 바디를 그 자리로 옮겨(이후 같은 틱 다른 캐릭터 무브가 지금 위치를 본다) 처리 순서 = 엔티티 순서.
+//   넉백/발사 (UE LaunchCharacter식): LaunchCharacter(속도, 덮어쓰기 X/Z) = 다음 무브 처음에 속도를 더하거나 덮어쓴다 (위로 향하면 바닥을 떠나고
+//     — 바닥 점프를 쓴 것으로 친다, 대시는 끝난다). AddKnockback(속도, 경직 초) = X는 덮어쓰고 Z는 0이 아닐 때만 덮어쓰며, 경직 동안 입력(이동·점프·
+//     대시·내려가기)을 무시하고 수평 속도를 KnockbackDeceleration으로 줄인다. 둘 다 무브 필드(bLaunch …)로 들어가 같은 무브 → 같은 결과
+//     (예측·재조정 포함, 경직 타이머는 상태에 있다). 누가 넣는가는 World/GameWorldCharacter2D.cpp 머리 주석
 //   멀티플레이: 예측 클라이언트에서 다른 캐릭터는 스냅샷 보간(과거) 위치에 있으므로 막힘/밟기는 그 위치 기준이고, 서버 결과와 다르면 재조정이
 //   맞춘다(보정 허용). 서버에서 밀린 캐릭터의 소유 클라이언트도 ack 재조정으로 밀린 위치를 받는다 (밀기는 무브 밖 서버 일)
 struct FCharacterMovement2DComponent
@@ -77,6 +81,7 @@ struct FCharacterMovement2DComponent
 	ECharacterCollision CharacterCollision = ECharacterCollision::Ignore; // 다른 2D 캐릭터 (위 주석)
 	float               PushStrength       = 1.0f; // Push: 막힌 거리 중 상대에게 넘기는 비율 0~1 (작을수록 무겁게 밀린다, 1 = 이전 동작, 0 = Block과 같음)
 	float               PushResistance     = 0.0f; // 밀릴 때 저항 ≥ 0: 넘겨받은 거리 ÷ (1 + 이 값) (0 = 이전 동작, 1 = 절반만 밀림 — 위 주석 연쇄)
+	float               KnockbackDeceleration = 1500.0f; // cm/s², 넉백 경직(AddKnockback) 중 수평 감속 (바닥·공중 공통 — 탑다운은 벡터)
 };
 using ECharacterMovement2DMode = FCharacterMovement2DComponent::EMode;
 
@@ -91,9 +96,17 @@ struct FCharacterMove2D
 	bool     bJumpHeld    = false; // 점프 버튼을 아직 누르고 있음 (Jump() ~ StopJumping()) — 가변 점프
 	bool     bDash        = false;
 	bool     bDropDown    = false;
+	// 넉백/발사 (LaunchCharacter/AddKnockback — 위 주석): 무브 처음에 속도에 더하거나(덮어쓰기 꺼짐) 덮어쓴다, 경직 초 (0 = 없음)
+	bool     bLaunch          = false;
+	bool     bLaunchOverrideX = false;
+	bool     bLaunchOverrideY = false; // 평면 Y = 월드 Z
+	FVector2 LaunchVelocity;           // 평면 cm/s
+	float    StunSeconds      = 0.0f;
 
 	static constexpr float MaxMoveDeltaSeconds = 0.1f; // 서버가 받은 dt 상한
 	static constexpr float MaxDashSpeed        = 1.0e5f;
+	static constexpr float MaxLaunchSpeed      = 1.0e5f; // cm/s, 발사 속도 성분 상한 (서버 검증)
+	static constexpr float MaxStunSeconds      = 10.0f;
 };
 
 // 캐릭터 상태 (서버 → 소유 클라이언트 보정, 재조정 시작점). 무브 결과는 이 값 + 월드로만 정해진다
@@ -111,8 +124,10 @@ struct FCharacterState2D
 	float    DashCooldownTimer = 0.0f;
 	float    DropTimer         = 0.0f; // > 0 = 원웨이 무시
 	FVector2 DashDirection;            // 단위 벡터
+	float    StunTimer         = 0.0f; // > 0 = 넉백 경직 (입력 무시)
 
 	bool IsDashing() const { return DashTimer > 0.0f; }
+	bool IsStunned() const { return StunTimer > 0.0f; }
 };
 
 // 무브 하나에서 생긴 일 (Lua OnJumped(n)/OnLanded()/OnDashStarted()/OnStomped(other) — 재조정의 다시 적용에서는 내지 않는다)
@@ -150,6 +165,9 @@ namespace CharacterMovement2DMath
 	//   가변 점프: 상승 중 + 컷 가능 + 버튼을 뗐으면 수직 속도 × JumpCutFactor (한 번). 하강하면 컷 불가
 	//   중력: 바닥(점프 안 함)이면 수직 0, 아니면 GravityZ × GravityScale × dt, 낙하 속도 MaxFallSpeed로 자름
 	//   탑다운: 목표 = 입력(길이 ≤ 1) × MaxSpeed, 벡터로 가속/감속 (GroundAcceleration/Deceleration), 중력·점프 없음
+	//   발사(bLaunch, 가장 먼저): 성분마다 덮어쓰기면 LaunchVelocity, 아니면 더한다 (유한하지 않으면 0, MaxLaunchSpeed로 자름). 플랫포머에서 결과 수직
+	//     속도가 위면 바닥을 떠난다(코요테 0, 바닥 점프 쓴 것으로, 컷 불가). 대시 중이었으면 끝낸다. 경직 = max(남은 경직, StunSeconds)
+	//   경직(StunTimer > 0, dt만큼 준다): 이 무브의 입력·점프 누름·대시·내려가기를 무시하고 수평(탑다운은 벡터) 감속 = KnockbackDeceleration
 	void BeginMove(const FCharacterMovement2DComponent& Movement, FCharacterState2D& State, const FCharacterMove2D& Move, float GravityZ,
 	               const FVector2& GroundVelocity, FCharacterMove2DEvents& OutEvents);
 	// 무브 끝 단계 (충돌·바닥 판정 뒤): bGroundedNow로 착지(이벤트, 점프·공중 대시 다시 채움, 컷 끝)·수직 속도 0

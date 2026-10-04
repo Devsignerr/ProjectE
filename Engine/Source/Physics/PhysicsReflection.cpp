@@ -180,6 +180,8 @@ void RegisterPhysicsTypes()
 		.Tooltip("밀기: 막힌 거리 중 상대에게 넘기는 비율 (작을수록 무겁게 밀린다, 1 = 기본, 0 = 막기와 같음)")
 		.Property(&FCharacterMovement2DComponent::PushResistance, "PushResistance", "밀림 저항").Range(0.0f, 100.0f, 0.1f)
 		.Tooltip("다른 캐릭터에게 밀릴 때 넘겨받은 거리 ÷ (1 + 이 값) (0 = 기본, 1 = 절반만 밀림). 연쇄로 밀릴 때도 단계마다 나눈다")
+		.Property(&FCharacterMovement2DComponent::KnockbackDeceleration, "KnockbackDeceleration", "넉백 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Tooltip("AddKnockback 경직 동안 수평 속도를 줄이는 감속 (입력은 무시된다)")
 		.AsComponent();
 
 	constexpr const char* OffsetTip  = "엔티티 로컬 평면 오프셋 (X = 로컬 X, Y = 로컬 Z, cm)";

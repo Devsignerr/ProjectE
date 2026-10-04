@@ -1,6 +1,7 @@
 -- Crypt2D 데이터 읽기 (Script.Require("Scripts/Crypt/CryptData.lua")). 수치는 Data/Crypt/*.etable·*.edata에 있다 (BuildCrypt2D.py가 쓴다).
 --   CryptData.Weapons() → { [id] = 행 }, CryptData.WeaponIds() → 파일 순서 id 배열, CryptData.Weapon(id)
 --   CryptData.Enemies() → { [Kind] = 행 }, CryptData.Enemy(kind), CryptData.Balance() → Balance.edata 값
+--   CryptData.ShopItems() → { [id] = 행 }, CryptData.ShopItemIds() → 파일 순서 id 배열, CryptData.ShopItem(id) (상점 방 물건)
 -- 세대(Data.GetGeneration — 에디터 핫 리로드)마다 한 번 읽어 공유한다. 돌려준 테이블은 읽기 전용으로 쓴다.
 local CryptData = {}
 
@@ -48,6 +49,18 @@ end
 
 function CryptData.Enemy(Kind)
 	return CryptData.Enemies()[Kind]
+end
+
+function CryptData.ShopItems()
+	return Memo("ShopItems", function() return ByName("Data/Crypt/ShopItems.etable") end).Map
+end
+
+function CryptData.ShopItemIds()
+	return Memo("ShopItems", function() return ByName("Data/Crypt/ShopItems.etable") end).Order
+end
+
+function CryptData.ShopItem(Id)
+	return CryptData.ShopItems()[Id]
 end
 
 function CryptData.Balance()

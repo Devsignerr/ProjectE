@@ -75,7 +75,8 @@
           "DashTime": 0.12,
           "DashCooldown": 0.05,
           "MaxAirDashes": 99,
-          "DashIgnoresGravity": false
+          "DashIgnoresGravity": false,
+          "KnockbackDeceleration": 2600.0
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Crypt/Enemy.lua",

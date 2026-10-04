@@ -270,6 +270,25 @@ void FWindow::SetCursorLocked(bool bLock)
 	}
 }
 
+void FWindow::SetCursorHidden(bool bHide)
+{
+	if (bHide == bCursorHidden)
+	{
+		return;
+	}
+	bCursorHidden = bHide;
+	if (Hwnd != nullptr)
+	{
+		// 커서가 지금 클라이언트 영역 위면 다음 마우스 이동을 기다리지 않고 바로 바꾼다
+		POINT Point{};
+		RECT  Client{};
+		if (GetCursorPos(&Point) && ScreenToClient(Hwnd, &Point) && GetClientRect(Hwnd, &Client) && PtInRect(&Client, Point))
+		{
+			SetCursor(bHide ? nullptr : LoadCursorW(nullptr, IDC_ARROW));
+		}
+	}
+}
+
 void FWindow::SetCursorLockPoint(int32 X, int32 Y)
 {
 	if (CursorLockPoint[0] == X && CursorLockPoint[1] == Y)
@@ -682,6 +701,15 @@ int64 FWindow::HandleMessage(uint32 Message, uint64 WParam, int64 LParam)
 		Event.MouseY     = GetMouseY(LParam);
 		Dispatch(Event);
 		return 0;
+
+	case WM_SETCURSOR:
+		// 커서 숨김 (SetCursorHidden): 클라이언트 영역 위에서만 — 테두리·제목 표시줄의 크기 조절 커서는 그대로
+		if (bCursorHidden && LOWORD(LParam) == HTCLIENT)
+		{
+			SetCursor(nullptr);
+			return TRUE;
+		}
+		break;
 
 	case WM_MENUCHAR:
 		// Alt+Enter 등에서 경고음 방지

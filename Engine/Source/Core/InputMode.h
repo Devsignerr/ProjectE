@@ -46,6 +46,12 @@ class FInputModeState
 public:
 	static EInputMode Get();
 	static void       Set(EInputMode Mode); // 같은 모드여도 리비전이 오른다 (커서 잠금 다시 적용)
-	static void       Reset();              // GameAndUI
+	static void       Reset();              // GameAndUI + 커서 보임
 	static uint32     GetRevision();        // Set/Reset마다 1씩 오른다
+
+	// 커서 표시 (Lua Game.SetCursorVisible — 게임이 조준점을 직접 그릴 때 숨긴다). 입력 모드와 별개로 유지되고 Reset이 보임으로 되돌린다.
+	// 앱이 매 프레임 창에 적용한다(FWindow::SetCursorHidden — 런타임은 창 전체, 에디터는 빙의 중 플레이 뷰포트 위에서만).
+	// 커서 잠금(GameOnly/Game.SetMouseLocked)과 공존: 잠금은 늘 숨기고, 잠금이 풀린 동안 보일지를 이 값이 정한다
+	static void SetCursorVisible(bool bVisible);
+	static bool IsCursorVisible();
 };

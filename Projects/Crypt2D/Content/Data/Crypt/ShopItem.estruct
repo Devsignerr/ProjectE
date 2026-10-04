@@ -1,0 +1,60 @@
+{
+  "Version": 1,
+  "Name": "ShopItem",
+  "Description": "상점 물건 (ShopItems.etable, 행 이름 = 물건 id)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "물건",
+      "Description": "표시 이름 (상호작용 안내)"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Values": [
+        "Heal",
+        "MaxHealth",
+        "Weapon"
+      ],
+      "Default": "Heal",
+      "Description": "회복(Amount) / 최대 체력 증가(Amount, 그만큼 회복도) / 무기(Weapon — 들고 있던 칸과 바꾼다)"
+    },
+    {
+      "Name": "Amount",
+      "Type": "Float",
+      "Default": 20,
+      "Description": "회복량·최대 체력 증가량"
+    },
+    {
+      "Name": "Weapon",
+      "Type": "String",
+      "Default": "",
+      "Description": "무기 id (Weapons.etable 행, Kind = Weapon)"
+    },
+    {
+      "Name": "Slice",
+      "Type": "String",
+      "Default": "Heart",
+      "Description": "진열대 위 모습 (Generated.esprite 슬라이스, 무기는 무기 표 Slice)"
+    },
+    {
+      "Name": "Price",
+      "Type": "Int",
+      "Default": 10,
+      "Description": "코인 가격"
+    },
+    {
+      "Name": "MinFloor",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "나오기 시작하는 층"
+    },
+    {
+      "Name": "Weight",
+      "Type": "Float",
+      "Default": 1,
+      "Description": "뽑기 가중치"
+    }
+  ]
+}

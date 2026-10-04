@@ -1,17 +1,15 @@
 -- Crypt2D 플레이어 (Prefabs/Crypt/Player.eprefab — 2D 이동기 + 수도승 플립북 + 자식 Weapon 스프라이트).
 --   이동은 이동기가 한다 (스크립트는 입력만: AddMovementInput/Jump/StopJumping/Dash/DropDown).
---   조준: 마우스 원시 이동량(Input.GetLookDelta)으로 가상 커서를 움직이고(커서 잠금 — 조준점은 HUD 위젯), Camera.ScreenToWorldRay로 월드 점.
---     게임패드 오른쪽 스틱(AimStick)이면 몸 기준 방향. 몸 좌우 = 조준 쪽 (SetSpriteFlip), 무기 = 조준 각으로 회전 (FromAxisAngle(+Y, -각)).
+--   조준: 실제 마우스 커서(Input.GetMouseUIPosition — HUD UI 좌표, 커서는 숨기고 HUD 조준점을 그 자리에) → Camera.ScreenToWorldRay로 월드 점.
+--     커서가 게임 화면 밖이면 마지막 조준 유지. 게임패드 오른쪽 스틱(AimStick)이면 몸 기준 방향. 몸 좌우 = 조준 쪽 (SetSpriteFlip), 무기 = 조준 각으로 회전 (FromAxisAngle(+Y, -각)).
 --   대시: 조준 방향, 충전 칸(Balance.DashCharges)을 쓰고 시간으로 다시 채운다 — 이동기 공중 대시 횟수는 넉넉히 두고 칸은 여기서 센다. 대시 중 무적.
 --   공격: 근접 = 휘두르기(무기가 위/아래로 번갈아 반원을 쓸고 호 효과) + Physics2D.OverlapCircle("Enemy")로 각 안의 적,
---         원거리 = GameManager 투사체. 무기 2칸 교체 Q/휠. 피격 무적 깜빡임.
+--         원거리 = GameManager 투사체. 무기 2칸 교체 Q/휠. 피격 = 무적 깜빡임 + 넉백(entity:AddKnockback — 짧은 경직 동안 입력 무시).
 --   자동 플레이(GameManager.Pilot)면 입력을 AutoPilot이 채운 표에서 읽는다.
 local U = Script.Require("Scripts/Crypt/Util.lua")
 
 local Player = {
-	Properties = {
-		MouseSensitivity = 1.0,
-	},
+	Properties = {},
 }
 
 local Flipbooks = {
@@ -90,12 +88,10 @@ function Player:GatherInput(Dt)
 			self.CursorX, self.CursorY = SX, SY
 		end
 	else
-		local DX, DY = Input.GetLookDelta()
-		local Sens = self.Properties.MouseSensitivity
-		local W, H = 1280, 720
-		if Hud then W, H = Hud:GetLayoutSize() end
-		self.CursorX = U.Clamp(self.CursorX + DX * Sens, 0, W)
-		self.CursorY = U.Clamp(self.CursorY + DY * Sens, 0, H)
+		if Hud then
+			local MX, MY, bInside = Input.GetMouseUIPosition(Hud.entity)
+			if bInside then self.CursorX, self.CursorY = MX, MY end
+		end
 		local Origin = nil
 		if Hud then Origin = Camera.ScreenToWorldRay(self.CursorX, self.CursorY, Hud.entity) end
 		if Origin then
@@ -113,8 +109,8 @@ function Player:OnUpdate(Dt)
 	local E = self.entity
 	local P = E:GetWorldPosition()
 
-	-- 깜빡임·타이머는 히트스톱 중에도 화면이 멈춰 보이게 둔다
-	if GM.HitStop > 0 then return end
+	-- 히트스톱(게임 시간 배율 0): 입력·타이머 모두 멈춘 채 (화면이 멈춰 보이게)
+	if Time.GetTimeScale() == 0 then return end
 	self.Invuln = math.max(0, self.Invuln - Dt)
 	self.HurtTimer = math.max(0, self.HurtTimer - Dt)
 	self.AttackTimer = math.max(0, self.AttackTimer - Dt)
@@ -294,6 +290,11 @@ function Player:TakeDamage(Amount, SX, SZ)
 	GM:Sound("Hurt")
 	GM:AddShake(9, 0.25)
 	GM:SetHitStop(0.06)
+	-- 넉백: 맞은 쪽 반대로 튕기며 살짝 뜬다 (경직 동안 입력 무시 — 이동기가 무브 안에서 처리)
+	local Away = (P.X >= (SX or P.X)) and 1 or -1
+	if not self.entity:IsDashing() then
+		self.entity:AddKnockback(Vector3(Away * 520, 0, 420), 0.16)
+	end
 	GM:ShowNumber(P.X, P.Z + 110, tostring(math.floor(Amount)), { 1, 0.3, 0.3, 1 }, 1.1)
 	GM:SpawnFx("Fx_Spark", P.X, P.Z + 20, { Color = { 1, 0.4, 0.4, 1 } })
 	if self.Health <= 0 then

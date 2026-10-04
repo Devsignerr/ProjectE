@@ -1,18 +1,20 @@
 // Lua 타이머/코루틴 대기 (Phase 41-1).
 //
-//   Timer.After(초, 함수) → 번호        한 번 (만든 프레임부터 세어 '초'가 지난 첫 프레임)
-//   Timer.Every(초, 함수) → 번호        반복 (함수가 false를 돌려주면 멈춤, 한 프레임에 최대 한 번 — 밀린 횟수를 몰아 부르지 않는다)
+//   Timer.After(초, 함수[, { Unscaled = true }]) → 번호   한 번 (만든 프레임부터 세어 '초'가 지난 첫 프레임)
+//   Timer.Every(초, 함수[, { Unscaled = true }]) → 번호   반복 (함수가 false를 돌려주면 멈춤, 한 프레임에 최대 한 번 — 밀린 횟수를 몰아 부르지 않는다)
 //   Timer.Cancel(번호) → bool          Timer.IsActive(번호) → bool
 //   Coroutine.Start(함수, 인자...) → 번호  바로 실행해 첫 대기까지 진행 (Unity StartCoroutine)
 //   Coroutine.Stop(번호) → bool        Coroutine.IsRunning(번호) → bool
-//   코루틴 안에서만: Wait(초)(없거나 0 = 다음 프레임), WaitFrames(n), WaitUntil(함수) — 매 프레임 확인
+//   코루틴 안에서만: Wait(초)(없거나 0 = 다음 프레임), WaitUnscaled(초)(실제 시간), WaitFrames(n), WaitUntil(함수) — 매 프레임 확인
 //
 // 규칙
 // - 소유자 = 지금 실행 중인 스크립트 인스턴스 (OnStart/OnUpdate/이벤트/타이머·코루틴 안). 인스턴스 코드 밖(RunString, 비헤이비어 트리
 //   스크립트 객체)에서 부르면 오류. 인스턴스가 사라지면(OnDestroy 뒤·엔티티 파괴·스크립트 변경·EndPlay) 함께 사라지고,
 //   핫 리로드는 그 스크립트 인스턴스의 타이머/코루틴을 모두 취소한다 (옛 코드 클로저가 남지 않게 — OnStart는 다시 불리지 않는다).
-// - 시간 = 스크립트 시간 (FScriptSystem::Update의 DeltaSeconds = Time.DeltaTime, MaxDeltaSeconds로 제한). 에디터 일시정지 중에는
-//   Update가 불리지 않으므로 멈춘다. 발사/재개는 Update에서 모든 OnUpdate가 끝난 뒤 (UpdateOrder 순서), 노티파이/UI 이벤트 전.
+// - 시간 = 스크립트 시간 (FScriptSystem::Update의 DeltaSeconds = Time.DeltaTime, MaxDeltaSeconds로 제한) = 게임 시간 배율이 곱해진 시간
+//   (Game.SetTimeScale/HitStop — 0이면 멈춘다). Unscaled 타이머·WaitUnscaled는 실제 시간(Time.UnscaledDeltaTime, 같은 상한)으로 센다.
+//   프레임 기준인 것(0초 타이머·Wait()/Wait(0)·WaitFrames·WaitUntil 확인)은 시간 정지 중에도 프레임마다 진행한다. 에디터 일시정지 중에는
+//   Update가 불리지 않으므로 모두 멈춘다. 발사/재개는 Update에서 모든 OnUpdate가 끝난 뒤 (UpdateOrder 순서), 노티파이/UI 이벤트 전.
 // - 오류: 타이머 함수/코루틴 오류는 그 인스턴스만 멈춘다 (다른 스크립트 오류와 같음 — 핫 리로드 성공 시 재개, 타이머는 없는 채로).
 //   Coroutine.Start의 첫 실행 오류는 부른 쪽 메서드의 오류가 된다.
 // - ExecutionLocation: 인스턴스가 이 머신에서 돌 때만 존재하므로 자동으로 따른다.
@@ -45,6 +47,11 @@ function Wait(Seconds)
 	Check("Wait")
 	if Seconds ~= nil and type(Seconds) ~= "number" then error("Wait(초): 숫자가 필요합니다", 2) end
 	return Yield(Token, "Seconds", Seconds or 0)
+end
+function WaitUnscaled(Seconds)
+	Check("WaitUnscaled")
+	if Seconds ~= nil and type(Seconds) ~= "number" then error("WaitUnscaled(초): 숫자가 필요합니다", 2) end
+	return Yield(Token, "UnscaledSeconds", Seconds or 0)
 end
 function WaitFrames(Count)
 	Check("WaitFrames")
@@ -121,7 +128,8 @@ void FLuaRuntime::RegisterTimerBindings()
 		E_CHECKF(Result.valid(), "Wait 정의 청크 실행 실패");
 	}
 
-	const auto AddTimer = [this](double Seconds, sol::protected_function Callback, bool bRepeat, const char* ApiName) -> uint32 {
+	const auto AddTimer = [this](double Seconds, sol::protected_function Callback, bool bRepeat, const sol::optional<sol::table>& Options,
+	                             const char* ApiName) -> uint32 {
 		if (!(Seconds >= 0.0)) // NaN 포함
 		{
 			throw std::runtime_error(std::format("{}: 초는 0 이상이어야 합니다", ApiName));
@@ -136,6 +144,8 @@ void FLuaRuntime::RegisterTimerBindings()
 		Timer.Remaining    = Seconds;
 		Timer.Interval     = bRepeat ? Seconds : 0.0;
 		Timer.bRepeat      = bRepeat;
+		const sol::optional<bool> bUnscaled = Options ? Options->get<sol::optional<bool>>("Unscaled") : sol::optional<bool>();
+		Timer.bUnscaled    = bUnscaled.value_or(false);
 		Timer.CreatedFrame = FrameCount;
 		Timer.Callback     = sol::protected_function(Callback, Traceback);
 		Tasks[Timer.Id]    = { Instance.Entity.ToId(), false };
@@ -144,8 +154,12 @@ void FLuaRuntime::RegisterTimerBindings()
 	};
 
 	sol::table TimerTable  = Lua.create_named_table("Timer");
-	TimerTable["After"]    = [AddTimer](double Seconds, sol::protected_function Callback) { return AddTimer(Seconds, std::move(Callback), false, "Timer.After"); };
-	TimerTable["Every"]    = [AddTimer](double Seconds, sol::protected_function Callback) { return AddTimer(Seconds, std::move(Callback), true, "Timer.Every"); };
+	TimerTable["After"] = [AddTimer](double Seconds, sol::protected_function Callback, sol::optional<sol::table> Options) {
+		return AddTimer(Seconds, std::move(Callback), false, Options, "Timer.After");
+	};
+	TimerTable["Every"] = [AddTimer](double Seconds, sol::protected_function Callback, sol::optional<sol::table> Options) {
+		return AddTimer(Seconds, std::move(Callback), true, Options, "Timer.Every");
+	};
 	TimerTable["IsActive"] = [this](uint32 Id) {
 		const auto Found = Tasks.find(Id);
 		return Found != Tasks.end() && !Found->second.bCoroutine;
@@ -265,12 +279,12 @@ bool FLuaRuntime::ResumeCoroutine(FScriptCoroutine& Coroutine, const std::vector
 	if (Result.return_count() >= 4 && Result.get_type(1) == sol::type::table && Result.get<sol::table>(1) == WaitToken)
 	{
 		const std::string Kind = Result.get<std::string>(2);
-		if (Kind == "Seconds")
+		if (Kind == "Seconds" || Kind == "UnscaledSeconds")
 		{
 			const double Seconds = Result.get<double>(3);
 			if (Seconds > TimeEpsilon)
 			{
-				Coroutine.Wait    = EScriptWait::Seconds;
+				Coroutine.Wait    = Kind == "Seconds" ? EScriptWait::Seconds : EScriptWait::UnscaledSeconds;
 				Coroutine.Seconds = Seconds;
 			}
 		}
@@ -324,7 +338,7 @@ void FLuaRuntime::UpdateTasks(float DeltaSeconds, const FInput* InInput)
 			{
 				continue;
 			}
-			Timer.Remaining -= DeltaSeconds;
+			Timer.Remaining -= Timer.bUnscaled ? UnscaledDelta : DeltaSeconds;
 			if (Timer.Remaining > TimeEpsilon)
 			{
 				continue;
@@ -353,6 +367,7 @@ void FLuaRuntime::UpdateTasks(float DeltaSeconds, const FInput* InInput)
 			{
 			case EScriptWait::Frames:  bReady = --Coroutine.Frames <= 0; break;
 			case EScriptWait::Seconds: Coroutine.Seconds -= DeltaSeconds; bReady = Coroutine.Seconds <= TimeEpsilon; break;
+			case EScriptWait::UnscaledSeconds: Coroutine.Seconds -= UnscaledDelta; bReady = Coroutine.Seconds <= TimeEpsilon; break;
 			case EScriptWait::Until:   bReady = true; break; // 조건은 재개 단계에서 (Lua 호출)
 			}
 			if (bReady)

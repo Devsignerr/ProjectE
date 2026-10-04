@@ -7,7 +7,8 @@
 #   Content/Sprites/Crypt/Generated/Generated.png (+ .esprite) — 자체 제작 픽셀 아트 (Crypt2DArt.py)
 #   Content/UI/Crypt/*.eui + Icons/*.png, Content/Audio/Crypt/*.wav (Kenney CC0 복사 + 자체 합성), Content/Data/Crypt/* (무기·적·밸런스 표)
 #   Content/Scripts/Crypt/Rooms.lua (방 템플릿 — Crypt2DRooms.py), Content/Prefabs/Crypt/*.eprefab
-#   Content/Scenes/Title.escene·Crypt.escene + Scenes/Tests/CryptAutoPlay·CryptBoss·CryptRooms.escene
+#   Content/Scenes/Title.escene·Crypt.escene + Scenes/Tests/CryptAutoPlay·CryptBoss·CryptFloor·CryptDeath·CryptClimb·CryptRooms.escene
+#   방 템플릿은 생성 때 위 문까지 오르는 발판 경로를 검사한다 (Crypt2DRooms.FindUpPath — 없으면 오류)
 # 좌표: 2D 평면 = 월드 X(오른쪽)·Z(위), 카메라는 +Y에서 -Y를 보는 직교. 1 도트 = 4cm (UnitsPerPixel 4), 타일 16px = 64cm,
 #   카메라 OrthoHeight 960cm = 240 도트 → 1280x720에서 도트 하나 = 화면 3px (PixelArtComponent PixelSize 3).
 import json
@@ -424,11 +425,36 @@ def BuildData():
 		"MaxHealth": 80, "InvulnTime": 0.9, "DashCharges": 2, "DashRecharge": 1.4, "StartWeapons": ["ShortSword", "Crossbow"],
 		"FloorRooms": [7, 8], "SpawnRatio": [0.65, 0.85], "HealthMultiplier": [1.0, 1.35, 1.0], "ClearGold": 5, "HeartHeal": 20, "HeartChance": 0.35}})
 
+	# 상점 (Shop 방 진열대 — GameManager가 층 조건·가중치로 겹치지 않게 뽑고 F로 코인 구매)
+	WriteJson(os.path.join(Dir, "ShopItem.estruct"), {
+		"Version": 1, "Name": "ShopItem", "Description": "상점 물건 (ShopItems.etable, 행 이름 = 물건 id)",
+		"Fields": [
+			{"Name": "DisplayName", "Type": "String", "Default": "물건", "Description": "표시 이름 (상호작용 안내)"},
+			{"Name": "Kind", "Type": "Enum", "Values": ["Heal", "MaxHealth", "Weapon"], "Default": "Heal",
+			 "Description": "회복(Amount) / 최대 체력 증가(Amount, 그만큼 회복도) / 무기(Weapon — 들고 있던 칸과 바꾼다)"},
+			{"Name": "Amount", "Type": "Float", "Default": 20, "Description": "회복량·최대 체력 증가량"},
+			{"Name": "Weapon", "Type": "String", "Default": "", "Description": "무기 id (Weapons.etable 행, Kind = Weapon)"},
+			{"Name": "Slice", "Type": "String", "Default": "Heart", "Description": "진열대 위 모습 (Generated.esprite 슬라이스, 무기는 무기 표 Slice)"},
+			{"Name": "Price", "Type": "Int", "Default": 10, "Description": "코인 가격"},
+			{"Name": "MinFloor", "Type": "Int", "Default": 1, "Description": "나오기 시작하는 층"},
+			{"Name": "Weight", "Type": "Float", "Default": 1, "Description": "뽑기 가중치"},
+		]})
+	ShopItems = [
+		("Heart", {"DisplayName": "생명의 심장", "Kind": "Heal", "Amount": 30, "Weapon": "", "Slice": "Heart", "Price": 5, "MinFloor": 1, "Weight": 2.0}),
+		("Chalice", {"DisplayName": "수호의 성배", "Kind": "MaxHealth", "Amount": 15, "Weapon": "", "Slice": "Chalice", "Price": 12, "MinFloor": 1, "Weight": 1.0}),
+		("GreatAxe", {"DisplayName": "처형인의 도끼", "Kind": "Weapon", "Amount": 0, "Weapon": "GreatAxe", "Slice": "Axe", "Price": 16, "MinFloor": 1, "Weight": 1.0}),
+		("Spear", {"DisplayName": "성기사의 창", "Kind": "Weapon", "Amount": 0, "Weapon": "Spear", "Slice": "Spear", "Price": 14, "MinFloor": 1, "Weight": 1.0}),
+		("FireStaff", {"DisplayName": "화염 지팡이", "Kind": "Weapon", "Amount": 0, "Weapon": "FireStaff", "Slice": "Staff", "Price": 20, "MinFloor": 2, "Weight": 1.0}),
+	]
+	WriteJson(os.path.join(Dir, "ShopItems.etable"), {"Version": 1, "Struct": "Data/Crypt/ShopItem.estruct",
+	                                                  "Rows": [{"Name": N, "Values": V} for N, V in ShopItems]})
+
 
 # ================================================================ 방 템플릿 → Lua
 def BuildRoomsLua(Templates):
 	Lines = ["-- Crypt2D 방 템플릿 (생성물 — Projects/Crypt2D/Tools/Crypt2DRooms.py를 고치고 BuildCrypt2D.py로 다시 만든다).",
 	         "-- 행은 위 → 아래, 문자 규칙은 Crypt2DRooms.py 머리 주석. Dungeon.lua가 읽어 층 타일맵을 조립한다.",
+	         "-- UpPath = 바닥에서 위 문 착지 발판까지 설 수 있는 면 목록 { X0, X1, Y(면 칸 행 — 발 = Y + 1), Solid } (Crypt2DRooms.FindUpPath — 자동 조종이 따라간다)",
 	         "return {",
 	         f"\tWidth = {Rooms.RoomWidth},",
 	         f"\tHeight = {Rooms.RoomHeight},",
@@ -437,7 +463,11 @@ def BuildRoomsLua(Templates):
 		Lines.append(f"\t\t{{ Name = \"{T.Name}\", Kind = \"{T.Kind}\", Rows = {{")
 		for Row in T.Rows():
 			Lines.append(f"\t\t\t\"{Row}\",")
-		Lines.append("\t\t} },")
+		if T.UpPath:
+			Path = ", ".join(f"{{ {X0}, {X1}, {Y}, {'true' if Solid else 'false'} }}" for (X0, X1, Y, Solid) in T.UpPath)
+			Lines.append(f"\t\t}}, UpPath = {{ {Path} }} }},")
+		else:
+			Lines.append("\t\t} },")
 	Lines += ["\t},", "}", ""]
 	WriteText(os.path.join(Content, "Scripts", "Crypt", "Rooms.lua"), "\n".join(Lines))
 
@@ -719,7 +749,7 @@ def BuildPrefabs():
 			                                      AirAcceleration=5200.0, AirDeceleration=3200.0, JumpVelocity=1260.0, MaxJumps=2, GravityScale=3.0,
 			                                      MaxFallSpeed=1800.0, CoyoteTime=0.1, JumpBufferTime=0.12, JumpCutFactor=0.45, MaxSlopeAngle=50.0,
 			                                      GroundSnapDistance=12.0, DashSpeed=1900.0, DashTime=0.16, DashCooldown=0.12, MaxAirDashes=99,
-			                                      DashIgnoresGravity=True, DropThroughTime=0.25),
+			                                      DashIgnoresGravity=True, DropThroughTime=0.25, KnockbackDeceleration=2400.0),
 			"ScriptComponent": Script("Scripts/Crypt/Player.lua"),
 		}, (0, 4, 0)),
 		PrefabEntity("Weapon", 2, 0, {"SpriteComponent": SpriteComp(Gen, "Sword", "Weapons", 0)}, (0, 2, 8)),
@@ -728,7 +758,7 @@ def BuildPrefabs():
 	def Walker(Name, Sprite, Slice, Flipbook, Capsule, **Move):
 		Fields = dict(MaxSpeed=300.0, GroundAcceleration=3000.0, GroundDeceleration=4000.0, AirAcceleration=1500.0, AirDeceleration=800.0,
 		              JumpVelocity=950.0, MaxJumps=1, GravityScale=3.0, MaxFallSpeed=1800.0, DashSpeed=650.0, DashTime=0.12, DashCooldown=0.05,
-		              MaxAirDashes=99, DashIgnoresGravity=False)
+		              MaxAirDashes=99, DashIgnoresGravity=False, KnockbackDeceleration=2600.0)
 		Fields.update(Move)
 		WritePrefab(Name, [PrefabEntity(Name, 1, -1, {
 			"SpriteComponent": SpriteComp(Sprite, Slice, "Characters", 0),
@@ -883,6 +913,8 @@ def Main():
 	BuildGameScene(os.path.join(Scenes, "Tests", "CryptAutoPlay.escene"), {"AutoPlay": "Test", "Seed": 7})
 	BuildGameScene(os.path.join(Scenes, "Tests", "CryptBoss.escene"), {"AutoPlay": "Boss", "Seed": 3, "StartFloor": 3})
 	BuildGameScene(os.path.join(Scenes, "Tests", "CryptFloor.escene"), {"AutoPlay": "Explore", "Seed": 11})
+	BuildGameScene(os.path.join(Scenes, "Tests", "CryptDeath.escene"), {"AutoPlay": "Death", "Seed": 5})
+	BuildGameScene(os.path.join(Scenes, "Tests", "CryptClimb.escene"), {"AutoPlay": "Climb", "Seed": 9})
 	BuildRoomsScene(os.path.join(Scenes, "Tests", "CryptRooms.escene"), Templates)
 	print(f"완료: 템플릿 {len(Templates)}개 → {Content}")
 

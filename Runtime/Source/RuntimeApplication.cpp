@@ -294,6 +294,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	const EInputMode        InputMode = FInputModeState::Get();
 	const FInputModeRouting Routing   = GetInputModeRouting(InputMode);
 	UpdateInputModeCursor(InputState);
+	GetWindow().SetCursorHidden(!FInputModeState::IsCursorVisible() && !Console.IsOpen()); // Lua Game.SetCursorVisible (콘솔이 열리면 보인다)
 
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
 	// 백버퍼 크기만 읽는다 (렌더 스레드가 Present 중일 수 있어 현재 백버퍼 RTV는 보지 않는다)

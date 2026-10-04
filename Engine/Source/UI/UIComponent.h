@@ -16,6 +16,10 @@ struct FUIComponentRuntime
 	std::string                  LoadedAsset; // Instance를 만든 에셋 경로 (바뀌면 다시 만든다)
 	std::vector<FUIEvent>        Events;      // 이번 프레임 이벤트 (FUISystem::Update가 비우고 채움 → 스크립트/게임 모듈이 읽음)
 	bool                         bPointerOver = false;
+	// 이번 프레임 마우스 커서 (화면 픽셀 — 이 UI 뷰포트와 같은 좌표계, FUISystem::Update가 입력 모드와 무관하게 채운다).
+	// Lua Input.GetMouseUIPosition이 레이아웃 좌표로 바꾼다 (Camera.WorldToScreen과 같은 공간)
+	FVector2                     CursorPixels;
+	bool                         bCursorInside = false; // 커서가 화면(에디터: 플레이 뷰포트 이미지) 안
 
 	FUIComponentRuntime() = default;
 	FUIComponentRuntime(const FUIComponentRuntime&) {}

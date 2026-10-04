@@ -2,8 +2,11 @@
 --   층 조립(Dungeon.lua → 지형/뒷벽 타일맵 SetTiles), 방 입장 → 문 잠금 + 적 소환 → 전멸 시 열림 + 보상, 출구 포털 → 다음 층,
 --   마지막(3층)은 보스 방. 투사체·코인·하트·효과·잔상은 스크립트 없는 Sprite2D 프리팹 조각으로 만들어 여기서 움직이고 지운다
 --   (적 수십·탄 수백도 스크립트 인스턴스를 늘리지 않게). 카메라(부드러운 추적 + 조준 쪽 기울임 + 방 경계 고정 + 흔들림),
---   히트스톱(엔진 시간 배율이 없으므로 스크립트 시간을 멈춤: 적 AI·투사체·효과 진행·플립북), 일시정지, 사망/승리, 최고 기록 저장.
--- 속성: Seed (0 = 최고 기록의 판 수로 매번 다르게), AutoPlay ("" / "Test" 검증 코스 / "Boss" 보스전 / "Explore" 이웃 방 탐험),
+--   히트스톱 = Game.HitStop(실제 시간 동안 게임 시간 배율 0 — 이동기·플립북·스크립트 dt 모두 멈춤), 일시정지 = Game.SetTimeScale(0)
+--   (공중에서 멈춰도 떨어지지 않는다), 상점 방(ShopItems.etable — 코인으로 회복·최대 체력·무기), 사망/승리, 최고 기록 저장.
+--   조준 = 실제 마우스 커서(Input.GetMouseUIPosition — Player.lua)이므로 커서는 숨기고 잠그지 않는다 (입력 모드 GameAndUI, HUD 조준점이 대신).
+-- 속성: Seed (0 = 최고 기록의 판 수로 매번 다르게), AutoPlay ("" / "Test" 검증 코스 / "Boss" 보스전 / "Explore" 이웃 방 탐험 /
+--       "Death" 일부러 죽어 사망 화면 / "Climb" 위 문으로 방 세 개 오르기),
 --       StartFloor (1~3). 자동 플레이는 AutoPilot.lua가 플레이어 입력을 대신 넣고 "[Crypt2D] … 결과: 실패 N건"을 남긴다.
 local U         = Script.Require("Scripts/Crypt/Util.lua")
 local CryptData = Script.Require("Scripts/Crypt/CryptData.lua")
@@ -71,7 +74,6 @@ function GM:OnStart()
 	self.Interactables = {}
 	self.FloorEntities = {}
 	self.SpawnInit   = {}
-	self.HitStop     = 0.0
 	self.Shake       = 0.0
 	self.ShakeTime   = 0.0
 	self.bPaused     = false
@@ -83,8 +85,14 @@ function GM:OnStart()
 		self.Pilot = AutoPilot.New(self.Properties.AutoPlay, self)
 	end
 	self:BuildFloor(self.Floor)
-	Game.SetInputMode("GameOnly")
-	Game.SetMouseLocked(true)
+	self:SetGameplayInput(true)
+end
+
+-- 게임 입력 (조준 = 실제 마우스, 커서 숨김 — HUD 조준점) ↔ 메뉴 입력 (보이는 커서). 잠그지 않는다 (잠그면 커서 위치가 고정된다)
+function GM:SetGameplayInput(bGameplay)
+	Game.SetInputMode(bGameplay and "GameAndUI" or "UIOnly")
+	Game.SetMouseLocked(false)
+	Game.SetCursorVisible(not bGameplay or self.Pilot ~= nil)
 end
 
 -- ================================================================ 층
@@ -112,8 +120,10 @@ function GM:BuildFloor(Floor)
 	self:ClearFloor()
 	self.Floor = Floor
 	local Mode = self.Properties.AutoPlay
-	if Mode == "Test" then
+	if Mode == "Test" or Mode == "Death" then
 		self.Layout = Dungeon.TestLayout()
+	elseif Mode == "Climb" then
+		self.Layout = Dungeon.ClimbLayout()
 	elseif Floor >= FinalFloor then
 		self.Layout = Dungeon.BossLayout()
 	else
@@ -144,6 +154,9 @@ function GM:BuildFloor(Floor)
 			end
 		end
 		self:SpawnParallax(Room)
+		if Room.Kind == "Shop" then
+			self:SpawnShop(Room)
+		end
 	end
 
 	-- 플레이어 (첫 층) 또는 순간이동
@@ -191,6 +204,97 @@ function GM:SpawnParallax(Room)
 	end
 end
 
+-- ================================================================ 상점 (Shop 방 — 상인 + 진열대 3자리, 물건은 ShopItems.etable에서 층 조건·가중치로 겹치지 않게)
+function GM:PickShopOffers(Count)
+	local Pool = {}
+	for _, Id in ipairs(CryptData.ShopItemIds()) do
+		local Item = CryptData.ShopItem(Id)
+		local bHeld = Item.Kind == "Weapon" and (Item.Weapon == self.Weapons[1] or Item.Weapon == self.Weapons[2])
+		if Item.MinFloor <= self.Floor and not bHeld then Pool[#Pool + 1] = { Id, Item.Weight } end
+	end
+	local Offers = {}
+	for _ = 1, Count do
+		local Id = self.Rng:Weighted(Pool)
+		if Id == nil then break end
+		Offers[#Offers + 1] = Id
+		for I, Entry in ipairs(Pool) do
+			if Entry[1] == Id then table.remove(Pool, I) break end
+		end
+	end
+	return Offers
+end
+
+function GM:SpawnShop(Room)
+	local Stands = {}
+	for _, M in ipairs(Room.Markers) do
+		if M.Char == "m" then
+			-- 상인: 사제 시트를 금빛으로 (적이 아님 — 스크립트·바디 없음)
+			self:SpawnSprite({ Sprite = "Sprites/Crypt/Wizard.esprite", Slice = "Wizard0", Flipbook = "Sprites/Crypt/Wizard_Idle.eflipbook",
+			                   Layer = "Props", X = M.X, Z = M.Z + 80, Color = { 1.0, 0.85, 0.55, 1 }, Lit = false }, function(E)
+				self.FloorEntities[#self.FloorEntities + 1] = E
+			end)
+		elseif M.Char == "s" then
+			Stands[#Stands + 1] = M
+		end
+	end
+	local Offers = self:PickShopOffers(#Stands)
+	for I, M in ipairs(Stands) do
+		self:SpawnSprite({ Sprite = Paths.Gen, Slice = "Pedestal", Layer = "Props", X = M.X, Z = M.Z, Lit = true }, function(E)
+			self.FloorEntities[#self.FloorEntities + 1] = E
+		end)
+		local Id = Offers[I]
+		if Id then
+			local Item = CryptData.ShopItem(Id)
+			local Offer = { Kind = "Shop", ItemId = Id, X = M.X, Z = M.Z + 60, Price = Item.Price,
+			                Text = string.format("F  구매: %s (%d 코인)", Item.DisplayName, Item.Price) }
+			self:SpawnSprite({ Sprite = Paths.Gen, Slice = Item.Slice, Layer = "Pickups", X = M.X, Z = M.Z + 70,
+			                   Rotation = Item.Kind == "Weapon" and 45 or nil }, function(E)
+				self.FloorEntities[#self.FloorEntities + 1] = E
+				Offer.Entity = E
+			end)
+			self.Interactables[#self.Interactables + 1] = Offer
+		end
+	end
+	Room.ShopOffers = Offers
+	Log.Info(string.format("[Crypt2D] 상점: %s", table.concat(Offers, ", ")))
+end
+
+-- 구매: 코인이 모자라면 알림만. 반환 = 샀는가
+function GM:BuyOffer(Offer)
+	local Item = CryptData.ShopItem(Offer.ItemId)
+	if self.Gold < Item.Price then
+		self:Toast(string.format("코인이 모자랍니다 (%d / %d)", self.Gold, Item.Price), 1.2)
+		self:Sound("Hurt")
+		return false
+	end
+	local Player = self:PlayerScript()
+	self.Gold = self.Gold - Item.Price
+	Offer.bUsed = true
+	if Offer.Entity and Offer.Entity:IsValid() then Offer.Entity:Destroy() end
+	local PX, PZ = self:PlayerPos()
+	if Item.Kind == "Heal" then
+		if Player then Player:Heal(Item.Amount) end
+		self:Sound("Heal")
+		self:ShowNumber(PX, PZ + 100, "+" .. math.floor(Item.Amount), { 0.4, 1, 0.5, 1 })
+	elseif Item.Kind == "MaxHealth" then
+		if Player then
+			Player.MaxHealth = Player.MaxHealth + Item.Amount
+			Player:Heal(Item.Amount)
+		end
+		self:Sound("Heal")
+		self:ShowNumber(PX, PZ + 100, "최대 +" .. math.floor(Item.Amount), { 1, 0.85, 0.4, 1 })
+	else
+		self.Weapons[self.WeaponSlot] = Item.Weapon
+		if Player then Player:OnWeaponsChanged() end
+		self:Sound("Equip")
+	end
+	self:SpawnFx("Fx_Spark", Offer.X, Offer.Z, { Color = { 1, 0.9, 0.5, 1 } })
+	self:Toast(Item.DisplayName, 1.2)
+	self:RefreshHud()
+	Log.Info(string.format("[Crypt2D] 구매: %s (%d 코인, 남은 코인 %d)", Offer.ItemId, Item.Price, self.Gold))
+	return true
+end
+
 -- ================================================================ 방
 function GM:RoomAtPosition(X, Z)
 	if not self.Layout then return nil end
@@ -208,7 +312,7 @@ function GM:EnterRoom(Room)
 		local N = Dungeon.RoomAt(self.Layout, Room.SX + DX, Room.SY + DY)
 		if N then N.Known = true end
 	end
-	if Room.State == "Idle" and (Room.Kind == "Start" or Room.Kind == "Treasure") then
+	if Room.State == "Idle" and (Room.Kind == "Start" or Room.Kind == "Treasure" or Room.Kind == "Shop" or Room.Kind == "Climb") then
 		Room.State = "Cleared"
 	end
 	if self.Hud then self.Hud:UpdateMinimap(self.Layout, Room) end
@@ -338,8 +442,9 @@ function GM:SpawnPortal(Room)
 end
 
 -- ================================================================ 갱신
+-- AI를 멈출 때: 일시정지·히트스톱(게임 시간 배율 0 — dt 0으로 불린다)·판이 끝나고 잠시 뒤
 function GM:IsFrozen()
-	return self.bPaused or self.HitStop > 0 or self.bGameOver and self.GameOverTimer ~= nil and self.GameOverTimer > 1.2
+	return self.bPaused or Time.GetTimeScale() == 0 or self.bGameOver and self.GameOverTimer ~= nil and self.GameOverTimer > 1.2
 end
 
 -- 플레이어 스크립트 (OnStart가 끝난 뒤부터 — 생성 다음 프레임)
@@ -388,11 +493,6 @@ function GM:OnUpdate(Dt)
 		end
 	end
 
-	if self.HitStop > 0 then
-		self.HitStop = self.HitStop - Dt
-		if self.HitStop <= 0 then self:SetActorsFrozen(false) end
-		return
-	end
 	if not self.bGameOver then
 		self.RunTime = self.RunTime + Dt
 	end
@@ -776,6 +876,8 @@ function GM:Interact()
 		if Player then Player:OnWeaponsChanged() end
 		self:RefreshHud()
 		self:Toast(CryptData.Weapon(self.Weapons[self.WeaponSlot]).DisplayName, 1.2)
+	elseif I.Kind == "Shop" then
+		self:BuyOffer(I)
 	elseif I.Kind == "Portal" then
 		I.bUsed = true
 		self:Sound("Portal")
@@ -791,23 +893,9 @@ function GM:DamagePlayer(Amount, SX, SZ)
 	return false
 end
 
+-- 히트스톱: 실제 시간 Seconds 동안 게임 전체 정지 (겹치면 긴 쪽 — 엔진 Game.HitStop)
 function GM:SetHitStop(Seconds)
-	if Seconds > self.HitStop then
-		self.HitStop = Seconds
-		self:SetActorsFrozen(true)
-	end
-end
-
-function GM:SetActorsFrozen(bFrozen)
-	local function Set(E)
-		if E and E:IsValid() and E:HasComponent("FlipbookComponent") then
-			E:GetComponent("FlipbookComponent").Speed = bFrozen and 0.0 or 1.0
-		end
-	end
-	Set(self.Player)
-	if self.CurrentRoom then
-		for _, E in ipairs(self.CurrentRoom.Enemies) do Set(E) end
-	end
+	Game.HitStop(Seconds)
 end
 
 function GM:AddShake(Amount, Time)
@@ -874,16 +962,18 @@ function GM:ShowResult()
 	if self.Hud then
 		if self.bWin then self.Hud:ShowVictory(Text) else self.Hud:ShowDeath(Text) end
 	end
-	Game.SetInputMode("UIOnly")
+	-- 결과 화면: 뒤 세계는 멈추고(시간 배율 0) 커서를 보인다. 게임 입력도 받아 Confirm(Enter/R)으로 다시 시작 (단추는 UI가 먼저)
+	Game.SetTimeScale(0)
+	Game.SetInputMode("GameAndUI")
 	Game.SetMouseLocked(false)
+	Game.SetCursorVisible(true)
 end
 
 function GM:SetPaused(bPaused)
 	self.bPaused = bPaused
-	self:SetActorsFrozen(bPaused)
+	Game.SetTimeScale(bPaused and 0 or 1) -- 이동기·물리·플립북까지 멈춘다 (공중에서 멈춰도 떨어지지 않는다)
 	if self.Hud then self.Hud:ShowPause(bPaused) end
-	Game.SetInputMode(bPaused and "UIOnly" or "GameOnly")
-	Game.SetMouseLocked(not bPaused)
+	self:SetGameplayInput(not bPaused)
 	Log.Info(bPaused and "[Crypt2D] 일시정지" or "[Crypt2D] 계속")
 end
 

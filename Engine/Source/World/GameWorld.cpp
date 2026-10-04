@@ -9,6 +9,7 @@
 #include "Core/InputMode.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
+#include "Physics/Physics2DSystem.h"
 #include "Physics/PhysicsComponents.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/DebugDraw.h"
@@ -29,6 +30,7 @@
 #include <format>
 #include <iterator>
 #include <type_traits>
+#include <unordered_set>
 #include <variant>
 
 E_DEFINE_LOG_CATEGORY(LogGameWorldPerf, Log)
@@ -182,7 +184,7 @@ namespace
 	}
 } // namespace
 
-FGameWorld::FGameWorld() : AI(std::make_unique<FAISystem>()), Abilities(std::make_unique<FAbilitySystem>()) {}
+FGameWorld::FGameWorld() : Abilities(std::make_unique<FAbilitySystem>()), AI(std::make_unique<FAISystem>()), Physics2D(std::make_unique<FPhysics2DSystem>()) {}
 FGameWorld::~FGameWorld() = default;
 
 void FGameWorld::ConnectScriptsAndAI()
@@ -291,6 +293,8 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 		},
 	});
 
+	InstallScriptPhysicsHooks();
+
 	FPhysicsSystem* Physics = Systems.Physics;
 	if (Physics == nullptr)
 	{
@@ -310,54 +314,138 @@ void FGameWorld::Init(const FGameWorldSystems& InSystems)
 			return true;
 		},
 	});
-	Systems.Scripts->SetPhysicsHooks({
-		[Physics](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
-			FPhysicsHit Hit;
-			if (!Physics->Raycast(Origin, Direction, MaxDistance, Hit))
-			{
-				return false;
-			}
-			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
-			return true;
-		},
-		[Physics](FEntity Entity, const FVector3& Force) { Physics->AddForce(Entity, Force); },
-		[Physics](FEntity Entity, const FVector3& Impulse) { Physics->AddImpulse(Entity, Impulse); },
-		[Physics](FEntity Entity, const FVector3& Velocity) { Physics->SetVelocity(Entity, Velocity); },
-		[Physics](FEntity Entity) { return Physics->GetVelocity(Entity); },
-		[Physics](FEntity Entity) { return Physics->GetMass(Entity); },
-		[Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); },
-		[Physics](FEntity Entity) { Physics->RequestJump(Entity); },
-		[Physics](FEntity Entity) { return Physics->IsGrounded(Entity); },
-		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); },
-		[this, Physics](FEntity Entity) {
-			if (Scene != nullptr)
-			{
-				Physics->DisableRagdoll(*Scene, Entity);
-			}
-		},
-		[this, Physics](FEntity Entity) { return Scene != nullptr && Physics->IsRagdollActive(*Scene, Entity); },
-		[Physics](const FScriptQueryShape& Shape, const FVector3& Position, FEntity Ignore, std::vector<FEntity>& OutEntities) {
-			Physics->Overlap(ToPhysicsQueryShape(Shape), Position, Shape.Rotation, OutEntities, Ignore);
-		},
-		[Physics](const FScriptQueryShape& Shape, const FVector3& Start, const FVector3& Direction, float MaxDistance, FEntity Ignore, FScriptRayHit& OutHit) {
+}
+
+void FGameWorld::InstallScriptPhysicsHooks()
+{
+	// 3D(Systems.Physics — 없으면 그 기능은 무시) + 2D(Physics2D, 항상). 엔티티 함수(AddForce 등)는 2D 바디만 있는 엔티티면 2D로:
+	// 둘 다 있으면 3D를 쓰고 엔티티마다 경고 한 번. 벡터는 월드 3D (2D는 X·Z 성분)
+	FPhysicsSystem*   Physics = Systems.Physics;
+	FPhysics2DSystem* P2D     = Physics2D.get();
+	const auto        Warned  = std::make_shared<std::unordered_set<uint64>>();
+	const auto        Uses2D  = [Physics, P2D, Warned](FEntity Entity) {
+        const bool bHas2D = P2D->HasBody(Entity);
+        if (!bHas2D)
+        {
+            return false;
+        }
+        const bool bHas3D = Physics != nullptr && (Physics->HasBody(Entity) || Physics->HasCharacter(Entity));
+        if (bHas3D && Warned->insert(Entity.ToId()).second)
+        {
+            E_LOG(LogPhysics, Warning, "엔티티 {}에 3D와 2D 물리 바디가 모두 있어 스크립트 물리 함수는 3D를 씁니다", Entity.ToId());
+        }
+        return !bHas3D;
+	};
+	const auto ToPlane   = [](const FVector3& Vector) { return FVector2(Vector.X, Vector.Z); };
+	const auto FromPlane = [](const FVector2& Vector) { return FVector3(Vector.X, 0.0f, Vector.Y); };
+	const auto ToHit     = [](const FPhysicsHit& Hit) { return FScriptRayHit{ Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance }; };
+
+	FScriptPhysicsHooks Hooks;
+	Hooks.Raycast = [Physics, ToHit](const FVector3& Origin, const FVector3& Direction, float MaxDistance, FScriptRayHit& OutHit) {
+		FPhysicsHit Hit;
+		if (Physics == nullptr || !Physics->Raycast(Origin, Direction, MaxDistance, Hit))
+		{
+			return false;
+		}
+		OutHit = ToHit(Hit);
+		return true;
+	};
+	Hooks.AddForce = [Physics, P2D, Uses2D, ToPlane](FEntity Entity, const FVector3& Force) {
+		if (Uses2D(Entity))
+		{
+			P2D->AddForce(Entity, ToPlane(Force));
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->AddForce(Entity, Force);
+		}
+	};
+	Hooks.AddImpulse = [Physics, P2D, Uses2D, ToPlane](FEntity Entity, const FVector3& Impulse) {
+		if (Uses2D(Entity))
+		{
+			P2D->AddImpulse(Entity, ToPlane(Impulse));
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->AddImpulse(Entity, Impulse);
+		}
+	};
+	Hooks.SetVelocity = [Physics, P2D, Uses2D, ToPlane](FEntity Entity, const FVector3& Velocity) {
+		if (Uses2D(Entity))
+		{
+			P2D->SetVelocity(Entity, ToPlane(Velocity));
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->SetVelocity(Entity, Velocity);
+		}
+	};
+	Hooks.GetVelocity = [Physics, P2D, Uses2D, FromPlane](FEntity Entity) {
+		if (Uses2D(Entity))
+		{
+			return FromPlane(P2D->GetVelocity(Entity));
+		}
+		return Physics != nullptr ? Physics->GetVelocity(Entity) : FVector3();
+	};
+	Hooks.GetMass = [Physics, P2D, Uses2D](FEntity Entity) {
+		if (Uses2D(Entity))
+		{
+			return P2D->GetMass(Entity);
+		}
+		return Physics != nullptr ? Physics->GetMass(Entity) : 0.0f;
+	};
+	if (Physics != nullptr)
+	{
+		Hooks.AddMovementInput = [Physics](FEntity Entity, const FVector3& Direction) { Physics->AddMovementInput(Entity, Direction); };
+		Hooks.Jump             = [Physics](FEntity Entity) { Physics->RequestJump(Entity); };
+		Hooks.IsGrounded       = [Physics](FEntity Entity) { return Physics->IsGrounded(Entity); };
+		Hooks.EnableRagdoll    = [this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); };
+		Hooks.DisableRagdoll   = [this, Physics](FEntity Entity) {
+            if (Scene != nullptr)
+            {
+                Physics->DisableRagdoll(*Scene, Entity);
+            }
+		};
+		Hooks.IsRagdollActive = [this, Physics](FEntity Entity) { return Scene != nullptr && Physics->IsRagdollActive(*Scene, Entity); };
+		Hooks.Overlap         = [Physics](const FScriptQueryShape& Shape, const FVector3& Position, FEntity Ignore, std::vector<FEntity>& OutEntities) {
+            Physics->Overlap(ToPhysicsQueryShape(Shape), Position, Shape.Rotation, OutEntities, Ignore);
+		};
+		Hooks.Sweep = [Physics, ToHit](const FScriptQueryShape& Shape, const FVector3& Start, const FVector3& Direction, float MaxDistance, FEntity Ignore,
+		                               FScriptRayHit& OutHit) {
 			FPhysicsHit Hit;
 			if (!Physics->Sweep(ToPhysicsQueryShape(Shape), Start, Shape.Rotation, Direction, MaxDistance, Hit, Ignore))
 			{
 				return false;
 			}
-			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			OutHit = ToHit(Hit);
 			return true;
-		},
-		[Physics](const FVector3& Origin, const FVector3& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit& OutHit) {
+		};
+		Hooks.RaycastLayers = [Physics, ToHit](const FVector3& Origin, const FVector3& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit& OutHit) {
 			FPhysicsHit Hit;
 			if (!Physics->Raycast(Origin, Direction, MaxDistance, Hit, LayerMask))
 			{
 				return false;
 			}
-			OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance };
+			OutHit = ToHit(Hit);
 			return true;
-		},
-	});
+		};
+	}
+	Hooks.Raycast2D = [P2D](const FVector2& Origin, const FVector2& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit2D& OutHit) {
+		FPhysics2DHit Hit;
+		if (!P2D->Raycast(Origin, Direction, MaxDistance, Hit, LayerMask))
+		{
+			return false;
+		}
+		OutHit = { Hit.Entity, Hit.Position, Hit.Normal, Hit.Distance, Hit.Fraction };
+		return true;
+	};
+	Hooks.OverlapBox2D = [P2D](const FVector2& Center, const FVector2& HalfSize, float Angle, uint32 LayerMask, std::vector<FEntity>& OutEntities) {
+		P2D->OverlapBox(Center, HalfSize, Angle, OutEntities, LayerMask);
+	};
+	Hooks.OverlapCircle2D = [P2D](const FVector2& Center, float Radius, uint32 LayerMask, std::vector<FEntity>& OutEntities) {
+		P2D->OverlapCircle(Center, Radius, OutEntities, LayerMask);
+	};
+	Systems.Scripts->SetPhysicsHooks(std::move(Hooks));
 }
 
 void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
@@ -415,10 +503,23 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 		Systems.Physics->SetContactReportFilter([this](const FScene& Target, FEntity Entity) { return ShouldReportContacts(Target, Entity); });
 		Systems.Physics->Begin();
 	}
+	// 2D 물리: 3D와 같은 역할 규칙 (클라이언트는 복제 엔티티 동적 바디를 키네마틱으로 — 2D는 물리 예측 없음), 보간은 3D 설정을 따른다
+	if (bClient)
+	{
+		Physics2D->SetKinematicOverride([](const FScene& Target, FEntity Entity) { return Target.GetRegistry().Has<FNetIdComponent>(Entity); });
+	}
+	else
+	{
+		Physics2D->SetKinematicOverride(nullptr);
+	}
+	Physics2D->SetContactReportFilter([this](const FScene& Target, FEntity Entity) { return ShouldReportContacts(Target, Entity); });
+	Physics2D->SetInterpolation(Systems.Physics == nullptr || Systems.Physics->IsInterpolating());
+	Physics2D->Begin();
 	if (Systems.GameModule != nullptr && !bClient) // 게임 모듈(C++ 게임 로직)은 서버에서만
 	{
 		Systems.GameModule->SetNet(this);
 		Systems.GameModule->SetPhysics(Systems.Physics);
+		Systems.GameModule->SetPhysics2D(Physics2D.get());
 		Systems.GameModule->BeginPlay(InScene);
 	}
 	// 스크립트 BeginPlay는 Lua 상태만 만든다 (OnStart는 첫 TickGameplay). AI는 그 뒤 — 트리 시작 시 Lua 노드가 스크립트 객체를 만든다
@@ -460,11 +561,13 @@ void FGameWorld::EndPlay()
 		Systems.GameModule->EndPlay(*Scene);
 		Systems.GameModule->SetNet(nullptr);
 		Systems.GameModule->SetPhysics(nullptr);
+		Systems.GameModule->SetPhysics2D(nullptr);
 	}
 	if (Systems.Physics != nullptr)
 	{
 		Systems.Physics->End();
 	}
+	Physics2D->End();
 	ClearSubScenes();
 	FInputModeState::Reset();
 	FDebugDraw::Get().Clear(); // 플레이 정지 후 편집 화면에 남지 않게
@@ -519,6 +622,10 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::Physics);
 		Systems.Physics->Update(*Scene, DeltaSeconds);
+	}
+	{
+		const FScopedGameTickTimer Timer(EGameTickTimer::Physics);
+		Physics2D->Update(*Scene, DeltaSeconds); // 2D 물리 (3D 바로 뒤, 같은 단계 — 2D 바디가 없으면 거의 비용 없음)
 	}
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::GameplayTransforms);

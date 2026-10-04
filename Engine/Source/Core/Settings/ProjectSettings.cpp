@@ -47,6 +47,7 @@ FProjectSettings::FProjectSettings()
 
 	Registry.Register(Physics, { "Physics", "물리", GEngineCategory, "다음 플레이(물리 시작)부터 적용" })
 		.Property(&FPhysicsSettings::Gravity, "Gravity", "중력 (cm/s²)")
+		.Property(&FPhysicsSettings::Gravity2D, "Gravity2D", "2D 중력 (cm/s²)").Tooltip("2D 물리(Box2D) 평면 중력: X = 월드 X(오른쪽), Y = 월드 Z(위)")
 		.Property(&FPhysicsSettings::FixedStepHz, "FixedStepHz", "고정 스텝 (Hz)").Range(15.0f, 240.0f, 1.0f).Tooltip("물리 시뮬레이션 빈도. 높을수록 정확하지만 비싸다")
 		.Property(&FPhysicsSettings::MaxSubSteps, "MaxSubSteps", "최대 서브스텝").Range(1.0f, 16.0f).Tooltip("느린 프레임에서 한 번에 따라잡는 물리 스텝 상한");
 

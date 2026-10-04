@@ -254,6 +254,27 @@ add_library(ThirdParty::jolt ALIAS Jolt)
 target_compile_options(Jolt PRIVATE /W0)
 set_target_properties(Jolt PROPERTIES FOLDER "ThirdParty")
 
+# ---------------------------------------------------------------- Box2D (v3.1.1, MIT) — 2D 강체 물리 (Physics/Physics2DWorld.cpp에서만 포함)
+# 하위 디렉터리라 샘플/테스트/벤치마크/문서는 만들지 않는다 (PROJECT_IS_TOP_LEVEL일 때만). C17 정적 라이브러리.
+# AVX2·검증(무거운 내부 검사)은 끈다. 자체 /Wall은 지우고 /W0 (D9025 방지)
+foreach(_Option BOX2D_SAMPLES BOX2D_BENCHMARKS BOX2D_DOCS BOX2D_PROFILE BOX2D_VALIDATE BOX2D_UNIT_TESTS BOX2D_AVX2 BOX2D_SANITIZE
+        BOX2D_DISABLE_SIMD BOX2D_COMPILE_WARNING_AS_ERROR)
+    set(${_Option} OFF CACHE INTERNAL "")
+endforeach()
+e_fetchcontent_declare(box2d
+    URL      "https://github.com/erincatto/box2d/archive/refs/tags/v3.1.1.zip"
+    URL_HASH SHA256=7c88bef902a118a2933c21027918fea455237a1310e5422daf4640d22ba9a446)
+e_fetchcontent_make_available(box2d)
+
+add_library(ThirdParty::box2d ALIAS box2d)
+get_target_property(_Box2DOptions box2d COMPILE_OPTIONS)
+if(_Box2DOptions)
+    list(REMOVE_ITEM _Box2DOptions /Wall)
+    set_target_properties(box2d PROPERTIES COMPILE_OPTIONS "${_Box2DOptions}")
+endif()
+target_compile_options(box2d PRIVATE /W0)
+set_target_properties(box2d PROPERTIES FOLDER "ThirdParty")
+
 # ---------------------------------------------------------------- Recast/Detour (v1.6.0, zlib) — 내비메시 굽기 + 경로 탐색
 # 자체 CMakeLists(데모/테스트/설치)를 쓰지 않고 Recast, Detour, DetourCrowd 소스만 정적 라이브러리로 빌드한다
 e_fetchcontent_declare(recastnavigation

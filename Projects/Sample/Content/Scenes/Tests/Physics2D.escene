@@ -1,0 +1,754 @@
+{
+  "Entities": [
+    {
+      "Name": "Sun",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            800
+          ],
+          "Rotation": [
+            -0.4030582,
+            -0.1270838,
+            0.8643611,
+            -0.272532
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.96,
+            0.9
+          ],
+          "Intensity": 2.5
+        }
+      }
+    },
+    {
+      "Name": "SkyLight",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            0
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        }
+      }
+    },
+    {
+      "Name": "Camera2D",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            2000,
+            350
+          ],
+          "Rotation": [
+            0,
+            0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1,
+            1,
+            1
+          ]
+        },
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 20000.0,
+          "Primary": true,
+          "Priority": 0,
+          "Orthographic": true,
+          "OrthoHeight": 1100.0
+        }
+      }
+    },
+    {
+      "Name": "Ground",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            -50
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            18,
+            2,
+            1
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Checker.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Ramp",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -450,
+            0,
+            260
+          ],
+          "Rotation": [
+            0.0,
+            0.2164396,
+            0.0,
+            0.976296
+          ],
+          "Scale": [
+            6,
+            2,
+            0.3
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Purple.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "OneWay",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            330,
+            0,
+            300
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            4,
+            2,
+            0.2
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Yellow.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ],
+          "OneWay": true
+        }
+      }
+    },
+    {
+      "Name": "WallRight",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            860,
+            0,
+            300
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.2,
+            2,
+            6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Checker.emat",
+          "Visible": true
+        },
+        "EdgeCollider2DComponent": {
+          "Points": "-50,-50; -50,50"
+        }
+      }
+    },
+    {
+      "Name": "WallLeft",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -860,
+            0,
+            300
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.2,
+            2,
+            6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Checker.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Box0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -600,
+            0,
+            700
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -480,
+            0,
+            900
+          ],
+          "Rotation": [
+            0.0,
+            -0.1305262,
+            0.0,
+            0.9914449
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -380,
+            0,
+            1100
+          ],
+          "Rotation": [
+            0.0,
+            -0.258819,
+            0.0,
+            0.9659258
+          ],
+          "Scale": [
+            0.7,
+            0.7,
+            0.7
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Green.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            250,
+            0,
+            800
+          ],
+          "Rotation": [
+            0.0,
+            -0.3826834,
+            0.0,
+            0.9238795
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            380,
+            0,
+            1000
+          ],
+          "Rotation": [
+            0.0,
+            -0.5,
+            0.0,
+            0.8660254
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box5",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            450,
+            0,
+            1250
+          ],
+          "Rotation": [
+            0.0,
+            -0.6087614,
+            0.0,
+            0.7933533
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Green.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box6",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0,
+            0,
+            900
+          ],
+          "Rotation": [
+            0.0,
+            -0.7071068,
+            0.0,
+            0.7071068
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Box7",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            80,
+            0,
+            1200
+          ],
+          "Rotation": [
+            0.0,
+            -0.7933533,
+            0.0,
+            0.6087614
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "BoxCollider2DComponent": {
+          "Size": [
+            100.0,
+            100.0
+          ]
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Ball0",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -650,
+            0,
+            1000
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 50.0,
+          "Restitution": 0.3
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Ball1",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -520,
+            0,
+            1300
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.4,
+            0.4,
+            0.4
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Green.emat",
+          "Visible": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 50.0,
+          "Restitution": 0.3
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Ball2",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            300,
+            0,
+            1400
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Orange.emat",
+          "Visible": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 50.0,
+          "Restitution": 0.3
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Ball3",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -100,
+            0,
+            1300
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Blue.emat",
+          "Visible": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 50.0,
+          "Restitution": 0.3
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    },
+    {
+      "Name": "Ball4",
+      "Parent": -1,
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            600,
+            0,
+            900
+          ],
+          "Rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        },
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:sphere",
+          "MaterialAsset": "Materials/Green.emat",
+          "Visible": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 50.0,
+          "Restitution": 0.3
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 2
+        }
+      }
+    }
+  ],
+  "Version": 1
+}

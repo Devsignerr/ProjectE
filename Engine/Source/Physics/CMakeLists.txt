@@ -9,6 +9,6 @@ add_library(ProjectE::Physics ALIAS EPhysics)
 target_include_directories(EPhysics PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(EPhysics
     PUBLIC  ProjectE::Core ProjectE::Scene
-    PRIVATE ThirdParty::jolt)
+    PRIVATE ThirdParty::jolt ThirdParty::box2d)
 
 e_set_engine_module_defaults(EPhysics)

@@ -52,6 +52,16 @@ struct FScriptQueryShape
 	FQuat             Rotation;
 };
 
+// 2D 레이캐스트 결과 (평면 좌표 FVector2(X = 월드 X, Y = 월드 Z), cm — Physics/Physics2DMath.h 규약)
+struct FScriptRayHit2D
+{
+	FEntity  Entity;
+	FVector2 Position;
+	FVector2 Normal;
+	float    Distance = 0.0f;
+	float    Fraction = 0.0f;
+};
+
 // 스크립트가 쓰는 물리 기능. 앱이 Physics 모듈(FPhysicsSystem)과 연결한다 (비어 있으면 무시). 단위 cm, kg
 struct FScriptPhysicsHooks
 {
@@ -76,6 +86,11 @@ struct FScriptPhysicsHooks
 		Sweep;
 	// 충돌 레이어로 거른 레이캐스트 (LayerMask 비트 i = 레이어 칸 i, FCollisionLayerSettings). 없으면 레이어를 준 Physics.Raycast는 nil
 	std::function<bool(const FVector3& Origin, const FVector3& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit& OutHit)> RaycastLayers;
+	// 2D 물리 (FPhysics2DSystem, Lua Physics2D.*): 평면 좌표, 트리거 제외. 위 AddForce 등 엔티티 함수는 FGameWorld가 2D 강체에도 연결한다
+	std::function<bool(const FVector2& Origin, const FVector2& Direction, float MaxDistance, uint32 LayerMask, FScriptRayHit2D& OutHit)> Raycast2D;
+	std::function<void(const FVector2& Center, const FVector2& HalfSize, float AngleRadians, uint32 LayerMask, std::vector<FEntity>& OutEntities)>
+		OverlapBox2D;
+	std::function<void(const FVector2& Center, float Radius, uint32 LayerMask, std::vector<FEntity>& OutEntities)> OverlapCircle2D;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

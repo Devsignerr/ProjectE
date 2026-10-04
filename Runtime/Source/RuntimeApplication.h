@@ -12,8 +12,10 @@
 #include "Network/ReplicationServer.h"
 #include "Physics/PhysicsSystem.h"
 #include "Renderer/Camera.h"
+#include "Renderer/DebugDraw.h"
 #include "Renderer/DebugDrawRenderer.h"
 #include "Renderer/FlyCameraController.h"
+#include "Renderer/RenderThread.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Renderer/StatOverlay.h"
@@ -25,10 +27,14 @@
 #include "UI/UIDrawList.h"
 #include "World/GameWorld.h"
 
+#include <chrono>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
+class FConsoleVariable;
 class FD3D12RHI;
 
 // 게임 런타임: 프로젝트를 열어 씬을 렌더링한다 (에디터 UI 없음)
@@ -68,6 +74,11 @@ private:
 	// 맵 전환 (Game.OpenScene / 서버 지시): 요청 프레임은 검은 화면만 그리고, 다음 프레임 처음에 FGameWorldTravel::Travel
 	void TravelTo(const std::string& NextScene);
 
+	// ---- 렌더 스레드 (r.RenderThread — Renderer/RenderThread.h 머리 주석): OnRender = 게임 스레드 준비(BeginFrame·씬 수집·패스 등록·
+	// 오버레이 입력 사본) + 렌더 작업(그래프 실행·오버레이 기록·EndFrame/Present). r.RenderThread 0이면 렌더 작업을 그 자리에서 돈다
+	void RecordAndPresent(const std::filesystem::path& Screenshot, const std::filesystem::path& ContentDirectory);
+	void LogRenderThreadStats() const;
+
 	std::string                SceneAsset;    // Content 기준 현재 씬
 	std::optional<std::string> PendingTravel; // 다음 프레임에 열 씬 (이번 프레임은 로딩 화면)
 	uint16                     HostPort = 0;  // 리슨 서버 포트 (LAN 알림)
@@ -88,6 +99,27 @@ private:
 
 	FCamera              Camera;
 	FFlyCameraController CameraController;
+
+	FRenderThread           RenderThread;
+	FConsoleVariable*       RenderThreadVar = nullptr; // r.RenderThread (엔진 DLL 밖이라 이름으로 찾는다)
+	// 렌더 작업이 읽는 이번 프레임 사본 (게임 스레드가 WaitIdle 뒤에만 쓴다)
+	FCamera                 RenderCamera;
+	FRenderOutput           RenderSceneOutput;
+	std::vector<FDebugLine> RenderDebugLines;
+	std::filesystem::path   PendingScreenshot; // OnScreenshotRequested → 이번 프레임 EndFrame 직전
+	// CPU 구간 측정 (종료 로그 [성능] 렌더 스레드): 게임 스레드 작업(렌더 작업·대기 제외), 렌더 작업의 기록(FinishRender + 오버레이)과
+	// 제출(EndFrame — GPU가 밀리면 Present 대기 포함). 0이면 프레임 CPU ≈ 게임 + 기록 + 제출, 1이면 ≈ max(게임, 기록 + 제출)
+	struct FCpuFrameTimes
+	{
+		double                                GameMs   = 0.0;
+		double                                RecordMs = 0.0; // 렌더 작업만 쓴다 (종료 때 Stop 뒤에 읽는다)
+		double                                SubmitMs = 0.0;
+		double                                BeginFrameMs = 0.0; // 게임 스레드 BeginFrame (GPU가 밀리면 슬롯 펜스 대기 — 게임 스레드에 포함)
+		uint64                                Frames   = 0;
+		std::chrono::steady_clock::time_point LastKickEnd;
+		bool                                  bHasLastKick = false;
+	};
+	FCpuFrameTimes CpuTimes;
 
 	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
 	FGameModuleHost      GameModule; // 프로젝트 C++ 게임 모듈 (있으면)

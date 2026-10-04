@@ -21,4 +21,29 @@ public:
 	static double GetTotalSeconds();
 	// Advance 횟수
 	static uint64 GetFrameCount();
+
+	// 한 프레임의 시간 값 (렌더 스레드가 기록하는 프레임의 시간 — Renderer/RenderThread.h)
+	struct FSnapshot
+	{
+		float  DeltaSeconds = 0.0f;
+		double TotalSeconds = 0.0;
+		uint64 FrameCount   = 0;
+	};
+	// 현재 값 (게임 스레드)
+	static FSnapshot Capture();
+
+	// 이 스레드에서만 Get*이 Snapshot을 돌려주게 한다 (범위 동안). 렌더 스레드가 프레임 N을 기록하는 동안 게임 스레드는 이미
+	// N+1로 Advance했으므로, 기록 중 읽는 머티리얼 Time·노출 적응 등이 r.RenderThread 0과 같은 값을 보게 한다
+	class FScopedOverride
+	{
+	public:
+		explicit FScopedOverride(const FSnapshot& Snapshot);
+		~FScopedOverride();
+		FScopedOverride(const FScopedOverride&)            = delete;
+		FScopedOverride& operator=(const FScopedOverride&) = delete;
+
+	private:
+		const FSnapshot* Previous = nullptr;
+		FSnapshot        Value;
+	};
 };

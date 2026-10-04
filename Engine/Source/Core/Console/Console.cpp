@@ -1,6 +1,7 @@
 #include "Core/Console/Console.h"
 
 #include "Core/CommandLine.h"
+#include "Core/RenderThreadSync.h"
 #include "Core/StringConv.h"
 
 #include <algorithm>
@@ -298,31 +299,47 @@ std::string FConsoleVariable::GetDisplayString() const
 
 void FConsoleVariable::Assign(bool InBool, int32 InInt, float InFloat, std::string_view InString)
 {
+	if (Desc.Range && Type == EConsoleVariableType::Int)
+	{
+		InInt = std::clamp(InInt, static_cast<int32>(std::ceil(Desc.Range->first)), static_cast<int32>(std::floor(Desc.Range->second)));
+	}
+	if (Desc.Range && Type == EConsoleVariableType::Float)
+	{
+		InFloat = std::clamp(InFloat, Desc.Range->first, Desc.Range->second);
+	}
 	bool bChanged = false;
 	switch (Type)
 	{
 	case EConsoleVariableType::Bool:
-		bChanged  = BoolValue != InBool;
+		bChanged = BoolValue != InBool;
+		break;
+	case EConsoleVariableType::Int:
+		bChanged = IntValue != InInt;
+		break;
+	case EConsoleVariableType::Float:
+		bChanged = FloatValue != InFloat;
+		break;
+	case EConsoleVariableType::String:
+		bChanged = StringValue != InString;
+		break;
+	}
+	if (bChanged)
+	{
+		// 렌더 스레드가 기록 중인 프레임은 바꾸기 전 값을 본다 (값을 읽는 기록 코드·변경 콜백의 리소스 재생성과 겹치지 않게)
+		RenderThreadSync::WaitForRenderThread();
+	}
+	switch (Type)
+	{
+	case EConsoleVariableType::Bool:
 		BoolValue = InBool;
 		break;
 	case EConsoleVariableType::Int:
-		if (Desc.Range)
-		{
-			InInt = std::clamp(InInt, static_cast<int32>(std::ceil(Desc.Range->first)), static_cast<int32>(std::floor(Desc.Range->second)));
-		}
-		bChanged = IntValue != InInt;
 		IntValue = InInt;
 		break;
 	case EConsoleVariableType::Float:
-		if (Desc.Range)
-		{
-			InFloat = std::clamp(InFloat, Desc.Range->first, Desc.Range->second);
-		}
-		bChanged   = FloatValue != InFloat;
 		FloatValue = InFloat;
 		break;
 	case EConsoleVariableType::String:
-		bChanged    = StringValue != InString;
 		StringValue = std::string(InString);
 		break;
 	}

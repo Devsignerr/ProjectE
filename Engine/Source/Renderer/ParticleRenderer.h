@@ -17,6 +17,7 @@ class FD3D12RenderTarget;
 class FResourceManager;
 class FScene;
 class FShaderLibrary;
+class FStaticMesh;
 struct FParticleEmitter;
 struct FParticleGpuBuffer;
 
@@ -54,7 +55,8 @@ public:
 	void PrepareSimulation(FScene& Scene, const FFrustum& CullFrustum);
 	// 2) 계산 패스 등록 (풀마다 UAV 쓰기). 계산 셰이더만 쓰므로 Queue = AsyncCompute 가능
 	void AddSimulationPass(FRenderGraph& Graph, ERGQueue Queue, int32 Timer);
-	// 3) 그리기 패스 등록 (HDR 씬 컬러 + 깊이 테스트, GPU 풀·안개 볼륨 읽기). OutDrawn = 그린 입자 수 (실행 때 씀, GPU는 추정치)
+	// 3) 그리기 패스 등록 (HDR 씬 컬러 + 깊이 테스트, GPU 풀·안개 볼륨 읽기). OutDrawn = 그린 입자 수 (등록 때 씀, GPU는 추정치).
+	//    씬 수집·입자 업로드는 등록 때 끝내고 패스 기록은 준비된 그리기만 (렌더 스레드에서 씬을 읽지 않는다)
 	void AddRenderPass(FRenderGraph& Graph, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum, const FParticleRenderTargets& Targets,
 	                   int32 Timer, uint32* OutDrawn);
 
@@ -75,13 +77,35 @@ public:
 	static void BuildGpuProgram(const FParticleEmitter& Emitter, std::vector<FVector4>& OutProgram, FParticleSimConstants& OutConstants);
 
 private:
-	// 렌더 타깃(HDR + 깊이)이 바인딩된 상태에서 기록. 반환: 그린 입자 수 (GPU는 추정치)
-	uint32 Render(ID3D12GraphicsCommandList* CommandList, FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum);
+	// 그리기 하나 (등록 때 준비 — 기록은 상태 설정 + 드로우만)
+	struct FPreparedDraw
+	{
+		uint32                      Kind          = 0; // EPipelineKind
+		ID3D12PipelineState*        Pipeline      = nullptr;
+		D3D12_GPU_VIRTUAL_ADDRESS   DrawConstants = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS   Particles     = 0;
+		D3D12_GPU_DESCRIPTOR_HANDLE Texture{};
+		uint32                      InstanceCount = 0;
+		const FStaticMesh*          Mesh          = nullptr;
+		D3D12_VERTEX_BUFFER_VIEW    RibbonView{};
+		uint32                      RibbonVertexCount = 0;
+	};
+	struct FPreparedFrame
+	{
+		D3D12_GPU_VIRTUAL_ADDRESS   FrameConstants = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS   FogConstants   = 0;
+		D3D12_GPU_DESCRIPTOR_HANDLE FogVolume{};
+		std::vector<FPreparedDraw>  Draws;
+	};
+	// 씬의 이미터를 모아 먼 순으로 정렬하고 입자 데이터·상수를 동적 버퍼에 올린다 (등록 때, 씬을 읽는 유일한 곳). 반환: 그린 입자 수 (GPU는 추정치)
+	uint32 PrepareDraws(FScene& Scene, const FCamera& Camera, const FFrustum& CullFrustum, FPreparedFrame& Out);
+	// 렌더 타깃(HDR + 깊이)이 바인딩된 상태에서 준비된 그리기를 기록
+	void RecordDraws(ID3D12GraphicsCommandList* CommandList, const FPreparedFrame& Prepared) const;
 
 	// PrepareSimulation 결과: 풀마다 프로그램 + 단계별 상수
 	struct FSimJob
 	{
-		FParticleGpuBuffer*                    Pool    = nullptr;
+		std::shared_ptr<FParticleGpuBuffer>    Pool;
 		D3D12_GPU_VIRTUAL_ADDRESS              Program = 0;
 		uint32                                 Groups  = 0;
 		std::vector<D3D12_GPU_VIRTUAL_ADDRESS> Steps;

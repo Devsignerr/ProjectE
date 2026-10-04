@@ -13,6 +13,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <mutex>
 #include <vector>
 
 struct FD3D12RHIDesc
@@ -59,6 +60,9 @@ public:
 
 	// 현재 백버퍼의 sRGB RTV를 출력 대상으로 (BeginFrame 이후 유효)
 	FRenderOutput GetBackBufferOutput() const;
+	// 백버퍼 크기만 (Resize만 바꾼다 — 렌더 스레드가 EndFrame/Present 중이어도 게임 스레드가 읽을 수 있다)
+	uint32 GetBackBufferWidth() const { return SwapChain.GetWidth(); }
+	uint32 GetBackBufferHeight() const { return SwapChain.GetHeight(); }
 
 	// 이번 프레임의 슬롯(백버퍼 칸, 프레임 리소스 인덱스)과 BeginFrame마다 1씩 느는 프레임 번호 (GPU 타이머 등)
 	uint32 GetFrameSlot() const { return CurrentBackBufferIndex; }
@@ -117,7 +121,8 @@ public:
 	void   RemoveBeginFrameCallback(uint32 Id);
 
 	// 지연 해제: 요청한 뒤 처음 제출되는 프레임(EndFrame)을 GPU가 끝낸 뒤 실제로 해제한다.
-	// BeginFrame 전(UI 단계)에 요청해도 그 프레임이 아직 쓰는 리소스를 먼저 지우지 않는다
+	// BeginFrame 전(UI 단계)에 요청해도 그 프레임이 아직 쓰는 리소스를 먼저 지우지 않는다.
+	// 아무 스레드에서나 부를 수 있다 (렌더 스레드가 기록 중일 때 게임 스레드의 컴포넌트 소멸 등 — 잠금)
 	void DeferRelease(ComPtr<ID3D12Object> Object);
 	void DeferFreeDescriptor(const FD3D12DescriptorHandle& Handle);
 
@@ -155,6 +160,7 @@ private:
 	FD3D12DynamicUploadBuffer         DynamicBuffers[FrameCount];
 	FPendingReleases                  PendingReleases[FrameCount];
 	FPendingReleases                  RecordingReleases; // 다음 EndFrame에 제출 프레임 칸으로 옮겨짐
+	std::mutex                        RecordingReleasesMutex; // RecordingReleases (DeferRelease는 여러 스레드)
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 	ComPtr<ID3D12GraphicsCommandList> ComputeCommandList;
 	bool                              bComputeRecording = false;

@@ -61,6 +61,18 @@ namespace
 			return static_cast<uint32>(Workers.size());
 		}
 
+		// 다른 스레드(게임 ↔ 렌더 스레드)가 이미 병렬 루프를 돌리고 있으면 false — 호출자가 순차로 처리한다 (작업 칸이 하나)
+		bool TryRun(FTask& Task)
+		{
+			std::unique_lock RunLock(RunMutex, std::try_to_lock);
+			if (!RunLock.owns_lock())
+			{
+				return false;
+			}
+			Run(Task);
+			return true;
+		}
+
 		void Run(FTask& Task)
 		{
 			EnsureStarted();
@@ -150,6 +162,7 @@ namespace
 			}
 		}
 
+		std::mutex               RunMutex; // 한 번에 한 호출 스레드만 작업자를 쓴다
 		std::mutex               Mutex;
 		std::condition_variable  WakeWorkers;
 		std::condition_variable  Idle;
@@ -185,7 +198,10 @@ namespace FParallel
 		Task.Count        = Count;
 		Task.Batch        = std::max(MinBatch, (Count + (Workers + 1) * 4 - 1) / ((Workers + 1) * 4));
 		Task.TotalBatches = (Count + Task.Batch - 1) / Task.Batch;
-		Pool.Run(Task);
+		if (!Pool.TryRun(Task))
+		{
+			Body(0, Count); // 다른 스레드의 병렬 루프가 작업자를 쓰는 중 → 호출 스레드에서 순차 (결과는 같다)
+		}
 	}
 
 	uint32 GetWorkerCount() { return FParallelPool::Get().GetWorkerCount(); }

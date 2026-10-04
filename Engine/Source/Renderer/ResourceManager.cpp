@@ -2,6 +2,7 @@
 
 #include "Core/FileSystem.h"
 #include "Core/Profiling.h"
+#include "Core/RenderThreadSync.h"
 #include "Core/Serialization/BinaryArchive.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12RHI.h"
@@ -140,6 +141,7 @@ FTextureHandle FResourceManager::LoadTextureInternal(const std::filesystem::path
 		}
 		return Found->second;
 	}
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 
 	if (IsAsyncUpload())
 	{
@@ -254,6 +256,7 @@ FTextureHandle FResourceManager::LoadTextureInternal(const std::filesystem::path
 
 FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 	if (!Image.IsValid())
 	{
@@ -274,6 +277,7 @@ FTextureHandle FResourceManager::CreateTexture(const FImage& Image, bool bSRGB, 
 FTextureHandle FResourceManager::CreateTexture(uint32 Width, uint32 Height, DXGI_FORMAT Format, const void* Pixels, uint32 BytesPerPixel,
                                                const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 	auto Texture = std::make_unique<FD3D12Texture>();
 	if (!Texture->Init2D(Rhi->GetDevice(), Rhi->GetGraphicsQueue(), Rhi->GetSrvAllocator(), Width, Height, Format, Pixels, BytesPerPixel,
@@ -286,6 +290,7 @@ FTextureHandle FResourceManager::CreateTexture(uint32 Width, uint32 Height, DXGI
 
 FTextureHandle FResourceManager::CreateTexture(const FCompressedTexture& Texture, const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 	if (!Texture.IsValid())
 	{
@@ -395,6 +400,7 @@ uint32 FResourceManager::GetPendingLoadCount() const
 
 void FResourceManager::WaitForPendingLoads()
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_PROFILE_SCOPE("리소스 로딩 비우기");
 	while (GetPendingLoadCount() > 0)
 	{
@@ -411,6 +417,7 @@ void FResourceManager::WaitForPendingLoads()
 
 void FResourceManager::ProcessAsyncLoads()
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_PROFILE_SCOPE("비동기 로딩 처리");
 	if (GetLoadMode() == EResourceLoadMode::AsyncDrain)
 	{
@@ -546,6 +553,7 @@ void FResourceManager::CompletePendingUploads(uint64 FinalizedFence)
 
 void FResourceManager::DestroyTexture(FTextureHandle Handle)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	if (Handle == WhiteTexture || Handle == FlatNormalTexture)
 	{
 		E_LOG(LogRenderer, Warning, "기본 텍스처는 삭제할 수 없습니다");
@@ -584,6 +592,7 @@ const FD3D12Texture& FResourceManager::ResolveTexture(FTextureHandle Handle) con
 
 FMeshHandle FResourceManager::CreateMesh(const FMeshData& MeshData, const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 
 	auto Mesh = std::make_unique<FStaticMesh>();
@@ -608,6 +617,7 @@ FMeshHandle FResourceManager::CreateMesh(const FMeshData& MeshData, const std::w
 
 FMeshHandle FResourceManager::CreateSkinnedMesh(const FMeshData& MeshData, const std::vector<FSkinVertex>& SkinVertices, const std::wstring& DebugName)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	E_CHECKF(Rhi != nullptr, "리소스 관리자가 초기화되지 않았습니다");
 
 	auto Mesh = std::make_unique<FStaticMesh>();
@@ -634,6 +644,7 @@ FMeshHandle FResourceManager::CreateSkinnedMesh(const FMeshData& MeshData, const
 
 void FResourceManager::DestroyMesh(FMeshHandle Handle)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	if (std::unique_ptr<FStaticMesh> Mesh = Meshes.Remove(Handle))
 	{
 		Mesh->ShutdownDeferred(*Rhi);
@@ -647,6 +658,7 @@ FMeshHandle FResourceManager::GetOrCreatePrimitiveMesh(std::string_view Name)
 	{
 		return Found->second;
 	}
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 
 	FMeshHandle Handle;
 	if (Key == "cube")
@@ -726,6 +738,7 @@ void FResourceManager::BuildMaterialTable(FMaterial& Material)
 
 FMaterialHandle FResourceManager::CreateMaterial(const FMaterial& Material)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	auto NewMaterial          = std::make_unique<FMaterial>(Material);
 	NewMaterial->TextureTable = FD3D12DescriptorHandle{};
 	BuildMaterialTable(*NewMaterial);
@@ -734,6 +747,7 @@ FMaterialHandle FResourceManager::CreateMaterial(const FMaterial& Material)
 
 void FResourceManager::RefreshMaterialTextures(FMaterialHandle Handle)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	if (FMaterial* Material = Materials.Get(Handle))
 	{
 		BuildMaterialTable(*Material);
@@ -753,6 +767,7 @@ FMaterialHandle FResourceManager::LoadMaterial(const std::filesystem::path& Path
 	{
 		return Found->second;
 	}
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 
 	FMaterialAsset Asset;
 	if (!Asset.LoadFromFile(Canonical))
@@ -802,6 +817,7 @@ void FResourceManager::ResolveAndFillMaterial(FMaterial& Material, const FMateri
 
 void FResourceManager::ApplyMaterialAsset(FMaterialHandle Handle, const FMaterialAsset& Asset, const std::filesystem::path& BaseDirectory)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	FMaterial* Material = Materials.Get(Handle);
 	if (Material == nullptr)
 	{
@@ -936,6 +952,7 @@ bool FResourceManager::FillGraphMaterial(FMaterial& Material, const FMaterialAss
 
 bool FResourceManager::ReloadMaterialFile(const std::filesystem::path& Path)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	std::error_code       ErrorCode;
 	std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
 	if (ErrorCode)
@@ -981,6 +998,7 @@ bool FResourceManager::ReloadMaterialFile(const std::filesystem::path& Path)
 
 void FResourceManager::DestroyMaterial(FMaterialHandle Handle)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	if (Handle == DefaultMaterial)
 	{
 		E_LOG(LogRenderer, Warning, "기본 머티리얼은 삭제할 수 없습니다");
@@ -1027,6 +1045,7 @@ const FModelResources* FResourceManager::FindModelResources(const std::wstring& 
 
 const FModelResources& FResourceManager::AddModelResources(const std::wstring& Key, FModelResources Resources)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	std::unique_ptr<FModelResources>& Slot = ModelCache[Key];
 	Slot                                   = std::make_unique<FModelResources>(std::move(Resources));
 	return *Slot;
@@ -1045,6 +1064,7 @@ std::shared_ptr<FParticleSystemAsset> FResourceManager::LoadParticleSystem(const
 	{
 		return Found->second;
 	}
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 
 	auto System = std::make_shared<FParticleSystemAsset>();
 	if (!System->LoadFromFile(Canonical))
@@ -1059,6 +1079,7 @@ std::shared_ptr<FParticleSystemAsset> FResourceManager::LoadParticleSystem(const
 
 void FResourceManager::ResolveParticleResources(FParticleSystemAsset& System, const std::filesystem::path& BaseDirectory)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	constexpr std::string_view PrimitivePrefix = "primitive:";
 	for (FParticleEmitter& Emitter : System.Emitters)
 	{
@@ -1080,6 +1101,7 @@ void FResourceManager::ResolveParticleResources(FParticleSystemAsset& System, co
 
 void FResourceManager::OnAssetMoved(const std::filesystem::path& From, const std::filesystem::path& To)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	// 캐시 키 = weakly_canonical 경로 (+ 텍스처는 "|용도"). From은 이미 없어도 있는 부분까지 정규화된다
 	std::error_code             ErrorCode;
 	const std::filesystem::path CanonicalTo   = std::filesystem::weakly_canonical(To, ErrorCode);
@@ -1130,6 +1152,7 @@ void FResourceManager::OnAssetMoved(const std::filesystem::path& From, const std
 
 std::unique_ptr<FModelResources> FResourceManager::TakeModelResources(const std::filesystem::path& Path)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	std::error_code             ErrorCode;
 	const std::filesystem::path Canonical = std::filesystem::weakly_canonical(Path, ErrorCode);
 	const auto                  Found     = ModelCache.find((ErrorCode ? Path : Canonical).wstring());
@@ -1144,6 +1167,7 @@ std::unique_ptr<FModelResources> FResourceManager::TakeModelResources(const std:
 
 void FResourceManager::DestroyModelResources(const FModelResources& Model)
 {
+	RenderThreadSync::WaitForRenderThread(); // 풀·GPU 리소스 변경: 렌더 스레드 기록이 끝난 뒤 (RenderThread.h)
 	// 모델 머티리얼의 텍스처는 모델 로드 때 만든 것(경로 캐시에 없음)이라 함께 해제한다
 	std::vector<FTextureHandle> TexturesToDestroy;
 	for (const FMaterialHandle Handle : Model.Materials)

@@ -772,10 +772,16 @@ namespace
 
 void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
 {
+	BeginRender(Scene, Camera, Output);
+	FinishRender();
+}
+
+void FSceneRenderer::BeginRender(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
+{
 	E_CHECKF(Rhi != nullptr, "씬 렌더러가 초기화되지 않았습니다");
 	E_CHECKF(Output.IsValid(), "씬 렌더러 출력 대상이 유효하지 않습니다");
+	E_CHECKF(PendingGraph == nullptr, "이전 BeginRender의 FinishRender가 불리지 않았습니다");
 
-	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
 	ApplyConsoleVariables(); // 콘솔에서 바꾼 값은 이번 프레임부터
 	RenderProfiling::BeginFrame(Rhi->GetDevice().GetDevice(), Rhi->GetGraphicsQueue().GetQueue(), Rhi->GetFrameNumber());
 
@@ -786,6 +792,7 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 	bHasLastRenderTime           = true;
 	std::fill(std::begin(Stats.CpuMs), std::end(Stats.CpuMs), 0.0f);
 	const bool bGpuTiming = GpuTimer.BeginFrame(Rhi->GetFrameSlot(), Rhi->GetFrameNumber());
+	bPendingGpuTiming     = bGpuTiming;
 	ComputeGpuTimer.BeginFrame(Rhi->GetFrameSlot(), Rhi->GetFrameNumber());
 	if (bGpuTiming)
 	{
@@ -795,8 +802,7 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		}
 	}
 	BeginTimer(ERenderTimer::Total);
-	FD3D12DynamicUploadBuffer& DynamicBuffer = Rhi->GetDynamicBuffer();
-	const uint64               UploadStart   = DynamicBuffer.GetUsed();
+	PendingUploadStart = Rhi->GetDynamicBuffer().GetUsed();
 
 	// 한 Rhi 프레임에 몇 번 불렸는지 (여러 뷰/씬을 번갈아 그리는 렌더러는 시간 이력을 쓰지 않는다)
 	const uint64 FrameNumber = Rhi->GetFrameNumber();
@@ -824,20 +830,27 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 		BakeReflectionCaptures(Scene);
 	}
 
-	// 렌더 그래프: 패스 등록(CPU 준비 포함) → 컴파일(컬링·전이·비동기 포크/조인) → 실행(기록)
-	{
-		FRenderGraph Graph(*Rhi, GraphPool, "SceneRenderer");
-		SetupGraph(Graph);
-		RenderFrame(Graph, Scene, Camera, Output);
-		ExecuteGraph(Graph);
-	}
+	// 렌더 그래프: 패스 등록(CPU 준비 포함 — 여기까지 게임 스레드) → 컴파일(컬링·전이·비동기 포크/조인) → 실행(기록) = FinishRender
+	PendingGraph = std::make_unique<FRenderGraph>(*Rhi, GraphPool, "SceneRenderer");
+	SetupGraph(*PendingGraph);
+	RenderFrame(*PendingGraph, Scene, Camera, Output);
+	PendingOutput = Output;
 	if (bPendingSnapRestore)
 	{
-		PixelArtObjectSnap.Restore(Scene); // 씬 렌더(그래프 실행) 동안만 스냅 위치
+		PixelArtObjectSnap.Restore(Scene); // 씬 렌더(수집·패스 등록) 동안만 스냅 위치 — 패스 기록은 씬을 읽지 않는다
 		bPendingSnapRestore = false;
 	}
+}
+
+void FSceneRenderer::FinishRender()
+{
+	E_CHECKF(PendingGraph != nullptr, "BeginRender 없이 FinishRender가 불렸습니다");
+	ID3D12GraphicsCommandList* CommandList = Rhi->GetCommandList();
+	ExecuteGraph(*PendingGraph);
+	PendingGraph.reset();
+	const FRenderOutput Output = PendingOutput;
 	FinalizeFrameStats();
-	Stats.UploadBytes = DynamicBuffer.GetUsed() - UploadStart;
+	Stats.UploadBytes = Rhi->GetDynamicBuffer().GetUsed() - PendingUploadStart;
 	if (const uint32 Serial = RendererCVars::GetRayTracingStatsSerial(); Serial != SeenRtStatsSerial)
 	{
 		SeenRtStatsSerial = Serial;
@@ -855,7 +868,7 @@ void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderO
 
 	EndTimer(ERenderTimer::Total);
 	GpuTimer.EndFrame(CommandList);
-	if (bGpuTiming)
+	if (bPendingGpuTiming)
 	{
 		AccumulatePerfCapture();
 	}

@@ -40,7 +40,8 @@ struct FUIFrameInput
 	bool            bHasPointer = false;
 	FUIPointerInput Pointer;      // 위치는 화면 픽셀 (Viewport와 같은 좌표계)
 	FUIKeyInput     Keys;
-	float           DeltaSeconds = 0.0f; // 캐럿 깜빡임, UI 애니메이션
+	float           DeltaSeconds = 0.0f; // 캐럿 깜빡임, UI 애니메이션 (실제 시간)
+	float           GameTimeScale = 1.0f; // 게임 시간으로 재생하는 UI 애니메이션(bUseGameTime)의 배율 — 앱이 FGameWorld::GetUpcomingTimeScale()로 채운다
 };
 
 // UI가 이번 프레임에 가져간 입력 → 게임에는 FInput::WithoutMouseButtons / WithoutKeyboard 사본을 넘긴다

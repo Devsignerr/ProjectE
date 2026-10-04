@@ -217,6 +217,21 @@ FInputAction* FInputMapping::Find(std::string_view Name)
 	return const_cast<FInputAction*>(static_cast<const FInputMapping*>(this)->Find(Name));
 }
 
+bool FInputMapping::IsSourceBound(const FInputSource& Source) const
+{
+	for (const FInputAction& Action : Actions)
+	{
+		for (const FInputBinding& Binding : Action.Bindings)
+		{
+			if (Binding.Source == Source)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 uint32 FInputMapping::GetLayoutHash() const
 {
 	uint32     Hash   = 2166136261u; // FNV-1a

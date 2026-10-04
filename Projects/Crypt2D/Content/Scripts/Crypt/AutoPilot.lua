@@ -1,9 +1,13 @@
 -- Crypt2D 자동 조종 (자동 검증 — GameManager.Properties.AutoPlay). 플레이어 입력 표를 대신 채우고(Player:GatherInput),
 -- 실제 레벨에서 기능이 되는지 단계마다 확인해 "[Crypt2D] 자동 …" 로그와 마지막 "[Crypt2D] 결과: 실패 N건"을 남긴다.
---   Test    : 검증 코스(Dungeon.TestLayout — 시작 방 + 해골 하나 방). 바닥 대시 → 높은 단(두 번 점프로만) → 원웨이 발판 위로(아래에서 통과)
---             → S+Space 내려가기 → 오른쪽 방 입장 = 문 잠김 → 싸워서 전멸 = 문 열림
+--   Test    : 검증 코스(Dungeon.TestLayout — 시작 방 + 해골 하나 방 + 보물 + 상점). 바닥 대시 → 높은 단(두 번 점프로만) → 원웨이 발판 위로
+--             (아래에서 통과) → S+Space 내려가기 → 오른쪽 방 입장 = 문 잠김 → 싸워서 전멸 = 문 열림 → 코인 → 보물 방 지나 상점에서 구매
+--             (코인 차감·효과) → 일시정지(시간 배율 0)
 --   Boss    : 보스 층. 오른쪽 보스 방으로 가서 싸운다 (플레이어 무적). 패턴 3종 이상·보스 체력 감소 확인
---   Explore : 생성된 층. 왼쪽/오른쪽 문으로 이웃 방에 들어가 싸운다 (스크린샷용, 확인은 방 하나 정리)
+--   Explore : 생성된 층. 왼쪽/오른쪽/아래/위 문으로 이웃 방에 들어가 싸운다 (스크린샷용, 확인은 방 하나 정리)
+--   Death   : 검증 코스에서 싸우지 않고 해골에게 맞아 죽는다 (체력을 낮춰 시작) → 사망 화면·결과 글·시간 배율 0·커서·기록 확인
+--   Climb   : Dungeon.ClimbLayout(시작 + 위로 방 세 개) — 방마다 템플릿 UpPath(생성기가 검사한 발판 경로)를 따라 위 문으로 오른다.
+--             꼭대기에서 공중 일시정지 = 떨어지지 않음(시간 배율 0) 확인
 local U = Script.Require("Scripts/Crypt/Util.lua")
 
 local AutoPilot = {}
@@ -50,11 +54,29 @@ end
 function AutoPilot:Update(Dt)
 	local GM = self.GM
 	if not GM.bGameOver or self.bReported then return end
+	if self.Mode == "Death" then
+		if GM.bResultShown then self:CheckDeath() end
+		return
+	end
 	if self.Mode == "Boss" then
 		self:CheckBoss()
 	else
 		self:Expect(false, "플레이어 사망으로 판이 끝남")
 	end
+	self:Report()
+end
+
+-- 사망 화면 (GM:ShowResult — 결과 글, 뒤 세계 정지, 커서 보임·게임 입력도 받음)
+function AutoPilot:CheckDeath()
+	local GM = self.GM
+	local Hud = GM.Hud
+	self:Expect(GM.bWin ~= true, "패배로 판이 끝남")
+	self:Expect(Hud ~= nil and Hud:W("DeathScreen").Visible == true, "사망 화면 표시")
+	local Text = Hud and Hud:W("DeathResult").Text or ""
+	self:Expect(Text:find("도달 층") ~= nil and Text:find("처치") ~= nil, "결과 글 (" .. Text:gsub("\n", " / ") .. ")")
+	self:Expect(Game.GetTimeScale() == 0, "결과 화면 뒤 세계 정지 (시간 배율 0)")
+	self:Expect(Game.GetInputMode() == "GameAndUI" and Game.IsCursorVisible() and not Game.IsMouseLocked(), "커서 보임 + 다시 시작 입력")
+	self:Expect(SaveGame.Load("Crypt2D") ~= nil, "기록 저장")
 	self:Report()
 end
 
@@ -160,6 +182,10 @@ function AutoPilot:GetInput(Player)
 	local P = Player.entity:GetWorldPosition()
 	if self.Mode == "Test" then
 		self:TestStep(Player, In, P)
+	elseif self.Mode == "Death" then
+		self:DeathStep(Player, In, P)
+	elseif self.Mode == "Climb" then
+		self:ClimbStep(Player, In, P)
 	elseif self.Mode == "Boss" then
 		self:BossStep(Player, In, P)
 	else
@@ -302,11 +328,62 @@ function AutoPilot:TestStep(Player, In, P)
 		In.MoveX = (math.floor(T / 0.8) % 2 == 0) and 0.6 or -0.6
 		if T > 2.5 then
 			self:Expect(GM.Gold > 0, string.format("코인 줍기 (%d)", GM.Gold))
-			-- 일시정지 메뉴 (멈춘 뒤에는 플레이어 입력이 불리지 않으므로 같은 프레임에 확인·보고 — 마지막 스크린샷은 메뉴 화면)
-			GM:SetPaused(true)
-			self:Expect(GM.Hud ~= nil and GM.Hud:W("PauseScreen").Visible == true, "일시정지 메뉴 표시")
-			self:Report()
+			self:SetPhase("ToShop")
 		end
+	elseif Phase == "ToShop" then
+		-- 보물 방을 지나 오른쪽 상점으로 (적 없음 — 들어가면 정리된 방)
+		In.MoveX = 1
+		In.AimX, In.AimZ = P.X + 300, P.Z
+		local Room = GM.CurrentRoom
+		if Room and Room.Kind == "Shop" and P.X > Room.Rect[1] + 6 * U.Cell then
+			self:Note(string.format("상점 입장: 물건 [%s], 코인 %d", table.concat(Room.ShopOffers or {}, ", "), GM.Gold))
+			self:Expect(Room.State == "Cleared" and #(Room.ShopOffers or {}) == 3, "상점 방 (적 없음, 진열대 3자리)")
+			self:SetPhase("Buy")
+		elseif T > 20 then
+			self:Expect(false, Pos("상점 도착 시간 초과"))
+			self:SetPhase("Report")
+		end
+	elseif Phase == "Buy" then
+		-- 살 수 있는 가장 싼 물건 앞으로 가서 F
+		if self.Offer == nil then
+			for _, I in ipairs(GM.Interactables) do
+				if I.Kind == "Shop" and not I.bUsed and I.Price <= GM.Gold and (self.Offer == nil or I.Price < self.Offer.Price) then self.Offer = I end
+			end
+			if self.Offer == nil then
+				self:Expect(false, string.format("살 수 있는 물건 없음 (코인 %d)", GM.Gold))
+				self:SetPhase("Pause")
+				return
+			end
+			self.GoldBefore, self.HealthBefore, self.MaxBefore = GM.Gold, Player.Health, Player.MaxHealth
+		end
+		local Offer = self.Offer
+		In.AimX, In.AimZ = Offer.X, Offer.Z
+		if self.Step == 0 and math.abs(P.X - Offer.X) > 24 then
+			In.MoveX = U.Clamp((Offer.X - P.X) / 100, -1, 1)
+		elseif self.Step == 0 and GM.Focus == Offer then
+			In.InteractPressed = true
+			self.Step = 1
+		elseif self.Step == 1 then
+			local Item = GM.Data.ShopItem(Offer.ItemId)
+			local bEffect
+			if Item.Kind == "Heal" then bEffect = Player.Health == math.min(Player.MaxHealth, self.HealthBefore + Item.Amount)
+			elseif Item.Kind == "MaxHealth" then bEffect = Player.MaxHealth == self.MaxBefore + Item.Amount
+			else bEffect = GM.Weapons[GM.WeaponSlot] == Item.Weapon end
+			self:Expect(Offer.bUsed == true and GM.Gold == self.GoldBefore - Item.Price,
+				string.format("상점 구매 %s: 코인 %d → %d (가격 %d)", Offer.ItemId, self.GoldBefore, GM.Gold, Item.Price))
+			self:Expect(bEffect, "구매 효과 (" .. Item.Kind .. ")")
+			self:SetPhase("Pause")
+		end
+		if self.Phase == "Buy" and T > 8 then
+			self:Expect(false, Pos("구매 시간 초과"))
+			self:SetPhase("Pause")
+		end
+	elseif Phase == "Pause" then
+		-- 일시정지 메뉴 (멈춘 뒤에는 플레이어 입력이 불리지 않으므로 같은 프레임에 확인·보고 — 마지막 스크린샷은 메뉴 화면)
+		GM:SetPaused(true)
+		self:Expect(GM.Hud ~= nil and GM.Hud:W("PauseScreen").Visible == true, "일시정지 메뉴 표시")
+		self:Expect(Game.GetTimeScale() == 0 and Game.IsCursorVisible(), "일시정지 = 시간 배율 0 + 커서 보임")
+		self:Report()
 	elseif Phase == "Report" then
 		self:Report()
 	end
@@ -333,7 +410,7 @@ function AutoPilot:BossStep(Player, In, P)
 			In.AimZ = P.Z + 150
 		end
 		local Boss = GM.Boss
-		if (Boss and self.PhaseTime > 40) or (Boss == nil and GM.bVictory) or self.PhaseTime > 70 then
+		if (Boss and self.PhaseTime > 55) or (Boss == nil and GM.bVictory) or self.PhaseTime > 70 then
 			self:SetPhase("Check")
 		end
 	elseif self.Phase == "Check" then
@@ -374,10 +451,10 @@ function AutoPilot:ExploreStep(Player, In, P)
 		else
 			-- 아직 안 가 본 이웃: 왼쪽/오른쪽 문(걸어서) → 아래 문(구멍 원웨이로 내려감)
 			local Target = nil
-			for _, Side in ipairs({ "R", "L", "D" }) do
+			for _, Side in ipairs({ "R", "L", "D", "U" }) do
 				if Room.Doors[Side] then
 					local DX = (Side == "R" and 1) or (Side == "L" and -1) or 0
-					local DY = (Side == "D" and -1) or 0
+					local DY = (Side == "D" and -1) or (Side == "U" and 1) or 0
 					local N = GM.Layout.ByKey[(Room.SY + DY) * 100 + Room.SX + DX]
 					if N and not N.Visited then Target = Side break end
 				end
@@ -386,7 +463,9 @@ function AutoPilot:ExploreStep(Player, In, P)
 				if self.PhaseTime > 4 then self:SetPhase("Report") end
 				return
 			end
-			if Target == "D" then
+			if Target == "U" then
+				self:ClimbRoom(Player, In, P, Room) -- 템플릿 UpPath를 따라 위 문으로
+			elseif Target == "D" then
 				if math.abs(P.X - MidX) > 40 then
 					In.MoveX = U.Clamp((MidX - P.X) / 150, -1, 1)
 				else
@@ -418,6 +497,208 @@ function AutoPilot:ExploreStep(Player, In, P)
 	elseif self.Phase == "Loot" then
 		In.MoveX = (math.floor(self.PhaseTime / 0.8) % 2 == 0) and 0.5 or -0.5
 		if self.PhaseTime > 2 then self:SetPhase("Report") end
+	elseif self.Phase == "Report" then
+		self:Report()
+	end
+end
+
+-- ================================================================ 위 문 오르기 (템플릿 UpPath — Crypt2DRooms.FindUpPath가 생성 때 검사한 면 목록)
+-- 면 k에 서 있으면 면 k+1로: 오르기는 가장자리(단단한 단·틈) 또는 그 아래(원웨이 — 뚫고 오름)에서 뛰고, 높으면 정점에서 한 번 더,
+-- 공중에서는 다음 면 가운데로. 마지막 면(착지 발판) 위에서는 문 가운데에서 두 번 뛰어 위 방으로 (위 방 원웨이 바닥에 착지)
+local FeetOffset = 80 -- 캡슐 중심 → 발 (높이 160의 절반)
+
+function AutoPilot:ClimbRoom(Player, In, P, Room)
+	local Path = Room.Template.UpPath
+	if Path == nil then return false end
+	local E = Player.entity
+	local Cell = U.Cell
+	local OX, OZ = Room.Rect[1], Room.Rect[2]
+	local Feet = P.Z - FeetOffset
+	if self.ClimbRoomRef ~= Room then
+		self.ClimbRoomRef, self.ClimbIndex = Room, 1 -- 점프 횟수는 착지할 때만 (아래 방에서 뛰어 올라오는 중에도 이어서 센다)
+		self.ClimbJumps = self.ClimbJumps or 0
+		self.ClimbLanded = E:IsGrounded() -- 아래 방에서 위 문으로 들어오는 중이면 이 방에 처음 설 때까지 아래 문 원웨이가 목표
+	end
+	local function Range(S) return OX + S[1] * Cell, OX + (S[2] + 1) * Cell end
+	-- 면 높이: '#' 윗면 타일은 아래 절반 다각형(Y + 0.5칸), '=' 원웨이는 Full(Y + 1칸) — Dungeon.lua 자동 타일·FindUpPath와 같다
+	local function Top(S) return OZ + (S[3] + (S[4] and 0.5 or 1.0)) * Cell end
+	local bGrounded = E:IsGrounded()
+	if bGrounded then
+		self.ClimbJumps = 0
+		self.ClimbLanded = true
+		-- 지금 선 면 (경로 안에서 발 높이·가로 범위가 맞는 것 중 가장 높은 번호)
+		for I = #Path, 1, -1 do
+			local X0, X1 = Range(Path[I])
+			if math.abs(Feet - Top(Path[I])) < 14 and P.X > X0 - 40 and P.X < X1 + 40 then
+				if I ~= self.ClimbIndex then self:Note(string.format("오르기 면 %d/%d (방 %d, %d)", I, #Path, Room.SX, Room.SY)) end
+				self.ClimbIndex = I
+				break
+			end
+		end
+	end
+	local A = Path[self.ClimbIndex]
+	local AX0, AX1 = Range(A)
+	if self.ClimbIndex >= #Path then
+		-- 착지 발판: 위 문 가운데(18~21열 → 20열 경계)에서 두 번 뛴다
+		local DoorX = OX + 20 * Cell
+		In.MoveX = U.Clamp((DoorX - P.X) / 60, -1, 1)
+		if bGrounded and math.abs(P.X - DoorX) < 20 then
+			In.JumpPressed = true
+			self.ClimbJumps = 1
+		elseif not bGrounded and self.ClimbJumps == 1 and E:GetMovementVelocity().Z < 150 then
+			In.JumpPressed = true
+			self.ClimbJumps = 2
+		end
+		return true
+	end
+	local B = Path[self.ClimbIndex + 1]
+	local BX0, BX1 = Range(B)
+	local BMid = (BX0 + BX1) * 0.5
+	local Rise = (B[3] + (B[4] and 0.5 or 1.0)) - (A[3] + (A[4] and 0.5 or 1.0))
+	if not bGrounded then
+		-- 공중: 다음 면 가운데로, 정점 근처에서 아직 아래면 한 번 더. 아래 방에서 위 문으로 올라오는 중이면(발이 이 방 바닥 아래)
+		-- 목표는 이 방 바닥의 원웨이(아래 문 18~21열) — 문 가운데로
+		local bFromBelow = self.ClimbIndex == 1 and not self.ClimbLanded
+		local GoalX = bFromBelow and OX + 20 * Cell or BMid
+		if not bFromBelow and B[4] and Feet < Top(B) + 8 then
+			-- 단단한 단: 윗면보다 높아질 때까지 옆에 머문다 (아래로 파고들면 밑면에 머리를 박는다)
+			GoalX = P.X > BMid and BX1 + 36 or BX0 - 36
+		end
+		local GoalTop = bFromBelow and OZ + 2 * Cell or Top(B) -- 아래 문 원웨이(1행, Full) 윗면
+		In.MoveX = U.Clamp((GoalX - P.X) / 80, -1, 1)
+		-- 정점에서도 목표 아래이거나, 단단한 단 옆에서 아직 그 위로 들어가지 못했으면 한 번 더
+		local bBesideSolid = not bFromBelow and B[4] and (P.X > BX1 or P.X < BX0)
+		if self.ClimbJumps == 1 and E:GetMovementVelocity().Z < 150 and (Feet < GoalTop + 20 or bBesideSolid) then
+			In.JumpPressed = true
+			self.ClimbJumps = 2
+		end
+		return true
+	end
+	if Rise <= 0 then
+		-- 내려가기: 아래 면 쪽으로 걸어 나가고, 원웨이 위에서 바로 아래면 내려가기
+		In.MoveX = U.Clamp((BMid - P.X) / 80, -1, 1)
+		if not A[4] and P.X >= BX0 and P.X <= BX1 and (self.JumpCooldown or 0) <= 0 then
+			In.MoveY = -1
+			In.JumpPressed = true
+			self.JumpCooldown = 0.6
+		end
+		return true
+	end
+	-- 오르기: 뛸 자리 (원웨이가 머리 위에 겹치면 겹친 곳 가운데, 아니면 다음 면 쪽 가장자리 반 칸 안)
+	local TakeoffX
+	local Overlap0, Overlap1 = math.max(AX0, BX0), math.min(AX1, BX1)
+	if not B[4] and Overlap1 - Overlap0 > Cell then
+		TakeoffX = (Overlap0 + Overlap1) * 0.5
+	elseif BMid > (AX0 + AX1) * 0.5 then
+		TakeoffX = U.Clamp(math.min(AX1, BX0) - Cell * 0.5, AX0 + Cell * 0.5, AX1 - Cell * 0.5)
+	else
+		TakeoffX = U.Clamp(math.max(AX0, BX1) + Cell * 0.5, AX0 + Cell * 0.5, AX1 - Cell * 0.5)
+	end
+	if math.abs(P.X - TakeoffX) > 18 then
+		In.MoveX = U.Clamp((TakeoffX - P.X) / 80, -1, 1)
+	elseif (self.JumpCooldown or 0) <= 0 then
+		In.JumpPressed = true
+		In.MoveX = U.Sign(BMid - P.X)
+		self.ClimbJumps = 1
+		self.JumpCooldown = 0.3
+	end
+	return true
+end
+
+-- ================================================================ 사망 화면 검증: 체력을 낮추고 싸우지 않고 해골 쪽으로 걸어간다
+function AutoPilot:DeathStep(Player, In, P)
+	local GM = self.GM
+	if self.Phase == "Settle" then
+		if self.PhaseTime > 0.5 then
+			Player.Health = 12
+			GM:RefreshHud()
+			self:SetPhase("Walk")
+		end
+	elseif self.Phase == "Walk" then
+		local Room = GM.CurrentRoom
+		local Target = nil
+		if Room and Room.State == "Active" then
+			for _, E in ipairs(Room.Enemies) do
+				if E:IsValid() then Target = E:GetWorldPosition() break end
+			end
+		end
+		if Target then
+			In.MoveX = math.abs(Target.X - P.X) > 30 and U.Sign(Target.X - P.X) or 0
+			In.AimX, In.AimZ = Target.X, Target.Z
+		else
+			In.MoveX = 1
+			In.AimX, In.AimZ = P.X + 300, P.Z
+		end
+		if self.PhaseTime > 40 then
+			self:Expect(false, "사망 시간 초과")
+			self:Report()
+		end
+	end
+end
+
+-- ================================================================ 위 문 경로 검증 (ClimbLayout)
+function AutoPilot:ClimbStep(Player, In, P)
+	local GM = self.GM
+	local Room = GM.CurrentRoom
+	if Room == nil then return end
+	In.AimX, In.AimZ = P.X + 300, P.Z + 200
+	if self.Phase == "Settle" then
+		if self.PhaseTime > 0.5 then
+			self.StartRoom = Room
+			self.TopRoom = Room
+			self:SetPhase("Climb")
+		end
+	elseif self.Phase == "Climb" then
+		-- 방 판정은 캡슐 중심 기준이라 구멍을 지나는 순간 아래 방으로 잠깐 돌아갈 수 있다 — 새로 오른 방만 센다
+		if Room.SY > self.TopRoom.SY then
+			self:Expect(Room.SY == self.TopRoom.SY + 1 and Room.SX == self.TopRoom.SX,
+				string.format("위 문으로 %s → %s (%d, %d)", self.TopRoom.Template.Name, Room.Template.Name, Room.SX, Room.SY))
+			self.TopRoom = Room
+			self.PhaseTime = 0
+		end
+		if Room.Doors.U == nil then
+			if Player.entity:IsGrounded() then
+				self:Expect(Room.SY - self.StartRoom.SY == 3, string.format("꼭대기 방 도착 (%s, 오른 방 %d)", Room.Template.Name, Room.SY - self.StartRoom.SY))
+				self:SetPhase("AirPause")
+			end
+			return
+		end
+		self:ClimbRoom(Player, In, P, Room)
+		-- 3초마다 상태 (막히면 원인을 볼 수 있게)
+		self.ClimbLog = (self.ClimbLog or 0) + Time.DeltaTime
+		if self.ClimbLog > 3 then
+			self.ClimbLog = 0
+			local V = Player.entity:GetMovementVelocity()
+			self:Note(string.format("오르는 중 %s 면 %d: 칸 (%.1f, %.1f) 속도 (%.0f, %.0f) 바닥 %s", Room.Template.Name, self.ClimbIndex or 0,
+				(P.X - Room.Rect[1]) / U.Cell, (P.Z - 80 - Room.Rect[2]) / U.Cell, V.X, V.Z, tostring(Player.entity:IsGrounded())))
+		end
+		if self.PhaseTime > 25 then
+			self:Expect(false, string.format("오르기 시간 초과: %s 면 %d", Room.Template.Name, self.ClimbIndex or 0))
+			self:SetPhase("Report")
+		end
+	elseif self.Phase == "AirPause" then
+		-- 공중에서 일시정지 → 실제 0.5초 동안 위치·속도가 그대로 (예전: 스크립트만 멈춰 이동기가 떨어뜨렸다)
+		if self.Step == 0 then
+			In.JumpPressed = true
+			self.Step = 1
+		elseif self.Step == 1 and self.PhaseTime > 0.25 then
+			-- 배율은 다음 틱부터 — 멈춘 뒤(실제 0.1초) 자리를 재고, 다시 실제 0.5초 뒤 비교 (실제 시간 타이머)
+			local E = Player.entity
+			GM:SetPaused(true)
+			Timer.After(0.1, function()
+				self.FrozenAt = E:GetWorldPosition()
+				self.FrozenVel = E:GetMovementVelocity()
+				Timer.After(0.5, function()
+					local Now = E:GetWorldPosition()
+					local Vel = E:GetMovementVelocity()
+					self:Expect(not E:IsGrounded() and Now.Z == self.FrozenAt.Z and Vel.Z == self.FrozenVel.Z,
+						string.format("공중 일시정지: 높이 %.1f → %.1f, 속도 %.1f → %.1f (떨어지지 않음)", self.FrozenAt.Z, Now.Z, self.FrozenVel.Z, Vel.Z))
+					GM:SetPaused(false)
+					self:Report()
+				end, { Unscaled = true })
+			end, { Unscaled = true })
+			self.Step = 2
+		end
 	elseif self.Phase == "Report" then
 		self:Report()
 	end

@@ -615,6 +615,11 @@ void FEditorApplication::OnRender()
 	TerrainToolPanel.Update(Context); // Undo/Redo로 바뀐 지형/폴리지 편집 버전 맞추기
 	FoliageToolPanel.Update(Context);
 	ViewportPanel.Draw(Context, GetInput());
+	// 커서 숨김 (Lua Game.SetCursorVisible(false)): 빙의 중 플레이 뷰포트 위에서만 (ImGui가 창 커서를 정한다)
+	if (PlayMode.IsActive() && PlayMode.IsPossessed() && !FInputModeState::IsCursorVisible() && ViewportPanel.IsHovered())
+	{
+		ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+	}
 	TilePalettePanel.FinishFrame(Context); // 이번 프레임 타일 미리보기를 쓰지 않았으면 그리기 목록 비우기
 	HierarchyPanel.Draw(Context);
 	InspectorPanel.Draw(Context);
@@ -1912,12 +1917,14 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 		FUIFrameInput UIInput;
 		UIInput.Viewport    = ViewportPanel.GetGameUIViewport();
 		UIInput.bHasPointer = bUIInput;
+		// 커서 위치는 UI 입력이 꺼져 있어도 채운다 (Lua Input.GetMouseUIPosition — 뷰포트 이미지 기준 픽셀)
+		UIInput.Pointer = FUISystem::MakePointer(GameInput != nullptr ? *GameInput : GetInput(), -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
 		if (bUIInput)
 		{
-			UIInput.Pointer = FUISystem::MakePointer(*GameInput, -ViewportPanel.GetImageMin(), ViewportPanel.IsHovered());
-			UIInput.Keys    = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
+			UIInput.Keys = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
 		}
 		UIInput.DeltaSeconds          = DeltaSeconds;
+		UIInput.GameTimeScale         = World.GetUpcomingTimeScale(); // 게임 시간 UI 애니메이션 (bUseGameTime)
 		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
 		// 게임 UI 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (뷰포트 이미지 위치만큼 옮김)
 		bGameTextInput = bUIInput && UIResult.bKeyboard && UIResult.bHasTextCaret;

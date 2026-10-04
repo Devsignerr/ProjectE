@@ -1,7 +1,7 @@
 -- Crypt2D HUD (씬의 HUD 엔티티 — UI/Crypt/HUD.eui). GameManager/Player가 메서드로 값을 넘기고, 메뉴 단추는 GameManager:OnMenu로 돌려준다.
 --   체력·대시 칸·코인·처치·층, 무기 2칸(현재 칸 강조), 미니맵(방 격자 — 현재/방문/알려진 방, 출구·보물·보스 색, 문 연결선),
 --   데미지 숫자(DmgTemplate 복제 풀 — Camera.WorldToScreen으로 매 프레임 자리, 위로 뜨며 사라짐), 알림, 상호작용 안내, 보스 체력바,
---   조준점(가상 커서), 일시정지/사망/승리 화면.
+--   조준점(실제 마우스 커서 자리 — OS 커서는 숨김), 일시정지/사망/승리 화면.
 local Hud = {
 	Properties = {},
 }
@@ -13,16 +13,11 @@ function Hud:OnStart()
 	self.Numbers = {}
 	self.Free = {}
 	self.ToastTime = 0
-	self.LayoutW, self.LayoutH = 1280, 720
 	self.LastPrompt = false
 end
 
 function Hud:W(Name)
 	return self.entity:GetWidget(Name)
-end
-
-function Hud:GetLayoutSize()
-	return self.LayoutW, self.LayoutH
 end
 
 function Hud:SetHealth(Health, Max)
@@ -102,6 +97,7 @@ end
 -- ---- 미니맵
 local RoomColors = {
 	Exit = Vector4(0.35, 0.85, 0.45, 1), Treasure = Vector4(1.0, 0.75, 0.3, 1), Boss = Vector4(0.9, 0.22, 0.3, 1),
+	Shop = Vector4(0.45, 0.7, 1.0, 1),
 }
 
 function Hud:UpdateMinimap(Layout, Current)
@@ -173,12 +169,6 @@ function Hud:PlaceNumber(Item, W)
 end
 
 function Hud:LateUpdate(Dt)
-	-- 레이아웃 크기 = 화면 가운데(카메라 위치)의 UI 좌표 × 2
-	local Cam = self.GM.Camera
-	if Cam then
-		local CX, CY = Camera.WorldToScreen(Cam:GetWorldPosition() - Vector3(0, 1000, 0), self.entity)
-		if CX > 0 and CY > 0 then self.LayoutW, self.LayoutH = CX * 2, CY * 2 end
-	end
 	local Keep = {}
 	for _, Item in ipairs(self.Numbers) do
 		Item.Age = Item.Age + Dt
@@ -206,6 +196,7 @@ end
 -- ---- 메뉴 화면
 function Hud:ShowPause(bShow)
 	self:W("PauseScreen").Visible = bShow
+	if bShow then self:W("Crosshair").Visible = false end -- 메뉴는 OS 커서로 (계속하면 플레이어가 다시 켠다)
 end
 
 function Hud:ShowDeath(Text)

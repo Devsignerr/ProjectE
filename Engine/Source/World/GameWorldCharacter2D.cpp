@@ -25,9 +25,17 @@
 //     물리 예측(GameWorldPhysicsPrediction2D.cpp)이 로컬에서 시뮬레이션하고, 다시 적용할 때 그 바디를 기록 위치에 잠시 두는 경로도 함께 본다.
 //     ack 무브의 로컬 시각(MoveTimes)은 물리 예측이 스냅샷 시각을 로컬 기록에 맞추는 데 쓴다 (3D와 같은 시계)
 //   예측 옵션(UsesClientPrediction = 컴포넌트 bClientPrediction && 프로젝트 설정): 끄면 보내기만 하고 스냅샷 보간으로 보여 준다
+//   넉백/발사 (entity:LaunchCharacter/AddKnockback — 규칙은 CharacterMovement2D.h): 엔티티에 쌓였다가 다음 무브에 실린다 (무브 필드라 같은 무브 → 같은 결과).
+//     조종하는 쪽(Standalone, 서버 소유를 서버가, 예측하는 소유 클라이언트): 자기 다음 무브 — 클라이언트면 무브와 함께 서버로 간다 (서버는 성분을 MaxLaunchSpeed로 자름)
+//     서버의 원격 플레이어 캐릭터: 서버가 준 넉백은 다음에 적용하는 받은 무브(큐 첫 무브)에 합친다 — 받은 무브가 없으면 올 때까지 기다린다.
+//       결과(속도·경직 타이머)는 ack 상태로 소유 클라이언트에 가고, 클라이언트는 재조정(ack 상태 + 남은 무브 다시 적용)으로 같은 궤적을 받는다
+//       (넉백을 실은 무브까지는 클라이언트가 넉백 없이 예측했으므로 그만큼 보정이 생긴다 — 화면 오프셋으로 흡수)
+//     클라이언트의 다른 캐릭터: 무시 (서버 결과를 복제로 받는다). 같은 넉백을 서버와 소유 클라이언트가 둘 다 부르면 두 번 실리므로 한쪽(보통 서버)에서만
+//     시간 정지(게임 시간 배율 0 — Standalone 전용)인 틱은 무브를 시뮬레이션하지 않는다: 쌓인 입력은 버리고 넉백은 다음 무브까지 남긴다
 //   메시지 (비신뢰):
 //     CharacterMoves2D: uint32 NetId, uint8 개수, [uint32 순번, float dt, float 입력 X, float 입력 Y,
-//                       uint8 플래그(1 점프 누름, 2 점프 누르고 있음, 4 대시, 8 내려가기) (+ 대시면 float 방향 X, float 방향 Y)]...
+//                       uint8 플래그(1 점프 누름, 2 점프 누르고 있음, 4 대시, 8 내려가기, 16 발사) (+ 대시면 float 방향 X, float 방향 Y)
+//                       (+ 발사면 float 속도 X, float 속도 Y, uint8 덮어쓰기(1 X, 2 Y), float 경직 초)]...
 //     CharacterAck2D:   uint32 NetId, uint32 순번, FCharacterState2D (WriteState 순서)
 //   서버는 dt를 MaxMoveDeltaSeconds로 자르고 입력을 길이 1로 자르며, 소유자가 아닌 연결의 무브는 버린다.
 // 이벤트(점프/착지/대시 시작/밟기 — 밟기는 착지 뒤 OnStomped(other) + 밟힌 쪽 OnStompedBy(other))는 시뮬레이션한 쪽에서만 난다: 서버/Standalone(서버 스크립트·게임 모듈), 예측하는 소유 클라이언트(그 클라이언트의
@@ -48,6 +56,7 @@ namespace
 		MoveFlag_JumpHeld    = 2,
 		MoveFlag_Dash        = 4,
 		MoveFlag_DropDown    = 8,
+		MoveFlag_Launch      = 16,
 	};
 
 	bool IsFinite(const FVector2& V) { return std::isfinite(V.X) && std::isfinite(V.Y); }
@@ -77,6 +86,7 @@ namespace
 		Writer.Write(State.DashCooldownTimer);
 		Writer.Write(State.DropTimer);
 		Writer.Write(State.DashDirection);
+		Writer.Write(State.StunTimer);
 	}
 
 	FCharacterState2D ReadState(FBinaryReader& Reader)
@@ -95,6 +105,7 @@ namespace
 		State.DashCooldownTimer = Reader.Read<float>();
 		State.DropTimer         = Reader.Read<float>();
 		State.DashDirection     = Reader.Read<FVector2>();
+		State.StunTimer         = Reader.Read<float>();
 		return State;
 	}
 
@@ -102,7 +113,7 @@ namespace
 	{
 		return IsFinite(State.Position) && IsFinite(State.Velocity) && IsFinite(State.DashDirection) && std::isfinite(State.CoyoteTimer) &&
 		       std::isfinite(State.JumpBufferTimer) && std::isfinite(State.DashTimer) && std::isfinite(State.DashCooldownTimer) &&
-		       std::isfinite(State.DropTimer);
+		       std::isfinite(State.DropTimer) && std::isfinite(State.StunTimer);
 	}
 } // namespace
 
@@ -120,12 +131,22 @@ void FGameWorld::TickCharacters2D(float DeltaSeconds)
 			Characters.push_back(Entity);
 		}
 	});
+	if (DeltaSeconds <= 0.0f)
+	{
+		// 시간 정지 (게임 시간 배율 0/히트스톱 — Standalone): 무브 없음. 쌓인 입력은 버리고 넉백은 다음 무브까지 남긴다
+		for (const FEntity Entity : Characters)
+		{
+			Characters2D->ConsumePendingMove(Entity, 0.0f);
+		}
+		return;
+	}
 	for (const FEntity Entity : Characters)
 	{
 		const int32      Owner = GetOwner(Entity);
 		FCharacterMove2D Move  = Characters2D->ConsumePendingMove(Entity, DeltaSeconds); // 조종하지 않는 쪽 입력은 버린다
 		if (IsLocallyControlled(Entity))
 		{
+			Characters2D->MergePendingLaunch(Entity, Move); // 넉백/발사는 자기 무브에 (클라이언트면 무브와 함께 서버로)
 			if (Mode != ENetMode::Client)
 			{
 				Characters2D->SimulateCharacter(*Scene, Entity, Move);
@@ -161,6 +182,11 @@ void FGameWorld::TickCharacters2D(float DeltaSeconds)
 		}
 		else if (Mode == ENetMode::Client)
 		{
+			FCharacterMove2D Ignored;
+			if (Characters2D->MergePendingLaunch(Entity, Ignored)) // 남의 캐릭터 넉백은 서버가 준다 (복제로 받는다)
+			{
+				E_LOG(LogNet, Verbose, "2D 캐릭터 넉백 무시: 이 클라이언트가 조종하지 않는 캐릭터 (서버에서 부를 것)");
+			}
 			Characters2D->FollowTransform(*Scene, Entity);
 		}
 		else if (Owner >= 0)
@@ -168,8 +194,9 @@ void FGameWorld::TickCharacters2D(float DeltaSeconds)
 			FServerCharacter2D& Server = ServerCharacters2D[Entity];
 			if (Server.Queue.empty())
 			{
-				continue; // 무브가 없으면 그 자리 (클라이언트가 시간을 정한다)
+				continue; // 무브가 없으면 그 자리 (클라이언트가 시간을 정한다) — 서버가 준 넉백도 다음 무브까지 기다린다
 			}
+			Characters2D->MergePendingLaunch(Entity, Server.Queue.front()); // 서버가 준 넉백 → 이번에 적용하는 첫 무브 (결과는 ack 상태로)
 			for (const FCharacterMove2D& Queued : Server.Queue)
 			{
 				Characters2D->SimulateCharacter(*Scene, Entity, Queued);
@@ -207,11 +234,18 @@ void FGameWorld::SendCharacterMoves2D(FEntity Entity)
 		Writer.Write(Move.Input.X);
 		Writer.Write(Move.Input.Y);
 		Writer.Write(static_cast<uint8>((Move.bJumpPressed ? MoveFlag_JumpPressed : 0) | (Move.bJumpHeld ? MoveFlag_JumpHeld : 0) |
-		                                (Move.bDash ? MoveFlag_Dash : 0) | (Move.bDropDown ? MoveFlag_DropDown : 0)));
+		                                (Move.bDash ? MoveFlag_Dash : 0) | (Move.bDropDown ? MoveFlag_DropDown : 0) | (Move.bLaunch ? MoveFlag_Launch : 0)));
 		if (Move.bDash)
 		{
 			Writer.Write(Move.DashDirection.X);
 			Writer.Write(Move.DashDirection.Y);
+		}
+		if (Move.bLaunch)
+		{
+			Writer.Write(Move.LaunchVelocity.X);
+			Writer.Write(Move.LaunchVelocity.Y);
+			Writer.Write(static_cast<uint8>((Move.bLaunchOverrideX ? 1 : 0) | (Move.bLaunchOverrideY ? 2 : 0)));
+			Writer.Write(Move.StunSeconds);
 		}
 	}
 	Systems.Net->SendToServer(Writer.GetBuffer(), ENetReliability::Unreliable);
@@ -252,15 +286,29 @@ void FGameWorld::ReceiveCharacterMoves2D(FNetConnectionId Connection, const std:
 		Move.bJumpHeld    = (Flags & MoveFlag_JumpHeld) != 0;
 		Move.bDash        = (Flags & MoveFlag_Dash) != 0;
 		Move.bDropDown    = (Flags & MoveFlag_DropDown) != 0;
+		Move.bLaunch      = (Flags & MoveFlag_Launch) != 0;
 		if (Move.bDash)
 		{
 			Move.DashDirection.X = Reader.Read<float>();
 			Move.DashDirection.Y = Reader.Read<float>();
 		}
-		if (!Reader.IsOk() || !std::isfinite(Move.DeltaSeconds) || !IsFinite(Move.Input) || !IsFinite(Move.DashDirection))
+		if (Move.bLaunch)
+		{
+			Move.LaunchVelocity.X = Reader.Read<float>();
+			Move.LaunchVelocity.Y = Reader.Read<float>();
+			const uint8 Overrides = Reader.Read<uint8>();
+			Move.bLaunchOverrideX = (Overrides & 1) != 0;
+			Move.bLaunchOverrideY = (Overrides & 2) != 0;
+			Move.StunSeconds      = Reader.Read<float>();
+		}
+		if (!Reader.IsOk() || !std::isfinite(Move.DeltaSeconds) || !IsFinite(Move.Input) || !IsFinite(Move.DashDirection) || !IsFinite(Move.LaunchVelocity) ||
+		    !std::isfinite(Move.StunSeconds))
 		{
 			return;
 		}
+		Move.LaunchVelocity.X = std::clamp(Move.LaunchVelocity.X, -FCharacterMove2D::MaxLaunchSpeed, FCharacterMove2D::MaxLaunchSpeed);
+		Move.LaunchVelocity.Y = std::clamp(Move.LaunchVelocity.Y, -FCharacterMove2D::MaxLaunchSpeed, FCharacterMove2D::MaxLaunchSpeed);
+		Move.StunSeconds      = std::clamp(Move.StunSeconds, 0.0f, FCharacterMove2D::MaxStunSeconds);
 		if (Move.Sequence <= Server.LastQueued)
 		{
 			continue; // 이미 받은 무브 (겹쳐 보낸 것)

@@ -110,9 +110,9 @@ bool FUIInstance::RemoveWidget(std::string_view Name)
 }
 
 bool FUIInstance::Update(const FUIRect& InViewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,
-                         std::vector<FUIEvent>& OutEvents, float DeltaSeconds)
+                         std::vector<FUIEvent>& OutEvents, float DeltaSeconds, float GameTimeScale)
 {
-	TickAnimations(DeltaSeconds, OutEvents); // 값을 먼저 바꾸고 레이아웃 (렌더 변환은 레이아웃 뒤 누적)
+	TickAnimations(DeltaSeconds, OutEvents, GameTimeScale); // 값을 먼저 바꾸고 레이아웃 (렌더 변환은 레이아웃 뒤 누적)
 	Layout(InViewport, Fonts);
 
 	FUIPointerInput Pointer;
@@ -191,7 +191,7 @@ void FUIInstance::Paint(FUIDrawList& Out, FUIFontLibrary& Fonts) const
 	FUIPainter::Paint(*Asset.Root, Transform, Viewport, Fonts, Out);
 }
 
-bool FUIInstance::PlayAnimation(std::string_view Name, int32 Loops, float Speed)
+bool FUIInstance::PlayAnimation(std::string_view Name, int32 Loops, float Speed, std::optional<bool> UseGameTime)
 {
 	for (size_t Index = 0; Index < Asset.Animations.size(); ++Index)
 	{
@@ -204,6 +204,7 @@ bool FUIInstance::PlayAnimation(std::string_view Name, int32 Loops, float Speed)
 		Playback.AnimationIndex = static_cast<int32>(Index);
 		Playback.Speed          = Speed;
 		Playback.LoopsRemaining = FMath::Max(Loops, 0);
+		Playback.bUseGameTime   = UseGameTime.value_or(Asset.Animations[Index].bUseGameTime);
 		Playback.Time           = Speed < 0.0f ? Asset.Animations[Index].Length : 0.0f;
 		Asset.Animations[Index].ApplyAt(*Asset.Root, Playback.Time);
 		Playing.push_back(Playback);
@@ -230,14 +231,15 @@ bool FUIInstance::IsAnimationPlaying(std::string_view Name) const
 	});
 }
 
-void FUIInstance::TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents)
+void FUIInstance::TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents, float GameTimeScale)
 {
+	const float GameScale = std::isfinite(GameTimeScale) ? FMath::Max(GameTimeScale, 0.0f) : 1.0f;
 	for (size_t Index = 0; Index < Playing.size();)
 	{
 		FUIAnimationPlayback& Playback  = Playing[Index];
 		const FUIAnimation&   Animation = Asset.Animations[static_cast<size_t>(Playback.AnimationIndex)];
 		const float           Length    = FMath::Max(Animation.Length, 0.001f);
-		Playback.Time += DeltaSeconds * Playback.Speed;
+		Playback.Time += DeltaSeconds * (Playback.bUseGameTime ? GameScale : 1.0f) * Playback.Speed;
 		bool       bFinished = false;
 		const bool bPastEnd  = Playback.Speed >= 0.0f ? Playback.Time >= Length : Playback.Time <= 0.0f;
 		if (bPastEnd)

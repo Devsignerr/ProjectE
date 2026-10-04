@@ -1,0 +1,309 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 60.0,
+          "NearZ": 10.0,
+          "FarZ": 20000.0,
+          "Primary": true,
+          "Priority": 0,
+          "Orthographic": true,
+          "OrthoHeight": 960.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            2000.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Camera2D",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PixelArtComponent": {
+          "Enabled": true,
+          "PixelSize": 3,
+          "SnapCamera": true,
+          "OutlineStrength": 0.0,
+          "HighlightStrength": 0.0,
+          "DepthThreshold": 25.0,
+          "ColorLevels": 0,
+          "DitherStrength": 0.0,
+          "SnapMovingObjects": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "PixelArt",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyLightComponent": {
+          "Intensity": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "SkyLight",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/GameManager.lua",
+          "PropertyOverrides": "{\"AutoPlay\": \"Death\", \"Seed\": 5}",
+          "ExecutionLocation": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "GameManager",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Crypt/Crypt.etileset",
+          "CellSize": [
+            64.0,
+            64.0
+          ],
+          "SortingLayer": "Tiles",
+          "OrderInLayer": 0,
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "Lit": true,
+          "Collision": true,
+          "CollisionLayer": "Terrain",
+          "Friction": 0.0,
+          "Restitution": 0.0,
+          "TileData": "",
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Crypt/Crypt.etileset",
+          "CellSize": [
+            64.0,
+            64.0
+          ],
+          "SortingLayer": "Background",
+          "OrderInLayer": 0,
+          "Color": [
+            0.85,
+            0.85,
+            1.0,
+            1
+          ],
+          "Lit": false,
+          "Collision": false,
+          "CollisionLayer": "",
+          "Friction": 0.0,
+          "Restitution": 0.0,
+          "TileData": "",
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -60.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Crypt/Crypt.etileset",
+          "CellSize": [
+            64.0,
+            64.0
+          ],
+          "SortingLayer": "Background",
+          "OrderInLayer": 2,
+          "Color": [
+            0.9,
+            0.88,
+            1.0,
+            1
+          ],
+          "Lit": false,
+          "Collision": false,
+          "CollisionLayer": "",
+          "Friction": 0.0,
+          "Restitution": 0.0,
+          "TileData": "",
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -55.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "BackDecor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "UIComponent": {
+          "Asset": "UI/Crypt/HUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": true,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/Hud.lua",
+          "PropertyOverrides": "",
+          "ExecutionLocation": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "HUD",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

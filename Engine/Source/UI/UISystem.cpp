@@ -104,9 +104,12 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 	Fonts.SetContentDirectory(ContentDirectory);
 
 	// 지난 프레임 이벤트 비우기 (숨긴 UI 포함)
-	Scene.GetRegistry().View<FUIComponent>().Each([](FEntity, FUIComponent& Component) {
+	// 커서 위치는 포인터 입력(bHasPointer — 입력 모드 GameOnly면 꺼짐)과 무관하게 모든 UI에 남긴다 (Lua Input.GetMouseUIPosition)
+	Scene.GetRegistry().View<FUIComponent>().Each([&Input](FEntity, FUIComponent& Component) {
 		Component.Runtime.Events.clear();
-		Component.Runtime.bPointerOver = false;
+		Component.Runtime.bPointerOver  = false;
+		Component.Runtime.CursorPixels  = Input.Pointer.Position;
+		Component.Runtime.bCursorInside = Input.Pointer.bInside && Input.Viewport.Contains(Input.Pointer.Position);
 	});
 
 	std::vector<FOrderedUI> Ordered = CollectVisible(Scene);
@@ -145,7 +148,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 			{
 				Keys.PasteText = FUIPlatform::GetClipboardText(); // Ctrl+V + 포커스된 텍스트 상자일 때만 OS 클립보드를 읽는다
 			}
-			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds);
+			Component.Runtime.bPointerOver = Instance->Update(Input.Viewport, &Pointer, &Keys, Fonts, Component.Runtime.Events, Input.DeltaSeconds, Input.GameTimeScale);
 			bTaken                         = bTaken || Component.Runtime.bPointerOver;
 			// 복사/잘라내기 → OS 클립보드
 			if (std::string Copied; Instance->GetInputRouter().TakeClipboardText(Copied))
@@ -160,7 +163,7 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 		}
 		else
 		{
-			Instance->TickAnimations(Input.DeltaSeconds, Component.Runtime.Events); // 입력을 받지 않는 UI(HUD)도 애니메이션은 진행
+			Instance->TickAnimations(Input.DeltaSeconds, Component.Runtime.Events, Input.GameTimeScale); // 입력을 받지 않는 UI(HUD)도 애니메이션은 진행
 			Instance->Layout(Input.Viewport, Fonts);
 		}
 	}

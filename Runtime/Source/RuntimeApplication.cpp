@@ -299,6 +299,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	const EInputMode        InputMode = FInputModeState::Get();
 	const FInputModeRouting Routing   = GetInputModeRouting(InputMode);
 	UpdateInputModeCursor(InputState);
+	GetWindow().SetCursorHidden(!FInputModeState::IsCursorVisible() && !Console.IsOpen()); // Lua Game.SetCursorVisible (콘솔이 열리면 보인다)
 
 	// 게임 UI가 먼저 입력을 본다: 포인터를 가져가면 게임 로직에는 마우스 버튼/휠을 뺀 입력을 넘긴다
 	// 백버퍼 크기만 읽는다 (렌더 스레드가 Present 중일 수 있어 현재 백버퍼 RTV는 보지 않는다)
@@ -308,6 +309,7 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	UIInput.Pointer     = FUISystem::MakePointer(InputState, FVector2::ZeroVector, true);
 	UIInput.Keys         = bConsoleKeyboard || !Routing.bUIInput ? FUIKeyInput{} : FUISystem::MakeKeys(InputState);
 	UIInput.DeltaSeconds = DeltaSeconds;
+	UIInput.GameTimeScale = World.GetUpcomingTimeScale(); // 게임 시간 UI 애니메이션 (bUseGameTime)
 	FInput               BlockedInput;
 	const FUIInputResult UIResult  = FUISystem::Update(Scene, UIInput, FPaths::HasProject() ? FPaths::GetProjectContentDirectory() : FPaths::GetEngineDirectory());
 	// 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (Phase 32-2)
@@ -326,12 +328,15 @@ void FRuntimeApplication::OnUpdate(float DeltaSeconds)
 	// (텍스트 상자에 입력 중이면 UI가 ESC를 받아 포커스만 푼다)
 	// 커서가 잠겨 있으면 ESC는 잠금만 푼다 (게임 스크립트도 ESC를 볼 수 있다)
 	// (콘솔이 열려 있으면 ESC는 콘솔을 닫는다)
+	// 게임이 ESC를 입력 액션에 바인딩했으면(유효 매핑 — 프로젝트 설정 "입력" + 플레이어 재지정, 예: Pause) 개발 실행에서도 종료하지 않는다
 	if (!UIResult.bKeyboard && !bConsoleKeyboard && InputState.IsKeyPressed(EKey::Escape) && GetWindow().IsCursorLocked())
 	{
 		GetWindow().SetCursorLocked(false);
 	}
-	else if (!FPaths::IsPackaged() && !UIResult.bKeyboard && !bConsoleKeyboard && InputState.IsKeyPressed(EKey::Escape))
+	else if (!FPaths::IsPackaged() && !UIResult.bKeyboard && !bConsoleKeyboard && InputState.IsKeyPressed(EKey::Escape) &&
+	         !FProjectSettings::Get().Input.GetEffectiveMapping().IsSourceBound(FInputSource::Key(EKey::Escape)))
 	{
+		E_LOG(LogRuntime, Display, "ESC: 개발 실행 종료 (게임이 ESC를 입력 액션에 바인딩하면 종료하지 않는다)");
 		RequestExit();
 	}
 	// Alt+Enter: 창 ↔ 테두리 없는 전체 화면

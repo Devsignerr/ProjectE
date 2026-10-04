@@ -52,6 +52,8 @@ void RegisterPhysicsTypes()
 		.Property(&FCharacterMovementComponent::bClientPrediction, "ClientPrediction", "클라이언트 예측")
 		.Tooltip("멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직이고 서버 결과로 보정한다. 끄면 서버 결과를 보간해 보여 준다(반응이 왕복 지연 + 0.1초 늦음). 프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야 한다")
 		.Property(&FCharacterMovementComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.Property(&FCharacterMovementComponent::KnockbackDeceleration, "KnockbackDeceleration", "넉백 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Tooltip("AddKnockback 경직 동안 수평 속도를 줄이는 감속 (입력은 무시된다)")
 		.AsComponent();
 
 	Registry.RegisterType<FBoxColliderComponent>("BoxColliderComponent", "박스 콜라이더")
@@ -180,6 +182,8 @@ void RegisterPhysicsTypes()
 		.Tooltip("밀기: 막힌 거리 중 상대에게 넘기는 비율 (작을수록 무겁게 밀린다, 1 = 기본, 0 = 막기와 같음)")
 		.Property(&FCharacterMovement2DComponent::PushResistance, "PushResistance", "밀림 저항").Range(0.0f, 100.0f, 0.1f)
 		.Tooltip("다른 캐릭터에게 밀릴 때 넘겨받은 거리 ÷ (1 + 이 값) (0 = 기본, 1 = 절반만 밀림). 연쇄로 밀릴 때도 단계마다 나눈다")
+		.Property(&FCharacterMovement2DComponent::KnockbackDeceleration, "KnockbackDeceleration", "넉백 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Tooltip("AddKnockback 경직 동안 수평 속도를 줄이는 감속 (입력은 무시된다)")
 		.AsComponent();
 
 	constexpr const char* OffsetTip  = "엔티티 로컬 평면 오프셋 (X = 로컬 X, Y = 로컬 Z, cm)";

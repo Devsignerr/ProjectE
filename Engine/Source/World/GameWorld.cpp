@@ -38,6 +38,22 @@
 
 E_DEFINE_LOG_CATEGORY(LogGameWorldPerf, Log)
 
+// ---- 시간 배율 (Lua Game.SetTimeScale/GetTimeScale/HitStop, C++ FGameWorld::SetTimeScale/HitStop, 게임 모듈 IGameNet 같은 이름 + GetUnscaledDeltaSeconds)
+//   게임 시간 = 앱이 넘긴 프레임 dt(실제 시간 — --fixed-delta면 고정값) × 배율. 배율은 게임플레이 틱 시작에 한 번 정하고(TickTimeScale) 그 틱과
+//   바로 다음 표시 틱이 모두 같은 값을 쓴다 — 틱 도중 바꾼 배율·히트스톱은 다음 틱부터 (한 틱 안에서 시스템마다 다른 시간이 흐르지 않게).
+//   히트스톱이 남아 있으면 그 틱 배율은 0이고 남은 시간은 실제 dt만큼 준다 (0.05초 = 60fps에서 3프레임 정지).
+//   배율을 곱하는 것 (게임 시간): 스크립트 OnUpdate/OnLateUpdate dt·Time.DeltaTime·타이머·코루틴 Wait, 능력 시스템, 시퀀스, 게임 모듈,
+//     AI, 게임플레이 규칙(리스폰 대기 등), 3D/2D 물리(고정 스텝 누적 — 0이면 스텝 없음, 보간 상태 유지), 3D/2D 캐릭터 이동기,
+//     표시 틱(플레이 씬만): 애니메이션·2D 플립북·파티클·시간대
+//   실제 시간 (배율 무관): 앱 프레임·UI(FUISystem 입력·UI 애니메이션 — 일시정지 메뉴가 움직인다)·오디오(소리는 멈추지 않는다 — 필요하면 스크립트가
+//     Audio로 끈다)·렌더러 화면 시간(FFrameTime: 물결·구름·머티리얼 Time)·디버그 선 수명·네트워크, 스크립트 Time.UnscaledDeltaTime·
+//     Timer.After(…, { Unscaled = true })·WaitUnscaled. 편집 씬 표시 틱(에디터, 플레이 밖)도 실제 시간
+//   배율 0인 틱: 캐릭터 이동기는 무브를 시뮬레이션하지 않는다 (쌓인 입력은 버림, 넉백은 다음 무브까지 남음 — 정지 동안 공중에서 떨어지지 않는다).
+//     스크립트는 dt 0으로 계속 불린다 (입력을 읽어 일시정지를 풀 수 있게)
+//   멀티플레이: Standalone 전용. 서버가 시간을 늦추면 소유 클라이언트가 보낸 무브(클라이언트 dt)와 서버 시간·보간 시계가 어긋나므로 네트워크 모드
+//     (리슨/전용 서버/클라이언트)에서는 Set/HitStop을 거절하고(경고 한 번) 배율은 1. 플레이 시작·맵 전환(BeginPlay)·모드 전환에 1로 돌아간다.
+//   결정성: 배율은 프레임 dt에 곱할 뿐이므로 --fixed-delta 실행은 그대로 결정적이다
+
 namespace
 {
 	// ---- --perf-capture [--perf-warmup N]: 게임 쪽 틱 구간별 CPU 평균 (렌더러 [성능] 로그와 같은 워밍업, 종료 때 [성능] 게임 틱 로그)
@@ -192,6 +208,41 @@ FGameWorld::FGameWorld() : Abilities(std::make_unique<FAbilitySystem>()), AI(std
 {
 }
 FGameWorld::~FGameWorld() = default;
+
+bool FGameWorld::SetTimeScale(float Scale)
+{
+	if (Mode != ENetMode::Standalone)
+	{
+		if (!bWarnedNetTimeScale)
+		{
+			bWarnedNetTimeScale = true;
+			E_LOG(LogGameWorldPerf, Warning, "게임 시간 배율/히트스톱은 Standalone 전용입니다 (네트워크 세션에서는 무시)");
+		}
+		return false;
+	}
+	TimeScale = std::isfinite(Scale) ? std::clamp(Scale, 0.0f, MaxTimeScale) : 1.0f;
+	return true;
+}
+
+bool FGameWorld::HitStop(float Seconds)
+{
+	if (!SetTimeScale(TimeScale)) // 같은 규칙 (네트워크 모드 거절)
+	{
+		return false;
+	}
+	if (std::isfinite(Seconds) && Seconds > 0.0f)
+	{
+		HitStopRemaining = std::max(HitStopRemaining, std::min(Seconds, 10.0f));
+	}
+	return true;
+}
+
+void FGameWorld::ResetTimeScale()
+{
+	TimeScale        = 1.0f;
+	HitStopRemaining = 0.0f;
+	TickTimeScale    = 1.0f;
+}
 
 void FGameWorld::ConnectScriptsAndAI()
 {
@@ -457,6 +508,30 @@ void FGameWorld::InstallScriptPhysicsHooks()
 	Hooks.GetJumpsRemaining  = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetJumpsRemaining(Entity) : 0; };
 	Hooks.GetDashesRemaining = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) ? C2D->GetDashesRemaining(Entity) : 0; };
 	Hooks.IsDashing          = [C2D, Is2D](FEntity Entity) { return Is2D(Entity) && C2D->IsDashing(Entity); };
+	// 넉백/발사: 2D 이동기면 2D (X·Z), 아니면 3D 캐릭터 (덮어쓰기 X = 수평 XY 묶음). 무브에 싣는 규칙은 World/GameWorldCharacter(2D).cpp 머리 주석
+	Hooks.LaunchCharacter = [Physics, C2D, Is2D](FEntity Entity, const FVector3& Velocity, bool bOverrideX, bool bOverrideZ) {
+		if (Is2D(Entity))
+		{
+			C2D->LaunchCharacter(Entity, Velocity, bOverrideX, bOverrideZ);
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->LaunchCharacter(Entity, Velocity, bOverrideX, bOverrideZ);
+		}
+	};
+	Hooks.AddKnockback = [Physics, C2D, Is2D](FEntity Entity, const FVector3& Velocity, float StunSeconds) {
+		if (Is2D(Entity))
+		{
+			C2D->AddKnockback(Entity, Velocity, StunSeconds);
+		}
+		else if (Physics != nullptr)
+		{
+			Physics->AddKnockback(Entity, Velocity, StunSeconds);
+		}
+	};
+	Hooks.IsStunned = [Physics, C2D, Is2D](FEntity Entity) {
+		return Is2D(Entity) ? C2D->IsStunned(Entity) : Physics != nullptr && Physics->IsCharacterStunned(Entity);
+	};
 	if (Physics != nullptr)
 	{
 		Hooks.EnableRagdoll    = [this, Physics](FEntity Entity) { return Scene != nullptr && Physics->EnableRagdoll(*Scene, Entity); };
@@ -557,6 +632,7 @@ void FGameWorld::BeginPlay(FScene& InScene, ENetMode InMode)
 	}
 	Scene = &InScene;
 	Mode  = InMode;
+	ResetTimeScale(); // 시간 배율은 플레이(맵)마다 1에서
 	RemoteInputs.clear();
 	PredictedCharacters.clear();
 	ServerCharacters.clear();
@@ -686,6 +762,7 @@ void FGameWorld::EndPlay()
 	FDebugDraw::Get().Clear(); // 플레이 정지 후 편집 화면에 남지 않게
 	GameplayValidatedScene = nullptr;
 	Scene = nullptr;
+	ResetTimeScale();
 }
 
 void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
@@ -696,7 +773,22 @@ void FGameWorld::TickGameplay(float DeltaSeconds, const FInput* Input)
 		return;
 	}
 	TickLocalInput = Input;
-	FDebugDraw::Get().Tick(DeltaSeconds); // 지난 틱에 그린 디버그 선 수명 (지속 시간 0 = 여기서 사라짐), 이번 틱 스크립트/게임 모듈이 다시 그린다
+	// 시간 배율 (머리 주석 "시간 배율"): 이 틱 배율을 정하고 아래 게임 시스템은 모두 배율을 곱한 dt를 쓴다
+	const float UnscaledDeltaSeconds = DeltaSeconds;
+	TickUnscaledDeltaSeconds         = UnscaledDeltaSeconds;
+	TickTimeScale                    = TimeScale;
+	if (HitStopRemaining > 1.0e-4f)
+	{
+		TickTimeScale    = 0.0f;
+		HitStopRemaining = std::max(HitStopRemaining - UnscaledDeltaSeconds, 0.0f);
+	}
+	else
+	{
+		HitStopRemaining = 0.0f;
+	}
+	DeltaSeconds = UnscaledDeltaSeconds * TickTimeScale;
+	Systems.Scripts->SetFrameTime(UnscaledDeltaSeconds, TickTimeScale);
+	FDebugDraw::Get().Tick(UnscaledDeltaSeconds); // 지난 틱에 그린 디버그 선 수명 (지속 시간 0 = 여기서 사라짐), 이번 틱 스크립트/게임 모듈이 다시 그린다
 	if (Mode == ENetMode::Client && Input != nullptr)
 	{
 		SendLocalInput(*Input); // 서버 스크립트가 이 플레이어 소유 엔티티에서 읽는다
@@ -786,6 +878,10 @@ void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 	// 갱신 빈도 LOD로 건너뛴 모델·정적 물체는 입력이 그대로라 전체 갱신이어도 모두 캐시 적중 (결과 동일)
 	const bool bPartial    = GameplayValidatedScene == &TargetScene;
 	GameplayValidatedScene = nullptr;
+	if (IsPlaying() && &TargetScene == Scene)
+	{
+		DeltaSeconds *= TickTimeScale; // 플레이 씬 표시(애니메이션·플립북·파티클·시간대)도 게임 시간 (직전 게임플레이 틱과 같은 배율)
+	}
 	PresentationWritten.clear();
 	if (const FEntity Sun = FTimeOfDaySystem::Update(TargetScene, DeltaSeconds, IsPlaying()); Sun.IsValid()) // 시간대 → 태양 회전 (Phase 49, 트랜스폼 갱신 전)
 	{

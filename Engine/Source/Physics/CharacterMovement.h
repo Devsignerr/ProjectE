@@ -9,6 +9,12 @@
 //   엔티티 트랜스폼 위치 = 캡슐 중심. 콜라이더·강체 컴포넌트는 쓰지 않는다 (있어도 캐릭터가 우선).
 //   스크립트/게임 모듈은 이동 방향(AddMovementInput)과 점프(Jump)만 넘기고, 실제 이동은 "무브" 단위로 FPhysicsSystem::SimulateCharacter가 한다.
 //   멀티플레이: 소유 클라이언트가 무브를 즉시 적용(예측)하고 서버로 보내며, 서버가 같은 무브로 다시 계산해 보정한다 (FGameWorld).
+//   넉백/발사 (UE LaunchCharacter식 — 2D 이동기 CharacterMovement2D.h와 같은 규칙): LaunchCharacter(속도, 덮어쓰기 XY, 덮어쓰기 Z) = 다음 무브 처음에
+//     속도를 더하거나 덮어쓴다 (수평 XY는 한 묶음). 발사한 무브는 공중 규칙으로 계산하고 바닥에 붙이지 않는다 — 위로 향하면 바닥을 떠난다.
+//     수평만 발사하면 다음 무브에 다시 바닥이면 걷기 규칙(수평 = 입력)으로 돌아가므로 밀려나는 효과는 AddKnockback을 쓴다.
+//     AddKnockback(속도, 경직 초) = XY는 덮어쓰고 Z는 0이 아닐 때만 덮어쓰며, 경직 동안 입력(이동·점프)을 무시하고 수평 속도를
+//     KnockbackDeceleration으로 줄인다 (바닥·공중 공통, 공중 조작도 없음). 둘 다 무브 필드(bLaunch …)로 들어가 같은 무브 → 같은 결과
+//     (예측·재조정 포함, 경직 타이머는 상태에 있다). 누가 어느 무브에 넣는가는 World/GameWorldCharacter.cpp 머리 주석
 struct FCharacterMovementComponent
 {
 	float MaxWalkSpeed      = 450.0f;  // cm/s
@@ -25,6 +31,7 @@ struct FCharacterMovementComponent
 	bool  bClientPrediction = true;    // 멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직인다 (프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야).
 	                                   // 끄면 무브를 보내기만 하고 서버 결과를 보간해 보여 준다 (반응은 늦지만 보정이 없다)
 	std::string Layer;                 // 충돌 레이어 이름 (캡슐과 내부 바디 모두, 비면 Default — Core/Settings/CollisionSettings.h)
+	float KnockbackDeceleration = 1500.0f; // cm/s², 넉백 경직(AddKnockback) 중 수평 감속 (바닥·공중 공통)
 
 	// 루트 모션 (Scene/AnimRootMotion.h — 런타임 전용, 리플렉션/직렬화 제외): 자신 또는 자손의 애니메이션이 추출한 월드 이동을 쌓아 두면
 	// 다음 무브가 가져가 "루트 모션 속도"(쌓인 이동 ÷ 쌓인 시간)로 움직인다. 0.25초 넘게 아무도 가져가지 않으면 오래된 것은 버린다
@@ -52,9 +59,17 @@ struct FCharacterMove
 	bool     bJump = false;        // 바닥에 있으면 점프
 	bool     bRootMotion = false;  // 루트 모션 무브: Input 대신 RootMotionVelocity로 이동
 	FVector2 RootMotionVelocity;   // 월드 XY cm/s
+	// 넉백/발사 (LaunchCharacter/AddKnockback — 컴포넌트 위 주석): 무브 처음에 속도에 더하거나(덮어쓰기 꺼짐) 덮어쓴다, 경직 초 (0 = 없음)
+	bool     bLaunch           = false;
+	bool     bLaunchOverrideXY = false;
+	bool     bLaunchOverrideZ  = false;
+	FVector3 LaunchVelocity;            // 월드 cm/s
+	float    StunSeconds       = 0.0f;
 
 	static constexpr float MaxMoveDeltaSeconds = 0.1f;    // 서버가 받은 dt 상한 (느린 프레임/조작 방지)
 	static constexpr float MaxRootMotionSpeed  = 3000.0f; // cm/s, 루트 모션 속도 상한 (서버 검증)
+	static constexpr float MaxLaunchSpeed      = 1.0e5f;  // cm/s, 발사 속도 성분 상한 (서버 검증 — 2D와 같음)
+	static constexpr float MaxStunSeconds      = 10.0f;
 };
 
 // 캐릭터 상태 (서버 → 소유 클라이언트 보정, 재조정 시작점)
@@ -63,6 +78,9 @@ struct FCharacterState
 	FVector3 Position; // cm (캡슐 중심)
 	FVector3 Velocity; // cm/s
 	bool     bGrounded = false;
+	float    StunTimer = 0.0f; // > 0 = 넉백 경직 (입력 무시)
+
+	bool IsStunned() const { return StunTimer > 0.0f; }
 };
 
 namespace CharacterMovementMath
@@ -72,8 +90,19 @@ namespace CharacterMovementMath
 	//   공중: 수평은 AirControl만큼 입력 쪽으로 가속, 수직은 유지
 	//   루트 모션 무브: 수평 = RootMotionVelocity (바닥/공중 모두), 바닥이면 수직 0이고 점프하지 않는다
 	//   항상 중력 × 배율 × dt를 더한다 (바닥에서는 Jolt가 바닥에 붙여 둔다)
+	//   발사(bLaunch, 가장 먼저): 수평 XY·수직 Z 성분마다 덮어쓰기면 LaunchVelocity, 아니면 더한다 (유한하지 않으면 0, MaxLaunchSpeed로 자름).
+	//     발사한 무브는 공중으로 계산한다(바닥 규칙·점프·바닥 붙이기 없음 — bOutAirborne). 경직 = max(남은 경직, StunSeconds)
+	//   경직(InOutStunTimer > 0, 이 무브 dt만큼 준다): 입력·점프·루트 모션을 무시하고 수평 속도를 KnockbackDeceleration으로 0 쪽으로 줄인다
+	//     (바닥이면 수직 0, 공중이면 중력)
+	FVector3 ComputeVelocity(const FCharacterMovementComponent& Movement, const FVector3& CurrentVelocity, bool bGrounded, const FCharacterMove& Move,
+	                         float GravityZ, float& InOutStunTimer, bool& bOutJumped, bool& bOutAirborne);
+	// 경직·발사 없는 무브용 (경직 상태를 쓰지 않는 호출 — 테스트·발사 없는 경로)
 	FVector3 ComputeVelocity(const FCharacterMovementComponent& Movement, const FVector3& CurrentVelocity, bool bGrounded, const FCharacterMove& Move,
 	                         float GravityZ, bool& bOutJumped);
+	// 발사 하나를 무브(쌓인 발사)에 합친다 — 성분마다 덮어쓰기면 대체, 아니면 합 (덮어쓰기 표시는 남는다), 경직은 긴 쪽
+	void CombineLaunch(FCharacterMove& Into, const FVector3& Velocity, bool bOverrideXY, bool bOverrideZ, float StunSeconds);
+	// 받은 무브의 발사 값 정리 (유한하지 않으면 false, 성분을 MaxLaunchSpeed·경직을 MaxStunSeconds로 자른다)
+	bool SanitizeLaunch(FCharacterMove& Move);
 
 	// 입력 방향 정리: 길이 1로 자른다 (대각선이 빠르지 않게)
 	FVector2 ClampInput(const FVector2& Input);

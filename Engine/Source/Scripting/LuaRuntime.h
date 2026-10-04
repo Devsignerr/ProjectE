@@ -98,6 +98,12 @@ public:
 	bool   CallObject(uint32 Id, const char* Method, const float* DeltaSeconds, FScriptValue& OutResult, bool* bOutFound);
 	void   DestroyObject(uint32 Id);
 	void Update(float DeltaSeconds, const FInput* Input);
+	// 다음 Update의 실제(배율 전) dt와 배율 (FScriptSystem::SetFrameTime → Time.UnscaledDeltaTime, 비배율 타이머/WaitUnscaled)
+	void SetFrameTime(float InUnscaledDelta, float InTimeScale)
+	{
+		UnscaledDelta = InUnscaledDelta;
+		TimeScale     = InTimeScale;
+	}
 	// 시작된 인스턴스의 OnLateUpdate(dt). Lua 함수를 하나라도 불렀거나 엔티티를 파괴했으면 true (아니면 씬을 바꿨을 수 없다 — FGameWorld가 트랜스폼 재갱신 생략)
 	bool LateUpdate(float DeltaSeconds, const FInput* Input);
 	void DestroyAllInstances(); // OnDestroy 호출 후 인스턴스 제거
@@ -129,14 +135,16 @@ private:
 		double                  Remaining    = 0.0; // 초
 		double                  Interval     = 0.0; // Every 간격 (After는 0)
 		bool                    bRepeat      = false;
+		bool                    bUnscaled    = false; // 실제 시간으로 센다 (Timer.After(초, 함수, { Unscaled = true }) — 게임 시간 배율·정지 무관)
 		int64                   CreatedFrame = 0;   // 만든 프레임에는 시간을 빼지 않는다 (지금부터 센다)
 		sol::protected_function Callback;
 	};
 	enum class EScriptWait : uint8
 	{
 		Frames,  // WaitFrames(n) / Wait() / Wait(0)
-		Seconds, // Wait(초)
+		Seconds, // Wait(초) — 게임 시간
 		Until,   // WaitUntil(함수) — 매 프레임 확인
+		UnscaledSeconds, // WaitUnscaled(초) — 실제 시간
 	};
 	// Coroutine.Start (ScriptTimerBindings.cpp). Lua 스레드(코루틴)를 참조로 잡아 대기 중에 GC되지 않게 한다
 	struct FScriptCoroutine
@@ -319,6 +327,10 @@ private:
 	const FInput* Input = nullptr;
 	double        TotalTime  = 0.0;
 	int64         FrameCount = 0;
+	float         GameDelta     = 0.0f; // 이번 Update dt (배율 적용)
+	float         UnscaledDelta = 0.0f; // SetFrameTime
+	float         TimeScale     = 1.0f;
+	double        UnscaledTotalTime = 0.0;
 	bool          bStructureChanged = false;
 
 	std::unordered_map<uint64, FScriptInstance> Instances; // 키: FEntity::ToId()

@@ -1,6 +1,6 @@
 # Crypt2D 자체 제작 픽셀 아트 + 효과음 (외부 에셋 아님 — 이 스크립트가 절차적으로 그리고 합성한다. 라이선스 제약 없음, 커밋 대상).
 #   무기(검/도끼/창/석궁/지팡이 — 손잡이가 피벗, +X를 향함), 코인 회전 4프레임, 하트, 상자(닫힘/열림), 휘두르기 호 3프레임, 불꽃 튐,
-#   먼지, 석궁 화살, 보스 탄, 포털 4프레임, 횃불 빛무리, 조준점, 흰 점.
+#   먼지, 석궁 화살, 보스 탄, 포털 4프레임, 횃불 빛무리, 조준점, 흰 점, 상점 진열대·성배(최대 체력).
 #   교회/묘지 팩(GothicVania)과 같은 도트 크기(1px = 4cm)로 그린다. UI 아이콘은 4배 최근접 확대본 (UI 샘플러가 선형이라 흐려지지 않게).
 import math
 import os
@@ -154,6 +154,37 @@ def DrawHeart():
 		for X, C in enumerate(Row):
 			if C == 'X':
 				Px(Img, X, Y, (255, 120, 130) if (Y < 3 and X in (2, 3, 7)) else (220, 40, 60))
+	return AddOutline(Img)
+
+
+def DrawPedestal():
+	# 상점 진열대 (돌 받침 — 피벗 = 아래 가운데, 물건은 그 위에 띄운다)
+	Img = NewImage(16, 12)
+	StoneL, StoneM, StoneD = (150, 140, 170), (104, 96, 128), (64, 58, 84)
+	for X in range(1, 15):
+		Px(Img, X, 1, StoneL)
+		Px(Img, X, 2, StoneM)
+	for Y in range(3, 9):
+		for X in range(4, 12):
+			Px(Img, X, Y, StoneM if X < 10 else StoneD)
+	for X in range(2, 14):
+		Px(Img, X, 9, StoneM)
+		Px(Img, X, 10, StoneD)
+	Px(Img, 7, 5, GoldM)
+	Px(Img, 8, 5, GoldM)
+	return AddOutline(Img)
+
+
+def DrawChalice():
+	# 성배 (최대 체력 증가 — 상점 물건)
+	Img = NewImage(11, 12)
+	Rows = ["XXXXXXXXXXX", "XLLLLLLLLMX", ".XLLLLLLMX.", ".XRRRRRRRX.", "..XRRRRRX..", "...XLMMX...",
+	        "....XMX....", "....XMX....", "...XLMMX...", "..XLLLMMX..", "..XXXXXXX..", "..........."]
+	Colors = {'X': GoldD, 'L': GoldL, 'M': GoldM, 'R': (200, 30, 60)}
+	for Y, Row in enumerate(Rows):
+		for X, C in enumerate(Row):
+			if C in Colors:
+				Px(Img, X, Y, Colors[C])
 	return AddOutline(Img)
 
 
@@ -336,6 +367,8 @@ def BuildGeneratedAtlas():
 	Items.append(("Glow", DrawGlow(), None))
 	Items.append(("Crosshair", DrawCrosshair(), None))
 	Items.append(("Pixel", DrawPixel(), None))
+	Items.append(("Pedestal", DrawPedestal(), (0.5, 0.0)))
+	Items.append(("Chalice", DrawChalice(), None))
 
 	# 선반 묶기 (1px 간격 — 점 필터라 번짐 없음, 경계 확인 쉬움)
 	AtlasW = 256

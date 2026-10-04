@@ -72,14 +72,57 @@ namespace CharacterMovement2DMath
 			}
 			return Direction;
 		}
+
+		float ClampLaunchComponent(float Value)
+		{
+			return std::isfinite(Value) ? std::clamp(Value, -FCharacterMove2D::MaxLaunchSpeed, FCharacterMove2D::MaxLaunchSpeed) : 0.0f;
+		}
+
+		// 발사/넉백 (무브 처음 — 헤더 BeginMove 주석)
+		void ApplyLaunch(FCharacterState2D& State, const FCharacterMove2D& Move, bool bTopDown)
+		{
+			const FVector2 Launch(ClampLaunchComponent(Move.LaunchVelocity.X), ClampLaunchComponent(Move.LaunchVelocity.Y));
+			State.Velocity.X = Move.bLaunchOverrideX ? Launch.X : State.Velocity.X + Launch.X;
+			State.Velocity.Y = Move.bLaunchOverrideY ? Launch.Y : State.Velocity.Y + Launch.Y;
+			State.DashTimer         = 0.0f; // 대시 중이었으면 끝 (속도는 발사 결과)
+			State.bJumpCutAvailable = false;
+			if (!bTopDown && State.Velocity.Y > 0.0f)
+			{
+				State.bGrounded   = false;
+				State.CoyoteTimer = 0.0f;
+				if (State.JumpsUsed == 0)
+				{
+					State.JumpsUsed = 1; // 바닥을 떠남 = 바닥 점프는 쓴 것으로 (공중 점프는 남는다)
+				}
+			}
+			const float Stun = std::isfinite(Move.StunSeconds) ? std::clamp(Move.StunSeconds, 0.0f, FCharacterMove2D::MaxStunSeconds) : 0.0f;
+			State.StunTimer  = std::max(State.StunTimer, Stun);
+		}
 	} // namespace
 
-	void BeginMove(const FCharacterMovement2DComponent& Movement, FCharacterState2D& State, const FCharacterMove2D& Move, float GravityZ,
+	void BeginMove(const FCharacterMovement2DComponent& Movement, FCharacterState2D& State, const FCharacterMove2D& InMove, float GravityZ,
 	               const FVector2& GroundVelocity, FCharacterMove2DEvents& OutEvents)
 	{
-		const float    DeltaSeconds = std::clamp(std::isfinite(Move.DeltaSeconds) ? Move.DeltaSeconds : 0.0f, 0.0f, FCharacterMove2D::MaxMoveDeltaSeconds);
-		const bool     bTopDown     = Movement.Mode == ECharacterMovement2DMode::TopDown;
-		const FVector2 Input        = ClampInput(Move.Input, Movement.Mode);
+		const float DeltaSeconds = std::clamp(std::isfinite(InMove.DeltaSeconds) ? InMove.DeltaSeconds : 0.0f, 0.0f, FCharacterMove2D::MaxMoveDeltaSeconds);
+		const bool  bTopDown     = Movement.Mode == ECharacterMovement2DMode::TopDown;
+
+		// ---- 발사/넉백 + 경직 (경직 중 무브는 입력이 없는 것으로)
+		if (InMove.bLaunch)
+		{
+			ApplyLaunch(State, InMove, bTopDown);
+		}
+		const bool bStunned = State.IsStunned();
+		State.StunTimer     = State.StunTimer - DeltaSeconds > 1.0e-4f ? State.StunTimer - DeltaSeconds : 0.0f; // 프레임 dt 누적 오차 (대시와 같은 여유)
+		FCharacterMove2D Move = InMove;
+		if (bStunned)
+		{
+			Move.Input        = FVector2();
+			Move.bJumpPressed = false;
+			Move.bDash        = false;
+			Move.bDropDown    = false;
+		}
+		const float    KnockbackDecel = std::isfinite(Movement.KnockbackDeceleration) ? std::max(Movement.KnockbackDeceleration, 0.0f) : 0.0f;
+		const FVector2 Input          = ClampInput(Move.Input, Movement.Mode);
 		const float    MaxSpeed     = std::max(Movement.MaxSpeed, 0.0f);
 		if (bTopDown)
 		{
@@ -105,7 +148,7 @@ namespace CharacterMovement2DMath
 				State.JumpsUsed = 1; // 걸어서 떨어짐: 바닥 점프는 쓴 것으로 친다
 			}
 		}
-		const bool bJumpBuffered = !bTopDown && (Move.bJumpPressed || State.JumpBufferTimer > 0.0f);
+		const bool bJumpBuffered = !bTopDown && !bStunned && (Move.bJumpPressed || State.JumpBufferTimer > 0.0f);
 		if (Move.bJumpPressed && !bTopDown)
 		{
 			State.JumpBufferTimer = std::max(Movement.JumpBufferTime, 0.0f);
@@ -147,7 +190,7 @@ namespace CharacterMovement2DMath
 		if (bTopDown)
 		{
 			const FVector2 Target = Input * MaxSpeed;
-			const float    Rate   = Target.LengthSquared() > 1.0e-6f ? Movement.GroundAcceleration : Movement.GroundDeceleration;
+			const float    Rate   = bStunned ? KnockbackDecel : Target.LengthSquared() > 1.0e-6f ? Movement.GroundAcceleration : Movement.GroundDeceleration;
 			State.Velocity        = ApproachVector(State.Velocity, Target, std::max(Rate, 0.0f) * DeltaSeconds);
 			return;
 		}
@@ -157,8 +200,8 @@ namespace CharacterMovement2DMath
 		const float Current  = State.Velocity.X;
 		const float Accel    = State.bGrounded ? Movement.GroundAcceleration : Movement.AirAcceleration;
 		const float Decel    = State.bGrounded ? Movement.GroundDeceleration : Movement.AirDeceleration;
-		float       Rate     = Decel;
-		if (std::abs(Target) > 1.0e-4f)
+		float       Rate     = bStunned ? KnockbackDecel : Decel;
+		if (!bStunned && std::abs(Target) > 1.0e-4f)
 		{
 			if (Target * Current < 0.0f)
 			{

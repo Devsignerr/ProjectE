@@ -135,7 +135,14 @@ public:
 	void AddMovementInput(FEntity Entity, const FVector3& WorldDirection); // 이번 프레임 입력에 더한다 (XY만, 무브에서 길이 1로 자름)
 	void RequestJump(FEntity Entity);
 	// 이번 프레임 입력 → 무브 (입력을 비운다). ControlYaw가 있고 bFaceControlYaw면 그 방향, 아니면 이동 방향을 본다
-	FCharacterMove  ConsumePendingMove(FEntity Entity, float DeltaSeconds, const float* ControlYaw);
+	FCharacterMove  ConsumePendingMove(FEntity Entity, float DeltaSeconds, const float* ControlYaw); // 입력만 (발사/넉백은 MergePendingLaunch)
+	// ---- 발사/넉백 (CharacterMovement.h 컴포넌트 주석, 2D 이동기와 같은 규칙). 다음 무브에 실린다 — 한 프레임에 여러 번이면 성분마다 덮어쓰기는 대체,
+	//   아니면 합, 경직은 긴 쪽. 어느 무브에 싣는가는 FGameWorld가 정한다 (조종하는 쪽 = 자기 무브, 서버의 원격 캐릭터 = 다음에 적용하는 받은 무브)
+	void LaunchCharacter(FEntity Entity, const FVector3& WorldVelocity, bool bOverrideXY, bool bOverrideZ);
+	void AddKnockback(FEntity Entity, const FVector3& WorldVelocity, float StunSeconds); // XY 덮어쓰기, Z는 0이 아니면 덮어쓰기 + 경직
+	bool HasPendingLaunch(FEntity Entity) const;
+	bool MergePendingLaunch(FEntity Entity, FCharacterMove& InOutMove); // 쌓인 발사를 무브에 합치고 비운다 (없으면 false)
+	bool IsCharacterStunned(FEntity Entity) const;                     // 넉백 경직 중
 	void            SimulateCharacter(FScene& Scene, FEntity Entity, const FCharacterMove& Move); // 무브 하나 적용 + 트랜스폼 쓰기
 	FCharacterState GetCharacterState(FEntity Entity) const;
 	void            SetCharacterState(FScene& Scene, FEntity Entity, const FCharacterState& State); // 보정/재조정 시작점 (트랜스폼도)
@@ -196,6 +203,8 @@ private:
 		FCharacterMovementComponent CreatedWith; // 이 설정으로 만들었다 (모양/질량이 바뀌면 다시 생성)
 		FVector2                    PendingInput;
 		bool                        bPendingJump = false;
+		FCharacterMove              PendingLaunch;       // bLaunch/LaunchVelocity/덮어쓰기/StunSeconds만 쓴다
+		float                       StunTimer    = 0.0f; // 넉백 경직 남은 초 (상태 — FCharacterState::StunTimer)
 		FVector3                    VisualOffset;        // 트랜스폼에만 더하는 화면용 오프셋 (예측 보정 흡수)
 		float                       Yaw          = 0.0f; // 몸 방향 (도)
 		FVector3                    WrittenPosition;     // 마지막으로 트랜스폼에 쓴 값 (스크립트 순간이동 감지)

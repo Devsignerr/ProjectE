@@ -35,6 +35,9 @@ public:
 	virtual void OnBeginPlay(FScene& /*Scene*/) {}
 	virtual void OnUpdate(FScene& /*Scene*/, float /*DeltaSeconds*/) {}
 	virtual void OnAnimNotify(FScene& /*Scene*/, const FAnimNotifyEvent& /*Event*/) {}
+	// 2D 플립북 (Scene/Sprite/FlipbookSystem.h): 플레이 중, 발생 다음 프레임 OnUpdate 직전 (노티파이 다음). Entity = 플립북 엔티티
+	virtual void OnFlipbookEvent(FScene& /*Scene*/, FEntity /*Entity*/, const std::string& /*Name*/, int32 /*Frame*/) {}
+	virtual void OnFlipbookFinished(FScene& /*Scene*/, FEntity /*Entity*/) {} // Once 재생이 끝에 닿은 순간 한 번
 	virtual void OnEndPlay(FScene& /*Scene*/) {}
 	virtual void OnUnload() {}
 
@@ -82,7 +85,7 @@ private:
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 11; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙), 10: 능력 시스템 (OnAbilityEvent, GetAbilities), 11: GetPhysics2D (2D 물리)
+inline constexpr uint32 GameModuleApiVersion = 12; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙), 10: 능력 시스템 (OnAbilityEvent, GetAbilities), 11: GetPhysics2D (2D 물리), 12: OnFlipbookEvent/OnFlipbookFinished (2D 플립북)
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

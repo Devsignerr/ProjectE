@@ -7,6 +7,9 @@
 #include "Physics/PhysicsWorld.h" // LogPhysics
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
+#include "Scene/Sprite/Sprite2DComponents.h"
+#include "Scene/Sprite/TilemapCollision.h"
+#include "Scene/Sprite/TilesetAsset.h"
 
 #include <algorithm>
 #include <cmath>
@@ -28,6 +31,7 @@ namespace
 		Kind_PolygonHull = 3,
 		Kind_PolygonParse = 4,
 		Kind_EdgeParse = 5,
+		Kind_TilePolygonHull = 6,
 	};
 
 	FMatrix4x4 ComputeWorldMatrix(const FScene& Scene, FEntity Entity)
@@ -111,6 +115,26 @@ namespace
 	}
 
 	FVector2 ScalePoint(const FVector2& Point, float ScaleX, float ScaleZ) { return FVector2(Point.X * ScaleX, Point.Y * ScaleZ); }
+
+	// Box2D 다각형으로 쓸 수 있게: 오목하거나 8점을 넘으면 볼록 껍질(8점 이하), 시계 방향이면 뒤집는다. 반환: 껍질로 바꿨는가
+	bool MakeBox2DPolygon(std::vector<FVector2>& Points)
+	{
+		if (!Physics2DMath::IsConvexPolygon(Points) || Points.size() > 8)
+		{
+			std::vector<FVector2> Hull = Physics2DMath::ComputeConvexHull(Points);
+			if (Hull.size() > 8)
+			{
+				Hull = Physics2DMath::ReduceConvexPolygon(std::move(Hull), 8);
+			}
+			Points = std::move(Hull);
+			return true;
+		}
+		if (Physics2DMath::SignedArea(Points) < 0.0f)
+		{
+			std::reverse(Points.begin(), Points.end());
+		}
+		return false;
+	}
 } // namespace
 
 FPhysics2DSystem::FPhysics2DSystem()  = default;
@@ -135,6 +159,7 @@ void FPhysics2DSystem::End()
 {
 	Bodies.clear();
 	PointCaches.clear();
+	TilemapCaches.clear();
 	CollisionEvents.clear();
 	World.reset();
 	Stepper.Reset();
@@ -230,23 +255,10 @@ bool FPhysics2DSystem::BuildDesc(FScene& Scene, FEntity Entity, const FVector3& 
 		{
 			Points.push_back(ScalePoint(Point, ScaleX, ScaleZ));
 		}
-		if (!Physics2DMath::IsConvexPolygon(Points) || Points.size() > 8)
+		if (MakeBox2DPolygon(Points) && Cache.bValid && Points.size() >= 3)
 		{
-			std::vector<FVector2> Hull = Physics2DMath::ComputeConvexHull(Points);
-			if (Hull.size() > 8)
-			{
-				Hull = Physics2DMath::ReduceConvexPolygon(std::move(Hull), 8);
-			}
-			if (Cache.bValid && Hull.size() >= 3)
-			{
-				WarnOnce(Entity, Kind_PolygonHull,
-				         std::format("2D 다각형 콜라이더가 오목하거나 8점을 넘어 볼록 껍질({}점)로 만듭니다 (엔티티 {})", Hull.size(), Entity.ToId()));
-			}
-			Points = std::move(Hull);
-		}
-		else if (Physics2DMath::SignedArea(Points) < 0.0f)
-		{
-			std::reverse(Points.begin(), Points.end());
+			WarnOnce(Entity, Kind_PolygonHull,
+			         std::format("2D 다각형 콜라이더가 오목하거나 8점을 넘어 볼록 껍질({}점)로 만듭니다 (엔티티 {})", Points.size(), Entity.ToId()));
 		}
 		if (Points.size() >= 3)
 		{
@@ -289,6 +301,87 @@ bool FPhysics2DSystem::BuildDesc(FScene& Scene, FEntity Entity, const FVector3& 
 		}
 	}
 	return !OutDesc.Shapes.empty();
+}
+
+const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale)
+{
+	FTilemapComponent* Tilemap = Scene.GetRegistry().TryGet<FTilemapComponent>(Entity);
+	if (Tilemap == nullptr || !Tilemap->bCollision)
+	{
+		return nullptr;
+	}
+	const std::shared_ptr<const FTilesetAsset> Tileset = Sprite2DRuntime::ResolveTileset(*Tilemap);
+	const FTilemapData& Data = Sprite2DRuntime::GetTilemapData(*Tilemap); // TileData가 바뀌었으면 다시 디코딩 (Revision 증가)
+	if (Tileset == nullptr)
+	{
+		return nullptr; // 읽기 실패 경고는 라이브러리가 한 번 낸다
+	}
+
+	FTilemapShapeCache& Cache = TilemapCaches[Entity];
+	if (Cache.bBuilt && Cache.Revision == Tilemap->Runtime.Revision && Cache.Tileset == Tileset && Cache.CellSize == Tilemap->CellSize &&
+	    Cache.ScaleX == Scale.X && Cache.ScaleZ == Scale.Z && Cache.Layer == Tilemap->CollisionLayer && Cache.Friction == Tilemap->Friction &&
+	    Cache.Restitution == Tilemap->Restitution)
+	{
+		return &Cache;
+	}
+	Cache.bBuilt      = true;
+	Cache.Revision    = Tilemap->Runtime.Revision;
+	Cache.Tileset     = Tileset;
+	Cache.CellSize    = Tilemap->CellSize;
+	Cache.ScaleX      = Scale.X;
+	Cache.ScaleZ      = Scale.Z;
+	Cache.Layer       = Tilemap->CollisionLayer;
+	Cache.Friction    = Tilemap->Friction;
+	Cache.Restitution = Tilemap->Restitution;
+	Cache.Version     = NextTilemapVersion++;
+	Cache.Shapes.clear();
+
+	const FTilemapCollisionShapes Shapes = TilemapCollision::BuildShapes(Data, *Tileset, Tilemap->CellSize);
+	const uint8                   Layer  = ResolveCollisionLayer(Tilemap->CollisionLayer);
+	const auto                    MakeShape = [&](bool bOneWay) {
+        FPhysics2DShapeDesc Shape;
+        Shape.Friction       = Tilemap->Friction;
+        Shape.Restitution    = Tilemap->Restitution;
+        Shape.bOneWay        = bOneWay;
+        Shape.CollisionLayer = Layer;
+        return Shape;
+	};
+	const auto AddBoxes = [&](const std::vector<FTileCollisionBox>& Boxes, bool bOneWay) {
+		for (const FTileCollisionBox& Box : Boxes)
+		{
+			FPhysics2DShapeDesc Shape = MakeShape(bOneWay);
+			Shape.Shape               = EPhysics2DShape::Box;
+			Shape.HalfSize = FVector2(std::abs((Box.Max.X - Box.Min.X) * Scale.X) * 0.5f, std::abs((Box.Max.Y - Box.Min.Y) * Scale.Z) * 0.5f);
+			Shape.Offset   = ScalePoint(FVector2((Box.Min.X + Box.Max.X) * 0.5f, (Box.Min.Y + Box.Max.Y) * 0.5f), Scale.X, Scale.Z);
+			Cache.Shapes.push_back(std::move(Shape));
+		}
+	};
+	const auto AddPolygons = [&](const std::vector<FTileCollisionPolygon>& Polygons, bool bOneWay) {
+		for (const FTileCollisionPolygon& Polygon : Polygons)
+		{
+			FPhysics2DShapeDesc Shape = MakeShape(bOneWay);
+			Shape.Shape               = EPhysics2DShape::Polygon;
+			Shape.Points.reserve(Polygon.Points.size());
+			for (const FVector2& Point : Polygon.Points)
+			{
+				Shape.Points.push_back(ScalePoint(Point, Scale.X, Scale.Z));
+			}
+			if (MakeBox2DPolygon(Shape.Points))
+			{
+				WarnOnce(Entity, Kind_TilePolygonHull,
+				         std::format("타일맵(엔티티 {})의 타일 충돌 다각형이 오목하거나 8점을 넘어 볼록 껍질로 만듭니다", Entity.ToId()));
+			}
+			if (Shape.Points.size() >= 3)
+			{
+				Cache.Shapes.push_back(std::move(Shape));
+			}
+		}
+	};
+	AddBoxes(Shapes.Boxes, false);
+	AddPolygons(Shapes.Polygons, false);
+	AddBoxes(Shapes.OneWayBoxes, true);
+	AddPolygons(Shapes.OneWayPolygons, true);
+	return &Cache;
 }
 
 uint32 FPhysics2DSystem::Update(FScene& Scene, float DeltaSeconds)
@@ -366,6 +459,12 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 	Registry.View<FTransformComponent, FCapsuleCollider2DComponent>().Each([&](FEntity Entity, FTransformComponent&, FCapsuleCollider2DComponent&) { Collect(Entity); });
 	Registry.View<FTransformComponent, FPolygonCollider2DComponent>().Each([&](FEntity Entity, FTransformComponent&, FPolygonCollider2DComponent&) { Collect(Entity); });
 	Registry.View<FTransformComponent, FEdgeCollider2DComponent>().Each([&](FEntity Entity, FTransformComponent&, FEdgeCollider2DComponent&) { Collect(Entity); });
+	Registry.View<FTransformComponent, FTilemapComponent>().Each([&](FEntity Entity, FTransformComponent&, FTilemapComponent& Tilemap) {
+		if (Tilemap.bCollision)
+		{
+			Collect(Entity);
+		}
+	});
 
 	for (FEntity Entity : Candidates)
 	{
@@ -386,11 +485,18 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 			         std::format("2D 물리 엔티티 {}의 회전에 평면(X·Z) 밖 성분이 있어 무시합니다 (Y축 회전만 쓴다)", Entity.ToId()));
 		}
 
-		FPhysics2DBodyDesc Desc;
-		if (!BuildDesc(Scene, Entity, Scale, Desc))
+		FPhysics2DBodyDesc        Desc;
+		const bool                bHasColliders = BuildDesc(Scene, Entity, Scale, Desc);
+		const FTilemapShapeCache* TileShapes    = BuildTilemapShapes(Scene, Entity, Scale);
+		if (TileShapes != nullptr && TileShapes->Shapes.empty())
 		{
-			continue;
+			TileShapes = nullptr; // 빈 맵 (모양 없음)
 		}
+		if (!bHasColliders && TileShapes == nullptr)
+		{
+			continue; // 바디 없음 (있던 것은 아래에서 지운다)
+		}
+		const uint32 TilemapVersion = TileShapes != nullptr ? TileShapes->Version : 0;
 		const FVector2 PlanePosition = Physics2DMath::ToPlane(Position);
 		Desc.Position = PlanePosition;
 		Desc.Angle    = Angle;
@@ -416,14 +522,24 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 		Desc.bReportContacts = (RigidBody != nullptr && RigidBody->bReportContacts) || (ContactReportFilter && ContactReportFilter(Scene, Entity));
 
 		auto Found = Bodies.find(Entity);
-		if (Found == Bodies.end() || NeedsRecreate(Found->second.CreatedDesc, Desc))
+		if (Found == Bodies.end() || Found->second.TilemapVersion != TilemapVersion || NeedsRecreate(Found->second.CreatedDesc, Desc))
 		{
 			if (Found != Bodies.end())
 			{
 				World->DestroyBody(Found->second.Body);
 			}
 			FBodyState State;
-			State.Body = World->CreateBody(Desc);
+			if (TileShapes != nullptr)
+			{
+				// 타일 모양은 생성할 때만 붙인다 (CreatedDesc에는 콜라이더 모양만 — 매 프레임 비교는 TilemapVersion으로)
+				FPhysics2DBodyDesc CreateDesc = Desc;
+				CreateDesc.Shapes.insert(CreateDesc.Shapes.end(), TileShapes->Shapes.begin(), TileShapes->Shapes.end());
+				State.Body = World->CreateBody(CreateDesc);
+			}
+			else
+			{
+				State.Body = World->CreateBody(Desc);
+			}
 			if (State.Body == FPhysics2DWorld::InvalidBody)
 			{
 				if (Found != Bodies.end())
@@ -433,6 +549,7 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 				continue;
 			}
 			State.CreatedDesc      = Desc;
+			State.TilemapVersion   = TilemapVersion;
 			State.LastSeenFrame    = FrameCounter;
 			State.Depth            = Position.Y;
 			State.PreviousPosition = State.CurrentPosition = PlanePosition;
@@ -488,6 +605,19 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 		{
 			World->DestroyBody(It->second.Body);
 			It = Bodies.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+	// 사라진 엔티티(또는 충돌을 끈 타일맵)의 타일 모양 캐시
+	for (auto It = TilemapCaches.begin(); It != TilemapCaches.end();)
+	{
+		const FTilemapComponent* Tilemap = Registry.IsValid(It->first) ? Registry.TryGet<FTilemapComponent>(It->first) : nullptr;
+		if (Tilemap == nullptr || !Tilemap->bCollision)
+		{
+			It = TilemapCaches.erase(It);
 		}
 		else
 		{

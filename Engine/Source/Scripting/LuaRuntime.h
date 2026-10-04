@@ -214,6 +214,9 @@ private:
 	void RegisterCameraBindings();   // Camera.WorldToScreen/ScreenToWorldRay (ScriptCameraBindings.cpp)
 	void RegisterDataBindings();     // Data.GetRow/GetRows/Load 등 데이터 테이블·에셋 (ScriptDataBindings.cpp)
 	void RegisterBuildingBindings(); // entity:GenerateBuilding/ClearBuilding 절차적 건물 (ScriptBuildingBindings.cpp)
+	void RegisterSprite2DBindings(); // 플립북/스프라이트/타일맵 entity:PlayFlipbook·SetTile 등 (ScriptSprite2DBindings.cpp, Phase 56)
+	// 직전 표시 틱 플립북 이벤트 → OnFlipbookEvent_<이름>(frame), OnFlipbookFinished() (ScriptSprite2DBindings.cpp)
+	void DispatchFlipbookEvents();
 	void RegisterSkyBindings();      // Sky.SetSunAngles/GetSunAngles/SetTimeOfDay/GetTimeOfDay (ScriptSkyBindings.cpp, Phase 49)
 	void RegisterAbilityBindings();  // 능력 시스템 entity:TryActivateAbility 등 + Abilities 테이블 + 능력 ctx (ScriptAbilityBindings.cpp)
 	struct FAbilityTask

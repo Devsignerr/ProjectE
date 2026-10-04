@@ -120,7 +120,12 @@ void RegisterSprite2DTypes()
 		.Property(&FTilemapComponent::OrderInLayer, "OrderInLayer", "레이어 안 순서").Tooltip("같은 정렬 레이어 안에서 큰 값이 앞에 그려진다")
 		.Property(&FTilemapComponent::Color, "Color", "색", PF_Color)
 		.Property(&FTilemapComponent::bLit, "Lit", "조명 받기")
-		.Property(&FTilemapComponent::bCollision, "Collision", "충돌").Tooltip("타일셋의 충돌 모양으로 정적 바디를 만든다")
+		.Property(&FTilemapComponent::bCollision, "Collision", "충돌").Tooltip("타일셋의 충돌 모양으로 2D 정적 바디를 만든다 (Full 타일은 이웃끼리 병합, OneWay 타일은 원웨이)")
+		.Property(&FTilemapComponent::CollisionLayer, "CollisionLayer", "충돌 레이어")
+		.StringOptions([]() { return FProjectSettings::Get().Collision.GetLayerNames(); })
+		.Tooltip("타일 충돌의 충돌 레이어 (프로젝트 설정 → 충돌 레이어). 비었거나 없는 이름이면 Default")
+		.Property(&FTilemapComponent::Friction, "Friction", "마찰").Range(0.0f, 10.0f, 0.01f)
+		.Property(&FTilemapComponent::Restitution, "Restitution", "반발").Range(0.0f, 1.0f, 0.01f)
 		.Property(&FTilemapComponent::TileData, "TileData", "타일 데이터", PF_Hidden)
 		.AsComponent();
 }

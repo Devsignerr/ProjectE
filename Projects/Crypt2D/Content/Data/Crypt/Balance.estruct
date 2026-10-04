@@ -1,0 +1,90 @@
+{
+  "Version": 1,
+  "Name": "Balance",
+  "Description": "플레이어·던전 밸런스 (Balance.edata 하나)",
+  "Fields": [
+    {
+      "Name": "MaxHealth",
+      "Type": "Float",
+      "Default": 80,
+      "Description": "플레이어 최대 체력"
+    },
+    {
+      "Name": "InvulnTime",
+      "Type": "Float",
+      "Default": 0.9,
+      "Description": "피격 후 무적 (초)"
+    },
+    {
+      "Name": "DashCharges",
+      "Type": "Int",
+      "Default": 2,
+      "Description": "대시 충전 칸"
+    },
+    {
+      "Name": "DashRecharge",
+      "Type": "Float",
+      "Default": 1.4,
+      "Description": "대시 한 칸 재충전 (초)"
+    },
+    {
+      "Name": "StartWeapons",
+      "Type": "Array",
+      "Element": "String",
+      "Default": [
+        "ShortSword",
+        "Crossbow"
+      ],
+      "Description": "시작 무기 2칸"
+    },
+    {
+      "Name": "FloorRooms",
+      "Type": "Array",
+      "Element": "Int",
+      "Default": [
+        7,
+        8
+      ],
+      "Description": "층별 방 수 (마지막 층 다음은 보스 층)"
+    },
+    {
+      "Name": "SpawnRatio",
+      "Type": "Array",
+      "Element": "Float",
+      "Default": [
+        0.65,
+        0.85
+      ],
+      "Description": "층별 템플릿 적 표식 사용 비율"
+    },
+    {
+      "Name": "HealthMultiplier",
+      "Type": "Array",
+      "Element": "Float",
+      "Default": [
+        1.0,
+        1.35,
+        1.0
+      ],
+      "Description": "층별 적 체력 배율"
+    },
+    {
+      "Name": "ClearGold",
+      "Type": "Int",
+      "Default": 5,
+      "Description": "방 정리 보상 코인"
+    },
+    {
+      "Name": "HeartHeal",
+      "Type": "Float",
+      "Default": 20,
+      "Description": "하트 회복량"
+    },
+    {
+      "Name": "HeartChance",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "방 정리 시 하트가 나올 확률"
+    }
+  ]
+}

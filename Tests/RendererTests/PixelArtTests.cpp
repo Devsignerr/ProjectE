@@ -88,6 +88,34 @@ E_TEST(PixelArt_SnapRemainderAndGrid)
 	E_EXPECT_EQ(FPixelArtMath::PositiveMod4(6), 2u);
 }
 
+E_TEST(PixelArt_OddSourceAlignsTexelEdgesToWorldGrid)
+{
+	// 1280x720 / 3 → 소스 429 x 242 (여백 포함): 가로가 홀수라 위상 0.5로 스냅해야 텍셀 경계가 월드 정수 격자에 놓인다
+	// (월드 격자에 맞춘 점 필터 타일의 경계가 픽셀 가운데를 지나면 이웃 텍셀을 읽어 1도트 줄이 생겼다 — Crypt2D)
+	const uint32   SourceWidth  = FPixelArtMath::GetSourceDimension(1280, 3);
+	const uint32   SourceHeight = FPixelArtMath::GetSourceDimension(720, 3);
+	E_EXPECT_EQ(SourceWidth, 429u);
+	E_EXPECT_EQ(SourceHeight, 242u);
+	E_EXPECT_NEAR(FPixelArtMath::GetGridPhase(SourceWidth), 0.5f, Tol);
+	E_EXPECT_NEAR(FPixelArtMath::GetGridPhase(SourceHeight), 0.0f, Tol);
+
+	const FVector3 Right = FVector3(-1.0f, 0.0f, 0.0f); // 2D 카메라 (+Y에서 -Y를 봄)
+	const FVector3 Up    = FVector3(0.0f, 0.0f, 1.0f);
+	const float    Texel = FPixelArtMath::GetTexelWorldSize(960.0f, 720, 3);
+	const FVector2 Phase(FPixelArtMath::GetGridPhase(SourceWidth), FPixelArtMath::GetGridPhase(SourceHeight));
+	const FVector3 Cameras[] = { FVector3(1000.0f, 2000.0f, 500.0f), FVector3(1001.3f, 2000.0f, 498.9f), FVector3(-777.7f, 2000.0f, 3210.5f) };
+	for (const FVector3& Camera : Cameras)
+	{
+		const auto Snap = FPixelArtMath::SnapToTexelGrid(Camera, Right, Up, Texel, Phase);
+		E_EXPECT_TRUE(std::fabs(Snap.Remainder.X) <= 0.5f + Tol);
+		// 소스 왼쪽 끝(픽셀 0의 왼쪽 경계)과 아래쪽 끝의 월드 격자 번호가 정수
+		const float LeftEdge   = FVector3::Dot(Snap.SnappedPosition, Right) / Texel - static_cast<float>(SourceWidth) * 0.5f;
+		const float BottomEdge = FVector3::Dot(Snap.SnappedPosition, Up) / Texel - static_cast<float>(SourceHeight) * 0.5f;
+		E_EXPECT_NEAR(LeftEdge, std::round(LeftEdge), 1.0e-3f);
+		E_EXPECT_NEAR(BottomEdge, std::round(BottomEdge), 1.0e-3f);
+	}
+}
+
 E_TEST(PixelArt_SnapPlusOffsetMatchesIdealProjection)
 {
 	// 스냅된 카메라로 렌더한 소스를 서브픽셀 오프셋으로 확대하면, 월드 점이 스냅 없는 이상적 위치에 찍혀야 한다

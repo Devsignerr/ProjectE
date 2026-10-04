@@ -1,0 +1,65 @@
+{
+  "Version": 1,
+  "Texture": "../../Asset/GothicVania/Church/backgrounds_keyed.png",
+  "TextureWidth": 624,
+  "TextureHeight": 192,
+  "UnitsPerPixel": 4.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Window",
+      "X": 4,
+      "Y": 18,
+      "W": 151,
+      "H": 174,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Pillar",
+      "X": 181,
+      "Y": 3,
+      "W": 111,
+      "H": 187,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Altar",
+      "X": 321,
+      "Y": 72,
+      "W": 126,
+      "H": 117,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Gargoyle",
+      "X": 469,
+      "Y": 104,
+      "W": 71,
+      "H": 88,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Lantern",
+      "X": 568,
+      "Y": 75,
+      "W": 49,
+      "H": 81,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "EditorStartupMap": "Scenes/Crypt.escene",
+  "GameDefaultMap": "Scenes/Title.escene",
+  "ServerDefaultMap": "",
+  "PlayerPrefab": ""
+}

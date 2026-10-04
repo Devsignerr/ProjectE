@@ -1,0 +1,121 @@
+{
+  "Version": 1,
+  "Struct": "Data/Crypt/Weapon.estruct",
+  "Rows": [
+    {
+      "Name": "ShortSword",
+      "Values": {
+        "DisplayName": "녹슨 검",
+        "Kind": "Melee",
+        "Slice": "Sword",
+        "Icon": "UI/Crypt/Icons/Sword.png",
+        "DamageMin": 8,
+        "DamageMax": 12,
+        "CritChance": 0.12,
+        "CritMultiplier": 1.8,
+        "Cooldown": 0.32,
+        "Range": 120,
+        "Arc": 140,
+        "Knockback": 520,
+        "ProjectileSpeed": 0,
+        "Projectile": "Bolt",
+        "Pierce": 0,
+        "Explosion": 0,
+        "SwingSound": "Audio/Crypt/Swing1.wav",
+        "MinFloor": 1
+      }
+    },
+    {
+      "Name": "Crossbow",
+      "Values": {
+        "DisplayName": "사냥꾼의 석궁",
+        "Kind": "Ranged",
+        "Slice": "Crossbow",
+        "Icon": "UI/Crypt/Icons/Crossbow.png",
+        "DamageMin": 7,
+        "DamageMax": 10,
+        "CritChance": 0.15,
+        "CritMultiplier": 2.0,
+        "Cooldown": 0.42,
+        "Range": 1400,
+        "Arc": 0,
+        "Knockback": 260,
+        "ProjectileSpeed": 2400,
+        "Projectile": "Bolt",
+        "Pierce": 0,
+        "Explosion": 0,
+        "SwingSound": "Audio/Crypt/Shoot.wav",
+        "MinFloor": 1
+      }
+    },
+    {
+      "Name": "GreatAxe",
+      "Values": {
+        "DisplayName": "처형인의 도끼",
+        "Kind": "Melee",
+        "Slice": "Axe",
+        "Icon": "UI/Crypt/Icons/Axe.png",
+        "DamageMin": 20,
+        "DamageMax": 28,
+        "CritChance": 0.1,
+        "CritMultiplier": 2.0,
+        "Cooldown": 0.7,
+        "Range": 150,
+        "Arc": 170,
+        "Knockback": 950,
+        "ProjectileSpeed": 0,
+        "Projectile": "Bolt",
+        "Pierce": 0,
+        "Explosion": 0,
+        "SwingSound": "Audio/Crypt/Swing3.wav",
+        "MinFloor": 1
+      }
+    },
+    {
+      "Name": "Spear",
+      "Values": {
+        "DisplayName": "성기사의 창",
+        "Kind": "Melee",
+        "Slice": "Spear",
+        "Icon": "UI/Crypt/Icons/Spear.png",
+        "DamageMin": 12,
+        "DamageMax": 16,
+        "CritChance": 0.2,
+        "CritMultiplier": 1.7,
+        "Cooldown": 0.45,
+        "Range": 190,
+        "Arc": 50,
+        "Knockback": 700,
+        "ProjectileSpeed": 0,
+        "Projectile": "Bolt",
+        "Pierce": 0,
+        "Explosion": 0,
+        "SwingSound": "Audio/Crypt/Swing2.wav",
+        "MinFloor": 1
+      }
+    },
+    {
+      "Name": "FireStaff",
+      "Values": {
+        "DisplayName": "화염 지팡이",
+        "Kind": "Ranged",
+        "Slice": "Staff",
+        "Icon": "UI/Crypt/Icons/Staff.png",
+        "DamageMin": 14,
+        "DamageMax": 18,
+        "CritChance": 0.08,
+        "CritMultiplier": 1.6,
+        "Cooldown": 0.65,
+        "Range": 1100,
+        "Arc": 0,
+        "Knockback": 400,
+        "ProjectileSpeed": 1300,
+        "Projectile": "Fireball",
+        "Pierce": 0,
+        "Explosion": 150,
+        "SwingSound": "Audio/Crypt/Fireball.wav",
+        "MinFloor": 2
+      }
+    }
+  ]
+}

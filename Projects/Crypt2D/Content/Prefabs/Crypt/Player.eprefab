@@ -1,0 +1,146 @@
+{
+  "Entities": [
+    {
+      "Name": "Player",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            4.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Player.esprite",
+          "Slice": "Idle0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "Characters",
+          "OrderInLayer": 10,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/Crypt/Player_Idle.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "CharacterMovement2DComponent": {
+          "Mode": 0,
+          "CapsuleRadius": 32.0,
+          "CapsuleHeight": 160.0,
+          "Layer": "Player",
+          "ClientPrediction": false,
+          "MaxSpeed": 520.0,
+          "GroundAcceleration": 7000.0,
+          "GroundDeceleration": 9000.0,
+          "AirAcceleration": 5200.0,
+          "AirDeceleration": 3200.0,
+          "JumpVelocity": 1260.0,
+          "MaxJumps": 2,
+          "GravityScale": 3.0,
+          "MaxFallSpeed": 1800.0,
+          "CoyoteTime": 0.1,
+          "JumpBufferTime": 0.12,
+          "JumpCutFactor": 0.45,
+          "MaxSlopeAngle": 50.0,
+          "GroundSnapDistance": 12.0,
+          "DashSpeed": 1900.0,
+          "DashTime": 0.16,
+          "DashCooldown": 0.12,
+          "MaxAirDashes": 99,
+          "DashIgnoresGravity": true,
+          "DropThroughTime": 0.25
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/Player.lua",
+          "PropertyOverrides": "",
+          "ExecutionLocation": 0
+        }
+      }
+    },
+    {
+      "Name": "Weapon",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            2.0,
+            8.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Generated.esprite",
+          "Slice": "Sword",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "Weapons",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        }
+      }
+    }
+  ]
+}

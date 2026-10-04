@@ -1,0 +1,88 @@
+{
+  "Entities": [
+    {
+      "Name": "Skeleton",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Cemetery.esprite",
+          "Slice": "SkeletonRise0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "Characters",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/Crypt/Skeleton_Rise.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "CharacterMovement2DComponent": {
+          "Mode": 0,
+          "CapsuleRadius": 28.0,
+          "CapsuleHeight": 152.0,
+          "Layer": "Enemy",
+          "ClientPrediction": false,
+          "MaxSpeed": 300.0,
+          "GroundAcceleration": 3000.0,
+          "GroundDeceleration": 4000.0,
+          "AirAcceleration": 1500.0,
+          "AirDeceleration": 800.0,
+          "JumpVelocity": 950.0,
+          "MaxJumps": 1,
+          "GravityScale": 3.0,
+          "MaxFallSpeed": 1800.0,
+          "DashSpeed": 900.0,
+          "DashTime": 0.22,
+          "DashCooldown": 0.05,
+          "MaxAirDashes": 99,
+          "DashIgnoresGravity": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/Enemy.lua",
+          "PropertyOverrides": "{\"Kind\": \"Skeleton\"}",
+          "ExecutionLocation": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Texture": "../../Asset/GothicVania/Cemetery/background.png",
+  "TextureWidth": 384,
+  "TextureHeight": 224,
+  "UnitsPerPixel": 4.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Background",
+      "X": 0,
+      "Y": 0,
+      "W": 384,
+      "H": 224,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

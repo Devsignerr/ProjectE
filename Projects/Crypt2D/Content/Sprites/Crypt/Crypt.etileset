@@ -1,0 +1,384 @@
+{
+  "Version": 1,
+  "Texture": "../../Asset/GothicVania/Church/tileset.png",
+  "TextureWidth": 336,
+  "TextureHeight": 224,
+  "TileWidth": 16,
+  "TileHeight": 16,
+  "Margin": 0,
+  "Spacing": 0,
+  "Columns": 21,
+  "Rows": 14,
+  "UnitsPerPixel": 4.0,
+  "Filter": "Point",
+  "Tiles": [
+    {
+      "Id": 106,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 148,
+      "Collision": "Full",
+      "Tags": [
+        "Gate"
+      ]
+    },
+    {
+      "Id": 149,
+      "Collision": "Full",
+      "Tags": [
+        "Gate"
+      ]
+    },
+    {
+      "Id": 169,
+      "Collision": "Full",
+      "Tags": [
+        "Gate"
+      ]
+    },
+    {
+      "Id": 170,
+      "Collision": "Full",
+      "Tags": [
+        "Gate"
+      ]
+    },
+    {
+      "Id": 210,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 211,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 212,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 214,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 215,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 216,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 218,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 219,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 220,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          8.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Surface"
+      ]
+    },
+    {
+      "Id": 223,
+      "Collision": "Full",
+      "OneWay": true,
+      "Tags": [
+        "Platform"
+      ]
+    },
+    {
+      "Id": 225,
+      "Collision": "Full",
+      "OneWay": true,
+      "Tags": [
+        "Platform"
+      ]
+    },
+    {
+      "Id": 231,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 232,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 233,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 235,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 236,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 237,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 239,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 240,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 241,
+      "Collision": "Full",
+      "Tags": [
+        "Ground"
+      ]
+    },
+    {
+      "Id": 258,
+      "Collision": "Polygon",
+      "Points": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          8.0,
+          0.0
+        ],
+        [
+          16.0,
+          8.0
+        ],
+        [
+          16.0,
+          16.0
+        ],
+        [
+          0.0,
+          16.0
+        ]
+      ],
+      "Tags": [
+        "Ground"
+      ]
+    }
+  ]
+}

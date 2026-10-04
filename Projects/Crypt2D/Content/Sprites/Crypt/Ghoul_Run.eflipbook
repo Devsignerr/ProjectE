@@ -1,0 +1,56 @@
+{
+  "Version": 1,
+  "Sprite": "Ghoul.esprite",
+  "Fps": 16,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Ghoul0"
+    },
+    {
+      "Slice": "Ghoul1"
+    },
+    {
+      "Slice": "Ghoul2"
+    },
+    {
+      "Slice": "Ghoul3"
+    },
+    {
+      "Slice": "Ghoul4"
+    },
+    {
+      "Slice": "Ghoul5"
+    },
+    {
+      "Slice": "Ghoul6"
+    },
+    {
+      "Slice": "Ghoul7"
+    },
+    {
+      "Slice": "Ghoul8"
+    },
+    {
+      "Slice": "Ghoul9"
+    },
+    {
+      "Slice": "Ghoul10"
+    },
+    {
+      "Slice": "Ghoul11"
+    },
+    {
+      "Slice": "Ghoul12"
+    },
+    {
+      "Slice": "Ghoul13"
+    },
+    {
+      "Slice": "Ghoul14"
+    },
+    {
+      "Slice": "Ghoul15"
+    }
+  ]
+}

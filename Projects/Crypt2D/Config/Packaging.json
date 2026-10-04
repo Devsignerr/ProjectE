@@ -1,0 +1,7 @@
+{
+  "Configuration": "Release",
+  "UsePak": true,
+  "IncludeSourceAssets": false,
+  "AdditionalDirectories": "",
+  "AdditionalAssets": "Scripts/Crypt;Data/Crypt;Audio/Crypt;Sprites/Crypt"
+}

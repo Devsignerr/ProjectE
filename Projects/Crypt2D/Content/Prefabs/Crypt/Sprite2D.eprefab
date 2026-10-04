@@ -1,0 +1,62 @@
+{
+  "Entities": [
+    {
+      "Name": "Sprite2D",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Generated.esprite",
+          "Slice": "Pixel",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "FX",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        }
+      }
+    }
+  ]
+}

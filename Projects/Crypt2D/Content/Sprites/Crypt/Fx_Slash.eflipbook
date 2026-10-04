@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Generated.esprite",
+  "Fps": 24,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Slash0"
+    },
+    {
+      "Slice": "Slash1"
+    },
+    {
+      "Slice": "Slash2"
+    }
+  ]
+}

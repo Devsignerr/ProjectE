@@ -366,7 +366,14 @@ void FRuntimeApplication::OnRender()
 	{
 		RenderThread.Start();
 	}
+	using FClock = std::chrono::steady_clock;
+	const FClock::time_point WaitStart = FClock::now();
 	RenderThread.WaitIdle();
+	const FClock::time_point WaitEnd = FClock::now();
+	if (CpuTimes.bHasLastKick)
+	{
+		CpuTimes.GameMs += std::chrono::duration<double, std::milli>(WaitStart - CpuTimes.LastKickEnd).count();
+	}
 	const std::filesystem::path Screenshot = std::exchange(PendingScreenshot, {});
 	if (PendingTravel)
 	{
@@ -382,7 +389,9 @@ void FRuntimeApplication::OnRender()
 	}
 	FHdrOutputController::Update(*Rhi); // r.HDR.Output 변경 반영 (BeginFrame 전)
 	const float ClearColor[4] = { 0.12f, 0.2f, 0.36f, 1.0f };
+	const FClock::time_point BeginFrameStart = FClock::now();
 	Rhi->BeginFrame(ClearColor);
+	CpuTimes.BeginFrameMs += std::chrono::duration<double, std::milli>(FClock::now() - BeginFrameStart).count();
 	// 화면 통계(stat fps/gpu) = 기록이 끝난 지난 프레임까지의 값
 	const std::vector<std::string> StatLines = StatOverlay.BuildLines(&SceneRenderer.GetStats());
 
@@ -403,11 +412,18 @@ void FRuntimeApplication::OnRender()
 	UIRenderer.PrepareTextures(UIDrawList, ContentDirectory);
 
 	// 렌더 작업: 렌더 스레드(r.RenderThread 1)에서 게임 스레드의 다음 OnUpdate와 겹쳐, 아니면 바로
+	const FClock::time_point KickStart = FClock::now();
+	CpuTimes.GameMs += std::chrono::duration<double, std::milli>(KickStart - WaitEnd).count();
+	++CpuTimes.Frames;
 	RenderThread.Kick([this, Screenshot, ContentDirectory]() { RecordAndPresent(Screenshot, ContentDirectory); }, FFrameTime::Capture(), bThreaded);
+	CpuTimes.LastKickEnd  = FClock::now();
+	CpuTimes.bHasLastKick = true;
 }
 
 void FRuntimeApplication::RecordAndPresent(const std::filesystem::path& Screenshot, const std::filesystem::path& ContentDirectory)
 {
+	using FClock = std::chrono::steady_clock;
+	const FClock::time_point RecordStart = FClock::now();
 	SceneRenderer.FinishRender(); // 그래프 컴파일·실행 (명령 기록)
 	const FRenderOutput Back = Rhi->GetBackBufferOutput();
 	// 3D 디버그 선: 씬 깊이가 백버퍼와 같은 크기일 때만 깊이 테스트 (픽셀 아트 모드는 "항상 위" 선만, TAAU면 출력 해상도로 옮긴 깊이)
@@ -417,19 +433,25 @@ void FRuntimeApplication::RecordAndPresent(const std::filesystem::path& Screensh
 	{
 		Rhi->RequestScreenshot(Screenshot);
 	}
+	const FClock::time_point SubmitStart = FClock::now();
 	Rhi->EndFrame();
+	CpuTimes.RecordMs += std::chrono::duration<double, std::milli>(SubmitStart - RecordStart).count();
+	CpuTimes.SubmitMs += std::chrono::duration<double, std::milli>(FClock::now() - SubmitStart).count();
 }
 
 void FRuntimeApplication::LogRenderThreadStats() const
 {
 	const FRenderThread::FStats Stats = RenderThread.GetStats();
-	if (Stats.Threaded == 0 || Stats.Frames == 0)
+	if (Stats.Frames == 0 || CpuTimes.Frames == 0)
 	{
 		return;
 	}
 	const double Frames = static_cast<double>(Stats.Frames);
-	E_LOG(LogRuntime, Display, "[성능] 렌더 스레드: 작업 {}개 (렌더 스레드 {}개), 렌더 작업 평균 {:.3f} ms, 게임 스레드 대기 평균 {:.3f} ms", Stats.Frames,
-	      Stats.Threaded, Stats.WorkMs / Frames, Stats.WaitMs / Frames);
+	const double Cpu    = static_cast<double>(CpuTimes.Frames);
+	E_LOG(LogRuntime, Display,
+	      "[성능] 렌더 스레드: 작업 {}개 (렌더 스레드 {}개), 렌더 작업 평균 {:.3f} ms, 게임 스레드 대기 평균 {:.3f} ms | CPU 구간 평균: 게임 스레드 {:.3f} ms (BeginFrame {:.3f}), "
+	      "기록 {:.3f} ms, 제출·Present {:.3f} ms",
+	      Stats.Frames, Stats.Threaded, Stats.WorkMs / Frames, Stats.WaitMs / Frames, CpuTimes.GameMs / Cpu, CpuTimes.BeginFrameMs / Cpu, CpuTimes.RecordMs / Cpu, CpuTimes.SubmitMs / Cpu);
 }
 
 void FRuntimeApplication::OnResize(uint32 Width, uint32 Height)

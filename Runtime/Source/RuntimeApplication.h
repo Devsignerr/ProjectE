@@ -27,6 +27,7 @@
 #include "UI/UIDrawList.h"
 #include "World/GameWorld.h"
 
+#include <chrono>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -106,6 +107,19 @@ private:
 	FRenderOutput           RenderSceneOutput;
 	std::vector<FDebugLine> RenderDebugLines;
 	std::filesystem::path   PendingScreenshot; // OnScreenshotRequested → 이번 프레임 EndFrame 직전
+	// CPU 구간 측정 (종료 로그 [성능] 렌더 스레드): 게임 스레드 작업(렌더 작업·대기 제외), 렌더 작업의 기록(FinishRender + 오버레이)과
+	// 제출(EndFrame — GPU가 밀리면 Present 대기 포함). 0이면 프레임 CPU ≈ 게임 + 기록 + 제출, 1이면 ≈ max(게임, 기록 + 제출)
+	struct FCpuFrameTimes
+	{
+		double                                GameMs   = 0.0;
+		double                                RecordMs = 0.0; // 렌더 작업만 쓴다 (종료 때 Stop 뒤에 읽는다)
+		double                                SubmitMs = 0.0;
+		double                                BeginFrameMs = 0.0; // 게임 스레드 BeginFrame (GPU가 밀리면 슬롯 펜스 대기 — 게임 스레드에 포함)
+		uint64                                Frames   = 0;
+		std::chrono::steady_clock::time_point LastKickEnd;
+		bool                                  bHasLastKick = false;
+	};
+	FCpuFrameTimes CpuTimes;
 
 	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
 	FGameModuleHost      GameModule; // 프로젝트 C++ 게임 모듈 (있으면)

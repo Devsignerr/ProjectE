@@ -325,3 +325,90 @@ E_TEST(Editor2D_CameraStateKeepsViewport2DAndSaved3D)
 	E_EXPECT_FALSE(Old.bViewport2D);
 	E_EXPECT_FALSE(Old.bHasSaved3D);
 }
+
+// ---- 박스 선택 (Editor2DMath "박스 선택")
+
+E_TEST(Editor2D_BoxSelectProjectsBoundsAndRequiresContainment)
+{
+	// 2D 카메라: +Y에서 -Y, 직교 높이 1000cm, 이미지 1000x1000 → 1px = 1cm, 화면 가운데 = 원점, 오른쪽 = +X, 위 = +Z
+	FCamera Camera;
+	Camera.SetPosition(FVector3(0.0f, 5000.0f, 0.0f));
+	Camera.SetRotation(Get2DCameraRotation());
+	Camera.SetOrthographic(1000.0f, 1.0f, 10.0f, 20000.0f);
+	const FVector2 ImageSize(1000.0f, 1000.0f);
+
+	FScreenRect Rect;
+	E_EXPECT_TRUE(ProjectBoundsToScreen(FBox(FVector3(100.0f, -5.0f, 50.0f), FVector3(200.0f, 5.0f, 150.0f)), Camera.GetViewProjectionMatrix(), ImageSize, Rect));
+	E_EXPECT_NEAR(Rect.Min.X, 600.0f, 0.5f);
+	E_EXPECT_NEAR(Rect.Max.X, 700.0f, 0.5f);
+	E_EXPECT_NEAR(Rect.Min.Y, 350.0f, 0.5f); // 위(+Z 150) = 화면 위쪽(작은 y)
+	E_EXPECT_NEAR(Rect.Max.Y, 450.0f, 0.5f);
+
+	// 완전히 들어가야 선택 (걸치기는 아님)
+	E_EXPECT_TRUE(IsScreenRectInside(Rect, MakeScreenRect(FVector2(710.0f, 460.0f), FVector2(590.0f, 340.0f))));
+	E_EXPECT_FALSE(IsScreenRectInside(Rect, MakeScreenRect(FVector2(650.0f, 340.0f), FVector2(710.0f, 460.0f))));
+
+	// 무효 경계·카메라 뒤 (원근) = 실패
+	E_EXPECT_FALSE(ProjectBoundsToScreen(FBox(), Camera.GetViewProjectionMatrix(), ImageSize, Rect));
+	FCamera Perspective;
+	Perspective.SetPerspective(60.0f, 1.0f, 10.0f, 100000.0f);
+	Perspective.SetPosition(FVector3::ZeroVector); // 앞 = +X
+	E_EXPECT_FALSE(ProjectBoundsToScreen(FBox(FVector3(-200.0f, -10.0f, -10.0f), FVector3(-100.0f, 10.0f, 10.0f)), Perspective.GetViewProjectionMatrix(), ImageSize, Rect));
+	E_EXPECT_TRUE(ProjectBoundsToScreen(FBox(FVector3(100.0f, -10.0f, -10.0f), FVector3(200.0f, 10.0f, 10.0f)), Perspective.GetViewProjectionMatrix(), ImageSize, Rect));
+	E_EXPECT_TRUE(Rect.Min.X < 500.0f && Rect.Max.X > 500.0f);
+
+	// 합치기
+	FScreenRect Union;
+	bool        bValid = false;
+	UnionScreenRect(Union, bValid, FScreenRect{ FVector2(10.0f, 20.0f), FVector2(30.0f, 40.0f) });
+	UnionScreenRect(Union, bValid, FScreenRect{ FVector2(5.0f, 25.0f), FVector2(20.0f, 50.0f) });
+	E_EXPECT_TRUE(bValid);
+	E_EXPECT_NEAR(Union.Min.X, 5.0f, Tol);
+	E_EXPECT_NEAR(Union.Min.Y, 20.0f, Tol);
+	E_EXPECT_NEAR(Union.Max.X, 30.0f, Tol);
+	E_EXPECT_NEAR(Union.Max.Y, 50.0f, Tol);
+}
+
+E_TEST(Editor2D_BoxSelectCombineModes)
+{
+	const FEntity A{ 1, 1 };
+	const FEntity B{ 2, 1 };
+	const FEntity C{ 3, 1 };
+	const std::vector<FEntity> Current = { A, B };
+	const std::vector<FEntity> Hits    = { B, C, C };
+
+	const std::vector<FEntity> Replace = CombineBoxSelection(Current, Hits, EBoxSelectMode::Replace);
+	E_EXPECT_EQ(Replace.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(Replace[0] == B && Replace[1] == C);
+	E_EXPECT_TRUE(CombineBoxSelection(Current, {}, EBoxSelectMode::Replace).empty()); // 빈 곳 끌기 = 선택 해제
+
+	const std::vector<FEntity> Add = CombineBoxSelection(Current, Hits, EBoxSelectMode::Add);
+	E_EXPECT_EQ(Add.size(), static_cast<size_t>(3));
+	E_EXPECT_TRUE(Add[0] == A && Add[1] == B && Add[2] == C);
+
+	const std::vector<FEntity> Toggle = CombineBoxSelection(Current, Hits, EBoxSelectMode::Toggle);
+	E_EXPECT_EQ(Toggle.size(), static_cast<size_t>(2));
+	E_EXPECT_TRUE(Toggle[0] == A && Toggle[1] == C); // B는 빠지고 C는 더해짐
+}
+
+// 9-슬라이스 스프라이트의 클릭/박스 판정 사각형 = 늘인 크기 그대로 (렌더러가 그리는 바깥 크기 SpriteMath::ComputeSize와 같음)
+E_TEST(Editor2D_NineSliceQuadMatchesDrawnSize)
+{
+	FSpriteSlice Slice;
+	Slice.Name         = "Panel";
+	Slice.W            = 16;
+	Slice.H            = 16;
+	Slice.BorderLeft   = 4;
+	Slice.BorderRight  = 4;
+	Slice.BorderTop    = 4;
+	Slice.BorderBottom = 4;
+	const FVector2    Size(300.0f, 120.0f);
+	const FSpriteQuad Quad  = SpriteMath::ComputeQuad(Slice, 64, 64, 2.0f, Size, false, false);
+	const FVector2    Drawn = SpriteMath::ComputeSize(Slice, 2.0f, Size);
+	E_EXPECT_NEAR(Drawn.X, 300.0f, Tol);
+	E_EXPECT_NEAR(Quad.Positions[2].X - Quad.Positions[0].X, Drawn.X, Tol);
+	E_EXPECT_NEAR(Quad.Positions[2].Y - Quad.Positions[0].Y, Drawn.Y, Tol);
+	// Size 0 = 슬라이스 원래 크기 × UnitsPerPixel
+	const FSpriteQuad Native = SpriteMath::ComputeQuad(Slice, 64, 64, 2.0f, FVector2::ZeroVector, false, false);
+	E_EXPECT_NEAR(Native.Positions[2].X - Native.Positions[0].X, 32.0f, Tol);
+}

@@ -5,8 +5,10 @@
 #include "Core/StringConv.h"
 #include "Editor/AssetEditors/AssetEditorWidgets.h"
 #include "Editor/AssetEditors/DataValueWidgets.h"
+#include "Editor/AssetEditors/SpriteSliceRename.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
+#include "Scene/Prefab.h"
 #include "Scene/Sprite/Sprite2DLibrary.h"
 
 #include <imgui.h>
@@ -92,9 +94,37 @@ bool FSpriteAtlasEditor::LoadAsset(FAssetEditorEnvironment& Env)
 	return true;
 }
 
+std::vector<Sprite2DEditing::FSliceRename> FSpriteAtlasEditor::DetectRenamesSinceSave() const
+{
+	std::string  Text;
+	FSpriteAsset Saved;
+	if (!ReadAssetText(Text) || !FSpriteAsset::FromJsonString(Text, Saved))
+	{
+		return {};
+	}
+	return DetectSliceRenames(Saved, Asset);
+}
+
 bool FSpriteAtlasEditor::SaveAsset(FAssetEditorEnvironment& Env)
 {
-	(void)Env;
+	// 슬라이스 이름이 바뀌었으면 참조(플립북·씬·프리팹)도 바꿀지 묻는다 — 자동 검증 실행은 묻지 않고 예
+	if (!bRenameDecided)
+	{
+		PendingRenames    = DetectRenamesSinceSave();
+		bPropagateRenames = false;
+		if (!PendingRenames.empty())
+		{
+			if (FCommandLine::FromProcess().GetValue(L"--exit-after").empty())
+			{
+				bOpenRenameConfirm = true; // 확인 → 다시 Save
+				bSaveDeferred      = true;
+				return false;
+			}
+			bPropagateRenames = true;
+		}
+	}
+	bRenameDecided = false;
+
 	std::string Error;
 	if (!FSprite2DLibrary::Get().SaveSprite(GetAssetPathString(), Asset, &Error))
 	{
@@ -102,7 +132,68 @@ bool FSpriteAtlasEditor::SaveAsset(FAssetEditorEnvironment& Env)
 		return false;
 	}
 	AfterSaved();
+	if (bPropagateRenames && Env.Editor != nullptr)
+	{
+		const SpriteSliceRename::FResult Result = SpriteSliceRename::Propagate(*Env.Editor, FPrefabLibrary::Get().MakeAssetPath(Path), PendingRenames);
+		Notify(Env, "슬라이스 이름 변경 반영: " + SpriteSliceRename::Describe(Result), false);
+	}
+	PendingRenames.clear();
+	bPropagateRenames = false;
 	return true;
+}
+
+void FSpriteAtlasEditor::DrawRenameConfirm(FAssetEditorEnvironment& Env)
+{
+	if (bOpenRenameConfirm)
+	{
+		ImGui::OpenPopup("슬라이스 이름 변경##SpriteRename");
+		bOpenRenameConfirm = false;
+	}
+	if (!ImGui::BeginPopupModal("슬라이스 이름 변경##SpriteRename", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		return;
+	}
+	ImGui::TextUnformatted(ICON_FA_PEN " 슬라이스 이름이 바뀌었습니다. 이 아틀라스를 쓰는 참조도 바꿀까요?");
+	ImGui::TextDisabled("플립북 프레임, 씬·프리팹 파일의 SpriteComponent.Slice, 열린 씬(실행 취소 가능)");
+	ImGui::Separator();
+	for (const FSliceRename& Rename : PendingRenames)
+	{
+		ImGui::BulletText("%s  " ICON_FA_ARROW_RIGHT "  %s", Rename.From.c_str(), Rename.To.c_str());
+	}
+	ImGui::Separator();
+	const auto Decide = [&](bool bPropagate) {
+		bRenameDecided    = true;
+		bPropagateRenames = bPropagate;
+		ImGui::CloseCurrentPopup();
+		Save(Env);
+	};
+	if (ImGui::Button(ICON_FA_CHECK " 참조도 바꾸고 저장"))
+	{
+		Decide(true);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("이 파일만 저장"))
+	{
+		Decide(false);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("취소"))
+	{
+		PendingRenames.clear();
+		ImGui::CloseCurrentPopup();
+	}
+	ImGui::EndPopup();
+}
+
+std::string FSpriteAtlasEditor::CaptureLibraryState() const
+{
+	const std::shared_ptr<const FSpriteAsset> Loaded = FSprite2DLibrary::Get().LoadSprite(GetAssetPathString());
+	return Loaded != nullptr ? Loaded->ToJsonString() : std::string();
+}
+
+void FSpriteAtlasEditor::PushLivePreview()
+{
+	FSprite2DLibrary::Get().SetSpritePreview(GetAssetPathString(), std::make_shared<FSpriteAsset>(Asset));
 }
 
 std::string FSpriteAtlasEditor::CaptureState() const
@@ -231,6 +322,8 @@ void FSpriteAtlasEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 		Canvas.Frame(Asset.TextureWidth, Asset.TextureHeight);
 	}
 	ImGui::SameLine();
+	DrawLivePreviewToggle();
+	ImGui::SameLine();
 	ImGui::TextDisabled("%.0f%%", Canvas.GetZoom() * 100.0f);
 	if (Canvas.IsHovered())
 	{
@@ -241,6 +334,7 @@ void FSpriteAtlasEditor::DrawPreviewArea(FAssetEditorEnvironment& Env)
 
 	DrawCanvas(Env);
 	DrawGridDialog();
+	DrawRenameConfirm(Env);
 }
 
 void FSpriteAtlasEditor::DrawCanvas(FAssetEditorEnvironment& Env)
@@ -764,6 +858,8 @@ void FSpriteAtlasEditor::DrawGridDialog()
 	{
 		ImGui::OpenPopup("격자로 자르기##SpriteGrid");
 		bOpenGridDialog = false;
+		// 기본 셀 크기 추정: 기존 슬라이스의 가장 흔한 크기, 없으면 텍스처 크기를 나누는 16/32/8
+		EstimateGridCellSize(Asset, GridOptions.CellWidth, GridOptions.CellHeight);
 	}
 	bGridDialogOpen = false;
 	ImGui::SetNextWindowPos(ImVec2(Canvas.GetMax().x - 12.0f, Canvas.GetMin().y + 12.0f), ImGuiCond_Appearing, ImVec2(1.0f, 0.0f));

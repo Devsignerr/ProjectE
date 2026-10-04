@@ -6,6 +6,7 @@
 #include "Core/StringConv.h"
 #include "Editor/ContentBrowser/ContentDragDrop.h"
 #include "Editor/EditorContext.h"
+#include "Editor/EditorTheme.h"
 #include "RHI/D3D12/D3D12Common.h"
 #include "Renderer/ResourceManager.h"
 #include "Scene/Sprite/Sprite2DLibrary.h"
@@ -38,6 +39,11 @@ void FSprite2DEditorBase::Update(FAssetEditorEnvironment& Env, float DeltaSecond
 	{
 		bEditedSinceOpen = true;
 	}
+	if (FrameCounter == 0 && SupportsLivePreview() && FCommandLine::FromProcess().HasFlag(L"--sprite-live-preview"))
+	{
+		bLivePreview = true;
+	}
+	UpdateLivePreview();
 	const uint32 Generation = FSprite2DLibrary::Get().GetGeneration();
 	if (Generation != KnownSprite2DGeneration)
 	{
@@ -170,9 +176,54 @@ void FSprite2DEditorBase::AfterSaved()
 	KnownSprite2DGeneration = FSprite2DLibrary::Get().GetGeneration(); // 자기 저장은 변경 알림으로 보지 않는다
 }
 
+void FSprite2DEditorBase::DrawLivePreviewToggle()
+{
+	if (!SupportsLivePreview())
+	{
+		return;
+	}
+	ImGui::Checkbox(ICON_FA_BOLT " 씬에 실시간 반영", &bLivePreview);
+	ImGui::SetItemTooltip("저장하지 않은 편집을 씬 뷰포트에 바로 보여 준다 (파일은 그대로 — 저장하지 않고 닫거나 끄면 파일 상태로 돌아간다)");
+}
+
+void FSprite2DEditorBase::UpdateLivePreview()
+{
+	if (!SupportsLivePreview())
+	{
+		return;
+	}
+	if (!bLivePreview)
+	{
+		EndLivePreview();
+		return;
+	}
+	std::string State = CaptureState();
+	if (bLivePreviewApplied && State == LivePreviewState)
+	{
+		return;
+	}
+	PushLivePreview();
+	LivePreviewState        = std::move(State);
+	bLivePreviewApplied     = true;
+	KnownSprite2DGeneration = FSprite2DLibrary::Get().GetGeneration(); // 자기 미리보기는 변경 알림으로 보지 않는다
+}
+
+void FSprite2DEditorBase::EndLivePreview()
+{
+	if (!bLivePreviewApplied)
+	{
+		return;
+	}
+	bLivePreviewApplied = false;
+	LivePreviewState.clear();
+	FSprite2DLibrary::Get().Invalidate(GetAssetPathString()); // 파일 상태로
+	KnownSprite2DGeneration = FSprite2DLibrary::Get().GetGeneration();
+}
+
 void FSprite2DEditorBase::OnClose(FAssetEditorEnvironment& Env)
 {
 	(void)Env;
+	EndLivePreview();
 	if (bEditedSinceOpen)
 	{
 		// 저장 안 함으로 닫아도 라이브러리는 파일 내용만 갖지만, 혹시 다른 경로로 캐시가 앞섰다면 파일 상태로 다시 읽게 한다
@@ -198,6 +249,11 @@ void FSprite2DEditorBase::RunVerifyRoundTrip(FAssetEditorEnvironment& Env)
 	const std::string Edited = CaptureState();
 	Check(Edited != Original, "편집으로 상태가 바뀜");
 	Check(IsDirty(), "편집 후 변경 표시");
+	if (bLivePreview)
+	{
+		UpdateLivePreview();
+		Check(CaptureLibraryState() == Edited, "실시간 반영 = 편집 상태");
+	}
 
 	uint32 UndoCount = 0;
 	while (CanUndo() && UndoCount < 1000)
@@ -216,6 +272,12 @@ void FSprite2DEditorBase::RunVerifyRoundTrip(FAssetEditorEnvironment& Env)
 	// 저장 안 함 닫기와 같은 경로 (FAssetEditor::Close → RevertToSaved)
 	RevertToSaved(Env);
 	Check(CaptureState() == Original, "저장 안 함 닫기 = 파일 상태");
+	if (bLivePreview)
+	{
+		EndLivePreview(); // 닫기(OnClose)와 같은 정리
+		Check(CaptureLibraryState() == Original, "실시간 반영 끔 = 파일 상태");
+		bLivePreview = false;
+	}
 	std::vector<uint8> FileAfter;
 	Check(ReadFileBytes(Path, FileAfter) && FileAfter == FileBefore, "파일 바이트 불변");
 

@@ -49,6 +49,7 @@
 #include <iterator>
 #include <limits>
 #include <string>
+#include <unordered_map>
 
 E_DECLARE_LOG_CATEGORY(LogEditor)
 
@@ -485,6 +486,55 @@ void FViewportPanel::Draw(FEditorContext& Context, const FInput& Input)
 			{
 				const ImVec2 Mouse = ImGui::GetMousePos();
 				PickEntity(Context, FVector2(Mouse.x - ImagePosition.x, Mouse.y - ImagePosition.y), FVector2(ImageSize.x, ImageSize.y));
+			}
+
+			// 박스 선택: 기즈모·편집 도구(타일/지형 브러시)·툴바·게임 UI가 아닌 빈 곳에서 왼쪽을 눌러 끌기. Shift = 추가, Ctrl = 토글
+			{
+				const ImVec2   Mouse = ImGui::GetMousePos();
+				const FVector2 LocalMouse(Mouse.x - ImagePosition.x, Mouse.y - ImagePosition.y);
+				const bool     bCanBox = bCanEdit && !bToolCaptured && !bUsingGizmo && !(Context.bPlaying && bGameUIWantsPointer);
+				if (bCanBox && bHovered && !bGizmoOver && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered() &&
+				    !Input.IsMouseButtonDown(EMouseButton::Right) && !ImGui::GetIO().KeyAlt)
+				{
+					bBoxPending  = true;
+					bBoxDragging = false;
+					BoxStart     = LocalMouse;
+				}
+				if (bBoxPending && !bCanBox)
+				{
+					bBoxPending  = false; // 기즈모/도구가 마우스를 가져감
+					bBoxDragging = false;
+				}
+				if (bBoxPending)
+				{
+					const FVector2 Delta = LocalMouse - BoxStart;
+					bBoxDragging         = bBoxDragging || Delta.X * Delta.X + Delta.Y * Delta.Y > 16.0f;
+					const Editor2DMath::FScreenRect Rect = Editor2DMath::MakeScreenRect(BoxStart, LocalMouse);
+					if (bBoxDragging)
+					{
+						ImDrawList* const List = ImGui::GetWindowDrawList();
+						const ImVec2      Min(ImagePosition.x + Rect.Min.X, ImagePosition.y + Rect.Min.Y);
+						const ImVec2      Max(ImagePosition.x + Rect.Max.X, ImagePosition.y + Rect.Max.Y);
+						const ImVec4&     Accent = FEditorTheme::Accent;
+						List->PushClipRect(ImagePosition, ImVec2(ImagePosition.x + ImageSize.x, ImagePosition.y + ImageSize.y), true);
+						List->AddRectFilled(Min, Max, ImGui::ColorConvertFloat4ToU32(ImVec4(Accent.x, Accent.y, Accent.z, 0.12f)));
+						List->AddRect(Min, Max, ImGui::ColorConvertFloat4ToU32(ImVec4(Accent.x, Accent.y, Accent.z, 0.9f)), 0.0f, 0, 1.5f);
+						List->PopClipRect();
+					}
+					if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+					{
+						if (bBoxDragging)
+						{
+							const ImGuiIO&                     IO   = ImGui::GetIO();
+							const Editor2DMath::EBoxSelectMode Mode = IO.KeyCtrl    ? Editor2DMath::EBoxSelectMode::Toggle
+							                                          : IO.KeyShift ? Editor2DMath::EBoxSelectMode::Add
+							                                                        : Editor2DMath::EBoxSelectMode::Replace;
+							BoxSelect(Context, Rect, FVector2(ImageSize.x, ImageSize.y), Mode);
+						}
+						bBoxPending  = false;
+						bBoxDragging = false;
+					}
+				}
 			}
 		}
 		else
@@ -1130,6 +1180,98 @@ void FViewportPanel::PickEntity(FEditorContext& Context, const FVector2& LocalPi
 	{
 		Context.Select(Closest);
 	}
+}
+
+std::vector<FEntity> FViewportPanel::CollectBoxSelection(FEditorContext& Context, const Editor2DMath::FScreenRect& Rect, const FVector2& ImageSize) const
+{
+	std::vector<FEntity> Result;
+	if (Context.Scene == nullptr || Context.Camera == nullptr || ImageSize.X <= 0.0f || ImageSize.Y <= 0.0f)
+	{
+		return Result;
+	}
+	FScene&          Scene          = *Context.Scene;
+	FRegistry&       Registry       = Scene.GetRegistry();
+	const FMatrix4x4 ViewProjection = Context.Camera->GetViewProjectionMatrix();
+
+	// 선택 단위(모델 하위 노드 → 모델 루트 — 클릭 선택과 같은 규칙)별 화면 경계 합
+	struct FCandidate
+	{
+		Editor2DMath::FScreenRect Rect;
+		bool                      bValid = false;
+	};
+	std::vector<FEntity>                    Order;
+	std::unordered_map<FEntity, FCandidate> Candidates;
+	const auto Add = [&](FEntity Entity, const FBox& Bounds) {
+		while (Entity.IsValid() && Registry.Has<FTransientComponent>(Entity))
+		{
+			const FEntity Parent = Scene.GetParent(Entity);
+			if (!Parent.IsValid())
+			{
+				break;
+			}
+			Entity = Parent;
+		}
+		Editor2DMath::FScreenRect Screen;
+		if (!Editor2DMath::ProjectBoundsToScreen(Bounds, ViewProjection, ImageSize, Screen))
+		{
+			return;
+		}
+		auto [It, bInserted] = Candidates.try_emplace(Entity);
+		if (bInserted)
+		{
+			Order.push_back(Entity);
+		}
+		Editor2DMath::UnionScreenRect(It->second.Rect, It->second.bValid, Screen);
+	};
+
+	Registry.View<FTransformComponent, FStaticMeshComponent>().Each([&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
+		if (const FStaticMesh* Mesh = MeshComponent.bVisible ? Context.Resources->GetMesh(MeshComponent.Mesh) : nullptr)
+		{
+			Add(Entity, Mesh->GetLocalBounds().TransformBy(Transform.WorldMatrix));
+		}
+	});
+	Registry.View<FTransformComponent>().Each([&](FEntity Entity, FTransformComponent&) {
+		if (const FSpriteComponent* Sprite = Registry.TryGet<FSpriteComponent>(Entity); Sprite != nullptr && !Sprite->bVisible)
+		{
+			return; // 숨긴 스프라이트는 클릭 선택처럼 고르지 않는다
+		}
+		FBox Bounds;
+		if (Editor2DScene::AddBounds(Scene, Entity, Bounds))
+		{
+			Add(Entity, Bounds);
+		}
+	});
+
+	for (const FEntity Entity : Order)
+	{
+		const FCandidate& Candidate = Candidates[Entity];
+		if (Candidate.bValid && Editor2DMath::IsScreenRectInside(Candidate.Rect, Rect))
+		{
+			Result.push_back(Entity);
+		}
+	}
+	return Result;
+}
+
+void FViewportPanel::BoxSelect(FEditorContext& Context, const Editor2DMath::FScreenRect& Rect, const FVector2& ImageSize, Editor2DMath::EBoxSelectMode Mode)
+{
+	const std::vector<FEntity> Hits     = CollectBoxSelection(Context, Rect, ImageSize);
+	const std::vector<FEntity> Combined = Editor2DMath::CombineBoxSelection(Context.Selection.GetEntities(), Hits, Mode);
+	// 주 선택: 추가/토글에서 기존 주 선택이 남아 있으면 유지, 아니면 결과의 마지막
+	const bool    bKeepPrimary = Mode != Editor2DMath::EBoxSelectMode::Replace &&
+	                          std::find(Combined.begin(), Combined.end(), Context.SelectedEntity) != Combined.end();
+	const FEntity Primary      = bKeepPrimary ? Context.SelectedEntity : (Combined.empty() ? NullEntity : Combined.back());
+	Context.SelectMany(Combined, Primary);
+}
+
+void FViewportPanel::DropAssets(FEditorContext& Context, const std::vector<std::filesystem::path>& Paths, const FVector2& LocalPixel)
+{
+	HandleAssetDrop(Context, Paths, LocalPixel, GetImageSize());
+}
+
+FVector2 FViewportPanel::GetImageSize() const
+{
+	return RenderTarget ? FVector2(static_cast<float>(RenderTarget->GetWidth()), static_cast<float>(RenderTarget->GetHeight())) : FVector2::ZeroVector;
 }
 
 void FViewportPanel::FocusSelection(FEditorContext& Context)

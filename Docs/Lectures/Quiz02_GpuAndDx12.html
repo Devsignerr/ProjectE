@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part01_GraphicsBasics.html#lec-2">← 2강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">1부 · 2강 문제풀이</div>
+		<h1>GPU와 DirectX 12의 사고방식, 제대로 이해했나요?</h1>
+		<p>2강의 여덟 주제(CPU와 GPU, 디바이스, 커맨드, 펜스, 배리어, 디스크립터, 스왑체인, 디버그 레이어)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part01_GraphicsBasics.html#lec-3">3강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part01_GraphicsBasics.html";
+const Topics = {
+	async:      { name: "CPU와 GPU",            anchor: "lec-2-why" },
+	device:     { name: "디바이스",              anchor: "lec-2-device" },
+	commands:   { name: "커맨드 리스트·할당자·큐", anchor: "lec-2-commands" },
+	fence:      { name: "펜스와 frames in flight", anchor: "lec-2-fence" },
+	barrier:    { name: "리소스 배리어",          anchor: "lec-2-barrier" },
+	descriptor: { name: "디스크립터와 힙",        anchor: "lec-2-descriptor" },
+	swapchain:  { name: "스왑체인",              anchor: "lec-2-swapchain" },
+	debug:      { name: "디버그 레이어",          anchor: "lec-2-debug" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "async", kind: "개념",
+		q: "CPU가 커맨드 리스트에 \"삼각형을 그려라\"를 기록하고 큐에 제출했습니다. 그 직후의 상황으로 맞는 것은?",
+		o: [
+			"GPU가 삼각형을 다 그릴 때까지 CPU는 제출 함수 안에서 기다린다.",
+			"CPU는 곧바로 다음 일을 하고, GPU는 대기열에서 그 명령을 꺼내 자기 속도로 나중에 실행한다. 보통 둘은 1~3프레임 정도 차이를 두고 달린다.",
+			"제출하는 순간 GPU가 지금 하던 일을 멈추고 그 명령부터 실행한다.",
+			"CPU가 명령을 직접 실행하고 결과 이미지만 GPU로 복사한다.",
+		],
+		a: 1,
+		w: [
+			"제출(`ExecuteCommandLists`)은 기다리지 않고 바로 돌아옵니다. 기다림이 필요하면 펜스로 명시적으로 기다려야 합니다.",
+			"CPU와 GPU는 각자 실행 흐름과 메모리를 가진 별개의 프로세서입니다. 식당에 비유하면 직원(CPU)이 주문서를 창구에 꽂고 다음 손님에게 가는 것과 같습니다. DX12의 부품들은 모두 이 비동기 관계를 다루기 위한 것입니다.",
+			"큐는 대기열이라서 먼저 들어온 명령부터 순서대로 처리합니다. 새치기하지 않습니다.",
+			"그리기는 GPU가 합니다. CPU는 무엇을 그릴지 적어서 넘길 뿐입니다.",
+		],
+	},
+	{
+		t: "async", kind: "설계 이유",
+		q: "DX12가 DX11보다 훨씬 장황한(직접 챙길 것이 많은) 이유로 가장 알맞은 것은?",
+		o: [
+			"DX12는 하드웨어 지원이 부족해서 엔진이 기능을 대신 구현해야 하기 때문이다.",
+			"DX11 드라이버가 숨겨서 처리하던 동기화·메모리·상태 관리를 애플리케이션이 직접 말하게 해서, 드라이버가 추측하지 않고 동작이 예측 가능해지며 여러 스레드에서 명령을 기록할 수 있게 했기 때문이다.",
+			"DX12는 C 언어용 API라서 C++ 래퍼가 없기 때문이다.",
+			"DX12는 Windows 11 전용이라 호환성 코드를 넣어야 하기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"반대입니다. DX12는 더 낮은 수준에서 하드웨어를 직접 다루게 합니다. 기능이 부족해서 장황한 것이 아닙니다.",
+			"DX11에서는 드라이버가 언제 기다리고 언제 복사하는지 알 수 없었습니다. DX12는 \"애플리케이션이 다 말해 준다\"는 설계입니다. 엔진을 만드는 입장에서는 이 장황함이 곧 통제권입니다.",
+			"DX12는 COM 기반 C++ 인터페이스입니다. ProjectE도 `ComPtr`로 감싸서 씁니다.",
+			"DX12는 Windows 10에서도 동작합니다. 장황함은 호환성 때문이 아닙니다.",
+		],
+	},
+	{
+		t: "device", kind: "코드 읽기",
+		q: "`FD3D12Device::SelectAdapter`의 어댑터 선택 방식으로 맞는 것은?",
+		code: "for (Index ...; Factory->EnumAdapterByGpuPreference(Index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, ...); ...)\n{\n\tif (AdapterDesc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE) continue;\n\tif (SUCCEEDED(D3D12CreateDevice(Candidate.Get(), MinFeatureLevel, __uuidof(ID3D12Device), nullptr)))\n\t{\n\t\tAdapter = Candidate;\n\t\treturn true;\n\t}\n}",
+		o: [
+			"VRAM이 가장 큰 어댑터를 고른다.",
+			"고성능 우선 순서로 훑으며 소프트웨어 렌더러는 건너뛰고, 디바이스를 만들 수 있는 첫 어댑터를 고른다. 이때 `nullptr`을 넘겨 실제로 만들지 않고 가능 여부만 확인한다.",
+			"내장 GPU를 우선 골라 전력 소모를 줄인다.",
+			"모든 어댑터에 디바이스를 하나씩 만들어 두고 프레임마다 번갈아 쓴다.",
+		],
+		a: 1,
+		w: [
+			"VRAM 크기를 비교하는 코드는 없습니다. 순서는 `HIGH_PERFORMANCE` 선호도가 정합니다.",
+			"GPU가 둘인 노트북을 위해 고성능 GPU부터 시도합니다. `D3D12CreateDevice`의 마지막 인자에 `nullptr`을 주면 \"만들 수 있는지\"만 확인합니다.",
+			"반대입니다. `DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE`로 고성능 GPU를 먼저 봅니다.",
+			"디바이스는 하나만 만듭니다. 첫 성공에서 `return true`로 끝납니다.",
+		],
+	},
+	{
+		t: "device", kind: "개념",
+		q: "ProjectE는 `MinFeatureLevel = D3D_FEATURE_LEVEL_11_0`으로 디바이스를 만듭니다. 이 설정과 레이 트레이싱 지원의 관계로 맞는 것은?",
+		o: [
+			"기능 수준 11_0으로 만들면 DX11 API로 동작하므로 레이 트레이싱을 쓸 수 없다.",
+			"\"DX12 API로 말하되 하드웨어는 11_0 수준 이상이면 받는다\"는 뜻이다. 레이 트레이싱 같은 고급 기능은 디바이스를 만든 뒤 `CheckFeatureSupport`로 따로 확인하고, 없으면 그 기능만 끈다.",
+			"레이 트레이싱을 쓰려면 기능 수준을 12_2로 올려 만들어야 하고, 지원하지 않는 GPU에서는 엔진이 실행되지 않는다.",
+			"기능 수준은 셰이더 모델 버전과 같은 것이라 DXC 컴파일 옵션만 바꾸면 된다.",
+		],
+		a: 1,
+		w: [
+			"API는 여전히 DX12입니다. 기능 수준은 \"하드웨어가 최소 어디까지 지원해야 하나\"를 정할 뿐입니다.",
+			"최소 요구 사항은 낮게 잡아 더 많은 GPU에서 실행되게 하고, 고급 기능은 있을 때만 켭니다. 실제로 RT 미지원이면 RT 효과가 꺼지고 래스터로 그립니다(25강).",
+			"그렇게 하면 RT가 없는 GPU에서는 엔진 자체가 뜨지 않습니다. ProjectE는 최소 수준을 낮게 두고 기능별로 확인합니다.",
+			"기능 수준과 셰이더 모델은 다른 개념입니다. 셰이더 모델 지원도 디바이스에 따로 물어봅니다.",
+		],
+	},
+	{
+		t: "device", kind: "판단",
+		q: "D3D 호출을 감싸는 두 매크로의 쓰임이 바르게 짝지어진 것은?",
+		o: [
+			"`ID3D12Device` 생성 → `E_D3D_CHECK`(Fatal),  프레임 중 `CommandList->Close()` → `E_D3D_VERIFY`(Error + `return false`)",
+			"`ID3D12Device` 생성 → `E_D3D_VERIFY`(Error + `return false`),  프레임 중 `CommandList->Close()` → `E_D3D_CHECK`(Fatal)",
+			"둘 다 `E_D3D_VERIFY`로 감싸서 절대 프로세스를 멈추지 않는다.",
+			"둘 다 `E_D3D_CHECK`로 감싸서 실패하면 바로 멈춘다.",
+		],
+		a: 1,
+		w: [
+			"반대입니다. 초기화 실패는 \"일어날 수 있는 일\"이고 프레임 중 실패는 복구할 방법이 없습니다.",
+			"1강의 구분(오류 처리 vs 어설트) 그대로입니다. 초기화 실패는 알리고 호출자가 처리하게 하고(`E_D3D_VERIFY`), 프레임 경로에서 명령 기록이 실패하면 이어 갈 방법이 없으므로 Fatal입니다(`E_D3D_CHECK`).",
+			"프레임 중 실패를 무시하고 진행하면 잘못된 상태가 퍼집니다.",
+			"초기화 실패까지 Fatal로 만들면 \"GPU가 지원하지 않습니다\" 같은 처리를 할 기회가 없습니다.",
+		],
+	},
+	{
+		t: "commands", kind: "개념",
+		q: "커맨드 할당자, 커맨드 리스트, 커맨드 큐에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"할당자는 기록된 명령의 바이트가 실제로 저장되는 메모리 덩어리다.",
+			"리스트는 \"파이프라인 설정, 바인딩, 그리기\" 같은 명령을 할당자의 메모리에 기록하는 인터페이스다.",
+			"큐는 닫힌 리스트를 제출받아 GPU가 순서대로 실행하는 대기열이다.",
+			"큐에 제출하면 명령이 큐 쪽으로 복사되므로, 제출 직후 할당자를 Reset해도 안전하다.",
+		],
+		a: 3,
+		w: [
+			"맞는 설명입니다. 식당 비유로는 주문서 용지 묶음입니다.",
+			"맞는 설명입니다. 주문서에 적는 펜에 해당합니다.",
+			"맞는 설명입니다. 주방 창구에 해당합니다.",
+			"이것이 틀렸습니다. 명령은 복사되지 않고 할당자 메모리에 그대로 있으며, GPU는 실행할 때 그 메모리를 읽습니다. 제출 직후 할당자를 Reset하면 GPU가 아직 읽지 않은 명령이 지워집니다.",
+		],
+	},
+	{
+		t: "commands", kind: "설계 이유",
+		q: "ProjectE는 커맨드 리스트는 매 프레임 재사용하면서, 할당자는 프레임 칸마다 따로 둡니다. 왜 그럴까요?",
+		o: [
+			"리스트는 기록 도구일 뿐이라 제출 직후 다음 기록에 Reset해도 되지만, 할당자 메모리는 GPU가 그 명령을 다 실행할 때까지 건드리면 안 되기 때문이다.",
+			"할당자는 스레드마다 하나씩 있어야 하기 때문이다.",
+			"리스트는 만들 때 비용이 크고 할당자는 비용이 없기 때문이다.",
+			"할당자를 칸마다 두면 GPU가 여러 프레임을 동시에 병렬로 그릴 수 있기 때문이다.",
+		],
+		a: 0,
+		w: [
+			"그래서 할당자는 BeginFrame에서 그 칸의 펜스를 통과한 뒤에만 Reset합니다. 리스트는 하나를 계속 Reset해서 다른 칸의 할당자에 기록합니다.",
+			"여러 스레드가 동시에 기록할 때는 스레드마다 할당자가 필요한 것도 맞습니다. 하지만 이 강의에서 칸마다 두는 이유는 GPU가 아직 쓰는 메모리를 보호하기 위해서입니다.",
+			"생성 비용의 차이가 이 설계의 이유는 아닙니다.",
+			"GPU는 한 큐의 명령을 순서대로 실행합니다. 칸을 여러 개 두는 목적은 CPU가 기다리지 않고 다음 프레임을 기록하는 것입니다.",
+		],
+	},
+	{
+		t: "fence", kind: "개념",
+		q: "CPU가 큐에 `Signal(Fence, 7)`을 넣었습니다. 이 명령의 의미로 맞는 것은?",
+		o: [
+			"CPU가 지금 바로 펜스 값을 7로 바꾼다.",
+			"GPU가 큐에서 이 지점보다 앞에 있는 명령을 모두 실행한 뒤 펜스 값을 7로 쓴다. CPU는 `GetCompletedValue()`로 읽어 7번 지점까지 끝났는지 안다.",
+			"GPU가 7프레임 뒤에 이 큐를 실행하라는 예약이다.",
+			"GPU가 7번째 명령까지만 실행하고 멈춘다.",
+		],
+		a: 1,
+		w: [
+			"`ID3D12Fence::Signal`(CPU 쪽)도 있지만 여기서는 큐에 넣는 `Queue->Signal`입니다. 이것은 GPU가 그 지점에 도달했을 때 값을 씁니다.",
+			"펜스는 GPU가 \"어디까지 끝났나\"를 CPU에게 알려 주는 유일한 신호입니다. 기다려야 하면 `SetEventOnCompletion`으로 이벤트를 걸고 잠듭니다(`WaitForFenceValue`).",
+			"펜스 값은 시간이나 프레임 예약이 아니라 단조 증가하는 일련번호입니다.",
+			"`Signal`은 실행을 멈추지 않습니다. 진행 위치를 표시할 뿐입니다.",
+		],
+	},
+	{
+		t: "fence", kind: "결과 예측",
+		q: "가장 단순하게, 매 프레임 끝에 `Flush()`(지금까지 제출한 일이 끝날 때까지 대기)를 부르면 어떻게 될까요?",
+		o: [
+			"할당자를 언제 Reset해도 안전해지지만, CPU가 GPU를 기다리는 동안 CPU가 놀고 CPU가 기록하는 동안 GPU가 놀아서 프레임 시간이 대략 CPU 시간 + GPU 시간이 된다.",
+			"안전하면서도 성능 손해가 없다. GPU는 어차피 한 프레임씩 처리하기 때문이다.",
+			"GPU가 다음 프레임 명령을 미리 실행해서 더 빨라진다.",
+			"교착 상태(데드락)가 생겨 프로그램이 멈춘다.",
+		],
+		a: 0,
+		w: [
+			"두 프로세서가 번갈아 쉬는 \"핑퐁\"이 됩니다. 칸을 여러 개 두면 프레임 시간이 둘 중 큰 쪽에 가까워집니다.",
+			"손해가 있습니다. 비동기로 겹쳐 달릴 수 있는 두 프로세서를 강제로 번갈아 돌리게 됩니다.",
+			"Flush는 기다리는 것이라 GPU를 빠르게 하지 않습니다. 오히려 GPU에 쌓인 일이 없어서 놀게 됩니다.",
+			"Flush는 이미 제출한 일만 기다리므로 끝나는 조건이 있습니다. 교착은 생기지 않습니다. 실제로 리사이즈처럼 드문 경우에는 Flush를 씁니다.",
+		],
+	},
+	{
+		t: "fence", kind: "추적",
+		q: "`FrameCount = 3`이고, 프레임 N은 칸 `N % 3`을 씁니다. **프레임 8**의 `BeginFrame`에서 CPU가 기다리는 것은?",
+		o: [
+			"프레임 7이 GPU에서 끝나기를",
+			"프레임 6이 GPU에서 끝나기를",
+			"프레임 5가 GPU에서 끝나기를",
+			"아무것도 기다리지 않는다",
+		],
+		a: 2,
+		w: [
+			"프레임 7은 칸 1을 씁니다. 프레임 8(칸 2)과 칸이 달라서 기다릴 필요가 없습니다.",
+			"프레임 6은 칸 0을 씁니다. 칸이 다릅니다.",
+			"프레임 8은 칸 2(8 % 3)를 씁니다. 칸 2를 마지막으로 쓴 프레임은 5입니다. `BeginFrame`은 `FrameFenceValues[칸]`, 즉 프레임 5를 제출할 때 받은 펜스 값까지 기다린 뒤 그 칸의 할당자·업로드 메모리·해제 목록을 비웁니다.",
+			"칸을 다시 쓰려면 그 칸의 이전 사용자가 끝났는지 반드시 확인해야 합니다. GPU가 빠르면 이미 끝나 있어서 실제로는 바로 통과할 뿐입니다.",
+		],
+	},
+	{
+		t: "fence", kind: "설계 이유",
+		q: "ProjectE는 프레임 칸 번호를 스왑체인의 백버퍼 번호(`GetCurrentBackBufferIndex`)와 같게 둡니다(`FrameCount = BackBufferCount = 3`). 그 이점은?",
+		o: [
+			"백버퍼 메모리를 할당자와 공유해서 VRAM을 아낄 수 있다.",
+			"\"이 백버퍼를 쓰던 프레임이 끝나길 기다리는 일\"과 \"이 칸을 쓰던 프레임이 끝나길 기다리는 일\"이 한 번의 대기로 합쳐진다.",
+			"VSync를 끌 수 있게 된다.",
+			"백버퍼가 3장이어야 디버그 레이어가 동작한다.",
+		],
+		a: 1,
+		w: [
+			"백버퍼와 할당자는 서로 다른 메모리입니다. 공유하지 않습니다.",
+			"백버퍼를 다시 그리려면 그 백버퍼를 쓰던 프레임이 끝나야 합니다. 칸 번호를 맞추면 두 조건이 같은 펜스 하나로 확인됩니다.",
+			"VSync 끄기는 플립 모델과 `ALLOW_TEARING`의 문제입니다. 칸 번호와는 관계없습니다.",
+			"디버그 레이어는 버퍼 수와 무관하게 동작합니다.",
+		],
+	},
+	{
+		t: "barrier", kind: "개념",
+		q: "`EndFrame`에서 백버퍼를 `RENDER_TARGET` → `PRESENT` 상태로 바꾸는 배리어를 빠뜨렸습니다. 무엇이 문제이고, 어떻게 알게 될까요?",
+		o: [
+			"아무 문제 없다. 상태는 드라이버가 알아서 추적한다.",
+			"DX12에서는 리소스 상태를 애플리케이션이 직접 관리한다. 그리기 대상 상태 그대로 Present하면 규칙 위반이고, 디버그 레이어가 바로 오류를 낸다. 화면이 멀쩡해 보여도 GPU나 드라이버에 따라 깨질 수 있다.",
+			"컴파일 에러가 난다.",
+			"프레임률이 절반으로 떨어질 뿐 정확성 문제는 없다.",
+		],
+		a: 1,
+		w: [
+			"DX11까지는 드라이버가 추적했지만, DX12는 상태를 애플리케이션이 말해야 합니다. 그래서 배리어가 있습니다.",
+			"배리어는 \"이 시점 전의 쓰기를 끝내고, 이 리소스를 다음 용도(여기서는 화면 표시)에 맞게 준비해 달라\"는 주문입니다. 하드웨어는 용도에 따라 내부 압축과 캐시를 다르게 다룹니다. 나중에는 렌더 그래프가 이 전이를 자동으로 넣습니다(22강).",
+			"배리어 누락은 실행 중의 규칙 위반이라 컴파일러가 알 수 없습니다.",
+			"성능 문제가 아니라 정확성 문제입니다.",
+		],
+	},
+	{
+		t: "descriptor", kind: "개념",
+		q: "디스크립터(descriptor)와 디스크립터 힙에 대한 설명으로 맞는 것은?",
+		o: [
+			"디스크립터는 텍스처의 픽셀 데이터 자체이고, 힙은 그 픽셀이 저장되는 VRAM 영역이다.",
+			"디스크립터는 \"이 메모리는 1024×1024 RGBA8 텍스처, 밉 11개\" 같은 해석 정보(뷰)이고, 힙은 디스크립터를 담는 고정 크기 배열이다. 칸 하나의 크기는 GPU마다 달라서 i번째 칸 주소 = 힙 시작 + i × 증분 크기이고, 증분 크기는 디바이스에 물어본다.",
+			"디스크립터 칸 크기는 항상 32바이트라서 주소를 상수로 계산하면 된다.",
+			"힙 하나에 SRV, RTV, DSV, 샘플러를 섞어 담고 셰이더가 모두 읽는다.",
+		],
+		a: 1,
+		w: [
+			"픽셀 데이터는 리소스(텍스처) 메모리에 있습니다. 디스크립터는 그 메모리를 어떻게 해석할지 적은 작은 설명서입니다.",
+			"용도별 이름도 알아 두세요: SRV(셰이더 읽기), UAV(읽고 쓰기), CBV(상수 버퍼), RTV(렌더 타깃), DSV(깊이). 증분 크기는 `GetDescriptorHandleIncrementSize`로 얻습니다.",
+			"칸 크기는 GPU마다 다릅니다. 그래서 반드시 디바이스에 물어봐야 합니다.",
+			"힙은 종류별로 나뉩니다. CBV/SRV/UAV 힙, 샘플러 힙, RTV 힙, DSV 힙이 따로 있습니다.",
+		],
+	},
+	{
+		t: "descriptor", kind: "설계 이유",
+		q: "셰이더 가시(shader-visible) 힙에 대한 설명과 ProjectE의 선택으로 맞는 것은?",
+		o: [
+			"모든 종류의 디스크립터를 셰이더 가시 힙에 만들 수 있고, 그리기마다 힙을 바꿔 바인딩한다.",
+			"CBV/SRV/UAV와 샘플러만 셰이더 가시로 만들 수 있다. 한 번에 하나만 바인딩되고 바꾸는 비용이 크므로, ProjectE는 큰 힙(65536칸) 하나를 만들어 프레임 내내 고정한다. RTV/DSV 힙은 CPU 쪽에만 있다.",
+			"RTV와 DSV만 셰이더 가시이고, 텍스처 SRV는 CPU 힙에만 둔다.",
+			"셰이더 가시 힙은 프레임 칸마다 하나씩, 모두 3개를 번갈아 바인딩한다.",
+		],
+		a: 1,
+		w: [
+			"RTV/DSV는 셰이더 가시가 될 수 없고, 힙 교체는 비싸서 자주 하지 않습니다.",
+			"RTV/DSV는 \"어디에 그릴지\"를 기록하는 순간에 읽히고 끝나므로 GPU가 그리기 도중 읽을 필요가 없습니다. 셰이더 가시 힙은 `BeginFrame`에서 `SetDescriptorHeaps`로 한 번 바인딩합니다.",
+			"반대입니다. 셰이더가 텍스처를 읽으려면 SRV가 셰이더 가시 힙에 있어야 합니다.",
+			"ProjectE는 큰 힙 하나를 고정해서 씁니다.",
+		],
+	},
+	{
+		t: "descriptor", kind: "버그 찾기",
+		q: "`FD3D12DescriptorAllocator::Free`는 칸을 \"즉시 재사용 가능\"으로 만듭니다. 텍스처를 지우면서 그 SRV 칸을 바로 `Free`하면 어떤 버그가 생길 수 있을까요?",
+		o: [
+			"아무 문제 없다. GPU는 디스크립터를 제출 시점에 복사해 두기 때문이다.",
+			"그 칸에 곧바로 다른 텍스처의 디스크립터가 써지면, 아직 GPU에서 실행 중인 이전 프레임이 엉뚱한 텍스처를 읽는다. 그래서 GPU가 그 칸 사용을 끝낸 뒤에 반환해야 한다(6강의 지연 해제).",
+			"힙이 즉시 조각나서 다음 `Allocate`가 실패한다.",
+			"`E_CHECKF`가 걸려 프로그램이 멈춘다.",
+		],
+		a: 1,
+		w: [
+			"셰이더 가시 힙의 디스크립터는 GPU가 실행 중에 직접 읽습니다. 제출 시점에 복사되지 않습니다.",
+			"할당자 머리 주석에 \"GPU가 해당 디스크립터 사용을 끝낸 뒤 호출해야 한다\"고 적혀 있습니다. 해제를 GPU 완료 뒤로 미루는 것이 6강의 주제입니다.",
+			"프리 리스트 방식이라 반환된 칸은 다음 요청에 먼저 재사용됩니다. 조각나서 실패하지는 않습니다.",
+			"용량 초과일 때만 `E_CHECKF`가 걸립니다. 너무 일찍 반환하는 것은 할당자가 알 수 없어서 조용히 잘못된 화면을 냅니다. 그래서 더 위험합니다.",
+		],
+	},
+	{
+		t: "descriptor", kind: "실제로 겪은 일",
+		q: "셰이더 가시 힙이 4096칸이던 시절, RT 스트레스 장면에서 \"유닛 500 × 9 > 4096\"으로 칸이 모자랐습니다. 원인을 바로 알 수 있었던 이유는?",
+		o: [
+			"GPU가 \"힙 부족\" 대화 상자를 띄웠기 때문이다.",
+			"할당자가 용량을 넘으면 조용히 덮어쓰지 않고 `E_CHECKF(NextUnused < Capacity, \"디스크립터 힙 용량 초과\")`로 즉시 멈추게 되어 있었기 때문이다.",
+			"화면에 검은 텍스처가 나와서 눈으로 찾았기 때문이다.",
+			"디스크립터 힙은 자동으로 커지기 때문에 사실 문제가 없었다.",
+		],
+		a: 1,
+		w: [
+			"GPU나 드라이버는 이런 알림을 주지 않습니다.",
+			"고정 크기 자원은 \"넘치면 어떻게 되는가\"를 처음부터 정해 두어야 합니다. 그 자리에서 멈추게 해 둔 덕분에 바로 원인을 찾았고, 힙을 65536칸으로 늘렸습니다.",
+			"덮어쓰기를 허용했다면 그런 식으로 원인 모를 증상만 보였을 것입니다. 실제로는 어설트가 먼저 잡았습니다.",
+			"디스크립터 힙은 만들 때 크기가 고정됩니다. 그래서 늘리는 수정이 필요했습니다.",
+		],
+	},
+	{
+		t: "swapchain", kind: "개념",
+		q: "스왑체인과 ProjectE의 설정(플립 모델 `FLIP_DISCARD`, 백버퍼 3장)에 대한 설명으로 **틀린** 것은?",
+		o: [
+			"그리는 버퍼와 화면에 표시하는 버퍼를 나눠서, 그리는 도중 모니터가 읽어 가 화면이 찢어지는(티어링) 것을 막는다.",
+			"플립 모델은 버퍼 내용을 복사하지 않고 \"어느 버퍼가 화면인지\"만 바꾼다.",
+			"VSync를 끄고 티어링을 허용하는 `ALLOW_TEARING`은 플립 모델에서 쓸 수 있다. F1 VSync 토글은 `SyncInterval` 0/1 전환이다.",
+			"백버퍼를 3장으로 늘리는 목적은 화면 해상도를 3배로 높이는 것이다.",
+		],
+		a: 3,
+		w: [
+			"맞는 설명입니다. 다 그린 뒤 버퍼를 바꾸는 동작이 Present입니다.",
+			"맞는 설명입니다. 현대 Windows에서 권장되는 방식입니다.",
+			"맞는 설명입니다. Phase 0 DoD의 \"F1 VSync 토글\"이 이것입니다.",
+			"이것이 틀렸습니다. 해상도와는 관계없습니다. 하나는 표시 중, 하나는 표시 대기, 하나에 그리는 중일 수 있어서 CPU와 GPU가 덜 기다리게 하는 것이 목적입니다. 프레임 칸 수와도 맞춰져 있습니다.",
+		],
+	},
+	{
+		t: "swapchain", kind: "설계 이유",
+		q: "백버퍼 리소스는 `R8G8B8A8_UNORM`으로 만들고, 씬을 그릴 때는 같은 버퍼의 sRGB RTV(`..._UNORM_SRGB`)를 씁니다. 왜 이렇게 할까요?",
+		o: [
+			"sRGB 포맷이 UNORM보다 메모리를 덜 쓰기 때문이다.",
+			"플립 모델은 sRGB 포맷 리소스를 직접 만들 수 없다. 그래서 리소스는 UNORM으로 만들고, 선형 색을 쓰면 하드웨어가 감마 인코딩해 주는 sRGB 뷰로 씬을 그린다. 이미 sRGB인 UI 색은 UNORM 뷰로 그려 이중 인코딩을 피한다.",
+			"UNORM은 HDR 색을 담을 수 있기 때문이다.",
+			"sRGB 뷰를 쓰면 안티에일리어싱이 자동으로 켜지기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"둘 다 픽셀당 4바이트로 크기가 같습니다. 차이는 값을 해석하는 방식뿐입니다.",
+			"셰이더의 조명 계산은 선형 공간에서 해야 맞고, 모니터는 감마 인코딩된 값을 기대합니다. 같은 메모리를 두 방식으로 보는 것이 해법입니다(색공간은 5강·15강).",
+			"8비트 UNORM은 0~1만 담습니다. HDR은 16비트 부동소수 타깃이 따로 담당합니다(15강).",
+			"안티에일리어싱과는 관계없습니다.",
+		],
+	},
+	{
+		t: "swapchain", kind: "순서",
+		q: "창 크기가 바뀌었을 때 `FD3D12RHI::Resize`가 하는 일의 순서와 이유로 맞는 것은?",
+		o: [
+			"`ResizeBuffers`를 먼저 부르고, 실패하면 Flush 후 다시 시도한다.",
+			"큐를 Flush해서 GPU가 옛 백버퍼를 더 이상 쓰지 않게 한 뒤 `ResizeBuffers`를 부르고 깊이 버퍼도 다시 만든다. 크기가 0(최소화)이면 아무것도 하지 않는다.",
+			"리사이즈는 드물게 일어나므로 아무 대기 없이 즉시 버퍼를 바꿔도 된다.",
+			"스왑체인을 지우고 새 창을 만든다.",
+		],
+		a: 1,
+		w: [
+			"백버퍼를 참조하는 프레임이 GPU에 남아 있으면 `ResizeBuffers`가 실패합니다. 먼저 비워야 합니다.",
+			"리사이즈는 드물게 일어나므로 Flush의 비용은 문제되지 않습니다. 크기 0을 건너뛰는 것은 1강의 \"최소화 상태에서는 렌더링을 건너뛴다\"와 짝을 이룹니다.",
+			"드물기 때문에 오히려 Flush해도 괜찮은 것입니다. 기다리지 않으면 GPU가 쓰는 버퍼를 바꾸게 됩니다.",
+			"창은 그대로 두고 스왑체인 버퍼만 다시 만듭니다.",
+		],
+	},
+	{
+		t: "debug", kind: "설계 이유",
+		q: "ProjectE는 디버그 레이어 메시지를 `RegisterMessageCallback`으로 받아 엔진 로그(`E_LOG`)로 보냅니다. 이렇게 하는 가장 큰 이유는?",
+		o: [
+			"디버그 레이어 메시지를 한국어로 번역하기 위해서",
+			"Visual Studio 출력 창에만 나오던 메시지를 로그 파일에 남겨서, 자동 검증(`Scripts/Verify.ps1`)이 오류·경고 수를 세어 \"디버그 레이어 오류 0건\"을 기계적으로 확인하게 하기 위해서",
+			"Release 빌드에서도 디버그 레이어를 켜기 위해서",
+			"메시지를 로그로 보내면 디버그 레이어의 성능 비용이 사라지기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"메시지 내용은 그대로 옮깁니다. 번역하지 않습니다.",
+			"CLAUDE.md가 렌더링 변경 후 \"디버그 레이어 오류 0건을 확인한 뒤 커밋\"을 규칙으로 둘 수 있는 것도 이 덕분입니다. 또 디버거가 붙어 있을 때만 오류에서 멈추게 해서, 자동 검증 실행은 멈추지 않고 로그로 남깁니다.",
+			"디버그 레이어는 개발용입니다. 메시지를 어디로 보내느냐와 켜는 빌드 구성은 별개입니다.",
+			"검사 비용은 레이어가 켜져 있으면 그대로 듭니다. 출력 위치를 바꿔도 줄지 않습니다.",
+		],
+	},
+	{
+		t: "debug", kind: "실제로 겪은 일",
+		q: "Phase 6에서 디버그 레이어 메시지를 로그로 모으자, 화면은 멀쩡한데 상태 검증 오류가 1,900여 건 쌓여 있었습니다. 이 사건에서 얻은 교훈으로 가장 알맞은 것은?",
+		o: [
+			"화면이 맞으면 API 사용도 맞으므로 경고는 무시해도 된다.",
+			"디버그 레이어는 오탐이 많으니 끄는 것이 낫다.",
+			"화면이 맞다고 API 사용이 맞는 것은 아니다. 드라이버나 GPU가 바뀌면 같은 코드가 깨진 화면을 낼 수 있으므로, \"디버그 레이어 오류·경고 0건\"을 모든 렌더링 작업의 기본 검사로 삼는다.",
+			"오류가 1,000건을 넘으면 디버그 레이어가 자동으로 꺼지므로 주의해야 한다.",
+		],
+		a: 2,
+		w: [
+			"이 사건이 바로 그 생각이 틀렸다는 증거입니다.",
+			"오탐이 아니었습니다. 디스크립터 범위 플래그가 실제 사용과 맞지 않는 진짜 규칙 위반이었고, 플래그를 `DATA_VOLATILE`로 바꿔 해결했습니다(루트 시그니처는 3강).",
+			"지금 GPU에서 우연히 맞게 보이는 것과 규칙을 지키는 것은 다릅니다. 이후 \"0건\"이 기준이 되었습니다.",
+			"그런 동작은 없습니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-02";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 43;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = Seed % (K + 1);
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 2강을 확실히 이해했습니다. 3강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"2강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

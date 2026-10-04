@@ -148,6 +148,7 @@ svg .f1 { fill: var(--c1); } svg .f2 { fill: var(--c2); } svg .f3 { fill: var(--
 }
 svg [class^="k"]:not([stroke-width]) { stroke-width: 1.3; }
 /* ===== 공통 스타일 끝 ===== */
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
 </style>
 </head>
 <body>
@@ -549,6 +550,11 @@ InfoQueue1-&gt;RegisterMessageCallback(
 <details class="quiz"><summary>Q3. 백버퍼 리소스는 UNORM인데 왜 씬은 sRGB 뷰로 그릴까요?</summary>
 	셰이더의 조명 계산은 선형 공간에서 해야 맞습니다(5강). 모니터는 감마 인코딩된 값을 기대하므로, 선형 결과를 sRGB 뷰에 쓰면 하드웨어가 쓰는 순간 자동으로 인코딩해 줍니다. 플립 모델이 sRGB 리소스를 허용하지 않으므로 "리소스는 UNORM, 뷰는 sRGB"로 같은 메모리를 두 방식으로 봅니다. 이미 sRGB인 UI 색은 UNORM 뷰로 그려 이중 인코딩을 피합니다.
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	2강 내용을 모두 이해했는지 객관식 21문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz02_GpuAndDx12.html">→ 2강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 3강 ======================================================= -->

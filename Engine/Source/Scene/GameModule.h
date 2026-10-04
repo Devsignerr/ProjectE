@@ -64,7 +64,8 @@ public:
 	// 상태(IsGrounded/GetVelocity/GetJumpsRemaining …). GetNet()과 같은 수명
 	FCharacterMovement2DSystem* GetCharacters2D() const { return Characters2D; }
 	void                        SetCharacters2D(FCharacterMovement2DSystem* InCharacters) { Characters2D = InCharacters; } // 엔진(FGameModuleHost)만 부른다
-	// 2D 캐릭터 이동 이벤트 (점프/착지/대시 시작 — 서버가 시뮬레이션한 무브): 같은 엔티티 스크립트의 OnJumped/OnLanded/OnDashStarted 다음
+	// 2D 캐릭터 이동 이벤트 (점프/착지/대시 시작/밟기(bStomped + StompedEntity) — 서버가 시뮬레이션한 무브): 같은 엔티티 스크립트의 OnJumped/OnLanded/
+	// OnDashStarted/OnStomped(+ 밟힌 쪽 OnStompedBy) 다음
 	virtual void OnCharacter2DEvent(FScene& /*Scene*/, FEntity /*Entity*/, const FCharacterMove2DEvents& /*Events*/) {}
 
 	// 물리 알림 (Scene/CollisionEvents.h, 규칙은 Physics/PhysicsSystem.h): 서버(Standalone 포함)에서 물리 스텝 뒤, 같은 엔티티 스크립트의
@@ -94,7 +95,7 @@ private:
 };
 
 // 게임 모듈과 엔진이 약속한 인터페이스 버전 (IGameModule 가상 함수 구성이 바뀌면 올린다)
-inline constexpr uint32 GameModuleApiVersion = 13; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙), 10: 능력 시스템 (OnAbilityEvent, GetAbilities), 11: GetPhysics2D (2D 물리), 12: OnFlipbookEvent/OnFlipbookFinished (2D 플립북), 13: GetCharacters2D/OnCharacter2DEvent (2D 캐릭터 이동기)
+inline constexpr uint32 GameModuleApiVersion = 14; // 2: OnAnimNotify 추가, 3: 멀티플레이 (OnPlayerJoined/Left, OnRpc, GetNet), 4: IGameNet::GetInput (입력 액션), 5: 게임플레이 (OnDamaged/OnDeath/OnRespawned), 6: IGameNet::OpenScene (맵 전환), 7: IGameNet 서브 씬 (Load/Unload/IsSubSceneLoaded), 8: 물리 알림 (WantsCollisionEvents, OnCollisionBegin/End, OnTriggerEnter/Exit, OnJointBreak), 9: GetPhysics (모양 질의) + FAnimationRuntime 구조 변경 (몽타주/IK/노티파이 트랙), 10: 능력 시스템 (OnAbilityEvent, GetAbilities), 11: GetPhysics2D (2D 물리), 12: OnFlipbookEvent/OnFlipbookFinished (2D 플립북), 13: GetCharacters2D/OnCharacter2DEvent (2D 캐릭터 이동기), 14: FCharacterMove2DEvents 밟기(bStomped/StompedEntity) + 캐릭터끼리 충돌
 
 // 게임 모듈 .cpp 하나에 한 번: E_IMPLEMENT_GAME_MODULE(FMyGameModule)
 #define E_IMPLEMENT_GAME_MODULE(ModuleClass)                                                   \

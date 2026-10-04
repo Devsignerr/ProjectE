@@ -26,6 +26,15 @@ struct FPhysics2DHit
 	float    Fraction = 0.0f; // Distance / MaxDistance
 };
 
+// 동적 바디의 최신 스텝 상태 (평면, 렌더 보간 전) — 네트워크 물리 예측 (World/GameWorldPhysicsPrediction2D.cpp)
+struct FPhysics2DBodyMotion
+{
+	FVector2 Position;               // cm
+	float    Angle = 0.0f;           // 라디안 반시계 +
+	FVector2 LinearVelocity;         // cm/s
+	float    AngularVelocity = 0.0f; // rad/s 반시계 +
+};
+
 // 2D 물리 (Box2D v3): 씬 ↔ 2D 월드 동기화 + 고정 스텝 + 렌더 보간. 평면 규약은 Physics/Physics2DMath.h 머리 주석 (X·Z 평면, 깊이 Y 유지,
 // 각 = 화면 반시계 +), 컴포넌트는 Physics/Physics2DComponents.h. 3D FPhysicsSystem과 같은 구조·규칙이다:
 //   대상: 2D 콜라이더(상자/원/캡슐/다각형/선분)가 하나라도 있는 엔티티 — 모두 한 바디의 모양. FRigidBody2DComponent가 없으면 정적,
@@ -77,6 +86,15 @@ public:
 	float    GetMass(FEntity Entity) const; // 동적 바디가 아니면 0
 	bool     HasBody(FEntity Entity) const { return Bodies.contains(Entity); }
 	bool     IsDynamicBody(FEntity Entity) const;
+
+	// ---- 네트워크 물리 예측 (3D FPhysicsSystem의 같은 이름 API와 같은 규칙, 구현 Physics2DSystemPrediction.cpp). 동적 바디만, 아니면 무시/false
+	bool GetBodyMotion(FEntity Entity, FPhysics2DBodyMotion& OutMotion) const;
+	void SetBodyMotion(FEntity Entity, const FPhysics2DBodyMotion& Motion); // 순간이동 + 속도 (렌더 보간 직전 상태도 같은 값)
+	// 보정: 위치·각을 더하고(렌더 보간 직전 상태도 함께 옮겨 화면이 끊기지 않게) 속도·각속도를 더한다
+	void CorrectBody(FEntity Entity, const FVector2& DeltaPosition, float DeltaAngle, const FVector2& DeltaVelocity, float DeltaAngularVelocity);
+	// 충돌 질의용으로만 잠시 옮긴다 (보간/스텝 상태는 그대로). RestoreBodyPose로 최신 스텝 위치로 — 예측 재조정에서 캐릭터 무브를 다시 적용할 때
+	void PoseBody(FEntity Entity, const FVector2& Position, float Angle);
+	void RestoreBodyPose(FEntity Entity);
 
 	// ---- 질의 (평면 cm, 트리거 제외). LayerMask 비트 i = 충돌 레이어 칸 i (FCollisionLayerSettings::MakeMask)
 	bool   Raycast(const FVector2& Origin, const FVector2& Direction, float MaxDistance, FPhysics2DHit& OutHit,

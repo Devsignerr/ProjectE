@@ -173,6 +173,9 @@ void RegisterPhysicsTypes()
 		.Property(&FCharacterMovement2DComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
 		.Property(&FCharacterMovement2DComponent::bClientPrediction, "ClientPrediction", "클라이언트 예측")
 		.Tooltip("멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직이고 서버 결과로 보정한다. 프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야 한다")
+		.Property(&FCharacterMovement2DComponent::CharacterCollision, "CharacterCollision", "캐릭터끼리")
+		.Enum({ { "Ignore", "통과" }, { "Block", "막기" }, { "Push", "밀기" } })
+		.Tooltip("다른 2D 캐릭터와: 통과 / 막기(위에 설 수 있고 밟으면 OnStomped) / 밀기(막히면 수평으로 민다). 두 캐릭터 모두 통과가 아니어야 상호작용")
 		.AsComponent();
 
 	constexpr const char* OffsetTip  = "엔티티 로컬 평면 오프셋 (X = 로컬 X, Y = 로컬 Z, cm)";

@@ -141,7 +141,21 @@ void RegisterSprite2DTypes()
 
 	Registry.RegisterType<FSpriteComponent>("SpriteComponent", "스프라이트")
 		.Property(&FSpriteComponent::Sprite, "Sprite", "스프라이트 아틀라스").AssetFilter(".esprite")
-		.Property(&FSpriteComponent::Slice, "Slice", "슬라이스").Tooltip("아틀라스 슬라이스 이름. 비면 첫 슬라이스. 같은 엔티티의 플립북이 재생 중이면 플립북 프레임이 우선")
+		.Property(&FSpriteComponent::Slice, "Slice", "슬라이스")
+		.StringOptionsFor([](const FSpriteComponent& Sprite) {
+			// 고른 아틀라스의 슬라이스 이름 (읽기 실패·미선택이면 빈 목록 → 인스펙터는 일반 문자열 칸)
+			std::vector<std::string> Names;
+			if (const std::shared_ptr<const FSpriteAsset> Asset = Sprite.Sprite.empty() ? nullptr : FSprite2DLibrary::Get().LoadSprite(Sprite.Sprite))
+			{
+				Names.reserve(Asset->Slices.size());
+				for (const FSpriteSlice& Slice : Asset->Slices)
+				{
+					Names.push_back(Slice.Name);
+				}
+			}
+			return Names;
+		})
+		.Tooltip("아틀라스 슬라이스 이름. 비면 첫 슬라이스. 같은 엔티티의 플립북이 재생 중이면 플립북 프레임이 우선")
 		.Property(&FSpriteComponent::Color, "Color", "색", PF_Color).Tooltip("텍스처에 곱하는 색 (sRGB) + 알파")
 		.Property(&FSpriteComponent::bFlipX, "FlipX", "좌우 반전").Tooltip("피벗을 지나는 세로축으로 거울 반사")
 		.Property(&FSpriteComponent::bFlipY, "FlipY", "상하 반전")

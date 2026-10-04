@@ -35,6 +35,9 @@ struct FPropertyInfo
 	std::string Tooltip;        // 에디터 마우스 오버 설명
 	// String 프로퍼티의 선택지 (있으면 에디터가 콤보로 그린다 — 예: 충돌 레이어 이름). 값이 비면 첫 선택지로 표시
 	std::function<std::vector<std::string>()> StringOptions;
+	// 그 오브젝트(컴포넌트 인스턴스 시작 주소)를 받는 선택지 공급자 — 같은 오브젝트의 다른 값에 따라 목록이 바뀔 때
+	// (예: 고른 .esprite의 슬라이스 이름). StringOptions보다 우선, 결과가 비면 에디터는 일반 문자열 칸으로 그린다
+	std::function<std::vector<std::string>(const void* Object)> StringOptionsFor;
 
 	// Int32 enum 선택지 (값 = 순번). 비어 있으면 일반 정수. Name은 직렬화 키(JSON 문자열), DisplayName은 콤보 표시
 	struct FEnumEntry
@@ -58,6 +61,17 @@ struct FPropertyInfo
 			}
 		}
 		return -1;
+	}
+
+	bool HasStringOptions() const { return StringOptions != nullptr || StringOptionsFor != nullptr; }
+	// 선택지 (StringOptionsFor 우선). 공급자가 없으면 빈 목록
+	std::vector<std::string> GetStringOptions(const void* Object) const
+	{
+		if (StringOptionsFor)
+		{
+			return StringOptionsFor(Object);
+		}
+		return StringOptions ? StringOptions() : std::vector<std::string>();
 	}
 
 	bool HasFlag(EPropertyFlags Flag) const { return (Flags & Flag) != 0; }
@@ -259,6 +273,16 @@ public:
 	{
 		E_CHECKF(!Info.Properties.empty() && Info.Properties.back().Type == EPropertyType::String, "StringOptions는 String Property 다음에 호출해야 합니다");
 		Info.Properties.back().StringOptions = std::move(Provider);
+		return *this;
+	}
+
+	// 직전에 추가한 String 프로퍼티의 인스턴스별 선택지 공급자 (그 오브젝트를 받는다 — 그릴 때마다 다시 묻는다)
+	TTypeBuilder& StringOptionsFor(std::function<std::vector<std::string>(const T& Object)> Provider)
+	{
+		E_CHECKF(!Info.Properties.empty() && Info.Properties.back().Type == EPropertyType::String, "StringOptionsFor는 String Property 다음에 호출해야 합니다");
+		Info.Properties.back().StringOptionsFor = [Provider = std::move(Provider)](const void* Object) {
+			return Object != nullptr ? Provider(*static_cast<const T*>(Object)) : std::vector<std::string>();
+		};
 		return *this;
 	}
 

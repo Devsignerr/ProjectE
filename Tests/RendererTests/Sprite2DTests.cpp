@@ -761,6 +761,27 @@ E_TEST(Sprite2D_ComponentsReflectAndSerialize)
 		return;
 	}
 	E_EXPECT_TRUE(Sprite->FindProperty("SortingLayer")->StringOptions != nullptr);
+	{
+		// 슬라이스 콤보: 그 컴포넌트가 고른 .esprite의 슬라이스 이름 (인스턴스별 공급자). 미선택·없는 파일 = 빈 목록 (일반 문자열 칸)
+		const fs::path Directory = FTestRegistry::GetTempDirectory() / "ProjectE_Sprite2DSliceOptions";
+		fs::create_directories(Directory);
+		FSpriteAsset Atlas;
+		Atlas.Texture       = "A.png";
+		Atlas.TextureWidth  = 32;
+		Atlas.TextureHeight = 16;
+		Atlas.Slices        = SpriteMath::SliceGrid(32, 16, 16, 16, 0, 0, "Gem");
+		Atlas.Slices[1].Name = "Coin";
+		const std::string AtlasPath = (Directory / "Options.esprite").generic_string();
+		E_EXPECT_TRUE(FSprite2DLibrary::Get().SaveSprite(AtlasPath, Atlas));
+		const FPropertyInfo* Slice = Sprite->FindProperty("Slice");
+		E_EXPECT_TRUE(Slice->StringOptionsFor != nullptr);
+		FSpriteComponent Component;
+		E_EXPECT_TRUE(Slice->GetStringOptions(&Component).empty());
+		Component.Sprite = AtlasPath;
+		E_EXPECT_TRUE(Slice->GetStringOptions(&Component) == (std::vector<std::string>{ Atlas.Slices[0].Name, "Coin" }));
+		Component.Sprite = (Directory / "Missing.esprite").generic_string();
+		E_EXPECT_TRUE(Slice->GetStringOptions(&Component).empty());
+	}
 	E_EXPECT_EQ(Sprite->FindProperty("Sprite")->AssetFilter, std::string(".esprite"));
 	E_EXPECT_TRUE(Sprite->FindProperty("Color")->HasFlag(PF_Color));
 	E_EXPECT_TRUE(Sprite->FindProperty("Runtime") == nullptr);

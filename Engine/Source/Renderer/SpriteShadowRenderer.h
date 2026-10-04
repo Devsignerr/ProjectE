@@ -16,9 +16,12 @@ class FShaderLibrary;
 // 2D 스프라이트·타일맵 그림자 캐스터 (Phase 56-4c). 씬 수집(FSpriteSceneCollector — bCastShadows + 캐스터 볼륨 판정)이 준 그림자 목록을
 // 방향광 캐스케이드와 로컬 그림자 장에 깊이만 그린다 — 두 그림자 렌더러의 추가 캐스터 훅(FShadowCasterHook)으로 (지형과 같은 자리).
 //
-// 깊이: 모든 블렌드가 알파 컷오프로 clip (텍셀 알파 × 색 알파 < AlphaCutoff면 버림 — 반투명 그림자는 없다), 양면(컬링 없음), 방향광 = 깊이 클립 끔
+// 깊이: 모든 블렌드가 알파 컷오프로 clip (텍셀 알파 × 색 알파 < AlphaCutoff면 버림), 양면(컬링 없음), 방향광 = 깊이 클립 끔
 //   (팬케이킹) + FShadowSettings 바이어스, 로컬 = FLocalShadowSettings 바이어스 (SetBias — 씬 렌더러가 프레임마다 설정 값을 넘기고 바뀌면 PSO를 다시 만든다.
 //   기본값은 이전 고정값과 같다).
+// 반투명 그림자 (r.Sprite.TranslucentShadows, 기본 끔): 알파·프리멀티플라이드 블렌드 캐스터는 컷오프 대신 그림자 맵 텍셀 고정 4x4 Bayer 디더로 clip →
+//   덮는 텍셀 비율 = 텍셀 알파 × 색 알파, PCF가 평균해 옅은 그림자. 패턴이 그림자 맵에 고정이라 시간 안정(TAA 없는 2D도), 캐시 정적 판정 그대로.
+//   한계: 필터 폭이 디더 4텍셀보다 좁으면(가까운 캐스케이드·로컬 그림자·픽셀 아트 확대) 점무늬, 겹친 반투명은 곱이 아니라 합집합에 가깝다.
 // 방향광 그림자 캐시 (ShadowCacheMath.h): 캐스터를 정적/동적으로 나눈다.
 //   정적 = 수집이 bShadowStatic으로 알린 것 (움직이지 않는 타일맵 청크 — 월드·색 알파·컷오프·내용 Revision이 r.Shadow.Cache.StaticFrames 수집 연속 같음,
 //   스프라이트 — 그리는 값 해시가 연속 같음). 정적은 FShadowRenderer::ExtraCasters(지형과 함께 캐시에 그림)에, 상태 해시 GetStaticStateHash(장 프러스텀과
@@ -55,7 +58,8 @@ public:
 	void SetBias(int32 DirectionalDepthBias, float DirectionalSlopeBias, int32 LocalDepthBias, float LocalSlopeBias);
 
 	// 게임 스레드: 그림자 목록 (수집기 GetShadowItems/GetShadowChunks — 비면 이번 프레임 캐스터 없음)
-	void Prepare(std::span<const FSpriteDrawItem> Items, std::span<const FSpriteChunkDraw> Chunks);
+	// bTranslucentDither = r.Sprite.TranslucentShadows: 알파·프리멀티플라이드 블렌드는 컷오프 대신 디더 (SpriteShadow.hlsl)
+	void Prepare(std::span<const FSpriteDrawItem> Items, std::span<const FSpriteChunkDraw> Chunks, bool bTranslucentDither = false);
 	// 동적 구간 중 장 프러스텀과 겹치는 것이 있나 + 그 구간들의 월드 경계 합 (RenderShadow(ESet::Dynamic)가 그 장에 그리는 것과 같은 판정 —
 	// FShadowRenderer 캐스케이드별 캐시 되살리기: 다음 프레임 이 경계의 텍셀 사각형만 캐시에서 다시 쓴다)
 	bool GetDynamicCasterBounds(const FFrustum& Frustum, FBox& OutBounds) const;

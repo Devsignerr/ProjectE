@@ -1393,7 +1393,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		}
 		SpriteCollector.Collect(Scene, FrozenFrustum, CasterTest, ShadowStaticFrames);
 		SpriteShadows.SetBias(ShadowSettings.DepthBias, ShadowSettings.SlopeBias, LocalShadowSettings.DepthBias, LocalShadowSettings.SlopeBias);
-		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks());
+		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks(), RendererCVars::SpriteTranslucentShadows.Get());
 	}
 	else
 	{

@@ -12,7 +12,7 @@ from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 CONTENT = os.path.join(ROOT, "Projects", "Sample", "Content")
 
-UNIT_COUNT = 500
+UNIT_COUNT = 1000
 CHARACTERS = ["Knight", "Barbarian", "Mage", "Rogue", "SkeletonMinion", "SkeletonWarrior", "SkeletonRogue", "SkeletonMage"]
 WALK_SPEED = 160.0  # cm/s (Walking_A)
 RUN_SPEED  = 345.0  # cm/s (Running_A — 블렌드 위치와 같은 발 속도)

@@ -157,6 +157,8 @@ void FPhysics2DSystem::Begin()
 
 void FPhysics2DSystem::End()
 {
+	Joints.clear();
+	Drags.clear();
 	Bodies.clear();
 	PointCaches.clear();
 	TilemapCaches.clear();
@@ -434,6 +436,7 @@ uint32 FPhysics2DSystem::Update(FScene& Scene, float DeltaSeconds)
 	++FrameCounter;
 	CollisionEvents.clear();
 	SyncBodies(Scene);
+	SyncJoints(Scene);
 	CollectContactEvents(); // 사라진 바디의 접촉 끝
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
@@ -455,6 +458,7 @@ uint32 FPhysics2DSystem::Update(FScene& Scene, float DeltaSeconds)
 		}
 		World->Step(Stepper.StepSeconds);
 		CollectContactEvents();
+		CheckJointBreaks();
 		for (auto& [Entity, State] : Bodies)
 		{
 			if (State.CreatedDesc.Type == EBodyType2D::Dynamic)

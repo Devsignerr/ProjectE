@@ -89,6 +89,44 @@ struct FPhysics2DRayHit
 	float    Fraction = 0.0f; // 0~1 (Distance / MaxDistance)
 };
 
+// 2D 관절 (Box2D 관절). 단위: 위치 cm, 각 라디안(반시계 +), 힘 N, 토크 N·m, 속도 cm/s · rad/s
+enum class EPhysics2DJoint : uint8
+{
+	Distance,
+	Revolute,
+	Prismatic,
+	Weld,
+	Wheel,
+	Mouse, // Body1 무시 (월드), Target으로 Body2를 끈다
+};
+
+struct FPhysics2DJointDesc
+{
+	EPhysics2DJoint Type  = EPhysics2DJoint::Revolute;
+	uint32          Body1 = ~0u; // 무효 = 월드에 고정 (원점 정적 바디)
+	uint32          Body2 = ~0u; // 필수
+	FVector2        LocalAnchor1;            // Body1 로컬 (월드 고정이면 월드 평면 위치)
+	FVector2        LocalAnchor2;            // Body2 로컬
+	FVector2        LocalAxis1 = FVector2(1.0f, 0.0f); // Prismatic/Wheel: Body1 로컬 축 (길이 무관)
+	float           ReferenceAngle = 0.0f;   // Revolute/Prismatic/Weld: 각2 - 각1 (0도 기준)
+	bool            bCollideConnected = false;
+	// Distance
+	float Length = 100.0f;
+	bool  bSpring = false; // Distance/Wheel/Revolute: 스프링 (Distance는 끄면 딱딱한 막대)
+	float Hertz = 0.0f, DampingRatio = 0.0f;
+	// Distance 길이 제한 · Revolute 각 / Prismatic·Wheel 이동 제한
+	bool  bLimit = false;
+	float Lower = 0.0f, Upper = 0.0f;
+	// 모터 (Revolute/Wheel = 토크·rad/s, Prismatic = 힘·cm/s)
+	bool  bMotor = false;
+	float MotorSpeed = 0.0f, MaxMotorForce = 0.0f;
+	// Weld (0 = 딱딱함)
+	float LinearHertz = 0.0f, AngularHertz = 0.0f, LinearDampingRatio = 0.0f, AngularDampingRatio = 0.0f;
+	// Mouse
+	FVector2 Target;
+	float    MaxForce = 1000.0f;
+};
+
 class FPhysics2DWorld
 {
 public:
@@ -135,6 +173,15 @@ public:
 	                  uint32 LayerMask = FCollisionLayerSettings::AllLayersMask) const;
 	uint32 OverlapCircle(const FVector2& Center, float Radius, std::vector<uint64>& OutUserData,
 	                     uint32 LayerMask = FCollisionLayerSettings::AllLayersMask) const;
+
+	// 관절: 실패(Body2 없음 등)면 InvalidJoint. 바디를 지우면(DestroyBody) 그 바디의 관절을 먼저 지운다 → IsJointAlive false
+	static constexpr uint32 InvalidJoint = ~0u;
+	uint32 CreateJoint(const FPhysics2DJointDesc& Desc);
+	void   DestroyJoint(uint32 Joint);
+	bool   IsJointAlive(uint32 Joint) const;
+	uint32 GetJointCount() const;
+	float  GetJointForce(uint32 Joint) const;  // 마지막 스텝의 구속 힘 크기 (N, 토크는 제외)
+	void   SetMouseTarget(uint32 Joint, const FVector2& Target);
 
 	// 접촉 알림 (클래스 주석). 보고 여부는 바디를 다시 만들지 않고 바꾼다 (이미 닿아 있는 쌍에는 다음 접촉부터)
 	void SetBodyReportsContacts(uint32 Body, bool bReport);

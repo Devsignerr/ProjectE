@@ -447,6 +447,9 @@ void FGameWorld::InstallScriptPhysicsHooks()
 	Hooks.OverlapCircle2D = [P2D](const FVector2& Center, float Radius, uint32 LayerMask, std::vector<FEntity>& OutEntities) {
 		P2D->OverlapCircle(Center, Radius, OutEntities, LayerMask);
 	};
+	Hooks.BeginDrag2D  = [P2D](FEntity Entity, const FVector2& Point, float MaxForce) { return P2D->BeginDrag(Entity, Point, MaxForce); };
+	Hooks.UpdateDrag2D = [P2D](FEntity Entity, const FVector2& Target) { return P2D->UpdateDrag(Entity, Target); };
+	Hooks.EndDrag2D    = [P2D](FEntity Entity) { return P2D->EndDrag(Entity); };
 	Systems.Scripts->SetPhysicsHooks(std::move(Hooks));
 }
 

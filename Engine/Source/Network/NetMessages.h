@@ -8,7 +8,7 @@
 
 // 네트워크 메시지 형식: [uint8 종류][본문]. 본문은 FBinaryWriter 리틀 엔디언.
 // 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다
-inline constexpr uint32 NetProtocolVersion = 13; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값, 9: 맵 이동(Travel/TravelAck), 10: 서브 씬(SubSceneLoad/Unload), 11: 캐릭터 무브 루트 모션(플래그 + 속도), 12: 능력 발동 요청/결과(AbilityActivate/AbilityResult), 13: 2D 캐릭터 무브/ack(CharacterMoves2D/CharacterAck2D)
+inline constexpr uint32 NetProtocolVersion = 14; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값, 9: 맵 이동(Travel/TravelAck), 10: 서브 씬(SubSceneLoad/Unload), 11: 캐릭터 무브 루트 모션(플래그 + 속도), 12: 능력 발동 요청/결과(AbilityActivate/AbilityResult), 13: 2D 캐릭터 무브/ack(CharacterMoves2D/CharacterAck2D), 14: 2D 무브 발사/넉백(플래그 16 + 속도·덮어쓰기·경직) + ack 상태 경직 타이머
 
 enum class ENetMessageType : uint8
 {

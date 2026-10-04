@@ -40,13 +40,25 @@ bool FScriptSystem::BeginPlay(FScene& Scene)
 	return true;
 }
 
+void FScriptSystem::SetFrameTime(float UnscaledDeltaSeconds, float TimeScale)
+{
+	FrameUnscaledDelta = UnscaledDeltaSeconds;
+	FrameTimeScale     = TimeScale;
+}
+
 void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 {
 	E_PROFILE_SCOPE("스크립트 OnUpdate");
+	const float Scaled = DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds;
 	if (PlayRuntime)
 	{
-		PlayRuntime->Update(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
+		// 실제 dt도 같은 상한 (SetFrameTime을 부르지 않았으면 배율 1 — 실제 = dt)
+		const float Unscaled = FrameUnscaledDelta >= 0.0f ? (FrameUnscaledDelta < MaxDeltaSeconds ? FrameUnscaledDelta : MaxDeltaSeconds) : Scaled;
+		PlayRuntime->SetFrameTime(Unscaled, FrameUnscaledDelta >= 0.0f ? FrameTimeScale : 1.0f);
+		PlayRuntime->Update(Scaled, Input);
 	}
+	FrameUnscaledDelta = -1.0f; // 다음 틱 SetFrameTime까지 (부르지 않는 호출자는 배율 1)
+	FrameTimeScale     = 1.0f;
 }
 
 bool FScriptSystem::LateUpdate(float DeltaSeconds, const FInput* Input)

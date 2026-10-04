@@ -21,19 +21,27 @@
 //   옮긴다면 위치 계산도 OnLateUpdate에서 한다. 픽셀 아트 모드도 최종 출력 기준(CameraProjection.h). 활성 카메라나 레이아웃된 UI가 없으면
 //   WorldToScreen은 (0, 0, false), ScreenToWorldRay는 nil
 // bVisible = 카메라 앞(근·원평면 사이) && 화면 안
+//
+// 마우스 커서 (Input 테이블 — 같은 좌표 공간이라 여기서 등록)
+//   local X, Y, bInside = Input.GetMouseUIPosition([uiEntity])  -- 게임 UI 레이아웃 좌표 (위와 같은 UI 고르기·배율·뷰포트 — 에디터 플레이 뷰포트도 맞음).
+//       입력 모드(GameOnly 포함)·커서 잠금과 무관하게 OS 커서 위치 (잠금 중에는 가둔 점에 머문다 — 조준은 커서를 숨기고(Game.SetCursorVisible(false))
+//       잠그지 않는 쪽이 맞다). bInside = 커서가 게임 화면 안. 레이아웃된 UI가 없으면 (0, 0, false). 로컬 화면 값 — 서버의 원격 플레이어에는 없다
+//   Input.IsMouseOverUI()  -- 이번 프레임 게임 UI가 포인터를 가져갔는가 (보이는 위젯 위 — 그 프레임 게임 입력에서 마우스 버튼이 빠진다).
+//       UI가 포인터를 받지 않는 입력 모드(GameOnly)에서는 항상 false
+//   (창 클라이언트 픽셀은 Input.GetMousePosition() — LuaRuntime.cpp)
 
 void FLuaRuntime::RegisterCameraBindings()
 {
 	// 좌표 기준 UI: 레이아웃이 끝난(뷰포트 크기가 있는) 인스턴스만
-	const auto ResolveUI = [this](const sol::optional<FScriptEntity>& UIEntity) -> const FUIInstance* {
+	const auto ResolveUIComponent = [this](const sol::optional<FScriptEntity>& UIEntity) -> const FUIComponent* {
 		if (Scene == nullptr)
 		{
 			throw std::runtime_error("씬이 없습니다 (플레이 중에만 Camera를 사용할 수 있습니다)");
 		}
 		FRegistry& Registry = Scene->GetRegistry();
-		const auto Usable   = [](FUIComponent* Component) -> const FUIInstance* {
+		const auto Usable   = [](FUIComponent* Component) -> const FUIComponent* {
 			const FUIInstance* Instance = Component != nullptr ? Component->Runtime.Instance.get() : nullptr;
-			return Instance != nullptr && !Instance->GetViewport().IsEmpty() ? Instance : nullptr;
+			return Instance != nullptr && !Instance->GetViewport().IsEmpty() ? Component : nullptr;
 		};
 		if (UIEntity)
 		{
@@ -45,12 +53,12 @@ void FLuaRuntime::RegisterCameraBindings()
 		}
 		for (FEntity Current = CurrentInstance; Current.IsValid() && Registry.IsValid(Current); Current = Scene->GetParent(Current))
 		{
-			if (const FUIInstance* Instance = Usable(Registry.TryGet<FUIComponent>(Current)))
+			if (const FUIComponent* Found = Usable(Registry.TryGet<FUIComponent>(Current)))
 			{
-				return Instance;
+				return Found;
 			}
 		}
-		const FUIInstance* First = nullptr;
+		const FUIComponent* First = nullptr;
 		Registry.View<FUIComponent>().Each([&](FEntity, FUIComponent& Component) {
 			if (First == nullptr && Component.bVisible)
 			{
@@ -58,6 +66,10 @@ void FLuaRuntime::RegisterCameraBindings()
 			}
 		});
 		return First;
+	};
+	const auto ResolveUI = [ResolveUIComponent](const sol::optional<FScriptEntity>& UIEntity) -> const FUIInstance* {
+		const FUIComponent* Component = ResolveUIComponent(UIEntity);
+		return Component != nullptr ? Component->Runtime.Instance.get() : nullptr;
 	};
 	// 활성 카메라 뷰-투영 (UI 뷰포트 종횡비)
 	const auto ComputeViewProjection = [this](const FUIInstance& UI, FMatrix4x4& Out) {
@@ -91,5 +103,25 @@ void FLuaRuntime::RegisterCameraBindings()
 			return std::make_tuple(sol::object(sol::lua_nil), sol::object(sol::lua_nil));
 		}
 		return std::make_tuple(sol::make_object(Lua, Origin), sol::make_object(Lua, Direction));
+	};
+
+	sol::table InputTable = Lua["Input"];
+	InputTable["GetMouseUIPosition"] = [ResolveUIComponent](sol::optional<FScriptEntity> UIEntity) {
+		const FUIComponent* Component = ResolveUIComponent(UIEntity);
+		if (Component == nullptr)
+		{
+			return std::make_tuple(0.0f, 0.0f, false);
+		}
+		const FVector2 Layout = Component->Runtime.Instance->GetTransform().ToUi(Component->Runtime.CursorPixels);
+		return std::make_tuple(Layout.X, Layout.Y, Component->Runtime.bCursorInside);
+	};
+	InputTable["IsMouseOverUI"] = [this]() {
+		if (Scene == nullptr)
+		{
+			return false;
+		}
+		bool bOver = false;
+		Scene->GetRegistry().View<FUIComponent>().Each([&bOver](FEntity, FUIComponent& Component) { bOver = bOver || Component.Runtime.bPointerOver; });
+		return bOver;
 	};
 }

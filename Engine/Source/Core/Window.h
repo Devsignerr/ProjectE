@@ -53,6 +53,10 @@ public:
 	bool IsCursorLocked() const { return bCursorLocked; }
 	// 잠금 중 커서를 둘 점 (클라이언트 픽셀 — 에디터는 뷰포트 가운데). 음수 = 클라이언트 영역 가운데 (기본). 매 프레임 불러도 된다
 	void SetCursorLockPoint(int32 X, int32 Y);
+	// 커서 숨김 (Lua Game.SetCursorVisible(false) — 게임이 조준점 등을 직접 그릴 때): 클라이언트 영역 위에서만 커서를 그리지 않는다(WM_SETCURSOR).
+	// 잠금과 별개 — 실제로 보이는 것은 !잠금 && !숨김. 매 프레임 불러도 된다
+	void SetCursorHidden(bool bHide);
+	bool IsCursorHidden() const { return bCursorHidden; }
 
 	// 게임 UI 텍스트 입력 (매 프레임 불러도 된다). 켜져 있으면 IME 조합을 창이 직접 받아 ImeComposition/Char 이벤트로 보내고
 	// (시스템 조합 창 대신 UI가 그린다), 조합/후보 창을 캐럿(클라이언트 픽셀: 위쪽 X/Y, 높이) 아래에 둔다. 끄면 조합 중인 글자는 취소된다
@@ -80,6 +84,7 @@ private:
 	bool          bBorderlessFullscreen = false;
 	bool          bHidden               = false; // FWindowDesc::bHidden — 창 모드 전환도 보이게 하지 않는다
 	bool          bCursorLocked         = false;
+	bool          bCursorHidden         = false; // SetCursorHidden
 	int32         CursorLockPoint[2]    = { -1, -1 }; // SetCursorLockPoint
 	void          ApplyCursorClip() const; // 잠금 중이면 클라이언트 영역에 가둔다 (크기/위치가 바뀔 때마다)
 	// 전체 화면 전 창 상태 (WINDOWPLACEMENT 일부 — 헤더에 Windows.h를 넣지 않으려고 값으로 보관)

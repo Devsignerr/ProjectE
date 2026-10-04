@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "Struct": "Data/Crypt/ShopItem.estruct",
+  "Rows": [
+    {
+      "Name": "Heart",
+      "Values": {
+        "DisplayName": "생명의 심장",
+        "Kind": "Heal",
+        "Amount": 30,
+        "Weapon": "",
+        "Slice": "Heart",
+        "Price": 5,
+        "MinFloor": 1,
+        "Weight": 2.0
+      }
+    },
+    {
+      "Name": "Chalice",
+      "Values": {
+        "DisplayName": "수호의 성배",
+        "Kind": "MaxHealth",
+        "Amount": 15,
+        "Weapon": "",
+        "Slice": "Chalice",
+        "Price": 12,
+        "MinFloor": 1,
+        "Weight": 1.0
+      }
+    },
+    {
+      "Name": "GreatAxe",
+      "Values": {
+        "DisplayName": "처형인의 도끼",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "GreatAxe",
+        "Slice": "Axe",
+        "Price": 16,
+        "MinFloor": 1,
+        "Weight": 1.0
+      }
+    },
+    {
+      "Name": "Spear",
+      "Values": {
+        "DisplayName": "성기사의 창",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Spear",
+        "Slice": "Spear",
+        "Price": 14,
+        "MinFloor": 1,
+        "Weight": 1.0
+      }
+    },
+    {
+      "Name": "FireStaff",
+      "Values": {
+        "DisplayName": "화염 지팡이",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "FireStaff",
+        "Slice": "Staff",
+        "Price": 20,
+        "MinFloor": 2,
+        "Weight": 1.0
+      }
+    }
+  ]
+}

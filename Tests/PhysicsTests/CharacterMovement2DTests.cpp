@@ -917,3 +917,147 @@ E_TEST(Character2DWorld_SameMovesSameResultWithCharacters)
 	E_EXPECT_TRUE(First.bGrounded == Second.bGrounded && First.JumpsUsed == Second.JumpsUsed);
 	E_EXPECT_TRUE(First.Position.X > 250.0f); // 점프로 상대를 넘거나 위에 올라섰다 (막히기만 하지 않음)
 }
+
+// ---------------------------------------------------------------- 넉백/발사 (LaunchCharacter/AddKnockback — CharacterMovement2D.h)
+
+// 발사: 성분마다 더하기/덮어쓰기, 위로 향하면 바닥을 떠나고 바닥 점프를 쓴 것으로 (공중 점프는 남는다), 대시는 끝난다
+E_TEST(CharacterMovement2D_LaunchAddsOrOverrides)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.MaxJumps          = 2;
+	FCharacterState2D State    = Grounded();
+	State.Velocity             = FVector2(200.0f, 0.0f);
+	FCharacterMove2D Launch    = MakeMove();
+	Launch.bLaunch             = true;
+	Launch.LaunchVelocity      = FVector2(100.0f, 800.0f);
+	FCharacterMove2DEvents Events;
+	CharacterMovement2DMath::BeginMove(Movement, State, Launch, Gravity, FVector2(), Events);
+	// X는 더하기 (200 + 100) 뒤 공중 감속 한 프레임, Z는 800 + 중력 한 프레임
+	E_EXPECT_NEAR(State.Velocity.X, 300.0f - Movement.AirDeceleration * Frame, 1.0e-3f);
+	E_EXPECT_NEAR(State.Velocity.Y, 800.0f + Gravity * Movement.GravityScale * Frame, 1.0e-3f);
+	E_EXPECT_FALSE(State.bGrounded);
+	E_EXPECT_EQ(static_cast<int32>(State.JumpsUsed), 1);
+	E_EXPECT_FALSE(Events.bJumped);
+	// 공중 점프는 남아 있다
+	FCharacterMove2DEvents AirJump;
+	CharacterMovement2DMath::BeginMove(Movement, State, MakeMove(0.0f, true), Gravity, FVector2(), AirJump);
+	E_EXPECT_TRUE(AirJump.bJumped && AirJump.JumpIndex == 2);
+
+	// 덮어쓰기: 대시 중에도 대시를 끝내고 정확히 그 속도에서
+	FCharacterState2D Dashing = Grounded();
+	FCharacterMove2D  Dash    = MakeMove();
+	Dash.bDash                = true;
+	Dash.DashDirection        = FVector2(1.0f, 0.0f);
+	Step(Movement, Dashing, Dash, true);
+	E_EXPECT_TRUE(Dashing.IsDashing());
+	FCharacterMove2D Override = MakeMove();
+	Override.bLaunch          = true;
+	Override.bLaunchOverrideX = true;
+	Override.bLaunchOverrideY = true;
+	Override.LaunchVelocity   = FVector2(-400.0f, 0.0f);
+	Step(Movement, Dashing, Override, true);
+	E_EXPECT_FALSE(Dashing.IsDashing());
+	E_EXPECT_NEAR(Dashing.Velocity.X, -400.0f + Movement.GroundDeceleration * Frame, 1.0e-3f); // 수평 발사는 바닥에 남는다 → 지상 감속
+	E_EXPECT_TRUE(Dashing.bGrounded);
+	// 유한하지 않은 값은 0, 큰 값은 자른다
+	FCharacterState2D Bad = Grounded();
+	FCharacterMove2D  Nan = MakeMove();
+	Nan.bLaunch           = true;
+	Nan.bLaunchOverrideX  = true;
+	Nan.LaunchVelocity    = FVector2(std::nanf(""), 1.0e9f);
+	FCharacterMove2DEvents Ignored;
+	CharacterMovement2DMath::BeginMove(Movement, Bad, Nan, Gravity, FVector2(), Ignored);
+	E_EXPECT_TRUE(std::isfinite(Bad.Velocity.X) && std::isfinite(Bad.Velocity.Y));
+	E_EXPECT_TRUE(Bad.Velocity.Y <= FCharacterMove2D::MaxLaunchSpeed);
+}
+
+// 넉백 경직: 경직 동안 입력·점프·대시를 무시하고 KnockbackDeceleration으로 줄어들며, 끝나면 다시 입력을 따른다
+E_TEST(CharacterMovement2D_KnockbackStunIgnoresInput)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.KnockbackDeceleration = 1200.0f;
+	FCharacterState2D State        = Grounded();
+	FCharacterMove2D  Hit          = MakeMove(1.0f, true); // 오른쪽 입력 + 점프를 눌러도
+	Hit.bLaunch                    = true;
+	Hit.bLaunchOverrideX           = true;
+	Hit.LaunchVelocity             = FVector2(-600.0f, 0.0f);
+	Hit.StunSeconds                = 0.25f;
+	Hit.bDash                      = true;
+	FCharacterMove2DEvents Events  = Step(Movement, State, Hit, true);
+	E_EXPECT_FALSE(Events.bJumped || Events.bDashStarted);
+	E_EXPECT_NEAR(State.Velocity.X, -600.0f + 1200.0f * Frame, 1.0e-3f);
+	E_EXPECT_TRUE(State.IsStunned());
+	int32 StunFrames = 1;
+	while (State.IsStunned() && StunFrames < 60)
+	{
+		Events = Step(Movement, State, MakeMove(1.0f, true), true);
+		E_EXPECT_FALSE(Events.bJumped);
+		++StunFrames;
+	}
+	// 0.25초 = 15프레임 (경직이 남아 있던 무브까지 입력 무시)
+	E_EXPECT_EQ(StunFrames, 15);
+	E_EXPECT_NEAR(State.Velocity.X, -600.0f + 1200.0f * Frame * 15.0f, 1.0e-2f);
+	// 경직이 끝나면 입력 (반대 방향 = max(가속, 감속))
+	const float Before = State.Velocity.X;
+	Step(Movement, State, MakeMove(1.0f), true);
+	E_EXPECT_NEAR(State.Velocity.X, Before + std::max(Movement.GroundAcceleration, Movement.GroundDeceleration) * Frame, 1.0e-2f);
+}
+
+// 실제 월드: 바닥에서 위로 발사하면 바닥 붙이기 없이 뜨고, 넉백 궤적은 같은 무브 → 같은 결과
+E_TEST(Character2DWorld_KnockbackTrajectoryDeterministic)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(30);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	const FCharacterState2D Start = World.Characters.GetState(World.Pawn);
+
+	std::vector<FCharacterMove2D> Moves;
+	for (int32 Index = 0; Index < 80; ++Index)
+	{
+		Moves.push_back(MakeMove(1.0f)); // 내내 오른쪽 입력
+	}
+	Moves[0].bLaunch          = true;
+	Moves[0].bLaunchOverrideX = true;
+	Moves[0].bLaunchOverrideY = true;
+	Moves[0].LaunchVelocity   = FVector2(-700.0f, 600.0f);
+	Moves[0].StunSeconds      = 0.3f;
+	const auto RunMoves = [&]() {
+		World.Characters.SetState(World.Scene, World.Pawn, Start);
+		float PeakZ = Start.Position.Y, MinX = Start.Position.X;
+		for (const FCharacterMove2D& Move : Moves)
+		{
+			World.Characters.SimulateCharacter(World.Scene, World.Pawn, Move);
+			PeakZ = std::max(PeakZ, World.Characters.GetState(World.Pawn).Position.Y);
+			MinX  = std::min(MinX, World.Characters.GetState(World.Pawn).Position.X);
+		}
+		return std::make_pair(PeakZ, MinX);
+	};
+	World.Characters.SetState(World.Scene, World.Pawn, Start);
+	World.Characters.SimulateCharacter(World.Scene, World.Pawn, Moves[0]);
+	E_EXPECT_FALSE(World.Characters.IsGrounded(World.Pawn)); // 바닥에 다시 붙지 않고 떴다
+	E_EXPECT_TRUE(World.Characters.IsStunned(World.Pawn));
+	const auto [PeakZ, MinX] = RunMoves();
+	const FCharacterState2D First = World.Characters.GetState(World.Pawn);
+	RunMoves();
+	const FCharacterState2D Second = World.Characters.GetState(World.Pawn);
+	E_EXPECT_TRUE(First.Position == Second.Position && First.Velocity == Second.Velocity && First.StunTimer == Second.StunTimer);
+	// 위로 v²/2g ≈ 600² / (2 × 2942) ≈ 61cm, 경직 동안 입력과 반대로 밀려났다가 다시 입력 쪽으로
+	E_EXPECT_NEAR(PeakZ - Start.Position.Y, 600.0f * 600.0f / (2.0f * 980.665f * 3.0f), 6.0f);
+	E_EXPECT_TRUE(MinX < Start.Position.X - 100.0f);
+	E_EXPECT_TRUE(First.bGrounded && First.Position.X > MinX + 50.0f);
+
+	// 시스템 API: 한 프레임에 쌓인 발사는 합쳐져 무브에 실린다
+	World.Characters.LaunchCharacter(World.Pawn, FVector3(100.0f, 0.0f, 0.0f), false, false);
+	World.Characters.LaunchCharacter(World.Pawn, FVector3(50.0f, 0.0f, 300.0f), false, true);
+	World.Characters.AddKnockback(World.Pawn, FVector3(0.0f, 0.0f, 0.0f), 0.5f); // X 덮어쓰기 0, Z는 0이라 덮어쓰지 않음
+	FCharacterMove2D Merged = MakeMove();
+	E_EXPECT_TRUE(World.Characters.MergePendingLaunch(World.Pawn, Merged));
+	E_EXPECT_TRUE(Merged.bLaunch && Merged.bLaunchOverrideX && Merged.bLaunchOverrideY);
+	E_EXPECT_NEAR(Merged.LaunchVelocity.X, 0.0f, 0.0f);
+	E_EXPECT_NEAR(Merged.LaunchVelocity.Y, 300.0f, 0.0f);
+	E_EXPECT_NEAR(Merged.StunSeconds, 0.5f, 0.0f);
+	E_EXPECT_FALSE(World.Characters.HasPendingLaunch(World.Pawn));
+}

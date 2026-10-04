@@ -104,9 +104,12 @@ FUIInputResult FUISystem::Update(FScene& Scene, const FUIFrameInput& Input, cons
 	Fonts.SetContentDirectory(ContentDirectory);
 
 	// 지난 프레임 이벤트 비우기 (숨긴 UI 포함)
-	Scene.GetRegistry().View<FUIComponent>().Each([](FEntity, FUIComponent& Component) {
+	// 커서 위치는 포인터 입력(bHasPointer — 입력 모드 GameOnly면 꺼짐)과 무관하게 모든 UI에 남긴다 (Lua Input.GetMouseUIPosition)
+	Scene.GetRegistry().View<FUIComponent>().Each([&Input](FEntity, FUIComponent& Component) {
 		Component.Runtime.Events.clear();
-		Component.Runtime.bPointerOver = false;
+		Component.Runtime.bPointerOver  = false;
+		Component.Runtime.CursorPixels  = Input.Pointer.Position;
+		Component.Runtime.bCursorInside = Input.Pointer.bInside && Input.Viewport.Contains(Input.Pointer.Position);
 	});
 
 	std::vector<FOrderedUI> Ordered = CollectVisible(Scene);

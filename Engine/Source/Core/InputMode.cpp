@@ -10,6 +10,7 @@ namespace
 	{
 		EInputMode Mode     = EInputMode::GameAndUI;
 		uint32     Revision = 0;
+		bool       bCursorVisible = true;
 	};
 
 	// 엔진 DLL 안 하나 (.cpp 함수 지역 static — 바이너리마다 따로 생기지 않는다)
@@ -113,6 +114,17 @@ void FInputModeState::Set(EInputMode Mode)
 void FInputModeState::Reset()
 {
 	Set(EInputMode::GameAndUI);
+	GetGlobal().bCursorVisible = true;
+}
+
+void FInputModeState::SetCursorVisible(bool bVisible)
+{
+	GetGlobal().bCursorVisible = bVisible;
+}
+
+bool FInputModeState::IsCursorVisible()
+{
+	return GetGlobal().bCursorVisible;
 }
 
 uint32 FInputModeState::GetRevision()

@@ -155,6 +155,12 @@ void FGameWorld::InstallScriptNetHooks()
 	NetHooks.UnloadSubScene   = [this](const std::string& Asset) { return UnloadSubScene(Asset); };
 	NetHooks.IsSubSceneLoaded = [this](const std::string& Asset) { return IsSubSceneLoaded(Asset); };
 	NetHooks.GetSubSceneRoot  = [this](const std::string& Asset) { return GetSubSceneRoot(Asset); };
+
+	// 게임 시간 배율 (World/GameWorld.cpp "시간 배율")
+	NetHooks.SetTimeScale        = [this](float Scale) { return SetTimeScale(Scale); };
+	NetHooks.GetTimeScale        = [this]() { return GetTimeScale(); };
+	NetHooks.HitStop             = [this](float Seconds) { return HitStop(Seconds); };
+	NetHooks.GetHitStopRemaining = [this]() { return GetHitStopRemaining(); };
 	Systems.Scripts->SetNetHooks(std::move(NetHooks));
 }
 
@@ -170,6 +176,10 @@ void FGameWorld::SetNetMode(ENetMode InMode)
 	// 스크립트 실행 필터가 바뀌는 전환(클라이언트 ↔ 서버)은 월드를 다시 시작해야 한다
 	E_CHECKF((Mode == ENetMode::Client) == (InMode == ENetMode::Client), "SetNetMode: 클라이언트 ↔ 서버 전환은 BeginPlay로 다시 시작하세요");
 	Mode = InMode;
+	if (Mode != ENetMode::Standalone)
+	{
+		ResetTimeScale(); // 시간 배율은 Standalone 전용 (리슨 서버로 바뀌면 1)
+	}
 	InstallScriptNetHooks();
 }
 

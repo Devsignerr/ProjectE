@@ -220,6 +220,65 @@ void FCharacterMovement2DSystem::DropDown(FEntity Entity)
 	}
 }
 
+namespace
+{
+	// 발사 하나를 다른 발사 위에 합친다 (성분마다 덮어쓰기면 대체, 아니면 합 — 덮어쓰기 표시는 남는다, 경직은 긴 쪽)
+	void CombineLaunch(FCharacterMove2D& Into, const FVector2& Velocity, bool bOverrideX, bool bOverrideY, float StunSeconds)
+	{
+		if (!Into.bLaunch)
+		{
+			Into.bLaunch          = true;
+			Into.LaunchVelocity   = FVector2();
+			Into.bLaunchOverrideX = false;
+			Into.bLaunchOverrideY = false;
+			Into.StunSeconds      = 0.0f;
+		}
+		Into.LaunchVelocity.X = bOverrideX ? Velocity.X : Into.LaunchVelocity.X + Velocity.X;
+		Into.LaunchVelocity.Y = bOverrideY ? Velocity.Y : Into.LaunchVelocity.Y + Velocity.Y;
+		Into.bLaunchOverrideX = Into.bLaunchOverrideX || bOverrideX;
+		Into.bLaunchOverrideY = Into.bLaunchOverrideY || bOverrideY;
+		Into.StunSeconds      = std::max(Into.StunSeconds, StunSeconds);
+	}
+} // namespace
+
+void FCharacterMovement2DSystem::LaunchCharacter(FEntity Entity, const FVector3& WorldVelocity, bool bOverrideX, bool bOverrideZ)
+{
+	if (const auto Found = Characters.find(Entity); Found != Characters.end() && std::isfinite(WorldVelocity.X) && std::isfinite(WorldVelocity.Z))
+	{
+		CombineLaunch(Found->second.PendingLaunch, FVector2(WorldVelocity.X, WorldVelocity.Z), bOverrideX, bOverrideZ, 0.0f);
+	}
+}
+
+void FCharacterMovement2DSystem::AddKnockback(FEntity Entity, const FVector3& WorldVelocity, float StunSeconds)
+{
+	if (const auto Found = Characters.find(Entity);
+	    Found != Characters.end() && std::isfinite(WorldVelocity.X) && std::isfinite(WorldVelocity.Z) && std::isfinite(StunSeconds))
+	{
+		CombineLaunch(Found->second.PendingLaunch, FVector2(WorldVelocity.X, WorldVelocity.Z), true, WorldVelocity.Z != 0.0f,
+		              std::clamp(StunSeconds, 0.0f, FCharacterMove2D::MaxStunSeconds));
+	}
+}
+
+bool FCharacterMovement2DSystem::HasPendingLaunch(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return Found != Characters.end() && Found->second.PendingLaunch.bLaunch;
+}
+
+bool FCharacterMovement2DSystem::MergePendingLaunch(FEntity Entity, FCharacterMove2D& InOutMove)
+{
+	const auto Found = Characters.find(Entity);
+	if (Found == Characters.end() || !Found->second.PendingLaunch.bLaunch)
+	{
+		return false;
+	}
+	const FCharacterMove2D& Pending = Found->second.PendingLaunch;
+	// 무브에 이미 실린 발사(클라이언트가 보낸 것) 뒤에 서버의 발사를 합친다
+	CombineLaunch(InOutMove, Pending.LaunchVelocity, Pending.bLaunchOverrideX, Pending.bLaunchOverrideY, Pending.StunSeconds);
+	Found->second.PendingLaunch = FCharacterMove2D();
+	return true;
+}
+
 FCharacterMove2D FCharacterMovement2DSystem::ConsumePendingMove(FEntity Entity, float DeltaSeconds)
 {
 	FCharacterMove2D Move;
@@ -366,7 +425,7 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 				GroundCharacter = Contact.UserData;
 			}
 		}
-		if (!bGroundedNow && bWasGrounded && !Events.bJumped && !State.IsDashing() && Movement->GroundSnapDistance > 0.0f)
+		if (!bGroundedNow && bWasGrounded && !Events.bJumped && !Move.bLaunch && !State.IsDashing() && Movement->GroundSnapDistance > 0.0f)
 		{
 			float                  Fraction = 1.0f;
 			FPhysics2DMoverContact Hit;
@@ -602,6 +661,12 @@ bool FCharacterMovement2DSystem::IsDashing(FEntity Entity) const
 {
 	const auto Found = Characters.find(Entity);
 	return Found != Characters.end() && Found->second.State.IsDashing();
+}
+
+bool FCharacterMovement2DSystem::IsStunned(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return Found != Characters.end() && Found->second.State.IsStunned();
 }
 
 FVector2 FCharacterMovement2DSystem::GetVelocity(FEntity Entity) const

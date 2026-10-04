@@ -165,6 +165,15 @@ public:
 	// 2D 캐릭터 이동기 (Physics/CharacterMovement2DSystem.h, 예측은 World/GameWorldCharacter2D.cpp). 항상 유효 — 플레이 중에만 돈다
 	FCharacterMovement2DSystem& GetCharacters2D() { return *Characters2D; }
 
+	// ---- 게임 시간 배율 (규칙은 GameWorld.cpp "시간 배율"). Standalone 전용 — 네트워크 모드에서는 Set/HitStop이 false (경고 한 번)
+	bool  SetTimeScale(float Scale);   // 0 = 정지, 0~MaxTimeScale로 자름. 다음 틱부터
+	float GetTimeScale() const { return TimeScale; }
+	bool  HitStop(float Seconds);      // 실제 시간 Seconds 동안 배율 0 (겹치면 긴 쪽)
+	float GetHitStopRemaining() const { return HitStopRemaining; }
+	float GetTickTimeScale() const { return TickTimeScale; } // 직전 게임플레이 틱이 쓴 배율 (히트스톱 = 0) — 표시 틱도 이 값
+	void  ResetTimeScale();            // 1, 히트스톱 없음 (BeginPlay/EndPlay/네트워크 모드 전환)
+	static constexpr float MaxTimeScale = 100.0f;
+
 	// ---- IGameNet (게임 모듈용)
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
 	bool  IsClient() const override { return Mode != ENetMode::DedicatedServer; }
@@ -423,6 +432,10 @@ private:
 	FScene*              GameplayValidatedScene = nullptr;
 	std::vector<FTransformChangedSubtree> PresentationWritten; // 표시 틱이 로컬 트랜스폼을 쓴 엔티티 (태양 + 평가한 애니메이션 모델)
 	ENetMode          Mode  = ENetMode::Standalone;
+	float             TimeScale        = 1.0f; // Game.SetTimeScale
+	float             HitStopRemaining = 0.0f; // 실제 초 (Game.HitStop)
+	float             TickTimeScale    = 1.0f; // 이번 게임플레이 틱 배율 (틱 시작에 정함 — 틱 안의 변경은 다음 틱부터)
+	bool              bWarnedNetTimeScale = false;
 
 	std::unordered_map<uint32, FRemoteInput> RemoteInputs;      // 서버: 플레이어 ID → 받은 입력
 	uint32                                   InputSequence = 0; // 클라이언트: 보낸 입력 순번

@@ -5,6 +5,7 @@
 #include "Core/Log.h"
 #include "Core/Settings/ProjectSettings.h"
 
+#include <cmath>
 #include <stdexcept>
 
 E_DECLARE_LOG_CATEGORY(LogScript)
@@ -21,6 +22,13 @@ E_DECLARE_LOG_CATEGORY(LogScript)
 //   Game.SetInputMode("GameOnly" | "GameAndUI" | "UIOnly") / Game.GetInputMode()  -- 입력 모드 (Core/InputMode.h).
 //       GameOnly = 게임만 입력(UI는 그리기만, 커서 잠금), GameAndUI = 기본(UI 먼저), UIOnly = UI만(게임은 빈 입력).
 //       플레이 시작/정지·맵 전환마다 GameAndUI로 돌아간다. 커서 잠금은 모드에 들어갈 때의 기본값이며 이후 SetMouseLocked로 바꿀 수 있다
+//   Game.SetCursorVisible(false) / Game.IsCursorVisible()  -- OS 커서 숨김 (게임이 조준점을 직접 그릴 때). 입력 모드·잠금과 별개로 유지되고
+//       플레이 시작/정지·맵 전환에 보임으로 돌아간다. 잠금은 늘 숨기며, 이 값은 잠기지 않은 동안 보일지를 정한다 (에디터: 빙의 중 플레이 뷰포트 위에서만)
+//   Game.SetTimeScale(0.5) / Game.GetTimeScale()  -- 게임 시간 배율 (0 = 정지, 최대 100). 스크립트 dt·타이머·코루틴 Wait·게임 모듈·AI·2D/3D 물리·
+//       캐릭터 이동기·애니메이션·플립북·파티클에 곱한다 (규칙은 World/GameWorld.cpp "시간 배율"). 실제 시간은 Time.UnscaledDeltaTime,
+//       Timer.After(초, 함수, { Unscaled = true }), WaitUnscaled(초). 다음 틱부터 적용, 플레이 시작·맵 전환에 1로 돌아간다.
+//       Standalone 전용 — 네트워크 세션에서는 경고 한 번 + false (서버 시간이 흐르는 동안 예측·재조정과 어긋나므로)
+//   Game.HitStop(초) / Game.GetHitStopRemaining()  -- 실제 시간 '초' 동안 배율 0 (히트스톱 — 겹치면 긴 쪽). Standalone 전용
 // 화면 설정은 런타임이 사용자 설정 파일(<Saved>/Config/GameUserSettings.json)에 저장한다. 앱이 지원하지 않으면 무시(경고 한 번)
 //
 // Steam (FSteamSubsystem — 런타임이 .eproject SteamAppId로 초기화했을 때만 동작, 아니면 false/빈 값)
@@ -106,6 +114,24 @@ void FLuaRuntime::RegisterGameBindings()
 		FInputModeState::Set(Mode);
 	};
 	GameTable["GetInputMode"] = []() { return std::string(ToString(FInputModeState::Get())); };
+	GameTable["SetCursorVisible"] = [](bool bVisible) { FInputModeState::SetCursorVisible(bVisible); };
+	GameTable["IsCursorVisible"]  = []() { return FInputModeState::IsCursorVisible(); };
+	GameTable["SetTimeScale"]     = [this](float Scale) {
+		if (!std::isfinite(Scale) || Scale < 0.0f)
+		{
+			throw std::runtime_error("Game.SetTimeScale: 배율은 0 이상의 숫자여야 합니다");
+		}
+		return NetHooks != nullptr && NetHooks->SetTimeScale && NetHooks->SetTimeScale(Scale);
+	};
+	GameTable["GetTimeScale"] = [this]() { return NetHooks != nullptr && NetHooks->GetTimeScale ? NetHooks->GetTimeScale() : 1.0f; };
+	GameTable["HitStop"]      = [this](float Seconds) {
+		if (!std::isfinite(Seconds) || Seconds < 0.0f)
+		{
+			throw std::runtime_error("Game.HitStop: 초는 0 이상의 숫자여야 합니다");
+		}
+		return NetHooks != nullptr && NetHooks->HitStop && NetHooks->HitStop(Seconds);
+	};
+	GameTable["GetHitStopRemaining"] = [this]() { return NetHooks != nullptr && NetHooks->GetHitStopRemaining ? NetHooks->GetHitStopRemaining() : 0.0f; };
 
 	sol::table SteamTable     = Lua.create_named_table("Steam");
 	SteamTable["IsAvailable"] = [this]() { return SteamHooks != nullptr && SteamHooks->IsAvailable && SteamHooks->IsAvailable(); };

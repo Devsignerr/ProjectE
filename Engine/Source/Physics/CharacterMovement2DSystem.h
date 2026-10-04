@@ -53,7 +53,13 @@ public:
 	void StopJumping(FEntity Entity);
 	void Dash(FEntity Entity, const FVector3& WorldDirection);
 	void DropDown(FEntity Entity);
-	FCharacterMove2D ConsumePendingMove(FEntity Entity, float DeltaSeconds);
+	FCharacterMove2D ConsumePendingMove(FEntity Entity, float DeltaSeconds); // 입력만 (발사/넉백은 MergePendingLaunch)
+	// ---- 발사/넉백 (CharacterMovement2D.h 머리 주석). 다음 무브에 실린다 — 한 프레임에 여러 번이면 성분마다 덮어쓰기는 대체, 아니면 합, 경직은 긴 쪽.
+	//   어느 무브에 싣는가는 FGameWorld가 정한다 (조종하는 쪽 = 자기 무브, 서버의 원격 캐릭터 = 다음에 적용하는 받은 무브)
+	void LaunchCharacter(FEntity Entity, const FVector3& WorldVelocity, bool bOverrideX, bool bOverrideZ);
+	void AddKnockback(FEntity Entity, const FVector3& WorldVelocity, float StunSeconds); // X 덮어쓰기, Z는 0이 아니면 덮어쓰기 + 경직
+	bool HasPendingLaunch(FEntity Entity) const;
+	bool MergePendingLaunch(FEntity Entity, FCharacterMove2D& InOutMove); // 쌓인 발사를 무브에 합치고 비운다 (없으면 false)
 
 	// ---- 시뮬레이션 (FGameWorld)
 	void              SimulateCharacter(FScene& Scene, FEntity Entity, const FCharacterMove2D& Move);
@@ -70,6 +76,7 @@ public:
 	// ---- 상태 질의 (없는 엔티티는 0/false)
 	bool     IsGrounded(FEntity Entity) const;
 	bool     IsDashing(FEntity Entity) const;
+	bool     IsStunned(FEntity Entity) const; // 넉백 경직 중
 	FVector2 GetVelocity(FEntity Entity) const; // 평면 cm/s
 	int32    GetJumpsRemaining(FEntity Entity) const;
 	int32    GetDashesRemaining(FEntity Entity) const; // 지금 대시할 수 있는 횟수 (바닥 = 1, 쿨다운·대시 중이면 0)
@@ -92,6 +99,7 @@ private:
 		bool                          bJumpHeld    = false;
 		bool                          bPendingDash = false;
 		bool                          bPendingDrop = false;
+		FCharacterMove2D              PendingLaunch; // bLaunch/LaunchVelocity/덮어쓰기/StunSeconds만 쓴다
 		FVector2                      VisualOffset;
 		FVector3                      WrittenPosition; // 마지막으로 쓴 로컬 위치 (스크립트 순간이동 감지)
 		bool                          bWritten  = false;

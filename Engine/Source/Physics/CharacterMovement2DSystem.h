@@ -2,6 +2,7 @@
 
 #include "Core/ECS/Entity.h"
 #include "Physics/CharacterMovement2D.h"
+#include "Physics/Physics2DWorld.h"
 
 #include <set>
 #include <string>
@@ -20,7 +21,7 @@ class FScene;
 //     같은 상태 + 같은 무브 + 같은 월드 → 같은 결과 (멀티플레이 예측/재조정)
 //   UpdateProxies: 2D 물리 스텝 전 — 대리 키네마틱 바디를 캐릭터 위치로 옮기고 속도를 맞춘다 (동적 바디를 밀고, 레이캐스트·트리거가 본다)
 //   이벤트(점프/착지/대시 시작)는 SetRecordEvents(true)일 때만 쌓는다 (재조정의 다시 적용은 끈다) → FGameWorld가 Lua OnJumped(n)/OnLanded()/
-//   OnDashStarted()로 보낸다 (충돌 알림과 같은 단계)
+//   OnDashStarted()(+ 밟기 OnStomped(other)/OnStompedBy(other))로 보낸다 (충돌 알림과 같은 단계)
 // 입력은 프레임마다 쌓았다가 ConsumePendingMove가 무브로 꺼낸다: AddMovementInput(합), Jump(누름 = 점프 버퍼 + 누르고 있음), StopJumping(뗌 —
 //   가변 점프), Dash(방향 — 0이면 입력/속도 방향), DropDown(원웨이 내려가기). Jump는 누른 순간에 한 번 부른다 (매 프레임 부르면 공중 점프가 바로 나간다)
 class FCharacterMovement2DSystem
@@ -61,6 +62,8 @@ public:
 	void              FollowTransform(FScene& Scene, FEntity Entity);                         // 클라이언트의 다른 캐릭터: 복제 위치로 대리 바디만
 	void              SetVisualOffset(FScene& Scene, FEntity Entity, const FVector2& Offset);  // 화면 보정 (상태는 그대로)
 	void              UpdateProxies();
+	// 닿은 엔티티 (대리 캡슐을 2cm 부풀린 상자와 겹친 2D 바디 — 자기 제외, 물리 예측 대상 선정). OutEntities는 비우고 채운다
+	void              GetCharacterContacts(FEntity Entity, std::vector<FEntity>& OutEntities) const;
 
 	// ---- 상태 질의 (없는 엔티티는 0/false)
 	bool     IsGrounded(FEntity Entity) const;
@@ -93,6 +96,9 @@ private:
 		uint64                        LastSeen  = 0;
 	};
 
+	FPhysics2DMover MakeMover(const FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement) const;
+	// 밀기 (CharacterCollision::Push): Other를 Delta만큼 그 캐릭터의 이동 질의로 옮긴다 (벽에서 멈춤). 반환: 실제로 옮긴 거리
+	float PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta);
 	void  CreateProxy(FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement);
 	void  DestroyProxy(FCharacter& Character);
 	uint8 ResolveLayer(const std::string& Name);

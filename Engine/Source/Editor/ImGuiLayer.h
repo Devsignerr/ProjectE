@@ -7,6 +7,7 @@
 #include <vector>
 
 struct ID3D12GraphicsCommandList;
+struct ImDrawList;
 class FD3D12RHI;
 class FWindow;
 
@@ -37,6 +38,11 @@ public:
 	bool IsFrameActive() const { return bFrameBegun; }
 	// 메인 도크스페이스 ID (BeginFrame 이후 유효 — 기본 레이아웃 구성용)
 	uint32 GetDockSpaceId() const { return DockSpaceId; }
+
+	// 이미지 최근접(점) 필터 구간 (2D 에셋 편집기 — 픽셀 아트 확대): Begin과 End 사이에 DrawList에 넣은 이미지는 점 필터로 그린다.
+	// 백엔드 표준 콜백이 루트 시그니처를 바꾸므로 투영 상수를 다시 올린다 (메인 뷰포트 드로우 데이터 기준 — 다중 뷰포트 미사용)
+	static void BeginNearestSampling(ImDrawList* DrawList);
+	static void EndNearestSampling(ImDrawList* DrawList);
 
 private:
 	FD3D12RHI*  Rhi          = nullptr;

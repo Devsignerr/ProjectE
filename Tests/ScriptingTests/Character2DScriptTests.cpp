@@ -105,3 +105,50 @@ E_TEST(Character2DScript_LuaApiAndCallbacks)
 	World.EndPlay();
 	Host.Unload();
 }
+
+// 밟기 (CharacterCollision Block): 위에서 떨어진 캐릭터 OnStomped(other), 밟힌 캐릭터 OnStompedBy(other) — 착지와 같은 단계
+E_TEST(Character2DScript_StompCallbacks)
+{
+	RegisterPhysicsTypes();
+	const std::filesystem::path Directory = FTestRegistry::GetTempDirectory() / L"ProjectECharacter2DStompTests";
+	std::filesystem::create_directories(Directory / L"Scripts");
+	{
+		std::ofstream File(Directory / L"Scripts/Stomp.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { Log = "" } }
+function T:OnLanded() self.Properties.Log = self.Properties.Log .. "L;" end
+function T:OnStomped(other) self.Properties.Log = self.Properties.Log .. "S:" .. other:GetName() .. ";" end
+function T:OnStompedBy(other) self.Properties.Log = self.Properties.Log .. "B:" .. other:GetName() .. ";" end
+return T
+)";
+	}
+	FScene        Scene;
+	const FEntity Floor = Scene.CreateEntity("Floor");
+	Scene.GetTransform(Floor).Position = FVector3(0.0f, 0.0f, -50.0f);
+	Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Floor).Size = FVector2(10000.0f, 100.0f);
+	const auto Spawn = [&](const char* Name, const FVector3& Position) {
+		const FEntity Entity = Scene.CreateEntity(Name);
+		Scene.GetTransform(Entity).Position = Position;
+		Scene.GetRegistry().Emplace<FCharacterMovement2DComponent>(Entity).CharacterCollision = FCharacterMovement2DComponent::ECharacterCollision::Block;
+		Scene.GetRegistry().Emplace<FScriptComponent>(Entity).ScriptAsset = "Scripts/Stomp.lua";
+		return Entity;
+	};
+	const FEntity Victim  = Spawn("Victim", FVector3(0.0f, 0.0f, 61.0f));
+	const FEntity Stomper = Spawn("Stomper", FVector3(10.0f, 0.0f, 500.0f));
+	Scene.UpdateTransforms();
+
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, Directory });
+	World.BeginPlay(Scene);
+	for (int32 Frame = 0; Frame < 120; ++Frame)
+	{
+		World.TickGameplay(Step, nullptr);
+	}
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Stomper, "Log").String == "L;S:Victim;");
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Victim, "Log").String == "L;B:Stomper;");
+	E_EXPECT_NEAR(Scene.GetTransform(Stomper).Position.Z, 179.2f, 2.0f); // 상대 위에 섰다 (가로 10cm 어긋남 → 캡슐 머리 접점 높이)
+	E_EXPECT_NEAR(Scene.GetTransform(Stomper).Position.X, 10.0f, 1.0f);  // 둥근 머리에서 미끄러지지 않는다
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
+}

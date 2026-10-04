@@ -16,6 +16,9 @@
 #include "Editor/AssetEditors/AnimGraphEditor.h"
 #include "Scene/AnimGraph.h"
 #include "Editor/AssetEditors/SequenceEditor.h"
+#include "Editor/AssetEditors/SpriteAtlasEditor.h"
+#include "Editor/AssetEditors/FlipbookEditor.h"
+#include "Editor/AssetEditors/TilesetEditor.h"
 #include "Scene/Sequence.h"
 #include "Scene/Prefab.h"
 #include "Editor/ContentBrowser/AssetFileOps.h"
@@ -102,6 +105,19 @@ namespace
 		{
 			return std::make_unique<FDataStructEditor>(Path);
 		}
+		// 2D 에셋 (Phase 56-5b)
+		if (Extension == FSpriteAsset::Extension)
+		{
+			return std::make_unique<FSpriteAtlasEditor>(Path);
+		}
+		if (Extension == FFlipbookAsset::Extension)
+		{
+			return std::make_unique<FFlipbookEditor>(Path);
+		}
+		if (Extension == FTilesetAsset::Extension)
+		{
+			return std::make_unique<FTilesetEditor>(Path);
+		}
 		if (IsModelExtension(Extension))
 		{
 			// 애니메이션이 있는 모델은 애니메이션 편집기, 없으면 스태틱 메시 편집기
@@ -145,7 +161,8 @@ bool FAssetEditorManager::CanOpen(const std::filesystem::path& Path)
 	return Extension == FMaterialAsset::Extension || Extension == FParticleSystemAsset::Extension || Extension == FPrefabLibrary::Extension ||
 	       Extension == BehaviorTreeExtension || Extension == FUIAsset::Extension || IsModelExtension(Extension) ||
 	       Extension == FStringTable::Extension || Extension == FAnimGraphAsset::Extension || Extension == FSequenceAsset::Extension ||
-	       Extension == FDataTable::Extension || Extension == FDataAsset::Extension || Extension == FDataStruct::Extension;
+	       Extension == FDataTable::Extension || Extension == FDataAsset::Extension || Extension == FDataStruct::Extension ||
+	       Extension == FSpriteAsset::Extension || Extension == FFlipbookAsset::Extension || Extension == FTilesetAsset::Extension;
 }
 
 bool FAssetEditorManager::EnsureRenderer(FEditorContext& Context)

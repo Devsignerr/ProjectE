@@ -174,9 +174,12 @@ public:
 	// (복제 클라이언트는 이 엔티티의 스냅샷 트랜스폼을 쓰지 않는다 — FReplicationClient::SetTransformFilter)
 	bool   IsPredicted(FEntity Entity) const;
 	// 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction.cpp 머리 주석): 예측 캐릭터 근처/접촉한 복제 동적 바디를 로컬에서 동적으로 시뮬레이션
-	bool   IsPhysicsPredicted(FEntity Entity) const { return PredictedBodies.contains(Entity); }
+	// 2D 동적 바디도 같은 규칙 (World/GameWorldPhysicsPrediction2D.cpp 머리 주석)
+	bool   IsPhysicsPredicted(FEntity Entity) const { return PredictedBodies.contains(Entity) || PredictedBodies2D.contains(Entity); }
 	bool   IsPhysicsSimulatedLocally(FEntity Entity) const; // 예측 중 + 동적 (해제 블렌드 중이면 false)
-	uint32 GetPhysicsPredictedBodyCount() const { return static_cast<uint32>(PredictedBodies.size()); }
+	bool   IsPhysics2DSimulatedLocally(FEntity Entity) const;
+	uint32 GetPhysicsPredictedBodyCount() const { return static_cast<uint32>(PredictedBodies.size() + PredictedBodies2D.size()); }
+	uint32 GetPhysics2DPredictedBodyCount() const { return static_cast<uint32>(PredictedBodies2D.size()); }
 	// 예측 옵션: 캐릭터 이동 컴포넌트(3D 또는 2D) bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
 	bool   UsesClientPrediction(FEntity Entity) const;
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
@@ -241,6 +244,7 @@ private:
 	struct FPredictedCharacter2D
 	{
 		std::deque<FCharacterMove2D> Moves;
+		std::deque<std::pair<uint32, float>> MoveTimes; // 순번 → 그 무브를 시뮬레이션한 물리 예측 시계 (3D와 같은 용도)
 		uint32                       NextSequence    = 0;
 		uint32                       LastAckSequence = 0;
 		FVector2                     VisualOffset;
@@ -258,7 +262,7 @@ private:
 	void ReceiveCharacterMoves2D(FNetConnectionId Connection, const std::vector<uint8>& Message);
 	void ReceiveCharacterAck2D(const std::vector<uint8>& Message);
 	void SendCharacterAck2D(FEntity Entity, uint32 Sequence);
-	bool DispatchCharacter2DEvents(); // 점프/착지/대시 → Lua OnJumped(n)/OnLanded()/OnDashStarted() + 게임 모듈 (충돌 알림 단계). 무엇이든 보냈으면 true
+	bool DispatchCharacter2DEvents(); // 점프/착지/대시/밟기 → Lua OnJumped(n)/OnLanded()/OnDashStarted()/OnStomped(other)/OnStompedBy(other) + 게임 모듈 (충돌 알림 단계). 무엇이든 보냈으면 true
 	// 캐릭터 이동 → 애니메이션 그래프 파라미터 (World/GameWorldAnimation.cpp, FAnimGraphComponent::bUseCharacterMovement). 물리·트랜스폼 갱신 뒤
 	void UpdateCharacterAnimParams(float DeltaSeconds);
 	// 발 IK 바닥 탐색 (Scene/AnimIK.h): 직전 애니메이션의 발 위치에서 FPhysicsSystem::Raycast → FFootIkComponent::Runtime. 물리·트랜스폼 갱신 뒤
@@ -296,6 +300,7 @@ private:
 	void PoseBodiesForReplay(float MoveTime);
 	void RestoreBodiesAfterReplay();
 	bool IsPhysicsPredictionEnabled() const;
+	bool IsPhysicsPredictionTimingEnabled() const; // 시각 맞추기 (3D·2D 공용): 클라이언트 + 스냅샷 버퍼 + 설정
 	void CollectPredictionCharacters(std::vector<FEntity>& OutCharacters) const;
 	void TickPhysicsPredictionStats();
 	void LogPhysicsPredictionStats(const char* Label) const;
@@ -334,6 +339,38 @@ private:
 		std::vector<float> ReactionDelays;
 	};
 	FPhysicsPredictionStats PredictionStats;
+
+	// 2D 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction2D.cpp — 3D와 같은 규칙·상수·시계, 평면 상태)
+	struct FBodyHistorySample2D
+	{
+		float    Time = 0.0f;
+		FVector2 Position; // 평면 cm
+		float    Angle = 0.0f; // 라디안 반시계 +
+	};
+	struct FPredictedBody2D
+	{
+		bool     bBlendingOut = false;
+		float    IdleSeconds  = 0.0f;
+		float    BlendSeconds = 0.0f;
+		FVector3 BlendFromPosition;
+		FQuat    BlendFromRotation;
+		float    LastSampleTime = -1.0f;
+		FVector2 PositionError;
+		FVector2 VelocityError;
+		float    AngleError        = 0.0f;
+		float    AngularSpeedError = 0.0f; // rad/s
+		FVector2 ServerVelocity;
+		std::deque<FBodyHistorySample2D> History;
+	};
+	void TickPhysicsPrediction2D(float DeltaSeconds);
+	void RecordPhysicsPrediction2D();
+	bool IsPhysicsPrediction2DEnabled() const;
+	void ProcessBodySnapshot2D(FEntity Entity, FPredictedBody2D& Body);
+	void ApplyBodyCorrection2D(FEntity Entity, FPredictedBody2D& Body, float DeltaSeconds);
+	void BeginBodyBlendOut2D(FEntity Entity, FPredictedBody2D& Body);
+	void PoseBodiesForReplay2D(float MoveTime);
+	void RestoreBodiesAfterReplay2D();
+	std::unordered_map<FEntity, FPredictedBody2D> PredictedBodies2D;
 
 	// 게임플레이 규칙 (Scene/Gameplay.h 체력·게임 모드, World/GameWorldGameplay.cpp)
 	void  TickGameplayRules(float DeltaSeconds);

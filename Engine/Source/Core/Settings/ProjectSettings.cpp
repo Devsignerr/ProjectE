@@ -152,13 +152,25 @@ FProjectSettings::FProjectSettings()
 		.Property(&FGameplayTagSettings::bWarnUnknownTags, "WarnUnknownTags", "미등록 태그 경고")
 		.Tooltip("효과/능력 데이터에 목록에 없는 태그가 있으면 로그 경고 (오타 잡기)");
 
-	Registry.Register(Rendering, { "Rendering", "렌더링", GEngineCategory, "레이 트레이싱(DXR 1.1) 기본값. 콘솔 변수 r.RayTracing*가 -1이면 이 값을 따른다" })
+	Registry.Register(Rendering, { "Rendering", "렌더링", GEngineCategory,
+	                               "레이 트레이싱(DXR 1.1) 기본값(콘솔 변수 r.RayTracing*가 -1이면 이 값)과 프로젝트 기본 후처리(런타임·에디터 뷰포트 시작 값 — "
+	                               "에디터 포스트 프로세스 패널이 이번 세션 값을 바꾸고, 콘솔 r.TAA/r.SSAO/r.SSR은 끄기만 한다)" })
 		.Property(&FRenderingSettings::bRayTracing, "RayTracing", "레이 트레이싱")
 		.Tooltip("DXR 1.1(인라인 RayQuery)을 지원하는 GPU에서 가속 구조를 만들고 아래 효과를 쓴다. 미지원 GPU는 자동으로 꺼진다")
 		.Property(&FRenderingSettings::bRayTracedShadows, "RayTracedShadows", "RT 방향광 그림자")
 		.Tooltip("불투명 표면의 방향광 그림자를 레이 트레이싱으로 (반그림자 = r.RayTracing.Shadows.SunAngle). 반투명·볼류메트릭 안개는 섀도맵")
 		.Property(&FRenderingSettings::bRayTracedReflections, "RayTracedReflections", "RT 반사")
-		.Tooltip("화면 공간 반사(SSR) 대신 레이 트레이싱 반사 — 화면 밖·가려진 물체도 반사된다. 거칠기 한계 위는 반사 캡처/하늘");
+		.Tooltip("화면 공간 반사(SSR) 대신 레이 트레이싱 반사 — 화면 밖·가려진 물체도 반사된다. 거칠기 한계 위는 반사 캡처/하늘")
+		.Property(&FRenderingSettings::Tonemapper, "Tonemapper", "기본 톤매핑")
+		.Enum({ { "None", "없음 (선형 클램프 — 2D·원본 색)" }, { "AcesFit", "ACES (근사)" }, { "Reinhard", "Reinhard" } })
+		.Tooltip("2D 픽셀 아트처럼 텍스처 색을 그대로 보여야 하면 '없음' (노출 0·블룸 끔과 함께 쓰면 언릿 스프라이트 = 원본 PNG 색)")
+		.Property(&FRenderingSettings::ExposureEV, "ExposureEV", "노출 (EV)").Range(-10.0f, 10.0f, 0.05f).Tooltip("배율 = 2^EV. 자동 노출이면 보정값")
+		.Property(&FRenderingSettings::bAutoExposure, "AutoExposure", "자동 노출")
+		.Property(&FRenderingSettings::bBloom, "Bloom", "블룸")
+		.Property(&FRenderingSettings::BloomIntensity, "BloomIntensity", "블룸 강도").Range(0.0f, 2.0f, 0.005f)
+		.Property(&FRenderingSettings::bTemporalAA, "TemporalAA", "TAA").Tooltip("픽셀 아트·와이어프레임은 항상 꺼짐")
+		.Property(&FRenderingSettings::bAmbientOcclusion, "AmbientOcclusion", "주변광 차폐 (SSAO/RTAO)")
+		.Property(&FRenderingSettings::bScreenSpaceReflections, "ScreenSpaceReflections", "화면 공간 반사 (SSR)").Tooltip("끄면 RT 반사도 쓰지 않는다");
 }
 
 void FProjectSettings::ResetToDefaults()

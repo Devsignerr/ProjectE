@@ -12,6 +12,7 @@
 #include "Network/NetBindPolicy.h"
 #include "Network/ReplicationTypes.h"
 #include "Online/SteamSubsystem.h"
+#include "RHI/D3D12/D3D12PipelineState.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12RenderTarget.h"
 #include "Renderer/DebugDraw.h"
@@ -137,6 +138,7 @@ bool FRuntimeApplication::OnInit()
 	// TAAU/동적 해상도 (Phase 48): 사용자 설정 → 콘솔 변수. 명령줄(--screen-percentage, --dynamic-resolution, --cvar)로 정한 값은 그대로
 	SceneRenderer.bAllowScreenPercentage = true;
 	SceneRenderer.bAllowRayTracing       = true; // 레이 트레이싱 (Phase 50): r.RayTracing* / 프로젝트 설정 Rendering, DXR 미지원이면 꺼짐
+	SceneRenderer.ApplyProjectPostProcessDefaults(); // 프로젝트 설정 Rendering의 기본 톤매핑·노출·블룸·TAA·SSAO·SSR
 	{
 		FConsoleManager& Cvars = FConsoleManager::Get();
 		if (FConsoleVariable* Var = Cvars.FindVariable("r.ScreenPercentage"); Var != nullptr && Var->IsDefault())
@@ -160,13 +162,16 @@ bool FRuntimeApplication::OnInit()
 	RegisterAITypes();
 	RegisterNetworkTypes();
 	RegisterUITypes();
-	if (!DebugDrawRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary()))
 	{
-		E_LOG(LogRuntime, Warning, "디버그 선 렌더러 초기화 실패: 3D 디버그 선을 그리지 않습니다");
-	}
-	if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
-	{
-		E_LOG(LogRuntime, Warning, "UI 렌더러 초기화 실패: 게임 UI를 그리지 않습니다");
+		const FD3D12PipelineState::FDeferredCreationScope DeferredPipelines; // PSO는 처음 그릴 때 (디버그 선을 안 쓰는 게임은 만들지 않는다)
+		if (!DebugDrawRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary()))
+		{
+			E_LOG(LogRuntime, Warning, "디버그 선 렌더러 초기화 실패: 3D 디버그 선을 그리지 않습니다");
+		}
+		if (!UIRenderer.Init(*Rhi, SceneRenderer.GetShaderLibrary(), Resources, FD3D12RHI::RenderTargetFormat))
+		{
+			E_LOG(LogRuntime, Warning, "UI 렌더러 초기화 실패: 게임 UI를 그리지 않습니다");
+		}
 	}
 	// 게임 모듈 (.eproject "GameModule"): 씬 로드 전에 게임 컴포넌트 타입을 등록한다
 	if (FPaths::HasProject() && !FPaths::GetProjectDescriptor().GameModule.empty())
@@ -373,6 +378,12 @@ void FRuntimeApplication::OnRender()
 	if (CpuTimes.bHasLastKick)
 	{
 		CpuTimes.GameMs += std::chrono::duration<double, std::milli>(WaitStart - CpuTimes.LastKickEnd).count();
+		if (!bLoggedFirstFrame)
+		{
+			// 시작 시간 측정 기준: 첫 프레임의 기록(지연 생성 PSO 포함)·Present가 끝난 시점 (로그 시각 − 프로세스 시작 시각)
+			bLoggedFirstFrame = true;
+			E_LOG(LogRuntime, Display, "[시작] 첫 프레임 표시 완료");
+		}
 	}
 	const std::filesystem::path Screenshot = std::exchange(PendingScreenshot, {});
 	if (PendingTravel)

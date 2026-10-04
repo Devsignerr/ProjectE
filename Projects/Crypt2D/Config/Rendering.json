@@ -1,5 +1,13 @@
 {
   "RayTracing": false,
   "RayTracedShadows": false,
-  "RayTracedReflections": false
+  "RayTracedReflections": false,
+  "Tonemapper": "None",
+  "ExposureEV": 0.0,
+  "AutoExposure": false,
+  "Bloom": false,
+  "BloomIntensity": 0.08,
+  "TemporalAA": false,
+  "AmbientOcclusion": false,
+  "ScreenSpaceReflections": false
 }

@@ -128,14 +128,19 @@ bool FRayTracingEffects::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary)
 	Library    = &InLibrary;
 	bSupported = false;
 	EnsureShadowTargets(1, 1); // 메인 패스 t24는 항상 바인딩
-	if (!Rhi->GetDevice().SupportsRayTracing())
+	return true;
+}
+
+bool FRayTracingEffects::InitRayTracing()
+{
+	if (bSupported || !Rhi->GetDevice().SupportsRayTracing())
 	{
-		return true;
+		return bSupported;
 	}
 	if (!Root.Init(Rhi->GetDevice().GetDevice()) || !CreatePipelines(Pipelines, false, nullptr))
 	{
 		E_LOG(LogRenderer, Error, "레이 트레이싱 화면 패스 파이프라인 생성 실패 — 레이 트레이싱 효과를 끕니다");
-		return true;
+		return false;
 	}
 	bSupported = true;
 	return true;
@@ -274,7 +279,7 @@ void FRayTracingEffects::ReleaseVariants(bool bAll)
 			for (FD3D12PipelineState* Pipeline : { &It->second->Pipelines.ShadowTrace, &It->second->Pipelines.ReflectionTrace, &It->second->Pipelines.Debug,
 			                                       &It->second->Pipelines.AoTrace, &It->second->Pipelines.AoReference })
 			{
-				if (Pipeline->Get() != nullptr)
+				if (Pipeline->IsInitialized())
 				{
 					Rhi->DeferRelease(Pipeline->Detach());
 				}

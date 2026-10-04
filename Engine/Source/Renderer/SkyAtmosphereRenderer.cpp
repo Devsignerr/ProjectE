@@ -191,7 +191,7 @@ bool FSkyAtmosphereRenderer::CreatePipelines(bool bForceRecompile)
 	for (uint32 Index = 0; Index < 8; ++Index)
 	{
 		Targets[Index]->Swap(NewPipelines[Index]);
-		if (NewPipelines[Index].Get() != nullptr)
+		if (NewPipelines[Index].IsInitialized())
 		{
 			Rhi->DeferRelease(NewPipelines[Index].Detach());
 		}

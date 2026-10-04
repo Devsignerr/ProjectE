@@ -206,6 +206,9 @@ public:
 	void RequestReflectionCaptureBake() { bBakeCapturesRequested = true; }
 
 	FPostProcessSettings PostProcessSettings;
+	// 프로젝트 설정 Rendering의 기본 후처리(톤매핑·노출·블룸·TAA·SSAO·SSR)를 PostProcessSettings에 쓴다.
+	// 런타임·에디터 뷰포트가 Init 뒤에 부른다(에디터는 설정 창에서 Rendering이 바뀔 때도). 미리보기·썸네일 렌더러는 부르지 않는다(엔진 기본값)
+	void ApplyProjectPostProcessDefaults();
 	FShadowSettings      ShadowSettings;
 	FLocalShadowSettings LocalShadowSettings; // 점광원/스포트라이트 그림자
 	FVector4             BackgroundColor = FVector4(0.12f, 0.2f, 0.36f, 1.0f); // HDR 선형 값
@@ -353,6 +356,12 @@ private:
 	void                   LogRayTracingStats() const;
 	FDdgiRenderer          Ddgi;              // 동적 GI 프로브 볼륨 (Phase 51)
 	uint32                 SeenDdgiStatsSerial = 0;
+	// 레이 트레이싱 지연 초기화 (2026-10-05): RT 가속 구조 버퍼·RT/DDGI 셰이더·루트 시그니처는 RT 효과가 처음 필요한 프레임에 만든다
+	// (2D·RT 끈 프로젝트·미리보기 렌더러는 만들지 않는다). 실패하면 다시 시도하지 않는다
+	bool                   bRayTracingInitialized = false;
+	bool                   bRayTracingInitFailed  = false;
+	bool                   IsRayTracingAvailable() const; // 초기화 전이면 DXR 1.1 지원 여부, 뒤면 실제 준비 여부
+	bool                   EnsureRayTracing();
 	void                   LogDdgiStats() const;
 	FSkyAtmosphereRenderer SkyAtmosphere; // 물리 기반 대기 (Phase 49)
 	FWaterRenderer       Water;            // 소규모 물 (Phase 49)

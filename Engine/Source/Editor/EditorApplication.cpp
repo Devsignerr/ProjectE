@@ -129,6 +129,12 @@ bool FEditorApplication::OnInit()
 	}
 	SceneRenderer.bAllowScreenPercentage = true; // 뷰포트: r.ScreenPercentage / r.DynamicResolution (TAAU, 통계 창)
 	SceneRenderer.bAllowRayTracing       = true; // 레이 트레이싱 (Phase 50): r.RayTracing* / 프로젝트 설정 Rendering, DXR 미지원이면 꺼짐
+	// 프로젝트 기본 후처리 (설정 창에서 Rendering을 바꾸면 다시 적용 — 포스트 프로세스 패널로 바꾼 이번 세션 값은 그때 덮인다)
+	SceneRenderer.ApplyProjectPostProcessDefaults();
+	if (FSettingsSection* RenderingSection = FSettingsRegistry::Get().Find("Rendering"))
+	{
+		RenderingSection->OnChanged = [this]() { SceneRenderer.ApplyProjectPostProcessDefaults(); };
+	}
 	if (!ImGuiLayer.Init(GetWindow(), *Rhi, FPaths::GetSavedDirectory() / L"EditorLayout.ini"))
 	{
 		return false;

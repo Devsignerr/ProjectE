@@ -2,6 +2,8 @@
 
 #include "RHI/D3D12/D3D12Common.h"
 
+#include <atomic>
+#include <memory>
 #include <vector>
 
 // 렌더 타깃 블렌드 모드
@@ -52,22 +54,59 @@ struct FGraphicsPipelineDesc
 	EBlendMode GetEffectiveBlendMode() const { return (bAlphaBlend && BlendMode == EBlendMode::Opaque) ? EBlendMode::Alpha : BlendMode; }
 };
 
+// PSO 하나. 지연 생성(2026-10-05, 2D 시작 시간): FDeferredCreationScope 안에서 Init*을 부르면 설명(셰이더 바이트코드·입력 레이아웃 사본 +
+// 루트 시그니처 참조)만 기억하고 실제 Create*PipelineState(PSO 캐시 요청)는 처음 Get()할 때 한다 — 쓰지 않는 패스(2D 게임의 3D 메시·
+// 지형·물·구름 변형 등)의 PSO는 만들지 않고, 만든 것만 PSO 레시피(사용자/--record-pso)에 남는다. 범위 밖 Init*은 예전처럼 즉시 만든다
+// (핫 리로드: 실패하면 기존 PSO 유지가 즉시 판정에 기댄다).
+//   Get()은 어느 스레드에서 불러도 된다(렌더 스레드 기록 중 첫 사용 — 생성은 전역 잠금 안, 이미 만든 뒤는 원자 읽기 하나).
+//   지연 생성 실패는 Fatal (예전에는 Init이 false → 앱 초기화 실패였던 경우). 존재 확인은 Get() 대신 IsInitialized()(만들지 않음).
+//   Init*/Swap/Detach/Shutdown은 예전처럼 그 PSO를 쓰는 기록이 없을 때만 (메인 스레드).
 class FD3D12PipelineState
 {
 public:
+	FD3D12PipelineState();
 	~FD3D12PipelineState();
+	FD3D12PipelineState(const FD3D12PipelineState&)            = delete;
+	FD3D12PipelineState& operator=(const FD3D12PipelineState&) = delete;
 
 	bool InitGraphics(ID3D12Device* Device, const FGraphicsPipelineDesc& Desc, const wchar_t* DebugName);
 	bool InitCompute(ID3D12Device* Device, ID3D12RootSignature* RootSignature, const D3D12_SHADER_BYTECODE& ComputeShader,
 	                 const wchar_t* DebugName);
 	void Shutdown();
 
-	// 핫 리로드용: 두 PSO 내용 교환 / 내부 오브젝트 소유권 넘기기 (지연 해제에 전달)
-	void                        Swap(FD3D12PipelineState& Other) { PipelineState.Swap(Other.PipelineState); }
-	ComPtr<ID3D12PipelineState> Detach() { return std::move(PipelineState); }
+	// 핫 리로드용: 두 PSO 내용 교환 / 내부 오브젝트 소유권 넘기기 (지연 해제에 전달 — 아직 만들지 않은 지연 PSO면 빈 포인터)
+	void                        Swap(FD3D12PipelineState& Other);
+	ComPtr<ID3D12PipelineState> Detach();
 
-	ID3D12PipelineState* Get() const { return PipelineState.Get(); }
+	// 지연 PSO면 여기서 만든다
+	ID3D12PipelineState* Get() const
+	{
+		ID3D12PipelineState* Resolved = ResolvedPipeline.load(std::memory_order_acquire);
+		return Resolved != nullptr ? Resolved : ResolveDeferred();
+	}
+	// 만들었거나 지연 생성 대기 중인가 (만들지 않는다)
+	bool IsInitialized() const;
+	bool IsDeferredPending() const;
+
+	// 이 범위(중첩 가능, 메인 스레드)에서 부른 Init*은 지연 생성. --no-deferred-pso면 범위가 있어도 즉시
+	struct FDeferredCreationScope
+	{
+		FDeferredCreationScope();
+		~FDeferredCreationScope();
+		FDeferredCreationScope(const FDeferredCreationScope&)            = delete;
+		FDeferredCreationScope& operator=(const FDeferredCreationScope&) = delete;
+	};
+	static bool IsDeferredCreationActive();
+	static uint32 GetDeferredResolvedCount(); // 통계: 지연 생성으로 실제 만든 수
+	static uint32 GetDeferredRecordedCount(); // 통계: 지연으로 기록한 수 (만들지 않은 것 포함)
 
 private:
-	ComPtr<ID3D12PipelineState> PipelineState;
+	struct FDeferred;
+
+	ID3D12PipelineState* ResolveDeferred() const;
+
+	mutable ComPtr<ID3D12PipelineState>              PipelineState;
+	mutable std::atomic<ID3D12PipelineState*>        ResolvedPipeline{ nullptr };
+	mutable std::atomic<bool>                        bDeferredPending{ false }; // Deferred가 있다 (빈 PSO의 Get()이 잠금을 잡지 않게)
+	mutable std::unique_ptr<FDeferred>               Deferred;
 };

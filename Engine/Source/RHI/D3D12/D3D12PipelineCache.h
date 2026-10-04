@@ -23,6 +23,9 @@ class FJobQueue;
 //       <프로젝트>/Config/PipelineRecipes.epso(--record-pso로 기록, 패키지에 파일로 포함, FFileSystem으로 읽음). 시작할 때 작업 스레드가
 //       루트 시그니처(블롭)·PSO를 미리 만든다 (ID3D12Device는 자유 스레드). 같은 키를 메인 스레드가 요청하면 끝날 때까지 기다린다.
 //       워밍은 드라이버 캐시를 읽지 않고 항상 Create한다 — 작업 스레드 라이브러리 Load와 섞으면 화면이 실행마다 달라졌다 (WarmOne 주석)
+//       워밍 순서 = 최근에 쓴 레시피 먼저(LastUsedRun 큰 것 — 프로젝트 레시피는 직전 실행과 같은 순위, 같으면 키 순). 요청한 키가 대기열에 있지만 아직 시작 전이면 요청 스레드가
+//       가져가 바로 만든다(WarmTaken — 지금 필요한 PSO가 워밍 줄 뒤에서 기다리지 않게), 이미 만드는 중이면 끝날 때까지 기다린다.
+//       렌더러 초기화는 PSO를 지연 생성(FD3D12PipelineState::FDeferredCreationScope)하므로 요청·레시피에는 실제로 그린 PSO만 남는다
 //   (c) 드라이버 캐시(a)는 기본 끔 (--pso-library로 켬). 2026-10-05 재현(Tests/Tilemap2D, Release ↔ Debug 교대): 드라이버 캐시에서 Load한 PSO가
 //       틀리게 그리는 실행이 나왔다 — 릿 스프라이트 PSO(SpritePS*Lit)가 그림자를 읽지 않아 2D 그림자가 통째로 빠짐(스프라이트 그림자 PSO 자체가 아님).
 //       ① Load가 다른 스레드의 Create와 겹친 실행은 Load한 PSO가 실행마다 달랐고(20회 중 5회), ② 그렇게(또는 워밍 실행에서 — 드물게, 재현 조건 미상)
@@ -54,6 +57,7 @@ public:
 		uint32 Bypassed       = 0; // 캐시 불가(등록 안 된 루트 시그니처 등)로 바로 만든 것
 		uint32 WarmHits       = 0; // 이미 메모리에 있던 것 (워밍으로 만들었거나 같은 키를 앞서 요청 — 같은 PSO 객체 공유)
 		uint32 WarmWaits      = 0; // 워밍 중이라 기다린 것
+		uint32 WarmTaken      = 0; // 워밍 대기열에 있었지만 아직 시작 전이라 요청 스레드가 직접 만든 것 (필요한 PSO가 줄을 서지 않게)
 		uint32 LibraryHits    = 0; // 드라이버 캐시에서 불러온 것
 		uint32 Created        = 0; // 새로 컴파일한 것
 		double RequestMs      = 0.0; // 요청 스레드가 PSO 요청에 쓴 총 시간
@@ -86,6 +90,7 @@ private:
 		ComPtr<ID3D12PipelineState> Pipeline;
 		ID3D12RootSignature*        RootSignature = nullptr; // 만들 때 쓴 객체 (워밍은 블롭으로 만든 것)
 		bool                        bPending      = false;
+		bool                        bWarmStarted  = false;   // 워밍 작업이 이 항목을 만들기 시작함 (그 전이면 요청 스레드가 가져가 직접 만든다)
 		bool                        bRequested    = false;   // 이번 실행 엔진이 요청함 (저장 대상)
 	};
 

@@ -120,6 +120,7 @@ private:
 		bool                                  bHasLastKick = false;
 	};
 	FCpuFrameTimes CpuTimes;
+	bool           bLoggedFirstFrame = false; // "[시작] 첫 프레임 표시 완료" 로그 (시작 시간 측정)
 
 	FScriptSystem        Scripts; // 씬의 스크립트 컴포넌트 실행 (로드 직후 BeginPlay)
 	FGameModuleHost      GameModule; // 프로젝트 C++ 게임 모듈 (있으면)

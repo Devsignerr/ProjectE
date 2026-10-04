@@ -1,5 +1,7 @@
 #include "RHI/D3D12/D3D12PipelineCache.h"
 
+#include "RHI/D3D12/D3D12PipelineState.h"
+
 #include "Core/FileSystem.h"
 #include "Core/Jobs/JobQueue.h"
 #include "Core/StringConv.h"
@@ -166,6 +168,11 @@ bool FD3D12PipelineCache::Initialize(ID3D12Device* InDevice, IDXGIAdapter* Adapt
 		if (FFileSystem::ReadFile(Options.ProjectRecipeFile, Bytes) && Project.Read(Bytes))
 		{
 			ProjectRecipes = static_cast<uint32>(Project.Recipes.size());
+			// 워밍 순서용: 프로젝트 레시피(이 게임이 그리는 PSO)는 직전 실행에서 쓴 것과 같은 우선순위 — 오래된 사용자 레시피보다 먼저
+			for (auto& [Key, Entry] : Project.Recipes)
+			{
+				Entry.LastUsedRun = std::max(Entry.LastUsedRun, UserRecipes.RunCounter);
+			}
 			WarmSet.Merge(Project);
 		}
 		else
@@ -238,7 +245,9 @@ void FD3D12PipelineCache::StartWarming()
 {
 	WarmJobs = std::make_unique<FJobQueue>();
 	WarmJobs->Init(std::max(Options.WarmThreads, 1u), "PSO 워밍");
-	uint32 Submitted = 0;
+	// 순서: 최근에 쓴 레시피 먼저 (같으면 키 순 — 실행마다 같은 순서)
+	std::vector<std::pair<uint32, uint64>> Order;
+	Order.reserve(WarmSource.Recipes.size());
 	{
 		std::lock_guard Lock(Mutex);
 		for (const auto& [Key, Entry] : WarmSource.Recipes)
@@ -249,19 +258,16 @@ void FD3D12PipelineCache::StartWarming()
 			}
 			FEntry& Pending  = Entries[Key];
 			Pending.bPending = true;
-			++Submitted;
+			Order.emplace_back(Entry.LastUsedRun, Key);
 		}
 	}
-	for (const auto& [Key, Entry] : WarmSource.Recipes)
+	std::sort(Order.begin(), Order.end(), [](const auto& A, const auto& B) { return A.first != B.first ? A.first > B.first : A.second < B.second; });
+	for (const auto& [LastUsedRun, Key] : Order)
 	{
-		if (!WarmSource.HasBlobs(Entry.Recipe))
-		{
-			continue;
-		}
 		const uint64 WarmKey = Key;
 		WarmJobs->Submit([this, WarmKey]() { WarmOne(WarmKey, WarmSource.Recipes.at(WarmKey).Recipe); });
 	}
-	E_LOG(LogD3D12, Display, "[PSO 캐시] 워밍 시작: PSO {}개 (작업 스레드 {})", Submitted, WarmJobs->GetWorkerCount());
+	E_LOG(LogD3D12, Display, "[PSO 캐시] 워밍 시작: PSO {}개 (작업 스레드 {})", Order.size(), WarmJobs->GetWorkerCount());
 }
 
 ID3D12RootSignature* FD3D12PipelineCache::GetWarmRootSignature(uint64 Hash)
@@ -286,7 +292,16 @@ ID3D12RootSignature* FD3D12PipelineCache::GetWarmRootSignature(uint64 Hash)
 
 void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Recipe)
 {
-	const auto                  Start = FClock::now();
+	const auto Start = FClock::now();
+	{
+		std::lock_guard Lock(Mutex);
+		FEntry& Entry = Entries[Key];
+		if (!Entry.bPending)
+		{
+			return; // 요청 스레드가 가져가 직접 만들었다
+		}
+		Entry.bWarmStarted = true;
+	}
 	ComPtr<ID3D12PipelineState> Pipeline;
 	// 워밍은 드라이버 캐시(파이프라인 라이브러리)를 읽지 않고 항상 Create*PipelineState로 만든다 (드라이버 자체 셰이더 캐시는 쓴다).
 	// 2026-10-04 측정: 작업 스레드가 블롭으로 만든 루트 시그니처로 라이브러리 Load한 PSO를 쓰면(또는 같은 이름을 나중에 메인 스레드가
@@ -443,7 +458,13 @@ HRESULT FD3D12PipelineCache::Request(ID3D12Device* InDevice, PipelineCache::FRec
 		std::unique_lock Lock(Mutex);
 		++Stats.Requests;
 		auto It = Entries.find(Key);
-		if (It != Entries.end() && It->second.bPending)
+		if (It != Entries.end() && It->second.bPending && !It->second.bWarmStarted)
+		{
+			// 워밍 대기열에서 아직 시작 전: 기다리지 않고 직접 만든다 (워밍 작업은 bPending이 꺼진 것을 보고 건너뛴다)
+			It->second.bPending = false;
+			++Stats.WarmTaken;
+		}
+		else if (It != Entries.end() && It->second.bPending)
 		{
 			++Stats.WarmWaits;
 			PendingDone.wait(Lock, [&]() { return !Entries[Key].bPending; });
@@ -633,7 +654,9 @@ void FD3D12PipelineCache::LogStats(const char* When) const
 {
 	const FStats S = GetStats();
 	E_LOG(LogD3D12, Display,
-	      "[PSO 캐시] {}: 요청 {} (메모리 {} — 워밍 대기 {}, 드라이버 캐시 {}, 새로 컴파일 {} {:.1f}ms), 우회 {}, 요청 스레드 총 {:.1f}ms / 워밍 스레드 PSO {} {:.1f}ms",
-	      When, S.Requests, S.WarmHits, S.WarmWaits, S.LibraryHits, S.Created, S.CreateMs, S.Bypassed, S.RequestMs, S.WarmCreated,
+	      "[PSO 캐시] {}: 요청 {} (메모리 {} — 워밍 대기 {}, 드라이버 캐시 {}, 새로 컴파일 {} {:.1f}ms — 워밍 줄에서 가져감 {}), 우회 {}, 요청 스레드 총 {:.1f}ms / 워밍 스레드 PSO {} {:.1f}ms",
+	      When, S.Requests, S.WarmHits, S.WarmWaits, S.LibraryHits, S.Created, S.CreateMs, S.WarmTaken, S.Bypassed, S.RequestMs, S.WarmCreated,
 	      S.WarmMs);
+	E_LOG(LogD3D12, Display, "[PSO 캐시] {}: 지연 생성 PSO {}개 중 {}개를 실제로 만듦 (나머지는 쓰지 않아 만들지 않음)", When,
+	      FD3D12PipelineState::GetDeferredRecordedCount(), FD3D12PipelineState::GetDeferredResolvedCount());
 }

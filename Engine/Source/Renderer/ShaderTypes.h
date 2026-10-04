@@ -489,3 +489,18 @@ struct FTerrainChunkGpu
 	uint32 Quads = 0; // 패치 한 변 사각형 수
 };
 static_assert(sizeof(FTerrainChunkGpu) == 16);
+
+// 스프라이트 인스턴스 (Sprite.hlsl FSpriteInstance, 구조화 버퍼 — 메시 루트 t13 자리, Renderer/SpriteRenderer.h).
+// 월드 사각형 = Origin + u * AxisX + v * AxisZ (u, v ∈ [0, 1], v = 로컬 위쪽). UV = lerp(UVRect.xy, UVRect.zw, (u, 1 - v))
+struct FSpriteInstanceGpu
+{
+	FVector3 Origin;           // 로컬 왼쪽 아래 모서리의 월드 위치
+	uint32   TextureIndex = 0; // 셰이더 가시 힙 칸 (프레임마다 다시 구함 — 밉 스트리밍 SwapContents)
+	FVector3 AxisX;            // 로컬 X 변 전체 (월드, 크기 포함)
+	uint32   Flags = 0;        // SpriteFlag_* (Sprite.hlsl E_SPRITE_FLAG_*)
+	FVector3 AxisZ;            // 로컬 Z 변 전체 (월드, 크기 포함)
+	float    AlphaCutoff = 0.5f;
+	FVector4 UVRect;           // (u0, v0, u1, v1) — 반전은 두 값을 바꿔 둔다
+	FVector4 Color;            // 선형 RGBA
+};
+static_assert(sizeof(FSpriteInstanceGpu) == 80);

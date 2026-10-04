@@ -30,6 +30,7 @@
 #include "Renderer/RayTracingEffects.h"
 #include "Renderer/RayTracingScene.h"
 #include "Renderer/SkyAtmosphereRenderer.h"
+#include "Renderer/SpriteRenderer.h"
 #include "Renderer/VolumetricCloudRenderer.h"
 #include "Renderer/WaterRenderer.h"
 #include "Renderer/FoliageRenderer.h"
@@ -82,6 +83,7 @@ enum class ERenderTimer : uint32
 	DdgiBlend,        // DDGI 조도/거리/상태 누적 (+ 프로브 구 표시)
 	RayTracedAmbientOcclusion, // RTAO 추적 + 공간 필터 + 누적 (SSAO 대신, 근거리 간접 가림)
 	SkinCache,        // 스킨 캐시 계산 스키닝 (r.SkinCache — 보이는 스킨 인스턴스를 프레임에 한 번)
+	Sprites,          // 2D 스프라이트 (CPU: 정렬·배치·업로드, GPU: 스프라이트 패스 — Renderer/SpriteRenderer.h)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -101,6 +103,8 @@ struct FSceneRenderStats
 	uint32 ShadowCacheRebuilt = 0; // 캐시를 다시 그린 캐스케이드 수
 	uint32 ScreenSizeCulled   = 0; // 메인 프러스텀 안이지만 r.MinScreenSize/r.MaxDrawDistance로 뺀 인스턴스
 	uint32 Particles     = 0; // 그린 파티클 입자 수
+	uint32 Sprites       = 0; // 그린 2D 스프라이트 수
+	uint32 SpriteDrawCalls = 0; // 스프라이트 패스 드로우 (파이프라인 구간 수)
 	uint32 ParticleEmittersCulled = 0; // 화면 밖이라 그리지 않은 이미터 (GPU 이미터는 계산도 미룸)
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
@@ -237,6 +241,10 @@ public:
 
 	FShaderLibrary& GetShaderLibrary() { return ShaderLibrary; }
 
+	// 2D 스프라이트 그리기 목록 (Renderer/SpriteRenderer.h 머리 주석 — 다음 Set/Clear까지 유지, 보통 프레임마다 BeginRender/Render 전에 넘긴다)
+	void SetSpriteDrawList(std::vector<FSpriteDrawItem> Items) { SpriteRenderer.SetDrawList(std::move(Items)); }
+	void ClearSpriteDrawList() { SpriteRenderer.ClearDrawList(); }
+
 	// 이번 프레임 스킨 팔레트 (Render 이후 같은 프레임 안에서만 유효 — 에디터 오버레이용)
 	const FSkinnedMeshPalette& GetSkinPalettes() const { return SkinPalettes; }
 
@@ -315,6 +323,7 @@ private:
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;
 	FParticleRenderer    ParticleRenderer;
+	FSpriteRenderer      SpriteRenderer;     // 2D 스프라이트 (메시 루트 시그니처 공유)
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
 	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)

@@ -12,6 +12,7 @@ enum class EBlendMode : uint8
 	Additive, // Src + Dest (HDR 누적, 블룸 업샘플 등)
 	Premultiplied, // 색 = Src + Dest * (1 - SrcAlpha), 알파 = Dest 유지 (안개 적용: 씬 컬러 알파 = TAA 반응형 마스크를 건드리지 않는다)
 	Remaining, // 색 = Src * SrcAlpha + Dest * (1 - SrcAlpha), 알파 = Dest * (1 - SrcAlpha) (데칼 DBuffer: 알파 = 남은 원래 표면 비중)
+	PremultipliedOver, // 색 = Src + Dest * (1 - SrcAlpha), 알파 = SrcAlpha + Dest * (1 - SrcAlpha) (프리멀티플라이드 스프라이트: 알파 = 덮인 정도 누적)
 };
 
 // 그래픽스 파이프라인 설정. 자주 쓰는 값이 기본값이며 필요한 항목만 바꾼다.

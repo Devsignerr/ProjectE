@@ -89,6 +89,8 @@ namespace TextureStreaming
 	std::vector<std::string> FormatStats(const FTextureStreamingStats& Stats);
 }
 
+struct FMaterial;
+
 // FResourceManager 안 상태 (구현은 TextureStreaming.cpp — FResourceManager 멤버 함수)
 struct FTextureStreamingState
 {
@@ -122,6 +124,14 @@ struct FTextureStreamingState
 	};
 
 	std::map<uint64, FEntry>           Entries; // 키: FTextureHandle::ToId (정렬 — 예산 배분·요청 순서가 결정적)
+	// 보고의 인스턴스별 요구 (병렬 계산 칸, 재사용). Material이 nullptr이면 이번 뷰에 텍스처를 읽지 않는다
+	struct FInstanceNeed
+	{
+		const FMaterial* Material = nullptr;
+		float            Log2     = 0.0f;
+		float            Priority = 0.0f;
+	};
+	std::vector<FInstanceNeed>         InstanceNeeds;
 	bool                               bReportedThisFrame = false;
 	uint32                             NextSerial         = 1;
 	uint64                             PoolBytes          = 0; // 지난 갱신에 쓴 예산

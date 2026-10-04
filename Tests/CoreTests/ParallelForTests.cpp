@@ -48,3 +48,34 @@ E_TEST(ParallelFor_NestedRunsSequentiallyAndRepeatedCallsWork)
 	}
 	E_EXPECT_EQ(Total.load(), 50u * 64u * 10u);
 }
+
+E_TEST(ParallelFor_BackToBackCallsNeverRunStaleBody)
+{
+	// 연속 호출: 늦게 깨어난 작업자가 이전 호출의 본문·범위를 다음 호출과 섞어 부르면 안 된다 (작업자는 호출 사이에 돌며 기다린다)
+	std::atomic<bool> bWrongCall = false;
+	for (uint32 Round = 0; Round < 3000; ++Round)
+	{
+		const uint32        Count = 50 + (Round * 37) % 900;
+		std::vector<uint32> Hits(Count, 0);
+		const uint32        Tag = Round;
+		FParallel::ParallelFor(Count, 4, [&Hits, &bWrongCall, Count, Tag, Round](uint32 Begin, uint32 End) {
+			if (Tag != Round || End > Count || Begin >= End)
+			{
+				bWrongCall = true;
+				return;
+			}
+			for (uint32 Index = Begin; Index < End; ++Index)
+			{
+				++Hits[Index];
+			}
+		});
+		for (uint32 Index = 0; Index < Count; ++Index)
+		{
+			if (Hits[Index] != 1)
+			{
+				bWrongCall = true;
+			}
+		}
+	}
+	E_EXPECT_FALSE(bWrongCall.load());
+}

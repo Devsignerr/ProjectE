@@ -26,6 +26,10 @@ public:
 
 	size_t Count();
 
+	// Each가 순회하는 기준 목록 (가장 작은 풀의 엔티티, 같은 크기면 앞 타입). 풀이 하나라도 없으면 nullptr.
+	// 병렬 순회용: 목록 순서 = Each 순서이며 나머지 풀은 Contains로 확인한다
+	const std::vector<FEntity>* GetIterationEntities();
+
 private:
 	FRegistry& Registry;
 };
@@ -230,21 +234,11 @@ void TView<TComponents...>::Each(TFunc&& Func)
 {
 	// 모든 풀이 존재해야 결과가 있다
 	std::tuple<TSparseSet<TComponents>*...> PoolTuple{ Registry.TryGetPool<TComponents>()... };
-	bool bAllPoolsExist = true;
-	std::apply([&](auto*... Pools) { ((bAllPoolsExist = bAllPoolsExist && Pools != nullptr), ...); }, PoolTuple);
-	if (!bAllPoolsExist)
+	const std::vector<FEntity>* SmallestEntities = GetIterationEntities();
+	if (SmallestEntities == nullptr)
 	{
 		return;
 	}
-
-	// 가장 작은 풀의 엔티티 목록을 기준으로 순회
-	const std::vector<FEntity>* SmallestEntities = nullptr;
-	size_t                      SmallestSize     = ~static_cast<size_t>(0);
-	std::apply(
-		[&](auto*... Pools) {
-			((Pools->Size() < SmallestSize ? (SmallestSize = Pools->Size(), SmallestEntities = &Pools->GetEntities(), 0) : 0), ...);
-		},
-		PoolTuple);
 
 	// 순회 중 풀 변경을 허용하지 않으므로 목록 복사 없이 순회
 	for (size_t Index = 0; Index < SmallestEntities->size(); ++Index)
@@ -260,6 +254,28 @@ void TView<TComponents...>::Each(TFunc&& Func)
 
 		std::apply([&](auto*... Pools) { Func(Entity, Pools->Get(Entity)...); }, PoolTuple);
 	}
+}
+
+template <typename... TComponents>
+const std::vector<FEntity>* TView<TComponents...>::GetIterationEntities()
+{
+	std::tuple<TSparseSet<TComponents>*...> PoolTuple{ Registry.TryGetPool<TComponents>()... };
+	bool bAllPoolsExist = true;
+	std::apply([&](auto*... Pools) { ((bAllPoolsExist = bAllPoolsExist && Pools != nullptr), ...); }, PoolTuple);
+	if (!bAllPoolsExist)
+	{
+		return nullptr;
+	}
+
+	// 가장 작은 풀의 엔티티 목록 (같은 크기면 앞 타입)
+	const std::vector<FEntity>* SmallestEntities = nullptr;
+	size_t                      SmallestSize     = ~static_cast<size_t>(0);
+	std::apply(
+		[&](auto*... Pools) {
+			((Pools->Size() < SmallestSize ? (SmallestSize = Pools->Size(), SmallestEntities = &Pools->GetEntities(), 0) : 0), ...);
+		},
+		PoolTuple);
+	return SmallestEntities;
 }
 
 template <typename... TComponents>

@@ -1,6 +1,7 @@
 #include "Renderer/SceneRenderer.h"
 
 #include "Core/CommandLine.h"
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/Paths.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
@@ -1953,32 +1954,47 @@ void FSceneRenderer::BakeReflectionCaptures(FScene& Scene)
 
 void FSceneRenderer::ApplyMotionHistory(bool bValid)
 {
-	// 정적 인스턴스만 (스킨은 팔레트가 이전 프레임 본을 따로 가진다). 엔티티 하나 = 인스턴스 하나
-	for (FMeshInstance& Instance : MeshInstances.GetInstances())
+	// 정적 인스턴스만 (스킨은 팔레트가 이전 프레임 본을 따로 가진다). Gather 직후라 엔티티 하나 = 인스턴스 하나 →
+	// 칸 크기를 먼저 맞추고 병렬 (쓰는 것은 자기 인스턴스·엔티티 칸뿐)
+	std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
+	const uint32                Count     = MeshInstances.GetGatheredCount();
+	uint32                      MaxIndex  = 0;
+	bool                        bAny      = false;
+	for (uint32 Index = 0; Index < Count; ++Index)
 	{
-		if (Instance.IsSkinned())
+		if (!Instances[Index].IsSkinned())
 		{
-			continue;
+			MaxIndex = std::max(MaxIndex, Instances[Index].Entity.Index);
+			bAny     = true;
 		}
-		const uint32 Index = Instance.Entity.Index;
-		if (Index >= MotionHistory.size())
-		{
-			MotionHistory.resize(Index + 1);
-		}
-		FMotionHistory& History     = MotionHistory[Index];
-		const bool      bContinuous = History.Generation == Instance.Entity.Generation && History.Frame + 1 == SceneFrameCount;
-		if (bValid && bContinuous)
-		{
-			Instance.PrevWorld = History.World;
-		}
-		// 그림자 캐시 정적 판정: 월드 행렬이 연속 프레임 비트 단위로 같았던 횟수 (ShadowCacheMath.h)
-		const bool bSame       = bContinuous && std::memcmp(&History.World, &Instance.World, sizeof(FMatrix4x4)) == 0;
-		History.StableFrames   = bSame ? std::min(History.StableFrames + 1, 0x7FFFFFFFu) : 0u;
-		Instance.bShadowStatic = ShadowCacheMath::IsStatic(History.StableFrames, ShadowStaticFrames);
-		History.Generation = Instance.Entity.Generation;
-		History.Frame      = SceneFrameCount;
-		History.World      = Instance.World;
 	}
+	if (bAny && MaxIndex >= MotionHistory.size())
+	{
+		MotionHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+	}
+	FParallel::ParallelFor(Count, 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 InstanceIndex = Begin; InstanceIndex < End; ++InstanceIndex)
+		{
+			FMeshInstance& Instance = Instances[InstanceIndex];
+			if (Instance.IsSkinned())
+			{
+				continue;
+			}
+			FMotionHistory& History     = MotionHistory[Instance.Entity.Index];
+			const bool      bContinuous = History.Generation == Instance.Entity.Generation && History.Frame + 1 == SceneFrameCount;
+			if (bValid && bContinuous)
+			{
+				Instance.PrevWorld = History.World;
+			}
+			// 그림자 캐시 정적 판정: 월드 행렬이 연속 프레임 비트 단위로 같았던 횟수 (ShadowCacheMath.h)
+			const bool bSame       = bContinuous && std::memcmp(&History.World, &Instance.World, sizeof(FMatrix4x4)) == 0;
+			History.StableFrames   = bSame ? std::min(History.StableFrames + 1, 0x7FFFFFFFu) : 0u;
+			Instance.bShadowStatic = ShadowCacheMath::IsStatic(History.StableFrames, ShadowStaticFrames);
+			History.Generation = Instance.Entity.Generation;
+			History.Frame      = SceneFrameCount;
+			History.World      = Instance.World;
+		}
+	});
 }
 
 void FSceneRenderer::AddDebugViewPass(FRenderGraph& Graph, const FPostProcessGraphOutput& Output, const FSceneGraphRefs& Refs)
@@ -2335,33 +2351,50 @@ void FSceneRenderer::SelectLods(const FCamera& Camera)
 	const bool     bOrthographic  = Camera.IsOrthographic();
 	const float    TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
 	const FVector3 CameraPosition = Camera.GetPosition();
-	for (FMeshInstance& Instance : MeshInstances.GetInstances())
-	{
+	std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
+	auto SelectOne = [&](FMeshInstance& Instance) {
 		if ((Instance.IsSkinned() && !bSkinnedLod) || Instance.bFixedLod || Instance.Mesh->GetLodCount() <= 1)
 		{
-			continue;
+			return;
 		}
 		if (ForcedLod >= 0)
 		{
 			Instance.Lod = std::min(static_cast<uint32>(ForcedLod), Instance.Mesh->GetLodCount() - 1);
-			continue;
+			return;
 		}
 		const float Radius = Instance.WorldBounds.GetExtent().Length();
 		const float ScreenSize =
 			bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
 			              : LodMath::ComputePerspectiveScreenSize(Radius, FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition), TanHalfFov);
-		// 히스테리시스: 엔티티별 이전 LOD (처음이거나 엔티티가 바뀌었으면 없음)
-		const uint32 Index = Instance.Entity.Index;
-		if (Index >= LodHistory.size())
-		{
-			LodHistory.resize(Index + 1);
-		}
-		FLodHistory& History  = LodHistory[Index];
+		// 히스테리시스: 엔티티별 이전 LOD (처음이거나 엔티티가 바뀌었으면 없음). 칸은 호출 전에 크기를 맞춘다
+		FLodHistory& History  = LodHistory[Instance.Entity.Index];
 		const uint32 Previous = History.Generation == Instance.Entity.Generation ? History.Lod : ~0u;
 		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(),
 		                                                Instance.IsSkinned() ? LodScale * SkinnedLodScale : LodScale, Previous,
 		                                                LodHysteresis);
 		History = { Instance.Entity.Generation, Instance.Lod };
+	};
+	// 칸 크기 먼저 (엔티티 번호 최댓값)
+	uint32 MaxIndex = 0;
+	for (const FMeshInstance& Instance : Instances)
+	{
+		MaxIndex = std::max(MaxIndex, Instance.Entity.Index);
+	}
+	if (!Instances.empty() && MaxIndex >= LodHistory.size())
+	{
+		LodHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+	}
+	// Gather 부분은 엔티티마다 하나라 병렬 (자기 칸만 쓴다), AddExternal 부분은 엔티티가 겹칠 수 있어 순서대로
+	const uint32 GatheredCount = MeshInstances.GetGatheredCount();
+	FParallel::ParallelFor(GatheredCount, 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 Index = Begin; Index < End; ++Index)
+		{
+			SelectOne(Instances[Index]);
+		}
+	});
+	for (size_t Index = GatheredCount; Index < Instances.size(); ++Index)
+	{
+		SelectOne(Instances[Index]);
 	}
 }
 

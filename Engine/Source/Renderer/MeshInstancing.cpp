@@ -1,5 +1,6 @@
 #include "Renderer/MeshInstancing.h"
 
+#include "Core/Jobs/ParallelFor.h"
 #include "RHI/D3D12/D3D12DynamicUploadBuffer.h"
 #include "Renderer/Material.h"
 #include "Renderer/MaterialRender.h"
@@ -11,21 +12,24 @@
 #include <algorithm>
 #include <cstring>
 
-void FMeshInstanceList::Add(FEntity Entity, const FTransformComponent& Transform, const FStaticMeshComponent& MeshComponent,
-                            const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes)
+const FStaticMesh* FMeshInstanceList::ResolveDrawable(FEntity Entity, const FStaticMeshComponent& MeshComponent, const FResourceManager& Resources,
+                                                     const FSkinnedMeshPalette* SkinPalettes)
 {
-	++ComponentCount;
 	if (!MeshComponent.bVisible)
 	{
-		return;
+		return nullptr;
 	}
 	const FStaticMesh* Mesh = Resources.GetMesh(MeshComponent.Mesh);
 	if (Mesh == nullptr || !Mesh->IsReady() || (SkinPalettes != nullptr && SkinPalettes->IsCulled(Entity))) // 업로드 중인 메시는 그리지 않는다
 	{
-		return; // 가시성 판정에서 빠진 스킨 메시는 정적 메시로 그리면 안 된다
+		return nullptr; // 가시성 판정에서 빠진 스킨 메시는 정적 메시로 그리면 안 된다
 	}
+	return Mesh;
+}
 
-	FMeshInstance& Instance = Instances.emplace_back();
+void FMeshInstanceList::Fill(FMeshInstance& Instance, const FStaticMesh* Mesh, FEntity Entity, const FTransformComponent& Transform,
+                             const FStaticMeshComponent& MeshComponent, const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes)
+{
 	Instance.Mesh           = Mesh;
 	Instance.MeshHandle     = MeshComponent.Mesh;
 	Instance.Material       = &Resources.ResolveMaterial(MeshComponent.Material);
@@ -54,11 +58,64 @@ void FMeshInstanceList::Gather(FScene& Scene, const FResourceManager& Resources,
 {
 	Instances.clear();
 	ComponentCount = 0;
+	GatheredCount  = 0;
 	GpuData        = 0;
-	Scene.GetRegistry().View<FTransformComponent, FStaticMeshComponent>().Each(
-		[&](FEntity Entity, FTransformComponent& Transform, FStaticMeshComponent& MeshComponent) {
-			Add(Entity, Transform, MeshComponent, Resources, SkinPalettes);
-		});
+	FRegistry&                  Registry     = Scene.GetRegistry();
+	const std::vector<FEntity>* ViewEntities = Registry.View<FTransformComponent, FStaticMeshComponent>().GetIterationEntities();
+	if (ViewEntities == nullptr || ViewEntities->empty())
+	{
+		return;
+	}
+	const TSparseSet<FTransformComponent>*  TransformPool = Registry.TryGetPool<FTransformComponent>();
+	const TSparseSet<FStaticMeshComponent>* MeshPool      = Registry.TryGetPool<FStaticMeshComponent>();
+	const uint32                            ViewCount     = static_cast<uint32>(ViewEntities->size());
+
+	// 1) 병렬: 뷰 칸마다 그릴 메시 (View<FTransformComponent, FStaticMeshComponent>().Each와 같은 순서·조건)
+	GatherSlots.resize(ViewCount);
+	FParallel::ParallelFor(ViewCount, 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 Index = Begin; Index < End; ++Index)
+		{
+			FGatherSlot&                Slot          = GatherSlots[Index];
+			const FEntity               Entity        = (*ViewEntities)[Index];
+			const FStaticMeshComponent* MeshComponent = MeshPool->TryGet(Entity);
+			Slot.Mesh                                 = nullptr;
+			Slot.Output                               = GatherSlotAbsent;
+			if (MeshComponent == nullptr || !TransformPool->Contains(Entity))
+			{
+				continue;
+			}
+			Slot.Output = 0;
+			Slot.Mesh   = ResolveDrawable(Entity, *MeshComponent, Resources, SkinPalettes);
+		}
+	});
+
+	// 2) 호출 스레드: 출력 번호 (뷰 순서)
+	uint32 OutputCount = 0;
+	for (FGatherSlot& Slot : GatherSlots)
+	{
+		if (Slot.Output == GatherSlotAbsent)
+		{
+			continue;
+		}
+		++ComponentCount;
+		Slot.Output = Slot.Mesh != nullptr ? OutputCount++ : GatherSlotAbsent;
+	}
+	Instances.resize(OutputCount);
+	GatheredCount = OutputCount;
+
+	// 3) 병렬: 인스턴스 채우기 (쓰는 것은 자기 인스턴스뿐)
+	FParallel::ParallelFor(ViewCount, 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 Index = Begin; Index < End; ++Index)
+		{
+			const FGatherSlot& Slot = GatherSlots[Index];
+			if (Slot.Mesh == nullptr)
+			{
+				continue;
+			}
+			const FEntity Entity = (*ViewEntities)[Index];
+			Fill(Instances[Slot.Output], Slot.Mesh, Entity, TransformPool->Get(Entity), MeshPool->Get(Entity), Resources, SkinPalettes);
+		}
+	});
 }
 
 void FMeshInstanceList::GatherEntities(FScene& Scene, const FResourceManager& Resources, const std::vector<FEntity>& Entities,
@@ -70,13 +127,19 @@ void FMeshInstanceList::GatherEntities(FScene& Scene, const FResourceManager& Re
 	FRegistry& Registry = Scene.GetRegistry();
 	for (const FEntity Entity : Entities)
 	{
-		const FTransformComponent*  Transform = Registry.TryGet<FTransformComponent>(Entity);
-		const FStaticMeshComponent* Mesh      = Registry.TryGet<FStaticMeshComponent>(Entity);
-		if (Transform != nullptr && Mesh != nullptr)
+		const FTransformComponent*  Transform     = Registry.TryGet<FTransformComponent>(Entity);
+		const FStaticMeshComponent* MeshComponent = Registry.TryGet<FStaticMeshComponent>(Entity);
+		if (Transform == nullptr || MeshComponent == nullptr)
 		{
-			Add(Entity, *Transform, *Mesh, Resources, SkinPalettes);
+			continue;
+		}
+		++ComponentCount;
+		if (const FStaticMesh* Mesh = ResolveDrawable(Entity, *MeshComponent, Resources, SkinPalettes))
+		{
+			Fill(Instances.emplace_back(), Mesh, Entity, *Transform, *MeshComponent, Resources, SkinPalettes);
 		}
 	}
+	GatheredCount = static_cast<uint32>(Instances.size());
 }
 
 void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
@@ -89,24 +152,27 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 	{
 		std::memset(Data, 0, sizeof(FInstanceGpuData));
 	}
-	for (size_t Index = 0; Index < Instances.size(); ++Index)
-	{
-		const FMeshInstance& Instance = Instances[Index];
-		FInstanceGpuData     Gpu;
-		Gpu.World          = Instance.World;
-		Gpu.BoneOffset     = Instance.BoneOffset;
-		Gpu.PrevBoneOffset = Instance.PrevBoneOffset;
-		Gpu.PrevWorld      = Instance.PrevWorld;
-		if (!Instance.IsSkinned())
+	// 병렬: 구간마다 연속으로 쓴다 (업로드 힙(쓰기 결합)은 읽지 않고 순차 쓰기만)
+	FParallel::ParallelFor(static_cast<uint32>(Instances.size()), 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 Index = Begin; Index < End; ++Index)
 		{
-			const FMatrix4x4 Normal = Instance.World.GetInverse().GetTransposed();
-			for (int32 Row = 0; Row < 3; ++Row)
+			const FMeshInstance& Instance = Instances[Index];
+			FInstanceGpuData     Gpu;
+			Gpu.World          = Instance.World;
+			Gpu.BoneOffset     = Instance.BoneOffset;
+			Gpu.PrevBoneOffset = Instance.PrevBoneOffset;
+			Gpu.PrevWorld      = Instance.PrevWorld;
+			if (!Instance.IsSkinned())
 			{
-				Gpu.NormalMatrix[Row] = FVector4(Normal.M[Row][0], Normal.M[Row][1], Normal.M[Row][2], 0.0f);
+				const FMatrix4x4 Normal = Instance.World.GetInverse().GetTransposed();
+				for (int32 Row = 0; Row < 3; ++Row)
+				{
+					Gpu.NormalMatrix[Row] = FVector4(Normal.M[Row][0], Normal.M[Row][1], Normal.M[Row][2], 0.0f);
+				}
 			}
+			std::memcpy(Data + Index, &Gpu, sizeof(Gpu));
 		}
-		std::memcpy(Data + Index, &Gpu, sizeof(Gpu)); // 업로드 힙(쓰기 결합)은 순차 쓰기만
-	}
+	});
 	GpuData = Allocation.GpuAddress;
 }
 

@@ -51,11 +51,13 @@ public:
 		{
 			Entity.Index = FreeIndices.back();
 			FreeIndices.pop_back();
+			bSlotFree[Entity.Index] = 0;
 		}
 		else
 		{
 			Entity.Index = static_cast<uint32>(Generations.size());
 			Generations.push_back(0);
+			bSlotFree.push_back(0);
 		}
 		Entity.Generation = Generations[Entity.Index];
 		++AliveCount;
@@ -78,6 +80,7 @@ public:
 		}
 		++Generations[Entity.Index];
 		FreeIndices.push_back(Entity.Index);
+		bSlotFree[Entity.Index] = 1;
 		--AliveCount;
 	}
 
@@ -208,20 +211,12 @@ private:
 
 	static uint32 AssignComponentTypeId(std::type_index Type);
 
-	bool IsFree(uint32 Index) const
-	{
-		for (uint32 FreeIndex : FreeIndices)
-		{
-			if (FreeIndex == Index)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+	// 슬롯별 표시로 O(1) — 해제 목록을 훑으면 큰 씬을 닫은 뒤(같은 레지스트리에 씬 열기·맵 전환) IsValid 한 번이 목록 길이만큼 걸린다
+	bool IsFree(uint32 Index) const { return bSlotFree[Index] != 0; }
 
 	std::vector<uint32>                          Generations;
-	std::vector<uint32>                          FreeIndices;
+	std::vector<uint32>                          FreeIndices; // 재사용 순서 (뒤에서 꺼냄)
+	std::vector<uint8>                           bSlotFree;   // 슬롯이 FreeIndices에 있으면 1 (Generations와 같은 길이)
 	std::vector<std::unique_ptr<FSparseSetBase>> Pools;
 	uint32                                       AliveCount = 0;
 };

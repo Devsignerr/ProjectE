@@ -1,6 +1,8 @@
 #include "Core/ECS/Registry.h"
 #include "Core/Testing/TestFramework.h"
 
+#include <vector>
+
 namespace
 {
 	struct FPosition
@@ -93,6 +95,38 @@ E_TEST(ECS_StaleHandleDoesNotAliasReusedSlot)
 	// 오래된 핸들로는 새 엔티티의 컴포넌트에 접근할 수 없다
 	E_EXPECT_FALSE(Registry.Has<FPosition>(Old));
 	E_EXPECT_TRUE(Registry.TryGet<FPosition>(Old) == nullptr);
+}
+
+E_TEST(ECS_FreeSlotStateAfterManyDestroys)
+{
+	// 큰 씬을 비운 뒤 같은 레지스트리를 계속 쓰는 경우 (에디터 씬 열기·맵 전환): 해제 슬롯 판정이 슬롯별로 맞아야 한다
+	FRegistry            Registry;
+	std::vector<FEntity> Entities;
+	for (int32 Index = 0; Index < 1000; ++Index)
+	{
+		Entities.push_back(Registry.Create());
+	}
+	for (const FEntity Entity : Entities)
+	{
+		Registry.Destroy(Entity);
+	}
+	E_EXPECT_EQ(Registry.GetAliveCount(), 0u);
+
+	// 해제된 슬롯의 현재 세대로 만든 핸들도 무효 (슬롯이 비어 있으므로)
+	FEntity Forged = Entities[10];
+	++Forged.Generation;
+	E_EXPECT_FALSE(Registry.IsValid(Forged));
+
+	// 재사용: 마지막으로 해제한 슬롯부터, 재사용한 슬롯만 유효
+	const FEntity Reused = Registry.Create();
+	E_EXPECT_EQ(Reused.Index, Entities.back().Index);
+	E_EXPECT_TRUE(Registry.IsValid(Reused));
+	E_EXPECT_FALSE(Registry.IsValid(Forged));
+	E_EXPECT_FALSE(Registry.IsValid(Entities.back()));
+
+	Registry.Destroy(Reused);
+	E_EXPECT_FALSE(Registry.IsValid(Reused));
+	E_EXPECT_EQ(Registry.GetAliveCount(), 0u);
 }
 
 E_TEST(ECS_SwapRemoveKeepsPoolConsistent)

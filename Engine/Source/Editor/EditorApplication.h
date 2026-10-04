@@ -206,6 +206,8 @@ private:
 	bool  bResetLayoutRequested = false;
 	float  VerifyCameraPanPerFrame = 0.0f; // --verify-camera-pan <cm/프레임>: 편집 카메라를 오른쪽으로 일정하게 민다 (움직일 때 시간 떨림 확인)
 	uint64 VerifyCameraPanStart    = 0;    // --verify-camera-pan-start <프레임>: 이 프레임부터 민다
+	std::wstring VerifyThenOpenScene;           // --then-open <Content 경로>: 시작 씬 뒤 이 씬을 연다 (씬 전환 후 상태 확인)
+	uint64       VerifyThenOpenFrame = 120;     // --then-open-frame <프레임>: 이 프레임에 연다
 	bool  bScriptStopPlayRequested = false; // Lua Game.Quit() → 이번 플레이 틱이 끝난 뒤 정지
 	bool  bStopPlayAfterDebugResume = false; // 스크립트 디버거 정지 중 '플레이 정지' → 재개 후 이번 프레임 끝에 정지
 	uint64 DebugAutoResumeFrames    = 0;     // 자동 검증 --debug-script: 정지 후 이만큼 중첩 프레임을 그리고 재개 (0 = 사람이 재개)

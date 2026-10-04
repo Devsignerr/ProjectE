@@ -327,6 +327,11 @@ bool FEditorApplication::OnInit()
 	{
 		VerifyCameraPanStart = static_cast<uint64>(std::stoull(PanStart));
 	}
+	VerifyThenOpenScene = FCommandLine::FromProcess().GetValue(L"--then-open");
+	if (const std::wstring ThenOpenFrame = FCommandLine::FromProcess().GetValue(L"--then-open-frame"); !ThenOpenFrame.empty())
+	{
+		VerifyThenOpenFrame = static_cast<uint64>(std::stoull(ThenOpenFrame));
+	}
 	// 자동 검증: --open-settings project|editor [--settings-section <Id>] 으로 설정 창 열기
 	if (const std::wstring SettingsArg = FCommandLine::FromProcess().GetValue(L"--open-settings"); !SettingsArg.empty())
 	{
@@ -484,6 +489,12 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	if (VerifyCameraPanPerFrame != 0.0f && Context.Camera == &Camera && GetFrameIndex() >= VerifyCameraPanStart)
 	{
 		Camera.SetPosition(Camera.GetPosition() + Camera.GetRightVector() * VerifyCameraPanPerFrame);
+	}
+	if (!VerifyThenOpenScene.empty() && GetFrameIndex() >= VerifyThenOpenFrame)
+	{
+		E_LOG(LogEditor, Display, "--then-open: {}", FStringConv::ToUtf8(VerifyThenOpenScene));
+		OpenScene(Context.ContentDirectory / VerifyThenOpenScene);
+		VerifyThenOpenScene.clear();
 	}
 
 	FEditorActions::PruneSelection(Context);

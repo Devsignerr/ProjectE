@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6강 문제풀이 — ProjectE 엔진 강의</title>
+<style>
+:root {
+	--bg: #f7f6f2; --surface: #ffffff; --surface2: #f0eee8; --line: #d9d5cb;
+	--text: #22211e; --muted: #6b675e; --accent: #b4532a; --accent-soft: #f6e3d8;
+	--ok: #2e8a5f; --ok-soft: #dcf0e5; --bad: #c0434f; --bad-soft: #f7dfe1; --info: #2f6db5; --info-soft: #dde8f6;
+	--code-bg: #f3f1ec;
+	--shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+		--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+		--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+		--code-bg: #1a1c20; --shadow: none;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #17181b; --surface: #1f2125; --surface2: #282a2f; --line: #3a3d44;
+	--text: #e8e6e1; --muted: #a09c93; --accent: #e58a5c; --accent-soft: #3b2a22;
+	--ok: #6cc79a; --ok-soft: #1d3128; --bad: #ec8590; --bad-soft: #3a2125; --info: #78a9e6; --info-soft: #1f2b3b;
+	--code-bg: #1a1c20; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+	font-size: 16px; line-height: 1.7; word-break: keep-all;
+}
+a { color: var(--accent); }
+code { font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: .88em; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+pre.code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-family: "Cascadia Code", Consolas, "D2Coding", monospace; font-size: 13.5px; line-height: 1.6; margin: 10px 0 4px; tab-size: 4; }
+
+.wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 120px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.top a { text-decoration: none; }
+button.chip { font: inherit; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+header.hero .eyebrow { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 22px; }
+header.hero h1 { font-size: 30px; line-height: 1.3; margin: 4px 0 8px; }
+header.hero p { color: var(--muted); margin: 0 0 6px; }
+
+.status {
+	position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 12px 0 10px; margin: 18px 0 8px;
+	border-bottom: 1px solid var(--line); display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 14px;
+}
+.status .bar { flex: 1 1 200px; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; display: flex; }
+.status .bar .ok { background: var(--ok); }
+.status .bar .bad { background: var(--bad); }
+.status b { font-size: 15px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; }
+.legend span { font-size: 12.5px; padding: 2px 9px; border-radius: 6px; background: var(--surface2); color: var(--muted); }
+
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 18px 0; box-shadow: var(--shadow); scroll-margin-top: 70px; }
+.q.correct { border-color: var(--ok); }
+.q.wrong { border-color: var(--bad); }
+.q .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.q .no { font-weight: 800; color: var(--accent); }
+.q .topic { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface2); color: var(--muted); }
+.q .kind { font-size: 12px; color: var(--muted); margin-left: auto; }
+.q .stem { font-weight: 600; margin: 8px 0 6px; }
+.q ol.opts { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+.q button.opt {
+	width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--surface);
+	border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; display: flex; gap: 10px; line-height: 1.6;
+}
+.q button.opt:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.q button.opt:disabled { cursor: default; }
+.q button.opt .mark { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted); margin-top: 1px; }
+.q button.opt.is-answer { border-color: var(--ok); background: var(--ok-soft); }
+.q button.opt.is-answer .mark { background: var(--ok); color: var(--surface); }
+.q button.opt.is-picked-wrong { border-color: var(--bad); background: var(--bad-soft); }
+.q button.opt.is-picked-wrong .mark { background: var(--bad); color: var(--surface); }
+.q button.opt.dim { opacity: .55; }
+.feedback { margin-top: 14px; border-radius: 10px; padding: 12px 16px; font-size: 15px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .verdict { font-weight: 800; }
+.feedback.ok .verdict { color: var(--ok); }
+.feedback.bad .verdict { color: var(--bad); }
+.feedback p { margin: 6px 0; }
+.feedback .why-wrong { border-left: 3px solid var(--bad); padding-left: 10px; }
+.feedback .review { font-size: 13.5px; margin-top: 8px; }
+
+.result { background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px 22px; margin-top: 30px; box-shadow: var(--shadow); }
+.result h2 { margin: 0 0 4px; font-size: 22px; }
+.result .score { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.result table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14.5px; }
+.result th, .result td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+.result th { background: var(--surface2); }
+.result .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.result .actions a, .result .actions button { font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.result .actions .primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.hidden { display: none; }
+
+@media (max-width: 600px) {
+	.wrap { padding: 20px 16px 80px; }
+	header.hero h1 { font-size: 24px; }
+	.q { padding: 14px 14px; }
+}
+code, pre.code { font-variant-ligatures: none; } /* 코드 글꼴 합자(-> 를 화살표로) 끄기 */
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="top">
+		<a href="Part01_GraphicsBasics.html#lec-6">← 6강 강의로 돌아가기</a>
+		<span><a href="Curriculum.html">커리큘럼</a> · <button class="chip" id="theme-btn" type="button">테마 전환</button></span>
+	</div>
+
+	<header class="hero">
+		<div class="eyebrow">1부 · 6강 문제풀이</div>
+		<h1>GPU 리소스 수명, 제대로 이해했나요?</h1>
+		<p>6강의 다섯 주제(지연 해제, 세대 핸들, 리소스 관리자, 기본 텍스처, 함정)를 모두 확인하는 객관식 문제입니다. 보기를 고르면 바로 채점되고, 고른 보기가 왜 맞는지 또는 왜 틀렸는지 설명이 나옵니다.</p>
+		<div class="legend" id="legend"></div>
+	</header>
+
+	<div class="status" aria-live="polite">
+		<span><b id="answered">0</b> / <span id="total">0</span> 풀이</span>
+		<span>정답 <b id="correct">0</b></span>
+		<div class="bar" aria-hidden="true"><div class="ok" id="bar-ok"></div><div class="bad" id="bar-bad"></div></div>
+		<button class="chip" id="reset-btn" type="button">처음부터</button>
+	</div>
+
+	<div id="questions"></div>
+
+	<section class="result hidden" id="result" aria-live="polite">
+		<h2>결과</h2>
+		<div class="score" id="result-score"></div>
+		<p id="result-message"></p>
+		<table>
+			<thead><tr><th>주제</th><th>정답</th><th>다시 볼 곳</th></tr></thead>
+			<tbody id="result-table"></tbody>
+		</table>
+		<div class="actions">
+			<button type="button" id="retry-wrong" class="primary">틀린 문제만 다시 풀기</button>
+			<button type="button" id="retry-all">전부 다시 풀기</button>
+			<a href="Part02_EngineCore.html#lec-7">7강으로 →</a>
+		</div>
+	</section>
+</div>
+
+<script>
+// 강의 주제 (강의 페이지의 절 앵커)
+const Lesson = "Part01_GraphicsBasics.html";
+const Topics = {
+	defer:    { name: "지연 해제",                 anchor: "lec-6-defer" },
+	handle:   { name: "세대 핸들",                 anchor: "lec-6-handle" },
+	manager:  { name: "FResourceManager 소유 구조", anchor: "lec-6-manager" },
+	fallback: { name: "기본 텍스처",               anchor: "lec-6-default" },
+	pitfalls: { name: "함정과 교훈",               anchor: "lec-6-pitfalls" },
+};
+
+// 문제: a = 정답 인덱스, w = 보기별 설명(정답 보기는 근거, 오답 보기는 왜 틀렸는지), code = 선택 코드
+const Questions = [
+	{
+		t: "defer", kind: "결과 예측",
+		q: "프레임 N을 기록하던 중 CPU 코드가 텍스처를 \"다 썼다\"고 판단해 지연 없이 곧바로 `Shutdown()`으로 해제했습니다. 이미 제출된 프레임 N−1의 명령 목록에 그 텍스처를 읽는 그리기가 남아 있다면?",
+		o: [
+			"GPU가 해제된 메모리를 읽어 화면이 깨지거나 디바이스가 제거될 수 있다.",
+			"ComPtr 참조 카운트가 명령 목록의 참조까지 세므로 해제가 GPU 완료 뒤로 밀린다.",
+			"`ExecuteCommandLists`가 제출 시점에 텍스처 내용을 복사해 두어 영향이 없다.",
+			"메모리는 해제되지만 다른 리소스가 그 자리를 받기 전까지 GPU는 옛 값을 정상으로 읽는다.",
+		],
+		a: 0,
+		w: [
+			"GPU는 CPU보다 몇 프레임 늦게 실행합니다(2강). CPU가 지운 순간에도 제출된 명령에는 그 텍스처를 읽으라는 지시가 남아 있어, 해제된 메모리를 읽게 됩니다. 운이 좋으면 이상한 색, 나쁘면 device removed로 게임이 꺼지고, 타이밍에 따라 가끔만 나타나 재현도 어렵습니다.",
+			"명령 목록은 리소스의 COM 참조를 잡지 않습니다. 그래서 수명 연장은 엔진이 직접(지연 해제 목록이 ComPtr을 들고) 해야 합니다.",
+			"명령 목록에는 리소스의 GPU 주소·디스크립터만 들어갑니다. 텍스처 내용을 복사해 두지 않습니다.",
+			"해제된 메모리를 읽는 것 자체가 정의되지 않은 동작입니다. 덮어써지지 않았더라도 드라이버가 디바이스를 제거할 수 있고, \"정상\"을 기대할 근거가 없습니다.",
+		],
+	},
+	{
+		t: "defer", kind: "순서",
+		q: "ProjectE RHI에서 `DeferRelease`로 요청한 리소스가 실제로 놓이기까지의 흐름으로 맞는 것은?",
+		o: [
+			"현재 칸 목록에 바로 넣음 → 다음 BeginFrame에서 펜스 없이 해제",
+			"기록 중 목록 → BeginFrame에 현재 칸으로 → 같은 프레임 EndFrame에서 해제",
+			"기록 중 목록 → EndFrame에 제출한 칸으로 → 그 칸의 BeginFrame에서 해제",
+			"기록 중 목록 → EndFrame에 GPU를 Flush → 그 자리에서 바로 해제",
+		],
+		a: 2,
+		w: [
+			"펜스 확인 없이 해제하면 GPU가 아직 쓰는 리소스를 지울 수 있어 지연 해제의 의미가 없습니다. \"현재 칸에 바로 넣기\"는 실제로 버그를 낸 옛 방식이기도 합니다(함정 절).",
+			"BeginFrame 시점에 칸을 정하면 그 프레임이 제출되었는지와 무관하게 묶이고, EndFrame에서 해제하면 방금 제출한 프레임이 아직 GPU에서 돌고 있습니다.",
+			"① `RecordingReleases`에 모음 → ② EndFrame에서 제출하고 받은 펜스 값을 칸에 적은 뒤 그 칸의 `PendingReleases`로 옮김 → ③ 같은 칸이 돌아오는 BeginFrame에서 `WaitForFenceValue` 직후 `ProcessPendingReleases`. 펜스를 통과했다는 것이 GPU가 그 프레임을 끝냈다는 보장입니다.",
+			"매 프레임 Flush하면 CPU와 GPU가 겹쳐 돌지 못해 프레임 칸을 둔 의미가 사라집니다. Flush 후 즉시 해제는 종료 때만 씁니다.",
+		],
+	},
+	{
+		t: "defer", kind: "추적",
+		q: "프레임 칸은 3개이고 프레임마다 칸 0 → 1 → 2 → 0 순서로 돕니다. 프레임 10(칸 1)을 기록하는 도중 `DeferRelease`를 불렀습니다. 리소스가 실제로 해제되는 때는?",
+		o: [
+			"프레임 10의 EndFrame 직후",
+			"프레임 11의 BeginFrame",
+			"프레임 12의 BeginFrame",
+			"프레임 13의 BeginFrame",
+		],
+		a: 3,
+		w: [
+			"EndFrame에서는 요청을 칸 1의 목록으로 옮기기만 합니다. 방금 제출한 프레임 10은 아직 GPU에서 돌고 있습니다.",
+			"프레임 11은 칸 2를 씁니다. 칸 2의 BeginFrame은 칸 2의 목록(프레임 8에서 온 것)만 처리합니다.",
+			"프레임 12는 칸 0입니다. 요청이 담긴 칸 1이 아닙니다.",
+			"요청은 프레임 10의 EndFrame에서 칸 1 목록으로 갑니다. 칸 1이 다시 돌아오는 프레임 13의 BeginFrame이 프레임 10의 펜스를 기다린 직후 해제합니다. 그래서 강의 Q2가 \"최대 3프레임\" 동안 옛 리소스가 남는다고 말합니다.",
+		],
+	},
+	{
+		t: "defer", kind: "코드 읽기",
+		q: "`ShutdownDeferred`는 `DeferRelease(Resource)` 바로 다음에 `Resource.Reset()`을 부릅니다. 그런데도 GPU가 끝내기 전에 리소스가 해제되지 않는 이유는?",
+		code: "void FD3D12Texture::ShutdownDeferred(FD3D12RHI& Rhi)\n{\n\tRhi.DeferRelease(Resource);        // ComPtr<ID3D12Object>를 값으로 받는다\n\tRhi.DeferFreeDescriptor(Srv);\n\tSrv          = FD3D12DescriptorHandle{};\n\tSrvAllocator = nullptr;\n\tResource.Reset();\n}",
+		o: [
+			"`Reset`은 참조 카운트를 줄이지 않고 텍스처 객체 안의 포인터 값만 비운다.",
+			"목록에 담긴 ComPtr 사본이 참조를 하나 들고 있어 `Reset` 뒤에도 객체가 살아 있다.",
+			"`DeferRelease`가 리소스를 GPU 전용 힙으로 옮겨 CPU 쪽 `Reset`과 끊어 둔다.",
+			"D3D12 리소스는 펜스 신호가 올 때만 해제되므로 `Reset`이 마지막 참조여도 미뤄진다.",
+		],
+		a: 1,
+		w: [
+			"`ComPtr::Reset`은 `Release`를 불러 참조 카운트를 줄입니다. 이것이 마지막 참조였다면 바로 해제됩니다.",
+			"`DeferRelease`는 ComPtr을 값으로 받아(참조 +1) 목록으로 옮깁니다. 텍스처의 `Reset`은 자기 몫만 놓고, 목록의 `Objects.clear()`가 마지막 참조를 놓는 순간(펜스 통과 후)에 실제로 해제됩니다. 목록에 담는 것만으로 수명이 연장되는 구조입니다.",
+			"리소스의 메모리 위치를 옮기는 일은 없습니다. 같은 COM 객체를 목록이 함께 들 뿐입니다.",
+			"D3D12는 펜스를 보고 해제를 미뤄 주지 않습니다. 마지막 참조가 사라지면 즉시 해제되며, 그래서 엔진이 지연 해제를 직접 만듭니다.",
+		],
+	},
+	{
+		t: "defer", kind: "판단",
+		q: "다음 중 `Destroy*`(지연 해제)가 아니라 즉시 `Shutdown()`을 써도 안전한 경우는?",
+		o: [
+			"에디터에서 머티리얼의 베이스 텍스처를 바꾼 뒤 옛 텍스처를 놓을 때",
+			"BeginFrame 전 ImGui 단계라 아직 이번 프레임 명령이 기록되지 않았을 때",
+			"종료 시 `WaitIdle`·`Flush`로 업로드·그래픽스 큐를 비운 뒤",
+			"텍스처가 1×1처럼 작아 GPU가 이미 다 읽었을 가능성이 높을 때",
+		],
+		a: 2,
+		w: [
+			"렌더링 도중의 삭제입니다. 이전 프레임들이 아직 그 텍스처를 읽고 있을 수 있어 지연 해제가 필요합니다.",
+			"이번 프레임은 기록 전이어도 지난 프레임들은 GPU에서 돌고 있을 수 있습니다. 함정 절의 버그가 바로 이 단계의 요청에서 생겼습니다.",
+			"CLAUDE.md 규칙: \"즉시 `Shutdown()`은 GPU Flush 이후에만\". `FResourceManager::Shutdown`은 `WaitIdle`·`Flush`로 큐를 완전히 비운 다음 모든 리소스를 즉시 놓습니다. GPU가 쓸 일이 남지 않았으므로 미룰 이유가 없습니다.",
+			"크기는 GPU가 그 리소스를 다 썼는지와 무관합니다. 확인은 펜스로만 할 수 있습니다.",
+		],
+	},
+	{
+		t: "handle", kind: "추적",
+		q: "`TResourcePool`은 빈 칸 번호를 `FreeIndices`의 뒤에서 꺼내 재사용합니다. 아래를 실행한 뒤 `C`의 (Index, Generation)과 `P`는?",
+		code: "TResourcePool<FTex, FTextureHandle> Pool;   // 빈 풀\nFTextureHandle A = Pool.Add(MakeTex(\"a\"));\nFTextureHandle B = Pool.Add(MakeTex(\"b\"));\nPool.Remove(A);\nFTextureHandle C = Pool.Add(MakeTex(\"c\"));\nFTex* P = Pool.Get(A);",
+		o: [
+			"C = (2, 0), P = nullptr",
+			"C = (0, 1), P = nullptr",
+			"C = (0, 0), P = 텍스처 c의 포인터",
+			"C = (0, 1), P = 텍스처 c의 포인터",
+		],
+		a: 1,
+		w: [
+			"`Remove`가 칸 0을 `FreeIndices`에 넣었으므로 새 칸 2를 만들지 않고 칸 0을 재사용합니다.",
+			"A = (0, 0), B = (1, 0). `Remove(A)`가 칸 0의 세대를 1로 올리고 빈 칸 목록에 넣습니다. C는 칸 0을 받아 (0, 1)입니다. `Get(A)`는 칸 세대 1 ≠ 핸들 세대 0이라 `IsValid`가 거짓 → nullptr. 칸이 재사용되어도 옛 핸들이 새 텍스처를 잡지 않습니다.",
+			"`Remove`가 세대를 올리는 것을 빠뜨린 추적입니다. 그랬다면 옛 핸들 A가 c를 잡는 바로 그 버그가 납니다.",
+			"`IsValid`는 칸 번호뿐 아니라 세대도 비교합니다. A의 세대 0은 칸의 세대 1과 다릅니다.",
+		],
+	},
+	{
+		t: "handle", kind: "개념",
+		q: "핸들에 세대 없이 칸 번호(Index)만 있다면 어떤 버그가 생길 수 있을까요?",
+		o: [
+			"핸들끼리 같은지 비교할 수 없어 정렬 키나 캐시 키로 쓸 수 없게 된다.",
+			"메시 핸들을 텍스처 함수에 넘겨도 컴파일 오류가 나지 않게 된다.",
+			"지운 칸을 재사용할 수 없어 풀의 칸 수가 생성 횟수만큼 계속 늘어난다.",
+			"지워진 텍스처의 옛 핸들이 같은 칸에 새로 들어온 다른 텍스처를 잡는다.",
+		],
+		a: 3,
+		w: [
+			"정수 하나도 비교·정렬·해시가 됩니다. 세대가 막는 문제는 비교 가능성이 아닙니다.",
+			"종류가 섞이는 것을 막는 것은 세대가 아니라 태그 타입(`THandle<FMeshHandleTag>`)입니다.",
+			"칸 재사용은 `FreeIndices`가 하므로 세대가 없어도 됩니다. 오히려 재사용 때문에 세대가 필요해집니다.",
+			"칸이 재사용되면 옛 핸들과 새 리소스가 같은 번호를 갖습니다. 세대가 없으면 옛 핸들로 접근할 때 엉뚱한 텍스처가 그려지고, 크래시도 없어 찾기 어렵습니다. 지울 때 칸 세대를 올리면 옛 핸들은 세대가 맞지 않아 무효로 판정됩니다.",
+		],
+	},
+	{
+		t: "handle", kind: "결과 예측",
+		q: "아래 코드를 빌드하면?",
+		code: "FMeshHandle Mesh = Resources.CreateMesh(RockData, L\"Rock\");\n// ... 실수로\nResources.DestroyTexture(Mesh);   // void DestroyTexture(FTextureHandle Handle)",
+		o: [
+			"`THandle`의 태그 타입이 달라 서로 다른 타입이므로 컴파일 오류가 난다.",
+			"컴파일되고, 실행 중 텍스처 풀의 `IsValid`가 거짓을 돌려 조용히 무시된다.",
+			"컴파일되고, 같은 Index·Generation을 가진 텍스처가 있으면 그것이 지워진다.",
+			"두 핸들의 멤버 구성이 같아 암시적 변환 경고(C4244)만 나고 빌드된다.",
+		],
+		a: 0,
+		w: [
+			"`FMeshHandle = THandle<FMeshHandleTag>`, `FTextureHandle = THandle<FTextureHandleTag>`. 내용은 정수 두 개로 같아도 템플릿 인자가 달라 별개 타입이고 변환도 없으므로 컴파일 오류입니다. 정수 두 개짜리 구조체에 타입 안전성을 공짜로 얹는 요령입니다.",
+			"컴파일 단계에서 막히므로 실행까지 가지 않습니다.",
+			"태그 타입이 없었다면 생길 수 있는 사고입니다. 태그가 바로 이것을 막습니다.",
+			"멤버 구성이 같다고 다른 구조체 타입끼리 암시적 변환이 생기지는 않습니다. C4244는 산술 타입 축소 경고입니다.",
+		],
+	},
+	{
+		t: "handle", kind: "설계 이유",
+		q: "`TResourcePool::Remove`가 리소스를 그냥 파괴하지 않고 `std::unique_ptr<TResource>`로 호출자에게 돌려주는 이유는?",
+		o: [
+			"`unique_ptr` 소멸자가 펜스를 기다려 주므로 받은 쪽이 바로 버려도 안전하다.",
+			"호출자가 같은 칸에 다시 넣으면 세대를 이전 값으로 되돌릴 수 있게 하려고",
+			"GPU 수명 처리(`ShutdownDeferred`)를 받은 쪽에 맡기려고",
+			"`Remove` 뒤에도 옛 핸들로 객체에 접근할 수 있도록 풀 밖에 보관하려고",
+		],
+		a: 2,
+		w: [
+			"`unique_ptr` 소멸자는 펜스를 모릅니다. 받은 쪽이 `ShutdownDeferred`를 부르지 않고 버리면 GPU 리소스가 즉시 해제됩니다.",
+			"세대는 올라가기만 합니다. 되돌리면 옛 핸들이 다시 유효해져 세대 핸들의 의미가 없어집니다.",
+			"역할 분담입니다. 풀은 칸·세대만 관리하고 D3D12를 모릅니다. `FResourceManager`가 꺼낸 객체에 `ShutdownDeferred(*Rhi)`를 불러 GPU 메모리와 SRV를 지연 해제로 넘긴 뒤 버립니다.",
+			"`Remove` 직후 세대가 올라 옛 핸들의 `Get`은 nullptr입니다. 옛 핸들로 접근하게 하려는 설계가 아닙니다.",
+		],
+	},
+	{
+		t: "handle", kind: "계산",
+		q: "세대는 `uint32`입니다. 한 칸에서 생성·삭제를 초당 1000번 반복하면 세대가 한 바퀴 돌아 0으로 돌아오는 데 대략 얼마나 걸릴까요?",
+		o: ["약 25일", "약 50일", "약 72분", "약 136년"],
+		a: 1,
+		w: [
+			"2³¹(부호 있는 정수)로 계산한 값입니다. `uint32`는 2³²입니다.",
+			"2³² ≈ 4.29 × 10⁹, ÷ 1000/초 ≈ 4.29 × 10⁶초 ≈ 49.7일. 그 긴 시간 동안 옛 핸들을 계속 들고 있어야 오인이 생기므로 게임 리소스에는 32비트로 충분합니다. 엔티티처럼 생성·삭제가 훨씬 잦으면 비트 배분을 다시 따져야 합니다.",
+			"초당 100만 번으로 계산한 값입니다(1000을 1000배 잘못 씀).",
+			"초당 1번으로 계산한 값입니다.",
+		],
+	},
+	{
+		t: "manager", kind: "설계 이유",
+		q: "`FMeshHandle`·`FTextureHandle`·`FMaterialHandle`은 Renderer가 아니라 Scene 모듈의 `Scene/ResourceHandles.h`에 정의되어 있습니다. 그 이유는?",
+		o: [
+			"씬 코드가 `FResourceManager`를 직접 불러 메시를 만들 수 있게 하려고",
+			"핸들 Index를 씬 JSON에 그대로 저장해 다음 실행에서 같은 리소스를 찾으려고",
+			"Renderer 헤더는 D3D12 타입을 포함하므로 핸들 헤더까지 무겁게 하지 않으려고",
+			"씬이 렌더러를 몰라도 \"이 엔티티는 저 메시를 쓴다\"를 표현하게 하려고",
+		],
+		a: 3,
+		w: [
+			"반대입니다. Scene은 Renderer를 모르며(의존 방향 Renderer → Scene), 리소스를 만들고 해석하는 것은 렌더러 쪽입니다.",
+			"핸들은 실행 중에만 의미 있는 칸 번호·세대라 파일에 저장하지 않습니다. 씬 파일에는 에셋 경로가 들어갑니다.",
+			"헤더 무게는 부수 효과일 뿐 핵심 이유가 아닙니다. 핸들이 Renderer에 있었다면 Scene이 Renderer에 의존해야 한다는 것이 문제입니다.",
+			"핸들은 작은 값 타입이라 Scene에 둘 수 있고, 실제 객체는 Renderer의 `FResourceManager`가 소유합니다. 0강의 단방향 의존(Renderer → Scene → Core)이 지켜집니다.",
+		],
+	},
+	{
+		t: "manager", kind: "틀린 것은?",
+		q: "`FResourceManager::DestroyTexture`가 하는 일로 **틀린** 것은?",
+		o: [
+			"이 텍스처 핸들을 들고 있는 씬 컴포넌트를 찾아 핸들을 무효 값으로 바꾼다.",
+			"풀에서 꺼내며 칸 세대를 올려 CPU 쪽의 옛 핸들을 모두 무효로 만든다.",
+			"꺼낸 텍스처의 리소스와 SRV를 `ShutdownDeferred`로 지연 해제에 넘긴다.",
+			"이 텍스처를 쓰던 머티리얼의 디스크립터 표를 기본 텍스처로 다시 만든다.",
+		],
+		a: 0,
+		w: [
+			"이것은 하지 않습니다. 흩어진 참조를 일일이 찾아 고치지 않아도 되도록 세대 핸들을 쓰는 것입니다. 컴포넌트가 든 옛 핸들은 그대로 남지만 세대가 맞지 않아 무효로 판정되고, `ResolveTexture`가 흰색 기본 텍스처로 해석합니다.",
+			"맞는 설명입니다. `Textures.Remove(Handle)`가 세대를 올립니다.",
+			"맞는 설명입니다. GPU 메모리와 디스크립터는 펜스 통과 후 놓입니다.",
+			"맞는 설명입니다. 머티리얼 표는 텍스처 SRV를 복사해 둔 칸이라 원본이 사라지면 고쳐야 합니다(이전 표는 지연 해제).",
+		],
+	},
+	{
+		t: "manager", kind: "결과 예측",
+		q: "`DestroyTexture(T)`로 텍스처를 지운 직후, 같은 파일 경로로 텍스처를 다시 불러왔습니다. 결과로 맞는 것은?",
+		o: [
+			"경로 캐시에 남은 옛 핸들 `T`를 돌려줘 그 텍스처는 흰색으로 보인다.",
+			"지연 해제 목록의 옛 텍스처를 되살려 `T`와 같은 핸들을 다시 돌려준다.",
+			"새 텍스처·새 핸들이 생기고 옛 핸들 `T`는 무효로 남는다.",
+			"같은 칸이 재사용되므로 옛 핸들 `T`도 새 텍스처를 가리키게 된다.",
+		],
+		a: 2,
+		w: [
+			"`DestroyTexture`는 경로 캐시에서도 항목을 지우므로 옛 핸들을 돌려주지 않습니다. 지우지 않았다면 실제로 이 증상이 생겼을 것입니다.",
+			"지연 해제 목록은 GPU 완료를 기다리는 대기열일 뿐, 되살리는 경로가 없습니다. 그래서 강의 Q2처럼 잠깐 옛 것과 새 것이 함께 메모리에 있을 수 있습니다.",
+			"캐시 항목이 없으므로 새로 만들어 새 핸들을 캐시에 넣습니다. 칸이 재사용되더라도 세대가 올라 있으므로 `T`는 여전히 무효입니다.",
+			"칸 번호가 같아도 세대가 다릅니다. 이것이 세대 핸들이 막는 상황입니다.",
+		],
+	},
+	{
+		t: "manager", kind: "설계 이유",
+		q: "텍스처를 지울 때 그 텍스처를 쓰던 머티리얼의 디스크립터 표를 **다시 만들어야** 하는 이유는?",
+		o: [
+			"표 칸에 텍스처 핸들이 들어 있어, 세대가 바뀌면 셰이더가 그 칸을 읽지 못한다.",
+			"표 칸은 텍스처 SRV를 복사해 둔 것이라, 원본이 해제되면 사라진 리소스를 가리킨다.",
+			"루트 시그니처가 표의 텍스처 수를 고정하므로 하나가 빠지면 PSO가 맞지 않는다.",
+			"`BuildMaterialTable`이 텍스처의 sRGB 여부를 표에 기록해 두어 다시 읽어야 한다.",
+		],
+		a: 1,
+		w: [
+			"셰이더 가시 힙의 디스크립터 칸에는 핸들이 아니라 SRV 디스크립터가 들어 있습니다. 셰이더는 세대를 모릅니다.",
+			"머티리얼마다 셰이더 가시 힙에 연속 칸을 두고 텍스처 SRV를 복사해 둡니다. 원본 텍스처가 지연 해제되면 그 복사본은 곧 사라질 리소스를 가리키므로, 기본 텍스처로 표를 다시 만들고 이전 표는 지연 해제합니다. 이 복사 관계는 밉 스트리밍에서 더 중요해집니다.",
+			"텍스처 수는 그대로입니다. 빠진 자리를 기본 텍스처가 채우므로 표 모양과 루트 시그니처는 변하지 않습니다.",
+			"sRGB 여부는 SRV 형식에 들어 있지 표가 따로 기록하지 않습니다. 다시 만드는 이유는 칸이 가리키는 리소스입니다.",
+		],
+	},
+	{
+		t: "fallback", kind: "결과 예측",
+		q: "1×1 평면 노멀 기본 텍스처 (128, 128, 255)를 실수로 sRGB 포맷(`true`)으로 만들었다면 노멀 맵이 없는 머티리얼은 어떻게 셰이딩될까요?",
+		o: [
+			"sRGB 변환은 B 채널에만 적용되어 법선의 Z가 줄고 표면이 조금 어두워진다.",
+			"셰이더가 노멀 텍스처를 읽을 때 선형으로 다시 바꾸므로 화면은 그대로다.",
+			"1×1 텍스처는 밉이 하나뿐이라 sRGB 변환이 적용되지 않아 결과가 같다.",
+			"R·G가 약 0.22로 읽혀 법선이 −X·−Y 쪽으로 기운다.",
+		],
+		a: 3,
+		w: [
+			"sRGB 디코딩은 R·G·B 세 채널에 모두 적용됩니다(알파만 제외).",
+			"sRGB 포맷이면 하드웨어가 샘플할 때 이미 선형으로 바꿔 돌려줍니다. 셰이더가 한 번 더 바꾸지 않으며, 바로 그 자동 변환이 데이터를 망칩니다.",
+			"sRGB 변환은 포맷의 성질이라 크기·밉 수와 무관합니다.",
+			"128/255 ≈ 0.502가 sRGB 디코딩으로 ≈ 0.216이 되고, 2x − 1 = −0.57이라 법선이 (−0.57, −0.57, …) 쪽으로 기웁니다. 그래서 평면 노멀은 선형(`false`)으로 만듭니다. 색은 sRGB, 데이터는 선형이라는 5강의 구분입니다.",
+		],
+	},
+	{
+		t: "fallback", kind: "결과 예측",
+		q: "Phase 37부터 텍스처는 백그라운드에서 읽습니다. 아직 읽는 중인 텍스처를 쓰는 물체를 그리면?",
+		o: [
+			"준비될 때까지 흰색 기본 텍스처로 그려졌다가 나중에 바뀐다.",
+			"그 텍스처를 쓰는 메시는 로딩이 끝날 때까지 그리기 목록에서 빠져 보이지 않는다.",
+			"메인 스레드가 그 텍스처의 업로드가 끝날 때까지 기다린 뒤 그리기를 기록한다.",
+			"아직 SRV가 없어 빈 디스크립터가 묶이고 그동안은 검은색으로 그려진다.",
+		],
+		a: 0,
+		w: [
+			"`ResolveTexture`는 텍스처가 없거나 `IsReady()`가 거짓이면 흰색 기본 텍스처를 돌려줍니다(머티리얼 표도 준비 전에는 기본 텍스처). 이미 있던 \"없음 → 기본 텍스처\" 경로가 비동기 로딩의 자리표시로 자연스럽게 확장되었습니다.",
+			"준비 확인으로 그리기에서 빼는 것은 메시(`FStaticMesh::IsReady`)의 경우입니다. 텍스처는 기본 텍스처로 대신해 물체를 계속 그립니다.",
+			"기다리면 비동기 로딩의 의미가 없고 끊김이 생깁니다. 준비 전에도 그릴 수 있게 하는 것이 목적입니다.",
+			"빈 디스크립터를 묶으면 디버그 레이어 오류와 정의되지 않은 결과가 납니다. 기본 텍스처가 그 자리를 채웁니다.",
+		],
+	},
+	{
+		t: "fallback", kind: "코드 읽기",
+		q: "`DestroyTexture`는 첫 줄에서 `WhiteTexture`와 `FlatNormalTexture`의 삭제를 거부합니다. 이 검사가 없어 흰색 기본 텍스처가 지워졌다면 가장 직접적인 문제는?",
+		code: "const FD3D12Texture& FResourceManager::ResolveTexture(FTextureHandle Handle) const\n{\n\tif (const FD3D12Texture* Texture = Textures.Get(Handle); Texture != nullptr && Texture->IsReady())\n\t{\n\t\treturn *Texture;\n\t}\n\treturn *Textures.Get(WhiteTexture);\n}",
+		o: [
+			"이후 무효 핸들은 평면 노멀 텍스처로 해석되어 물체 색이 푸르게 보인다.",
+			"경로 캐시가 흰색을 다시 만들므로 한 프레임만 깜빡이고 다시 정상이 된다.",
+			"무효 핸들을 해석할 때 `ResolveTexture` 마지막 줄이 nullptr을 역참조한다.",
+			"기본 머티리얼의 표가 지연 해제되어 다음 프레임부터 모든 물체가 검게 보인다.",
+		],
+		a: 2,
+		w: [
+			"`ResolveTexture`는 다른 기본 텍스처로 넘어가는 경로가 없습니다. 언제나 `WhiteTexture`만 봅니다.",
+			"기본 텍스처는 파일 경로가 없는 생성 텍스처라 경로 캐시가 되살리지 않습니다.",
+			"`ResolveTexture`는 \"언제나 유효한 참조\"를 약속하며 그 바닥이 흰색 기본 텍스처입니다. 그것이 지워지면 `Textures.Get`이 nullptr을 돌려주고 `*nullptr` 역참조로 크래시가 납니다. 모두가 기대는 바닥이라 삭제를 막아 둡니다.",
+			"검게 보이는 문제가 아니라 해석 함수 자체가 깨집니다. 지운 뒤 머티리얼 표를 다시 만드는 과정도 기본 텍스처에 기대므로 더 먼저 문제가 납니다.",
+		],
+	},
+	{
+		t: "fallback", kind: "판단",
+		q: "발광(emissive) 슬롯도 텍스처가 없으면 흰색 기본 텍스처를 씁니다. 그런데도 발광 텍스처가 없는 물체가 빛나지 않는 이유는?",
+		o: [
+			"발광 슬롯은 흰색이 아니라 1×1 검은색 기본 텍스처를 따로 쓰기 때문이다.",
+			"셰이더가 `IsReady` 플래그를 보고 텍스처가 없으면 발광 계산을 건너뛰기 때문이다.",
+			"발광 텍스처는 sRGB라서 흰색이 선형으로 디코딩되면 0에 가까워지기 때문이다.",
+			"곱하는 `EmissiveFactor`의 기본값이 0이기 때문이다.",
+		],
+		a: 3,
+		w: [
+			"ProjectE의 기본 텍스처는 흰색과 평면 노멀 두 개뿐입니다. 노멀 슬롯만 평면 노멀이고 나머지는 흰색입니다.",
+			"셰이더에는 텍스처 유무 분기가 없습니다. 언제나 같은 식으로 계산하는 것이 기본 텍스처를 두는 목적입니다.",
+			"sRGB에서 흰색(255)은 선형으로도 1.0입니다. 0이 되지 않습니다.",
+			"`ShaderTypes.h`에서 `EmissiveFactor`의 기본값이 `ZeroVector`입니다. 흰색(1) × 0 = 0이라 빛나지 않습니다. 기본 텍스처는 슬롯의 의미에 맞춰 고르고, 곱하는 계수의 기본값으로 \"없음\"을 표현합니다(강의 Q3).",
+		],
+	},
+	{
+		t: "pitfalls", kind: "실제로 겪은 일",
+		q: "처음의 `DeferRelease`는 요청을 곧바로 `PendingReleases[CurrentBackBufferIndex]`에 넣었습니다. 에디터가 생긴 뒤 이 방식이 문제가 된 원인은?",
+		o: [
+			"에디터가 여러 뷰포트를 그려 프레임 칸 수가 3개를 넘었기 때문이다.",
+			"BeginFrame 전 UI 단계의 요청이 아직 지난 프레임의 칸에 들어갔기 때문이다.",
+			"`CurrentBackBufferIndex`를 여러 스레드가 동시에 바꾸어 칸이 섞였기 때문이다.",
+			"에디터가 해제를 너무 많이 요청해 펜스 값이 넘쳐 0으로 돌아갔기 때문이다.",
+		],
+		a: 1,
+		w: [
+			"프레임 칸 수는 스왑체인 백버퍼 수로 고정입니다. 뷰포트 수와 관계없습니다.",
+			"ImGui UI를 만드는 단계는 BeginFrame 전이라 `CurrentBackBufferIndex`가 아직 지난 프레임의 칸입니다. 요청이 그 칸에 들어가면, 이번에 기록할 프레임이 GPU에서 끝났는지 확인하지 않은 채 그 칸이 돌아올 때 해제됩니다. 그래서 `RecordingReleases`에 모았다가 EndFrame에서 \"방금 제출한 프레임\"의 칸으로 옮기도록 고쳤습니다. 교훈: 암묵적 상태가 아니라 제출이라는 확실한 사건에 묶어라.",
+			"해제 요청과 칸 전환은 모두 메인 스레드에서 일어났습니다. 문제는 경쟁이 아니라 요청 시점이었습니다.",
+			"펜스 값은 64비트 증가 값이라 넘치지 않습니다. 요청 수와도 무관합니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "버그 찾기",
+		q: "에디터 패널이 썸네일을 그리려고 아래처럼 SRV를 한 번만 얻어 둡니다. 텍스처 밉 스트리밍(Phase 53)이 켜진 뒤 생길 수 있는 문제는?",
+		code: "// 패널을 열 때 한 번\nCachedSrv = Resources.ResolveTexture(Handle).GetSrv();\n\n// 매 프레임\nDrawThumbnail(CachedSrv);",
+		o: [
+			"밉 범위 교체로 옛 디스크립터가 지연 해제되어 `CachedSrv`가 곧 해제될 칸을 가리킨다.",
+			"스트리밍이 텍스처를 교체할 때 핸들 세대가 올라 `Handle` 자체가 무효가 된다.",
+			"`ResolveTexture`가 참조를 돌려주므로 `CachedSrv`가 늘 최신 디스크립터를 따라간다.",
+			"매 프레임 같은 디스크립터를 묶으면 디버그 레이어가 중복 바인딩 경고를 낸다.",
+		],
+		a: 0,
+		w: [
+			"`SwapContents`는 같은 핸들 뒤의 내용을 새 밉 범위의 텍스처로 바꾸고 이전 내용은 지연 해제합니다. 핸들은 세대로 보호되지만 핸들에서 꺼낸 디스크립터 주소는 보호되지 않습니다. 그래서 CLAUDE.md는 \"텍스처 SRV/디스크립터를 프레임을 넘겨 캐시하지 않는다\"를 규칙으로 두고 매 프레임 핸들에서 다시 얻게 합니다(30강).",
+			"교체는 같은 핸들 뒤에서 일어납니다(`SwapContents`). 핸들은 계속 유효하고, 그래서 다시 얻으면 새 디스크립터가 나옵니다.",
+			"`GetSrv()` 결과를 값으로 복사해 두었으므로 그 시점의 칸에 고정됩니다. 따라가지 않습니다.",
+			"같은 디스크립터를 매 프레임 쓰는 것 자체는 문제가 아닙니다. 문제는 그 칸이 해제된 뒤에도 쓴다는 것입니다.",
+		],
+	},
+	{
+		t: "pitfalls", kind: "버그 찾기",
+		q: "에디터를 종료하자 \"디스크립터 3개가 반환되지 않은 채 할당자가 종료됩니다\" 경고가 났습니다. 가장 먼저 의심할 원인은?",
+		o: [
+			"세대 값이 한 바퀴 돌아 옛 핸들이 다시 유효해지며 디스크립터가 두 번 할당되었다.",
+			"누군가 기본 텍스처를 지우려다 거부되어 그 SRV가 반환 목록에 들어가지 못했다.",
+			"`DeferFreeDescriptor`가 칸을 너무 일찍 반환해 GPU가 읽던 칸이 덮어써졌다.",
+			"어떤 해제 경로에서 SRV의 `DeferFreeDescriptor` 호출이 빠졌다.",
+		],
+		a: 3,
+		w: [
+			"세대 순환은 사실상 일어나지 않으며(약 50일), 일어나도 디스크립터 할당 수와 직접 관계가 없습니다.",
+			"기본 텍스처는 삭제 거부 후에도 관리자가 소유하다가 종료 때 정상적으로 놓습니다. 반환되지 않은 칸이 생기지 않습니다.",
+			"너무 일찍 반환하는 것은 반대 방향의 버그(덮어쓰기)입니다. 이 경고는 반환이 아예 안 된 칸이 있다는 뜻입니다.",
+			"반환되지 않은 칸 = 어디선가 `Free`가 빠졌다는 뜻입니다. `ShutdownDeferred`처럼 리소스와 디스크립터를 함께 넘겨야 하는데 한쪽이 빠진 경로를 찾습니다. 수명 관리가 맞는지는 할당자 경고와 `ReportLiveObjects`로 \"종료가 깨끗한가\"를 보고 확인합니다.",
+		],
+	},
+];
+
+// ---- 상태 ----
+const StorageKey = "projecte-quiz-06";
+let Picks = LoadPicks(); // 문제 번호 → 고른 보기 인덱스
+let Filter = null;       // null이면 전체, 배열이면 그 번호만 표시
+
+function LoadPicks()
+{
+	try
+	{
+		const Raw = JSON.parse(localStorage.getItem(StorageKey) || "{}");
+		return typeof Raw === "object" && Raw !== null ? Raw : {};
+	}
+	catch (e) { return {}; }
+}
+
+function SavePicks()
+{
+	try { localStorage.setItem(StorageKey, JSON.stringify(Picks)); }
+	catch (e) { /* 저장할 수 없는 환경이면 이번 방문 동안만 유지 */ }
+}
+
+// `코드` 표기를 <code>로 바꿔 넣는다 (textContent만 써서 안전)
+function AppendRich(Parent, Text)
+{
+	Text.split(/(`[^`]+`)/).forEach(Part =>
+	{
+		if (Part.startsWith("`") && Part.endsWith("`") && Part.length > 1)
+		{
+			const C = document.createElement("code");
+			C.textContent = Part.slice(1, -1);
+			Parent.append(C);
+		}
+		else
+		{
+			// **굵게** 표기
+			Part.split(/(\*\*[^*]+\*\*)/).forEach(Sub =>
+			{
+				if (Sub.startsWith("**") && Sub.endsWith("**") && Sub.length > 4)
+				{
+					const B = document.createElement("b");
+					B.textContent = Sub.slice(2, -2);
+					Parent.append(B);
+				}
+				else if (Sub)
+				{
+					Parent.append(document.createTextNode(Sub));
+				}
+			});
+		}
+	});
+	return Parent;
+}
+
+function El(Tag, Class)
+{
+	const Node = document.createElement(Tag);
+	if (Class) Node.className = Class;
+	return Node;
+}
+
+const Letters = ["①", "②", "③", "④", "⑤"];
+
+// 보기 표시 순서: 문제 번호로 정해지는 고정 순열 (정답 위치가 고르게 나뉘도록 고른 씨앗).
+// 데이터의 a/w는 원래 순서 기준이고, 화면 번호(①~④)만 이 순서를 따른다
+const ShuffleSalt = 10546;
+function OptionOrder(Index, Count)
+{
+	let Seed = (Math.imul(Index, 2654435761) + ShuffleSalt * 97 + 12345) >>> 0;
+	const Order = [...Array(Count).keys()];
+	for (let K = Count - 1; K > 0; --K)
+	{
+		Seed = (Math.imul(Seed, 1664525) + 1013904223) >>> 0;
+		const J = (Seed >>> 16) % (K + 1); // 상위 비트 (LCG 하위 비트는 주기가 짧다)
+		[Order[K], Order[J]] = [Order[J], Order[K]];
+	}
+	return Order; // Order[화면 위치] = 원래 보기 번호
+}
+
+function DisplayLetter(Index, Count, Original)
+{
+	return Letters[OptionOrder(Index, Count).indexOf(Original)];
+}
+
+function RenderQuestion(Q, Index)
+{
+	const Card = El("article", "q");
+	Card.id = `q${Index + 1}`;
+	const Head = El("div", "head");
+	const No = El("span", "no"); No.textContent = `문제 ${Index + 1}`;
+	const Topic = El("span", "topic"); Topic.textContent = Topics[Q.t].name;
+	const Kind = El("span", "kind"); Kind.textContent = Q.kind;
+	Head.append(No, Topic, Kind);
+	Card.append(Head, AppendRich(El("div", "stem"), Q.q));
+	if (Q.code)
+	{
+		const Pre = El("pre", "code");
+		Pre.textContent = Q.code;
+		Card.append(Pre);
+	}
+	const List = El("ol", "opts");
+	const Buttons = new Array(Q.o.length);
+	OptionOrder(Index, Q.o.length).forEach((OptIndex, Position) =>
+	{
+		const Li = El("li");
+		const Btn = El("button", "opt");
+		Btn.type = "button";
+		const Mark = El("span", "mark"); Mark.textContent = Letters[Position];
+		Btn.append(Mark, AppendRich(El("span"), Q.o[OptIndex]));
+		Btn.addEventListener("click", () => Pick(Index, OptIndex));
+		Li.append(Btn);
+		List.append(Li);
+		Buttons[OptIndex] = Btn; // 원래 보기 번호로 찾는다
+	});
+	Card.append(List);
+	const Feedback = El("div", "feedback hidden");
+	Card.append(Feedback);
+
+	const Picked = Picks[Index];
+	if (Picked !== undefined) ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked);
+	return Card;
+}
+
+function ShowAnswer(Q, Index, Card, Buttons, Feedback, Picked)
+{
+	const Answer = DisplayLetter(Index, Q.o.length, Q.a);
+	const Chosen = DisplayLetter(Index, Q.o.length, Picked);
+	const bCorrect = Picked === Q.a;
+	Card.classList.add(bCorrect ? "correct" : "wrong");
+	Buttons.forEach((Btn, I) =>
+	{
+		Btn.disabled = true;
+		if (I === Q.a) Btn.classList.add("is-answer");
+		else if (I === Picked) Btn.classList.add("is-picked-wrong");
+		else Btn.classList.add("dim");
+	});
+	Feedback.className = "feedback " + (bCorrect ? "ok" : "bad");
+	Feedback.replaceChildren();
+	const Verdict = El("div", "verdict");
+	Verdict.textContent = bCorrect ? `정답입니다 (${Answer})` : `오답입니다. 정답은 ${Answer}`;
+	Feedback.append(Verdict);
+	if (!bCorrect)
+	{
+		const Wrong = El("p", "why-wrong");
+		Wrong.append(document.createTextNode(`고른 ${Chosen}: `));
+		AppendRich(Wrong, Q.w[Picked]);
+		Feedback.append(Wrong);
+	}
+	const Why = El("p");
+	Why.append(document.createTextNode(bCorrect ? "" : `정답 ${Answer}: `));
+	AppendRich(Why, Q.w[Q.a]);
+	Feedback.append(Why);
+	const Review = El("div", "review");
+	const Link = El("a");
+	Link.href = `${Lesson}#${Topics[Q.t].anchor}`;
+	Link.textContent = `강의에서 다시 보기: ${Topics[Q.t].name} →`;
+	Review.append(Link);
+	Feedback.append(Review);
+}
+
+function Pick(Index, OptIndex)
+{
+	if (Picks[Index] !== undefined) return;
+	Picks[Index] = OptIndex;
+	SavePicks();
+	Render();
+	const Card = document.getElementById(`q${Index + 1}`);
+	Card?.querySelector(".feedback")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function Render()
+{
+	const Container = document.getElementById("questions");
+	Container.replaceChildren();
+	Questions.forEach((Q, I) =>
+	{
+		if (Filter && !Filter.includes(I)) return;
+		Container.append(RenderQuestion(Q, I));
+	});
+	UpdateStatus();
+}
+
+function UpdateStatus()
+{
+	const Visible = Questions.map((_, I) => I).filter(I => !Filter || Filter.includes(I));
+	const Answered = Visible.filter(I => Picks[I] !== undefined);
+	const Correct = Answered.filter(I => Picks[I] === Questions[I].a);
+	document.getElementById("total").textContent = Visible.length;
+	document.getElementById("answered").textContent = Answered.length;
+	document.getElementById("correct").textContent = Correct.length;
+	document.getElementById("bar-ok").style.width = `${(Correct.length / Visible.length) * 100}%`;
+	document.getElementById("bar-bad").style.width = `${((Answered.length - Correct.length) / Visible.length) * 100}%`;
+
+	const Result = document.getElementById("result");
+	if (Answered.length < Visible.length)
+	{
+		Result.classList.add("hidden");
+		return;
+	}
+	Result.classList.remove("hidden");
+	const AllCorrect = Questions.filter((Q, I) => Picks[I] === Q.a).length;
+	const Ratio = AllCorrect / Questions.length;
+	document.getElementById("result-score").textContent = `${AllCorrect} / ${Questions.length}`;
+	document.getElementById("result-message").textContent =
+		Ratio === 1 ? "모두 맞혔습니다. 6강을 확실히 이해했습니다. 7강으로 넘어가도 좋습니다." :
+		Ratio >= 0.8 ? "거의 다 이해했습니다. 아래 표에서 틀린 주제만 다시 보고 넘어가세요." :
+		Ratio >= 0.6 ? "큰 흐름은 잡았지만 빈 곳이 있습니다. 틀린 주제의 절을 다시 읽고 틀린 문제를 다시 풀어 보세요." :
+		"6강을 한 번 더 읽고 다시 풀어 보는 것을 권합니다. 특히 아래 표에서 정답률이 낮은 주제를 중심으로 보세요.";
+
+	const Body = document.getElementById("result-table");
+	Body.replaceChildren();
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Indices = Questions.map((Q, I) => (Q.t === Key ? I : -1)).filter(I => I >= 0);
+		if (Indices.length === 0) continue;
+		const Ok = Indices.filter(I => Picks[I] === Questions[I].a).length;
+		const Tr = El("tr");
+		const Td1 = El("td"); Td1.textContent = Topic.name;
+		const Td2 = El("td"); Td2.textContent = `${Ok} / ${Indices.length}`;
+		const Td3 = El("td");
+		if (Ok < Indices.length)
+		{
+			const A = El("a");
+			A.href = `${Lesson}#${Topic.anchor}`;
+			A.textContent = "강의 절 다시 보기";
+			Td3.append(A);
+		}
+		else
+		{
+			Td3.textContent = "✓";
+		}
+		Tr.append(Td1, Td2, Td3);
+		Body.append(Tr);
+	}
+	document.getElementById("retry-wrong").disabled = AllCorrect === Questions.length;
+}
+
+document.getElementById("retry-wrong").addEventListener("click", () =>
+{
+	const Wrong = Questions.map((Q, I) => (Picks[I] !== Q.a ? I : -1)).filter(I => I >= 0);
+	if (Wrong.length === 0) return;
+	Wrong.forEach(I => delete Picks[I]);
+	Filter = Wrong;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function ResetAll()
+{
+	Picks = {};
+	Filter = null;
+	SavePicks();
+	Render();
+	window.scrollTo({ top: 0, behavior: "smooth" });
+}
+document.getElementById("retry-all").addEventListener("click", ResetAll);
+document.getElementById("reset-btn").addEventListener("click", ResetAll);
+
+// 주제 범례
+(function ()
+{
+	const Legend = document.getElementById("legend");
+	for (const [Key, Topic] of Object.entries(Topics))
+	{
+		const Count = Questions.filter(Q => Q.t === Key).length;
+		const Span = El("span");
+		Span.textContent = `${Topic.name} ${Count}문제`;
+		Legend.append(Span);
+	}
+})();
+
+// 테마 전환 (강의 페이지와 같은 저장 키)
+(function ()
+{
+	const Root = document.documentElement;
+	try
+	{
+		const Saved = localStorage.getItem("projecte-lectures-theme");
+		if (Saved) Root.dataset.theme = Saved;
+	}
+	catch (e) {}
+	document.getElementById("theme-btn").addEventListener("click", () =>
+	{
+		const IsDark = Root.dataset.theme ? Root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+		Root.dataset.theme = IsDark ? "light" : "dark";
+		try { localStorage.setItem("projecte-lectures-theme", Root.dataset.theme); } catch (e) {}
+	});
+})();
+
+Render();
+</script>
+</body>
+</html>

@@ -1755,6 +1755,11 @@ Output.WorldNormal   = normalize(mul(Input.Normal, (float3x3)WorldInverseTranspo
 <details class="quiz"><summary>Q3. 균등 스케일(모든 축 2배)만 있는 물체라면 역전치 대신 월드 행렬로 법선을 곱해도 될까요?</summary>
 	됩니다. 균등 스케일 s는 법선 방향을 바꾸지 않고 길이만 s배 하므로, 곱한 뒤 정규화하면 같은 결과입니다. 회전은 역행렬이 전치라 (M⁻¹)ᵀ = M입니다. 문제는 비균등 스케일뿐이지만, 어떤 물체가 비균등 스케일을 가질지 셰이더는 모르므로 일반적으로 역전치를 씁니다.
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	5강 내용을 모두 이해했는지 객관식 24문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz05_3DBasics.html">→ 5강 문제풀이</a>
+</div>
 </article>
 
 <!-- ======================================================= 6강 ======================================================= -->
@@ -2087,6 +2092,11 @@ DefaultMaterial = CreateMaterial(Default);</pre>
 <details class="quiz"><summary>Q3. 셰이더가 쓰는 텍스처가 없을 때 "흰색 텍스처"가 아니라 "검은색 텍스처"를 기본으로 쓰면 무엇이 달라질까요?</summary>
 	베이스 컬러는 "텍스처 × 색상 값"이라 흰색(1)이어야 색상 값이 그대로 남습니다. 검은색이면 텍스처 없는 모든 물체가 검게 보입니다. 반대로 발광(emissive)처럼 "없으면 0이어야 하는" 슬롯은 흰색이면 모든 물체가 빛나 버립니다. 그래서 기본 텍스처는 슬롯의 의미에 맞춰 고르며, ProjectE는 노멀 슬롯만 평면 노멀, 나머지는 흰색을 쓰고, 발광은 "텍스처 × <code>EmissiveFactor</code>"에서 계수의 기본값을 0으로 두어 끕니다(<code>MaterialDefault.hlsli</code>, <code>ShaderTypes.h</code>).
 </details>
+<div class="callout tip">
+	<b class="t">문제풀이로 확인하기</b>
+	6강 내용을 모두 이해했는지 객관식 21문제로 확인해 보세요. 틀린 문제는 왜 틀렸는지와 다시 볼 절을 알려 줍니다.
+	<a href="Quiz06_ResourceLifetime.html">→ 6강 문제풀이</a>
+</div>
 </article>
 
 <div class="nextpart">

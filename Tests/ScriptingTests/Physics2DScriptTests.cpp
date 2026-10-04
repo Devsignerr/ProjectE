@@ -168,3 +168,62 @@ assert(math.abs(V.X - 100) < 0.5 and V.Y == 0 and math.abs(V.Z) < 1e-3)
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();
 }
+
+// 2D 관절 끊어짐이 3D와 같은 OnJointBreak(other, force)로 오고, Lua Physics2D.BeginDrag/UpdateDrag/EndDrag가 동적 2D 바디를 끈다
+E_TEST(Physics2DScript_JointBreakAndDrag)
+{
+	const std::filesystem::path Content = WriteRecorder();
+	{
+		std::ofstream File(Content / L"Scripts/JointRecorder2D.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { Other = "", Force = 0.0 } }
+function T:OnJointBreak(other, force)
+	self.Properties.Other = other and other:GetName() or "nil"
+	self.Properties.Force = force
+end
+return T
+)";
+	}
+	FScene        Scene;
+	const FEntity Hook = Scene.CreateEntity("Hook");
+	Scene.GetTransform(Hook).Position = FVector3(0.0f, 0.0f, 500.0f);
+	Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Hook).Size = FVector2(20.0f, 20.0f);
+	const FEntity Crate = Scene.CreateEntity("Crate");
+	Scene.GetTransform(Crate).Position = FVector3(0.0f, 0.0f, 400.0f);
+	Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Crate).Size = FVector2(50.0f, 50.0f);
+	Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Crate).Mass = 10.0f;
+	FRevoluteJoint2DComponent& Joint = Scene.GetRegistry().Emplace<FRevoluteJoint2DComponent>(Crate);
+	Joint.Target     = Hook;
+	Joint.Anchor     = FVector2(0.0f, 100.0f);
+	Joint.BreakForce = 50.0f;
+	Scene.GetRegistry().Emplace<FScriptComponent>(Crate).ScriptAsset = "Scripts/JointRecorder2D.lua";
+	const FEntity Puck = Scene.CreateEntity("Puck");
+	Scene.GetTransform(Puck).Position = FVector3(1000.0f, 0.0f, 0.0f);
+	Scene.GetRegistry().Emplace<FCircleCollider2DComponent>(Puck).Radius = 20.0f;
+	Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Puck).GravityScale = 0.0f;
+	Scene.UpdateTransforms();
+
+	FScriptSystem   Scripts;
+	FGameModuleHost Host;
+	FGameWorld      World;
+	World.Init({ &Scripts, nullptr, &Host, nullptr, Content });
+	World.BeginPlay(Scene);
+	World.TickGameplay(Step, nullptr);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+local Puck = Scene.Find('Puck')
+assert(not Physics2D.BeginDrag(Scene.Find('Hook'), Vector2(0, 500))) -- 정적
+assert(Physics2D.BeginDrag(Puck, Vector3(1000, 0, 0)))
+assert(Physics2D.UpdateDrag(Puck, Vector2(1100, 50)))
+)"));
+	for (int32 Frame = 0; Frame < 90; ++Frame)
+	{
+		World.TickGameplay(Step, nullptr);
+	}
+	E_EXPECT_NEAR(Scene.GetTransform(Puck).Position.X, 1100.0f, 10.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Puck).Position.Z, 50.0f, 10.0f);
+	E_EXPECT_TRUE(Scripts.RunString("assert(Physics2D.EndDrag(Scene.Find('Puck'))); assert(not Physics2D.EndDrag(Scene.Find('Puck')))"));
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Crate, "Other").String == "Hook");
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Crate, "Force").Number > 50.0);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
+}

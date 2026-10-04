@@ -157,6 +157,8 @@ void FPhysics2DSystem::Begin()
 
 void FPhysics2DSystem::End()
 {
+	Joints.clear();
+	Drags.clear();
 	Bodies.clear();
 	PointCaches.clear();
 	TilemapCaches.clear();
@@ -303,7 +305,7 @@ bool FPhysics2DSystem::BuildDesc(FScene& Scene, FEntity Entity, const FVector3& 
 	return !OutDesc.Shapes.empty();
 }
 
-const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale)
+const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes(FScene& Scene, FEntity Entity, const FVector3& Scale, bool bSolid)
 {
 	FTilemapComponent* Tilemap = Scene.GetRegistry().TryGet<FTilemapComponent>(Entity);
 	if (Tilemap == nullptr || !Tilemap->bCollision)
@@ -320,7 +322,7 @@ const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes
 	FTilemapShapeCache& Cache = TilemapCaches[Entity];
 	if (Cache.bBuilt && Cache.Revision == Tilemap->Runtime.Revision && Cache.Tileset == Tileset && Cache.CellSize == Tilemap->CellSize &&
 	    Cache.ScaleX == Scale.X && Cache.ScaleZ == Scale.Z && Cache.Layer == Tilemap->CollisionLayer && Cache.Friction == Tilemap->Friction &&
-	    Cache.Restitution == Tilemap->Restitution)
+	    Cache.Restitution == Tilemap->Restitution && Cache.bSolid == bSolid)
 	{
 		return &Cache;
 	}
@@ -333,6 +335,7 @@ const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes
 	Cache.Layer       = Tilemap->CollisionLayer;
 	Cache.Friction    = Tilemap->Friction;
 	Cache.Restitution = Tilemap->Restitution;
+	Cache.bSolid      = bSolid;
 	Cache.Version     = NextTilemapVersion++;
 	Cache.Shapes.clear();
 
@@ -377,9 +380,48 @@ const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes
 			}
 		}
 	};
-	AddBoxes(Shapes.Boxes, false);
+	if (bSolid)
+	{
+		AddBoxes(Shapes.Boxes, false);
+	}
+	else
+	{
+		// Full 영역 외곽선 → 닫힌 체인 (점 순서 = 영역 왼쪽, 스케일 부호가 하나만 음수면 거울이라 순서를 뒤집는다)
+		const bool bMirrored = (Scale.X < 0.0f) != (Scale.Z < 0.0f);
+		for (const FTileCollisionOutline& Outline : Shapes.Outlines)
+		{
+			FPhysics2DShapeDesc Shape = MakeShape(false);
+			Shape.Shape               = EPhysics2DShape::Chain;
+			Shape.Density             = 0.0f;
+			Shape.Points.reserve(Outline.Points.size());
+			for (const FVector2& Point : Outline.Points)
+			{
+				Shape.Points.push_back(ScalePoint(Point, Scale.X, Scale.Z));
+			}
+			if (bMirrored)
+			{
+				std::reverse(Shape.Points.begin(), Shape.Points.end());
+			}
+			Cache.Shapes.push_back(std::move(Shape));
+		}
+	}
 	AddPolygons(Shapes.Polygons, false);
-	AddBoxes(Shapes.OneWayBoxes, true);
+	if (bSolid)
+	{
+		AddBoxes(Shapes.OneWayBoxes, true);
+	}
+	else
+	{
+		// 원웨이 윗변 선분 (위쪽 판정은 기존 원웨이 사전 해결 — 선분은 양면이라 방향 무관)
+		for (const FTileCollisionSegment& Segment : Shapes.OneWaySegments)
+		{
+			FPhysics2DShapeDesc Shape = MakeShape(true);
+			Shape.Shape               = EPhysics2DShape::Edge;
+			Shape.Density             = 0.0f;
+			Shape.Points              = { ScalePoint(Segment.Start, Scale.X, Scale.Z), ScalePoint(Segment.End, Scale.X, Scale.Z) };
+			Cache.Shapes.push_back(std::move(Shape));
+		}
+	}
 	AddPolygons(Shapes.OneWayPolygons, true);
 	return &Cache;
 }
@@ -394,6 +436,7 @@ uint32 FPhysics2DSystem::Update(FScene& Scene, float DeltaSeconds)
 	++FrameCounter;
 	CollisionEvents.clear();
 	SyncBodies(Scene);
+	SyncJoints(Scene);
 	CollectContactEvents(); // 사라진 바디의 접촉 끝
 
 	const uint32 Steps = Stepper.Advance(DeltaSeconds);
@@ -415,6 +458,7 @@ uint32 FPhysics2DSystem::Update(FScene& Scene, float DeltaSeconds)
 		}
 		World->Step(Stepper.StepSeconds);
 		CollectContactEvents();
+		CheckJointBreaks();
 		for (auto& [Entity, State] : Bodies)
 		{
 			if (State.CreatedDesc.Type == EBodyType2D::Dynamic)
@@ -487,7 +531,8 @@ void FPhysics2DSystem::SyncBodies(FScene& Scene)
 
 		FPhysics2DBodyDesc        Desc;
 		const bool                bHasColliders = BuildDesc(Scene, Entity, Scale, Desc);
-		const FTilemapShapeCache* TileShapes    = BuildTilemapShapes(Scene, Entity, Scale);
+		const bool                bSolidTiles   = RigidBody != nullptr && RigidBody->BodyType == EBodyType2D::Dynamic;
+		const FTilemapShapeCache* TileShapes    = BuildTilemapShapes(Scene, Entity, Scale, bSolidTiles);
 		if (TileShapes != nullptr && TileShapes->Shapes.empty())
 		{
 			TileShapes = nullptr; // 빈 맵 (모양 없음)

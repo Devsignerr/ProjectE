@@ -3,6 +3,7 @@
 #include "Core/Testing/TestFramework.h"
 #include "Physics/Physics2DComponents.h"
 #include "Physics/Physics2DSystem.h"
+#include "Physics/PhysicsWorld.h" // LogPhysics
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scene/Sprite/Sprite2DComponents.h"
@@ -171,4 +172,86 @@ E_TEST(Tilemap2DPhysics_ErasedTileRebuildsBody)
 	Physics.Update(Scene, Frame);
 	E_EXPECT_FALSE(Physics.HasBody(Map));
 	Physics.End();
+}
+
+// 이음매 고스트 충돌: Full 영역은 외곽선 닫힌 체인이라 병합 상자 경계(아래 줄이 짧아 윗면이 상자 두 개로 나뉘는 X = 500)를
+// 마찰 없이 미끄러지는 상자/원이 튀거나 멈추지 않고 지나간다 (수평 속도 유지, 높이 일정). 비교로 같은 모양의 상자 콜라이더 두 개 바닥도 잰다(로그만)
+E_TEST(Tilemap2DPhysics_SlidingAcrossSeamKeepsVelocity)
+{
+	const std::string TilesetPath = WriteTileset();
+	struct FResult
+	{
+		float MinVelocityX = 1.0e9f;
+		float MaxHeightError = 0.0f;
+		float EndX = 0.0f;
+	};
+	// bTiles: 타일맵(체인) / 아니면 상자 콜라이더 둘 (A: X 0~500·Z 0~100, B: X 500~1000·Z 50~100 — 윗면 이음매 X 500)
+	const auto Run = [&](bool bTiles, bool bCircle) {
+		FScene Scene;
+		if (bTiles)
+		{
+			const FEntity      Map     = AddTilemap(Scene, TilesetPath);
+			FTilemapComponent& Tilemap = Scene.GetRegistry().Get<FTilemapComponent>(Map);
+			Tilemap.CellSize           = FVector2(50.0f, 50.0f);
+			Tilemap.Friction           = 0.0f;
+			FillRow(Tilemap, 0, 9, 0, 0);  // 아래 줄 (짧음)
+			FillRow(Tilemap, 0, 19, 1, 0); // 위 줄 (김) — 병합 상자면 X 500에 윗면 이음매
+		}
+		else
+		{
+			const auto AddGround = [&](const FVector3& Center, const FVector2& Size) {
+				const FEntity Ground             = Scene.CreateEntity("Ground");
+				Scene.GetTransform(Ground).Position = Center;
+				FBoxCollider2DComponent& Box     = Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Ground);
+				Box.Size                         = Size;
+				Box.Friction                     = 0.0f;
+			};
+			AddGround(FVector3(250.0f, 0.0f, 50.0f), FVector2(500.0f, 100.0f));
+			AddGround(FVector3(750.0f, 0.0f, 75.0f), FVector2(500.0f, 50.0f));
+		}
+		const FEntity Mover = Scene.CreateEntity("Mover");
+		if (bCircle)
+		{
+			Scene.GetTransform(Mover).Position = FVector3(100.0f, 0.0f, 125.0f);
+			FCircleCollider2DComponent& Circle = Scene.GetRegistry().Emplace<FCircleCollider2DComponent>(Mover);
+			Circle.Radius                      = 25.0f;
+			Circle.Friction                    = 0.0f;
+			Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Mover);
+		}
+		else
+		{
+			Scene.GetTransform(Mover).Position = FVector3(100.0f, 0.0f, 125.0f);
+			FBoxCollider2DComponent& Box       = Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Mover);
+			Box.Size                           = FVector2(50.0f, 50.0f);
+			Box.Friction                       = 0.0f;
+			Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Mover).bFixedRotation = true;
+		}
+		Scene.UpdateTransforms();
+
+		FPhysics2DSystem Physics;
+		Physics.Begin();
+		Simulate(Physics, Scene, 0.5f); // 내려앉기
+		Physics.SetVelocity(Mover, FVector2(600.0f, 0.0f));
+		FResult Result;
+		for (int32 Index = 0; Index < 75; ++Index) // 1.25초 ≈ 750cm (X 100 → 850, 이음매 X 500 통과)
+		{
+			Physics.Update(Scene, Frame);
+			Scene.UpdateTransforms();
+			Result.MinVelocityX   = std::min(Result.MinVelocityX, Physics.GetVelocity(Mover).X);
+			Result.MaxHeightError = std::max(Result.MaxHeightError, std::abs(Scene.GetTransform(Mover).Position.Z - 125.0f));
+		}
+		Result.EndX = Scene.GetTransform(Mover).Position.X;
+		Physics.End();
+		return Result;
+	};
+	for (const bool bCircle : { false, true })
+	{
+		const FResult Tiles = Run(true, bCircle);
+		const FResult Boxes = Run(false, bCircle);
+		E_LOG(LogPhysics, Display, "[이음매] {}: 타일 체인 최소 vx {:.1f} 높이 오차 {:.2f} 끝 X {:.0f} / 상자 둘 최소 vx {:.1f} 높이 오차 {:.2f} 끝 X {:.0f}",
+		      bCircle ? "원" : "상자", Tiles.MinVelocityX, Tiles.MaxHeightError, Tiles.EndX, Boxes.MinVelocityX, Boxes.MaxHeightError, Boxes.EndX);
+		E_EXPECT_TRUE(Tiles.MinVelocityX > 600.0f * 0.98f);
+		E_EXPECT_TRUE(Tiles.MaxHeightError < 1.5f);
+		E_EXPECT_TRUE(Tiles.EndX > 800.0f);
+	}
 }

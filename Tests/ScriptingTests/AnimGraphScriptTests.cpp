@@ -100,3 +100,77 @@ return T
 	std::error_code ErrorCode;
 	std::filesystem::remove_all(Content, ErrorCode);
 }
+
+// 몽타주 끝 콜백도 다른 배달 경로처럼 인스턴스 범위(FInstanceScope) 안에서 불린다 — Timer.After/Coroutine.Start를 부를 수 있고,
+// 콜백 오류는 그 인스턴스만 멈춘다 (다른 캐릭터의 콜백·타이머는 계속)
+E_TEST(AnimGraphScript_MontageEndCallbackOwnsTimersAndCoroutines)
+{
+	const std::filesystem::path Content = FTestRegistry::GetTempDirectory() / L"ProjectEMontageScope";
+	std::filesystem::create_directories(Content / L"Scripts");
+	{
+		std::ofstream File(Content / L"Scripts/Good.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { Ended = 0, TimerFired = false, CoroutineDone = false } }
+function T:OnStart()
+	assert(self.entity:PlayMontage('Wave', { BlendIn = 0, BlendOut = 0 }))
+end
+function T:OnMontageEnded(clip, interrupted, slot)
+	self.Properties.Ended = self.Properties.Ended + 1
+	Timer.After(0.05, function() self.Properties.TimerFired = true end)
+	Coroutine.Start(function()
+		Wait(0)
+		WaitFrames(2)
+		self.Properties.CoroutineDone = true
+	end)
+end
+return T
+)";
+	}
+	{
+		std::ofstream File(Content / L"Scripts/Bad.lua", std::ios::binary | std::ios::trunc);
+		File << R"(
+local T = { Properties = { Ended = 0 } }
+function T:OnStart()
+	assert(self.entity:PlayMontage('Wave', { BlendIn = 0, BlendOut = 0 }))
+end
+function T:OnMontageEnded()
+	self.Properties.Ended = self.Properties.Ended + 1
+	Timer.After(0.01, function() self.Properties.Ended = 100 end) -- 아래 오류로 인스턴스가 멈추면 이 타이머도 지워진다
+	error('몽타주 콜백 오류')
+end
+return T
+)";
+	}
+	FAnimationClip Wave;
+	Wave.Name     = "Wave";
+	Wave.Duration = 0.2f;
+
+	FScene     Scene;
+	const auto AddCharacter = [&](const char* Name, const char* ScriptPath) {
+		const FEntity        Character = Scene.CreateEntity(Name);
+		FAnimationComponent& Animation = Scene.GetRegistry().Emplace<FAnimationComponent>(Character);
+		Animation.Runtime.Set          = MakeAnimationSet({ Wave }, { -1 }, std::vector<FNodePose>(1));
+		Scene.GetRegistry().Emplace<FScriptComponent>(Character).ScriptAsset = ScriptPath;
+		return Character;
+	};
+	const FEntity Good = AddCharacter("Good", "Scripts/Good.lua");
+	const FEntity Bad  = AddCharacter("Bad", "Scripts/Bad.lua");
+
+	FScriptSystem Scripts;
+	FGameWorld    World;
+	World.Init({ &Scripts, nullptr, nullptr, nullptr, Content });
+	World.BeginPlay(Scene);
+	for (int32 Frame = 0; Frame < 40; ++Frame)
+	{
+		World.TickGameplay(1.0f / 60.0f, nullptr);
+		World.TickPresentation(Scene, 1.0f / 60.0f);
+	}
+	E_EXPECT_NEAR(Scripts.GetInstanceProperty(Good, "Ended").Number, 1.0, 1.0e-9);
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Good, "TimerFired").bBool);
+	E_EXPECT_TRUE(Scripts.GetInstanceProperty(Good, "CoroutineDone").bBool);
+	E_EXPECT_NEAR(Scripts.GetInstanceProperty(Bad, "Ended").Number, 1.0, 1.0e-9); // 멈춘 인스턴스의 타이머는 지워졌다
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 1u);
+	World.EndPlay();
+	std::error_code ErrorCode;
+	std::filesystem::remove_all(Content, ErrorCode);
+}

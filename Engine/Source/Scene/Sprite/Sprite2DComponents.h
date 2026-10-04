@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+class FScene;
 struct FSpriteAsset;
 struct FFlipbookAsset;
 struct FTilesetAsset;
@@ -102,6 +103,9 @@ struct FTilemapRuntime
 	std::string                          LoadedPath;
 	uint32                               Generation = 0;
 	uint32                               Revision   = 0; // Data가 바뀔 때마다 증가 (렌더러/충돌 캐시 무효화용)
+	int32                                EditDepth  = 0; // BeginTilemapEdit 중첩 수 (0 = 묶음 밖)
+	bool                                 bDirty     = false; // Data가 TileData보다 새롭다 (MarkTilemapEdited — 커밋 대기)
+	uint32                               CommitCount = 0; // CommitTilemapData(인코딩) 횟수 (테스트·통계용)
 
 	FTilemapRuntime() = default;
 	FTilemapRuntime(const FTilemapRuntime&) {}
@@ -144,8 +148,19 @@ namespace Sprite2DRuntime
 	std::shared_ptr<const FTilesetAsset> ResolveTileset(FTilemapComponent& Tilemap);
 	// 디코딩된 셀 데이터 (TileData가 바뀌었으면 다시 디코딩 — 손상이면 오류 로그 한 번 후 빈 맵)
 	const FTilemapData& GetTilemapData(FTilemapComponent& Tilemap);
-	// 편집한 Runtime.Data를 TileData로 써 넣는다 (편집기 브러시 → 저장/Undo 대상 문자열)
+	// 편집한 Runtime.Data를 TileData로 써 넣는다 (편집기 브러시 → 저장/Undo 대상 문자열). 대기 중인 표시(bDirty)도 지운다
 	void CommitTilemapData(FTilemapComponent& Tilemap);
+
+	// ---- 지연 커밋 (게임플레이 편집 — Lua SetTile 등). 인코딩은 비싸므로 셀을 바꿀 때마다 하지 않는다:
+	//   Runtime.Data를 고친 뒤 MarkTilemapEdited → Revision 증가(렌더러·2D 물리는 다음 갱신에 Data로 다시 만든다) + bDirty.
+	//   TileData(저장·복제·Undo 대상 문자열) 커밋 시점 = 묶음 밖이면 FlushTilemapEdits(FGameWorld::TickGameplay 끝·EndPlay),
+	//   BeginTilemapEdit ~ EndTilemapEdit 묶음 안이면 가장 바깥 End에서 한 번. 커밋 전에 TileData가 밖에서 바뀌면(복제·Undo) 다시
+	//   디코딩해 대기 중인 편집은 버린다 (밖의 값이 이긴다)
+	void BeginTilemapEdit(FTilemapComponent& Tilemap); // 지금 TileData로 디코딩해 두고 중첩 +1
+	bool EndTilemapEdit(FTilemapComponent& Tilemap);   // 중첩 -1, 0이 되고 대기 중이면 커밋. 반환: 묶음 안이었는가 (짝 없는 End = false)
+	void MarkTilemapEdited(FTilemapComponent& Tilemap);
+	// 대기 중인 타일맵을 모두 커밋 (묶음이 열린 채면 경고 후 닫는다 — 묶음은 프레임을 넘기지 않는다). 반환: 커밋한 수
+	uint32 FlushTilemapEdits(FScene& Scene);
 } // namespace Sprite2DRuntime
 
 // 리플렉션 등록 (RegisterSceneTypes가 부른다 — 여러 번 불러도 한 번)

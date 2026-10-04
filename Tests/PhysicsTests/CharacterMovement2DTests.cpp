@@ -563,3 +563,169 @@ E_TEST(Character2DWorld_TileSlopeSeamsDoNotSnag)
 	E_EXPECT_TRUE(World.Position().X < -50.0f);
 	E_EXPECT_NEAR(World.Position().Z, StandZ, 2.0f);
 }
+
+// ---------------------------------------------------------------- 캐릭터끼리 (CharacterCollision)
+
+namespace
+{
+	using ECollision = FCharacterMovement2DComponent::ECharacterCollision;
+
+	// 두 캐릭터: Pawn(A)은 입력, Other(B)는 입력 없이 (서 있거나 떨어진다)
+	struct FDuo : FWorld
+	{
+		FEntity Other;
+		bool    bOtherFirst = false; // 무브 순서 (게임 월드는 엔티티 순서)
+
+		void Setup(ECollision ModeA, ECollision ModeB, const FVector3& PositionA, const FVector3& PositionB)
+		{
+			AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+			FCharacterMovement2DComponent A;
+			A.CharacterCollision = ModeA;
+			SpawnPawn(PositionA, A);
+			Other                              = Scene.CreateEntity("Other");
+			Scene.GetTransform(Other).Position = PositionB;
+			Scene.GetRegistry().Emplace<FCharacterMovement2DComponent>(Other).CharacterCollision = ModeB;
+			Begin();
+		}
+		void Step(float InputX)
+		{
+			Characters.Sync(Scene);
+			if (bOtherFirst)
+			{
+				Characters.SimulateCharacter(Scene, Other, MakeMove());
+			}
+			Characters.SimulateCharacter(Scene, Pawn, MakeMove(InputX));
+			if (!bOtherFirst)
+			{
+				Characters.SimulateCharacter(Scene, Other, MakeMove());
+			}
+			Characters.UpdateProxies();
+			Physics.Update(Scene, Frame);
+			Scene.UpdateTransforms();
+		}
+		void Run(int32 Frames, float InputX)
+		{
+			for (int32 Index = 0; Index < Frames; ++Index)
+			{
+				Step(InputX);
+			}
+		}
+		FVector3 OtherPosition() const { return Scene.GetTransform(Other).Position; }
+	};
+} // namespace
+
+// 막기/밀기/통과: 기본 Ignore는 통과, 둘 다 Ignore가 아니면 막히고, Push는 상대를 민다 (벽 안으로는 못 민다)
+E_TEST(Character2DWorld_CharacterBlockPushAndIgnore)
+{
+	// 기본(Ignore): 통과
+	{
+		FDuo World;
+		World.Setup(ECollision::Ignore, ECollision::Ignore, FVector3(0.0f, 0.0f, 80.0f), FVector3(200.0f, 0.0f, 80.0f));
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f);
+		E_EXPECT_TRUE(World.Position().X > 300.0f);
+		E_EXPECT_NEAR(World.OtherPosition().X, 200.0f, 0.5f);
+	}
+	// 한쪽만 Block: 상대가 Ignore면 여전히 통과
+	{
+		FDuo World;
+		World.Setup(ECollision::Block, ECollision::Ignore, FVector3(0.0f, 0.0f, 80.0f), FVector3(200.0f, 0.0f, 80.0f));
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f);
+		E_EXPECT_TRUE(World.Position().X > 300.0f);
+	}
+	// 둘 다 Block: 캡슐(반지름 30)끼리 닿은 자리에서 멈춘다, 상대는 그대로
+	{
+		FDuo World;
+		World.Setup(ECollision::Block, ECollision::Block, FVector3(0.0f, 0.0f, 80.0f), FVector3(200.0f, 0.0f, 80.0f));
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f);
+		E_EXPECT_NEAR(World.Position().X, 200.0f - 60.0f, 2.0f);
+		E_EXPECT_NEAR(World.OtherPosition().X, 200.0f, 0.5f);
+		E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+	}
+	// Push: 상대를 밀며 나아간다 (상대는 바닥에 선 채)
+	{
+		FDuo World;
+		World.Setup(ECollision::Push, ECollision::Block, FVector3(0.0f, 0.0f, 80.0f), FVector3(200.0f, 0.0f, 80.0f));
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f);
+		E_EXPECT_TRUE(World.OtherPosition().X > 300.0f);
+		E_EXPECT_NEAR(World.OtherPosition().X - World.Position().X, 60.0f, 3.0f);
+		E_EXPECT_NEAR(World.OtherPosition().Z, StandZ, 1.5f);
+	}
+	// Push + 벽: 상대는 벽에서 멈추고 나도 멈춘다
+	{
+		FDuo World;
+		World.AddBox("Wall", FVector3(350.0f, 0.0f, 100.0f), FVector2(100.0f, 400.0f)); // 왼쪽 면 X = 300
+		World.Setup(ECollision::Push, ECollision::Block, FVector3(0.0f, 0.0f, 80.0f), FVector3(200.0f, 0.0f, 80.0f));
+		World.Run(20, 0.0f);
+		World.Run(90, 1.0f);
+		E_EXPECT_NEAR(World.OtherPosition().X, 300.0f - 30.0f, 2.0f);
+		E_EXPECT_NEAR(World.Position().X, 300.0f - 90.0f, 3.0f);
+	}
+}
+
+// 밟기: 위에서 떨어져 상대 위에 선다 + Stomped 이벤트 (상대 엔티티)
+E_TEST(Character2DWorld_StompLandsOnCharacter)
+{
+	for (const bool bOtherFirst : { false, true })
+	{
+		FDuo World;
+		World.bOtherFirst = bOtherFirst;
+		World.Setup(ECollision::Block, ECollision::Block, FVector3(10.0f, 0.0f, 500.0f), FVector3(0.0f, 0.0f, 61.0f));
+		std::vector<FCharacterMovement2DSystem::FEvent> Events;
+		bool                                            bStomped = false;
+		for (int32 Index = 0; Index < 90; ++Index)
+		{
+			World.Step(0.0f);
+			World.Characters.ConsumeEvents(Events);
+			for (const FCharacterMovement2DSystem::FEvent& Event : Events)
+			{
+				if (Event.Entity == World.Pawn && Event.Events.bStomped)
+				{
+					bStomped = true;
+					E_EXPECT_TRUE(Event.Events.bLanded);
+					E_EXPECT_EQ(Event.Events.StompedEntity, World.Other.ToId());
+				}
+				E_EXPECT_FALSE(Event.Entity == World.Other && Event.Events.bStomped); // 바닥에 착지한 쪽은 밟기 아님
+			}
+			Events.clear();
+		}
+		E_EXPECT_TRUE(bStomped);
+		// 상대 캡슐 머리 위 (가로 10cm 어긋남: 반원 중심 거리 60 → 높이 59.16), 둥근 머리에서 미끄러지지 않고 상대도 밀리지 않는다
+		E_EXPECT_NEAR(World.Position().Z, StandZ + 60.0f + 59.16f, 1.5f);
+		E_EXPECT_NEAR(World.Position().X, 10.0f, 0.5f);
+		E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+		E_EXPECT_NEAR(World.OtherPosition().Z, StandZ, 1.5f);
+		E_EXPECT_NEAR(World.OtherPosition().X, 0.0f, 0.5f);
+	}
+}
+
+// 같은 상태 + 같은 무브 → 같은 결과 (다른 캐릭터가 막는 월드에서도)
+E_TEST(Character2DWorld_SameMovesSameResultWithCharacters)
+{
+	FDuo World;
+	World.Setup(ECollision::Block, ECollision::Block, FVector3(0.0f, 0.0f, 80.0f), FVector3(250.0f, 0.0f, 80.0f));
+	World.Run(30, 0.0f);
+	std::vector<FCharacterMove2D> Moves;
+	for (int32 Index = 0; Index < 90; ++Index)
+	{
+		Moves.push_back(MakeMove(1.0f, Index == 20 || Index == 40, Index < 50));
+	}
+	const FCharacterState2D Start = World.Characters.GetState(World.Pawn);
+	for (const FCharacterMove2D& Move : Moves)
+	{
+		World.Characters.SimulateCharacter(World.Scene, World.Pawn, Move);
+	}
+	const FCharacterState2D First = World.Characters.GetState(World.Pawn);
+	World.Characters.SetState(World.Scene, World.Pawn, Start);
+	for (const FCharacterMove2D& Move : Moves)
+	{
+		World.Characters.SimulateCharacter(World.Scene, World.Pawn, Move);
+	}
+	const FCharacterState2D Second = World.Characters.GetState(World.Pawn);
+	E_EXPECT_TRUE(First.Position == Second.Position && First.Velocity == Second.Velocity);
+	E_EXPECT_TRUE(First.bGrounded == Second.bGrounded && First.JumpsUsed == Second.JumpsUsed);
+	E_EXPECT_TRUE(First.Position.X > 250.0f); // 점프로 상대를 넘거나 위에 올라섰다 (막히기만 하지 않음)
+}

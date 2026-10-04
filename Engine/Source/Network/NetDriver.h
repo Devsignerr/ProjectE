@@ -96,6 +96,8 @@ public:
 	EClientState       GetClientState() const { return ClientState; }
 	uint32             GetLocalPlayerId() const { return LocalPlayerId; }
 	const std::string& GetFailureReason() const { return FailureReason; }
+	// 클라이언트: 입장(Welcome) 전에 도착해 버린 게임 메시지 수 (비신뢰가 재전송 중인 신뢰 Welcome을 앞지른 경우 — 테스트/진단)
+	uint32             GetIgnoredPreJoinMessages() const { return IgnoredPreJoinMessages; }
 
 	// 게임 메시지 보내기 (첫 바이트 = ENetMessageType::GameBase 이상). 서버: 입장한 플레이어에게, 클라이언트: 서버에게 (Connection 무시)
 	bool Send(FNetConnectionId Connection, const std::vector<uint8>& Message, ENetReliability Reliability);
@@ -153,6 +155,7 @@ private:
 	EClientState     ClientState      = EClientState::Idle;
 	uint32           LocalPlayerId    = HostPlayerId;
 	std::string      FailureReason;
+	uint32           IgnoredPreJoinMessages = 0;
 	uint32           ClientTravelId = 0;          // 받은 이동 번호 (0 = 이동 중 아님). CompleteClientTravel까지 게임 메시지를 버린다
 	std::string      ClientTravelScene;
 	bool             bClientTravelConsumed = false; // ConsumeServerTravel로 앱에 넘겼음

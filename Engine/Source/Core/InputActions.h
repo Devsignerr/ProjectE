@@ -117,6 +117,8 @@ struct FInputMapping
 	FInputAction*       Find(std::string_view Name);
 	// 액션 이름 + 종류 순서의 해시 (네트워크 입력 커맨드가 액션 값을 순서로 보낼 때 양쪽 목록이 같은지 확인)
 	uint32 GetLayoutHash() const;
+	// 이 소스가 어느 액션에든 바인딩되어 있는가 (개발 런타임 ESC 종료 판정 — 게임이 ESC를 액션으로 쓰면 종료하지 않는다)
+	bool IsSourceBound(const FInputSource& Source) const;
 
 	// JSON: { "Version": 1, "Actions": [ { "Name", "Type", "Description", "ActuationThreshold", "Bindings": [ { "Source", "Modifiers": [...] } ] } ] }
 	// 모르는 소스/수정자는 경고 문구를 Error에 남기고 그 항목만 건너뛴다 (JSON 자체가 깨졌을 때만 false)

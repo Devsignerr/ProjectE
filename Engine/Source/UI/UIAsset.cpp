@@ -192,6 +192,10 @@ namespace
 		Object["Name"]   = Animation.Name;
 		Object["Length"] = Animation.Length;
 		Object["Tracks"] = std::move(Tracks);
+		if (Animation.bUseGameTime)
+		{
+			Object["UseGameTime"] = true; // 끈 기본값은 쓰지 않는다 (예전 파일과 같은 내용)
+		}
 		return Object;
 	}
 
@@ -203,6 +207,7 @@ namespace
 		}
 		Read(Object, "Name", Out.Name);
 		Read(Object, "Length", Out.Length);
+		Read(Object, "UseGameTime", Out.bUseGameTime);
 		Out.Length          = FMath::Max(Out.Length, 0.01f);
 		const auto TracksIt = Object.find("Tracks");
 		if (TracksIt == Object.end() || !TracksIt->is_array())

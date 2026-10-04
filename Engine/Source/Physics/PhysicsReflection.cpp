@@ -52,6 +52,8 @@ void RegisterPhysicsTypes()
 		.Property(&FCharacterMovementComponent::bClientPrediction, "ClientPrediction", "클라이언트 예측")
 		.Tooltip("멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직이고 서버 결과로 보정한다. 끄면 서버 결과를 보간해 보여 준다(반응이 왕복 지연 + 0.1초 늦음). 프로젝트 설정 네트워크 → 클라이언트 예측도 켜져 있어야 한다")
 		.Property(&FCharacterMovementComponent::Layer, "Layer", "레이어").StringOptions(LayerOptions).Tooltip(LayerTip)
+		.Property(&FCharacterMovementComponent::KnockbackDeceleration, "KnockbackDeceleration", "넉백 감속 (cm/s²)").Range(0.0f, 100000.0f, 10.0f)
+		.Tooltip("AddKnockback 경직 동안 수평 속도를 줄이는 감속 (입력은 무시된다)")
 		.AsComponent();
 
 	Registry.RegisterType<FBoxColliderComponent>("BoxColliderComponent", "박스 콜라이더")

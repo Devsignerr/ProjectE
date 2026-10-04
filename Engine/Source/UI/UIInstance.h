@@ -4,6 +4,7 @@
 #include "UI/UIDrawList.h"
 #include "UI/UIInput.h"
 
+#include <optional>
 #include <vector>
 
 class FUIFontLibrary;
@@ -25,7 +26,7 @@ public:
 
 	// Viewport: UI를 놓을 화면 픽셀 영역. Pointer는 화면 픽셀 기준 (nullptr이면 입력 없음). 반환: 포인터가 UI 위에 있음
 	bool Update(const FUIRect& Viewport, const FUIPointerInput* PointerPixels, const FUIKeyInput* Keys, FUIFontLibrary& Fonts,
-	            std::vector<FUIEvent>& OutEvents, float DeltaSeconds = 0.0f);
+	            std::vector<FUIEvent>& OutEvents, float DeltaSeconds = 0.0f, float GameTimeScale = 1.0f);
 	// 레이아웃만 (입력 없이)
 	void Layout(const FUIRect& Viewport, FUIFontLibrary& Fonts);
 	void Paint(FUIDrawList& Out, FUIFontLibrary& Fonts) const;
@@ -35,12 +36,14 @@ public:
 	FUIInputRouter&     GetInputRouter() { return Router; }
 	bool                IsPointerOverUI() const { return bPointerOver; }
 	// ---- 애니메이션 (에셋 Animations). 같은 이름을 다시 재생하면 처음부터. Loops 0 = 무한, Speed 음수 = 거꾸로
-	bool PlayAnimation(std::string_view Name, int32 Loops = 1, float Speed = 1.0f);
+	//   UseGameTime: 비면 에셋 값(FUIAnimation::bUseGameTime), 참이면 게임 시간 배율·히트스톱을 따른다 (TickAnimations GameTimeScale)
+	bool PlayAnimation(std::string_view Name, int32 Loops = 1, float Speed = 1.0f, std::optional<bool> UseGameTime = std::nullopt);
 	void StopAnimation(std::string_view Name); // 현재 값에 멈춘다
 	void StopAllAnimations();
 	bool IsAnimationPlaying(std::string_view Name) const;
 	// 재생 진행 (Update가 부른다). 끝난 애니메이션은 AnimationFinished 이벤트 (WidgetName = 애니메이션 이름)
-	void TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents);
+	//   DeltaSeconds = 실제 시간, 게임 시간 재생은 × GameTimeScale (게임 시간 배율 — 히트스톱이면 0)
+	void TickAnimations(float DeltaSeconds, std::vector<FUIEvent>& OutEvents, float GameTimeScale = 1.0f);
 
 	// ---- 실행 중 트리 편집 (스크립트 entity:CloneWidget/RemoveWidget). 규칙:
 	//   CloneWidget: 템플릿(루트가 아닌 위젯)을 자식까지 깊은 복사해 템플릿의 부모 끝에 붙인다. 복제 루트 이름 = NewName,

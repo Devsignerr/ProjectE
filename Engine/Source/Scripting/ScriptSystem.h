@@ -102,8 +102,8 @@ struct FScriptPhysicsHooks
 	std::function<int32(FEntity)>                 GetJumpsRemaining;
 	std::function<int32(FEntity)>                 GetDashesRemaining;
 	std::function<bool(FEntity)>                  IsDashing;
-	// 넉백/발사 (2D 이동기 — CharacterMovement2D.h, 3D 캐릭터는 아직 없음 = 무시): 다음 무브 처음에 속도를 더하거나(덮어쓰기 꺼짐) 덮어쓴다,
-	// AddKnockback = X 덮어쓰기 + Z는 0이 아니면 덮어쓰기 + 경직(입력 무시) 초
+	// 넉백/발사 (2D 이동기 — CharacterMovement2D.h, 3D 캐릭터 — CharacterMovement.h, 3D는 덮어쓰기 X = 수평 XY): 다음 무브 처음에 속도를 더하거나
+	// (덮어쓰기 꺼짐) 덮어쓴다, AddKnockback = 수평 덮어쓰기 + Z는 0이 아니면 덮어쓰기 + 경직(입력 무시) 초
 	std::function<void(FEntity, const FVector3& Velocity, bool bOverrideX, bool bOverrideZ)> LaunchCharacter;
 	std::function<void(FEntity, const FVector3& Velocity, float StunSeconds)>               AddKnockback;
 	std::function<bool(FEntity)>                                                           IsStunned;

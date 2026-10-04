@@ -166,11 +166,14 @@ public:
 	FCharacterMovement2DSystem& GetCharacters2D() { return *Characters2D; }
 
 	// ---- 게임 시간 배율 (규칙은 GameWorld.cpp "시간 배율"). Standalone 전용 — 네트워크 모드에서는 Set/HitStop이 false (경고 한 번)
-	bool  SetTimeScale(float Scale);   // 0 = 정지, 0~MaxTimeScale로 자름. 다음 틱부터
-	float GetTimeScale() const { return TimeScale; }
-	bool  HitStop(float Seconds);      // 실제 시간 Seconds 동안 배율 0 (겹치면 긴 쪽)
-	float GetHitStopRemaining() const { return HitStopRemaining; }
+	bool  SetTimeScale(float Scale) override; // 0 = 정지, 0~MaxTimeScale로 자름. 다음 틱부터 (IGameNet — 게임 모듈도)
+	float GetTimeScale() const override { return TimeScale; }
+	bool  HitStop(float Seconds) override;    // 실제 시간 Seconds 동안 배율 0 (겹치면 긴 쪽)
+	float GetHitStopRemaining() const override { return HitStopRemaining; }
+	float GetUnscaledDeltaSeconds() const override { return TickUnscaledDeltaSeconds; } // 이번(직전) 게임플레이 틱의 실제 dt
 	float GetTickTimeScale() const { return TickTimeScale; } // 직전 게임플레이 틱이 쓴 배율 (히트스톱 = 0) — 표시 틱도 이 값
+	// 다음 게임플레이 틱이 쓸 배율 (히트스톱이 남았으면 0, 플레이 중이 아니면 1) — 앱이 FUISystem::Update 전에 게임 시간 UI 애니메이션 배율로 (FUIFrameInput::GameTimeScale)
+	float GetUpcomingTimeScale() const { return !IsPlaying() ? 1.0f : HitStopRemaining > 1.0e-4f ? 0.0f : TimeScale; }
 	void  ResetTimeScale();            // 1, 히트스톱 없음 (BeginPlay/EndPlay/네트워크 모드 전환)
 	static constexpr float MaxTimeScale = 100.0f;
 
@@ -435,6 +438,7 @@ private:
 	float             TimeScale        = 1.0f; // Game.SetTimeScale
 	float             HitStopRemaining = 0.0f; // 실제 초 (Game.HitStop)
 	float             TickTimeScale    = 1.0f; // 이번 게임플레이 틱 배율 (틱 시작에 정함 — 틱 안의 변경은 다음 틱부터)
+	float             TickUnscaledDeltaSeconds = 0.0f; // 이번 게임플레이 틱 실제 dt (IGameNet::GetUnscaledDeltaSeconds)
 	bool              bWarnedNetTimeScale = false;
 
 	std::unordered_map<uint32, FRemoteInput> RemoteInputs;      // 서버: 플레이어 ID → 받은 입력

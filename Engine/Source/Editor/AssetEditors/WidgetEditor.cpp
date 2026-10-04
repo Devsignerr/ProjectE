@@ -2023,6 +2023,12 @@ void FWidgetEditor::DrawTimeline()
 		MarkEdited("애니메이션 길이");
 	}
 	ImGui::SameLine();
+	if (ImGui::Checkbox("게임 시간", &Animation->bUseGameTime))
+	{
+		MarkEdited("애니메이션 게임 시간");
+	}
+	ImGui::SetItemTooltip("켜면 게임 시간 배율·히트스톱을 따른다 (끄면 실제 시간 — 일시정지 메뉴도 움직인다)");
+	ImGui::SameLine();
 	if (FEditorTheme::ToolButton(bTimelinePlaying ? ICON_FA_PAUSE : ICON_FA_PLAY, bTimelinePlaying ? "일시정지" : "재생 미리보기", bTimelinePlaying))
 	{
 		if (!bTimelinePlaying && Playhead >= Animation->Length)

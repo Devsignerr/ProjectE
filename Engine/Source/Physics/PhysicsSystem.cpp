@@ -791,6 +791,51 @@ FCharacterMove FPhysicsSystem::ConsumePendingMove(FEntity Entity, float DeltaSec
 	return Move;
 }
 
+void FPhysicsSystem::LaunchCharacter(FEntity Entity, const FVector3& WorldVelocity, bool bOverrideXY, bool bOverrideZ)
+{
+	if (const auto Found = Characters.find(Entity);
+	    Found != Characters.end() && std::isfinite(WorldVelocity.X) && std::isfinite(WorldVelocity.Y) && std::isfinite(WorldVelocity.Z))
+	{
+		CharacterMovementMath::CombineLaunch(Found->second.PendingLaunch, WorldVelocity, bOverrideXY, bOverrideZ, 0.0f);
+	}
+}
+
+void FPhysicsSystem::AddKnockback(FEntity Entity, const FVector3& WorldVelocity, float StunSeconds)
+{
+	if (const auto Found = Characters.find(Entity); Found != Characters.end() && std::isfinite(WorldVelocity.X) && std::isfinite(WorldVelocity.Y) &&
+	                                                std::isfinite(WorldVelocity.Z) && std::isfinite(StunSeconds))
+	{
+		CharacterMovementMath::CombineLaunch(Found->second.PendingLaunch, WorldVelocity, true, WorldVelocity.Z != 0.0f,
+		                                     std::clamp(StunSeconds, 0.0f, FCharacterMove::MaxStunSeconds));
+	}
+}
+
+bool FPhysicsSystem::HasPendingLaunch(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return Found != Characters.end() && Found->second.PendingLaunch.bLaunch;
+}
+
+bool FPhysicsSystem::MergePendingLaunch(FEntity Entity, FCharacterMove& InOutMove)
+{
+	const auto Found = Characters.find(Entity);
+	if (Found == Characters.end() || !Found->second.PendingLaunch.bLaunch)
+	{
+		return false;
+	}
+	const FCharacterMove& Pending = Found->second.PendingLaunch;
+	// 무브에 이미 실린 발사(클라이언트가 보낸 것) 뒤에 서버의 발사를 합친다
+	CharacterMovementMath::CombineLaunch(InOutMove, Pending.LaunchVelocity, Pending.bLaunchOverrideXY, Pending.bLaunchOverrideZ, Pending.StunSeconds);
+	Found->second.PendingLaunch = FCharacterMove();
+	return true;
+}
+
+bool FPhysicsSystem::IsCharacterStunned(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	return Found != Characters.end() && Found->second.StunTimer > 0.0f;
+}
+
 void FPhysicsSystem::SimulateCharacter(FScene& Scene, FEntity Entity, const FCharacterMove& Move)
 {
 	const auto Found = Characters.find(Entity);
@@ -803,7 +848,9 @@ void FPhysicsSystem::SimulateCharacter(FScene& Scene, FEntity Entity, const FCha
 	const float                   DeltaSeconds = std::clamp(Move.DeltaSeconds, 0.0f, FCharacterMove::MaxMoveDeltaSeconds);
 	const FPhysicsCharacterResult Before       = World->GetCharacterResult(Sim.Character);
 	bool                          bJumped      = false;
-	const FVector3 Velocity = CharacterMovementMath::ComputeVelocity(*Movement, Before.Velocity, Before.bGrounded, Move, World->GetGravity().Z, bJumped);
+	bool                          bAirborne    = false; // 발사한 무브 (바닥에 붙이지 않는다)
+	const FVector3 Velocity = CharacterMovementMath::ComputeVelocity(*Movement, Before.Velocity, Before.bGrounded, Move, World->GetGravity().Z, Sim.StunTimer,
+	                                                                 bJumped, bAirborne);
 	if (std::isfinite(Move.Yaw))
 	{
 		Sim.Yaw = Move.Yaw;
@@ -812,7 +859,7 @@ void FPhysicsSystem::SimulateCharacter(FScene& Scene, FEntity Entity, const FCha
 	if (DeltaSeconds > 0.0f)
 	{
 		// 바닥에 붙이기는 걷는 중에만 (점프/공중이면 끔 — 계단 높이만큼 아래로 당긴다)
-		const float StickDown = Before.bGrounded && !bJumped ? Movement->MaxStepHeight : 0.0f;
+		const float StickDown = Before.bGrounded && !bJumped && !bAirborne ? Movement->MaxStepHeight : 0.0f;
 		World->UpdateCharacter(Sim.Character, DeltaSeconds, Velocity, Movement->MaxStepHeight, StickDown);
 	}
 	WriteCharacterTransform(Scene, Entity);
@@ -827,6 +874,7 @@ FCharacterState FPhysicsSystem::GetCharacterState(FEntity Entity) const
 		State.Position  = Result.Position;
 		State.Velocity  = Result.Velocity;
 		State.bGrounded = Result.bGrounded;
+		State.StunTimer = Found->second.StunTimer;
 	}
 	return State;
 }
@@ -836,6 +884,7 @@ void FPhysicsSystem::SetCharacterState(FScene& Scene, FEntity Entity, const FCha
 	if (const auto Found = Characters.find(Entity); World && Found != Characters.end())
 	{
 		World->SetCharacterState(Found->second.Character, State.Position, State.Velocity);
+		Found->second.StunTimer = std::isfinite(State.StunTimer) ? std::clamp(State.StunTimer, 0.0f, FCharacterMove::MaxStunSeconds) : 0.0f;
 		WriteCharacterTransform(Scene, Entity);
 	}
 }

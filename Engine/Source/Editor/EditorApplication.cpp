@@ -1918,6 +1918,7 @@ void FEditorApplication::UpdatePlayMode(float DeltaSeconds)
 			UIInput.Keys = ViewportPanel.IsFocused() ? FUISystem::MakeKeys(*GameInput) : FUIKeyInput{};
 		}
 		UIInput.DeltaSeconds          = DeltaSeconds;
+		UIInput.GameTimeScale         = World.GetUpcomingTimeScale(); // 게임 시간 UI 애니메이션 (bUseGameTime)
 		const FUIInputResult UIResult = FUISystem::Update(*Context.Scene, UIInput, Context.ContentDirectory);
 		// 게임 UI 텍스트 상자 입력 중: IME 조합을 창이 직접 받고 후보 창을 캐럿 아래에 (뷰포트 이미지 위치만큼 옮김)
 		bGameTextInput = bUIInput && UIResult.bKeyboard && UIResult.bHasTextCaret;

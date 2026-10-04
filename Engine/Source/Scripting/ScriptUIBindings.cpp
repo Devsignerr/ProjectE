@@ -145,10 +145,20 @@ void FLuaRuntime::RegisterUIBindings()
 		}
 		return sol::make_object(Lua, FScriptWidgetRef{ Entity.Entity, Name });
 	};
-	// UI 애니메이션 (.eui Animations): entity:PlayUIAnimation("Intro"[, 반복(0 = 무한), 속도(음수 = 거꾸로)]) → 있으면 true
-	EntityType["PlayUIAnimation"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name, sol::optional<int32> Loops, sol::optional<float> Speed) {
-		FUIInstance* Instance = FindInstance(Entity.Entity);
-		return Instance != nullptr && Instance->PlayAnimation(Name, Loops.value_or(1), Speed.value_or(1.0f));
+	// UI 애니메이션 (.eui Animations): entity:PlayUIAnimation("Intro"[, 반복(0 = 무한), 속도(음수 = 거꾸로)[, { GameTime = true|false }]]) → 있으면 true
+	//   GameTime: 게임 시간 배율·히트스톱을 따른다 (없으면 에셋 값 — 기본 실제 시간, UI/UIAnimation.h FUIAnimation::bUseGameTime)
+	EntityType["PlayUIAnimation"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name, sol::optional<int32> Loops, sol::optional<float> Speed,
+	                                               sol::optional<sol::table> Options) {
+		FUIInstance*        Instance = FindInstance(Entity.Entity);
+		std::optional<bool> UseGameTime;
+		if (Options)
+		{
+			if (const sol::optional<bool> GameTime = (*Options)["GameTime"]; GameTime)
+			{
+				UseGameTime = *GameTime;
+			}
+		}
+		return Instance != nullptr && Instance->PlayAnimation(Name, Loops.value_or(1), Speed.value_or(1.0f), UseGameTime);
 	};
 	EntityType["StopUIAnimation"] = [FindInstance](const FScriptEntity& Entity, const std::string& Name) {
 		if (FUIInstance* Instance = FindInstance(Entity.Entity))

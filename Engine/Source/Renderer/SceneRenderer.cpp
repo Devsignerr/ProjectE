@@ -2589,8 +2589,6 @@ void FSceneRenderer::SelectLods(FScene& Scene, const FCamera& Camera, uint32 Vie
 	if (!Instances.empty() && MaxIndex >= LodGroupRoots.size())
 	{
 		LodGroupRoots.resize(static_cast<size_t>(MaxIndex) + 1);
-		LodGroupHistory.resize(static_cast<size_t>(MaxIndex) + 1);
-		LodGroupSlots.resize(static_cast<size_t>(MaxIndex) + 1, -1);
 	}
 
 	// 1) 오차 기반 인스턴스를 묶음에 모은다 (Gather 부분만 — 엔티티가 씬 엔티티. 순서대로라 결정적)
@@ -2605,7 +2603,14 @@ void FSceneRenderer::SelectLods(FScene& Scene, const FCamera& Camera, uint32 Vie
 			continue;
 		}
 		const FEntity Root = FindLodGroupRoot(Scene, Instance.Entity);
-		int32&        Slot = LodGroupSlots[Root.Index];
+		// 루트(모델 조상)는 인스턴스 엔티티가 아니므로 번호가 MaxIndex보다 클 수 있다 (해제된 칸 재사용 — 썸네일 씬 등).
+		// 루트 번호로 찾는 표는 여기서 늘린다 (늘리지 않으면 범위 밖 쓰기 → 힙 손상)
+		if (Root.Index >= LodGroupSlots.size())
+		{
+			LodGroupSlots.resize(static_cast<size_t>(Root.Index) + 1, -1);
+			LodGroupHistory.resize(static_cast<size_t>(Root.Index) + 1);
+		}
+		int32& Slot = LodGroupSlots[Root.Index];
 		if (Slot < 0 || static_cast<size_t>(Slot) >= LodGroups.size() || LodGroups[Slot].Root != Root)
 		{
 			Slot = static_cast<int32>(LodGroups.size());

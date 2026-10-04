@@ -43,3 +43,6 @@ Projects/Sample/Content/Asset/PolyHaven/**/*.png
 
 # 파이썬 캐시
 __pycache__/
+
+# 규모 측정용 생성 씬 (Scripts/ScaleBench.ps1)
+Projects/Sample/Content/Scenes/Tests/Scale/

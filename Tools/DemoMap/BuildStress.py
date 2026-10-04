@@ -1,6 +1,8 @@
 # 성능 기준 씬 Tests/Stress 생성: 스킨 유닛 500개가 동심원 트랙을 돈다 (게임 모듈 StressWalkerComponent) + 정적 그림자 캐스터 소품.
 #   실행: python Tools/DemoMap/BuildStress.py — 측정 기준이 바뀌므로 구성을 바꾸면 Plans.md에 새 기준 프레임을 적는다
 #   결정적(고정 시드). 유닛 = KayKit 캐릭터 8종(스켈레톤 관절 41, 프리미티브 최대 9) — 걷기/달리기 고리가 번갈아
+#   규모 측정용 변형: python Tools/DemoMap/BuildStress.py --count N --out Scenes/Tests/Scale/Stress_N.escene (Scripts/ScaleBench.ps1이 쓴다, gitignore)
+import argparse
 import math
 import os
 import random
@@ -19,6 +21,11 @@ RUN_SPEED  = 345.0  # cm/s (Running_A — 블렌드 위치와 같은 발 속도)
 
 
 def Main():
+	Parser = argparse.ArgumentParser()
+	Parser.add_argument("--count", type=int, default=UNIT_COUNT)
+	Parser.add_argument("--out", default="Scenes/Tests/Stress.escene", help="Content 기준 경로")
+	Args = Parser.parse_args()
+	UnitCount = Args.count
 	Rng = random.Random(500)
 	S = FScene()
 	S.Add("Sun", {"DirectionalLightComponent": {"Color": [1.0, 0.96, 0.9], "Intensity": 3.0}}, (0, 0, 1000), QuatFromEuler(Pitch=-40, Yaw=-30))
@@ -28,9 +35,9 @@ def Main():
 	# 유닛: 반지름 400cm부터 120cm 간격 고리, 고리 둘레에 일정 간격(약 140cm)으로 채운다
 	Placed = 0
 	Ring = 0
-	while Placed < UNIT_COUNT:
+	while Placed < UnitCount:
 		Radius = 400.0 + Ring * 120.0
-		Count = min(int(2 * math.pi * Radius / 140.0), UNIT_COUNT - Placed)
+		Count = min(int(2 * math.pi * Radius / 140.0), UnitCount - Placed)
 		bRun = Ring % 2 == 1
 		Direction = 1.0 if Ring % 4 < 2 else -1.0
 		Phase = Rng.uniform(0, 2 * math.pi)
@@ -65,7 +72,8 @@ def Main():
 
 	S.Add("Camera", {"CameraComponent": {"Primary": True, "FovYDegrees": 60.0, "NearZ": 10.0, "FarZ": 100000.0}},
 		(-OuterRadius - 900.0, -OuterRadius * 0.6, 1500.0), QuatFromEuler(Pitch=-28, Yaw=30))
-	Path = os.path.join(CONTENT, "Scenes", "Tests", "Stress.escene")
+	Path = os.path.join(CONTENT, *Args.out.split("/"))
+	os.makedirs(os.path.dirname(Path), exist_ok=True)
 	S.Save(Path)
 	print(f"Stress 생성: 유닛 {Placed}, 고리 {Ring}, 바깥 반지름 {OuterRadius:.0f}cm, 엔티티 {len(S.Entities)}")
 

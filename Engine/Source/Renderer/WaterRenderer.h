@@ -26,6 +26,8 @@ struct FWaterPassInputs
 	FRGResourceRef            VelocityRef;
 	FRGResourceRef            ShadowMapRef;
 	FRGResourceRef            FogVolumeRef;
+	FRGResourceRef            LocalShadowRef; // 로컬 그림자 타일 배열 / 클러스터 버퍼 (FLocalLightRenderer::Import*)
+	FRGResourceRef            ClustersRef;
 	FMatrix4x4                ViewProjection;           // 지터 포함
 	FMatrix4x4                UnjitteredViewProjection;
 	FMatrix4x4                PrevViewProjection;
@@ -41,6 +43,12 @@ struct FWaterPassInputs
 	FD3D12DescriptorHandle    FogVolumeSrv;
 	FD3D12DescriptorHandle    IblTable;     // 조도 / 프리필터 / BRDF (FIblRenderer::GetLightingTable — 대기 실시간 IBL 포함)
 	FD3D12DescriptorHandle    CaptureAtlasSrv;
+	// 클러스터 로컬 라이트 (FLocalLightRenderer — 메시 패스와 같은 값: b4/t11~t14 + 공간 3 힙 표)
+	D3D12_GPU_VIRTUAL_ADDRESS ClusterConstants    = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS LocalLights         = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS ClusterData         = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS LocalShadowMatrices = 0;
+	FD3D12DescriptorHandle    LocalShadowMapSrv;
 };
 
 // 소규모 물 (Phase 49, FWaterBodyComponent — 식은 Renderer/WaterMath.h, 셰이더 Water.hlsl)

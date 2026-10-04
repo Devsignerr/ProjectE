@@ -7,12 +7,17 @@
 // 방향광 캐스케이드 그림자 상수 b3
 #define E_SHADOW_CONSTANTS_REGISTER b3
 #include "ShadowCommon.hlsli"
+#include "PBR.hlsli"
+// 클러스터 로컬 라이트 (점광원/스포트/면광원 — LocalLightRenderer, 메시 패스와 같은 식): b4 클러스터 상수, t11~t14, 공간 3 표 (LTC·IES·쿠키)
+#define E_CLUSTER_CONSTANTS_REGISTER b4
+#include "Lighting.hlsli"
 
 // 소규모 물 (Phase 49, FWaterRenderer). CPU 참조 식은 Renderer/WaterMath.h (테스트 Water_*)
 //   반투명 위치(안개 적용 뒤, 반투명 메시 전)의 전용 패스. 수면 = 물 상자 윗면 사각형(요 회전)
 //   굴절: 씬 컬러 복사본(t0)을 노멀 오프셋으로 읽되, 오프셋 자리의 장면이 수면보다 앞(물 위 물체)이면 오프셋 없이 → 물 위 물체가 새지 않는다
 //   깊이 색: 바닥까지 물속 거리로 채널별 흡수 T = exp(-흡수 × m) → 바닥 × T + 산란 색 × 조명 × (1 - T)
 //   반사: 화면 공간 추적(결정적 — 지터 없음, 씬 컬러 복사본) → 반사 캡처 → 하늘 IBL 프리필터. 프레넬(슐릭, F0 0.02)로 섞는다
+//   로컬 라이트: 클러스터 점광원/스포트/면광원의 반사광만 (LocalLighting.hlsli EvaluateLocalLights — 메시 패스와 같은 식·그림자, 알베도 0)
 //   거품: 물 두께가 FoamDistance보다 얇은 가장자리 × 거품 노이즈(노멀 텍스처 B)
 //   출력: 씬 컬러(알파 = TAA 반응형 마스크 0.2 — 잔물결이 움직인다) + 움직임 벡터(수면 기준 — 바닥 깊이로 재투영하지 않게)
 //   깊이: 씬 깊이(t1)와 셰이더에서 비교 (깊이 버퍼에는 쓰지 않음)
@@ -83,7 +88,16 @@ SamplerState           LinearClamp  : register(s0);
 SamplerState           LinearWrap   : register(s1);
 SamplerComparisonState ShadowSampler : register(s2);
 
+#define E_LOCAL_LIGHTS_REGISTER t11
+#define E_CLUSTER_DATA_REGISTER t12
+#define E_LOCAL_SHADOW_MATRICES_REGISTER t13
+#define E_LOCAL_SHADOW_MAP_REGISTER t14
+#define E_LIGHT_SAMPLER_CLAMP LinearClamp
+#define E_LIGHT_SAMPLER_WRAP LinearWrap
+#include "LocalLighting.hlsli"
+
 static const float WaterF0 = 0.02f; // FWaterMath::WaterF0
+static const float WaterLocalLightMinRoughness = 0.08f; // 로컬 라이트 하이라이트 거칠기 하한
 
 struct FWaterVSOutput
 {
@@ -353,6 +367,16 @@ FWaterOutput PSWater(FWaterVSOutput Input, bool bFrontFace : SV_IsFrontFace)
 		Direct       = Refracted * DirectWeight;
 		Color        = ScatterColor * InLight * ((1.0f - T) * (1.0f - F)) + Reflection * F;
 		Color += SunColor * (SunSpecular(N, V, SunDirection, max(Roughness, 0.02f)) * saturate(dot(N, SunDirection)) * Shadow);
+		// 로컬 라이트 반사광 (점광원/스포트/면광원 — 메시 패스와 같은 클러스터 평가, 그림자 포함). 확산 없음(알베도 0) = 반사만.
+		// 점 광원의 거울 하이라이트가 잔물결마다 한 픽셀로 반짝이지 않게 거칠기 하한을 둔다
+		FSurface LocalSurface;
+		LocalSurface.Albedo    = 0.0f;
+		LocalSurface.Metallic  = 0.0f;
+		LocalSurface.Roughness = max(Roughness, WaterLocalLightMinRoughness);
+		LocalSurface.N         = N;
+		LocalSurface.V         = V;
+		LocalSurface.Occlusion = 1.0f;
+		Color += EvaluateLocalLights(LocalSurface, Input.Position.xy, P, Up);
 	}
 	else
 	{

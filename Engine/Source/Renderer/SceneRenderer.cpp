@@ -1988,6 +1988,13 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			WaterInputs.FogVolumeSrv             = FogRenderer.GetVolumeSrv();
 			WaterInputs.IblTable                 = IblRenderer.GetLightingTable();
 			WaterInputs.CaptureAtlasSrv          = ReflectionCaptures.GetAtlasSrv();
+			WaterInputs.LocalShadowRef           = LocalShadowRef;
+			WaterInputs.ClustersRef              = ClustersRef;
+			WaterInputs.ClusterConstants         = LocalLightRenderer.GetConstants();
+			WaterInputs.LocalLights              = LocalLightRenderer.GetLightList();
+			WaterInputs.ClusterData              = LocalLightRenderer.GetClusterData();
+			WaterInputs.LocalShadowMatrices      = LocalLightRenderer.GetShadowMatrices();
+			WaterInputs.LocalShadowMapSrv        = LocalLightRenderer.GetShadowMapSrv();
 			Water.AddSurfacePass(Graph, WaterInputs, TimerId(ERenderTimer::Water));
 		}
 

@@ -33,6 +33,12 @@ namespace
 		WaterRoot_FogVolume    = 9, // t8
 		WaterRoot_Captures     = 10, // t9 (루트 SRV)
 		WaterRoot_CaptureAtlas = 11, // t10
+		WaterRoot_Cluster      = 12, // b4 (클러스터 상수)
+		WaterRoot_LocalLights  = 13, // t11 (루트 SRV)
+		WaterRoot_ClusterData  = 14, // t12 (루트 SRV)
+		WaterRoot_LocalShadowMatrices = 15, // t13 (루트 SRV)
+		WaterRoot_LocalShadowMap      = 16, // t14
+		WaterRoot_LightTextures       = 17, // 공간 3 t0~ (셰이더 가시 힙 전체 — LTC·IES·쿠키)
 	};
 
 	constexpr uint32 WaveTextureSize = 256;
@@ -73,9 +79,19 @@ bool FWaterRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InLibrary)
 	const uint32 FogVolume = RootSignature.AddDescriptorTable(Table(1, 8), D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 Captures  = RootSignature.AddShaderResourceView(9, 0, D3D12_SHADER_VISIBILITY_PIXEL);
 	const uint32 Atlas     = RootSignature.AddDescriptorTable(Table(1, 10), D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 Cluster       = RootSignature.AddConstantBufferView(4, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LocalLights   = RootSignature.AddShaderResourceView(11, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 ClusterData   = RootSignature.AddShaderResourceView(12, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 ShadowMatrices = RootSignature.AddShaderResourceView(13, 0, D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LocalShadow   = RootSignature.AddDescriptorTable(Table(1, 14), D3D12_SHADER_VISIBILITY_PIXEL);
+	const uint32 LightTextures = RootSignature.AddDescriptorTable(
+		{ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, UINT_MAX, 0, 3, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE) },
+		D3D12_SHADER_VISIBILITY_PIXEL);
 	E_CHECK(Frame == WaterRoot_Frame && Body == WaterRoot_Body && Fog == WaterRoot_Fog && Shadow == WaterRoot_Shadow && Copy == WaterRoot_Copy &&
 	        Depth == WaterRoot_Depth && Waves == WaterRoot_Waves && Ibl == WaterRoot_Ibl && ShadowMap == WaterRoot_ShadowMap &&
-	        FogVolume == WaterRoot_FogVolume && Captures == WaterRoot_Captures && Atlas == WaterRoot_CaptureAtlas);
+	        FogVolume == WaterRoot_FogVolume && Captures == WaterRoot_Captures && Atlas == WaterRoot_CaptureAtlas &&
+	        Cluster == WaterRoot_Cluster && LocalLights == WaterRoot_LocalLights && ClusterData == WaterRoot_ClusterData &&
+	        ShadowMatrices == WaterRoot_LocalShadowMatrices && LocalShadow == WaterRoot_LocalShadowMap && LightTextures == WaterRoot_LightTextures);
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP));
 	D3D12_STATIC_SAMPLER_DESC ShadowSampler =
@@ -360,6 +376,12 @@ void FWaterRenderer::BindCommon(ID3D12GraphicsCommandList* List, D3D12_GPU_VIRTU
 	List->SetGraphicsRootDescriptorTable(WaterRoot_FogVolume, Inputs.FogVolumeSrv.Gpu);
 	List->SetGraphicsRootShaderResourceView(WaterRoot_Captures, Inputs.CaptureList);
 	List->SetGraphicsRootDescriptorTable(WaterRoot_CaptureAtlas, Inputs.CaptureAtlasSrv.Gpu);
+	List->SetGraphicsRootConstantBufferView(WaterRoot_Cluster, Inputs.ClusterConstants);
+	List->SetGraphicsRootShaderResourceView(WaterRoot_LocalLights, Inputs.LocalLights);
+	List->SetGraphicsRootShaderResourceView(WaterRoot_ClusterData, Inputs.ClusterData);
+	List->SetGraphicsRootShaderResourceView(WaterRoot_LocalShadowMatrices, Inputs.LocalShadowMatrices);
+	List->SetGraphicsRootDescriptorTable(WaterRoot_LocalShadowMap, Inputs.LocalShadowMapSrv.Gpu);
+	List->SetGraphicsRootDescriptorTable(WaterRoot_LightTextures, Rhi->GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
 }
 
 void FWaterRenderer::AddSurfacePass(FRenderGraph& Graph, const FWaterPassInputs& Inputs, int32 Timer)
@@ -398,9 +420,12 @@ void FWaterRenderer::AddSurfacePass(FRenderGraph& Graph, const FWaterPassInputs&
 		.Write(Inputs.ColorRef, ERGAccess::RenderTarget)
 		.Write(Inputs.VelocityRef, ERGAccess::RenderTarget)
 		.Timer(Timer);
-	if (Inputs.ShadowMapRef.IsValid())
+	for (const FRGResourceRef& Ref : { Inputs.ShadowMapRef, Inputs.LocalShadowRef, Inputs.ClustersRef })
 	{
-		Pass.Read(Inputs.ShadowMapRef, ERGAccess::SrvPixel);
+		if (Ref.IsValid())
+		{
+			Pass.Read(Ref, ERGAccess::SrvPixel);
+		}
 	}
 	if (Inputs.FogVolumeRef.IsValid())
 	{
@@ -434,9 +459,12 @@ void FWaterRenderer::AddUnderwaterPass(FRenderGraph& Graph, const FWaterPassInpu
 	const uint32                    Height = Inputs.SceneColor->GetHeight();
 	FRenderGraph::FPassBuilder      Pass   = Graph.AddPass("물속");
 	Pass.Read(Inputs.DepthRef, ERGAccess::SrvPixel).Write(Inputs.ColorRef, ERGAccess::RenderTarget).Timer(Timer);
-	if (Inputs.ShadowMapRef.IsValid())
+	for (const FRGResourceRef& Ref : { Inputs.ShadowMapRef, Inputs.LocalShadowRef, Inputs.ClustersRef })
 	{
-		Pass.Read(Inputs.ShadowMapRef, ERGAccess::SrvPixel);
+		if (Ref.IsValid())
+		{
+			Pass.Read(Ref, ERGAccess::SrvPixel);
+		}
 	}
 	if (Inputs.FogVolumeRef.IsValid())
 	{

@@ -1,0 +1,132 @@
+{
+  "Version": 1,
+  "Struct": "Data/Crypt/Enemy.estruct",
+  "Rows": [
+    {
+      "Name": "Ghost",
+      "Values": {
+        "DisplayName": "떠도는 망령",
+        "Behavior": "Flyer",
+        "MaxHealth": 18,
+        "ContactDamage": 7,
+        "AttackDamage": 7,
+        "MoveSpeed": 190,
+        "AggroRange": 1100,
+        "AttackRange": 0,
+        "AttackCooldown": 1.0,
+        "ProjectileSpeed": 0,
+        "GoldMin": 1,
+        "GoldMax": 2,
+        "FacesRight": false,
+        "Radius": 44,
+        "MinFloor": 1,
+        "Weight": 1
+      }
+    },
+    {
+      "Name": "Skeleton",
+      "Values": {
+        "DisplayName": "해골 전사",
+        "Behavior": "Melee",
+        "MaxHealth": 30,
+        "ContactDamage": 5,
+        "AttackDamage": 11,
+        "MoveSpeed": 210,
+        "AggroRange": 900,
+        "AttackRange": 150,
+        "AttackCooldown": 1.5,
+        "ProjectileSpeed": 0,
+        "GoldMin": 2,
+        "GoldMax": 4,
+        "FacesRight": false,
+        "Radius": 40,
+        "MinFloor": 1,
+        "Weight": 1.4
+      }
+    },
+    {
+      "Name": "Ghoul",
+      "Values": {
+        "DisplayName": "불타는 구울",
+        "Behavior": "Charger",
+        "MaxHealth": 34,
+        "ContactDamage": 10,
+        "AttackDamage": 10,
+        "MoveSpeed": 430,
+        "AggroRange": 800,
+        "AttackRange": 0,
+        "AttackCooldown": 1.0,
+        "ProjectileSpeed": 0,
+        "GoldMin": 2,
+        "GoldMax": 5,
+        "FacesRight": false,
+        "Radius": 42,
+        "MinFloor": 1,
+        "Weight": 0.8
+      }
+    },
+    {
+      "Name": "Gato",
+      "Values": {
+        "DisplayName": "지옥 고양이",
+        "Behavior": "Leaper",
+        "MaxHealth": 26,
+        "ContactDamage": 9,
+        "AttackDamage": 9,
+        "MoveSpeed": 360,
+        "AggroRange": 900,
+        "AttackRange": 600,
+        "AttackCooldown": 1.8,
+        "ProjectileSpeed": 0,
+        "GoldMin": 2,
+        "GoldMax": 4,
+        "FacesRight": false,
+        "Radius": 46,
+        "MinFloor": 2,
+        "Weight": 0.9
+      }
+    },
+    {
+      "Name": "Wizard",
+      "Values": {
+        "DisplayName": "타락한 사제",
+        "Behavior": "Caster",
+        "MaxHealth": 24,
+        "ContactDamage": 4,
+        "AttackDamage": 9,
+        "MoveSpeed": 170,
+        "AggroRange": 1300,
+        "AttackRange": 1100,
+        "AttackCooldown": 2.4,
+        "ProjectileSpeed": 650,
+        "GoldMin": 3,
+        "GoldMax": 5,
+        "FacesRight": false,
+        "Radius": 40,
+        "MinFloor": 1,
+        "Weight": 1
+      }
+    },
+    {
+      "Name": "Angel",
+      "Values": {
+        "DisplayName": "타락 천사 세라핌",
+        "Behavior": "Boss",
+        "MaxHealth": 650,
+        "ContactDamage": 12,
+        "AttackDamage": 10,
+        "MoveSpeed": 320,
+        "AggroRange": 4000,
+        "AttackRange": 0,
+        "AttackCooldown": 1.2,
+        "ProjectileSpeed": 520,
+        "GoldMin": 30,
+        "GoldMax": 40,
+        "FacesRight": true,
+        "Radius": 100,
+        "MinFloor": 3,
+        "Weight": 1
+      }
+    }
+  ]
+}

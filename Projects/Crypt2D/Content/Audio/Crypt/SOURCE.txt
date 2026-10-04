@@ -1,0 +1,5 @@
+Crypt2D 효과음 (BuildCrypt2D.py가 만든다)
+- Swing1~3/Hit/HitHeavy/Hurt/Dash/Block: Projects/Sample/Content/Audio/RPG (프로젝트 자체 절차 생성, 라이선스 제약 없음)
+- Coin/ChestOpen/Equip: Kenney RPG Audio (CC0), Heal/UIConfirm/UIClick/DoorOpen/DoorClose: Kenney Interface Sounds (CC0)
+- Jump/Shoot/Fireball/Explode/Portal/BossRoar/Door: Tools/Crypt2DArt.py가 합성 (자체 제작)
+형식: WAV (miniaudio 빌드에 Vorbis 디코더가 없어 .ogg는 재생되지 않는다)

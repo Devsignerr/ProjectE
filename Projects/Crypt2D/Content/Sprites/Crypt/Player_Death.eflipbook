@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Player.esprite",
+  "Fps": 6,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Hurt0"
+    },
+    {
+      "Slice": "Hurt1"
+    },
+    {
+      "Slice": "Crouch0"
+    },
+    {
+      "Slice": "Crouch1"
+    }
+  ]
+}

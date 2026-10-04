@@ -1,0 +1,123 @@
+{
+  "Version": 1,
+  "Name": "Weapon",
+  "Description": "무기 (Weapons.etable, 행 이름 = 무기 id)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "무기",
+      "Description": "표시 이름"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Values": [
+        "Melee",
+        "Ranged"
+      ],
+      "Default": "Melee",
+      "Description": "근접(휘두르기 호 판정) / 원거리(투사체)"
+    },
+    {
+      "Name": "Slice",
+      "Type": "String",
+      "Default": "Sword",
+      "Description": "Generated.esprite 슬라이스 (손에 든 모습)"
+    },
+    {
+      "Name": "Icon",
+      "Type": "String",
+      "Default": "UI/Crypt/Icons/Sword.png",
+      "Description": "HUD 슬롯 아이콘"
+    },
+    {
+      "Name": "DamageMin",
+      "Type": "Float",
+      "Default": 8,
+      "Description": "한 대 최소"
+    },
+    {
+      "Name": "DamageMax",
+      "Type": "Float",
+      "Default": 12,
+      "Description": "한 대 최대"
+    },
+    {
+      "Name": "CritChance",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "치명타 확률 0~1"
+    },
+    {
+      "Name": "CritMultiplier",
+      "Type": "Float",
+      "Default": 1.8,
+      "Description": "치명타 배율"
+    },
+    {
+      "Name": "Cooldown",
+      "Type": "Float",
+      "Default": 0.35,
+      "Description": "공격 간격 (초)"
+    },
+    {
+      "Name": "Range",
+      "Type": "Float",
+      "Default": 110,
+      "Description": "근접 = 판정 반경 (cm, 손에서), 원거리 = 사거리"
+    },
+    {
+      "Name": "Arc",
+      "Type": "Float",
+      "Default": 130,
+      "Description": "근접 판정 각 (도, 조준 방향 중심)"
+    },
+    {
+      "Name": "Knockback",
+      "Type": "Float",
+      "Default": 600,
+      "Description": "넉백 속도 (cm/s)"
+    },
+    {
+      "Name": "ProjectileSpeed",
+      "Type": "Float",
+      "Default": 2200,
+      "Description": "원거리 투사체 속도 (cm/s)"
+    },
+    {
+      "Name": "Projectile",
+      "Type": "Enum",
+      "Values": [
+        "Bolt",
+        "Fireball"
+      ],
+      "Default": "Bolt",
+      "Description": "원거리 투사체 모양"
+    },
+    {
+      "Name": "Pierce",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "투사체가 더 꿰뚫는 적 수"
+    },
+    {
+      "Name": "Explosion",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "> 0이면 명중 시 폭발 반경 (cm)"
+    },
+    {
+      "Name": "SwingSound",
+      "Type": "String",
+      "Default": "Audio/Crypt/Swing1.wav",
+      "Description": "공격 소리"
+    },
+    {
+      "Name": "MinFloor",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "상자에서 나오기 시작하는 층"
+    }
+  ]
+}

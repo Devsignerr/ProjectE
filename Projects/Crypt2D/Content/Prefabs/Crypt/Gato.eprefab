@@ -1,0 +1,88 @@
+{
+  "Entities": [
+    {
+      "Name": "Gato",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Cemetery.esprite",
+          "Slice": "Gato0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "Characters",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/Crypt/Gato_Run.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "CharacterMovement2DComponent": {
+          "Mode": 0,
+          "CapsuleRadius": 44.0,
+          "CapsuleHeight": 120.0,
+          "Layer": "Enemy",
+          "ClientPrediction": false,
+          "MaxSpeed": 300.0,
+          "GroundAcceleration": 3000.0,
+          "GroundDeceleration": 4000.0,
+          "AirAcceleration": 3000.0,
+          "AirDeceleration": 200.0,
+          "JumpVelocity": 1150.0,
+          "MaxJumps": 1,
+          "GravityScale": 3.0,
+          "MaxFallSpeed": 1800.0,
+          "DashSpeed": 650.0,
+          "DashTime": 0.12,
+          "DashCooldown": 0.05,
+          "MaxAirDashes": 99,
+          "DashIgnoresGravity": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/Enemy.lua",
+          "PropertyOverrides": "{\"Kind\": \"Gato\"}",
+          "ExecutionLocation": 0
+        }
+      }
+    }
+  ]
+}

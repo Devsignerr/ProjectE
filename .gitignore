@@ -46,3 +46,8 @@ __pycache__/
 
 # 규모 측정용 생성 씬 (Scripts/ScaleBench.ps1)
 Projects/Sample/Content/Scenes/Tests/Scale/
+
+# Crypt2D 예제: 받은 원본(GothicVania, Projects/Crypt2D/Scripts/FetchAssets.ps1 + Assets.json으로 재현)과 쿠킹/저장 폴더
+Projects/Crypt2D/Content/Asset/GothicVania/
+Projects/Crypt2D/Cooked/
+Projects/Crypt2D/Saved/

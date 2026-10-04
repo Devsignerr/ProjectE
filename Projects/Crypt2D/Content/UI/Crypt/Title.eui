@@ -1,0 +1,555 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1280,
+    720
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Enabled": true,
+    "Opacity": 1,
+    "Visibility": "SelfHitTestInvisible",
+    "Children": [
+      {
+        "Type": "Text",
+        "Name": "TitleText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            70,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Text": "CRYPT 2D",
+        "FontSize": 96,
+        "TextColor": [
+          1.0,
+          0.84,
+          0.36,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "SubtitleText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            186,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Text": "지하 묘지의 수도승",
+        "FontSize": 30,
+        "TextColor": [
+          0.85,
+          0.78,
+          0.95,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "MenuBox",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "SelfHitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0.5
+          ],
+          "AnchorMax": [
+            0.5,
+            0.5
+          ],
+          "Offsets": [
+            0,
+            60,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Button",
+            "Name": "StartButton",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "Padding": [
+                0,
+                6,
+                0,
+                6
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.2,
+                0.12,
+                0.28,
+                0.95
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.05,
+                0.02,
+                0.08,
+                1
+              ]
+            },
+            "HoveredBrush": {
+              "Color": [
+                0.36,
+                0.2,
+                0.46,
+                1
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.95,
+                0.78,
+                0.4,
+                1
+              ]
+            },
+            "PressedBrush": {
+              "Color": [
+                0.14,
+                0.08,
+                0.2,
+                1
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.95,
+                0.78,
+                0.4,
+                1
+              ]
+            },
+            "DisabledBrush": {
+              "Color": [
+                0.12,
+                0.1,
+                0.14,
+                0.8
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.05,
+                0.02,
+                0.08,
+                1
+              ]
+            },
+            "ContentPadding": [
+              24,
+              8,
+              24,
+              8
+            ],
+            "MinSize": [
+              320,
+              56
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "StartButtonText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "모험 시작 (Enter)",
+                "FontSize": 28,
+                "TextColor": [
+                  0.95,
+                  0.9,
+                  0.84,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              }
+            ]
+          },
+          {
+            "Type": "Button",
+            "Name": "QuitButton",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "Padding": [
+                0,
+                6,
+                0,
+                6
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.2,
+                0.12,
+                0.28,
+                0.95
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.05,
+                0.02,
+                0.08,
+                1
+              ]
+            },
+            "HoveredBrush": {
+              "Color": [
+                0.36,
+                0.2,
+                0.46,
+                1
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.95,
+                0.78,
+                0.4,
+                1
+              ]
+            },
+            "PressedBrush": {
+              "Color": [
+                0.14,
+                0.08,
+                0.2,
+                1
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.95,
+                0.78,
+                0.4,
+                1
+              ]
+            },
+            "DisabledBrush": {
+              "Color": [
+                0.12,
+                0.1,
+                0.14,
+                0.8
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0.05,
+                0.02,
+                0.08,
+                1
+              ]
+            },
+            "ContentPadding": [
+              24,
+              8,
+              24,
+              8
+            ],
+            "MinSize": [
+              320,
+              56
+            ],
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "QuitButtonText",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Center",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "종료",
+                "FontSize": 28,
+                "TextColor": [
+                  0.95,
+                  0.9,
+                  0.84,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "RecordText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -64,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Text": "",
+        "FontSize": 22,
+        "TextColor": [
+          0.85,
+          0.82,
+          0.7,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "CreditText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -16,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Text": "Art: ansimuz — GothicVania Church & Cemetery (CC0)  ·  Sound: Kenney (CC0)",
+        "FontSize": 15,
+        "TextColor": [
+          0.6,
+          0.56,
+          0.66,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      }
+    ]
+  },
+  "Animations": []
+}

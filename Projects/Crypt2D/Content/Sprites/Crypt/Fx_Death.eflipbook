@@ -1,0 +1,35 @@
+{
+  "Version": 1,
+  "Sprite": "DeathFx.esprite",
+  "Fps": 20,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Death0"
+    },
+    {
+      "Slice": "Death1"
+    },
+    {
+      "Slice": "Death2"
+    },
+    {
+      "Slice": "Death3"
+    },
+    {
+      "Slice": "Death4"
+    },
+    {
+      "Slice": "Death5"
+    },
+    {
+      "Slice": "Death6"
+    },
+    {
+      "Slice": "Death7"
+    },
+    {
+      "Slice": "Death8"
+    }
+  ]
+}

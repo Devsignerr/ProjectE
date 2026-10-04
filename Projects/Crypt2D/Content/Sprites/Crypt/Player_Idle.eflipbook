@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Player.esprite",
+  "Fps": 7,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Idle0"
+    },
+    {
+      "Slice": "Idle1"
+    },
+    {
+      "Slice": "Idle2"
+    },
+    {
+      "Slice": "Idle3"
+    }
+  ]
+}

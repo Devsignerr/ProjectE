@@ -1,0 +1,26 @@
+{
+  "Version": 1,
+  "Sprite": "Player.esprite",
+  "Fps": 12,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Walk0"
+    },
+    {
+      "Slice": "Walk1"
+    },
+    {
+      "Slice": "Walk2"
+    },
+    {
+      "Slice": "Walk3"
+    },
+    {
+      "Slice": "Walk4"
+    },
+    {
+      "Slice": "Walk5"
+    }
+  ]
+}

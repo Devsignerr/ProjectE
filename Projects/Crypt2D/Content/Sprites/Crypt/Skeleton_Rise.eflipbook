@@ -1,0 +1,26 @@
+{
+  "Version": 1,
+  "Sprite": "Cemetery.esprite",
+  "Fps": 9,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "SkeletonRise0"
+    },
+    {
+      "Slice": "SkeletonRise1"
+    },
+    {
+      "Slice": "SkeletonRise2"
+    },
+    {
+      "Slice": "SkeletonRise3"
+    },
+    {
+      "Slice": "SkeletonRise4"
+    },
+    {
+      "Slice": "SkeletonRise5"
+    }
+  ]
+}

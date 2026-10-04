@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Generated.esprite",
+  "Fps": 8,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Portal0"
+    },
+    {
+      "Slice": "Portal1"
+    },
+    {
+      "Slice": "Portal2"
+    },
+    {
+      "Slice": "Portal3"
+    }
+  ]
+}

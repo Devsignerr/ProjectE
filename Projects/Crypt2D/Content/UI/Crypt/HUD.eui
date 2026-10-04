@@ -1,0 +1,5725 @@
+{
+  "Version": 2,
+  "DesignSize": [
+    1280,
+    720
+  ],
+  "ScaleMode": "MatchHeight",
+  "Root": {
+    "Type": "Canvas",
+    "Name": "Root",
+    "Enabled": true,
+    "Opacity": 1,
+    "Visibility": "SelfHitTestInvisible",
+    "Children": [
+      {
+        "Type": "Border",
+        "Name": "StatusPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            16,
+            16,
+            330,
+            104
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.03,
+            0.01,
+            0.05,
+            0.6
+          ],
+          "CornerRadius": 4,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.2,
+            0.12,
+            0.26,
+            0.9
+          ]
+        },
+        "ContentPadding": [
+          16,
+          12,
+          16,
+          10
+        ],
+        "Children": [
+          {
+            "Type": "VerticalBox",
+            "Name": "StatusBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Overlay",
+                "Name": "HpRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    8
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "MinSize": [
+                  298,
+                  28
+                ],
+                "Children": [
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "HpBar",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "MinSize": [
+                      298,
+                      28
+                    ],
+                    "Brush": {
+                      "Color": [
+                        0.1,
+                        0.03,
+                        0.05,
+                        1
+                      ],
+                      "CornerRadius": 2,
+                      "BorderWidth": 2,
+                      "BorderColor": [
+                        0.02,
+                        0,
+                        0.02,
+                        1
+                      ]
+                    },
+                    "FillBrush": {
+                      "Color": [
+                        0.84,
+                        0.16,
+                        0.22,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight"
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "HpText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "80 / 80",
+                    "FontSize": 20,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "HorizontalBox",
+                "Name": "DashRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    8
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Dash0",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        6,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "MinSize": [
+                      56,
+                      12
+                    ],
+                    "Brush": {
+                      "Color": [
+                        0.06,
+                        0.06,
+                        0.1,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 1,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "FillBrush": {
+                      "Color": [
+                        0.45,
+                        0.85,
+                        1.0,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight"
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Dash1",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        6,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "MinSize": [
+                      56,
+                      12
+                    ],
+                    "Brush": {
+                      "Color": [
+                        0.06,
+                        0.06,
+                        0.1,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 1,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "FillBrush": {
+                      "Color": [
+                        0.45,
+                        0.85,
+                        1.0,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight"
+                  },
+                  {
+                    "Type": "ProgressBar",
+                    "Name": "Dash2",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        6,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Fill",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "MinSize": [
+                      56,
+                      12
+                    ],
+                    "Brush": {
+                      "Color": [
+                        0.06,
+                        0.06,
+                        0.1,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 1,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "FillBrush": {
+                      "Color": [
+                        0.45,
+                        0.85,
+                        1.0,
+                        1
+                      ],
+                      "CornerRadius": 1,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ]
+                    },
+                    "Percent": 1.0,
+                    "FillDirection": "LeftToRight"
+                  }
+                ]
+              },
+              {
+                "Type": "HorizontalBox",
+                "Name": "GoldRow",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "SelfHitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "HAlign": "Fill",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Children": [
+                  {
+                    "Type": "Image",
+                    "Name": "GoldIcon",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        8,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Brush": {
+                      "Color": [
+                        1,
+                        1,
+                        1,
+                        1
+                      ],
+                      "CornerRadius": 0,
+                      "BorderWidth": 0,
+                      "BorderColor": [
+                        0,
+                        0,
+                        0,
+                        1
+                      ],
+                      "Texture": "UI/Crypt/Icons/Coin.png"
+                    },
+                    "ImageSize": [
+                      24,
+                      24
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "GoldText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        24,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "0",
+                    "FontSize": 22,
+                    "TextColor": [
+                      1.0,
+                      0.84,
+                      0.36,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  },
+                  {
+                    "Type": "Text",
+                    "Name": "KillText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Fill",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "처치 0",
+                    "FontSize": 20,
+                    "TextColor": [
+                      0.8,
+                      0.76,
+                      0.86,
+                      1
+                    ],
+                    "Justify": "Left",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -226,
+            16,
+            210,
+            158
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.03,
+            0.01,
+            0.05,
+            0.6
+          ],
+          "CornerRadius": 4,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.2,
+            0.12,
+            0.26,
+            0.9
+          ]
+        },
+        "ContentPadding": [
+          14,
+          8,
+          14,
+          8
+        ],
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "FloorText",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Top",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "지하 1층",
+            "FontSize": 22,
+            "TextColor": [
+              1.0,
+              0.84,
+              0.36,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.04,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_0_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -212,
+            140,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_0_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -182,
+            147,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_0_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -199,
+            132,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_1_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -174,
+            140,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_1_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -144,
+            147,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_1_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -161,
+            132,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_2_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -136,
+            140,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_2_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -106,
+            147,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_2_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -123,
+            132,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_3_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -98,
+            140,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_3_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -68,
+            147,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_3_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -85,
+            132,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_4_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -60,
+            140,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_4_0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -47,
+            132,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_0_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -212,
+            114,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_0_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -182,
+            121,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_0_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -199,
+            106,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_1_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -174,
+            114,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_1_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -144,
+            121,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_1_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -161,
+            106,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_2_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -136,
+            114,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_2_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -106,
+            121,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_2_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -123,
+            106,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_3_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -98,
+            114,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_3_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -68,
+            121,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_3_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -85,
+            106,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_4_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -60,
+            114,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_4_1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -47,
+            106,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_0_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -212,
+            88,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_0_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -182,
+            95,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_0_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -199,
+            80,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_1_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -174,
+            88,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_1_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -144,
+            95,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_1_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -161,
+            80,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_2_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -136,
+            88,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_2_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -106,
+            95,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_2_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -123,
+            80,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_3_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -98,
+            88,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_3_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -68,
+            95,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_3_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -85,
+            80,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_4_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -60,
+            88,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapV_4_2",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -47,
+            80,
+            4,
+            8
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_0_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -212,
+            62,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_0_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -182,
+            69,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_1_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -174,
+            62,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_1_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -144,
+            69,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_2_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -136,
+            62,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_2_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -106,
+            69,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_3_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -98,
+            62,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "MapH_3_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -68,
+            69,
+            8,
+            4
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 1
+        },
+        "Brush": {
+          "Color": [
+            0.7,
+            0.66,
+            0.6,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Map_4_3",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            1,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            0
+          ],
+          "Offsets": [
+            -60,
+            62,
+            30,
+            18
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 2
+        },
+        "Brush": {
+          "Color": [
+            0.4,
+            0.4,
+            0.45,
+            1
+          ],
+          "CornerRadius": 2,
+          "BorderWidth": 1,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "ContentPadding": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "Type": "Overlay",
+        "Name": "WeaponSlot0",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            16,
+            -16,
+            96,
+            96
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "WeaponSlot0Bg",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.05,
+                0.03,
+                0.08,
+                0.8
+              ],
+              "CornerRadius": 4,
+              "BorderWidth": 3,
+              "BorderColor": [
+                0.3,
+                0.2,
+                0.36,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "WeaponSlot0Icon",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                8,
+                8,
+                8,
+                8
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Crypt/Icons/Sword.png"
+            },
+            "ImageSize": [
+              76,
+              76
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "WeaponSlot0Key",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                6,
+                2,
+                0,
+                0
+              ],
+              "HAlign": "Left",
+              "VAlign": "Top",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "1",
+            "FontSize": 18,
+            "TextColor": [
+              1.0,
+              0.84,
+              0.36,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.04,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Overlay",
+        "Name": "WeaponSlot1",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            120,
+            -16,
+            96,
+            96
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "WeaponSlot1Bg",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.05,
+                0.03,
+                0.08,
+                0.8
+              ],
+              "CornerRadius": 4,
+              "BorderWidth": 3,
+              "BorderColor": [
+                0.3,
+                0.2,
+                0.36,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "Image",
+            "Name": "WeaponSlot1Icon",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                8,
+                8,
+                8,
+                8
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "Texture": "UI/Crypt/Icons/Sword.png"
+            },
+            "ImageSize": [
+              76,
+              76
+            ]
+          },
+          {
+            "Type": "Text",
+            "Name": "WeaponSlot1Key",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                6,
+                2,
+                0,
+                0
+              ],
+              "HAlign": "Left",
+              "VAlign": "Top",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "2",
+            "FontSize": 18,
+            "TextColor": [
+              1.0,
+              0.84,
+              0.36,
+              1
+            ],
+            "Justify": "Left",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.04,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "WeaponName",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            1
+          ],
+          "AnchorMax": [
+            0,
+            1
+          ],
+          "Offsets": [
+            16,
+            -122,
+            400,
+            30
+          ],
+          "Alignment": [
+            0,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Text": "녹슨 검",
+        "FontSize": 22,
+        "TextColor": [
+          0.95,
+          0.9,
+          0.84,
+          1
+        ],
+        "Justify": "Left",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "HintText",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -10,
+            1100,
+            22
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Text": "A/D 이동  Space 점프(2단)  우클릭/Shift 대시  좌클릭 공격  Q·휠 무기 교체  F 상호작용  S+Space 내려가기  Esc 일시정지",
+        "FontSize": 15,
+        "TextColor": [
+          0.7,
+          0.66,
+          0.74,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "VerticalBox",
+        "Name": "BossPanel",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -46,
+            620,
+            64
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": false,
+          "ZOrder": 0
+        },
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "BossName",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                4
+              ],
+              "HAlign": "Center",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "타락 천사 세라핌",
+            "FontSize": 24,
+            "TextColor": [
+              1.0,
+              0.7,
+              0.7,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.04,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ]
+          },
+          {
+            "Type": "ProgressBar",
+            "Name": "BossBar",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "MinSize": [
+              620,
+              20
+            ],
+            "Brush": {
+              "Color": [
+                0.08,
+                0.02,
+                0.04,
+                0.9
+              ],
+              "CornerRadius": 2,
+              "BorderWidth": 2,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "FillBrush": {
+              "Color": [
+                0.9,
+                0.2,
+                0.3,
+                1
+              ],
+              "CornerRadius": 1,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "Percent": 1.0,
+            "FillDirection": "LeftToRight"
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "Toast",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            0
+          ],
+          "AnchorMax": [
+            0.5,
+            0
+          ],
+          "Offsets": [
+            0,
+            150,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            0
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Text": "",
+        "FontSize": 44,
+        "TextColor": [
+          1.0,
+          0.84,
+          0.36,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "Border",
+        "Name": "Prompt",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0.5,
+            1
+          ],
+          "AnchorMax": [
+            0.5,
+            1
+          ],
+          "Offsets": [
+            0,
+            -150,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": 0
+        },
+        "Brush": {
+          "Color": [
+            0.04,
+            0.02,
+            0.06,
+            0.8
+          ],
+          "CornerRadius": 4,
+          "BorderWidth": 2,
+          "BorderColor": [
+            0.95,
+            0.78,
+            0.4,
+            0.9
+          ]
+        },
+        "ContentPadding": [
+          16,
+          6,
+          16,
+          6
+        ],
+        "Children": [
+          {
+            "Type": "Text",
+            "Name": "PromptText",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "HitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Text": "F  상자 열기",
+            "FontSize": 24,
+            "TextColor": [
+              0.95,
+              0.9,
+              0.84,
+              1
+            ],
+            "Justify": "Center",
+            "Wrap": false,
+            "OutlineWidth": 2,
+            "OutlineColor": [
+              0.04,
+              0.02,
+              0.06,
+              1
+            ],
+            "ShadowOffset": [
+              0,
+              2
+            ],
+            "ShadowColor": [
+              0,
+              0,
+              0,
+              0.6
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Text",
+        "Name": "DmgTemplate",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0.5,
+            1
+          ],
+          "AutoSize": true,
+          "ZOrder": -1
+        },
+        "Text": "0",
+        "FontSize": 28,
+        "TextColor": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "Justify": "Center",
+        "Wrap": false,
+        "OutlineWidth": 2,
+        "OutlineColor": [
+          0.04,
+          0.02,
+          0.06,
+          1
+        ],
+        "ShadowOffset": [
+          0,
+          2
+        ],
+        "ShadowColor": [
+          0,
+          0,
+          0,
+          0.6
+        ]
+      },
+      {
+        "Type": "Image",
+        "Name": "Crosshair",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "HitTestInvisible",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            0,
+            0
+          ],
+          "Offsets": [
+            640,
+            360,
+            60,
+            60
+          ],
+          "Alignment": [
+            0.5,
+            0.5
+          ],
+          "AutoSize": false,
+          "ZOrder": 20
+        },
+        "Brush": {
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "CornerRadius": 0,
+          "BorderWidth": 0,
+          "BorderColor": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "Texture": "UI/Crypt/Icons/Crosshair.png"
+        },
+        "ImageSize": [
+          60,
+          60
+        ]
+      },
+      {
+        "Type": "Overlay",
+        "Name": "PauseScreen",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 30
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "PauseScreenShade",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.02,
+                0.0,
+                0.04,
+                0.72
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "VerticalBox",
+            "Name": "PauseScreenBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "PauseScreenTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    18
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "일시정지",
+                "FontSize": 64,
+                "TextColor": [
+                  1.0,
+                  0.84,
+                  0.36,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "ResumeButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "ResumeButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "계속하기",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "RestartButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "RestartButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "다시 시작",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "TitleButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "TitleButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "타이틀로",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "QuitButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "QuitButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "게임 종료",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Overlay",
+        "Name": "DeathScreen",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 31
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "DeathScreenShade",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.02,
+                0.0,
+                0.04,
+                0.72
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "VerticalBox",
+            "Name": "DeathScreenBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "DeathScreenTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    18
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "사망",
+                "FontSize": 64,
+                "TextColor": [
+                  0.95,
+                  0.3,
+                  0.3,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "DeathResult",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    26
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 26,
+                "TextColor": [
+                  0.95,
+                  0.9,
+                  0.84,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "DeathRestartButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "DeathRestartButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "다시 도전 (R)",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "DeathTitleButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "DeathTitleButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "타이틀로",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Type": "Overlay",
+        "Name": "VictoryScreen",
+        "Enabled": true,
+        "Opacity": 1,
+        "Visibility": "Collapsed",
+        "Slot": {
+          "AnchorMin": [
+            0,
+            0
+          ],
+          "AnchorMax": [
+            1,
+            1
+          ],
+          "Offsets": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "Alignment": [
+            0,
+            0
+          ],
+          "AutoSize": false,
+          "ZOrder": 32
+        },
+        "Children": [
+          {
+            "Type": "Border",
+            "Name": "VictoryScreenShade",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "Visible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Fill",
+              "VAlign": "Fill",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Brush": {
+              "Color": [
+                0.02,
+                0.0,
+                0.04,
+                0.72
+              ],
+              "CornerRadius": 0,
+              "BorderWidth": 0,
+              "BorderColor": [
+                0,
+                0,
+                0,
+                1
+              ]
+            },
+            "ContentPadding": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "Type": "VerticalBox",
+            "Name": "VictoryScreenBox",
+            "Enabled": true,
+            "Opacity": 1,
+            "Visibility": "SelfHitTestInvisible",
+            "Slot": {
+              "Padding": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "HAlign": "Center",
+              "VAlign": "Center",
+              "SizeRule": "Auto",
+              "FillWeight": 1
+            },
+            "Children": [
+              {
+                "Type": "Text",
+                "Name": "VictoryScreenTitle",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    18
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "승리!",
+                "FontSize": 64,
+                "TextColor": [
+                  1.0,
+                  0.84,
+                  0.36,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              },
+              {
+                "Type": "Text",
+                "Name": "VictoryResult",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "HitTestInvisible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    0,
+                    0,
+                    26
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Text": "",
+                "FontSize": 26,
+                "TextColor": [
+                  0.95,
+                  0.9,
+                  0.84,
+                  1
+                ],
+                "Justify": "Center",
+                "Wrap": false,
+                "OutlineWidth": 2,
+                "OutlineColor": [
+                  0.04,
+                  0.02,
+                  0.06,
+                  1
+                ],
+                "ShadowOffset": [
+                  0,
+                  2
+                ],
+                "ShadowColor": [
+                  0,
+                  0,
+                  0,
+                  0.6
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "VictoryRestartButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "VictoryRestartButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "새 도전 (R)",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              },
+              {
+                "Type": "Button",
+                "Name": "VictoryTitleButton",
+                "Enabled": true,
+                "Opacity": 1,
+                "Visibility": "Visible",
+                "Slot": {
+                  "Padding": [
+                    0,
+                    6,
+                    0,
+                    6
+                  ],
+                  "HAlign": "Center",
+                  "VAlign": "Fill",
+                  "SizeRule": "Auto",
+                  "FillWeight": 1
+                },
+                "Brush": {
+                  "Color": [
+                    0.2,
+                    0.12,
+                    0.28,
+                    0.95
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "HoveredBrush": {
+                  "Color": [
+                    0.36,
+                    0.2,
+                    0.46,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "PressedBrush": {
+                  "Color": [
+                    0.14,
+                    0.08,
+                    0.2,
+                    1
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.95,
+                    0.78,
+                    0.4,
+                    1
+                  ]
+                },
+                "DisabledBrush": {
+                  "Color": [
+                    0.12,
+                    0.1,
+                    0.14,
+                    0.8
+                  ],
+                  "CornerRadius": 2,
+                  "BorderWidth": 2,
+                  "BorderColor": [
+                    0.05,
+                    0.02,
+                    0.08,
+                    1
+                  ]
+                },
+                "ContentPadding": [
+                  24,
+                  8,
+                  24,
+                  8
+                ],
+                "MinSize": [
+                  320,
+                  56
+                ],
+                "Children": [
+                  {
+                    "Type": "Text",
+                    "Name": "VictoryTitleButtonText",
+                    "Enabled": true,
+                    "Opacity": 1,
+                    "Visibility": "HitTestInvisible",
+                    "Slot": {
+                      "Padding": [
+                        0,
+                        0,
+                        0,
+                        0
+                      ],
+                      "HAlign": "Center",
+                      "VAlign": "Center",
+                      "SizeRule": "Auto",
+                      "FillWeight": 1
+                    },
+                    "Text": "타이틀로",
+                    "FontSize": 28,
+                    "TextColor": [
+                      0.95,
+                      0.9,
+                      0.84,
+                      1
+                    ],
+                    "Justify": "Center",
+                    "Wrap": false,
+                    "OutlineWidth": 2,
+                    "OutlineColor": [
+                      0.04,
+                      0.02,
+                      0.06,
+                      1
+                    ],
+                    "ShadowOffset": [
+                      0,
+                      2
+                    ],
+                    "ShadowColor": [
+                      0,
+                      0,
+                      0,
+                      0.6
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "Animations": []
+}

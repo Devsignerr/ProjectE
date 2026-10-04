@@ -1,0 +1,91 @@
+{
+  "Entities": [
+    {
+      "Name": "Ghost",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Cemetery.esprite",
+          "Slice": "Ghost0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "Characters",
+          "OrderInLayer": 1,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/Crypt/Ghost_Float.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "RigidBody2DComponent": {
+          "BodyType": 1,
+          "Mass": 0.0,
+          "GravityScale": 0.0,
+          "LinearDamping": 0.0,
+          "AngularDamping": 0.0,
+          "FixedRotation": true,
+          "Bullet": false,
+          "ReportContacts": false,
+          "Enabled": true
+        },
+        "CircleCollider2DComponent": {
+          "Radius": 44.0,
+          "Offset": [
+            0.0,
+            0.0
+          ],
+          "Friction": 0.0,
+          "Restitution": 0.0,
+          "Density": 1.0,
+          "IsTrigger": false,
+          "OneWay": false,
+          "Layer": "Enemy"
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Crypt/Enemy.lua",
+          "PropertyOverrides": "{\"Kind\": \"Ghost\"}",
+          "ExecutionLocation": 0
+        }
+      }
+    }
+  ]
+}

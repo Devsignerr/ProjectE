@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Generated.esprite",
+  "Fps": 16,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Dust0"
+    },
+    {
+      "Slice": "Dust1"
+    },
+    {
+      "Slice": "Dust2"
+    },
+    {
+      "Slice": "Dust3"
+    }
+  ]
+}

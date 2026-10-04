@@ -1,0 +1,17 @@
+{
+  "Version": 1,
+  "Sprite": "Fireball.esprite",
+  "Fps": 12,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Fireball0"
+    },
+    {
+      "Slice": "Fireball1"
+    },
+    {
+      "Slice": "Fireball2"
+    }
+  ]
+}

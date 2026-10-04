@@ -20,7 +20,7 @@ namespace
 	// 텍스트로 훑는 에셋 (나머지는 바이너리/참조 없음 — .eterrain은 JSON이지만 큰 base64 높이 데이터뿐)
 	constexpr std::string_view TextExtensions[] = { ".escene", ".eprefab", ".emat", ".eanimgraph", ".ebt", ".eui", ".eparticle", ".esequence",
 	                                                ".lua", ".etable", ".edata", ".estruct", ".efoliage", ".ebuilding", ".emeta", ".eimport",
-	                                                ".gltf", ".estrings", ".json" };
+	                                                ".gltf", ".estrings", ".json", ".esprite", ".eflipbook", ".etileset" };
 	constexpr std::string_view ModelExtensions[] = { ".gltf", ".glb", ".fbx" };
 	constexpr std::string_view ImageExtensions[] = { ".png", ".jpg", ".jpeg", ".tga", ".bmp" };
 

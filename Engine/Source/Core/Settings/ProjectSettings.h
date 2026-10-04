@@ -4,6 +4,7 @@
 #include "Core/GameUserSettings.h"
 #include "Core/Settings/CollisionSettings.h"
 #include "Core/Settings/InputSettings.h"
+#include "Core/Settings/SortingLayerSettings.h"
 #include "Core/Math/Math.h"
 
 #include <string>
@@ -117,6 +118,7 @@ public:
 	FConsoleSettings      Console;
 	FGameplayTagSettings  GameplayTags;
 	FRenderingSettings    Rendering;
+	FSortingLayerSettings SortingLayers; // "SortingLayers" — 2D 정렬 레이어 이름 (Config/SortingLayers.json, 순서 = 그리기 순서)
 
 	// 기본값 → .eproject의 이전 필드(DefaultScene 등, 마이그레이션) → Config/<Id>.json 순서로 채운다
 	void LoadForProject(const FProjectDescriptor& Descriptor);

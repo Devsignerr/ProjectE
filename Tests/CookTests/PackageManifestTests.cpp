@@ -172,6 +172,36 @@ E_TEST(PackageManifest_ScannerFollowsReferences)
 	E_EXPECT_TRUE(UsagesOf("Icons/sword.png") == std::set<ETextureUsage>{ ETextureUsage::Color });
 }
 
+E_TEST(PackageManifest_FollowsSprite2DReferences)
+{
+	// 씬 → 플립북(Content 기준) → 스프라이트(플립북 폴더 기준) → 텍스처(스프라이트 폴더 기준), 타일셋 → 텍스처. 이미지 용도는 색상
+	FTempContent Content;
+	Content.Write("Scenes/Level.escene", R"({"Entities": [
+		{"FlipbookComponent": {"Flipbook": "Sprites/Hero/Run.eflipbook"}},
+		{"TilemapComponent": {"Tileset": "Tiles/Ground.etileset", "TileData": "AQEAAAA="}}
+	]})");
+	Content.Write("Sprites/Hero/Run.eflipbook", R"({"Version": 1, "Sprite": "Atlas/Hero.esprite", "Frames": [{"Slice": "Run_0"}]})");
+	Content.Write("Sprites/Hero/Atlas/Hero.esprite", R"({"Version": 1, "Texture": "../Hero.png", "Slices": []})");
+	Content.Write("Sprites/Hero/Hero.png", "png");
+	Content.Write("Tiles/Ground.etileset", R"({"Version": 1, "Texture": "../Textures/Ground.png", "Tiles": []})");
+	Content.Write("Textures/Ground.png", "png");
+	Content.Write("Textures/Unused.png", "png");
+
+	FPackageDependencyScanner Scanner(Content.Root);
+	E_EXPECT_TRUE(Scanner.AddRoot("Scenes/Level.escene", true, "테스트"));
+	const FPackageManifest Manifest = Scanner.Run();
+	E_EXPECT_FALSE(Manifest.bHasErrors);
+	E_EXPECT_TRUE(Manifest.Files.contains("Sprites/Hero/Run.eflipbook"));
+	E_EXPECT_TRUE(Manifest.Files.contains("Sprites/Hero/Atlas/Hero.esprite"));
+	E_EXPECT_TRUE(Manifest.Files.contains("Sprites/Hero/Hero.png"));
+	E_EXPECT_TRUE(Manifest.Files.contains("Tiles/Ground.etileset"));
+	E_EXPECT_TRUE(Manifest.Files.contains("Textures/Ground.png"));
+	E_EXPECT_FALSE(Manifest.Files.contains("Textures/Unused.png"));
+	const auto UsagesOf = [&](const char* Path) { return Manifest.Images.contains(Path) ? Manifest.Images.at(Path) : std::set<ETextureUsage>{}; };
+	E_EXPECT_TRUE(UsagesOf("Sprites/Hero/Hero.png") == std::set<ETextureUsage>{ ETextureUsage::Color });
+	E_EXPECT_TRUE(UsagesOf("Textures/Ground.png") == std::set<ETextureUsage>{ ETextureUsage::Color });
+}
+
 E_TEST(PackageManifest_TextRoundTrip)
 {
 	FPackageManifest Manifest;

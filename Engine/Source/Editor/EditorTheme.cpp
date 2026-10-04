@@ -229,6 +229,18 @@ FEditorTheme::FAssetStyle FEditorTheme::GetAssetStyle(std::string_view Extension
 	{
 		return { ICON_FA_TABLE_LIST, IM_COL32(160, 170, 220, 255), "데이터 구조체" };
 	}
+	if (Extension == ".esprite")
+	{
+		return { ICON_FA_IMAGES, IM_COL32(240, 140, 200, 255), "스프라이트" };
+	}
+	if (Extension == ".eflipbook")
+	{
+		return { ICON_FA_FILM, IM_COL32(245, 120, 160, 255), "플립북" };
+	}
+	if (Extension == ".etileset")
+	{
+		return { ICON_FA_TABLE_CELLS, IM_COL32(170, 200, 120, 255), "타일셋" };
+	}
 	if (Extension == ".ebuilding")
 	{
 		return { ICON_FA_BUILDING, IM_COL32(200, 170, 120, 255), "건물 설정" };

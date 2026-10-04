@@ -7,6 +7,7 @@
 #include "Editor/EditorTheme.h"
 #include "Editor/Panels/CollisionSettingsEditor.h"
 #include "Editor/Panels/InputSettingsEditor.h"
+#include "Editor/Panels/SortingLayerSettingsEditor.h"
 #include "Editor/PropertyWidgets.h"
 
 #include <imgui.h>
@@ -277,6 +278,10 @@ bool FSettingsWindow::DrawCustomSection(FSettingsSection& Section)
 	if (Section.Id == "Collision")
 	{
 		return FCollisionSettingsEditor::Draw(FProjectSettings::Get().Collision);
+	}
+	if (Section.Id == "SortingLayers")
+	{
+		return FSortingLayerSettingsEditor::Draw(FProjectSettings::Get().SortingLayers);
 	}
 	return false;
 }

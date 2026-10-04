@@ -61,8 +61,11 @@ if ($Multiplayer) {
     $ServerLog = Join-Path $OutDir "$($Name)_server.log"
     Remove-Item (Join-Path $OutDir "$($Name)_*") -ErrorAction SilentlyContinue
 
-    # 서버는 클라이언트보다 오래 돈다 (60Hz 틱: 클라이언트 프레임 + 여유 8초)
-    $ServerArgs = "--scene `"$Scene`" --port $Port --exit-after $($Frames + 480) --log `"$ServerLog`" $ExtraArgs"
+    # 서버 수명: 클라이언트 $Clients개가 모두 입장했다가 모두 나간 뒤 0.5초(30틱)에 스스로 끝난다 (--exit-when-empty — 클라이언트 시작이
+    # 5~40초(PSO 컴파일) 걸리거나 제각각이어도 먼저 끝나지 않게).
+    # --exit-after는 안전 상한 (60Hz 틱: 클라이언트 프레임 + 시간 제한 전체)
+    $ServerTicks = $Frames + 60 * $TimeoutSeconds
+    $ServerArgs  = "--scene `"$Scene`" --port $Port --exit-after $ServerTicks --exit-when-empty 30 --exit-min-players $Clients --log `"$ServerLog`" $ExtraArgs"
     $Server = Start-Process -FilePath $ServerExe -ArgumentList $ServerArgs -PassThru -WorkingDirectory $RootDir -WindowStyle Hidden
     Start-Sleep -Milliseconds 1000
 
@@ -82,7 +85,8 @@ if ($Multiplayer) {
         if (-not $Client.WaitForExit($TimeoutSeconds * 1000)) { $Client.Kill(); $Failed = $true; Write-Host "클라이언트 시간 초과" -ForegroundColor Red }
         elseif ($Client.ExitCode -ne 0) { $Failed = $true; Write-Host "클라이언트 비정상 종료 ($($Client.ExitCode))" -ForegroundColor Red }
     }
-    if (-not $Server.HasExited) { $Server.Kill(); $Server.WaitForExit() }
+    # 클라이언트가 끝나면 서버도 곧 끝난다 (연결 종료 감지 + 30틱). 비정상 종료한 클라이언트는 연결 시간 초과까지 기다릴 수 있다
+    if (-not $Server.WaitForExit(20000)) { $Server.Kill(); $Server.WaitForExit(); Write-Host "서버가 스스로 끝나지 않아 종료시킴" -ForegroundColor Yellow }
     elseif ($Server.ExitCode -ne 0) { $Failed = $true; Write-Host "서버 비정상 종료 ($($Server.ExitCode))" -ForegroundColor Red }
 
     Write-Host "서버 로그: $ServerLog"

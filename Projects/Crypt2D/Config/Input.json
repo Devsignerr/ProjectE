@@ -1,0 +1,235 @@
+{
+	"Version": 1,
+	"Actions": [
+		{
+			"Name": "Move",
+			"Type": "Axis2D",
+			"Description": "이동 (X = 오른쪽, Y = 위 — 아래 + 점프 = 원웨이 발판 내려가기)",
+			"ActuationThreshold": 0.3,
+			"Bindings": [
+				{
+					"Source": "D"
+				},
+				{
+					"Source": "A",
+					"Modifiers": [
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "W",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						}
+					]
+				},
+				{
+					"Source": "S",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						},
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "Right"
+				},
+				{
+					"Source": "Left",
+					"Modifiers": [
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "Up",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						}
+					]
+				},
+				{
+					"Source": "Down",
+					"Modifiers": [
+						{
+							"Type": "Swizzle"
+						},
+						{
+							"Type": "Negate",
+							"X": true,
+							"Y": true
+						}
+					]
+				},
+				{
+					"Source": "Gamepad_LeftStick",
+					"Modifiers": [
+						{
+							"Type": "DeadZone",
+							"Lower": 0.25,
+							"Upper": 1.0,
+							"Radial": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Name": "Jump",
+			"Type": "Button",
+			"Description": "점프 (공중에서 한 번 더 = 2단 점프, 짧게 누르면 낮게)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Space"
+				},
+				{
+					"Source": "Gamepad_A"
+				}
+			]
+		},
+		{
+			"Name": "Dash",
+			"Type": "Button",
+			"Description": "대시 (조준 방향, 충전 칸 소모, 대시 중 무적)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "MouseRight"
+				},
+				{
+					"Source": "LeftShift"
+				},
+				{
+					"Source": "Gamepad_RightShoulder"
+				}
+			]
+		},
+		{
+			"Name": "Attack",
+			"Type": "Button",
+			"Description": "공격 (누르고 있으면 계속)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "MouseLeft"
+				},
+				{
+					"Source": "J"
+				},
+				{
+					"Source": "Gamepad_RightTrigger"
+				}
+			]
+		},
+		{
+			"Name": "SwapWeapon",
+			"Type": "Button",
+			"Description": "무기 교체",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Q"
+				},
+				{
+					"Source": "Gamepad_Y"
+				}
+			]
+		},
+		{
+			"Name": "WeaponWheel",
+			"Type": "Axis1D",
+			"Description": "무기 교체 (휠)",
+			"ActuationThreshold": 0.1,
+			"Bindings": [
+				{
+					"Source": "MouseWheel"
+				}
+			]
+		},
+		{
+			"Name": "Interact",
+			"Type": "Button",
+			"Description": "상호작용 (상자·무기·계단)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "F"
+				},
+				{
+					"Source": "E"
+				},
+				{
+					"Source": "Gamepad_X"
+				}
+			]
+		},
+		{
+			"Name": "Pause",
+			"Type": "Button",
+			"Description": "일시정지",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Escape"
+				},
+				{
+					"Source": "P"
+				},
+				{
+					"Source": "Gamepad_Start"
+				}
+			]
+		},
+		{
+			"Name": "AimStick",
+			"Type": "Axis2D",
+			"Description": "게임패드 조준 (오른쪽 스틱)",
+			"ActuationThreshold": 0.3,
+			"Bindings": [
+				{
+					"Source": "Gamepad_RightStick",
+					"Modifiers": [
+						{
+							"Type": "DeadZone",
+							"Lower": 0.25,
+							"Upper": 1.0,
+							"Radial": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Name": "Confirm",
+			"Type": "Button",
+			"Description": "메뉴 확인 (타이틀 시작·사망 화면 재시작)",
+			"ActuationThreshold": 0.5,
+			"Bindings": [
+				{
+					"Source": "Enter"
+				},
+				{
+					"Source": "R"
+				},
+				{
+					"Source": "Gamepad_A"
+				}
+			]
+		}
+	]
+}

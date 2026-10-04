@@ -386,7 +386,8 @@ const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes
 	}
 	else
 	{
-		// Full 영역 외곽선 → 닫힌 체인 (점 순서 = 영역 왼쪽, 스케일 부호가 하나만 음수면 거울이라 순서를 뒤집는다)
+		// Full + 다각형 타일 합집합 외곽선 → 닫힌 체인 (점 순서 = 영역 왼쪽, 스케일 부호가 하나만 음수면 거울이라 순서를 뒤집는다).
+		// 경사 다각형 타일과 Full 칸이 한 체인이라 경사 → 평지 이음매에서도 미끄러지는 물체가 걸리지 않는다
 		const bool bMirrored = (Scale.X < 0.0f) != (Scale.Z < 0.0f);
 		for (const FTileCollisionOutline& Outline : Shapes.Outlines)
 		{
@@ -405,7 +406,10 @@ const FPhysics2DSystem::FTilemapShapeCache* FPhysics2DSystem::BuildTilemapShapes
 			Cache.Shapes.push_back(std::move(Shape));
 		}
 	}
-	AddPolygons(Shapes.Polygons, false);
+	if (bSolid)
+	{
+		AddPolygons(Shapes.Polygons, false); // 동적 강체 타일맵 (체인은 질량이 없다)
+	}
 	if (bSolid)
 	{
 		AddBoxes(Shapes.OneWayBoxes, true);

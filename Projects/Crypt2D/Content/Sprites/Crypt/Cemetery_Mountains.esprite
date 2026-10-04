@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Texture": "../../Asset/GothicVania/Cemetery/mountains.png",
+  "TextureWidth": 192,
+  "TextureHeight": 179,
+  "UnitsPerPixel": 4.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Mountains",
+      "X": 0,
+      "Y": 0,
+      "W": 192,
+      "H": 179,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

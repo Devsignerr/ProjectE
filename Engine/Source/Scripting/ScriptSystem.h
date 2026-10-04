@@ -62,6 +62,24 @@ struct FScriptRayHit2D
 	float    Fraction = 0.0f;
 };
 
+// 2D 관절 실시간 제어 (FPhysics2DSystem::SetJoint*/GetJoint* — Lua entity:SetJointMotorSpeed 등)
+enum class EScriptJoint2DControl : uint8
+{
+	MotorSpeed,    // A
+	MaxMotorForce, // A
+	EnableMotor,   // A != 0
+	Limits,        // A, B
+	EnableLimit,   // A != 0
+	Spring,        // A = Hz, B = 감쇠
+	SpringTarget,  // A (회전 도 / 미닫이 cm)
+};
+enum class EScriptJoint2DQuery : uint8
+{
+	Angle,       // 도
+	Translation, // cm
+	Speed,       // 도/초 또는 cm/s
+};
+
 // 스크립트가 쓰는 물리 기능. 앱이 Physics 모듈(FPhysicsSystem)과 연결한다 (비어 있으면 무시). 단위 cm, kg
 struct FScriptPhysicsHooks
 {
@@ -104,6 +122,9 @@ struct FScriptPhysicsHooks
 	std::function<bool(FEntity, const FVector2& Point, float MaxForce)> BeginDrag2D;
 	std::function<bool(FEntity, const FVector2& Target)>                UpdateDrag2D;
 	std::function<bool(FEntity)>                                        EndDrag2D;
+	// 2D 관절 실시간 제어 (관절 컴포넌트 엔티티 — 컴포넌트 값도 바꾼다, 컴포넌트가 없으면 false) / 상태 (없으면 0)
+	std::function<bool(FEntity, EScriptJoint2DControl, float A, float B)> ControlJoint2D;
+	std::function<float(FEntity, EScriptJoint2DQuery)>                    QueryJoint2D;
 };
 
 // LAN에서 찾은 세션 (Lua Net.GetSessions의 항목)

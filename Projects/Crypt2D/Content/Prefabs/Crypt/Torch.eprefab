@@ -1,0 +1,94 @@
+{
+  "Entities": [
+    {
+      "Name": "Torch",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            60.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.62,
+            0.32
+          ],
+          "Intensity": 4.0,
+          "Radius": 520.0,
+          "CastShadows": false
+        }
+      }
+    },
+    {
+      "Name": "Glow",
+      "Parent": 0,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -50.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "SpriteComponent": {
+          "Sprite": "Sprites/Crypt/Generated.esprite",
+          "Slice": "Glow",
+          "Color": [
+            1.0,
+            0.75,
+            0.5,
+            0.55
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "BackDecor",
+          "OrderInLayer": 5,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 2,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0
+        }
+      }
+    }
+  ]
+}

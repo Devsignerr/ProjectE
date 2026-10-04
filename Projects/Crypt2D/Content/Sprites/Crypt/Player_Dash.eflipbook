@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Player.esprite",
+  "Fps": 14,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "FlyKick0"
+    },
+    {
+      "Slice": "FlyKick1"
+    }
+  ]
+}

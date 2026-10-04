@@ -50,6 +50,7 @@
 //   옵션: 프로젝트 설정 네트워크 bPhysicsPrediction(+ 캐릭터 예측) && 앱이 SetReplicationClient로 스냅샷 버퍼를 연결. 끄면 지금까지처럼 키네마틱 보간.
 //   측정 (자동 검증): --net-physics-stats → 캐릭터 보정 횟수(5cm 초과)/최대, 화면 위치의 프레임당 튐(등속 외삽과의 차이, 정지 → 출발 프레임 제외),
 //     닿은(닿을 위치에 온) 때 → 화면에서 바디가 움직이기 시작할 때까지 시간. 2초마다·종료 때 로그 한 줄 (Verify.ps1 -Multiplayer -ExtraArgs).
+//     이 줄은 3D 캐릭터·바디만 센다 — 2D는 같은 항목의 "2D 물리 예측 측정" 줄 (GameWorldPhysicsPrediction2D.cpp), 2D만 있는 씬은 2D 줄만.
 
 namespace
 {
@@ -619,6 +620,10 @@ void FGameWorld::TickPhysicsPredictionStats()
 void FGameWorld::LogPhysicsPredictionStats(const char* Label) const
 {
 	const FPhysicsPredictionStats& Stats = PredictionStats;
+	if (Stats.Characters.empty() && Stats.Bodies.empty() && (!PredictionStats2D.Characters.empty() || !PredictionStats2D.Bodies.empty()))
+	{
+		return; // 2D만 있는 씬은 2D 줄만 (LogPhysicsPredictionStats2D)
+	}
 	float                          Sum = 0.0f, Max = 0.0f;
 	for (const float Delay : Stats.ReactionDelays)
 	{
@@ -629,8 +634,8 @@ void FGameWorld::LogPhysicsPredictionStats(const char* Label) const
 	E_LOG(LogNet, Display,
 	      "물리 예측 측정 ({}): {}프레임 {:.1f}초, 캐릭터 보정 {}회 (5cm 초과 {}회, 최대 {:.1f}cm), 캐릭터 최대 튐 {:.2f}cm (2cm 초과 {}프레임), "
 	      "반응한 바디 {}개 지연 평균 {:.3f}초 / 최대 {:.3f}초, 바디 최대 튐 {:.2f}cm (2cm 초과 {}프레임), 바디 스냅 {}회, 예측 중 {}개, 예측 선행 {:.3f}초, 보간 여유 {:.3f}초",
-	      Label, Stats.Frames, Stats.Elapsed, CharacterCorrections, Stats.BigCorrections, Stats.CorrectionMax, Stats.CharacterMaxJump, Stats.CharacterJumpFrames,
-	      Stats.ReactionDelays.size(), Average, Max, Stats.BodyMaxJump, Stats.BodyJumpFrames, Stats.Snaps, PredictedBodies.size() + PredictedBodies2D.size(),
+	      Label, Stats.Frames, Stats.Elapsed, CharacterCorrections - PredictionStats2D.Corrections, Stats.BigCorrections, Stats.CorrectionMax, Stats.CharacterMaxJump, Stats.CharacterJumpFrames,
+	      Stats.ReactionDelays.size(), Average, Max, Stats.BodyMaxJump, Stats.BodyJumpFrames, Stats.Snaps, PredictedBodies.size(),
 	      bPredictionTimingValid ? PredictionClock - PredictionTimeOffset - LastSnapshotTime : 0.0f,
 	      Stats.InterpolationMargin);
 }

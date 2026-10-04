@@ -1,0 +1,111 @@
+{
+  "Version": 1,
+  "Name": "Enemy",
+  "Description": "적 (Enemies.etable, 행 이름 = Enemy.lua Kind = 프리팹 이름)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "적",
+      "Description": "표시 이름"
+    },
+    {
+      "Name": "Behavior",
+      "Type": "Enum",
+      "Values": [
+        "Flyer",
+        "Melee",
+        "Charger",
+        "Leaper",
+        "Caster",
+        "Boss"
+      ],
+      "Default": "Melee",
+      "Description": "행동: 비행 추적 / 순찰·추적·돌진 베기 / 질주 / 도약 / 거리 유지 시전 / 보스"
+    },
+    {
+      "Name": "MaxHealth",
+      "Type": "Float",
+      "Default": 30,
+      "Description": "체력"
+    },
+    {
+      "Name": "ContactDamage",
+      "Type": "Float",
+      "Default": 6,
+      "Description": "몸에 닿으면 (0 = 없음)"
+    },
+    {
+      "Name": "AttackDamage",
+      "Type": "Float",
+      "Default": 10,
+      "Description": "공격·투사체 한 대"
+    },
+    {
+      "Name": "MoveSpeed",
+      "Type": "Float",
+      "Default": 250,
+      "Description": "이동 속도 (cm/s)"
+    },
+    {
+      "Name": "AggroRange",
+      "Type": "Float",
+      "Default": 900,
+      "Description": "발견 거리 (cm)"
+    },
+    {
+      "Name": "AttackRange",
+      "Type": "Float",
+      "Default": 140,
+      "Description": "공격 시작 거리 (cm)"
+    },
+    {
+      "Name": "AttackCooldown",
+      "Type": "Float",
+      "Default": 1.6,
+      "Description": "공격 간격 (초)"
+    },
+    {
+      "Name": "ProjectileSpeed",
+      "Type": "Float",
+      "Default": 700,
+      "Description": "투사체 속도 (cm/s)"
+    },
+    {
+      "Name": "GoldMin",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "떨어뜨리는 코인 최소"
+    },
+    {
+      "Name": "GoldMax",
+      "Type": "Int",
+      "Default": 3,
+      "Description": "최대"
+    },
+    {
+      "Name": "FacesRight",
+      "Type": "Bool",
+      "Default": false,
+      "Description": "시트 원본이 오른쪽을 보는가 (반전 기준)"
+    },
+    {
+      "Name": "Radius",
+      "Type": "Float",
+      "Default": 40,
+      "Description": "피격·접촉 판정 반지름 (cm)"
+    },
+    {
+      "Name": "MinFloor",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "나오기 시작하는 층"
+    },
+    {
+      "Name": "Weight",
+      "Type": "Float",
+      "Default": 1,
+      "Description": "같은 표식 안 뽑기 가중치"
+    }
+  ]
+}

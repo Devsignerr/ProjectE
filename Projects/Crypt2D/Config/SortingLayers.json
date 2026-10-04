@@ -1,0 +1,15 @@
+{
+  "Layers": [
+    "Default",
+    "Background",
+    "BackDecor",
+    "Tiles",
+    "Props",
+    "Pickups",
+    "Characters",
+    "Weapons",
+    "Projectiles",
+    "FX",
+    "Foreground"
+  ]
+}

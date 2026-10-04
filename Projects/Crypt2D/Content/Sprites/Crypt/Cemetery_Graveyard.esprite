@@ -1,0 +1,21 @@
+{
+  "Version": 1,
+  "Texture": "../../Asset/GothicVania/Cemetery/graveyard.png",
+  "TextureWidth": 384,
+  "TextureHeight": 123,
+  "UnitsPerPixel": 4.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "Graveyard",
+      "X": 0,
+      "Y": 0,
+      "W": 384,
+      "H": 123,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

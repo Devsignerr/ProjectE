@@ -64,6 +64,8 @@ public:
 	void              UpdateProxies();
 	// 닿은 엔티티 (대리 캡슐을 2cm 부풀린 상자와 겹친 2D 바디 — 자기 제외, 물리 예측 대상 선정). OutEntities는 비우고 채운다
 	void              GetCharacterContacts(FEntity Entity, std::vector<FEntity>& OutEntities) const;
+	// 지금 상태 위치의 캡슐이 동적 2D 바디에 묻힌 가장 깊은 깊이 (cm, 0 = 겹침 없음 — 위에 서 있는 것은 0 근처). 재조정 겹침 거부 (GameWorldCharacter2D.cpp)
+	float             GetDynamicPenetration(FEntity Entity) const;
 
 	// ---- 상태 질의 (없는 엔티티는 0/false)
 	bool     IsGrounded(FEntity Entity) const;
@@ -97,8 +99,9 @@ private:
 	};
 
 	FPhysics2DMover MakeMover(const FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement) const;
-	// 밀기 (CharacterCollision::Push): Other를 Delta만큼 그 캐릭터의 이동 질의로 옮긴다 (벽에서 멈춤). 반환: 실제로 옮긴 거리
-	float PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta);
+	// 밀기 (CharacterCollision::Push): Other를 Delta ÷ (1 + Other의 PushResistance)만큼 그 캐릭터의 이동 질의로 옮긴다 (벽에서 멈춤). 앞의 다른 상호작용 캐릭터에 막히면
+	// 남은 만큼 그 캐릭터를 다시 이 함수로 민다 (연쇄 — Chain = 이미 민/미는 캐릭터, 깊이 상한, 순환 없음). 반환: 실제로 옮긴 거리
+	float PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta, std::vector<FEntity>& Chain);
 	void  CreateProxy(FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement);
 	void  DestroyProxy(FCharacter& Character);
 	uint8 ResolveLayer(const std::string& Name);

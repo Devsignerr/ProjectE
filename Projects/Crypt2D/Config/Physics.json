@@ -1,0 +1,13 @@
+{
+  "Gravity": [
+    0.0,
+    0.0,
+    -980.665
+  ],
+  "Gravity2D": [
+    0.0,
+    -980.665
+  ],
+  "FixedStepHz": 60.0,
+  "MaxSubSteps": 4
+}

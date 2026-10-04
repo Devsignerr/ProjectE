@@ -1,0 +1,41 @@
+{
+  "Root": "Projects/Crypt2D/Content/Asset/GothicVania",
+  "License": "CC0 (ansimuz — GothicVania, OpenGameArt). 음악(Pascal Belisle)은 별도 라이선스라 받지 않는다",
+  "Packs": [
+    {
+      "Name": "Church",
+      "Page": "https://opengameart.org/content/gothicvania-church-pack",
+      "Url": "https://opengameart.org/sites/default/files/gothicvania%20church%20files.zip",
+      "Md5": "a7d4cceda46882ab28c07ad7419724e6",
+      "Files": [
+        { "From": "gothicvania church files/public-license.txt", "To": "public-license.txt" },
+        { "From": "gothicvania church files/ENVIRONMENT/tileset.png", "To": "tileset.png" },
+        { "From": "gothicvania church files/ENVIRONMENT/backgrounds.png", "To": "backgrounds.png" },
+        { "From": "gothicvania church files/ENVIRONMENT/column.png", "To": "column.png" },
+        { "From": "gothicvania church files/SPRITES/player/spritesheet/player.png", "To": "player.png" },
+        { "From": "gothicvania church files/SPRITES/wizard/spritesheet/wizard.png", "To": "wizard.png" },
+        { "From": "gothicvania church files/SPRITES/angel/spritesheet/angel.png", "To": "angel.png" },
+        { "From": "gothicvania church files/SPRITES/burning-ghoul/spritesheet/v2/burning-ghoul.png", "To": "burning-ghoul.png" },
+        { "From": "gothicvania church files/SPRITES/fx/enemy-death/enemy-death-spritesheet/enemy-death.png", "To": "enemy-death.png" },
+        { "From": "gothicvania church files/SPRITES/fx/fireball/fireball-spritesheet/fireball.png", "To": "fireball.png" }
+      ],
+      "ColorKeys": [
+        { "From": "backgrounds.png", "To": "backgrounds_keyed.png", "Color": [39, 38, 56], "Comment": "장식 판의 단색 바탕을 투명으로 (뒷벽 위에 일반 블렌드로 얹기)" }
+      ]
+    },
+    {
+      "Name": "Cemetery",
+      "Page": "https://opengameart.org/content/gothicvania-cemetery-pack",
+      "Url": "https://opengameart.org/sites/default/files/gothicvania-cemetery-files_1.zip",
+      "Md5": "7400e784ef58a4685c8a71d43287dd35",
+      "Files": [
+        { "From": "gothicvania-cemetery-files/public-license.txt", "To": "public-license.txt" },
+        { "From": "gothicvania-cemetery-files/demo/assets/atlas/atlas.png", "To": "atlas.png" },
+        { "From": "gothicvania-cemetery-files/demo/assets/atlas/atlas-props.png", "To": "atlas-props.png" },
+        { "From": "gothicvania-cemetery-files/PNG/Environment/background.png", "To": "background.png" },
+        { "From": "gothicvania-cemetery-files/PNG/Environment/mountains.png", "To": "mountains.png" },
+        { "From": "gothicvania-cemetery-files/PNG/Environment/graveyard.png", "To": "graveyard.png" }
+      ]
+    }
+  ]
+}

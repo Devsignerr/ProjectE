@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Sprite": "Wizard.esprite",
+  "Fps": 8,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Wizard0"
+    },
+    {
+      "Slice": "Wizard1"
+    },
+    {
+      "Slice": "Wizard2"
+    },
+    {
+      "Slice": "Wizard3"
+    },
+    {
+      "Slice": "Wizard4"
+    }
+  ]
+}

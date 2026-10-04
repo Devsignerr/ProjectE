@@ -1231,7 +1231,8 @@ FCamera FSceneRenderer::BuildPixelArtCamera(const FPixelArtComponent& PixelArt, 
 		if (PixelArt.bSnapCamera)
 		{
 			const FPixelArtMath::FSnapResult Snap =
-				FPixelArtMath::SnapToTexelGrid(Camera.GetPosition(), Camera.GetRightVector(), Camera.GetUpVector(), TexelWorldSize);
+				FPixelArtMath::SnapToTexelGrid(Camera.GetPosition(), Camera.GetRightVector(), Camera.GetUpVector(), TexelWorldSize,
+			                                   FVector2(FPixelArtMath::GetGridPhase(SourceWidth), FPixelArtMath::GetGridPhase(SourceHeight)));
 			SourceCamera.SetPosition(Snap.SnappedPosition);
 			OutParams.SubPixelOffset  = FPixelArtMath::GetSubPixelOffset(Snap.Remainder);
 			OutParams.DitherOrigin[0] = FPixelArtMath::PositiveMod4(Snap.IndexRight);

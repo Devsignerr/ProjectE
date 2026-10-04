@@ -1,0 +1,41 @@
+{
+  "Name": "Planks",
+  "Parent": "BoxPBR.emat",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/weathered_planks/weathered_planks_diff_2k.jpg"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/weathered_planks/weathered_planks_arm_2k.jpg"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/weathered_planks/weathered_planks_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 200.0
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.8,
+        1.8,
+        1.8,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

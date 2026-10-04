@@ -1,0 +1,44 @@
+{
+  "Version": 1,
+  "Sprite": "Wizard.esprite",
+  "Fps": 12,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Wizard5"
+    },
+    {
+      "Slice": "Wizard6"
+    },
+    {
+      "Slice": "Wizard7"
+    },
+    {
+      "Slice": "Wizard8"
+    },
+    {
+      "Slice": "Wizard9"
+    },
+    {
+      "Slice": "Wizard10"
+    },
+    {
+      "Slice": "Wizard11"
+    },
+    {
+      "Slice": "Wizard12"
+    },
+    {
+      "Slice": "Wizard13"
+    },
+    {
+      "Slice": "Wizard14"
+    }
+  ],
+  "Events": [
+    {
+      "Frame": 7,
+      "Name": "Shoot"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Generated.esprite",
+  "Fps": 10,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Coin0"
+    },
+    {
+      "Slice": "Coin1"
+    },
+    {
+      "Slice": "Coin2"
+    },
+    {
+      "Slice": "Coin3"
+    }
+  ]
+}

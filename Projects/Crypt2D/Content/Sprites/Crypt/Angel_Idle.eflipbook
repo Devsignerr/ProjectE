@@ -1,0 +1,32 @@
+{
+  "Version": 1,
+  "Sprite": "Angel.esprite",
+  "Fps": 10,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Angel3"
+    },
+    {
+      "Slice": "Angel4"
+    },
+    {
+      "Slice": "Angel5"
+    },
+    {
+      "Slice": "Angel6"
+    },
+    {
+      "Slice": "Angel7"
+    },
+    {
+      "Slice": "Angel8"
+    },
+    {
+      "Slice": "Angel9"
+    },
+    {
+      "Slice": "Angel10"
+    }
+  ]
+}

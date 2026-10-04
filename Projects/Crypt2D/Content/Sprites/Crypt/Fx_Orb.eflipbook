@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Generated.esprite",
+  "Fps": 10,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Orb0"
+    },
+    {
+      "Slice": "Orb1"
+    }
+  ]
+}

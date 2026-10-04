@@ -1,0 +1,30 @@
+{
+  "Version": 1,
+  "Struct": "Data/Crypt/Balance.estruct",
+  "Values": {
+    "MaxHealth": 80,
+    "InvulnTime": 0.9,
+    "DashCharges": 2,
+    "DashRecharge": 1.4,
+    "StartWeapons": [
+      "ShortSword",
+      "Crossbow"
+    ],
+    "FloorRooms": [
+      7,
+      8
+    ],
+    "SpawnRatio": [
+      0.65,
+      0.85
+    ],
+    "HealthMultiplier": [
+      1.0,
+      1.35,
+      1.0
+    ],
+    "ClearGold": 5,
+    "HeartHeal": 20,
+    "HeartChance": 0.35
+  }
+}

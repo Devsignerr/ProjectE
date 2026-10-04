@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Cemetery.esprite",
+  "Fps": 8,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Ghost0"
+    },
+    {
+      "Slice": "Ghost1"
+    },
+    {
+      "Slice": "Ghost2"
+    },
+    {
+      "Slice": "Ghost3"
+    }
+  ]
+}

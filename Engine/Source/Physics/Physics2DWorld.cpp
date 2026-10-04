@@ -903,6 +903,9 @@ uint32 FPhysics2DWorld::CreateJoint(const FPhysics2DJointDesc& Desc)
 		Def.enableLimit        = Desc.bLimit;
 		Def.minLength          = std::max(Lower * CmToM, 0.005f);
 		Def.maxLength          = std::max(Desc.Upper * CmToM, Def.minLength);
+		Def.enableMotor        = Desc.bMotor;
+		Def.motorSpeed         = Desc.MotorSpeed * CmToM;
+		Def.maxMotorForce      = std::max(Desc.MaxMotorForce, 0.0f);
 		Def.collideConnected   = Desc.bCollideConnected;
 		Joint                  = b2CreateDistanceJoint(Impl->World, &Def);
 		break;
@@ -924,6 +927,7 @@ uint32 FPhysics2DWorld::CreateJoint(const FPhysics2DJointDesc& Desc)
 		Def.enableSpring       = Desc.bSpring;
 		Def.hertz              = Desc.Hertz;
 		Def.dampingRatio       = Desc.DampingRatio;
+		Def.targetAngle        = std::clamp(Desc.SpringTarget, -FMath::Pi, FMath::Pi);
 		Def.collideConnected   = Desc.bCollideConnected;
 		Joint                  = b2CreateRevoluteJoint(Impl->World, &Def);
 		break;
@@ -943,6 +947,10 @@ uint32 FPhysics2DWorld::CreateJoint(const FPhysics2DJointDesc& Desc)
 		Def.enableMotor         = Desc.bMotor;
 		Def.motorSpeed          = Desc.MotorSpeed * CmToM;
 		Def.maxMotorForce       = Desc.MaxMotorForce;
+		Def.enableSpring        = Desc.bSpring;
+		Def.hertz               = Desc.Hertz;
+		Def.dampingRatio        = Desc.DampingRatio;
+		Def.targetTranslation   = Desc.SpringTarget * CmToM;
 		Def.collideConnected    = Desc.bCollideConnected;
 		Joint                   = b2CreatePrismaticJoint(Impl->World, &Def);
 		break;
@@ -1072,6 +1080,9 @@ bool FPhysics2DWorld::UpdateJoint(uint32 Joint, const FPhysics2DJointDesc& Desc)
 		b2DistanceJoint_EnableLimit(Id, Desc.bLimit);
 		const float MinLength = std::max(Lower * CmToM, 0.005f);
 		b2DistanceJoint_SetLengthRange(Id, MinLength, std::max(Desc.Upper * CmToM, MinLength));
+		b2DistanceJoint_EnableMotor(Id, Desc.bMotor);
+		b2DistanceJoint_SetMotorSpeed(Id, Desc.MotorSpeed * CmToM);
+		b2DistanceJoint_SetMaxMotorForce(Id, std::max(Desc.MaxMotorForce, 0.0f));
 		break;
 	}
 	case b2_revoluteJoint:
@@ -1087,6 +1098,7 @@ bool FPhysics2DWorld::UpdateJoint(uint32 Joint, const FPhysics2DJointDesc& Desc)
 		b2RevoluteJoint_EnableSpring(Id, Desc.bSpring);
 		b2RevoluteJoint_SetSpringHertz(Id, Desc.Hertz);
 		b2RevoluteJoint_SetSpringDampingRatio(Id, Desc.DampingRatio);
+		b2RevoluteJoint_SetTargetAngle(Id, std::clamp(Desc.SpringTarget, -FMath::Pi, FMath::Pi));
 		break;
 	case b2_prismaticJoint:
 		if (Desc.Type != EPhysics2DJoint::Prismatic)
@@ -1098,6 +1110,10 @@ bool FPhysics2DWorld::UpdateJoint(uint32 Joint, const FPhysics2DJointDesc& Desc)
 		b2PrismaticJoint_EnableMotor(Id, Desc.bMotor);
 		b2PrismaticJoint_SetMotorSpeed(Id, Desc.MotorSpeed * CmToM);
 		b2PrismaticJoint_SetMaxMotorForce(Id, Desc.MaxMotorForce);
+		b2PrismaticJoint_EnableSpring(Id, Desc.bSpring);
+		b2PrismaticJoint_SetSpringHertz(Id, Desc.Hertz);
+		b2PrismaticJoint_SetSpringDampingRatio(Id, Desc.DampingRatio);
+		b2PrismaticJoint_SetTargetTranslation(Id, Desc.SpringTarget * CmToM);
 		break;
 	case b2_weldJoint:
 		if (Desc.Type != EPhysics2DJoint::Weld)

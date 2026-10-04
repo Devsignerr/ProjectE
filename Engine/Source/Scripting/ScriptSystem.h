@@ -71,6 +71,7 @@ enum class EScriptJoint2DControl : uint8
 	Limits,        // A, B
 	EnableLimit,   // A != 0
 	Spring,        // A = Hz, B = 감쇠
+	SpringTarget,  // A (회전 도 / 미닫이 cm)
 };
 enum class EScriptJoint2DQuery : uint8
 {

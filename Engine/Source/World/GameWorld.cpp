@@ -527,6 +527,8 @@ void FGameWorld::InstallScriptPhysicsHooks()
 			return P2D->EnableJointLimit(*Scene, Entity, A != 0.0f);
 		case EScriptJoint2DControl::Spring:
 			return P2D->SetJointSpring(*Scene, Entity, A, B);
+		case EScriptJoint2DControl::SpringTarget:
+			return P2D->SetJointTarget(*Scene, Entity, A);
 		}
 		return false;
 	};

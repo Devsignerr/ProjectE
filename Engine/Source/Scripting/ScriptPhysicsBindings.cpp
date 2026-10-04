@@ -17,11 +17,12 @@
 //     point = 잡은 점, maxForce N 생략 = 질량 × 1000), Physics2D.UpdateDrag(entity, target) → 끄는 중인가, Physics2D.EndDrag(entity) → 끌고 있었는가.
 //     바디가 사라지거나 다시 만들어지면 끝난다
 // 2D 관절 실시간 제어 (관절 컴포넌트가 있는 엔티티 — 다시 만들지 않고 바로 반영, 컴포넌트 값도 바뀐다. 규칙은 Physics/Physics2DSystem.h "관절"):
-//   entity:SetJointMotorSpeed(v)       -- Revolute/Wheel 도/초 (반시계 +), Prismatic cm/s
-//   entity:SetJointMaxMotorForce(f)    -- Revolute/Wheel 최대 토크 N·m, Prismatic 최대 힘 N
-//   entity:EnableJointMotor(bool) / entity:EnableJointLimit(bool)         -- Revolute/Prismatic/Wheel
+//   entity:SetJointMotorSpeed(v)       -- Revolute/Wheel 도/초 (반시계 +), Prismatic cm/s, Distance cm/s (+ = 늘어남 — 윈치)
+//   entity:SetJointMaxMotorForce(f)    -- Revolute/Wheel 최대 토크 N·m, Prismatic/Distance 최대 힘 N
+//   entity:EnableJointMotor(bool)      -- Revolute/Prismatic/Wheel/Distance   entity:EnableJointLimit(bool) -- Revolute/Prismatic/Wheel
 //   entity:SetJointLimits(lo, hi)      -- 한계도 켠다: Revolute 도, Prismatic/Wheel cm, Distance 최소/최대 길이 cm
-//   entity:SetJointSpring(hz, damping?) -- Distance/Wheel 스프링, Weld 선·각 (0 = 딱딱함, damping 생략 = 0.7)
+//   entity:SetJointSpring(hz, damping?) -- Distance/Wheel/Revolute/Prismatic 스프링, Weld 선·각 (0 = 끔·딱딱함, damping 생략 = 0.7)
+//   entity:SetJointTarget(v)           -- 스프링 목표: Revolute 각 도 (-180~180로 자름, 만든 순간 = 0), Prismatic 이동 cm
 //   → 해당 컴포넌트가 있었는가. 한 엔티티에 여러 관절 종류가 있으면 지원하는 것 모두
 //   entity:GetJointAngle() 도(-180~180) / GetJointTranslation() cm (Prismatic·Wheel 축 방향, Distance 지금 길이) / GetJointSpeed() 도/초·cm/s
 //   → 만들어진 관절이 없으면 0 (Revolute → Prismatic → Wheel → Distance → Weld 순의 첫 관절)
@@ -78,6 +79,7 @@ void FLuaRuntime::RegisterPhysicsBindings()
 	EntityType["SetJointSpring"] = [Control](const FScriptEntity& Entity, float Frequency, sol::optional<float> Damping) {
 		return Control(Entity, EScriptJoint2DControl::Spring, Frequency, Damping.value_or(0.7f));
 	};
+	EntityType["SetJointTarget"] = [Control](const FScriptEntity& Entity, float Target) { return Control(Entity, EScriptJoint2DControl::SpringTarget, Target, 0.0f); };
 	EntityType["GetJointAngle"]       = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Angle); };
 	EntityType["GetJointTranslation"] = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Translation); };
 	EntityType["GetJointSpeed"]       = [Query](const FScriptEntity& Entity) { return Query(Entity, EScriptJoint2DQuery::Speed); };

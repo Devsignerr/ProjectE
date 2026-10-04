@@ -414,7 +414,7 @@ E_TEST(Physics2DJoint_LiveControlKeepsJoint)
 	// 관절이 없는 엔티티 / 지원하지 않는 조작
 	E_EXPECT_FALSE(Physics.SetJointMotorSpeed(Scene, Plain, 10.0f));
 	E_EXPECT_NEAR(Physics.GetJointAngle(Plain), 0.0f, 1.0e-6f);
-	E_EXPECT_FALSE(Physics.SetJointSpring(Scene, Wheel, 2.0f, 0.5f)); // 회전 관절 컴포넌트에는 스프링 필드가 없다
+	E_EXPECT_FALSE(Physics.SetJointTarget(Scene, Plain, 10.0f));
 	// 구조 필드(연결 지점)를 바꾸면 지금 자세로 다시 만든다 (각 0부터)
 	Live.Anchor = FVector2(0.0f, 1.0f);
 	Live.bMotor = false;
@@ -444,5 +444,131 @@ E_TEST(Physics2DJoint_LiveSpringAndDistanceLimits)
 	E_EXPECT_TRUE(Physics.SetJointLimits(Scene, Bob, 0.0f, 110.0f));
 	Step(Physics, Scene, 120);
 	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 110.0f, 1.0f);
+	Physics.End();
+}
+
+// 회전 관절 스프링: 중심에 매단 공(중력 토크 없음)이 목표 각으로 돌아가 멈춘다. 목표를 실시간으로 바꿔도 다시 만들지 않고
+// (기준 자세 유지) 새 목표로 간다. 한계가 목표보다 좁으면 한계에서 멈춘다
+E_TEST(Physics2DJoint_RevoluteSpringTargetAngle)
+{
+	FScene        Scene;
+	const FEntity Wheel = AddBall(Scene, "Wheel", FVector3(0.0f, 0.0f, 500.0f), 50.0f);
+	FRevoluteJoint2DComponent& Joint = Scene.GetRegistry().Emplace<FRevoluteJoint2DComponent>(Wheel);
+	Joint.SpringFrequency = 2.0f;
+	Joint.SpringDamping   = 1.0f;
+	Joint.TargetAngle     = 60.0f;
+	Scene.UpdateTransforms();
+
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), 60.0f, 1.0f);
+	E_EXPECT_NEAR(Physics.GetJointSpeed(Wheel), 0.0f, 2.0f);
+	const uint32 JointCount = Physics.GetJointCount();
+
+	// 목표 바꾸기 (API — 컴포넌트도 바뀐다)
+	E_EXPECT_TRUE(Physics.SetJointTarget(Scene, Wheel, -45.0f));
+	E_EXPECT_NEAR(Scene.GetRegistry().Get<FRevoluteJoint2DComponent>(Wheel).TargetAngle, -45.0f, 1.0e-4f);
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), -45.0f, 1.0f); // 다시 만들었으면 지금 자세가 0이 되어 -45 - 60 쪽으로 간다
+	// 목표는 -180~180로 자른다
+	E_EXPECT_TRUE(Physics.SetJointTarget(Scene, Wheel, 400.0f));
+	E_EXPECT_NEAR(Scene.GetRegistry().Get<FRevoluteJoint2DComponent>(Wheel).TargetAngle, 180.0f, 1.0e-4f);
+	E_EXPECT_TRUE(Physics.SetJointTarget(Scene, Wheel, 90.0f));
+	// 한계 [-30, 30]: 목표 90도여도 30도에서 멈춘다
+	E_EXPECT_TRUE(Physics.SetJointLimits(Scene, Wheel, -30.0f, 30.0f));
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), 30.0f, 1.5f);
+	// 스프링 끄기 → 멈춘 자리에 남는다 (되돌리는 힘 없음)
+	E_EXPECT_TRUE(Physics.SetJointSpring(Scene, Wheel, 0.0f, 1.0f));
+	E_EXPECT_TRUE(Physics.EnableJointLimit(Scene, Wheel, false));
+	Step(Physics, Scene, 60);
+	E_EXPECT_NEAR(Physics.GetJointAngle(Wheel), 30.0f, 2.0f);
+	E_EXPECT_EQ(Physics.GetJointCount(), JointCount);
+	Physics.End();
+}
+
+// 미닫이 스프링: 수평 축(중력은 축에 수직) 상자가 목표 이동으로 가서 멈추고, 실시간 목표 변경을 따른다
+E_TEST(Physics2DJoint_PrismaticSpringTarget)
+{
+	FScene        Scene;
+	const FEntity Slider = AddBox(Scene, "Slider", FVector3(0.0f, 0.0f, 200.0f), FVector2(40.0f, 40.0f));
+	FPrismaticJoint2DComponent& Joint = Scene.GetRegistry().Emplace<FPrismaticJoint2DComponent>(Slider);
+	Joint.SpringFrequency   = 2.0f;
+	Joint.SpringDamping     = 1.0f;
+	Joint.TargetTranslation = 80.0f;
+	Scene.UpdateTransforms();
+
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Slider), 80.0f, 1.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Slider).Position.Z, 200.0f, 0.5f);
+	E_EXPECT_TRUE(Physics.SetJointTarget(Scene, Slider, -40.0f));
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Slider), -40.0f, 1.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Slider).Position.X, -40.0f, 1.0f);
+	Physics.End();
+}
+
+// 거리 관절 모터(윈치): 월드 지점에 매단 공을 모터로 감아올렸다(최소 길이에서 멈춤) 다시 풀어 내린다 — 다시 만들지 않는다
+E_TEST(Physics2DJoint_DistanceMotorWinch)
+{
+	FScene        Scene;
+	const FEntity Bob = AddBall(Scene, "Bob", FVector3(0.0f, 0.0f, 400.0f), 10.0f);
+	FDistanceJoint2DComponent& Rope = Scene.GetRegistry().Emplace<FDistanceJoint2DComponent>(Bob);
+	Rope.TargetAnchor  = FVector2(0.0f, 500.0f); // 월드 지점, 길이 100
+	Rope.MinLength     = 50.0f;
+	Rope.MaxLength     = 300.0f;
+	Rope.MaxMotorForce = 50.0f;
+	Scene.UpdateTransforms();
+
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 30);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 100.0f, 0.5f); // 모터 꺼짐 = 딱딱한 막대
+	const uint32 JointCount = Physics.GetJointCount();
+	E_EXPECT_TRUE(Physics.SetJointMotorSpeed(Scene, Bob, -50.0f));
+	E_EXPECT_TRUE(Physics.EnableJointMotor(Scene, Bob, true));
+	Step(Physics, Scene, 30); // 0.5초 ≈ 25cm 감김
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 75.0f, 3.0f);
+	Step(Physics, Scene, 90);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 50.0f, 1.5f); // 최소 길이 (한계는 부드러운 관절 — 모터 힘만큼 조금 파고든다)
+	E_EXPECT_TRUE(Physics.SetJointMotorSpeed(Scene, Bob, 100.0f));
+	Step(Physics, Scene, 60);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Bob), 150.0f, 4.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Bob).Position.X, 0.0f, 0.5f);
+	// 모터 힘이 무게보다 작으면 풀려 내려간다 (속도 0이어도 버티지 못함)
+	E_EXPECT_TRUE(Physics.SetJointMotorSpeed(Scene, Bob, 0.0f));
+	E_EXPECT_TRUE(Physics.SetJointMaxMotorForce(Scene, Bob, Physics.GetMass(Bob) * 9.8f * 0.25f));
+	const float Before = Physics.GetJointTranslation(Bob);
+	Step(Physics, Scene, 30);
+	E_EXPECT_TRUE(Physics.GetJointTranslation(Bob) > Before + 10.0f);
+	E_EXPECT_EQ(Physics.GetJointCount(), JointCount);
+	Physics.End();
+}
+
+// 바퀴 관절 한계: 약한 서스펜션(1Hz, 처짐 ≈ 25cm)에 매단 바퀴가 한계(-10cm)에서 멈추고, 한계를 끄면 처짐 자리까지 내려간다
+E_TEST(Physics2DJoint_WheelSuspensionLimit)
+{
+	FScene        Scene;
+	const FEntity Wheel = AddBall(Scene, "Wheel", FVector3(0.0f, 0.0f, 300.0f), 20.0f);
+	FWheelJoint2DComponent& Joint = Scene.GetRegistry().Emplace<FWheelJoint2DComponent>(Wheel);
+	Joint.SpringFrequency  = 1.0f;
+	Joint.SpringDamping    = 1.0f;
+	Joint.bLimit           = true;
+	Joint.LowerTranslation = -10.0f;
+	Joint.UpperTranslation = 10.0f;
+	Scene.UpdateTransforms();
+
+	FPhysics2DSystem Physics;
+	BeginPhysics(Physics);
+	Step(Physics, Scene, 120);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Wheel), -10.0f, 1.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Wheel).Position.Z, 290.0f, 1.0f);
+	E_EXPECT_TRUE(Physics.EnableJointLimit(Scene, Wheel, false));
+	Step(Physics, Scene, 240);
+	E_EXPECT_NEAR(Physics.GetJointTranslation(Wheel), -980.0f / (4.0f * FMath::Pi * FMath::Pi), 2.0f);
+	E_EXPECT_NEAR(Scene.GetTransform(Wheel).Position.X, 0.0f, 0.5f); // 축(위)에서 벗어나지 않음
 	Physics.End();
 }

@@ -114,12 +114,13 @@ struct FPhysics2DJointDesc
 	bool            bCollideConnected = false;
 	// Distance
 	float Length = 100.0f;
-	bool  bSpring = false; // Distance/Wheel/Revolute: 스프링 (Distance는 끄면 딱딱한 막대)
+	bool  bSpring = false; // Distance/Wheel/Revolute/Prismatic: 스프링 (Distance는 끄면 딱딱한 막대 — 모터도 스프링을 켜야 돈다)
 	float Hertz = 0.0f, DampingRatio = 0.0f;
+	float SpringTarget = 0.0f; // Revolute: 목표 각 (라디안, -π~π로 자름) / Prismatic: 목표 이동 (cm)
 	// Distance 길이 제한 · Revolute 각 / Prismatic·Wheel 이동 제한
 	bool  bLimit = false;
 	float Lower = 0.0f, Upper = 0.0f;
-	// 모터 (Revolute/Wheel = 토크·rad/s, Prismatic = 힘·cm/s)
+	// 모터 (Revolute/Wheel = 토크·rad/s, Prismatic/Distance = 힘·cm/s)
 	bool  bMotor = false;
 	float MotorSpeed = 0.0f, MaxMotorForce = 0.0f;
 	// Weld (0 = 딱딱함)

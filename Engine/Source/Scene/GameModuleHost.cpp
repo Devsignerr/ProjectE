@@ -6,6 +6,7 @@
 #include "Core/Reflection/TypeInfo.h"
 #include "Core/StringConv.h"
 #include "Scene/Scene.h"
+#include "Scene/Sprite/Sprite2DComponents.h"
 
 #include <vector>
 
@@ -162,6 +163,35 @@ void FGameModuleHost::Update(FScene& Scene, float DeltaSeconds)
 		for (const FAnimNotifyEvent& Event : Events)
 		{
 			Module->OnAnimNotify(Scene, Event);
+		}
+		// 직전 표시 틱 플립북 이벤트 (같은 이유로 먼저 복사)
+		struct FFlipbookCall
+		{
+			FEntity     Entity;
+			std::string Name; // 비면 끝남
+			int32       Frame = 0;
+		};
+		std::vector<FFlipbookCall> FlipbookCalls;
+		Scene.GetRegistry().View<FFlipbookComponent>().Each([&](FEntity Entity, FFlipbookComponent& Flipbook) {
+			for (const FFlipbookEventRecord& Event : Flipbook.Runtime.PendingEvents)
+			{
+				FlipbookCalls.push_back({ Entity, Event.Name, Event.Frame });
+			}
+			if (Flipbook.Runtime.bFinishedThisUpdate)
+			{
+				FlipbookCalls.push_back({ Entity, std::string(), 0 });
+			}
+		});
+		for (const FFlipbookCall& Call : FlipbookCalls)
+		{
+			if (Call.Name.empty())
+			{
+				Module->OnFlipbookFinished(Scene, Call.Entity);
+			}
+			else
+			{
+				Module->OnFlipbookEvent(Scene, Call.Entity, Call.Name, Call.Frame);
+			}
 		}
 		Module->OnUpdate(Scene, DeltaSeconds);
 	}

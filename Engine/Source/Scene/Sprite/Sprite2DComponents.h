@@ -72,6 +72,7 @@ struct FFlipbookRuntime
 	int32                                 Frame      = -1;
 	bool                                  bStarted   = false; // 첫 갱신 전 (시작 프레임 이벤트를 아직 안 냄)
 	bool                                  bFinished  = false; // Once가 끝에 닿음 (정방향 끝 / 역방향 0)
+	bool                                  bFinishedThisUpdate = false; // 이번 갱신에서 bFinished가 됨 (OnFlipbookFinished 한 번 — 매 갱신 비움)
 	std::vector<FFlipbookEventRecord>     PendingEvents; // 이번 갱신의 이벤트 (FFlipbookSystem::Update가 비우고 채움 → 스크립트/게임 모듈이 읽음)
 
 	FFlipbookRuntime() = default;
@@ -118,7 +119,10 @@ struct FTilemapComponent
 	int32       OrderInLayer = 0;
 	FVector4    Color        = FVector4::OneVector; // sRGB + 알파
 	bool        bLit         = false;
-	bool        bCollision   = true; // 타일 충돌 모양으로 정적 바디를 만든다 (Physics 연결은 후속)
+	bool        bCollision   = true; // 타일 충돌 모양으로 2D 정적 바디를 만든다 (FPhysics2DSystem — 엔티티당 바디 하나)
+	std::string CollisionLayer;      // 충돌 레이어 이름 (프로젝트 설정 → 충돌 레이어, 비었거나 없으면 Default)
+	float       Friction     = 0.6f; // 2D 콜라이더 기본값과 같음
+	float       Restitution  = 0.0f;
 	std::string TileData;            // 인코딩된 셀 (FTilemapData::Encode — 인스펙터에 숨김)
 
 	FTilemapRuntime Runtime;

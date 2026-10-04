@@ -21,6 +21,7 @@
 #include "Scene/Particles.h"
 #include "Scene/Scene.h"
 #include "Scene/SequencePlayer.h"
+#include "Scene/Sprite/FlipbookSystem.h"
 #include "Scripting/ScriptSystem.h"
 
 #include <algorithm>
@@ -676,6 +677,10 @@ void FGameWorld::TickPresentation(FScene& TargetScene, float DeltaSeconds)
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::Animation);
 		FAnimationSystem::Update(TargetScene, DeltaSeconds, bPartial ? &PresentationWritten : nullptr);
+		// 2D 플립북 (Phase 56): 스프라이트 표시 프레임 + PendingEvents. 트랜스폼은 쓰지 않으므로 PresentationWritten과 무관하다.
+		// 편집 중에도 돌아 미리보기가 되고, 이벤트(OnFlipbookEvent_<이름>/OnFlipbookFinished, 게임 모듈)는 플레이 중 다음 게임플레이 틱
+		// 스크립트·게임 모듈 갱신이 노티파이와 같은 자리에서 배달한다
+		FFlipbookSystem::Update(TargetScene, DeltaSeconds);
 	}
 	{
 		const FScopedGameTickTimer Timer(EGameTickTimer::PresentTransforms);

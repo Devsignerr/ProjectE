@@ -78,7 +78,7 @@ enum class EWorldRole : uint8
 //         입력 액션 값(Input.GetAction)도 함께 보낸다 — 클라이언트가 자기 바인딩으로 계산한 값. 게임 모듈은 IGameNet::GetInput
 //                                  물리 → UpdateTransforms 뒤: 캐릭터 이동 상태 → 애니메이션 그래프 파라미터 (Speed/VerticalSpeed/Grounded)
 //                                  → 충돌/트리거 알림 (GameWorldPhysicsEvents.cpp) → 스크립트 OnLateUpdate
-//   표시 틱 (편집 중에도):         애니메이션 → UpdateTransforms → 파티클 에셋 해석 → 파티클
+//   표시 틱 (편집 중에도):         애니메이션 → 2D 플립북(트랜스폼 안 씀) → UpdateTransforms → 파티클 에셋 해석 → 파티클
 // 시작/정지: BeginPlay = 물리 → 게임 모듈 → 스크립트(Lua 상태) → AI (Client 역할은 게임 모듈·AI 없음), EndPlay = 역순.
 //   스크립트 OnStart는 첫 게임플레이 틱에 불리므로 AI(트리 시작)가 스크립트 뒤여도 OnStart가 블랙보드를 쓰기 전에 트리가 있다
 // RPC(스크립트/게임 모듈 공용)와 입력·플레이어 이벤트는 GameWorldNet.cpp. 게임 모듈에는 IGameNet으로 자신을 넘긴다

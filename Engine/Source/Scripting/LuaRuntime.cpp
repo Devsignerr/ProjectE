@@ -197,6 +197,7 @@ void FLuaRuntime::RegisterBindings()
 	RegisterBuildingBindings();
 	RegisterSkyBindings();
 	RegisterAbilityBindings();
+	RegisterSprite2DBindings();
 }
 
 void FLuaRuntime::RegisterMathBindings()
@@ -1365,6 +1366,7 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 
 	// 3.5 애니메이션 노티파이 (직전 프레임 애니메이션 갱신에서 발생) → 게임 UI 이벤트 (이번 프레임 FUISystem::Update에서 발생)
 	DispatchAnimNotifies();
+	DispatchFlipbookEvents(); // 직전 표시 틱 2D 플립북 이벤트 (노티파이와 같은 자리)
 	DispatchUIEvents();
 	DispatchSequenceEvents(); // 직전 게임플레이 틱 시퀀스 갱신에서 발생
 	DispatchMontageEvents();

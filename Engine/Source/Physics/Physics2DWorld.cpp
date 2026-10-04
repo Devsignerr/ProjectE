@@ -520,6 +520,26 @@ void FPhysics2DWorld::SetTransform(uint32 Body, const FVector2& Position, float 
 	if (FImpl::FBodySlot* Slot = Impl->Find(Body))
 	{
 		b2Body_SetTransform(Slot->Body, ToB2(Position), b2MakeRot(Angle));
+		// 정적 바디를 옮기면 Box2D는 닿아 있던 잠든 바디를 깨우지 않는다 → 받침이 사라져도 공중에 떠 있으므로 직접 깨운다
+		if (b2Body_GetType(Slot->Body) == b2_staticBody)
+		{
+			const int32 Capacity = b2Body_GetContactCapacity(Slot->Body);
+			if (Capacity > 0)
+			{
+				std::vector<b2ContactData> Contacts(static_cast<size_t>(Capacity));
+				const int32 Count = b2Body_GetContactData(Slot->Body, Contacts.data(), Capacity);
+				for (int32 Index = 0; Index < Count; ++Index)
+				{
+					const b2BodyId BodyA = b2Shape_GetBody(Contacts[static_cast<size_t>(Index)].shapeIdA);
+					const b2BodyId BodyB = b2Shape_GetBody(Contacts[static_cast<size_t>(Index)].shapeIdB);
+					const b2BodyId Other = B2_ID_EQUALS(BodyA, Slot->Body) ? BodyB : BodyA;
+					if (b2Body_GetType(Other) != b2_staticBody)
+					{
+						b2Body_SetAwake(Other, true);
+					}
+				}
+			}
+		}
 	}
 }
 

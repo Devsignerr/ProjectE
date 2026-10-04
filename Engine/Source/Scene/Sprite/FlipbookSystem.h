@@ -10,8 +10,10 @@ class FScene;
 //   2) bPlaying이면 Time += dt × Speed, FlipbookMath::CollectEvents로 이벤트를 Runtime.PendingEvents에 쌓는다 (매 갱신 비우고 채움 —
 //      첫 갱신은 시작 프레임 이벤트도). Once는 끝(정방향 T / 역방향 0)에 닿으면 bFinished + 그 자리에 멈춘다. Loop/PingPong은 Time을 주기로 감싼다
 //   3) 같은 엔티티의 FSpriteComponent::Runtime.FlipbookAtlas/FlipbookSliceIndex에 현재 프레임을 쓴다 (플립북이 없거나 읽기 실패면 비움)
-// 호출 위치: 게임 월드 표시 틱(TickPresentation, 애니메이션 단계 옆 — 트랜스폼은 쓰지 않는다). 연결은 World 쪽에서 (Phase 56 머지 때)
-// 이벤트 배달(Lua OnFlipbookEvent_<이름>, 게임 모듈)도 World가 PendingEvents를 읽어 한다
+//      이번 갱신에서 Once가 끝에 닿았으면 Runtime.bFinishedThisUpdate (매 갱신 비움)
+// 호출 위치: FGameWorld::TickPresentation (애니메이션 바로 뒤, 편집 중에도 — 트랜스폼은 쓰지 않으므로 PresentationWritten 무관).
+// 이벤트 배달: 플레이 중 다음 게임플레이 틱에 애니메이션 노티파이와 같은 자리 — Lua OnFlipbookEvent_<이름>(frame)/OnFlipbookFinished()
+//   (FLuaRuntime::DispatchFlipbookEvents, 받는 쪽 = 플립북 엔티티 스크립트, 없으면 가장 가까운 조상), 게임 모듈 OnFlipbookEvent/OnFlipbookFinished
 class FFlipbookSystem
 {
 public:

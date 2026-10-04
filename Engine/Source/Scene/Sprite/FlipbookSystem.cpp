@@ -70,6 +70,7 @@ void FFlipbookSystem::Update(FScene& Scene, float DeltaSeconds)
 	Registry.View<FFlipbookComponent>().Each([&](FEntity Entity, FFlipbookComponent& Component) {
 		FFlipbookRuntime& Runtime = Component.Runtime;
 		Runtime.PendingEvents.clear();
+		Runtime.bFinishedThisUpdate = false;
 		const bool bValid = ResolveFlipbook(Component);
 		if (!bValid)
 		{
@@ -102,7 +103,8 @@ void FFlipbookSystem::Update(FScene& Scene, float DeltaSeconds)
 			const bool bBackwardEnd = Component.Speed < 0.0f && New <= 0.0f;
 			if (bForwardEnd || bBackwardEnd)
 			{
-				Runtime.bFinished = true;
+				Runtime.bFinished           = true;
+				Runtime.bFinishedThisUpdate = true;
 				New               = bForwardEnd ? Asset.TotalDuration : 0.0f;
 			}
 		}

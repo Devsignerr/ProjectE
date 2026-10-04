@@ -5,9 +5,9 @@
 //   BoneOffset은 인스턴스 데이터(MeshInstance.hlsli FInstanceData.BoneOffset)에 있다. 조인트 번호는 SkinnedMeshData.h MaxSkinJoints 미만
 //
 // E_SKIN_CACHE: 스킨 캐시 (Renderer/SkinCache.h — 프레임마다 계산 셰이더 SkinCache.hlsl이 보이는 스킨 인스턴스를 한 번 스키닝한 결과)
-//   [현재 정점 영역: FVertex 64B × 용량 — 월드 위치/법선/UV/색/탄젠트][이전 영역: float4 16B × 용량 — 이전 프레임 월드 위치 xyz + 위치 w]
-//   인스턴스 데이터 SkinCacheVertex(현재 영역 정점 번호) / SkinCachePrevIndex(버퍼 안 16바이트 칸 번호) + SV_VertexID로 읽는다.
-//   값은 팔레트 경로 정점 셰이더와 같은 식으로 계산된다 (위치 w = 가중치 합 — 팔레트 경로의 mul(float4(P, 1), Skin).w와 같다)
+//   용량 C 기준 영역: 위치 float4 [0,16C) / 법선·탄젠트 float4×2 [16C,48C) / 이전 위치 float4 [48C,64C) (SkinCacheMath::Get*Offset)
+//   정점 번호 = 인스턴스 SkinCacheVertex + SV_VertexID (메시 그리기는 BaseVertexLocation 0). 값은 팔레트 경로 정점 셰이더와 같은 식의 결과
+//   (위치 w = 가중치 합 — 팔레트 경로의 mul(float4(P, 1), Skin).w와 같다)
 
 #ifdef E_SKIN_CACHE
 
@@ -21,22 +21,21 @@ struct FSkinCacheVertex
 	float4 Tangent;      // 월드 xyz 정규화, w = 바이탄젠트 부호 (반사 행렬이면 반전됨)
 };
 
-float4 LoadSkinCachePosition(uint CacheVertex, uint PrevIndex, uint VertexId)
+float4 LoadSkinCachePosition(uint CacheVertex, uint Capacity, uint VertexId)
 {
-	const float3 Position = asfloat(SkinCache.Load3((CacheVertex + VertexId) * 64));
-	const float  W        = asfloat(SkinCache.Load(((PrevIndex + VertexId) * 16) + 12));
-	return float4(Position, W);
+	return asfloat(SkinCache.Load4((CacheVertex + VertexId) * 16));
 }
 
-FSkinCacheVertex LoadSkinCacheVertex(uint CacheVertex, uint PrevIndex, uint VertexId)
+FSkinCacheVertex LoadSkinCacheVertex(uint CacheVertex, uint Capacity, uint VertexId)
 {
-	const uint   Base = (CacheVertex + VertexId) * 64;
-	const float4 Prev = asfloat(SkinCache.Load4((PrevIndex + VertexId) * 16));
+	const uint   Index = CacheVertex + VertexId;
+	const float4 NormalW = asfloat(SkinCache.Load4(Capacity * 16 + Index * 32));
+	const float4 TangentXyz = asfloat(SkinCache.Load4(Capacity * 16 + Index * 32 + 16));
 	FSkinCacheVertex Vertex;
-	Vertex.Position     = float4(asfloat(SkinCache.Load3(Base)), Prev.w);
-	Vertex.PrevPosition = Prev;
-	Vertex.Normal       = asfloat(SkinCache.Load3(Base + 12));
-	Vertex.Tangent      = asfloat(SkinCache.Load4(Base + 48));
+	Vertex.Position     = asfloat(SkinCache.Load4(Index * 16));
+	Vertex.PrevPosition = asfloat(SkinCache.Load4(Capacity * 48 + Index * 16));
+	Vertex.Normal       = NormalW.xyz;
+	Vertex.Tangent      = float4(TangentXyz.xyz, NormalW.w);
 	return Vertex;
 }
 

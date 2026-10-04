@@ -1,8 +1,8 @@
 ﻿#include "SkinnedMesh.hlsli" // t15 SkinBones (프레임 팔레트)
 
 // 스킨 캐시 (Renderer/SkinCache.h): 같은 메시·LOD 인스턴스 묶음 하나를 디스패치 하나로 스키닝한다 (X = 정점 목록, Y = 항목).
-//   현재 영역: FVertex(64B) 자리 그대로 월드 공간 — 위치/법선/탄젠트 = 스킨 행렬, UV/색은 bAttributes일 때만 복사 (레이 트레이싱 정점 풀로 그대로 복사된다)
-//   이전 영역: float4 (이전 프레임 팔레트로 변환한 위치 xyz, 현재 위치 w = 가중치 합)
+//   영역(SkinnedMesh.hlsli, SkinCacheMath): 위치 float4 / 법선·탄젠트 float4×2 / 이전 위치 float4(이전 팔레트, w = 현재 가중치 합)
+//   + bAttributes면 RT 정점 영역에 완전한 FVertex (레이 트레이싱 정점 풀로 그대로 복사된다)
 //   식은 Mesh.hlsl VSSkinned(팔레트 경로)·RayTracingSkinning.hlsl과 같다 (반사 행렬이면 탄젠트 w 반전)
 
 cbuffer SkinCacheConstants : register(b0)
@@ -15,10 +15,12 @@ cbuffer SkinCacheConstants : register(b0)
 
 struct FSkinCacheItem
 {
-	uint FirstVertex;    // 현재 영역 첫 정점
-	uint PrevIndex;      // 이전 영역 첫 정점의 16바이트 칸 번호 (버퍼 시작 기준)
+	uint FirstVertex;    // 영역 안 첫 정점 (캐시 정점 번호 = 첫 정점 + 메시 정점 번호)
+	uint Capacity;       // 용량 C (영역 시작 — SkinnedMesh.hlsli)
 	uint BoneOffset;     // 팔레트 안 첫 본
 	uint PrevBoneOffset; // 이전 프레임 팔레트 (이력 없으면 BoneOffset)
+	uint RtFirstVertex;  // RT 정점 영역 안 첫 정점 (bAttributes일 때)
+	uint3 Padding;
 };
 
 ByteAddressBuffer                BaseVertices : register(t0); // FVertex: Position(0) Normal(12) UV(24) Color(32) Tangent(48)
@@ -52,22 +54,27 @@ void CSMain(uint3 DispatchId : SV_DispatchThreadID)
 	const float3x3 Skin3         = (float3x3)SkinMatrix;
 	const float    Handedness    = determinant(Skin3) < 0.0f ? -1.0f : 1.0f;
 
-	const uint Out = (Item.FirstVertex + Vertex) * 64;
-	OutVertices.Store3(Out, asuint(WorldPosition.xyz));
-	OutVertices.Store3(Out + 12, asuint(normalize(mul(Normal, Skin3))));
+	const uint   Index   = Item.FirstVertex + Vertex;
+	const float3 Normal3 = normalize(mul(Normal, Skin3));
+	const float4 Tangent4 = float4(normalize(mul(Tangent.xyz, Skin3)), Tangent.w * Handedness);
+	OutVertices.Store4(Index * 16, asuint(WorldPosition));
+	OutVertices.Store4(Item.Capacity * 16 + Index * 32, asuint(float4(Normal3, Tangent4.w)));
+	OutVertices.Store4(Item.Capacity * 16 + Index * 32 + 16, asuint(float4(Tangent4.xyz, 0.0f)));
 	if (bAttributes != 0)
 	{
-		const uint2 UV    = BaseVertices.Load2(Base + 24);
-		const uint4 Color = BaseVertices.Load4(Base + 32);
-		OutVertices.Store2(Out + 24, UV);
-		OutVertices.Store4(Out + 32, Color);
+		// 레이 트레이싱 정점 영역: FVertex 그대로 (RayTracingSkinning.hlsl과 같은 값 — RT가 정점 풀로 복사)
+		const uint Out = Item.Capacity * 64 + (Item.RtFirstVertex + Vertex) * 64;
+		OutVertices.Store3(Out, asuint(WorldPosition.xyz));
+		OutVertices.Store3(Out + 12, asuint(Normal3));
+		OutVertices.Store2(Out + 24, BaseVertices.Load2(Base + 24));
+		OutVertices.Store4(Out + 32, BaseVertices.Load4(Base + 32));
+		OutVertices.Store4(Out + 48, asuint(Tangent4));
 	}
-	OutVertices.Store4(Out + 48, asuint(float4(normalize(mul(Tangent.xyz, Skin3)), Tangent.w * Handedness)));
 
 	float4 PrevPosition = WorldPosition;
 	if (Item.PrevBoneOffset != Item.BoneOffset)
 	{
 		PrevPosition = mul(float4(Position, 1.0f), ComputeSkinMatrix(Item.PrevBoneOffset, Joints, Weights));
 	}
-	OutVertices.Store4((Item.PrevIndex + Vertex) * 16, asuint(float4(PrevPosition.xyz, WorldPosition.w)));
+	OutVertices.Store4(Item.Capacity * 48 + Index * 16, asuint(float4(PrevPosition.xyz, WorldPosition.w)));
 }

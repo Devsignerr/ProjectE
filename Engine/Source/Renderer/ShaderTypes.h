@@ -253,8 +253,8 @@ struct FInstanceGpuData
 	FVector4   NormalMatrix[3]; // (World⁻¹)ᵀ 상단 3x3의 행 (w 미사용) — 비균등 스케일에서도 올바른 법선 변환
 	uint32     BoneOffset     = 0;
 	uint32     PrevBoneOffset = 0; // 스킨: 같은 팔레트 버퍼 안 이전 프레임 팔레트 첫 본
-	uint32     SkinCacheVertex    = 0; // 스킨 캐시(SkinCache.h): 현재 정점 영역 안 첫 정점
-	uint32     SkinCachePrevIndex = 0; // 스킨 캐시: 이전 위치 영역 첫 정점의 버퍼 안 16바이트 칸 번호
+	uint32     SkinCacheVertex    = 0; // 스킨 캐시(SkinCache.h): 영역 안 첫 정점
+	uint32     SkinCacheCapacity  = 0; // 스킨 캐시: 버퍼 용량 C (영역 시작 = SkinCacheMath::Get*Offset)
 	FMatrix4x4 PrevWorld;
 };
 static_assert(sizeof(FInstanceGpuData) == 192);

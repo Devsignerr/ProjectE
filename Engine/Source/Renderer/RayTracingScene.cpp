@@ -1283,7 +1283,7 @@ void FRayTracingScene::PrepareSkinned(const FRayTracingSceneOptions& Options, co
 				const FStaticMesh&       Mesh      = *Geometry.Instance->Mesh;
 				SkinOps.push_back({ Primitive.VertexOffset, Mesh.GetVertexBuffer().GetGpuAddress(), Mesh.GetSkinBuffer().GetGpuAddress(), Primitive.VertexCount,
 				                    Geometry.Instance->BoneOffset,
-				                    Geometry.Instance->bSkinCacheLod0 ? static_cast<uint64>(Geometry.Instance->SkinCacheVertex) * sizeof(FVertex) : ~0ull });
+				                    Geometry.Instance->bSkinCacheLod0 ? Geometry.Instance->SkinCacheRtOffset : ~0ull });
 				D3D12_RAYTRACING_GEOMETRY_DESC Desc =
 					MakeTriangles(VertexBase + Primitive.VertexOffset, Primitive.VertexCount, Mesh.GetIndexBuffer().GetGpuAddress(), Primitive.IndexCount);
 				Desc.Flags = Geometry.Instance->IsMasked() ? D3D12_RAYTRACING_GEOMETRY_FLAG_NONE : D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;

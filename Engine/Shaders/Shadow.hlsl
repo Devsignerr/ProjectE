@@ -24,7 +24,7 @@ float4 ShadowVS(float3 Position : POSITION, uint InstanceId : SV_InstanceID) : S
 float4 ShadowSkinnedVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID) : SV_Position
 {
 	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
-	return mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCachePrevIndex, VertexId), LightViewProjection);
+	return mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId), LightViewProjection);
 }
 #else
 // 스킨 메시 캐스터 (인스턴싱): 인스턴스 팔레트로 월드 공간 변환 후 라이트 뷰-투영
@@ -67,7 +67,7 @@ FShadowMaskedOutput ShadowSkinnedMaskedVS(float2 UV : TEXCOORD0, float4 Color : 
 {
 	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
 	FShadowMaskedOutput Output;
-	Output.Position = mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCachePrevIndex, VertexId), LightViewProjection);
+	Output.Position = mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId), LightViewProjection);
 	Output.UV       = UV;
 	Output.Alpha    = Color.a;
 	return Output;
@@ -129,7 +129,7 @@ FShadowMaterialOutput ShadowMaterialVS(float3 Position : POSITION, float3 Normal
 FShadowMaterialOutput ShadowMaterialSkinnedVS(float2 UV : TEXCOORD0, float4 Color : COLOR, uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
 {
 	const FInstanceData    Instance = LoadInstance(InstanceOffset, InstanceId);
-	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCachePrevIndex, VertexId);
+	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId);
 	FShadowMaterialOutput  Output;
 	Output.Position      = mul(Vertex.Position, LightViewProjection);
 	Output.WorldPosition = Vertex.Position.xyz;

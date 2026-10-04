@@ -17,15 +17,22 @@ class FShaderLibrary;
 // 스킨 캐시 배치 (순수 로직 — SkinCacheTests): 이번 프레임 스킨 인스턴스(입력 순서)를 메시별로 묶어 캐시 정점 영역에 연속 배치한다.
 namespace SkinCacheMath
 {
-	// 캐시 정점 하나 = 현재 영역 FVertex 64바이트 + 이전 위치 영역 float4 16바이트 (SkinnedMesh.hlsli E_SKIN_CACHE)
-	inline constexpr uint64 CurrentVertexBytes = 64;
-	inline constexpr uint64 PrevVertexBytes    = 16;
-	inline constexpr uint64 BytesPerVertex     = CurrentVertexBytes + PrevVertexBytes;
+	// 버퍼 = 영역 4개, 용량 C(정점) 기준 (SkinnedMesh.hlsli E_SKIN_CACHE — 래스터가 읽는 것은 촘촘한 SoA, 쓰기 대역폭이 비용의 대부분):
+	//   위치 [0, 16C)          float4 (월드 xyz, w = 가중치 합) — 그림자/사전/메인
+	//   법선·탄젠트 [16C, 48C)  float4 (법선 xyz, 탄젠트 w) + float4 (탄젠트 xyz, 0) — 메인/그래프 그림자
+	//   이전 위치 [48C, 64C)    float4 (이전 프레임 월드 xyz, w) — 움직임 벡터
+	//   RT 정점 [64C, 64C + 64R) FVertex 64B (UV/색 포함, 레이 트레이싱 정점 풀로 그대로 복사) — RT 용량 R은 RT 대상 인스턴스만 따로 센다
+	inline constexpr uint64 PositionBytes  = 16;
+	inline constexpr uint64 TangentBytes   = 32;
+	inline constexpr uint64 PrevBytes      = 16;
+	inline constexpr uint64 RasterBytesPerVertex = PositionBytes + TangentBytes + PrevBytes; // 64
+	inline constexpr uint64 RtVertexBytes  = 64; // sizeof(FVertex)
+	inline constexpr uint64 MaxBytesPerVertex = RasterBytesPerVertex + RtVertexBytes;
 	inline constexpr uint32 GroupSize          = 64;     // SkinCache.hlsl numthreads X
 	inline constexpr uint32 MaxDispatchItems   = 65535;  // 디스패치 Y 상한 (넘으면 같은 메시를 여러 디스패치로)
 	inline constexpr uint64 CapacityGranularity = 16384; // 용량 올림 단위 (정점)
 	// 바이트 주소 버퍼 오프셋은 uint32 — 이전 영역 끝(용량 × 80바이트)이 4GB를 넘지 않게
-	inline constexpr uint64 MaxCapacity = (0xFFFFFFFFull / BytesPerVertex) / CapacityGranularity * CapacityGranularity;
+	inline constexpr uint64 MaxCapacity = (0xFFFFFFFFull / MaxBytesPerVertex) / CapacityGranularity * CapacityGranularity;
 
 	struct FItemInput
 	{
@@ -46,7 +53,7 @@ namespace SkinCacheMath
 	struct FLayout
 	{
 		std::vector<uint32>    ItemOrder;   // 디스패치 순서의 입력 번호 (같은 메시가 연속, 메시는 첫 등장 순서, 메시 안은 입력 순서)
-		std::vector<uint32>    FirstVertex; // 입력 번호별 현재 영역 첫 정점 (정점 0개 입력은 0 — 디스패치 없음)
+		std::vector<uint32>    FirstVertex; // 입력 번호별 영역 안 첫 정점 (정점 0개 입력은 0 — 디스패치 없음)
 		std::vector<FDispatch> Dispatches;
 		uint64                 TotalVertices = 0;
 	};
@@ -59,12 +66,15 @@ namespace SkinCacheMath
 	// 필요한 용량 (정점): Required가 Current 이하면 Current 유지(줄이지 않음 — 다시 만들면 버퍼 교체), 넘으면 1.5배와 Required 중 큰 값을 단위로 올림.
 	// MaxCapacity를 넘으면 0 (할 수 없음)
 	uint64 ComputeCapacity(uint64 Current, uint64 Required);
-	// 이전 위치 영역의 16바이트 칸 번호 (버퍼 시작 기준): 현재 영역 = Capacity × 64바이트 = Capacity × 4칸
-	inline uint32 GetPrevIndex(uint64 Capacity, uint32 FirstVertex) { return static_cast<uint32>(Capacity * (CurrentVertexBytes / PrevVertexBytes) + FirstVertex); }
+	// 영역 시작 바이트 (위 머리 주석 순서)
+	inline uint64 GetTangentOffset(uint64 Capacity) { return Capacity * PositionBytes; }
+	inline uint64 GetPrevOffset(uint64 Capacity) { return Capacity * (PositionBytes + TangentBytes); }
+	inline uint64 GetRtOffset(uint64 Capacity) { return Capacity * RasterBytesPerVertex; }
+	inline uint64 GetBufferBytes(uint64 Capacity, uint64 RtCapacity) { return Capacity * RasterBytesPerVertex + RtCapacity * RtVertexBytes; }
 } // namespace SkinCacheMath
 
 // 레이 트레이싱 스킨 BLAS 공유 (FRayTracingScene): 켜져 있으면 LOD0이고 RT 스킨 거리 안인 인스턴스는 UV/색까지 써서
-// (현재 영역 = 완전한 FVertex) RT가 다시 스키닝하지 않고 복사하게 한다. 그 밖 인스턴스는 래스터가 읽는 위치/법선/탄젠트만 쓴다(쓰기 대역폭)
+// (RT 정점 영역에 완전한 FVertex) RT가 다시 스키닝하지 않고 복사하게 한다. 그 밖 인스턴스는 래스터가 읽는 위치/법선/탄젠트만 쓴다(쓰기 대역폭)
 struct FSkinCacheRtOptions
 {
 	bool     bEnabled    = false;
@@ -88,16 +98,16 @@ struct FSkinDrawSource
 };
 
 // 스킨 캐시 (r.SkinCache): 프레임마다 보이는 스킨 인스턴스(팔레트 가시성을 통과해 메시 인스턴스 목록에 든 것)를 계산 셰이더로 한 번 스키닝해
-// 월드 공간 정점(현재 FVertex + 이전 프레임 위치)을 풀 버퍼 하나에 쓴다. 메시 패스(깊이 사전/메인/반투명/방향광·로컬 그림자)의 스킨 변형은
+// 월드 공간 정점(위치·법선·탄젠트 + 이전 프레임 위치, 촘촘한 SoA 영역)을 풀 버퍼 하나에 쓴다. 메시 패스(깊이 사전/메인/반투명/방향광·로컬 그림자)의 스킨 변형은
 // 디파인 E_SKIN_CACHE 정점 셰이더로 이 버퍼를 SV_VertexID + 인스턴스 SkinCacheVertex로 읽는다 (패스마다 다시 스키닝하지 않음).
 //   - 묶음/인스턴싱은 그대로 (같은 메시 인스턴스는 인스턴스 데이터의 캐시 위치만 다르다)
 //   - LOD는 정점 버퍼를 공유한다: 캐시 자리는 메시 전체 정점(정점 번호 그대로)이지만 스키닝은 인스턴스 LOD 이상이 쓰는 정점만
 //     (FStaticMesh::GetLodVertexList — 그림자 LOD 바이어스는 더 거친 LOD만 쓰므로 덮인다). 나머지 칸은 쓰지 않고 아무도 읽지 않는다
 //   - 이전 위치 = 이전 프레임 팔레트(PrevBoneOffset)로 같은 정점을 변환 (이력이 없으면 현재 위치) — 움직임 벡터 식은 팔레트 경로와 같다
-//   - 레이 트레이싱 스킨 BLAS(FRayTracingScene, LOD0)는 LOD0 정점까지 스키닝된 인스턴스(bSkinCacheLod0)면 다시 스키닝하지 않고
-//     이 버퍼의 현재 영역(FVertex 그대로)을 자기 정점 풀로 복사한다 (아니면 자기 계산 스키닝)
+//   - 레이 트레이싱 스킨 BLAS(FRayTracingScene, LOD0)는 LOD0·RT 거리 안 인스턴스(bSkinCacheLod0)면 다시 스키닝하지 않고
+//     이 버퍼의 RT 정점 영역(FVertex 그대로 — 그 인스턴스만 씀)을 자기 정점 풀로 복사한다 (아니면 자기 계산 스키닝)
 //   - 배치는 Prepare마다 새로 (프레임마다 모두 다시 쓰므로 엔티티별 고정 자리가 필요 없다). 한 프레임에 여러 번 그려도(반사 캡처) 그래프 순서대로
-// 호출: 메시 인스턴스 Gather 뒤·Upload 전 Prepare(인스턴스의 SkinCacheVertex/SkinCachePrevIndex를 채움) → 첫 메시 패스 등록 전 AddPass
+// 호출: 메시 인스턴스 Gather·LOD 선택 뒤·Upload 전 Prepare(인스턴스의 SkinCacheVertex/SkinCacheCapacity를 채움) → 첫 메시 패스 등록 전 AddPass
 class FSkinCache
 {
 public:
@@ -118,7 +128,7 @@ public:
 	uint64                    GetCapacity() const { return Capacity; }       // 정점
 	uint64                    GetFrameVertices() const { return FrameVertices; } // 이번 Prepare가 스키닝하는 정점 수 (LOD 목록 합)
 	uint32                    GetFrameDispatches() const { return static_cast<uint32>(FrameDispatches.size()); }
-	uint64                    GetGpuBytes() const { return Capacity * SkinCacheMath::BytesPerVertex; }
+	uint64                    GetGpuBytes() const { return SkinCacheMath::GetBufferBytes(Capacity, RtCapacity); }
 
 private:
 	struct FFrameDispatch
@@ -132,7 +142,7 @@ private:
 		uint32                    bAttributes  = 0; // 1 = UV/색도 쓴다 (RT 복사용 완전한 FVertex)
 	};
 	bool CreatePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
-	bool EnsureCapacity(uint64 Required);
+	bool EnsureCapacity(uint64 Required, uint64 RtRequired);
 
 	FD3D12RHI*                  Rhi     = nullptr;
 	FShaderLibrary*             Library = nullptr;
@@ -141,11 +151,22 @@ private:
 	ComPtr<ID3D12Resource>      Buffer;
 	D3D12_RESOURCE_STATES       BufferState = D3D12_RESOURCE_STATE_COMMON; // 그래프 밖 상태 (ImportTracked)
 	uint64                      Capacity    = 0;
+	uint64                      RtCapacity  = 0; // RT 정점 영역 용량 (정점, RT 대상 인스턴스만)
 
 	// 이번 Prepare
 	SkinCacheMath::FLayout             Layout;
+	std::vector<SkinCacheMath::FItemInput> LayoutInputs; // Layout을 만든 입력 (같으면 다시 만들지 않는다)
 	std::vector<SkinCacheMath::FItemInput> Inputs;
 	std::vector<uint32>                InputInstances; // 입력 번호 → 인스턴스 번호
+	struct FInstanceInput
+	{
+		SkinCacheMath::FItemInput  Input;
+		std::pair<uint32, uint32>  Bones;
+		bool                       bSkinned = false;
+	};
+	std::vector<FInstanceInput>        PerInstance;    // 인스턴스 번호별 (병렬 수집)
+	std::vector<std::pair<uint32, uint32>> InputBones;  // 입력 번호 → (BoneOffset, PrevBoneOffset)
+	std::vector<uint32>                InputRtFirst;   // 입력 번호 → RT 정점 영역 첫 정점
 	std::vector<FFrameDispatch>        FrameDispatches;
 	D3D12_GPU_VIRTUAL_ADDRESS          ItemTable     = 0;
 	uint64                             FrameVertices = 0;

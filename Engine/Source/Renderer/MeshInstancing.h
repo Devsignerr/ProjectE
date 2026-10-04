@@ -32,9 +32,10 @@ struct FMeshInstance
 	FEntity                   Entity;
 	uint32                    BoneOffset  = 0; // 스킨: 프레임 팔레트 버퍼(FSkinnedMeshPalette::GetGpuData, t15) 안 첫 본
 	uint32                    PrevBoneOffset = 0; // 스킨: 같은 버퍼 안 이전 프레임 팔레트 (이력 없으면 BoneOffset)
-	uint32                    SkinCacheVertex    = 0; // 스킨 캐시(FSkinCache::Prepare가 채움): 캐시 현재 영역 첫 정점
-	uint32                    SkinCachePrevIndex = 0; // 스킨 캐시: 이전 위치 영역 첫 정점의 16바이트 칸 번호
-	bool                      bSkinCacheLod0     = false; // 스킨 캐시가 LOD0이 쓰는 정점까지 스키닝했다 (레이 트레이싱 BLAS 복사 가능)
+	uint32                    SkinCacheVertex    = 0; // 스킨 캐시(FSkinCache::Prepare가 채움): 영역 안 첫 정점
+	uint32                    SkinCacheCapacity  = 0; // 스킨 캐시: 버퍼 용량 (영역 시작 계산)
+	bool                      bSkinCacheLod0     = false; // 스킨 캐시가 LOD0 정점까지 RT 정점 영역에 썼다 (레이 트레이싱 BLAS 복사 가능)
+	uint64                    SkinCacheRtOffset  = 0;     // 그 RT 정점 영역 안 바이트 (bSkinCacheLod0일 때)
 	uint32                    Lod         = 0; // 메인 카메라 화면 크기로 고른 LOD (그림자 패스도 같은 값)
 	bool                      bSkinned    = false;
 	bool                      bCastShadow = true;  // false면 그림자 패스(방향광/로컬)에서 뺀다 (폴리지 그림자 거리)

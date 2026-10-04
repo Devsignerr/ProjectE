@@ -110,16 +110,19 @@ E_TEST(SkinCache_CapacityGrowsAndNeverShrinks)
 	E_EXPECT_EQ(ComputeCapacity(CapacityGranularity, CapacityGranularity * 10 + 5), CapacityGranularity * 11);
 	E_EXPECT_EQ(ComputeCapacity(MaxCapacity - CapacityGranularity, MaxCapacity), MaxCapacity); // 상한에서 자름
 	E_EXPECT_EQ(ComputeCapacity(0, MaxCapacity + 1), 0ull);                            // 불가
-	static_assert(MaxCapacity * BytesPerVertex <= 0xFFFFFFFFull, "바이트 주소가 uint32 안");
+	static_assert(MaxCapacity * MaxBytesPerVertex <= 0xFFFFFFFFull, "바이트 주소가 uint32 안");
 }
 
-E_TEST(SkinCache_PrevIndexFollowsCurrentRegion)
+E_TEST(SkinCache_RegionsAreContiguousAndFitBuffer)
 {
-	// 이전 위치 영역은 현재 영역(용량 × 64바이트) 바로 뒤, 칸 = 16바이트
+	// 영역 순서: 위치(16B) → 법선·탄젠트(32B) → 이전 위치(16B) → RT 정점(FVertex 64B, 있을 때만)
 	using namespace SkinCacheMath;
-	E_EXPECT_EQ(GetPrevIndex(1000, 0), 4000u);
-	E_EXPECT_EQ(GetPrevIndex(1000, 37), 4037u);
-	E_EXPECT_EQ(static_cast<uint64>(GetPrevIndex(1000, 999)) * PrevVertexBytes + PrevVertexBytes, 1000ull * BytesPerVertex); // 마지막 칸 = 버퍼 끝
+	const uint64 Capacity = 1000;
+	E_EXPECT_EQ(GetTangentOffset(Capacity), 16000ull);
+	E_EXPECT_EQ(GetPrevOffset(Capacity), 48000ull);
+	E_EXPECT_EQ(GetRtOffset(Capacity), 64000ull);
+	E_EXPECT_EQ(GetPrevOffset(Capacity) + Capacity * PrevBytes, GetBufferBytes(Capacity, 0)); // 래스터 영역 끝 = 버퍼 끝
+	E_EXPECT_EQ(GetRtOffset(Capacity) + 300 * RtVertexBytes, GetBufferBytes(Capacity, 300));  // RT 정점 영역은 따로 센 용량
 	// 인스턴스 GPU 데이터 크기는 그대로 (캐시 칸 2개가 예전 여백 자리)
 	static_assert(sizeof(FInstanceGpuData) == 192);
 }

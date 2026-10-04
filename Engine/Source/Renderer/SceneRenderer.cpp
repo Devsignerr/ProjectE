@@ -431,8 +431,8 @@ void FSceneRenderer::LogPerfCapture() const
 	      Capture.SkinPalettes / Count, Capture.SkinnedCulled / Count, Capture.UploadBytes / Count / 1024.0);
 	if (Stats.SkinCacheBytes > 0)
 	{
-		E_LOG(LogRenderer, Display, "[성능] 스킨 캐시: 마지막 프레임 정점 {} (디스패치 {}), 버퍼 {:.1f} MB", Stats.SkinCacheVertices, Stats.SkinCacheDispatches,
-		      static_cast<double>(Stats.SkinCacheBytes) / (1024.0 * 1024.0));
+		E_LOG(LogRenderer, Display, "[성능] 스킨 캐시: 마지막 프레임 정점 {} (디스패치 {}), 버퍼 {:.1f} MB, 준비 CPU {:.3f} ms", Stats.SkinCacheVertices,
+		      Stats.SkinCacheDispatches, static_cast<double>(Stats.SkinCacheBytes) / (1024.0 * 1024.0), Stats.SkinCachePrepareMs);
 	}
 	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
@@ -1302,7 +1302,9 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	SkinCacheRt.bEnabled       = (bRtShadows || bRtReflections || bRtDebug || bDdgiWanted) && RendererCVars::RayTracingSkinned.Get();
 	SkinCacheRt.CameraPosition = Camera.GetPosition();
 	SkinCacheRt.MaxDistance    = RendererCVars::RayTracingSkinnedDistance.Get();
+	const auto SkinCacheStart  = std::chrono::steady_clock::now();
 	const bool bSkinCacheFrame = bSkinCache && SkinCache.Prepare(MeshInstances, DynamicBuffer, SkinCacheRt);
+	Stats.SkinCachePrepareMs   = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - SkinCacheStart).count();
 	Stats.SkinCacheVertices    = bSkinCacheFrame ? SkinCache.GetFrameVertices() : 0;
 	Stats.SkinCacheDispatches  = bSkinCacheFrame ? SkinCache.GetFrameDispatches() : 0;
 	Stats.SkinCacheBytes       = SkinCache.GetGpuBytes();

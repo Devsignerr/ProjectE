@@ -516,7 +516,7 @@ FPixelInput VSSkinned(FVertexInput Input, uint VertexId : SV_VertexID, uint Inst
 	FPixelInput Output;
 
 	const FInstanceData    Instance = LoadInstance(InstanceOffset, InstanceId);
-	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCachePrevIndex, VertexId);
+	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId);
 	Output.Position      = mul(Vertex.Position, ViewProjection);
 	Output.CurrentClip   = mul(Vertex.Position, UnjitteredViewProjection);
 	Output.PreviousClip  = mul(Vertex.PrevPosition, PrevViewProjection);

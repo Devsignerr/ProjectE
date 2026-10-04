@@ -110,6 +110,7 @@ struct FSceneRenderStats
 	uint64 SkinCacheVertices = 0; // 스킨 캐시가 이번 프레임 스키닝한 정점 (r.SkinCache, 0 = 팔레트 정점 셰이더 경로)
 	uint32 SkinCacheDispatches = 0;
 	uint64 SkinCacheBytes    = 0; // 스킨 캐시 버퍼 크기 (용량)
+	float  SkinCachePrepareMs = 0.0f; // 스킨 캐시 배치 CPU (이번 프레임)
 	uint64 UploadBytes   = 0; // 씬 렌더러가 이번 프레임 동적 업로드 버퍼에 쓴 양
 	// 오클루전 컬링 (GPU 리드백 — 몇 프레임 늦은 값): 검사한 정적 인스턴스, 1단계/2단계에서 그린 수
 	uint32 OcclusionTested = 0;

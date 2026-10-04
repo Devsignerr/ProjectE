@@ -1282,7 +1282,7 @@ bool FAnimationSystem::RefreshRetargeting(FScene& Scene, FEntity Entity)
 // 준비(메인, 엔티티 순서) → 포즈 평가(FParallel, 엔티티별 독립) → 마무리(메인, 엔티티 순서).
 // 노티파이·몽타주 끝 이벤트는 런타임별 Pending 목록에 쌓이므로 평가 순서와 무관하고, 루트 모션 콜백은 마무리에서 엔티티 순서대로 부른다
 // (평가 중에는 노드 로컬 트랜스폼만 바뀌고 월드 행렬은 다음 UpdateTransforms까지 그대로 — 순차 실행과 결과가 같다)
-void FAnimationSystem::Update(FScene& Scene, float DeltaSeconds)
+void FAnimationSystem::Update(FScene& Scene, float DeltaSeconds, std::vector<FTransformChangedSubtree>* OutWritten)
 {
 	E_PROFILE_SCOPE("애니메이션");
 	const FAnimViewPoint         View = FindViewPoint(Scene);
@@ -1317,6 +1317,11 @@ void FAnimationSystem::Update(FScene& Scene, float DeltaSeconds)
 	for (const FAnimUpdateItem& Item : Items)
 	{
 		FinishAnimation(Scene, Item);
+		if (OutWritten != nullptr)
+		{
+			// 평가 단계는 이 모델 노드만(포즈·IK), 마무리는 루트만(루트 모션 — 수신자가 있으면 캐릭터 이동에 쌓기만) 쓴다
+			OutWritten->push_back({ Item.Entity, Item.Animation->Runtime.NodeEntities });
+		}
 	}
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 
 #include <cmath>
@@ -143,7 +144,8 @@ namespace FSkyScene
 // FGameWorld::TickPresentation이 매 프레임 부른다 (트랜스폼 갱신 전)
 struct FTimeOfDaySystem
 {
-	static void Update(FScene& Scene, float DeltaSeconds, bool bAdvance);
+	// 회전을 쓴 태양(첫 방향광) 엔티티를 돌려준다 (시간대가 없거나 방향광이 없으면 NullEntity)
+	static FEntity Update(FScene& Scene, float DeltaSeconds, bool bAdvance);
 };
 
 // 리플렉션 등록 (RegisterSceneTypes 끝에서 부른다)

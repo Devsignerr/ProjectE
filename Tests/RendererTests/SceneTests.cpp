@@ -4,6 +4,7 @@
 #include "Scene/Scene.h"
 
 #include <cstring>
+#include <format>
 #include <memory>
 #include <vector>
 
@@ -257,4 +258,142 @@ E_TEST(Scene_TransformCacheMatchesFullRecompute)
 	E_EXPECT_TRUE(Scene.GetSocketWorldMatrix(Model, "Grip", GripWorld));
 	E_EXPECT_EQUALS(Scene.GetTransform(Sword).GetWorldPosition(), GripWorld.GetOrigin(), Tol);
 	E_EXPECT_EQUALS(Scene.GetTransform(SwordChild).GetWorldPosition(), (FMatrix4x4::MakeTranslation(FVector3(3.0f, 0.0f, 0.0f)) * GripWorld).GetOrigin(), Tol);
+}
+
+// 부분 갱신(FScene::UpdateTransformsPartial — 표시 틱): 전체 갱신 뒤 "바뀐 하위 트리"만 알려 주면 결과가 전체 재계산과 비트 단위로 같아야 한다.
+// 모델(루트 + 노드 트리 + 프리미티브 자식) 여럿, 그룹 아래 모델, 소켓 부착(다른 모델 하위 트리 안에 놓인 것 포함), 하위 트리 밖으로 옮긴 노드(Members),
+// 루트 모션(루트 로컬 변경), 태양(단독 엔티티), 갱신 사이 구조 변경(전체 갱신으로 대체)을 섞는다
+E_TEST(Scene_PartialTransformUpdateMatchesFull)
+{
+	FScene      Scene;
+	FRegistry&  Registry = Scene.GetRegistry();
+	FTestRandom Random;
+
+	struct FModel
+	{
+		FEntity              Root;
+		std::vector<FEntity> Nodes;
+	};
+	std::vector<FModel> Models;
+	const FEntity       Group = Scene.CreateEntity("Group");
+	auto                Metadata = std::make_shared<FModelMetadata>();
+	FModelSocket        Socket;
+	Socket.Name     = "Grip";
+	Socket.Bone     = "Node3";
+	Socket.Position = FVector3(0.0f, 5.0f, 10.0f);
+	Metadata->Sockets.push_back(Socket);
+	for (int32 ModelIndex = 0; ModelIndex < 24; ++ModelIndex)
+	{
+		FModel Model;
+		Model.Root = Scene.CreateEntity("Model");
+		if (ModelIndex % 3 == 0)
+		{
+			Scene.SetParent(Model.Root, Group);
+		}
+		Scene.GetTransform(Model.Root).Position = FVector3(Random.Range(-500.0f, 500.0f), Random.Range(-500.0f, 500.0f), 0.0f);
+		for (int32 NodeIndex = 0; NodeIndex < 12; ++NodeIndex)
+		{
+			const FEntity Node = Scene.CreateEntity(std::format("Node{}", NodeIndex));
+			Scene.SetParent(Node, NodeIndex == 0 ? Model.Root : Model.Nodes[Random.Index(Model.Nodes.size())]);
+			FTransformComponent& Transform = Scene.GetTransform(Node);
+			Transform.Position             = FVector3(Random.Range(-20.0f, 20.0f), Random.Range(-20.0f, 20.0f), Random.Range(0.0f, 30.0f));
+			Transform.Rotation             = FQuat::FromEuler(Random.Range(-90.0f, 90.0f), Random.Range(-180.0f, 180.0f), 0.0f);
+			Model.Nodes.push_back(Node);
+			if (NodeIndex % 4 == 1)
+			{
+				const FEntity Primitive = Scene.CreateEntity("Primitive");
+				Scene.SetParent(Primitive, Node);
+			}
+		}
+		FModelComponent& ModelComponent     = Registry.Emplace<FModelComponent>(Model.Root);
+		ModelComponent.Runtime.Metadata     = Metadata;
+		ModelComponent.Runtime.NodeEntities = Model.Nodes;
+		Models.push_back(std::move(Model));
+	}
+	// 소켓 부착: 루트에 하나, 다른 모델의 노드 아래(그 하위 트리 안)에 하나 — 대상 모델만 움직여도 따라가야 한다
+	const FEntity Sword = Scene.CreateEntity("Sword");
+	Registry.Emplace<FSocketAttachmentComponent>(Sword) = { Models[1].Root, "Grip" };
+	const FEntity SwordChild = Scene.CreateEntity("SwordChild");
+	Scene.SetParent(SwordChild, Sword);
+	Scene.GetTransform(SwordChild).Position = FVector3(3.0f, 0.0f, 0.0f);
+	const FEntity Shield = Scene.CreateEntity("Shield");
+	Scene.SetParent(Shield, Models[5].Nodes[2]);
+	Registry.Emplace<FSocketAttachmentComponent>(Shield) = { Models[2].Root, "Grip" };
+	// 하위 트리 밖으로 옮긴 노드 (모델 7의 노드 4 → 모델 8의 노드 0 아래): 모델 7을 알릴 때 Members로 찾아야 한다
+	Scene.SetParent(Models[7].Nodes[4], Models[8].Nodes[0]);
+	const FEntity Sun = Scene.CreateEntity("Sun");
+	const FEntity Prop = Scene.CreateEntity("Prop");
+	Scene.GetTransform(Prop).Position = FVector3(1.0f, 2.0f, 3.0f);
+
+	int32 Mismatches = 0;
+	Scene.UpdateTransforms();
+	E_EXPECT_TRUE(AllWorldMatricesMatchFullRecompute(Scene, Mismatches));
+
+	std::vector<FTransformChangedSubtree> Changes;
+	for (int32 Frame = 0; Frame < 80; ++Frame)
+	{
+		// 게임플레이: 루트 이동 (그룹 포함) → 전체 갱신
+		for (const FModel& Model : Models)
+		{
+			if (Random.Index(3) != 0)
+			{
+				Scene.GetTransform(Model.Root).Position.X += Random.Range(-3.0f, 3.0f);
+			}
+		}
+		if (Frame % 5 == 0)
+		{
+			Scene.GetTransform(Group).Rotation = FQuat::FromEuler(0.0f, static_cast<float>(Frame), 0.0f);
+		}
+		Scene.UpdateTransforms();
+		E_EXPECT_TRUE(AllWorldMatricesMatchFullRecompute(Scene, Mismatches));
+
+		// 표시: 일부 모델만 "평가" (노드 로컬, 가끔 루트 모션), 가끔 태양 — 알린 것만 바뀐다
+		Changes.clear();
+		for (const FModel& Model : Models)
+		{
+			if (Random.Index(4) != 0)
+			{
+				continue; // 갱신 빈도 LOD로 건너뜀
+			}
+			for (const FEntity Node : Model.Nodes)
+			{
+				if (Random.Index(3) != 0)
+				{
+					Scene.GetTransform(Node).Rotation = FQuat::FromEuler(Random.Range(-90.0f, 90.0f), Random.Range(-180.0f, 180.0f), 0.0f);
+				}
+			}
+			if (Random.Index(4) == 0)
+			{
+				Scene.GetTransform(Model.Root).Position.Y += 1.0f; // 루트 모션
+			}
+			Changes.push_back({ Model.Root, Model.Nodes });
+		}
+		// 하위 트리 밖 노드만 바꾼 경우도 (모델 7)
+		Scene.GetTransform(Models[7].Nodes[4]).Position.Z += 0.5f;
+		Changes.push_back({ Models[7].Root, Models[7].Nodes });
+		if (Frame % 3 == 0)
+		{
+			Scene.GetTransform(Sun).Rotation = FQuat::FromEuler(-static_cast<float>(Frame), 30.0f, 0.0f);
+			Changes.push_back({ Sun, {} });
+		}
+		// 가끔 갱신 사이 구조 변경 → 부분 갱신은 전체 갱신으로 대체되어야 한다 (새 엔티티 포함)
+		if (Frame % 7 == 3)
+		{
+			const FEntity Created = Scene.CreateEntity("Spawned");
+			Scene.SetParent(Created, Models[Random.Index(Models.size())].Nodes[0]);
+			Scene.GetTransform(Created).Position = FVector3(0.0f, 0.0f, 7.0f);
+		}
+		Scene.UpdateTransformsPartial(Changes);
+		E_EXPECT_TRUE(AllWorldMatricesMatchFullRecompute(Scene, Mismatches));
+		E_EXPECT_EQ(Mismatches, 0);
+	}
+
+	// 정말 건너뛰는지: 알리지 않은 엔티티의 로컬을 바꾸면 부분 갱신은 반영하지 않고(계약 위반 — 확인용), 전체 갱신은 반영한다
+	Scene.GetTransform(Prop).Position = FVector3(100.0f, 0.0f, 0.0f);
+	Changes.clear();
+	Scene.UpdateTransformsPartial(Changes);
+	E_EXPECT_EQUALS(Scene.GetTransform(Prop).GetWorldPosition(), FVector3(1.0f, 2.0f, 3.0f), Tol);
+	Scene.UpdateTransforms();
+	E_EXPECT_EQUALS(Scene.GetTransform(Prop).GetWorldPosition(), FVector3(100.0f, 0.0f, 0.0f), Tol);
+	E_EXPECT_TRUE(AllWorldMatricesMatchFullRecompute(Scene, Mismatches));
 }

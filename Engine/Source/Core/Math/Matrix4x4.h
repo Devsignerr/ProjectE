@@ -3,6 +3,8 @@
 #include "Core/Math/Quat.h"
 #include "Core/Math/Vector4.h"
 
+#include <xmmintrin.h>
+
 // 4x4 행렬. 행우선(row-major) 저장, 행벡터 규약: v' = v * M.
 // 변환 합성은 적용 순서대로 곱한다: World = Scale * Rotation * Translation, MVP = World * View * Projection.
 // 이동 성분은 마지막 행(M[3][0..2])에 위치한다.
@@ -80,3 +82,24 @@ struct FMatrix4x4
 };
 
 inline const FMatrix4x4 FMatrix4x4::Identity;
+
+// SSE: 결과 행 = Σ M[Row][k] * B 행 k. 칸마다 ((p0 + p1) + p2) + p3 순서의 단정밀도 곱·합(FMA 없음, /fp:precise)이라
+// 스칼라 식 M[Row][0] * B.M[0][Col] + M[Row][1] * B.M[1][Col] + M[Row][2] * B.M[2][Col] + M[Row][3] * B.M[3][Col]과 비트 동일하다
+// (Math_MatrixMultiplyMatchesScalarBitExactly). 헤더 인라인 — 트랜스폼 갱신 같은 대량 호출에서 호출 비용을 없앤다
+inline FMatrix4x4 FMatrix4x4::operator*(const FMatrix4x4& B) const
+{
+	const __m128 B0 = _mm_loadu_ps(B.M[0]);
+	const __m128 B1 = _mm_loadu_ps(B.M[1]);
+	const __m128 B2 = _mm_loadu_ps(B.M[2]);
+	const __m128 B3 = _mm_loadu_ps(B.M[3]);
+	FMatrix4x4   Result;
+	for (int32 Row = 0; Row < 4; ++Row)
+	{
+		__m128 Sum = _mm_mul_ps(_mm_set1_ps(M[Row][0]), B0);
+		Sum        = _mm_add_ps(Sum, _mm_mul_ps(_mm_set1_ps(M[Row][1]), B1));
+		Sum        = _mm_add_ps(Sum, _mm_mul_ps(_mm_set1_ps(M[Row][2]), B2));
+		Sum        = _mm_add_ps(Sum, _mm_mul_ps(_mm_set1_ps(M[Row][3]), B3));
+		_mm_storeu_ps(Result.M[Row], Sum);
+	}
+	return Result;
+}

@@ -1225,6 +1225,7 @@ bool FLuaRuntime::CallMethod(FScriptInstance& Instance, const char* MethodName, 
 		return true;
 	}
 
+	++SideEffectCount;
 	// 호출 중 Instances가 바뀔 수 있으므로(다른 스크립트의 GetScript 등은 읽기만 하지만) 필요한 값은 복사해 둔다
 	const sol::table        Self = Instance.Self;
 	sol::protected_function Function(Method.as<sol::function>(), Traceback);
@@ -1281,6 +1282,7 @@ void FLuaRuntime::ApplyPendingDestroys()
 			}
 			Scene->DestroyEntity(Root);
 			bStructureChanged = true;
+			++SideEffectCount;
 		}
 	}
 	PendingDestroy.clear();
@@ -1372,12 +1374,13 @@ void FLuaRuntime::Update(float DeltaSeconds, const FInput* InInput)
 	ApplyPendingDestroys();
 }
 
-void FLuaRuntime::LateUpdate(float DeltaSeconds, const FInput* InInput)
+bool FLuaRuntime::LateUpdate(float DeltaSeconds, const FInput* InInput)
 {
 	if (Scene == nullptr)
 	{
-		return;
+		return false;
 	}
+	const uint64 SideEffectsBefore = SideEffectCount;
 	FRegistry& Registry = Scene->GetRegistry();
 	for (FEntity Entity : UpdateOrder) // 이번 프레임 Update 순서 그대로
 	{
@@ -1391,6 +1394,7 @@ void FLuaRuntime::LateUpdate(float DeltaSeconds, const FInput* InInput)
 	}
 	Input = InInput;
 	ApplyPendingDestroys();
+	return SideEffectCount != SideEffectsBefore;
 }
 
 void FLuaRuntime::DispatchAnimNotifies()

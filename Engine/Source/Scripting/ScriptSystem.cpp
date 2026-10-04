@@ -49,13 +49,14 @@ void FScriptSystem::Update(float DeltaSeconds, const FInput* Input)
 	}
 }
 
-void FScriptSystem::LateUpdate(float DeltaSeconds, const FInput* Input)
+bool FScriptSystem::LateUpdate(float DeltaSeconds, const FInput* Input)
 {
 	E_PROFILE_SCOPE("스크립트 OnLateUpdate");
 	if (PlayRuntime)
 	{
-		PlayRuntime->LateUpdate(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
+		return PlayRuntime->LateUpdate(DeltaSeconds < MaxDeltaSeconds ? DeltaSeconds : MaxDeltaSeconds, Input);
 	}
+	return false;
 }
 
 void FScriptSystem::EndPlay()

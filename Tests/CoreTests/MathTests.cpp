@@ -1,6 +1,8 @@
 #include "Core/Math/Math.h"
 #include "Core/Testing/TestFramework.h"
 
+#include <cstring>
+
 namespace
 {
 	constexpr float Tol = 1.0e-4f;
@@ -114,6 +116,47 @@ E_TEST(Quat_Slerp)
 }
 
 // ---------------------------------------------------------------- FMatrix4x4
+
+// SSE 행렬 곱은 스칼라 식(칸마다 ((p0 + p1) + p2) + p3)과 비트 단위로 같아야 한다 (트랜스폼 캐시·결정성 검증이 비트 비교에 기댄다)
+E_TEST(Math_MatrixMultiplyMatchesScalarBitExactly)
+{
+	uint32 State = 12345u;
+	auto   Next  = [&State]() {
+        State = State * 1664525u + 1013904223u;
+        return static_cast<float>(static_cast<int32>(State >> 8) - (1 << 23)) / static_cast<float>(1 << 15);
+	};
+	int32 Mismatches = 0;
+	for (int32 Iteration = 0; Iteration < 2000; ++Iteration)
+	{
+		FMatrix4x4 A, B;
+		for (int32 Row = 0; Row < 4; ++Row)
+		{
+			for (int32 Col = 0; Col < 4; ++Col)
+			{
+				// 0/-0도 섞는다 (부호 있는 0의 합 순서까지 같아야 함)
+				A.M[Row][Col] = (Iteration % 7 == 0 && Col == Row) ? -0.0f : Next();
+				B.M[Row][Col] = (Iteration % 5 == 0 && Col != Row) ? 0.0f : Next();
+			}
+		}
+		const FMatrix4x4 Product = A * B;
+		for (int32 Row = 0; Row < 4; ++Row)
+		{
+			for (int32 Col = 0; Col < 4; ++Col)
+			{
+				volatile float P0 = A.M[Row][0] * B.M[0][Col];
+				volatile float P1 = A.M[Row][1] * B.M[1][Col];
+				volatile float P2 = A.M[Row][2] * B.M[2][Col];
+				volatile float P3 = A.M[Row][3] * B.M[3][Col];
+				const float    Expected = ((P0 + P1) + P2) + P3;
+				if (std::memcmp(&Expected, &Product.M[Row][Col], sizeof(float)) != 0)
+				{
+					++Mismatches;
+				}
+			}
+		}
+	}
+	E_EXPECT_EQ(Mismatches, 0);
+}
 
 E_TEST(Matrix_IdentityAndMultiply)
 {

@@ -19,30 +19,34 @@ struct FNameComponent
 };
 
 // 로컬 트랜스폼 + 캐시된 월드 행렬 (FScene::UpdateTransforms가 계층 순서로 갱신)
-//   WorldCache: UpdateTransforms 전용 — WorldMatrix를 마지막으로 계산한 입력(로컬 TRS + 부모 월드). 둘 다 비트 단위로 같으면 계산을 건너뛴다
-//   (결과는 전체 재계산과 비트 동일). 로컬 값을 쓰는 쪽은 아무것도 하지 않아도 된다. WorldMatrix를 직접 쓰는 코드만
-//   (되돌리지 않는다면) InvalidateWorldCache()를 부른다. 리플렉션에 등록하지 않는다(복사는 구조체 통째 — WorldMatrix와 함께 옮겨져 일관됨)
+//   WorldStamp: 지금 WorldMatrix를 계산한 갱신의 고유 번호 (프로세스 전역에서 겹치지 않음 — 구조체 복사는 행렬과 함께 옮겨지므로 같은 번호 = 같은 값)
+//   WorldCache: UpdateTransforms 전용 — WorldMatrix를 마지막으로 계산한 입력(로컬 TRS + 부모의 WorldStamp). 둘 다 같으면 계산을 건너뛴다
+//   (결과는 전체 재계산과 비트 동일 — 부모 월드 64바이트 대신 부모 번호를 비교한다). 로컬 값을 쓰는 쪽은 아무것도 하지 않아도 된다.
+//   WorldMatrix를 직접 쓰는 코드만 (되돌리지 않는다면) InvalidateWorldCache()를 부른다 — 그래야 다음 갱신이 새 번호로 다시 계산해 자식도 따라온다.
+//   리플렉션에 등록하지 않는다(복사는 구조체 통째 — WorldMatrix·번호와 함께 옮겨져 일관됨)
 struct FTransformComponent
 {
 	FVector3 Position;
 	FQuat    Rotation;
 	FVector3 Scale = FVector3::OneVector;
 
-	FMatrix4x4 WorldMatrix;
-
+	// 캐시를 로컬 바로 뒤에 둔다 (변경 없는 갱신이 읽는 바이트를 한데 모음 — 월드 행렬은 다시 계산할 때만 쓴다). 구조체 160바이트.
+	// ParentStamp 0 = 무효 (다음 갱신이 반드시 다시 계산). 로컬 사본은 ParentStamp를 쓸 때 항상 그 계산에 쓴 로컬과 같다
 	struct FWorldCache
 	{
-		FVector3   Position;
-		FQuat      Rotation;
-		FVector3   Scale;
-		FMatrix4x4 ParentWorld;
-		bool       bValid = false;
+		FVector3 Position;
+		FQuat    Rotation;
+		FVector3 Scale;
+		uint64   ParentStamp = 0;
 	};
 	FWorldCache WorldCache;
+	uint64      WorldStamp = 0;
+
+	FMatrix4x4 WorldMatrix;
 
 	FMatrix4x4 GetLocalMatrix() const { return FMatrix4x4::MakeTransform(Position, Rotation, Scale); }
 	// WorldMatrix를 직접 바꾼 뒤 다음 UpdateTransforms가 반드시 다시 계산하게 한다
-	void InvalidateWorldCache() { WorldCache.bValid = false; }
+	void InvalidateWorldCache() { WorldCache.ParentStamp = 0; }
 	FVector3   GetWorldPosition() const { return WorldMatrix.GetOrigin(); }
 	FVector3   GetWorldForward() const { return WorldMatrix.GetAxisX().GetNormalized(); }
 };

@@ -61,6 +61,7 @@ void FSceneCloner::Clone(const FScene& Source, FScene& Dest, FEntityMap* OutEnti
 				Child = Remap(Child);
 			}
 			std::erase_if(Hierarchy->Children, [](FEntity Child) { return !Child.IsValid(); });
+			Dest.NotifyHierarchyChanged(); // 계층을 SetParent 밖에서 고쳤다 (트랜스폼 갱신 계획)
 		}
 
 		Types.ForEachComponentType([&](const FTypeInfo& Type) {

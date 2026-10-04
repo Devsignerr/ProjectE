@@ -135,6 +135,13 @@ private:
 	ShadowCacheMath::FCascadeCacheState CacheStates[ShadowMath::MaxCascades];
 	ShadowCacheMath::ECacheAction       CascadeActions[ShadowMath::MaxCascades] = {};
 	bool             bExtraStatic = false; // 이번 프레임 추가 캐스터를 캐시에 그리나 (ExtraCasterState 있음)
+	// 캐스터 거르기 병렬 조각 (PrepareBatches — 인스턴스 1024개 이상씩·최대 64조각, 캐스케이드별 정적/동적 항목을 조각 안에서 정렬 → 합친다)
+	struct FCasterChunk
+	{
+		std::vector<FInstanceSortItem> Static[ShadowMath::MaxCascades];
+		std::vector<FInstanceSortItem> Dynamic[ShadowMath::MaxCascades];
+	};
+	std::vector<FCasterChunk> CasterChunks;
 	FMeshPassBatches StaticBatches[ShadowMath::MaxCascades];  // Direct = 모든 캐스터, Rebuild = 정적 캐스터(캐시에), Reuse = 비어 있음
 	FMeshPassBatches DynamicBatches[ShadowMath::MaxCascades]; // Rebuild/Reuse의 동적 캐스터
 	// 섀도우 맵 장이 이미 캐시 내용 그대로인가 (지난 프레임 캐시를 쓰고 동적 캐스터를 그리지 않았음) — 같은 키면 복사도 건너뛴다

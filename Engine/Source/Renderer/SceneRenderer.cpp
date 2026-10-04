@@ -2052,34 +2052,61 @@ void FSceneRenderer::PrepareMainBatches(const FCamera& Camera, bool bOcclusion)
 	const bool  bSizeCulling   = MinScreenSize > 0.0f || MaxDrawDistance > 0.0f;
 	const bool  bOrthographic  = Camera.IsOrthographic();
 	const float TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
-	const std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
-	for (uint32 Index = 0; Index < static_cast<uint32>(Instances.size()); ++Index)
+	// 인스턴스 조각별 병렬 (조각마다 자기 목록 — 조각 순서로 이어 붙이므로 항목 순서·통계는 순차 실행과 같다)
+	const std::vector<FMeshInstance>& Instances  = MeshInstances.GetInstances();
+	const uint32                      Count      = static_cast<uint32>(Instances.size());
+	constexpr uint32                  ChunkSize  = 1024;
+	const uint32                      ChunkCount = (Count + ChunkSize - 1) / ChunkSize;
+	if (MainCullChunks.size() < ChunkCount)
 	{
-		const FMeshInstance& Instance = Instances[Index];
-		if (!FrozenFrustum.Intersects(Instance.WorldBounds))
+		MainCullChunks.resize(ChunkCount);
+	}
+	FParallel::ParallelFor(ChunkCount, 1, [&](uint32 BeginChunk, uint32 EndChunk) {
+		for (uint32 ChunkIndex = BeginChunk; ChunkIndex < EndChunk; ++ChunkIndex)
 		{
-			continue;
-		}
-		if (bSizeCulling)
-		{
-			const float Radius     = Instance.WorldBounds.GetExtent().Length();
-			const float Distance   = FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition);
-			const float ScreenSize = bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
-			                                       : LodMath::ComputePerspectiveScreenSize(Radius, Distance, TanHalfFov);
-			if (LodMath::ShouldCullInstance(ScreenSize, Distance - Radius, MinScreenSize, MaxDrawDistance))
+			FMainCullChunk& Chunk = MainCullChunks[ChunkIndex];
+			Chunk.Main.clear();
+			Chunk.Translucent.clear();
+			Chunk.Visible    = 0;
+			Chunk.SizeCulled = 0;
+			const uint32 End = FMath::Min(Count, (ChunkIndex + 1) * ChunkSize);
+			for (uint32 Index = ChunkIndex * ChunkSize; Index < End; ++Index)
 			{
-				++Stats.ScreenSizeCulled;
-				continue;
+				const FMeshInstance& Instance = Instances[Index];
+				if (!FrozenFrustum.Intersects(Instance.WorldBounds))
+				{
+					continue;
+				}
+				if (bSizeCulling)
+				{
+					const float Radius     = Instance.WorldBounds.GetExtent().Length();
+					const float Distance   = FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition);
+					const float ScreenSize = bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
+					                                       : LodMath::ComputePerspectiveScreenSize(Radius, Distance, TanHalfFov);
+					if (LodMath::ShouldCullInstance(ScreenSize, Distance - Radius, MinScreenSize, MaxDrawDistance))
+					{
+						++Chunk.SizeCulled;
+						continue;
+					}
+				}
+				++Chunk.Visible;
+				const float Depth = FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition);
+				if (Instance.IsTranslucent() && !bWireframe)
+				{
+					Chunk.Translucent.push_back({ MakeMainBatchKey(Instance), Depth, Index });
+					continue;
+				}
+				Chunk.Main.push_back({ MakeMainBatchKey(Instance), Depth, Index });
 			}
 		}
-		++Stats.VisibleMeshes;
-		const float Depth = FVector3::DistanceSquared(Instance.WorldBounds.GetCenter(), CameraPosition);
-		if (Instance.IsTranslucent() && !bWireframe)
-		{
-			TranslucentBatches.Add(MakeMainBatchKey(Instance), Depth, Index);
-			continue;
-		}
-		MainBatches.Add(MakeMainBatchKey(Instance), Depth, Index);
+	});
+	for (uint32 ChunkIndex = 0; ChunkIndex < ChunkCount; ++ChunkIndex)
+	{
+		const FMainCullChunk& Chunk = MainCullChunks[ChunkIndex];
+		MainBatches.Append(Chunk.Main);
+		TranslucentBatches.Append(Chunk.Translucent);
+		Stats.VisibleMeshes += Chunk.Visible;
+		Stats.ScreenSizeCulled += Chunk.SizeCulled;
 	}
 	EndCpuTimer(ERenderTimer::MainCull);
 

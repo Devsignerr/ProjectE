@@ -250,6 +250,12 @@ void FMeshPassBatches::Reset()
 
 void FMeshPassBatches::Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer, bool bBackToFront)
 {
+	Build(bBackToFront);
+	Upload(DynamicBuffer);
+}
+
+void FMeshPassBatches::Build(bool bBackToFront)
+{
 	if (bBackToFront)
 	{
 		InstanceBatching::BuildBackToFront(Items, Indices, Batches);
@@ -258,6 +264,16 @@ void FMeshPassBatches::Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer, bool b
 	{
 		InstanceBatching::Build(Items, Indices, Batches);
 	}
+}
+
+void FMeshPassBatches::BuildMerged(const std::vector<FInstanceSortItem>* const* Lists, uint32 ListCount)
+{
+	InstanceBatching::MergeSortedLists(Lists, ListCount, Items);
+	InstanceBatching::BuildSorted(Items, Indices, Batches);
+}
+
+void FMeshPassBatches::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
+{
 	const size_t                  Count      = std::max<size_t>(Indices.size(), 1);
 	const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(uint32) * Count, 16);
 	if (Indices.empty())

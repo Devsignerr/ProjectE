@@ -171,8 +171,15 @@ class FMeshPassBatches
 public:
 	void Reset();
 	void Add(uint64 Key, float Depth, uint32 Instance) { Items.push_back({ Key, Depth, Instance }); }
-	// bBackToFront: 반투명 패스 — 먼 것부터 그리는 순서 (InstanceBatching::BuildBackToFront)
+	// 다른 목록의 항목을 그대로 덧붙인다 (병렬로 모은 조각을 순서대로 합칠 때)
+	void Append(const std::vector<FInstanceSortItem>& InItems) { Items.insert(Items.end(), InItems.begin(), InItems.end()); }
+	// bBackToFront: 반투명 패스 — 먼 것부터 그리는 순서 (InstanceBatching::BuildBackToFront). = Build + Upload
 	void Finalize(FD3D12DynamicUploadBuffer& DynamicBuffer, bool bBackToFront = false);
+	// Finalize를 둘로: Build(정렬·묶음 — CPU만, 묶음마다 다른 스레드에서 동시에 불러도 된다) → Upload(인스턴스 번호 목록 업로드 — 메인 스레드)
+	void Build(bool bBackToFront = false);
+	// Build 대신: 앞 순서(SortFrontToBack)로 정렬된 목록들을 합쳐 묶음을 만든다 (Add한 항목은 무시하고 지운다)
+	void BuildMerged(const std::vector<FInstanceSortItem>* const* Lists, uint32 ListCount);
+	void Upload(FD3D12DynamicUploadBuffer& DynamicBuffer);
 
 	const std::vector<FInstanceBatch>& GetBatches() const { return Batches; }
 	const std::vector<uint32>&         GetIndices() const { return Indices; }

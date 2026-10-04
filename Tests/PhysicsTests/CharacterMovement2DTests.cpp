@@ -1,0 +1,565 @@
+// 2D 캐릭터 이동기 (Physics/CharacterMovement2D.h): 순수 이동 수학(CharacterMovement2D_*)과 실제 2D 월드 이동(Character2DWorld_*).
+// 테스트는 Box2D를 직접 부르지 않고 엔진 래퍼(FPhysics2DSystem + FCharacterMovement2DSystem)만 쓴다
+#include "Core/Testing/TestFramework.h"
+#include "Physics/CharacterMovement2D.h"
+#include "Physics/CharacterMovement2DSystem.h"
+#include "Physics/Physics2DComponents.h"
+#include "Physics/Physics2DSystem.h"
+#include "Scene/Components.h"
+#include "Scene/Scene.h"
+
+#include <cmath>
+#include <format>
+
+namespace
+{
+	constexpr float Frame   = 1.0f / 60.0f;
+	constexpr float Gravity = -980.665f; // 프로젝트 설정 기본 Gravity2D Z
+
+	FCharacterMove2D MakeMove(float InputX = 0.0f, bool bJump = false, bool bHeld = false)
+	{
+		FCharacterMove2D Move;
+		Move.DeltaSeconds = Frame;
+		Move.Input        = FVector2(InputX, 0.0f);
+		Move.bJumpPressed = bJump;
+		Move.bJumpHeld    = bHeld || bJump;
+		return Move;
+	}
+
+	// 충돌 없이 수학만으로 한 무브 (바닥 여부는 호출자가 정한다)
+	FCharacterMove2DEvents Step(const FCharacterMovement2DComponent& Movement, FCharacterState2D& State, const FCharacterMove2D& Move, bool bGroundedAfter)
+	{
+		FCharacterMove2DEvents Events;
+		CharacterMovement2DMath::BeginMove(Movement, State, Move, Gravity, FVector2(), Events);
+		State.Position = State.Position + State.Velocity * Move.DeltaSeconds;
+		CharacterMovement2DMath::EndMove(Movement, State, bGroundedAfter && State.Velocity.Y <= 0.0f, Events);
+		return Events;
+	}
+
+	FCharacterState2D Grounded()
+	{
+		FCharacterState2D State;
+		State.bGrounded = true;
+		return State;
+	}
+} // namespace
+
+// ---------------------------------------------------------------- 순수 수학
+
+E_TEST(CharacterMovement2D_AccelerationAndDeceleration)
+{
+	FCharacterMovement2DComponent Movement;
+	FCharacterState2D             State = Grounded();
+	Step(Movement, State, MakeMove(1.0f), true);
+	E_EXPECT_NEAR(State.Velocity.X, Movement.GroundAcceleration * Frame, 1.0e-3f);
+	for (int32 Index = 0; Index < 30; ++Index)
+	{
+		Step(Movement, State, MakeMove(1.0f), true);
+	}
+	E_EXPECT_NEAR(State.Velocity.X, Movement.MaxSpeed, 1.0e-3f); // 최대 속력에서 멈춘다
+	Step(Movement, State, MakeMove(0.0f), true);
+	E_EXPECT_NEAR(State.Velocity.X, Movement.MaxSpeed - Movement.GroundDeceleration * Frame, 1.0e-3f);
+	// 반대 입력은 max(가속, 감속)
+	State.Velocity.X = 300.0f;
+	Step(Movement, State, MakeMove(-1.0f), true);
+	E_EXPECT_NEAR(State.Velocity.X, 300.0f - std::max(Movement.GroundAcceleration, Movement.GroundDeceleration) * Frame, 1.0e-3f);
+	// 공중은 공중 가속
+	FCharacterState2D Air;
+	Step(Movement, Air, MakeMove(1.0f), false);
+	E_EXPECT_NEAR(Air.Velocity.X, Movement.AirAcceleration * Frame, 1.0e-3f);
+	// 플랫포머는 입력 Y를 버린다
+	E_EXPECT_NEAR(CharacterMovement2DMath::ClampInput(FVector2(0.5f, 1.0f), ECharacterMovement2DMode::Platformer).Y, 0.0f, 0.0f);
+}
+
+E_TEST(CharacterMovement2D_JumpHeight)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.MaxJumps        = 1;
+	const float       Height = CharacterMovement2DMath::ComputeJumpHeight(Movement, Gravity);
+	E_EXPECT_NEAR(Height, Movement.JumpVelocity * Movement.JumpVelocity / (2.0f * 980.665f * Movement.GravityScale), 1.0e-2f);
+	FCharacterState2D State  = Grounded();
+	FCharacterMove2DEvents Events = Step(Movement, State, MakeMove(0.0f, true), true);
+	E_EXPECT_TRUE(Events.bJumped);
+	E_EXPECT_EQ(Events.JumpIndex, 1);
+	float MaxZ = State.Position.Y;
+	for (int32 Index = 0; Index < 120 && !State.bGrounded; ++Index)
+	{
+		Step(Movement, State, MakeMove(0.0f, false, true), State.Position.Y <= 0.0f);
+		MaxZ = std::max(MaxZ, State.Position.Y);
+	}
+	E_EXPECT_NEAR(MaxZ, Height, Movement.JumpVelocity * Frame); // 반암시 오일러 오차 한 스텝 안
+	E_EXPECT_TRUE(State.bGrounded);
+}
+
+E_TEST(CharacterMovement2D_DoubleJumpAndFallOffCountsFirstJump)
+{
+	FCharacterMovement2DComponent Movement; // MaxJumps 2
+	FCharacterState2D             State = Grounded();
+	E_EXPECT_EQ(Step(Movement, State, MakeMove(0.0f, true), true).JumpIndex, 1);
+	for (int32 Index = 0; Index < 10; ++Index)
+	{
+		Step(Movement, State, MakeMove(0.0f, false, true), false);
+	}
+	const FCharacterMove2DEvents Second = Step(Movement, State, MakeMove(0.0f, true), false);
+	E_EXPECT_TRUE(Second.bJumped);
+	E_EXPECT_EQ(Second.JumpIndex, 2);
+	E_EXPECT_NEAR(State.Velocity.Y, Movement.JumpVelocity + Gravity * Movement.GravityScale * Frame, 1.0e-2f);
+	Step(Movement, State, MakeMove(0.0f, false, false), false);
+	E_EXPECT_FALSE(Step(Movement, State, MakeMove(0.0f, true), false).bJumped); // 점프 다 씀
+
+	// 걸어서 떨어지고 코요테 시간이 지나면 첫 점프를 쓴 것으로 친다 → 남은 점프 1 (공중 점프 = 2번째)
+	FCharacterState2D Walk = Grounded();
+	Step(Movement, Walk, MakeMove(), false); // 바닥을 떠남
+	for (int32 Index = 0; Index < 12; ++Index) // 0.2초 > 코요테 0.1초
+	{
+		Step(Movement, Walk, MakeMove(), false);
+	}
+	E_EXPECT_EQ(static_cast<int32>(Walk.JumpsUsed), 1);
+	const FCharacterMove2DEvents Air = Step(Movement, Walk, MakeMove(0.0f, true), false);
+	E_EXPECT_TRUE(Air.bJumped);
+	E_EXPECT_EQ(Air.JumpIndex, 2);
+}
+
+E_TEST(CharacterMovement2D_CoyoteTime)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.MaxJumps       = 1;
+	FCharacterState2D State = Grounded();
+	Step(Movement, State, MakeMove(), false); // 이 무브 끝에 바닥을 떠남
+	for (int32 Index = 0; Index < 3; ++Index) // 0.05초 — 코요테 0.1초 안
+	{
+		Step(Movement, State, MakeMove(), false);
+	}
+	const FCharacterMove2DEvents Late = Step(Movement, State, MakeMove(0.0f, true), false);
+	E_EXPECT_TRUE(Late.bJumped); // 바닥 점프로 허용
+	E_EXPECT_EQ(Late.JumpIndex, 1);
+
+	FCharacterState2D Expired = Grounded();
+	Step(Movement, Expired, MakeMove(), false);
+	for (int32 Index = 0; Index < 9; ++Index) // 0.15초
+	{
+		Step(Movement, Expired, MakeMove(), false);
+	}
+	E_EXPECT_FALSE(Step(Movement, Expired, MakeMove(0.0f, true), false).bJumped);
+}
+
+E_TEST(CharacterMovement2D_JumpBuffer)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.MaxJumps = 1;
+	// 공중(점프 다 씀)에서 누르고 0.05초 뒤 착지 → 착지 다음 무브에 점프
+	FCharacterState2D State;
+	State.JumpsUsed = 1;
+	E_EXPECT_FALSE(Step(Movement, State, MakeMove(0.0f, true), false).bJumped);
+	Step(Movement, State, MakeMove(0.0f, false, true), false);
+	Step(Movement, State, MakeMove(0.0f, false, true), true); // 착지
+	E_EXPECT_TRUE(State.bGrounded);
+	E_EXPECT_TRUE(Step(Movement, State, MakeMove(0.0f, false, true), true).bJumped);
+
+	// 버퍼가 지나면 없음
+	FCharacterState2D Old;
+	Old.JumpsUsed = 1;
+	Step(Movement, Old, MakeMove(0.0f, true), false);
+	for (int32 Index = 0; Index < 9; ++Index)
+	{
+		Step(Movement, Old, MakeMove(0.0f, false, true), false);
+	}
+	Step(Movement, Old, MakeMove(0.0f, false, true), true);
+	E_EXPECT_FALSE(Step(Movement, Old, MakeMove(0.0f, false, true), true).bJumped);
+}
+
+E_TEST(CharacterMovement2D_VariableJumpCut)
+{
+	FCharacterMovement2DComponent Movement;
+	FCharacterState2D             Held = Grounded();
+	FCharacterState2D             Cut  = Grounded();
+	Step(Movement, Held, MakeMove(0.0f, true), true);
+	Step(Movement, Cut, MakeMove(0.0f, true), true);
+	const float Before = Cut.Velocity.Y;
+	Step(Movement, Held, MakeMove(0.0f, false, true), false);
+	Step(Movement, Cut, MakeMove(0.0f, false, false), false); // 뗌
+	E_EXPECT_NEAR(Cut.Velocity.Y, (Before * Movement.JumpCutFactor) + Gravity * Movement.GravityScale * Frame, 1.0e-2f);
+	E_EXPECT_TRUE(Held.Velocity.Y > Cut.Velocity.Y + 400.0f);
+	// 컷은 한 번 — 다시 떼어 있어도 더 줄지 않는다
+	const float AfterCut = Cut.Velocity.Y;
+	Step(Movement, Cut, MakeMove(0.0f, false, false), false);
+	E_EXPECT_NEAR(Cut.Velocity.Y, AfterCut + Gravity * Movement.GravityScale * Frame, 1.0e-2f);
+	// 높이 비교: 짧게 누른 점프가 낮다
+	float HeldMax = Held.Position.Y, CutMax = Cut.Position.Y;
+	for (int32 Index = 0; Index < 90; ++Index)
+	{
+		Step(Movement, Held, MakeMove(0.0f, false, true), false);
+		Step(Movement, Cut, MakeMove(0.0f, false, false), false);
+		HeldMax = std::max(HeldMax, Held.Position.Y);
+		CutMax  = std::max(CutMax, Cut.Position.Y);
+	}
+	E_EXPECT_TRUE(CutMax < HeldMax * 0.5f);
+}
+
+E_TEST(CharacterMovement2D_Dash)
+{
+	FCharacterMovement2DComponent Movement;
+	FCharacterState2D             State = Grounded();
+	FCharacterMove2D              Move  = MakeMove();
+	Move.bDash         = true;
+	Move.DashDirection = FVector2(-2.0f, 0.0f); // 정규화된다
+	E_EXPECT_TRUE(Step(Movement, State, Move, true).bDashStarted);
+	E_EXPECT_NEAR(State.Velocity.X, -Movement.DashSpeed, 1.0e-3f);
+	E_EXPECT_TRUE(State.IsDashing());
+	// 대시 중 중력 무시 (공중 대시)
+	FCharacterState2D Air;
+	FCharacterMove2D  Up = MakeMove();
+	Up.bDash             = true;
+	Up.DashDirection     = FVector2(1.0f, 0.0f);
+	E_EXPECT_TRUE(Step(Movement, Air, Up, false).bDashStarted);
+	E_EXPECT_NEAR(Air.Velocity.Y, 0.0f, 0.0f);
+	E_EXPECT_EQ(static_cast<int32>(Air.AirDashesUsed), 1);
+	// 대시가 끝나면 보통 속력
+	int32 Frames = 1;
+	while (Air.IsDashing() && Frames < 60)
+	{
+		Step(Movement, Air, MakeMove(), false);
+		++Frames;
+	}
+	E_EXPECT_EQ(Frames, static_cast<int32>(std::ceil(Movement.DashTime / Frame)));
+	E_EXPECT_NEAR(Air.Velocity.X, Movement.MaxSpeed + 0.0f, Movement.AirDeceleration * Frame + 1.0e-3f);
+	// 공중 대시는 MaxAirDashes(1)번 — 쿨다운이 지나도 착지 전에는 없음
+	for (int32 Index = 0; Index < 30; ++Index)
+	{
+		Step(Movement, Air, MakeMove(), false);
+	}
+	E_EXPECT_FALSE(Step(Movement, Air, Up, false).bDashStarted);
+	Step(Movement, Air, MakeMove(), true); // 착지 → 다시 채움
+	E_EXPECT_TRUE(Step(Movement, Air, Up, true).bDashStarted);
+	// 쿨다운 안에는 다시 대시하지 않는다
+	FCharacterState2D Ground = Grounded();
+	Step(Movement, Ground, Up, true);
+	for (int32 Index = 0; Index < 12; ++Index) // 0.2초 > 대시 0.15초, < 쿨다운 0.35초
+	{
+		Step(Movement, Ground, MakeMove(), true);
+	}
+	E_EXPECT_FALSE(Step(Movement, Ground, Up, true).bDashStarted);
+	// 방향이 0이면 입력 → 속도 X 부호
+	FCharacterState2D Facing = Grounded();
+	Facing.Velocity.X        = -10.0f;
+	FCharacterMove2D NoDir   = MakeMove();
+	NoDir.bDash              = true;
+	Step(Movement, Facing, NoDir, true);
+	E_EXPECT_TRUE(Facing.Velocity.X < 0.0f);
+}
+
+E_TEST(CharacterMovement2D_TopDownDiagonalNormalized)
+{
+	FCharacterMovement2DComponent Movement;
+	Movement.Mode           = ECharacterMovement2DMode::TopDown;
+	FCharacterState2D State;
+	FCharacterMove2D  Move  = MakeMove();
+	Move.Input              = FVector2(1.0f, 1.0f);
+	Move.bJumpPressed       = true; // 탑다운은 점프 없음
+	for (int32 Index = 0; Index < 60; ++Index)
+	{
+		E_EXPECT_FALSE(Step(Movement, State, Move, false).bJumped);
+	}
+	E_EXPECT_NEAR(State.Velocity.Length(), Movement.MaxSpeed, 1.0e-2f); // 대각선도 최대 속력
+	E_EXPECT_NEAR(State.Velocity.X, State.Velocity.Y, 1.0e-3f);
+	E_EXPECT_TRUE(State.bGrounded); // 중력 없음, 항상 바닥
+	const FVector2 Clamped = CharacterMovement2DMath::ClampInput(FVector2(3.0f, 4.0f), ECharacterMovement2DMode::TopDown);
+	E_EXPECT_NEAR(Clamped.X, 0.6f, 1.0e-5f);
+	E_EXPECT_NEAR(Clamped.Y, 0.8f, 1.0e-5f);
+	// 입력을 놓으면 감속
+	State.Velocity = FVector2(600.0f, 0.0f);
+	Step(Movement, State, MakeMove(), false);
+	E_EXPECT_NEAR(State.Velocity.X, 600.0f - Movement.GroundDeceleration * Frame, 1.0e-2f);
+}
+
+// ---------------------------------------------------------------- 실제 2D 월드
+
+namespace
+{
+	struct FWorld
+	{
+		FScene                     Scene;
+		FPhysics2DSystem           Physics;
+		FCharacterMovement2DSystem Characters;
+		FEntity                    Pawn;
+
+		FEntity AddBox(const char* Name, const FVector3& Center, const FVector2& Size, bool bOneWay = false)
+		{
+			const FEntity Entity = Scene.CreateEntity(Name);
+			Scene.GetTransform(Entity).Position = Center;
+			FBoxCollider2DComponent& Box        = Scene.GetRegistry().Emplace<FBoxCollider2DComponent>(Entity);
+			Box.Size                            = Size;
+			Box.bOneWay                         = bOneWay;
+			return Entity;
+		}
+		FEntity AddPolygon(const char* Name, const std::string& Points)
+		{
+			const FEntity Entity = Scene.CreateEntity(Name);
+			Scene.GetRegistry().Emplace<FPolygonCollider2DComponent>(Entity).Points = Points;
+			return Entity;
+		}
+		void SpawnPawn(const FVector3& Position, const FCharacterMovement2DComponent& Movement = {})
+		{
+			Pawn                              = Scene.CreateEntity("Pawn");
+			Scene.GetTransform(Pawn).Position = Position;
+			Scene.GetRegistry().Emplace<FCharacterMovement2DComponent>(Pawn) = Movement;
+		}
+		void Begin()
+		{
+			Scene.UpdateTransforms();
+			Physics.Begin();
+			Characters.Begin(Physics);
+			Physics.SyncBodies(Scene);
+			Characters.Sync(Scene);
+		}
+		void Tick(const FCharacterMove2D& Move)
+		{
+			Characters.Sync(Scene);
+			Characters.SimulateCharacter(Scene, Pawn, Move);
+			Characters.UpdateProxies();
+			Physics.Update(Scene, Frame);
+			Scene.UpdateTransforms();
+		}
+		void Run(int32 Frames, float InputX = 0.0f)
+		{
+			for (int32 Index = 0; Index < Frames; ++Index)
+			{
+				Tick(MakeMove(InputX));
+			}
+		}
+		FVector3 Position() const { return Scene.GetTransform(Pawn).Position; }
+		~FWorld()
+		{
+			Characters.End();
+			Physics.End();
+		}
+	};
+	// 기본 캡슐: 반지름 30, 높이 120 → 바닥(Z = 0) 위 중심 Z = 60
+	constexpr float StandZ = 60.0f;
+} // namespace
+
+E_TEST(Character2DWorld_RunOnFlatGround)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	World.SpawnPawn(FVector3(0.0f, 7.0f, 100.0f));
+	World.Begin();
+	World.Run(60); // 내려앉기
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+	E_EXPECT_NEAR(World.Position().Y, 7.0f, 0.0f); // 깊이 유지
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	const float StartX = World.Position().X;
+	World.Run(60, 1.0f);
+	// 0.1초 가속(600 / 6000) 동안 30cm 손해 → 1초에 약 570cm
+	E_EXPECT_NEAR(World.Position().X - StartX, 600.0f - 0.5f * 600.0f * 0.1f, 15.0f);
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	E_EXPECT_NEAR(World.Characters.GetVelocity(World.Pawn).X, 600.0f, 1.0f);
+}
+
+E_TEST(Character2DWorld_SlopeWalkableAndTooSteep)
+{
+	// 30도 오르막 (X 0 → 400, 높이 231)과 65도 벽 같은 경사 (X 1200 → 1300, 높이 214)
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	World.AddPolygon("Ramp", "0,0; 400,0; 400,230.94");
+	World.AddBox("Plateau", FVector3(1700.0f, 0.0f, 115.47f), FVector2(2600.0f, 230.94f));
+	World.SpawnPawn(FVector3(-200.0f, 0.0f, 100.0f));
+	World.Begin();
+	World.Run(30);
+	World.Run(120, 1.0f); // 오르막을 올라 고원으로
+	E_EXPECT_TRUE(World.Position().X > 450.0f);
+	E_EXPECT_NEAR(World.Position().Z, 230.94f + StandZ, 3.0f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+
+	FWorld Steep;
+	Steep.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	Steep.AddPolygon("Steep", "0,0; 100,0; 100,214.45"); // 65도
+	Steep.SpawnPawn(FVector3(-200.0f, 0.0f, 100.0f));
+	Steep.Begin();
+	Steep.Run(30);
+	Steep.Run(120, 1.0f);
+	E_EXPECT_TRUE(Steep.Position().X < 60.0f);         // 경사를 넘지 못한다
+	E_EXPECT_TRUE(Steep.Position().Z < StandZ + 60.0f); // 많이 오르지 못한다
+	Steep.Run(60, 0.0f);
+	E_EXPECT_TRUE(Steep.Characters.IsGrounded(Steep.Pawn)); // 미끄러져 내려와 평지에 선다
+	E_EXPECT_NEAR(Steep.Position().Z, StandZ, 3.0f);
+}
+
+E_TEST(Character2DWorld_OneWayJumpThroughAndDropDown)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(4000.0f, 100.0f));
+	World.AddBox("Platform", FVector3(0.0f, 0.0f, 140.0f), FVector2(400.0f, 20.0f), true); // 윗면 Z = 150
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(30);
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f); // 아래에서는 바닥에 서 있다
+	World.Tick(MakeMove(0.0f, true));                 // 점프 (높이 약 205cm) → 발판을 뚫고 올라가 내려앉는다
+	float MaxZ = 0.0f;
+	for (int32 Index = 0; Index < 90; ++Index)
+	{
+		World.Tick(MakeMove(0.0f, false, true));
+		MaxZ = std::max(MaxZ, World.Position().Z);
+	}
+	E_EXPECT_TRUE(MaxZ > 150.0f + StandZ + 20.0f); // 발이 발판 위로 넘어갔다
+	E_EXPECT_NEAR(World.Position().Z, 150.0f + StandZ, 2.0f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	// 내려가기 → 바닥으로
+	FCharacterMove2D Drop = MakeMove();
+	Drop.bDropDown        = true;
+	World.Tick(Drop);
+	World.Run(60);
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 2.0f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+}
+
+E_TEST(Character2DWorld_CeilingStopsJump)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(4000.0f, 100.0f));
+	World.AddBox("Ceiling", FVector3(0.0f, 0.0f, 210.0f), FVector2(400.0f, 20.0f)); // 아랫면 Z = 200
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(30);
+	World.Tick(MakeMove(0.0f, true));
+	float MaxZ  = 0.0f;
+	bool  bFell = false;
+	for (int32 Index = 0; Index < 20; ++Index)
+	{
+		World.Tick(MakeMove(0.0f, false, true));
+		MaxZ  = std::max(MaxZ, World.Position().Z);
+		bFell = bFell || World.Characters.GetVelocity(World.Pawn).Y <= 0.0f;
+	}
+	E_EXPECT_TRUE(MaxZ <= 200.0f - StandZ + 1.0f); // 머리(중심 + 60)가 천장 아래
+	E_EXPECT_TRUE(MaxZ > 200.0f - StandZ - 5.0f);  // 천장까지는 올라갔다
+	E_EXPECT_TRUE(bFell);                          // 박치기 뒤 상승 속도가 없어졌다
+	World.Run(60);
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+}
+
+E_TEST(Character2DWorld_RidesMovingPlatformAndPushesDynamicBox)
+{
+	FWorld        World;
+	const FEntity Lift = World.AddBox("Lift", FVector3(0.0f, 0.0f, -10.0f), FVector2(400.0f, 20.0f)); // 윗면 Z = 0
+	World.Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Lift).BodyType = EBodyType2D::Kinematic;
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	for (int32 Index = 0; Index < 30; ++Index)
+	{
+		World.Tick(MakeMove());
+	}
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 1.5f);
+	const float StartX = World.Position().X;
+	for (int32 Index = 0; Index < 60; ++Index) // 발판이 오른쪽 120cm/s, 위로 60cm/s
+	{
+		World.Scene.GetTransform(Lift).Position.X += 2.0f;
+		World.Scene.GetTransform(Lift).Position.Z += 1.0f;
+		World.Tick(MakeMove());
+	}
+	E_EXPECT_NEAR(World.Position().X - StartX, 120.0f, 6.0f); // 발판을 따라간다
+	E_EXPECT_NEAR(World.Position().Z, 60.0f + StandZ, 3.0f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+
+	// 동적 상자를 밀면 상자가 밀려난다 (대리 키네마틱 바디)
+	FWorld Push;
+	Push.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	const FEntity Crate = Push.AddBox("Crate", FVector3(150.0f, 0.0f, 40.0f), FVector2(80.0f, 80.0f));
+	Push.Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Crate).Mass = 10.0f;
+	Push.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	Push.Begin();
+	Push.Run(30);
+	const float CrateStart = Push.Scene.GetTransform(Crate).Position.X;
+	Push.Run(90, 1.0f);
+	E_EXPECT_TRUE(Push.Scene.GetTransform(Crate).Position.X - CrateStart > 50.0f);
+	E_EXPECT_TRUE(Push.Position().X > 100.0f);
+}
+
+// 같은 상태 + 같은 무브 → 같은 결과 (멀티플레이 재조정의 기준)
+E_TEST(Character2DWorld_SameMovesSameResult)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	World.AddPolygon("Ramp", "300,0; 700,0; 700,230.94");
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(30);
+	std::vector<FCharacterMove2D> Moves;
+	for (int32 Index = 0; Index < 90; ++Index)
+	{
+		FCharacterMove2D Move = MakeMove(1.0f, Index == 10 || Index == 30, Index < 40);
+		Move.bDash            = Index == 50;
+		Moves.push_back(Move);
+	}
+	const FCharacterState2D Start = World.Characters.GetState(World.Pawn);
+	for (const FCharacterMove2D& Move : Moves)
+	{
+		World.Characters.SimulateCharacter(World.Scene, World.Pawn, Move);
+	}
+	const FCharacterState2D First = World.Characters.GetState(World.Pawn);
+	World.Characters.SetState(World.Scene, World.Pawn, Start);
+	for (const FCharacterMove2D& Move : Moves)
+	{
+		World.Characters.SimulateCharacter(World.Scene, World.Pawn, Move);
+	}
+	const FCharacterState2D Second = World.Characters.GetState(World.Pawn);
+	E_EXPECT_TRUE(First.Position == Second.Position && First.Velocity == Second.Velocity);
+	E_EXPECT_TRUE(First.bGrounded == Second.bGrounded && First.JumpsUsed == Second.JumpsUsed);
+	E_EXPECT_TRUE(First.Position.X > Start.Position.X + 300.0f);
+}
+
+// 대리 바디: 트리거·레이캐스트가 캐릭터를 본다 (이동기 자신은 트리거에 막히지 않는다)
+E_TEST(Character2DWorld_ProxySeenByTriggerAndRaycast)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	const FEntity Coin = World.AddBox("Coin", FVector3(300.0f, 0.0f, 60.0f), FVector2(40.0f, 40.0f));
+	World.Scene.GetRegistry().Get<FBoxCollider2DComponent>(Coin).bIsTrigger = true;
+	World.SpawnPawn(FVector3(0.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(20);
+	FPhysics2DHit Hit;
+	E_EXPECT_TRUE(World.Physics.Raycast(FVector2(-300.0f, 60.0f), FVector2(1.0f, 0.0f), 1000.0f, Hit));
+	E_EXPECT_TRUE(Hit.Entity == World.Pawn);
+	E_EXPECT_NEAR(Hit.Position.X, World.Position().X - 30.0f, 1.0f);
+	bool bEntered = false;
+	for (int32 Index = 0; Index < 60; ++Index)
+	{
+		World.Tick(MakeMove(1.0f));
+		for (const FCollisionEvent& Event : World.Physics.GetCollisionEvents())
+		{
+			bEntered = bEntered || (Event.Type == ECollisionEventType::TriggerEnter && Event.Self == Coin && Event.Other == World.Pawn);
+		}
+	}
+	E_EXPECT_TRUE(bEntered);
+	E_EXPECT_TRUE(World.Position().X > 400.0f); // 트리거에 막히지 않는다
+}
+
+// 타일식 45도 계단 (셀마다 삼각형 + 아래 상자): 꼭짓점 고스트 접촉(내부 모서리)에 걸리지 않고 올라간다
+E_TEST(Character2DWorld_TileSlopeSeamsDoNotSnag)
+{
+	FWorld World;
+	World.AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		const float X = 50.0f * static_cast<float>(Index);
+		const float Z = 50.0f * static_cast<float>(Index);
+		World.AddPolygon("Tri", std::format("{},{}; {},{}; {},{}", X, Z, X + 50.0f, Z, X + 50.0f, Z + 50.0f));
+		if (Index > 0)
+		{
+			World.AddBox("Fill", FVector3(X + 25.0f, 0.0f, Z * 0.5f), FVector2(50.0f, Z)); // 삼각형 아래 채움 (셀 상자 열)
+		}
+	}
+	World.AddBox("Plateau", FVector3(1200.0f, 0.0f, 100.0f), FVector2(2000.0f, 200.0f)); // 윗면 Z 200, X 200 ~ 2200
+	World.SpawnPawn(FVector3(-300.0f, 0.0f, 80.0f));
+	World.Begin();
+	World.Run(20);
+	World.Run(110, 1.0f);
+	E_EXPECT_TRUE(World.Position().X > 500.0f);
+	E_EXPECT_NEAR(World.Position().Z, 200.0f + StandZ, 2.0f);
+	E_EXPECT_TRUE(World.Characters.IsGrounded(World.Pawn));
+	// 내려오기도 (오른쪽 → 왼쪽, 바닥에 붙어 내려온다)
+	World.Run(110, -1.0f);
+	E_EXPECT_TRUE(World.Position().X < -50.0f);
+	E_EXPECT_NEAR(World.Position().Z, StandZ, 2.0f);
+}

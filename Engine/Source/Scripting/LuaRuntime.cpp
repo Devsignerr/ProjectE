@@ -618,6 +618,45 @@ void FLuaRuntime::RegisterEntityBindings()
 		RequireEntity(Entity);
 		return PhysicsHooks && PhysicsHooks->IsGrounded && PhysicsHooks->IsGrounded(Entity.Entity);
 	};
+	// 2D 캐릭터 이동기 (CharacterMovement2DComponent — 규칙은 Physics/CharacterMovement2D.h). Jump는 누른 순간 한 번, StopJumping은 뗀 순간
+	// (가변 점프), Dash(방향 — nil/0이면 입력·속도 방향), DropDown(원웨이 발판 내려가기). 3D 캐릭터에서는 무시/0
+	EntityType["StopJumping"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->StopJumping)
+		{
+			PhysicsHooks->StopJumping(Entity.Entity);
+		}
+	};
+	EntityType["Dash"] = [RequireEntity, this](const FScriptEntity& Entity, sol::optional<FVector3> Direction) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->Dash)
+		{
+			PhysicsHooks->Dash(Entity.Entity, Direction.value_or(FVector3()));
+		}
+	};
+	EntityType["DropDown"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		if (PhysicsHooks && PhysicsHooks->DropDown)
+		{
+			PhysicsHooks->DropDown(Entity.Entity);
+		}
+	};
+	EntityType["GetMovementVelocity"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->GetMovementVelocity ? PhysicsHooks->GetMovementVelocity(Entity.Entity) : FVector3();
+	};
+	EntityType["GetJumpsRemaining"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->GetJumpsRemaining ? PhysicsHooks->GetJumpsRemaining(Entity.Entity) : 0;
+	};
+	EntityType["GetDashesRemaining"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->GetDashesRemaining ? PhysicsHooks->GetDashesRemaining(Entity.Entity) : 0;
+	};
+	EntityType["IsDashing"] = [RequireEntity, this](const FScriptEntity& Entity) {
+		RequireEntity(Entity);
+		return PhysicsHooks && PhysicsHooks->IsDashing && PhysicsHooks->IsDashing(Entity.Entity);
+	};
 
 	EntityType["GetOwner"] = [RequireEntity, this](const FScriptEntity& Entity) {
 		RequireEntity(Entity);

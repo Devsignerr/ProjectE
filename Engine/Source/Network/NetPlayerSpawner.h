@@ -17,7 +17,8 @@ class FNetPlayerSpawner
 public:
 	static constexpr const char* PlayerStartName = "PlayerStart";
 
-	// Scene은 이 객체보다 오래 산다 (비소유). PrefabAsset이 비어 있으면 아무것도 만들지 않는다
+	// Scene은 이 객체보다 오래 산다 (비소유). PrefabAsset이 비어 있으면 아무것도 만들지 않는다.
+	// 씬의 첫 FGameModeComponent에 PlayerPrefab이 있으면 그것을 쓴다 (씬 전용 플레이어 — 예: 2D 테스트 씬)
 	void Begin(FScene& InScene, std::string InPrefabAsset);
 	void End();
 

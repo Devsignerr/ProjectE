@@ -6,6 +6,7 @@
 #include "Network/LanDiscovery.h"
 #include "Network/NetTypes.h"
 #include "Physics/CharacterMovement.h"
+#include "Physics/CharacterMovement2D.h"
 #include "Scene/GameRpc.h"
 #include "Scene/Scene.h"
 
@@ -24,6 +25,7 @@ class FGameModuleHost;
 class FNetDriver;
 class FPhysicsSystem;
 class FPhysics2DSystem;
+class FCharacterMovement2DSystem;
 class FReplicationClient;
 class FReplicationServer;
 class FResourceManager;
@@ -160,6 +162,8 @@ public:
 	FAbilitySystem& GetAbilities() { return *Abilities; }
 	// 2D 물리 (Box2D). 항상 유효 — 플레이 중에만 돈다 (IsActive)
 	FPhysics2DSystem& GetPhysics2D() { return *Physics2D; }
+	// 2D 캐릭터 이동기 (Physics/CharacterMovement2DSystem.h, 예측은 World/GameWorldCharacter2D.cpp). 항상 유효 — 플레이 중에만 돈다
+	FCharacterMovement2DSystem& GetCharacters2D() { return *Characters2D; }
 
 	// ---- IGameNet (게임 모듈용)
 	bool  IsServer() const override { return Mode != ENetMode::Client; }
@@ -173,7 +177,7 @@ public:
 	bool   IsPhysicsPredicted(FEntity Entity) const { return PredictedBodies.contains(Entity); }
 	bool   IsPhysicsSimulatedLocally(FEntity Entity) const; // 예측 중 + 동적 (해제 블렌드 중이면 false)
 	uint32 GetPhysicsPredictedBodyCount() const { return static_cast<uint32>(PredictedBodies.size()); }
-	// 예측 옵션: 캐릭터 이동 컴포넌트 bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
+	// 예측 옵션: 캐릭터 이동 컴포넌트(3D 또는 2D) bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
 	bool   UsesClientPrediction(FEntity Entity) const;
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
 	int32 GetOwner(FEntity Entity) const override;
@@ -233,6 +237,28 @@ private:
 	void ReceiveCharacterAck(const std::vector<uint8>& Message);
 	void SendCharacterAck(FEntity Entity, uint32 Sequence);
 	bool IsLocallyControlled(FEntity Entity) const; // 이 프로세스가 조종: 소유 플레이어가 로컬이거나, 서버 소유(owner < 0)를 서버/Standalone이
+	// 2D 캐릭터 이동기 (FCharacterMovement2DComponent, World/GameWorldCharacter2D.cpp 머리 주석): 3D와 같은 예측/재조정 구조의 2D 병렬 경로
+	struct FPredictedCharacter2D
+	{
+		std::deque<FCharacterMove2D> Moves;
+		uint32                       NextSequence    = 0;
+		uint32                       LastAckSequence = 0;
+		FVector2                     VisualOffset;
+	};
+	struct FServerCharacter2D
+	{
+		std::vector<FCharacterMove2D> Queue;
+		uint32                        LastQueued  = 0;
+		uint32                        LastApplied = 0;
+	};
+	std::unordered_map<FEntity, FPredictedCharacter2D> PredictedCharacters2D;
+	std::unordered_map<FEntity, FServerCharacter2D>    ServerCharacters2D;
+	void TickCharacters2D(float DeltaSeconds);
+	void SendCharacterMoves2D(FEntity Entity);
+	void ReceiveCharacterMoves2D(FNetConnectionId Connection, const std::vector<uint8>& Message);
+	void ReceiveCharacterAck2D(const std::vector<uint8>& Message);
+	void SendCharacterAck2D(FEntity Entity, uint32 Sequence);
+	bool DispatchCharacter2DEvents(); // 점프/착지/대시 → Lua OnJumped(n)/OnLanded()/OnDashStarted() + 게임 모듈 (충돌 알림 단계). 무엇이든 보냈으면 true
 	// 캐릭터 이동 → 애니메이션 그래프 파라미터 (World/GameWorldAnimation.cpp, FAnimGraphComponent::bUseCharacterMovement). 물리·트랜스폼 갱신 뒤
 	void UpdateCharacterAnimParams(float DeltaSeconds);
 	// 발 IK 바닥 탐색 (Scene/AnimIK.h): 직전 애니메이션의 발 위치에서 FPhysicsSystem::Raycast → FFootIkComponent::Runtime. 물리·트랜스폼 갱신 뒤
@@ -337,6 +363,7 @@ private:
 	FGameWorldSystems          Systems;
 	std::unique_ptr<FAISystem> AI;
 	std::unique_ptr<FPhysics2DSystem> Physics2D;
+	std::unique_ptr<FCharacterMovement2DSystem> Characters2D;
 	void InstallScriptPhysicsHooks(); // 3D(Systems.Physics, 없으면 무시) + 2D 물리 → 스크립트 (Init)
 	FScene*           Scene = nullptr; // 플레이 중인 씬 (비소유, BeginPlay~EndPlay)
 	// 표시 틱 부분 트랜스폼 갱신: 게임플레이 틱이 이 씬의 트랜스폼을 전체 갱신한 직후면 그 씬 (표시 틱이 소비). 사이에 다른 코드가

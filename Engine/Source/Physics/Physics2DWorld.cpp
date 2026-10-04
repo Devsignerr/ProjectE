@@ -8,6 +8,7 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <map>
 #include <unordered_map>
@@ -19,6 +20,7 @@ namespace
 	constexpr float  MToCm          = 100.0f;
 	constexpr int    SubStepCount   = 4;
 	constexpr uint64 ShapeFlagOneWay = 1u; // 모양 userData 비트 (원웨이 플랫폼)
+	constexpr uint64 ShapeFlagMoverProxy = 2u; // 모양 userData 비트 (2D 캐릭터 이동기 대리 모양 — 이동기 질의가 무시)
 
 	b2Vec2   ToB2(const FVector2& Centimeters) { return b2Vec2{ Centimeters.X * CmToM, Centimeters.Y * CmToM }; }
 	FVector2 FromB2(const b2Vec2& Meters) { return FVector2(Meters.x * MToCm, Meters.y * MToCm); }
@@ -337,7 +339,8 @@ uint32 FPhysics2DWorld::CreateBody(const FPhysics2DBodyDesc& Desc)
 	for (const FPhysics2DShapeDesc& Shape : Desc.Shapes)
 	{
 		const b2Filter Filter   = Impl->MakeFilter(Shape.CollisionLayer);
-		void* const    UserData = reinterpret_cast<void*>(static_cast<uintptr_t>(Shape.bOneWay ? ShapeFlagOneWay : 0u));
+		void* const    UserData = reinterpret_cast<void*>(
+			static_cast<uintptr_t>((Shape.bOneWay ? ShapeFlagOneWay : 0u) | (Shape.bMoverProxy ? ShapeFlagMoverProxy : 0u)));
 
 		b2ShapeDef ShapeDef           = b2DefaultShapeDef();
 		ShapeDef.userData             = UserData;
@@ -784,4 +787,329 @@ void FPhysics2DWorld::ConsumeContactEvents(std::vector<FPhysics2DContactEvent>& 
 {
 	OutEvents.insert(OutEvents.end(), Impl->Pending.begin(), Impl->Pending.end());
 	Impl->Pending.clear();
+}
+
+// ---------------------------------------------------------------- 2D 캐릭터 이동기 (FPhysics2DMover 주석, Physics/CharacterMovement2D.h)
+// Box2D 캐릭터 이동 도구(b2World_CollideMover/b2SolvePlanes/b2ClipVector)를 쓰고, 캐스트는 b2World_CastMover와 같은 식(b2ShapeCast +
+// 겹침 진입 허용, 처음부터 겹친 모양 무시)을 모양마다 직접 돌린다 — b2World_CastMover에는 모양 거르기 콜백이 없어 원웨이·대리 모양을
+// 걸러 낼 수 없기 때문. 콜백은 모으기만 하고 거르기·변환은 여기(메인 스레드, 월드 잠김 없음)서 한다.
+
+namespace
+{
+	constexpr int   MoverIterations    = 5;
+	constexpr float MoverToleranceCm   = 1.0f;  // 이번 반복 이동이 이보다 작으면 끝
+	constexpr float OneWayUpCos        = 0.5f;  // 60도
+	constexpr float OneWayRisingCmPerS = 50.0f; // 바디 사전 해결 콜백과 같은 0.5m/s
+	constexpr float MinMoverRadiusCm   = 1.5f;  // Box2D: 반지름 > 2 × 선형 여유(0.5cm)
+	constexpr float InternalEdgeToleranceCm = 1.0f; // 내부 모서리 판정: 바닥 면에서 이 거리 안
+
+	b2Capsule MakeMoverCapsule(const FPhysics2DMover& Mover, const FVector2& Position, float Inflate)
+	{
+		const b2Vec2 Center = ToB2(Position);
+		const float  Half   = std::max(Mover.HalfSegment, 0.0f) * CmToM;
+		b2Capsule    Capsule;
+		Capsule.center1 = b2Vec2{ Center.x, Center.y - Half };
+		Capsule.center2 = b2Vec2{ Center.x, Center.y + Half };
+		Capsule.radius  = std::max(Mover.Radius + Inflate, MinMoverRadiusCm) * CmToM;
+		return Capsule;
+	}
+
+	EBodyType2D ToBodyType(b2BodyType Type)
+	{
+		return Type == b2_staticBody ? EBodyType2D::Static : (Type == b2_kinematicBody ? EBodyType2D::Kinematic : EBodyType2D::Dynamic);
+	}
+
+	FVector2 GetBodyUp(b2BodyId Body)
+	{
+		const b2Vec2 Up = b2RotateVector(b2Body_GetRotation(Body), b2Vec2{ 0.0f, 1.0f });
+		return FVector2(Up.x, Up.y);
+	}
+
+	// 월드 좌표 모양 대리 (캐스트용). 모르는 모양이면 false
+	bool MakeWorldShapeProxy(b2ShapeId Shape, b2ShapeProxy& OutProxy)
+	{
+		const b2Transform Transform = b2Body_GetTransform(b2Shape_GetBody(Shape));
+		switch (b2Shape_GetType(Shape))
+		{
+		case b2_polygonShape:
+		{
+			const b2Polygon Polygon = b2Shape_GetPolygon(Shape);
+			OutProxy                = b2MakeOffsetProxy(Polygon.vertices, Polygon.count, Polygon.radius, Transform.p, Transform.q);
+			return true;
+		}
+		case b2_circleShape:
+		{
+			const b2Circle Circle = b2Shape_GetCircle(Shape);
+			OutProxy              = b2MakeOffsetProxy(&Circle.center, 1, Circle.radius, Transform.p, Transform.q);
+			return true;
+		}
+		case b2_capsuleShape:
+		{
+			const b2Capsule Capsule   = b2Shape_GetCapsule(Shape);
+			const b2Vec2    Points[2] = { Capsule.center1, Capsule.center2 };
+			OutProxy                  = b2MakeOffsetProxy(Points, 2, Capsule.radius, Transform.p, Transform.q);
+			return true;
+		}
+		case b2_segmentShape:
+		{
+			const b2Segment Segment   = b2Shape_GetSegment(Shape);
+			const b2Vec2    Points[2] = { Segment.point1, Segment.point2 };
+			OutProxy                  = b2MakeOffsetProxy(Points, 2, 0.0f, Transform.p, Transform.q);
+			return true;
+		}
+		case b2_chainSegmentShape:
+		{
+			const b2ChainSegment Chain     = b2Shape_GetChainSegment(Shape);
+			const b2Vec2         Points[2] = { Chain.segment.point1, Chain.segment.point2 };
+			OutProxy                       = b2MakeOffsetProxy(Points, 2, 0.0f, Transform.p, Transform.q);
+			return true;
+		}
+		default: return false;
+		}
+	}
+} // namespace
+
+void FPhysics2DWorld::CollideMover(const FPhysics2DMover& Mover, const FVector2& Position, float Inflate,
+                                   std::vector<FPhysics2DMoverContact>& OutContacts) const
+{
+	OutContacts.clear();
+	if (!Impl->IsValid())
+	{
+		return;
+	}
+	struct FRaw
+	{
+		b2ShapeId     Shape;
+		b2PlaneResult Result;
+	};
+	std::vector<FRaw> Raw;
+	const b2Capsule   Capsule = MakeMoverCapsule(Mover, Position, Inflate);
+	const b2Filter    Filter  = Impl->MakeFilter(Mover.CollisionLayer);
+	b2World_CollideMover(
+		Impl->World, &Capsule, b2QueryFilter{ Filter.categoryBits, Filter.maskBits },
+		[](b2ShapeId Shape, const b2PlaneResult* Plane, void* Context) -> bool {
+			static_cast<std::vector<FRaw>*>(Context)->push_back({ Shape, *Plane });
+			return true;
+		},
+		&Raw);
+	const float InflateCm = std::max(Mover.Radius + Inflate, MinMoverRadiusCm) - std::max(Mover.Radius, MinMoverRadiusCm);
+	for (const FRaw& Item : Raw)
+	{
+		const uint64 Flags = reinterpret_cast<uint64>(b2Shape_GetUserData(Item.Shape));
+		const uint32 Body  = Impl->BodyOf(Item.Shape);
+		if (b2Shape_IsSensor(Item.Shape) || (Flags & ShapeFlagMoverProxy) != 0 || Body == InvalidBody ||
+		    (Mover.IgnoreUserData != 0 && Impl->Bodies[Body].UserData == Mover.IgnoreUserData))
+		{
+			continue;
+		}
+		const b2BodyId         BodyId = Impl->Bodies[Body].Body;
+		// b2CollideMover는 법선만 월드로 돌려 주고 점은 모양(바디) 로컬로 남긴다 (Box2D v3.1.1) — 여기서 월드로
+		const b2Vec2           WorldPoint = b2TransformPoint(b2Body_GetTransform(BodyId), Item.Result.point);
+		FPhysics2DMoverContact Contact;
+		Contact.Normal      = FVector2(Item.Result.plane.normal.x, Item.Result.plane.normal.y);
+		Contact.Point       = FromB2(WorldPoint);
+		Contact.Penetration = Item.Result.plane.offset * MToCm - InflateCm;
+		Contact.Body        = Body;
+		Contact.UserData    = Impl->Bodies[Body].UserData;
+		Contact.bOneWay     = (Flags & ShapeFlagOneWay) != 0;
+		Contact.BodyType    = ToBodyType(b2Body_GetType(BodyId));
+		if (Contact.bOneWay)
+		{
+			if (Mover.bIgnoreOneWay)
+			{
+				continue;
+			}
+			const FVector2 Up       = GetBodyUp(BodyId);
+			const FVector2 Relative = Mover.Velocity - FromB2(b2Body_GetWorldPointVelocity(BodyId, WorldPoint));
+			if (FVector2::Dot(Contact.Normal, Up) < OneWayUpCos || Contact.Penetration > Mover.OneWayMaxPenetration ||
+			    FVector2::Dot(Relative, Up) > OneWayRisingCmPerS)
+			{
+				continue; // 아래·옆에서 / 깊이 묻힘 / 뚫고 올라가는 중
+			}
+		}
+		if (Contact.BodyType == EBodyType2D::Dynamic && Contact.Normal.Y < Mover.WalkableNormalY)
+		{
+			continue; // 동적 바디는 위에 설 때만 막는다 (옆은 대리 바디가 민다)
+		}
+		OutContacts.push_back(Contact);
+	}
+	// 내부 모서리 거르기 (타일 이음매·경사 끝의 고스트 접촉): 바닥이 아닌 접촉의 점이 다른 바닥 접촉의 면 위(또는 아래)에 있으면
+	// 드러난 면이 아니라 이어진 바닥 속 꼭짓점이다 — 버린다 (안 버리면 경사를 오르다 꼭짓점 법선에 막힌다). 바닥 접촉은 항상 남긴다
+	std::vector<bool> Internal(OutContacts.size(), false);
+	for (size_t Index = 0; Index < OutContacts.size(); ++Index)
+	{
+		const FPhysics2DMoverContact& Contact = OutContacts[Index];
+		if (Contact.Normal.Y >= Mover.WalkableNormalY)
+		{
+			continue;
+		}
+		for (const FPhysics2DMoverContact& Floor : OutContacts)
+		{
+			if (&Floor != &Contact && Floor.Normal.Y >= Mover.WalkableNormalY && FVector2::Dot(Contact.Point - Floor.Point, Floor.Normal) <= InternalEdgeToleranceCm)
+			{
+				Internal[Index] = true;
+				break;
+			}
+		}
+	}
+	size_t Kept = 0;
+	for (size_t Index = 0; Index < OutContacts.size(); ++Index)
+	{
+		if (!Internal[Index])
+		{
+			OutContacts[Kept++] = OutContacts[Index];
+		}
+	}
+	OutContacts.resize(Kept);
+}
+
+bool FPhysics2DWorld::CastMover(const FPhysics2DMover& Mover, const FVector2& Position, const FVector2& Translation, float& OutFraction,
+                                FPhysics2DMoverContact& OutHit) const
+{
+	OutFraction = 1.0f;
+	if (!Impl->IsValid() || Translation.LengthSquared() < 1.0e-8f)
+	{
+		return false;
+	}
+	const b2Capsule Capsule = MakeMoverCapsule(Mover, Position, 0.0f);
+	const b2Vec2    Move    = ToB2(Translation);
+	const b2Vec2    Extent{ Capsule.radius, Capsule.radius };
+	b2AABB          Bounds;
+	Bounds.lowerBound = b2Sub(b2Min(Capsule.center1, Capsule.center2), Extent);
+	Bounds.upperBound = b2Add(b2Max(Capsule.center1, Capsule.center2), Extent);
+	Bounds.lowerBound = b2Min(Bounds.lowerBound, b2Add(Bounds.lowerBound, Move));
+	Bounds.upperBound = b2Max(Bounds.upperBound, b2Add(Bounds.upperBound, Move));
+
+	std::vector<b2ShapeId> Candidates;
+	const b2Filter         Filter = Impl->MakeFilter(Mover.CollisionLayer);
+	b2World_OverlapAABB(
+		Impl->World, Bounds, b2QueryFilter{ Filter.categoryBits, Filter.maskBits },
+		[](b2ShapeId Shape, void* Context) -> bool {
+			static_cast<std::vector<b2ShapeId>*>(Context)->push_back(Shape);
+			return true;
+		},
+		&Candidates);
+
+	const b2Vec2 MoverPoints[2] = { Capsule.center1, Capsule.center2 };
+	bool         bHit           = false;
+	for (const b2ShapeId Shape : Candidates)
+	{
+		const uint64 Flags = reinterpret_cast<uint64>(b2Shape_GetUserData(Shape));
+		const uint32 Body  = Impl->BodyOf(Shape);
+		if (b2Shape_IsSensor(Shape) || (Flags & ShapeFlagMoverProxy) != 0 || Body == InvalidBody ||
+		    (Mover.IgnoreUserData != 0 && Impl->Bodies[Body].UserData == Mover.IgnoreUserData))
+		{
+			continue;
+		}
+		const bool bOneWay = (Flags & ShapeFlagOneWay) != 0;
+		if (bOneWay && Mover.bIgnoreOneWay)
+		{
+			continue;
+		}
+		b2ShapeCastPairInput Input{};
+		if (!MakeWorldShapeProxy(Shape, Input.proxyA))
+		{
+			continue;
+		}
+		Input.proxyB       = b2MakeProxy(MoverPoints, 2, Capsule.radius);
+		Input.transformA   = b2Transform_identity;
+		Input.transformB   = b2Transform_identity;
+		Input.translationB = Move;
+		Input.maxFraction  = OutFraction;
+		Input.canEncroach  = true;
+		const b2CastOutput Output = b2ShapeCast(&Input);
+		if (!Output.hit || Output.fraction <= 0.0f || Output.fraction >= OutFraction)
+		{
+			continue; // 빗나감 / 처음부터 겹침(무시 — Box2D 규칙) / 더 먼 것
+		}
+		const FVector2    Normal(Output.normal.x, Output.normal.y); // 모양 → 이동기
+		const b2BodyId    BodyId = Impl->Bodies[Body].Body;
+		const EBodyType2D Type   = ToBodyType(b2Body_GetType(BodyId));
+		if (bOneWay)
+		{
+			const FVector2 Up = GetBodyUp(BodyId);
+			if (FVector2::Dot(Normal, Up) < OneWayUpCos || FVector2::Dot(Translation, Up) >= 0.0f)
+			{
+				continue; // 위에서 내려앉을 때만
+			}
+		}
+		if (Type == EBodyType2D::Dynamic && Normal.Y < Mover.WalkableNormalY)
+		{
+			continue;
+		}
+		OutFraction        = Output.fraction;
+		OutHit.Normal      = Normal;
+		OutHit.Point       = FromB2(Output.point);
+		OutHit.Penetration = 0.0f;
+		OutHit.Body        = Body;
+		OutHit.UserData    = Impl->Bodies[Body].UserData;
+		OutHit.bOneWay     = bOneWay;
+		OutHit.BodyType    = Type;
+		bHit               = true;
+	}
+	return bHit;
+}
+
+void FPhysics2DWorld::MoveMover(const FPhysics2DMover& Mover, const FVector2& Position, const FVector2& Delta, FPhysics2DMoveResult& OutResult) const
+{
+	OutResult          = {};
+	OutResult.Position = Position + Delta;
+	OutResult.Velocity = Mover.Velocity;
+	if (!Impl->IsValid())
+	{
+		return;
+	}
+	const FVector2                      Target = Position + Delta;
+	std::vector<FPhysics2DMoverContact> Contacts;
+	std::vector<b2CollisionPlane>       Planes;
+	FVector2                            Current = Position;
+	for (int Iteration = 0; Iteration < MoverIterations; ++Iteration)
+	{
+		++OutResult.Iterations;
+		CollideMover(Mover, Current, 0.0f, Contacts);
+		Planes.clear();
+		for (const FPhysics2DMoverContact& Contact : Contacts)
+		{
+			b2CollisionPlane Plane;
+			FVector2         Normal = Contact.Normal;
+			float            Depth  = Contact.Penetration;
+			if (Mover.bSteepAsWall && Normal.Y > 0.0f && Normal.Y < Mover.WalkableNormalY && std::abs(Normal.X) > 1.0e-3f)
+			{
+				Depth  = Depth / std::abs(Normal.X); // 수평으로 빠져나올 깊이
+				Normal = FVector2(Normal.X > 0.0f ? 1.0f : -1.0f, 0.0f);
+			}
+			Plane.plane        = b2Plane{ b2Vec2{ Normal.X, Normal.Y }, Depth * CmToM };
+			Plane.pushLimit    = FLT_MAX;
+			Plane.push         = 0.0f;
+			Plane.clipVelocity = Normal.Y < Mover.WalkableNormalY; // 바닥 면은 속도를 자르지 않는다 (오르막 수평 속도 유지)
+			Planes.push_back(Plane);
+		}
+		const b2PlaneSolverResult Solved      = b2SolvePlanes(ToB2(Target - Current), Planes.data(), static_cast<int>(Planes.size()));
+		const FVector2            Translation = FromB2(Solved.translation);
+		float                     Fraction    = 1.0f;
+		FPhysics2DMoverContact    Hit;
+		CastMover(Mover, Current, Translation, Fraction, Hit);
+		const FVector2 Step = Translation * Fraction;
+		Current             = Current + Step;
+		if (Step.LengthSquared() < MoverToleranceCm * MoverToleranceCm)
+		{
+			break;
+		}
+	}
+	OutResult.Position   = Current;
+	const b2Vec2 Clipped = b2ClipVector(ToB2(Mover.Velocity), Planes.data(), static_cast<int>(Planes.size()));
+	OutResult.Velocity   = FromB2(Clipped);
+	for (const b2CollisionPlane& Plane : Planes)
+	{
+		if (Plane.push > 0.0f && Plane.plane.normal.y < -0.5f)
+		{
+			OutResult.bHitCeiling = true;
+		}
+	}
+}
+
+FVector2 FPhysics2DWorld::GetPointVelocity(uint32 Body, const FVector2& Point) const
+{
+	const FImpl::FBodySlot* Slot = Impl->Find(Body);
+	return Slot != nullptr ? FromB2(b2Body_GetWorldPointVelocity(Slot->Body, ToB2(Point))) : FVector2();
 }

@@ -8,7 +8,7 @@
 
 // 네트워크 메시지 형식: [uint8 종류][본문]. 본문은 FBinaryWriter 리틀 엔디언.
 // 프로토콜을 바꾸면(메시지 추가/필드 변경) NetProtocolVersion을 올린다 — 버전이 다르면 접속을 거부한다
-inline constexpr uint32 NetProtocolVersion = 12; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값, 9: 맵 이동(Travel/TravelAck), 10: 서브 씬(SubSceneLoad/Unload), 11: 캐릭터 무브 루트 모션(플래그 + 속도), 12: 능력 발동 요청/결과(AbilityActivate/AbilityResult)
+inline constexpr uint32 NetProtocolVersion = 13; // 2: 복제 메시지, 3: 트랜스폼 스냅샷, 4: RPC, 5: 입력 커맨드, 6: 입력에 시점 방향 + 카메라 Priority/강체 LockRotation, 7: 캐릭터 무브/ack (예측), 8: 입력 커맨드에 액션 값, 9: 맵 이동(Travel/TravelAck), 10: 서브 씬(SubSceneLoad/Unload), 11: 캐릭터 무브 루트 모션(플래그 + 속도), 12: 능력 발동 요청/결과(AbilityActivate/AbilityResult), 13: 2D 캐릭터 무브/ack(CharacterMoves2D/CharacterAck2D)
 
 enum class ENetMessageType : uint8
 {
@@ -34,6 +34,8 @@ enum class ENetMessageType : uint8
 	SubSceneUnload     = GameBase + 9, // 서버 → 클라이언트, 신뢰: uint32 서브 씬 번호
 	AbilityActivate    = GameBase + 10, // 클라이언트 → 서버, 신뢰: uint32 NetId, string 능력, uint32 예측 키 (형식은 World/GameWorldAbilities.cpp)
 	AbilityResult      = GameBase + 11, // 서버 → 소유 클라이언트, 신뢰: uint32 NetId, uint32 예측 키, uint8 취소(1)/거절(0), string 이유
+	CharacterMoves2D   = GameBase + 12, // 클라이언트 → 서버, 비신뢰: 2D 예측 캐릭터의 최근 무브들. 형식은 World/GameWorldCharacter2D.cpp
+	CharacterAck2D     = GameBase + 13, // 서버 → 소유 클라이언트, 비신뢰: 처리한 2D 무브 순번 + 그때 상태 전체 (재조정 기준)
 };
 
 struct FNetHello

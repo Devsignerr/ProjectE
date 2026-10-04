@@ -232,7 +232,7 @@ try {
             $Relative  = $File.FullName.Substring($ContentDst.Length + 1)
             $CookedDir = Join-Path $ProjectDir "Cooked"
             $Cooked    = @(Get-ChildItem -Path (Split-Path (Join-Path $CookedDir $Relative) -Parent) -Filter "$($File.Name).*" -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -match '\.(emodel|(color|linear|normal|mask)\.etex)$' })
+                Where-Object { $_.Name -match '\.(emodel|(color|linear|normal|mask|pixel)\.etex)$' })
             if ($Cooked.Count -gt 0) {
                 Remove-Item $File.FullName
                 $ExcludedCount++
@@ -253,7 +253,7 @@ try {
     if (-not $Manifest -and (Test-Path (Join-Path $ProjectDir "Cooked"))) {
         Copy-Item -Recurse -Force (Join-Path $ProjectDir "Cooked") (Join-Path $ProjectDst "Cooked")
         Get-ChildItem -Recurse -File (Join-Path $ProjectDst "Cooked") |
-            Where-Object { $_.Name -notmatch '\.(emodel|(color|linear|normal|mask)\.etex)$' } | Remove-Item
+            Where-Object { $_.Name -notmatch '\.(emodel|(color|linear|normal|mask|pixel)\.etex)$' } | Remove-Item
     }
 
     # 심볼: PDB + 패키지와 같은 바이너리 (덤프를 열 때 디버거가 둘 다 찾는다)

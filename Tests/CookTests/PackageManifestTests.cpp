@@ -174,7 +174,8 @@ E_TEST(PackageManifest_ScannerFollowsReferences)
 
 E_TEST(PackageManifest_FollowsSprite2DReferences)
 {
-	// 씬 → 플립북(Content 기준) → 스프라이트(플립북 폴더 기준) → 텍스처(스프라이트 폴더 기준), 타일셋 → 텍스처. 이미지 용도는 색상
+	// 씬 → 플립북(Content 기준) → 스프라이트(플립북 폴더 기준) → 텍스처(스프라이트 폴더 기준), 타일셋 → 텍스처.
+	// 이미지 용도 = 에셋 Filter: Point(생략 기본) = 무압축 pixel, Linear = color (FSpriteSceneCollector와 같은 규칙)
 	FTempContent Content;
 	Content.Write("Scenes/Level.escene", R"({"Entities": [
 		{"FlipbookComponent": {"Flipbook": "Sprites/Hero/Run.eflipbook"}},
@@ -183,7 +184,7 @@ E_TEST(PackageManifest_FollowsSprite2DReferences)
 	Content.Write("Sprites/Hero/Run.eflipbook", R"({"Version": 1, "Sprite": "Atlas/Hero.esprite", "Frames": [{"Slice": "Run_0"}]})");
 	Content.Write("Sprites/Hero/Atlas/Hero.esprite", R"({"Version": 1, "Texture": "../Hero.png", "Slices": []})");
 	Content.Write("Sprites/Hero/Hero.png", "png");
-	Content.Write("Tiles/Ground.etileset", R"({"Version": 1, "Texture": "../Textures/Ground.png", "Tiles": []})");
+	Content.Write("Tiles/Ground.etileset", R"({"Version": 1, "Texture": "../Textures/Ground.png", "Filter": "Linear", "Tiles": []})");
 	Content.Write("Textures/Ground.png", "png");
 	Content.Write("Textures/Unused.png", "png");
 
@@ -198,7 +199,7 @@ E_TEST(PackageManifest_FollowsSprite2DReferences)
 	E_EXPECT_TRUE(Manifest.Files.contains("Textures/Ground.png"));
 	E_EXPECT_FALSE(Manifest.Files.contains("Textures/Unused.png"));
 	const auto UsagesOf = [&](const char* Path) { return Manifest.Images.contains(Path) ? Manifest.Images.at(Path) : std::set<ETextureUsage>{}; };
-	E_EXPECT_TRUE(UsagesOf("Sprites/Hero/Hero.png") == std::set<ETextureUsage>{ ETextureUsage::Color });
+	E_EXPECT_TRUE(UsagesOf("Sprites/Hero/Hero.png") == std::set<ETextureUsage>{ ETextureUsage::PixelArt });
 	E_EXPECT_TRUE(UsagesOf("Textures/Ground.png") == std::set<ETextureUsage>{ ETextureUsage::Color });
 }
 
@@ -207,7 +208,7 @@ E_TEST(PackageManifest_TextRoundTrip)
 	FPackageManifest Manifest;
 	Manifest.Files       = { "A/b.escene", "T/n.png" };
 	Manifest.Models      = { "M/m.glb" };
-	Manifest.Images      = { { "T/n.png", { ETextureUsage::Normal, ETextureUsage::Linear } } };
+	Manifest.Images      = { { "T/n.png", { ETextureUsage::Normal, ETextureUsage::Linear } }, { "T/p.png", { ETextureUsage::PixelArt } } };
 	Manifest.Internal    = { "M/m.bin" };
 	Manifest.Directories = { "Audio/RPG" };
 	Manifest.Warnings    = { "경고" };

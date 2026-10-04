@@ -1,5 +1,5 @@
 -- Tests/Tilemap2D 확인 스크립트 (Phase 56 연결): 플립북 이벤트 로그, 2초에 받침 타일을 지워(entity:EraseTile) 위 상자를 떨어뜨리고,
--- 3.5초에 상자 높이·발밑 셀을 로그로 남긴다 (타일맵은 아직 그려지지 않으므로 로그로 판단)
+-- 3.5초에 상자 높이·발밑 셀을 로그로 남긴다 (화면은 스프라이트·타일맵으로 보이고, 수치는 로그로 판단)
 local T = {
 	Properties = {
 		HoleMinX = -10,
@@ -43,7 +43,7 @@ function T:OnUpdate(dt)
 			local Box = Scene.Find(Name)
 			if Box ~= nil then
 				local Position = Box:GetWorldPosition()
-				local X, Y = Map:WorldToCell(Position - Vector3(0, 0, 31))
+				local X, Y = Map:WorldToCell(Position - Vector3(0, 0, 35))
 				local Tags = Map:GetTileTags(X, Y)
 				Log.Info(string.format("[Tilemap2D] %s 높이 Z = %.1f, 발밑 셀 (%d,%d) 태그 [%s]", Name, Position.Z, X, Y, table.concat(Tags, ",")))
 			end

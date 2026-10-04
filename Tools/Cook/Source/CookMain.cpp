@@ -4,6 +4,7 @@
 
 #include "Core/CommandLine.h"
 #include "Core/CoreMinimal.h"
+#include "Core/FileSystem.h"
 #include "Core/Paths.h"
 #include "Core/StringConv.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
@@ -12,6 +13,8 @@
 #include "Renderer/AssetCache.h"
 #include "Renderer/MaterialAsset.h"
 #include "Renderer/MaterialRender.h"
+#include "Scene/Sprite/SpriteAsset.h"
+#include "Scene/Sprite/TilesetAsset.h"
 
 #include <algorithm>
 #include <cwctype>
@@ -235,6 +238,35 @@ int main()
 						const std::filesystem::path TexturePath = std::filesystem::weakly_canonical(Entry.path().parent_path() / FStringConv::ToWide(Material.TexturePaths[Slot]), ErrorCode);
 						TextureUsages[TexturePath].insert(FMaterialAsset::GetSlotUsage(Slot));
 					}
+				}
+			}
+			// 2D 아틀라스/타일셋: Filter Point = PixelArt(무압축), Linear = Color (FSpriteSceneCollector와 같은 규칙)
+			const std::wstring Extension = Entry.path().extension().wstring();
+			if (!PackageAssets && Entry.is_regular_file(ErrorCode) && (Extension == L".esprite" || Extension == L".etileset"))
+			{
+				std::string Text;
+				std::string Texture;
+				ESpriteFilter Filter = ESpriteFilter::Point;
+				FSpriteAsset  Sprite;
+				FTilesetAsset Tileset;
+				if (!FFileSystem::ReadTextFile(Entry.path(), Text))
+				{
+					continue;
+				}
+				if (Extension == L".esprite" && FSpriteAsset::FromJsonString(Text, Sprite))
+				{
+					Texture = Sprite.Texture;
+					Filter  = Sprite.Filter;
+				}
+				else if (Extension == L".etileset" && FTilesetAsset::FromJsonString(Text, Tileset))
+				{
+					Texture = Tileset.Texture;
+					Filter  = Tileset.Filter;
+				}
+				if (!Texture.empty())
+				{
+					TextureUsages[std::filesystem::weakly_canonical(Entry.path().parent_path() / FStringConv::ToWide(Texture), ErrorCode)].insert(
+						Filter == ESpriteFilter::Point ? ETextureUsage::PixelArt : ETextureUsage::Color);
 				}
 			}
 		}

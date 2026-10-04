@@ -120,15 +120,27 @@ namespace SpriteBatching
 {
 	void BuildRuns(std::span<const uint8> PipelineKeys, std::vector<FRun>& OutRuns)
 	{
+		BuildRuns(PipelineKeys, {}, OutRuns);
+	}
+
+	void BuildRuns(std::span<const uint8> PipelineKeys, std::span<const int32> ChunkIndices, std::vector<FRun>& OutRuns)
+	{
 		OutRuns.clear();
+		uint32 ItemIndex = 0;
 		for (size_t Index = 0; Index < PipelineKeys.size(); ++Index)
 		{
 			const uint32 Key = PipelineKeys[Index];
-			if (OutRuns.empty() || OutRuns.back().PipelineKey != Key)
+			if (Index < ChunkIndices.size() && ChunkIndices[Index] >= 0)
 			{
-				OutRuns.push_back({ static_cast<uint32>(Index), 0u, Key });
+				OutRuns.push_back({ static_cast<uint32>(ChunkIndices[Index]), 0u, Key, true });
+				continue;
+			}
+			if (OutRuns.empty() || OutRuns.back().bChunk || OutRuns.back().PipelineKey != Key)
+			{
+				OutRuns.push_back({ ItemIndex, 0u, Key, false });
 			}
 			++OutRuns.back().Count;
+			++ItemIndex;
 		}
 	}
 } // namespace SpriteBatching

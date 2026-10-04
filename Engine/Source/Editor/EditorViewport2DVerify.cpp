@@ -1,6 +1,7 @@
 // FEditorApplication 자동 검증 중 2D 뷰포트 부분 (Phase 56 2D 에디터 후속 — EditorApplication.cpp 밖에 두어 다른 트랙과 겹치지 않게)
 //   --verify-2d-create  : 콘텐츠 브라우저 드롭(.esprite/.eflipbook/.etileset) + 박스 선택 + 엔티티 메뉴 "2D" 만들기 → 컴포넌트·Y = 0 평면·Undo 한 단계
 //   --verify-gizmo-2d   : ImGui 마우스 입력으로 2D 회전 기즈모 고리를 반시계로 60도 끌어 엔티티 2D 각 증가 + 화면에서 반시계 회전 확인
+//   --verify-box-select-2d : ImGui 마우스 끌기로 뷰포트 박스 선택 (교체 → 같은 사각형 Ctrl 토글) — 결과 = CollectBoxSelection(같은 사각형)
 //   --verify-slice-rename : 임시 복사본(Content/__VerifySliceRename)으로 슬라이스 이름 변경 전파 (플립북·씬·프리팹 파일 + 열린 씬 메모리 Undo)
 // 모두 씬을 저장하지 않는다. 실패는 Error 로그 (Verify.ps1 종료 코드)
 #include <imgui.h>
@@ -18,6 +19,7 @@
 #include "Scene/Sprite/Sprite2DComponents.h"
 #include "Scene/Sprite/Sprite2DLibrary.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <format>
@@ -405,6 +407,170 @@ void FEditorApplication::UpdateVerifyGizmo2D()
 		// 마우스를 뷰포트 밖으로 (스크린샷에 고리 강조가 남지 않게)
 		IO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
 		VerifyGizmo.Step = -1;
+		return;
+	}
+	default:
+		return;
+	}
+}
+
+// ---------------------------------------------------------------- --verify-box-select-2d
+
+void FEditorApplication::UpdateVerifyBoxSelect2D()
+{
+	static const bool bEnabled = FCommandLine::FromProcess().HasFlag(L"--verify-box-select-2d");
+	if (!bEnabled || VerifyBoxSelect.Step < 0 || GetFrameIndex() < VerifyBoxSelect.NextFrame)
+	{
+		return;
+	}
+	constexpr uint64    StartFrame = 30;
+	constexpr int32     MoveSteps  = 8;
+	ImGuiIO&            IO         = ImGui::GetIO();
+	const FVector2      ImageSize  = ViewportPanel.GetImageSize();
+	FVerifyBoxSelect2D& V          = VerifyBoxSelect;
+	const auto MoveMouse = [&](const FVector2& Pixel) {
+		const FVector2 Screen = ViewportPanel.GetImageMin() + Pixel;
+		IO.AddMousePosEvent(Screen.X, Screen.Y);
+	};
+	const auto Fail = [&](const std::string& Message) {
+		E_LOG(LogEditor, Error, "2D 박스 선택(마우스) 검증 실패: {}", Message);
+		IO.AddKeyEvent(ImGuiMod_Ctrl, false);
+		IO.AddKeyEvent(ImGuiKey_LeftCtrl, false);
+		IO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+		V.Step = -1;
+	};
+	const auto SameSet = [](std::vector<FEntity> A, std::vector<FEntity> B) {
+		const auto Less = [](FEntity L, FEntity R) { return L.Index < R.Index; };
+		std::sort(A.begin(), A.end(), Less);
+		std::sort(B.begin(), B.end(), Less);
+		return A == B;
+	};
+
+	switch (V.Step)
+	{
+	case 0: // 2D 모드 + 씬 2D 전체 맞춤 + 선택 해제 (맞춤이 반영되도록 몇 프레임 뒤에 사각형을 고른다)
+		if (GetFrameIndex() < StartFrame)
+		{
+			return;
+		}
+		if (!ViewportPanel.Is2DMode())
+		{
+			ViewportPanel.Set2DMode(Context, true);
+		}
+		ViewportPanel.SetGizmoOperation(ETransformTool::Translate);
+		Context.ClearSelection();
+		ViewportPanel.FrameAll2D(Context);
+		V.Step      = 1;
+		V.NextFrame = GetFrameIndex() + 3;
+		return;
+	case 1: // 화면 경계가 가장 가까운 루트 스프라이트 둘을 감싸는 사각형 (여유 6px) — 시작점은 사각형 왼쪽 위 모서리
+	{
+		if (ImageSize.X <= 0.0f || Context.Camera != &Camera)
+		{
+			Fail("뷰포트 렌더 타깃/편집 카메라가 없습니다");
+			return;
+		}
+		struct FCandidate
+		{
+			FEntity                   Entity;
+			Editor2DMath::FScreenRect Rect;
+		};
+		std::vector<FCandidate> Candidates;
+		const FMatrix4x4        ViewProjection = Camera.GetViewProjectionMatrix();
+		Scene.GetRegistry().View<FSpriteComponent>().Each([&](FEntity Entity, FSpriteComponent&) {
+			FBox                      Bounds;
+			Editor2DMath::FScreenRect Rect;
+			if (!Scene.GetParent(Entity).IsValid() && Editor2DScene::AddBounds(Scene, Entity, Bounds) &&
+			    Editor2DMath::ProjectBoundsToScreen(Bounds, ViewProjection, ImageSize, Rect) && Rect.Min.X > 12.0f && Rect.Min.Y > 12.0f &&
+			    Rect.Max.X < ImageSize.X - 12.0f && Rect.Max.Y < ImageSize.Y - 12.0f)
+			{
+				Candidates.push_back({ Entity, Rect });
+			}
+		});
+		// 감싸는 사각형 넓이가 가장 작은 쌍 (다른 것이 덜 들어감 — 들어가도 기대값 CollectBoxSelection에 포함)
+		float BestArea = FLT_MAX;
+		for (size_t A = 0; A < Candidates.size(); ++A)
+		{
+			for (size_t B = A + 1; B < Candidates.size(); ++B)
+			{
+				const FVector2 Min(std::min(Candidates[A].Rect.Min.X, Candidates[B].Rect.Min.X), std::min(Candidates[A].Rect.Min.Y, Candidates[B].Rect.Min.Y));
+				const FVector2 Max(std::max(Candidates[A].Rect.Max.X, Candidates[B].Rect.Max.X), std::max(Candidates[A].Rect.Max.Y, Candidates[B].Rect.Max.Y));
+				const float    Area = (Max.X - Min.X) * (Max.Y - Min.Y);
+				if (Area < BestArea)
+				{
+					BestArea  = Area;
+					V.Targets = { Candidates[A].Entity, Candidates[B].Entity };
+					V.Start   = Min - FVector2(6.0f, 6.0f);
+					V.End     = Max + FVector2(6.0f, 6.0f);
+				}
+			}
+		}
+		if (V.Targets.size() != 2)
+		{
+			Fail(std::format("화면 안 루트 스프라이트가 둘 이상 필요합니다 ({}개)", Candidates.size()));
+			return;
+		}
+		V.Expected = ViewportPanel.CollectBoxSelection(Context, Editor2DMath::MakeScreenRect(V.Start, V.End), ImageSize);
+		MoveMouse(V.Start);
+		V.Step      = 2;
+		V.NextFrame = GetFrameIndex() + 3; // 마우스가 뷰포트 위로 (bHovered는 직전 Draw 판정)
+		return;
+	}
+	case 2: // 누름 (6 = Ctrl 단계)
+	case 6:
+		IO.AddMouseButtonEvent(ImGuiMouseButton_Left, true);
+		V.MoveIndex = 0;
+		++V.Step;
+		V.NextFrame = GetFrameIndex() + 1;
+		return;
+	case 3: // 끌기 (MoveSteps 프레임에 나눠)
+	case 7:
+	{
+		++V.MoveIndex;
+		const float T = static_cast<float>(V.MoveIndex) / static_cast<float>(MoveSteps);
+		MoveMouse(V.Start + (V.End - V.Start) * T);
+		if (V.MoveIndex >= MoveSteps)
+		{
+			++V.Step;
+		}
+		return;
+	}
+	case 4: // 뗌
+	case 8:
+		IO.AddMouseButtonEvent(ImGuiMouseButton_Left, false);
+		++V.Step;
+		V.NextFrame = GetFrameIndex() + 2;
+		return;
+	case 5: // 교체 판정 → Ctrl 누르고 같은 사각형을 다시 끈다
+	{
+		const std::vector<FEntity> Selected = Context.Selection.GetEntities();
+		const bool                 bTargets = Context.IsSelected(V.Targets[0]) && Context.IsSelected(V.Targets[1]);
+		if (!bTargets || !SameSet(Selected, V.Expected))
+		{
+			Fail(std::format("교체 선택 {}개 (기대 {}개 = CollectBoxSelection, 대상 둘 포함 {})", Selected.size(), V.Expected.size(), bTargets ? "예" : "아니오"));
+			return;
+		}
+		IO.AddKeyEvent(ImGuiKey_LeftCtrl, true);
+		IO.AddKeyEvent(ImGuiMod_Ctrl, true);
+		MoveMouse(V.Start);
+		V.Step      = 6;
+		V.NextFrame = GetFrameIndex() + 3;
+		return;
+	}
+	case 9: // Ctrl 토글 판정: 같은 사각형이라 모두 빠진다. 끌기가 Undo 단계를 만들지 않는다
+	{
+		IO.AddKeyEvent(ImGuiMod_Ctrl, false);
+		IO.AddKeyEvent(ImGuiKey_LeftCtrl, false);
+		const std::vector<FEntity> Selected = Context.Selection.GetEntities();
+		if (!Selected.empty() || Context.PendingEdit.IsPending())
+		{
+			Fail(std::format("Ctrl 토글 뒤 선택 {}개 (기대 0), 편집 대기 {}", Selected.size(), Context.PendingEdit.IsPending() ? "있음" : "없음"));
+			return;
+		}
+		E_LOG(LogEditor, Display, "2D 박스 선택(마우스) 검증 통과: 사각형 ({:.0f}, {:.0f})-({:.0f}, {:.0f}), 교체 {}개 = CollectBoxSelection, Ctrl 토글 뒤 0개",
+		      V.Start.X, V.Start.Y, V.End.X, V.End.Y, V.Expected.size());
+		IO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+		V.Step = -1;
 		return;
 	}
 	default:

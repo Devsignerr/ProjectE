@@ -28,6 +28,8 @@ struct FSpriteChunk
 
 static const uint E_SPRITE_FLAG_POINT = 1u;           // SpriteRenderer SpriteFlag_Point / SpriteTiles::FlagPoint
 static const uint E_SPRITE_CHUNK_BIT  = 0x80000000u;  // SpriteRenderer SpriteChunkRunBit (b0 최상위 비트 = 청크 구간)
+static const uint E_SPRITE_FLAG_SHADOW_DITHER = 2u;   // SpriteTiles::FlagShadowDither — 그림자 깊이: 컷오프 대신 디더 (SpriteShadow.hlsl)
+static const uint E_SPRITE_RUN_DITHER_BIT     = 0x40000000u; // FSpriteShadowRenderer: 청크 구간 전체 디더 (b0 RunInfo)
 
 // 사각형 모서리 (u = 로컬 X, v = 로컬 위) — 두 삼각형. 양면이라 와인딩은 상관없다 (컬링 없음)
 static const float2 SpriteCorners[6] = { float2(0.0f, 0.0f), float2(0.0f, 1.0f), float2(1.0f, 1.0f),

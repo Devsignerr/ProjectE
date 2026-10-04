@@ -32,6 +32,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  ShadowCache;             // r.Shadow.Cache (--no-shadow-cache)
 	extern TAutoConsoleVariable<int32> ShadowCacheStaticFrames; // r.Shadow.Cache.StaticFrames
 	extern TAutoConsoleVariable<bool>  SpriteShadows;           // r.Sprite.Shadows (--no-sprite-shadows, 2D 그림자 캐스팅)
+	extern TAutoConsoleVariable<bool>  SpriteTranslucentShadows; // r.Sprite.TranslucentShadows (알파 블렌드 2D 그림자 디더, 기본 끔)
 	extern TAutoConsoleVariable<float> ShadowCacheQuantize;     // r.Shadow.Cache.Quantize (카메라 이동 중 캐시 재사용 — 캐스케이드 중심 격자)
 	extern TAutoConsoleVariable<int32> ShadowCacheQuantizeFirst; // r.Shadow.Cache.QuantizeFirstCascade
 	extern TAutoConsoleVariable<float> ShadowLodBias;           // r.Shadow.LodBias

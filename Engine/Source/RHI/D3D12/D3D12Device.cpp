@@ -130,6 +130,7 @@ bool FD3D12Device::Init(bool bEnableDebugLayer)
 		Options.ProjectRecipeFile = FPaths::GetProjectConfigDirectory() / L"PipelineRecipes.epso";
 		Options.bWarm             = !CommandLine.HasFlag(L"--no-pso-warm");
 		Options.bRecordProject    = CommandLine.HasFlag(L"--record-pso");
+		Options.bUseLibrary       = CommandLine.HasFlag(L"--pso-library"); // 드라이버 캐시는 기본 끔 (D3D12PipelineCache.h (c))
 		FD3D12PipelineCache::Get().Initialize(Device.Get(), Adapter.Get(), Options);
 	}
 	return true;

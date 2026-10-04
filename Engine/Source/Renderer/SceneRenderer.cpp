@@ -235,7 +235,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	ShadowRenderer.ExtraDynamicCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight) {
 		SpriteShadows.RenderShadow(List, ViewProjection, Frustum, bLocalLight, FSpriteShadowRenderer::ESet::Dynamic);
 	};
-	ShadowRenderer.HasExtraDynamicCasters = [this]() { return SpriteShadows.HasDynamicCasters(); };
+	ShadowRenderer.HasExtraDynamicCasters = [this](const FFrustum& Frustum, FBox& OutBounds) { return SpriteShadows.GetDynamicCasterBounds(Frustum, OutBounds); };
 	LocalLightRenderer.ExtraCasters = [this](ID3D12GraphicsCommandList* List, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight) {
 		TerrainRenderer.RenderShadow(List, ViewProjection, Frustum, bLocalLight);
 		SpriteShadows.RenderShadow(List, ViewProjection, Frustum, bLocalLight, FSpriteShadowRenderer::ESet::All);
@@ -420,6 +420,8 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.UploadBytes += static_cast<double>(Stats.UploadBytes);
 	Capture.ShadowCacheReused += Stats.ShadowCacheReused;
 	Capture.ShadowCacheRebuilt += Stats.ShadowCacheRebuilt;
+	Capture.ShadowCacheCopied += Stats.ShadowCacheCopied;
+	Capture.ShadowCacheRestored += Stats.ShadowCacheRestored;
 	Capture.ScreenSizeCulled += Stats.ScreenSizeCulled;
 	Capture.Sprites += Stats.Sprites;
 	Capture.SpriteDrawCalls += Stats.SpriteDrawCalls;
@@ -480,8 +482,9 @@ void FSceneRenderer::LogPerfCapture() const
 		E_LOG(LogRenderer, Display, "[성능] 스킨 캐시: 마지막 프레임 정점 {} (디스패치 {}), 버퍼 {:.1f} MB, 준비 CPU {:.3f} ms", Stats.SkinCacheVertices,
 		      Stats.SkinCacheDispatches, static_cast<double>(Stats.SkinCacheBytes) / (1024.0 * 1024.0), Stats.SkinCachePrepareMs);
 	}
-	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
-	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
+	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f}, 캐시 복사 {:.2f}, 사각형 되살리기 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}",
+	      Capture.ShadowCacheReused / Count, Capture.ShadowCacheRebuilt / Count, Capture.ShadowCacheCopied / Count, Capture.ShadowCacheRestored / Count,
+	      Capture.ScreenSizeCulled / Count);
 	if (Capture.Sprites > 0.0 || Capture.SpriteTiles > 0.0)
 	{
 		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}, 타일 청크 {:.1f} (타일 {:.0f}, 캐시 청크 {}), 그림자 캐스터 {:.0f} (정적 {:.0f})",
@@ -1075,6 +1078,8 @@ void FSceneRenderer::FinalizeFrameStats()
 	Stats.ShadowTriangles   = ShadowRenderer.GetTriangles() + LocalLightRenderer.GetShadowTriangles() + TerrainRenderer.GetShadowTriangles();
 	Stats.ShadowCacheReused  = ShadowRenderer.GetCacheReusedCascades();
 	Stats.ShadowCacheRebuilt = ShadowRenderer.GetCacheRebuiltCascades();
+	Stats.ShadowCacheCopied  = ShadowRenderer.GetCacheCopiedCascades();
+	Stats.ShadowCacheRestored = ShadowRenderer.GetCacheRestoredCascades();
 	if (bFrameOcclusion)
 	{
 		Stats.Triangles       = OcclusionCuller.GetDrawnTriangles() + FrameMainTriangles; // 간접 드로우(정적) + 바로 그린 스킨
@@ -1388,7 +1393,8 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 			CasterTest = [this](const FBox& Bounds) { return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds); };
 		}
 		SpriteCollector.Collect(Scene, FrozenFrustum, CasterTest, ShadowStaticFrames);
-		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks());
+		SpriteShadows.SetBias(ShadowSettings.DepthBias, ShadowSettings.SlopeBias, LocalShadowSettings.DepthBias, LocalShadowSettings.SlopeBias);
+		SpriteShadows.Prepare(SpriteCollector.GetShadowItems(), SpriteCollector.GetShadowChunks(), RendererCVars::SpriteTranslucentShadows.Get());
 	}
 	else
 	{

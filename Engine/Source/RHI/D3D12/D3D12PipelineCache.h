@@ -23,6 +23,13 @@ class FJobQueue;
 //       <프로젝트>/Config/PipelineRecipes.epso(--record-pso로 기록, 패키지에 파일로 포함, FFileSystem으로 읽음). 시작할 때 작업 스레드가
 //       루트 시그니처(블롭)·PSO를 미리 만든다 (ID3D12Device는 자유 스레드). 같은 키를 메인 스레드가 요청하면 끝날 때까지 기다린다.
 //       워밍은 드라이버 캐시를 읽지 않고 항상 Create한다 — 작업 스레드 라이브러리 Load와 섞으면 화면이 실행마다 달라졌다 (WarmOne 주석)
+//   (c) 드라이버 캐시(a)는 기본 끔 (--pso-library로 켬). 2026-10-05 재현(Tests/Tilemap2D, Release ↔ Debug 교대): 드라이버 캐시에서 Load한 PSO가
+//       틀리게 그리는 실행이 나왔다 — 릿 스프라이트 PSO(SpritePS*Lit)가 그림자를 읽지 않아 2D 그림자가 통째로 빠짐(스프라이트 그림자 PSO 자체가 아님).
+//       ① Load가 다른 스레드의 Create와 겹친 실행은 Load한 PSO가 실행마다 달랐고(20회 중 5회), ② 그렇게(또는 워밍 실행에서 — 드물게, 재현 조건 미상)
+//       저장된 캐시 파일은 그 뒤 Load만 하는 실행마다 같은 틀린 화면(Tests/Materials·Decals·Terrain도 화면이 달라짐). 워밍·요청 Create로 만든 PSO는
+//       모든 실행에서 맞았다. 드라이버 내부 원인은 미상이고, 워밍이 레시피 전부를 만들어 요청은 대부분 메모리에서 받으므로(Tilemap2D 요청 스레드 PSO
+//       시간 Release 0.17s — 드라이버 캐시 Load만이면 0.35s) 드라이버 캐시를 끈다. 켜면 드라이버 PSO 작업을 한 번에 하나로(FDriverScope —
+//       Create·Load·워밍 루트 시그니처, 요청 우선) 해 ①을 막는다(②는 남음 — 형식 버전 3으로 이전 파일은 버림)
 //   셰이더 핫 리로드·머티리얼 변형: 바이트코드가 바뀌면 키가 바뀌어 새 PSO (옛 항목은 다음 실행 정리에서 빠짐)
 //   쓰는 곳: FD3D12Device::Init(Initialize, 프로젝트가 있을 때만 — 테스트·도구는 캐시 없음) / Shutdown(저장, 디바이스 해제 전)
 //   끄기 --no-pso-cache, 워밍만 끄기 --no-pso-warm, 통계 로그 "[PSO 캐시]"
@@ -38,6 +45,7 @@ public:
 		bool                  bWarm          = true;
 		bool                  bRecordProject = false; // 종료 때 이번 실행 레시피를 ProjectRecipeFile에 합쳐 쓴다 (--record-pso)
 		uint32                WarmThreads    = 2;
+		bool                  bUseLibrary    = false; // 드라이버 캐시(ID3D12PipelineLibrary) 읽기·저장 (--pso-library, 기본 끔 — 머리 주석 (c))
 	};
 
 	struct FStats
@@ -105,7 +113,21 @@ private:
 	ComPtr<ID3D12PipelineLibrary> Library;
 	std::vector<uint8>            LibraryData; // 라이브러리가 참조하는 직렬화 바이트 (라이브러리보다 오래 살아야 함)
 	std::unordered_set<uint64>    LibraryKeys; // 디스크 라이브러리에 저장된 키 (없는 이름을 Load하면 디버그 레이어 경고 — 있을 때만 불러온다, 읽은 뒤 읽기 전용)
-	std::mutex                    LibraryMutex;
+	// 드라이버 캐시 Load(배타) ↔ PSO·루트 시그니처 Create(공유, 워밍·요청 스레드): 라이브러리 Load가 다른 스레드의 Create와 겹치면
+	// 화면이 실행마다 달라지고 PSO가 통째로 그리지 않는 일이 있었다 (2026-10-05 재현 — 2D 그림자가 빠짐, 머리 주석 참고)
+	// 드라이버 캐시를 켰을 때만(Library): 드라이버 PSO 작업(Create*PipelineState·Load*Pipeline·워밍 루트 시그니처)은 프로세스 안에서 한 번에 하나
+	// (머리 주석 (c)). 요청(비워밍) 우선: 요청이 기다리는 동안 워밍은 새 작업을 시작하지 않는다
+	std::mutex              GateMutex;
+	std::condition_variable GateChanged;
+	uint32                  PendingRequests = 0;
+	bool                    bDriverBusy     = false;
+	struct FDriverScope
+	{
+		FDriverScope(FD3D12PipelineCache& InCache, bool bWarm);
+		~FDriverScope();
+		FD3D12PipelineCache& Cache;
+		bool                 bActive = false;
+	};
 	PipelineCache::FRecipeFile    UserRecipes;   // 읽은 사용자 레시피 (+ 이번 실행 기록)
 	PipelineCache::FRecipeFile    SessionRecipes; // 이번 실행 요청 레시피 (+ 블롭)
 	PipelineCache::FRecipeFile    WarmSource;     // 워밍 레시피 (사용자 ∪ 프로젝트, 워밍 중 읽기 전용)

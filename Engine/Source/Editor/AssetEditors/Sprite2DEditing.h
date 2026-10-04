@@ -128,6 +128,12 @@ namespace Sprite2DEditing
 	// 격자 대화 기본 셀 크기: 슬라이스가 있으면 가장 흔한 (W, H)(같은 수면 먼저 나온 것), 없으면 텍스처 가로·세로를 모두 나누는 16 → 32 → 8,
 	// 그것도 없으면 축마다 따로 (16 → 32 → 8, 없으면 그 축 전체). 텍스처 크기를 모르면(0 이하) 16
 	void EstimateGridCellSize(const FSpriteAsset& Asset, int32& OutWidth, int32& OutHeight);
+	// 이미지 투명 열/행 패턴으로 격자 추정 (격자 대화 기본값 — 슬라이스가 없을 때): 간격 S(1~16)·여백 M(0~16) 후보마다 축별로 가장 작은 셀 C를 찾는다 —
+	// 칸 수 N = (크기 - 2M + S) / (C + S) ≥ 2 (SpriteMath::SliceGrid와 같은 식), 여백·간격·끝 남는 줄이 모두 투명, 모든 칸 띠에 불투명 픽셀이 있음.
+	// 고르기: 가장 큰 S(내용에 꼭 맞는 칸) → 끝 남는 줄 = M(대칭 여백)인 축이 많은 것 → 주기(C + S) 합이 작은 것 → 작은 M. 칸 안 투명 여백은
+	// 여백·간격과 구별이 안 되므로 간격으로 본다(칸이 내용 합집합에 꼭 맞음 — 빈틈 없이 채운 타일 시트는 정확). 간격 0인 격자는 패턴으로 구별할 수
+	// 없어 false (호출자는 EstimateGridCellSize). 성공하면 셀 크기 모드로 채운다
+	bool EstimateGridFromImage(const FImageView& Image, FGridSliceOptions& InOut);
 
 	// ---- 슬라이스 이름 변경 전파 (아틀라스 저장 시 — 이 아틀라스를 쓰는 플립북 프레임·씬/프리팹 SpriteComponent.Slice)
 	struct FSliceRename

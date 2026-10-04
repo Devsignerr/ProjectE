@@ -161,6 +161,8 @@ void FMeshInstanceList::Upload(FD3D12DynamicUploadBuffer& DynamicBuffer)
 			Gpu.World          = Instance.World;
 			Gpu.BoneOffset     = Instance.BoneOffset;
 			Gpu.PrevBoneOffset = Instance.PrevBoneOffset;
+			Gpu.SkinCacheVertex    = Instance.SkinCacheVertex;
+			Gpu.SkinCacheCapacity  = Instance.SkinCacheCapacity;
 			Gpu.PrevWorld      = Instance.PrevWorld;
 			if (!Instance.IsSkinned())
 			{

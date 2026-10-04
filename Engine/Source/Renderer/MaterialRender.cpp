@@ -113,6 +113,11 @@ ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader,
 		VertexDesc.FileName                 = L"Shadow.hlsl";
 		VertexDesc.EntryPoint               = bSkinned ? L"ShadowMaterialSkinnedVS" : L"ShadowMaterialVS";
 		VertexDesc.Stage                    = EShaderStage::Vertex;
+		const bool bSkinCache               = bSkinned && State->bSkinCache;
+		if (bSkinCache)
+		{
+			VertexDesc.Defines.push_back(L"E_SKIN_CACHE"); // 스킨 캐시 정점 (SkinnedMesh.hlsli) — 슬롯 1 스트림 없음
+		}
 		const FShaderCompileDesc PixelDesc  = MaterialRender::MakeGraphShaderDesc(L"Shadow.hlsl", L"ShadowMaterialPS", EShaderStage::Pixel, Shader);
 		const ComPtr<IDxcBlob>   VertexBlob = State->ShaderLibrary->GetShader(VertexDesc);
 		const ComPtr<IDxcBlob>   PixelBlob  = State->ShaderLibrary->GetShader(PixelDesc);
@@ -122,7 +127,7 @@ ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader,
 			FGraphicsPipelineDesc Desc = State->BaseDesc;
 			Desc.VertexShader          = FD3D12ShaderCompiler::ToBytecode(VertexBlob.Get());
 			Desc.PixelShader           = FD3D12ShaderCompiler::ToBytecode(PixelBlob.Get());
-			Desc.InputLayout           = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
+			Desc.InputLayout           = bSkinned && !bSkinCache ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
 			const std::wstring Name    = std::format(L"{}{}_{:016x}", State->DebugName, bSkinned ? L"Skinned" : L"", Shader.Hash);
 			bOk                        = Entry->Pipelines[Index].InitGraphics(Rhi->GetDevice().GetDevice(), Desc, Name.c_str());
 		}
@@ -133,6 +138,15 @@ ID3D12PipelineState* FMaterialDepthPipelines::Get(const FMaterialShader& Shader,
 		}
 	}
 	return Entry->bFailed[Index] ? nullptr : Entry->Pipelines[Index].Get();
+}
+
+void FMaterialDepthPipelines::SetSkinCache(bool bInSkinCache)
+{
+	if (State && State->bSkinCache != bInSkinCache)
+	{
+		State->bSkinCache = bInSkinCache;
+		Reset();
+	}
 }
 
 void FMaterialDepthPipelines::Reset()

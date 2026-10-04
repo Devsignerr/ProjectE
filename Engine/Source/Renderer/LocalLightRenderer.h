@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Renderer/SkinCache.h"
+
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
@@ -53,6 +55,8 @@ public:
 	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources);
 	void Shutdown();
 	bool ReloadShaders(bool bForceRecompile);
+	// 스킨 변형 그림자 정점 셰이더 = 스킨 캐시 경로(E_SKIN_CACHE). Init 전 또는 바꾼 뒤 ReloadShaders (FSceneRenderer가 맞춘다)
+	bool bSkinCache = false;
 
 	// 1) 라이트 수집 + 그림자 장 배정 (CPU만)
 	void PrepareLights(FScene& Scene, const FCamera& Camera, const FLocalShadowSettings& ShadowSettings);
@@ -63,7 +67,8 @@ public:
 	// 3) 렌더 그래프 패스 등록: 로컬 그림자(장이 있으면, 타일 배열 깊이 쓰기) → 클러스터 컬링(계산, 클러스터 버퍼 UAV).
 	// 그림자 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료): 장마다 (정적/스킨)·메시·LOD별 인스턴싱, 스킨은 프레임 팔레트(t15).
 	// BreakRootSignature = 컬링 전에 그래픽스 루트를 바꿔 지난 메시 패스의 클러스터 루트 SRV 묶음을 끊는다 (같은 프레임에 다시 그릴 때 디버그 레이어 1003)
-	void AddPasses(FRenderGraph& Graph, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes, ID3D12RootSignature* BreakRootSignature,
+	// SkinSource = 스킨 정점 원본 (t15 — 프레임 팔레트 또는 스킨 캐시, 캐시면 그림자 패스가 읽기 선언)
+	void AddPasses(FRenderGraph& Graph, const FMeshInstanceList& Instances, const FSkinDrawSource& SkinSource, ID3D12RootSignature* BreakRootSignature,
 	               int32 Timer);
 	// 메시 패스가 읽는 리소스 (그림자 타일 배열 / 클러스터 버퍼) 가져오기
 	FRGResourceRef ImportShadowMap(FRenderGraph& Graph) const;

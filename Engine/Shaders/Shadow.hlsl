@@ -19,6 +19,14 @@ float4 ShadowVS(float3 Position : POSITION, uint InstanceId : SV_InstanceID) : S
 	return mul(mul(float4(Position, 1.0f), Instance.World), LightViewProjection);
 }
 
+#ifdef E_SKIN_CACHE
+// 스킨 메시 캐스터 (스킨 캐시, Renderer/SkinCache.h): 이번 프레임 스키닝된 월드 위치 (팔레트 경로와 같은 값)
+float4 ShadowSkinnedVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID) : SV_Position
+{
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	return mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId), LightViewProjection);
+}
+#else
 // 스킨 메시 캐스터 (인스턴싱): 인스턴스 팔레트로 월드 공간 변환 후 라이트 뷰-투영
 float4 ShadowSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT, uint InstanceId : SV_InstanceID) : SV_Position
 {
@@ -26,6 +34,7 @@ float4 ShadowSkinnedVS(float3 Position : POSITION, uint4 Joints : BLENDINDICES, 
 	const float4        WorldPosition = mul(float4(Position, 1.0f), ComputeSkinMatrix(Instance.BoneOffset, Joints, Weights));
 	return mul(WorldPosition, LightViewProjection);
 }
+#endif
 
 // ---- Masked (알파 테스트) 캐스터: 루트 상수 b1 + 머티리얼 텍스처 테이블 첫 칸(t0 = 베이스 컬러)
 cbuffer ShadowMaskConstants : register(b1)
@@ -53,6 +62,17 @@ FShadowMaskedOutput ShadowMaskedVS(float3 Position : POSITION, float2 UV : TEXCO
 	return Output;
 }
 
+#ifdef E_SKIN_CACHE
+FShadowMaskedOutput ShadowSkinnedMaskedVS(float2 UV : TEXCOORD0, float4 Color : COLOR, uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
+{
+	const FInstanceData Instance = LoadInstance(InstanceOffset, InstanceId);
+	FShadowMaskedOutput Output;
+	Output.Position = mul(LoadSkinCachePosition(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId), LightViewProjection);
+	Output.UV       = UV;
+	Output.Alpha    = Color.a;
+	return Output;
+}
+#else
 FShadowMaskedOutput ShadowSkinnedMaskedVS(float3 Position : POSITION, float2 UV : TEXCOORD0, float4 Color : COLOR, uint4 Joints : BLENDINDICES,
                                           float4 Weights : BLENDWEIGHT, uint InstanceId : SV_InstanceID)
 {
@@ -63,6 +83,7 @@ FShadowMaskedOutput ShadowSkinnedMaskedVS(float3 Position : POSITION, float2 UV 
 	Output.Alpha    = Color.a;
 	return Output;
 }
+#endif
 
 void ShadowMaskedPS(FShadowMaskedOutput Input)
 {
@@ -103,6 +124,22 @@ FShadowMaterialOutput ShadowMaterialVS(float3 Position : POSITION, float3 Normal
 	                                Color);
 }
 
+#ifdef E_SKIN_CACHE
+// 스킨 캐시: 법선·탄젠트는 이미 월드 공간 (정규화, 탄젠트 w = 반사 반영 부호)
+FShadowMaterialOutput ShadowMaterialSkinnedVS(float2 UV : TEXCOORD0, float4 Color : COLOR, uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
+{
+	const FInstanceData    Instance = LoadInstance(InstanceOffset, InstanceId);
+	const FSkinCacheVertex Vertex   = LoadSkinCacheVertex(Instance.SkinCacheVertex, Instance.SkinCacheCapacity, VertexId);
+	FShadowMaterialOutput  Output;
+	Output.Position      = mul(Vertex.Position, LightViewProjection);
+	Output.WorldPosition = Vertex.Position.xyz;
+	Output.WorldNormal   = Vertex.Normal;
+	Output.WorldTangent  = Vertex.Tangent;
+	Output.UV            = UV;
+	Output.Color         = Color;
+	return Output;
+}
+#else
 FShadowMaterialOutput ShadowMaterialSkinnedVS(float3 Position : POSITION, float3 Normal : NORMAL, float2 UV : TEXCOORD0, float4 Color : COLOR,
                                               float4 Tangent : TANGENT, uint4 Joints : BLENDINDICES, float4 Weights : BLENDWEIGHT,
                                               uint InstanceId : SV_InstanceID)
@@ -111,6 +148,7 @@ FShadowMaterialOutput ShadowMaterialSkinnedVS(float3 Position : POSITION, float3
 	const float4x4      Skin     = ComputeSkinMatrix(Instance.BoneOffset, Joints, Weights);
 	return MakeShadowMaterialOutput(mul(float4(Position, 1.0f), Skin), mul(Normal, (float3x3)Skin), (float3x3)Skin, Tangent, UV, Color);
 }
+#endif
 
 #ifdef E_MATERIAL_GRAPH
 SamplerState MaterialShadowClampSampler : register(s1);

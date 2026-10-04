@@ -158,7 +158,9 @@ public:
 	void Prepare(const FMeshInstanceList& Instances, const FResourceManager& Resources, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
 	             const FRayTracingSceneOptions& Options, const std::vector<FTerrainRayTracingInput>* Terrains = nullptr, const FScene* Scene = nullptr);
 	// 그래프 패스 등록. 반환 = TLAS 참조 (추적 패스가 Read(…, AccelStructRead))
-	FRGResourceRef AddBuildPasses(FRenderGraph& Graph, int32 Timer);
+	//   SkinCache/SkinCacheRef: 스킨 캐시(FSkinCache)가 이번 프레임 스키닝했으면 스킨 정점은 다시 계산하지 않고 캐시 RT 정점 영역(FVertex 그대로,
+	//   인스턴스 SkinCacheRtOffset, bSkinCacheLod0인 것만)을 정점 풀로 복사한다 (갱신하는 모델만 — 나머지는 계산 스키닝, 갱신 주기·풀 수명 그대로)
+	FRGResourceRef AddBuildPasses(FRenderGraph& Graph, int32 Timer, ID3D12Resource* SkinCache = nullptr, FRGResourceRef SkinCacheRef = {});
 	// 추적 패스가 읽는 리소스 선언: TLAS + 이번 프레임 스킨 정점 버퍼 (바인드리스로 읽음)
 	void DeclareTraceReads(FRenderGraph::FPassBuilder& Pass, FRGResourceRef Tlas) const;
 
@@ -318,6 +320,7 @@ private:
 		D3D12_GPU_VIRTUAL_ADDRESS SkinVertices = 0;
 		uint32                    VertexCount  = 0;
 		uint32                    BoneOffset   = 0;
+		uint64                    CacheOffset  = ~0ull; // 스킨 캐시 RT 정점 영역 안 바이트 (LOD0·RT 거리 안 인스턴스만 — 아니면 ~0 = 계산 스키닝)
 	};
 	struct FCompactOp
 	{

@@ -95,6 +95,7 @@ bool FLocalLightRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary
 	}
 
 	MaterialPipelines.Init(*Rhi, *ShaderLibrary, L"LocalShadowMaterialPipeline");
+	MaterialPipelines.SetSkinCache(bSkinCache);
 	if (!CreateCullPipeline(CullPipeline, false) || !CreateShadowPipeline(ShadowPipelines[0], false, 0) ||
 	    !CreateShadowPipeline(ShadowPipelines[1], false, 1) || !CreateShadowPipeline(ShadowPipelines[2], false, 2) ||
 	    !CreateShadowPipeline(ShadowPipelines[3], false, 3))
@@ -315,6 +316,11 @@ bool FLocalLightRenderer::CreateShadowPipeline(FD3D12PipelineState& OutPipeline,
 	VertexDesc.FileName   = L"Shadow.hlsl";
 	VertexDesc.EntryPoint = bMasked ? (bSkinned ? L"ShadowSkinnedMaskedVS" : L"ShadowMaskedVS") : (bSkinned ? L"ShadowSkinnedVS" : L"ShadowVS");
 	VertexDesc.Stage      = EShaderStage::Vertex;
+	const bool bSkinCacheVertex = bSkinned && bSkinCache; // 스킨 캐시 정점 (SkinnedMesh.hlsli E_SKIN_CACHE — 슬롯 1 스트림 없음)
+	if (bSkinCacheVertex)
+	{
+		VertexDesc.Defines.push_back(L"E_SKIN_CACHE");
+	}
 	FShaderCompileDesc PixelDesc;
 	PixelDesc.FileName   = L"Shadow.hlsl";
 	PixelDesc.EntryPoint = L"ShadowMaskedPS";
@@ -337,7 +343,7 @@ bool FLocalLightRenderer::CreateShadowPipeline(FD3D12PipelineState& OutPipeline,
 	{
 		Desc.PixelShader = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
 	}
-	Desc.InputLayout          = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
+	Desc.InputLayout          = bSkinned && !bSkinCacheVertex ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout();
 	Desc.NumRenderTargets     = 0;
 	Desc.DepthStencilFormat   = ShadowDsvFormat;
 	Desc.bDepthEnable         = true;
@@ -361,6 +367,7 @@ bool FLocalLightRenderer::ReloadShaders(bool bForceRecompile)
 		return true;
 	}
 	MaterialPipelines.Reset(); // 그래프 머티리얼 PSO는 다음 그리기에 다시 만든다
+	MaterialPipelines.SetSkinCache(bSkinCache);
 	FD3D12PipelineState NewCull;
 	FD3D12PipelineState NewShadow[DepthVariantCount];
 	bool                bOk = CreateCullPipeline(NewCull, bForceRecompile);
@@ -882,17 +889,19 @@ void FLocalLightRenderer::PrepareFrame(const FCamera& Camera, uint32 Width, uint
 	ConstantsAddress      = DynamicBuffer.AllocateConstants(Constants).GpuAddress;
 }
 
-void FLocalLightRenderer::AddPasses(FRenderGraph& Graph, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
+void FLocalLightRenderer::AddPasses(FRenderGraph& Graph, const FMeshInstanceList& Instances, const FSkinDrawSource& SkinSource,
                                     ID3D12RootSignature* BreakRootSignature, int32 Timer)
 {
+	const D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes = SkinSource.Address;
 	ShadowDrawCalls = 0;
 	ShadowTriangles = 0;
 	if (!ShadowSlices.empty())
 	{
 		// 장마다 지우고 그린다 (쓰지 않는 장은 셰이더가 읽지 않음)
-		Graph.AddPass("로컬 그림자")
-			.Write(ImportShadowMap(Graph), ERGAccess::DepthWrite, FRGSubresourceRange::All(), true)
-			.Timer(Timer)
+		FRenderGraph::FPassBuilder Pass = Graph.AddPass("로컬 그림자");
+		Pass.Write(ImportShadowMap(Graph), ERGAccess::DepthWrite, FRGSubresourceRange::All(), true);
+		SkinSource.DeclareRead(Pass);
+		Pass.Timer(Timer)
 			.Execute([this, &Instances, SkinPalettes](FRGContext& Context) { RecordShadows(Context.CommandList, Instances, SkinPalettes); });
 	}
 

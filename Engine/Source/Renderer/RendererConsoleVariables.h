@@ -15,6 +15,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  DepthPrepass;     // r.DepthPrepass   (--no-depth-prepass)
 	extern TAutoConsoleVariable<bool>  Occlusion;        // r.Occlusion      (--occlusion)
 	extern TAutoConsoleVariable<bool>  SkinCulling;      // r.SkinCulling    (--no-skin-culling)
+	extern TAutoConsoleVariable<bool>  SkinCache;        // r.SkinCache      (--skin-cache / --no-skin-cache, Renderer/SkinCache.h)
 	extern TAutoConsoleVariable<bool>  ParticleCulling;  // r.ParticleCulling (--no-particle-culling)
 	extern TAutoConsoleVariable<bool>  Lod;              // r.LOD            (--no-lod)
 	extern TAutoConsoleVariable<bool>  SkinnedLod;       // r.LOD.Skinned    (--no-skinned-lod)

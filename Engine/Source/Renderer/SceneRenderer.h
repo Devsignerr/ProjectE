@@ -81,6 +81,7 @@ enum class ERenderTimer : uint32
 	DdgiTrace,        // DDGI 프로브 광선 추적 (Phase 51)
 	DdgiBlend,        // DDGI 조도/거리/상태 누적 (+ 프로브 구 표시)
 	RayTracedAmbientOcclusion, // RTAO 추적 + 공간 필터 + 누적 (SSAO 대신, 근거리 간접 가림)
+	SkinCache,        // 스킨 캐시 계산 스키닝 (r.SkinCache — 보이는 스킨 인스턴스를 프레임에 한 번)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -106,6 +107,10 @@ struct FSceneRenderStats
 	uint32 SkinnedDrawn  = 0; // 팔레트로 그리는 스킨 메시 엔티티 (메인 프러스텀 ∪ 그림자 캐스터 볼륨)
 	uint32 SkinPalettes  = 0; // 이번 프레임 계산한 팔레트 수 (같은 스킨의 프리미티브는 하나를 공유)
 	uint32 SkinnedCulled = 0; // 가시성 판정에서 빠진 스킨 메시
+	uint64 SkinCacheVertices = 0; // 스킨 캐시가 이번 프레임 스키닝한 정점 (r.SkinCache, 0 = 팔레트 정점 셰이더 경로)
+	uint32 SkinCacheDispatches = 0;
+	uint64 SkinCacheBytes    = 0; // 스킨 캐시 버퍼 크기 (용량)
+	float  SkinCachePrepareMs = 0.0f; // 스킨 캐시 배치 CPU (이번 프레임)
 	uint64 UploadBytes   = 0; // 씬 렌더러가 이번 프레임 동적 업로드 버퍼에 쓴 양
 	// 오클루전 컬링 (GPU 리드백 — 몇 프레임 늦은 값): 검사한 정적 인스턴스, 1단계/2단계에서 그린 수
 	uint32 OcclusionTested = 0;
@@ -266,7 +271,8 @@ private:
 	// 현재 라이브러리 셰이더로 메시 PSO 생성 (Init/ReloadShaders 공용)
 	// GraphShader: 그래프 머티리얼 픽셀 셰이더 변형 (nullptr = 고정 PBR). 정점 셰이더는 항상 기본 바이트코드
 	bool CreateMeshPipeline(FD3D12PipelineState& OutPipeline, EMeshPass Pass, uint32 Variant, const FMaterialShader* GraphShader = nullptr);
-	static void GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel);
+	// bSkinCache: 스킨 변형 정점 셰이더를 스킨 캐시 경로(E_SKIN_CACHE)로
+	static void GetMeshShaderDescs(EMeshPass Pass, uint32 Variant, bool bSkinCache, FShaderCompileDesc& OutVertex, FShaderCompileDesc& OutPixel);
 	FD3D12PipelineState& GetMeshPipeline(EMeshPass Pass, uint32 Variant)
 	{
 		if (Pass == EMeshPass::Wireframe)
@@ -301,6 +307,9 @@ private:
 	};
 	std::unordered_map<uint64, std::unique_ptr<FGraphPipelineSet>> GraphPipelines;
 	FSkinnedMeshPalette  SkinPalettes; // 프레임별 본 팔레트 (섀도우/메인 공유)
+	FSkinCache           SkinCache;    // 스킨 캐시 (r.SkinCache): 프레임에 한 번 계산 스키닝 → 메시 패스 스킨 변형이 읽는다
+	bool                 bSkinCache = false; // 메시/그림자 파이프라인의 스킨 변형이 스킨 캐시 정점 셰이더인가 (r.SkinCache, 바뀌면 파이프라인 다시)
+	FSkinDrawSource      FrameSkinSource;    // 이번 Render의 스킨 정점 원본 (t15: 캐시 또는 팔레트) — 메시 패스 루트·선언
 	FPostProcessor       PostProcessor;
 	FShadowRenderer      ShadowRenderer;
 	FIblRenderer         IblRenderer;

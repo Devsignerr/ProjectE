@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Renderer/SkinCache.h"
+
 #include "RHI/D3D12/D3D12DescriptorAllocator.h"
 #include "RHI/D3D12/D3D12DescriptorHeap.h"
 #include "RHI/D3D12/D3D12PipelineState.h"
@@ -68,7 +70,8 @@ public:
 	bool IntersectsCasterVolume(const FBox& WorldBounds) const;
 	// 2) 섀도우 패스 등록 (캐스케이드가 있을 때만, 그림자 맵 깊이 쓰기). 그래프 실행 뒤 섀도우 맵은 평소 상태(PIXEL_SHADER_RESOURCE).
 	// 캐스터 = 프레임 메시 인스턴스 목록 (Upload 완료). 캐스케이드마다 (정적/스킨)·메시·LOD별 인스턴싱, 스킨은 프레임 팔레트(SkinPalettes, t15)
-	void AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes, int32 Timer);
+	// SkinSource = 스킨 정점 원본 (t15 — 프레임 팔레트 또는 스킨 캐시, 캐시면 그림자 패스가 읽기 선언)
+	void AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, const FSkinDrawSource& SkinSource, int32 Timer);
 	// 섀도우 맵 가져오기 (없으면 무효 참조). 평소 상태 PIXEL_SHADER_RESOURCE (캐스케이드 = 배열 장)
 	FRGResourceRef ImportShadowMap(FRenderGraph& Graph) const;
 
@@ -77,6 +80,8 @@ public:
 	ID3D12Resource*               GetShadowMapResource() const { return ShadowMap.Get(); } // 평소 PIXEL_SHADER_RESOURCE
 
 	bool ReloadShaders(bool bForceRecompile);
+	// 스킨 변형 정점 셰이더 = 스킨 캐시 경로(E_SKIN_CACHE, 슬롯 1 없음). Init 전 또는 바꾼 뒤 ReloadShaders (FSceneRenderer가 맞춘다)
+	bool bSkinCache = false;
 
 	FShadowCasterHook ExtraCasters; // 메시 인스턴스 밖 캐스터 (지형 — FTerrainRenderer::RenderShadow)
 	// 추가 캐스터의 그림자 상태 해시 (캐스케이드 프러스텀 안). 있으면 추가 캐스터는 정적 캐스터로 캐시에 그린다 — 해시에는 그리는 결과를

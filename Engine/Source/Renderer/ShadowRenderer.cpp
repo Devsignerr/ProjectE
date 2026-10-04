@@ -63,6 +63,7 @@ bool FShadowRenderer::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 		return false;
 	}
 	MaterialPipelines.Init(*Rhi, *ShaderLibrary, L"ShadowMaterialPipeline");
+	MaterialPipelines.SetSkinCache(bSkinCache);
 	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
 		if (!CreatePipeline(Pipelines[Variant], false, Variant))
@@ -109,6 +110,11 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	VertexDesc.FileName   = L"Shadow.hlsl";
 	VertexDesc.EntryPoint = bMasked ? (bSkinned ? L"ShadowSkinnedMaskedVS" : L"ShadowMaskedVS") : (bSkinned ? L"ShadowSkinnedVS" : L"ShadowVS");
 	VertexDesc.Stage      = EShaderStage::Vertex;
+	const bool bSkinCacheVertex = bSkinned && bSkinCache; // 스킨 캐시 정점 (SkinnedMesh.hlsli E_SKIN_CACHE — 슬롯 1 스트림 없음)
+	if (bSkinCacheVertex)
+	{
+		VertexDesc.Defines.push_back(L"E_SKIN_CACHE");
+	}
 	FShaderCompileDesc PixelDesc;
 	PixelDesc.FileName   = L"Shadow.hlsl";
 	PixelDesc.EntryPoint = L"ShadowMaskedPS";
@@ -131,7 +137,7 @@ bool FShadowRenderer::CreatePipeline(FD3D12PipelineState& OutPipeline, bool bFor
 	{
 		Desc.PixelShader = FD3D12ShaderCompiler::ToBytecode(PixelShader.Get());
 	}
-	Desc.InputLayout          = bSkinned ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // POSITION(+UV/COLOR, 스킨)만 사용
+	Desc.InputLayout          = bSkinned && !bSkinCacheVertex ? FStaticMesh::GetSkinnedInputLayout() : FStaticMesh::GetInputLayout(); // POSITION(+UV/COLOR, 스킨)만 사용
 	Desc.NumRenderTargets     = 0;
 	Desc.DepthStencilFormat   = ShadowDsvFormat;
 	Desc.bDepthEnable         = true;
@@ -155,6 +161,7 @@ bool FShadowRenderer::ReloadShaders(bool bForceRecompile)
 		return true;
 	}
 	MaterialPipelines.Reset(); // 그래프 머티리얼 PSO는 다음 그리기에 다시 만든다
+	MaterialPipelines.SetSkinCache(bSkinCache);
 	InvalidateCache();         // 셰이더가 바뀌었을 수 있다
 	for (uint32 Variant = 0; Variant < DepthVariantCount; ++Variant)
 	{
@@ -576,9 +583,10 @@ void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12D
 	}
 }
 
-void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes,
+void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, const FMeshInstanceList& Instances, const FSkinDrawSource& SkinSource,
                               int32 Timer)
 {
+	const D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes = SkinSource.Address;
 	E_CHECKF(Rhi != nullptr, "섀도우 렌더러가 초기화되지 않았습니다");
 	DrawCalls    = 0;
 	Triangles    = 0;
@@ -610,6 +618,7 @@ void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, 
 					Pass.Write(CacheRef, ERGAccess::DepthWrite, FRGSubresourceRange::Slice(Index), true);
 				}
 			}
+			SkinSource.DeclareRead(Pass);
 			Pass.Timer(Timer).Execute([this, &Instances, SkinPalettes](FRGContext& Context) { RecordCache(Context.CommandList, Instances, SkinPalettes); });
 		}
 		bool bAnyCopy = false;
@@ -633,9 +642,10 @@ void FShadowRenderer::AddPass(FRenderGraph& Graph, FRGResourceRef ShadowMapRef, 
 	}
 	// 캐시 없는 캐스케이드는 지우고 모두 그리고, 캐시 캐스케이드는 복사된(또는 이미 같은) 정적 깊이 위에 동적 캐스터만
 	// (캐시 캐스케이드가 있으면 이전 내용을 읽는 쓰기 — 덮어쓰기 아님. 쓰지 않는 장은 셰이더가 읽지 않는다)
-	Graph.AddPass("방향광 그림자")
-		.Write(ShadowMapRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), !bAnyCached)
-		.Timer(Timer)
+	FRenderGraph::FPassBuilder Pass = Graph.AddPass("방향광 그림자");
+	Pass.Write(ShadowMapRef, ERGAccess::DepthWrite, FRGSubresourceRange::All(), !bAnyCached);
+	SkinSource.DeclareRead(Pass);
+	Pass.Timer(Timer)
 		.Execute([this, &Instances, SkinPalettes](FRGContext& Context) { Record(Context.CommandList, Instances, SkinPalettes); });
 }
 

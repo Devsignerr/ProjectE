@@ -125,15 +125,23 @@ struct FDistanceJoint2DComponent
 	float    MaxLength         = -1.0f;    // cm (< 0 = 제한 없음)
 	float    SpringFrequency   = 0.0f;     // Hz (0 = 딱딱한 막대)
 	float    SpringDamping     = 0.5f;
+	// 모터 (윈치): 길이를 MotorSpeed로 바꾼다 — 켜면 딱딱한 막대가 아니라 Min/MaxLength 범위 안에서 늘고 준다(진동수 0이면 스프링 힘 없음,
+	// 범위가 없으면 끝없이 — Box2D 거리 관절 모터는 부드러운 관절에서만 돈다)
+	bool     bMotor            = false;
+	float    MotorSpeed        = 0.0f;    // cm/s (+ = 늘어남)
+	float    MaxMotorForce     = 1000.0f; // N
 	float    BreakForce        = 0.0f;
 	bool     bCollideConnected = true;
 };
 
-// 회전 관절 (경첩): Anchor를 중심으로 돈다. 각 한계·모터 선택
+// 회전 관절 (경첩): Anchor를 중심으로 돈다. 각 한계·모터·스프링 선택 (스프링 = TargetAngle로 되돌리는 회전 스프링, 모터·한계와 함께 쓸 수 있다)
 struct FRevoluteJoint2DComponent
 {
 	FEntity  Target;
 	FVector2 Anchor;
+	float    SpringFrequency   = 0.0f;   // Hz (0 = 스프링 없음)
+	float    SpringDamping     = 0.7f;
+	float    TargetAngle       = 0.0f;   // 도, 스프링이 되돌리는 각 (-180~180, 만든 순간 = 0)
 	bool     bLimit            = false;
 	float    LowerAngle        = -45.0f; // 도
 	float    UpperAngle        = 45.0f;
@@ -144,12 +152,15 @@ struct FRevoluteJoint2DComponent
 	bool     bCollideConnected = false;
 };
 
-// 미닫이 관절: Axis 방향으로만 미끄러진다 (회전 없음). 이동 한계·모터 선택
+// 미닫이 관절: Axis 방향으로만 미끄러진다 (회전 없음). 이동 한계·모터·스프링 선택 (스프링 = TargetTranslation으로 되돌린다)
 struct FPrismaticJoint2DComponent
 {
 	FEntity  Target;
 	FVector2 Anchor;
 	FVector2 Axis              = FVector2(1.0f, 0.0f);
+	float    SpringFrequency   = 0.0f;    // Hz (0 = 스프링 없음)
+	float    SpringDamping     = 0.7f;
+	float    TargetTranslation = 0.0f;    // cm, 스프링이 되돌리는 이동 (만든 순간 = 0)
 	bool     bLimit            = false;
 	float    LowerTranslation  = -100.0f; // cm
 	float    UpperTranslation  = 100.0f;
@@ -178,7 +189,7 @@ struct FWheelJoint2DComponent
 	FEntity  Target;
 	FVector2 Anchor;
 	FVector2 Axis              = FVector2(0.0f, 1.0f);
-	float    SpringFrequency   = 4.0f;  // Hz (0 = 서스펜션 없음 — 딱딱함)
+	float    SpringFrequency   = 4.0f;  // Hz (0 = 스프링 없음 — 축 방향으로 자유롭게 미끄러진다, 고정하려면 한계 0~0)
 	float    SpringDamping     = 0.7f;
 	bool     bLimit            = false;
 	float    LowerTranslation  = -25.0f; // cm (서스펜션 이동)

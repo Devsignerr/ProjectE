@@ -33,11 +33,15 @@
 //     3D처럼 두 번 다시 적용해 지금 예측에 가까운 쪽을 쓴다: ① 바디를 지금 자리에 둔 채 ② 무브마다 그 무브를 처음 시뮬레이션할 때의
 //     기록 위치로 잠시 옮겨(PoseBodiesForReplay2D — 끝나면 RestoreBodiesAfterReplay2D). 예측 바디는 재시뮬레이션하지 않는다.
 //   옵션: 3D와 같은 Network.bPhysicsPrediction(+ 캐릭터 예측) && SetReplicationClient. 끄면 키네마틱 보간.
-//   측정(--net-physics-stats)의 바디 항목은 3D 바디만 센다 (2D는 스냅 횟수와 예측 중 개수만 합친다).
+//   ②의 결과가 지금 자리로 돌아온 바디에 1cm 넘게 묻히면 ①을 쓴다 (3D와 같은 겹침 거부 — 묻힌 채 2D 스텝을 맞으면 키네마틱 대리 캡슐이 바디를 튕겨 낸다).
+//   측정(--net-physics-stats): 3D 줄과 같은 항목(캐릭터 보정·튐, 바디 반응 지연·튐·스냅, 예측 중 개수)을 2D 캐릭터·2D 바디로 따로 한 줄
+//     ("2D 물리 예측 측정") + 재조정 겹침 거부 횟수. 2D 캐릭터나 2D 복제 동적 바디가 있을 때만 쓴다 (TickPhysicsPredictionStats2D).
 
 namespace
 {
 	using namespace PhysicsPredictionTuning;
+	constexpr float StatsJumpThreshold2D = 2.0f; // cm, 측정: 눈에 띄는 튐 (3D StatsJumpThreshold와 같다)
+	constexpr float StatsMoveThreshold2D = 1.0f; // cm, 측정: 접촉 후 이만큼 움직이면 반응 시작
 
 	// 최단 각 차이 (To - From, -π ~ π)
 	float WrapAngle(float Radians)
@@ -322,7 +326,7 @@ void FGameWorld::ProcessBodySnapshot2D(FEntity Entity, FPredictedBody2D& Body)
 	if (Body.PositionError.Length() > SnapDistance)
 	{
 		E_LOG(LogNet, Verbose, "2D 물리 예측 스냅: NetId {} {:.1f}cm", NetReplication::GetNetId(*Scene, Entity), Body.PositionError.Length());
-		++PredictionStats.Snaps;
+		++PredictionStats2D.Snaps;
 		FPhysics2DBodyMotion Snapped;
 		Snapped.Position        = ServerPosition + Body.ServerVelocity * Ahead;
 		Snapped.Angle           = ServerAngle;
@@ -415,4 +419,132 @@ void FGameWorld::RecordPhysicsPrediction2D()
 			Body.History.pop_front();
 		}
 	}
+	if (PredictionStats.bEnabled)
+	{
+		TickPhysicsPredictionStats2D();
+	}
+}
+
+// ---------------------------------------------------------------- 측정 (--net-physics-stats — 3D TickPhysicsPredictionStats와 같은 항목, 평면)
+
+void FGameWorld::TickPhysicsPredictionStats2D()
+{
+	FPhysicsPredictionStats2D& Stats    = PredictionStats2D;
+	const float                Delta    = PredictionStats.LastDelta;
+	FRegistry&                 Registry = Scene->GetRegistry();
+	Stats.Elapsed += Delta;
+	++Stats.Frames;
+
+	struct FCharacterReach
+	{
+		FVector2 Position;
+		FVector2 HalfExtent; // 캡슐 반 폭·반 높이
+	};
+	std::vector<FCharacterReach> Characters;
+	std::unordered_set<FEntity>  Touching;
+	std::vector<FEntity>         Contacts;
+	Registry.View<FCharacterMovement2DComponent>().Each([&](FEntity Character, FCharacterMovement2DComponent& Movement) {
+		if (!IsPredicted(Character) || !Characters2D->HasCharacter(Character))
+		{
+			return;
+		}
+		const float Jump       = Stats.Characters[Character].Push(Scene->GetTransform(Character).Position, Delta);
+		Stats.CharacterMaxJump = std::max(Stats.CharacterMaxJump, Jump);
+		Stats.CharacterJumpFrames += Jump > StatsJumpThreshold2D ? 1u : 0u;
+		Characters2D->GetCharacterContacts(Character, Contacts);
+		Touching.insert(Contacts.begin(), Contacts.end());
+		Characters.push_back({ Characters2D->GetState(Character).Position,
+		                       FVector2(Movement.CapsuleRadius, std::max(Movement.CapsuleHeight * 0.5f, Movement.CapsuleRadius)) });
+	});
+	Registry.View<FNetIdComponent, FRigidBody2DComponent>().Each([&](FEntity Entity, FNetIdComponent& NetId, FRigidBody2DComponent& RigidBody) {
+		if (RigidBody.BodyType != EBodyType2D::Dynamic || Registry.Has<FCharacterMovement2DComponent>(Entity))
+		{
+			return;
+		}
+		FBodyStats&    Body     = Stats.Bodies[Entity];
+		const FVector3 Position = Scene->GetTransform(Entity).Position;
+		if (!Body.bInitialized)
+		{
+			Body.bInitialized = true;
+			Body.RestPosition = Position;
+			Body.LastPosition = Position;
+		}
+		// 접촉 전에 멈춰 있으면 기준 위치를 다시 잡는다 (떨어져 자리 잡는 상자 등 — 3D와 같다)
+		if (Body.ContactTime < 0.0f && FVector3::Distance(Position, Body.LastPosition) < 0.05f &&
+		    FVector3::Distance(Position, Body.RestPosition) > StatsMoveThreshold2D)
+		{
+			Body.RestPosition = Position;
+			Body.MoveTime     = -1.0f;
+		}
+		Body.LastPosition = Position;
+		if (Body.MoveTime < 0.0f && FVector3::Distance(Position, Body.RestPosition) > StatsMoveThreshold2D)
+		{
+			Body.MoveTime = Stats.Elapsed;
+		}
+		if (Body.ContactTime < 0.0f)
+		{
+			// 접촉 = 캐릭터가 닿았거나, 평면 위 닿을 위치에 왔다 (보간 바디는 과거 위치라 물리 접촉이 늦을 수 있다)
+			const FVector3 Scale = Scene->GetTransform(Entity).Scale;
+			FVector2       Extent;
+			if (const FBoxCollider2DComponent* Box = Registry.TryGet<FBoxCollider2DComponent>(Entity))
+			{
+				Extent = FVector2(std::abs(Box->Size.X * Scale.X), std::abs(Box->Size.Y * Scale.Z)) * 0.5f;
+			}
+			else if (const FCircleCollider2DComponent* Circle = Registry.TryGet<FCircleCollider2DComponent>(Entity))
+			{
+				const float Radius = std::abs(Circle->Radius) * std::max(std::abs(Scale.X), std::abs(Scale.Z));
+				Extent             = FVector2(Radius, Radius);
+			}
+			bool           bReached = Touching.contains(Entity);
+			const FVector2 Plane    = Physics2DMath::ToPlane(Position);
+			for (const FCharacterReach& Character : Characters)
+			{
+				const FVector2 Offset = Character.Position - Plane;
+				bReached              = bReached || (std::abs(Offset.X) < Character.HalfExtent.X + Extent.X + 2.0f &&
+				                                     std::abs(Offset.Y) < Character.HalfExtent.Y + Extent.Y + 2.0f);
+			}
+			if (!bReached)
+			{
+				return;
+			}
+			Body.ContactTime = Stats.Elapsed;
+			Body.bReacted    = Body.MoveTime >= 0.0f && Body.MoveTime < Stats.Elapsed;
+			E_LOG(LogNet, Display, "2D 물리 예측 측정: NetId {} 접촉 ({:.2f}초)", NetId.NetId, Stats.Elapsed);
+		}
+		const float Jump  = Body.Track.Push(Position, Delta);
+		Stats.BodyMaxJump = std::max(Stats.BodyMaxJump, Jump);
+		Stats.BodyJumpFrames += Jump > StatsJumpThreshold2D ? 1u : 0u;
+		if (!Body.bReacted && Body.MoveTime >= 0.0f)
+		{
+			Body.bReacted = true;
+			Stats.ReactionDelays.push_back(Body.MoveTime - Body.ContactTime);
+			E_LOG(LogNet, Display, "2D 물리 예측 측정: NetId {} 반응 {:.3f}초", NetId.NetId, Body.MoveTime - Body.ContactTime);
+		}
+	});
+	if (Stats.Elapsed >= Stats.NextLog)
+	{
+		Stats.NextLog += 2.0f;
+		LogPhysicsPredictionStats2D("중간");
+	}
+}
+
+void FGameWorld::LogPhysicsPredictionStats2D(const char* Label) const
+{
+	const FPhysicsPredictionStats2D& Stats = PredictionStats2D;
+	if (Stats.Characters.empty() && Stats.Bodies.empty())
+	{
+		return; // 2D 예측 대상이 없는 씬
+	}
+	float Sum = 0.0f, Max = 0.0f;
+	for (const float Delay : Stats.ReactionDelays)
+	{
+		Sum += Delay;
+		Max = std::max(Max, Delay);
+	}
+	const float Average = Stats.ReactionDelays.empty() ? 0.0f : Sum / static_cast<float>(Stats.ReactionDelays.size());
+	E_LOG(LogNet, Display,
+	      "2D 물리 예측 측정 ({}): {}프레임 {:.1f}초, 캐릭터 보정 {}회 (5cm 초과 {}회, 최대 {:.1f}cm, 겹침 거부 {}회), 캐릭터 최대 튐 {:.2f}cm (2cm 초과 {}프레임), "
+	      "반응한 바디 {}개 지연 평균 {:.3f}초 / 최대 {:.3f}초, 바디 최대 튐 {:.2f}cm (2cm 초과 {}프레임), 바디 스냅 {}회, 예측 중 {}개",
+	      Label, Stats.Frames, Stats.Elapsed, Stats.Corrections, Stats.BigCorrections, Stats.CorrectionMax, Stats.ReplayOverlapRejects, Stats.CharacterMaxJump,
+	      Stats.CharacterJumpFrames, Stats.ReactionDelays.size(), Average, Max, Stats.BodyMaxJump, Stats.BodyJumpFrames, Stats.Snaps, PredictedBodies2D.size());
 }

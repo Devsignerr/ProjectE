@@ -69,6 +69,18 @@ void FSprite2DLibrary::Invalidate(const std::string& AssetPath)
 	++Generation;
 }
 
+void FSprite2DLibrary::SetSpritePreview(const std::string& AssetPath, std::shared_ptr<const FSpriteAsset> Asset)
+{
+	Sprites[MakeKey(AssetPath)] = std::move(Asset);
+	++Generation;
+}
+
+void FSprite2DLibrary::SetFlipbookPreview(const std::string& AssetPath, std::shared_ptr<const FFlipbookAsset> Asset)
+{
+	Flipbooks[MakeKey(AssetPath)] = std::move(Asset);
+	++Generation;
+}
+
 template <typename TAsset>
 std::shared_ptr<const TAsset> FSprite2DLibrary::LoadCached(std::unordered_map<std::wstring, std::shared_ptr<const TAsset>>& Cache, const std::string& AssetPath,
                                                            const char* Kind)

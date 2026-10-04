@@ -1,0 +1,288 @@
+{
+  "Name": "BoxPBR",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "BaseTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Color"
+    },
+    {
+      "Name": "ArmTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "NormalTexture",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Normal"
+    },
+    {
+      "Name": "TileSize",
+      "Type": "Scalar",
+      "Value": 200.0
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "pos",
+        "Type": "WorldPosition"
+      },
+      {
+        "Id": "tile",
+        "Type": "ScalarParameter",
+        "Parameter": "TileSize"
+      },
+      {
+        "Id": "p",
+        "Type": "Divide",
+        "Inputs": {
+          "A": "pos",
+          "B": "tile"
+        }
+      },
+      {
+        "Id": "ps",
+        "Type": "Split",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "negX",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:0",
+          "B": -1.0
+        }
+      },
+      {
+        "Id": "negZ",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:2",
+          "B": -1.0
+        }
+      },
+      {
+        "Id": "n",
+        "Type": "WorldNormal"
+      },
+      {
+        "Id": "ns",
+        "Type": "Split",
+        "Inputs": {
+          "A": "n"
+        }
+      },
+      {
+        "Id": "ax",
+        "Type": "Abs",
+        "Inputs": {
+          "A": "ns:0"
+        }
+      },
+      {
+        "Id": "ay",
+        "Type": "Abs",
+        "Inputs": {
+          "A": "ns:1"
+        }
+      },
+      {
+        "Id": "az",
+        "Type": "Abs",
+        "Inputs": {
+          "A": "ns:2"
+        }
+      },
+      {
+        "Id": "sx",
+        "Type": "Compare",
+        "Op": "Greater",
+        "Inputs": {
+          "A": "ns:0",
+          "B": 0.0,
+          "True": -1.0,
+          "False": 1.0
+        }
+      },
+      {
+        "Id": "sy",
+        "Type": "Compare",
+        "Op": "Greater",
+        "Inputs": {
+          "A": "ns:1",
+          "B": 0.0,
+          "True": 1.0,
+          "False": -1.0
+        }
+      },
+      {
+        "Id": "sz",
+        "Type": "Compare",
+        "Op": "Greater",
+        "Inputs": {
+          "A": "ns:2",
+          "B": 0.0,
+          "True": 1.0,
+          "False": -1.0
+        }
+      },
+      {
+        "Id": "ux",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:1",
+          "B": "sx"
+        }
+      },
+      {
+        "Id": "uy",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:0",
+          "B": "sy"
+        }
+      },
+      {
+        "Id": "uz",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:1",
+          "B": "sz"
+        }
+      },
+      {
+        "Id": "uvX",
+        "Type": "Append",
+        "Inputs": {
+          "A": "ux",
+          "B": "negZ"
+        }
+      },
+      {
+        "Id": "uvY",
+        "Type": "Append",
+        "Inputs": {
+          "A": "uy",
+          "B": "negZ"
+        }
+      },
+      {
+        "Id": "uvZ",
+        "Type": "Append",
+        "Inputs": {
+          "A": "uz",
+          "B": "negX"
+        }
+      },
+      {
+        "Id": "maxXY",
+        "Type": "Max",
+        "Inputs": {
+          "A": "ax",
+          "B": "ay"
+        }
+      },
+      {
+        "Id": "uvXY",
+        "Type": "Compare",
+        "Op": "GreaterEqual",
+        "Inputs": {
+          "A": "ax",
+          "B": "ay",
+          "True": "uvX",
+          "False": "uvY"
+        }
+      },
+      {
+        "Id": "uv",
+        "Type": "Compare",
+        "Op": "GreaterEqual",
+        "Inputs": {
+          "A": "az",
+          "B": "maxXY",
+          "True": "uvZ",
+          "False": "uvXY"
+        }
+      },
+      {
+        "Id": "base",
+        "Type": "TextureSample",
+        "Texture": "BaseTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "arm",
+        "Type": "TextureSample",
+        "Texture": "ArmTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "nrm",
+        "Type": "TextureSample",
+        "Texture": "NormalTexture",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "color",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "base:1",
+          "B": "tint:1"
+        }
+      },
+      {
+        "Id": "roughScale",
+        "Type": "ScalarParameter",
+        "Parameter": "RoughnessScale"
+      },
+      {
+        "Id": "rough",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "arm:3",
+          "B": "roughScale"
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "color",
+      "Roughness": "rough",
+      "Metallic": "arm:4",
+      "AmbientOcclusion": "arm:2",
+      "Normal": "nrm:1"
+    }
+  }
+}

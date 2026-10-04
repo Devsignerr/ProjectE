@@ -14,7 +14,9 @@
 #include "UI/UIReflection.h"
 #include "World/GameWorldTravel.h"
 
+#include <algorithm>
 #include <format>
+#include <string>
 
 E_DEFINE_LOG_CATEGORY(LogServer, Log)
 
@@ -76,6 +78,7 @@ bool FServerApplication::OnInit()
 	World.SetReplicationServer(&Replication); // 서브 씬 NetId·클라이언트 알림
 	Players.Begin(Scene, FProjectSettings::Get().Maps.PlayerPrefab);
 	Net.OnPlayerJoined = [this](const FNetDriver::FRemotePlayer& Player) {
+		++JoinCount;
 		const FEntity Pawn = Players.SpawnPlayer(Player.PlayerId);
 		Replication.OnPlayerJoined(Player.Connection);
 		World.OnPlayerJoined(Player.PlayerId, Pawn);
@@ -98,6 +101,14 @@ bool FServerApplication::OnInit()
 		Net.SetSimulation(NetOptions.SimulatedLatencyMs, NetOptions.SimulatedLossPercent);
 	}
 	Port = NetOptions.Port;
+	if (const std::wstring ExitWhenEmpty = FCommandLine::FromProcess().GetValue(L"--exit-when-empty"); !ExitWhenEmpty.empty())
+	{
+		ExitWhenEmptyTicks = std::max(0LL, std::stoll(ExitWhenEmpty));
+		if (const std::wstring MinPlayers = FCommandLine::FromProcess().GetValue(L"--exit-min-players"); !MinPlayers.empty())
+		{
+			ExitMinPlayers = std::max(1LL, std::stoll(MinPlayers));
+		}
+	}
 	StartLanHost(SceneAsset);
 	E_LOG(LogServer, Display, "서버 시작 (Ctrl+C 종료)");
 	return true;
@@ -122,6 +133,19 @@ void FServerApplication::OnUpdate(float DeltaSeconds)
 	World.TickGameplay(DeltaSeconds, nullptr);
 	World.TickPresentation(Scene, DeltaSeconds); // 애니메이션(노티파이/소켓)은 게임 로직에 쓰이므로 서버도 돌린다
 	Replication.Tick(DeltaSeconds);
+
+	// 자동 검증 (--exit-when-empty): ExitMinPlayers명이 입장한 뒤 모두 나가면 정해진 틱 뒤 종료 (클라이언트 시작이 늦거나 제각각이어도 먼저 끝나지 않게)
+	if (ExitWhenEmptyTicks >= 0)
+	{
+		const bool bReady = JoinCount >= ExitMinPlayers;
+		EmptyTicks        = bReady && Net.GetPlayers().empty() ? EmptyTicks + 1 : 0;
+		if (bReady && EmptyTicks > ExitWhenEmptyTicks)
+		{
+			E_LOG(LogServer, Display, "플레이어가 모두 나가 종료합니다 (--exit-when-empty {})", ExitWhenEmptyTicks);
+			ExitWhenEmptyTicks = -1;
+			RequestExit();
+		}
+	}
 
 	// 맵 전환 (Game.OpenScene / 게임 모듈): 틱 끝에. 클라이언트들은 Travel 메시지로 따라오고 TravelAck 때 폰이 다시 생긴다
 	if (const std::optional<std::string> NextScene = FGameWorldTravel::ConsumePending(World, &Net))

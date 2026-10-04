@@ -108,24 +108,46 @@ def WriteBaseMaterials():
 		for Name in os.listdir(Folder):
 			if Name.endswith(".emat"):
 				os.remove(os.path.join(Folder, Name))
-	# 타일 PBR 그래프 (BuildLighting.py와 같은 구조): 내장 큐브 UV(면마다 0~1) × Tiling
+	# 박스 매핑 PBR 그래프: 월드 위치를 법선의 우세 축 면에 투영한 UV / TileSize (cm) — 상자 면마다 크기가 달라도(벽 윗면·보 밑면·기둥)
+	#   텍스처 밀도가 같고 이웃 상자끼리 이어진다. 예전 "내장 큐브 UV(면마다 0~1) × Tiling"은 Tiling 하나를 가장 큰 면 기준으로 정해
+	#   좁은 면이 한 방향으로 수십 배 늘어났다. 면별 UV 방향 = 내장 큐브 면의 탄젠트 방향(PrimitiveShapes AddQuadFace: U = Right, V = -Up)이라
+	#   축 정렬 상자는 노멀맵이 정확하다: ±X면 U = -sign(Nx)·Y, ±Y면 U = sign(Ny)·X, V = -Z / ±Z면 U = sign(Nz)·Y, V = -X
 	Graph = {
-		"Name": "TiledPBR",
+		"Name": "BoxPBR",
 		"BlendMode": "Opaque",
 		"Parameters": [
 			{"Name": "BaseTexture", "Type": "Texture", "Value": "", "Usage": "Color"},
 			{"Name": "ArmTexture", "Type": "Texture", "Value": "", "Usage": "Linear"},
 			{"Name": "NormalTexture", "Type": "Texture", "Value": "", "Usage": "Normal"},
-			{"Name": "Tiling", "Type": "Vector", "Value": [1.0, 1.0, 0.0, 0.0]},
+			{"Name": "TileSize", "Type": "Scalar", "Value": 200.0},
 			{"Name": "Tint", "Type": "Vector", "Value": [1.0, 1.0, 1.0, 1.0]},
 			{"Name": "RoughnessScale", "Type": "Scalar", "Value": 1.0},
 		],
 		"Graph": {
 			"Nodes": [
-				{"Id": "uv0", "Type": "TexCoord"},
-				{"Id": "tiling", "Type": "VectorParameter", "Parameter": "Tiling"},
-				{"Id": "tilingXY", "Type": "Append", "Inputs": {"A": "tiling:2", "B": "tiling:3"}},
-				{"Id": "uv", "Type": "Multiply", "Inputs": {"A": "uv0", "B": "tilingXY"}},
+				{"Id": "pos", "Type": "WorldPosition"},
+				{"Id": "tile", "Type": "ScalarParameter", "Parameter": "TileSize"},
+				{"Id": "p", "Type": "Divide", "Inputs": {"A": "pos", "B": "tile"}},
+				{"Id": "ps", "Type": "Split", "Inputs": {"A": "p"}},
+				{"Id": "negX", "Type": "Multiply", "Inputs": {"A": "ps:0", "B": -1.0}},
+				{"Id": "negZ", "Type": "Multiply", "Inputs": {"A": "ps:2", "B": -1.0}},
+				{"Id": "n", "Type": "WorldNormal"},
+				{"Id": "ns", "Type": "Split", "Inputs": {"A": "n"}},
+				{"Id": "ax", "Type": "Abs", "Inputs": {"A": "ns:0"}},
+				{"Id": "ay", "Type": "Abs", "Inputs": {"A": "ns:1"}},
+				{"Id": "az", "Type": "Abs", "Inputs": {"A": "ns:2"}},
+				{"Id": "sx", "Type": "Compare", "Op": "Greater", "Inputs": {"A": "ns:0", "B": 0.0, "True": -1.0, "False": 1.0}},
+				{"Id": "sy", "Type": "Compare", "Op": "Greater", "Inputs": {"A": "ns:1", "B": 0.0, "True": 1.0, "False": -1.0}},
+				{"Id": "sz", "Type": "Compare", "Op": "Greater", "Inputs": {"A": "ns:2", "B": 0.0, "True": 1.0, "False": -1.0}},
+				{"Id": "ux", "Type": "Multiply", "Inputs": {"A": "ps:1", "B": "sx"}},
+				{"Id": "uy", "Type": "Multiply", "Inputs": {"A": "ps:0", "B": "sy"}},
+				{"Id": "uz", "Type": "Multiply", "Inputs": {"A": "ps:1", "B": "sz"}},
+				{"Id": "uvX", "Type": "Append", "Inputs": {"A": "ux", "B": "negZ"}},
+				{"Id": "uvY", "Type": "Append", "Inputs": {"A": "uy", "B": "negZ"}},
+				{"Id": "uvZ", "Type": "Append", "Inputs": {"A": "uz", "B": "negX"}},
+				{"Id": "maxXY", "Type": "Max", "Inputs": {"A": "ax", "B": "ay"}},
+				{"Id": "uvXY", "Type": "Compare", "Op": "GreaterEqual", "Inputs": {"A": "ax", "B": "ay", "True": "uvX", "False": "uvY"}},
+				{"Id": "uv", "Type": "Compare", "Op": "GreaterEqual", "Inputs": {"A": "az", "B": "maxXY", "True": "uvZ", "False": "uvXY"}},
 				{"Id": "base", "Type": "TextureSample", "Texture": "BaseTexture", "Inputs": {"UV": "uv"}},
 				{"Id": "arm", "Type": "TextureSample", "Texture": "ArmTexture", "Inputs": {"UV": "uv"}},
 				{"Id": "nrm", "Type": "TextureSample", "Texture": "NormalTexture", "Inputs": {"UV": "uv"}},
@@ -137,7 +159,7 @@ def WriteBaseMaterials():
 			"Output": {"BaseColor": "color", "Roughness": "rough", "Metallic": "arm:4", "AmbientOcclusion": "arm:2", "Normal": "nrm:1"},
 		},
 	}
-	WriteJson(os.path.join(Folder, "TiledPBR.emat"), Graph)
+	WriteJson(os.path.join(Folder, "BoxPBR.emat"), Graph)
 
 	def Plain(Name, Base, Alpha=1.0, Emissive=(0.0, 0.0, 0.0), Rough=0.9, Blend=None, Texture=""):
 		Mat = {"Name": Name}
@@ -157,23 +179,22 @@ def WriteBaseMaterials():
 
 
 class FMaterials:
-	# 표면 + 면 크기 → 타일 인스턴스(.emat) 경로. 같은 키는 한 파일
+	# 표면 → 박스 매핑 인스턴스(.emat) 경로 (면 크기와 무관 — 텍스처 밀도는 TileSize)
 	def __init__(self):
 		self.Written = {}
 
-	def Get(self, Surface, U, V):
+	def Get(self, Surface):
 		Id, Tile, RoughScale, Tint = SURFACES[Surface]
-		TU, TV = round(U / Tile, 2), round(V / Tile, 2)
-		Name = f"{Surface}_{int(round(U))}x{int(round(V))}"
+		Name = Surface
 		if Name not in self.Written:
 			Rel = f"../../../{PH}/{Id}/{Id}"
 			WriteJson(os.path.join(CONTENT, MAT, f"{Name}.emat"), {
-				"Name": Name, "Parent": "TiledPBR.emat",
+				"Name": Name, "Parent": "BoxPBR.emat",
 				"Parameters": [
 					{"Name": "BaseTexture", "Type": "Texture", "Value": f"{Rel}_diff_2k.jpg"},
 					{"Name": "ArmTexture", "Type": "Texture", "Value": f"{Rel}_arm_2k.jpg"},
 					{"Name": "NormalTexture", "Type": "Texture", "Value": f"{Rel}_nor_gl_2k.jpg"},
-					{"Name": "Tiling", "Type": "Vector", "Value": [max(TU, 0.05), max(TV, 0.05), 0.0, 0.0]},
+					{"Name": "TileSize", "Type": "Scalar", "Value": Tile},
 					{"Name": "Tint", "Type": "Vector", "Value": Tint + [1.0]},
 					{"Name": "RoughnessScale", "Type": "Scalar", "Value": RoughScale},
 				],
@@ -224,11 +245,9 @@ def BuildScene(Camera=None):
 	Mats = FMaterials()
 
 	def Box(Name, Surface, Center, Size, Collide=True, Rotation=None, Parent=-1):
-		# 내장 큐브(100cm) × Size/100. 큐브 옆면 UV = (수평, Z), 윗면/아랫면 UV = (Y, X) — 면 크기에 맞는 타일 인스턴스
+		# 내장 큐브(100cm) × Size/100. 머티리얼은 박스 매핑(월드 좌표)이라 면 크기와 무관
 		SX, SY, SZ = Size
-		Thin = min(range(3), key=lambda A: Size[A])
-		U, V = (SY, SX) if Thin == 2 else ((SY, SZ) if Thin == 0 else (SX, SZ))
-		Comps = {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": Mats.Get(Surface, U, V)}}
+		Comps = {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": Mats.Get(Surface)}}
 		if Collide:
 			Comps["BoxColliderComponent"] = {}
 		return S.Add(Name, Comps, Center, Rotation, (SX / 100.0, SY / 100.0, SZ / 100.0), Parent)

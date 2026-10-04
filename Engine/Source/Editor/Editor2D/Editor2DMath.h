@@ -86,4 +86,29 @@ namespace Editor2DMath
 	};
 	// 맨 앞 후보 번호 (-1 = 없음): Priority → 레이어 → 순번 → 가까운 것 → 목록 앞 (렌더러 정렬과 같은 앞뒤 관계)
 	int32 FindFrontmost(const std::vector<FPick2DHit>& Hits);
+
+	// ---- 박스 선택 (뷰포트 빈 곳 왼쪽 끌기 — 2D·3D 공통). 판정 = 엔티티 화면 경계 사각형이 끌기 사각형 안에 **완전히** 들어감
+	//   (걸치기만 하면 넓은 타일맵·바닥 메시가 늘 잡히므로). 화면 경계 = 월드 경계 상자 8꼭짓점 투영의 사각형, 카메라 뒤 꼭짓점은 버린다
+	struct FScreenRect
+	{
+		FVector2 Min = FVector2(0.0f, 0.0f);
+		FVector2 Max = FVector2(0.0f, 0.0f);
+	};
+	// 두 점(끌기 시작/현재, 순서 무관) → 사각형
+	FScreenRect MakeScreenRect(const FVector2& A, const FVector2& B);
+	// 월드 경계 → 이미지 픽셀 사각형 (왼쪽 위 원점, 아래로 +). 꼭짓점이 모두 카메라 뒤(또는 경계 무효)면 false
+	bool ProjectBoundsToScreen(const FBox& Bounds, const FMatrix4x4& ViewProjection, const FVector2& ImageSize, FScreenRect& OutRect);
+	// 경계 합치기 (Out이 비었으면 그대로 복사 — bOutValid로 구분)
+	void UnionScreenRect(FScreenRect& InOut, bool& bInOutValid, const FScreenRect& Add);
+	bool IsScreenRectInside(const FScreenRect& Inner, const FScreenRect& Outer);
+
+	enum class EBoxSelectMode : int32
+	{
+		Replace, // 그냥 끌기
+		Add,     // Shift
+		Toggle,  // Ctrl (있으면 빼고 없으면 더함)
+	};
+	// 결과 선택 목록 (마지막 = 주 선택 — FEntitySelection 순서 규칙). Hits는 순서 유지·중복 제거해 다룬다.
+	//   Replace = Hits (비면 빈 선택), Add = Current 뒤에 새 Hits, Toggle = Current에서 Hits에 든 것은 빼고 나머지 Hits를 뒤에
+	std::vector<FEntity> CombineBoxSelection(const std::vector<FEntity>& Current, const std::vector<FEntity>& Hits, EBoxSelectMode Mode);
 } // namespace Editor2DMath

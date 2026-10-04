@@ -183,6 +183,7 @@ public:
 	// 예측 옵션: 캐릭터 이동 컴포넌트(3D 또는 2D) bClientPrediction && 프로젝트 설정 네트워크 → 클라이언트 예측
 	bool   UsesClientPrediction(FEntity Entity) const;
 	uint32 GetCharacterCorrectionCount() const { return CharacterCorrections; }
+	uint32 GetReplayOverlapRejectCount2D() const { return PredictionStats2D.ReplayOverlapRejects; } // 2D 재조정 겹침 거부 (테스트/통계)
 	int32 GetOwner(FEntity Entity) const override;
 	void  CallRpc(FEntity Target, EGameRpcKind Kind, const std::string& Name, const FGameRpcArgs& Args) override;
 	const FInput* GetInput(FEntity Entity) const override { return ResolveInput(Entity, TickLocalInput); }
@@ -339,6 +340,20 @@ private:
 		std::vector<float> ReactionDelays;
 	};
 	FPhysicsPredictionStats PredictionStats;
+	// 2D 측정 (--net-physics-stats, 3D와 같은 항목을 2D 캐릭터·2D 바디로 — 따로 한 줄). 보정·재조정 겹침 거부 횟수는 측정을 꺼도 센다
+	struct FPhysicsPredictionStats2D
+	{
+		float  Elapsed = 0.0f, NextLog = 2.0f;
+		std::unordered_map<FEntity, FMotionTrack> Characters;
+		std::unordered_map<FEntity, FBodyStats>   Bodies;
+		float  CharacterMaxJump = 0.0f, BodyMaxJump = 0.0f, CorrectionMax = 0.0f;
+		uint32 CharacterJumpFrames = 0, BodyJumpFrames = 0, Frames = 0, Snaps = 0, Corrections = 0, BigCorrections = 0;
+		uint32 ReplayOverlapRejects = 0; // 재조정 ②(기록 위치 다시 적용) 결과가 지금 바디와 겹쳐 버린 횟수
+		std::vector<float> ReactionDelays;
+	};
+	FPhysicsPredictionStats2D PredictionStats2D;
+	void TickPhysicsPredictionStats2D();
+	void LogPhysicsPredictionStats2D(const char* Label) const;
 
 	// 2D 물리 예측 (클라이언트, World/GameWorldPhysicsPrediction2D.cpp — 3D와 같은 규칙·상수·시계, 평면 상태)
 	struct FBodyHistorySample2D

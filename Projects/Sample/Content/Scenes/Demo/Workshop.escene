@@ -136,7 +136,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Asphalt_6400x8000.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Asphalt.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -165,7 +165,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Concrete_1300x3200.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Concrete.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -194,7 +194,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Brick_3280x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Brick.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -223,7 +223,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_3280x750.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -252,7 +252,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Brick_1300x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Brick.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -281,7 +281,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_1300x750.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -310,7 +310,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Brick_1300x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Brick.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -339,7 +339,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_1300x750.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -368,7 +368,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Brick_1290x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Brick.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -397,7 +397,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_1290x750.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -426,7 +426,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Brick_1290x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Brick.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -455,7 +455,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_1290x750.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -484,7 +484,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Corrugated_700x340.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Corrugated.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -513,7 +513,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_760x30.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -541,7 +541,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_30x560.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -570,7 +570,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_30x560.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -599,7 +599,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_360x3280.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -628,7 +628,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_340x3280.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -657,7 +657,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_360x3280.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -686,7 +686,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_160x190.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -715,7 +715,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_160x190.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -772,7 +772,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_160x190.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -801,7 +801,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Roof_160x190.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Roof.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -858,7 +858,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -886,7 +886,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -914,7 +914,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -943,7 +943,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -971,7 +971,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1000,7 +1000,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1028,7 +1028,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1056,7 +1056,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1084,7 +1084,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1113,7 +1113,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1141,7 +1141,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1170,7 +1170,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1198,7 +1198,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1226,7 +1226,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1254,7 +1254,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1283,7 +1283,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1311,7 +1311,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1340,7 +1340,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1368,7 +1368,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1396,7 +1396,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1424,7 +1424,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1453,7 +1453,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1481,7 +1481,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1510,7 +1510,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1538,7 +1538,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1566,7 +1566,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1594,7 +1594,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1623,7 +1623,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1651,7 +1651,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1680,7 +1680,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1708,7 +1708,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1736,7 +1736,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1764,7 +1764,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1793,7 +1793,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1821,7 +1821,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1850,7 +1850,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1878,7 +1878,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1906,7 +1906,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1934,7 +1934,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -1963,7 +1963,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -1991,7 +1991,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -2020,7 +2020,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2048,7 +2048,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x44.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2076,7 +2076,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_1300x12.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2104,7 +2104,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -2133,7 +2133,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2161,7 +2161,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_32x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -2190,7 +2190,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_8x128.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2218,7 +2218,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_3200x40.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2246,7 +2246,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_3200x16.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2274,7 +2274,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_3200x40.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -2302,7 +2302,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_3200x16.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3216,7 +3216,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Planks_170x740.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Planks.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3245,7 +3245,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Planks_170x150.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Planks.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3274,7 +3274,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_734x24.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3303,7 +3303,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_150x24.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3332,7 +3332,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x210.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3361,7 +3361,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x210.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3390,7 +3390,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x147.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3419,7 +3419,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x84.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3448,7 +3448,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x28.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3477,7 +3477,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_734x24.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3506,7 +3506,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_150x24.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3535,7 +3535,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x210.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3564,7 +3564,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_180x10.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3592,7 +3592,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x210.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3621,7 +3621,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_180x10.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3649,7 +3649,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x147.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3678,7 +3678,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_180x10.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3706,7 +3706,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x84.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3735,7 +3735,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_180x10.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3763,7 +3763,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_14x28.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -3792,7 +3792,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_180x10.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [
@@ -3820,7 +3820,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_170x40.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "BoxColliderComponent": {},
         "TransformComponent": {
@@ -11850,7 +11850,7 @@
       "Components": {
         "StaticMeshComponent": {
           "MeshAsset": "primitive:cube",
-          "MaterialAsset": "Materials/Demo/Workshop/Steel_3000x900.emat"
+          "MaterialAsset": "Materials/Demo/Workshop/Steel.emat"
         },
         "TransformComponent": {
           "Position": [

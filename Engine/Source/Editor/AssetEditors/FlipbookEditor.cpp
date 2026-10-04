@@ -60,6 +60,19 @@ bool FFlipbookEditor::LoadAsset(FAssetEditorEnvironment& Env)
 	return true;
 }
 
+std::string FFlipbookEditor::CaptureLibraryState() const
+{
+	const std::shared_ptr<const FFlipbookAsset> Loaded = FSprite2DLibrary::Get().LoadFlipbook(GetAssetPathString());
+	return Loaded != nullptr ? Loaded->ToJsonString() : std::string();
+}
+
+void FFlipbookEditor::PushLivePreview()
+{
+	std::shared_ptr<FFlipbookAsset> Copy = std::make_shared<FFlipbookAsset>(Asset);
+	Copy->RebuildTimeline(); // 프레임 길이 표 (직렬화 안 하는 파생 값)
+	FSprite2DLibrary::Get().SetFlipbookPreview(GetAssetPathString(), std::move(Copy));
+}
+
 bool FFlipbookEditor::SaveAsset(FAssetEditorEnvironment& Env)
 {
 	(void)Env;
@@ -244,6 +257,8 @@ void FFlipbookEditor::DrawToolbar()
 	ImGui::Checkbox("X 반전", &bFlipX);
 	ImGui::SameLine();
 	ImGui::Checkbox("Y 반전", &bFlipY);
+	ImGui::SameLine();
+	DrawLivePreviewToggle();
 	ImGui::SameLine();
 	const int32 Current = GetCurrentFrame();
 	ImGui::TextDisabled("프레임 %d / %zu  %.2f초 / %.2f초", Current, Asset.Frames.size(), Time, Asset.TotalDuration);

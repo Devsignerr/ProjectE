@@ -13,6 +13,9 @@
 //         빈 곳 끌기 = 새 슬라이스, 선택 슬라이스의 피벗 점 끌기, 9-슬라이스 테두리 선 끌기(테두리 표시 켬), Delete = 삭제
 //   오른쪽: 텍스처(드롭/목록 — 크기는 이미지에서 자동), UnitsPerPixel, Filter, 슬라이스 목록(이름 바꾸기 — 중복 검사, 정렬, 삭제),
 //          선택 슬라이스 사각형/피벗(프리셋)/테두리, "격자로 자르기" 대화(셀 크기 또는 개수, 여백, 간격, 접두사, 빈 칸 건너뛰기, 교체/추가)
+//   저장: 저장본과 비교한 슬라이스 이름 변경(Sprite2DEditing::DetectSliceRenames)이 있으면 "참조도 바꿀까요?" 확인 → 예면 저장 뒤
+//         SpriteSliceRename::Propagate(플립북 프레임·씬/프리팹 SpriteComponent.Slice, 열린 씬은 메모리 + Undo). 자동 검증 실행은 묻지 않고 예.
+//   씬에 실시간 반영(도구 줄, 기본 끔 — Sprite2DEditorBase). 격자 대화 기본 셀 = EstimateGridCellSize.
 //   편집 연산은 Sprite2DEditing. 자동 검증 --verify-sprite-roundtrip (Sprite2DEditorBase), --sprite-select <슬라이스 이름>(선택),
 //   --sprite-grid-dialog(격자 대화 열기)
 class FSpriteAtlasEditor : public FSprite2DEditorBase
@@ -36,6 +39,9 @@ protected:
 
 	const wchar_t* GetVerifyRoundTripFlag() const override { return L"--verify-sprite-roundtrip"; }
 	bool           ApplyVerifyEdits(FAssetEditorEnvironment& Env) override;
+	bool           SupportsLivePreview() const override { return true; }
+	void           PushLivePreview() override;
+	std::string    CaptureLibraryState() const override;
 
 private:
 	enum class EDrag : int32
@@ -54,6 +60,9 @@ private:
 	void DrawSliceList();
 	void DrawSliceDetails();
 	void DrawGridDialog();
+	void DrawRenameConfirm(FAssetEditorEnvironment& Env);
+	// 디스크 저장본과 비교한 이름 변경 (읽기 실패면 빈 목록)
+	std::vector<Sprite2DEditing::FSliceRename> DetectRenamesSinceSave() const;
 	void DeleteSelected();
 	void SelectOnly(int32 Index);
 	bool IsSelected(int32 Index) const;
@@ -89,4 +98,10 @@ private:
 	Sprite2DEditing::FGridSliceOptions GridOptions;
 	bool                              bGridReplace = true;
 	bool                              bCheckedArgs = false;
+
+	// 저장 시 슬라이스 이름 변경 전파 확인
+	std::vector<Sprite2DEditing::FSliceRename> PendingRenames;
+	bool                                       bOpenRenameConfirm = false;
+	bool                                       bRenameDecided     = false; // 확인 대화에서 고름 → 다음 Save는 묻지 않는다
+	bool                                       bPropagateRenames  = false;
 };

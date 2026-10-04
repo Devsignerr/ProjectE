@@ -32,7 +32,8 @@ namespace
 		return A.CapsuleRadius != B.CapsuleRadius || A.CapsuleHeight != B.CapsuleHeight || A.Layer != B.Layer || IsSolidCharacter(A) != IsSolidCharacter(B);
 	}
 
-	constexpr float PushSideNormalY = 0.5f; // 밀기: 법선 |Y|가 이보다 작은 캐릭터 접촉만 "옆"
+	constexpr float  PushSideNormalY   = 0.5f; // 밀기: 법선 |Y|가 이보다 작은 캐릭터 접촉만 "옆"
+	constexpr size_t MaxPushChainDepth = 4;    // 밀기 연쇄: 처음 미는 캐릭터 뒤로 밀리는 캐릭터 최대 수
 
 	FVector3 GetWorldPosition(const FScene& Scene, FEntity Entity)
 	{
@@ -332,8 +333,10 @@ void FCharacterMovement2DSystem::SimulateCharacter(FScene& Scene, FEntity Entity
 					continue;
 				}
 				const FVector2 Direction = bPlatformer ? FVector2(Contact.Normal.X > 0.0f ? -1.0f : 1.0f, 0.0f) : FVector2(-Contact.Normal.X, -Contact.Normal.Y);
-				const float    Amount    = FVector2::Dot(Remaining, Direction);
-				if (Amount > 0.0f && PushCharacter(Scene, FEntity::FromId(Contact.UserData), Direction * Amount) > 0.0f)
+				const float    Strength  = std::clamp(std::isfinite(Movement->PushStrength) ? Movement->PushStrength : 1.0f, 0.0f, 1.0f);
+				const float    Amount    = FVector2::Dot(Remaining, Direction) * Strength;
+				std::vector<FEntity> Chain { Entity };
+				if (Amount > 0.0f && PushCharacter(Scene, FEntity::FromId(Contact.UserData), Direction * Amount, Chain) > 0.0f)
 				{
 					FPhysics2DMoveResult Second;
 					World.MoveMover(Mover, Result.Position, Remaining, Second); // Mover.Velocity = 막히기 전 속도
@@ -438,20 +441,50 @@ FPhysics2DMover FCharacterMovement2DSystem::MakeMover(const FCharacter& Characte
 	return Mover;
 }
 
-float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta)
+float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, const FVector2& InDelta, std::vector<FEntity>& Chain)
 {
 	const auto Found = Characters.find(Other);
-	if (Found == Characters.end() || !IsActive() || !IsSolidCharacter(Found->second.Settings))
+	if (Found == Characters.end() || !IsActive() || !IsSolidCharacter(Found->second.Settings) ||
+	    std::find(Chain.begin(), Chain.end(), Other) != Chain.end())
 	{
 		return 0.0f;
 	}
-	FCharacter&     Character = Found->second;
-	FPhysics2DMover Mover     = MakeMover(Character, Other, Character.Settings);
-	Mover.Velocity            = Character.State.Velocity;
-	Mover.bIgnoreOneWay       = Character.State.DropTimer > 0.0f;
+	Chain.push_back(Other);
+	FCharacter&      Character  = Found->second;
+	FPhysics2DWorld& World      = *Physics2D->GetWorld();
+	// 밀림 저항: 넘겨받은 거리 ÷ (1 + r) — 사슬 단계마다 받는 쪽 저항으로 나눈다 (r = 0이면 그대로 = 이전 동작)
+	const float      Resistance = std::isfinite(Character.Settings.PushResistance) ? std::max(Character.Settings.PushResistance, 0.0f) : 0.0f;
+	const FVector2   Delta      = Resistance > 0.0f ? InDelta * (1.0f / (1.0f + Resistance)) : InDelta;
+	FPhysics2DMover  Mover     = MakeMover(Character, Other, Character.Settings);
+	Mover.Velocity             = Character.State.Velocity;
+	Mover.bIgnoreOneWay        = Character.State.DropTimer > 0.0f;
+	const FVector2       Start = Character.State.Position;
 	FPhysics2DMoveResult Result;
-	Physics2D->GetWorld()->MoveMover(Mover, Character.State.Position, Delta, Result); // 벽 안으로는 밀지 않는다
-	const float Moved = (Result.Position - Character.State.Position).Length();
+	World.MoveMover(Mover, Start, Delta, Result); // 벽 안으로는 밀지 않는다
+	// 연쇄: 이 캐릭터가 미는 방향 앞의 캐릭터에 막혔으면 남은 만큼 그 캐릭터를 밀고 다시 움직인다 (한 단계에 하나, 사슬에 이미 있는 캐릭터 제외)
+	const FVector2 Remaining = Start + Delta - Result.Position;
+	if (Chain.size() <= MaxPushChainDepth && Remaining.LengthSquared() > 0.01f && Delta.LengthSquared() > 0.0f)
+	{
+		const FVector2                      Direction = Delta * (1.0f / Delta.Length());
+		std::vector<FPhysics2DMoverContact> Contacts;
+		World.CollideMover(Mover, Result.Position, GroundSkin, Contacts);
+		for (const FPhysics2DMoverContact& Contact : Contacts)
+		{
+			if (!Contact.bCharacter || std::abs(Contact.Normal.Y) >= PushSideNormalY || FVector2::Dot(Contact.Normal, Direction) >= 0.0f)
+			{
+				continue;
+			}
+			const float Amount = FVector2::Dot(Remaining, Direction);
+			if (Amount > 0.0f && PushCharacter(Scene, FEntity::FromId(Contact.UserData), Direction * Amount, Chain) > 0.0f)
+			{
+				FPhysics2DMoveResult Second;
+				World.MoveMover(Mover, Result.Position, Remaining, Second);
+				Result.Position = Second.Position;
+			}
+			break;
+		}
+	}
+	const float Moved = (Result.Position - Start).Length();
 	if (Moved <= 0.0f)
 	{
 		return 0.0f;
@@ -460,7 +493,7 @@ float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, co
 	WriteTransform(Scene, Other, Character);
 	if (Character.Proxy != ~0u)
 	{
-		Physics2D->GetWorld()->SetTransform(Character.Proxy, Character.State.Position, 0.0f);
+		World.SetTransform(Character.Proxy, Character.State.Position, 0.0f);
 	}
 	return Moved;
 }
@@ -484,6 +517,30 @@ void FCharacterMovement2DSystem::GetCharacterContacts(FEntity Entity, std::vecto
 			OutEntities.push_back(FEntity::FromId(Id));
 		}
 	}
+}
+
+float FCharacterMovement2DSystem::GetDynamicPenetration(FEntity Entity) const
+{
+	const auto Found = Characters.find(Entity);
+	if (Found == Characters.end() || !IsActive())
+	{
+		return 0.0f;
+	}
+	FPhysics2DMover Mover      = MakeMover(Found->second, Entity, Found->second.Settings);
+	Mover.bIgnoreOneWay        = true; // 원웨이는 겹쳐도 막지 않는다
+	Mover.bCollideCharacters   = false;
+	Mover.bIncludeDynamicSides = true;
+	std::vector<FPhysics2DMoverContact> Contacts;
+	Physics2D->GetWorld()->CollideMover(Mover, Found->second.State.Position, 0.0f, Contacts);
+	float Deepest = 0.0f;
+	for (const FPhysics2DMoverContact& Contact : Contacts)
+	{
+		if (Contact.BodyType == EBodyType2D::Dynamic)
+		{
+			Deepest = std::max(Deepest, Contact.Penetration);
+		}
+	}
+	return Deepest;
 }
 
 void FCharacterMovement2DSystem::SetVisualOffset(FScene& Scene, FEntity Entity, const FVector2& Offset)

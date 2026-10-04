@@ -2,14 +2,18 @@
 
 #include "Editor/Panels/TilePalettePanel.h"
 
+#include "Core/FileSystem.h"
 #include "Core/Input.h"
+#include "Core/Log.h"
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Editor/Editor2D/Editor2DScene.h"
 #include "Editor/EditorContext.h"
 #include "Editor/EditorTheme.h"
+#include "Editor/ImGuiLayer.h"
 #include "RHI/D3D12/D3D12Texture.h"
 #include "Renderer/Camera.h"
+#include "Renderer/Image.h"
 #include "Renderer/ResourceManager.h"
 #include "Renderer/SceneRenderer.h"
 #include "Renderer/SpriteDraw.h"
@@ -23,6 +27,8 @@
 #include <cmath>
 #include <format>
 #include <limits>
+
+E_DECLARE_LOG_CATEGORY(LogEditor)
 
 namespace
 {
@@ -627,10 +633,10 @@ void FTilePalettePanel::DrawPalette(FEditorContext& Context, FEntity Target)
 	const int32 Columns = Tileset->GetColumns();
 	const int32 Rows    = Tileset->GetRows();
 
-	const FTextureHandle Handle  = LoadTilesetTexture(Context, Tilemap.Tileset, *Tileset);
-	const FD3D12Texture* Texture = Context.Resources != nullptr ? Context.Resources->GetTexture(Handle) : nullptr;
-	const float TextureWidth  = static_cast<float>(Tileset->TextureWidth > 0 ? Tileset->TextureWidth : (Texture != nullptr ? static_cast<int32>(Texture->GetWidth()) : 0));
-	const float TextureHeight = static_cast<float>(Tileset->TextureHeight > 0 ? Tileset->TextureHeight : (Texture != nullptr ? static_cast<int32>(Texture->GetHeight()) : 0));
+	UpdatePaletteTexture(Context, FSprite2DLibrary::ResolveReference(Tilemap.Tileset, Tileset->Texture));
+	const bool  bTextureReady = PaletteTexture.IsValid() && Context.Resources != nullptr && Context.Resources->IsReady(PaletteTexture);
+	const float TextureWidth  = static_cast<float>(Tileset->TextureWidth > 0 ? Tileset->TextureWidth : PaletteTextureWidth);
+	const float TextureHeight = static_cast<float>(Tileset->TextureHeight > 0 ? Tileset->TextureHeight : PaletteTextureHeight);
 
 	const Editor2DMath::FTileStamp Stamp = GetEffectiveStamp();
 	ImGui::Text("%s  ·  %s  ·  스탬프 %dx%d", ICON_FA_TABLE_CELLS, GetToolName(Tool), Stamp.Width, Stamp.Height);
@@ -653,13 +659,24 @@ void FTilePalettePanel::DrawPalette(FEditorContext& Context, FEntity Target)
 	ImDrawList* DrawList       = ImGui::GetWindowDrawList();
 	const ImVec2 CanvasMax(Origin.x + CanvasSize.x, Origin.y + CanvasSize.y);
 	DrawList->AddRectFilled(Origin, CanvasMax, IM_COL32(40, 40, 44, 255));
-	if (Texture != nullptr && Texture->IsReady())
+	if (bTextureReady)
 	{
-		DrawList->AddImage(static_cast<ImTextureID>(Texture->GetSrv().Gpu.ptr), Origin, CanvasMax);
+		// 점 필터 타일셋은 확대해도 도트가 번지지 않게 최근접 샘플링 (에셋 편집기 캔버스와 같은 방식)
+		const bool bNearest = Tileset->Filter == ESpriteFilter::Point;
+		if (bNearest)
+		{
+			FImGuiLayer::BeginNearestSampling(DrawList);
+		}
+		DrawList->AddImage(static_cast<ImTextureID>(Context.Resources->ResolveTexture(PaletteTexture).GetSrv().Gpu.ptr), Origin, CanvasMax);
+		if (bNearest)
+		{
+			FImGuiLayer::EndNearestSampling(DrawList);
+		}
 	}
 	else
 	{
-		DrawList->AddText(ImVec2(Origin.x + 6.0f, Origin.y + 6.0f), IM_COL32(200, 200, 200, 255), "텍스처 읽는 중...");
+		DrawList->AddText(ImVec2(Origin.x + 6.0f, Origin.y + 6.0f), IM_COL32(200, 200, 200, 255),
+		                  bPaletteTextureFailed ? "텍스처를 읽을 수 없습니다" : "텍스처 읽는 중...");
 	}
 
 	auto TileScreenRect = [&](int32 Col, int32 Row, ImVec2& OutMin, ImVec2& OutMax) {
@@ -760,6 +777,41 @@ void FTilePalettePanel::DrawPalette(FEditorContext& Context, FEntity Target)
 		ImGui::SetItemTooltip("%s", Tip.c_str());
 	}
 	ImGui::EndChild();
+}
+
+void FTilePalettePanel::UpdatePaletteTexture(FEditorContext& Context, const std::string& ContentPath)
+{
+	const std::filesystem::path Resolved = ContentPath.empty() ? std::filesystem::path() : FSprite2DLibrary::Get().ResolvePath(ContentPath);
+	if (Resolved == PaletteTexturePath && (PaletteTexture.IsValid() || bPaletteTextureFailed || Resolved.empty()))
+	{
+		return;
+	}
+	if (PaletteTexture.IsValid() && Context.Resources != nullptr)
+	{
+		Context.Resources->DestroyTexture(PaletteTexture);
+	}
+	PaletteTexture        = FTextureHandle();
+	PaletteTexturePath    = Resolved;
+	PaletteTextureWidth   = 0;
+	PaletteTextureHeight  = 0;
+	bPaletteTextureFailed = false;
+	if (Resolved.empty() || Context.Resources == nullptr)
+	{
+		return;
+	}
+	std::vector<uint8> Bytes;
+	FImage             Image;
+	const std::string  Display = FStringConv::ToUtf8(Resolved.filename().wstring());
+	if (!FFileSystem::ReadFile(Resolved, Bytes) || !FImageLoader::LoadFromMemory(Bytes.data(), Bytes.size(), Image, Display.c_str()))
+	{
+		bPaletteTextureFailed = true;
+		E_LOG(LogEditor, Warning, "[타일 팔레트] 타일셋 이미지를 읽을 수 없습니다: {}", FStringConv::ToUtf8(Resolved.wstring()));
+		return;
+	}
+	PaletteTextureWidth  = static_cast<int32>(Image.Width);
+	PaletteTextureHeight = static_cast<int32>(Image.Height);
+	PaletteTexture = Context.Resources->CreateTexture(Image.Width, Image.Height, DXGI_FORMAT_R8G8B8A8_UNORM, Image.Pixels.data(), FImage::BytesPerPixel,
+	                                                  L"TilePalettePreview");
 }
 
 void FTilePalettePanel::Draw(FEditorContext& Context)

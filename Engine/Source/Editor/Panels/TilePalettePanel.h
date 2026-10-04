@@ -3,6 +3,9 @@
 #include "Core/ECS/Entity.h"
 #include "Core/Math/Math.h"
 #include "Editor/Editor2D/Editor2DMath.h"
+#include "Scene/ResourceHandles.h"
+
+#include <filesystem>
 
 class FInput;
 struct FEditorContext;
@@ -65,6 +68,9 @@ private:
 	void DrawToolbar();
 	void DrawPalette(FEditorContext& Context, FEntity Target);
 	void DrawPreview(FEditorContext& Context, FEntity Target, const FVector2& ImageMin, const FVector2& ImageSize);
+	// 팔레트 이미지 (편집기 소유 UNORM 텍스처 — 2D 에셋 편집기와 같은 방식: ImGui는 UNORM 백버퍼라 sRGB 텍스처는 어둡게 보인다).
+	// 경로가 바뀔 때만 다시 읽는다 (이전 것은 DestroyTexture 지연 해제)
+	void UpdatePaletteTexture(FEditorContext& Context, const std::string& ContentPath);
 
 	ETool                    Tool           = ETool::Select;
 	ETool                    LastPaintTool  = ETool::Brush;
@@ -92,6 +98,12 @@ private:
 	// 커서 셀 (직전 HandleViewport)
 	bool       bHasCell = false;
 	FTileCoord HoverCell;
+
+	std::filesystem::path PaletteTexturePath;
+	FTextureHandle        PaletteTexture;
+	int32                 PaletteTextureWidth   = 0;
+	int32                 PaletteTextureHeight  = 0;
+	bool                  bPaletteTextureFailed = false;
 
 	int32 FocusFrames      = 0;
 	bool bPreviewSet       = false; // SetSpriteDrawList로 미리보기를 넣어 둠

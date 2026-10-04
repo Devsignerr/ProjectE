@@ -57,6 +57,9 @@ IMPORT_SETTINGS = {
 	"power_box_01":            {"MaxTriangles": 6000},   # 21272
 	"industrial_storage_cart": {"MaxTriangles": 8000},   # 18902
 	"rusted_wheel_rim_01":     {"MaxTriangles": 5000},   # 16440
+	# glTF가 BLEND인데 알파가 없는 불투명 물체(알파 없는 JPG, 색 알파 1) — 반투명으로 그려지면 사전 패스·움직임 벡터·그림자가 빠지고
+	# TAA 반응형이라 지터로 떨린다(2026-10-05 사용자 보고). 마스크는 알파 1이라 잘리는 곳 없이 불투명 경로로 그려진다
+	"plastic_crate_02":        {"BlendAsMasked": True},
 }
 
 

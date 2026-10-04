@@ -2,6 +2,7 @@
 
 #include "Core/Console/Console.h"
 #include "Core/FileSystem.h"
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/FrameTime.h"
 #include "Core/Log.h"
 #include "Core/Profiling.h"
@@ -288,44 +289,68 @@ void FResourceManager::ReportTextureStreamingView(const FTextureStreamingView& V
 	std::unordered_map<const FMaterial*, FMaterialNeed> Needs;
 	Needs.reserve(256);
 	const float NegativeInfinity = -std::numeric_limits<float>::infinity();
-	for (const FMeshInstance& Instance : View.Instances->GetInstances())
+	// 병렬: 인스턴스마다 (머티리얼, log2(UV/픽셀), 우선순위). 판정 함수(IsInMainView/IsShadowCaster)는 읽기 전용이어야 한다
+	const std::vector<FMeshInstance>&                    Instances = View.Instances->GetInstances();
+	std::vector<FTextureStreamingState::FInstanceNeed>& InstanceNeeds = Streaming.InstanceNeeds;
+	InstanceNeeds.resize(Instances.size());
+	FParallel::ParallelFor(static_cast<uint32>(Instances.size()), 256, [&](uint32 Begin, uint32 End) {
+		for (uint32 InstanceIndex = Begin; InstanceIndex < End; ++InstanceIndex)
+		{
+			const FMeshInstance&                 Instance = Instances[InstanceIndex];
+			FTextureStreamingState::FInstanceNeed& Out    = InstanceNeeds[InstanceIndex];
+			Out.Material                                  = nullptr;
+			if (Instance.Material == nullptr || Instance.Mesh == nullptr)
+			{
+				continue;
+			}
+			const bool bMain = !View.IsInMainView || View.IsInMainView(Instance.WorldBounds);
+			// 메인 뷰 밖: 그림자 패스만 그린다 — 텍스처를 읽는 것은 Masked(알파 테스트)뿐
+			if (!bMain && (!Instance.IsMasked() || !View.IsShadowCaster || !View.IsShadowCaster(Instance.WorldBounds)))
+			{
+				continue;
+			}
+			const FVector3 Center = Instance.WorldBounds.GetCenter();
+			const FVector3 Extent = Instance.WorldBounds.GetExtent();
+			float          CmPerPixel;
+			float          ScreenSize;
+			if (View.bOrthographic)
+			{
+				CmPerPixel = ComputeOrthographicCmPerPixel(View.OrthoHeight, View.ScreenHeight);
+				ScreenSize = View.OrthoHeight > 0.0f ? 2.0f * Extent.Length() / View.OrthoHeight : 1.0f;
+			}
+			else
+			{
+				// 경계 상자의 가장 가까운 시야 깊이 (원근 픽셀 크기는 깊이에 비례)
+				const FVector3& F     = View.CameraForward;
+				const float     Depth = FVector3::Dot(Center - View.CameraPosition, F) -
+				                    (std::fabs(F.X) * Extent.X + std::fabs(F.Y) * Extent.Y + std::fabs(F.Z) * Extent.Z);
+				const float NearDepth = std::max(Depth, View.NearZ);
+				CmPerPixel            = ComputePerspectiveCmPerPixel(NearDepth, View.TanHalfFovY, View.ScreenHeight);
+				ScreenSize            = View.TanHalfFovY > 0.0f ? Extent.Length() / (NearDepth * View.TanHalfFovY) : 1.0f;
+			}
+			const float Scale   = Instance.IsSkinned() ? 1.0f : GetMaxAxisScale(Instance.World);
+			const float Density = Scale > 1.0e-6f ? Instance.Mesh->GetUvDensity() / Scale : 0.0f;
+			Out.Log2            = ComputeLog2UvPerPixel(Density, CmPerPixel); // 알 수 없음 = -무한대 → 밉 0
+			Out.Priority        = ScreenSize * (bMain ? 1.0f : ShadowOnlyPriorityScale);
+			Out.Material        = Instance.Material;
+		}
+	});
+	// 호출 스레드: 머티리얼별 최솟값/최댓값 (인스턴스 순서, 같은 머티리얼이 이어지면 찾기 생략)
+	const FMaterial* LastMaterial = nullptr;
+	FMaterialNeed*   LastNeed     = nullptr;
+	for (const FTextureStreamingState::FInstanceNeed& InstanceNeed : InstanceNeeds)
 	{
-		if (Instance.Material == nullptr || Instance.Mesh == nullptr)
+		if (InstanceNeed.Material == nullptr)
 		{
 			continue;
 		}
-		const bool bMain = !View.IsInMainView || View.IsInMainView(Instance.WorldBounds);
-		// 메인 뷰 밖: 그림자 패스만 그린다 — 텍스처를 읽는 것은 Masked(알파 테스트)뿐
-		if (!bMain && (!Instance.IsMasked() || !View.IsShadowCaster || !View.IsShadowCaster(Instance.WorldBounds)))
+		if (InstanceNeed.Material != LastMaterial)
 		{
-			continue;
+			LastMaterial = InstanceNeed.Material;
+			LastNeed     = &Needs[InstanceNeed.Material];
 		}
-		const FVector3 Center = Instance.WorldBounds.GetCenter();
-		const FVector3 Extent = Instance.WorldBounds.GetExtent();
-		float          CmPerPixel;
-		float          ScreenSize;
-		if (View.bOrthographic)
-		{
-			CmPerPixel = ComputeOrthographicCmPerPixel(View.OrthoHeight, View.ScreenHeight);
-			ScreenSize = View.OrthoHeight > 0.0f ? 2.0f * Extent.Length() / View.OrthoHeight : 1.0f;
-		}
-		else
-		{
-			// 경계 상자의 가장 가까운 시야 깊이 (원근 픽셀 크기는 깊이에 비례)
-			const FVector3& F     = View.CameraForward;
-			const float     Depth = FVector3::Dot(Center - View.CameraPosition, F) -
-			                    (std::fabs(F.X) * Extent.X + std::fabs(F.Y) * Extent.Y + std::fabs(F.Z) * Extent.Z);
-			const float NearDepth = std::max(Depth, View.NearZ);
-			CmPerPixel            = ComputePerspectiveCmPerPixel(NearDepth, View.TanHalfFovY, View.ScreenHeight);
-			ScreenSize            = View.TanHalfFovY > 0.0f ? Extent.Length() / (NearDepth * View.TanHalfFovY) : 1.0f;
-		}
-		const float Scale   = Instance.IsSkinned() ? 1.0f : GetMaxAxisScale(Instance.World);
-		const float Density = Scale > 1.0e-6f ? Instance.Mesh->GetUvDensity() / Scale : 0.0f;
-		const float Log2    = ComputeLog2UvPerPixel(Density, CmPerPixel); // 알 수 없음 = -무한대 → 밉 0
-
-		FMaterialNeed& Need = Needs[Instance.Material];
-		Need.MinLog2        = std::min(Need.MinLog2, Log2);
-		Need.Priority       = std::max(Need.Priority, ScreenSize * (bMain ? 1.0f : ShadowOnlyPriorityScale));
+		LastNeed->MinLog2  = std::min(LastNeed->MinLog2, InstanceNeed.Log2);
+		LastNeed->Priority = std::max(LastNeed->Priority, InstanceNeed.Priority);
 	}
 	for (const FMaterialHandle Handle : View.FullResidencyMaterials)
 	{

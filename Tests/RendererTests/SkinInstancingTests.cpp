@@ -3,6 +3,7 @@
 #include "Renderer/MeshInstancing.h"
 #include "Renderer/SkinnedMeshPalette.h"
 
+#include <cstring>
 #include <vector>
 
 namespace
@@ -106,4 +107,57 @@ E_TEST(SkinInstancing_ConservativeBoundsContainPaletteBounds)
 	}
 	// 조인트가 없으면 빈 경계
 	E_EXPECT_FALSE(FSkinnedMeshPalette::ComputeConservativeBounds({}, {}).IsValid());
+}
+
+E_TEST(SkinInstancing_SkinnedBoundsMatchScalarBitExactly)
+{
+	// ComputeSkinnedBounds(SSE)는 예전 스칼라 식(상자 중심·반 크기 변환 → FBox::AddBox를 뼈 순서대로)과 비트 단위로 같아야 한다
+	// (경계가 LOD·정렬·컬링에 쓰이므로 결과 화면이 바뀌면 안 된다). -0, 음수 스케일, 0 반 크기도 포함
+	auto ScalarBounds = [](const FBox& LocalBounds, const std::vector<FMatrix4x4>& Palette) {
+		const FVector3 Center = LocalBounds.GetCenter();
+		const FVector3 Extent = LocalBounds.GetExtent();
+		FBox           Result;
+		for (const FMatrix4x4& M : Palette)
+		{
+			FVector3 NewCenter(M.M[3][0], M.M[3][1], M.M[3][2]);
+			FVector3 NewExtent(0.0f);
+			for (int32 Column = 0; Column < 3; ++Column)
+			{
+				NewCenter[Column] += Center.X * M.M[0][Column] + Center.Y * M.M[1][Column] + Center.Z * M.M[2][Column];
+				NewExtent[Column] = Extent.X * FMath::Abs(M.M[0][Column]) + Extent.Y * FMath::Abs(M.M[1][Column]) + Extent.Z * FMath::Abs(M.M[2][Column]);
+			}
+			Result.AddBox(FBox(NewCenter - NewExtent, NewCenter + NewExtent));
+		}
+		return Result;
+	};
+	const FBox Locals[] = { FBox(FVector3(-20.0f, -10.0f, 0.0f), FVector3(40.0f, 10.0f, 60.0f)), FBox(FVector3(3.0f), FVector3(3.0f)),
+		                    FBox(FVector3(-0.0f, 0.0f, -1.5f), FVector3(0.0f, 2.25f, 1.5f)) };
+	for (const FBox& LocalBounds : Locals)
+	{
+		for (int32 Step = 0; Step < 16; ++Step)
+		{
+			std::vector<FMatrix4x4> Palette;
+			for (int32 Joint = 0; Joint < 7; ++Joint)
+			{
+				FMatrix4x4 Bone = MakePose(Joint + Step, static_cast<float>(Step) * 0.37f);
+				if ((Joint + Step) % 3 == 0)
+				{
+					Bone.M[0][1] = -0.0f; // FMath::Abs(-0) = -0 경로
+					Bone.M[2][0] = 0.0f;
+				}
+				if ((Joint + Step) % 5 == 0)
+				{
+					Bone = Bone * FMatrix4x4::MakeScale(FVector3(-1.0f, 1.0f, 1.0f)); // 반사
+				}
+				Palette.push_back(Bone);
+			}
+			const FBox Expected = ScalarBounds(LocalBounds, Palette);
+			const FBox Actual   = FSkinnedMeshPalette::ComputeSkinnedBounds(LocalBounds, Palette.data(), static_cast<uint32>(Palette.size()));
+			E_EXPECT_TRUE(std::memcmp(&Expected, &Actual, sizeof(FBox)) == 0);
+		}
+	}
+	// 뼈가 없으면 빈 경계 (FBox 기본값)
+	const FBox Empty = FSkinnedMeshPalette::ComputeSkinnedBounds(Locals[0], nullptr, 0);
+	const FBox Default;
+	E_EXPECT_TRUE(std::memcmp(&Empty, &Default, sizeof(FBox)) == 0);
 }

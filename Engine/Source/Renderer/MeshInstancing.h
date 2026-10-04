@@ -63,6 +63,7 @@ struct FMeshInstance
 };
 
 // 프레임 단위 메시 인스턴스 목록: 씬의 보이는 메시를 한 번 모아(컬링 전) 월드 행렬을 GPU 구조화 버퍼로 올린다.
+// Gather/Upload는 FParallel로 나눠 돌지만 순서는 뷰 순서 그대로 (결정적)
 // 모든 패스(메인/방향광 그림자/로컬 그림자/에디터 아웃라인)가 같은 목록을 각자 컬링해 FMeshPassBatches로 묶어 그린다.
 // 인스턴스 번호 = 목록 인덱스. GPU 데이터는 Upload한 프레임 안에서만 유효(동적 업로드 버퍼)
 class FMeshInstanceList
@@ -87,14 +88,29 @@ public:
 	const FMeshInstance&              operator[](uint32 Index) const { return Instances[Index]; }
 	uint32                            GetCount() const { return static_cast<uint32>(Instances.size()); }
 	uint32                            GetComponentCount() const { return ComponentCount; } // 보이지 않는 것 포함 (통계)
+	// Gather/GatherEntities가 넣은 인스턴스 수 = 목록 앞부분 (엔티티마다 하나 — 그 뒤는 AddExternal, 엔티티가 겹칠 수 있다)
+	uint32                            GetGatheredCount() const { return GatheredCount; }
 	D3D12_GPU_VIRTUAL_ADDRESS         GetGpuData() const { return GpuData; }
 
 private:
-	void Add(FEntity Entity, const FTransformComponent& Transform, const FStaticMeshComponent& MeshComponent,
-	         const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes);
+	// 그릴 메시 (보이지 않음·준비 전·스킨 컬링이면 nullptr)
+	static const FStaticMesh* ResolveDrawable(FEntity Entity, const FStaticMeshComponent& MeshComponent, const FResourceManager& Resources,
+	                                          const FSkinnedMeshPalette* SkinPalettes);
+	static void Fill(FMeshInstance& Instance, const FStaticMesh* Mesh, FEntity Entity, const FTransformComponent& Transform,
+	                 const FStaticMeshComponent& MeshComponent, const FResourceManager& Resources, const FSkinnedMeshPalette* SkinPalettes);
+
+	// Gather 뷰 칸 (병렬 1단계 결과): 컴포넌트가 없으면 Output = GatherSlotAbsent, 그릴 것이면 Mesh + 출력 번호
+	static constexpr uint32 GatherSlotAbsent = ~0u;
+	struct FGatherSlot
+	{
+		const FStaticMesh* Mesh   = nullptr;
+		uint32             Output = GatherSlotAbsent;
+	};
 
 	std::vector<FMeshInstance> Instances;
+	std::vector<FGatherSlot>   GatherSlots;
 	uint32                     ComponentCount = 0;
+	uint32                     GatheredCount  = 0;
 	D3D12_GPU_VIRTUAL_ADDRESS  GpuData        = 0;
 };
 

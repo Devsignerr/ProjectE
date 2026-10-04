@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstring>
 #include <format>
 #include <string>
@@ -376,6 +377,7 @@ void FSceneRenderer::AccumulatePerfCapture()
 		Capture.GpuMs[Index] += Stats.GpuMs[Index];
 	}
 	Capture.FrameMs += Stats.FrameIntervalMs;
+	Capture.FrameIntervals.push_back(Stats.FrameIntervalMs);
 	Capture.DrawCalls += Stats.DrawCalls;
 	Capture.ShadowDrawCalls += Stats.ShadowDrawCalls;
 	Capture.PrepassDrawCalls += Stats.PrepassDrawCalls;
@@ -422,6 +424,18 @@ void FSceneRenderer::LogPerfCapture() const
 	      "[성능] {} 프레임 평균 ({}): 프레임 {:.3f} ms, 드로우 {:.1f} (그림자 {:.1f}, 깊이 사전 {:.1f}), 삼각형 {:.0f} (그림자 {:.0f}), 메시 {:.1f}/{}",
 	      Capture.Frames, Config, Capture.FrameMs / Count, Capture.DrawCalls / Count, Capture.ShadowDrawCalls / Count, Capture.PrepassDrawCalls / Count,
 	      Capture.Triangles / Count, Capture.ShadowTriangles / Count, Capture.VisibleMeshes / Count, Capture.TotalMeshes);
+	if (!Capture.FrameIntervals.empty())
+	{
+		// 백분위 = 정렬 후 최근접 순위 (끊김 비교용 — 평균만으로는 튀는 프레임이 묻힌다)
+		std::vector<float> Sorted = Capture.FrameIntervals;
+		std::sort(Sorted.begin(), Sorted.end());
+		const auto Percentile = [&Sorted](double P) {
+			const size_t Rank = static_cast<size_t>(std::ceil(P * static_cast<double>(Sorted.size())));
+			return Sorted[std::clamp<size_t>(Rank, 1, Sorted.size()) - 1];
+		};
+		E_LOG(LogRenderer, Display, "[성능] 프레임 시간 백분위: p50 {:.3f}, p95 {:.3f}, p99 {:.3f}, 최대 {:.3f} ms", Percentile(0.5), Percentile(0.95),
+		      Percentile(0.99), Sorted.back());
+	}
 	if (Capture.OcclusionTested > 0.0)
 	{
 		E_LOG(LogRenderer, Display, "[성능] 오클루전: 정적 인스턴스 {:.1f} 중 그림 {:.1f} (2단계 {:.2f}), 가려짐 {:.1f}", Capture.OcclusionTested / Count,

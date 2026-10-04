@@ -216,6 +216,7 @@ bool FSceneRenderer::Init(FD3D12RHI& InRhi, FResourceManager& InResources)
 	{
 		return false;
 	}
+	SpriteCollector.Init(*Rhi, *Resources);
 	// 지형 (Phase 34): 그림자는 두 그림자 렌더러의 추가 캐스터 훅으로
 	if (!TerrainRenderer.Init(*Rhi, ShaderLibrary, *Resources, SceneColorFormat, FD3D12RHI::DepthBufferFormat))
 	{
@@ -404,6 +405,8 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.ScreenSizeCulled += Stats.ScreenSizeCulled;
 	Capture.Sprites += Stats.Sprites;
 	Capture.SpriteDrawCalls += Stats.SpriteDrawCalls;
+	Capture.SpriteTileChunks += Stats.SpriteTileChunks;
+	Capture.SpriteTiles += Stats.SpriteTiles;
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -459,9 +462,10 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
-	if (Capture.Sprites > 0.0)
+	if (Capture.Sprites > 0.0 || Capture.SpriteTiles > 0.0)
 	{
-		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}", Capture.Sprites / Count, Capture.SpriteDrawCalls / Count);
+		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}, 타일 청크 {:.1f} (타일 {:.0f}, 캐시 청크 {})", Capture.Sprites / Count,
+		      Capture.SpriteDrawCalls / Count, Capture.SpriteTileChunks / Count, Capture.SpriteTiles / Count, SpriteCollector.GetCachedChunkCount());
 	}
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
@@ -703,6 +707,7 @@ void FSceneRenderer::Shutdown()
 	Clouds.Shutdown();
 	IblRenderer.Shutdown();
 	ParticleRenderer.Shutdown();
+	SpriteCollector.Shutdown();
 	SpriteRenderer.Shutdown();
 	TerrainRenderer.Shutdown();
 	FoliageRenderer.Shutdown();
@@ -1926,18 +1931,23 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 		}
 
 		// 2D 스프라이트 (Renderer/SpriteRenderer.h): 안개 적용·물 수면 뒤, 반투명 메시 앞 — 반투명 메시와 서로 정렬하지 않고 패스째 먼저
-		// (Masked 스프라이트가 쓴 깊이에 반투명 메시·파티클이 가려지도록). 정렬·업로드는 여기(게임 스레드), 람다는 준비된 값만.
-		// 캡처 굽기·와이어프레임(에셋 미리보기)에는 그리지 않는다
-		Stats.Sprites         = 0;
-		Stats.SpriteDrawCalls = 0;
+		// (Masked 스프라이트가 쓴 깊이에 반투명 메시·파티클이 가려지도록). 씬 수집(스프라이트·타일맵 컴포넌트 — FSpriteSceneCollector)·정렬·업로드는
+		// 여기(게임 스레드), 람다는 준비된 값만. 캡처 굽기·와이어프레임(에셋 미리보기)에는 그리지 않는다
+		Stats.Sprites          = 0;
+		Stats.SpriteDrawCalls  = 0;
+		Stats.SpriteTileChunks = 0;
+		Stats.SpriteTiles      = 0;
 		if (!bRenderingCaptures && !bWireframe)
 		{
 			BeginCpuTimer(ERenderTimer::Sprites);
+			SpriteCollector.Collect(Scene, FrozenFrustum);
 			FSpriteRenderer::FPreparedFrame Sprites;
-			SpriteRenderer.Prepare(RenderCamera, Sprites);
+			SpriteRenderer.Prepare(RenderCamera, SpriteCollector.GetItems(), SpriteCollector.GetChunks(), Sprites);
 			EndCpuTimer(ERenderTimer::Sprites);
-			Stats.Sprites         = Sprites.SpriteCount;
-			Stats.SpriteDrawCalls = static_cast<uint32>(Sprites.Runs.size());
+			Stats.Sprites          = Sprites.SpriteCount;
+			Stats.SpriteDrawCalls  = static_cast<uint32>(Sprites.Runs.size());
+			Stats.SpriteTileChunks = Sprites.ChunkCount;
+			Stats.SpriteTiles      = Sprites.TileCount;
 			if (!Sprites.IsEmpty())
 			{
 				const D3D12_GPU_VIRTUAL_ADDRESS FogConstants = FogRenderer.GetConstantsAddress();

@@ -1,6 +1,7 @@
 ﻿// 2D 스프라이트 (Renderer/SpriteRenderer.h 머리 주석이 기준). 메시 루트 시그니처를 그대로 쓰므로 Mesh.hlsl의 바인딩·조명 함수를 포함한다
 //   (방향광 + 캐스케이드 그림자, 클러스터 로컬 라이트(그림자 포함), 하늘 IBL/DDGI, 반투명 안개 b6/t23 — 반투명 메시 패스와 같은 바인딩).
-// 정점 버퍼 없음: 인스턴스마다 정점 6개(사각형 두 삼각형)를 SV_VertexID로 만든다. 인스턴스 = 묶음 시작(b0 InstanceOffset) + SV_InstanceID.
+// 정점 버퍼 없음: 인스턴스마다 정점 6개(사각형 두 삼각형)를 SV_VertexID로 만든다. 인스턴스 = 묶음 시작(b0 InstanceOffset) + SV_InstanceID
+//   (타일맵 청크 구간은 b0 최상위 비트 — 아래 FSpriteChunk).
 // 텍스처는 바인드리스 — 셰이더 가시 힙 전체 표(공간 3, Mesh.hlsl LightTextures)를 인스턴스의 칸 번호로 읽는다.
 // 픽셀 셰이더 = 블렌드 모드별 엔트리 (SpriteRenderer ESpriteBlendMode), 조명은 디파인 E_SPRITE_LIT 변형.
 #include "Mesh.hlsl"
@@ -23,6 +24,22 @@ StructuredBuffer<FSpriteInstance> SpriteInstances : register(t13);
 
 static const uint E_SPRITE_FLAG_POINT = 1u; // SpriteRenderer SpriteFlag_Point
 
+// 타일맵 청크 머리 (ShaderTypes.h FSpriteChunkGpu와 1:1, 64바이트). 청크 구간은 b0의 최상위 비트를 켜서 알린다 —
+// 그때 t13 = 청크 정적 버퍼(타일맵 로컬 공간 인스턴스, 0번부터), t14 = 이 머리 하나 (메시 인스턴스 번호 목록 자리 — 스프라이트 셰이더는 안 쓰는 자리)
+struct FSpriteChunk
+{
+	float3 AxisX;
+	uint   TextureIndex;
+	float3 AxisZ;
+	uint   Pad0;
+	float3 Translation;
+	uint   Pad1;
+	float4 Color;
+};
+StructuredBuffer<FSpriteChunk> SpriteChunkHeader : register(t14);
+
+static const uint E_SPRITE_CHUNK_BIT = 0x80000000u; // SpriteRenderer SpriteChunkRunBit
+
 struct FSpriteVSOutput
 {
 	float4 Position                     : SV_Position;
@@ -41,9 +58,20 @@ static const float2 SpriteCorners[6] = { float2(0.0f, 0.0f), float2(0.0f, 1.0f),
 
 FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
 {
-	const FSpriteInstance Sprite = SpriteInstances[InstanceOffset + InstanceId];
-	const float2          Corner = SpriteCorners[VertexId];
-	const float3          World  = Sprite.Origin + Sprite.AxisX * Corner.x + Sprite.AxisZ * Corner.y;
+	const bool      bChunk = (InstanceOffset & E_SPRITE_CHUNK_BIT) != 0;
+	FSpriteInstance Sprite = SpriteInstances[bChunk ? InstanceId : InstanceOffset + InstanceId];
+	if (bChunk)
+	{
+		// 로컬(Y = 0 평면) → 월드: 위치는 이동 포함, 축은 방향만
+		const FSpriteChunk Chunk = SpriteChunkHeader[0];
+		Sprite.Origin       = Chunk.Translation + Chunk.AxisX * Sprite.Origin.x + Chunk.AxisZ * Sprite.Origin.z;
+		Sprite.AxisX        = Chunk.AxisX * Sprite.AxisX.x + Chunk.AxisZ * Sprite.AxisX.z;
+		Sprite.AxisZ        = Chunk.AxisX * Sprite.AxisZ.x + Chunk.AxisZ * Sprite.AxisZ.z;
+		Sprite.Color       *= Chunk.Color;
+		Sprite.TextureIndex = Chunk.TextureIndex;
+	}
+	const float2 Corner = SpriteCorners[VertexId];
+	const float3 World  = Sprite.Origin + Sprite.AxisX * Corner.x + Sprite.AxisZ * Corner.y;
 
 	FSpriteVSOutput Output;
 	Output.Position      = mul(float4(World, 1.0f), ViewProjection); // 지터 포함 (씬 컬러에 그리는 패스)

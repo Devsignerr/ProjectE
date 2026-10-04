@@ -5,6 +5,8 @@
 #include "Core/Settings/ProjectSettings.h"
 #include "Core/StringConv.h"
 #include "Renderer/MaterialAsset.h"
+#include "Scene/Sprite/SpriteAsset.h"
+#include "Scene/Sprite/TilesetAsset.h"
 
 #include <algorithm>
 #include <format>
@@ -360,13 +362,14 @@ const char* PackageManifest::GetUsageName(ETextureUsage Usage)
 	case ETextureUsage::Linear: return "linear";
 	case ETextureUsage::Normal: return "normal";
 	case ETextureUsage::Mask:   return "mask";
+	case ETextureUsage::PixelArt: return "pixel";
 	}
 	return "color";
 }
 
 bool PackageManifest::ParseUsageName(std::string_view Name, ETextureUsage& OutUsage)
 {
-	for (const ETextureUsage Usage : { ETextureUsage::Color, ETextureUsage::Linear, ETextureUsage::Normal, ETextureUsage::Mask })
+	for (const ETextureUsage Usage : { ETextureUsage::Color, ETextureUsage::Linear, ETextureUsage::Normal, ETextureUsage::Mask, ETextureUsage::PixelArt })
 	{
 		if (Name == GetUsageName(Usage))
 		{
@@ -725,6 +728,51 @@ void FPackageDependencyScanner::ScanMaterialUsages(const std::string& Path)
 	}
 }
 
+void FPackageDependencyScanner::ScanSprite2DUsage(const std::string& Path, const std::string& Text, bool bTileset)
+{
+	// 2D 아틀라스/타일셋 텍스처: Filter Point = PixelArt(무압축 — 런타임 FSpriteSceneCollector와 같은 규칙), Linear = Color
+	std::string   Texture;
+	ESpriteFilter Filter = ESpriteFilter::Point;
+	if (bTileset)
+	{
+		FTilesetAsset Asset;
+		if (!FTilesetAsset::FromJsonString(Text, Asset))
+		{
+			Result.Warnings.push_back(std::format("타일셋을 읽지 못함: {}", Path));
+			return;
+		}
+		Texture = Asset.Texture;
+		Filter  = Asset.Filter;
+	}
+	else
+	{
+		FSpriteAsset Asset;
+		if (!FSpriteAsset::FromJsonString(Text, Asset))
+		{
+			Result.Warnings.push_back(std::format("스프라이트를 읽지 못함: {}", Path));
+			return;
+		}
+		Texture = Asset.Texture;
+		Filter  = Asset.Filter;
+	}
+	if (Texture.empty())
+	{
+		return;
+	}
+	const std::string  Normalized = ToLowerAscii(PackageManifest::NormalizeRelativePath(JoinPath(GetDirectoryPart(Path), Texture)));
+	const std::string* File       = Normalized.empty() ? nullptr : FindFile(Normalized);
+	if (File == nullptr)
+	{
+		Result.Warnings.push_back(std::format("2D 텍스처 없음: {} → {}", Path, Texture));
+		return;
+	}
+	AddFile(*File, EContext::Package, false);
+	if (const auto Found = Result.Images.find(*File); Found != Result.Images.end())
+	{
+		Found->second.insert(Filter == ESpriteFilter::Point ? ETextureUsage::PixelArt : ETextureUsage::Color);
+	}
+}
+
 void FPackageDependencyScanner::ScanFile(const std::string& Path, EContext Context)
 {
 	const std::string Extension = GetExtensionLower(Path);
@@ -745,14 +793,19 @@ void FPackageDependencyScanner::ScanFile(const std::string& Path, EContext Conte
 	// 모델 원본(glTF uri, .eimport 추가 입력)이 가리키는 파일은 쿠킹 입력
 	const EContext RefContext = (Extension == ".gltf" || Extension == ".eimport") ? EContext::ModelSource : Context;
 	const bool     bMaterial  = Extension == ".emat";
+	const bool     bSprite2D  = Extension == ".esprite" || Extension == ".etileset"; // 텍스처 용도는 Filter로 (ScanSprite2DUsage)
 	const std::string Directory = GetDirectoryPart(Path);
 	for (const std::string& Value : PackageManifest::ExtractStrings(Text, Extension == ".lua"))
 	{
-		ResolveValue(Value, Directory, RefContext, bMaterial);
+		ResolveValue(Value, Directory, RefContext, bMaterial || bSprite2D);
 	}
 	if (bMaterial && Context == EContext::Package)
 	{
 		ScanMaterialUsages(Path);
+	}
+	if (bSprite2D && Context == EContext::Package)
+	{
+		ScanSprite2DUsage(Path, Text, Extension == ".etileset");
 	}
 }
 

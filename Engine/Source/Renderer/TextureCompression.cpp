@@ -73,7 +73,7 @@ namespace
 				{
 					for (int Channel = 0; Channel < 4; ++Channel)
 					{
-						const bool bSrgbChannel = Usage == ETextureUsage::Color && Channel < 3;
+						const bool bSrgbChannel = (Usage == ETextureUsage::Color || Usage == ETextureUsage::PixelArt) && Channel < 3;
 						const float Value       = bSrgbChannel ? SrgbTable[Texel[Channel]] : static_cast<float>(Texel[Channel]) / 255.0f;
 						Sum[Channel] += Usage == ETextureUsage::Normal && Channel < 3 ? Value * 2.0f - 1.0f : Value;
 					}
@@ -97,7 +97,7 @@ namespace
 				{
 					for (int Channel = 0; Channel < 3; ++Channel)
 					{
-						Out[Channel] = Usage == ETextureUsage::Color ? LinearToSrgb8(Sum[Channel]) : ToUnorm8(Sum[Channel]);
+						Out[Channel] = (Usage == ETextureUsage::Color || Usage == ETextureUsage::PixelArt) ? LinearToSrgb8(Sum[Channel]) : ToUnorm8(Sum[Channel]);
 					}
 				}
 				Out[3] = ToUnorm8(Sum[3]);
@@ -239,6 +239,14 @@ FCompressedTexture TextureCompression::Compress(const FImage& Base, ETextureUsag
 	InitEncoders();
 
 	FCompressedTexture Result;
+	if (Usage == ETextureUsage::PixelArt)
+	{
+		// 무압축 밉 0 하나 (최근접 Load로만 읽는다 — 밉·블록 압축 없음)
+		Result.bSRGB  = true;
+		Result.Format = ETextureFormat::RGBA8;
+		Result.Mips.push_back(EncodeMip(Base, ETextureFormat::RGBA8, Usage));
+		return Result;
+	}
 	Result.bSRGB  = Usage == ETextureUsage::Color;
 	Result.Format = (Base.Width % 4 == 0 && Base.Height % 4 == 0) ? SelectFormat(Usage) : ETextureFormat::RGBA8;
 

@@ -21,6 +21,7 @@ enum class ETextureUsage : uint8
 	Linear, // 선형 데이터 (금속/거칠기 등 채널 패킹): BC7 선형 가중치
 	Normal, // 탄젠트 공간 노멀: 벡터 평균 후 재정규화, BC5
 	Mask,   // 단일 채널 (R): BC4
+	PixelArt, // sRGB 색상, 무압축 RGBA8 + 밉 0만 (Point 필터 2D 스프라이트/타일셋 — BC7 블록 오차·밉이 도트를 번지게 한다. Sprite.hlsl은 Point를 밉 0 Load로 읽는다)
 };
 
 struct FTextureMip
@@ -56,7 +57,7 @@ namespace TextureCompression
 	std::vector<FImage> GenerateMips(const FImage& Base, ETextureUsage Usage);
 
 	// 밉 생성 + 압축. 밉 0 크기가 4의 배수가 아니면 RGBA8(비압축)로 대체한다 (D3D12 BC 제약)
-	//   bSRGB는 Color 용도에서만 true (색상은 sRGB 뷰로 샘플링)
+	//   bSRGB는 Color/PixelArt 용도에서만 true (색상은 sRGB 뷰로 샘플링). PixelArt는 항상 RGBA8 밉 0 하나
 	FCompressedTexture Compress(const FImage& Base, ETextureUsage Usage);
 
 	// 검증/미리보기용 CPU 디코딩 (RGBA8). GPU 샘플링과 같게 BC5는 (R, G, 0, 255), BC4는 (R, 0, 0, 255)

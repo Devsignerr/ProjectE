@@ -570,6 +570,8 @@ private:
 		double ShadowCacheReused  = 0.0;
 		double ShadowCacheRebuilt = 0.0;
 		double ScreenSizeCulled   = 0.0;
+		double Sprites            = 0.0;
+		double SpriteDrawCalls    = 0.0;
 		std::vector<float> FrameIntervals; // 프레임마다 간격 (ms) — 백분위 출력용
 	};
 	FPerfCapture PerfCapture;

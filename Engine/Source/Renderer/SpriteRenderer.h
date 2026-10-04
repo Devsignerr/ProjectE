@@ -87,7 +87,9 @@ private:
 	std::vector<FSpriteDrawItem>    FrameItems; // 이번 Prepare 대상 (목록 + 시험)
 	std::vector<SpriteSorting::FKey> SortKeys;
 	std::vector<uint32>              SortOrder;
-	std::vector<uint8>               PipelineKeys;
+	std::vector<FSpriteInstanceGpu>  InstanceScratch;  // 제출 순서 (병렬로 채움)
+	std::vector<uint8>               ItemPipelineKeys; // 제출 순서
+	std::vector<uint8>               PipelineKeys;     // 그리기 순서
 	std::vector<SpriteBatching::FRun> Runs;
 	bool                             bWarnedBufferFull = false;
 };

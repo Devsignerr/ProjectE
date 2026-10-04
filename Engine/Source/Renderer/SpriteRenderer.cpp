@@ -1,6 +1,7 @@
 #include "Renderer/SpriteRenderer.h"
 
 #include "Core/Console/Console.h"
+#include "Core/Jobs/ParallelFor.h"
 #include "Core/Paths.h"
 #include "RHI/D3D12/D3D12RHI.h"
 #include "RHI/D3D12/D3D12ShaderCompiler.h"
@@ -204,48 +205,53 @@ void FSpriteRenderer::Prepare(const FCamera& Camera, FPreparedFrame& Out)
 		Count = static_cast<size_t>(MaxCount);
 	}
 
-	// 정렬 키 (깊이 = 사각형 가운데의 카메라 시선 거리)
+	// 1) 항목마다 (병렬, 자기 칸만): 사각형 → GPU 인스턴스(제출 순서 칸) + 파이프라인 키 + 정렬 키(깊이 = 사각형 가운데의 카메라 시선 거리).
+	//    ResolveTexture는 읽기만 (텍스처 칸 번호는 이번 프레임 값 — 같은 핸들이 이어지면 다시 찾지 않음)
 	const FVector3 CameraPosition = Camera.GetPosition();
 	const FVector3 CameraForward  = Camera.GetForwardVector();
 	SortKeys.resize(Count);
-	for (size_t Index = 0; Index < Count; ++Index)
-	{
-		const FSpriteDrawItem& Item = (*Items)[Index];
-		SortKeys[Index]             = { Item.SortLayer, Item.OrderInLayer,
-		                                SpriteMath::ComputeSortDepth(SpriteMath::ComputeQuad(Item), CameraPosition, CameraForward) };
-	}
+	InstanceScratch.resize(Count);
+	ItemPipelineKeys.resize(Count);
+	FParallel::ParallelFor(static_cast<uint32>(Count), 1024, [&](uint32 Begin, uint32 End) {
+		FTextureHandle LastTexture;
+		uint32         LastTextureIndex = Resources->ResolveTexture(LastTexture).GetSrv().Index;
+		for (uint32 Index = Begin; Index < End; ++Index)
+		{
+			const FSpriteDrawItem&  Item = (*Items)[Index];
+			const SpriteMath::FQuad Quad = SpriteMath::ComputeQuad(Item);
+			if (Item.Texture != LastTexture)
+			{
+				LastTexture      = Item.Texture;
+				LastTextureIndex = Resources->ResolveTexture(Item.Texture).GetSrv().Index;
+			}
+			FSpriteInstanceGpu& Instance = InstanceScratch[Index];
+			Instance.Origin              = Quad.Origin;
+			Instance.TextureIndex        = LastTextureIndex;
+			Instance.AxisX               = Quad.AxisX;
+			Instance.Flags               = Item.Filter == ESpriteFilter::Point ? SpriteFlag_Point : 0u;
+			Instance.AxisZ               = Quad.AxisZ;
+			Instance.AlphaCutoff         = Item.AlphaCutoff;
+			Instance.UVRect              = FVector4(Item.UVMin.X, Item.UVMin.Y, Item.UVMax.X, Item.UVMax.Y);
+			Instance.Color               = Item.Color;
+			const ESpriteBlendMode Blend = Item.Blend < ESpriteBlendMode::Count ? Item.Blend : ESpriteBlendMode::Alpha;
+			ItemPipelineKeys[Index]      = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Item.bLit));
+			SortKeys[Index]              = { Item.SortLayer, Item.OrderInLayer, SpriteMath::ComputeSortDepth(Quad, CameraPosition, CameraForward) };
+		}
+	});
+	// 2) 정렬 (순차, 결정적)
 	SpriteSorting::Sort(SortKeys, SortOrder);
 
-	// 정렬 순서대로 인스턴스를 업로드 버퍼에 바로 쓴다 (텍스처 칸 번호는 이번 프레임 값 — 같은 핸들이 이어지면 다시 찾지 않음)
+	// 3) 정렬 순서로 모아 업로드 버퍼(쓰기 결합)에 순서대로 쓴다 + 구간
 	const FD3D12DynamicAllocation Allocation = DynamicBuffer.Allocate(sizeof(FSpriteInstanceGpu) * Count, 16);
 	auto*                         Gpu        = static_cast<FSpriteInstanceGpu*>(Allocation.CpuAddress);
 	PipelineKeys.resize(Count);
-	FTextureHandle LastTexture;
-	uint32         LastTextureIndex = Resources->ResolveTexture(LastTexture).GetSrv().Index;
 	for (size_t Index = 0; Index < Count; ++Index)
 	{
-		const FSpriteDrawItem&  Item = (*Items)[SortOrder[Index]];
-		const SpriteMath::FQuad Quad = SpriteMath::ComputeQuad(Item);
-		if (Item.Texture != LastTexture)
-		{
-			LastTexture      = Item.Texture;
-			LastTextureIndex = Resources->ResolveTexture(Item.Texture).GetSrv().Index;
-		}
-		FSpriteInstanceGpu Instance;
-		Instance.Origin       = Quad.Origin;
-		Instance.TextureIndex = LastTextureIndex;
-		Instance.AxisX        = Quad.AxisX;
-		Instance.Flags        = Item.Filter == ESpriteFilter::Point ? SpriteFlag_Point : 0u;
-		Instance.AxisZ        = Quad.AxisZ;
-		Instance.AlphaCutoff  = Item.AlphaCutoff;
-		Instance.UVRect       = FVector4(Item.UVMin.X, Item.UVMin.Y, Item.UVMax.X, Item.UVMax.Y);
-		Instance.Color        = Item.Color;
-		std::memcpy(&Gpu[Index], &Instance, sizeof(Instance)); // 업로드 힙(쓰기 결합)에 순서대로
-		const ESpriteBlendMode Blend = Item.Blend < ESpriteBlendMode::Count ? Item.Blend : ESpriteBlendMode::Alpha;
-		PipelineKeys[Index]          = static_cast<uint8>(SpriteBatching::MakePipelineKey(Blend, Item.bLit));
+		const uint32 Source = SortOrder[Index];
+		std::memcpy(&Gpu[Index], &InstanceScratch[Source], sizeof(FSpriteInstanceGpu));
+		PipelineKeys[Index] = ItemPipelineKeys[Source];
 	}
 	SpriteBatching::BuildRuns(PipelineKeys, Runs);
-
 	Out.Instances   = Allocation.GpuAddress;
 	Out.SpriteCount = static_cast<uint32>(Count);
 	Out.Runs.reserve(Runs.size());
@@ -280,7 +286,8 @@ void FSpriteRenderer::RecordDraws(ID3D12GraphicsCommandList* CommandList, const 
 
 // ---- 임시 확인 경로 (r.Sprite.Test N) — 머지 뒤 컴포넌트 수집이 붙으면 이 함수와 TestTextures/TestRootProviderId를 지운다.
 // 카메라 앞 일정 거리 평면에 N개를 격자로 놓는다. 축은 카메라 오른쪽/위 (2D 카메라(+Y에서 -Y를 봄)면 정확히 월드 X/Z 평면 — 3D 시험 씬에서도
-// 보이도록 카메라 축을 쓴다). 섞는 것: 정렬 레이어(큰 스프라이트가 위 레이어로 이웃을 덮음)·순번·깊이, 블렌드 4종, Point/Linear, 조명, 회전, UV 반전.
+// 보이도록 카메라 축을 쓴다). 섞는 것(앞 256개): 정렬 레이어(큰 스프라이트가 위 레이어로 이웃을 덮음)·순번·깊이, 블렌드 4종, Point/Linear, 조명, 회전,
+// UV 반전. 그 뒤는 같은 설정의 균일 스프라이트 (r.Sprite.Test=10000 성능 측정 — 묶음 하나)
 void FSpriteRenderer::AppendTestSprites(const FCamera& Camera, int32 Count, std::vector<FSpriteDrawItem>& Out)
 {
 	if (TestTextures.empty())
@@ -346,6 +353,7 @@ void FSpriteRenderer::AppendTestSprites(const FCamera& Camera, int32 Count, std:
 	static const ESpriteBlendMode Blends[] = { ESpriteBlendMode::Alpha,    ESpriteBlendMode::Masked, ESpriteBlendMode::Additive, ESpriteBlendMode::Alpha,
 		                                       ESpriteBlendMode::Premultiplied, ESpriteBlendMode::Masked, ESpriteBlendMode::Alpha, ESpriteBlendMode::Additive };
 	const size_t IconCount = TestTextures.size() > 2 ? TestTextures.size() - 2 : 0;
+	constexpr int32 VariedCount = 256; // 앞 256개만 레이어·블렌드·필터·조명을 섞는다 (섞인 순서는 정렬 뒤 파이프라인이 번갈아 묶음이 잘게 끊긴다)
 
 	Out.reserve(Out.size() + static_cast<size_t>(Count));
 	for (int32 Index = 0; Index < Count; ++Index)
@@ -392,6 +400,17 @@ void FSpriteRenderer::AppendTestSprites(const FCamera& Camera, int32 Count, std:
 		if (Index % 5 == 4)
 		{
 			std::swap(Item.UVMin.X, Item.UVMax.X); // 좌우 반전
+		}
+		if (Index >= VariedCount)
+		{
+			// 성능 확인용 균일 스프라이트 (같은 텍스처·블렌드·필터, 언릿, 정렬상 맨 앞 한 구간): 섞인 앞 256개 뒤는 묶음 하나로 그려진다
+			Item.SortLayer    = -1;
+			Item.OrderInLayer = 0;
+			Item.Blend        = ESpriteBlendMode::Alpha;
+			Item.Filter       = ESpriteFilter::Linear;
+			Item.bLit         = false;
+			Item.Texture      = TestTextures[0];
+			Item.Size         = FVector2(Cell * 0.9f);
 		}
 		Out.push_back(Item);
 	}

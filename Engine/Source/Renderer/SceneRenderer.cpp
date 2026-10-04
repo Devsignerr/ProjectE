@@ -402,6 +402,8 @@ void FSceneRenderer::AccumulatePerfCapture()
 	Capture.ShadowCacheReused += Stats.ShadowCacheReused;
 	Capture.ShadowCacheRebuilt += Stats.ShadowCacheRebuilt;
 	Capture.ScreenSizeCulled += Stats.ScreenSizeCulled;
+	Capture.Sprites += Stats.Sprites;
+	Capture.SpriteDrawCalls += Stats.SpriteDrawCalls;
 }
 
 void FSceneRenderer::LogPerfCapture() const
@@ -457,6 +459,10 @@ void FSceneRenderer::LogPerfCapture() const
 	}
 	E_LOG(LogRenderer, Display, "[성능] 그림자 캐시: 캐스케이드 재사용 {:.2f}, 다시 그림 {:.2f} / 프레임, 화면 크기·거리 컬링 {:.1f}", Capture.ShadowCacheReused / Count,
 	      Capture.ShadowCacheRebuilt / Count, Capture.ScreenSizeCulled / Count);
+	if (Capture.Sprites > 0.0)
+	{
+		E_LOG(LogRenderer, Display, "[성능] 스프라이트: {:.1f}개, 드로우 {:.1f}", Capture.Sprites / Count, Capture.SpriteDrawCalls / Count);
+	}
 	if (Stats.bRayTracedShadows || Stats.bRayTracedReflections)
 	{
 		LogRayTracingStats(); // 마지막 프레임 가속 구조 상태 (BLAS/TLAS 크기)

@@ -31,20 +31,6 @@ namespace
 	}
 } // namespace
 
-FMatrix4x4 FMatrix4x4::operator*(const FMatrix4x4& B) const
-{
-	FMatrix4x4 Result;
-	for (int32 Row = 0; Row < 4; ++Row)
-	{
-		for (int32 Col = 0; Col < 4; ++Col)
-		{
-			Result.M[Row][Col] = M[Row][0] * B.M[0][Col] + M[Row][1] * B.M[1][Col] +
-			                     M[Row][2] * B.M[2][Col] + M[Row][3] * B.M[3][Col];
-		}
-	}
-	return Result;
-}
-
 FVector4 FMatrix4x4::TransformVector4(const FVector4& V) const
 {
 	return {

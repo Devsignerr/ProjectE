@@ -10,6 +10,8 @@
 
 #include <cmath>
 #include <format>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -700,6 +702,111 @@ E_TEST(Character2DWorld_StompLandsOnCharacter)
 		E_EXPECT_NEAR(World.OtherPosition().Z, StandZ, 1.5f);
 		E_EXPECT_NEAR(World.OtherPosition().X, 0.0f, 0.5f);
 	}
+}
+
+namespace
+{
+	// 줄지어 선 캐릭터: Pawn(첫째)만 입력, 나머지는 입력 없이. 무브 순서 = 만든 순서
+	struct FLine : FWorld
+	{
+		std::vector<FEntity> Others;
+
+		void Setup(const FCharacterMovement2DComponent& PawnMovement, const std::vector<std::pair<ECollision, float>>& OthersSetup)
+		{
+			AddBox("Ground", FVector3(0.0f, 0.0f, -50.0f), FVector2(10000.0f, 100.0f));
+			SpawnPawn(FVector3(0.0f, 0.0f, 80.0f), PawnMovement);
+			for (const auto& [Mode, X] : OthersSetup)
+			{
+				const FEntity Entity                = Scene.CreateEntity("Other");
+				Scene.GetTransform(Entity).Position = FVector3(X, 0.0f, 80.0f);
+				Scene.GetRegistry().Emplace<FCharacterMovement2DComponent>(Entity).CharacterCollision = Mode;
+				Others.push_back(Entity);
+			}
+			Begin();
+		}
+		void Run(int32 Frames, float InputX)
+		{
+			for (int32 Index = 0; Index < Frames; ++Index)
+			{
+				Characters.Sync(Scene);
+				Characters.SimulateCharacter(Scene, Pawn, MakeMove(InputX));
+				for (const FEntity Entity : Others)
+				{
+					Characters.SimulateCharacter(Scene, Entity, MakeMove());
+				}
+				Characters.UpdateProxies();
+				Physics.Update(Scene, Frame);
+				Scene.UpdateTransforms();
+			}
+		}
+		float X(size_t Index) const { return Scene.GetTransform(Others[Index]).Position.X; }
+	};
+
+	FCharacterMovement2DComponent PushMovement(float Strength = 1.0f)
+	{
+		FCharacterMovement2DComponent Movement;
+		Movement.CharacterCollision = ECollision::Push;
+		Movement.PushStrength       = Strength;
+		return Movement;
+	}
+} // namespace
+
+// 밀기 연쇄: 밀린 캐릭터(Block/Push 상관없이)가 앞 캐릭터를 민다 — 줄 전체가 붙어서 나아가고, 벽에 닿으면 모두 멈춘다. Ignore는 사슬에 끼지 않는다
+E_TEST(Character2DWorld_PushChainsThroughCharacters)
+{
+	{
+		FLine World;
+		World.Setup(PushMovement(), { { ECollision::Block, 150.0f }, { ECollision::Push, 300.0f }, { ECollision::Block, 450.0f } });
+		World.Run(20, 0.0f);
+		World.Run(90, 1.0f);
+		E_EXPECT_TRUE(World.X(2) > 480.0f);
+		E_EXPECT_NEAR(World.X(0) - World.Position().X, 60.0f, 3.0f);
+		E_EXPECT_NEAR(World.X(1) - World.X(0), 60.0f, 3.0f);
+		E_EXPECT_NEAR(World.X(2) - World.X(1), 60.0f, 3.0f);
+		E_EXPECT_NEAR(World.Scene.GetTransform(World.Others[2]).Position.Z, StandZ, 1.5f);
+	}
+	// 벽: 맨 앞이 벽에서 멈추면 줄 전체가 멈춘다 (벽 안으로 밀려 들어가지 않는다)
+	{
+		FLine World;
+		World.AddBox("Wall", FVector3(550.0f, 0.0f, 100.0f), FVector2(100.0f, 400.0f)); // 왼쪽 면 X = 500
+		World.Setup(PushMovement(), { { ECollision::Block, 150.0f }, { ECollision::Block, 300.0f } });
+		World.Run(20, 0.0f);
+		World.Run(120, 1.0f);
+		E_EXPECT_NEAR(World.X(1), 500.0f - 30.0f, 2.0f);
+		E_EXPECT_NEAR(World.X(0), 500.0f - 90.0f, 3.0f);
+		E_EXPECT_NEAR(World.Position().X, 500.0f - 150.0f, 4.0f);
+	}
+	// 깊이 상한: 밀리는 캐릭터는 최대 4 — 다섯째부터는 벽처럼 막는다
+	{
+		FLine World;
+		World.Setup(PushMovement(), { { ECollision::Block, 100.0f }, { ECollision::Block, 200.0f }, { ECollision::Block, 300.0f },
+		                              { ECollision::Block, 400.0f }, { ECollision::Block, 500.0f } });
+		World.Run(20, 0.0f);
+		World.Run(120, 1.0f);
+		E_EXPECT_NEAR(World.X(4), 500.0f, 0.5f);
+		E_EXPECT_NEAR(World.X(3), 500.0f - 60.0f, 3.0f);
+	}
+}
+
+// 밀기 세기: 작을수록 느리게(무겁게) 민다, 0이면 Block과 같다 (기본 1 = 이전 동작)
+E_TEST(Character2DWorld_PushStrength)
+{
+	float Distances[3] = {};
+	const float Strengths[3] = { 1.0f, 0.5f, 0.0f };
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		FLine World;
+		World.Setup(PushMovement(Strengths[Index]), { { ECollision::Block, 100.0f } });
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f); // 가속 0.1초 + 접촉까지 몇 프레임
+		const float Before = World.X(0);
+		World.Run(60, 1.0f);
+		Distances[Index] = World.X(0) - Before;
+		E_EXPECT_TRUE(World.X(0) - World.Position().X > 57.0f); // 겹치지 않는다
+	}
+	E_EXPECT_TRUE(Distances[0] > 200.0f);
+	E_EXPECT_TRUE(Distances[1] > 30.0f && Distances[1] < Distances[0] * 0.6f);
+	E_EXPECT_NEAR(Distances[2], 0.0f, 0.5f);
 }
 
 // 같은 상태 + 같은 무브 → 같은 결과 (다른 캐릭터가 막는 월드에서도)

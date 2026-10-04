@@ -460,6 +460,15 @@ private:
 	std::vector<FLodHistory> LodHistory;
 	FMeshPassBatches  MainBatches;
 	FMeshPassBatches  TranslucentBatches; // 반투명/가산 (먼 것부터, PrepareMainBatches가 함께 만든다)
+	// 메인 컬링 병렬 조각 (PrepareMainBatches — 조각 순서로 이어 붙인다)
+	struct FMainCullChunk
+	{
+		std::vector<FInstanceSortItem> Main;
+		std::vector<FInstanceSortItem> Translucent;
+		uint32                         Visible    = 0;
+		uint32                         SizeCulled = 0;
+	};
+	std::vector<FMainCullChunk> MainCullChunks;
 	FSceneRenderStats Stats;
 
 	FFrustum FrozenFrustum;

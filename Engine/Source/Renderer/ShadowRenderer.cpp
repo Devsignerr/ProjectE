@@ -5,6 +5,8 @@
 #include "Renderer/Camera.h"
 #include "Renderer/StaticMesh.h"
 
+#include "Core/Jobs/ParallelFor.h"
+
 E_DECLARE_LOG_CATEGORY(LogRenderer)
 
 namespace
@@ -25,6 +27,7 @@ namespace
 		ShadowParam_MaterialTextures  = 7, // 공간 2 t0~ (그래프 머티리얼 텍스처 테이블, 무제한 범위)
 	};
 	constexpr uint32 ShadowPassConstantCount = 17;
+	constexpr uint32 MaxCasterChunks         = 64; // 캐스터 거르기 병렬 조각 상한 (합치기 비용 = 조각 수에 비례)
 } // namespace
 
 FShadowRenderer::~FShadowRenderer()
@@ -429,10 +432,11 @@ void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12D
 	const uint64 StaticHash = bCache ? ComputeStaticSetHash(Instances) : 0;
 	const float  MinTexels  = FrameSettings.MinCasterTexels;
 	bExtraStatic            = bCache && ExtraCasters && ExtraCasterState;
-	const std::vector<FMeshInstance>& List = Instances.GetInstances();
+
+	// ---- 1) 캐스케이드별 캐시 행동 (메인 스레드 — 추가 캐스터 상태 콜백·캐시 생성)
+	//   키 = 캐스케이드 뷰-투영 + 설정 + 정적 집합 + 추가 캐스터 상태 + 캐시 세대
 	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
 	{
-		// ---- 캐시 행동 (키 = 캐스케이드 뷰-투영 + 설정 + 정적 집합 + 추가 캐스터 상태 + 캐시 세대)
 		ECacheAction Action = ECacheAction::Direct;
 		if (bCache)
 		{
@@ -463,47 +467,109 @@ void FShadowRenderer::PrepareBatches(const FMeshInstanceList& Instances, FD3D12D
 			Decide(CacheStates[Index], 0, false);
 		}
 		CascadeActions[Index] = Action;
+	}
 
-		// ---- 묶음: 캐스케이드 프러스텀 + 작은 캐스터 컬링 → (정적/스킨 × 불투명/Masked)·메시·캐스케이드 LOD별 (Masked만 머티리얼별)
-		// 반투명 머티리얼은 그림자를 드리우지 않는다. Direct = 모두 StaticBatches, Rebuild = 정적은 StaticBatches(캐시)·동적은 DynamicBatches,
-		// Reuse = 동적만
-		FMeshPassBatches& Static  = StaticBatches[Index];
-		FMeshPassBatches& Dynamic = DynamicBatches[Index];
-		Static.Reset();
-		Dynamic.Reset();
-		const FFrustum& Frustum   = CascadeFrustums[Index];
-		const uint32    LodBias   = ComputeCascadeLodBias(Index, FrameSettings.LodBias);
-		const float     TexelSize = CascadeData[Index].WorldTexelSize;
-		for (uint32 InstanceIndex = 0; InstanceIndex < static_cast<uint32>(List.size()); ++InstanceIndex)
+	// ---- 2) 인스턴스 조각별 캐스터 거르기 (병렬, 조각마다 자기 목록): 인스턴스를 한 번 읽어 캐스케이드마다
+	//   캐스케이드 프러스텀 + 작은 캐스터 컬링 → (정적/스킨 × 불투명/Masked)·메시·캐스케이드 LOD별 키 (Masked만 머티리얼별).
+	//   반투명 머티리얼은 그림자를 드리우지 않는다. Direct = 모두 정적 목록(StaticBatches), Rebuild = 정적은 정적 목록(캐시)·동적은 동적 목록,
+	//   Reuse = 동적만
+	const std::vector<FMeshInstance>& List       = Instances.GetInstances();
+	const uint32                      Count      = static_cast<uint32>(List.size());
+	const uint32                      ChunkSize  = FMath::Max(1024u, (Count + MaxCasterChunks - 1) / MaxCasterChunks); // 조각 수 ≤ MaxCasterChunks
+	const uint32                      ChunkCount = (Count + ChunkSize - 1) / ChunkSize;
+	if (CasterChunks.size() < ChunkCount)
+	{
+		CasterChunks.resize(ChunkCount);
+	}
+	FParallel::ParallelFor(ChunkCount, 1, [this, &List, Count, ChunkSize, MinTexels](uint32 BeginChunk, uint32 EndChunk) {
+		uint32 LodBias[ShadowMath::MaxCascades];
+		for (uint32 Index = 0; Index < ActiveCascades; ++Index)
 		{
-			const FMeshInstance& Instance = List[InstanceIndex];
-			if (!Instance.CastsShadow())
-			{
-				continue;
-			}
-			const bool bStatic = Action != ECacheAction::Direct && Instance.bShadowStatic && !Instance.IsSkinned();
-			if (bStatic && Action == ECacheAction::Reuse)
-			{
-				continue; // 캐시에 있다
-			}
-			if (!Frustum.Intersects(Instance.WorldBounds) || IsCasterTooSmall(Instance.WorldBounds.GetExtent().Length(), TexelSize, MinTexels))
-			{
-				continue;
-			}
-			const uint32 Lod = SelectShadowLod(Instance.Lod, Instance.Mesh->GetLodCount(), LodBias, Instance.bFixedLod); // 스킨 포함
-			((bStatic || Action == ECacheAction::Direct) ? Static : Dynamic).Add(MakeDepthBatchKey(Instance, Lod), 0.0f, InstanceIndex);
+			LodBias[Index] = ComputeCascadeLodBias(Index, FrameSettings.LodBias);
 		}
+		for (uint32 ChunkIndex = BeginChunk; ChunkIndex < EndChunk; ++ChunkIndex)
+		{
+			FCasterChunk& Chunk = CasterChunks[ChunkIndex];
+			for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+			{
+				Chunk.Static[Index].clear();
+				Chunk.Dynamic[Index].clear();
+			}
+			const uint32 End = FMath::Min(Count, (ChunkIndex + 1) * ChunkSize);
+			for (uint32 InstanceIndex = ChunkIndex * ChunkSize; InstanceIndex < End; ++InstanceIndex)
+			{
+				const FMeshInstance& Instance = List[InstanceIndex];
+				if (!Instance.CastsShadow())
+				{
+					continue;
+				}
+				const bool   bStaticCaster = Instance.bShadowStatic && !Instance.IsSkinned();
+				const float  Radius        = Instance.WorldBounds.GetExtent().Length();
+				const uint32 LodCount      = Instance.Mesh->GetLodCount();
+				const uint64 KeyBase       = MakeDepthBatchKey(Instance, 0); // LOD 칸(하위 4비트)은 캐스케이드마다
+				for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+				{
+					const ECacheAction Action  = CascadeActions[Index];
+					const bool         bStatic = Action != ECacheAction::Direct && bStaticCaster;
+					if (bStatic && Action == ECacheAction::Reuse)
+					{
+						continue; // 캐시에 있다
+					}
+					if (!CascadeFrustums[Index].Intersects(Instance.WorldBounds) || IsCasterTooSmall(Radius, CascadeData[Index].WorldTexelSize, MinTexels))
+					{
+						continue;
+					}
+					const uint32 Lod = SelectShadowLod(Instance.Lod, LodCount, LodBias[Index], Instance.bFixedLod); // 스킨 포함
+					((bStatic || Action == ECacheAction::Direct) ? Chunk.Static[Index] : Chunk.Dynamic[Index])
+						.push_back({ KeyBase | (Lod & 0xFu), 0.0f, InstanceIndex });
+				}
+			}
+			// 조각 안에서 미리 정렬 (합치기는 3단계)
+			for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+			{
+				InstanceBatching::SortFrontToBack(Chunk.Static[Index]);
+				InstanceBatching::SortFrontToBack(Chunk.Dynamic[Index]);
+			}
+		}
+	});
+
+	// ---- 3) 목록별 합치기·묶음 (병렬, 캐스케이드 × 정적/동적 목록마다 독립): 조각마다 정렬된 목록을 합친다 — 결과는 전체를 한 번에
+	//   정렬한 것과 같다 (InstanceBatching::MergeSortedLists)
+	FParallel::ParallelFor(ActiveCascades * 2, 1, [this, ChunkCount](uint32 Begin, uint32 End) {
+		for (uint32 ListIndex = Begin; ListIndex < End; ++ListIndex)
+		{
+			const uint32       Index   = ListIndex / 2;
+			const bool         bStatic = (ListIndex % 2) == 0;
+			const ECacheAction Action  = CascadeActions[Index];
+			FMeshPassBatches&  Batches = bStatic ? StaticBatches[Index] : DynamicBatches[Index];
+			Batches.Reset();
+			if (bStatic ? Action == ECacheAction::Reuse : Action == ECacheAction::Direct)
+			{
+				continue; // 이 행동에서는 쓰지 않는 목록 (비어 있음)
+			}
+			const std::vector<FInstanceSortItem>* Lists[MaxCasterChunks];
+			uint32                                ListCount = 0;
+			for (uint32 ChunkIndex = 0; ChunkIndex < ChunkCount; ++ChunkIndex)
+			{
+				Lists[ListCount++] = bStatic ? &CasterChunks[ChunkIndex].Static[Index] : &CasterChunks[ChunkIndex].Dynamic[Index];
+			}
+			Batches.BuildMerged(Lists, ListCount);
+		}
+	});
+
+	// ---- 4) 업로드 (메인 스레드, 캐스케이드 순서) + 섀도우 맵 장이 지난 프레임부터 같은 캐시 내용(동적 캐스터 없음)이면 복사도 건너뛴다
+	for (uint32 Index = 0; Index < ActiveCascades; ++Index)
+	{
+		const ECacheAction Action = CascadeActions[Index];
 		if (Action != ECacheAction::Reuse)
 		{
-			Static.Finalize(DynamicBuffer);
+			StaticBatches[Index].Upload(DynamicBuffer);
 		}
 		if (Action != ECacheAction::Direct)
 		{
-			Dynamic.Finalize(DynamicBuffer);
+			DynamicBatches[Index].Upload(DynamicBuffer);
 		}
-
-		// 섀도우 맵 장이 지난 프레임부터 같은 캐시 내용(동적 캐스터 없음)이면 복사도 건너뛴다
-		const bool bCleanNow  = Action != ECacheAction::Direct && Dynamic.IsEmpty() && (bExtraStatic || !ExtraCasters);
+		const bool bCleanNow  = Action != ECacheAction::Direct && DynamicBatches[Index].IsEmpty() && (bExtraStatic || !ExtraCasters);
 		bSkipCopy[Index]      = bCleanNow && bMapSliceClean[Index] && MapSliceKey[Index] == CacheStates[Index].CachedKey;
 		bMapSliceClean[Index] = bCleanNow;
 		MapSliceKey[Index]    = CacheStates[Index].CachedKey;

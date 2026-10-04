@@ -58,7 +58,7 @@ struct FPhysics2DBodyMotion
 //     엔티티의 2D 바디(Body2)와 Target의 2D 바디(Body1, 없으면 월드)를 잇는다. 연결 지점/축/기준 각은 만드는 순간의 바디 자세 기준.
 //     구조 설정(Target·Anchor·TargetAnchor·Axis·CollideConnected)이나 양쪽 바디가 바뀌면(바디를 다시 만들면 FPhysics2DWorld::DestroyBody가
 //     관절을 먼저 지운다) 지금 자세로 다시 만든다. 실시간 필드(모터 켜기/속도/최대 힘·토크, 한계 켜기/범위, 스프링 진동수/감쇠, 거리 Length·
-//     Min/MaxLength, 용접 진동수/감쇠, BreakForce)만 바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint로 바로 옮긴다 (기준 자세 유지 —
+//     Min/MaxLength, 회전·미닫이 스프링 목표 TargetAngle/TargetTranslation, 거리 모터, 용접 진동수/감쇠, BreakForce)만 바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint로 바로 옮긴다 (기준 자세 유지 —
 //     인스펙터·스크립트·복제가 컴포넌트를 바꿔도 같은 규칙, 거리 Length를 -1로 되돌리면 지금 길이 유지). 실시간 제어 API(SetJoint*)는
 //     컴포넌트 값을 바꾸고 그 자리에서 반영한다 (Lua entity:SetJointMotorSpeed 등 — 컴포넌트와 항상 같다).
 //     둘 다 동적이 아니면 만들지 않는다. 끊어짐: BreakForce > 0이면 스텝마다 구속 힘(N)을 재서 넘으면 지우고 JointBreak 이벤트
@@ -125,12 +125,13 @@ public:
 	// 마우스 끌기: 동적 2D 바디의 Point(평면 cm, 바디 위 잡은 점)를 Target 쪽으로 끈다 (스프링 5Hz·감쇠 0.7, MaxForce N — 0 이하 = 질량 × 1000)
 	// 실시간 제어 (관절 컴포넌트 엔티티 기준, 위 "관절" 절): 그 조작을 지원하는 컴포넌트 값을 바꾸고 바로 반영한다. 컴포넌트가 없으면 false.
 	//   여러 종류가 한 엔티티에 있으면 모두 바꾼다. 단위는 컴포넌트와 같다 (각 도, 이동 cm, 회전 모터 도/초·N·m, 미닫이 모터 cm/s·N)
-	bool SetJointMotorSpeed(FScene& Scene, FEntity Entity, float Speed);        // Revolute/Wheel 도/초, Prismatic cm/s
-	bool SetJointMaxMotorForce(FScene& Scene, FEntity Entity, float Force);     // Revolute/Wheel 최대 토크 N·m, Prismatic 최대 힘 N
-	bool EnableJointMotor(FScene& Scene, FEntity Entity, bool bEnable);         // Revolute/Prismatic/Wheel
+	bool SetJointMotorSpeed(FScene& Scene, FEntity Entity, float Speed);        // Revolute/Wheel 도/초, Prismatic/Distance cm/s
+	bool SetJointMaxMotorForce(FScene& Scene, FEntity Entity, float Force);     // Revolute/Wheel 최대 토크 N·m, Prismatic/Distance 최대 힘 N
+	bool EnableJointMotor(FScene& Scene, FEntity Entity, bool bEnable);         // Revolute/Prismatic/Wheel/Distance (거리 = 윈치)
 	bool SetJointLimits(FScene& Scene, FEntity Entity, float Lower, float Upper); // 한계도 켠다: Revolute 도, Prismatic/Wheel cm, Distance Min/MaxLength cm
 	bool EnableJointLimit(FScene& Scene, FEntity Entity, bool bEnable);         // Revolute/Prismatic/Wheel
-	bool SetJointSpring(FScene& Scene, FEntity Entity, float Frequency, float Damping); // Distance/Wheel 스프링, Weld 선·각 진동수 (Hz, 0 = 딱딱함)
+	bool SetJointSpring(FScene& Scene, FEntity Entity, float Frequency, float Damping); // Distance/Wheel/Revolute/Prismatic 스프링, Weld 선·각 진동수 (Hz, 0 = 끔·딱딱함)
+	bool SetJointTarget(FScene& Scene, FEntity Entity, float Target);           // 스프링 목표: Revolute 각 도(-180~180로 자름), Prismatic 이동 cm
 	// 관절 상태 (만들어진 첫 관절 — Revolute → Prismatic → Wheel → Distance → Weld 순, 없으면 0)
 	float GetJointAngle(FEntity Entity) const;       // 도 -180~180 (Revolute: 만든 순간 0, 그 밖: 바디 사이 상대 각)
 	float GetJointTranslation(FEntity Entity) const; // cm (Prismatic: 만든 순간 0, Wheel: 축 방향, Distance: 지금 길이)

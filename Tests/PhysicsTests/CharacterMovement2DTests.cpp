@@ -5,6 +5,7 @@
 #include "Physics/CharacterMovement2DSystem.h"
 #include "Physics/Physics2DComponents.h"
 #include "Physics/Physics2DSystem.h"
+#include "Physics/PhysicsWorld.h" // LogPhysics
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 
@@ -830,6 +831,63 @@ E_TEST(Character2DWorld_PushStrength)
 	E_EXPECT_TRUE(Distances[0] > 200.0f);
 	E_EXPECT_TRUE(Distances[1] > 30.0f && Distances[1] < Distances[0] * 0.6f);
 	E_EXPECT_NEAR(Distances[2], 0.0f, 0.5f);
+}
+
+// 밀림 저항: 넘겨받은 거리 ÷ (1 + r) — 무거운 캐릭터는 덜 밀린다 (r = 0이면 이전 동작과 같은 거리), 사슬은 단계마다 받는 쪽 저항으로
+// 나눈다(뒤에 무거운 캐릭터가 서 있으면 줄 전체가 덜 나아간다). 같은 무브 반복은 같은 결과
+E_TEST(Character2DWorld_PushResistance)
+{
+	const auto Measure = [](std::vector<float> Resistances, std::vector<float> Xs, std::vector<float>* OutFinal = nullptr, float Strength = 1.0f) {
+		FLine World;
+		std::vector<std::pair<ECollision, float>> Setup;
+		for (const float X : Xs)
+		{
+			Setup.push_back({ ECollision::Block, X });
+		}
+		World.Setup(PushMovement(Strength), Setup);
+		for (size_t Index = 0; Index < Resistances.size(); ++Index)
+		{
+			World.Scene.GetRegistry().Get<FCharacterMovement2DComponent>(World.Others[Index]).PushResistance = Resistances[Index];
+		}
+		World.Run(20, 0.0f);
+		World.Run(60, 1.0f);
+		const float Before = World.X(0);
+		World.Run(60, 1.0f);
+		E_EXPECT_TRUE(World.X(0) - World.Position().X > 57.0f); // 겹치지 않는다
+		if (OutFinal != nullptr)
+		{
+			OutFinal->clear();
+			OutFinal->push_back(World.Position().X);
+			for (size_t Index = 0; Index < World.Others.size(); ++Index)
+			{
+				OutFinal->push_back(World.X(Index));
+			}
+		}
+		return World.X(0) - Before;
+	};
+	// 한 캐릭터: 저항 r = 미는 쪽 세기 1 / (1 + r)와 같은 식 (같은 거리), 클수록 덜 밀린다. 미는 쪽 속도도 막혀 줄어 들므로
+	// 거리는 비례보다 더 줄어든다 (세기와 같은 성질)
+	const float Free  = Measure({ 0.0f }, { 100.0f });
+	const float Half  = Measure({ 1.0f }, { 100.0f });
+	const float Heavy = Measure({ 3.0f }, { 100.0f });
+	E_EXPECT_TRUE(Free > 200.0f);
+	E_EXPECT_TRUE(Half < Free * 0.6f && Half > 10.0f);
+	E_EXPECT_TRUE(Heavy < Half * 0.6f && Heavy > 1.0f);
+	E_EXPECT_NEAR(Half, Measure({ 0.0f }, { 100.0f }, nullptr, 0.5f), 0.01f);
+	E_EXPECT_NEAR(Heavy, Measure({ 0.0f }, { 100.0f }, nullptr, 0.25f), 0.01f);
+	// 사슬: 앞이 가볍고 뒤가 무거우면(0, 1) 둘 다 저항 0인 줄보다 덜 나아가고, (1, 1)이면 더 덜 나아간다
+	const float ChainFree = Measure({ 0.0f, 0.0f }, { 100.0f, 200.0f });
+	const float ChainBack = Measure({ 0.0f, 1.0f }, { 100.0f, 200.0f });
+	const float ChainBoth = Measure({ 1.0f, 1.0f }, { 100.0f, 200.0f });
+	E_LOG(LogPhysics, Display, "[밀림 저항] 하나 {:.1f} / {:.1f} / {:.1f}, 사슬 {:.1f} / {:.1f} / {:.1f}", Free, Half, Heavy, ChainFree, ChainBack, ChainBoth);
+	E_EXPECT_TRUE(ChainFree > 150.0f);
+	E_EXPECT_TRUE(ChainBack < ChainFree * 0.65f && ChainBack > 5.0f);
+	E_EXPECT_TRUE(ChainBoth < ChainBack && ChainBoth > 0.5f);
+	// 결정적: 같은 장면·같은 무브를 두 번 돌리면 비트 단위로 같다
+	std::vector<float> First, Second;
+	Measure({ 0.5f, 2.0f }, { 100.0f, 200.0f }, &First);
+	Measure({ 0.5f, 2.0f }, { 100.0f, 200.0f }, &Second);
+	E_EXPECT_TRUE(First == Second);
 }
 
 // 같은 상태 + 같은 무브 → 같은 결과 (다른 캐릭터가 막는 월드에서도)

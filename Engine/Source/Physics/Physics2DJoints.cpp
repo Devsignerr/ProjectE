@@ -79,18 +79,22 @@ namespace
 		return Out;
 	}
 
-	// 실시간 시그니처 (바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint): 모터·한계·스프링·길이·용접 진동수 (BreakForce는 시스템만 쓴다)
+	// 실시간 시그니처 (바뀌면 다시 만들지 않고 FPhysics2DWorld::UpdateJoint): 모터·한계·스프링(목표 포함)·길이·용접 진동수
+	// (BreakForce는 시스템만 쓴다)
 	std::vector<float> MakeLiveSignature(const FDistanceJoint2DComponent& Joint)
 	{
-		return { Joint.Length, Joint.MinLength, Joint.MaxLength, Joint.SpringFrequency, Joint.SpringDamping };
+		return { Joint.Length,     Joint.MinLength, Joint.MaxLength, Joint.SpringFrequency, Joint.SpringDamping, Joint.bMotor ? 1.0f : 0.0f,
+		         Joint.MotorSpeed, Joint.MaxMotorForce };
 	}
 	std::vector<float> MakeLiveSignature(const FRevoluteJoint2DComponent& Joint)
 	{
-		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerAngle, Joint.UpperAngle, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorTorque };
+		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerAngle,      Joint.UpperAngle,    Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed,
+		         Joint.MaxMotorTorque,       Joint.SpringFrequency, Joint.SpringDamping, Joint.TargetAngle };
 	}
 	std::vector<float> MakeLiveSignature(const FPrismaticJoint2DComponent& Joint)
 	{
-		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerTranslation, Joint.UpperTranslation, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed, Joint.MaxMotorForce };
+		return { Joint.bLimit ? 1.0f : 0.0f, Joint.LowerTranslation, Joint.UpperTranslation, Joint.bMotor ? 1.0f : 0.0f, Joint.MotorSpeed,
+		         Joint.MaxMotorForce,        Joint.SpringFrequency,  Joint.SpringDamping,    Joint.TargetTranslation };
 	}
 	std::vector<float> MakeLiveSignature(const FWeldJoint2DComponent& Joint)
 	{
@@ -132,6 +136,11 @@ namespace
 		Desc.bLimit               = Joint.MinLength >= 0.0f || Joint.MaxLength >= 0.0f;
 		Desc.Lower                = std::max(Joint.MinLength, 0.0f);
 		Desc.Upper                = Joint.MaxLength >= 0.0f ? Joint.MaxLength : UnlimitedLength;
+		// Box2D 거리 모터는 부드러운 관절에서만 돈다 — 모터를 켜면 스프링을 켠다 (진동수 0 = 스프링 힘 없이 범위 안에서 자유)
+		Desc.bSpring              = Desc.bSpring || Joint.bMotor;
+		Desc.bMotor               = Joint.bMotor;
+		Desc.MotorSpeed           = Joint.MotorSpeed;
+		Desc.MaxMotorForce        = Joint.MaxMotorForce;
 	}
 	void FillDesc(const FRevoluteJoint2DComponent& Joint, const FFrame2D& Self, const FFrame2D* Target, FPhysics2DJointDesc& Desc)
 	{
@@ -143,6 +152,10 @@ namespace
 		Desc.bMotor        = Joint.bMotor;
 		Desc.MotorSpeed    = Joint.MotorSpeed * FMath::DegToRad;
 		Desc.MaxMotorForce = Joint.MaxMotorTorque;
+		Desc.bSpring       = Joint.SpringFrequency > 0.0f;
+		Desc.Hertz         = Joint.SpringFrequency;
+		Desc.DampingRatio  = Joint.SpringDamping;
+		Desc.SpringTarget  = Joint.TargetAngle * FMath::DegToRad;
 	}
 	void FillDesc(const FPrismaticJoint2DComponent& Joint, const FFrame2D& Self, const FFrame2D* Target, FPhysics2DJointDesc& Desc)
 	{
@@ -155,6 +168,10 @@ namespace
 		Desc.bMotor        = Joint.bMotor;
 		Desc.MotorSpeed    = Joint.MotorSpeed;
 		Desc.MaxMotorForce = Joint.MaxMotorForce;
+		Desc.bSpring       = Joint.SpringFrequency > 0.0f;
+		Desc.Hertz         = Joint.SpringFrequency;
+		Desc.DampingRatio  = Joint.SpringDamping;
+		Desc.SpringTarget  = Joint.TargetTranslation;
 	}
 	void FillDesc(const FWeldJoint2DComponent& Joint, const FFrame2D& Self, const FFrame2D* Target, FPhysics2DJointDesc& Desc)
 	{
@@ -522,9 +539,13 @@ namespace
 		return bAny;
 	}
 
+	// 모터: 회전·미닫이·바퀴·거리(윈치) / 한계 켜기: 회전·미닫이·바퀴 (거리는 Min/MaxLength < 0 = 없음)
 	template <typename TJoint>
 	constexpr bool HasMotor = std::is_same_v<TJoint, FRevoluteJoint2DComponent> || std::is_same_v<TJoint, FPrismaticJoint2DComponent> ||
-	                          std::is_same_v<TJoint, FWheelJoint2DComponent>;
+	                          std::is_same_v<TJoint, FWheelJoint2DComponent> || std::is_same_v<TJoint, FDistanceJoint2DComponent>;
+	template <typename TJoint>
+	constexpr bool HasLimitToggle = std::is_same_v<TJoint, FRevoluteJoint2DComponent> || std::is_same_v<TJoint, FPrismaticJoint2DComponent> ||
+	                                std::is_same_v<TJoint, FWheelJoint2DComponent>;
 } // namespace
 
 bool FPhysics2DSystem::SetJointMotorSpeed(FScene& Scene, FEntity Entity, float Speed)
@@ -547,7 +568,7 @@ bool FPhysics2DSystem::SetJointMotorSpeed(FScene& Scene, FEntity Entity, float S
 bool FPhysics2DSystem::SetJointMaxMotorForce(FScene& Scene, FEntity Entity, float Force)
 {
 	const bool bAny = std::isfinite(Force) && EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
-		if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent>)
+		if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent> || std::is_same_v<TJoint, FDistanceJoint2DComponent>)
 		{
 			Joint.MaxMotorForce = std::max(Force, 0.0f);
 			return true;
@@ -623,7 +644,7 @@ bool FPhysics2DSystem::SetJointLimits(FScene& Scene, FEntity Entity, float Lower
 bool FPhysics2DSystem::EnableJointLimit(FScene& Scene, FEntity Entity, bool bEnable)
 {
 	const bool bAny = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
-		if constexpr (HasMotor<TJoint>)
+		if constexpr (HasLimitToggle<TJoint>)
 		{
 			Joint.bLimit = bEnable;
 			return true;
@@ -645,7 +666,8 @@ bool FPhysics2DSystem::SetJointSpring(FScene& Scene, FEntity Entity, float Frequ
 	}
 	const float Hertz = std::max(Frequency, 0.0f), Ratio = std::max(Damping, 0.0f);
 	const bool  bAny  = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
-        if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent> || std::is_same_v<TJoint, FWheelJoint2DComponent>)
+        if constexpr (std::is_same_v<TJoint, FDistanceJoint2DComponent> || std::is_same_v<TJoint, FWheelJoint2DComponent> ||
+                      std::is_same_v<TJoint, FRevoluteJoint2DComponent> || std::is_same_v<TJoint, FPrismaticJoint2DComponent>)
         {
             Joint.SpringFrequency = Hertz;
             Joint.SpringDamping   = Ratio;
@@ -662,6 +684,32 @@ bool FPhysics2DSystem::SetJointSpring(FScene& Scene, FEntity Entity, float Frequ
         {
         	return false;
         }
+	});
+	ApplyJointLiveSettings(Scene, Entity);
+	return bAny;
+}
+
+bool FPhysics2DSystem::SetJointTarget(FScene& Scene, FEntity Entity, float Target)
+{
+	if (!std::isfinite(Target))
+	{
+		return false;
+	}
+	const bool bAny = EditJointComponents(Scene, Entity, [&]<typename TJoint>(TJoint& Joint) {
+		if constexpr (std::is_same_v<TJoint, FRevoluteJoint2DComponent>)
+		{
+			Joint.TargetAngle = std::clamp(Target, -180.0f, 180.0f);
+			return true;
+		}
+		else if constexpr (std::is_same_v<TJoint, FPrismaticJoint2DComponent>)
+		{
+			Joint.TargetTranslation = Target;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	});
 	ApplyJointLiveSettings(Scene, Entity);
 	return bAny;

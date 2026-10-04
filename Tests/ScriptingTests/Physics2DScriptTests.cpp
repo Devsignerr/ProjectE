@@ -228,7 +228,7 @@ assert(Physics2D.UpdateDrag(Puck, Vector2(1100, 50)))
 	World.EndPlay();
 }
 
-// Lua 2D 관절 실시간 제어: entity:SetJointMotorSpeed/SetJointMaxMotorForce/EnableJointMotor/SetJointLimits/EnableJointLimit/SetJointSpring가
+// Lua 2D 관절 실시간 제어: entity:SetJointMotorSpeed/SetJointMaxMotorForce/EnableJointMotor/SetJointLimits/EnableJointLimit/SetJointSpring/SetJointTarget가
 // 컴포넌트 값을 바꾸고 관절을 다시 만들지 않고 반영, GetJointAngle/Translation/Speed로 상태를 읽는다
 E_TEST(Physics2DScript_JointControl)
 {
@@ -265,7 +265,7 @@ local Rail = Slider:GetComponent('PrismaticJoint2DComponent')
 assert(Rail.Limit == true and Rail.LowerTranslation == -10 and Rail.UpperTranslation == 80)
 assert(not Scene.Find('Rock'):SetJointMotorSpeed(10)) -- 관절 없음
 assert(Scene.Find('Rock'):GetJointAngle() == 0)
-assert(not Wheel:SetJointSpring(2)) -- 회전 관절에는 스프링 필드가 없다
+assert(not Scene.Find('Rock'):SetJointTarget(10)) -- 관절 없음
 )"));
 	for (int32 Frame = 0; Frame < 60; ++Frame)
 	{
@@ -282,6 +282,57 @@ assert(Slider:GetComponent('PrismaticJoint2DComponent').Limit == false)
 	World.TickGameplay(Step, nullptr);
 	World.TickGameplay(Step, nullptr);
 	E_EXPECT_TRUE(Scripts.RunString("local S = Scene.Find('Slider'); assert(S:GetJointTranslation() > 80.5 and S:GetJointSpeed() > 50, S:GetJointSpeed())"));
+	E_EXPECT_EQ(World.GetPhysics2D().GetJointCount(), 2u);
+	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
+	World.EndPlay();
+}
+
+// Lua 2D 관절 스프링 목표: entity:SetJointSpring(hz, damping)이 회전 관절 스프링을 켜고 SetJointTarget(도)으로 정한 각에 멈춘다.
+// 거리 관절 모터(윈치)도 SetJointMotorSpeed/EnableJointMotor로 감는다
+E_TEST(Physics2DScript_JointSpringTarget)
+{
+	const std::filesystem::path Content = WriteRecorder();
+	FScene                      Scene;
+	const FEntity               Wheel = Scene.CreateEntity("Wheel");
+	Scene.GetTransform(Wheel).Position = FVector3(0.0f, 0.0f, 500.0f);
+	Scene.GetRegistry().Emplace<FCircleCollider2DComponent>(Wheel).Radius = 50.0f;
+	Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Wheel).AngularDamping = 0.0f;
+	Scene.GetRegistry().Emplace<FRevoluteJoint2DComponent>(Wheel);
+	const FEntity Bob = Scene.CreateEntity("Bob");
+	Scene.GetTransform(Bob).Position = FVector3(300.0f, 0.0f, 400.0f);
+	Scene.GetRegistry().Emplace<FCircleCollider2DComponent>(Bob).Radius = 10.0f;
+	Scene.GetRegistry().Emplace<FRigidBody2DComponent>(Bob);
+	FDistanceJoint2DComponent& Rope = Scene.GetRegistry().Emplace<FDistanceJoint2DComponent>(Bob);
+	Rope.TargetAnchor  = FVector2(300.0f, 500.0f);
+	Rope.MinLength     = 40.0f;
+	Rope.MaxMotorForce = 50.0f;
+	Scene.UpdateTransforms();
+
+	FScriptSystem   Scripts;
+	FGameModuleHost Host;
+	FGameWorld      World;
+	World.Init({ &Scripts, nullptr, &Host, nullptr, Content });
+	World.BeginPlay(Scene);
+	World.TickGameplay(Step, nullptr);
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+local Wheel, Bob = Scene.Find('Wheel'), Scene.Find('Bob')
+assert(Wheel:SetJointSpring(2, 1))
+assert(Wheel:SetJointTarget(45))
+local Hinge = Wheel:GetComponent('RevoluteJoint2DComponent')
+assert(Hinge.SpringFrequency == 2 and Hinge.TargetAngle == 45)
+assert(Bob:SetJointMotorSpeed(-60) and Bob:EnableJointMotor(true))
+assert(Bob:GetComponent('DistanceJoint2DComponent').Motor == true)
+assert(not Bob:SetJointTarget(10)) -- 거리 관절에는 스프링 목표가 없다
+)"));
+	for (int32 Frame = 0; Frame < 120; ++Frame)
+	{
+		World.TickGameplay(Step, nullptr);
+	}
+	E_EXPECT_TRUE(Scripts.RunString(R"(
+local Wheel, Bob = Scene.Find('Wheel'), Scene.Find('Bob')
+assert(math.abs(Wheel:GetJointAngle() - 45) < 1.5, tostring(Wheel:GetJointAngle()))
+assert(math.abs(Bob:GetJointTranslation() - 40) < 1.5, tostring(Bob:GetJointTranslation())) -- 최소 길이까지 감김
+)"));
 	E_EXPECT_EQ(World.GetPhysics2D().GetJointCount(), 2u);
 	E_EXPECT_EQ(Scripts.GetErrorCount(), 0u);
 	World.EndPlay();

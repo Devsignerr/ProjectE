@@ -99,7 +99,7 @@ private:
 	};
 
 	FPhysics2DMover MakeMover(const FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement) const;
-	// 밀기 (CharacterCollision::Push): Other를 Delta만큼 그 캐릭터의 이동 질의로 옮긴다 (벽에서 멈춤). 앞의 다른 상호작용 캐릭터에 막히면
+	// 밀기 (CharacterCollision::Push): Other를 Delta ÷ (1 + Other의 PushResistance)만큼 그 캐릭터의 이동 질의로 옮긴다 (벽에서 멈춤). 앞의 다른 상호작용 캐릭터에 막히면
 	// 남은 만큼 그 캐릭터를 다시 이 함수로 민다 (연쇄 — Chain = 이미 민/미는 캐릭터, 깊이 상한, 순환 없음). 반환: 실제로 옮긴 거리
 	float PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta, std::vector<FEntity>& Chain);
 	void  CreateProxy(FCharacter& Character, FEntity Entity, const FCharacterMovement2DComponent& Movement);

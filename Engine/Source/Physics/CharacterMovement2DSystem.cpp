@@ -441,7 +441,7 @@ FPhysics2DMover FCharacterMovement2DSystem::MakeMover(const FCharacter& Characte
 	return Mover;
 }
 
-float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, const FVector2& Delta, std::vector<FEntity>& Chain)
+float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, const FVector2& InDelta, std::vector<FEntity>& Chain)
 {
 	const auto Found = Characters.find(Other);
 	if (Found == Characters.end() || !IsActive() || !IsSolidCharacter(Found->second.Settings) ||
@@ -450,8 +450,11 @@ float FCharacterMovement2DSystem::PushCharacter(FScene& Scene, FEntity Other, co
 		return 0.0f;
 	}
 	Chain.push_back(Other);
-	FCharacter&      Character = Found->second;
-	FPhysics2DWorld& World     = *Physics2D->GetWorld();
+	FCharacter&      Character  = Found->second;
+	FPhysics2DWorld& World      = *Physics2D->GetWorld();
+	// 밀림 저항: 넘겨받은 거리 ÷ (1 + r) — 사슬 단계마다 받는 쪽 저항으로 나눈다 (r = 0이면 그대로 = 이전 동작)
+	const float      Resistance = std::isfinite(Character.Settings.PushResistance) ? std::max(Character.Settings.PushResistance, 0.0f) : 0.0f;
+	const FVector2   Delta      = Resistance > 0.0f ? InDelta * (1.0f / (1.0f + Resistance)) : InDelta;
 	FPhysics2DMover  Mover     = MakeMover(Character, Other, Character.Settings);
 	Mover.Velocity             = Character.State.Velocity;
 	Mover.bIgnoreOneWay        = Character.State.DropTimer > 0.0f;

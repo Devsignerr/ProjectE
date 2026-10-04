@@ -22,6 +22,8 @@
 //   Push: Block + 옆으로 막히면 막힌 만큼 × PushStrength 상대를 수평으로 민다 (상대 이동 질의로 벽 안으로는 밀지 않고, 남은 만큼 다시 움직인다 — 한 번).
 //     연쇄: 밀린 캐릭터가 그 방향 앞의 다른 상호작용 캐릭터(Block/Push)에 막히면 남은 거리를 그대로 넘겨 민다 (밀린 쪽 설정과 무관 — 줄지어 선
 //     캐릭터는 한 덩어리, 밀리는 캐릭터 최대 4, 이미 사슬에 있는 캐릭터 제외, 단계마다 접촉 순서의 첫 캐릭터 하나 — 결정적). 세기는 처음 미는 쪽만.
+//     밀림 저항(PushResistance r ≥ 0, 기본 0 = 이전 동작): 밀리는 캐릭터는 넘겨받은 거리 ÷ (1 + r)만 받는다 — 단계마다 받는 쪽 저항으로 나누므로
+//     사슬 끝 캐릭터의 이동 = 처음 넘긴 거리 ÷ Π(1 + r_i) (무거운 캐릭터·무거운 줄일수록 덜 밀리고 미는 쪽도 그만큼 덜 나아간다).
 //   밟기: Block/Push 캐릭터가 다른 캐릭터 위에 착지하면 이벤트(Stomped — Lua OnStomped(other), 밟힌 쪽 OnStompedBy(other)).
 //   상호작용하는 캐릭터는 무브 끝에 대리 바디를 그 자리로 옮겨(이후 같은 틱 다른 캐릭터 무브가 지금 위치를 본다) 처리 순서 = 엔티티 순서.
 //   멀티플레이: 예측 클라이언트에서 다른 캐릭터는 스냅샷 보간(과거) 위치에 있으므로 막힘/밟기는 그 위치 기준이고, 서버 결과와 다르면 재조정이
@@ -74,6 +76,7 @@ struct FCharacterMovement2DComponent
 	bool        bClientPrediction = true; // 멀티플레이: 소유 클라이언트가 입력 즉시 미리 움직인다 (프로젝트 설정 네트워크 → 클라이언트 예측도)
 	ECharacterCollision CharacterCollision = ECharacterCollision::Ignore; // 다른 2D 캐릭터 (위 주석)
 	float               PushStrength       = 1.0f; // Push: 막힌 거리 중 상대에게 넘기는 비율 0~1 (작을수록 무겁게 밀린다, 1 = 이전 동작, 0 = Block과 같음)
+	float               PushResistance     = 0.0f; // 밀릴 때 저항 ≥ 0: 넘겨받은 거리 ÷ (1 + 이 값) (0 = 이전 동작, 1 = 절반만 밀림 — 위 주석 연쇄)
 };
 using ECharacterMovement2DMode = FCharacterMovement2DComponent::EMode;
 

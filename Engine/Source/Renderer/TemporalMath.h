@@ -131,6 +131,45 @@ struct FTemporalMath
 		return FMath::Lerp(Base, FMath::Max(Base, 0.25f), FMath::Clamp(SpeedPixels / 32.0f, 0.0f, 1.0f));
 	}
 
+	// ---- TAA 깜빡임 감지 (TemporalAA.hlsl ComputeFlickerAmount/UpdateFlickerStats와 같은 식·상수 — 머리 주석 5))
+	// 통계 = 현재 밝기의 지수 평균(Mean), 평균 이탈(Deviation), 평균 위아래 뒤집힘 빈도(FlipRate, 느린 지수 평균 — 지속성), 직전 쪽(Side).
+	// 판정 = 뒤집힘 빈도 (지터로 오락가락 ≈ 0.5, 물체가 한 번·드물게 지나감 ≈ 0.1 이하, 꾸준한 변화 0). 한 번에 바뀐 값(평균 ± 대역 × 이탈 밖)은 0
+	static constexpr float FlickerBlend       = 0.125f;
+	static constexpr float FlickerFlipBlend   = 0.0625f;
+	static constexpr float FlickerFlipLow     = 0.15f;
+	static constexpr float FlickerFlipHigh    = 0.3f;
+	static constexpr float FlickerSideEpsilon = 0.002f;
+	static constexpr float FlickerBand        = 2.5f;
+	static constexpr float FlickerBoxScale    = 1.5f;  // 이웃 상자를 판정 × 이탈 × 이 배수만큼 넓힌다
+	static constexpr float FlickerWeightReduction = 0.75f; // 판정 1이면 현재 비중 × (1 - 이 값)
+
+	struct FFlickerStats
+	{
+		float Mean      = 0.0f;
+		float Deviation = 0.0f;
+		float FlipRate  = 0.0f;
+		float Side      = 0.0f; // -1 / 0(모름) / +1
+	};
+	static FFlickerStats MakeFlickerStats(float Luma) { return { Luma, 0.0f, 0.0f, 0.0f }; }
+	// 0..1 (이전 통계로 이번 값을 판정)
+	static float ComputeFlickerAmount(const FFlickerStats& Stats, float Luma)
+	{
+		const float Amount = FMath::Clamp((Stats.FlipRate - FlickerFlipLow) / (FlickerFlipHigh - FlickerFlipLow), 0.0f, 1.0f);
+		return FMath::Abs(Luma - Stats.Mean) > FlickerBand * Stats.Deviation + 1.0e-3f ? 0.0f : Amount;
+	}
+	static FFlickerStats UpdateFlickerStats(const FFlickerStats& Stats, float Luma)
+	{
+		const float   Offset = Luma - Stats.Mean;
+		const float   Side   = Offset > FlickerSideEpsilon ? 1.0f : (Offset < -FlickerSideEpsilon ? -1.0f : Stats.Side);
+		const float   Flip   = (Stats.Side != 0.0f && Side != Stats.Side) ? 1.0f : 0.0f;
+		FFlickerStats Result;
+		Result.Mean      = Stats.Mean + FlickerBlend * Offset;
+		Result.Deviation = Stats.Deviation + FlickerBlend * (FMath::Abs(Offset) - Stats.Deviation);
+		Result.FlipRate  = Stats.FlipRate + FlickerFlipBlend * (Flip - Stats.FlipRate);
+		Result.Side      = Side;
+		return Result;
+	}
+
 	// 단위 법선 → 팔면체 [-1, 1]^2 (화면 공간 법선 버퍼 RG). Engine/Shaders/ScreenSpace.hlsli와 같은 식
 	static FVector2 EncodeOctahedral(const FVector3& Normal)
 	{

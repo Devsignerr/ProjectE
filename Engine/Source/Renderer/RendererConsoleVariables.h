@@ -24,6 +24,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<float> LodHysteresis;    // r.LODHysteresis  (--lod-hysteresis X)
 	extern TAutoConsoleVariable<bool>  TaaReconstruct;   // r.TAA.Reconstruct
 	extern TAutoConsoleVariable<float> TaaStaticWeight;  // r.TAA.StaticWeight
+	extern TAutoConsoleVariable<float> TaaFlickerReduction; // r.TAA.FlickerReduction
 	extern TAutoConsoleVariable<float> LodErrorPixels;   // r.LOD.ErrorPixels
 	// 메인/깊이 사전 패스 인스턴스 거리·화면 크기 컬링 (같은 묶음 목록 — 사전 패스와 메인이 같은 집합)
 	extern TAutoConsoleVariable<float> MinScreenSize;    // r.MinScreenSize  (경계 구 지름 / 화면 높이가 이보다 작으면 안 그림, 0 = 끔)

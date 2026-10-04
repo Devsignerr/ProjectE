@@ -40,6 +40,7 @@ struct FTemporalAAInputs
 //   렌더 그래프 패스 "TAA" 하나 (씬 컬러·움직임·깊이·이전 이력 읽기 → 이번 이력 쓰기). 상태 전이는 그래프가 한다
 //   TAAU: 씬(내부 해상도) ≠ 출력이면 이력은 출력 해상도 — 내부 해상도가 바뀌어도(동적 해상도) 이력은 그대로 이어진다.
 //   업샘플일 때는 오버레이 깊이(출력 해상도, AddOverlayDepthPass)도 만든다
+//   깜빡임 감지(재구성 경로): 출력 해상도 통계 버퍼 2개(번갈아 읽기/쓰기, 이력과 같은 크기·수명 — TemporalAA.hlsl 머리 주석 5))
 class FTemporalAA
 {
 public:
@@ -79,7 +80,9 @@ private:
 	FD3D12PipelineState             DepthPipeline;     // PSUpscaleDepth (오버레이 깊이)
 
 	std::unique_ptr<FD3D12RenderTarget> HistoryTargets[2];
+	std::unique_ptr<FD3D12RenderTarget> FlickerTargets[2]; // 깜빡임 통계 (HistoryTargets와 같은 번호로 읽기/쓰기)
 	std::unique_ptr<FD3D12RenderTarget> OverlayDepth; // 출력 해상도 깊이 (+ 쓰지 않는 R8 색)
 	uint32                              WriteIndex  = 0;
 	bool                                bHasHistory = false;
+	bool                                bHasFlicker = false; // 직전 해상이 재구성 경로로 통계를 썼다
 };

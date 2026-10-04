@@ -3,6 +3,7 @@
 #include "Renderer/ShaderTypes.h"
 #include "Renderer/TemporalMath.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -248,4 +249,85 @@ E_TEST(Temporal_TaaClipAndWeight)
 		History            = FMath::Lerp(History, Sample, 0.1f);
 	}
 	E_EXPECT_NEAR(History, 0.5f, 0.06f);
+}
+
+namespace
+{
+	// 밝기 열을 통계에 흘려 Skip 이후 판정의 평균·최댓값 (TemporalAA.hlsl 깜빡임 감지와 같은 식)
+	struct FFlickerRun
+	{
+		float Mean = 0.0f;
+		float Max  = 0.0f;
+	};
+	FFlickerRun RunFlicker(const std::vector<float>& Lumas, size_t Skip)
+	{
+		FTemporalMath::FFlickerStats Stats = FTemporalMath::MakeFlickerStats(Lumas[0]);
+		FFlickerRun                  Run;
+		size_t                       Count = 0;
+		for (size_t Index = 0; Index < Lumas.size(); ++Index)
+		{
+			const float Amount = FTemporalMath::ComputeFlickerAmount(Stats, Lumas[Index]);
+			if (Index >= Skip)
+			{
+				Run.Mean += Amount;
+				Run.Max = std::max(Run.Max, Amount);
+				++Count;
+			}
+			Stats = FTemporalMath::UpdateFlickerStats(Stats, Lumas[Index]);
+		}
+		Run.Mean /= static_cast<float>(std::max<size_t>(Count, 1));
+		return Run;
+	}
+} // namespace
+
+// 지터로 오락가락하는 값(가는 기하 — Halton 8 주기 덮임)은 깜빡임으로, 정지·꾸준한 변화·느린 조명 흔들림·한 번에 바뀐 값은 아님
+E_TEST(Temporal_FlickerDetectsJitterOscillation)
+{
+	constexpr size_t   Frames = 200;
+	std::vector<float> Thin(Frames);
+	std::vector<float> Alternate(Frames);
+	for (size_t Index = 0; Index < Frames; ++Index)
+	{
+		Thin[Index]      = FTemporalMath::Halton(static_cast<uint32>(Index % 8) + 1, 2) > 0.5f ? 0.7f : 0.2f;
+		Alternate[Index] = Index % 2 == 0 ? 0.2f : 0.6f;
+	}
+	E_EXPECT_TRUE(RunFlicker(Thin, 40).Mean > 0.95f);
+	E_EXPECT_TRUE(RunFlicker(Alternate, 40).Mean > 0.95f);
+}
+
+E_TEST(Temporal_FlickerIgnoresRealChanges)
+{
+	constexpr size_t   Frames = 200;
+	std::vector<float> Static(Frames, 0.4f);
+	std::vector<float> Step(Frames);
+	std::vector<float> Ramp(Frames);
+	std::vector<float> SlowSine(Frames);
+	for (size_t Index = 0; Index < Frames; ++Index)
+	{
+		Step[Index]     = Index < 50 ? 0.2f : 0.7f;
+		Ramp[Index]     = 0.2f + 0.003f * static_cast<float>(Index);
+		SlowSine[Index] = 0.4f + 0.2f * std::sin(6.2831853f * static_cast<float>(Index) / 30.0f); // 0.5초 주기 (60fps)
+	}
+	E_EXPECT_TRUE(RunFlicker(Static, 0).Max == 0.0f);
+	E_EXPECT_TRUE(RunFlicker(Step, 0).Max == 0.0f); // 바뀐 순간·뒤 모두 (잔상 없음)
+	E_EXPECT_TRUE(RunFlicker(Ramp, 0).Max == 0.0f);
+	E_EXPECT_TRUE(RunFlicker(SlowSine, 40).Max == 0.0f);
+	// 물체가 한 번 또는 드물게(0.5~1초마다 2~3프레임) 지나감 — 뒤집힘 2번이라 오락가락이 아니다 (잔상 줄무늬 회귀)
+	std::vector<float> PassOnce(Frames, 0.6f);
+	std::vector<float> PassEvery30(Frames, 0.6f);
+	for (size_t Index = 0; Index < Frames; ++Index)
+	{
+		PassOnce[Index]    = (Index == 60 || Index == 61) ? 0.1f : 0.6f;
+		PassEvery30[Index] = (Index > 20 && Index % 30 < 3) ? 0.1f : 0.6f;
+	}
+	E_EXPECT_TRUE(RunFlicker(PassOnce, 0).Max == 0.0f);
+	E_EXPECT_TRUE(RunFlicker(PassEvery30, 0).Max == 0.0f);
+	// 깜빡이던 화소에 다른 값이 들어오면(가려짐·한 번에 바뀜) 그 프레임 판정은 0
+	FTemporalMath::FFlickerStats Stats = FTemporalMath::MakeFlickerStats(0.2f);
+	for (int32 Index = 0; Index < 100; ++Index)
+	{
+		Stats = FTemporalMath::UpdateFlickerStats(Stats, Index % 2 == 0 ? 0.2f : 0.4f);
+	}
+	E_EXPECT_TRUE(FTemporalMath::ComputeFlickerAmount(Stats, 0.3f) > 0.95f);
+	E_EXPECT_NEAR(FTemporalMath::ComputeFlickerAmount(Stats, 0.95f), 0.0f, Tol);
 }

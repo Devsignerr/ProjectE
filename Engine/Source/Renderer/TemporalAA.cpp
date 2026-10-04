@@ -23,7 +23,8 @@ namespace
 		FVector2   JitterUv;
 		float      UpsampleScale = 1.0f;
 		float      StaticWeight  = 0.1f; // 움직임 0일 때 현재 비중 (재구성 경로만, 2px 움직임까지 CurrentWeight로)
-		float      Padding[2]    = {};
+		float      FlickerReduction = 0.0f; // 깜빡임 감지 세기 (재구성 경로만)
+		uint32     bFlickerValid    = 0;
 	};
 	static_assert(sizeof(FTaaConstants) == 128);
 
@@ -49,11 +50,16 @@ void FTemporalAA::Shutdown()
 	{
 		Target.reset();
 	}
+	for (std::unique_ptr<FD3D12RenderTarget>& Target : FlickerTargets)
+	{
+		Target.reset();
+	}
 	OverlayDepth.reset();
 	Pipeline.Shutdown();
 	UpsamplePipeline.Shutdown();
 	DepthPipeline.Shutdown();
 	bHasHistory = false;
+	bHasFlicker = false;
 	Rhi         = nullptr;
 }
 
@@ -62,7 +68,7 @@ bool FTemporalAA::CreatePipelines(FD3D12PipelineState& OutResolve, FD3D12Pipelin
 	ID3D12Device* Device = Rhi->GetDevice().GetDevice();
 	return Root->CreateGraphicsPipeline(OutResolve, Device, *Library, L"TemporalAA.hlsl", L"PSResolve", { HistoryFormat }, EBlendMode::Opaque,
 	                                    bForceRecompile, L"TemporalAAPipeline") &&
-	       Root->CreateGraphicsPipeline(OutUpsample, Device, *Library, L"TemporalAA.hlsl", L"PSResolveUpsample", { HistoryFormat }, EBlendMode::Opaque,
+	       Root->CreateGraphicsPipeline(OutUpsample, Device, *Library, L"TemporalAA.hlsl", L"PSResolveUpsample", { HistoryFormat, HistoryFormat }, EBlendMode::Opaque,
 	                                    bForceRecompile, L"TemporalUpsamplePipeline") &&
 	       Root->CreateDepthOutputPipeline(OutDepth, Device, *Library, L"TemporalAA.hlsl", L"PSUpscaleDepth", FD3D12RHI::DepthBufferFormat, bForceRecompile,
 	                                       L"UpscaleDepthPipeline");
@@ -105,8 +111,19 @@ void FTemporalAA::EnsureTargets(uint32 Width, uint32 Height)
 		{
 			E_LOG(LogRenderer, Fatal, "TAA 이력 버퍼 생성 실패 ({}x{})", Width, Height);
 		}
+		if (FlickerTargets[Index])
+		{
+			FlickerTargets[Index]->ShutdownDeferred(*Rhi);
+		}
+		FlickerTargets[Index] = std::make_unique<FD3D12RenderTarget>();
+		if (!FlickerTargets[Index]->Init(Rhi->GetDevice(), Rhi->GetSrvAllocator(), Width, Height, Index == 0 ? L"TaaFlicker0" : L"TaaFlicker1",
+		                                 FRenderTargetDesc::MakeHdr(false)))
+		{
+			E_LOG(LogRenderer, Fatal, "TAA 깜빡임 통계 버퍼 생성 실패 ({}x{})", Width, Height);
+		}
 	}
 	bHasHistory = false; // 새 버퍼는 비어 있다
+	bHasFlicker = false;
 }
 
 const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTemporalAAInputs& Inputs, const FTemporalAAGraphRefs& Refs, int32 Timer,
@@ -122,8 +139,10 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	const bool   bReconstruct = bUpsample || RendererCVars::TaaReconstruct.Get();
 	EnsureTargets(Width, Height);
 
-	FD3D12RenderTarget& Read  = *HistoryTargets[WriteIndex ^ 1];
-	FD3D12RenderTarget& Write = *HistoryTargets[WriteIndex];
+	FD3D12RenderTarget& Read         = *HistoryTargets[WriteIndex ^ 1];
+	FD3D12RenderTarget& Write        = *HistoryTargets[WriteIndex];
+	FD3D12RenderTarget& FlickerRead  = *FlickerTargets[WriteIndex ^ 1];
+	FD3D12RenderTarget& FlickerWrite = *FlickerTargets[WriteIndex];
 
 	FTaaConstants Constants;
 	Constants.Reprojection   = Inputs.Reprojection;
@@ -139,6 +158,8 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 		Constants.InputTexelSize = FVector2(1.0f / Constants.InputSize.X, 1.0f / Constants.InputSize.Y);
 		Constants.JitterUv       = FUpscaleMath::JitterNdcToUv(Inputs.JitterNdc);
 		Constants.UpsampleScale  = static_cast<float>(Height) / static_cast<float>(InputHeight);
+		Constants.FlickerReduction = FMath::Clamp(RendererCVars::TaaFlickerReduction.Get(), 0.0f, 1.0f);
+		Constants.bFlickerValid    = (Constants.bHistoryValid != 0 && bHasFlicker) ? 1u : 0u;
 	}
 	const D3D12_GPU_VIRTUAL_ADDRESS ConstantsAddress = Rhi->GetDynamicBuffer().AllocateConstants(Constants).GpuAddress;
 
@@ -149,19 +170,38 @@ const FD3D12RenderTarget& FTemporalAA::AddPass(FRenderGraph& Graph, const FTempo
 	const FD3D12DescriptorHandle DepthSrv    = Inputs.SceneColor->GetDepthSrv();
 	const FD3D12DescriptorHandle HistorySrv  = Read.GetSrv();
 	const FD3D12PipelineState*   UsedPipeline = bReconstruct ? &UpsamplePipeline : &Pipeline;
-	Graph.AddPass(bUpsample ? "TAAU" : "TAA")
-		.Read(Refs.SceneColor, ERGAccess::SrvPixel)
+	FRenderGraph::FPassBuilder   Pass         = Graph.AddPass(bUpsample ? "TAAU" : "TAA");
+	Pass.Read(Refs.SceneColor, ERGAccess::SrvPixel)
 		.Read(Refs.Velocity, ERGAccess::SrvPixel)
 		.Read(Refs.SceneDepth, ERGAccess::SrvPixel)
 		.Read(ReadRef, ERGAccess::SrvPixel)
 		.Write(WriteRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true) // 전체를 덮어쓴다
-		.Timer(Timer)
-		.Execute([this, &Write, UsedPipeline, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, Width, Height](FRGContext& Context) {
+		.Timer(Timer);
+	if (bReconstruct)
+	{
+		// 깜빡임 통계: 이전 것을 읽고(t4) 이번 것을 전부 쓴다(SV_Target1)
+		const FRGResourceRef         FlickerReadRef  = Graph.ImportColor("TaaFlickerRead", FlickerRead);
+		const FRGResourceRef         FlickerWriteRef = Graph.ImportColor("TaaFlickerWrite", FlickerWrite);
+		const FD3D12DescriptorHandle FlickerSrv      = FlickerRead.GetSrv();
+		Pass.Read(FlickerReadRef, ERGAccess::SrvPixel).Write(FlickerWriteRef, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true);
+		Pass.Execute([this, &Write, &FlickerWrite, UsedPipeline, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, FlickerSrv, Width,
+		              Height](FRGContext& Context) {
+			const D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[] = { Write.GetRtv(), FlickerWrite.GetRtv() };
+			Context.CommandList->OMSetRenderTargets(2, Rtvs, FALSE, nullptr);
+			DrawScreenPass(Context.CommandList, *Root, *UsedPipeline, ConstantsAddress, { SceneSrv, HistorySrv, VelocitySrv, DepthSrv, FlickerSrv }, Width,
+			               Height);
+		});
+	}
+	else
+	{
+		Pass.Execute([this, &Write, UsedPipeline, ConstantsAddress, SceneSrv, VelocitySrv, DepthSrv, HistorySrv, Width, Height](FRGContext& Context) {
 			Write.Bind(Context.CommandList, nullptr);
 			DrawScreenPass(Context.CommandList, *Root, *UsedPipeline, ConstantsAddress, { SceneSrv, HistorySrv, VelocitySrv, DepthSrv }, Width, Height);
 		});
+	}
 
 	bHasHistory = true;
+	bHasFlicker = bReconstruct;
 	WriteIndex ^= 1;
 	OutResult = WriteRef;
 	return Write;

@@ -939,3 +939,9 @@ Phase 11 완료 후 13 노티파이 → 14 소켓 → 15 프리팹 → 16 인게
   - 최종 측정 (2026-10-04, 1280x720 Release `--perf-capture --perf-warmup 200 --no-vsync`, 다른 작업 없이 순차): Hub 4.77ms / Lighting 5.70 / Alley 3.05 / Gallery 5.22 / Forest 7.94 / Workshop 6.04 / Training 2.43 / Campfire 3.87 / Tests/Stress(스킨 500) 7.09 (GPU 4.65 — CPU 한계) → 스킨 1000으로 변경: RT 켬 17.5 / RT 끔 11.6ms (수집 CPU 5.2ms, 게임 틱 3.2ms, GPU 5.1ms), 디버그 레이어·엔진 오류 0
   - 후속: Stress 드문 비결정(동시 부하 13회 중 1회, 캐릭터 위 미세 차이), Forest 먼 비탈 원뿔 폴리지·성목 전나무 없음, 면광원 그림자는 가운데 기준 한 장(아주 긴 면광원 그림자 잘림)
 - [ ] Demo_GameTest (픽셀 아트 디펜스)
+
+## TAA·스프라이트 화면 안정성 (2026-10-05, 사용자 보고: "Tilemap이 부들부들 떨림", "Workshop 보관함·선반이 지글지글")
+- [x] 스프라이트 TAA: Masked 움직임 벡터 + 반응형 0, 정지 반투명 스프라이트는 알파 보존 PSO (Tilemap2D 정지 떨림 16.6 → 1.1%) — HD-2D 대비
+- [x] Workshop 보관함: glTF BLEND인데 알파 없는 불투명 에셋 → `BlendAsMasked` (반투명이라 사전 패스·움직임 벡터·그림자가 빠지고 TAA 반응형)
+- [x] TAA 깜빡임 감지 (TSR식 1단계): 정지 화소 뒤집힘 빈도 통계로 가는 기하·잎 떨림 감소 (Workshop 선반 10.5 → 0.7%, Hub 0.69 → 0.15%, 움직이는 물체 잔상 없음) — `Docs/Rules/RenderingPipeline.md`
+- [ ] (후보) TSR 2단계: 가려짐 판정 강화·움직임 벡터 다듬기 / 반투명 메시도 정지면 반응형 끄기 / Alley 에어컨 실외기 `BlendAsMasked` / 안티에일리어싱 선택지(FXAA·SMAA)

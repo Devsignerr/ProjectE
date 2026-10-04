@@ -12,6 +12,10 @@ namespace RendererCVars
 	TAutoConsoleVariable<float> TaaStaticWeight("r.TAA.StaticWeight", 0.04f,
 	                                            "TAA 정지 화소 현재 비중 (재구성 경로, 움직임 2px까지 기본 비중 0.1로 보간). 작을수록 가는 선·잎 깜빡임이 줄고 변화 반응이 느리다",
 	                                            EConsoleFlags::None, { .Range = std::pair(0.01f, 1.0f) });
+	TAutoConsoleVariable<float> TaaFlickerReduction("r.TAA.FlickerReduction", 1.0f,
+	                                                "TAA 깜빡임 감지 세기 (TSR식, 재구성 경로): 정지 화소의 밝기가 지터로 오락가락하면(가는 기하·반짝임) 이웃 상자를 넓혀 "
+	                                                "이력을 자르지 않는다. 0 = 끔 (예전 결과와 같음)",
+	                                                EConsoleFlags::None, { .Range = std::pair(0.0f, 1.0f) });
 	TAutoConsoleVariable<bool> TemporalAA("r.TAA", true, "TAA (서브픽셀 지터 + 이력 누적). 픽셀 아트/와이어프레임/여러 뷰 렌더러는 자동으로 꺼짐",
 	                                      EConsoleFlags::None, { .CommandLine = { { L"--no-taa", "0" } } });
 	TAutoConsoleVariable<bool> AmbientOcclusion("r.SSAO", true, "SSAO (GTAO). 깊이 사전 패스가 있어야 한다", EConsoleFlags::None,

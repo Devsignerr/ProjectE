@@ -721,6 +721,115 @@ namespace Sprite2DEditing
 	}
 	// ---------------------------------------------------------------- 격자 대화 기본값
 
+	namespace
+	{
+		// 축 하나: Opaque[i] = 열(행) i에 불투명 픽셀이 있음, Prefix = 누적 개수. 조건에 맞는 가장 작은 셀 (없으면 0), OutSymmetric = 끝 남는 줄 == M
+		int32 FindSmallestGridCell(const std::vector<int32>& Prefix, int32 Size, int32 Margin, int32 Spacing, bool& OutSymmetric)
+		{
+			const auto Opaque = [&Prefix](int32 Begin, int32 End) { return End > Begin && Prefix[static_cast<size_t>(End)] - Prefix[static_cast<size_t>(Begin)] > 0; };
+			if (Opaque(0, std::min(Margin, Size)))
+			{
+				return 0;
+			}
+			for (int32 Cell = 2; Cell <= Size; ++Cell)
+			{
+				const int32 Count = (Size - 2 * Margin + Spacing) / (Cell + Spacing);
+				if (Count < 2)
+				{
+					break; // 셀이 커질수록 칸 수는 줄어든다
+				}
+				bool bValid = true;
+				for (int32 Index = 0; Index < Count && bValid; ++Index)
+				{
+					const int32 Begin = Margin + Index * (Cell + Spacing);
+					bValid            = Opaque(Begin, Begin + Cell) && (Index + 1 == Count || !Opaque(Begin + Cell, Begin + Cell + Spacing));
+				}
+				const int32 End = Margin + Count * Cell + (Count - 1) * Spacing;
+				if (bValid && !Opaque(End, Size))
+				{
+					OutSymmetric = Size - End == Margin;
+					return Cell;
+				}
+			}
+			return 0;
+		}
+
+		std::vector<int32> MakeOpaquePrefix(const FImageView& Image, bool bColumns)
+		{
+			const int32        Size = bColumns ? Image.Width : Image.Height;
+			std::vector<uint8> Opaque(static_cast<size_t>(Size), 0);
+			for (int32 Y = 0; Y < Image.Height; ++Y)
+			{
+				const size_t Row = static_cast<size_t>(Y) * static_cast<size_t>(Image.Width);
+				for (int32 X = 0; X < Image.Width; ++X)
+				{
+					if (Image.Pixels[(Row + static_cast<size_t>(X)) * 4 + 3] != 0)
+					{
+						Opaque[static_cast<size_t>(bColumns ? X : Y)] = 1;
+					}
+				}
+			}
+			std::vector<int32> Prefix(static_cast<size_t>(Size) + 1, 0);
+			for (int32 Index = 0; Index < Size; ++Index)
+			{
+				Prefix[static_cast<size_t>(Index) + 1] = Prefix[static_cast<size_t>(Index)] + Opaque[static_cast<size_t>(Index)];
+			}
+			return Prefix;
+		}
+	} // namespace
+
+	bool EstimateGridFromImage(const FImageView& Image, FGridSliceOptions& InOut)
+	{
+		if (Image.Width < 4 || Image.Height < 4 || Image.Pixels.size() < static_cast<size_t>(Image.Width) * static_cast<size_t>(Image.Height) * 4)
+		{
+			return false;
+		}
+		const std::vector<int32> Columns = MakeOpaquePrefix(Image, true);
+		const std::vector<int32> Rows    = MakeOpaquePrefix(Image, false);
+		bool  bFound       = false;
+		int32 BestPeriod   = 0;
+		int32 BestSymmetry = 0;
+		int32 BestSpacing  = 0;
+		int32 BestMargin   = 0;
+		for (int32 Spacing = 1; Spacing <= 16; ++Spacing)
+		{
+			for (int32 Margin = 0; Margin <= 16; ++Margin)
+			{
+				bool        bSymmetricX = false;
+				bool        bSymmetricY = false;
+				const int32 CellX       = FindSmallestGridCell(Columns, Image.Width, Margin, Spacing, bSymmetricX);
+				const int32 CellY       = CellX > 0 ? FindSmallestGridCell(Rows, Image.Height, Margin, Spacing, bSymmetricY) : 0;
+				if (CellX <= 0 || CellY <= 0)
+				{
+					continue;
+				}
+				const int32 Period   = CellX + CellY + 2 * Spacing;
+				const int32 Symmetry = (bSymmetricX ? 1 : 0) + (bSymmetricY ? 1 : 0);
+				// 큰 간격(내용에 꼭 맞는 칸) → 대칭 많은 것 → 주기 작은 것 → (반복 순서상 작은 M이 먼저라 같으면 그대로)
+				const bool bBetter = !bFound || Spacing > BestSpacing ||
+				                     (Spacing == BestSpacing && (Symmetry > BestSymmetry || (Symmetry == BestSymmetry && Period < BestPeriod)));
+				if (bBetter)
+				{
+					bFound              = true;
+					BestPeriod          = Period;
+					BestSymmetry        = Symmetry;
+					BestSpacing         = Spacing;
+					BestMargin          = Margin;
+					InOut.CellWidth     = CellX;
+					InOut.CellHeight    = CellY;
+				}
+			}
+		}
+		if (!bFound)
+		{
+			return false;
+		}
+		InOut.bByCount = false;
+		InOut.Margin   = BestMargin;
+		InOut.Spacing  = BestSpacing;
+		return true;
+	}
+
 	void EstimateGridCellSize(const FSpriteAsset& Asset, int32& OutWidth, int32& OutHeight)
 	{
 		if (!Asset.Slices.empty())

@@ -24,7 +24,8 @@ struct FTileDefinition;
 //   SelectAnimationFrame(시간 = FFrameTime 총 시간)으로 그릴 타일을 골라 일반 스프라이트 항목으로 그린다 (보통 셀 수가 적다).
 namespace SpriteTiles
 {
-	inline constexpr uint32 FlagPoint = 1u; // Sprite.hlsl E_SPRITE_FLAG_POINT (SpriteRenderer SpriteFlag_Point)
+	inline constexpr uint32 FlagPoint        = 1u; // Sprite.hlsl E_SPRITE_FLAG_POINT (SpriteRenderer SpriteFlag_Point)
+	inline constexpr uint32 FlagShadowDither = 2u; // SpriteCommon.hlsli E_SPRITE_FLAG_SHADOW_DITHER (그림자 깊이만 — FSpriteShadowRenderer 반투명 그림자)
 
 	// 셀 (X, Y)의 로컬 사각형 (FSpriteInstanceGpu Origin/AxisX/AxisZ 의미, 로컬 Y = 0)
 	struct FTileQuad

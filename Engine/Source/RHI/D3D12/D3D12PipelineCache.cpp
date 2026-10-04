@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <optional>
 
 namespace
 {
@@ -74,6 +75,41 @@ namespace
 	}
 } // namespace
 
+FD3D12PipelineCache::FDriverScope::FDriverScope(FD3D12PipelineCache& InCache, bool bWarm)
+	: Cache(InCache)
+	, bActive(InCache.Library != nullptr) // 드라이버 캐시가 없으면 Load가 없으므로 Create끼리는 자유 (워밍 두 스레드)
+{
+	if (!bActive)
+	{
+		return;
+	}
+	std::unique_lock Lock(Cache.GateMutex);
+	if (bWarm)
+	{
+		Cache.GateChanged.wait(Lock, [this]() { return !Cache.bDriverBusy && Cache.PendingRequests == 0; });
+	}
+	else
+	{
+		++Cache.PendingRequests;
+		Cache.GateChanged.wait(Lock, [this]() { return !Cache.bDriverBusy; });
+		--Cache.PendingRequests;
+	}
+	Cache.bDriverBusy = true;
+}
+
+FD3D12PipelineCache::FDriverScope::~FDriverScope()
+{
+	if (!bActive)
+	{
+		return;
+	}
+	{
+		std::lock_guard Lock(Cache.GateMutex);
+		Cache.bDriverBusy = false;
+	}
+	Cache.GateChanged.notify_all();
+}
+
 FD3D12PipelineCache& FD3D12PipelineCache::Get()
 {
 	static FD3D12PipelineCache Instance;
@@ -109,7 +145,10 @@ bool FD3D12PipelineCache::Initialize(ID3D12Device* InDevice, IDXGIAdapter* Adapt
 	std::filesystem::create_directories(Options.UserDirectory, ErrorCode);
 
 	const auto Start = FClock::now();
-	LoadLibrary();
+	if (Options.bUseLibrary)
+	{
+		LoadLibrary();
+	}
 
 	// 레시피: 사용자 파일(실행 번호) + 프로젝트 파일(패키지 포함, FFileSystem)
 	std::vector<uint8> Bytes;
@@ -135,7 +174,7 @@ bool FD3D12PipelineCache::Initialize(ID3D12Device* InDevice, IDXGIAdapter* Adapt
 		}
 	}
 	E_LOG(LogD3D12, Display, "[PSO 캐시] 시작: 드라이버 캐시 {}, 레시피 사용자 {} + 프로젝트 {}, 실행 #{} ({:.1f}ms)",
-	      bLibraryFromDisk ? "디스크에서 읽음" : (Library ? "새로 만듦" : "지원 안 됨"),
+	      !Options.bUseLibrary ? "끔" : bLibraryFromDisk ? "디스크에서 읽음" : (Library ? "새로 만듦" : "지원 안 됨"),
 	      UserRecipes.Recipes.size(), ProjectRecipes, CurrentRun, ElapsedMs(Start));
 
 	if (Options.bWarm && !WarmSet.Recipes.empty())
@@ -253,6 +292,7 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 	// 2026-10-04 측정: 작업 스레드가 블롭으로 만든 루트 시그니처로 라이브러리 Load한 PSO를 쓰면(또는 같은 이름을 나중에 메인 스레드가
 	// 다시 Load해도) Tests/Materials/Decals/Terrain 화면이 실행마다 0.1~0.8% 픽셀 달라졌다 (파티클·반투명·조명 미세 차이, MD5가 실행마다 바뀜).
 	// 라이브러리만(--no-pso-warm) 또는 워밍만(라이브러리 없음)은 각각 비트 동일 — 드라이버 내부 원인은 미확인, 조합을 피한다
+	std::optional<FDriverScope> DriverScope(std::in_place, *this, true); // 드라이버 PSO 작업은 한 번에 하나 (머리 주석)
 	ID3D12RootSignature*        RootSignature = GetWarmRootSignature(Recipe.RootSignatureHash);
 	if (RootSignature != nullptr)
 	{
@@ -277,6 +317,7 @@ void FD3D12PipelineCache::WarmOne(uint64 Key, const PipelineCache::FRecipe& Reci
 			}
 		}
 	}
+	DriverScope.reset();
 	{
 		std::lock_guard Lock(Mutex);
 		FEntry& Entry = Entries[Key];
@@ -334,6 +375,7 @@ HRESULT FD3D12PipelineCache::CreateGraphics(ID3D12Device* InDevice, const D3D12_
 			std::lock_guard Lock(Mutex);
 			++Stats.Bypassed;
 		}
+		const FDriverScope DriverScope(*this, false);
 		return InDevice->CreateGraphicsPipelineState(&Desc, IID_PPV_ARGS(&Out));
 	}
 	return Request(InDevice, PipelineCache::FromDesc(Desc, RootHash), Desc.pRootSignature, &Desc, Out);
@@ -359,6 +401,7 @@ HRESULT FD3D12PipelineCache::CreateCompute(ID3D12Device* InDevice, const D3D12_C
 			std::lock_guard Lock(Mutex);
 			++Stats.Bypassed;
 		}
+		const FDriverScope DriverScope(*this, false);
 		return InDevice->CreateComputePipelineState(&Desc, IID_PPV_ARGS(&Out));
 	}
 	return Request(InDevice, PipelineCache::FromDesc(Desc, RootHash), Desc.pRootSignature, &Desc, Out);
@@ -366,6 +409,7 @@ HRESULT FD3D12PipelineCache::CreateCompute(ID3D12Device* InDevice, const D3D12_C
 
 HRESULT FD3D12PipelineCache::CreateDirect(ID3D12Device* InDevice, const PipelineCache::FRecipe& Recipe, const void* Desc, ComPtr<ID3D12PipelineState>& Out)
 {
+	const FDriverScope DriverScope(*this, false); // 드라이버 PSO 작업은 한 번에 하나 (머리 주석)
 	return Recipe.Type == PipelineCache::EPipelineType::Graphics
 		       ? InDevice->CreateGraphicsPipelineState(static_cast<const D3D12_GRAPHICS_PIPELINE_STATE_DESC*>(Desc), IID_PPV_ARGS(&Out))
 		       : InDevice->CreateComputePipelineState(static_cast<const D3D12_COMPUTE_PIPELINE_STATE_DESC*>(Desc), IID_PPV_ARGS(&Out));
@@ -424,7 +468,7 @@ HRESULT FD3D12PipelineCache::Request(ID3D12Device* InDevice, PipelineCache::FRec
 	const std::wstring Name   = PipelineCache::MakeLibraryName(Key);
 	if (Library && LibraryKeys.contains(Key))
 	{
-		std::lock_guard Lock(LibraryMutex);
+		const FDriverScope DriverScope(*this, false); // 드라이버 PSO 작업은 한 번에 하나 (머리 주석)
 		Result = Recipe.Type == PipelineCache::EPipelineType::Graphics
 			         ? Library->LoadGraphicsPipeline(Name.c_str(), static_cast<const D3D12_GRAPHICS_PIPELINE_STATE_DESC*>(Desc), IID_PPV_ARGS(&Out))
 			         : Library->LoadComputePipeline(Name.c_str(), static_cast<const D3D12_COMPUTE_PIPELINE_STATE_DESC*>(Desc), IID_PPV_ARGS(&Out));
@@ -466,7 +510,7 @@ HRESULT FD3D12PipelineCache::Request(ID3D12Device* InDevice, PipelineCache::FRec
 
 void FD3D12PipelineCache::SaveLibrary()
 {
-	if (!Device1 || !(bLibraryDirty || bLibraryInvalidated))
+	if (!Device1 || !Library || !(bLibraryDirty || bLibraryInvalidated)) // 드라이버 캐시를 끄면(기본) 쓰지 않는다
 	{
 		return; // 바뀐 것 없음 (디스크 캐시 그대로)
 	}

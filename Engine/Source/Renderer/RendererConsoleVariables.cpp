@@ -59,6 +59,10 @@ namespace RendererCVars
 	TAutoConsoleVariable<bool> SpriteShadows("r.Sprite.Shadows", true,
 	                                         "2D 스프라이트·타일맵 그림자 캐스팅 (CastShadows — 방향광·로컬 그림자에 알파 컷오프 깊이, 끄면 2D 그림자 없는 화면과 같음)",
 	                                         EConsoleFlags::None, { .CommandLine = { { L"--no-sprite-shadows", "0" } } });
+	TAutoConsoleVariable<bool> SpriteTranslucentShadows("r.Sprite.TranslucentShadows", false,
+	                                                    "알파·프리멀티플라이드 블렌드 2D 그림자를 알파만큼 옅게: 알파 컷오프 대신 그림자 맵 텍셀의 고정 4x4 디더 "
+	                                                    "(시간에 고정 — 필터가 좁으면 점무늬가 보일 수 있다, 끄면 알파 컷오프)",
+	                                                    EConsoleFlags::None, {});
 	TAutoConsoleVariable<int32> ShadowCacheStaticFrames("r.Shadow.Cache.StaticFrames", 30,
 	                                                    "그림자 캐시: 위치가 이 프레임 수만큼 그대로인 비스킨 메시를 정적 캐스터로 본다", EConsoleFlags::None,
 	                                                    { .Range = std::pair(1.0f, 10000.0f) });

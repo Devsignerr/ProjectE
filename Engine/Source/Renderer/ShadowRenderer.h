@@ -88,9 +88,11 @@ public:
 	// 바꾸는 모든 것(데이터 변경 번호, 위치, LOD 등)을 넣는다. 없으면 추가 캐스터는 동적(매 프레임 그림)
 	std::function<uint64(const FFrustum& Frustum)> ExtraCasterState;
 	// 매 프레임 그리는 추가 캐스터 (캐시에 넣지 않음 — 움직이는 2D 스프라이트, FSpriteShadowRenderer ESet::Dynamic). 캐시 캐스케이드에서도
-	// 복사된 정적 깊이 위에 그린다. HasExtraDynamicCasters가 이번 프레임 false면 부르지 않는다 (섀도우 맵 장 "깨끗함" 판정도 그대로)
-	FShadowCasterHook     ExtraDynamicCasters;
-	std::function<bool()> HasExtraDynamicCasters;
+	// 되살린 정적 깊이 위에 그린다. HasExtraDynamicCasters(캐스케이드 프러스텀, 출력 월드 경계)가 false인 캐스케이드에는 부르지 않는다.
+	// 경계 = 훅이 그 프러스텀에 그리는 모든 것을 덮는 월드 AABB — 다음 프레임 그 텍셀 사각형만 캐시에서 되살린다 (ShadowCacheMath "장 되살리기").
+	// 훅이 그 프러스텀에 실제로 그리는 것과 같은 판정·경계여야 한다 (밖에 그리면 다음 프레임 그림자가 남는다)
+	FShadowCasterHook                                 ExtraDynamicCasters;
+	std::function<bool(const FFrustum&, FBox& OutBounds)> HasExtraDynamicCasters;
 	// 캐시를 다음 프레임에 다시 그리게 한다 (키에 담기지 않는 변경 — 메시/머티리얼을 같은 핸들로 다시 로드 등)
 	void InvalidateCache() { ++CacheEpoch; }
 
@@ -100,6 +102,8 @@ public:
 	// 지난 AddPass의 캐시 사용 (통계): 캐시를 재사용한 / 다시 그린 캐스케이드 수
 	uint32 GetCacheReusedCascades() const { return CacheReused; }
 	uint32 GetCacheRebuiltCascades() const { return CacheRebuilt; }
+	uint32 GetCacheCopiedCascades() const { return CacheCopied; }     // 캐시 → 섀도우 맵 장 전체 복사한 캐스케이드 수
+	uint32 GetCacheRestoredCascades() const { return CacheRestored; } // 텍셀 사각형만 되살린 캐스케이드 수
 
 private:
 	// Variant = DepthVariant* (스킨/Masked)
@@ -113,6 +117,8 @@ private:
 	                 const FDepthPassBindings& Bindings);
 	void RecordCache(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 	void RecordCopy(ID3D12GraphicsCommandList* CommandList);
+	void RecordRestore(ID3D12GraphicsCommandList* CommandList);
+	bool CreateRestorePipeline(FD3D12PipelineState& OutPipeline, bool bForceRecompile);
 	void Record(ID3D12GraphicsCommandList* CommandList, const FMeshInstanceList& Instances, D3D12_GPU_VIRTUAL_ADDRESS SkinPalettes);
 	void EnsureShadowMap(uint32 Resolution, uint32 Cascades);
 	void ReleaseShadowMap();
@@ -139,12 +145,15 @@ private:
 	// 캐시: 섀도우 맵과 같은 크기·장 수 (평소 COPY_SOURCE)
 	ComPtr<ID3D12Resource> CacheMap;
 	FD3D12DescriptorHeap   CacheDsvHeap;
+	FD3D12DescriptorHandle CacheSliceSrv[ShadowMath::MaxCascades]; // 부분 되살리기가 읽는다 (장마다 하나 — 표가 가리키는 장만 SrvPixel로 전이되므로)
+	FD3D12RootSignature    RestoreRootSignature;                   // t0 캐시 장 (픽셀)
+	FD3D12PipelineState    RestorePipeline;
 	uint64                 CacheEpoch      = 0;
 	FShadowSettings        FrameSettings; // PrepareCascades 값 (AddPass가 키·LOD 바이어스에 쓴다)
 	ShadowCacheMath::FCascadeCacheState CacheStates[ShadowMath::MaxCascades];
 	ShadowCacheMath::ECacheAction       CascadeActions[ShadowMath::MaxCascades] = {};
 	bool             bExtraStatic  = false; // 이번 프레임 추가 캐스터를 캐시에 그리나 (ExtraCasterState 있음)
-	bool             bExtraDynamic = false; // 이번 프레임 동적 추가 캐스터가 있나 (HasExtraDynamicCasters)
+	bool             bExtraDynamic[ShadowMath::MaxCascades] = {}; // 이번 프레임 그 캐스케이드에 동적 추가 캐스터가 있나 (HasExtraDynamicCasters)
 	// 캐스터 거르기 병렬 조각 (PrepareBatches — 인스턴스 1024개 이상씩·최대 64조각, 캐스케이드별 정적/동적 항목을 조각 안에서 정렬 → 합친다)
 	struct FCasterChunk
 	{
@@ -155,11 +164,13 @@ private:
 	FMeshPassBatches StaticBatches[ShadowMath::MaxCascades];  // Direct = 모든 캐스터, Rebuild = 정적 캐스터(캐시에), Reuse = 비어 있음
 	FMeshPassBatches DynamicBatches[ShadowMath::MaxCascades]; // Rebuild/Reuse의 동적 캐스터
 	// 섀도우 맵 장이 이미 캐시 내용 그대로인가 (지난 프레임 캐시를 쓰고 동적 캐스터를 그리지 않았음) — 같은 키면 복사도 건너뛴다
-	uint64           MapSliceKey[ShadowMath::MaxCascades]   = {};
-	bool             bMapSliceClean[ShadowMath::MaxCascades] = {};
-	bool             bSkipCopy[ShadowMath::MaxCascades]      = {};
+	ShadowCacheMath::FSliceCopyState MapSlices[ShadowMath::MaxCascades];
+	ShadowCacheMath::ESliceRestore   SliceRestore[ShadowMath::MaxCascades] = {}; // 이번 프레임 되살리기
+	ShadowCacheMath::FTexelRect      RestoreRect[ShadowMath::MaxCascades];        // Rect일 때 사각형
 	uint32           CacheReused  = 0;
 	uint32           CacheRebuilt = 0;
+	uint32           CacheCopied  = 0;
+	uint32           CacheRestored = 0;
 	uint32           DrawCalls = 0;
 	uint64           Triangles = 0;
 	int32            BakedDepthBias = FShadowSettings{}.DepthBias; // PSO에 고정된 바이어스

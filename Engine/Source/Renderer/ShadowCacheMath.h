@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math/MathUtils.h"
+#include "Core/Math/Math.h"
 
 #include <cstring>
 
@@ -74,6 +74,106 @@ namespace ShadowCacheMath
 		State.LastKey     = Key;
 		State.bHasLast    = bEnabled;
 		return Action;
+	}
+
+	// 섀도우 맵 장 되살리기 (캐시를 쓰는 캐스케이드 Rebuild/Reuse — 캐시 → 장): 장이 지난 프레임 끝에 어떤 상태였는지로 고른다.
+	//   깨끗함 = 캐시 위에 아무것도 그리지 않았다 → 장은 이미 캐시 내용, 되살리기 없음 (이번에 위에 그리더라도 — 동적 캐스터가 들어온 첫 프레임)
+	//   부분 = 위에 그린 것이 텍셀 사각형 Dirty 안뿐이다(동적 추가 캐스터만 — 2D 스프라이트 경계를 광원 공간에 투영) → 그 사각형만 캐시에서 다시 쓴다
+	//          (FShadowRenderer: 캐시 깊이를 읽어 SV_Depth로 쓰는 시저 그리기 — D32는 서브리소스 일부 복사가 안 된다)
+	//   그 밖(동적 메시·캐시에 넣지 않는 추가 캐스터가 그렸음, 처음, 캐시 키가 바뀜) → 장 전체 복사
+	// 판정은 캐스케이드마다 따로. 직교 2D 카메라는 모든 캐스케이드가 같은 화면(평면)을 덮어 동적 2D 캐스터가 매 캐스케이드에 닿으므로,
+	// 장 전체 복사 대신 부분 되살리기가 비용을 줄인다 (작은 캐릭터 = 작은 사각형).
+	struct FTexelRect
+	{
+		int32 X0 = 0;
+		int32 Y0 = 0;
+		int32 X1 = 0; // 끝 (포함 안 함)
+		int32 Y1 = 0;
+
+		bool IsEmpty() const { return X1 <= X0 || Y1 <= Y0; }
+		bool operator==(const FTexelRect& Other) const = default;
+	};
+
+	// 월드 AABB → 장 텍셀 사각형: 8꼭짓점을 광원 뷰-투영(행벡터 v × M)으로 NDC → 텍셀(u = (x+1)/2, v = (1-y)/2), 바깥으로 내림/올림 + Margin,
+	// [0, Resolution]으로 자름. 꼭짓점이 w <= 0이면(직교 광원에서는 없음) 장 전체
+	inline FTexelRect ComputeTexelRect(const FBox& Bounds, const FMatrix4x4& ViewProjection, uint32 Resolution, int32 Margin = 1)
+	{
+		const int32 Size = static_cast<int32>(Resolution);
+		if (!Bounds.IsValid())
+		{
+			return {};
+		}
+		float MinX = 1.0e30f;
+		float MinY = 1.0e30f;
+		float MaxX = -1.0e30f;
+		float MaxY = -1.0e30f;
+		for (uint32 Corner = 0; Corner < 8; ++Corner)
+		{
+			const FVector3 P((Corner & 1) ? Bounds.Max.X : Bounds.Min.X, (Corner & 2) ? Bounds.Max.Y : Bounds.Min.Y, (Corner & 4) ? Bounds.Max.Z : Bounds.Min.Z);
+			const FMatrix4x4& M = ViewProjection;
+			const float X = P.X * M.M[0][0] + P.Y * M.M[1][0] + P.Z * M.M[2][0] + M.M[3][0];
+			const float Y = P.X * M.M[0][1] + P.Y * M.M[1][1] + P.Z * M.M[2][1] + M.M[3][1];
+			const float W = P.X * M.M[0][3] + P.Y * M.M[1][3] + P.Z * M.M[2][3] + M.M[3][3];
+			if (W <= 1.0e-6f)
+			{
+				return { 0, 0, Size, Size };
+			}
+			const float U = (X / W * 0.5f + 0.5f) * static_cast<float>(Size);
+			const float V = (0.5f - Y / W * 0.5f) * static_cast<float>(Size);
+			MinX = FMath::Min(MinX, U);
+			MinY = FMath::Min(MinY, V);
+			MaxX = FMath::Max(MaxX, U);
+			MaxY = FMath::Max(MaxY, V);
+		}
+		const auto Clamp = [Size](float Value) { return static_cast<int32>(FMath::Clamp(Value, 0.0f, static_cast<float>(Size))); };
+		FTexelRect Rect;
+		Rect.X0 = Clamp(FMath::Floor(MinX) - static_cast<float>(Margin));
+		Rect.Y0 = Clamp(FMath::Floor(MinY) - static_cast<float>(Margin));
+		Rect.X1 = Clamp(FMath::Ceil(MaxX) + static_cast<float>(Margin));
+		Rect.Y1 = Clamp(FMath::Ceil(MaxY) + static_cast<float>(Margin));
+		return Rect.IsEmpty() ? FTexelRect{} : Rect;
+	}
+
+	enum class ESliceRestore : uint8
+	{
+		None, // 장이 이미 캐시 내용 (또는 Direct — 지우고 전부 그림)
+		Rect, // FSliceCopyState::Dirty 사각형만 캐시에서
+		Copy, // 장 전체 복사
+	};
+
+	struct FSliceCopyState
+	{
+		uint64     Key      = 0;
+		bool       bClean   = false;
+		bool       bPartial = false; // 캐시와 다른 곳이 Dirty 안뿐
+		FTexelRect Dirty;
+	};
+
+	// 이번 프레임 되살리기 (그리기 전 상태로 판정)
+	inline ESliceRestore DecideSliceRestore(const FSliceCopyState& State, ECacheAction Action, uint64 CachedKey)
+	{
+		if (Action == ECacheAction::Direct)
+		{
+			return ESliceRestore::None;
+		}
+		if (State.Key == CachedKey && State.bClean)
+		{
+			return ESliceRestore::None;
+		}
+		if (State.Key == CachedKey && State.bPartial)
+		{
+			return ESliceRestore::Rect;
+		}
+		return ESliceRestore::Copy;
+	}
+
+	// 이번 프레임 끝 상태: bMeshOnTop = 위치를 모르는 것이 캐시 위에 그렸다(동적 메시 등), OnTopRect = 동적 추가 캐스터가 그린 텍셀 사각형 (비면 없음)
+	inline void FinishSlice(FSliceCopyState& State, ECacheAction Action, uint64 CachedKey, bool bMeshOnTop, const FTexelRect& OnTopRect)
+	{
+		State.Key      = CachedKey;
+		State.bClean   = Action != ECacheAction::Direct && !bMeshOnTop && OnTopRect.IsEmpty();
+		State.bPartial = Action != ECacheAction::Direct && !bMeshOnTop && !OnTopRect.IsEmpty();
+		State.Dirty    = State.bPartial ? OnTopRect : FTexelRect{};
 	}
 
 	// 캐스케이드 c의 LOD 바이어스 = floor(c × BiasPerCascade)

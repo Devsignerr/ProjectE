@@ -18,9 +18,15 @@ namespace
 		float      MinorStep    = 0.0f;
 		float      MajorStep    = 0.0f;
 		float      FadeDistance = 0.0f;
+		float      PlaneMode    = 0.0f; // 0 = Z = 0 바닥(XY), 1 = 2D 평면(XZ, Y = PlaneDepth)
+		FVector2   Origin2D;            // 2D 격자 원점 (월드 X, Z)
+		float      MinorStepV   = 0.0f; // 2D 세로(Z) 보조 간격 (가로는 MinorStep)
+		float      MajorStepV   = 0.0f;
+		FVector2   PixelStep;           // 2D 픽셀 격자 간격 (0 = 없음)
+		float      PlaneDepth   = 0.0f;
 		float      Padding0     = 0.0f;
 	};
-	static_assert(sizeof(FGridConstants) == 96);
+	static_assert(sizeof(FGridConstants) == 128);
 
 	FShaderCompileDesc MakeDesc(const wchar_t* Entry, EShaderStage Stage)
 	{
@@ -132,6 +138,20 @@ void FEditorGrid::Render(const FCamera& Camera, const FRenderOutput& Output, D3D
 	Constants.MinorStep      = FMath::Max(MinorStep, 0.01f);
 	Constants.MajorStep      = FMath::Max(MajorStep, Constants.MinorStep);
 	Constants.FadeDistance   = FMath::Max(FadeDistance, 1.0f);
+	if (bPlaneXZ)
+	{
+		// 2D: 직교 화면 전체를 덮는 사각형 (거리 페이드 없음 — 셰이더), 칸은 축별 간격
+		const float HalfWidth  = Camera.GetOrthoHeight() * FMath::Max(Camera.GetAspectRatio(), 1.0f);
+		Constants.Extent       = FMath::Max(HalfWidth, 100.0f) + FMath::Max(Cell2D.X, Cell2D.Y) * MajorRatio2D * 2.0f;
+		Constants.PlaneMode    = 1.0f;
+		Constants.MinorStep    = FMath::Max(Cell2D.X, 0.01f);
+		Constants.MinorStepV   = FMath::Max(Cell2D.Y, 0.01f);
+		Constants.MajorStep    = Constants.MinorStep * FMath::Max(MajorRatio2D, 1.0f);
+		Constants.MajorStepV   = Constants.MinorStepV * FMath::Max(MajorRatio2D, 1.0f);
+		Constants.Origin2D     = Origin2D;
+		Constants.PixelStep    = PixelStep2D;
+		Constants.PlaneDepth   = PlaneDepth2D;
+	}
 
 	CommandList->SetGraphicsRootSignature(RootSignature.Get());
 	CommandList->SetPipelineState(Pipeline.Get());

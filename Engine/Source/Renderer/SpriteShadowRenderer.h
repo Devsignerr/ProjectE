@@ -1,0 +1,99 @@
+#pragma once
+
+#include "Core/Math/Math.h"
+#include "RHI/D3D12/D3D12PipelineState.h"
+#include "RHI/D3D12/D3D12RootSignature.h"
+#include "Renderer/ShaderTypes.h"
+#include "Renderer/SpriteDraw.h"
+
+#include <span>
+#include <vector>
+
+class FD3D12RHI;
+class FResourceManager;
+class FShaderLibrary;
+
+// 2D 스프라이트·타일맵 그림자 캐스터 (Phase 56-4c). 씬 수집(FSpriteSceneCollector — bCastShadows + 캐스터 볼륨 판정)이 준 그림자 목록을
+// 방향광 캐스케이드와 로컬 그림자 장에 깊이만 그린다 — 두 그림자 렌더러의 추가 캐스터 훅(FShadowCasterHook)으로 (지형과 같은 자리).
+//
+// 깊이: 모든 블렌드가 알파 컷오프로 clip (텍셀 알파 × 색 알파 < AlphaCutoff면 버림 — 반투명 그림자는 없다), 양면(컬링 없음), 방향광 = 깊이 클립 끔
+//   (팬케이킹) + FShadowSettings 기본 바이어스, 로컬 = FLocalShadowSettings 기본 바이어스 (지형 그림자 PSO와 같은 규칙 — 설정 창에서 바꾼 바이어스는 따라가지 않음).
+// 방향광 그림자 캐시 (ShadowCacheMath.h): 캐스터를 정적/동적으로 나눈다.
+//   정적 = 수집이 bShadowStatic으로 알린 것 (움직이지 않는 타일맵 청크 — 월드·색 알파·컷오프·내용 Revision이 r.Shadow.Cache.StaticFrames 수집 연속 같음,
+//   스프라이트 — 그리는 값 해시가 연속 같음). 정적은 FShadowRenderer::ExtraCasters(지형과 함께 캐시에 그림)에, 상태 해시 GetStaticStateHash(장 프러스텀과
+//   겹치는 정적 청크 + 정적 항목 묶음(경계 합집합 하나 — 장마다 O(1))의 인스턴스 해시 합 — 텍스처 칸·컷오프·월드 위치 포함, 색 RGB 제외)를
+//   ExtraCasterState에 섞는다 (정적 캐스터가 없으면 0 = 섞지 않음 →
+//   스프라이트 그림자가 없는 씬은 캐시 키·화면이 이전과 같다).
+//   동적 = 그 밖(움직이는 스프라이트, 플립북, 애니메이션 타일) — FShadowRenderer::ExtraDynamicCasters로 매 프레임 그린다 (캐시에 넣지 않음).
+//   로컬 그림자는 캐시가 없으므로 둘 다 (ESet::All).
+// 데이터: Prepare(게임 스레드, 그림자 패스 등록 전)가 항목 인스턴스(FSpriteInstanceGpu, 월드 공간 — 정적 구간 | 동적 구간)와 청크 머리를 동적 업로드
+//   버퍼에 쓰고 구간 목록을 만든다. 텍스처 칸은 매 Prepare에 ResolveTexture로 다시 구한다 (프레임을 넘겨 캐시하지 않음 — 준비 전 기본 텍스처면 칸이 바뀌어
+//   정적 해시가 바뀌므로 로드가 끝난 프레임에 캐시를 다시 그린다). 청크 인스턴스는 수집기의 정적 버퍼(로컬 공간)를 그대로 읽는다.
+// RenderShadow(렌더 스레드 가능 — 그래프 패스 람다 안 훅)는 Prepare가 만든 구간만 읽는다 (씬을 읽지 않음). 장 프러스텀과 겹치지 않는 구간은 건너뛴다
+//   (항목 구간은 구간 전체 경계 — 개별 컬링은 GPU 클립에 맡김).
+// 바인딩: 자체 루트 시그니처 (b0 상수 = 광원 뷰-투영 + 구간 정보, t0 인스턴스, t1 청크 머리, 공간 1 무제한 표 = 셰이더 가시 힙 전체, s0 선형 클램프).
+// 한계: 레이 트레이싱 그림자(r.RayTracing.Shadows)·RT 반사·DDGI에는 스프라이트가 없다 (TLAS 밖 — 래스터 그림자만).
+class FSpriteShadowRenderer
+{
+public:
+	enum class ESet : uint8
+	{
+		Static,  // 정적 캐스터만 (방향광 캐시에 그림)
+		Dynamic, // 동적 캐스터만 (방향광 매 프레임)
+		All,     // 둘 다 (로컬 그림자)
+	};
+
+	~FSpriteShadowRenderer();
+
+	bool Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary, FResourceManager& InResources);
+	void Shutdown();
+	bool ReloadShaders(bool bForceRecompile);
+
+	// 게임 스레드: 그림자 목록 (수집기 GetShadowItems/GetShadowChunks — 비면 이번 프레임 캐스터 없음)
+	void Prepare(std::span<const FSpriteDrawItem> Items, std::span<const FSpriteChunkDraw> Chunks);
+	bool HasDynamicCasters() const { return bHasDynamic; }
+	// 장 프러스텀 안 정적 캐스터의 상태 해시 (없으면 0). 게임 스레드 (FShadowRenderer::PrepareBatches)
+	uint64 GetStaticStateHash(const FFrustum& Frustum) const;
+	// 렌더 스레드 가능: 장 DSV·뷰포트가 묶인 상태에서 (FShadowCasterHook). 자기 루트 시그니처/PSO를 묶는다
+	void RenderShadow(ID3D12GraphicsCommandList* CommandList, const FMatrix4x4& ViewProjection, const FFrustum& Frustum, bool bLocalLight, ESet Set) const;
+
+	// 통계 (마지막 Prepare)
+	uint32 GetCasterCount() const { return CasterCount; }       // 항목 + 청크 타일
+	uint32 GetStaticCasterCount() const { return StaticCount; } // 그중 정적
+
+private:
+	bool CreatePipelines(FD3D12PipelineState& OutDirectional, FD3D12PipelineState& OutLocal, bool bForceRecompile);
+
+	struct FRun
+	{
+		D3D12_GPU_VIRTUAL_ADDRESS Instances = 0;
+		D3D12_GPU_VIRTUAL_ADDRESS Header    = 0; // 청크 구간: 청크 머리 (항목 구간은 Instances — 셰이더가 읽지 않는 유효 주소)
+		uint32                    Count     = 0;
+		uint32                    RunInfo   = 0; // b0 RunInfo (청크 비트)
+		FBox                      Bounds;
+		bool                      bStatic   = false;
+	};
+	struct FStaticCaster
+	{
+		FBox   Bounds;
+		uint64 Hash = 0;
+	};
+
+	FD3D12RHI*          Rhi           = nullptr;
+	FShaderLibrary*     ShaderLibrary = nullptr;
+	FResourceManager*   Resources     = nullptr;
+	FD3D12RootSignature RootSignature;
+	FD3D12PipelineState DirectionalPipeline;
+	FD3D12PipelineState LocalPipeline;
+
+	std::vector<FRun>               Runs;
+	std::vector<FStaticCaster>      StaticCasters;     // 정적 청크 (장 프러스텀마다 개별 판정)
+	uint64                          StaticItemSum = 0; // 정적 항목 인스턴스 해시 합 — 항목은 하나로 묶어 판정 (항목이 수만 개여도 장마다 O(1),
+	uint32                          StaticItemCount = 0; //   한 정적 항목이 바뀌면 그 묶음 경계와 겹치는 장이 모두 다시 그림 — 보수적, 정적 변경은 드묾)
+	FBox                            StaticItemBounds;
+	std::vector<FSpriteInstanceGpu> Scratch;
+	std::vector<uint64>             ScratchHashes; // 정적 항목 인스턴스 해시 (동적 = 0)
+	bool                            bHasDynamic = false;
+	uint32                          CasterCount = 0;
+	uint32                          StaticCount = 0;
+};

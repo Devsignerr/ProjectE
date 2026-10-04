@@ -661,11 +661,12 @@ E_TEST(Sprite2D_LoadsSampleAssets)
 	{
 		return;
 	}
-	E_EXPECT_EQ(Sprite->Slices.size(), static_cast<size_t>(8));
+	E_EXPECT_EQ(Sprite->Slices.size(), static_cast<size_t>(9));
 	E_EXPECT_TRUE(Sprite->Filter == ESpriteFilter::Point);
-	// 샘플 배치는 SliceGrid(144, 72, 34, 34, 1, 2)와 같다
-	const std::vector<FSpriteSlice> Grid = SpriteMath::SliceGrid(Sprite->TextureWidth, Sprite->TextureHeight, 34, 34, 1, 2, "");
-	E_EXPECT_EQ(Grid.size(), Sprite->Slices.size());
+	// 샘플 아이콘 8개 배치는 SliceGrid(144, 72, 34, 34, 1, 2)와 같다 (그 아래 줄 = 9-슬라이스 패널 — Phase 56-4c)
+	const std::vector<FSpriteSlice> Grid = SpriteMath::SliceGrid(Sprite->TextureWidth, 72, 34, 34, 1, 2, "");
+	E_EXPECT_EQ(Grid.size(), static_cast<size_t>(8));
+	E_EXPECT_TRUE(Sprite->Slices[8].Name == "Panel" && Sprite->Slices[8].HasBorder());
 	E_EXPECT_EQ(Grid[4].X, Sprite->Slices[4].X);
 	E_EXPECT_EQ(Grid[4].Y, Sprite->Slices[4].Y);
 	E_EXPECT_TRUE(Library.LoadSprite(SamplePath(L"SampleAtlas.esprite")) == Sprite); // 캐시

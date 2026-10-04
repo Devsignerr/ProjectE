@@ -17,10 +17,10 @@
             800.0
           ],
           "Rotation": [
-            -0.4030582,
-            -0.1270838,
-            0.8643611,
-            -0.272532
+            0.14079646108542862,
+            0.21515954513187457,
+            -0.5291520010992795,
+            0.8086290165564751
           ],
           "Scale": [
             1.0,
@@ -425,6 +425,435 @@
         }
       },
       "Name": "Gem",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Samples/SampleTiles.etileset",
+          "CellSize": [
+            50.0,
+            50.0
+          ],
+          "Collision": false,
+          "Lit": true,
+          "OrderInLayer": -5,
+          "Color": [
+            0.85,
+            0.85,
+            0.85,
+            1.0
+          ],
+          "TileData": "AQEAAAD/////AAAAAPEAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAABQAAAAAAAwAAwAAACMCAAAAAA=="
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShadowWall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TilemapComponent": {
+          "Tileset": "Sprites/Samples/SampleTiles.etileset",
+          "CellSize": [
+            50.0,
+            50.0
+          ],
+          "Collision": false,
+          "Lit": true,
+          "Blend": 3,
+          "CastShadows": true,
+          "TileData": "AQEAAAD/////AAAAABIBAAAAAAkAAQAAAAEABAAAAOQCAAAAAA=="
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShadowLedge",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "PotionRed",
+          "Size": [
+            68.0,
+            68.0
+          ],
+          "Lit": true,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -650.0,
+            0.0,
+            484.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShadowPotion",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Fire",
+          "Size": [
+            68.0,
+            68.0
+          ],
+          "Lit": true,
+          "CastShadows": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5
+        },
+        "TransformComponent": {
+          "Position": [
+            -560.0,
+            0.0,
+            484.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShadowFire",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Panel",
+          "Size": [
+            64.0,
+            32.0
+          ],
+          "Lit": true,
+          "CastShadows": true,
+          "Blend": 3
+        },
+        "TransformComponent": {
+          "Position": [
+            -330.0,
+            0.0,
+            620.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.125,
+            1.0,
+            3.125
+          ]
+        }
+      },
+      "Name": "ShadowSign",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Size": [
+            68.0,
+            0.0
+          ],
+          "Lit": true,
+          "CastShadows": true
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/Samples/SampleGems.eflipbook"
+        },
+        "TransformComponent": {
+          "Position": [
+            -460.0,
+            0.0,
+            560.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "ShadowGem",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.7,
+            0.4
+          ],
+          "Intensity": 30.0,
+          "Radius": 700.0,
+          "CastShadows": true
+        },
+        "TransformComponent": {
+          "Position": [
+            -330.0,
+            60.0,
+            470.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "StageLamp",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Panel",
+          "Size": [
+            96.0,
+            48.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            10.0,
+            650.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.125,
+            1.0,
+            3.125
+          ]
+        }
+      },
+      "Name": "PanelStretch",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Panel",
+          "Size": [
+            96.0,
+            48.0
+          ],
+          "SliceMode": 1
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            10.0,
+            470.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.125,
+            1.0,
+            3.125
+          ]
+        }
+      },
+      "Name": "PanelTile",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Panel",
+          "Size": [
+            12.0,
+            26.0
+          ],
+          "FlipX": true
+        },
+        "TransformComponent": {
+          "Position": [
+            300.0,
+            10.0,
+            470.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            3.125,
+            1.0,
+            3.125
+          ]
+        }
+      },
+      "Name": "PanelSmall",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Crystal",
+          "Size": [
+            136.0,
+            136.0
+          ],
+          "Blend": 2,
+          "Color": [
+            1.0,
+            0.75,
+            0.3,
+            1.0
+          ],
+          "OrderInLayer": 2
+        },
+        "TransformComponent": {
+          "Position": [
+            -640.0,
+            10.0,
+            680.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "GlowGem",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/Samples/SampleAtlas.esprite",
+          "Slice": "Crystal",
+          "Size": [
+            136.0,
+            136.0
+          ],
+          "Color": [
+            1.0,
+            0.75,
+            0.3,
+            1.0
+          ],
+          "OrderInLayer": 2
+        },
+        "TransformComponent": {
+          "Position": [
+            400.0,
+            10.0,
+            650.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "AlphaGem",
       "Parent": -1
     }
   ],

@@ -87,6 +87,10 @@ public:
 	// 추가 캐스터의 그림자 상태 해시 (캐스케이드 프러스텀 안). 있으면 추가 캐스터는 정적 캐스터로 캐시에 그린다 — 해시에는 그리는 결과를
 	// 바꾸는 모든 것(데이터 변경 번호, 위치, LOD 등)을 넣는다. 없으면 추가 캐스터는 동적(매 프레임 그림)
 	std::function<uint64(const FFrustum& Frustum)> ExtraCasterState;
+	// 매 프레임 그리는 추가 캐스터 (캐시에 넣지 않음 — 움직이는 2D 스프라이트, FSpriteShadowRenderer ESet::Dynamic). 캐시 캐스케이드에서도
+	// 복사된 정적 깊이 위에 그린다. HasExtraDynamicCasters가 이번 프레임 false면 부르지 않는다 (섀도우 맵 장 "깨끗함" 판정도 그대로)
+	FShadowCasterHook     ExtraDynamicCasters;
+	std::function<bool()> HasExtraDynamicCasters;
 	// 캐시를 다음 프레임에 다시 그리게 한다 (키에 담기지 않는 변경 — 메시/머티리얼을 같은 핸들로 다시 로드 등)
 	void InvalidateCache() { ++CacheEpoch; }
 
@@ -139,7 +143,8 @@ private:
 	FShadowSettings        FrameSettings; // PrepareCascades 값 (AddPass가 키·LOD 바이어스에 쓴다)
 	ShadowCacheMath::FCascadeCacheState CacheStates[ShadowMath::MaxCascades];
 	ShadowCacheMath::ECacheAction       CascadeActions[ShadowMath::MaxCascades] = {};
-	bool             bExtraStatic = false; // 이번 프레임 추가 캐스터를 캐시에 그리나 (ExtraCasterState 있음)
+	bool             bExtraStatic  = false; // 이번 프레임 추가 캐스터를 캐시에 그리나 (ExtraCasterState 있음)
+	bool             bExtraDynamic = false; // 이번 프레임 동적 추가 캐스터가 있나 (HasExtraDynamicCasters)
 	// 캐스터 거르기 병렬 조각 (PrepareBatches — 인스턴스 1024개 이상씩·최대 64조각, 캐스케이드별 정적/동적 항목을 조각 안에서 정렬 → 합친다)
 	struct FCasterChunk
 	{

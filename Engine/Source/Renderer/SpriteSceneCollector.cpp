@@ -11,6 +11,7 @@
 #include "Renderer/LightMath.h"
 #include "Renderer/ResourceCollector.h"
 #include "Renderer/ResourceManager.h"
+#include "Renderer/ShadowCacheMath.h"
 #include "Scene/Components.h"
 #include "Scene/Scene.h"
 #include "Scene/Sprite/Sprite2DComponents.h"
@@ -95,6 +96,9 @@ void FSpriteSceneCollector::Shutdown()
 	AssetTextures.clear();
 	Items.clear();
 	Chunks.clear();
+	ShadowItems.clear();
+	ShadowChunks.clear();
+	ShadowHistory.clear();
 	Rhi       = nullptr;
 	Resources = nullptr;
 }
@@ -159,10 +163,12 @@ FTextureHandle FSpriteSceneCollector::ResolveAssetTexture(const std::shared_ptr<
 	return Entry.Handle;
 }
 
-void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum)
+void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum, const FCasterTest& ShadowCasterTest, uint32 StaticFrames)
 {
 	Items.clear();
 	Chunks.clear();
+	ShadowItems.clear();
+	ShadowChunks.clear();
 	if (Rhi == nullptr)
 	{
 		return;
@@ -174,8 +180,8 @@ void FSpriteSceneCollector::Collect(FScene& Scene, const FFrustum& Frustum)
 		std::erase_if(AssetTextures, [](const auto& Pair) { return Pair.second.Owner.expired(); });
 	}
 	// 타일맵 먼저: 애니메이션 타일 항목이 스프라이트 항목보다 제출 순서가 앞 (같은 키면 타일 아래)
-	CollectTilemaps(Scene, Frustum);
-	CollectSprites(Scene, Frustum);
+	CollectTilemaps(Scene, Frustum, ShadowCasterTest, StaticFrames);
+	CollectSprites(Scene, Frustum, ShadowCasterTest, StaticFrames);
 }
 
 bool FSpriteSceneCollector::PeekSprite(const FSpriteComponent& Sprite, uint32 LibraryGeneration, FSpriteSource& Out)
@@ -200,7 +206,7 @@ bool FSpriteSceneCollector::PeekSprite(const FSpriteComponent& Sprite, uint32 Li
 	return true;
 }
 
-void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustum)
+void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames)
 {
 	FRegistry&                       Registry     = Scene.GetRegistry();
 	const std::vector<FEntity>*      ViewEntities = Registry.View<FSpriteComponent, FTransformComponent>().GetIterationEntities();
@@ -230,6 +236,7 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			}
 			Source.Sprite = Sprite;
 			Source.World  = &Transform->WorldMatrix;
+			Source.Entity = Entity;
 			Source.State  = PeekSprite(*Sprite, Generation, Source) ? ESourceState::Ready : ESourceState::NeedsResolve;
 			// 레이어: 읽기 전용 찾기 (없는 이름 경고는 아래 순차 단계 — ResolveLayerChecked)
 			const int32 Layer = Sprite->SortingLayer.empty() ? 0 : Layers.FindLayer(Sprite->SortingLayer);
@@ -284,6 +291,26 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 		Source.TextureHeight = LastHeight;
 	}
 
+	// 그림자 정적 판정 이력: 캐스터 엔티티 번호 칸을 병렬 전에 맞춘다 (병렬 본문은 자기 엔티티 칸만 쓴다)
+	const bool bShadows = static_cast<bool>(CasterTest);
+	if (bShadows)
+	{
+		uint32 MaxIndex = 0;
+		bool   bAny     = false;
+		for (const FSpriteSource& Source : Sources)
+		{
+			if (Source.State == ESourceState::Ready && Source.Sprite->bCastShadows)
+			{
+				MaxIndex = std::max(MaxIndex, Source.Entity.Index);
+				bAny     = true;
+			}
+		}
+		if (bAny && MaxIndex >= ShadowHistory.size())
+		{
+			ShadowHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+		}
+	}
+
 	// 3) 병렬: 항목 + 컬링 (자기 칸만). 에셋은 컴포넌트 런타임이 shared_ptr로 붙잡고 있어 이 수집 동안 살아 있다
 	SpriteScratch.resize(ViewCount);
 	SpriteVisible.resize(ViewCount);
@@ -303,6 +330,9 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			FSpriteDrawItem&        Item   = SpriteScratch[Index];
 			Item.World = *Source.World;
 			Item.Size  = SpriteMath::ComputeSize(Slice, Asset.UnitsPerPixel, Sprite.Size);
+			// 9-슬라이스 판정 (조각은 아래 4) 순차 단계에서 — 보통 소수)
+			const FVector2 OriginalSize(static_cast<float>(Slice.W) * Asset.UnitsPerPixel, static_cast<float>(Slice.H) * Asset.UnitsPerPixel);
+			const bool     bSliced = SpriteNineSlice::ShouldSlice(Slice, Item.Size, OriginalSize);
 			Item.Pivot = Slice.Pivot;
 			Item.UVMin = FVector2(Uv.U0, Uv.V0);
 			Item.UVMax = FVector2(Uv.U1, Uv.V1);
@@ -320,22 +350,98 @@ void FSpriteSceneCollector::CollectSprites(FScene& Scene, const FFrustum& Frustu
 			Item.Color        = SrgbToLinearColor(Sprite.Color);
 			Item.SortLayer    = Source.Layer;
 			Item.OrderInLayer = Sprite.OrderInLayer;
-			Item.Blend        = ESpriteBlendMode::Alpha;
+			Item.Blend        = Sprite.Blend >= ESpriteBlendMode::Alpha && Sprite.Blend < ESpriteBlendMode::Count ? Sprite.Blend : ESpriteBlendMode::Alpha;
 			Item.Filter       = Asset.Filter;
-			Item.AlphaCutoff  = 0.5f;
+			Item.AlphaCutoff  = Sprite.AlphaCutoff;
 			Item.bLit         = Sprite.bLit;
 			Item.bCastShadows = Sprite.bCastShadows;
-			SpriteVisible[Index] = Frustum.Intersects(ComputeItemBounds(Item)) ? 1 : 0;
+			// 조각들은 원래 사각형을 정확히 덮으므로 컬링은 원래 사각형으로
+			const FBox Bounds = ComputeItemBounds(Item);
+			uint8      Flags  = Frustum.Intersects(Bounds) ? 1 : 0;
+			if (bShadows && Sprite.bCastShadows)
+			{
+				// 그림자 정적 판정: 그리는 값 해시가 연속 수집에서 같았던 횟수 (캐스터 판정과 무관하게 갱신 — 이력이 끊기지 않게)
+				using namespace ShadowCacheMath;
+				uint64 Hash = HashSeed;
+				Hash        = HashValue(Hash, Item.World);
+				Hash        = HashValue(Hash, Item.Size);
+				Hash        = HashValue(Hash, Item.Pivot);
+				Hash        = HashValue(Hash, Item.UVMin);
+				Hash        = HashValue(Hash, Item.UVMax);
+				Hash        = HashValue(Hash, Item.Texture);
+				Hash        = HashValue(Hash, Item.Color.W);
+				Hash        = HashValue(Hash, Item.AlphaCutoff);
+				Hash        = HashValue(Hash, Item.Filter);
+				Hash        = HashValue(Hash, bSliced ? static_cast<int32>(Sprite.SliceMode) + 1 : 0);
+				FShadowHistory& History     = ShadowHistory[Source.Entity.Index];
+				const bool      bContinuous = History.Generation == Source.Entity.Generation && History.LastCollect + 1 == CollectIndex;
+				History.Stable              = bContinuous && History.Hash == Hash ? std::min(History.Stable + 1, 0x7FFFFFFFu) : 0u;
+				History.Hash                = Hash;
+				History.Generation          = Source.Entity.Generation;
+				History.LastCollect         = CollectIndex;
+				Item.bShadowStatic          = IsStatic(History.Stable, StaticFrames);
+				Flags |= CasterTest(Bounds) ? 2 : 0;
+			}
+			if (bSliced && (Flags & 3) != 0)
+			{
+				Flags |= 4;
+			}
+			SpriteVisible[Index] = Flags;
 		}
 	});
 
-	// 4) 보이는 것만 뷰 순서대로
+	// 4) 보이는 것만 뷰 순서대로 (9-슬라이스는 조각 항목들 — 같은 정렬 키·연속 제출이라 한 구간으로 묶인다)
 	Items.reserve(Items.size() + ViewCount);
 	for (uint32 Index = 0; Index < ViewCount; ++Index)
 	{
-		if (SpriteVisible[Index] != 0)
+		const uint8 Flags = SpriteVisible[Index];
+		if (Flags == 0)
 		{
-			Items.push_back(SpriteScratch[Index]);
+			continue;
+		}
+		const FSpriteDrawItem& Item = SpriteScratch[Index];
+		if ((Flags & 4) == 0)
+		{
+			if ((Flags & 1) != 0)
+			{
+				Items.push_back(Item);
+			}
+			if ((Flags & 2) != 0)
+			{
+				ShadowItems.push_back(Item);
+			}
+			continue;
+		}
+		const FSpriteSource&    Source = Sources[Index];
+		const FSpriteComponent& Sprite = *Source.Sprite;
+		const FSpriteAsset&     Asset  = **Source.AssetOwner;
+		const FSpriteSlice&     Slice  = Asset.Slices[static_cast<size_t>(Source.Slice)];
+		const FSpriteUvRect     Uv     = SpriteMath::ComputeUvRect(Slice, Source.TextureWidth, Source.TextureHeight);
+		SpriteNineSlice::FInput Input;
+		Input.Size         = Item.Size;
+		Input.OriginalSize = FVector2(static_cast<float>(Slice.W) * Asset.UnitsPerPixel, static_cast<float>(Slice.H) * Asset.UnitsPerPixel);
+		Input.Pivot        = Slice.Pivot;
+		Input.BorderLeft   = static_cast<float>(Slice.BorderLeft) * Asset.UnitsPerPixel;
+		Input.BorderTop    = static_cast<float>(Slice.BorderTop) * Asset.UnitsPerPixel;
+		Input.BorderRight  = static_cast<float>(Slice.BorderRight) * Asset.UnitsPerPixel;
+		Input.BorderBottom = static_cast<float>(Slice.BorderBottom) * Asset.UnitsPerPixel;
+		Input.UVMin        = FVector2(Uv.U0, Uv.V0);
+		Input.UVMax        = FVector2(Uv.U1, Uv.V1);
+		Input.bFlipX       = Sprite.bFlipX;
+		Input.bFlipY       = Sprite.bFlipY;
+		Input.Mode         = Sprite.SliceMode;
+		SpriteNineSlice::Build(Input, PieceScratch);
+		for (const SpriteNineSlice::FPiece& Piece : PieceScratch)
+		{
+			const FSpriteDrawItem PieceItem = SpriteNineSlice::MakePieceItem(Item, Piece);
+			if ((Flags & 1) != 0)
+			{
+				Items.push_back(PieceItem);
+			}
+			if ((Flags & 2) != 0)
+			{
+				ShadowItems.push_back(PieceItem);
+			}
 		}
 	}
 }
@@ -460,7 +566,7 @@ void FSpriteSceneCollector::RebuildTilemap(FTilemapCache& Cache, const FTilemapD
 	Cache.Chunks = std::move(Next);
 }
 
-void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frustum)
+void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frustum, const FCasterTest& CasterTest, uint32 StaticFrames)
 {
 	const FSortingLayerSettings& Layers = FProjectSettings::Get().SortingLayers;
 	const double                 Time   = FFrameTime::GetTotalSeconds();
@@ -493,10 +599,31 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 			RebuildTilemap(Cache, Data, bParameters);
 		}
 
-		const FTextureHandle Texture = ResolveAssetTexture(Tileset, Tilemap.Tileset, Tileset->Texture, Tileset->Filter);
-		const FVector4       Color   = SrgbToLinearColor(Tilemap.Color);
-		const int32          Layer   = static_cast<int32>(Layers.ResolveLayerChecked(Tilemap.SortingLayer));
-		const FMatrix4x4&    World   = Transform.WorldMatrix;
+		const FTextureHandle   Texture = ResolveAssetTexture(Tileset, Tilemap.Tileset, Tileset->Texture, Tileset->Filter);
+		const FVector4         Color   = SrgbToLinearColor(Tilemap.Color);
+		const int32            Layer   = static_cast<int32>(Layers.ResolveLayerChecked(Tilemap.SortingLayer));
+		const FMatrix4x4&      World   = Transform.WorldMatrix;
+		const ESpriteBlendMode Blend   = Tilemap.Blend >= ESpriteBlendMode::Alpha && Tilemap.Blend < ESpriteBlendMode::Count ? Tilemap.Blend : ESpriteBlendMode::Alpha;
+		const bool             bShadow = CasterTest && Tilemap.bCastShadows;
+		bool                   bShadowStatic = false;
+		if (bShadow)
+		{
+			// 정적 판정: 그림자 결과를 바꾸는 타일맵 값이 연속 수집에서 같았던 횟수 (청크 내용 변경은 Revision이 잡는다)
+			using namespace ShadowCacheMath;
+			uint64 Hash = HashSeed;
+			Hash        = HashValue(Hash, World);
+			Hash        = HashValue(Hash, Color.W);
+			Hash        = HashValue(Hash, Tilemap.AlphaCutoff);
+			Hash        = HashValue(Hash, Cache.Revision);
+			Hash        = HashValue(Hash, Tileset.get());
+			Hash        = HashValue(Hash, CellSize);
+			Hash        = HashValue(Hash, Texture);
+			const bool bContinuous  = Cache.ShadowLastCollect + 1 == CollectIndex;
+			Cache.ShadowStable      = bContinuous && Cache.ShadowHash == Hash ? std::min(Cache.ShadowStable + 1, 0x7FFFFFFFu) : 0u;
+			Cache.ShadowHash        = Hash;
+			Cache.ShadowLastCollect = CollectIndex;
+			bShadowStatic           = IsStatic(Cache.ShadowStable, StaticFrames);
+		}
 		for (FChunk& Chunk : Cache.Chunks)
 		{
 			// 업로드가 끝난 새 내용으로 바꾼다
@@ -513,23 +640,36 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				continue;
 			}
 			const FBox Bounds = Chunk.Current->LocalBounds.TransformBy(World);
-			if (!Frustum.Intersects(Bounds))
+			const bool bMain  = Frustum.Intersects(Bounds);
+			const bool bCast  = bShadow && CasterTest(Bounds);
+			if (!bMain && !bCast)
 			{
 				continue;
 			}
 			if (Chunk.Current->Count > 0)
 			{
-				FSpriteChunkDraw& Draw = Chunks.emplace_back();
-				Draw.Instances    = Chunk.Current->Buffer.GetGpuAddress();
-				Draw.Count        = Chunk.Current->Count;
-				Draw.World        = World;
-				Draw.Texture      = Texture;
-				Draw.Color        = Color;
-				Draw.Center       = Bounds.GetCenter();
-				Draw.SortLayer    = Layer;
-				Draw.OrderInLayer = Tilemap.OrderInLayer;
-				Draw.Blend        = ESpriteBlendMode::Alpha;
-				Draw.bLit         = Tilemap.bLit;
+				FSpriteChunkDraw Draw;
+				Draw.Instances     = Chunk.Current->Buffer.GetGpuAddress();
+				Draw.Count         = Chunk.Current->Count;
+				Draw.World         = World;
+				Draw.Texture       = Texture;
+				Draw.Color         = Color;
+				Draw.Center        = Bounds.GetCenter();
+				Draw.SortLayer     = Layer;
+				Draw.OrderInLayer  = Tilemap.OrderInLayer;
+				Draw.Blend         = Blend;
+				Draw.AlphaCutoff   = Tilemap.AlphaCutoff;
+				Draw.bLit          = Tilemap.bLit;
+				Draw.Bounds        = Bounds;
+				Draw.bShadowStatic = bShadowStatic;
+				if (bMain)
+				{
+					Chunks.push_back(Draw);
+				}
+				if (bCast)
+				{
+					ShadowChunks.push_back(Draw);
+				}
 			}
 			// 애니메이션 타일: 이번 시간의 프레임 타일로 항목 하나씩 (로컬 사각형 × 월드 — 크기 1, 피벗 0)
 			for (const SpriteTiles::FAnimatedCell& Cell : Chunk.Current->Animated)
@@ -543,7 +683,7 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				Local.M[0][0] = Quad.AxisX.X; Local.M[0][1] = Quad.AxisX.Y; Local.M[0][2] = Quad.AxisX.Z;
 				Local.M[2][0] = Quad.AxisZ.X; Local.M[2][1] = Quad.AxisZ.Y; Local.M[2][2] = Quad.AxisZ.Z;
 				Local.M[3][0] = Quad.Origin.X; Local.M[3][1] = Quad.Origin.Y; Local.M[3][2] = Quad.Origin.Z;
-				FSpriteDrawItem& Item = Items.emplace_back();
+				FSpriteDrawItem Item;
 				Item.World        = Local * World;
 				Item.Size         = FVector2(1.0f, 1.0f);
 				Item.Pivot        = FVector2(0.0f, 0.0f);
@@ -553,9 +693,19 @@ void FSpriteSceneCollector::CollectTilemaps(FScene& Scene, const FFrustum& Frust
 				Item.Color        = Color;
 				Item.SortLayer    = Layer;
 				Item.OrderInLayer = Tilemap.OrderInLayer;
-				Item.Blend        = ESpriteBlendMode::Alpha;
+				Item.Blend        = Blend;
+				Item.AlphaCutoff  = Tilemap.AlphaCutoff;
 				Item.Filter       = Tileset->Filter;
 				Item.bLit         = Tilemap.bLit;
+				if (bMain)
+				{
+					Items.push_back(Item);
+				}
+				if (bCast)
+				{
+					Item.bCastShadows = true; // 애니메이션 타일 = 항상 동적 캐스터 (프레임마다 바뀜)
+					ShadowItems.push_back(Item);
+				}
 			}
 		}
 	});

@@ -32,6 +32,7 @@
 #include "Renderer/SkyAtmosphereRenderer.h"
 #include "Renderer/SpriteRenderer.h"
 #include "Renderer/SpriteSceneCollector.h"
+#include "Renderer/SpriteShadowRenderer.h"
 #include "Renderer/VolumetricCloudRenderer.h"
 #include "Renderer/WaterRenderer.h"
 #include "Renderer/FoliageRenderer.h"
@@ -108,6 +109,8 @@ struct FSceneRenderStats
 	uint32 SpriteDrawCalls = 0; // 스프라이트 패스 드로우 (파이프라인 구간 수)
 	uint32 SpriteTileChunks = 0; // 그린 타일맵 청크 (스프라이트 패스 구간 중 청크)
 	uint32 SpriteTiles      = 0; // 청크로 그린 타일 수 (애니메이션 타일은 Sprites에 포함)
+	uint32 SpriteShadowCasters       = 0; // 2D 그림자 캐스터 (항목 + 청크 타일 — FSpriteShadowRenderer)
+	uint32 SpriteShadowStaticCasters = 0; // 그중 방향광 캐시 정적
 	uint32 ParticleEmittersCulled = 0; // 화면 밖이라 그리지 않은 이미터 (GPU 이미터는 계산도 미룸)
 	uint32 LocalLights   = 0; // 클러스터에 올린 점광원/스포트라이트 수
 	uint32 LocalShadowSlices = 0; // 이번 프레임 그린 로컬 그림자 장 수 (스포트 1, 점광원 6)
@@ -329,6 +332,7 @@ private:
 	FParticleRenderer    ParticleRenderer;
 	FSpriteRenderer      SpriteRenderer;     // 2D 스프라이트 (메시 루트 시그니처 공유)
 	FSpriteSceneCollector SpriteCollector;   // 씬 스프라이트·타일맵 컴포넌트 → 스프라이트 항목/타일 청크 (게임 스레드)
+	FSpriteShadowRenderer SpriteShadows;     // 2D 그림자 캐스터 (방향광·로컬 그림자 추가 캐스터 훅)
 	FLocalLightRenderer  LocalLightRenderer; // 점광원/스포트라이트 + 클러스터 컬링
 	FOcclusionCuller     OcclusionCuller;    // HZB 오클루전 (메인 패스 정적 메시)
 	FScreenPassRootSignature ScreenPassRoot; // 화면 공간 패스 공용 (TAA/SSAO/안개/SSR)
@@ -579,6 +583,8 @@ private:
 		double SpriteDrawCalls    = 0.0;
 		double SpriteTileChunks   = 0.0;
 		double SpriteTiles        = 0.0;
+		double SpriteShadowCasters = 0.0;
+		double SpriteShadowStatic  = 0.0;
 		std::vector<float> FrameIntervals; // 프레임마다 간격 (ms) — 백분위 출력용
 	};
 	FPerfCapture PerfCapture;

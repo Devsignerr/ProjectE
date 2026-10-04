@@ -2,7 +2,7 @@
   "Version": 1,
   "Texture": "SampleAtlas.png",
   "TextureWidth": 144,
-  "TextureHeight": 72,
+  "TextureHeight": 100,
   "UnitsPerPixel": 1.0,
   "Filter": "Point",
   "Slices": [
@@ -65,6 +65,19 @@
       "Y": 37,
       "W": 34,
       "H": 34
+    },
+    {
+      "Name": "Panel",
+      "X": 1,
+      "Y": 73,
+      "W": 26,
+      "H": 26,
+      "Border": [
+        8,
+        8,
+        8,
+        8
+      ]
     }
   ]
 }

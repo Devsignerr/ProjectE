@@ -12,17 +12,8 @@
 // 2D 규약: 평면 = 월드 X(오른쪽)·Z(위), 2D 카메라는 +Y 쪽에서 -Y를 본다(화면 오른쪽 +X, 위 +Z), 사각형 앞면 = +Y. 다만 렌더러 코어는
 // 이 규약에 묶이지 않는다 — 항목은 월드 변환 행렬로 놓인 "로컬 X/Z 평면 사각형"이므로 어떤 방향의 사각형도 그린다.
 
-// 블렌드 모드 (번호는 끝에만 추가)
-enum class ESpriteBlendMode : uint8
-{
-	Alpha,         // 직선 알파: 색 × a + 뒤 × (1 - a). 깊이 쓰기 없음
-	Premultiplied, // 프리멀티플라이드 알파 텍스처: 색 + 뒤 × (1 - a). 깊이 쓰기 없음
-	Additive,      // 가산: 색 × a + 뒤. 깊이 쓰기 없음
-	Masked,        // 알파 < AlphaCutoff면 버림, 나머지 불투명. 깊이 씀 (뒤에 그리는 반투명 메시·파티클이 가려진다)
-	Count
-};
-
-// 텍스처 필터 ESpriteFilter는 2D 데이터 계층(Scene/Sprite/SpriteAsset.h)의 enum을 같이 쓴다 — 렌더러 쪽 중복 정의 금지
+// 블렌드 모드 ESpriteBlendMode·텍스처 필터 ESpriteFilter·9-슬라이스 방식 ESpriteSliceMode는 2D 데이터 계층(Scene/Sprite/SpriteAsset.h)의
+// enum을 같이 쓴다 (컴포넌트 필드와 같은 값) — 렌더러 쪽 중복 정의 금지
 
 // 스프라이트 하나. 로컬 사각형 = 로컬 X ∈ [-Pivot.X, 1 - Pivot.X] × Size.X, 로컬 Z ∈ [-Pivot.Y, 1 - Pivot.Y] × Size.Y (Y = 0 평면),
 // 월드 = 로컬 * World (행 벡터 규약). 텍스처 v는 아래로 증가: 로컬 아래 변 = UVMax.Y, 위 변 = UVMin.Y.
@@ -40,9 +31,10 @@ struct FSpriteDrawItem
 	int32          OrderInLayer = 0;                       // 레이어 안 순번 (작은 것부터)
 	ESpriteBlendMode Blend      = ESpriteBlendMode::Alpha;
 	ESpriteFilter    Filter     = ESpriteFilter::Linear;
-	float          AlphaCutoff  = 0.5f;  // Masked 전용
+	float          AlphaCutoff  = 0.5f;  // Masked 그리기 + 그림자 깊이 clip (모든 블렌드 — SpriteShadow.hlsl)
 	bool           bLit         = false; // 방향광(그림자) + 로컬 라이트 + 하늘 환경광 (Sprite.hlsl ShadeSprite)
-	bool           bCastShadows = false; // 후속 (아직 그림자 패스에 넣지 않음)
+	bool           bCastShadows = false; // 그림자 캐스터 목록 항목 (Renderer/SpriteShadowRenderer.h — 그리기 목록에서는 쓰지 않음)
+	bool           bShadowStatic = false; // 그림자 캐스터: 방향광 그림자 캐시의 정적 캐스터 (그리는 값이 r.Shadow.Cache.StaticFrames 수집 연속 같음)
 };
 
 // 타일맵 청크 하나 (Phase 56-4b — Renderer/SpriteSceneCollector.h가 만든다). 인스턴스는 정적 GPU 버퍼에 이미 있고(타일맵 로컬 공간,
@@ -59,7 +51,11 @@ struct FSpriteChunkDraw
 	int32            SortLayer    = 0;
 	int32            OrderInLayer = 0;
 	ESpriteBlendMode Blend        = ESpriteBlendMode::Alpha;
+	float            AlphaCutoff  = 0.5f;  // 청크 머리로 넘겨 인스턴스 값을 덮는다 (Masked 그리기 + 그림자 clip)
 	bool             bLit         = false;
+	// 그림자 캐스터 목록에서만 (Renderer/SpriteShadowRenderer.h)
+	FBox             Bounds;                // 월드 경계 (장 프러스텀 컬링)
+	bool             bShadowStatic = false; // 방향광 그림자 캐시의 정적 캐스터 (타일맵 월드·색·내용이 연속 같음)
 };
 
 namespace SpriteMath
@@ -78,6 +74,50 @@ namespace SpriteMath
 	// 정렬 깊이 = 사각형 가운데의 카메라 시선 거리
 	float    ComputeSortDepth(const FQuad& Quad, const FVector3& CameraPosition, const FVector3& CameraForward);
 } // namespace SpriteMath
+
+// 9-슬라이스 (슬라이스 Border가 있고 그릴 크기가 슬라이스 원래 크기와 다를 때 — 씬 수집 FSpriteSceneCollector가 항목을 조각으로 나눈다).
+// 방식 = CPU에서 조각 항목으로 (조각마다 FSpriteDrawItem 하나 — 같은 정렬 키·연속 제출이라 같은 구간으로 묶인다).
+//   VS가 인스턴스 테두리 값으로 18정점(9칸)을 만드는 방식보다 단순하다: 인스턴스 형식(80B)·셰이더·그림자 경로·컬링·정렬이 그대로이고
+//   반복(Tile)처럼 조각 수가 크기에 따라 바뀌는 경우도 같은 코드로 된다. 9-슬라이스는 보통 UI 패널·발판 같은 소수라 항목 9배 비용은 작다.
+// 규칙: 모서리 = 원래 크기(px × UnitsPerPixel), 왼/오른 가장자리 = 세로만, 위/아래 가장자리 = 가로만, 가운데 = 두 축으로 늘인다(Stretch)
+//   또는 원래 가운데 크기로 반복(Tile — 가운데 영역 왼쪽 아래에서 시작, 마지막 칸은 잘라 맞추고 UV도 그만큼 줄임).
+//   그릴 크기가 두 테두리 합보다 작으면 그 축의 테두리를 비율로 줄인다(유니티와 같음 — UV는 그대로, 가운데는 폭 0이라 빠짐).
+//   반전은 피벗을 지나는 축 거울 (조각 위치 부호 반전 + UV 교환 — 일반 항목 반전과 같은 사각형). 크기 0 조각은 만들지 않는다.
+//   반복 칸 수가 축마다 MaxTilesPerAxis를 넘으면 그 축은 늘이기로 (조각 폭주 방지).
+namespace SpriteNineSlice
+{
+	inline constexpr int32 MaxTilesPerAxis = 128;
+
+	struct FInput
+	{
+		FVector2         Size;            // 그릴 크기 (cm, SpriteMath::ComputeSize)
+		FVector2         OriginalSize;    // 슬라이스 원래 크기 (px × UnitsPerPixel, cm)
+		FVector2         Pivot;           // 슬라이스 피벗 (반전 전, 아래 0)
+		float            BorderLeft   = 0.0f; // cm (px × UnitsPerPixel)
+		float            BorderTop    = 0.0f;
+		float            BorderRight  = 0.0f;
+		float            BorderBottom = 0.0f;
+		FVector2         UVMin;           // 슬라이스 UV 왼쪽 위 (반전 전)
+		FVector2         UVMax;           // 오른쪽 아래
+		bool             bFlipX = false;
+		bool             bFlipY = false;
+		ESpriteSliceMode Mode   = ESpriteSliceMode::Stretch;
+	};
+	// 조각: 로컬 (X, Z) 사각형 (cm, 원점 = 엔티티 원점 = 피벗) + UV (FSpriteDrawItem 규약: UVMin.X = 로컬 왼쪽, UVMin.Y = 로컬 위)
+	struct FPiece
+	{
+		FVector2 Min;
+		FVector2 Max;
+		FVector2 UVMin;
+		FVector2 UVMax;
+	};
+	// 9-슬라이스로 그려야 하는가 (테두리가 있고 크기가 원래와 다름 — 같으면 한 장으로 그린 것과 같다)
+	bool ShouldSlice(const FSpriteSlice& Slice, const FVector2& Size, const FVector2& OriginalSize);
+	// 조각 목록 (아래 줄 → 위 줄, 줄 안 왼쪽 → 오른쪽 — 반전 전 기준 순서). Out은 비우고 채운다
+	void Build(const FInput& Input, std::vector<FPiece>& Out);
+	// 조각 → 항목 (Base의 월드·색·텍스처·정렬·블렌드 등을 그대로, 크기·피벗·UV만 조각 것)
+	FSpriteDrawItem MakePieceItem(const FSpriteDrawItem& Base, const FPiece& Piece);
+} // namespace SpriteNineSlice
 
 namespace SpriteSorting
 {

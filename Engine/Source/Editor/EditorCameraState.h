@@ -13,6 +13,13 @@ struct FEditorCameraState
 	float    MoveSpeed = 500.0f; // cm/초
 	bool     bOrthographic = false;   // 편집 뷰포트 직교 투영
 	float    OrthoHeight   = 1000.0f; // cm (직교일 때 화면 세로가 담는 월드 높이)
+	// 뷰포트 2D 모드 (Phase 56-5a): 켜져 있으면 위 카메라는 2D 카메라(+Y에서 -Y, 직교)이고, 3D로 돌아갈 때 아래 3D 카메라를 되살린다
+	bool     bViewport2D        = false;
+	bool     bHasSaved3D        = false;
+	FVector3 Saved3DPosition;
+	FQuat    Saved3DRotation;
+	bool     bSaved3DOrthographic = false;
+	float    Saved3DOrthoHeight   = 1000.0f;
 
 	std::string ToJsonString() const;
 	bool        FromJsonString(const std::string& Json); // 실패 시 false (값은 바뀌지 않음)

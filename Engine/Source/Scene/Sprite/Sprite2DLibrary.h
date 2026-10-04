@@ -37,6 +37,11 @@ public:
 	bool SaveFlipbook(const std::string& AssetPath, const FFlipbookAsset& Asset, std::string* OutError = nullptr);
 	bool SaveTileset(const std::string& AssetPath, const FTilesetAsset& Asset, std::string* OutError = nullptr);
 
+	// 편집기 실시간 미리보기: 그 경로의 캐시 항목을 저장 안 한 사본으로 바꾸고 세대를 올린다 (파일은 그대로 — Invalidate(경로)하면 파일 상태로 돌아감).
+	// 2D 에셋 편집기의 "씬에 실시간 반영"(기본 끔)만 쓴다 — 닫을 때·끌 때 Invalidate
+	void SetSpritePreview(const std::string& AssetPath, std::shared_ptr<const FSpriteAsset> Asset);
+	void SetFlipbookPreview(const std::string& AssetPath, std::shared_ptr<const FFlipbookAsset> Asset);
+
 	// 확장자(소문자, "." 포함)가 이 라이브러리 형식인가
 	static bool IsSprite2DExtension(const std::wstring& LowerExtension);
 

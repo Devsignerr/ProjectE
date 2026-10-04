@@ -6,39 +6,12 @@
 // 픽셀 셰이더 = 블렌드 모드별 엔트리 (SpriteRenderer ESpriteBlendMode), 조명은 디파인 E_SPRITE_LIT 변형.
 #include "Mesh.hlsl"
 
-// ShaderTypes.h FSpriteInstanceGpu와 1:1 (80바이트)
-struct FSpriteInstance
-{
-	float3 Origin;
-	uint   TextureIndex;
-	float3 AxisX;
-	uint   Flags;
-	float3 AxisZ;
-	float  AlphaCutoff;
-	float4 UVRect;
-	float4 Color;
-};
+#include "SpriteCommon.hlsli"
 
 // 메시 인스턴스 목록(t13)과 같은 루트 SRV 자리 — 스프라이트 패스는 이 자리에 스프라이트 인스턴스 버퍼를 묶는다 (Mesh.hlsl의 Instances는 이 셰이더에서 쓰지 않음)
 StructuredBuffer<FSpriteInstance> SpriteInstances : register(t13);
-
-static const uint E_SPRITE_FLAG_POINT = 1u; // SpriteRenderer SpriteFlag_Point
-
-// 타일맵 청크 머리 (ShaderTypes.h FSpriteChunkGpu와 1:1, 64바이트). 청크 구간은 b0의 최상위 비트를 켜서 알린다 —
-// 그때 t13 = 청크 정적 버퍼(타일맵 로컬 공간 인스턴스, 0번부터), t14 = 이 머리 하나 (메시 인스턴스 번호 목록 자리 — 스프라이트 셰이더는 안 쓰는 자리)
-struct FSpriteChunk
-{
-	float3 AxisX;
-	uint   TextureIndex;
-	float3 AxisZ;
-	uint   Pad0;
-	float3 Translation;
-	uint   Pad1;
-	float4 Color;
-};
+// 청크 구간(b0 최상위 비트)의 청크 머리 하나 — 메시 인스턴스 번호 목록 자리 (스프라이트 셰이더는 안 쓰는 자리). 그때 t13 = 청크 정적 버퍼(0번부터)
 StructuredBuffer<FSpriteChunk> SpriteChunkHeader : register(t14);
-
-static const uint E_SPRITE_CHUNK_BIT = 0x80000000u; // SpriteRenderer SpriteChunkRunBit
 
 struct FSpriteVSOutput
 {
@@ -52,34 +25,23 @@ struct FSpriteVSOutput
 	nointerpolation float AlphaCutoff   : TEXCOORD3;
 };
 
-// 사각형 모서리 (u = 로컬 X, v = 로컬 위) — 두 삼각형. 양면이라 와인딩은 상관없다 (컬링 없음)
-static const float2 SpriteCorners[6] = { float2(0.0f, 0.0f), float2(0.0f, 1.0f), float2(1.0f, 1.0f),
-	                                     float2(0.0f, 0.0f), float2(1.0f, 1.0f), float2(1.0f, 0.0f) };
-
 FSpriteVSOutput SpriteVS(uint VertexId : SV_VertexID, uint InstanceId : SV_InstanceID)
 {
 	const bool      bChunk = (InstanceOffset & E_SPRITE_CHUNK_BIT) != 0;
 	FSpriteInstance Sprite = SpriteInstances[bChunk ? InstanceId : InstanceOffset + InstanceId];
 	if (bChunk)
 	{
-		// 로컬(Y = 0 평면) → 월드: 위치는 이동 포함, 축은 방향만
-		const FSpriteChunk Chunk = SpriteChunkHeader[0];
-		Sprite.Origin       = Chunk.Translation + Chunk.AxisX * Sprite.Origin.x + Chunk.AxisZ * Sprite.Origin.z;
-		Sprite.AxisX        = Chunk.AxisX * Sprite.AxisX.x + Chunk.AxisZ * Sprite.AxisX.z;
-		Sprite.AxisZ        = Chunk.AxisX * Sprite.AxisZ.x + Chunk.AxisZ * Sprite.AxisZ.z;
-		Sprite.Color       *= Chunk.Color;
-		Sprite.TextureIndex = Chunk.TextureIndex;
+		ApplySpriteChunk(Sprite, SpriteChunkHeader[0]);
 	}
 	const float2 Corner = SpriteCorners[VertexId];
-	const float3 World  = Sprite.Origin + Sprite.AxisX * Corner.x + Sprite.AxisZ * Corner.y;
+	const float3 World  = GetSpriteCornerWorld(Sprite, Corner);
 
 	FSpriteVSOutput Output;
 	Output.Position      = mul(float4(World, 1.0f), ViewProjection); // 지터 포함 (씬 컬러에 그리는 패스)
 	Output.WorldPosition = World;
 	// 앞 = 로컬 +Y (2D 카메라는 +Y에서 -Y를 본다 — 화면 오른쪽 +X, 위 +Z). 픽셀 셰이더가 카메라 쪽으로 뒤집는다 (양면)
 	Output.WorldNormal   = cross(Sprite.AxisZ, Sprite.AxisX); // (0,0,1) × (1,0,0) = (0,1,0)
-	// SpriteMath::GetCornerUV와 같은 식: 텍스처 v는 아래로 증가하므로 로컬 위(v = 1)가 UVRect.y
-	Output.UV            = lerp(Sprite.UVRect.xy, Sprite.UVRect.zw, float2(Corner.x, 1.0f - Corner.y));
+	Output.UV            = GetSpriteCornerUV(Sprite, Corner);
 	Output.Color         = Sprite.Color;
 	Output.TextureIndex  = Sprite.TextureIndex;
 	Output.Flags         = Sprite.Flags;
@@ -97,11 +59,7 @@ float4 SampleSprite(FSpriteVSOutput Input)
 	float4    Texel;
 	if ((Input.Flags & E_SPRITE_FLAG_POINT) != 0)
 	{
-		uint Width, Height;
-		Texture.GetDimensions(Width, Height);
-		const int2 Size  = int2(Width, Height);
-		const int2 Pixel = clamp(int2(floor(Input.UV * float2(Size))), int2(0, 0), Size - 1);
-		Texel = Texture.Load(int3(Pixel, 0));
+		Texel = LoadSpritePoint(Texture, Input.UV);
 	}
 	else
 	{

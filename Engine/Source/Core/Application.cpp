@@ -102,6 +102,7 @@ int FApplication::Run()
 	}
 	// 크래시 알림 대화 상자는 패키지 게임 창에서만 (개발/자동 검증은 로그와 덤프로 충분, 서버는 사람이 없다)
 	FCrashHandler::SetShowDialog(FPaths::IsPackaged() && !Desc.bHeadless && ExitAfterFrames == 0);
+	FCrashHandler::SetUnattended(ExitAfterFrames != 0);
 	// 쉼표 목록 "W,Space" / "A,LeftY=1"
 	const auto SplitList = [](const std::wstring& List) {
 		std::vector<std::string> Items;

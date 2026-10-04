@@ -61,6 +61,8 @@ public:
 
 	// 계층 컴포넌트를 SetParent 밖에서 직접 고친 코드(FSceneCloner)가 부른다 — 트랜스폼 갱신 계획을 다시 만들게 한다
 	void NotifyHierarchyChanged() { ++HierarchyRevision; }
+	// SetParent/생성/파괴마다 바뀐다 — 계층에서 파생한 캐시(렌더러 LOD 모델 묶음 등)의 무효화 기준
+	uint64 GetHierarchyRevision() const { return HierarchyRevision; }
 
 	FTransformComponent&       GetTransform(FEntity Entity) { return Registry.Get<FTransformComponent>(Entity); }
 	const FTransformComponent& GetTransform(FEntity Entity) const { return Registry.Get<FTransformComponent>(Entity); }

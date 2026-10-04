@@ -42,14 +42,16 @@ void FStaticMesh::PrepareCpuData(const FMeshData& MeshData, std::vector<uint32>&
 			{
 				break;
 			}
-			Lods.push_back({ static_cast<uint32>(AllIndices.size()), static_cast<uint32>(Lod.Indices.size()), Lod.ScreenSize });
+			Lods.push_back({ static_cast<uint32>(AllIndices.size()), static_cast<uint32>(Lod.Indices.size()), Lod.ScreenSize, Lod.Error });
 			AllIndices.insert(AllIndices.end(), Lod.Indices.begin(), Lod.Indices.end());
 		}
 	}
 	for (size_t Index = 0; Index < LodMath::MaxLods; ++Index)
 	{
 		LodScreenSizes[Index] = Index < Lods.size() ? Lods[Index].ScreenSize : 0.0f;
+		LodErrors[Index]      = Index < Lods.size() ? Lods[Index].Error : 0.0f;
 	}
+	bHasLodErrors = Lods.size() > 1 && std::all_of(Lods.begin(), Lods.end(), [](const FLodRange& Range) { return Range.Error >= 0.0f; });
 	std::vector<std::pair<uint32, uint32>> Ranges;
 	for (const FLodRange& Range : Lods)
 	{

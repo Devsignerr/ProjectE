@@ -28,9 +28,13 @@ namespace RendererCVars
 	                               { .CommandLine = { { L"--no-lod", "0" } } });
 	TAutoConsoleVariable<bool> SkinnedLod("r.LOD.Skinned", true, "스킨 메시 LOD (정적 메시와 같은 화면 크기 선택). 끄면 스킨 메시는 항상 LOD0",
 	                                      EConsoleFlags::None, { .CommandLine = { { L"--no-skinned-lod", "0" } } });
-	TAutoConsoleVariable<float> SkinnedLodScale("r.LOD.SkinnedScale", 2.0f,
-	                                            "스킨 메시 LOD 화면 크기 배율 (r.LOD 배율에 곱함, 크면 LOD0을 더 멀리까지 — 캐릭터는 가까이서 모양 변화가 잘 보여 정적보다 보수적)",
+	TAutoConsoleVariable<float> SkinnedLodScale("r.LOD.SkinnedScale", 1.0f,
+	                                            "스킨 메시 LOD 배율 (r.LOD 배율에 곱함, 크면 LOD0을 더 멀리까지 — 오차 기반이면 허용 픽셀을 이 값으로 나눔, 화면 크기 기반이면 화면 크기에 곱함)",
 	                                            EConsoleFlags::None, { .Range = std::pair(0.25f, 16.0f) });
+	TAutoConsoleVariable<float> LodErrorPixels("r.LOD.ErrorPixels", 2.0f,
+	                                           "LOD 허용 형상 오차 (화면 픽셀): 임포트가 잰 LOD별 오차를 화면에 투영해 이 값 이하인 가장 거친 LOD를 고른다 "
+	                                           "(모델 단위 — 같은 모델의 메시는 같은 LOD, r.LOD 배율·r.LOD.SkinnedScale로 나눈다). 오차가 없는 메시는 화면 크기 임계값",
+	                                           EConsoleFlags::None, { .Range = std::pair(0.05f, 64.0f) });
 	TAutoConsoleVariable<int32> ForceLod("r.ForceLOD", -1, "0 이상이면 모든 메시(스킨 포함)를 그 LOD로 (-1 = 끔, 확인용)", EConsoleFlags::None,
 	                                     { .Range = std::pair(-1.0f, 7.0f), .CommandLine = { { L"--force-lod", "" } } });
 	TAutoConsoleVariable<float> LodHysteresis("r.LODHysteresis", 0.1f, "LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔)",

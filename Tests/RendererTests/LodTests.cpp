@@ -7,6 +7,7 @@
 #include "Renderer/ModelImportSettings.h"
 #include "Renderer/PrimitiveShapes.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <tuple>
@@ -108,6 +109,74 @@ E_TEST(Lod_HysteresisKeepsPreviousInsideBand)
 	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.48f, Sizes, 4, 1.0f, 0, 0.0f), 1u);
 	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.01f, Sizes, 2, 1.0f, 0, 0.1f), 1u);
 	E_EXPECT_EQ(LodMath::SelectLodWithHysteresis(0.24f, Sizes, 4, 2.0f, 0, 0.1f), 0u); // 배율 2 → 0.48, 띠 안이라 0 유지
+}
+
+E_TEST(Lod_SurfaceDeviation)
+{
+	// 같은 삼각형 = 0, 정사각형을 두 삼각형으로 덮으면 그 위 꼭짓점은 0, 솟은 꼭짓점을 빼면 높이만큼
+	std::vector<FVertex> Vertices(5);
+	Vertices[0].Position = FVector3(0.0f, 0.0f, 0.0f);
+	Vertices[1].Position = FVector3(100.0f, 0.0f, 0.0f);
+	Vertices[2].Position = FVector3(100.0f, 100.0f, 0.0f);
+	Vertices[3].Position = FVector3(0.0f, 100.0f, 0.0f);
+	Vertices[4].Position = FVector3(50.0f, 50.0f, 7.0f); // 가운데 솟은 점
+	const std::vector<uint32> Flat = { 0, 1, 2, 0, 2, 3 };
+	const std::vector<uint32> Peak = { 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4 };
+	E_EXPECT_NEAR(MeshSimplifier::ComputeSurfaceDeviation(Vertices, Flat, Flat), 0.0f, 1.0e-4f);
+	E_EXPECT_NEAR(MeshSimplifier::ComputeSurfaceDeviation(Vertices, Peak, Flat), 7.0f, 1.0e-3f);
+	// 반대 방향: 평면 꼭짓점은 모두 봉우리 메시 위 (모서리 꼭짓점)
+	E_EXPECT_NEAR(MeshSimplifier::ComputeSurfaceDeviation(Vertices, Flat, Peak), 0.0f, 1.0e-4f);
+	// 삼각형이 없으면 원본 대각선
+	E_EXPECT_NEAR(MeshSimplifier::ComputeSurfaceDeviation(Vertices, Peak, {}), std::sqrt(100.0f * 100.0f * 2.0f + 49.0f), 1.0e-2f);
+
+	// 구 LOD: 오차가 LOD 번호에 단조 증가하고 반지름보다 훨씬 작다. 격자 탐색 = 전수 탐색
+	FMeshData Sphere = FPrimitiveShapes::MakeSphere(50.0f, 32, 16);
+	MeshSimplifier::GenerateLods(Sphere, LodMath::MaxLods);
+	float Previous = 0.0f;
+	for (const FMeshLod& Level : Sphere.Lods)
+	{
+		E_EXPECT_TRUE(Level.Error > 0.0f && Level.Error >= Previous && Level.Error < 25.0f);
+		Previous = Level.Error;
+	}
+	const std::vector<uint32>& Coarse = Sphere.Lods.back().Indices;
+	float                      Brute  = 0.0f;
+	for (const uint32 Index : Sphere.Indices)
+	{
+		float Best = 1.0e30f;
+		for (size_t Triangle = 0; Triangle < Coarse.size(); Triangle += 3)
+		{
+			const std::vector<FVertex> One   = { Sphere.Vertices[Coarse[Triangle]], Sphere.Vertices[Coarse[Triangle + 1]], Sphere.Vertices[Coarse[Triangle + 2]],
+			                                     Sphere.Vertices[Index] };
+			Best = std::min(Best, MeshSimplifier::ComputeSurfaceDeviation(One, { 3, 3, 3 }, { 0, 1, 2 }));
+		}
+		Brute = std::max(Brute, Best);
+	}
+	E_EXPECT_NEAR(MeshSimplifier::ComputeSurfaceDeviation(Sphere.Vertices, Sphere.Indices, Coarse), Brute, 1.0e-3f);
+}
+
+E_TEST(Lod_SelectByProjectedError)
+{
+	const float Errors[4] = { 0.0f, 0.5f, 2.0f, 8.0f }; // cm
+	// 화면 1440px, 시야 60°: 거리 d에서 픽셀/cm = 720 / (d × tan30°)
+	const float Tan = std::tan(30.0f * 3.14159265f / 180.0f);
+	E_EXPECT_NEAR(LodMath::ComputePerspectivePixelsPerUnit(1000.0f, Tan, 1440.0f), 720.0f / (1000.0f * Tan), 1.0e-4f);
+	E_EXPECT_TRUE(LodMath::ComputePerspectivePixelsPerUnit(0.0f, Tan, 1440.0f) > 1.0e8f); // 경계 안 → LOD0
+	E_EXPECT_NEAR(LodMath::ComputeOrthographicPixelsPerUnit(1000.0f, 1440.0f), 1.44f, 1.0e-5f);
+
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 4, 10.0f, 1.0f), 0u);   // LOD1 오차 5px
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 4, 2.0f, 1.0f), 1u);    // 1px, 4px
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 4, 0.5f, 1.0f), 2u);    // 0.25, 1, 4
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 4, 0.1f, 1.0f), 3u);
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 2, 0.1f, 1.0f), 1u);    // LOD 수 제한
+	E_EXPECT_EQ(LodMath::SelectLodByError(Errors, 4, 0.1f, 0.5f), 2u);    // 허용치가 작으면 고운 쪽
+
+	// 히스테리시스: 허용치 1px ±10% — 경계(오차 1px 근처)에서 이전 LOD 유지
+	const LodMath::FLodRangeByError Range = LodMath::SelectLodRangeByError(Errors, 4, 2.0f, 1.0f, 0.1f); // LOD1 오차 정확히 1px
+	E_EXPECT_EQ(Range.Fine, 0u);
+	E_EXPECT_EQ(Range.Coarse, 1u);
+	E_EXPECT_EQ(Range.Exact, 1u);
+	E_EXPECT_EQ(FMath::Clamp(0u, Range.Fine, Range.Coarse), 0u);
+	E_EXPECT_EQ(FMath::Clamp(3u, Range.Fine, Range.Coarse), 1u);
 }
 
 E_TEST(Lod_SimplifySphereReducesTrianglesAndKeepsWinding)
@@ -243,6 +312,8 @@ E_TEST(Lod_ImportSettingsAndSerialization)
 	E_EXPECT_EQ(Read.Meshes[0].Data.Lods.size(), static_cast<size_t>(3));
 	E_EXPECT_TRUE(Read.Meshes[0].Data.Lods[2].Indices == Model.Meshes[0].Data.Lods[2].Indices);
 	E_EXPECT_NEAR(Read.Meshes[0].Data.Lods[1].ScreenSize, Model.Meshes[0].Data.Lods[1].ScreenSize, 0.0f);
+	E_EXPECT_NEAR(Read.Meshes[0].Data.Lods[2].Error, Model.Meshes[0].Data.Lods[2].Error, 0.0f);
+	E_EXPECT_TRUE(Read.Meshes[0].Data.Lods[2].Error > 0.0f);
 
 	// 범위 밖 LOD 인덱스는 거부
 	Model.Meshes[0].Data.Lods[0].Indices[0] = static_cast<uint32>(Model.Meshes[0].Data.Vertices.size());

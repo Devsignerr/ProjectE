@@ -261,6 +261,7 @@ void FSceneRenderer::ApplyConsoleVariables()
 	SkinnedLodScale                 = RendererCVars::SkinnedLodScale.Get();
 	ForcedLod                       = RendererCVars::ForceLod.Get();
 	LodHysteresis                   = RendererCVars::LodHysteresis.Get();
+	LodErrorPixels                  = RendererCVars::LodErrorPixels.Get();
 	MinScreenSize                   = RendererCVars::MinScreenSize.Get();
 	MaxDrawDistance                 = RendererCVars::MaxDrawDistance.Get();
 	ShadowStaticFrames              = static_cast<uint32>(std::max(1, RendererCVars::ShadowCacheStaticFrames.Get()));
@@ -1309,7 +1310,7 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	FoliageRenderer.Gather(Scene, Camera, FrozenFrustum, [this](const FBox& Bounds) {
 		return ShadowRenderer.IntersectsCasterVolume(Bounds) || LocalLightRenderer.IntersectsShadowCaster(Bounds);
 	}, MeshInstances);
-	SelectLods(Camera); // 스킨 캐시가 인스턴스 LOD로 스키닝할 정점을 고르므로 그 앞에서 (GPU 데이터와 무관)
+	SelectLods(Scene, Camera, Height); // 스킨 캐시가 인스턴스 LOD로 스키닝할 정점을 고르므로 그 앞에서 (GPU 데이터와 무관)
 	// 스킨 캐시 자리 배정 (인스턴스 데이터 SkinCacheVertex — Upload 전). 스킨 인스턴스가 없으면 팔레트 주소를 그대로 묶는다
 	// RT 스킨 BLAS가 이번 프레임 쓸 수 있는 인스턴스(LOD0, RT 스킨 거리 안)는 UV/색까지 써서 RT가 복사만 하게 한다
 	FSkinCacheRtOptions SkinCacheRt;
@@ -1360,9 +1361,10 @@ void FSceneRenderer::RenderSceneColor(FRenderGraph& Graph, FScene& Scene, const 
 	const FRGResourceRef ShadowMapRef = ShadowRenderer.ImportShadowMap(Graph);
 	BeginCpuTimer(ERenderTimer::Shadow);
 	// 그림자 캐시 키는 메인 LOD를 담지 않으므로 LOD 설정이 바뀌면 캐시를 다시 그린다
-	const uint64 LodSignature = ShadowCacheMath::HashValue(
+	uint64 LodSignature = ShadowCacheMath::HashValue(
 		ShadowCacheMath::HashValue(ShadowCacheMath::HashValue(ShadowCacheMath::HashValue(ShadowCacheMath::HashSeed, bEnableLod), ForcedLod), LodScale),
 		LodHysteresis);
+	LodSignature = ShadowCacheMath::HashValue(ShadowCacheMath::HashValue(LodSignature, LodErrorPixels), SkinnedLodScale);
 	if (LodSignature != ShadowLodSignature)
 	{
 		ShadowLodSignature = LodSignature;
@@ -2458,61 +2460,180 @@ void FSceneRenderer::ReportTextureStreaming(FScene& Scene, const FCamera& Camera
 	Resources->ReportTextureStreamingView(View);
 }
 
-void FSceneRenderer::SelectLods(const FCamera& Camera)
+// LOD 선택 (메인 카메라 기준 — 그림자 패스도 같은 LOD를 써서 그림자와 본체 모양이 어긋나지 않는다. 레이 트레이싱 스킨 BLAS는 항상 LOD0)
+//   오차 기반(메시에 LOD 형상 오차가 있을 때 — 쿠킹 모델·내장 도형): 모델 단위로 고른다. 같은 LOD 묶음(가장 가까운 FModelComponent 조상,
+//     없으면 자기 자신)의 메시들은 경계(이번 프레임 월드 경계의 합)까지 거리 하나로 화면 픽셀/단위를 구하고, 메시마다 투영 오차가
+//     r.LOD.ErrorPixels / (r.LOD 배율 × 스킨이면 r.LOD.SkinnedScale) 이하인 가장 거친 LOD를 구해 그 최솟값을 묶음 LOD로 쓴다
+//     (메시 LOD 수보다 크면 그 메시의 마지막 LOD). 히스테리시스도 묶음 단위. → 부품(투구·머리 등)이 따로 바뀌어 서로 뚫거나,
+//     경계가 포즈마다 바뀌는 스킨 부품이 각도에 따라 LOD가 오가는 일이 없다
+//   화면 크기 기반(오차 없는 메시 — 잎 솎아내기 LOD 등, 씬 밖 인스턴스): 예전처럼 메시마다 화면 크기 임계값 + 엔티티별 히스테리시스
+FEntity FSceneRenderer::FindLodGroupRoot(const FScene& Scene, FEntity Entity)
+{
+	FLodGroupRootCache& Cached = LodGroupRoots[Entity.Index];
+	if (Cached.Generation == Entity.Generation)
+	{
+		return Cached.Root;
+	}
+	const FRegistry& Registry = Scene.GetRegistry();
+	FEntity          Root     = Entity;
+	for (FEntity Current = Entity; Current.IsValid(); Current = Scene.GetParent(Current))
+	{
+		if (Registry.Has<FModelComponent>(Current))
+		{
+			Root = Current;
+			break;
+		}
+	}
+	Cached = { Entity.Generation, Root };
+	return Root;
+}
+
+void FSceneRenderer::SelectLods(FScene& Scene, const FCamera& Camera, uint32 ViewportHeight)
 {
 	if (!bEnableLod)
 	{
 		return; // 모두 LOD0 (Gather 기본값)
 	}
-	// 메인 카메라 화면 크기로 고르고 그림자 패스도 같은 LOD를 쓴다 (그림자와 본체 모양이 어긋나지 않게).
-	// 스킨 메시도 같은 규칙 (경계 = 스킨 팔레트의 월드 경계). 레이 트레이싱 스킨 BLAS는 항상 LOD0
+	std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
+	const auto                  IsEligible = [this](const FMeshInstance& Instance) {
+		return !(Instance.IsSkinned() && !bSkinnedLod) && !Instance.bFixedLod && Instance.Mesh->GetLodCount() > 1;
+	};
+	if (ForcedLod >= 0)
+	{
+		for (FMeshInstance& Instance : Instances)
+		{
+			if (IsEligible(Instance))
+			{
+				Instance.Lod = std::min(static_cast<uint32>(ForcedLod), Instance.Mesh->GetLodCount() - 1);
+			}
+		}
+		return;
+	}
+
 	const bool     bOrthographic  = Camera.IsOrthographic();
 	const float    TanHalfFov     = FMath::Tan(FMath::DegreesToRadians(Camera.GetFovYDegrees()) * 0.5f);
 	const FVector3 CameraPosition = Camera.GetPosition();
-	std::vector<FMeshInstance>& Instances = MeshInstances.GetInstances();
-	auto SelectOne = [&](FMeshInstance& Instance) {
-		if ((Instance.IsSkinned() && !bSkinnedLod) || Instance.bFixedLod || Instance.Mesh->GetLodCount() <= 1)
+	const float    Height         = static_cast<float>(std::max(ViewportHeight, 1u));
+
+	// 칸 크기 먼저 (엔티티 번호 최댓값). 씬·계층이 바뀌었으면 묶음 루트 캐시를 비운다
+	uint32 MaxIndex = 0;
+	for (const FMeshInstance& Instance : Instances)
+	{
+		MaxIndex = std::max(MaxIndex, Instance.Entity.Index);
+	}
+	if (LodGroupScene != &Scene || LodGroupRevision != Scene.GetHierarchyRevision())
+	{
+		LodGroupScene    = &Scene;
+		LodGroupRevision = Scene.GetHierarchyRevision();
+		std::fill(LodGroupRoots.begin(), LodGroupRoots.end(), FLodGroupRootCache{});
+	}
+	if (!Instances.empty() && MaxIndex >= LodHistory.size())
+	{
+		LodHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+	}
+	if (!Instances.empty() && MaxIndex >= LodGroupRoots.size())
+	{
+		LodGroupRoots.resize(static_cast<size_t>(MaxIndex) + 1);
+		LodGroupHistory.resize(static_cast<size_t>(MaxIndex) + 1);
+		LodGroupSlots.resize(static_cast<size_t>(MaxIndex) + 1, -1);
+	}
+
+	// 1) 오차 기반 인스턴스를 묶음에 모은다 (Gather 부분만 — 엔티티가 씬 엔티티. 순서대로라 결정적)
+	const uint32 GatheredCount = MeshInstances.GetGatheredCount();
+	LodGroups.clear();
+	LodInstanceGroup.assign(Instances.size(), -1);
+	for (uint32 Index = 0; Index < GatheredCount; ++Index)
+	{
+		const FMeshInstance& Instance = Instances[Index];
+		if (!IsEligible(Instance) || !Instance.Mesh->HasLodErrors() || !Instance.WorldBounds.IsValid())
+		{
+			continue;
+		}
+		const FEntity Root = FindLodGroupRoot(Scene, Instance.Entity);
+		int32&        Slot = LodGroupSlots[Root.Index];
+		if (Slot < 0 || static_cast<size_t>(Slot) >= LodGroups.size() || LodGroups[Slot].Root != Root)
+		{
+			Slot = static_cast<int32>(LodGroups.size());
+			LodGroups.push_back({ Root });
+		}
+		LodGroups[Slot].Bounds.AddBox(Instance.WorldBounds);
+		LodInstanceGroup[Index] = Slot;
+	}
+
+	// 2) 묶음마다 경계까지 거리 → 화면 픽셀/단위, 멤버별 오차 LOD 범위의 최솟값
+	const float BaseBudget = LodErrorPixels / std::max(LodScale, 1.0e-3f);
+	const auto  WorldScale = [](const FMatrix4x4& World) {
+		const float X = FVector3(World.M[0][0], World.M[0][1], World.M[0][2]).Length();
+		const float Y = FVector3(World.M[1][0], World.M[1][1], World.M[1][2]).Length();
+		const float Z = FVector3(World.M[2][0], World.M[2][1], World.M[2][2]).Length();
+		return std::max({ X, Y, Z });
+	};
+	std::vector<float> GroupPixelsPerUnit(LodGroups.size());
+	for (size_t Slot = 0; Slot < LodGroups.size(); ++Slot)
+	{
+		const FBox&    Bounds  = LodGroups[Slot].Bounds;
+		const FVector3 Closest = FVector3(FMath::Clamp(CameraPosition.X, Bounds.Min.X, Bounds.Max.X), FMath::Clamp(CameraPosition.Y, Bounds.Min.Y, Bounds.Max.Y),
+		                                  FMath::Clamp(CameraPosition.Z, Bounds.Min.Z, Bounds.Max.Z));
+		GroupPixelsPerUnit[Slot] = bOrthographic ? LodMath::ComputeOrthographicPixelsPerUnit(Camera.GetOrthoHeight(), Height)
+		                                         : LodMath::ComputePerspectivePixelsPerUnit(FVector3::Distance(Closest, CameraPosition), TanHalfFov, Height);
+	}
+	for (uint32 Index = 0; Index < GatheredCount; ++Index)
+	{
+		const int32 Slot = LodInstanceGroup[Index];
+		if (Slot < 0)
+		{
+			continue;
+		}
+		const FMeshInstance& Instance = Instances[Index];
+		FLodGroup&           Group    = LodGroups[Slot];
+		// 스킨 인스턴스는 World가 단위 행렬(팔레트가 월드 공간)이라 묶음 루트(모델 루트)의 스케일을 쓴다
+		const float Scale  = Instance.IsSkinned() ? WorldScale(Scene.GetTransform(Group.Root).WorldMatrix) : WorldScale(Instance.World);
+		const float Budget = Instance.IsSkinned() ? BaseBudget / std::max(SkinnedLodScale, 1.0e-3f) : BaseBudget;
+		const LodMath::FLodRangeByError Range =
+			LodMath::SelectLodRangeByError(Instance.Mesh->GetLodErrors(), Instance.Mesh->GetLodCount(), GroupPixelsPerUnit[Slot] * Scale, Budget, LodHysteresis);
+		Group.Fine   = std::min(Group.Fine, Range.Fine);
+		Group.Coarse = std::min(Group.Coarse, Range.Coarse);
+		Group.Exact  = std::min(Group.Exact, Range.Exact);
+	}
+	for (FLodGroup& Group : LodGroups)
+	{
+		FLodHistory& History = LodGroupHistory[Group.Root.Index];
+		Group.Lod            = History.Generation == Group.Root.Generation && History.Lod != ~0u ? FMath::Clamp(History.Lod, Group.Fine, Group.Coarse) : Group.Exact;
+		History              = { Group.Root.Generation, Group.Lod };
+		LodGroupSlots[Group.Root.Index] = -1; // 다음 프레임을 위해 비운다
+	}
+
+	// 3) 인스턴스에 적용. 오차 없는 메시는 화면 크기 선택 (Gather 부분은 엔티티마다 하나라 병렬 — 자기 칸만, AddExternal 부분은 순서대로)
+	auto SelectOne = [&](uint32 Index) {
+		FMeshInstance& Instance = Instances[Index];
+		if (!IsEligible(Instance))
 		{
 			return;
 		}
-		if (ForcedLod >= 0)
+		if (const int32 Slot = LodInstanceGroup[Index]; Slot >= 0)
 		{
-			Instance.Lod = std::min(static_cast<uint32>(ForcedLod), Instance.Mesh->GetLodCount() - 1);
+			Instance.Lod = std::min(LodGroups[Slot].Lod, Instance.Mesh->GetLodCount() - 1);
 			return;
 		}
 		const float Radius = Instance.WorldBounds.GetExtent().Length();
 		const float ScreenSize =
 			bOrthographic ? LodMath::ComputeOrthographicScreenSize(Radius, Camera.GetOrthoHeight())
 			              : LodMath::ComputePerspectiveScreenSize(Radius, FVector3::Distance(Instance.WorldBounds.GetCenter(), CameraPosition), TanHalfFov);
-		// 히스테리시스: 엔티티별 이전 LOD (처음이거나 엔티티가 바뀌었으면 없음). 칸은 호출 전에 크기를 맞춘다
 		FLodHistory& History  = LodHistory[Instance.Entity.Index];
 		const uint32 Previous = History.Generation == Instance.Entity.Generation ? History.Lod : ~0u;
 		Instance.Lod = LodMath::SelectLodWithHysteresis(ScreenSize, Instance.Mesh->GetLodScreenSizes(), Instance.Mesh->GetLodCount(),
-		                                                Instance.IsSkinned() ? LodScale * SkinnedLodScale : LodScale, Previous,
-		                                                LodHysteresis);
+		                                                Instance.IsSkinned() ? LodScale * SkinnedLodScale : LodScale, Previous, LodHysteresis);
 		History = { Instance.Entity.Generation, Instance.Lod };
 	};
-	// 칸 크기 먼저 (엔티티 번호 최댓값)
-	uint32 MaxIndex = 0;
-	for (const FMeshInstance& Instance : Instances)
-	{
-		MaxIndex = std::max(MaxIndex, Instance.Entity.Index);
-	}
-	if (!Instances.empty() && MaxIndex >= LodHistory.size())
-	{
-		LodHistory.resize(static_cast<size_t>(MaxIndex) + 1);
-	}
-	// Gather 부분은 엔티티마다 하나라 병렬 (자기 칸만 쓴다), AddExternal 부분은 엔티티가 겹칠 수 있어 순서대로
-	const uint32 GatheredCount = MeshInstances.GetGatheredCount();
 	FParallel::ParallelFor(GatheredCount, 256, [&](uint32 Begin, uint32 End) {
 		for (uint32 Index = Begin; Index < End; ++Index)
 		{
-			SelectOne(Instances[Index]);
+			SelectOne(Index);
 		}
 	});
 	for (size_t Index = GatheredCount; Index < Instances.size(); ++Index)
 	{
-		SelectOne(Instances[Index]);
+		SelectOne(static_cast<uint32>(Index));
 	}
 }
 

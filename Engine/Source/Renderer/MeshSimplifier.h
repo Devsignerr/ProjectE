@@ -19,8 +19,13 @@ namespace MeshSimplifier
 
 	// LOD1..(LodCount-1)을 만들어 Mesh.Lods를 채운다 (LodMath 기본 비율·화면 크기, 앞 LOD에서 이어서 단순화).
 	// 원본이 MinTriangles 미만이거나 직전 LOD보다 충분히 줄지 않으면(85% 초과) 거기서 멈춘다. LodCount ≤ 1이면 Lods를 비운다
+	// 각 LOD의 Error(형상 오차, ComputeSurfaceDeviation)도 채운다 — 씬 렌더러는 화면에 투영한 오차로 LOD를 고른다 (LodMath::SelectLodByError)
 	constexpr uint32 MinTriangles = 64;
 	void GenerateLods(FMeshData& Mesh, uint32 LodCount);
+
+	// 형상 오차: SourceIndices가 쓰는 정점마다 SimplifiedIndices 삼각형 표면까지의 최소 거리, 그중 최댓값 (단방향 하우스도르프, 위치 단위).
+	// 균일 격자로 가까운 삼각형만 찾는다 (정확한 최소 거리, 결정적). 단순화 삼각형이 없으면 원본 경계 상자 대각선
+	float ComputeSurfaceDeviation(const std::vector<FVertex>& Vertices, const std::vector<uint32>& SourceIndices, const std::vector<uint32>& SimplifiedIndices);
 
 	// LOD0을 TargetTriangles 이하로 단순화하고 쓰지 않게 된 정점을 버린다 (임포트 설정 MaxTriangles — 스캔 에셋용). 이미 작으면 그대로
 	void SimplifyBase(FMeshData& Mesh, uint32 TargetTriangles);

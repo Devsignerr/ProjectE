@@ -20,7 +20,8 @@ struct FVertex
 struct FMeshLod
 {
 	std::vector<uint32> Indices;
-	float               ScreenSize = 0.0f; // 화면 크기가 이보다 작으면 이 LOD (LodMath)
+	float               ScreenSize = 0.0f; // 화면 크기가 이보다 작으면 이 LOD (LodMath) — Error가 없을 때만 쓴다
+	float               Error      = -1.0f; // 형상 오차 (메시 로컬 단위 = cm): LOD0 정점에서 이 LOD 표면까지 최대 거리. 음수 = 모름 (화면 크기로 고름)
 };
 
 // CPU 측 메시 데이터. 인덱스는 삼각형 리스트, 앞면은 시계 방향(CW).

@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <queue>
 #include <unordered_map>
 
@@ -546,8 +547,188 @@ namespace MeshSimplifier
 			FMeshLod& Level  = Mesh.Lods.emplace_back();
 			Level.Indices    = Simplifier.GetIndices();
 			Level.ScreenSize = LodMath::DefaultScreenSizes[Lod];
+			// 더 낮은 LOD의 오차가 앞 LOD보다 작게 나와도 앞 값 이상으로 (선택이 LOD 번호에 단조롭도록)
+			Level.Error      = std::max(ComputeSurfaceDeviation(Mesh.Vertices, Mesh.Indices, Level.Indices), Lod > 1 ? Mesh.Lods[Lod - 2].Error : 0.0f);
 			PrevTriangles    = Triangles;
 		}
+	}
+
+	float ComputeSurfaceDeviation(const std::vector<FVertex>& Vertices, const std::vector<uint32>& SourceIndices, const std::vector<uint32>& SimplifiedIndices)
+	{
+		FBox SourceBounds;
+		for (uint32 Index : SourceIndices)
+		{
+			SourceBounds.AddPoint(Vertices[Index].Position);
+		}
+		const uint32 TriangleCount = static_cast<uint32>(SimplifiedIndices.size() / 3);
+		if (!SourceBounds.IsValid())
+		{
+			return 0.0f;
+		}
+		if (TriangleCount == 0)
+		{
+			return (SourceBounds.Max - SourceBounds.Min).Length();
+		}
+
+		// 격자: 단순화 삼각형 경계 상자를 덮는 칸 (긴 축 최대 64칸, 삼각형 수의 세제곱근 비례)
+		FBox Bounds;
+		for (uint32 Index : SimplifiedIndices)
+		{
+			Bounds.AddPoint(Vertices[Index].Position);
+		}
+		const FVector3 Size     = Bounds.Max - Bounds.Min;
+		const float    Longest  = std::max({ Size.X, Size.Y, Size.Z, 1.0e-4f });
+		const float    PerAxis  = std::clamp(2.0f * std::cbrt(static_cast<float>(TriangleCount)), 1.0f, 64.0f);
+		const float    CellSize = Longest / PerAxis;
+		const int32    CellsX   = std::max(1, static_cast<int32>(std::ceil(Size.X / CellSize)));
+		const int32    CellsY   = std::max(1, static_cast<int32>(std::ceil(Size.Y / CellSize)));
+		const int32    CellsZ   = std::max(1, static_cast<int32>(std::ceil(Size.Z / CellSize)));
+		const auto     CellCoord = [CellSize](float Value, float Min, int32 Count) {
+			return std::clamp(static_cast<int32>((Value - Min) / CellSize), 0, Count - 1);
+		};
+		const auto CellIndex = [CellsX, CellsY](int32 X, int32 Y, int32 Z) { return (static_cast<size_t>(Z) * CellsY + Y) * CellsX + X; };
+
+		// 칸 → 삼각형 (CSR: 개수 세기 → 시작 위치 → 채우기)
+		const size_t        CellCount = static_cast<size_t>(CellsX) * CellsY * CellsZ;
+		std::vector<uint32> CellStart(CellCount + 1, 0);
+		const auto          ForEachCell = [&](uint32 Triangle, auto&& Func) {
+			FBox TriangleBounds;
+			for (uint32 Corner = 0; Corner < 3; ++Corner)
+			{
+				TriangleBounds.AddPoint(Vertices[SimplifiedIndices[Triangle * 3 + Corner]].Position);
+			}
+			const int32 X0 = CellCoord(TriangleBounds.Min.X, Bounds.Min.X, CellsX);
+			const int32 X1 = CellCoord(TriangleBounds.Max.X, Bounds.Min.X, CellsX);
+			const int32 Y0 = CellCoord(TriangleBounds.Min.Y, Bounds.Min.Y, CellsY);
+			const int32 Y1 = CellCoord(TriangleBounds.Max.Y, Bounds.Min.Y, CellsY);
+			const int32 Z0 = CellCoord(TriangleBounds.Min.Z, Bounds.Min.Z, CellsZ);
+			const int32 Z1 = CellCoord(TriangleBounds.Max.Z, Bounds.Min.Z, CellsZ);
+			for (int32 Z = Z0; Z <= Z1; ++Z)
+			{
+				for (int32 Y = Y0; Y <= Y1; ++Y)
+				{
+					for (int32 X = X0; X <= X1; ++X)
+					{
+						Func(CellIndex(X, Y, Z));
+					}
+				}
+			}
+		};
+		for (uint32 Triangle = 0; Triangle < TriangleCount; ++Triangle)
+		{
+			ForEachCell(Triangle, [&](size_t Cell) { ++CellStart[Cell + 1]; });
+		}
+		for (size_t Cell = 0; Cell < CellCount; ++Cell)
+		{
+			CellStart[Cell + 1] += CellStart[Cell];
+		}
+		std::vector<uint32> CellTriangles(CellStart[CellCount]);
+		std::vector<uint32> Fill(CellStart.begin(), CellStart.end() - 1);
+		for (uint32 Triangle = 0; Triangle < TriangleCount; ++Triangle)
+		{
+			ForEachCell(Triangle, [&](size_t Cell) { CellTriangles[Fill[Cell]++] = Triangle; });
+		}
+
+		// 점-삼각형 최소 제곱 거리 (Ericson, Real-Time Collision Detection 5.1.5)
+		const auto DistanceSquaredToTriangle = [&](const FVector3& P, uint32 Triangle) {
+			const FVector3& A  = Vertices[SimplifiedIndices[Triangle * 3 + 0]].Position;
+			const FVector3& B  = Vertices[SimplifiedIndices[Triangle * 3 + 1]].Position;
+			const FVector3& C  = Vertices[SimplifiedIndices[Triangle * 3 + 2]].Position;
+			const FVector3  AB = B - A;
+			const FVector3  AC = C - A;
+			const FVector3  AP = P - A;
+			const float     D1 = FVector3::Dot(AB, AP);
+			const float     D2 = FVector3::Dot(AC, AP);
+			if (D1 <= 0.0f && D2 <= 0.0f)
+			{
+				return AP.LengthSquared();
+			}
+			const FVector3 BP = P - B;
+			const float    D3 = FVector3::Dot(AB, BP);
+			const float    D4 = FVector3::Dot(AC, BP);
+			if (D3 >= 0.0f && D4 <= D3)
+			{
+				return BP.LengthSquared();
+			}
+			const float VC = D1 * D4 - D3 * D2;
+			if (VC <= 0.0f && D1 >= 0.0f && D3 <= 0.0f)
+			{
+				return (AP - AB * (D1 / (D1 - D3))).LengthSquared();
+			}
+			const FVector3 CP = P - C;
+			const float    D5 = FVector3::Dot(AB, CP);
+			const float    D6 = FVector3::Dot(AC, CP);
+			if (D6 >= 0.0f && D5 <= D6)
+			{
+				return CP.LengthSquared();
+			}
+			const float VB = D5 * D2 - D1 * D6;
+			if (VB <= 0.0f && D2 >= 0.0f && D6 <= 0.0f)
+			{
+				return (AP - AC * (D2 / (D2 - D6))).LengthSquared();
+			}
+			const float VA = D3 * D6 - D5 * D4;
+			if (VA <= 0.0f && (D4 - D3) >= 0.0f && (D5 - D6) >= 0.0f)
+			{
+				return (BP - (C - B) * ((D4 - D3) / ((D4 - D3) + (D5 - D6)))).LengthSquared();
+			}
+			const float Denom = 1.0f / (VA + VB + VC);
+			return (AP - AB * (VB * Denom) - AC * (VC * Denom)).LengthSquared();
+		};
+
+		// 정점마다 칸 고리를 넓혀 가며 찾는다: 고리 R까지 본 최소 거리가 R × 칸 크기 이하면 더 바깥 고리에 더 가까운 삼각형은 없다
+		std::vector<uint8>  Visited(Vertices.size(), 0);
+		std::vector<uint32> Stamp(TriangleCount, 0);
+		uint32              Query       = 0;
+		float               MaxDistance = 0.0f;
+		const int32         MaxRing     = std::max({ CellsX, CellsY, CellsZ });
+		for (uint32 Index : SourceIndices)
+		{
+			if (Visited[Index] != 0)
+			{
+				continue;
+			}
+			Visited[Index]     = 1;
+			const FVector3& P  = Vertices[Index].Position;
+			const int32     CX = CellCoord(P.X, Bounds.Min.X, CellsX);
+			const int32     CY = CellCoord(P.Y, Bounds.Min.Y, CellsY);
+			const int32     CZ = CellCoord(P.Z, Bounds.Min.Z, CellsZ);
+			++Query;
+			float Best = std::numeric_limits<float>::max();
+			for (int32 Ring = 0; Ring <= MaxRing; ++Ring)
+			{
+				for (int32 Z = std::max(CZ - Ring, 0); Z <= std::min(CZ + Ring, CellsZ - 1); ++Z)
+				{
+					for (int32 Y = std::max(CY - Ring, 0); Y <= std::min(CY + Ring, CellsY - 1); ++Y)
+					{
+						for (int32 X = std::max(CX - Ring, 0); X <= std::min(CX + Ring, CellsX - 1); ++X)
+						{
+							if (std::max({ std::abs(X - CX), std::abs(Y - CY), std::abs(Z - CZ) }) != Ring)
+							{
+								continue; // 고리 껍질만
+							}
+							const size_t Cell = CellIndex(X, Y, Z);
+							for (uint32 Slot = CellStart[Cell]; Slot < CellStart[Cell + 1]; ++Slot)
+							{
+								const uint32 Triangle = CellTriangles[Slot];
+								if (Stamp[Triangle] != Query)
+								{
+									Stamp[Triangle] = Query;
+									Best            = std::min(Best, DistanceSquaredToTriangle(P, Triangle));
+								}
+							}
+						}
+					}
+				}
+				const float Reach = static_cast<float>(Ring) * CellSize;
+				if (Best <= Reach * Reach)
+				{
+					break;
+				}
+			}
+			MaxDistance = std::max(MaxDistance, std::sqrt(Best));
+		}
+		return MaxDistance;
 	}
 
 	void CompactVertices(FMeshData& Mesh)

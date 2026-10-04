@@ -203,9 +203,10 @@ public:
 	bool                 bEnableLod      = true;  // 메시 LOD (화면 크기 전환). 끄면 항상 LOD0 (--no-lod)
 	float                LodScale        = 1.0f;  // 화면 크기 배율: 크면 고품질 LOD를 더 멀리까지
 	bool                 bSkinnedLod     = true;  // 스킨 메시 LOD (r.LOD.Skinned, --no-skinned-lod)
-	float                SkinnedLodScale = 2.0f;  // 스킨 메시 LOD 화면 크기 배율 (LodScale에 곱함, r.LOD.SkinnedScale)
+	float                SkinnedLodScale = 1.0f;  // 스킨 메시 LOD 배율 (LodScale에 곱함, r.LOD.SkinnedScale)
 	int32                ForcedLod       = -1;    // 0 이상이면 모든 메시(스킨 포함)를 그 LOD로 (확인용, --force-lod N)
 	float                LodHysteresis   = 0.1f;  // LOD 전환 여유 (임계값 ±비율 띠 안에서는 이전 LOD 유지, 0 = 끔, --lod-hysteresis X)
+	float                LodErrorPixels  = 2.0f;  // 오차 기반 LOD 허용 화면 픽셀 (r.LOD.ErrorPixels)
 	float                MinScreenSize   = 0.0f;  // r.MinScreenSize (메인·사전 패스 화면 크기 컬링)
 	float                MaxDrawDistance = 0.0f;  // r.MaxDrawDistance (cm)
 	uint32               ShadowStaticFrames = 30; // r.Shadow.Cache.StaticFrames
@@ -403,7 +404,9 @@ private:
 	bool                         bDynamicResolutionActive = false;
 	bool                         bFrameUpscaled           = false; // 이번 프레임 TAAU (오버레이 깊이 = TemporalAA.GetOverlayDepth)
 	// 인스턴스마다 메인 카메라 화면 크기로 LOD 선택 (그림자 패스도 같은 값)
-	void SelectLods(const FCamera& Camera);
+	// 모델 단위 오차 기반 LOD (규칙은 SceneRenderer.cpp SelectLods 머리 주석). ViewportHeight = 씬 렌더 세로 픽셀
+	void SelectLods(FScene& Scene, const FCamera& Camera, uint32 ViewportHeight);
+	FEntity FindLodGroupRoot(const FScene& Scene, FEntity Entity);
 	// 텍스처 밉 스트리밍 (Phase 53): 이 뷰의 메시 인스턴스 + 지형·데칼 머티리얼을 리소스 관리자에 보고 (수집·LOD 선택 뒤, 그래프 실행 전)
 	void ReportTextureStreaming(FScene& Scene, const FCamera& Camera, uint32 Height, float MipBias);
 	// 메인 묶음: 인스턴스 목록 프러스텀 컬링 → 묶음·정렬 (+ 오클루전 1단계 준비). 사전 패스와 메인 패스가 같은 묶음을 그린다
@@ -478,7 +481,29 @@ private:
 		uint32 Generation = 0;
 		uint32 Lod        = ~0u;
 	};
-	std::vector<FLodHistory> LodHistory;
+	std::vector<FLodHistory> LodHistory;      // 오차 없는 메시(화면 크기 선택): 엔티티별
+	std::vector<FLodHistory> LodGroupHistory; // 오차 기반: 모델 루트 엔티티별 (그룹 LOD)
+	// 엔티티 → LOD 묶음 루트 (가장 가까운 FModelComponent 조상, 없으면 자신). 씬·계층 리비전이 바뀌면 비운다
+	struct FLodGroupRootCache
+	{
+		uint32  Generation = ~0u;
+		FEntity Root;
+	};
+	std::vector<FLodGroupRootCache> LodGroupRoots;
+	const FScene*                   LodGroupScene    = nullptr;
+	uint64                          LodGroupRevision = 0;
+	struct FLodGroup
+	{
+		FEntity Root;
+		FBox    Bounds;
+		uint32  Fine   = ~0u;
+		uint32  Coarse = ~0u;
+		uint32  Exact  = ~0u;
+		uint32  Lod    = 0;
+	};
+	std::vector<FLodGroup> LodGroups;        // 프레임 임시
+	std::vector<int32>     LodGroupSlots;    // 프레임 임시: 루트 엔티티 번호 → LodGroups 칸 (-1 = 없음)
+	std::vector<int32>     LodInstanceGroup; // 프레임 임시: 인스턴스 → LodGroups 칸 (-1 = 화면 크기 선택)
 	FMeshPassBatches  MainBatches;
 	FMeshPassBatches  TranslucentBatches; // 반투명/가산 (먼 것부터, PrepareMainBatches가 함께 만든다)
 	// 메인 컬링 병렬 조각 (PrepareMainBatches — 조각 순서로 이어 붙인다)

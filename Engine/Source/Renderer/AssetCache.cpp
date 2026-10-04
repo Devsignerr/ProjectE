@@ -410,6 +410,7 @@ void FAssetCache::WriteModel(FBinaryWriter& Writer, const FModelData& Model, std
 		{
 			Writer.WriteArray(Lod.Indices);
 			Writer.Write(Lod.ScreenSize);
+			Writer.Write(Lod.Error);
 		}
 	}
 
@@ -531,6 +532,7 @@ bool FAssetCache::ReadModel(FBinaryReader& Reader, FModelData& OutModel)
 		{
 			Lod.Indices    = Reader.ReadArray<uint32>();
 			Lod.ScreenSize = Reader.Read<float>();
+			Lod.Error      = Reader.Read<float>();
 		}
 	}
 

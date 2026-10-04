@@ -22,6 +22,7 @@ public:
 		uint32 IndexOffset = 0;
 		uint32 IndexCount  = 0;
 		float  ScreenSize  = 1.0f; // 화면 크기가 이보다 작으면 이 LOD (LOD0 = 1)
+		float  Error       = 0.0f; // 형상 오차 (로컬 단위, LOD0 = 0, 음수 = 모름 — FMeshLod::Error)
 	};
 
 	bool Init(FD3D12Device& Device, FD3D12CommandQueue& Queue, const FMeshData& MeshData, const wchar_t* DebugName);
@@ -54,6 +55,9 @@ public:
 	const FLodRange& GetLod(uint32 Lod) const { return Lods[Lod < Lods.size() ? Lod : Lods.size() - 1]; }
 	// LodMath::SelectLod용 화면 크기 임계값 (LOD0부터, GetLodCount개)
 	const float* GetLodScreenSizes() const { return LodScreenSizes; }
+	// LodMath::SelectLodByError용 형상 오차 (LOD0부터, GetLodCount개, 로컬 단위). 모든 LOD에 오차가 있을 때만 HasLodErrors
+	const float* GetLodErrors() const { return LodErrors; }
+	bool         HasLodErrors() const { return bHasLodErrors; }
 	float        GetBoundingRadius() const { return BoundingRadius; } // 로컬 경계 상자 반 대각선
 	float        GetUvDensity() const { return UvDensity; } // UV 단위/cm (로컬, 텍스처 밉 스트리밍). 0 = UV 없음/퇴화
 	uint32      GetVertexCount() const { return VertexCount; }
@@ -86,6 +90,8 @@ private:
 	std::vector<FLodRange> Lods;
 	std::vector<std::vector<uint32>> LodVertexLists; // Lods와 같은 개수 (GetLodVertexList)
 	float                  LodScreenSizes[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
+	float                  LodErrors[4]      = { 0.0f, 0.0f, 0.0f, 0.0f };
+	bool                   bHasLodErrors     = false;
 	float                  BoundingRadius = 0.0f;
 	float                  UvDensity      = 0.0f;
 	uint32                VertexCount = 0;

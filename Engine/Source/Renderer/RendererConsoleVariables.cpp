@@ -103,12 +103,13 @@ namespace RendererCVars
 	                                              { .Range = std::pair(0.0f, 3600.0f) });
 
 	TAutoConsoleVariable<bool> RenderGraphCull("r.RenderGraph.Cull", true, "렌더 그래프: 결과를 아무도 읽지 않는 패스 제거 (끄면 모두 실행 — 비교용)");
-	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),
-	// GPU 입자 15만 개 장면에서만 GPU 프레임 -1% 안팎 — 계산 작업이 작아 겹쳐도 이득이 제출 비용보다 작다
-	TAutoConsoleVariable<bool> RenderThread("r.RenderThread", false,
+	// 기본 켬 (2026-10-04 사용자 요청): Tests/Stress 1000유닛 6.9 → 5.8ms, 2000유닛은 경합으로 12.7 → 13.2ms (수집을 옮기는 2단계 전)
+	TAutoConsoleVariable<bool> RenderThread("r.RenderThread", true,
 	                                        "렌더 스레드: 게임 스레드가 다음 프레임을 갱신하는 동안 이번 프레임의 렌더 그래프 실행(명령 기록)·제출·Present를 "
 	                                        "다른 스레드에서 (씬 수집·패스 등록은 게임 스레드 — Renderer/RenderThread.h). 런타임만 (에디터는 단일 스레드)",
 	                                        EConsoleFlags::None, { .CommandLine = { { L"--render-thread", "1" }, { L"--no-render-thread", "0" } } });
+	// 기본 끔 (Phase 47 측정, RTX 3060 Laptop): 데모 씬에서는 프레임당 큐 제출이 늘어 CPU +0.3~0.5ms, Demo_Showcase GPU 프레임 +0.15ms(손해),
+	// GPU 입자 15만 개 장면에서만 GPU 프레임 -1% 안팎 — 계산 작업이 작아 겹쳐도 이득이 제출 비용보다 작다
 	TAutoConsoleVariable<bool> RenderGraphAsyncCompute("r.RenderGraph.AsyncCompute", false,
 	                                                   "렌더 그래프: 계산 큐 후보 패스(볼류메트릭 안개, GPU 파티클)를 비동기 계산 큐에서 그래픽스와 겹쳐 실행 "
 	                                                   "(끄면 그래픽스 큐에서 순서대로). 기본 끔 — 측정에서 이득이 제출 비용보다 작았다",

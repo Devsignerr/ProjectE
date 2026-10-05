@@ -170,7 +170,7 @@ function HD2DBoss:OnUpdate(Dt)
 
 	if self.Flash > 0 then
 		self.Flash = self.Flash - Dt
-		self.Sprite.Color = self.Flash > 0 and Vector4(2.4, 2.4, 2.4, 1) or self:BaseColor()
+		self.Sprite.Color = self.Flash > 0 and Vector4(2.4, 2.4, 2.4, 1) or self:BaseColor() -- TODO(엔진 API): SpriteComponent.FlashColor
 	elseif self.State ~= "ChargeWindup" then
 		self.Sprite.Color = self:BaseColor()
 	end

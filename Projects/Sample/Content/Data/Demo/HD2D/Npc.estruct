@@ -19,19 +19,32 @@
       "Name": "Role",
       "Type": "Enum",
       "Default": "Talk",
-      "Description": "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사)",
+      "Description": "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사) / 서브 퀘스트 의뢰인(SubQuest)",
       "Values": [
         "Talk",
         "Shop",
-        "Elder"
+        "Elder",
+        "Quest"
       ]
     },
     {
       "Name": "Lines",
       "Type": "Array",
       "Default": [],
-      "Description": "대사 (촌장은 Quests.etable 단계 대사)",
+      "Description": "대사 (촌장은 Quests.etable 단계 대사, 의뢰인은 SubQuests.etable 대사)",
       "Element": "String"
+    },
+    {
+      "Name": "Portrait",
+      "Type": "String",
+      "Default": "",
+      "Description": "대화 창 초상화 (UI 텍스처)"
+    },
+    {
+      "Name": "SubQuest",
+      "Type": "String",
+      "Default": "",
+      "Description": "의뢰하는 서브 퀘스트 (SubQuests.etable 행)"
     }
   ]
 }

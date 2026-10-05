@@ -1,7 +1,9 @@
--- HD-2D 데모 게임 관리 (Scenes/Demo/HD2D.escene의 "HD2DGame" 엔티티 — Tools/DemoMap/HD2DGameplay.py가 배치·속성을 쓴다).
---   맡는 것: 적 자리(소환·부활)·보스, 보물상자·마을 사람(프리팹으로 만들고 상호작용), 일행 상태(골드·소지품·장비 무기·퀘스트 단계),
---            메뉴(대화·인벤토리·상점 — 열려 있는 동안 Game.SetTimeScale(0), 메뉴 글자·커서는 실제 시간), 효과 조각·투사체·줍는 것·독 웅덩이
+-- HD-2D 데모 게임 관리 (Scenes/Demo/HD2D.escene의 "HD2DGame" 엔티티 — Tools/DemoMap/HD2DGameplay.py가 배치·속성을 쓴다. 다른 맵도 같은 스크립트).
+--   맡는 것: 적 자리(소환·부활)·보스, 보물상자·마을 사람·소품(프리팹으로 만들고 상호작용), 효과 조각·투사체·줍는 것·독 웅덩이
 --            (스크립트 없는 FxSprite 프리팹 조각 — 만든 직후 콜백에서 모양을 정하고 여기서 움직이고 지운다), 화면 흔들림, 자동 검증 결과 판정.
+--   확장 모듈(메서드를 이 클래스에 붙인다): HD2DParty.lua = 일행·장비·퀘스트·서브 퀘스트·저장/불러오기·맵 이동 세션,
+--            HD2DMenu.lua = 타이틀·대화·인벤토리(탭)·상점 메뉴.
+--   시작 순서: 맵 이동으로 왔으면 세션을 불러와 Spawn_<이름>에 플레이어를 둔다 → 아니면 Title 속성이 켜진 맵은 타이틀 화면 → 처음부터(시작 연출)/이어하기.
 --   다른 스크립트는 Scene.Find("HD2DGame"):GetScript()로 쓴다 (플레이어 = HD2DPlayer.lua, 적 = HD2DEnemy.lua, 보스 = HD2DBoss.lua, UI = HD2DHud.lua).
 --   좌표: 카메라가 +Y 쪽에서 -Y를 내려다본다 → 화면 오른쪽 = +X, 화면 위(안쪽) = -Y. 스프라이트는 XZ 평면(앞면 +Y)에 서 있다.
 --   수치·대사: HD2DData.lua (Data/Demo/HD2D/*). 난수는 결정적(LCG) — 자동 검증 화면이 실행마다 같도록 math.random을 쓰지 않는다.
@@ -9,15 +11,21 @@ local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
 local HD2DGame = {
 	Properties = {
+		Map      = "Village", -- 맵 id (저장·연 상자 키)
 		Enemies  = "",  -- "종류,x,y,z;..." (z = 캡슐 중심)
 		Npcs     = "",  -- "id,x,y,z;..."
 		Chests   = "",  -- "x,y,z,아이템*개수+...;..." (Gold*n = 골드)
+		Props    = "",  -- "id,x,y,z;..." (SavePoint / Cat)
 		Boss     = "",  -- "x,y,z"
-		Path     = "",  -- "x,y;..." 마을 → 들판 길 (자동 조종이 따라 걷는다)
-		AutoPlay = "",  -- "" | Full | Inventory | Shop | Dialog | Combat | Boss (HD2DAutoPilot.lua)
+		Path     = "",  -- "x,y;..." 마을 → 들판 길 (내비메시가 없을 때 자동 조종이 따라 걷는다)
+		AutoPlay = "",  -- "" | Full | TitleShot | Inventory | Equip | Shop | Dialog | Combat | Boost | Boss (HD2DAutoPilot.lua)
+		Title    = false, -- 시작할 때 타이틀 화면 (맵 이동으로 온 경우는 건너뜀)
 		RespawnMinDistance = 900.0,
 	},
 }
+for _, Module in ipairs({ "Scripts/Demo/HD2D/HD2DParty.lua", "Scripts/Demo/HD2D/HD2DMenu.lua" }) do
+	for Name, Fn in pairs(Script.Require(Module)) do HD2DGame[Name] = Fn end
+end
 
 local Prefabs = "Prefabs/Demo/HD2D/"
 local FxSprite = "Sprites/HD2D/Fx.esprite"
@@ -54,18 +62,14 @@ function HD2DGame:OnStart()
 	self.SlotOf = {}       -- 적 엔티티 Id → 자리 번호
 	self.Chests = {}
 	self.Npcs = {}
+	self.Props_ = {}
 	self.Report = { Kills = {}, WeaponHits = {}, Chests = 0, Bought = {}, Used = {}, InventoryOpened = 0, Dialogs = 0, LevelUps = 0,
-	                Pickups = 0, Projectiles = 0, PoisonTicks = 0, Equips = 0, BossPatterns = {} }
-
-	-- 일행 상태
-	local B = D.Balance()
-	self.Gold = B.StartGold
-	self.Items = {}        -- 아이템 id → 개수
-	self:AddItem(B.StartWeapon, 1, false)
-	for _, Id in ipairs(B.StartItems) do self:AddItem(Id, 1, false) end
-	self.Equipped = B.StartWeapon
-	self.QuestStage, self.QuestKills = 0, 0
-	self.Menu = nil        -- nil | "Dialog" | "Inventory" | "Shop"
+	                Pickups = 0, Projectiles = 0, PoisonTicks = 0, Equips = 0, GearEquips = 0, BossPatterns = {}, Boosts = 0, BoostMax = 0,
+	                SubDone = 0, Saves = 0 }
+	self.Menu = nil        -- nil | "Title" | "Dialog" | "Inventory" | "Shop" | "Travel"
+	self.Mode = "Play"     -- Title | Intro | Play | Travel
+	self:InitParty()
+	local bSession = self:TryResumeSession()
 
 	for Item in string.gmatch(self.Properties.Enemies, "[^;]+") do
 		local Kind, Rest = string.match(Item, "^(%a+),(.+)$")
@@ -78,20 +82,38 @@ function HD2DGame:OnStart()
 		local Id, Rest = string.match(Item, "^(%a+),(.+)$")
 		if Id then self:SpawnNpc(Id, Parse3(Rest)) end
 	end
+	local Index = 0
 	for Item in string.gmatch(self.Properties.Chests, "[^;]+") do
 		local X, Y, Z, Contents = string.match(Item, "([-%d%.]+),([-%d%.]+),([-%d%.]+),(.+)")
-		if X then self:SpawnChest(Vector3(tonumber(X), tonumber(Y), tonumber(Z)), Contents) end
+		if X then
+			Index = Index + 1
+			self:SpawnChest(Vector3(tonumber(X), tonumber(Y), tonumber(Z)), Contents, false, self.Properties.Map .. ":" .. Index)
+		end
+	end
+	for Item in string.gmatch(self.Properties.Props, "[^;]+") do
+		local Id, Rest = string.match(Item, "^(%a+),(.+)$")
+		if Id then self:SpawnProp(Id, Parse3(Rest)) end
 	end
 	if self.Properties.Boss ~= "" then
 		self.BossPos = Parse3(self.Properties.Boss)
-		Scene.SpawnPrefab(Prefabs .. "Golem.eprefab", self.BossPos)
+		if not self.BossDead then
+			Scene.SpawnPrefab(Prefabs .. "Golem.eprefab", self.BossPos)
+		elseif not self.Opened[self.Properties.Map .. ":Boss"] then
+			self:SpawnChest(self.BossPos + Vector3(0, 170, -175 + 47), "HiPotion*2+Gold*100", false, self.Properties.Map .. ":Boss")
+		end
 	end
 	self.Path = {}
 	for X, Y in string.gmatch(self.Properties.Path, "([-%d%.]+),([-%d%.]+)") do
 		self.Path[#self.Path + 1] = Vector3(tonumber(X), tonumber(Y), 0)
 	end
-	Log.Info(string.format("[HD2D] 시작: 적 자리 %d곳, 마을 사람 %d명, 보물상자 %d개, 보스 %s, 시나리오 '%s'",
-		#self.Slots, #self.Npcs, #self.Chests, self.BossPos and "있음" or "없음", self.Properties.AutoPlay))
+	if bSession then
+		self:Hud():FadeFrom(1.0, 0.6)
+	elseif self.Properties.Title then
+		self.bOpenTitle = true -- HUD·플레이어가 준비된 첫 갱신에서
+	end
+	Log.Info(string.format("[HD2D] 시작: 맵 %s, 적 자리 %d곳, 마을 사람 %d명, 보물상자 %d개, 소품 %d개, 보스 %s, 시나리오 '%s'%s",
+		self.Properties.Map, #self.Slots, #self.Npcs, #self.Chests, #self.Props_, self.BossPos and (self.BossDead and "처치함" or "있음") or "없음",
+		self.Properties.AutoPlay, bSession and ", 맵 이동 세션" or ""))
 end
 
 -- 결정적 난수 (0~1)
@@ -135,10 +157,14 @@ function HD2DGame:OnEnemyKilled(S)
 	local Row = S.Row
 	local Pos = S.entity:GetWorldPosition()
 	self.Report.Kills[S.Kind] = (self.Report.Kills[S.Kind] or 0) + 1
-	-- 전리품: 골드 동전 몇 개 + 확률 아이템
+	-- 전리품: 골드 동전 몇 개 + 확률 아이템 (+ 대장간 의뢰 중이면 슬라임 젤리)
 	local Gold = Row.GoldMin + math.floor(self:Random() * (Row.GoldMax - Row.GoldMin + 1))
 	local Ground = Vector3(Pos.X, Pos.Y, Pos.Z + S.Foot + 2)
 	self:DropLoot(Ground, Gold, (Row.DropItem ~= "" and self:Random() < Row.DropChance) and Row.DropItem or nil, S.bBoss and 8 or 3)
+	if S.Kind == "Slime" and self:SubState("Smith") == "Active" and self:Count("Jelly") + self:PendingPickups("Jelly") < D.SubQuest("Smith").Count
+		and self:Random() < 0.85 then
+		self:SpawnPickup(Ground, "Jelly", 1)
+	end
 	local Player = self:GetPlayer()
 	if Player then Player:AddExp(Row.Exp) end
 	local SlotIndex = self.SlotOf[S.entity.Id]
@@ -154,15 +180,26 @@ function HD2DGame:OnEnemyKilled(S)
 			Audio.PlayOneShot(Snd.Confirm)
 		end
 	end
+	if not S.bBoss then self:CountSubQuestKill(Pos) end
 	Log.Info(string.format("[HD2D] 처치: %s (골드 %d, 경험치 %d)", Row.DisplayName, Gold, Row.Exp))
+end
+
+function HD2DGame:PendingPickups(Id)
+	local N = 0
+	for _, P in ipairs(self.Pickups) do
+		if P.Id == Id then N = N + P.Value end
+	end
+	return N
 end
 
 function HD2DGame:OnBossKilled(S)
 	local Pos = S.entity:GetWorldPosition()
 	self.bBossDead = true
+	self.BossDead = true
 	self:Hud():ShowBoss(nil)
 	self:Hud():Announce("고대의 바위 골렘을 쓰러뜨렸다!", "촌장 바르톨로에게 돌아가 보고하자", 3.5)
-	self:SpawnChest(Pos + Vector3(0, 170, S.Foot + 47), "HiPotion*2+Gold*100", true) -- 상자 루트 = 지면 + 45
+	self:Fanfare()
+	self:SpawnChest(Pos + Vector3(0, 170, S.Foot + 47), "HiPotion*2+Gold*100", true, self.Properties.Map .. ":Boss") -- 상자 루트 = 지면 + 45
 	if self.QuestStage == 2 then
 		self:SetQuestStage(3)
 	end
@@ -237,7 +274,11 @@ function HD2DGame:HitEnemy(S, Damage, Dir, Knockback, bCrit, WeaponId)
 	local P = S.entity:GetWorldPosition()
 	self:DamageNumber(P + Vector3(0, 0, S.HitHeight or 60), tostring(Damage), bCrit and { 1, 0.86, 0.3, 1 } or { 1, 1, 1, 1 }, bCrit and 1.35 or 1.0)
 	self:SpawnFx("Spark", P + Vector3(0, 40, (S.HitHeight or 60) - 30), { Blend = 2, Scale = bCrit and 2.0 or 1.4 })
-	if WeaponId then self.Report.WeaponHits[WeaponId] = (self.Report.WeaponHits[WeaponId] or 0) + 1 end
+	if WeaponId then
+		self.Report.WeaponHits[WeaponId] = (self.Report.WeaponHits[WeaponId] or 0) + 1
+		local Player = self:GetPlayer()
+		if Player then Player:OnHitLanded() end
+	end
 	return true
 end
 
@@ -258,7 +299,7 @@ function HD2DGame:UpdateSlots(Dt)
 	end
 end
 
--- ================================================================ 마을 사람 · 보물상자 · 상호작용
+-- ================================================================ 마을 사람 · 보물상자 · 소품 · 상호작용
 function HD2DGame:SpawnNpc(Id, Pos)
 	local Row = D.Npc(Id)
 	if not Row then
@@ -276,25 +317,74 @@ function HD2DGame:SpawnNpc(Id, Pos)
 	end)
 end
 
-function HD2DGame:SpawnChest(Pos, Contents, bReward)
-	local Chest = { Pos = Pos, Contents = Contents, bOpened = false }
+-- 보물상자: Key = "맵:번호" — 이미 연 상자(저장)는 열린 모양으로 만든다
+function HD2DGame:SpawnChest(Pos, Contents, bReward, Key)
+	local Chest = { Pos = Pos, Contents = Contents, bOpened = Key ~= nil and self.Opened[Key] == true, Key = Key }
 	self.Chests[#self.Chests + 1] = Chest
 	Scene.SpawnPrefab(Prefabs .. "Chest.eprefab", Pos, function(E)
 		Chest.Entity = E
 		Chest.Body = E:FindChild("Body")
+		if Chest.bOpened then
+			Chest.Body:GetComponent("SpriteComponent").Slice = "Chest2"
+		end
 		if bReward then
 			self:SpawnFx("Poof", Pos + Vector3(0, 20, -20), { Scale = 1.4 })
 			self:SpawnFx("Sparkle", Pos + Vector3(0, 30, 30), { Blend = 2, Scale = 1.6 })
 		end
 	end)
+	return Chest
+end
+
+-- 소품: SavePoint = 게시판(저장), Cat = 서브 퀘스트 고양이 (받은 뒤 아직 못 찾았을 때만 보임)
+function HD2DGame:SpawnProp(Id, Pos)
+	local Prop = { Id = Id, Pos = Pos }
+	self.Props_[#self.Props_ + 1] = Prop
+	Scene.SpawnPrefab(Prefabs .. (Id == "Cat" and "PropSmall.eprefab" or "Prop.eprefab"), Pos, function(E)
+		Prop.Entity = E
+		Prop.Body = E:FindChild("Body")
+		Prop.Marker = E:FindChild("Marker")
+		local S = Prop.Body:GetComponent("SpriteComponent")
+		if Id == "Cat" then
+			Prop.Body:PlayFlipbook("Sprites/HD2D/Cat_Idle.eflipbook")
+			Prop.Body:SetPosition(Vector3(0, 0, -45))
+		else
+			S.Slice = "Board"
+		end
+		self:RefreshProps()
+	end)
+end
+
+function HD2DGame:IsPropActive(Prop)
+	if Prop.Id == "Cat" then
+		return self:SubState("Cat") == "Active" and self:Count("LostCat") == 0
+	end
+	return true
+end
+
+function HD2DGame:RefreshProps()
+	for _, Prop in ipairs(self.Props_) do
+		if Prop.Body then
+			local bShow = self:IsPropActive(Prop)
+			local S = Prop.Body:GetComponent("SpriteComponent")
+			if S.Visible ~= bShow then S.Visible = bShow end
+			local Shadow = Prop.Entity:FindChild("Shadow")
+			if Shadow then Shadow:GetComponent("SpriteComponent").Visible = bShow end
+			local M = Prop.Marker and Prop.Marker:GetComponent("SpriteComponent")
+			if M then M.Visible = bShow and Prop.Id == "Cat" end
+		end
+	end
 end
 
 function HD2DGame:RefreshMarkers()
 	for _, Npc in ipairs(self.Npcs) do
 		if Npc.Marker then
 			local bShow = false
-			if Npc.Row.Role == "Elder" then
+			local Role = Npc.Row.Role
+			if Role == "Elder" then
 				bShow = self.QuestStage == 0 or self.QuestStage == 3 or (self.QuestStage == 1 and self.QuestKills >= D.Quest(1).KillGoal)
+			elseif Role == "Quest" then
+				local Id = Npc.Row.SubQuest
+				bShow = self:SubState(Id) == nil or self:SubReady(Id)
 			end
 			local S = Npc.Marker:GetComponent("SpriteComponent")
 			if S.Visible ~= bShow then S.Visible = bShow end
@@ -307,7 +397,7 @@ function HD2DGame:UpdateInteract(Pos)
 	local Best, BestDist, Text = nil, 1.0e9, nil
 	for _, Npc in ipairs(self.Npcs) do
 		local L = Flat(Npc.Pos - Pos):Length()
-		if Npc.Entity and L < 175 and L < BestDist then
+		if Npc.Entity and L < 210 and L < BestDist then
 			Best, BestDist, Text = Npc, L, "E  " .. Npc.Row.DisplayName .. "와(과) 이야기하기"
 		end
 	end
@@ -315,6 +405,12 @@ function HD2DGame:UpdateInteract(Pos)
 		local L = Flat(Chest.Pos - Pos):Length()
 		if Chest.Entity and not Chest.bOpened and L < 160 and L < BestDist then
 			Best, BestDist, Text = Chest, L, "E  보물상자 열기"
+		end
+	end
+	for _, Prop in ipairs(self.Props_) do
+		local L = Flat(Prop.Pos - Pos):Length()
+		if Prop.Entity and self:IsPropActive(Prop) and L < 170 and L < BestDist then
+			Best, BestDist, Text = Prop, L, Prop.Id == "Cat" and "E  고양이를 안아 올리기" or "E  게시판에 모험을 기록하기 (저장)"
 		end
 	end
 	self.Target = Best
@@ -328,14 +424,29 @@ function HD2DGame:Interact()
 	if not T then return false end
 	if T.Contents then
 		self:OpenChest(T)
-	else
+	elseif T.Row then
 		self:TalkTo(T)
+	elseif T.Id == "Cat" then
+		self:AddItem("LostCat", 1, true)
+		self:SpawnFx("Sparkle", T.Pos + Vector3(0, 30, 10), { Blend = 2, Scale = 1.2 })
+		Audio.PlayOneShot(self.Sounds.Pickup)
+		self:StartDialog("", { "아르펜|Hero|찾았다, 미미! 리나가 걱정하고 있어. 같이 돌아가자.", "|Cat|고양이는 \"냐아\" 하고 품에 얌전히 안겼다." },
+			function() self:OnSubQuestChanged() end)
+		self:OnSubQuestChanged()
+	elseif T.Id == "SavePoint" then
+		self:StartDialog("", { "||낡은 게시판에 지금까지의 모험을 적어 두었다." }, function()
+			if self:SaveGame() then
+				self:Hud():Toast("UI/Demo/HD2D/Icons/Coin.png", "기록했다")
+				self:SpawnHealFx(self:GetPlayer().entity:GetWorldPosition(), { 1, 0.9, 0.6, 1 })
+			end
+		end)
 	end
 	return true
 end
 
 function HD2DGame:OpenChest(Chest)
 	Chest.bOpened = true
+	if Chest.Key then self.Opened[Chest.Key] = true end
 	Chest.Body:PlayFlipbook("Sprites/HD2D/Chest_Open.eflipbook")
 	self:SpawnFx("Sparkle", Chest.Pos + Vector3(0, 30, 40), { Blend = 2, Scale = 1.6 })
 	self:SpawnSprite({ Sprite = FxSprite, Slice = "Pillar", Position = Chest.Pos + Vector3(0, 20, -45), Blend = 2, Life = 0.7, Fade = true,
@@ -361,346 +472,16 @@ function HD2DGame:TalkTo(Npc)
 		local bAdvance = Stage == 0 or Stage == 3 or (Stage == 1 and self.QuestKills >= D.Quest(1).KillGoal)
 		if bAdvance then
 			local Next = D.Quest(Stage + 1)
-			self:StartDialog(Row.DisplayName, Next.Lines, function() self:SetQuestStage(Stage + 1) end)
+			self:StartDialog(Row.DisplayName, Next.Lines, function() self:SetQuestStage(Stage + 1) end, Row.Portrait)
 		else
-			self:StartDialog(Row.DisplayName, D.Quest(Stage).WaitLines)
+			self:StartDialog(Row.DisplayName, D.Quest(Stage).WaitLines, nil, Row.Portrait)
 		end
 	elseif Row.Role == "Shop" then
-		self:StartDialog(Row.DisplayName, Row.Lines, function() self:OpenShop() end)
+		self:StartDialog(Row.DisplayName, Row.Lines, function() self:OpenShop() end, Row.Portrait)
+	elseif Row.Role == "Quest" then
+		self:TalkSubQuest(Npc)
 	else
-		self:StartDialog(Row.DisplayName, Row.Lines)
-	end
-end
-
--- ================================================================ 퀘스트
-function HD2DGame:SetQuestStage(Stage)
-	self.QuestStage = Stage
-	local Q = D.Quest(Stage)
-	if Stage == 4 then
-		local B = D.Balance()
-		self:AddGold(B.QuestRewardGold, true)
-		if B.QuestRewardItem ~= "" then self:AddItem(B.QuestRewardItem, 1, true) end
-		self:Hud():Announce("퀘스트 완료!", Q.Title, 3.0)
-		self:SpawnLevelFx(self:GetPlayer().entity:GetWorldPosition())
-	elseif Stage == 2 then
-		self:Hud():Announce("새 목표", Q.Objective, 2.5)
-	end
-	self:RefreshQuest()
-	Log.Info(string.format("[HD2D] 퀘스트 단계 %d: %s", Stage, Q.Objective))
-end
-
-function HD2DGame:RefreshQuest()
-	local Q = D.Quest(self.QuestStage)
-	local Text = Q.Objective
-	if Q.KillGoal > 0 then
-		if self.QuestKills >= Q.KillGoal then
-			Text = "마물 퇴치 완료! 촌장 바르톨로에게 보고하자"
-		else
-			Text = string.format("%s (%d/%d)", Q.Objective, self.QuestKills, Q.KillGoal)
-		end
-	end
-	local H = self:Hud()
-	if H then H:SetQuest(Q.Title, Text) end
-	self:RefreshMarkers()
-end
-
--- ================================================================ 일행 (골드·소지품·장비)
-function HD2DGame:AddGold(N, bToast)
-	self.Gold = self.Gold + N
-	if bToast then
-		self:Hud():Toast("UI/Demo/HD2D/Icons/Coin.png", string.format("%d 골드", N))
-	end
-end
-
-function HD2DGame:Count(Id) return self.Items[Id] or 0 end
-
-function HD2DGame:AddItem(Id, N, bToast)
-	local Row = D.Item(Id)
-	if not Row then
-		Log.Error("[HD2D] 아이템 표에 없음:", Id)
-		return
-	end
-	if Row.Kind == "Weapon" then
-		self.Items[Id] = 1
-	else
-		self.Items[Id] = (self.Items[Id] or 0) + N
-	end
-	if bToast then
-		self:Hud():Toast(Row.Icon, N > 1 and string.format("%s ×%d 획득", Row.DisplayName, N) or (Row.DisplayName .. " 획득"))
-	end
-end
-
-function HD2DGame:GetWeapon()
-	return D.Weapon(self.Equipped)
-end
-
-function HD2DGame:Equip(Id, bToast)
-	if self:Count(Id) <= 0 or self.Equipped == Id then return false end
-	self.Equipped = Id
-	self.Report.Equips = self.Report.Equips + 1
-	Audio.PlayOneShot(Snd.Equip)
-	if bToast then self:Hud():Toast(D.Weapon(Id).Icon, D.Weapon(Id).DisplayName .. " 장비") end
-	local Player = self:GetPlayer()
-	if Player then Player:OnWeaponChanged() end
-	return true
-end
-
--- 가진 무기를 순서대로 돌려 낀다 (R)
-function HD2DGame:CycleWeapon()
-	local Order = D.WeaponOrder
-	local Current = 1
-	for I, Id in ipairs(Order) do
-		if Id == self.Equipped then Current = I end
-	end
-	for Step = 1, #Order - 1 do
-		local Id = Order[(Current - 1 + Step) % #Order + 1]
-		if self:Count(Id) > 0 then
-			return self:Equip(Id, true)
-		end
-	end
-	return false
-end
-
--- 소모품 쓰기. 썼으면 true
-function HD2DGame:UseItem(Id)
-	local Row = D.Item(Id)
-	local Player = self:GetPlayer()
-	if not Row or self:Count(Id) <= 0 or not Player then return false end
-	if Row.Kind == "Weapon" then return self:Equip(Id, true) end
-	self.Items[Id] = self.Items[Id] - 1
-	if Row.Kind == "Heal" then
-		Player:Heal(Row.Amount, 0)
-	elseif Row.Kind == "Mana" then
-		Player:Heal(0, Row.Amount)
-	else
-		Player:Heal(99999, 99999)
-	end
-	self.Report.Used[Id] = (self.Report.Used[Id] or 0) + 1
-	Audio.PlayOneShot(Snd.Potion)
-	Log.Info("[HD2D] 아이템 사용: " .. Row.DisplayName)
-	return true
-end
-
--- 가진 것 중 첫 번째 (단축키: 회복약 → 고급 회복약 / 마나 물약)
-function HD2DGame:QuickUse(Ids)
-	for _, Id in ipairs(Ids) do
-		if self:Count(Id) > 0 then return self:UseItem(Id) end
-	end
-	self:Hud():Toast(D.Item(Ids[1]).Icon, D.Item(Ids[1]).DisplayName .. "이(가) 없다")
-	Audio.PlayOneShot(Snd.Error)
-	return false
-end
-
--- ================================================================ 메뉴 (대화·인벤토리·상점)
-function HD2DGame:IsMenuOpen() return self.Menu ~= nil end
-
-function HD2DGame:SetPaused(bPaused)
-	Game.SetTimeScale(bPaused and 0.0 or 1.0)
-end
-
-function HD2DGame:StartDialog(Name, Lines, OnDone)
-	if Lines == nil or #Lines == 0 then
-		if OnDone then OnDone() end
-		return
-	end
-	self.Menu = "Dialog"
-	self.Dialog = { Name = Name, Lines = Lines, Index = 1, Chars = 0.0, OnDone = OnDone }
-	self:SetPaused(true)
-	self:Hud():ShowPrompt(nil)
-	self:Hud():ShowDialog(Name, Lines[1], 0)
-	self.Report.Dialogs = self.Report.Dialogs + 1
-	Audio.PlayOneShot(Snd.Open)
-end
-
-function HD2DGame:UpdateDialog(UDt, In)
-	local Dlg = self.Dialog
-	local Line = Dlg.Lines[Dlg.Index]
-	local Total = utf8.len(Line) or #Line
-	if Dlg.Chars < Total then
-		Dlg.Chars = math.min(Total, Dlg.Chars + UDt * 42.0)
-	end
-	if In.Confirm then
-		if Dlg.Chars < Total then
-			Dlg.Chars = Total
-		elseif Dlg.Index < #Dlg.Lines then
-			Dlg.Index = Dlg.Index + 1
-			Dlg.Chars = 0
-			Audio.PlayOneShot(Snd.Move)
-		else
-			self:CloseMenu()
-			if Dlg.OnDone then Dlg.OnDone() end
-			return
-		end
-	end
-	self:Hud():ShowDialog(Dlg.Name, Dlg.Lines[Dlg.Index], math.floor(Dlg.Chars), Dlg.Chars >= (utf8.len(Dlg.Lines[Dlg.Index]) or 0))
-end
-
-function HD2DGame:CloseMenu()
-	local Was = self.Menu
-	self.Menu = nil
-	self:SetPaused(false)
-	local H = self:Hud()
-	if Was == "Dialog" then H:HideDialog() else H:ShowMenu(nil) end
-	Audio.PlayOneShot(Snd.Close)
-end
-
--- 목록 줄 (인벤토리: 무기 → 소모품, 상점: 진열)
-function HD2DGame:BuildRows()
-	local Rows = {}
-	if self.Menu == "Shop" then
-		for _, Id in ipairs(D.Balance().ShopStock) do Rows[#Rows + 1] = Id end
-	else
-		for _, Id in ipairs(D.WeaponOrder) do
-			if self:Count(Id) > 0 then Rows[#Rows + 1] = Id end
-		end
-		for _, Id in ipairs(D.ConsumableOrder) do
-			if self:Count(Id) > 0 then Rows[#Rows + 1] = Id end
-		end
-	end
-	return Rows
-end
-
-function HD2DGame:OpenInventory()
-	self.Menu = "Inventory"
-	self.MenuIndex = 1
-	self.MenuNote = nil
-	self:SetPaused(true)
-	self.Report.InventoryOpened = self.Report.InventoryOpened + 1
-	self:Hud():ShowPrompt(nil)
-	self:Hud():ShowMenu("Inv")
-	self:RefreshMenu()
-	Audio.PlayOneShot(Snd.Open)
-end
-
-function HD2DGame:OpenShop()
-	self.Menu = "Shop"
-	self.MenuIndex = 1
-	self.MenuNote = nil
-	self:SetPaused(true)
-	self:Hud():ShowMenu("Shop")
-	self:RefreshMenu()
-	Audio.PlayOneShot(Snd.Open)
-end
-
-function HD2DGame:SelectedId()
-	local Rows = self:BuildRows()
-	return Rows[self.MenuIndex], Rows
-end
-
-function HD2DGame:RefreshMenu()
-	local Rows = self:BuildRows()
-	if #Rows == 0 then self.MenuIndex = 1 else self.MenuIndex = math.max(1, math.min(self.MenuIndex, #Rows)) end
-	local Player = self:GetPlayer()
-	local Prefix = self.Menu == "Shop" and "Shop" or "Inv"
-	local Lines = {}
-	for I, Id in ipairs(Rows) do
-		local Row = D.Item(Id)
-		local Right
-		if self.Menu == "Shop" then
-			Right = (Row.Kind == "Weapon" and self:Count(Id) > 0) and "보유" or string.format("%d G", Row.Price)
-		else
-			Right = Row.Kind == "Weapon" and (Id == self.Equipped and "장비 중" or "") or string.format("×%d", self:Count(Id))
-		end
-		Lines[I] = { Icon = Row.Icon, Name = Row.DisplayName, Right = Right, bDim = self.Menu == "Shop" and Row.Price > self.Gold and Right ~= "보유" }
-	end
-	local Status = Player and string.format("Lv %d    HP %d/%d    MP %d/%d    공격력 ×%.2f", Player.Level, math.ceil(Player.Health), Player.MaxHealth,
-		math.floor(Player.Mana), Player.MaxMana, Player:DamageScale()) or ""
-	local H = self:Hud()
-	H:SetMenuRows(Prefix, Lines, self.MenuIndex)
-	H:SetMenuHeader(Prefix, Status, self.Gold)
-	local Id = Rows[self.MenuIndex]
-	if Id then
-		local Row = D.Item(Id)
-		local Type, Desc, Stats = "", Row.Description, ""
-		if Row.Kind == "Weapon" then
-			local W = D.Weapon(Row.Weapon)
-			local KindName = { Slash = "베기", Thrust = "찌르기", Arrow = "활", Bolt = "마법" }
-			Type = "무기 · " .. KindName[W.Kind]
-			Desc = W.Description
-			Stats = string.format("공격력 %d    사거리 %d", W.Damage, math.floor(W.Range / 10 + 0.5) * 10)
-			if W.ManaCost > 0 then Stats = Stats .. string.format("    마나 %d", W.ManaCost) end
-			if self.Menu ~= "Shop" and Id == self.Equipped then Stats = Stats .. "\n지금 장비하고 있다" end
-		else
-			Type = ({ Heal = "회복 아이템", Mana = "마나 회복 아이템", Elixir = "귀한 회복 아이템" })[Row.Kind] or ""
-			Stats = string.format("소지 %d개", self:Count(Id))
-		end
-		if self.Menu == "Shop" then Stats = Stats .. string.format("\n가격 %d 골드", Row.Price) end
-		if self.MenuNote then Stats = Stats .. "\n" .. self.MenuNote end
-		H:SetMenuDetail(Prefix, Row.Icon, Row.DisplayName, Type, Desc, Stats)
-	else
-		H:SetMenuDetail(Prefix, nil, "", "", "소지품이 없다", "")
-	end
-end
-
-function HD2DGame:MenuConfirm()
-	local Id = self:SelectedId()
-	if not Id then return end
-	local Row = D.Item(Id)
-	self.MenuNote = nil
-	if self.Menu == "Shop" then
-		if Row.Kind == "Weapon" and self:Count(Id) > 0 then
-			self.MenuNote = "이미 가지고 있다"
-			Audio.PlayOneShot(Snd.Error)
-		elseif self.Gold < Row.Price then
-			self.MenuNote = "골드가 부족하다"
-			Audio.PlayOneShot(Snd.Error)
-		else
-			self.Gold = self.Gold - Row.Price
-			self:AddItem(Id, 1, true)
-			self.Report.Bought[Id] = (self.Report.Bought[Id] or 0) + 1
-			self.MenuNote = "구입했다!"
-			Audio.PlayOneShot(Snd.Buy)
-			Log.Info(string.format("[HD2D] 구입: %s (%d G, 남은 골드 %d)", Row.DisplayName, Row.Price, self.Gold))
-		end
-	else
-		if Row.Kind == "Weapon" then
-			if not self:Equip(Id, true) then Audio.PlayOneShot(Snd.Error) end
-		else
-			if self:UseItem(Id) then self.MenuNote = Row.DisplayName .. "을(를) 사용했다" end
-		end
-	end
-	self:RefreshMenu()
-end
-
--- 메뉴가 열려 있는 동안 플레이어 스크립트가 입력을 넘긴다 (In: MenuUp/MenuDown/Confirm/Cancel/Inventory)
-function HD2DGame:MenuInput(In)
-	local UDt = Time.GetUnscaledDelta()
-	if self.Menu == "Dialog" then
-		self:UpdateDialog(UDt, In)
-		return
-	end
-	if In.Cancel or In.Inventory then
-		self:CloseMenu()
-		return
-	end
-	local Rows = self:BuildRows()
-	if In.MenuUp and #Rows > 0 then
-		self.MenuIndex = (self.MenuIndex - 2) % #Rows + 1
-		self.MenuNote = nil
-		Audio.PlayOneShot(Snd.Move)
-		self:RefreshMenu()
-	elseif In.MenuDown and #Rows > 0 then
-		self.MenuIndex = self.MenuIndex % #Rows + 1
-		self.MenuNote = nil
-		Audio.PlayOneShot(Snd.Move)
-		self:RefreshMenu()
-	elseif In.Confirm then
-		self:MenuConfirm()
-	end
-end
-
--- UI 단추 (마우스): 줄 클릭 = 고르고 확인, 올리기 = 고르기
-function HD2DGame:OnMenuRowClicked(Index)
-	if self.Menu ~= "Inventory" and self.Menu ~= "Shop" then return end
-	self.MenuIndex = Index
-	self:MenuConfirm()
-end
-
-function HD2DGame:OnMenuRowHovered(Index)
-	if (self.Menu == "Inventory" or self.Menu == "Shop") and self.MenuIndex ~= Index and Index <= #self:BuildRows() then
-		self.MenuIndex = Index
-		self.MenuNote = nil
-		self:RefreshMenu()
+		self:StartDialog(Row.DisplayName, Row.Lines, nil, Row.Portrait)
 	end
 end
 
@@ -823,10 +604,10 @@ function HD2DGame:SpawnProjectile(Desc)
 		                            Scale = 1.2, Color = { 1, 1, 1, 0.9 } })
 		P.Fx = self:SpawnFx("Rock", Desc.Pos, { Lit = true, Blend = 3, Scale = 1.6, Life = P.Duration + 0.2 })
 	elseif P.Kind == "Bolt" then
-		P.Fx = self:SpawnFx("Bolt", Desc.Pos, { Blend = 2, Scale = 1.4, Life = 3.0 })
+		P.Fx = self:SpawnFx("Bolt", Desc.Pos, { Blend = 2, Scale = 1.4 * (Desc.Scale or 1), Life = 3.0 })
 	else
 		P.Fx = self:SpawnSprite({ Sprite = FxSprite, Slice = "Arrow", Position = Desc.Pos, Rotation = HD2DGame.ScreenAngle(Desc.Dir), Blend = 0,
-		                          Life = 3.0, Scale = 1.3, Color = P.Team == "Enemy" and { 1, 0.75, 0.75, 1 } or { 1, 1, 1, 1 } })
+		                          Life = 3.0, Scale = 1.3 * (Desc.Scale or 1), Color = P.Team == "Enemy" and { 1, 0.75, 0.75, 1 } or { 1, 1, 1, 1 } })
 	end
 	self.Projectiles[#self.Projectiles + 1] = P
 	self.Report.Projectiles = self.Report.Projectiles + 1
@@ -1035,10 +816,24 @@ end
 
 function HD2DGame:OnUpdate(Dt)
 	self.Time = self.Time + Dt
+	self.PlayTime = (self.PlayTime or 0) + Dt
 	self.ShakeTime = math.max(0.0, self.ShakeTime - Dt)
 	if not self.bQuestShown then
 		self.bQuestShown = true
 		self:RefreshQuest()
+		self:RefreshProps()
+	end
+	if self.bOpenTitle then
+		self.bOpenTitle = false
+		self:OpenTitle()
+	end
+	if self.ArrivePos then
+		local Player = self:GetPlayer()
+		if Player and Player.bStarted then
+			Player:Teleport(self.ArrivePos)
+			Player:SnapCamera()
+			self.ArrivePos = nil
+		end
 	end
 	self:UpdateFx(Dt)
 	self:UpdateProjectiles(Dt)
@@ -1056,10 +851,12 @@ function HD2DGame:ReportAutoPlay(Failures, Summary)
 	local Hits = {}
 	for Id, N in pairs(R.WeaponHits) do Hits[#Hits + 1] = Id .. " " .. N end
 	table.sort(Hits)
-	Log.Info(string.format("[HD2D] 자동 플레이 요약: %s | 처치 {%s} | 무기 명중 {%s} | 상자 %d, 줍기 %d, 대화 %d, 인벤토리 %d, 장비 교체 %d, 투사체 %d, 독 %d, 퀘스트 %d단계, 골드 %d",
-		Summary or "", table.concat(Kills, ", "), table.concat(Hits, ", "), R.Chests, R.Pickups, R.Dialogs, R.InventoryOpened, R.Equips,
-		R.Projectiles, R.PoisonTicks, self.QuestStage, self.Gold))
-	if #Failures == 0 then
+	Log.Info(string.format("[HD2D] 자동 플레이 요약: %s | 처치 {%s} | 무기 명중 {%s} | 상자 %d, 줍기 %d, 대화 %d, 인벤토리 %d, 장비 교체 %d(방어구·장신구 %d), 부스트 %d(최대 %d단계), 서브 퀘스트 %d, 저장 %d, 투사체 %d, 독 %d, 퀘스트 %d단계, 골드 %d",
+		Summary or "", table.concat(Kills, ", "), table.concat(Hits, ", "), R.Chests, R.Pickups, R.Dialogs, R.InventoryOpened, R.Equips, R.GearEquips,
+		R.Boosts, R.BoostMax, R.SubDone, R.Saves, R.Projectiles, R.PoisonTicks, self.QuestStage, self.Gold))
+	if Failures == nil then
+		return -- 단계 요약만 (자동 검증이 씬을 다시 여는 중간)
+	elseif #Failures == 0 then
 		Log.Info("[HD2D] 결과: 실패 0건")
 	else
 		Log.Error("[HD2D] 결과: 실패 " .. #Failures .. "건 — " .. table.concat(Failures, ", "))

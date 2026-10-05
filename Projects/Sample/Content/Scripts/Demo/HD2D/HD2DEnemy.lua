@@ -9,6 +9,8 @@
 --       체력 0 → 관리자 OnEnemyKilled(전리품·경험치·부활 예약) 후 펑 효과와 함께 사라짐.
 --   돌진·급강하는 entity:AddKnockback(방향 × ProjectileSpeed, 시간) — 이동기가 경직 동안 수평 속도를 덮어써 미끄러진다.
 --   이동기가 루트를 이동 방향으로 돌리므로 Visual 회전을 매 프레임 상쇄한다 (스프라이트는 늘 카메라를 본다). 원본 그림은 오른쪽을 본다.
+--   길찾기: 걷는 적(박쥐 제외)은 쫓기·집으로 돌아가기에 내비메시 경로(AI.FindPath — 지면 높이 점, 0.8~1.2초마다 다시)를 따라 울타리·건물·개울을
+--     돌아간다. 씬에 내비메시가 없거나 경로가 없으면 곧장 걷는다 (HD2DGameplay.py 머리 주석의 굽기 순서).
 local D = Script.Require("Scripts/Demo/HD2D/HD2DData.lua")
 
 local HD2DEnemy = {
@@ -81,6 +83,33 @@ function HD2DEnemy:Face(Dir)
 	self.Body:SetSpriteFlip(self.FlipX, false)
 end
 
+-- 목표(지면 점)로 가는 다음 방향 (내비메시 경로 따라가기, 없으면 곧장)
+function HD2DEnemy:PathDir(Pos, Goal)
+	local Direct = Flat(Goal - Pos)
+	local L = Direct:Length()
+	if L < 1 then return Vector3(0, 0, 0) end
+	self.PathTimer = (self.PathTimer or 0) - (self.LastDt or 0)
+	if self.PathTimer <= 0 or not self.PathGoal or Flat(self.PathGoal - Goal):Length() > 150 then
+		self.PathTimer = 0.8 + self:Random() * 0.4
+		self.PathGoal = Goal
+		local Foot = Vector3(Pos.X, Pos.Y, Pos.Z + self.Foot)
+		self.Path = AI.FindPath(Foot, Vector3(Goal.X, Goal.Y, Foot.Z))
+		self.PathIndex = 2
+		if self.Path then self.GM.Report.Paths = (self.GM.Report.Paths or 0) + 1 end
+	end
+	if self.Path then
+		while self.Path[self.PathIndex] and Flat(self.Path[self.PathIndex] - Pos):Length() < 70 do
+			self.PathIndex = self.PathIndex + 1
+		end
+		local Next = self.Path[self.PathIndex]
+		if Next then
+			local D_ = Flat(Next - Pos)
+			if D_:Length() > 1 then return D_:Normalized() end
+		end
+	end
+	return Direct * (1.0 / L)
+end
+
 function HD2DEnemy:SetState(State, Time)
 	self.State, self.Timer = State, Time or 0
 end
@@ -102,6 +131,8 @@ function HD2DEnemy:OnUpdate(Dt)
 		Dist = ToPlayer:Length()
 	end
 	local DirP = Dist > 1 and ToPlayer * (1.0 / Dist) or Vector3(0, 1, 0)
+	self.LastDt = Dt
+	self.PlayerPos = Pos + ToPlayer
 	self.bAggro = Dist < R.AggroRange or (self.bAggro and Dist < R.AggroRange * 1.6)
 	-- 목줄: 집에서 너무 멀어지면 쫓기를 그만두고 돌아간다 (마을 안까지 따라오지 않게)
 	if Flat(Pos - self.Home):Length() > 1400 then self.bAggro = false end
@@ -126,6 +157,7 @@ function HD2DEnemy:OnUpdate(Dt)
 	-- 피격 번쩍임 (하얗게 → 원래 색)
 	if self.Flash > 0 then
 		self.Flash = self.Flash - Dt
+		-- TODO(엔진 API): SpriteComponent.FlashColor(하얀 덮기)로 바꾼다 — 지금은 색 배율 2.6으로 밝게
 		self.Sprite.Color = self.Flash > 0 and Vector4(2.6, 2.6, 2.6, 1) or Vector4(1, 1, 1, 1)
 	elseif self.State == "Windup" then
 		-- 예비 동작: 붉게 깜빡 (피할 신호)
@@ -145,7 +177,7 @@ end
 function HD2DEnemy:WanderDir(Pos)
 	local FromHome = Flat(Pos - self.Home)
 	if FromHome:Length() > 380 then
-		return (FromHome * -1):Normalized()
+		return self:PathDir(Pos, self.Home)
 	end
 	local A = self:Random() * math.pi * 2
 	return Vector3(math.cos(A), math.sin(A), 0)
@@ -165,7 +197,7 @@ function HD2DEnemy:UpdateHopper(Dt, Pos, DirP, Dist)
 			self.GM:SpawnFx("Dust", Pos + Vector3(0, 4, self.Foot + 2), { Scale = 0.8 })
 		end
 	elseif self.Timer <= 0 and not E:IsStunned() then
-		self.HopDir = self.bAggro and DirP or self:WanderDir(Pos)
+		self.HopDir = self.bAggro and self:PathDir(Pos, self.PlayerPos) or self:WanderDir(Pos)
 		self:SetState("Hop", 0.42)
 		self:Play("Move")
 		self:Face(self.HopDir)
@@ -256,7 +288,7 @@ function HD2DEnemy:UpdateCharger(Dt, Pos, DirP, Dist)
 				return
 			end
 			if Dist > R.AttackRange * 0.6 and not E:IsStunned() then
-				E:AddMovementInput(DirP)
+				E:AddMovementInput(self:PathDir(Pos, self.PlayerPos))
 				self:Play("Move")
 			else
 				self:Play("Idle")
@@ -312,7 +344,7 @@ function HD2DEnemy:UpdateArcher(Dt, Pos, DirP, Dist)
 	else
 		if self.bAggro then
 			local Move = nil
-			if Dist < 450 then Move = DirP * -1 elseif Dist > R.AttackRange * 0.8 then Move = DirP end
+			if Dist < 450 then Move = DirP * -1 elseif Dist > R.AttackRange * 0.8 then Move = self:PathDir(Pos, self.PlayerPos) end
 			if self.Cooldown <= 0 and Dist < R.AttackRange and Dist > 200 and not E:IsStunned() then
 				self:SetState("Windup", R.WindupTime)
 				self:Play("Windup")
@@ -358,7 +390,7 @@ function HD2DEnemy:UpdateSpore(Dt, Pos, DirP, Dist)
 				return
 			end
 			if Dist > 120 and not E:IsStunned() then
-				E:AddMovementInput(DirP)
+				E:AddMovementInput(self:PathDir(Pos, self.PlayerPos))
 				self:Play("Move")
 			else
 				self:Play("Idle")
@@ -398,6 +430,7 @@ function HD2DEnemy:TakeHit(Damage, Dir, Knockback)
 		self.bDead = true
 		local P = self.entity:GetWorldPosition()
 		self.GM:SpawnFx("Poof", P + Vector3(0, 10, self.Foot + 30), { Scale = 1.3 })
+		-- TODO(엔진 API): entity:GetSpriteSlice()가 들어오면 지금 그려지는 프레임으로 사라지는 잔상(GM:SpawnAfterimage)을 남긴다
 		self.GM:SpawnFx("Sparkle", P + Vector3(0, 20, self.HitHeight), { Blend = 2, Scale = 1.1, Color = { 1, 0.9, 0.7, 1 } })
 		self.GM:OnEnemyKilled(self)
 		self.entity:Destroy()

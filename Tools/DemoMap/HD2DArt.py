@@ -836,6 +836,9 @@ NPC_STYLES = {
 	"Merchant": {"Hair": ((196, 120, 66), (150, 86, 46), (98, 54, 34)), "Cloth": ((120, 176, 96), (82, 136, 70), (52, 94, 50)), "Scarf": (236, 196, 92), "Apron": True},
 	"Girl":     {"Hair": ((255, 176, 96), (232, 128, 60), (170, 84, 40)), "Cloth": ((255, 160, 180), (226, 106, 140), (160, 64, 100)), "Tails": True},
 	"Guard":    {"Hair": ((206, 214, 226), (150, 160, 178), (96, 104, 124)), "Cloth": ((200, 70, 70), (156, 44, 50), (104, 28, 38)), "Helmet": True, "Spear": True},
+	"Smith":    {"Hair": ((120, 80, 52), (88, 56, 36), (60, 38, 26)), "Cloth": ((96, 96, 112), (70, 70, 86), (48, 48, 60)), "Bald": True, "Beard": True,
+				 "SmithApron": True},
+	"Farmer":   {"Hair": ((150, 96, 60), (110, 70, 44), (76, 48, 30)), "Cloth": ((110, 150, 200), (76, 112, 164), (50, 76, 120)), "Hat": True},
 }
 
 
@@ -848,7 +851,7 @@ def DrawVillager(Style, Frame):
 	if St.get("Spear"):
 		SpearAt(C, 23, 30, 23, 3)
 	# 다리 + 신발 (긴 옷이면 치마)
-	if St.get("Apron") or St.get("Beard") or St.get("Tails"):
+	if (St.get("Apron") or St.get("Beard") or St.get("Tails")) and not St.get("SmithApron"):
 		Poly(C, [(11, 21), (20, 21), (22, 29), (9, 29)], CM)
 		C.Rect(9, 28, 22, 29, CD)
 		C.Rect(11, 30, 13, 30, BOOT_D)
@@ -863,6 +866,11 @@ def DrawVillager(Style, Frame):
 	C.Rect(20, 17 + B, 21, 22 + B, CD)
 	C.Rect(10, 23 + B, 11, 23 + B, SKIN)
 	C.Rect(20, 23 + B, 21, 23 + B, SKIN)
+	if St.get("SmithApron"):
+		C.Rect(12, 18 + B, 19, 27, (92, 60, 40))
+		C.Rect(12, 18 + B, 19, 18 + B, (130, 90, 60))
+		C.Rect(10, 17 + B, 11, 22 + B, SKIN)
+		C.Rect(20, 17 + B, 21, 22 + B, SKIN_D)
 	if St.get("Apron"):
 		C.Rect(13, 19 + B, 18, 27, (236, 228, 208))
 		C.Rect(13, 19 + B, 18, 19 + B, (196, 186, 166))
@@ -877,7 +885,21 @@ def DrawVillager(Style, Frame):
 	C.Rect(10, Top + 6, 10, Top + 10, SKIN)
 	C.Rect(21, Top + 6, 21, Top + 10, SKIN)
 	C.Rect(11, Top + 12, 20, Top + 12, SKIN_D)
-	if St.get("Helmet"):
+	if St.get("Bald"):
+		C.Rect(11, Top + 1, 20, Top + 5, SKIN)
+		C.Rect(12, Top, 19, Top, SKIN)
+		C.Rect(13, Top + 1, 15, Top + 1, (255, 232, 200))
+		C.Rect(10, Top + 4, 10, Top + 9, HD)
+		C.Rect(21, Top + 4, 21, Top + 9, HD)
+	elif St.get("Hat"):
+		C.Rect(11, Top + 2, 20, Top + 5, HM)
+		C.Rect(10, Top + 6, 10, Top + 9, HD)
+		C.Rect(21, Top + 6, 21, Top + 9, HD)
+		C.Rect(6, Top + 3, 25, Top + 4, (226, 196, 110))
+		C.Rect(10, Top - 2, 21, Top + 2, (238, 210, 124))
+		C.Rect(10, Top + 1, 21, Top + 1, (196, 70, 60))
+		C.Rect(7, Top + 4, 24, Top + 4, (180, 150, 80))
+	elif St.get("Helmet"):
 		C.Rect(10, Top, 21, Top + 5, HM)
 		C.Rect(11, Top - 1, 20, Top, HL)
 		C.Rect(10, Top + 5, 21, Top + 5, HD)
@@ -1227,6 +1249,163 @@ def WriteUiTextures(Folder):
 	UpscaleSave(DrawCursor(), os.path.join(Folder, "Cursor.png"))
 	for Name in ITEM_ICONS:
 		UpscaleSave(DrawIcon(Name), os.path.join(Folder, "Icons", f"{Name}.png"))
+	WriteUiTextures2(Folder)
+
+
+# ---- 2차: 고양이·게시판(저장 지점)·장비 아이콘·BP 구슬·대화 초상화·타이틀 장식 --------------------------------------------------
+CAT, CAT_D, CAT_L = (236, 150, 70), (176, 96, 44), (255, 206, 140)
+
+
+def DrawCat(Frame):
+	# 앉아 있는 주황 고양이 (옆모습, 오른쪽을 봄) — 0/1 꼬리 흔들기
+	C = FCanvas(18, 14)
+	C.Ellipse(8, 9, 5.0, 3.6, CAT)
+	C.Ellipse(7, 8, 2.6, 1.6, CAT_L)
+	C.Ellipse(13, 5.5, 3.2, 3.0, CAT)
+	C.Px(11, 2, CAT)
+	C.Px(11, 1, CAT_D)
+	C.Px(15, 2, CAT)
+	C.Px(15, 1, CAT_D)
+	C.Px(14, 5, EYE)
+	C.Px(16, 6, (230, 120, 120))
+	for X in (5, 6, 10, 11):
+		C.Px(X, 12, CAT_D)
+	if Frame == 0:
+		C.Line(3, 9, 1, 5, CAT)
+		C.Px(1, 4, CAT_D)
+	else:
+		C.Line(3, 9, 0, 8, CAT)
+		C.Px(0, 7, CAT_D)
+	for X in (6, 8):
+		C.Px(X, 8, CAT_D)
+	C.Outline((60, 34, 20))
+	return C
+
+
+def DrawBoard():
+	# 마을 게시판 (저장 지점): 나무 기둥 둘 + 판 + 붙은 종이 + 금빛 깃펜
+	C = FCanvas(30, 34)
+	C.Rect(5, 12, 6, 33, WOOD_D)
+	C.Rect(23, 12, 24, 33, WOOD_D)
+	C.Rect(2, 4, 27, 22, WOOD)
+	C.Rect(2, 4, 27, 5, WOOD_L)
+	C.Rect(2, 21, 27, 22, WOOD_D)
+	Poly(C, [(0, 4), (15, -1), (29, 4)], (150, 60, 50))
+	C.Rect(5, 8, 12, 17, (240, 232, 208))
+	C.Rect(15, 7, 24, 13, (236, 226, 196))
+	C.Rect(16, 15, 23, 19, (226, 214, 186))
+	for Y in (10, 12, 14):
+		C.Rect(6, Y, 11, Y, (150, 140, 120))
+	C.Rect(16, 9, 23, 9, (150, 140, 120))
+	C.Line(19, 3, 24, 9, GOLD)
+	C.Px(24, 10, GOLD_L)
+	C.Outline((50, 30, 20))
+	return C
+
+
+def DrawEquipIcon(Name):
+	C = FCanvas(16, 16)
+	if Name in ("Vest", "Mail", "Plate"):
+		Col = {"Vest": ((170, 110, 64), (126, 78, 44)), "Mail": ((170, 178, 196), (120, 128, 150)), "Plate": ((210, 216, 232), (150, 160, 190))}[Name]
+		Poly(C, [(3, 3), (6, 2), (8, 4), (10, 2), (13, 3), (14, 8), (12, 8), (12, 14), (4, 14), (4, 8), (2, 8)], Col[0])
+		C.Rect(4, 11, 11, 14, Col[1])
+		if Name == "Mail":
+			for Y in range(5, 13, 2):
+				for X in range(5 + (Y // 2) % 2, 12, 2):
+					C.Px(X, Y, Col[1])
+		if Name == "Plate":
+			C.Rect(7, 5, 8, 13, GOLD)
+			C.Rect(5, 7, 10, 7, GOLD_D)
+	elif Name == "Charm":
+		C.Line(8, 1, 8, 5, (200, 180, 140))
+		Poly(C, [(8, 5), (13, 10), (8, 15), (3, 10)], (90, 200, 160))
+		Poly(C, [(8, 7), (11, 10), (8, 13), (5, 10)], (170, 250, 220))
+	elif Name == "Ring":
+		C.Ellipse(8, 9.5, 5, 4.5, GOLD)
+		C.Ellipse(8, 9.5, 3, 2.6, (0, 0, 0), 0)
+		for Y in range(16):
+			for X in range(16):
+				if (X + 0.5 - 8) ** 2 / 9.0 + (Y + 0.5 - 9.5) ** 2 / 6.8 < 1.0:
+					C.P[Y, X] = (0, 0, 0, 0)
+		C.Ellipse(8, 4, 2.4, 2.2, (230, 60, 90))
+		C.Px(7, 3, (255, 190, 200))
+	elif Name == "Amulet":
+		C.Line(3, 1, 8, 7, (200, 180, 140))
+		C.Line(13, 1, 8, 7, (200, 180, 140))
+		C.Ellipse(8, 10, 4, 4, GOLD)
+		C.Ellipse(8, 10, 2.4, 2.4, (230, 70, 90))
+		C.Px(7, 9, (255, 200, 210))
+	elif Name == "Jelly":
+		C.Ellipse(8, 10, 6, 4.5, SLIME)
+		C.Ellipse(6, 8, 2.2, 1.5, SLIME_L)
+		C.Px(5, 7, WHITE)
+		C.Rect(2, 13, 13, 14, SLIME_D)
+	elif Name == "CatIcon":
+		Cat = DrawCat(0)
+		C.P[1:15, 0:16] = Cat.P[0:14, 1:17]
+		return C
+	C.Outline((24, 16, 28))
+	return C
+
+
+def DrawOrb(State):
+	# BP 구슬 (State: Empty / Full / Pending — 올린 단계)
+	C = FCanvas(12, 12)
+	if State == "Empty":
+		C.Ellipse(6, 6, 4.6, 4.6, (40, 34, 60))
+		C.Ellipse(6, 6, 3.2, 3.2, (24, 20, 40))
+	else:
+		Base, Light = ((255, 170, 60), (255, 236, 170)) if State == "Full" else ((120, 220, 255), (240, 255, 255))
+		C.Ellipse(6, 6, 4.8, 4.8, Base)
+		C.Ellipse(5, 5, 2.6, 2.6, Light)
+		C.Px(4, 4, WHITE)
+	C.Outline((20, 12, 24))
+	return C
+
+
+def DrawPortrait(Canvas, Box):
+	# 32x32 캐릭터 그림의 머리 부분만 잘라 초상화로 (X0, Y0, X1, Y1) — 배경은 투명
+	X0, Y0, X1, Y1 = Box
+	P = FCanvas(X1 - X0, Y1 - Y0)
+	P.P = Canvas.P[Y0:Y1, X0:X1].copy()
+	return P
+
+
+def DrawTitleOrnament():
+	# 타이틀 로고 아래 금빛 장식 줄 (64x8) — 가운데 마름모 + 양옆으로 가늘어지는 선
+	C = FCanvas(64, 8)
+	for X in range(64):
+		T = abs(X + 0.5 - 32) / 32.0
+		if T < 0.95:
+			C.Px(X, 4, GOLD if T < 0.6 else GOLD_D)
+	Poly(C, [(32, 0), (36, 4), (32, 8), (28, 4)], GOLD)
+	Poly(C, [(32, 2), (34, 4), (32, 6), (30, 4)], GOLD_L)
+	for X in (20, 44):
+		C.Rect(X - 1, 3, X + 1, 5, GOLD)
+	return C
+
+
+EQUIP_ICONS = ("Vest", "Mail", "Plate", "Charm", "Ring", "Amulet", "Jelly", "CatIcon")
+PORTRAITS = {  # 이름: (그리기, 자를 상자)
+	"Hero": (lambda: DrawHero("Down", "Idle", 0), (6, 1, 26, 21)),
+	"Elder": (lambda: DrawVillager("Elder", 0), (6, 1, 26, 21)),
+	"Merchant": (lambda: DrawVillager("Merchant", 0), (6, 1, 26, 21)),
+	"Girl": (lambda: DrawVillager("Girl", 0), (6, 1, 26, 21)),
+	"Guard": (lambda: DrawVillager("Guard", 0), (6, 0, 26, 20)),
+	"Smith": (lambda: DrawVillager("Smith", 0), (6, 1, 26, 21)),
+	"Farmer": (lambda: DrawVillager("Farmer", 0), (5, 0, 27, 20)),
+	"Cat": (lambda: DrawCat(0), (0, 0, 18, 14)),
+}
+
+
+def WriteUiTextures2(Folder):
+	for Name in EQUIP_ICONS:
+		UpscaleSave(DrawEquipIcon(Name), os.path.join(Folder, "Icons", f"{Name}.png"))
+	for State in ("Empty", "Full", "Pending"):
+		UpscaleSave(DrawOrb(State), os.path.join(Folder, f"Orb{State}.png"))
+	for Name, (Draw, Box) in PORTRAITS.items():
+		UpscaleSave(DrawPortrait(Draw(), Box), os.path.join(Folder, "Portraits", f"{Name}.png"), 6)
+	UpscaleSave(DrawTitleOrnament(), os.path.join(Folder, "TitleOrnament.png"), 6)
 
 
 # ---- 아틀라스 쓰기 -------------------------------------------------------------------------------------------------------
@@ -1362,13 +1541,17 @@ def WriteAll(Folder):
 		WriteFlipbook(Folder, f"Npc_{Style}", "Npcs.esprite", [f"{Style}0", f"{Style}1"], 0, "Loop", [0.7, 0.5])
 
 	# 소품 (보물상자·코인·주머니)
-	Props = FAtlas(128)
+	Props = FAtlas(160)
 	for I in range(3):
 		Props.Add(f"Chest{I}", DrawChest(I))
 	for I in range(4):
 		Props.Add(f"Coin{I}", DrawCoin(I))
 	Props.Add("Bag", DrawBag())
+	for I in range(2):
+		Props.Add(f"Cat{I}", DrawCat(I))
+	Props.Add("Board", DrawBoard())
 	Props.Save(Folder, "Props")
+	WriteFlipbook(Folder, "Cat_Idle", "Props.esprite", ["Cat0", "Cat1"], 0, "Loop", [0.6, 0.4])
 	WriteFlipbook(Folder, "Chest_Open", "Props.esprite", ["Chest0", "Chest1", "Chest2"], 0, "Once", [0.08, 0.12, 0.2])
 	WriteFlipbook(Folder, "Coin_Spin", "Props.esprite", [f"Coin{I}" for I in range(4)], 10.0)
 

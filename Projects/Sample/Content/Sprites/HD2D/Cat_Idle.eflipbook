@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Props.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Cat0",
+      "Duration": 0.6
+    },
+    {
+      "Slice": "Cat1",
+      "Duration": 0.4
+    }
+  ]
+}

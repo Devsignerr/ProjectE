@@ -17,7 +17,9 @@
       230,
       350,
       500,
-      700
+      700,
+      950,
+      1250
     ],
     "StartWeapon": "Sword",
     "StartGold": 120,
@@ -31,6 +33,8 @@
       "HiPotion",
       "Ether",
       "Bow",
+      "ChainMail",
+      "LuckyRing",
       "Elixir"
     ],
     "InvulnTime": 0.8,
@@ -40,6 +44,29 @@
     "CritChance": 0.1,
     "CritMultiplier": 1.6,
     "QuestRewardGold": 300,
-    "QuestRewardItem": "Elixir"
+    "QuestRewardItem": "Elixir",
+    "StartArmor": "LeatherVest",
+    "BoostMax": 5,
+    "BoostStart": 1,
+    "BoostRegenTime": 7.0,
+    "BoostHitsPerPoint": 5,
+    "BoostMaxLevel": 3,
+    "BoostDamagePerLevel": 0.35,
+    "TitleName": "황혼의 들판",
+    "TitleSub": "― 여명을 찾는 아르펜의 여행 ―",
+    "IntroLines": [
+      "||해 질 녘, 낡은 지도 한 장을 손에 쥔 여행자가 작은 마을 하르트에 닿았다.",
+      "||들판 너머에서는 오래전 잠든 무언가가 다시 눈을 뜨려 하고 있었다…",
+      "아르펜|Hero|여기가 하르트 마을인가. 지도에 그려진 빛의 들판은 동쪽이라고 했지.",
+      "아르펜|Hero|우선 광장의 촌장님께 인사부터 드려야겠다."
+    ],
+    "ShopLines": [
+      "무엇을 찾으세요? 천천히 둘러보세요!",
+      "감사합니다! 좋은 물건이에요.",
+      "어머, 골드가 조금 모자라네요…",
+      "그건 이미 가지고 계시잖아요?",
+      "또 오세요! 들판에선 몸조심하시고요."
+    ],
+    "SaveSlot": "HD2D"
   }
 }

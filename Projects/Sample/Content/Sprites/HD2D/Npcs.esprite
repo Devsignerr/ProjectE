@@ -2,7 +2,7 @@
   "Version": 1,
   "Texture": "Npcs.png",
   "TextureWidth": 133,
-  "TextureHeight": 67,
+  "TextureHeight": 100,
   "UnitsPerPixel": 6.0,
   "Filter": "Point",
   "Slices": [
@@ -87,6 +87,50 @@
       "Name": "Guard1",
       "X": 100,
       "Y": 34,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Smith0",
+      "X": 1,
+      "Y": 67,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Smith1",
+      "X": 34,
+      "Y": 67,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Farmer0",
+      "X": 67,
+      "Y": 67,
+      "W": 32,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "Farmer1",
+      "X": 100,
+      "Y": 67,
       "W": 32,
       "H": 32,
       "Pivot": [

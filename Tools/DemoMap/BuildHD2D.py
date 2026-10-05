@@ -863,7 +863,7 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	EXTRA_FOLIAGE.extend(((Env.TREE_TYPE, TreeFoliage["Tree"]), (Env.TREE_AUTUMN_TYPE, TreeFoliage["TreeAutumn"]), (Env.PINE_TYPE, TreeFoliage["Pine"])))
 
 	# ---- 게임: 관리자·HUD(HD2DGameplay) + 카메라 + 플레이어
-	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay)
+	HD2DGameplay.AddGame(S, Height, PATH, AutoPlay, Title=None if AutoPlay else Start == PLAYER_START)  # 타이틀은 기본 씬에만 (시점 변형 제외)
 	StartZ = Height(*Start) + HD2DGameplay.PLAYER_RADIUS + HD2DGameplay.PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-CAMERA_PITCH)), -math.sin(math.radians(-CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
@@ -905,6 +905,7 @@ def Main():
 		for Name, Start in VIEW_STARTS.items():
 			Variant, _, _ = BuildScene(Sampler, Start)
 			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2D_{Name}.escene"))
+		HD2DGameplay.WriteNavBake(CONTENT, Scene, Sampler, PLAY_MIN, PLAY_MAX, PATH)
 		Variant, _, _ = BuildScene(Sampler, HD2DGameplay.AUTOPLAY_START, AutoPlay=True)
 		Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", "_HD2DAutoPlay.escene"))
 		# 배경 확인용 자유 시점(우선순위 높은 카메라를 더함 — 흐림 없음): 이름 → (X, Y, Z, Pitch, Yaw, 시야각)

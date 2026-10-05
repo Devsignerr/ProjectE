@@ -1,0 +1,112 @@
+{
+  "Version": 1,
+  "Name": "SubQuest",
+  "Description": "HD2D 서브 퀘스트 (SubQuests.etable, 행 이름 = 서브 퀘스트 id — 의뢰인 = Npcs.etable SubQuest)",
+  "Fields": [
+    {
+      "Name": "Title",
+      "Type": "String",
+      "Default": "",
+      "Description": "퀘스트 이름 (퀘스트 탭)"
+    },
+    {
+      "Name": "Giver",
+      "Type": "String",
+      "Default": "",
+      "Description": "의뢰인 (Npcs.etable 행)"
+    },
+    {
+      "Name": "Kind",
+      "Type": "Enum",
+      "Default": "Find",
+      "Description": "찾기(Target 아이템 1개 — 맵의 소품을 조사) / 모으기(Target 아이템 Count개) / 사냥(구역 안 처치 Count번)",
+      "Values": [
+        "Find",
+        "Collect",
+        "Hunt"
+      ]
+    },
+    {
+      "Name": "Target",
+      "Type": "String",
+      "Default": "",
+      "Description": "아이템 id (찾기·모으기)"
+    },
+    {
+      "Name": "Count",
+      "Type": "Int",
+      "Default": 1,
+      "Description": "필요 수"
+    },
+    {
+      "Name": "AreaX",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "사냥 구역 가운데 X (cm)"
+    },
+    {
+      "Name": "AreaY",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "사냥 구역 가운데 Y (cm)"
+    },
+    {
+      "Name": "AreaRadius",
+      "Type": "Float",
+      "Default": 0,
+      "Description": "사냥 구역 반지름 (cm)"
+    },
+    {
+      "Name": "RewardGold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "보상 골드"
+    },
+    {
+      "Name": "RewardItem",
+      "Type": "String",
+      "Default": "",
+      "Description": "보상 아이템"
+    },
+    {
+      "Name": "RewardExp",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "보상 경험치"
+    },
+    {
+      "Name": "Summary",
+      "Type": "String",
+      "Default": "",
+      "Description": "퀘스트 탭 설명"
+    },
+    {
+      "Name": "AcceptLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "받을 때 대사",
+      "Element": "String"
+    },
+    {
+      "Name": "ProgressLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "진행 중 대사",
+      "Element": "String"
+    },
+    {
+      "Name": "DoneLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "보고할 때 대사 (보상)",
+      "Element": "String"
+    },
+    {
+      "Name": "AfterLines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "끝난 뒤 대사",
+      "Element": "String"
+    }
+  ]
+}

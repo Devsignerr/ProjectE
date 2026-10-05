@@ -1,0 +1,99 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/SubQuest.estruct",
+  "Rows": [
+    {
+      "Name": "Cat",
+      "Values": {
+        "Title": "길 잃은 고양이",
+        "Giver": "Girl",
+        "Kind": "Find",
+        "Target": "LostCat",
+        "Count": 1,
+        "AreaX": 0,
+        "AreaY": 0,
+        "AreaRadius": 0,
+        "RewardGold": 60,
+        "RewardItem": "LifeAmulet",
+        "RewardExp": 25,
+        "Summary": "리나의 고양이 미미가 연못 동쪽 바위 근처로 사라졌다. 찾아서 데려다주자.",
+        "AcceptLines": [
+          "흑… 우리 미미가 없어졌어.",
+          "연못 쪽으로 나비를 쫓아가는 걸 봤는데… 언니 오빠가 찾아 줄래?"
+        ],
+        "ProgressLines": [
+          "미미는 연못 동쪽 바위 근처에 있을 거야. 부탁해!"
+        ],
+        "DoneLines": [
+          "미미! 정말 찾아 줬구나!",
+          "고마워… 이건 엄마가 준 목걸이야. 언니 오빠가 가져가!"
+        ],
+        "AfterLines": [
+          "미미가 이제 내 옆에서만 잔대. 헤헤."
+        ]
+      }
+    },
+    {
+      "Name": "Smith",
+      "Values": {
+        "Title": "대장간의 담금질",
+        "Giver": "Smith",
+        "Kind": "Collect",
+        "Target": "Jelly",
+        "Count": 3,
+        "AreaX": 0,
+        "AreaY": 0,
+        "AreaRadius": 0,
+        "RewardGold": 0,
+        "RewardItem": "KnightPlate",
+        "RewardExp": 30,
+        "Summary": "대장장이 브론이 갑옷 담금질에 쓸 슬라임 젤리 3개를 찾는다. 들판의 슬라임이 떨어뜨린다.",
+        "AcceptLines": [
+          "어이, 젊은이. 쓸 만한 갑옷이 필요해 보이는군.",
+          "슬라임 젤리 세 개만 가져오면 기사의 판금 갑옷을 담금질해 주지."
+        ],
+        "ProgressLines": [
+          "젤리는 들판의 슬라임이 떨어뜨린다네. 세 개면 충분해."
+        ],
+        "DoneLines": [
+          "오, 탱탱한 젤리로군! 잠깐 기다리게…",
+          "자, 받게. 이 마을에서 제일 단단한 갑옷일세."
+        ],
+        "AfterLines": [
+          "갑옷이 손에 익거든 또 들르게. 쇠는 쓸수록 길이 드는 법이지."
+        ]
+      }
+    },
+    {
+      "Name": "Scarecrow",
+      "Values": {
+        "Title": "허수아비를 지켜라",
+        "Giver": "Farmer",
+        "Kind": "Hunt",
+        "Target": "",
+        "Count": 3,
+        "AreaX": 4980.0,
+        "AreaY": -900.0,
+        "AreaRadius": 750,
+        "RewardGold": 80,
+        "RewardItem": "SwiftCharm",
+        "RewardExp": 30,
+        "Summary": "밀밭 허수아비 근처의 마물 3마리를 쓰러뜨려 농부 한스의 밀밭을 지키자.",
+        "AcceptLines": [
+          "이거 큰일이구먼. 밀밭 허수아비 근처에 마물이 눌러앉았지 뭐야.",
+          "세 마리만 쫓아내 주면 사례하겠네!"
+        ],
+        "ProgressLines": [
+          "허수아비 근처의 마물을 부탁하네. 밀밭 울타리 틈으로 들어가면 돼."
+        ],
+        "DoneLines": [
+          "밀밭이 조용해졌구먼! 정말 고맙네.",
+          "바람의 부적일세. 발이 빨라지면 마물한테 덜 맞을 걸세."
+        ],
+        "AfterLines": [
+          "올해 밀은 풍년이겠어. 다 자네 덕일세."
+        ]
+      }
+    }
+  ]
+}

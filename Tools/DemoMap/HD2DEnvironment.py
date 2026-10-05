@@ -224,6 +224,7 @@ def WriteMaterials(Content):
 		"EnvWheat":       Plain("EnvWheat", (1.35, 1.0, 0.42, 1.0), 0.85),
 		"EnvMeadow":      Plain("EnvMeadow", (0.75, 1.0, 0.45, 1.0), 0.85),
 		"EnvLeaf":        Plain("EnvLeaf", (0.2, 0.36, 0.12, 1.0), 0.8),
+		"EnvCaveDark":    Plain("EnvCaveDark", (0.004, 0.004, 0.005, 1.0), 1.0),
 	}
 	for Name, Doc in Plains.items():
 		WriteJson(os.path.join(Content, MAT_DIR, f"{Name}.emat"), Doc)
@@ -851,3 +852,94 @@ class FDressing:
 					self.Ball(f"{Name}_Bloom{Row}_{K}", (CX, RY, 26.0), 9.0, Crop, Root)
 		self.Reserve(X, Y, max(W, D) * 0.55)
 		return Root
+
+	# ---- 게시판 / 매단 간판 -------------------------------------------------------------------------------------------
+	def NoticeBoard(self, Name, X, Y, Yaw=0.0):
+		Z = self.Height(X, Y)
+		Root = self.Group(Name, (X, Y, Z), Yaw)
+		for Sign in (-1, 1):
+			self.Box(f"{Name}_Post{Sign}", (Sign * 85.0, 0.0, 110.0), (12.0, 12.0, 220.0), "EnvTimber", None, Root)
+		self.Box(f"{Name}_Board", (0.0, 2.0, 140.0), (170.0, 6.0, 110.0), "EnvPlanks", None, Root)
+		self.Box(f"{Name}_Frame", (0.0, 5.0, 198.0), (184.0, 8.0, 10.0), "EnvTimber", None, Root)
+		self.Box(f"{Name}_Sill", (0.0, 5.0, 82.0), (184.0, 8.0, 10.0), "EnvTimber", None, Root)
+		self.Roof(f"{Name}_Roof", Root, 222.0, 50.0, 200.0, "X", 35.0, "EnvRoofBrown", None, Eave=14.0, GableOver=10.0, Thick=6.0, Cap=False)
+		Papers = ((-55.0, 160.0, 34.0, 42.0, -4.0, "EnvClothWhite"), (-8.0, 150.0, 30.0, 38.0, 3.0, "EnvCanvas"), (40.0, 165.0, 36.0, 30.0, -2.0, "EnvClothWhite"),
+				  (-35.0, 110.0, 40.0, 28.0, 2.0, "EnvClothYellow"), (30.0, 115.0, 28.0, 36.0, -5.0, "EnvClothWhite"), (62.0, 118.0, 20.0, 26.0, 6.0, "EnvCanvas"))
+		for Index, (PX, PZ, W, H, Tilt, Material) in enumerate(Papers):
+			self.Box(f"{Name}_Paper{Index}", (PX, 6.0, PZ), (W, 1.0, H), Material, QuatFromEuler(Pitch=Tilt), Root)
+			self.Box(f"{Name}_Pin{Index}", (PX, 7.5, PZ + H * 0.4), (3.0, 1.5, 3.0), "EnvClothRed", None, Root)
+		self.BoxCollider(f"{Name}_Collision", (X, Y, Z + 100.0), (95.0, 15.0, 100.0), Yaw)
+		self.Reserve(X, Y, 120.0)
+		return Root
+
+	def HangingSign(self, Name, X, Y, Z, Symbol="Bed", Parent=-1):
+		# 벽에서 앞(+Y)으로 내민 쇠 팔 + 매단 판자 + 그림(침대·잔 — 작은 상자 조합)
+		Root = self.Group(Name, (X, Y, Z), 0.0, Parent)
+		self.Box(f"{Name}_Arm", (0.0, 45.0, 0.0), (6.0, 90.0, 6.0), "EnvIron", None, Root)
+		self.Box(f"{Name}_Brace", (0.0, 25.0, -22.0), (5.0, 60.0, 5.0), "EnvIron", QuatFromEuler(Roll=-35.0), Root)
+		for Sign in (-1, 1):
+			self.Box(f"{Name}_Chain{Sign}", (Sign * 4.0, 70.0, -14.0), (2.0, 2.0, 24.0), "EnvIron", None, Root)
+		Board = self.Group(f"{Name}_BoardRoot", (0.0, 70.0, -26.0), 0.0, Root)
+		self.Box(f"{Name}_Board", (0.0, 0.0, -30.0), (78.0, 5.0, 60.0), "EnvPlanks", None, Board)
+		self.Box(f"{Name}_Edge", (0.0, 0.0, -30.0), (86.0, 4.0, 68.0), "EnvTimber", None, Board)
+		for Side in (-1, 1):
+			if Symbol == "Bed":
+				Parts = ((0.0, -38.0, 46.0, 10.0, "EnvClothRed"), (-20.0, -30.0, 12.0, 10.0, "EnvClothWhite"), (-26.0, -40.0, 4.0, 28.0, "EnvTimber"), (26.0, -42.0, 4.0, 20.0, "EnvTimber"))
+			else:
+				Parts = ((0.0, -32.0, 22.0, 26.0, "EnvClothYellow"), (14.0, -32.0, 8.0, 12.0, "EnvClothYellow"), (0.0, -18.0, 24.0, 6.0, "EnvClothWhite"))
+			for Index, (PX, PZ, W, H, Material) in enumerate(Parts):
+				self.Box(f"{Name}_Mark{Side}_{Index}", (PX, Side * 3.5, PZ), (W, 1.5, H), Material, None, Board)
+		return Root
+
+	# ---- 벼랑 동굴 입구 (바위 벽 + 무너진 아치 + 어두운 안쪽 + 횃불) ----------------------------------------------------
+	def CaveMouth(self, Name, X, Y, Z=None, Kit="Asset/KayKit/Dungeon"):
+		Z = self.Height(X, Y) if Z is None else Z
+		Root = self.Group(Name, (X, Y, Z))
+		Rng = self.Rng
+		# 바위 벽 덩어리 (아치 뒤·옆) — 놀이 영역 뒤 경계 너머
+		for Index, (DX, DY, SX, SY, SZ, Yaw) in enumerate(((-420.0, -120.0, 360.0, 300.0, 520.0, 14.0), (430.0, -110.0, 380.0, 300.0, 560.0, -12.0),
+														   (0.0, -260.0, 700.0, 260.0, 640.0, 3.0), (-720.0, -40.0, 300.0, 260.0, 380.0, 32.0),
+														   (720.0, -60.0, 320.0, 240.0, 420.0, -28.0), (0.0, -140.0, 520.0, 160.0, 160.0, 0.0))):
+			Top = SZ if Index != 5 else 640.0
+			self.Box(f"{Name}_Rock{Index}", (DX, DY, (Top - 40.0) * 0.5 if Index != 5 else 520.0), (SX, SY, Top + 40.0 if Index != 5 else SZ), "EnvCliff",
+					 QuatFromEuler(Pitch=Rng.uniform(-5, 5), Yaw=Yaw, Roll=Rng.uniform(-5, 5)), Root)
+		# 돌 문틀(기둥 둘 + 상인방 + 쐐기돌) + 안쪽 어둠(입구 너머가 보이지 않게 깊은 검은 상자)
+		for Side in (-1, 1):
+			self.Box(f"{Name}_Jamb{Side}", (Side * 165.0, 30.0, 140.0), (70.0, 90.0, 320.0), "EnvStone", QuatFromEuler(Yaw=Side * 3.0), Root)
+			self.Box(f"{Name}_JambBase{Side}", (Side * 165.0, 34.0, 15.0), (92.0, 104.0, 40.0), "EnvStoneDark", None, Root)
+		self.Box(f"{Name}_Lintel", (0.0, 30.0, 330.0), (430.0, 100.0, 70.0), "EnvStone", QuatFromEuler(Pitch=1.5), Root)
+		self.Box(f"{Name}_Keystone", (0.0, 36.0, 372.0), (70.0, 100.0, 50.0), "EnvStoneDark", None, Root)
+		self.Box(f"{Name}_Dark", (0.0, -80.0, 140.0), (270.0, 200.0, 300.0), "EnvCaveDark", None, Root)
+		self.S.Add(f"{Name}_Mist", {"PointLightComponent": {"Color": [0.35, 0.55, 1.0], "Intensity": 1.5, "Radius": 300.0, "CastShadows": False}},
+				   (0.0, -40.0, 120.0), None, (1.0, 1.0, 1.0), Root)
+		for Side in (-1, 1):
+			self.S.Add(f"{Name}_Torch{Side}", {"ModelComponent": {"AssetPath": f"{Kit}/torch_mounted.glb"}}, (Side * 175.0, 72.0, 230.0),
+					   QuatFromEuler(Yaw=-90.0), (1.0, 1.0, 1.0), Root)
+			self.Particles(f"{Name}_TorchFlame{Side}", "Particles/Demo/CampfireLanternFlame.eparticle", (Side * 175.0, 95.0, 300.0), Root)
+		self.S.Add(f"{Name}_Sign", {"StaticMeshComponent": {"MeshAsset": CUBE, "MaterialAsset": Mat("EnvPlanks")}}, (-330.0, 190.0, 120.0),
+				   QuatFromEuler(Yaw=8.0, Roll=-6.0), (0.9, 0.05, 0.5), Root)
+		self.Box(f"{Name}_SignPost", (-330.0, 190.0, 60.0), (10.0, 10.0, 120.0), "EnvTimber", None, Root)
+		return Root
+
+
+def WriteCastleKit(Content, OutRel):
+	# 성채: 둥근 탑 + 얇은 성벽 + 성문 + 성벽 + 둥근 탑 (바깥면 = +Y(카메라 쪽), 로컬 원점 = 서쪽 끝 바깥면). 키트 조각 로컬: 길이 → -X, 두께 → +Y
+	#   Yaw 180 → 길이 +X, 두께 -Y (BuildTraining.py 실측과 같은 규약)
+	from GltfKit import FGltfKitComposer, EngineToGltf
+	Fort = "modular_fort_01"
+	K = FGltfKitComposer(os.path.join(Content, *PH.split("/")), os.path.join(Content, *OutRel.split("/")))
+
+	def Piece(Name, X, Y, Yaw):
+		K.Add(Fort, f"{Fort}_{Name}", EngineToGltf(X, Y, -40.0, Yaw))
+
+	X = 600.0
+	for Name, Length in (("wall_thin_straight_01", 1482.0), ("wall_thin_gate_01", 741.0), ("wall_thin_straight_02", 1482.0)):
+		Piece(Name, X, 0.0, 180.0)
+		X += Length
+	Piece("tower_round", 300.0, -380.0, 0.0)
+	Piece("tower_round", X + 300.0, -380.0, 40.0)
+	# 성문 안쪽 높은 성벽 (뒤로 보이는 겹)
+	Piece("wall_thick_straight_01", 1600.0, -1400.0, 180.0)
+	Piece("wall_thick_straight_02", 3056.0, -1400.0, 180.0)
+	K.Save()
+	return X + 300.0

@@ -50565,39 +50565,6 @@
     {
       "Components": {
         "CapsuleColliderComponent": {
-          "Radius": 24.0,
-          "HalfHeight": 120.0,
-          "Offset": [
-            0.0,
-            0.0,
-            0.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            600.0,
-            -1500.0,
-            153.5317719232589
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "FieldFir_0_Trunk",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "CapsuleColliderComponent": {
           "Radius": 26.400000000000002,
           "HalfHeight": 120.0,
           "Offset": [
@@ -50625,7 +50592,7 @@
           ]
         }
       },
-      "Name": "FieldFir_1_Trunk",
+      "Name": "FieldFir_0_Trunk",
       "Parent": -1
     },
     {
@@ -50658,7 +50625,7 @@
           ]
         }
       },
-      "Name": "FieldFir_2_Trunk",
+      "Name": "FieldFir_1_Trunk",
       "Parent": -1
     },
     {
@@ -50691,40 +50658,7 @@
           ]
         }
       },
-      "Name": "FieldFir_3_Trunk",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "CapsuleColliderComponent": {
-          "Radius": 21.6,
-          "HalfHeight": 120.0,
-          "Offset": [
-            0.0,
-            0.0,
-            0.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            300.0,
-            -1250.0,
-            151.22726551543107
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "FieldFir_7_Trunk",
+      "Name": "FieldFir_2_Trunk",
       "Parent": -1
     },
     {
@@ -50757,7 +50691,150 @@
           ]
         }
       },
-      "Name": "FieldFir_8_Trunk",
+      "Name": "FieldFir_4_Trunk",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1325.3396580958279,
+            -364.69346260884913,
+            0.995406505595831
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6486270637596283,
+            0.7611063868859353
+          ],
+          "Scale": [
+            1.0508620136817428,
+            1.0508620136817428,
+            1.0508620136817428
+          ]
+        }
+      },
+      "Name": "FieldRock_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            10.097006756675311,
+            5.324147459322659,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1325.9625781810278,
+            -362.8951140696462,
+            8.346493151333728
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.6486270637596283,
+            0.7611063868859353
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FieldRock_0_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            4003.028118573227,
+            636.5809791999436,
+            -15.8620033251686
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9770815980204862,
+            0.21286510002753603
+          ],
+          "Scale": [
+            0.9002637534362472,
+            0.9002637534362472,
+            0.9002637534362472
+          ]
+        }
+      },
+      "Name": "FieldRock_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            441.25791560851684,
+            -440.43286555872487,
+            -16.252965970412998
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4351615529782284,
+            0.9003523881289905
+          ],
+          "Scale": [
+            0.912906470383035,
+            0.912906470383035,
+            0.912906470383035
+          ]
+        }
+      },
+      "Name": "FieldRock_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            8.771487292966041,
+            4.625201597934109,
+            60.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            442.49409160733876,
+            -439.3349698394528,
+            -9.866918634161243
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.4351615529782284,
+            0.9003523881289905
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FieldRock_2_Collision",
       "Parent": -1
     },
     {
@@ -50784,65 +50861,7 @@
           ]
         }
       },
-      "Name": "FieldRock_0",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            11.31843239363403,
-            5.968204689200816,
-            60.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            584.052590590447,
-            1056.3664294883756,
-            -8.234369850873033
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.9603546179133982,
-            -0.27878129035573923
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "FieldRock_0_Collision",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            300.52727681470907,
-            -479.82094327032905,
-            -17.36843275199294
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.17118624332893145,
-            -0.9852386868647252
-          ],
-          "Scale": [
-            0.8898378950933601,
-            0.8898378950933601,
-            0.8898378950933601
-          ]
-        }
-      },
-      "Name": "FieldRock_1",
+      "Name": "FieldRock_3",
       "Parent": -1
     },
     {
@@ -50869,7 +50888,7 @@
           ]
         }
       },
-      "Name": "FieldRock_2",
+      "Name": "FieldRock_4",
       "Parent": -1
     },
     {
@@ -50900,7 +50919,7 @@
           ]
         }
       },
-      "Name": "FieldRock_2_Collision",
+      "Name": "FieldRock_4_Collision",
       "Parent": -1
     },
     {
@@ -50927,7 +50946,7 @@
           ]
         }
       },
-      "Name": "FieldRock_3",
+      "Name": "FieldRock_5",
       "Parent": -1
     },
     {
@@ -50954,7 +50973,7 @@
           ]
         }
       },
-      "Name": "FieldRock_4",
+      "Name": "FieldRock_6",
       "Parent": -1
     },
     {
@@ -50985,7 +51004,7 @@
           ]
         }
       },
-      "Name": "FieldRock_4_Collision",
+      "Name": "FieldRock_6_Collision",
       "Parent": -1
     },
     {
@@ -51012,7 +51031,7 @@
           ]
         }
       },
-      "Name": "FieldRock_5",
+      "Name": "FieldRock_7",
       "Parent": -1
     },
     {
@@ -51039,7 +51058,7 @@
           ]
         }
       },
-      "Name": "FieldRock_6",
+      "Name": "FieldRock_8",
       "Parent": -1
     },
     {
@@ -51070,7 +51089,7 @@
           ]
         }
       },
-      "Name": "FieldRock_6_Collision",
+      "Name": "FieldRock_8_Collision",
       "Parent": -1
     },
     {
@@ -51097,92 +51116,61 @@
           ]
         }
       },
-      "Name": "FieldRock_7",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            5028.391220147678,
-            -1737.4402926387363,
-            48.350161210610544
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.8234984770554838,
-            -0.567318480473974
-          ],
-          "Scale": [
-            0.8375330972298349,
-            0.8375330972298349,
-            0.8375330972298349
-          ]
-        }
-      },
-      "Name": "FieldRock_8",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            8.04727664676054,
-            4.243325625685174,
-            60.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            5027.613295939813,
-            -1738.7424426093169,
-            54.20894979203351
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.8234984770554838,
-            -0.567318480473974
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "FieldRock_8_Collision",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/rock_07/rock_07.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            3613.11104039469,
-            -614.6762841137493,
-            -4.5233479399432195
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.9873203797070622,
-            -0.1587402526617067
-          ],
-          "Scale": [
-            0.6499894437676574,
-            0.6499894437676574,
-            0.6499894437676574
-          ]
-        }
-      },
       "Name": "FieldRock_9",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3121.6729980397563,
+            492.2390483991462,
+            -4.435400110808225
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7079266289016924,
+            -0.706285981803324
+          ],
+          "Scale": [
+            0.6570970308658137,
+            0.6570970308658137,
+            0.6570970308658137
+          ]
+        }
+      },
+      "Name": "FieldBush_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            2398.8578096817373,
+            34.69137876659374,
+            -0.40870033601293354
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.8507549781273239,
+            -0.5255625245311699
+          ],
+          "Scale": [
+            2.110904581216066,
+            2.110904581216066,
+            2.110904581216066
+          ]
+        }
+      },
+      "Name": "FieldBush_1",
       "Parent": -1
     },
     {
@@ -51209,7 +51197,7 @@
           ]
         }
       },
-      "Name": "FieldBush_0",
+      "Name": "FieldBush_2",
       "Parent": -1
     },
     {
@@ -51236,7 +51224,7 @@
           ]
         }
       },
-      "Name": "FieldBush_1",
+      "Name": "FieldBush_3",
       "Parent": -1
     },
     {
@@ -51263,7 +51251,7 @@
           ]
         }
       },
-      "Name": "FieldBush_2",
+      "Name": "FieldBush_4",
       "Parent": -1
     },
     {
@@ -51290,7 +51278,7 @@
           ]
         }
       },
-      "Name": "FieldBush_3",
+      "Name": "FieldBush_5",
       "Parent": -1
     },
     {
@@ -51317,7 +51305,7 @@
           ]
         }
       },
-      "Name": "FieldBush_4",
+      "Name": "FieldBush_6",
       "Parent": -1
     },
     {
@@ -51344,7 +51332,7 @@
           ]
         }
       },
-      "Name": "FieldBush_5",
+      "Name": "FieldBush_7",
       "Parent": -1
     },
     {
@@ -51371,7 +51359,7 @@
           ]
         }
       },
-      "Name": "FieldBush_6",
+      "Name": "FieldBush_8",
       "Parent": -1
     },
     {
@@ -51398,7 +51386,7 @@
           ]
         }
       },
-      "Name": "FieldBush_7",
+      "Name": "FieldBush_9",
       "Parent": -1
     },
     {
@@ -51425,7 +51413,7 @@
           ]
         }
       },
-      "Name": "FieldBush_8",
+      "Name": "FieldBush_10",
       "Parent": -1
     },
     {
@@ -51452,60 +51440,6 @@
           ]
         }
       },
-      "Name": "FieldBush_9",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/shrub_03/shrub_03.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            1234.0634929176945,
-            -271.05652203170007,
-            3.7590056090887654
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.7650652403779112,
-            0.6439527761920814
-          ],
-          "Scale": [
-            0.832070340135489,
-            0.832070340135489,
-            0.832070340135489
-          ]
-        }
-      },
-      "Name": "FieldBush_10",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            3914.5180878071037,
-            -673.3431011093537,
-            10.44617441609569
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.2996214218258442,
-            -0.9540581762047111
-          ],
-          "Scale": [
-            0.5708868358909159,
-            0.5708868358909159,
-            0.5708868358909159
-          ]
-        }
-      },
       "Name": "FieldBush_11",
       "Parent": -1
     },
@@ -51516,9 +51450,9 @@
         },
         "TransformComponent": {
           "Position": [
-            3342.3730545290064,
-            1225.4166963412208,
-            -1.335968442577669
+            5183.463588033158,
+            158.78205114162256,
+            1.5527866444540628
           ],
           "Rotation": [
             0.0,
@@ -51570,20 +51504,20 @@
         },
         "TransformComponent": {
           "Position": [
-            2034.7218750714044,
-            845.5846651454676,
-            -9.682626157415726
+            3435.2241868441533,
+            1248.707108990065,
+            -0.8223400600305824
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.25109399069937954,
-            -0.9679627099401401
+            0.7873839594570653,
+            -0.6164628945765629
           ],
           "Scale": [
-            0.5846236688106123,
-            0.5846236688106123,
-            0.5846236688106123
+            0.8155748378633081,
+            0.8155748378633081,
+            0.8155748378633081
           ]
         }
       },
@@ -51593,24 +51527,24 @@
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+          "AssetPath": "Asset/PolyHaven/shrub_03/shrub_03.gltf"
         },
         "TransformComponent": {
           "Position": [
-            5219.154016899529,
-            -119.23587353979133,
-            10.252773543787548
+            2565.49022350677,
+            665.6588754961331,
+            -2.8666685964931493
           ],
           "Rotation": [
             0.0,
-            -0.0,
-            0.557589139768215,
-            0.830117070787333
+            0.0,
+            0.8561125456474055,
+            -0.5167894244129992
           ],
           "Scale": [
-            2.030781167128591,
-            2.030781167128591,
-            2.030781167128591
+            0.5738296086725709,
+            0.5738296086725709,
+            0.5738296086725709
           ]
         }
       },
@@ -51624,24 +51558,78 @@
         },
         "TransformComponent": {
           "Position": [
-            3482.3016175096045,
-            -1876.2159282279054,
-            104.05642959753615
+            2467.9148620341866,
+            1041.4709625726769,
+            -8.34041754247798
           ],
           "Rotation": [
             0.0,
             -0.0,
-            0.7156288422382564,
-            0.6984807514575707
+            0.9575873886954422,
+            0.2881430079169788
           ],
           "Scale": [
-            0.791264840431381,
-            0.791264840431381,
-            0.791264840431381
+            0.5664262758388781,
+            0.5664262758388781,
+            0.5664262758388781
           ]
         }
       },
       "Name": "FieldBush_16",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/shrub_04/shrub_04.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            1923.1037932070424,
+            1204.5729289421106,
+            -13.022812264491314
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.7064912139975636,
+            -0.7077218129634332
+          ],
+          "Scale": [
+            0.5155962941813724,
+            0.5155962941813724,
+            0.5155962941813724
+          ]
+        }
+      },
+      "Name": "FieldBush_17",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            3579.907768392509,
+            -54.517150218396864,
+            -14.9763010676574
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.4817065314115239,
+            -0.8763325953058454
+          ],
+          "Scale": [
+            0.7650299777429324,
+            0.7650299777429324,
+            0.7650299777429324
+          ]
+        }
+      },
+      "Name": "FieldBush_18",
       "Parent": -1
     },
     {
@@ -51668,7 +51656,7 @@
           ]
         }
       },
-      "Name": "FieldBush_17",
+      "Name": "FieldBush_19",
       "Parent": -1
     },
     {
@@ -51695,89 +51683,2392 @@
           ]
         }
       },
-      "Name": "FieldBush_18",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            1249.5007823922824,
-            -477.5722681565903,
-            5.21116400429748
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.9372681156362254,
-            -0.34860935072329796
-          ],
-          "Scale": [
-            0.6760330018164252,
-            0.6760330018164252,
-            0.6760330018164252
-          ]
-        }
-      },
-      "Name": "FieldBush_19",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/shrub_02/shrub_02.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            3984.5508971269164,
-            935.0430341175843,
-            -5.533014383332479
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.9973900046020222,
-            0.07220234566811544
-          ],
-          "Scale": [
-            0.8460512748252291,
-            0.8460512748252291,
-            0.8460512748252291
-          ]
-        }
-      },
       "Name": "FieldBush_20",
       "Parent": -1
     },
     {
       "Components": {
         "ModelComponent": {
-          "AssetPath": "Asset/PolyHaven/flower_gazania/flower_gazania.gltf"
+          "AssetPath": "Asset/PolyHaven/wild_rooibos_bush/wild_rooibos_bush.alpha.gltf"
         },
         "TransformComponent": {
           "Position": [
-            746.9361526429939,
-            -1202.3130689380064,
-            -3.0416048305038124
+            3749.603830907873,
+            -1827.848627902247,
+            140.0534295527323
           ],
           "Rotation": [
             0.0,
             0.0,
-            0.6387989137332809,
-            -0.7693737374080171
+            0.12561062081521085,
+            -0.9920796197576167
           ],
           "Scale": [
-            2.476594239587034,
-            2.476594239587034,
-            2.476594239587034
+            0.500583161345116,
+            0.500583161345116,
+            0.500583161345116
           ]
         }
       },
       "Name": "FieldBush_21",
       "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/DemoKits/HD2D/HD2DCastle.gltf"
+        },
+        "TransformComponent": {
+          "Position": [
+            850.0,
+            -2380.0,
+            160.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.6,
+            0.6,
+            0.6
+          ]
+        }
+      },
+      "Name": "Castle",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/banner_patternA_red.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2069.5,
+            -2350.0,
+            340.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Castle_Banner-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 6.0,
+          "Radius": 700.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 6.0, \"Seed\": 69, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            2121.5,
+            -2260.0,
+            420.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Castle_GateLight-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2121.5,
+            -2340.0,
+            390.03020839345714
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Castle_Torch-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2121.5,
+            -2322.0,
+            447.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Castle_TorchFlame-1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/banner_patternA_red.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2573.5,
+            -2350.0,
+            340.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Castle_Banner1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.6,
+            0.28
+          ],
+          "Intensity": 6.0,
+          "Radius": 700.0,
+          "CastShadows": false
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
+          "ExecutionLocation": 2,
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 6.0, \"Seed\": 71, \"Amount\": 0.2, \"Speed\": 1.0}"
+        },
+        "TransformComponent": {
+          "Position": [
+            2521.5,
+            -2260.0,
+            420.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Castle_GateLight1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            2521.5,
+            -2340.0,
+            390.03020839345714
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.8,
+            0.8,
+            0.8
+          ]
+        }
+      },
+      "Name": "Castle_Torch1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            2521.5,
+            -2322.0,
+            447.03020839345714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Castle_TorchFlame1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            330.0,
+            -2025.0,
+            8.332769854719023
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            -120.0,
+            240.0
+          ],
+          "Rotation": [
+            -0.02229357082761662,
+            0.04109665763027465,
+            0.1224760942908838,
+            0.9913695919073897
+          ],
+          "Scale": [
+            3.6,
+            3.0,
+            5.6
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock0",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            430.0,
+            -110.0,
+            260.0
+          ],
+          "Rotation": [
+            -0.03545102510906522,
+            -0.03956562313571584,
+            -0.10571521288931482,
+            0.9929763743656572
+          ],
+          "Scale": [
+            3.8,
+            3.0,
+            6.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -260.0,
+            300.0
+          ],
+          "Rotation": [
+            -0.018346395528057138,
+            -0.004488481025252654,
+            0.02609833693239223,
+            0.9994809353452307
+          ],
+          "Scale": [
+            7.0,
+            2.6,
+            6.8
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock2",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -720.0,
+            -40.0,
+            170.0
+          ],
+          "Rotation": [
+            0.01442977387338412,
+            0.047768880687869233,
+            0.27420236474074566,
+            0.9603764776557026
+          ],
+          "Scale": [
+            3.0,
+            2.6,
+            4.2
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock3",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            720.0,
+            -60.0,
+            190.0
+          ],
+          "Rotation": [
+            0.01753601810103496,
+            -0.012382032806276031,
+            -0.24171520886720219,
+            0.9701097521079918
+          ],
+          "Scale": [
+            3.2,
+            2.4,
+            4.6
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock4",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCliff.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -140.0,
+            520.0
+          ],
+          "Rotation": [
+            -0.025774524974960605,
+            -0.014109923801538011,
+            -0.00036383371136775847,
+            0.9995681325140675
+          ],
+          "Scale": [
+            5.2,
+            1.6,
+            1.6
+          ]
+        }
+      },
+      "Name": "CaveMouth_Rock5",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStone.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -165.0,
+            30.0,
+            140.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.026176948307873153,
+            0.9996573249755573
+          ],
+          "Scale": [
+            0.7,
+            0.9,
+            3.2
+          ]
+        }
+      },
+      "Name": "CaveMouth_Jamb-1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -165.0,
+            34.0,
+            15.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.92,
+            1.04,
+            0.4
+          ]
+        }
+      },
+      "Name": "CaveMouth_JambBase-1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStone.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            165.0,
+            30.0,
+            140.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.026176948307873153,
+            0.9996573249755573
+          ],
+          "Scale": [
+            0.7,
+            0.9,
+            3.2
+          ]
+        }
+      },
+      "Name": "CaveMouth_Jamb1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            165.0,
+            34.0,
+            15.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.92,
+            1.04,
+            0.4
+          ]
+        }
+      },
+      "Name": "CaveMouth_JambBase1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStone.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            30.0,
+            330.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.013089595571344441,
+            0.0,
+            0.999914327574007
+          ],
+          "Scale": [
+            4.3,
+            1.0,
+            0.7
+          ]
+        }
+      },
+      "Name": "CaveMouth_Lintel",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvStoneDark.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            36.0,
+            372.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.7,
+            1.0,
+            0.5
+          ]
+        }
+      },
+      "Name": "CaveMouth_Keystone",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCaveDark.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -80.0,
+            140.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            2.7,
+            2.0,
+            3.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_Dark",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.35,
+            0.55,
+            1.0
+          ],
+          "Intensity": 1.5,
+          "Radius": 300.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -40.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_Mist",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -175.0,
+            72.0,
+            230.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_Torch-1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            -175.0,
+            95.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_TorchFlame-1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            175.0,
+            72.0,
+            230.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_Torch1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "ParticleSystemComponent": {
+          "Asset": "Particles/Demo/CampfireLanternFlame.eparticle",
+          "Playing": true,
+          "Speed": 1.0
+        },
+        "TransformComponent": {
+          "Position": [
+            175.0,
+            95.0,
+            300.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveMouth_TorchFlame1",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvPlanks.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -330.0,
+            190.0,
+            120.0
+          ],
+          "Rotation": [
+            0.052208468483931986,
+            0.0036507717575346025,
+            0.06966087492121549,
+            0.9961969233988566
+          ],
+          "Scale": [
+            0.9,
+            0.05,
+            0.5
+          ]
+        }
+      },
+      "Name": "CaveMouth_Sign",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -330.0,
+            190.0,
+            60.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.1,
+            0.1,
+            1.2
+          ]
+        }
+      },
+      "Name": "CaveMouth_SignPost",
+      "Parent": 1840
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            150.0,
+            70.0,
+            130.0
+          ],
+          "IsTrigger": true
+        },
+        "ScriptComponent": {
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DTravel.lua",
+          "ExecutionLocation": 0,
+          "PropertyOverrides": "{\"TargetScene\": \"Scenes/Demo/HD2DCave.escene\", \"SpawnName\": \"CaveEntry\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            330.0,
+            -1890.0,
+            128.55719833648052
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "CaveGate_Travel",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            330.0,
+            -1650.0,
+            8.071204972131074
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_CaveExit",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -2780.0,
+            -800.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "NoticeBoard",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -85.0,
+            0.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.12,
+            2.2
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Post-1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            85.0,
+            0.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.12,
+            2.2
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Post1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvPlanks.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            2.0,
+            140.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.7,
+            0.06,
+            1.1
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Board",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            5.0,
+            198.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.84,
+            0.08,
+            0.1
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Frame",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            5.0,
+            82.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.84,
+            0.08,
+            0.1
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Sill",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            222.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.7002075382097097
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Roof_GableScale",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvRoofBrown.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -19.5,
+            229.51346522643777
+          ],
+          "Rotation": [
+            0.3007057995042731,
+            0.0,
+            0.0,
+            0.9537169507482269
+          ],
+          "Scale": [
+            2.2,
+            0.47610208961696787,
+            0.06
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Roof_Roof-1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvRoofBrown.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            19.5,
+            229.51346522643777
+          ],
+          "Rotation": [
+            -0.3007057995042731,
+            -0.0,
+            0.0,
+            0.9537169507482269
+          ],
+          "Scale": [
+            2.2,
+            0.47610208961696787,
+            0.06
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Roof_Roof1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -55.0,
+            6.0,
+            160.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.03489949670250097,
+            0.0,
+            0.9993908270190958
+          ],
+          "Scale": [
+            0.34,
+            0.01,
+            0.42
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper0",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -55.0,
+            7.5,
+            176.8
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin0",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCanvas.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -8.0,
+            6.0,
+            150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.026176948307873153,
+            0.0,
+            0.9996573249755573
+          ],
+          "Scale": [
+            0.3,
+            0.01,
+            0.38
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -8.0,
+            7.5,
+            165.2
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin1",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            6.0,
+            165.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.01745240643728351,
+            0.0,
+            0.9998476951563913
+          ],
+          "Scale": [
+            0.36,
+            0.01,
+            0.3
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper2",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            40.0,
+            7.5,
+            177.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin2",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothYellow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -35.0,
+            6.0,
+            110.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.01745240643728351,
+            0.0,
+            0.9998476951563913
+          ],
+          "Scale": [
+            0.4,
+            0.01,
+            0.28
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper3",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -35.0,
+            7.5,
+            121.2
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin3",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            30.0,
+            6.0,
+            115.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.043619387365336,
+            0.0,
+            0.9990482215818578
+          ],
+          "Scale": [
+            0.28,
+            0.01,
+            0.36
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper4",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            30.0,
+            7.5,
+            129.4
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin4",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvCanvas.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            62.0,
+            6.0,
+            118.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.052335956242943835,
+            0.0,
+            0.9986295347545738
+          ],
+          "Scale": [
+            0.2,
+            0.01,
+            0.26
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Paper5",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            62.0,
+            7.5,
+            128.4
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.03,
+            0.015,
+            0.03
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Pin5",
+      "Parent": 1863
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            95.0,
+            15.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -2780.0,
+            -800.0,
+            100.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "NoticeBoard_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3515.0,
+            -1320.0,
+            405.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Inn_Sign",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            45.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.06,
+            0.9,
+            0.06
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Arm",
+      "Parent": 1885
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            25.0,
+            -22.0
+          ],
+          "Rotation": [
+            0.3007057995042731,
+            0.0,
+            0.0,
+            0.9537169507482269
+          ],
+          "Scale": [
+            0.05,
+            0.6,
+            0.05
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Brace",
+      "Parent": 1885
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            70.0,
+            -14.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            0.24
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Chain-1",
+      "Parent": 1885
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            70.0,
+            -14.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            0.24
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Chain1",
+      "Parent": 1885
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            70.0,
+            -26.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Inn_Sign_BoardRoot",
+      "Parent": 1885
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvPlanks.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.78,
+            0.05,
+            0.6
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Board",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.86,
+            0.04,
+            0.68
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Edge",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -3.5,
+            -38.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.46,
+            0.015,
+            0.1
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark-1_0",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -20.0,
+            -3.5,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.015,
+            0.1
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark-1_1",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -26.0,
+            -3.5,
+            -40.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            0.015,
+            0.28
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark-1_2",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            26.0,
+            -3.5,
+            -42.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            0.015,
+            0.2
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark-1_3",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothRed.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            3.5,
+            -38.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.46,
+            0.015,
+            0.1
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark1_0",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -20.0,
+            3.5,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.12,
+            0.015,
+            0.1
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark1_1",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -26.0,
+            3.5,
+            -40.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            0.015,
+            0.28
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark1_2",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            26.0,
+            3.5,
+            -42.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.04,
+            0.015,
+            0.2
+          ]
+        }
+      },
+      "Name": "Inn_Sign_Mark1_3",
+      "Parent": 1890
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            -3230.0,
+            -1320.0,
+            405.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Inn_SignMug",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            45.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.06,
+            0.9,
+            0.06
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Arm",
+      "Parent": 1901
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            25.0,
+            -22.0
+          ],
+          "Rotation": [
+            0.3007057995042731,
+            0.0,
+            0.0,
+            0.9537169507482269
+          ],
+          "Scale": [
+            0.05,
+            0.6,
+            0.05
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Brace",
+      "Parent": 1901
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -4.0,
+            70.0,
+            -14.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            0.24
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Chain-1",
+      "Parent": 1901
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvIron.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            4.0,
+            70.0,
+            -14.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.02,
+            0.02,
+            0.24
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Chain1",
+      "Parent": 1901
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            70.0,
+            -26.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_BoardRoot",
+      "Parent": 1901
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvPlanks.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.78,
+            0.05,
+            0.6
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Board",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvTimber.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -30.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.86,
+            0.04,
+            0.68
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Edge",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothYellow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -3.5,
+            -32.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.22,
+            0.015,
+            0.26
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark-1_0",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothYellow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            14.0,
+            -3.5,
+            -32.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.08,
+            0.015,
+            0.12
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark-1_1",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -3.5,
+            -18.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.24,
+            0.015,
+            0.06
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark-1_2",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothYellow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            3.5,
+            -32.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.22,
+            0.015,
+            0.26
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark1_0",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothYellow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            14.0,
+            3.5,
+            -32.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.08,
+            0.015,
+            0.12
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark1_1",
+      "Parent": 1906
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/Demo/HD2D/EnvClothWhite.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            3.5,
+            -18.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.24,
+            0.015,
+            0.06
+          ]
+        }
+      },
+      "Name": "Inn_SignMug_Mark1_2",
+      "Parent": 1906
     },
     {
       "Components": {
@@ -52106,7 +54397,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1842
+          "Root": 1924
         },
         "TransformComponent": {
           "Position": [

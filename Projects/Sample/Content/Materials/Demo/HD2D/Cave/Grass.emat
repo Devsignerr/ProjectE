@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DCaveGrass",
+  "BaseColorFactor": [
+    0.32,
+    0.5,
+    0.42,
+    1.0
+  ],
+  "EmissiveFactor": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.9,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

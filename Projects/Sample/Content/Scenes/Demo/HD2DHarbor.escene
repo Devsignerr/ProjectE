@@ -25094,8 +25094,8 @@
         },
         "TransformComponent": {
           "Position": [
-            856.0,
-            520.0,
+            1296.0,
+            820.0,
             5.0
           ],
           "Rotation": [
@@ -25125,8 +25125,8 @@
         },
         "TransformComponent": {
           "Position": [
-            856.0,
-            520.0,
+            1296.0,
+            820.0,
             30.0
           ],
           "Rotation": [
@@ -25152,8 +25152,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1296.0,
-            820.0,
+            852.0,
+            1000.0,
             5.0
           ],
           "Rotation": [
@@ -25183,8 +25183,8 @@
         },
         "TransformComponent": {
           "Position": [
-            1296.0,
-            820.0,
+            852.0,
+            1000.0,
             30.0
           ],
           "Rotation": [
@@ -25201,64 +25201,6 @@
         }
       },
       "Name": "Jetty_Bollard1_Collision",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "ModelComponent": {
-          "AssetPath": "Asset/DemoKits/HD2D/Harbor/HarborBollard.gltf"
-        },
-        "TransformComponent": {
-          "Position": [
-            856.0,
-            960.0,
-            5.0
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.9,
-            0.9,
-            0.9
-          ]
-        }
-      },
-      "Name": "Jetty_Bollard2",
-      "Parent": -1
-    },
-    {
-      "Components": {
-        "BoxColliderComponent": {
-          "HalfExtents": [
-            15.0,
-            15.0,
-            30.0
-          ]
-        },
-        "TransformComponent": {
-          "Position": [
-            856.0,
-            960.0,
-            30.0
-          ],
-          "Rotation": [
-            0.0,
-            -0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            1.0,
-            1.0,
-            1.0
-          ]
-        }
-      },
-      "Name": "Jetty_Bollard2_Collision",
       "Parent": -1
     },
     {
@@ -25635,7 +25577,7 @@
         }
       },
       "Name": "Market_Stall0_Post-11",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25663,7 +25605,7 @@
         }
       },
       "Name": "Market_Stall0_Post-1-1",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25691,7 +25633,7 @@
         }
       },
       "Name": "Market_Stall0_Post11",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25719,7 +25661,7 @@
         }
       },
       "Name": "Market_Stall0_Post1-1",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25747,7 +25689,7 @@
         }
       },
       "Name": "Market_Stall0_Counter",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25775,7 +25717,7 @@
         }
       },
       "Name": "Market_Stall0_CounterTop",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25803,7 +25745,7 @@
         }
       },
       "Name": "Market_Stall0_Back",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25831,7 +25773,7 @@
         }
       },
       "Name": "Market_Stall0_Awning",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25859,7 +25801,7 @@
         }
       },
       "Name": "Market_Stall0_Valance",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25887,7 +25829,7 @@
         }
       },
       "Name": "Market_Stall0_Crate0",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -25964,7 +25906,7 @@
         }
       },
       "Name": "Market_Stall0_Crate1",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -26041,7 +25983,7 @@
         }
       },
       "Name": "Market_Stall0_Crate2",
-      "Parent": 888
+      "Parent": 886
     },
     {
       "Components": {
@@ -26222,7 +26164,7 @@
         }
       },
       "Name": "Market_Stall1_Post-11",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26250,7 +26192,7 @@
         }
       },
       "Name": "Market_Stall1_Post-1-1",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26278,7 +26220,7 @@
         }
       },
       "Name": "Market_Stall1_Post11",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26306,7 +26248,7 @@
         }
       },
       "Name": "Market_Stall1_Post1-1",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26334,7 +26276,7 @@
         }
       },
       "Name": "Market_Stall1_Counter",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26362,7 +26304,7 @@
         }
       },
       "Name": "Market_Stall1_CounterTop",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26390,7 +26332,7 @@
         }
       },
       "Name": "Market_Stall1_Back",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26418,7 +26360,7 @@
         }
       },
       "Name": "Market_Stall1_Awning",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26446,7 +26388,7 @@
         }
       },
       "Name": "Market_Stall1_Valance",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26474,7 +26416,7 @@
         }
       },
       "Name": "Market_Stall1_Crate0",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26551,7 +26493,7 @@
         }
       },
       "Name": "Market_Stall1_Crate1",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26628,7 +26570,7 @@
         }
       },
       "Name": "Market_Stall1_Crate2",
-      "Parent": 906
+      "Parent": 904
     },
     {
       "Components": {
@@ -26809,7 +26751,7 @@
         }
       },
       "Name": "Market_Stall2_Post-11",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26837,7 +26779,7 @@
         }
       },
       "Name": "Market_Stall2_Post-1-1",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26865,7 +26807,7 @@
         }
       },
       "Name": "Market_Stall2_Post11",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26893,7 +26835,7 @@
         }
       },
       "Name": "Market_Stall2_Post1-1",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26921,7 +26863,7 @@
         }
       },
       "Name": "Market_Stall2_Counter",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26949,7 +26891,7 @@
         }
       },
       "Name": "Market_Stall2_CounterTop",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -26977,7 +26919,7 @@
         }
       },
       "Name": "Market_Stall2_Back",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -27005,7 +26947,7 @@
         }
       },
       "Name": "Market_Stall2_Awning",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -27033,7 +26975,7 @@
         }
       },
       "Name": "Market_Stall2_Valance",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -27061,7 +27003,7 @@
         }
       },
       "Name": "Market_Stall2_Crate0",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -27138,7 +27080,7 @@
         }
       },
       "Name": "Market_Stall2_Crate1",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -27215,7 +27157,7 @@
         }
       },
       "Name": "Market_Stall2_Crate2",
-      "Parent": 924
+      "Parent": 922
     },
     {
       "Components": {
@@ -32580,7 +32522,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_GableScale",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32608,7 +32550,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Gable",
-      "Parent": 1120
+      "Parent": 1118
     },
     {
       "Components": {
@@ -32636,7 +32578,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Roof-1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32664,7 +32606,7 @@
         }
       },
       "Name": "Pirate_TentA_Cloth_Roof1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32692,7 +32634,7 @@
         }
       },
       "Name": "Pirate_TentA_Opening",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32720,7 +32662,7 @@
         }
       },
       "Name": "Pirate_TentA_Flap-1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32748,7 +32690,7 @@
         }
       },
       "Name": "Pirate_TentA_Flap1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32776,7 +32718,7 @@
         }
       },
       "Name": "Pirate_TentA_Pole-1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32804,7 +32746,7 @@
         }
       },
       "Name": "Pirate_TentA_Pole1",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32832,7 +32774,7 @@
         }
       },
       "Name": "Pirate_TentA_RidgePole",
-      "Parent": 1119
+      "Parent": 1117
     },
     {
       "Components": {
@@ -32911,7 +32853,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_GableScale",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -32939,7 +32881,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Gable",
-      "Parent": 1132
+      "Parent": 1130
     },
     {
       "Components": {
@@ -32967,7 +32909,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Roof-1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -32995,7 +32937,7 @@
         }
       },
       "Name": "Pirate_TentB_Cloth_Roof1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33023,7 +32965,7 @@
         }
       },
       "Name": "Pirate_TentB_Opening",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33051,7 +32993,7 @@
         }
       },
       "Name": "Pirate_TentB_Flap-1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33079,7 +33021,7 @@
         }
       },
       "Name": "Pirate_TentB_Flap1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33107,7 +33049,7 @@
         }
       },
       "Name": "Pirate_TentB_Pole-1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33135,7 +33077,7 @@
         }
       },
       "Name": "Pirate_TentB_Pole1",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -33163,7 +33105,7 @@
         }
       },
       "Name": "Pirate_TentB_RidgePole",
-      "Parent": 1131
+      "Parent": 1129
     },
     {
       "Components": {
@@ -34947,7 +34889,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_GableScale",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -34975,7 +34917,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Gable",
-      "Parent": 1200
+      "Parent": 1198
     },
     {
       "Components": {
@@ -35003,7 +34945,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Roof-1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35031,7 +34973,7 @@
         }
       },
       "Name": "Cove_Tent_Cloth_Roof1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35059,7 +35001,7 @@
         }
       },
       "Name": "Cove_Tent_Opening",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35087,7 +35029,7 @@
         }
       },
       "Name": "Cove_Tent_Flap-1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35115,7 +35057,7 @@
         }
       },
       "Name": "Cove_Tent_Flap1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35143,7 +35085,7 @@
         }
       },
       "Name": "Cove_Tent_Pole-1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35171,7 +35113,7 @@
         }
       },
       "Name": "Cove_Tent_Pole1",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35199,7 +35141,7 @@
         }
       },
       "Name": "Cove_Tent_RidgePole",
-      "Parent": 1199
+      "Parent": 1197
     },
     {
       "Components": {
@@ -35903,7 +35845,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 1231
+          "Root": 1229
         },
         "TransformComponent": {
           "Position": [

@@ -190,6 +190,7 @@
 - RPG 수치는 `Data/RPG/*`, 스크립트는 `RPGData.lua`로만 읽는다
 - RPG 데모: 스크립트 간 계약 = `GameManager`/`Player`/적
 - 데모 맵: 씬 파일을 직접 고치지 말고 `Tools/DemoMap/Build*.py`를 고쳐 다시 만든다, `Scenes/Tests/`는 데모용으로 고치지 않는다
+- HD2D 낮밤·지역(항구): 새 맵은 `Regions.etable` 행 + 등불 `Night_#`/창 `NightWin_#` 이름 규칙, 시간에 따른 화면은 `DayNightKeys.etable`(스크립트 상수 금지)
 
 ### [`Docs/Rules/Packaging.md`](Docs/Rules/Packaging.md) — 패키징·Steam·설정·콘솔·프로파일링
 

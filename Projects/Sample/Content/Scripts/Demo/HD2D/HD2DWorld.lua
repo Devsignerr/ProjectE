@@ -189,11 +189,13 @@ function World:ApplyDayNight(bForce)
 	if R.DayNight then
 		-- 하늘 (0.02시 단위 — 그림자 캐시가 끊긴 사이에는 재사용된다)
 		local Q = math.floor(self.GameHour / 0.02 + 0.5) * 0.02
-		if bForce or Q ~= self.SkyHour then
+		local bStep = bForce or Q ~= self.SkyHour
+		if bStep then
 			self.SkyHour = Q
 			Sky.SetTimeOfDay(Q)
 		end
-		local K = self:SampleKeys(self.GameHour)
+		-- 화면 열쇠도 같은 단위로만 (색 보정 LUT 굽기·환경광 갱신을 매 프레임 일으키지 않게)
+		local K = bStep and self:SampleKeys(Q) or nil
 		if K then
 			if self.SkyLight then self.SkyLight.Intensity = self.SkyBase * K.SkyScale end
 			if self.SunLight then self.SunLight.Intensity = self.SunBase * K.SunScale end

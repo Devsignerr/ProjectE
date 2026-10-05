@@ -1005,7 +1005,7 @@ def BuildHarborFront(C):
 	for K in range(14):
 		A = math.radians(-60.0 + K * 240.0 / 13.0)
 		C.BoxCollider(f"Jetty_Ring{K}", (LX + math.cos(A) * 300.0, LY + math.sin(A) * 300.0, 60.0), (16.0, 75.0, 90.0), math.degrees(A))
-	for Index, (X, Y) in enumerate(((JX - JW * 0.5 + 16.0, 520.0), (JX + JW * 0.5 - 24.0, 820.0), (JX - JW * 0.5 + 16.0, 960.0))):
+	for Index, (X, Y) in enumerate(((JX + JW * 0.5 - 24.0, 820.0), (JX - JW * 0.5 + 12.0, 1000.0))):  # 서쪽 걷는 길은 비운다
 		C.Kit(f"Jetty_Bollard{Index}", "HarborBollard", X, Y, 0.0, 0.9, Z=5.0)
 		C.BoxCollider(f"Jetty_Bollard{Index}_Collision", (X, Y, 30.0), (15.0, 15.0, 30.0))
 	E.Box("Jetty_BuoyPost", (JX + JW * 0.5 - 30.0, 430.0, 70.0), (12.0, 12.0, 150.0), "EnvTimber")

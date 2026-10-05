@@ -576,6 +576,8 @@ void FEditorApplication::OnUpdate(float DeltaSeconds)
 	}
 	UpdateGameModuleHotReload(); // 플레이 중이면 정지 후 다시 로드하므로 플레이 갱신 전에
 	UpdatePlayMode(DeltaSeconds);
+	// 피사계 심도는 게임 카메라 기준 값이라 편집 카메라로 볼 때는 컴포넌트가 미리보기를 켰을 때만
+	SceneRenderer.bEditorCameraView = Context.Camera == &Camera;
 	// 애니메이션/파티클은 편집 중에도 재생해 보여준다 (플레이 중이면 플레이 씬)
 	World.TickPresentation(*Context.Scene, DeltaSeconds);
 	AssetEditors.Update(Context, DeltaSeconds);

@@ -86,6 +86,7 @@ enum class ERenderTimer : uint32
 	RayTracedAmbientOcclusion, // RTAO 추적 + 공간 필터 + 누적 (SSAO 대신, 근거리 간접 가림)
 	SkinCache,        // 스킨 캐시 계산 스키닝 (r.SkinCache — 보이는 스킨 인스턴스를 프레임에 한 번)
 	Sprites,          // 2D 스프라이트 (CPU: 정렬·배치·업로드, GPU: 스프라이트 패스 — Renderer/SpriteRenderer.h)
+	DepthOfField,     // 피사계 심도 (반해상도 축소·보케·텐트 + 합성)
 	Count
 };
 const char* GetRenderTimerName(ERenderTimer Timer);
@@ -192,6 +193,9 @@ public:
 	// 레이 트레이싱 (Phase 50): true인 렌더러만 r.RayTracing*/프로젝트 설정 Rendering을 따른다 (에디터 뷰포트·런타임이 켠다 — 미리보기·썸네일·
 	// 캡처 굽기는 항상 래스터). DXR 1.1 미지원, 와이어프레임, 픽셀 아트, 사전 패스 없음, 한 프레임 여러 뷰면 꺼진다
 	bool bAllowRayTracing = false;
+	// 피사계 심도: 에디터가 편집 카메라로 그릴 때 true (그때는 DepthOfFieldComponent.bPreviewInEditor일 때만 적용 — 초점 거리가 게임 카메라 기준이라).
+	// 게임 카메라 시점(플레이 빙의)·런타임은 false
+	bool bEditorCameraView = false;
 	const FRayTracingScene& GetRayTracingScene() const { return RayTracingScene; }
 	const FDynamicResolutionController& GetDynamicResolution() const { return DynamicResolution; }
 	// 화면 공간 법선 (R10G10B10A2, ScreenSpace.hlsli) / 움직임 벡터 (R16G16_FLOAT). 씬 컬러와 같은 크기, PIXEL_SHADER_RESOURCE
@@ -373,6 +377,7 @@ private:
 	bool                 bConsoleTemporalAA       = true;
 	bool                 bConsoleAmbientOcclusion = true;
 	bool                 bConsoleReflections      = true;
+	bool                 bConsoleDepthOfField     = true;
 	// 하늘광 환경맵이 바뀌면 FAssetCache로 읽어 IBL을 다시 만든다 (Phase 33-7)
 	void                 UpdateEnvironment(FScene& Scene);
 	std::string          AppliedEnvironmentMap;

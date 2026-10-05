@@ -118,6 +118,22 @@ void RegisterSceneTypes()
 		.Property(&FPixelArtComponent::bSnapMovingObjects, "SnapMovingObjects", "움직이는 물체 도트 스냅")
 		.AsComponent();
 
+	Registry.RegisterType<FDepthOfFieldComponent>("DepthOfFieldComponent", "피사계 심도")
+		.Property(&FDepthOfFieldComponent::bEnabled, "Enabled", "사용")
+		.Property(&FDepthOfFieldComponent::FocusDistance, "FocusDistance", "초점 거리 (cm)").Range(1.0f, 1000000.0f, 5.0f)
+		.Tooltip("카메라에서 초점면까지의 뷰 깊이")
+		.Property(&FDepthOfFieldComponent::FocalRegion, "FocalRegion", "초점 영역 (cm)").Range(0.0f, 1000000.0f, 5.0f)
+		.Tooltip("초점 거리 앞뒤로 이만큼은 완전히 선명")
+		.Property(&FDepthOfFieldComponent::NearTransition, "NearTransition", "근경 전환 (cm)").Range(0.0f, 1000000.0f, 5.0f)
+		.Tooltip("초점 영역 앞에서 최대 흐림까지의 거리 (0 = 바로 최대)")
+		.Property(&FDepthOfFieldComponent::FarTransition, "FarTransition", "원경 전환 (cm)").Range(0.0f, 1000000.0f, 5.0f)
+		.Tooltip("초점 영역 뒤에서 최대 흐림까지의 거리 (0 = 바로 최대)")
+		.Property(&FDepthOfFieldComponent::NearBlurSize, "NearBlurSize", "근경 흐림 (화면 높이 %)").Range(0.0f, 4.0f, 0.01f)
+		.Property(&FDepthOfFieldComponent::FarBlurSize, "FarBlurSize", "원경 흐림 (화면 높이 %)").Range(0.0f, 4.0f, 0.01f)
+		.Property(&FDepthOfFieldComponent::bPreviewInEditor, "PreviewInEditor", "에디터 카메라에도 적용")
+		.Tooltip("끄면 플레이 중 게임 카메라 시점(빙의)·런타임에서만 보인다")
+		.AsComponent();
+
 	// 스크립트 Properties 오버라이드는 인스펙터가 스크립트 선언을 읽어 전용 UI로 편집한다
 	Registry.RegisterType<FScriptComponent>("ScriptComponent", "스크립트")
 		.Property(&FScriptComponent::ScriptAsset, "ScriptAsset", "스크립트").AssetFilter(".lua")

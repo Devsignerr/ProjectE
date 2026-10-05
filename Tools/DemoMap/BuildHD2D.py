@@ -268,6 +268,7 @@ NORTH_AZIMUTH = SUN_AZIMUTH - 90.0 - (TIME_OF_DAY - 6.0) / 12.0 * 180.0
 CAMERA_PITCH = -28.0
 CAMERA_FOV = 24.0
 CAMERA_DISTANCE = 2900.0
+DOF_FOCAL_REGION = 300.0  # 초점 앞뒤 선명한 깊이 (cm) — 플레이어 주변 놀이 공간
 PLAYER_START = (-2050.0, 250.0)
 VIEW_STARTS = {
 	"Village": (-2050.0, 250.0),
@@ -599,7 +600,11 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	StartZ = Height(*Start) + PLAYER_RADIUS + PLAYER_HALF + 4.0
 	Forward = (0.0, -math.cos(math.radians(-CAMERA_PITCH)), -math.sin(math.radians(-CAMERA_PITCH)))
 	Focus = (Start[0], Start[1], StartZ - 85.0 + 70.0)
-	S.Add("Camera", {"CameraComponent": {"FovYDegrees": CAMERA_FOV, "NearZ": 50.0, "FarZ": 60000.0, "Primary": True, "Priority": 10}},
+	# 피사계 심도 (HD-2D 미니어처 느낌): 초점 = 카메라에서 플레이어 가슴까지(카메라 거리 고정 — 따라가도 그대로), 앞 땅·뒤 산과 하늘은 흐림
+	S.Add("Camera", {"CameraComponent": {"FovYDegrees": CAMERA_FOV, "NearZ": 50.0, "FarZ": 60000.0, "Primary": True, "Priority": 10},
+					 "DepthOfFieldComponent": {"Enabled": True, "FocusDistance": CAMERA_DISTANCE, "FocalRegion": DOF_FOCAL_REGION,
+											   "NearTransition": 700.0, "FarTransition": 1800.0, "NearBlurSize": 1.4, "FarBlurSize": 1.7,
+											   "PreviewInEditor": False}},
 		  tuple(Focus[I] - Forward[I] * CAMERA_DISTANCE for I in range(3)), QuatFromEuler(Pitch=CAMERA_PITCH, Yaw=-90.0))
 	PlayerIndex = len(S.Entities)
 	S.Add("Player", {

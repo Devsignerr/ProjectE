@@ -12,6 +12,7 @@ namespace RendererCVars
 	extern TAutoConsoleVariable<bool>  TemporalAA;       // r.TAA            (--no-taa)
 	extern TAutoConsoleVariable<bool>  AmbientOcclusion; // r.SSAO           (--no-ssao)
 	extern TAutoConsoleVariable<bool>  Reflections;      // r.SSR            (--no-ssr)
+	extern TAutoConsoleVariable<bool>  DepthOfField;     // r.DepthOfField   (--no-dof, 씬의 DepthOfFieldComponent)
 	extern TAutoConsoleVariable<bool>  DepthPrepass;     // r.DepthPrepass   (--no-depth-prepass)
 	extern TAutoConsoleVariable<bool>  Occlusion;        // r.Occlusion      (--occlusion)
 	extern TAutoConsoleVariable<bool>  SkinCulling;      // r.SkinCulling    (--no-skin-culling)

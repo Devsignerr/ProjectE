@@ -22,6 +22,9 @@ namespace RendererCVars
 	                                            { .CommandLine = { { L"--no-ssao", "0" } } });
 	TAutoConsoleVariable<bool> Reflections("r.SSR", true, "화면 공간 반사. 깊이 사전 패스·시간 이력이 있어야 한다", EConsoleFlags::None,
 	                                       { .CommandLine = { { L"--no-ssr", "0" } } });
+	TAutoConsoleVariable<bool> DepthOfField("r.DepthOfField", true,
+	                                        "피사계 심도 (씬의 DepthOfFieldComponent — 초점 거리 앞뒤를 흐림, 반해상도 원반 보케). 끄면 컴포넌트가 있어도 선명",
+	                                        EConsoleFlags::None, { .CommandLine = { { L"--no-dof", "0" } } });
 	TAutoConsoleVariable<bool> DepthPrepass("r.DepthPrepass", true,
 	                                        "깊이 사전 패스 (깊이 + 화면 공간 법선 + 움직임 벡터). 끄면 SSAO/SSR/TAA 움직임이 틀어진다 (비교용)",
 	                                        EConsoleFlags::None, { .CommandLine = { { L"--no-depth-prepass", "0" } } });

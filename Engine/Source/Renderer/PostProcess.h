@@ -77,6 +77,22 @@ struct FPixelArtCompositeParams
 	float    PixelViewScale    = 1.0f;  // 직교: 텍셀 월드 크기(cm), 원근: 깊이 1당 텍셀 크기
 };
 
+// 피사계 심도 입력 (FSceneRenderer가 FDepthOfFieldComponent + 카메라로 채운다). 식은 PostProcessMath.h ComputeCircleOfConfusion ↔ DepthOfField.hlsl
+struct FDepthOfFieldParams
+{
+	float FocusDistance  = 1000.0f; // cm
+	float FocalRegion    = 200.0f;  // cm
+	float NearTransition = 500.0f;  // cm
+	float FarTransition  = 2000.0f; // cm
+	float NearBlur       = 0.01f;   // 화면 높이 비율 (컴포넌트 % / 100)
+	float FarBlur        = 0.01f;
+	float NearZ          = 10.0f;
+	float FarZ           = 100000.0f;
+	bool  bOrthographic  = false;
+
+	static constexpr float MaxBlur = 0.04f; // 보케 반경 상한 (화면 높이 4% — 반해상도 43탭 원반의 표본 간격 한계)
+};
+
 // 포스트 패스 입력: 그래프 참조 + 셰이더가 읽을 SRV
 struct FPostProcessGraphInput
 {
@@ -91,6 +107,7 @@ struct FPostProcessGraphOutput
 };
 
 // HDR 씬 컬러 → 출력 대상(LDR, sRGB RTV).
+//   [피사계 심도] (별도 호출 AddDepthOfFieldPasses) 반해상도 축소·CoC → 43탭 원반 보케 → 텐트 → 전체 해상도 합성 (HDR, TAA 뒤·블룸 앞)
 //   [블룸] 13탭 다운샘플 체인(첫 단계 Karis 평균 + 임계값) → 텐트 업샘플 가산 합성 (절반 해상도부터 최대 6단계)
 //   [자동 노출] 1/4 해상도 로그 휘도 히스토그램(픽셀 셰이더 UAV) → 컴퓨트 평균 + 시간 적응 (GPU 버퍼에 유지)
 //   [톤매핑] 씬 + 블룸 * 강도 → 노출 → 연산자
@@ -108,6 +125,11 @@ public:
 	// SceneColor = HDR 씬(그래프 참조 + SRV), 크기는 Output과 같다고 가정. Sharpness > 0이면 톤매핑 직전 4이웃 샤프닝 (TAA 결과일 때만)
 	void AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor, const FPostProcessGraphOutput& Output, const FPostProcessSettings& Settings,
 	               float Sharpness, int32 Timer);
+
+	// 피사계 심도: HDR 씬(SceneColor, Width x Height) + 깊이(SceneDepth = 깊이 참조 + 깊이 SRV, 해상도가 달라도 UV로 읽음) →
+	// 흐린 HDR 색(그래프 풀 텍스처). 반환값을 AddPasses의 SceneColor로 넘긴다. 흐림 반경이 둘 다 0이면 입력 그대로
+	FPostProcessGraphInput AddDepthOfFieldPasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor, const FPostProcessGraphInput& SceneDepth,
+	                                             uint32 Width, uint32 Height, const FDepthOfFieldParams& Params, int32 Timer);
 
 	// 픽셀 아트: 저해상도 톤매핑 결과(SourceColor, 선형) + 저해상도 깊이(SourceDepth = 깊이 참조 + 깊이 SRV)를
 	// 서브픽셀 보정 최근접 확대 + 1px 외곽선/모서리 하이라이트 + 양자화/디더로 Output에 합성한다
@@ -132,6 +154,10 @@ private:
 		BloomUpsample,
 		Histogram,
 		AverageLuminance,
+		DofPrefilter,
+		DofBokeh,
+		DofPostfilter,
+		DofCombine,
 		Count
 	};
 

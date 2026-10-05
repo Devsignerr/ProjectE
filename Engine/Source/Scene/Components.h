@@ -171,6 +171,21 @@ struct FPixelArtComponent
 	bool  bSnapMovingObjects = true;  // 한 번이라도 움직인 최상위 물체(하위 트리 통째로)를 도트 격자에 맞춰 그림 (직교, 렌더만)
 };
 
+// 피사계 심도 (씬 전역 — 씬에서 처음 찾은 활성 컴포넌트 하나만 쓴다, 픽셀 아트 모드에서는 쓰지 않음).
+// 초점 거리(카메라 앞 깊이) 앞뒤 FocalRegion은 선명, 그 밖은 전환 거리 동안 흐림이 커져 근경/원경 최대 반경(화면 높이 %)에서 멈춘다.
+// 식은 Renderer/PostProcessMath.h ComputeCircleOfConfusion ↔ DepthOfField.hlsl. 에디터 편집 카메라에는 bPreviewInEditor일 때만 (게임 카메라 시점·런타임은 항상)
+struct FDepthOfFieldComponent
+{
+	bool  bEnabled         = true;
+	float FocusDistance    = 1000.0f; // cm (카메라에서 초점면까지 뷰 깊이)
+	float FocalRegion      = 200.0f;  // cm (초점 앞뒤로 완전히 선명한 깊이)
+	float NearTransition   = 500.0f;  // cm (선명 → 근경 최대 흐림)
+	float FarTransition    = 2000.0f; // cm (선명 → 원경 최대 흐림)
+	float NearBlurSize     = 1.0f;    // 근경 최대 흐림 반경 (화면 높이 %)
+	float FarBlurSize      = 1.0f;    // 원경 최대 흐림 반경 (화면 높이 %)
+	bool  bPreviewInEditor = false;   // 에디터 편집 카메라로 볼 때도 적용
+};
+
 // Lua 스크립트 인스턴스. 실행 상태(Lua 테이블)는 FScriptSystem이 엔티티별로 보관하고 여기에는 데이터만 둔다.
 //   ScriptAsset:       프로젝트 Content 기준 상대 경로 (예: "Scripts/Rotator.lua")
 //   PropertyOverrides: 스크립트 Properties 기본값을 덮어쓰는 JSON 객체 문자열 (인스펙터가 편집, 씬에 저장)

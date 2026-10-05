@@ -300,6 +300,7 @@ void FSceneRenderer::ApplyConsoleVariables()
 	bConsoleTemporalAA              = RendererCVars::TemporalAA.Get();
 	bConsoleAmbientOcclusion        = RendererCVars::AmbientOcclusion.Get();
 	bConsoleReflections             = RendererCVars::Reflections.Get();
+	bConsoleDepthOfField            = RendererCVars::DepthOfField.Get();
 	if (RendererCVars::SkinCache.Get() != bSkinCache && Rhi != nullptr)
 	{
 		// 스킨 변형 파이프라인(메시·그림자)을 다른 정점 셰이더로 다시 만든다 (실패하면 이전 경로로 되돌림)
@@ -355,6 +356,7 @@ const char* GetRenderTimerName(ERenderTimer Timer)
 	case ERenderTimer::RayTracedAmbientOcclusion: return "RTAO";
 	case ERenderTimer::SkinCache:    return "스킨 캐시";
 	case ERenderTimer::Sprites:      return "스프라이트";
+	case ERenderTimer::DepthOfField: return "피사계 심도";
 	default:                        return "?";
 	}
 }
@@ -872,6 +874,19 @@ namespace
 		});
 		return Found;
 	}
+
+	// 씬에서 처음 찾은 활성 피사계 심도 설정 (없으면 nullptr)
+	const FDepthOfFieldComponent* FindDepthOfFieldSettings(FScene& Scene)
+	{
+		const FDepthOfFieldComponent* Found = nullptr;
+		Scene.GetRegistry().View<FDepthOfFieldComponent>().Each([&](FEntity, FDepthOfFieldComponent& DepthOfField) {
+			if (Found == nullptr && DepthOfField.bEnabled)
+			{
+				Found = &DepthOfField;
+			}
+		});
+		return Found;
+	}
 } // namespace
 
 void FSceneRenderer::Render(FScene& Scene, const FCamera& Camera, const FRenderOutput& Output)
@@ -1157,6 +1172,24 @@ void FSceneRenderer::RenderFrame(FRenderGraph& Graph, FScene& Scene, const FCame
 		}
 		bTaaRanLastFrame = bTaa;
 		bFrameUpscaled   = bUpscale;
+
+		// 피사계 심도: TAA 뒤(안정된 HDR, 출력 해상도) · 블룸 앞. 깊이는 내부 해상도 그대로 UV로 읽는다 (CoC는 부드러워 지터·크기 차이 무관)
+		const FDepthOfFieldComponent* DepthOfField = FindDepthOfFieldSettings(Scene);
+		if (DepthOfField != nullptr && bConsoleDepthOfField && !bWireframe && (!bEditorCameraView || DepthOfField->bPreviewInEditor))
+		{
+			FDepthOfFieldParams Params;
+			Params.FocusDistance  = DepthOfField->FocusDistance;
+			Params.FocalRegion    = DepthOfField->FocalRegion;
+			Params.NearTransition = DepthOfField->NearTransition;
+			Params.FarTransition  = DepthOfField->FarTransition;
+			Params.NearBlur       = DepthOfField->NearBlurSize * 0.01f;
+			Params.FarBlur        = DepthOfField->FarBlurSize * 0.01f;
+			Params.NearZ          = Camera.GetNearZ();
+			Params.FarZ           = Camera.GetFarZ();
+			Params.bOrthographic  = Camera.IsOrthographic();
+			PostInput = PostProcessor.AddDepthOfFieldPasses(Graph, PostInput, { Refs.Depth, SceneColor->GetDepthSrv() }, Output.Width, Output.Height, Params,
+			                                                static_cast<int32>(ERenderTimer::DepthOfField));
+		}
 
 		PostProcessor.AddPasses(Graph, PostInput, PostOutput, PostProcessSettings, Sharpness, static_cast<int32>(ERenderTimer::PostProcess));
 		AddDebugViewPass(Graph, PostOutput, Refs);

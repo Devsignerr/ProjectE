@@ -21,6 +21,7 @@ namespace
 		PostRoot_Source2   = 2, // t1
 		PostRoot_Histogram = 3, // u0
 		PostRoot_Luminance = 4, // u1
+		PostRoot_Source3   = 5, // t2
 	};
 
 	constexpr uint32 PostRootConstantCount = 16; // 패스별 상수 구조체는 이 크기 이하
@@ -60,6 +61,25 @@ namespace
 		float Padding[2]            = {};
 	};
 	static_assert(sizeof(FAutoExposureConstants) <= PostRootConstantCount * 4 && sizeof(FAutoExposureConstants) % 4 == 0);
+
+	// DepthOfField.hlsl cbuffer와 1:1
+	struct FDepthOfFieldConstants
+	{
+		float  SourceTexelSize[2] = {};
+		float  RcpAspect          = 1.0f;
+		float  MaxCoc             = 0.0f;
+		float  FocusDistance      = 0.0f;
+		float  FocalRegion        = 0.0f;
+		float  NearTransition     = 0.0f;
+		float  FarTransition      = 0.0f;
+		float  NearBlur           = 0.0f;
+		float  FarBlur            = 0.0f;
+		float  NearZ              = 1.0f;
+		float  FarZ               = 2.0f;
+		uint32 bOrthographic      = 0;
+		float  Padding[3]         = {};
+	};
+	static_assert(sizeof(FDepthOfFieldConstants) == PostRootConstantCount * 4);
 
 	// PixelArt.hlsl cbuffer와 1:1
 	struct FPixelArtConstants
@@ -105,6 +125,10 @@ namespace
 		{ L"Bloom.hlsl", L"PSUpsample", L"BloomUpsamplePipeline", false },
 		{ L"AutoExposure.hlsl", L"PSHistogram", L"LuminanceHistogramPipeline", false },
 		{ L"AutoExposure.hlsl", L"CSAverage", L"AverageLuminancePipeline", true },
+		{ L"DepthOfField.hlsl", L"PSPrefilter", L"DofPrefilterPipeline", false },
+		{ L"DepthOfField.hlsl", L"PSBokeh", L"DofBokehPipeline", false },
+		{ L"DepthOfField.hlsl", L"PSPostfilter", L"DofPostfilterPipeline", false },
+		{ L"DepthOfField.hlsl", L"PSCombine", L"DofCombinePipeline", false },
 	};
 
 	void SetFullscreenViewport(ID3D12GraphicsCommandList* CommandList, uint32 Width, uint32 Height)
@@ -147,8 +171,10 @@ bool FPostProcessor::Init(FD3D12RHI& InRhi, FShaderLibrary& InShaderLibrary)
 	const uint32 Source2Index   = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	const uint32 HistogramIndex = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	const uint32 LuminanceIndex = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
+	const uint32 Source3Index   = RootSignature.AddDescriptorTable({ FD3D12RootSignature::MakeRange(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE) });
 	E_CHECK(ConstantsIndex == PostRoot_Constants && SourceIndex == PostRoot_Source && Source2Index == PostRoot_Source2 &&
-	        HistogramIndex == PostRoot_Histogram && LuminanceIndex == PostRoot_Luminance);
+	        HistogramIndex == PostRoot_Histogram && LuminanceIndex == PostRoot_Luminance && Source3Index == PostRoot_Source3);
+	static_assert(std::size(GPipelineInfos) == static_cast<size_t>(EPipeline::Count));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
 	                                                                      D3D12_SHADER_VISIBILITY_ALL));
 	RootSignature.AddStaticSampler(FD3D12RootSignature::MakeStaticSampler(1, D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
@@ -253,6 +279,12 @@ bool FPostProcessor::CreatePipeline(EPipeline Pipeline, FD3D12PipelineState& Out
 		break;
 	case EPipeline::Histogram:
 		PsoDesc.NumRenderTargets = 0; // UAV에만 기록
+		break;
+	case EPipeline::DofPrefilter:
+	case EPipeline::DofBokeh:
+	case EPipeline::DofPostfilter:
+	case EPipeline::DofCombine:
+		PsoDesc.RenderTargetFormats[0] = FRenderTargetDesc::MakeHdr(false).RtvFormat;
 		break;
 	default:
 		break;
@@ -624,6 +656,84 @@ void FPostProcessor::AddPasses(FRenderGraph& Graph, const FPostProcessGraphInput
 		CommandList->SetGraphicsRootDescriptorTable(PostRoot_Luminance, LuminanceUav.Gpu);
 		DrawFullscreen(CommandList);
 	});
+}
+
+FPostProcessGraphInput FPostProcessor::AddDepthOfFieldPasses(FRenderGraph& Graph, const FPostProcessGraphInput& SceneColor,
+                                                             const FPostProcessGraphInput& SceneDepth, uint32 Width, uint32 Height,
+                                                             const FDepthOfFieldParams& Params, int32 Timer)
+{
+	FDepthOfFieldConstants Constants;
+	Constants.FocusDistance  = Params.FocusDistance;
+	Constants.FocalRegion    = FMath::Max(Params.FocalRegion, 0.0f);
+	Constants.NearTransition = FMath::Max(Params.NearTransition, 0.0f);
+	Constants.FarTransition  = FMath::Max(Params.FarTransition, 0.0f);
+	Constants.NearBlur       = FMath::Clamp(Params.NearBlur, 0.0f, FDepthOfFieldParams::MaxBlur);
+	Constants.FarBlur        = FMath::Clamp(Params.FarBlur, 0.0f, FDepthOfFieldParams::MaxBlur);
+	Constants.MaxCoc         = FMath::Max(Constants.NearBlur, Constants.FarBlur);
+	Constants.RcpAspect      = static_cast<float>(Height) / static_cast<float>(FMath::Max(Width, 1u));
+	Constants.NearZ          = Params.NearZ;
+	Constants.FarZ           = Params.FarZ;
+	Constants.bOrthographic  = Params.bOrthographic ? 1u : 0u;
+	if (Constants.MaxCoc <= 0.0f || Width == 0 || Height == 0)
+	{
+		return SceneColor;
+	}
+
+	const DXGI_FORMAT Format     = FRenderTargetDesc::MakeHdr(false).RtvFormat;
+	const uint32      HalfWidth  = FPostProcessMath::GetDepthOfFieldDimension(Width);
+	const uint32      HalfHeight = FPostProcessMath::GetDepthOfFieldDimension(Height);
+
+	// 중간 버퍼 = 그래프 풀 텍스처
+	const auto MakeTarget = [&](const char* Name, uint32 W, uint32 H) {
+		const FRGResourceRef Ref = Graph.CreateTexture(Name, FRGTextureDesc::MakeRenderTarget(W, H, Format));
+		return FPostProcessGraphInput{ Ref, Graph.GetTexture(Ref)->Srv };
+	};
+	// 풀스크린 패스 하나: Inputs = t0, t1, t2 (모자란 칸은 t0 — 셰이더가 읽지 않음) → Target 전체 덮어쓰기
+	const auto AddPass = [&](const char* Name, EPipeline Pipeline, const FPostProcessGraphInput& Target, uint32 W, uint32 H, uint32 SourceW,
+	                         uint32 SourceH, std::initializer_list<FPostProcessGraphInput> Inputs) {
+		FDepthOfFieldConstants PassConstants = Constants;
+		PassConstants.SourceTexelSize[0]     = 1.0f / static_cast<float>(SourceW);
+		PassConstants.SourceTexelSize[1]     = 1.0f / static_cast<float>(SourceH);
+		FD3D12DescriptorHandle     Srvs[3];
+		FRenderGraph::FPassBuilder Pass  = Graph.AddPass(Name);
+		size_t                     Index = 0;
+		for (const FPostProcessGraphInput& Input : Inputs)
+		{
+			Pass.Read(Input.Ref, ERGAccess::SrvPixel);
+			Srvs[Index++] = Input.Srv;
+		}
+		for (; Index < 3; ++Index)
+		{
+			Srvs[Index] = Srvs[0];
+		}
+		ID3D12PipelineState* const        State = Pipelines[static_cast<size_t>(Pipeline)].Get();
+		const D3D12_CPU_DESCRIPTOR_HANDLE Rtv   = Graph.GetTexture(Target.Ref)->GetRtv();
+		Pass.Write(Target.Ref, ERGAccess::RenderTarget, FRGSubresourceRange::All(), true)
+			.Timer(Timer)
+			.Execute([this, State, Rtv, W, H, PassConstants, Srvs](FRGContext& Context) {
+				ID3D12GraphicsCommandList* CommandList = Context.CommandList;
+				CommandList->OMSetRenderTargets(1, &Rtv, FALSE, nullptr);
+				SetFullscreenViewport(CommandList, W, H);
+				CommandList->SetGraphicsRootSignature(RootSignature.Get());
+				CommandList->SetPipelineState(State);
+				SetGraphicsConstants(CommandList, PassConstants);
+				CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source, Srvs[0].Gpu);
+				CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source2, Srvs[1].Gpu);
+				CommandList->SetGraphicsRootDescriptorTable(PostRoot_Source3, Srvs[2].Gpu);
+				DrawFullscreen(CommandList);
+			});
+	};
+
+	// 깊이는 항상 t2 (축소: 색 t0 / 합성: 색 t0 + 보케 t1)
+	const FPostProcessGraphInput Prefiltered = MakeTarget("DofPrefilter", HalfWidth, HalfHeight);
+	AddPass("피사계 심도 축소", EPipeline::DofPrefilter, Prefiltered, HalfWidth, HalfHeight, Width, Height, { SceneColor, SceneColor, SceneDepth });
+	const FPostProcessGraphInput Bokeh = MakeTarget("DofBokeh", HalfWidth, HalfHeight);
+	AddPass("피사계 심도 보케", EPipeline::DofBokeh, Bokeh, HalfWidth, HalfHeight, HalfWidth, HalfHeight, { Prefiltered });
+	const FPostProcessGraphInput Filtered = MakeTarget("DofPostfilter", HalfWidth, HalfHeight);
+	AddPass("피사계 심도 텐트", EPipeline::DofPostfilter, Filtered, HalfWidth, HalfHeight, HalfWidth, HalfHeight, { Bokeh });
+	const FPostProcessGraphInput Result = MakeTarget("DofResult", Width, Height);
+	AddPass("피사계 심도 합성", EPipeline::DofCombine, Result, Width, Height, Width, Height, { SceneColor, Filtered, SceneDepth });
+	return Result;
 }
 
 void FPostProcessor::AddPixelArtCompositePass(FRenderGraph& Graph, const FPostProcessGraphInput& SourceColor, const FPostProcessGraphInput& SourceDepth,

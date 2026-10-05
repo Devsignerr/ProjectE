@@ -3504,14 +3504,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 60, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 60, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -3686,14 +3686,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 61, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 61, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -3868,14 +3868,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 62, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 62, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -4050,14 +4050,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": true
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 63, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 63, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -4232,14 +4232,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 64, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 64, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -4414,14 +4414,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 65, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 65, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -6767,14 +6767,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 66, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 66, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -6949,14 +6949,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 67, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 67, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -7131,14 +7131,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 68, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 68, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -7313,14 +7313,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 69, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 69, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -7495,14 +7495,14 @@
             0.62,
             0.3
           ],
-          "Intensity": 5.0,
-          "Radius": 750.0,
+          "Intensity": 8.0,
+          "Radius": 800.0,
           "CastShadows": false
         },
         "ScriptComponent": {
           "ScriptAsset": "Scripts/Demo/FlickerLight.lua",
           "ExecutionLocation": 2,
-          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 5.0, \"Seed\": 70, \"Amount\": 0.18, \"Speed\": 1.0}"
+          "PropertyOverrides": "{\"Style\": \"Fire\", \"BaseIntensity\": 8.0, \"Seed\": 70, \"Amount\": 0.18, \"Speed\": 1.0}"
         },
         "TransformComponent": {
           "Position": [
@@ -9563,6 +9563,16 @@
           "FarZ": 60000.0,
           "Primary": true,
           "Priority": 10
+        },
+        "DepthOfFieldComponent": {
+          "Enabled": true,
+          "FocusDistance": 2900.0,
+          "FocalRegion": 300.0,
+          "NearTransition": 700.0,
+          "FarTransition": 1800.0,
+          "NearBlurSize": 1.4,
+          "FarBlurSize": 1.7,
+          "PreviewInEditor": false
         },
         "TransformComponent": {
           "Position": [

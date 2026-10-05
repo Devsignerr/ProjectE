@@ -71,4 +71,40 @@ struct FPostProcessMath
 		const float Contrib  = FMath::Max(Soft, Brightness - Threshold);
 		return Contrib / FMath::Max(Brightness, 1.0e-5f);
 	}
+
+	// ---- 피사계 심도 (DepthOfField.hlsl ComputeCoc와 같은 식)
+	// 착란원(CoC) 반경 = 화면 높이 비율, 부호: 음수 = 초점 앞(근경), 양수 = 초점 뒤(원경).
+	//   [초점 - 영역, 초점 + 영역]은 0(선명), 그 밖은 전환 거리 동안 선형으로 커져 근경/원경 최대 반경에서 멈춘다 (UE 가우시안 DOF 방식 매개변수)
+	//   전환 거리 <= 0이면 영역을 벗어나자마자 최대
+	static float ComputeCircleOfConfusion(float ViewDepth, float FocusDistance, float FocalRegion, float NearTransition, float FarTransition,
+	                                      float NearBlur, float FarBlur)
+	{
+		const float Region = FMath::Max(FocalRegion, 0.0f);
+		const float Near   = FocusDistance - Region - ViewDepth; // > 0이면 근경
+		const float Far    = ViewDepth - FocusDistance - Region;  // > 0이면 원경
+		if (Near > 0.0f)
+		{
+			const float T = NearTransition > 0.0f ? FMath::Min(Near / NearTransition, 1.0f) : 1.0f;
+			return -T * FMath::Max(NearBlur, 0.0f);
+		}
+		if (Far > 0.0f)
+		{
+			const float T = FarTransition > 0.0f ? FMath::Min(Far / FarTransition, 1.0f) : 1.0f;
+			return T * FMath::Max(FarBlur, 0.0f);
+		}
+		return 0.0f;
+	}
+
+	// 장치 깊이 [0, 1] → 뷰 깊이(cm). 원근은 표준 깊이(근평면 0, 원평면 1), 직교는 선형 (PixelArt.hlsl LinearizeDepth와 같음)
+	static float LinearizeDepth(float DeviceDepth, float NearZ, float FarZ, bool bOrthographic)
+	{
+		if (bOrthographic)
+		{
+			return NearZ + (FarZ - NearZ) * DeviceDepth;
+		}
+		return NearZ * FarZ / (FarZ - DeviceDepth * (FarZ - NearZ));
+	}
+
+	// 피사계 심도 반해상도 버퍼 크기 (홀수는 올림)
+	static uint32 GetDepthOfFieldDimension(uint32 FullDimension) { return FMath::Max(1u, (FullDimension + 1) / 2); }
 };

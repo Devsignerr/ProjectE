@@ -103,3 +103,39 @@ E_TEST(PostProcess_SettingsDefaults)
 	E_EXPECT_TRUE(Settings.AutoExposureMinEV < Settings.AutoExposureMaxEV);
 	E_EXPECT_TRUE(Settings.AdaptationSpeed > 0.0f);
 }
+
+E_TEST(PostProcess_DepthOfFieldCoc)
+{
+	// 초점 1000, 영역 ±100, 근경 전환 400 / 원경 전환 1000, 최대 반경 근경 0.02 / 원경 0.01 (화면 높이 비율)
+	const auto Coc = [](float Depth) { return FPostProcessMath::ComputeCircleOfConfusion(Depth, 1000.0f, 100.0f, 400.0f, 1000.0f, 0.02f, 0.01f); };
+	// 초점 영역 안은 정확히 0 (경계 포함)
+	E_EXPECT_EQ(Coc(1000.0f), 0.0f);
+	E_EXPECT_EQ(Coc(900.0f), 0.0f);
+	E_EXPECT_EQ(Coc(1100.0f), 0.0f);
+	// 근경: 음수, 전환 거리 동안 선형, 그 뒤 최대에서 멈춤
+	E_EXPECT_NEAR(Coc(700.0f), -0.01f, Tol);
+	E_EXPECT_NEAR(Coc(500.0f), -0.02f, Tol);
+	E_EXPECT_NEAR(Coc(10.0f), -0.02f, Tol);
+	// 원경: 양수, 하늘(원평면)은 최대
+	E_EXPECT_NEAR(Coc(1600.0f), 0.005f, Tol);
+	E_EXPECT_NEAR(Coc(2100.0f), 0.01f, Tol);
+	E_EXPECT_NEAR(Coc(60000.0f), 0.01f, Tol);
+	// 전환 0 = 영역을 벗어나자마자 최대, 음수 반경·영역은 0으로
+	E_EXPECT_NEAR(FPostProcessMath::ComputeCircleOfConfusion(1200.0f, 1000.0f, 100.0f, 0.0f, 0.0f, 0.02f, 0.01f), 0.01f, Tol);
+	E_EXPECT_NEAR(FPostProcessMath::ComputeCircleOfConfusion(500.0f, 1000.0f, -50.0f, 0.0f, 0.0f, -1.0f, 0.01f), 0.0f, Tol);
+	E_EXPECT_NEAR(FPostProcessMath::ComputeCircleOfConfusion(999.0f, 1000.0f, -50.0f, 0.0f, 0.0f, 0.02f, 0.01f), -0.02f, Tol);
+}
+
+E_TEST(PostProcess_DepthOfFieldLinearizeDepth)
+{
+	// 원근: 장치 깊이 0 = 근평면, 1 = 원평면, 중간은 쌍곡선 (근평면 쪽에 몰림)
+	E_EXPECT_NEAR(FPostProcessMath::LinearizeDepth(0.0f, 10.0f, 1000.0f, false), 10.0f, Tol);
+	E_EXPECT_NEAR(FPostProcessMath::LinearizeDepth(1.0f, 10.0f, 1000.0f, false), 1000.0f, 1.0e-2f);
+	E_EXPECT_NEAR(FPostProcessMath::LinearizeDepth(0.5f, 10.0f, 1000.0f, false), 10.0f * 1000.0f / (1000.0f - 0.5f * 990.0f), 1.0e-3f);
+	// 직교: 선형
+	E_EXPECT_NEAR(FPostProcessMath::LinearizeDepth(0.25f, 0.0f, 400.0f, true), 100.0f, Tol);
+	// 반해상도 크기: 홀수 올림, 최소 1
+	E_EXPECT_EQ(FPostProcessMath::GetDepthOfFieldDimension(1920), 960u);
+	E_EXPECT_EQ(FPostProcessMath::GetDepthOfFieldDimension(1081), 541u);
+	E_EXPECT_EQ(FPostProcessMath::GetDepthOfFieldDimension(1), 1u);
+}

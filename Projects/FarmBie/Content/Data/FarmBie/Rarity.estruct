@@ -32,6 +32,18 @@
       ],
       "Description": "글자 색",
       "Element": "Float"
+    },
+    {
+      "Name": "BuffSize",
+      "Type": "Float",
+      "Default": 0.0,
+      "Description": "먹으면 받는 버프 크기 (0.1 = 10%)"
+    },
+    {
+      "Name": "FoodMul",
+      "Type": "Float",
+      "Default": 1.0,
+      "Description": "먹을 때 회복량 배율"
     }
   ]
 }

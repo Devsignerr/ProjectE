@@ -115,10 +115,10 @@ DAY_NIGHT_FIELDS = [
 # ---- 농사 ---------------------------------------------------------------------------------------------------------------------
 # 희귀도: 판매가 배율, 수확 때 한 단계 위 씨앗이 나올 확률(비료 배율을 곱함)
 RARITY_ROWS = [
-	("Common",    {"DisplayName": "일반",     "PriceMul": 1.0,  "UpChance": 0.10,  "Color": [0.92, 0.9, 0.86, 1.0]}),
-	("Rare",      {"DisplayName": "레어",     "PriceMul": 3.0,  "UpChance": 0.06,  "Color": [0.45, 0.7, 1.0, 1.0]}),
-	("Unique",    {"DisplayName": "유니크",   "PriceMul": 10.0, "UpChance": 0.03,  "Color": [0.8, 0.5, 1.0, 1.0]}),
-	("Legendary", {"DisplayName": "레전더리", "PriceMul": 40.0, "UpChance": 0.0,   "Color": [1.0, 0.82, 0.3, 1.0]}),
+	("Common",    {"DisplayName": "일반",     "PriceMul": 1.0,  "UpChance": 0.10,  "Color": [0.92, 0.9, 0.86, 1.0], "BuffSize": 0.0,  "FoodMul": 1.0}),
+	("Rare",      {"DisplayName": "레어",     "PriceMul": 3.0,  "UpChance": 0.06,  "Color": [0.45, 0.7, 1.0, 1.0],  "BuffSize": 0.12, "FoodMul": 1.5}),
+	("Unique",    {"DisplayName": "유니크",   "PriceMul": 10.0, "UpChance": 0.03,  "Color": [0.8, 0.5, 1.0, 1.0],   "BuffSize": 0.22, "FoodMul": 2.0}),
+	("Legendary", {"DisplayName": "레전더리", "PriceMul": 40.0, "UpChance": 0.0,   "Color": [1.0, 0.82, 0.3, 1.0],  "BuffSize": 0.35, "FoodMul": 3.0}),
 ]
 
 FARMING = {
@@ -151,6 +151,47 @@ ITEM_ROWS = [
 ]
 
 
+# 작물을 먹을 때 버프 (레어 이상, 크기 = Rarity.BuffSize): Speed 이동 속도, Power 공격력, Guard 받는 피해 감소, Regen 체력 회복(초당 Max의 크기%/10)
+BUFF_TYPES = ["None", "Speed", "Power", "Guard", "Regen"]
+CROP_BUFFS = {
+	"EyeRadish": "Speed", "BrainCabbage": "Power", "TentacleLeek": "Regen", "FingerBean": "Guard", "Mandrake": "Regen",
+	"FangCorn": "Power", "HeartTomato": "Regen", "VeinPepper": "Speed", "SkullMelon": "Guard", "SunEyeLotus": "Regen",
+	"ScreamPumpkin": "Guard", "ShadowEggplant": "Speed", "CobwebGrape": "Guard", "BloodBeet": "Power", "WraithCorn": "Power",
+	"FrostEyeFlower": "Speed", "BoneCarrot": "Guard", "AbyssTurnip": "Power", "FrozenStar": "Regen",
+}
+
+# ---- 체력·정신력 ------------------------------------------------------------------------------------------------------------
+VITALS = {
+	"MaxHealth": 100, "MaxSanity": 100, "StartSanity": 80,
+	"FoodHealthBase": 8, "FoodHealthPerPrice": 0.1,     # 작물을 먹으면 체력 + (기본 + 값×배율) × 희귀도 FoodMul
+	"BedSanity": 8, "DawnSanity": 4,                    # 잠: 침대 / 새벽에 쓰러지듯
+	"LowSanity": 50, "CriticalSanity": 25,              # 이 아래면 능력치 감소
+	"LowStatMul": 0.9, "CriticalStatMul": 0.75,         # 이동 속도·공격력 배율
+	"CollapseGoldLoss": 0.2, "CollapseWakeHour": 10.0, "CollapseSanity": 30, "CollapseHealth": 50,
+	"DeathSanityLoss": 12, "RoundLossSanity": 8,        # 밤 전투 사망 / 라운드 패배 (F7)
+}
+
+VITALS_FIELDS = [
+	Field("MaxHealth", "Int", 100, "최대 체력"),
+	Field("MaxSanity", "Int", 100, "최대 정신력"),
+	Field("StartSanity", "Int", 80, "처음 정신력"),
+	Field("FoodHealthBase", "Int", 8, "작물을 먹을 때 체력 회복 기본"),
+	Field("FoodHealthPerPrice", "Float", 0.1, "작물 값당 체력 회복"),
+	Field("BedSanity", "Int", 8, "침대에서 자면 정신력 회복"),
+	Field("DawnSanity", "Int", 4, "새벽에 쓰러지듯 자면 정신력 회복"),
+	Field("LowSanity", "Int", 50, "이 아래면 능력치 감소 (낮음)"),
+	Field("CriticalSanity", "Int", 25, "이 아래면 능력치 크게 감소 (위험)"),
+	Field("LowStatMul", "Float", 0.9, "정신력 낮음 능력치 배율"),
+	Field("CriticalStatMul", "Float", 0.75, "정신력 위험 능력치 배율"),
+	Field("CollapseGoldLoss", "Float", 0.2, "쓰러지면 잃는 소지금 비율"),
+	Field("CollapseWakeHour", "Float", 10.0, "쓰러진 다음 날 깨는 시각"),
+	Field("CollapseSanity", "Int", 30, "쓰러진 다음 날 정신력"),
+	Field("CollapseHealth", "Int", 50, "쓰러진 다음 날 체력"),
+	Field("DeathSanityLoss", "Int", 12, "밤 전투에서 쓰러지면 잃는 정신력"),
+	Field("RoundLossSanity", "Int", 8, "라운드 패배로 잃는 정신력"),
+]
+
+
 def WriteFarming(Content):
 	import FarmBieCrops as FC
 	Struct(Content, "Crop", "작물", [
@@ -162,16 +203,19 @@ def WriteFarming(Content):
 		Field("SeedPrice", "Int", 10, "일반 단계 씨앗 값 (0 = 팔지 않음)"),
 		Field("Exclusive", "Bool", False, "계절 전용 희귀종 (수확 때 드물게만 씨앗이 나온다)"),
 		Field("Sanity", "Int", 0, "먹으면 회복하는 정신력 (0 = 정신력 음식 아님)"),
+		Field("Buff", "Enum", "None", "레어 이상을 먹으면 다음 날 아침까지 받는 버프", Values=BUFF_TYPES),
 		Field("Description", "String", "", "설명"),
 	])
 	Table(Content, "Crops", "Crop", [(C["Id"], {"DisplayName": C["Name"], "Season": C["Season"], "Days": C["Days"], "Regrow": C["Regrow"],
 											   "Price": C["Price"], "SeedPrice": C["SeedPrice"], "Exclusive": C["Exclusive"], "Sanity": C["Sanity"],
-											   "Description": C["Desc"]}) for C in FC.CROPS])
+											   "Buff": CROP_BUFFS.get(C["Id"], "None"), "Description": C["Desc"]}) for C in FC.CROPS])
 	Struct(Content, "Rarity", "희귀도", [
 		Field("DisplayName", "String", "", "이름"),
 		Field("PriceMul", "Float", 1.0, "판매가 배율"),
 		Field("UpChance", "Float", 0.0, "수확 때 한 단계 위 씨앗 확률"),
 		Field("Color", "Array", [1.0, 1.0, 1.0, 1.0], "글자 색", Element="Float"),
+		Field("BuffSize", "Float", 0.0, "먹으면 받는 버프 크기 (0.1 = 10%)"),
+		Field("FoodMul", "Float", 1.0, "먹을 때 회복량 배율"),
 	])
 	Table(Content, "Rarities", "Rarity", RARITY_ROWS)
 	Struct(Content, "Farming", "농사 수치", FARMING_FIELDS)
@@ -255,3 +299,5 @@ def WriteAll(Content):
 	Table(Content, "DayNightKeys", "DayNightKey", [(f"K{I:02d}", Row) for I, Row in enumerate(DAY_NIGHT_KEYS)])
 	WriteFarming(Content)
 	WriteEconomy(Content)
+	Struct(Content, "Vitals", "체력·정신력", VITALS_FIELDS)
+	Values(Content, "Vitals", "Vitals", VITALS)

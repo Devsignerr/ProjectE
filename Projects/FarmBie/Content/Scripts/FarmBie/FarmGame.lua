@@ -15,11 +15,11 @@ local FarmGame = {
 	},
 }
 for _, Module in ipairs({ "Scripts/FarmBie/FarmTime.lua", "Scripts/FarmBie/FarmInventory.lua", "Scripts/FarmBie/FarmField.lua",
-                         "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua" }) do
+                         "Scripts/FarmBie/FarmEconomy.lua", "Scripts/FarmBie/FarmMenu.lua", "Scripts/FarmBie/FarmVitals.lua" }) do
 	for Name, Fn in pairs(Script.Require(Module)) do FarmGame[Name] = Fn end
 end
 
-local SaveParts = { "Time", "Inventory", "Field", "Economy" }
+local SaveParts = { "Time", "Inventory", "Field", "Economy", "Vitals" }
 local SaveVersion = 1
 
 local function Flat(V) return Vector3(V.X, V.Y, 0) end
@@ -32,6 +32,7 @@ function FarmGame:OnStart()
 	self.Report = {}
 	self.Interactables = {}
 	self.SleepSpot = Parse2(self.Properties.SleepSpot)
+	self:InitVitals()
 	self:InitTime()
 	self:InitInventory()
 	self.RandState = 12345
@@ -71,6 +72,7 @@ end
 function FarmGame:OnUpdate(Dt)
 	self:UpdateTime(Dt)
 	self:UpdateMerchant()
+	self:UpdateVitals(Dt)
 end
 
 -- ---- 상호작용
@@ -120,10 +122,11 @@ end
 
 -- ---- 시간 훅 (FarmTime이 부른다)
 function FarmGame:OnDayStart(bNewSeason)
-	local Grown = self:GrowField()
-	local Income = self:SettleShipping()
 	-- 아침 알림 띠 부제에 붙일 글 (FarmTime이 잠 전환 끝에 쓴다)
 	self.MorningNotes = {}
+	self:ApplySleepRecovery(self.MorningNotes)
+	local Grown = self:GrowField()
+	local Income = self:SettleShipping()
 	if Income > 0 then self.MorningNotes[#self.MorningNotes + 1] = string.format("출하 수입 +%d", Income) end
 	if self:IsMerchantDay() then self.MorningNotes[#self.MorningNotes + 1] = "보부상이 남쪽 천막에 왔다" end
 	Log.Info(string.format("[FarmBie] 아침: 자란 작물 %d, 출하 수입 %d, 돈 %d", Grown, Income, self.Gold))

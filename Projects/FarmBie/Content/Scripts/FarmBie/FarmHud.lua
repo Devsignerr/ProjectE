@@ -133,6 +133,16 @@ function Hud:OnUpdate(Dt)
 	local bMoon = GM.Phase == "Night" or GM.Hour >= GM.Calendar.NightStartHour
 	self:Set("ClockIcon", "Texture", bMoon and "UI/FarmBie/Moon.png" or "UI/FarmBie/Sun.png")
 	self:Set("GoldText", "Text", tostring(GM.Gold or 0))
+	if GM.Vitals then
+		local V = GM.Vitals
+		self:Set("HealthBar", "Percent", math.floor(GM.Health / V.MaxHealth * 100 + 0.5) / 100)
+		self:Set("HealthText", "Text", tostring(math.ceil(GM.Health)))
+		self:Set("SanityBar", "Percent", math.floor(GM.Sanity / V.MaxSanity * 100 + 0.5) / 100)
+		self:Set("SanityText", "Text", tostring(math.ceil(GM.Sanity)))
+		local Buff = GM:BuffText()
+		self:Set("BuffText", "Text", Buff)
+		self:Show("BuffText", Buff ~= "")
+	end
 	self:UpdateHotbar()
 	self:UpdateToasts(Time.GetUnscaledDelta())
 	-- 알림 띠: 실제 시간으로 줄어든다 (일시정지 중에도 사라짐), 끝 0.5초 페이드

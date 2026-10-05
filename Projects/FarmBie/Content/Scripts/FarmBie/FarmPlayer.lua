@@ -44,6 +44,8 @@ function FarmPlayer:OnStart()
 	self.Visual = self.entity:FindChild("Visual")
 	self.Body = self.Visual:FindChild("Body")
 	self.Sprite = self.Body:GetComponent("SpriteComponent")
+	self.Mover = self.entity:GetComponent("CharacterMovementComponent")
+	self.BaseWalkSpeed = self.Mover.MaxWalkSpeed
 	self.Facing = "Down"
 	self.Anim = ""
 	self.DodgeTimer, self.DodgeCooldown = 0.0, 0.0
@@ -69,7 +71,8 @@ function FarmPlayer:GatherInput()
 	end
 	local MX, MY = Input.GetAction("Move")
 	local In = { Move = Vector3(MX, -MY, 0), Dodge = Input.WasActionPressed("Dodge"), Interact = Input.WasActionPressed("Interact"),
-	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause"), Inventory = Input.WasActionPressed("Inventory") }
+	             UseTool = Input.WasActionPressed("UseTool"), Pause = Input.WasActionPressed("Pause"), Inventory = Input.WasActionPressed("Inventory"),
+	             Eat = Input.WasActionPressed("Eat") }
 	self:MenuNavigation(In, MX, MY)
 	for I = 1, 9 do
 		if Input.WasActionPressed("Slot" .. I) then In.Slot = I end
@@ -139,6 +142,10 @@ function FarmPlayer:OnUpdate(Dt)
 		end
 		self:UpdateAnimation(Vector3(0, 0, 0))
 		return
+	end
+	if In.Eat then
+		local S = GM:SelectedItem()
+		if S and GM:CanEat(S.Key) then GM:Eat(S.Key) end
 	end
 	if In.Interact then
 		GM:Interact()

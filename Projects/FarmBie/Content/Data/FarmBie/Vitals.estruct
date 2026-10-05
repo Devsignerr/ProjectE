@@ -1,0 +1,109 @@
+{
+  "Version": 1,
+  "Name": "Vitals",
+  "Description": "체력·정신력",
+  "Fields": [
+    {
+      "Name": "MaxHealth",
+      "Type": "Int",
+      "Default": 100,
+      "Description": "최대 체력"
+    },
+    {
+      "Name": "MaxSanity",
+      "Type": "Int",
+      "Default": 100,
+      "Description": "최대 정신력"
+    },
+    {
+      "Name": "StartSanity",
+      "Type": "Int",
+      "Default": 80,
+      "Description": "처음 정신력"
+    },
+    {
+      "Name": "FoodHealthBase",
+      "Type": "Int",
+      "Default": 8,
+      "Description": "작물을 먹을 때 체력 회복 기본"
+    },
+    {
+      "Name": "FoodHealthPerPrice",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "작물 값당 체력 회복"
+    },
+    {
+      "Name": "BedSanity",
+      "Type": "Int",
+      "Default": 8,
+      "Description": "침대에서 자면 정신력 회복"
+    },
+    {
+      "Name": "DawnSanity",
+      "Type": "Int",
+      "Default": 4,
+      "Description": "새벽에 쓰러지듯 자면 정신력 회복"
+    },
+    {
+      "Name": "LowSanity",
+      "Type": "Int",
+      "Default": 50,
+      "Description": "이 아래면 능력치 감소 (낮음)"
+    },
+    {
+      "Name": "CriticalSanity",
+      "Type": "Int",
+      "Default": 25,
+      "Description": "이 아래면 능력치 크게 감소 (위험)"
+    },
+    {
+      "Name": "LowStatMul",
+      "Type": "Float",
+      "Default": 0.9,
+      "Description": "정신력 낮음 능력치 배율"
+    },
+    {
+      "Name": "CriticalStatMul",
+      "Type": "Float",
+      "Default": 0.75,
+      "Description": "정신력 위험 능력치 배율"
+    },
+    {
+      "Name": "CollapseGoldLoss",
+      "Type": "Float",
+      "Default": 0.2,
+      "Description": "쓰러지면 잃는 소지금 비율"
+    },
+    {
+      "Name": "CollapseWakeHour",
+      "Type": "Float",
+      "Default": 10.0,
+      "Description": "쓰러진 다음 날 깨는 시각"
+    },
+    {
+      "Name": "CollapseSanity",
+      "Type": "Int",
+      "Default": 30,
+      "Description": "쓰러진 다음 날 정신력"
+    },
+    {
+      "Name": "CollapseHealth",
+      "Type": "Int",
+      "Default": 50,
+      "Description": "쓰러진 다음 날 체력"
+    },
+    {
+      "Name": "DeathSanityLoss",
+      "Type": "Int",
+      "Default": 12,
+      "Description": "밤 전투에서 쓰러지면 잃는 정신력"
+    },
+    {
+      "Name": "RoundLossSanity",
+      "Type": "Int",
+      "Default": 8,
+      "Description": "라운드 패배로 잃는 정신력"
+    }
+  ]
+}

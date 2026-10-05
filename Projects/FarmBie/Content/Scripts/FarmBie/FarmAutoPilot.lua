@@ -3,6 +3,7 @@
 --   확인은 Expect로 쌓고 끝에 관리자 ReportAutoPlay → 로그 "[FarmBie] 결과: 실패 N건".
 --   Basic: 이동(사방)·방향 플립북·구르기·카메라 추적·집/울타리 충돌
 --   Economy: 처음 돈·출하(작물 전부/고른 묶음)·아침 정산·보부상 요일·재고(계절·한정)·사기(돈 부족·품절)·떠남·소지품 창 옮기기·저장
+--   Sanity: 먹기(체력·정신력·희귀 버프)·버프는 아침에 끝·정신력 낮음 속도 감소·잠 회복·정신력 0 쓰러짐(소지금 20%·10시 기상)·저장
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -452,6 +453,65 @@ function AutoPilot:RunBagShot()
 	GM.MenuIndex = 7
 	GM:RefreshMenu()
 	while true do self:Yield() end
+end
+
+function AutoPilot:RunSanity()
+	local GM, P = self.GM, self.Player
+	local V = GM.Vitals
+	local Hud = GM:Hud()
+	self:Wait(1.0)
+	self:Expect(GM.Sanity == 80 and GM.Health == 100 and Hud.Cache["SanityText.Text"] == "80", "처음 정신력 80")
+	-- 정신력 음식: 속삭이는 감자 (18) — 고른 칸 + Eat
+	GM:Give("Crop:WhisperPotato:0", 2, true)
+	GM:Give("Crop:BrainCabbage:1", 1, true)
+	GM.Health = 50
+	for I = 1, 9 do if GM.Bag[I] and GM.Bag[I].Key == "Crop:WhisperPotato:0" then self.In.Slot = I end end
+	self:Yield()
+	self:Press("Eat")
+	self:Expect(GM.Sanity == 98 and GM:CountItem("Crop:WhisperPotato:0") == 1, "감자 먹기 정신력 " .. GM.Sanity)
+	self:Expect(GM.Health == 50 + 8 + 6, "체력 회복 " .. GM.Health)
+	-- 레어 뇌양배추: 공격력 버프 12%
+	for I = 1, 9 do if GM.Bag[I] and GM.Bag[I].Key == "Crop:BrainCabbage:1" then self.In.Slot = I end end
+	self:Yield()
+	self:Press("Eat")
+	self:Expect(math.abs(GM:BuffAmount("Power") - 0.12) < 1e-4 and string.find(Hud.Cache["BuffText.Text"] or "", "공격력") ~= nil, "레어 버프 " .. tostring(Hud.Cache["BuffText.Text"]))
+	-- 도구·씨앗은 못 먹는다
+	self.In.Slot = 1
+	self:Yield()
+	local Count = GM:CountItem("Hoe")
+	self:Press("Eat")
+	self:Expect(GM:CountItem("Hoe") == Count, "괭이는 못 먹음")
+	-- 정신력 낮음: 속도 감소
+	local Base = P.BaseWalkSpeed
+	GM:LoseSanity(60, "시험")
+	self:Wait(0.1)
+	self:Expect(GM.Sanity == 38 and math.abs(P.Mover.MaxWalkSpeed - Base * 0.9) < 1, string.format("정신력 낮음 속도 %.0f", P.Mover.MaxWalkSpeed))
+	self:Expect(GM:FearLevel() > 0 and GM.Vignette.Intensity > 0.5, "화면 공포 효과")
+	GM:LoseSanity(20, "시험")
+	self:Wait(0.1)
+	self:Expect(math.abs(P.Mover.MaxWalkSpeed - Base * 0.75) < 1, "정신력 위험 속도")
+	-- 침대 잠: +8, 버프 끝
+	GM:SetHour(21)
+	self:Expect(self:GoTo(GM.SleepSpot + Vector3(0, 80, 0), 40, 15), "문 앞")
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:WaitMorning()
+	self:Expect(GM.Sanity == 26 and GM:BuffAmount("Power") == 0 and GM.Health == 100, "잠 회복·버프 끝 " .. GM.Sanity)
+	-- 정신력 0: 쓰러짐 → 다음 날 10시, 소지금 20% 잃음
+	local Gold = GM.Gold
+	local Day = GM.Day
+	GM:LoseSanity(30, "시험")
+	self:Expect(GM.Phase == "Sleep" and GM.SleepReason == "Collapse", "쓰러짐")
+	self:WaitMorning()
+	self:Expect(GM.Day == Day + 1 and math.abs(GM.Hour - 10) < 0.05 and GM.Gold == Gold - math.floor(Gold * 0.2 + 0.5) and GM.Sanity == 30,
+		string.format("쓰러진 다음 날 %s 돈 %d 정신력 %d", GM:ClockText(), GM.Gold, GM.Sanity))
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "쓰러졌다") ~= nil, "쓰러짐 알림")
+	-- 저장/불러오기
+	GM:SaveGame()
+	GM:SetSanity(90)
+	GM:LoadGame()
+	self:Expect(GM.Sanity == 30, "정신력 저장")
+	self:Finish()
 end
 
 function AutoPilot:RunTime()

@@ -424,7 +424,7 @@ def AddTrees(B):
 		B.Place(f"Tree_{Count}", Kind, X, Y, Rng.uniform(0, 360), Scale, Sink=10.0)
 		Count += 1
 	# 마당 안 그늘 나무 몇 그루 (충돌 있음)
-	for Index, (X, Y) in enumerate([(-2050.0, -1500.0), (2100.0, -1550.0), (-2150.0, 1450.0), (2200.0, 1500.0), (1250.0, -1500.0)]):
+	for Index, (X, Y) in enumerate([(-2050.0, -1500.0), (-2150.0, 1450.0), (2200.0, 1500.0)]):
 		B.Place(f"YardTree_{Index}", "tree_single_B" if Index % 2 else "tree_single_A", X, Y, Index * 70.0, KS * 1.1, Collide=True, Shrink=0.3)
 
 
@@ -449,6 +449,11 @@ def AddFarmstead(B):
 		B.S.Add(f"GreenhouseStake_{I}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/WoodPost.emat"}},
 				(X, Y, B.Height(X, Y) + 40.0), None, (0.1, 0.1, 0.8))
 	B.Reserve((X0 + X1) * 0.5, (Y0 + Y1) * 0.5, 250.0)
+	# 탑 (북동쪽 — FarmTower.lua: 문 앞에서 E로 들어감)
+	TX_, TY_ = FARM_TOWER
+	B.S.Add("TowerBuilding", {"ModelComponent": {"AssetPath": f"{FarmBieBuild.FOLDER}/Tower.gltf"}}, (TX_, TY_, B.Height(TX_, TY_)))
+	B.BoxCollider("TowerBuilding_Collision", (TX_, TY_, B.Height(TX_, TY_) + 150.0), (210.0, 210.0, 150.0))
+	B.Reserve(TX_, TY_, 330.0)
 	# 작업대 (제작 — FarmCraft.lua)
 	B.S.Add("Workbench", {"ModelComponent": {"AssetPath": f"{FarmBieBuild.FOLDER}/Workbench.gltf"}}, (WORKBENCH[0], WORKBENCH[1], B.Height(*WORKBENCH)),
 			QuatFromEuler(Yaw=0.0))
@@ -518,6 +523,7 @@ SHIPPING_BIN = (380.0, -950.0)
 GREENHOUSE_TILES = (38, 23, 6, 4)   # 온실 부지 (TX, TY, 가로, 세로 칸) — 밭 동쪽
 CRYSTAL_START = (18, 11)            # 크리스탈 처음 칸 (집 서쪽 마당)
 WORKBENCH = (760.0, -1120.0)        # 작업대 (헛간 앞)
+FARM_TOWER = (1850.0, -1600.0)      # 탑 건물 (문은 +Y — Tower.edata FarmDoor)
 # 밤 진입로 (울타리 틈 바깥쪽 — 격자 안): 이름, 좀비가 나오는 자리
 ENTRANCE_SPAWNS = {"North": (ENTRANCES["North"][0], PLAY_MIN[1] + 70.0), "South": (ENTRANCES["South"][0], PLAY_MAX[1] - 70.0),
 				   "West": (PLAY_MIN[0] + 70.0, ENTRANCES["West"][1]), "East": (PLAY_MAX[0] - 70.0, ENTRANCES["East"][1])}
@@ -597,8 +603,92 @@ def BuildScene(Height, AutoPlay=""):
 	AddTravel(B, "Travel_Forest", PLAY_MIN[0] + 60.0, ENTRANCES["West"][1], "Scenes/Forest.escene", "FromFarm")
 	AddSpawn(B, "FromForest", PLAY_MIN[0] + 300.0, ENTRANCES["West"][1])
 	AddSpawn(B, "Bed", SLEEP_SPOT[0], SLEEP_SPOT[1] + 60.0)
+	AddSpawn(B, "FromTower", FARM_TOWER[0], FARM_TOWER[1] + 380.0)
 	AddCamera(B, PLAYER_START)
 	AddPlayer(B, PLAYER_START)
+	return B.S
+
+
+# ================================================================ 탑 (F9 — 한 방을 층마다 다시 꾸민다: FarmTower.lua)
+TOWER_ORIGIN = (-1200.0, -700.0)   # 24×14칸 방
+TOWER_W, TOWER_H = 24, 14
+TOWER_START = (0.0, 560.0)
+DG = "Asset/KayKit/Dungeon"
+
+
+def BuildTowerTerrain():
+	# 평평한 돌바닥 (레이어 3 = 돌) — 방 밖은 어둠
+	H = np.zeros((TERRAIN_RES, TERRAIN_RES))
+	W = np.full((TERRAIN_RES, TERRAIN_RES), 255 << 24, dtype=np.uint32)
+	return H, W
+
+
+def WriteTowerPrefabs():
+	def Piece(Name, Asset, Scale, Half, ColZ):
+		Entities = [{"Name": Name, "Parent": -1, "Components": {"PrefabLinkComponent": Link(1), "TransformComponent": Transform()}},
+					{"Name": "Model", "Parent": 0, "Components": {"ModelComponent": {"AssetPath": Asset}, "PrefabLinkComponent": Link(2),
+																  "TransformComponent": Transform(Scale=Scale)}}]
+		if Half:
+			Entities.append({"Name": "Collision", "Parent": 0, "Components": {"BoxColliderComponent": {"HalfExtents": list(Half)},
+																			  "PrefabLinkComponent": Link(3), "TransformComponent": Transform((0, 0, ColZ))}})
+		WritePrefab(Name, Entities)
+	Piece("TowerColumn", f"{DG}/column.glb", (1.35, 1.35, 1.25), (46.0, 46.0, 90.0), 90.0)
+	Piece("TowerCrates", f"{DG}/box_large.glb", (0.62, 0.62, 0.62), (47.0, 47.0, 47.0), 47.0)
+	Piece("TowerChest", f"{DG}/chest_gold.glb", (0.55, 0.55, 0.55), (40.0, 46.0, 36.0), 36.0)
+
+
+def BuildTowerScene(Height, AutoPlay=""):
+	B = FBuilder(Height)
+	S = B.S
+	X0, Y0 = TOWER_ORIGIN
+	X1, Y1 = X0 + TOWER_W * TILE, Y0 + TOWER_H * TILE
+	AddEnvironment(B, 10.0, "Terrain/FarmBie/Tower.eterrain", (X0, Y0), (X1, Y1))
+	for E in S.Entities:
+		if E["Name"] == "Sun":
+			E["Components"]["DirectionalLightComponent"]["Intensity"] = 2.2   # 탑 안: 해는 약하고 횃불이 밝힌다
+		if E["Name"] == "Sky":
+			E["Components"]["SkyLightComponent"]["Intensity"] = 1.1
+			E["Components"]["HeightFogComponent"]["Color"] = [0.05, 0.04, 0.07]
+			E["Components"]["HeightFogComponent"]["Density"] = 0.0012
+	# 바닥 타일 (4m) + 방 밖 어두운 바닥
+	for IX in range(int(X0) - 400, int(X1) + 400, 400):
+		for IY in range(int(Y0) - 400, int(Y1) + 400, 400):
+			Inside = X0 <= IX < X1 and Y0 <= IY < Y1
+			S.Add(f"Floor_{IX}_{IY}", {"ModelComponent": {"AssetPath": f"{DG}/{'floor_tile_large' if Inside else 'floor_dirt_large_rocky'}.glb"}},
+				  (IX + 200.0, IY + 200.0, 0.0))
+	# 벽: 북(뒤)·서·동 — 남쪽(카메라 쪽)은 충돌만
+	WS = (1.0, 1.0, 0.55)
+	for I, X in enumerate(range(int(X0), int(X1), 400)):
+		S.Add(f"WallN_{I}", {"ModelComponent": {"AssetPath": f"{DG}/{'wall_window_open' if I % 3 == 1 else 'wall'}.glb"}}, (X + 200.0, Y0 - 50.0, 0.0),
+			  QuatFromEuler(Yaw=90.0), WS)
+	for Side, X in (("W", X0 - 50.0), ("E", X1 + 50.0)):
+		for I, Y in enumerate(range(int(Y0), int(Y1), 400)):
+			S.Add(f"Wall{Side}_{I}", {"ModelComponent": {"AssetPath": f"{DG}/wall.glb"}}, (X, Y + 200.0, 0.0), None, WS)
+	for Name, Center, Half in (("RoomN", (0.0, Y0 - 50.0, 120.0), ((X1 - X0) * 0.5 + 100.0, 50.0, 120.0)),
+							   ("RoomS", (0.0, Y1 + 50.0, 120.0), ((X1 - X0) * 0.5 + 100.0, 50.0, 120.0)),
+							   ("RoomW", (X0 - 50.0, (Y0 + Y1) * 0.5, 120.0), (50.0, (Y1 - Y0) * 0.5 + 100.0, 120.0)),
+							   ("RoomE", (X1 + 50.0, (Y0 + Y1) * 0.5, 120.0), (50.0, (Y1 - Y0) * 0.5 + 100.0, 120.0))):
+		B.BoxCollider(f"{Name}_Collision", Center, Half)
+	# 남쪽 낮은 장식 (방 끝 표시) + 출구 아치
+	for I, X in enumerate(range(int(X0), int(X1), 400)):
+		if abs(X + 200.0) > 300.0:
+			S.Add(f"RubbleS_{I}", {"ModelComponent": {"AssetPath": f"{DG}/{'barrel_small_stack' if I % 2 else 'crates_stacked'}.glb"}},
+				  (X + 200.0, Y1 + 120.0, 0.0), QuatFromEuler(Yaw=I * 37.0), (0.5, 0.5, 0.5))
+	S.Add("ExitArch", {"ModelComponent": {"AssetPath": f"{DG}/wall_doorway.glb"}}, (0.0, Y1 + 70.0, 0.0), QuatFromEuler(Yaw=90.0), (1.0, 1.0, 0.45))
+	# 계단 (북쪽 가운데 — 층을 깨면 열림)
+	S.Add("Stairs", {"ModelComponent": {"AssetPath": f"{DG}/stairs.glb"}}, (100.0, Y0 - 20.0, 0.0), QuatFromEuler(Yaw=-90.0), (0.45, 0.45, 0.45))
+	# 횃불 (북쪽 벽 + 기둥 자리)
+	for I, X in enumerate(range(int(X0) + 300, int(X1), 600)):
+		S.Add(f"Torch_{I}", {"ModelComponent": {"AssetPath": f"{DG}/torch_mounted.glb"}}, (X, Y0 + 10.0, 150.0), QuatFromEuler(Yaw=90.0))
+		S.Add(f"TorchLight_{I}", {"PointLightComponent": {"Color": [1.0, 0.78, 0.55], "Intensity": 5.5, "Radius": 1100.0, "CastShadows": False}},
+			  (X, Y0 + 80.0, 260.0))
+	for I, (X, Y) in enumerate(((X0 + 150.0, Y1 - 150.0), (X1 - 150.0, Y1 - 150.0), (0.0, (Y0 + Y1) * 0.5))):
+		S.Add(f"FloorLight_{I}", {"PointLightComponent": {"Color": [0.9, 0.85, 1.0], "Intensity": 3.0, "Radius": 1000.0, "CastShadows": False}},
+			  (X, Y, 320.0))
+	AddGame(B, AutoPlay, "Tower", f"{X0 + 600.0},{Y0 + 300.0},{X1 - 600.0},{Y1 - 300.0}")
+	AddSpawn(B, "Floor", TOWER_START[0], TOWER_START[1])
+	AddCamera(B, TOWER_START)
+	AddPlayer(B, TOWER_START)
 	return B.S
 
 
@@ -727,6 +817,12 @@ def Main():
 	WritePrefabs()
 	Scene = BuildScene(Height)
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Farm.escene"))
+	WriteTowerPrefabs()
+	TH, TW = BuildTowerTerrain()
+	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Tower.eterrain"), TH, TW)
+	TowerHeight = FHeight(TH)
+	BuildTowerScene(TowerHeight).Save(os.path.join(CONTENT, "Scenes", "Tower.escene"))
+	BuildScene(Height, AutoPlay="Tower").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTower.escene"))
 	FH, FW = BuildForestTerrain()
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Forest.eterrain"), FH, FW)
 	ForestHeight = FHeight(FH)
@@ -748,6 +844,7 @@ def Main():
 		BuildScene(Height, AutoPlay="BossShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBossShot.escene"))
 		BuildScene(Height, AutoPlay="NightShot").Save(os.path.join(CONTENT, "Scenes", "_FarmNightShot.escene"))
 		BuildScene(Height, AutoPlay="BuildShot").Save(os.path.join(CONTENT, "Scenes", "_FarmBuildShot.escene"))
+		BuildTowerScene(TowerHeight, "TowerShot").Save(os.path.join(CONTENT, "Scenes", "_TowerShot.escene"))
 		BuildForestScene(ForestHeight, "Shot10").Save(os.path.join(CONTENT, "Scenes", "_ForestShot.escene"))
 		# 확인용 (커밋하지 않음): 시각별 화면
 		BuildScene(Height, AutoPlay="ShopShot").Save(os.path.join(CONTENT, "Scenes", "_FarmShopShot.escene"))

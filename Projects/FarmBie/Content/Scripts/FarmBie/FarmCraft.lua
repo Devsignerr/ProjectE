@@ -110,7 +110,7 @@ end
 function Craft:PlayerAttack(WeaponKey, Pos, Facing)
 	local Row = self:WeaponRow(WeaponKey)
 	local Dc = self.Defense
-	if not Row or not Dc or self.MapId ~= "Farm" then return false end
+	if not Row or not Dc or (self.MapId ~= "Farm" and self.MapId ~= "Tower") then return false end
 	local Mul = self:StatMul() * (1 + self:BuffAmount("Power"))
 	if Row.Kind == "Shot" then
 		local Ammo, AmmoMul, Slice = self:PickAmmo(WeaponKey, Row)

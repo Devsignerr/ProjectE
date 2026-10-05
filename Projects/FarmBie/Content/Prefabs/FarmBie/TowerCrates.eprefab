@@ -1,0 +1,100 @@
+{
+  "Entities": [
+    {
+      "Name": "TowerCrates",
+      "Parent": -1,
+      "Components": {
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Model",
+      "Parent": 0,
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/box_large.glb"
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.62,
+            0.62,
+            0.62
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Collision",
+      "Parent": 0,
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            47.0,
+            47.0,
+            47.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "3",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            47.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 4,
+  "Version": 1
+}

@@ -8,6 +8,7 @@
 --   Build : 건설 모드·벽(가로/세로)·문 통과·덫·지뢰(물건)·포탑·철거 반환·수리·부서짐 정리·크리스탈 옮기기/강화·온실(계절 넘김에도 삶)·저장
 --   Defense: 진입로 예고·생성·덫/지뢰/포탑·검/활·작물 먹힘·밤 정리 → 침대 / DefenseLoss: 플레이어 피해·쓰러짐·부활·크리스탈 발견·시간 초과 패배·부재 정산 / GameOver
 --   Boss: 10일차 중간 보스 등장·크리스탈 사냥·어그로·처치 보상 → 20일차 패배 쓰러짐 / SeasonBoss: 30일차 중간+계절 보스·오라·소환·계절 보스 처치(다음 계절 씨앗)·중간 보스 패배
+--   Tower(씬 3번): 탑 문 → 1층(적 처치·보물상자·계단) → 5층 수호자·체크포인트·크리스탈 조각 → 쓰러짐(전리품 절반) → 집 → 다시 들어가면 5층
 --   Farm : 갈기·물·심기·비료·제철 아님 거절·물 준 날만 자람·수확·희귀/전용 씨앗 확률·계절 사멸·걷기·우물·저장/불러오기
 --   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
@@ -99,6 +100,7 @@ function AutoPilot:Finish()
 	self.bFinished = true
 	Game.SetPersistent("FarmBie_AutoPhase", nil)
 	Game.SetPersistent("FarmBie_AutoPlay", nil)
+	self.GM.Properties.AutoPlay = "" -- 끝난 뒤 맵 이동으로 시나리오가 다시 시작되지 않게
 	local P = self.Player
 	self.GM:ReportAutoPlay(self.Failures, string.format("%.0f초, 확인 %d건, 이동 %.0fcm, 구르기 %d", self.Time, self.Checks, P.Stats.Distance, P.Stats.Dodges))
 end
@@ -1115,6 +1117,119 @@ function AutoPilot:RunBossShot()
 	self:Wait(30.0)
 	local B = GM.Bosses[2] or GM.Bosses[1]
 	if B and B.Z and B.Z.Entity then P:Teleport(B.Z.Entity:GetWorldPosition() + Vector3(120, 380, 100)) end
+	P.Facing = "Up"
+	while true do self:Yield() end
+end
+
+-- 탑: 이 층 적을 정리 (시험 단축 — 체력을 바닥으로 만들어 C++가 처치)
+function AutoPilot:ClearTowerFloor()
+	local GM = self.GM
+	self:WaitUntil(function() return GM:PendingZombies() == 0 and #GM:LiveZombies() > 0 end, 5)
+	for _, Z in ipairs(GM:LiveZombies()) do Z.Comp.Hp = 0 Z.Comp.Dead = true end
+	return self:WaitUntil(function() return GM.bFloorCleared end, 6)
+end
+
+function AutoPilot:RunTower()
+	local GM = self.GM
+	self:Wait(1.0)
+	self:Expect(GM.TowerCheckpoint == 1, "체크포인트 1")
+	self:HandOff("In")
+	local Door = Vector3(GM.TowerData.FarmDoor[1], GM.TowerData.FarmDoor[2], 0)
+	self:GoTo(Door + Vector3(0, 60, 0), 40, 25)
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Wait(5)
+	self:Expect(false, "탑에 들어가지 못함")
+	self:Finish()
+end
+
+-- 탑 안은 기둥·상자 때문에 직선으로 못 갈 수 있다 → 상호작용 자리 옆으로 옮김
+function AutoPilot:TeleportNear(Pos)
+	local P = self.Player
+	P:Teleport(Vector3(Pos.X, Pos.Y, P.entity:GetWorldPosition().Z))
+	P.Facing = "Up"
+	self:Wait(0.3)
+end
+
+function AutoPilot:RunTowerIn()
+	local GM, P = self.GM, self.Player
+	local R = GM.Report
+	self:Wait(1.0)
+	self:Expect(GM.MapId == "Tower" and GM.TowerRun and GM.TowerRun.Floor == 1, "탑 1층")
+	self:Expect(#GM.Zombies >= 4 and GM.Defense.StaticBlocked ~= "", string.format("적 %d · 배치 %s", #GM.Zombies, tostring(GM.TowerPresetName)))
+	-- 적이 플레이어를 쫓는다
+	local Z = GM:LiveZombies()[1]
+	local D0 = Flat(Z.Entity:GetWorldPosition() - self:Pos()):Length()
+	self:Wait(3.0)
+	local D1 = Z.Entity:IsValid() and Flat(Z.Entity:GetWorldPosition() - self:Pos()):Length() or 0
+	self:Expect(D1 < D0 - 100, string.format("적이 다가옴 %.0f → %.0f", D0, D1))
+	-- 처치 → 보물상자 → 계단
+	self:Expect(self:ClearTowerFloor(), "1층 정리")
+	local Gold = GM.Gold
+	self:TeleportNear(GM.ChestSpot + Vector3(0, 110, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.bChestOpened and GM.Gold == Gold + 30 and #GM.TowerRun.Loot >= 1, "보물상자 " .. (GM:Hud().Cache["BannerSub.Text"] or ""))
+	local Stairs = Vector3(GM.TowerData.Origin[1] + GM.TowerData.Width * 50, GM.TowerData.Origin[2] + 70, 0)
+	self:TeleportNear(Stairs + Vector3(0, 90, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.TowerRun.Floor == 2 and not GM.bFloorCleared, "2층")
+	-- 4층까지 건너뛰고 5층 수호자
+	GM.TowerRun.Floor = 4
+	self:Expect(self:ClearTowerFloor(), "2층 정리")
+	self:TeleportNear(Stairs + Vector3(0, 90, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM.TowerRun.Floor == 5 and GM.TowerCheckpoint == 5 and GM.Guardian ~= nil, "5층 수호자·체크포인트")
+	self:Wait(1.0)
+	self:Expect(GM:Hud().Cache["BossPanel.Visibility"] == "HitTestInvisible", "수호자 체력 막대")
+	self:Expect(self:ClearTowerFloor(), "5층 정리")
+	local Shards = GM:CountItem("CrystalShard")
+	self:TeleportNear(GM.ChestSpot + Vector3(0, 110, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Expect(GM:CountItem("CrystalShard") == Shards + 1 and GM:CountItem("Sword") == 1, "수호자 보물 (조각·검)")
+	-- 6층에서 쓰러짐 → 전리품 절반 잃고 집으로
+	self:TeleportNear(Stairs + Vector3(0, 90, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	Game.SetPersistent("FarmBie_AutoIron", GM:CountItem("Iron"))
+	self:HandOff("Home")
+	GM:Damage(1000, "시험")
+	self:Wait(5)
+	self:Expect(false, "쓰러져도 집으로 가지 못함")
+	self:Finish()
+end
+
+function AutoPilot:RunTowerHome()
+	local GM = self.GM
+	self:Wait(1.0)
+	local Iron = Game.GetPersistent("FarmBie_AutoIron", 0)
+	self:Expect(GM.MapId == "Farm" and GM.TowerCheckpoint == 5 and GM.Health > 0, "집으로 귀환 · 체크포인트 5")
+	self:Expect(GM:CountItem("Iron") < Iron and string.find(GM:Hud().Cache["BannerSub.Text"] or "", "잃은") ~= nil,
+		string.format("전리품 절반 잃음 철 %d → %d", Iron, GM:CountItem("Iron")))
+	Game.SetPersistent("FarmBie_AutoIron", nil)
+	self:HandOff("Again")
+	local Door = Vector3(GM.TowerData.FarmDoor[1], GM.TowerData.FarmDoor[2], 0)
+	self:TeleportNear(Door + Vector3(0, 60, 0))
+	self:Wait(0.2)
+	self:Press("Interact")
+	self:Wait(5)
+	self:Expect(false, "다시 들어가지 못함")
+	self:Finish()
+end
+
+function AutoPilot:RunTowerAgain()
+	local GM = self.GM
+	self:Wait(1.0)
+	self:Expect(GM.MapId == "Tower" and GM.TowerRun.Floor == 5, "체크포인트 5층부터 " .. tostring(GM.TowerRun and GM.TowerRun.Floor))
+	self:Finish()
+end
+
+function AutoPilot:RunTowerShot()
+	local GM, P = self.GM, self.Player
+	self:Wait(2.5)
 	P.Facing = "Up"
 	while true do self:Yield() end
 end

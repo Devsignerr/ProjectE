@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Name": "TowerPreset",
+  "Description": "탑 층 배치 프리셋",
+  "Fields": [
+    {
+      "Name": "Rows",
+      "Type": "Array",
+      "Default": [],
+      "Description": "칸 줄 (위 → 아래)",
+      "Element": "String"
+    }
+  ]
+}

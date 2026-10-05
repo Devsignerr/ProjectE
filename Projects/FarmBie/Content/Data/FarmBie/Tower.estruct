@@ -1,0 +1,120 @@
+{
+  "Version": 1,
+  "Name": "Tower",
+  "Description": "탑 수치",
+  "Fields": [
+    {
+      "Name": "Floors",
+      "Type": "Int",
+      "Default": 20,
+      "Description": "층 수"
+    },
+    {
+      "Name": "GuardianEvery",
+      "Type": "Int",
+      "Default": 5,
+      "Description": "수호자·체크포인트 간격"
+    },
+    {
+      "Name": "BaseEnemies",
+      "Type": "Int",
+      "Default": 4,
+      "Description": "기본 적 수"
+    },
+    {
+      "Name": "EnemiesPerFloor",
+      "Type": "Float",
+      "Default": 0.5,
+      "Description": "층당 늘어나는 적"
+    },
+    {
+      "Name": "HpPerFloor",
+      "Type": "Float",
+      "Default": 0.15,
+      "Description": "층당 체력 배율 증가"
+    },
+    {
+      "Name": "DamagePerFloor",
+      "Type": "Float",
+      "Default": 0.06,
+      "Description": "층당 공격 배율 증가"
+    },
+    {
+      "Name": "GoldPerFloor",
+      "Type": "Int",
+      "Default": 30,
+      "Description": "보물상자 돈 = 층 × 이 값"
+    },
+    {
+      "Name": "LootLossOnDown",
+      "Type": "Float",
+      "Default": 0.5,
+      "Description": "쓰러지면 잃는 이번 탑 전리품 비율"
+    },
+    {
+      "Name": "WeaponFloors",
+      "Type": "Array",
+      "Default": [],
+      "Description": "\"무기,층\" 처음 도달 보상",
+      "Element": "String"
+    },
+    {
+      "Name": "KindFloors",
+      "Type": "Array",
+      "Default": [],
+      "Description": "\"좀비 종류,처음 나오는 층\"",
+      "Element": "String"
+    },
+    {
+      "Name": "GuardianBosses",
+      "Type": "Array",
+      "Default": [],
+      "Description": "수호자 보스 (5층마다 차례로)",
+      "Element": "String"
+    },
+    {
+      "Name": "GuardianHpMul",
+      "Type": "Float",
+      "Default": 0.6,
+      "Description": "수호자 체력 배율 (보스 표 체력에 곱함)"
+    },
+    {
+      "Name": "Origin",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0
+      ],
+      "Description": "탑 방 격자 왼쪽 위",
+      "Element": "Float"
+    },
+    {
+      "Name": "Width",
+      "Type": "Int",
+      "Default": 24,
+      "Description": "탑 방 가로 칸"
+    },
+    {
+      "Name": "Height",
+      "Type": "Int",
+      "Default": 14,
+      "Description": "탑 방 세로 칸"
+    },
+    {
+      "Name": "Tile",
+      "Type": "Float",
+      "Default": 100.0,
+      "Description": "칸 크기"
+    },
+    {
+      "Name": "FarmDoor",
+      "Type": "Array",
+      "Default": [
+        0.0,
+        0.0
+      ],
+      "Description": "농장의 탑 문 앞",
+      "Element": "Float"
+    }
+  ]
+}

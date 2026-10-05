@@ -1,0 +1,3004 @@
+{
+  "Entities": [
+    {
+      "Components": {
+        "DirectionalLightComponent": {
+          "Color": [
+            1.0,
+            0.95,
+            0.86
+          ],
+          "Intensity": 2.2
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3000.0
+          ],
+          "Rotation": [
+            -0.2113091308703497,
+            0.36599815077066683,
+            0.4531538935183249,
+            0.7848855672213958
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sun",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SkyAtmosphereComponent": {
+          "MoonIntensity": 0.2,
+          "MoonColor": [
+            0.6,
+            0.72,
+            1.0
+          ],
+          "NightSkyColor": [
+            0.008,
+            0.012,
+            0.026
+          ],
+          "StarIntensity": 0.3
+        },
+        "TimeOfDayComponent": {
+          "TimeOfDay": 10.0,
+          "DayLengthMinutes": 0.0,
+          "MaxSunElevation": 60.0,
+          "NorthAzimuth": 180.0,
+          "AnimateInEditor": false
+        },
+        "SkyLightComponent": {
+          "Intensity": 1.1
+        },
+        "HeightFogComponent": {
+          "Color": [
+            0.05,
+            0.04,
+            0.07
+          ],
+          "Density": 0.0012,
+          "HeightFalloff": 0.05,
+          "StartDistance": 3500.0,
+          "MaxOpacity": 0.4,
+          "DirectionalInscatteringColor": [
+            0.9,
+            0.8,
+            0.6
+          ],
+          "Volumetric": false,
+          "VolumetricDistance": 6000.0,
+          "VolumetricAlbedo": [
+            0.95,
+            0.92,
+            0.88
+          ],
+          "VolumetricExtinctionScale": 0.6,
+          "VolumetricAnisotropy": 0.5,
+          "VolumetricDirectionalScale": 0.5,
+          "VolumetricLocalLightScale": 0.35
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Sky",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TerrainComponent": {
+          "Asset": "Terrain/FarmBie/Tower.eterrain",
+          "Size": [
+            12000.0,
+            12000.0
+          ],
+          "HeightRange": 4000.0,
+          "Layer0Material": "Materials/FarmBie/GroundGrass.emat",
+          "Layer1Material": "Materials/FarmBie/GroundPath.emat",
+          "Layer2Material": "Materials/FarmBie/GroundSoil.emat",
+          "Layer3Material": "Materials/FarmBie/GroundStone.emat",
+          "Layer0Tiling": 500.0,
+          "Layer1Tiling": 400.0,
+          "Layer2Tiling": 400.0,
+          "Layer3Tiling": 450.0,
+          "CastShadows": true,
+          "Collision": true
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Terrain",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1400.0,
+            50.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -750.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_N",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1400.0,
+            50.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            750.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_S",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            900.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_W",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            900.0,
+            300.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            0.0,
+            200.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Bound_E",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1400.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1600_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-1200_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-800_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_-400_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_0_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_400_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_tile_large.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_800_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            -900.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_-1100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_-700",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_-300",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_100",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_500",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/floor_dirt_large_rocky.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1400.0,
+            1100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Floor_1200_900",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_window_open.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -200.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            200.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_window_open.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            -750.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallN_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallW_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallW_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallW_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallW_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            -500.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallE_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            -100.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallE_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            300.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallE_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            700.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.55
+          ]
+        }
+      },
+      "Name": "WallE_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1300.0,
+            50.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            -750.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "RoomN_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            1300.0,
+            50.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            750.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "RoomS_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            800.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1250.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "RoomW_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            50.0,
+            800.0,
+            120.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1250.0,
+            0.0,
+            120.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "RoomE_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/crates_stacked.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1000.0,
+            820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "RubbleS_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/barrel_small_stack.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -600.0,
+            820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.31730465640509214,
+            0.9483236552061993
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "RubbleS_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/crates_stacked.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            600.0,
+            820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9612616959383189,
+            0.27563735581699916
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "RubbleS_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/barrel_small_stack.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            1000.0,
+            820.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9990482215818578,
+            -0.04361938736533589
+          ],
+          "Scale": [
+            0.5,
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "Name": "RubbleS_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/wall_doorway.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            770.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            0.45
+          ]
+        }
+      },
+      "Name": "ExitArch",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/stairs.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            100.0,
+            -720.0,
+            0.0
+          ],
+          "Rotation": [
+            -0.0,
+            0.0,
+            -0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            0.45,
+            0.45,
+            0.45
+          ]
+        }
+      },
+      "Name": "Stairs",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            -690.0,
+            150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Torch_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.78,
+            0.55
+          ],
+          "Intensity": 5.5,
+          "Radius": 1100.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            -620.0,
+            260.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TorchLight_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            -300.0,
+            -690.0,
+            150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Torch_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.78,
+            0.55
+          ],
+          "Intensity": 5.5,
+          "Radius": 1100.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -300.0,
+            -620.0,
+            260.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TorchLight_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            300.0,
+            -690.0,
+            150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Torch_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.78,
+            0.55
+          ],
+          "Intensity": 5.5,
+          "Radius": 1100.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            300.0,
+            -620.0,
+            260.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TorchLight_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "ModelComponent": {
+          "AssetPath": "Asset/KayKit/Dungeon/torch_mounted.glb"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -690.0,
+            150.0
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Torch_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.78,
+            0.55
+          ],
+          "Intensity": 5.5,
+          "Radius": 1100.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            -620.0,
+            260.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TorchLight_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.9,
+            0.85,
+            1.0
+          ],
+          "Intensity": 3.0,
+          "Radius": 1000.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1050.0,
+            550.0,
+            320.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FloorLight_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.9,
+            0.85,
+            1.0
+          ],
+          "Intensity": 3.0,
+          "Radius": 1000.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1050.0,
+            550.0,
+            320.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FloorLight_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            0.9,
+            0.85,
+            1.0
+          ],
+          "Intensity": 3.0,
+          "Radius": 1000.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            320.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FloorLight_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "FarmDefenseComponent": {
+          "Active": false,
+          "Width": 0,
+          "Height": 0
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 0,
+          "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
+          "PropertyOverrides": "{\"AutoPlay\": \"\", \"Map\": \"Tower\", \"CameraBounds\": \"-600.0,-400.0,600.0,400.0\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"1\", \"ShipSpot\": \"380.0,-950.0\", \"MerchantSpot\": \"520.0,1480.0\"}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "FarmGame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Merchant",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Peddler.esprite",
+          "Slice": "Idle0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 1
+        },
+        "FlipbookComponent": {
+          "Flipbook": "Sprites/FarmBie/Peddler_Idle.eflipbook",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantBody",
+      "Parent": 91
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Fx.esprite",
+          "Slice": "Shadow",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            1.5
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.1,
+            1.0,
+            1.1
+          ]
+        }
+      },
+      "Name": "MerchantShadow",
+      "Parent": 91
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            45.0,
+            35.0,
+            90.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            520.0,
+            1480.0,
+            90.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "MerchantCollision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/FarmBie/Field.esprite",
+          "Slice": "Cursor",
+          "Color": [
+            1,
+            1,
+            1,
+            0.85
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 0
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            3.0
+          ],
+          "Rotation": [
+            -0.7071067811865476,
+            0.0,
+            0.0,
+            0.7071067811865476
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "TileCursor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "UIComponent": {
+          "Asset": "UI/FarmBie/HUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": false,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "ScriptAsset": "Scripts/FarmBie/FarmHud.lua",
+          "PropertyOverrides": "{}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Hud",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            560.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Spawn_Floor",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "CameraComponent": {
+          "FovYDegrees": 30.0,
+          "NearZ": 50.0,
+          "FarZ": 40000.0,
+          "Primary": true,
+          "Priority": 10
+        },
+        "DepthOfFieldComponent": {
+          "Enabled": true,
+          "FocusDistance": 2000.0,
+          "FocalRegion": 600.0,
+          "NearTransition": 600.0,
+          "FarTransition": 1500.0,
+          "NearBlurSize": 0.6,
+          "FarBlurSize": 0.8,
+          "PreviewInEditor": false,
+          "Mode": 1,
+          "TiltShiftCenter": 0.5,
+          "TiltShiftBand": 0.5,
+          "TiltShiftTransition": 0.45,
+          "TiltShiftAngle": 0.0,
+          "BokehBladeCount": 6,
+          "BokehRotation": 15.0,
+          "BokehHighlightBoost": 2.0,
+          "BokehHighlightThreshold": 1.0
+        },
+        "ColorGradingComponent": {
+          "Enabled": true,
+          "Temperature": 0.1,
+          "Tint": 0.02,
+          "Saturation": 1.1,
+          "Contrast": 1.06,
+          "Lift": [
+            0.0,
+            0.006,
+            0.02
+          ],
+          "Gamma": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "Gain": [
+            1.03,
+            1.0,
+            0.97
+          ],
+          "LookupTable": "",
+          "LookupTableIntensity": 1.0
+        },
+        "VignetteComponent": {
+          "Enabled": true,
+          "Intensity": 0.35,
+          "Size": 0.5,
+          "Smoothness": 0.6,
+          "Roundness": 1.0,
+          "Color": [
+            0.03,
+            0.02,
+            0.03
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1244.0402866513377,
+            1949.3852415718166
+          ],
+          "Rotation": [
+            0.40557978767263886,
+            0.40557978767263886,
+            -0.5792279653395692,
+            0.5792279653395692
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Camera",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PrefabInstanceComponent": {
+          "Asset": "Prefabs/FarmBie/Player.eprefab",
+          "Overrides": ""
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": 99
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            560.0,
+            89.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Player",
+      "Parent": -1
+    }
+  ],
+  "Version": 1
+}

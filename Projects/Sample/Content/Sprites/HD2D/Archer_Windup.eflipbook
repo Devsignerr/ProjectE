@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Enemies.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "ArcherDraw0",
+      "Duration": 0.25
+    },
+    {
+      "Slice": "ArcherDraw1",
+      "Duration": 1.0
+    }
+  ]
+}

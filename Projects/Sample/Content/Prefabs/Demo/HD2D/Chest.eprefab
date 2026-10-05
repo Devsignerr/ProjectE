@@ -1,0 +1,100 @@
+{
+  "Entities": [
+    {
+      "Name": "Chest",
+      "Parent": -1,
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            62.0,
+            36.0,
+            45.0
+          ]
+        },
+        "PrefabLinkComponent": {
+          "Id": "1",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "Body",
+      "Parent": 0,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Props.esprite",
+          "Slice": "Chest0",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": true,
+          "CastShadows": true,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": true,
+          "Blend": 3,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 2
+        },
+        "FlipbookComponent": {
+          "Flipbook": "",
+          "Speed": 1.0,
+          "Playing": true,
+          "StartTime": 0.0
+        },
+        "PrefabLinkComponent": {
+          "Id": "2",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            -45.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "NextId": 3,
+  "Version": 1
+}

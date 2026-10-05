@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "Name": "Npc",
+  "Description": "HD2D 마을 사람 (Npcs.etable, 행 이름 = 마을 사람 id)",
+  "Fields": [
+    {
+      "Name": "DisplayName",
+      "Type": "String",
+      "Default": "마을 사람",
+      "Description": "대화 창 이름"
+    },
+    {
+      "Name": "Flipbook",
+      "Type": "String",
+      "Default": "",
+      "Description": "대기 플립북"
+    },
+    {
+      "Name": "Role",
+      "Type": "Enum",
+      "Default": "Talk",
+      "Description": "대화만 / 대화 뒤 상점 / 촌장(퀘스트 단계 대사)",
+      "Values": [
+        "Talk",
+        "Shop",
+        "Elder"
+      ]
+    },
+    {
+      "Name": "Lines",
+      "Type": "Array",
+      "Default": [],
+      "Description": "대사 (촌장은 Quests.etable 단계 대사)",
+      "Element": "String"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Enemies.esprite",
+  "Fps": 8.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "ArcherWalk0"
+    },
+    {
+      "Slice": "ArcherWalk1"
+    },
+    {
+      "Slice": "ArcherWalk2"
+    },
+    {
+      "Slice": "ArcherWalk3"
+    }
+  ]
+}

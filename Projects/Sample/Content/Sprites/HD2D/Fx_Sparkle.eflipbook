@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 12.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Sparkle0"
+    },
+    {
+      "Slice": "Sparkle1"
+    },
+    {
+      "Slice": "Sparkle2"
+    },
+    {
+      "Slice": "Sparkle3"
+    }
+  ]
+}

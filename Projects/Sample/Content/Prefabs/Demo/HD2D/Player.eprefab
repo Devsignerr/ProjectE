@@ -16,7 +16,8 @@
           "MaxStepHeight": 35.0,
           "MaxWalkSpeed": 430.0,
           "PushForce": 2000.0,
-          "KnockbackDeceleration": 2600.0
+          "KnockbackDeceleration": 2600.0,
+          "ClientPrediction": true
         },
         "ScriptComponent": {
           "ExecutionLocation": 2,
@@ -101,7 +102,8 @@
           "Visible": true,
           "Blend": 3,
           "AlphaCutoff": 0.5,
-          "SliceMode": 0
+          "SliceMode": 0,
+          "Billboard": 2
         },
         "FlipbookComponent": {
           "Flipbook": "Sprites/HD2D/Hero_IdleDown.eflipbook",
@@ -159,7 +161,8 @@
           "Visible": true,
           "Blend": 0,
           "AlphaCutoff": 0.5,
-          "SliceMode": 0
+          "SliceMode": 0,
+          "Billboard": 0
         },
         "PrefabLinkComponent": {
           "Id": "4",
@@ -172,7 +175,7 @@
             -83.5
           ],
           "Rotation": [
-            0.7071067811865476,
+            -0.7071067811865476,
             0.0,
             0.0,
             0.7071067811865476
@@ -184,268 +187,8 @@
           ]
         }
       }
-    },
-    {
-      "Name": "Heart0",
-      "Parent": 1,
-      "Components": {
-        "SpriteComponent": {
-          "Sprite": "Sprites/HD2D/Fx.esprite",
-          "Slice": "HeartFull",
-          "Color": [
-            1,
-            1,
-            1,
-            1
-          ],
-          "FlipX": false,
-          "FlipY": false,
-          "SortingLayer": "",
-          "OrderInLayer": 0,
-          "Lit": false,
-          "CastShadows": false,
-          "Size": [
-            0.0,
-            0.0
-          ],
-          "Visible": false,
-          "Blend": 3,
-          "AlphaCutoff": 0.5,
-          "SliceMode": 0
-        },
-        "PrefabLinkComponent": {
-          "Id": "5",
-          "Root": -1
-        },
-        "TransformComponent": {
-          "Position": [
-            -76.0,
-            8.0,
-            120.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.7,
-            1.0,
-            0.7
-          ]
-        }
-      }
-    },
-    {
-      "Name": "Heart1",
-      "Parent": 1,
-      "Components": {
-        "SpriteComponent": {
-          "Sprite": "Sprites/HD2D/Fx.esprite",
-          "Slice": "HeartFull",
-          "Color": [
-            1,
-            1,
-            1,
-            1
-          ],
-          "FlipX": false,
-          "FlipY": false,
-          "SortingLayer": "",
-          "OrderInLayer": 0,
-          "Lit": false,
-          "CastShadows": false,
-          "Size": [
-            0.0,
-            0.0
-          ],
-          "Visible": false,
-          "Blend": 3,
-          "AlphaCutoff": 0.5,
-          "SliceMode": 0
-        },
-        "PrefabLinkComponent": {
-          "Id": "6",
-          "Root": -1
-        },
-        "TransformComponent": {
-          "Position": [
-            -38.0,
-            8.0,
-            120.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.7,
-            1.0,
-            0.7
-          ]
-        }
-      }
-    },
-    {
-      "Name": "Heart2",
-      "Parent": 1,
-      "Components": {
-        "SpriteComponent": {
-          "Sprite": "Sprites/HD2D/Fx.esprite",
-          "Slice": "HeartFull",
-          "Color": [
-            1,
-            1,
-            1,
-            1
-          ],
-          "FlipX": false,
-          "FlipY": false,
-          "SortingLayer": "",
-          "OrderInLayer": 0,
-          "Lit": false,
-          "CastShadows": false,
-          "Size": [
-            0.0,
-            0.0
-          ],
-          "Visible": false,
-          "Blend": 3,
-          "AlphaCutoff": 0.5,
-          "SliceMode": 0
-        },
-        "PrefabLinkComponent": {
-          "Id": "7",
-          "Root": -1
-        },
-        "TransformComponent": {
-          "Position": [
-            0.0,
-            8.0,
-            120.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.7,
-            1.0,
-            0.7
-          ]
-        }
-      }
-    },
-    {
-      "Name": "Heart3",
-      "Parent": 1,
-      "Components": {
-        "SpriteComponent": {
-          "Sprite": "Sprites/HD2D/Fx.esprite",
-          "Slice": "HeartFull",
-          "Color": [
-            1,
-            1,
-            1,
-            1
-          ],
-          "FlipX": false,
-          "FlipY": false,
-          "SortingLayer": "",
-          "OrderInLayer": 0,
-          "Lit": false,
-          "CastShadows": false,
-          "Size": [
-            0.0,
-            0.0
-          ],
-          "Visible": false,
-          "Blend": 3,
-          "AlphaCutoff": 0.5,
-          "SliceMode": 0
-        },
-        "PrefabLinkComponent": {
-          "Id": "8",
-          "Root": -1
-        },
-        "TransformComponent": {
-          "Position": [
-            38.0,
-            8.0,
-            120.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.7,
-            1.0,
-            0.7
-          ]
-        }
-      }
-    },
-    {
-      "Name": "Heart4",
-      "Parent": 1,
-      "Components": {
-        "SpriteComponent": {
-          "Sprite": "Sprites/HD2D/Fx.esprite",
-          "Slice": "HeartFull",
-          "Color": [
-            1,
-            1,
-            1,
-            1
-          ],
-          "FlipX": false,
-          "FlipY": false,
-          "SortingLayer": "",
-          "OrderInLayer": 0,
-          "Lit": false,
-          "CastShadows": false,
-          "Size": [
-            0.0,
-            0.0
-          ],
-          "Visible": false,
-          "Blend": 3,
-          "AlphaCutoff": 0.5,
-          "SliceMode": 0
-        },
-        "PrefabLinkComponent": {
-          "Id": "9",
-          "Root": -1
-        },
-        "TransformComponent": {
-          "Position": [
-            76.0,
-            8.0,
-            120.0
-          ],
-          "Rotation": [
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "Scale": [
-            0.7,
-            1.0,
-            0.7
-          ]
-        }
-      }
     }
   ],
-  "NextId": 10,
+  "NextId": 5,
   "Version": 1
 }

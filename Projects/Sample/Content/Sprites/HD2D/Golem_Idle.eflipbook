@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Golem.esprite",
+  "Fps": 2.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Idle0"
+    },
+    {
+      "Slice": "Idle1"
+    }
+  ]
+}

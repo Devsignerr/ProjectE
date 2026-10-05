@@ -1,0 +1,45 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Balance.estruct",
+  "Values": {
+    "PlayerName": "아르펜",
+    "MaxHealth": 120,
+    "MaxMana": 50,
+    "ManaRegen": 3.0,
+    "HealthPerLevel": 18,
+    "ManaPerLevel": 8,
+    "DamagePerLevel": 0.12,
+    "ExpTable": [
+      0,
+      30,
+      75,
+      140,
+      230,
+      350,
+      500,
+      700
+    ],
+    "StartWeapon": "Sword",
+    "StartGold": 120,
+    "StartItems": [
+      "Potion",
+      "Potion",
+      "Potion"
+    ],
+    "ShopStock": [
+      "Potion",
+      "HiPotion",
+      "Ether",
+      "Bow",
+      "Elixir"
+    ],
+    "InvulnTime": 0.8,
+    "DashSpeed": 1700,
+    "DashTime": 0.2,
+    "DashCooldown": 0.5,
+    "CritChance": 0.1,
+    "CritMultiplier": 1.6,
+    "QuestRewardGold": 300,
+    "QuestRewardItem": "Elixir"
+  }
+}

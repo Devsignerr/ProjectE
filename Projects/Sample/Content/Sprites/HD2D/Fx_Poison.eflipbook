@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 3.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Poison0"
+    },
+    {
+      "Slice": "Poison1"
+    }
+  ]
+}

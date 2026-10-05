@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Hero.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "AttackBowSide0",
+      "Duration": 0.14
+    },
+    {
+      "Slice": "AttackBowSide1",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "AttackBowSide2",
+      "Duration": 0.18
+    }
+  ]
+}

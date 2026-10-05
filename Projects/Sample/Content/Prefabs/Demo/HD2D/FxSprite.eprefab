@@ -26,7 +26,8 @@
           "Visible": false,
           "Blend": 0,
           "AlphaCutoff": 0.5,
-          "SliceMode": 0
+          "SliceMode": 0,
+          "Billboard": 0
         },
         "FlipbookComponent": {
           "Flipbook": "",

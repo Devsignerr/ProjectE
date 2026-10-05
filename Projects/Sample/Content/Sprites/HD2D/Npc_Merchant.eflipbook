@@ -1,0 +1,16 @@
+{
+  "Version": 1,
+  "Sprite": "Npcs.esprite",
+  "Fps": 10.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Merchant0",
+      "Duration": 0.7
+    },
+    {
+      "Slice": "Merchant1",
+      "Duration": 0.5
+    }
+  ]
+}

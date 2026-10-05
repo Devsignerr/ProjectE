@@ -1,0 +1,102 @@
+{
+  "Version": 1,
+  "Struct": "Data/Demo/HD2D/Item.estruct",
+  "Rows": [
+    {
+      "Name": "Sword",
+      "Values": {
+        "DisplayName": "여행자의 검",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Sword",
+        "Icon": "UI/Demo/HD2D/Icons/Sword.png",
+        "Description": "",
+        "Price": 0
+      }
+    },
+    {
+      "Name": "Spear",
+      "Values": {
+        "DisplayName": "기사의 창",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Spear",
+        "Icon": "UI/Demo/HD2D/Icons/Spear.png",
+        "Description": "",
+        "Price": 160
+      }
+    },
+    {
+      "Name": "Bow",
+      "Values": {
+        "DisplayName": "사냥꾼의 활",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Bow",
+        "Icon": "UI/Demo/HD2D/Icons/Bow.png",
+        "Description": "",
+        "Price": 90
+      }
+    },
+    {
+      "Name": "Staff",
+      "Values": {
+        "DisplayName": "현자의 지팡이",
+        "Kind": "Weapon",
+        "Amount": 0,
+        "Weapon": "Staff",
+        "Icon": "UI/Demo/HD2D/Icons/Staff.png",
+        "Description": "",
+        "Price": 140
+      }
+    },
+    {
+      "Name": "Potion",
+      "Values": {
+        "DisplayName": "회복약",
+        "Kind": "Heal",
+        "Amount": 50,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Potion.png",
+        "Description": "약초를 달인 붉은 물약. 체력을 50 회복한다. (단축키 1)",
+        "Price": 15
+      }
+    },
+    {
+      "Name": "HiPotion",
+      "Values": {
+        "DisplayName": "고급 회복약",
+        "Kind": "Heal",
+        "Amount": 130,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/HiPotion.png",
+        "Description": "진하게 우려낸 귀한 물약. 체력을 130 회복한다.",
+        "Price": 45
+      }
+    },
+    {
+      "Name": "Ether",
+      "Values": {
+        "DisplayName": "마나 물약",
+        "Kind": "Mana",
+        "Amount": 40,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Ether.png",
+        "Description": "푸른 빛이 도는 물약. 마나를 40 회복한다. (단축키 2)",
+        "Price": 25
+      }
+    },
+    {
+      "Name": "Elixir",
+      "Values": {
+        "DisplayName": "엘릭서",
+        "Kind": "Elixir",
+        "Amount": 0,
+        "Weapon": "",
+        "Icon": "UI/Demo/HD2D/Icons/Elixir.png",
+        "Description": "전설의 영약. 체력과 마나를 모두 회복한다.",
+        "Price": 300
+      }
+    }
+  ]
+}

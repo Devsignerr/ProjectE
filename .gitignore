@@ -51,3 +51,5 @@ Projects/Sample/Content/Scenes/Tests/Scale/
 Projects/Crypt2D/Content/Asset/GothicVania/
 Projects/Crypt2D/Cooked/
 Projects/Crypt2D/Saved/
+# 데모 생성기 확인용 변형 씬 (BuildHD2D.py --views 등 — 커밋하지 않음)
+Projects/Sample/Content/Scenes/Demo/_*.escene

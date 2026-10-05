@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 12.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Bolt0"
+    },
+    {
+      "Slice": "Bolt1"
+    }
+  ]
+}

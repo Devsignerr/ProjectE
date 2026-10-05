@@ -1,0 +1,318 @@
+{
+  "Version": 1,
+  "Texture": "Enemies.png",
+  "TextureWidth": 256,
+  "TextureHeight": 123,
+  "UnitsPerPixel": 6.0,
+  "Filter": "Point",
+  "Slices": [
+    {
+      "Name": "BatFly0",
+      "X": 1,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "BatFly1",
+      "X": 30,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "BatFly2",
+      "X": 59,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "BatFly3",
+      "X": 88,
+      "Y": 1,
+      "W": 28,
+      "H": 20,
+      "Pivot": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "Name": "GoblinIdle0",
+      "X": 117,
+      "Y": 1,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinIdle1",
+      "X": 148,
+      "Y": 1,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinWalk0",
+      "X": 179,
+      "Y": 1,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinWalk1",
+      "X": 210,
+      "Y": 1,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinWalk2",
+      "X": 1,
+      "Y": 30,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinWalk3",
+      "X": 32,
+      "Y": 30,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinWindup0",
+      "X": 63,
+      "Y": 30,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinAttack0",
+      "X": 94,
+      "Y": 30,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "GoblinAttack1",
+      "X": 125,
+      "Y": 30,
+      "W": 30,
+      "H": 28,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherIdle0",
+      "X": 156,
+      "Y": 30,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherIdle1",
+      "X": 187,
+      "Y": 30,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherWalk0",
+      "X": 218,
+      "Y": 30,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherWalk1",
+      "X": 1,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherWalk2",
+      "X": 32,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherWalk3",
+      "X": 63,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherDraw0",
+      "X": 94,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherDraw1",
+      "X": 125,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "ArcherShoot0",
+      "X": 156,
+      "Y": 63,
+      "W": 30,
+      "H": 32,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomIdle0",
+      "X": 187,
+      "Y": 63,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomIdle1",
+      "X": 214,
+      "Y": 63,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomWalk0",
+      "X": 1,
+      "Y": 96,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomWalk1",
+      "X": 28,
+      "Y": 96,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomWindup0",
+      "X": 55,
+      "Y": 96,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "Name": "MushroomPuff0",
+      "X": 82,
+      "Y": 96,
+      "W": 26,
+      "H": 26,
+      "Pivot": [
+        0.5,
+        0.0
+      ]
+    }
+  ]
+}

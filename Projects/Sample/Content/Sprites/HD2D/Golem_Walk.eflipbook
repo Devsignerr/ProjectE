@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Golem.esprite",
+  "Fps": 6.0,
+  "Loop": "Loop",
+  "Frames": [
+    {
+      "Slice": "Walk0"
+    },
+    {
+      "Slice": "Walk1"
+    },
+    {
+      "Slice": "Walk2"
+    },
+    {
+      "Slice": "Walk3"
+    }
+  ]
+}

@@ -14,15 +14,15 @@
           "Mass": 30.0,
           "MaxSlopeAngle": 50.0,
           "MaxStepHeight": 25.0,
-          "MaxWalkSpeed": 300.0,
+          "MaxWalkSpeed": 300,
           "PushForce": 500.0,
           "KnockbackDeceleration": 2400.0,
           "ClientPrediction": false
         },
         "ScriptComponent": {
           "ExecutionLocation": 0,
-          "PropertyOverrides": "",
-          "ScriptAsset": "Scripts/Demo/HD2D/HD2DSlime.lua"
+          "ScriptAsset": "Scripts/Demo/HD2D/HD2DEnemy.lua",
+          "PropertyOverrides": "{\"Kind\": \"Slime\"}"
         },
         "PrefabLinkComponent": {
           "Id": "1",
@@ -102,7 +102,8 @@
           "Visible": true,
           "Blend": 3,
           "AlphaCutoff": 0.5,
-          "SliceMode": 0
+          "SliceMode": 0,
+          "Billboard": 2
         },
         "FlipbookComponent": {
           "Flipbook": "Sprites/HD2D/Slime_Idle.eflipbook",
@@ -160,7 +161,8 @@
           "Visible": true,
           "Blend": 0,
           "AlphaCutoff": 0.5,
-          "SliceMode": 0
+          "SliceMode": 0,
+          "Billboard": 0
         },
         "PrefabLinkComponent": {
           "Id": "4",
@@ -173,7 +175,7 @@
             -40.5
           ],
           "Rotation": [
-            0.7071067811865476,
+            -0.7071067811865476,
             0.0,
             0.0,
             0.7071067811865476
@@ -185,8 +187,114 @@
           ]
         }
       }
+    },
+    {
+      "Name": "HpBack",
+      "Parent": 1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Fx.esprite",
+          "Slice": "HpBack",
+          "Color": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 2
+        },
+        "PrefabLinkComponent": {
+          "Id": "5",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            6.0,
+            53.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "Name": "HpFill",
+      "Parent": 1,
+      "Components": {
+        "SpriteComponent": {
+          "Sprite": "Sprites/HD2D/Fx.esprite",
+          "Slice": "HpFill",
+          "Color": [
+            0.95,
+            0.3,
+            0.3,
+            1
+          ],
+          "FlipX": false,
+          "FlipY": false,
+          "SortingLayer": "",
+          "OrderInLayer": 0,
+          "Lit": false,
+          "CastShadows": false,
+          "Size": [
+            0.0,
+            0.0
+          ],
+          "Visible": false,
+          "Blend": 0,
+          "AlphaCutoff": 0.5,
+          "SliceMode": 0,
+          "Billboard": 2
+        },
+        "PrefabLinkComponent": {
+          "Id": "6",
+          "Root": -1
+        },
+        "TransformComponent": {
+          "Position": [
+            -60.0,
+            8.0,
+            53.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      }
     }
   ],
-  "NextId": 5,
+  "NextId": 7,
   "Version": 1
 }

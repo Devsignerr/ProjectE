@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Sprite": "Props.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Chest0",
+      "Duration": 0.08
+    },
+    {
+      "Slice": "Chest1",
+      "Duration": 0.12
+    },
+    {
+      "Slice": "Chest2",
+      "Duration": 0.2
+    }
+  ]
+}

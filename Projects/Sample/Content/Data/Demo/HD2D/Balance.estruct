@@ -1,0 +1,133 @@
+{
+  "Version": 1,
+  "Name": "Balance",
+  "Description": "HD2D 플레이어·진행 밸런스 (Balance.edata 하나)",
+  "Fields": [
+    {
+      "Name": "PlayerName",
+      "Type": "String",
+      "Default": "용사",
+      "Description": "이름"
+    },
+    {
+      "Name": "MaxHealth",
+      "Type": "Float",
+      "Default": 100,
+      "Description": "1레벨 최대 체력"
+    },
+    {
+      "Name": "MaxMana",
+      "Type": "Float",
+      "Default": 40,
+      "Description": "1레벨 최대 마나"
+    },
+    {
+      "Name": "ManaRegen",
+      "Type": "Float",
+      "Default": 2,
+      "Description": "초당 마나 회복"
+    },
+    {
+      "Name": "HealthPerLevel",
+      "Type": "Float",
+      "Default": 15,
+      "Description": "레벨마다 최대 체력 +"
+    },
+    {
+      "Name": "ManaPerLevel",
+      "Type": "Float",
+      "Default": 5,
+      "Description": "레벨마다 최대 마나 +"
+    },
+    {
+      "Name": "DamagePerLevel",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "레벨마다 피해 배율 +"
+    },
+    {
+      "Name": "ExpTable",
+      "Type": "Array",
+      "Default": [
+        0,
+        30
+      ],
+      "Description": "레벨 n이 되는 누적 경험치 (1레벨 = 0)",
+      "Element": "Int"
+    },
+    {
+      "Name": "StartWeapon",
+      "Type": "String",
+      "Default": "Sword",
+      "Description": "시작 무기"
+    },
+    {
+      "Name": "StartGold",
+      "Type": "Int",
+      "Default": 0,
+      "Description": "시작 골드"
+    },
+    {
+      "Name": "StartItems",
+      "Type": "Array",
+      "Default": [],
+      "Description": "시작 소지품",
+      "Element": "String"
+    },
+    {
+      "Name": "ShopStock",
+      "Type": "Array",
+      "Default": [],
+      "Description": "상점 진열 (아이템 id)",
+      "Element": "String"
+    },
+    {
+      "Name": "InvulnTime",
+      "Type": "Float",
+      "Default": 0.8,
+      "Description": "피격 뒤 무적 (초)"
+    },
+    {
+      "Name": "DashSpeed",
+      "Type": "Float",
+      "Default": 1700,
+      "Description": "대시 속도 (cm/s)"
+    },
+    {
+      "Name": "DashTime",
+      "Type": "Float",
+      "Default": 0.2,
+      "Description": "대시 시간 (초)"
+    },
+    {
+      "Name": "DashCooldown",
+      "Type": "Float",
+      "Default": 0.5,
+      "Description": "대시 간격 (초)"
+    },
+    {
+      "Name": "CritChance",
+      "Type": "Float",
+      "Default": 0.1,
+      "Description": "치명타 확률"
+    },
+    {
+      "Name": "CritMultiplier",
+      "Type": "Float",
+      "Default": 1.5,
+      "Description": "치명타 배율"
+    },
+    {
+      "Name": "QuestRewardGold",
+      "Type": "Int",
+      "Default": 100,
+      "Description": "퀘스트 완료 골드"
+    },
+    {
+      "Name": "QuestRewardItem",
+      "Type": "String",
+      "Default": "",
+      "Description": "퀘스트 완료 아이템"
+    }
+  ]
+}

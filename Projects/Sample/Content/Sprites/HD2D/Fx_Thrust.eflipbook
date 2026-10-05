@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Sprite": "Fx.esprite",
+  "Fps": 10.0,
+  "Loop": "Once",
+  "Frames": [
+    {
+      "Slice": "Thrust0",
+      "Duration": 0.03
+    },
+    {
+      "Slice": "Thrust1",
+      "Duration": 0.05
+    },
+    {
+      "Slice": "Thrust2",
+      "Duration": 0.06
+    },
+    {
+      "Slice": "Thrust3",
+      "Duration": 0.07
+    }
+  ]
+}

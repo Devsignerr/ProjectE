@@ -13,9 +13,9 @@
       "Name": "DeepColor",
       "Type": "Vector",
       "Value": [
-        0.16,
-        0.3,
-        0.32,
+        0.06,
+        0.13,
+        0.14,
         1.0
       ]
     },
@@ -23,9 +23,9 @@
       "Name": "FoamColor",
       "Type": "Vector",
       "Value": [
-        0.95,
-        0.97,
-        1.0,
+        0.85,
+        0.9,
+        0.92,
         1.0
       ]
     }
@@ -42,8 +42,8 @@
         "Inputs": {
           "A": "uv0",
           "B": [
-            1.0,
-            0.6
+            1.6,
+            0.35
           ]
         }
       },
@@ -64,8 +64,8 @@
         "Inputs": {
           "A": "uv0",
           "B": [
-            1.7,
-            1.1
+            2.6,
+            0.7
           ]
         }
       },
@@ -106,17 +106,25 @@
       },
       {
         "Id": "half",
-        "Type": "Multiply",
+        "Type": "Subtract",
         "Inputs": {
           "A": "sum",
-          "B": 0.5
+          "B": 0.95
+        }
+      },
+      {
+        "Id": "sharp",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "half",
+          "B": 2.2
         }
       },
       {
         "Id": "foam",
         "Type": "Saturate",
         "Inputs": {
-          "A": "half"
+          "A": "sharp"
         }
       },
       {
@@ -143,7 +151,7 @@
         "Type": "Multiply",
         "Inputs": {
           "A": "foam",
-          "B": 0.75
+          "B": 0.6
         }
       },
       {
@@ -151,7 +159,7 @@
         "Type": "Add",
         "Inputs": {
           "A": "op0",
-          "B": 0.18
+          "B": 0.32
         }
       },
       {
@@ -159,7 +167,7 @@
         "Type": "Multiply",
         "Inputs": {
           "A": "color",
-          "B": 0.12
+          "B": 0.05
         }
       }
     ],

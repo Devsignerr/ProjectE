@@ -1,9 +1,9 @@
 {
   "Name": "HD2DEnvTentGreen",
   "BaseColorFactor": [
-    0.2,
-    0.3,
-    0.17,
+    0.09,
+    0.15,
+    0.08,
     1.0
   ],
   "EmissiveFactor": [

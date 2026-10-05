@@ -1,0 +1,41 @@
+{
+  "Name": "HD2DEnvPineCrown",
+  "Parent": "HD2DTriplanarVC.emat",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/leafy_grass/leafy_grass_diff_2k.jpg"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/leafy_grass/leafy_grass_arm_2k.jpg"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "../../../Asset/PolyHaven/leafy_grass/leafy_grass_nor_gl_2k.jpg"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.007142857142857143
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        4.6,
+        6.6,
+        6.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ]
+}

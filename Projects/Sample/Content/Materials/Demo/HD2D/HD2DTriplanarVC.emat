@@ -1,5 +1,5 @@
 {
-  "Name": "HD2DTriplanar",
+  "Name": "HD2DTriplanarVC",
   "BlendMode": "Opaque",
   "Parameters": [
     {
@@ -232,11 +232,15 @@
         }
       },
       {
+        "Id": "vc",
+        "Type": "VertexColor"
+      },
+      {
         "Id": "base",
         "Type": "Multiply",
         "Inputs": {
           "A": "base0",
-          "B": 1.0
+          "B": "vc:1"
         }
       }
     ],
@@ -244,8 +248,7 @@
       "BaseColor": "base",
       "Roughness": "rough",
       "AmbientOcclusion": "arm:2",
-      "Metallic": 0.0,
-      "Normal": "nrm:1"
+      "Metallic": 0.0
     }
   }
 }

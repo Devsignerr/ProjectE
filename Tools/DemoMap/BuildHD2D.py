@@ -128,7 +128,9 @@ def BuildHeights():
 
 
 def TerraceMask(X, Y):
-	return Smoothstep(TERRACE_Y + 20.0, TERRACE_Y - 20.0, Y) * Smoothstep(TERRACE_EAST + 20.0, TERRACE_EAST - 20.0, X)
+	# 동쪽 옆벽(개울 쪽)은 놀이 영역 뒤 끝까지만 — 그 너머 언덕에서는 단이 전체로 퍼져 경계선(턱)이 언덕을 타고 오르지 않게
+	East = np.maximum(Smoothstep(TERRACE_EAST + 20.0, TERRACE_EAST - 20.0, X), Smoothstep(-2150.0, -2500.0, Y))
+	return Smoothstep(TERRACE_Y + 20.0, TERRACE_Y - 20.0, Y) * East
 
 
 FALLS_INFO = {}
@@ -148,7 +150,7 @@ def BuildWeights(X, Y, H):
 	Path = Smoothstep(150.0 + Noise * 40.0, 95.0 + Noise * 40.0, PathD) * (1.0 - Plaza) * Smoothstep(200.0, 280.0, CreekD)
 	Wet = np.maximum(Smoothstep(1.35, 1.0, EllipseValue(X, Y, POND)) * 0.85, Smoothstep(300.0, 200.0, CreekD))
 	Wet = np.maximum(Wet, Smoothstep(380.0, 250.0, np.hypot(X - FALLS[0], Y - FALLS[1])))
-	Moss = np.maximum(Smoothstep(0.2, 0.45, Slope + Noise * 0.08), Wet)
+	Moss = np.maximum(Smoothstep(0.38, 0.65, Slope + Noise * 0.08), Wet)  # 완만한 언덕은 풀 (이끼 바위 텍스처가 노을빛에 주황으로 떴다)
 	Moss = Moss * (1.0 - Plaza) * (1.0 - Path)
 	W1, W2, W3 = Path, Plaza, Moss
 	W0 = np.clip(1.0 - W1 - W2 - W3, 0.0, 1.0)
@@ -344,6 +346,12 @@ VIEW_STARTS = {
 	"Bridge":  (350.0, 250.0),
 	"Ruins":   (1500.0, -1100.0),
 }
+OVERVIEW_VIEWS = {
+	"Village": (-2300.0, 3600.0, 3200.0, -38.0, -90.0, 40.0),
+	"Field":   (2400.0, 3800.0, 3400.0, -38.0, -90.0, 42.0),
+	"Falls":   (-300.0, -900.0, 700.0, -12.0, -95.0, 45.0),
+	"West":    (-6200.0, 600.0, 1600.0, -25.0, -20.0, 45.0),
+}
 SPAWN_POINTS = [(1000.0, -700.0), (1700.0, -250.0), (2300.0, 450.0), (3150.0, -250.0), (3400.0, 750.0), (4300.0, -650.0),
 				(4700.0, 0.0), (1500.0, -1450.0), (3400.0, -1350.0), (900.0, 650.0)]
 
@@ -473,15 +481,17 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	BoxCollider("Bound_West", (MinX - 100.0, MidY, 300.0), (100.0, (MaxY - MinY) * 0.5 + 200.0, 800.0))
 	BoxCollider("Bound_East", (MaxX + 100.0, MidY, 300.0), (100.0, (MaxY - MinY) * 0.5 + 200.0, 800.0))
 
-	def Fir(Name, X, Y, Scale, Tier="lo", Collide=False, Sink=20.0):
-		# 전나무 (Poly Haven fir_sapling_medium 변형 a/b/c — 줄기 + 잎 단계 "", mid, lo)
-		Variant = "abc"[Rng.randrange(3)]
-		Stem = f"{PH}/fir_sapling_medium/fir_sapling_medium_{Variant}"
-		Extra = {"CapsuleColliderComponent": {"Radius": 14.0, "HalfHeight": 200.0, "Offset": [0.0, 0.0, 230.0]}} if Collide else None
-		Root = S.Model(Name, f"{Stem}.part.gltf", (X, Y, Height(X, Y) - Sink), Rng.uniform(0, 360), (Scale, Scale, Scale * Rng.uniform(0.9, 1.1)), -1, Extra)
-		S.Model(f"{Name}_Leaves", f"{Stem}_leaves{Tier}.part.gltf", (0, 0, 0), 0.0, 1.0, Parent=Root)
-		Reserve(X, Y, 90.0 * Scale)
-		return Root
+	TreeFoliage = {"Tree": [], "TreeAutumn": [], "Pine": []}
+
+	def Fir(Name, X, Y, Scale, Tier="lo", Collide=False, Sink=20.0, Kind=None):
+		# 나무 = 엔진 폴리지(foliage:tree 활엽수 / foliage:pine 침엽수, 약 6m — 잎은 풀잎 텍스처 × 정점 색). 놀이 영역 안 줄기는 캡슐 충돌
+		#   (스캔 전나무는 이 높은 시점에서 잎 카드가 성겨 앙상해 보였다)
+		del Tier, Sink
+		Kind = Kind or ("Pine" if Rng.random() < 0.45 else ("TreeAutumn" if Rng.random() < 0.15 else "Tree"))
+		TreeFoliage[Kind].append((float(X), float(Y), Height(X, Y), Rng.uniform(0, 360), Scale * 1.25 * Rng.uniform(0.9, 1.1), 0.0, 0.0, 1.0))
+		if Collide:
+			S.Add(f"{Name}_Trunk", {"CapsuleColliderComponent": {"Radius": 24.0 * Scale, "HalfHeight": 120.0, "Offset": [0.0, 0.0, 0.0]}}, (X, Y, Height(X, Y) + 150.0))
+		Reserve(X, Y, 110.0 * Scale)
 
 	def Reeds(Name, X, Y, Scale):
 		return Place(Name, f"{PH}/grass_medium_02/grass_medium_02_{'abcde'[Rng.randrange(5)]}.part.gltf", X, Y, Rng.uniform(0, 360), Scale, Sink=3.0)
@@ -503,6 +513,9 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 			Shutter="EnvShutterBlue", Chimney=0.5, Z=TZ)
 	Point("Tavern_DoorLight", (-3560.0 - 140.0 + 95.0, -1600.0 + 280.0 + 60.0, TZ + 230.0), (1.0, 0.62, 0.3), 5.0, 650.0, Flicker={"Style": "Fire", "Seed": 21, "Amount": 0.15})
 	Point("Chapel_Glow", (-2380.0, -1390.0, TZ + 300.0), (1.0, 0.7, 0.4), 3.0, 500.0)
+	# 창 불빛이 단 위 자갈길에 고이게 (그림자 없는 약한 점광원)
+	for Index, (X, Y) in enumerate(((-4520.0, -1250.0), (-1840.0, -1310.0), (-1180.0, -1210.0))):
+		Point(f"WindowPool_{Index}", (X, Y, TZ + 170.0), (1.0, 0.66, 0.36), 2.5, 450.0, Flicker={"Style": "Fire", "Seed": 30 + Index, "Amount": 0.06, "Speed": 0.4})
 	# 옹벽 (단 앞 + 개울 쪽 옆) + 광장에서 오르는 돌계단(볼 받침 + 양옆 난간 돌)
 	WallFront, WallThick, WallTop = TERRACE_Y + 25.0, 60.0, TZ + 58.0
 	Gap = (STAIRS_X - STAIRS_W * 0.5, STAIRS_X + STAIRS_W * 0.5)
@@ -547,8 +560,8 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	E.Laundry("Laundry", (-2000.0, -1290.0, TZ + 250.0), (-1530.0, -1180.0, TZ + 250.0))
 	for Index, (X, Y) in enumerate(((-2000.0, -1290.0), (-1530.0, -1180.0))):
 		E.Box(f"Laundry_Pole{Index}", (X, Y, TZ + 130.0), (10.0, 10.0, 260.0), "EnvTimber")
-	PH_("Terrace_Barrel_0", "barrel_03", -3080.0, -1260.0, 20.0, 1.0, Z=TZ, Collide=True)
-	PH_("Terrace_Barrel_1", "barrel_03", -3010.0, -1300.0, 70.0, 1.0, Z=TZ, Collide=True)
+	PH_("Terrace_Barrel_0", "wine_barrel_01", -3080.0, -1260.0, 20.0, 1.0, Z=TZ, Collide=True)
+	PH_("Terrace_Barrel_1", "wine_barrel_01", -3010.0, -1300.0, 70.0, 1.0, Z=TZ, Collide=True)
 	PH_("Terrace_Bench", "painted_wooden_bench", -4200.0, -1200.0, -90.0, 1.0, Z=TZ, Collide=True)
 
 	# 아래 광장: 대장간 (광장을 봄 — 앞 = +X) + 화로 지붕
@@ -567,9 +580,10 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	Point("Forge_Light", (FX_ + 30.0, FY_ + 40.0, FZ + 140.0), (1.0, 0.46, 0.16), 16.0, 900.0, True, Flicker={"Style": "Fire", "Seed": 11})
 	S.Add("Forge_Sound", {"AudioSourceComponent": {"ClipAsset": "Audio/Demo/CampfireCrackle.wav", "Volume": 0.5, "Pitch": 1.2, "Loop": True,
 		"PlayOnStart": True, "Spatial": True, "MinDistance": 200.0, "MaxDistance": 2200.0}}, (FX_, FY_, FZ + 80.0))
-	for Index, (Id, DX, DY, Yaw) in enumerate((("weaponrack", 230.0, 120.0, 90.0), ("resource_lumber", 180.0, -260.0, 20.0), ("barrel", 260.0, 330.0, 0.0),
-											   ("crate_A_big", 310.0, -150.0, 25.0), ("crate_B_small", 300.0, -80.0, 50.0))):
+	for Index, (Id, DX, DY, Yaw) in enumerate((("weaponrack", 230.0, 120.0, 90.0), ("resource_lumber", 180.0, -260.0, 20.0))):
 		KK_(f"Smithy_{Id}_{Index}", Id, -3950.0 + DX, -250.0 + DY, Yaw, KS * 0.9, Collide=True)
+	for Index, (Id, DX, DY, Yaw) in enumerate((("wine_barrel_01", 260.0, 330.0, 0.0), ("wooden_crate_02", 310.0, -150.0, 25.0), ("wooden_crate_01", 300.0, -70.0, 50.0))):
+		PH_(f"Smithy_{Id}_{Index}", Id, -3950.0 + DX, -250.0 + DY, Yaw, 1.0, Sink=2.0, Collide=True)
 	PH_("Smithy_Anvil_Stump", "tree_stump_02", -3560.0, -330.0, 30.0, 0.5, Sink=4.0, Collide=True)
 	PH_("Smithy_Hammer", "sledgehammer_01", -3520.0, -330.0, 70.0, 1.0, Z=Height(-3560, -330) + 38.0, Roll=90.0)
 	# 상점 (광장 동쪽, 2층 장미색 회벽 + 줄무늬 차양) / 서남쪽 오두막 (카메라 쪽 — 낮은 단층)
@@ -591,12 +605,14 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	Table = PH_("Market_Table", "wooden_picnic_table", -1400.0, 110.0, 10.0, 1.0, Collide=True)
 	for G, (Id, DX, DY) in enumerate((("wicker_basket_01", -20.0, -70.0), ("jug_01", 15.0, -15.0), ("wicker_basket_02", -10.0, 45.0), ("jug_01", 20.0, 90.0))):
 		S.Model(f"Market_Goods_{G}", f"{PH}/{Id}/{Id}.gltf", (DX, DY, 75.0), Rng.uniform(0, 360), 1.0, Parent=Table)
-	for Index, (Id, X, Y, Scale) in enumerate((("barrel_03", -780.0, -300.0, 1.0), ("barrel_03", -760.0, -230.0, 1.0), ("wooden_crate_02", -800.0, -140.0, 1.0),
+	for Index, (Id, X, Y, Scale) in enumerate((("wine_barrel_01", -780.0, -300.0, 1.0), ("wine_barrel_01", -760.0, -230.0, 1.0), ("wooden_crate_02", -800.0, -140.0, 1.0),
 											   ("wooden_barrels_01", -2950.0, -830.0, 0.85), ("wooden_crate_01", -1830.0, -850.0, 1.0), ("wooden_crate_02", -1760.0, -830.0, 0.9))):
 		PH_(f"Village_{Id}_{Index}", Id, X, Y, Rng.uniform(0, 360), Scale, Sink=2.0, Collide=True)
-	for Index, (Id, X, Y) in enumerate((("sack", -1480.0, 380.0), ("sack", -1440.0, 410.0), ("bucket_water", -2050.0, -560.0), ("wheelbarrow", -2950.0, 120.0),
-										("sack", -2840.0, 640.0))):
-		KK_(f"Village_{Id}_{Index}", Id, X, Y, Rng.uniform(0, 360), KS, Collide=Id != "sack")
+	for Index, (Id, X, Y) in enumerate((("sack", -1480.0, 380.0), ("sack", -1440.0, 410.0), ("sack", -2840.0, 640.0))):
+		KK_(f"Village_{Id}_{Index}", Id, X, Y, Rng.uniform(0, 360), KS)
+	PH_("Village_Bucket", "wooden_bucket_01", -2050.0, -560.0, 30.0, 1.0)
+	PH_("Village_Crates", "wooden_crate_02", -2950.0, 120.0, 15.0, 1.0, Sink=2.0, Collide=True)
+	PH_("Village_CratesTop", "wooden_crate_01", -2960.0, 110.0, 50.0, 0.9, Z=Height(-2950, 120) + 44.0)
 	# 광장 앞(카메라 쪽) 텃밭 + 장작 더미
 	E.Garden("Garden", -2250.0, 880.0, 620.0, 320.0)
 	E.Fence("Garden_Fence_W", (-2600.0, 700.0), (-2600.0, 1060.0), Spacing=120.0, Height=70.0, Collide=False)
@@ -801,9 +817,14 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 	# 들판 나무(전나무)·바위·덤불 (길·연못·야영지·소환 지점은 비움)
 	for X, Y in SPAWN_POINTS:
 		Reserve(X, Y, 150.0)
-	Trees = [(600.0, -1500.0, 1.0), (1900.0, -1750.0, 1.1), (5100.0, -1450.0, 1.2), (5050.0, 950.0, 0.85), (2750.0, 1180.0, 0.8),
-			 (5600.0, -300.0, 1.2), (3900.0, 1200.0, 0.8), (1250.0, -2250.0, 1.4), (2450.0, -2300.0, 1.3), (4800.0, -2250.0, 1.4),
-			 (300.0, -1250.0, 0.9), (3200.0, -1850.0, 1.1)]
+	#   카메라 쪽(+Y)에는 큰 나무를 두지 않는다 (피치 28도 — 나무 뒤 10m 넘게 캐릭터를 가림) → 덤불 무리
+	Trees = [(600.0, -1500.0, 1.0), (1900.0, -1750.0, 1.1), (5100.0, -1450.0, 1.2), (5600.0, -300.0, 1.2), (1250.0, -2250.0, 1.4),
+			 (2450.0, -2300.0, 1.3), (4800.0, -2250.0, 1.4), (300.0, -1250.0, 0.9), (3200.0, -1850.0, 1.1)]
+	for Index, (X, Y) in enumerate(((5050.0, 1050.0), (2750.0, 1250.0), (3900.0, 1250.0), (4600.0, 1150.0))):
+		for K in range(3):
+			BX, BY = X + Rng.uniform(-120, 120), Y + Rng.uniform(-60, 60)
+			PH_(f"FieldHedge_{Index}_{K}", Rng.choice(["shrub_02", "shrub_03", "wild_rooibos_bush"]), BX, BY, Rng.uniform(0, 360), Rng.uniform(0.6, 0.9), Sink=4.0)
+		Reserve(X, Y, 180.0)
 	for Index, (X, Y, Scale) in enumerate(Trees):
 		Fir(f"FieldFir_{Index}", X, Y, Scale, Tier="lo" if Y < -1900 else "mid", Collide=Y > -1950)
 	for Index in range(10):
@@ -823,12 +844,20 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		Reserve(X, Y, 70.0)
 
 	# ---- 먼 배경: 언덕 위 전나무 숲 (화면 위쪽 = 놀이 영역 뒤 15~25m) + 먼 산
-	for Index in range(70):
-		for _ in range(60):
-			X, Y = Rng.uniform(-5200.0, 6600.0), Rng.uniform(-3900.0, -2250.0)
-			if Free(X, Y, 230.0) and math.hypot(X - FALLS[0], Y - FALLS[1]) > 650.0 and math.hypot(X - FALLS_BASIN[0], Y - FALLS_BASIN[1]) > 450.0:
-				break
-		Fir(f"HillFir_{Index}", X, Y, Rng.uniform(1.1, 1.8), Tier="lo", Sink=30.0)
+	HillRng = np.random.default_rng(57)
+	Taken = []
+	for X, Y in HillRng.uniform((-6500.0, -6000.0), (7500.0, -2200.0), size=(9000, 2)):
+		X, Y = float(X), float(Y)
+		Spacing = 260.0 if Y > -3600.0 else 340.0
+		if math.hypot(X - FALLS[0], Y - FALLS[1]) < 600.0 or math.hypot(X - FALLS_BASIN[0], Y - FALLS_BASIN[1]) < 420.0:
+			continue
+		if Y > -2350.0 and HillRng.random() < 0.6:
+			continue  # 놀이 영역 바로 뒤는 조금 성기게
+		if any((X - TX) ** 2 + (Y - TY) ** 2 < Spacing ** 2 for TX, TY in Taken[-400:]) or not Free(X, Y, 150.0):
+			continue
+		Taken.append((X, Y))
+		Kind = "Pine" if HillRng.random() < (0.35 if Y > -3400.0 else 0.65) else ("TreeAutumn" if HillRng.random() < 0.12 else "Tree")
+		TreeFoliage[Kind].append((X, Y, Height(X, Y), float(HillRng.uniform(0, 360)), float(HillRng.uniform(1.1, 1.7)), 0.0, 0.0, 1.0))
 	for Index, (Id, X, Y, Scale, Yaw) in enumerate((("mountain_B_grass_trees", -3000.0, -6800.0, 22.0, 20.0), ("mountain_A_grass_trees", 1500.0, -7500.0, 26.0, 70.0),
 													 ("mountain_B_grass_trees", 6000.0, -6800.0, 21.0, 140.0))):
 		KK_(f"Backdrop_{Index}", Id, X, Y, Yaw, Scale, Sink=40.0)
@@ -896,6 +925,7 @@ def BuildScene(Height, Start=PLAYER_START, AutoPlay=False):
 		N = Height.Normal(X, Y)
 		Meadow.append((X, Y, Height(X, Y), float(GrassRng.uniform(0, 360)), float(GrassRng.uniform(0.8, 1.2)), float(N[0]), float(N[1]), float(N[2])))
 	EXTRA_FOLIAGE.append((Env.MEADOW_TYPE, Meadow))
+	EXTRA_FOLIAGE.extend(((Env.TREE_TYPE, TreeFoliage["Tree"]), (Env.TREE_AUTUMN_TYPE, TreeFoliage["TreeAutumn"]), (Env.PINE_TYPE, TreeFoliage["Pine"])))
 
 	# ---- 게임: 관리자 + 카메라 + 플레이어
 	S.Add("HD2DGame", {"ScriptComponent": {"ScriptAsset": "Scripts/Demo/HD2D/HD2DGame.lua", "ExecutionLocation": 0,
@@ -940,6 +970,15 @@ def Main():
 			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2D_{Name}.escene"))
 		Variant, _, _ = BuildScene(Sampler, VIEW_STARTS["Field"], AutoPlay=True)
 		Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", "_HD2DAutoPlay.escene"))
+		# 배경 확인용 자유 시점(우선순위 높은 카메라를 더함 — 흐림 없음): 이름 → (X, Y, Z, Pitch, Yaw, 시야각)
+		for Name, (X, Y, Z, Pitch, Yaw, Fov) in OVERVIEW_VIEWS.items():
+			Variant, _, _ = BuildScene(Sampler, VIEW_STARTS["Village"])
+			for Entity in Variant.Entities:
+				if Entity["Name"] == "Camera":
+					Entity["Components"]["DepthOfFieldComponent"]["Enabled"] = False  # 확인용: 흐림 끔 (게임 카메라 설정은 그대로)
+			Variant.Add("OverviewCamera", {"CameraComponent": {"FovYDegrees": Fov, "NearZ": 50.0, "FarZ": 80000.0, "Primary": True, "Priority": 100}},
+						(X, Y, Z), QuatFromEuler(Pitch=Pitch, Yaw=Yaw))
+			Variant.Save(os.path.join(CONTENT, "Scenes", "Demo", f"_HD2D_Over{Name}.escene"))
 		print("확인용 변형: Scenes/Demo/_HD2D_*.escene, _HD2DAutoPlay.escene (커밋하지 않음)")
 
 

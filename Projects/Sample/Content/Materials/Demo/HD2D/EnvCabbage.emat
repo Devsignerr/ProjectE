@@ -1,9 +1,9 @@
 {
   "Name": "HD2DEnvCabbage",
   "BaseColorFactor": [
-    0.3,
-    0.55,
-    0.18,
+    0.2,
+    0.4,
+    0.13,
     1.0
   ],
   "EmissiveFactor": [
@@ -12,7 +12,7 @@
     0.0
   ],
   "Metallic": 0.0,
-  "Roughness": 0.6,
+  "Roughness": 0.7,
   "NormalScale": 1.0,
   "OcclusionStrength": 1.0,
   "BaseColorTexture": "",

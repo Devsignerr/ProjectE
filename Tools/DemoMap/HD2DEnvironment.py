@@ -35,7 +35,7 @@ def Mat(Name):
 
 
 # ---- 머티리얼 -------------------------------------------------------------------------------------------------------
-def TriplanarGraph():
+def TriplanarGraph(VertexColor=False):
 	# 월드 좌표 박스 투영: 위를 보는 면(|N.z| > 0.75) = XY, 그 밖은 X를 보면 YZ, Y를 보면 XZ (경계는 날카롭게 — 큐브 면 단위라 섞일 일 없음)
 	Nodes = [
 		{"Id": "pos", "Type": "WorldPosition"},
@@ -61,12 +61,17 @@ def TriplanarGraph():
 		{"Id": "arm", "Type": "TextureSample", "Texture": "Arm", "Inputs": {"UV": "uv"}},
 		{"Id": "nrm", "Type": "TextureSample", "Texture": "Normal", "Inputs": {"UV": "uv"}},
 		{"Id": "tint", "Type": "VectorParameter", "Parameter": "Tint"},
-		{"Id": "base", "Type": "Multiply", "Inputs": {"A": "col:1", "B": "tint:1"}},
+		{"Id": "base0", "Type": "Multiply", "Inputs": {"A": "col:1", "B": "tint:1"}},
 		{"Id": "rs", "Type": "ScalarParameter", "Parameter": "RoughnessScale"},
 		{"Id": "rough", "Type": "Multiply", "Inputs": {"A": "arm:3", "B": "rs"}},
 	]
+	if VertexColor:
+		# 엔진 폴리지 메시(foliage:tree/pine/bush)는 정점 색(줄기 갈색·잎 초록, 어두움)을 가진다 → 텍스처 × 정점 색 × Tint
+		Nodes += [{"Id": "vc", "Type": "VertexColor"}, {"Id": "base", "Type": "Multiply", "Inputs": {"A": "base0", "B": "vc:1"}}]
+	else:
+		Nodes.append({"Id": "base", "Type": "Multiply", "Inputs": {"A": "base0", "B": 1.0}})
 	return {
-		"Name": "HD2DTriplanar", "BlendMode": "Opaque",
+		"Name": "HD2DTriplanarVC" if VertexColor else "HD2DTriplanar", "BlendMode": "Opaque",
 		"Parameters": [
 			{"Name": "Albedo", "Type": "Texture", "Value": "", "Usage": "Color"},
 			{"Name": "Arm", "Type": "Texture", "Value": "", "Usage": "Linear"},
@@ -75,14 +80,16 @@ def TriplanarGraph():
 			{"Name": "Tint", "Type": "Vector", "Value": [1.0, 1.0, 1.0, 1.0]},
 			{"Name": "RoughnessScale", "Type": "Scalar", "Value": 1.0},
 		],
-		"Graph": {"Nodes": Nodes, "Output": {"BaseColor": "base", "Roughness": "rough", "Normal": "nrm:1", "AmbientOcclusion": "arm:2", "Metallic": 0.0}},
+		# 폴리지 메시는 UV가 없어 탄젠트가 없다 → 노멀 맵은 정점 색 변형에서 쓰지 않는다
+		"Graph": {"Nodes": Nodes, "Output": dict({"BaseColor": "base", "Roughness": "rough", "AmbientOcclusion": "arm:2", "Metallic": 0.0},
+												 **({} if VertexColor else {"Normal": "nrm:1"}))},
 	}
 
 
-def TriplanarInstance(Name, Stem, Size, Tint, Rough=1.0):
+def TriplanarInstance(Name, Stem, Size, Tint, Rough=1.0, Parent="HD2DTriplanar.emat"):
 	# Stem: Content 기준이 아닌 이 머티리얼 폴더 기준 "<폴더>/<줄기>" (…_diff_2k.jpg 등을 붙인다), Size = 텍스처 한 장이 덮는 cm
 	Rel = f"../../../{PH}/{Stem}"
-	return {"Name": f"HD2D{Name}", "Parent": "HD2DTriplanar.emat", "Parameters": [
+	return {"Name": f"HD2D{Name}", "Parent": Parent, "Parameters": [
 		{"Name": "Albedo", "Type": "Texture", "Value": f"{Rel}_diff_2k.jpg"},
 		{"Name": "Arm", "Type": "Texture", "Value": f"{Rel}_arm_2k.jpg"},
 		{"Name": "Normal", "Type": "Texture", "Value": f"{Rel}_nor_gl_2k.jpg"},
@@ -106,28 +113,29 @@ def WaterfallGraph():
 	# 폭포 면: 세로 줄무늬 노이즈 두 겹을 아래로 흘리고(Panner) 밝은 줄 = 거품, 알파 = 줄무늬 (반투명, 큐브 앞면 UV)
 	Nodes = [
 		{"Id": "uv0", "Type": "TexCoord"},
-		{"Id": "uvA", "Type": "Multiply", "Inputs": {"A": "uv0", "B": [1.0, 0.6]}},
+		{"Id": "uvA", "Type": "Multiply", "Inputs": {"A": "uv0", "B": [1.6, 0.35]}},
 		{"Id": "panA", "Type": "Panner", "Inputs": {"UV": "uvA", "Speed": [0.0, -0.55]}},
-		{"Id": "uvB", "Type": "Multiply", "Inputs": {"A": "uv0", "B": [1.7, 1.1]}},
+		{"Id": "uvB", "Type": "Multiply", "Inputs": {"A": "uv0", "B": [2.6, 0.7]}},
 		{"Id": "panB", "Type": "Panner", "Inputs": {"UV": "uvB", "Speed": [0.03, -1.05]}},
 		{"Id": "a", "Type": "TextureSample", "Texture": "Streaks", "Inputs": {"UV": "panA"}},
 		{"Id": "b", "Type": "TextureSample", "Texture": "Streaks", "Inputs": {"UV": "panB"}},
 		{"Id": "sum", "Type": "Add", "Inputs": {"A": "a:2", "B": "b:2"}},
-		{"Id": "half", "Type": "Multiply", "Inputs": {"A": "sum", "B": 0.5}},
-		{"Id": "foam", "Type": "Saturate", "Inputs": {"A": "half"}},
+		{"Id": "half", "Type": "Subtract", "Inputs": {"A": "sum", "B": 0.95}},
+		{"Id": "sharp", "Type": "Multiply", "Inputs": {"A": "half", "B": 2.2}},
+		{"Id": "foam", "Type": "Saturate", "Inputs": {"A": "sharp"}},
 		{"Id": "deep", "Type": "VectorParameter", "Parameter": "DeepColor"},
 		{"Id": "white", "Type": "VectorParameter", "Parameter": "FoamColor"},
 		{"Id": "color", "Type": "Lerp", "Inputs": {"A": "deep:1", "B": "white:1", "Alpha": "foam"}},
-		{"Id": "op0", "Type": "Multiply", "Inputs": {"A": "foam", "B": 0.75}},
-		{"Id": "op", "Type": "Add", "Inputs": {"A": "op0", "B": 0.18}},
-		{"Id": "glow", "Type": "Multiply", "Inputs": {"A": "color", "B": 0.12}},
+		{"Id": "op0", "Type": "Multiply", "Inputs": {"A": "foam", "B": 0.6}},
+		{"Id": "op", "Type": "Add", "Inputs": {"A": "op0", "B": 0.32}},
+		{"Id": "glow", "Type": "Multiply", "Inputs": {"A": "color", "B": 0.05}},
 	]
 	return {
 		"Name": "HD2DWaterfall", "BlendMode": "Translucent", "TwoSided": True,
 		"Parameters": [
 			{"Name": "Streaks", "Type": "Texture", "Value": "Textures/WaterfallStreaks.png", "Usage": "Linear"},
-			{"Name": "DeepColor", "Type": "Vector", "Value": [0.16, 0.3, 0.32, 1.0]},
-			{"Name": "FoamColor", "Type": "Vector", "Value": [0.95, 0.97, 1.0, 1.0]},
+			{"Name": "DeepColor", "Type": "Vector", "Value": [0.06, 0.13, 0.14, 1.0]},
+			{"Name": "FoamColor", "Type": "Vector", "Value": [0.85, 0.9, 0.92, 1.0]},
 		],
 		"Graph": {"Nodes": Nodes, "Output": {"BaseColor": "color", "Roughness": 0.15, "Metallic": 0.0, "Opacity": "op", "Emissive": "glow"}},
 	}
@@ -159,6 +167,11 @@ def WriteTextures(Content):
 def WriteMaterials(Content):
 	WriteTextures(Content)
 	WriteJson(os.path.join(Content, MAT_DIR, "HD2DTriplanar.emat"), TriplanarGraph())
+	WriteJson(os.path.join(Content, MAT_DIR, "HD2DTriplanarVC.emat"), TriplanarGraph(True))
+	# 나무(엔진 폴리지 나무·침엽수): 잎 = 풀잎 텍스처 × 정점 색(어두움 → Tint로 밝힘)
+	for Name, Tint in {"EnvTreeCrown": (5.2, 7.2, 6.0), "EnvTreeAutumn": (9.0, 6.6, 4.0), "EnvPineCrown": (4.6, 6.6, 6.0)}.items():
+		WriteJson(os.path.join(Content, MAT_DIR, f"{Name}.emat"),
+				  TriplanarInstance(Name, "leafy_grass/leafy_grass", 140.0, Tint, 1.0, "HD2DTriplanarVC.emat"))
 	Fort = "modular_fort_01/textures/modular_fort_01"
 	Instances = {
 		"EnvPlaster":     ("plastered_wall_04/plastered_wall_04", 260.0, (1.0, 0.94, 0.82), 1.0),
@@ -190,16 +203,16 @@ def WriteMaterials(Content):
 		"EnvAwningRed":   Plain("EnvAwningRed", (1.0, 1.0, 1.0, 1.0), 0.85, Texture="Textures/AwningRed.png"),
 		"EnvAwningBlue":  Plain("EnvAwningBlue", (1.0, 1.0, 1.0, 1.0), 0.85, Texture="Textures/AwningBlue.png"),
 		"EnvAwningGreen": Plain("EnvAwningGreen", (1.0, 1.0, 1.0, 1.0), 0.85, Texture="Textures/AwningGreen.png"),
-		"EnvCanvas":      Plain("EnvCanvas", (0.52, 0.44, 0.32, 1.0), 0.9),
+		"EnvCanvas":      Plain("EnvCanvas", (0.36, 0.3, 0.22, 1.0), 0.95),
 		"EnvClothWhite":  Plain("EnvClothWhite", (0.86, 0.85, 0.8, 1.0), 0.9),
 		"EnvClothBlue":   Plain("EnvClothBlue", (0.25, 0.4, 0.62, 1.0), 0.9),
 		"EnvClothRed":    Plain("EnvClothRed", (0.62, 0.16, 0.12, 1.0), 0.9),
 		"EnvClothYellow": Plain("EnvClothYellow", (0.9, 0.7, 0.2, 1.0), 0.9),
 		"EnvClothGreen":  Plain("EnvClothGreen", (0.22, 0.48, 0.25, 1.0), 0.9),
-		"EnvTentGreen":   Plain("EnvTentGreen", (0.2, 0.3, 0.17, 1.0), 0.95),
+		"EnvTentGreen":   Plain("EnvTentGreen", (0.09, 0.15, 0.08, 1.0), 0.95),
 		"EnvApple":       Plain("EnvApple", (0.55, 0.06, 0.04, 1.0), 0.35),
 		"EnvOrange":      Plain("EnvOrange", (0.85, 0.38, 0.05, 1.0), 0.45),
-		"EnvCabbage":     Plain("EnvCabbage", (0.3, 0.55, 0.18, 1.0), 0.6),
+		"EnvCabbage":     Plain("EnvCabbage", (0.2, 0.4, 0.13, 1.0), 0.7),
 		"EnvBread":       Plain("EnvBread", (0.62, 0.38, 0.16, 1.0), 0.8),
 		"EnvFlowerRed":   Plain("EnvFlowerRed", (0.75, 0.06, 0.05, 1.0), 0.7),
 		"EnvFlowerPink":  Plain("EnvFlowerPink", (0.95, 0.42, 0.58, 1.0), 0.7),
@@ -224,9 +237,9 @@ def PetalsSystem(Box, Height, Colors, Rate, Name, Seed):
 	# 떨어지는 꽃잎/잎: 넓은 상자 위쪽에서 생겨 바람(+X)·회오리를 타고 천천히 내려온다 (GPU, 정렬 없음 — 작은 불투명에 가까운 조각)
 	Fall = Emitter(Name, Seed, 1200,
 		[Mod("SpawnRate", SpawnRate=Const(Rate))],
-		[Init(Rand(8.0, 13.0), Rand(*Colors), Rand((3.0, 1.8), (5.5, 3.2)), Rand(0.0, 360.0)),
-		 Shape(SHAPE_BOX, Box=(Box[0], Box[1], 120.0), Offset=(0.0, 0.0, Height)),
-		 Mod("AddVelocity", Velocity=Rand((20.0, -15.0, -45.0), (60.0, 15.0, -25.0)))],
+		[Init(Rand(14.0, 20.0), Rand(*Colors), Rand((13.0, 8.0), (20.0, 12.0)), Rand(0.0, 360.0)),
+		 Shape(SHAPE_BOX, Box=(Box[0], Box[1], 200.0), Offset=(0.0, 0.0, Height)),
+		 Mod("AddVelocity", Velocity=Rand((15.0, -10.0, -32.0), (45.0, 10.0, -18.0)))],
 		[Mod("CurlNoiseForce", Strength=Const(70.0), Frequency=Const(0.004), PanSpeed=Const(30.0, 0.0, 0.0)),
 		 Mod("Drag", Drag=Const(0.4)),
 		 Mod("SpriteRotationRate", RotationRate=Rand(-160.0, 160.0)),
@@ -242,7 +255,7 @@ def MotesSystem(Box):
 	Twinkle = Curve((0.0, (1, 1, 1, 0)), (0.2, (1, 1, 1, 0.8)), (0.35, (1, 1, 1, 0.25)), (0.55, (1, 1, 1, 1.0)), (0.75, (1, 1, 1, 0.3)), (1.0, (1, 1, 1, 0)))
 	Motes = Emitter("Motes", 811, 1600,
 		[Mod("SpawnRate", SpawnRate=Const(120.0))],
-		[Init(Rand(6.0, 11.0), Rand((1.4, 0.95, 0.5, 0.6), (2.2, 1.5, 0.8, 0.9)), Rand((1.2, 1.2), (2.4, 2.4))),
+		[Init(Rand(6.0, 11.0), Rand((2.0, 1.4, 0.7, 0.7), (3.2, 2.2, 1.1, 1.0)), Rand((5.0, 5.0), (8.0, 8.0))),
 		 Shape(SHAPE_BOX, Box=(Box[0], Box[1], 380.0), Offset=(0.0, 0.0, 230.0)),
 		 Mod("AddVelocity", Velocity=Rand((-8.0, -8.0, -4.0), (12.0, 8.0, 8.0)))],
 		[Mod("CurlNoiseForce", Strength=Const(18.0), Frequency=Const(0.006), PanSpeed=Const(5.0, 0.0, 2.0)),
@@ -300,9 +313,9 @@ def WaterfallMistSystem(Width):
 
 def WriteParticles(Content, PlayBox):
 	Systems = {
-		"HD2DPetals": PetalsSystem(PlayBox, 900.0, ((1.0, 0.62, 0.78, 1.0), (1.0, 0.86, 0.92, 1.0)), 22.0, "HD2DPetals", 801),
-		"HD2DLeaves": PetalsSystem(PlayBox, 1100.0, ((0.75, 0.42, 0.12, 1.0), (0.95, 0.68, 0.22, 1.0)), 10.0, "HD2DLeaves", 802),
-		"HD2DPondPetals": PetalsSystem((900.0, 900.0), 650.0, ((0.62, 0.45, 0.95, 1.0), (0.8, 0.66, 1.0, 1.0)), 9.0, "HD2DPondPetals", 803),
+		"HD2DPetals": PetalsSystem(PlayBox, 550.0, ((1.0, 0.62, 0.78, 1.0), (1.0, 0.86, 0.92, 1.0)), 32.0, "HD2DPetals", 801),
+		"HD2DLeaves": PetalsSystem(PlayBox, 600.0, ((0.75, 0.42, 0.12, 1.0), (0.95, 0.68, 0.22, 1.0)), 14.0, "HD2DLeaves", 802),
+		"HD2DPondPetals": PetalsSystem((900.0, 900.0), 500.0, ((0.62, 0.45, 0.95, 1.0), (0.8, 0.66, 1.0, 1.0)), 9.0, "HD2DPondPetals", 803),
 		"HD2DMotes": MotesSystem(PlayBox),
 		"HD2DChimneySmoke": ChimneySmokeSystem(),
 		"HD2DWaterfallMist": WaterfallMistSystem(180.0),
@@ -326,6 +339,9 @@ FLOWER_COLORS = ["Red", "Yellow", "White", "Purple", "Pink", "Blue"]
 FLOWER_TYPES = {Color: FoliageType(f"Flower{Color}", SPHERE, Mat(f"EnvFlower{Color}"), 0.05, 0.085, ZOffset=14.0, Cull=4500.0) for Color in FLOWER_COLORS}
 WHEAT_TYPE = FoliageType("Wheat", "foliage:grass", Mat("EnvWheat"), 1.25, 1.75, ZOffset=-2.0, Cull=6000.0, Shadow=2500.0)
 MEADOW_TYPE = FoliageType("Meadow", "foliage:grass", Mat("EnvMeadow"), 0.8, 1.2, ZOffset=-2.0, Cull=5000.0)
+TREE_TYPE = dict(FoliageType("Tree", "foliage:tree", Mat("EnvTreeCrown"), 0.8, 1.3, ZOffset=-10.0, Cull=20000.0, Shadow=9000.0), AlignToNormal=False)
+TREE_AUTUMN_TYPE = dict(TREE_TYPE, Name="TreeAutumn", Material=Mat("EnvTreeAutumn"))
+PINE_TYPE = dict(FoliageType("Pine", "foliage:pine", Mat("EnvPineCrown"), 0.9, 1.6, ZOffset=-10.0, Cull=20000.0, Shadow=9000.0), AlignToNormal=False)
 
 
 # ---- 배치 도우미 ----------------------------------------------------------------------------------------------------

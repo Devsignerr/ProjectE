@@ -1,0 +1,23 @@
+{
+  "Name": "HD2DEnvWindowDim",
+  "BaseColorFactor": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "EmissiveFactor": [
+    1.1,
+    0.55,
+    0.22
+  ],
+  "Metallic": 0.0,
+  "Roughness": 0.6,
+  "NormalScale": 1.0,
+  "OcclusionStrength": 1.0,
+  "BaseColorTexture": "",
+  "MetallicRoughnessTexture": "",
+  "NormalTexture": "",
+  "OcclusionTexture": "",
+  "EmissiveTexture": ""
+}

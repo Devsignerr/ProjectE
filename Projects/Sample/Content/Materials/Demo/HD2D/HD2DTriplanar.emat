@@ -1,0 +1,251 @@
+{
+  "Name": "HD2DTriplanar",
+  "BlendMode": "Opaque",
+  "Parameters": [
+    {
+      "Name": "Albedo",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Color"
+    },
+    {
+      "Name": "Arm",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Linear"
+    },
+    {
+      "Name": "Normal",
+      "Type": "Texture",
+      "Value": "",
+      "Usage": "Normal"
+    },
+    {
+      "Name": "WorldScale",
+      "Type": "Scalar",
+      "Value": 0.005
+    },
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "Name": "RoughnessScale",
+      "Type": "Scalar",
+      "Value": 1.0
+    }
+  ],
+  "Graph": {
+    "Nodes": [
+      {
+        "Id": "pos",
+        "Type": "WorldPosition"
+      },
+      {
+        "Id": "scale",
+        "Type": "ScalarParameter",
+        "Parameter": "WorldScale"
+      },
+      {
+        "Id": "p",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "pos",
+          "B": "scale"
+        }
+      },
+      {
+        "Id": "ps",
+        "Type": "Split",
+        "Inputs": {
+          "A": "p"
+        }
+      },
+      {
+        "Id": "nz",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "ps:2",
+          "B": -1.0
+        }
+      },
+      {
+        "Id": "uvXY",
+        "Type": "Append",
+        "Inputs": {
+          "A": "ps:0",
+          "B": "ps:1"
+        }
+      },
+      {
+        "Id": "uvYZ",
+        "Type": "Append",
+        "Inputs": {
+          "A": "ps:1",
+          "B": "nz"
+        }
+      },
+      {
+        "Id": "uvXZ",
+        "Type": "Append",
+        "Inputs": {
+          "A": "ps:0",
+          "B": "nz"
+        }
+      },
+      {
+        "Id": "n",
+        "Type": "WorldNormal"
+      },
+      {
+        "Id": "an",
+        "Type": "Abs",
+        "Inputs": {
+          "A": "n"
+        }
+      },
+      {
+        "Id": "ns",
+        "Type": "Split",
+        "Inputs": {
+          "A": "an"
+        }
+      },
+      {
+        "Id": "dxy",
+        "Type": "Subtract",
+        "Inputs": {
+          "A": "ns:0",
+          "B": "ns:1"
+        }
+      },
+      {
+        "Id": "dxyS",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "dxy",
+          "B": 60.0
+        }
+      },
+      {
+        "Id": "mx",
+        "Type": "Saturate",
+        "Inputs": {
+          "A": "dxyS"
+        }
+      },
+      {
+        "Id": "uvWall",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": "uvXZ",
+          "B": "uvYZ",
+          "Alpha": "mx"
+        }
+      },
+      {
+        "Id": "dz",
+        "Type": "Subtract",
+        "Inputs": {
+          "A": "ns:2",
+          "B": 0.75
+        }
+      },
+      {
+        "Id": "dzS",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "dz",
+          "B": 60.0
+        }
+      },
+      {
+        "Id": "mz",
+        "Type": "Saturate",
+        "Inputs": {
+          "A": "dzS"
+        }
+      },
+      {
+        "Id": "uv",
+        "Type": "Lerp",
+        "Inputs": {
+          "A": "uvWall",
+          "B": "uvXY",
+          "Alpha": "mz"
+        }
+      },
+      {
+        "Id": "col",
+        "Type": "TextureSample",
+        "Texture": "Albedo",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "arm",
+        "Type": "TextureSample",
+        "Texture": "Arm",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "nrm",
+        "Type": "TextureSample",
+        "Texture": "Normal",
+        "Inputs": {
+          "UV": "uv"
+        }
+      },
+      {
+        "Id": "tint",
+        "Type": "VectorParameter",
+        "Parameter": "Tint"
+      },
+      {
+        "Id": "base0",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "col:1",
+          "B": "tint:1"
+        }
+      },
+      {
+        "Id": "rs",
+        "Type": "ScalarParameter",
+        "Parameter": "RoughnessScale"
+      },
+      {
+        "Id": "rough",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "arm:3",
+          "B": "rs"
+        }
+      },
+      {
+        "Id": "base",
+        "Type": "Multiply",
+        "Inputs": {
+          "A": "base0",
+          "B": 1.0
+        }
+      }
+    ],
+    "Output": {
+      "BaseColor": "base",
+      "Roughness": "rough",
+      "AmbientOcclusion": "arm:2",
+      "Metallic": 0.0,
+      "Normal": "nrm:1"
+    }
+  }
+}

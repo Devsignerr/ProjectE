@@ -11100,7 +11100,7 @@
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
-          "PropertyOverrides": "{\"AutoPlay\": \"Basic\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\"}"
+          "PropertyOverrides": "{\"AutoPlay\": \"Time\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"Test\"}"
         },
         "TransformComponent": {
           "Position": [

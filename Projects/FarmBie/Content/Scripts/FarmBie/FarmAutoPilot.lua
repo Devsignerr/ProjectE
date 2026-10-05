@@ -2,6 +2,7 @@
 --   시나리오는 코루틴 하나(Run<이름>) — 도우미(GoTo/Press/Wait)가 프레임마다 입력을 채우고 yield 한다. 시간은 실제 시간(메뉴로 게임이 멈춰도 흐른다).
 --   확인은 Expect로 쌓고 끝에 관리자 ReportAutoPlay → 로그 "[FarmBie] 결과: 실패 N건".
 --   Basic: 이동(사방)·방향 플립북·구르기·카메라 추적·집/울타리 충돌
+--   Time : 시계 속도(낮·밤)·밤 시작 알림·등불·잠자기(문 앞 상호작용)·새 날·자동 저장·계절 끝 경고·계절/연도 넘김·불러오기
 --   이 모듈은 상태를 갖지 않는다 (Script.Require 값은 공유) — 상태는 New가 만든 객체에.
 local AutoPilot = {}
 AutoPilot.__index = AutoPilot
@@ -10,6 +11,8 @@ local function Flat(V) return Vector3(V.X, V.Y, 0) end
 
 function AutoPilot.New(Scenario, Player, GM)
 	local A = setmetatable({ Scenario = Scenario, Player = Player, GM = GM, Time = 0, Frame = 0, Failures = {}, Checks = 0 }, AutoPilot)
+	local ShotHour = string.match(Scenario, "^Shot([%d%.]+)$")
+	if ShotHour then A.ShotHour, Scenario = ShotHour, "Shot" end
 	local Runner = A["Run" .. Scenario]
 	if not Runner then
 		Log.Error("[FarmBie] 모르는 자동 시나리오: " .. tostring(Scenario))
@@ -149,6 +152,73 @@ function AutoPilot:RunBasic()
 	self:Walk(Vector3(1, 0, 0), 2.5)
 	self:Expect(self:Pos().X < 2460, string.format("울타리에 막힘 X %.0f", self:Pos().X))
 	self:Expect(Flat(self:Pos() - Start):Length() > 500, "시작에서 멀어짐")
+	self:Finish()
+end
+
+-- 스크린샷용: 시각을 정하고 머문다 (Shot<시각> — 예: Shot21.5)
+function AutoPilot:RunShot()
+	self.GM:SetHour(tonumber(self.ShotHour) or 10)
+	while true do self:Yield() end
+end
+
+-- 잠이 끝나 다음 날 아침이 될 때까지
+function AutoPilot:WaitMorning(Timeout)
+	local GM = self.GM
+	self:WaitUntil(function() return GM.Phase == "Sleep" end, 3)
+	return self:WaitUntil(function() return GM.Phase == "Day" end, Timeout or 8)
+end
+
+function AutoPilot:RunTime()
+	local GM, P = self.GM, self.Player
+	local Hud = GM:Hud()
+	self:Wait(1.0)
+	self:Expect(GM.Day == 1 and GM.Season == 0 and GM.Year == 1 and GM.Phase == "Day", "시작 날짜 " .. GM:DateText())
+	self:Expect(Hud.Cache["ClockDate.Text"] == "봄 1일 (월)", "HUD 날짜 " .. tostring(Hud.Cache["ClockDate.Text"]))
+	-- 낮 시계: 실제 8분 = 14시간
+	local H0, T0 = GM.Hour, self.Time
+	self:Wait(3.0)
+	local Rate = (GM.Hour - H0) / (self.Time - T0)
+	self:Expect(math.abs(Rate - 14 / 480) < 0.004, string.format("낮 시계 %.4f시/초", Rate))
+	-- 밤 시작
+	GM:SetHour(19.97)
+	self:Expect(self:WaitUntil(function() return GM.Phase == "Night" end, 5), "밤 시작")
+	self:Expect(Hud.LastAnnounce == "밤이 찾아온다", "밤 알림 " .. tostring(Hud.LastAnnounce))
+	self:Wait(0.5)
+	self:Expect(#GM.Lamps > 0 and GM.Lamps[1].Light.Intensity > 5, string.format("등불 켜짐 %d개", #GM.Lamps))
+	self:Expect(Hud.Cache["ClockIcon.Texture"] == "UI/FarmBie/Moon.png", "달 아이콘")
+	H0, T0 = GM.Hour, self.Time
+	self:Wait(3.0)
+	Rate = (GM.Hour - H0) / (self.Time - T0)
+	self:Expect(math.abs(Rate - 6 / 210) < 0.004, string.format("밤 시계 %.4f시/초", Rate))
+	-- 잠자기: 문 앞 → 안내 → 상호작용
+	self:Expect(self:GoTo(GM.SleepSpot + Vector3(0, 80, 0), 40, 15), "문 앞 도착")
+	self:Wait(0.2)
+	self:Expect(GM.Focus ~= nil and Hud.Cache["Prompt.Visibility"] == "HitTestInvisible", "잠자기 안내")
+	self:Press("Interact")
+	self:Expect(self:WaitMorning(), "잠 → 아침")
+	self:Expect(GM.Day == 2 and math.abs(GM.Hour - 6) < 0.05 and GM:Weekday() == 1, string.format("2일 아침 %s %s", GM:DateText(), GM:ClockText()))
+	self:Expect(SaveGame.Exists(GM:SlotName()) and GM.Report.Saves == 1, "자동 저장")
+	self:Expect(Flat(self:Pos() - GM.SleepSpot):Length() < 150, "문 앞에서 깸")
+	-- 계절 끝 경고 (28일에 잠 → 29일 아침: 1일 남음)
+	GM.Day = 28
+	GM:SetHour(21.0)
+	self:Press("Interact")
+	self:WaitMorning()
+	self:Expect(GM.Day == 29 and string.find(Hud.Cache["BannerSub.Text"] or "", "계절이") ~= nil, "계절 끝 경고 " .. tostring(Hud.Cache["BannerSub.Text"]))
+	-- 마지막 날 밤: 새벽까지 버티면 쓰러지듯 잠 → 여름 1일
+	GM.Day = 30
+	GM:SetHour(25.97)
+	self:Expect(self:WaitMorning(), "새벽 잠")
+	self:Expect(GM.SleepReason == "Dawn" and GM.Day == 1 and GM.Season == 1, "여름 1일 " .. GM:DateText())
+	self:Expect(string.find(Hud.Cache["BannerSub.Text"] or "", "여름") ~= nil, "계절 알림 " .. tostring(Hud.Cache["BannerSub.Text"]))
+	-- 불러오기: 바꾼 값이 저장값으로 돌아온다
+	GM.Day, GM.Season = 9, 2
+	self:Expect(GM:LoadGame() and GM.Day == 1 and GM.Season == 1, "불러오기 " .. GM:DateText())
+	-- 연도 넘김: 겨울 30일 → 2년차 봄 1일
+	GM.Season, GM.Day = 3, 30
+	GM:SetHour(25.97)
+	self:WaitMorning()
+	self:Expect(GM.Year == 2 and GM.Season == 0 and GM.Day == 1, string.format("연도 넘김 %d년차 %s", GM.Year, GM:DateText()))
 	self:Finish()
 end
 

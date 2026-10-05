@@ -812,6 +812,1095 @@
     },
     {
       "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            -1000.0,
+            97.42374301271506
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            -1000.0,
+            209.42374301271508
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_0_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            -980.0,
+            227.42374301271508
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_0",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -420.0,
+            -1000.0,
+            97.42374301271506
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_0_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            420.0,
+            -1200.0,
+            98.30960697705714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1993679344171972,
+            0.9799247046208296
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            420.0,
+            -1200.0,
+            210.30960697705714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.1993679344171972,
+            0.9799247046208296
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_1_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            420.0,
+            -1180.0,
+            228.30960697705714
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_1",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            420.0,
+            -1200.0,
+            98.30960697705714
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_1_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1300.0,
+            -600.0,
+            102.9168778729256
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.39073112848927377,
+            0.9205048534524404
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -1300.0,
+            -600.0,
+            214.9168778729256
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.39073112848927377,
+            0.9205048534524404
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_2_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -1300.0,
+            -580.0,
+            232.9168778729256
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_2",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -1300.0,
+            -600.0,
+            102.9168778729256
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_2_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1300.0,
+            -600.0,
+            97.52072606162339
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5664062369248328,
+            0.8241261886220157
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            1300.0,
+            -600.0,
+            209.52072606162338
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.5664062369248328,
+            0.8241261886220157
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_3_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            1300.0,
+            -580.0,
+            227.52072606162338
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_3",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            1300.0,
+            -600.0,
+            97.52072606162339
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_3_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            500.0,
+            100.0359053158423
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7193398003386512,
+            0.6946583704589973
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            500.0,
+            212.0359053158423
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.7193398003386512,
+            0.6946583704589973
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_4_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            520.0,
+            230.0359053158423
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_4",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -900.0,
+            500.0,
+            100.0359053158423
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_4_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            500.0,
+            101.37924190048487
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8433914458128856,
+            0.5372996083468239
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            500.0,
+            213.37924190048486
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.8433914458128856,
+            0.5372996083468239
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_5_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            520.0,
+            231.37924190048486
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_5",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            900.0,
+            500.0,
+            101.37924190048487
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_5_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1250.0,
+            97.93271555087577
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9335804264972017,
+            0.3583679495453004
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1250.0,
+            209.93271555087577
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9335804264972017,
+            0.3583679495453004
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_6_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1270.0,
+            227.93271555087577
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_6",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            1250.0,
+            97.93271555087577
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_6_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2000.0,
+            150.0,
+            101.64053586127443
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9862856015372314,
+            0.1650476058606776
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            -2000.0,
+            150.0,
+            213.64053586127443
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.9862856015372314,
+            0.1650476058606776
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_7_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            -2000.0,
+            170.0,
+            231.64053586127443
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_7",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            -2000.0,
+            150.0,
+            101.64053586127443
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_7_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/WoodPost.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2000.0,
+            -300.0,
+            102.42736467355817
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9993908270190958,
+            -0.034899496702500955
+          ],
+          "Scale": [
+            0.14,
+            0.14,
+            2.0
+          ]
+        }
+      },
+      "Name": "LampPost_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "StaticMeshComponent": {
+          "MeshAsset": "primitive:cube",
+          "MaterialAsset": "Materials/FarmBie/LampGlow.emat"
+        },
+        "TransformComponent": {
+          "Position": [
+            2000.0,
+            -300.0,
+            214.42736467355817
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.9993908270190958,
+            -0.034899496702500955
+          ],
+          "Scale": [
+            0.26,
+            0.26,
+            0.3
+          ]
+        }
+      },
+      "Name": "LampPost_8_Box",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "PointLightComponent": {
+          "Color": [
+            1.0,
+            0.72,
+            0.4
+          ],
+          "Intensity": 0.0,
+          "Radius": 900.0,
+          "CastShadows": false
+        },
+        "TransformComponent": {
+          "Position": [
+            2000.0,
+            -280.0,
+            232.42736467355817
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Lamp_8",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "BoxColliderComponent": {
+          "HalfExtents": [
+            16.0,
+            16.0,
+            100.0
+          ]
+        },
+        "TransformComponent": {
+          "Position": [
+            2000.0,
+            -300.0,
+            102.42736467355817
+          ],
+          "Rotation": [
+            0.0,
+            -0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "LampPost_8_Collision",
+      "Parent": -1
+    },
+    {
+      "Components": {
         "ModelComponent": {
           "AssetPath": "Asset/KayKit/Village/fence_wood_straight.gltf"
         },
@@ -10011,7 +11100,7 @@
         "ScriptComponent": {
           "ExecutionLocation": 0,
           "ScriptAsset": "Scripts/FarmBie/FarmGame.lua",
-          "PropertyOverrides": "{\"AutoPlay\": \"\"}"
+          "PropertyOverrides": "{\"AutoPlay\": \"\", \"SleepSpot\": \"0.0,-1090.0\", \"Slot\": \"1\"}"
         },
         "TransformComponent": {
           "Position": [
@@ -10033,6 +11122,42 @@
         }
       },
       "Name": "FarmGame",
+      "Parent": -1
+    },
+    {
+      "Components": {
+        "UIComponent": {
+          "Asset": "UI/FarmBie/HUD.eui",
+          "ZOrder": 0,
+          "Visible": true,
+          "ReceiveInput": false,
+          "KeyboardFocus": false
+        },
+        "ScriptComponent": {
+          "ExecutionLocation": 2,
+          "ScriptAsset": "Scripts/FarmBie/FarmHud.lua",
+          "PropertyOverrides": "{}"
+        },
+        "TransformComponent": {
+          "Position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "Rotation": [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ],
+          "Scale": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      },
+      "Name": "Hud",
       "Parent": -1
     },
     {
@@ -10129,7 +11254,7 @@
         },
         "PrefabLinkComponent": {
           "Id": "1",
-          "Root": 360
+          "Root": 397
         },
         "TransformComponent": {
           "Position": [

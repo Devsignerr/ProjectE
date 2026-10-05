@@ -80,6 +80,12 @@ function FarmPlayer:OnUpdate(Dt)
 	self.LastPos = Pos
 
 	local In = self:GatherInput()
+	if not self.GM.bReady or self.GM.Phase == "Sleep" then
+		self:UpdateAnimation(Vector3(0, 0, 0))
+		return
+	end
+	self.GM:UpdateInteract(Pos)
+	if In.Interact then self.GM:Interact() end
 	local Move = In.Move
 	if Move:Length() > 1 then Move = Move:Normalized() end
 	self.DodgeCooldown = math.max(0.0, self.DodgeCooldown - Dt)

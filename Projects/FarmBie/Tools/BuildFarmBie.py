@@ -18,6 +18,8 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "Tools", "DemoMap"))
 sys.path.insert(0, HERE)
 import FarmBieArt  # noqa: E402
+import FarmBieData  # noqa: E402
+import FarmBieUI  # noqa: E402
 import ModelBounds  # noqa: E402
 from SceneBuilder import FScene, QuatFromEuler  # noqa: E402
 
@@ -165,6 +167,10 @@ def WriteMaterials():
 	FarmBieArt.WriteGroundTextures(os.path.join(CONTENT, "Textures", "FarmBie"))
 	for Name in FarmBieArt.GROUND_TEXTURES:
 		WriteJson(os.path.join(CONTENT, MATS, f"Ground{Name}.emat"), Material(f"FarmBieGround{Name}", Texture=f"../../Textures/FarmBie/{Name}.png"))
+	WriteJson(os.path.join(CONTENT, MATS, "WoodPost.emat"), Material("FarmBieWoodPost", (0.32, 0.2, 0.12, 1.0), 0.85))
+	Glow = Material("FarmBieLampGlow", (1.0, 0.8, 0.5, 1.0), 0.6)
+	Glow["EmissiveFactor"] = [1.3, 0.8, 0.35]
+	WriteJson(os.path.join(CONTENT, MATS, "LampGlow.emat"), Glow)
 
 
 # ---- 프리팹 --------------------------------------------------------------------------------------------------------------
@@ -390,8 +396,29 @@ def AddCamera(B, Start):
 	}, tuple(Focus[I] - Forward[I] * CAMERA_DISTANCE for I in range(3)), QuatFromEuler(Pitch=CAMERA_PITCH, Yaw=-90.0))
 
 
+SLEEP_SPOT = (HOUSE[0], HOUSE[1] + 260.0)  # 집 문 앞 (잠자기 상호작용)
+LAMPS = [(-420.0, -1000.0), (420.0, -1200.0), (-1300.0, -600.0), (1300.0, -600.0), (-900.0, 500.0), (900.0, 500.0), (0.0, 1250.0), (-2000.0, 150.0), (2000.0, -300.0)]
+
+
+def AddLamps(B):
+	# 등불 기둥 (나무 기둥 + 등 상자 + 점광원 Lamp_<n>) — 낮밤(FarmTime.lua)이 LampScale로 켜고 끈다. 밤 디펜스 시야
+	for I, (X, Y) in enumerate(LAMPS):
+		Ground = B.Height(X, Y)
+		B.S.Add(f"LampPost_{I}", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/WoodPost.emat"}},
+				(X, Y, Ground + 100.0), QuatFromEuler(Yaw=I * 23.0), (0.14, 0.14, 2.0))
+		B.S.Add(f"LampPost_{I}_Box", {"StaticMeshComponent": {"MeshAsset": "primitive:cube", "MaterialAsset": f"{MATS}/LampGlow.emat"}},
+				(X, Y, Ground + 212.0), QuatFromEuler(Yaw=I * 23.0), (0.26, 0.26, 0.3))
+		B.S.Add(f"Lamp_{I}", {"PointLightComponent": {"Color": [1.0, 0.72, 0.4], "Intensity": 0.0, "Radius": 900.0, "CastShadows": False}},
+				(X, Y + 20.0, Ground + 230.0))
+		B.BoxCollider(f"LampPost_{I}_Collision", (X, Y, Ground + 100.0), (16.0, 16.0, 100.0))
+		B.Reserve(X, Y, 60.0)
+
+
 def AddGame(B, AutoPlay):
-	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay)})
+	B.S.Add("FarmGame", {"ScriptComponent": Script(f"{SCRIPTS}/FarmGame.lua", 0, AutoPlay=AutoPlay,
+												   SleepSpot=f"{SLEEP_SPOT[0]},{SLEEP_SPOT[1]}", Slot="Test" if AutoPlay else "1")})
+	B.S.Add("Hud", {"UIComponent": {"Asset": f"{FarmBieUI.UI_DIR}/HUD.eui", "ZOrder": 0, "Visible": True, "ReceiveInput": False, "KeyboardFocus": False},
+					"ScriptComponent": Script(f"{SCRIPTS}/FarmHud.lua", 2)})
 
 
 def AddPlayer(B, Start):
@@ -409,6 +436,7 @@ def BuildScene(Height, AutoPlay=""):
 	B.Reserve(HOUSE[0], HOUSE[1], 500.0)
 	AddEnvironment(B, 10.0)
 	AddFarmstead(B)
+	AddLamps(B)
 	AddFence(B)
 	AddTrees(B)
 	AddGame(B, AutoPlay)
@@ -420,6 +448,8 @@ def BuildScene(Height, AutoPlay=""):
 def Main():
 	FarmBieArt.WriteSprites(os.path.join(CONTENT, *SPRITES.split("/")))
 	WriteMaterials()
+	FarmBieData.WriteAll(CONTENT)
+	FarmBieUI.WriteHud(CONTENT)
 	_, _, H, Weights = BuildTerrain()
 	WriteTerrain(os.path.join(CONTENT, "Terrain", "FarmBie", "Farm.eterrain"), H, Weights)
 	Height = FHeight(H)
@@ -428,6 +458,11 @@ def Main():
 	Scene.Save(os.path.join(CONTENT, "Scenes", "Farm.escene"))
 	os.makedirs(os.path.join(CONTENT, "Scenes", "Tests"), exist_ok=True)
 	BuildScene(Height, AutoPlay="Basic").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmAutoPlay.escene"))
+	BuildScene(Height, AutoPlay="Time").Save(os.path.join(CONTENT, "Scenes", "Tests", "FarmTime.escene"))
+	if "--views" in sys.argv:
+		# 확인용 (커밋하지 않음): 시각별 화면
+		for Hour in ("9", "17.5", "21.5"):
+			BuildScene(Height, AutoPlay=f"Shot{Hour}").Save(os.path.join(CONTENT, "Scenes", f"_FarmShot{Hour.replace('.', '_')}.escene"))
 	print(f"FarmBie 생성: 엔티티 {len(Scene.Entities)}개, 지형 {TERRAIN_RES}² 높이 {H.min():.0f}~{H.max():.0f}cm")
 
 
